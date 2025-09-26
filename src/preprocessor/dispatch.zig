@@ -560,11 +560,9 @@ pub fn Preprocessor(comptime FrameType: type) type {
                     },
                     .jump => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMP)] });
-                        try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
                     },
                     .jumpi => {
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPI)] });
-                        try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } });
                     },
                     .push => |data| {
                         try processPushOpcode(&schedule_items, allocator, opcode_handlers, data);

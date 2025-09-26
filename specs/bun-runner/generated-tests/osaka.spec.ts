@@ -7,7 +7,9 @@ import {
   CallType,
   type BlockInfo,
   type CallParams,
-  type EvmResult 
+  type EvmResult,
+  type StateDump,
+  type AccountState
 } from "../../../sdks/bun/src";
 
 function createDefaultEVM(): GuillotineEVM {
@@ -29,8 +31,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -40,8 +42,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -51,8 +53,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -62,8 +64,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -73,8 +75,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -84,8 +86,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -95,8 +97,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -106,8 +108,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -117,8 +119,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -128,8 +130,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -139,8 +141,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -150,8 +152,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -161,8 +163,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -172,8 +174,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -183,8 +185,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -194,8 +196,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -205,8 +207,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -216,8 +218,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -227,8 +229,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -238,8 +240,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -249,8 +251,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -260,8 +262,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -271,8 +273,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -282,8 +284,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -293,8 +295,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -304,8 +306,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -315,8 +317,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -326,8 +328,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -337,8 +339,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -348,8 +350,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -359,8 +361,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -370,8 +372,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -381,8 +383,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -392,8 +394,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -403,8 +405,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -414,8 +416,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -425,8 +427,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -436,8 +438,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -447,8 +449,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -458,8 +460,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -469,8 +471,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -480,8 +482,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -491,8 +493,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -502,8 +504,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -513,8 +515,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -524,8 +526,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -538,8 +540,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -549,8 +551,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -560,8 +562,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -571,8 +573,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -582,8 +584,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -593,8 +595,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -604,8 +606,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -615,8 +617,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -626,8 +628,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -637,8 +639,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -648,8 +650,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -659,8 +661,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -670,8 +672,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -681,8 +683,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -692,8 +694,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -703,8 +705,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -714,8 +716,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -725,8 +727,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -736,8 +738,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -747,8 +749,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -758,8 +760,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -769,8 +771,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -780,8 +782,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -791,8 +793,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -802,8 +804,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -813,8 +815,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -824,8 +826,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -835,8 +837,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -846,8 +848,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -857,8 +859,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -868,8 +870,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -879,8 +881,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -893,8 +895,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -904,8 +906,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -915,8 +917,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -926,8 +928,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -937,8 +939,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -948,8 +950,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -959,8 +961,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -970,8 +972,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -981,8 +983,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -992,8 +994,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1003,8 +1005,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1014,8 +1016,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1025,8 +1027,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1036,8 +1038,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1047,8 +1049,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1058,8 +1060,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1069,8 +1071,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1080,8 +1082,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1091,8 +1093,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1102,8 +1104,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1113,8 +1115,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1124,8 +1126,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1135,8 +1137,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1146,8 +1148,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1157,8 +1159,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1168,8 +1170,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1179,8 +1181,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1190,8 +1192,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1201,8 +1203,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1212,8 +1214,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1223,8 +1225,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1234,8 +1236,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1245,8 +1247,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1256,8 +1258,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1267,8 +1269,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1278,8 +1280,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1289,8 +1291,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1300,8 +1302,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1311,8 +1313,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1322,8 +1324,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1333,8 +1335,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1344,8 +1346,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1355,8 +1357,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1366,8 +1368,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1377,8 +1379,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1388,8 +1390,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1399,8 +1401,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1410,8 +1412,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1421,8 +1423,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1432,8 +1434,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1443,8 +1445,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1454,8 +1456,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1465,8 +1467,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1476,8 +1478,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1487,8 +1489,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1498,8 +1500,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1509,8 +1511,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1520,8 +1522,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1531,8 +1533,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1542,8 +1544,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1553,8 +1555,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1564,8 +1566,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1575,8 +1577,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1586,8 +1588,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1597,8 +1599,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1608,8 +1610,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1619,8 +1621,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1630,8 +1632,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1641,8 +1643,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1652,8 +1654,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1663,8 +1665,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1674,8 +1676,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1685,8 +1687,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1696,8 +1698,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1707,8 +1709,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1718,8 +1720,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1729,8 +1731,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1740,8 +1742,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1751,8 +1753,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1762,8 +1764,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1773,8 +1775,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1784,8 +1786,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1795,8 +1797,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1806,8 +1808,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1817,8 +1819,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1828,8 +1830,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1839,8 +1841,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1850,8 +1852,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1861,8 +1863,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1872,8 +1874,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1883,8 +1885,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1894,8 +1896,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1905,8 +1907,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1916,8 +1918,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1927,8 +1929,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1938,8 +1940,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1949,8 +1951,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1960,8 +1962,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1971,8 +1973,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1982,8 +1984,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -1993,8 +1995,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2004,8 +2006,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2015,8 +2017,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2026,8 +2028,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2037,8 +2039,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2048,8 +2050,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2059,8 +2061,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2070,8 +2072,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2081,8 +2083,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2092,8 +2094,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2103,8 +2105,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2114,8 +2116,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2125,8 +2127,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2136,8 +2138,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2147,8 +2149,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2158,8 +2160,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2169,8 +2171,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2180,8 +2182,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2191,8 +2193,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2202,8 +2204,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2213,8 +2215,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2224,8 +2226,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2235,8 +2237,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2246,8 +2248,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2257,8 +2259,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2268,8 +2270,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2279,8 +2281,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2290,8 +2292,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2301,8 +2303,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2312,8 +2314,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2323,8 +2325,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2334,8 +2336,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2345,8 +2347,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2356,8 +2358,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2367,8 +2369,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2378,8 +2380,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2389,8 +2391,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2400,8 +2402,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2411,8 +2413,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2422,8 +2424,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2433,8 +2435,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2444,8 +2446,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2455,8 +2457,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2466,8 +2468,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2477,8 +2479,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2488,8 +2490,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2499,8 +2501,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2510,8 +2512,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2521,8 +2523,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2532,8 +2534,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2543,8 +2545,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2554,8 +2556,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2565,8 +2567,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2576,8 +2578,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2587,8 +2589,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2598,8 +2600,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2609,8 +2611,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2620,8 +2622,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2631,8 +2633,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2642,8 +2644,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2653,8 +2655,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2664,8 +2666,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2675,8 +2677,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2686,8 +2688,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2697,8 +2699,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2708,8 +2710,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2719,8 +2721,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2730,8 +2732,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2741,8 +2743,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2752,8 +2754,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2763,8 +2765,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2774,8 +2776,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2785,8 +2787,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2796,8 +2798,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2807,8 +2809,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2818,8 +2820,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2829,8 +2831,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2840,8 +2842,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2851,8 +2853,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2862,8 +2864,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2873,8 +2875,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2884,8 +2886,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2895,8 +2897,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2906,8 +2908,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2917,8 +2919,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2928,8 +2930,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2939,8 +2941,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2950,8 +2952,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2961,8 +2963,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2972,8 +2974,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2983,8 +2985,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -2994,8 +2996,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3005,8 +3007,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3016,8 +3018,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3027,8 +3029,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3038,8 +3040,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3049,8 +3051,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3060,8 +3062,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3071,8 +3073,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3082,8 +3084,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3093,8 +3095,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3104,8 +3106,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3115,8 +3117,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3126,8 +3128,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3137,8 +3139,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3148,8 +3150,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3159,8 +3161,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3170,8 +3172,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3181,8 +3183,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3192,8 +3194,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3203,8 +3205,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3214,8 +3216,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3225,8 +3227,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3236,8 +3238,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3247,8 +3249,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3258,8 +3260,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3269,8 +3271,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3280,8 +3282,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3291,8 +3293,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3302,8 +3304,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3313,8 +3315,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3324,8 +3326,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3335,8 +3337,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3346,8 +3348,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3357,8 +3359,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3368,8 +3370,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3379,8 +3381,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3390,8 +3392,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3401,8 +3403,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3412,8 +3414,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3423,8 +3425,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3434,8 +3436,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3445,8 +3447,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3456,8 +3458,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3467,8 +3469,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3478,8 +3480,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3489,8 +3491,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3500,8 +3502,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3511,8 +3513,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3522,8 +3524,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3533,8 +3535,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3544,8 +3546,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3555,8 +3557,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3566,8 +3568,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3577,8 +3579,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3588,8 +3590,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3599,8 +3601,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3610,8 +3612,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3621,8 +3623,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3632,8 +3634,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3643,8 +3645,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3654,8 +3656,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3665,8 +3667,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3676,8 +3678,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3687,8 +3689,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3698,8 +3700,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3709,8 +3711,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3720,8 +3722,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3731,8 +3733,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3742,8 +3744,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3753,8 +3755,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3764,8 +3766,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3775,8 +3777,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3786,8 +3788,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3797,8 +3799,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3808,8 +3810,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3819,8 +3821,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3830,8 +3832,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3841,8 +3843,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3852,8 +3854,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3863,8 +3865,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3874,8 +3876,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3885,8 +3887,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3896,8 +3898,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3907,8 +3909,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3918,8 +3920,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3929,8 +3931,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3940,8 +3942,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3951,8 +3953,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3962,8 +3964,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3973,8 +3975,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3984,8 +3986,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -3995,8 +3997,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4006,8 +4008,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4017,8 +4019,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4028,8 +4030,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4039,8 +4041,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4050,8 +4052,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4061,8 +4063,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4072,8 +4074,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4083,8 +4085,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4094,8 +4096,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4105,8 +4107,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
@@ -4116,8 +4118,8 @@ describe("osaka tests", () => {
       
       const evm = createDefaultEVM();
       
-      // No specific expectations, checking execution succeeded
-      expect(true).toBe(true);
+      // No post-state expectations to verify
+      expect(result0).toBeDefined();
       
       evm.destroy();
     });
