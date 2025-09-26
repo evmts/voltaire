@@ -33,9 +33,9 @@ pub fn Handlers(FrameType: type) type {
         }
 
         /// Generate a push handler for PUSH1-PUSH32
-        pub fn generatePushHandler(push_n: u8) FrameType.OpcodeHandler {
-            if (push_n > 32) @compileError("Only PUSH1 to PUSH32 is supported");
-            if (push_n == 0) @compileError("PUSH0 is handled as its own opcode");
+        pub fn generatePushHandler(comptime push_n: u8) FrameType.OpcodeHandler {
+            std.debug.assert(push_n <= 32); // Only PUSH1 to PUSH32 is supported
+            std.debug.assert(push_n != 0); // PUSH0 is handled as its own opcode
             return &struct {
                 pub fn pushHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const opcode = switch (push_n) {
@@ -130,8 +130,8 @@ pub fn Handlers(FrameType: type) type {
         }
 
         /// Generate a dup handler for DUP1-DUP16
-        pub fn generateDupHandler(dup_n: u8) FrameType.OpcodeHandler {
-            if (dup_n == 0 or dup_n > 16) @compileError("Only DUP1 to DUP16 is supported");
+        pub fn generateDupHandler(comptime dup_n: u8) FrameType.OpcodeHandler {
+            std.debug.assert(dup_n > 0 and dup_n <= 16); // Only DUP1 to DUP16 is supported
             return &struct {
                 pub fn dupHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const opcode = switch (dup_n) {
@@ -183,8 +183,8 @@ pub fn Handlers(FrameType: type) type {
         }
 
         /// Generate a swap handler for SWAP1-SWAP16
-        pub fn generateSwapHandler(swap_n: u8) FrameType.OpcodeHandler {
-            if (swap_n == 0 or swap_n > 16) @compileError("Only SWAP1 to SWAP16 is supported");
+        pub fn generateSwapHandler(comptime swap_n: u8) FrameType.OpcodeHandler {
+            std.debug.assert(swap_n > 0 and swap_n <= 16); // Only SWAP1 to SWAP16 is supported
             return &struct {
                 pub fn swapHandler(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
                     const opcode = switch (swap_n) {
