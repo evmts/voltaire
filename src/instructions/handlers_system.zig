@@ -240,7 +240,10 @@ pub fn Handlers(FrameType: type) type {
 
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
-                self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch {};
+                self.memory.set_data(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_offset_usize)), result.output[0..copy_size]) catch |err| {
+                    log.err("Failed to copy call output to memory: {s}", .{@errorName(err)});
+                    return Error.AllocationError;
+                };
             }
 
             const provided_gas_callcode: u64 = gas_u64;

@@ -241,14 +241,8 @@ pub fn Evm(config: EvmConfig) type {
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
 
             // Track addresses for state dump
-            // Note: Allocation failures here are non-critical for correctness
-            // We continue execution even if state dump tracking fails
-            self.touched_addresses.put(from, {}) catch |err| {
-                log.debug("Failed to track from address for state dump: {}", .{err});
-            };
-            self.touched_addresses.put(to, {}) catch |err| {
-                log.debug("Failed to track to address for state dump: {}", .{err});
-            };
+            try self.touched_addresses.put(from, {});
+            try self.touched_addresses.put(to, {});
 
             from_account.balance -= value;
             to_account.balance += value;
@@ -322,12 +316,8 @@ pub fn Evm(config: EvmConfig) type {
                 // Get code if present
                 var code: []u8 = &.{};
                 if (!std.mem.eql(u8, &account.code_hash, &([_]u8{0} ** 32))) {
-                    if (self.database.get_code(account.code_hash)) |db_code| {
-                        code = try allocator.dupe(u8, db_code);
-                    } else |err| {
-                        log.debug("Failed to get code for state dump: {}", .{err});
-                        // Continue with empty code for state dump
-                    }
+                    const db_code = try self.database.get_code(account.code_hash);
+                    code = try allocator.dupe(u8, db_code);
                 }
                 
                 // Get storage
@@ -374,13 +364,14 @@ pub fn Evm(config: EvmConfig) type {
             self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
 
             // Track origin and to addresses for state dump
-            // Note: Failures here don't affect correctness, only debugging/analysis
             self.touched_addresses.put(self.origin, {}) catch |err| {
-                log.debug("Failed to track origin address: {}", .{err});
+                log.err("Failed to track origin address: {s}", .{@errorName(err)});
+                return CallResult.failure(0);
             };
             if (!to_address.equals(primitives.ZERO_ADDRESS)) {
                 self.touched_addresses.put(to_address, {}) catch |err| {
-                    log.debug("Failed to track to address: {}", .{err});
+                    log.err("Failed to track to address: {s}", .{@errorName(err)});
+                    return CallResult.failure(0);
                 };
             }
 
@@ -438,9 +429,8 @@ pub fn Evm(config: EvmConfig) type {
                 params.get_to(),
                 self.block_info.coinbase,
             ) catch |err| {
-                // Pre-warming failure is not critical - addresses will be cold
-                // This affects gas costs but not correctness
-                log.debug("Failed to pre-warm addresses: {}", .{err});
+                log.err("Failed to pre-warm addresses: {s}", .{@errorName(err)});
+                return CallResult.failure(0);
             };
 
             const call_gas = params.getGas();
@@ -581,9 +571,9 @@ pub fn Evm(config: EvmConfig) type {
             // Extract logs for top-level calls
             // Transfer logs to result - the CallResult now owns them and will free on deinit
             result.logs = self.logs.toOwnedSlice(self.allocator) catch |err| {
-                log.err("Failed to transfer logs ownership: {}", .{err});
-                // Return empty logs on allocation failure
-                &.{}
+                log.err("Failed to transfer logs: {s}", .{@errorName(err)});
+                result.success = false;
+                return result;
             };
             // IMPORTANT: Reinitialize logs after toOwnedSlice() to maintain allocator reference
             // toOwnedSlice() takes ownership and leaves the ArrayList in an undefined state
@@ -593,9 +583,9 @@ pub fn Evm(config: EvmConfig) type {
             // EIP-6780 restricts SELFDESTRUCT behavior in Cancun+
             if (config.eips.eip_6780_selfdestruct_same_transaction_only()) {
                 result.selfdestructs = self.self_destruct.toOwnedSlice(self.allocator) catch |err| {
-                    log.err("Failed to transfer selfdestructs ownership: {}", .{err});
-                    // Return empty selfdestructs on allocation failure
-                    &.{}
+                    log.err("Failed to transfer selfdestructs: {s}", .{@errorName(err)});
+                    result.success = false;
+                    return result;
                 };
             } else {
                 result.selfdestructs = &.{};
@@ -866,11 +856,7 @@ pub fn Evm(config: EvmConfig) type {
                 }
             }
 
-            const code = self.database.get_code_by_address(params.to.bytes) catch |err| {
-                log.debug("Failed to get code for address: {}", .{err});
-                // Treat as account with no code (EOA)
-                &.{}
-            };
+            const code = try self.database.get_code_by_address(params.to.bytes);
             if (code.len == 0) {
                 @branchHint(.unlikely);
                 return CallResult.success_empty(params.gas);
@@ -1014,12 +1000,7 @@ pub fn Evm(config: EvmConfig) type {
 
             const existed_before = self.database.account_exists(contract_address.bytes);
             if (existed_before) {
-                const existing = self.database.get_account(contract_address.bytes) catch |err| {
-                    log.debug("Failed to check existing account in CREATE: {}", .{err});
-                    // Treat database error as collision to be safe
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(0);
-                };
+                const existing = try self.database.get_account(contract_address.bytes);
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     self.journal.revert_to_snapshot(snapshot_id);
                     return CallResult.failure(0);
@@ -1091,12 +1072,7 @@ pub fn Evm(config: EvmConfig) type {
 
             const existed_before = self.database.account_exists(contract_address.bytes);
             if (existed_before) {
-                const existing = self.database.get_account(contract_address.bytes) catch |err| {
-                    log.debug("Failed to check existing account in CREATE2: {}", .{err});
-                    // Treat database error as collision to be safe
-                    self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(params.gas);
-                };
+                const existing = try self.database.get_account(contract_address.bytes);
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     log.debug("CREATE2: collision at address", .{});
                     self.journal.revert_to_snapshot(snapshot_id);
@@ -1279,10 +1255,7 @@ pub fn Evm(config: EvmConfig) type {
             defer frame.deinit(arena_allocator);
 
             // EIP-2929: Warm the contract address being executed
-            config.eips.warm_contract_for_execution(&self.access_list, address) catch |err| {
-                log.debug("Failed to warm contract for execution: {}", .{err});
-                // Continue with cold access costs
-            };
+            try config.eips.warm_contract_for_execution(&self.access_list, address);
 
             // Build dispatch schedule before frame execution
             // Note: Size validation is done by caller (execute_init_code checks init code size,
@@ -1469,11 +1442,8 @@ pub fn Evm(config: EvmConfig) type {
         }
 
         /// Get account code
-        pub fn get_code(self: *Self, address: primitives.Address) []const u8 {
-            return self.database.get_code_by_address(address.bytes) catch |err| {
-                log.debug("Failed to get code: {}", .{err});
-                return &.{};
-            };
+        pub fn get_code(self: *Self, address: primitives.Address) ![]const u8 {
+            return try self.database.get_code_by_address(address.bytes);
         }
 
         /// Get block information
@@ -1498,11 +1468,8 @@ pub fn Evm(config: EvmConfig) type {
         }
 
         /// Take ownership of the accumulated logs and clear internal storage
-        pub fn takeLogs(self: *Self) []@import("frame/call_result.zig").Log {
-            return self.logs.toOwnedSlice(self.allocator) catch |err| {
-                log.err("Failed to take logs: {}", .{err});
-                return &.{};
-            };
+        pub fn takeLogs(self: *Self) ![]@import("frame/call_result.zig").Log {
+            return try self.logs.toOwnedSlice(self.allocator);
         }
 
         /// Register a contract as created in the current transaction
@@ -1592,9 +1559,7 @@ pub fn Evm(config: EvmConfig) type {
         pub fn record_storage_change(self: *Self, address: primitives.Address, slot: u256, original_value: u256) !void {
             try self.journal.record_storage_change(self.current_snapshot_id, address, slot, original_value);
             // Track address for state dump
-            self.touched_addresses.put(address, {}) catch |err| {
-                log.debug("Failed to track storage address: {}", .{err});
-            };
+            try self.touched_addresses.put(address, {});
             // Track storage slot for state dump
             var slots = self.touched_storage.get(address);
             if (slots == null) {
@@ -1625,9 +1590,7 @@ pub fn Evm(config: EvmConfig) type {
         pub fn access_address(self: *Self, address: primitives.Address) !u64 {
             const cost = try self.access_list.access_address(address);
             // Track address for state dump
-            self.touched_addresses.put(address, {}) catch |err| {
-                log.debug("Failed to track accessed address: {}", .{err});
-            };
+            try self.touched_addresses.put(address, {});
             return cost;
         }
 
@@ -1635,9 +1598,7 @@ pub fn Evm(config: EvmConfig) type {
         pub fn access_storage_slot(self: *Self, contract_address: primitives.Address, slot: u256) !u64 {
             const cost = try self.access_list.access_storage_slot(contract_address, slot);
             // Track address for state dump
-            self.touched_addresses.put(contract_address, {}) catch |err| {
-                log.debug("Failed to track storage slot address: {}", .{err});
-            };
+            try self.touched_addresses.put(contract_address, {});
             // Track storage slot for state dump
             var slots = self.touched_storage.get(contract_address);
             if (slots == null) {
@@ -3745,9 +3706,9 @@ test "Error handling - REVERT should preserve data and error message in both tra
         try std.testing.expect(!result.success);
 
         // After fix: Output should contain "FAIL" in non-tracing mode
-        std.debug.print("Non-tracing mode - Output length: {d}\n", .{result.output.len});
+        log.debug("Non-tracing mode - Output length: {d}", .{result.output.len});
         if (result.output.len > 0) {
-            std.debug.print("Non-tracing mode - Output data: {s}\n", .{result.output});
+            log.debug("Non-tracing mode - Output data: {s}", .{result.output});
         }
 
         // After fix: This should work because non-tracing mode now preserves revert data
@@ -3755,14 +3716,14 @@ test "Error handling - REVERT should preserve data and error message in both tra
         try std.testing.expect(std.mem.eql(u8, result.output, "FAIL"));
 
         // After fix: Error message should not be empty
-        std.debug.print("Non-tracing mode - Error info: {any}\n", .{result.error_info});
+        log.debug("Non-tracing mode - Error info: {any}", .{result.error_info});
         try std.testing.expect(result.error_info != null);
         if (result.error_info) |info| {
             try std.testing.expect(std.mem.eql(u8, info, "execution reverted"));
         }
 
         // Gas should be partially consumed, not zero
-        std.debug.print("Non-tracing mode - Gas left: {d}\n", .{result.gas_left});
+        log.debug("Non-tracing mode - Gas left: {d}", .{result.gas_left});
         try std.testing.expect(result.gas_left < 100_000); // Some gas should be consumed
 
         // Clean up result
@@ -3813,9 +3774,9 @@ test "Error handling - REVERT should preserve data and error message in both tra
         try std.testing.expect(!result.success);
 
         // In tracing mode, output should be preserved
-        std.debug.print("Tracing mode - Output length: {d}\n", .{result.output.len});
+        log.debug("Tracing mode - Output length: {d}", .{result.output.len});
         if (result.output.len > 0) {
-            std.debug.print("Tracing mode - Output data: {s}\n", .{result.output});
+            log.debug("Tracing mode - Output data: {s}", .{result.output});
         }
 
         // This should work in tracing mode
@@ -3823,14 +3784,14 @@ test "Error handling - REVERT should preserve data and error message in both tra
         try std.testing.expect(std.mem.eql(u8, result.output, "FAIL"));
 
         // After fix: Error message should not be empty even in tracing mode
-        std.debug.print("Tracing mode - Error info: {any}\n", .{result.error_info});
+        log.debug("Tracing mode - Error info: {any}", .{result.error_info});
         try std.testing.expect(result.error_info != null);
         if (result.error_info) |info| {
             try std.testing.expect(std.mem.eql(u8, info, "execution reverted"));
         }
 
         // Gas should be partially consumed
-        std.debug.print("Tracing mode - Gas left: {d}\n", .{result.gas_left});
+        log.debug("Tracing mode - Gas left: {d}", .{result.gas_left});
         try std.testing.expect(result.gas_left > 0);
         try std.testing.expect(result.gas_left < 100_000);
 
@@ -3908,7 +3869,7 @@ test "Error handling - REVERT with empty data should still have error message" {
     try std.testing.expect(result.output.len == 0);
 
     // After fix: Error message should indicate revert even with empty data
-    std.debug.print("Empty revert - Error info: {any}\n", .{result.error_info});
+    log.debug("Empty revert - Error info: {any}", .{result.error_info});
     try std.testing.expect(result.error_info != null);
     if (result.error_info) |info| {
         try std.testing.expect(std.mem.eql(u8, info, "execution reverted"));

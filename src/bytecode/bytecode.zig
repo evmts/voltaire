@@ -1642,7 +1642,7 @@ test "pretty_print: should format bytecode with colors and metadata" {
 
     for (expected_parts) |part| {
         std.testing.expect(std.mem.indexOf(u8, formatted, part) != null) catch |err| {
-            std.debug.print("Expected to find '{s}' in:\n{s}\n", .{ part, formatted });
+            log.err("Expected to find '{s}' in:\n{s}", .{ part, formatted });
             return err;
         };
     }
@@ -1676,8 +1676,8 @@ test "pretty_print: enhanced visualization with JUMP/JUMPDEST/fusions" {
     const formatted = try bytecode.pretty_print(allocator);
     defer allocator.free(formatted);
 
-    // Print for visual inspection during test
-    std.debug.print("\n=== Enhanced Pretty Print Output ===\n{s}\n", .{formatted});
+    // Log for visual inspection during test
+    log.debug("\n=== Enhanced Pretty Print Output ===\n{s}", .{formatted});
 
     // Verify new features are present
     try std.testing.expect(std.mem.indexOf(u8, formatted, "Legend") != null);

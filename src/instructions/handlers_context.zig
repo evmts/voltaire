@@ -361,7 +361,12 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            const code = evm.get_code(addr);
+            const code = evm.get_code(addr) catch {
+                // On database error, treat as empty code (size 0)
+                self.stack.set_top_unsafe(0);
+                const op_data = dispatch.getOpData(.EXTCODESIZE);
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            };
             const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
             self.stack.set_top_unsafe(code_len);
             const op_data = dispatch.getOpData(.EXTCODESIZE); // Use op_data.next_handler and op_data.next_cursor directly
@@ -432,7 +437,7 @@ pub fn Handlers(FrameType: type) type {
                 else => return Error.AllocationError,
             };
 
-            const code = self.getEvm().get_code(addr);
+            const code = self.getEvm().get_code(addr) catch &.{};
 
             // Copy external code to memory with proper zero-padding
             var i: usize = 0;
@@ -477,7 +482,7 @@ pub fn Handlers(FrameType: type) type {
                 return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
-            const code = self.getEvm().get_code(addr);
+            const code = self.getEvm().get_code(addr) catch &.{};
             if (code.len == 0) {
                 // Existing account with empty code returns keccak256("") constant
                 const empty_hash_u256: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
