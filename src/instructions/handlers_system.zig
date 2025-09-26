@@ -538,7 +538,7 @@ pub fn Handlers(FrameType: type) type {
                     .caller = self.contract_address,
                     .value = value,
                     .init_code = init_code,
-                    .gas = @as(u64, @intCast(self.gas_remaining)),
+                    .gas = @as(u64, @intCast(@max(0, self.gas_remaining))),
                 },
             };
             var result = self.getEvm().inner_call(params);
@@ -550,9 +550,7 @@ pub fn Handlers(FrameType: type) type {
             }
 
             // Update gas remaining
-            // Safety check: gas_left should never exceed what we started with
-            const safe_gas_left = @min(result.gas_left, @as(u64, @intCast(@max(0, self.gas_remaining))));
-            self.gas_remaining = @as(FrameType.GasType, @intCast(safe_gas_left));
+            self.gas_remaining = @intCast(result.gas_left);
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
@@ -630,7 +628,7 @@ pub fn Handlers(FrameType: type) type {
                     .value = value,
                     .init_code = init_code,
                     .salt = salt_u256,
-                    .gas = @as(u64, @intCast(self.gas_remaining)),
+                    .gas = @as(u64, @intCast(@max(0, self.gas_remaining))),
                 },
             };
             var result = self.getEvm().inner_call(params);
@@ -642,9 +640,7 @@ pub fn Handlers(FrameType: type) type {
             }
 
             // Update gas remaining
-            // Safety check: gas_left should never exceed what we started with
-            const safe_gas_left_c2 = @min(result.gas_left, @as(u64, @intCast(@max(0, self.gas_remaining))));
-            self.gas_remaining = @as(FrameType.GasType, @intCast(safe_gas_left_c2));
+            self.gas_remaining = @intCast(result.gas_left);
 
             // Push created contract address or 0 on failure
             if (result.success and result.created_address != null) {
