@@ -226,6 +226,17 @@ func main() {
 				Action:    commands.ExecuteDispatch,
 			},
 			{
+				Name:      "spec",
+				Usage:     "Execute Ethereum specification test fixtures",
+				ArgsUsage: "<fixture-file-or-pattern>",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{Name: "verbose", Aliases: []string{"v"}, Usage: "Show detailed execution information"},
+					&cli.BoolFlag{Name: "fail-fast", Usage: "Stop on first test failure"},
+					&cli.BoolFlag{Name: "details", Aliases: []string{"d"}, Usage: "Show test details during execution"},
+				},
+				Action: commands.RunSpec,
+			},
+			{
 				Name:      "bench",
 				Usage:     "Benchmark EVM execution using hyperfine (defaults to snailtracer if no args)",
 				ArgsUsage: "[fixture-path]",
