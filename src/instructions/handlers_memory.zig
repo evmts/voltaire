@@ -209,12 +209,13 @@ pub fn Handlers(FrameType: type) type {
 
         /// MCOPY opcode (0x5e) - Memory copy operation (EIP-5656).
         /// Copies memory from one location to another.
+        /// Stack order per EIP-5656: [dest, src, length] (same as CALLDATACOPY)
         pub fn mcopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.MCOPY, cursor);
             self.validateOpcodeHandler(.MCOPY, cursor);
-            const size = self.stack.pop_unsafe(); // Top of stack
-            const src_offset = self.stack.pop_unsafe(); // Second from top
-            const dest_offset = self.stack.pop_unsafe(); // Third from top
+            const dest_offset = self.stack.pop_unsafe(); // Top of stack (dest)
+            const src_offset = self.stack.pop_unsafe(); // Second from top (src)
+            const size = self.stack.pop_unsafe(); // Third from top (length)
 
             // Check if offsets and size fit in u24 (memory limit)
             if (!checkMemoryLimit(dest_offset) or !checkMemoryLimit(src_offset) or !checkMemoryLimit(size)) {
@@ -452,9 +453,10 @@ test "MCOPY opcode - basic copy" {
     frame.memory.set_u256_evm(0, 0x1234567890ABCDEF) catch unreachable;
 
     // Copy from offset 0 to offset 32, size 32 bytes
-    try frame.stack.push(32); // dest
+    // Stack order: [dest, src, length]
+    try frame.stack.push(32); // length
     try frame.stack.push(0); // src
-    try frame.stack.push(32); // size
+    try frame.stack.push(32); // dest
 
     const dispatch = createMockDispatch();
     _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -476,9 +478,10 @@ test "MCOPY opcode - overlapping copy" {
     frame.memory.set_u256_evm(32, 0x2222222222222222) catch unreachable;
 
     // Copy from offset 0 to offset 16, size 48 bytes (overlapping)
-    try frame.stack.push(16); // dest
+    // Stack order: [dest, src, length]
+    try frame.stack.push(48); // length
     try frame.stack.push(0); // src
-    try frame.stack.push(48); // size
+    try frame.stack.push(16); // dest
 
     const dispatch = createMockDispatch();
     _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -499,9 +502,10 @@ test "MCOPY opcode - zero size" {
     defer frame.deinit(testing.allocator);
 
     // Copy with size 0 should be no-op
-    try frame.stack.push(100); // dest
+    // Stack order: [dest, src, length]
+    try frame.stack.push(0); // length
     try frame.stack.push(200); // src
-    try frame.stack.push(0); // size
+    try frame.stack.push(100); // dest
 
     const initial_msize = frame.memory.len();
 
@@ -919,9 +923,10 @@ test "MCOPY opcode - various sizes" {
         }
 
         // Copy to destination at offset 2000
-        try frame.stack.push(2000); // dest
+        // Stack order: [dest, src, length]
+        try frame.stack.push(size); // length
         try frame.stack.push(0); // src
-        try frame.stack.push(size); // size
+        try frame.stack.push(2000); // dest
 
         const dispatch = createMockDispatch();
         _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -948,9 +953,10 @@ test "MCOPY opcode - self-overlapping forward" {
     frame.memory.set_u256_evm(64, 0xCCCCCCCC) catch unreachable;
 
     // Copy from 0 to 16 with size 64 (overlapping forward)
-    try frame.stack.push(16); // dest
+    // Stack order: [dest, src, length]
+    try frame.stack.push(64); // length
     try frame.stack.push(0); // src
-    try frame.stack.push(64); // size
+    try frame.stack.push(16); // dest
 
     const dispatch = createMockDispatch();
     _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -979,9 +985,10 @@ test "MCOPY opcode - self-overlapping backward" {
     frame.memory.set_u256_evm(64, 0x22222222) catch unreachable;
 
     // Copy from 32 to 16 with size 64 (overlapping backward)
-    try frame.stack.push(16); // dest
+    // Stack order: [dest, src, length]
+    try frame.stack.push(64); // length
     try frame.stack.push(32); // src
-    try frame.stack.push(64); // size
+    try frame.stack.push(16); // dest
 
     const dispatch = createMockDispatch();
     _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -1005,9 +1012,10 @@ test "MCOPY opcode - exact overlap" {
     frame.memory.set_u256_evm(100, 0xDEADBEEF) catch unreachable;
 
     // Copy to same location (should be no-op)
-    try frame.stack.push(100); // dest
+    // Stack order: [dest, src, length]
+    try frame.stack.push(32); // length
     try frame.stack.push(100); // src
-    try frame.stack.push(32); // size
+    try frame.stack.push(100); // dest
 
     const dispatch = createMockDispatch();
     _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -1034,9 +1042,10 @@ test "MCOPY opcode - large copy" {
     }
 
     // Copy to high offset
-    try frame.stack.push(50000); // dest
+    // Stack order: [dest, src, length]
+    try frame.stack.push(size); // length
     try frame.stack.push(0); // src
-    try frame.stack.push(size); // size
+    try frame.stack.push(50000); // dest
 
     const dispatch = createMockDispatch();
     _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -1070,9 +1079,10 @@ test "memory operations - gas edge cases" {
         const gas_before = frame.gas_remaining;
 
         // MCOPY operation
-        try frame.stack.push(tc.offset + tc.size * 2); // dest
+        // Stack order: [dest, src, length]
+        try frame.stack.push(tc.size); // length
         try frame.stack.push(0); // src
-        try frame.stack.push(tc.size); // size
+        try frame.stack.push(tc.offset + tc.size * 2); // dest
 
         const dispatch = createMockDispatch();
         _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -1111,8 +1121,8 @@ test "memory operations - out of bounds protection" {
         // MSTORE8 at max offset
         .{ .op = .mstore8, .stack_values = &[_]u256{ std.math.maxInt(u256), 0xFF }, .expect_error = true },
 
-        // MCOPY with max size
-        .{ .op = .mcopy, .stack_values = &[_]u256{ 0, 0, std.math.maxInt(u256) }, .expect_error = true },
+        // MCOPY with max size - Stack order: [dest, src, length]
+        .{ .op = .mcopy, .stack_values = &[_]u256{ std.math.maxInt(u256), 0, 0 }, .expect_error = true },
     };
 
     for (max_tests) |tc| {
@@ -1171,9 +1181,10 @@ test "MCOPY opcode - gas calculation" {
         frame.gas_remaining = 100_000;
         const gas_before = frame.gas_remaining;
 
-        try frame.stack.push(1000); // dest
+        // Stack order: [dest, src, length]
+        try frame.stack.push(size); // length
         try frame.stack.push(0); // src
-        try frame.stack.push(size); // size
+        try frame.stack.push(1000); // dest
 
         const dispatch = createMockDispatch();
         _ = TestFrame.MemoryHandlers.mcopy(&frame, dispatch.cursor) catch |err| switch (err) {
@@ -1276,9 +1287,10 @@ test "MCOPY opcode - single byte copies" {
         frame.memory.set_byte_evm(testing.allocator, @as(u24, @intCast(i)), test_byte) catch unreachable;
 
         // Copy single byte to destination
-        try frame.stack.push(100 + i); // dest
+        // Stack order: [dest, src, length]
+        try frame.stack.push(1); // length (1 byte)
         try frame.stack.push(i); // src
-        try frame.stack.push(1); // size (1 byte)
+        try frame.stack.push(100 + i); // dest
 
         const dispatch = createMockDispatch();
         _ = try TestFrame.MemoryHandlers.mcopy(&frame, dispatch);
