@@ -166,8 +166,7 @@ pub fn runTest(
 
     // Check if execution was successful
     if (!call_result.success) {
-        const error_msg = call_result.error_info orelse "Unknown error";
-        result.error_message = try std.fmt.allocPrint(allocator, "Execution failed: {s}", .{error_msg});
+        result.error_message = try std.fmt.allocPrint(allocator, "Execution failed with gas left: {}", .{call_result.gas_left});
         // Mark as success=false but return normally (not an error)
         result.success = false;
         return result;
