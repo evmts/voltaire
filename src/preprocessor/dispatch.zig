@@ -538,7 +538,10 @@ pub fn Preprocessor(comptime FrameType: type) type {
 
             const first_block_info = calculateFirstBlockInfo(bytecode);
 
-            if (first_block_info.gas > 0) try schedule_items.append(allocator, .{ .first_block_gas = first_block_info });
+            // Add first block metadata if there's any gas cost OR stack requirements
+            if (first_block_info.gas > 0 or first_block_info.min_stack > 0 or first_block_info.max_stack > 0) {
+                try schedule_items.append(allocator, .{ .first_block_gas = first_block_info });
+            }
 
             var opcode_count: usize = 0;
             var loop_counter = FrameType.config.createLoopSafetyCounter().init(FrameType.config.loop_quota orelse 0);
