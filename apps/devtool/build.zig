@@ -1,7 +1,7 @@
 const std = @import("std");
 
 // Export the asset generator for use in this build config
-pub const AssetGenerator = @import("asset_generator.zig");
+pub const AssetGenerator = @import("asset_generator.build.zig");
 
 pub fn createDevtoolExecutable(
     b: *std.Build,
