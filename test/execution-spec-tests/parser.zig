@@ -169,9 +169,11 @@ pub fn parseHardfork(hardfork_str: []const u8) Hardfork {
     if (std.mem.eql(u8, hardfork_str, "Homestead")) return .HOMESTEAD;
     if (std.mem.eql(u8, hardfork_str, "Byzantium")) return .BYZANTIUM;
     if (std.mem.eql(u8, hardfork_str, "Constantinople")) return .CONSTANTINOPLE;
+    if (std.mem.eql(u8, hardfork_str, "ConstantinopleFix")) return .CONSTANTINOPLE_FIX;
     if (std.mem.eql(u8, hardfork_str, "Istanbul")) return .ISTANBUL;
     if (std.mem.eql(u8, hardfork_str, "Berlin")) return .BERLIN;
     if (std.mem.eql(u8, hardfork_str, "London")) return .LONDON;
+    if (std.mem.eql(u8, hardfork_str, "Paris")) return .PARIS;
     if (std.mem.eql(u8, hardfork_str, "Shanghai")) return .SHANGHAI;
     if (std.mem.eql(u8, hardfork_str, "Cancun")) return .CANCUN;
     if (std.mem.eql(u8, hardfork_str, "Prague")) return .PRAGUE;

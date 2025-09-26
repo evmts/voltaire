@@ -159,9 +159,12 @@ pub fn compareState(
 
 /// Get nonce from EVM (handles both MinimalEvm and MainEvm)
 fn getNonce(evm: anytype, address: Address) u64 {
-    // MinimalEvm doesn't track nonces, so we'll just return 0 for now
-    // This is a limitation of the minimal implementation
-    _ = evm;
-    _ = address;
+    // MainEvm: Get nonce from database through account
+    if (@hasField(@TypeOf(evm.*), "database")) {
+        const account = evm.database.get_account(address.bytes) catch return 0;
+        return if (account) |acc| acc.nonce else 0;
+    }
+
+    // MinimalEvm: No nonce tracking available
     return 0;
 }

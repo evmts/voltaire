@@ -27,10 +27,10 @@ test "ERC20 mint test" {
     const allocator = std.testing.allocator;
     
     // Load bytecode and calldata from fixtures
-    const bytecode = try loadFixture(allocator, "src/evm/fixtures/erc20-mint/bytecode.txt");
+    const bytecode = try loadFixture(allocator, "src/_test_utils/fixtures/erc20-mint/bytecode.txt");
     defer allocator.free(bytecode);
-    
-    const calldata = try loadFixture(allocator, "src/evm/fixtures/erc20-mint/calldata.txt");
+
+    const calldata = try loadFixture(allocator, "src/_test_utils/fixtures/erc20-mint/calldata.txt");
     defer allocator.free(calldata);
     
     std.debug.print("\n=== ERC20 Mint Test ===\n", .{});

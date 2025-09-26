@@ -148,19 +148,23 @@ pub fn runTest(
         .create => try evm.execute(
             data, // init code
             @intCast(gas_limit),
-            origin, // Use origin as the sender
-            primitives.ZERO_ADDRESS, // contract will be created
+            origin, // caller
+            primitives.ZERO_ADDRESS, // address (contract will be created)
             value,
             &.{}, // no calldata for create
         ),
-        .call => |call| try evm.execute(
-            &.{}, // code will be fetched from address
-            @intCast(gas_limit),
-            origin, // Use origin as the sender
-            call.to,
-            value,
-            data, // calldata
-        ),
+        .call => |call| blk: {
+            // For calls, we need to get the code from the target address first
+            const code = evm.get_code(call.to);
+            break :blk try evm.execute(
+                code, // bytecode to execute
+                @intCast(gas_limit),
+                origin, // caller
+                call.to, // address being called
+                value,
+                data, // calldata
+            );
+        },
         else => unreachable,
     };
 

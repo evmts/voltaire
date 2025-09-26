@@ -37,16 +37,16 @@ test "ERC20 transfer fixture test" {
     const allocator = testing.allocator;
     
     // Read bytecode from fixture
-    const bytecode_file = try std.fs.cwd().openFile("src/evm/fixtures/erc20-transfer/bytecode.txt", .{});
+    const bytecode_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/erc20-transfer/bytecode.txt", .{});
     defer bytecode_file.close();
     const bytecode_hex = try bytecode_file.readToEndAlloc(allocator, 1024 * 1024);
     defer allocator.free(bytecode_hex);
-    
+
     const init_code = try hexDecode(allocator, bytecode_hex);
     defer allocator.free(init_code);
-    
+
     // Read calldata from fixture
-    const calldata_file = try std.fs.cwd().openFile("src/evm/fixtures/erc20-transfer/calldata.txt", .{});
+    const calldata_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/erc20-transfer/calldata.txt", .{});
     defer calldata_file.close();
     const calldata_hex = try calldata_file.readToEndAlloc(allocator, 1024 * 1024);
     defer allocator.free(calldata_hex);
