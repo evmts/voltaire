@@ -168,5 +168,5 @@ The devtool module is essential for EVM development, providing the visibility an
 
 ## Build Notes
 
-- The Zig build integrates asset generation: `npm install && npm run build` under `src/devtool/`, then embeds the produced assets into a Zig module. Running the devtool from the project root via `zig build` generates assets automatically when needed.
-- All web assets live in `src/devtool/public` and compiled output in `src/devtool/dist`.
+- The Zig build integrates asset generation: `npm install && npm run build` under `apps/devtool/`, then embeds the produced assets into a Zig module. Running the devtool from the project root via `zig build` generates assets automatically when needed.
+- All web assets live in `apps/devtool/public` and compiled output in `apps/devtool/dist`.
