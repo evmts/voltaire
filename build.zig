@@ -1,83 +1,33 @@
 const std = @import("std");
 const build_pkg = @import("build/main.zig");
-
-fn checkSubmodules() void {
-    // Check if critical submodules are initialized
-    const submodules = [_]struct {
-        path: []const u8,
-        name: []const u8,
-    }{
-        .{ .path = "lib/c-kzg-4844/.git", .name = "c-kzg-4844" },
-    };
-
-    var has_error = false;
-
-    for (submodules) |submodule| {
-        std.fs.cwd().access(submodule.path, .{}) catch {
-            if (!has_error) {
-                std.debug.print("\n", .{});
-                std.debug.print("❌ ERROR: Git submodules are not initialized!\n", .{});
-                std.debug.print("\n", .{});
-                std.debug.print("The following required submodules are missing:\n", .{});
-                has_error = true;
-            }
-            std.debug.print("  • {s}\n", .{submodule.name});
-        };
-    }
-
-    if (has_error) {
-        std.debug.print("\n", .{});
-        std.debug.print("To fix this, run the following commands:\n", .{});
-        std.debug.print("\n", .{});
-        std.debug.print("  git submodule update --init --recursive\n", .{});
-        std.debug.print("\n", .{});
-        std.debug.print("This will download and initialize all required dependencies.\n", .{});
-        std.debug.print("\n", .{});
-        std.process.exit(1);
-    }
-}
+const lib_build = @import("lib/build.zig");
+const kzg_build = @import("src/kzg/build.zig");
 
 pub fn build(b: *std.Build) void {
-    // Check submodules first
-    checkSubmodules();
+    lib_build.checkSubmodules();
 
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     
-    // Test filter option for filtering specific tests
     const test_filters = b.option(
         [][]const u8,
         "test-filter",
         "Filter for tests. Only applies to Zig tests. Example: -Dtest-filter='trace validation'",
     ) orelse &[0][]const u8{};
 
-    // Download KZG trusted setup if it doesn't exist
-    const kzg_path = "src/kzg/trusted_setup.txt";
-    std.fs.cwd().access(kzg_path, .{}) catch {
-        const download_kzg = b.addSystemCommand(&[_][]const u8{
-            "curl",
-            "-L",
-            "-o",
-            kzg_path,
-            "https://github.com/ethereum/c-kzg-4844/raw/main/src/trusted_setup.txt",
-        });
-        b.getInstallStep().dependOn(&download_kzg.step);
-    };
+    kzg_build.ensureTrustedSetup(b);
 
-    // Build configuration
     const config = build_pkg.Config.createBuildOptions(b, target);
     const rust_target = build_pkg.Config.getRustTarget(target);
 
-    // Dependencies
     const zbench_dep = b.dependency("zbench", .{ .target = target, .optimize = optimize }); // retained for module wiring; not used to build benches
 
-    // Libraries
-    const blst_lib = build_pkg.BlstLib.createBlstLibrary(b, target, optimize);
-    const c_kzg_lib = build_pkg.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
+    const blst_lib = lib_build.createBlstLibrary(b, target, optimize);
+    const c_kzg_lib = lib_build.createCKzgLibrary(b, target, optimize, blst_lib);
 
-    const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b, rust_target, optimize);
-    const bn254_lib = build_pkg.Bn254Lib.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
-    const foundry_lib = build_pkg.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
+    const rust_build_step = lib_build.createRustBuildStep(b, rust_target, optimize);
+    const bn254_lib = lib_build.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
+    const foundry_lib = lib_build.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
     
     // Install BLS libraries to zig-out/lib for stable paths
     b.installArtifact(blst_lib);
@@ -904,6 +854,7 @@ pub fn build(b: *std.Build) void {
     build_pkg.PythonBindings.createPythonSteps(b);
     build_pkg.GoBindings.createGoSteps(b);
     build_pkg.TypeScriptBindings.createTypeScriptSteps(b);
+    build_pkg.BunBindings.createBunSteps(b);
 
     // Focused fusion tests aggregator
     {
