@@ -173,9 +173,13 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
                         return OpcodeData{ .push = .{ .value = value, .size = push_size } };
                     },
                     0x5B => { // JUMPDEST
-                        const block_gas = iterator.calculateBlockGasAtJumpdest();
+                        const block_info = iterator.calculateBlockInfoAtJumpdest();
                         iterator.pc += 1;
-                        return OpcodeData{ .jumpdest = .{ .gas_cost = @intCast(block_gas) } };
+                        return OpcodeData{ .jumpdest = .{
+                            .gas_cost = block_info.gas,
+                            .min_stack = block_info.min_stack,
+                            .max_stack = block_info.max_stack,
+                        } };
                     },
                     0x56 => { // JUMP - Dynamic jump (not fused)
                         iterator.pc += 1;
@@ -205,10 +209,13 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
                 }
             }
 
-            // Calculate gas cost for the block starting at current JUMPDEST
-            pub fn calculateBlockGasAtJumpdest(iterator: *Iterator) u32 {
+            // Calculate gas cost and stack requirements for the block starting at current JUMPDEST
+            pub fn calculateBlockInfoAtJumpdest(iterator: *Iterator) struct { gas: u32, min_stack: u32, max_stack: u32 } {
                 const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
                 var gas: u32 = 1; // JUMPDEST itself costs 1 gas
+                var stack_effect: i32 = 0;
+                var min_stack: i32 = 0;
+                var max_stack: i32 = 0;
                 var pc = iterator.pc + 1; // Start after the JUMPDEST
                 var loop_counter = cfg.createLoopSafetyCounter().init(cfg.loop_quota orelse 0);
 
@@ -227,21 +234,64 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
                         0xFE, // INVALID
                         0xFF, // SELFDESTRUCT
                         => {
-                            return gas;
+                            return .{
+                                .gas = gas,
+                                .min_stack = @intCast(@abs(min_stack)),
+                                .max_stack = @intCast(@max(0, max_stack)),
+                            };
                         },
                         0x60...0x7F => { // PUSH1-PUSH32
                             gas += opcode_info[opcode].gas_cost;
                             const push_size = opcode - 0x5F;
                             pc += 1 + push_size;
+                            // PUSH operations: 0 inputs, 1 output
+                            stack_effect += 1;
+                            if (stack_effect > max_stack) max_stack = stack_effect;
+                        },
+                        // Special handling for DUP operations
+                        0x80...0x8f => { // DUP1-DUP16
+                            gas += opcode_info[opcode].gas_cost;
+                            const dup_n = @as(i32, opcode - 0x80 + 1);
+                            // DUP needs N items
+                            const min_required = stack_effect - dup_n;
+                            if (min_required < min_stack) {
+                                min_stack = min_required;
+                            }
+                            stack_effect += 1; // DUP pushes 1 item
+                            if (stack_effect > max_stack) max_stack = stack_effect;
+                            pc += 1;
+                        },
+                        // Special handling for SWAP operations
+                        0x90...0x9f => { // SWAP1-SWAP16
+                            gas += opcode_info[opcode].gas_cost;
+                            const swap_n = @as(i32, opcode - 0x90 + 2); // SWAP1 needs 2 items, SWAP2 needs 3, etc.
+                            // SWAP needs N+1 items
+                            const min_required = stack_effect - swap_n;
+                            if (min_required < min_stack) {
+                                min_stack = min_required;
+                            }
+                            // SWAP doesn't change stack size
+                            pc += 1;
                         },
                         else => {
                             gas += opcode_info[opcode].gas_cost;
+                            // Regular opcodes - use opcode_info for stack effects
+                            if (opcode < opcode_info.len) {
+                                stack_effect -= opcode_info[opcode].stack_inputs;
+                                if (stack_effect < min_stack) min_stack = stack_effect;
+                                stack_effect += opcode_info[opcode].stack_outputs;
+                                if (stack_effect > max_stack) max_stack = stack_effect;
+                            }
                             pc += 1;
                         },
                     }
                 }
 
-                return gas;
+                return .{
+                    .gas = gas,
+                    .min_stack = @intCast(@abs(min_stack)),
+                    .max_stack = @intCast(@max(0, max_stack)),
+                };
             }
         };
 
@@ -249,7 +299,7 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
         pub const OpcodeData = union(enum) {
             regular: struct { opcode: u8 },
             push: struct { value: u256, size: u8 },
-            jumpdest: struct { gas_cost: u16 },
+            jumpdest: struct { gas_cost: u32, min_stack: i16, max_stack: i16 },
             jump: void, // Dynamic JUMP (not fused)
             jumpi: void, // Dynamic JUMPI (not fused)
             pc: struct { value: PcType }, // PC opcode with current PC value

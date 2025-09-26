@@ -436,12 +436,38 @@ pub fn Preprocessor(FrameType: type) type {
                         
                         // Update stack effect for this opcode
                         if (data.opcode < opcode_info.len) {
-                            stack_effect -= opcode_info[data.opcode].stack_inputs;
-                            if (stack_effect < min_stack) min_stack = stack_effect;
-                            stack_effect += opcode_info[data.opcode].stack_outputs;
-                            if (stack_effect > max_stack) max_stack = stack_effect;
+                            // Special handling for DUP and SWAP operations
+                            // DUP1-DUP16 (0x80-0x8f) require N items on stack but don't consume them
+                            if (data.opcode >= 0x80 and data.opcode <= 0x8f) {
+                                const dup_n = @as(i32, data.opcode - 0x80 + 1);
+                                // DUP needs N items: we need stack_effect + N >= N, so stack_effect >= 0
+                                // If stack_effect < 0, we need abs(stack_effect) + N items minimum
+                                const min_required = stack_effect - dup_n;
+                                if (min_required < min_stack) {
+                                    min_stack = min_required;
+                                }
+                                stack_effect += 1; // DUP pushes 1 item
+                                if (stack_effect > max_stack) max_stack = stack_effect;
+                            }
+                            // SWAP1-SWAP16 (0x90-0x9f) require N+1 items on stack but don't change count
+                            else if (data.opcode >= 0x90 and data.opcode <= 0x9f) {
+                                const swap_n = @as(i32, data.opcode - 0x90 + 2); // SWAP1 needs 2 items, SWAP2 needs 3, etc.
+                                // SWAP needs N+1 items: similar calculation
+                                const min_required = stack_effect - swap_n;
+                                if (min_required < min_stack) {
+                                    min_stack = min_required;
+                                }
+                                // SWAP doesn't change stack size
+                            }
+                            // Regular opcodes
+                            else {
+                                stack_effect -= opcode_info[data.opcode].stack_inputs;
+                                if (stack_effect < min_stack) min_stack = stack_effect;
+                                stack_effect += opcode_info[data.opcode].stack_outputs;
+                                if (stack_effect > max_stack) max_stack = stack_effect;
+                            }
                         }
-                        
+
                         switch (data.opcode) {
                             0x56, 0x57, 0x00, 0xf3, 0xfd, 0xfe, 0xff => {
                                 if (data.opcode == 0x57) {}
@@ -580,7 +606,11 @@ pub fn Preprocessor(FrameType: type) type {
                         });
 
                         try schedule_items.append(allocator, .{ .opcode_handler = opcode_handlers.*[@intFromEnum(Opcode.JUMPDEST)] });
-                        try schedule_items.append(allocator, .{ .jump_dest = .{ .gas = data.gas_cost } });
+                        try schedule_items.append(allocator, .{ .jump_dest = .{
+                            .gas = data.gas_cost,
+                            .min_stack = data.min_stack,
+                            .max_stack = data.max_stack,
+                        } });
                     },
                     .push_add_fusion => |data| {
                         if (tracer) |t| t.onFusionDetected(@intCast(instr_pc), "push_add", 2);
