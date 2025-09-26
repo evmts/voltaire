@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub fn createTypeScriptSteps(b: *std.Build) void {
+    // Note: TypeScript bindings are in src/guillotine-ts, not sdks/typescript
     const ts_install_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "install" });
     ts_install_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_install_cmd.step.dependOn(b.getInstallStep());

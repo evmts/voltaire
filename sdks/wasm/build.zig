@@ -1,5 +1,5 @@
 const std = @import("std");
-const wasm = @import("../steps/wasm.zig");
+const wasm = @import("../../build/steps/wasm.zig");
 
 pub fn createWasmSteps(
     b: *std.Build,

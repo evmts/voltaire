@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub fn createSwiftSteps(b: *std.Build) void {
+    // Note: Swift bindings are in src/guillotine-swift, not sdks/swift
     const swift_build_cmd = b.addSystemCommand(&[_][]const u8{ "swift", "build" });
     swift_build_cmd.setCwd(b.path("src/guillotine-swift"));
     swift_build_cmd.step.dependOn(b.getInstallStep());
