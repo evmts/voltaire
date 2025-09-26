@@ -217,15 +217,16 @@ pub fn Preprocessor(FrameType: type) type {
 
                 // DUP operations
                 .DUP1, .DUP2, .DUP3, .DUP4, .DUP5, .DUP6, .DUP7, .DUP8, .DUP9, .DUP10, .DUP11, .DUP12, .DUP13, .DUP14, .DUP15, .DUP16 => {
-                    const n = @intFromEnum(opcode) - @intFromEnum(UnifiedOpcode.DUP1) + 1;
-                    tracerAssert(frame, frame.stack.size() >= n, "Dispatch validation failed");
-                    tracerAssert(frame, frame.stack.size() < @TypeOf(frame.stack).stack_capacity, "Dispatch validation failed");
+                    // Stack validation is handled in the handler itself to return proper errors
+                    // The handler checks stack.size() >= n and returns Error.StackUnderflow
+                    // We don't assert here to avoid crashes on invalid bytecode
                 },
 
                 // SWAP operations
                 .SWAP1, .SWAP2, .SWAP3, .SWAP4, .SWAP5, .SWAP6, .SWAP7, .SWAP8, .SWAP9, .SWAP10, .SWAP11, .SWAP12, .SWAP13, .SWAP14, .SWAP15, .SWAP16 => {
-                    const n = @intFromEnum(opcode) - @intFromEnum(UnifiedOpcode.SWAP1) + 2;
-                    tracerAssert(frame, frame.stack.size() >= n, "Dispatch validation failed");
+                    // Stack validation is handled in the handler itself to return proper errors
+                    // The handler checks stack.size() >= n and returns Error.StackUnderflow
+                    // We don't assert here to avoid crashes on invalid bytecode
                 },
 
                 // LOG operations

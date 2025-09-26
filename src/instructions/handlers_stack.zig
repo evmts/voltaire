@@ -154,6 +154,12 @@ pub fn Handlers(FrameType: type) type {
                         else => unreachable,
                     };
                     self.beforeInstruction(opcode, cursor);
+                    // CRITICAL: Validate stack has enough items before unsafe operation
+                    // This prevents crashes from invalid bytecode
+                    if (self.stack.size() < dup_n) {
+                        self.afterComplete(opcode);
+                        return Error.StackUnderflow;
+                    }
                     self.stack.dup_n_unsafe(dup_n);
                     const dispatch = Dispatch{ .cursor = cursor };
                     // DUP operations don't have metadata, just get next
@@ -207,6 +213,12 @@ pub fn Handlers(FrameType: type) type {
                         else => unreachable,
                     };
                     self.beforeInstruction(opcode, cursor);
+                    // CRITICAL: Validate stack has enough items before unsafe operation
+                    // SWAP needs n+1 items (swap top with n-th from top)
+                    if (self.stack.size() < swap_n + 1) {
+                        self.afterComplete(opcode);
+                        return Error.StackUnderflow;
+                    }
                     self.stack.swap_n_unsafe(swap_n);
                     const dispatch = Dispatch{ .cursor = cursor };
                     // SWAP operations don't have metadata, just get next
