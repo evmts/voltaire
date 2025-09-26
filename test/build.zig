@@ -17,7 +17,7 @@ pub fn createAllTests(
     // Create the main test step
     const test_step = b.step("test", "Run all tests");
 
-    // Unit tests
+    // Unit tests for lib module (src/root.zig)
     const lib_unit_tests = b.addTest(.{
         .root_module = modules.lib_mod,
         .filters = test_filters,
@@ -25,6 +25,15 @@ pub fn createAllTests(
     });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
     test_step.dependOn(&run_lib_unit_tests.step);
+
+    // Unit tests for EVM module (also src/root.zig)
+    const evm_unit_tests = b.addTest(.{
+        .root_module = modules.evm_mod,
+        .filters = test_filters,
+        .use_llvm = true,
+    });
+    const run_evm_unit_tests = b.addRunArtifact(evm_unit_tests);
+    test_step.dependOn(&run_evm_unit_tests.step);
 
     // Integration tests
     const integration_tests = createIntegrationTests(b, target, optimize, modules, libs.bn254_lib, libs.c_kzg_lib, libs.blst_lib);
