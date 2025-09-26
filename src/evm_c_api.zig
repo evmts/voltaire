@@ -116,6 +116,8 @@ const EvmInstance = struct {
     block_info: BlockInfoFFI,
     in_use: bool,
     needs_reset: bool,
+    // Track addresses that have been set up for state dumping
+    setup_addresses: std.ArrayList(primitives.Address),
 };
 
 const TracingEvmInstance = struct {
@@ -370,6 +372,7 @@ export fn guillotine_evm_create_mainnet(block_info_ptr: *const BlockInfoFFI) ?*E
         .block_info = block_info_ptr.*,
         .in_use = true,
         .needs_reset = false,
+        .setup_addresses = std.ArrayList(primitives.Address).empty,
     };
 
     // Add to pool
@@ -655,6 +658,10 @@ export fn guillotine_set_balance(handle: *EvmHandle, address: *const [20]u8, bal
         return false;
     };
 
+    // Track this address for state dump
+    const addr = primitives.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {};
+
     return true;
 }
 
@@ -671,6 +678,9 @@ export fn guillotine_set_balance_tracing(handle: *EvmHandle, address: *const [20
         setError("Failed to set account balance", .{});
         return false;
     };
+    // Track this address for state dump
+    const addr = primitives.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {};
     return true;
 }
 
@@ -699,6 +709,10 @@ export fn guillotine_set_code(handle: *EvmHandle, address: *const [20]u8, code: 
         return false;
     };
 
+    // Track this address for state dump
+    const addr = primitives.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {};
+
     return true;
 }
 
@@ -719,6 +733,9 @@ export fn guillotine_set_code_tracing(handle: *EvmHandle, address: *const [20]u8
         setError("Failed to update account code hash", .{});
         return false;
     };
+    // Track this address for state dump
+    const addr = primitives.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {};
     return true;
 }
 
@@ -1190,6 +1207,10 @@ export fn guillotine_set_storage(handle: *EvmHandle, address: *const [20]u8, key
         return false;
     };
 
+    // Track this address for state dump
+    const addr = primitives.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {};
+
     return true;
 }
 
@@ -1458,4 +1479,320 @@ export fn guillotine_simulate(handle: *EvmHandle, params: *const CallParams) ?*E
 
     // Convert result to FFI format
     return convertCallResultToEvmResult(result, allocator);
+}
+
+// ============================================================================
+// STATE DUMP API
+// ============================================================================
+
+// State dump structure for FFI
+pub const AccountStateFFI = extern struct {
+    address: [20]u8,
+    balance: [32]u8,
+    nonce: u64,
+    code: [*]const u8,
+    code_len: usize,
+    storage_keys: [*]const [32]u8,
+    storage_values: [*]const [32]u8,
+    storage_count: usize,
+};
+
+pub const StateDumpFFI = extern struct {
+    accounts: [*]const AccountStateFFI,
+    accounts_count: usize,
+};
+
+// Dump current state
+export fn guillotine_dump_state(handle: *EvmHandle) ?*StateDumpFFI {
+    const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
+    const allocator = ffi_allocator orelse {
+        setError("FFI not initialized", .{});
+        return null;
+    };
+
+    // Dump the current state from the EVM
+    var state_dump = evm_ptr.dumpState(allocator) catch {
+        setError("Failed to dump state", .{});
+        return null;
+    };
+    defer state_dump.deinit(allocator);
+
+    // Convert to FFI format
+    const ffi_dump = allocator.create(StateDumpFFI) catch {
+        setError("Failed to allocate state dump", .{});
+        return null;
+    };
+
+    // Count non-empty accounts
+    var account_count: usize = 0;
+    var it = state_dump.accounts.iterator();
+    while (it.next()) |_| : (account_count += 1) {}
+
+    // Allocate accounts array
+    const accounts_array = allocator.alloc(AccountStateFFI, account_count) catch {
+        setError("Failed to allocate accounts array", .{});
+        allocator.destroy(ffi_dump);
+        return null;
+    };
+
+    // Fill accounts array
+    it = state_dump.accounts.iterator();
+    var idx: usize = 0;
+    while (it.next()) |entry| : (idx += 1) {
+        // Parse hex address
+        const addr_str = entry.key_ptr.*;
+        var addr_bytes: [20]u8 = undefined;
+        if (addr_str.len >= 42 and std.mem.eql(u8, addr_str[0..2], "0x")) {
+            for (0..20) |i| {
+                const byte_str = addr_str[2 + i * 2 .. 4 + i * 2];
+                addr_bytes[i] = std.fmt.parseInt(u8, byte_str, 16) catch 0;
+            }
+        } else {
+            @memset(&addr_bytes, 0);
+        }
+
+        accounts_array[idx].address = addr_bytes;
+        
+        // Convert balance to bytes
+        var balance_bytes: [32]u8 = undefined;
+        std.mem.writeInt(u256, &balance_bytes, entry.value_ptr.balance, .big);
+        accounts_array[idx].balance = balance_bytes;
+        
+        accounts_array[idx].nonce = entry.value_ptr.nonce;
+
+        // Copy code
+        if (entry.value_ptr.code.len > 0) {
+            const code_copy = allocator.dupe(u8, entry.value_ptr.code) catch {
+                // Clean up on error
+                for (accounts_array[0..idx]) |*acc| {
+                    if (acc.code_len > 0) allocator.free(acc.code[0..acc.code_len]);
+                    if (acc.storage_count > 0) {
+                        allocator.free(acc.storage_keys[0..acc.storage_count]);
+                        allocator.free(acc.storage_values[0..acc.storage_count]);
+                    }
+                }
+                allocator.free(accounts_array);
+                allocator.destroy(ffi_dump);
+                setError("Failed to copy code", .{});
+                return null;
+            };
+            accounts_array[idx].code = code_copy.ptr;
+            accounts_array[idx].code_len = code_copy.len;
+        } else {
+            accounts_array[idx].code = @ptrCast(&empty_buffer);
+            accounts_array[idx].code_len = 0;
+        }
+
+        // Convert storage
+        const storage_count = entry.value_ptr.storage.count();
+        if (storage_count > 0) {
+            const keys_array = allocator.alloc([32]u8, storage_count) catch {
+                // Clean up
+                for (accounts_array[0..idx + 1]) |*acc| {
+                    if (acc.code_len > 0) allocator.free(acc.code[0..acc.code_len]);
+                    if (acc.storage_count > 0 and acc != &accounts_array[idx]) {
+                        allocator.free(acc.storage_keys[0..acc.storage_count]);
+                        allocator.free(acc.storage_values[0..acc.storage_count]);
+                    }
+                }
+                allocator.free(accounts_array);
+                allocator.destroy(ffi_dump);
+                setError("Failed to allocate storage keys", .{});
+                return null;
+            };
+            const values_array = allocator.alloc([32]u8, storage_count) catch {
+                allocator.free(keys_array);
+                // Clean up
+                for (accounts_array[0..idx + 1]) |*acc| {
+                    if (acc.code_len > 0) allocator.free(acc.code[0..acc.code_len]);
+                    if (acc.storage_count > 0 and acc != &accounts_array[idx]) {
+                        allocator.free(acc.storage_keys[0..acc.storage_count]);
+                        allocator.free(acc.storage_values[0..acc.storage_count]);
+                    }
+                }
+                allocator.free(accounts_array);
+                allocator.destroy(ffi_dump);
+                setError("Failed to allocate storage values", .{});
+                return null;
+            };
+
+            var storage_it = entry.value_ptr.storage.iterator();
+            var storage_idx: usize = 0;
+            while (storage_it.next()) |storage_entry| : (storage_idx += 1) {
+                std.mem.writeInt(u256, &keys_array[storage_idx], storage_entry.key_ptr.*, .big);
+                std.mem.writeInt(u256, &values_array[storage_idx], storage_entry.value_ptr.*, .big);
+            }
+
+            accounts_array[idx].storage_keys = keys_array.ptr;
+            accounts_array[idx].storage_values = values_array.ptr;
+            accounts_array[idx].storage_count = storage_count;
+        } else {
+            accounts_array[idx].storage_keys = @ptrCast(&empty_buffer);
+            accounts_array[idx].storage_values = @ptrCast(&empty_buffer);
+            accounts_array[idx].storage_count = 0;
+        }
+    }
+
+    ffi_dump.accounts = accounts_array.ptr;
+    ffi_dump.accounts_count = account_count;
+    return ffi_dump;
+}
+
+// Free state dump
+export fn guillotine_free_state_dump(dump: ?*StateDumpFFI) void {
+    const allocator = ffi_allocator orelse return;
+    if (dump) |d| {
+        // Free each account's data
+        for (d.accounts[0..d.accounts_count]) |acc| {
+            if (acc.code_len > 0) {
+                allocator.free(acc.code[0..acc.code_len]);
+            }
+            if (acc.storage_count > 0) {
+                allocator.free(acc.storage_keys[0..acc.storage_count]);
+                allocator.free(acc.storage_values[0..acc.storage_count]);
+            }
+        }
+        // Free accounts array
+        if (d.accounts_count > 0) {
+            allocator.free(d.accounts[0..d.accounts_count]);
+        }
+        // Free dump structure
+        allocator.destroy(d);
+    }
+}
+
+// Dump state for test EVM
+export fn guillotine_dump_state_test(handle: *EvmHandle) ?*StateDumpFFI {
+    const evm_ptr: *TestEvm = @ptrCast(@alignCast(handle));
+    const allocator = ffi_allocator orelse {
+        setError("FFI not initialized", .{});
+        return null;
+    };
+
+    // Dump state from EVM
+    var state_dump = evm_ptr.dumpState(allocator) catch {
+        setError("Failed to dump state", .{});
+        return null;
+    };
+    defer state_dump.deinit(allocator);
+
+    // Convert to FFI format (same logic as guillotine_dump_state)
+    const ffi_dump = allocator.create(StateDumpFFI) catch {
+        setError("Failed to allocate state dump", .{});
+        return null;
+    };
+
+    // Count non-empty accounts
+    var account_count: usize = 0;
+    var it = state_dump.accounts.iterator();
+    while (it.next()) |_| : (account_count += 1) {}
+
+    // Allocate accounts array
+    const accounts_array = allocator.alloc(AccountStateFFI, account_count) catch {
+        setError("Failed to allocate accounts array", .{});
+        allocator.destroy(ffi_dump);
+        return null;
+    };
+
+    // Fill accounts array
+    it = state_dump.accounts.iterator();
+    var idx: usize = 0;
+    while (it.next()) |entry| : (idx += 1) {
+        // Parse hex address
+        const addr_str = entry.key_ptr.*;
+        var addr_bytes: [20]u8 = undefined;
+        if (addr_str.len >= 42 and std.mem.eql(u8, addr_str[0..2], "0x")) {
+            for (0..20) |i| {
+                const byte_str = addr_str[2 + i * 2 .. 4 + i * 2];
+                addr_bytes[i] = std.fmt.parseInt(u8, byte_str, 16) catch 0;
+            }
+        } else {
+            @memset(&addr_bytes, 0);
+        }
+
+        accounts_array[idx].address = addr_bytes;
+        
+        // Convert balance to bytes
+        var balance_bytes: [32]u8 = undefined;
+        std.mem.writeInt(u256, &balance_bytes, entry.value_ptr.balance, .big);
+        accounts_array[idx].balance = balance_bytes;
+        
+        accounts_array[idx].nonce = entry.value_ptr.nonce;
+
+        // Copy code
+        if (entry.value_ptr.code.len > 0) {
+            const code_copy = allocator.dupe(u8, entry.value_ptr.code) catch {
+                // Clean up on error
+                for (accounts_array[0..idx]) |*acc| {
+                    if (acc.code_len > 0) allocator.free(acc.code[0..acc.code_len]);
+                    if (acc.storage_count > 0) {
+                        allocator.free(acc.storage_keys[0..acc.storage_count]);
+                        allocator.free(acc.storage_values[0..acc.storage_count]);
+                    }
+                }
+                allocator.free(accounts_array);
+                allocator.destroy(ffi_dump);
+                setError("Failed to copy code", .{});
+                return null;
+            };
+            accounts_array[idx].code = code_copy.ptr;
+            accounts_array[idx].code_len = code_copy.len;
+        } else {
+            accounts_array[idx].code = @ptrCast(&empty_buffer);
+            accounts_array[idx].code_len = 0;
+        }
+
+        // Convert storage
+        const storage_count = entry.value_ptr.storage.count();
+        if (storage_count > 0) {
+            const keys_array = allocator.alloc([32]u8, storage_count) catch {
+                // Clean up
+                for (accounts_array[0..idx + 1]) |*acc| {
+                    if (acc.code_len > 0) allocator.free(acc.code[0..acc.code_len]);
+                    if (acc.storage_count > 0 and acc != &accounts_array[idx]) {
+                        allocator.free(acc.storage_keys[0..acc.storage_count]);
+                        allocator.free(acc.storage_values[0..acc.storage_count]);
+                    }
+                }
+                allocator.free(accounts_array);
+                allocator.destroy(ffi_dump);
+                setError("Failed to allocate storage keys", .{});
+                return null;
+            };
+            const values_array = allocator.alloc([32]u8, storage_count) catch {
+                allocator.free(keys_array);
+                // Clean up
+                for (accounts_array[0..idx + 1]) |*acc| {
+                    if (acc.code_len > 0) allocator.free(acc.code[0..acc.code_len]);
+                    if (acc.storage_count > 0 and acc != &accounts_array[idx]) {
+                        allocator.free(acc.storage_keys[0..acc.storage_count]);
+                        allocator.free(acc.storage_values[0..acc.storage_count]);
+                    }
+                }
+                allocator.free(accounts_array);
+                allocator.destroy(ffi_dump);
+                setError("Failed to allocate storage values", .{});
+                return null;
+            };
+
+            var storage_it = entry.value_ptr.storage.iterator();
+            var storage_idx: usize = 0;
+            while (storage_it.next()) |storage_entry| : (storage_idx += 1) {
+                std.mem.writeInt(u256, &keys_array[storage_idx], storage_entry.key_ptr.*, .big);
+                std.mem.writeInt(u256, &values_array[storage_idx], storage_entry.value_ptr.*, .big);
+            }
+
+            accounts_array[idx].storage_keys = keys_array.ptr;
+            accounts_array[idx].storage_values = values_array.ptr;
+            accounts_array[idx].storage_count = storage_count;
+        } else {
+            accounts_array[idx].storage_keys = @ptrCast(&empty_buffer);
+            accounts_array[idx].storage_values = @ptrCast(&empty_buffer);
+            accounts_array[idx].storage_count = 0;
+        }
+    }
+
+    ffi_dump.accounts = accounts_array.ptr;
+    ffi_dump.accounts_count = account_count;
+    return ffi_dump;
 }

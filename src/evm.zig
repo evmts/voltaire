@@ -124,6 +124,12 @@ pub fn Evm(comptime config: EvmConfig) type {
         self_destruct: SelfDestruct,
 
 
+        // State dump tracking - persists across calls
+        /// Tracks all addresses that have been touched (for state dump)
+        touched_addresses: std.AutoHashMap(primitives.Address, void),
+        /// Tracks storage slots that have been modified (address -> list of storage keys)
+        touched_storage: std.AutoHashMap(primitives.Address, std.ArrayList(u256)),
+        
         // Tracer - at the very bottom of memory layout for minimal impact on cache performance
         /// Tracer for debugging and logging - can be accessed via evm.tracer or frame.evm_ptr.tracer
         tracer: @import("tracer/tracer.zig").Tracer,
@@ -162,6 +168,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .origin = origin,
                 .call_arena = arena,
                 .self_destruct = SelfDestruct.init(allocator),
+                .touched_addresses = std.AutoHashMap(primitives.Address, void).init(allocator),
+                .touched_storage = std.AutoHashMap(primitives.Address, std.ArrayList(u256)).init(allocator),
                 .tracer = @import("tracer/tracer.zig").Tracer.init(allocator, config.tracer_config),
             };
 
@@ -211,6 +219,13 @@ pub fn Evm(comptime config: EvmConfig) type {
             self.self_destruct.deinit();
             self.access_list.deinit();
             self.logs.deinit(self.allocator);
+            self.touched_addresses.deinit();
+            // Clean up touched_storage
+            var storage_it = self.touched_storage.iterator();
+            while (storage_it.next()) |entry| {
+                entry.value_ptr.deinit(self.allocator);
+            }
+            self.touched_storage.deinit();
             self.call_arena.deinit();
         }
 
@@ -224,6 +239,10 @@ pub fn Evm(comptime config: EvmConfig) type {
             var to_account = try self.database.get_account(to.bytes) orelse Account.zero();
             try self.journal.record_balance_change(snapshot_id, from, from_account.balance);
             try self.journal.record_balance_change(snapshot_id, to, to_account.balance);
+
+            // Track addresses for state dump
+            self.touched_addresses.put(from, {}) catch {};
+            self.touched_addresses.put(to, {}) catch {};
 
             from_account.balance -= value;
             to_account.balance += value;
@@ -273,30 +292,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             errdefer state_dump.deinit(allocator);
             
-            // Get all touched addresses from journal
-            var addresses = std.AutoHashMap(primitives.Address, void).init(allocator);
-            defer addresses.deinit();
-            
-            // Add all addresses from the journal
-            for (self.journal.entries.items) |entry| {
-                switch (entry.data) {
-                    .account_created => |ac| _ = try addresses.put(ac.address, {}),
-                    .account_destroyed => |ad| _ = try addresses.put(ad.address, {}),
-                    .balance_change => |bc| _ = try addresses.put(bc.address, {}),
-                    .nonce_change => |nc| _ = try addresses.put(nc.address, {}),
-                    .code_change => |cc| _ = try addresses.put(cc.address, {}),
-                    .storage_change => |sc| _ = try addresses.put(sc.address, {}),
-                }
-            }
-            
-            // Also add addresses from access list
-            var access_it = self.access_list.addresses.iterator();
-            while (access_it.next()) |entry| {
-                _ = try addresses.put(entry.key_ptr.*, {});
-            }
-            
-            // Dump each account's state
-            var addr_it = addresses.iterator();
+            // Use the persistent touched_addresses tracker
+            var addr_it = self.touched_addresses.iterator();
             while (addr_it.next()) |entry| {
                 const addr = entry.key_ptr.*;
                 const account = (try self.database.get_account(addr.bytes)) orelse continue;
@@ -327,28 +324,13 @@ pub fn Evm(comptime config: EvmConfig) type {
                 // Get storage
                 var storage = std.AutoHashMap(u256, u256).init(allocator);
                 
-                // Get all storage keys for this address from journal
-                var storage_keys = std.AutoHashMap(u256, void).init(allocator);
-                defer storage_keys.deinit();
-                
-                for (self.journal.entries.items) |journal_entry| {
-                    switch (journal_entry.data) {
-                        .storage_change => |sc| {
-                            if (std.mem.eql(u8, &sc.address.bytes, &addr.bytes)) {
-                                _ = try storage_keys.put(sc.key, {});
-                            }
-                        },
-                        else => {},
-                    }
-                }
-                
-                // Read current values for all keys
-                var key_it = storage_keys.iterator();
-                while (key_it.next()) |key_entry| {
-                    const key = key_entry.key_ptr.*;
-                    const value = try self.database.get_storage(addr.bytes, key);
-                    if (value != 0) {
-                        try storage.put(key, value);
+                // Get tracked storage slots for this address
+                if (self.touched_storage.get(addr)) |slots| {
+                    for (slots.items) |slot| {
+                        const value = try self.database.get_storage(addr.bytes, slot);
+                        if (value != 0) {
+                            try storage.put(slot, value);
+                        }
                     }
                 }
                 
@@ -381,6 +363,12 @@ pub fn Evm(comptime config: EvmConfig) type {
                 .create2 => |p| p.value,
             };
             self.tracer.onCallStart(@tagName(params), @as(i64, @intCast(params.getGas())), to_address, value);
+
+            // Track origin and to addresses for state dump
+            self.touched_addresses.put(self.origin, {}) catch {};
+            if (!to_address.equals(primitives.ZERO_ADDRESS)) {
+                self.touched_addresses.put(to_address, {}) catch {};
+            }
 
             params.validate() catch |err| {
                 log.err("CallParams validation failed: {s}", .{@errorName(err)});
@@ -1562,6 +1550,27 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Record a storage change in the journal
         pub fn record_storage_change(self: *Self, address: primitives.Address, slot: u256, original_value: u256) !void {
             try self.journal.record_storage_change(self.current_snapshot_id, address, slot, original_value);
+            // Track address for state dump
+            self.touched_addresses.put(address, {}) catch {};
+            // Track storage slot for state dump
+            var slots = self.touched_storage.get(address);
+            if (slots == null) {
+                var new_slots = std.ArrayList(u256).empty;
+                try new_slots.append(self.allocator, slot);
+                try self.touched_storage.put(address, new_slots);
+            } else {
+                // Check if slot already tracked
+                var found = false;
+                for (slots.?.items) |existing_slot| {
+                    if (existing_slot == slot) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    try slots.?.append(self.allocator, slot);
+                }
+            }
         }
 
         /// Get the original storage value from the journal
@@ -1572,12 +1581,35 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Access an address and return the gas cost (EIP-2929)
         pub fn access_address(self: *Self, address: primitives.Address) !u64 {
             const cost = try self.access_list.access_address(address);
+            // Track address for state dump
+            self.touched_addresses.put(address, {}) catch {};
             return cost;
         }
 
         /// Access a storage slot and return the gas cost (EIP-2929)
         pub fn access_storage_slot(self: *Self, contract_address: primitives.Address, slot: u256) !u64 {
             const cost = try self.access_list.access_storage_slot(contract_address, slot);
+            // Track address for state dump
+            self.touched_addresses.put(contract_address, {}) catch {};
+            // Track storage slot for state dump
+            var slots = self.touched_storage.get(contract_address);
+            if (slots == null) {
+                var new_slots = std.ArrayList(u256).empty;
+                try new_slots.append(self.allocator, slot);
+                try self.touched_storage.put(contract_address, new_slots);
+            } else {
+                // Check if slot already tracked
+                var found = false;
+                for (slots.?.items) |existing_slot| {
+                    if (existing_slot == slot) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    try slots.?.append(self.allocator, slot);
+                }
+            }
             return cost;
         }
 

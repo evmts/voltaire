@@ -396,6 +396,19 @@ pub const MemoryDatabase = struct {
         self.batch_changes = null;
     }
 
+    /// Get all account addresses (for state dumping)
+    pub fn getAllAccounts(self: *Self, allocator: std.mem.Allocator) ![]const primitives.Address {
+        var addresses = std.ArrayList(primitives.Address).init(allocator);
+        errdefer addresses.deinit();
+        
+        var iter = self.accounts.iterator();
+        while (iter.next()) |entry| {
+            try addresses.append(primitives.Address{ .bytes = entry.key_ptr.* });
+        }
+        
+        return addresses.toOwnedSlice(allocator);
+    }
+
     pub fn rollback_batch(self: *Self) Database.Error!void {
         if (!self.batch_in_progress) return Database.Error.NoBatchInProgress;
         
