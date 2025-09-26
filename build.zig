@@ -117,7 +117,7 @@ pub fn build(b: *std.Build) void {
 
     // Specs CLI - delegated to specs/build.zig
     SpecsBuild.createSpecsCli(b, target, optimize, modules, config.options_mod, c_kzg_lib, blst_lib, bn254_lib);
-    SpecsBuild.createBunSpecsRunner(b);
+    // Note: createBunSpecsRunner is now called from test/build.zig to include in test step
 
     // Language bindings - create build steps
     const wasm_step = build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);

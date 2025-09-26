@@ -3,6 +3,7 @@ const std = @import("std");
 // Sub-modules for specialized test areas
 pub const OfficialTests = @import("official/build.zig");
 pub const ExecutionSpecTests = @import("execution-spec-tests/build.zig");
+pub const SpecsBuild = @import("../specs/build.zig");
 
 pub fn createAllTests(
     b: *std.Build,
@@ -81,6 +82,12 @@ pub fn createAllTests(
     }
     if (b.top_level_steps.get("test-fixtures-differential")) |fixtures_step| {
         test_step.dependOn(&fixtures_step.step);
+    }
+
+    // Bun specs tests - add to main test step
+    SpecsBuild.createBunSpecsRunner(b);
+    if (b.top_level_steps.get("specs")) |specs_step| {
+        test_step.dependOn(&specs_step.step);
     }
 }
 
