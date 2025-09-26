@@ -43,6 +43,94 @@ test "Bytecode.init and basic getters" {
     try std.testing.expect(!bytecode2.isValidJumpDest(3));
 }
 
+test "snailtracer bytecode JUMP to 0x2e0 validation" {
+    // This test reproduces the issue from snailtracer where a JUMP to PC=0x2e0
+    // is incorrectly being flagged as invalid
+    const allocator = std.testing.allocator;
+
+    // Read the snailtracer bytecode
+    const bytecode_file = try std.fs.cwd().openFile("src/_test_utils/fixtures/snailtracer/bytecode.txt", .{});
+    defer bytecode_file.close();
+
+    const bytecode_hex = try bytecode_file.readToEndAlloc(allocator, 1024 * 1024);
+    defer allocator.free(bytecode_hex);
+
+    // Count valid hex characters
+    var valid_count: usize = 0;
+    for (bytecode_hex) |c| {
+        if (c != ' ' and c != '\n' and c != '\r' and c != '\t') {
+            valid_count += 1;
+        }
+    }
+
+    // Allocate clean buffer
+    const bytecode_clean = try allocator.alloc(u8, valid_count);
+    defer allocator.free(bytecode_clean);
+
+    // Copy valid characters
+    var clean_idx: usize = 0;
+    for (bytecode_hex) |c| {
+        if (c != ' ' and c != '\n' and c != '\r' and c != '\t') {
+            bytecode_clean[clean_idx] = c;
+            clean_idx += 1;
+        }
+    }
+
+    // Convert hex string to bytes
+    const bytecode_len = bytecode_clean.len / 2;
+    const full_bytecode = try allocator.alloc(u8, bytecode_len);
+    defer allocator.free(full_bytecode);
+
+    var i: usize = 0;
+    while (i < bytecode_clean.len) : (i += 2) {
+        const hex_byte = bytecode_clean[i .. i + 2];
+        full_bytecode[i / 2] = try std.fmt.parseInt(u8, hex_byte, 16);
+    }
+
+    // Extract runtime code (skip constructor at first 32 bytes)
+    const runtime_code = if (full_bytecode.len > 32) full_bytecode[32..] else full_bytecode;
+
+    // Create bytecode object
+    var bytecode = try BytecodeDefault.init(allocator, runtime_code);
+    defer bytecode.deinit();
+
+    // Check if PC=0x2e0 is a valid JUMPDEST
+    const is_valid_jumpdest = bytecode.isValidJumpDest(0x2e0);
+
+    // Let's also check what opcode is at PC=0x2e0
+    const opcode_at_2e0 = bytecode.get(0x2e0);
+
+    std.log.warn("PC=0x2e0: opcode=0x{x}, isValidJumpDest={}", .{ opcode_at_2e0 orelse 0xFF, is_valid_jumpdest });
+
+    // Check if there's any PUSH instruction containing 0x02e0 as data
+    // that might be mistaken for a jump target
+    var pc: usize = 0;
+    while (pc < bytecode.len()) {
+        const op = bytecode.get(@intCast(pc)) orelse break;
+
+        // Check for PUSH2 instructions that might push 0x02e0
+        if (op == 0x61 and pc + 2 < bytecode.len()) { // PUSH2
+            const val = (@as(u16, bytecode.get_unsafe(@intCast(pc + 1))) << 8) |
+                        @as(u16, bytecode.get_unsafe(@intCast(pc + 2)));
+            if (val == 0x02e0) {
+                std.log.warn("Found PUSH2 0x02e0 at PC=0x{x}", .{pc});
+                // Check if it's followed by a JUMP
+                if (pc + 3 < bytecode.len() and bytecode.get_unsafe(@intCast(pc + 3)) == 0x56) {
+                    std.log.warn("  Followed by JUMP at PC=0x{x}", .{pc + 3});
+                }
+            }
+            pc += 3;
+        } else if (op >= 0x60 and op <= 0x7F) { // Other PUSH instructions
+            pc += 1 + (op - 0x5F);
+        } else {
+            pc += 1;
+        }
+    }
+
+    // The test should verify that 0x2e0 is NOT a valid JUMPDEST
+    try std.testing.expect(!is_valid_jumpdest);
+}
+
 test "Bytecode buildBitmaps are created on init" {
     const allocator = std.testing.allocator;
     const code = [_]u8{ 0x61, 0x12, 0x34, 0x5b, 0x60, 0x56, 0x00 };
