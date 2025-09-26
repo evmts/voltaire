@@ -210,7 +210,7 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
             }
 
             // Calculate gas cost and stack requirements for the block starting at current JUMPDEST
-            pub fn calculateBlockInfoAtJumpdest(iterator: *Iterator) struct { gas: u32, min_stack: u32, max_stack: u32 } {
+            pub fn calculateBlockInfoAtJumpdest(iterator: *Iterator) struct { gas: u32, min_stack: i16, max_stack: i16 } {
                 const opcode_info = @import("../opcodes/opcode_data.zig").OPCODE_INFO;
                 var gas: u32 = 1; // JUMPDEST itself costs 1 gas
                 var stack_effect: i32 = 0;
