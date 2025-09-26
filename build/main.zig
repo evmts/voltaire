@@ -3,15 +3,15 @@ const std = @import("std");
 // Build configuration and options
 pub const Config = @import("config.zig");
 
-// Module definitions
-pub const Modules = @import("modules.zig");
+// Module definitions - now in src/
+pub const Modules = @import("../src/modules.build.zig");
 
-// Executables
-pub const GuillotineExe = @import("executables/guillotine.zig");
+// Executables - now colocated with their source
+pub const GuillotineExe = @import("../src/build.zig");
 pub const DevtoolExe = @import("../apps/devtool/build.zig");
 pub const CliExe = @import("../apps/cli/build.zig");
-pub const EvmRunnerExe = @import("executables/evm_runner.zig");
-pub const BenchmarksExe = @import("executables/benchmarks.zig");
+pub const EvmRunnerExe = @import("executables/evm_runner.zig"); // TODO: move this
+pub const BenchmarksExe = @import("executables/benchmarks.zig"); // TODO: move this
 
 // Libraries - now aggregated in lib/build.zig
 const lib_build = @import("../lib/build.zig");
@@ -28,7 +28,7 @@ pub const GoBindings = @import("../sdks/go/build.zig");
 pub const TypeScriptBindings = @import("../sdks/typescript/build.zig");
 pub const BunBindings = @import("../sdks/bun/build.zig");
 
-// Build steps (existing)
-pub const RustBuild = @import("steps/rust_build.zig");
+// Build steps
+pub const RustBuild = @import("steps/rust_build.zig"); // TODO: move to lib/
 pub const AssetGenerator = DevtoolExe.AssetGenerator; // Now exported from devtool
-pub const Tests = @import("steps/tests_integration.zig");
+pub const Tests = @import("../test/build.zig"); // Moved to test directory

@@ -120,9 +120,9 @@ pub fn createModules(
     // REVM import removed - using MinimalEvm for differential testing
 
     // Executable module
-    const exe_mod = b.createModule(.{ 
-        .root_source_file = b.path("src/main.zig"), 
-        .target = target, 
+    const exe_mod = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
         .optimize = optimize
     });
     exe_mod.addImport("Guillotine_lib", lib_mod);
