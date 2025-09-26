@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const evm_mod = @import("evm");
 const primitives = @import("primitives");
-const log = @import("log");
+const log = evm_mod.log;
 
 // Import specific types we need
 const bytecode_mod = evm_mod.bytecode;
@@ -96,8 +96,8 @@ test "fusion: PUSH+ADD fusion detection and execution" {
         },
     };
     
-    const result = evm.call(create_params);
-    defer if (result.output.len > 0) allocator.free(result.output);
+    var result = evm.call(create_params);
+    defer result.deinit(allocator);
     
     // Check execution succeeded
     try testing.expect(result.success);

@@ -172,7 +172,7 @@ fn runBlockchainCase(allocator: std.mem.Allocator, json_path: []const u8) !void 
     const tc = first.value_ptr.*.object;
 
     // Network/fork name
-    const fork_name = tc.get("network").?.string;
+    _ = tc.get("network").?.string; // fork_name is now configured at compile time
 
     // Pre-state
     var db = Database.init(allocator);
@@ -222,7 +222,7 @@ fn runBlockchainCase(allocator: std.mem.Allocator, json_path: []const u8) !void 
         tx_context.gas_limit = b_gas_limit;
         tx_context.coinbase = b_coinbase;
 
-        var vm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS, hfFromName(fork_name));
+        var vm = try DefaultEvm.init(allocator, &db, block_info, tx_context, 0, primitives.ZERO_ADDRESS);
         defer vm.deinit();
 
         // Apply transactions

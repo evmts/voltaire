@@ -82,35 +82,15 @@ test "CODECOPY and RETURN differential test" {
         .chain_id = 1,
     };
     
-    var guillotine_evm = evm.Evm{
-        .allocator = allocator,
-        .db = &database,
-        .block_info = block_info,
-        .tx_context = tx_context,
-        .env = .{
-            .origin = caller_address,
-            .coinbase = primitives.ZERO_ADDRESS,
-            .number = 20_000_000,
-            .timestamp = 1_800_000_000,
-            .difficulty = 0,
-            .gas_limit = 30_000_000,
-            .base_fee = 7,
-            .prev_randao = null,
-            .chain_id = 1,
-        },
-        .journaled_state = try evm.JournaledState.init(allocator, &database),
-        .logs = .empty,
-        .return_data = &.{},
-        .created_contracts = evm.CreatedContracts.init(allocator),
-    };
-    defer {
-        guillotine_evm.journaled_state.deinit();
-        guillotine_evm.logs.deinit();
-        if (guillotine_evm.return_data.len > 0) {
-            allocator.free(guillotine_evm.return_data);
-        }
-        guillotine_evm.created_contracts.deinit();
-    }
+    var guillotine_evm = try evm.DefaultEvm.init(
+        allocator,
+        &database,
+        block_info,
+        tx_context,
+        0, // gas_price
+        caller_address // origin
+    );
+    defer guillotine_evm.deinit();
     
     // Call the contract
     const call_params = evm.CallParams{

@@ -97,8 +97,7 @@ test "ERC20 mint test" {
         block_info,
         tx_context,
         0, // gas_price
-        caller_address, // origin
-        .CANCUN
+        caller_address // origin
     );
     defer evm_instance.deinit();
     
@@ -118,11 +117,8 @@ test "ERC20 mint test" {
     std.debug.print("  Contract: 0x{x}\n", .{contract_address.bytes});
     std.debug.print("  Function selector: 0x{x}\n", .{calldata[0..4]});
     
-    // Execute EVM call
-    const result = evm_instance.call(call_params) catch |err| {
-        std.debug.print("\n❌ EVM call failed: {}\n", .{err});
-        return err;
-    };
+    // Execute EVM call (call doesn't return an error union)
+    const result = evm_instance.call(call_params);
     defer {
         var mutable_result = result;
         mutable_result.deinit(allocator);

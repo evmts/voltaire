@@ -123,8 +123,7 @@ fn run_fixture_test(allocator: std.mem.Allocator, fixture_dir: []const u8) !void
         block_info,
         tx_context,
         0, // gas_price
-        caller, // origin
-        .CANCUN // hardfork
+        caller // origin
     );
     defer evm_instance.deinit();
     
@@ -161,7 +160,8 @@ fn run_fixture_test(allocator: std.mem.Allocator, fixture_dir: []const u8) !void
         std.debug.print("Deploying contract with {} bytes of init code\n", .{init_bytecode.len});
         
         // Deploy with regular EVM execution
-        const deploy_result = evm_instance.call(deploy_params);
+        var deploy_result = evm_instance.call(deploy_params);
+        defer deploy_result.deinit(allocator);
         if (!deploy_result.success) {
             log.err("❌ Contract deployment failed for {s}", .{fixture_dir});
             log.err("  This indicates a bug during deployment (constructor execution)", .{});
@@ -233,7 +233,8 @@ fn run_fixture_test(allocator: std.mem.Allocator, fixture_dir: []const u8) !void
         };
         
         // Execute with regular EVM execution
-        const result = evm_instance.call(call_params);
+        var result = evm_instance.call(call_params);
+        defer result.deinit(allocator);
         if (!result.success) {
             log.err("❌ Contract execution failed for {s}", .{fixture_dir});
             log.err("  This indicates a bug during contract execution", .{});

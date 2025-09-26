@@ -12,8 +12,8 @@ const comparison = @import("comparison.zig");
 
 const Address = primitives.Address;
 const Allocator = std.mem.Allocator;
-const CallParams = MainEvm.CallParams;
-const CallResult = MainEvm.CallResult;
+const CallParams = evm_mod.CallParams;
+const CallResult = evm_mod.CallResult;
 const Hardfork = evm_mod.Hardfork;
 
 /// Result of running a single test
@@ -52,7 +52,7 @@ pub fn runTest(
     };
 
     // Parse hardfork and context data
-    const hardfork = parser.parseHardfork(hardfork_str);
+    _ = parser.parseHardfork(hardfork_str); // hardfork is now configured at compile time
     const chain_id = try primitives.Hex.hex_to_u64(test_case.config.chainid);
     const block_number = try primitives.Hex.hex_to_u64(test_case.env.currentNumber);
     const block_timestamp = try primitives.Hex.hex_to_u64(test_case.env.currentTimestamp);
@@ -109,7 +109,6 @@ pub fn runTest(
         tx_context,
         @intCast(gas_price),
         origin,
-        hardfork,
     ) catch |err| {
         result.error_message = try std.fmt.allocPrint(allocator, "Failed to init EVM: {s}", .{@errorName(err)});
         result.success = false;

@@ -83,8 +83,9 @@ test "trace validation - basic trace population on successful call" {
         },
     };
     
-    const result = evm.call(params);
-    
+    var result = evm.call(params);
+    defer result.deinit(allocator);
+
     // Basic result verification
     try testing.expect(result.success);
     try testing.expect(result.gas_left < 100_000); // Some gas was consumed
@@ -108,9 +109,7 @@ test "trace validation - basic trace population on successful call" {
         }
     }
     
-    // Clean up
-    var mutable_result = result;
-    mutable_result.deinit(allocator);
+    // Clean up is handled by defer
 }
 
 test "trace validation - trace step details are correct" {
@@ -167,11 +166,12 @@ test "trace validation - trace step details are correct" {
         },
     };
     
-    const result = evm.call(params);
-    
+    var result = evm.call(params);
+    defer result.deinit(allocator);
+
     try testing.expect(result.success);
     try testing.expect(result.trace != null);
-    
+
     if (result.trace) |trace| {
         // Find PUSH1 and ADD operations in trace
         var found_push1_count: u32 = 0;
@@ -205,9 +205,8 @@ test "trace validation - trace step details are correct" {
         try testing.expect(found_add);
         try testing.expect(found_stop);
     }
-    
-    var mutable_result = result;
-    mutable_result.deinit(allocator);
+
+    // Clean up is handled by defer
 }
 
 test "trace validation - REVERT produces trace" {
@@ -267,8 +266,9 @@ test "trace validation - REVERT produces trace" {
         },
     };
     
-    const result = evm.call(params);
-    
+    var result = evm.call(params);
+    defer result.deinit(allocator);
+
     // Verify revert
     try testing.expect(!result.success);
     // The output has padding, so check that it ends with "FAIL"
@@ -291,9 +291,8 @@ test "trace validation - REVERT produces trace" {
         }
         try testing.expect(found_revert);
     }
-    
-    var mutable_result = result;
-    mutable_result.deinit(allocator);
+
+    // Clean up is handled by defer
 }
 
 test "trace validation - gas consumption tracking" {
@@ -351,8 +350,9 @@ test "trace validation - gas consumption tracking" {
             .gas = initial_gas,
         },
     };
-    
-    const result = evm.call(params);
+
+    var result = evm.call(params);
+    defer result.deinit(allocator);
     
     try testing.expect(result.success);
     try testing.expect(result.trace != null);
@@ -379,9 +379,8 @@ test "trace validation - gas consumption tracking" {
         const total_consumed = initial_gas - result.gas_left;
         _ = total_consumed;
     }
-    
-    var mutable_result = result;
-    mutable_result.deinit(allocator);
+
+    // Clean up is handled by defer
 }
 
 test "trace validation - snapshot test" {
@@ -535,8 +534,9 @@ test "trace validation - CREATE operation produces trace" {
             .gas = 100_000,
         },
     };
-    
-    const result = evm.call(params);
+
+    var result = evm.call(params);
+    defer result.deinit(allocator);
     
     try testing.expect(result.success);
     try testing.expect(result.trace != null);
@@ -556,7 +556,6 @@ test "trace validation - CREATE operation produces trace" {
     
     // Verify created address is populated
     try testing.expect(result.created_address != null);
-    
-    var mutable_result = result;
-    mutable_result.deinit(allocator);
+
+    // Clean up is handled by defer
 }

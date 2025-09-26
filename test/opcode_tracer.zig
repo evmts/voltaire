@@ -1,5 +1,6 @@
 const std = @import("std");
-const log = @import("log");
+const evm = @import("evm");
+const log = evm.log;
 
 /// Simple tracer that logs every opcode execution with stack state
 pub const OpcodeTracer = struct {

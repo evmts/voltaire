@@ -251,15 +251,16 @@ fn runSingleStateCase(allocator: std.mem.Allocator, json_path: []const u8) !void
         .blob_base_fee = 0,
     };
 
-    var vm = try DefaultEvm.init(allocator, &db, block_info, tx_context, gas_price, sender, hfFromName(fork_name));
+    var vm = try DefaultEvm.init(allocator, &db, block_info, tx_context, gas_price, sender);
     defer vm.deinit();
 
     // Execute
-    const res = vm.call(if (is_create)
+    var res = vm.call(if (is_create)
         DefaultEvm.CallParams{ .create = .{ .caller = sender, .value = value, .init_code = data_bytes, .gas = gas_lim } }
     else
         DefaultEvm.CallParams{ .call = .{ .caller = sender, .to = to_addr, .value = value, .input = data_bytes, .gas = gas_lim } }
     );
+    defer res.deinit(allocator);
 
     // Gas accounting and miner tip
     const gas_used: u64 = gas_lim - res.gas_left;

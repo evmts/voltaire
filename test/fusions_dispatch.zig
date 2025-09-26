@@ -1,12 +1,12 @@
 const std = @import("std");
 const testing = std.testing;
-const log = @import("log");
 const evm = @import("evm");
+const log = evm.log;
 const frame_mod = evm.frame;
 const FrameConfig = evm.FrameConfig;
 const MemoryDatabase = evm.MemoryDatabase;
 const Address = @import("primitives").Address.Address;
-const DefaultTracer = @import("evm").tracer.DefaultTracer;
+const Tracer = @import("evm").Tracer;
 const Evm = @import("evm").evm.Evm;
 
 // Test configuration for frame
@@ -16,7 +16,6 @@ const test_config = FrameConfig{
     .max_bytecode_size = 1024,
     .block_gas_limit = 30_000_000,
     .DatabaseType = MemoryDatabase,
-    .TracerType = DefaultTracer,
     .memory_initial_capacity = 4096,
     .memory_limit = 0xFFFFFF,
 };
@@ -62,7 +61,9 @@ test "fusion dispatch: verify jump resolution for ten-thousand-hashes" {
     // Build opcode handlers and dispatch schedule
     const frame_handlers = @import("evm").frame_handlers;
     const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
-    var schedule = try TestDispatch.DispatchSchedule.init(allocator, bc, &opcode_handlers);
+    var tracer = Tracer.init(allocator, .{}); // Add a tracer for the init call
+    defer tracer.deinit();
+    var schedule = try TestDispatch.DispatchSchedule.init(allocator, bc, &opcode_handlers, @as(?*Tracer, &tracer));
     defer schedule.deinit();
 
     // Build jump table from schedule
@@ -102,7 +103,9 @@ test "fusion dispatch: simple PUSH+JUMPI resolution" {
     // Create dispatch
     const frame_handlers = @import("evm").frame_handlers;
     const opcode_handlers = frame_handlers.getOpcodeHandlers(TestFrame, &.{});
-    var schedule = try TestDispatch.DispatchSchedule.init(allocator, bc, &opcode_handlers);
+    var tracer2 = Tracer.init(allocator, .{}); // Add a tracer for the init call
+    defer tracer2.deinit();
+    var schedule = try TestDispatch.DispatchSchedule.init(allocator, bc, &opcode_handlers, @as(?*Tracer, &tracer2));
     defer schedule.deinit();
 
     // Create jump table

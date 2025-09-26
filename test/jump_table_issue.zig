@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const evm = @import("evm");
 const primitives = @import("primitives");
-const log = @import("log");
+const log = evm.log;
 
 const Evm = evm.Evm;
 const Database = evm.Database;
@@ -62,19 +62,21 @@ test "Jump table should contain JUMPDEST at 0x0f in ERC20 bytecode" {
     // Get opcode handlers
     const opcode_handlers = &TestFrame.opcode_handlers;
 
-    // Create dispatch schedule
-    const schedule = try TestDispatch.init(allocator, &bytecode, opcode_handlers);
-    defer allocator.free(schedule);
+    // Create dispatch schedule (need to add tracer parameter)
+    var tracer = @import("evm").Tracer.init(allocator, .{});
+    defer tracer.deinit();
+    var schedule = try TestDispatch.DispatchSchedule.init(allocator, &bytecode, opcode_handlers, @as(?*@import("evm").Tracer, &tracer));
+    defer schedule.deinit();
 
-    log.info("Created dispatch schedule with {} items", .{schedule.len});
+    log.info("Created dispatch schedule with {} items", .{schedule.items.len});
 
     // Pretty print the dispatch to see what's happening
-    const pretty = try TestDispatch.pretty_print(allocator, schedule, &bytecode);
+    const pretty = try TestDispatch.pretty_print(allocator, schedule.items, &bytecode);
     defer allocator.free(pretty);
     log.info("\nDispatch Schedule:\n{s}", .{pretty});
 
     // Create jump table
-    const jump_table = try TestDispatch.createJumpTable(allocator, schedule, &bytecode);
+    const jump_table = try TestDispatch.createJumpTable(allocator, schedule.items, &bytecode);
     defer allocator.free(jump_table.entries);
 
     log.info("Created jump table with {} entries", .{jump_table.entries.len});

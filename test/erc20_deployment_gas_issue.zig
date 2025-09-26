@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const evm = @import("evm");
 const primitives = @import("primitives");
-const log = @import("log");
+const log = evm.log;
 const OpcodeTracer = @import("opcode_tracer.zig").OpcodeTracer;
 
 const Evm = evm.Evm;

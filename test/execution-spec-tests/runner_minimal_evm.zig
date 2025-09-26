@@ -143,7 +143,26 @@ pub fn runTest(
         },
     };
 
-    const call_result = evm.call(call_params);
+    // Extract params and call execute directly
+    const call_result = switch (call_params) {
+        .create => try evm.execute(
+            data, // init code
+            @intCast(gas_limit),
+            origin, // Use origin as the sender
+            primitives.ZERO_ADDRESS, // contract will be created
+            value,
+            &.{}, // no calldata for create
+        ),
+        .call => |call| try evm.execute(
+            &.{}, // code will be fetched from address
+            @intCast(gas_limit),
+            origin, // Use origin as the sender
+            call.to,
+            value,
+            data, // calldata
+        ),
+        else => unreachable,
+    };
 
     // Check if execution was successful
     if (!call_result.success) {
@@ -186,20 +205,21 @@ fn setupPreState(evm: *MinimalEvm, pre: std.json.Value) !void {
         // Set balance
         if (account.get("balance")) |balance_val| {
             const balance = try primitives.Hex.hex_to_u256(balance_val.string);
-            try evm.*.set_balance(address, balance);
+            try evm.*.setBalance(address, balance);
         }
 
-        // Set nonce
-        if (account.get("nonce")) |nonce_val| {
-            const nonce = try primitives.Hex.hex_to_u64(nonce_val.string);
-            try evm.*.set_nonce(address, nonce);
-        }
+        // Set nonce - MinimalEvm doesn't track nonces
+        // if (account.get("nonce")) |nonce_val| {
+        //     const nonce = try primitives.Hex.hex_to_u64(nonce_val.string);
+        //     try evm.*.set_nonce(address, nonce);
+        // }
+        _ = account.get("nonce"); // Ignore nonce for now
 
         // Set code
         if (account.get("code")) |code_val| {
             const code = try primitives.Hex.from_hex(evm.allocator, code_val.string);
             defer evm.allocator.free(code);
-            try evm.*.set_code(address, code);
+            try evm.*.setCode(address, code);
         }
 
         // Set storage
