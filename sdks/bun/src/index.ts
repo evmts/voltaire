@@ -93,6 +93,10 @@ const lib = dlopen(libPath, {
     args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], // EvmHandle*, address[20], key[32], value[32]
     returns: FFIType.bool,
   },
+  guillotine_set_nonce: {
+    args: [FFIType.ptr, FFIType.ptr, FFIType.u64], // EvmHandle*, address[20], nonce
+    returns: FFIType.bool,
+  },
 });
 
 // Initialize the FFI
@@ -287,10 +291,18 @@ export class GuillotineEVM {
   }
 
   setNonce(address: string, nonce: bigint): void {
-    // For now, we'll need to implement this in the C API
-    // But we can provide a stub that throws an informative error
-    console.warn(`setNonce not yet implemented for address ${address}, nonce ${nonce}`);
-    // TODO: Implement guillotine_set_nonce in C API
+    const addrBytes = addressToBytes(address);
+    
+    const success = lib.symbols.guillotine_set_nonce(
+      this.handle,
+      ptr(addrBytes),
+      nonce
+    );
+    
+    if (!success) {
+      const error = lib.symbols.guillotine_get_last_error();
+      throw new Error(`Failed to set nonce: ${error}`);
+    }
   }
 
   setStorage(address: string, key: bigint, value: bigint): void {

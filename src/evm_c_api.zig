@@ -684,6 +684,48 @@ export fn guillotine_set_balance_tracing(handle: *EvmHandle, address: *const [20
     return true;
 }
 
+// Set account nonce
+export fn guillotine_set_nonce(handle: *EvmHandle, address: *const [20]u8, nonce: u64) bool {
+    const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
+
+    // Get or create account
+    var account = evm_ptr.database.get_account(address.*) catch {
+        setError("Failed to get account", .{});
+        return false;
+    } orelse Account.zero();
+
+    account.nonce = nonce;
+
+    evm_ptr.database.set_account(address.*, account) catch {
+        setError("Failed to set account nonce", .{});
+        return false;
+    };
+
+    // Track this address for state dump
+    const addr = primitives.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {};
+
+    return true;
+}
+
+// Set account nonce (tracing)
+export fn guillotine_set_nonce_tracing(handle: *EvmHandle, address: *const [20]u8, nonce: u64) bool {
+    const evm_ptr: *TracerEvm = @ptrCast(@alignCast(handle));
+    var account = evm_ptr.database.get_account(address.*) catch {
+        setError("Failed to get account", .{});
+        return false;
+    } orelse Account.zero();
+    account.nonce = nonce;
+    evm_ptr.database.set_account(address.*, account) catch {
+        setError("Failed to set account nonce", .{});
+        return false;
+    };
+    // Track this address for state dump
+    const addr = primitives.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {};
+    return true;
+}
+
 // Set contract code
 export fn guillotine_set_code(handle: *EvmHandle, address: *const [20]u8, code: [*]const u8, code_len: usize) bool {
     const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
@@ -1035,6 +1077,10 @@ export fn guillotine_call(handle: *EvmHandle, params: *const CallParams) ?*EvmRe
         return null;
     };
 
+    // Set the origin to the caller for top-level transactions
+    // This ensures nonce increments and gas fees are properly handled
+    evm_ptr.origin = primitives.Address{ .bytes = params.caller };
+
     // Convert input slice
     const input_slice = if (params.input_len > 0) params.input[0..params.input_len] else &[_]u8{};
 
@@ -1114,6 +1160,11 @@ export fn guillotine_call_tracing(handle: *EvmHandle, params: *const CallParams)
         setError("FFI not initialized", .{});
         return null;
     };
+    
+    // Set the origin to the caller for top-level transactions
+    // This ensures nonce increments and gas fees are properly handled
+    evm_ptr.origin = primitives.Address{ .bytes = params.caller };
+    
     const input_slice = if (params.input_len > 0) params.input[0..params.input_len] else &[_]u8{};
     const value = std.mem.readInt(u256, &params.value, .big);
     const call_params = switch (params.call_type) {
