@@ -71,6 +71,18 @@ For an in-depth understanding of Guillotine's design and implementation, see our
 
 ---
 
+## 🔨 Building from Source
+
+**Currently Supported**: macOS (building from source)
+**Coming Soon**: Linux support (coming next week!)
+
+To build Guillotine from source on macOS:
+```bash
+zig build
+```
+
+---
+
 ## 🧰 SDKs (Experimental)
 
 All SDKs in this repo are vibecoded proof-of-concepts. APIs are unstable and may change without notice. We're actively seeking early users to try things out and tell us what APIs you want. Please open an issue or ping us on Telegram with feedback.
