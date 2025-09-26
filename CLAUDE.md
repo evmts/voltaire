@@ -18,6 +18,7 @@ Every line of code must be correct. Zero error tolerance.
 - Memory safety: plan ownership/deallocation for every allocation
 - Every change must be tested and verified
 - Use SafetyCounter for infinite loop prevention (300M instruction limit)
+- **CRITICAL: Crashes are SEVERE SECURITY BUGS** - Any crash (e.g., from `std.debug.assert`) indicates memory unsafety or missing validation. The EVM must ALWAYS return errors gracefully, never crash. Before fixing the bug that triggered the crash, FIRST fix the validation/error handling that allowed the crash to occur.
 
 ### Build Verification
 
