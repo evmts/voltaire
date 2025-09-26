@@ -99,14 +99,14 @@ pub fn build(b: *std.Build) void {
     npm_check.addCheck(.{ .expect_stdout_match = "npm" });
 
     const npm_install = b.addSystemCommand(&[_][]const u8{ "npm", "install" });
-    npm_install.setCwd(b.path("src/devtool"));
+    npm_install.setCwd(b.path("apps/devtool"));
     npm_install.step.dependOn(&npm_check.step);
 
     const npm_build = b.addSystemCommand(&[_][]const u8{ "npm", "run", "build" });
-    npm_build.setCwd(b.path("src/devtool"));
+    npm_build.setCwd(b.path("apps/devtool"));
     npm_build.step.dependOn(&npm_install.step);
 
-    const generate_assets = asset_generator.GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
+    const generate_assets = asset_generator.GenerateAssetsStep.init(b, "apps/devtool/dist", "apps/devtool/assets.zig");
     generate_assets.step.dependOn(&npm_build.step);
 
     const devtool_exe = build_pkg.DevtoolExe.createDevtoolExecutable(b, target, optimize, modules.lib_mod, modules.evm_mod, modules.primitives_mod, modules.provider_mod, &generate_assets.step);

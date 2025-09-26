@@ -11,7 +11,7 @@ pub fn createDevtoolExecutable(
     generate_assets_step: *std.Build.Step,
 ) *std.Build.Step.Compile {
     const devtool_mod = b.createModule(.{
-        .root_source_file = b.path("src/devtool/main.zig"),
+        .root_source_file = b.path("apps/devtool/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -37,7 +37,7 @@ pub fn createDevtoolExecutable(
             "arm64-apple-macosx15.0",
             "-o",
             "zig-out/libnative_menu_swift.dylib",
-            "src/devtool/native_menu.swift",
+            "apps/devtool/native_menu.swift",
         });
 
         const mkdir_cmd = b.addSystemCommand(&[_][]const u8{

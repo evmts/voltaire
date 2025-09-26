@@ -21,21 +21,21 @@ pub fn setupDevtool(b: *std.Build, config: DevtoolConfig) struct {
 
     // Install npm dependencies
     const npm_install = b.addSystemCommand(&[_][]const u8{ "npm", "install" });
-    npm_install.setCwd(b.path("src/devtool"));
+    npm_install.setCwd(b.path("apps/devtool"));
     npm_install.step.dependOn(&npm_check.step);
 
     // Build the Solid app
     const npm_build = b.addSystemCommand(&[_][]const u8{ "npm", "run", "build" });
-    npm_build.setCwd(b.path("src/devtool"));
+    npm_build.setCwd(b.path("apps/devtool"));
     npm_build.step.dependOn(&npm_install.step);
 
     // Generate assets from the built Solid app
-    const generate_assets = asset_generator.GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
+    const generate_assets = asset_generator.GenerateAssetsStep.init(b, "apps/devtool/dist", "apps/devtool/assets.zig");
     generate_assets.step.dependOn(&npm_build.step);
 
     // Create devtool module
     const devtool_mod = b.createModule(.{
-        .root_source_file = b.path("src/devtool/main.zig"),
+        .root_source_file = b.path("apps/devtool/main.zig"),
         .target = config.target,
         .optimize = config.optimize,
     });
@@ -92,7 +92,7 @@ fn setupPlatformSpecific(b: *std.Build, target: std.Build.ResolvedTarget, exe: *
             "-O",
             "-target", "arm64-apple-macosx15.0",
             "-o", "zig-out/libnative_menu_swift.dylib",
-            "src/devtool/native_menu.swift",
+            "apps/devtool/native_menu.swift",
         });
         
         // Ensure output directory exists
