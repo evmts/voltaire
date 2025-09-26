@@ -243,6 +243,126 @@ pub fn Evm(comptime config: EvmConfig) type {
             return self.call(params);
         }
 
+        /// State dump structure for post-state validation
+        pub const StateDump = struct {
+            accounts: std.StringHashMap(AccountState),
+            
+            pub const AccountState = struct {
+                balance: u256,
+                nonce: u64,
+                code: []const u8,
+                storage: std.AutoHashMap(u256, u256),
+            };
+            
+            pub fn deinit(self: *StateDump, allocator: std.mem.Allocator) void {
+                var it = self.accounts.iterator();
+                while (it.next()) |entry| {
+                    allocator.free(entry.key_ptr.*);
+                    allocator.free(entry.value_ptr.code);
+                    entry.value_ptr.storage.deinit();
+                }
+                self.accounts.deinit();
+            }
+        };
+        
+        /// Dump the current state of all accounts in the database
+        /// This is useful for post-state validation in tests
+        pub fn dumpState(self: *Self, allocator: std.mem.Allocator) !StateDump {
+            var state_dump = StateDump{
+                .accounts = std.StringHashMap(StateDump.AccountState).init(allocator),
+            };
+            errdefer state_dump.deinit(allocator);
+            
+            // Get all touched addresses from journal
+            var addresses = std.AutoHashMap(primitives.Address, void).init(allocator);
+            defer addresses.deinit();
+            
+            // Add all addresses from the journal
+            for (self.journal.entries.items) |entry| {
+                switch (entry.data) {
+                    .account_created => |ac| _ = try addresses.put(ac.address, {}),
+                    .account_destroyed => |ad| _ = try addresses.put(ad.address, {}),
+                    .balance_change => |bc| _ = try addresses.put(bc.address, {}),
+                    .nonce_change => |nc| _ = try addresses.put(nc.address, {}),
+                    .code_change => |cc| _ = try addresses.put(cc.address, {}),
+                    .storage_change => |sc| _ = try addresses.put(sc.address, {}),
+                }
+            }
+            
+            // Also add addresses from access list
+            var access_it = self.access_list.addresses.iterator();
+            while (access_it.next()) |entry| {
+                _ = try addresses.put(entry.key_ptr.*, {});
+            }
+            
+            // Dump each account's state
+            var addr_it = addresses.iterator();
+            while (addr_it.next()) |entry| {
+                const addr = entry.key_ptr.*;
+                const account = (try self.database.get_account(addr.bytes)) orelse continue;
+                
+                // Skip zero balance, zero nonce accounts with no code
+                if (account.balance == 0 and account.nonce == 0 and std.mem.eql(u8, &account.code_hash, &([_]u8{0} ** 32))) {
+                    continue;
+                }
+                
+                // Convert address to hex string
+                var addr_hex: [42]u8 = undefined;
+                @memcpy(addr_hex[0..2], "0x");
+                for (addr.bytes, 0..) |byte, i| {
+                    const chars = "0123456789abcdef";
+                    addr_hex[2 + i * 2] = chars[byte >> 4];
+                    addr_hex[2 + i * 2 + 1] = chars[byte & 0x0F];
+                }
+                const addr_str = try allocator.dupe(u8, &addr_hex);
+                
+                // Get code if present
+                var code: []u8 = &.{};
+                if (!std.mem.eql(u8, &account.code_hash, &([_]u8{0} ** 32))) {
+                    if (self.database.get_code(account.code_hash) catch null) |db_code| {
+                        code = try allocator.dupe(u8, db_code);
+                    }
+                }
+                
+                // Get storage
+                var storage = std.AutoHashMap(u256, u256).init(allocator);
+                
+                // Get all storage keys for this address from journal
+                var storage_keys = std.AutoHashMap(u256, void).init(allocator);
+                defer storage_keys.deinit();
+                
+                for (self.journal.entries.items) |journal_entry| {
+                    switch (journal_entry.data) {
+                        .storage_change => |sc| {
+                            if (std.mem.eql(u8, &sc.address.bytes, &addr.bytes)) {
+                                _ = try storage_keys.put(sc.key, {});
+                            }
+                        },
+                        else => {},
+                    }
+                }
+                
+                // Read current values for all keys
+                var key_it = storage_keys.iterator();
+                while (key_it.next()) |key_entry| {
+                    const key = key_entry.key_ptr.*;
+                    const value = try self.database.get_storage(addr.bytes, key);
+                    if (value != 0) {
+                        try storage.put(key, value);
+                    }
+                }
+                
+                try state_dump.accounts.put(addr_str, StateDump.AccountState{
+                    .balance = account.balance,
+                    .nonce = account.nonce,
+                    .code = code,
+                    .storage = storage,
+                });
+            }
+            
+            return state_dump;
+        }
+
         /// Execute an EVM operation.
         ///
         /// This is the main entry point that routes to specific handlers based
