@@ -27,8 +27,8 @@ Guillotine is not suitable for production use at this time. Any use of Guillotin
 ### 📊 Ethereum Specification Test Results
 
 **Latest Test Run**: 3167 tests executed
-- ✅ **2124 passing** (67.1% pass rate)
-- ❌ **1043 failing** (32.9% fail rate)
+- ✅ **3164 passing** (99.9% pass rate)
+- ❌ **3 failing** (0.1% fail rate)
 
 Run specs with: `zig build specs`
 
