@@ -189,22 +189,6 @@ pub fn Handlers(FrameType: type) type {
             self.afterInstruction(.JUMPDEST, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
-
-        /// PC opcode (0x58) - Get program counter.
-        /// Pushes the current program counter onto the stack.
-        /// The actual PC value is provided by the planner through metadata.
-        pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.beforeInstruction(.PC, cursor);
-            // Jump table not needed for PC
-            const dispatch = Dispatch{ .cursor = cursor };
-            // Get PC value from metadata
-            const op_data = dispatch.getOpData(.PC);
-
-            self.stack.push_unsafe(op_data.metadata.value);
-
-            self.afterInstruction(.PC, op_data.next_handler, op_data.next_cursor.cursor);
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
-        }
     };
 }
 

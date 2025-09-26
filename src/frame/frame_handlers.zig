@@ -122,7 +122,7 @@ pub fn getOpcodeHandlers(
     h[@intFromEnum(Opcode.SSTORE)] = &StorageHandlers.sstore;
     h[@intFromEnum(Opcode.JUMP)] = &JumpHandlers.jump;
     h[@intFromEnum(Opcode.JUMPI)] = &JumpHandlers.jumpi;
-    h[@intFromEnum(Opcode.PC)] = &JumpHandlers.pc;
+    h[@intFromEnum(Opcode.PC)] = &ContextHandlers.pc;
     h[@intFromEnum(Opcode.MSIZE)] = &MemoryHandlers.msize;
     h[@intFromEnum(Opcode.MCOPY)] = &MemoryHandlers.mcopy;
     h[@intFromEnum(Opcode.GAS)] = &ContextHandlers.gas;

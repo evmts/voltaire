@@ -866,11 +866,9 @@ pub fn Handlers(FrameType: type) type {
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);
-            {
-                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "PC requires stack space");
-            }
+            // Stack validation happens in JUMPDEST/first_block handlers
             self.stack.push_unsafe(op_data.metadata.value);
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.op_data.next_handler, .{ self, op_data.op_data.next_cursor.cursor });
+            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }
     };
 }
