@@ -209,6 +209,15 @@ fn runSingleStateCase(allocator: std.mem.Allocator, json_path: []const u8) !void
     const base_fee = try parseU256Hex(env.get("currentBaseFee").?.string);
     const prev_randao = try parseHash32(env.get("currentRandom").?.string);
 
+    // Parse EIP-4844 blob gas fields if present (Cancun+)
+    var blob_base_fee: u256 = 0;
+    if (env.get("currentExcessBlobGas")) |excess_blob_gas_field| {
+        const excess_blob_gas = try parseU64Hex(excess_blob_gas_field.string);
+        // Calculate blob base fee from excess blob gas using EIP-4844 formula
+        const Blob = @import("primitives").Blob;
+        blob_base_fee = Blob.calculate_blob_gas_price(excess_blob_gas);
+    }
+
     // Transaction
     const tx_ptr = tc.get("transaction").?;
     if (tx_ptr != .object) return error.InvalidFixture;
@@ -239,7 +248,7 @@ fn runSingleStateCase(allocator: std.mem.Allocator, json_path: []const u8) !void
         .coinbase = coinbase,
         .base_fee = base_fee,
         .prev_randao = prev_randao,
-        .blob_base_fee = 0,
+        .blob_base_fee = blob_base_fee,
         .blob_versioned_hashes = &.{},
     };
 
@@ -248,7 +257,7 @@ fn runSingleStateCase(allocator: std.mem.Allocator, json_path: []const u8) !void
         .coinbase = coinbase,
         .chain_id = 1,
         .blob_versioned_hashes = &.{},
-        .blob_base_fee = 0,
+        .blob_base_fee = blob_base_fee,
     };
 
     var vm = try DefaultEvm.init(allocator, &db, block_info, tx_context, gas_price, sender);
