@@ -1,5 +1,8 @@
 const std = @import("std");
-const build_pkg = @import("build/main.zig");
+const Modules = @import("src/modules.build.zig");
+const GuillotineExe = @import("src/build.zig");
+const lib_build = @import("lib/build.zig");
+const DevtoolExe = @import("apps/devtool/build.zig");
 
 fn checkSubmodules() void {
     // Check if critical submodules are initialized
@@ -58,19 +61,54 @@ pub fn build(b: *std.Build) void {
     };
 
     // Build configuration
-    const config = build_pkg.Config.createBuildOptions(b, target);
-    const rust_target = build_pkg.Config.getRustTarget(target);
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "enable_tracing", b.option(bool, "enable-tracing", "Enable EVM instruction tracing") orelse false);
+    build_options.addOption(bool, "disable_tailcall_dispatch", b.option(bool, "disable-tailcall-dispatch", "Disable tailcall-based dispatch") orelse true);
+    build_options.addOption([]const u8, "hardfork", b.option([]const u8, "evm-hardfork", "EVM hardfork (default: CANCUN)") orelse "CANCUN");
+    build_options.addOption(bool, "disable_gas_checks", b.option(bool, "evm-disable-gas", "Disable gas checks for testing") orelse false);
+    build_options.addOption(bool, "enable_fusion", b.option(bool, "evm-enable-fusion", "Enable bytecode fusion") orelse true);
+    build_options.addOption([]const u8, "optimize_strategy", b.option([]const u8, "evm-optimize", "EVM optimization strategy") orelse "safe");
+    build_options.addOption(u11, "max_call_depth", b.option(u11, "max-call-depth", "Maximum call depth (default: 1024)") orelse 1024);
+    build_options.addOption(u12, "stack_size", b.option(u12, "stack-size", "Maximum stack size (default: 1024)") orelse 1024);
+    build_options.addOption(u32, "max_bytecode_size", b.option(u32, "max-bytecode-size", "Maximum bytecode size (default: 24576)") orelse 24576);
+    build_options.addOption(u32, "max_initcode_size", b.option(u32, "max-initcode-size", "Maximum initcode size (default: 49152)") orelse 49152);
+    build_options.addOption(u64, "block_gas_limit", b.option(u64, "block-gas-limit", "Block gas limit (default: 30000000)") orelse 30_000_000);
+    build_options.addOption(usize, "memory_initial_capacity", b.option(usize, "memory-initial-capacity", "Memory initial capacity (default: 4096)") orelse 4096);
+    build_options.addOption(u64, "memory_limit", b.option(u64, "memory-limit", "Memory limit (default: 0xFFFFFF)") orelse 0xFFFFFF);
+    build_options.addOption(usize, "arena_capacity_limit", b.option(usize, "arena-capacity-limit", "Arena capacity limit (default: 64MB)") orelse (64 * 1024 * 1024));
+    build_options.addOption(bool, "disable_balance_checks", b.option(bool, "disable-balance-checks", "Disable balance checks") orelse false);
+    const options_mod = build_options.createModule();
+    
+    const rust_target = b: {
+        const os = target.result.os.tag;
+        const arch = target.result.cpu.arch;
+        
+        break :b switch (os) {
+            .macos => switch (arch) {
+                .aarch64 => "aarch64-apple-darwin",
+                .x86_64 => "x86_64-apple-darwin",
+                else => "x86_64-apple-darwin",
+            },
+            .linux => switch (arch) {
+                .aarch64 => "aarch64-unknown-linux-gnu",
+                .x86_64 => "x86_64-unknown-linux-gnu",
+                else => "x86_64-unknown-linux-gnu",
+            },
+            .windows => "x86_64-pc-windows-msvc",
+            else => "x86_64-unknown-linux-gnu",
+        };
+    };
 
     // Dependencies
     const zbench_dep = b.dependency("zbench", .{ .target = target, .optimize = optimize }); // retained for module wiring; not used to build benches
 
     // Libraries
-    const blst_lib = build_pkg.BlstLib.createBlstLibrary(b, target, optimize);
-    const c_kzg_lib = build_pkg.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
+    const blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, optimize);
+    const c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
 
-    const rust_build_step = build_pkg.FoundryLib.createRustBuildStep(b, rust_target, optimize);
-    const bn254_lib = build_pkg.Bn254Lib.createBn254Library(b, target, optimize, config.options, rust_build_step, rust_target);
-    const foundry_lib = build_pkg.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
+    const rust_build_step = lib_build.FoundryLib.createRustBuildStep(b, rust_target, optimize);
+    const bn254_lib = lib_build.Bn254Lib.createBn254Library(b, target, optimize, .{ .enable_tracy = false }, rust_build_step, rust_target);
+    const foundry_lib = lib_build.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
     
     // Install BLS libraries to zig-out/lib for stable paths
     b.installArtifact(blst_lib);
@@ -78,16 +116,16 @@ pub fn build(b: *std.Build) void {
     if (bn254_lib) |bn254| b.installArtifact(bn254);
 
     // Modules
-    const modules = build_pkg.Modules.createModules(b, target, optimize, config.options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, foundry_lib);
+    const modules = Modules.createModules(b, target, optimize, options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, foundry_lib);
 
     // Executables
-    const guillotine_exe = build_pkg.GuillotineExe.createExecutable(b, modules.exe_mod);
-    _ = build_pkg.GuillotineExe.createRunStep(b, guillotine_exe);
+    const guillotine_exe = GuillotineExe.createExecutable(b, modules.exe_mod);
+    _ = GuillotineExe.createRunStep(b, guillotine_exe);
 
     // Bench runner executables are removed (moved to separate repo)
 
     // Asset generation for devtool
-    const asset_generator = build_pkg.AssetGenerator;
+    const AssetGenerator = DevtoolExe.AssetGenerator;
     const npm_check = b.addSystemCommand(&[_][]const u8{ "which", "npm" });
     npm_check.addCheck(.{ .expect_stdout_match = "npm" });
 
@@ -99,11 +137,11 @@ pub fn build(b: *std.Build) void {
     npm_build.setCwd(b.path("src/devtool"));
     npm_build.step.dependOn(&npm_install.step);
 
-    const generate_assets = asset_generator.GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
+    const generate_assets = AssetGenerator.GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
     generate_assets.step.dependOn(&npm_build.step);
 
-    const devtool_exe = build_pkg.DevtoolExe.createDevtoolExecutable(b, target, optimize, modules.lib_mod, modules.evm_mod, modules.primitives_mod, modules.provider_mod, &generate_assets.step);
-    build_pkg.DevtoolExe.createDevtoolSteps(b, devtool_exe, target);
+    const devtool_exe = DevtoolExe.createDevtoolExecutable(b, target, optimize, modules.lib_mod, modules.evm_mod, modules.primitives_mod, modules.provider_mod, &generate_assets.step);
+    DevtoolExe.createDevtoolSteps(b, devtool_exe, target);
 
     // Pattern analyzer tool (JSON fixtures)
     const pattern_analyzer = b.addExecutable(.{
@@ -143,6 +181,18 @@ pub fn build(b: *std.Build) void {
     const bytecode_patterns_step = b.step("build-bytecode-patterns", "Build bytecode pattern analyzer");
     bytecode_patterns_step.dependOn(&b.addInstallArtifact(bytecode_patterns, .{}).step);
 
+    // BLS wrapper for missing symbols
+    const bls_wrapper = b.addLibrary(.{
+        .name = "bls_wrapper",
+        .linkage = .static,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("lib/bls_wrapper.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    bls_wrapper.root_module.addImport("build_options", options_mod);
+
     // Shared library for FFI bindings
     const shared_lib_mod = b.createModule(.{
         .root_source_file = b.path("src/evm_c_api.zig"),
@@ -152,7 +202,7 @@ pub fn build(b: *std.Build) void {
     shared_lib_mod.addImport("evm", modules.evm_mod);
     shared_lib_mod.addImport("primitives", modules.primitives_mod);
     shared_lib_mod.addImport("crypto", modules.crypto_mod);
-    shared_lib_mod.addImport("build_options", config.options_mod);
+    shared_lib_mod.addImport("build_options", options_mod);
 
     const shared_lib = b.addLibrary(.{
         .name = "guillotine_ffi",
@@ -161,6 +211,7 @@ pub fn build(b: *std.Build) void {
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
     });
+    shared_lib.linkLibrary(bls_wrapper); // Add BLS wrapper symbols
     shared_lib.linkLibrary(c_kzg_lib);
     shared_lib.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| shared_lib.linkLibrary(bn254);
@@ -202,8 +253,9 @@ pub fn build(b: *std.Build) void {
         .root_module = modules.evm_mod,
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
-        .test_runner = .{ .src_path = b.path("test_runner.zig") },
+        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
     });
+    unit_tests.linkLibrary(bls_wrapper);
     if (test_filter) |filter| {
         unit_tests.filters = &[_][]const u8{filter};
     }
@@ -229,7 +281,7 @@ pub fn build(b: *std.Build) void {
         }),
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
-        .test_runner = .{ .src_path = b.path("test_runner.zig") },
+        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
     });
     if (foundry_lib) |foundry| {
         lib_tests.linkLibrary(foundry);
@@ -264,7 +316,7 @@ pub fn build(b: *std.Build) void {
         }),
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
-        .test_runner = .{ .src_path = b.path("test_runner.zig") },
+        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
     });
     integration_tests.root_module.addImport("evm", modules.evm_mod);
     integration_tests.root_module.addImport("primitives", modules.primitives_mod);
@@ -276,6 +328,7 @@ pub fn build(b: *std.Build) void {
     integration_tests.linkLibrary(c_kzg_lib);
     integration_tests.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| integration_tests.linkLibrary(bn254);
+    integration_tests.linkLibrary(bls_wrapper);
     integration_tests.linkLibC();
     if (test_filter) |filter| {
         integration_tests.filters = &[_][]const u8{filter};
@@ -335,7 +388,7 @@ pub fn build(b: *std.Build) void {
     zbench_evm.root_module.addImport("evm", modules.evm_mod);
     zbench_evm.root_module.addImport("primitives", modules.primitives_mod);
     zbench_evm.root_module.addImport("crypto", modules.crypto_mod);
-    zbench_evm.root_module.addImport("build_options", config.options_mod);
+    zbench_evm.root_module.addImport("build_options", options_mod);
     zbench_evm.linkLibrary(c_kzg_lib);
     zbench_evm.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| zbench_evm.linkLibrary(bn254);
@@ -359,7 +412,7 @@ pub fn build(b: *std.Build) void {
     erc20_gas_test.root_module.addImport("evm", modules.evm_mod);
     erc20_gas_test.root_module.addImport("primitives", modules.primitives_mod);
     erc20_gas_test.root_module.addImport("crypto", modules.crypto_mod);
-    erc20_gas_test.root_module.addImport("build_options", config.options_mod);
+    erc20_gas_test.root_module.addImport("build_options", options_mod);
     erc20_gas_test.root_module.addImport("log", b.createModule(.{
         .root_source_file = b.path("src/log.zig"),
         .target = target,
@@ -388,7 +441,7 @@ pub fn build(b: *std.Build) void {
     jump_table_test.root_module.addImport("evm", modules.evm_mod);
     jump_table_test.root_module.addImport("primitives", modules.primitives_mod);
     jump_table_test.root_module.addImport("crypto", modules.crypto_mod);
-    jump_table_test.root_module.addImport("build_options", config.options_mod);
+    jump_table_test.root_module.addImport("build_options", options_mod);
     jump_table_test.root_module.addImport("log", b.createModule(.{
         .root_source_file = b.path("src/log.zig"),
         .target = target,
@@ -417,7 +470,7 @@ pub fn build(b: *std.Build) void {
     erc20_deployment_test.root_module.addImport("evm", modules.evm_mod);
     erc20_deployment_test.root_module.addImport("primitives", modules.primitives_mod);
     erc20_deployment_test.root_module.addImport("crypto", modules.crypto_mod);
-    erc20_deployment_test.root_module.addImport("build_options", config.options_mod);
+    erc20_deployment_test.root_module.addImport("build_options", options_mod);
     erc20_deployment_test.root_module.addImport("log", b.createModule(.{
         .root_source_file = b.path("src/log.zig"),
         .target = target,
@@ -449,7 +502,7 @@ pub fn build(b: *std.Build) void {
     fixtures_differential_test.root_module.addImport("evm", modules.evm_mod);
     fixtures_differential_test.root_module.addImport("primitives", modules.primitives_mod);
     fixtures_differential_test.root_module.addImport("crypto", modules.crypto_mod);
-    fixtures_differential_test.root_module.addImport("build_options", config.options_mod);
+    fixtures_differential_test.root_module.addImport("build_options", options_mod);
     fixtures_differential_test.root_module.addImport("log", b.createModule(.{ 
         .root_source_file = b.path("src/log.zig"), 
         .target = target, 
@@ -481,7 +534,7 @@ pub fn build(b: *std.Build) void {
     snailtracer_test.root_module.addImport("evm", modules.evm_mod);
     snailtracer_test.root_module.addImport("primitives", modules.primitives_mod);
     snailtracer_test.root_module.addImport("crypto", modules.crypto_mod);
-    snailtracer_test.root_module.addImport("build_options", config.options_mod);
+    snailtracer_test.root_module.addImport("build_options", options_mod);
     snailtracer_test.root_module.addImport("log", b.createModule(.{ 
         .root_source_file = b.path("src/log.zig"), 
         .target = target, 
@@ -513,7 +566,7 @@ pub fn build(b: *std.Build) void {
     gt_bug_test.root_module.addImport("evm", modules.evm_mod);
     gt_bug_test.root_module.addImport("primitives", modules.primitives_mod);
     gt_bug_test.root_module.addImport("crypto", modules.crypto_mod);
-    gt_bug_test.root_module.addImport("build_options", config.options_mod);
+    gt_bug_test.root_module.addImport("build_options", options_mod);
     gt_bug_test.root_module.addImport("log", b.createModule(.{ 
         .root_source_file = b.path("src/log.zig"), 
         .target = target, 
@@ -540,7 +593,7 @@ pub fn build(b: *std.Build) void {
     dev_test.root_module.addImport("evm", modules.evm_mod);
     dev_test.root_module.addImport("primitives", modules.primitives_mod);
     dev_test.root_module.addImport("crypto", modules.crypto_mod);
-    dev_test.root_module.addImport("build_options", config.options_mod);
+    dev_test.root_module.addImport("build_options", options_mod);
     dev_test.linkLibrary(c_kzg_lib);
     dev_test.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| dev_test.linkLibrary(bn254);
@@ -585,7 +638,7 @@ pub fn build(b: *std.Build) void {
             t.root_module.addImport("evm", modules.evm_mod);
             t.root_module.addImport("primitives", modules.primitives_mod);
             t.root_module.addImport("crypto", modules.crypto_mod);
-            t.root_module.addImport("build_options", config.options_mod);
+            t.root_module.addImport("build_options", options_mod);
             t.root_module.addImport("log", b.createModule(.{
                 .root_source_file = b.path("src/log.zig"),
                 .target = target,
@@ -659,7 +712,7 @@ pub fn build(b: *std.Build) void {
         erc20_transfer_test.root_module.addImport("evm", modules.evm_mod);
         erc20_transfer_test.root_module.addImport("primitives", modules.primitives_mod);
         erc20_transfer_test.root_module.addImport("crypto", modules.crypto_mod);
-        erc20_transfer_test.root_module.addImport("build_options", config.options_mod);
+        erc20_transfer_test.root_module.addImport("build_options", options_mod);
 
         // Link required libraries
         erc20_transfer_test.linkLibrary(c_kzg_lib);
@@ -687,7 +740,7 @@ pub fn build(b: *std.Build) void {
     //     static_jumps_test.root_module.addImport("evm", modules.evm_mod);
     //     static_jumps_test.root_module.addImport("primitives", modules.primitives_mod);
     //     static_jumps_test.root_module.addImport("crypto", modules.crypto_mod);
-    //     static_jumps_test.root_module.addImport("build_options", config.options_mod);
+    //     static_jumps_test.root_module.addImport("build_options", options_mod);
     //
     //     // Link required libraries
     //     static_jumps_test.linkLibrary(c_kzg_lib);
@@ -719,7 +772,7 @@ pub fn build(b: *std.Build) void {
         codecopy_test.root_module.addImport("evm", modules.evm_mod);
         codecopy_test.root_module.addImport("primitives", modules.primitives_mod);
         codecopy_test.root_module.addImport("crypto", modules.crypto_mod);
-        codecopy_test.root_module.addImport("build_options", config.options_mod);
+        codecopy_test.root_module.addImport("build_options", options_mod);
 
         const run_codecopy_test = b.addRunArtifact(codecopy_test);
         const codecopy_step = b.step("test-codecopy-return", "Test CODECOPY and RETURN opcodes");
@@ -743,7 +796,7 @@ pub fn build(b: *std.Build) void {
         official_state_test.root_module.addImport("evm", modules.evm_mod);
         official_state_test.root_module.addImport("primitives", modules.primitives_mod);
         official_state_test.root_module.addImport("crypto", modules.crypto_mod);
-        official_state_test.root_module.addImport("build_options", config.options_mod);
+        official_state_test.root_module.addImport("build_options", options_mod);
 
         // Link libraries used by EVM
         official_state_test.linkLibrary(c_kzg_lib);
@@ -780,7 +833,7 @@ pub fn build(b: *std.Build) void {
         official_chain_test.root_module.addImport("evm", modules.evm_mod);
         official_chain_test.root_module.addImport("primitives", modules.primitives_mod);
         official_chain_test.root_module.addImport("crypto", modules.crypto_mod);
-        official_chain_test.root_module.addImport("build_options", config.options_mod);
+        official_chain_test.root_module.addImport("build_options", options_mod);
 
         official_chain_test.linkLibrary(c_kzg_lib);
         official_chain_test.linkLibrary(blst_lib);
@@ -814,7 +867,7 @@ pub fn build(b: *std.Build) void {
         // Add module imports needed by the test
         synthetic_test.root_module.addImport("primitives", modules.primitives_mod);
         synthetic_test.root_module.addImport("crypto", modules.crypto_mod);
-        synthetic_test.root_module.addImport("build_options", config.options_mod);
+        synthetic_test.root_module.addImport("build_options", options_mod);
 
         synthetic_test.linkLibrary(c_kzg_lib);
         synthetic_test.linkLibrary(blst_lib);
@@ -840,10 +893,11 @@ pub fn build(b: *std.Build) void {
     specs_test.root_module.addImport("evm", modules.evm_mod);
     specs_test.root_module.addImport("primitives", modules.primitives_mod);
     specs_test.root_module.addImport("crypto", modules.crypto_mod);
-    specs_test.root_module.addImport("build_options", config.options_mod);
+    specs_test.root_module.addImport("build_options", options_mod);
     specs_test.linkLibrary(c_kzg_lib);
     specs_test.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| specs_test.linkLibrary(bn254);
+    specs_test.linkLibrary(bls_wrapper);
     specs_test.linkLibC();
     
     // Apply test filter if specified
@@ -893,11 +947,12 @@ pub fn build(b: *std.Build) void {
     specs_bun_step.dependOn(&run_specs_bun.step);
 
     // Language bindings
-    _ = build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
-    _ = build_pkg.PythonBindings.createPythonSteps(b);
-    _ = build_pkg.SwiftBindings.createSwiftSteps(b);
-    _ = build_pkg.GoBindings.createGoSteps(b);
-    _ = build_pkg.TypeScriptBindings.createTypeScriptSteps(b);
+    // Language bindings - TODO: Re-enable when SDK build files are created
+    // _ = WasmBindings.createWasmSteps(b, optimize, options_mod);
+    // _ = PythonBindings.createPythonSteps(b);
+    // _ = SwiftBindings.createSwiftSteps(b);
+    // _ = GoBindings.createGoSteps(b);
+    // _ = TypeScriptBindings.createTypeScriptSteps(b);
 
     // Focused fusion tests aggregator
     {
@@ -915,7 +970,7 @@ pub fn build(b: *std.Build) void {
         fusions_basic.root_module.addImport("evm", modules.evm_mod);
         fusions_basic.root_module.addImport("primitives", modules.primitives_mod);
         fusions_basic.root_module.addImport("crypto", modules.crypto_mod);
-        fusions_basic.root_module.addImport("build_options", config.options_mod);
+        fusions_basic.root_module.addImport("build_options", options_mod);
         fusions_basic.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
         fusions_basic.linkLibrary(c_kzg_lib);
         fusions_basic.linkLibrary(blst_lib);
@@ -936,7 +991,7 @@ pub fn build(b: *std.Build) void {
         fusions_dispatch.root_module.addImport("evm", modules.evm_mod);
         fusions_dispatch.root_module.addImport("primitives", modules.primitives_mod);
         fusions_dispatch.root_module.addImport("crypto", modules.crypto_mod);
-        fusions_dispatch.root_module.addImport("build_options", config.options_mod);
+        fusions_dispatch.root_module.addImport("build_options", options_mod);
         fusions_dispatch.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
         fusions_dispatch.linkLibrary(c_kzg_lib);
         fusions_dispatch.linkLibrary(blst_lib);
@@ -957,7 +1012,7 @@ pub fn build(b: *std.Build) void {
         fusions_diff_toggle.root_module.addImport("evm", modules.evm_mod);
         fusions_diff_toggle.root_module.addImport("primitives", modules.primitives_mod);
         fusions_diff_toggle.root_module.addImport("crypto", modules.crypto_mod);
-        fusions_diff_toggle.root_module.addImport("build_options", config.options_mod);
+        fusions_diff_toggle.root_module.addImport("build_options", options_mod);
         fusions_diff_toggle.root_module.addImport("log", b.createModule(.{ .root_source_file = b.path("src/log.zig"), .target = target, .optimize = .Debug }));
         // Using MinimalEvm for differential testing (REVM removed)
         fusions_diff_toggle.linkLibrary(c_kzg_lib);
