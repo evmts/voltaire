@@ -6,10 +6,10 @@
 const std = @import("std");
 
 // Global log configuration
-// Default to .warn to reduce noise in tests
+// Default to .err to reduce noise in tests
 // To enable debug logs, rebuild with -Dlog-level=debug or modify this value
 pub const std_options: std.Options = .{
-    .log_level = .warn,
+    .log_level = .err,
 };
 
 // Re-export everything from evm/root.zig

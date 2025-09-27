@@ -4,9 +4,9 @@
 
 const std = @import("std");
 
-// Enable debug logging for tests
+// Suppress debug logging for tests to keep output clean
 pub const std_options = std.Options{
-    .log_level = .debug,
+    .log_level = .err,
 };
 
 test {

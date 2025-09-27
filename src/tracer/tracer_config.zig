@@ -10,12 +10,9 @@ const Opcode = @import("../opcodes/opcode.zig").Opcode;
 const SafetyCounter = @import("../internal/safety_counter.zig").SafetyCounter;
 
 pub const TracerConfig = struct {
-    /// Enable the tracer system entirely (default: based on build mode)
-    /// false for ReleaseFast and ReleaseSmall, true for Debug and ReleaseSafe
-    enabled: bool = blk: {
-        const builtin = @import("builtin");
-        break :blk builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
-    },
+    /// Enable the tracer system entirely (default: false)
+    /// Must be explicitly enabled when needed
+    enabled: bool = false,
 
     enable_validation: bool = false,
     enable_step_capture: bool = false,

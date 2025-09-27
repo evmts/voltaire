@@ -325,7 +325,7 @@ pub fn Handlers(FrameType: type) type {
         /// GASPRICE opcode (0x3A) - Get price of gas in current environment.
         /// Stack: [] → [gas_price]
         pub fn gasprice(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .GASPRICE);
+            // log.before_instruction(self, .GASPRICE);
             const dispatch = Dispatch{ .cursor = cursor };
             const gas_price = self.getEvm().get_gas_price();
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
@@ -340,7 +340,7 @@ pub fn Handlers(FrameType: type) type {
         /// EXTCODESIZE opcode (0x3B) - Get size of an account's code.
         /// Stack: [address] → [size]
         pub fn extcodesize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .EXTCODESIZE);
+            // log.before_instruction(self, .EXTCODESIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             {
                 (&self.getEvm().tracer).assert(self.stack.size() >= 1, "EXTCODESIZE requires 1 stack item");
@@ -376,7 +376,7 @@ pub fn Handlers(FrameType: type) type {
         /// EXTCODECOPY opcode (0x3C) - Copy an account's code to memory.
         /// Stack: [address, destOffset, offset, length] → []
         pub fn extcodecopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .EXTCODECOPY);
+            // log.before_instruction(self, .EXTCODECOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             {
                 (&self.getEvm().tracer).assert(self.stack.size() >= 4, "EXTCODECOPY requires 4 stack items");
@@ -454,7 +454,7 @@ pub fn Handlers(FrameType: type) type {
         /// EXTCODEHASH opcode (0x3F) - Get hash of account's code.
         /// Stack: [address] → [hash]
         pub fn extcodehash(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .EXTCODEHASH);
+            // log.before_instruction(self, .EXTCODEHASH);
             const dispatch = Dispatch{ .cursor = cursor };
             {
                 (&self.getEvm().tracer).assert(self.stack.size() >= 1, "EXTCODEHASH requires 1 stack item");
@@ -511,7 +511,7 @@ pub fn Handlers(FrameType: type) type {
         /// RETURNDATASIZE opcode (0x3D) - Get size of output data from the previous call.
         /// Stack: [] → [size]
         pub fn returndatasize(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .RETURNDATASIZE);
+            // log.before_instruction(self, .RETURNDATASIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             // Return data from the last call is stored in the EVM's return_data field
             const return_data = self.getEvm().get_return_data();
@@ -527,7 +527,7 @@ pub fn Handlers(FrameType: type) type {
         /// RETURNDATACOPY opcode (0x3E) - Copy output data from the previous call to memory.
         /// Stack: [destOffset, offset, length] → []
         pub fn returndatacopy(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .RETURNDATACOPY);
+            // log.before_instruction(self, .RETURNDATACOPY);
             const dispatch = Dispatch{ .cursor = cursor };
             // EVM stack order: [destOffset, offset, length] with dest on top
             {
@@ -657,7 +657,7 @@ pub fn Handlers(FrameType: type) type {
         /// TIMESTAMP opcode (0x42) - Get the current block's timestamp.
         /// Stack: [] → [timestamp]
         pub fn timestamp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .TIMESTAMP);
+            // log.before_instruction(self, .TIMESTAMP);
             // TIMESTAMP costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -680,7 +680,7 @@ pub fn Handlers(FrameType: type) type {
         /// NUMBER opcode (0x43) - Get the current block's number.
         /// Stack: [] → [number]
         pub fn number(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .NUMBER);
+            // log.before_instruction(self, .NUMBER);
             // NUMBER costs 2 gas
             const gas_cost = GasConstants.GasQuickStep;
             // Use negative gas pattern for single-branch out-of-gas detection
@@ -734,7 +734,7 @@ pub fn Handlers(FrameType: type) type {
         /// GASLIMIT opcode (0x45) - Get the current block's gas limit.
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .GASLIMIT);
+            // log.before_instruction(self, .GASLIMIT);
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
@@ -764,7 +764,7 @@ pub fn Handlers(FrameType: type) type {
         /// SELFBALANCE opcode (0x47) - Get balance of currently executing account.
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .SELFBALANCE);
+            // log.before_instruction(self, .SELFBALANCE);
             const dispatch = Dispatch{ .cursor = cursor };
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
@@ -779,7 +779,7 @@ pub fn Handlers(FrameType: type) type {
         /// BASEFEE opcode (0x48) - Get the current block's base fee.
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .BASEFEE);
+            // log.before_instruction(self, .BASEFEE);
             const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
@@ -845,7 +845,7 @@ pub fn Handlers(FrameType: type) type {
         /// GAS opcode (0x5A) - Get the amount of available gas.
         /// Stack: [] → [gas]
         pub fn gas(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .GAS);
+            // log.before_instruction(self, .GAS);
             const dispatch = Dispatch{ .cursor = cursor };
             // Note: The gas value pushed should be after the gas for this instruction is consumed
             // The dispatch system handles the gas consumption before calling this handler
@@ -862,7 +862,7 @@ pub fn Handlers(FrameType: type) type {
         /// PC opcode (0x58) - Get the value of the program counter prior to the increment.
         /// Stack: [] → [pc]
         pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            log.before_instruction(self, .PC);
+            // log.before_instruction(self, .PC);
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);

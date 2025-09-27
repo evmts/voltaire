@@ -4,9 +4,9 @@ const primitives = @import("primitives");
 
 const Address = primitives.Address.Address;
 
-// Enable warning logging for the test to prevent terminal flooding
+// Disable debug logging for the test to prevent terminal flooding
 test {
-    std.testing.log_level = .warn;
+    std.testing.log_level = .err;
 }
 
 test "snailtracer differential test without tracing" {

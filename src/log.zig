@@ -8,12 +8,12 @@ const builtin = @import("builtin");
 /// Provides debug, error, and warning logging with EVM2-specific prefixing.
 /// Debug logs are optimized away in release builds for performance.
 /// Debug log for development and troubleshooting
-/// Respects std_options.log_level from root module
+/// Disabled by default to keep output clean
 pub fn debug(comptime format: []const u8, args: anytype) void {
-    // Check runtime log level from std_options
-    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-        std.log.debug("[EVM2] " ++ format, args);
-    }
+    // Debug logging is disabled to prevent terminal flooding
+    // Enable only when explicitly needed for debugging
+    _ = format;
+    _ = args;
 }
 
 /// Error log for critical issues that require attention
@@ -42,7 +42,8 @@ pub fn info(comptime format: []const u8, args: anytype) void {
 /// @param frame The execution frame containing stack, memory, and gas information
 /// @param opcode The UnifiedOpcode being executed (comptime known for optimization)
 pub fn before_instruction(frame: anytype, comptime opcode: @import("opcodes/opcode.zig").UnifiedOpcode) void {
-    if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
+    // Debug logging disabled to prevent terminal flooding
+    if (comptime false) {
         if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
             // Get opcode name at compile time
             const opcode_name = comptime switch (opcode) {

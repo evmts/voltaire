@@ -286,7 +286,7 @@ pub const Tracer = struct {
         if (self.minimal_evm) |evm| {
             const pc = evm.getPC();
             const bytecode = evm.getBytecode();
-            log.debug("beforeInstruction: Frame executing {s}, MinimalEvm PC={d}, bytecode[PC]=0x{x:0>2}", .{ opcode_name, pc, if (pc < bytecode.len) bytecode[pc] else 0 });
+            self.debug("beforeInstruction: Frame executing {s}, MinimalEvm PC={d}, bytecode[PC]=0x{x:0>2}", .{ opcode_name, pc, if (pc < bytecode.len) bytecode[pc] else 0 });
         }
         if (opcode_value <= 0xff) {
             const expected_handler = @TypeOf(frame.*).opcode_handlers[opcode_value];
@@ -318,7 +318,7 @@ pub const Tracer = struct {
 
         if (self.minimal_evm) |evm| {
             if (evm.getCurrentFrame()) |mf| {
-                log.debug("Before executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
+                self.debug("Before executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
                     opcode_name,
                     mf.stack.items.len,
                     frame.stack.size(),
@@ -326,7 +326,7 @@ pub const Tracer = struct {
             }
             minimal_evm_sync.executeMinimalEvmForOpcode(self, evm, opcode, frame, cursor);
             if (evm.getCurrentFrame()) |mf| {
-                log.debug("After executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
+                self.debug("After executeMinimalEvmForOpcode {s}: MinimalEvm stack={d}, Frame stack={d}", .{
                     opcode_name,
                     mf.stack.items.len,
                     frame.stack.size(),
@@ -335,7 +335,7 @@ pub const Tracer = struct {
         }
 
         const stack_size = frame.stack.size();
-        log.debug("EXEC[{d}]: {s} | PC={d} stack={d} gas={d}", .{
+        self.debug("EXEC[{d}]: {s} | PC={d} stack={d} gas={d}", .{
             self.instruction_count,
             opcode_name,
             self.current_pc,
@@ -383,10 +383,10 @@ pub const Tracer = struct {
             }
         }
 
-        log.debug("afterInstruction: Validating state after {s}", .{opcode_name});
+        self.debug("afterInstruction: Validating state after {s}", .{opcode_name});
         if (self.minimal_evm) |evm| {
             if (evm.getCurrentFrame()) |mf| {
-                log.debug("  MinimalEvm stack={d}, Frame stack={d}", .{
+                self.debug("  MinimalEvm stack={d}, Frame stack={d}", .{
                     mf.stack.items.len,
                     frame.stack.size(),
                 });
@@ -396,7 +396,7 @@ pub const Tracer = struct {
 
         if (self.minimal_evm) |evm| self.current_pc = evm.getPC();
 
-        log.debug("DONE[{d}]: {s} | PC={d}", .{
+        self.debug("DONE[{d}]: {s} | PC={d}", .{
             self.instruction_count,
             opcode_name,
             self.current_pc,
@@ -547,7 +547,7 @@ pub const Tracer = struct {
                     else => false,
                 };
                 if (is_call_like) {
-                    log.debug("[EVM2] [DIVERGENCE] (call-like) Stack size mismatch after {s}: MinimalEvm={d} Frame={d}", .{ opcode_name, evm_stack_size, frame_stack_size });
+                    self.debug("[EVM2] [DIVERGENCE] (call-like) Stack size mismatch after {s}: MinimalEvm={d} Frame={d}", .{ opcode_name, evm_stack_size, frame_stack_size });
                     return;
                 }
                 log.err("[EVM2] [DIVERGENCE] Stack size mismatch after {s}:", .{opcode_name});
@@ -595,8 +595,8 @@ pub const Tracer = struct {
 
             if (evm_memory_size != frame_memory_size) {
                 // Memory size mismatch is not critical, just debug log
-                log.debug("[EVM2] [DIVERGENCE] Memory size mismatch:", .{});
-                log.debug("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
+                self.debug("[EVM2] [DIVERGENCE] Memory size mismatch:", .{});
+                self.debug("[EVM2]   MinimalEvm: {d}, Frame: {d}", .{ evm_memory_size, frame_memory_size });
             }
 
             // Gas validation - different rules for different opcode types
@@ -614,10 +614,10 @@ pub const Tracer = struct {
                 // because both EVMs should have consumed the same amount
                 if (frame_gas_remaining != evm_gas_remaining) {
                     // Gas divergence at terminal state, debug log only
-                    log.debug("[EVM2] [GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
-                    log.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
-                    log.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
-                    log.debug("[EVM2]   Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
+                    self.debug("[EVM2] [GAS DIVERGENCE] Exact gas mismatch at terminal opcode {s}:", .{opcode_name});
+                    self.debug("[EVM2]   Frame gas_remaining: {d}", .{frame_gas_remaining});
+                    self.debug("[EVM2]   MinimalEvm gas_remaining: {d}", .{evm_gas_remaining});
+                    self.debug("[EVM2]   Difference: {d}", .{@as(i64, frame_gas_remaining) - @as(i64, evm_gas_remaining)});
                 }
             } else {
                 // For regular opcodes, we don't validate gas due to different charging strategies:

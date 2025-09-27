@@ -1178,7 +1178,7 @@ pub fn Evm(config: EvmConfig) type {
             const call_result = @import("frame/call_result.zig");
 
             if (!@hasField(@TypeOf(tracer.*), "steps")) {
-                std.log.debug("[EVM2] convertTracerToExecutionTrace: No steps field", .{});
+                log.debug("convertTracerToExecutionTrace: No steps field", .{});
                 return call_result.ExecutionTrace{
                     .steps = &[_]call_result.TraceStep{},
                     .allocator = allocator,
@@ -1186,7 +1186,7 @@ pub fn Evm(config: EvmConfig) type {
             }
 
             const tracer_steps = tracer.steps.items;
-            std.log.debug("[EVM2] convertTracerToExecutionTrace: Converting {d} tracer steps", .{tracer_steps.len});
+            log.debug("convertTracerToExecutionTrace: Converting {d} tracer steps", .{tracer_steps.len});
             var trace_steps = try allocator.alloc(call_result.TraceStep, tracer_steps.len);
             errdefer allocator.free(trace_steps);
 

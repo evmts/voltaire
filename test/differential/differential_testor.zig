@@ -797,8 +797,7 @@ pub const DifferentialTestor = struct {
 
         // If MinimalEvm tracing isn't working yet, focus on execution results only
         if (minimal_result.trace == null and guillotine_result.trace != null) {
-            const log = std.log.scoped(.differential_trace);
-            log.warn("MinimalEvm tracing not available, skipping trace comparison (Guillotine has {} steps)", .{guillotine_steps_len});
+            // Silently skip trace comparison when MinimalEvm doesn't have traces
             diff.trace_match = true; // Don't fail on missing MinimalEvm traces yet
         } else if (minimal_steps_len != guillotine_steps_len) {
             diff.trace_match = false;
