@@ -5,6 +5,35 @@
 
 const std = @import("std");
 
+// Global log configuration - controlled by environment variable
+// Set LOG_LEVEL=debug|info|warn|err to control logging verbosity
+// Defaults to .warn to reduce noise in tests
+pub const std_options = .{
+    .log_level = blk: {
+        const builtin = @import("builtin");
+        if (builtin.os.tag == .freestanding or builtin.os.tag == .wasi) {
+            break :blk .warn;
+        }
+        const env_level = std.process.getEnvVarOwned(
+            std.heap.page_allocator,
+            "LOG_LEVEL",
+        ) catch break :blk .warn;
+        defer std.heap.page_allocator.free(env_level);
+
+        if (std.mem.eql(u8, env_level, "debug")) {
+            break :blk .debug;
+        } else if (std.mem.eql(u8, env_level, "info")) {
+            break :blk .info;
+        } else if (std.mem.eql(u8, env_level, "warn")) {
+            break :blk .warn;
+        } else if (std.mem.eql(u8, env_level, "err")) {
+            break :blk .err;
+        } else {
+            break :blk .warn; // Default to warn for unknown values
+        }
+    },
+};
+
 // Re-export everything from evm/root.zig
 pub const Frame = @import("frame/frame.zig").Frame;
 pub const FrameConfig = @import("frame/frame_config.zig").FrameConfig;
@@ -37,17 +66,23 @@ pub const MainnetEvmWithTracer = Evm(EvmConfig{
     .tracer_config = @import("tracer/tracer.zig").TracerConfig{
         .enabled = true,
         .enable_validation = true,  // Enable validation for step capture
-        .enable_step_capture = true,  // Enable step capture for JSON-RPC trace  
+        .enable_step_capture = true,  // Enable step capture for JSON-RPC trace
         .enable_pc_tracking = true,
         .enable_gas_tracking = true,
-        .enable_debug_logging = true,  // Enable debug logging to see what's happening
+        .enable_debug_logging = false,  // Disable debug logging to reduce noise
         .enable_advanced_trace = false,  // Disable advanced trace to simplify
     },
 });
 
 pub const TestEvm = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/eips.zig").Hardfork.CANCUN },
-    .tracer_config = @import("tracer/tracer.zig").TracerConfig.debug,
+    .tracer_config = @import("tracer/tracer.zig").TracerConfig{
+        .enabled = true,
+        .enable_validation = true,
+        .enable_pc_tracking = true,
+        .enable_gas_tracking = true,
+        .enable_debug_logging = false,  // Disable debug logging to reduce noise
+    },
     .disable_gas_checks = true,
 });
 
