@@ -129,14 +129,8 @@ pub const EvmConfig = struct {
 
     /// Tracer configuration for execution monitoring and debugging
     /// Controls what tracing features are enabled
-    /// Default: build mode dependent (enabled for Debug/ReleaseSafe, disabled for ReleaseFast/ReleaseSmall)
-    tracer_config: @import("tracer/tracer.zig").TracerConfig = blk: {
-        if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
-            break :blk @import("tracer/tracer.zig").TracerConfig{};
-        } else {
-            break :blk @import("tracer/tracer.zig").TracerConfig.disabled;
-        }
-    },
+    /// Default: disabled (must be explicitly enabled when needed)
+    tracer_config: @import("tracer/tracer.zig").TracerConfig = @import("tracer/tracer.zig").TracerConfig.disabled,
 
     // TODO: this method is completely
     /// Get the effective SIMD vector length for the current target
@@ -251,8 +245,8 @@ pub const EvmConfig = struct {
         config.memory_initial_capacity = build_options.memory_initial_capacity;
         config.memory_limit = build_options.memory_limit;
         config.arena_capacity_limit = build_options.arena_capacity_limit;
-        config.enable_fusion = build_options.enable_fusion and !build_options.disable_fusion;
-        config.enable_precompiles = !build_options.no_precompiles;
+        config.enable_fusion = build_options.enable_fusion;
+        config.enable_precompiles = true; // Always enable precompiles
         config.disable_gas_checks = build_options.disable_gas_checks;
         config.disable_balance_checks = build_options.disable_balance_checks;
 

@@ -423,16 +423,6 @@ pub fn execute_ecadd(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     const copy_len = @min(input.len, 128);
     @memcpy(padded_input[0..copy_len], input[0..copy_len]);
 
-    if (build_options.no_bn254) {
-        // BN254 operations disabled - return error
-        const output = try allocator.alloc(u8, 64);
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = false,
-        };
-    }
 
     // Parse points
     const x1 = bytesToU256(padded_input[0..32]);
@@ -511,16 +501,6 @@ pub fn execute_ecmul(allocator: std.mem.Allocator, input: []const u8, gas_limit:
     const copy_len = @min(input.len, 96);
     @memcpy(padded_input[0..copy_len], input[0..copy_len]);
 
-    if (build_options.no_bn254) {
-        // BN254 operations disabled - return error
-        const output = try allocator.alloc(u8, 64);
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = false,
-        };
-    }
 
     // Parse point and scalar
     const x = bytesToU256(padded_input[0..32]);
@@ -595,16 +575,6 @@ pub fn execute_ecpairing(allocator: std.mem.Allocator, input: []const u8, gas_li
         };
     }
 
-    if (build_options.no_bn254) {
-        // BN254 operations disabled - return error
-        const output = try allocator.alloc(u8, 32);
-        @memset(output, 0);
-        return PrecompileOutput{
-            .output = output,
-            .gas_used = required_gas,
-            .success = false,
-        };
-    }
 
     const output = try allocator.alloc(u8, 32);
     @memset(output, 0);
