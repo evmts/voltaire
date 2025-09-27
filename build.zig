@@ -192,26 +192,49 @@ pub fn build(b: *std.Build) void {
     // Test filtering support
     const test_filter = b.option([]const u8, "test-filter", "Filter tests by pattern (applies to all test types)");
 
-    // Tests
-    const tests_pkg = build_pkg.Tests;
-    const lib_unit_tests = b.addTest(.{
-        .root_module = modules.lib_mod,
+    // Unit tests from src/root.zig (same as evm_mod, just run its tests)
+    const unit_tests = b.addTest(.{
+        .name = "unit-tests",
+        .root_module = modules.evm_mod,
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
     });
     if (test_filter) |filter| {
-        lib_unit_tests.filters = &[_][]const u8{filter};
+        unit_tests.filters = &[_][]const u8{filter};
     }
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
+    const run_unit_tests = b.addRunArtifact(unit_tests);
+    const unit_test_step = b.step("test-unit", "Run unit tests from src/**/*.zig");
+    unit_test_step.dependOn(&run_unit_tests.step);
 
-    const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, bn254_lib, c_kzg_lib, blst_lib);
+    // Library tests from lib/root.zig
+    const lib_tests = b.addTest(.{
+        .name = "lib-tests",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("lib/root.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
+    });
+    if (foundry_lib) |foundry| {
+        lib_tests.linkLibrary(foundry);
+        lib_tests.addIncludePath(b.path("lib/foundry-compilers"));
+    }
+    lib_tests.linkLibrary(c_kzg_lib);
+    lib_tests.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| lib_tests.linkLibrary(bn254);
+    lib_tests.linkLibC();
     if (test_filter) |filter| {
-        integration_tests.filters = &[_][]const u8{filter};
+        lib_tests.filters = &[_][]const u8{filter};
     }
-    const run_integration_tests = b.addRunArtifact(integration_tests);
+    const run_lib_tests = b.addRunArtifact(lib_tests);
+    const lib_test_step = b.step("test-lib", "Run library tests from lib/**/*.zig");
+    lib_test_step.dependOn(&run_lib_tests.step);
 
-    // Add test/root.zig tests
-    const root_tests = b.addTest(.{
+    // Integration tests from test/root.zig
+    const integration_tests = b.addTest(.{
+        .name = "integration-tests",
         .root_module = b.createModule(.{
             .root_source_file = b.path("test/root.zig"),
             .target = target,
@@ -220,54 +243,28 @@ pub fn build(b: *std.Build) void {
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
     });
-    root_tests.root_module.addImport("evm", modules.evm_mod);
-    root_tests.root_module.addImport("primitives", modules.primitives_mod);
-    root_tests.root_module.addImport("crypto", modules.crypto_mod);
-    root_tests.root_module.addImport("compilers", modules.compilers_mod);
-    root_tests.root_module.addImport("provider", modules.provider_mod);
-    root_tests.root_module.addImport("trie", modules.trie_mod);
-    root_tests.root_module.addImport("Guillotine_lib", modules.lib_mod);
-    // Using MinimalEvm for differential testing (REVM removed)
-    root_tests.linkLibrary(c_kzg_lib);
-    root_tests.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| root_tests.linkLibrary(bn254);
-    root_tests.linkLibC();
+    integration_tests.root_module.addImport("evm", modules.evm_mod);
+    integration_tests.root_module.addImport("primitives", modules.primitives_mod);
+    integration_tests.root_module.addImport("crypto", modules.crypto_mod);
+    integration_tests.root_module.addImport("compilers", modules.compilers_mod);
+    integration_tests.root_module.addImport("provider", modules.provider_mod);
+    integration_tests.root_module.addImport("trie", modules.trie_mod);
+    integration_tests.root_module.addImport("Guillotine_lib", modules.lib_mod);
+    integration_tests.linkLibrary(c_kzg_lib);
+    integration_tests.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| integration_tests.linkLibrary(bn254);
+    integration_tests.linkLibC();
     if (test_filter) |filter| {
-        root_tests.filters = &[_][]const u8{filter};
+        integration_tests.filters = &[_][]const u8{filter};
     }
-    const run_root_tests = b.addRunArtifact(root_tests);
+    const run_integration_tests = b.addRunArtifact(integration_tests);
+    const integration_test_step = b.step("test-integration", "Run integration tests from test/**/*.zig");
+    integration_test_step.dependOn(&run_integration_tests.step);
 
-    // Compiler tests
-    const compiler_tests = b.addTest(.{
-        .name = "compiler-tests",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("test/compiler_test.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
-        .use_llvm = true,
-    });
-    compiler_tests.root_module.addImport("compilers", modules.compilers_mod);
-    compiler_tests.root_module.addImport("primitives", modules.primitives_mod);
-    if (foundry_lib) |foundry| {
-        compiler_tests.linkLibrary(foundry);
-        compiler_tests.addIncludePath(b.path("lib/foundry-compilers"));
-        compiler_tests.linkLibC();
-    }
-    if (test_filter) |filter| {
-        compiler_tests.filters = &[_][]const u8{filter};
-    }
-    const run_compiler_tests = b.addRunArtifact(compiler_tests);
 
-    // Add a dedicated compiler test step
-    const compiler_test_step = b.step("test-compiler", "Run compiler tests");
-    if (foundry_lib != null) {
-        compiler_test_step.dependOn(&run_compiler_tests.step);
-    }
 
-    // Main test step will be populated after all tests are defined
-    const test_step = b.step("test", "Run all tests (opcodes -> specs -> others)");
+    // Main test step runs tests in priority order: specs -> integration -> unit
+    const test_step = b.step("test", "Run all tests (specs -> integration -> unit)");
 
     // BN254 benchmarks
     const zbench_module = zbench_dep.module("zbench");
@@ -798,29 +795,71 @@ pub fn build(b: *std.Build) void {
         synthetic_step.dependOn(&run_synthetic_test.step);
     }
 
-    // Bun specs runner
+    // Zig specs runner (new default)
+    const specs_test = b.addTest(.{
+        .name = "ethereum-specs-test",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/specs/ethereum_specs_test.zig"),
+            .target = target,
+            .optimize = .Debug,
+        }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
+    });
+    specs_test.root_module.addImport("evm", modules.evm_mod);
+    specs_test.root_module.addImport("primitives", modules.primitives_mod);
+    specs_test.root_module.addImport("crypto", modules.crypto_mod);
+    specs_test.root_module.addImport("build_options", config.options_mod);
+    specs_test.linkLibrary(c_kzg_lib);
+    specs_test.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| specs_test.linkLibrary(bn254);
+    specs_test.linkLibC();
+    
+    // Apply test filter if specified
+    if (test_filter) |filter| {
+        specs_test.filters = &[_][]const u8{filter};
+    }
+    
+    const run_specs_test = b.addRunArtifact(specs_test);
+    
+    // Set MAX_SPEC_FILES environment variable
+    const spec_max_files = b.option([]const u8, "spec-max-files", "Maximum number of spec files to run (default: all)");
+    if (spec_max_files) |max_files| {
+        run_specs_test.setEnvironmentVariable("MAX_SPEC_FILES", max_files);
+    } else {
+        run_specs_test.setEnvironmentVariable("MAX_SPEC_FILES", "999999"); // Run all test files
+    }
+    
+    // Pass test filter as environment variable too
+    if (test_filter) |filter| {
+        run_specs_test.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+    
+    const specs_step = b.step("specs", "Run Ethereum execution spec tests (Zig version) - use -Dspec-max-files=N to limit, -Dtest-filter=pattern to filter");
+    specs_step.dependOn(&run_specs_test.step);
+    
+    // Bun specs runner (kept as alternative)
     const bun_check = b.addSystemCommand(&[_][]const u8{ "which", "bun" });
     bun_check.addCheck(.{ .expect_stdout_match = "bun" });
 
-    const run_specs = b.addSystemCommand(&[_][]const u8{ "bun", "test", "ethereum-specs.test.ts" });
-    run_specs.setCwd(b.path("specs/bun-runner"));
-    run_specs.step.dependOn(&bun_check.step);
+    const run_specs_bun = b.addSystemCommand(&[_][]const u8{ "bun", "test", "ethereum-specs.test.ts" });
+    run_specs_bun.setCwd(b.path("specs/bun-runner"));
+    run_specs_bun.step.dependOn(&bun_check.step);
 
-    // Set MAX_SPEC_FILES to run all tests by default
-    const spec_max_files = b.option([]const u8, "spec-max-files", "Maximum number of spec files to run (default: all)");
+    // Set MAX_SPEC_FILES to run all tests by default for Bun version
     if (spec_max_files) |max_files| {
-        run_specs.setEnvironmentVariable("MAX_SPEC_FILES", max_files);
+        run_specs_bun.setEnvironmentVariable("MAX_SPEC_FILES", max_files);
     } else {
-        run_specs.setEnvironmentVariable("MAX_SPEC_FILES", "999999"); // Run all test files
+        run_specs_bun.setEnvironmentVariable("MAX_SPEC_FILES", "999999"); // Run all test files
     }
 
     // Pass test filter to bun tests if specified
     if (test_filter) |filter| {
-        run_specs.setEnvironmentVariable("TEST_FILTER", filter);
+        run_specs_bun.setEnvironmentVariable("TEST_FILTER", filter);
     }
 
-    const specs_step = b.step("specs", "Run ALL Ethereum execution spec tests (use -Dspec-max-files=N to limit, -Dtest-filter=pattern to filter)");
-    specs_step.dependOn(&run_specs.step);
+    const specs_bun_step = b.step("specs-bun", "Run Ethereum execution spec tests (Bun/TypeScript version) - use -Dspec-max-files=N to limit, -Dtest-filter=pattern to filter");
+    specs_bun_step.dependOn(&run_specs_bun.step);
 
     // Language bindings
     _ = build_pkg.WasmBindings.createWasmSteps(b, optimize, config.options_mod);
@@ -905,18 +944,13 @@ pub fn build(b: *std.Build) void {
         test_fusions_step.dependOn(&run_fusions_diff_toggle.step);
     }
 
-    // Configure main test step dependencies in order:
-    // 1. First: Run opcode tests (most critical)
-    test_step.dependOn(opcode_tests_step);
-
-    // 2. Second: Run specs tests
+    // Configure main test step dependencies in priority order:
+    // 1. First: Run specs tests (Ethereum compliance)
     test_step.dependOn(specs_step);
 
-    // 3. Third: Run all other tests
-    test_step.dependOn(&run_lib_unit_tests.step);
+    // 2. Second: Run integration tests (test/**/*.zig)
     test_step.dependOn(&run_integration_tests.step);
-    test_step.dependOn(&run_root_tests.step);
-    if (foundry_lib != null) {
-        test_step.dependOn(&run_compiler_tests.step);
-    }
+
+    // 3. Third: Run unit tests (src/**/*.zig)
+    test_step.dependOn(&run_unit_tests.step);
 }
