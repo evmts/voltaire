@@ -9,16 +9,20 @@ The specs directory contains Ethereum execution specification tests to validate 
 ### Basic Commands
 
 ```bash
-# Quick test (100 files)
+# Run all spec tests (Zig implementation - default)
 zig build specs
 
-# Full test suite
-zig build specs -- -Dspec-max-files=10000
+# Run with Bun/TypeScript runner (alternative)
+zig build specs-bun
 
-# Isolated mode (safer, prevents crashes from affecting other tests)
-zig build specs -- -Dspec-isolated=true
+# Limit number of spec files
+zig build specs -Dspec-max-files=100
 
 # Filter tests by pattern
+zig build specs -Dtest-filter='add'
+
+# Legacy options still supported
+zig build specs -- -Dspec-isolated=true
 zig build specs -- -Dspec-pattern='add*.json'
 ```
 
@@ -63,6 +67,15 @@ zig build test-execution-spec-minimal-evm -Doptimize=Debug
 - **2124 tests passing**
 - **1043 tests failing**
 - **3167 total expect() calls**
+
+## Test Organization
+
+The specs tests are the **highest priority** in the test hierarchy:
+1. **Specs** - Ethereum protocol compliance (run first)
+2. **Integration** - Cross-module testing  
+3. **Unit** - Module-specific tests
+
+Run all tests in order: `zig build test`
 
 ## Working with Specs
 

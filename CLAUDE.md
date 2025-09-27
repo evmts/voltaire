@@ -176,8 +176,26 @@ const Contract = @import("../frame/contract.zig");
 
 ### Basic Commands
 - `zig build` - Build the project
-- `zig build test` - Run all tests
+- `zig build test` - Run all tests (specs → integration → unit)
+- `zig build specs` - Run Ethereum execution spec tests
+- `zig build test-integration` - Run integration tests from test/**/*.zig
+- `zig build test-unit` - Run unit tests from src/**/*.zig
+- `zig build test-lib` - Run library tests from lib/**/*.zig
 - `zig build test-opcodes` - Run opcode differential tests
+
+### Test Organization
+
+**Test Categories:**
+1. **Specs Tests** (`zig build specs`) - Ethereum execution spec compliance tests
+2. **Integration Tests** (`zig build test-integration`) - Cross-module testing, differential testing, fixtures
+3. **Unit Tests** (`zig build test-unit`) - Module-specific unit tests from src/
+4. **Library Tests** (`zig build test-lib`) - External library wrapper tests
+
+**Test Aggregator Files:**
+- `src/root.zig` - Aggregates all unit tests from src/**/*.zig
+- `test/root.zig` - Aggregates all integration tests from test/**/*.zig  
+- `lib/root.zig` - Aggregates all library tests from lib/**/*.zig
+- `test/specs/ethereum_specs_test.zig` - Ethereum spec test runner
 
 ### Test Filtering
 Use `-Dtest-filter='<pattern>'` to run specific tests:
@@ -186,10 +204,10 @@ Use `-Dtest-filter='<pattern>'` to run specific tests:
 zig build test-opcodes -Dtest-filter='ADD opcode'
 
 # Run tests matching a pattern
-zig build test -Dtest-filter='trace validation'
+zig build test-integration -Dtest-filter='trace validation'
 
-# Run multiple specific tests
-zig build test-opcodes -Dtest-filter='ADD' -Dtest-filter='SUB'
+# Filter unit tests
+zig build test-unit -Dtest-filter='stack'
 ```
 
 ### Other Test Commands
@@ -382,7 +400,11 @@ Required for: creating, commenting, closing, updating issues and all GitHub API 
 Usage: `zig build [steps] [options]`
 
 Key Steps:
-  test                         Run all tests
+  test                         Run all tests (specs -> integration -> unit)
+  specs                        Run Ethereum execution spec tests
+  test-integration             Run integration tests from test/**/*.zig
+  test-unit                    Run unit tests from src/**/*.zig
+  test-lib                     Run library tests from lib/**/*.zig
   test-opcodes                 Run all per-opcode differential tests
   test-snailtracer             Run snailtracer differential test
   test-synthetic               Test synthetic opcodes
