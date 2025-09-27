@@ -28,24 +28,46 @@ pub fn Handlers(FrameType: type) type {
         }
 
         /// PUSH_ADD_INLINE - Fused PUSH+ADD with inline value (≤8 bytes).
-        /// Pushes a value and immediately adds it to the top of stack.
+        /// If stack is empty, just pushes the value.
+        /// If stack has items, adds the value to the top of stack.
         pub fn push_add_inline(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
             self.beforeInstruction(.PUSH_ADD_INLINE, cursor);
-            validate_stack(self);
             const op_data = dispatch_opcode_data.getOpData(.PUSH_ADD_INLINE, Dispatch, Dispatch.Item, cursor);
-            self.stack.set_top_unsafe(op_data.metadata.value +% self.stack.peek_unsafe());
+
+            if (self.stack.size() == 0) {
+                // Stack is empty - just push the value
+                {
+                    (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Push requires stack space");
+                }
+                self.stack.push_unsafe(op_data.metadata.value);
+            } else {
+                // Stack has items - add to top
+                validate_stack(self);
+                self.stack.set_top_unsafe(op_data.metadata.value +% self.stack.peek_unsafe());
+            }
             return next_instruction(self, cursor, .PUSH_ADD_INLINE);
         }
 
         /// PUSH_ADD_POINTER - Fused PUSH+ADD with pointer value (>8 bytes).
+        /// If stack is empty, just pushes the value.
+        /// If stack has items, adds the value to the top of stack.
         pub fn push_add_pointer(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.PUSH_ADD_POINTER, cursor);
-            validate_stack(self);
-
             const op_data = dispatch_opcode_data.getOpData(.PUSH_ADD_POINTER, Dispatch, Dispatch.Item, cursor);
-            const top = self.stack.peek_unsafe();
-            self.stack.set_top_unsafe(op_data.metadata.value_ptr.* +% top);
+
+            if (self.stack.size() == 0) {
+                // Stack is empty - just push the value
+                {
+                    (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Push requires stack space");
+                }
+                self.stack.push_unsafe(op_data.metadata.value_ptr.*);
+            } else {
+                // Stack has items - add to top
+                validate_stack(self);
+                const top = self.stack.peek_unsafe();
+                self.stack.set_top_unsafe(op_data.metadata.value_ptr.* +% top);
+            }
 
             return next_instruction(self, cursor, .PUSH_ADD_POINTER);
         }

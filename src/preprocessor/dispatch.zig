@@ -290,8 +290,13 @@ pub fn Preprocessor(FrameType: type) type {
                     tracerAssert(frame, frame.stack.size() >= 1, "Unary op: stack underflow, requires 1 item");
                 },
 
-                // Synthetic arithmetic opcodes with inline metadata (require 1 stack item)
-                .PUSH_ADD_INLINE, .PUSH_MUL_INLINE, .PUSH_DIV_INLINE, .PUSH_SUB_INLINE, .PUSH_AND_INLINE, .PUSH_OR_INLINE, .PUSH_XOR_INLINE => {
+                // Synthetic arithmetic opcodes with inline metadata
+                // PUSH_ADD_INLINE can work with empty stack (just pushes), others require 1 item
+                .PUSH_ADD_INLINE => {
+                    tracerAssert(frame, self.cursor[1] == .push_inline, "Invalid metadata for synthetic opcode: expected push_inline");
+                    // PUSH_ADD_INLINE handles empty stack case internally
+                },
+                .PUSH_MUL_INLINE, .PUSH_DIV_INLINE, .PUSH_SUB_INLINE, .PUSH_AND_INLINE, .PUSH_OR_INLINE, .PUSH_XOR_INLINE => {
                     tracerAssert(frame, self.cursor[1] == .push_inline, "Invalid metadata for synthetic opcode: expected push_inline");
                     tracerAssert(frame, frame.stack.size() >= 1, "Stack underflow for synthetic opcode: requires 1 item");
                 },
@@ -308,8 +313,13 @@ pub fn Preprocessor(FrameType: type) type {
                     tracerAssert(frame, frame.stack.size() >= 1, "Stack underflow for synthetic store opcode: requires 1 item");
                 },
 
-                // Synthetic arithmetic opcodes with pointer metadata (require 1 stack item)
-                .PUSH_ADD_POINTER, .PUSH_MUL_POINTER, .PUSH_DIV_POINTER, .PUSH_SUB_POINTER, .PUSH_AND_POINTER, .PUSH_OR_POINTER, .PUSH_XOR_POINTER => {
+                // Synthetic arithmetic opcodes with pointer metadata
+                // PUSH_ADD_POINTER can work with empty stack (just pushes), others require 1 item
+                .PUSH_ADD_POINTER => {
+                    tracerAssert(frame, self.cursor[1] == .push_pointer, "Invalid metadata for synthetic opcode: expected push_pointer");
+                    // PUSH_ADD_POINTER handles empty stack case internally
+                },
+                .PUSH_MUL_POINTER, .PUSH_DIV_POINTER, .PUSH_SUB_POINTER, .PUSH_AND_POINTER, .PUSH_OR_POINTER, .PUSH_XOR_POINTER => {
                     tracerAssert(frame, self.cursor[1] == .push_pointer, "Invalid metadata for synthetic opcode: expected push_pointer");
                     tracerAssert(frame, frame.stack.size() >= 1, "Stack underflow for synthetic opcode: requires 1 item");
                 },

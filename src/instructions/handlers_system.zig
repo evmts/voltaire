@@ -514,6 +514,13 @@ pub fn Handlers(FrameType: type) type {
 
             // Ensure memory capacity
             const memory_end = offset_usize + size_usize;
+            // Check if offset, size, and memory_end fit in u24 (memory limit)
+            if (offset_usize > std.math.maxInt(u24) or size_usize > std.math.maxInt(u24) or memory_end > std.math.maxInt(u24)) {
+                self.stack.push_unsafe(0);
+                const op_data = dispatch.getOpData(.CREATE);
+                self.afterInstruction(.CREATE, op_data.next_handler, op_data.next_cursor.cursor);
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            }
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE);
@@ -600,6 +607,13 @@ pub fn Handlers(FrameType: type) type {
 
             // Ensure memory capacity
             const memory_end = offset_usize + size_usize;
+            // Check if offset, size, and memory_end fit in u24 (memory limit)
+            if (offset_usize > std.math.maxInt(u24) or size_usize > std.math.maxInt(u24) or memory_end > std.math.maxInt(u24)) {
+                self.stack.push_unsafe(0);
+                const op_data = dispatch.getOpData(.CREATE2);
+                self.afterInstruction(.CREATE2, op_data.next_handler, op_data.next_cursor.cursor);
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            }
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch {
                 self.stack.push_unsafe(0);
                 const op_data = dispatch.getOpData(.CREATE2);
@@ -686,6 +700,10 @@ pub fn Handlers(FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_end = offset_usize + size_usize;
+            // Check if values fit in u24 (memory limit)
+            if (offset_usize > std.math.maxInt(u24) or size_usize > std.math.maxInt(u24) or memory_end > std.math.maxInt(u24)) {
+                return Error.OutOfBounds;
+            }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(memory_end)));
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(memory_expansion_cost);
@@ -693,7 +711,7 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Ensure memory capacity
+            // Ensure memory capacity (memory_end is guaranteed to fit in u24 from check above)
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
             // Extract return data from memory and store it in thread-local storage
@@ -739,6 +757,10 @@ pub fn Handlers(FrameType: type) type {
 
             // Calculate gas cost for memory expansion
             const memory_end = offset_usize + size_usize;
+            // Check if values fit in u24 (memory limit)
+            if (offset_usize > std.math.maxInt(u24) or size_usize > std.math.maxInt(u24) or memory_end > std.math.maxInt(u24)) {
+                return Error.OutOfBounds;
+            }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(memory_end)));
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @intCast(memory_expansion_cost);
@@ -746,7 +768,7 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Ensure memory capacity
+            // Ensure memory capacity (memory_end is guaranteed to fit in u24 from check above)
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch return Error.OutOfBounds;
 
             // Extract revert data from memory and store it in thread-local storage
