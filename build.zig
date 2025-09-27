@@ -189,8 +189,12 @@ pub fn build(b: *std.Build) void {
     const static_lib_step = b.step("static", "Build static library for FFI");
     static_lib_step.dependOn(&b.addInstallArtifact(static_lib, .{}).step);
 
-    // Test filtering support
+    // Test configuration options
     const test_filter = b.option([]const u8, "test-filter", "Filter tests by pattern (applies to all test types)");
+    const test_verbose = b.option(bool, "test-verbose", "Enable verbose test output") orelse false;
+    const test_fail_fast = b.option(bool, "test-fail-fast", "Stop on first test failure") orelse false;
+    const test_no_color = b.option(bool, "test-no-color", "Disable colored output") orelse false;
+    const test_quiet = b.option(bool, "test-quiet", "Minimal output (dots only)") orelse false;
 
     // Unit tests from src/root.zig (same as evm_mod, just run its tests)
     const unit_tests = b.addTest(.{
@@ -198,11 +202,20 @@ pub fn build(b: *std.Build) void {
         .root_module = modules.evm_mod,
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
+        .test_runner = .{ .src_path = b.path("test_runner.zig") },
     });
     if (test_filter) |filter| {
         unit_tests.filters = &[_][]const u8{filter};
     }
     const run_unit_tests = b.addRunArtifact(unit_tests);
+    // Pass test configuration as environment variables for the custom runner
+    if (test_filter) |filter| {
+        run_unit_tests.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+    if (test_verbose) run_unit_tests.setEnvironmentVariable("TEST_VERBOSE", "1");
+    if (test_fail_fast) run_unit_tests.setEnvironmentVariable("TEST_FAIL_FAST", "1");
+    if (test_no_color) run_unit_tests.setEnvironmentVariable("TEST_NO_COLOR", "1");
+    if (test_quiet) run_unit_tests.setEnvironmentVariable("TEST_QUIET", "1");
     const unit_test_step = b.step("test-unit", "Run unit tests from src/**/*.zig");
     unit_test_step.dependOn(&run_unit_tests.step);
 
@@ -216,6 +229,7 @@ pub fn build(b: *std.Build) void {
         }),
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
+        .test_runner = .{ .src_path = b.path("test_runner.zig") },
     });
     if (foundry_lib) |foundry| {
         lib_tests.linkLibrary(foundry);
@@ -229,6 +243,14 @@ pub fn build(b: *std.Build) void {
         lib_tests.filters = &[_][]const u8{filter};
     }
     const run_lib_tests = b.addRunArtifact(lib_tests);
+    // Pass test configuration as environment variables for the custom runner
+    if (test_filter) |filter| {
+        run_lib_tests.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+    if (test_verbose) run_lib_tests.setEnvironmentVariable("TEST_VERBOSE", "1");
+    if (test_fail_fast) run_lib_tests.setEnvironmentVariable("TEST_FAIL_FAST", "1");
+    if (test_no_color) run_lib_tests.setEnvironmentVariable("TEST_NO_COLOR", "1");
+    if (test_quiet) run_lib_tests.setEnvironmentVariable("TEST_QUIET", "1");
     const lib_test_step = b.step("test-lib", "Run library tests from lib/**/*.zig");
     lib_test_step.dependOn(&run_lib_tests.step);
 
@@ -242,6 +264,7 @@ pub fn build(b: *std.Build) void {
         }),
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
+        .test_runner = .{ .src_path = b.path("test_runner.zig") },
     });
     integration_tests.root_module.addImport("evm", modules.evm_mod);
     integration_tests.root_module.addImport("primitives", modules.primitives_mod);
@@ -258,6 +281,14 @@ pub fn build(b: *std.Build) void {
         integration_tests.filters = &[_][]const u8{filter};
     }
     const run_integration_tests = b.addRunArtifact(integration_tests);
+    // Pass test configuration as environment variables for the custom runner
+    if (test_filter) |filter| {
+        run_integration_tests.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+    if (test_verbose) run_integration_tests.setEnvironmentVariable("TEST_VERBOSE", "1");
+    if (test_fail_fast) run_integration_tests.setEnvironmentVariable("TEST_FAIL_FAST", "1");
+    if (test_no_color) run_integration_tests.setEnvironmentVariable("TEST_NO_COLOR", "1");
+    if (test_quiet) run_integration_tests.setEnvironmentVariable("TEST_QUIET", "1");
     const integration_test_step = b.step("test-integration", "Run integration tests from test/**/*.zig");
     integration_test_step.dependOn(&run_integration_tests.step);
 
