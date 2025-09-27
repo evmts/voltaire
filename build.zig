@@ -189,16 +189,25 @@ pub fn build(b: *std.Build) void {
     const static_lib_step = b.step("static", "Build static library for FFI");
     static_lib_step.dependOn(&b.addInstallArtifact(static_lib, .{}).step);
 
+    // Test filtering support
+    const test_filter = b.option([]const u8, "test-filter", "Filter tests by pattern (applies to all test types)");
+
     // Tests
     const tests_pkg = build_pkg.Tests;
-    const lib_unit_tests = b.addTest(.{ 
+    const lib_unit_tests = b.addTest(.{
         .root_module = modules.lib_mod,
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
     });
+    if (test_filter) |filter| {
+        lib_unit_tests.filters = &[_][]const u8{filter};
+    }
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
     const integration_tests = tests_pkg.createIntegrationTests(b, target, optimize, modules, bn254_lib, c_kzg_lib, blst_lib);
+    if (test_filter) |filter| {
+        integration_tests.filters = &[_][]const u8{filter};
+    }
     const run_integration_tests = b.addRunArtifact(integration_tests);
 
     // Add test/root.zig tests
@@ -223,6 +232,9 @@ pub fn build(b: *std.Build) void {
     root_tests.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| root_tests.linkLibrary(bn254);
     root_tests.linkLibC();
+    if (test_filter) |filter| {
+        root_tests.filters = &[_][]const u8{filter};
+    }
     const run_root_tests = b.addRunArtifact(root_tests);
 
     // Compiler tests
@@ -243,6 +255,9 @@ pub fn build(b: *std.Build) void {
         compiler_tests.addIncludePath(b.path("lib/foundry-compilers"));
         compiler_tests.linkLibC();
     }
+    if (test_filter) |filter| {
+        compiler_tests.filters = &[_][]const u8{filter};
+    }
     const run_compiler_tests = b.addRunArtifact(compiler_tests);
 
     // Add a dedicated compiler test step
@@ -251,13 +266,8 @@ pub fn build(b: *std.Build) void {
         compiler_test_step.dependOn(&run_compiler_tests.step);
     }
 
-    const test_step = b.step("test", "Run all tests");
-    test_step.dependOn(&run_lib_unit_tests.step);
-    test_step.dependOn(&run_integration_tests.step);
-    test_step.dependOn(&run_root_tests.step);
-    if (foundry_lib != null) {
-        test_step.dependOn(&run_compiler_tests.step);
-    }
+    // Main test step will be populated after all tests are defined
+    const test_step = b.step("test", "Run all tests (opcodes -> specs -> others)");
 
     // BN254 benchmarks
     const zbench_module = zbench_dep.module("zbench");
@@ -539,15 +549,19 @@ pub fn build(b: *std.Build) void {
                 // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
                 .use_llvm = true,
             });
+            // Apply test filter if specified
+            if (test_filter) |filter| {
+                t.filters = &[_][]const u8{filter};
+            }
             // Inject module dependencies used by the differential harness
             t.root_module.addImport("evm", modules.evm_mod);
             t.root_module.addImport("primitives", modules.primitives_mod);
             t.root_module.addImport("crypto", modules.crypto_mod);
             t.root_module.addImport("build_options", config.options_mod);
-            t.root_module.addImport("log", b.createModule(.{ 
-                .root_source_file = b.path("src/log.zig"), 
-                .target = target, 
-                .optimize = .Debug, 
+            t.root_module.addImport("log", b.createModule(.{
+                .root_source_file = b.path("src/log.zig"),
+                .target = target,
+                .optimize = .Debug,
             }));
 
             // Link external libs
@@ -800,7 +814,12 @@ pub fn build(b: *std.Build) void {
         run_specs.setEnvironmentVariable("MAX_SPEC_FILES", "999999"); // Run all test files
     }
 
-    const specs_step = b.step("specs", "Run ALL Ethereum execution spec tests (use -Dspec-max-files=N to limit)");
+    // Pass test filter to bun tests if specified
+    if (test_filter) |filter| {
+        run_specs.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+
+    const specs_step = b.step("specs", "Run ALL Ethereum execution spec tests (use -Dspec-max-files=N to limit, -Dtest-filter=pattern to filter)");
     specs_step.dependOn(&run_specs.step);
 
     // Language bindings
@@ -884,5 +903,20 @@ pub fn build(b: *std.Build) void {
         test_fusions_step.dependOn(&run_fusions_basic.step);
         test_fusions_step.dependOn(&run_fusions_dispatch.step);
         test_fusions_step.dependOn(&run_fusions_diff_toggle.step);
+    }
+
+    // Configure main test step dependencies in order:
+    // 1. First: Run opcode tests (most critical)
+    test_step.dependOn(opcode_tests_step);
+
+    // 2. Second: Run specs tests
+    test_step.dependOn(specs_step);
+
+    // 3. Third: Run all other tests
+    test_step.dependOn(&run_lib_unit_tests.step);
+    test_step.dependOn(&run_integration_tests.step);
+    test_step.dependOn(&run_root_tests.step);
+    if (foundry_lib != null) {
+        test_step.dependOn(&run_compiler_tests.step);
     }
 }

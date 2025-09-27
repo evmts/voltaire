@@ -15,6 +15,7 @@ import {
 const SPECS_DIR = join(import.meta.dir, "../execution-specs/tests");
 const MAX_FILES = parseInt(process.env.MAX_SPEC_FILES || "100");
 const PATTERN = process.env.SPEC_PATTERN || "*.json";
+const TEST_FILTER = process.env.TEST_FILTER;  // Optional test name filter
 
 interface TestCase {
   _info?: {
@@ -180,7 +181,12 @@ for (const [category, files] of categories) {
         // Create a test for each test case in the file
         for (const [testName, testCase] of Object.entries(testData)) {
           if (typeof testCase !== "object" || !testCase) continue;
-          
+
+          // Skip test if it doesn't match the filter
+          if (TEST_FILTER && !testName.includes(TEST_FILTER) && !fileName.includes(TEST_FILTER) && !category.includes(TEST_FILTER)) {
+            continue;
+          }
+
           test(testName, () => {
             // Skip if assembly code
             if (testCase.pre) {
