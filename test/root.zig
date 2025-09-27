@@ -1,5 +1,6 @@
-// Root test file that imports all tests in the test directory
-// This allows build.zig to run all tests with a single test target
+// Integration test aggregator
+// This file imports all integration tests from the test directory
+// Unit tests are now in src/root.zig, library tests in lib/root.zig
 
 const std = @import("std");
 
@@ -9,10 +10,12 @@ pub const std_options = std.Options{
 };
 
 test {
+    // Integration tests - testing EVM behavior with fixtures and differential testing
+    
     // Test snailtracer first
     _ = @import("evm/snailtracer_test.zig");
     
-    // Minimal EVM
+    // Minimal EVM differential test
     _ = @import("minimal_evm_revm_differential_test.zig");
 
     // Differential tests - gradually re-enabling
@@ -104,7 +107,7 @@ test {
     _ = @import("evm/selfdestruct_records_test.zig");
     _ = @import("evm/allocation_failure_snapshot_test.zig");
     
-    // Opcode differential tests
+    // Opcode differential tests (integration tests comparing implementations)
     _ = @import("evm/opcodes/all_opcodes.zig");
     
     // Trace validation tests
