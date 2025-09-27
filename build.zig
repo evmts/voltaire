@@ -953,4 +953,7 @@ pub fn build(b: *std.Build) void {
 
     // 3. Third: Run unit tests (src/**/*.zig)
     test_step.dependOn(&run_unit_tests.step);
+
+    // 4. Fourth: Run library tests (lib/**/*.zig)
+    test_step.dependOn(&run_lib_tests.step);
 }
