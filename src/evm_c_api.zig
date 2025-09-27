@@ -3,6 +3,11 @@
 
 const std = @import("std");
 const evm = @import("evm");
+
+// Global log configuration - suppress debug logs
+pub const std_options: std.Options = .{
+    .log_level = .warn,
+};
 const primitives = @import("primitives");
 const bytecode_c = @import("bytecode/bytecode_c.zig");
 const log = std.log.scoped(.c_api);

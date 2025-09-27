@@ -8,12 +8,11 @@ const builtin = @import("builtin");
 /// Provides debug, error, and warning logging with EVM2-specific prefixing.
 /// Debug logs are optimized away in release builds for performance.
 /// Debug log for development and troubleshooting
-/// Compile-time no-op in ReleaseFast/ReleaseSmall for performance
+/// Respects std_options.log_level from root module
 pub fn debug(comptime format: []const u8, args: anytype) void {
-    if (comptime (builtin.mode == .Debug or builtin.mode == .ReleaseSafe)) {
-        if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-            std.log.debug("[EVM2] " ++ format, args);
-        }
+    // Check runtime log level from std_options
+    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+        std.log.debug("[EVM2] " ++ format, args);
     }
 }
 

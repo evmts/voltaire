@@ -34,18 +34,13 @@ pub fn Handlers(FrameType: type) type {
             @branchHint(.likely);
             self.beforeInstruction(.PUSH_ADD_INLINE, cursor);
             const op_data = dispatch_opcode_data.getOpData(.PUSH_ADD_INLINE, Dispatch, Dispatch.Item, cursor);
-
-            if (self.stack.size() == 0) {
-                // Stack is empty - just push the value
-                {
-                    (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Push requires stack space");
-                }
-                self.stack.push_unsafe(op_data.metadata.value);
-            } else {
-                // Stack has items - add to top
-                validate_stack(self);
-                self.stack.set_top_unsafe(op_data.metadata.value +% self.stack.peek_unsafe());
+            {
+                (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "Push requires stack space. An error here indicates a bug in either the JumpDest logic, analysis, or BeginBlock where the stack check should have happened");
+                (&self.getEvm().tracer).assert(self.stack.size() >= 1, "Push requires at least 1 item. An error here indicates a bug in either the JumpDest logic, analysis, or BeginBlock where the stack check should have happened");
             }
+            // Stack has items - add to top
+            validate_stack(self);
+            self.stack.set_top_unsafe(op_data.metadata.value +% self.stack.peek_unsafe());
             return next_instruction(self, cursor, .PUSH_ADD_INLINE);
         }
 
