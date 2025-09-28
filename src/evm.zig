@@ -1375,7 +1375,7 @@ pub fn Evm(config: EvmConfig) type {
                         @memcpy(buf, output_data);
                         break :blk buf;
                     } else &[_]u8{};
-                    var result = CallResult.revert_with_data(self.allocator, gas_left, out_copy) catch unreachable;
+                    var result = CallResult.revert_with_data(self.getCallArenaAllocator(), gas_left, out_copy) catch unreachable;
                     result.trace = execution_trace;
                     return result;
                 },
