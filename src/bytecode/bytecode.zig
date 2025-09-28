@@ -369,8 +369,8 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
             if (code.len >= 4) { // Minimal length for metadata to be present.
                 const metadata_len = std.mem.readInt(u16, code[code.len - 2 ..][0..2], .big);
 
-                if (metadata_len > 0 and metadata_len + 2 <= code.len) {
-                    const metadata_start_idx = code.len - metadata_len - 2;
+                if (metadata_len > 0 and @as(usize, metadata_len) + 2 <= code.len) {
+                    const metadata_start_idx = code.len - @as(usize, metadata_len) - 2;
                     const metadata_slice = code[metadata_start_idx .. code.len - 2];
 
                     // A valid metadata block is a CBOR map. We check for common Solidity patterns for robustness.
