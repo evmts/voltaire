@@ -27,6 +27,13 @@ pub fn Handlers(FrameType: type) type {
             // Get jump table from frame
             const jump_table = self.jump_table;
 
+            // Check stack has at least 1 item for JUMP
+            if (self.stack.size() < 1) {
+                log.warn("JUMP: Stack underflow, requires 1 item", .{});
+                self.afterComplete(.JUMP);
+                return Error.StackUnderflow;
+            }
+
             const dest = self.stack.pop_unsafe();
 
             // Validate jump destination range
@@ -85,6 +92,13 @@ pub fn Handlers(FrameType: type) type {
         pub fn jumpi(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.JUMPI, cursor);
             const jump_table = self.jump_table;
+
+            // Check stack has at least 2 items for JUMPI
+            if (self.stack.size() < 2) {
+                log.warn("JUMPI: Stack underflow, requires 2 items", .{});
+                self.afterComplete(.JUMPI);
+                return Error.StackUnderflow;
+            }
 
             const dest = self.stack.pop_unsafe();
             const condition = self.stack.pop_unsafe();

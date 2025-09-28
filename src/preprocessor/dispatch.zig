@@ -134,10 +134,10 @@ pub fn Preprocessor(FrameType: type) type {
 
                 // Jump operations
                 .JUMP => {
-                    tracerAssert(frame, frame.stack.size() >= 1, "JUMP: stack underflow, requires 1 item");
+                    // Stack validation moved to handler to return proper error instead of asserting
                 },
                 .JUMPI => {
-                    tracerAssert(frame, frame.stack.size() >= 2, "JUMPI: stack underflow, requires 2 items");
+                    // Stack validation moved to handler to return proper error instead of asserting
                 },
 
                 // Static jump operations with jump_static metadata
@@ -865,11 +865,17 @@ pub fn Preprocessor(FrameType: type) type {
             // For memory operations with known offsets, we can calculate expansion cost statically
             if (value <= std.math.maxInt(usize)) {
                 const offset_usize = @as(usize, @intCast(value));
-                const size_needed = switch (fusion_type) {
-                    .push_mload, .push_mstore => offset_usize + 32,
-                    .push_mstore8 => offset_usize + 1,
+                // Check for overflow before addition
+                const add_amount: usize = switch (fusion_type) {
+                    .push_mload, .push_mstore => 32,
+                    .push_mstore8 => 1,
                     else => unreachable,
                 };
+                if (offset_usize > std.math.maxInt(usize) - add_amount) {
+                    // Overflow would occur, skip fusion optimization
+                    return;
+                }
+                const size_needed = offset_usize + add_amount;
 
                 // Calculate memory expansion cost statically
                 // Memory cost = 3 * words + words^2 / 512
