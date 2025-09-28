@@ -294,6 +294,19 @@ pub const Database = struct {
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
         // log.debug("set_code: Storing code with len={} and hash {x}", .{code.len, hash});
 
+        // Check if code with this hash already exists to avoid memory leak
+        if (self.overlay_active) {
+            if (self.overlay_code.get(hash)) |_| {
+                // Code already exists, no need to store again
+                return hash;
+            }
+        } else {
+            if (self.code_storage.get(hash)) |_| {
+                // Code already exists, no need to store again
+                return hash;
+            }
+        }
+
         // Make a copy of the code to own it
         const code_copy = self.allocator.alloc(u8, code.len) catch return Error.OutOfMemory;
         @memcpy(code_copy, code);
