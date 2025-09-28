@@ -73,11 +73,11 @@ pub fn CallResult(config: anytype) type {
             return Self{
                 .success = false,
                 .gas_left = gas_left,
-                .output = try allocator.dupe(u8, revert_data),
-                .logs = try allocator.alloc(Log, 0),
-                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
-                .accessed_addresses = try allocator.alloc(Address, 0),
-                .accessed_storage = try allocator.alloc(StorageAccess, 0),
+                .output = if (revert_data.len > 0) try allocator.dupe(u8, revert_data) else &.{},
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
                 .error_info = null,
             };
         }
