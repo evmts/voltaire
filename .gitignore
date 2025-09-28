@@ -154,7 +154,6 @@ bench/official/orchestrator
 bench/official/evms/zig/bin/
 bench/official/diff_output/
 diff_output/
-test_traces/
 
 # Test trace files
 trace_*.json
@@ -182,10 +181,6 @@ apps/cli/guil
 EVM2_Performance_Report.md
 *-comparison.md
 
-# Test files and debug artifacts in root directory
-test_*
-/test_*
-
 # Swift build artifacts
 **/.build/
 
@@ -198,7 +193,6 @@ bun.lock
 **/src/test/
 
 # Compiled binaries without extensions (common in development)
-test_benchmark_debug
 guillotine-cli
 test_hyperfine
 
