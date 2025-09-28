@@ -218,6 +218,15 @@ pub fn Evm(config: EvmConfig) type {
             self.created_contracts.deinit();
             self.self_destruct.deinit();
             self.access_list.deinit();
+            // Free individual log entries before deinit
+            for (self.logs.items) |log_entry| {
+                if (log_entry.topics.len > 0) {
+                    self.allocator.free(log_entry.topics);
+                }
+                if (log_entry.data.len > 0) {
+                    self.allocator.free(log_entry.data);
+                }
+            }
             self.logs.deinit(self.allocator);
             self.touched_addresses.deinit();
             // Clean up touched_storage
@@ -392,6 +401,15 @@ pub fn Evm(config: EvmConfig) type {
                 // Reset gas refund counter
                 self.gas_refund_counter = 0;
                 // Clear logs from previous transaction
+                // Free individual log entries before clearing the list
+                for (self.logs.items) |log_entry| {
+                    if (log_entry.topics.len > 0) {
+                        self.allocator.free(log_entry.topics);
+                    }
+                    if (log_entry.data.len > 0) {
+                        self.allocator.free(log_entry.data);
+                    }
+                }
                 // Clear logs while maintaining allocator reference
                 self.logs.clearRetainingCapacity();
                 // Clear created contracts tracking (EIP-6780)
@@ -593,14 +611,14 @@ pub fn Evm(config: EvmConfig) type {
             }
 
             // Extract access list data before clearing
-            result.accessed_addresses = self.allocator.dupe(primitives.Address, self.access_list.addresses.keys()) catch {
+            result.accessed_addresses = self.getCallArenaAllocator().dupe(primitives.Address, self.access_list.addresses.keys()) catch {
                 log.debug("Out of memory allocating accessed_addresses", .{});
                 return CallResult.failure(0);
             };
 
             // Convert StorageKey to StorageAccess (same fields, different type)
             const storage_keys = self.access_list.storage_slots.keys();
-            const storage_access = self.allocator.alloc(call_result_module.StorageAccess, storage_keys.len) catch {
+            const storage_access = self.getCallArenaAllocator().alloc(call_result_module.StorageAccess, storage_keys.len) catch {
                 log.debug("Out of memory allocating storage_access", .{});
                 return CallResult.failure(0);
             };
@@ -691,7 +709,7 @@ pub fn Evm(config: EvmConfig) type {
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
                     // Handle allocation errors by reverting snapshot and returning failure
-                    const out = self.allocator.alloc(u8, result.output.len) catch {
+                    const out = self.getCallArenaAllocator().alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
                         return PreflightResult{ .precompile_result = CallResult.failure(0) };
                     };
@@ -721,7 +739,7 @@ pub fn Evm(config: EvmConfig) type {
                 // Allocate output that persists beyond this function
                 const output = if (result.output.len > 0) output: {
                     // Handle allocation errors by reverting snapshot and returning failure
-                    const out = self.allocator.alloc(u8, result.output.len) catch {
+                    const out = self.getCallArenaAllocator().alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
                         return PreflightResult{ .precompile_result = CallResult.failure(0) };
                     };
@@ -1309,8 +1327,7 @@ pub fn Evm(config: EvmConfig) type {
                     // Get output from frame
                     const output_data = frame.output_data;
                     const out_copy = if (output_data.len > 0) blk: {
-                        // Handle allocation errors by reverting snapshot and returning failure
-                        const buf = try self.allocator.alloc(u8, output_data.len);
+                        const buf = try self.getCallArenaAllocator().alloc(u8, output_data.len);
                         @memcpy(buf, output_data);
                         break :blk buf;
                     } else &[_]u8{};
@@ -1338,8 +1355,8 @@ pub fn Evm(config: EvmConfig) type {
             // Get output from frame (set by RETURN/REVERT handlers)
             const output_data = frame.output_data;
             const out_buf = if (output_data.len > 0) blk: {
-                // Handle allocation errors by reverting and returning appropriate error
-                const b = try self.allocator.alloc(u8, output_data.len);
+                // Must use main allocator since this is stored in self.return_data
+                const b = try self.getCallArenaAllocator().alloc(u8, output_data.len);
                 @memcpy(b, output_data);
                 break :blk b;
             } else &.{};
@@ -1409,7 +1426,7 @@ pub fn Evm(config: EvmConfig) type {
             const precompile_id = address.bytes[19];
             if (precompile_id < 1 or precompile_id > 10) return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
 
-            const result = precompiles.execute_precompile(self.allocator, address, input, gas) catch {
+            const result = precompiles.execute_precompile(self.getCallArenaAllocator(), address, input, gas) catch {
                 return CallResult{
                     .success = false,
                     .gas_left = 0,
@@ -1417,9 +1434,10 @@ pub fn Evm(config: EvmConfig) type {
                 };
             };
 
-            const out_slice = result.output;
-            if (result.success) return CallResult{ .success = true, .gas_left = gas - result.gas_used, .output = out_slice };
-            return CallResult{ .success = false, .gas_left = 0, .output = out_slice };
+            // The precompile allocated the output, so we own it and pass ownership to the CallResult
+            // The CallResult.deinit() method will free this memory
+            if (result.success) return CallResult{ .success = true, .gas_left = gas - result.gas_used, .output = result.output };
+            return CallResult{ .success = false, .gas_left = 0, .output = result.output };
         }
 
         /// Get account balance
@@ -1449,8 +1467,8 @@ pub fn Evm(config: EvmConfig) type {
             if (!eips.Eips.is_log_emission_allowed(self.is_static_context())) return;
 
             // Handle allocation errors by reverting and returning appropriate error
-            const topics_copy = self.allocator.dupe(u256, topics) catch return;
-            const data_copy = self.allocator.dupe(u8, data) catch return;
+            const topics_copy = self.getCallArenaAllocator().dupe(u256, topics) catch return;
+            const data_copy = self.getCallArenaAllocator().dupe(u8, data) catch return;
 
             self.logs.append(self.allocator, @import("frame/call_result.zig").Log{
                 .address = contract_address,

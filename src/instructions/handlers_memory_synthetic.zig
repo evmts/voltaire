@@ -35,7 +35,12 @@ pub fn Handlers(FrameType: type) type {
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Read 32 bytes from memory
-            const value_u256 = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            // Use std.math.cast to safely convert to u24, returns null if out of bounds
+            const offset_u24 = std.math.cast(u24, offset_usize) orelse {
+                self.afterComplete(.PUSH_MLOAD_INLINE);
+                return Error.OutOfBounds;
+            };
+            const value_u256 = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), offset_u24) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MLOAD_INLINE);
                     return Error.OutOfBounds;
@@ -81,7 +86,12 @@ pub fn Handlers(FrameType: type) type {
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
             // Read 32 bytes from memory
-            const value_u256 = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize))) catch |err| switch (err) {
+            // Use std.math.cast to safely convert to u24, returns null if out of bounds
+            const offset_u24 = std.math.cast(u24, offset_usize) orelse {
+                self.afterComplete(.PUSH_MLOAD_POINTER);
+                return Error.OutOfBounds;
+            };
+            const value_u256 = self.memory.get_u256_evm(self.getEvm().getCallArenaAllocator(), offset_u24) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MLOAD_POINTER);
                     return Error.OutOfBounds;
@@ -135,7 +145,12 @@ pub fn Handlers(FrameType: type) type {
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            // Use std.math.cast to safely convert to u24, returns null if out of bounds
+            const offset_u24 = std.math.cast(u24, offset_usize) orelse {
+                self.afterComplete(.PUSH_MSTORE_INLINE);
+                return Error.OutOfBounds;
+            };
+            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), offset_u24, value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MSTORE_INLINE);
                     return Error.OutOfBounds;
@@ -182,7 +197,12 @@ pub fn Handlers(FrameType: type) type {
 
             // Store 32 bytes to memory
             const value_u256 = @as(u256, value);
-            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(offset_usize)), value_u256) catch |err| switch (err) {
+            // Use std.math.cast to safely convert to u24, returns null if out of bounds
+            const offset_u24 = std.math.cast(u24, offset_usize) orelse {
+                self.afterComplete(.PUSH_MSTORE_POINTER);
+                return Error.OutOfBounds;
+            };
+            self.memory.set_u256_evm(self.getEvm().getCallArenaAllocator(), offset_u24, value_u256) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => {
                     self.afterComplete(.PUSH_MSTORE_POINTER);
                     return Error.OutOfBounds;
@@ -225,6 +245,12 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
+
+            // Check if offset fits in u24
+            if (offset_usize > std.math.maxInt(u24)) {
+                self.afterComplete(.PUSH_MSTORE8_INLINE);
+                return Error.OutOfBounds;
+            }
 
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
 
@@ -272,6 +298,12 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfBounds;
             }
             const offset_usize = @as(usize, @intCast(offset));
+
+            // Check if offset fits in u24
+            if (offset_usize > std.math.maxInt(u24)) {
+                self.afterComplete(.PUSH_MSTORE8_POINTER);
+                return Error.OutOfBounds;
+            }
 
             // Gas costs are handled statically by dispatch - no dynamic calculation needed
 

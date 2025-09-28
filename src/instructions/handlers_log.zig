@@ -98,6 +98,10 @@ pub fn Handlers(FrameType: type) type {
                     // Ensure memory capacity
                     if (length_usize > 0) {
                         const memory_end = offset_usize + length_usize;
+                        if (memory_end > std.math.maxInt(u24)) {
+                            self.afterComplete(unified_opcode);
+                            return Error.OutOfBounds;
+                        }
                         self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(memory_end))) catch {
                             self.afterComplete(unified_opcode);
                             return Error.OutOfBounds;

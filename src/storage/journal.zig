@@ -48,7 +48,9 @@ pub fn Journal(comptime config: JournalConfig) type {
         /// Create a new snapshot and return its ID
         pub fn create_snapshot(self: *Self) SnapshotIdType {
             const id = self.next_snapshot_id;
-            self.next_snapshot_id += 1;
+            // Use saturating addition to prevent overflow
+            // If we hit max snapshots, reuse the max ID (will still work for revert)
+            self.next_snapshot_id = @min(self.next_snapshot_id +| 1, std.math.maxInt(SnapshotIdType));
             return id;
         }
         

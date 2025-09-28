@@ -108,6 +108,12 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfBounds;
             };
 
+            // Check if end fits in u24 before ensuring memory capacity
+            if (end > std.math.maxInt(u24)) {
+                self.afterComplete(.KECCAK256);
+                return Error.OutOfBounds;
+            }
+
             // Ensure memory is available
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(end))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => {

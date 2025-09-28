@@ -212,6 +212,9 @@ pub fn Handlers(FrameType: type) type {
 
             // Calculate gas cost for memory expansion and copy operation
             const new_size = dest_offset_usize + length_usize;
+            if (new_size > std.math.maxInt(u24)) {
+                return Error.OutOfBounds;
+            }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(new_size)));
 
             // Dynamic gas cost: 3 gas per word (32 bytes) copied
@@ -224,7 +227,7 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Ensure memory capacity
+            // Ensure memory capacity (new_size already validated to fit in u24)
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -289,6 +292,9 @@ pub fn Handlers(FrameType: type) type {
 
             // Calculate gas cost for memory expansion and copy operation
             const new_size = dest_offset_usize + length_usize;
+            if (new_size > std.math.maxInt(u24)) {
+                return Error.OutOfBounds;
+            }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(new_size)));
 
             // Dynamic gas cost: 3 gas per word (32 bytes) copied
@@ -301,7 +307,7 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Ensure memory capacity
+            // Ensure memory capacity (new_size already validated to fit in u24)
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -419,6 +425,9 @@ pub fn Handlers(FrameType: type) type {
 
             // Calculate gas cost for memory expansion and copy operation
             const new_size = dest_offset_usize + length_usize;
+            if (new_size > std.math.maxInt(u24)) {
+                return Error.OutOfBounds;
+            }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(new_size)));
 
             // Dynamic gas cost: 3 gas per word (32 bytes) copied
@@ -431,7 +440,7 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Ensure memory capacity
+            // Ensure memory capacity (new_size already validated to fit in u24)
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
@@ -566,6 +575,9 @@ pub fn Handlers(FrameType: type) type {
 
             // Calculate gas cost for memory expansion and copy operation
             const new_size = dest_offset_usize + length_usize;
+            if (new_size > std.math.maxInt(u24)) {
+                return Error.OutOfBounds;
+            }
             const memory_expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(new_size)));
 
             // Dynamic gas cost: 3 gas per word (32 bytes) copied
@@ -578,7 +590,7 @@ pub fn Handlers(FrameType: type) type {
                 return Error.OutOfGas;
             }
 
-            // Ensure memory capacity
+            // Ensure memory capacity (new_size already validated to fit in u24)
             self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(new_size))) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,

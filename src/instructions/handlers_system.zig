@@ -127,7 +127,8 @@ pub fn Handlers(FrameType: type) type {
             };
 
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getEvm().getCallArenaAllocator());
+            // Use main allocator for deinit since precompile outputs are allocated with it
+            defer result.deinit(self.getEvm().allocator);
 
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
@@ -236,7 +237,7 @@ pub fn Handlers(FrameType: type) type {
             };
 
             var result = self.getEvm().inner_call(call_params);
-            defer result.deinit(self.getEvm().getCallArenaAllocator());
+            defer result.deinit(self.getEvm().allocator);
 
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
@@ -341,7 +342,8 @@ pub fn Handlers(FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getEvm().getCallArenaAllocator());
+            // Use main allocator for deinit since precompile outputs are allocated with it
+            defer result.deinit(self.getEvm().allocator);
 
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
                 const copy_size = @min(output_size_usize, result.output.len);
@@ -452,7 +454,8 @@ pub fn Handlers(FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getEvm().getCallArenaAllocator());
+            // Use main allocator for deinit since precompile outputs are allocated with it
+            defer result.deinit(self.getEvm().allocator);
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
@@ -549,7 +552,8 @@ pub fn Handlers(FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getEvm().getCallArenaAllocator());
+            // Use main allocator for deinit since precompile outputs are allocated with it
+            defer result.deinit(self.getEvm().allocator);
 
             // EIP-211: Clear return data buffer after CREATE (Byzantium+)
             if (self.getEvm().should_clear_returndata_on_create()) {
@@ -646,7 +650,8 @@ pub fn Handlers(FrameType: type) type {
                 },
             };
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getEvm().getCallArenaAllocator());
+            // Use main allocator for deinit since precompile outputs are allocated with it
+            defer result.deinit(self.getEvm().allocator);
 
             // EIP-211/EIP-1014: Clear return data buffer after CREATE2 (Byzantium+)
             if (self.getEvm().should_clear_returndata_on_create()) {
@@ -1030,7 +1035,8 @@ pub fn Handlers(FrameType: type) type {
             };
 
             var result = self.getEvm().inner_call(params);
-            defer result.deinit(self.getEvm().getCallArenaAllocator());
+            // Use main allocator for deinit since precompile outputs are allocated with it
+            defer result.deinit(self.getEvm().allocator);
 
             // Write return data to memory if successful and output size > 0
             if (result.success and output_size_usize > 0 and result.output.len > 0) {
