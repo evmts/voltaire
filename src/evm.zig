@@ -160,7 +160,7 @@ pub fn Evm(config: EvmConfig) type {
                 .current_snapshot_id = 0,
                 .gas_refund_counter = 0,
                 .journal = Journal.init(allocator),
-                .logs = .empty,
+                .logs = std.ArrayList(@import("frame/call_result.zig").Log).empty,
                 .created_contracts = CreatedContracts.init(allocator),
                 .block_info = block_info,
                 .context = context,
@@ -392,6 +392,7 @@ pub fn Evm(config: EvmConfig) type {
                 // Reset gas refund counter
                 self.gas_refund_counter = 0;
                 // Clear logs from previous transaction
+                // Clear logs while maintaining allocator reference
                 self.logs.clearRetainingCapacity();
                 // Clear created contracts tracking (EIP-6780)
                 self.created_contracts.clear();
@@ -577,7 +578,7 @@ pub fn Evm(config: EvmConfig) type {
             };
             // IMPORTANT: Reinitialize logs after toOwnedSlice() to maintain allocator reference
             // toOwnedSlice() takes ownership and leaves the ArrayList in an undefined state
-            self.logs = .empty;
+            self.logs = std.ArrayList(@import("frame/call_result.zig").Log).empty;
 
             // Extract self-destruct records if self-destruct is enabled
             // EIP-6780 restricts SELFDESTRUCT behavior in Cancun+
@@ -593,13 +594,15 @@ pub fn Evm(config: EvmConfig) type {
 
             // Extract access list data before clearing
             result.accessed_addresses = self.allocator.dupe(primitives.Address, self.access_list.addresses.keys()) catch {
-                return CallResult.failure_with_error(0, "Out of memory");
+                log.debug("Out of memory allocating accessed_addresses", .{});
+                return CallResult.failure(0);
             };
 
             // Convert StorageKey to StorageAccess (same fields, different type)
             const storage_keys = self.access_list.storage_slots.keys();
             const storage_access = self.allocator.alloc(call_result_module.StorageAccess, storage_keys.len) catch {
-                return CallResult.failure_with_error(0, "Out of memory");
+                log.debug("Out of memory allocating storage_access", .{});
+                return CallResult.failure(0);
             };
             for (storage_keys, 0..) |key, i| {
                 storage_access[i] = .{ .address = key.address, .slot = key.slot };
@@ -751,21 +754,10 @@ pub fn Evm(config: EvmConfig) type {
             // log.debug("Attempting to get code for address: {x}", .{code_address.bytes});
             const code = self.database.get_code_by_address(code_address.bytes) catch |err| {
                 // log.debug("Failed to get code for address {x}: {}", .{ code_address.bytes, err });
-                const error_str = switch (err) {
-                    Database.Error.CodeNotFound => "CodeNotFound",
-                    Database.Error.AccountNotFound => "AccountNotFound",
-                    Database.Error.StorageNotFound => "StorageNotFound",
-                    Database.Error.InvalidAddress => "InvalidAddress",
-                    Database.Error.DatabaseCorrupted => "DatabaseCorrupted",
-                    Database.Error.NetworkError => "NetworkError",
-                    Database.Error.PermissionDenied => "PermissionDenied",
-                    Database.Error.OutOfMemory => "OutOfMemory",
-                    Database.Error.InvalidSnapshot => "InvalidSnapshot",
-                    Database.Error.NoBatchInProgress => "NoBatchInProgress",
-                    Database.Error.SnapshotNotFound => "SnapshotNotFound",
-                    Database.Error.WriteProtection => "WriteProtection",
-                };
-                return PreflightResult{ .precompile_result = CallResult.failure_with_error(0, error_str) };
+                // Don't use error_info with string literals to avoid freeing them
+                // Just log the error and return a failure without error_info
+                log.debug("Database error: {}", .{err});
+                return PreflightResult{ .precompile_result = CallResult.failure(0) };
             };
 
             if (code.len == 0) {
