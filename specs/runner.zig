@@ -3,6 +3,7 @@ const testing = std.testing;
 const evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address;
+const assembler = @import("assembler.zig");
 
 // Error type for tests that are not yet implemented
 pub const TestTodo = error.TestTodo;
@@ -16,21 +17,18 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
         return;
     }
 
-    // Check for assembly code tests that we can't compile yet
+    // Check for assembly code tests that we can't compile
     if (test_case.object.get("pre")) |pre| {
         if (pre == .object) {
             var it = pre.object.iterator();
             while (it.next()) |kv| {
-                // Check if we have compiled bytecode (//code field)
-                const has_compiled_code = kv.value_ptr.*.object.get("//code") != null;
-                if (!has_compiled_code) {
-                    // Only return TODO if we have assembly code without compiled version
-                    if (kv.value_ptr.*.object.get("code")) |code| {
-                        if (code == .string) {
-                            if (isAssemblyCode(code.string)) {
-                                // Assembly tests without compiled bytecode are TODO
-                                return TestTodo;
-                            }
+                if (kv.value_ptr.*.object.get("code")) |code| {
+                    if (code == .string) {
+                        const code_str = code.string;
+                        // We can now compile (asm ...) format, but not other formats
+                        if (isAssemblyCode(code_str) and !std.mem.startsWith(u8, code_str, "(asm ")) {
+                            // Non-(asm) assembly tests are still TODO
+                            return TestTodo;
                         }
                     }
                 }
@@ -88,7 +86,8 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                 
                 // Set balance
                 if (account.object.get("balance")) |balance| {
-                    acc.balance = try std.fmt.parseInt(u256, balance.string, 0);
+                    const bal_str = balance.string;
+                    acc.balance = if (bal_str.len == 0) 0 else try std.fmt.parseInt(u256, bal_str, 0);
                 }
                 
                 // Set nonce
@@ -96,38 +95,38 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                     acc.nonce = try parseIntFromJson(nonce);
                 }
                 
-                // Set code - prefer //code field if available (pre-compiled bytecode)
-                // First try //code field (contains compiled bytecode for Yul/assembly tests)
-                if (account.object.get("//code")) |compiled_code| {
-                    if (compiled_code == .string) {
-                        const code_str = compiled_code.string;
-                        if (!std.mem.eql(u8, code_str, "") and !std.mem.eql(u8, code_str, "0x")) {
-                            const hex_data = try parseHexData(allocator, code_str);
-                            defer allocator.free(hex_data);
-
-                            if (hex_data.len > 2) { // More than just "0x"
-                                const code_bytes = try primitives.Hex.hex_to_bytes(allocator, hex_data);
-                                defer allocator.free(code_bytes);
-                                const code_hash = try database.set_code(code_bytes);
-                                acc.code_hash = code_hash;
-                            }
-                        }
-                    }
-                } else if (account.object.get("code")) |code| {
-                    // Fall back to regular code field if no //code exists
+                // Set code
+                // The //code field is a comment/description, not actual bytecode - skip it
+                // Only process the "code" field which contains the actual assembly or bytecode
+                if (account.object.get("code")) |code| {
                     if (code == .string) {
                         const code_str = code.string;
-                        // Skip assembly/Yul code that doesn't have pre-compiled bytecode
-                        if (!std.mem.eql(u8, code_str, "") and !std.mem.eql(u8, code_str, "0x") and !isAssemblyCode(code_str)) {
-                            const hex_data = try parseHexData(allocator, code_str);
-                            defer allocator.free(hex_data);
+                        if (!std.mem.eql(u8, code_str, "") and !std.mem.eql(u8, code_str, "0x")) {
+                            var code_bytes: []u8 = undefined;
+                            const should_free = true;
 
-                            if (hex_data.len > 2) { // More than just "0x"
-                                const code_bytes = try primitives.Hex.hex_to_bytes(allocator, hex_data);
-                                defer allocator.free(code_bytes);
-                                const code_hash = try database.set_code(code_bytes);
-                                acc.code_hash = code_hash;
+                            // Check if it's assembly code that needs compilation
+                            if (std.mem.startsWith(u8, code_str, "(asm ")) {
+                                // Compile (asm ...) format to bytecode
+                                code_bytes = try assembler.compileAssembly(allocator, code_str);
+                            } else if (isAssemblyCode(code_str)) {
+                                // Skip other assembly formats we can't handle yet
+                                continue;
+                            } else {
+                                // Parse hex bytecode
+                                const hex_data = try parseHexData(allocator, code_str);
+                                defer allocator.free(hex_data);
+
+                                if (hex_data.len > 2) { // More than just "0x"
+                                    code_bytes = try primitives.Hex.hex_to_bytes(allocator, hex_data);
+                                } else {
+                                    continue;
+                                }
                             }
+
+                            defer if (should_free) allocator.free(code_bytes);
+                            const code_hash = try database.set_code(code_bytes);
+                            acc.code_hash = code_hash;
                         }
                     }
                 }
@@ -445,9 +444,24 @@ fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
         return result;
     }
 
-    // Handle :raw prefix
+    // Handle :raw or raw prefix (with or without colon)
     if (std.mem.startsWith(u8, data, ":raw ")) {
         clean_data = data[5..];
+    } else if (std.mem.startsWith(u8, data, "raw ")) {
+        clean_data = data[4..];
+    }
+
+    // Additional check: if after stripping prefix we still have odd length, pad with zero
+    if (clean_data.len > 2 and std.mem.startsWith(u8, clean_data, "0x")) {
+        const hex_part = clean_data[2..];
+        if (hex_part.len % 2 != 0) {
+            // Odd length hex - pad with leading zero
+            const padded = try allocator.alloc(u8, clean_data.len + 1);
+            @memcpy(padded[0..2], "0x");
+            padded[2] = '0';
+            @memcpy(padded[3..], hex_part);
+            clean_data = padded;
+        }
     }
     
     // Handle concatenated :raw data
@@ -525,18 +539,31 @@ fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
     const final_result = try allocator.alloc(u8, write_idx);
     @memcpy(final_result, trimmed);
     allocator.free(result);
+
+    // Final check: ensure the result (after 0x) has even length
+    if (final_result.len > 2 and (final_result.len - 2) % 2 != 0) {
+        // Pad with a leading zero after 0x
+        const padded_result = try allocator.alloc(u8, final_result.len + 1);
+        @memcpy(padded_result[0..2], "0x");
+        padded_result[2] = '0';
+        @memcpy(padded_result[3..], final_result[2..]);
+        allocator.free(final_result);
+        return padded_result;
+    }
+
     return final_result;
 }
 
 fn isAssemblyCode(code: []const u8) bool {
-    // Assembly code starts with { or :asm or :yul
-    // :raw prefix indicates actual bytecode, not assembly
-    if (std.mem.startsWith(u8, code, ":raw ")) {
+    // Assembly code starts with { or :asm or :yul or (asm
+    // :raw or raw prefix indicates actual bytecode, not assembly
+    if (std.mem.startsWith(u8, code, ":raw ") or std.mem.startsWith(u8, code, "raw ")) {
         return false; // This is bytecode, not assembly
     }
     return std.mem.startsWith(u8, code, "{") or
            std.mem.startsWith(u8, code, ":asm ") or
-           std.mem.startsWith(u8, code, ":yul ");
+           std.mem.startsWith(u8, code, ":yul ") or
+           std.mem.startsWith(u8, code, "(asm ");
 }
 
 fn parseHardfork(network: []const u8) evm.Hardfork {
