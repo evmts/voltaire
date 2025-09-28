@@ -1,0 +1,6 @@
+.{
+    .test_name = "type",
+    .source_file = "eest/prague/eip7002_el_triggerable_withdrawals/contract_deploy_tx.json",
+    .test_index = 2223,
+    .data = "0x0",
+}

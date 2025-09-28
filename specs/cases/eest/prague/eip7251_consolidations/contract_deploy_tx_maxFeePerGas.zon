@@ -1,0 +1,6 @@
+.{
+    .test_name = "maxFeePerGas",
+    .source_file = "eest/prague/eip7251_consolidations/contract_deploy_tx.json",
+    .test_index = 2200,
+    .data = null,
+}

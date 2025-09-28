@@ -1,0 +1,6 @@
+.{
+    .test_name = "gasLimit",
+    .source_file = "eest/prague/eip7002_el_triggerable_withdrawals/contract_deploy_tx.json",
+    .test_index = 2226,
+    .data = "0x3d090",
+}

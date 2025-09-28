@@ -1,0 +1,6 @@
+.{
+    .test_name = "maxPriorityFeePerGas",
+    .source_file = "eest/prague/eip2935_historical_block_hashes_from_state/contract_deploy_tx.json",
+    .test_index = 2214,
+    .data = null,
+}

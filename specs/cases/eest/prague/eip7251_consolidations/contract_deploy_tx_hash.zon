@@ -1,0 +1,6 @@
+.{
+    .test_name = "hash",
+    .source_file = "eest/prague/eip7251_consolidations/contract_deploy_tx.json",
+    .test_index = 2206,
+    .data = "0x379269d571beff3ed1d8eba3abb24076a7267b0eaf0cc66d728fb0544f5a690d",
+}

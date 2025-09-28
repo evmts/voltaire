@@ -1,0 +1,6 @@
+.{
+    .test_name = "to",
+    .source_file = "eest/prague/eip7251_consolidations/contract_deploy_tx.json",
+    .test_index = 2196,
+    .data = null,
+}

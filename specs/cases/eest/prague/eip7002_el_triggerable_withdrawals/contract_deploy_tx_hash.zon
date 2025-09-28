@@ -1,0 +1,6 @@
+.{
+    .test_name = "hash",
+    .source_file = "eest/prague/eip7002_el_triggerable_withdrawals/contract_deploy_tx.json",
+    .test_index = 2235,
+    .data = "0x8ded54be89448d78d4bc97782c0187b099e45380ab681742f9d3754e405c2572",
+}

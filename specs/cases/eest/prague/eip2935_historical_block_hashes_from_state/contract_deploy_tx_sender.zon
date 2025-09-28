@@ -1,0 +1,6 @@
+.{
+    .test_name = "sender",
+    .source_file = "eest/prague/eip2935_historical_block_hashes_from_state/contract_deploy_tx.json",
+    .test_index = 2222,
+    .data = "0x3462413Af4609098e1E27A490f554f260213D685",
+}
