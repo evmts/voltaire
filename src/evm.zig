@@ -379,18 +379,18 @@ pub fn Evm(config: EvmConfig) type {
             // Track origin and to addresses for state dump
             self.touched_addresses.put(self.origin, {}) catch |err| {
                 log.err("Failed to track origin address: {s}", .{@errorName(err)});
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
             if (!to_address.equals(primitives.ZERO_ADDRESS)) {
                 self.touched_addresses.put(to_address, {}) catch |err| {
                     log.err("Failed to track to address: {s}", .{@errorName(err)});
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
             }
 
             params.validate() catch |err| {
                 log.err("CallParams validation failed: {s}", .{@errorName(err)});
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             defer {
@@ -445,12 +445,12 @@ pub fn Evm(config: EvmConfig) type {
                 self.block_info.coinbase,
             ) catch |err| {
                 log.err("Failed to pre-warm addresses: {s}", .{@errorName(err)});
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             const call_gas = params.getGas();
             if (!config.disable_gas_checks) {
-                if (call_gas == 0) return CallResult.failure(self.allocator, 0) catch unreachable;
+                if (call_gas == 0) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
             const initial_gas = call_gas;
@@ -463,7 +463,7 @@ pub fn Evm(config: EvmConfig) type {
                 };
 
                 // Check if we have enough gas for intrinsic cost
-                if (params.getGas() < intrinsic_gas) return CallResult.failure(self.allocator, 0) catch unreachable;
+                if (params.getGas() < intrinsic_gas) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
 
                 break :blk params.getGas() - intrinsic_gas;
             };
@@ -472,26 +472,31 @@ pub fn Evm(config: EvmConfig) type {
             // This must happen after gas deduction but before inner_call execution
             {
                 var origin_account = self.database.get_account(self.origin.bytes) catch {
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 } orelse Account.zero();
 
                 // Record the nonce change for potential revert
                 // Using current_snapshot_id (0 at transaction level)
                 self.journal.record_nonce_change(self.current_snapshot_id, self.origin, origin_account.nonce) catch {
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
 
                 // Increment and persist the nonce
                 origin_account.nonce += 1;
                 self.database.set_account(self.origin.bytes, origin_account) catch {
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
             }
 
             var modified_params = params;
             modified_params.setGas(@as(u64, @intCast(execution_gas)));
 
-            var result = self.inner_call(modified_params);
+            const arena_result = self.inner_call(modified_params);
+            // Clone result to main allocator since we're at depth 0 (top-level call)
+            var result = arena_result.toOwnedResult(self.allocator) catch |err| {
+                log.err("Failed to clone call result: {s}", .{@errorName(err)});
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
+            };
 
             self.tracer.onCallComplete(result.success, @as(i64, @intCast(result.gas_left)), result.output.len);
 
@@ -584,13 +589,14 @@ pub fn Evm(config: EvmConfig) type {
             }
 
             // Extract logs for top-level calls
-            // Copy logs from arena to main allocator for the result
-            // The CallResult now owns them and will free on deinit
+            // Logs are already arena-allocated and will be cloned by toOwnedResult above
+            // Transfer logs to result - they are already owned by result via toOwnedResult
             const logs_slice = self.logs.items;
+            if (logs_slice.len > 0) {
+                // Free the logs already in result (from toOwnedResult) since we need to replace them
+                self.allocator.free(result.logs);
 
-            if (logs_slice.len == 0) {
-                result.logs = &.{};
-            } else {
+                // Allocate new array for logs
                 const logs_copy = self.allocator.alloc(@import("frame/call_result.zig").Log, logs_slice.len) catch |err| {
                     log.err("Failed to allocate result logs: {s}", .{@errorName(err)});
                     result.success = false;
@@ -651,14 +657,14 @@ pub fn Evm(config: EvmConfig) type {
             // Extract access list data before clearing
             result.accessed_addresses = self.allocator.dupe(primitives.Address, self.access_list.addresses.keys()) catch {
                 log.debug("Out of memory allocating accessed_addresses", .{});
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             // Convert StorageKey to StorageAccess (same fields, different type)
             const storage_keys = self.access_list.storage_slots.keys();
             const storage_access = self.allocator.alloc(call_result_module.StorageAccess, storage_keys.len) catch {
                 log.debug("Out of memory allocating storage_access", .{});
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
             for (storage_keys, 0..) |key, i| {
                 storage_access[i] = .{ .address = key.address, .slot = key.slot };
@@ -673,17 +679,17 @@ pub fn Evm(config: EvmConfig) type {
         pub fn inner_call(self: *Self, params: CallParams) CallResult {
             @branchHint(.likely);
             if ((@import("builtin").mode == .Debug or @import("builtin").mode == .ReleaseSafe)) {
-                params.validate() catch return CallResult.failure(self.allocator, 0) catch unreachable;
+                params.validate() catch return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
             if (!config.disable_gas_checks) {
-                if (params.getGas() == 0) return CallResult.failure(self.allocator, 0) catch unreachable;
+                if (params.getGas() == 0) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
             self.depth += 1;
             defer self.depth -= 1;
 
-            if (self.depth >= config.max_call_depth) return CallResult.failure(self.allocator, 0) catch unreachable;
+            if (self.depth >= config.max_call_depth) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
 
             const execution_gas = params.getGas();
 
@@ -691,19 +697,19 @@ pub fn Evm(config: EvmConfig) type {
                 .call => |p| blk: {
                     @branchHint(.likely);
                     break :blk self.executeCall(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch {
-                        return CallResult.failure(self.allocator, 0) catch unreachable;
+                        return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
                 },
                 .staticcall => |p| blk: {
                     @branchHint(.likely);
-                    break :blk self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch (CallResult.failure(self.allocator, 0) catch unreachable);
+                    break :blk self.executeStaticcall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable);
                 },
-                .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch (CallResult.failure(self.allocator, 0) catch unreachable),
-                .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch (CallResult.failure(self.allocator, 0) catch unreachable),
-                .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = execution_gas }) catch (CallResult.failure(self.allocator, 0) catch unreachable),
+                .delegatecall => |p| self.executeDelegatecall(.{ .caller = p.caller, .to = p.to, .input = p.input, .gas = execution_gas }) catch (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable),
+                .create => |p| self.executeCreate(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .gas = execution_gas }) catch (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable),
+                .create2 => |p| self.executeCreate2(.{ .caller = p.caller, .value = p.value, .init_code = p.init_code, .salt = p.salt, .gas = execution_gas }) catch (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable),
                 .callcode => |p| blk: {
                     @branchHint(.cold);
-                    break :blk self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch (CallResult.failure(self.allocator, 0) catch unreachable);
+                    break :blk self.executeCallcode(.{ .caller = p.caller, .to = p.to, .value = p.value, .input = p.input, .gas = execution_gas }) catch (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable);
                 },
             };
 
@@ -727,7 +733,7 @@ pub fn Evm(config: EvmConfig) type {
             if (config.enable_precompiles and precompiles.is_precompile(to)) {
                 const result = self.executePrecompileInline(to, input, gas, is_static, snapshot_id) catch {
                     self.journal.revert_to_snapshot(snapshot_id);
-                    return PreflightResult{ .precompile_result = CallResult.failure(self.allocator, 0) catch unreachable };
+                    return PreflightResult{ .precompile_result = CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable };
                 };
                 return PreflightResult{ .precompile_result = result };
             }
@@ -741,7 +747,7 @@ pub fn Evm(config: EvmConfig) type {
                 const result = contract.execute(caller, input, gas) catch |err| {
                     log.debug("Beacon roots contract failed: {}", .{err});
                     self.journal.revert_to_snapshot(snapshot_id);
-                    return PreflightResult{ .precompile_result = CallResult.failure(self.allocator, 0) catch unreachable };
+                    return PreflightResult{ .precompile_result = CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable };
                 };
 
                 // Allocate output that persists beyond this function
@@ -749,7 +755,7 @@ pub fn Evm(config: EvmConfig) type {
                     // Handle allocation errors by reverting snapshot and returning failure
                     const out = self.getCallArenaAllocator().alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
-                        return PreflightResult{ .precompile_result = CallResult.failure(self.allocator, 0) catch unreachable };
+                        return PreflightResult{ .precompile_result = CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable };
                     };
                     @memcpy(out, result.output);
                     break :output out;
@@ -771,7 +777,7 @@ pub fn Evm(config: EvmConfig) type {
                 const result = contract.execute(caller, input, gas) catch |err| {
                     log.debug("Historical block hashes contract failed: {}", .{err});
                     self.journal.revert_to_snapshot(snapshot_id);
-                    return PreflightResult{ .precompile_result = CallResult.failure(self.allocator, 0) catch unreachable };
+                    return PreflightResult{ .precompile_result = CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable };
                 };
 
                 // Allocate output that persists beyond this function
@@ -779,7 +785,7 @@ pub fn Evm(config: EvmConfig) type {
                     // Handle allocation errors by reverting snapshot and returning failure
                     const out = self.getCallArenaAllocator().alloc(u8, result.output.len) catch {
                         self.journal.revert_to_snapshot(snapshot_id);
-                        return PreflightResult{ .precompile_result = CallResult.failure(self.allocator, 0) catch unreachable };
+                        return PreflightResult{ .precompile_result = CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable };
                     };
                     @memcpy(out, result.output);
                     break :output out;
@@ -795,7 +801,7 @@ pub fn Evm(config: EvmConfig) type {
             // Check for EIP-7702 delegation first
             const account = self.database.get_account(to.bytes) catch |err| {
                 log.debug("Failed to get account for address {x}: {}", .{ to.bytes, err });
-                return PreflightResult{ .precompile_result = (CallResult.failure(self.allocator, 0) catch unreachable) };
+                return PreflightResult{ .precompile_result = (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable) };
             };
 
             // Get the effective code address (handles delegation)
@@ -813,7 +819,7 @@ pub fn Evm(config: EvmConfig) type {
                 // Don't use error_info with string literals to avoid freeing them
                 // Just log the error and return a failure without error_info
                 log.debug("Database error: {}", .{err});
-                return PreflightResult{ .precompile_result = (CallResult.failure(self.allocator, 0) catch unreachable) };
+                return PreflightResult{ .precompile_result = (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable) };
             };
 
             if (code.len == 0) {
@@ -839,14 +845,14 @@ pub fn Evm(config: EvmConfig) type {
                 self.transferWithBalanceChecks(params.caller, params.to, params.value, snapshot_id) catch |err| {
                     log.debug("Call value transfer failed: {}", .{err});
                     self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
             }
 
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
                 self.tracer.onCallPreflight("CALL", @errorName(err));
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
             self.tracer.onCallPreflight("CALL", @tagName(preflight));
 
@@ -854,7 +860,7 @@ pub fn Evm(config: EvmConfig) type {
                 .precompile_result => |result| return result,
                 .empty_account => |gas| {
                     self.tracer.onCodeRetrieval(params.to, 0, true);
-                    return CallResult.success_empty(self.allocator, gas) catch unreachable;
+                    return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable;
                 },
                 .execute_with_code => |code| {
                     self.tracer.onCodeRetrieval(params.to, code.len, false);
@@ -870,7 +876,7 @@ pub fn Evm(config: EvmConfig) type {
                     ) catch |err| {
                         log.debug("EXECUTE_CALL: execute_frame failed with error: {}", .{err});
                         self.journal.revert_to_snapshot(snapshot_id);
-                        return CallResult.failure(self.allocator, 0) catch unreachable;
+                        return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
 
                     if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
@@ -894,12 +900,12 @@ pub fn Evm(config: EvmConfig) type {
                     const caller_account = self.database.get_account(params.caller.bytes) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
-                        return CallResult.failure(self.allocator, 0) catch unreachable;
+                        return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
                     if (caller_account == null or caller_account.?.balance < params.value) {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
-                        return CallResult.failure(self.allocator, 0) catch unreachable;
+                        return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     }
                 }
             }
@@ -907,7 +913,7 @@ pub fn Evm(config: EvmConfig) type {
             const code = try self.database.get_code_by_address(params.to.bytes);
             if (code.len == 0) {
                 @branchHint(.unlikely);
-                return CallResult.success_empty(self.allocator, params.gas) catch unreachable;
+                return CallResult.success_empty(self.getCallArenaAllocator(), params.gas) catch unreachable;
             }
 
             const result = self.execute_frame(
@@ -922,7 +928,7 @@ pub fn Evm(config: EvmConfig) type {
             ) catch {
                 @branchHint(.unlikely);
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             if (!result.success) {
@@ -944,12 +950,12 @@ pub fn Evm(config: EvmConfig) type {
                 @branchHint(.cold);
                 log.debug("Delegatecall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             switch (preflight) {
                 .precompile_result => |result| return result,
-                .empty_account => |gas| return CallResult.success_empty(self.allocator, gas) catch unreachable,
+                .empty_account => |gas| return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable,
                 .execute_with_code => |code| {
                     const current_value = if (self.depth > 0) self.call_stack[self.depth - 1].value else 0;
                     const result = self.execute_frame(
@@ -964,7 +970,7 @@ pub fn Evm(config: EvmConfig) type {
                     ) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
-                        return CallResult.failure(self.allocator, 0) catch unreachable;
+                        return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
 
                     if (!result.success) {
@@ -989,12 +995,12 @@ pub fn Evm(config: EvmConfig) type {
                 @branchHint(.cold);
                 log.debug("Staticcall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             switch (preflight) {
                 .precompile_result => |result| return result,
-                .empty_account => |gas| return CallResult.success_empty(self.allocator, gas) catch unreachable,
+                .empty_account => |gas| return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable,
                 .execute_with_code => |code| {
                     const result = self.execute_frame(
                         code,
@@ -1008,7 +1014,7 @@ pub fn Evm(config: EvmConfig) type {
                     ) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
-                        return CallResult.failure(self.allocator, 0) catch unreachable;
+                        return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
 
                     if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
@@ -1028,12 +1034,12 @@ pub fn Evm(config: EvmConfig) type {
 
             var caller_account = self.database.get_account(params.caller.bytes) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             } orelse Account.zero();
 
             if (caller_account.balance < params.value) {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
             const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
@@ -1043,7 +1049,7 @@ pub fn Evm(config: EvmConfig) type {
             caller_account.nonce += 1;
             self.database.set_account(params.caller.bytes, caller_account) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             const existed_before = self.database.account_exists(contract_address.bytes);
@@ -1051,14 +1057,14 @@ pub fn Evm(config: EvmConfig) type {
                 const existing = try self.database.get_account(contract_address.bytes);
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 }
             }
             const GasConstants = primitives.GasConstants;
             const create_overhead = GasConstants.CreateGas;
             if (params.gas < create_overhead) {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
             const remaining_gas: u64 = params.gas - create_overhead;
             var result = self.executeCreateInternal(.{
@@ -1069,7 +1075,7 @@ pub fn Evm(config: EvmConfig) type {
                 .contract_address = contract_address,
                 .snapshot_id = snapshot_id,
                 .existed_before = existed_before,
-            }) catch return CallResult.failure(self.allocator, 0) catch unreachable;
+            }) catch return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
 
             result.created_address = contract_address;
             return result;
@@ -1086,7 +1092,7 @@ pub fn Evm(config: EvmConfig) type {
             log.debug("CREATE2: gas={}, init_len={}, value={}", .{ params.gas, params.init_code.len, params.value });
             if (self.depth >= config.max_call_depth) {
                 log.debug("CREATE2: depth exceeded", .{});
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
             const snapshot_id = self.journal.create_snapshot();
@@ -1094,13 +1100,13 @@ pub fn Evm(config: EvmConfig) type {
             var caller_account = self.database.get_account(params.caller.bytes) catch {
                 log.debug("CREATE2: get_account failed", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             } orelse Account.zero();
 
             if (caller_account.balance < params.value) {
                 log.debug("CREATE2: insufficient balance", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
             // Always increment nonce for CREATE operations
@@ -1108,7 +1114,7 @@ pub fn Evm(config: EvmConfig) type {
             caller_account.nonce += 1;
             self.database.set_account(params.caller.bytes, caller_account) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             const keccak_asm = @import("crypto").keccak_asm;
@@ -1124,7 +1130,7 @@ pub fn Evm(config: EvmConfig) type {
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     log.debug("CREATE2: collision at address", .{});
                     self.journal.revert_to_snapshot(snapshot_id);
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 }
             }
 
@@ -1135,7 +1141,7 @@ pub fn Evm(config: EvmConfig) type {
             if (params.gas < total_overhead) {
                 log.debug("CREATE2: insufficient gas for overhead: need={}, have={}", .{ total_overhead, params.gas });
                 self.journal.revert_to_snapshot(snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
             const remaining_gas: u64 = params.gas - total_overhead;
 
@@ -1147,7 +1153,7 @@ pub fn Evm(config: EvmConfig) type {
                 .contract_address = contract_address,
                 .snapshot_id = snapshot_id,
                 .existed_before = existed_before,
-            }) catch return CallResult.failure(self.allocator, 0) catch unreachable;
+            }) catch return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
 
             result.created_address = contract_address;
             return result;
@@ -1166,7 +1172,7 @@ pub fn Evm(config: EvmConfig) type {
             if (args.value > 0) {
                 self.transferWithBalanceChecks(args.caller, args.contract_address, args.value, args.snapshot_id) catch {
                     self.journal.revert_to_snapshot(args.snapshot_id);
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
             }
             const result = self.execute_init_code(
@@ -1177,7 +1183,7 @@ pub fn Evm(config: EvmConfig) type {
             ) catch |err| {
                 log.debug("execute_init_code failed with error: {}", .{err});
                 self.journal.revert_to_snapshot(args.snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
             if (!result.success) {
                 log.debug("Init code execution failed, success=false", .{});
@@ -1186,7 +1192,7 @@ pub fn Evm(config: EvmConfig) type {
             }
             var contract_account = self.database.get_account(args.contract_address.bytes) catch {
                 self.journal.revert_to_snapshot(args.snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             } orelse Account.zero();
             if (!args.existed_before) {
                 try self.journal.record_account_created(args.snapshot_id, args.contract_address);
@@ -1199,24 +1205,24 @@ pub fn Evm(config: EvmConfig) type {
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
                 if (config.eips.eip_3541_should_reject_create_with_ef_bytecode(result.output)) {
                     self.journal.revert_to_snapshot(args.snapshot_id);
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 }
                 const stored_hash = self.database.set_code(result.output) catch {
                     self.journal.revert_to_snapshot(args.snapshot_id);
-                    return CallResult.failure(self.allocator, 0) catch unreachable;
+                    return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
                 try self.journal.record_code_change(args.snapshot_id, args.contract_address, contract_account.code_hash);
                 contract_account.code_hash = stored_hash;
             }
             self.database.set_account(args.contract_address.bytes, contract_account) catch {
                 self.journal.revert_to_snapshot(args.snapshot_id);
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             var final_result = if (result.output.len > 0)
-                CallResult.success_with_output(self.allocator, result.gas_left, result.output) catch unreachable
+                CallResult.success_with_output(self.getCallArenaAllocator(), result.gas_left, result.output) catch unreachable
             else
-                CallResult.success_empty(self.allocator, result.gas_left) catch unreachable;
+                CallResult.success_empty(self.getCallArenaAllocator(), result.gas_left) catch unreachable;
             final_result.trace = result.trace;
             return final_result;
         }
@@ -1381,7 +1387,7 @@ pub fn Evm(config: EvmConfig) type {
                             .allocator = self.allocator,
                         };
                     };
-                    var failure = (CallResult.failure(self.allocator, 0) catch unreachable);
+                    var failure = (CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable);
                     failure.trace = execution_trace;
                     return failure;
                 },
@@ -1400,17 +1406,17 @@ pub fn Evm(config: EvmConfig) type {
             if (termination_reason) |reason| {
                 switch (reason) {
                     error.Stop => {
-                        result = CallResult.success_with_output(self.allocator, gas_left, &.{}) catch unreachable;
+                        result = CallResult.success_with_output(self.getCallArenaAllocator(), gas_left, &.{}) catch unreachable;
                     },
                     error.Return => {
-                        result = CallResult.success_with_output(self.allocator, gas_left, output_data) catch unreachable;
+                        result = CallResult.success_with_output(self.getCallArenaAllocator(), gas_left, output_data) catch unreachable;
                     },
                     error.SelfDestruct => {
-                        result = CallResult.success_with_output(self.allocator, gas_left, &.{}) catch unreachable;
+                        result = CallResult.success_with_output(self.getCallArenaAllocator(), gas_left, &.{}) catch unreachable;
                     },
                 }
             } else {
-                result = CallResult.success_with_output(self.allocator, gas_left, output_data) catch unreachable;
+                result = CallResult.success_with_output(self.getCallArenaAllocator(), gas_left, output_data) catch unreachable;
             }
             result.trace = execution_trace;
             return result;
@@ -1425,7 +1431,7 @@ pub fn Evm(config: EvmConfig) type {
         ) !CallResult {
             if (code.len > config.eips.size_limit()) {
                 log.debug("Init code too large: {} > 49152", .{code.len});
-                return CallResult.failure(self.allocator, 0) catch unreachable;
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
             const result = self.execute_frame(
                 code,
@@ -1447,10 +1453,10 @@ pub fn Evm(config: EvmConfig) type {
         fn executePrecompileInline(self: *Self, address: primitives.Address, input: []const u8, gas: u64, is_static: bool, snapshot_id: Journal.SnapshotIdType) !CallResult {
             _ = snapshot_id;
             _ = is_static;
-            if (!precompiles.is_precompile(address)) return CallResult.failure(self.allocator, 0) catch unreachable; // TODO: Fix manual CallResult creation
+            if (!precompiles.is_precompile(address)) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
 
             const precompile_id = address.bytes[19];
-            if (precompile_id < 1 or precompile_id > 10) return CallResult.failure(self.allocator, 0) catch unreachable; // TODO: Fix manual CallResult creation
+            if (precompile_id < 1 or precompile_id > 10) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
 
             const result = precompiles.execute_precompile(self.getCallArenaAllocator(), address, input, gas) catch {
                 return CallResult{
@@ -1462,8 +1468,8 @@ pub fn Evm(config: EvmConfig) type {
 
             // The precompile allocated the output, so we own it and pass ownership to the CallResult
             // The CallResult.deinit() method will free this memory
-            if (result.success) return CallResult.failure(self.allocator, 0) catch unreachable; // TODO: Fix manual CallResult creation
-            return CallResult.failure(self.allocator, 0) catch unreachable; // TODO: Fix manual CallResult creation
+            if (result.success) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
+            return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
         }
 
         /// Get account balance
