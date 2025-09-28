@@ -20,35 +20,37 @@ pub fn CallResult(config: anytype) type {
             return Self{
                 .success = true,
                 .gas_left = gas_left,
-                .output = try allocator.dupe(u8, output),
-                .logs = try allocator.alloc(Log, 0),
-                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
-                .accessed_addresses = try allocator.alloc(Address, 0),
-                .accessed_storage = try allocator.alloc(StorageAccess, 0),
+                .output = if (output.len > 0) try allocator.dupe(u8, output) else &.{},
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
             };
         }
 
         pub fn success_empty(allocator: std.mem.Allocator, gas_left: u64) !Self {
+            _ = allocator; // Unused when using compile-time empty slices
             return Self{
                 .success = true,
                 .gas_left = gas_left,
-                .output = try allocator.alloc(u8, 0),
-                .logs = try allocator.alloc(Log, 0),
-                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
-                .accessed_addresses = try allocator.alloc(Address, 0),
-                .accessed_storage = try allocator.alloc(StorageAccess, 0),
+                .output = &.{},
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
             };
         }
 
         pub fn failure(allocator: std.mem.Allocator, gas_left: u64) !Self {
+            _ = allocator; // Unused when using compile-time empty slices
             return Self{
                 .success = false,
                 .gas_left = gas_left,
-                .output = try allocator.alloc(u8, 0),
-                .logs = try allocator.alloc(Log, 0),
-                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
-                .accessed_addresses = try allocator.alloc(Address, 0),
-                .accessed_storage = try allocator.alloc(StorageAccess, 0),
+                .output = &.{},
+                .logs = &.{},
+                .selfdestructs = &.{},
+                .accessed_addresses = &.{},
+                .accessed_storage = &.{},
             };
         }
 
