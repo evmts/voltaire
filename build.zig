@@ -889,6 +889,7 @@ pub fn build(b: *std.Build) void {
         }),
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
+        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
     });
     specs_test.root_module.addImport("evm", modules.evm_mod);
     specs_test.root_module.addImport("primitives", modules.primitives_mod);
@@ -907,6 +908,15 @@ pub fn build(b: *std.Build) void {
     
     const run_specs_test = b.addRunArtifact(specs_test);
     
+    // Pass test configuration as environment variables for the custom runner
+    if (test_filter) |filter| {
+        run_specs_test.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+    if (test_verbose) run_specs_test.setEnvironmentVariable("TEST_VERBOSE", "1");
+    if (test_fail_fast) run_specs_test.setEnvironmentVariable("TEST_FAIL_FAST", "1");
+    if (test_no_color) run_specs_test.setEnvironmentVariable("TEST_NO_COLOR", "1");
+    if (test_quiet) run_specs_test.setEnvironmentVariable("TEST_QUIET", "1");
+    
     // Set MAX_SPEC_FILES environment variable
     const spec_max_files = b.option([]const u8, "spec-max-files", "Maximum number of spec files to run (default: all)");
     if (spec_max_files) |max_files| {
@@ -915,9 +925,10 @@ pub fn build(b: *std.Build) void {
         run_specs_test.setEnvironmentVariable("MAX_SPEC_FILES", "999999"); // Run all test files
     }
     
-    // Pass test filter as environment variable too
-    if (test_filter) |filter| {
-        run_specs_test.setEnvironmentVariable("TEST_FILTER", filter);
+    // Set SKIP_SPEC_FILES environment variable to skip the first N files
+    const spec_skip_files = b.option([]const u8, "spec-skip-files", "Number of spec files to skip from the beginning");
+    if (spec_skip_files) |skip_files| {
+        run_specs_test.setEnvironmentVariable("SKIP_SPEC_FILES", skip_files);
     }
     
     const specs_step = b.step("specs", "Run Ethereum execution spec tests (Zig version) - use -Dspec-max-files=N to limit, -Dtest-filter=pattern to filter");
