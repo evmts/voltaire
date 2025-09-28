@@ -55,6 +55,7 @@ const TestResult = struct {
     suite: []const u8,
     test_name: []const u8,
     passed: bool,
+    todo: bool = false,  // New field for TODO tests
     error_msg: ?[]const u8,
     duration_ns: u64,
     file_path: ?[]const u8 = null,
@@ -272,9 +273,19 @@ pub fn main() !void {
         t.func() catch |err| {
             const test_end = std.time.nanoTimestamp();
             test_result.duration_ns = @intCast(test_end - test_start);
-            test_result.passed = false;
-            const err_msg = try std.fmt.allocPrint(allocator, "{}", .{err});
-            test_result.error_msg = err_msg;
+
+            // Check if this is a TODO test (not yet implemented)
+            const err_name = @errorName(err);
+            if (std.mem.eql(u8, err_name, "TestTodo")) {
+                test_result.todo = true;
+                test_result.passed = false;
+                test_result.error_msg = try allocator.dupe(u8, "Test not yet implemented (assembly compilation required)");
+            } else {
+                test_result.passed = false;
+                const err_msg = try std.fmt.allocPrint(allocator, "{}", .{err});
+                test_result.error_msg = err_msg;
+            }
+
             try results.append(allocator, test_result);
             continue;
         };
@@ -335,17 +346,22 @@ pub fn main() !void {
 
     var passed_count: u32 = 0;
     var failed_count: u32 = 0;
+    var todo_count: u32 = 0;
 
     for (suites.items) |suite| {
         const tests = suite_map.get(suite).?;
 
         var suite_passed: u32 = 0;
         var suite_failed: u32 = 0;
+        var suite_todo: u32 = 0;
         var suite_duration: u64 = 0;
 
         for (tests.items) |t| {
             suite_duration += t.duration_ns;
-            if (t.passed) {
+            if (t.todo) {
+                suite_todo += 1;
+                todo_count += 1;
+            } else if (t.passed) {
                 suite_passed += 1;
                 passed_count += 1;
             } else {
@@ -362,6 +378,15 @@ pub fn main() !void {
                 Color.white,
                 Color.reset,
                 Color.white,
+                suite,
+                Color.reset,
+            });
+        } else if (suite_todo > 0 and suite_passed == 0) {
+            try stdout.print(" {s}{s} TODO {s} {s}{s}{s} ", .{
+                Color.bg_yellow,
+                Color.black,
+                Color.reset,
+                Color.yellow,
                 suite,
                 Color.reset,
             });
@@ -392,6 +417,30 @@ pub fn main() !void {
                     Color.reset,
                 });
             }
+            if (suite_todo > 0) {
+                try stdout.print(" {s}|{s} {s}{d} todo{s}", .{
+                    Color.dim,
+                    Color.reset,
+                    Color.yellow,
+                    suite_todo,
+                    Color.reset,
+                });
+            }
+        } else if (suite_todo > 0) {
+            try stdout.print("{s}{d} todo{s}", .{
+                Color.yellow,
+                suite_todo,
+                Color.reset
+            });
+            if (suite_passed > 0) {
+                try stdout.print(" {s}|{s} {s}{d} passed{s}", .{
+                    Color.dim,
+                    Color.reset,
+                    Color.green,
+                    suite_passed,
+                    Color.reset,
+                });
+            }
         } else {
             try stdout.print("{s}({d}){s}", .{
                 Color.green,
@@ -404,9 +453,18 @@ pub fn main() !void {
         formatDuration(stdout, suite_duration);
         try stdout.print("\n", .{});
 
-        // Print failed test names under suite with better indentation
+        // Print failed and todo test names under suite with better indentation
         for (tests.items) |t| {
-            if (!t.passed) {
+            if (t.todo) {
+                try stdout.print("   {s}{s}{s} {s}{s} (TODO){s}\n", .{
+                    Color.yellow,
+                    Icons.clock,
+                    Color.reset,
+                    Color.yellow,
+                    t.test_name,
+                    Color.reset,
+                });
+            } else if (!t.passed) {
                 try stdout.print("   {s}{s}{s} {s}{s}{s}\n", .{
                     Color.red,
                     Icons.cross,
@@ -512,6 +570,15 @@ pub fn main() !void {
                 Color.reset,
             });
         }
+        if (todo_count > 0) {
+            try stdout.print(" {s}|{s} {s}{d} todo{s}", .{
+                Color.dim,
+                Color.reset,
+                Color.yellow,
+                todo_count,
+                Color.reset,
+            });
+        }
         try stdout.print(" {s}({d}){s}\n", .{
             Color.dim,
             total_tests,
@@ -522,26 +589,56 @@ pub fn main() !void {
             Color.bold,
             Color.reset,
         });
-        try stdout.print("{s}1 passed{s} {s}({d}){s}\n", .{
-            Color.green,
-            Color.reset,
-            Color.dim,
-            total_tests,
-            Color.reset,
-        });
+        if (todo_count > 0) {
+            try stdout.print("{s}1 passed{s} {s}({d}){s}\n", .{
+                Color.green,
+                Color.reset,
+                Color.dim,
+                total_tests,
+                Color.reset,
+            });
+        } else {
+            try stdout.print("{s}1 passed{s} {s}({d}){s}\n", .{
+                Color.green,
+                Color.reset,
+                Color.dim,
+                total_tests,
+                Color.reset,
+            });
+        }
 
         try stdout.print("      {s}Tests  {s}", .{
             Color.bold,
             Color.reset,
         });
-        try stdout.print("{s}{d} passed{s} {s}({d}){s}\n", .{
-            Color.green,
-            passed_count,
-            Color.reset,
-            Color.dim,
-            total_tests,
-            Color.reset,
-        });
+        if (todo_count > 0) {
+            try stdout.print("{s}{d} passed{s}", .{
+                Color.green,
+                passed_count,
+                Color.reset,
+            });
+            try stdout.print(" {s}|{s} {s}{d} todo{s}", .{
+                Color.dim,
+                Color.reset,
+                Color.yellow,
+                todo_count,
+                Color.reset,
+            });
+            try stdout.print(" {s}({d}){s}\n", .{
+                Color.dim,
+                total_tests,
+                Color.reset,
+            });
+        } else {
+            try stdout.print("{s}{d} passed{s} {s}({d}){s}\n", .{
+                Color.green,
+                passed_count,
+                Color.reset,
+                Color.dim,
+                total_tests,
+                Color.reset,
+            });
+        }
     }
 
     // Duration with icon

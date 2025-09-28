@@ -4,6 +4,9 @@ const evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address;
 
+// Error type for tests that are not yet implemented
+pub const TestTodo = error.TestTodo;
+
 // New function to run tests directly from JSON
 pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !void {
     // Handle non-object test cases (e.g., when test_case is a string)
@@ -13,16 +16,21 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
         return;
     }
 
-    // Skip tests with assembly code in pre-state
+    // Check for assembly code tests that we can't compile yet
     if (test_case.object.get("pre")) |pre| {
         if (pre == .object) {
             var it = pre.object.iterator();
             while (it.next()) |kv| {
-                if (kv.value_ptr.*.object.get("code")) |code| {
-                    if (code == .string) {
-                        if (isAssemblyCode(code.string)) {
-                            // Skip assembly tests for now
-                            return;
+                // Check if we have compiled bytecode (//code field)
+                const has_compiled_code = kv.value_ptr.*.object.get("//code") != null;
+                if (!has_compiled_code) {
+                    // Only return TODO if we have assembly code without compiled version
+                    if (kv.value_ptr.*.object.get("code")) |code| {
+                        if (code == .string) {
+                            if (isAssemblyCode(code.string)) {
+                                // Assembly tests without compiled bytecode are TODO
+                                return TestTodo;
+                            }
                         }
                     }
                 }
@@ -30,10 +38,13 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
         }
     }
     
+    // Don't check for placeholder addresses - our parseAddress function handles them correctly
+    // Only mark as TODO if we have assembly code without compiled bytecode
+
     // Setup database
     var database = evm.Database.init(allocator);
     defer database.deinit();
-    
+
     // Parse environment
     const env = test_case.object.get("env");
     const block_info = evm.BlockInfo{
@@ -85,14 +96,32 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                     acc.nonce = try parseIntFromJson(nonce);
                 }
                 
-                // Set code
-                if (account.object.get("code")) |code| {
+                // Set code - prefer //code field if available (pre-compiled bytecode)
+                // First try //code field (contains compiled bytecode for Yul/assembly tests)
+                if (account.object.get("//code")) |compiled_code| {
+                    if (compiled_code == .string) {
+                        const code_str = compiled_code.string;
+                        if (!std.mem.eql(u8, code_str, "") and !std.mem.eql(u8, code_str, "0x")) {
+                            const hex_data = try parseHexData(allocator, code_str);
+                            defer allocator.free(hex_data);
+
+                            if (hex_data.len > 2) { // More than just "0x"
+                                const code_bytes = try primitives.Hex.hex_to_bytes(allocator, hex_data);
+                                defer allocator.free(code_bytes);
+                                const code_hash = try database.set_code(code_bytes);
+                                acc.code_hash = code_hash;
+                            }
+                        }
+                    }
+                } else if (account.object.get("code")) |code| {
+                    // Fall back to regular code field if no //code exists
                     if (code == .string) {
                         const code_str = code.string;
+                        // Skip assembly/Yul code that doesn't have pre-compiled bytecode
                         if (!std.mem.eql(u8, code_str, "") and !std.mem.eql(u8, code_str, "0x") and !isAssemblyCode(code_str)) {
                             const hex_data = try parseHexData(allocator, code_str);
                             defer allocator.free(hex_data);
-                            
+
                             if (hex_data.len > 2) { // More than just "0x"
                                 const code_bytes = try primitives.Hex.hex_to_bytes(allocator, hex_data);
                                 defer allocator.free(code_bytes);
@@ -112,7 +141,22 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                         var storage_it = storage.object.iterator();
                         while (storage_it.next()) |storage_kv| {
                             const key = try std.fmt.parseInt(u256, storage_kv.key_ptr.*, 0);
-                            const value = try std.fmt.parseInt(u256, storage_kv.value_ptr.*.string, 0);
+
+                            // Storage values might contain placeholders like <eoa:sender:0x...>
+                            const value_str = storage_kv.value_ptr.*.string;
+                            const value: u256 = if (std.mem.startsWith(u8, value_str, "<") and std.mem.endsWith(u8, value_str, ">")) blk: {
+                                // Extract address from placeholder and convert to u256
+                                const addr = try parseAddress(value_str);
+                                const addr_bytes = addr.bytes;
+                                var addr_int: u256 = 0;
+                                for (addr_bytes) |b| {
+                                    addr_int = (addr_int << 8) | b;
+                                }
+                                break :blk addr_int;
+                            } else blk: {
+                                break :blk try std.fmt.parseInt(u256, value_str, 0);
+                            };
+
                             try database.set_storage(address.bytes, key, value);
                         }
                     }
@@ -203,13 +247,15 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
             // Parse value
             const value = if (tx.object.get("value")) |v| blk: {
                 const val_str = if (v == .array) v.array.items[0].string else v.string;
-                break :blk try std.fmt.parseInt(u256, val_str, 0);
+                break :blk if (val_str.len == 0) 0 else try std.fmt.parseInt(u256, val_str, 0);
             } else 0;
             
             // Parse to address
-            const to = if (tx.object.get("to")) |to_val| 
-                try parseAddress(to_val.string) 
-            else null;
+            const to = if (tx.object.get("to")) |to_val| blk: {
+                const to_str = to_val.string;
+                if (to_str.len == 0) break :blk null;
+                break :blk try parseAddress(to_str);
+            } else null;
             
             // Create call params
             const call_params = if (to) |to_addr| 
@@ -240,9 +286,9 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
 
 fn parseIntFromJson(value: std.json.Value) !u64 {
     return switch (value) {
-        .string => |s| try std.fmt.parseInt(u64, s, 0),
+        .string => |s| if (s.len == 0) 0 else try std.fmt.parseInt(u64, s, 0),
         .integer => |i| @intCast(i),
-        .number_string => |s| try std.fmt.parseInt(u64, s, 0),
+        .number_string => |s| if (s.len == 0) 0 else try std.fmt.parseInt(u64, s, 0),
         else => 1,
     };
 }
@@ -317,8 +363,9 @@ pub const TransactionIndexes = struct {
 };
 
 fn parseAddress(addr: []const u8) !Address {
+    var buf: [42]u8 = undefined;
     var clean_addr = addr;
-    
+
     // Handle placeholder syntax like:
     // <contract:0x...>
     // <contract:name:0x...>
@@ -333,33 +380,71 @@ fn parseAddress(addr: []const u8) !Address {
             }
         }
     }
-    
-    // Ensure 0x prefix
+
+    // Ensure we have a properly formatted hex string
+    var final_addr: []const u8 = undefined;
+
+    // Check if we need to add 0x prefix
     if (!std.mem.startsWith(u8, clean_addr, "0x")) {
-        var buf: [42]u8 = undefined;
         buf[0] = '0';
         buf[1] = 'x';
-        @memcpy(buf[2..2 + clean_addr.len], clean_addr);
-        clean_addr = buf[0..2 + clean_addr.len];
-    }
-    
-    // Ensure proper length (pad with zeros if needed)
-    if (clean_addr.len < 42) {
-        var padded: [42]u8 = undefined;
-        @memcpy(padded[0..clean_addr.len], clean_addr);
-        // Fill rest with '0'
-        for (clean_addr.len..42) |i| {
-            padded[i] = '0';
+
+        // Pad with leading zeros if needed (addresses without 0x should be 40 chars)
+        const expected_len = 40;
+        const actual_len = clean_addr.len;
+
+        if (actual_len < expected_len) {
+            // Add leading zeros after 0x
+            const zeros_needed = expected_len - actual_len;
+            for (0..zeros_needed) |i| {
+                buf[2 + i] = '0';
+            }
+            @memcpy(buf[2 + zeros_needed..2 + zeros_needed + actual_len], clean_addr);
+            final_addr = buf[0..42];
+        } else {
+            @memcpy(buf[2..2 + actual_len], clean_addr);
+            final_addr = buf[0..2 + actual_len];
         }
-        return try Address.fromHex(padded[0..42]);
+    } else {
+        // Already has 0x prefix
+        if (clean_addr.len < 42) {
+            // Need to pad with zeros
+            @memcpy(buf[0..2], "0x");
+            const hex_part = clean_addr[2..];
+            const zeros_needed = 40 - hex_part.len;
+
+            for (0..zeros_needed) |i| {
+                buf[2 + i] = '0';
+            }
+            @memcpy(buf[2 + zeros_needed..2 + zeros_needed + hex_part.len], hex_part);
+            final_addr = buf[0..42];
+        } else {
+            final_addr = clean_addr;
+        }
     }
-    
-    return try Address.fromHex(clean_addr);
+
+    return try Address.fromHex(final_addr);
+}
+
+test "parseAddress placeholders" {
+    const addr1 = try parseAddress("<contract:target:0x0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6>");
+    try std.testing.expectEqual(Address.fromHex("0x0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6").?, addr1);
+
+    const addr2 = try parseAddress("<eoa:sender:0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b>");
+    try std.testing.expectEqual(Address.fromHex("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b").?, addr2);
 }
 
 fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
     var clean_data = data;
-    
+
+    // Debug for odd length hex
+    if (std.mem.eql(u8, data, "0x")) {
+        // Empty hex data is valid - return just "0x"
+        const result = try allocator.alloc(u8, 2);
+        @memcpy(result, "0x");
+        return result;
+    }
+
     // Handle :raw prefix
     if (std.mem.startsWith(u8, data, ":raw ")) {
         clean_data = data[5..];
@@ -444,12 +529,14 @@ fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
 }
 
 fn isAssemblyCode(code: []const u8) bool {
-    // Assembly code starts with { or :asm
+    // Assembly code starts with { or :asm or :yul
     // :raw prefix indicates actual bytecode, not assembly
     if (std.mem.startsWith(u8, code, ":raw ")) {
         return false; // This is bytecode, not assembly
     }
-    return std.mem.startsWith(u8, code, "{") or std.mem.startsWith(u8, code, ":asm ");
+    return std.mem.startsWith(u8, code, "{") or
+           std.mem.startsWith(u8, code, ":asm ") or
+           std.mem.startsWith(u8, code, ":yul ");
 }
 
 fn parseHardfork(network: []const u8) evm.Hardfork {
@@ -542,12 +629,12 @@ pub fn runTest(allocator: std.mem.Allocator, test_data: TestData) !void {
             
             // Set balance
             if (account.balance) |balance| {
-                acc.balance = try std.fmt.parseInt(u256, balance, 0);
+                acc.balance = if (balance.len == 0) 0 else try std.fmt.parseInt(u256, balance, 0);
             }
             
             // Set nonce
             if (account.nonce) |nonce| {
-                acc.nonce = try std.fmt.parseInt(u64, nonce, 0);
+                acc.nonce = if (nonce.len == 0) 0 else try std.fmt.parseInt(u64, nonce, 0);
             }
             
             // Set code
@@ -572,7 +659,21 @@ pub fn runTest(allocator: std.mem.Allocator, test_data: TestData) !void {
             if (account.storage) |storage| {
                 for (storage) |entry| {
                     const key = try std.fmt.parseInt(u256, entry.key, 0);
-                    const value = try std.fmt.parseInt(u256, entry.value, 0);
+
+                    // Storage values might contain placeholders like <eoa:sender:0x...>
+                    const value: u256 = if (std.mem.startsWith(u8, entry.value, "<") and std.mem.endsWith(u8, entry.value, ">")) blk: {
+                        // Extract address from placeholder and convert to u256
+                        const addr = try parseAddress(entry.value);
+                        const addr_bytes = addr.bytes;
+                        var addr_int: u256 = 0;
+                        for (addr_bytes) |b| {
+                            addr_int = (addr_int << 8) | b;
+                        }
+                        break :blk addr_int;
+                    } else blk: {
+                        break :blk try std.fmt.parseInt(u256, entry.value, 0);
+                    };
+
                     try database.set_storage(address.bytes, key, value);
                 }
             }
@@ -624,8 +725,14 @@ pub fn runTest(allocator: std.mem.Allocator, test_data: TestData) !void {
                 Address.zero();
             
             // Parse to address
-            const to_opt = if (tx.to) |to| try parseAddress(to) else null;
-            const value = if (tx.value) |v| try std.fmt.parseInt(u256, v, 0) else 0;
+            const to_opt = if (tx.to) |to| blk: {
+                if (to.len == 0) break :blk null;
+                break :blk try parseAddress(to);
+            } else null;
+            const value = if (tx.value) |v| blk: {
+                if (v.len == 0) break :blk 0;
+                break :blk try std.fmt.parseInt(u256, v, 0);
+            } else 0;
             const gas = if (tx.gasLimit) |g| try std.fmt.parseInt(u64, g, 0) else 1000000;
             
             // Create call params
@@ -659,15 +766,15 @@ pub fn runTest(allocator: std.mem.Allocator, test_data: TestData) !void {
             
             // Check balance
             if (expected.balance) |expected_bal| {
-                const exp = try std.fmt.parseInt(u256, expected_bal, 0);
+                const exp = if (expected_bal.len == 0) 0 else try std.fmt.parseInt(u256, expected_bal, 0);
                 const actual_account = try database.get_account(address.bytes);
                 const actual = if (actual_account) |acc| acc.balance else 0;
                 try testing.expectEqual(exp, actual);
             }
-            
+
             // Check nonce
             if (expected.nonce) |expected_nonce| {
-                const exp = try std.fmt.parseInt(u64, expected_nonce, 0);
+                const exp = if (expected_nonce.len == 0) 0 else try std.fmt.parseInt(u64, expected_nonce, 0);
                 const actual_account = try database.get_account(address.bytes);
                 const actual = if (actual_account) |acc| acc.nonce else 0;
                 try testing.expectEqual(exp, actual);
@@ -718,7 +825,7 @@ pub fn runTest(allocator: std.mem.Allocator, test_data: TestData) !void {
                     
                     // Check nonce
                     if (expected.nonce) |expected_nonce| {
-                        const exp = try std.fmt.parseInt(u64, expected_nonce, 0);
+                        const exp = if (expected_nonce.len == 0) 0 else try std.fmt.parseInt(u64, expected_nonce, 0);
                         const actual_account = try database.get_account(address.bytes);
                         const actual = if (actual_account) |acc| acc.nonce else 0;
                         try testing.expectEqual(exp, actual);
@@ -728,7 +835,21 @@ pub fn runTest(allocator: std.mem.Allocator, test_data: TestData) !void {
                     if (expected.storage) |storage| {
                         for (storage) |entry| {
                             const key = try std.fmt.parseInt(u256, entry.key, 0);
-                            const exp_value = try std.fmt.parseInt(u256, entry.value, 0);
+
+                            // Expected storage values might contain placeholders like <eoa:sender:0x...>
+                            const exp_value: u256 = if (std.mem.startsWith(u8, entry.value, "<") and std.mem.endsWith(u8, entry.value, ">")) blk: {
+                                // Extract address from placeholder and convert to u256
+                                const addr = try parseAddress(entry.value);
+                                const addr_bytes = addr.bytes;
+                                var addr_int: u256 = 0;
+                                for (addr_bytes) |b| {
+                                    addr_int = (addr_int << 8) | b;
+                                }
+                                break :blk addr_int;
+                            } else blk: {
+                                break :blk try std.fmt.parseInt(u256, entry.value, 0);
+                            };
+
                             const actual_value = try database.get_storage(address.bytes, key);
                             try testing.expectEqual(exp_value, actual_value);
                         }
