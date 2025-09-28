@@ -180,7 +180,7 @@ pub fn Handlers(FrameType: type) type {
                 const stack_capacity = @TypeOf(self.stack).stack_capacity;
                 const max_final_size = @as(isize, @intCast(current_stack_size)) + @as(isize, max_stack);
                 if (max_final_size > @as(isize, @intCast(stack_capacity))) {
-                    log.warn("JUMPDEST: Stack overflow - current={}, max_change={}, capacity={}", .{ current_stack_size, max_stack, stack_capacity });
+                    log.debug("JUMPDEST: Stack overflow - current={}, max_change={}, capacity={}", .{ current_stack_size, max_stack, stack_capacity });
                     self.afterComplete(.JUMPDEST);
                     return Error.StackOverflow;
                 }
