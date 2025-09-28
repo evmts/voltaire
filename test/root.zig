@@ -15,6 +15,9 @@ test {
     // Test snailtracer first
     _ = @import("evm/snailtracer_test.zig");
     
+    // High gas limit crash reproduction test
+    _ = @import("high_gas_limit_test.zig");
+    
     // Minimal EVM differential test
     _ = @import("minimal_evm_revm_differential_test.zig");
 
