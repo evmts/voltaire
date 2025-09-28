@@ -523,7 +523,7 @@ pub fn Handlers(FrameType: type) type {
             // log.before_instruction(self, .RETURNDATASIZE);
             const dispatch = Dispatch{ .cursor = cursor };
             // Return data from the last call is stored in the EVM's return_data field
-            const return_data = self.getEvm().get_return_data();
+            const return_data = self.getEvm().get_return_data() orelse &[_]u8{};
             const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "RETURNDATASIZE requires stack space");
@@ -559,7 +559,7 @@ pub fn Handlers(FrameType: type) type {
             const length_usize = @as(usize, @intCast(length));
 
             // Return data from the last call is stored in the EVM's return_data field
-            const return_data = self.getEvm().get_return_data();
+            const return_data = self.getEvm().get_return_data() orelse return Error.ReturnDataNotAvailable;
 
             // Check if we're trying to read past the end of return data
             if (offset_usize > return_data.len or
