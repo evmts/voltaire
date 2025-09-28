@@ -47,6 +47,7 @@ pub fn Frame(_config: FrameConfig) type {
             GasOverflow,
             InvalidAmount,
             WriteProtection,
+            ReturnDataNotAvailable,
             // Success termination cases (not actually errors)
             // We treat every exit as errors in the low level interpreter while evm.zig catches them and returns them as success
             // This is a perf optimization

@@ -16,80 +16,90 @@ pub fn CallResult(config: anytype) type {
         error_info: ?[]const u8 = null,
         created_address: ?Address = null,
 
-        pub fn success_with_output(gas_left: u64, output: []const u8) Self {
+        pub fn success_with_output(allocator: std.mem.Allocator, gas_left: u64, output: []const u8) !Self {
             return Self{
                 .success = true,
                 .gas_left = gas_left,
-                .output = output,
-                .logs = &.{},
-                .selfdestructs = &.{},
-                .accessed_addresses = &.{},
-                .accessed_storage = &.{},
+                .output = try allocator.dupe(u8, output),
+                .logs = try allocator.alloc(Log, 0),
+                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
+                .accessed_addresses = try allocator.alloc(Address, 0),
+                .accessed_storage = try allocator.alloc(StorageAccess, 0),
             };
         }
 
-        pub fn success_empty(gas_left: u64) Self {
+        pub fn success_empty(allocator: std.mem.Allocator, gas_left: u64) !Self {
             return Self{
                 .success = true,
                 .gas_left = gas_left,
-                .output = &[_]u8{},
-                .logs = &.{},
-                .selfdestructs = &.{},
-                .accessed_addresses = &.{},
-                .accessed_storage = &.{},
+                .output = try allocator.alloc(u8, 0),
+                .logs = try allocator.alloc(Log, 0),
+                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
+                .accessed_addresses = try allocator.alloc(Address, 0),
+                .accessed_storage = try allocator.alloc(StorageAccess, 0),
             };
         }
 
-        pub fn failure(gas_left: u64) Self {
+        pub fn failure(allocator: std.mem.Allocator, gas_left: u64) !Self {
             return Self{
                 .success = false,
                 .gas_left = gas_left,
-                .output = &[_]u8{},
-                .logs = &.{},
-                .selfdestructs = &.{},
-                .accessed_addresses = &.{},
-                .accessed_storage = &.{},
+                .output = try allocator.alloc(u8, 0),
+                .logs = try allocator.alloc(Log, 0),
+                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
+                .accessed_addresses = try allocator.alloc(Address, 0),
+                .accessed_storage = try allocator.alloc(StorageAccess, 0),
             };
         }
 
         /// Create a failed call result with error info
-        pub fn failure_with_error(gas_left: u64, error_info: []const u8) Self {
+        pub fn failure_with_error(allocator: std.mem.Allocator, gas_left: u64, error_info: []const u8) !Self {
             return Self{
                 .success = false,
                 .gas_left = gas_left,
-                .output = &[_]u8{},
-                .logs = &.{},
-                .selfdestructs = &.{},
-                .accessed_addresses = &.{},
-                .accessed_storage = &.{},
-                .error_info = error_info,
+                .output = try allocator.alloc(u8, 0),
+                .logs = try allocator.alloc(Log, 0),
+                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
+                .accessed_addresses = try allocator.alloc(Address, 0),
+                .accessed_storage = try allocator.alloc(StorageAccess, 0),
+                .error_info = try allocator.dupe(u8, error_info),
             };
         }
 
         /// Create a reverted call result with revert data
-        pub fn revert_with_data(gas_left: u64, revert_data: []const u8) Self {
+        pub fn revert_with_data(allocator: std.mem.Allocator, gas_left: u64, revert_data: []const u8) !Self {
             return Self{
                 .success = false,
                 .gas_left = gas_left,
-                .output = revert_data,
-                .logs = &.{},
-                .selfdestructs = &.{},
-                .accessed_addresses = &.{},
-                .accessed_storage = &.{},
-                .error_info = null, // Don't set error_info to avoid freeing string literal
+                .output = try allocator.dupe(u8, revert_data),
+                .logs = try allocator.alloc(Log, 0),
+                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
+                .accessed_addresses = try allocator.alloc(Address, 0),
+                .accessed_storage = try allocator.alloc(StorageAccess, 0),
+                .error_info = null,
             };
         }
 
         /// Create a successful call result with output and logs
-        pub fn success_with_logs(gas_left: u64, output: []const u8, logs: []const Log) Self {
+        pub fn success_with_logs(allocator: std.mem.Allocator, gas_left: u64, output: []const u8, logs: []const Log) !Self {
+            // Deep copy logs
+            const logs_copy = try allocator.alloc(Log, logs.len);
+            for (logs, 0..) |log, i| {
+                logs_copy[i] = .{
+                    .address = log.address,
+                    .topics = try allocator.dupe(u256, log.topics),
+                    .data = try allocator.dupe(u8, log.data),
+                };
+            }
+
             return Self{
                 .success = true,
                 .gas_left = gas_left,
-                .output = output,
-                .logs = logs,
-                .selfdestructs = &.{},
-                .accessed_addresses = &.{},
-                .accessed_storage = &.{},
+                .output = try allocator.dupe(u8, output),
+                .logs = logs_copy,
+                .selfdestructs = try allocator.alloc(SelfDestructRecord, 0),
+                .accessed_addresses = try allocator.alloc(Address, 0),
+                .accessed_storage = try allocator.alloc(StorageAccess, 0),
             };
         }
 
@@ -136,135 +146,100 @@ pub fn CallResult(config: anytype) type {
         }
 
         /// Clean up all allocated memory in the CallResult
-        /// Call this when the CallResult contains owned data that needs to be freed
+        /// This assumes the CallResult was created via toOwnedResult() and owns all its data
+        /// UNCONDITIONALLY frees all memory
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            // Free output buffer if it's allocated
-            if (self.output.len > 0) {
-                allocator.free(self.output);
-            }
+            // Free output unconditionally
+            allocator.free(self.output);
 
-            // Free logs - always free if we have logs since they're allocated
-            if (self.logs.len > 0) {
-                for (self.logs) |log| {
-                    if (log.topics.len > 0) {
-                        allocator.free(log.topics);
-                    }
-                    if (log.data.len > 0) {
-                        allocator.free(log.data);
-                    }
-                }
-                allocator.free(self.logs);
+            // Free logs and their contents unconditionally
+            for (self.logs) |log| {
+                allocator.free(log.topics);
+                allocator.free(log.data);
             }
+            allocator.free(self.logs);
 
-            // Free selfdestructs if allocated
-            if (self.selfdestructs.len > 0) {
-                allocator.free(self.selfdestructs);
-            }
+            // Free selfdestructs unconditionally
+            allocator.free(self.selfdestructs);
 
-            // Free accessed_addresses if allocated
-            if (self.accessed_addresses.len > 0) {
-                allocator.free(self.accessed_addresses);
-            }
+            // Free accessed_addresses unconditionally
+            allocator.free(self.accessed_addresses);
 
-            // Free accessed_storage if allocated
-            if (self.accessed_storage.len > 0) {
-                allocator.free(self.accessed_storage);
-            }
+            // Free accessed_storage unconditionally
+            allocator.free(self.accessed_storage);
 
             // Free trace if present
             if (self.trace) |*trace| {
                 trace.deinit();
             }
 
-            // Free error_info if present
+            // Free error_info unconditionally
             if (self.error_info) |info| {
                 allocator.free(info);
             }
 
-            // Reset all fields to empty slices
-            self.output = &.{};
-            self.logs = &.{};
-            self.selfdestructs = &.{};
-            self.accessed_addresses = &.{};
-            self.accessed_storage = &.{};
-            self.trace = null;
-            self.error_info = null;
+            // Reset all fields
+            self.* = undefined;
         }
 
         /// Create an owned copy of this CallResult
         /// All dynamically allocated data (output, logs, etc.) is duplicated
         /// The caller owns the returned result and must call deinit() when done
         pub fn toOwnedResult(self: Self, allocator: std.mem.Allocator) !Self {
-            // Copy output data
-            const output_copy = if (self.output.len > 0)
-                try allocator.dupe(u8, self.output)
+            // Always allocate and copy output data (even if empty)
+            // Handle compile-time empty slices that may have invalid pointers
+            const output_copy = if (self.output.len == 0)
+                try allocator.alloc(u8, 0)
             else
-                &.{};
-            errdefer if (output_copy.len > 0) allocator.free(output_copy);
+                try allocator.dupe(u8, self.output);
+            errdefer allocator.free(output_copy);
 
-            // Copy logs
-            const logs_copy = if (self.logs.len > 0) blk: {
-                const logs = try allocator.alloc(Log, self.logs.len);
-                errdefer allocator.free(logs);
-
-                var copied_count: usize = 0;
-                errdefer {
-                    for (logs[0..copied_count]) |log| {
-                        if (log.topics.len > 0) allocator.free(log.topics);
-                        if (log.data.len > 0) allocator.free(log.data);
-                    }
-                }
-
-                for (self.logs, 0..) |log, i| {
-                    logs[i] = .{
-                        .address = log.address,
-                        .topics = if (log.topics.len > 0)
-                            try allocator.dupe(u256, log.topics)
-                        else
-                            &.{},
-                        .data = if (log.data.len > 0)
-                            try allocator.dupe(u8, log.data)
-                        else
-                            &.{},
-                    };
-                    copied_count += 1;
-                }
-                break :blk logs;
-            } else &.{};
-            errdefer if (logs_copy.len > 0) {
+            // Always allocate and copy logs
+            const logs_copy = try allocator.alloc(Log, self.logs.len);
+            errdefer {
                 for (logs_copy) |log| {
-                    if (log.topics.len > 0) allocator.free(log.topics);
-                    if (log.data.len > 0) allocator.free(log.data);
+                    allocator.free(log.topics);
+                    allocator.free(log.data);
                 }
                 allocator.free(logs_copy);
-            };
+            }
 
-            // Copy selfdestructs
-            const selfdestructs_copy = if (self.selfdestructs.len > 0)
-                try allocator.dupe(SelfDestructRecord, self.selfdestructs)
-            else
-                &.{};
-            errdefer if (selfdestructs_copy.len > 0) allocator.free(selfdestructs_copy);
+            for (self.logs, 0..) |log, i| {
+                logs_copy[i] = .{
+                    .address = log.address,
+                    .topics = if (log.topics.len == 0) try allocator.alloc(u256, 0) else try allocator.dupe(u256, log.topics),
+                    .data = if (log.data.len == 0) try allocator.alloc(u8, 0) else try allocator.dupe(u8, log.data),
+                };
+            }
 
-            // Copy accessed addresses
-            const accessed_addresses_copy = if (self.accessed_addresses.len > 0)
-                try allocator.dupe(Address, self.accessed_addresses)
+            // Always allocate and copy selfdestructs
+            const selfdestructs_copy = if (self.selfdestructs.len == 0)
+                try allocator.alloc(SelfDestructRecord, 0)
             else
-                &.{};
-            errdefer if (accessed_addresses_copy.len > 0) allocator.free(accessed_addresses_copy);
+                try allocator.dupe(SelfDestructRecord, self.selfdestructs);
+            errdefer allocator.free(selfdestructs_copy);
 
-            // Copy accessed storage
-            const accessed_storage_copy = if (self.accessed_storage.len > 0)
-                try allocator.dupe(StorageAccess, self.accessed_storage)
+            // Always allocate and copy accessed addresses
+            const accessed_addresses_copy = if (self.accessed_addresses.len == 0)
+                try allocator.alloc(Address, 0)
             else
-                &.{};
-            errdefer if (accessed_storage_copy.len > 0) allocator.free(accessed_storage_copy);
+                try allocator.dupe(Address, self.accessed_addresses);
+            errdefer allocator.free(accessed_addresses_copy);
 
-            // Copy error info
-            const error_info_copy = if (self.error_info) |info|
-                try allocator.dupe(u8, info)
+            // Always allocate and copy accessed storage
+            const accessed_storage_copy = if (self.accessed_storage.len == 0)
+                try allocator.alloc(StorageAccess, 0)
             else
-                null;
+                try allocator.dupe(StorageAccess, self.accessed_storage);
+            errdefer allocator.free(accessed_storage_copy);
+
+            // Copy error info if present
+            const error_info_copy: ?[]const u8 = if (self.error_info) |info| blk: {
+                break :blk if (info.len == 0)
+                    try allocator.alloc(u8, 0)
+                else
+                    try allocator.dupe(u8, info);
+            } else null;
             errdefer if (error_info_copy) |info| allocator.free(info);
 
             // Copy trace if present
@@ -419,7 +394,7 @@ pub const ExecutionTrace = struct {
 
 test "call result success creation" {
     const output_data = &[_]u8{ 0x01, 0x02, 0x03, 0x04 };
-    const result = DefaultCallResult.success_with_output(15000, output_data);
+    const result = (DefaultCallResult.success_with_output(std.testing.allocator, 15000, output_data) catch unreachable);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(u64, 15000), result.gas_left);
@@ -430,7 +405,7 @@ test "call result success creation" {
 }
 
 test "call result success empty" {
-    const result = DefaultCallResult.success_empty(8000);
+    const result = (DefaultCallResult.success_empty(std.testing.allocator, 8000) catch unreachable);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(u64, 8000), result.gas_left);
@@ -441,7 +416,7 @@ test "call result success empty" {
 }
 
 test "call result failure" {
-    const result = DefaultCallResult.failure(500);
+    const result = (DefaultCallResult.failure(std.testing.allocator, 500) catch unreachable);
 
     try std.testing.expect(!result.success);
     try std.testing.expectEqual(@as(u64, 500), result.gas_left);
@@ -453,7 +428,7 @@ test "call result failure" {
 
 test "call result revert with data" {
     const revert_data = "Error: insufficient balance";
-    const result = DefaultCallResult.revert_with_data(3000, revert_data);
+    const result = (DefaultCallResult.revert_with_data(std.testing.allocator, 3000, revert_data) catch unreachable);
 
     try std.testing.expect(!result.success);
     try std.testing.expectEqual(@as(u64, 3000), result.gas_left);
@@ -467,78 +442,78 @@ test "call result gas consumption calculation" {
     const original_gas: u64 = 21000;
 
     // Successful call that consumed some gas
-    const success_result = DefaultCallResult.success_empty(18500);
+    const success_result = (DefaultCallResult.success_empty(std.testing.allocator, 18500) catch unreachable);
     try std.testing.expectEqual(@as(u64, 2500), success_result.gasConsumed(original_gas));
 
     // Failed call that consumed most gas
-    const failed_result = DefaultCallResult.failure(100);
+    const failed_result = (DefaultCallResult.failure(std.testing.allocator, 100) catch unreachable);
     try std.testing.expectEqual(@as(u64, 20900), failed_result.gasConsumed(original_gas));
 
     // Edge case: gas_left equals original_gas (no consumption)
-    const no_consumption = DefaultCallResult.success_empty(original_gas);
+    const no_consumption = (DefaultCallResult.success_empty(std.testing.allocator, original_gas) catch unreachable);
     try std.testing.expectEqual(@as(u64, 0), no_consumption.gasConsumed(original_gas));
 
     // Edge case: gas_left > original_gas (invalid state)
-    const invalid_result = DefaultCallResult.success_empty(25000);
+    const invalid_result = (DefaultCallResult.success_empty(std.testing.allocator, 25000) catch unreachable);
     try std.testing.expectEqual(@as(u64, 0), invalid_result.gasConsumed(original_gas));
 }
 
 test "call result state checks" {
     // Success cases
-    const success1 = DefaultCallResult.success_empty(1000);
+    const success1 = (DefaultCallResult.success_empty(std.testing.allocator, 1000) catch unreachable);
     try std.testing.expect(success1.isSuccess());
     try std.testing.expect(!success1.isFailure());
 
-    const success2 = DefaultCallResult.success_with_output(2000, &[_]u8{0xff});
+    const success2 = (DefaultCallResult.success_with_output(std.testing.allocator, 2000, &[_]u8{0xff}) catch unreachable);
     try std.testing.expect(success2.isSuccess());
     try std.testing.expect(!success2.isFailure());
 
     // Failure cases
-    const failure1 = DefaultCallResult.failure(500);
+    const failure1 = (DefaultCallResult.failure(std.testing.allocator, 500) catch unreachable);
     try std.testing.expect(!failure1.isSuccess());
     try std.testing.expect(failure1.isFailure());
 
-    const failure2 = DefaultCallResult.revert_with_data(300, "revert reason");
+    const failure2 = (DefaultCallResult.revert_with_data(std.testing.allocator, 300, "revert reason") catch unreachable);
     try std.testing.expect(!failure2.isSuccess());
     try std.testing.expect(failure2.isFailure());
 }
 
 test "call result output checks" {
     // No output cases
-    const empty1 = DefaultCallResult.success_empty(1000);
+    const empty1 = (DefaultCallResult.success_empty(std.testing.allocator, 1000) catch unreachable);
     try std.testing.expect(!empty1.hasOutput());
 
-    const empty2 = DefaultCallResult.failure(500);
+    const empty2 = (DefaultCallResult.failure(std.testing.allocator, 500) catch unreachable);
     try std.testing.expect(!empty2.hasOutput());
 
     // With output cases
-    const with_output1 = DefaultCallResult.success_with_output(2000, &[_]u8{0x42});
+    const with_output1 = (DefaultCallResult.success_with_output(std.testing.allocator, 2000, &[_]u8{0x42}) catch unreachable);
     try std.testing.expect(with_output1.hasOutput());
 
-    const with_output2 = DefaultCallResult.revert_with_data(300, "error message");
+    const with_output2 = (DefaultCallResult.revert_with_data(std.testing.allocator, 300, "error message") catch unreachable);
     try std.testing.expect(with_output2.hasOutput());
 }
 
 test "call result edge cases" {
     // Zero gas left
-    const zero_gas = DefaultCallResult.success_empty(0);
+    const zero_gas = (DefaultCallResult.success_empty(std.testing.allocator, 0) catch unreachable);
     try std.testing.expect(zero_gas.isSuccess());
     try std.testing.expectEqual(@as(u64, 0), zero_gas.gas_left);
     try std.testing.expectEqual(@as(u64, 21000), zero_gas.gasConsumed(21000));
 
     // Maximum gas left
-    const max_gas = DefaultCallResult.success_empty(std.math.maxInt(u64));
+    const max_gas = (DefaultCallResult.success_empty(std.testing.allocator, std.math.maxInt(u64)) catch unreachable);
     try std.testing.expectEqual(std.math.maxInt(u64), max_gas.gas_left);
     try std.testing.expectEqual(@as(u64, 0), max_gas.gasConsumed(std.math.maxInt(u64)));
 
     // Large output data
     const large_output = &[_]u8{0xaa} ** 10000;
-    const large_result = DefaultCallResult.success_with_output(5000, large_output);
+    const large_result = (DefaultCallResult.success_with_output(std.testing.allocator, 5000, large_output) catch unreachable);
     try std.testing.expect(large_result.hasOutput());
     try std.testing.expectEqual(@as(usize, 10000), large_result.output.len);
 
     // Empty revert data (still counts as having output)
-    const empty_revert = DefaultCallResult.revert_with_data(1000, &[_]u8{});
+    const empty_revert = (DefaultCallResult.revert_with_data(std.testing.allocator, 1000, &[_]u8{}) catch unreachable);
     try std.testing.expect(!empty_revert.hasOutput());
     try std.testing.expect(empty_revert.isFailure());
 }
@@ -575,7 +550,7 @@ test "DefaultCallResult log memory management - proper cleanup" {
     };
 
     // Create CallResult with logs
-    var call_result = DefaultCallResult.success_with_logs(50000, &[_]u8{}, logs);
+    var call_result = (DefaultCallResult.success_with_logs(std.testing.allocator, 50000, &[_]u8{}, logs) catch unreachable);
 
     // This should properly clean up all allocated memory
     call_result.deinitLogs(allocator);
@@ -618,7 +593,7 @@ test "DefaultCallResult deinitLogsSlice - memory management for takeLogs result"
 
 test "call result failure with error info" {
     const error_message = "Contract execution reverted";
-    const result = DefaultCallResult.failure_with_error(1500, error_message);
+    const result = (DefaultCallResult.failure_with_error(std.testing.allocator, 1500, error_message) catch unreachable);
 
     try std.testing.expect(!result.success);
     try std.testing.expectEqual(@as(u64, 1500), result.gas_left);
@@ -647,7 +622,7 @@ test "call result success with logs" {
     };
 
     const output_data = &[_]u8{ 0xAA, 0xBB, 0xCC };
-    const result = DefaultCallResult.success_with_logs(12000, output_data, logs);
+    const result = (DefaultCallResult.success_with_logs(std.testing.allocator, 12000, output_data, logs) catch unreachable);
 
     try std.testing.expect(result.success);
     try std.testing.expectEqual(@as(u64, 12000), result.gas_left);
@@ -662,7 +637,7 @@ test "call result success with logs" {
 
 test "call result struct field defaults" {
     // Test that default fields are correctly initialized
-    const result = DefaultCallResult.success_empty(5000);
+    const result = (DefaultCallResult.success_empty(std.testing.allocator, 5000) catch unreachable);
 
     try std.testing.expectEqual(@as(usize, 0), result.logs.len);
     try std.testing.expectEqual(@as(usize, 0), result.selfdestructs.len);
@@ -684,7 +659,7 @@ test "call result with self destructs" {
         },
     };
 
-    var result = DefaultCallResult.success_empty(8000);
+    var result = (DefaultCallResult.success_empty(std.testing.allocator, 8000) catch unreachable);
     result.selfdestructs = &selfdestructs;
 
     try std.testing.expectEqual(@as(usize, 2), result.selfdestructs.len);
@@ -701,7 +676,7 @@ test "call result with accessed addresses" {
         .{ .bytes = [_]u8{0xCC} ++ [_]u8{0} ** 19 },
     };
 
-    var result = DefaultCallResult.failure(200);
+    var result = (DefaultCallResult.failure(std.testing.allocator, 200) catch unreachable);
     result.accessed_addresses = &accessed_addresses;
 
     try std.testing.expectEqual(@as(usize, 3), result.accessed_addresses.len);
@@ -722,7 +697,7 @@ test "call result with accessed storage" {
         },
     };
 
-    var result = DefaultCallResult.success_empty(9500);
+    var result = (DefaultCallResult.success_empty(std.testing.allocator, 9500) catch unreachable);
     result.accessed_storage = &accessed_storage;
 
     try std.testing.expectEqual(@as(usize, 2), result.accessed_storage.len);
@@ -799,27 +774,27 @@ test "trace step memory management" {
 
 test "call result gas consumption edge cases" {
     // Test integer overflow protection
-    const result1 = DefaultCallResult.success_empty(std.math.maxInt(u64));
+    const result1 = (DefaultCallResult.success_empty(std.testing.allocator, std.math.maxInt(u64)) catch unreachable);
     try std.testing.expectEqual(@as(u64, 0), result1.gasConsumed(1000));
 
     // Test maximum possible consumption
-    const result2 = DefaultCallResult.success_empty(0);
+    const result2 = (DefaultCallResult.success_empty(std.testing.allocator, 0) catch unreachable);
     try std.testing.expectEqual(std.math.maxInt(u64), result2.gasConsumed(std.math.maxInt(u64)));
 
     // Test exact consumption
-    const result3 = DefaultCallResult.failure(12345);
+    const result3 = (DefaultCallResult.failure(std.testing.allocator, 12345) catch unreachable);
     try std.testing.expectEqual(@as(u64, 8655), result3.gasConsumed(21000));
 }
 
 test "call result comprehensive constructor coverage" {
     // Test all constructor methods
     const constructors = [_]DefaultCallResult{
-        DefaultCallResult.success_with_output(1000, &[_]u8{0x01}),
-        DefaultCallResult.success_empty(2000),
-        DefaultCallResult.failure(3000),
-        DefaultCallResult.failure_with_error(4000, "test error"),
-        DefaultCallResult.revert_with_data(5000, "revert reason"),
-        DefaultCallResult.success_with_logs(6000, &[_]u8{0x02}, &[_]Log{}),
+        (DefaultCallResult.success_with_output(std.testing.allocator, 1000, &[_]u8{0x01}) catch unreachable),
+        (DefaultCallResult.success_empty(std.testing.allocator, 2000) catch unreachable),
+        (DefaultCallResult.failure(std.testing.allocator, 3000) catch unreachable),
+        (DefaultCallResult.failure_with_error(std.testing.allocator, 4000, "test error") catch unreachable),
+        (DefaultCallResult.revert_with_data(std.testing.allocator, 5000, "revert reason") catch unreachable),
+        (DefaultCallResult.success_with_logs(std.testing.allocator, 6000, &[_]u8{0x02}, &[_]Log{}) catch unreachable),
     };
 
     // Verify all constructors work properly
@@ -903,7 +878,7 @@ test "call result toOwnedResult basic" {
     const allocator = testing.allocator;
 
     // Test with simple success result
-    const original = DefaultCallResult.success_with_output(5000, "test output");
+    const original = (DefaultCallResult.success_with_output(std.testing.allocator, 5000, "test output") catch unreachable);
     const owned = try original.toOwnedResult(allocator);
     defer {
         var mutable_owned = owned;
@@ -940,7 +915,7 @@ test "call result toOwnedResult with logs" {
         .data = data,
     };
 
-    const original = DefaultCallResult.success_with_logs(3000, "output", logs);
+    const original = (DefaultCallResult.success_with_logs(std.testing.allocator, 3000, "output", logs) catch unreachable);
     const owned = try original.toOwnedResult(allocator);
     defer {
         var mutable_owned = owned;
@@ -963,7 +938,7 @@ test "call result toOwnedResult empty result" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const original = DefaultCallResult.success_empty(1000);
+    const original = (DefaultCallResult.success_empty(std.testing.allocator, 1000) catch unreachable);
     const owned = try original.toOwnedResult(allocator);
     defer {
         var mutable_owned = owned;
@@ -980,7 +955,7 @@ test "call result toOwnedResult with error info" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
-    const original = DefaultCallResult.failure_with_error(500, "error message");
+    const original = (DefaultCallResult.failure_with_error(std.testing.allocator, 500, "error message") catch unreachable);
     const owned = try original.toOwnedResult(allocator);
     defer {
         var mutable_owned = owned;
@@ -1004,7 +979,7 @@ test "call result toOwnedResult with all fields" {
     const allocator = gpa.allocator();
 
     // Create a result with all fields populated
-    var result = DefaultCallResult.success_with_output(2500, "test output");
+    var result = (DefaultCallResult.success_with_output(std.testing.allocator, 2500, "test output") catch unreachable);
 
     // Add logs
     const topics = try allocator.dupe(u256, &[_]u256{0xABCD});
