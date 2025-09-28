@@ -874,8 +874,25 @@ pub fn Preprocessor(FrameType: type) type {
                 // Calculate memory expansion cost statically
                 // Memory cost = 3 * words + words^2 / 512
                 const new_words = (size_needed + 31) / 32;
-                const memory_cost = 3 * new_words + (new_words * new_words) / 512;
-                static_gas_cost += memory_cost;
+
+                // Compile-time safety check: Verify that u64 max is much larger than the configured
+                // block gas limit. This allows us to safely use saturating arithmetic - any memory
+                // access large enough to overflow u64 would cost far more gas than any block could provide.
+                comptime {
+                    if (std.math.maxInt(u64) <= FrameType.config.block_gas_limit) {
+                        @compileError("u64 max must be greater than block_gas_limit for saturating arithmetic to work correctly. " ++
+                                    "u64 max: " ++ std.fmt.comptimePrint("{}", .{std.math.maxInt(u64)}) ++
+                                    ", block_gas_limit: " ++ std.fmt.comptimePrint("{}", .{FrameType.config.block_gas_limit}) ++
+                                    ". The saturating arithmetic assumption requires that any overflow results in costs exceeding block limits.");
+                    }
+                }
+
+                // Use saturating arithmetic to prevent overflow on large memory operations
+                // If this saturates, the gas cost will be astronomical (>18 quintillion),
+                // which will fail gas checks long before execution
+                const words_squared = @as(u64, new_words) *| @as(u64, new_words);
+                const memory_cost = 3 *| new_words +| (words_squared / 512);
+                static_gas_cost +|= memory_cost;
             }
 
             const synthetic_opcode = getSyntheticOpcode(fusion_type, value <= std.math.maxInt(u64));
