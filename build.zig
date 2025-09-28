@@ -883,7 +883,7 @@ pub fn build(b: *std.Build) void {
     const specs_test = b.addTest(.{
         .name = "ethereum-specs-test",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("test/specs/ethereum_specs_test.zig"),
+            .root_source_file = b.path("specs/cases/root.zig"),
             .target = target,
             .optimize = .Debug,
         }),
@@ -895,6 +895,12 @@ pub fn build(b: *std.Build) void {
     specs_test.root_module.addImport("primitives", modules.primitives_mod);
     specs_test.root_module.addImport("crypto", modules.crypto_mod);
     specs_test.root_module.addImport("build_options", options_mod);
+    const runner_module = b.createModule(.{
+        .root_source_file = b.path("specs/runner.zig"),
+    });
+    runner_module.addImport("evm", modules.evm_mod);
+    runner_module.addImport("primitives", modules.primitives_mod);
+    specs_test.root_module.addImport("runner", runner_module);
     specs_test.linkLibrary(c_kzg_lib);
     specs_test.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| specs_test.linkLibrary(bn254);
@@ -933,6 +939,47 @@ pub fn build(b: *std.Build) void {
     
     const specs_step = b.step("specs", "Run Ethereum execution spec tests (Zig version) - use -Dspec-max-files=N to limit, -Dtest-filter=pattern to filter");
     specs_step.dependOn(&run_specs_test.step);
+    
+    // State tests runner using manifest
+    const state_tests = b.addTest(.{
+        .name = "state-tests",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("specs/cases/root.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
+        .use_llvm = true,
+        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
+    });
+    state_tests.root_module.addImport("evm", modules.evm_mod);
+    state_tests.root_module.addImport("primitives", modules.primitives_mod);
+    state_tests.root_module.addImport("crypto", modules.crypto_mod);
+    state_tests.root_module.addImport("build_options", options_mod);
+    state_tests.linkLibrary(c_kzg_lib);
+    state_tests.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| state_tests.linkLibrary(bn254);
+    state_tests.linkLibrary(bls_wrapper);
+    state_tests.linkLibC();
+    
+    // Apply test filter if specified
+    if (test_filter) |filter| {
+        state_tests.filters = &[_][]const u8{filter};
+    }
+    
+    const run_state_tests = b.addRunArtifact(state_tests);
+    
+    // Pass test configuration as environment variables
+    if (test_filter) |filter| {
+        run_state_tests.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+    if (test_verbose) run_state_tests.setEnvironmentVariable("TEST_VERBOSE", "1");
+    if (test_fail_fast) run_state_tests.setEnvironmentVariable("TEST_FAIL_FAST", "1");
+    if (test_no_color) run_state_tests.setEnvironmentVariable("TEST_NO_COLOR", "1");
+    if (test_quiet) run_state_tests.setEnvironmentVariable("TEST_QUIET", "1");
+    
+    const state_tests_step = b.step("state-tests", "Run Ethereum state tests from manifest - use -Dtest-filter=pattern to filter");
+    state_tests_step.dependOn(&run_state_tests.step);
     
     // Bun specs runner (kept as alternative)
     const bun_check = b.addSystemCommand(&[_][]const u8{ "which", "bun" });
