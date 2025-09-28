@@ -117,12 +117,13 @@ pub fn Handlers(FrameType: type) type {
                     else
                         &[_]u8{};
 
-                    // Write log directly to EVM using EVM's main allocator for proper memory ownership
+                    // Write log directly to EVM using arena allocator
+                    // The log data will be copied to main allocator only at transaction end
                     const evm = self.getEvm();
 
-                    // Use EVM's main allocator (not arena) for log data that will be freed later
+                    // Use arena allocator for log data (will be copied to main allocator at transaction end)
                     const data_copy = if (data.len > 0)
-                        evm.allocator.dupe(u8, data) catch {
+                        evm.getCallArenaAllocator().dupe(u8, data) catch {
                             self.afterComplete(unified_opcode);
                             return Error.AllocationError;
                         }
@@ -130,8 +131,8 @@ pub fn Handlers(FrameType: type) type {
                         &[_]u8{};
 
                     const topics_array = if (topic_count > 0) blk: {
-                        const arr = evm.allocator.alloc(u256, topic_count) catch {
-                            if (data_copy.len > 0) evm.allocator.free(data_copy);
+                        const arr = evm.getCallArenaAllocator().alloc(u256, topic_count) catch {
+                            // No need to free data_copy - arena allocated
                             self.afterComplete(unified_opcode);
                             return Error.AllocationError;
                         };
@@ -139,8 +140,8 @@ pub fn Handlers(FrameType: type) type {
                             arr[j] = @as(u256, topics[j]);
                         }
                         break :blk arr;
-                    } else evm.allocator.alloc(u256, 0) catch {
-                        if (data_copy.len > 0) evm.allocator.free(data_copy);
+                    } else evm.getCallArenaAllocator().alloc(u256, 0) catch {
+                        // No need to free data_copy - arena allocated
                         self.afterComplete(unified_opcode);
                         return Error.AllocationError;
                     };
