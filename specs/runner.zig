@@ -222,9 +222,9 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                 }};
             
             // Execute transaction
-            const result = evm_instance.call(call_params);
+            var result = evm_instance.call(call_params);
+            defer result.deinit(allocator);
             // Many tests expect failures, so we don't fail on unsuccessful calls
-            _ = result;
         }
     }
     
@@ -639,9 +639,9 @@ pub fn runTest(allocator: std.mem.Allocator, test_data: TestData) !void {
                 }};
             
             // Execute transaction
-            const result = evm_instance.call(call_params);
+            var result = evm_instance.call(call_params);
+            defer result.deinit(allocator);
             // Many tests expect failures, so we don't fail on unsuccessful calls
-            _ = result;
         }
     }
     
