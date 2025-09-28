@@ -2,8 +2,68 @@ const std = @import("std");
 
 // Simple assembler to compile basic assembly code for tests
 pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8 {
-    // Remove (asm ... ) wrapper if present
     var code = asm_code;
+
+    // Handle :asm prefix - simple assembly format
+    if (std.mem.startsWith(u8, code, ":asm ")) {
+        code = code[5..]; // Remove ":asm " prefix
+        // :asm format is typically simple space-separated opcodes
+        return compileSingleExpression(allocator, code);
+    }
+
+    // Handle :yul prefix - Yul assembly language
+    // For now, we'll return an error since Yul is too complex to parse here
+    // In the future, we could integrate a proper Yul compiler
+    if (std.mem.startsWith(u8, code, ":yul ")) {
+        // Yul has complex syntax with functions, if statements, etc.
+        // Example: ":yul berlin { mstore8(0x1f, 0x42) calldatacopy(0x1f, 0, 0x0103) ... }"
+        // This would require a full Yul parser/compiler
+        return error.YulNotSupported;
+    }
+
+    // Handle { ... } format (may contain multiple expressions)
+    if (std.mem.startsWith(u8, code, "{") and std.mem.endsWith(u8, code, "}")) {
+        code = std.mem.trim(u8, code[1..code.len-1], " \t\n\r");
+
+        // Process multiple parenthesized expressions
+        var bytecode = std.ArrayList(u8){};
+        defer bytecode.deinit(allocator);
+
+        var pos: usize = 0;
+        while (pos < code.len) {
+            // Skip whitespace
+            while (pos < code.len and std.ascii.isWhitespace(code[pos])) {
+                pos += 1;
+            }
+            if (pos >= code.len) break;
+
+            // Find next expression
+            if (code[pos] == '(') {
+                // Find matching closing paren
+                var depth: usize = 1;
+                var end = pos + 1;
+                while (end < code.len and depth > 0) {
+                    if (code[end] == '(') depth += 1;
+                    if (code[end] == ')') depth -= 1;
+                    end += 1;
+                }
+
+                // Compile this expression
+                const expr = code[pos+1..end-1];
+                const expr_bytecode = try compileSingleExpression(allocator, expr);
+                defer allocator.free(expr_bytecode);
+                try bytecode.appendSlice(allocator, expr_bytecode);
+
+                pos = end;
+            } else {
+                return error.InvalidFormat;
+            }
+        }
+
+        return bytecode.toOwnedSlice(allocator);
+    }
+
+    // Remove (asm ... ) wrapper if present
     if (std.mem.startsWith(u8, code, "(asm ")) {
         code = code[5..];
         if (std.mem.endsWith(u8, code, ")")) {
@@ -11,11 +71,16 @@ pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8
         }
     }
 
+    return compileSingleExpression(allocator, code);
+}
+
+// Compile a single expression (no wrapper)
+fn compileSingleExpression(allocator: std.mem.Allocator, code: []const u8) ![]u8 {
     // Tokenize the assembly code
     var tokens = std.ArrayList([]const u8){};
     defer tokens.deinit(allocator);
 
-    var it = std.mem.tokenizeAny(u8, code, " \t\n\r");
+    var it = std.mem.tokenizeAny(u8, code, " \t\n\r()");
     while (it.next()) |token| {
         try tokens.append(allocator, token);
     }
@@ -28,8 +93,27 @@ pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8
     while (i < tokens.items.len) : (i += 1) {
         const token = tokens.items[i];
 
-        // Check if it's a number (push immediate)
-        if (isNumber(token)) {
+        // Check for PUSH opcodes that need immediate values
+        if (std.mem.startsWith(u8, token, "PUSH")) {
+            const opcode = try getOpcode(token);
+            try bytecode.append(allocator, opcode);
+
+            // If it's a PUSH opcode (not PUSH0), get the immediate value
+            if (opcode >= 0x60 and opcode <= 0x7f and i + 1 < tokens.items.len) {
+                const push_size = opcode - 0x5f;
+                i += 1;
+                const value_token = tokens.items[i];
+                const value = try parseNumber(value_token);
+
+                // Write the value bytes in big-endian order
+                var bytes_written: u8 = 0;
+                while (bytes_written < push_size) : (bytes_written += 1) {
+                    const shift: u8 = @intCast((push_size - 1 - bytes_written) * 8);
+                    try bytecode.append(allocator, @intCast((value >> shift) & 0xFF));
+                }
+            }
+        } else if (isNumber(token)) {
+            // It's a standalone number (auto-select PUSH size)
             const value = try parseNumber(token);
             if (value <= 0xFF) {
                 try bytecode.append(allocator, 0x60); // PUSH1
@@ -59,7 +143,7 @@ pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8
                 }
             }
         } else {
-            // It's an opcode
+            // It's a regular opcode
             const opcode = try getOpcode(token);
             try bytecode.append(allocator, opcode);
         }
@@ -260,4 +344,17 @@ test "compile simple assembly" {
     // Expected: GAS(5a) SELFBALANCE(47) GAS(5a) SWAP1(90) POP(50) SWAP1(90) SUB(03) PUSH1(60) 02 SWAP1(90) SUB(03) PUSH1(60) 01 SSTORE(55)
     const expected2 = [_]u8{ 0x5a, 0x47, 0x5a, 0x90, 0x50, 0x90, 0x03, 0x60, 0x02, 0x90, 0x03, 0x60, 0x01, 0x55 };
     try std.testing.expectEqualSlices(u8, &expected2, bytecode2);
+}
+
+test "compile { } format assembly" {
+    const allocator = std.testing.allocator;
+
+    // Test simple { } format
+    const asm1 = "{ (PUSH1 0x01) (PUSH1 0x02) (ADD) }";
+    const bytecode1 = try compileAssembly(allocator, asm1);
+    defer allocator.free(bytecode1);
+
+    // Expected: PUSH1 0x01=0x60 0x01, PUSH1 0x02=0x60 0x02, ADD=0x01
+    const expected1 = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 };
+    try std.testing.expectEqualSlices(u8, &expected1, bytecode1);
 }

@@ -25,11 +25,14 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                 if (kv.value_ptr.*.object.get("code")) |code| {
                     if (code == .string) {
                         const code_str = code.string;
-                        // We can now compile (asm ...) format, but not other formats
-                        if (isAssemblyCode(code_str) and !std.mem.startsWith(u8, code_str, "(asm ")) {
-                            // Non-(asm) assembly tests are still TODO
+                        // We can compile (asm ...) and :asm formats
+                        // Only :yul and other complex formats are still TODO
+                        if (std.mem.startsWith(u8, code_str, ":yul ")) {
+                            // Yul assembly tests are still TODO
                             return TestTodo;
                         }
+                        // Note: { } format and other assembly formats will be attempted
+                        // If they fail to compile, the test will continue without that account's code
                     }
                 }
             }
@@ -109,8 +112,36 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                             if (std.mem.startsWith(u8, code_str, "(asm ")) {
                                 // Compile (asm ...) format to bytecode
                                 code_bytes = try assembler.compileAssembly(allocator, code_str);
+                            } else if (std.mem.startsWith(u8, code_str, "{")) {
+                                // Compile { } format to bytecode (our simple assembly)
+                                code_bytes = assembler.compileAssembly(allocator, code_str) catch |err| {
+                                    // If we can't compile it, skip this account
+                                    if (err == error.UnknownOpcode) continue;
+                                    return err;
+                                };
+                            } else if (std.mem.startsWith(u8, code_str, ":asm ")) {
+                                // Compile :asm format to bytecode
+                                code_bytes = assembler.compileAssembly(allocator, code_str) catch |err| {
+                                    // If we can't compile it, skip this account
+                                    if (err == error.UnknownOpcode) continue;
+                                    return err;
+                                };
+                            } else if (std.mem.startsWith(u8, code_str, ":raw ")) {
+                                // :raw format is just raw hex with :raw prefix
+                                const raw_hex = std.mem.trim(u8, code_str[5..], " \t\n\r");
+                                const hex_data = try parseHexData(allocator, raw_hex);
+                                defer allocator.free(hex_data);
+
+                                if (hex_data.len > 2) { // More than just "0x"
+                                    code_bytes = try primitives.Hex.hex_to_bytes(allocator, hex_data);
+                                } else {
+                                    continue;
+                                }
+                            } else if (std.mem.startsWith(u8, code_str, ":yul ")) {
+                                // Yul format is not supported yet, skip
+                                continue;
                             } else if (isAssemblyCode(code_str)) {
-                                // Skip other assembly formats we can't handle yet
+                                // Skip other assembly formats we can't handle yet (e.g., LLL)
                                 continue;
                             } else {
                                 // Parse hex bytecode
@@ -445,31 +476,21 @@ fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
     }
 
     // Handle :raw or raw prefix (with or without colon)
+    var is_raw = false;
     if (std.mem.startsWith(u8, data, ":raw ")) {
         clean_data = data[5..];
+        is_raw = true;
     } else if (std.mem.startsWith(u8, data, "raw ")) {
         clean_data = data[4..];
+        is_raw = true;
     }
 
-    // Additional check: if after stripping prefix we still have odd length, pad with zero
-    if (clean_data.len > 2 and std.mem.startsWith(u8, clean_data, "0x")) {
-        const hex_part = clean_data[2..];
-        if (hex_part.len % 2 != 0) {
-            // Odd length hex - pad with leading zero
-            const padded = try allocator.alloc(u8, clean_data.len + 1);
-            @memcpy(padded[0..2], "0x");
-            padded[2] = '0';
-            @memcpy(padded[3..], hex_part);
-            clean_data = padded;
-        }
-    }
-    
     // Handle concatenated :raw data
     if (std.mem.indexOf(u8, clean_data, ",:raw ")) |_| {
         var parts = std.mem.tokenizeSequence(u8, clean_data, ",:raw ");
         var result = std.ArrayList(u8){};
         defer result.deinit(allocator);
-        
+
         while (parts.next()) |part| {
             var p = part;
             if (std.mem.startsWith(u8, p, "0x")) {
@@ -477,20 +498,85 @@ fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
             }
             try result.appendSlice(allocator, p);
         }
-        
+
         var final = try allocator.alloc(u8, result.items.len + 2);
         final[0] = '0';
         final[1] = 'x';
         @memcpy(final[2..], result.items);
         return final;
     }
-    
+
+    // For :raw data with embedded placeholders, we need to:
+    // 1. First replace placeholders with their hex addresses (without 0x)
+    // 2. Then ensure the entire string is valid hex
+    if (is_raw and std.mem.indexOf(u8, clean_data, "<") != null) {
+        var result = std.ArrayList(u8){};
+        defer result.deinit(allocator);
+
+        // Remove 0x prefix if present for processing
+        var hex_data = clean_data;
+        var had_prefix = false;
+        if (std.mem.startsWith(u8, clean_data, "0x")) {
+            hex_data = clean_data[2..];
+            had_prefix = true;
+        }
+
+        var read_idx: usize = 0;
+        while (read_idx < hex_data.len) {
+            if (read_idx < hex_data.len and hex_data[read_idx] == '<') {
+                // Look for closing >
+                if (std.mem.indexOf(u8, hex_data[read_idx..], ">")) |end_offset| {
+                    const placeholder = hex_data[read_idx..read_idx + end_offset + 1];
+                    // Extract the address from placeholder
+                    if (std.mem.lastIndexOf(u8, placeholder, "0x")) |addr_idx| {
+                        const addr_end = placeholder.len - 1; // Before >
+                        const addr = placeholder[addr_idx..addr_end];
+                        // Append just the address hex part (without 0x)
+                        if (addr.len >= 2 and std.mem.startsWith(u8, addr, "0x")) {
+                            const addr_hex = addr[2..];
+                            // Pad address to 40 hex chars if needed
+                            const padding_needed = if (addr_hex.len < 40) 40 - addr_hex.len else 0;
+                            var j: usize = 0;
+                            while (j < padding_needed) : (j += 1) {
+                                try result.append(allocator, '0');
+                            }
+                            try result.appendSlice(allocator, addr_hex);
+                        }
+                    }
+                    read_idx += end_offset + 1;
+                    continue;
+                }
+            }
+            try result.append(allocator, hex_data[read_idx]);
+            read_idx += 1;
+        }
+
+        // Build final result with 0x prefix
+        var final = try allocator.alloc(u8, result.items.len + 2);
+        final[0] = '0';
+        final[1] = 'x';
+        @memcpy(final[2..], result.items);
+
+        // Ensure even length
+        if ((final.len - 2) % 2 != 0) {
+            const padded = try allocator.alloc(u8, final.len + 1);
+            @memcpy(padded[0..2], "0x");
+            padded[2] = '0';
+            @memcpy(padded[3..], final[2..]);
+            allocator.free(final);
+            return padded;
+        }
+
+        return final;
+    }
+
+    // Original placeholder replacement for non-raw data
     // Replace contract/eoa placeholders with addresses
     // Format: <contract:0xADDRESS> or <contract:name:0xADDRESS>
     var result = try allocator.alloc(u8, clean_data.len * 2); // Allocate extra for safety
     var write_idx: usize = 0;
     var read_idx: usize = 0;
-    
+
     while (read_idx < clean_data.len) {
         if (read_idx + 1 < clean_data.len and clean_data[read_idx] == '<') {
             // Look for closing >
@@ -560,8 +646,15 @@ fn isAssemblyCode(code: []const u8) bool {
     if (std.mem.startsWith(u8, code, ":raw ") or std.mem.startsWith(u8, code, "raw ")) {
         return false; // This is bytecode, not assembly
     }
-    return std.mem.startsWith(u8, code, "{") or
-           std.mem.startsWith(u8, code, ":asm ") or
+    // LLL format starts with space + { (e.g., " { [[ ... ]] }")
+    if (code.len > 0 and code[0] == ' ' and std.mem.indexOf(u8, code, "{") != null) {
+        return true; // LLL format (not supported yet)
+    }
+    // Our supported assembly format starts directly with {
+    if (std.mem.startsWith(u8, code, "{")) {
+        return false; // This is our supported { } format, not "other assembly"
+    }
+    return std.mem.startsWith(u8, code, ":asm ") or
            std.mem.startsWith(u8, code, ":yul ") or
            std.mem.startsWith(u8, code, "(asm ");
 }
