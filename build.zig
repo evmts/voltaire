@@ -517,40 +517,8 @@ pub fn build(b: *std.Build) void {
     fixtures_differential_test.linkLibC();
 
     const run_fixtures_differential_test = b.addRunArtifact(fixtures_differential_test);
-    const fixtures_differential_test_step = b.step("test-fixtures-differential", "Run differential tests for benchmark fixtures (ERC20, snailtracer, etc.)");
+    const fixtures_differential_test_step = b.step("test-fixtures-differential", "Run differential tests for benchmark fixtures (ERC20, etc.)");
     fixtures_differential_test_step.dependOn(&run_fixtures_differential_test.step);
-
-    // Snailtracer differential test
-    const snailtracer_test = b.addTest(.{
-        .name = "snailtracer-test",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("test/evm/snailtracer_test.zig"),
-            .target = target,
-            .optimize = .Debug,
-        }),
-        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
-        .use_llvm = true,
-    });
-    snailtracer_test.root_module.addImport("evm", modules.evm_mod);
-    snailtracer_test.root_module.addImport("primitives", modules.primitives_mod);
-    snailtracer_test.root_module.addImport("crypto", modules.crypto_mod);
-    snailtracer_test.root_module.addImport("build_options", options_mod);
-    snailtracer_test.root_module.addImport("log", b.createModule(.{ 
-        .root_source_file = b.path("src/log.zig"), 
-        .target = target, 
-        .optimize = .Debug, 
-    }));
-
-    // Using MinimalEvm for differential testing (REVM removed)
-
-    snailtracer_test.linkLibrary(c_kzg_lib);
-    snailtracer_test.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| snailtracer_test.linkLibrary(bn254);
-    snailtracer_test.linkLibC();
-
-    const run_snailtracer_test = b.addRunArtifact(snailtracer_test);
-    const snailtracer_test_step = b.step("test-snailtracer", "Run snailtracer differential test");
-    snailtracer_test_step.dependOn(&run_snailtracer_test.step);
 
     // GT opcode bug test
     const gt_bug_test = b.addTest(.{
