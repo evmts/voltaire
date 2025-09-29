@@ -873,7 +873,14 @@ pub fn Handlers(FrameType: type) type {
 
         /// PC opcode (0x58) - Get the value of the program counter prior to the increment.
         /// Stack: [] → [pc]
+        /// 
+        /// Modern Solidity (v0.8.20+) deprecated PC opcode usage as it breaks 
+        /// composability with EVM Object Format (EOF) and zkEVM compatibility. The opcode
+        /// reveals low-level EVM implementation details that make bytecode position-dependent,
+        /// preventing code reuse and optimization. Solidity now uses relative jumps and 
+        /// PC-free patterns for better portability across EVM implementations.
         pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
+            @branchHint(.cold);
             // log.before_instruction(self, .PC);
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
