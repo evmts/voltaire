@@ -116,11 +116,9 @@ pub fn Handlers(FrameType: type) type {
 
                     if (comptime push_n <= 8) {
                         const value = op_data.metadata.value;
-                        log.debug("[PUSH{d}] Pushing inline value: 0x{x:0>16}", .{ push_n, value });
                         self.stack.push_unsafe(value);
                     } else {
                         const value = op_data.metadata.value_ptr.*;
-                        log.debug("[PUSH{d}] Pushing pointer value: 0x{x:0>64}", .{ push_n, value });
                         self.stack.push_unsafe(value);
                     }
                     self.afterInstruction(opcode, op_data.next_handler, op_data.next_cursor.cursor);

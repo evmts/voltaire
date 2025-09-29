@@ -738,9 +738,8 @@ pub fn Handlers(FrameType: type) type {
         /// PREVRANDAO opcode - Alias for DIFFICULTY post-merge.
         /// Stack: [] → [prevrandao]
         pub fn prevrandao(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            self.beforeInstruction(.PREVRANDAO, cursor);
-            const dispatch = Dispatch{ .cursor = cursor };
-            return difficulty(self, dispatch);
+            // Don't call beforeInstruction here - difficulty will call it
+            return difficulty(self, cursor);
         }
 
         /// GASLIMIT opcode (0x45) - Get the current block's gas limit.

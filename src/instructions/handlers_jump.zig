@@ -29,7 +29,6 @@ pub fn Handlers(FrameType: type) type {
 
             // Check stack has at least 1 item for JUMP
             if (self.stack.size() < 1) {
-                log.warn("JUMP: Stack underflow, requires 1 item", .{});
                 self.afterComplete(.JUMP);
                 return Error.StackUnderflow;
             }
@@ -38,7 +37,6 @@ pub fn Handlers(FrameType: type) type {
 
             // Validate jump destination range
             if (dest > std.math.maxInt(u32)) {
-                log.warn("JUMP: Invalid destination out of range: 0x{x}", .{dest});
                 self.afterComplete(.JUMP);
                 return Error.InvalidJump;
             }
@@ -54,6 +52,11 @@ pub fn Handlers(FrameType: type) type {
                     frame_handlers.setCurrentPc(dest_pc);
                 }
 
+                // Debug logging to file
+                if (dest_pc == 0x304) {
+                }
+
+
                 // The cursor might point to different types of items depending on the jump target
                 // Check what kind of item we have at the cursor
                 const next_handler = switch (jump_dispatch.cursor[0]) {
@@ -65,7 +68,6 @@ pub fn Handlers(FrameType: type) type {
                         break :blk target_dispatch.cursor[0].opcode_handler;
                     },
                     else => {
-                        log.warn("JUMP: Unexpected dispatch item type at jump target", .{});
                         self.afterComplete(.JUMP);
                         return Error.InvalidJump;
                     },
@@ -80,7 +82,6 @@ pub fn Handlers(FrameType: type) type {
                 return @call(FrameType.Dispatch.getTailCallModifier(), next_handler, .{ self, next_cursor });
             } else {
                 // Not a valid JUMPDEST
-                log.warn("JUMP: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
                 self.afterComplete(.JUMP);
                 return Error.InvalidJump;
             }
@@ -95,7 +96,6 @@ pub fn Handlers(FrameType: type) type {
 
             // Check stack has at least 2 items for JUMPI
             if (self.stack.size() < 2) {
-                log.warn("JUMPI: Stack underflow, requires 2 items", .{});
                 self.afterComplete(.JUMPI);
                 return Error.StackUnderflow;
             }
@@ -105,7 +105,6 @@ pub fn Handlers(FrameType: type) type {
 
             if (condition != 0) {
                 if (dest > std.math.maxInt(u32)) {
-                    log.warn("JUMPI: Invalid destination out of range: 0x{x}", .{dest});
                     self.afterComplete(.JUMPI);
                     return Error.InvalidJump;
                 }
@@ -130,7 +129,6 @@ pub fn Handlers(FrameType: type) type {
                             break :blk target_dispatch.cursor[0].opcode_handler;
                         },
                         else => {
-                            log.warn("JUMPI: Unexpected dispatch item type at jump target", .{});
                             self.afterComplete(.JUMPI);
                             return Error.InvalidJump;
                         },
@@ -145,7 +143,6 @@ pub fn Handlers(FrameType: type) type {
                     return @call(FrameType.Dispatch.getTailCallModifier(), next_handler, .{ self, next_cursor });
                 } else {
                     // Not a valid JUMPDEST
-                    log.warn("JUMPI: Invalid jump destination PC=0x{x} - not a JUMPDEST", .{dest_pc});
                     self.afterComplete(.JUMPI);
                     return Error.InvalidJump;
                 }
@@ -172,7 +169,6 @@ pub fn Handlers(FrameType: type) type {
             // Use negative gas pattern for single-branch out-of-gas detection
             self.gas_remaining -= @as(FrameType.GasType, @intCast(gas_cost));
             if (self.gas_remaining < 0) {
-                log.warn("JUMPDEST: Out of gas - required={}, available={}", .{ gas_cost, self.gas_remaining + @as(FrameType.GasType, @intCast(gas_cost)) });
                 self.afterComplete(.JUMPDEST);
                 return Error.OutOfGas;
             }
@@ -182,7 +178,6 @@ pub fn Handlers(FrameType: type) type {
 
             // Check minimum stack requirement (won't underflow)
             if (min_stack > 0 and current_stack_size < @as(usize, @intCast(min_stack))) {
-                log.warn("JUMPDEST: Stack underflow - required min={}, current={}", .{ min_stack, current_stack_size });
                 self.afterComplete(.JUMPDEST);
                 return Error.StackUnderflow;
             }
@@ -194,7 +189,6 @@ pub fn Handlers(FrameType: type) type {
                 const stack_capacity = @TypeOf(self.stack).stack_capacity;
                 const max_final_size = @as(isize, @intCast(current_stack_size)) + @as(isize, max_stack);
                 if (max_final_size > @as(isize, @intCast(stack_capacity))) {
-                    log.debug("JUMPDEST: Stack overflow - current={}, max_change={}, capacity={}", .{ current_stack_size, max_stack, stack_capacity });
                     self.afterComplete(.JUMPDEST);
                     return Error.StackOverflow;
                 }

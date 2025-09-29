@@ -21,6 +21,8 @@ pub fn Handlers(FrameType: type) type {
 
             // The dispatch pointer already points to the JUMPDEST handler location
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
+            
+            
             // Call the handler at that location, passing cursor pointing to the handler itself
             self.afterInstruction(.JUMP_TO_STATIC_LOCATION, jump_dispatch_ptr[0].opcode_handler, jump_dispatch_ptr);
             return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
@@ -30,23 +32,28 @@ pub fn Handlers(FrameType: type) type {
         /// The cursor now points to metadata containing the jump destination dispatch.
         pub fn jumpi_to_static_location(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.likely);
+            
             self.beforeInstruction(.JUMPI_TO_STATIC_LOCATION, cursor);
             const dispatch_opcode_data = @import("../preprocessor/dispatch_opcode_data.zig");
             const op_data = dispatch_opcode_data.getOpData(.JUMPI_TO_STATIC_LOCATION, Dispatch, Dispatch.Item, cursor);
-
+            
             // The dispatch pointer already points to the JUMPDEST handler location
             const jump_dispatch_ptr = @as([*]const Dispatch.Item, @ptrCast(@alignCast(op_data.metadata.dispatch)));
+            
             {
                 (&self.getEvm().tracer).assert(self.stack.size() >= 1, "JUMPI requires condition on stack");
             }
             const condition = self.stack.pop_unsafe();
+            
             if (condition != 0) {
                 @branchHint(.unlikely);
                 // Call the handler at that location, passing cursor pointing to that slot
                 self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, jump_dispatch_ptr[0].opcode_handler, jump_dispatch_ptr);
                 return @call(FrameType.Dispatch.getTailCallModifier(), jump_dispatch_ptr[0].opcode_handler, .{ self, jump_dispatch_ptr });
             }
+            
             // Continue to next instruction - use the pre-computed next_handler and next_cursor from op_data
+            
             self.afterInstruction(.JUMPI_TO_STATIC_LOCATION, op_data.next_handler, op_data.next_cursor.cursor);
             return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
         }

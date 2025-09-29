@@ -109,7 +109,6 @@ pub fn executeMinimalEvmForOpcode(
     _ = evm.getPC(); // initial_pc for debugging
     
     // Log for debugging
-    // log.err("[MinimalEvmSync] Frame executing: {s} at PC={d}", .{@tagName(opcode), initial_pc});
 
     // For regular opcodes (< 0x100), execute exactly once
     if (!isSyntheticOpcode(opcode)) {
@@ -135,17 +134,6 @@ pub fn executeMinimalEvmForOpcode(
             }
 
             // const bytecode = evm.getBytecode();
-            // log.err("  [MinimalEvmSync] About to execute step for {s} at PC={d}, bytecode[PC]=0x{x:0>2}, bytecode[9..15]=0x{x:0>2}{x:0>2}{x:0>2}{x:0>2}{x:0>2}{x:0>2}", .{ 
-            //     @tagName(opcode), 
-            //     evm.getPC(), 
-            //     if (evm.getPC() < bytecode.len) bytecode[evm.getPC()] else 0,
-            //     if (9 < bytecode.len) bytecode[9] else 0,
-            //     if (10 < bytecode.len) bytecode[10] else 0,
-            //     if (11 < bytecode.len) bytecode[11] else 0,
-            //     if (12 < bytecode.len) bytecode[12] else 0,
-            //     if (13 < bytecode.len) bytecode[13] else 0,
-            //     if (14 < bytecode.len) bytecode[14] else 0
-            // });
             evm.step() catch |e| {
                 if (step_before) |mut_step| {
                     var step = mut_step;
@@ -164,7 +152,6 @@ pub fn executeMinimalEvmForOpcode(
                 return;
             };
             
-            // log.err("  [MinimalEvmSync] Successfully executed {s}, new PC={d}, stack size={d}", .{ @tagName(opcode), evm.getPC(), mf.stack.items.len });
 
             if (step_before) |mut_step| {
                 var step = mut_step;
@@ -197,20 +184,22 @@ pub fn executeMinimalEvmForOpcode(
     }
 
     // For synthetic opcodes, run MinimalEvm until it catches up
-    // log.err("[MinimalEvmSync] Executing synthetic opcode {s} with max {d} steps", .{ @tagName(opcode), max_steps });
 
     var steps_executed: u32 = 0;
     var last_error: ?anyerror = null;
 
+    // Log initial MinimalEvm state
+    if (evm.getCurrentFrame()) |mf| {
+    }
+
     while (steps_executed < max_steps) : (steps_executed += 1) {
         // Get current state before step
-        // const pc_before = evm.getPC();
+        const pc_before = evm.getPC();
         
         // Try to step MinimalEvm
-        // log.err("[MinimalEvmSync] Synthetic {s}: attempting step {d} at PC={d}", .{ @tagName(opcode), steps_executed + 1, evm.getPC() });
+        
         evm.step() catch |e| {
             // Log the error but don't panic - this is expected for some cases
-            // log.err("[MinimalEvmSync] Synthetic {s} step {d} failed: {any}", .{ @tagName(opcode), steps_executed + 1, e });
             last_error = e;
             
             // Special handling for JUMPI failures - need to skip the JUMPI instruction
@@ -222,7 +211,6 @@ pub fn executeMinimalEvmForOpcode(
                     if (current_pc < mf.bytecode.len and (mf.bytecode[current_pc] == 0x56 or mf.bytecode[current_pc] == 0x57)) {
                         // We're at a JUMP/JUMPI instruction that failed, skip it
                         mf.pc = current_pc + 1;
-                        // log.err("[MinimalEvmSync] Manually advanced PC from {d} to {d} after failed JUMP/JUMPI", .{ current_pc, current_pc + 1 });
                         return;
                     }
                 }
@@ -230,7 +218,6 @@ pub fn executeMinimalEvmForOpcode(
             
             // For synthetics, we might have partially executed - that's ok
             if (steps_executed > 0) {
-                // log.err("[MinimalEvmSync] Synthetic {s} partially executed {d} steps before error", .{ @tagName(opcode), steps_executed });
                 return;
             }
             
@@ -241,13 +228,11 @@ pub fn executeMinimalEvmForOpcode(
 
         // Check if we've made progress
         const pc_after = evm.getPC();
-        _ = pc_after; // Used in debug logging
-        // log.err("[MinimalEvmSync] Synthetic {s} step {d}: PC {d} -> {d}", .{ @tagName(opcode), steps_executed + 1, pc_before, pc_after });
 
         // For most synthetics, we're done after the expected number of steps
         const expected_steps = getMaxStepsForOpcode(opcode);
         if (steps_executed + 1 >= expected_steps and expected_steps < SyntheticOpcodeSteps.DEFAULT_MAX) {
-            // log.err("[MinimalEvmSync] Synthetic {s} completed after {d} steps, final PC={d}", .{ @tagName(opcode), steps_executed + 1, pc_after });
+            
             return;
         }
     }
