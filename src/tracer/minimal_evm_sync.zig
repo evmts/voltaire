@@ -189,12 +189,13 @@ pub fn executeMinimalEvmForOpcode(
     var last_error: ?anyerror = null;
 
     // Log initial MinimalEvm state
-    if (evm.getCurrentFrame()) |mf| {
+    if (evm.getCurrentFrame()) |_| {
+        // Frame exists but no logging needed
     }
 
     while (steps_executed < max_steps) : (steps_executed += 1) {
         // Get current state before step
-        const pc_before = evm.getPC();
+        _ = evm.getPC(); // Get PC before step for debugging
         
         // Try to step MinimalEvm
         
@@ -227,7 +228,7 @@ pub fn executeMinimalEvmForOpcode(
         };
 
         // Check if we've made progress
-        const pc_after = evm.getPC();
+        _ = evm.getPC(); // Get PC after step for debugging
 
         // For most synthetics, we're done after the expected number of steps
         const expected_steps = getMaxStepsForOpcode(opcode);
