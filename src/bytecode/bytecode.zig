@@ -1023,6 +1023,25 @@ pub fn Bytecode(cfg: BytecodeConfig) type {
 
                 // Check for fusion candidates if enabled
                 if (comptime fusions_enabled) {
+                    // Check for ISZERO+PUSH+JUMPI pattern
+                    if (op == @intFromEnum(Opcode.ISZERO)) {
+                        const push_pc = i + 1;
+                        if (push_pc < validate_up_to) {
+                            const push_op = self.runtime_code[push_pc];
+                            if (push_op >= @intFromEnum(Opcode.PUSH1) and push_op <= @intFromEnum(Opcode.PUSH32)) {
+                                const push_size: PcType = push_op - (@intFromEnum(Opcode.PUSH1) - 1);
+                                const jumpi_pc = push_pc + 1 + push_size;
+                                if (jumpi_pc < validate_up_to and self.runtime_code[jumpi_pc] == @intFromEnum(Opcode.JUMPI)) {
+                                    // Mark ISZERO as fusion candidate for ISZERO+PUSH+JUMPI pattern
+                                    self.packed_bitmap[i].is_fusion_candidate = true;
+                                    if (tracer) |t| {
+                                        t.debug("Marked ISZERO at PC {} as fusion candidate for ISZERO+PUSH+JUMPI pattern", .{i});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     // Check if this is a PUSH that could be part of a fusion
                     if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                         const push_size: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
