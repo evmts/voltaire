@@ -1,9 +1,0 @@
-{
-  "name": "snailtracer",
-  "num_runs": 10,
-  "solc_version": "0.8.20",
-  "contract": "SnailTracer.sol",
-  "calldata": "0x30627b7c",
-  "warmup": 3,
-  "gas_limit": 1000000000
-}
