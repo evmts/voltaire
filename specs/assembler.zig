@@ -1,5 +1,11 @@
 const std = @import("std");
 
+// Label tracking for [[n]] syntax
+const LabelInfo = struct {
+    position: usize,
+    references: std.ArrayList(usize),
+};
+
 // Simple assembler to compile basic assembly code for tests
 pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8 {
     var code = asm_code;
@@ -24,43 +30,7 @@ pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8
     // Handle { ... } format (may contain multiple expressions)
     if (std.mem.startsWith(u8, code, "{") and std.mem.endsWith(u8, code, "}")) {
         code = std.mem.trim(u8, code[1..code.len-1], " \t\n\r");
-
-        // Process multiple parenthesized expressions
-        var bytecode = std.ArrayList(u8){};
-        defer bytecode.deinit(allocator);
-
-        var pos: usize = 0;
-        while (pos < code.len) {
-            // Skip whitespace
-            while (pos < code.len and std.ascii.isWhitespace(code[pos])) {
-                pos += 1;
-            }
-            if (pos >= code.len) break;
-
-            // Find next expression
-            if (code[pos] == '(') {
-                // Find matching closing paren
-                var depth: usize = 1;
-                var end = pos + 1;
-                while (end < code.len and depth > 0) {
-                    if (code[end] == '(') depth += 1;
-                    if (code[end] == ')') depth -= 1;
-                    end += 1;
-                }
-
-                // Compile this expression
-                const expr = code[pos+1..end-1];
-                const expr_bytecode = try compileSingleExpression(allocator, expr);
-                defer allocator.free(expr_bytecode);
-                try bytecode.appendSlice(allocator, expr_bytecode);
-
-                pos = end;
-            } else {
-                return error.InvalidFormat;
-            }
-        }
-
-        return bytecode.toOwnedSlice(allocator);
+        return compileComplexExpression(allocator, code);
     }
 
     // Remove (asm ... ) wrapper if present
@@ -72,6 +42,245 @@ pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8
     }
 
     return compileSingleExpression(allocator, code);
+}
+
+// Compile complex expressions with labels and multiple parts
+fn compileComplexExpression(allocator: std.mem.Allocator, code: []const u8) ![]u8 {
+    var bytecode = std.ArrayList(u8){};
+    defer bytecode.deinit(allocator);
+
+    var labels = std.StringHashMap(LabelInfo).init(allocator);
+    defer {
+        var it = labels.iterator();
+        while (it.next()) |entry| {
+            entry.value_ptr.references.deinit(allocator);
+        }
+        labels.deinit();
+    }
+
+    var pos: usize = 0;
+    while (pos < code.len) {
+        // Skip whitespace
+        while (pos < code.len and std.ascii.isWhitespace(code[pos])) {
+            pos += 1;
+        }
+        if (pos >= code.len) break;
+
+        // Check for label [[ n ]]
+        if (pos + 1 < code.len and code[pos] == '[' and code[pos+1] == '[') {
+            // Find closing ]]
+            var end = pos + 2;
+            while (end + 1 < code.len and !(code[end] == ']' and code[end+1] == ']')) {
+                end += 1;
+            }
+            if (end + 1 >= code.len) return error.InvalidFormat;
+
+            // Extract label number
+            const label_str = std.mem.trim(u8, code[pos+2..end], " \t");
+
+            // Store label position
+            const gop = try labels.getOrPut(label_str);
+            if (!gop.found_existing) {
+                gop.value_ptr.* = LabelInfo{
+                    .position = bytecode.items.len,
+                    .references = std.ArrayList(usize){},
+                };
+            } else {
+                gop.value_ptr.position = bytecode.items.len;
+            }
+
+            // Add JUMPDEST at label position
+            try bytecode.append(allocator, 0x5b); // JUMPDEST
+
+            pos = end + 2;
+        }
+        // Check for expression ( ... )
+        else if (code[pos] == '(') {
+            // Find matching closing paren
+            var depth: usize = 1;
+            var end = pos + 1;
+            while (end < code.len and depth > 0) {
+                if (code[end] == '(') depth += 1;
+                if (code[end] == ')') depth -= 1;
+                end += 1;
+            }
+
+            // Compile this expression
+            const expr = code[pos+1..end-1];
+            const expr_bytecode = try compileExpressionWithLabels(allocator, expr, &labels, bytecode.items.len);
+            defer allocator.free(expr_bytecode);
+            try bytecode.appendSlice(allocator, expr_bytecode);
+
+            pos = end;
+        } else {
+            return error.InvalidFormat;
+        }
+
+    }
+
+    // Resolve label references (update PUSH values for jumps to labels)
+    var it = labels.iterator();
+    while (it.next()) |entry| {
+        for (entry.value_ptr.references.items) |ref_pos| {
+            // Update the PUSH2 value with actual label position
+            const label_pos = entry.value_ptr.position;
+            bytecode.items[ref_pos] = @intCast((label_pos >> 8) & 0xFF);
+            bytecode.items[ref_pos + 1] = @intCast(label_pos & 0xFF);
+        }
+    }
+
+    return bytecode.toOwnedSlice(allocator);
+}
+
+// Compile expression with label and contract reference support
+fn compileExpressionWithLabels(allocator: std.mem.Allocator, code: []const u8, labels: *std.StringHashMap(LabelInfo), current_pos: usize) ![]u8 {
+    // Tokenize the assembly code, preserving special tokens
+    var tokens = std.ArrayList([]const u8){};
+    defer tokens.deinit(allocator);
+
+    var pos: usize = 0;
+    while (pos < code.len) {
+        // Skip whitespace
+        while (pos < code.len and std.ascii.isWhitespace(code[pos])) {
+            pos += 1;
+        }
+        if (pos >= code.len) break;
+
+        // Check for contract reference <contract:0x...>
+        if (std.mem.startsWith(u8, code[pos..], "<contract:")) {
+            const end = std.mem.indexOfScalar(u8, code[pos..], '>') orelse return error.InvalidFormat;
+            // Extract address from <contract:0xADDRESS>
+            const addr_start = pos + 10; // Skip "<contract:"
+            const addr_str = code[addr_start..pos+end];
+            try tokens.append(allocator, addr_str);
+            pos = pos + end + 1;
+        }
+        // Check for label reference [[ n ]]
+        else if (pos + 1 < code.len and code[pos] == '[' and code[pos+1] == '[') {
+            // Find closing ]]
+            var end = pos + 2;
+            while (end + 1 < code.len and !(code[end] == ']' and code[end+1] == ']')) {
+                end += 1;
+            }
+            if (end + 1 >= code.len) return error.InvalidFormat;
+
+            const label_str = std.mem.trim(u8, code[pos+2..end], " \t");
+            // Mark this as a label reference with special prefix
+            const label_ref = try std.fmt.allocPrint(allocator, "[[{s}", .{label_str});
+            defer allocator.free(label_ref);
+            try tokens.append(allocator, label_ref);
+            pos = end + 2;
+        }
+        // Regular token
+        else {
+            const start = pos;
+            while (pos < code.len and !std.ascii.isWhitespace(code[pos]) and
+                   code[pos] != '(' and code[pos] != ')' and code[pos] != '<' and code[pos] != '[') {
+                pos += 1;
+            }
+            if (pos > start) {
+                try tokens.append(allocator, code[start..pos]);
+            }
+        }
+    }
+
+    return compileTokensWithLabels(allocator, tokens.items, labels, current_pos);
+}
+
+// Compile tokens with label reference support
+fn compileTokensWithLabels(allocator: std.mem.Allocator, tokens: [][]const u8, labels: *std.StringHashMap(LabelInfo), current_pos: usize) ![]u8 {
+    var bytecode = std.ArrayList(u8){};
+    defer bytecode.deinit(allocator);
+
+    var i: usize = 0;
+    while (i < tokens.len) : (i += 1) {
+        const token = tokens[i];
+
+        // Check for label reference
+        if (std.mem.startsWith(u8, token, "[[")) {
+            const label_name = token[2..];
+            // Use PUSH2 for label address (will be patched later)
+            try bytecode.append(allocator, 0x61); // PUSH2
+
+            // Record this position for later patching
+            const gop = try labels.getOrPut(label_name);
+            if (!gop.found_existing) {
+                gop.value_ptr.* = LabelInfo{
+                    .position = 0, // Will be set when label is defined
+                    .references = std.ArrayList(usize){},
+                };
+            }
+            try gop.value_ptr.references.append(allocator, current_pos + bytecode.items.len);
+
+            // Placeholder bytes (will be patched)
+            try bytecode.append(allocator, 0x00);
+            try bytecode.append(allocator, 0x00);
+        }
+        // Check for PUSH opcodes that need immediate values
+        else if (std.mem.startsWith(u8, token, "PUSH")) {
+            const opcode = try getOpcode(token);
+            try bytecode.append(allocator, opcode);
+
+            // If it's a PUSH opcode (not PUSH0), get the immediate value
+            if (opcode >= 0x60 and opcode <= 0x7f and i + 1 < tokens.len) {
+                const push_size = opcode - 0x5f;
+                i += 1;
+                const value_token = tokens[i];
+                const value = try parseNumber(value_token);
+
+                // Write the value bytes in big-endian order
+                var bytes_written: u8 = 0;
+                while (bytes_written < push_size) : (bytes_written += 1) {
+                    const shift: u8 = @intCast((push_size - 1 - bytes_written) * 8);
+                    try bytecode.append(allocator, @intCast((value >> shift) & 0xFF));
+                }
+            }
+        } else if (isNumber(token)) {
+            // It's a standalone number (auto-select PUSH size)
+            const value = try parseNumber(token);
+            // For addresses, use PUSH20
+            if (token.len >= 40 and std.mem.startsWith(u8, token, "0x")) {
+                try bytecode.append(allocator, 0x73); // PUSH20
+                var j: u8 = 19;
+                while (true) : (j -= 1) {
+                    try bytecode.append(allocator, @intCast((value >> @intCast(j * 8)) & 0xFF));
+                    if (j == 0) break;
+                }
+            } else if (value <= 0xFF) {
+                try bytecode.append(allocator, 0x60); // PUSH1
+                try bytecode.append(allocator, @intCast(value));
+            } else if (value <= 0xFFFF) {
+                try bytecode.append(allocator, 0x61); // PUSH2
+                try bytecode.append(allocator, @intCast(value >> 8));
+                try bytecode.append(allocator, @intCast(value & 0xFF));
+            } else if (value <= 0xFFFFFF) {
+                try bytecode.append(allocator, 0x62); // PUSH3
+                try bytecode.append(allocator, @intCast(value >> 16));
+                try bytecode.append(allocator, @intCast((value >> 8) & 0xFF));
+                try bytecode.append(allocator, @intCast(value & 0xFF));
+            } else if (value <= 0xFFFFFFFF) {
+                try bytecode.append(allocator, 0x63); // PUSH4
+                try bytecode.append(allocator, @intCast(value >> 24));
+                try bytecode.append(allocator, @intCast((value >> 16) & 0xFF));
+                try bytecode.append(allocator, @intCast((value >> 8) & 0xFF));
+                try bytecode.append(allocator, @intCast(value & 0xFF));
+            } else {
+                // For larger values, use PUSH32
+                try bytecode.append(allocator, 0x7f); // PUSH32
+                var j: u8 = 31;
+                while (true) : (j -= 1) {
+                    try bytecode.append(allocator, @intCast((value >> @intCast(j * 8)) & 0xFF));
+                    if (j == 0) break;
+                }
+            }
+        } else {
+            // It's a regular opcode
+            const opcode = try getOpcode(token);
+            try bytecode.append(allocator, opcode);
+        }
+    }
+
+    return bytecode.toOwnedSlice(allocator);
 }
 
 // Compile a single expression (no wrapper)
@@ -264,6 +473,32 @@ fn getOpcode(name: []const u8) !u8 {
     if (std.mem.eql(u8, name, "PUSH3")) return 0x62;
     if (std.mem.eql(u8, name, "PUSH4")) return 0x63;
     if (std.mem.eql(u8, name, "PUSH5")) return 0x64;
+    if (std.mem.eql(u8, name, "PUSH6")) return 0x65;
+    if (std.mem.eql(u8, name, "PUSH7")) return 0x66;
+    if (std.mem.eql(u8, name, "PUSH8")) return 0x67;
+    if (std.mem.eql(u8, name, "PUSH9")) return 0x68;
+    if (std.mem.eql(u8, name, "PUSH10")) return 0x69;
+    if (std.mem.eql(u8, name, "PUSH11")) return 0x6a;
+    if (std.mem.eql(u8, name, "PUSH12")) return 0x6b;
+    if (std.mem.eql(u8, name, "PUSH13")) return 0x6c;
+    if (std.mem.eql(u8, name, "PUSH14")) return 0x6d;
+    if (std.mem.eql(u8, name, "PUSH15")) return 0x6e;
+    if (std.mem.eql(u8, name, "PUSH16")) return 0x6f;
+    if (std.mem.eql(u8, name, "PUSH17")) return 0x70;
+    if (std.mem.eql(u8, name, "PUSH18")) return 0x71;
+    if (std.mem.eql(u8, name, "PUSH19")) return 0x72;
+    if (std.mem.eql(u8, name, "PUSH20")) return 0x73;
+    if (std.mem.eql(u8, name, "PUSH21")) return 0x74;
+    if (std.mem.eql(u8, name, "PUSH22")) return 0x75;
+    if (std.mem.eql(u8, name, "PUSH23")) return 0x76;
+    if (std.mem.eql(u8, name, "PUSH24")) return 0x77;
+    if (std.mem.eql(u8, name, "PUSH25")) return 0x78;
+    if (std.mem.eql(u8, name, "PUSH26")) return 0x79;
+    if (std.mem.eql(u8, name, "PUSH27")) return 0x7a;
+    if (std.mem.eql(u8, name, "PUSH28")) return 0x7b;
+    if (std.mem.eql(u8, name, "PUSH29")) return 0x7c;
+    if (std.mem.eql(u8, name, "PUSH30")) return 0x7d;
+    if (std.mem.eql(u8, name, "PUSH31")) return 0x7e;
     if (std.mem.eql(u8, name, "PUSH32")) return 0x7f;
 
     // Dup operations
