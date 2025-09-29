@@ -55,7 +55,41 @@ pub const MinimalFrame = struct {
     hardfork: Hardfork,
 
     /// Analyze bytecode to identify valid JUMPDEST locations
+    /// Strip Solidity metadata from bytecode
+    /// Returns bytecode without the trailing metadata
+    fn stripSolidityMetadata(bytecode: []const u8) []const u8 {
+        if (bytecode.len < 4) return bytecode;
+        
+        // Read metadata length from last 2 bytes (big-endian)
+        const metadata_len = std.mem.readInt(u16, bytecode[bytecode.len - 2 ..][0..2], .big);
+        
+        // Validate metadata length
+        if (metadata_len > 0 and @as(usize, metadata_len) + 2 <= bytecode.len) {
+            const metadata_start = bytecode.len - @as(usize, metadata_len) - 2;
+            const metadata_slice = bytecode[metadata_start .. bytecode.len - 2];
+            
+            // Check for common Solidity metadata patterns (CBOR encoded)
+            if (metadata_slice.len > 6) {
+                const ipfs_pattern = &.{ 0xa2, 0x64, 'i', 'p', 'f', 's' };
+                const bzzr0_pattern = &.{ 0xa1, 0x65, 'b', 'z', 'z', 'r', '0' };
+                const bzzr1_pattern = &.{ 0xa1, 0x65, 'b', 'z', 'z', 'r', '1' };
+                
+                if (std.mem.startsWith(u8, metadata_slice, ipfs_pattern) or
+                    std.mem.startsWith(u8, metadata_slice, bzzr0_pattern) or
+                    std.mem.startsWith(u8, metadata_slice, bzzr1_pattern))
+                {
+                    // Valid metadata found, return bytecode without it
+                    return bytecode[0..metadata_start];
+                }
+            }
+        }
+        
+        // No valid metadata found, return original bytecode
+        return bytecode;
+    }
+
     fn validateJumpDests(_: std.mem.Allocator, bytecode: []const u8, valid_jumpdests: *std.AutoArrayHashMap(u32, void)) !void {
+        // Note: bytecode is already stripped of metadata by caller
         var pc: u32 = 0;
         while (pc < bytecode.len) {
             const opcode = bytecode[pc];
@@ -94,10 +128,13 @@ pub const MinimalFrame = struct {
         var memory_map = std.AutoHashMap(u32, u8).init(allocator);
         errdefer memory_map.deinit();
 
+        // Strip metadata from bytecode for both validation and execution
+        const runtime_bytecode = stripSolidityMetadata(bytecode);
+        
         // Analyze bytecode to identify valid jump destinations
         var valid_jumpdests = std.AutoArrayHashMap(u32, void).init(allocator);
         errdefer valid_jumpdests.deinit();
-        try validateJumpDests(allocator, bytecode, &valid_jumpdests);
+        try validateJumpDests(allocator, runtime_bytecode, &valid_jumpdests);
 
         return Self{
             .stack = stack,
@@ -105,7 +142,7 @@ pub const MinimalFrame = struct {
             .memory_size = 0,
             .pc = 0,
             .gas_remaining = gas,
-            .bytecode = bytecode,
+            .bytecode = runtime_bytecode,
             .valid_jumpdests = valid_jumpdests,
             .caller = caller,
             .address = address,

@@ -198,6 +198,14 @@ fn benchMinimalEvmTenHashes(allocator: std.mem.Allocator) void {
     benchMinimalEvm(allocator, "tenhashes", "0x", 10000000);
 }
 
+fn benchMainEvmSnailtracer(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "snailtracer", "0x30627b7c", 100000000);
+}
+
+fn benchMinimalEvmSnailtracer(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "snailtracer", "0x30627b7c", 100000000);
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
@@ -292,6 +300,11 @@ pub fn main() !void {
     if (fx.getContract("tenhashes") != null) {
         try bench.add("MainEvm/tenhashes", benchMainEvmTenHashes, .{});
         try bench.add("MinimalEvm/tenhashes", benchMinimalEvmTenHashes, .{});
+    }
+    
+    if (fx.getContract("snailtracer") != null) {
+        try bench.add("MainEvm/snailtracer", benchMainEvmSnailtracer, .{});
+        try bench.add("MinimalEvm/snailtracer", benchMinimalEvmSnailtracer, .{});
     }
     
     // Run benchmarks

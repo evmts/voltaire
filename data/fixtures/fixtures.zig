@@ -45,21 +45,35 @@ pub const Fixtures = struct {
         }{
             .{ .name = "arithmetic", .path = "data/fixtures/Arithmetic.sol" },
             .{ .name = "bitwise", .path = "data/fixtures/Bitwise.sol" },
+            .{ .name = "blockinfo", .path = "data/fixtures/BlockInfo.sol" },
             .{ .name = "bubblesort", .path = "data/fixtures/BubbleSort.sol" },
             .{ .name = "calldata", .path = "data/fixtures/Calldata.sol" },
             .{ .name = "codecopy", .path = "data/fixtures/CodeCopy.sol" },
             .{ .name = "comparison", .path = "data/fixtures/Comparison.sol" },
+            .{ .name = "context", .path = "data/fixtures/Context.sol" },
             .{ .name = "contractcalls", .path = "data/fixtures/ContractCalls.sol" },
+            .{ .name = "contractcreation", .path = "data/fixtures/ContractCreation.sol" },
             .{ .name = "controlflow", .path = "data/fixtures/ControlFlow.sol" },
+            .{ .name = "erc20approval", .path = "data/fixtures/Erc20Approval.sol" },
+            .{ .name = "erc20mint", .path = "data/fixtures/Erc20Mint.sol" },
+            .{ .name = "erc20transfer", .path = "data/fixtures/Erc20Transfer.sol" },
             .{ .name = "externalcode", .path = "data/fixtures/ExternalCode.sol" },
-            .{ .name = "factorial", .path = "data/fixtures/FactorialRecursive.sol" },
+            .{ .name = "factorial", .path = "data/fixtures/Factorial.sol" },
+            .{ .name = "factorial_recursive", .path = "data/fixtures/FactorialRecursive.sol" },
             .{ .name = "fibonacci", .path = "data/fixtures/Fibanacci.sol" },
             .{ .name = "fibonacci_recursive", .path = "data/fixtures/FibonacciRecursive.sol" },
             .{ .name = "hashing", .path = "data/fixtures/Hashing.sol" },
             .{ .name = "logs", .path = "data/fixtures/Logs.sol" },
+            .{ .name = "manyhashes", .path = "data/fixtures/ManyHashes.sol" },
+            .{ .name = "memory", .path = "data/fixtures/Memory.sol" },
+            .{ .name = "modulararithmetic", .path = "data/fixtures/ModularArithmetic.sol" },
+            .{ .name = "mstore", .path = "data/fixtures/Mstore.sol" },
             .{ .name = "push", .path = "data/fixtures/Push.sol" },
             .{ .name = "returndata", .path = "data/fixtures/ReturnData.sol" },
             .{ .name = "shifts", .path = "data/fixtures/Shifts.sol" },
+            .{ .name = "signedarithmetic", .path = "data/fixtures/SignedArithmetic.sol" },
+            .{ .name = "snailtracer", .path = "data/fixtures/SnailTracer.sol" },
+            .{ .name = "sstore", .path = "data/fixtures/Sstore.sol" },
             .{ .name = "stack", .path = "data/fixtures/Stack.sol" },
             .{ .name = "storage", .path = "data/fixtures/Storage.sol" },
             .{ .name = "tenhashes", .path = "data/fixtures/TenThousandHashes.sol" },
@@ -69,17 +83,6 @@ pub const Fixtures = struct {
             const contract = try self.compileContract(fixture.path);
             try self.contracts.put(fixture.name, contract);
         }
-
-        // Also compile ERC20 and SnailTracer if they exist
-        if (std.fs.cwd().access("data/fixtures/lib/ERC20.sol", .{})) |_| {
-            const erc20 = try self.compileContract("data/fixtures/lib/ERC20.sol");
-            try self.contracts.put("erc20", erc20);
-        } else |_| {}
-
-        if (std.fs.cwd().access("data/fixtures/SnailTracer.sol", .{})) |_| {
-            const snailtracer = try self.compileContract("data/fixtures/SnailTracer.sol");
-            try self.contracts.put("snailtracer", snailtracer);
-        } else |_| {}
     }
 
     /// Compile a single contract
