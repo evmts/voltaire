@@ -207,3 +207,7 @@ sdks/python/guillotine_evm/_ffi.c
 
 # Test fixtures
 test/execution-spec-tests/fixtures/
+
+# Solidity compilation artifacts
+data/fixtures/out/
+bubblesort_bytecode.txt
