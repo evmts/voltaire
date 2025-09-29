@@ -611,6 +611,12 @@ pub fn Preprocessor(FrameType: type) type {
                         // Record this JUMPDEST's location in schedule for single-pass resolution
                         // We store the index where the JUMPDEST handler will be placed
                         const jumpdest_schedule_idx = schedule_items.items.len;
+                        
+                        // Debug logging
+                        if (instr_pc == 0x304) {
+                            log.warn("[JUMPDEST] PC=0x304 found at schedule[{}] (path 1)", .{jumpdest_schedule_idx});
+                        }
+                        
                         try jumpdest_entries.append(allocator, .{
                             .pc = @intCast(instr_pc),
                             .schedule_index = jumpdest_schedule_idx,
@@ -1036,91 +1042,77 @@ pub fn Preprocessor(FrameType: type) type {
             schedule: []const Item,
             bytecode: anytype,
         ) !JumpTable {
+            const log = @import("../log.zig");
+            
+            // We need the bytecode to find JUMPDEST PCs
             const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
                 try bytecode
             else
                 bytecode;
-
+            
             var jumpdest_entries = ArrayList(JumpDestEntry, null){};
             defer jumpdest_entries.deinit(allocator);
-
-            var iter = actual_bytecode.createIterator();
+            
+            // Create a mapping of JUMPDEST PCs to their schedule indices
+            // by walking through the schedule and bytecode in parallel
+            
+            var bytecode_iter = actual_bytecode.createIterator();
             var schedule_index: usize = 0;
-
-            const first_block_gas = Self.calculateFirstBlockGas(actual_bytecode);
-            if (first_block_gas > 0 and schedule.len > 0) schedule_index = 1;
-
-            while (true) {
-                const instr_pc = iter.pc;
-                const maybe = iter.next();
-                if (maybe == null) break;
-                const op_data = maybe.?;
-
-                switch (op_data) {
-                    .jumpdest => {
-                        try jumpdest_entries.append(allocator, .{
-                            .pc = @intCast(instr_pc),
-                            .schedule_index = schedule_index,
-                        });
-                        schedule_index += 2;
-                    },
-                    .regular => {
-                        schedule_index += 1;
-                    },
-                    .pc => {
-                        schedule_index += 2;
-                    },
-                    .jump, .jumpi => {
-                        schedule_index += 2;
-                    },
-                    .push => {
-                        schedule_index += 2;
-                    },
-                    .push_add_fusion, .push_mul_fusion, .push_sub_fusion, .push_div_fusion, .push_and_fusion, .push_or_fusion, .push_xor_fusion, .push_jump_fusion, .push_jumpi_fusion, .push_mload_fusion, .push_mstore_fusion, .push_mstore8_fusion => {
-                        schedule_index += 2;
-                    },
-                    .stop, .invalid => {
-                        schedule_index += 1;
-                    },
-                    .multi_push => |mp| {
-                        schedule_index += 1 + @as(usize, mp.count);
-                    },
-                    .multi_pop => {
-                        schedule_index += 1;
-                    },
-                    .iszero_jumpi => {
-                        schedule_index += 2;
-                    },
-                    .dup2_mstore_push => {
-                        schedule_index += 2;
-                    },
-                    .dup3_add_mstore => {
-                        schedule_index += 1;
-                    },
-                    .swap1_dup2_add => {
-                        schedule_index += 1;
-                    },
-                    .push_dup3_add => {
-                        schedule_index += 2;
-                    },
-                    .function_dispatch => {
-                        schedule_index += 3;
-                    },
-                    .callvalue_check => {
-                        schedule_index += 1;
-                    },
-                    .push0_revert => {
-                        schedule_index += 1;
-                    },
-                    .push_add_dup1 => {
-                        schedule_index += 2;
-                    },
-                    .mload_swap1_dup2 => {
-                        schedule_index += 1;
-                    },
+            
+            // Skip first_block_gas if present
+            if (schedule.len > 0 and schedule[0] == .first_block_gas) {
+                schedule_index = 1;
+            }
+            
+            // Get JUMPDEST handler for comparison
+            const frame_handlers = @import("../frame/frame_handlers.zig");
+            const jumpdest_handler = frame_handlers.getOpcodeHandlers(FrameType, &.{})[@intFromEnum(Opcode.JUMPDEST)];
+            
+            // Walk through schedule and find all JUMPDEST handlers
+            var jumpdest_pcs = ArrayList(FrameType.PcType, null){};
+            defer jumpdest_pcs.deinit(allocator);
+            
+            // First, collect all JUMPDEST PCs from bytecode
+            while (bytecode_iter.next()) |op_data| {
+                // The PC is already at the start of the next instruction, so we need to go back
+                const instr_len = switch (op_data) {
+                    .regular => 1,
+                    .jumpdest => 1,
+                    .push => |data| 1 + data.size,
+                    .jump, .jumpi => 1,
+                    .pc => 1,
+                    .stop, .invalid => 1,
+                    else => 1, // For other cases, assume 1 byte
+                };
+                const pc = bytecode_iter.pc - instr_len;
+                if (op_data == .jumpdest) {
+                    // Cast to FrameType.PcType for storage
+                    const jumpdest_pc: FrameType.PcType = @intCast(pc);
+                    try jumpdest_pcs.append(allocator, jumpdest_pc);
                 }
             }
-
+            
+            // Now find each JUMPDEST in the schedule
+            var jumpdest_idx: usize = 0;
+            for (schedule, 0..) |item, index| {
+                if (item == .opcode_handler and item.opcode_handler == jumpdest_handler) {
+                    // This is a JUMPDEST handler
+                    if (jumpdest_idx < jumpdest_pcs.items.len) {
+                        const pc = jumpdest_pcs.items[jumpdest_idx];
+                        try jumpdest_entries.append(allocator, .{
+                            .pc = pc,
+                            .schedule_index = index,
+                        });
+                        
+                        if (pc == 0x304) {
+                            log.warn("Found PC=0x304 JUMPDEST at schedule[{}] (fixed approach)", .{index});
+                        }
+                        
+                        jumpdest_idx += 1;
+                    }
+                }
+            }
+            
             const jumpdest_array = try jumpdest_entries.toOwnedSlice(allocator);
             defer allocator.free(jumpdest_array);
             std.sort.block(JumpDestEntry, jumpdest_array, {}, JumpDestEntry.lessThan);
@@ -1133,8 +1125,13 @@ pub fn Preprocessor(FrameType: type) type {
             schedule: []const Item,
             jumpdest_array: []const JumpDestEntry,
         ) !JumpTable {
+            const log = @import("../log.zig");
             const entries = try allocator.alloc(JumpTable.JumpTableEntry, jumpdest_array.len);
             errdefer allocator.free(entries);
+
+            // Debug logging for jump table construction
+            log.debug("=== Jump Table Construction ===", .{});
+            log.debug("Total JUMPDESTs: {}", .{jumpdest_array.len});
 
             for (jumpdest_array, 0..) |jumpdest, i| {
                 entries[i] = .{
@@ -1143,6 +1140,14 @@ pub fn Preprocessor(FrameType: type) type {
                         .cursor = schedule.ptr + jumpdest.schedule_index,
                     },
                 };
+                
+                // Debug log each jump table entry
+                if (jumpdest.pc == 0x304) {
+                    log.warn("Jump table entry: PC=0x304 -> schedule[{}]", .{jumpdest.schedule_index});
+                    if (jumpdest.schedule_index < schedule.len) {
+                        log.warn("  Schedule item at [{}]: {s}", .{jumpdest.schedule_index, @tagName(schedule[jumpdest.schedule_index])});
+                    }
+                }
             }
 
             if (std.debug.runtime_safety and entries.len > 1) {
