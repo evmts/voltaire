@@ -1,0 +1,9 @@
+{
+  "name": "codecopy",
+  "num_runs": 10,
+  "solc_version": "0.8.20",
+  "contract": "CodeCopy.sol",
+  "calldata": "0x8903c5a2",
+  "warmup": 3,
+  "gas_limit": 30000000
+}

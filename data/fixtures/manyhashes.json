@@ -1,0 +1,9 @@
+{
+  "name": "manyhashes",
+  "num_runs": 10,
+  "solc_version": "0.8.17",
+  "contract": "ManyHashes.sol",
+  "calldata": "0x239b51bf00000000000000000000000000000000000000000000000000000000000003e8",
+  "warmup": 3,
+  "gas_limit": 30000000
+}
