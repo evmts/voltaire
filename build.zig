@@ -2,6 +2,7 @@ const std = @import("std");
 const Modules = @import("src/modules.build.zig");
 const GuillotineExe = @import("src/build.zig");
 const lib_build = @import("lib/build.zig");
+const data_build = @import("data/build.zig");
 const DevtoolExe = @import("apps/devtool/build.zig");
 
 fn checkSubmodules() void {
@@ -117,6 +118,9 @@ pub fn build(b: *std.Build) void {
 
     // Modules
     const modules = Modules.createModules(b, target, optimize, options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, foundry_lib);
+    
+    // Create fixtures module
+    const fixtures_mod = data_build.createFixturesModule(b, target, optimize, modules.compilers_mod, foundry_lib);
 
     // Executables
     const guillotine_exe = GuillotineExe.createExecutable(b, modules.exe_mod);
@@ -345,7 +349,41 @@ pub fn build(b: *std.Build) void {
     const integration_test_step = b.step("test-integration", "Run integration tests from test/**/*.zig");
     integration_test_step.dependOn(&run_integration_tests.step);
 
-
+    // Fixture tests - test all Solidity fixtures with both EVMs
+    const fixture_tests = b.addTest(.{
+        .name = "fixture-tests",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("test/fixtures.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+        .use_llvm = true,
+        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
+    });
+    fixture_tests.root_module.addImport("evm", modules.evm_mod);
+    fixture_tests.root_module.addImport("primitives", modules.primitives_mod);
+    fixture_tests.root_module.addImport("fixtures", fixtures_mod);
+    fixture_tests.linkLibrary(c_kzg_lib);
+    fixture_tests.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| fixture_tests.linkLibrary(bn254);
+    if (foundry_lib) |foundry| {
+        fixture_tests.linkLibrary(foundry);
+        fixture_tests.addIncludePath(b.path("lib/foundry-compilers"));
+    }
+    fixture_tests.linkLibC();
+    if (test_filter) |filter| {
+        fixture_tests.filters = &[_][]const u8{filter};
+    }
+    const run_fixture_tests = b.addRunArtifact(fixture_tests);
+    if (test_filter) |filter| {
+        run_fixture_tests.setEnvironmentVariable("TEST_FILTER", filter);
+    }
+    if (test_verbose) run_fixture_tests.setEnvironmentVariable("TEST_VERBOSE", "1");
+    if (test_fail_fast) run_fixture_tests.setEnvironmentVariable("TEST_FAIL_FAST", "1");
+    if (test_no_color) run_fixture_tests.setEnvironmentVariable("TEST_NO_COLOR", "1");
+    if (test_quiet) run_fixture_tests.setEnvironmentVariable("TEST_QUIET", "1");
+    const fixture_test_step = b.step("test-fixtures", "Run fixture tests comparing MainEvm and MinimalEvm");
+    fixture_test_step.dependOn(&run_fixture_tests.step);
 
     // Main test step runs tests in priority order: specs -> integration -> unit
     const test_step = b.step("test", "Run all tests (specs -> integration -> unit)");
@@ -411,9 +449,15 @@ pub fn build(b: *std.Build) void {
     zbench_main.root_module.addImport("zbench", zbench_module);
     zbench_main.root_module.addImport("evm", modules.evm_mod);
     zbench_main.root_module.addImport("primitives", modules.primitives_mod);
+    zbench_main.root_module.addImport("foundry_compilers", modules.compilers_mod);
+    zbench_main.root_module.addImport("fixtures", fixtures_mod);
     zbench_main.linkLibrary(c_kzg_lib);
     zbench_main.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| zbench_main.linkLibrary(bn254);
+    if (foundry_lib) |foundry| {
+        zbench_main.linkLibrary(foundry);
+        zbench_main.addIncludePath(b.path("lib/foundry-compilers"));
+    }
     zbench_main.linkLibC();
 
     const run_zbench_main = b.addRunArtifact(zbench_main);
