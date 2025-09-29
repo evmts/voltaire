@@ -13,7 +13,10 @@ test {
     // Integration tests - testing EVM behavior with fixtures and differential testing
     
     // Test snailtracer first
-    _ = @import("evm/snailtracer_test.zig");
+    // _ = @import("evm/snailtracer_test.zig"); // File not present
+    
+    // Fixtures tests
+    _ = @import("fixtures.zig");
     
     // High gas limit crash reproduction test
     _ = @import("high_gas_limit_test.zig");
