@@ -90,10 +90,26 @@ fn benchMinimalEvm(allocator: std.mem.Allocator, fixture_name: []const u8, calld
     const calldata = hexToBytes(allocator, calldata_hex) catch unreachable;
     defer allocator.free(calldata);
     
-    _ = min_evm.execute(bytecode, gas, sender, contract, 0, calldata) catch return;
+    _ = min_evm.execute(bytecode, @intCast(gas), sender, contract, 0, calldata) catch return;
 }
 
 // Specific benchmark functions
+fn benchMainEvmArithmetic(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "arithmetic", "0x", 1000000);
+}
+
+fn benchMinimalEvmArithmetic(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "arithmetic", "0x", 1000000);
+}
+
+fn benchMainEvmBitwise(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "bitwise", "0x", 1000000);
+}
+
+fn benchMinimalEvmBitwise(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "bitwise", "0x", 1000000);
+}
+
 fn benchMainEvmBubblesort(allocator: std.mem.Allocator) void {
     benchMainEvm(allocator, "bubblesort", "0x239b51bf0000000000000000000000000000000000000000000000000000000000000064", 30000000);
 }
@@ -102,12 +118,68 @@ fn benchMinimalEvmBubblesort(allocator: std.mem.Allocator) void {
     benchMinimalEvm(allocator, "bubblesort", "0x239b51bf0000000000000000000000000000000000000000000000000000000000000064", 30000000);
 }
 
-fn benchMainEvmArithmetic(allocator: std.mem.Allocator) void {
-    benchMainEvm(allocator, "arithmetic", "0x", 1000000);
+fn benchMainEvmComparison(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "comparison", "0x", 1000000);
 }
 
-fn benchMinimalEvmArithmetic(allocator: std.mem.Allocator) void {
-    benchMinimalEvm(allocator, "arithmetic", "0x", 1000000);
+fn benchMinimalEvmComparison(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "comparison", "0x", 1000000);
+}
+
+fn benchMainEvmControlFlow(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "controlflow", "0x", 1000000);
+}
+
+fn benchMinimalEvmControlFlow(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "controlflow", "0x", 1000000);
+}
+
+fn benchMainEvmFactorial(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "factorial", "0x", 5000000);
+}
+
+fn benchMinimalEvmFactorial(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "factorial", "0x", 5000000);
+}
+
+fn benchMainEvmFibonacci(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "fibonacci", "0x", 3000000);
+}
+
+fn benchMinimalEvmFibonacci(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "fibonacci", "0x", 3000000);
+}
+
+fn benchMainEvmHashing(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "hashing", "0x", 1000000);
+}
+
+fn benchMinimalEvmHashing(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "hashing", "0x", 1000000);
+}
+
+fn benchMainEvmLogs(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "logs", "0x", 1000000);
+}
+
+fn benchMinimalEvmLogs(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "logs", "0x", 1000000);
+}
+
+fn benchMainEvmShifts(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "shifts", "0x", 1000000);
+}
+
+fn benchMinimalEvmShifts(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "shifts", "0x", 1000000);
+}
+
+fn benchMainEvmStack(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "stack", "0x", 1000000);
+}
+
+fn benchMinimalEvmStack(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "stack", "0x", 1000000);
 }
 
 fn benchMainEvmStorage(allocator: std.mem.Allocator) void {
@@ -118,12 +190,12 @@ fn benchMinimalEvmStorage(allocator: std.mem.Allocator) void {
     benchMinimalEvm(allocator, "storage", "0x", 1000000);
 }
 
-fn benchMainEvmHashing(allocator: std.mem.Allocator) void {
-    benchMainEvm(allocator, "hashing", "0x", 1000000);
+fn benchMainEvmTenHashes(allocator: std.mem.Allocator) void {
+    benchMainEvm(allocator, "tenhashes", "0x", 10000000);
 }
 
-fn benchMinimalEvmHashing(allocator: std.mem.Allocator) void {
-    benchMinimalEvm(allocator, "hashing", "0x", 1000000);
+fn benchMinimalEvmTenHashes(allocator: std.mem.Allocator) void {
+    benchMinimalEvm(allocator, "tenhashes", "0x", 10000000);
 }
 
 pub fn main() !void {
@@ -151,25 +223,75 @@ pub fn main() !void {
     });
     defer bench.deinit();
     
-    // Add benchmarks
+    // Add benchmarks - Core operations
     if (fx.getContract("arithmetic") != null) {
         try bench.add("MainEvm/arithmetic", benchMainEvmArithmetic, .{});
         try bench.add("MinimalEvm/arithmetic", benchMinimalEvmArithmetic, .{});
     }
     
+    if (fx.getContract("bitwise") != null) {
+        try bench.add("MainEvm/bitwise", benchMainEvmBitwise, .{});
+        try bench.add("MinimalEvm/bitwise", benchMinimalEvmBitwise, .{});
+    }
+    
+    if (fx.getContract("comparison") != null) {
+        try bench.add("MainEvm/comparison", benchMainEvmComparison, .{});
+        try bench.add("MinimalEvm/comparison", benchMinimalEvmComparison, .{});
+    }
+    
+    if (fx.getContract("shifts") != null) {
+        try bench.add("MainEvm/shifts", benchMainEvmShifts, .{});
+        try bench.add("MinimalEvm/shifts", benchMinimalEvmShifts, .{});
+    }
+    
+    // Memory and Storage
     if (fx.getContract("storage") != null) {
         try bench.add("MainEvm/storage", benchMainEvmStorage, .{});
         try bench.add("MinimalEvm/storage", benchMinimalEvmStorage, .{});
     }
     
+    if (fx.getContract("stack") != null) {
+        try bench.add("MainEvm/stack", benchMainEvmStack, .{});
+        try bench.add("MinimalEvm/stack", benchMinimalEvmStack, .{});
+    }
+    
+    // Hashing and Logs
     if (fx.getContract("hashing") != null) {
         try bench.add("MainEvm/hashing", benchMainEvmHashing, .{});
         try bench.add("MinimalEvm/hashing", benchMinimalEvmHashing, .{});
     }
     
+    if (fx.getContract("logs") != null) {
+        try bench.add("MainEvm/logs", benchMainEvmLogs, .{});
+        try bench.add("MinimalEvm/logs", benchMinimalEvmLogs, .{});
+    }
+    
+    // Control Flow
+    if (fx.getContract("controlflow") != null) {
+        try bench.add("MainEvm/controlflow", benchMainEvmControlFlow, .{});
+        try bench.add("MinimalEvm/controlflow", benchMinimalEvmControlFlow, .{});
+    }
+    
+    // Algorithm benchmarks
     if (fx.getContract("bubblesort") != null) {
         try bench.add("MainEvm/bubblesort", benchMainEvmBubblesort, .{});
         try bench.add("MinimalEvm/bubblesort", benchMinimalEvmBubblesort, .{});
+    }
+    
+    if (fx.getContract("factorial") != null) {
+        try bench.add("MainEvm/factorial", benchMainEvmFactorial, .{});
+        try bench.add("MinimalEvm/factorial", benchMinimalEvmFactorial, .{});
+    }
+    
+    if (fx.getContract("fibonacci") != null) {
+        try bench.add("MainEvm/fibonacci", benchMainEvmFibonacci, .{});
+        try bench.add("MinimalEvm/fibonacci", benchMinimalEvmFibonacci, .{});
+    }
+    
+    // Heavy workloads
+    if (fx.getContract("tenhashes") != null) {
+        try bench.add("MainEvm/tenhashes", benchMainEvmTenHashes, .{});
+        try bench.add("MinimalEvm/tenhashes", benchMinimalEvmTenHashes, .{});
     }
     
     // Run benchmarks
