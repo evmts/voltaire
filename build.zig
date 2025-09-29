@@ -398,6 +398,28 @@ pub fn build(b: *std.Build) void {
     const zbench_evm_step = b.step("bench-evm", "Run zbench EVM benchmarks");
     zbench_evm_step.dependOn(&run_zbench_evm.step);
 
+    // Main benchmark command - runs all fixture benchmarks
+    const zbench_main = b.addExecutable(.{
+        .name = "zbench",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("bench/evm_fixture_benchmarks.zig"),
+            .target = target,
+            .optimize = .ReleaseFast,
+        }),
+        .use_llvm = true, // For tail call optimization
+    });
+    zbench_main.root_module.addImport("zbench", zbench_module);
+    zbench_main.root_module.addImport("evm", modules.evm_mod);
+    zbench_main.root_module.addImport("primitives", modules.primitives_mod);
+    zbench_main.linkLibrary(c_kzg_lib);
+    zbench_main.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| zbench_main.linkLibrary(bn254);
+    zbench_main.linkLibC();
+
+    const run_zbench_main = b.addRunArtifact(zbench_main);
+    const zbench_step = b.step("bench", "Run all EVM fixture benchmarks");
+    zbench_step.dependOn(&run_zbench_main.step);
+
     // ERC20 deployment gas issue test
     const erc20_gas_test = b.addTest(.{
         .name = "test-erc20-gas",
