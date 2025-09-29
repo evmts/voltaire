@@ -130,9 +130,12 @@ pub const MinimalEvm = struct {
         var frames_list = std.ArrayList(*MinimalFrame){};
         try frames_list.ensureTotalCapacity(arena_allocator, 16);
 
+        const original_storage_map = std.AutoHashMap(StorageSlotKey, u256).init(arena_allocator);
+
         return Self{
             .frames = frames_list,
             .storage = storage_map,
+            .original_storage = original_storage_map,
             .balances = balances_map,
             .code = code_map,
             .warm_addresses = warm_addresses,

@@ -76,6 +76,7 @@ pub const DefaultEvm = BuildConfiguredEvm;
 pub const tracer = @import("tracer/tracer.zig");
 pub const Tracer = @import("tracer/tracer.zig").Tracer;
 pub const TracerConfig = @import("tracer/tracer.zig").TracerConfig;
+pub const MinimalEvm = @import("tracer/minimal_evm.zig").MinimalEvm;
 // Compatibility alias - to be removed later
 pub const DefaultTracer = Tracer;
 // differential_tracer removed - using MinimalEvm for differential testing
