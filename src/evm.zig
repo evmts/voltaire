@@ -879,7 +879,9 @@ pub fn Evm(config: EvmConfig) type {
                         return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
 
-                    if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
+                    if (!result.success) {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                    }
                     return result;
                 },
             }

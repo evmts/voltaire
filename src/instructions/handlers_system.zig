@@ -185,10 +185,9 @@ pub fn Handlers(FrameType: type) type {
                 output_offset > std.math.maxInt(usize) or
                 output_size > std.math.maxInt(usize))
             {
-                self.stack.push_unsafe(0);
-                const op_data = dispatch.getOpData(.CALLCODE);
-                self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                // Offsets/sizes exceeding usize limit means accessing beyond memory limits
+                // This should cause OutOfGas, not just return 0
+                return Error.OutOfGas;
             }
 
             const input_offset_usize = @as(usize, @intCast(input_offset));
@@ -196,23 +195,38 @@ pub fn Handlers(FrameType: type) type {
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
 
+            // Calculate memory expansion cost for both input and output regions
+            const input_mem_end = if (input_size_usize > 0) input_offset_usize + input_size_usize else 0;
+            const output_mem_end = if (output_size_usize > 0) output_offset_usize + output_size_usize else 0;
+            const max_mem_end = @max(input_mem_end, output_mem_end);
+
+            // Check if memory expansion exceeds u24 limit (16MB)
+            if (max_mem_end > std.math.maxInt(u24)) {
+                // Memory expansion exceeds limit - out of gas
+                return Error.OutOfGas;
+            }
+
+            // Calculate and charge memory expansion gas
+            if (max_mem_end > 0) {
+                const expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(max_mem_end)));
+                const expansion_cost_i64 = @as(FrameType.GasType, @intCast(expansion_cost));
+                self.gas_remaining -= expansion_cost_i64;
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
+            }
+
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.CALLCODE);
-                    self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return Error.AllocationError;
                 };
             }
 
             if (output_size_usize > 0) {
                 const output_end = output_offset_usize + output_size_usize;
                 self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(output_end))) catch {
-                    self.stack.push_unsafe(0);
-                    const op_data = dispatch.getOpData(.CALLCODE);
-                    self.afterInstruction(.CALLCODE, op_data.next_handler, op_data.next_cursor.cursor);
-                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                    return Error.AllocationError;
                 };
             }
 
