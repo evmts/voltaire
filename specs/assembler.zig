@@ -6,9 +6,45 @@ const LabelInfo = struct {
     references: std.ArrayList(usize),
 };
 
+// Replace <contract:...> and <eoa:...> placeholders with hex addresses
+fn replacePlaceholders(allocator: std.mem.Allocator, code: []const u8) ![]u8 {
+    var result = std.ArrayList(u8){};
+    defer result.deinit(allocator);
+
+    var i: usize = 0;
+    while (i < code.len) {
+        if (code[i] == '<') {
+            // Look for closing >
+            if (std.mem.indexOfPos(u8, code, i, ">")) |end_idx| {
+                const placeholder = code[i..end_idx + 1];
+                // Check if it's a contract or eoa placeholder
+                if (std.mem.indexOf(u8, placeholder, "contract:") != null or
+                    std.mem.indexOf(u8, placeholder, "eoa:") != null) {
+                    // Extract the hex address (last occurrence of 0x)
+                    if (std.mem.lastIndexOf(u8, placeholder, "0x")) |addr_start| {
+                        const addr = placeholder[addr_start..placeholder.len - 1]; // Remove trailing >
+                        // Write "0x" + address
+                        try result.appendSlice(allocator, addr);
+                        i = end_idx + 1;
+                        continue;
+                    }
+                }
+            }
+        }
+        try result.append(allocator, code[i]);
+        i += 1;
+    }
+
+    return result.toOwnedSlice(allocator);
+}
+
 // Simple assembler to compile basic assembly code for tests
 pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8 {
-    var code = asm_code;
+    // First, replace any <contract:...> or <eoa:...> placeholders
+    const code_with_addresses = try replacePlaceholders(allocator, asm_code);
+    defer allocator.free(code_with_addresses);
+
+    var code: []const u8 = code_with_addresses;
 
     // Handle :asm prefix - simple assembly format
     if (std.mem.startsWith(u8, code, ":asm ")) {
@@ -44,8 +80,294 @@ pub fn compileAssembly(allocator: std.mem.Allocator, asm_code: []const u8) ![]u8
     return compileSingleExpression(allocator, code);
 }
 
+// LLL Expression - represents a parsed LLL s-expression
+const LllExpr = union(enum) {
+    opcode: []const u8,
+    number: u256,
+    list: []LllExpr,
+
+    fn deinit(self: *LllExpr, allocator: std.mem.Allocator) void {
+        switch (self.*) {
+            .list => |items| {
+                for (items) |*item| {
+                    item.deinit(allocator);
+                }
+                allocator.free(items);
+            },
+            else => {},
+        }
+    }
+};
+
+// Parse LLL s-expression into structured form
+fn parseLllExpression(allocator: std.mem.Allocator, code: []const u8) !LllExpr {
+    var pos: usize = 0;
+
+    // Skip whitespace
+    while (pos < code.len and std.ascii.isWhitespace(code[pos])) : (pos += 1) {}
+    if (pos >= code.len) return error.InvalidFormat;
+
+    // Check if this is a list (starts with '(')
+    if (code[pos] == '(') {
+        pos += 1; // Skip '('
+        var items = std.ArrayList(LllExpr){};
+        errdefer {
+            for (items.items) |*item| {
+                item.deinit(allocator);
+            }
+            items.deinit(allocator);
+        }
+
+        while (pos < code.len) {
+            // Skip whitespace
+            while (pos < code.len and std.ascii.isWhitespace(code[pos])) : (pos += 1) {}
+            if (pos >= code.len) return error.InvalidFormat;
+
+            // Check for closing paren
+            if (code[pos] == ')') {
+                pos += 1;
+                break;
+            }
+
+            // Parse nested expression
+            const result = try parseLllExpressionAt(allocator, code, &pos);
+            try items.append(allocator, result);
+        }
+
+        return LllExpr{ .list = try items.toOwnedSlice(allocator) };
+    }
+
+    // Otherwise parse atom (opcode or number)
+    return parseLllAtom(code, &pos);
+}
+
+fn parseLllExpressionAt(allocator: std.mem.Allocator, code: []const u8, pos: *usize) !LllExpr {
+    // Skip whitespace
+    while (pos.* < code.len and std.ascii.isWhitespace(code[pos.*])) : (pos.* += 1) {}
+    if (pos.* >= code.len) return error.InvalidFormat;
+
+    // Check if this is a list
+    if (code[pos.*] == '(') {
+        pos.* += 1; // Skip '('
+        var items = std.ArrayList(LllExpr){};
+        errdefer {
+            for (items.items) |*item| {
+                item.deinit(allocator);
+            }
+            items.deinit(allocator);
+        }
+
+        while (pos.* < code.len) {
+            // Skip whitespace
+            while (pos.* < code.len and std.ascii.isWhitespace(code[pos.*])) : (pos.* += 1) {}
+            if (pos.* >= code.len) return error.InvalidFormat;
+
+            // Check for closing paren
+            if (code[pos.*] == ')') {
+                pos.* += 1;
+                break;
+            }
+
+            // Parse nested expression
+            const result = try parseLllExpressionAt(allocator, code, pos);
+            try items.append(allocator, result);
+        }
+
+        return LllExpr{ .list = try items.toOwnedSlice(allocator) };
+    }
+
+    // Otherwise parse atom
+    return parseLllAtom(code, pos);
+}
+
+fn parseLllAtom(code: []const u8, pos: *usize) !LllExpr {
+    // Skip whitespace
+    while (pos.* < code.len and std.ascii.isWhitespace(code[pos.*])) : (pos.* += 1) {}
+    if (pos.* >= code.len) return error.InvalidFormat;
+
+    const start = pos.*;
+
+    // Find end of atom (whitespace or paren)
+    while (pos.* < code.len and
+           !std.ascii.isWhitespace(code[pos.*]) and
+           code[pos.*] != '(' and
+           code[pos.*] != ')') : (pos.* += 1) {}
+
+    const atom = code[start..pos.*];
+    if (atom.len == 0) return error.InvalidFormat;
+
+    // Try to parse as number
+    if (isNumber(atom)) {
+        const value = try parseNumber(atom);
+        return LllExpr{ .number = value };
+    }
+
+    // Otherwise it's an opcode
+    return LllExpr{ .opcode = atom };
+}
+
+// Compile LLL expression to bytecode (prefix -> postfix)
+fn compileLllExpr(allocator: std.mem.Allocator, expr: LllExpr, labels: *std.StringHashMap(LabelInfo), current_pos: usize) ![]u8 {
+    switch (expr) {
+        .opcode => |name| {
+            // Single opcode
+            var bytecode = std.ArrayList(u8){};
+            defer bytecode.deinit(allocator);
+            const opcode = try getOpcode(name);
+            try bytecode.append(allocator, opcode);
+            return bytecode.toOwnedSlice(allocator);
+        },
+        .number => |value| {
+            // Push the number
+            return compilePushValue(allocator, value);
+        },
+        .list => |items| {
+            if (items.len == 0) return error.InvalidFormat;
+
+            // Check for special forms
+            const first = items[0];
+            if (first == .opcode) {
+                const op_name = first.opcode;
+
+                // Handle (seq ...) - sequential execution
+                if (std.mem.eql(u8, op_name, "seq")) {
+                    var bytecode = std.ArrayList(u8){};
+                    defer bytecode.deinit(allocator);
+
+                    // Compile each expression in sequence
+                    for (items[1..]) |item| {
+                        const item_bytecode = try compileLllExpr(allocator, item, labels, current_pos + bytecode.items.len);
+                        defer allocator.free(item_bytecode);
+                        try bytecode.appendSlice(allocator, item_bytecode);
+                    }
+
+                    return bytecode.toOwnedSlice(allocator);
+                }
+
+                // Handle (lll ...) - meta-compilation
+                if (std.mem.eql(u8, op_name, "lll")) {
+                    if (items.len != 3) return error.InvalidFormat;
+
+                    // Compile the inner expression
+                    const inner_bytecode = try compileLllExpr(allocator, items[1], labels, 0);
+                    defer allocator.free(inner_bytecode);
+
+                    var bytecode = std.ArrayList(u8){};
+                    defer bytecode.deinit(allocator);
+
+                    // Push the bytecode length
+                    const len_bytes = try compilePushValue(allocator, inner_bytecode.len);
+                    defer allocator.free(len_bytes);
+                    try bytecode.appendSlice(allocator, len_bytes);
+
+                    // DUP1 - duplicate length for later
+                    try bytecode.append(allocator, 0x80); // DUP1
+
+                    // Push the offset (second argument)
+                    const offset_bytecode = try compileLllExpr(allocator, items[2], labels, current_pos + bytecode.items.len);
+                    defer allocator.free(offset_bytecode);
+                    try bytecode.appendSlice(allocator, offset_bytecode);
+
+                    // CODECOPY to copy the init code into memory
+                    // Stack: [length, length, offset]
+                    // We need: [destOffset, offset, length] for CODECOPY
+                    // But we want to return [offset, length] for CREATE2
+
+                    // For now, just push the compiled bytecode as data
+                    // This is a simplified version - full LLL would embed the code
+                    try bytecode.appendSlice(allocator, inner_bytecode);
+
+                    return bytecode.toOwnedSlice(allocator);
+                }
+
+                // Regular opcode with arguments - compile in REVERSE order
+                var bytecode = std.ArrayList(u8){};
+                defer bytecode.deinit(allocator);
+
+                // Push arguments in reverse order (prefix -> postfix)
+                var i = items.len;
+                while (i > 1) {
+                    i -= 1;
+                    const arg_bytecode = try compileLllExpr(allocator, items[i], labels, current_pos + bytecode.items.len);
+                    defer allocator.free(arg_bytecode);
+                    try bytecode.appendSlice(allocator, arg_bytecode);
+                }
+
+                // Then execute the opcode
+                const opcode = try getOpcode(op_name);
+                try bytecode.append(allocator, opcode);
+
+                return bytecode.toOwnedSlice(allocator);
+            }
+
+            return error.InvalidFormat;
+        },
+    }
+}
+
+// Helper to compile a PUSH for a value
+fn compilePushValue(allocator: std.mem.Allocator, value: u256) ![]u8 {
+    var bytecode = std.ArrayList(u8){};
+    defer bytecode.deinit(allocator);
+
+    // For addresses (20 bytes), use PUSH20
+    if (value > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF and
+        value <= 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) {
+        try bytecode.append(allocator, 0x73); // PUSH20
+        var j: u8 = 19;
+        while (true) : (j -%= 1) {
+            try bytecode.append(allocator, @intCast((value >> @intCast(j * 8)) & 0xFF));
+            if (j == 0) break;
+        }
+    } else if (value == 0) {
+        try bytecode.append(allocator, 0x60); // PUSH1
+        try bytecode.append(allocator, 0);
+    } else if (value <= 0xFF) {
+        try bytecode.append(allocator, 0x60); // PUSH1
+        try bytecode.append(allocator, @intCast(value));
+    } else if (value <= 0xFFFF) {
+        try bytecode.append(allocator, 0x61); // PUSH2
+        try bytecode.append(allocator, @intCast(value >> 8));
+        try bytecode.append(allocator, @intCast(value & 0xFF));
+    } else if (value <= 0xFFFFFF) {
+        try bytecode.append(allocator, 0x62); // PUSH3
+        try bytecode.append(allocator, @intCast(value >> 16));
+        try bytecode.append(allocator, @intCast((value >> 8) & 0xFF));
+        try bytecode.append(allocator, @intCast(value & 0xFF));
+    } else if (value <= 0xFFFFFFFF) {
+        try bytecode.append(allocator, 0x63); // PUSH4
+        try bytecode.append(allocator, @intCast(value >> 24));
+        try bytecode.append(allocator, @intCast((value >> 16) & 0xFF));
+        try bytecode.append(allocator, @intCast((value >> 8) & 0xFF));
+        try bytecode.append(allocator, @intCast(value & 0xFF));
+    } else {
+        // For larger values, use PUSH32
+        try bytecode.append(allocator, 0x7f); // PUSH32
+        var j: u8 = 31;
+        while (true) : (j -%= 1) {
+            try bytecode.append(allocator, @intCast((value >> @intCast(j * 8)) & 0xFF));
+            if (j == 0) break;
+        }
+    }
+
+    return bytecode.toOwnedSlice(allocator);
+}
+
 // Compile complex expressions with labels and multiple parts
 fn compileComplexExpression(allocator: std.mem.Allocator, code: []const u8) ![]u8 {
+    var trimmed_code = code;
+
+    // Check for (asm ...) wrapper - this is NOT an LLL expression
+    // It's a simple format with space-separated opcodes
+    if (std.mem.startsWith(u8, trimmed_code, "(asm ")) {
+        trimmed_code = trimmed_code[5..]; // Remove "(asm "
+        if (std.mem.endsWith(u8, trimmed_code, ")")) {
+            trimmed_code = trimmed_code[0..trimmed_code.len - 1]; // Remove ")"
+        }
+        trimmed_code = std.mem.trim(u8, trimmed_code, " \t\n\r");
+        return compileSingleExpression(allocator, trimmed_code);
+    }
+
     var bytecode = std.ArrayList(u8){};
     defer bytecode.deinit(allocator);
 
@@ -59,24 +381,24 @@ fn compileComplexExpression(allocator: std.mem.Allocator, code: []const u8) ![]u
     }
 
     var pos: usize = 0;
-    while (pos < code.len) {
+    while (pos < trimmed_code.len) {
         // Skip whitespace
-        while (pos < code.len and std.ascii.isWhitespace(code[pos])) {
+        while (pos < trimmed_code.len and std.ascii.isWhitespace(trimmed_code[pos])) {
             pos += 1;
         }
-        if (pos >= code.len) break;
+        if (pos >= trimmed_code.len) break;
 
         // Check for label [[ n ]]
-        if (pos + 1 < code.len and code[pos] == '[' and code[pos+1] == '[') {
+        if (pos + 1 < trimmed_code.len and trimmed_code[pos] == '[' and trimmed_code[pos+1] == '[') {
             // Find closing ]]
             var end = pos + 2;
-            while (end + 1 < code.len and !(code[end] == ']' and code[end+1] == ']')) {
+            while (end + 1 < trimmed_code.len and !(trimmed_code[end] == ']' and trimmed_code[end+1] == ']')) {
                 end += 1;
             }
-            if (end + 1 >= code.len) return error.InvalidFormat;
+            if (end + 1 >= trimmed_code.len) return error.InvalidFormat;
 
             // Extract label number
-            const label_str = std.mem.trim(u8, code[pos+2..end], " \t");
+            const label_str = std.mem.trim(u8, trimmed_code[pos+2..end], " \t");
 
             // Store label position
             const gop = try labels.getOrPut(label_str);
@@ -94,26 +416,56 @@ fn compileComplexExpression(allocator: std.mem.Allocator, code: []const u8) ![]u
 
             pos = end + 2;
         }
-        // Check for expression ( ... )
-        else if (code[pos] == '(') {
+        // Check for LLL expression ( ... )
+        else if (trimmed_code[pos] == '(') {
             // Find matching closing paren
             var depth: usize = 1;
             var end = pos + 1;
-            while (end < code.len and depth > 0) {
-                if (code[end] == '(') depth += 1;
-                if (code[end] == ')') depth -= 1;
+            while (end < trimmed_code.len and depth > 0) {
+                if (trimmed_code[end] == '(') depth += 1;
+                if (trimmed_code[end] == ')') depth -= 1;
                 end += 1;
             }
 
-            // Compile this expression
-            const expr = code[pos+1..end-1];
-            const expr_bytecode = try compileExpressionWithLabels(allocator, expr, &labels, bytecode.items.len);
+            // Parse as LLL expression
+            const expr_str = trimmed_code[pos..end];
+            var lll_expr = try parseLllExpression(allocator, expr_str);
+            defer lll_expr.deinit(allocator);
+
+            // Compile the LLL expression
+            const expr_bytecode = try compileLllExpr(allocator, lll_expr, &labels, bytecode.items.len);
             defer allocator.free(expr_bytecode);
             try bytecode.appendSlice(allocator, expr_bytecode);
 
             pos = end;
-        } else {
-            return error.InvalidFormat;
+        }
+        // Check for simple token (number or opcode)
+        else {
+            // Find end of token
+            const start = pos;
+            while (pos < trimmed_code.len and !std.ascii.isWhitespace(trimmed_code[pos]) and
+                   trimmed_code[pos] != '(' and trimmed_code[pos] != ')' and
+                   trimmed_code[pos] != '[') {
+                pos += 1;
+            }
+
+            if (pos == start) {
+                return error.InvalidFormat;
+            }
+
+            const token = trimmed_code[start..pos];
+
+            // Compile the token (number or opcode)
+            if (isNumber(token)) {
+                const value = try parseNumber(token);
+                const push_bytes = try compilePushValue(allocator, value);
+                defer allocator.free(push_bytes);
+                try bytecode.appendSlice(allocator, push_bytes);
+            } else {
+                // It's an opcode
+                const opcode = try getOpcode(token);
+                try bytecode.append(allocator, opcode);
+            }
         }
 
     }
