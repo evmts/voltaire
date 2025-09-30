@@ -475,6 +475,26 @@ fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
         return result;
     }
 
+    // Check if this is assembly code that needs compilation
+    // Trim whitespace first to handle trailing spaces like "{ ... } "
+    const trimmed = std.mem.trim(u8, data, " \t\n\r");
+    if (std.mem.startsWith(u8, trimmed, "{") and std.mem.endsWith(u8, trimmed, "}")) {
+        // This is assembly code - compile it to bytecode
+        const compiled = try assembler.compileAssembly(allocator, trimmed);
+        defer allocator.free(compiled);
+
+        // Convert bytecode to hex string format with 0x prefix
+        const hex_result = try allocator.alloc(u8, compiled.len * 2 + 2);
+        hex_result[0] = '0';
+        hex_result[1] = 'x';
+        const hex_chars = "0123456789abcdef";
+        for (compiled, 0..) |byte, i| {
+            hex_result[2 + i * 2] = hex_chars[byte >> 4];
+            hex_result[2 + i * 2 + 1] = hex_chars[byte & 0xF];
+        }
+        return hex_result;
+    }
+
     // Handle :raw or raw prefix (with or without colon)
     var is_raw = false;
     if (std.mem.startsWith(u8, data, ":raw ")) {
