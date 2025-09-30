@@ -215,33 +215,16 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
         break :blk evm.Hardfork.CANCUN;
     };
     
-    // Create EVM with transaction context
-    const tx_context = evm.TransactionContext{
-        .gas_limit = 10000000,
-        .coinbase = block_info.coinbase,
-        .chain_id = 1,
-    };
-    
-    var evm_instance = try evm.DefaultEvm.init(
-        allocator, 
-        &database, 
-        block_info, 
-        tx_context,
-        10, // gas_price
-        primitives.Address.zero() // origin
-    );
-    defer evm_instance.deinit();
-    
     // Execute transaction(s)
     const has_transactions = test_case.object.get("transactions") != null;
     const has_transaction = test_case.object.get("transaction") != null;
-    
+
     if (has_transactions or has_transaction) {
-        const transactions = if (has_transactions) 
-            test_case.object.get("transactions").?.array.items 
-        else 
+        const transactions = if (has_transactions)
+            test_case.object.get("transactions").?.array.items
+        else
             &[_]std.json.Value{test_case.object.get("transaction").?};
-        
+
         for (transactions) |tx| {
             // Parse transaction data
             const tx_data = if (tx.object.get("data")) |data| blk: {
@@ -257,14 +240,31 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
             defer allocator.free(tx_data);
             
             // Determine sender
-            const sender = if (tx.object.get("sender")) |s| 
+            const sender = if (tx.object.get("sender")) |s|
                 try parseAddress(s.string)
             else if (tx.object.get("secretKey") != null)
                 // Standard test address for the common test private key
                 try Address.fromHex("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b")
             else
                 Address.zero();
-            
+
+            // Create EVM with transaction context (create per transaction to set correct origin)
+            const tx_context = evm.TransactionContext{
+                .gas_limit = 10000000,
+                .coinbase = block_info.coinbase,
+                .chain_id = 1,
+            };
+
+            var evm_instance = try evm.DefaultEvm.init(
+                allocator,
+                &database,
+                block_info,
+                tx_context,
+                10, // gas_price
+                sender // origin is the transaction sender
+            );
+            defer evm_instance.deinit();
+
             // Parse gas limit
             const gas_limit = if (tx.object.get("gasLimit")) |g| blk: {
                 if (g == .array) {
