@@ -257,7 +257,8 @@ pub fn build(b: *std.Build) void {
         .root_module = modules.evm_mod,
         // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
         .use_llvm = true,
-        .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
+        // Temporarily disable custom test runner to debug
+        // .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
     });
     unit_tests.linkLibrary(bls_wrapper);
     if (test_filter) |filter| {
