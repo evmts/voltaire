@@ -536,19 +536,26 @@ export fn guillotine_evm_destroy_tracing(handle: *EvmHandle) void {
 // Set balance
 export fn guillotine_set_balance(handle: *EvmHandle, address: *const [20]u8, balance: *const [32]u8) bool {
     const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
-    
+
     const balance_value = std.mem.readInt(u256, balance, .big);
     var account = evm_ptr.database.get_account(address.*) catch {
         setError("Failed to get account", .{});
         return false;
     } orelse Account{ .balance = 0, .code_hash = primitives.EMPTY_CODE_HASH, .storage_root = [_]u8{0} ** 32, .nonce = 0, .delegated_address = null };
     account.balance = balance_value;
-    
+
     evm_ptr.database.set_account(address.*, account) catch {
         setError("Failed to set account balance", .{});
         return false;
     };
-    
+
+    // Mark address as touched for state dump
+    const addr = primitives.Address.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {
+        setError("Failed to mark address as touched", .{});
+        return false;
+    };
+
     return true;
 }
 
@@ -568,27 +575,77 @@ export fn guillotine_set_balance_tracing(handle: *EvmHandle, address: *const [20
     return true;
 }
 
+// Set nonce
+export fn guillotine_set_nonce(handle: *EvmHandle, address: *const [20]u8, nonce: u64) bool {
+    const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
+
+    var account = evm_ptr.database.get_account(address.*) catch {
+        setError("Failed to get account", .{});
+        return false;
+    } orelse Account{ .balance = 0, .code_hash = primitives.EMPTY_CODE_HASH, .storage_root = [_]u8{0} ** 32, .nonce = 0, .delegated_address = null };
+    account.nonce = nonce;
+
+    evm_ptr.database.set_account(address.*, account) catch {
+        setError("Failed to set account nonce", .{});
+        return false;
+    };
+
+    // Mark address as touched for state dump
+    const addr = primitives.Address.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {
+        setError("Failed to mark address as touched", .{});
+        return false;
+    };
+
+    return true;
+}
+
+// Set nonce for tracing EVM
+export fn guillotine_set_nonce_tracing(handle: *EvmHandle, address: *const [20]u8, nonce: u64) bool {
+    const evm_ptr: *TracerEvm = @ptrCast(@alignCast(handle));
+
+    var account = evm_ptr.database.get_account(address.*) catch {
+        setError("Failed to get account", .{});
+        return false;
+    } orelse Account{ .balance = 0, .code_hash = primitives.EMPTY_CODE_HASH, .storage_root = [_]u8{0} ** 32, .nonce = 0, .delegated_address = null };
+    account.nonce = nonce;
+
+    evm_ptr.database.set_account(address.*, account) catch {
+        setError("Failed to set account nonce", .{});
+        return false;
+    };
+
+    return true;
+}
+
 // Set code
 export fn guillotine_set_code(handle: *EvmHandle, address: *const [20]u8, code: [*]const u8, code_len: usize) bool {
     const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
-    
+
     const code_slice = code[0..code_len];
     const code_hash = evm_ptr.database.set_code(code_slice) catch {
         setError("Failed to set code", .{});
         return false;
     };
-    
+
     var account = evm_ptr.database.get_account(address.*) catch {
         setError("Failed to get account", .{});
         return false;
     } orelse Account{ .balance = 0, .code_hash = primitives.EMPTY_CODE_HASH, .storage_root = [_]u8{0} ** 32, .nonce = 0, .delegated_address = null };
     account.code_hash = code_hash;
-    
+
     evm_ptr.database.set_account(address.*, account) catch {
         setError("Failed to update account code hash", .{});
         return false;
     };
-    
+
+    // Mark address as touched for state dump
+    const addr = primitives.Address.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {
+        setError("Failed to mark address as touched", .{});
+        return false;
+    };
+
     return true;
 }
 
@@ -1054,15 +1111,41 @@ export fn guillotine_free_code(code: [*]u8, len: usize) void {
 // Set storage
 export fn guillotine_set_storage(handle: *EvmHandle, address: *const [20]u8, key: *const [32]u8, value: *const [32]u8) bool {
     const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
-    
+
     const key_u256 = std.mem.readInt(u256, key, .big);
     const value_u256 = std.mem.readInt(u256, value, .big);
-    
+
     evm_ptr.database.set_storage(address.*, key_u256, value_u256) catch {
         setError("Failed to set storage", .{});
         return false;
     };
-    
+
+    // Mark address as touched for state dump
+    const addr = primitives.Address.Address{ .bytes = address.* };
+    evm_ptr.touched_addresses.put(addr, {}) catch {
+        setError("Failed to mark address as touched", .{});
+        return false;
+    };
+
+    // Track storage slot for state dump
+    var slots = evm_ptr.touched_storage.get(addr);
+    if (slots == null) {
+        var new_slots = std.ArrayList(u256).empty;
+        new_slots.append(evm_ptr.allocator, key_u256) catch {
+            setError("Failed to track storage slot", .{});
+            return false;
+        };
+        evm_ptr.touched_storage.put(addr, new_slots) catch {
+            setError("Failed to track storage for address", .{});
+            return false;
+        };
+    } else {
+        slots.?.append(evm_ptr.allocator, key_u256) catch {
+            setError("Failed to append storage slot", .{});
+            return false;
+        };
+    }
+
     return true;
 }
 
@@ -1078,6 +1161,166 @@ export fn guillotine_get_storage(handle: *EvmHandle, address: *const [20]u8, key
     
     std.mem.writeInt(u256, value_out, value, .big);
     return true;
+}
+
+// FFI structures for state dump
+const AccountStateFFI = extern struct {
+    address: [20]u8,
+    balance: [32]u8,
+    _padding1: [4]u8 = [_]u8{0} ** 4, // Padding for alignment
+    nonce: u64,
+    code: [*]const u8,
+    code_len: usize,
+    storage_keys: [*]const [32]u8,
+    storage_values: [*]const [32]u8,
+    storage_count: usize,
+};
+
+const StateDumpFFI = extern struct {
+    accounts: [*]const AccountStateFFI,
+    accounts_count: usize,
+};
+
+// Dump current EVM state
+export fn guillotine_dump_state(handle: *EvmHandle) ?*StateDumpFFI {
+    const evm_ptr: *DefaultEvm = @ptrCast(@alignCast(handle));
+    const alloc = ffi_allocator orelse {
+        setError("FFI allocator not initialized", .{});
+        return null;
+    };
+
+    // Get state dump from EVM
+    const state_dump = evm_ptr.dumpState(alloc) catch {
+        setError("Failed to dump state", .{});
+        return null;
+    };
+
+    // Convert to FFI format
+    var accounts_list = std.ArrayList(AccountStateFFI).init(alloc);
+    var accounts_iter = state_dump.accounts.iterator();
+
+    while (accounts_iter.next()) |entry| {
+        const account = entry.value_ptr.*;
+
+        // Parse address from hex string (with 0x prefix)
+        var address: [20]u8 = undefined;
+        const addr_hex = if (std.mem.startsWith(u8, entry.key_ptr.*, "0x")) entry.key_ptr.*[2..] else entry.key_ptr.*;
+        for (0..20) |i| {
+            const byte_str = addr_hex[i*2..i*2+2];
+            address[i] = std.fmt.parseInt(u8, byte_str, 16) catch 0;
+        }
+
+        // Convert balance to big-endian bytes
+        var balance: [32]u8 = undefined;
+        std.mem.writeInt(u256, &balance, account.balance, .big);
+
+        // Copy code
+        var code_copy: []u8 = &.{};
+        if (account.code.len > 0) {
+            code_copy = alloc.alloc(u8, account.code.len) catch {
+                setError("Failed to allocate code memory", .{});
+                state_dump.deinit(alloc);
+                accounts_list.deinit();
+                return null;
+            };
+            @memcpy(code_copy, account.code);
+        }
+
+        // Convert storage to arrays
+        const storage_count = account.storage.count();
+        var storage_keys: [][32]u8 = &.{};
+        var storage_values: [][32]u8 = &.{};
+
+        if (storage_count > 0) {
+            storage_keys = alloc.alloc([32]u8, storage_count) catch {
+                setError("Failed to allocate storage keys", .{});
+                if (code_copy.len > 0) alloc.free(code_copy);
+                state_dump.deinit(alloc);
+                accounts_list.deinit();
+                return null;
+            };
+            storage_values = alloc.alloc([32]u8, storage_count) catch {
+                setError("Failed to allocate storage values", .{});
+                alloc.free(storage_keys);
+                if (code_copy.len > 0) alloc.free(code_copy);
+                state_dump.deinit(alloc);
+                accounts_list.deinit();
+                return null;
+            };
+
+            var storage_iter = account.storage.iterator();
+            var idx: usize = 0;
+            while (storage_iter.next()) |storage_entry| : (idx += 1) {
+                std.mem.writeInt(u256, &storage_keys[idx], storage_entry.key_ptr.*, .big);
+                std.mem.writeInt(u256, &storage_values[idx], storage_entry.value_ptr.*, .big);
+            }
+        }
+
+        accounts_list.append(AccountStateFFI{
+            .address = address,
+            .balance = balance,
+            .nonce = account.nonce,
+            .code = if (code_copy.len > 0) code_copy.ptr else &[_]u8{},
+            .code_len = code_copy.len,
+            .storage_keys = if (storage_keys.len > 0) @ptrCast(storage_keys.ptr) else @ptrCast(&[_][32]u8{}),
+            .storage_values = if (storage_values.len > 0) @ptrCast(storage_values.ptr) else @ptrCast(&[_][32]u8{}),
+            .storage_count = storage_count,
+        }) catch {
+            setError("Failed to append account", .{});
+            if (storage_keys.len > 0) alloc.free(storage_keys);
+            if (storage_values.len > 0) alloc.free(storage_values);
+            if (code_copy.len > 0) alloc.free(code_copy);
+            state_dump.deinit(alloc);
+            accounts_list.deinit();
+            return null;
+        };
+    }
+
+    // Create FFI result
+    const result = alloc.create(StateDumpFFI) catch {
+        setError("Failed to allocate StateDumpFFI", .{});
+        for (accounts_list.items) |acc| {
+            if (acc.code_len > 0) alloc.free(acc.code[0..acc.code_len]);
+            if (acc.storage_count > 0) {
+                alloc.free(@as([*]const [32]u8, @ptrCast(acc.storage_keys))[0..acc.storage_count]);
+                alloc.free(@as([*]const [32]u8, @ptrCast(acc.storage_values))[0..acc.storage_count]);
+            }
+        }
+        accounts_list.deinit();
+        state_dump.deinit(alloc);
+        return null;
+    };
+
+    result.* = StateDumpFFI{
+        .accounts = accounts_list.items.ptr,
+        .accounts_count = accounts_list.items.len,
+    };
+
+    // Note: We don't free accounts_list or state_dump here because the caller needs the data
+    // The caller must call guillotine_free_state_dump when done
+
+    return result;
+}
+
+// Free state dump
+export fn guillotine_free_state_dump(dump: ?*StateDumpFFI) void {
+    const alloc = ffi_allocator orelse return;
+    if (dump) |d| {
+        const accounts = d.accounts[0..d.accounts_count];
+        for (accounts) |acc| {
+            if (acc.code_len > 0) {
+                alloc.free(acc.code[0..acc.code_len]);
+            }
+            if (acc.storage_count > 0) {
+                const keys = @as([*]const [32]u8, @ptrCast(acc.storage_keys))[0..acc.storage_count];
+                const values = @as([*]const [32]u8, @ptrCast(acc.storage_values))[0..acc.storage_count];
+                alloc.free(keys);
+                alloc.free(values);
+            }
+        }
+        alloc.free(accounts);
+        alloc.destroy(d);
+    }
 }
 
 // Free output memory

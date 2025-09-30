@@ -148,10 +148,14 @@ pub fn Handlers(FrameType: type) type {
                 },
             };
 
-            // Charge access cost (cold = 2600, warm = 100)
-            self.gas_remaining -= @intCast(access_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
+            // Charge additional access cost beyond base (cold adds 2500, warm adds 0)
+            // Base cost of 100 is already charged by dispatch, access_address returns 2600 for cold or 100 for warm
+            if (access_cost > 100) {
+                const additional_access_cost = access_cost - 100;
+                self.gas_remaining -= @intCast(additional_access_cost);
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
             }
 
             // Check if this is a value transfer and if the account exists
@@ -969,8 +973,8 @@ pub fn Handlers(FrameType: type) type {
             {
                 (&self.getEvm().tracer).assert(self.stack.size() >= 2, "REVERT requires 2 stack items");
             }
-            const size = self.stack.pop_unsafe(); // Top of stack
-            const offset = self.stack.pop_unsafe(); // Second from top
+            const offset = self.stack.pop_unsafe(); // Top of stack
+            const size = self.stack.pop_unsafe(); // Second from top
 
             // Bounds checking for memory offset and size
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
