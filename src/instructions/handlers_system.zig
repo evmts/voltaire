@@ -125,6 +125,56 @@ pub fn Handlers(FrameType: type) type {
                 return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
+            // Calculate and charge memory expansion gas
+            if (max_mem_end > 0) {
+                const expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(max_mem_end)));
+                const expansion_cost_i64 = @as(FrameType.GasType, @intCast(expansion_cost));
+                self.gas_remaining -= expansion_cost_i64;
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
+            }
+
+            // Calculate and charge CALL-specific gas costs (EIP-150, EIP-2929)
+            const evm = self.getEvm();
+
+            // Access address for warm/cold accounting (EIP-2929)
+            const access_cost = evm.access_address(addr) catch |err| switch (err) {
+                else => {
+                    self.stack.push_unsafe(0);
+                    const op_data = dispatch.getOpData(.CALL);
+                    self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                },
+            };
+
+            // Charge access cost (cold = 2600, warm = 100)
+            self.gas_remaining -= @intCast(access_cost);
+            if (self.gas_remaining < 0) {
+                return Error.OutOfGas;
+            }
+
+            // Check if this is a value transfer and if the account exists
+            const has_value_transfer = value != 0;
+            const account_exists = evm.database.account_exists(addr.bytes);
+            const is_new_account = !account_exists and has_value_transfer;
+
+            // Charge value transfer cost (9000 gas)
+            if (has_value_transfer) {
+                self.gas_remaining -= @intCast(primitives.GasConstants.CALL_VALUE_TRANSFER_COST);
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
+            }
+
+            // Charge new account creation cost (25000 gas)
+            if (is_new_account) {
+                self.gas_remaining -= @intCast(primitives.GasConstants.CALL_NEW_ACCOUNT_COST);
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
+            }
+
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
@@ -414,6 +464,16 @@ pub fn Handlers(FrameType: type) type {
                 return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
             }
 
+            // Calculate and charge memory expansion gas
+            if (max_mem_end > 0) {
+                const expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(max_mem_end)));
+                const expansion_cost_i64 = @as(FrameType.GasType, @intCast(expansion_cost));
+                self.gas_remaining -= expansion_cost_i64;
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
+            }
+
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
@@ -559,6 +619,16 @@ pub fn Handlers(FrameType: type) type {
                 const op_data = dispatch.getOpData(.STATICCALL);
                 self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
                 return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            }
+
+            // Calculate and charge memory expansion gas
+            if (max_mem_end > 0) {
+                const expansion_cost = self.memory.get_expansion_cost(@as(u24, @intCast(max_mem_end)));
+                const expansion_cost_i64 = @as(FrameType.GasType, @intCast(expansion_cost));
+                self.gas_remaining -= expansion_cost_i64;
+                if (self.gas_remaining < 0) {
+                    return Error.OutOfGas;
+                }
             }
 
             // Ensure memory capacity for input

@@ -821,12 +821,11 @@ pub fn Handlers(FrameType: type) type {
             self.beforeInstruction(.GAS, cursor);
             // Note: The gas value pushed should be after the gas for this instruction is consumed
             // The dispatch system handles the gas consumption before calling this handler
-            const gas_value = @as(WordType, @max(self.gas_remaining, 0));
-            // DEBUG: Print gas_remaining value
-            if (self.gas_remaining <= 0) {
-                const log = @import("../log.zig");
-                log.debug("GAS opcode: gas_remaining={} (returning {})", .{self.gas_remaining, gas_value});
-            }
+            //
+            // gas_remaining is signed (GasType = i32 or i64) for efficient out-of-gas detection
+            // The GAS opcode should never be reached if gas is negative, but if it somehow is, return 0
+            const gas_u64: u64 = if (self.gas_remaining < 0) 0 else @as(u64, @intCast(self.gas_remaining));
+            const gas_value = @as(WordType, gas_u64);
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GAS requires stack space");
             }
