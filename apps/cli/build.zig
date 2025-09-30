@@ -77,6 +77,32 @@ pub fn createCliSteps(b: *std.Build) *std.Build.Step {
     const cli_deps_step = b.step("cli-deps", "Update CLI Go dependencies");
     cli_deps_step.dependOn(&cli_deps_cmd.step);
 
+    // Release build - optimized binary with version info
+    const cli_release_cmd = b.addSystemCommand(&[_][]const u8{
+        "go",
+        "build",
+        "-o",
+        "zig-out/bin/guil",
+        "-trimpath",
+        "-ldflags=-s -w",
+        ".",
+    });
+    cli_release_cmd.setCwd(b.path("apps/cli"));
+    cli_release_cmd.step.dependOn(b.getInstallStep());
+
+    const cli_release_step = b.step("cli-release", "Build optimized release binary");
+    cli_release_step.dependOn(&cli_release_cmd.step);
+
+    // GoReleaser build (for testing release configuration locally)
+    const cli_goreleaser_snapshot_cmd = b.addSystemCommand(&[_][]const u8{
+        "goreleaser", "release", "--snapshot", "--clean", "--skip=publish",
+    });
+    cli_goreleaser_snapshot_cmd.setCwd(b.path("apps/cli"));
+    cli_goreleaser_snapshot_cmd.step.dependOn(b.getInstallStep());
+
+    const cli_goreleaser_step = b.step("cli-goreleaser-test", "Test GoReleaser configuration locally");
+    cli_goreleaser_step.dependOn(&cli_goreleaser_snapshot_cmd.step);
+
     // Return the main build step
     return cli_build_step;
 }
