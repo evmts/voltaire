@@ -860,9 +860,15 @@ pub fn Evm(config: EvmConfig) type {
             self.tracer.onCallPreflight("CALL", @tagName(preflight));
 
             switch (preflight) {
-                .precompile_result => |result| return result,
+                .precompile_result => |result| {
+                    // Precompiles succeeded, commit the snapshot
+                    try self.database.commit_snapshot(db_snapshot_id);
+                    return result;
+                },
                 .empty_account => |gas| {
                     self.tracer.onCodeRetrieval(params.to, 0, true);
+                    // Empty account call succeeded, commit the snapshot
+                    try self.database.commit_snapshot(db_snapshot_id);
                     return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable;
                 },
                 .execute_with_code => |code| {
@@ -886,6 +892,9 @@ pub fn Evm(config: EvmConfig) type {
                     if (!result.success) {
                         self.journal.revert_to_snapshot(snapshot_id);
                         try self.database.revert_to_snapshot(db_snapshot_id);
+                    } else {
+                        // Call succeeded, commit the snapshot
+                        try self.database.commit_snapshot(db_snapshot_id);
                     }
                     return result;
                 },
@@ -923,6 +932,8 @@ pub fn Evm(config: EvmConfig) type {
             const code = try self.database.get_code_by_address(params.to.bytes);
             if (code.len == 0) {
                 @branchHint(.unlikely);
+                // Empty code, commit snapshot
+                try self.database.commit_snapshot(db_snapshot_id);
                 return CallResult.success_empty(self.getCallArenaAllocator(), params.gas) catch unreachable;
             }
 
@@ -946,6 +957,9 @@ pub fn Evm(config: EvmConfig) type {
                 @branchHint(.unlikely);
                 self.journal.revert_to_snapshot(snapshot_id);
                 try self.database.revert_to_snapshot(db_snapshot_id);
+            } else {
+                // Call succeeded, commit snapshot
+                try self.database.commit_snapshot(db_snapshot_id);
             }
             return result;
         }
@@ -968,8 +982,14 @@ pub fn Evm(config: EvmConfig) type {
             };
 
             switch (preflight) {
-                .precompile_result => |result| return result,
-                .empty_account => |gas| return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable,
+                .precompile_result => |result| {
+                    try self.database.commit_snapshot(db_snapshot_id);
+                    return result;
+                },
+                .empty_account => |gas| {
+                    try self.database.commit_snapshot(db_snapshot_id);
+                    return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable;
+                },
                 .execute_with_code => |code| {
                     const current_value = if (self.depth > 0) self.call_stack[self.depth - 1].value else 0;
                     const result = self.execute_frame(
@@ -992,6 +1012,8 @@ pub fn Evm(config: EvmConfig) type {
                         @branchHint(.unlikely);
                         self.journal.revert_to_snapshot(snapshot_id);
                         try self.database.revert_to_snapshot(db_snapshot_id);
+                    } else {
+                        try self.database.commit_snapshot(db_snapshot_id);
                     }
                     return result;
                 },
@@ -1017,8 +1039,14 @@ pub fn Evm(config: EvmConfig) type {
             };
 
             switch (preflight) {
-                .precompile_result => |result| return result,
-                .empty_account => |gas| return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable,
+                .precompile_result => |result| {
+                    try self.database.commit_snapshot(db_snapshot_id);
+                    return result;
+                },
+                .empty_account => |gas| {
+                    try self.database.commit_snapshot(db_snapshot_id);
+                    return CallResult.success_empty(self.getCallArenaAllocator(), gas) catch unreachable;
+                },
                 .execute_with_code => |code| {
                     const result = self.execute_frame(
                         code,
@@ -1039,6 +1067,8 @@ pub fn Evm(config: EvmConfig) type {
                     if (!result.success) {
                         self.journal.revert_to_snapshot(snapshot_id);
                         try self.database.revert_to_snapshot(db_snapshot_id);
+                    } else {
+                        try self.database.commit_snapshot(db_snapshot_id);
                     }
                     return result;
                 },
@@ -1270,6 +1300,9 @@ pub fn Evm(config: EvmConfig) type {
                 try self.database.revert_to_snapshot(args.db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
+
+            // CREATE succeeded, commit the snapshot
+            try self.database.commit_snapshot(args.db_snapshot_id);
 
             var final_result = if (result.output.len > 0)
                 CallResult.success_with_output(self.getCallArenaAllocator(), result.gas_left, result.output) catch unreachable
