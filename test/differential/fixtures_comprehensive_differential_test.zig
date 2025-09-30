@@ -5,9 +5,9 @@ const log = evm.log;
 
 const testing = std.testing;
 
-// Enable info logging for tests
+// Enable debug logging for tests
 pub const std_options = .{
-    .log_level = .info,
+    .log_level = .debug,
 };
 
 // Use DefaultEvm for regular EVM execution

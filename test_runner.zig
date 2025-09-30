@@ -106,7 +106,7 @@ fn extractTestName(full_name: []const u8) []const u8 {
     return full_name;
 }
 
-fn formatDuration(writer: *std.io.Writer, ns: u64) void {
+fn formatDuration(writer: anytype, ns: u64) void {
     if (ns < 1_000) {
         writer.print("{s}{d} ns{s}", .{ Color.gray, ns, Color.reset }) catch {};
     } else if (ns < 1_000_000) {
@@ -118,15 +118,15 @@ fn formatDuration(writer: *std.io.Writer, ns: u64) void {
     }
 }
 
-fn clearLine(writer: *std.io.Writer) void {
+fn clearLine(writer: anytype) void {
     writer.print("\r\x1b[K", .{}) catch {};
 }
 
-fn moveCursorUp(writer: *std.io.Writer, lines: usize) void {
+fn moveCursorUp(writer: anytype, lines: usize) void {
     writer.print("\x1b[{d}A", .{lines}) catch {};
 }
 
-fn printProgress(writer: *std.io.Writer, current: usize, total: usize, suite_name: []const u8) void {
+fn printProgress(writer: anytype, current: usize, total: usize, suite_name: []const u8) void {
     clearLine(writer);
     const percent = (current * 100) / total;
 
@@ -200,17 +200,17 @@ fn getSourceContext(allocator: std.mem.Allocator, file_path: []const u8, line_nu
 }
 
 pub fn main() !void {
-    const stdout_file = std.fs.File{ .handle = std.posix.STDOUT_FILENO };
-    const stderr_file = std.fs.File{ .handle = std.posix.STDERR_FILENO };
+    const stdout_file = std.fs.File.stdout();
+    const stderr_file = std.fs.File.stderr();
 
-    var stdout_buf: [8192]u8 = undefined;
-    var stderr_buf: [8192]u8 = undefined;
+    var stdout_buffer: [4096]u8 = undefined;
+    var stderr_buffer: [4096]u8 = undefined;
 
-    var stdout_writer = stdout_file.writer(&stdout_buf);
-    var stderr_writer = stderr_file.writer(&stderr_buf);
+    var stdout_writer = stdout_file.writer(&stdout_buffer);
+    var stderr_writer = stderr_file.writer(&stderr_buffer);
 
-    var stdout = &stdout_writer.interface;
-    var stderr = &stderr_writer.interface;
+    const stdout = &stdout_writer.interface;
+    const stderr = &stderr_writer.interface;
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
@@ -667,8 +667,8 @@ pub fn main() !void {
     try stdout.print("\n\n", .{});
 
     // Ensure all output is flushed
-    try stdout_writer.end();
-    try stderr_writer.end();
+    try stdout.flush();
+    try stderr.flush();
 
     if (failed_count > 0) {
         return error.TestsFailed;
