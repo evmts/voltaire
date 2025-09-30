@@ -86,6 +86,45 @@ pub fn Handlers(FrameType: type) type {
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
 
+            // Calculate memory bounds with overflow checking
+            var input_mem_end: usize = 0;
+            var output_mem_end: usize = 0;
+
+            if (input_size_usize > 0) {
+                const overflow = @addWithOverflow(input_offset_usize, input_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - return failure
+                    self.stack.push_unsafe(0);
+                    const op_data = dispatch.getOpData(.CALL);
+                    self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                }
+                input_mem_end = overflow[0];
+            }
+
+            if (output_size_usize > 0) {
+                const overflow = @addWithOverflow(output_offset_usize, output_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - return failure
+                    self.stack.push_unsafe(0);
+                    const op_data = dispatch.getOpData(.CALL);
+                    self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                }
+                output_mem_end = overflow[0];
+            }
+
+            const max_mem_end = @max(input_mem_end, output_mem_end);
+
+            // Check if memory expansion exceeds u24 limit (16MB)
+            if (max_mem_end > std.math.maxInt(u24)) {
+                // Memory expansion exceeds limit - return failure
+                self.stack.push_unsafe(0);
+                const op_data = dispatch.getOpData(.CALL);
+                self.afterInstruction(.CALL, op_data.next_handler, op_data.next_cursor.cursor);
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            }
+
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
@@ -195,9 +234,28 @@ pub fn Handlers(FrameType: type) type {
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
 
-            // Calculate memory expansion cost for both input and output regions
-            const input_mem_end = if (input_size_usize > 0) input_offset_usize + input_size_usize else 0;
-            const output_mem_end = if (output_size_usize > 0) output_offset_usize + output_size_usize else 0;
+            // Calculate memory bounds with overflow checking
+            var input_mem_end: usize = 0;
+            var output_mem_end: usize = 0;
+
+            if (input_size_usize > 0) {
+                const overflow = @addWithOverflow(input_offset_usize, input_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - out of gas
+                    return Error.OutOfGas;
+                }
+                input_mem_end = overflow[0];
+            }
+
+            if (output_size_usize > 0) {
+                const overflow = @addWithOverflow(output_offset_usize, output_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - out of gas
+                    return Error.OutOfGas;
+                }
+                output_mem_end = overflow[0];
+            }
+
             const max_mem_end = @max(input_mem_end, output_mem_end);
 
             // Check if memory expansion exceeds u24 limit (16MB)
@@ -317,6 +375,45 @@ pub fn Handlers(FrameType: type) type {
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
 
+            // Calculate memory bounds with overflow checking
+            var input_mem_end: usize = 0;
+            var output_mem_end: usize = 0;
+
+            if (input_size_usize > 0) {
+                const overflow = @addWithOverflow(input_offset_usize, input_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - return failure
+                    self.stack.push_unsafe(0);
+                    const op_data = dispatch.getOpData(.DELEGATECALL);
+                    self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                }
+                input_mem_end = overflow[0];
+            }
+
+            if (output_size_usize > 0) {
+                const overflow = @addWithOverflow(output_offset_usize, output_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - return failure
+                    self.stack.push_unsafe(0);
+                    const op_data = dispatch.getOpData(.DELEGATECALL);
+                    self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                }
+                output_mem_end = overflow[0];
+            }
+
+            const max_mem_end = @max(input_mem_end, output_mem_end);
+
+            // Check if memory expansion exceeds u24 limit (16MB)
+            if (max_mem_end > std.math.maxInt(u24)) {
+                // Memory expansion exceeds limit - return failure
+                self.stack.push_unsafe(0);
+                const op_data = dispatch.getOpData(.DELEGATECALL);
+                self.afterInstruction(.DELEGATECALL, op_data.next_handler, op_data.next_cursor.cursor);
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            }
+
             if (input_size_usize > 0) {
                 const input_end = input_offset_usize + input_size_usize;
                 self.memory.ensure_capacity(self.getEvm().getCallArenaAllocator(), @as(u24, @intCast(input_end))) catch {
@@ -424,6 +521,45 @@ pub fn Handlers(FrameType: type) type {
             const input_size_usize = @as(usize, @intCast(input_size));
             const output_offset_usize = @as(usize, @intCast(output_offset));
             const output_size_usize = @as(usize, @intCast(output_size));
+
+            // Calculate memory bounds with overflow checking
+            var input_mem_end: usize = 0;
+            var output_mem_end: usize = 0;
+
+            if (input_size_usize > 0) {
+                const overflow = @addWithOverflow(input_offset_usize, input_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - return failure
+                    self.stack.push_unsafe(0);
+                    const op_data = dispatch.getOpData(.STATICCALL);
+                    self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                }
+                input_mem_end = overflow[0];
+            }
+
+            if (output_size_usize > 0) {
+                const overflow = @addWithOverflow(output_offset_usize, output_size_usize);
+                if (overflow[1] != 0) {
+                    // Overflow occurred - return failure
+                    self.stack.push_unsafe(0);
+                    const op_data = dispatch.getOpData(.STATICCALL);
+                    self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
+                    return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+                }
+                output_mem_end = overflow[0];
+            }
+
+            const max_mem_end = @max(input_mem_end, output_mem_end);
+
+            // Check if memory expansion exceeds u24 limit (16MB)
+            if (max_mem_end > std.math.maxInt(u24)) {
+                // Memory expansion exceeds limit - return failure
+                self.stack.push_unsafe(0);
+                const op_data = dispatch.getOpData(.STATICCALL);
+                self.afterInstruction(.STATICCALL, op_data.next_handler, op_data.next_cursor.cursor);
+                return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            }
 
             // Ensure memory capacity for input
             if (input_size_usize > 0) {

@@ -331,16 +331,14 @@ pub fn Handlers(FrameType: type) type {
         /// GASPRICE opcode (0x3A) - Get price of gas in current environment.
         /// Stack: [] → [gas_price]
         pub fn gasprice(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // log.before_instruction(self, .GASPRICE);
-            const dispatch = Dispatch{ .cursor = cursor };
+            self.beforeInstruction(.GASPRICE, cursor);
             const gas_price = self.getEvm().get_gas_price();
             const gas_price_truncated = @as(WordType, @truncate(gas_price));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASPRICE requires stack space");
             }
             self.stack.push_unsafe(gas_price_truncated);
-            const op_data = dispatch.getOpData(.GASPRICE); // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .GASPRICE);
         }
 
         /// EXTCODESIZE opcode (0x3B) - Get size of an account's code.
@@ -669,70 +667,40 @@ pub fn Handlers(FrameType: type) type {
         /// TIMESTAMP opcode (0x42) - Get the current block's timestamp.
         /// Stack: [] → [timestamp]
         pub fn timestamp(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // log.before_instruction(self, .TIMESTAMP);
-            // TIMESTAMP costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(gas_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
-
-            const dispatch = Dispatch{ .cursor = cursor };
+            self.beforeInstruction(.TIMESTAMP, cursor);
             const block_info = self.getEvm().get_block_info();
             const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "TIMESTAMP requires stack space");
             }
             self.stack.push_unsafe(timestamp_word);
-            const op_data = dispatch.getOpData(.TIMESTAMP); // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .TIMESTAMP);
         }
 
         /// NUMBER opcode (0x43) - Get the current block's number.
         /// Stack: [] → [number]
         pub fn number(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // log.before_instruction(self, .NUMBER);
-            // NUMBER costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(gas_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
-
-            const dispatch = Dispatch{ .cursor = cursor };
+            self.beforeInstruction(.NUMBER, cursor);
             const block_info = self.getEvm().get_block_info();
             const block_number_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.number))));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "NUMBER requires stack space");
             }
             self.stack.push_unsafe(block_number_word);
-            const op_data = dispatch.getOpData(.NUMBER); // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .NUMBER);
         }
 
         /// DIFFICULTY opcode (0x44) - Get the current block's difficulty.
         /// Stack: [] → [difficulty]
         pub fn difficulty(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             self.beforeInstruction(.PREVRANDAO, cursor);
-            // DIFFICULTY costs 2 gas
-            const gas_cost = GasConstants.GasQuickStep;
-            // Use negative gas pattern for single-branch out-of-gas detection
-            self.gas_remaining -= @intCast(gas_cost);
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
-
-            const dispatch = Dispatch{ .cursor = cursor };
             const block_info = self.getEvm().get_block_info();
             const difficulty_word = @as(WordType, @truncate(block_info.difficulty));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "DIFFICULTY requires stack space");
             }
             self.stack.push_unsafe(difficulty_word);
-            const op_data = dispatch.getOpData(.PREVRANDAO); // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .PREVRANDAO);
         }
 
         /// PREVRANDAO opcode - Alias for DIFFICULTY post-merge.
@@ -745,16 +713,14 @@ pub fn Handlers(FrameType: type) type {
         /// GASLIMIT opcode (0x45) - Get the current block's gas limit.
         /// Stack: [] → [gas_limit]
         pub fn gaslimit(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // log.before_instruction(self, .GASLIMIT);
-            const dispatch = Dispatch{ .cursor = cursor };
+            self.beforeInstruction(.GASLIMIT, cursor);
             const block_info = self.getEvm().get_block_info();
             const gas_limit_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.gas_limit))));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GASLIMIT requires stack space");
             }
             self.stack.push_unsafe(gas_limit_word);
-            const op_data = dispatch.getOpData(.GASLIMIT); // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .GASLIMIT);
         }
 
         /// CHAINID opcode (0x46) - Get the chain ID.
@@ -775,31 +741,27 @@ pub fn Handlers(FrameType: type) type {
         /// SELFBALANCE opcode (0x47) - Get balance of currently executing account.
         /// Stack: [] → [balance]
         pub fn selfbalance(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // log.before_instruction(self, .SELFBALANCE);
-            const dispatch = Dispatch{ .cursor = cursor };
+            self.beforeInstruction(.SELFBALANCE, cursor);
             const bal = self.getEvm().get_balance(self.contract_address);
             const balance_word = @as(WordType, @truncate(bal));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "SELFBALANCE requires stack space");
             }
             self.stack.push_unsafe(balance_word);
-            const op_data = dispatch.getOpData(.SELFBALANCE); // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .SELFBALANCE);
         }
 
         /// BASEFEE opcode (0x48) - Get the current block's base fee.
         /// Stack: [] → [base_fee]
         pub fn basefee(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // log.before_instruction(self, .BASEFEE);
-            const dispatch = Dispatch{ .cursor = cursor };
+            self.beforeInstruction(.BASEFEE, cursor);
             const block_info = self.getEvm().get_block_info();
             const base_fee_word = @as(WordType, @truncate(block_info.base_fee));
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "BASEFEE requires stack space");
             }
             self.stack.push_unsafe(base_fee_word);
-            const op_data = dispatch.getOpData(.BASEFEE); // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .BASEFEE);
         }
 
         /// BLOBHASH opcode (0x49) - Get versioned hashes of blob transactions.
@@ -856,31 +818,33 @@ pub fn Handlers(FrameType: type) type {
         /// GAS opcode (0x5A) - Get the amount of available gas.
         /// Stack: [] → [gas]
         pub fn gas(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
-            // log.before_instruction(self, .GAS);
-            const dispatch = Dispatch{ .cursor = cursor };
+            self.beforeInstruction(.GAS, cursor);
             // Note: The gas value pushed should be after the gas for this instruction is consumed
             // The dispatch system handles the gas consumption before calling this handler
             const gas_value = @as(WordType, @max(self.gas_remaining, 0));
+            // DEBUG: Print gas_remaining value
+            if (self.gas_remaining <= 0) {
+                const log = @import("../log.zig");
+                log.debug("GAS opcode: gas_remaining={} (returning {})", .{self.gas_remaining, gas_value});
+            }
             {
                 (&self.getEvm().tracer).assert(self.stack.size() < @TypeOf(self.stack).stack_capacity, "GAS requires stack space");
             }
             self.stack.push_unsafe(gas_value);
-            const op_data = dispatch.getOpData(.GAS);
-            // Use op_data.next_handler and op_data.next_cursor directly
-            return @call(FrameType.Dispatch.getTailCallModifier(), op_data.next_handler, .{ self, op_data.next_cursor.cursor });
+            return next_instruction(self, cursor, .GAS);
         }
 
         /// PC opcode (0x58) - Get the value of the program counter prior to the increment.
         /// Stack: [] → [pc]
-        /// 
-        /// Modern Solidity (v0.8.20+) deprecated PC opcode usage as it breaks 
+        ///
+        /// Modern Solidity (v0.8.20+) deprecated PC opcode usage as it breaks
         /// composability with EVM Object Format (EOF) and zkEVM compatibility. The opcode
         /// reveals low-level EVM implementation details that make bytecode position-dependent,
-        /// preventing code reuse and optimization. Solidity now uses relative jumps and 
+        /// preventing code reuse and optimization. Solidity now uses relative jumps and
         /// PC-free patterns for better portability across EVM implementations.
         pub fn pc(self: *FrameType, cursor: [*]const Dispatch.Item) Error!noreturn {
             @branchHint(.cold);
-            // log.before_instruction(self, .PC);
+            self.beforeInstruction(.PC, cursor);
             const dispatch = Dispatch{ .cursor = cursor };
             // Get PC value from metadata
             const op_data = dispatch.getOpData(.PC);

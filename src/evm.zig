@@ -1455,10 +1455,7 @@ pub fn Evm(config: EvmConfig) type {
         fn executePrecompileInline(self: *Self, address: primitives.Address, input: []const u8, gas: u64, is_static: bool, snapshot_id: Journal.SnapshotIdType) !CallResult {
             _ = snapshot_id;
             _ = is_static;
-            if (!precompiles.is_precompile(address)) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
-
-            const precompile_id = address.bytes[19];
-            if (precompile_id < 1 or precompile_id > 10) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
+            if (!precompiles.is_precompile(address)) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
 
             const result = precompiles.execute_precompile(self.getCallArenaAllocator(), address, input, gas) catch {
                 return CallResult{
@@ -1468,10 +1465,20 @@ pub fn Evm(config: EvmConfig) type {
                 };
             };
 
-            // The precompile allocated the output, so we own it and pass ownership to the CallResult
-            // The CallResult.deinit() method will free this memory
-            if (result.success) return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
-            return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable; // TODO: Fix manual CallResult creation
+            // Convert PrecompileOutput to CallResult
+            if (result.success) {
+                return CallResult{
+                    .success = true,
+                    .gas_left = gas - result.gas_used,
+                    .output = result.output,
+                };
+            } else {
+                return CallResult{
+                    .success = false,
+                    .gas_left = gas - result.gas_used,
+                    .output = result.output,
+                };
+            }
         }
 
         /// Get account balance
