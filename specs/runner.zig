@@ -310,8 +310,139 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
             // Many tests expect failures, so we don't fail on unsuccessful calls
         }
     }
-    
-    // TODO: Validate post-state
+
+    // Validate post-state
+    if (test_case.object.get("post")) |post| {
+        if (post == .object) {
+            var it = post.object.iterator();
+            while (it.next()) |kv| {
+                const address = try parseAddress(kv.key_ptr.*);
+                const expected = kv.value_ptr.*;
+
+                // Check balance
+                if (expected.object.get("balance")) |expected_bal| {
+                    const exp = if (expected_bal.string.len == 0) 0 else try std.fmt.parseInt(u256, expected_bal.string, 0);
+                    const actual_account = try database.get_account(address.bytes);
+                    const actual = if (actual_account) |acc| acc.balance else 0;
+                    try testing.expectEqual(exp, actual);
+                }
+
+                // Check nonce
+                if (expected.object.get("nonce")) |expected_nonce| {
+                    const exp = try parseIntFromJson(expected_nonce);
+                    const actual_account = try database.get_account(address.bytes);
+                    const actual = if (actual_account) |acc| acc.nonce else 0;
+                    try testing.expectEqual(exp, actual);
+                }
+
+                // Check code
+                if (expected.object.get("code")) |expected_code| {
+                    if (expected_code == .string) {
+                        const code_str = expected_code.string;
+                        if (!std.mem.eql(u8, code_str, "") and !std.mem.eql(u8, code_str, "0x") and !isAssemblyCode(code_str)) {
+                            const hex_data = try parseHexData(allocator, code_str);
+                            defer allocator.free(hex_data);
+
+                            if (hex_data.len > 2) {
+                                const exp_bytes = try primitives.Hex.hex_to_bytes(allocator, hex_data);
+                                defer allocator.free(exp_bytes);
+
+                                const actual_account = try database.get_account(address.bytes);
+                                const actual_bytes = if (actual_account) |acc| try database.get_code(acc.code_hash) else &[_]u8{};
+
+                                try testing.expectEqualSlices(u8, exp_bytes, actual_bytes);
+                            }
+                        }
+                    }
+                }
+
+                // Check storage
+                if (expected.object.get("storage")) |storage| {
+                    if (storage == .object) {
+                        var storage_it = storage.object.iterator();
+                        while (storage_it.next()) |storage_kv| {
+                            const key = try std.fmt.parseInt(u256, storage_kv.key_ptr.*, 0);
+
+                            // Expected storage values might contain placeholders like <eoa:sender:0x...>
+                            const exp_value: u256 = if (std.mem.startsWith(u8, storage_kv.value_ptr.*.string, "<") and std.mem.endsWith(u8, storage_kv.value_ptr.*.string, ">")) blk: {
+                                // Extract address from placeholder and convert to u256
+                                const addr = try parseAddress(storage_kv.value_ptr.*.string);
+                                const addr_bytes = addr.bytes;
+                                var addr_int: u256 = 0;
+                                for (addr_bytes) |b| {
+                                    addr_int = (addr_int << 8) | b;
+                                }
+                                break :blk addr_int;
+                            } else blk: {
+                                break :blk try std.fmt.parseInt(u256, storage_kv.value_ptr.*.string, 0);
+                            };
+
+                            const actual_value = try database.get_storage(address.bytes, key);
+                            try testing.expectEqual(exp_value, actual_value);
+                        }
+                    }
+                }
+            }
+        }
+    } else if (test_case.object.get("expect")) |expect_list| {
+        // Handle expect format (alternative to post)
+        if (expect_list == .array) {
+            for (expect_list.array.items) |expectation| {
+                if (expectation.object.get("result")) |result| {
+                    if (result == .object) {
+                        var it = result.object.iterator();
+                        while (it.next()) |kv| {
+                            const address = try parseAddress(kv.key_ptr.*);
+                            const expected = kv.value_ptr.*;
+
+                            // Check balance
+                            if (expected.object.get("balance")) |expected_bal| {
+                                const exp = if (expected_bal.string.len == 0) 0 else try std.fmt.parseInt(u256, expected_bal.string, 0);
+                                const actual_account = try database.get_account(address.bytes);
+                                const actual = if (actual_account) |acc| acc.balance else 0;
+                                try testing.expectEqual(exp, actual);
+                            }
+
+                            // Check nonce
+                            if (expected.object.get("nonce")) |expected_nonce| {
+                                const exp = try parseIntFromJson(expected_nonce);
+                                const actual_account = try database.get_account(address.bytes);
+                                const actual = if (actual_account) |acc| acc.nonce else 0;
+                                try testing.expectEqual(exp, actual);
+                            }
+
+                            // Check storage
+                            if (expected.object.get("storage")) |storage| {
+                                if (storage == .object) {
+                                    var storage_it = storage.object.iterator();
+                                    while (storage_it.next()) |storage_kv| {
+                                        const key = try std.fmt.parseInt(u256, storage_kv.key_ptr.*, 0);
+
+                                        // Expected storage values might contain placeholders like <eoa:sender:0x...>
+                                        const exp_value: u256 = if (std.mem.startsWith(u8, storage_kv.value_ptr.*.string, "<") and std.mem.endsWith(u8, storage_kv.value_ptr.*.string, ">")) blk: {
+                                            // Extract address from placeholder and convert to u256
+                                            const addr = try parseAddress(storage_kv.value_ptr.*.string);
+                                            const addr_bytes = addr.bytes;
+                                            var addr_int: u256 = 0;
+                                            for (addr_bytes) |b| {
+                                                addr_int = (addr_int << 8) | b;
+                                            }
+                                            break :blk addr_int;
+                                        } else blk: {
+                                            break :blk try std.fmt.parseInt(u256, storage_kv.value_ptr.*.string, 0);
+                                        };
+
+                                        const actual_value = try database.get_storage(address.bytes, key);
+                                        try testing.expectEqual(exp_value, actual_value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn parseIntFromJson(value: std.json.Value) !u64 {
@@ -432,8 +563,10 @@ fn parseAddress(addr: []const u8) !Address {
             @memcpy(buf[2 + zeros_needed..2 + zeros_needed + actual_len], clean_addr);
             final_addr = buf[0..42];
         } else {
-            @memcpy(buf[2..2 + actual_len], clean_addr);
-            final_addr = buf[0..2 + actual_len];
+            // Truncate if too long
+            const copy_len = @min(actual_len, expected_len);
+            @memcpy(buf[2..2 + copy_len], clean_addr[0..copy_len]);
+            final_addr = buf[0..2 + copy_len];
         }
     } else {
         // Already has 0x prefix
@@ -477,10 +610,10 @@ fn parseHexData(allocator: std.mem.Allocator, data: []const u8) ![]u8 {
 
     // Check if this is assembly code that needs compilation
     // Trim whitespace first to handle trailing spaces like "{ ... } "
-    const trimmed = std.mem.trim(u8, data, " \t\n\r");
-    if (std.mem.startsWith(u8, trimmed, "{") and std.mem.endsWith(u8, trimmed, "}")) {
+    const trimmed_data = std.mem.trim(u8, data, " \t\n\r");
+    if (std.mem.startsWith(u8, trimmed_data, "{") and std.mem.endsWith(u8, trimmed_data, "}")) {
         // This is assembly code - compile it to bytecode
-        const compiled = try assembler.compileAssembly(allocator, trimmed);
+        const compiled = try assembler.compileAssembly(allocator, trimmed_data);
         defer allocator.free(compiled);
 
         // Convert bytecode to hex string format with 0x prefix
