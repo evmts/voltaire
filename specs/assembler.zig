@@ -598,12 +598,26 @@ fn compileExpressionWithLabels(allocator: std.mem.Allocator, code: []const u8, l
         if (pos >= code.len) break;
 
         // Check for contract reference <contract:0x...>
-        if (std.mem.startsWith(u8, code[pos..], "<contract:")) {
+        // NOTE: replacePlaceholders should have already handled this, but just in case
+        if (std.mem.startsWith(u8, code[pos..], "<")) {
             const end = std.mem.indexOfScalar(u8, code[pos..], '>') orelse return error.InvalidFormat;
-            // Extract address from <contract:0xADDRESS>
-            const addr_start = pos + 10; // Skip "<contract:"
-            const addr_str = code[addr_start..pos+end];
-            try tokens.append(allocator, addr_str);
+            const placeholder = code[pos..pos+end+1];
+
+            // If it's still a placeholder (replacePlaceholders missed it), extract the address
+            if (std.mem.indexOf(u8, placeholder, "contract:") != null or
+                std.mem.indexOf(u8, placeholder, "eoa:") != null)
+            {
+                // Extract address from placeholder - find last 0x
+                const addr_str = if (std.mem.lastIndexOf(u8, placeholder, "0x")) |idx|
+                    placeholder[idx..placeholder.len-1] // Remove trailing >
+                else
+                    return error.InvalidFormat;
+
+                try tokens.append(allocator, addr_str);
+            } else {
+                // Some other < > syntax, keep as is
+                try tokens.append(allocator, placeholder);
+            }
             pos = pos + end + 1;
         }
         // Check for label reference [[ n ]]
