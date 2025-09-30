@@ -1471,6 +1471,7 @@ pub fn Evm(config: EvmConfig) type {
                     return result;
                 },
                 else => {
+                    log.err("Frame execution failed with error: {s} (code_len={}, gas={}, depth={})", .{ @errorName(err), code.len, gas, self.depth });
                     // Try to get partial trace even on error
                     execution_trace = convertTracerToExecutionTrace(self.allocator, &self.tracer) catch blk: {
                         break :blk @import("frame/call_result.zig").ExecutionTrace{
