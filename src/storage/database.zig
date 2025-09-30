@@ -384,11 +384,13 @@ pub const Database = struct {
             }
         }
         const index = snapshot_index orelse return Error.SnapshotNotFound;
-        for (self.snapshots.items[index..]) |*snapshot| {
-            snapshot.accounts.deinit();
-            snapshot.storage.deinit();
-        }
-        self.snapshots.shrinkRetainingCapacity(index);
+
+        // Free just this snapshot's memory
+        self.snapshots.items[index].accounts.deinit();
+        self.snapshots.items[index].storage.deinit();
+
+        // Remove this snapshot from the list, keeping all others
+        _ = self.snapshots.orderedRemove(index);
     }
 
     // EIP-7702 Delegation operations
