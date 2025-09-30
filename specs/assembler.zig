@@ -85,6 +85,7 @@ const LllExpr = union(enum) {
     opcode: []const u8,
     number: u256,
     list: []LllExpr,
+    mload: u256, // Memory load @x
 
     fn deinit(self: *LllExpr, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -185,6 +186,27 @@ fn parseLllAtom(code: []const u8, pos: *usize) !LllExpr {
     while (pos.* < code.len and std.ascii.isWhitespace(code[pos.*])) : (pos.* += 1) {}
     if (pos.* >= code.len) return error.InvalidFormat;
 
+    // Check for memory reference @x
+    if (code[pos.*] == '@') {
+        pos.* += 1;
+        const start = pos.*;
+
+        // Find end of number/atom
+        while (pos.* < code.len and
+               !std.ascii.isWhitespace(code[pos.*]) and
+               code[pos.*] != '(' and
+               code[pos.*] != ')') : (pos.* += 1) {}
+
+        const atom = code[start..pos.*];
+        if (atom.len == 0) return error.InvalidFormat;
+
+        // Parse the number/identifier
+        const index = if (isNumber(atom)) try parseNumber(atom) else return error.InvalidFormat;
+
+        // Return as mload variant
+        return LllExpr{ .mload = index };
+    }
+
     const start = pos.*;
 
     // Find end of atom (whitespace or paren)
@@ -220,6 +242,16 @@ fn compileLllExpr(allocator: std.mem.Allocator, expr: LllExpr, labels: *std.Stri
         .number => |value| {
             // Push the number
             return compilePushValue(allocator, value);
+        },
+        .mload => |index| {
+            // @x compiles to: PUSH index, MLOAD
+            var bytecode = std.ArrayList(u8){};
+            defer bytecode.deinit(allocator);
+            const push_bytes = try compilePushValue(allocator, index);
+            defer allocator.free(push_bytes);
+            try bytecode.appendSlice(allocator, push_bytes);
+            try bytecode.append(allocator, 0x51); // MLOAD
+            return bytecode.toOwnedSlice(allocator);
         },
         .list => |items| {
             if (items.len == 0) return error.InvalidFormat;
@@ -388,33 +420,100 @@ fn compileComplexExpression(allocator: std.mem.Allocator, code: []const u8) ![]u
         }
         if (pos >= trimmed_code.len) break;
 
-        // Check for label [[ n ]]
-        if (pos + 1 < trimmed_code.len and trimmed_code[pos] == '[' and trimmed_code[pos+1] == '[') {
-            // Find closing ]]
-            var end = pos + 2;
-            while (end + 1 < trimmed_code.len and !(trimmed_code[end] == ']' and trimmed_code[end+1] == ']')) {
+        // Check for storage store [[x]]expr or memory store [x]expr
+        if (trimmed_code[pos] == '[') {
+            const is_storage = pos + 1 < trimmed_code.len and trimmed_code[pos+1] == '[';
+            const start_bracket = if (is_storage) pos + 2 else pos + 1;
+
+            // Find closing bracket(s)
+            var end = start_bracket;
+            while (end < trimmed_code.len and trimmed_code[end] != ']') {
                 end += 1;
             }
-            if (end + 1 >= trimmed_code.len) return error.InvalidFormat;
+            if (end >= trimmed_code.len) return error.InvalidFormat;
 
-            // Extract label number
-            const label_str = std.mem.trim(u8, trimmed_code[pos+2..end], " \t");
+            // Check for second bracket if storage
+            if (is_storage) {
+                if (end + 1 >= trimmed_code.len or trimmed_code[end+1] != ']') {
+                    // This might be a label, not storage store
+                    // Labels are just [[n]] with no following expression
+                    // Check if there's a following expression
+                    var check_pos = end + 2;
+                    while (check_pos < trimmed_code.len and std.ascii.isWhitespace(trimmed_code[check_pos])) {
+                        check_pos += 1;
+                    }
 
-            // Store label position
-            const gop = try labels.getOrPut(label_str);
-            if (!gop.found_existing) {
-                gop.value_ptr.* = LabelInfo{
-                    .position = bytecode.items.len,
-                    .references = std.ArrayList(usize){},
-                };
-            } else {
-                gop.value_ptr.position = bytecode.items.len;
+                    // If no following expression or following is another [[ or end of code, it's a label
+                    if (check_pos >= trimmed_code.len or
+                        (trimmed_code[check_pos] == '[' and check_pos + 1 < trimmed_code.len and trimmed_code[check_pos+1] == '[')) {
+                        // This is a label
+                        const label_str = std.mem.trim(u8, trimmed_code[start_bracket..end], " \t");
+                        const gop = try labels.getOrPut(label_str);
+                        if (!gop.found_existing) {
+                            gop.value_ptr.* = LabelInfo{
+                                .position = bytecode.items.len,
+                                .references = std.ArrayList(usize){},
+                            };
+                        } else {
+                            gop.value_ptr.position = bytecode.items.len;
+                        }
+                        try bytecode.append(allocator, 0x5b); // JUMPDEST
+                        pos = end + 1;
+                        continue;
+                    }
+                    return error.InvalidFormat;
+                }
             }
 
-            // Add JUMPDEST at label position
-            try bytecode.append(allocator, 0x5b); // JUMPDEST
+            // Extract index
+            const index_str = std.mem.trim(u8, trimmed_code[start_bracket..end], " \t");
+            const index = try parseNumber(index_str);
 
-            pos = end + 2;
+            // Move past closing bracket(s)
+            pos = if (is_storage) end + 2 else end + 1;
+
+            // Skip whitespace
+            while (pos < trimmed_code.len and std.ascii.isWhitespace(trimmed_code[pos])) {
+                pos += 1;
+            }
+
+            // Parse the value expression
+            if (pos >= trimmed_code.len) return error.InvalidFormat;
+
+            var value_expr: LllExpr = undefined;
+            if (trimmed_code[pos] == '(') {
+                // Find matching closing paren
+                var depth: usize = 1;
+                var expr_end = pos + 1;
+                while (expr_end < trimmed_code.len and depth > 0) {
+                    if (trimmed_code[expr_end] == '(') depth += 1;
+                    if (trimmed_code[expr_end] == ')') depth -= 1;
+                    expr_end += 1;
+                }
+                const expr_str = trimmed_code[pos..expr_end];
+                value_expr = try parseLllExpression(allocator, expr_str);
+                pos = expr_end;
+            } else {
+                return error.InvalidFormat;
+            }
+            defer value_expr.deinit(allocator);
+
+            // Compile: value_expr, push index, MSTORE/SSTORE
+            const value_bytecode = try compileLllExpr(allocator, value_expr, &labels, bytecode.items.len);
+            defer allocator.free(value_bytecode);
+            try bytecode.appendSlice(allocator, value_bytecode);
+
+            // Push index
+            const index_bytecode = try compilePushValue(allocator, index);
+            defer allocator.free(index_bytecode);
+            try bytecode.appendSlice(allocator, index_bytecode);
+
+            // MSTORE or SSTORE
+            if (is_storage) {
+                try bytecode.append(allocator, 0x55); // SSTORE
+            } else {
+                try bytecode.append(allocator, 0x52); // MSTORE
+            }
         }
         // Check for LLL expression ( ... )
         else if (trimmed_code[pos] == '(') {
