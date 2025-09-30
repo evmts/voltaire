@@ -991,6 +991,7 @@ pub fn build(b: *std.Build) void {
     state_tests.root_module.addImport("primitives", modules.primitives_mod);
     state_tests.root_module.addImport("crypto", modules.crypto_mod);
     state_tests.root_module.addImport("build_options", options_mod);
+    state_tests.root_module.addImport("runner", runner_module); // Reuse runner_module from specs_test
     state_tests.linkLibrary(c_kzg_lib);
     state_tests.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| state_tests.linkLibrary(bn254);
