@@ -840,11 +840,13 @@ pub fn Evm(config: EvmConfig) type {
         }) !CallResult {
             @branchHint(.likely);
             const snapshot_id = self.journal.create_snapshot();
+            const db_snapshot_id = try self.database.create_snapshot();
 
             if (params.value > 0) {
                 self.transferWithBalanceChecks(params.caller, params.to, params.value, snapshot_id) catch |err| {
                     log.debug("Call value transfer failed: {}", .{err});
                     self.journal.revert_to_snapshot(snapshot_id);
+                    try self.database.revert_to_snapshot(db_snapshot_id);
                     return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
             }
@@ -852,6 +854,7 @@ pub fn Evm(config: EvmConfig) type {
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
                 self.tracer.onCallPreflight("CALL", @errorName(err));
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
             self.tracer.onCallPreflight("CALL", @tagName(preflight));
@@ -876,11 +879,13 @@ pub fn Evm(config: EvmConfig) type {
                     ) catch |err| {
                         log.debug("EXECUTE_CALL: execute_frame failed with error: {}", .{err});
                         self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
                         return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
 
                     if (!result.success) {
                         self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
                     }
                     return result;
                 },
@@ -896,17 +901,20 @@ pub fn Evm(config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
+            const db_snapshot_id = try self.database.create_snapshot();
 
             if (params.value > 0) {
                 if (!config.disable_balance_checks) {
                     const caller_account = self.database.get_account(params.caller.bytes) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
                         return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
                     if (caller_account == null or caller_account.?.balance < params.value) {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
                         return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     }
                 }
@@ -930,12 +938,14 @@ pub fn Evm(config: EvmConfig) type {
             ) catch {
                 @branchHint(.unlikely);
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
             if (!result.success) {
                 @branchHint(.unlikely);
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
             }
             return result;
         }
@@ -947,11 +957,13 @@ pub fn Evm(config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
+            const db_snapshot_id = try self.database.create_snapshot();
 
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, false, snapshot_id) catch |err| {
                 @branchHint(.cold);
                 log.debug("Delegatecall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
@@ -972,12 +984,14 @@ pub fn Evm(config: EvmConfig) type {
                     ) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
                         return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
 
                     if (!result.success) {
                         @branchHint(.unlikely);
                         self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
                     }
                     return result;
                 },
@@ -992,11 +1006,13 @@ pub fn Evm(config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
+            const db_snapshot_id = try self.database.create_snapshot();
 
             const preflight = self.performCallPreflight(params.to, params.input, params.gas, true, snapshot_id) catch |err| {
                 @branchHint(.cold);
                 log.debug("Staticcall preflight failed: {}", .{err});
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
@@ -1016,10 +1032,14 @@ pub fn Evm(config: EvmConfig) type {
                     ) catch {
                         @branchHint(.cold);
                         self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
                         return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                     };
 
-                    if (!result.success) self.journal.revert_to_snapshot(snapshot_id);
+                    if (!result.success) {
+                        self.journal.revert_to_snapshot(snapshot_id);
+                        try self.database.revert_to_snapshot(db_snapshot_id);
+                    }
                     return result;
                 },
             }
@@ -1033,14 +1053,17 @@ pub fn Evm(config: EvmConfig) type {
             gas: u64,
         }) !CallResult {
             const snapshot_id = self.journal.create_snapshot();
+            const db_snapshot_id = try self.database.create_snapshot();
 
             var caller_account = self.database.get_account(params.caller.bytes) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             } orelse Account.zero();
 
             if (caller_account.balance < params.value) {
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
@@ -1051,6 +1074,7 @@ pub fn Evm(config: EvmConfig) type {
             caller_account.nonce += 1;
             self.database.set_account(params.caller.bytes, caller_account) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
@@ -1059,6 +1083,7 @@ pub fn Evm(config: EvmConfig) type {
                 const existing = try self.database.get_account(contract_address.bytes);
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     self.journal.revert_to_snapshot(snapshot_id);
+                    try self.database.revert_to_snapshot(db_snapshot_id);
                     return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 }
             }
@@ -1066,6 +1091,7 @@ pub fn Evm(config: EvmConfig) type {
             const create_overhead = GasConstants.CreateGas;
             if (params.gas < create_overhead) {
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
             const remaining_gas: u64 = params.gas - create_overhead;
@@ -1076,8 +1102,13 @@ pub fn Evm(config: EvmConfig) type {
                 .gas_left = remaining_gas,
                 .contract_address = contract_address,
                 .snapshot_id = snapshot_id,
+                .db_snapshot_id = db_snapshot_id,
                 .existed_before = existed_before,
-            }) catch return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
+            }) catch {
+                self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
+            };
 
             result.created_address = contract_address;
             return result;
@@ -1098,16 +1129,19 @@ pub fn Evm(config: EvmConfig) type {
             }
 
             const snapshot_id = self.journal.create_snapshot();
+            const db_snapshot_id = try self.database.create_snapshot();
 
             var caller_account = self.database.get_account(params.caller.bytes) catch {
                 log.debug("CREATE2: get_account failed", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             } orelse Account.zero();
 
             if (caller_account.balance < params.value) {
                 log.debug("CREATE2: insufficient balance", .{});
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
 
@@ -1116,6 +1150,7 @@ pub fn Evm(config: EvmConfig) type {
             caller_account.nonce += 1;
             self.database.set_account(params.caller.bytes, caller_account) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
@@ -1132,6 +1167,7 @@ pub fn Evm(config: EvmConfig) type {
                 if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
                     log.debug("CREATE2: collision at address", .{});
                     self.journal.revert_to_snapshot(snapshot_id);
+                    try self.database.revert_to_snapshot(db_snapshot_id);
                     return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 }
             }
@@ -1143,6 +1179,7 @@ pub fn Evm(config: EvmConfig) type {
             if (params.gas < total_overhead) {
                 log.debug("CREATE2: insufficient gas for overhead: need={}, have={}", .{ total_overhead, params.gas });
                 self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             }
             const remaining_gas: u64 = params.gas - total_overhead;
@@ -1154,8 +1191,13 @@ pub fn Evm(config: EvmConfig) type {
                 .gas_left = remaining_gas,
                 .contract_address = contract_address,
                 .snapshot_id = snapshot_id,
+                .db_snapshot_id = db_snapshot_id,
                 .existed_before = existed_before,
-            }) catch return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
+            }) catch {
+                self.journal.revert_to_snapshot(snapshot_id);
+                try self.database.revert_to_snapshot(db_snapshot_id);
+                return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
+            };
 
             result.created_address = contract_address;
             return result;
@@ -1168,12 +1210,14 @@ pub fn Evm(config: EvmConfig) type {
             gas_left: u64,
             contract_address: primitives.Address,
             snapshot_id: Journal.SnapshotIdType,
+            db_snapshot_id: u64,
             existed_before: bool,
         }) !CallResult {
             try self.created_contracts.mark_created(args.contract_address);
             if (args.value > 0) {
                 self.transferWithBalanceChecks(args.caller, args.contract_address, args.value, args.snapshot_id) catch {
                     self.journal.revert_to_snapshot(args.snapshot_id);
+                    try self.database.revert_to_snapshot(args.db_snapshot_id);
                     return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
             }
@@ -1185,15 +1229,18 @@ pub fn Evm(config: EvmConfig) type {
             ) catch |err| {
                 log.debug("execute_init_code failed with error: {}", .{err});
                 self.journal.revert_to_snapshot(args.snapshot_id);
+                try self.database.revert_to_snapshot(args.db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
             if (!result.success) {
                 log.debug("Init code execution failed, success=false", .{});
                 self.journal.revert_to_snapshot(args.snapshot_id);
+                try self.database.revert_to_snapshot(args.db_snapshot_id);
                 return result;
             }
             var contract_account = self.database.get_account(args.contract_address.bytes) catch {
                 self.journal.revert_to_snapshot(args.snapshot_id);
+                try self.database.revert_to_snapshot(args.db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             } orelse Account.zero();
             if (!args.existed_before) {
@@ -1207,10 +1254,12 @@ pub fn Evm(config: EvmConfig) type {
                 // EIP-3541: Reject new contract code starting with the 0xEF byte
                 if (config.eips.eip_3541_should_reject_create_with_ef_bytecode(result.output)) {
                     self.journal.revert_to_snapshot(args.snapshot_id);
+                    try self.database.revert_to_snapshot(args.db_snapshot_id);
                     return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 }
                 const stored_hash = self.database.set_code(result.output) catch {
                     self.journal.revert_to_snapshot(args.snapshot_id);
+                    try self.database.revert_to_snapshot(args.db_snapshot_id);
                     return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
                 };
                 try self.journal.record_code_change(args.snapshot_id, args.contract_address, contract_account.code_hash);
@@ -1218,6 +1267,7 @@ pub fn Evm(config: EvmConfig) type {
             }
             self.database.set_account(args.contract_address.bytes, contract_account) catch {
                 self.journal.revert_to_snapshot(args.snapshot_id);
+                try self.database.revert_to_snapshot(args.db_snapshot_id);
                 return CallResult.failure(self.getCallArenaAllocator(), 0) catch unreachable;
             };
 
