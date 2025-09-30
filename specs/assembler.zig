@@ -494,7 +494,27 @@ fn compileComplexExpression(allocator: std.mem.Allocator, code: []const u8) ![]u
                 value_expr = try parseLllExpression(allocator, expr_str);
                 pos = expr_end;
             } else {
-                return error.InvalidFormat;
+                // Parse a simple token (number or hex value)
+                const token_start = pos;
+                while (pos < trimmed_code.len and
+                       !std.ascii.isWhitespace(trimmed_code[pos]) and
+                       trimmed_code[pos] != '[' and
+                       trimmed_code[pos] != ']' and
+                       trimmed_code[pos] != '(' and
+                       trimmed_code[pos] != ')' and
+                       trimmed_code[pos] != '}') {
+                    pos += 1;
+                }
+                const token = trimmed_code[token_start..pos];
+                if (token.len == 0) return error.InvalidFormat;
+
+                // Parse as number
+                const value = if (isNumber(token))
+                    try parseNumber(token)
+                else
+                    return error.InvalidFormat;
+
+                value_expr = LllExpr{ .number = value };
             }
             defer value_expr.deinit(allocator);
 
