@@ -1,9 +1,0 @@
-{
-  "name": "erc20mint",
-  "num_runs": 10,
-  "solc_version": "0.8.17",
-  "contract": "Erc20Mint.sol",
-  "calldata": "0x239b51bf0000000000000000000000000000000000000000000000000000000000000064",
-  "warmup": 3,
-  "gas_limit": 30000000
-}
