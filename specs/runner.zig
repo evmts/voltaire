@@ -72,8 +72,27 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
         .base_fee = if (env != null and env.?.object.get("currentBaseFee") != null)
             try std.fmt.parseInt(u256, env.?.object.get("currentBaseFee").?.string, 0)
         else 10,
+
+        .blob_base_fee = if (env != null and env.?.object.get("currentBlobBaseFee") != null)
+            try std.fmt.parseInt(u256, env.?.object.get("currentBlobBaseFee").?.string, 0)
+        else 0,
+
+        .blob_versioned_hashes = blk: {
+            if (env) |e| if (e.object.get("currentBlobVersionedHashes")) |hashes| {
+                const bytes = try primitives.Hex.hex_to_bytes(allocator, hashes.string);
+                break :blk std.mem.bytesAsSlice([32]u8, bytes);
+            };
+            break :blk &.{};
+        },
         
-        .prev_randao = [_]u8{0} ** 32,
+        .prev_randao = blk: {
+            if (env) |e| if (e.object.get("currentRandom")) |rand| {
+                const bytes = try primitives.Hex.hex_to_bytes(allocator, rand.string);
+                defer allocator.free(bytes);
+                break :blk std.mem.bytesAsValue([32]u8, bytes).*;
+            };
+            break :blk [_]u8{0} ** 32;
+        },
     };
     
     // Setup pre-state
@@ -248,6 +267,11 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
             else
                 Address.zero();
 
+            // Determine gas price
+            const gas_price = if (tx.object.get("gasPrice")) |g| blk: {
+                break :blk try parseIntFromJson(g);
+            } else 10;
+
             // Create EVM with transaction context (create per transaction to set correct origin)
             const tx_context = evm.TransactionContext{
                 .gas_limit = 10000000,
@@ -260,7 +284,7 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
                 &database,
                 block_info,
                 tx_context,
-                10, // gas_price
+                gas_price,
                 sender // origin is the transaction sender
             );
             defer evm_instance.deinit();
@@ -312,9 +336,23 @@ pub fn runJsonTest(allocator: std.mem.Allocator, test_case: std.json.Value) !voi
     }
 
     // Validate post-state
-    if (test_case.object.get("post")) |post| {
-        if (post == .object) {
-            var it = post.object.iterator();
+    // Post structure: { "Prague": [ { "state": { "0x...": {...} } } ] }
+    // Extract state directly from post.Prague[0].state
+    const post_state = blk: {
+        const post = test_case.object.get("post") orelse break :blk null;
+        if (post != .object) break :blk null;
+
+        // TODO: when we run on specific hardforks don't hardcode that
+        const prague = post.object.get("Prague") orelse break :blk null;
+        if (prague != .array or prague.array.items.len == 0) break :blk null;
+
+        const expectation = prague.array.items[0];
+        break :blk expectation.object.get("state");
+    };
+
+    if (post_state) |state| {
+        if (state == .object) {
+            var it = state.object.iterator();
             while (it.next()) |kv| {
                 const address = try parseAddress(kv.key_ptr.*);
                 const expected = kv.value_ptr.*;
