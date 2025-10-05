@@ -2,7 +2,6 @@ const std = @import("std");
 const Modules = @import("src/modules.build.zig");
 const GuillotineExe = @import("src/build.zig");
 const lib_build = @import("lib/build.zig");
-const data_build = @import("data/build.zig");
 const DevtoolExe = @import("apps/devtool/build.zig");
 
 fn checkSubmodules() void {
@@ -79,11 +78,11 @@ pub fn build(b: *std.Build) void {
     build_options.addOption(usize, "arena_capacity_limit", b.option(usize, "arena-capacity-limit", "Arena capacity limit (default: 64MB)") orelse (64 * 1024 * 1024));
     build_options.addOption(bool, "disable_balance_checks", b.option(bool, "disable-balance-checks", "Disable balance checks") orelse false);
     const options_mod = build_options.createModule();
-    
+
     const rust_target = b: {
         const os = target.result.os.tag;
         const arch = target.result.cpu.arch;
-        
+
         break :b switch (os) {
             .macos => switch (arch) {
                 .aarch64 => "aarch64-apple-darwin",
@@ -110,7 +109,7 @@ pub fn build(b: *std.Build) void {
     const rust_build_step = lib_build.FoundryLib.createRustBuildStep(b, rust_target, optimize);
     const bn254_lib = lib_build.Bn254Lib.createBn254Library(b, target, optimize, .{ .enable_tracy = false }, rust_build_step, rust_target);
     const foundry_lib = lib_build.FoundryLib.createFoundryLibrary(b, target, optimize, rust_build_step, rust_target);
-    
+
     // Install BLS libraries to zig-out/lib for stable paths
     b.installArtifact(blst_lib);
     b.installArtifact(c_kzg_lib);
@@ -118,9 +117,6 @@ pub fn build(b: *std.Build) void {
 
     // Modules
     const modules = Modules.createModules(b, target, optimize, options_mod, zbench_dep, c_kzg_lib, blst_lib, bn254_lib, foundry_lib);
-    
-    // Create fixtures module
-    const fixtures_mod = data_build.createFixturesModule(b, target, optimize, modules.compilers_mod, foundry_lib);
 
     // Executables
     const guillotine_exe = GuillotineExe.createExecutable(b, modules.exe_mod);
@@ -146,44 +142,6 @@ pub fn build(b: *std.Build) void {
 
     const devtool_exe = DevtoolExe.createDevtoolExecutable(b, target, optimize, modules.lib_mod, modules.evm_mod, modules.primitives_mod, modules.provider_mod, &generate_assets.step);
     DevtoolExe.createDevtoolSteps(b, devtool_exe, target);
-
-    // Pattern analyzer tool (JSON fixtures)
-    const pattern_analyzer = b.addExecutable(.{
-        .name = "pattern-analyzer",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("scripts/analyze_patterns.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
-        .use_llvm = true,
-    });
-    pattern_analyzer.root_module.addImport("evm", modules.evm_mod);
-    pattern_analyzer.root_module.addImport("primitives", modules.primitives_mod);
-    pattern_analyzer.root_module.addImport("crypto", modules.crypto_mod);
-    b.installArtifact(pattern_analyzer);
-
-    const pattern_analyzer_step = b.step("build-pattern-analyzer", "Build JSON fixture pattern analyzer");
-    pattern_analyzer_step.dependOn(&b.addInstallArtifact(pattern_analyzer, .{}).step);
-
-    // Bytecode pattern analyzer (text files)
-    const bytecode_patterns = b.addExecutable(.{
-        .name = "bytecode-patterns",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("scripts/bytecode_patterns.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-        // Force LLVM backend: native Zig backend on Linux x86 doesn't support tail calls yet
-        .use_llvm = true,
-    });
-    bytecode_patterns.root_module.addImport("evm", modules.evm_mod);
-    bytecode_patterns.root_module.addImport("primitives", modules.primitives_mod);
-    bytecode_patterns.root_module.addImport("crypto", modules.crypto_mod);
-    b.installArtifact(bytecode_patterns);
-
-    const bytecode_patterns_step = b.step("build-bytecode-patterns", "Build bytecode pattern analyzer");
-    bytecode_patterns_step.dependOn(&b.addInstallArtifact(bytecode_patterns, .{}).step);
 
     // BLS wrapper for missing symbols
     const bls_wrapper = b.addLibrary(.{
@@ -363,7 +321,6 @@ pub fn build(b: *std.Build) void {
     });
     fixture_tests.root_module.addImport("evm", modules.evm_mod);
     fixture_tests.root_module.addImport("primitives", modules.primitives_mod);
-    fixture_tests.root_module.addImport("fixtures", fixtures_mod);
     fixture_tests.linkLibrary(c_kzg_lib);
     fixture_tests.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| fixture_tests.linkLibrary(bn254);
@@ -451,7 +408,6 @@ pub fn build(b: *std.Build) void {
     zbench_main.root_module.addImport("evm", modules.evm_mod);
     zbench_main.root_module.addImport("primitives", modules.primitives_mod);
     zbench_main.root_module.addImport("foundry_compilers", modules.compilers_mod);
-    zbench_main.root_module.addImport("fixtures", fixtures_mod);
     zbench_main.linkLibrary(c_kzg_lib);
     zbench_main.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| zbench_main.linkLibrary(bn254);
@@ -570,10 +526,10 @@ pub fn build(b: *std.Build) void {
     fixtures_differential_test.root_module.addImport("primitives", modules.primitives_mod);
     fixtures_differential_test.root_module.addImport("crypto", modules.crypto_mod);
     fixtures_differential_test.root_module.addImport("build_options", options_mod);
-    fixtures_differential_test.root_module.addImport("log", b.createModule(.{ 
-        .root_source_file = b.path("src/log.zig"), 
-        .target = target, 
-        .optimize = .Debug, 
+    fixtures_differential_test.root_module.addImport("log", b.createModule(.{
+        .root_source_file = b.path("src/log.zig"),
+        .target = target,
+        .optimize = .Debug,
     }));
 
     // Using MinimalEvm for differential testing (REVM removed)
@@ -602,10 +558,10 @@ pub fn build(b: *std.Build) void {
     gt_bug_test.root_module.addImport("primitives", modules.primitives_mod);
     gt_bug_test.root_module.addImport("crypto", modules.crypto_mod);
     gt_bug_test.root_module.addImport("build_options", options_mod);
-    gt_bug_test.root_module.addImport("log", b.createModule(.{ 
-        .root_source_file = b.path("src/log.zig"), 
-        .target = target, 
-        .optimize = .Debug, 
+    gt_bug_test.root_module.addImport("log", b.createModule(.{
+        .root_source_file = b.path("src/log.zig"),
+        .target = target,
+        .optimize = .Debug,
     }));
     gt_bug_test.linkLibrary(c_kzg_lib);
     gt_bug_test.linkLibrary(blst_lib);
@@ -941,14 +897,14 @@ pub fn build(b: *std.Build) void {
     if (bn254_lib) |bn254| specs_test.linkLibrary(bn254);
     specs_test.linkLibrary(bls_wrapper);
     specs_test.linkLibC();
-    
+
     // Apply test filter if specified
     if (test_filter) |filter| {
         specs_test.filters = &[_][]const u8{filter};
     }
-    
+
     const run_specs_test = b.addRunArtifact(specs_test);
-    
+
     // Pass test configuration as environment variables for the custom runner
     if (test_filter) |filter| {
         run_specs_test.setEnvironmentVariable("TEST_FILTER", filter);
@@ -957,7 +913,7 @@ pub fn build(b: *std.Build) void {
     if (test_fail_fast) run_specs_test.setEnvironmentVariable("TEST_FAIL_FAST", "1");
     if (test_no_color) run_specs_test.setEnvironmentVariable("TEST_NO_COLOR", "1");
     if (test_quiet) run_specs_test.setEnvironmentVariable("TEST_QUIET", "1");
-    
+
     // Set MAX_SPEC_FILES environment variable
     const spec_max_files = b.option([]const u8, "spec-max-files", "Maximum number of spec files to run (default: all)");
     if (spec_max_files) |max_files| {
@@ -965,16 +921,16 @@ pub fn build(b: *std.Build) void {
     } else {
         run_specs_test.setEnvironmentVariable("MAX_SPEC_FILES", "999999"); // Run all test files
     }
-    
+
     // Set SKIP_SPEC_FILES environment variable to skip the first N files
     const spec_skip_files = b.option([]const u8, "spec-skip-files", "Number of spec files to skip from the beginning");
     if (spec_skip_files) |skip_files| {
         run_specs_test.setEnvironmentVariable("SKIP_SPEC_FILES", skip_files);
     }
-    
+
     const specs_step = b.step("specs", "Run Ethereum execution spec tests (Zig version) - use -Dspec-max-files=N to limit, -Dtest-filter=pattern to filter");
     specs_step.dependOn(&run_specs_test.step);
-    
+
     // State tests runner using manifest
     const state_tests = b.addTest(.{
         .name = "state-tests",
@@ -997,14 +953,14 @@ pub fn build(b: *std.Build) void {
     if (bn254_lib) |bn254| state_tests.linkLibrary(bn254);
     state_tests.linkLibrary(bls_wrapper);
     state_tests.linkLibC();
-    
+
     // Apply test filter if specified
     if (test_filter) |filter| {
         state_tests.filters = &[_][]const u8{filter};
     }
-    
+
     const run_state_tests = b.addRunArtifact(state_tests);
-    
+
     // Pass test configuration as environment variables
     if (test_filter) |filter| {
         run_state_tests.setEnvironmentVariable("TEST_FILTER", filter);
@@ -1013,10 +969,10 @@ pub fn build(b: *std.Build) void {
     if (test_fail_fast) run_state_tests.setEnvironmentVariable("TEST_FAIL_FAST", "1");
     if (test_no_color) run_state_tests.setEnvironmentVariable("TEST_NO_COLOR", "1");
     if (test_quiet) run_state_tests.setEnvironmentVariable("TEST_QUIET", "1");
-    
+
     const state_tests_step = b.step("state-tests", "Run Ethereum state tests from manifest - use -Dtest-filter=pattern to filter");
     state_tests_step.dependOn(&run_state_tests.step);
-    
+
     // Bun specs runner (kept as alternative)
     const bun_check = b.addSystemCommand(&[_][]const u8{ "which", "bun" });
     bun_check.addCheck(.{ .expect_stdout_match = "bun" });
