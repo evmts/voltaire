@@ -5,13 +5,6 @@
 
 const std = @import("std");
 
-// Global log configuration
-// Default to .err to reduce noise in tests
-// To enable debug logs, rebuild with -Dlog-level=debug or modify this value
-pub const std_options: std.Options = .{
-    .log_level = .err,
-};
-
 // Re-export everything from evm/root.zig
 pub const Frame = @import("frame/frame.zig").Frame;
 pub const FrameConfig = @import("frame/frame_config.zig").FrameConfig;
@@ -43,12 +36,12 @@ pub const MainnetEvmWithTracer = Evm(EvmConfig{
     .eips = .{ .hardfork = @import("eips_and_hardforks/eips.zig").Hardfork.CANCUN },
     .tracer_config = @import("tracer/tracer.zig").TracerConfig{
         .enabled = true,
-        .enable_validation = true,  // Enable validation for step capture
-        .enable_step_capture = true,  // Enable step capture for JSON-RPC trace
+        .enable_validation = true, // Enable validation for step capture
+        .enable_step_capture = true, // Enable step capture for JSON-RPC trace
         .enable_pc_tracking = true,
         .enable_gas_tracking = true,
-        .enable_debug_logging = false,  // Disable debug logging to reduce noise
-        .enable_advanced_trace = false,  // Disable advanced trace to simplify
+        .enable_debug_logging = false, // Disable debug logging to reduce noise
+        .enable_advanced_trace = false, // Disable advanced trace to simplify
     },
 });
 
@@ -59,15 +52,14 @@ pub const TestEvm = Evm(EvmConfig{
         .enable_validation = true,
         .enable_pc_tracking = true,
         .enable_gas_tracking = true,
-        .enable_debug_logging = false,  // Disable debug logging to reduce noise
+        .enable_debug_logging = false, // Disable debug logging to reduce noise
     },
     .disable_gas_checks = true,
 });
 
 // Fixtures for testing
-pub const FixtureContract = @import("_test_utils/fixtures/popular_contracts.zig").FixtureContract;
-pub const ContractName = @import("_test_utils/fixtures/popular_contracts.zig").ContractName;
-pub const FixtureRunner = @import("_test_utils/fixture_runner.zig").FixtureRunner;
+pub const FixtureContract = @import("fixtures").FixtureContract;
+pub const ContractName = @import("fixtures").ContractName;
 
 // Default EVM types - now uses build configuration
 pub const DefaultEvm = BuildConfiguredEvm;
@@ -80,7 +72,6 @@ pub const MinimalEvm = @import("tracer/minimal_evm.zig").MinimalEvm;
 // Compatibility alias - to be removed later
 pub const DefaultTracer = Tracer;
 // differential_tracer removed - using MinimalEvm for differential testing
-pub const trace_comparer = @import("_test_utils/trace_comparer.zig");
 pub const JSONRPCTracer = @import("tracer/tracer.zig").JSONRPCTracer;
 
 // Logging
