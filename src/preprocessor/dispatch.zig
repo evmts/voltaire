@@ -39,7 +39,6 @@ pub fn Preprocessor(FrameType: type) type {
             first_block_gas: Metadata.FirstBlockMetadata,
         };
 
-
         fn processPushOpcode(
             schedule_items: anytype,
             allocator: std.mem.Allocator,
@@ -421,7 +420,7 @@ pub fn Preprocessor(FrameType: type) type {
             var stack_effect: i32 = 0;
             var min_stack: i32 = 0;
             var max_stack: i32 = 0;
-            
+
             const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
                 bytecode catch return .{ .gas = 0, .min_stack = 0, .max_stack = 0 }
             else
@@ -444,7 +443,7 @@ pub fn Preprocessor(FrameType: type) type {
                         const gas_to_add = @as(u64, opcode_info[data.opcode].gas_cost);
                         const new_gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         gas = new_gas;
-                        
+
                         // Update stack effect for this opcode
                         if (data.opcode < opcode_info.len) {
                             // Special handling for DUP and SWAP operations
@@ -496,7 +495,7 @@ pub fn Preprocessor(FrameType: type) type {
                         const gas_to_add = @as(u64, opcode_info[push_opcode].gas_cost);
                         const new_gas = std.math.add(u64, gas, gas_to_add) catch gas;
                         gas = new_gas;
-                        
+
                         // PUSH operations: 0 inputs, 1 output
                         // stack_effect -= 0; (no inputs)
                         stack_effect += 1; // 1 output
@@ -564,7 +563,6 @@ pub fn Preprocessor(FrameType: type) type {
             var schedule_items = ScheduleList{};
             errdefer schedule_items.deinit(allocator);
 
-
             var jumpdest_entries = ArrayList(JumpDestEntry, null){};
             defer jumpdest_entries.deinit(allocator);
 
@@ -611,12 +609,7 @@ pub fn Preprocessor(FrameType: type) type {
                         // Record this JUMPDEST's location in schedule for single-pass resolution
                         // We store the index where the JUMPDEST handler will be placed
                         const jumpdest_schedule_idx = schedule_items.items.len;
-                        
-                        // Debug logging
-                        if (instr_pc == 0x304) {
-                            log.warn("[JUMPDEST] PC=0x304 found at schedule[{}] (path 1)", .{jumpdest_schedule_idx});
-                        }
-                        
+
                         try jumpdest_entries.append(allocator, .{
                             .pc = @intCast(instr_pc),
                             .schedule_index = jumpdest_schedule_idx,
@@ -893,9 +886,9 @@ pub fn Preprocessor(FrameType: type) type {
                 comptime {
                     if (std.math.maxInt(u64) <= FrameType.config.block_gas_limit) {
                         @compileError("u64 max must be greater than block_gas_limit for saturating arithmetic to work correctly. " ++
-                                    "u64 max: " ++ std.fmt.comptimePrint("{}", .{std.math.maxInt(u64)}) ++
-                                    ", block_gas_limit: " ++ std.fmt.comptimePrint("{}", .{FrameType.config.block_gas_limit}) ++
-                                    ". The saturating arithmetic assumption requires that any overflow results in costs exceeding block limits.");
+                            "u64 max: " ++ std.fmt.comptimePrint("{}", .{std.math.maxInt(u64)}) ++
+                            ", block_gas_limit: " ++ std.fmt.comptimePrint("{}", .{FrameType.config.block_gas_limit}) ++
+                            ". The saturating arithmetic assumption requires that any overflow results in costs exceeding block limits.");
                     }
                 }
 
@@ -940,7 +933,6 @@ pub fn Preprocessor(FrameType: type) type {
             tracer: anytype,
             jump_pc: u32,
         ) !void {
-
             if (value > std.math.maxInt(FrameType.PcType)) {
                 if (tracer) |t| t.onInvalidStaticJump(jump_pc, @intCast(value & 0xFFFFFFFF));
                 const opcode_handlers = @import("../frame/frame_handlers.zig").getOpcodeHandlers(FrameType, &.{});
@@ -1043,35 +1035,35 @@ pub fn Preprocessor(FrameType: type) type {
             bytecode: anytype,
         ) !JumpTable {
             const log = @import("../log.zig");
-            
+
             // We need the bytecode to find JUMPDEST PCs
             const actual_bytecode = if (@typeInfo(@TypeOf(bytecode)) == .error_union)
                 try bytecode
             else
                 bytecode;
-            
+
             var jumpdest_entries = ArrayList(JumpDestEntry, null){};
             defer jumpdest_entries.deinit(allocator);
-            
+
             // Create a mapping of JUMPDEST PCs to their schedule indices
             // by walking through the schedule and bytecode in parallel
-            
+
             var bytecode_iter = actual_bytecode.createIterator();
             var schedule_index: usize = 0;
-            
+
             // Skip first_block_gas if present
             if (schedule.len > 0 and schedule[0] == .first_block_gas) {
                 schedule_index = 1;
             }
-            
+
             // Get JUMPDEST handler for comparison
             const frame_handlers = @import("../frame/frame_handlers.zig");
             const jumpdest_handler = frame_handlers.getOpcodeHandlers(FrameType, &.{})[@intFromEnum(Opcode.JUMPDEST)];
-            
+
             // Walk through schedule and find all JUMPDEST handlers
             var jumpdest_pcs = ArrayList(FrameType.PcType, null){};
             defer jumpdest_pcs.deinit(allocator);
-            
+
             // First, collect all JUMPDEST PCs from bytecode
             while (bytecode_iter.next()) |op_data| {
                 // The PC is already at the start of the next instruction, so we need to go back
@@ -1091,7 +1083,7 @@ pub fn Preprocessor(FrameType: type) type {
                     try jumpdest_pcs.append(allocator, jumpdest_pc);
                 }
             }
-            
+
             // Now find each JUMPDEST in the schedule
             var jumpdest_idx: usize = 0;
             for (schedule, 0..) |item, index| {
@@ -1103,16 +1095,16 @@ pub fn Preprocessor(FrameType: type) type {
                             .pc = pc,
                             .schedule_index = index,
                         });
-                        
+
                         if (pc == 0x304) {
                             log.warn("Found PC=0x304 JUMPDEST at schedule[{}] (fixed approach)", .{index});
                         }
-                        
+
                         jumpdest_idx += 1;
                     }
                 }
             }
-            
+
             const jumpdest_array = try jumpdest_entries.toOwnedSlice(allocator);
             defer allocator.free(jumpdest_array);
             std.sort.block(JumpDestEntry, jumpdest_array, {}, JumpDestEntry.lessThan);
@@ -1140,12 +1132,12 @@ pub fn Preprocessor(FrameType: type) type {
                         .cursor = schedule.ptr + jumpdest.schedule_index,
                     },
                 };
-                
+
                 // Debug log each jump table entry
                 if (jumpdest.pc == 0x304) {
                     log.warn("Jump table entry: PC=0x304 -> schedule[{}]", .{jumpdest.schedule_index});
                     if (jumpdest.schedule_index < schedule.len) {
-                        log.warn("  Schedule item at [{}]: {s}", .{jumpdest.schedule_index, @tagName(schedule[jumpdest.schedule_index])});
+                        log.warn("  Schedule item at [{}]: {s}", .{ jumpdest.schedule_index, @tagName(schedule[jumpdest.schedule_index]) });
                     }
                 }
             }
