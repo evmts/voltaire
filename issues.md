@@ -1,1 +1,0 @@
-- If user overrides an opcode handler we need to disable that fusion. Currently fusions would still happen possibly resulting in wrong behavior
