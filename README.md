@@ -48,6 +48,7 @@
   - [`Opcode`](./src/primitives/opcode.zig) &mdash; EVM opcode enumeration with utility methods
   - [`OpcodeInfo`](./src/primitives/opcode_info.zig) &mdash; gas costs and stack metadata for all opcodes
   - [`Hardfork`](./src/primitives/hardfork.zig) &mdash; Ethereum hardfork identifiers with version comparison
+  - [`Trie`](./src/primitives/trie.zig) &mdash; Merkle Patricia Trie for state storage with proof generation
     <br/>
     <br/>
 - [**Cryptography**](#cryptography)
