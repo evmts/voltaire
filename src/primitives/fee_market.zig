@@ -1,17 +1,9 @@
 const std = @import("std");
 
-// NOTE: FEE market is currently just exported but unused by the EVM
-// FeeMarket implements the EIP-1559 fee market mechanism
-///
-// The EIP-1559 fee market introduces a base fee per block that moves
-// up or down based on how full the previous block was compared to the target.
-///
-// Key features:
-// 1. Base fee per block that is burned (not paid to miners)
-// 2. Priority fee (tip) that goes to miners
-// 3. Base fee adjustment based on block fullness
+/// EIP-1559 fee market mechanism
+/// Base fee adjusts based on block fullness; burned, not paid to miners
 
-/// Helper function to calculate fee delta safely avoiding overflow and division by zero
+/// Calculate fee delta safely (avoids overflow and division by zero)
 fn calculate_fee_delta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
     // Using u128 for intermediate calculation to avoid overflow
     const intermediate: u128 = @as(u128, fee) * @as(u128, gas_delta);
@@ -22,41 +14,16 @@ fn calculate_fee_delta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u
     // Always return at least 1 to ensure some movement
     return @max(1, result);
 }
-/// Minimum base fee per gas (in wei)
-/// This ensures the base fee never goes to zero
+/// Minimum base fee (wei)
 pub const MIN_BASE_FEE: u64 = 7;
 
-/// Base fee change denominator
-/// The base fee can change by at most 1/BASE_FEE_CHANGE_DENOMINATOR
-/// (or 12.5% with the value of 8) between blocks
+/// Base fee change denominator (12.5% max change per block)
 pub const BASE_FEE_CHANGE_DENOMINATOR: u64 = 8;
 
-/// Initialize base fee for the first EIP-1559 block
-///
-/// This is used when transitioning from a pre-EIP-1559 chain to
-/// an EIP-1559 enabled chain.
-///
-/// Parameters:
-/// - parent_gas_used: Gas used by the parent block
-/// - parent_gas_limit: Gas limit of the parent block
-///
-/// Returns: The initial base fee (in wei)
+/// Initialize base fee for first EIP-1559 block based on parent gas usage
 pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
-    // Initializing base fee for first EIP-1559 block
-    // Parent block gas used and gas limit used in calculation
-
-    // Initial base fee formula from the EIP-1559 specification
-    // If the parent block used exactly the target gas, the initial base fee is 1 gwei
-    // If it used more, the initial base fee is higher
-    // If it used less, the initial base fee is lower
-
-    // Target gas usage is half the block gas limit
     const parent_gas_target = parent_gas_limit / 2;
-
-    // Initial base fee calculation
-    var base_fee: u64 = 1_000_000_000; // 1 gwei in wei
-
-    // Adjust initial base fee based on parent block's gas usage
+    var base_fee: u64 = 1_000_000_000; // 1 gwei
     if (parent_gas_used > 0) {
         const gas_used_delta = if (parent_gas_used > parent_gas_target)
             parent_gas_used - parent_gas_target
@@ -72,11 +39,7 @@ pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
         }
     }
 
-    // Ensure base fee is at least the minimum
-    base_fee = @max(base_fee, MIN_BASE_FEE);
-
-    // Initial base fee calculated
-    return base_fee;
+    return @max(base_fee, MIN_BASE_FEE);
 }
 
 /// Calculate the next block's base fee based on the current block
