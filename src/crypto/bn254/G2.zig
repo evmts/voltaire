@@ -373,8 +373,6 @@ pub fn gamma_lambda_endomorphism(self: *const G2) G2 {
     return self.gamma_endomorphism().lambda_endomorphism();
 }
 
-const std = @import("std");
-
 test "G2.isOnCurve generator" {
     try std.testing.expect(G2.GENERATOR.isOnCurve());
 }

@@ -285,8 +285,6 @@ pub fn mulAssign(self: *G1, scalar: *const Fr) void {
 // TESTS - Adapted from g1.zig for Montgomery form
 // ============================================================================
 
-const std = @import("std");
-
 test "G1.add opposite" {
     const Gen = G1.GENERATOR;
     const minusG = Gen.neg();
