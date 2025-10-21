@@ -379,16 +379,9 @@ pub fn calculateCreate2Address(allocator: std.mem.Allocator, creator: Address, s
     return address;
 }
 
-// Convenience function for CREATE address calculation without allocator
-// Uses page allocator - only use in tests or when allocation failure is truly impossible
-// For production code, use calculateCreateAddress with a proper allocator
-pub fn getContractAddress(creator: Address, nonce: u64) Address {
-    const allocator = std.heap.page_allocator;
-    return calculateCreateAddress(allocator, creator, nonce) catch |err| {
-        // Page allocator should not fail for small allocations
-        // If it does, it's a system-level OOM which is unrecoverable
-        std.debug.panic("getContractAddress: unexpected allocation failure: {}", .{err});
-    };
+// Convenience function for CREATE address calculation
+pub fn getContractAddress(allocator: std.mem.Allocator, creator: Address, nonce: u64) CalculateAddressError!Address {
+    return calculateCreateAddress(allocator, creator, nonce);
 }
 
 // Convenience function for CREATE2 address calculation without allocator
@@ -501,24 +494,27 @@ test "Address - equality" {
 }
 
 test "contract address generation - CREATE" {
+    const allocator = std.testing.allocator;
     const deployer = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
     const nonce: u64 = 0;
 
-    const addr = getContractAddress(deployer, nonce);
+    const addr = try getContractAddress(allocator, deployer, nonce);
     const expected = try fromHex("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
     try std.testing.expectEqual(expected, addr);
 }
 
 test "contract address generation - CREATE with nonce 1" {
+    const allocator = std.testing.allocator;
     const deployer = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
     const nonce: u64 = 1;
 
-    const addr = getContractAddress(deployer, nonce);
+    const addr = try getContractAddress(allocator, deployer, nonce);
     const expected = try fromHex("0x343c43a37d37dff08ae8c4a11544c718abb4fcf8");
     try std.testing.expectEqual(expected, addr);
 }
 
 test "contract address generation - CREATE multiple nonces" {
+    const allocator = std.testing.allocator;
     const deployer = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 
     const test_cases = [_]struct {
@@ -532,7 +528,7 @@ test "contract address generation - CREATE multiple nonces" {
     };
 
     for (test_cases) |tc| {
-        const addr = getContractAddress(deployer, tc.nonce);
+        const addr = try getContractAddress(allocator, deployer, tc.nonce);
         const expected = try fromHex(tc.expected);
         try std.testing.expectEqual(expected, addr);
     }

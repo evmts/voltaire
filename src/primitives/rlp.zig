@@ -93,6 +93,10 @@ const std = @import("std");
 const hex = @import("utils").hex;
 const Allocator = std.mem.Allocator;
 
+/// Maximum recursion depth to prevent stack overflow attacks
+/// Reasonable limit for nested RLP structures
+pub const MAX_RLP_DEPTH: u32 = 32;
+
 pub const RlpError = error{
     InputTooShort,
     InputTooLong,
@@ -102,6 +106,7 @@ pub const RlpError = error{
     UnexpectedInput,
     InvalidRemainder,
     ExtraZeros,
+    RecursionDepthExceeded,
 };
 
 pub const EncodeError = std.mem.Allocator.Error;
@@ -286,7 +291,7 @@ pub fn decode(allocator: Allocator, input: []const u8, stream: bool) !Decoded {
         };
     }
 
-    const result = try _decode(allocator, input);
+    const result = try _decode(allocator, input, 0);
 
     if (!stream and result.remainder.len > 0) {
         // Free the allocated data before returning error
@@ -297,9 +302,14 @@ pub fn decode(allocator: Allocator, input: []const u8, stream: bool) !Decoded {
     return result;
 }
 
-fn _decode(allocator: Allocator, input: []const u8) !Decoded {
+fn _decode(allocator: Allocator, input: []const u8, depth: u32) !Decoded {
     if (input.len == 0) {
         return RlpError.InputTooShort;
+    }
+
+    // Check recursion depth to prevent stack overflow
+    if (depth >= MAX_RLP_DEPTH) {
+        return RlpError.RecursionDepthExceeded;
     }
 
     const prefix = input[0];
@@ -406,7 +416,7 @@ fn _decode(allocator: Allocator, input: []const u8) !Decoded {
 
         var remaining = input[1 .. 1 + length];
         while (remaining.len > 0) {
-            const decoded = try _decode(allocator, remaining);
+            const decoded = try _decode(allocator, remaining, depth + 1);
             try items.append(allocator, decoded.data);
             remaining = decoded.remainder;
         }
@@ -455,7 +465,7 @@ fn _decode(allocator: Allocator, input: []const u8) !Decoded {
 
         var remaining = input[1 + length_of_length .. 1 + length_of_length + total_length];
         while (remaining.len > 0) {
-            const decoded = try _decode(allocator, remaining);
+            const decoded = try _decode(allocator, remaining, depth + 1);
             try items.append(allocator, decoded.data);
             remaining = decoded.remainder;
         }
@@ -749,4 +759,112 @@ test "RLP stream decoding" {
 
     // Verify all data was consumed
     try testing.expectEqual(@as(usize, 0), remaining.len);
+}
+
+test "RLP recursion depth limit" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test 1: Verify MAX_RLP_DEPTH constant exists and has reasonable value
+    try testing.expect(MAX_RLP_DEPTH == 32);
+
+    // Test 2: Create deeply nested list that exceeds MAX_RLP_DEPTH
+    // Each nested list adds one level of depth
+    // We'll create a list with MAX_RLP_DEPTH + 5 levels of nesting
+    var current_encoded = try encode(allocator, "inner");
+    defer allocator.free(current_encoded);
+
+    // Build nested structure: [[[[["inner"]]]]]
+    var depth: u32 = 0;
+    while (depth < MAX_RLP_DEPTH + 5) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (MAX_RLP_DEPTH + 5 > 0) allocator.free(current_encoded);
+
+    // Test 3: Decoding should fail with RecursionDepthExceeded
+    const result = decode(allocator, current_encoded, false);
+    try testing.expectError(RlpError.RecursionDepthExceeded, result);
+}
+
+test "RLP max allowed depth" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create nested list exactly at MAX_RLP_DEPTH - 1 (should succeed)
+    var current_encoded = try encode(allocator, "inner");
+    defer allocator.free(current_encoded);
+
+    // Build nested structure up to MAX_RLP_DEPTH - 1 levels
+    var depth: u32 = 0;
+    while (depth < MAX_RLP_DEPTH - 1) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (MAX_RLP_DEPTH - 1 > 0) allocator.free(current_encoded);
+
+    // This should succeed since we're at MAX_RLP_DEPTH - 1
+    const decoded = try decode(allocator, current_encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    // Verify we got a list
+    try testing.expect(decoded.data == .List);
+}
+
+test "RLP depth limit edge case" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test with exactly MAX_RLP_DEPTH levels (should succeed)
+    var current_encoded = try encode(allocator, "data");
+    defer allocator.free(current_encoded);
+
+    var depth: u32 = 0;
+    while (depth < MAX_RLP_DEPTH - 1) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (MAX_RLP_DEPTH - 1 > 0) allocator.free(current_encoded);
+
+    // Decoding at exactly MAX_RLP_DEPTH should succeed
+    const decoded = try decode(allocator, current_encoded, false);
+    defer decoded.data.deinit(allocator);
+    try testing.expect(decoded.data == .List);
+}
+
+test "RLP depth protection against attack" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Simulate an attack with 100 levels of nesting
+    const attack_depth: u32 = 100;
+    var current_encoded = try encode(allocator, &[_]u8{});
+    defer allocator.free(current_encoded);
+
+    var depth: u32 = 0;
+    while (depth < attack_depth) : (depth += 1) {
+        const list = [_][]const u8{current_encoded};
+        const new_encoded = try encode(allocator, list[0..]);
+        if (depth > 0) {
+            allocator.free(current_encoded);
+        }
+        current_encoded = new_encoded;
+    }
+    defer if (attack_depth > 0) allocator.free(current_encoded);
+
+    // Should fail with RecursionDepthExceeded
+    const result = decode(allocator, current_encoded, false);
+    try testing.expectError(RlpError.RecursionDepthExceeded, result);
 }

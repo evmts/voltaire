@@ -87,7 +87,9 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         pub fn from_limbs(limbs_arr: [limbs]u64) Self {
             const result = Self{ .limbs = limbs_arr };
             if (bits > 0 and MASK != std.math.maxInt(u64) and limbs > 0) {
-                std.debug.assert(result.limbs[limbs - 1] <= MASK);
+                if (result.limbs[limbs - 1] > MASK) {
+                    std.debug.panic("Uint{}.from_limbs: top limb 0x{X} exceeds mask 0x{X}", .{ bits, result.limbs[limbs - 1], MASK });
+                }
             }
             return result;
         }
@@ -131,8 +133,8 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
 
             // For 256-bit or smaller, use native u256 operations for better performance
             if (comptime bits <= 256) {
-                const self_u256 = self.to_u256() orelse unreachable;
-                const other_u256 = other.to_u256() orelse unreachable;
+                const self_u256 = self.to_u256() orelse std.debug.panic("Uint{}.eq: failed to convert to u256", .{bits});
+                const other_u256 = other.to_u256() orelse std.debug.panic("Uint{}.eq: failed to convert to u256", .{bits});
                 return self_u256 == other_u256;
             }
 

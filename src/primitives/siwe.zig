@@ -427,3 +427,568 @@ test "SIWE message parsing" {
     try testing.expectEqualStrings("https://example.com", parsed.uri);
     try testing.expectEqual(@as(u64, 1), parsed.chain_id);
 }
+
+test "format() with no optional fields" {
+    const allocator = testing.allocator;
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    try testing.expect(std.mem.indexOf(u8, formatted, "example.com wants you") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "URI: https://example.com") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Version: 1") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Chain ID: 1") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Nonce: 32891756") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Issued At: 2021-09-30T16:25:24Z") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Expiration Time:") == null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Not Before:") == null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Request ID:") == null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Resources:") == null);
+}
+
+test "format() with statement only" {
+    const allocator = testing.allocator;
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = "This is a test statement",
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    try testing.expect(std.mem.indexOf(u8, formatted, "This is a test statement") != null);
+}
+
+test "format() with expiration_time only" {
+    const allocator = testing.allocator;
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = "2021-10-01T16:25:24Z",
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    try testing.expect(std.mem.indexOf(u8, formatted, "Expiration Time: 2021-10-01T16:25:24Z") != null);
+}
+
+test "format() with not_before only" {
+    const allocator = testing.allocator;
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = "2021-09-30T16:00:00Z",
+        .request_id = null,
+        .resources = null,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    try testing.expect(std.mem.indexOf(u8, formatted, "Not Before: 2021-09-30T16:00:00Z") != null);
+}
+
+test "format() with request_id only" {
+    const allocator = testing.allocator;
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = "test-request-id-123",
+        .resources = null,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    try testing.expect(std.mem.indexOf(u8, formatted, "Request ID: test-request-id-123") != null);
+}
+
+test "format() with single resource" {
+    const allocator = testing.allocator;
+
+    const resources = [_][]const u8{
+        "https://example.com/resource1",
+    };
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = &resources,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    try testing.expect(std.mem.indexOf(u8, formatted, "Resources:") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "- https://example.com/resource1") != null);
+}
+
+test "format() with multiple resources" {
+    const allocator = testing.allocator;
+
+    const resources = [_][]const u8{
+        "https://example.com/resource1",
+        "https://example.com/resource2",
+        "https://example.com/resource3",
+    };
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = &resources,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    try testing.expect(std.mem.indexOf(u8, formatted, "Resources:") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "- https://example.com/resource1") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "- https://example.com/resource2") != null);
+    try testing.expect(std.mem.indexOf(u8, formatted, "- https://example.com/resource3") != null);
+}
+
+test "validate() with invalid expiration_time timestamp" {
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = "invalid-timestamp",
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    try testing.expectError(SiweError.InvalidExpirationTime, message.validate());
+}
+
+test "validate() with invalid not_before timestamp" {
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = "2021-09-30",
+        .request_id = null,
+        .resources = null,
+    };
+
+    try testing.expectError(SiweError.InvalidNotBefore, message.validate());
+}
+
+test "validate() with valid optional timestamps" {
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = "2021-10-01T16:25:24Z",
+        .not_before = "2021-09-30T16:00:00Z",
+        .request_id = null,
+        .resources = null,
+    };
+
+    try message.validate();
+}
+
+test "isValidTimestamp() with various invalid formats" {
+    try testing.expect(!isValidTimestamp(""));
+    try testing.expect(!isValidTimestamp("2021-09-30"));
+    try testing.expect(!isValidTimestamp("2021/09/30T16:25:24Z"));
+    try testing.expect(!isValidTimestamp("2021-09-30 16:25:24"));
+    try testing.expect(!isValidTimestamp("2021-09-30T16:25:24"));
+    try testing.expect(!isValidTimestamp("2021-09-30T16-25-24Z"));
+    try testing.expect(!isValidTimestamp("21-09-30T16:25:24Z"));
+}
+
+test "isValidTimestamp() with valid formats" {
+    try testing.expect(isValidTimestamp("2021-09-30T16:25:24Z"));
+    try testing.expect(isValidTimestamp("2024-12-31T23:59:59Z"));
+    try testing.expect(isValidTimestamp("2000-01-01T00:00:00Z"));
+}
+
+test "validate() domain edge cases" {
+    var message = SiweMessage{
+        .domain = "a",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    try message.validate();
+
+    message.domain = "verylongdomainnamewithmanycharactersexample.com";
+    try message.validate();
+}
+
+test "validate() uri edge cases" {
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "h",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    try message.validate();
+
+    message.uri = "https://example.com/very/long/path/with/many/segments?query=params&more=data";
+    try message.validate();
+}
+
+test "validate() nonce edge cases" {
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "1",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    try message.validate();
+
+    message.nonce = "verylongnoncewithmanycharacters1234567890";
+    try message.validate();
+}
+
+test "validate() version must be exactly 1" {
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    try message.validate();
+
+    message.version = "0";
+    try testing.expectError(SiweError.InvalidVersion, message.validate());
+
+    message.version = "2";
+    try testing.expectError(SiweError.InvalidVersion, message.validate());
+
+    message.version = "1.0";
+    try testing.expectError(SiweError.InvalidVersion, message.validate());
+}
+
+test "message roundtrip: format then parse" {
+    const allocator = testing.allocator;
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = "Sign in to Example",
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    const parsed = try parseSiweMessage(allocator, formatted);
+    defer {
+        allocator.free(parsed.domain);
+        if (parsed.statement) |s| allocator.free(s);
+        allocator.free(parsed.uri);
+        allocator.free(parsed.version);
+        allocator.free(parsed.nonce);
+        allocator.free(parsed.issued_at);
+    }
+
+    try testing.expectEqualStrings(message.domain, parsed.domain);
+    try testing.expect(message.address.eql(parsed.address));
+    try testing.expectEqualStrings(message.statement.?, parsed.statement.?);
+    try testing.expectEqualStrings(message.uri, parsed.uri);
+    try testing.expectEqualStrings(message.version, parsed.version);
+    try testing.expectEqual(message.chain_id, parsed.chain_id);
+    try testing.expectEqualStrings(message.nonce, parsed.nonce);
+    try testing.expectEqualStrings(message.issued_at, parsed.issued_at);
+}
+
+test "message roundtrip: format then parse without statement" {
+    const allocator = testing.allocator;
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    const parsed = try parseSiweMessage(allocator, formatted);
+    defer {
+        allocator.free(parsed.domain);
+        if (parsed.statement) |s| allocator.free(s);
+        allocator.free(parsed.uri);
+        allocator.free(parsed.version);
+        allocator.free(parsed.nonce);
+        allocator.free(parsed.issued_at);
+    }
+
+    try testing.expectEqualStrings(message.domain, parsed.domain);
+    try testing.expect(message.address.eql(parsed.address));
+    try testing.expect(parsed.statement == null);
+    try testing.expectEqualStrings(message.uri, parsed.uri);
+    try testing.expectEqualStrings(message.version, parsed.version);
+    try testing.expectEqual(message.chain_id, parsed.chain_id);
+    try testing.expectEqualStrings(message.nonce, parsed.nonce);
+    try testing.expectEqualStrings(message.issued_at, parsed.issued_at);
+}
+
+test "format() field ordering requirements" {
+    const allocator = testing.allocator;
+
+    const resources = [_][]const u8{
+        "https://example.com/resource1",
+    };
+
+    const message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = "Test statement",
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = "2021-10-01T16:25:24Z",
+        .not_before = "2021-09-30T16:00:00Z",
+        .request_id = "test-id",
+        .resources = &resources,
+    };
+
+    const formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+
+    const domain_pos = std.mem.indexOf(u8, formatted, "example.com wants you").?;
+    const address_pos = std.mem.indexOf(u8, formatted, "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2").?;
+    const statement_pos = std.mem.indexOf(u8, formatted, "Test statement").?;
+    const uri_pos = std.mem.indexOf(u8, formatted, "URI: https://example.com").?;
+    const version_pos = std.mem.indexOf(u8, formatted, "Version: 1").?;
+    const chain_pos = std.mem.indexOf(u8, formatted, "Chain ID: 1").?;
+    const nonce_pos = std.mem.indexOf(u8, formatted, "Nonce: 32891756").?;
+    const issued_pos = std.mem.indexOf(u8, formatted, "Issued At: 2021-09-30T16:25:24Z").?;
+    const expiration_pos = std.mem.indexOf(u8, formatted, "Expiration Time: 2021-10-01T16:25:24Z").?;
+    const not_before_pos = std.mem.indexOf(u8, formatted, "Not Before: 2021-09-30T16:00:00Z").?;
+    const request_pos = std.mem.indexOf(u8, formatted, "Request ID: test-id").?;
+    const resources_pos = std.mem.indexOf(u8, formatted, "Resources:").?;
+
+    try testing.expect(domain_pos < address_pos);
+    try testing.expect(address_pos < statement_pos);
+    try testing.expect(statement_pos < uri_pos);
+    try testing.expect(uri_pos < version_pos);
+    try testing.expect(version_pos < chain_pos);
+    try testing.expect(chain_pos < nonce_pos);
+    try testing.expect(nonce_pos < issued_pos);
+    try testing.expect(issued_pos < expiration_pos);
+    try testing.expect(expiration_pos < not_before_pos);
+    try testing.expect(not_before_pos < request_pos);
+    try testing.expect(request_pos < resources_pos);
+}
+
+test "format() with different chain IDs" {
+    const allocator = testing.allocator;
+
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = null,
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
+        .resources = null,
+    };
+
+    message.chain_id = 1;
+    var formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Chain ID: 1") != null);
+
+    message.chain_id = 137;
+    formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Chain ID: 137") != null);
+
+    message.chain_id = 42161;
+    formatted = try message.format(allocator);
+    defer allocator.free(formatted);
+    try testing.expect(std.mem.indexOf(u8, formatted, "Chain ID: 42161") != null);
+}
+
+test "validate() accepts all valid optional field combinations" {
+    const allocator = testing.allocator;
+
+    const resources = [_][]const u8{"https://example.com/resource1"};
+
+    var message = SiweMessage{
+        .domain = "example.com",
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .statement = "Test",
+        .uri = "https://example.com",
+        .version = "1",
+        .chain_id = 1,
+        .nonce = "32891756",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = "2021-10-01T16:25:24Z",
+        .not_before = "2021-09-30T16:00:00Z",
+        .request_id = "test-id",
+        .resources = &resources,
+    };
+
+    try message.validate();
+
+    message.statement = null;
+    try message.validate();
+
+    message.expiration_time = null;
+    try message.validate();
+
+    message.not_before = null;
+    try message.validate();
+
+    message.request_id = null;
+    try message.validate();
+
+    message.resources = null;
+    try message.validate();
+
+    _ = allocator;
+}
