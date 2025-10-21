@@ -24,6 +24,14 @@
   </sup>
   <br />
   <br />
+  <h3>Installation</h3>
+  <p><strong>Recommended:</strong> Build from source</p>
+  <pre>git clone https://github.com/evmts/primitives.git
+cd primitives
+git submodule update --init --recursive
+zig build</pre>
+  <br />
+  <p><strong>Alternative:</strong> Use zig fetch (may have missing dependencies)</p>
   <pre>zig fetch --save https://github.com/evmts/primitives</pre>
   <br />
   <br />
