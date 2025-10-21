@@ -28,13 +28,13 @@ pub fn init(value: u256) FpMont {
 }
 
 pub fn toStandardRepresentation(self: *const FpMont) u256 {
-    return REDC(self.value);
+    return redc(self.value);
 }
 
 /// Montgomery REDC algorithm
 /// Reference: https://en.wikipedia.org/wiki/Montgomery_modular_multiplication
 /// This is used to convert from Montgomery to standard representation
-pub fn REDC(T: u256) u256 {
+pub fn redc(T: u256) u256 {
     const a = T *% curve_parameters.MONTGOMERY_MINUS_P_INV_MOD_R;
 
     const u = T + (@as(u512, a) * @as(u512, FP_MOD));

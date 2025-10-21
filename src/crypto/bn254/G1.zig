@@ -197,7 +197,7 @@ pub fn addAssign(self: *G1, other: *const G1) void {
 }
 
 // This is a easy to compute morphism, G -> λG, where λ is a fixed field element, it can be found in curve_parameters.zig
-pub fn GLS_endomorphism(self: *const G1) G1 {
+pub fn glsEndomorphism(self: *const G1) G1 {
     const cube_root = FpMont.init(curve_parameters.G1_SCALAR.cube_root);
     const point_aff = self.toAffine();
     return G1{
@@ -239,7 +239,7 @@ pub fn mul_by_int(self: *const G1, scalar: u256) G1 {
     const naf_k2 = naf(k2);
 
     const P = self;
-    const Q = self.GLS_endomorphism().neg();
+    const Q = self.glsEndomorphism().neg();
     const P_plus_Q = P.add(&Q);
     const P_minus_Q = P.sub(&Q);
 
@@ -464,7 +464,7 @@ test "G1.mulAssign basic assignment" {
     try std.testing.expect(a.equal(&expected));
 }
 
-test "G1.GLS_endomorphism" {
+test "G1.glsEndomorphism" {
     const gen = G1.GENERATOR;
 
     const test_values = [_]Fr{
@@ -477,7 +477,7 @@ test "G1.GLS_endomorphism" {
 
     for (test_values) |value| {
         const point = gen.mul(&value);
-        const endo = point.GLS_endomorphism();
+        const endo = point.glsEndomorphism();
         const point_times_lambda = point.mul(&Fr.init(curve_parameters.G1_SCALAR.lambda));
         try std.testing.expect(point_times_lambda.equal(&endo));
     }

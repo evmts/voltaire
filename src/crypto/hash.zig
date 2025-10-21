@@ -18,27 +18,27 @@ pub const EMPTY_KECCAK256 = hash.EMPTY_KECCAK256;
 
 // Re-export core functions
 pub const zero = hash.zero;
-pub const from_bytes = hash.fromBytes;
-pub const from_slice = hash.fromSlice;
-pub const from_hex = hash.fromHex;
-pub const from_hex_comptime = hash.fromHexComptime;
-pub const to_hex = hash.toHex;
-pub const to_hex_upper = hash.toHexUpper;
-pub const is_zero = hash.isZero;
+pub const fromBytes = hash.fromBytes;
+pub const fromSlice = hash.fromSlice;
+pub const fromHex = hash.fromHex;
+pub const fromHexComptime = hash.fromHexComptime;
+pub const toHex = hash.toHex;
+pub const toHexUpper = hash.toHexUpper;
+pub const isZero = hash.isZero;
 pub const equal = hash.equal;
 pub const keccak256 = hash.keccak256;
-pub const keccak256_empty = hash.keccak256Empty;
-pub const eip191_hash_message = hash.eip191HashMessage;
-pub const selector_from_signature = hash.selectorFromSignature;
+pub const keccak256Empty = hash.keccak256Empty;
+pub const eip191HashMessage = hash.eip191HashMessage;
+pub const selectorFromSignature = hash.selectorFromSignature;
 pub const compare = hash.compare;
-pub const less_than = hash.lessThan;
-pub const greater_than = hash.greaterThan;
+pub const lessThan = hash.lessThan;
+pub const greaterThan = hash.greaterThan;
 pub const xor = hash.xor;
-pub const bit_and = hash.bitAnd;
-pub const bit_or = hash.bitOr;
-pub const bit_not = hash.bitNot;
-pub const to_u256 = hash.toU256;
-pub const from_u256 = hash.fromU256;
+pub const bitAnd = hash.bitAnd;
+pub const bitOr = hash.bitOr;
+pub const bitNot = hash.bitNot;
+pub const toU256 = hash.toU256;
+pub const fromU256 = hash.fromU256;
 
 // Tests to verify the module works
 const std = @import("std");
@@ -46,10 +46,10 @@ const std = @import("std");
 test "hash module integration" {
     // Test basic hash creation
     const test_hash = keccak256("test");
-    try std.testing.expect(!is_zero(test_hash));
+    try std.testing.expect(!isZero(test_hash));
 
     // Test selector creation
-    const sel = selector_from_signature("transfer(address,uint256)");
+    const sel = selectorFromSignature("transfer(address,uint256)");
     const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
     try std.testing.expectEqual(expected, sel);
 }

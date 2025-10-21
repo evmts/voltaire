@@ -171,7 +171,7 @@ pub const AccessListItem = struct {
 };
 
 // Encode legacy transaction for signing
-pub fn encode_legacy_for_signing(allocator: Allocator, tx: LegacyTransaction, chain_id: u64) ![]u8 {
+pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain_id: u64) ![]u8 {
     var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
@@ -273,7 +273,7 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
 }
 
 // Encode access list (public wrapper for external use)
-pub fn encode_access_list(allocator: Allocator, access_list: []const AccessListItem) ![]u8 {
+pub fn encodeAccessList(allocator: Allocator, access_list: []const AccessListItem) ![]u8 {
     var output = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer output.deinit();
     
@@ -334,9 +334,9 @@ fn encode_access_list_internal(allocator: Allocator, access_list: []const Access
 }
 
 // Sign legacy transaction
-pub fn sign_legacy_transaction(allocator: Allocator, tx: LegacyTransaction, private_key: crypto.PrivateKey, chain_id: u64) !LegacyTransaction {
+pub fn signLegacyTransaction(allocator: Allocator, tx: LegacyTransaction, private_key: crypto.PrivateKey, chain_id: u64) !LegacyTransaction {
     // Encode transaction for signing
-    const encoded = try encode_legacy_for_signing(allocator, tx, chain_id);
+    const encoded = try encodeLegacyForSigning(allocator, tx, chain_id);
     defer allocator.free(encoded);
 
     // Hash the encoded transaction
@@ -355,9 +355,9 @@ pub fn sign_legacy_transaction(allocator: Allocator, tx: LegacyTransaction, priv
 }
 
 // Compute legacy transaction hash
-pub fn compute_legacy_transaction_hash(allocator: Allocator, tx: LegacyTransaction) !Hash {
+pub fn computeLegacyTransactionHash(allocator: Allocator, tx: LegacyTransaction) !Hash {
     // Encode the full signed transaction
-    const encoded = try encode_legacy_for_signing(allocator, tx, 1);
+    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
     defer allocator.free(encoded);
 
     // Return keccak256 hash
@@ -365,7 +365,7 @@ pub fn compute_legacy_transaction_hash(allocator: Allocator, tx: LegacyTransacti
 }
 
 // Detect transaction type from raw data
-pub fn detect_transaction_type(data: []const u8) TransactionType {
+pub fn detectTransactionType(data: []const u8) TransactionType {
     if (data.len == 0) return TransactionType.legacy;
 
     // Check for typed transaction envelope
@@ -397,7 +397,7 @@ test "encode legacy transaction" {
     };
 
     // Encode transaction for signing
-    const encoded = try encode_legacy_for_signing(allocator, tx, 1);
+    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
     defer allocator.free(encoded);
 
     // Should produce valid RLP encoding
@@ -430,7 +430,7 @@ test "legacy transaction signature" {
     };
 
     // Sign transaction
-    const signed_tx = try sign_legacy_transaction(allocator, tx, private_key, 1);
+    const signed_tx = try signLegacyTransaction(allocator, tx, private_key, 1);
 
     // Verify signature components
     try testing.expect(signed_tx.v == 37 or signed_tx.v == 38); // EIP-155 for mainnet
@@ -514,13 +514,13 @@ test "compute transaction hash" {
         .s = [_]u8{0x34} ** 32,
     };
 
-    const h = try compute_legacy_transaction_hash(allocator, tx);
+    const h = try computeLegacyTransactionHash(allocator, tx);
 
     // Hash should be 32 bytes
     try testing.expectEqual(@as(usize, 32), h.bytes.len);
 
     // Hash should be deterministic
-    const h2 = try compute_legacy_transaction_hash(allocator, tx);
+    const h2 = try computeLegacyTransactionHash(allocator, tx);
     try testing.expectEqual(h, h2);
 }
 
@@ -541,7 +541,7 @@ test "contract creation transaction" {
         .s = [_]u8{0} ** 32,
     };
 
-    const encoded = try encode_legacy_for_signing(allocator, tx, 1);
+    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
     defer allocator.free(encoded);
 
     // Should encode properly with null `to` field
@@ -551,19 +551,19 @@ test "contract creation transaction" {
 test "detect transaction type" {
     // Legacy transaction (no prefix)
     const legacy_data = [_]u8{0xf8} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.legacy, detect_transaction_type(&legacy_data));
+    try testing.expectEqual(TransactionType.legacy, detectTransactionType(&legacy_data));
 
     // EIP-2930 (0x01 prefix)
     const eip2930_data = [_]u8{0x01} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip2930, detect_transaction_type(&eip2930_data));
+    try testing.expectEqual(TransactionType.eip2930, detectTransactionType(&eip2930_data));
 
     // EIP-1559 (0x02 prefix)
     const eip1559_data = [_]u8{0x02} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip1559, detect_transaction_type(&eip1559_data));
+    try testing.expectEqual(TransactionType.eip1559, detectTransactionType(&eip1559_data));
 
     // EIP-4844 (0x03 prefix)
     const eip4844_data = [_]u8{0x03} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip4844, detect_transaction_type(&eip4844_data));
+    try testing.expectEqual(TransactionType.eip4844, detectTransactionType(&eip4844_data));
 }
 
 test "decode mainnet transaction" {

@@ -29,7 +29,7 @@ pub const AccessListError = error{
 };
 
 // Calculate total gas cost for access list
-pub fn calculate_access_list_gas_cost(accessList: AccessList) u64 {
+pub fn calculateAccessListGasCost(accessList: AccessList) u64 {
     var totalCost: u64 = 0;
 
     for (accessList) |entry| {
@@ -44,7 +44,7 @@ pub fn calculate_access_list_gas_cost(accessList: AccessList) u64 {
 }
 
 // Check if address is in access list
-pub fn is_address_in_access_list(accessList: AccessList, addr: Address) bool {
+pub fn isAddressInAccessList(accessList: AccessList, addr: Address) bool {
     for (accessList) |entry| {
         if (entry.address.eql(addr)) {
             return true;
@@ -54,7 +54,7 @@ pub fn is_address_in_access_list(accessList: AccessList, addr: Address) bool {
 }
 
 // Check if storage key is in access list
-pub fn is_storage_key_in_access_list(
+pub fn isStorageKeyInAccessList(
     accessList: AccessList,
     addr: Address,
     storage_key: Hash,
@@ -72,7 +72,7 @@ pub fn is_storage_key_in_access_list(
 }
 
 // RLP encode access list
-pub fn encode_access_list(allocator: Allocator, accessList: AccessList) ![]u8 {
+pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
     // First, encode each entry as a list of [address, [storageKeys...]]
     var entries = std.array_list.AlignedManaged([]const u8, null).init(allocator);
     defer {
@@ -116,7 +116,7 @@ pub fn encode_access_list(allocator: Allocator, accessList: AccessList) ![]u8 {
 }
 
 // Calculate gas savings from access list
-pub fn calculate_gas_savings(accessList: AccessList) u64 {
+pub fn calculateGasSavings(accessList: AccessList) u64 {
     var savings: u64 = 0;
 
     for (accessList) |entry| {
@@ -133,7 +133,7 @@ pub fn calculate_gas_savings(accessList: AccessList) u64 {
 }
 
 // Deduplicate access list entries
-pub fn deduplicate_access_list(
+pub fn deduplicateAccessList(
     allocator: Allocator,
     accessList: AccessList,
 ) ![]AccessListEntry {
@@ -204,7 +204,7 @@ test "access list gas calculation" {
         },
     };
 
-    const gasCost = calculate_access_list_gas_cost(&accessList);
+    const gasCost = calculateAccessListGasCost(&accessList);
 
     // Expected: 2 addresses * 2400 + 2 storage keys * 1900 = 8600
     try testing.expectEqual(@as(u64, 8600), gasCost);
@@ -227,26 +227,26 @@ test "access list membership checks" {
     const addr1 = try Address.fromHex("0x1111111111111111111111111111111111111111");
     const addr2 = try Address.fromHex("0x2222222222222222222222222222222222222222");
 
-    try testing.expect(is_address_in_access_list(&accessList, addr1));
-    try testing.expect(!is_address_in_access_list(&accessList, addr2));
+    try testing.expect(isAddressInAccessList(&accessList, addr1));
+    try testing.expect(!isAddressInAccessList(&accessList, addr2));
 
     // Test storage key membership
     const key1 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
     const key3 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003");
 
-    try testing.expect(is_storage_key_in_access_list(&accessList, addr1, key1));
-    try testing.expect(!is_storage_key_in_access_list(&accessList, addr1, key3));
-    try testing.expect(!is_storage_key_in_access_list(&accessList, addr2, key1));
+    try testing.expect(isStorageKeyInAccessList(&accessList, addr1, key1));
+    try testing.expect(!isStorageKeyInAccessList(&accessList, addr1, key3));
+    try testing.expect(!isStorageKeyInAccessList(&accessList, addr2, key1));
 }
 
 test "empty access list" {
     const accessList: AccessList = &.{};
 
-    const gasCost = calculate_access_list_gas_cost(accessList);
+    const gasCost = calculateAccessListGasCost(accessList);
     try testing.expectEqual(@as(u64, 0), gasCost);
 
     const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
-    try testing.expect(!is_address_in_access_list(accessList, addr));
+    try testing.expect(!isAddressInAccessList(accessList, addr));
 }
 
 test "access list RLP encoding" {
@@ -263,7 +263,7 @@ test "access list RLP encoding" {
         },
     };
 
-    const encoded = try encode_access_list(allocator, &accessList);
+    const encoded = try encodeAccessList(allocator, &accessList);
     defer allocator.free(encoded);
 
     // Should produce valid RLP
@@ -284,7 +284,7 @@ test "access list gas savings" {
         },
     };
 
-    const savings = calculate_gas_savings(&accessList);
+    const savings = calculateGasSavings(&accessList);
 
     // Expected savings:
     // Account: 2600 - 2400 = 200
@@ -322,7 +322,7 @@ test "complex access list" {
         },
     };
 
-    const gasCost = calculate_access_list_gas_cost(&accessList);
+    const gasCost = calculateAccessListGasCost(&accessList);
 
     // Expected:
     // 3 addresses * 2400 = 7200
@@ -331,7 +331,7 @@ test "complex access list" {
     try testing.expectEqual(@as(u64, 14800), gasCost);
 
     // Test encoding
-    const encoded = try encode_access_list(allocator, &accessList);
+    const encoded = try encodeAccessList(allocator, &accessList);
     defer allocator.free(encoded);
 
     try testing.expect(encoded.len > 0);
@@ -361,7 +361,7 @@ test "deduplicate access list" {
         },
     };
 
-    const deduped = try deduplicate_access_list(allocator, &accessList);
+    const deduped = try deduplicateAccessList(allocator, &accessList);
     defer {
         for (deduped) |entry| {
             allocator.free(entry.storage_keys);

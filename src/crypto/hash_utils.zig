@@ -28,18 +28,18 @@ pub fn zero() Hash {
     return ZERO_HASH;
 }
 
-pub fn from_bytes(bytes: [32]u8) Hash {
+pub fn fromBytes(bytes: [32]u8) Hash {
     return bytes;
 }
 
-pub fn from_slice(slice: []const u8) !Hash {
+pub fn fromSlice(slice: []const u8) !Hash {
     if (slice.len != 32) return error.InvalidLength;
     var hash: Hash = undefined;
     @memcpy(&hash, slice);
     return hash;
 }
 
-pub fn from_hex(hex: []const u8) !Hash {
+pub fn fromHex(hex: []const u8) !Hash {
     if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x"))
         return error.InvalidHexFormat;
 
@@ -50,7 +50,7 @@ pub fn from_hex(hex: []const u8) !Hash {
     return hash;
 }
 
-pub fn from_hex_comptime(comptime hex: []const u8) Hash {
+pub fn fromHexComptime(comptime hex: []const u8) Hash {
     if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x"))
         @compileError("hex must start with '0x'");
 
@@ -62,7 +62,7 @@ pub fn from_hex_comptime(comptime hex: []const u8) Hash {
 }
 
 // Hash utility functions
-pub fn to_hex(hash: Hash) [66]u8 {
+pub fn toHex(hash: Hash) [66]u8 {
     var result: [66]u8 = undefined;
     result[0] = '0';
     result[1] = 'x';
@@ -71,7 +71,7 @@ pub fn to_hex(hash: Hash) [66]u8 {
     return result;
 }
 
-pub fn to_hex_upper(hash: Hash) [66]u8 {
+pub fn toHexUpper(hash: Hash) [66]u8 {
     var result: [66]u8 = undefined;
     result[0] = '0';
     result[1] = 'x';
@@ -80,7 +80,7 @@ pub fn to_hex_upper(hash: Hash) [66]u8 {
     return result;
 }
 
-pub fn is_zero(hash: Hash) bool {
+pub fn isZero(hash: Hash) bool {
     return std.mem.eql(u8, &hash, &ZERO_HASH);
 }
 
@@ -95,12 +95,12 @@ pub fn keccak256(data: []const u8) Hash {
     return hash;
 }
 
-pub fn keccak256_empty() Hash {
+pub fn keccak256Empty() Hash {
     return EMPTY_KECCAK256;
 }
 
 // EIP-191 message hashing
-pub fn eip191_hash_message(message: []const u8, allocator: std.mem.Allocator) !Hash {
+pub fn eip191HashMessage(message: []const u8, allocator: std.mem.Allocator) !Hash {
     const prefix = "\x19Ethereum Signed Message:\n";
     const length_str = try std.fmt.allocPrint(allocator, "{d}", .{message.len});
     defer allocator.free(length_str);
@@ -117,7 +117,7 @@ pub fn eip191_hash_message(message: []const u8, allocator: std.mem.Allocator) !H
 }
 
 // Selector creation (for function signatures)
-pub fn selector_from_signature(signature: []const u8) Selector {
+pub fn selectorFromSignature(signature: []const u8) Selector {
     const hash = keccak256(signature);
     return hash[0..4].*;
 }
@@ -127,11 +127,11 @@ pub fn compare(a: Hash, b: Hash) std.math.Order {
     return std.mem.order(u8, &a, &b);
 }
 
-pub fn less_than(a: Hash, b: Hash) bool {
+pub fn lessThan(a: Hash, b: Hash) bool {
     return compare(a, b) == .lt;
 }
 
-pub fn greater_than(a: Hash, b: Hash) bool {
+pub fn greaterThan(a: Hash, b: Hash) bool {
     return compare(a, b) == .gt;
 }
 
@@ -146,7 +146,7 @@ pub fn xor(a: Hash, b: Hash) Hash {
     return result;
 }
 
-pub fn bit_and(a: Hash, b: Hash) Hash {
+pub fn bitAnd(a: Hash, b: Hash) Hash {
     var result: Hash = undefined;
     var i: isize = -32;
     while (i < 0) : (i += 1) {
@@ -156,7 +156,7 @@ pub fn bit_and(a: Hash, b: Hash) Hash {
     return result;
 }
 
-pub fn bit_or(a: Hash, b: Hash) Hash {
+pub fn bitOr(a: Hash, b: Hash) Hash {
     var result: Hash = undefined;
     var i: isize = -32;
     while (i < 0) : (i += 1) {
@@ -166,7 +166,7 @@ pub fn bit_or(a: Hash, b: Hash) Hash {
     return result;
 }
 
-pub fn bit_not(a: Hash) Hash {
+pub fn bitNot(a: Hash) Hash {
     var result: Hash = undefined;
     var i: isize = -32;
     while (i < 0) : (i += 1) {
@@ -177,7 +177,7 @@ pub fn bit_not(a: Hash) Hash {
 }
 
 // Hash to/from integer conversion
-pub fn to_u256(hash: Hash) u256 {
+pub fn toU256(hash: Hash) u256 {
     var result: u256 = 0;
     for (hash) |byte| {
         result = (result << 8) | byte;
@@ -185,7 +185,7 @@ pub fn to_u256(hash: Hash) u256 {
     return result;
 }
 
-pub fn from_u256(value: u256) Hash {
+pub fn fromU256(value: u256) Hash {
     var hash: Hash = undefined;
     var v = value;
     var i: isize = -32;
@@ -201,17 +201,17 @@ pub fn from_u256(value: u256) Hash {
 test "hash creation and conversion" {
     // Test zero hash
     const zero_hash = zero();
-    try testing.expect(is_zero(zero_hash));
+    try testing.expect(isZero(zero_hash));
 
-    // Test from_bytes
+    // Test fromBytes
     const test_bytes = [_]u8{ 0x12, 0x34 } ++ [_]u8{0} ** 30;
-    const hash_from_bytes = from_bytes(test_bytes);
+    const hash_from_bytes = fromBytes(test_bytes);
     try testing.expectEqual(test_bytes, hash_from_bytes);
 
     // Test hex conversion
     const hex_str = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-    const hash_from_hex = try from_hex(hex_str);
-    const hex_result = to_hex(hash_from_hex);
+    const hash_from_hex = try fromHex(hex_str);
+    const hex_result = toHex(hash_from_hex);
     try testing.expectEqualStrings(hex_str, &hex_result);
 }
 
@@ -223,80 +223,80 @@ test "keccak256 hashing" {
     // Test known hash
     const hello_hash = keccak256("hello");
     const expected_hex = "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8";
-    const expected_hash = try from_hex(expected_hex);
+    const expected_hash = try fromHex(expected_hex);
     try testing.expectEqual(expected_hash, hello_hash);
 }
 
 test "hash comparison and arithmetic" {
-    const hash1 = from_u256(0x1234);
-    const hash2 = from_u256(0x5678);
+    const hash1 = fromU256(0x1234);
+    const hash2 = fromU256(0x5678);
 
     // Test comparison
-    try testing.expect(less_than(hash1, hash2));
-    try testing.expect(greater_than(hash2, hash1));
+    try testing.expect(lessThan(hash1, hash2));
+    try testing.expect(greaterThan(hash2, hash1));
     try testing.expect(!equal(hash1, hash2));
 
     // Test XOR
     const xor_result = xor(hash1, hash2);
-    const expected_xor = from_u256(0x1234 ^ 0x5678);
+    const expected_xor = fromU256(0x1234 ^ 0x5678);
     try testing.expectEqual(expected_xor, xor_result);
 }
 
 test "selector creation" {
     const signature = "transfer(address,uint256)";
-    const selector = selector_from_signature(signature);
+    const selector = selectorFromSignature(signature);
     const expected = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
     try testing.expectEqual(expected, selector);
 }
 
 test "u256 conversion" {
     const value: u256 = 0x123456789abcdef0;
-    const hash = from_u256(value);
-    const converted_back = to_u256(hash);
+    const hash = fromU256(value);
+    const converted_back = toU256(hash);
     try testing.expectEqual(value, converted_back);
 }
 
 test "EIP-191 message hashing" {
     const allocator = testing.allocator;
     const message = "Hello, Ethereum!";
-    const hash = try eip191_hash_message(message, allocator);
+    const hash = try eip191HashMessage(message, allocator);
 
     // The hash should not be zero
-    try testing.expect(!is_zero(hash));
+    try testing.expect(!isZero(hash));
 
     // Should be deterministic
-    const hash2 = try eip191_hash_message(message, allocator);
+    const hash2 = try eip191HashMessage(message, allocator);
     try testing.expectEqual(hash, hash2);
 }
 
 // Additional tests from hash_utils_test.zig
 test "create zero hash" {
     const zero_hash = zero();
-    try testing.expect(is_zero(zero_hash));
+    try testing.expect(isZero(zero_hash));
     try testing.expectEqualSlices(u8, &ZERO_HASH, &zero_hash);
 }
 
 test "hash from bytes" {
     const test_bytes = [_]u8{ 0x12, 0x34 } ++ [_]u8{0} ** 30;
-    const hash_from_bytes = from_bytes(test_bytes);
+    const hash_from_bytes = fromBytes(test_bytes);
     try testing.expectEqual(test_bytes, hash_from_bytes);
 }
 
 test "hash from slice" {
     const slice: []const u8 = &[_]u8{ 0xde, 0xad, 0xbe, 0xef } ++ [_]u8{0} ** 28;
-    const hash_from_slice = try from_slice(slice);
+    const hash_from_slice = try fromSlice(slice);
     try testing.expectEqualSlices(u8, slice, &hash_from_slice);
 }
 
 test "hash from slice invalid length" {
     const slice: []const u8 = &[_]u8{ 0xde, 0xad, 0xbe, 0xef }; // Only 4 bytes
-    const result = from_slice(slice);
+    const result = fromSlice(slice);
     try testing.expectError(error.InvalidLength, result);
 }
 
 test "hash from hex" {
     const hex_str = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-    const hash_from_hex = try from_hex(hex_str);
+    const hash_from_hex = try fromHex(hex_str);
 
     const expected_bytes = [_]u8{
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
@@ -308,27 +308,27 @@ test "hash from hex" {
 }
 
 test "hash to hex" {
-    const test_hash = from_bytes([_]u8{
+    const test_hash = fromBytes([_]u8{
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
     });
 
-    const hex_result = to_hex(test_hash);
+    const hex_result = toHex(test_hash);
     const expected = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
     try testing.expectEqualStrings(expected, &hex_result);
 }
 
 test "hash to hex uppercase" {
-    const test_hash = from_bytes([_]u8{
+    const test_hash = fromBytes([_]u8{
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
         0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
     });
 
-    const hex_result = to_hex_upper(test_hash);
+    const hex_result = toHexUpper(test_hash);
     const expected = "0x1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
     try testing.expectEqualStrings(expected, &hex_result);
 }
@@ -336,13 +336,13 @@ test "hash to hex uppercase" {
 test "keccak256 empty string" {
     const empty_hash = keccak256("");
     try testing.expectEqual(EMPTY_KECCAK256, empty_hash);
-    try testing.expectEqual(keccak256_empty(), empty_hash);
+    try testing.expectEqual(keccak256Empty(), empty_hash);
 }
 
 test "keccak256 known values" {
     // Test "hello" hash
     const hello_hash = keccak256("hello");
-    const expected_hello = try from_hex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8");
+    const expected_hello = try fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8");
     try testing.expectEqual(expected_hello, hello_hash);
 
     // Test "Hello World!"
@@ -369,13 +369,13 @@ test "eip191 hash message with different lengths" {
     const allocator = testing.allocator;
 
     // Test empty message
-    const empty_hash = try eip191_hash_message("", allocator);
-    try testing.expect(!is_zero(empty_hash));
+    const empty_hash = try eip191HashMessage("", allocator);
+    try testing.expect(!isZero(empty_hash));
 
     // Test longer message
     const long_message = "This is a much longer message that should still hash correctly";
-    const long_hash = try eip191_hash_message(long_message, allocator);
-    try testing.expect(!is_zero(long_hash));
+    const long_hash = try eip191HashMessage(long_message, allocator);
+    try testing.expect(!isZero(long_hash));
 
     // Different messages should produce different hashes
     try testing.expect(!equal(empty_hash, long_hash));
@@ -384,33 +384,33 @@ test "eip191 hash message with different lengths" {
 test "selector from signature" {
     // Test standard ERC20 transfer function
     const transfer_sig = "transfer(address,uint256)";
-    const selector = selector_from_signature(transfer_sig);
+    const selector = selectorFromSignature(transfer_sig);
     const expected_selector = [4]u8{ 0xa9, 0x05, 0x9c, 0xbb };
     try testing.expectEqual(expected_selector, selector);
 
     // Test balanceOf function
     const balance_sig = "balanceOf(address)";
-    const balance_selector = selector_from_signature(balance_sig);
+    const balance_selector = selectorFromSignature(balance_sig);
     const expected_balance = [4]u8{ 0x70, 0xa0, 0x82, 0x31 };
     try testing.expectEqual(expected_balance, balance_selector);
 }
 
 test "hash comparison and ordering" {
-    const hash1 = from_u256(0x1234);
-    const hash2 = from_u256(0x5678);
-    const hash3 = from_u256(0x1234); // Same as hash1
+    const hash1 = fromU256(0x1234);
+    const hash2 = fromU256(0x5678);
+    const hash3 = fromU256(0x1234); // Same as hash1
 
     // Test equality
     try testing.expect(equal(hash1, hash3));
     try testing.expect(!equal(hash1, hash2));
 
     // Test comparison
-    try testing.expect(less_than(hash1, hash2));
-    try testing.expect(!less_than(hash2, hash1));
-    try testing.expect(!less_than(hash1, hash3)); // Equal values
+    try testing.expect(lessThan(hash1, hash2));
+    try testing.expect(!lessThan(hash2, hash1));
+    try testing.expect(!lessThan(hash1, hash3)); // Equal values
 
-    try testing.expect(greater_than(hash2, hash1));
-    try testing.expect(!greater_than(hash1, hash2));
+    try testing.expect(greaterThan(hash2, hash1));
+    try testing.expect(!greaterThan(hash1, hash2));
 
     // Test compare function
     try testing.expectEqual(std.math.Order.lt, compare(hash1, hash2));
@@ -419,28 +419,28 @@ test "hash comparison and ordering" {
 }
 
 test "hash bitwise operations" {
-    const hash1 = from_u256(0x1234);
-    const hash2 = from_u256(0x5678);
+    const hash1 = fromU256(0x1234);
+    const hash2 = fromU256(0x5678);
 
     // Test XOR
     const xor_result = xor(hash1, hash2);
-    const expected_xor = from_u256(0x1234 ^ 0x5678);
+    const expected_xor = fromU256(0x1234 ^ 0x5678);
     try testing.expectEqual(expected_xor, xor_result);
 
     // Test AND
-    const and_result = bit_and(hash1, hash2);
-    const expected_and = from_u256(0x1234 & 0x5678);
+    const and_result = bitAnd(hash1, hash2);
+    const expected_and = fromU256(0x1234 & 0x5678);
     try testing.expectEqual(expected_and, and_result);
 
     // Test OR
-    const or_result = bit_or(hash1, hash2);
-    const expected_or = from_u256(0x1234 | 0x5678);
+    const or_result = bitOr(hash1, hash2);
+    const expected_or = fromU256(0x1234 | 0x5678);
     try testing.expectEqual(expected_or, or_result);
 
     // Test NOT
-    const not_result = bit_not(hash1);
+    const not_result = bitNot(hash1);
     const value_1234: u256 = 0x1234;
-    const expected_not = from_u256(~value_1234);
+    const expected_not = fromU256(~value_1234);
     try testing.expectEqual(expected_not, not_result);
 }
 
@@ -453,41 +453,45 @@ test "hash to/from u256 conversion" {
     };
 
     for (test_values) |value| {
-        const hash_val = from_u256(value);
-        const converted_back = to_u256(hash_val);
+        const hash_val = fromU256(value);
+        const converted_back = toU256(hash_val);
         try testing.expectEqual(value, converted_back);
     }
 }
 
 test "hash invalid hex format" {
     // Missing 0x prefix
-    const result1 = from_hex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    const result1 = fromHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
     try testing.expectError(error.InvalidHexFormat, result1);
 
     // Invalid length
-    const result2 = from_hex("0x1234");
+    const result2 = fromHex("0x1234");
     try testing.expectError(error.InvalidHexLength, result2);
 
     // Invalid characters
-    const result3 = from_hex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdeg");
+    const result3 = fromHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdeg");
     try testing.expectError(error.InvalidHexString, result3);
 }
 
 test "hash from hex comptime" {
-    const comptime_hash = from_hex_comptime("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
-    const expected_bytes = [_]u8{
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
-        0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
-    };
-    try testing.expectEqual(expected_bytes, comptime_hash);
+    comptime {
+        const comptime_hash = fromHexComptime("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+        const expected_bytes = [_]u8{
+            0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+            0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+            0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+            0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef,
+        };
+        if (!std.mem.eql(u8, &expected_bytes, &comptime_hash)) {
+            @compileError("comptime hash does not match expected bytes");
+        }
+    }
 }
 
 test "well known hash values" {
     // Test that constants are correct
     try testing.expectEqual(@as(usize, 32), ZERO_HASH.len);
-    try testing.expect(is_zero(ZERO_HASH));
+    try testing.expect(isZero(ZERO_HASH));
 
     // Empty keccak256 should be a specific value
     const empty_keccak = keccak256("");

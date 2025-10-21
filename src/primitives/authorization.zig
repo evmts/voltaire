@@ -94,7 +94,7 @@ pub const Authorization = struct {
         }
 
         // Address must not be zero
-        if (self.address.is_zero()) {
+        if (self.address.isZero()) {
             return AuthorizationError.ZeroAddress;
         }
 
@@ -108,7 +108,7 @@ pub const Authorization = struct {
 };
 
 // Create a signed authorization
-pub fn create_authorization(
+pub fn createAuthorization(
     allocator: Allocator,
     chain_id: u64,
     addr: Address,
@@ -139,7 +139,7 @@ pub fn create_authorization(
 pub const AuthorizationList = []const Authorization;
 
 // RLP encode authorization list
-pub fn encode_authorization_list(allocator: Allocator, auth_list: AuthorizationList) ![]u8 {
+pub fn encodeAuthorizationList(allocator: Allocator, auth_list: AuthorizationList) ![]u8 {
     var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
@@ -209,7 +209,7 @@ pub const DelegationDesignation = struct {
 };
 
 // Batch authorization processing
-pub fn process_authorizations(
+pub fn processAuthorizations(
     allocator: Allocator,
     auth_list: AuthorizationList,
 ) ![]DelegationDesignation {
@@ -237,7 +237,7 @@ pub fn process_authorizations(
 pub const PER_EMPTY_ACCOUNT_COST = 25000;
 pub const PER_AUTH_BASE_COST = 12500;
 
-pub fn calculate_authorization_gas_cost(auth_list: AuthorizationList, empty_accounts: usize) u64 {
+pub fn calculateAuthorizationGasCost(auth_list: AuthorizationList, empty_accounts: usize) u64 {
     const auth_cost = auth_list.len * PER_AUTH_BASE_COST;
     const empty_cost = empty_accounts * PER_EMPTY_ACCOUNT_COST;
     return auth_cost + empty_cost;
@@ -253,7 +253,7 @@ test "authorization creation and recovery" {
     const signer_address = try crypto.getAddress(allocator, private_key);
     const target_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
 
-    const auth = try create_authorization(
+    const auth = try createAuthorization(
         allocator,
         1, // chain_id
         target_address,
@@ -297,7 +297,7 @@ test "authorization list encoding" {
 
     const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
 
-    const auth1 = try create_authorization(
+    const auth1 = try createAuthorization(
         allocator,
         1,
         try Address.from_hex("0x1111111111111111111111111111111111111111"),
@@ -305,7 +305,7 @@ test "authorization list encoding" {
         private_key,
     );
 
-    const auth2 = try create_authorization(
+    const auth2 = try createAuthorization(
         allocator,
         1,
         try Address.from_hex("0x2222222222222222222222222222222222222222"),
@@ -315,7 +315,7 @@ test "authorization list encoding" {
 
     const auth_list = [_]Authorization{ auth1, auth2 };
 
-    const encoded = try encode_authorization_list(allocator, &auth_list);
+    const encoded = try encodeAuthorizationList(allocator, &auth_list);
     defer allocator.free(encoded);
 
     // Should produce valid RLP
@@ -344,7 +344,7 @@ test "batch authorization processing" {
     const private_key1: crypto.PrivateKey = [_]u8{0x01} ** 32;
     const private_key2: crypto.PrivateKey = [_]u8{0x02} ** 32;
 
-    const auth1 = try create_authorization(
+    const auth1 = try createAuthorization(
         allocator,
         1,
         try Address.from_hex("0x1111111111111111111111111111111111111111"),
@@ -352,7 +352,7 @@ test "batch authorization processing" {
         private_key1,
     );
 
-    const auth2 = try create_authorization(
+    const auth2 = try createAuthorization(
         allocator,
         1,
         try Address.from_hex("0x2222222222222222222222222222222222222222"),
@@ -362,7 +362,7 @@ test "batch authorization processing" {
 
     const auth_list = [_]Authorization{ auth1, auth2 };
 
-    const delegations = try process_authorizations(allocator, &auth_list);
+    const delegations = try processAuthorizations(allocator, &auth_list);
     defer allocator.free(delegations);
 
     try testing.expectEqual(@as(usize, 2), delegations.len);
@@ -391,7 +391,7 @@ test "authorization gas cost calculation" {
     };
 
     // 2 authorizations, 1 empty account
-    const gas_cost = calculate_authorization_gas_cost(&auth_list, 1);
+    const gas_cost = calculateAuthorizationGasCost(&auth_list, 1);
 
     // Expected: 2 * 12500 + 1 * 25000 = 50000
     try testing.expectEqual(@as(u64, 50000), gas_cost);

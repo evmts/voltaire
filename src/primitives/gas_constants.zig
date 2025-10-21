@@ -392,7 +392,7 @@ pub const CALL_GAS_RETENTION_DIVISOR: u64 = 64;
 /// ## Formula
 /// The total memory cost for n words is: 3n + n²/512
 /// Where a word is 32 bytes.
-pub fn memory_gas_cost(current_size: u64, new_size: u64) u64 {
+pub fn memoryGasCost(current_size: u64, new_size: u64) u64 {
     if (new_size <= current_size) return 0;
 
     const current_words = wordCount(current_size);
@@ -445,24 +445,24 @@ pub inline fn wordCount(bytes: usize) usize {
 ///
 /// ## Usage
 /// ```zig
-/// const call_cost = call_gas_cost(true, false, true); // Value transfer to existing cold account
-/// const simple_call = call_gas_cost(false, false, false); // Simple warm call
+/// const call_cost = callGasCost(true, false, true); // Value transfer to existing cold account
+/// const simple_call = callGasCost(false, false, false); // Simple warm call
 /// ```
-pub inline fn call_gas_cost(value_transfer: bool, new_account: bool, cold_access: bool) u64 {
+pub inline fn callGasCost(value_transfer: bool, new_account: bool, cold_access: bool) u64 {
     var gas = CALL_BASE_COST;
-    
+
     if (cold_access) {
         gas += CALL_COLD_ACCOUNT_COST;
     }
-    
+
     if (value_transfer) {
         gas += CALL_VALUE_TRANSFER_COST;
     }
-    
+
     if (new_account) {
         gas += CALL_NEW_ACCOUNT_COST;
     }
-    
+
     return gas;
 }
 
@@ -482,17 +482,17 @@ pub inline fn call_gas_cost(value_transfer: bool, new_account: bool, cold_access
 ///
 /// ## Usage
 /// ```zig
-/// const cost = sstore_gas_cost(0, 0, 42, true); // Set zero to non-zero (cold)
-/// const update_cost = sstore_gas_cost(10, 10, 20, false); // Modify existing value (warm)
+/// const cost = sstoreGasCost(0, 0, 42, true); // Set zero to non-zero (cold)
+/// const update_cost = sstoreGasCost(10, 10, 20, false); // Modify existing value (warm)
 /// ```
-pub inline fn sstore_gas_cost(current: u256, original: u256, new: u256, is_cold: bool) u64 {
+pub inline fn sstoreGasCost(current: u256, original: u256, new: u256, is_cold: bool) u64 {
     var gas: u64 = 0;
-    
+
     // Add cold access cost if applicable (EIP-2929)
     if (is_cold) {
         gas += ColdSloadCost;
     }
-    
+
     // Determine storage operation type and cost
     if (original == current and current == new) {
         // No change - minimum cost
@@ -510,7 +510,7 @@ pub inline fn sstore_gas_cost(current: u256, original: u256, new: u256, is_cold:
         // Subsequent modification (already modified in this transaction)
         gas += SloadGas; // Same as warm SLOAD
     }
-    
+
     return gas;
 }
 
@@ -527,10 +527,10 @@ pub inline fn sstore_gas_cost(current: u256, original: u256, new: u256, is_cold:
 ///
 /// ## Usage
 /// ```zig
-/// const create_cost = create_gas_cost(1024, InitcodeWordGas); // CREATE with 1KB init code
-/// const large_create = create_gas_cost(32768, InitcodeWordGas); // Large contract deployment
+/// const create_cost = createGasCost(1024, InitcodeWordGas); // CREATE with 1KB init code
+/// const large_create = createGasCost(32768, InitcodeWordGas); // Large contract deployment
 /// ```
-pub inline fn create_gas_cost(init_code_size: usize, init_code_word_cost: u64) u64 {
+pub inline fn createGasCost(init_code_size: usize, init_code_word_cost: u64) u64 {
     const word_count = wordCount(init_code_size);
     return CreateGas + (word_count * init_code_word_cost);
 }
@@ -549,10 +549,10 @@ pub inline fn create_gas_cost(init_code_size: usize, init_code_word_cost: u64) u
 ///
 /// ## Usage
 /// ```zig
-/// const log0_cost = log_gas_cost(0, 256); // LOG0 with 256 bytes of data
-/// const log3_cost = log_gas_cost(3, 128); // LOG3 with 3 topics and 128 bytes of data
+/// const log0_cost = logGasCost(0, 256); // LOG0 with 256 bytes of data
+/// const log3_cost = logGasCost(3, 128); // LOG3 with 3 topics and 128 bytes of data
 /// ```
-pub inline fn log_gas_cost(topic_count: u8, data_size: usize) u64 {
+pub inline fn logGasCost(topic_count: u8, data_size: usize) u64 {
     var gas = LogGas; // Base cost
     gas += @as(u64, topic_count) * LogTopicGas; // Cost per topic
     gas += @as(u64, data_size) * LogDataGas; // Cost per byte of data
@@ -572,10 +572,10 @@ pub inline fn log_gas_cost(topic_count: u8, data_size: usize) u64 {
 ///
 /// ## Usage
 /// ```zig
-/// const copy_cost = copy_gas_cost(1024); // Copy 1KB of data
-/// const small_copy = copy_gas_cost(64); // Copy 64 bytes (2 words)
+/// const copy_cost = copyGasCost(1024); // Copy 1KB of data
+/// const small_copy = copyGasCost(64); // Copy 64 bytes (2 words)
 /// ```
-pub inline fn copy_gas_cost(size: usize) u64 {
+pub inline fn copyGasCost(size: usize) u64 {
     const word_count = wordCount(size);
     return word_count * CopyGas;
 }
@@ -592,10 +592,10 @@ pub inline fn copy_gas_cost(size: usize) u64 {
 ///
 /// ## Usage
 /// ```zig
-/// const hash_cost = keccak256_gas_cost(128); // Hash 128 bytes of data
-/// const large_hash = keccak256_gas_cost(4096); // Hash 4KB of data
+/// const hash_cost = keccak256GasCost(128); // Hash 128 bytes of data
+/// const large_hash = keccak256GasCost(4096); // Hash 4KB of data
 /// ```
-pub inline fn keccak256_gas_cost(data_size: usize) u64 {
+pub inline fn keccak256GasCost(data_size: usize) u64 {
     const word_count = wordCount(data_size);
     return Keccak256Gas + (word_count * Keccak256WordGas);
 }
@@ -606,138 +606,138 @@ pub inline fn keccak256_gas_cost(data_size: usize) u64 {
 
 const testing = std.testing;
 
-test "call_gas_cost function" {
+test "callGasCost function" {
     // Test basic call (warm, no value transfer, existing account)
-    const basic_call = call_gas_cost(false, false, false);
+    const basic_call = callGasCost(false, false, false);
     try testing.expectEqual(CALL_BASE_COST, basic_call);
-    
+
     // Test cold call with no value transfer
-    const cold_call = call_gas_cost(false, false, true);
+    const cold_call = callGasCost(false, false, true);
     try testing.expectEqual(CALL_BASE_COST + CALL_COLD_ACCOUNT_COST, cold_call);
-    
+
     // Test warm call with value transfer
-    const value_call = call_gas_cost(true, false, false);
+    const value_call = callGasCost(true, false, false);
     try testing.expectEqual(CALL_BASE_COST + CALL_VALUE_TRANSFER_COST, value_call);
-    
+
     // Test new account creation
-    const new_account_call = call_gas_cost(false, true, false);
+    const new_account_call = callGasCost(false, true, false);
     try testing.expectEqual(CALL_BASE_COST + CALL_NEW_ACCOUNT_COST, new_account_call);
-    
+
     // Test maximum cost (cold call with value transfer to new account)
-    const max_cost_call = call_gas_cost(true, true, true);
+    const max_cost_call = callGasCost(true, true, true);
     const expected_max = CALL_BASE_COST + CALL_COLD_ACCOUNT_COST + CALL_VALUE_TRANSFER_COST + CALL_NEW_ACCOUNT_COST;
     try testing.expectEqual(expected_max, max_cost_call);
 }
 
-test "sstore_gas_cost function" {
+test "sstoreGasCost function" {
     // Test no change (current == original == new)
-    const no_change = sstore_gas_cost(42, 42, 42, false);
+    const no_change = sstoreGasCost(42, 42, 42, false);
     try testing.expectEqual(SloadGas, no_change);
-    
+
     // Test setting zero to non-zero (most expensive case)
-    const zero_to_nonzero = sstore_gas_cost(0, 0, 42, false);
+    const zero_to_nonzero = sstoreGasCost(0, 0, 42, false);
     try testing.expectEqual(SstoreSetGas, zero_to_nonzero);
-    
+
     // Test cold access with zero to non-zero
-    const cold_zero_to_nonzero = sstore_gas_cost(0, 0, 42, true);
+    const cold_zero_to_nonzero = sstoreGasCost(0, 0, 42, true);
     try testing.expectEqual(ColdSloadCost + SstoreSetGas, cold_zero_to_nonzero);
-    
+
     // Test modifying existing non-zero value
-    const modify_nonzero = sstore_gas_cost(10, 10, 20, false);
+    const modify_nonzero = sstoreGasCost(10, 10, 20, false);
     try testing.expectEqual(SstoreResetGas, modify_nonzero);
-    
+
     // Test subsequent modification (current != original)
-    const subsequent_mod = sstore_gas_cost(20, 10, 30, false);
+    const subsequent_mod = sstoreGasCost(20, 10, 30, false);
     try testing.expectEqual(SloadGas, subsequent_mod);
 }
 
-test "create_gas_cost function" {
+test "createGasCost function" {
     // Test empty init code
-    const empty_create = create_gas_cost(0, InitcodeWordGas);
+    const empty_create = createGasCost(0, InitcodeWordGas);
     try testing.expectEqual(CreateGas, empty_create);
-    
+
     // Test 32 bytes (1 word) of init code
-    const one_word_create = create_gas_cost(32, InitcodeWordGas);
+    const one_word_create = createGasCost(32, InitcodeWordGas);
     try testing.expectEqual(CreateGas + InitcodeWordGas, one_word_create);
-    
+
     // Test 64 bytes (2 words) of init code
-    const two_word_create = create_gas_cost(64, InitcodeWordGas);
+    const two_word_create = createGasCost(64, InitcodeWordGas);
     try testing.expectEqual(CreateGas + 2 * InitcodeWordGas, two_word_create);
-    
+
     // Test 33 bytes (2 words due to rounding up) of init code
-    const partial_word_create = create_gas_cost(33, InitcodeWordGas);
+    const partial_word_create = createGasCost(33, InitcodeWordGas);
     try testing.expectEqual(CreateGas + 2 * InitcodeWordGas, partial_word_create);
 }
 
-test "log_gas_cost function" {
+test "logGasCost function" {
     // Test LOG0 (no topics)
-    const log0_cost = log_gas_cost(0, 0);
+    const log0_cost = logGasCost(0, 0);
     try testing.expectEqual(LogGas, log0_cost);
-    
+
     // Test LOG1 with no data
-    const log1_no_data = log_gas_cost(1, 0);
+    const log1_no_data = logGasCost(1, 0);
     try testing.expectEqual(LogGas + LogTopicGas, log1_no_data);
-    
+
     // Test LOG0 with data
-    const log0_with_data = log_gas_cost(0, 100);
+    const log0_with_data = logGasCost(0, 100);
     try testing.expectEqual(LogGas + 100 * LogDataGas, log0_with_data);
-    
+
     // Test LOG4 with data (maximum topics)
-    const log4_with_data = log_gas_cost(4, 256);
+    const log4_with_data = logGasCost(4, 256);
     const expected = LogGas + 4 * LogTopicGas + 256 * LogDataGas;
     try testing.expectEqual(expected, log4_with_data);
 }
 
-test "copy_gas_cost function" {
+test "copyGasCost function" {
     // Test zero size copy
-    const zero_copy = copy_gas_cost(0);
+    const zero_copy = copyGasCost(0);
     try testing.expectEqual(0, zero_copy);
-    
+
     // Test 32 bytes (1 word)
-    const one_word_copy = copy_gas_cost(32);
+    const one_word_copy = copyGasCost(32);
     try testing.expectEqual(CopyGas, one_word_copy);
-    
+
     // Test 64 bytes (2 words)
-    const two_word_copy = copy_gas_cost(64);
+    const two_word_copy = copyGasCost(64);
     try testing.expectEqual(2 * CopyGas, two_word_copy);
-    
+
     // Test 33 bytes (2 words due to rounding up)
-    const partial_word_copy = copy_gas_cost(33);
+    const partial_word_copy = copyGasCost(33);
     try testing.expectEqual(2 * CopyGas, partial_word_copy);
 }
 
-test "keccak256_gas_cost function" {
+test "keccak256GasCost function" {
     // Test zero size hash
-    const zero_hash = keccak256_gas_cost(0);
+    const zero_hash = keccak256GasCost(0);
     try testing.expectEqual(Keccak256Gas, zero_hash);
-    
+
     // Test 32 bytes (1 word)
-    const one_word_hash = keccak256_gas_cost(32);
+    const one_word_hash = keccak256GasCost(32);
     try testing.expectEqual(Keccak256Gas + Keccak256WordGas, one_word_hash);
-    
+
     // Test 64 bytes (2 words)
-    const two_word_hash = keccak256_gas_cost(64);
+    const two_word_hash = keccak256GasCost(64);
     try testing.expectEqual(Keccak256Gas + 2 * Keccak256WordGas, two_word_hash);
-    
+
     // Test 33 bytes (2 words due to rounding up)
-    const partial_word_hash = keccak256_gas_cost(33);
+    const partial_word_hash = keccak256GasCost(33);
     try testing.expectEqual(Keccak256Gas + 2 * Keccak256WordGas, partial_word_hash);
 }
 
-test "memory_gas_cost edge cases" {
+test "memoryGasCost edge cases" {
     // Test same sizes (no expansion)
-    try testing.expectEqual(@as(u64, 0), memory_gas_cost(1000, 1000));
-    try testing.expectEqual(@as(u64, 0), memory_gas_cost(2048, 1000)); // new_size < current_size
-    
+    try testing.expectEqual(@as(u64, 0), memoryGasCost(1000, 1000));
+    try testing.expectEqual(@as(u64, 0), memoryGasCost(2048, 1000)); // new_size < current_size
+
     // Test zero expansion
-    try testing.expectEqual(@as(u64, 0), memory_gas_cost(0, 0));
-    
+    try testing.expectEqual(@as(u64, 0), memoryGasCost(0, 0));
+
     // Test small expansions (verifiable manually)
-    const expand_to_32 = memory_gas_cost(0, 32);
+    const expand_to_32 = memoryGasCost(0, 32);
     const expected_32 = 3 * 1 + (1 * 1) / 512; // 1 word: 3 + 0 = 3
     try testing.expectEqual(expected_32, expand_to_32);
-    
-    const expand_to_64 = memory_gas_cost(0, 64);
+
+    const expand_to_64 = memoryGasCost(0, 64);
     const expected_64 = 3 * 2 + (2 * 2) / 512; // 2 words: 6 + 0 = 6
     try testing.expectEqual(expected_64, expand_to_64);
 }
@@ -769,47 +769,47 @@ test "wordCount edge cases" {
 // Additional Comprehensive Tests
 // ============================================================================
 
-test "memory_gas_cost - quadratic growth behavior" {
+test "memoryGasCost - quadratic growth behavior" {
     // Test quadratic growth for larger expansions
     // Formula: gas = 3n + n²/512
-    
+
     // 512 bytes = 16 words
     // Cost = 3*16 + 16²/512 = 48 + 0.5 = 48
-    const cost_512 = memory_gas_cost(0, 512);
+    const cost_512 = memoryGasCost(0, 512);
     try testing.expectEqual(@as(u64, 48), cost_512);
-    
+
     // 1024 bytes = 32 words
     // Cost = 3*32 + 32²/512 = 96 + 2 = 98
-    const cost_1024 = memory_gas_cost(0, 1024);
+    const cost_1024 = memoryGasCost(0, 1024);
     try testing.expectEqual(@as(u64, 98), cost_1024);
-    
+
     // 2048 bytes = 64 words
     // Cost = 3*64 + 64²/512 = 192 + 8 = 200
-    const cost_2048 = memory_gas_cost(0, 2048);
+    const cost_2048 = memoryGasCost(0, 2048);
     try testing.expectEqual(@as(u64, 200), cost_2048);
 }
 
-test "memory_gas_cost - incremental expansions" {
+test "memoryGasCost - incremental expansions" {
     // Test expanding from existing memory
-    const expand_1024_to_2048 = memory_gas_cost(1024, 2048);
-    const total_2048 = memory_gas_cost(0, 2048);
-    const total_1024 = memory_gas_cost(0, 1024);
-    
+    const expand_1024_to_2048 = memoryGasCost(1024, 2048);
+    const total_2048 = memoryGasCost(0, 2048);
+    const total_1024 = memoryGasCost(0, 1024);
+
     // Cost should be the difference
     try testing.expectEqual(total_2048 - total_1024, expand_1024_to_2048);
-    
+
     // Partial word expansions
-    const expand_0_to_1 = memory_gas_cost(0, 1);
-    const expand_0_to_31 = memory_gas_cost(0, 31);
-    const expand_0_to_32 = memory_gas_cost(0, 32);
-    
+    const expand_0_to_1 = memoryGasCost(0, 1);
+    const expand_0_to_31 = memoryGasCost(0, 31);
+    const expand_0_to_32 = memoryGasCost(0, 32);
+
     // All should cost the same (1 word)
     try testing.expectEqual(expand_0_to_1, expand_0_to_31);
     try testing.expectEqual(expand_0_to_31, expand_0_to_32);
     try testing.expectEqual(@as(u64, 3), expand_0_to_1);
 }
 
-test "call_gas_cost - all flag combinations" {
+test "callGasCost - all flag combinations" {
     // Test all 8 combinations of the 3 boolean parameters
     const scenarios = [_]struct {
         value_transfer: bool,
@@ -834,100 +834,100 @@ test "call_gas_cost - all flag combinations" {
         // All flags (maximum cost)
         .{ .value_transfer = true, .new_account = true, .cold_access = true, .expected = 100 + 2600 + 9000 + 25000 },
     };
-    
+
     for (scenarios) |scenario| {
-        const cost = call_gas_cost(scenario.value_transfer, scenario.new_account, scenario.cold_access);
+        const cost = callGasCost(scenario.value_transfer, scenario.new_account, scenario.cold_access);
         try testing.expectEqual(scenario.expected, cost);
     }
 }
 
-test "sstore_gas_cost - all state transitions" {
+test "sstoreGasCost - all state transitions" {
     // Test zero to non-zero (most expensive)
-    try testing.expectEqual(@as(u64, 20000), sstore_gas_cost(0, 0, 1, false));
-    try testing.expectEqual(@as(u64, 22100), sstore_gas_cost(0, 0, 1, true)); // cold
-    
+    try testing.expectEqual(@as(u64, 20000), sstoreGasCost(0, 0, 1, false));
+    try testing.expectEqual(@as(u64, 22100), sstoreGasCost(0, 0, 1, true)); // cold
+
     // Test non-zero to different non-zero
-    try testing.expectEqual(@as(u64, 5000), sstore_gas_cost(1, 1, 2, false));
-    try testing.expectEqual(@as(u64, 7100), sstore_gas_cost(1, 1, 2, true)); // cold
-    
+    try testing.expectEqual(@as(u64, 5000), sstoreGasCost(1, 1, 2, false));
+    try testing.expectEqual(@as(u64, 7100), sstoreGasCost(1, 1, 2, true)); // cold
+
     // Test non-zero to zero (clearing)
-    try testing.expectEqual(@as(u64, 5000), sstore_gas_cost(42, 42, 0, false));
-    try testing.expectEqual(@as(u64, 7100), sstore_gas_cost(42, 42, 0, true)); // cold
-    
+    try testing.expectEqual(@as(u64, 5000), sstoreGasCost(42, 42, 0, false));
+    try testing.expectEqual(@as(u64, 7100), sstoreGasCost(42, 42, 0, true)); // cold
+
     // Test subsequent modifications
-    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(2, 1, 3, false));
-    try testing.expectEqual(@as(u64, 2200), sstore_gas_cost(2, 1, 3, true)); // cold
+    try testing.expectEqual(@as(u64, 100), sstoreGasCost(2, 1, 3, false));
+    try testing.expectEqual(@as(u64, 2200), sstoreGasCost(2, 1, 3, true)); // cold
 }
 
-test "create_gas_cost - init code size variations" {
+test "createGasCost - init code size variations" {
     // Test various init code sizes
-    try testing.expectEqual(@as(u64, 32000), create_gas_cost(0, InitcodeWordGas));
-    try testing.expectEqual(@as(u64, 32002), create_gas_cost(1, InitcodeWordGas));
-    try testing.expectEqual(@as(u64, 32002), create_gas_cost(32, InitcodeWordGas));
-    try testing.expectEqual(@as(u64, 32004), create_gas_cost(33, InitcodeWordGas));
-    try testing.expectEqual(@as(u64, 32064), create_gas_cost(1024, InitcodeWordGas));
-    
+    try testing.expectEqual(@as(u64, 32000), createGasCost(0, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32002), createGasCost(1, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32002), createGasCost(32, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32004), createGasCost(33, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32064), createGasCost(1024, InitcodeWordGas));
+
     // Test maximum init code size (EIP-3860)
     const max_size = MaxInitcodeSize; // 49152 bytes
-    const max_cost = create_gas_cost(max_size, InitcodeWordGas);
+    const max_cost = createGasCost(max_size, InitcodeWordGas);
     const expected = 32000 + (49152 / 32) * 2; // 32000 + 1536 * 2 = 35072
     try testing.expectEqual(expected, max_cost);
 }
 
-test "log_gas_cost - all LOG opcodes" {
+test "logGasCost - all LOG opcodes" {
     // Test LOG0 through LOG4
-    try testing.expectEqual(@as(u64, 375), log_gas_cost(0, 0)); // LOG0
-    try testing.expectEqual(@as(u64, 750), log_gas_cost(1, 0)); // LOG1
-    try testing.expectEqual(@as(u64, 1125), log_gas_cost(2, 0)); // LOG2
-    try testing.expectEqual(@as(u64, 1500), log_gas_cost(3, 0)); // LOG3
-    try testing.expectEqual(@as(u64, 1875), log_gas_cost(4, 0)); // LOG4
-    
+    try testing.expectEqual(@as(u64, 375), logGasCost(0, 0)); // LOG0
+    try testing.expectEqual(@as(u64, 750), logGasCost(1, 0)); // LOG1
+    try testing.expectEqual(@as(u64, 1125), logGasCost(2, 0)); // LOG2
+    try testing.expectEqual(@as(u64, 1500), logGasCost(3, 0)); // LOG3
+    try testing.expectEqual(@as(u64, 1875), logGasCost(4, 0)); // LOG4
+
     // Test with data
     const data_size = 256;
-    try testing.expectEqual(@as(u64, 375 + 256 * 8), log_gas_cost(0, data_size));
-    try testing.expectEqual(@as(u64, 1875 + 256 * 8), log_gas_cost(4, data_size));
+    try testing.expectEqual(@as(u64, 375 + 256 * 8), logGasCost(0, data_size));
+    try testing.expectEqual(@as(u64, 1875 + 256 * 8), logGasCost(4, data_size));
 }
 
-test "copy_gas_cost - alignment with CODECOPY operations" {
+test "copyGasCost - alignment with CODECOPY operations" {
     // Test common copy sizes
     const sizes = [_]usize{ 0, 1, 32, 33, 64, 100, 256, 512, 1024, 4096 };
-    
+
     for (sizes) |size| {
-        const cost = copy_gas_cost(size);
+        const cost = copyGasCost(size);
         const expected_words = wordCount(size);
         try testing.expectEqual(expected_words * CopyGas, cost);
     }
 }
 
-test "keccak256_gas_cost - common hash scenarios" {
+test "keccak256GasCost - common hash scenarios" {
     // Empty input
-    try testing.expectEqual(@as(u64, 30), keccak256_gas_cost(0));
-    
+    try testing.expectEqual(@as(u64, 30), keccak256GasCost(0));
+
     // Common sizes
-    try testing.expectEqual(@as(u64, 36), keccak256_gas_cost(32)); // 1 word
-    try testing.expectEqual(@as(u64, 42), keccak256_gas_cost(64)); // 2 words
-    try testing.expectEqual(@as(u64, 78), keccak256_gas_cost(256)); // 8 words
-    
+    try testing.expectEqual(@as(u64, 36), keccak256GasCost(32)); // 1 word
+    try testing.expectEqual(@as(u64, 42), keccak256GasCost(64)); // 2 words
+    try testing.expectEqual(@as(u64, 78), keccak256GasCost(256)); // 8 words
+
     // Large hashes
-    try testing.expectEqual(@as(u64, 222), keccak256_gas_cost(1024)); // 32 words
-    try testing.expectEqual(@as(u64, 798), keccak256_gas_cost(4096)); // 128 words
+    try testing.expectEqual(@as(u64, 222), keccak256GasCost(1024)); // 32 words
+    try testing.expectEqual(@as(u64, 798), keccak256GasCost(4096)); // 128 words
 }
 
 test "gas calculation overflow protection" {
     // Test that calculations handle large inputs without overflow
-    
+
     // Large memory expansion
-    const large_memory = memory_gas_cost(0, 1_000_000);
+    const large_memory = memoryGasCost(0, 1_000_000);
     try testing.expect(large_memory > 0);
     try testing.expect(large_memory < std.math.maxInt(u64));
-    
+
     // Large copy operation
-    const large_copy = copy_gas_cost(1_000_000);
+    const large_copy = copyGasCost(1_000_000);
     try testing.expect(large_copy > 0);
     try testing.expect(large_copy < std.math.maxInt(u64));
-    
+
     // Large hash operation
-    const large_hash = keccak256_gas_cost(1_000_000);
+    const large_hash = keccak256GasCost(1_000_000);
     try testing.expect(large_hash > 0);
     try testing.expect(large_hash < std.math.maxInt(u64));
 }
@@ -960,17 +960,17 @@ test "gas constants match Ethereum specifications" {
 // Edge Cases and Boundary Tests
 // ============================================================================
 
-test "memory_gas_cost - maximum memory size" {
+test "memoryGasCost - maximum memory size" {
     // Test near maximum memory sizes
     const max_memory = 0x1FFFFFFFE0; // Maximum EVM memory size
     const near_max = max_memory - 32;
-    
+
     // Expanding to maximum should work
-    const expand_to_max = memory_gas_cost(0, max_memory);
+    const expand_to_max = memoryGasCost(0, max_memory);
     try testing.expect(expand_to_max > 0);
-    
+
     // Expanding from near-max to max
-    const expand_near_to_max = memory_gas_cost(near_max, max_memory);
+    const expand_near_to_max = memoryGasCost(near_max, max_memory);
     try testing.expect(expand_near_to_max > 0);
 }
 
@@ -985,38 +985,38 @@ test "wordCount - special boundary cases" {
     try testing.expectEqual(@as(usize, 768), wordCount(max_contract_size));
 }
 
-test "sstore_gas_cost - complex state transitions" {
+test "sstoreGasCost - complex state transitions" {
     // Test transition from non-zero to different non-zero back to original
     // This tests the "dirty" state tracking
-    
+
     // Original = 10, Current = 20, New = 10 (reverting to original)
-    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(20, 10, 10, false));
-    
+    try testing.expectEqual(@as(u64, 100), sstoreGasCost(20, 10, 10, false));
+
     // Original = 0, Current = 10, New = 0 (reverting to original zero)
-    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(10, 0, 0, false));
-    
+    try testing.expectEqual(@as(u64, 100), sstoreGasCost(10, 0, 0, false));
+
     // Original = 10, Current = 0, New = 20 (was cleared, now setting different)
-    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(0, 10, 20, false));
+    try testing.expectEqual(@as(u64, 100), sstoreGasCost(0, 10, 20, false));
 }
 
-test "create_gas_cost - exact word boundaries" {
+test "createGasCost - exact word boundaries" {
     // Test exact multiples of 32 bytes
     const word_sizes = [_]usize{ 32, 64, 128, 256, 512, 1024, 2048, 4096 };
-    
+
     for (word_sizes) |size| {
-        const cost = create_gas_cost(size, InitcodeWordGas);
+        const cost = createGasCost(size, InitcodeWordGas);
         const expected = CreateGas + (size / 32) * InitcodeWordGas;
         try testing.expectEqual(expected, cost);
     }
 }
 
-test "log_gas_cost - maximum data sizes" {
+test "logGasCost - maximum data sizes" {
     // Test with large data sizes that might be used in practice
     const large_sizes = [_]usize{ 1024, 2048, 4096, 8192, 16384 };
-    
+
     for (large_sizes) |size| {
         for (0..5) |topic_count| {
-            const cost = log_gas_cost(@intCast(topic_count), size);
+            const cost = logGasCost(@intCast(topic_count), size);
             const expected = LogGas + topic_count * LogTopicGas + size * LogDataGas;
             try testing.expectEqual(expected, cost);
         }
@@ -1033,12 +1033,12 @@ test "integration - CREATE2 full gas calculation" {
     const salt_size = 32;
     const address_size = 20;
     const prefix_size = 1; // 0xff prefix
-    
+
     // Calculate individual components
-    const create_cost = create_gas_cost(init_code_size, InitcodeWordGas);
+    const create_cost = createGasCost(init_code_size, InitcodeWordGas);
     const hash_input_size = prefix_size + address_size + salt_size + init_code_size;
-    const hash_cost = keccak256_gas_cost(hash_input_size);
-    
+    const hash_cost = keccak256GasCost(hash_input_size);
+
     // Total cost should be sum of components
     const total_cost = create_cost + hash_cost;
     try testing.expect(total_cost > CreateGas);
@@ -1051,11 +1051,11 @@ test "integration - memory expansion with copy" {
     const copy_offset = 2000;
     const copy_size = 500;
     const final_mem = copy_offset + copy_size; // 2500
-    
+
     // Calculate costs
-    const expansion_cost = memory_gas_cost(current_mem, final_mem);
-    const copy_cost = copy_gas_cost(copy_size);
-    
+    const expansion_cost = memoryGasCost(current_mem, final_mem);
+    const copy_cost = copyGasCost(copy_size);
+
     // Verify costs are reasonable
     try testing.expect(expansion_cost > 0);
     try testing.expect(copy_cost == wordCount(copy_size) * CopyGas);
@@ -1063,22 +1063,22 @@ test "integration - memory expansion with copy" {
 
 test "integration - storage operation sequence" {
     // Simulate a sequence of storage operations in a transaction
-    
+
     // First access (cold)
     const first_read = ColdSloadCost; // 2100
-    
+
     // First write (cold, zero to non-zero)
-    const first_write = sstore_gas_cost(0, 0, 42, true); // 22100
-    
+    const first_write = sstoreGasCost(0, 0, 42, true); // 22100
+
     // Second read (warm)
     const second_read = SloadGas; // 100
-    
+
     // Second write (warm, modify)
-    const second_write = sstore_gas_cost(42, 42, 100, false); // 5000
-    
+    const second_write = sstoreGasCost(42, 42, 100, false); // 5000
+
     // Third write (warm, already modified)
-    const third_write = sstore_gas_cost(100, 42, 200, false); // 100
-    
+    const third_write = sstoreGasCost(100, 42, 200, false); // 100
+
     // Total sequence cost
     const total = first_read + first_write + second_read + second_write + third_write;
     try testing.expectEqual(@as(u64, 29400), total);
@@ -1090,14 +1090,14 @@ test "integration - storage operation sequence" {
 
 test "storage refunds - clearing storage" {
     // Test gas refund calculations for storage clearing
-    
+
     // Clear storage (non-zero to zero)
-    const clear_cost = sstore_gas_cost(42, 42, 0, false);
+    const clear_cost = sstoreGasCost(42, 42, 0, false);
     try testing.expectEqual(SstoreResetGas, clear_cost);
-    
+
     // Refund should be SstoreRefundGas
     try testing.expectEqual(@as(u64, 4800), SstoreRefundGas);
-    
+
     // Maximum refund is gas_used / MaxRefundQuotient
     const gas_used = 100000;
     const max_refund = gas_used / MaxRefundQuotient;
@@ -1293,34 +1293,34 @@ test "hardfork - EIP-4844 Cancun blob transactions" {
 // ============================================================================
 
 /// Calculate CALL gas cost based on hardfork rules
-pub fn call_gas_cost_with_hardfork(
+pub fn callGasCostWithHardfork(
     value_transfer: bool,
     new_account: bool,
     cold_access: bool,
     is_berlin_or_later: bool,
 ) u64 {
     var gas = CALL_BASE_COST;
-    
+
     // EIP-2929 (Berlin): Cold access costs
     if (is_berlin_or_later and cold_access) {
         gas += CALL_COLD_ACCOUNT_COST;
     }
-    
+
     // Value transfer cost (all hardforks)
     if (value_transfer) {
         gas += CALL_VALUE_TRANSFER_COST;
     }
-    
+
     // New account creation cost (all hardforks)
     if (new_account) {
         gas += CALL_NEW_ACCOUNT_COST;
     }
-    
+
     return gas;
 }
 
 /// Calculate storage gas cost based on hardfork rules
-pub fn sstore_gas_cost_with_hardfork(
+pub fn sstoreGasCostWithHardfork(
     current: u256,
     original: u256,
     new: u256,
@@ -1329,12 +1329,12 @@ pub fn sstore_gas_cost_with_hardfork(
     is_istanbul_or_later: bool,
 ) u64 {
     var gas: u64 = 0;
-    
+
     // EIP-2929 (Berlin): Add cold access cost if applicable
     if (is_berlin_or_later and is_cold) {
         gas += ColdSloadCost;
     }
-    
+
     // EIP-2200 (Istanbul) storage gas calculation
     if (is_istanbul_or_later) {
         // Istanbul rules
@@ -1360,20 +1360,20 @@ pub fn sstore_gas_cost_with_hardfork(
             gas += 5000; // Reset existing
         }
     }
-    
+
     return gas;
 }
 
 /// Calculate precompile gas cost based on hardfork
-pub fn ecadd_gas_cost_with_hardfork(is_istanbul_or_later: bool) u64 {
+pub fn ecaddGasCostWithHardfork(is_istanbul_or_later: bool) u64 {
     return if (is_istanbul_or_later) ECADD_GAS_COST else ECADD_GAS_COST_BYZANTIUM;
 }
 
-pub fn ecmul_gas_cost_with_hardfork(is_istanbul_or_later: bool) u64 {
+pub fn ecmulGasCostWithHardfork(is_istanbul_or_later: bool) u64 {
     return if (is_istanbul_or_later) ECMUL_GAS_COST else ECMUL_GAS_COST_BYZANTIUM;
 }
 
-pub fn ecpairing_gas_cost_with_hardfork(pair_count: usize, is_istanbul_or_later: bool) u64 {
+pub fn ecpairingGasCostWithHardfork(pair_count: usize, is_istanbul_or_later: bool) u64 {
     if (is_istanbul_or_later) {
         return ECPAIRING_BASE_GAS_COST + @as(u64, pair_count) * ECPAIRING_PER_PAIR_GAS_COST;
     } else {
@@ -1383,42 +1383,42 @@ pub fn ecpairing_gas_cost_with_hardfork(pair_count: usize, is_istanbul_or_later:
 
 test "hardfork gas calculation functions" {
     // Test CALL gas with hardfork differences
-    
+
     // Pre-Berlin: no cold access penalty
-    const pre_berlin_call = call_gas_cost_with_hardfork(true, false, true, false);
+    const pre_berlin_call = callGasCostWithHardfork(true, false, true, false);
     try testing.expectEqual(@as(u64, 9100), pre_berlin_call); // 100 + 9000
-    
+
     // Post-Berlin: cold access penalty
-    const post_berlin_call = call_gas_cost_with_hardfork(true, false, true, true);
+    const post_berlin_call = callGasCostWithHardfork(true, false, true, true);
     try testing.expectEqual(@as(u64, 11700), post_berlin_call); // 100 + 2600 + 9000
-    
+
     // Test storage gas with hardfork differences
-    
+
     // Pre-Istanbul simple rules
-    const pre_istanbul_sstore = sstore_gas_cost_with_hardfork(0, 0, 42, false, false, false);
+    const pre_istanbul_sstore = sstoreGasCostWithHardfork(0, 0, 42, false, false, false);
     try testing.expectEqual(@as(u64, 20000), pre_istanbul_sstore);
-    
+
     // Post-Istanbul with warm access
-    const post_istanbul_warm = sstore_gas_cost_with_hardfork(42, 42, 42, false, false, true);
+    const post_istanbul_warm = sstoreGasCostWithHardfork(42, 42, 42, false, false, true);
     try testing.expectEqual(@as(u64, 200), post_istanbul_warm);
-    
+
     // Post-Berlin with warm access
-    const post_berlin_warm = sstore_gas_cost_with_hardfork(42, 42, 42, false, true, true);
+    const post_berlin_warm = sstoreGasCostWithHardfork(42, 42, 42, false, true, true);
     try testing.expectEqual(@as(u64, 100), post_berlin_warm);
-    
+
     // Test precompile gas with hardfork differences
-    
+
     // Pre-Istanbul ECADD
-    try testing.expectEqual(@as(u64, 500), ecadd_gas_cost_with_hardfork(false));
-    
+    try testing.expectEqual(@as(u64, 500), ecaddGasCostWithHardfork(false));
+
     // Post-Istanbul ECADD
-    try testing.expectEqual(@as(u64, 150), ecadd_gas_cost_with_hardfork(true));
-    
+    try testing.expectEqual(@as(u64, 150), ecaddGasCostWithHardfork(true));
+
     // ECPAIRING with 2 pairs
-    const pre_istanbul_pairing = ecpairing_gas_cost_with_hardfork(2, false);
+    const pre_istanbul_pairing = ecpairingGasCostWithHardfork(2, false);
     try testing.expectEqual(@as(u64, 260000), pre_istanbul_pairing); // 100000 + 2*80000
-    
-    const post_istanbul_pairing = ecpairing_gas_cost_with_hardfork(2, true);
+
+    const post_istanbul_pairing = ecpairingGasCostWithHardfork(2, true);
     try testing.expectEqual(@as(u64, 113000), post_istanbul_pairing); // 45000 + 2*34000
 }
 
@@ -1428,21 +1428,21 @@ test "hardfork gas calculation functions" {
 
 test "hardfork - CREATE2 gas calculation across hardforks" {
     // CREATE2 introduced in Constantinople
-    
+
     // Pre-Shanghai: no init code word cost
     const init_code_size = 1000;
-    const pre_shanghai_cost = create_gas_cost(init_code_size, 0);
+    const pre_shanghai_cost = createGasCost(init_code_size, 0);
     try testing.expectEqual(@as(u64, 32000), pre_shanghai_cost);
-    
+
     // Post-Shanghai: init code word cost
-    const post_shanghai_cost = create_gas_cost(init_code_size, InitcodeWordGas);
+    const post_shanghai_cost = createGasCost(init_code_size, InitcodeWordGas);
     const expected_words = wordCount(init_code_size);
     try testing.expectEqual(32000 + expected_words * 2, post_shanghai_cost);
-    
+
     // Hash cost for CREATE2 (unchanged across hardforks)
     const salt_and_address_size = 85; // 1 + 20 + 32 + 32
     const hash_input_size = salt_and_address_size + init_code_size;
-    const hash_cost = keccak256_gas_cost(hash_input_size);
+    const hash_cost = keccak256GasCost(hash_input_size);
     try testing.expectEqual(30 + wordCount(hash_input_size) * 6, hash_cost);
 }
 
@@ -1475,16 +1475,16 @@ test "hardfork - transaction type gas costs" {
 test "hardfork - memory expansion costs unchanged" {
     // Memory expansion formula unchanged across hardforks
     // gas = 3n + n²/512
-    
+
     const sizes = [_]u64{ 0, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
-    
+
     for (sizes) |size| {
-        const cost = memory_gas_cost(0, size);
+        const cost = memoryGasCost(0, size);
         const words = wordCount(size);
         const expected = MemoryGas * words + (words * words) / QuadCoeffDiv;
         try testing.expectEqual(expected, cost);
     }
-    
+
     // Verify constants unchanged
     try testing.expectEqual(@as(u64, 3), MemoryGas);
     try testing.expectEqual(@as(u64, 512), QuadCoeffDiv);
@@ -1496,25 +1496,25 @@ test "hardfork - memory expansion costs unchanged" {
 
 test "hardfork - EIP-2200 Istanbul SSTORE gas metering" {
     // Test Istanbul's complex SSTORE gas rules
-    
+
     // Scenario 1: No-op (current == original == new)
-    const no_op_gas = sstore_gas_cost(42, 42, 42, false);
+    const no_op_gas = sstoreGasCost(42, 42, 42, false);
     try testing.expectEqual(@as(u64, 100), no_op_gas); // SloadGas
-    
+
     // Scenario 2: Fresh slot (original == current == 0, new != 0)
-    const fresh_slot_gas = sstore_gas_cost(0, 0, 42, false);
+    const fresh_slot_gas = sstoreGasCost(0, 0, 42, false);
     try testing.expectEqual(@as(u64, 20000), fresh_slot_gas); // SstoreSetGas
-    
+
     // Scenario 3: Clean slot (original == current != 0, new == 0)
-    const clean_slot_gas = sstore_gas_cost(42, 42, 0, false);
+    const clean_slot_gas = sstoreGasCost(42, 42, 0, false);
     try testing.expectEqual(@as(u64, 5000), clean_slot_gas); // SstoreClearGas
-    
+
     // Scenario 4: Reset to original (original != current, new == original)
-    const reset_original_gas = sstore_gas_cost(100, 42, 42, false);
+    const reset_original_gas = sstoreGasCost(100, 42, 42, false);
     try testing.expectEqual(@as(u64, 100), reset_original_gas); // SloadGas
-    
+
     // Scenario 5: Dirty write (original != current, new != original)
-    const dirty_write_gas = sstore_gas_cost(100, 42, 200, false);
+    const dirty_write_gas = sstoreGasCost(100, 42, 200, false);
     try testing.expectEqual(@as(u64, 100), dirty_write_gas); // SloadGas
 }
 
@@ -1598,22 +1598,22 @@ test "hardfork - gas cost evolution timeline" {
 
 test "hardfork - edge cases across hardforks" {
     // Test edge cases that behave differently across hardforks
-    
+
     // SSTORE with same value (no-op)
     _ = 5000; // no_op_pre_istanbul: Always charged before Istanbul
     _ = 200; // no_op_istanbul: Reduced in Istanbul
     _ = 100; // no_op_berlin: Further reduced in Berlin
-    
+
     // Verify current (Berlin+) behavior
-    const current_no_op = sstore_gas_cost(42, 42, 42, false);
+    const current_no_op = sstoreGasCost(42, 42, 42, false);
     try testing.expectEqual(@as(u64, 100), current_no_op);
-    
+
     // CREATE2 with empty init code
-    const empty_create2_pre_shanghai = create_gas_cost(0, 0);
-    const empty_create2_post_shanghai = create_gas_cost(0, InitcodeWordGas);
+    const empty_create2_pre_shanghai = createGasCost(0, 0);
+    const empty_create2_post_shanghai = createGasCost(0, InitcodeWordGas);
     try testing.expectEqual(@as(u64, 32000), empty_create2_pre_shanghai);
     try testing.expectEqual(@as(u64, 32000), empty_create2_post_shanghai); // 0 words
-    
+
     // Transient storage (only exists post-Cancun)
     try testing.expectEqual(@as(u64, 100), TLoadGas);
     try testing.expectEqual(@as(u64, 100), TStoreGas);

@@ -33,25 +33,25 @@ pub const bls12_map_fp2_to_g2 = @import("bls12_map_fp2_to_g2.zig");
 pub const utils = @import("utils.zig");
 
 /// Precompile contract addresses (0x01 through 0x13)
-pub const ECRECOVER_ADDRESS: Address = Address.from_u256(0x01);
-pub const SHA256_ADDRESS: Address = Address.from_u256(0x02);
-pub const RIPEMD160_ADDRESS: Address = Address.from_u256(0x03);
-pub const IDENTITY_ADDRESS: Address = Address.from_u256(0x04);
-pub const MODEXP_ADDRESS: Address = Address.from_u256(0x05);
-pub const ECADD_ADDRESS: Address = Address.from_u256(0x06);
-pub const ECMUL_ADDRESS: Address = Address.from_u256(0x07);
-pub const ECPAIRING_ADDRESS: Address = Address.from_u256(0x08);
-pub const BLAKE2F_ADDRESS: Address = Address.from_u256(0x09);
-pub const POINT_EVALUATION_ADDRESS: Address = Address.from_u256(0x0A);
-pub const BLS12_G1ADD_ADDRESS: Address = Address.from_u256(0x0B);
-pub const BLS12_G1MUL_ADDRESS: Address = Address.from_u256(0x0C);
-pub const BLS12_G1MSM_ADDRESS: Address = Address.from_u256(0x0D);
-pub const BLS12_G2ADD_ADDRESS: Address = Address.from_u256(0x0E);
-pub const BLS12_G2MUL_ADDRESS: Address = Address.from_u256(0x0F);
-pub const BLS12_G2MSM_ADDRESS: Address = Address.from_u256(0x10);
-pub const BLS12_PAIRING_ADDRESS: Address = Address.from_u256(0x11);
-pub const BLS12_MAP_FP_TO_G1_ADDRESS: Address = Address.from_u256(0x12);
-pub const BLS12_MAP_FP2_TO_G2_ADDRESS: Address = Address.from_u256(0x13);
+pub const ECRECOVER_ADDRESS: Address = Address.fromU256(0x01);
+pub const SHA256_ADDRESS: Address = Address.fromU256(0x02);
+pub const RIPEMD160_ADDRESS: Address = Address.fromU256(0x03);
+pub const IDENTITY_ADDRESS: Address = Address.fromU256(0x04);
+pub const MODEXP_ADDRESS: Address = Address.fromU256(0x05);
+pub const ECADD_ADDRESS: Address = Address.fromU256(0x06);
+pub const ECMUL_ADDRESS: Address = Address.fromU256(0x07);
+pub const ECPAIRING_ADDRESS: Address = Address.fromU256(0x08);
+pub const BLAKE2F_ADDRESS: Address = Address.fromU256(0x09);
+pub const POINT_EVALUATION_ADDRESS: Address = Address.fromU256(0x0A);
+pub const BLS12_G1ADD_ADDRESS: Address = Address.fromU256(0x0B);
+pub const BLS12_G1MUL_ADDRESS: Address = Address.fromU256(0x0C);
+pub const BLS12_G1MSM_ADDRESS: Address = Address.fromU256(0x0D);
+pub const BLS12_G2ADD_ADDRESS: Address = Address.fromU256(0x0E);
+pub const BLS12_G2MUL_ADDRESS: Address = Address.fromU256(0x0F);
+pub const BLS12_G2MSM_ADDRESS: Address = Address.fromU256(0x10);
+pub const BLS12_PAIRING_ADDRESS: Address = Address.fromU256(0x11);
+pub const BLS12_MAP_FP_TO_G1_ADDRESS: Address = Address.fromU256(0x12);
+pub const BLS12_MAP_FP2_TO_G2_ADDRESS: Address = Address.fromU256(0x13);
 
 /// Check if an address is a precompile
 pub fn isPrecompile(address: Address, hardfork: Hardfork) bool {
@@ -107,39 +107,39 @@ pub fn execute(
 test "isPrecompile - Frontier" {
     const testing = std.testing;
 
-    try testing.expect(isPrecompile(Address.from_u256(0x01), .FRONTIER));
-    try testing.expect(isPrecompile(Address.from_u256(0x04), .FRONTIER));
-    try testing.expect(!isPrecompile(Address.from_u256(0x05), .FRONTIER));
+    try testing.expect(isPrecompile(Address.fromU256(0x01), .FRONTIER));
+    try testing.expect(isPrecompile(Address.fromU256(0x04), .FRONTIER));
+    try testing.expect(!isPrecompile(Address.fromU256(0x05), .FRONTIER));
 }
 
 test "isPrecompile - Byzantium" {
     const testing = std.testing;
 
-    try testing.expect(isPrecompile(Address.from_u256(0x01), .BYZANTIUM));
-    try testing.expect(isPrecompile(Address.from_u256(0x08), .BYZANTIUM));
-    try testing.expect(!isPrecompile(Address.from_u256(0x09), .BYZANTIUM));
+    try testing.expect(isPrecompile(Address.fromU256(0x01), .BYZANTIUM));
+    try testing.expect(isPrecompile(Address.fromU256(0x08), .BYZANTIUM));
+    try testing.expect(!isPrecompile(Address.fromU256(0x09), .BYZANTIUM));
 }
 
 test "isPrecompile - Istanbul" {
     const testing = std.testing;
 
-    try testing.expect(isPrecompile(Address.from_u256(0x09), .ISTANBUL));
-    try testing.expect(!isPrecompile(Address.from_u256(0x0A), .ISTANBUL));
+    try testing.expect(isPrecompile(Address.fromU256(0x09), .ISTANBUL));
+    try testing.expect(!isPrecompile(Address.fromU256(0x0A), .ISTANBUL));
 }
 
 test "isPrecompile - Cancun" {
     const testing = std.testing;
 
-    try testing.expect(isPrecompile(Address.from_u256(0x0A), .CANCUN));
-    try testing.expect(!isPrecompile(Address.from_u256(0x0B), .CANCUN));
+    try testing.expect(isPrecompile(Address.fromU256(0x0A), .CANCUN));
+    try testing.expect(!isPrecompile(Address.fromU256(0x0B), .CANCUN));
 }
 
 test "isPrecompile - Prague" {
     const testing = std.testing;
 
-    try testing.expect(isPrecompile(Address.from_u256(0x0B), .PRAGUE));
-    try testing.expect(isPrecompile(Address.from_u256(0x13), .PRAGUE));
-    try testing.expect(!isPrecompile(Address.from_u256(0x14), .PRAGUE));
+    try testing.expect(isPrecompile(Address.fromU256(0x0B), .PRAGUE));
+    try testing.expect(isPrecompile(Address.fromU256(0x13), .PRAGUE));
+    try testing.expect(!isPrecompile(Address.fromU256(0x14), .PRAGUE));
 }
 
 test "precompile - out of gas" {

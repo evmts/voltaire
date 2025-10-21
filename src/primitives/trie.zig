@@ -173,7 +173,7 @@ test "TrieMask - all positions" {
 ///
 /// Each byte is split into two 4-bit nibbles (high and low).
 /// Example: 0x1A -> [0x1, 0xA]
-pub fn key_to_nibbles(allocator: Allocator, key: []const u8) ![]u8 {
+pub fn keyToNibbles(allocator: Allocator, key: []const u8) ![]u8 {
     const nibbles = try allocator.alloc(u8, key.len * 2);
     errdefer allocator.free(nibbles);
 
@@ -188,7 +188,7 @@ pub fn key_to_nibbles(allocator: Allocator, key: []const u8) ![]u8 {
 /// Convert nibbles back to key bytes
 ///
 /// Requires an even number of nibbles.
-pub fn nibbles_to_key(allocator: Allocator, nibbles: []const u8) ![]u8 {
+pub fn nibblesToKey(allocator: Allocator, nibbles: []const u8) ![]u8 {
     if (nibbles.len % 2 != 0) {
         return TrieError.InvalidKey;
     }
@@ -204,12 +204,12 @@ pub fn nibbles_to_key(allocator: Allocator, nibbles: []const u8) ![]u8 {
     return key;
 }
 
-test "key_to_nibbles - basic conversion" {
+test "keyToNibbles - basic conversion" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const key = [_]u8{ 0x12, 0xAB };
-    const nibbles = try key_to_nibbles(allocator, &key);
+    const nibbles = try keyToNibbles(allocator, &key);
     defer allocator.free(nibbles);
 
     try testing.expectEqual(@as(usize, 4), nibbles.len);
@@ -219,23 +219,23 @@ test "key_to_nibbles - basic conversion" {
     try testing.expectEqual(@as(u8, 0xB), nibbles[3]);
 }
 
-test "key_to_nibbles - empty key" {
+test "keyToNibbles - empty key" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const key = [_]u8{};
-    const nibbles = try key_to_nibbles(allocator, &key);
+    const nibbles = try keyToNibbles(allocator, &key);
     defer allocator.free(nibbles);
 
     try testing.expectEqual(@as(usize, 0), nibbles.len);
 }
 
-test "nibbles_to_key - basic conversion" {
+test "nibblesToKey - basic conversion" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const nibbles = [_]u8{ 0x1, 0x2, 0xA, 0xB };
-    const key = try nibbles_to_key(allocator, &nibbles);
+    const key = try nibblesToKey(allocator, &nibbles);
     defer allocator.free(key);
 
     try testing.expectEqual(@as(usize, 2), key.len);
@@ -243,25 +243,25 @@ test "nibbles_to_key - basic conversion" {
     try testing.expectEqual(@as(u8, 0xAB), key[1]);
 }
 
-test "nibbles_to_key - odd length fails" {
+test "nibblesToKey - odd length fails" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const nibbles = [_]u8{ 0x1, 0x2, 0x3 };
-    const result = nibbles_to_key(allocator, &nibbles);
+    const result = nibblesToKey(allocator, &nibbles);
 
     try testing.expectError(TrieError.InvalidKey, result);
 }
 
-test "key_to_nibbles and nibbles_to_key - round trip" {
+test "keyToNibbles and nibblesToKey - round trip" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const original = [_]u8{ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
-    const nibbles = try key_to_nibbles(allocator, &original);
+    const nibbles = try keyToNibbles(allocator, &original);
     defer allocator.free(nibbles);
 
-    const restored = try nibbles_to_key(allocator, nibbles);
+    const restored = try nibblesToKey(allocator, nibbles);
     defer allocator.free(restored);
 
     try testing.expectEqualSlices(u8, &original, restored);
@@ -274,7 +274,7 @@ test "key_to_nibbles and nibbles_to_key - round trip" {
 /// - Odd length, extension:  [0x1X, ...] where X is first nibble
 /// - Even length, leaf:      [0x20, ...]
 /// - Odd length, leaf:       [0x3X, ...] where X is first nibble
-pub fn encode_path(allocator: Allocator, nibbles: []const u8, is_leaf: bool) ![]u8 {
+pub fn encodePath(allocator: Allocator, nibbles: []const u8, is_leaf: bool) ![]u8 {
     if (nibbles.len == 0) {
         const result = try allocator.alloc(u8, 1);
         result[0] = if (is_leaf) 0x20 else 0x00;
@@ -311,7 +311,7 @@ pub fn encode_path(allocator: Allocator, nibbles: []const u8, is_leaf: bool) ![]
 /// Decode a path from hex prefix encoding
 ///
 /// Returns the nibbles and a flag indicating if this is a leaf node.
-pub fn decode_path(allocator: Allocator, encoded: []const u8) !struct { nibbles: []u8, is_leaf: bool } {
+pub fn decodePath(allocator: Allocator, encoded: []const u8) !struct { nibbles: []u8, is_leaf: bool } {
     if (encoded.len == 0) {
         return TrieError.InvalidPath;
     }
@@ -349,12 +349,12 @@ pub fn decode_path(allocator: Allocator, encoded: []const u8) !struct { nibbles:
     return .{ .nibbles = nibbles, .is_leaf = is_leaf };
 }
 
-test "encode_path - even length extension" {
+test "encodePath - even length extension" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const nibbles = [_]u8{ 0x1, 0x2, 0x3, 0x4 };
-    const encoded = try encode_path(allocator, &nibbles, false);
+    const encoded = try encodePath(allocator, &nibbles, false);
     defer allocator.free(encoded);
 
     try testing.expectEqual(@as(usize, 3), encoded.len);
@@ -363,12 +363,12 @@ test "encode_path - even length extension" {
     try testing.expectEqual(@as(u8, 0x34), encoded[2]);
 }
 
-test "encode_path - odd length leaf" {
+test "encodePath - odd length leaf" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const nibbles = [_]u8{ 0x1, 0x2, 0x3 };
-    const encoded = try encode_path(allocator, &nibbles, true);
+    const encoded = try encodePath(allocator, &nibbles, true);
     defer allocator.free(encoded);
 
     try testing.expectEqual(@as(usize, 2), encoded.len);
@@ -376,36 +376,36 @@ test "encode_path - odd length leaf" {
     try testing.expectEqual(@as(u8, 0x23), encoded[1]);
 }
 
-test "encode_path - empty nibbles extension" {
+test "encodePath - empty nibbles extension" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const nibbles = [_]u8{};
-    const encoded = try encode_path(allocator, &nibbles, false);
+    const encoded = try encodePath(allocator, &nibbles, false);
     defer allocator.free(encoded);
 
     try testing.expectEqual(@as(usize, 1), encoded.len);
     try testing.expectEqual(@as(u8, 0x00), encoded[0]);
 }
 
-test "encode_path - empty nibbles leaf" {
+test "encodePath - empty nibbles leaf" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const nibbles = [_]u8{};
-    const encoded = try encode_path(allocator, &nibbles, true);
+    const encoded = try encodePath(allocator, &nibbles, true);
     defer allocator.free(encoded);
 
     try testing.expectEqual(@as(usize, 1), encoded.len);
     try testing.expectEqual(@as(u8, 0x20), encoded[0]);
 }
 
-test "decode_path - even length extension" {
+test "decodePath - even length extension" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const encoded = [_]u8{ 0x00, 0x12, 0x34 };
-    const result = try decode_path(allocator, &encoded);
+    const result = try decodePath(allocator, &encoded);
     defer allocator.free(result.nibbles);
 
     try testing.expect(!result.is_leaf);
@@ -416,12 +416,12 @@ test "decode_path - even length extension" {
     try testing.expectEqual(@as(u8, 0x4), result.nibbles[3]);
 }
 
-test "decode_path - odd length leaf" {
+test "decodePath - odd length leaf" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const encoded = [_]u8{ 0x31, 0x23 };
-    const result = try decode_path(allocator, &encoded);
+    const result = try decodePath(allocator, &encoded);
     defer allocator.free(result.nibbles);
 
     try testing.expect(result.is_leaf);
@@ -431,17 +431,17 @@ test "decode_path - odd length leaf" {
     try testing.expectEqual(@as(u8, 0x3), result.nibbles[2]);
 }
 
-test "decode_path - empty encoded fails" {
+test "decodePath - empty encoded fails" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
     const encoded = [_]u8{};
-    const result = decode_path(allocator, &encoded);
+    const result = decodePath(allocator, &encoded);
 
     try testing.expectError(TrieError.InvalidPath, result);
 }
 
-test "encode_path and decode_path - round trip" {
+test "encodePath and decodePath - round trip" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
@@ -456,10 +456,10 @@ test "encode_path and decode_path - round trip" {
     };
 
     for (test_cases) |tc| {
-        const encoded = try encode_path(allocator, tc.nibbles, tc.is_leaf);
+        const encoded = try encodePath(allocator, tc.nibbles, tc.is_leaf);
         defer allocator.free(encoded);
 
-        const decoded = try decode_path(allocator, encoded);
+        const decoded = try decodePath(allocator, encoded);
         defer allocator.free(decoded.nibbles);
 
         try testing.expectEqual(tc.is_leaf, decoded.is_leaf);
@@ -807,7 +807,7 @@ pub const Trie = struct {
 
     /// Insert a key-value pair into the trie
     pub fn put(self: *Trie, key: []const u8, value: []const u8) !void {
-        const nibbles = try key_to_nibbles(self.allocator, key);
+        const nibbles = try keyToNibbles(self.allocator, key);
         defer self.allocator.free(nibbles);
 
         if (self.root) |current_root| {
@@ -827,7 +827,7 @@ pub const Trie = struct {
     pub fn get(self: *const Trie, key: []const u8) !?[]const u8 {
         const current_root = self.root orelse return null;
 
-        const nibbles = try key_to_nibbles(self.allocator, key);
+        const nibbles = try keyToNibbles(self.allocator, key);
         defer self.allocator.free(nibbles);
 
         return try self.get_at(current_root, nibbles);
@@ -837,7 +837,7 @@ pub const Trie = struct {
     pub fn delete(self: *Trie, key: []const u8) !void {
         const current_root = self.root orelse return;
 
-        const nibbles = try key_to_nibbles(self.allocator, key);
+        const nibbles = try keyToNibbles(self.allocator, key);
         defer self.allocator.free(nibbles);
 
         const result = try self.delete_at(current_root, nibbles);
@@ -1172,7 +1172,7 @@ fn hash_node(allocator: Allocator, node: *const Node) ![32]u8 {
     const encoded = switch (node.*) {
         .Empty => try Rlp.encode(allocator, ""),
         .Leaf => |leaf| blk: {
-            const path_encoded = try encode_path(allocator, leaf.nibbles, true);
+            const path_encoded = try encodePath(allocator, leaf.nibbles, true);
             defer allocator.free(path_encoded);
 
             var list = std.ArrayList([]const u8){};
@@ -1189,7 +1189,7 @@ fn hash_node(allocator: Allocator, node: *const Node) ![32]u8 {
             break :blk try Rlp.encode(allocator, list.items);
         },
         .Extension => |ext| blk: {
-            const path_encoded = try encode_path(allocator, ext.nibbles, false);
+            const path_encoded = try encodePath(allocator, ext.nibbles, false);
             defer allocator.free(path_encoded);
 
             var list = std.ArrayList([]const u8){};

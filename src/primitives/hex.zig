@@ -97,7 +97,7 @@ pub const HexError = error{
 pub const Bytes = []u8;
 
 // Hex validation
-pub fn is_hex(input: []const u8) bool {
+pub fn isHex(input: []const u8) bool {
     if (input.len < 3) return false; // At least "0x" + one hex digit
     if (!std.mem.eql(u8, input[0..2], "0x")) return false;
 
@@ -112,7 +112,7 @@ pub fn is_hex(input: []const u8) bool {
 }
 
 // Hex to bytes conversion
-pub fn hex_to_bytes(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
+pub fn hexToBytes(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
     if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x")) {
         return HexError.InvalidHexFormat;
     }
@@ -127,8 +127,8 @@ pub fn hex_to_bytes(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
 
     var i: usize = 0;
     while (i < hex_digits.len) : (i += 2) {
-        const high = hex_char_to_value(hex_digits[i]) orelse return HexError.InvalidHexCharacter;
-        const low = hex_char_to_value(hex_digits[i + 1]) orelse return HexError.InvalidHexCharacter;
+        const high = hexCharToValue(hex_digits[i]) orelse return HexError.InvalidHexCharacter;
+        const low = hexCharToValue(hex_digits[i + 1]) orelse return HexError.InvalidHexCharacter;
         bytes[i / 2] = high * 16 + low;
     }
 
@@ -136,7 +136,7 @@ pub fn hex_to_bytes(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
 }
 
 // Bytes to hex conversion
-pub fn bytes_to_hex(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
+pub fn bytesToHex(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
     const hex_chars = "0123456789abcdef";
     const result = try allocator.alloc(u8, 2 + bytes.len * 2);
 
@@ -152,7 +152,7 @@ pub fn bytes_to_hex(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
 }
 
 // Fixed-size hex to bytes (no allocation)
-pub fn hex_to_bytes_fixed(comptime N: usize, hex: []const u8) ![N]u8 {
+pub fn hexToBytesFixed(comptime N: usize, hex: []const u8) ![N]u8 {
     if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x")) {
         return HexError.InvalidHexFormat;
     }
@@ -165,8 +165,8 @@ pub fn hex_to_bytes_fixed(comptime N: usize, hex: []const u8) ![N]u8 {
     var result: [N]u8 = undefined;
     var i: usize = 0;
     while (i < hex_digits.len) : (i += 2) {
-        const high = hex_char_to_value(hex_digits[i]) orelse return HexError.InvalidHexCharacter;
-        const low = hex_char_to_value(hex_digits[i + 1]) orelse return HexError.InvalidHexCharacter;
+        const high = hexCharToValue(hex_digits[i]) orelse return HexError.InvalidHexCharacter;
+        const low = hexCharToValue(hex_digits[i + 1]) orelse return HexError.InvalidHexCharacter;
         result[i / 2] = high * 16 + low;
     }
 
@@ -174,7 +174,7 @@ pub fn hex_to_bytes_fixed(comptime N: usize, hex: []const u8) ![N]u8 {
 }
 
 // Fixed-size bytes to hex (no allocation)
-pub fn bytes_to_hex_fixed(comptime N: usize, bytes: [N]u8) [2 + N * 2]u8 {
+pub fn bytesToHexFixed(comptime N: usize, bytes: [N]u8) [2 + N * 2]u8 {
     const hex_chars = "0123456789abcdef";
     var result: [2 + N * 2]u8 = undefined;
 
@@ -190,23 +190,23 @@ pub fn bytes_to_hex_fixed(comptime N: usize, bytes: [N]u8) [2 + N * 2]u8 {
 }
 
 // Hex string conversion (with and without 0x prefix)
-pub fn to_hex(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
-    return bytes_to_hex(allocator, bytes);
+pub fn toHex(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
+    return bytesToHex(allocator, bytes);
 }
 
-pub fn from_hex(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
-    return hex_to_bytes(allocator, hex);
+pub fn fromHex(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
+    return hexToBytes(allocator, hex);
 }
 
 // String conversions
-pub fn hex_to_string(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
-    const bytes = try hex_to_bytes(allocator, hex);
+pub fn hexToString(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {
+    const bytes = try hexToBytes(allocator, hex);
     defer allocator.free(bytes);
     return allocator.dupe(u8, bytes);
 }
 
-pub fn string_to_hex(allocator: std.mem.Allocator, str: []const u8) ![]u8 {
-    return bytes_to_hex(allocator, str);
+pub fn stringToHex(allocator: std.mem.Allocator, str: []const u8) ![]u8 {
+    return bytesToHex(allocator, str);
 }
 
 // Bytes utilities
@@ -238,7 +238,7 @@ pub fn concat(allocator: std.mem.Allocator, arrays: []const []const u8) ![]u8 {
 }
 
 // Padding utilities
-pub fn pad_left(allocator: std.mem.Allocator, bytes: []const u8, target_length: usize) ![]u8 {
+pub fn padLeft(allocator: std.mem.Allocator, bytes: []const u8, target_length: usize) ![]u8 {
     if (bytes.len >= target_length) {
         return allocator.dupe(u8, bytes);
     }
@@ -251,7 +251,7 @@ pub fn pad_left(allocator: std.mem.Allocator, bytes: []const u8, target_length: 
     return result;
 }
 
-pub fn pad_right(allocator: std.mem.Allocator, bytes: []const u8, target_length: usize) ![]u8 {
+pub fn padRight(allocator: std.mem.Allocator, bytes: []const u8, target_length: usize) ![]u8 {
     if (bytes.len >= target_length) {
         return allocator.dupe(u8, bytes);
     }
@@ -264,11 +264,11 @@ pub fn pad_right(allocator: std.mem.Allocator, bytes: []const u8, target_length:
 }
 
 pub fn pad(allocator: std.mem.Allocator, bytes: []const u8, target_length: usize) ![]u8 {
-    return pad_left(allocator, bytes, target_length);
+    return padLeft(allocator, bytes, target_length);
 }
 
 // Trimming utilities
-pub fn trim_left_zeros(bytes: []const u8) []const u8 {
+pub fn trimLeftZeros(bytes: []const u8) []const u8 {
     var start: usize = 0;
     while (start < bytes.len and bytes[start] == 0) {
         start += 1;
@@ -276,7 +276,7 @@ pub fn trim_left_zeros(bytes: []const u8) []const u8 {
     return bytes[start..];
 }
 
-pub fn trim_right_zeros(bytes: []const u8) []const u8 {
+pub fn trimRightZeros(bytes: []const u8) []const u8 {
     var end: usize = bytes.len;
     while (end > 0 and bytes[end - 1] == 0) {
         end -= 1;
@@ -285,11 +285,11 @@ pub fn trim_right_zeros(bytes: []const u8) []const u8 {
 }
 
 pub fn trim(bytes: []const u8) []const u8 {
-    return trim_left_zeros(bytes);
+    return trimLeftZeros(bytes);
 }
 
 // Numeric conversions
-pub fn hex_to_u256(hex: []const u8) !u256 {
+pub fn hexToU256(hex: []const u8) !u256 {
     if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x")) {
         return HexError.InvalidHexFormat;
     }
@@ -305,15 +305,15 @@ pub fn hex_to_u256(hex: []const u8) !u256 {
     };
 }
 
-pub fn hex_to_u64(hex: []const u8) !u64 {
-    const value = try hex_to_u256(hex);
+pub fn hexToU64(hex: []const u8) !u64 {
+    const value = try hexToU256(hex);
     if (value > std.math.maxInt(u64)) {
         return HexError.ValueTooLarge;
     }
     return @intCast(value);
 }
 
-pub fn u256_to_hex(allocator: std.mem.Allocator, value: u256) ![]u8 {
+pub fn u256ToHex(allocator: std.mem.Allocator, value: u256) ![]u8 {
     if (value == 0) {
         return allocator.dupe(u8, "0x0");
     }
@@ -341,12 +341,12 @@ pub fn u256_to_hex(allocator: std.mem.Allocator, value: u256) ![]u8 {
     return result;
 }
 
-pub fn u64_to_hex(allocator: std.mem.Allocator, value: u64) ![]u8 {
-    return u256_to_hex(allocator, value);
+pub fn u64ToHex(allocator: std.mem.Allocator, value: u64) ![]u8 {
+    return u256ToHex(allocator, value);
 }
 
 // Helper functions
-fn hex_char_to_value(c: u8) ?u8 {
+fn hexCharToValue(c: u8) ?u8 {
     return switch (c) {
         '0'...'9' => c - '0',
         'a'...'f' => c - 'a' + 10,
@@ -357,18 +357,18 @@ fn hex_char_to_value(c: u8) ?u8 {
 
 // Tests
 test "hex validation" {
-    try testing.expect(is_hex("0x1234"));
-    try testing.expect(is_hex("0xabcdef"));
-    try testing.expect(is_hex("0xABCDEF"));
-    try testing.expect(!is_hex("1234"));
-    try testing.expect(!is_hex("0xGHI"));
-    try testing.expect(!is_hex("0x"));
+    try testing.expect(isHex("0x1234"));
+    try testing.expect(isHex("0xabcdef"));
+    try testing.expect(isHex("0xABCDEF"));
+    try testing.expect(!isHex("1234"));
+    try testing.expect(!isHex("0xGHI"));
+    try testing.expect(!isHex("0x"));
 }
 
 test "hex to bytes conversion" {
     const allocator = testing.allocator;
 
-    const bytes = try hex_to_bytes(allocator, "0x1234");
+    const bytes = try hexToBytes(allocator, "0x1234");
     defer allocator.free(bytes);
 
     try testing.expectEqual(@as(usize, 2), bytes.len);
@@ -380,7 +380,7 @@ test "bytes to hex conversion" {
     const allocator = testing.allocator;
 
     const bytes = [_]u8{ 0x12, 0x34, 0xab, 0xcd };
-    const hex = try bytes_to_hex(allocator, &bytes);
+    const hex = try bytesToHex(allocator, &bytes);
     defer allocator.free(hex);
 
     try testing.expectEqualStrings("0x1234abcd", hex);
@@ -388,14 +388,14 @@ test "bytes to hex conversion" {
 
 test "fixed size conversions" {
     const hex = "0x1234abcd";
-    const bytes = try hex_to_bytes_fixed(4, hex);
+    const bytes = try hexToBytesFixed(4, hex);
 
     try testing.expectEqual(@as(u8, 0x12), bytes[0]);
     try testing.expectEqual(@as(u8, 0x34), bytes[1]);
     try testing.expectEqual(@as(u8, 0xab), bytes[2]);
     try testing.expectEqual(@as(u8, 0xcd), bytes[3]);
 
-    const hex_result = bytes_to_hex_fixed(4, bytes);
+    const hex_result = bytesToHexFixed(4, bytes);
     try testing.expectEqualStrings("0x1234abcd", &hex_result);
 }
 
@@ -420,7 +420,7 @@ test "padding utilities" {
     const allocator = testing.allocator;
 
     const bytes = [_]u8{ 0x12, 0x34 };
-    const padded = try pad_left(allocator, &bytes, 4);
+    const padded = try padLeft(allocator, &bytes, 4);
     defer allocator.free(padded);
 
     try testing.expectEqual(@as(usize, 4), padded.len);
@@ -432,8 +432,8 @@ test "padding utilities" {
 
 test "trimming utilities" {
     const bytes = [_]u8{ 0x00, 0x00, 0x12, 0x34, 0x00 };
-    const trimmed_left = trim_left_zeros(&bytes);
-    const trimmed_right = trim_right_zeros(&bytes);
+    const trimmed_left = trimLeftZeros(&bytes);
+    const trimmed_right = trimRightZeros(&bytes);
 
     try testing.expectEqual(@as(usize, 3), trimmed_left.len);
     try testing.expectEqual(@as(u8, 0x12), trimmed_left[0]);
@@ -445,10 +445,10 @@ test "trimming utilities" {
 test "numeric conversions" {
     const allocator = testing.allocator;
 
-    const value = try hex_to_u256("0x1234");
+    const value = try hexToU256("0x1234");
     try testing.expectEqual(@as(u256, 0x1234), value);
 
-    const hex = try u256_to_hex(allocator, 0x1234);
+    const hex = try u256ToHex(allocator, 0x1234);
     defer allocator.free(hex);
     try testing.expectEqualStrings("0x1234", hex);
 }
@@ -456,44 +456,44 @@ test "numeric conversions" {
 // Additional tests from hex_test.zig
 test "is valid hex" {
     // Valid hex strings
-    try testing.expect(!is_hex("0x")); // Too short, requires at least one hex digit
-    try testing.expect(is_hex("0x0"));
-    try testing.expect(is_hex("0x00"));
-    try testing.expect(is_hex("0x0123456789abcdef"));
-    try testing.expect(is_hex("0x0123456789ABCDEF"));
-    try testing.expect(is_hex("0xdeadbeef"));
+    try testing.expect(!isHex("0x")); // Too short, requires at least one hex digit
+    try testing.expect(isHex("0x0"));
+    try testing.expect(isHex("0x00"));
+    try testing.expect(isHex("0x0123456789abcdef"));
+    try testing.expect(isHex("0x0123456789ABCDEF"));
+    try testing.expect(isHex("0xdeadbeef"));
 
     // Invalid hex strings
-    try testing.expect(!is_hex(""));
-    try testing.expect(!is_hex("0"));
-    try testing.expect(!is_hex("00"));
-    try testing.expect(!is_hex("0xg"));
-    try testing.expect(!is_hex("0x0123456789abcdefg"));
-    try testing.expect(!is_hex("0x "));
-    try testing.expect(!is_hex(" 0x00"));
-    try testing.expect(!is_hex("0x00 "));
+    try testing.expect(!isHex(""));
+    try testing.expect(!isHex("0"));
+    try testing.expect(!isHex("00"));
+    try testing.expect(!isHex("0xg"));
+    try testing.expect(!isHex("0x0123456789abcdefg"));
+    try testing.expect(!isHex("0x "));
+    try testing.expect(!isHex(" 0x00"));
+    try testing.expect(!isHex("0x00 "));
 }
 
 test "from bytes basic" {
     const allocator = testing.allocator;
 
     // Empty bytes
-    const empty = try bytes_to_hex(allocator, &[_]u8{});
+    const empty = try bytesToHex(allocator, &[_]u8{});
     defer allocator.free(empty);
     try testing.expectEqualStrings("0x", empty);
 
     // Single byte
-    const single = try bytes_to_hex(allocator, &[_]u8{0x61});
+    const single = try bytesToHex(allocator, &[_]u8{0x61});
     defer allocator.free(single);
     try testing.expectEqualStrings("0x61", single);
 
     // Multiple bytes
-    const multiple = try bytes_to_hex(allocator, &[_]u8{ 0x61, 0x62, 0x63 });
+    const multiple = try bytesToHex(allocator, &[_]u8{ 0x61, 0x62, 0x63 });
     defer allocator.free(multiple);
     try testing.expectEqualStrings("0x616263", multiple);
 
     // "Hello World!"
-    const hello = try bytes_to_hex(allocator, "Hello World!");
+    const hello = try bytesToHex(allocator, "Hello World!");
     defer allocator.free(hello);
     try testing.expectEqualStrings("0x48656c6c6f20576f726c6421", hello);
 }
@@ -504,7 +504,7 @@ test "from bytes with specific case" {
     const bytes = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
 
     // Lowercase (default)
-    const lower = try bytes_to_hex(allocator, &bytes);
+    const lower = try bytesToHex(allocator, &bytes);
     defer allocator.free(lower);
     try testing.expectEqualStrings("0xdeadbeef", lower);
 
@@ -515,22 +515,22 @@ test "to bytes basic" {
     const allocator = testing.allocator;
 
     // Empty hex
-    const empty = try hex_to_bytes(allocator, "0x");
+    const empty = try hexToBytes(allocator, "0x");
     defer allocator.free(empty);
     try testing.expectEqual(@as(usize, 0), empty.len);
 
     // Single byte
-    const single = try hex_to_bytes(allocator, "0x61");
+    const single = try hexToBytes(allocator, "0x61");
     defer allocator.free(single);
     try testing.expectEqualSlices(u8, &[_]u8{0x61}, single);
 
     // Multiple bytes
-    const multiple = try hex_to_bytes(allocator, "0x616263");
+    const multiple = try hexToBytes(allocator, "0x616263");
     defer allocator.free(multiple);
     try testing.expectEqualSlices(u8, &[_]u8{ 0x61, 0x62, 0x63 }, multiple);
 
     // Mixed case
-    const mixed = try hex_to_bytes(allocator, "0xDeAdBeEf");
+    const mixed = try hexToBytes(allocator, "0xDeAdBeEf");
     defer allocator.free(mixed);
     try testing.expectEqualSlices(u8, &[_]u8{ 0xde, 0xad, 0xbe, 0xef }, mixed);
 }
@@ -539,10 +539,10 @@ test "to bytes odd length" {
     const allocator = testing.allocator;
 
     // Note: hexToBytes expects even length after 0x prefix, so odd length will error
-    const odd = hex_to_bytes(allocator, "0x1");
+    const odd = hexToBytes(allocator, "0x1");
     try testing.expectError(HexError.OddLengthHex, odd);
 
-    const odd2 = hex_to_bytes(allocator, "0x123");
+    const odd2 = hexToBytes(allocator, "0x123");
     try testing.expectError(HexError.OddLengthHex, odd2);
 }
 
@@ -550,11 +550,11 @@ test "to bytes invalid hex" {
     const allocator = testing.allocator;
 
     // Missing 0x prefix
-    const result1 = hex_to_bytes(allocator, "deadbeef");
+    const result1 = hexToBytes(allocator, "deadbeef");
     try testing.expectError(HexError.InvalidHexFormat, result1);
 
     // Invalid character
-    const result2 = hex_to_bytes(allocator, "0xdeadbeeg");
+    const result2 = hexToBytes(allocator, "0xdeadbeeg");
     try testing.expectError(HexError.InvalidHexCharacter, result2);
 }
 
@@ -562,55 +562,55 @@ test "from u256" {
     const allocator = testing.allocator;
 
     // Zero
-    const zero = try u256_to_hex(allocator, 0);
+    const zero = try u256ToHex(allocator, 0);
     defer allocator.free(zero);
     try testing.expectEqualStrings("0x0", zero);
 
     // Small number
-    const small = try u256_to_hex(allocator, 69420);
+    const small = try u256ToHex(allocator, 69420);
     defer allocator.free(small);
     try testing.expectEqualStrings("0x10f2c", small);
 
     // Large number
-    const large = try u256_to_hex(allocator, 0xdeadbeef);
+    const large = try u256ToHex(allocator, 0xdeadbeef);
     defer allocator.free(large);
     try testing.expectEqualStrings("0xdeadbeef", large);
 
     // Max u256
-    const max = try u256_to_hex(allocator, std.math.maxInt(u256));
+    const max = try u256ToHex(allocator, std.math.maxInt(u256));
     defer allocator.free(max);
     try testing.expectEqualStrings("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", max);
 }
 
 test "to u256" {
     // Zero
-    const zero = try hex_to_u256("0x0");
+    const zero = try hexToU256("0x0");
     try testing.expectEqual(@as(u256, 0), zero);
 
     // Small number
-    const small = try hex_to_u256("0x10f2c");
+    const small = try hexToU256("0x10f2c");
     try testing.expectEqual(@as(u256, 69420), small);
 
     // Large number
-    const large = try hex_to_u256("0xdeadbeef");
+    const large = try hexToU256("0xdeadbeef");
     try testing.expectEqual(@as(u256, 0xdeadbeef), large);
 
     // Max u256
-    const max = try hex_to_u256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    const max = try hexToU256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
     try testing.expectEqual(std.math.maxInt(u256), max);
 }
 
 test "empty string handling" {
     const allocator = testing.allocator;
 
-    const result = hex_to_bytes(allocator, "");
+    const result = hexToBytes(allocator, "");
     try testing.expectError(HexError.InvalidHexFormat, result);
 }
 
 test "only prefix" {
     const allocator = testing.allocator;
 
-    const bytes = try hex_to_bytes(allocator, "0x");
+    const bytes = try hexToBytes(allocator, "0x");
     defer allocator.free(bytes);
     try testing.expectEqual(@as(usize, 0), bytes.len);
 }

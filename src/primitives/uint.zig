@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const builtin = @import("builtin");
 
-pub fn nlimbs(bits: usize) usize {
+pub fn nLimbs(bits: usize) usize {
     if (bits == 0) return 1;
     return (bits + 63) / 64;
 }
@@ -1616,7 +1616,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         pub fn widening_mul(self: Self, comptime bits_rhs: usize, comptime limbs_rhs: usize, comptime bits_res: usize, comptime limbs_res: usize, rhs: Uint(bits_rhs, limbs_rhs)) Uint(bits_res, limbs_res) {
             comptime {
                 std.debug.assert(bits_res == bits + bits_rhs);
-                std.debug.assert(limbs_res == nlimbs(bits_res));
+                std.debug.assert(limbs_res == nLimbs(bits_res));
             }
 
             const Result = Uint(bits_res, limbs_res);
@@ -1842,15 +1842,15 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
     };
 }
 
-test "nlimbs calculation" {
-    try testing.expectEqual(@as(usize, 1), nlimbs(0));
-    try testing.expectEqual(@as(usize, 1), nlimbs(1));
-    try testing.expectEqual(@as(usize, 1), nlimbs(63));
-    try testing.expectEqual(@as(usize, 1), nlimbs(64));
-    try testing.expectEqual(@as(usize, 2), nlimbs(65));
-    try testing.expectEqual(@as(usize, 2), nlimbs(128));
-    try testing.expectEqual(@as(usize, 4), nlimbs(256));
-    try testing.expectEqual(@as(usize, 8), nlimbs(512));
+test "nLimbs calculation" {
+    try testing.expectEqual(@as(usize, 1), nLimbs(0));
+    try testing.expectEqual(@as(usize, 1), nLimbs(1));
+    try testing.expectEqual(@as(usize, 1), nLimbs(63));
+    try testing.expectEqual(@as(usize, 1), nLimbs(64));
+    try testing.expectEqual(@as(usize, 2), nLimbs(65));
+    try testing.expectEqual(@as(usize, 2), nLimbs(128));
+    try testing.expectEqual(@as(usize, 4), nLimbs(256));
+    try testing.expectEqual(@as(usize, 8), nLimbs(512));
 }
 
 test "mask calculation" {

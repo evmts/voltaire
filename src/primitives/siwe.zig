@@ -130,25 +130,25 @@ pub const SiweMessage = struct {
         }
 
         // Validate timestamp formats (simplified)
-        if (!is_valid_timestamp(self.issued_at)) {
+        if (!isValidTimestamp(self.issued_at)) {
             return SiweError.InvalidIssuedAt;
         }
 
         if (self.expiration_time) |exp| {
-            if (!is_valid_timestamp(exp)) {
+            if (!isValidTimestamp(exp)) {
                 return SiweError.InvalidExpirationTime;
             }
         }
 
         if (self.not_before) |nb| {
-            if (!is_valid_timestamp(nb)) {
+            if (!isValidTimestamp(nb)) {
                 return SiweError.InvalidNotBefore;
             }
         }
     }
 };
 
-fn is_valid_timestamp(timestamp: []const u8) bool {
+fn isValidTimestamp(timestamp: []const u8) bool {
     // Simplified ISO 8601 validation
     // Format: YYYY-MM-DDTHH:MM:SSZ
     if (timestamp.len < 20) return false;
@@ -160,7 +160,7 @@ fn is_valid_timestamp(timestamp: []const u8) bool {
 }
 
 // SIWE message verification
-pub fn verify_siwe_message(
+pub fn verifySiweMessage(
     allocator: Allocator,
     message: *const SiweMessage,
     signature: crypto.Signature,
@@ -177,14 +177,14 @@ pub fn verify_siwe_message(
 
     // Recover signer
     const public_key = try crypto.recover_public_key(allocator, message_hash, signature);
-    const recovered_address = address.from_public_key(public_key.bytes);
+    const recovered_address = address.fromPublicKey(public_key.bytes);
 
     // Check if recovered address matches
     return recovered_address.eql(message.address);
 }
 
 // Parse SIWE message from string
-pub fn parse_siwe_message(allocator: Allocator, text: []const u8) !SiweMessage {
+pub fn parseSiweMessage(allocator: Allocator, text: []const u8) !SiweMessage {
     var lines = std.mem.tokenizeScalar(u8, text, '\n');
 
     // Parse header
@@ -194,7 +194,7 @@ pub fn parse_siwe_message(allocator: Allocator, text: []const u8) !SiweMessage {
 
     // Parse address
     const addr_line = lines.next() orelse return SiweError.InvalidFormat;
-    const addr = try address.from_hex(addr_line);
+    const addr = try address.fromHex(addr_line);
 
     // Skip empty line
     _ = lines.next();
@@ -386,13 +386,13 @@ test "SIWE message signature verification" {
     const signature = try crypto.personal_sign(allocator, private_key, formatted);
 
     // Verify
-    const verified = try verify_siwe_message(allocator, &message, signature);
+    const verified = try verifySiweMessage(allocator, &message, signature);
     try testing.expect(verified);
 
     // Verify with wrong address should fail
     var wrong_message = message;
     wrong_message.address = Address.ZERO;
-    const not_verified = try verify_siwe_message(allocator, &wrong_message, signature);
+    const not_verified = try verifySiweMessage(allocator, &wrong_message, signature);
     try testing.expect(!not_verified);
 }
 
@@ -412,7 +412,7 @@ test "SIWE message parsing" {
         \\Issued At: 2021-09-30T16:25:24Z
     ;
 
-    const parsed = try parse_siwe_message(allocator, text);
+    const parsed = try parseSiweMessage(allocator, text);
     defer {
         allocator.free(parsed.domain);
         if (parsed.statement) |s| allocator.free(s);
