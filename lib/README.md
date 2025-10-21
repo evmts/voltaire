@@ -1,149 +1,83 @@
-# Guillotine External Dependencies (`lib/`)
+# External Cryptographic Libraries (`lib/`)
 
-This directory contains external libraries and dependencies required by Guillotine, the high-performance Zig EVM implementation. All dependencies are carefully chosen to support Guillotine's core mission of providing a fast, memory-safe, and correct Ethereum Virtual Machine.
+This directory contains external C/Rust libraries required for cryptographic operations. These dependencies are essential for production-grade Ethereum cryptography.
 
 ## Overview
 
-The `lib/` directory contains four main dependency categories:
-- **Cryptographic libraries** for elliptic curve operations and KZG commitments
-- **Reference implementations** for differential testing and validation
-- **Compilation infrastructure** for Solidity contract support
-- **Performance-critical native libraries** built in Rust
+The `lib/` directory contains cryptographic libraries required by the primitives library:
+- **BLS12-381** - Pairing-friendly elliptic curve operations (via BLST)
+- **KZG Commitments** - EIP-4844 polynomial commitments
+- **BN254** - Alt-BN128 curve for zkSNARK operations
 
 ## Dependencies
 
 ### 🔐 `c-kzg-4844/` - KZG Polynomial Commitments
 
-**Purpose**: Provides KZG polynomial commitment operations required for EIP-4844 (Proto-Danksharding) and EIP-7594.
+**Purpose**: Provides KZG polynomial commitment operations required for EIP-4844 (Proto-Danksharding) blob transactions.
 
-**Technology**: C library with Zig bindings
-**Version**: Ethereum Foundation official implementation
+**Technology**: C library (Ethereum Foundation official implementation)
 **License**: Apache-2.0
 
 **Key Features**:
 - Blob to KZG commitment conversion
 - KZG proof computation and verification
 - Batch verification for performance
-- EIP-4844 and EIP-7594 compliance
-- Embedded trusted setup (807KB when used)
-- Dead code elimination for unused features
+- EIP-4844 compliance
+- Embedded trusted setup
 
-**Integration**: 
-- Used by `src/evm/precompiles` for KZG operations
-- Automatically built via `zig build` with blst dependency
-- Provides Zig-native API through `lib/c-kzg-4844/bindings/zig/`
+**Integration**:
+- Used by `src/crypto/` for KZG operations
+- Automatically built via `zig build`
+- Depends on BLST for elliptic curve operations
 
 **Build Requirements**:
 - Git submodule (`git submodule update --init --recursive`)
-- Trusted setup file (auto-downloaded from Ethereum Foundation)
+- BLST library (built automatically)
+
+**Submodule Structure**:
+```
+lib/c-kzg-4844/
+├── blst/           # BLS12-381 implementation (submodule)
+├── src/            # KZG C implementation
+└── bindings/       # Language bindings
+```
 
 ### 🧮 `ark/` - BN254 Elliptic Curve Operations
 
-**Purpose**: Production-grade BN254 elliptic curve implementation for EVM precompiles 0x06 (ECADD), 0x07 (ECMUL), and 0x08 (ECPAIRING).
+**Purpose**: BN254 (alt_bn128) elliptic curve implementation for zkSNARK operations.
 
 **Technology**: Rust wrapper around arkworks ecosystem
-**Dependencies**: ark-bn254, ark-ec, ark-ff, ark-serialize
+**Dependencies**: ark-bn254, ark-ec, ark-ff
 **License**: MIT
 
 **Key Features**:
 - Scalar multiplication and pairing operations
 - Memory-safe FFI bindings
-- WASM-compatible placeholder implementations
 - Production-tested cryptographic primitives
+- Used for precompile operations (ECADD, ECMUL, ECPAIRING)
 
 **Integration**:
-- Linked via Rust build system in `Cargo.toml` workspace
-- Used by `src/crypto` and `src/evm/precompiles`
-- C header generation via cbindgen
+- Used by `src/crypto/bn254.zig`
+- Built via Rust/Cargo
+- Currently stubbed out (returns null) - enable when Rust target is available
 
-**Future**: Planned replacement with pure Zig implementation to eliminate Rust dependency.
+### Build System Wrappers
 
-### 🔄 `revm/` - Reference EVM for Differential Testing
-
-**Purpose**: Rust Ethereum Virtual Machine used as a reference implementation for differential testing and validation.
-
-**Technology**: Rust library (revm 14.0)
-**Dependencies**: revm-primitives 10.0, alloy-primitives 0.8
-**License**: MIT
-
-**Key Features**:
-- Complete EVM implementation in Rust
-- Serves as oracle for differential testing
-- High-performance assembly-optimized KECCAK256
-- Shared cryptographic dependencies with other components
-
-**Integration**:
-- Used in `test/differential/` for validating Guillotine behavior
-- Built as static library via Cargo workspace
-- C FFI bindings generated via cbindgen
-- Accessed through `lib/revm/revm.zig`
-
-**Testing**: Critical for ensuring Guillotine correctness against established reference.
-
-### ⚙️ `foundry-compilers/` - Solidity Compilation Infrastructure
-
-**Purpose**: Seamless Solidity compilation integration for contract deployment and testing.
-
-**Technology**: Zig wrapper around Foundry's compiler infrastructure
-**Dependencies**: foundry-compilers (Rust), zabi (Zig ABI parsing)
-**License**: MIT
-
-**Key Features**:
-- Full Solidity compilation support
-- In-memory and file-based compilation
-- Strongly typed ABI parsing with compile-time safety
-- Automatic Solc version management
-- Caching support for improved performance
-- Production-ready API design
-
-**Integration**:
-- Three-layer architecture: Rust → C bindings → Zig API
-- Used by testing infrastructure and development tools
-- Automatic zabi integration for type-safe ABI handling
-
-**API Highlights**:
-```zig
-var result = try Compiler.compileSource(allocator, "contract.sol", source, settings);
-defer result.deinit();
-
-// Strongly typed ABI access
-for (result.contracts[0].abi) |item| {
-    switch (item) {
-        .abiFunction => |func| // Type-safe function metadata
-    }
-}
-```
+- **`blst.zig`** - Zig bindings for BLST (BLS12-381)
+- **`c-kzg.zig`** - Zig bindings for c-kzg-4844
+- **`bn254.zig`** - Zig bindings for ark BN254 (currently stubbed)
+- **`bls_wrapper.zig`** - High-level BLS12-381 wrapper
+- **`build.zig`** - Build configuration for all libraries
 
 ## Build System Integration
-
-### Cargo Workspace Configuration
-
-All Rust dependencies are managed through a unified workspace in the root `Cargo.toml`:
-
-```toml
-[workspace]
-members = ["lib/foundry-compilers", "lib/ark", "lib/revm"]
-
-[workspace.dependencies]
-revm = { version = "14.0", features = ["c-kzg", "blst", "std", "serde"] }
-revm-primitives = "10.0"
-alloy-primitives = "0.8"
-# Arkworks dependencies
-ark-bn254 = "0.5.0"
-ark-ec = "0.5.0"
-ark-ff = "0.5.0"
-ark-serialize = "0.5.0"
-ark-bls12-381 = "0.5.0"
-```
 
 ### Zig Build Integration
 
 The main `build.zig` orchestrates all dependencies:
 
 1. **Submodule Verification**: Ensures c-kzg-4844 submodule is initialized
-2. **Library Creation**: Creates static libraries for each Rust component
-3. **Module Wiring**: Provides unified module imports for Guillotine
-4. **Asset Generation**: Handles trusted setup and binding generation
+2. **Library Creation**: Creates static libraries for each component
+3. **Linking**: Links crypto libraries to primitives and crypto modules
 
 ### Build Commands
 
@@ -151,35 +85,24 @@ The main `build.zig` orchestrates all dependencies:
 # Standard build (includes all dependencies)
 zig build
 
-# Test with differential validation
-zig build test-opcodes
-
-# Build individual components
-zig build test-foundry  # Test Solidity compilation
+# Run tests (includes crypto tests)
+zig build test
 ```
 
 ## Memory Management
 
-All external libraries follow Guillotine's strict memory safety protocols:
+All external libraries follow strict memory safety protocols:
 
 - **RAII patterns** with defer/errdefer cleanup
-- **Clear ownership semantics** for allocated resources  
+- **Clear ownership semantics** for allocated resources
 - **No memory leaks** - every allocation paired with deallocation
-- **Error handling** with proper resource cleanup on failure paths
-
-## Performance Considerations
-
-- **Static linking** preferred for better optimization
-- **LTO enabled** for cross-library optimization
-- **Assembly optimizations** in critical paths (KECCAK256)
-- **Dead code elimination** for unused library features
-- **Caching support** where applicable (Solidity compilation)
+- **Error handling** with proper resource cleanup
 
 ## Security & Auditing
 
 - **c-kzg-4844**: Security audited by Sigma Prime (June 2023)
+- **BLST**: Production-grade BLS12-381 implementation
 - **arkworks**: Production-tested cryptographic library
-- **revm**: Established reference implementation with extensive testing
 - **Memory safety**: All FFI boundaries carefully managed
 
 ## Version Management
@@ -187,34 +110,32 @@ All external libraries follow Guillotine's strict memory safety protocols:
 | Component | Version | Update Policy |
 |-----------|---------|---------------|
 | c-kzg-4844 | Latest stable | Track Ethereum Foundation releases |
-| revm | 14.0 | Update with EVM specification changes |
+| BLST | Latest stable | Track official BLST releases |
 | arkworks | 0.5.0 | Stable cryptographic primitives |
-| foundry-compilers | Latest | Track Foundry ecosystem updates |
 
 ## Development Notes
 
 ### Adding New Dependencies
 
-1. Evaluate necessity - prefer Zig-native solutions
-2. Security audit requirements for cryptographic code  
+1. Evaluate necessity - prefer Zig-native solutions when possible
+2. Security audit requirements for cryptographic code
 3. Memory safety verification for all FFI boundaries
 4. Integration with existing build system
 5. Documentation and testing requirements
 
 ### Debugging External Libraries
 
-- Use `test/differential/` for revm-based validation
-- Enable debug symbols in Cargo.toml for Rust components
-- Leverage Guillotine's logging system (`log.zig`) instead of native print statements
+- Enable debug symbols for C/Rust components
+- Use logging via `src/log.zig`
 - Follow TDD practices for any modifications
+- Test against known vectors from specifications
 
 ### Future Roadmap
 
-- **Pure Zig cryptography**: Replace Rust dependencies with native Zig implementations
-- **WASM optimization**: Improve browser compatibility
+- **Pure Zig cryptography**: Replace external dependencies with native Zig where feasible
 - **Performance benchmarking**: Continuous performance monitoring
 - **Security hardening**: Regular dependency audits and updates
 
 ---
 
-**Note**: All external dependencies are carefully vetted for security, performance, and compatibility with Guillotine's architecture. Changes to this directory should follow the project's security and development protocols outlined in `CLAUDE.md`.
+**Note**: All external dependencies are carefully vetted for security, performance, and compatibility. Changes to this directory should follow the project's security and development protocols outlined in `CLAUDE.md`.

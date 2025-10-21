@@ -1,8 +1,8 @@
-# Contributing to Guillotine
+# Contributing to Primitives
 
-Thank you so much for you interest in contributing to Guillotine!
+Thank you for your interest in contributing to the Ethereum Primitives library!
 
-We welcome contributions to Guillotine! This document provides guidelines and instructions for contributing to the project.
+We welcome contributions! This document provides guidelines and instructions for contributing to the project.
 
 ## AI-Assisted Contributions
 
@@ -16,7 +16,7 @@ We welcome contributions to Guillotine! This document provides guidelines and in
    - Link to any related issues
 4. **Review and understand** all AI-generated code before submitting
 5. **Take responsibility** for the correctness and quality of the code
-6. **Run all tests** including differential tests against revm/MinimalEvm
+6. **Run all tests** to ensure nothing breaks
 
 Example PR description:
 
@@ -25,235 +25,188 @@ Example PR description:
 This PR contains AI-generated code using Claude.
 
 ### Prompts used:
-- "Add error handling for invalid bytecode in the EVM parser"
-- "Write tests for the new error cases"
+- "Add validation for RLP encoded data to prevent buffer overflows"
+- "Write tests for the new validation logic"
 
 ### Human Description:
-This change adds proper error handling for malformed bytecode that was causing panics in production. Fixes #123.
+This change adds proper input validation for RLP decoding that was missing. Fixes #123.
 
 ### Testing:
-- ✅ zig build test-opcodes passes
-- ✅ Differential tests against revm pass
-- ✅ No performance regression in benchmarks
+- ✅ zig build test passes
+- ✅ All primitive and crypto tests pass
+- ✅ Added new test cases for edge conditions
 ```
 
-If your contribution is large please open a discussion to chat about the change before doing the work.
+If your contribution is large, please open a discussion to chat about the change before doing the work.
 
 ## Critical Safety Requirements
 
-**⚠️ WARNING: This is mission-critical financial infrastructure.** ANY bug can result in catastrophic loss of funds. Please follow these requirements:
+**⚠️ WARNING: This is mission-critical cryptographic infrastructure.** ANY bug can compromise security or cause fund loss. Please follow these requirements:
 
 ### Zero Tolerance Policy
 
 - ❌ **NO** broken builds or failing tests
 - ❌ **NO** stub implementations (`error.NotImplemented`)
 - ❌ **NO** commented-out code (use Git for history)
-- ❌ **NO** `std.debug.print` in production code (use `log.zig`)
-- ❌ **NO** skipping tests or disabling problematic code
+- ❌ **NO** test failures - all tests must pass
+- ❌ **NO** swallowing errors with empty catch blocks
+- ❌ **NO** `std.debug.print` in library code (use `log.zig`)
+- ❌ **NO** `std.debug.assert` (use proper error handling)
 
-### Memory Safety
+**If in doubt, STOP and ask for guidance rather than stubbing or commenting out code.**
 
-- **Always** pair allocations with `defer` or `errdefer`
-- **Always** validate memory bounds before access
-- **Always** zero-initialize expanded memory regions
-- **Never** leak memory - proper cleanup is mandatory
+## Before You Start
 
-### Testing Requirements
+1. **Read CLAUDE.md** - Contains critical development guidelines
+2. **Understand the architecture** - Read src/README.md
+3. **Check existing issues** - Your change may already be discussed
+4. **Run tests** - Ensure everything works before making changes
 
-- **Every** code change must pass `zig build test-opcodes`
-- **Critical** changes require differential testing against revm
-- **Gas costs** must match Yellow Paper specification exactly
-- **Stack operations** must validate depth before execution
+## Development Workflow
 
-## Code of Conduct
-
-We are committed to providing a welcoming and inclusive environment. All contributors are expected to:
-
-- Be respectful and considerate in all interactions
-- Welcome newcomers and help them get started
-- Focus on constructive criticism and collaborative problem-solving
-- Respect differing viewpoints and experiences
-
-## Project structure
-
-### Source Directory Structure
-
-```
-src/
-├── _test_utils/         # Testing utilities and fixtures
-├── block/               # Block data structures and validation
-├── bytecode/            # Bytecode analysis and optimization
-├── cli/                 # Command-line interface
-├── crypto/              # Cryptographic operations (Keccak, BN254, etc.)
-│   └── bn254/          # BN254 elliptic curve operations
-├── devtool/            # Development tools and web UI
-├── eips_and_hardforks/ # EIP implementations and hardfork configurations
-├── frame/              # Execution frame and context management
-├── instructions/       # EVM opcode implementations
-├── internal/           # Internal utilities (safety counters, etc.)
-├── kzg/                # KZG commitment scheme support
-├── memory/             # EVM memory management
-├── opcodes/            # Opcode definitions and tables
-├── precompiles/        # Precompiled contract implementations
-├── preprocessor/       # Bytecode preprocessing and optimization
-├── primitives/         # Core types (Address, U256, Bytes32, etc.)
-├── provider/           # RPC provider interfaces
-├── solidity/           # Solidity compiler integration
-├── stack/              # EVM stack implementation
-├── storage/            # State storage and database interfaces
-├── tracer/             # Transaction tracing and debugging
-│   ├── MinimalEvm.zig  # Standalone 65KB EVM for testing
-│   └── pc_tracker.zig  # Execution flow tracking
-└── trie/               # Merkle Patricia Trie implementation
-```
-
-### Build System
-
-```
-build/
-├── bindings/           # Language bindings generation
-├── config.zig          # Build configuration
-├── executables/        # Executable targets
-├── libraries/          # Library dependencies (BN254, REVM)
-├── modules.zig         # Module definitions
-└── steps/              # Build step definitions
-```
-
-### Key Files
-
-- `src/evm.zig` - Core EVM implementation
-- `src/frame/frame.zig` - The most important datastructure in the evm
-- `src/instructions/*.zig` - Individual opcode handlers for the evm
-- `src/tracer/tracer.zig` - Execution tracing and debugging infrastructure
-- `src/tracer/MinimalEvm.zig` - Standalone EVM for differential testing
-- `src/preprocessor/dispatch.zig` - Bytecode dispatch optimization
-- `src/root.zig` - Module root exports
-- `build.zig` - Main build configuration
-
-## Code Quality Standards
-
-### Assertion and Error Handling
-
-- Use `tracer.assert()` with descriptive messages for runtime validation
-- Provide clear error messages that help debugging
-- Handle all error cases explicitly - no silent failures
-- Use `errdefer` for cleanup on error paths
-
-### Documentation
-
-- Each module should have a CLAUDE.md file documenting:
-  - Mission-critical aspects
-  - Implementation details
-  - Safety requirements
-  - Testing guidelines
-- Keep documentation close to code for maintainability
-
-### Performance Considerations
-
-- Use `_unsafe` operations only after validation
-- Implement tail call optimization for opcode dispatch
-- Cache frequently accessed data
-- Profile before optimizing
-
-## Getting Started
-
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/Guillotine.git
-   cd Guillotine
-   ```
-3. **Add upstream remote**:
-   ```bash
-   git remote add upstream https://github.com/evmts/Guillotine.git
-   ```
-4. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-## Development Setup
-
-### Prerequisites
-
-- Zig 0.15.1 or later
-- Git
-- Rust toolchain (required for ark and revm dependencies)
-- Golang and node.js if working with the cli and native app
-
-### Building the Project
-
-#### First-time Setup (Fresh Machine)
-
-When building on a fresh machine or after a fresh clone, you need to initialize submodules:
+### 1. Setup
 
 ```bash
-# Initialize and update git submodules
+git clone <repository-url>
+cd primitives
 git submodule update --init --recursive
-
-# Build the project (Zig automatically runs cargo build for Rust dependencies)
 zig build
-
-# Run tests (use test-opcodes to avoid hanging issues)
-zig build test-opcodes
+zig build test
 ```
 
-**Note**: The Zig build system automatically runs `cargo build` as a dependency step when building Rust libraries. On the first build, this may take longer as Cargo downloads and compiles dependencies.
+### 2. Make Changes
 
-#### Regular Development
+- Follow the coding standards in CLAUDE.md
+- Write tests for all new functionality
+- Ensure memory safety (explicit ownership, defer/errDefer)
+- Use meaningful variable names
+- Add inline documentation for complex logic
+
+### 3. Test Thoroughly
 
 ```bash
-# Build the project
-zig build
-
 # Run all tests
 zig build test
 
-# Run specific opcode tests
-zig build test-opcodes
+# Verify build succeeds
+zig build
 ```
 
-#### Test Filtering
+**CRITICAL**: ALL tests must pass before submitting.
 
-You can run specific tests using the `-Dtest-filter` option:
+### 4. Submit Pull Request
 
-```bash
-# Run tests matching a specific pattern
-zig build test -Dtest-filter='trace validation'
+- Write a clear PR description
+- Reference related issues
+- Disclose AI usage if applicable
+- Ensure CI passes
 
-# Run specific opcode tests
-zig build test-opcodes -Dtest-filter='ADD opcode'
+## Coding Standards
 
-# Run multiple specific tests (repeat the flag)
-zig build test-opcodes -Dtest-filter='ADD' -Dtest-filter='SUB'
+### Memory Management
 
-# Run tests for a specific function
-zig build test -Dtest-filter='get_balance'
+```zig
+// ✅ CORRECT - Explicit cleanup
+const thing = try allocator.create(Thing);
+defer allocator.destroy(thing);
+
+// ❌ WRONG - Memory leak
+const thing = try allocator.create(Thing);
+// Missing defer!
 ```
 
-### Development Workflow
+### Error Handling
 
-1. **Always verify builds**: After any code change, run:
-   ```bash
-   zig build && zig build test-opcodes
-   ```
-2. **Enable debug logging** in tests when needed:
-   ```zig
-   test {
-       std.testing.log_level = .debug;
-   }
-   ```
-3. **Use tracer assertions** for debugging instead of `std.debug.assert`:
+```zig
+// ✅ CORRECT - Explicit error propagation
+pub fn doSomething() !void {
+    const result = try riskyOperation();
+    if (result == null) return error.InvalidResult;
+}
 
-   ```zig
-   // Good - provides context on failure
-   self.getTracer().assert(condition, "descriptive message");
+// ❌ WRONG - Swallowing errors
+pub fn doSomething() void {
+    const result = riskyOperation() catch return;  // NEVER DO THIS
+}
+```
 
-   // Avoid - no context on failure
-   std.debug.assert(condition);
-   ```
+### Testing
 
-4. **Test against MinimalEvm** for correctness verification:
-   ```bash
-   zig build test-snailtracer  # Differential testing
-   ```
+```zig
+// ✅ CORRECT - Self-contained test
+test "uint256 addition overflow" {
+    const a = primitives.uint256.max();
+    const b = primitives.uint256.fromInt(1);
+    const result = a.addWithOverflow(b);
+    try std.testing.expect(result.overflow);
+}
+
+// ❌ WRONG - No test for new functionality
+pub fn newFeature() void {
+    // ... implementation without tests
+}
+```
+
+## Cryptographic Code
+
+**Extra scrutiny required for crypto changes:**
+
+1. **Constant-time operations** - Prevent timing attacks
+2. **Input validation** - Check all inputs before processing
+3. **Test vectors** - Use known test vectors from specifications
+4. **Reference implementations** - Cross-validate against known-good implementations
+5. **Security review** - Tag maintainers for review
+
+Example:
+
+```zig
+// ✅ CORRECT - Constant time comparison
+pub fn constantTimeCompare(a: []const u8, b: []const u8) bool {
+    if (a.len != b.len) return false;
+    var result: u8 = 0;
+    for (a, b) |byte_a, byte_b| {
+        result |= byte_a ^ byte_b;
+    }
+    return result == 0;
+}
+
+// ❌ WRONG - Leaks timing information
+pub fn timingUnsafeCompare(a: []const u8, b: []const u8) bool {
+    for (a, b) |byte_a, byte_b| {
+        if (byte_a != byte_b) return false;  // Early exit leaks info!
+    }
+    return true;
+}
+```
+
+## Areas Looking for Contributors
+
+We especially welcome contributions in:
+
+- **Test Coverage** - More comprehensive unit tests
+- **Documentation** - Improving code documentation
+- **Performance** - Optimization opportunities (with benchmarks)
+- **Bug Fixes** - Addressing any issues
+- **Platform Support** - Testing on different platforms
+
+## Questions?
+
+- Open a discussion for architecture questions
+- Comment on relevant issues for feature discussions
+- Tag maintainers for security-sensitive changes
+
+## Code Review Process
+
+1. **Automated checks** - CI must pass
+2. **Manual review** - Maintainer review required
+3. **Testing verification** - Confirm tests are comprehensive
+4. **Security review** - Extra scrutiny for crypto code
+5. **Merge** - Squash and merge with clear commit message
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the same license as the project.
+
+---
+
+Thank you for helping make Ethereum primitives more robust and secure! 🙏
