@@ -6,11 +6,21 @@ This directory contains external C/Rust libraries required for cryptographic ope
 
 This library offers **dual implementations** for some cryptographic operations:
 
-| Operation | Pure Zig | C/Rust Production | Status | Use Cases |
-|-----------|----------|-------------------|--------|-----------|
-| **BN254** | `src/crypto/bn254/` | `lib/ark/` (Rust) | Both ✅ Production Ready | Zig: Zero deps<br>Rust: Audited, EVM precompiles |
-| **BLS12-381** | ❌ Not Implemented | `lib/c-kzg-4844/blst/` (C) | C: ✅ Production Ready | **Required for KZG** |
-| **KZG (EIP-4844)** | ❌ Not Implemented | `lib/c-kzg-4844/` (C) | C: ✅ Production Ready | **Required for EIP-4844** |
+| Operation | Pure Zig | C/Rust Production | Zig Wrapper | Use Cases |
+|-----------|----------|-------------------|-------------|-----------|
+| **Keccak-256** | `std.crypto` (fallback) | `lib/keccak/` (Rust) | `src/crypto/keccak_asm.zig` | **Assembly-optimized hashing** |
+| **BN254** | `src/crypto/bn254/` | `lib/ark/` (Rust) | `src/crypto/bn254_ffi.zig` | Zig: Zero deps, full control<br>Rust: Audited, battle-tested |
+| **BLS12-381** | ❌ Not Implemented | `lib/c-kzg-4844/blst/` (C) | `src/crypto/bn254_ffi.zig` (partial) | **Required for KZG & EIP-2537** |
+| **KZG (EIP-4844)** | ❌ Not Implemented | `lib/c-kzg-4844/` (C) | `src/crypto/root.zig` (c_kzg) | **Required for blob transactions** |
+
+### Exposed Zig APIs
+
+All external libraries are wrapped in idiomatic Zig interfaces:
+
+- **`crypto.keccak_asm`** - Assembly-optimized Keccak-256 via keccak-asm Rust crate
+- **`crypto.bn254`** - Pure Zig BN254 implementation (zero external deps)
+- **`crypto.bn254_ffi`** - Rust arkworks wrapper (ECMUL, ECPAIRING, BLS12-381 ops)
+- **`crypto.c_kzg`** - KZG commitments for EIP-4844 blob transactions
 
 ### When to Use Each Implementation
 
@@ -95,6 +105,38 @@ lib/c-kzg-4844/
 - ✅ Comprehensive test suite
 - ✅ Zero external dependencies
 - 📋 Use when you want to avoid Rust toolchain
+
+### ⚡ `keccak/` - Assembly-Optimized Keccak-256
+
+**Status**: ✅ **Production Ready** - High-performance assembly implementation
+
+**Purpose**: Assembly-optimized Keccak-256 hashing for maximum performance on x86_64 and aarch64 architectures.
+
+**Technology**: Rust wrapper around keccak-asm (DaniPopes)
+**Dependencies**: keccak-asm
+**License**: BSD-3-Clause
+
+**Key Features**:
+- Platform-specific assembly implementations (x86_64, aarch64)
+- SIMD acceleration where available
+- Significantly faster than pure software implementations
+- Zero-cost FFI abstractions
+- Used for all Ethereum hashing operations
+
+**Integration**:
+- Built automatically via Cargo workspace
+- Linked into Zig build via `lib/keccak.zig`
+- FFI header at `lib/keccak/keccak_wrapper.h`
+- Exposed via `src/crypto/keccak_asm.zig`
+
+**Build Requirements**:
+- Rust toolchain (cargo)
+- Built via: `cargo build` or `cargo build --release`
+- Workspace builds to `target/debug/` or `target/release/`
+
+**Fallback**: `std.crypto.hash.sha3.Keccak256`
+- Used automatically for WASM targets
+- Pure Zig implementation when Rust is unavailable
 
 ### 🔷 BLST - BLS12-381 Operations
 

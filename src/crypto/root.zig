@@ -93,8 +93,17 @@ else struct {
     }
 };
 
-// BN254 for precompiles
-pub const bn254 = @import("bn254.zig");
+// BN254 elliptic curve - dual implementations
+pub const bn254 = @import("bn254.zig"); // Pure Zig implementation
+pub const bn254_ffi = if (builtin.target.cpu.arch != .wasm32)
+    @import("bn254_ffi.zig") // Rust (arkworks) FFI - production-grade, audited
+else struct {
+    // Stub for WASM builds - Rust FFI not supported
+    pub const BN254Error = error{NotSupported};
+    pub fn init() BN254Error!void { return error.NotSupported; }
+    pub fn ecmul(input: []const u8, output: []u8) BN254Error!void { _ = input; _ = output; return error.NotSupported; }
+    pub fn ecpairing(input: []const u8, output: []u8) BN254Error!void { _ = input; _ = output; return error.NotSupported; }
+};
 
 // Export BLS12-381 from crypto.zig
 pub const bls12_381 = Crypto.bls12_381;

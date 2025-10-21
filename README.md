@@ -48,10 +48,11 @@
     <br/>
     <br/>
 - [**Cryptography**](#cryptography)
-  - [`keccak256`](./src/crypto/hash.zig) &mdash; Ethereum's primary hash function
+  - [`keccak256`](./src/crypto/keccak_asm.zig) &mdash; assembly-optimized Keccak-256 (via keccak-asm)
   - [`secp256k1`](./src/crypto/secp256k1.zig) &mdash; ECDSA signatures for transaction signing
   - [`BLS12-381`](./src/crypto/crypto.zig) &mdash; pairing-friendly curve operations (via BLST)
-  - [`BN254`](./src/crypto/bn254.zig) &mdash; alt_bn128 curve for zkSNARK verification
+  - [`BN254`](./src/crypto/bn254/) &mdash; pure Zig alt_bn128 curve implementation
+  - [`BN254 FFI`](./src/crypto/bn254_ffi.zig) &mdash; audited Rust arkworks wrapper (ECMUL/ECPAIRING)
   - [`KZG`](./src/crypto/root.zig) &mdash; polynomial commitments for EIP-4844 blobs
   - [`SHA256`](./src/crypto/hash_algorithms.zig) &mdash; standard SHA-256 hashing
   - [`RIPEMD160`](./src/crypto/hash_algorithms.zig) &mdash; legacy hash function
@@ -60,9 +61,10 @@
     <br/>
     <br/>
 - [**External Libraries**](#external-libraries)
-  - [`lib/blst`](./lib/blst.zig) &mdash; BLS12-381 C implementation
+  - [`lib/blst`](./lib/blst.zig) &mdash; BLS12-381 C implementation (via c-kzg-4844)
   - [`lib/c-kzg-4844`](./lib/c-kzg.zig) &mdash; KZG commitments (Ethereum Foundation)
-  - [`lib/ark`](./lib/ark/) &mdash; BN254 curve via arkworks ecosystem
+  - [`lib/ark`](./lib/ark/) &mdash; BN254/BLS12-381 Rust (arkworks) - audited, production-grade
+  - [`lib/keccak`](./lib/keccak/) &mdash; Keccak-256 Rust (keccak-asm) - assembly-optimized
     <br/>
     <br/>
 
