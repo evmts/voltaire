@@ -5,11 +5,20 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // STEP 1: Verify all required submodules are initialized
+    lib_build.checkSubmodules();
+
+    // STEP 2: Verify Cargo is installed for Rust dependencies
+    lib_build.checkCargoInstalled();
+
+    // STEP 3: Build Rust workspace (bn254_wrapper, keccak_wrapper)
+    const cargo_build_step = lib_build.createCargoBuildStep(b, optimize);
+
     // Build crypto C/Rust libraries that primitives + crypto depend on
     const blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
-    const bn254_lib = lib_build.Bn254Lib.createBn254Library(b, target, optimize, .{ .enable_tracy = false }, null, null);
-    const keccak_lib = lib_build.KeccakLib.createKeccakLibrary(b, target, optimize, .{}, null, null);
+    const bn254_lib = lib_build.Bn254Lib.createBn254Library(b, target, optimize, .{ .enable_tracy = false }, cargo_build_step, null);
+    const keccak_lib = lib_build.KeccakLib.createKeccakLibrary(b, target, optimize, .{}, cargo_build_step, null);
 
     // Install crypto libraries
     b.installArtifact(blst_lib);

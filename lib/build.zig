@@ -12,37 +12,119 @@ pub const createCKzgLibrary = CKzgLib.createCKzgLibrary;
 pub const createBn254Library = Bn254Lib.createBn254Library;
 pub const createKeccakLibrary = KeccakLib.createKeccakLibrary;
 
+pub fn checkCargoInstalled() void {
+    const result = std.process.Child.run(.{
+        .allocator = std.heap.page_allocator,
+        .argv = &[_][]const u8{ "cargo", "--version" },
+    }) catch {
+        std.debug.print("\n", .{});
+        std.debug.print("❌ ERROR: Cargo (Rust build tool) is not installed!\n", .{});
+        std.debug.print("\n", .{});
+        std.debug.print("This project requires Rust libraries (bn254_wrapper, keccak_wrapper).\n", .{});
+        std.debug.print("\n", .{});
+        std.debug.print("To install Rust and Cargo, visit:\n", .{});
+        std.debug.print("  https://rustup.rs/\n", .{});
+        std.debug.print("\n", .{});
+        std.debug.print("Or run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\n", .{});
+        std.debug.print("\n", .{});
+        std.process.exit(1);
+    };
+    defer {
+        std.heap.page_allocator.free(result.stdout);
+        std.heap.page_allocator.free(result.stderr);
+    }
+
+    if (result.term.Exited != 0) {
+        std.debug.print("\n", .{});
+        std.debug.print("❌ ERROR: Cargo command failed!\n", .{});
+        std.debug.print("\n", .{});
+        std.debug.print("Please ensure Cargo is properly installed and in your PATH.\n", .{});
+        std.debug.print("\n", .{});
+        std.process.exit(1);
+    }
+}
+
+pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *std.Build.Step {
+    const cargo_build = b.addSystemCommand(&[_][]const u8{"cargo"});
+    cargo_build.addArg("build");
+
+    // Map Zig optimize mode to Cargo profile
+    const profile_args = switch (optimize) {
+        .Debug => &[_][]const u8{},
+        .ReleaseSafe, .ReleaseSmall => &[_][]const u8{ "--release" },
+        .ReleaseFast => &[_][]const u8{ "--profile", "release-fast" },
+    };
+
+    for (profile_args) |arg| {
+        cargo_build.addArg(arg);
+    }
+
+    // Build workspace members
+    cargo_build.addArgs(&[_][]const u8{
+        "--workspace",
+    });
+
+    return &cargo_build.step;
+}
+
 pub fn checkSubmodules() void {
     const submodules = [_]struct {
         path: []const u8,
         name: []const u8,
+        required: bool,
     }{
-        .{ .path = "lib/c-kzg-4844/.git", .name = "c-kzg-4844" },
+        // Critical submodules required for building
+        // Check for actual content files instead of .git to handle different submodule states
+        .{ .path = "lib/c-kzg-4844/src", .name = "c-kzg-4844", .required = true },
+        .{ .path = "lib/c-kzg-4844/blst/src", .name = "c-kzg-4844/blst (nested)", .required = true },
+
+        // Optional submodules for benchmarking/specs
+        .{ .path = "third_party/mcl/include", .name = "third_party/mcl", .required = false },
+        .{ .path = "evm-bench/README.md", .name = "evm-bench", .required = false },
+        .{ .path = "bench/official/evms/evmone/evmone/lib", .name = "bench/official/evms/evmone/evmone", .required = false },
+        .{ .path = "specs/execution-specs/README.md", .name = "specs/execution-specs", .required = false },
+        .{ .path = "lib/zig/lib", .name = "lib/zig", .required = false },
     };
 
     var has_error = false;
+    var has_warning = false;
 
     for (submodules) |submodule| {
         std.fs.cwd().access(submodule.path, .{}) catch {
-            if (!has_error) {
-                std.debug.print("\n", .{});
-                std.debug.print("❌ ERROR: Git submodules are not initialized!\n", .{});
-                std.debug.print("\n", .{});
-                std.debug.print("The following required submodules are missing:\n", .{});
-                has_error = true;
+            if (submodule.required) {
+                if (!has_error) {
+                    std.debug.print("\n", .{});
+                    std.debug.print("❌ ERROR: Required git submodules are not initialized!\n", .{});
+                    std.debug.print("\n", .{});
+                    std.debug.print("The following required submodules are missing:\n", .{});
+                    has_error = true;
+                }
+                std.debug.print("  • {s}\n", .{submodule.name});
+            } else {
+                if (!has_warning) {
+                    if (!has_error) std.debug.print("\n", .{});
+                    std.debug.print("⚠️  WARNING: Optional submodules are missing (non-critical):\n", .{});
+                    has_warning = true;
+                }
+                std.debug.print("  • {s}\n", .{submodule.name});
             }
-            std.debug.print("  • {s}\n", .{submodule.name});
         };
     }
 
     if (has_error) {
         std.debug.print("\n", .{});
-        std.debug.print("To fix this, run the following commands:\n", .{});
+        std.debug.print("To fix this, run:\n", .{});
         std.debug.print("\n", .{});
         std.debug.print("  git submodule update --init --recursive\n", .{});
         std.debug.print("\n", .{});
         std.debug.print("This will download and initialize all required dependencies.\n", .{});
         std.debug.print("\n", .{});
         std.process.exit(1);
+    }
+
+    if (has_warning) {
+        std.debug.print("\n", .{});
+        std.debug.print("Build will continue, but some features may be unavailable.\n", .{});
+        std.debug.print("\n", .{});
     }
 }
