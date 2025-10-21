@@ -1010,3 +1010,1203 @@ test "msmDiscount - discount table" {
     try testing.expectEqual(@as(u64, 200), msmDiscount(64));
     try testing.expectEqual(@as(u64, 174), msmDiscount(128));
 }
+
+// Gas cost boundary tests
+test "ecRecover - exact gas boundary" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(ECRECOVER_BASE_GAS, result.gas_used);
+}
+
+test "ecRecover - gas boundary minus one" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = ecRecover(allocator, &input, ECRECOVER_BASE_GAS - 1);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "sha256Hash - gas boundary zero length input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const expected_gas = SHA256_BASE_GAS;
+    const result = try sha256Hash(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "sha256Hash - gas boundary one byte input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xFF};
+    const expected_gas = SHA256_BASE_GAS + SHA256_PER_WORD_GAS;
+    const result = try sha256Hash(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "sha256Hash - gas boundary at 32 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 32;
+    const expected_gas = SHA256_BASE_GAS + SHA256_PER_WORD_GAS;
+    const result = try sha256Hash(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "sha256Hash - gas boundary at 33 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 33;
+    const expected_gas = SHA256_BASE_GAS + SHA256_PER_WORD_GAS * 2;
+    const result = try sha256Hash(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "ripemd160Hash - gas boundary zero length input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const expected_gas = RIPEMD160_BASE_GAS;
+    const result = try ripemd160Hash(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "ripemd160Hash - gas boundary at 32 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 32;
+    const expected_gas = RIPEMD160_BASE_GAS + RIPEMD160_PER_WORD_GAS;
+    const result = try ripemd160Hash(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "identity - gas boundary zero length" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const expected_gas = IDENTITY_BASE_GAS;
+    const result = try identity(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "identity - gas boundary at 31 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 31;
+    const expected_gas = IDENTITY_BASE_GAS + IDENTITY_PER_WORD_GAS;
+    const result = try identity(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "identity - gas boundary at 32 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 32;
+    const expected_gas = IDENTITY_BASE_GAS + IDENTITY_PER_WORD_GAS;
+    const result = try identity(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "identity - gas boundary at 33 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 33;
+    const expected_gas = IDENTITY_BASE_GAS + IDENTITY_PER_WORD_GAS * 2;
+    const result = try identity(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "bn254Add - exact gas boundary" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try bn254Add(allocator, &input, ECADD_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(ECADD_GAS, result.gas_used);
+}
+
+test "bn254Add - gas boundary minus one" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = bn254Add(allocator, &input, ECADD_GAS - 1);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "bn254Mul - exact gas boundary" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 96;
+    const result = try bn254Mul(allocator, &input, ECMUL_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(ECMUL_GAS, result.gas_used);
+}
+
+test "bn254Mul - gas boundary minus one" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 96;
+    const result = bn254Mul(allocator, &input, ECMUL_GAS - 1);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "bn254Pairing - gas boundary one pair" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 192;
+    const expected_gas = ECPAIRING_BASE_GAS + ECPAIRING_PER_POINT_GAS;
+    const result = try bn254Pairing(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "bn254Pairing - gas boundary two pairs" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 384;
+    const expected_gas = ECPAIRING_BASE_GAS + ECPAIRING_PER_POINT_GAS * 2;
+    const result = try bn254Pairing(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+// Input length validation tests
+test "ecRecover - zero length input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - partial input 127 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xFF} ** 127;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - exact input 128 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - oversized input 129 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 129;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "sha256Hash - one byte input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xAB};
+    const result = try sha256Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ripemd160Hash - one byte input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xAB};
+    const result = try ripemd160Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "modexp - zero base length" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [96]u8 = [_]u8{0} ** 96;
+    const result = try modexp(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "modexp - zero exponent length" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [97]u8 = [_]u8{0} ** 97;
+    input[31] = 1;
+    input[95] = 1;
+    input[96] = 5;
+    const result = try modexp(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+}
+
+test "modexp - zero modulus length" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [98]u8 = [_]u8{0} ** 98;
+    input[31] = 1;
+    input[63] = 1;
+    input[96] = 2;
+    input[97] = 3;
+    const result = try modexp(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "modexp - input too short" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 95;
+    const result = modexp(allocator, &input, 1000000, .Cancun);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bn254Add - short input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 127;
+    const result = try bn254Add(allocator, &input, ECADD_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+test "bn254Mul - short input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 95;
+    const result = try bn254Mul(allocator, &input, ECMUL_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+test "bn254Pairing - invalid length 191 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 191;
+    const result = bn254Pairing(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bn254Pairing - invalid length 193 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 193;
+    const result = bn254Pairing(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "blake2f - exact length 213 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [213]u8 = [_]u8{0} ** 213;
+    input[3] = 1;
+    const result = try blake2f(allocator, &input, 100);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+test "blake2f - length 212 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 212;
+    const result = blake2f(allocator, &input, 100);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "blake2f - length 214 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 214;
+    const result = blake2f(allocator, &input, 100);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G1Add - wrong length 255 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 255;
+    const result = bls12G1Add(allocator, &input, BLS12_G1ADD_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G1Add - wrong length 257 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 257;
+    const result = bls12G1Add(allocator, &input, BLS12_G1ADD_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G1Mul - wrong length 159 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 159;
+    const result = bls12G1Mul(allocator, &input, BLS12_G1MUL_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G1Mul - wrong length 161 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 161;
+    const result = bls12G1Mul(allocator, &input, BLS12_G1MUL_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G1Msm - empty input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const result = bls12G1Msm(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G1Msm - invalid length 159 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 159;
+    const result = bls12G1Msm(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G2Add - wrong length 511 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 511;
+    const result = bls12G2Add(allocator, &input, BLS12_G2ADD_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G2Mul - wrong length 287 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 287;
+    const result = bls12G2Mul(allocator, &input, BLS12_G2MUL_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G2Msm - empty input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const result = bls12G2Msm(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12G2Msm - invalid length 287 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 287;
+    const result = bls12G2Msm(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12Pairing - invalid length 383 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 383;
+    const result = bls12Pairing(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12MapFpToG1 - wrong length 63 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 63;
+    const result = bls12MapFpToG1(allocator, &input, BLS12_MAP_FP_TO_G1_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bls12MapFp2ToG2 - wrong length 127 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 127;
+    const result = bls12MapFp2ToG2(allocator, &input, BLS12_MAP_FP2_TO_G2_GAS);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+// Output padding tests
+test "ripemd160Hash - output is left padded" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xAB};
+    const result = try ripemd160Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output[0..12]) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "ecRecover - output is left padded address" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output[0..12]) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "sha256Hash - output is exact 32 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xAB};
+    const result = try sha256Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "bn254Pairing - output format success" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const result = try bn254Pairing(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output[0..31]) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+    try testing.expectEqual(@as(u8, 1), result.output[31]);
+}
+
+test "blake2f - output is 64 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [213]u8 = [_]u8{0} ** 213;
+    input[3] = 1;
+    const result = try blake2f(allocator, &input, 100);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+// Hardfork compatibility tests
+test "isPrecompile - address 0x00 all hardforks" {
+    const testing = std.testing;
+
+    try testing.expect(!isPrecompile(Address.fromInt(0x00), .Frontier));
+    try testing.expect(!isPrecompile(Address.fromInt(0x00), .Homestead));
+    try testing.expect(!isPrecompile(Address.fromInt(0x00), .Byzantium));
+    try testing.expect(!isPrecompile(Address.fromInt(0x00), .Istanbul));
+    try testing.expect(!isPrecompile(Address.fromInt(0x00), .Cancun));
+    try testing.expect(!isPrecompile(Address.fromInt(0x00), .Prague));
+}
+
+test "isPrecompile - address 0x01 all hardforks" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromInt(0x01), .Frontier));
+    try testing.expect(isPrecompile(Address.fromInt(0x01), .Homestead));
+    try testing.expect(isPrecompile(Address.fromInt(0x01), .Byzantium));
+    try testing.expect(isPrecompile(Address.fromInt(0x01), .Istanbul));
+    try testing.expect(isPrecompile(Address.fromInt(0x01), .Cancun));
+    try testing.expect(isPrecompile(Address.fromInt(0x01), .Prague));
+}
+
+test "isPrecompile - address 0x04 boundary Frontier" {
+    const testing = std.testing;
+
+    try testing.expect(isPrecompile(Address.fromInt(0x04), .Frontier));
+    try testing.expect(isPrecompile(Address.fromInt(0x04), .Homestead));
+}
+
+test "isPrecompile - address 0x05 boundary Byzantium" {
+    const testing = std.testing;
+
+    try testing.expect(!isPrecompile(Address.fromInt(0x05), .Frontier));
+    try testing.expect(!isPrecompile(Address.fromInt(0x05), .Homestead));
+    try testing.expect(isPrecompile(Address.fromInt(0x05), .Byzantium));
+    try testing.expect(isPrecompile(Address.fromInt(0x05), .Istanbul));
+    try testing.expect(isPrecompile(Address.fromInt(0x05), .Cancun));
+    try testing.expect(isPrecompile(Address.fromInt(0x05), .Prague));
+}
+
+test "isPrecompile - address 0x08 boundary Byzantium" {
+    const testing = std.testing;
+
+    try testing.expect(!isPrecompile(Address.fromInt(0x08), .Frontier));
+    try testing.expect(isPrecompile(Address.fromInt(0x08), .Byzantium));
+}
+
+test "isPrecompile - address 0x09 boundary Istanbul" {
+    const testing = std.testing;
+
+    try testing.expect(!isPrecompile(Address.fromInt(0x09), .Byzantium));
+    try testing.expect(isPrecompile(Address.fromInt(0x09), .Istanbul));
+    try testing.expect(isPrecompile(Address.fromInt(0x09), .Cancun));
+    try testing.expect(isPrecompile(Address.fromInt(0x09), .Prague));
+}
+
+test "isPrecompile - address 0x0A boundary Cancun" {
+    const testing = std.testing;
+
+    try testing.expect(!isPrecompile(Address.fromInt(0x0A), .Istanbul));
+    try testing.expect(isPrecompile(Address.fromInt(0x0A), .Cancun));
+    try testing.expect(isPrecompile(Address.fromInt(0x0A), .Prague));
+}
+
+test "isPrecompile - address 0x13 boundary Prague" {
+    const testing = std.testing;
+
+    try testing.expect(!isPrecompile(Address.fromInt(0x13), .Cancun));
+    try testing.expect(isPrecompile(Address.fromInt(0x13), .Prague));
+}
+
+test "isPrecompile - address 0x14 beyond all hardforks" {
+    const testing = std.testing;
+
+    try testing.expect(!isPrecompile(Address.fromInt(0x14), .Frontier));
+    try testing.expect(!isPrecompile(Address.fromInt(0x14), .Homestead));
+    try testing.expect(!isPrecompile(Address.fromInt(0x14), .Byzantium));
+    try testing.expect(!isPrecompile(Address.fromInt(0x14), .Istanbul));
+    try testing.expect(!isPrecompile(Address.fromInt(0x14), .Cancun));
+    try testing.expect(!isPrecompile(Address.fromInt(0x14), .Prague));
+}
+
+// MSM discount calculation tests
+test "msmDiscount - boundary k equals 1" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 1000), msmDiscount(1));
+}
+
+test "msmDiscount - boundary k equals 2" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 820), msmDiscount(2));
+    try testing.expectEqual(@as(u64, 820), msmDiscount(3));
+}
+
+test "msmDiscount - boundary k equals 4" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 580), msmDiscount(4));
+    try testing.expectEqual(@as(u64, 580), msmDiscount(5));
+    try testing.expectEqual(@as(u64, 580), msmDiscount(6));
+    try testing.expectEqual(@as(u64, 580), msmDiscount(7));
+}
+
+test "msmDiscount - boundary k equals 8" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 430), msmDiscount(8));
+    try testing.expectEqual(@as(u64, 430), msmDiscount(9));
+    try testing.expectEqual(@as(u64, 430), msmDiscount(15));
+}
+
+test "msmDiscount - boundary k equals 16" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 320), msmDiscount(16));
+    try testing.expectEqual(@as(u64, 320), msmDiscount(17));
+    try testing.expectEqual(@as(u64, 320), msmDiscount(31));
+}
+
+test "msmDiscount - boundary k equals 32" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 250), msmDiscount(32));
+    try testing.expectEqual(@as(u64, 250), msmDiscount(33));
+    try testing.expectEqual(@as(u64, 250), msmDiscount(63));
+}
+
+test "msmDiscount - boundary k equals 64" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 200), msmDiscount(64));
+    try testing.expectEqual(@as(u64, 200), msmDiscount(65));
+    try testing.expectEqual(@as(u64, 200), msmDiscount(127));
+}
+
+test "msmDiscount - boundary k equals 128" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 174), msmDiscount(128));
+    try testing.expectEqual(@as(u64, 174), msmDiscount(129));
+    try testing.expectEqual(@as(u64, 174), msmDiscount(1000));
+}
+
+test "bls12G1Msm - gas cost with k equals 1" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 160;
+    const k: usize = 1;
+    const discount = msmDiscount(k);
+    const expected_gas = (BLS12_G1MSM_BASE_GAS * k * discount) / 1000;
+
+    const result = try bls12G1Msm(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "bls12G1Msm - gas cost with k equals 2" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 320;
+    const k: usize = 2;
+    const discount = msmDiscount(k);
+    const expected_gas = (BLS12_G1MSM_BASE_GAS * k * discount) / 1000;
+
+    const result = try bls12G1Msm(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "bls12G2Msm - gas cost with k equals 1" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 288;
+    const k: usize = 1;
+    const discount = msmDiscount(k);
+    const expected_gas = (BLS12_G2MSM_BASE_GAS * k * discount) / 1000;
+
+    const result = try bls12G2Msm(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "bls12G2Msm - gas cost with k equals 2" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 576;
+    const k: usize = 2;
+    const discount = msmDiscount(k);
+    const expected_gas = (BLS12_G2MSM_BASE_GAS * k * discount) / 1000;
+
+    const result = try bls12G2Msm(allocator, &input, expected_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+// ecRecover edge cases
+test "ecRecover - invalid signature returns zero address" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [128]u8 = [_]u8{0xFF} ** 128;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "ecRecover - v value 27" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [128]u8 = [_]u8{0} ** 128;
+    input[63] = 27;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - v value 28" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [128]u8 = [_]u8{0} ** 128;
+    input[63] = 28;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - all zero input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "ecRecover - all max input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xFF} ** 128;
+    const result = try ecRecover(allocator, &input, ECRECOVER_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+// sha256Hash edge cases
+test "sha256Hash - single byte 0x00" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0x00};
+    const result = try sha256Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "sha256Hash - single byte 0xFF" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xFF};
+    const result = try sha256Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "sha256Hash - 31 bytes boundary" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xAB} ** 31;
+    const result = try sha256Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "sha256Hash - large input 1024 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0x42} ** 1024;
+    const result = try sha256Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+// ripemd160Hash edge cases
+test "ripemd160Hash - single byte 0x00" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0x00};
+    const result = try ripemd160Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output[0..12]) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "ripemd160Hash - single byte 0xFF" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xFF};
+    const result = try ripemd160Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output[0..12]) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "ripemd160Hash - 31 bytes boundary" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0xAB} ** 31;
+    const result = try ripemd160Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ripemd160Hash - large input 1024 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0x42} ** 1024;
+    const result = try ripemd160Hash(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+// identity edge cases
+test "identity - empty input preserves emptiness" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const result = try identity(allocator, &input, IDENTITY_BASE_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "identity - large input 1024 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0x42} ** 1024;
+    const result = try identity(allocator, &input, 100000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqualSlices(u8, &input, result.output);
+}
+
+// modexp complex input parsing
+test "modexp - partial base in input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [100]u8 = [_]u8{0} ** 100;
+    input[31] = 10;
+    input[63] = 1;
+    input[95] = 1;
+    input[96] = 2;
+    input[97] = 3;
+    input[98] = 5;
+
+    const result = try modexp(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+}
+
+test "modexp - partial exponent in input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [100]u8 = [_]u8{0} ** 100;
+    input[31] = 1;
+    input[63] = 10;
+    input[95] = 1;
+    input[96] = 2;
+    input[97] = 3;
+    input[98] = 5;
+
+    const result = try modexp(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+}
+
+test "modexp - partial modulus in input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [100]u8 = [_]u8{0} ** 100;
+    input[31] = 1;
+    input[63] = 1;
+    input[95] = 10;
+    input[96] = 2;
+    input[97] = 3;
+    input[98] = 5;
+
+    const result = try modexp(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 10), result.output.len);
+}
+
+test "modexp - output longer than result" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [99]u8 = [_]u8{0} ** 99;
+    input[31] = 1;
+    input[63] = 1;
+    input[94] = 10;
+    input[96] = 2;
+    input[97] = 3;
+    input[98] = 5;
+
+    const result = try modexp(allocator, &input, 1000000, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 10), result.output.len);
+    try testing.expectEqual(@as(u8, 3), result.output[9]);
+}
+
+test "modexp - Byzantium hardfork" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [99]u8 = [_]u8{0} ** 99;
+    input[31] = 1;
+    input[63] = 1;
+    input[95] = 1;
+    input[96] = 2;
+    input[97] = 3;
+    input[98] = 5;
+
+    const result = try modexp(allocator, &input, 1000000, .Byzantium);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+}
+
+// bn254 edge cases
+test "bn254Add - oversized input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 200;
+    const result = try bn254Add(allocator, &input, ECADD_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+test "bn254Mul - oversized input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 150;
+    const result = try bn254Mul(allocator, &input, ECMUL_GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+// blake2f round validation
+test "blake2f - zero rounds" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [213]u8 = [_]u8{0} ** 213;
+    const result = try blake2f(allocator, &input, 100);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+    try testing.expectEqual(@as(u64, 0), result.gas_used);
+}
+
+test "blake2f - one round" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [213]u8 = [_]u8{0} ** 213;
+    input[3] = 1;
+    const result = try blake2f(allocator, &input, 100);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+    try testing.expectEqual(@as(u64, 1), result.gas_used);
+}
+
+test "blake2f - many rounds gas cost" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [213]u8 = [_]u8{0} ** 213;
+    const rounds: u32 = 1000;
+    input[0] = @intCast((rounds >> 24) & 0xFF);
+    input[1] = @intCast((rounds >> 16) & 0xFF);
+    input[2] = @intCast((rounds >> 8) & 0xFF);
+    input[3] = @intCast(rounds & 0xFF);
+
+    const result = try blake2f(allocator, &input, rounds + 100);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(u64, rounds), result.gas_used);
+}
+
+test "blake2f - max rounds gas check" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [213]u8 = [_]u8{0} ** 213;
+    const rounds: u32 = 4294967295;
+    input[0] = 0xFF;
+    input[1] = 0xFF;
+    input[2] = 0xFF;
+    input[3] = 0xFF;
+
+    const result = blake2f(allocator, &input, rounds);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+// Execute function tests
+test "execute - frontier hardfork ecrecover" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try execute(allocator, ECRECOVER_ADDRESS, &input, 100000, .Frontier);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "execute - frontier hardfork rejects modexp" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 96;
+    const result = execute(allocator, MODEXP_ADDRESS, &input, 100000, .Frontier);
+    try testing.expectError(error.NotImplemented, result);
+}
+
+test "execute - byzantium hardfork accepts modexp" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [96]u8 = [_]u8{0} ** 96;
+    const result = try execute(allocator, MODEXP_ADDRESS, &input, 100000, .Byzantium);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 0), result.output.len);
+}
+
+test "execute - cancun hardfork accepts point evaluation" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [192]u8 = [_]u8{0} ** 192;
+    const result = execute(allocator, POINT_EVALUATION_ADDRESS, &input, POINT_EVALUATION_GAS, .Cancun);
+    if (result) |r| {
+        r.deinit(allocator);
+    } else |_| {}
+}
+
+test "execute - prague hardfork accepts bls12 g1 add" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 256;
+    const result = execute(allocator, BLS12_G1ADD_ADDRESS, &input, BLS12_G1ADD_GAS, .Prague);
+    if (result) |r| {
+        r.deinit(allocator);
+    } else |_| {}
+}
+
+test "execute - invalid address" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 32;
+    const result = execute(allocator, Address.fromInt(0x14), &input, 100000, .Prague);
+    try testing.expectError(error.NotImplemented, result);
+}
