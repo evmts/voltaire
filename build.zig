@@ -24,16 +24,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // Primitives module
+    // Primitives module (includes Hardfork)
     const primitives_mod = b.createModule(.{
         .root_source_file = b.path("src/primitives/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Hardfork module
-    const hardfork_mod = b.createModule(.{
-        .root_source_file = b.path("src/hardfork.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -49,7 +42,7 @@ pub fn build(b: *std.Build) void {
     if (keccak_lib) |keccak| primitives_tests.linkLibrary(keccak);
     primitives_tests.linkLibC();
 
-    // Crypto tests
+    // Crypto tests (Hardfork accessed through primitives module)
     const crypto_mod = b.createModule(.{
         .root_source_file = b.path("src/crypto/root.zig"),
         .target = target,
@@ -57,7 +50,6 @@ pub fn build(b: *std.Build) void {
     });
     crypto_mod.addImport("c_kzg", c_kzg_mod);
     crypto_mod.addImport("primitives", primitives_mod);
-    crypto_mod.addImport("hardfork", hardfork_mod);
 
     const crypto_tests = b.addTest(.{
         .name = "crypto-tests",
@@ -69,10 +61,31 @@ pub fn build(b: *std.Build) void {
     if (keccak_lib) |keccak| crypto_tests.linkLibrary(keccak);
     crypto_tests.linkLibC();
 
+    // Precompiles module
+    const precompiles_mod = b.createModule(.{
+        .root_source_file = b.path("src/precompiles/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    precompiles_mod.addImport("primitives", primitives_mod);
+    precompiles_mod.addImport("crypto", crypto_mod);
+
+    const precompiles_tests = b.addTest(.{
+        .name = "precompiles-tests",
+        .root_module = precompiles_mod,
+    });
+    precompiles_tests.linkLibrary(c_kzg_lib);
+    precompiles_tests.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| precompiles_tests.linkLibrary(bn254);
+    if (keccak_lib) |keccak| precompiles_tests.linkLibrary(keccak);
+    precompiles_tests.linkLibC();
+
     const run_primitives_tests = b.addRunArtifact(primitives_tests);
     const run_crypto_tests = b.addRunArtifact(crypto_tests);
+    const run_precompiles_tests = b.addRunArtifact(precompiles_tests);
 
-    const test_step = b.step("test", "Run primitives and crypto tests");
+    const test_step = b.step("test", "Run all tests (primitives + crypto + precompiles)");
     test_step.dependOn(&run_primitives_tests.step);
     test_step.dependOn(&run_crypto_tests.step);
+    test_step.dependOn(&run_precompiles_tests.step);
 }

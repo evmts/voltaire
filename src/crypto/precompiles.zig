@@ -3,6 +3,7 @@ const primitives = @import("primitives");
 const crypto = @import("crypto");
 const Address = primitives.Address;
 const Blob = primitives.Blob;
+const Hardfork = primitives.Hardfork;
 const secp256k1 = crypto.secp256k1;
 const SHA256_Accel = crypto.SHA256_Accel;
 const Ripemd160 = crypto.Ripemd160;
@@ -11,7 +12,6 @@ const Blake2 = crypto.Blake2;
 const ModExp = crypto.ModExp;
 const c_kzg = crypto.c_kzg;
 const kzg_setup = crypto.kzg_setup;
-const Hardfork = @import("hardfork").Hardfork;
 
 /// Precompile contract addresses (0x01 through 0x12)
 pub const ECRECOVER_ADDRESS: Address = Address.fromInt(0x01);
