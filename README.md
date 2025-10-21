@@ -39,21 +39,21 @@ zig build</pre>
 </div>
 
 - [**Ethereum primitives**](#primitives)
-  - [`uint256`](./src/primitives/uint256.zig) &mdash; 256-bit unsigned integer with overflow-checked arithmetic
+  - [`Uint`](./src/primitives/uint.zig) &mdash; arbitrary-width unsigned integer with overflow-checked arithmetic (Note: Zig 0.14+ includes native `u256` support which is recommended for most use cases. This library provides additional micro-performance optimizations when needed)
   - [`Address`](./src/primitives/address.zig) &mdash; Ethereum address type with EIP-55 checksumming
-    - [`fromHex`](./src/primitives/address.zig#L79) &mdash; construct Address from hex string
-    - [`fromU256`](./src/primitives/address.zig#L69) &mdash; construct Address from u256 value
-    - [`fromBytes`](./src/primitives/address.zig#L124) &mdash; construct Address from 20-byte slice
-    - [`fromPublicKey`](./src/primitives/address.zig#L89) &mdash; derive address from public key components
-    - [`toU256`](./src/primitives/address.zig#L56) &mdash; convert Address to u256 integer
-    - [`toHex`](./src/primitives/address.zig#L102) &mdash; convert to 42-byte hex string
-    - [`toChecksumHex`](./src/primitives/address.zig#L106) &mdash; convert to EIP-55 checksummed hex
-    - [`isValid`](./src/primitives/address.zig#L131) &mdash; validate address string format
-    - [`isValidChecksum`](./src/primitives/address.zig#L135) &mdash; validate EIP-55 checksum
-    - [`isZero`](./src/primitives/address.zig#L110) &mdash; check if zero address
-    - [`equals`](./src/primitives/address.zig#L114) &mdash; compare two addresses
-    - [`calculateCreateAddress`](./src/primitives/address.zig#L314) &mdash; compute CREATE opcode contract address
-    - [`calculateCreate2Address`](./src/primitives/address.zig#L351) &mdash; compute CREATE2 opcode contract address
+    - [`fromHex`](./src/primitives/address.zig#L70) &mdash; construct Address from hex string
+    - [`fromU256`](./src/primitives/address.zig#L60) &mdash; construct Address from u256 value
+    - [`fromBytes`](./src/primitives/address.zig#L115) &mdash; construct Address from 20-byte slice
+    - [`fromPublicKey`](./src/primitives/address.zig#L80) &mdash; derive address from public key components
+    - [`toU256`](./src/primitives/address.zig#L52) &mdash; convert Address to u256 integer
+    - [`toHex`](./src/primitives/address.zig#L93) &mdash; convert to 42-byte hex string
+    - [`toChecksumHex`](./src/primitives/address.zig#L97) &mdash; convert to EIP-55 checksummed hex
+    - [`isValid`](./src/primitives/address.zig#L122) &mdash; validate address string format
+    - [`isValidChecksum`](./src/primitives/address.zig#L126) &mdash; validate EIP-55 checksum
+    - [`isZero`](./src/primitives/address.zig#L101) &mdash; check if zero address
+    - [`equals`](./src/primitives/address.zig#L105) &mdash; compare two addresses
+    - [`calculateCreateAddress`](./src/primitives/address.zig#L305) &mdash; compute CREATE opcode contract address
+    - [`calculateCreate2Address`](./src/primitives/address.zig#L342) &mdash; compute CREATE2 opcode contract address
   - [`Hex`](./src/primitives/hex.zig) &mdash; hexadecimal encoding and decoding utilities
     - [`isHex`](./src/primitives/hex.zig#L100) &mdash; validate hex string format (requires 0x prefix)
     - [`hexToBytes`](./src/primitives/hex.zig#L115) &mdash; convert hex string to byte array
@@ -78,7 +78,7 @@ zig build</pre>
   - [`ABI`](./src/primitives/abi.zig) &mdash; Application Binary Interface encoding/decoding
   - [`Transaction`](./src/primitives/transaction.zig) &mdash; all transaction types (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702)
     - [`encodeLegacyForSigning`](./src/primitives/transaction.zig#L174) &mdash; encode legacy transaction for signature (EIP-155)
-    - [`encodeEip1559ForSigning`](./src/primitives/transaction.zig#L220) &mdash; encode EIP-1559 transaction for signature
+    - [`encode_eip1559_for_signing`](./src/primitives/transaction.zig#L220) &mdash; encode EIP-1559 transaction for signature
     - [`encodeAccessList`](./src/primitives/transaction.zig#L276) &mdash; encode access list to RLP format
     - [`signLegacyTransaction`](./src/primitives/transaction.zig#L337) &mdash; sign transaction with private key
     - [`computeLegacyTransactionHash`](./src/primitives/transaction.zig#L358) &mdash; compute transaction hash (keccak256)
@@ -110,7 +110,7 @@ zig build</pre>
   - [`Trie`](./src/primitives/trie.zig) &mdash; Merkle Patricia Trie for state storage with proof generation
     - [`init`](./src/primitives/trie.zig#L785) &mdash; initialize empty trie
     - [`deinit`](./src/primitives/trie.zig#L793) &mdash; free trie resources
-    - [`rootHash`](./src/primitives/trie.zig#L804) &mdash; get root hash of trie
+    - [`root_hash`](./src/primitives/trie.zig#L804) &mdash; get root hash of trie
     - [`put`](./src/primitives/trie.zig#L809) &mdash; insert key-value pair into trie
     - [`get`](./src/primitives/trie.zig#L827) &mdash; retrieve value from trie
     - [`delete`](./src/primitives/trie.zig#L837) &mdash; delete key from trie
@@ -126,33 +126,30 @@ zig build</pre>
     - [`equal`](./src/crypto/hash_utils.zig#L87) &mdash; constant-time hash comparison
     - [`bitAnd`](./src/crypto/hash_utils.zig#L149) &mdash; bitwise AND of two hashes
     - [`bitOr`](./src/crypto/hash_utils.zig#L159) &mdash; bitwise OR of two hashes
-    - [`bit_xor`](./src/crypto/hash_utils.zig#L139) &mdash; bitwise XOR of two hashes
+    - [`xor`](./src/crypto/hash_utils.zig#L139) &mdash; bitwise XOR of two hashes
     - [`eip191HashMessage`](./src/crypto/hash_utils.zig#L103) &mdash; EIP-191 personal message hashing
-  - [`keccak256 (asm)`](./src/crypto/keccak_asm.zig) &mdash; ⚠️ (unaudited) assembly-optimized Keccak-256 (via keccak-asm)
+  - [`keccak256 (asm)`](./src/crypto/keccak_asm.zig) &mdash; ⚠️ (unaudited) assembly-optimized Keccak-256 (via [keccak-asm](https://github.com/DaniPopes/keccak-asm))
     - [`keccak256`](./src/crypto/keccak_asm.zig#L43) &mdash; assembly-optimized KECCAK256
     - [`keccak224`](./src/crypto/keccak_asm.zig#L60) &mdash; Keccak-224 (28-byte output)
     - [`keccak384`](./src/crypto/keccak_asm.zig#L66) &mdash; Keccak-384 (48-byte output)
     - [`keccak512`](./src/crypto/keccak_asm.zig#L72) &mdash; Keccak-512 (64-byte output)
     - [`keccak256_batch`](./src/crypto/keccak_asm.zig#L80) &mdash; batch process multiple inputs
   - [`secp256k1`](./src/crypto/secp256k1.zig) &mdash; ⚠️ (unaudited) ECDSA signatures for transaction signing
-    - [`AffinePoint.add`](./src/crypto/secp256k1.zig#L83) &mdash; point addition (P+Q)
-    - [`AffinePoint.double`](./src/crypto/secp256k1.zig#L61) &mdash; point doubling (2P)
-    - [`AffinePoint.scalarMul`](./src/crypto/secp256k1.zig#L108) &mdash; scalar multiplication (k·P)
-    - [`unauditedValidateSignature`](./src/crypto/secp256k1.zig#L130) &mdash; validate ECDSA signature parameters
-    - [`unauditedRecoverAddress`](./src/crypto/secp256k1.zig#L147) &mdash; recover Ethereum address from signature
-    - [`unauditedMulmod`](./src/crypto/secp256k1.zig#L253) &mdash; modular multiplication (⚠️ timing attack vulnerable)
-    - [`unauditedInvmod`](./src/crypto/secp256k1.zig#L337) &mdash; modular inverse using Extended Euclidean
-  - [`BLS12-381`](./src/crypto/crypto.zig) &mdash; pairing-friendly curve operations (via BLST)
-    - [`unauditedGetPublicKey`](./src/crypto/crypto.zig#L353) &mdash; derive public key from private key
-    - [`unauditedSignHash`](./src/crypto/crypto.zig#L379) &mdash; sign hash with private key using ECDSA
-    - [`unauditedSignMessage`](./src/crypto/crypto.zig#L459) &mdash; sign EIP-191 message with private key
-    - [`unauditedRecoverAddress`](./src/crypto/crypto.zig#L468) &mdash; recover address from signature and hash
-    - [`unauditedVerifySignature`](./src/crypto/crypto.zig#L494) &mdash; verify signature against hash and address
+    - [`unaudited_validate_signature`](./src/crypto/secp256k1.zig#L130) &mdash; validate ECDSA signature parameters
+    - [`unaudited_recover_address`](./src/crypto/secp256k1.zig#L147) &mdash; recover Ethereum address from signature
+    - [`unaudited_mulmod`](./src/crypto/secp256k1.zig#L253) &mdash; modular multiplication (⚠️ timing attack vulnerable)
+    - [`unaudited_invmod`](./src/crypto/secp256k1.zig#L337) &mdash; modular inverse using Extended Euclidean
+  - [`BLS12-381`](./src/crypto/crypto.zig) &mdash; pairing-friendly curve operations (via [BLST](https://github.com/supranational/blst))
+    - [`unaudited_getPublicKey`](./src/crypto/crypto.zig#L353) &mdash; derive public key from private key
+    - [`unaudited_signHash`](./src/crypto/crypto.zig#L379) &mdash; sign hash with private key using ECDSA
+    - [`unaudited_signMessage`](./src/crypto/crypto.zig#L459) &mdash; sign EIP-191 message with private key
+    - [`unaudited_recoverAddress`](./src/crypto/crypto.zig#L468) &mdash; recover address from signature and hash
+    - [`unaudited_verifySignature`](./src/crypto/crypto.zig#L494) &mdash; verify signature against hash and address
   - [`BN254`](./src/crypto/bn254/) &mdash; ⚠️ (unaudited) pure Zig alt_bn128 curve implementation
-  - [`BN254 Arkworks`](./src/crypto/bn254_arkworks.zig) &mdash; audited Rust arkworks (ECMUL/ECPAIRING)
+  - [`BN254 Arkworks`](./src/crypto/bn254_arkworks.zig) &mdash; audited Rust [arkworks](https://github.com/arkworks-rs/curves) (ECMUL/ECPAIRING)
     - [`ecmul`](./src/crypto/bn254_arkworks.zig#L56) &mdash; scalar multiplication on BN254 G1 (precompile 0x07)
     - [`ecpairing`](./src/crypto/bn254_arkworks.zig#L71) &mdash; pairing check on BN254 (precompile 0x08)
-  - [`KZG`](./src/crypto/c_kzg.zig) &mdash; polynomial commitments for EIP-4844 blobs (via c-kzg-4844)
+  - [`KZG`](./src/crypto/c_kzg.zig) &mdash; polynomial commitments for EIP-4844 blobs (via [c-kzg-4844](https://github.com/ethereum/c-kzg-4844))
     - [`blobToKzgCommitment`](./src/crypto/c_kzg.zig#L43) &mdash; compute KZG commitment from blob
     - [`computeKZGProof`](./src/crypto/c_kzg.zig#L48) &mdash; compute KZG proof at point z
     - [`verifyKZGProof`](./src/crypto/c_kzg.zig#L53) &mdash; verify KZG proof
@@ -165,9 +162,9 @@ zig build</pre>
   - [`RIPEMD160`](./src/crypto/hash_algorithms.zig) &mdash; ⚠️ (unaudited) legacy hash function
     - [`hash`](./src/crypto/hash_algorithms.zig#L64) &mdash; compute RIPEMD160 hash into output buffer
   - [`Blake2`](./src/crypto/blake2.zig) &mdash; ⚠️ (unaudited) high-performance hashing
-    - [`unauditedBlake2fCompress`](./src/crypto/blake2.zig#L100) &mdash; BLAKE2F wrapper for EIP-152 precompile
+    - [`unaudited_blake2f_compress`](./src/crypto/blake2.zig#L100) &mdash; BLAKE2F wrapper for EIP-152 precompile
   - [`ModExp`](./src/crypto/modexp.zig) &mdash; ⚠️ (unaudited) modular exponentiation
-    - [`unauditedModexp`](./src/crypto/modexp.zig#L42) &mdash; modular exponentiation (base^exp mod m)
+    - [`unaudited_modexp`](./src/crypto/modexp.zig#L42) &mdash; modular exponentiation (base^exp mod m)
     <br/>
     <br/>
 - [**Ethereum precompiles**](#precompiles)
@@ -176,9 +173,9 @@ zig build</pre>
   - [`RIPEMD160`](./src/precompiles/ripemd160.zig#L12) &mdash; ⚠️ (unaudited) 0x03: RIPEMD-160 hash function
   - [`IDENTITY`](./src/precompiles/identity.zig#L10) &mdash; 0x04: identity/copy function
   - [`MODEXP`](./src/precompiles/modexp.zig#L13) &mdash; ⚠️ (unaudited) 0x05: modular exponentiation
-  - [`ECADD`](./src/precompiles/bn254_add.zig#L11) &mdash; 0x06: BN254 elliptic curve addition (via Arkworks)
-  - [`ECMUL`](./src/precompiles/bn254_mul.zig#L11) &mdash; 0x07: BN254 elliptic curve multiplication (via Arkworks)
-  - [`ECPAIRING`](./src/precompiles/bn254_pairing.zig#L12) &mdash; 0x08: BN254 pairing check (via Arkworks)
+  - [`ECADD`](./src/precompiles/bn254_add.zig#L11) &mdash; 0x06: BN254 elliptic curve addition (via [Arkworks](https://github.com/arkworks-rs/curves))
+  - [`ECMUL`](./src/precompiles/bn254_mul.zig#L11) &mdash; 0x07: BN254 elliptic curve multiplication (via [Arkworks](https://github.com/arkworks-rs/curves))
+  - [`ECPAIRING`](./src/precompiles/bn254_pairing.zig#L12) &mdash; 0x08: BN254 pairing check (via [Arkworks](https://github.com/arkworks-rs/curves))
   - [`BLAKE2F`](./src/precompiles/blake2f.zig#L11) &mdash; ⚠️ (unaudited) 0x09: Blake2b compression function
   - [`POINT_EVALUATION`](./src/precompiles/point_evaluation.zig#L12) &mdash; 0x0A: KZG point evaluation (EIP-4844)
   - [`BLS12_G1ADD`](./src/precompiles/bls12_g1_add.zig#L10) &mdash; 0x0B: BLS12-381 G1 addition
