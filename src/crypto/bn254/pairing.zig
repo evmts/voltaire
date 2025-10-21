@@ -76,7 +76,11 @@ pub fn final_exponentiation_easy_part(f: *const Fp12Mont) Fp12Mont {
     for (0..6) |_| {
         result.frobeniusMapAssign();
     }
-    result.mulAssign(&(f.inv() catch unreachable));
+    // f is a pairing result and should not be zero in a valid pairing computation
+    const f_inv = f.inv() catch |err| {
+        std.debug.panic("final_exponentiation_easy_part: field element inversion failed: {}", .{err});
+    };
+    result.mulAssign(&f_inv);
     result.mulAssign(&result.frobeniusMap().frobeniusMap());
     return result;
 }

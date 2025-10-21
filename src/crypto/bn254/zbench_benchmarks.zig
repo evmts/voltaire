@@ -451,7 +451,10 @@ fn benchmarkFpMontInv(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..1000) |j| {
-        const result = test_inputs.fp_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchmarkFpMontInv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 
@@ -506,7 +509,10 @@ fn benchmarkFp2MontInv(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..1000) |j| {
-        const result = test_inputs.fp2_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp2_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp2_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchmarkFp2MontInv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 
@@ -561,7 +567,10 @@ fn benchmarkFp6MontInv(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..1000) |j| {
-        const result = test_inputs.fp6_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp6_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp6_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchmarkFp6MontInv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 
@@ -616,7 +625,10 @@ fn benchmarkFp12MontInv(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..1000) |j| {
-        const result = test_inputs.fp12_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp12_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp12_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchmarkFp12MontInv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 
@@ -660,7 +672,10 @@ fn benchmarkFrInv(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..1000) |j| {
-        const result = test_inputs.fr_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fr_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fr_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchmarkFrInv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 
