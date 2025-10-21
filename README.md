@@ -45,6 +45,10 @@
   - [`ABI`](./src/primitives/abi.zig) &mdash; Application Binary Interface encoding/decoding
   - [`Transaction`](./src/primitives/transaction.zig) &mdash; all transaction types (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702)
   - [`Logs`](./src/primitives/logs.zig) &mdash; event log structures with topic handling
+  - [`Bytecode`](./src/primitives/bytecode.zig) &mdash; EVM bytecode utilities with jump destination analysis
+  - [`Opcode`](./src/primitives/opcode.zig) &mdash; EVM opcode enumeration with utility methods
+  - [`OpcodeInfo`](./src/primitives/opcode_info.zig) &mdash; gas costs and stack metadata for all opcodes
+  - [`Hardfork`](./src/primitives/hardfork.zig) &mdash; Ethereum hardfork identifiers with version comparison
     <br/>
     <br/>
 - [**Cryptography**](#cryptography)
@@ -56,6 +60,7 @@
   - [`KZG`](./src/crypto/root.zig) &mdash; polynomial commitments for EIP-4844 blobs
   - [`KZG Trusted Setup`](./src/crypto/kzg_trusted_setup.zig) &mdash; embedded trusted setup data
   - [`KZG Setup`](./src/crypto/kzg_setup.zig) &mdash; thread-safe initialization and management
+  - [`Precompiles`](./src/crypto/precompiles.zig) &mdash; Ethereum precompiles (0x01-0x13)
   - [`SHA256`](./src/crypto/hash_algorithms.zig) &mdash; standard SHA-256 hashing
   - [`RIPEMD160`](./src/crypto/hash_algorithms.zig) &mdash; legacy hash function
   - [`Blake2`](./src/crypto/blake2.zig) &mdash; high-performance hashing
