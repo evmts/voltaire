@@ -1,10 +1,9 @@
 <div align="center">
   <h1>
+    Ethereum primitives and cryptography for Zig.
     <br/>
     <br/>
     <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
-    <br />
-    <br />
     <br />
     <br />
     <br />
@@ -22,21 +21,16 @@
       <img src="https://img.shields.io/badge/tests-passing-brightgreen.svg" alt="tests" />
     </a>
     <br />
-    <em>Ethereum primitives and cryptography for Zig.</em>
   </sup>
-  <br />
-  <br />
   <br />
   <br />
   <pre>zig fetch --save https://github.com/evmts/primitives</pre>
   <br />
   <br />
   <br />
-  <br />
-  <br />
 </div>
 
-- [**Guillotine Primitives**](#primitives)
+- [**Ethereum primitives**](#primitives)
   - [`uint256`](./src/primitives/uint256.zig) &mdash; 256-bit unsigned integer with overflow-checked arithmetic
   - [`Address`](./src/primitives/address.zig) &mdash; Ethereum address type with EIP-55 checksumming
   - [`Hex`](./src/primitives/hex.zig) &mdash; hexadecimal encoding and decoding utilities
@@ -51,7 +45,7 @@
   - [`Trie`](./src/primitives/trie.zig) &mdash; Merkle Patricia Trie for state storage with proof generation
     <br/>
     <br/>
-- [**Cryptography**](#cryptography)
+- [**Cryptography primitives**](#cryptography)
   - [`keccak256`](./src/crypto/keccak_asm.zig) &mdash; assembly-optimized Keccak-256 (via keccak-asm)
   - [`secp256k1`](./src/crypto/secp256k1.zig) &mdash; ECDSA signatures for transaction signing
   - [`BLS12-381`](./src/crypto/crypto.zig) &mdash; pairing-friendly curve operations (via BLST)
@@ -67,14 +61,6 @@
   - [`ModExp`](./src/crypto/modexp.zig) &mdash; modular exponentiation
     <br/>
     <br/>
-- [**External Libraries**](#external-libraries)
-  - [`lib/blst`](./lib/blst.zig) &mdash; BLS12-381 C implementation (via c-kzg-4844)
-  - [`lib/c-kzg-4844`](./lib/c-kzg.zig) &mdash; KZG commitments (Ethereum Foundation)
-  - [`lib/ark`](./lib/ark/) &mdash; BN254/BLS12-381 Rust (arkworks) - audited, production-grade
-  - [`lib/keccak`](./lib/keccak/) &mdash; Keccak-256 Rust (keccak-asm) - assembly-optimized
-    <br/>
-    <br/>
-
 <br />
 <br />
 <br />
