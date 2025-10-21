@@ -24,14 +24,12 @@
     </a>
     <br />
     <em>Ethereum primitives and cryptography for Zig.</em>
-    <br />
-    <em>Production-grade types and operations for blockchain development.</em>
   </sup>
   <br />
   <br />
   <br />
   <br />
-  <pre>git clone https://github.com/evmts/primitives.git</pre>
+  <pre>zig fetch --save https://github.com/evmts/primitives</pre>
   <br />
   <br />
   <br />
