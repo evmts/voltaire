@@ -206,6 +206,23 @@ pub const Signature = struct {
 // Constants
 const ETHEREUM_MESSAGE_PREFIX = "\x19Ethereum Signed Message:\n";
 
+/// Securely zero sensitive memory to prevent leakage
+/// Uses volatile operations to prevent compiler optimization
+pub fn secureZeroMemory(ptr: anytype) void {
+    const T = @TypeOf(ptr);
+    const info = @typeInfo(T);
+
+    if (info != .Pointer) {
+        @compileError("secureZeroMemory expects a pointer type");
+    }
+
+    const bytes = std.mem.asBytes(ptr);
+    // Use @memset which the compiler should not optimize away for security-sensitive data
+    @memset(bytes, 0);
+    // Memory barrier to prevent reordering
+    std.atomic.compilerFence(.seq_cst);
+}
+
 // secp256k1 constants - re-export from precompile implementation
 pub const SECP256K1_P: u256 = secp256k1.SECP256K1_P;
 pub const SECP256K1_N: u256 = secp256k1.SECP256K1_N;
@@ -355,7 +372,8 @@ pub fn is_valid_signature(signature: Signature) bool {
 /// This function implements public key derivation using unaudited ECC operations.
 /// Use at your own risk in production systems.
 pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
-    const private_key_u256 = std.mem.readInt(u256, &private_key, .big);
+    var private_key_u256 = std.mem.readInt(u256, &private_key, .big);
+    defer secureZeroMemory(&private_key_u256);
 
     // Validate private key
     if (private_key_u256 == 0 or private_key_u256 >= SECP256K1_N) {
@@ -381,7 +399,8 @@ pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
 /// This function implements ECDSA signing without security review.
 /// Use at your own risk in production systems.
 pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
-    const private_key_u256 = std.mem.readInt(u256, &private_key, .big);
+    var private_key_u256 = std.mem.readInt(u256, &private_key, .big);
+    defer secureZeroMemory(&private_key_u256);
 
     // Validate private key
     if (private_key_u256 == 0 or private_key_u256 >= SECP256K1_N) {
@@ -395,6 +414,7 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     // For now, we'll use a simpler approach with random k
     // TODO: Implement proper RFC 6979 for deterministic signatures
     var k: u256 = 0;
+    defer secureZeroMemory(&k);
     var r: u256 = 0;
     var s: u256 = 0;
     var recovery_id: u8 = 0;
@@ -404,6 +424,7 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     while (attempts < 1000) : (attempts += 1) {
         // Generate random k
         var k_bytes: [32]u8 = undefined;
+        defer secureZeroMemory(&k_bytes);
         crypto.random.bytes(&k_bytes);
         k = std.mem.readInt(u256, &k_bytes, .big);
 
