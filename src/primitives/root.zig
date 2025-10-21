@@ -30,11 +30,20 @@
 //! - **Authorization**: EIP-7702 authorization lists
 //! - **Blob**: EIP-4844 blob transaction data structures
 //!
+//! ### Bytecode & Execution
+//! - **Bytecode**: EVM bytecode utilities with jump destination analysis
+//! - **Opcode**: EVM opcode enumeration with utility methods
+//! - **OpcodeInfo**: Gas costs and stack metadata for opcodes
+//!
 //! ### Ethereum Standards
 //! - **EventLog**: Contract event log structures
 //! - **ENS**: Ethereum Name Service utilities
 //! - **SIWE**: Sign-In with Ethereum message handling
 //! - **EIP712**: Typed data signing standard
+//!
+//! ### Protocol
+//! - **Hardfork**: Ethereum hardfork identifiers and version comparison
+//! - **ForkTransition**: Fork transition parsing and activation logic
 //!
 //! ### State & Storage
 //! - **State**: Account state and storage key definitions
@@ -120,12 +129,22 @@ pub const Blob = @import("blob.zig");
 
 // Contract utilities
 pub const EventLog = @import("event_log.zig");
+pub const Bytecode = @import("bytecode.zig").Bytecode;
+
+// Opcodes
+pub const Opcode = @import("opcode.zig").Opcode;
+pub const OpcodeInfo = @import("opcode_info.zig");
+
 
 // Logging
 pub const logs = @import("logs.zig");
 
 // Standards
 pub const Siwe = @import("siwe.zig");
+
+// Protocol
+pub const Hardfork = @import("hardfork.zig").Hardfork;
+pub const ForkTransition = @import("hardfork.zig").ForkTransition;
 
 // Export common constants
 pub const ZERO_ADDRESS = Address.ZERO_ADDRESS;
