@@ -37,7 +37,7 @@ Follow TDD
 ❌ Stub implementations (`error.NotImplemented`)
 ❌ Commented code (use Git)
 ❌ Test failures
-❌ `std.debug.print` in modules (use `log.zig`)
+❌ `std.debug.print` in library code
 ❌ `std.debug.assert` (use proper error handling)
 ❌ Skipping/commenting tests
 ❌ Any stub/fallback implementations
@@ -66,7 +66,7 @@ This uncertainty wastes debugging time and erodes trust. Either implement it ful
 - Defer patterns for cleanup
 - Always follow allocations with defer/errDefer
 - Descriptive variables (`top`, `value1`, `operand` not `a`, `b`)
-- Logging: use `log.zig` (`log.debug`, `log.warn`)
+- No logging in library code (this is a library, not an application)
 
 ### Memory Management
 

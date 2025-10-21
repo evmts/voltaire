@@ -25,9 +25,6 @@ Cryptographic primitives and operations:
 - **RIPEMD160** - Legacy RIPEMD-160 hashing
 - **Blake2** - High-performance Blake2 hashing
 
-### Infrastructure
-- **log.zig** - Logging utilities
-
 ## Build System
 
 All modules are integrated through Zig's build system:

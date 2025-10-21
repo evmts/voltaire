@@ -126,7 +126,7 @@ All external libraries follow strict memory safety protocols:
 ### Debugging External Libraries
 
 - Enable debug symbols for C/Rust components
-- Use logging via `src/log.zig`
+- Use standard Zig testing and error handling
 - Follow TDD practices for any modifications
 - Test against known vectors from specifications
 

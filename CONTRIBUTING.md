@@ -50,7 +50,7 @@ If your contribution is large, please open a discussion to chat about the change
 - ❌ **NO** commented-out code (use Git for history)
 - ❌ **NO** test failures - all tests must pass
 - ❌ **NO** swallowing errors with empty catch blocks
-- ❌ **NO** `std.debug.print` in library code (use `log.zig`)
+- ❌ **NO** `std.debug.print` in library code (this is a library, not an app)
 - ❌ **NO** `std.debug.assert` (use proper error handling)
 
 **If in doubt, STOP and ask for guidance rather than stubbing or commenting out code.**
