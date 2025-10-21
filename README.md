@@ -32,217 +32,156 @@
 
 - [**Ethereum primitives**](#primitives)
   - [`uint256`](./src/primitives/uint256.zig) &mdash; 256-bit unsigned integer with overflow-checked arithmetic
-    - `from_limbs()`, `from_u64()`, `from_str()` &mdash; construction from various types
-    - `to_u64()`, `to_le_bytes()`, `to_be_bytes()` &mdash; conversion to basic types
-    - `overflowing_add()`, `checked_add()`, `wrapping_add()` &mdash; addition with overflow handling
-    - `overflowing_sub()`, `checked_sub()`, `wrapping_sub()` &mdash; subtraction with overflow handling
-    - `overflowing_mul()`, `checked_mul()`, `wrapping_mul()`, `saturating_mul()` &mdash; multiplication variants
-    - `div_rem()`, `wrapping_div()`, `checked_div()` &mdash; division and modulo operations
-    - `eq()`, `lt()`, `gt()`, `le()`, `ge()`, `cmp()` &mdash; comparison operations
-    - `ltBranchFree()`, `gtBranchFree()` &mdash; constant-time comparisons
-    - `bit_and()`, `bit_or()`, `bit_xor()`, `bit_not()` &mdash; bitwise operations
-    - `wrapping_shl()`, `wrapping_shr()`, `rotate_left()`, `rotate_right()` &mdash; bit shifting
-    - `set_bit()`, `get_bit()`, `set_byte()`, `byte()` &mdash; bit/byte manipulation
-    - `count_ones()`, `count_zeros()`, `leading_zeros()`, `trailing_zeros()` &mdash; bit counting
-    - `add_mod()`, `mul_mod()`, `pow_mod()` &mdash; modular arithmetic
-    - `gcd()`, `lcm()`, `sqrt()`, `pow()` &mdash; number theory operations
   - [`Address`](./src/primitives/address.zig) &mdash; Ethereum address type with EIP-55 checksumming
-    - `from_hex()`, `from_u256()`, `fromBytes()` &mdash; parse from various formats
-    - `from_public_key()`, `address_from_public_key()` &mdash; derive from ECDSA public key
-    - `to_u256()`, `to_hex()`, `to_checksum_hex()` &mdash; convert to different formats
-    - `is_valid()`, `is_valid_checksum()` &mdash; validate address format and EIP-55 checksum
-    - `is_zero()`, `equals()`, `eql()` &mdash; comparison operations
-    - `calculate_create_address()` &mdash; compute CREATE opcode contract address
-    - `calculate_create2_address()` &mdash; compute CREATE2 opcode contract address
+    - [`from_hex`](./src/primitives/address.zig#L79) &mdash; construct Address from hex string
+    - [`from_u256`](./src/primitives/address.zig#L69) &mdash; construct Address from u256 value
+    - [`fromBytes`](./src/primitives/address.zig#L124) &mdash; construct Address from 20-byte slice
+    - [`from_public_key`](./src/primitives/address.zig#L89) &mdash; derive address from public key components
+    - [`to_u256`](./src/primitives/address.zig#L56) &mdash; convert Address to u256 integer
+    - [`to_hex`](./src/primitives/address.zig#L102) &mdash; convert to 42-byte hex string
+    - [`to_checksum_hex`](./src/primitives/address.zig#L106) &mdash; convert to EIP-55 checksummed hex
+    - [`is_valid`](./src/primitives/address.zig#L131) &mdash; validate address string format
+    - [`is_valid_checksum`](./src/primitives/address.zig#L135) &mdash; validate EIP-55 checksum
+    - [`is_zero`](./src/primitives/address.zig#L110) &mdash; check if zero address
+    - [`equals`](./src/primitives/address.zig#L114) &mdash; compare two addresses
+    - [`calculate_create_address`](./src/primitives/address.zig#L314) &mdash; compute CREATE opcode contract address
+    - [`calculate_create2_address`](./src/primitives/address.zig#L351) &mdash; compute CREATE2 opcode contract address
   - [`Hex`](./src/primitives/hex.zig) &mdash; hexadecimal encoding and decoding utilities
-    - `is_hex()` &mdash; validate hex string format
-    - `hex_to_bytes()`, `bytes_to_hex()` &mdash; convert between hex strings and byte arrays
-    - `hex_to_bytes_fixed()`, `bytes_to_hex_fixed()` &mdash; fixed-size conversions without allocator
-    - `hex_to_string()`, `string_to_hex()` &mdash; UTF-8 string conversions
-    - `hex_to_u256()`, `u256_to_hex()` &mdash; numeric conversions
-    - `pad_left()`, `pad_right()`, `pad()` &mdash; zero-padding operations
-    - `trim_left_zeros()`, `trim_right_zeros()`, `trim()` &mdash; remove leading/trailing zeros
-    - `size()`, `slice()`, `concat()` &mdash; byte array utilities
+    - [`is_hex`](./src/primitives/hex.zig#L100) &mdash; validate hex string format (requires 0x prefix)
+    - [`hex_to_bytes`](./src/primitives/hex.zig#L115) &mdash; convert hex string to byte array
+    - [`bytes_to_hex`](./src/primitives/hex.zig#L139) &mdash; convert byte array to hex string
+    - [`hex_to_bytes_fixed`](./src/primitives/hex.zig#L155) &mdash; convert to fixed-size array (no allocator)
+    - [`bytes_to_hex_fixed`](./src/primitives/hex.zig#L177) &mdash; convert fixed array to hex (no allocator)
+    - [`hex_to_string`](./src/primitives/hex.zig#L202) &mdash; convert hex to UTF-8 string
+    - [`string_to_hex`](./src/primitives/hex.zig#L208) &mdash; convert UTF-8 string to hex
+    - [`hex_to_u256`](./src/primitives/hex.zig#L292) &mdash; parse hex string to u256 integer
+    - [`u256_to_hex`](./src/primitives/hex.zig#L316) &mdash; convert u256 integer to hex string
+    - [`u64_to_hex`](./src/primitives/hex.zig#L344) &mdash; convert u64 integer to hex string
+    - [`pad_left`](./src/primitives/hex.zig#L241) &mdash; left-pad bytes with zeros
+    - [`pad_right`](./src/primitives/hex.zig#L254) &mdash; right-pad bytes with zeros
+    - [`trim_left_zeros`](./src/primitives/hex.zig#L271) &mdash; remove leading zero bytes
+    - [`trim_right_zeros`](./src/primitives/hex.zig#L279) &mdash; remove trailing zero bytes
+    - [`concat`](./src/primitives/hex.zig#L224) &mdash; concatenate multiple byte arrays
   - [`RLP`](./src/primitives/rlp.zig) &mdash; Recursive Length Prefix serialization
-    - `encode()` &mdash; generic RLP encoding for any type
-    - `encode_bytes()` &mdash; encode byte strings
-    - `encode_length()` &mdash; encode length prefixes
-    - `decode()` &mdash; decode RLP data into structured types
-    - `bytes_to_hex()`, `hex_to_bytes()` &mdash; hex conversion utilities
-    - `concat_bytes()` &mdash; concatenate byte arrays
+    - [`encode`](./src/primitives/rlp.zig#L137) &mdash; encode input into RLP format (generic)
+    - [`encode_bytes`](./src/primitives/rlp.zig#L235) &mdash; encode byte array according to RLP rules
+    - [`encode_length`](./src/primitives/rlp.zig#L264) &mdash; encode integer length as bytes
+    - [`decode`](./src/primitives/rlp.zig#L281) &mdash; decode RLP data with optional streaming
   - [`ABI`](./src/primitives/abi.zig) &mdash; Application Binary Interface encoding/decoding
-    - `encodeAbiParameters()`, `decodeAbiParameters()` &mdash; encode/decode function parameters
-    - `encodeFunctionData()`, `decodeFunctionData()` &mdash; encode/decode complete function calls
-    - `encodeEventTopics()` &mdash; encode event log topics for filtering
-    - `encodePacked()` &mdash; packed encoding for keccak256 hashing
-    - `computeSelector()` &mdash; calculate 4-byte function selector
-    - `createFunctionSignature()` &mdash; build canonical function signature
-    - `uint256Value()`, `boolValue()`, `addressValue()` &mdash; wrap primitive values
   - [`Transaction`](./src/primitives/transaction.zig) &mdash; all transaction types (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702)
-    - `encode_legacy_for_signing()` &mdash; prepare legacy transaction for signing
-    - `encode_eip1559_for_signing()` &mdash; prepare EIP-1559 transaction for signing
-    - `encode_access_list()` &mdash; encode EIP-2930 access list
-    - `sign_legacy_transaction()` &mdash; sign transaction with private key
-    - `compute_legacy_transaction_hash()` &mdash; calculate transaction hash
-    - `detect_transaction_type()` &mdash; identify transaction type from raw data
+    - [`encode_legacy_for_signing`](./src/primitives/transaction.zig#L174) &mdash; encode legacy transaction for signature (EIP-155)
+    - [`encode_eip1559_for_signing`](./src/primitives/transaction.zig#L220) &mdash; encode EIP-1559 transaction for signature
+    - [`encode_access_list`](./src/primitives/transaction.zig#L276) &mdash; encode access list to RLP format
+    - [`sign_legacy_transaction`](./src/primitives/transaction.zig#L337) &mdash; sign transaction with private key
+    - [`compute_legacy_transaction_hash`](./src/primitives/transaction.zig#L358) &mdash; compute transaction hash (keccak256)
+    - [`detect_transaction_type`](./src/primitives/transaction.zig#L368) &mdash; detect transaction type from raw data
   - [`Logs`](./src/primitives/logs.zig) &mdash; event log structures with topic handling
-    - `Log` struct with `address`, `topics[]`, `data` fields
   - [`Bytecode`](./src/primitives/bytecode.zig) &mdash; EVM bytecode utilities with jump destination analysis
-    - `init()`, `deinit()` &mdash; initialize with automatic JUMPDEST analysis
-    - `isValidJumpDest()` &mdash; check if program counter is valid jump destination
-    - `len()` &mdash; get bytecode length
-    - `getOpcode()` &mdash; read byte at position
-    - `getOpcodeEnum()` &mdash; get Opcode enum at position
-    - `readImmediate()` &mdash; read PUSH instruction immediate data
+    - [`init`](./src/primitives/bytecode.zig#L16) &mdash; initialize bytecode with jump destination analysis
+    - [`deinit`](./src/primitives/bytecode.zig#L29) &mdash; clean up resources
+    - [`isValidJumpDest`](./src/primitives/bytecode.zig#L34) &mdash; check if position is valid JUMPDEST
+    - [`len`](./src/primitives/bytecode.zig#L39) &mdash; get bytecode length
+    - [`getOpcode`](./src/primitives/bytecode.zig#L44) &mdash; get opcode byte at position
+    - [`getOpcodeEnum`](./src/primitives/bytecode.zig#L52) &mdash; get typed Opcode enum at position
+    - [`readImmediate`](./src/primitives/bytecode.zig#L59) &mdash; read immediate data for PUSH operations
   - [`Opcode`](./src/primitives/opcode.zig) &mdash; EVM opcode enumeration with utility methods
-    - All 256 EVM opcodes: `STOP`, `ADD`, `MUL`, `SUB`, `DIV`, `SDIV`, `MOD`, `SMOD`, `ADDMOD`, `MULMOD`, `EXP`, `SIGNEXTEND`
-    - Stack: `PUSH0`-`PUSH32`, `POP`, `DUP1`-`DUP16`, `SWAP1`-`SWAP16`
-    - Memory: `MLOAD`, `MSTORE`, `MSTORE8`, `MSIZE`
-    - Storage: `SLOAD`, `SSTORE`
-    - Control: `JUMP`, `JUMPI`, `JUMPDEST`, `PC`, `GAS`
-    - System: `CREATE`, `CREATE2`, `CALL`, `CALLCODE`, `DELEGATECALL`, `STATICCALL`, `RETURN`, `REVERT`, `SELFDESTRUCT`
-    - Environmental: `ADDRESS`, `BALANCE`, `CALLER`, `CALLVALUE`, `CALLDATALOAD`, `CALLDATASIZE`, `CALLDATACOPY`, `CODESIZE`, `CODECOPY`
-    - Block: `BLOCKHASH`, `COINBASE`, `TIMESTAMP`, `NUMBER`, `DIFFICULTY`, `GASLIMIT`, `CHAINID`, `BASEFEE`, `BLOBHASH`, `BLOBBASEFEE`
-    - Crypto: `KECCAK256`
-    - Logs: `LOG0`, `LOG1`, `LOG2`, `LOG3`, `LOG4`
+    - [`isPush`](./src/primitives/opcode.zig#L170) &mdash; check if opcode is PUSH (0x5f-0x7f)
+    - [`pushSize`](./src/primitives/opcode.zig#L176) &mdash; get number of bytes pushed (0-32)
+    - [`isDup`](./src/primitives/opcode.zig#L185) &mdash; check if opcode is DUP (0x80-0x8f)
+    - [`isSwap`](./src/primitives/opcode.zig#L198) &mdash; check if opcode is SWAP (0x90-0x9f)
+    - [`isLog`](./src/primitives/opcode.zig#L211) &mdash; check if opcode is LOG (0xa0-0xa4)
+    - [`isTerminating`](./src/primitives/opcode.zig#L224) &mdash; check if opcode terminates execution
+    - [`isStateModifying`](./src/primitives/opcode.zig#L232) &mdash; check if opcode modifies state
+    - [`name`](./src/primitives/opcode.zig#L264) &mdash; get opcode name as string
   - [`OpcodeInfo`](./src/primitives/opcode_info.zig) &mdash; gas costs and stack metadata for all opcodes
-    - `OpcodeInfo` struct with `gas_cost`, `stack_inputs`, `stack_outputs` fields
-    - `OPCODE_INFO[256]` &mdash; static array with metadata for all opcodes
-    - `HARDFORK_OPCODES` &mdash; hardfork-specific opcode availability
   - [`Hardfork`](./src/primitives/hardfork.zig) &mdash; Ethereum hardfork identifiers with version comparison
-    - All hardforks: `FRONTIER`, `HOMESTEAD`, `DAO`, `TANGERINE_WHISTLE`, `SPURIOUS_DRAGON`, `BYZANTIUM`, `CONSTANTINOPLE`, `PETERSBURG`, `ISTANBUL`, `MUIR_GLACIER`, `BERLIN`, `LONDON`, `ARROW_GLACIER`, `GRAY_GLACIER`, `MERGE`, `SHANGHAI`, `CANCUN`, `PRAGUE`, `OSAKA`
-    - `toInt()` &mdash; convert to numeric value
-    - `isAtLeast()`, `isBefore()` &mdash; version comparison
-    - `fromString()` &mdash; parse from name (case-insensitive)
+    - [`toInt`](./src/primitives/hardfork.zig#L123) &mdash; convert hardfork to numeric representation
+    - [`isAtLeast`](./src/primitives/hardfork.zig#L128) &mdash; check if at or after specified version
+    - [`isBefore`](./src/primitives/hardfork.zig#L133) &mdash; check if before specified version
+    - [`fromString`](./src/primitives/hardfork.zig#L139) &mdash; parse hardfork from string (case-insensitive)
   - [`Trie`](./src/primitives/trie.zig) &mdash; Merkle Patricia Trie for state storage with proof generation
-    - `init()`, `deinit()` &mdash; lifecycle management
-    - `root_hash()` &mdash; get Merkle root hash
-    - `put()`, `get()`, `delete()` &mdash; key-value operations
-    - `clear()` &mdash; remove all entries
-    - `TrieMask` with `set()`, `unset()`, `is_set()`, `bit_count()` &mdash; bit mask for branch children
+    - [`init`](./src/primitives/trie.zig#L785) &mdash; initialize empty trie
+    - [`deinit`](./src/primitives/trie.zig#L793) &mdash; free trie resources
+    - [`root_hash`](./src/primitives/trie.zig#L804) &mdash; get root hash of trie
+    - [`put`](./src/primitives/trie.zig#L809) &mdash; insert key-value pair into trie
+    - [`get`](./src/primitives/trie.zig#L827) &mdash; retrieve value from trie
+    - [`delete`](./src/primitives/trie.zig#L837) &mdash; delete key from trie
+    - [`clear`](./src/primitives/trie.zig#L848) &mdash; clear trie to empty state
     <br/>
     <br/>
 - [**Cryptography primitives**](#cryptography)
   - [`keccak256`](./src/crypto/hash_utils.zig) &mdash; Keccak-256 via Zig std library
-    - `Hash.keccak256()` &mdash; compute Keccak-256 hash
-    - `Hash.from_bytes()`, `Hash.from_hex()` &mdash; create from existing hash
-    - `Hash.to_bytes()`, `Hash.to_hex()` &mdash; convert to bytes or hex string
-    - `Hash.eql()` &mdash; constant-time hash comparison
-    - `Hash.bit_and()`, `Hash.bit_or()`, `Hash.bit_xor()` &mdash; bitwise operations
-    - `compute_selector()` &mdash; compute 4-byte function selector
-    - `hash_message_eip191()` &mdash; EIP-191 personal message hashing
+    - [`keccak256`](./src/crypto/hash_utils.zig#L92) &mdash; compute Keccak-256 hash
+    - [`from_bytes`](./src/crypto/hash_utils.zig#L31) &mdash; create Hash from [32]u8 array
+    - [`from_hex`](./src/crypto/hash_utils.zig#L42) &mdash; create Hash from 0x-prefixed hex string
+    - [`to_hex`](./src/crypto/hash_utils.zig#L65) &mdash; convert Hash to [66]u8 hex string
+    - [`equal`](./src/crypto/hash_utils.zig#L87) &mdash; constant-time hash comparison
+    - [`bit_and`](./src/crypto/hash_utils.zig#L149) &mdash; bitwise AND of two hashes
+    - [`bit_or`](./src/crypto/hash_utils.zig#L159) &mdash; bitwise OR of two hashes
+    - [`bit_xor`](./src/crypto/hash_utils.zig#L139) &mdash; bitwise XOR of two hashes
+    - [`eip191_hash_message`](./src/crypto/hash_utils.zig#L103) &mdash; EIP-191 personal message hashing
   - [`keccak256 (asm)`](./src/crypto/keccak_asm.zig) &mdash; ⚠️ (unaudited) assembly-optimized Keccak-256 (via keccak-asm)
-    - `keccak256()`, `keccak224()`, `keccak384()`, `keccak512()` &mdash; optimized Keccak variants
-    - `keccak256_batch()` &mdash; batch processing for multiple inputs
+    - [`keccak256`](./src/crypto/keccak_asm.zig#L43) &mdash; assembly-optimized KECCAK256
+    - [`keccak224`](./src/crypto/keccak_asm.zig#L60) &mdash; Keccak-224 (28-byte output)
+    - [`keccak384`](./src/crypto/keccak_asm.zig#L66) &mdash; Keccak-384 (48-byte output)
+    - [`keccak512`](./src/crypto/keccak_asm.zig#L72) &mdash; Keccak-512 (64-byte output)
+    - [`keccak256_batch`](./src/crypto/keccak_asm.zig#L80) &mdash; batch process multiple inputs
   - [`secp256k1`](./src/crypto/secp256k1.zig) &mdash; ⚠️ (unaudited) ECDSA signatures for transaction signing
-    - `AffinePoint.add()`, `AffinePoint.double()`, `AffinePoint.scalar_mul()` &mdash; elliptic curve operations
-    - `validate_signature()` &mdash; verify ECDSA signature
-    - `recover_address()` &mdash; recover Ethereum address from signature
-    - `mulmod()`, `addmod()`, `submod()`, `powmod()`, `invmod()` &mdash; field arithmetic (⚠️ timing attack vulnerable)
+    - [`AffinePoint.add`](./src/crypto/secp256k1.zig#L83) &mdash; point addition (P+Q)
+    - [`AffinePoint.double`](./src/crypto/secp256k1.zig#L61) &mdash; point doubling (2P)
+    - [`AffinePoint.scalar_mul`](./src/crypto/secp256k1.zig#L108) &mdash; scalar multiplication (k·P)
+    - [`unaudited_validate_signature`](./src/crypto/secp256k1.zig#L130) &mdash; validate ECDSA signature parameters
+    - [`unaudited_recover_address`](./src/crypto/secp256k1.zig#L147) &mdash; recover Ethereum address from signature
+    - [`unaudited_mulmod`](./src/crypto/secp256k1.zig#L253) &mdash; modular multiplication (⚠️ timing attack vulnerable)
+    - [`unaudited_invmod`](./src/crypto/secp256k1.zig#L337) &mdash; modular inverse using Extended Euclidean
   - [`BLS12-381`](./src/crypto/crypto.zig) &mdash; pairing-friendly curve operations (via BLST)
-    - `bls_g1_add()`, `bls_g1_mul()`, `bls_g1_msm()` &mdash; G1 group operations
-    - `bls_g2_add()`, `bls_g2_mul()`, `bls_g2_msm()` &mdash; G2 group operations
-    - `bls_pairing()` &mdash; pairing check operation
-    - `bls_map_fp_to_g1()`, `bls_map_fp2_to_g2()` &mdash; hash-to-curve operations
-    - `generate_private_key()`, `derive_public_key()` &mdash; key generation
-    - `sign_message()`, `verify_signature()` &mdash; ECDSA signature operations
+    - [`unaudited_getPublicKey`](./src/crypto/crypto.zig#L353) &mdash; derive public key from private key
+    - [`unaudited_signHash`](./src/crypto/crypto.zig#L379) &mdash; sign hash with private key using ECDSA
+    - [`unaudited_signMessage`](./src/crypto/crypto.zig#L459) &mdash; sign EIP-191 message with private key
+    - [`unaudited_recoverAddress`](./src/crypto/crypto.zig#L468) &mdash; recover address from signature and hash
+    - [`unaudited_verifySignature`](./src/crypto/crypto.zig#L494) &mdash; verify signature against hash and address
   - [`BN254`](./src/crypto/bn254/) &mdash; ⚠️ (unaudited) pure Zig alt_bn128 curve implementation
-    - `FpMont` &mdash; Montgomery field arithmetic: `mul()`, `add()`, `sub()`, `neg()`, `inv()`, `pow()`, `sqrt()`
-    - `Fp2Mont`, `Fp4Mont`, `Fp6Mont`, `Fp12Mont` &mdash; extension field operations
-    - `G1`, `G2` &mdash; elliptic curve point operations: `add()`, `double()`, `scalar_mul()`, `is_on_curve()`
-    - `pairing()` &mdash; optimal ate pairing computation
-    - `miller_loop()`, `final_exponentiation()` &mdash; pairing components
   - [`BN254 Arkworks`](./src/crypto/bn254_arkworks.zig) &mdash; audited Rust arkworks (ECMUL/ECPAIRING)
-    - `bn254_add()` &mdash; G1 point addition (precompile 0x06)
-    - `bn254_mul()` &mdash; G1 scalar multiplication (precompile 0x07)
-    - `bn254_pairing()` &mdash; pairing check (precompile 0x08)
-    - `validate_g1_point()`, `validate_g2_point()` &mdash; point validation
-  - [`KZG`](./src/crypto/root.zig) &mdash; polynomial commitments for EIP-4844 blobs (via c-kzg-4844)
-    - `verify_blob_kzg_proof()` &mdash; verify KZG proof for blob
-    - `verify_blob_kzg_proof_batch()` &mdash; batch proof verification
-    - `compute_blob_kzg_proof()` &mdash; generate proof for blob
-    - `blob_to_kzg_commitment()` &mdash; compute commitment from blob
+    - [`ecmul`](./src/crypto/bn254_arkworks.zig#L56) &mdash; scalar multiplication on BN254 G1 (precompile 0x07)
+    - [`ecpairing`](./src/crypto/bn254_arkworks.zig#L71) &mdash; pairing check on BN254 (precompile 0x08)
+  - [`KZG`](./src/crypto/c_kzg.zig) &mdash; polynomial commitments for EIP-4844 blobs (via c-kzg-4844)
+    - [`blobToKzgCommitment`](./src/crypto/c_kzg.zig#L43) &mdash; compute KZG commitment from blob
+    - [`computeKZGProof`](./src/crypto/c_kzg.zig#L48) &mdash; compute KZG proof at point z
+    - [`verifyKZGProof`](./src/crypto/c_kzg.zig#L53) &mdash; verify KZG proof
   - [`KZG Trusted Setup`](./src/crypto/kzg_trusted_setup.zig) &mdash; embedded trusted setup data
-    - Embedded mainnet trusted setup parameters for EIP-4844
   - [`KZG Setup`](./src/crypto/kzg_setup.zig) &mdash; thread-safe initialization and management
-    - `ensure_kzg_initialized()` &mdash; thread-safe lazy initialization
-    - `get_kzg_settings()` &mdash; access global KZG settings
-    - `deinit_kzg()` &mdash; cleanup KZG resources
+    - [`init`](./src/crypto/kzg_setup.zig#L22) &mdash; initialize KZG with embedded trusted setup (thread-safe)
+    - [`deinit`](./src/crypto/kzg_setup.zig#L73) &mdash; deinitialize KZG trusted setup
   - [`SHA256`](./src/crypto/hash_algorithms.zig) &mdash; standard SHA-256 hashing via Zig std library
-    - `sha256_hash()` &mdash; compute SHA-256 hash
+    - [`hash`](./src/crypto/hash_algorithms.zig#L11) &mdash; compute SHA256 hash into output buffer
   - [`RIPEMD160`](./src/crypto/hash_algorithms.zig) &mdash; ⚠️ (unaudited) legacy hash function
-    - `ripemd160_hash()` &mdash; compute RIPEMD-160 hash
+    - [`hash`](./src/crypto/hash_algorithms.zig#L64) &mdash; compute RIPEMD160 hash into output buffer
   - [`Blake2`](./src/crypto/blake2.zig) &mdash; ⚠️ (unaudited) high-performance hashing
-    - `blake2f()` &mdash; Blake2b compression function (EIP-152)
-    - `blake2b_mix()` &mdash; Blake2b mixing function
-    - `blake2b_round()` &mdash; single Blake2b round
+    - [`unaudited_blake2f_compress`](./src/crypto/blake2.zig#L100) &mdash; BLAKE2F wrapper for EIP-152 precompile
   - [`ModExp`](./src/crypto/modexp.zig) &mdash; ⚠️ (unaudited) modular exponentiation
-    - `modexp()` &mdash; big-integer modular exponentiation
-    - `calculate_modexp_gas()` &mdash; EIP-198 gas cost calculation
-    - `bytes_to_bigint()`, `bigint_to_bytes()` &mdash; big-integer conversions
-    <br/>
-
-  > **Note**: Additional cryptographic primitives are available in [Zig's standard library](https://ziglang.org/documentation/master/std/#std.crypto).
+    - [`unaudited_modexp`](./src/crypto/modexp.zig#L42) &mdash; modular exponentiation (base^exp mod m)
     <br/>
     <br/>
 - [**Ethereum precompiles**](#precompiles)
-  - [`ECRECOVER`](./src/precompiles/ecrecover.zig) &mdash; ⚠️ (unaudited) 0x01: recover signer address from signature
-    - `run()` &mdash; recover Ethereum address from ECDSA signature (r, s, v) and message hash
-    - `calculate_gas()` &mdash; returns fixed gas cost of 3000
-  - [`SHA256`](./src/precompiles/sha256.zig) &mdash; 0x02: SHA-256 hash function
-    - `run()` &mdash; compute SHA-256 hash of input data
-    - `calculate_gas()` &mdash; 60 + 12 per word (32 bytes)
-  - [`RIPEMD160`](./src/precompiles/ripemd160.zig) &mdash; ⚠️ (unaudited) 0x03: RIPEMD-160 hash function
-    - `run()` &mdash; compute RIPEMD-160 hash, left-padded to 32 bytes
-    - `calculate_gas()` &mdash; 600 + 120 per word
-  - [`IDENTITY`](./src/precompiles/identity.zig) &mdash; 0x04: identity/copy function
-    - `run()` &mdash; return input data unchanged (memory copy)
-    - `calculate_gas()` &mdash; 15 + 3 per word
-  - [`MODEXP`](./src/precompiles/modexp.zig) &mdash; ⚠️ (unaudited) 0x05: modular exponentiation
-    - `run()` &mdash; compute (base^exp) mod modulus for arbitrary-precision integers
-    - `calculate_gas()` &mdash; EIP-198/EIP-2565 complexity-based gas calculation
-  - [`ECADD`](./src/precompiles/bn254_add.zig) &mdash; 0x06: BN254 elliptic curve addition (via Arkworks)
-    - `run()` &mdash; add two BN254 G1 points (alt_bn128 curve)
-    - `calculate_gas()` &mdash; returns fixed gas cost of 150
-  - [`ECMUL`](./src/precompiles/bn254_mul.zig) &mdash; 0x07: BN254 elliptic curve multiplication (via Arkworks)
-    - `run()` &mdash; scalar multiplication of BN254 G1 point
-    - `calculate_gas()` &mdash; returns fixed gas cost of 6000
-  - [`ECPAIRING`](./src/precompiles/bn254_pairing.zig) &mdash; 0x08: BN254 pairing check (via Arkworks)
-    - `run()` &mdash; verify BN254 pairing equation for zkSNARK verification
-    - `calculate_gas()` &mdash; 45000 + 34000 per pairing pair
-  - [`BLAKE2F`](./src/precompiles/blake2f.zig) &mdash; ⚠️ (unaudited) 0x09: Blake2b compression function
-    - `run()` &mdash; Blake2b F compression function (EIP-152)
-    - `calculate_gas()` &mdash; 1 gas per round
-  - [`POINT_EVALUATION`](./src/precompiles/point_evaluation.zig) &mdash; 0x0A: KZG point evaluation (EIP-4844)
-    - `run()` &mdash; verify KZG commitment opens to claimed value at point
-    - `calculate_gas()` &mdash; returns fixed gas cost of 50000
-  - [`BLS12_G1ADD`](./src/precompiles/bls12_g1_add.zig) &mdash; 0x0B: BLS12-381 G1 addition
-    - `run()` &mdash; add two BLS12-381 G1 points
-    - `calculate_gas()` &mdash; returns fixed gas cost of 500
-  - [`BLS12_G1MUL`](./src/precompiles/bls12_g1_mul.zig) &mdash; 0x0C: BLS12-381 G1 multiplication
-    - `run()` &mdash; scalar multiplication of BLS12-381 G1 point
-    - `calculate_gas()` &mdash; returns fixed gas cost of 12000
-  - [`BLS12_G1MSM`](./src/precompiles/bls12_g1_msm.zig) &mdash; 0x0D: BLS12-381 G1 multi-scalar multiplication
-    - `run()` &mdash; multi-scalar multiplication for multiple G1 points (optimized)
-    - `calculate_gas()` &mdash; discount schedule: 12000 per pair with discounts for batching
-  - [`BLS12_G2ADD`](./src/precompiles/bls12_g2_add.zig) &mdash; 0x0E: BLS12-381 G2 addition
-    - `run()` &mdash; add two BLS12-381 G2 points
-    - `calculate_gas()` &mdash; returns fixed gas cost of 800
-  - [`BLS12_G2MUL`](./src/precompiles/bls12_g2_mul.zig) &mdash; 0x0F: BLS12-381 G2 multiplication
-    - `run()` &mdash; scalar multiplication of BLS12-381 G2 point
-    - `calculate_gas()` &mdash; returns fixed gas cost of 45000
-  - [`BLS12_G2MSM`](./src/precompiles/bls12_g2_msm.zig) &mdash; 0x10: BLS12-381 G2 multi-scalar multiplication
-    - `run()` &mdash; multi-scalar multiplication for multiple G2 points (optimized)
-    - `calculate_gas()` &mdash; discount schedule: 45000 per pair with discounts for batching
-  - [`BLS12_PAIRING`](./src/precompiles/bls12_pairing.zig) &mdash; 0x11: BLS12-381 pairing check
-    - `run()` &mdash; verify BLS12-381 pairing equation
-    - `calculate_gas()` &mdash; 115000 + 23000 per G1/G2 pair
-  - [`BLS12_MAP_FP_TO_G1`](./src/precompiles/bls12_map_fp_to_g1.zig) &mdash; 0x12: BLS12-381 map field to G1
-    - `run()` &mdash; hash-to-curve: map field element to G1 point
-    - `calculate_gas()` &mdash; returns fixed gas cost of 5500
-  - [`BLS12_MAP_FP2_TO_G2`](./src/precompiles/bls12_map_fp2_to_g2.zig) &mdash; 0x13: BLS12-381 map field to G2
-    - `run()` &mdash; hash-to-curve: map Fp2 element to G2 point
-    - `calculate_gas()` &mdash; returns fixed gas cost of 75000
+  - [`ECRECOVER`](./src/precompiles/ecrecover.zig#L11) &mdash; ⚠️ (unaudited) 0x01: recover signer address from signature
+  - [`SHA256`](./src/precompiles/sha256.zig#L12) &mdash; 0x02: SHA-256 hash function
+  - [`RIPEMD160`](./src/precompiles/ripemd160.zig#L12) &mdash; ⚠️ (unaudited) 0x03: RIPEMD-160 hash function
+  - [`IDENTITY`](./src/precompiles/identity.zig#L10) &mdash; 0x04: identity/copy function
+  - [`MODEXP`](./src/precompiles/modexp.zig#L13) &mdash; ⚠️ (unaudited) 0x05: modular exponentiation
+  - [`ECADD`](./src/precompiles/bn254_add.zig#L11) &mdash; 0x06: BN254 elliptic curve addition (via Arkworks)
+  - [`ECMUL`](./src/precompiles/bn254_mul.zig#L11) &mdash; 0x07: BN254 elliptic curve multiplication (via Arkworks)
+  - [`ECPAIRING`](./src/precompiles/bn254_pairing.zig#L12) &mdash; 0x08: BN254 pairing check (via Arkworks)
+  - [`BLAKE2F`](./src/precompiles/blake2f.zig#L11) &mdash; ⚠️ (unaudited) 0x09: Blake2b compression function
+  - [`POINT_EVALUATION`](./src/precompiles/point_evaluation.zig#L12) &mdash; 0x0A: KZG point evaluation (EIP-4844)
+  - [`BLS12_G1ADD`](./src/precompiles/bls12_g1_add.zig#L10) &mdash; 0x0B: BLS12-381 G1 addition
+  - [`BLS12_G1MUL`](./src/precompiles/bls12_g1_mul.zig#L10) &mdash; 0x0C: BLS12-381 G1 multiplication
+  - [`BLS12_G1MSM`](./src/precompiles/bls12_g1_msm.zig#L12) &mdash; 0x0D: BLS12-381 G1 multi-scalar multiplication
+  - [`BLS12_G2ADD`](./src/precompiles/bls12_g2_add.zig#L10) &mdash; 0x0E: BLS12-381 G2 addition
+  - [`BLS12_G2MUL`](./src/precompiles/bls12_g2_mul.zig#L10) &mdash; 0x0F: BLS12-381 G2 multiplication
+  - [`BLS12_G2MSM`](./src/precompiles/bls12_g2_msm.zig#L12) &mdash; 0x10: BLS12-381 G2 multi-scalar multiplication
+  - [`BLS12_PAIRING`](./src/precompiles/bls12_pairing.zig#L11) &mdash; 0x11: BLS12-381 pairing check
+  - [`BLS12_MAP_FP_TO_G1`](./src/precompiles/bls12_map_fp_to_g1.zig#L10) &mdash; 0x12: BLS12-381 map field to G1
+  - [`BLS12_MAP_FP2_TO_G2`](./src/precompiles/bls12_map_fp2_to_g2.zig#L10) &mdash; 0x13: BLS12-381 map field to G2
     <br/>
     <br/>
 <br />
