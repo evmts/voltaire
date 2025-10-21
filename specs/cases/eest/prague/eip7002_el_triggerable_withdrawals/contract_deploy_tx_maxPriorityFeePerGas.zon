@@ -1,6 +1,0 @@
-.{
-    .test_name = "maxPriorityFeePerGas",
-    .source_file = "eest/prague/eip7002_el_triggerable_withdrawals/contract_deploy_tx.json",
-    .test_index = 2228,
-    .data = null,
-}

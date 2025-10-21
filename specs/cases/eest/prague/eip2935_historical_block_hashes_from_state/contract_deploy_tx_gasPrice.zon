@@ -1,6 +1,0 @@
-.{
-    .test_name = "gasPrice",
-    .source_file = "eest/prague/eip2935_historical_block_hashes_from_state/contract_deploy_tx.json",
-    .test_index = 2213,
-    .data = "0xe8d4a51000",
-}

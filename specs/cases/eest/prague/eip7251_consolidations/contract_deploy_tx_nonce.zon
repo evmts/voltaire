@@ -1,6 +1,0 @@
-.{
-    .test_name = "nonce",
-    .source_file = "eest/prague/eip7251_consolidations/contract_deploy_tx.json",
-    .test_index = 2195,
-    .data = "0x0",
-}

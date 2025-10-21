@@ -1,6 +1,0 @@
-.{
-    .test_name = "sender",
-    .source_file = "eest/prague/eip7251_consolidations/contract_deploy_tx.json",
-    .test_index = 2208,
-    .data = "0x13d1913d623E6a9D8811736359E50fD31Fe54fCA",
-}

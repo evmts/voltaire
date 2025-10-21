@@ -1,6 +1,0 @@
-.{
-    .test_name = "s",
-    .source_file = "eest/prague/eip2935_historical_block_hashes_from_state/contract_deploy_tx.json",
-    .test_index = 2220,
-    .data = "0x0aa12693182426612186309f02cfe8a80a0000",
-}
