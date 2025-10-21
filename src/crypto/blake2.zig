@@ -506,3 +506,486 @@ test "blake2b compression - message schedule verification" {
     // Verify compression completed
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
 }
+
+// EIP-152 Test Vectors from https://eips.ethereum.org/EIPS/eip-152
+
+test "EIP-152 test vector 4 - zero rounds" {
+    // Test vector 4: zero rounds compression
+    // Input: rounds=0, final=true, t=3
+    var h = [8]u64{
+        0x48c9bdf267e6096a,
+        0x3ba7ca8485ae67bb,
+        0x2bf894fe72f36e3c,
+        0xf1361d5f3af54fa5,
+        0xd182e6ad7f520e51,
+        0x1f6c3e2b8c68059b,
+        0x6bbd41fbabd9831f,
+        0x79217e1319cde05b,
+    };
+
+    var m = [_]u64{0} ** 16;
+    // "abc" message: 0x616263
+    m[0] = 0x0000000000636261;
+
+    const t = [2]u64{ 3, 0 };
+
+    unaudited_blake2f_compress(&h, &m, t, true, 0);
+
+    // Expected output from EIP-152
+    const expected = [8]u64{
+        0x08c9bcf367e6096a,
+        0x3ba7ca8485ae67bb,
+        0x2bf894fe72f36e3c,
+        0xf1361d5f3af54fa5,
+        0xd282e6ad7f520e51,
+        0x1f6c3e2b8c68059b,
+        0x9442be0454267ce0,
+        0x79217e1319cde05b,
+    };
+
+    for (0..8) |i| {
+        try std.testing.expectEqual(expected[i], h[i]);
+    }
+}
+
+test "EIP-152 test vector 5 - RFC 7693 Appendix A 'abc' with 12 rounds" {
+    // Test vector 5: "abc" with 12 rounds (standard BLAKE2b)
+    // This is the test vector from RFC 7693 Appendix A
+    var h = [8]u64{
+        0x48c9bdf267e6096a,
+        0x3ba7ca8485ae67bb,
+        0x2bf894fe72f36e3c,
+        0xf1361d5f3af54fa5,
+        0xd182e6ad7f520e51,
+        0x1f6c3e2b8c68059b,
+        0x6bbd41fbabd9831f,
+        0x79217e1319cde05b,
+    };
+
+    var m = [_]u64{0} ** 16;
+    // "abc" message: 0x616263
+    m[0] = 0x0000000000636261;
+
+    const t = [2]u64{ 3, 0 };
+
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
+
+    // Expected output from EIP-152 and RFC 7693
+    const expected = [8]u64{
+        0xba80a53f981c4d0d,
+        0x6a2797b69f12f6e9,
+        0x4c212f14685ac4b7,
+        0x4b12bb6fdbffa2d1,
+        0x7d87c5392aab792d,
+        0xc252d5de4533cc95,
+        0x18d38aa8dbf1925a,
+        0xb92386edd4009923,
+    };
+
+    for (0..8) |i| {
+        try std.testing.expectEqual(expected[i], h[i]);
+    }
+}
+
+test "EIP-152 test vector 6 - non-final block" {
+    // Test vector 6: "abc" with 12 rounds, non-final block (f=false)
+    var h = [8]u64{
+        0x48c9bdf267e6096a,
+        0x3ba7ca8485ae67bb,
+        0x2bf894fe72f36e3c,
+        0xf1361d5f3af54fa5,
+        0xd182e6ad7f520e51,
+        0x1f6c3e2b8c68059b,
+        0x6bbd41fbabd9831f,
+        0x79217e1319cde05b,
+    };
+
+    var m = [_]u64{0} ** 16;
+    // "abc" message: 0x616263
+    m[0] = 0x0000000000636261;
+
+    const t = [2]u64{ 3, 0 };
+
+    unaudited_blake2f_compress(&h, &m, t, false, 12);
+
+    // Expected output from EIP-152
+    const expected = [8]u64{
+        0x75ab69d3190a562c,
+        0x51aef8d88f1c2775,
+        0x876944407270c42c,
+        0x9844252c26d28752,
+        0x98743e7f6d5ea2f2,
+        0xd3e8d226039cd31b,
+        0x4e426ac4f2d3d666,
+        0xa610c2116fde4735,
+    };
+
+    for (0..8) |i| {
+        try std.testing.expectEqual(expected[i], h[i]);
+    }
+}
+
+test "EIP-152 test vector 7 - single round" {
+    // Test vector 7: "abc" with 1 round
+    var h = [8]u64{
+        0x48c9bdf267e6096a,
+        0x3ba7ca8485ae67bb,
+        0x2bf894fe72f36e3c,
+        0xf1361d5f3af54fa5,
+        0xd182e6ad7f520e51,
+        0x1f6c3e2b8c68059b,
+        0x6bbd41fbabd9831f,
+        0x79217e1319cde05b,
+    };
+
+    var m = [_]u64{0} ** 16;
+    // "abc" message: 0x616263
+    m[0] = 0x0000000000636261;
+
+    const t = [2]u64{ 3, 0 };
+
+    unaudited_blake2f_compress(&h, &m, t, true, 1);
+
+    // Expected output from EIP-152
+    const expected = [8]u64{
+        0xb63a380cb2897d52,
+        0x1994a85234ee2c18,
+        0x1b5f844d2c624c00,
+        0x2677e9703449d2fb,
+        0xa551b3a8333bcdf5,
+        0xf2f7e08993d53923,
+        0xde3d64fcc68c034e,
+        0x717b9293fed7a421,
+    };
+
+    for (0..8) |i| {
+        try std.testing.expectEqual(expected[i], h[i]);
+    }
+}
+
+test "EIP-152 test vector 8 - maximum rounds" {
+    // Test vector 8: "abc" with maximum rounds (0xffffffff = 4294967295)
+    var h = [8]u64{
+        0x48c9bdf267e6096a,
+        0x3ba7ca8485ae67bb,
+        0x2bf894fe72f36e3c,
+        0xf1361d5f3af54fa5,
+        0xd182e6ad7f520e51,
+        0x1f6c3e2b8c68059b,
+        0x6bbd41fbabd9831f,
+        0x79217e1319cde05b,
+    };
+
+    var m = [_]u64{0} ** 16;
+    // "abc" message: 0x616263
+    m[0] = 0x0000000000636261;
+
+    const t = [2]u64{ 3, 0 };
+
+    unaudited_blake2f_compress(&h, &m, t, true, 0xffffffff);
+
+    // Expected output from EIP-152
+    const expected = [8]u64{
+        0xfc59093aafa9ab43,
+        0xdaae0e914c57635c,
+        0x5402d8e3d2130eb9,
+        0xb3cc181de7f0ecf9,
+        0xb22bf99a7815ce16,
+        0x419e200e01846e6b,
+        0x5df8cc7703041bbc,
+        0xeb571de6631d2615,
+    };
+
+    for (0..8) |i| {
+        try std.testing.expectEqual(expected[i], h[i]);
+    }
+}
+
+test "RFC 7693 - parameter block variations" {
+    // Test with different parameter block values in h[0]
+    // Standard parameter block: digest_length=64 (0x40), key_length=0, fanout=1, depth=1
+    var h1 = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040, // Standard: 64-byte output
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    var h2 = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010020, // 32-byte output
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    const m = [_]u64{0} ** 16;
+    const t = [2]u64{ 0, 0 };
+
+    unaudited_blake2f_compress(&h1, &m, t, true, 12);
+    unaudited_blake2f_compress(&h2, &m, t, true, 12);
+
+    // Different parameter blocks should produce different results
+    try std.testing.expect(h1[0] != h2[0]);
+}
+
+test "blake2b compression - offset counter combinations" {
+    // Test different offset counter values
+    var h1 = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    var h2 = h1;
+    var h3 = h1;
+
+    const m = [_]u64{0} ** 16;
+
+    // Different offset values
+    const t1 = [2]u64{ 0, 0 };
+    const t2 = [2]u64{ 128, 0 };
+    const t3 = [2]u64{ 0, 1 }; // High word set
+
+    unaudited_blake2f_compress(&h1, &m, t1, true, 12);
+    unaudited_blake2f_compress(&h2, &m, t2, true, 12);
+    unaudited_blake2f_compress(&h3, &m, t3, true, 12);
+
+    // Different offsets should produce different results
+    try std.testing.expect(h1[0] != h2[0]);
+    try std.testing.expect(h1[0] != h3[0]);
+    try std.testing.expect(h2[0] != h3[0]);
+}
+
+test "blake2b compression - multi-block sequence" {
+    // Simulate a sequence of compressions for multi-block input
+    // First block (non-final)
+    var h = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    // First block: 128 bytes, non-final
+    var m1 = [16]u64{
+        0x0706050403020100,
+        0x0f0e0d0c0b0a0908,
+        0x1716151413121110,
+        0x1f1e1d1c1b1a1918,
+        0x2726252423222120,
+        0x2f2e2d2c2b2a2928,
+        0x3736353433323130,
+        0x3f3e3d3c3b3a3938,
+        0x4746454443424140,
+        0x4f4e4d4c4b4a4948,
+        0x5756555453525150,
+        0x5f5e5d5c5b5a5958,
+        0x6766656463626160,
+        0x6f6e6d6c6b6a6968,
+        0x7776757473727170,
+        0x7f7e7d7c7b7a7978,
+    };
+
+    const t1 = [2]u64{ 128, 0 };
+    unaudited_blake2f_compress(&h, &m1, t1, false, 12);
+
+    const h_after_first = h;
+
+    // Second block: 64 bytes, final
+    var m2 = [16]u64{
+        0x8786858483828180,
+        0x8f8e8d8c8b8a8988,
+        0x9796959493929190,
+        0x9f9e9d9c9b9a9998,
+        0xa7a6a5a4a3a2a1a0,
+        0xafaeadacabaaa9a8,
+        0xb7b6b5b4b3b2b1b0,
+        0xbfbebdbcbbbab9b8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    };
+
+    const t2 = [2]u64{ 192, 0 }; // Total 192 bytes processed
+    unaudited_blake2f_compress(&h, &m2, t2, true, 12);
+
+    // Verify state changed after each block
+    try std.testing.expect(h_after_first[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
+    try std.testing.expect(h[0] != h_after_first[0]);
+}
+
+test "blake2b compression - all bits set patterns" {
+    // Test with all-bits-set in various fields
+    var h = [8]u64{
+        0xFFFFFFFFFFFFFFFF,
+        0xFFFFFFFFFFFFFFFF,
+        0xFFFFFFFFFFFFFFFF,
+        0xFFFFFFFFFFFFFFFF,
+        0xFFFFFFFFFFFFFFFF,
+        0xFFFFFFFFFFFFFFFF,
+        0xFFFFFFFFFFFFFFFF,
+        0xFFFFFFFFFFFFFFFF,
+    };
+
+    const m = [_]u64{0xFFFFFFFFFFFFFFFF} ** 16;
+    const t = [2]u64{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF };
+
+    const h_original = h;
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
+
+    // Verify compression changed state
+    for (0..8) |i| {
+        try std.testing.expect(h[i] != h_original[i]);
+    }
+}
+
+test "blake2b compression - alternating bit patterns" {
+    // Test with alternating bit patterns
+    var h = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    // Alternating pattern: 0xAAAAAAAAAAAAAAAA
+    const m = [_]u64{0xAAAAAAAAAAAAAAAA} ** 16;
+    const t = [2]u64{ 128, 0 };
+
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
+
+    // Verify state changed
+    try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
+}
+
+test "blake2b compression - specific rounds edge cases" {
+    // Test with specific round counts: 0, 1, 2, 6, 12
+    const test_rounds = [_]u32{ 0, 1, 2, 6, 12 };
+
+    var results: [5][8]u64 = undefined;
+
+    for (test_rounds, 0..) |rounds, idx| {
+        var h = [8]u64{
+            0x6a09e667f3bcc908 ^ 0x01010040,
+            0xbb67ae8584caa73b,
+            0x3c6ef372fe94f82b,
+            0xa54ff53a5f1d36f1,
+            0x510e527fade682d1,
+            0x9b05688c2b3e6c1f,
+            0x1f83d9abfb41bd6b,
+            0x5be0cd19137e2179,
+        };
+
+        const m = [_]u64{0} ** 16;
+        const t = [2]u64{ 0, 0 };
+
+        unaudited_blake2f_compress(&h, &m, t, true, rounds);
+        results[idx] = h;
+    }
+
+    // Verify that different round counts produce different results
+    // Compare 0 rounds vs 1 round
+    try std.testing.expect(results[0][0] != results[1][0]);
+    // Compare 1 round vs 2 rounds
+    try std.testing.expect(results[1][0] != results[2][0]);
+    // Compare 6 rounds vs 12 rounds
+    try std.testing.expect(results[3][0] != results[4][0]);
+}
+
+test "blake2b compression - final vs non-final with same input" {
+    // Test that final and non-final flags produce different outputs
+    var h_final = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    var h_non_final = h_final;
+
+    const m = [_]u64{0} ** 16;
+    const t = [2]u64{ 128, 0 };
+
+    unaudited_blake2f_compress(&h_final, &m, t, true, 12);
+    unaudited_blake2f_compress(&h_non_final, &m, t, false, 12);
+
+    // Final and non-final flags should produce different results
+    for (0..8) |i| {
+        try std.testing.expect(h_final[i] != h_non_final[i]);
+    }
+}
+
+test "blake2b compression - determinism verification" {
+    // Verify that compression is deterministic
+    var h1 = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    var h2 = h1;
+
+    var m = [16]u64{
+        0x0123456789abcdef,
+        0xfedcba9876543210,
+        0x1111111111111111,
+        0x2222222222222222,
+        0x3333333333333333,
+        0x4444444444444444,
+        0x5555555555555555,
+        0x6666666666666666,
+        0x7777777777777777,
+        0x8888888888888888,
+        0x9999999999999999,
+        0xaaaaaaaaaaaaaaaa,
+        0xbbbbbbbbbbbbbbbb,
+        0xcccccccccccccccc,
+        0xdddddddddddddddd,
+        0xeeeeeeeeeeeeeeee,
+    };
+
+    const t = [2]u64{ 128, 0 };
+
+    unaudited_blake2f_compress(&h1, &m, t, true, 12);
+    unaudited_blake2f_compress(&h2, &m, t, true, 12);
+
+    // Results should be identical
+    for (0..8) |i| {
+        try std.testing.expectEqual(h1[i], h2[i]);
+    }
+}
