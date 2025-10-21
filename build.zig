@@ -24,14 +24,24 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // Primitives module
+    const primitives_mod = b.createModule(.{
+        .root_source_file = b.path("src/primitives/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // Hardfork module
+    const hardfork_mod = b.createModule(.{
+        .root_source_file = b.path("src/hardfork.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     // Primitives tests
     const primitives_tests = b.addTest(.{
         .name = "primitives-tests",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/primitives/root.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
+        .root_module = primitives_mod,
     });
     primitives_tests.linkLibrary(c_kzg_lib);
     primitives_tests.linkLibrary(blst_lib);
@@ -46,6 +56,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("c_kzg", c_kzg_mod);
+    crypto_mod.addImport("primitives", primitives_mod);
+    crypto_mod.addImport("hardfork", hardfork_mod);
 
     const crypto_tests = b.addTest(.{
         .name = "crypto-tests",
