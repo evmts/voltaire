@@ -2,9 +2,9 @@
   <h1>
     <br/>
     <br/>
-    <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/92c16e9a-a007-4ccf-a6cc-49ac34fa7d27" />
+    <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
     <br />
-    primitives
+    Guillotine Primitives
     <br />
     <br />
     <br />
@@ -37,7 +37,7 @@
   <br />
 </div>
 
-- [**Primitives**](#primitives)
+- [**Guillotine Primitives**](#primitives)
   - [`uint256`](./src/primitives/uint256.zig) &mdash; 256-bit unsigned integer with overflow-checked arithmetic
   - [`Address`](./src/primitives/address.zig) &mdash; Ethereum address type with EIP-55 checksumming
   - [`Hex`](./src/primitives/hex.zig) &mdash; hexadecimal encoding and decoding utilities
