@@ -14,31 +14,20 @@ pub fn mask(bits: usize) u64 {
     return (@as(u64, 1) << @intCast(remainder)) - 1;
 }
 
-// Optimized carry operations using compiler intrinsics when available
 pub inline fn addWithCarry(a: u64, b: u64, carry: u8) struct { sum: u64, carry: u8 } {
-    if (false) {
-        unreachable; // asm path disabled for Zig 0.15 compatibility
-    } else {
-        // Fallback implementation
-        const sum = a +% b;
-        const carry1 = @intFromBool(sum < a);
-        const sum2 = sum +% carry;
-        const carry2 = @intFromBool(sum2 < sum);
-        return .{ .sum = sum2, .carry = carry1 | carry2 };
-    }
+    const sum = a +% b;
+    const carry1 = @intFromBool(sum < a);
+    const sum2 = sum +% carry;
+    const carry2 = @intFromBool(sum2 < sum);
+    return .{ .sum = sum2, .carry = carry1 | carry2 };
 }
 
 pub inline fn subWithBorrow(a: u64, b: u64, borrow: u8) struct { diff: u64, borrow: u8 } {
-    if (false) {
-        unreachable; // asm path disabled for Zig 0.15 compatibility
-    } else {
-        // Fallback implementation
-        const diff = a -% b;
-        const borrow1 = @intFromBool(a < b);
-        const diff2 = diff -% borrow;
-        const borrow2 = @intFromBool(diff < borrow);
-        return .{ .diff = diff2, .borrow = borrow1 | borrow2 };
-    }
+    const diff = a -% b;
+    const borrow1 = @intFromBool(a < b);
+    const diff2 = diff -% borrow;
+    const borrow2 = @intFromBool(diff < borrow);
+    return .{ .diff = diff2, .borrow = borrow1 | borrow2 };
 }
 
 // Fast multiplication producing 128-bit result
