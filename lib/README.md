@@ -1,13 +1,32 @@
 # External Cryptographic Libraries (`lib/`)
 
-This directory contains external C/Rust libraries required for cryptographic operations. These dependencies are essential for production-grade Ethereum cryptography.
+This directory contains external C/Rust libraries required for cryptographic operations. These dependencies provide production-grade, audited implementations that are used in the Ethereum ecosystem.
 
-## Overview
+## Implementation Strategy: C/Rust + Pure Zig
 
-The `lib/` directory contains cryptographic libraries required by the primitives library:
-- **BLS12-381** - Pairing-friendly elliptic curve operations (via BLST)
-- **KZG Commitments** - EIP-4844 polynomial commitments
-- **BN254** - Alt-BN128 curve for zkSNARK operations
+This library offers **dual implementations** for some cryptographic operations:
+
+| Operation | Pure Zig | C/Rust Production | Status | Use Cases |
+|-----------|----------|-------------------|--------|-----------|
+| **BN254** | `src/crypto/bn254/` | `lib/ark/` (Rust) | Both ✅ Production Ready | Zig: Zero deps<br>Rust: Audited, EVM precompiles |
+| **BLS12-381** | ❌ Not Implemented | `lib/c-kzg-4844/blst/` (C) | C: ✅ Production Ready | **Required for KZG** |
+| **KZG (EIP-4844)** | ❌ Not Implemented | `lib/c-kzg-4844/` (C) | C: ✅ Production Ready | **Required for EIP-4844** |
+
+### When to Use Each Implementation
+
+**Pure Zig Implementations:**
+- ✅ Zero external dependencies
+- ✅ Full Zig safety guarantees
+- ✅ Easier debugging and modification
+- ✅ Better integration with Zig toolchain
+- ❌ May require additional optimization
+
+**C/Rust Implementations:**
+- ✅ Battle-tested in production
+- ✅ Highly optimized (assembly, SIMD)
+- ✅ Audited by security firms
+- ❌ FFI overhead and complexity
+- ❌ External toolchain dependencies
 
 ## Dependencies
 
@@ -44,30 +63,64 @@ lib/c-kzg-4844/
 
 ### 🧮 `ark/` - BN254 Elliptic Curve Operations
 
-**Purpose**: BN254 (alt_bn128) elliptic curve implementation for zkSNARK operations.
+**Status**: ✅ **Production Ready** - Audited implementation used in EVM precompiles
+
+**Purpose**: BN254 (alt_bn128) elliptic curve operations for zkSNARK verification and EVM precompiles (ECADD, ECMUL, ECPAIRING).
 
 **Technology**: Rust wrapper around arkworks ecosystem
-**Dependencies**: ark-bn254, ark-ec, ark-ff
+**Dependencies**: ark-bn254, ark-ec, ark-ff, ark-serialize
 **License**: MIT
 
 **Key Features**:
+- Production-tested in Ethereum ecosystem
+- Audited arkworks cryptographic primitives
 - Scalar multiplication and pairing operations
 - Memory-safe FFI bindings
-- Production-tested cryptographic primitives
-- Used for precompile operations (ECADD, ECMUL, ECPAIRING)
+- Used by EVM implementations (ECADD 0x06, ECMUL 0x07, ECPAIRING 0x08)
 
 **Integration**:
-- Used by `src/crypto/bn254.zig`
-- Built via Rust/Cargo
-- Currently stubbed out (returns null) - enable when Rust target is available
+- Built automatically via Cargo workspace
+- Linked into Zig build via `lib/bn254.zig`
+- FFI header at `lib/ark/bn254_wrapper.h`
+
+**Build Requirements**:
+- Rust toolchain (cargo)
+- Built via: `cargo build` or `cargo build --release`
+- Workspace builds to `target/debug/` or `target/release/`
+
+**Pure Zig Alternative**: `src/crypto/bn254/`
+- ✅ Complete field tower (Fp, Fp2, Fp6, Fp12)
+- ✅ G1 and G2 group operations
+- ✅ Optimal ate pairing
+- ✅ Comprehensive test suite
+- ✅ Zero external dependencies
+- 📋 Use when you want to avoid Rust toolchain
+
+### 🔷 BLST - BLS12-381 Operations
+
+**Status**: ✅ **Available** - Integrated via c-kzg-4844 submodule
+
+**Purpose**: BLS12-381 elliptic curve operations for KZG commitments and BLS signatures.
+
+**Technology**: C implementation (highly optimized)
+**License**: Apache-2.0
+
+**Integration**:
+- Used by `lib/c-kzg-4844/` for KZG operations
+- Can be accessed directly via `lib/blst.zig`
+- Built automatically as part of c-kzg-4844
+
+**Current Usage**: Primarily for KZG commitments (EIP-4844)
+
+**Note**: `lib/bls_wrapper.zig` contains only stub implementations. Direct BLST operations require using the c-kzg-4844 wrapper or implementing proper BLST bindings.
 
 ### Build System Wrappers
 
-- **`blst.zig`** - Zig bindings for BLST (BLS12-381)
-- **`c-kzg.zig`** - Zig bindings for c-kzg-4844
-- **`bn254.zig`** - Zig bindings for ark BN254 (currently stubbed)
-- **`bls_wrapper.zig`** - High-level BLS12-381 wrapper
-- **`build.zig`** - Build configuration for all libraries
+- **`blst.zig`** - Zig build wrapper for BLST library
+- **`c-kzg.zig`** - Zig build wrapper for c-kzg-4844
+- **`bn254.zig`** - Zig build wrapper for ark BN254 (currently returns null)
+- **`bls_wrapper.zig`** - Stub BLS12-381 FFI exports (not implemented)
+- **`build.zig`** - Build configuration for all external libraries
 
 ## Build System Integration
 
@@ -82,12 +135,18 @@ The main `build.zig` orchestrates all dependencies:
 ### Build Commands
 
 ```bash
+# Build Rust dependencies (run once, or when Rust code changes)
+cargo build          # Debug build
+cargo build --release # Optimized build
+
 # Standard build (includes all dependencies)
 zig build
 
 # Run tests (includes crypto tests)
 zig build test
 ```
+
+**Note**: The Rust BN254 library must be built with cargo before running `zig build`. This is a one-time setup step (or when the Rust code changes).
 
 ## Memory Management
 
@@ -132,9 +191,18 @@ All external libraries follow strict memory safety protocols:
 
 ### Future Roadmap
 
-- **Pure Zig cryptography**: Replace external dependencies with native Zig where feasible
-- **Performance benchmarking**: Continuous performance monitoring
-- **Security hardening**: Regular dependency audits and updates
+#### Completed
+- ✅ **Pure Zig BN254**: Complete, production-ready implementation in `src/crypto/bn254/`
+
+#### In Progress
+- 🔄 **Pure Zig BLS12-381**: Replace BLST with native Zig implementation
+- 🔄 **BLS Wrapper Implementation**: Complete `lib/bls_wrapper.zig` for direct BLST access
+
+#### Planned
+- 📋 **Unified API**: Consistent interface for C and Zig implementations
+- 📋 **Feature Flags**: Build-time selection of C vs Zig implementations
+- 📋 **Performance Parity**: Optimize Zig implementations to match C performance
+- 📋 **Pure Zig KZG**: Native implementation to eliminate c-kzg-4844 dependency
 
 ---
 
