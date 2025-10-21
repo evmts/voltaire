@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["lib/ark"]
+members = ["lib/ark", "lib/keccak"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,6 +13,8 @@ ark-ec = "0.5.0"
 ark-ff = "0.5.0"
 ark-serialize = "0.5.0"
 ark-bls12-381 = "0.5.0"
+# Keccak assembly-optimized implementation
+keccak-asm = "0.1.4"
 
 [profile.release]
 # Optimize for size by default

@@ -1,0 +1,11 @@
+[package]
+name = "keccak_wrapper"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "keccak_wrapper"
+crate-type = ["staticlib"]
+
+[dependencies]
+keccak-asm = { workspace = true }

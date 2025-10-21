@@ -5,16 +5,17 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Build crypto C libraries that primitives + crypto depend on
+    // Build crypto C/Rust libraries that primitives + crypto depend on
     const blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
-
     const bn254_lib = lib_build.Bn254Lib.createBn254Library(b, target, optimize, .{ .enable_tracy = false }, null, null);
+    const keccak_lib = lib_build.KeccakLib.createKeccakLibrary(b, target, optimize, .{}, null, null);
 
     // Install crypto libraries
     b.installArtifact(blst_lib);
     b.installArtifact(c_kzg_lib);
     if (bn254_lib) |bn254| b.installArtifact(bn254);
+    if (keccak_lib) |keccak| b.installArtifact(keccak);
 
     // Create c_kzg module for crypto tests
     const c_kzg_mod = b.addModule("c_kzg", .{
@@ -35,6 +36,7 @@ pub fn build(b: *std.Build) void {
     primitives_tests.linkLibrary(c_kzg_lib);
     primitives_tests.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| primitives_tests.linkLibrary(bn254);
+    if (keccak_lib) |keccak| primitives_tests.linkLibrary(keccak);
     primitives_tests.linkLibC();
 
     // Crypto tests
@@ -52,6 +54,7 @@ pub fn build(b: *std.Build) void {
     crypto_tests.linkLibrary(c_kzg_lib);
     crypto_tests.linkLibrary(blst_lib);
     if (bn254_lib) |bn254| crypto_tests.linkLibrary(bn254);
+    if (keccak_lib) |keccak| crypto_tests.linkLibrary(keccak);
     crypto_tests.linkLibC();
 
     const run_primitives_tests = b.addRunArtifact(primitives_tests);
