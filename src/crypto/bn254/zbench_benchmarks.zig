@@ -200,7 +200,9 @@ var input_index: usize = 0;
 
 fn getInputs() *PreGeneratedInputs {
     if (!inputs_initialized) {
-        inputs = PreGeneratedInputs.init(std.heap.page_allocator) catch unreachable;
+        inputs = PreGeneratedInputs.init(std.heap.page_allocator) catch |err| {
+            std.debug.panic("Failed to initialize benchmark inputs: {}", .{err});
+        };
         inputs_initialized = true;
     }
     return &inputs;
@@ -387,17 +389,6 @@ pub fn main() !void {
         try out.flush();
     }
 }
-
-// pub fn runAllBenchmarks(allocator: std.mem.Allocator) !void {
-//     std.debug.print("\n=== BN254 Field Operations ===\n");
-//     try runFieldBenchmarks(allocator);
-
-//     std.debug.print("\n=== BN254 Curve Operations ===\n");
-//     try runCurveBenchmarks(allocator);
-
-//     std.debug.print("\n=== BN254 Pairing Operations ===\n");
-//     try runPairingBenchmarks(allocator);
-// }
 
 // =============================================================================
 // INDIVIDUAL BENCHMARK FUNCTIONS
@@ -835,78 +826,3 @@ fn benchmarkFinalExponentiationHard(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-// =============================================================================
-// PERFORMANCE ANALYSIS AND REPORTING
-// =============================================================================
-
-// pub const BenchmarkResults = struct {
-//     operation: []const u8,
-//     avg_ns: u64,
-//     min_ns: u64,
-//     max_ns: u64,
-//     iterations: u32,
-//     ops_per_sec: f64,
-// };
-
-// pub fn generatePerformanceReport(allocator: std.mem.Allocator) !void {
-//     std.debug.print("=".repeat(80));
-//     std.debug.print("\n BN254 Pairing Library Performance Report\n");
-//     std.debug.print("=".repeat(80));
-//     std.debug.print("\n\n");
-
-//     std.debug.print("Configuration:\n");
-//     std.debug.print("- Max Iterations: {}\n", .{Config.max_iterations});
-//     std.debug.print("- Time Budget: {d:.1}s per benchmark\n", .{@as(f64, @floatFromInt(Config.time_budget_ns)) / 1e9});
-//     std.debug.print("- Memory Tracking: {}\n", .{Config.track_allocations});
-//     std.debug.print("- Random Generation: Cryptographically secure (ChaCha20)\n\n");
-
-//     std.debug.print("Field Operations Performance:\n");
-//     std.debug.print("-".repeat(40));
-//     std.debug.print("\n");
-//     try runFieldBenchmarks(allocator);
-
-//     std.debug.print("\n\nElliptic Curve Operations Performance:\n");
-//     std.debug.print("-".repeat(40));
-//     std.debug.print("\n");
-//     try runCurveBenchmarks(allocator);
-
-//     std.debug.print("\n\nPairing Operations Performance:\n");
-//     std.debug.print("-".repeat(40));
-//     std.debug.print("\n");
-//     try runPairingBenchmarks(allocator);
-// }
-
-// =============================================================================
-// USAGE EXAMPLES AND INTEGRATION INSTRUCTIONS
-// =============================================================================
-
-// Example integration in your main function or test:
-//
-// pub fn main() !void {
-//     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-//     defer _ = gpa.deinit();
-//     const allocator = gpa.allocator();
-//
-//     const bn254_benchmarks = @import("path/to/zbench_benchmarks.zig");
-//
-//     std.debug.print("Running BN254 benchmarks...\n");
-//     try bn254_benchmarks.runAllBenchmarks(allocator);
-//
-//     std.debug.print("\nGenerating performance report...\n");
-//     try bn254_benchmarks.generatePerformanceReport(allocator);
-// }
-
-// Build system integration example for build.zig:
-//
-// const bn254_bench = b.addExecutable(.{
-//     .name = "bn254-bench",
-//     .root_source_file = b.path("src/crypto/bn254/zbench_benchmarks.zig"),
-//     .target = target,
-//     .optimize = .ReleaseFast, // Use ReleaseFast for meaningful benchmarks
-// });
-//
-// const zbench = b.dependency("zbench", .{});
-// bn254_bench.root_module.addImport("zbench", zbench.module("zbench"));
-//
-// const bench_step = b.step("bench-bn254", "Run BN254 benchmarks");
-// bench_step.dependOn(&b.addRunArtifact(bn254_bench).step);

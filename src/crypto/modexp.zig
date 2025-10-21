@@ -363,7 +363,6 @@ test "modexp: large base and modulus" {
     for (output, 0..) |byte, i| {
         if (byte < mod[i]) break;
         if (byte > mod[i]) {
-            std.debug.print("Output greater than modulus at byte {}\n", .{i});
             try std.testing.expect(false);
         }
     }

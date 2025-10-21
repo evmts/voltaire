@@ -9,7 +9,9 @@ pub const SHA256 = struct {
 
     /// Compute SHA256 hash of input data
     pub fn hash(input: []const u8, output: []u8) void {
-        std.debug.assert(output.len >= OUTPUT_SIZE);
+        if (output.len < OUTPUT_SIZE) {
+            std.debug.panic("SHA256.hash: output buffer too small (got {}, need {})", .{ output.len, OUTPUT_SIZE });
+        }
 
         var hasher = std.crypto.hash.sha2.Sha256.init(.{});
         hasher.update(input);
@@ -62,7 +64,9 @@ pub const RIPEMD160 = struct {
 
     /// Compute RIPEMD160 hash of input data
     pub fn hash(input: []const u8, output: []u8) void {
-        std.debug.assert(output.len >= OUTPUT_SIZE);
+        if (output.len < OUTPUT_SIZE) {
+            std.debug.panic("RIPEMD160.hash: output buffer too small (got {}, need {})", .{ output.len, OUTPUT_SIZE });
+        }
 
         const result = ripemd160_impl.unaudited_hash(input);
         @memcpy(output[0..OUTPUT_SIZE], &result);

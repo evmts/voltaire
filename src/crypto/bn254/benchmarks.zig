@@ -422,7 +422,9 @@ var input_index: usize = 0;
 
 fn getInputs() *PreGeneratedInputs {
     if (!inputs_initialized) {
-        inputs = PreGeneratedInputs.init(std.heap.page_allocator) catch unreachable;
+        inputs = PreGeneratedInputs.init(std.heap.page_allocator) catch |err| {
+            std.debug.panic("Failed to initialize benchmark inputs: {}", .{err});
+        };
         inputs_initialized = true;
     }
     return &inputs;

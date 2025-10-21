@@ -94,11 +94,36 @@ pub fn keccak256_batch(inputs: [][]const u8, outputs: [][32]u8) !void {
         return;
     }
 
-    // TODO: Use FFI batch function for optimal performance
-    // For now, call individual FFI functions which is still faster than std lib
-    for (inputs, outputs) |input, *output| {
-        try keccak256(input, output);
+    // Use FFI batch function for optimal performance
+    // We need to prepare arrays of pointers for the C interface
+    const allocator = std.heap.c_allocator;
+
+    const input_ptrs = try allocator.alloc([*c]const u8, inputs.len);
+    defer allocator.free(input_ptrs);
+
+    const input_lens = try allocator.alloc(c_ulong, inputs.len);
+    defer allocator.free(input_lens);
+
+    const output_ptrs = try allocator.alloc([*c]u8, outputs.len);
+    defer allocator.free(output_ptrs);
+
+    // Populate arrays
+    for (inputs, 0..) |input, i| {
+        input_ptrs[i] = input.ptr;
+        input_lens[i] = input.len;
     }
+
+    for (outputs, 0..) |*output, i| {
+        output_ptrs[i] = output;
+    }
+
+    const result = c.keccak256_batch(
+        input_ptrs.ptr,
+        input_lens.ptr,
+        output_ptrs.ptr,
+        inputs.len,
+    );
+    try keccakResultToError(result);
 }
 
 /// Convert bytes to u256 (big-endian)
