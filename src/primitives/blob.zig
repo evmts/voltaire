@@ -478,18 +478,16 @@ test "calculateExcessBlobGas with existing excess below target usage" {
 }
 
 test "calculateExcessBlobGas with existing excess at target" {
-    const target = 393216;
     const existing_excess = BLOB_GAS_PER_BLOB;
-    const usage = target - existing_excess;
+    const usage = 393216 - existing_excess;
 
     const excess = calculateExcessBlobGas(existing_excess, usage);
     try testing.expectEqual(@as(u64, 0), excess);
 }
 
 test "calculateExcessBlobGas with existing excess above target" {
-    const target = 393216;
     const existing_excess = BLOB_GAS_PER_BLOB;
-    const usage = target;
+    const usage = 393216;
 
     const excess = calculateExcessBlobGas(existing_excess, usage);
     try testing.expectEqual(existing_excess, excess);
