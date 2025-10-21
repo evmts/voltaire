@@ -441,3 +441,356 @@ test "get_gas_target with small gas limit" {
     const target = getGasTarget(gas_limit);
     try std.testing.expectEqual(@as(u64, 0), target);
 }
+
+// Additional comprehensive tests for initialBaseFee
+
+test "initialBaseFee with maximum gas limit" {
+    const parent_gas_limit = std.math.maxInt(u64);
+    const parent_gas_used = std.math.maxInt(u64) / 2; // At target
+
+    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    // Should handle large values without overflow
+    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+}
+
+test "initialBaseFee with full parent block" {
+    const parent_gas_limit = 30_000_000;
+    const parent_gas_used = 30_000_000; // Completely full
+
+    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    // Should be at maximum increase (12.5%)
+    // 1 gwei + (1 gwei * 15M / 15M / 8) = 1 gwei + 125M wei
+    try std.testing.expectEqual(@as(u64, 1_125_000_000), base_fee);
+}
+
+test "initialBaseFee with very small gas limit" {
+    const parent_gas_limit = 100;
+    const parent_gas_used = 50; // At target
+
+    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    // Should still work with small values and respect minimum
+    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+}
+
+test "initialBaseFee with near-zero parent gas used" {
+    const parent_gas_limit = 30_000_000;
+    const parent_gas_used = 1; // Nearly empty
+
+    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    // Should decrease from 1 gwei but respect minimum
+    try std.testing.expect(base_fee < 1_000_000_000);
+    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+}
+
+test "initialBaseFee with extreme below-target usage" {
+    const parent_gas_limit = 30_000_000;
+    const parent_gas_used = 100; // Way below target
+
+    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    // Should decrease significantly but respect minimum
+    try std.testing.expect(base_fee >= MIN_BASE_FEE);
+}
+
+test "initialBaseFee minimum enforcement at boundary" {
+    const parent_gas_limit = 1000;
+    const parent_gas_used = 1; // Very low usage to force decrease
+
+    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    // Even with extreme decrease, should not go below MIN_BASE_FEE
+    try std.testing.expectEqual(MIN_BASE_FEE, base_fee);
+}
+
+// Additional comprehensive tests for nextBaseFee
+
+test "nextBaseFee with minimal above-target usage" {
+    const parent_base_fee = 1_000_000_000;
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 15_000_001; // Just 1 over target
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should increase minimally (at least by 1)
+    try std.testing.expect(next_fee > parent_base_fee);
+    try std.testing.expect(next_fee - parent_base_fee >= 1);
+}
+
+test "nextBaseFee with minimal below-target usage" {
+    const parent_base_fee = 1_000_000_000;
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 14_999_999; // Just 1 under target
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should decrease minimally (at least by 1)
+    try std.testing.expect(next_fee < parent_base_fee);
+    try std.testing.expect(parent_base_fee - next_fee >= 1);
+}
+
+test "nextBaseFee precision with small base fee" {
+    const parent_base_fee = 10; // Very small base fee
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 20_000_000; // Above target
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should still increase by at least 1 due to minimum delta
+    try std.testing.expect(next_fee > parent_base_fee);
+    try std.testing.expect(next_fee - parent_base_fee >= 1);
+}
+
+test "nextBaseFee precision with large base fee" {
+    const parent_base_fee = 1_000_000_000_000; // 1000 gwei
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 16_000_000; // Slightly above target
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should calculate precise increase
+    try std.testing.expect(next_fee > parent_base_fee);
+
+    // Expected: base_fee * (1M / 15M) / 8 = base_fee * 1/120
+    const expected_delta = parent_base_fee / 120;
+    const expected = parent_base_fee + expected_delta;
+    try std.testing.expectEqual(expected, next_fee);
+}
+
+test "nextBaseFee with very high gas usage" {
+    const parent_base_fee = 1_000_000_000;
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 100_000_000; // Way above target
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should cap at 12.5% increase
+    const max_increase = parent_base_fee + (parent_base_fee / 8);
+    try std.testing.expectEqual(max_increase, next_fee);
+}
+
+test "nextBaseFee decrease to minimum boundary" {
+    const parent_base_fee = 8; // Just above MIN_BASE_FEE
+    const parent_gas_target = 1_000;
+    const parent_gas_used = 1; // Very low to force decrease
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should not go below MIN_BASE_FEE
+    try std.testing.expect(next_fee >= MIN_BASE_FEE);
+    try std.testing.expectEqual(MIN_BASE_FEE, next_fee);
+}
+
+test "nextBaseFee at minimum with empty block" {
+    const parent_base_fee = MIN_BASE_FEE;
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 0; // Empty block
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should stay at minimum for empty blocks
+    try std.testing.expectEqual(MIN_BASE_FEE, next_fee);
+}
+
+test "nextBaseFee at minimum with below-target usage" {
+    const parent_base_fee = MIN_BASE_FEE;
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 1_000_000; // Below target
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should stay at minimum (cannot decrease further)
+    try std.testing.expectEqual(MIN_BASE_FEE, next_fee);
+}
+
+test "nextBaseFee with gas used exceeding realistic limits" {
+    const parent_base_fee = 1_000_000_000;
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 1_000_000_000; // Unrealistically high
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should still cap at 12.5% increase
+    const max_increase = parent_base_fee + (parent_base_fee / 8);
+    try std.testing.expectEqual(max_increase, next_fee);
+}
+
+test "nextBaseFee precision loss with integer division" {
+    const parent_base_fee = 15; // Base fee that doesn't divide evenly
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 20_000_000; // Above target
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should handle integer division correctly
+    try std.testing.expect(next_fee > parent_base_fee);
+    // Minimum increase should be 1
+    try std.testing.expect(next_fee - parent_base_fee >= 1);
+}
+
+test "nextBaseFee with maximum safe base fee" {
+    const parent_base_fee = std.math.maxInt(u64) / 2;
+    const parent_gas_target = 15_000_000;
+    const parent_gas_used = 20_000_000; // Above target would increase
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Should not overflow - calculate_fee_delta handles this
+    try std.testing.expect(next_fee >= parent_base_fee);
+}
+
+test "nextBaseFee boundary at exact target after increase" {
+    const parent_base_fee = 1_000_000_000;
+    const parent_gas_target = 15_000_000;
+    // First increase
+    const parent_gas_used_high = 20_000_000;
+    const increased_fee = nextBaseFee(parent_base_fee, parent_gas_used_high, parent_gas_target);
+
+    // Then at target
+    const next_fee = nextBaseFee(increased_fee, parent_gas_target, parent_gas_target);
+    // Should stay at increased fee
+    try std.testing.expectEqual(increased_fee, next_fee);
+}
+
+test "nextBaseFee boundary at exact target after decrease" {
+    const parent_base_fee = 1_000_000_000;
+    const parent_gas_target = 15_000_000;
+    // First decrease
+    const parent_gas_used_low = 10_000_000;
+    const decreased_fee = nextBaseFee(parent_base_fee, parent_gas_used_low, parent_gas_target);
+
+    // Then at target
+    const next_fee = nextBaseFee(decreased_fee, parent_gas_target, parent_gas_target);
+    // Should stay at decreased fee
+    try std.testing.expectEqual(decreased_fee, next_fee);
+}
+
+test "nextBaseFee with zero gas target" {
+    const parent_base_fee = 1_000_000_000;
+    const parent_gas_target = 0; // Edge case
+    const parent_gas_used = 0;
+
+    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    // Empty block behavior
+    try std.testing.expectEqual(parent_base_fee, next_fee);
+}
+
+// Edge case tests for fee delta calculations
+
+test "calculate_fee_delta with maximum fee and small delta" {
+    const fee = std.math.maxInt(u64) / 10;
+    const gas_delta = 1;
+    const gas_target = 15_000_000;
+    const denominator = 8;
+
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    // Should not overflow and return valid result
+    try std.testing.expect(result >= 1);
+}
+
+test "calculate_fee_delta with zero fee" {
+    const fee = 0;
+    const gas_delta = 1_000_000;
+    const gas_target = 15_000_000;
+    const denominator = 8;
+
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    // 0 * anything = 0, but minimum is 1
+    try std.testing.expectEqual(@as(u64, 1), result);
+}
+
+test "calculate_fee_delta with zero gas delta" {
+    const fee = 1_000_000_000;
+    const gas_delta = 0;
+    const gas_target = 15_000_000;
+    const denominator = 8;
+
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    // 0 delta should result in minimum return of 1
+    try std.testing.expectEqual(@as(u64, 1), result);
+}
+
+test "calculate_fee_delta with all maximum values" {
+    const fee = std.math.maxInt(u64);
+    const gas_delta = std.math.maxInt(u64);
+    const gas_target = std.math.maxInt(u64);
+    const denominator = std.math.maxInt(u64);
+
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    // Should handle overflow and return capped result
+    try std.testing.expect(result > 0);
+    try std.testing.expect(result <= std.math.maxInt(u64));
+}
+
+test "calculate_fee_delta rounding behavior" {
+    // Test that integer division rounds down correctly
+    const fee = 1000;
+    const gas_delta = 3;
+    const gas_target = 100;
+    const denominator = 8;
+
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    // (1000 * 3) / (100 * 8) = 3000 / 800 = 3.75 -> rounds to 3
+    try std.testing.expectEqual(@as(u64, 3), result);
+}
+
+// Tests for sequential fee adjustments (realistic block sequences)
+
+test "nextBaseFee sequence of full blocks" {
+    var current_fee: u64 = 1_000_000_000;
+    const gas_target: u64 = 15_000_000;
+    const gas_used: u64 = 30_000_000; // Full block
+
+    // After 10 full blocks, fee should compound
+    var i: usize = 0;
+    while (i < 10) : (i += 1) {
+        const next = nextBaseFee(current_fee, gas_used, gas_target);
+        // Each step should increase by 12.5%
+        try std.testing.expect(next > current_fee);
+        current_fee = next;
+    }
+
+    // After 10 blocks at 12.5% increase each, fee should be significantly higher
+    try std.testing.expect(current_fee > 3_000_000_000); // More than 3x original
+}
+
+test "nextBaseFee sequence of empty blocks" {
+    var current_fee: u64 = 1_000_000_000;
+    const gas_target: u64 = 15_000_000;
+    const gas_used: u64 = 0; // Empty block
+
+    // After 10 empty blocks, fee should stay the same
+    var i: usize = 0;
+    while (i < 10) : (i += 1) {
+        const next = nextBaseFee(current_fee, gas_used, gas_target);
+        try std.testing.expectEqual(current_fee, next);
+        current_fee = next;
+    }
+
+    try std.testing.expectEqual(@as(u64, 1_000_000_000), current_fee);
+}
+
+test "nextBaseFee sequence alternating full and empty" {
+    var current_fee: u64 = 1_000_000_000;
+    const gas_target: u64 = 15_000_000;
+
+    // Alternate between full and empty blocks
+    var i: usize = 0;
+    while (i < 10) : (i += 1) {
+        if (i % 2 == 0) {
+            // Full block
+            current_fee = nextBaseFee(current_fee, 30_000_000, gas_target);
+        } else {
+            // Empty block
+            current_fee = nextBaseFee(current_fee, 0, gas_target);
+        }
+    }
+
+    // Fee should be higher than start (more full than empty)
+    try std.testing.expect(current_fee > 1_000_000_000);
+}
+
+test "nextBaseFee sequence descending to minimum" {
+    var current_fee: u64 = 1_000_000_000;
+    const gas_target: u64 = 15_000_000;
+    const gas_used: u64 = 100; // Very low usage
+
+    // Keep decreasing until we hit minimum
+    var i: usize = 0;
+    while (i < 100) : (i += 1) {
+        const next = nextBaseFee(current_fee, gas_used, gas_target);
+        if (next == MIN_BASE_FEE and current_fee == MIN_BASE_FEE) {
+            break; // Reached minimum
+        }
+        current_fee = next;
+    }
+
+    // Should eventually reach minimum
+    try std.testing.expectEqual(MIN_BASE_FEE, current_fee);
+}

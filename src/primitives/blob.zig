@@ -339,3 +339,515 @@ test "blob data too large" {
     const result = encodeBlobData(allocator, large_data);
     try testing.expectError(BlobError.DataTooLarge, result);
 }
+
+// Comprehensive tests for isValidVersionedHash
+
+test "isValidVersionedHash with correct version" {
+    var h: VersionedHash = undefined;
+    h.bytes = [_]u8{0x00} ** 32;
+    h.bytes[0] = BLOB_COMMITMENT_VERSION_KZG; // 0x01
+
+    try testing.expect(isValidVersionedHash(h));
+}
+
+test "isValidVersionedHash with version zero" {
+    var h: VersionedHash = undefined;
+    h.bytes = [_]u8{0x00} ** 32;
+    h.bytes[0] = 0x00;
+
+    try testing.expect(!isValidVersionedHash(h));
+}
+
+test "isValidVersionedHash with version two" {
+    var h: VersionedHash = undefined;
+    h.bytes = [_]u8{0x00} ** 32;
+    h.bytes[0] = 0x02;
+
+    try testing.expect(!isValidVersionedHash(h));
+}
+
+test "isValidVersionedHash with max version byte" {
+    var h: VersionedHash = undefined;
+    h.bytes = [_]u8{0xFF} ** 32;
+    h.bytes[0] = 0xFF;
+
+    try testing.expect(!isValidVersionedHash(h));
+}
+
+test "isValidVersionedHash with various invalid versions" {
+    const invalid_versions = [_]u8{ 0x00, 0x02, 0x03, 0x10, 0xAA, 0xFF };
+
+    for (invalid_versions) |version| {
+        var h: VersionedHash = undefined;
+        h.bytes = [_]u8{0x00} ** 32;
+        h.bytes[0] = version;
+
+        try testing.expect(!isValidVersionedHash(h));
+    }
+}
+
+// Comprehensive tests for calculateBlobGasPrice
+
+test "calculateBlobGasPrice with zero excess gas" {
+    const price = calculateBlobGasPrice(0);
+    try testing.expectEqual(@as(u64, MIN_BLOB_BASE_FEE), price);
+}
+
+test "calculateBlobGasPrice with small excess gas" {
+    const price = calculateBlobGasPrice(1000);
+    try testing.expect(price >= MIN_BLOB_BASE_FEE);
+}
+
+test "calculateBlobGasPrice with one blob worth of excess" {
+    const price = calculateBlobGasPrice(BLOB_GAS_PER_BLOB);
+    try testing.expect(price > MIN_BLOB_BASE_FEE);
+}
+
+test "calculateBlobGasPrice with target blob gas" {
+    const target = 393216; // 3 * BLOB_GAS_PER_BLOB
+    const price = calculateBlobGasPrice(target);
+    try testing.expect(price > MIN_BLOB_BASE_FEE);
+}
+
+test "calculateBlobGasPrice monotonically increases" {
+    const price1 = calculateBlobGasPrice(0);
+    const price2 = calculateBlobGasPrice(BLOB_GAS_PER_BLOB);
+    const price3 = calculateBlobGasPrice(2 * BLOB_GAS_PER_BLOB);
+    const price4 = calculateBlobGasPrice(10 * BLOB_GAS_PER_BLOB);
+
+    try testing.expect(price2 > price1);
+    try testing.expect(price3 > price2);
+    try testing.expect(price4 > price3);
+}
+
+test "calculateBlobGasPrice with various excess blob gas values" {
+    const test_values = [_]u64{
+        0,
+        1,
+        100,
+        1000,
+        BLOB_GAS_PER_BLOB,
+        BLOB_GAS_PER_BLOB * 2,
+        BLOB_GAS_PER_BLOB * 6, // Max blobs worth
+        393216, // Target
+        393216 * 2, // 2x target
+    };
+
+    for (test_values) |excess| {
+        const price = calculateBlobGasPrice(excess);
+        try testing.expect(price >= MIN_BLOB_BASE_FEE);
+    }
+}
+
+test "calculateBlobGasPrice with high excess gas" {
+    const price = calculateBlobGasPrice(100 * BLOB_GAS_PER_BLOB);
+    try testing.expect(price > calculateBlobGasPrice(10 * BLOB_GAS_PER_BLOB));
+}
+
+// Comprehensive tests for calculateExcessBlobGas
+
+test "calculateExcessBlobGas with no excess and no usage" {
+    const excess = calculateExcessBlobGas(0, 0);
+    try testing.expectEqual(@as(u64, 0), excess);
+}
+
+test "calculateExcessBlobGas with no excess and below target usage" {
+    const target = 393216;
+    const excess = calculateExcessBlobGas(0, target - 1);
+    try testing.expectEqual(@as(u64, 0), excess);
+}
+
+test "calculateExcessBlobGas with no excess at exact target" {
+    const target = 393216;
+    const excess = calculateExcessBlobGas(0, target);
+    try testing.expectEqual(@as(u64, 0), excess);
+}
+
+test "calculateExcessBlobGas with no excess above target" {
+    const target = 393216;
+    const excess = calculateExcessBlobGas(0, target + 1);
+    try testing.expectEqual(@as(u64, 1), excess);
+}
+
+test "calculateExcessBlobGas with existing excess below target usage" {
+    const existing_excess = BLOB_GAS_PER_BLOB;
+    const usage = BLOB_GAS_PER_BLOB; // Total < target
+
+    const excess = calculateExcessBlobGas(existing_excess, usage);
+    try testing.expectEqual(@as(u64, 0), excess);
+}
+
+test "calculateExcessBlobGas with existing excess at target" {
+    const target = 393216;
+    const existing_excess = BLOB_GAS_PER_BLOB;
+    const usage = target - existing_excess;
+
+    const excess = calculateExcessBlobGas(existing_excess, usage);
+    try testing.expectEqual(@as(u64, 0), excess);
+}
+
+test "calculateExcessBlobGas with existing excess above target" {
+    const target = 393216;
+    const existing_excess = BLOB_GAS_PER_BLOB;
+    const usage = target;
+
+    const excess = calculateExcessBlobGas(existing_excess, usage);
+    try testing.expectEqual(existing_excess, excess);
+}
+
+test "calculateExcessBlobGas rollover accumulation" {
+    // Start with no excess
+    var excess: u64 = 0;
+
+    // Use 6 blobs (max) - above target
+    excess = calculateExcessBlobGas(excess, 6 * BLOB_GAS_PER_BLOB);
+    try testing.expect(excess > 0);
+
+    // Use another 6 blobs - should accumulate
+    const prev_excess = excess;
+    excess = calculateExcessBlobGas(excess, 6 * BLOB_GAS_PER_BLOB);
+    try testing.expect(excess > prev_excess);
+}
+
+test "calculateExcessBlobGas boundary at target minus one" {
+    const target = 393216;
+    const excess = calculateExcessBlobGas(0, target - 1);
+    try testing.expectEqual(@as(u64, 0), excess);
+}
+
+test "calculateExcessBlobGas boundary at target plus one" {
+    const target = 393216;
+    const excess = calculateExcessBlobGas(0, target + 1);
+    try testing.expectEqual(@as(u64, 1), excess);
+}
+
+// Comprehensive tests for fakeExponential
+
+test "fakeExponential with zero numerator" {
+    const result = fakeExponential(MIN_BLOB_BASE_FEE, 0, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expectEqual(@as(u64, MIN_BLOB_BASE_FEE), result);
+}
+
+test "fakeExponential approximation accuracy small values" {
+    // For small values, should approximate e^x well
+    const result = fakeExponential(1, 1000, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expect(result >= 1);
+}
+
+test "fakeExponential does not overflow" {
+    // Test with large values that could overflow
+    const result = fakeExponential(MIN_BLOB_BASE_FEE, 1000000, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expect(result > MIN_BLOB_BASE_FEE);
+}
+
+test "fakeExponential iteration limit" {
+    // Ensure iteration limit prevents infinite loop
+    const result = fakeExponential(1, 100000000, 1);
+    try testing.expect(result > 0);
+}
+
+test "fakeExponential consistency with calculateBlobGasPrice" {
+    // Verify that calculateBlobGasPrice uses fakeExponential correctly
+    const excess = BLOB_GAS_PER_BLOB;
+    const price = calculateBlobGasPrice(excess);
+    const direct = fakeExponential(MIN_BLOB_BASE_FEE, excess, BLOB_BASE_FEE_UPDATE_FRACTION);
+    try testing.expectEqual(direct, price);
+}
+
+// Comprehensive tests for BlobTransaction.validate
+
+test "BlobTransaction validate with single valid blob" {
+    const hash = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hashes = [_]VersionedHash{hash};
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try tx.validate();
+}
+
+test "BlobTransaction validate with max blobs exactly" {
+    var hashes: [MAX_BLOBS_PER_TRANSACTION]VersionedHash = undefined;
+    for (0..MAX_BLOBS_PER_TRANSACTION) |i| {
+        hashes[i] = commitmentToVersionedHash([_]u8{@intCast(i + 1)} ** 48);
+    }
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try tx.validate();
+}
+
+test "BlobTransaction validate fails with zero blobs" {
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &.{},
+    };
+
+    try testing.expectError(BlobError.NoBlobs, tx.validate());
+}
+
+test "BlobTransaction validate fails with max blobs plus one" {
+    var hashes: [MAX_BLOBS_PER_TRANSACTION + 1]VersionedHash = undefined;
+    for (0..hashes.len) |i| {
+        hashes[i] = commitmentToVersionedHash([_]u8{@intCast(i + 1)} ** 48);
+    }
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try testing.expectError(BlobError.TooManyBlobs, tx.validate());
+}
+
+test "BlobTransaction validate fails with many blobs" {
+    var hashes: [100]VersionedHash = undefined;
+    for (0..hashes.len) |i| {
+        hashes[i] = commitmentToVersionedHash([_]u8{@intCast((i % 255) + 1)} ** 48);
+    }
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try testing.expectError(BlobError.TooManyBlobs, tx.validate());
+}
+
+test "BlobTransaction validate fails with invalid versioned hash in middle" {
+    const valid_hash1 = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    var invalid_hash: VersionedHash = undefined;
+    invalid_hash.bytes = [_]u8{0x00} ** 32;
+    invalid_hash.bytes[0] = 0x00; // Invalid version
+    const valid_hash2 = commitmentToVersionedHash([_]u8{0x02} ** 48);
+
+    const hashes = [_]VersionedHash{ valid_hash1, invalid_hash, valid_hash2 };
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try testing.expectError(BlobError.InvalidVersionedHash, tx.validate());
+}
+
+test "BlobTransaction validate fails with zero max fee" {
+    const hash = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hashes = [_]VersionedHash{hash};
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 0,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try testing.expectError(BlobError.ZeroMaxFeePerBlobGas, tx.validate());
+}
+
+test "BlobTransaction validate succeeds with minimal max fee" {
+    const hash = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hashes = [_]VersionedHash{hash};
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try tx.validate();
+}
+
+test "BlobTransaction validate succeeds with high max fee" {
+    const hash = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hashes = [_]VersionedHash{hash};
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 999999999999,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try tx.validate();
+}
+
+// Tests for max blob count enforcement
+
+test "max blob count is six" {
+    try testing.expectEqual(@as(usize, 6), MAX_BLOBS_PER_TRANSACTION);
+}
+
+test "BlobTransaction with exactly max blobs is valid" {
+    var hashes: [MAX_BLOBS_PER_TRANSACTION]VersionedHash = undefined;
+    for (0..MAX_BLOBS_PER_TRANSACTION) |i| {
+        hashes[i] = commitmentToVersionedHash([_]u8{@intCast(i + 1)} ** 48);
+    }
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 100,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try tx.validate();
+    try testing.expectEqual(@as(u64, 6 * BLOB_GAS_PER_BLOB), tx.blobGasUsed());
+}
+
+test "BlobTransaction gas calculations with max blobs" {
+    var hashes: [MAX_BLOBS_PER_TRANSACTION]VersionedHash = undefined;
+    for (0..MAX_BLOBS_PER_TRANSACTION) |i| {
+        hashes[i] = commitmentToVersionedHash([_]u8{@intCast(i + 1)} ** 48);
+    }
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 100,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    const expected_gas = 6 * BLOB_GAS_PER_BLOB;
+    try testing.expectEqual(expected_gas, tx.blobGasUsed());
+
+    const blob_base_fee: u64 = 50;
+    const expected_cost = expected_gas * blob_base_fee;
+    try testing.expectEqual(expected_cost, tx.blobGasCost(blob_base_fee));
+}
+
+// Edge case tests near boundaries
+
+test "blob gas calculation boundary with one blob" {
+    const hash = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hashes = [_]VersionedHash{hash};
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try testing.expectEqual(BLOB_GAS_PER_BLOB, tx.blobGasUsed());
+}
+
+test "blob gas calculation boundary with two blobs" {
+    const hash1 = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hash2 = commitmentToVersionedHash([_]u8{0x02} ** 48);
+    const hashes = [_]VersionedHash{ hash1, hash2 };
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try testing.expectEqual(@as(u64, 2 * BLOB_GAS_PER_BLOB), tx.blobGasUsed());
+}
+
+test "excess blob gas at target boundary minus one blob" {
+    const target = 393216;
+    const excess = calculateExcessBlobGas(0, target - BLOB_GAS_PER_BLOB);
+    try testing.expectEqual(@as(u64, 0), excess);
+}
+
+test "excess blob gas at target boundary plus one blob" {
+    const target = 393216;
+    const excess = calculateExcessBlobGas(0, target + BLOB_GAS_PER_BLOB);
+    try testing.expectEqual(BLOB_GAS_PER_BLOB, excess);
+}
+
+test "blob price at target boundary" {
+    const target = 393216;
+
+    // Price with zero excess
+    const price_zero = calculateBlobGasPrice(0);
+
+    // Price with target excess
+    const price_target = calculateBlobGasPrice(target);
+
+    try testing.expect(price_target > price_zero);
+}
+
+test "blob gas cost calculation with zero base fee" {
+    const hash = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hashes = [_]VersionedHash{hash};
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 100,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    const cost = tx.blobGasCost(0);
+    try testing.expectEqual(@as(u64, 0), cost);
+}
+
+test "blob gas cost calculation with high base fee" {
+    const hash = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hashes = [_]VersionedHash{hash};
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1000000,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    const base_fee: u64 = 1000000;
+    const expected = BLOB_GAS_PER_BLOB * base_fee;
+    const cost = tx.blobGasCost(base_fee);
+    try testing.expectEqual(expected, cost);
+}
+
+// Gas price calculation edge cases
+
+test "gas price with maximum practical excess" {
+    // Test with very high excess (100 blobs worth)
+    const high_excess = 100 * BLOB_GAS_PER_BLOB;
+    const price = calculateBlobGasPrice(high_excess);
+    try testing.expect(price > MIN_BLOB_BASE_FEE);
+}
+
+test "gas price progression with incremental excess" {
+    var excess: u64 = 0;
+    var prev_price = calculateBlobGasPrice(excess);
+
+    for (0..10) |_| {
+        excess += BLOB_GAS_PER_BLOB;
+        const price = calculateBlobGasPrice(excess);
+        try testing.expect(price >= prev_price); // Should never decrease
+        prev_price = price;
+    }
+}
+
+test "blob transaction cost realistic scenario" {
+    const hash1 = commitmentToVersionedHash([_]u8{0x01} ** 48);
+    const hash2 = commitmentToVersionedHash([_]u8{0x02} ** 48);
+    const hash3 = commitmentToVersionedHash([_]u8{0x03} ** 48);
+    const hashes = [_]VersionedHash{ hash1, hash2, hash3 };
+
+    const tx = BlobTransaction{
+        .max_fee_per_blob_gas = 1000000,
+        .blob_versioned_hashes = &hashes,
+    };
+
+    try tx.validate();
+
+    // Calculate gas with current excess
+    const excess_blob_gas: u64 = BLOB_GAS_PER_BLOB * 2;
+    const blob_base_fee = calculateBlobGasPrice(excess_blob_gas);
+    const total_cost = tx.blobGasCost(blob_base_fee);
+
+    // Verify cost is reasonable
+    try testing.expect(total_cost > 0);
+    try testing.expectEqual(@as(u64, 3 * BLOB_GAS_PER_BLOB), tx.blobGasUsed());
+}
+
+test "excess blob gas converges to zero with low usage" {
+    var excess: u64 = 10 * BLOB_GAS_PER_BLOB; // Start high
+
+    // Use 1 blob per block (well below target of 3)
+    for (0..20) |_| {
+        const prev_excess = excess;
+        excess = calculateExcessBlobGas(excess, BLOB_GAS_PER_BLOB);
+
+        if (excess > 0) {
+            try testing.expect(excess <= prev_excess); // Should decrease or stay zero
+        }
+    }
+
+    // Should eventually reach zero
+    try testing.expectEqual(@as(u64, 0), excess);
+}
