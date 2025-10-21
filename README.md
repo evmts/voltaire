@@ -4,7 +4,6 @@
     <br/>
     <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
     <br />
-    Guillotine Primitives
     <br />
     <br />
     <br />
