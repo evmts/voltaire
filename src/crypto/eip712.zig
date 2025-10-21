@@ -637,3 +637,815 @@ test "EIP-712 crypto integration" {
     const zero_address = [_]u8{0} ** 20;
     try testing.expect(!std.mem.eql(u8, &address, &zero_address));
 }
+
+test "encode_type - simple type" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const person_props = [_]TypeProperty{
+        TypeProperty{ .name = "name", .type = "string" },
+        TypeProperty{ .name = "wallet", .type = "address" },
+    };
+
+    try types.put(allocator, "Person", &person_props);
+
+    const encoded = try encode_type(allocator, "Person", &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqualStrings("Person(string name,address wallet)", encoded);
+}
+
+test "encode_type - nested custom type" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const person_props = [_]TypeProperty{
+        TypeProperty{ .name = "name", .type = "string" },
+        TypeProperty{ .name = "wallet", .type = "address" },
+    };
+    try types.put(allocator, "Person", &person_props);
+
+    const mail_props = [_]TypeProperty{
+        TypeProperty{ .name = "from", .type = "Person" },
+        TypeProperty{ .name = "to", .type = "Person" },
+        TypeProperty{ .name = "contents", .type = "string" },
+    };
+    try types.put(allocator, "Mail", &mail_props);
+
+    const encoded = try encode_type(allocator, "Mail", &types);
+    defer allocator.free(encoded);
+
+    // Should include Mail type definition and referenced Person type
+    try testing.expect(std.mem.indexOf(u8, encoded, "Mail(") != null);
+    try testing.expect(std.mem.indexOf(u8, encoded, "Person from") != null);
+    try testing.expect(std.mem.indexOf(u8, encoded, "Person to") != null);
+    try testing.expect(std.mem.indexOf(u8, encoded, "string contents") != null);
+    try testing.expect(std.mem.indexOf(u8, encoded, "Person(") != null);
+}
+
+test "encode_type - invalid type returns error" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const result = encode_type(allocator, "NonExistent", &types);
+    try testing.expectError(Eip712Error.TypeNotFound, result);
+}
+
+test "encode_type_recursive - multiple custom types" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const address_props = [_]TypeProperty{
+        TypeProperty{ .name = "street", .type = "string" },
+        TypeProperty{ .name = "city", .type = "string" },
+    };
+    try types.put(allocator, "Address", &address_props);
+
+    const person_props = [_]TypeProperty{
+        TypeProperty{ .name = "name", .type = "string" },
+        TypeProperty{ .name = "home", .type = "Address" },
+    };
+    try types.put(allocator, "Person", &person_props);
+
+    const encoded = try encode_type(allocator, "Person", &types);
+    defer allocator.free(encoded);
+
+    try testing.expect(std.mem.indexOf(u8, encoded, "Person(") != null);
+    try testing.expect(std.mem.indexOf(u8, encoded, "Address(") != null);
+}
+
+test "hash_struct - simple struct" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const message_props = [_]TypeProperty{
+        TypeProperty{ .name = "value", .type = "uint256" },
+    };
+    try types.put(allocator, "Message", &message_props);
+
+    var data = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = data.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data.deinit();
+    }
+
+    try data.put(try allocator.dupe(u8, "value"), MessageValue{ .number = 123 });
+
+    const hash = try hash_struct(allocator, "Message", &data, &types);
+
+    // Verify hash is not all zeros
+    const zero_hash = [_]u8{0} ** 32;
+    try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
+}
+
+test "hash_struct - missing required field" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const message_props = [_]TypeProperty{
+        TypeProperty{ .name = "value", .type = "uint256" },
+        TypeProperty{ .name = "message", .type = "string" },
+    };
+    try types.put(allocator, "Message", &message_props);
+
+    var data = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = data.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data.deinit();
+    }
+
+    // Only provide one of two required fields
+    try data.put(try allocator.dupe(u8, "value"), MessageValue{ .number = 123 });
+
+    const result = hash_struct(allocator, "Message", &data, &types);
+    try testing.expectError(Eip712Error.InvalidMessage, result);
+}
+
+test "encode_data - multiple fields" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const message_props = [_]TypeProperty{
+        TypeProperty{ .name = "from", .type = "address" },
+        TypeProperty{ .name = "to", .type = "address" },
+        TypeProperty{ .name = "amount", .type = "uint256" },
+    };
+    try types.put(allocator, "Transfer", &message_props);
+
+    var data = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = data.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data.deinit();
+    }
+
+    const addr1 = [_]u8{1} ** 20;
+    const addr2 = [_]u8{2} ** 20;
+
+    try data.put(try allocator.dupe(u8, "from"), MessageValue{ .address = addr1 });
+    try data.put(try allocator.dupe(u8, "to"), MessageValue{ .address = addr2 });
+    try data.put(try allocator.dupe(u8, "amount"), MessageValue{ .number = 1000 });
+
+    const encoded = try encode_data(allocator, "Transfer", &data, &types);
+    defer allocator.free(encoded);
+
+    // Should include type hash (32 bytes) + 3 encoded values (32 bytes each)
+    try testing.expectEqual(@as(usize, 32 + 32 * 3), encoded.len);
+}
+
+test "encode_value - uint256" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const value = MessageValue{ .number = 42 };
+    const encoded = try encode_value(allocator, "uint256", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+
+    // Verify big-endian encoding
+    var expected = [_]u8{0} ** 32;
+    expected[31] = 42;
+    try testing.expectEqualSlices(u8, &expected, encoded);
+}
+
+test "encode_value - address" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const addr = [_]u8{0xAB} ** 20;
+    const value = MessageValue{ .address = addr };
+    const encoded = try encode_value(allocator, "address", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+
+    // Address should be in last 20 bytes
+    try testing.expectEqualSlices(u8, &addr, encoded[12..32]);
+}
+
+test "encode_value - bool true" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const value = MessageValue{ .boolean = true };
+    const encoded = try encode_value(allocator, "bool", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+    try testing.expectEqual(@as(u8, 1), encoded[31]);
+}
+
+test "encode_value - bool false" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const value = MessageValue{ .boolean = false };
+    const encoded = try encode_value(allocator, "bool", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+    try testing.expectEqual(@as(u8, 0), encoded[31]);
+}
+
+test "encode_value - string" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const str = try allocator.dupe(u8, "Hello, World!");
+    defer allocator.free(str);
+
+    const value = MessageValue{ .string = str };
+    const encoded = try encode_value(allocator, "string", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+
+    // Should be keccak256 hash of the string
+    const expected_hash = Hash.keccak256("Hello, World!");
+    try testing.expectEqualSlices(u8, &expected_hash, encoded);
+}
+
+test "encode_value - dynamic bytes" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const bytes = try allocator.dupe(u8, &[_]u8{ 0x01, 0x02, 0x03 });
+    defer allocator.free(bytes);
+
+    const value = MessageValue{ .bytes = bytes };
+    const encoded = try encode_value(allocator, "bytes", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+
+    // Should be keccak256 hash of the bytes
+    const expected_hash = Hash.keccak256(&[_]u8{ 0x01, 0x02, 0x03 });
+    try testing.expectEqualSlices(u8, &expected_hash, encoded);
+}
+
+test "encode_value - fixed bytes" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const bytes = try allocator.dupe(u8, &[_]u8{0xAB} ** 4);
+    defer allocator.free(bytes);
+
+    const value = MessageValue{ .bytes = bytes };
+    const encoded = try encode_value(allocator, "bytes4", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+
+    // First 4 bytes should be the data, rest zeros
+    try testing.expectEqualSlices(u8, &[_]u8{0xAB} ** 4, encoded[0..4]);
+    try testing.expectEqualSlices(u8, &[_]u8{0} ** 28, encoded[4..32]);
+}
+
+test "encode_value - custom type" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const person_props = [_]TypeProperty{
+        TypeProperty{ .name = "name", .type = "string" },
+    };
+    try types.put(allocator, "Person", &person_props);
+
+    var person_data = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = person_data.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        person_data.deinit();
+    }
+
+    try person_data.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Alice") });
+
+    const value = MessageValue{ .object = person_data };
+    const encoded = try encode_value(allocator, "Person", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+
+    // Should be hash of the struct
+    const zero_hash = [_]u8{0} ** 32;
+    try testing.expect(!std.mem.eql(u8, &zero_hash, encoded));
+}
+
+test "encode_value - type mismatch returns error" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Provide string value for uint256 type
+    const value = MessageValue{ .string = "not a number" };
+    const result = encode_value(allocator, "uint256", value, &types);
+    try testing.expectError(Eip712Error.InvalidMessage, result);
+}
+
+test "encode_value - invalid type name" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const value = MessageValue{ .number = 42 };
+    const result = encode_value(allocator, "invalidType", value, &types);
+    try testing.expectError(Eip712Error.TypeNotFound, result);
+}
+
+test "hash_domain - all fields" {
+    const allocator = testing.allocator;
+
+    const addr = [_]u8{0xFF} ** 20;
+    const salt_bytes = [_]u8{0xAB} ** 32;
+
+    const domain = Eip712Domain{
+        .name = try allocator.dupe(u8, "TestDomain"),
+        .version = try allocator.dupe(u8, "1.0.0"),
+        .chain_id = 1,
+        .verifying_contract = addr,
+        .salt = salt_bytes,
+    };
+    defer {
+        var mut_domain = domain;
+        mut_domain.deinit(allocator);
+    }
+
+    const hash = try hash_domain(allocator, &domain);
+
+    const zero_hash = [_]u8{0} ** 32;
+    try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
+}
+
+test "hash_domain - minimal fields" {
+    const allocator = testing.allocator;
+
+    const domain = Eip712Domain{
+        .name = try allocator.dupe(u8, "MinimalDomain"),
+        .version = null,
+        .chain_id = null,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer {
+        var mut_domain = domain;
+        mut_domain.deinit(allocator);
+    }
+
+    const hash = try hash_domain(allocator, &domain);
+
+    const zero_hash = [_]u8{0} ** 32;
+    try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
+}
+
+test "hash_domain - deterministic" {
+    const allocator = testing.allocator;
+
+    const domain = Eip712Domain{
+        .name = try allocator.dupe(u8, "TestDomain"),
+        .version = try allocator.dupe(u8, "1"),
+        .chain_id = 1,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer {
+        var mut_domain = domain;
+        mut_domain.deinit(allocator);
+    }
+
+    const hash1 = try hash_domain(allocator, &domain);
+    const hash2 = try hash_domain(allocator, &domain);
+
+    try testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+
+test "hash_domain - different values produce different hashes" {
+    const allocator = testing.allocator;
+
+    const domain1 = Eip712Domain{
+        .name = try allocator.dupe(u8, "Domain1"),
+        .version = null,
+        .chain_id = null,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer {
+        var mut_domain1 = domain1;
+        mut_domain1.deinit(allocator);
+    }
+
+    const domain2 = Eip712Domain{
+        .name = try allocator.dupe(u8, "Domain2"),
+        .version = null,
+        .chain_id = null,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer {
+        var mut_domain2 = domain2;
+        mut_domain2.deinit(allocator);
+    }
+
+    const hash1 = try hash_domain(allocator, &domain1);
+    const hash2 = try hash_domain(allocator, &domain2);
+
+    try testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+}
+
+test "deeply nested structures" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const level3_props = [_]TypeProperty{
+        TypeProperty{ .name = "value", .type = "uint256" },
+    };
+    try types.put(allocator, "Level3", &level3_props);
+
+    const level2_props = [_]TypeProperty{
+        TypeProperty{ .name = "nested", .type = "Level3" },
+    };
+    try types.put(allocator, "Level2", &level2_props);
+
+    const level1_props = [_]TypeProperty{
+        TypeProperty{ .name = "nested", .type = "Level2" },
+    };
+    try types.put(allocator, "Level1", &level1_props);
+
+    var level3_data = std.StringHashMap(MessageValue).init(allocator);
+    defer level3_data.deinit();
+    try level3_data.put(try allocator.dupe(u8, "value"), MessageValue{ .number = 42 });
+
+    var level2_data = std.StringHashMap(MessageValue).init(allocator);
+    defer level2_data.deinit();
+    try level2_data.put(try allocator.dupe(u8, "nested"), MessageValue{ .object = level3_data });
+
+    var level1_data = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = level1_data.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+        }
+        level1_data.deinit();
+    }
+    try level1_data.put(try allocator.dupe(u8, "nested"), MessageValue{ .object = level2_data });
+
+    const hash = try hash_struct(allocator, "Level1", &level1_data, &types);
+
+    const zero_hash = [_]u8{0} ** 32;
+    try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
+}
+
+test "empty arrays" {
+    const allocator = testing.allocator;
+
+    const empty_array = try allocator.alloc(MessageValue, 0);
+    defer allocator.free(empty_array);
+
+    const value = MessageValue{ .array = empty_array };
+
+    // Clean up properly
+    var mut_value = value;
+    mut_value.deinit(allocator);
+}
+
+test "arrays of custom types" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const person_props = [_]TypeProperty{
+        TypeProperty{ .name = "name", .type = "string" },
+        TypeProperty{ .name = "age", .type = "uint256" },
+    };
+    try types.put(allocator, "Person", &person_props);
+
+    // Create first person
+    var person1 = std.StringHashMap(MessageValue).init(allocator);
+    try person1.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Alice") });
+    try person1.put(try allocator.dupe(u8, "age"), MessageValue{ .number = 30 });
+
+    // Create second person
+    var person2 = std.StringHashMap(MessageValue).init(allocator);
+    try person2.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Bob") });
+    try person2.put(try allocator.dupe(u8, "age"), MessageValue{ .number = 25 });
+
+    const people = try allocator.alloc(MessageValue, 2);
+    people[0] = MessageValue{ .object = person1 };
+    people[1] = MessageValue{ .object = person2 };
+
+    var value = MessageValue{ .array = people };
+    defer value.deinit(allocator);
+
+    // Verify structure was created successfully
+    try testing.expectEqual(@as(usize, 2), value.array.len);
+}
+
+test "maximum field counts" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Create type with many fields (20 fields)
+    const num_fields = 20;
+    const large_props = try allocator.alloc(TypeProperty, num_fields);
+    defer allocator.free(large_props);
+
+    for (large_props, 0..) |*prop, i| {
+        const field_name = try std.fmt.allocPrint(allocator, "field{d}", .{i});
+        prop.* = TypeProperty{
+            .name = field_name,
+            .type = try allocator.dupe(u8, "uint256"),
+        };
+    }
+
+    try types.put(allocator, "LargeType", large_props);
+
+    var data = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = data.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data.deinit();
+    }
+
+    for (0..num_fields) |i| {
+        const field_name = try std.fmt.allocPrint(allocator, "field{d}", .{i});
+        try data.put(field_name, MessageValue{ .number = i });
+    }
+
+    const hash = try hash_struct(allocator, "LargeType", &data, &types);
+
+    const zero_hash = [_]u8{0} ** 32;
+    try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
+}
+
+test "field ordering variations" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const props = [_]TypeProperty{
+        TypeProperty{ .name = "a", .type = "uint256" },
+        TypeProperty{ .name = "b", .type = "uint256" },
+        TypeProperty{ .name = "c", .type = "uint256" },
+    };
+    try types.put(allocator, "Ordered", &props);
+
+    // Create data with same values in same order
+    var data1 = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = data1.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data1.deinit();
+    }
+
+    try data1.put(try allocator.dupe(u8, "a"), MessageValue{ .number = 1 });
+    try data1.put(try allocator.dupe(u8, "b"), MessageValue{ .number = 2 });
+    try data1.put(try allocator.dupe(u8, "c"), MessageValue{ .number = 3 });
+
+    // Create data with same values (hashmap order doesn't matter)
+    var data2 = std.StringHashMap(MessageValue).init(allocator);
+    defer {
+        var iterator = data2.iterator();
+        while (iterator.next()) |entry| {
+            allocator.free(entry.key_ptr.*);
+            entry.value_ptr.deinit(allocator);
+        }
+        data2.deinit();
+    }
+
+    try data2.put(try allocator.dupe(u8, "c"), MessageValue{ .number = 3 });
+    try data2.put(try allocator.dupe(u8, "a"), MessageValue{ .number = 1 });
+    try data2.put(try allocator.dupe(u8, "b"), MessageValue{ .number = 2 });
+
+    const hash1 = try hash_struct(allocator, "Ordered", &data1, &types);
+    const hash2 = try hash_struct(allocator, "Ordered", &data2, &types);
+
+    // Hashes should be the same because field order is defined by type definition
+    try testing.expectEqualSlices(u8, &hash1, &hash2);
+}
+
+test "invalid type name characters" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Create type with special characters in name (should work)
+    const props = [_]TypeProperty{
+        TypeProperty{ .name = "value", .type = "uint256" },
+    };
+    try types.put(allocator, "Type_With_Underscores", &props);
+
+    const encoded = try encode_type(allocator, "Type_With_Underscores", &types);
+    defer allocator.free(encoded);
+
+    try testing.expect(std.mem.indexOf(u8, encoded, "Type_With_Underscores") != null);
+}
+
+test "encode_value - fixed bytes wrong size" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Provide wrong sized bytes for bytes4
+    const bytes = try allocator.dupe(u8, &[_]u8{0xAB} ** 8);
+    defer allocator.free(bytes);
+
+    const value = MessageValue{ .bytes = bytes };
+    const result = encode_value(allocator, "bytes4", value, &types);
+    try testing.expectError(Eip712Error.InvalidMessage, result);
+}
+
+test "encode_value - int256" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    const value = MessageValue{ .number = 12345 };
+    const encoded = try encode_value(allocator, "int256", value, &types);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 32), encoded.len);
+}
+
+test "full typed data with nested types" {
+    const allocator = testing.allocator;
+
+    const domain = Eip712Domain{
+        .name = try allocator.dupe(u8, "TestApp"),
+        .version = try allocator.dupe(u8, "1"),
+        .chain_id = 1,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer {
+        var mut_domain = domain;
+        mut_domain.deinit(allocator);
+    }
+
+    var typed_data = TypedData.init(allocator);
+    defer typed_data.deinit(allocator);
+
+    typed_data.domain = domain;
+    typed_data.primary_type = try allocator.dupe(u8, "Mail");
+
+    // Define Person type
+    const person_props = [_]TypeProperty{
+        TypeProperty{ .name = "name", .type = "string" },
+        TypeProperty{ .name = "wallet", .type = "address" },
+    };
+    try typed_data.types.put(allocator, "Person", &person_props);
+
+    // Define Mail type
+    const mail_props = [_]TypeProperty{
+        TypeProperty{ .name = "from", .type = "Person" },
+        TypeProperty{ .name = "to", .type = "Person" },
+        TypeProperty{ .name = "contents", .type = "string" },
+    };
+    try typed_data.types.put(allocator, "Mail", &mail_props);
+
+    // Create from person
+    var from_person = std.StringHashMap(MessageValue).init(allocator);
+    try from_person.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Alice") });
+    try from_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = [_]u8{0xAA} ** 20 });
+
+    // Create to person
+    var to_person = std.StringHashMap(MessageValue).init(allocator);
+    try to_person.put(try allocator.dupe(u8, "name"), MessageValue{ .string = try allocator.dupe(u8, "Bob") });
+    try to_person.put(try allocator.dupe(u8, "wallet"), MessageValue{ .address = [_]u8{0xBB} ** 20 });
+
+    // Create mail message
+    try typed_data.message.put(try allocator.dupe(u8, "from"), MessageValue{ .object = from_person });
+    try typed_data.message.put(try allocator.dupe(u8, "to"), MessageValue{ .object = to_person });
+    try typed_data.message.put(try allocator.dupe(u8, "contents"), MessageValue{ .string = try allocator.dupe(u8, "Hello!") });
+
+    const hash = try unaudited_hashTypedData(allocator, &typed_data);
+
+    const zero_hash = [_]u8{0} ** 32;
+    try testing.expect(!std.mem.eql(u8, &hash, &zero_hash));
+}
+
+test "typed data determinism across multiple hashes" {
+    const allocator = testing.allocator;
+
+    const domain = Eip712Domain{
+        .name = try allocator.dupe(u8, "TestApp"),
+        .version = try allocator.dupe(u8, "1"),
+        .chain_id = 1,
+        .verifying_contract = null,
+        .salt = null,
+    };
+    defer {
+        var mut_domain = domain;
+        mut_domain.deinit(allocator);
+    }
+
+    var typed_data = TypedData.init(allocator);
+    defer typed_data.deinit(allocator);
+
+    typed_data.domain = domain;
+    typed_data.primary_type = try allocator.dupe(u8, "Message");
+
+    const message_props = [_]TypeProperty{
+        TypeProperty{ .name = "content", .type = "string" },
+    };
+    try typed_data.types.put(allocator, "Message", &message_props);
+
+    try typed_data.message.put(try allocator.dupe(u8, "content"), MessageValue{ .string = try allocator.dupe(u8, "Test") });
+
+    // Hash multiple times
+    const hash1 = try unaudited_hashTypedData(allocator, &typed_data);
+    const hash2 = try unaudited_hashTypedData(allocator, &typed_data);
+    const hash3 = try unaudited_hashTypedData(allocator, &typed_data);
+
+    try testing.expectEqualSlices(u8, &hash1, &hash2);
+    try testing.expectEqualSlices(u8, &hash2, &hash3);
+}
+
+test "circular type references handled gracefully" {
+    const allocator = testing.allocator;
+
+    var types = TypeDefinitions.init(allocator);
+    defer types.deinit(allocator);
+
+    // Create TypeA that references TypeB
+    const typeA_props = [_]TypeProperty{
+        TypeProperty{ .name = "value", .type = "uint256" },
+        TypeProperty{ .name = "next", .type = "TypeB" },
+    };
+    try types.put(allocator, "TypeA", &typeA_props);
+
+    // Create TypeB that references TypeA (circular)
+    const typeB_props = [_]TypeProperty{
+        TypeProperty{ .name = "value", .type = "uint256" },
+        TypeProperty{ .name = "next", .type = "TypeA" },
+    };
+    try types.put(allocator, "TypeB", &typeB_props);
+
+    // The current implementation should handle this by visiting each type only once
+    // This won't error, but will produce a type encoding that doesn't include the circular reference
+    const encoded = try encode_type(allocator, "TypeA", &types);
+    defer allocator.free(encoded);
+
+    // Should have successfully encoded something
+    try testing.expect(encoded.len > 0);
+    try testing.expect(std.mem.indexOf(u8, encoded, "TypeA(") != null);
+}
