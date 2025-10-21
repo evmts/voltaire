@@ -48,8 +48,9 @@ pub const keccak_asm = @import("keccak_asm.zig");
 
 // KZG commitments for EIP-4844
 const builtin = @import("builtin");
-pub const c_kzg = if (builtin.target.cpu.arch != .wasm32) 
-    @import("c_kzg") 
+pub const kzg_trusted_setup = @import("kzg_trusted_setup.zig");
+pub const c_kzg = if (builtin.target.cpu.arch != .wasm32)
+    @import("c_kzg")
 else struct {
     // Stub for WASM builds - KZG operations not supported
     pub const KZGCommitment = [48]u8;
