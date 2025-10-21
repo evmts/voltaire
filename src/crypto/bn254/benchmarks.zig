@@ -625,7 +625,10 @@ fn benchFpInv(sample_size: usize) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..sample_size) |j| {
-        const result = test_inputs.fp_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchFpInv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 }
@@ -670,7 +673,10 @@ fn benchFp2Inv(sample_size: usize) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..sample_size) |j| {
-        const result = test_inputs.fp2_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp2_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp2_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchFp2Inv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 }
@@ -715,7 +721,10 @@ fn benchFp6Inv(sample_size: usize) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..sample_size) |j| {
-        const result = test_inputs.fp6_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp6_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp6_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchFp6Inv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 }
@@ -760,7 +769,10 @@ fn benchFp12Inv(sample_size: usize) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..sample_size) |j| {
-        const result = test_inputs.fp12_nonzero[(i + j) % 1000].inv() catch unreachable;
+        // fp12_nonzero should never contain zero, so inversion should always succeed
+        const result = test_inputs.fp12_nonzero[(i + j) % 1000].inv() catch |err| {
+            std.debug.panic("benchFp12Inv: unexpected inversion failure on nonzero element: {}", .{err});
+        };
         std.mem.doNotOptimizeAway(result);
     }
 }

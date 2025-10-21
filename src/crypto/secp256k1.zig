@@ -375,7 +375,7 @@ test "recover address from signature" {
     const message = "Hello, Ethereum!";
     var hasher = crypto.hash.sha3.Keccak256.init(.{});
     hasher.update("\x19Ethereum Signed Message:\n");
-    const length_str = std.fmt.allocPrint(std.testing.allocator, "{d}", .{message.len}) catch unreachable;
+    const length_str = try std.fmt.allocPrint(std.testing.allocator, "{d}", .{message.len});
     defer std.testing.allocator.free(length_str);
     hasher.update(length_str);
     hasher.update(message);
@@ -602,7 +602,7 @@ test "Ethereum test vectors - signature recovery" {
         // Create Ethereum signed message hash
         var hasher = crypto.hash.sha3.Keccak256.init(.{});
         hasher.update("\x19Ethereum Signed Message:\n");
-        const length_str = std.fmt.allocPrint(std.testing.allocator, "{d}", .{tv.msg.len}) catch unreachable;
+        const length_str = try std.fmt.allocPrint(std.testing.allocator, "{d}", .{tv.msg.len});
         defer std.testing.allocator.free(length_str);
         hasher.update(length_str);
         hasher.update(tv.msg);
@@ -792,8 +792,9 @@ test "Public key recovery consistency" {
         return;
     };
 
-    const addr2 = unaudited_recover_address(&hash, 0, r, s) catch unreachable;
-    const addr3 = unaudited_recover_address(&hash, 0, r, s) catch unreachable;
+    // If the first call succeeded, subsequent calls with identical inputs should also succeed
+    const addr2 = try unaudited_recover_address(&hash, 0, r, s);
+    const addr3 = try unaudited_recover_address(&hash, 0, r, s);
 
     // All recovered addresses should be identical
     try std.testing.expectEqualSlices(u8, &addr1, &addr2);

@@ -30,11 +30,17 @@ pub fn parseHeader() struct { n_g1: usize, n_g2: usize } {
 
     var lines = std.mem.splitScalar(u8, data, '\n');
 
-    const n_g1_line = lines.next() orelse unreachable;
-    const n_g1 = std.fmt.parseInt(usize, std.mem.trim(u8, n_g1_line, " \t\r\n"), 10) catch unreachable;
+    // The trusted setup file format is fixed and known to be valid
+    // If parsing fails, the embedded file is corrupted which should never happen
+    const n_g1_line = lines.next() orelse @panic("kzg_trusted_setup: missing G1 count line");
+    const n_g1 = std.fmt.parseInt(usize, std.mem.trim(u8, n_g1_line, " \t\r\n"), 10) catch |err| {
+        @panic(std.fmt.comptimePrint("kzg_trusted_setup: invalid G1 count: {}", .{err}));
+    };
 
-    const n_g2_line = lines.next() orelse unreachable;
-    const n_g2 = std.fmt.parseInt(usize, std.mem.trim(u8, n_g2_line, " \t\r\n"), 10) catch unreachable;
+    const n_g2_line = lines.next() orelse @panic("kzg_trusted_setup: missing G2 count line");
+    const n_g2 = std.fmt.parseInt(usize, std.mem.trim(u8, n_g2_line, " \t\r\n"), 10) catch |err| {
+        @panic(std.fmt.comptimePrint("kzg_trusted_setup: invalid G2 count: {}", .{err}));
+    };
 
     return .{ .n_g1 = n_g1, .n_g2 = n_g2 };
 }
