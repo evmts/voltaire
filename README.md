@@ -2,7 +2,7 @@
   <h1>
     <br/>
     <br/>
-    ⚡
+    <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/92c16e9a-a007-4ccf-a6cc-49ac34fa7d27" />
     <br />
     primitives
     <br />
