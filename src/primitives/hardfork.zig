@@ -206,7 +206,7 @@ pub const ForkTransition = struct {
             // Extract number from "Time15k" -> "15k"
             const time_index = std.mem.indexOf(u8, transition_str, "Time") orelse return null;
             const num_str = transition_str[time_index + 4 ..];
-            const timestamp = parseNumber(num_str) orelse return null;
+            const timestamp = parseNumber(num_str) catch return null;
             return ForkTransition{
                 .from_fork = from_fork,
                 .to_fork = to_fork,
@@ -215,7 +215,7 @@ pub const ForkTransition = struct {
             };
         } else {
             // It's a block number
-            const block = parseNumber(transition_str) orelse return null;
+            const block = parseNumber(transition_str) catch return null;
             return ForkTransition{
                 .from_fork = from_fork,
                 .to_fork = to_fork,
@@ -236,18 +236,24 @@ pub const ForkTransition = struct {
     }
 };
 
+/// Errors that can occur when parsing numbers
+pub const ParseNumberError = error{
+    EmptyString,
+    InvalidFormat,
+};
+
 /// Parse a number from a string like "15k" or "5"
-fn parseNumber(str: []const u8) ?u64 {
-    if (str.len == 0) return null;
+fn parseNumber(str: []const u8) ParseNumberError!u64 {
+    if (str.len == 0) return error.EmptyString;
 
     // Check for 'k' suffix (multiply by 1000)
     if (str[str.len - 1] == 'k') {
         const num_str = str[0 .. str.len - 1];
-        const base = std.fmt.parseInt(u64, num_str, 10) catch return null;
+        const base = std.fmt.parseInt(u64, num_str, 10) catch return error.InvalidFormat;
         return base * 1000;
     }
 
-    return std.fmt.parseInt(u64, str, 10) catch null;
+    return std.fmt.parseInt(u64, str, 10) catch error.InvalidFormat;
 }
 
 // Tests

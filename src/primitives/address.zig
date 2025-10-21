@@ -145,7 +145,9 @@ pub fn addressFromHex(comptime hex: [42]u8) Address {
         @compileError("hex must start with '0x'");
 
     var out: Address = undefined;
-    hex_to_bytes(&out.bytes, hex[2..]) catch unreachable;
+    _ = hex_to_bytes(&out.bytes, hex[2..]) catch {
+        @compileError("invalid hex string in addressFromHex");
+    };
     return out;
 }
 
@@ -378,10 +380,15 @@ pub fn calculateCreate2Address(allocator: std.mem.Allocator, creator: Address, s
 }
 
 // Convenience function for CREATE address calculation without allocator
-// Uses a fixed buffer for the RLP encoding
+// Uses page allocator - only use in tests or when allocation failure is truly impossible
+// For production code, use calculateCreateAddress with a proper allocator
 pub fn getContractAddress(creator: Address, nonce: u64) Address {
     const allocator = std.heap.page_allocator;
-    return calculateCreateAddress(allocator, creator, nonce) catch unreachable;
+    return calculateCreateAddress(allocator, creator, nonce) catch |err| {
+        // Page allocator should not fail for small allocations
+        // If it does, it's a system-level OOM which is unrecoverable
+        std.debug.panic("getContractAddress: unexpected allocation failure: {}", .{err});
+    };
 }
 
 // Convenience function for CREATE2 address calculation without allocator
@@ -439,7 +446,7 @@ test "Address - checksumAddress" {
 
     for (test_cases) |tc| {
         var addr: Address = undefined;
-        _ = hex_to_bytes(&addr.bytes, tc.input[2..]) catch unreachable;
+        _ = try hex_to_bytes(&addr.bytes, tc.input[2..]);
 
         const checksummed = addressToChecksumHex(addr);
 
@@ -454,7 +461,7 @@ test "Address - fromPublicKey" {
     const addr = addressFromPublicKey(public_key);
 
     var expected_addr: Address = undefined;
-    _ = hex_to_bytes(&expected_addr.bytes, "f39fd6e51aad88f6f4ce6ab8827279cfffb92266") catch unreachable;
+    _ = try hex_to_bytes(&expected_addr.bytes, "f39fd6e51aad88f6f4ce6ab8827279cfffb92266");
 
     try std.testing.expectEqualSlices(u8, &expected_addr.bytes, &addr.bytes);
 

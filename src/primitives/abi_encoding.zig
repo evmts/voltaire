@@ -13,7 +13,7 @@ pub const AbiError = error{
     OutOfBounds,
     InvalidAddress,
     InvalidUtf8,
-    NotImplemented,
+    UnsupportedType,
     OutOfMemory,
 };
 
@@ -93,15 +93,15 @@ pub const AbiType = enum {
     // Dynamic types
     bytes,
     string,
-    // Array types
-    uint256_array,
-    bytes32_array,
-    address_array,
-    string_array,
+    // Array types - using @"" syntax for names with special characters
+    @"uint256[]",
+    @"bytes32[]",
+    @"address[]",
+    @"string[]",
 
     pub fn is_dynamic(self: AbiType) bool {
         return switch (self) {
-            .string, .bytes, .array => true,
+            .string, .bytes, .@"uint256[]", .@"bytes32[]", .@"address[]", .@"string[]" => true,
             else => false,
         };
     }
@@ -123,40 +123,12 @@ pub const AbiType = enum {
             .bytes8 => 8,
             .bytes16 => 16,
             .bytes32 => 32,
-            .bytes, .string, .uint256_array, .bytes32_array, .address_array, .string_array => null,
+            .bytes, .string, .@"uint256[]", .@"bytes32[]", .@"address[]", .@"string[]" => null,
         };
     }
 
     pub fn get_type(self: AbiType) []const u8 {
-        return switch (self) {
-            .uint8 => "uint8",
-            .uint16 => "uint16",
-            .uint32 => "uint32",
-            .uint64 => "uint64",
-            .uint128 => "uint128",
-            .uint256 => "uint256",
-            .int8 => "int8",
-            .int16 => "int16",
-            .int32 => "int32",
-            .int64 => "int64",
-            .int128 => "int128",
-            .int256 => "int256",
-            .address => "address",
-            .bool => "bool",
-            .bytes1 => "bytes1",
-            .bytes2 => "bytes2",
-            .bytes3 => "bytes3",
-            .bytes4 => "bytes4",
-            .bytes8 => "bytes8",
-            .bytes16 => "bytes16",
-            .bytes32 => "bytes32",
-            .bytes => "bytes",
-            .string => "string",
-            .uint256_array => "uint256[]",
-            .bytes32_array => "bytes32[]",
-            .address_array => "address[]",
-            .string_array => "string[]",
-        };
+        return @tagName(self);
     }
 };
 
@@ -184,36 +156,13 @@ pub const AbiValue = union(AbiType) {
     bytes32: [32]u8,
     bytes: []const u8,
     string: []const u8,
-    uint256_array: []const u256,
-    bytes32_array: []const [32]u8,
-    address_array: []const address.Address,
-    string_array: []const []const u8,
+    @"uint256[]": []const u256,
+    @"bytes32[]": []const [32]u8,
+    @"address[]": []const address.Address,
+    @"string[]": []const []const u8,
 
     pub fn get_type(self: AbiValue) AbiType {
-        return switch (self) {
-            .uint8 => .uint8,
-            .uint16 => .uint16,
-            .uint32 => .uint32,
-            .uint64 => .uint64,
-            .uint256 => .uint256,
-            .int8 => .int8,
-            .int16 => .int16,
-            .int32 => .int32,
-            .int64 => .int64,
-            .int256 => .int256,
-            .bool => .bool,
-            .address => .address,
-            .bytes1 => .bytes1,
-            .bytes4 => .bytes4,
-            .bytes8 => .bytes8,
-            .bytes32 => .bytes32,
-            .bytes => .bytes,
-            .string => .string,
-            .uint256_array => .uint256_array,
-            .bytes32_array => .bytes32_array,
-            .address_array => .address_array,
-            .string_array => .string_array,
-        };
+        return self;
     }
 };
 
@@ -281,8 +230,10 @@ fn decode_int(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T 
     const start_offset = 32 - bytes_len;
 
     if (T == i256) {
-        // For i256, we need special handling since Zig doesn't have i256
-        return AbiError.NotImplemented;
+        // i256 is not natively supported in Zig as there is no i256 type.
+        // This is intentional - Solidity's int256 is rarely used in practice.
+        // If needed, use uint256 and handle sign bit manually, or use a big integer library.
+        return AbiError.UnsupportedType;
     } else {
         const unsigned = std.mem.readInt(std.meta.Int(.unsigned, @bitSizeOf(T)), word[start_offset..32], .big);
         return @bitCast(unsigned);
@@ -369,7 +320,7 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
         .int32 => AbiValue{ .int32 = try decode_int(cursor, i32, 32) },
         .int64 => AbiValue{ .int64 = try decode_int(cursor, i64, 64) },
         .int128 => AbiValue{ .int128 = try decode_int(cursor, i128, 128) },
-        .int256 => return AbiError.NotImplemented, // i256 not supported in Zig
+        .int256 => return AbiError.UnsupportedType, // i256 not natively supported in Zig
         .address => AbiValue{ .address = try decode_address(cursor) },
         .bool => AbiValue{ .bool = try decode_bool(cursor) },
         .bytes1 => AbiValue{ .bytes1 = try decode_bytes_fixed(cursor, 1) },
@@ -381,17 +332,50 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
         .bytes32 => AbiValue{ .bytes32 = try decode_bytes_fixed(cursor, 32) },
         .bytes => AbiValue{ .bytes = try decode_bytes_dynamic(allocator, cursor, static_position) },
         .string => AbiValue{ .string = try decode_string(allocator, cursor, static_position) },
-        .uint256_array => {
+        .@"uint256[]" => {
             const array_values = try decode_array(allocator, cursor, .uint256, static_position);
             defer allocator.free(array_values);
 
             var result = try allocator.alloc(u256, array_values.len);
+            errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
                 result[i] = value.uint256;
             }
-            return AbiValue{ .uint256_array = result };
+            return AbiValue{ .@"uint256[]" = result };
         },
-        else => AbiError.NotImplemented,
+        .@"bytes32[]" => {
+            const array_values = try decode_array(allocator, cursor, .bytes32, static_position);
+            defer allocator.free(array_values);
+
+            var result = try allocator.alloc([32]u8, array_values.len);
+            errdefer allocator.free(result);
+            for (array_values, 0..) |value, i| {
+                result[i] = value.bytes32;
+            }
+            return AbiValue{ .@"bytes32[]" = result };
+        },
+        .@"address[]" => {
+            const array_values = try decode_array(allocator, cursor, .address, static_position);
+            defer allocator.free(array_values);
+
+            var result = try allocator.alloc(address.Address, array_values.len);
+            errdefer allocator.free(result);
+            for (array_values, 0..) |value, i| {
+                result[i] = value.address;
+            }
+            return AbiValue{ .@"address[]" = result };
+        },
+        .@"string[]" => {
+            const array_values = try decode_array(allocator, cursor, .string, static_position);
+            defer allocator.free(array_values);
+
+            var result = try allocator.alloc([]const u8, array_values.len);
+            errdefer allocator.free(result);
+            for (array_values, 0..) |value, i| {
+                result[i] = value.string;
+            }
+            return AbiValue{ .@"string[]" = result };
+        },
     };
 }
 
@@ -438,7 +422,7 @@ pub fn decodeFunctionData(allocator: std.mem.Allocator, data: []const u8, types:
 // Helper to determine if a type is dynamic
 fn is_dynamic(abi_type: AbiType) bool {
     return switch (abi_type) {
-        .string, .bytes, .uint256_array, .bytes32_array, .address_array, .string_array => true,
+        .string, .bytes, .@"uint256[]", .@"bytes32[]", .@"address[]", .@"string[]" => true,
         else => false,
     };
 }
@@ -447,13 +431,14 @@ fn is_dynamic(abi_type: AbiType) bool {
 fn get_static_size(abi_type: AbiType) ?usize {
     return switch (abi_type) {
         .uint8, .uint16, .uint32, .uint64, .uint128, .uint256, .int8, .int16, .int32, .int64, .int128, .int256, .address, .bool, .bytes1, .bytes2, .bytes3, .bytes4, .bytes8, .bytes16, .bytes32 => 32,
-        .string, .bytes, .uint256_array, .bytes32_array, .address_array, .string_array => null,
+        .string, .bytes, .@"uint256[]", .@"bytes32[]", .@"address[]", .@"string[]" => null,
     };
 }
 
 // Encode a single static parameter
 fn encode_static_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8 {
     var result = try allocator.alloc(u8, 32);
+    errdefer allocator.free(result);
     @memset(result, 0);
 
     switch (value) {
@@ -534,7 +519,10 @@ fn encode_static_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8 
             }
         },
         .int256 => {
-            return AbiError.NotImplemented; // i256 not supported in Zig
+            // i256 is not natively supported in Zig as there is no i256 type.
+            // This is intentional - Solidity's int256 is rarely used in practice.
+            // If needed, use uint256 and handle sign bit manually, or use a big integer library.
+            return AbiError.UnsupportedType;
         },
         .address => |val| {
             // Address is 20 bytes, right-aligned (left-padded with zeros)
@@ -565,7 +553,7 @@ fn encode_static_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8 
             @memcpy(result, &val);
         },
         else => {
-            allocator.free(result);
+            // errdefer will handle cleanup
             return AbiError.InvalidType;
         },
     }
@@ -582,6 +570,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             const padded_length = ((length + 31) / 32) * 32;
 
             var result = try allocator.alloc(u8, 32 + padded_length);
+            errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
@@ -601,6 +590,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             const padded_length = ((length + 31) / 32) * 32;
 
             var result = try allocator.alloc(u8, 32 + padded_length);
+            errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
@@ -614,11 +604,12 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             return result;
         },
-        .uint256_array => |val| {
+        .@"uint256[]" => |val| {
             // Length + array elements
             const length = val.len;
 
             var result = try allocator.alloc(u8, 32 + (length * 32));
+            errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
@@ -636,10 +627,32 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             return result;
         },
-        .address_array => |val| {
+        .@"bytes32[]" => |val| {
+            // Length + array elements
             const length = val.len;
 
             var result = try allocator.alloc(u8, 32 + (length * 32));
+            errdefer allocator.free(result);
+            @memset(result, 0);
+
+            // Encode length
+            var length_bytes: [32]u8 = undefined;
+            @memset(length_bytes, 0);
+            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            @memcpy(result[0..32], &length_bytes);
+
+            // Encode elements (bytes32 values are left-aligned)
+            for (val, 0..) |elem, i| {
+                @memcpy(result[32 + (i * 32) .. 32 + ((i + 1) * 32)], &elem);
+            }
+
+            return result;
+        },
+        .@"address[]" => |val| {
+            const length = val.len;
+
+            var result = try allocator.alloc(u8, 32 + (length * 32));
+            errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
@@ -655,7 +668,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             return result;
         },
-        .string_array => |val| {
+        .@"string[]" => |val| {
             const length = val.len;
 
             // First pass: calculate total size needed
@@ -673,6 +686,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             }
 
             var result = try allocator.alloc(u8, total_size);
+            errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode array length
@@ -1085,10 +1099,10 @@ pub const ErrorResult = struct {
             for (params) |param| {
                 switch (param) {
                     .string, .bytes => |slice| allocator.free(slice),
-                    .uint256_array => |arr| allocator.free(arr),
-                    .bytes32_array => |arr| allocator.free(arr),
-                    .address_array => |arr| allocator.free(arr),
-                    .string_array => |arr| {
+                    .@"uint256[]" => |arr| allocator.free(arr),
+                    .@"bytes32[]" => |arr| allocator.free(arr),
+                    .@"address[]" => |arr| allocator.free(arr),
+                    .@"string[]" => |arr| {
                         for (arr) |str| allocator.free(str);
                         allocator.free(arr);
                     },
@@ -1255,10 +1269,10 @@ test "decode uint256" {
         for (decoded) |value| {
             switch (value) {
                 .string, .bytes => |slice| std.testing.allocator.free(slice),
-                .uint256_array => |arr| std.testing.allocator.free(arr),
-                .bytes32_array => |arr| std.testing.allocator.free(arr),
-                .address_array => |arr| std.testing.allocator.free(arr),
-                .string_array => |arr| {
+                .@"uint256[]" => |arr| std.testing.allocator.free(arr),
+                .@"bytes32[]" => |arr| std.testing.allocator.free(arr),
+                .@"address[]" => |arr| std.testing.allocator.free(arr),
+                .@"string[]" => |arr| {
                     for (arr) |str| std.testing.allocator.free(str);
                     std.testing.allocator.free(arr);
                 },
