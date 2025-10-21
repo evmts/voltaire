@@ -76,6 +76,22 @@ zig build</pre>
     - [`encodeLength`](./src/primitives/rlp.zig#L264) &mdash; encode integer length as bytes
     - [`decode`](./src/primitives/rlp.zig#L281) &mdash; decode RLP data with optional streaming
   - [`ABI`](./src/primitives/abi.zig) &mdash; Application Binary Interface encoding/decoding
+    - [`computeSelector`](./src/primitives/abi_encoding.zig#L238) &mdash; compute 4-byte function selector from signature string
+    - [`createFunctionSignature`](./src/primitives/abi_encoding.zig#L244) &mdash; create function signature string from name and types
+    - [`encodeAbiParameters`](./src/primitives/abi_encoding.zig#L720) &mdash; encode values according to ABI specification
+    - [`decodeAbiParameters`](./src/primitives/abi_encoding.zig#L399) &mdash; decode ABI-encoded parameter data
+    - [`encodeFunctionData`](./src/primitives/abi_encoding.zig#L808) &mdash; encode function call (selector + parameters)
+    - [`decodeFunctionData`](./src/primitives/abi_encoding.zig#L421) &mdash; decode function call data into selector and parameters
+    - [`encodeFunctionResult`](./src/primitives/abi_encoding.zig#L1045) &mdash; encode function return values
+    - [`decodeFunctionResult`](./src/primitives/abi_encoding.zig#L1050) &mdash; decode function return values
+    - [`encodeErrorResult`](./src/primitives/abi_encoding.zig#L1055) &mdash; encode error data (selector + parameters)
+    - [`encodeEventTopics`](./src/primitives/abi_encoding.zig#L818) &mdash; encode event signature and indexed parameters as topics
+    - [`encodePacked`](./src/primitives/abi_encoding.zig#L855) &mdash; packed encoding without padding
+    - [`estimateGasForData`](./src/primitives/abi_encoding.zig#L887) &mdash; estimate gas cost for calldata
+    - [`createFunctionResult`](./src/primitives/abi_encoding.zig#L1104) &mdash; create function execution result structure
+    - [`decodeFunctionResultWithTypes`](./src/primitives/abi_encoding.zig#L1113) &mdash; decode function result with type information
+    - [`createErrorResult`](./src/primitives/abi_encoding.zig#L1117) &mdash; create error result structure
+    - [`decodeErrorResultWithTypes`](./src/primitives/abi_encoding.zig#L1125) &mdash; decode error result with type information
   - [`Transaction`](./src/primitives/transaction.zig) &mdash; all transaction types (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702)
     - [`encodeLegacyForSigning`](./src/primitives/transaction.zig#L174) &mdash; encode legacy transaction for signature (EIP-155)
     - [`encode_eip1559_for_signing`](./src/primitives/transaction.zig#L220) &mdash; encode EIP-1559 transaction for signature
@@ -84,6 +100,16 @@ zig build</pre>
     - [`computeLegacyTransactionHash`](./src/primitives/transaction.zig#L358) &mdash; compute transaction hash (keccak256)
     - [`detectTransactionType`](./src/primitives/transaction.zig#L368) &mdash; detect transaction type from raw data
   - [`Logs`](./src/primitives/logs.zig) &mdash; event log structures with topic handling
+  - [`Blob`](./src/primitives/blob.zig) &mdash; EIP-4844 blob transaction support with KZG commitments
+    - [`commitmentToVersionedHash`](./src/primitives/blob.zig#L36) &mdash; create versioned hash from KZG commitment
+    - [`isValidVersionedHash`](./src/primitives/blob.zig#L50) &mdash; validate versioned hash format
+  - [`Authorization`](./src/primitives/authorization.zig) &mdash; EIP-7702 authorization list for account abstraction
+    - [`authority`](./src/primitives/authorization.zig#L31) &mdash; recover authority (signer) from authorization
+    - [`signing_hash`](./src/primitives/authorization.zig#L45) &mdash; compute hash for authorization signing
+  - [`SIWE`](./src/primitives/siwe.zig) &mdash; Sign-In with Ethereum (EIP-4361) message handling
+    - [`SiweMessage.format`](./src/primitives/siwe.zig#L40) &mdash; format SIWE message for signing
+    - [`SiweMessage.validate`](./src/primitives/siwe.zig) &mdash; validate SIWE message structure
+    - [`SiweMessage.parse`](./src/primitives/siwe.zig) &mdash; parse SIWE message from string
   - [`Bytecode`](./src/primitives/bytecode.zig) &mdash; EVM bytecode utilities with jump destination analysis
     - [`init`](./src/primitives/bytecode.zig#L16) &mdash; initialize bytecode with jump destination analysis
     - [`deinit`](./src/primitives/bytecode.zig#L29) &mdash; clean up resources
@@ -139,6 +165,13 @@ zig build</pre>
     - [`unaudited_recover_address`](./src/crypto/secp256k1.zig#L147) &mdash; recover Ethereum address from signature
     - [`unaudited_mulmod`](./src/crypto/secp256k1.zig#L253) &mdash; modular multiplication (⚠️ timing attack vulnerable)
     - [`unaudited_invmod`](./src/crypto/secp256k1.zig#L337) &mdash; modular inverse using Extended Euclidean
+  - [`EIP-712`](./src/crypto/eip712.zig) &mdash; ⚠️ (unaudited) typed structured data hashing and signing
+    - [`unaudited_hashTypedData`](./src/crypto/eip712.zig#L407) &mdash; hash typed data according to EIP-712
+    - [`unaudited_signTypedData`](./src/crypto/eip712.zig#L435) &mdash; sign typed data with private key
+    - [`unaudited_verifyTypedData`](./src/crypto/eip712.zig#L445) &mdash; verify typed data signature
+    - [`unaudited_recoverTypedDataAddress`](./src/crypto/eip712.zig#L455) &mdash; recover address from typed data signature
+    - [`create_domain`](./src/crypto/eip712.zig#L476) &mdash; create EIP-712 domain separator
+    - [`create_simple_typed_data`](./src/crypto/eip712.zig#L463) &mdash; create simple typed data structure
   - [`BLS12-381`](./src/crypto/crypto.zig) &mdash; pairing-friendly curve operations (via [BLST](https://github.com/supranational/blst))
     - [`unaudited_getPublicKey`](./src/crypto/crypto.zig#L353) &mdash; derive public key from private key
     - [`unaudited_signHash`](./src/crypto/crypto.zig#L379) &mdash; sign hash with private key using ECDSA
