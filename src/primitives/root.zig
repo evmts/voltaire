@@ -146,6 +146,9 @@ pub const Siwe = @import("siwe.zig");
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const ForkTransition = @import("hardfork.zig").ForkTransition;
 
+// Data structures
+pub const Trie = @import("trie.zig").Trie;
+
 // Export common constants
 pub const ZERO_ADDRESS = Address.ZERO_ADDRESS;
 pub const EMPTY_CODE_HASH = State.EMPTY_CODE_HASH;
