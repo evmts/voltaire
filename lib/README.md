@@ -9,7 +9,7 @@ This library offers **dual implementations** for some cryptographic operations:
 | Operation | Pure Zig | C/Rust Production | Zig Wrapper | Use Cases |
 |-----------|----------|-------------------|-------------|-----------|
 | **Keccak-256** | `std.crypto` (fallback) | `lib/keccak/` (Rust) | `src/crypto/keccak_asm.zig` | **Assembly-optimized hashing** |
-| **BN254** | `src/crypto/bn254/` | `lib/ark/` (Rust) | `src/crypto/bn254_ffi.zig` | Zig: Zero deps, full control<br>Rust: Audited, battle-tested |
+| **BN254** | `src/crypto/bn254/` | `lib/ark/` (Rust) | `src/crypto/bn254_arkworks.zig` | Zig: Zero deps, full control<br>Rust: Audited, battle-tested |
 | **BLS12-381** | ❌ Not Implemented | `lib/c-kzg-4844/blst/` (C) | `src/crypto/bn254_ffi.zig` (partial) | **Required for KZG & EIP-2537** |
 | **KZG (EIP-4844)** | ❌ Not Implemented | `lib/c-kzg-4844/` (C) | `src/crypto/root.zig` (c_kzg) | **Required for blob transactions** |
 
@@ -19,7 +19,7 @@ All external libraries are wrapped in idiomatic Zig interfaces:
 
 - **`crypto.keccak_asm`** - Assembly-optimized Keccak-256 via keccak-asm Rust crate
 - **`crypto.bn254`** - Pure Zig BN254 implementation (zero external deps)
-- **`crypto.bn254_ffi`** - Rust arkworks wrapper (ECMUL, ECPAIRING, BLS12-381 ops)
+- **`crypto.bn254_arkworks`** - Rust arkworks wrapper (ECMUL, ECPAIRING, BLS12-381 ops)
 - **`crypto.c_kzg`** - KZG commitments for EIP-4844 blob transactions
 
 ### When to Use Each Implementation

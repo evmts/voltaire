@@ -95,8 +95,8 @@ else struct {
 
 // BN254 elliptic curve - dual implementations
 pub const bn254 = @import("bn254.zig"); // Pure Zig implementation
-pub const bn254_ffi = if (builtin.target.cpu.arch != .wasm32)
-    @import("bn254_ffi.zig") // Rust (arkworks) FFI - production-grade, audited
+pub const bn254_arkworks = if (builtin.target.cpu.arch != .wasm32)
+    @import("bn254_arkworks.zig") // Rust arkworks - production-grade, audited
 else struct {
     // Stub for WASM builds - Rust FFI not supported
     pub const BN254Error = error{NotSupported};

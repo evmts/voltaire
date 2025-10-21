@@ -52,7 +52,7 @@
   - [`secp256k1`](./src/crypto/secp256k1.zig) &mdash; ECDSA signatures for transaction signing
   - [`BLS12-381`](./src/crypto/crypto.zig) &mdash; pairing-friendly curve operations (via BLST)
   - [`BN254`](./src/crypto/bn254/) &mdash; pure Zig alt_bn128 curve implementation
-  - [`BN254 FFI`](./src/crypto/bn254_ffi.zig) &mdash; audited Rust arkworks wrapper (ECMUL/ECPAIRING)
+  - [`BN254 Arkworks`](./src/crypto/bn254_arkworks.zig) &mdash; audited Rust arkworks (ECMUL/ECPAIRING)
   - [`KZG`](./src/crypto/root.zig) &mdash; polynomial commitments for EIP-4844 blobs
   - [`SHA256`](./src/crypto/hash_algorithms.zig) &mdash; standard SHA-256 hashing
   - [`RIPEMD160`](./src/crypto/hash_algorithms.zig) &mdash; legacy hash function
