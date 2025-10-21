@@ -57,6 +57,28 @@ This uncertainty wastes debugging time and erodes trust. Either implement it ful
 
 ## Coding Standards
 
+### Official Zig Naming Conventions
+
+Follow the official Zig style guide for all identifiers:
+
+1. **TitleCase (PascalCase)** - Types and functions that return types
+   - Types: `struct`, `union`, `enum`, `error`
+   - Functions that return `type` (like generic constructors)
+   - Example: `ArrayList`, `HashMap`, `MyStruct`
+
+2. **camelCase** - Regular functions
+   - Any callable that doesn't return a type
+   - Example: `calculateSum`, `fromHex`, `toBytes`
+
+3. **snake_case** - Everything else
+   - Variables: `my_variable`, `count`
+   - Constants: `max_size`, `default_value`
+   - Function parameters: `allocator`, `input_data`
+   - Struct fields: `gas_limit`, `transaction_hash`
+   - Namespaces (0-field structs)
+
+**Key Insight**: The naming convention encodes semantic meaning - if you see TitleCase on a callable, it returns a type. If you see camelCase, it returns a regular value.
+
 ### Principles
 
 - Minimal else statements
