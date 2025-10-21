@@ -149,7 +149,7 @@ pub const PublicKey = struct {
         };
     }
 
-    pub fn is_valid(self: PublicKey) bool {
+    pub fn isValid(self: PublicKey) bool {
         const point = self.to_affine_point();
         return point.isOnCurve() and !point.infinity;
     }
@@ -198,7 +198,7 @@ pub const Signature = struct {
         return from_bytes(bytes);
     }
 
-    pub fn is_valid(self: Signature) bool {
+    pub fn isValid(self: Signature) bool {
         return secp256k1.unaudited_validate_signature(self.r, self.s);
     }
 };
@@ -470,7 +470,7 @@ pub fn unaudited_signMessage(message: []const u8, private_key: PrivateKey) !Sign
 /// This function implements signature recovery without security review.
 /// Use at your own risk in production systems.
 pub fn unaudited_recoverAddress(hash: Hash.Hash, signature: Signature) !Address {
-    if (!signature.is_valid()) {
+    if (!signature.isValid()) {
         return CryptoError.InvalidSignature;
     }
 
@@ -537,7 +537,7 @@ test "public key derivation" {
     const public_key = try unaudited_getPublicKey(private_key);
 
     // Verify public key is valid
-    try testing.expect(public_key.is_valid());
+    try testing.expect(public_key.isValid());
 
     // Verify public key is not at infinity
     try testing.expect(public_key.x != 0 or public_key.y != 0);
@@ -575,7 +575,7 @@ test "signature creation and verification" {
     const signature = try unaudited_signMessage(message, private_key);
 
     // Verify signature is valid
-    try testing.expect(signature.is_valid());
+    try testing.expect(signature.isValid());
 
     // Recover address from signature
     const recovered_address = try unaudited_recoverMessageAddress(message, signature);
@@ -633,7 +633,7 @@ test "invalid signature rejection" {
     // Test with invalid signature
     var invalid_signature = signature;
     invalid_signature.r = 0; // Invalid r
-    try testing.expect(!invalid_signature.is_valid());
+    try testing.expect(!invalid_signature.isValid());
 }
 
 // Tests from crypto_test.zig
@@ -806,7 +806,7 @@ test "signature normalization" {
     };
 
     // This signature would be invalid due to high S
-    try testing.expect(!signature.is_valid());
+    try testing.expect(!signature.isValid());
 }
 
 test "validate signature components" {
