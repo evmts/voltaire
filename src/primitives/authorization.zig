@@ -396,3 +396,346 @@ test "authorization gas cost calculation" {
     // Expected: 2 * 12500 + 1 * 25000 = 50000
     try testing.expectEqual(@as(u64, 50000), gas_cost);
 }
+
+test "authority() recovers correct signer address" {
+    const allocator = testing.allocator;
+
+    const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+    const expected_signer = try crypto.getAddress(allocator, private_key);
+    const target = try Address.from_hex("0x1111111111111111111111111111111111111111");
+
+    const auth = try createAuthorization(
+        allocator,
+        1,
+        target,
+        0,
+        private_key,
+    );
+
+    const recovered = try auth.authority();
+    try testing.expectEqual(expected_signer, recovered);
+}
+
+test "authority() recovers correct signer with different nonces" {
+    const allocator = testing.allocator;
+
+    const private_key: crypto.PrivateKey = [_]u8{0x99} ** 32;
+    const expected_signer = try crypto.getAddress(allocator, private_key);
+    const target = try Address.from_hex("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+    const nonces = [_]u64{ 0, 1, 100, 999999, std.math.maxInt(u64) };
+
+    for (nonces) |nonce| {
+        const auth = try createAuthorization(
+            allocator,
+            1,
+            target,
+            nonce,
+            private_key,
+        );
+
+        const recovered = try auth.authority();
+        try testing.expectEqual(expected_signer, recovered);
+    }
+}
+
+test "signing_hash() produces consistent hashes" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const addr = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    const auth1 = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 42,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const auth2 = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 42,
+        .v = 28,
+        .r = [_]u8{0xff} ** 32,
+        .s = [_]u8{0xaa} ** 32,
+    };
+
+    const hash1 = try auth1.signing_hash();
+    const hash2 = try auth2.signing_hash();
+
+    try testing.expectEqual(hash1, hash2);
+}
+
+test "signing_hash() produces different hashes for different inputs" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const addr = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    const auth1 = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const auth2 = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 1,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const auth3 = Authorization{
+        .chain_id = 2,
+        .address = addr,
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const hash1 = try auth1.signing_hash();
+    const hash2 = try auth2.signing_hash();
+    const hash3 = try auth3.signing_hash();
+
+    try testing.expect(!std.mem.eql(u8, &hash1, &hash2));
+    try testing.expect(!std.mem.eql(u8, &hash1, &hash3));
+    try testing.expect(!std.mem.eql(u8, &hash2, &hash3));
+}
+
+test "signing_hash() handles edge case nonce values" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const addr = try Address.from_hex("0x1111111111111111111111111111111111111111");
+
+    const auth_zero = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const auth_max = Authorization{
+        .chain_id = 1,
+        .address = addr,
+        .nonce = std.math.maxInt(u64),
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const hash_zero = try auth_zero.signing_hash();
+    const hash_max = try auth_max.signing_hash();
+
+    try testing.expect(hash_zero.len == 32);
+    try testing.expect(hash_max.len == 32);
+    try testing.expect(!std.mem.eql(u8, &hash_zero, &hash_max));
+}
+
+test "validate() rejects zero chain ID" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    var auth = Authorization{
+        .chain_id = 0,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    try testing.expectError(AuthorizationError.InvalidChainId, auth.validate());
+}
+
+test "validate() rejects zero address" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = Address.ZERO,
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    try testing.expectError(AuthorizationError.ZeroAddress, auth.validate());
+}
+
+test "validate() rejects signature with r=0" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
+}
+
+test "validate() rejects signature with s=0" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
+}
+
+test "validate() rejects signature with r >= N" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    var r_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &r_bytes, secp256k1_n, .big);
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = r_bytes,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
+}
+
+test "validate() rejects signature with s >= N" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, secp256k1_n, .big);
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = s_bytes,
+    };
+
+    try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
+}
+
+test "validate() rejects malleable signature (high S-value)" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    const half_n = secp256k1_n >> 1;
+    const high_s = half_n + 1;
+
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, high_s, .big);
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = s_bytes,
+    };
+
+    try testing.expectError(AuthorizationError.InvalidSignature, auth.validate());
+}
+
+test "validate() accepts signature with s = N/2 (boundary)" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    const half_n = secp256k1_n >> 1;
+
+    var r_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &r_bytes, 0x12345678, .big);
+
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, half_n, .big);
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = r_bytes,
+        .s = s_bytes,
+    };
+
+    try auth.validate();
+}
+
+test "validate() accepts signature with s = 1 (minimum)" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    var r_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &r_bytes, 0x12345678, .big);
+
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, 1, .big);
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = r_bytes,
+        .s = s_bytes,
+    };
+
+    try auth.validate();
+}
+
+test "validate() accepts signature with r = N-1 (maximum valid)" {
+    const allocator = testing.allocator;
+    _ = allocator;
+
+    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    const max_r = secp256k1_n - 1;
+
+    var r_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &r_bytes, max_r, .big);
+
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, 0x12345678, .big);
+
+    var auth = Authorization{
+        .chain_id = 1,
+        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .nonce = 0,
+        .v = 27,
+        .r = r_bytes,
+        .s = s_bytes,
+    };
+
+    try auth.validate();
+}

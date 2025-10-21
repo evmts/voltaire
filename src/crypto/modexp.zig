@@ -390,3 +390,337 @@ test "modexp: very large exponent" {
     const modulus = unaudited_bytesToU64(&mod);
     try std.testing.expect(result < modulus);
 }
+
+// Gas calculation tests
+
+test "calculateMultiplicationComplexity: quadratic region x=1" {
+    const x: usize = 1;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // x <= 64: complexity = x^2
+    try std.testing.expectEqual(@as(u64, 1), complexity);
+}
+
+test "calculateMultiplicationComplexity: quadratic region x=32" {
+    const x: usize = 32;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // x <= 64: complexity = x^2 = 1024
+    try std.testing.expectEqual(@as(u64, 1024), complexity);
+}
+
+test "calculateMultiplicationComplexity: quadratic boundary x=64" {
+    const x: usize = 64;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // x == 64: complexity = x^2 = 4096
+    try std.testing.expectEqual(@as(u64, 4096), complexity);
+}
+
+test "calculateMultiplicationComplexity: linear region x=65" {
+    const x: usize = 65;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // 64 < x <= 1024: complexity = x^2/4 + 96*x - 3072
+    // = 4225/4 + 96*65 - 3072 = 1056.25 + 6240 - 3072 = 4224.25 = 4224 (integer)
+    const expected: u64 = (65 * 65) / 4 + 96 * 65 - 3072;
+    try std.testing.expectEqual(expected, complexity);
+}
+
+test "calculateMultiplicationComplexity: linear region x=512" {
+    const x: usize = 512;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // 64 < x <= 1024: complexity = x^2/4 + 96*x - 3072
+    const expected: u64 = (512 * 512) / 4 + 96 * 512 - 3072;
+    try std.testing.expectEqual(expected, complexity);
+}
+
+test "calculateMultiplicationComplexity: linear boundary x=1024" {
+    const x: usize = 1024;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // x == 1024: complexity = x^2/4 + 96*x - 3072
+    const expected: u64 = (1024 * 1024) / 4 + 96 * 1024 - 3072;
+    try std.testing.expectEqual(expected, complexity);
+}
+
+test "calculateMultiplicationComplexity: large region x=1025" {
+    const x: usize = 1025;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // x > 1024: complexity = x^2/16 + 480*x - 199680
+    const expected: u64 = (1025 * 1025) / 16 + 480 * 1025 - 199680;
+    try std.testing.expectEqual(expected, complexity);
+}
+
+test "calculateMultiplicationComplexity: large region x=2048" {
+    const x: usize = 2048;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // x > 1024: complexity = x^2/16 + 480*x - 199680
+    const expected: u64 = (2048 * 2048) / 16 + 480 * 2048 - 199680;
+    try std.testing.expectEqual(expected, complexity);
+}
+
+test "calculateMultiplicationComplexity: large region x=4096" {
+    const x: usize = 4096;
+    const complexity = unaudited_calculateMultiplicationComplexity(x);
+    // x > 1024: complexity = x^2/16 + 480*x - 199680
+    const expected: u64 = (4096 * 4096) / 16 + 480 * 4096 - 199680;
+    try std.testing.expectEqual(expected, complexity);
+}
+
+test "calculateMultiplicationComplexity: verify monotonic increasing" {
+    // Verify complexity increases as x increases
+    var x: usize = 1;
+    var prev = unaudited_calculateMultiplicationComplexity(x);
+    x = 2;
+    while (x <= 4096) : (x *= 2) {
+        const current = unaudited_calculateMultiplicationComplexity(x);
+        try std.testing.expect(current > prev);
+        prev = current;
+    }
+}
+
+test "calculateAdjustedExponentLength: zero length exponent" {
+    const exp_len: usize = 0;
+    const exp_bytes: [0]u8 = .{};
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    try std.testing.expectEqual(@as(u64, 0), adj_len);
+}
+
+test "calculateAdjustedExponentLength: all zero bytes" {
+    const exp_len: usize = 4;
+    const exp_bytes = [_]u8{ 0, 0, 0, 0 };
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    try std.testing.expectEqual(@as(u64, 0), adj_len);
+}
+
+test "calculateAdjustedExponentLength: single byte 0x01" {
+    const exp_len: usize = 1;
+    const exp_bytes = [_]u8{0x01};
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    // First non-zero byte is 0x01, bit length = 1
+    // adj_len = (1 - 0 - 1) * 8 + 1 = 0 * 8 + 1 = 1
+    try std.testing.expectEqual(@as(u64, 1), adj_len);
+}
+
+test "calculateAdjustedExponentLength: single byte 0xFF" {
+    const exp_len: usize = 1;
+    const exp_bytes = [_]u8{0xFF};
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    // First non-zero byte is 0xFF, bit length = 8
+    // adj_len = (1 - 0 - 1) * 8 + 8 = 0 * 8 + 8 = 8
+    try std.testing.expectEqual(@as(u64, 8), adj_len);
+}
+
+test "calculateAdjustedExponentLength: two bytes 0x01 0x00" {
+    const exp_len: usize = 2;
+    const exp_bytes = [_]u8{ 0x01, 0x00 };
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    // First non-zero byte is 0x01 at index 0, bit length = 1
+    // adj_len = (2 - 0 - 1) * 8 + 1 = 1 * 8 + 1 = 9
+    try std.testing.expectEqual(@as(u64, 9), adj_len);
+}
+
+test "calculateAdjustedExponentLength: leading zeros 0x00 0x00 0x80 0x00" {
+    const exp_len: usize = 4;
+    const exp_bytes = [_]u8{ 0x00, 0x00, 0x80, 0x00 };
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    // First non-zero byte is 0x80 at index 2, bit length = 8
+    // adj_len = (4 - 2 - 1) * 8 + 8 = 1 * 8 + 8 = 16
+    try std.testing.expectEqual(@as(u64, 16), adj_len);
+}
+
+test "calculateAdjustedExponentLength: leading zeros 0x00 0x00 0x01 0xFF" {
+    const exp_len: usize = 4;
+    const exp_bytes = [_]u8{ 0x00, 0x00, 0x01, 0xFF };
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    // First non-zero byte is 0x01 at index 2, bit length = 1
+    // adj_len = (4 - 2 - 1) * 8 + 1 = 1 * 8 + 1 = 9
+    try std.testing.expectEqual(@as(u64, 9), adj_len);
+}
+
+test "calculateAdjustedExponentLength: maximum bit width single byte" {
+    const exp_len: usize = 1;
+    const exp_bytes = [_]u8{0x80};
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    // First non-zero byte is 0x80, bit length = 8
+    // adj_len = (1 - 0 - 1) * 8 + 8 = 0 * 8 + 8 = 8
+    try std.testing.expectEqual(@as(u64, 8), adj_len);
+}
+
+test "calculateAdjustedExponentLength: maximum bit width 32 bytes" {
+    const exp_len: usize = 32;
+    const exp_bytes = [_]u8{0xFF} ** 32;
+    const adj_len = unaudited_calculateAdjustedExponentLength(exp_len, &exp_bytes);
+    // First non-zero byte is 0xFF at index 0, bit length = 8
+    // adj_len = (32 - 0 - 1) * 8 + 8 = 31 * 8 + 8 = 256
+    try std.testing.expectEqual(@as(u64, 256), adj_len);
+}
+
+test "calculateAdjustedExponentLength: various bit lengths" {
+    // Test byte 0x01 (1 bit)
+    {
+        const exp_bytes = [_]u8{0x01};
+        const adj_len = unaudited_calculateAdjustedExponentLength(1, &exp_bytes);
+        try std.testing.expectEqual(@as(u64, 1), adj_len);
+    }
+    // Test byte 0x02 (2 bits)
+    {
+        const exp_bytes = [_]u8{0x02};
+        const adj_len = unaudited_calculateAdjustedExponentLength(1, &exp_bytes);
+        try std.testing.expectEqual(@as(u64, 2), adj_len);
+    }
+    // Test byte 0x04 (3 bits)
+    {
+        const exp_bytes = [_]u8{0x04};
+        const adj_len = unaudited_calculateAdjustedExponentLength(1, &exp_bytes);
+        try std.testing.expectEqual(@as(u64, 3), adj_len);
+    }
+    // Test byte 0x08 (4 bits)
+    {
+        const exp_bytes = [_]u8{0x08};
+        const adj_len = unaudited_calculateAdjustedExponentLength(1, &exp_bytes);
+        try std.testing.expectEqual(@as(u64, 4), adj_len);
+    }
+    // Test byte 0x10 (5 bits)
+    {
+        const exp_bytes = [_]u8{0x10};
+        const adj_len = unaudited_calculateAdjustedExponentLength(1, &exp_bytes);
+        try std.testing.expectEqual(@as(u64, 5), adj_len);
+    }
+    // Test byte 0x20 (6 bits)
+    {
+        const exp_bytes = [_]u8{0x20};
+        const adj_len = unaudited_calculateAdjustedExponentLength(1, &exp_bytes);
+        try std.testing.expectEqual(@as(u64, 6), adj_len);
+    }
+    // Test byte 0x40 (7 bits)
+    {
+        const exp_bytes = [_]u8{0x40};
+        const adj_len = unaudited_calculateAdjustedExponentLength(1, &exp_bytes);
+        try std.testing.expectEqual(@as(u64, 7), adj_len);
+    }
+}
+
+test "modexp: all zero inputs" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{0};
+    const exp = [_]u8{0};
+    const mod = [_]u8{7};
+    var output: [1]u8 = undefined;
+
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    // 0^0 mod 7 = 1 (by mathematical convention)
+    try std.testing.expectEqual(@as(u8, 1), output[0]);
+}
+
+test "modexp: empty exponent" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{5};
+    const exp: [0]u8 = .{};
+    const mod = [_]u8{7};
+    var output: [1]u8 = undefined;
+
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    // base^(empty) = base^0 = 1
+    try std.testing.expectEqual(@as(u8, 1), output[0]);
+}
+
+test "modexp: empty base" {
+    const allocator = std.testing.allocator;
+
+    const base: [0]u8 = .{};
+    const exp = [_]u8{5};
+    const mod = [_]u8{7};
+    var output: [1]u8 = undefined;
+
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    // (empty)^5 = 0^5 = 0
+    try std.testing.expectEqual(@as(u8, 0), output[0]);
+}
+
+test "modexp: empty modulus gives division by zero" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{5};
+    const exp = [_]u8{3};
+    const mod: [0]u8 = .{};
+    var output: [1]u8 = undefined;
+
+    try std.testing.expectError(ModExpError.DivisionByZero, unaudited_modexp(allocator, &base, &exp, &mod, &output));
+}
+
+test "modexp: EIP-198 test vector 1" {
+    const allocator = std.testing.allocator;
+
+    // Example from EIP-198: 2^2 mod 3 = 1
+    const base = [_]u8{2};
+    const exp = [_]u8{2};
+    const mod = [_]u8{3};
+    var output: [1]u8 = undefined;
+
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try std.testing.expectEqual(@as(u8, 1), output[0]);
+}
+
+test "modexp: EIP-198 test vector 2" {
+    const allocator = std.testing.allocator;
+
+    // Example: 5^3 mod 13 = 8
+    const base = [_]u8{5};
+    const exp = [_]u8{3};
+    const mod = [_]u8{13};
+    var output: [1]u8 = undefined;
+
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try std.testing.expectEqual(@as(u8, 8), output[0]);
+}
+
+test "modexp: boundary at GAS_QUADRATIC_THRESHOLD" {
+    const allocator = std.testing.allocator;
+
+    // Test with 64-byte values (GAS_QUADRATIC_THRESHOLD)
+    const base = [_]u8{2} ++ ([_]u8{0} ** 63);
+    const exp = [_]u8{3};
+    const mod = [_]u8{0xFF} ++ ([_]u8{0xFF} ** 63);
+    var output: [64]u8 = undefined;
+
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+
+    // Verify result is less than modulus
+    var result_greater = false;
+    for (output, 0..) |byte, i| {
+        if (byte < mod[i]) break;
+        if (byte > mod[i]) {
+            result_greater = true;
+            break;
+        }
+    }
+    try std.testing.expect(!result_greater);
+}
+
+test "modexp: boundary at GAS_LINEAR_THRESHOLD" {
+    const allocator = std.testing.allocator;
+
+    // Test with 1024-byte values (GAS_LINEAR_THRESHOLD)
+    var base: [1024]u8 = undefined;
+    @memset(&base, 0);
+    base[0] = 2;
+
+    const exp = [_]u8{3};
+
+    var mod: [1024]u8 = undefined;
+    @memset(&mod, 0xFF);
+
+    var output: [1024]u8 = undefined;
+
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+
+    // Verify result is less than modulus
+    var result_greater = false;
+    for (output, 0..) |byte, i| {
+        if (byte < mod[i]) break;
+        if (byte > mod[i]) {
+            result_greater = true;
+            break;
+        }
+    }
+    try std.testing.expect(!result_greater);
+}

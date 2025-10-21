@@ -386,3 +386,387 @@ test "percentage calculations" {
     try testing.expectEqual(@as(u256, 50), calculatePercentage(100, 50));
     try testing.expectEqual(@as(u256, 25), calculatePercentageOf(25, 100));
 }
+
+test "parseEther with integer values" {
+    const result1 = try parseEther("0");
+    try testing.expectEqual(@as(u256, 0), result1);
+
+    const result2 = try parseEther("1");
+    try testing.expectEqual(ETHER, result2);
+
+    const result3 = try parseEther("10");
+    try testing.expectEqual(10 * ETHER, result3);
+
+    const result4 = try parseEther("100");
+    try testing.expectEqual(100 * ETHER, result4);
+
+    const result5 = try parseEther("1000000");
+    try testing.expectEqual(1000000 * ETHER, result5);
+}
+
+test "parseEther with decimal values" {
+    const result1 = try parseEther("0.1");
+    try testing.expectEqual(ETHER / 10, result1);
+
+    const result2 = try parseEther("0.5");
+    try testing.expectEqual(ETHER / 2, result2);
+
+    const result3 = try parseEther("1.5");
+    try testing.expectEqual(ETHER + ETHER / 2, result3);
+
+    const result4 = try parseEther("2.25");
+    try testing.expectEqual(2 * ETHER + ETHER / 4, result4);
+
+    const result5 = try parseEther("0.001");
+    try testing.expectEqual(FINNEY, result5);
+
+    const result6 = try parseEther("0.000001");
+    try testing.expectEqual(SZABO, result6);
+
+    const result7 = try parseEther("0.000000001");
+    try testing.expectEqual(GWEI, result7);
+}
+
+test "parseEther with maximum precision" {
+    const result1 = try parseEther("0.000000000000000001");
+    try testing.expectEqual(@as(u256, 1), result1);
+
+    const result2 = try parseEther("1.000000000000000001");
+    try testing.expectEqual(ETHER + 1, result2);
+
+    const result3 = try parseEther("0.123456789012345678");
+    try testing.expectEqual(@as(u256, 123456789012345678), result3);
+
+    const result4 = try parseEther("1.123456789012345678");
+    try testing.expectEqual(ETHER + 123456789012345678, result4);
+}
+
+test "parseEther with trailing zeros" {
+    const result1 = try parseEther("1.0");
+    try testing.expectEqual(ETHER, result1);
+
+    const result2 = try parseEther("1.00");
+    try testing.expectEqual(ETHER, result2);
+
+    const result3 = try parseEther("1.500");
+    try testing.expectEqual(ETHER + ETHER / 2, result3);
+
+    const result4 = try parseEther("0.100");
+    try testing.expectEqual(ETHER / 10, result4);
+}
+
+test "parseEther with leading decimal point" {
+    const result1 = try parseEther(".1");
+    try testing.expectEqual(ETHER / 10, result1);
+
+    const result2 = try parseEther(".5");
+    try testing.expectEqual(ETHER / 2, result2);
+
+    const result3 = try parseEther(".001");
+    try testing.expectEqual(FINNEY, result3);
+}
+
+test "parseEther with whitespace" {
+    const result1 = try parseEther("  1  ");
+    try testing.expectEqual(ETHER, result1);
+
+    const result2 = try parseEther("\t1.5\t");
+    try testing.expectEqual(ETHER + ETHER / 2, result2);
+
+    const result3 = try parseEther("\n0.1\n");
+    try testing.expectEqual(ETHER / 10, result3);
+
+    const result4 = try parseEther(" \t\n 2.5 \r\n ");
+    try testing.expectEqual(2 * ETHER + ETHER / 2, result4);
+}
+
+test "parseEther with precision overflow" {
+    const result1 = try parseEther("1.0000000000000000001");
+    try testing.expectEqual(ETHER, result1);
+
+    const result2 = try parseEther("1.123456789012345678999999");
+    try testing.expectEqual(ETHER + 123456789012345678, result2);
+}
+
+test "parseEther invalid input" {
+    try testing.expectError(NumericError.InvalidInput, parseEther(""));
+    try testing.expectError(NumericError.InvalidInput, parseEther("   "));
+    try testing.expectError(NumericError.InvalidInput, parseEther("abc"));
+    try testing.expectError(NumericError.InvalidInput, parseEther("1.2.3"));
+    try testing.expectError(NumericError.InvalidInput, parseEther("1..2"));
+    try testing.expectError(NumericError.InvalidInput, parseEther("1.2a"));
+    try testing.expectError(NumericError.InvalidInput, parseEther("a1.2"));
+}
+
+test "parseUnits with wei" {
+    const result1 = try parseUnits("0", .wei);
+    try testing.expectEqual(@as(u256, 0), result1);
+
+    const result2 = try parseUnits("1", .wei);
+    try testing.expectEqual(@as(u256, 1), result2);
+
+    const result3 = try parseUnits("100", .wei);
+    try testing.expectEqual(@as(u256, 100), result3);
+
+    const result4 = try parseUnits("1000000000000000000", .wei);
+    try testing.expectEqual(ETHER, result4);
+}
+
+test "parseUnits with kwei" {
+    const result1 = try parseUnits("1", .kwei);
+    try testing.expectEqual(KWEI, result1);
+
+    const result2 = try parseUnits("10", .kwei);
+    try testing.expectEqual(10 * KWEI, result2);
+
+    const result3 = try parseUnits("0.5", .kwei);
+    try testing.expectEqual(KWEI / 2, result3);
+
+    const result4 = try parseUnits("1.5", .kwei);
+    try testing.expectEqual(KWEI + KWEI / 2, result4);
+}
+
+test "parseUnits with mwei" {
+    const result1 = try parseUnits("1", .mwei);
+    try testing.expectEqual(MWEI, result1);
+
+    const result2 = try parseUnits("10", .mwei);
+    try testing.expectEqual(10 * MWEI, result2);
+
+    const result3 = try parseUnits("0.001", .mwei);
+    try testing.expectEqual(KWEI, result3);
+}
+
+test "parseUnits with gwei" {
+    const result1 = try parseUnits("1", .gwei);
+    try testing.expectEqual(GWEI, result1);
+
+    const result2 = try parseUnits("20", .gwei);
+    try testing.expectEqual(20 * GWEI, result2);
+
+    const result3 = try parseUnits("0.5", .gwei);
+    try testing.expectEqual(GWEI / 2, result3);
+
+    const result4 = try parseUnits("100.25", .gwei);
+    try testing.expectEqual(100 * GWEI + GWEI / 4, result4);
+}
+
+test "parseUnits with szabo" {
+    const result1 = try parseUnits("1", .szabo);
+    try testing.expectEqual(SZABO, result1);
+
+    const result2 = try parseUnits("0.001", .szabo);
+    try testing.expectEqual(GWEI, result2);
+
+    const result3 = try parseUnits("1000", .szabo);
+    try testing.expectEqual(1000 * SZABO, result3);
+}
+
+test "parseUnits with finney" {
+    const result1 = try parseUnits("1", .finney);
+    try testing.expectEqual(FINNEY, result1);
+
+    const result2 = try parseUnits("0.001", .finney);
+    try testing.expectEqual(SZABO, result2);
+
+    const result3 = try parseUnits("1000", .finney);
+    try testing.expectEqual(ETHER, result3);
+}
+
+test "parseUnits with ether" {
+    const result1 = try parseUnits("1", .ether);
+    try testing.expectEqual(ETHER, result1);
+
+    const result2 = try parseUnits("0.001", .ether);
+    try testing.expectEqual(FINNEY, result2);
+
+    const result3 = try parseUnits("100", .ether);
+    try testing.expectEqual(100 * ETHER, result3);
+}
+
+test "parseUnits decimal precision per unit" {
+    const result1 = try parseUnits("1.1", .wei);
+    try testing.expectEqual(@as(u256, 1), result1);
+
+    const result2 = try parseUnits("1.999", .kwei);
+    try testing.expectEqual(KWEI + 999, result2);
+
+    const result3 = try parseUnits("1.999999", .mwei);
+    try testing.expectEqual(MWEI + 999999, result3);
+
+    const result4 = try parseUnits("1.999999999", .gwei);
+    try testing.expectEqual(GWEI + 999999999, result4);
+}
+
+test "parseUnits with zero values" {
+    const result1 = try parseUnits("0", .wei);
+    try testing.expectEqual(@as(u256, 0), result1);
+
+    const result2 = try parseUnits("0", .gwei);
+    try testing.expectEqual(@as(u256, 0), result2);
+
+    const result3 = try parseUnits("0", .ether);
+    try testing.expectEqual(@as(u256, 0), result3);
+
+    const result4 = try parseUnits("0.0", .ether);
+    try testing.expectEqual(@as(u256, 0), result4);
+
+    const result5 = try parseUnits("0.00", .gwei);
+    try testing.expectEqual(@as(u256, 0), result5);
+}
+
+test "parseUnits with only decimal part" {
+    const result1 = try parseUnits(".1", .ether);
+    try testing.expectEqual(ETHER / 10, result1);
+
+    const result2 = try parseUnits(".5", .gwei);
+    try testing.expectEqual(GWEI / 2, result2);
+
+    const result3 = try parseUnits(".999", .kwei);
+    try testing.expectEqual(@as(u256, 999), result3);
+}
+
+test "parseUnits invalid inputs" {
+    try testing.expectError(NumericError.InvalidInput, parseUnits("", .ether));
+    try testing.expectError(NumericError.InvalidInput, parseUnits("   ", .ether));
+    try testing.expectError(NumericError.InvalidInput, parseUnits("abc", .gwei));
+    try testing.expectError(NumericError.InvalidInput, parseUnits("1.2.3", .ether));
+    try testing.expectError(NumericError.InvalidInput, parseUnits("1..2", .ether));
+    try testing.expectError(NumericError.InvalidInput, parseUnits("1.2a", .gwei));
+    try testing.expectError(NumericError.InvalidInput, parseUnits("a1.2", .wei));
+    try testing.expectError(NumericError.InvalidInput, parseUnits("1e10", .ether));
+    try testing.expectError(NumericError.ValueTooLarge, parseUnits("-1", .ether));
+}
+
+test "parseUnits edge cases with large values" {
+    const result1 = try parseUnits("1000000", .ether);
+    try testing.expectEqual(1000000 * ETHER, result1);
+
+    const result2 = try parseUnits("999999999", .gwei);
+    try testing.expectEqual(999999999 * GWEI, result2);
+
+    const result3 = try parseUnits("123456.789012345678", .ether);
+    try testing.expectEqual(123456 * ETHER + 789012345678000000, result3);
+}
+
+test "parseUnits consistent across all units" {
+    const ether_value = try parseUnits("1", .ether);
+    const finney_value = try parseUnits("1000", .finney);
+    try testing.expectEqual(ether_value, finney_value);
+
+    const gwei_value = try parseUnits("1", .gwei);
+    const wei_value = try parseUnits("1000000000", .wei);
+    try testing.expectEqual(gwei_value, wei_value);
+
+    const szabo_value = try parseUnits("1", .szabo);
+    const gwei_szabo = try parseUnits("1000", .gwei);
+    try testing.expectEqual(szabo_value, gwei_szabo);
+}
+
+test "parseUnits whitespace handling" {
+    const result1 = try parseUnits("  1  ", .ether);
+    try testing.expectEqual(ETHER, result1);
+
+    const result2 = try parseUnits("\t0.5\t", .gwei);
+    try testing.expectEqual(GWEI / 2, result2);
+
+    const result3 = try parseUnits("\n\r 10.25 \r\n", .gwei);
+    try testing.expectEqual(10 * GWEI + GWEI / 4, result3);
+}
+
+test "unit conversion edge cases" {
+    const result1 = try convertUnits(0, .ether, .gwei);
+    try testing.expectEqual(@as(u256, 0), result1);
+
+    const result2 = try convertUnits(1, .wei, .wei);
+    try testing.expectEqual(@as(u256, 1), result2);
+
+    const result3 = try convertUnits(1, .ether, .wei);
+    try testing.expectEqual(ETHER, result3);
+
+    const result4 = try convertUnits(1, .wei, .ether);
+    try testing.expectEqual(@as(u256, 0), result4);
+
+    const result5 = try convertUnits(1_000_000_000_000_000_000, .wei, .ether);
+    try testing.expectEqual(@as(u256, 1), result5);
+}
+
+test "unit conversion precision loss" {
+    const result1 = try convertUnits(500, .gwei, .ether);
+    try testing.expectEqual(@as(u256, 0), result1);
+
+    const result2 = try convertUnits(1, .kwei, .mwei);
+    try testing.expectEqual(@as(u256, 0), result2);
+
+    const result3 = try convertUnits(999, .wei, .kwei);
+    try testing.expectEqual(@as(u256, 0), result3);
+}
+
+test "unit conversion all combinations" {
+    const result1 = try convertUnits(1, .kwei, .wei);
+    try testing.expectEqual(KWEI, result1);
+
+    const result2 = try convertUnits(1, .mwei, .kwei);
+    try testing.expectEqual(@as(u256, 1000), result2);
+
+    const result3 = try convertUnits(1, .gwei, .mwei);
+    try testing.expectEqual(@as(u256, 1000), result3);
+
+    const result4 = try convertUnits(1, .szabo, .gwei);
+    try testing.expectEqual(@as(u256, 1000), result4);
+
+    const result5 = try convertUnits(1, .finney, .szabo);
+    try testing.expectEqual(@as(u256, 1000), result5);
+
+    const result6 = try convertUnits(1, .ether, .finney);
+    try testing.expectEqual(@as(u256, 1000), result6);
+}
+
+test "unit fromString and toString" {
+    try testing.expectEqual(Unit.wei, Unit.fromString("wei").?);
+    try testing.expectEqual(Unit.kwei, Unit.fromString("kwei").?);
+    try testing.expectEqual(Unit.mwei, Unit.fromString("mwei").?);
+    try testing.expectEqual(Unit.gwei, Unit.fromString("gwei").?);
+    try testing.expectEqual(Unit.szabo, Unit.fromString("szabo").?);
+    try testing.expectEqual(Unit.finney, Unit.fromString("finney").?);
+    try testing.expectEqual(Unit.ether, Unit.fromString("ether").?);
+
+    try testing.expectEqual(@as(?Unit, null), Unit.fromString("invalid"));
+    try testing.expectEqual(@as(?Unit, null), Unit.fromString(""));
+    try testing.expectEqual(@as(?Unit, null), Unit.fromString("ETHER"));
+
+    try testing.expectEqualStrings("wei", Unit.wei.toString());
+    try testing.expectEqualStrings("kwei", Unit.kwei.toString());
+    try testing.expectEqualStrings("mwei", Unit.mwei.toString());
+    try testing.expectEqualStrings("gwei", Unit.gwei.toString());
+    try testing.expectEqualStrings("szabo", Unit.szabo.toString());
+    try testing.expectEqualStrings("finney", Unit.finney.toString());
+    try testing.expectEqualStrings("ether", Unit.ether.toString());
+}
+
+test "unit toMultiplier" {
+    try testing.expectEqual(WEI, Unit.wei.toMultiplier());
+    try testing.expectEqual(KWEI, Unit.kwei.toMultiplier());
+    try testing.expectEqual(MWEI, Unit.mwei.toMultiplier());
+    try testing.expectEqual(GWEI, Unit.gwei.toMultiplier());
+    try testing.expectEqual(SZABO, Unit.szabo.toMultiplier());
+    try testing.expectEqual(FINNEY, Unit.finney.toMultiplier());
+    try testing.expectEqual(ETHER, Unit.ether.toMultiplier());
+}
+
+test "parseEther maximum value handling" {
+    const max_ether_str = "115792089237316195423570985008687907853269984665640564039457";
+    const result = try parseEther(max_ether_str);
+    try testing.expect(result > 0);
+}
+
+test "parseUnits with very small decimals" {
+    const result1 = try parseUnits("0.000000000000000001", .ether);
+    try testing.expectEqual(@as(u256, 1), result1);
+
+    const result2 = try parseUnits("0.000000001", .gwei);
+    try testing.expectEqual(@as(u256, 1), result2);
+
+    const result3 = try parseUnits("0.001", .kwei);
+    try testing.expectEqual(@as(u256, 1), result3);
+}

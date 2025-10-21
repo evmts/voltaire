@@ -1385,3 +1385,539 @@ test "Trie - clear" {
     try testing.expect(trie.root_hash() == null);
     try testing.expect((try trie.get(&[_]u8{ 0x12, 0x34 })) == null);
 }
+
+// Additional comprehensive tests
+
+test "Trie - root hash changes with updates" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const key = [_]u8{ 0x12, 0x34 };
+
+    try testing.expect(trie.root_hash() == null);
+
+    try trie.put(&key, "value1");
+    const hash1 = trie.root_hash();
+    try testing.expect(hash1 != null);
+
+    try trie.put(&key, "value2");
+    const hash2 = trie.root_hash();
+    try testing.expect(hash2 != null);
+
+    try testing.expect(!std.mem.eql(u8, &hash1.?, &hash2.?));
+}
+
+test "Trie - root hash deterministic" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie1 = Trie.init(allocator);
+    defer trie1.deinit();
+
+    var trie2 = Trie.init(allocator);
+    defer trie2.deinit();
+
+    const keys = [_][]const u8{
+        &[_]u8{ 0x12, 0x34 },
+        &[_]u8{ 0x56, 0x78 },
+        &[_]u8{ 0xAB, 0xCD },
+    };
+
+    for (keys, 0..) |key, i| {
+        const value = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(value);
+        try trie1.put(key, value);
+        try trie2.put(key, value);
+    }
+
+    const hash1 = trie1.root_hash();
+    const hash2 = trie2.root_hash();
+
+    try testing.expect(hash1 != null);
+    try testing.expect(hash2 != null);
+    try testing.expectEqualSlices(u8, &hash1.?, &hash2.?);
+}
+
+test "Trie - large key handling" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    var large_key: [256]u8 = undefined;
+    for (&large_key, 0..) |*byte, i| {
+        byte.* = @intCast(i % 256);
+    }
+
+    const value = "test_value_for_large_key";
+
+    try trie.put(&large_key, value);
+
+    const retrieved = try trie.get(&large_key);
+    try testing.expect(retrieved != null);
+    try testing.expectEqualStrings(value, retrieved.?);
+}
+
+test "Trie - large value handling" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const key = [_]u8{ 0x12, 0x34 };
+
+    const large_value = try allocator.alloc(u8, 1024);
+    defer allocator.free(large_value);
+    for (large_value, 0..) |*byte, i| {
+        byte.* = @intCast(i % 256);
+    }
+
+    try trie.put(&key, large_value);
+
+    const retrieved = try trie.get(&key);
+    try testing.expect(retrieved != null);
+    try testing.expectEqualSlices(u8, large_value, retrieved.?);
+}
+
+test "Trie - empty key handling" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const empty_key = [_]u8{};
+    const value = "value_for_empty_key";
+
+    try trie.put(&empty_key, value);
+
+    const retrieved = try trie.get(&empty_key);
+    try testing.expect(retrieved != null);
+    try testing.expectEqualStrings(value, retrieved.?);
+}
+
+test "Trie - empty value handling" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const key = [_]u8{ 0x12, 0x34 };
+    const empty_value = "";
+
+    try trie.put(&key, empty_value);
+
+    const retrieved = try trie.get(&key);
+    try testing.expect(retrieved != null);
+    try testing.expectEqualStrings(empty_value, retrieved.?);
+}
+
+test "Trie - single nibble keys" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const key1 = [_]u8{0x01};
+    const key2 = [_]u8{0x02};
+
+    try trie.put(&key1, "value1");
+    try trie.put(&key2, "value2");
+
+    const val1 = try trie.get(&key1);
+    try testing.expectEqualStrings("value1", val1.?);
+
+    const val2 = try trie.get(&key2);
+    try testing.expectEqualStrings("value2", val2.?);
+}
+
+test "Trie - keys with common prefix" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x12, 0x34, 0x56 }, "value1");
+    try trie.put(&[_]u8{ 0x12, 0x34, 0x78 }, "value2");
+    try trie.put(&[_]u8{ 0x12, 0x34, 0x9A }, "value3");
+
+    const val1 = try trie.get(&[_]u8{ 0x12, 0x34, 0x56 });
+    try testing.expectEqualStrings("value1", val1.?);
+
+    const val2 = try trie.get(&[_]u8{ 0x12, 0x34, 0x78 });
+    try testing.expectEqualStrings("value2", val2.?);
+
+    const val3 = try trie.get(&[_]u8{ 0x12, 0x34, 0x9A });
+    try testing.expectEqualStrings("value3", val3.?);
+}
+
+test "Trie - key is prefix of another" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x12, 0x34 }, "short");
+    try trie.put(&[_]u8{ 0x12, 0x34, 0x56 }, "long");
+
+    const short = try trie.get(&[_]u8{ 0x12, 0x34 });
+    try testing.expectEqualStrings("short", short.?);
+
+    const long = try trie.get(&[_]u8{ 0x12, 0x34, 0x56 });
+    try testing.expectEqualStrings("long", long.?);
+}
+
+test "Trie - get non-existent key" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x12, 0x34 }, "value");
+
+    const result = try trie.get(&[_]u8{ 0x56, 0x78 });
+    try testing.expect(result == null);
+}
+
+test "Trie - delete non-existent key" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x12, 0x34 }, "value");
+
+    try trie.delete(&[_]u8{ 0x56, 0x78 });
+
+    const val = try trie.get(&[_]u8{ 0x12, 0x34 });
+    try testing.expectEqualStrings("value", val.?);
+}
+
+test "Trie - delete from empty trie" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.delete(&[_]u8{ 0x12, 0x34 });
+
+    try testing.expect(trie.root_hash() == null);
+}
+
+test "Trie - multiple deletes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x12, 0x34 }, "value1");
+    try trie.put(&[_]u8{ 0x56, 0x78 }, "value2");
+    try trie.put(&[_]u8{ 0xAB, 0xCD }, "value3");
+
+    try trie.delete(&[_]u8{ 0x12, 0x34 });
+    try testing.expect((try trie.get(&[_]u8{ 0x12, 0x34 })) == null);
+    try testing.expectEqualStrings("value2", (try trie.get(&[_]u8{ 0x56, 0x78 })).?);
+
+    try trie.delete(&[_]u8{ 0x56, 0x78 });
+    try testing.expect((try trie.get(&[_]u8{ 0x56, 0x78 })) == null);
+    try testing.expectEqualStrings("value3", (try trie.get(&[_]u8{ 0xAB, 0xCD })).?);
+
+    try trie.delete(&[_]u8{ 0xAB, 0xCD });
+    try testing.expect((try trie.get(&[_]u8{ 0xAB, 0xCD })) == null);
+    try testing.expect(trie.root_hash() == null);
+}
+
+test "Trie - delete and reinsert" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const key = [_]u8{ 0x12, 0x34 };
+
+    try trie.put(&key, "value1");
+    const hash1 = trie.root_hash();
+
+    try trie.delete(&key);
+    try testing.expect(trie.root_hash() == null);
+
+    try trie.put(&key, "value1");
+    const hash2 = trie.root_hash();
+
+    try testing.expect(hash1 != null and hash2 != null);
+    try testing.expectEqualSlices(u8, &hash1.?, &hash2.?);
+}
+
+test "Trie - many sequential inserts" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const count = 100;
+    var i: usize = 0;
+    while (i < count) : (i += 1) {
+        var key: [4]u8 = undefined;
+        key[0] = @intCast((i >> 24) & 0xFF);
+        key[1] = @intCast((i >> 16) & 0xFF);
+        key[2] = @intCast((i >> 8) & 0xFF);
+        key[3] = @intCast(i & 0xFF);
+
+        const value = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(value);
+
+        try trie.put(&key, value);
+    }
+
+    i = 0;
+    while (i < count) : (i += 1) {
+        var key: [4]u8 = undefined;
+        key[0] = @intCast((i >> 24) & 0xFF);
+        key[1] = @intCast((i >> 16) & 0xFF);
+        key[2] = @intCast((i >> 8) & 0xFF);
+        key[3] = @intCast(i & 0xFF);
+
+        const expected = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(expected);
+
+        const retrieved = try trie.get(&key);
+        try testing.expect(retrieved != null);
+        try testing.expectEqualStrings(expected, retrieved.?);
+    }
+}
+
+test "Trie - random access pattern" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const keys = [_][2]u8{
+        [_]u8{ 0xAB, 0xCD },
+        [_]u8{ 0x12, 0x34 },
+        [_]u8{ 0xFF, 0x00 },
+        [_]u8{ 0x56, 0x78 },
+        [_]u8{ 0x00, 0xFF },
+    };
+
+    for (keys, 0..) |key, i| {
+        const value = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(value);
+        try trie.put(&key, value);
+    }
+
+    for (keys, 0..) |key, i| {
+        const expected = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(expected);
+
+        const retrieved = try trie.get(&key);
+        try testing.expect(retrieved != null);
+        try testing.expectEqualStrings(expected, retrieved.?);
+    }
+}
+
+test "Trie - branch node creation and traversal" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    var i: u8 = 0;
+    while (i < 16) : (i += 1) {
+        const key = [_]u8{ i, 0x00 };
+        const value = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(value);
+        try trie.put(&key, value);
+    }
+
+    i = 0;
+    while (i < 16) : (i += 1) {
+        const key = [_]u8{ i, 0x00 };
+        const expected = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(expected);
+
+        const retrieved = try trie.get(&key);
+        try testing.expect(retrieved != null);
+        try testing.expectEqualStrings(expected, retrieved.?);
+    }
+}
+
+test "Trie - extension node creation" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x01, 0x02, 0x03, 0x04 }, "value1");
+    try trie.put(&[_]u8{ 0x01, 0x02, 0x03, 0x05 }, "value2");
+
+    const val1 = try trie.get(&[_]u8{ 0x01, 0x02, 0x03, 0x04 });
+    try testing.expectEqualStrings("value1", val1.?);
+
+    const val2 = try trie.get(&[_]u8{ 0x01, 0x02, 0x03, 0x05 });
+    try testing.expectEqualStrings("value2", val2.?);
+}
+
+test "Trie - all node types" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x01, 0x23, 0x45 }, "leaf1");
+    try trie.put(&[_]u8{ 0x01, 0x23, 0x46 }, "leaf2");
+    try trie.put(&[_]u8{ 0x01, 0x24 }, "branch_value");
+    try trie.put(&[_]u8{ 0x02, 0x00 }, "another_leaf");
+
+    try testing.expectEqualStrings("leaf1", (try trie.get(&[_]u8{ 0x01, 0x23, 0x45 })).?);
+    try testing.expectEqualStrings("leaf2", (try trie.get(&[_]u8{ 0x01, 0x23, 0x46 })).?);
+    try testing.expectEqualStrings("branch_value", (try trie.get(&[_]u8{ 0x01, 0x24 })).?);
+    try testing.expectEqualStrings("another_leaf", (try trie.get(&[_]u8{ 0x02, 0x00 })).?);
+}
+
+test "Trie - delete with branch collapse" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x01, 0x23 }, "value1");
+    try trie.put(&[_]u8{ 0x01, 0x24 }, "value2");
+    try trie.put(&[_]u8{ 0x01, 0x25 }, "value3");
+
+    try trie.delete(&[_]u8{ 0x01, 0x23 });
+    try trie.delete(&[_]u8{ 0x01, 0x24 });
+
+    try testing.expect((try trie.get(&[_]u8{ 0x01, 0x23 })) == null);
+    try testing.expect((try trie.get(&[_]u8{ 0x01, 0x24 })) == null);
+    try testing.expectEqualStrings("value3", (try trie.get(&[_]u8{ 0x01, 0x25 })).?);
+}
+
+test "Trie - memory safety with many operations" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    var i: usize = 0;
+    while (i < 50) : (i += 1) {
+        var key: [2]u8 = undefined;
+        key[0] = @intCast((i >> 8) & 0xFF);
+        key[1] = @intCast(i & 0xFF);
+
+        const value = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(value);
+        try trie.put(&key, value);
+    }
+
+    i = 0;
+    while (i < 50) : (i += 2) {
+        var key: [2]u8 = undefined;
+        key[0] = @intCast((i >> 8) & 0xFF);
+        key[1] = @intCast(i & 0xFF);
+        try trie.delete(&key);
+    }
+
+    i = 1;
+    while (i < 50) : (i += 2) {
+        var key: [2]u8 = undefined;
+        key[0] = @intCast((i >> 8) & 0xFF);
+        key[1] = @intCast(i & 0xFF);
+
+        const expected = try std.fmt.allocPrint(allocator, "value{}", .{i});
+        defer allocator.free(expected);
+
+        const retrieved = try trie.get(&key);
+        try testing.expect(retrieved != null);
+        try testing.expectEqualStrings(expected, retrieved.?);
+    }
+}
+
+test "Trie - overwrite with different length values" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const key = [_]u8{ 0x12, 0x34 };
+
+    try trie.put(&key, "short");
+    try testing.expectEqualStrings("short", (try trie.get(&key)).?);
+
+    try trie.put(&key, "much longer value");
+    try testing.expectEqualStrings("much longer value", (try trie.get(&key)).?);
+
+    try trie.put(&key, "x");
+    try testing.expectEqualStrings("x", (try trie.get(&key)).?);
+}
+
+test "Trie - hash_to_string and back" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const hash = [_]u8{0xAB} ** 32;
+    const hash_str = try hash_to_string(allocator, &hash);
+    defer allocator.free(hash_str);
+
+    try testing.expectEqual(@as(usize, 64), hash_str.len);
+
+    for (hash_str) |c| {
+        try testing.expect((c >= '0' and c <= '9') or (c >= 'a' and c <= 'f'));
+    }
+}
+
+test "Trie - store and retrieve node" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    const nibbles = [_]u8{ 0x1, 0x2, 0x3 };
+    const leaf = try LeafNode.init(allocator, &nibbles, "test");
+    const node = Node{ .Leaf = leaf };
+
+    const hash = try trie.store_node(node);
+
+    const retrieved = trie.get_node(hash);
+    try testing.expect(retrieved != null);
+}
+
+test "Trie - clear and reuse" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var trie = Trie.init(allocator);
+    defer trie.deinit();
+
+    try trie.put(&[_]u8{ 0x12, 0x34 }, "value1");
+    try trie.put(&[_]u8{ 0x56, 0x78 }, "value2");
+
+    trie.clear();
+
+    try trie.put(&[_]u8{ 0xAB, 0xCD }, "value3");
+    try testing.expectEqualStrings("value3", (try trie.get(&[_]u8{ 0xAB, 0xCD })).?);
+    try testing.expect((try trie.get(&[_]u8{ 0x12, 0x34 })) == null);
+}
