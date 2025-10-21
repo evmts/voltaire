@@ -54,16 +54,27 @@ pub const verifyKZGProof = ckzg.verifyKZGProof;
 
 test "c_kzg basic functionality" {
     const testing = std.testing;
-    
+
     // This test requires the trusted setup file to be present
     const trusted_setup_path = "src/kzg/trusted_setup.txt";
     std.fs.cwd().access(trusted_setup_path, .{}) catch {
         // File doesn't exist, skip test
         return;
     };
-    
+
     try loadTrustedSetupFile(trusted_setup_path, 0);
-    defer freeTrustedSetup() catch {};
-    
+    errdefer {
+        // If test fails after loading, ensure cleanup attempt
+        freeTrustedSetup() catch |err| {
+            std.log.warn("Failed to free trusted setup during test cleanup: {}", .{err});
+        };
+    }
+    defer {
+        freeTrustedSetup() catch |err| {
+            // Log error but don't fail test - cleanup is best-effort after test completes
+            std.log.warn("Failed to free trusted setup: {}", .{err});
+        };
+    }
+
     // If we get here without error, the trusted setup loaded successfully
 }

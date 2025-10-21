@@ -1,3 +1,4 @@
+const std = @import("std");
 const FpMont = @import("FpMont.zig");
 const Fr = @import("Fr.zig");
 const curve_parameters = @import("curve_parameters.zig");
@@ -35,7 +36,11 @@ pub fn toAffine(self: *const G1) G1 {
     if (self.isInfinity()) {
         return INFINITY;
     }
-    const z_inv = self.z.inv() catch unreachable;
+    // z cannot be zero here since we checked isInfinity above
+    // If inv() fails, it means z is zero which violates the invariant
+    const z_inv = self.z.inv() catch |err| {
+        std.debug.panic("G1.toAffine: z inversion failed (z should not be zero): {}", .{err});
+    };
     const z_inv_sq = z_inv.mul(&z_inv);
     const z_inv_cubed = z_inv_sq.mul(&z_inv);
 

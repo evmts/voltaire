@@ -1,3 +1,4 @@
+const std = @import("std");
 const FpMont = @import("FpMont.zig");
 const Fp2Mont = @import("Fp2Mont.zig");
 const Fr = @import("Fr.zig");
@@ -36,7 +37,11 @@ pub fn toAffine(self: *const G2) G2 {
     if (self.isInfinity()) {
         return INFINITY;
     }
-    const z_inv = self.z.inv() catch unreachable;
+    // z cannot be zero here since we checked isInfinity above
+    // If inv() fails, it means z is zero which violates the invariant
+    const z_inv = self.z.inv() catch |err| {
+        std.debug.panic("G2.toAffine: z inversion failed (z should not be zero): {}", .{err});
+    };
     const z_inv_sq = z_inv.mul(&z_inv);
     const z_inv_cubed = z_inv_sq.mul(&z_inv);
 
@@ -50,7 +55,10 @@ pub fn toAffine(self: *const G2) G2 {
 pub fn isOnCurve(self: *const G2) bool {
     if (self.isInfinity()) return true;
     const xi = curve_parameters.XI;
-    const xi_inv = xi.inv() catch unreachable;
+    // xi is a curve constant and should never be zero
+    const xi_inv = xi.inv() catch |err| {
+        std.debug.panic("G2.isOnCurve: xi inversion failed (xi is a constant and should not be zero): {}", .{err});
+    };
     const z_factor = Fp2Mont.init_from_int(3, 0).mul(&xi_inv);
 
     // BN254 Jacobian equation: Y² = X³ + (3/xi)Z⁶
