@@ -109,6 +109,3 @@ else struct {
 
 // Export BLS12-381 from crypto.zig
 pub const bls12_381 = Crypto.bls12_381;
-
-// Precompiles
-pub const precompiles = @import("precompiles.zig");

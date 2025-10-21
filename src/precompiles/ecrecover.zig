@@ -1,0 +1,78 @@
+const std = @import("std");
+const crypto = @import("crypto");
+const secp256k1 = crypto.secp256k1;
+const PrecompileError = @import("common.zig").PrecompileError;
+const PrecompileResult = @import("common.zig").PrecompileResult;
+
+/// Gas cost for ECRECOVER precompile
+pub const GAS: u64 = 3000;
+
+/// 0x01: ECRECOVER - Elliptic curve signature recovery
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult {
+    if (gas_limit < GAS) {
+        return error.OutOfGas;
+    }
+
+    // Input: 128 bytes (hash32, v32, r32, s32)
+    var input_buf: [128]u8 = [_]u8{0} ** 128;
+    @memcpy(input_buf[0..@min(input.len, 128)], input[0..@min(input.len, 128)]);
+
+    const hash = input_buf[0..32];
+    const v_bytes = input_buf[32..64];
+    const r = input_buf[64..96];
+    const s = input_buf[96..128];
+
+    // Extract v from the padded 32-byte value
+    const v = v_bytes[31];
+
+    // Recover public key
+    const pubkey = secp256k1.recoverPubkey(hash, r, s, v) catch {
+        // Invalid signature - return empty output
+        const output = try allocator.alloc(u8, 32);
+        @memset(output, 0);
+        return PrecompileResult{
+            .output = output,
+            .gas_used = GAS,
+        };
+    };
+
+    // Derive address from public key (last 20 bytes of keccak256(pubkey))
+    var hash_output: [32]u8 = undefined;
+    try crypto.keccak_asm.keccak256(&pubkey, &hash_output);
+
+    const output = try allocator.alloc(u8, 32);
+    @memset(output[0..12], 0); // Left-pad with zeros
+    @memcpy(output[12..32], hash_output[12..32]);
+
+    return PrecompileResult{
+        .output = output,
+        .gas_used = GAS,
+    };
+}
+
+test "ecRecover - valid signature" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Example from Ethereum yellow paper
+    const hash = [_]u8{0x47} ** 32;
+    const v = [_]u8{0} ** 31 ++ [_]u8{28};
+    const r = [_]u8{0x69} ** 32;
+    const s = [_]u8{0x7a} ** 32;
+
+    var input: [128]u8 = undefined;
+    @memcpy(input[0..32], &hash);
+    @memcpy(input[32..64], &v);
+    @memcpy(input[64..96], &r);
+    @memcpy(input[96..128], &s);
+
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    try testing.expectEqual(GAS, result.gas_used);
+}
