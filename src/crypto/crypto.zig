@@ -220,7 +220,7 @@ pub fn secureZeroMemory(ptr: anytype) void {
     // Use @memset which the compiler should not optimize away for security-sensitive data
     @memset(bytes, 0);
     // Memory barrier to prevent reordering
-    std.atomic.compilerFence(.seq_cst);
+    asm volatile ("" ::: .{ .memory = true });
 }
 
 // secp256k1 constants - re-export from precompile implementation
