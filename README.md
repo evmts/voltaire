@@ -51,6 +51,8 @@ zig fetch --save https://github.com/evmts/primitives
   <br />
 </div>
 
+<br />
+
 ## Examples
 
 [`examples/`](./examples/)
@@ -60,6 +62,9 @@ zig fetch --save https://github.com/evmts/primitives
 [`docs/`](./docs/) — ⚠️ AI-generated, unverified
 
 [`LLMS.txt`](./LLMS.txt) — For LLMs
+
+<br />
+<br />
 
 <div align="center">
 
