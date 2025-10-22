@@ -18,7 +18,8 @@ const Eip1559Transaction = Transaction.Eip1559Transaction;
 const AccessListItem = Transaction.AccessListItem;
 const TransactionType = Transaction.TransactionType;
 const Address = primitives.Address.Address;
-const Hash = crypto_pkg.Hash.Hash;
+const hash_mod = crypto_pkg.Hash;
+const Hash = hash_mod.Hash;
 const Crypto = crypto_pkg.Crypto;
 
 pub fn main() !void {
@@ -98,7 +99,7 @@ pub fn main() !void {
 
     const tx_hash = try Transaction.computeLegacyTransactionHash(allocator, signed_tx);
 
-    std.debug.print("  Transaction Hash: 0x{X}\n", .{tx_hash.bytes});
+    std.debug.print("  Transaction Hash: 0x{X}\n", .{tx_hash});
     std.debug.print("  This is the unique identifier for this transaction\n", .{});
     std.debug.print("\n", .{});
 
@@ -127,8 +128,8 @@ pub fn main() !void {
     std.debug.print("-" ** 50 ++ "\n", .{});
 
     // Create storage keys
-    const storage_key_1 = Hash.fromU256(0).bytes;
-    const storage_key_2 = Hash.fromU256(1).bytes;
+    const storage_key_1 = hash_mod.fromU256(0);
+    const storage_key_2 = hash_mod.fromU256(1);
     const storage_keys = [_][32]u8{ storage_key_1, storage_key_2 };
 
     // Create access list with one contract and two storage slots
