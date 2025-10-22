@@ -1,7 +1,7 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const abi = primitives.AbiEncoding;
-const Address = primitives.Address.Address;
+
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -49,7 +49,7 @@ fn exampleEncodeFunctionData(allocator: std.mem.Allocator) !void {
 
     const transfer_selector = abi.computeSelector("transfer(address,uint256)");
 
-    const recipient: Address = [_]u8{
+    const recipient_bytes = [_]u8{
         0xd8, 0xdA, 0x6B, 0xF2, 0x69, 0x64, 0xaF, 0x9D,
         0x7e, 0xEd, 0x9e, 0x03, 0xE5, 0x34, 0x15, 0xD3,
         0x7a, 0xa9, 0x60, 0x45,
@@ -58,7 +58,7 @@ fn exampleEncodeFunctionData(allocator: std.mem.Allocator) !void {
     const amount: u256 = 1000_000_000_000_000_000_000;
 
     const params = [_]abi.AbiValue{
-        abi.addressValue(recipient),
+        abi.addressValue(primitives.Address{.bytes = recipient_bytes}),
         abi.uint256_value(amount),
     };
 
@@ -67,7 +67,7 @@ fn exampleEncodeFunctionData(allocator: std.mem.Allocator) !void {
 
     std.debug.print("Function: transfer(address,uint256)\n", .{});
     std.debug.print("Recipient: 0x", .{});
-    for (recipient) |byte| {
+    for (recipient_bytes) |byte| {
         std.debug.print("{x:0>2}", .{byte});
     }
     std.debug.print("\n", .{});
@@ -84,11 +84,11 @@ fn exampleDecodeFunctionData(allocator: std.mem.Allocator) !void {
 
     const transfer_selector = abi.computeSelector("transfer(address,uint256)");
 
-    const recipient: Address = [_]u8{0xaa} ** 20;
+    const recipient_bytes = [_]u8{0xaa} ** 20;
     const amount: u256 = 42_000;
 
     const params = [_]abi.AbiValue{
-        abi.addressValue(recipient),
+        abi.addressValue(primitives.Address{.bytes = recipient_bytes}),
         abi.uint256_value(amount),
     };
 
@@ -134,7 +134,7 @@ fn exampleDecodeFunctionData(allocator: std.mem.Allocator) !void {
 fn exampleEncodeParameters(allocator: std.mem.Allocator) !void {
     std.debug.print("--- Example 4: Encoding Parameters ---\n", .{});
 
-    const test_address: Address = [_]u8{
+    const test_address_bytes = [_]u8{
         0x14, 0xdC, 0x79, 0x96, 0x4d, 0xa2, 0xC0, 0x8b,
         0x23, 0x69, 0x8B, 0x3D, 0x3c, 0xc7, 0xCa, 0x32,
         0x19, 0x3d, 0x99, 0x55,
@@ -143,7 +143,7 @@ fn exampleEncodeParameters(allocator: std.mem.Allocator) !void {
     const static_params = [_]abi.AbiValue{
         abi.uint256_value(12345),
         abi.boolValue(true),
-        abi.addressValue(test_address),
+        abi.addressValue(primitives.Address{.bytes = test_address_bytes}),
     };
 
     const encoded_static = try abi.encodeAbiParameters(allocator, &static_params);
@@ -161,11 +161,11 @@ fn exampleEncodeParameters(allocator: std.mem.Allocator) !void {
 fn exampleDecodeParameters(allocator: std.mem.Allocator) !void {
     std.debug.print("--- Example 5: Decoding Parameters ---\n", .{});
 
-    const test_address: Address = [_]u8{0xbb} ** 20;
+    const test_address_bytes = [_]u8{0xbb} ** 20;
     const params = [_]abi.AbiValue{
         abi.uint256_value(99999),
         abi.boolValue(false),
-        abi.addressValue(test_address),
+        abi.addressValue(primitives.Address{.bytes = test_address_bytes}),
         abi.stringValue("Decoding test"),
     };
 

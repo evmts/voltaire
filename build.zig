@@ -119,6 +119,29 @@ pub fn build(b: *std.Build) void {
     const run_keccak256_example = b.addRunArtifact(keccak256_example);
     const example_keccak256_step = b.step("example-keccak256", "Run the Keccak-256 hashing example");
     example_keccak256_step.dependOn(&run_keccak256_example.step);
+
+    // ABI encoding/decoding example
+    const abi_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/abi.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    abi_example_mod.addImport("primitives", primitives_mod);
+
+    const abi_example = b.addExecutable(.{
+        .name = "abi_example",
+        .root_module = abi_example_mod,
+    });
+    abi_example.linkLibrary(c_kzg_lib);
+    abi_example.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| abi_example.linkLibrary(bn254);
+    if (keccak_lib) |keccak| abi_example.linkLibrary(keccak);
+    abi_example.linkLibC();
+
+    const run_abi_example = b.addRunArtifact(abi_example);
+    const example_abi_step = b.step("example-abi", "Run the ABI encoding/decoding example");
+    example_abi_step.dependOn(&run_abi_example.step);
+
     // secp256k1 ECDSA signature operations example
     const secp256k1_example_mod = b.createModule(.{
         .root_source_file = b.path("examples/secp256k1.zig"),
@@ -141,5 +164,4 @@ pub fn build(b: *std.Build) void {
     const run_secp256k1_example = b.addRunArtifact(secp256k1_example);
     const example_secp256k1_step = b.step("example-secp256k1", "Run the secp256k1 ECDSA signature operations example");
     example_secp256k1_step.dependOn(&run_secp256k1_example.step);
-}
 }
