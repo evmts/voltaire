@@ -360,6 +360,24 @@ pub const bls12_381 = struct {
     pub fn pairingOutputSize() u32 {
         return bls12_381_pairing_output_size();
     }
+
+    /// Map field element to G1 curve point
+    /// Currently a stub implementation - will return error until blst library is integrated
+    pub fn mapFpToG1(input: []const u8, output: []u8) Error!void {
+        _ = input;
+        _ = output;
+        // Stub implementation - returns error until C library is integrated
+        return Error.ComputationFailed;
+    }
+
+    /// Map field extension element to G2 curve point
+    /// Currently a stub implementation - will return error until blst library is integrated
+    pub fn mapFp2ToG2(input: []const u8, output: []u8) Error!void {
+        _ = input;
+        _ = output;
+        // Stub implementation - returns error until C library is integrated
+        return Error.ComputationFailed;
+    }
 };
 
 /// Generate a random private key
