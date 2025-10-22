@@ -519,23 +519,28 @@ test "Bytecode: large bytecode performance" {
 
 test "Bytecode: complex real-world-like bytecode" {
     // Simulate a more complex bytecode pattern like a simple contract
+    // Position calculation:
+    // 0-1: PUSH1 0x80, 2-3: PUSH1 0x40, 4: MSTORE, 5: JUMPDEST,
+    // 6-7: PUSH1 0x00, 8: CALLDATALOAD, 9-10: PUSH1 0xe0, 11: SHR,
+    // 12-16: PUSH4 0x12345678, 17: JUMPDEST, 18: EQ,
+    // 19-21: PUSH2 0x001e, 22: JUMPI, 23: JUMPDEST, 24: STOP
     const code = [_]u8{
         // Constructor-like pattern
-        0x60, 0x80, // PUSH1 0x80
-        0x60, 0x40, // PUSH1 0x40
-        0x52, // MSTORE
-        0x5b, // JUMPDEST (position 5)
-        0x60, 0x00, // PUSH1 0x00
-        0x35, // CALLDATALOAD
-        0x60, 0xe0, // PUSH1 0xe0
-        0x1c, // SHR
-        0x63, 0x12, 0x34, 0x56, 0x78, // PUSH4 0x12345678 (function selector)
-        0x5b, // JUMPDEST (position 18)
-        0x14, // EQ
-        0x61, 0x00, 0x1e, // PUSH2 0x001e
-        0x57, // JUMPI
-        0x5b, // JUMPDEST (position 24)
-        0x00, // STOP
+        0x60, 0x80, // PUSH1 0x80 (pos 0-1)
+        0x60, 0x40, // PUSH1 0x40 (pos 2-3)
+        0x52, // MSTORE (pos 4)
+        0x5b, // JUMPDEST (pos 5)
+        0x60, 0x00, // PUSH1 0x00 (pos 6-7)
+        0x35, // CALLDATALOAD (pos 8)
+        0x60, 0xe0, // PUSH1 0xe0 (pos 9-10)
+        0x1c, // SHR (pos 11)
+        0x63, 0x12, 0x34, 0x56, 0x78, // PUSH4 0x12345678 (pos 12-16)
+        0x5b, // JUMPDEST (pos 17)
+        0x14, // EQ (pos 18)
+        0x61, 0x00, 0x1e, // PUSH2 0x001e (pos 19-21)
+        0x57, // JUMPI (pos 22)
+        0x5b, // JUMPDEST (pos 23)
+        0x00, // STOP (pos 24)
     };
 
     var bytecode = try Bytecode.init(std.testing.allocator, &code);
@@ -543,8 +548,8 @@ test "Bytecode: complex real-world-like bytecode" {
 
     // Verify JUMPDESTs at correct positions
     try std.testing.expect(bytecode.isValidJumpDest(5));
-    try std.testing.expect(bytecode.isValidJumpDest(18));
-    try std.testing.expect(bytecode.isValidJumpDest(24));
+    try std.testing.expect(bytecode.isValidJumpDest(17));
+    try std.testing.expect(bytecode.isValidJumpDest(23));
 
     // Verify non-JUMPDESTs
     try std.testing.expect(!bytecode.isValidJumpDest(0));
@@ -559,13 +564,13 @@ test "Bytecode: complex real-world-like bytecode" {
         try std.testing.expect(false);
     }
 
-    if (bytecode.readImmediate(13, 4)) |value| {
+    if (bytecode.readImmediate(12, 4)) |value| {
         try std.testing.expectEqual(@as(u256, 0x12345678), value);
     } else {
         try std.testing.expect(false);
     }
 
-    if (bytecode.readImmediate(20, 2)) |value| {
+    if (bytecode.readImmediate(19, 2)) |value| {
         try std.testing.expectEqual(@as(u256, 0x001e), value);
     } else {
         try std.testing.expect(false);
