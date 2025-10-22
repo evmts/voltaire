@@ -243,6 +243,13 @@ pub fn encodeUint(allocator: Allocator, value: anytype, list: anytype) !void {
     try list.appendSlice(encoded);
 }
 
+/// Encodes a byte array and appends the result to an ArrayList
+pub fn encodeBytesTo(allocator: Allocator, bytes: []const u8, list: anytype) !void {
+    const encoded = try encodeBytes(allocator, bytes);
+    defer allocator.free(encoded);
+    try list.appendSlice(encoded);
+}
+
 /// Encodes a byte array or slice according to RLP rules
 pub fn encodeBytes(allocator: Allocator, bytes: []const u8) ![]u8 {
     // If a single byte less than 0x80, return as is
