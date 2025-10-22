@@ -1,50 +1,24 @@
 # Ethereum Primitives & Cryptography for Zig
 
-**Version:** Zig 0.15.1+ | **Repo:** https://github.com/evmts/primitives
-
-Mission-critical cryptographic infrastructure. Zero error tolerance.
+Zig 0.15.1+ | https://github.com/evmts/primitives | Mission-critical crypto infrastructure - zero error tolerance
 
 ---
 
 ## Critical Context
 
 <zig_version_breaking_changes>
-**Zig 0.15.1 ArrayList API Change (LLMs commonly get this wrong):**
-
+**Zig 0.15.1 ArrayList API (LLMs get this wrong):**
 ```zig
-// ✅ CORRECT - 0.15.1 uses UNMANAGED ArrayList
-var list = std.ArrayList(T){};  // Default init
-defer list.deinit(allocator);   // allocator REQUIRED
-try list.append(allocator, item); // allocator REQUIRED every call
+// ✅ CORRECT - UNMANAGED, allocator required every call
+var list = std.ArrayList(T){};
+defer list.deinit(allocator);
+try list.append(allocator, item);
 
-// ❌ WRONG - Old API (pre-0.15)
+// ❌ WRONG - old API
 var list = std.ArrayList(T).init(allocator);  // No init() method!
-list.deinit();  // Missing required allocator param
+list.deinit();  // Missing allocator
 ```
-
-All ArrayList operations require explicit allocator parameter in 0.15.1+
 </zig_version_breaking_changes>
-
-<build_requirements>
-**Always run from repo root. Every code change requires:**
-```bash
-zig build && zig build test
-```
-Exception: `.md` files only
-
-Use `zig build test` not `zig test` (requires module system)
-</build_requirements>
-
-<banned_patterns>
-- ❌ Stub implementations (`error.NotImplemented`)
-- ❌ Swallowing errors (`catch {}`, `catch null`, `catch &.{}`)
-- ❌ `std.debug.print` in library code
-- ❌ `std.debug.assert` (use proper error handling)
-- ❌ Commented tests or code
-- ❌ Placeholder implementations
-
-Cryptographic ops must NEVER crash - return errors gracefully
-</banned_patterns>
 
 ---
 
@@ -64,9 +38,8 @@ External C libs: blst, c-kzg-4844, arkworks (Rust, no WASM)
 ```zig
 const primitives = @import("primitives");
 const crypto = @import("crypto");
-const Address = primitives.Address;
 ```
-Never use parent imports (`@import("../primitives/address.zig")`)
+Never use parent imports (`@import("../...")`)
 </imports>
 
 ---
@@ -257,22 +230,12 @@ const recovered = try Eip712.unaudited_recoverTypedDataAddress(allocator, &typed
 ## Memory Patterns
 
 ```zig
-// Same scope cleanup
-const thing = try allocator.create(Thing);
-defer allocator.destroy(thing);
-
-// Ownership transfer
-const thing = try allocator.create(Thing);
-errdefer allocator.destroy(thing);
-thing.* = try Thing.init(allocator);
-return thing;
-
-// Common GPA setup
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-}
+// Same scope: defer allocator.destroy(thing);
+// Ownership transfer: errdefer allocator.destroy(thing);
+// GPA setup:
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
 ```
 
 ---
@@ -280,78 +243,82 @@ pub fn main() !void {
 ## Security Requirements
 
 <crypto_safety>
-**Constant-time operations required:**
-```zig
-// ✅ CORRECT
-pub fn constant_time_compare(a: []const u8, b: []const u8) bool {
-    if (a.len != b.len) return false;
-    var result: u8 = 0;
-    for (a, b) |byte_a, byte_b| {
-        result |= byte_a ^ byte_b;
-    }
-    return result == 0;
-}
-
-// ❌ WRONG - timing leak
-if (byte_a != byte_b) return false;  // Early return leaks position
-```
-
-**All crypto functions must:**
-- Validate inputs (signature components, curve points)
-- Never panic/crash (return errors)
+**Constant-time ops required. All crypto must:**
+- Validate inputs (sig components, curve points)
+- Never panic (return errors)
 - Clear sensitive memory
-- Avoid timing attacks
+- No timing leaks (no early returns in comparisons)
+
+```zig
+// ✅ Constant-time compare
+var result: u8 = 0;
+for (a, b) |byte_a, byte_b| { result |= byte_a ^ byte_b; }
+return result == 0;
+// ❌ if (byte_a != byte_b) return false;  // Leaks timing
+```
 </crypto_safety>
 
 <unaudited_functions>
-**DO NOT use in production without audit:**
-- `unaudited_randomPrivateKey()`, `unaudited_getPublicKey()`
-- `unaudited_signMessage()`, `unaudited_signHash()`
-- `unaudited_verifyMessage()`, `unaudited_recoverAddress()`
-- All `Eip712.unaudited_*` functions
-- `unaudited_mulmod()`, `unaudited_invmod()` (timing attacks)
-- RIPEMD160, Blake2, ModExp, pure Zig BN254
-
-**Audited via external libs:**
-- BLS12-381 (BLST), KZG (c-kzg-4844), BN254 via Arkworks, SHA256
+**Unaudited (DO NOT use in prod):** All `unaudited_*` functions, all `Eip712.unaudited_*`, RIPEMD160, Blake2, ModExp, pure Zig BN254
+**Audited libs:** BLS12-381 (BLST), KZG (c-kzg-4844), BN254 (Arkworks), SHA256
 </unaudited_functions>
 
 ---
 
-## Testing Notes
+## Documentation
 
-<test_behavior>
-**Zig test output:** No output = tests PASSED ✅
+<docs_base_url>
+Base: https://github.com/evmts/primitives/blob/main/docs
+</docs_base_url>
 
-Only failed tests produce output. This is normal behavior.
+<main_docs>
+- [Documentation Overview](https://github.com/evmts/primitives/blob/main/docs/DOCUMENTATION.md)
+- [README](https://github.com/evmts/primitives/blob/main/docs/README.md)
+</main_docs>
 
-```zig
-test "example" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+<crypto_docs>
+**Cryptography:**
+- [Crypto Module](https://github.com/evmts/primitives/blob/main/docs/crypto/crypto.zig.md)
+- [Hash Utils](https://github.com/evmts/primitives/blob/main/docs/crypto/hash.zig.md)
+- [Hash Algorithms](https://github.com/evmts/primitives/blob/main/docs/crypto/hash_algorithms.zig.md)
+- [secp256k1](https://github.com/evmts/primitives/blob/main/docs/crypto/secp256k1.zig.md)
+</crypto_docs>
 
-    // Test body - self-contained, no helpers
-    const result = try someFunction(allocator);
-    defer allocator.free(result);
+<primitives_docs>
+**Primitives:**
+- [Event Logs](https://github.com/evmts/primitives/blob/main/docs/primitives/logs.md)
+- [Hardforks](https://github.com/evmts/primitives/blob/main/docs/primitives/hardfork.md)
+- [Sign-In with Ethereum (SIWE)](https://github.com/evmts/primitives/blob/main/docs/primitives/siwe.md)
+</primitives_docs>
 
-    try std.testing.expectEqual(expected, result);
-}
-```
+<precompiles_docs>
+**Precompiles:**
+- [Overview](https://github.com/evmts/primitives/blob/main/docs/precompiles/README.md)
+- [Common Types](https://github.com/evmts/primitives/blob/main/docs/precompiles/common.md)
+- [Utils](https://github.com/evmts/primitives/blob/main/docs/precompiles/utils.md)
+- [SHA256 (0x02)](https://github.com/evmts/primitives/blob/main/docs/precompiles/sha256.md)
+- [RIPEMD160 (0x03)](https://github.com/evmts/primitives/blob/main/docs/precompiles/ripemd160.md)
+- [Identity (0x04)](https://github.com/evmts/primitives/blob/main/docs/precompiles/identity.md)
+- [ModExp (0x05)](https://github.com/evmts/primitives/blob/main/docs/precompiles/modexp.md)
+- [BN254 Add (0x06)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bn254_add.md)
+- [BN254 Mul (0x07)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bn254_mul.md)
+- [BN254 Pairing (0x08)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bn254_pairing.md)
+- [Blake2F (0x09)](https://github.com/evmts/primitives/blob/main/docs/precompiles/blake2f.md)
+- [Point Evaluation (0x0a)](https://github.com/evmts/primitives/blob/main/docs/precompiles/point_evaluation.md)
+- [BLS12-381 G1 Add (0x0b)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g1_add.md)
+- [BLS12-381 G1 Mul (0x0c)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g1_mul.md)
+- [BLS12-381 G1 MSM (0x0d)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g1_msm.md)
+- [BLS12-381 G2 Add (0x0e)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g2_add.md)
+- [BLS12-381 G2 Mul (0x0f)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g2_mul.md)
+- [BLS12-381 G2 MSM (0x10)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g2_msm.md)
+- [BLS12-381 Pairing (0x11)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_pairing.md)
+- [BLS12-381 Map Fp to G1 (0x12)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_map_fp_to_g1.md)
+- [BLS12-381 Map Fp2 to G2 (0x13)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_map_fp2_to_g2.md)
+</precompiles_docs>
 
-Debug logging (still won't show if test passes):
-```zig
-std.testing.log_level = .debug;
-std.log.debug("Value: {}", .{value});
-```
-</test_behavior>
-
----
-
-## Resources
-
-- **Zig Docs:** https://ziglang.org/documentation/0.15.1/
-- **Ethereum Specs:** https://eips.ethereum.org/
-- **Repo:** https://github.com/evmts/primitives
-
-**Full documentation in `/docs` directory for detailed examples and guides.**
+<external_resources>
+**External Resources:**
+- [Zig 0.15.1 Docs](https://ziglang.org/documentation/0.15.1/)
+- [Ethereum EIPs](https://eips.ethereum.org/)
+- [Repository](https://github.com/evmts/primitives)
+</external_resources>
