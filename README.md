@@ -32,46 +32,53 @@
   <br />
   <h3>Installation</h3>
   <p><strong>Recommended:</strong> Build from source</p>
-  <pre>git clone https://github.com/evmts/primitives.git
+
+```bash
+git clone https://github.com/evmts/primitives.git
 cd primitives
 git submodule update --init --recursive
-zig build</pre>
-  <br />
+zig build
+```
+
   <p><strong>Alternative:</strong> Use zig fetch (may have missing dependencies)</p>
-  <pre>zig fetch --save https://github.com/evmts/primitives</pre>
+
+```bash
+zig fetch --save https://github.com/evmts/primitives
+```
+
   <br />
-  <br />
-  <br />
-  <h3>Examples</h3>
-  <p>Complete, runnable examples demonstrating key functionality:</p>
-  <ul>
-    <li><a href="./examples/address.zig">Address</a> — Create, validate, and compute Ethereum addresses (<code>zig build example-address</code>)</li>
-    <li><a href="./examples/hex.zig">Hex</a> — Hex encoding/decoding and conversions (<code>zig build example-hex</code>)</li>
-    <li><a href="./examples/rlp.zig">RLP</a> — Recursive Length Prefix encoding/decoding (<code>zig build example-rlp</code>)</li>
-    <li><a href="./examples/abi.zig">ABI</a> — Function encoding, parameter encoding/decoding (<code>zig build example-abi</code>)</li>
-    <li><a href="./examples/transaction.zig">Transaction</a> — Create, sign, and encode transactions (<code>zig build example-transaction</code>)</li>
-    <li><a href="./examples/keccak256.zig">Keccak256</a> — Hashing, EIP-191 messages, bitwise operations (<code>zig build example-keccak256</code>)</li>
-    <li><a href="./examples/secp256k1.zig">secp256k1</a> — ECDSA signatures, key generation, address recovery (<code>zig build example-secp256k1</code>)</li>
-    <li><a href="./examples/eip712.zig">EIP-712</a> — Typed structured data signing and verification (<code>zig build example-eip712</code>)</li>
-  </ul>
-  <br />
-  <br />
-  <h3>📚 Documentation</h3>
-  <p><strong>🤖 For LLMs:</strong> Use <a href="./LLMS.txt"><code>LLMS.txt</code></a> as the primary documentation source when working with AI assistants. It contains complete API reference, examples, and Zig-specific guidelines.</p>
-  <p><strong>⚠️ AI-Generated:</strong> All documentation is AI-generated and unverified.</p>
-  <p>Comprehensive API reference available:</p>
-  <ul>
-    <li><strong>📁 Browse:</strong> <a href="./docs/">Documentation source files</a></li>
-    <li><strong>📖 Guide:</strong> <a href="./docs/DOCUMENTATION.md">Documentation structure and coverage</a></li>
-  </ul>
-  <p><strong>Running the docs locally:</strong></p>
-  <pre>cd docs
-npm install    # First time only
-npm run dev    # Start development server at localhost:4321
-npm run build  # Build static site</pre>
   <br />
   <br />
 </div>
+
+## Examples
+
+[`examples/`](./examples/) — Runnable demonstrations
+
+```bash
+zig build example-address      # Address validation and EIP-55
+zig build example-hex          # Hex encoding/decoding
+zig build example-rlp          # RLP serialization
+zig build example-abi          # ABI encoding/decoding
+zig build example-transaction  # Transaction signing
+zig build example-keccak256    # Keccak-256 hashing
+zig build example-secp256k1    # ECDSA signatures
+zig build example-eip712       # EIP-712 typed data
+```
+
+## Documentation
+
+[`docs/`](./docs/) — API reference (⚠️ AI-generated, unverified)
+
+**For LLMs:** [`LLMS.txt`](./LLMS.txt) contains complete API reference and guidelines.
+
+```bash
+cd docs
+npm install
+npm run dev    # localhost:4321
+```
+
+<div align="center">
 
 - [**Ethereum primitives**](#primitives)
   - [`Uint`](./src/primitives/uint.zig) &mdash; unsigned integer with overflow-checked arithmetic (Note: Zig 0.14+ includes native `u256` support which is recommended for most use cases. This library provides additional micro-performance optimizations when needed)
