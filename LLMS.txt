@@ -1,401 +1,219 @@
-# Ethereum Primitives and Cryptography for Zig
+# Ethereum Primitives & Cryptography for Zig
 
-> Official LLM documentation for the primitives library
->
-> **Version:** Zig 0.15.1+
-> **Repository:** https://github.com/evmts/primitives
+**Version:** Zig 0.15.1+ | **Repo:** https://github.com/evmts/primitives
 
-## Quick Reference
-
-**Zig Documentation:** https://ziglang.org/documentation/0.15.1/
-
-This is mission-critical cryptographic infrastructure. Every line must be correct with zero error tolerance.
+Mission-critical cryptographic infrastructure. Zero error tolerance.
 
 ---
 
-## Table of Contents
+## Critical Context
 
-1. [Critical Development Guidelines](#critical-development-guidelines)
-2. [Zig Essentials for This Project](#zig-essentials-for-this-project)
-3. [Project Architecture](#project-architecture)
-4. [API Reference](#api-reference)
-5. [Complete Examples](#complete-examples)
-6. [Memory Management](#memory-management)
-7. [Testing Philosophy](#testing-philosophy)
-8. [Common Patterns](#common-patterns)
+<zig_version_breaking_changes>
+**Zig 0.15.1 ArrayList API Change (LLMs commonly get this wrong):**
 
----
+```zig
+// ✅ CORRECT - 0.15.1 uses UNMANAGED ArrayList
+var list = std.ArrayList(T){};  // Default init
+defer list.deinit(allocator);   // allocator REQUIRED
+try list.append(allocator, item); // allocator REQUIRED every call
 
-## Critical Development Guidelines
+// ❌ WRONG - Old API (pre-0.15)
+var list = std.ArrayList(T).init(allocator);  // No init() method!
+list.deinit();  // Missing required allocator param
+```
 
-### Mission Critical Rules
+All ArrayList operations require explicit allocator parameter in 0.15.1+
+</zig_version_breaking_changes>
 
-**ALWAYS run commands from the repository root directory.** Never use `cd` except when debugging a submodule.
-
-**EVERY code change requires:**
+<build_requirements>
+**Always run from repo root. Every code change requires:**
 ```bash
 zig build && zig build test
 ```
 Exception: `.md` files only
 
-### Zero Tolerance Policy
+Use `zig build test` not `zig test` (requires module system)
+</build_requirements>
 
-**NEVER:**
-- ❌ Broken builds/tests
+<banned_patterns>
 - ❌ Stub implementations (`error.NotImplemented`)
-- ❌ Commented code (use Git instead)
-- ❌ `std.debug.print` in library code (this is a library, not an application)
+- ❌ Swallowing errors (`catch {}`, `catch null`, `catch &.{}`)
+- ❌ `std.debug.print` in library code
 - ❌ `std.debug.assert` (use proper error handling)
-- ❌ Skipping or commenting out tests
-- ❌ **Swallowing errors with `catch` (e.g., `catch {}`, `catch &.{}`, `catch null`)**
+- ❌ Commented tests or code
 - ❌ Placeholder implementations
 
-**Why placeholders are banned:** They create ambiguity about whether the AI couldn't solve it, is planning to implement it later, or there's a technical blocker. Either implement it fully, explain why it can't be done, or ask for help.
-
-**NEVER swallow errors!** Every error must be explicitly handled or propagated.
-
-### Security Requirements
-
-- **Cryptographic operations must NEVER crash** - return errors gracefully, never panic
-- Memory safety: plan ownership/deallocation for every allocation
-- Constant-time operations required for all cryptographic functions
-- All crypto functions must validate inputs
-- No timing attacks - avoid early returns in comparison functions
-
-### Build Verification
-
-Use `zig build test` not `zig test` (requires module system).
-
-Common commands:
-```bash
-zig build                    # Build the project
-zig build test              # Run all tests
-zig build -Dtest-filter=... # Filter tests
-```
+Cryptographic ops must NEVER crash - return errors gracefully
+</banned_patterns>
 
 ---
 
-## Zig Essentials for This Project
+## Library Scope
 
-### Official Naming Conventions
+<modules>
+**primitives:** Uint256, Address, Hex, RLP, ABI, Transactions (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702), Event Logs, Access Lists, Bytecode, Opcodes, Hardforks, Merkle Patricia Trie
 
-Zig uses semantic naming conventions:
+**crypto:** Keccak-256, secp256k1 ECDSA (⚠️ unaudited), EIP-712 (⚠️ unaudited), BLS12-381 (via BLST), BN254 alt_bn128 (⚠️ unaudited), KZG (via c-kzg-4844), SHA256, RIPEMD160 (⚠️ unaudited), Blake2 (⚠️ unaudited), ModExp (⚠️ unaudited)
 
-1. **TitleCase (PascalCase)** - Types and functions that return types
-   ```zig
-   struct MyStruct { ... }
-   fn ArrayList(comptime T: type) type { ... }
-   ```
+**precompiles:** All Ethereum precompiles (0x01-0x13)
 
-2. **camelCase** - Regular functions
-   ```zig
-   fn calculateSum(a: u32, b: u32) u32 { ... }
-   fn fromHex(hex_str: []const u8) !Address { ... }
-   ```
+External C libs: blst, c-kzg-4844, arkworks (Rust, no WASM)
+</modules>
 
-3. **snake_case** - Everything else
-   ```zig
-   const max_size = 100;
-   var my_variable: u32 = 0;
-   const gas_limit: u64 = 21000;
-   ```
-
-**Key insight:** If you see TitleCase on a callable, it returns a type. If you see camelCase, it returns a regular value.
-
-### ArrayList API (Zig 0.15.1)
-
-**CRITICAL:** In Zig 0.15.1, `std.ArrayList(T)` is UNMANAGED and requires allocator for ALL operations!
-
+<imports>
 ```zig
-// CORRECT - Unmanaged ArrayList
-var list = std.ArrayList(T){};  // Default initialization
-// OR
-const list = std.ArrayList(T).empty;  // Empty constant
-// OR with capacity
-var list = try std.ArrayList(T).initCapacity(allocator, 100);
-
-// All operations REQUIRE allocator:
-defer list.deinit(allocator);  // ✅ allocator REQUIRED
-try list.append(allocator, item);  // ✅ allocator REQUIRED
-try list.ensureCapacity(allocator, 100);  // ✅ allocator REQUIRED
-_ = list.pop();  // No allocator needed for pop
-
-// Direct access (no allocator needed):
-list.items[0] = value;
-list.items.len = 0;
-
-// WRONG - Does NOT work in Zig 0.15.1:
-var list = std.ArrayList(T).init(allocator);  // ❌ No init() method!
-list.deinit();  // ❌ Missing required allocator
-try list.append(item);  // ❌ Missing required allocator
-```
-
-### Error Handling
-
-```zig
-// Propagate errors with try
-const result = try someFunction();
-
-// Handle specific errors
-const value = someFunction() catch |err| switch (err) {
-    error.OutOfMemory => return error.OutOfMemory,
-    error.InvalidInput => return error.InvalidInput,
-    else => return err,
-};
-
-// NEVER swallow errors silently
-// ❌ const value = someFunction() catch {};  // BANNED!
-// ❌ const value = someFunction() catch null;  // BANNED!
-```
-
-### Import Rules
-
-```zig
-// ✅ CORRECT - Use module imports
 const primitives = @import("primitives");
 const crypto = @import("crypto");
 const Address = primitives.Address;
-
-// ❌ WRONG - No parent imports
-const Address = @import("../primitives/address.zig");
 ```
+Never use parent imports (`@import("../primitives/address.zig")`)
+</imports>
 
 ---
 
-## Project Architecture
+## API Quick Reference
 
-### Library Scope
-
-This repository contains ONLY Ethereum primitives and cryptographic operations. **No EVM execution engine.**
-
-### Key Components
-
-**Primitives Module:**
-- Uint256, Address, Hex, RLP, ABI
-- Transactions (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702)
-- Event Logs, Fee Market, Access Lists
-- Bytecode, Opcodes, Hardforks
-- Merkle Patricia Trie
-
-**Crypto Module:**
-- Keccak-256 (via Zig std library)
-- Keccak-256 ASM (⚠️ unaudited, hardware-accelerated)
-- secp256k1 ECDSA (⚠️ unaudited)
-- EIP-712 typed data (⚠️ unaudited)
-- BLS12-381 (via BLST library)
-- BN254 alt_bn128 (⚠️ unaudited pure Zig + audited Arkworks via Rust)
-- KZG commitments (via c-kzg-4844)
-- SHA256, RIPEMD160 (⚠️ unaudited), Blake2 (⚠️ unaudited)
-- ModExp (⚠️ unaudited)
-
-**Precompiles Module:**
-All Ethereum precompiles (0x01-0x13) including ECRECOVER, SHA256, RIPEMD160, IDENTITY, MODEXP, BN254 operations, BLAKE2F, KZG point evaluation, and BLS12-381 operations.
-
-### External C Libraries
-
-- **blst** - BLS12-381 operations
-- **c-kzg-4844** - KZG commitments for EIP-4844
-- **ark (arkworks)** - BN254 curve operations (Rust, not available in WASM)
-
----
-
-## API Reference
-
-### Address Operations
+### Address
 
 ```zig
-const primitives = @import("primitives");
-const Address = primitives.Address;
-
-// Create addresses
 const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const addr_u256 = Address.fromU256(some_u256);
 const addr_bytes = try Address.fromBytes(&bytes_20);
 const addr_pubkey = Address.fromPublicKey(public_key_x, public_key_y);
 
-// Convert addresses
 const as_u256 = addr.toU256();
-const hex = addr.toHex();  // Returns [42]u8
-const checksummed = addr.toChecksumHex();  // EIP-55 checksum
+const hex = addr.toHex();  // [42]u8
+const checksummed = addr.toChecksumHex();  // EIP-55
 
-// Validation
 const is_valid = Address.isValid(hex_string);
 const is_checksum_valid = Address.isValidChecksum(hex_string);
-const is_zero = addr.isZero();
-const are_equal = addr1.equals(addr2);
-
-// Special addresses
 const zero_addr = Address.zero();
 
-// Contract address computation
+// Contract addresses
 const create_addr = try Address.calculateCreateAddress(allocator, deployer, nonce);
 const create2_addr = try Address.calculateCreate2Address(allocator, deployer, salt, init_code);
 ```
 
-### Hex Utilities
+### Hex
 
 ```zig
-const Hex = primitives.Hex;
-
-// Validation
 const valid = Hex.isHex("0x1234abcd");  // Requires 0x prefix
 
-// Conversions
 const bytes = try Hex.hexToBytes(allocator, "0x1234");
 defer allocator.free(bytes);
 
 const hex = try Hex.bytesToHex(allocator, &bytes);
 defer allocator.free(hex);
 
-// String conversions
-const text = try Hex.hexToString(allocator, hex_str);
-defer allocator.free(text);
-
-const encoded = try Hex.stringToHex(allocator, "Hello");
-defer allocator.free(encoded);
-
-// Numeric conversions
 const value = try Hex.hexToU256("0xdeadbeef");
 const hex_str = try Hex.u256ToHex(allocator, value);
 defer allocator.free(hex_str);
 
-// Padding and trimming
-const padded_left = try Hex.padLeft(allocator, &bytes, 32);
-defer allocator.free(padded_left);
+const padded = try Hex.padLeft(allocator, &bytes, 32);
+defer allocator.free(padded);
 
-const padded_right = try Hex.padRight(allocator, &bytes, 32);
-defer allocator.free(padded_right);
-
-const trimmed_left = Hex.trimLeftZeros(&bytes);  // Returns slice, no alloc
-const trimmed_right = Hex.trimRightZeros(&bytes);
-
-// Utilities
-const concatenated = try Hex.concat(allocator, &[_][]const u8{ &bytes1, &bytes2 });
-defer allocator.free(concatenated);
+const trimmed = Hex.trimLeftZeros(&bytes);  // No alloc
 ```
 
-### RLP Encoding/Decoding
+### RLP
 
 ```zig
-const Rlp = primitives.Rlp;
-
-// Encode any type
 const encoded = try Rlp.encode(allocator, value);
 defer allocator.free(encoded);
 
-// Encode specific types
-const bytes_encoded = try Rlp.encodeBytes(allocator, &bytes);
-defer allocator.free(bytes_encoded);
-
-// Decode
 const decoded = try Rlp.decode(allocator, encoded, false);
 defer decoded.data.deinit(allocator);
 
 switch (decoded.data) {
-    .String => |str| {
-        // Process string/bytes
-    },
-    .List => |items| {
-        // Process list items
-        for (items) |item| {
-            // Handle nested items
-        }
-    },
+    .String => |str| { /* bytes */ },
+    .List => |items| { /* nested items */ },
 }
 
-// Stream decoding (for multiple items)
-var remaining = data;
-while (remaining.len > 0) {
-    const item = try Rlp.decode(allocator, remaining, true);  // Stream mode
-    defer item.data.deinit(allocator);
-    // Process item
-    remaining = item.remainder;
-}
+// Stream mode for multiple items
+const item = try Rlp.decode(allocator, data, true);  // Stream=true
+remaining = item.remainder;
 ```
 
-### ABI Encoding/Decoding
+### ABI
 
 ```zig
-const abi = primitives.AbiEncoding;
-
-// Function selectors
 const selector = abi.computeSelector("transfer(address,uint256)");
 
-// Encode function call
 const params = [_]abi.AbiValue{
     abi.addressValue(recipient),
     abi.uint256_value(amount),
 };
+
 const calldata = try abi.encodeFunctionData(allocator, selector, &params);
 defer allocator.free(calldata);
 
-// Decode function call
 const types = [_]abi.AbiType{ .address, .uint256 };
 const result = try abi.decodeFunctionData(allocator, calldata, &types);
 defer {
     for (result.parameters) |param| {
-        // Free dynamic types
         switch (param) {
             .string, .bytes => |slice| allocator.free(slice),
-            // ... handle other dynamic types
             else => {},
         }
     }
     allocator.free(result.parameters);
 }
 
-// Encode parameters only
-const encoded = try abi.encodeAbiParameters(allocator, &params);
-defer allocator.free(encoded);
-
-// Decode parameters
-const decoded = try abi.decodeAbiParameters(allocator, encoded, &types);
-defer {
-    for (decoded) |param| {
-        // Free as above
-    }
-    allocator.free(decoded);
-}
-
-// Packed encoding (no padding)
-const packed = try abi.encodePacked(allocator, &values);
+const packed = try abi.encodePacked(allocator, &values);  // No padding
 defer allocator.free(packed);
 ```
 
-### Transaction Operations
+### Keccak-256
 
 ```zig
-const Transaction = primitives.Transaction;
-const LegacyTransaction = Transaction.LegacyTransaction;
-const Eip1559Transaction = Transaction.Eip1559Transaction;
+const hash = HashUtils.keccak256("hello");
+const hash_hex = try HashUtils.fromHex("0x1234...");
 
-// Create legacy transaction
+const hex_lower = HashUtils.toHex(hash);  // [66]u8
+const message_hash = try HashUtils.eip191HashMessage("Sign this", allocator);
+
+const are_equal = HashUtils.equal(hash1, hash2);  // Constant-time
+const selector = HashUtils.selectorFromSignature("transfer(address,uint256)");
+```
+
+### secp256k1 (⚠️ UNAUDITED)
+
+```zig
+const private_key = try Crypto.unaudited_randomPrivateKey();
+const public_key = try Crypto.unaudited_getPublicKey(private_key);
+const address = Crypto.publicKeyToAddress(public_key);
+
+const signature = try Crypto.unaudited_signMessage("Hello", private_key);
+const hash_sig = try Crypto.unaudited_signHash(hash, private_key);
+
+const is_valid = try Crypto.unaudited_verifyMessage(message, signature, address);
+const recovered = try Crypto.unaudited_recoverAddress(hash, signature);
+
+const sig_valid = signature.isValid();  // Validates r, s, v
+const sig_bytes = signature.toBytes();  // [65]u8
+```
+
+### Transactions
+
+```zig
 const tx = LegacyTransaction{
     .nonce = 0,
     .gas_price = 20_000_000_000,  // 20 gwei
     .gas_limit = 21000,
-    .to = recipient_address,
+    .to = recipient,
     .value = 1_000_000_000_000_000_000,  // 1 ETH
     .data = &[_]u8{},
-    .v = 0,  // Unsigned
-    .r = [_]u8{0} ** 32,
-    .s = [_]u8{0} ** 32,
+    .v = 0, .r = [_]u8{0} ** 32, .s = [_]u8{0} ** 32,
 };
 
-// Encode for signing (EIP-155)
 const encoded = try Transaction.encodeLegacyForSigning(allocator, tx, chain_id);
 defer allocator.free(encoded);
 
-// Sign transaction
 const signed = try Transaction.signLegacyTransaction(allocator, tx, private_key, chain_id);
-
-// Compute transaction hash
 const hash = try Transaction.computeLegacyTransactionHash(allocator, signed);
-
-// Detect transaction type
 const tx_type = Transaction.detectTransactionType(raw_data);
 
-// Create EIP-1559 transaction
+// EIP-1559
 const eip1559 = Eip1559Transaction{
     .chain_id = 1,
     .nonce = 0,
@@ -406,104 +224,22 @@ const eip1559 = Eip1559Transaction{
     .value = amount,
     .data = &[_]u8{},
     .access_list = &[_]AccessListItem{},
-    .v = 0,
-    .r = [_]u8{0} ** 32,
-    .s = [_]u8{0} ** 32,
+    .v = 0, .r = [_]u8{0} ** 32, .s = [_]u8{0} ** 32,
 };
 ```
 
-### Keccak-256 Hashing
+### EIP-712 (⚠️ UNAUDITED)
 
 ```zig
-const crypto = @import("crypto");
-const HashUtils = crypto.HashUtils;
-
-// Compute hash
-const hash = HashUtils.keccak256("hello");
-
-// Create from bytes/hex
-const hash_bytes = HashUtils.fromBytes(raw_bytes);
-const hash_hex = try HashUtils.fromHex("0x1234...");
-
-// Convert to hex
-const hex_lower = HashUtils.toHex(hash);  // Returns [66]u8
-const hex_upper = HashUtils.toHexUpper(hash);
-
-// EIP-191 personal message hashing
-const message_hash = try HashUtils.eip191HashMessage("Sign this", allocator);
-
-// Bitwise operations
-const xor_result = HashUtils.xor(hash1, hash2);
-const and_result = HashUtils.bitAnd(hash1, hash2);
-const or_result = HashUtils.bitOr(hash1, hash2);
-
-// Comparison (constant-time)
-const are_equal = HashUtils.equal(hash1, hash2);
-const is_less = HashUtils.lessThan(hash1, hash2);
-
-// Function selector
-const selector = HashUtils.selectorFromSignature("transfer(address,uint256)");
-```
-
-### secp256k1 Operations (⚠️ UNAUDITED)
-
-```zig
-const Crypto = crypto.Crypto;
-
-// Generate private key
-const private_key = try Crypto.unaudited_randomPrivateKey();
-
-// Derive public key
-const public_key = try Crypto.unaudited_getPublicKey(private_key);
-
-// Get address from public key
-const address = Crypto.publicKeyToAddress(public_key);
-
-// Sign message (EIP-191 formatted)
-const signature = try Crypto.unaudited_signMessage("Hello", private_key);
-
-// Sign raw hash
-const hash_sig = try Crypto.unaudited_signHash(hash, private_key);
-
-// Verify signature
-const is_valid = try Crypto.unaudited_verifyMessage(message, signature, address);
-
-// Recover address from signature
-const recovered = try Crypto.unaudited_recoverAddress(hash, signature);
-const msg_recovered = try Crypto.unaudited_recoverMessageAddress(message, signature);
-
-// Signature validation
-const sig_valid = signature.isValid();  // Checks r, s, v parameters
-
-// Signature serialization
-const sig_bytes = signature.toBytes();  // [65]u8
-const sig_hex = signature.toHex();  // [132]u8 with 0x prefix
-const sig_from_bytes = Crypto.Signature.fromBytes(sig_bytes);
-```
-
-### EIP-712 Typed Data (⚠️ UNAUDITED)
-
-```zig
-const Eip712 = crypto.Eip712;
-
-// Create domain separator
-const domain = try Eip712.create_domain(
-    allocator,
-    "MyDApp",           // name
-    "1.0.0",           // version
-    1,                 // chain_id
-    null,              // verifying_contract (optional)
-);
+const domain = try Eip712.create_domain(allocator, "MyDApp", "1.0.0", 1, null);
 defer {
     var mut_domain = domain;
     mut_domain.deinit(allocator);
 }
 
-// Create typed data
 var typed_data = try Eip712.create_simple_typed_data(allocator, domain, "Transfer");
 defer typed_data.deinit(allocator);
 
-// Define type properties
 const props = [_]Eip712.TypeProperty{
     .{ .name = "from", .type = "address" },
     .{ .name = "to", .type = "address" },
@@ -511,415 +247,42 @@ const props = [_]Eip712.TypeProperty{
 };
 try typed_data.types.put(allocator, "Transfer", &props);
 
-// Add message values
-try typed_data.message.put(
-    try allocator.dupe(u8, "from"),
-    Eip712.MessageValue{ .address = from_addr },
-);
-
-// Hash typed data
 const hash = try Eip712.unaudited_hashTypedData(allocator, &typed_data);
-
-// Sign typed data
 const signature = try Eip712.unaudited_signTypedData(allocator, &typed_data, private_key);
-
-// Verify signature
-const is_valid = try Eip712.unaudited_verifyTypedData(
-    allocator,
-    &typed_data,
-    signature,
-    signer_address,
-);
-
-// Recover signer
-const recovered = try Eip712.unaudited_recoverTypedDataAddress(
-    allocator,
-    &typed_data,
-    signature,
-);
+const recovered = try Eip712.unaudited_recoverTypedDataAddress(allocator, &typed_data, signature);
 ```
 
 ---
 
-## Complete Examples
-
-### Example 1: Address Operations
+## Memory Patterns
 
 ```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Address = primitives.Address;
-
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    // Create from hex
-    const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-
-    // Get checksummed format
-    const checksummed = addr.toChecksumHex();
-    std.debug.print("Checksum: {s}\n", .{&checksummed});
-
-    // Validate
-    const is_valid = Address.isValid("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-    std.debug.print("Valid: {}\n", .{is_valid});
-
-    // Create from public key
-    const pubkey_addr = Address.fromPublicKey(public_x, public_y);
-
-    // Calculate CREATE address
-    const deployer = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-    const nonce: u64 = 0;
-    const contract_addr = try Address.calculateCreateAddress(allocator, deployer, nonce);
-
-    // Calculate CREATE2 address
-    const salt: u256 = 0xcafebabe;
-    const init_code = [_]u8{ 0x60, 0x80 };
-    const create2_addr = try Address.calculateCreate2Address(
-        allocator,
-        deployer,
-        salt,
-        &init_code,
-    );
-}
-```
-
-### Example 2: RLP Encoding
-
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const Rlp = primitives.Rlp;
-
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    // Encode string
-    const encoded_str = try Rlp.encode(allocator, "dog");
-    defer allocator.free(encoded_str);
-
-    // Encode list
-    const list = [_][]const u8{ "cat", "dog", "mouse" };
-    const encoded_list = try Rlp.encode(allocator, list[0..]);
-    defer allocator.free(encoded_list);
-
-    // Decode
-    const decoded = try Rlp.decode(allocator, encoded_list, false);
-    defer decoded.data.deinit(allocator);
-
-    switch (decoded.data) {
-        .List => |items| {
-            for (items, 0..) |item, i| {
-                switch (item) {
-                    .String => |str| {
-                        std.debug.print("[{}]: {s}\n", .{ i, str });
-                    },
-                    .List => {},
-                }
-            }
-        },
-        .String => {},
-    }
-}
-```
-
-### Example 3: ABI Encoding
-
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const abi = primitives.AbiEncoding;
-
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    // Compute function selector
-    const selector = abi.computeSelector("transfer(address,uint256)");
-
-    // Prepare parameters
-    const recipient = try primitives.Address.fromHex(
-        "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-    );
-    const amount: u256 = 1000_000_000_000_000_000_000;  // 1000 tokens
-
-    const params = [_]abi.AbiValue{
-        abi.addressValue(recipient),
-        abi.uint256_value(amount),
-    };
-
-    // Encode function call
-    const calldata = try abi.encodeFunctionData(allocator, selector, &params);
-    defer allocator.free(calldata);
-
-    std.debug.print("Calldata: 0x", .{});
-    for (calldata) |byte| {
-        std.debug.print("{x:0>2}", .{byte});
-    }
-
-    // Decode function call
-    const types = [_]abi.AbiType{ .address, .uint256 };
-    const result = try abi.decodeFunctionData(allocator, calldata, &types);
-    defer {
-        for (result.parameters) |param| {
-            switch (param) {
-                .string, .bytes => |slice| allocator.free(slice),
-                else => {},
-            }
-        }
-        allocator.free(result.parameters);
-    }
-
-    std.debug.print("Decoded address: 0x", .{});
-    for (result.parameters[0].address.bytes) |byte| {
-        std.debug.print("{x:0>2}", .{byte});
-    }
-    std.debug.print("\nDecoded amount: {}\n", .{result.parameters[1].uint256});
-}
-```
-
-### Example 4: Transaction Signing
-
-```zig
-const std = @import("std");
-const primitives = @import("primitives");
-const crypto = @import("crypto");
-const Transaction = primitives.Transaction;
-const LegacyTransaction = Transaction.LegacyTransaction;
-const Crypto = crypto.Crypto;
-
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    // Create transaction
-    const recipient = try primitives.Address.fromHex(
-        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-    );
-
-    const tx = LegacyTransaction{
-        .nonce = 0,
-        .gas_price = 20_000_000_000,
-        .gas_limit = 21000,
-        .to = recipient,
-        .value = 1_000_000_000_000_000_000,  // 1 ETH
-        .data = &[_]u8{},
-        .v = 0,
-        .r = [_]u8{0} ** 32,
-        .s = [_]u8{0} ** 32,
-    };
-
-    // Sign transaction
-    const private_key = Crypto.PrivateKey{
-        0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3,
-        0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x24,
-        0x4e, 0x21, 0xdb, 0x63, 0x5c, 0x51, 0xcb, 0x29,
-        0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
-    };
-
-    const chain_id: u64 = 1;  // Mainnet
-    const signed = try Transaction.signLegacyTransaction(
-        allocator,
-        tx,
-        private_key,
-        chain_id,
-    );
-
-    // Get transaction hash
-    const tx_hash = try Transaction.computeLegacyTransactionHash(allocator, signed);
-
-    std.debug.print("Transaction hash: 0x", .{});
-    for (tx_hash.bytes) |byte| {
-        std.debug.print("{x:0>2}", .{byte});
-    }
-}
-```
-
-### Example 5: Signature Operations (⚠️ UNAUDITED)
-
-```zig
-const std = @import("std");
-const crypto = @import("crypto");
-const primitives = @import("primitives");
-const Crypto = crypto.Crypto;
-
-pub fn main() !void {
-    // Generate key pair
-    const private_key = try Crypto.unaudited_randomPrivateKey();
-    const public_key = try Crypto.unaudited_getPublicKey(private_key);
-    const address = Crypto.publicKeyToAddress(public_key);
-
-    // Sign message
-    const message = "Hello, Ethereum!";
-    const signature = try Crypto.unaudited_signMessage(message, private_key);
-
-    std.debug.print("Signature:\n", .{});
-    std.debug.print("  r: 0x{x:0>64}\n", .{signature.r});
-    std.debug.print("  s: 0x{x:0>64}\n", .{signature.s});
-    std.debug.print("  v: {}\n", .{signature.v});
-
-    // Verify signature
-    const is_valid = try Crypto.unaudited_verifyMessage(message, signature, address);
-    std.debug.print("Valid: {}\n", .{is_valid});
-
-    // Recover address
-    const recovered = try Crypto.unaudited_recoverMessageAddress(message, signature);
-    const match = std.mem.eql(u8, &address.bytes, &recovered.bytes);
-    std.debug.print("Recovered matches: {}\n", .{match});
-}
-```
-
-### Example 6: Keccak-256 Hashing
-
-```zig
-const std = @import("std");
-const crypto = @import("crypto");
-const HashUtils = crypto.HashUtils;
-
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    // Simple hash
-    const hash = HashUtils.keccak256("hello");
-    std.debug.print("Hash: {s}\n", .{HashUtils.toHex(hash)});
-
-    // EIP-191 message hash
-    const message = "Sign this message";
-    const eip191_hash = try HashUtils.eip191HashMessage(message, allocator);
-    std.debug.print("EIP-191 hash: {s}\n", .{HashUtils.toHex(eip191_hash)});
-
-    // Bitwise operations
-    const hash_a = HashUtils.fromU256(0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA);
-    const hash_b = HashUtils.fromU256(0x5555555555555555555555555555555555555555555555555555555555555555);
-
-    const xor = HashUtils.xor(hash_a, hash_b);
-    std.debug.print("XOR: {s}\n", .{HashUtils.toHex(xor)});
-
-    // Function selector
-    const selector = HashUtils.selectorFromSignature("transfer(address,uint256)");
-    std.debug.print("Selector: 0x{x:0>2}{x:0>2}{x:0>2}{x:0>2}\n", .{
-        selector[0], selector[1], selector[2], selector[3],
-    });
-}
-```
-
----
-
-## Memory Management
-
-### Allocation Patterns
-
-```zig
-// Pattern 1: Same scope cleanup
+// Same scope cleanup
 const thing = try allocator.create(Thing);
 defer allocator.destroy(thing);
 
-// Pattern 2: Ownership transfer with error handling
+// Ownership transfer
 const thing = try allocator.create(Thing);
 errdefer allocator.destroy(thing);
 thing.* = try Thing.init(allocator);
 return thing;
 
-// Pattern 3: Slice allocation
-const bytes = try allocator.alloc(u8, size);
-defer allocator.free(bytes);
-
-// Pattern 4: Conditional cleanup
-var result: ?[]u8 = null;
-defer if (result) |r| allocator.free(r);
-result = try allocator.alloc(u8, size);
-```
-
-### Common GPA Setup
-
-```zig
+// Common GPA setup
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
-
-    // Use allocator for all allocations
 }
 ```
 
 ---
 
-## Testing Philosophy
+## Security Requirements
 
-### Core Principles
-
-- **NO abstractions** - copy/paste setup in each test
-- **NO helpers** - self-contained tests only
-- **Test failures = fix immediately**
-- **Evidence-based debugging only**
-
-### Zig Test Output Behavior
-
-**CRITICAL:** Zig tests output NOTHING when passing!
-
-- No output = tests PASSED successfully ✅
-- Output only appears for FAILED tests ❌
-
+<crypto_safety>
+**Constant-time operations required:**
 ```zig
-test "address validation" {
-    const valid = Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1");
-    try std.testing.expect(valid);
-}
-
-// If this test passes, you will see NO output!
-```
-
-### Debug Logging in Tests
-
-```zig
-test "with debug output" {
-    std.testing.log_level = .debug;
-
-    std.log.debug("Test starting", .{});
-    const result = someFunction();
-    std.log.debug("Result: {}", .{result});
-}
-
-// IMPORTANT: Even with log_level = .debug,
-// if the test passes you will see NO OUTPUT!
-```
-
-### Test Example
-
-```zig
-test "encode and decode RLP string" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    const input = "dog";
-    const encoded = try Rlp.encode(allocator, input);
-    defer allocator.free(encoded);
-
-    const decoded = try Rlp.decode(allocator, encoded, false);
-    defer decoded.data.deinit(allocator);
-
-    try std.testing.expect(decoded.data == .String);
-    try std.testing.expectEqualStrings(input, decoded.data.String);
-}
-```
-
----
-
-## Common Patterns
-
-### Constant-Time Comparison (Crypto)
-
-```zig
-// ✅ CORRECT - Constant time
+// ✅ CORRECT
 pub fn constant_time_compare(a: []const u8, b: []const u8) bool {
     if (a.len != b.len) return false;
     var result: u8 = 0;
@@ -929,150 +292,66 @@ pub fn constant_time_compare(a: []const u8, b: []const u8) bool {
     return result == 0;
 }
 
-// ❌ WRONG - Timing leak
-pub fn timing_unsafe_compare(a: []const u8, b: []const u8) bool {
-    for (a, b) |byte_a, byte_b| {
-        if (byte_a != byte_b) return false;  // Early return leaks timing!
-    }
-    return true;
-}
+// ❌ WRONG - timing leak
+if (byte_a != byte_b) return false;  // Early return leaks position
 ```
 
-### Error Handling Pattern
+**All crypto functions must:**
+- Validate inputs (signature components, curve points)
+- Never panic/crash (return errors)
+- Clear sensitive memory
+- Avoid timing attacks
+</crypto_safety>
 
-```zig
-pub fn processTransaction(allocator: std.mem.Allocator, data: []const u8) !Result {
-    // Allocate resources
-    const parsed = try parseData(allocator, data);
-    errdefer allocator.free(parsed);
+<unaudited_functions>
+**DO NOT use in production without audit:**
+- `unaudited_randomPrivateKey()`, `unaudited_getPublicKey()`
+- `unaudited_signMessage()`, `unaudited_signHash()`
+- `unaudited_verifyMessage()`, `unaudited_recoverAddress()`
+- All `Eip712.unaudited_*` functions
+- `unaudited_mulmod()`, `unaudited_invmod()` (timing attacks)
+- RIPEMD160, Blake2, ModExp, pure Zig BN254
 
-    const validated = try validateData(parsed);
-    errdefer cleanupValidated(validated);
-
-    // Process and return
-    return try finalProcess(validated);
-}
-```
-
-### Defer Pattern for Cleanup
-
-```zig
-pub fn complexOperation(allocator: std.mem.Allocator) !void {
-    var list = std.ArrayList(u8){};
-    defer list.deinit(allocator);
-
-    const buffer = try allocator.alloc(u8, 100);
-    defer allocator.free(buffer);
-
-    var map = std.StringHashMap(u32).init(allocator);
-    defer map.deinit();
-
-    // Cleanup happens in reverse order automatically
-}
-```
-
-### Minimal Else Pattern
-
-```zig
-// ✅ Preferred - early return
-pub fn getValue(input: ?u32) u32 {
-    if (input) |value| {
-        return value;
-    }
-    return 0;
-}
-
-// ❌ Avoid - else statement
-pub fn getValue(input: ?u32) u32 {
-    if (input) |value| {
-        return value;
-    } else {
-        return 0;
-    }
-}
-```
-
-### Single Word Variables
-
-```zig
-// ✅ Good - concise
-for (items) |item| {
-    const n = item.count;
-    const result = process(n);
-}
-
-// ❌ Verbose
-for (items) |single_item| {
-    const number_of_items = single_item.count;
-    const processing_result = process(number_of_items);
-}
-
-// ✅ Exception - descriptive when needed
-const operand = stack.pop();
-const top = stack.peek();
-```
+**Audited via external libs:**
+- BLS12-381 (BLST), KZG (c-kzg-4844), BN254 via Arkworks, SHA256
+</unaudited_functions>
 
 ---
 
-## Additional Resources
+## Testing Notes
 
-- **Zig Documentation:** https://ziglang.org/documentation/0.15.1/
-- **Ethereum Yellow Paper:** Ethereum specification
-- **EIPs:** https://eips.ethereum.org/
-- **Repository:** https://github.com/evmts/primitives
+<test_behavior>
+**Zig test output:** No output = tests PASSED ✅
 
----
+Only failed tests produce output. This is normal behavior.
 
-## Security Warnings
+```zig
+test "example" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-### Unaudited Functions
+    // Test body - self-contained, no helpers
+    const result = try someFunction(allocator);
+    defer allocator.free(result);
 
-Many cryptographic functions in this library are prefixed with `unaudited_` to indicate they have NOT undergone security review. These include:
+    try std.testing.expectEqual(expected, result);
+}
+```
 
-- `unaudited_randomPrivateKey()`
-- `unaudited_getPublicKey()`
-- `unaudited_signMessage()` / `unaudited_signHash()`
-- `unaudited_verifyMessage()` / `unaudited_verifySignature()`
-- `unaudited_recoverAddress()` / `unaudited_recoverMessageAddress()`
-- All EIP-712 functions: `unaudited_hashTypedData()`, `unaudited_signTypedData()`, etc.
-- `unaudited_mulmod()` - vulnerable to timing attacks
-- `unaudited_invmod()` - vulnerable to timing attacks
-- RIPEMD160 hash implementation
-- Blake2 compression function
-- ModExp implementation
-- Pure Zig BN254 curve operations
-
-**DO NOT use these functions in production without proper security audit!**
-
-### Hardware-Accelerated Functions
-
-The assembly-optimized Keccak-256 implementation (`keccak_asm.zig`) uses hardware acceleration (x86-64/ARM) and falls back to pure Zig in WASM builds. While faster, it is also unaudited.
-
-### External Libraries
-
-The following use audited external libraries:
-- BLS12-381 operations via BLST (audited)
-- KZG commitments via c-kzg-4844 (audited)
-- BN254 operations via Arkworks (audited, Rust, not available in WASM)
-- SHA256 via Zig std library (audited)
+Debug logging (still won't show if test passes):
+```zig
+std.testing.log_level = .debug;
+std.log.debug("Value: {}", .{value});
+```
+</test_behavior>
 
 ---
 
-## Quick Start Checklist
+## Resources
 
-When working with this library:
+- **Zig Docs:** https://ziglang.org/documentation/0.15.1/
+- **Ethereum Specs:** https://eips.ethereum.org/
+- **Repo:** https://github.com/evmts/primitives
 
-1. ✅ Always run from repository root
-2. ✅ Run `zig build && zig build test` after every code change
-3. ✅ Use proper error handling - never swallow errors
-4. ✅ Plan memory management with defer/errdefer
-5. ✅ Follow Zig naming conventions (TitleCase/camelCase/snake_case)
-6. ✅ Use `std.ArrayList(T){}` with allocator parameter for all operations
-7. ✅ Refer to https://ziglang.org/documentation/0.15.1/ for Zig syntax
-8. ✅ Remember: no test output = tests passed!
-9. ✅ Be aware of unaudited crypto functions
-10. ✅ Never use placeholders or stub implementations
-
----
-
-**This is mission-critical infrastructure. Code carefully. Test thoroughly. Every line matters.**
+**Full documentation in `/docs` directory for detailed examples and guides.**
