@@ -387,6 +387,11 @@ pub const bls12_381 = struct {
         // Stub implementation - returns error until C library is integrated
         return Error.ComputationFailed;
     }
+
+    // CamelCase aliases for consistency with G2 naming and precompile expectations
+    pub const g1Add = g1_add;
+    pub const g1Mul = g1_mul;
+    pub const g1Msm = g1_multiexp;
 };
 
 /// Generate a random private key

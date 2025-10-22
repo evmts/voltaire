@@ -140,6 +140,91 @@ pub fn unauditedValidateSignature(r: u256, s: u256) bool {
 }
 
 /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+/// Recovers uncompressed 64-byte public key from ECDSA signature
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// Contains custom elliptic curve point arithmetic that may have vulnerabilities.
+/// Do not use in production without proper security review.
+/// Returns 64 bytes: x-coordinate (32 bytes) || y-coordinate (32 bytes)
+pub fn recoverPubkey(
+    hash: []const u8,
+    r: []const u8,
+    s: []const u8,
+    v: u8,
+) ![64]u8 {
+    if (hash.len != 32) return error.InvalidHashLength;
+    if (r.len != 32) return error.InvalidRLength;
+    if (s.len != 32) return error.InvalidSLength;
+
+    // Parse r and s as u256 (big-endian)
+    const r_u256 = std.mem.readInt(u256, r[0..32], .big);
+    const s_u256 = std.mem.readInt(u256, s[0..32], .big);
+
+    // v in Ethereum is 27 or 28, we need recoveryId 0 or 1
+    var recoveryId: u8 = undefined;
+    if (v >= 27 and v <= 28) {
+        recoveryId = v - 27;
+    } else if (v <= 1) {
+        recoveryId = v;
+    } else {
+        return error.InvalidRecoveryId;
+    }
+
+    if (!unauditedValidateSignature(r_u256, s_u256)) return error.InvalidSignature;
+
+    // Step 1: Calculate point R from r and recoveryId
+    if (r_u256 >= SECP256K1_P) return error.InvalidSignature;
+
+    // Calculate y² = x³ + 7 mod p
+    const x3 = unauditedMulmod(unauditedMulmod(r_u256, r_u256, SECP256K1_P), r_u256, SECP256K1_P);
+    const y2 = unauditedAddmod(x3, SECP256K1_B, SECP256K1_P);
+
+    // Calculate y = y²^((p+1)/4) mod p (works because p ≡ 3 mod 4)
+    const y = unauditedPowmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
+
+    // Verify y is correct
+    if (unauditedMulmod(y, y, SECP256K1_P) != y2) return error.InvalidSignature;
+
+    // Choose correct y based on recoveryId
+    const y_is_odd = (y & 1) == 1;
+    const y_final = if (y_is_odd == (recoveryId == 1)) y else SECP256K1_P - y;
+
+    const R = AffinePoint{ .x = r_u256, .y = y_final, .infinity = false };
+    if (!R.isOnCurve()) return error.InvalidSignature;
+
+    // Step 2: Calculate e from message hash
+    var hash_array: [32]u8 = undefined;
+    @memcpy(&hash_array, hash);
+    const e = std.mem.readInt(u256, &hash_array, .big);
+
+    // Step 3: Calculate public key Q = r⁻¹(sR - eG)
+    const r_inv = unauditedInvmod(r_u256, SECP256K1_N) orelse return error.InvalidSignature;
+
+    // Calculate sR
+    const sR = R.scalarMul(s_u256);
+
+    // Calculate eG
+    const eG = AffinePoint.generator().scalarMul(e);
+
+    // Calculate sR - eG
+    const diff = sR.add(eG.negate());
+
+    // Calculate Q = r⁻¹ * (sR - eG)
+    const Q = diff.scalarMul(r_inv);
+
+    if (!Q.isOnCurve() or Q.infinity) return error.InvalidSignature;
+
+    // Step 4: Verify the signature with recovered key
+    if (!verifySignature(hash_array, r_u256, s_u256, Q)) return error.InvalidSignature;
+
+    // Step 5: Return public key as 64 bytes (x || y)
+    var pub_key: [64]u8 = undefined;
+    std.mem.writeInt(u256, pub_key[0..32], Q.x, .big);
+    std.mem.writeInt(u256, pub_key[32..64], Q.y, .big);
+
+    return pub_key;
+}
+
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Recovers Ethereum address from ECDSA signature
 /// WARNING: This is a custom crypto implementation that has not been security audited.
 /// Contains custom elliptic curve point arithmetic that may have vulnerabilities.

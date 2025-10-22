@@ -769,6 +769,52 @@ test "blake2b compression - offset counter combinations" {
     try std.testing.expect(h2[0] != h3[0]);
 }
 
+/// Wrapper API for precompile usage
+pub const Blake2 = struct {
+    /// EIP-152 Blake2f compression function wrapper
+    /// Input format: rounds(4)||h(64)||m(128)||t(16)||f(1) = 213 bytes total
+    /// Output format: h(64) = 64 bytes
+    /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+    pub fn compress(input: []const u8, output: []u8) !void {
+        if (input.len != 213) return error.InvalidInput;
+        if (output.len != 64) return error.InvalidOutput;
+
+        // Parse rounds (4 bytes, big-endian)
+        const rounds = std.mem.readInt(u32, input[0..4], .big);
+
+        // Parse h (64 bytes, 8x u64 little-endian)
+        var h: [8]u64 = undefined;
+        for (0..8) |i| {
+            const offset = 4 + i * 8;
+            h[i] = std.mem.readInt(u64, input[offset .. offset + 8], .little);
+        }
+
+        // Parse m (128 bytes, 16x u64 little-endian)
+        var m: [16]u64 = undefined;
+        for (0..16) |i| {
+            const offset = 68 + i * 8;
+            m[i] = std.mem.readInt(u64, input[offset .. offset + 8], .little);
+        }
+
+        // Parse t (16 bytes, 2x u64 little-endian)
+        var t: [2]u64 = undefined;
+        t[0] = std.mem.readInt(u64, input[196..204], .little);
+        t[1] = std.mem.readInt(u64, input[204..212], .little);
+
+        // Parse f (1 byte, boolean)
+        const f = input[212] != 0;
+
+        // Perform compression
+        unauditedBlake2fCompress(&h, &m, t, f, rounds);
+
+        // Write output (64 bytes, 8x u64 little-endian)
+        for (0..8) |i| {
+            const offset = i * 8;
+            std.mem.writeInt(u64, output[offset .. offset + 8], h[i], .little);
+        }
+    }
+};
+
 test "blake2b compression - multi-block sequence" {
     // Simulate a sequence of compressions for multi-block input
     // First block (non-final)
@@ -834,6 +880,53 @@ test "blake2b compression - multi-block sequence" {
     // Verify state changed after each block
     try std.testing.expect(h_after_first[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
     try std.testing.expect(h[0] != h_after_first[0]);
+}
+
+test "Blake2.compress wrapper - EIP-152 format" {
+    // Test the wrapper function with EIP-152 formatted input
+    var input: [213]u8 = undefined;
+
+    // rounds = 12 (big-endian)
+    std.mem.writeInt(u32, input[0..4], 12, .big);
+
+    // h = BLAKE2B_IV with parameter block (little-endian)
+    const h_init = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+    for (0..8) |i| {
+        const offset = 4 + i * 8;
+        std.mem.writeInt(u64, input[offset .. offset + 8], h_init[i], .little);
+    }
+
+    // m = all zeros (little-endian)
+    @memset(input[68..196], 0);
+
+    // t = [0, 0] (little-endian)
+    std.mem.writeInt(u64, input[196..204], 0, .little);
+    std.mem.writeInt(u64, input[204..212], 0, .little);
+
+    // f = true (1 byte)
+    input[212] = 1;
+
+    var output: [64]u8 = undefined;
+    try Blake2.compress(&input, &output);
+
+    // Verify output is not all zeros (compression changed state)
+    var all_zero = true;
+    for (output) |byte| {
+        if (byte != 0) {
+            all_zero = false;
+            break;
+        }
+    }
+    try std.testing.expect(!all_zero);
 }
 
 test "blake2b compression - all bits set patterns" {

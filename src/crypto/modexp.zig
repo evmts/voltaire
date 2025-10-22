@@ -235,6 +235,52 @@ pub fn unaudited_calculateAdjustedExponentLength(exp_len: usize, exp_bytes: []co
     return @intCast(adj_len);
 }
 
+/// Public API wrapper for ModExp precompile
+pub const ModExp = struct {
+    /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+    /// Performs modular exponentiation and returns allocated result
+    /// WARNING: Custom crypto implementation not audited
+    pub fn modexp(allocator: std.mem.Allocator, base: []const u8, exp: []const u8, modulus: []const u8) ![]u8 {
+        if (modulus.len == 0 or unaudited_isZero(modulus)) {
+            return ModExpError.DivisionByZero;
+        }
+
+        // Allocate output buffer matching modulus length
+        const output = try allocator.alloc(u8, modulus.len);
+        errdefer allocator.free(output);
+
+        // Call internal implementation
+        try unauditedModexp(allocator, base, exp, modulus, output);
+
+        return output;
+    }
+
+    /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+    /// Calculates gas cost for MODEXP operation (EIP-2565)
+    /// WARNING: Custom gas calculation logic not audited
+    pub fn calculateGas(
+        base_len: usize,
+        exp_len: usize,
+        mod_len: usize,
+        exp_bytes: []const u8,
+        hardfork: anytype,
+    ) u64 {
+        _ = hardfork; // Hardfork-specific logic would go here if needed
+
+        // Calculate maximum length for multiplication complexity
+        const max_len = @max(base_len, mod_len);
+        const mult_complexity = unaudited_calculateMultiplicationComplexity(max_len);
+
+        // Calculate iteration count based on exponent
+        const adj_exp_len = unaudited_calculateAdjustedExponentLength(exp_len, exp_bytes);
+        const iteration_count = @max(adj_exp_len, 1);
+
+        // Gas cost = max(200, floor(mult_complexity * iteration_count / 3))
+        const gas_cost = (mult_complexity * iteration_count) / 3;
+        return @max(200, gas_cost);
+    }
+};
+
 test "modexp: base^0 mod m = 1" {
     const allocator = std.testing.allocator;
 

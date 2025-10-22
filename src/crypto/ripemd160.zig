@@ -121,6 +121,18 @@ pub const RIPEMD160 = struct {
     }
 };
 
+// Export the struct and add a convenience function
+pub const Ripemd160 = struct {
+    /// Convenience function to hash data in one call
+    /// Compatible with precompile signature: hash(input: []const u8, output: *[20]u8)
+    pub fn hash(input: []const u8, output: *[20]u8) void {
+        var hasher = RIPEMD160.init();
+        hasher.update(input);
+        const result = hasher.final();
+        @memcpy(output, &result);
+    }
+};
+
 // RIPEMD160 round functions
 fn f(round_num: u32, x: u32, y: u32, z: u32) u32 {
     return switch (round_num) {

@@ -16,3 +16,6 @@
 [submodule "lib/zig"]
 	path = lib/zig
 	url = https://github.com/ziglang/zig
+[submodule "lib/primitives"]
+	path = lib/primitives
+	url = ../primitives
