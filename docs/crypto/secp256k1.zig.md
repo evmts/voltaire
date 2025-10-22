@@ -420,12 +420,12 @@ const s: u256 = 0x181522ec8eca07de4860a4acdd12909d831cc56cbbac4622082221a8768d1d
 const recovery_id: u8 = 0;
 
 // Validate signature
-if (!secp256k1.unaudited_validate_signature(r, s)) {
+if (!secp256k1.unauditedValidateSignature(r, s)) {
     return error.InvalidSignature;
 }
 
 // Recover address
-const address = try secp256k1.unaudited_recover_address(&hash, recovery_id, r, s);
+const address = try secp256k1.unauditedRecoverAddress(&hash, recoveryId, r, s);
 ```
 
 ## Security Best Practices
