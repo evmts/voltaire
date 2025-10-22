@@ -66,8 +66,6 @@ zig fetch --save https://github.com/evmts/primitives
 <br />
 <br />
 
-<div align="center">
-
 - [**Ethereum primitives**](#primitives)
   - [`Uint`](./src/primitives/uint.zig) &mdash; unsigned integer with overflow-checked arithmetic (Note: Zig 0.14+ includes native `u256` support which is recommended for most use cases. This library provides additional micro-performance optimizations when needed)
   - [`Address`](./src/primitives/address.zig) &mdash; Ethereum address type with EIP-55 checksumming
@@ -283,13 +281,7 @@ zig fetch --save https://github.com/evmts/primitives
   - [`BLS12_PAIRING`](./src/precompiles/bls12_pairing.zig#L11) &mdash; 0x11: BLS12-381 pairing check
   - [`BLS12_MAP_FP_TO_G1`](./src/precompiles/bls12_map_fp_to_g1.zig#L10) &mdash; 0x12: BLS12-381 map field to G1
   - [`BLS12_MAP_FP2_TO_G2`](./src/precompiles/bls12_map_fp2_to_g2.zig#L10) &mdash; 0x13: BLS12-381 map field to G2
-    <br/>
-    <br/>
-<br />
-<br />
-<br />
-<br />
-<br />
+
 <br />
 <br />
 
