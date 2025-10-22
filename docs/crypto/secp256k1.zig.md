@@ -50,11 +50,11 @@ pub const AffinePoint = struct {
 
     pub fn zero() AffinePoint
     pub fn generator() AffinePoint
-    pub fn is_on_curve(self: AffinePoint) bool
+    pub fn isOnCurve(self: AffinePoint) bool
     pub fn negate(self: AffinePoint) AffinePoint
     pub fn double(self: AffinePoint) AffinePoint
     pub fn add(self: AffinePoint, other: AffinePoint) AffinePoint
-    pub fn scalar_mul(self: AffinePoint, scalar: u256) AffinePoint
+    pub fn scalarMul(self: AffinePoint, scalar: u256) AffinePoint
 };
 ```
 
@@ -97,10 +97,10 @@ assert(G.y == SECP256K1_GY);
 assert(!G.infinity);
 ```
 
-#### is_on_curve()
+#### isOnCurve()
 
 ```zig
-pub fn is_on_curve(self: AffinePoint) bool
+pub fn isOnCurve(self: AffinePoint) bool
 ```
 
 Verifies that a point satisfies the curve equation y² = x³ + 7 (mod p).
@@ -110,7 +110,7 @@ Verifies that a point satisfies the curve equation y² = x³ + 7 (mod p).
 **Example:**
 ```zig
 const G = AffinePoint.generator();
-assert(G.is_on_curve());
+assert(G.isOnCurve());
 ```
 
 #### negate()
@@ -150,7 +150,7 @@ Computes point doubling: 2P using the formula for tangent line intersection.
 ```zig
 const G = AffinePoint.generator();
 const twoG = G.double();
-assert(twoG.is_on_curve());
+assert(twoG.isOnCurve());
 ```
 
 #### add()
@@ -175,18 +175,18 @@ Computes point addition using the chord-tangent method.
 **Example:**
 ```zig
 const G = AffinePoint.generator();
-const P = G.scalar_mul(5);
-const Q = G.scalar_mul(7);
+const P = G.scalarMul(5);
+const Q = G.scalarMul(7);
 const sum = P.add(Q);
-const expected = G.scalar_mul(12);
+const expected = G.scalarMul(12);
 assert(sum.x == expected.x);
 assert(sum.y == expected.y);
 ```
 
-#### scalar_mul()
+#### scalarMul()
 
 ```zig
-pub fn scalar_mul(self: AffinePoint, scalar: u256) AffinePoint
+pub fn scalarMul(self: AffinePoint, scalar: u256) AffinePoint
 ```
 
 Computes scalar multiplication: k·P using double-and-add algorithm.
@@ -201,15 +201,15 @@ Computes scalar multiplication: k·P using double-and-add algorithm.
 **Example:**
 ```zig
 const G = AffinePoint.generator();
-const pubkey = G.scalar_mul(private_key);
+const pubkey = G.scalarMul(private_key);
 ```
 
 ## Signature Functions
 
-### unaudited_validate_signature()
+### unauditedValidateSignature()
 
 ```zig
-pub fn unaudited_validate_signature(r: u256, s: u256) bool
+pub fn unauditedValidateSignature(r: u256, s: u256) bool
 ```
 
 **WARNING: UNAUDITED** - Validates ECDSA signature parameters according to secp256k1 and EIP-2 requirements.
@@ -227,17 +227,17 @@ pub fn unaudited_validate_signature(r: u256, s: u256) bool
 
 **Example:**
 ```zig
-if (!unaudited_validate_signature(r, s)) {
+if (!unauditedValidateSignature(r, s)) {
     return error.InvalidSignature;
 }
 ```
 
-### unaudited_recover_address()
+### unauditedRecoverAddress()
 
 ```zig
-pub fn unaudited_recover_address(
+pub fn unauditedRecoverAddress(
     hash: []const u8,
-    recovery_id: u8,
+    recoveryId: u8,
     r: u256,
     s: u256,
 ) !Address
@@ -247,7 +247,7 @@ pub fn unaudited_recover_address(
 
 **Parameters:**
 - `hash` - The 32-byte message hash
-- `recovery_id` - Recovery ID (0 or 1)
+- `recoveryId` - Recovery ID (0 or 1)
 - `r` - First signature component
 - `s` - Second signature component
 
@@ -259,8 +259,8 @@ pub fn unaudited_recover_address(
 - `InvalidSignature` - Signature parameters invalid or recovery failed
 
 **Algorithm:**
-1. Validate signature parameters (r, s, recovery_id)
-2. Reconstruct R point from r and recovery_id
+1. Validate signature parameters (r, s, recoveryId)
+2. Reconstruct R point from r and recoveryId
 3. Calculate e from message hash
 4. Calculate public key Q = r⁻¹(sR - eG)
 5. Verify signature with recovered key
@@ -269,15 +269,15 @@ pub fn unaudited_recover_address(
 **Example:**
 ```zig
 const hash: [32]u8 = keccak256(message);
-const address = try unaudited_recover_address(&hash, recovery_id, r, s);
+const address = try unauditedRecoverAddress(&hash, recoveryId, r, s);
 ```
 
 ## Modular Arithmetic Functions
 
-### unaudited_mulmod()
+### unauditedMulmod()
 
 ```zig
-pub fn unaudited_mulmod(a: u256, b: u256, m: u256) u256
+pub fn unauditedMulmod(a: u256, b: u256, m: u256) u256
 ```
 
 **WARNING: UNAUDITED** - Modular multiplication: (a × b) mod m.
@@ -286,39 +286,39 @@ pub fn unaudited_mulmod(a: u256, b: u256, m: u256) u256
 
 **Example:**
 ```zig
-const result = unaudited_mulmod(a, b, SECP256K1_P);
+const result = unauditedMulmod(a, b, SECP256K1_P);
 ```
 
-### unaudited_addmod()
+### unauditedAddmod()
 
 ```zig
-pub fn unaudited_addmod(a: u256, b: u256, m: u256) u256
+pub fn unauditedAddmod(a: u256, b: u256, m: u256) u256
 ```
 
 **WARNING: UNAUDITED** - Modular addition: (a + b) mod m.
 
 **Example:**
 ```zig
-const sum = unaudited_addmod(a, b, SECP256K1_P);
+const sum = unauditedAddmod(a, b, SECP256K1_P);
 ```
 
-### unaudited_submod()
+### unauditedSubmod()
 
 ```zig
-pub fn unaudited_submod(a: u256, b: u256, m: u256) u256
+pub fn unauditedSubmod(a: u256, b: u256, m: u256) u256
 ```
 
 **WARNING: UNAUDITED** - Modular subtraction: (a - b) mod m.
 
 **Example:**
 ```zig
-const diff = unaudited_submod(a, b, SECP256K1_P);
+const diff = unauditedSubmod(a, b, SECP256K1_P);
 ```
 
-### unaudited_powmod()
+### unauditedPowmod()
 
 ```zig
-pub fn unaudited_powmod(base: u256, exp: u256, modulus: u256) u256
+pub fn unauditedPowmod(base: u256, exp: u256, modulus: u256) u256
 ```
 
 **WARNING: UNAUDITED** - Modular exponentiation: base^exp mod modulus.
@@ -326,13 +326,13 @@ pub fn unaudited_powmod(base: u256, exp: u256, modulus: u256) u256
 **Example:**
 ```zig
 // Calculate y = y²^((p+1)/4) for square root
-const y = unaudited_powmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
+const y = unauditedPowmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
 ```
 
-### unaudited_invmod()
+### unauditedInvmod()
 
 ```zig
-pub fn unaudited_invmod(a: u256, m: u256) ?u256
+pub fn unauditedInvmod(a: u256, m: u256) ?u256
 ```
 
 **WARNING: UNAUDITED** - Modular multiplicative inverse using Extended Euclidean Algorithm.
@@ -345,7 +345,7 @@ pub fn unaudited_invmod(a: u256, m: u256) ?u256
 
 **Example:**
 ```zig
-const r_inv = unaudited_invmod(r, SECP256K1_N) orelse return error.InvalidSignature;
+const r_inv = unauditedInvmod(r, SECP256K1_N) orelse return error.InvalidSignature;
 ```
 
 ## Testing
