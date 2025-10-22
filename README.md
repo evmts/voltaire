@@ -56,6 +56,15 @@ zig build</pre>
   </ul>
   <br />
   <br />
+  <h3>📚 Documentation</h3>
+  <p><strong>⚠️ AI-Generated:</strong> All documentation is AI-generated and unverified.</p>
+  <p>Comprehensive API reference available in the <code>docs/</code> folder:</p>
+  <pre>cd docs
+npm run dev    # Start documentation server
+npm run build  # Build static site</pre>
+  <p>View <a href="./docs/DOCUMENTATION.md">documentation guide</a> for details.</p>
+  <br />
+  <br />
 </div>
 
 - [**Ethereum primitives**](#primitives)
