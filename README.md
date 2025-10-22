@@ -285,13 +285,11 @@ zig fetch --save https://github.com/evmts/primitives
 <br />
 <br />
 
-<p align="center">
-  <a href="./CLAUDE.md"><strong>Development</strong></a> &mdash; coding standards and guidelines.
-  <br />
-  <a href="./CONTRIBUTING.md"><strong>Contributing</strong></a> &mdash; how to contribute.
-  <br />
-  <a href="./src/README.md"><strong>Documentation</strong></a> &mdash; source code organization.
-</p>
+<a href="./CLAUDE.md"><strong>Development</strong></a> &mdash; coding standards and guidelines.
+<br />
+<a href="./CONTRIBUTING.md"><strong>Contributing</strong></a> &mdash; how to contribute.
+<br />
+<a href="./src/README.md"><strong>Documentation</strong></a> &mdash; source code organization.
 
 <br />
 <br />
