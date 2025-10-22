@@ -34,13 +34,33 @@ list.deinit();  // Missing allocator
 External C libs: blst, c-kzg-4844, arkworks (Rust, no WASM)
 </modules>
 
-<imports>
+<usage>
+**Import modules:**
 ```zig
 const primitives = @import("primitives");
 const crypto = @import("crypto");
 ```
-Never use parent imports (`@import("../...")`)
-</imports>
+
+**Add to build.zig.zon:**
+```zig
+.dependencies = .{
+    .primitives = .{
+        .url = "https://github.com/evmts/primitives/archive/<commit>.tar.gz",
+        .hash = "<hash>",
+    },
+},
+```
+
+**Add to build.zig:**
+```zig
+const primitives = b.dependency("primitives", .{
+    .target = target,
+    .optimize = optimize,
+});
+exe.root_module.addImport("primitives", primitives.module("primitives"));
+exe.root_module.addImport("crypto", primitives.module("crypto"));
+```
+</usage>
 
 ---
 
