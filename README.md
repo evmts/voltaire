@@ -24,6 +24,12 @@
   </sup>
   <br />
   <br />
+  <h3>Requirements</h3>
+  <p>
+    <a href="https://ziglang.org/download/">Zig 0.15.1+</a> &mdash;
+    <a href="https://www.rust-lang.org/tools/install">Cargo (Rust)</a>
+  </p>
+  <br />
   <h3>Installation</h3>
   <p><strong>Recommended:</strong> Build from source</p>
   <pre>git clone https://github.com/evmts/primitives.git
@@ -39,7 +45,7 @@ zig build</pre>
 </div>
 
 - [**Ethereum primitives**](#primitives)
-  - [`Uint`](./src/primitives/uint.zig) &mdash; arbitrary-width unsigned integer with overflow-checked arithmetic (Note: Zig 0.14+ includes native `u256` support which is recommended for most use cases. This library provides additional micro-performance optimizations when needed)
+  - [`Uint`](./src/primitives/uint.zig) &mdash; unsigned integer with overflow-checked arithmetic (Note: Zig 0.14+ includes native `u256` support which is recommended for most use cases. This library provides additional micro-performance optimizations when needed)
   - [`Address`](./src/primitives/address.zig) &mdash; Ethereum address type with EIP-55 checksumming
     - [`fromHex`](./src/primitives/address.zig#L70) &mdash; construct Address from hex string
     - [`fromU256`](./src/primitives/address.zig#L60) &mdash; construct Address from u256 value
@@ -52,8 +58,8 @@ zig build</pre>
     - [`isValidChecksum`](./src/primitives/address.zig#L126) &mdash; validate EIP-55 checksum
     - [`isZero`](./src/primitives/address.zig#L101) &mdash; check if zero address
     - [`equals`](./src/primitives/address.zig#L105) &mdash; compare two addresses
-    - [`calculateCreateAddress`](./src/primitives/address.zig#L305) &mdash; compute CREATE opcode contract address
-    - [`calculateCreate2Address`](./src/primitives/address.zig#L342) &mdash; compute CREATE2 opcode contract address
+    - [`calculateCreateAddress`](./src/primitives/address.zig#L307) &mdash; compute CREATE opcode contract address
+    - [`calculateCreate2Address`](./src/primitives/address.zig#L344) &mdash; compute CREATE2 opcode contract address
   - [`Hex`](./src/primitives/hex.zig) &mdash; hexadecimal encoding and decoding utilities
     - [`isHex`](./src/primitives/hex.zig#L100) &mdash; validate hex string format (requires 0x prefix)
     - [`hexToBytes`](./src/primitives/hex.zig#L115) &mdash; convert hex string to byte array
@@ -99,7 +105,40 @@ zig build</pre>
     - [`signLegacyTransaction`](./src/primitives/transaction.zig#L337) &mdash; sign transaction with private key
     - [`computeLegacyTransactionHash`](./src/primitives/transaction.zig#L358) &mdash; compute transaction hash (keccak256)
     - [`detectTransactionType`](./src/primitives/transaction.zig#L368) &mdash; detect transaction type from raw data
-  - [`Logs`](./src/primitives/logs.zig) &mdash; event log structures with topic handling
+  - [`EventLog`](./src/primitives/event_log.zig) &mdash; event log structures with topic handling
+    - [`parseEventLog`](./src/primitives/event_log.zig#L42) &mdash; parse event log with signature
+    - [`filterLogsByTopics`](./src/primitives/event_log.zig#L109) &mdash; filter logs by topics
+  - [`FeeMarket`](./src/primitives/fee_market.zig) &mdash; EIP-1559 fee market mechanism
+    - [`initialBaseFee`](./src/primitives/fee_market.zig#L24) &mdash; initialize base fee for first EIP-1559 block
+    - [`nextBaseFee`](./src/primitives/fee_market.zig#L59) &mdash; calculate next block's base fee
+    - [`getEffectiveGasPrice`](./src/primitives/fee_market.zig#L127) &mdash; calculate effective gas price and miner fee
+    - [`getGasTarget`](./src/primitives/fee_market.zig#L160) &mdash; get gas target for a block
+  - [`Numeric`](./src/primitives/numeric.zig) &mdash; Ethereum unit conversions and safe math utilities
+    - [`parseEther`](./src/primitives/numeric.zig#L79) &mdash; parse ether string to wei
+    - [`parseGwei`](./src/primitives/numeric.zig#L84) &mdash; parse gwei string to wei
+    - [`parseUnits`](./src/primitives/numeric.zig#L89) &mdash; parse units string to wei
+    - [`formatEther`](./src/primitives/numeric.zig#L123) &mdash; format wei to ether string
+    - [`formatGwei`](./src/primitives/numeric.zig#L128) &mdash; format wei to gwei string
+    - [`formatUnits`](./src/primitives/numeric.zig#L133) &mdash; format wei to specified units
+    - [`convertUnits`](./src/primitives/numeric.zig#L164) &mdash; convert between units
+    - [`calculateGasCost`](./src/primitives/numeric.zig#L176) &mdash; calculate gas cost in wei
+    - [`safeAdd`](./src/primitives/numeric.zig#L266) &mdash; checked addition
+    - [`safeSub`](./src/primitives/numeric.zig#L271) &mdash; checked subtraction
+    - [`safeMul`](./src/primitives/numeric.zig#L275) &mdash; checked multiplication
+    - [`safeDiv`](./src/primitives/numeric.zig#L281) &mdash; checked division
+  - [`GasConstants`](./src/primitives/gas_constants.zig) &mdash; EVM gas cost constants and calculation functions
+    - [`memoryGasCost`](./src/primitives/gas_constants.zig#L395) &mdash; calculate memory expansion gas cost
+    - [`callGasCost`](./src/primitives/gas_constants.zig#L451) &mdash; calculate CALL operation gas cost
+    - [`sstoreGasCost`](./src/primitives/gas_constants.zig#L488) &mdash; calculate SSTORE operation gas cost
+    - [`createGasCost`](./src/primitives/gas_constants.zig#L533) &mdash; calculate CREATE operation gas cost
+    - [`logGasCost`](./src/primitives/gas_constants.zig#L555) &mdash; calculate LOG operation gas cost
+    - [`keccak256GasCost`](./src/primitives/gas_constants.zig#L598) &mdash; calculate KECCAK256 gas cost
+  - [`AccessList`](./src/primitives/access_list.zig) &mdash; EIP-2930 access list support
+    - [`calculateAccessListGasCost`](./src/primitives/access_list.zig#L32) &mdash; calculate total gas cost for access list
+    - [`isAddressInAccessList`](./src/primitives/access_list.zig#L47) &mdash; check if address is in access list
+    - [`isStorageKeyInAccessList`](./src/primitives/access_list.zig#L57) &mdash; check if storage key is in access list
+    - [`encodeAccessList`](./src/primitives/access_list.zig#L75) &mdash; RLP encode access list
+    - [`calculateGasSavings`](./src/primitives/access_list.zig#L119) &mdash; calculate gas savings from access list
   - [`Blob`](./src/primitives/blob.zig) &mdash; EIP-4844 blob transaction support with KZG commitments
     - [`commitmentToVersionedHash`](./src/primitives/blob.zig#L36) &mdash; create versioned hash from KZG commitment
     - [`isValidVersionedHash`](./src/primitives/blob.zig#L50) &mdash; validate versioned hash format
@@ -154,8 +193,8 @@ zig build</pre>
     - [`bitOr`](./src/crypto/hash_utils.zig#L159) &mdash; bitwise OR of two hashes
     - [`xor`](./src/crypto/hash_utils.zig#L139) &mdash; bitwise XOR of two hashes
     - [`eip191HashMessage`](./src/crypto/hash_utils.zig#L103) &mdash; EIP-191 personal message hashing
-  - [`keccak256 (asm)`](./src/crypto/keccak_asm.zig) &mdash; ⚠️ (unaudited) assembly-optimized Keccak-256 (via [keccak-asm](https://github.com/DaniPopes/keccak-asm))
-    - [`keccak256`](./src/crypto/keccak_asm.zig#L43) &mdash; assembly-optimized KECCAK256
+  - [`keccak256 (asm)`](./src/crypto/keccak_asm.zig) &mdash; ⚠️ (unaudited) assembly-optimized Keccak-256 (via [keccak-asm](https://github.com/DaniPopes/keccak-asm)). Uses hardware-accelerated x86-64/ARM assembly. Falls back to pure Zig in WASM builds.
+    - [`keccak256`](./src/crypto/keccak_asm.zig#L43) &mdash; assembly-optimized KECCAK256 (hardware accelerated)
     - [`keccak224`](./src/crypto/keccak_asm.zig#L60) &mdash; Keccak-224 (28-byte output)
     - [`keccak384`](./src/crypto/keccak_asm.zig#L66) &mdash; Keccak-384 (48-byte output)
     - [`keccak512`](./src/crypto/keccak_asm.zig#L72) &mdash; Keccak-512 (64-byte output)
@@ -179,7 +218,7 @@ zig build</pre>
     - [`unaudited_recoverAddress`](./src/crypto/crypto.zig#L468) &mdash; recover address from signature and hash
     - [`unaudited_verifySignature`](./src/crypto/crypto.zig#L494) &mdash; verify signature against hash and address
   - [`BN254`](./src/crypto/bn254/) &mdash; ⚠️ (unaudited) pure Zig alt_bn128 curve implementation
-  - [`BN254 Arkworks`](./src/crypto/bn254_arkworks.zig) &mdash; audited Rust [arkworks](https://github.com/arkworks-rs/curves) (ECMUL/ECPAIRING)
+  - [`BN254 Arkworks`](./src/crypto/bn254_arkworks.zig) &mdash; audited Rust [arkworks](https://github.com/arkworks-rs/curves) (ECMUL/ECPAIRING). Not available in WASM builds (requires linking Rust library).
     - [`ecmul`](./src/crypto/bn254_arkworks.zig#L56) &mdash; scalar multiplication on BN254 G1 (precompile 0x07)
     - [`ecpairing`](./src/crypto/bn254_arkworks.zig#L71) &mdash; pairing check on BN254 (precompile 0x08)
   - [`KZG`](./src/crypto/c_kzg.zig) &mdash; polynomial commitments for EIP-4844 blobs (via [c-kzg-4844](https://github.com/ethereum/c-kzg-4844))
