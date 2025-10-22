@@ -989,3 +989,39 @@ test "blake2b compression - determinism verification" {
         try std.testing.expectEqual(h1[i], h2[i]);
     }
 }
+
+// Precompile-facing API wrapper
+pub const Blake2 = struct {
+    pub fn compress(input: []const u8, output: []u8) !void {
+        // EIP-152 input format: rounds(4) || h(64) || m(128) || t(16) || f(1) = 213 bytes
+        if (input.len != 213) return error.InvalidInputLength;
+        if (output.len != 64) return error.InvalidOutputLength;
+
+        // Parse input
+        const rounds = std.mem.readInt(u32, input[0..4], .big);
+
+        var h: [8]u64 = undefined;
+        for (0..8) |i| {
+            h[i] = std.mem.readInt(u64, input[4 + i * 8 .. 4 + (i + 1) * 8], .little);
+        }
+
+        var m: [16]u64 = undefined;
+        for (0..16) |i| {
+            m[i] = std.mem.readInt(u64, input[68 + i * 8 .. 68 + (i + 1) * 8], .little);
+        }
+
+        var t: [2]u64 = undefined;
+        t[0] = std.mem.readInt(u64, input[196..204], .little);
+        t[1] = std.mem.readInt(u64, input[204..212], .little);
+
+        const f = input[212] != 0;
+
+        // Compress
+        unauditedBlake2fCompress(&h, &m, t, f, rounds);
+
+        // Write output
+        for (0..8) |i| {
+            std.mem.writeInt(u64, output[i * 8 .. (i + 1) * 8], h[i], .little);
+        }
+    }
+};
