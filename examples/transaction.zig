@@ -88,8 +88,8 @@ pub fn main() !void {
     );
 
     std.debug.print("  Signature v: {}\n", .{signed_tx.v});
-    std.debug.print("  Signature r: 0x{x}\n", .{std.fmt.fmtSliceHexUpper(&signed_tx.r)});
-    std.debug.print("  Signature s: 0x{x}\n", .{std.fmt.fmtSliceHexUpper(&signed_tx.s)});
+    std.debug.print("  Signature r: 0x{X}\n", .{signed_tx.r});
+    std.debug.print("  Signature s: 0x{X}\n", .{signed_tx.s});
     std.debug.print("\n", .{});
 
     // Example 4: Computing transaction hash
@@ -98,7 +98,7 @@ pub fn main() !void {
 
     const tx_hash = try Transaction.computeLegacyTransactionHash(allocator, signed_tx);
 
-    std.debug.print("  Transaction Hash: 0x{x}\n", .{std.fmt.fmtSliceHexUpper(&tx_hash.bytes)});
+    std.debug.print("  Transaction Hash: 0x{X}\n", .{tx_hash.bytes});
     std.debug.print("  This is the unique identifier for this transaction\n", .{});
     std.debug.print("\n", .{});
 
@@ -145,7 +145,7 @@ pub fn main() !void {
     defer allocator.free(encoded_access_list);
 
     std.debug.print("  Access list contains:\n", .{});
-    std.debug.print("    - Contract: 0x{x}\n", .{std.fmt.fmtSliceHexUpper(&contract_addr.bytes)});
+    std.debug.print("    - Contract: 0x{X}\n", .{contract_addr.bytes});
     std.debug.print("    - Storage slots: {}\n", .{storage_keys.len});
     std.debug.print("  Encoded access list length: {} bytes\n", .{encoded_access_list.len});
     std.debug.print("\n", .{});
