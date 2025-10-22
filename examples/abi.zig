@@ -123,7 +123,7 @@ fn exampleDecodeFunctionData(allocator: std.mem.Allocator) !void {
 
     std.debug.print("Decoded parameters ({d}):\n", .{decoded_result.parameters.len});
     std.debug.print("  [0] address: 0x", .{});
-    for (decoded_result.parameters[0].address) |byte| {
+    for (decoded_result.parameters[0].address.bytes) |byte| {
         std.debug.print("{x:0>2}", .{byte});
     }
     std.debug.print("\n", .{});
@@ -196,7 +196,7 @@ fn exampleDecodeParameters(allocator: std.mem.Allocator) !void {
     std.debug.print("  [0] uint256: {d}\n", .{decoded[0].uint256});
     std.debug.print("  [1] bool: {}\n", .{decoded[1].bool});
     std.debug.print("  [2] address: 0x", .{});
-    for (decoded[2].address) |byte| {
+    for (decoded[2].address.bytes) |byte| {
         std.debug.print("{x:0>2}", .{byte});
     }
     std.debug.print("\n", .{});

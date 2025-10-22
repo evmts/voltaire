@@ -151,7 +151,7 @@ pub const PublicKey = struct {
 
     pub fn isValid(self: PublicKey) bool {
         const point = self.to_affine_point();
-        return point.isOnCurve() and !point.infinity;
+        return point.is_on_curve() and !point.infinity;
     }
 };
 
