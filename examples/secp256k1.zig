@@ -132,7 +132,7 @@ pub fn main() !void {
     std.debug.print("   Signature Hex: {s}\n", .{signature_hex});
 
     // Deserialize and verify it matches
-    const deserialized = crypto.Signature.from_bytes(signature_bytes);
+    const deserialized = crypto.Signature.fromBytes(signature_bytes);
     const sigs_match = deserialized.r == signature.r and
         deserialized.s == signature.s and
         deserialized.v == signature.v;
