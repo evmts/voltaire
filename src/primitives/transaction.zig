@@ -207,7 +207,8 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try result.appendSlice(len_bytes);
     }
@@ -258,7 +259,8 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
     if (list.items.len <= 55) {
         try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try rlp_wrapped.appendSlice(len_bytes);
     }
@@ -305,7 +307,8 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
         if (keys_list.items.len <= 55) {
             try item_list.append(@as(u8, @intCast(0xc0 + keys_list.items.len)));
         } else {
-            const len_bytes = rlp.encodeLength(keys_list.items.len);
+            const len_bytes = try rlp.encodeLength(allocator, keys_list.items.len);
+            defer allocator.free(len_bytes);
             try item_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try item_list.appendSlice(len_bytes);
         }
@@ -315,7 +318,8 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
         if (item_list.items.len <= 55) {
             try list.append(@as(u8, @intCast(0xc0 + item_list.items.len)));
         } else {
-            const len_bytes = rlp.encodeLength(item_list.items.len);
+            const len_bytes = try rlp.encodeLength(allocator, item_list.items.len);
+            defer allocator.free(len_bytes);
             try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try list.appendSlice(len_bytes);
         }
@@ -326,7 +330,8 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
     if (list.items.len <= 55) {
         try output.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try output.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try output.appendSlice(len_bytes);
     }
