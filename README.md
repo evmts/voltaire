@@ -53,30 +53,13 @@ zig fetch --save https://github.com/evmts/primitives
 
 ## Examples
 
-[`examples/`](./examples/) — Runnable demonstrations
-
-```bash
-zig build example-address      # Address validation and EIP-55
-zig build example-hex          # Hex encoding/decoding
-zig build example-rlp          # RLP serialization
-zig build example-abi          # ABI encoding/decoding
-zig build example-transaction  # Transaction signing
-zig build example-keccak256    # Keccak-256 hashing
-zig build example-secp256k1    # ECDSA signatures
-zig build example-eip712       # EIP-712 typed data
-```
+[`examples/`](./examples/)
 
 ## Documentation
 
-[`docs/`](./docs/) — API reference (⚠️ AI-generated, unverified)
+[`docs/`](./docs/) — ⚠️ AI-generated, unverified
 
-**For LLMs:** [`LLMS.txt`](./LLMS.txt) contains complete API reference and guidelines.
-
-```bash
-cd docs
-npm install
-npm run dev    # localhost:4321
-```
+[`LLMS.txt`](./LLMS.txt) — For LLMs
 
 <div align="center">
 
