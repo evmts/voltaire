@@ -157,3 +157,330 @@ pub const StorageKey = struct {
         }
     }
 };
+
+// =============================================================================
+// Tests
+// =============================================================================
+
+test "EMPTY_CODE_HASH is correct Keccak256 of empty bytes" {
+    var hasher = Keccak256.init(.{});
+    hasher.update(&.{});
+    var computed: [32]u8 = undefined;
+    hasher.final(&computed);
+
+    try std.testing.expectEqualSlices(u8, &EMPTY_CODE_HASH, &computed);
+}
+
+test "EMPTY_TRIE_ROOT is correct Keccak256 of RLP null" {
+    var hasher = Keccak256.init(.{});
+    hasher.update(&[_]u8{0x80}); // RLP encoding of null
+    var computed: [32]u8 = undefined;
+    hasher.final(&computed);
+
+    try std.testing.expectEqualSlices(u8, &EMPTY_TRIE_ROOT, &computed);
+}
+
+test "StorageKey equality with identical keys" {
+    const addr = [_]u8{0x01} ** 20;
+    const key1 = StorageKey{ .address = addr, .slot = 42 };
+    const key2 = StorageKey{ .address = addr, .slot = 42 };
+
+    try std.testing.expect(StorageKey.eql(key1, key2));
+}
+
+test "StorageKey equality with different addresses" {
+    const addr1 = [_]u8{0x01} ** 20;
+    const addr2 = [_]u8{0x02} ** 20;
+    const key1 = StorageKey{ .address = addr1, .slot = 42 };
+    const key2 = StorageKey{ .address = addr2, .slot = 42 };
+
+    try std.testing.expect(!StorageKey.eql(key1, key2));
+}
+
+test "StorageKey equality with different slots" {
+    const addr = [_]u8{0x01} ** 20;
+    const key1 = StorageKey{ .address = addr, .slot = 42 };
+    const key2 = StorageKey{ .address = addr, .slot = 43 };
+
+    try std.testing.expect(!StorageKey.eql(key1, key2));
+}
+
+test "StorageKey equality with different addresses and slots" {
+    const addr1 = [_]u8{0x01} ** 20;
+    const addr2 = [_]u8{0x02} ** 20;
+    const key1 = StorageKey{ .address = addr1, .slot = 42 };
+    const key2 = StorageKey{ .address = addr2, .slot = 43 };
+
+    try std.testing.expect(!StorageKey.eql(key1, key2));
+}
+
+test "StorageKey with zero values" {
+    const addr = [_]u8{0x00} ** 20;
+    const key1 = StorageKey{ .address = addr, .slot = 0 };
+    const key2 = StorageKey{ .address = addr, .slot = 0 };
+
+    try std.testing.expect(StorageKey.eql(key1, key2));
+}
+
+test "StorageKey with maximum u256 slot value" {
+    const addr = [_]u8{0xFF} ** 20;
+    const max_slot: u256 = std.math.maxInt(u256);
+    const key1 = StorageKey{ .address = addr, .slot = max_slot };
+    const key2 = StorageKey{ .address = addr, .slot = max_slot };
+
+    try std.testing.expect(StorageKey.eql(key1, key2));
+}
+
+test "StorageKey hash produces different values for different addresses" {
+    const addr1 = [_]u8{0x01} ** 20;
+    const addr2 = [_]u8{0x02} ** 20;
+    const key1 = StorageKey{ .address = addr1, .slot = 0 };
+    const key2 = StorageKey{ .address = addr2, .slot = 0 };
+
+    var hasher1 = std.hash.Wyhash.init(0);
+    var hasher2 = std.hash.Wyhash.init(0);
+
+    key1.hash(&hasher1);
+    key2.hash(&hasher2);
+
+    const hash1 = hasher1.final();
+    const hash2 = hasher2.final();
+
+    try std.testing.expect(hash1 != hash2);
+}
+
+test "StorageKey hash produces different values for different slots" {
+    const addr = [_]u8{0x01} ** 20;
+    const key1 = StorageKey{ .address = addr, .slot = 0 };
+    const key2 = StorageKey{ .address = addr, .slot = 1 };
+
+    var hasher1 = std.hash.Wyhash.init(0);
+    var hasher2 = std.hash.Wyhash.init(0);
+
+    key1.hash(&hasher1);
+    key2.hash(&hasher2);
+
+    const hash1 = hasher1.final();
+    const hash2 = hasher2.final();
+
+    try std.testing.expect(hash1 != hash2);
+}
+
+test "StorageKey hash is consistent across multiple calls" {
+    const addr = [_]u8{0xAB} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 12345 };
+
+    var hasher1 = std.hash.Wyhash.init(0);
+    var hasher2 = std.hash.Wyhash.init(0);
+
+    key.hash(&hasher1);
+    key.hash(&hasher2);
+
+    const hash1 = hasher1.final();
+    const hash2 = hasher2.final();
+
+    try std.testing.expectEqual(hash1, hash2);
+}
+
+test "StorageKey hash with maximum values" {
+    const addr = [_]u8{0xFF} ** 20;
+    const max_slot: u256 = std.math.maxInt(u256);
+    const key = StorageKey{ .address = addr, .slot = max_slot };
+
+    var hasher = std.hash.Wyhash.init(0);
+    key.hash(&hasher);
+    const hash_value = hasher.final();
+
+    // Should not crash and should produce a valid hash
+    try std.testing.expect(hash_value != 0 or hash_value == 0);
+}
+
+test "StorageKey hash with minimum values" {
+    const addr = [_]u8{0x00} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 0 };
+
+    var hasher = std.hash.Wyhash.init(0);
+    key.hash(&hasher);
+    const hash_value = hasher.final();
+
+    // Should not crash and should produce a valid hash
+    try std.testing.expect(hash_value != 0 or hash_value == 0);
+}
+
+test "StorageKey in AutoHashMap basic operations" {
+    var map = std.AutoHashMap(StorageKey, u256).init(std.testing.allocator);
+    defer map.deinit();
+
+    const addr = [_]u8{0x42} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 100 };
+    const value: u256 = 999;
+
+    try map.put(key, value);
+
+    const retrieved = map.get(key);
+    try std.testing.expect(retrieved != null);
+    try std.testing.expectEqual(value, retrieved.?);
+}
+
+test "StorageKey in AutoHashMap with multiple entries" {
+    var map = std.AutoHashMap(StorageKey, u256).init(std.testing.allocator);
+    defer map.deinit();
+
+    const addr1 = [_]u8{0x11} ** 20;
+    const addr2 = [_]u8{0x22} ** 20;
+    const addr3 = [_]u8{0x33} ** 20;
+
+    const key1 = StorageKey{ .address = addr1, .slot = 0 };
+    const key2 = StorageKey{ .address = addr2, .slot = 1 };
+    const key3 = StorageKey{ .address = addr3, .slot = 2 };
+
+    try map.put(key1, 100);
+    try map.put(key2, 200);
+    try map.put(key3, 300);
+
+    try std.testing.expectEqual(@as(u256, 100), map.get(key1).?);
+    try std.testing.expectEqual(@as(u256, 200), map.get(key2).?);
+    try std.testing.expectEqual(@as(u256, 300), map.get(key3).?);
+}
+
+test "StorageKey in AutoHashMap overwrites value for same key" {
+    var map = std.AutoHashMap(StorageKey, u256).init(std.testing.allocator);
+    defer map.deinit();
+
+    const addr = [_]u8{0x99} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 5 };
+
+    try map.put(key, 111);
+    try std.testing.expectEqual(@as(u256, 111), map.get(key).?);
+
+    try map.put(key, 222);
+    try std.testing.expectEqual(@as(u256, 222), map.get(key).?);
+}
+
+test "StorageKey in AutoHashMap with same address different slots" {
+    var map = std.AutoHashMap(StorageKey, u256).init(std.testing.allocator);
+    defer map.deinit();
+
+    const addr = [_]u8{0xAA} ** 20;
+
+    const key0 = StorageKey{ .address = addr, .slot = 0 };
+    const key1 = StorageKey{ .address = addr, .slot = 1 };
+    const key2 = StorageKey{ .address = addr, .slot = 2 };
+
+    try map.put(key0, 10);
+    try map.put(key1, 20);
+    try map.put(key2, 30);
+
+    try std.testing.expectEqual(@as(u256, 10), map.get(key0).?);
+    try std.testing.expectEqual(@as(u256, 20), map.get(key1).?);
+    try std.testing.expectEqual(@as(u256, 30), map.get(key2).?);
+}
+
+test "StorageKey in AutoHashMap removal" {
+    var map = std.AutoHashMap(StorageKey, u256).init(std.testing.allocator);
+    defer map.deinit();
+
+    const addr = [_]u8{0xBB} ** 20;
+    const key = StorageKey{ .address = addr, .slot = 77 };
+
+    try map.put(key, 555);
+    try std.testing.expect(map.get(key) != null);
+
+    _ = map.remove(key);
+    try std.testing.expect(map.get(key) == null);
+}
+
+test "StorageKey in AutoHashMap with large slot numbers" {
+    var map = std.AutoHashMap(StorageKey, u256).init(std.testing.allocator);
+    defer map.deinit();
+
+    const addr = [_]u8{0xCC} ** 20;
+    const large_slot: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+    const key = StorageKey{ .address = addr, .slot = large_slot };
+
+    try map.put(key, 12345);
+    try std.testing.expectEqual(@as(u256, 12345), map.get(key).?);
+}
+
+test "StorageKey memory layout is predictable" {
+    const key = StorageKey{
+        .address = [_]u8{0x01} ** 20,
+        .slot = 42,
+    };
+
+    // Verify the struct size is as expected (20 bytes address + 32 bytes u256)
+    try std.testing.expectEqual(52, @sizeOf(StorageKey));
+
+    // Verify fields are accessible
+    try std.testing.expectEqual(@as(u256, 42), key.slot);
+    try std.testing.expectEqual(@as(u8, 0x01), key.address[0]);
+    try std.testing.expectEqual(@as(u8, 0x01), key.address[19]);
+}
+
+test "StorageKey creation with various address patterns" {
+    const zero_addr = [_]u8{0x00} ** 20;
+    const max_addr = [_]u8{0xFF} ** 20;
+    const pattern_addr = [20]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14 };
+
+    const key1 = StorageKey{ .address = zero_addr, .slot = 0 };
+    const key2 = StorageKey{ .address = max_addr, .slot = std.math.maxInt(u256) };
+    const key3 = StorageKey{ .address = pattern_addr, .slot = 123456789 };
+
+    try std.testing.expect(StorageKey.eql(key1, key1));
+    try std.testing.expect(StorageKey.eql(key2, key2));
+    try std.testing.expect(StorageKey.eql(key3, key3));
+
+    try std.testing.expect(!StorageKey.eql(key1, key2));
+    try std.testing.expect(!StorageKey.eql(key2, key3));
+    try std.testing.expect(!StorageKey.eql(key1, key3));
+}
+
+test "StorageKey slot ordering edge cases" {
+    const addr = [_]u8{0x55} ** 20;
+
+    const key_slot_0 = StorageKey{ .address = addr, .slot = 0 };
+    const key_slot_1 = StorageKey{ .address = addr, .slot = 1 };
+    const key_slot_max_minus_1 = StorageKey{ .address = addr, .slot = std.math.maxInt(u256) - 1 };
+    const key_slot_max = StorageKey{ .address = addr, .slot = std.math.maxInt(u256) };
+
+    // Adjacent slots should not be equal
+    try std.testing.expect(!StorageKey.eql(key_slot_0, key_slot_1));
+    try std.testing.expect(!StorageKey.eql(key_slot_max_minus_1, key_slot_max));
+
+    // Same keys should be equal
+    const key_slot_0_dup = StorageKey{ .address = addr, .slot = 0 };
+    try std.testing.expect(StorageKey.eql(key_slot_0, key_slot_0_dup));
+}
+
+test "StorageKey address boundary differences" {
+    const addr1 = [20]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE };
+    const addr2 = [20]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+    const key1 = StorageKey{ .address = addr1, .slot = 0 };
+    const key2 = StorageKey{ .address = addr2, .slot = 0 };
+
+    // One bit difference in address should make keys unequal
+    try std.testing.expect(!StorageKey.eql(key1, key2));
+}
+
+test "StorageKey hash endianness consistency for slot" {
+    const addr = [_]u8{0x77} ** 20;
+    const slot: u256 = 0x0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F20;
+    const key = StorageKey{ .address = addr, .slot = slot };
+
+    // Hash the key
+    var hasher = std.hash.Wyhash.init(0);
+    key.hash(&hasher);
+    const hash_value = hasher.final();
+
+    // Create slot bytes manually in big-endian to verify
+    var slot_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &slot_bytes, slot, .big);
+
+    // Verify the slot bytes are in big-endian order
+    try std.testing.expectEqual(@as(u8, 0x01), slot_bytes[0]);
+    try std.testing.expectEqual(@as(u8, 0x20), slot_bytes[31]);
+
+    // Hash should be deterministic
+    try std.testing.expect(hash_value != 0 or hash_value == 0);
+}

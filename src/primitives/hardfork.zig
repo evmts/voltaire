@@ -341,3 +341,396 @@ test "parseNumber" {
 test "Hardfork DEFAULT constant" {
     try testing.expectEqual(Hardfork.PRAGUE, Hardfork.DEFAULT);
 }
+
+test "all hardfork variants exist" {
+    // Test that each hardfork can be created and has a valid integer value
+    const frontier = Hardfork.FRONTIER;
+    const homestead = Hardfork.HOMESTEAD;
+    const dao = Hardfork.DAO;
+    const tangerine = Hardfork.TANGERINE_WHISTLE;
+    const spurious = Hardfork.SPURIOUS_DRAGON;
+    const byzantium = Hardfork.BYZANTIUM;
+    const constantinople = Hardfork.CONSTANTINOPLE;
+    const petersburg = Hardfork.PETERSBURG;
+    const istanbul = Hardfork.ISTANBUL;
+    const muir = Hardfork.MUIR_GLACIER;
+    const berlin = Hardfork.BERLIN;
+    const london = Hardfork.LONDON;
+    const arrow = Hardfork.ARROW_GLACIER;
+    const gray = Hardfork.GRAY_GLACIER;
+    const merge = Hardfork.MERGE;
+    const shanghai = Hardfork.SHANGHAI;
+    const cancun = Hardfork.CANCUN;
+    const prague = Hardfork.PRAGUE;
+    const osaka = Hardfork.OSAKA;
+
+    // Verify each has a valid integer representation
+    try testing.expectEqual(@as(u32, 0), frontier.toInt());
+    try testing.expectEqual(@as(u32, 1), homestead.toInt());
+    try testing.expectEqual(@as(u32, 2), dao.toInt());
+    try testing.expectEqual(@as(u32, 3), tangerine.toInt());
+    try testing.expectEqual(@as(u32, 4), spurious.toInt());
+    try testing.expectEqual(@as(u32, 5), byzantium.toInt());
+    try testing.expectEqual(@as(u32, 6), constantinople.toInt());
+    try testing.expectEqual(@as(u32, 7), petersburg.toInt());
+    try testing.expectEqual(@as(u32, 8), istanbul.toInt());
+    try testing.expectEqual(@as(u32, 9), muir.toInt());
+    try testing.expectEqual(@as(u32, 10), berlin.toInt());
+    try testing.expectEqual(@as(u32, 11), london.toInt());
+    try testing.expectEqual(@as(u32, 12), arrow.toInt());
+    try testing.expectEqual(@as(u32, 13), gray.toInt());
+    try testing.expectEqual(@as(u32, 14), merge.toInt());
+    try testing.expectEqual(@as(u32, 15), shanghai.toInt());
+    try testing.expectEqual(@as(u32, 16), cancun.toInt());
+    try testing.expectEqual(@as(u32, 17), prague.toInt());
+    try testing.expectEqual(@as(u32, 18), osaka.toInt());
+}
+
+test "hardfork ordering is sequential" {
+    // Verify that hardforks are in chronological order
+    try testing.expect(Hardfork.FRONTIER.isBefore(.HOMESTEAD));
+    try testing.expect(Hardfork.HOMESTEAD.isBefore(.DAO));
+    try testing.expect(Hardfork.DAO.isBefore(.TANGERINE_WHISTLE));
+    try testing.expect(Hardfork.TANGERINE_WHISTLE.isBefore(.SPURIOUS_DRAGON));
+    try testing.expect(Hardfork.SPURIOUS_DRAGON.isBefore(.BYZANTIUM));
+    try testing.expect(Hardfork.BYZANTIUM.isBefore(.CONSTANTINOPLE));
+    try testing.expect(Hardfork.CONSTANTINOPLE.isBefore(.PETERSBURG));
+    try testing.expect(Hardfork.PETERSBURG.isBefore(.ISTANBUL));
+    try testing.expect(Hardfork.ISTANBUL.isBefore(.MUIR_GLACIER));
+    try testing.expect(Hardfork.MUIR_GLACIER.isBefore(.BERLIN));
+    try testing.expect(Hardfork.BERLIN.isBefore(.LONDON));
+    try testing.expect(Hardfork.LONDON.isBefore(.ARROW_GLACIER));
+    try testing.expect(Hardfork.ARROW_GLACIER.isBefore(.GRAY_GLACIER));
+    try testing.expect(Hardfork.GRAY_GLACIER.isBefore(.MERGE));
+    try testing.expect(Hardfork.MERGE.isBefore(.SHANGHAI));
+    try testing.expect(Hardfork.SHANGHAI.isBefore(.CANCUN));
+    try testing.expect(Hardfork.CANCUN.isBefore(.PRAGUE));
+    try testing.expect(Hardfork.PRAGUE.isBefore(.OSAKA));
+}
+
+test "isAtLeast with same hardfork" {
+    // A hardfork should be considered at least itself
+    try testing.expect(Hardfork.FRONTIER.isAtLeast(.FRONTIER));
+    try testing.expect(Hardfork.HOMESTEAD.isAtLeast(.HOMESTEAD));
+    try testing.expect(Hardfork.CANCUN.isAtLeast(.CANCUN));
+    try testing.expect(Hardfork.PRAGUE.isAtLeast(.PRAGUE));
+    try testing.expect(Hardfork.OSAKA.isAtLeast(.OSAKA));
+}
+
+test "isAtLeast across range" {
+    // Test that later hardforks are at least earlier ones
+    try testing.expect(Hardfork.OSAKA.isAtLeast(.FRONTIER));
+    try testing.expect(Hardfork.OSAKA.isAtLeast(.HOMESTEAD));
+    try testing.expect(Hardfork.OSAKA.isAtLeast(.CANCUN));
+    try testing.expect(Hardfork.OSAKA.isAtLeast(.PRAGUE));
+    try testing.expect(!Hardfork.FRONTIER.isAtLeast(.OSAKA));
+}
+
+test "isBefore across range" {
+    // Test that earlier hardforks are before later ones
+    try testing.expect(Hardfork.FRONTIER.isBefore(.OSAKA));
+    try testing.expect(Hardfork.HOMESTEAD.isBefore(.OSAKA));
+    try testing.expect(Hardfork.CANCUN.isBefore(.OSAKA));
+    try testing.expect(Hardfork.PRAGUE.isBefore(.OSAKA));
+    try testing.expect(!Hardfork.OSAKA.isBefore(.FRONTIER));
+}
+
+test "isBefore with same hardfork" {
+    // A hardfork should not be considered before itself
+    try testing.expect(!Hardfork.FRONTIER.isBefore(.FRONTIER));
+    try testing.expect(!Hardfork.HOMESTEAD.isBefore(.HOMESTEAD));
+    try testing.expect(!Hardfork.CANCUN.isBefore(.CANCUN));
+    try testing.expect(!Hardfork.PRAGUE.isBefore(.PRAGUE));
+    try testing.expect(!Hardfork.OSAKA.isBefore(.OSAKA));
+}
+
+test "fromString case insensitivity" {
+    // Test various case combinations
+    try testing.expectEqual(Hardfork.FRONTIER, Hardfork.fromString("frontier").?);
+    try testing.expectEqual(Hardfork.FRONTIER, Hardfork.fromString("FRONTIER").?);
+    try testing.expectEqual(Hardfork.FRONTIER, Hardfork.fromString("FrOnTiEr").?);
+
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString("cancun").?);
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString("CANCUN").?);
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString("CaNcUn").?);
+
+    try testing.expectEqual(Hardfork.PRAGUE, Hardfork.fromString("prague").?);
+    try testing.expectEqual(Hardfork.PRAGUE, Hardfork.fromString("PRAGUE").?);
+    try testing.expectEqual(Hardfork.PRAGUE, Hardfork.fromString("PrAgUe").?);
+}
+
+test "fromString all hardforks" {
+    // Test that all hardforks can be parsed from their names
+    try testing.expectEqual(Hardfork.FRONTIER, Hardfork.fromString("Frontier").?);
+    try testing.expectEqual(Hardfork.HOMESTEAD, Hardfork.fromString("Homestead").?);
+    try testing.expectEqual(Hardfork.DAO, Hardfork.fromString("DAO").?);
+    try testing.expectEqual(Hardfork.TANGERINE_WHISTLE, Hardfork.fromString("TangerineWhistle").?);
+    try testing.expectEqual(Hardfork.SPURIOUS_DRAGON, Hardfork.fromString("SpuriousDragon").?);
+    try testing.expectEqual(Hardfork.BYZANTIUM, Hardfork.fromString("Byzantium").?);
+    try testing.expectEqual(Hardfork.CONSTANTINOPLE, Hardfork.fromString("Constantinople").?);
+    try testing.expectEqual(Hardfork.PETERSBURG, Hardfork.fromString("Petersburg").?);
+    try testing.expectEqual(Hardfork.ISTANBUL, Hardfork.fromString("Istanbul").?);
+    try testing.expectEqual(Hardfork.MUIR_GLACIER, Hardfork.fromString("MuirGlacier").?);
+    try testing.expectEqual(Hardfork.BERLIN, Hardfork.fromString("Berlin").?);
+    try testing.expectEqual(Hardfork.LONDON, Hardfork.fromString("London").?);
+    try testing.expectEqual(Hardfork.ARROW_GLACIER, Hardfork.fromString("ArrowGlacier").?);
+    try testing.expectEqual(Hardfork.GRAY_GLACIER, Hardfork.fromString("GrayGlacier").?);
+    try testing.expectEqual(Hardfork.MERGE, Hardfork.fromString("Merge").?);
+    try testing.expectEqual(Hardfork.SHANGHAI, Hardfork.fromString("Shanghai").?);
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString("Cancun").?);
+    try testing.expectEqual(Hardfork.PRAGUE, Hardfork.fromString("Prague").?);
+    try testing.expectEqual(Hardfork.OSAKA, Hardfork.fromString("Osaka").?);
+}
+
+test "fromString aliases" {
+    // Test common aliases
+    try testing.expectEqual(Hardfork.MERGE, Hardfork.fromString("Paris").?);
+    try testing.expectEqual(Hardfork.PETERSBURG, Hardfork.fromString("ConstantinopleFix").?);
+
+    // Test aliases with different cases
+    try testing.expectEqual(Hardfork.MERGE, Hardfork.fromString("paris").?);
+    try testing.expectEqual(Hardfork.MERGE, Hardfork.fromString("PARIS").?);
+    try testing.expectEqual(Hardfork.PETERSBURG, Hardfork.fromString("constantinoplefix").?);
+}
+
+test "fromString with comparison operators" {
+    // Test with >= operator
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString(">=Cancun").?);
+    try testing.expectEqual(Hardfork.BERLIN, Hardfork.fromString(">=Berlin").?);
+    try testing.expectEqual(Hardfork.FRONTIER, Hardfork.fromString(">=Frontier").?);
+
+    // Test with > operator
+    try testing.expectEqual(Hardfork.BERLIN, Hardfork.fromString(">Berlin").?);
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString(">Cancun").?);
+
+    // Test with < operator
+    try testing.expectEqual(Hardfork.BERLIN, Hardfork.fromString("<Berlin").?);
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString("<Cancun").?);
+
+    // Test with <= operator
+    try testing.expectEqual(Hardfork.BERLIN, Hardfork.fromString("<=Berlin").?);
+    try testing.expectEqual(Hardfork.CANCUN, Hardfork.fromString("<=Cancun").?);
+}
+
+test "fromString invalid inputs" {
+    // Test various invalid inputs
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.fromString("InvalidFork"));
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.fromString(""));
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.fromString("Random"));
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.fromString("123"));
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.fromString("Frontier2"));
+    try testing.expectEqual(@as(?Hardfork, null), Hardfork.fromString("NotAFork"));
+}
+
+test "ForkTransition fromString all components" {
+    // Test transition with lowercase
+    const t1 = ForkTransition.fromString("berlintolondonat12965000");
+    try testing.expect(t1 != null);
+    try testing.expectEqual(Hardfork.BERLIN, t1.?.from_fork);
+    try testing.expectEqual(Hardfork.LONDON, t1.?.to_fork);
+    try testing.expectEqual(@as(?u64, 12965000), t1.?.at_block);
+
+    // Test transition with mixed case
+    const t2 = ForkTransition.fromString("BerlinToLondonAt12965000");
+    try testing.expect(t2 != null);
+    try testing.expectEqual(Hardfork.BERLIN, t2.?.from_fork);
+    try testing.expectEqual(Hardfork.LONDON, t2.?.to_fork);
+}
+
+test "ForkTransition fromString with various numbers" {
+    // Test with small block number
+    const t1 = ForkTransition.fromString("FrontierToHomesteadAt1");
+    try testing.expect(t1 != null);
+    try testing.expectEqual(@as(?u64, 1), t1.?.at_block);
+
+    // Test with large block number
+    const t2 = ForkTransition.fromString("BerlinToLondonAt12965000");
+    try testing.expect(t2 != null);
+    try testing.expectEqual(@as(?u64, 12965000), t2.?.at_block);
+
+    // Test with zero
+    const t3 = ForkTransition.fromString("FrontierToHomesteadAt0");
+    try testing.expect(t3 != null);
+    try testing.expectEqual(@as(?u64, 0), t3.?.at_block);
+}
+
+test "ForkTransition fromString with timestamp suffixes" {
+    // Test with 'k' suffix
+    const t1 = ForkTransition.fromString("ShanghaiToCancunAtTime15k");
+    try testing.expect(t1 != null);
+    try testing.expectEqual(@as(?u64, 15000), t1.?.at_timestamp);
+
+    // Test with large 'k' value
+    const t2 = ForkTransition.fromString("BerlinToLondonAtTime100k");
+    try testing.expect(t2 != null);
+    try testing.expectEqual(@as(?u64, 100000), t2.?.at_timestamp);
+
+    // Test with timestamp without 'k'
+    const t3 = ForkTransition.fromString("ShanghaiToCancunAtTime15000");
+    try testing.expect(t3 != null);
+    try testing.expectEqual(@as(?u64, 15000), t3.?.at_timestamp);
+}
+
+test "ForkTransition fromString invalid formats" {
+    // Missing "To"
+    try testing.expectEqual(@as(?ForkTransition, null), ForkTransition.fromString("BerlinLondonAt5"));
+
+    // Missing "At"
+    try testing.expectEqual(@as(?ForkTransition, null), ForkTransition.fromString("BerlinToLondon5"));
+
+    // Invalid from fork
+    try testing.expectEqual(@as(?ForkTransition, null), ForkTransition.fromString("InvalidToLondonAt5"));
+
+    // Invalid to fork
+    try testing.expectEqual(@as(?ForkTransition, null), ForkTransition.fromString("BerlinToInvalidAt5"));
+
+    // Empty string
+    try testing.expectEqual(@as(?ForkTransition, null), ForkTransition.fromString(""));
+
+    // Invalid number
+    try testing.expectEqual(@as(?ForkTransition, null), ForkTransition.fromString("BerlinToLondonAtInvalid"));
+}
+
+test "ForkTransition getActiveFork block boundary" {
+    const transition = ForkTransition{
+        .from_fork = .BERLIN,
+        .to_fork = .LONDON,
+        .at_block = 100,
+        .at_timestamp = null,
+    };
+
+    // Before transition
+    try testing.expectEqual(Hardfork.BERLIN, transition.getActiveFork(0, 0));
+    try testing.expectEqual(Hardfork.BERLIN, transition.getActiveFork(99, 0));
+
+    // At transition
+    try testing.expectEqual(Hardfork.LONDON, transition.getActiveFork(100, 0));
+
+    // After transition
+    try testing.expectEqual(Hardfork.LONDON, transition.getActiveFork(101, 0));
+    try testing.expectEqual(Hardfork.LONDON, transition.getActiveFork(1000000, 0));
+}
+
+test "ForkTransition getActiveFork timestamp boundary" {
+    const transition = ForkTransition{
+        .from_fork = .SHANGHAI,
+        .to_fork = .CANCUN,
+        .at_block = null,
+        .at_timestamp = 15000,
+    };
+
+    // Before transition
+    try testing.expectEqual(Hardfork.SHANGHAI, transition.getActiveFork(0, 0));
+    try testing.expectEqual(Hardfork.SHANGHAI, transition.getActiveFork(0, 14999));
+
+    // At transition
+    try testing.expectEqual(Hardfork.CANCUN, transition.getActiveFork(0, 15000));
+
+    // After transition
+    try testing.expectEqual(Hardfork.CANCUN, transition.getActiveFork(0, 15001));
+    try testing.expectEqual(Hardfork.CANCUN, transition.getActiveFork(0, 1000000));
+}
+
+test "ForkTransition getActiveFork neither block nor timestamp" {
+    // When neither at_block nor at_timestamp is set, should return to_fork
+    const transition = ForkTransition{
+        .from_fork = .BERLIN,
+        .to_fork = .LONDON,
+        .at_block = null,
+        .at_timestamp = null,
+    };
+
+    try testing.expectEqual(Hardfork.LONDON, transition.getActiveFork(0, 0));
+    try testing.expectEqual(Hardfork.LONDON, transition.getActiveFork(100, 0));
+    try testing.expectEqual(Hardfork.LONDON, transition.getActiveFork(0, 100));
+    try testing.expectEqual(Hardfork.LONDON, transition.getActiveFork(100, 100));
+}
+
+test "parseNumber various formats" {
+    // Plain numbers
+    try testing.expectEqual(@as(u64, 0), try parseNumber("0"));
+    try testing.expectEqual(@as(u64, 1), try parseNumber("1"));
+    try testing.expectEqual(@as(u64, 42), try parseNumber("42"));
+    try testing.expectEqual(@as(u64, 12965000), try parseNumber("12965000"));
+
+    // Numbers with 'k' suffix
+    try testing.expectEqual(@as(u64, 1000), try parseNumber("1k"));
+    try testing.expectEqual(@as(u64, 15000), try parseNumber("15k"));
+    try testing.expectEqual(@as(u64, 100000), try parseNumber("100k"));
+}
+
+test "parseNumber errors" {
+    // Empty string
+    try testing.expectError(ParseNumberError.EmptyString, parseNumber(""));
+
+    // Invalid format
+    try testing.expectError(ParseNumberError.InvalidFormat, parseNumber("invalid"));
+    try testing.expectError(ParseNumberError.InvalidFormat, parseNumber("abc"));
+    try testing.expectError(ParseNumberError.InvalidFormat, parseNumber("12x"));
+    try testing.expectError(ParseNumberError.InvalidFormat, parseNumber("k"));
+    try testing.expectError(ParseNumberError.InvalidFormat, parseNumber("1.5"));
+}
+
+test "hardfork comparison chain" {
+    // Test a full comparison chain from oldest to newest
+    const forks = [_]Hardfork{
+        .FRONTIER,
+        .HOMESTEAD,
+        .DAO,
+        .TANGERINE_WHISTLE,
+        .SPURIOUS_DRAGON,
+        .BYZANTIUM,
+        .CONSTANTINOPLE,
+        .PETERSBURG,
+        .ISTANBUL,
+        .MUIR_GLACIER,
+        .BERLIN,
+        .LONDON,
+        .ARROW_GLACIER,
+        .GRAY_GLACIER,
+        .MERGE,
+        .SHANGHAI,
+        .CANCUN,
+        .PRAGUE,
+        .OSAKA,
+    };
+
+    // Each fork should be before all later forks
+    for (forks, 0..) |fork1, i| {
+        for (forks[i + 1 ..]) |fork2| {
+            try testing.expect(fork1.isBefore(fork2));
+            try testing.expect(!fork2.isBefore(fork1));
+            try testing.expect(fork2.isAtLeast(fork1));
+            try testing.expect(!fork1.isAtLeast(fork2));
+        }
+    }
+}
+
+test "ForkTransition comprehensive parsing" {
+    // Test various realistic transitions
+    const transitions = [_][]const u8{
+        "FrontierToHomesteadAt1150000",
+        "HomesteadToDAOAt1920000",
+        "ByzantiumToConstantinopleAt7280000",
+        "BerlinToLondonAt12965000",
+        "ShanghaiToCancunAtTime1710338135",
+        "CancunToPragueAtTime1740000000",
+    };
+
+    for (transitions) |transition_str| {
+        const transition = ForkTransition.fromString(transition_str);
+        try testing.expect(transition != null);
+    }
+}
+
+test "toInt consistency" {
+    // Verify that toInt returns consistent values
+    const frontier = Hardfork.FRONTIER;
+    const osaka = Hardfork.OSAKA;
+
+    try testing.expectEqual(frontier.toInt(), frontier.toInt());
+    try testing.expectEqual(osaka.toInt(), osaka.toInt());
+
+    // Verify ordering through toInt
+    try testing.expect(frontier.toInt() < osaka.toInt());
+}
