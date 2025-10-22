@@ -108,7 +108,7 @@ const build_options = @import("build_options");
 const secp256k1 = @import("secp256k1.zig");
 
 // Use the address type from primitives
-const Address = primitives.Address.Address;
+pub const Address = primitives.Address.Address;
 
 // Error types for crypto operations
 pub const CryptoError = error{

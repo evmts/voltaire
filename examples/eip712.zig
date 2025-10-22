@@ -71,8 +71,8 @@ pub fn main() !void {
     // Fill in the actual values for the message
     std.debug.print("3. Adding Message Data\n", .{});
 
-    const from_address = [_]u8{0xAA} ** 20;
-    const to_address = [_]u8{0xBB} ** 20;
+    const from_address = primitives.Address{ .bytes = [_]u8{0xAA} ** 20 };
+    const to_address = primitives.Address{ .bytes = [_]u8{0xBB} ** 20 };
     const amount: u256 = 1000000000000000000; // 1.0 tokens (18 decimals)
 
     try typed_data.message.put(
@@ -90,9 +90,9 @@ pub fn main() !void {
 
     std.debug.print("   Message values:\n", .{});
     std.debug.print("   - from: 0x", .{});
-    for (from_address) |byte| std.debug.print("{x:0>2}", .{byte});
+    for (from_address.bytes) |byte| std.debug.print("{x:0>2}", .{byte});
     std.debug.print("\n   - to: 0x", .{});
-    for (to_address) |byte| std.debug.print("{x:0>2}", .{byte});
+    for (to_address.bytes) |byte| std.debug.print("{x:0>2}", .{byte});
     std.debug.print("\n   - amount: {d}\n\n", .{amount});
 
     // PART 4: Hash the typed data
@@ -167,11 +167,11 @@ pub fn main() !void {
     );
 
     std.debug.print("   Recovered address: 0x", .{});
-    for (recovered_address) |byte| std.debug.print("{x:0>2}", .{byte});
+    for (recovered_address.bytes) |byte| std.debug.print("{x:0>2}", .{byte});
     std.debug.print("\n\n", .{});
 
     // Verify the recovered address matches the signer
-    const addresses_match = std.mem.eql(u8, &recovered_address, &signer_address);
+    const addresses_match = std.mem.eql(u8, &recovered_address.bytes, &signer_address.bytes);
     std.debug.print("   Address matches signer: {}\n\n", .{addresses_match});
 
     if (!addresses_match) {
@@ -209,7 +209,7 @@ pub fn main() !void {
     );
     try from_person.put(
         try allocator.dupe(u8, "wallet"),
-        Eip712.MessageValue{ .address = [_]u8{0xAA} ** 20 },
+        Eip712.MessageValue{ .address = primitives.Address{ .bytes = [_]u8{0xAA} ** 20 } },
     );
 
     // Create to person
@@ -220,7 +220,7 @@ pub fn main() !void {
     );
     try to_person.put(
         try allocator.dupe(u8, "wallet"),
-        Eip712.MessageValue{ .address = [_]u8{0xBB} ** 20 },
+        Eip712.MessageValue{ .address = primitives.Address{ .bytes = [_]u8{0xBB} ** 20 } },
     );
 
     // Create mail message
@@ -238,11 +238,11 @@ pub fn main() !void {
     );
 
     std.debug.print("   Nested type structure:\n", .{});
-    std.debug.print("   Mail {\n", .{});
-    std.debug.print("     from: Person { name: \"Alice\", wallet: 0xAA... },\n", .{});
-    std.debug.print("     to: Person { name: \"Bob\", wallet: 0xBB... },\n", .{});
+    std.debug.print("   Mail {{\n", .{});
+    std.debug.print("     from: Person {{ name: \"Alice\", wallet: 0xAA... }},\n", .{});
+    std.debug.print("     to: Person {{ name: \"Bob\", wallet: 0xBB... }},\n", .{});
     std.debug.print("     contents: \"Hello, Bob!\"\n", .{});
-    std.debug.print("   }\n\n", .{});
+    std.debug.print("   }}\n\n", .{});
 
     const nested_hash = try Eip712.unaudited_hashTypedData(allocator, &nested_typed_data);
 

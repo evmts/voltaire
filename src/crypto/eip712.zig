@@ -9,7 +9,7 @@ const Hash = @import("hash_utils.zig");
 const primitives = @import("primitives");
 const Hex = primitives.Hex;
 const Crypto = @import("crypto.zig");
-const Address = [20]u8;
+const Address = Crypto.Address;
 const Signature = Crypto.Signature;
 const PrivateKey = Crypto.PrivateKey;
 
@@ -303,7 +303,7 @@ fn encode_value(allocator: Allocator, type_name: []const u8, value: MessageValue
             .address => |a| a,
             else => return Eip712Error.InvalidMessage,
         };
-        @memcpy(result[12..32], &addr);
+        @memcpy(result[12..32], &addr.bytes);
     } else if (std.mem.eql(u8, type_name, "bool")) {
         const bool_val = switch (value) {
             .boolean => |b| b,
