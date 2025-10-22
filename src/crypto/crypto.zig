@@ -190,7 +190,7 @@ pub const Signature = struct {
 
     pub fn toHex(self: Signature) [132]u8 {
         const bytes = self.toBytes();
-        return hex.bytesToHex(bytes);
+        return hex.bytesToHexFixed(65, bytes);
     }
 
     pub fn fromHex(hex_str: []const u8) !Signature {
