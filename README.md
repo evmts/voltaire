@@ -52,11 +52,9 @@ zig fetch --save https://github.com/evmts/primitives
 
 <br />
 
-## Examples
-
-[`examples/`](./examples/)
-
 ## Documentation
+
+[`examples/`](./examples/) — Example code and usage
 
 [`docs/`](./docs/) — ⚠️ AI-generated, unverified
 
