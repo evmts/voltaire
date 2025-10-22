@@ -236,6 +236,13 @@ pub fn encode(allocator: Allocator, input: anytype) EncodeError![]u8 {
     @compileError("Unsupported type for RLP encoding: " ++ @typeName(T));
 }
 
+/// Encodes an integer and appends the result to an ArrayList
+pub fn encodeUint(allocator: Allocator, value: anytype, list: anytype) !void {
+    const encoded = try encode(allocator, value);
+    defer allocator.free(encoded);
+    try list.appendSlice(encoded);
+}
+
 /// Encodes a byte array or slice according to RLP rules
 pub fn encodeBytes(allocator: Allocator, bytes: []const u8) ![]u8 {
     // If a single byte less than 0x80, return as is
