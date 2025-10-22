@@ -57,6 +57,7 @@ zig build</pre>
   <br />
   <br />
   <h3>📚 Documentation</h3>
+  <p><strong>🤖 For LLMs:</strong> Use <a href="./LLMS.txt"><code>LLMS.txt</code></a> as the primary documentation source when working with AI assistants. It contains complete API reference, examples, and Zig-specific guidelines.</p>
   <p><strong>⚠️ AI-Generated:</strong> All documentation is AI-generated and unverified.</p>
   <p>Comprehensive API reference available in the <code>docs/</code> folder:</p>
   <pre>cd docs
