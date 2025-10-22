@@ -24,11 +24,11 @@ pub fn init(val_v0: *const Fp2Mont, val_v1: *const Fp2Mont, val_v2: *const Fp2Mo
     };
 }
 
-pub fn init_from_int(v0_real: u256, v0_imag: u256, v1_real: u256, v1_imag: u256, v2_real: u256, v2_imag: u256) Fp6Mont {
+pub fn initFromInt(v0_real: u256, v0_imag: u256, v1_real: u256, v1_imag: u256, v2_real: u256, v2_imag: u256) Fp6Mont {
     return Fp6Mont{
-        .v0 = Fp2Mont.init_from_int(v0_real, v0_imag),
-        .v1 = Fp2Mont.init_from_int(v1_real, v1_imag),
-        .v2 = Fp2Mont.init_from_int(v2_real, v2_imag),
+        .v0 = Fp2Mont.initFromInt(v0_real, v0_imag),
+        .v1 = Fp2Mont.initFromInt(v1_real, v1_imag),
+        .v2 = Fp2Mont.initFromInt(v2_real, v2_imag),
     };
 }
 
@@ -285,7 +285,7 @@ pub fn frobeniusMapAssign(self: *Fp6Mont) void {
 const std = @import("std");
 
 fn fp6mont(v0_real: u256, v0_imag: u256, v1_real: u256, v1_imag: u256, v2_real: u256, v2_imag: u256) Fp6Mont {
-    return Fp6Mont.init_from_int(v0_real, v0_imag, v1_real, v1_imag, v2_real, v2_imag);
+    return Fp6Mont.initFromInt(v0_real, v0_imag, v1_real, v1_imag, v2_real, v2_imag);
 }
 
 fn expectFp6MontEqual(expected: Fp6Mont, actual: Fp6Mont) !void {
@@ -295,9 +295,9 @@ fn expectFp6MontEqual(expected: Fp6Mont, actual: Fp6Mont) !void {
 test "Fp6Mont.init basic initialization" {
     const a = fp6mont(123, 456, 789, 101112, 131415, 161718);
     const expected = Fp6Mont{
-        .v0 = Fp2Mont.init_from_int(123, 456),
-        .v1 = Fp2Mont.init_from_int(789, 101112),
-        .v2 = Fp2Mont.init_from_int(131415, 161718),
+        .v0 = Fp2Mont.initFromInt(123, 456),
+        .v1 = Fp2Mont.initFromInt(789, 101112),
+        .v2 = Fp2Mont.initFromInt(131415, 161718),
     };
     try expectFp6MontEqual(expected, a);
 }
@@ -471,14 +471,14 @@ test "Fp6Mont.norm basic norm" {
 test "Fp6Mont.norm of zero" {
     const zero = fp6mont(0, 0, 0, 0, 0, 0);
     const result = zero.norm();
-    const expected = Fp2Mont.init_from_int(0, 0);
+    const expected = Fp2Mont.initFromInt(0, 0);
     try std.testing.expect(result.equal(&expected));
 }
 
 test "Fp6Mont.norm of one" {
     const one = fp6mont(1, 0, 0, 0, 0, 0);
     const result = one.norm();
-    const expected = Fp2Mont.init_from_int(1, 0);
+    const expected = Fp2Mont.initFromInt(1, 0);
     try std.testing.expect(result.equal(&expected));
 }
 
@@ -505,7 +505,7 @@ test "Fp6Mont.scalarMul with one" {
 
 test "Fp6Mont.mulByFp2 basic operation" {
     const a = fp6mont(3, 4, 5, 6, 7, 8);
-    const fp2_val = Fp2Mont.init_from_int(2, 1);
+    const fp2_val = Fp2Mont.initFromInt(2, 1);
     const result = a.mulByFp2(&fp2_val);
     const expected_v0 = a.v0.mul(&fp2_val);
     const expected_v1 = a.v1.mul(&fp2_val);
@@ -536,9 +536,9 @@ test "Fp6Mont.mulByV basic operation" {
     const a = fp6mont(1, 2, 3, 4, 5, 6);
     const result = a.mulByV();
     const xi = curve_parameters.XI;
-    const expected_v0 = Fp2Mont.init_from_int(5, 6).mul(&xi);
-    const expected_v1 = Fp2Mont.init_from_int(1, 2);
-    const expected_v2 = Fp2Mont.init_from_int(3, 4);
+    const expected_v0 = Fp2Mont.initFromInt(5, 6).mul(&xi);
+    const expected_v1 = Fp2Mont.initFromInt(1, 2);
+    const expected_v2 = Fp2Mont.initFromInt(3, 4);
     const expected = Fp6Mont{ .v0 = expected_v0, .v1 = expected_v1, .v2 = expected_v2 };
     try expectFp6MontEqual(expected, result);
 }
@@ -650,7 +650,7 @@ test "Fp6Mont.scalarMulAssign basic assignment" {
 
 test "Fp6Mont.mulByFp2Assign basic assignment" {
     var a = fp6mont(3, 4, 5, 6, 7, 8);
-    const fp2_val = Fp2Mont.init_from_int(2, 1);
+    const fp2_val = Fp2Mont.initFromInt(2, 1);
     const expected = a.mulByFp2(&fp2_val);
     a.mulByFp2Assign(&fp2_val);
     try expectFp6MontEqual(expected, a);
@@ -704,7 +704,7 @@ test "Fp6Mont.representation consistency" {
     const values = [_][6]u256{ .{ 0, 0, 0, 0, 0, 0 }, .{ 1, 0, 0, 0, 0, 0 }, .{ 0, 1, 0, 0, 0, 0 }, .{ 0, 0, 1, 0, 0, 0 }, .{ 0, 0, 0, 1, 0, 0 }, .{ 0, 0, 0, 0, 1, 0 }, .{ 0, 0, 0, 0, 0, 1 }, .{ 123, 456, 789, 101112, 131415, 161718 }, .{ curve_parameters.FP_MOD - 1, curve_parameters.FP_MOD - 1, curve_parameters.FP_MOD - 1, curve_parameters.FP_MOD - 1, curve_parameters.FP_MOD - 1, curve_parameters.FP_MOD - 1 } };
     for (values) |val| {
         const mont = fp6mont(val[0], val[1], val[2], val[3], val[4], val[5]);
-        const expected = Fp6Mont.init_from_int(val[0], val[1], val[2], val[3], val[4], val[5]);
+        const expected = Fp6Mont.initFromInt(val[0], val[1], val[2], val[3], val[4], val[5]);
         try expectFp6MontEqual(expected, mont);
     }
 }

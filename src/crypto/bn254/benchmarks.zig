@@ -69,7 +69,7 @@ const OperationSampleSizes = struct {
 
     // Pairing operations - always single
     pairing: usize = 1,
-    miller_loop: usize = 1,
+    millerLoop: usize = 1,
     final_exp: usize = 1,
 };
 
@@ -112,7 +112,7 @@ pub const SecureRandomGenerator = struct {
     }
 
     pub fn randomFp2Mont(self: *SecureRandomGenerator) Fp2Mont {
-        return Fp2Mont.init_from_int(self.randomU256(), self.randomU256());
+        return Fp2Mont.initFromInt(self.randomU256(), self.randomU256());
     }
 
     pub fn randomFp2MontNonZero(self: *SecureRandomGenerator) Fp2Mont {
@@ -123,7 +123,7 @@ pub const SecureRandomGenerator = struct {
     }
 
     pub fn randomFp6Mont(self: *SecureRandomGenerator) Fp6Mont {
-        return Fp6Mont.init_from_int(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
+        return Fp6Mont.initFromInt(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
     }
 
     pub fn randomFp6MontNonZero(self: *SecureRandomGenerator) Fp6Mont {
@@ -136,7 +136,7 @@ pub const SecureRandomGenerator = struct {
     }
 
     pub fn randomFp12Mont(self: *SecureRandomGenerator) Fp12Mont {
-        return Fp12Mont.init_from_int(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
+        return Fp12Mont.initFromInt(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
     }
 
     pub fn randomFp12MontNonZero(self: *SecureRandomGenerator) Fp12Mont {
@@ -855,7 +855,7 @@ fn benchMillerLoop(sample_size: usize) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..sample_size) |j| {
-        const result = pairing_mod.miller_loop(&test_inputs.g1_points[(i + j) % 1000], &test_inputs.g2_points[(i + j) % 1000]);
+        const result = pairing_mod.millerLoop(&test_inputs.g1_points[(i + j) % 1000], &test_inputs.g2_points[(i + j) % 1000]);
         std.mem.doNotOptimizeAway(result);
     }
 }
@@ -864,7 +864,7 @@ fn benchFinalExponentiation(sample_size: usize) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
     for (0..sample_size) |j| {
-        const result = pairing_mod.final_exponentiation(&test_inputs.fp12_a[(i + j) % 1000]);
+        const result = pairing_mod.finalExponentiation(&test_inputs.fp12_a[(i + j) % 1000]);
         std.mem.doNotOptimizeAway(result);
     }
 }
@@ -928,7 +928,7 @@ pub fn runComprehensiveBenchmarks(allocator: std.mem.Allocator) !void {
 
         // Pairing operations (slow)
         .{ .name = "Full Pairing", .func = benchPairing, .sample_size = operation_sample_sizes.pairing, .is_slow = true },
-        .{ .name = "Miller Loop", .func = benchMillerLoop, .sample_size = operation_sample_sizes.miller_loop, .is_slow = true },
+        .{ .name = "Miller Loop", .func = benchMillerLoop, .sample_size = operation_sample_sizes.millerLoop, .is_slow = true },
         .{ .name = "Final Exponentiation", .func = benchFinalExponentiation, .sample_size = operation_sample_sizes.final_exp, .is_slow = true },
     };
 

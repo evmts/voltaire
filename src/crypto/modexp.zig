@@ -39,7 +39,7 @@ pub const ModExpError = error{
 /// @param exp_bytes Exponent value as big-endian bytes
 /// @param mod_bytes Modulus value as big-endian bytes
 /// @param output Output buffer (must be at least mod_bytes.len)
-pub fn unaudited_modexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: []const u8, mod_bytes: []const u8, output: []u8) ModExpError!void {
+pub fn unauditedModexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: []const u8, mod_bytes: []const u8, output: []u8) ModExpError!void {
     // Clear output first
     @memset(output, 0);
 
@@ -103,9 +103,9 @@ pub fn unaudited_modexp(allocator: std.mem.Allocator, base_bytes: []const u8, ex
     defer mod.deinit();
 
     // Parse inputs from big-endian bytes
-    try read_big_endian(&base, base_bytes);
-    try read_big_endian(&exp, exp_bytes);
-    try read_big_endian(&mod, mod_bytes);
+    try readBigEndian(&base, base_bytes);
+    try readBigEndian(&exp, exp_bytes);
+    try readBigEndian(&mod, mod_bytes);
 
     // Check if modulus is zero
     var zero = try Managed.init(allocator);
@@ -152,7 +152,7 @@ pub fn unaudited_modexp(allocator: std.mem.Allocator, base_bytes: []const u8, ex
     }
 
     // Write result to output (big-endian)
-    try write_big_endian(&result, output);
+    try writeBigEndian(&result, output);
 }
 
 /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
@@ -243,7 +243,7 @@ test "modexp: base^0 mod m = 1" {
     const mod = [_]u8{7};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 1), output[0]);
 }
 
@@ -255,7 +255,7 @@ test "modexp: 0^exp mod m = 0" {
     const mod = [_]u8{7};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 0), output[0]);
 }
 
@@ -267,7 +267,7 @@ test "modexp: 2^3 mod 5 = 3" {
     const mod = [_]u8{5};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 3), output[0]);
 }
 
@@ -279,11 +279,11 @@ test "modexp: division by zero" {
     const mod = [_]u8{0};
     var output: [1]u8 = undefined;
 
-    try std.testing.expectError(ModExpError.DivisionByZero, unaudited_modexp(allocator, &base, &exp, &mod, &output));
+    try std.testing.expectError(ModExpError.DivisionByZero, unauditedModexp(allocator, &base, &exp, &mod, &output));
 }
 
 /// Read big-endian bytes into a Managed big integer
-fn read_big_endian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
+fn readBigEndian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
     if (bytes.len == 0) {
         try big.set(0);
         return;
@@ -297,7 +297,7 @@ fn read_big_endian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
 }
 
 /// Write a Managed big integer to big-endian bytes
-fn write_big_endian(big: *const std.math.big.int.Managed, output: []u8) !void {
+fn writeBigEndian(big: *const std.math.big.int.Managed, output: []u8) !void {
     @memset(output, 0);
 
     // Check if the big integer is zero
@@ -334,7 +334,7 @@ test "modexp: large numbers - 2^255 mod 2^128" {
 
     var output: [17]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
 
     // 2^255 mod 2^128 = 2^127
     var expected: [17]u8 = .{0} ** 17;
@@ -357,7 +357,7 @@ test "modexp: large base and modulus" {
 
     var output: [16]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
 
     // Verify the result is less than the modulus
     for (output, 0..) |byte, i| {
@@ -382,7 +382,7 @@ test "modexp: very large exponent" {
 
     var output: [4]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
 
     // Verify result is less than modulus
     const result = unaudited_bytesToU64(&output);
@@ -604,7 +604,7 @@ test "modexp: all zero inputs" {
     const mod = [_]u8{7};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     // 0^0 mod 7 = 1 (by mathematical convention)
     try std.testing.expectEqual(@as(u8, 1), output[0]);
 }
@@ -617,7 +617,7 @@ test "modexp: empty exponent" {
     const mod = [_]u8{7};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     // base^(empty) = base^0 = 1
     try std.testing.expectEqual(@as(u8, 1), output[0]);
 }
@@ -630,7 +630,7 @@ test "modexp: empty base" {
     const mod = [_]u8{7};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     // (empty)^5 = 0^5 = 0
     try std.testing.expectEqual(@as(u8, 0), output[0]);
 }
@@ -643,7 +643,7 @@ test "modexp: empty modulus gives division by zero" {
     const mod: [0]u8 = .{};
     var output: [1]u8 = undefined;
 
-    try std.testing.expectError(ModExpError.DivisionByZero, unaudited_modexp(allocator, &base, &exp, &mod, &output));
+    try std.testing.expectError(ModExpError.DivisionByZero, unauditedModexp(allocator, &base, &exp, &mod, &output));
 }
 
 test "modexp: EIP-198 test vector 1" {
@@ -655,7 +655,7 @@ test "modexp: EIP-198 test vector 1" {
     const mod = [_]u8{3};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 1), output[0]);
 }
 
@@ -668,7 +668,7 @@ test "modexp: EIP-198 test vector 2" {
     const mod = [_]u8{13};
     var output: [1]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 8), output[0]);
 }
 
@@ -681,7 +681,7 @@ test "modexp: boundary at GAS_QUADRATIC_THRESHOLD" {
     const mod = [_]u8{0xFF} ++ ([_]u8{0xFF} ** 63);
     var output: [64]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
 
     // Verify result is less than modulus
     var result_greater = false;
@@ -710,7 +710,7 @@ test "modexp: boundary at GAS_LINEAR_THRESHOLD" {
 
     var output: [1024]u8 = undefined;
 
-    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
 
     // Verify result is less than modulus
     var result_greater = false;

@@ -236,7 +236,7 @@ pub fn decomposeScalar(scalar: u256) scalar_decomposition {
 
 // This uses GLS in NAF, we first compute k1 and k2 in NAF, such that k = k1 + λ * k2
 // we then use Shamir's trick to reduce the number of doublings
-pub fn mul_by_int(self: *const G1, scalar: u256) G1 {
+pub fn mulByInt(self: *const G1, scalar: u256) G1 {
     const decomposition = decomposeScalar(scalar);
     const k1 = decomposition.k1;
     const naf_k1 = naf(k1);
@@ -274,7 +274,7 @@ pub fn mul_by_int(self: *const G1, scalar: u256) G1 {
 }
 
 pub fn mul(self: *const G1, scalar: *const Fr) G1 {
-    return self.mul_by_int(scalar.value);
+    return self.mulByInt(scalar.value);
 }
 
 pub fn mulAssign(self: *G1, scalar: *const Fr) void {

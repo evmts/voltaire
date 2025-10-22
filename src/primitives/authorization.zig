@@ -101,7 +101,7 @@ pub const Authorization = struct {
         // Signature must be valid
         const r_value = std.mem.readInt(u256, &self.r, .big);
         const s_value = std.mem.readInt(u256, &self.s, .big);
-        if (!crypto.is_valid_signature(.{ .v = @intCast(self.v), .r = r_value, .s = s_value })) {
+        if (!crypto.isValidSignature(.{ .v = @intCast(self.v), .r = r_value, .s = s_value })) {
             return AuthorizationError.InvalidSignature;
         }
     }
@@ -251,7 +251,7 @@ test "authorization creation and recovery" {
     const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
 
     const signer_address = try crypto.getAddress(allocator, private_key);
-    const target_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    const target_address = try Address.fromHex("0x1111111111111111111111111111111111111111");
 
     const auth = try createAuthorization(
         allocator,
@@ -272,7 +272,7 @@ test "authorization creation and recovery" {
 test "authorization validation" {
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = [_]u8{0x12} ** 32,
@@ -300,7 +300,7 @@ test "authorization list encoding" {
     const auth1 = try createAuthorization(
         allocator,
         1,
-        try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        try Address.fromHex("0x1111111111111111111111111111111111111111"),
         0,
         private_key,
     );
@@ -308,7 +308,7 @@ test "authorization list encoding" {
     const auth2 = try createAuthorization(
         allocator,
         1,
-        try Address.from_hex("0x2222222222222222222222222222222222222222"),
+        try Address.fromHex("0x2222222222222222222222222222222222222222"),
         1,
         private_key,
     );
@@ -325,8 +325,8 @@ test "authorization list encoding" {
 
 test "delegation designation" {
     var delegation = DelegationDesignation{
-        .authority = try Address.from_hex("0x1111111111111111111111111111111111111111"),
-        .delegated_address = try Address.from_hex("0x2222222222222222222222222222222222222222"),
+        .authority = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+        .delegated_address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
     };
 
     // Should be active
@@ -347,7 +347,7 @@ test "batch authorization processing" {
     const auth1 = try createAuthorization(
         allocator,
         1,
-        try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        try Address.fromHex("0x1111111111111111111111111111111111111111"),
         0,
         private_key1,
     );
@@ -355,7 +355,7 @@ test "batch authorization processing" {
     const auth2 = try createAuthorization(
         allocator,
         1,
-        try Address.from_hex("0x2222222222222222222222222222222222222222"),
+        try Address.fromHex("0x2222222222222222222222222222222222222222"),
         0,
         private_key2,
     );
@@ -374,7 +374,7 @@ test "authorization gas cost calculation" {
     const auth_list = [_]Authorization{
         .{
             .chain_id = 1,
-            .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
             .nonce = 0,
             .v = 27,
             .r = [_]u8{0x12} ** 32,
@@ -382,7 +382,7 @@ test "authorization gas cost calculation" {
         },
         .{
             .chain_id = 1,
-            .address = try Address.from_hex("0x2222222222222222222222222222222222222222"),
+            .address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
             .nonce = 0,
             .v = 27,
             .r = [_]u8{0x56} ** 32,
@@ -402,7 +402,7 @@ test "authority() recovers correct signer address" {
 
     const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
     const expected_signer = try crypto.getAddress(allocator, private_key);
-    const target = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    const target = try Address.fromHex("0x1111111111111111111111111111111111111111");
 
     const auth = try createAuthorization(
         allocator,
@@ -421,7 +421,7 @@ test "authority() recovers correct signer with different nonces" {
 
     const private_key: crypto.PrivateKey = [_]u8{0x99} ** 32;
     const expected_signer = try crypto.getAddress(allocator, private_key);
-    const target = try Address.from_hex("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    const target = try Address.fromHex("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
 
     const nonces = [_]u64{ 0, 1, 100, 999999, std.math.maxInt(u64) };
 
@@ -443,7 +443,7 @@ test "signingHash() produces consistent hashes" {
     const allocator = testing.allocator;
     _ = allocator;
 
-    const addr = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
     const auth1 = Authorization{
         .chain_id = 1,
         .address = addr,
@@ -472,7 +472,7 @@ test "signingHash() produces different hashes for different inputs" {
     const allocator = testing.allocator;
     _ = allocator;
 
-    const addr = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
     const auth1 = Authorization{
         .chain_id = 1,
         .address = addr,
@@ -513,7 +513,7 @@ test "signingHash() handles edge case nonce values" {
     const allocator = testing.allocator;
     _ = allocator;
 
-    const addr = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
 
     const auth_zero = Authorization{
         .chain_id = 1,
@@ -547,7 +547,7 @@ test "validate() rejects zero chain ID" {
 
     var auth = Authorization{
         .chain_id = 0,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = [_]u8{0x12} ** 32,
@@ -579,7 +579,7 @@ test "validate() rejects signature with r=0" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = [_]u8{0} ** 32,
@@ -595,7 +595,7 @@ test "validate() rejects signature with s=0" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = [_]u8{0x12} ** 32,
@@ -615,7 +615,7 @@ test "validate() rejects signature with r >= N" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = r_bytes,
@@ -635,7 +635,7 @@ test "validate() rejects signature with s >= N" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = [_]u8{0x12} ** 32,
@@ -658,7 +658,7 @@ test "validate() rejects malleable signature (high S-value)" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = [_]u8{0x12} ** 32,
@@ -683,7 +683,7 @@ test "validate() accepts signature with s = N/2 (boundary)" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = r_bytes,
@@ -705,7 +705,7 @@ test "validate() accepts signature with s = 1 (minimum)" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = r_bytes,
@@ -730,7 +730,7 @@ test "validate() accepts signature with r = N-1 (maximum valid)" {
 
     var auth = Authorization{
         .chain_id = 1,
-        .address = try Address.from_hex("0x1111111111111111111111111111111111111111"),
+        .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = r_bytes,

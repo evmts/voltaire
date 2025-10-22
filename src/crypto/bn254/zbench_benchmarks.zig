@@ -65,7 +65,7 @@ pub const SecureRandomGenerator = struct {
 
     /// Generate random Fp2 element
     pub fn randomFp2Mont(self: *SecureRandomGenerator) Fp2Mont {
-        return Fp2Mont.init_from_int(self.randomU256(), self.randomU256());
+        return Fp2Mont.initFromInt(self.randomU256(), self.randomU256());
     }
 
     /// Generate non-zero random Fp2 element
@@ -78,7 +78,7 @@ pub const SecureRandomGenerator = struct {
 
     /// Generate random Fp6 element
     pub fn randomFp6Mont(self: *SecureRandomGenerator) Fp6Mont {
-        return Fp6Mont.init_from_int(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
+        return Fp6Mont.initFromInt(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
     }
 
     /// Generate non-zero random Fp6 element
@@ -91,7 +91,7 @@ pub const SecureRandomGenerator = struct {
 
     /// Generate random Fp12 element
     pub fn randomFp12Mont(self: *SecureRandomGenerator) Fp12Mont {
-        return Fp12Mont.init_from_int(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
+        return Fp12Mont.initFromInt(self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256(), self.randomU256());
     }
 
     /// Generate non-zero random Fp12 element
@@ -793,7 +793,7 @@ fn benchmarkPairing(allocator: std.mem.Allocator) void {
 fn benchmarkMillerLoop(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
-    const result = pairing_mod.miller_loop(&test_inputs.g1_points[i], &test_inputs.g2_points[i]);
+    const result = pairing_mod.millerLoop(&test_inputs.g1_points[i], &test_inputs.g2_points[i]);
     std.mem.doNotOptimizeAway(result);
 
     _ = allocator;
@@ -802,7 +802,7 @@ fn benchmarkMillerLoop(allocator: std.mem.Allocator) void {
 fn benchmarkFinalExponentiation(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
-    const result = pairing_mod.final_exponentiation(&test_inputs.fp12_nonzero[i]);
+    const result = pairing_mod.finalExponentiation(&test_inputs.fp12_nonzero[i]);
     std.mem.doNotOptimizeAway(result);
 
     _ = allocator;
@@ -811,7 +811,7 @@ fn benchmarkFinalExponentiation(allocator: std.mem.Allocator) void {
 fn benchmarkFinalExponentiationEasy(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
-    const result = pairing_mod.final_exponentiation_easy_part(&test_inputs.fp12_nonzero[i]);
+    const result = pairing_mod.finalExponentiationEasyPart(&test_inputs.fp12_nonzero[i]);
     std.mem.doNotOptimizeAway(result);
 
     _ = allocator;
@@ -820,7 +820,7 @@ fn benchmarkFinalExponentiationEasy(allocator: std.mem.Allocator) void {
 fn benchmarkFinalExponentiationHard(allocator: std.mem.Allocator) void {
     const test_inputs = getInputs();
     const i = nextInputIndex();
-    const result = pairing_mod.final_exponentiation_hard_part(&test_inputs.fp12_nonzero[i]);
+    const result = pairing_mod.finalExponentiationHardPart(&test_inputs.fp12_nonzero[i]);
     std.mem.doNotOptimizeAway(result);
 
     _ = allocator;

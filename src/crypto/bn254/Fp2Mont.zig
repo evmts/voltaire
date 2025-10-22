@@ -21,7 +21,7 @@ pub fn init(val_u0: *const FpMont, val_u1: *const FpMont) Fp2Mont {
     };
 }
 
-pub fn init_from_int(real: u256, imag: u256) Fp2Mont {
+pub fn initFromInt(real: u256, imag: u256) Fp2Mont {
     return Fp2Mont{
         .u0 = FpMont.init(real),
         .u1 = FpMont.init(imag),
@@ -209,7 +209,7 @@ pub fn frobeniusMapAssign(self: *Fp2Mont) void {
 const std = @import("std");
 
 fn fp2mont(real: u256, imag: u256) Fp2Mont {
-    return Fp2Mont.init_from_int(real, imag);
+    return Fp2Mont.initFromInt(real, imag);
 }
 
 fn expectFp2MontEqual(expected: Fp2Mont, actual: Fp2Mont) !void {
@@ -504,13 +504,13 @@ test "Fp2Mont.equal one component different" {
 }
 
 test "Fp2Mont.init basic initialization" {
-    const a = Fp2Mont.init_from_int(123, 456);
+    const a = Fp2Mont.initFromInt(123, 456);
     const expected = fp2mont(123, 456);
     try expectFp2MontEqual(expected, a);
 }
 
 test "Fp2Mont.init with modular reduction" {
-    const a = Fp2Mont.init_from_int(curve_parameters.FP_MOD + 5, curve_parameters.FP_MOD + 10);
+    const a = Fp2Mont.initFromInt(curve_parameters.FP_MOD + 5, curve_parameters.FP_MOD + 10);
     const expected = fp2mont(5, 10);
     try expectFp2MontEqual(expected, a);
 }
@@ -689,7 +689,7 @@ test "Fp2Mont.representation consistency" {
     const values = [_][2]u256{ .{ 0, 0 }, .{ 1, 0 }, .{ 0, 1 }, .{ 1, 1 }, .{ 123, 456 }, .{ curve_parameters.FP_MOD - 1, curve_parameters.FP_MOD - 1 } };
     for (values) |val| {
         const mont = fp2mont(val[0], val[1]);
-        const expected = Fp2Mont.init_from_int(val[0], val[1]);
+        const expected = Fp2Mont.initFromInt(val[0], val[1]);
         try expectFp2MontEqual(expected, mont);
     }
 }

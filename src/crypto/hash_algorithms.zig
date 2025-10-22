@@ -19,7 +19,7 @@ pub const SHA256 = struct {
     }
 
     /// Compute SHA256 hash and return as fixed-size array
-    pub fn hash_fixed(input: []const u8) [OUTPUT_SIZE]u8 {
+    pub fn hashFixed(input: []const u8) [OUTPUT_SIZE]u8 {
         var result: [OUTPUT_SIZE]u8 = undefined;
         hash(input, &result);
         return result;
@@ -43,9 +43,9 @@ test "SHA256 hash computation" {
     try std.testing.expectEqualSlices(u8, &expected, &output);
 }
 
-test "SHA256 hash_fixed function" {
+test "SHA256 hashFixed function" {
     const test_input = "hello world";
-    const result = SHA256.hash_fixed(test_input);
+    const result = SHA256.hashFixed(test_input);
 
     const expected = [_]u8{
         0xb9, 0x4d, 0x27, 0xb9, 0x93, 0x4d, 0x3e, 0x08,
@@ -68,13 +68,13 @@ pub const RIPEMD160 = struct {
             std.debug.panic("RIPEMD160.hash: output buffer too small (got {}, need {})", .{ output.len, OUTPUT_SIZE });
         }
 
-        const result = ripemd160_impl.unaudited_hash(input);
+        const result = ripemd160_impl.unauditedHash(input);
         @memcpy(output[0..OUTPUT_SIZE], &result);
     }
 
     /// Compute RIPEMD160 hash and return as fixed-size array
-    pub fn hash_fixed(input: []const u8) [OUTPUT_SIZE]u8 {
-        return ripemd160_impl.unaudited_hash(input);
+    pub fn hashFixed(input: []const u8) [OUTPUT_SIZE]u8 {
+        return ripemd160_impl.unauditedHash(input);
     }
 };
 
@@ -94,9 +94,9 @@ test "RIPEMD160 hash computation" {
     try std.testing.expectEqualSlices(u8, &expected, &output);
 }
 
-test "RIPEMD160 hash_fixed function" {
+test "RIPEMD160 hashFixed function" {
     const test_input = "";
-    const result = RIPEMD160.hash_fixed(test_input);
+    const result = RIPEMD160.hashFixed(test_input);
 
     // Known RIPEMD160 hash of empty string
     const expected = [_]u8{
@@ -124,8 +124,8 @@ pub const BLAKE2F = struct {
     /// @param t Offset counters (2 x 64-bit words)
     /// @param f Final block flag
     /// @param rounds Number of rounds to perform
-    pub fn unaudited_compress(h: *[STATE_SIZE]u64, m: *const [MESSAGE_SIZE]u64, t: [2]u64, f: bool, rounds: u32) void {
-        blake2_impl.unaudited_blake2f_compress(h, m, t, f, rounds);
+    pub fn unauditedCompress(h: *[STATE_SIZE]u64, m: *const [MESSAGE_SIZE]u64, t: [2]u64, f: bool, rounds: u32) void {
+        blake2_impl.unauditedBlake2fCompress(h, m, t, f, rounds);
     }
 
     /// Parse and compress from EIP-152 format input
@@ -134,7 +134,7 @@ pub const BLAKE2F = struct {
     /// Use at your own risk in production systems.
     /// @param input 213-byte input (rounds + h + m + t + f)
     /// @param output 64-byte output buffer
-    pub fn unaudited_compress_eip152(input: []const u8, output: []u8) !void {
+    pub fn unauditedCompressEip152(input: []const u8, output: []u8) !void {
         if (input.len != 213) return error.InvalidInputLength;
         if (output.len < OUTPUT_SIZE) return error.OutputBufferTooSmall;
 
@@ -166,7 +166,7 @@ pub const BLAKE2F = struct {
         if (f != 0 and f != 1) return error.InvalidFinalFlag;
 
         // Perform compression
-        unaudited_compress(&h, &m, t, f != 0, rounds);
+        unauditedCompress(&h, &m, t, f != 0, rounds);
 
         // Write result to output (little-endian)
         for (0..8) |i| {

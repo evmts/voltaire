@@ -57,7 +57,7 @@
 //! const primitives = @import("primitives");
 //!
 //! // Create address from hex string
-//! const addr = primitives.Address.from_hex("0x742d35Cc6641C91B6E...d");
+//! const addr = primitives.Address.fromHex("0x742d35Cc6641C91B6E...d");
 //!
 //! // Generate contract address
 //! const contract_addr = primitives.Address.get_contract_address(deployer, nonce);

@@ -59,7 +59,7 @@ pub fn isOnCurve(self: *const G2) bool {
     const xi_inv = xi.inv() catch |err| {
         std.debug.panic("G2.isOnCurve: xi inversion failed (xi is a constant and should not be zero): {}", .{err});
     };
-    const z_factor = Fp2Mont.init_from_int(3, 0).mul(&xi_inv);
+    const z_factor = Fp2Mont.initFromInt(3, 0).mul(&xi_inv);
 
     // BN254 Jacobian equation: Y² = X³ + (3/xi)Z⁶
     const y_squared = self.y.mul(&self.y);
@@ -278,10 +278,10 @@ pub fn decomposeScalar(scalar: u256) ScalarDecomposition {
 }
 
 pub fn mul(self: *const G2, scalar: *const Fr) G2 {
-    return self.mul_by_int(scalar.value);
+    return self.mulByInt(scalar.value);
 }
 
-pub fn mul_by_int(self: *const G2, scalar: u256) G2 {
+pub fn mulByInt(self: *const G2, scalar: u256) G2 {
     if (self.isInfinity() or scalar == 0) {
         return INFINITY;
     }
@@ -290,9 +290,9 @@ pub fn mul_by_int(self: *const G2, scalar: u256) G2 {
 
     var base_points = [4]G2{
         self.*,
-        self.lambda_endomorphism(),
-        self.gamma_endomorphism(),
-        self.gamma_lambda_endomorphism(),
+        self.lambdaEndomorphism(),
+        self.gammaEndomorphism(),
+        self.gammaLambdaEndomorphism(),
     };
 
     if (decomposition.k1 < 0) base_points[0].negAssign();
@@ -354,7 +354,7 @@ pub fn frobenius(self: *const G2) G2 {
     };
 }
 
-pub fn lambda_endomorphism(self: *const G2) G2 {
+pub fn lambdaEndomorphism(self: *const G2) G2 {
     const cube_root = FpMont.init(curve_parameters.G2_SCALAR.cube_root);
 
     const self_aff = self.toAffine();
@@ -365,12 +365,12 @@ pub fn lambda_endomorphism(self: *const G2) G2 {
     };
 }
 
-pub fn gamma_endomorphism(self: *const G2) G2 {
+pub fn gammaEndomorphism(self: *const G2) G2 {
     return self.frobenius().frobenius().frobenius();
 }
 
-pub fn gamma_lambda_endomorphism(self: *const G2) G2 {
-    return self.gamma_endomorphism().lambda_endomorphism();
+pub fn gammaLambdaEndomorphism(self: *const G2) G2 {
+    return self.gammaEndomorphism().lambdaEndomorphism();
 }
 
 test "G2.isOnCurve generator" {
@@ -396,7 +396,7 @@ test "G2.curve order annihilates subgroup points" {
     for (scalars) |k| {
         var scalar = Fr.init(k);
         const point = G2.GENERATOR.mul(&scalar);
-        const multiple = point.mul_by_int(order);
+        const multiple = point.mulByInt(order);
         try std.testing.expect(multiple.isInfinity());
     }
 }
@@ -422,7 +422,7 @@ test "G2.isInSubgroup non subgroup point" {
 test "G2.equal different representations same point" {
     var scalar = Fr.init(11);
     const point = G2.GENERATOR.mul(&scalar);
-    const scale = Fp2Mont.init_from_int(5, 0);
+    const scale = Fp2Mont.initFromInt(5, 0);
     const scale_sq = scale.mul(&scale);
     const scale_cu = scale_sq.mul(&scale);
     const scaled = G2{
@@ -522,21 +522,21 @@ test "G2.mul matches naive ladder" {
             }
             addend = addend.double();
         }
-        const actual = G2.GENERATOR.mul_by_int(k);
+        const actual = G2.GENERATOR.mulByInt(k);
         try std.testing.expect(expected.equal(&actual));
     }
 }
 
 test "G2.mul edge cases" {
-    const zero = G2.GENERATOR.mul_by_int(0);
+    const zero = G2.GENERATOR.mulByInt(0);
     try std.testing.expect(zero.isInfinity());
 
-    const one = G2.GENERATOR.mul_by_int(1);
+    const one = G2.GENERATOR.mulByInt(1);
     try std.testing.expect(one.equal(&G2.GENERATOR));
 
     const near_order = curve_parameters.FR_MOD - 1;
     const neg_point = G2.GENERATOR.neg();
-    const result = G2.GENERATOR.mul_by_int(near_order);
+    const result = G2.GENERATOR.mulByInt(near_order);
     try std.testing.expect(result.equal(&neg_point));
 }
 
@@ -559,7 +559,7 @@ test "G2.lambda endomorphism equals multiplication by lambda" {
         var scalar = Fr.init(k);
         const point = G2.GENERATOR.mul(&scalar);
         const by_lambda = point.mul(&lambda);
-        const endo = point.lambda_endomorphism();
+        const endo = point.lambdaEndomorphism();
         try std.testing.expect(by_lambda.equal(&endo));
     }
 }
@@ -571,7 +571,7 @@ test "G2.gamma endomorphism equals multiplication by gamma" {
         var scalar = Fr.init(k);
         const point = G2.GENERATOR.mul(&scalar);
         const by_gamma = point.mul(&gamma);
-        const endo = point.gamma_endomorphism();
+        const endo = point.gammaEndomorphism();
         try std.testing.expect(by_gamma.equal(&endo));
     }
 }
@@ -582,9 +582,9 @@ test "G2.gamma lambda endomorphism equals multiplication by gamma lambda" {
     for (scalars) |k| {
         var scalar = Fr.init(k);
         const point = G2.GENERATOR.mul(&scalar);
-        const composed = point.gamma_endomorphism().lambda_endomorphism();
+        const composed = point.gammaEndomorphism().lambdaEndomorphism();
         const by_gamma_lambda = point.mul(&gamma_lambda);
-        const direct = point.gamma_lambda_endomorphism();
+        const direct = point.gammaLambdaEndomorphism();
         try std.testing.expect(by_gamma_lambda.equal(&direct));
         try std.testing.expect(composed.equal(&direct));
     }

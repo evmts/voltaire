@@ -20,9 +20,9 @@ pub fn init(y0: *const Fp2Mont, y1: *const Fp2Mont) Fp4Mont {
     return Fp4Mont{ .y0 = y0.*, .y1 = y1.* };
 }
 
-pub fn init_from_int(y0_real: u256, y0_imag: u256, y1_real: u256, y1_imag: u256) Fp4Mont {
-    const y0 = Fp2Mont.init_from_int(y0_real, y0_imag);
-    const y1 = Fp2Mont.init_from_int(y1_real, y1_imag);
+pub fn initFromInt(y0_real: u256, y0_imag: u256, y1_real: u256, y1_imag: u256) Fp4Mont {
+    const y0 = Fp2Mont.initFromInt(y0_real, y0_imag);
+    const y1 = Fp2Mont.initFromInt(y1_real, y1_imag);
     return Fp4Mont{
         .y0 = y0,
         .y1 = y1,
@@ -128,7 +128,7 @@ pub fn equal(self: *const Fp4Mont, other: *const Fp4Mont) bool {
 const std = @import("std");
 
 fn fp4mont(y0_real: u256, y0_imag: u256, y1_real: u256, y1_imag: u256) Fp4Mont {
-    return Fp4Mont.init_from_int(y0_real, y0_imag, y1_real, y1_imag);
+    return Fp4Mont.initFromInt(y0_real, y0_imag, y1_real, y1_imag);
 }
 
 fn expectFp4MontEqual(expected: Fp4Mont, actual: Fp4Mont) !void {
@@ -138,8 +138,8 @@ fn expectFp4MontEqual(expected: Fp4Mont, actual: Fp4Mont) !void {
 test "Fp4Mont.init basic initialization" {
     const a = fp4mont(123, 456, 789, 101112);
     const expected = Fp4Mont{
-        .y0 = Fp2Mont.init_from_int(123, 456),
-        .y1 = Fp2Mont.init_from_int(789, 101112),
+        .y0 = Fp2Mont.initFromInt(123, 456),
+        .y1 = Fp2Mont.initFromInt(789, 101112),
     };
     try expectFp4MontEqual(expected, a);
 }
@@ -291,8 +291,8 @@ test "Fp4Mont.mulByY basic operation" {
     const a = fp4mont(1, 2, 3, 4);
     const result = a.mulByY();
     const xi = curve_parameters.XI;
-    const expected_y0 = Fp2Mont.init_from_int(3, 4).mul(&xi);
-    const expected_y1 = Fp2Mont.init_from_int(1, 2);
+    const expected_y0 = Fp2Mont.initFromInt(3, 4).mul(&xi);
+    const expected_y1 = Fp2Mont.initFromInt(1, 2);
     const expected = Fp4Mont{ .y0 = expected_y0, .y1 = expected_y1 };
     try expectFp4MontEqual(expected, result);
 }

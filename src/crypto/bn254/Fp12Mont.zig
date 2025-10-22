@@ -21,9 +21,9 @@ pub fn init(w0: *const Fp6Mont, w1: *const Fp6Mont) Fp12Mont {
     return Fp12Mont{ .w0 = w0.*, .w1 = w1.* };
 }
 
-pub fn init_from_int(w0_v0_real: u256, w0_v0_imag: u256, w0_v1_real: u256, w0_v1_imag: u256, w0_v2_real: u256, w0_v2_imag: u256, w1_v0_real: u256, w1_v0_imag: u256, w1_v1_real: u256, w1_v1_imag: u256, w1_v2_real: u256, w1_v2_imag: u256) Fp12Mont {
-    const w0 = Fp6Mont.init_from_int(w0_v0_real, w0_v0_imag, w0_v1_real, w0_v1_imag, w0_v2_real, w0_v2_imag);
-    const w1 = Fp6Mont.init_from_int(w1_v0_real, w1_v0_imag, w1_v1_real, w1_v1_imag, w1_v2_real, w1_v2_imag);
+pub fn initFromInt(w0_v0_real: u256, w0_v0_imag: u256, w0_v1_real: u256, w0_v1_imag: u256, w0_v2_real: u256, w0_v2_imag: u256, w1_v0_real: u256, w1_v0_imag: u256, w1_v1_real: u256, w1_v1_imag: u256, w1_v2_real: u256, w1_v2_imag: u256) Fp12Mont {
+    const w0 = Fp6Mont.initFromInt(w0_v0_real, w0_v0_imag, w0_v1_real, w0_v1_imag, w0_v2_real, w0_v2_imag);
+    const w1 = Fp6Mont.initFromInt(w1_v0_real, w1_v0_imag, w1_v1_real, w1_v1_imag, w1_v2_real, w1_v2_imag);
     return Fp12Mont{
         .w0 = w0,
         .w1 = w1,
@@ -261,7 +261,7 @@ pub fn squareCyclotomicAssign(self: *Fp12Mont) void {
 const std = @import("std");
 
 fn fp12mont(w0_v0_real: u256, w0_v0_imag: u256, w0_v1_real: u256, w0_v1_imag: u256, w0_v2_real: u256, w0_v2_imag: u256, w1_v0_real: u256, w1_v0_imag: u256, w1_v1_real: u256, w1_v1_imag: u256, w1_v2_real: u256, w1_v2_imag: u256) Fp12Mont {
-    return Fp12Mont.init_from_int(w0_v0_real, w0_v0_imag, w0_v1_real, w0_v1_imag, w0_v2_real, w0_v2_imag, w1_v0_real, w1_v0_imag, w1_v1_real, w1_v1_imag, w1_v2_real, w1_v2_imag);
+    return Fp12Mont.initFromInt(w0_v0_real, w0_v0_imag, w0_v1_real, w0_v1_imag, w0_v2_real, w0_v2_imag, w1_v0_real, w1_v0_imag, w1_v1_real, w1_v1_imag, w1_v2_real, w1_v2_imag);
 }
 
 fn expectFp12MontEqual(expected: Fp12Mont, actual: Fp12Mont) !void {
@@ -271,8 +271,8 @@ fn expectFp12MontEqual(expected: Fp12Mont, actual: Fp12Mont) !void {
 test "Fp12Mont.init basic initialization" {
     const a = fp12mont(123, 456, 789, 101112, 131415, 161718, 192021, 222324, 252627, 282930, 313233, 343536);
     const expected = Fp12Mont{
-        .w0 = Fp6Mont.init_from_int(123, 456, 789, 101112, 131415, 161718),
-        .w1 = Fp6Mont.init_from_int(192021, 222324, 252627, 282930, 313233, 343536),
+        .w0 = Fp6Mont.initFromInt(123, 456, 789, 101112, 131415, 161718),
+        .w1 = Fp6Mont.initFromInt(192021, 222324, 252627, 282930, 313233, 343536),
     };
     try expectFp12MontEqual(expected, a);
 }
@@ -517,7 +517,7 @@ test "Fp12Mont.frobeniusMap basic operation" {
 test "Fp12Mont.powParamT basic operation" {
     const pairing = @import("pairing.zig");
     const a = fp12mont(2, 1, 1, 2, 3, 1, 1, 2, 3, 1, 2, 1);
-    const a_cycl = pairing.final_exponentiation_easy_part(&a);
+    const a_cycl = pairing.finalExponentiationEasyPart(&a);
     const result = a_cycl.powParamT();
     // Verify it's equivalent to a.pow(curve_parameters.CURVE_PARAM_T)
     const expected = a_cycl.pow(curve_parameters.CURVE_PARAM_T);
@@ -537,7 +537,7 @@ test "Fp12Mont.squareCyclotomic basic operation" {
 
     // Test with a non-trivial element
     const a = fp12mont(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-    const a_cycl = pairing.final_exponentiation_easy_part(&a);
+    const a_cycl = pairing.finalExponentiationEasyPart(&a);
     const result = a_cycl.squareCyclotomic();
     const result2 = a_cycl.square();
 

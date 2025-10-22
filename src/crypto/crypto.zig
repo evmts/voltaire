@@ -130,11 +130,11 @@ pub const PublicKey = struct {
     x: u256,
     y: u256,
 
-    pub fn to_address(self: PublicKey) Address {
-        return public_key_to_address(self);
+    pub fn toAddress(self: PublicKey) Address {
+        return publicKeyToAddress(self);
     }
 
-    pub fn to_affine_point(self: PublicKey) secp256k1.AffinePoint {
+    pub fn toAffinePoint(self: PublicKey) secp256k1.AffinePoint {
         return secp256k1.AffinePoint{
             .x = self.x,
             .y = self.y,
@@ -142,7 +142,7 @@ pub const PublicKey = struct {
         };
     }
 
-    pub fn from_affine_point(point: secp256k1.AffinePoint) PublicKey {
+    pub fn fromAffinePoint(point: secp256k1.AffinePoint) PublicKey {
         return PublicKey{
             .x = point.x,
             .y = point.y,
@@ -150,8 +150,8 @@ pub const PublicKey = struct {
     }
 
     pub fn isValid(self: PublicKey) bool {
-        const point = self.to_affine_point();
-        return point.is_on_curve() and !point.infinity;
+        const point = self.toAffinePoint();
+        return point.isOnCurve() and !point.infinity;
     }
 };
 
@@ -160,7 +160,7 @@ pub const Signature = struct {
     s: u256,
     v: u8, // recovery id + 27 (Ethereum convention)
 
-    pub fn recovery_id(self: Signature) u8 {
+    pub fn recoveryId(self: Signature) u8 {
         // Handle both legacy (27/28) and EIP-155 (chainId * 2 + 35/36) formats
         if (self.v >= 27) {
             return @intCast((self.v - 27) % 2);
@@ -168,11 +168,11 @@ pub const Signature = struct {
         return self.v;
     }
 
-    pub fn y_parity(self: Signature) u8 {
-        return self.recovery_id();
+    pub fn yParity(self: Signature) u8 {
+        return self.recoveryId();
     }
 
-    pub fn to_bytes(self: Signature) [65]u8 {
+    pub fn toBytes(self: Signature) [65]u8 {
         var result: [65]u8 = undefined;
         std.mem.writeInt(u256, result[0..32], self.r, .big);
         std.mem.writeInt(u256, result[32..64], self.s, .big);
@@ -180,7 +180,7 @@ pub const Signature = struct {
         return result;
     }
 
-    pub fn from_bytes(bytes: [65]u8) Signature {
+    pub fn fromBytes(bytes: [65]u8) Signature {
         return Signature{
             .r = std.mem.readInt(u256, bytes[0..32], .big),
             .s = std.mem.readInt(u256, bytes[32..64], .big),
@@ -188,18 +188,18 @@ pub const Signature = struct {
         };
     }
 
-    pub fn to_hex(self: Signature) [132]u8 {
-        const bytes = self.to_bytes();
+    pub fn toHex(self: Signature) [132]u8 {
+        const bytes = self.toBytes();
         return hex.bytesToHex(bytes);
     }
 
-    pub fn from_hex(hex_str: []const u8) !Signature {
+    pub fn fromHex(hex_str: []const u8) !Signature {
         const bytes = try hex.hexToBytesFixed(65, hex_str);
-        return from_bytes(bytes);
+        return fromBytes(bytes);
     }
 
     pub fn isValid(self: Signature) bool {
-        return secp256k1.unaudited_validate_signature(self.r, self.s);
+        return secp256k1.unauditedValidateSignature(self.r, self.s);
     }
 };
 
@@ -357,7 +357,7 @@ pub const bls12_381 = struct {
     }
 
     /// Get the output size for pairing operations
-    pub fn pairing_output_size() u32 {
+    pub fn pairingOutputSize() u32 {
         return bls12_381_pairing_output_size();
     }
 };
@@ -381,7 +381,7 @@ pub fn unaudited_randomPrivateKey() !PrivateKey {
 }
 
 /// Convert public key to Ethereum address
-pub fn public_key_to_address(public_key: PublicKey) Address {
+pub fn publicKeyToAddress(public_key: PublicKey) Address {
     var pub_key_bytes: [64]u8 = undefined;
     std.mem.writeInt(u256, pub_key_bytes[0..32], public_key.x, .big);
     std.mem.writeInt(u256, pub_key_bytes[32..64], public_key.y, .big);
@@ -394,7 +394,7 @@ pub fn public_key_to_address(public_key: PublicKey) Address {
 }
 
 /// Create EIP-191 prefixed hash for a message
-pub fn hash_message(message: []const u8) Hash.Hash {
+pub fn hashMessage(message: []const u8) Hash.Hash {
     var hasher = crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(ETHEREUM_MESSAGE_PREFIX);
 
@@ -415,8 +415,8 @@ pub fn hash_message(message: []const u8) Hash.Hash {
 }
 
 /// Validate signature parameters (basic validation)
-pub fn is_valid_signature(signature: Signature) bool {
-    return secp256k1.unaudited_validate_signature(signature.r, signature.s);
+pub fn isValidSignature(signature: Signature) bool {
+    return secp256k1.unauditedValidateSignature(signature.r, signature.s);
 }
 
 /// Derive public key from private key
@@ -434,7 +434,7 @@ pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
 
     // Multiply generator point by private key
     const generator = secp256k1.AffinePoint.generator();
-    const public_key_point = generator.scalar_mul(private_key_u256);
+    const public_key_point = generator.scalarMul(private_key_u256);
 
     if (public_key_point.infinity) {
         return CryptoError.InvalidPrivateKey;
@@ -469,7 +469,7 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     defer secureZeroMemory(&k);
     var r: u256 = 0;
     var s: u256 = 0;
-    var recovery_id: u8 = 0;
+    var recoveryId: u8 = 0;
 
     // Try random k values until we get a valid signature
     var attempts: u32 = 0;
@@ -485,17 +485,17 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
 
         // Calculate r = (k * G).x mod n
         const generator = secp256k1.AffinePoint.generator();
-        const point_r = generator.scalar_mul(k);
+        const point_r = generator.scalarMul(k);
         if (point_r.infinity) continue;
 
         r = point_r.x % SECP256K1_N;
         if (r == 0) continue;
 
         // Calculate s = k^-1 * (hash + r * private_key) mod n
-        const k_inv = secp256k1.unaudited_invmod(k, SECP256K1_N) orelse continue;
-        const r_d = secp256k1.unaudited_mulmod(r, private_key_u256, SECP256K1_N);
-        const hash_plus_rd = secp256k1.unaudited_addmod(message_u256, r_d, SECP256K1_N);
-        s = secp256k1.unaudited_mulmod(k_inv, hash_plus_rd, SECP256K1_N);
+        const k_inv = secp256k1.unauditedInvmod(k, SECP256K1_N) orelse continue;
+        const r_d = secp256k1.unauditedMulmod(r, private_key_u256, SECP256K1_N);
+        const hash_plus_rd = secp256k1.unauditedAddmod(message_u256, r_d, SECP256K1_N);
+        s = secp256k1.unauditedMulmod(k_inv, hash_plus_rd, SECP256K1_N);
 
         if (s == 0) continue;
 
@@ -506,12 +506,12 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
         }
 
         // Calculate recovery ID
-        recovery_id = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
+        recoveryId = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
 
         // Verify signature by recovering public key
-        const recovered_address = unaudited_recoverAddress(hash, .{ .v = recovery_id, .r = r, .s = s }) catch continue;
+        const recovered_address = unaudited_recoverAddress(hash, .{ .v = recoveryId, .r = r, .s = s }) catch continue;
         const expected_public_key = unaudited_getPublicKey(private_key) catch continue;
-        const expected_address = expected_public_key.to_address();
+        const expected_address = expected_public_key.toAddress();
 
         if (std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes)) {
             break;
@@ -525,7 +525,7 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     return Signature{
         .r = r,
         .s = s,
-        .v = recovery_id + 27,
+        .v = recoveryId + 27,
     };
 }
 
@@ -534,7 +534,7 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
 /// This function implements message signing without security review.
 /// Use at your own risk in production systems.
 pub fn unaudited_signMessage(message: []const u8, private_key: PrivateKey) !Signature {
-    const message_hash = hash_message(message);
+    const message_hash = hashMessage(message);
     return unaudited_signHash(message_hash, private_key);
 }
 
@@ -547,12 +547,12 @@ pub fn unaudited_recoverAddress(hash: Hash.Hash, signature: Signature) !Address 
         return CryptoError.InvalidSignature;
     }
 
-    const recovery_id = signature.recovery_id();
-    if (recovery_id > 1) {
+    const recoveryId = signature.recoveryId();
+    if (recoveryId > 1) {
         return CryptoError.InvalidRecoveryId;
     }
 
-    return secp256k1.unaudited_recover_address(&hash, recovery_id, signature.r, signature.s);
+    return secp256k1.unauditedRecoverAddress(&hash, recoveryId, signature.r, signature.s);
 }
 
 /// Recover address from message and signature
@@ -560,7 +560,7 @@ pub fn unaudited_recoverAddress(hash: Hash.Hash, signature: Signature) !Address 
 /// This function implements message address recovery without security review.
 /// Use at your own risk in production systems.
 pub fn unaudited_recoverMessageAddress(message: []const u8, signature: Signature) !Address {
-    const message_hash = hash_message(message);
+    const message_hash = hashMessage(message);
     return unaudited_recoverAddress(message_hash, signature);
 }
 
@@ -619,7 +619,7 @@ test "public key derivation" {
 test "address derivation" {
     const private_key = try unaudited_randomPrivateKey();
     const public_key = try unaudited_getPublicKey(private_key);
-    const address = public_key.to_address();
+    const address = public_key.toAddress();
 
     // Verify address is not zero
     const zero_address = [_]u8{0} ** 20;
@@ -628,15 +628,15 @@ test "address derivation" {
 
 test "message hashing" {
     const message = "Hello, Ethereum!";
-    const hash1 = hash_message(message);
-    const hash2 = hash_message(message);
+    const hash1 = hashMessage(message);
+    const hash2 = hashMessage(message);
 
     // Verify deterministic hashing
     try testing.expect(std.mem.eql(u8, &hash1, &hash2));
 
     // Verify different messages produce different hashes
     const different_message = "Hello, World!";
-    const hash3 = hash_message(different_message);
+    const hash3 = hashMessage(different_message);
     try testing.expect(!std.mem.eql(u8, &hash1, &hash3));
 }
 
@@ -655,7 +655,7 @@ test "signature creation and verification" {
 
     // Verify recovered address matches expected
     const public_key = try unaudited_getPublicKey(private_key);
-    const expected_address = public_key.to_address();
+    const expected_address = public_key.toAddress();
     try testing.expect(std.mem.eql(u8, &recovered_address, &expected_address));
 
     // Verify signature verification
@@ -675,14 +675,14 @@ test "signature roundtrip" {
     try testing.expect(signature.v == 27 or signature.v == 28);
 
     // Verify signature serialization
-    const signature_bytes = signature.to_bytes();
-    const signature_restored = Signature.from_bytes(signature_bytes);
+    const signature_bytes = signature.toBytes();
+    const signature_restored = Signature.fromBytes(signature_bytes);
     try testing.expect(signature_restored.r == signature.r);
     try testing.expect(signature_restored.s == signature.s);
     try testing.expect(signature_restored.v == signature.v);
 
     // Verify message verification
-    const expected_address = (try unaudited_getPublicKey(private_key)).to_address();
+    const expected_address = (try unaudited_getPublicKey(private_key)).toAddress();
     try testing.expect(try unaudited_verifyMessage(message, signature, expected_address));
 }
 
@@ -690,7 +690,7 @@ test "invalid signature rejection" {
     const private_key = try unaudited_randomPrivateKey();
     const message = "Test message";
     const signature = try unaudited_signMessage(message, private_key);
-    const expected_address = (try unaudited_getPublicKey(private_key)).to_address();
+    const expected_address = (try unaudited_getPublicKey(private_key)).toAddress();
 
     // Verify correct signature works
     try testing.expect(try unaudited_verifyMessage(message, signature, expected_address));
@@ -760,7 +760,7 @@ test "signature serialization" {
     };
 
     // Convert to bytes
-    const bytes = signature.to_bytes();
+    const bytes = signature.toBytes();
     try testing.expectEqual(@as(usize, 65), bytes.len);
 
     // First 32 bytes should be r
@@ -777,7 +777,7 @@ test "signature serialization" {
     try testing.expectEqual(@as(u8, 28), bytes[64]);
 
     // Convert back from bytes
-    const recovered = Signature.from_bytes(bytes);
+    const recovered = Signature.fromBytes(bytes);
     try testing.expectEqual(signature.r, recovered.r);
     try testing.expectEqual(signature.s, recovered.s);
     try testing.expectEqual(signature.v, recovered.v);
@@ -791,14 +791,14 @@ test "signature hex encoding" {
     };
 
     // Convert to hex
-    const hex_str = signature.to_hex();
+    const hex_str = signature.toHex();
 
     // Should be 0x + 130 chars (65 bytes * 2)
     try testing.expectEqual(@as(usize, 132), hex_str.len);
     try testing.expect(std.mem.startsWith(u8, &hex_str, "0x"));
 
     // Convert back from hex
-    const recovered = try Signature.from_hex(&hex_str);
+    const recovered = try Signature.fromHex(&hex_str);
     try testing.expectEqual(signature.r, recovered.r);
     try testing.expectEqual(signature.s, recovered.s);
     try testing.expectEqual(signature.v, recovered.v);
@@ -845,13 +845,13 @@ test "derive address from private key" {
     };
 
     const public_key = try unaudited_getPublicKey(private_key);
-    const address = public_key_to_address(public_key);
+    const address = publicKeyToAddress(public_key);
 
     // Address should be 20 bytes
     try testing.expectEqual(@as(usize, 20), address.len);
 
     // Address should be deterministic
-    const address2 = public_key_to_address(public_key);
+    const address2 = publicKeyToAddress(public_key);
     try testing.expectEqualSlices(u8, &address, &address2);
 }
 
@@ -889,7 +889,7 @@ test "validate signature components" {
         .s = 0x3456789012345678901234567890123456789012345678901234567890123456,
         .v = 27,
     };
-    try testing.expect(is_valid_signature(valid_sig));
+    try testing.expect(isValidSignature(valid_sig));
 
     // Invalid v value
     const invalid_v = Signature{
@@ -897,7 +897,7 @@ test "validate signature components" {
         .s = 0x3456789012345678901234567890123456789012345678901234567890123456,
         .v = 26, // Should be 27 or 28
     };
-    try testing.expect(!is_valid_signature(invalid_v));
+    try testing.expect(!isValidSignature(invalid_v));
 
     // Zero r value (invalid)
     const zero_r = Signature{
@@ -905,7 +905,7 @@ test "validate signature components" {
         .s = 0x3456789012345678901234567890123456789012345678901234567890123456,
         .v = 27,
     };
-    try testing.expect(!is_valid_signature(zero_r));
+    try testing.expect(!isValidSignature(zero_r));
 
     // Zero s value (invalid)
     const zero_s = Signature{
@@ -913,5 +913,5 @@ test "validate signature components" {
         .s = 0,
         .v = 27,
     };
-    try testing.expect(!is_valid_signature(zero_s));
+    try testing.expect(!isValidSignature(zero_s));
 }

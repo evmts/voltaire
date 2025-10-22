@@ -62,8 +62,8 @@ test "fuzz Fp2 arithmetic operations" {
     const b0 = std.mem.readInt(u256, input[64..96], .big);
     const b1 = std.mem.readInt(u256, input[96..128], .big);
 
-    const a = Fp2Mont.init_from_int(a0, a1);
-    const b = Fp2Mont.init_from_int(b0, b1);
+    const a = Fp2Mont.initFromInt(a0, a1);
+    const b = Fp2Mont.initFromInt(b0, b1);
 
     // Test addition commutativity
     const sum1 = a.add(&b);
@@ -197,7 +197,7 @@ test "fuzz Fp6 and Fp12 operations" {
     const v2_real = std.mem.readInt(u256, input[128..160], .big);
     const v2_imag = std.mem.readInt(u256, input[160..192], .big);
 
-    const fp6 = Fp6Mont.init_from_int(v0_real, v0_imag, v1_real, v1_imag, v2_real, v2_imag);
+    const fp6 = Fp6Mont.initFromInt(v0_real, v0_imag, v1_real, v1_imag, v2_real, v2_imag);
 
     // Test that a * a^-1 = 1 (when a != 0)
     if (!fp6.equal(&Fp6Mont.ZERO)) {

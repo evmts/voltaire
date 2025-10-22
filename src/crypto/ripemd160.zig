@@ -460,7 +460,7 @@ fn round(a: *u32, _: *u32, c: *u32, _: *u32, e: *u32, x: u32, s: u5) void {
 /// WARNING: This is a custom crypto implementation that has not been security audited.
 /// May be vulnerable to timing attacks and other cryptographic vulnerabilities.
 /// Do not use in production without proper security review.
-pub fn unaudited_hash(data: []const u8) [20]u8 {
+pub fn unauditedHash(data: []const u8) [20]u8 {
     var h = RIPEMD160.init();
     h.update(data);
     return h.final();
@@ -748,7 +748,7 @@ test "RIPEMD160: exactly 128 bytes" {
     try std.testing.expectEqualSlices(u8, &expected, &result);
 }
 
-test "RIPEMD160: unaudited_hash convenience function" {
+test "RIPEMD160: unauditedHash convenience function" {
     // Test the convenience function matches expected behavior
     const input = "abc";
     const expected = [_]u8{
@@ -757,7 +757,7 @@ test "RIPEMD160: unaudited_hash convenience function" {
         0xf1, 0x5a, 0x0b, 0xfc,
     };
 
-    const result = unaudited_hash(input);
+    const result = unauditedHash(input);
     try std.testing.expectEqualSlices(u8, &expected, &result);
 }
 
@@ -850,7 +850,7 @@ test "RIPEMD160: cross-validation with known implementation" {
     };
 
     for (test_vectors) |tv| {
-        const result = unaudited_hash(tv.input);
+        const result = unauditedHash(tv.input);
         try std.testing.expectEqualSlices(u8, &tv.expected, &result);
     }
 }

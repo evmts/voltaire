@@ -19,11 +19,11 @@ pub const MontgomeryPointLine = struct {
 };
 
 pub fn pairing(g1: *const G1, g2: *const G2) Fp12Mont {
-    const f = miller_loop(g1, g2);
-    return final_exponentiation(&f);
+    const f = millerLoop(g1, g2);
+    return finalExponentiation(&f);
 }
 
-pub fn miller_loop(p: *const G1, q: *const G2) Fp12Mont {
+pub fn millerLoop(p: *const G1, q: *const G2) Fp12Mont {
     var result = Fp12Mont.ONE;
     if (p.isInfinity() or q.isInfinity()) {
         return result;
@@ -34,18 +34,18 @@ pub fn miller_loop(p: *const G1, q: *const G2) Fp12Mont {
     for (1..miller_loop_iterations + 1) |j| {
         const i = miller_loop_iterations - j;
         const signed_bit = miller_loop_constant_signed[i];
-        const double_point_line = point_double_line_evaluation(&p_affine, &t);
+        const double_point_line = pointDoubleLineEvaluation(&p_affine, &t);
         t = double_point_line.point;
         const double_line: Fp12Mont = double_point_line.line;
         result = result.square().mul(&double_line);
 
         if (signed_bit == 1) {
-            const add_point_line = point_add_line_evaluation(&p_affine, &q_affine, &t);
+            const add_point_line = pointAddLineEvaluation(&p_affine, &q_affine, &t);
             t = add_point_line.point;
             const add_line: Fp12Mont = add_point_line.line;
             result.mulAssign(&add_line);
         } else if (signed_bit == -1) {
-            const add_point_line = point_add_line_evaluation(&p_affine, &q_affine.neg(), &t);
+            const add_point_line = pointAddLineEvaluation(&p_affine, &q_affine.neg(), &t);
             t = add_point_line.point;
             const add_line: Fp12Mont = add_point_line.line;
             result.mulAssign(&add_line);
@@ -53,32 +53,32 @@ pub fn miller_loop(p: *const G1, q: *const G2) Fp12Mont {
     }
 
     const q1 = q_affine.frobenius();
-    const q1_point_line = point_add_line_evaluation(&p_affine, &q1, &t);
+    const q1_point_line = pointAddLineEvaluation(&p_affine, &q1, &t);
     t = q1_point_line.point;
     const q1_line: Fp12Mont = q1_point_line.line;
     result.mulAssign(&q1_line);
 
     const q2 = q1.frobenius().neg();
-    const q2_point_line = point_add_line_evaluation(&p_affine, &q2, &t);
+    const q2_point_line = pointAddLineEvaluation(&p_affine, &q2, &t);
     //t = q2_point_line.point;
     const q2_line: Fp12Mont = q2_point_line.line;
     result.mulAssign(&q2_line);
     return result;
 }
 
-pub fn final_exponentiation(f: *const Fp12Mont) Fp12Mont {
-    const easy_part = final_exponentiation_easy_part(f);
-    return final_exponentiation_hard_part(&easy_part);
+pub fn finalExponentiation(f: *const Fp12Mont) Fp12Mont {
+    const easy_part = finalExponentiationEasyPart(f);
+    return finalExponentiationHardPart(&easy_part);
 }
 
-pub fn final_exponentiation_easy_part(f: *const Fp12Mont) Fp12Mont {
+pub fn finalExponentiationEasyPart(f: *const Fp12Mont) Fp12Mont {
     var result = f.*;
     for (0..6) |_| {
         result.frobeniusMapAssign();
     }
     // f is a pairing result and should not be zero in a valid pairing computation
     const f_inv = f.inv() catch |err| {
-        std.debug.panic("final_exponentiation_easy_part: field element inversion failed: {}", .{err});
+        std.debug.panic("finalExponentiationEasyPart: field element inversion failed: {}", .{err});
     };
     result.mulAssign(&f_inv);
     result.mulAssign(&result.frobeniusMap().frobeniusMap());
@@ -86,7 +86,7 @@ pub fn final_exponentiation_easy_part(f: *const Fp12Mont) Fp12Mont {
 }
 
 //this is algorithm 6 from this paper: https://eprint.iacr.org/2015/192.pdf
-pub fn final_exponentiation_hard_part(f: *const Fp12Mont) Fp12Mont {
+pub fn finalExponentiationHardPart(f: *const Fp12Mont) Fp12Mont {
     var t0 = f.powParamT().unaryInverse();
 
     t0.squareAssign();
@@ -131,7 +131,7 @@ pub fn final_exponentiation_hard_part(f: *const Fp12Mont) Fp12Mont {
 }
 
 // p needs to be in affine form
-pub fn point_double_line_evaluation(p: *const G1, q: *const G2) MontgomeryPointLine {
+pub fn pointDoubleLineEvaluation(p: *const G1, q: *const G2) MontgomeryPointLine {
     var t0 = q.x.mul(&q.x);
     const t1 = q.y.mul(&q.y);
     const t2 = t1.mul(&t1);
@@ -190,7 +190,7 @@ pub fn point_double_line_evaluation(p: *const G1, q: *const G2) MontgomeryPointL
     return MontgomeryPointLine{ .point = point, .line = line };
 }
 
-pub fn point_add_line_evaluation(p: *const G1, q: *const G2, r: *const G2) MontgomeryPointLine {
+pub fn pointAddLineEvaluation(p: *const G1, q: *const G2, r: *const G2) MontgomeryPointLine {
     const q_affine = q.toAffine();
 
     var t0 = q_affine.x.mul(&r.z.square());
@@ -253,21 +253,21 @@ pub fn point_add_line_evaluation(p: *const G1, q: *const G2, r: *const G2) Montg
     return MontgomeryPointLine{ .point = point, .line = line };
 }
 
-test "final_exponentiation" {
+test "finalExponentiation" {
     const test_values = [_]Fp12Mont{
-        Fp12Mont.init_from_int(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-        Fp12Mont.init_from_int(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
-        Fp12Mont.init_from_int(123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021, 2223, 2425, 2627),
-        Fp12Mont.init_from_int(999, 888, 777, 666, 555, 444, 333, 222, 111, 100, 99, 88),
-        Fp12Mont.init_from_int(17, 23, 31, 47, 53, 61, 67, 71, 73, 79, 83, 89),
-        Fp12Mont.init_from_int(2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034),
-        Fp12Mont.init_from_int(7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6),
-        Fp12Mont.init_from_int(13, 37, 73, 97, 137, 173, 197, 233, 277, 313, 337, 373),
+        Fp12Mont.initFromInt(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+        Fp12Mont.initFromInt(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+        Fp12Mont.initFromInt(123, 456, 789, 1011, 1213, 1415, 1617, 1819, 2021, 2223, 2425, 2627),
+        Fp12Mont.initFromInt(999, 888, 777, 666, 555, 444, 333, 222, 111, 100, 99, 88),
+        Fp12Mont.initFromInt(17, 23, 31, 47, 53, 61, 67, 71, 73, 79, 83, 89),
+        Fp12Mont.initFromInt(2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034),
+        Fp12Mont.initFromInt(7, 6, 5, 4, 3, 2, 1, 0, 9, 8, 7, 6),
+        Fp12Mont.initFromInt(13, 37, 73, 97, 137, 173, 197, 233, 277, 313, 337, 373),
     };
 
     for (test_values) |f| {
         const f_pow_r = f.pow(FR_MOD);
-        const result = final_exponentiation(&f_pow_r);
+        const result = finalExponentiation(&f_pow_r);
         try std.testing.expect(result.equal(&Fp12Mont.ONE));
     }
 }
@@ -281,10 +281,10 @@ test "pairing bilinearity and infinity montgomery" {
     var i: u256 = 0;
     for (test_cases) |test_case| {
         i += 1;
-        const p1 = G1.GENERATOR.mul_by_int(test_case.p1);
-        const p2 = G1.GENERATOR.mul_by_int(test_case.p2);
-        const q1 = G2.GENERATOR.mul_by_int(test_case.q1);
-        const q2 = G2.GENERATOR.mul_by_int(test_case.q2);
+        const p1 = G1.GENERATOR.mulByInt(test_case.p1);
+        const p2 = G1.GENERATOR.mulByInt(test_case.p2);
+        const q1 = G2.GENERATOR.mulByInt(test_case.q1);
+        const q2 = G2.GENERATOR.mulByInt(test_case.q2);
 
         // Test bilinearity in first argument: e(P1 + P2, Q) = e(P1, Q) * e(P2, Q)
         const p1_plus_p2 = p1.add(&p2);
@@ -302,7 +302,7 @@ test "pairing bilinearity and infinity montgomery" {
         try std.testing.expect(left_side_2.equal(&right_side_2));
 
         // Test scalar multiplication
-        const scalar_times_p1 = p1.mul_by_int(test_case.scalar);
+        const scalar_times_p1 = p1.mulByInt(test_case.scalar);
         const left_side_3 = pairing(&scalar_times_p1, &q1);
         const right_side_3 = e_p1_q1.pow(test_case.scalar);
         try std.testing.expect(left_side_3.equal(&right_side_3));
