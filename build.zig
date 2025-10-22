@@ -33,12 +33,24 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // Crypto tests (Hardfork accessed through primitives module)
+    const crypto_mod = b.createModule(.{
+        .root_source_file = b.path("src/crypto/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    crypto_mod.addImport("c_kzg", c_kzg_mod);
+
     // Primitives module (includes Hardfork)
     const primitives_mod = b.createModule(.{
         .root_source_file = b.path("src/primitives/root.zig"),
         .target = target,
         .optimize = optimize,
     });
+    primitives_mod.addImport("crypto", crypto_mod);
+
+    // Now add primitives to crypto (circular dependency resolved by Zig's lazy evaluation)
+    crypto_mod.addImport("primitives", primitives_mod);
 
     // Primitives tests
     const primitives_tests = b.addTest(.{
@@ -51,15 +63,7 @@ pub fn build(b: *std.Build) void {
     if (keccak_lib) |keccak| primitives_tests.linkLibrary(keccak);
     primitives_tests.linkLibC();
 
-    // Crypto tests (Hardfork accessed through primitives module)
-    const crypto_mod = b.createModule(.{
-        .root_source_file = b.path("src/crypto/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    crypto_mod.addImport("c_kzg", c_kzg_mod);
-    crypto_mod.addImport("primitives", primitives_mod);
-
+    // Crypto tests
     const crypto_tests = b.addTest(.{
         .name = "crypto-tests",
         .root_module = crypto_mod,
