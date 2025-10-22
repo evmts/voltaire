@@ -243,7 +243,7 @@ fn decode_int(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T 
 fn decode_address(cursor: *Cursor) AbiError!address.Address {
     const word = try cursor.readWord();
     var address_result: address.Address = undefined;
-    @memcpy(&address_result, word[12..32]);
+    @memcpy(&address_result.bytes, word[12..32]);
     return address_result;
 }
 
@@ -526,7 +526,7 @@ fn encode_static_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8 
         },
         .address => |val| {
             // Address is 20 bytes, right-aligned (left-padded with zeros)
-            @memcpy(result[12..32], &val);
+            @memcpy(result[12..32], &val.bytes);
         },
         .bool => |val| {
             result[31] = if (val) 1 else 0;
