@@ -116,7 +116,7 @@ pub fn main() !void {
     const signer_address = public_key.to_address();
 
     std.debug.print("   Signer address: 0x", .{});
-    for (signer_address) |byte| std.debug.print("{x:0>2}", .{byte});
+    for (signer_address.bytes) |byte| std.debug.print("{x:0>2}", .{byte});
     std.debug.print("\n\n", .{});
 
     // PART 6: Sign the typed data
