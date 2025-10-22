@@ -42,7 +42,7 @@ pub fn main() !void {
     // Example 3: Derive Ethereum address from public key
     std.debug.print("3. Deriving Ethereum Address\n", .{});
     std.debug.print("   --------------------------\n", .{});
-    const address = public_key.to_address();
+    const address = public_key.toAddress();
     std.debug.print("   Address: 0x", .{});
     for (address.bytes) |byte| {
         std.debug.print("{x:0>2}", .{byte});
