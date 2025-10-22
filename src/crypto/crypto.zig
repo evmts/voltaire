@@ -518,7 +518,7 @@ pub fn unaudited_recoverMessageAddress(message: []const u8, signature: Signature
 /// Use at your own risk in production systems.
 pub fn unaudited_verifySignature(hash: Hash.Hash, signature: Signature, address: Address) !bool {
     const recovered_address = unaudited_recoverAddress(hash, signature) catch return false;
-    return std.mem.eql(u8, &recovered_address, &address);
+    return std.mem.eql(u8, &recovered_address.bytes, &address.bytes);
 }
 
 /// Verify a message signature against an address
