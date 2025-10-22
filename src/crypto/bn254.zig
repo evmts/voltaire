@@ -374,7 +374,7 @@ test "BN254 pairing additivity in second argument" {
 /// EIP-196: BN254 Addition
 /// Input: 128 bytes (two G1 points, 64 bytes each: x || y)
 /// Output: 64 bytes (resulting G1 point: x || y)
-pub fn bn254Add(input: *const [128]u8, output: *[64]u8) !void {
+pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
     // TODO: Implement EIP-196 format parsing and G1 addition
     // For now, return error to allow compilation
     _ = input;
@@ -385,7 +385,7 @@ pub fn bn254Add(input: *const [128]u8, output: *[64]u8) !void {
 /// EIP-196: BN254 Scalar Multiplication
 /// Input: 96 bytes (G1 point (64) || scalar (32))
 /// Output: 64 bytes (resulting G1 point: x || y)
-pub fn bn254Mul(input: *const [96]u8, output: *[64]u8) !void {
+pub fn bn254Mul(input: *const [96]u8, output: []u8) !void {
     // TODO: Implement EIP-196 format parsing and G1 scalar multiplication
     // For now, return error to allow compilation
     _ = input;

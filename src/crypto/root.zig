@@ -28,14 +28,17 @@
 // Core cryptographic modules
 pub const Crypto = @import("crypto.zig");
 pub const secp256k1 = @import("secp256k1.zig");
-pub const ModExp = @import("modexp.zig");
+const modexp_module = @import("modexp.zig");
+pub const ModExp = modexp_module.ModExp;
 
 // Hash implementations
 pub const Hash = @import("hash.zig");
 pub const HashAlgorithms = @import("hash_algorithms.zig");
 pub const HashUtils = @import("hash_utils.zig");
-pub const Blake2 = @import("blake2.zig");
-pub const Ripemd160 = @import("ripemd160.zig");
+const blake2_module = @import("blake2.zig");
+pub const Blake2 = blake2_module.Blake2;
+const ripemd160_module = @import("ripemd160.zig");
+pub const Ripemd160 = ripemd160_module.Ripemd160;
 
 // Ethereum standards
 pub const Eip712 = @import("eip712.zig");

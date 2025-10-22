@@ -786,20 +786,24 @@ pub const Blake2 = struct {
         var h: [8]u64 = undefined;
         for (0..8) |i| {
             const offset = 4 + i * 8;
-            h[i] = std.mem.readInt(u64, input[offset .. offset + 8], .little);
+            const bytes: *const [8]u8 = @ptrCast(input[offset .. offset + 8].ptr);
+            h[i] = std.mem.readInt(u64, bytes, .little);
         }
 
         // Parse m (128 bytes, 16x u64 little-endian)
         var m: [16]u64 = undefined;
         for (0..16) |i| {
             const offset = 68 + i * 8;
-            m[i] = std.mem.readInt(u64, input[offset .. offset + 8], .little);
+            const bytes: *const [8]u8 = @ptrCast(input[offset .. offset + 8].ptr);
+            m[i] = std.mem.readInt(u64, bytes, .little);
         }
 
         // Parse t (16 bytes, 2x u64 little-endian)
         var t: [2]u64 = undefined;
-        t[0] = std.mem.readInt(u64, input[196..204], .little);
-        t[1] = std.mem.readInt(u64, input[204..212], .little);
+        const t0_bytes: *const [8]u8 = @ptrCast(input[196..204].ptr);
+        t[0] = std.mem.readInt(u64, t0_bytes, .little);
+        const t1_bytes: *const [8]u8 = @ptrCast(input[204..212].ptr);
+        t[1] = std.mem.readInt(u64, t1_bytes, .little);
 
         // Parse f (1 byte, boolean)
         const f = input[212] != 0;
@@ -810,7 +814,8 @@ pub const Blake2 = struct {
         // Write output (64 bytes, 8x u64 little-endian)
         for (0..8) |i| {
             const offset = i * 8;
-            std.mem.writeInt(u64, output[offset .. offset + 8], h[i], .little);
+            const bytes: *[8]u8 = @ptrCast(output[offset .. offset + 8].ptr);
+            std.mem.writeInt(u64, bytes, h[i], .little);
         }
     }
 };

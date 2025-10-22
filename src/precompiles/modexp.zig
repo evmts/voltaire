@@ -73,7 +73,17 @@ pub fn execute(
         &[_]u8{};
 
     // Perform modular exponentiation
-    const result = try ModExp.modexp(allocator, base, exponent, modulus);
+    const result = ModExp.modexp(allocator, base, exponent, modulus) catch |err| switch (err) {
+        error.DivisionByZero => return error.InvalidInput,
+        error.InvalidInput => return error.InvalidInput,
+        error.InvalidBase => return error.InvalidInput,
+        error.InvalidCharacter => return error.InvalidInput,
+        error.InvalidLength => return error.InvalidInput,
+        error.AllocationFailed => return error.OutOfMemory,
+        error.OutOfMemory => return error.OutOfMemory,
+        error.NoSpaceLeft => return error.OutOfMemory,
+        error.NotImplemented => return error.NotImplemented,
+    };
     defer allocator.free(result);
 
     // Pad output to mod_len
