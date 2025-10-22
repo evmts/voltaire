@@ -113,7 +113,7 @@ pub fn main() !void {
 
     const private_key = try Crypto.unaudited_randomPrivateKey();
     const public_key = try Crypto.unaudited_getPublicKey(private_key);
-    const signer_address = public_key.to_address();
+    const signer_address = Crypto.publicKeyToAddress(public_key);
 
     std.debug.print("   Signer address: 0x", .{});
     for (signer_address.bytes) |byte| std.debug.print("{x:0>2}", .{byte});
