@@ -128,10 +128,11 @@ pub fn main() !void {
     const signature = try Eip712.unaudited_signTypedData(allocator, &typed_data, private_key);
 
     std.debug.print("   Signature created:\n", .{});
+    const sig_bytes = signature.toBytes();
     std.debug.print("   - r: 0x", .{});
-    for (signature.r) |byte| std.debug.print("{x:0>2}", .{byte});
+    for (sig_bytes[0..32]) |byte| std.debug.print("{x:0>2}", .{byte});
     std.debug.print("\n   - s: 0x", .{});
-    for (signature.s) |byte| std.debug.print("{x:0>2}", .{byte});
+    for (sig_bytes[32..64]) |byte| std.debug.print("{x:0>2}", .{byte});
     std.debug.print("\n   - v: {d}\n\n", .{signature.v});
 
     // PART 7: Verify the signature
