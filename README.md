@@ -42,6 +42,20 @@ zig build</pre>
   <br />
   <br />
   <br />
+  <h3>Examples</h3>
+  <p>Complete, runnable examples demonstrating key functionality:</p>
+  <ul>
+    <li><a href="./examples/address.zig">Address</a> — Create, validate, and compute Ethereum addresses (<code>zig build example-address</code>)</li>
+    <li><a href="./examples/hex.zig">Hex</a> — Hex encoding/decoding and conversions (<code>zig build example-hex</code>)</li>
+    <li><a href="./examples/rlp.zig">RLP</a> — Recursive Length Prefix encoding/decoding (<code>zig build example-rlp</code>)</li>
+    <li><a href="./examples/abi.zig">ABI</a> — Function encoding, parameter encoding/decoding (<code>zig build example-abi</code>)</li>
+    <li><a href="./examples/transaction.zig">Transaction</a> — Create, sign, and encode transactions (<code>zig build example-transaction</code>)</li>
+    <li><a href="./examples/keccak256.zig">Keccak256</a> — Hashing, EIP-191 messages, bitwise operations (<code>zig build example-keccak256</code>)</li>
+    <li><a href="./examples/secp256k1.zig">secp256k1</a> — ECDSA signatures, key generation, address recovery (<code>zig build example-secp256k1</code>)</li>
+    <li><a href="./examples/eip712.zig">EIP-712</a> — Typed structured data signing and verification (<code>zig build example-eip712</code>)</li>
+  </ul>
+  <br />
+  <br />
 </div>
 
 - [**Ethereum primitives**](#primitives)
