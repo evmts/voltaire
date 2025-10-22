@@ -4,13 +4,8 @@
     <br/>
     <br/>
     <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
-    <br />
-    <br />
-    <br />
   </h1>
   <sup>
-    <br />
-    <br />
     <a href="https://github.com/evmts/primitives">
        <img src="https://img.shields.io/badge/zig-0.15.1+-orange.svg" alt="zig version" />
     </a>
@@ -20,14 +15,8 @@
     <a href="https://github.com/evmts/primitives">
       <img src="https://img.shields.io/badge/tests-passing-brightgreen.svg" alt="tests" />
     </a>
-    <br />
   </sup>
-  <br />
-  <br />
-  <br />
 </div>
-
-<br />
 
 ## Requirements
 
@@ -278,17 +267,14 @@ zig fetch --save https://github.com/evmts/primitives
   - [`BLS12_MAP_FP_TO_G1`](./src/precompiles/bls12_map_fp_to_g1.zig#L10) &mdash; 0x12: BLS12-381 map field to G1
   - [`BLS12_MAP_FP2_TO_G2`](./src/precompiles/bls12_map_fp2_to_g2.zig#L10) &mdash; 0x13: BLS12-381 map field to G2
 
-<br />
-<br />
+## More
 
-<a href="./CLAUDE.md"><strong>Development</strong></a> &mdash; coding standards and guidelines.
-<br />
-<a href="./CONTRIBUTING.md"><strong>Contributing</strong></a> &mdash; how to contribute.
-<br />
-<a href="./src/README.md"><strong>Documentation</strong></a> &mdash; source code organization.
+[**Development**](./CLAUDE.md) — Coding standards and guidelines
 
-<br />
-<br />
-<br />
-<br />
-<br />
+[**Contributing**](./CONTRIBUTING.md) — How to contribute
+
+[**Source Documentation**](./src/README.md) — Source code organization
+
+[**Guillotine**](https://github.com/evmts/guillotine) — EVM execution engine using these primitives
+
+[**Guillotine Mini**](https://github.com/evmts/guillotine-mini) — Minimal EVM implementation
