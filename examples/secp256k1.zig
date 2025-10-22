@@ -121,7 +121,7 @@ pub fn main() !void {
     // Example 9: Demonstrate signature serialization
     std.debug.print("9. Signature Serialization\n", .{});
     std.debug.print("   ------------------------\n", .{});
-    const signature_bytes = signature.to_bytes();
+    const signature_bytes = signature.toBytes();
     std.debug.print("   Signature Bytes (65 bytes): 0x", .{});
     for (signature_bytes) |byte| {
         std.debug.print("{x:0>2}", .{byte});
