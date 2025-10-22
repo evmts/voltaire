@@ -212,7 +212,7 @@ pub fn secureZeroMemory(ptr: anytype) void {
     const T = @TypeOf(ptr);
     const info = @typeInfo(T);
 
-    if (info != .Pointer) {
+    if (info != .pointer) {
         @compileError("secureZeroMemory expects a pointer type");
     }
 
@@ -527,7 +527,7 @@ pub fn unaudited_verifySignature(hash: Hash.Hash, signature: Signature, address:
 /// Use at your own risk in production systems.
 pub fn unaudited_verifyMessage(message: []const u8, signature: Signature, address: Address) !bool {
     const recovered_address = unaudited_recoverMessageAddress(message, signature) catch return false;
-    return std.mem.eql(u8, &recovered_address, &address);
+    return std.mem.eql(u8, &recovered_address.bytes, &address.bytes);
 }
 
 // ============================================================================
