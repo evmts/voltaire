@@ -284,7 +284,7 @@ pub fn encodeAccessList(allocator: Allocator, access_list: []const AccessListIte
 }
 
 // Encode access list (internal version that writes to output)
-fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
+fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessListItem, output: *std.array_list.AlignedManaged(u8, null)) !void {
     var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
