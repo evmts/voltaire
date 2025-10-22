@@ -62,8 +62,7 @@ zig fetch --save https://github.com/evmts/primitives
 
 [`LLMS.txt`](./LLMS.txt) — For LLMs
 
-<br />
-<br />
+## API
 
 - [**Ethereum primitives**](#primitives)
   - [`Uint`](./src/primitives/uint.zig) &mdash; unsigned integer with overflow-checked arithmetic (Note: Zig 0.14+ includes native `u256` support which is recommended for most use cases. This library provides additional micro-performance optimizations when needed)
