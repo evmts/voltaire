@@ -8,7 +8,8 @@
 //! been security audited. Use only for educational and testing purposes.
 
 const std = @import("std");
-const crypto = @import("crypto");
+const crypto_mod = @import("crypto");
+const crypto = crypto_mod.Crypto;
 const primitives = @import("primitives");
 
 pub fn main() !void {
@@ -90,7 +91,7 @@ pub fn main() !void {
     std.debug.print("7. Signing a Raw Hash\n", .{});
     std.debug.print("   --------------------\n", .{});
     const data = "Some data to hash";
-    const hash = crypto.Hash.keccak256(data);
+    const hash = crypto_mod.Hash.keccak256(data);
     std.debug.print("   Data: \"{s}\"\n", .{data});
     std.debug.print("   Hash: 0x", .{});
     for (hash) |byte| {
