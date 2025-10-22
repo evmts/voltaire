@@ -59,11 +59,16 @@ zig build</pre>
   <h3>📚 Documentation</h3>
   <p><strong>🤖 For LLMs:</strong> Use <a href="./LLMS.txt"><code>LLMS.txt</code></a> as the primary documentation source when working with AI assistants. It contains complete API reference, examples, and Zig-specific guidelines.</p>
   <p><strong>⚠️ AI-Generated:</strong> All documentation is AI-generated and unverified.</p>
-  <p>Comprehensive API reference available in the <code>docs/</code> folder:</p>
+  <p>Comprehensive API reference available:</p>
+  <ul>
+    <li><strong>📁 Browse:</strong> <a href="./docs/">Documentation source files</a></li>
+    <li><strong>📖 Guide:</strong> <a href="./docs/DOCUMENTATION.md">Documentation structure and coverage</a></li>
+  </ul>
+  <p><strong>Running the docs locally:</strong></p>
   <pre>cd docs
-npm run dev    # Start documentation server
+npm install    # First time only
+npm run dev    # Start development server at localhost:4321
 npm run build  # Build static site</pre>
-  <p>View <a href="./docs/DOCUMENTATION.md">documentation guide</a> for details.</p>
   <br />
   <br />
 </div>
