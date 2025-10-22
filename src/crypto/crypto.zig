@@ -232,12 +232,20 @@ pub const SECP256K1_GY: u256 = secp256k1.SECP256K1_GY;
 
 // BLS12-381 FFI bindings
 pub const bls12_381 = struct {
-    // FFI function declarations
+    // FFI function declarations for G1
     extern fn bls12_381_g1_add(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
     extern fn bls12_381_g1_mul(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
     extern fn bls12_381_g1_multiexp(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
-    extern fn bls12_381_pairing(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
     extern fn bls12_381_g1_output_size() u32;
+
+    // FFI function declarations for G2
+    extern fn bls12_381_g2_add(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
+    extern fn bls12_381_g2_mul(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
+    extern fn bls12_381_g2_multiexp(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
+    extern fn bls12_381_g2_output_size() u32;
+
+    // FFI function declarations for pairing
+    extern fn bls12_381_pairing(input: [*]const u8, input_len: u32, output: [*]u8, output_len: u32) c_int;
     extern fn bls12_381_pairing_output_size() u32;
 
     pub const Error = error{
@@ -286,6 +294,45 @@ pub const bls12_381 = struct {
         }
     }
 
+    /// Perform BLS12-381 G2 addition
+    pub fn g2Add(input: []const u8, output: []u8) Error!void {
+        const result = bls12_381_g2_add(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
+        switch (result) {
+            0 => return,
+            1 => return Error.InvalidInput,
+            2 => return Error.InvalidPoint,
+            3 => return Error.InvalidScalar,
+            4 => return Error.ComputationFailed,
+            else => return Error.ComputationFailed,
+        }
+    }
+
+    /// Perform BLS12-381 G2 scalar multiplication
+    pub fn g2Mul(input: []const u8, output: []u8) Error!void {
+        const result = bls12_381_g2_mul(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
+        switch (result) {
+            0 => return,
+            1 => return Error.InvalidInput,
+            2 => return Error.InvalidPoint,
+            3 => return Error.InvalidScalar,
+            4 => return Error.ComputationFailed,
+            else => return Error.ComputationFailed,
+        }
+    }
+
+    /// Perform BLS12-381 G2 multi-scalar multiplication
+    pub fn g2Msm(input: []const u8, output: []u8) Error!void {
+        const result = bls12_381_g2_multiexp(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
+        switch (result) {
+            0 => return,
+            1 => return Error.InvalidInput,
+            2 => return Error.InvalidPoint,
+            3 => return Error.InvalidScalar,
+            4 => return Error.ComputationFailed,
+            else => return Error.ComputationFailed,
+        }
+    }
+
     /// Perform BLS12-381 pairing check
     pub fn pairing(input: []const u8, output: []u8) Error!void {
         const result = bls12_381_pairing(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
@@ -302,6 +349,11 @@ pub const bls12_381 = struct {
     /// Get the output size for G1 operations
     pub fn g1_output_size() u32 {
         return bls12_381_g1_output_size();
+    }
+
+    /// Get the output size for G2 operations
+    pub fn g2_output_size() u32 {
+        return bls12_381_g2_output_size();
     }
 
     /// Get the output size for pairing operations

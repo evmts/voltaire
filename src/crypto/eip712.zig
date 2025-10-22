@@ -261,7 +261,7 @@ fn hash_struct(allocator: Allocator, primary_type: []const u8, data: *const std.
 fn encode_data(allocator: Allocator, primary_type: []const u8, data: *const std.StringHashMap(MessageValue), types: *const TypeDefinitions) Eip712Error![]u8 {
     const type_properties = types.get(primary_type) orelse return Eip712Error.TypeNotFound;
 
-    var result = ArrayList(u8).init(allocator);
+    var result = ArrayList(u8, null).init(allocator);
     defer result.deinit();
 
     // Add type hash
@@ -405,7 +405,7 @@ fn hash_domain(allocator: Allocator, domain: *const Eip712Domain) Eip712Error!Ha
 /// EIP-712 implementation may have vulnerabilities in type encoding or hashing.
 /// Do not use in production without proper security review.
 pub fn unaudited_hashTypedData(allocator: Allocator, typed_data: *const TypedData) Eip712Error!Hash.Hash {
-    var result = ArrayList(u8).init(allocator);
+    var result = ArrayList(u8, null).init(allocator);
     defer result.deinit();
 
     // Add EIP-712 prefix

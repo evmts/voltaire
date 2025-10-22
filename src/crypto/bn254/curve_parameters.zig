@@ -81,3 +81,299 @@ pub const G2_SCALAR = struct {
         @as(i512, -14896984101578546644),
     };
 };
+
+// ============================================================================
+// TESTS - BN254 Curve Parameters Validation
+// ============================================================================
+
+const std = @import("std");
+
+test "curve parameters FP_MOD is prime-like" {
+    try std.testing.expect(FP_MOD > 1);
+    try std.testing.expect(FP_MOD & 1 == 1);
+}
+
+test "curve parameters FR_MOD is prime-like" {
+    try std.testing.expect(FR_MOD > 1);
+    try std.testing.expect(FR_MOD & 1 == 1);
+}
+
+test "curve parameters FP_MOD matches BN254 specification" {
+    const expected: u256 = 0x30644E72E131A029B85045B68181585D97816A916871CA8D3C208C16D87CFD47;
+    try std.testing.expectEqual(expected, FP_MOD);
+}
+
+test "curve parameters FR_MOD matches BN254 specification" {
+    const expected: u256 = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
+    try std.testing.expectEqual(expected, FR_MOD);
+}
+
+test "curve parameters FP_MOD and FR_MOD are different" {
+    try std.testing.expect(FP_MOD != FR_MOD);
+}
+
+test "curve parameters FP_MOD is larger than FR_MOD" {
+    try std.testing.expect(FP_MOD > FR_MOD);
+}
+
+test "curve parameters G1_GENERATOR is on curve" {
+    const gen = G1_GENERATOR;
+    try std.testing.expect(gen.isOnCurve());
+}
+
+test "curve parameters G1_GENERATOR is not infinity" {
+    const gen = G1_GENERATOR;
+    try std.testing.expect(!gen.isInfinity());
+}
+
+test "curve parameters G1_INFINITY is on curve" {
+    const inf = G1_INFINITY;
+    try std.testing.expect(inf.isOnCurve());
+}
+
+test "curve parameters G1_INFINITY is infinity" {
+    const inf = G1_INFINITY;
+    try std.testing.expect(inf.isInfinity());
+}
+
+test "curve parameters G2_GENERATOR is on curve" {
+    const gen = G2_GENERATOR;
+    try std.testing.expect(gen.isOnCurve());
+}
+
+test "curve parameters G2_GENERATOR is not infinity" {
+    const gen = G2_GENERATOR;
+    try std.testing.expect(!gen.isInfinity());
+}
+
+test "curve parameters G2_INFINITY is on curve" {
+    const inf = G2_INFINITY;
+    try std.testing.expect(inf.isOnCurve());
+}
+
+test "curve parameters G2_INFINITY is infinity" {
+    const inf = G2_INFINITY;
+    try std.testing.expect(inf.isInfinity());
+}
+
+test "curve parameters G1_GENERATOR has correct z coordinate" {
+    const gen = G1_GENERATOR;
+    const expected_z = FpMont.init(MONTGOMERY_R_MOD_P);
+    try std.testing.expect(gen.z.equal(&expected_z));
+}
+
+test "curve parameters G1_INFINITY has z equals zero" {
+    const inf = G1_INFINITY;
+    try std.testing.expectEqual(@as(u256, 0), inf.z.value);
+}
+
+test "curve parameters G2_INFINITY has z equals zero" {
+    const inf = G2_INFINITY;
+    try std.testing.expectEqual(@as(u256, 0), inf.z.u0.value);
+    try std.testing.expectEqual(@as(u256, 0), inf.z.u1.value);
+}
+
+test "curve parameters montgomery R mod p is valid" {
+    try std.testing.expect(MONTGOMERY_R_MOD_P > 0);
+    try std.testing.expect(MONTGOMERY_R_MOD_P < FP_MOD);
+}
+
+test "curve parameters montgomery R2 mod p is valid" {
+    try std.testing.expect(MONTGOMERY_R2_MOD_P > 0);
+    try std.testing.expect(MONTGOMERY_R2_MOD_P < FP_MOD);
+}
+
+test "curve parameters montgomery R3 mod p is valid" {
+    try std.testing.expect(MONTGOMERY_R3_MOD_P > 0);
+    try std.testing.expect(MONTGOMERY_R3_MOD_P < FP_MOD);
+}
+
+test "curve parameters XI is non-zero" {
+    const xi = XI;
+    try std.testing.expect(xi.u0.value != 0 or xi.u1.value != 0);
+}
+
+test "curve parameters V is valid" {
+    const v = V;
+    try std.testing.expect(v.v1.u0.value != 0 or v.v1.u1.value != 0);
+}
+
+test "curve parameters CURVE_PARAM_T is non-zero" {
+    try std.testing.expect(CURVE_PARAM_T != 0);
+}
+
+test "curve parameters miller loop iterations is reasonable" {
+    try std.testing.expect(miller_loop_iterations > 0);
+    try std.testing.expect(miller_loop_iterations < 256);
+}
+
+test "curve parameters miller loop constant length matches iterations" {
+    try std.testing.expectEqual(miller_loop_iterations + 1, miller_loop_constant_signed.len);
+}
+
+test "curve parameters frobenius coefficients are non-zero" {
+    try std.testing.expect(FROBENIUS_COEFF_FP6_V1.u0.value != 0 or FROBENIUS_COEFF_FP6_V1.u1.value != 0);
+    try std.testing.expect(FROBENIUS_COEFF_FP6_V2.u0.value != 0 or FROBENIUS_COEFF_FP6_V2.u1.value != 0);
+}
+
+test "curve parameters G1 scalar constants are valid" {
+    try std.testing.expect(G1_SCALAR.cube_root > 0);
+    try std.testing.expect(G1_SCALAR.cube_root < FR_MOD);
+    try std.testing.expect(G1_SCALAR.lambda > 0);
+    try std.testing.expect(G1_SCALAR.lambda < FR_MOD);
+}
+
+test "curve parameters G2 scalar constants are valid" {
+    try std.testing.expect(G2_SCALAR.cube_root > 0);
+    try std.testing.expect(G2_SCALAR.cube_root < FR_MOD);
+    try std.testing.expect(G2_SCALAR.gamma > 0);
+    try std.testing.expect(G2_SCALAR.lambda > 0);
+    try std.testing.expect(G2_SCALAR.gamma_lambda > 0);
+}
+
+test "curve parameters G1 lattice basis has correct size" {
+    try std.testing.expectEqual(@as(usize, 2), G1_SCALAR.lattice_basis.len);
+}
+
+test "curve parameters G2 lattice basis has correct size" {
+    try std.testing.expectEqual(@as(usize, 4), G2_SCALAR.lattice_basis.len);
+}
+
+test "curve parameters G2 projection coefficients has correct size" {
+    try std.testing.expectEqual(@as(usize, 4), G2_SCALAR.projection_coeffs.len);
+}
+
+test "curve parameters G1 equation verification on generator" {
+    const gen_affine = G1_GENERATOR.toAffine();
+
+    const y_squared = gen_affine.y.mul(&gen_affine.y);
+    const x_cubed = gen_affine.x.mul(&gen_affine.x).mul(&gen_affine.x);
+    const three = FpMont.init(3);
+    const rhs = x_cubed.add(&three);
+
+    try std.testing.expect(y_squared.equal(&rhs));
+}
+
+test "curve parameters G1 generator order is FR_MOD" {
+    const Fr = @import("Fr.zig").Fr;
+    const scalar = Fr{ .value = FR_MOD };
+    const result = G1_GENERATOR.mul(&scalar);
+    try std.testing.expect(result.isInfinity());
+}
+
+test "curve parameters G2 generator order is FR_MOD" {
+    const Fr = @import("Fr.zig").Fr;
+    const scalar = Fr{ .value = FR_MOD };
+    const result = G2_GENERATOR.mul(&scalar);
+    try std.testing.expect(result.isInfinity());
+}
+
+test "curve parameters G1 generator doubled is on curve" {
+    const doubled = G1_GENERATOR.double();
+    try std.testing.expect(doubled.isOnCurve());
+}
+
+test "curve parameters G2 generator doubled is on curve" {
+    const doubled = G2_GENERATOR.double();
+    try std.testing.expect(doubled.isOnCurve());
+}
+
+test "curve parameters G1 cube root cubed equals one mod FR" {
+    const cube_root = G1_SCALAR.cube_root;
+    const Fr = @import("Fr.zig").Fr;
+
+    const cr_fr = Fr.init(cube_root);
+    const cr_squared = cr_fr.mul(&cr_fr);
+    const cr_cubed = cr_squared.mul(&cr_fr);
+
+    try std.testing.expect(cr_cubed.equal(&Fr.ONE));
+}
+
+test "curve parameters G2 cube root cubed equals one mod FR" {
+    const cube_root = G2_SCALAR.cube_root;
+    const Fr = @import("Fr.zig").Fr;
+
+    const cr_fr = Fr.init(cube_root);
+    const cr_squared = cr_fr.mul(&cr_fr);
+    const cr_cubed = cr_squared.mul(&cr_fr);
+
+    try std.testing.expect(cr_cubed.equal(&Fr.ONE));
+}
+
+test "curve parameters montgomery minus p inv is valid" {
+    try std.testing.expect(MONTGOMERY_MINUS_P_INV_MOD_R != 0);
+}
+
+test "curve parameters NAF representation has valid bits" {
+    for (CURVE_PARAM_T_NAF) |bit| {
+        try std.testing.expect(bit == -1 or bit == 0 or bit == 1);
+    }
+}
+
+test "curve parameters G1 small multiples are on curve" {
+    const Fr = @import("Fr.zig").Fr;
+    const scalars = [_]u256{ 1, 2, 3, 5, 7, 11, 13 };
+
+    for (scalars) |s| {
+        const scalar = Fr.init(s);
+        const point = G1_GENERATOR.mul(&scalar);
+        try std.testing.expect(point.isOnCurve());
+    }
+}
+
+test "curve parameters G2 small multiples are on curve" {
+    const Fr = @import("Fr.zig").Fr;
+    const scalars = [_]u256{ 1, 2, 3, 5, 7, 11, 13 };
+
+    for (scalars) |s| {
+        const scalar = Fr.init(s);
+        const point = G2_GENERATOR.mul(&scalar);
+        try std.testing.expect(point.isOnCurve());
+    }
+}
+
+test "curve parameters G2 generator is in correct subgroup" {
+    try std.testing.expect(G2_GENERATOR.isInSubgroup());
+}
+
+test "curve parameters frobenius G2 coefficients are valid" {
+    const x_coeff = FROBENIUS_G2_X_COEFF;
+    const y_coeff = FROBENIUS_G2_Y_COEFF;
+
+    try std.testing.expect(x_coeff.u0.value != 0 or x_coeff.u1.value != 0);
+    try std.testing.expect(y_coeff.u0.value != 0 or y_coeff.u1.value != 0);
+}
+
+test "curve parameters FROBENIUS_COEFF_FP12 is valid" {
+    const coeff = FROBENIUS_COEFF_FP12;
+    try std.testing.expect(coeff.u0.value != 0 or coeff.u1.value != 0);
+}
+
+test "curve parameters G1 and G2 same cube root" {
+    try std.testing.expectEqual(G1_SCALAR.cube_root, G2_SCALAR.cube_root);
+}
+
+test "curve parameters field arithmetic in bounds" {
+    const x1 = FpMont.init(12345);
+    const x2 = FpMont.init(67890);
+
+    const sum = x1.add(&x2);
+    const prod = x1.mul(&x2);
+
+    try std.testing.expect(sum.value < FP_MOD);
+    try std.testing.expect(prod.value < FP_MOD);
+}
+
+test "curve parameters G1 affine generator coordinates in field" {
+    const gen_affine = G1_GENERATOR.toAffine();
+    try std.testing.expect(gen_affine.x.value < FP_MOD);
+    try std.testing.expect(gen_affine.y.value < FP_MOD);
+}
+
+test "curve parameters G2 affine generator coordinates in field" {
+    const gen_affine = G2_GENERATOR.toAffine();
+    try std.testing.expect(gen_affine.x.u0.value < FP_MOD);
+    try std.testing.expect(gen_affine.x.u1.value < FP_MOD);
+    try std.testing.expect(gen_affine.y.u0.value < FP_MOD);
+    try std.testing.expect(gen_affine.y.u1.value < FP_MOD);
+}
