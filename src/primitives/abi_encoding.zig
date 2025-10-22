@@ -575,7 +575,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
-            @memset(length_bytes, 0);
+            @memset(&length_bytes, 0);
             std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
             @memcpy(result[0..32], &length_bytes);
 
@@ -595,7 +595,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
-            @memset(length_bytes, 0);
+            @memset(&length_bytes, 0);
             std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
             @memcpy(result[0..32], &length_bytes);
 
@@ -614,7 +614,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
-            @memset(length_bytes, 0);
+            @memset(&length_bytes, 0);
             std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
             @memcpy(result[0..32], &length_bytes);
 
@@ -637,7 +637,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
-            @memset(length_bytes, 0);
+            @memset(&length_bytes, 0);
             std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
             @memcpy(result[0..32], &length_bytes);
 
@@ -657,13 +657,13 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
-            @memset(length_bytes, 0);
+            @memset(&length_bytes, 0);
             std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
             @memcpy(result[0..32], &length_bytes);
 
             // Encode elements
             for (val, 0..) |elem, i| {
-                @memcpy(result[32 + (i * 32) + 12 .. 32 + ((i + 1) * 32)], &elem);
+                @memcpy(result[32 + (i * 32) + 12 .. 32 + ((i + 1) * 32)], &elem.bytes);
             }
 
             return result;
@@ -691,7 +691,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
             // Encode array length
             var length_bytes: [32]u8 = undefined;
-            @memset(length_bytes, 0);
+            @memset(&length_bytes, 0);
             std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
             @memcpy(result[0..32], &length_bytes);
 
@@ -699,7 +699,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             var current_offset: usize = length * 32;
             for (0..length) |i| {
                 var offset_bytes: [32]u8 = undefined;
-                @memset(offset_bytes, 0);
+                @memset(&offset_bytes, 0);
                 std.mem.writeInt(u64, offset_bytes[24..32], @as(u64, @intCast(current_offset)), .big);
                 @memcpy(result[32 + (i * 32) .. 32 + ((i + 1) * 32)], &offset_bytes);
                 current_offset += string_sizes[i];
@@ -712,7 +712,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
 
                 // String length
                 var str_length_bytes: [32]u8 = undefined;
-                @memset(str_length_bytes, 0);
+                @memset(&str_length_bytes, 0);
                 std.mem.writeInt(u64, str_length_bytes[24..32], @as(u64, @intCast(str_len)), .big);
                 @memcpy(result[data_offset .. data_offset + 32], &str_length_bytes);
 
@@ -789,7 +789,7 @@ pub fn encodeAbiParameters(allocator: std.mem.Allocator, values: []const AbiValu
         if (is_dynamic(abi_type)) {
             // Update the offset pointer
             var offset_bytes: [32]u8 = undefined;
-            @memset(offset_bytes, 0);
+            @memset(&offset_bytes, 0);
             std.mem.writeInt(u64, offset_bytes[24..32], @as(u64, @intCast(current_dynamic_offset)), .big);
             @memcpy(static_parts.items[i], &offset_bytes);
 
