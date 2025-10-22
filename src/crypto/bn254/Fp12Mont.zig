@@ -268,23 +268,6 @@ fn expectFp12MontEqual(expected: Fp12Mont, actual: Fp12Mont) !void {
     try std.testing.expect(expected.equal(&actual));
 }
 
-fn printFp12Mont(a: Fp12Mont) void {
-    std.debug.print("w0:\n", .{});
-    std.debug.print("v0: ", .{});
-    std.debug.print("{} + u*{}\n", .{ a.w0.v0.u0.toStandardRepresentation(), a.w0.v0.u1.toStandardRepresentation() });
-    std.debug.print("v1: ", .{});
-    std.debug.print("{} + u*{}\n", .{ a.w0.v1.u0.toStandardRepresentation(), a.w0.v1.u1.toStandardRepresentation() });
-    std.debug.print("v2: ", .{});
-    std.debug.print("{} + u*{}\n", .{ a.w0.v2.u0.toStandardRepresentation(), a.w0.v2.u1.toStandardRepresentation() });
-    std.debug.print("w1:\n", .{});
-    std.debug.print("v0: ", .{});
-    std.debug.print("{} + u*{}\n", .{ a.w1.v0.u0.toStandardRepresentation(), a.w1.v0.u1.toStandardRepresentation() });
-    std.debug.print("v1: ", .{});
-    std.debug.print("{} + u*{}\n", .{ a.w1.v1.u0.toStandardRepresentation(), a.w1.v1.u1.toStandardRepresentation() });
-    std.debug.print("v2: ", .{});
-    std.debug.print("{} + u*{}\n", .{ a.w1.v2.u0.toStandardRepresentation(), a.w1.v2.u1.toStandardRepresentation() });
-}
-
 test "Fp12Mont.init basic initialization" {
     const a = fp12mont(123, 456, 789, 101112, 131415, 161718, 192021, 222324, 252627, 282930, 313233, 343536);
     const expected = Fp12Mont{
