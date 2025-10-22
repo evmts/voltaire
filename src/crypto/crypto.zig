@@ -378,6 +378,15 @@ pub const bls12_381 = struct {
         // Stub implementation - returns error until C library is integrated
         return Error.ComputationFailed;
     }
+
+    /// Perform BLS12-381 pairing check (returns bool)
+    /// This is a convenience wrapper that returns a boolean result
+    /// Currently a stub implementation - will return error until blst library is integrated
+    pub fn pairingCheck(input: []const u8) Error!bool {
+        _ = input;
+        // Stub implementation - returns error until C library is integrated
+        return Error.ComputationFailed;
+    }
 };
 
 /// Generate a random private key
