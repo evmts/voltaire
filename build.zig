@@ -97,4 +97,49 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_primitives_tests.step);
     test_step.dependOn(&run_crypto_tests.step);
     test_step.dependOn(&run_precompiles_tests.step);
+
+    // Example: Keccak-256 hashing demonstration
+    const keccak256_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/keccak256.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    keccak256_example_mod.addImport("crypto", crypto_mod);
+
+    const keccak256_example = b.addExecutable(.{
+        .name = "keccak256_example",
+        .root_module = keccak256_example_mod,
+    });
+    keccak256_example.linkLibrary(c_kzg_lib);
+    keccak256_example.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| keccak256_example.linkLibrary(bn254);
+    if (keccak_lib) |keccak| keccak256_example.linkLibrary(keccak);
+    keccak256_example.linkLibC();
+
+    const run_keccak256_example = b.addRunArtifact(keccak256_example);
+    const example_keccak256_step = b.step("example-keccak256", "Run the Keccak-256 hashing example");
+    example_keccak256_step.dependOn(&run_keccak256_example.step);
+    // secp256k1 ECDSA signature operations example
+    const secp256k1_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/secp256k1.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    secp256k1_example_mod.addImport("crypto", crypto_mod);
+    secp256k1_example_mod.addImport("primitives", primitives_mod);
+
+    const secp256k1_example = b.addExecutable(.{
+        .name = "secp256k1_example",
+        .root_module = secp256k1_example_mod,
+    });
+    secp256k1_example.linkLibrary(c_kzg_lib);
+    secp256k1_example.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| secp256k1_example.linkLibrary(bn254);
+    if (keccak_lib) |keccak| secp256k1_example.linkLibrary(keccak);
+    secp256k1_example.linkLibC();
+
+    const run_secp256k1_example = b.addRunArtifact(secp256k1_example);
+    const example_secp256k1_step = b.step("example-secp256k1", "Run the secp256k1 ECDSA signature operations example");
+    example_secp256k1_step.dependOn(&run_secp256k1_example.step);
+}
 }
