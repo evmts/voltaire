@@ -45,9 +45,9 @@ pub const PublicKey = struct {
     x: u256,
     y: u256,
 
-    pub fn to_address(self: PublicKey) Address
-    pub fn to_affine_point(self: PublicKey) secp256k1.AffinePoint
-    pub fn from_affine_point(point: secp256k1.AffinePoint) PublicKey
+    pub fn toAddress(self: PublicKey) Address
+    pub fn toAffinePoint(self: PublicKey) secp256k1.AffinePoint
+    pub fn fromAffinePoint(point: secp256k1.AffinePoint) PublicKey
     pub fn isValid(self: PublicKey) bool
 };
 ```
@@ -55,9 +55,9 @@ pub const PublicKey = struct {
 Represents an ECDSA public key on the secp256k1 curve with x and y coordinates.
 
 **Methods:**
-- `to_address()` - Convert public key to Ethereum address
-- `to_affine_point()` - Convert to secp256k1 affine point representation
-- `from_affine_point()` - Create from secp256k1 affine point
+- `toAddress()` - Convert public key to Ethereum address
+- `toAffinePoint()` - Convert to secp256k1 affine point representation
+- `fromAffinePoint()` - Create from secp256k1 affine point
 - `isValid()` - Verify the public key is on the curve and not at infinity
 
 ### Signature
@@ -68,12 +68,12 @@ pub const Signature = struct {
     s: u256,
     v: u8, // recovery id + 27 (Ethereum convention)
 
-    pub fn recovery_id(self: Signature) u8
-    pub fn y_parity(self: Signature) u8
-    pub fn to_bytes(self: Signature) [65]u8
-    pub fn from_bytes(bytes: [65]u8) Signature
-    pub fn to_hex(self: Signature) [132]u8
-    pub fn from_hex(hex_str: []const u8) !Signature
+    pub fn recoveryId(self: Signature) u8
+    pub fn yParity(self: Signature) u8
+    pub fn toBytes(self: Signature) [65]u8
+    pub fn fromBytes(bytes: [65]u8) Signature
+    pub fn toHex(self: Signature) [132]u8
+    pub fn fromHex(hex_str: []const u8) !Signature
     pub fn isValid(self: Signature) bool
 };
 ```
@@ -86,12 +86,12 @@ ECDSA signature with recovery ID following Ethereum conventions.
 - `v` - Recovery ID + 27 (or + 35/36 for EIP-155)
 
 **Methods:**
-- `recovery_id()` - Extract recovery ID (0 or 1)
-- `y_parity()` - Alias for recovery_id()
-- `to_bytes()` - Serialize to 65 bytes (r || s || v)
-- `from_bytes()` - Deserialize from 65 bytes
-- `to_hex()` - Convert to hex string with 0x prefix
-- `from_hex()` - Parse from hex string
+- `recoveryId()` - Extract recovery ID (0 or 1)
+- `yParity()` - Alias for recoveryId()
+- `toBytes()` - Serialize to 65 bytes (r || s || v)
+- `fromBytes()` - Deserialize from 65 bytes
+- `toHex()` - Convert to hex string with 0x prefix
+- `fromHex()` - Parse from hex string
 - `isValid()` - Validate signature parameters (r, s in valid range, s in lower half)
 
 ## Error Types
@@ -171,13 +171,13 @@ pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey
 **Example:**
 ```zig
 const public_key = try unaudited_getPublicKey(private_key);
-const address = public_key.to_address();
+const address = public_key.toAddress();
 ```
 
 ### Address Derivation
 
 ```zig
-pub fn public_key_to_address(public_key: PublicKey) Address
+pub fn publicKeyToAddress(public_key: PublicKey) Address
 ```
 
 Converts a public key to an Ethereum address using Keccak256.
@@ -189,13 +189,13 @@ Converts a public key to an Ethereum address using Keccak256.
 
 **Example:**
 ```zig
-const address = public_key_to_address(public_key);
+const address = publicKeyToAddress(public_key);
 ```
 
 ### Message Hashing (EIP-191)
 
 ```zig
-pub fn hash_message(message: []const u8) Hash.Hash
+pub fn hashMessage(message: []const u8) Hash.Hash
 ```
 
 Creates an EIP-191 prefixed hash for a message.
@@ -209,7 +209,7 @@ Creates an EIP-191 prefixed hash for a message.
 
 **Example:**
 ```zig
-const message_hash = hash_message("Hello, Ethereum!");
+const message_hash = hashMessage("Hello, Ethereum!");
 ```
 
 ### Signature Creation
@@ -327,7 +327,7 @@ const is_valid = try unaudited_verifyMessage("Hello", signature, expected_addres
 ### Signature Validation
 
 ```zig
-pub fn is_valid_signature(signature: Signature) bool
+pub fn isValidSignature(signature: Signature) bool
 ```
 
 Validates signature parameters according to secp256k1 and EIP-2 requirements.
@@ -376,7 +376,7 @@ pub const bls12_381 = struct {
     pub fn g1_multiexp(input: []const u8, output: []u8) Error!void
     pub fn pairing(input: []const u8, output: []u8) Error!void
     pub fn g1_output_size() u32
-    pub fn pairing_output_size() u32
+    pub fn pairingOutputSize() u32
 };
 ```
 
@@ -432,7 +432,7 @@ const crypto = @import("crypto");
 // Generate a new key pair
 const private_key = try crypto.unaudited_randomPrivateKey();
 const public_key = try crypto.unaudited_getPublicKey(private_key);
-const address = public_key.to_address();
+const address = public_key.toAddress();
 
 // Sign a message
 const message = "Hello, Ethereum!";
