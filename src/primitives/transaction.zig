@@ -182,13 +182,13 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
 
     // Encode 'to' field
     if (tx.to) |to_addr| {
-        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
+        try rlp.encodeBytesTo(allocator, &to_addr.bytes, &list);
     } else {
         try list.append(0x80); // Empty RLP string for null
     }
 
     try rlp.encodeUint(allocator, tx.value, &list);
-    try rlp.encodeBytes(allocator, tx.data, &list);
+    try rlp.encodeBytesTo(allocator, tx.data, &list);
 
     // For unsigned transaction (EIP-155)
     if (tx.v == 0) {
@@ -198,8 +198,8 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
     } else {
         // For signed transaction
         try rlp.encodeUint(allocator, tx.v, &list);
-        try rlp.encodeBytes(allocator, &tx.r, &list);
-        try rlp.encodeBytes(allocator, &tx.s, &list);
+        try rlp.encodeBytesTo(allocator, &tx.r, &list);
+        try rlp.encodeBytesTo(allocator, &tx.s, &list);
     }
 
     // Wrap in RLP list
@@ -230,13 +230,13 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
 
     // Encode 'to' field
     if (tx.to) |to_addr| {
-        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
+        try rlp.encodeBytesTo(allocator, &to_addr.bytes, &list);
     } else {
         try list.append(0x80); // Empty RLP string for null
     }
 
     try rlp.encodeUint(allocator, tx.value, &list);
-    try rlp.encodeBytes(allocator, tx.data, &list);
+    try rlp.encodeBytesTo(allocator, tx.data, &list);
 
     // Encode access list
     try encodeAccessListInternal(allocator, tx.access_list, &list);
@@ -247,8 +247,8 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
     } else {
         // For signed transaction
         try rlp.encodeUint(allocator, tx.v, &list);
-        try rlp.encodeBytes(allocator, &tx.r, &list);
-        try rlp.encodeBytes(allocator, &tx.s, &list);
+        try rlp.encodeBytesTo(allocator, &tx.r, &list);
+        try rlp.encodeBytesTo(allocator, &tx.s, &list);
     }
 
     // Wrap in RLP list
@@ -291,14 +291,14 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
         defer item_list.deinit();
 
         // Encode address
-        try rlp.encodeBytes(allocator, &item.address.bytes, &item_list);
+        try rlp.encodeBytesTo(allocator, &item.address.bytes, &item_list);
 
         // Encode storage keys
         var keys_list = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer keys_list.deinit();
 
         for (item.storage_keys) |key| {
-            try rlp.encodeBytes(allocator, &key, &keys_list);
+            try rlp.encodeBytesTo(allocator, &key, &keys_list);
         }
 
         // Wrap storage keys in RLP list
