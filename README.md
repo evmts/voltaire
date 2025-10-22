@@ -24,14 +24,18 @@
   </sup>
   <br />
   <br />
-  <h3>Requirements</h3>
-  <p>
-    <a href="https://ziglang.org/download/">Zig 0.15.1+</a> &mdash;
-    <a href="https://www.rust-lang.org/tools/install">Cargo (Rust)</a>
-  </p>
   <br />
-  <h3>Installation</h3>
-  <p><strong>Recommended:</strong> Build from source</p>
+</div>
+
+<br />
+
+## Requirements
+
+[Zig 0.15.1+](https://ziglang.org/download/) — [Cargo (Rust)](https://www.rust-lang.org/tools/install)
+
+## Installation
+
+**Recommended:** Build from source
 
 ```bash
 git clone https://github.com/evmts/primitives.git
@@ -40,16 +44,11 @@ git submodule update --init --recursive
 zig build
 ```
 
-  <p><strong>Alternative:</strong> Use zig fetch (may have missing dependencies)</p>
+**Alternative:** Use zig fetch (may have missing dependencies)
 
 ```bash
 zig fetch --save https://github.com/evmts/primitives
 ```
-
-  <br />
-  <br />
-  <br />
-</div>
 
 <br />
 
