@@ -8,7 +8,7 @@
 
 const std = @import("std");
 const primitives = @import("primitives");
-const rlp = primitives.rlp;
+const Rlp = primitives.Rlp;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -42,7 +42,7 @@ fn example_encode_bytes(allocator: std.mem.Allocator) !void {
     // Single byte values less than 0x80 are encoded as themselves
     {
         const single_byte = "a";
-        const encoded = try rlp.encode(allocator, single_byte);
+        const encoded = try Rlp.encode(allocator, single_byte);
         defer allocator.free(encoded);
 
         std.debug.print("Input: \"{s}\"\n", .{single_byte});
@@ -51,7 +51,7 @@ fn example_encode_bytes(allocator: std.mem.Allocator) !void {
         std.debug.print("Encoded length: {} bytes\n", .{encoded.len});
 
         // Decode to verify
-        const decoded = try rlp.decode(allocator, encoded, false);
+        const decoded = try Rlp.decode(allocator, encoded, false);
         defer decoded.data.deinit(allocator);
 
         switch (decoded.data) {
@@ -66,7 +66,7 @@ fn example_encode_bytes(allocator: std.mem.Allocator) !void {
     // Short strings (0-55 bytes) are prefixed with 0x80 + length
     {
         const short_string = "dog";
-        const encoded = try rlp.encode(allocator, short_string);
+        const encoded = try Rlp.encode(allocator, short_string);
         defer allocator.free(encoded);
 
         std.debug.print("Input: \"{s}\" ({} bytes)\n", .{ short_string, short_string.len });
@@ -74,7 +74,7 @@ fn example_encode_bytes(allocator: std.mem.Allocator) !void {
         printHex(encoded);
         std.debug.print("Prefix byte: 0x{x} (0x80 + {})\n", .{ encoded[0], short_string.len });
 
-        const decoded = try rlp.decode(allocator, encoded, false);
+        const decoded = try Rlp.decode(allocator, encoded, false);
         defer decoded.data.deinit(allocator);
 
         switch (decoded.data) {
@@ -89,7 +89,7 @@ fn example_encode_bytes(allocator: std.mem.Allocator) !void {
     // Long strings (>55 bytes) use 0xb7 + length_of_length encoding
     {
         const long_string = "This is a long string that exceeds 55 bytes and requires the long form RLP encoding";
-        const encoded = try rlp.encode(allocator, long_string);
+        const encoded = try Rlp.encode(allocator, long_string);
         defer allocator.free(encoded);
 
         std.debug.print("Input: \"{s}\" ({} bytes)\n", .{ long_string, long_string.len });
@@ -98,7 +98,7 @@ fn example_encode_bytes(allocator: std.mem.Allocator) !void {
         std.debug.print("Prefix byte: 0x{x}\n", .{encoded[0]});
         std.debug.print("Total encoded length: {} bytes\n", .{encoded.len});
 
-        const decoded = try rlp.decode(allocator, encoded, false);
+        const decoded = try Rlp.decode(allocator, encoded, false);
         defer decoded.data.deinit(allocator);
 
         switch (decoded.data) {
@@ -119,7 +119,7 @@ fn example_encode_integers(allocator: std.mem.Allocator) !void {
     // Zero is encoded as the empty string (0x80)
     {
         const value: u64 = 0;
-        const encoded = try rlp.encode(allocator, value);
+        const encoded = try Rlp.encode(allocator, value);
         defer allocator.free(encoded);
 
         std.debug.print("Input: {}\n", .{value});
@@ -131,7 +131,7 @@ fn example_encode_integers(allocator: std.mem.Allocator) !void {
     // Small integers less than 128 (0x80) are encoded as single bytes
     {
         const value: u8 = 15;
-        const encoded = try rlp.encode(allocator, value);
+        const encoded = try Rlp.encode(allocator, value);
         defer allocator.free(encoded);
 
         std.debug.print("Input: {}\n", .{value});
@@ -143,7 +143,7 @@ fn example_encode_integers(allocator: std.mem.Allocator) !void {
     // Larger integers are encoded as byte arrays with minimal leading bytes
     {
         const value: u64 = 1024;
-        const encoded = try rlp.encode(allocator, value);
+        const encoded = try Rlp.encode(allocator, value);
         defer allocator.free(encoded);
 
         std.debug.print("Input: {}\n", .{value});
@@ -156,7 +156,7 @@ fn example_encode_integers(allocator: std.mem.Allocator) !void {
     // Large integer
     {
         const value: u64 = 1_000_000;
-        const encoded = try rlp.encode(allocator, value);
+        const encoded = try Rlp.encode(allocator, value);
         defer allocator.free(encoded);
 
         std.debug.print("Input: {}\n", .{value});
@@ -173,7 +173,7 @@ fn example_encode_lists(allocator: std.mem.Allocator) !void {
     // Empty list
     {
         const empty_list: [0][]const u8 = .{};
-        const encoded = try rlp.encode(allocator, empty_list[0..]);
+        const encoded = try Rlp.encode(allocator, empty_list[0..]);
         defer allocator.free(encoded);
 
         std.debug.print("Input: [] (empty list)\n", .{});
@@ -185,7 +185,7 @@ fn example_encode_lists(allocator: std.mem.Allocator) !void {
     // List of strings
     {
         const list = [_][]const u8{ "cat", "dog", "mouse" };
-        const encoded = try rlp.encode(allocator, list[0..]);
+        const encoded = try Rlp.encode(allocator, list[0..]);
         defer allocator.free(encoded);
 
         std.debug.print("Input: [\"cat\", \"dog\", \"mouse\"]\n", .{});
@@ -194,7 +194,7 @@ fn example_encode_lists(allocator: std.mem.Allocator) !void {
         std.debug.print("Total encoded length: {} bytes\n", .{encoded.len});
 
         // Decode and verify
-        const decoded = try rlp.decode(allocator, encoded, false);
+        const decoded = try Rlp.decode(allocator, encoded, false);
         defer decoded.data.deinit(allocator);
 
         switch (decoded.data) {
@@ -217,14 +217,14 @@ fn example_encode_lists(allocator: std.mem.Allocator) !void {
     // List of integers
     {
         const numbers = [_]u32{ 1, 2, 3, 4, 5 };
-        const encoded = try rlp.encode(allocator, numbers[0..]);
+        const encoded = try Rlp.encode(allocator, numbers[0..]);
         defer allocator.free(encoded);
 
         std.debug.print("Input: [1, 2, 3, 4, 5]\n", .{});
         std.debug.print("Encoded (hex): ", .{});
         printHex(encoded);
 
-        const decoded = try rlp.decode(allocator, encoded, false);
+        const decoded = try Rlp.decode(allocator, encoded, false);
         defer decoded.data.deinit(allocator);
 
         switch (decoded.data) {
@@ -258,14 +258,14 @@ fn example_stream_decoding(allocator: std.mem.Allocator) !void {
     std.debug.print("--- Example 4: Stream Decoding ---\n", .{});
 
     // Create multiple encoded items
-    const item1 = try rlp.encode(allocator, "first");
+    const item1 = try Rlp.encode(allocator, "first");
     defer allocator.free(item1);
 
-    const item2 = try rlp.encode(allocator, @as(u64, 42));
+    const item2 = try Rlp.encode(allocator, @as(u64, 42));
     defer allocator.free(item2);
 
     const list_items = [_][]const u8{ "a", "b", "c" };
-    const item3 = try rlp.encode(allocator, list_items[0..]);
+    const item3 = try Rlp.encode(allocator, list_items[0..]);
     defer allocator.free(item3);
 
     // Concatenate all items into a stream
@@ -284,7 +284,7 @@ fn example_stream_decoding(allocator: std.mem.Allocator) !void {
     while (remaining.len > 0) {
         item_count += 1;
         // Pass true for stream mode to allow remainder
-        const decoded = try rlp.decode(allocator, remaining, true);
+        const decoded = try Rlp.decode(allocator, remaining, true);
         defer decoded.data.deinit(allocator);
 
         std.debug.print("Item {}: ", .{item_count});
@@ -328,16 +328,16 @@ fn example_nested_structures(allocator: std.mem.Allocator) !void {
 
     // First, encode inner lists
     const inner1 = [_][]const u8{"cat"};
-    const encoded_inner1 = try rlp.encode(allocator, inner1[0..]);
+    const encoded_inner1 = try Rlp.encode(allocator, inner1[0..]);
     defer allocator.free(encoded_inner1);
 
     const inner2 = [_][]const u8{ "dog", "mouse" };
-    const encoded_inner2 = try rlp.encode(allocator, inner2[0..]);
+    const encoded_inner2 = try Rlp.encode(allocator, inner2[0..]);
     defer allocator.free(encoded_inner2);
 
     // Now encode the outer list containing the encoded inner lists
     const outer = [_][]const u8{ encoded_inner1, encoded_inner2 };
-    const encoded_outer = try rlp.encode(allocator, outer[0..]);
+    const encoded_outer = try Rlp.encode(allocator, outer[0..]);
     defer allocator.free(encoded_outer);
 
     std.debug.print("Encoded (hex): ", .{});
@@ -345,7 +345,7 @@ fn example_nested_structures(allocator: std.mem.Allocator) !void {
     std.debug.print("Total size: {} bytes\n\n", .{encoded_outer.len});
 
     // Decode and display the nested structure
-    const decoded = try rlp.decode(allocator, encoded_outer, false);
+    const decoded = try Rlp.decode(allocator, encoded_outer, false);
     defer decoded.data.deinit(allocator);
 
     std.debug.print("Decoded nested structure:\n", .{});

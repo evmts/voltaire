@@ -113,7 +113,7 @@ pub fn main() !void {
 
     const private_key = try Crypto.unaudited_randomPrivateKey();
     const public_key = try Crypto.unaudited_getPublicKey(private_key);
-    const signer_address = public_key.toAddress();
+    const signer_address = public_key.to_address();
 
     std.debug.print("   Signer address: 0x", .{});
     for (signer_address) |byte| std.debug.print("{x:0>2}", .{byte});
@@ -233,7 +233,7 @@ pub fn main() !void {
     );
     try nested_typed_data.message.put(
         try allocator.dupe(u8, "contents"),
-        Eip712.MessageValue{ .string = try allocator.dupe(u8, "Hello, Bob!" },
+        Eip712.MessageValue{ .string = try allocator.dupe(u8, "Hello, Bob!") },
     );
 
     std.debug.print("   Nested type structure:\n", .{});

@@ -90,7 +90,7 @@ pub fn main() !void {
 
     // Simple init code (bytecode)
     const init_code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
-    std.debug.print("   Init Code: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&init_code)});
+    std.debug.print("   Init Code: 0x{x}\n", .{init_code});
 
     const create2_addr = try Address.calculateCreate2Address(allocator, deployer2, salt, &init_code);
     const create2_hex = create2_addr.toChecksumHex();
