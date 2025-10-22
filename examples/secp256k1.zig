@@ -128,7 +128,7 @@ pub fn main() !void {
     }
     std.debug.print("\n", .{});
 
-    const signature_hex = signature.to_hex();
+    const signature_hex = signature.toHex();
     std.debug.print("   Signature Hex: {s}\n", .{signature_hex});
 
     // Deserialize and verify it matches
