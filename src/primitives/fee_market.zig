@@ -4,7 +4,7 @@ const std = @import("std");
 /// Base fee adjusts based on block fullness; burned, not paid to miners
 
 /// Calculate fee delta safely (avoids overflow and division by zero)
-fn calculate_fee_delta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
+fn calculateFeeDelta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
     // Using u128 for intermediate calculation to avoid overflow
     const intermediate: u128 = @as(u128, fee) * @as(u128, gas_delta);
     // Avoid division by zero
@@ -30,7 +30,7 @@ pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
         else
             parent_gas_target - parent_gas_used;
 
-        const base_fee_delta = calculate_fee_delta(base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculateFeeDelta(base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         if (parent_gas_used > parent_gas_target) {
             base_fee = base_fee + base_fee_delta;
@@ -80,7 +80,7 @@ pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target
         const gas_used_delta = parent_gas_used - parent_gas_target;
 
         // Calculate the base fee delta (max 12.5% increase)
-        const base_fee_delta = calculate_fee_delta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         // Increase the base fee
         // The overflow check is probably unnecessary given gas limits, but it's a good safety measure
@@ -94,7 +94,7 @@ pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target
         const gas_used_delta = parent_gas_target - parent_gas_used;
 
         // Calculate the base fee delta (max 12.5% decrease)
-        const base_fee_delta = calculate_fee_delta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         // Decrease the base fee, but don't go below the minimum
         new_base_fee = if (parent_base_fee > base_fee_delta)
@@ -163,49 +163,49 @@ pub fn getGasTarget(gas_limit: u64) u64 {
 
 // Tests
 
-test "calculate_fee_delta basic functionality" {
+test "calculateFeeDelta basic functionality" {
     // Test basic calculation
     const fee = 1000;
     const gas_delta = 100;
     const gas_target = 1000;
     const denominator = 8;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // Expected: (1000 * 100) / (1000 * 8) = 100000 / 8000 = 12.5, rounded to 12
     try std.testing.expectEqual(@as(u64, 12), result);
 }
 
-test "calculate_fee_delta returns at least 1" {
+test "calculateFeeDelta returns at least 1" {
     // Test that result is always at least 1
     const fee = 1;
     const gas_delta = 1;
     const gas_target = 1000000;
     const denominator = 1000000;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     try std.testing.expectEqual(@as(u64, 1), result);
 }
 
-test "calculate_fee_delta handles large values without overflow" {
+test "calculateFeeDelta handles large values without overflow" {
     // Test with large values that would overflow u64 in intermediate calculations
     const fee = std.math.maxInt(u64) / 2;
     const gas_delta = 1000;
     const gas_target = 1000;
     const denominator = 1;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // Should not panic and return a valid result
     try std.testing.expect(result > 0);
 }
 
-test "calculate_fee_delta handles division by zero protection" {
+test "calculateFeeDelta handles division by zero protection" {
     // Test with zero gas_target and denominator
     const fee = 1000;
     const gas_delta = 100;
     const gas_target = 0;
     const denominator = 0;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // Should use divisor of 1 and return fee * gas_delta
     try std.testing.expectEqual(@as(u64, 100000), result);
 }
@@ -223,7 +223,7 @@ test "initial_base_fee with exactly target gas usage" {
     const parent_gas_used = 15_000_000; // Exactly half (target)
 
     const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // When exactly at target, there's still a minimal adjustment due to calculate_fee_delta returning at least 1
+    // When exactly at target, there's still a minimal adjustment due to calculateFeeDelta returning at least 1
     // gas_used_delta = 0, but calculate_fee_delta returns 1, so base_fee = 1_000_000_000 - 1
     try std.testing.expectEqual(@as(u64, 999_999_999), base_fee);
 }
@@ -621,7 +621,7 @@ test "nextBaseFee with maximum safe base fee" {
     const parent_gas_used = 20_000_000; // Above target would increase
 
     const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
-    // Should not overflow - calculate_fee_delta handles this
+    // Should not overflow - calculateFeeDelta handles this
     try std.testing.expect(next_fee >= parent_base_fee);
 }
 
@@ -663,59 +663,59 @@ test "nextBaseFee with zero gas target" {
 
 // Edge case tests for fee delta calculations
 
-test "calculate_fee_delta with maximum fee and small delta" {
+test "calculateFeeDelta with maximum fee and small delta" {
     const fee = std.math.maxInt(u64) / 10;
     const gas_delta = 1;
     const gas_target = 15_000_000;
     const denominator = 8;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // Should not overflow and return valid result
     try std.testing.expect(result >= 1);
 }
 
-test "calculate_fee_delta with zero fee" {
+test "calculateFeeDelta with zero fee" {
     const fee = 0;
     const gas_delta = 1_000_000;
     const gas_target = 15_000_000;
     const denominator = 8;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // 0 * anything = 0, but minimum is 1
     try std.testing.expectEqual(@as(u64, 1), result);
 }
 
-test "calculate_fee_delta with zero gas delta" {
+test "calculateFeeDelta with zero gas delta" {
     const fee = 1_000_000_000;
     const gas_delta = 0;
     const gas_target = 15_000_000;
     const denominator = 8;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // 0 delta should result in minimum return of 1
     try std.testing.expectEqual(@as(u64, 1), result);
 }
 
-test "calculate_fee_delta with all maximum values" {
+test "calculateFeeDelta with all maximum values" {
     const fee = std.math.maxInt(u64);
     const gas_delta = std.math.maxInt(u64);
     const gas_target = std.math.maxInt(u64);
     const denominator = std.math.maxInt(u64);
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // Should handle overflow and return capped result
     try std.testing.expect(result > 0);
     try std.testing.expect(result <= std.math.maxInt(u64));
 }
 
-test "calculate_fee_delta rounding behavior" {
+test "calculateFeeDelta rounding behavior" {
     // Test that integer division rounds down correctly
     const fee = 1000;
     const gas_delta = 3;
     const gas_target = 100;
     const denominator = 8;
 
-    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
+    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
     // (1000 * 3) / (100 * 8) = 3000 / 800 = 3.75 -> rounds to 3
     try std.testing.expectEqual(@as(u64, 3), result);
 }

@@ -217,7 +217,7 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
 }
 
 // Encode EIP-1559 transaction for signing
-pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) ![]u8 {
+pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]u8 {
     var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
@@ -239,7 +239,7 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
     try rlp.encodeBytes(allocator, tx.data, &list);
 
     // Encode access list
-    try encode_access_list_internal(allocator, tx.access_list, &list);
+    try encodeAccessListInternal(allocator, tx.access_list, &list);
 
     // For unsigned transaction
     if (tx.v == 0) {
@@ -276,13 +276,13 @@ pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) 
 pub fn encodeAccessList(allocator: Allocator, access_list: []const AccessListItem) ![]u8 {
     var output = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer output.deinit();
-    
-    try encode_access_list_internal(allocator, access_list, &output);
+
+    try encodeAccessListInternal(allocator, access_list, &output);
     return output.toOwnedSlice();
 }
 
 // Encode access list (internal version that writes to output)
-fn encode_access_list_internal(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
+fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
     var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
@@ -456,7 +456,7 @@ test "encode eip1559 transaction" {
         .s = [_]u8{0} ** 32,
     };
 
-    const encoded = try encode_eip1559_for_signing(allocator, tx);
+    const encoded = try encodeEip1559ForSigning(allocator, tx);
     defer allocator.free(encoded);
 
     // Should start with transaction type
@@ -493,7 +493,7 @@ test "eip1559 with access list" {
         .s = [_]u8{0} ** 32,
     };
 
-    const encoded = try encode_eip1559_for_signing(allocator, tx);
+    const encoded = try encodeEip1559ForSigning(allocator, tx);
     defer allocator.free(encoded);
 
     try testing.expect(encoded.len > 100); // Should be larger with access list

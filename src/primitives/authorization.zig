@@ -30,7 +30,7 @@ pub const Authorization = struct {
 
     pub fn authority(self: *const Authorization) !Address {
         // Recover the authority (signer) from the authorization
-        const h = try self.signing_hash();
+        const h = try self.signingHash();
         const r_value = std.mem.readInt(u256, &self.r, .big);
         const s_value = std.mem.readInt(u256, &self.s, .big);
         const signature = crypto.Signature{
@@ -42,7 +42,7 @@ pub const Authorization = struct {
         return try crypto.unaudited_recoverAddress(h, signature);
     }
 
-    pub fn signing_hash(self: *const Authorization) !Hash {
+    pub fn signingHash(self: *const Authorization) !Hash {
         const allocator = std.heap.page_allocator;
 
         // RLP encode [chain_id, address, nonce]
@@ -125,7 +125,7 @@ pub fn createAuthorization(
         .s = [_]u8{0} ** 32,
     };
 
-    const h = try auth.signing_hash();
+    const h = try auth.signingHash();
     const signature = try crypto.unaudited_signHash(h, private_key);
 
     auth.v = signature.v;
@@ -198,7 +198,7 @@ pub const DelegationDesignation = struct {
     authority: Address,
     delegated_address: Address,
 
-    pub fn is_active(self: *const DelegationDesignation) bool {
+    pub fn isActive(self: *const DelegationDesignation) bool {
         // Delegation is active if delegated address is not zero
         return !self.delegated_address.is_zero();
     }
@@ -330,11 +330,11 @@ test "delegation designation" {
     };
 
     // Should be active
-    try testing.expect(delegation.is_active());
+    try testing.expect(delegation.isActive());
 
     // Revoke delegation
     delegation.revoke();
-    try testing.expect(!delegation.is_active());
+    try testing.expect(!delegation.isActive());
     try testing.expectEqual(Address.ZERO, delegation.delegated_address);
 }
 
@@ -366,8 +366,8 @@ test "batch authorization processing" {
     defer allocator.free(delegations);
 
     try testing.expectEqual(@as(usize, 2), delegations.len);
-    try testing.expect(delegations[0].is_active());
-    try testing.expect(delegations[1].is_active());
+    try testing.expect(delegations[0].isActive());
+    try testing.expect(delegations[1].isActive());
 }
 
 test "authorization gas cost calculation" {
@@ -439,7 +439,7 @@ test "authority() recovers correct signer with different nonces" {
     }
 }
 
-test "signing_hash() produces consistent hashes" {
+test "signingHash() produces consistent hashes" {
     const allocator = testing.allocator;
     _ = allocator;
 
@@ -462,13 +462,13 @@ test "signing_hash() produces consistent hashes" {
         .s = [_]u8{0xaa} ** 32,
     };
 
-    const hash1 = try auth1.signing_hash();
-    const hash2 = try auth2.signing_hash();
+    const hash1 = try auth1.signingHash();
+    const hash2 = try auth2.signingHash();
 
     try testing.expectEqual(hash1, hash2);
 }
 
-test "signing_hash() produces different hashes for different inputs" {
+test "signingHash() produces different hashes for different inputs" {
     const allocator = testing.allocator;
     _ = allocator;
 
@@ -500,16 +500,16 @@ test "signing_hash() produces different hashes for different inputs" {
         .s = [_]u8{0x34} ** 32,
     };
 
-    const hash1 = try auth1.signing_hash();
-    const hash2 = try auth2.signing_hash();
-    const hash3 = try auth3.signing_hash();
+    const hash1 = try auth1.signingHash();
+    const hash2 = try auth2.signingHash();
+    const hash3 = try auth3.signingHash();
 
     try testing.expect(!std.mem.eql(u8, &hash1, &hash2));
     try testing.expect(!std.mem.eql(u8, &hash1, &hash3));
     try testing.expect(!std.mem.eql(u8, &hash2, &hash3));
 }
 
-test "signing_hash() handles edge case nonce values" {
+test "signingHash() handles edge case nonce values" {
     const allocator = testing.allocator;
     _ = allocator;
 
@@ -533,8 +533,8 @@ test "signing_hash() handles edge case nonce values" {
         .s = [_]u8{0x34} ** 32,
     };
 
-    const hash_zero = try auth_zero.signing_hash();
-    const hash_max = try auth_max.signing_hash();
+    const hash_zero = try auth_zero.signingHash();
+    const hash_max = try auth_max.signingHash();
 
     try testing.expect(hash_zero.len == 32);
     try testing.expect(hash_max.len == 32);
