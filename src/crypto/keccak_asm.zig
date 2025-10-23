@@ -24,7 +24,7 @@ const c = if (builtin.target.cpu.arch != .wasm32) @cImport({
     @cInclude("keccak_wrapper.h");
 }) else struct {};
 
-fn keccakResultToError(result: c_int) KeccakError!void {
+fn keccakResultToError(result: c_uint) KeccakError!void {
     if (builtin.target.cpu.arch == .wasm32) return;
 
     return switch (result) {

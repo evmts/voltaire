@@ -18,4 +18,10 @@ pub const PrecompileError = error{
     InvalidPairing,
     OutOfGas,
     NotImplemented,
+    // Keccak errors (from keccak_asm)
+    ExecutionError,
+    StateError,
+    MemoryError,
+    InvalidOutputSize,
+    Unknown,
 } || std.mem.Allocator.Error;
