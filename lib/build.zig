@@ -59,7 +59,8 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *
         cargo_build.addArg(arg);
     }
 
-    // No additional args needed - single package at repo root
+    // Set working directory to the primitives package root (where Cargo.toml lives)
+    cargo_build.setCwd(b.path("."));
 
     return &cargo_build.step;
 }
