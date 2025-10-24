@@ -29,11 +29,12 @@
 ```bash
 git clone https://github.com/evmts/primitives.git
 cd primitives
-git submodule update --init --recursive
 zig build
 ```
 
-**Alternative:** Use zig fetch (may have missing dependencies)
+**Note:** Requires [Cargo (Rust)](https://www.rust-lang.org/tools/install) to be installed. The build system will automatically compile Rust dependencies.
+
+**Alternative:** Use zig fetch
 
 ```bash
 zig fetch --save https://github.com/evmts/primitives

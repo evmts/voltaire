@@ -59,10 +59,7 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *
         cargo_build.addArg(arg);
     }
 
-    // Build workspace members
-    cargo_build.addArgs(&[_][]const u8{
-        "--workspace",
-    });
+    // No additional args needed - single package at repo root
 
     return &cargo_build.step;
 }
