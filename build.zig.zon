@@ -63,6 +63,8 @@
         "build.zig.zon",
         "src",
         "lib",
+        "Cargo.toml",
+        "Cargo.lock",
         // For example...
         //"LICENSE",
         //"README.md",
