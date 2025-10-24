@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // STEP 1: Verify vendored dependencies exist
-    lib_build.checkVendoredDeps();
+    lib_build.checkVendoredDeps(b);
 
     // STEP 2: Verify Cargo is installed for Rust dependencies
     lib_build.checkCargoInstalled();
@@ -26,23 +26,28 @@ pub fn build(b: *std.Build) void {
     if (bn254_lib) |bn254| b.installArtifact(bn254);
     if (keccak_lib) |keccak| b.installArtifact(keccak);
 
-    // Create c_kzg module for crypto tests
+    // Create c_kzg module with proper bindings root
     const c_kzg_mod = b.addModule("c_kzg", .{
-        .root_source_file = b.path("lib/c-kzg.zig"),
+        .root_source_file = b.path("lib/c-kzg-4844/bindings/zig/root.zig"),
         .target = target,
         .optimize = optimize,
     });
+    c_kzg_mod.linkLibrary(c_kzg_lib);
+    c_kzg_mod.linkLibrary(blst_lib);
+    c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/src"));
+    c_kzg_mod.addIncludePath(b.path("lib/c-kzg-4844/blst/bindings"));
 
-    // Crypto tests (Hardfork accessed through primitives module)
-    const crypto_mod = b.createModule(.{
+    // Crypto module - export for external packages
+    const crypto_mod = b.addModule("crypto", .{
         .root_source_file = b.path("src/crypto/root.zig"),
         .target = target,
         .optimize = optimize,
     });
     crypto_mod.addImport("c_kzg", c_kzg_mod);
+    crypto_mod.addIncludePath(b.path("lib")); // For keccak_wrapper.h
 
-    // Primitives module (includes Hardfork)
-    const primitives_mod = b.createModule(.{
+    // Primitives module - export for external packages (includes Hardfork)
+    const primitives_mod = b.addModule("primitives", .{
         .root_source_file = b.path("src/primitives/root.zig"),
         .target = target,
         .optimize = optimize,
@@ -74,8 +79,8 @@ pub fn build(b: *std.Build) void {
     if (keccak_lib) |keccak| crypto_tests.linkLibrary(keccak);
     crypto_tests.linkLibC();
 
-    // Precompiles module
-    const precompiles_mod = b.createModule(.{
+    // Precompiles module - export for external packages
+    const precompiles_mod = b.addModule("precompiles", .{
         .root_source_file = b.path("src/precompiles/root.zig"),
         .target = target,
         .optimize = optimize,

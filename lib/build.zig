@@ -64,8 +64,8 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *
     return &cargo_build.step;
 }
 
-pub fn checkVendoredDeps() void {
-    // Verify vendored c-kzg-4844 dependencies exist
+pub fn checkVendoredDeps(b: *std.Build) void {
+    // Verify vendored c-kzg-4844 dependencies exist relative to build root
     const deps = [_]struct {
         path: []const u8,
         name: []const u8,
@@ -77,7 +77,9 @@ pub fn checkVendoredDeps() void {
     var missing = false;
 
     for (deps) |dep| {
-        std.fs.cwd().access(dep.path, .{}) catch {
+        const full_path = b.path(dep.path);
+        const path_str = full_path.getPath(b);
+        std.fs.cwd().access(path_str, .{}) catch {
             if (!missing) {
                 std.debug.print("\n", .{});
                 std.debug.print("❌ ERROR: Required vendored dependencies are missing!\n", .{});
