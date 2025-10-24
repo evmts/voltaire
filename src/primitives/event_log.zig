@@ -1,427 +1,210 @@
 const std = @import("std");
-const testing = std.testing;
-const abi_encoding = @import("abi_encoding.zig");
+const Allocator = std.mem.Allocator;
+const address_mod = @import("address.zig");
 const crypto_pkg = @import("crypto");
 const hash = crypto_pkg.Hash;
-const address = @import("address.zig");
-const hex = @import("hex.zig");
+const Address = address_mod.Address;
 const Hash = hash.Hash;
-const Address = address.Address;
-const Allocator = std.mem.Allocator;
 
-// Event log error types
-pub const EventLogError = error{
-    OutOfMemory,
-};
+/// Represents an Ethereum event log emitted by a smart contract
+///
+/// Event logs are the primary mechanism for smart contracts to communicate
+/// state changes to off-chain systems. They consist of:
+/// - An address (the contract that emitted the log)
+/// - Topics (indexed parameters, up to 4, where topic0 is typically the event signature)
+/// - Data (non-indexed parameters, ABI-encoded)
+/// - Block/transaction metadata for provenance
+///
+/// This type provides:
+/// - Event signature extraction (topic0)
+/// - Log filtering with wildcard support
+/// - Reorg detection via the `removed` flag
+/// - Full block and transaction context tracking
+///
+/// Example:
+/// ```zig
+/// const log = EventLog{
+///     .address = contract_addr,
+///     .topics = &[_]Hash{ event_signature, indexed_param1, indexed_param2 },
+///     .data = abi_encoded_data,
+///     .block_number = 12345,
+///     .transaction_hash = tx_hash,
+///     .transaction_index = 0,
+///     .log_index = 0,
+///     .removed = false,
+/// };
+///
+/// // Get event signature
+/// const sig = log.eventSignature();
+///
+/// // Filter logs by topics (null = wildcard)
+/// const filtered = try filterLogs(allocator, logs, &[_]?Hash{ topic0, null, null });
+/// ```
+pub const EventLog = @This();
 
-// Event log structure
-pub const EventLog = struct {
-    address: Address,
-    topics: []const Hash,
-    data: []const u8,
-    block_number: ?u64,
-    transaction_hash: ?Hash,
-    transaction_index: ?u32,
-    log_index: ?u32,
-    removed: bool,
-};
+// =============================================================================
+// Fields
+// =============================================================================
 
-// Event signature structure
-pub const EventSignature = struct {
-    name: []const u8,
-    inputs: []const EventInput,
-};
+/// Contract address that emitted this log
+address: Address,
 
-pub const EventInput = struct {
-    name: []const u8,
-    type: abi_encoding.AbiType,
-    indexed: bool,
-};
+/// Topics array (indexed event parameters)
+/// - topic[0] is typically the event signature hash (keccak256 of event signature)
+/// - topic[1..3] are indexed parameters (max 3 indexed params per Solidity spec)
+/// - Can have 0-4 topics total
+topics: []const Hash,
 
-// Helper function to parse event log
-pub fn parseEventLog(allocator: Allocator, log: EventLog, sig: EventSignature) ![]abi_encoding.AbiValue {
-    var result = std.array_list.AlignedManaged(abi_encoding.AbiValue, null).init(allocator);
-    defer result.deinit();
+/// Non-indexed event data (ABI-encoded)
+/// Contains all non-indexed parameters in order they appear in event signature
+data: []const u8,
 
-    var topic_index: usize = 1; // Skip topic0 (event signature)
-    var data_types = std.array_list.AlignedManaged(abi_encoding.AbiType, null).init(allocator);
-    defer data_types.deinit();
+/// Block number where this log was emitted (null if pending)
+block_number: ?u64,
 
-    // Process each input
-    for (sig.inputs) |input| {
-        if (input.indexed) {
-            // Read from topics
-            if (topic_index < log.topics.len) {
-                const topic = log.topics[topic_index];
-                topic_index += 1;
+/// Transaction hash that produced this log (null if pending)
+transaction_hash: ?Hash,
 
-                // For indexed parameters, decode based on type
-                switch (input.type) {
-                    .address => {
-                        var addr: Address = undefined;
-                        @memcpy(&addr.bytes, topic.bytes[12..32]);
-                        try result.append(abi_encoding.addressValue(addr));
-                    },
-                    .uint256 => {
-                        const value = topic.to_u256();
-                        try result.append(abi_encoding.uint256Value(value));
-                    },
-                    .string, .bytes => {
-                        // Dynamic types are hashed when indexed
-                        // We can't recover the original value
-                        try result.append(abi_encoding.bytesValue(&topic.bytes));
-                    },
-                    else => {
-                        // Handle other types as needed
-                        try result.append(abi_encoding.uint256Value(0));
-                    },
-                }
-            }
-        } else {
-            // Will be decoded from data later
-            try data_types.append(input.type);
-        }
+/// Index of transaction in block (null if pending)
+transaction_index: ?u32,
+
+/// Index of this log entry within the transaction (null if pending)
+log_index: ?u32,
+
+/// True if this log was removed due to a chain reorganization
+/// When a block is uncled/reorged, its logs are marked as removed
+removed: bool,
+
+// =============================================================================
+// Event Signature Methods
+// =============================================================================
+
+/// Get event signature (topic0) if present
+///
+/// For non-anonymous events, topic[0] contains the keccak256 hash of the
+/// event signature. For anonymous events, there is no topic[0].
+///
+/// Returns:
+/// - `?Hash` - The event signature hash if topics.len > 0, otherwise null
+///
+/// Example:
+/// ```zig
+/// // Transfer(address,address,uint256) signature
+/// const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
+/// const log = EventLog{
+///     .address = contract,
+///     .topics = &[_]Hash{ topic0, from_topic, to_topic },
+///     .data = value_data,
+///     // ... other fields
+/// };
+///
+/// const sig = log.eventSignature();
+/// if (sig) |s| {
+///     // s equals topic0
+/// }
+/// ```
+pub fn eventSignature(self: EventLog) ?Hash {
+    if (self.topics.len > 0) {
+        return self.topics[0];
     }
-
-    // Decode non-indexed parameters from data
-    if (data_types.items.len > 0) {
-        const data_values = try abi_encoding.decodeAbiParameters(allocator, log.data, data_types.items);
-        defer allocator.free(data_values);
-
-        // Insert data values at their correct positions
-        var data_index: usize = 0;
-        var result_index: usize = 0;
-        for (sig.inputs) |input| {
-            if (!input.indexed) {
-                if (data_index < data_values.len) {
-                    try result.insert(result_index, data_values[data_index]);
-                    data_index += 1;
-                }
-            }
-            result_index += 1;
-        }
-    }
-
-    return result.toOwnedSlice();
+    return null;
 }
 
-// Helper function to filter logs by topics
-pub fn filterLogsByTopics(logs: []const EventLog, filter_topics: []const ?Hash) []const EventLog {
-    var matches = std.array_list.AlignedManaged(EventLog, null).init(std.heap.page_allocator);
-    defer matches.deinit();
+// =============================================================================
+// Log Filtering
+// =============================================================================
+
+/// Filter logs by topic patterns with wildcard support
+///
+/// Filters an array of logs to only those matching the specified topic pattern.
+/// Each position in the filter can be:
+/// - A specific Hash value to match exactly
+/// - null to match any value (wildcard)
+///
+/// Topics are matched positionally:
+/// - filter_topics[0] matches log.topics[0] (event signature)
+/// - filter_topics[1] matches log.topics[1] (first indexed param)
+/// - etc.
+///
+/// A log matches if:
+/// - For each position in filter_topics:
+///   - If filter value is null, any log value matches (wildcard)
+///   - If filter value is a Hash, log must have that exact Hash at that position
+/// - Log must have at least as many topics as filter_topics
+///
+/// Arguments:
+/// - `allocator` - Used to allocate the result array
+/// - `logs` - Array of logs to filter
+/// - `filter_topics` - Topic pattern to match (null entries are wildcards)
+///
+/// Returns:
+/// - `![]EventLog` - New array containing only matching logs (caller must free)
+///
+/// Example:
+/// ```zig
+/// // Filter for Transfer events from a specific address
+/// const transfer_sig = Hash.keccak256("Transfer(address,address,uint256)");
+/// const from_addr_hash = ...; // address encoded as Hash
+///
+/// // Match: Transfer signature, specific from address, any to address
+/// const filtered = try filterLogs(
+///     allocator,
+///     all_logs,
+///     &[_]?Hash{ transfer_sig, from_addr_hash, null }
+/// );
+/// defer allocator.free(filtered);
+///
+/// // Match: Any event signature, specific address in topic[1]
+/// const filtered2 = try filterLogs(
+///     allocator,
+///     all_logs,
+///     &[_]?Hash{ null, specific_topic1, null }
+/// );
+/// defer allocator.free(filtered2);
+/// ```
+pub fn filterLogs(
+    allocator: Allocator,
+    logs: []const EventLog,
+    filter_topics: []const ?Hash,
+) ![]EventLog {
+    var matches = std.ArrayList(EventLog){};
+    errdefer matches.deinit(allocator);
 
     for (logs) |log| {
-        var match = true;
+        var is_match = true;
 
-        for (filter_topics, 0..) |filter_topic, i| {
-            if (filter_topic) |topic| {
-                if (i >= log.topics.len or !log.topics[i].eql(topic)) {
-                    match = false;
+        // Check each filter topic position
+        for (filter_topics, 0..) |maybe_filter_topic, i| {
+            if (maybe_filter_topic) |filter_topic| {
+                // Non-null filter: must match exactly
+                if (i >= log.topics.len or !log.topics[i].eql(filter_topic)) {
+                    is_match = false;
                     break;
                 }
             }
+            // Null filter: wildcard, matches anything
         }
 
-        if (match) {
-            matches.append(log) catch continue;
+        if (is_match) {
+            try matches.append(allocator, log);
         }
     }
 
-    return matches.toOwnedSlice() catch &[_]EventLog{};
+    return try matches.toOwnedSlice(allocator);
 }
 
+// =============================================================================
 // Tests
+// =============================================================================
 
-test "parse event log with no indexed parameters" {
-    const allocator = testing.allocator;
-
-    // Transfer event without indexed parameters
-    const event_sig = EventSignature{
-        .name = "Transfer",
-        .inputs = &[_]EventInput{
-            .{ .name = "from", .type = .address, .indexed = false },
-            .{ .name = "to", .type = .address, .indexed = false },
-            .{ .name = "value", .type = .uint256, .indexed = false },
-        },
-    };
-
-    // Event signature hash (topic0)
-    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
-
-    // Log data contains all parameters
-    const from_addr = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const to_addr = try Address.fromHex("0x0000000000000000000000000000000000000002");
-    const value: u256 = 1000;
-
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.addressValue(from_addr),
-        abi_encoding.addressValue(to_addr),
-        abi_encoding.uint256Value(value),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{topic0},
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    // Parse the log
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 3), parsed.len);
-    try testing.expectEqualSlices(u8, &from_addr.bytes, &parsed[0].address.bytes);
-    try testing.expectEqualSlices(u8, &to_addr.bytes, &parsed[1].address.bytes);
-    try testing.expectEqual(value, parsed[2].uint256);
-}
-
-test "parse event log with indexed parameters" {
-    const allocator = testing.allocator;
-
-    // Transfer event with indexed from and to
-    const event_sig = EventSignature{
-        .name = "Transfer",
-        .inputs = &[_]EventInput{
-            .{ .name = "from", .type = .address, .indexed = true },
-            .{ .name = "to", .type = .address, .indexed = true },
-            .{ .name = "value", .type = .uint256, .indexed = false },
-        },
-    };
-
-    // Event signature hash (topic0)
-    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
-
-    // Indexed parameters as topics
-    const from_addr = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const to_addr = try Address.fromHex("0x0000000000000000000000000000000000000002");
-
-    // Create topics for indexed parameters
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &from_addr.bytes);
-
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &to_addr.bytes);
-
-    // Only non-indexed parameter in data
-    const value: u256 = 1000;
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1, topic2 },
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    // Parse the log
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 3), parsed.len);
-    try testing.expectEqualSlices(u8, &from_addr.bytes, &parsed[0].address.bytes);
-    try testing.expectEqualSlices(u8, &to_addr.bytes, &parsed[1].address.bytes);
-    try testing.expectEqual(value, parsed[2].uint256);
-}
-
-test "parse event log with dynamic indexed parameter" {
-    const allocator = testing.allocator;
-
-    // Event with indexed string (dynamic type)
-    _ = EventSignature{
-        .name = "Message",
-        .inputs = &[_]EventInput{
-            .{ .name = "message", .type = .string, .indexed = true },
-            .{ .name = "sender", .type = .address, .indexed = false },
-        },
-    };
-
-    const topic0 = hash.keccak256("Message(string,address)");
-
-    // For indexed dynamic types, the hash of the value is stored as topic
-    const message = "Hello, Ethereum!";
-    const message_hash = hash.keccak256(message);
-
-    const sender = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.addressValue(sender),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, message_hash },
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    // Note: We can't recover the original string from its hash
-    // This test just verifies the structure is correct
-    try testing.expectEqual(@as(usize, 2), log.topics.len);
-    try testing.expectEqual(message_hash, log.topics[1]);
-}
-
-test "parse anonymous event" {
-    const allocator = testing.allocator;
-
-    // Anonymous events don't include topic0 (signature hash)
-    _ = EventSignature{
-        .name = "AnonymousTransfer",
-        .inputs = &[_]EventInput{
-            .{ .name = "from", .type = .address, .indexed = true },
-            .{ .name = "to", .type = .address, .indexed = true },
-            .{ .name = "value", .type = .uint256, .indexed = false },
-        },
-    };
-
-    // No topic0 for anonymous events
-    const from_addr = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const to_addr = try Address.fromHex("0x0000000000000000000000000000000000000002");
-
-    var topic0 = Hash.ZERO;
-    @memcpy(topic0.bytes[12..32], &from_addr.bytes);
-
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &to_addr.bytes);
-
-    const value: u256 = 1000;
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1 }, // Only indexed parameters
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    // Anonymous events have different parsing logic
-    try testing.expectEqual(@as(usize, 2), log.topics.len);
-}
-
-test "parse ERC20 Transfer event" {
-    const allocator = testing.allocator;
-
-    // Standard ERC20 Transfer event
-    const event_sig = EventSignature{
-        .name = "Transfer",
-        .inputs = &[_]EventInput{
-            .{ .name = "from", .type = .address, .indexed = true },
-            .{ .name = "to", .type = .address, .indexed = true },
-            .{ .name = "value", .type = .uint256, .indexed = false },
-        },
-    };
-
-    // Real Transfer event signature
+test "EventLog: eventSignature - returns topic0 for non-anonymous events" {
     const topic0 = try Hash.fromHex("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
-
-    const from_addr = try Address.fromHex("0x1234567890123456789012345678901234567890");
-    const to_addr = try Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
-
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &from_addr.bytes);
-
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &to_addr.bytes);
-
-    const value: u256 = 1_000_000_000_000_000_000; // 1 ETH
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
+    const topic1 = Hash.ZERO;
 
     const log = EventLog{
-        .address = try Address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"), // WETH address
-        .topics = &[_]Hash{ topic0, topic1, topic2 },
-        .data = data,
-        .block_number = 17000000,
-        .transaction_hash = try Hash.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234"),
-        .transaction_index = 42,
-        .log_index = 123,
-        .removed = false,
-    };
-
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 3), parsed.len);
-    try testing.expectEqualSlices(u8, &from_addr.bytes, &parsed[0].address.bytes);
-    try testing.expectEqualSlices(u8, &to_addr.bytes, &parsed[1].address.bytes);
-    try testing.expectEqual(value, parsed[2].uint256);
-}
-
-test "parse event with multiple data parameters" {
-    const allocator = testing.allocator;
-
-    const event_sig = EventSignature{
-        .name = "Swap",
-        .inputs = &[_]EventInput{
-            .{ .name = "sender", .type = .address, .indexed = true },
-            .{ .name = "amount0In", .type = .uint256, .indexed = false },
-            .{ .name = "amount1In", .type = .uint256, .indexed = false },
-            .{ .name = "amount0Out", .type = .uint256, .indexed = false },
-            .{ .name = "amount1Out", .type = .uint256, .indexed = false },
-            .{ .name = "to", .type = .address, .indexed = true },
-        },
-    };
-
-    const topic0 = hash.keccak256("Swap(address,uint256,uint256,uint256,uint256,address)");
-
-    const sender = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const to = try Address.fromHex("0x0000000000000000000000000000000000000002");
-
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &sender.bytes);
-
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &to.bytes);
-
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(1000), // amount0In
-        abi_encoding.uint256Value(0), // amount1In
-        abi_encoding.uint256Value(0), // amount0Out
-        abi_encoding.uint256Value(2000), // amount1Out
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1, topic2 },
-        .data = data,
+        .address = Address.ZERO,
+        .topics = &[_]Hash{ topic0, topic1 },
+        .data = &[_]u8{},
         .block_number = 12345,
         .transaction_hash = null,
         .transaction_index = null,
@@ -429,27 +212,39 @@ test "parse event with multiple data parameters" {
         .removed = false,
     };
 
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 6), parsed.len);
-    try testing.expectEqualSlices(u8, &sender.bytes, &parsed[0].address.bytes);
-    try testing.expectEqual(@as(u256, 1000), parsed[1].uint256);
-    try testing.expectEqual(@as(u256, 0), parsed[2].uint256);
-    try testing.expectEqual(@as(u256, 0), parsed[3].uint256);
-    try testing.expectEqual(@as(u256, 2000), parsed[4].uint256);
-    try testing.expectEqualSlices(u8, &to.bytes, &parsed[5].address.bytes);
+    const sig = log.eventSignature();
+    try std.testing.expect(sig != null);
+    try std.testing.expect(sig.?.eql(topic0));
 }
 
-test "filter logs by topics" {
-    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
-    const from_topic = try Hash.fromHex("0x0000000000000000000000001234567890123456789012345678901234567890");
+test "EventLog: eventSignature - returns null for logs with no topics" {
+    const log = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
+        .block_number = 12345,
+        .transaction_hash = null,
+        .transaction_index = null,
+        .log_index = null,
+        .removed = false,
+    };
+
+    const sig = log.eventSignature();
+    try std.testing.expect(sig == null);
+}
+
+test "EventLog: filterLogs - exact topic match" {
+    const allocator = std.testing.allocator;
+
+    const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
+    const topic1 = try Hash.fromHex("0x0000000000000000000000001234567890123456789012345678901234567890");
+    const topic2 = try Hash.fromHex("0x000000000000000000000000abcdefabcdefabcdefabcdefabcdefabcdefabcd");
 
     const logs = [_]EventLog{
         // Matching log
         .{
             .address = Address.ZERO,
-            .topics = &[_]Hash{ topic0, from_topic },
+            .topics = &[_]Hash{ topic0, topic1, topic2 },
             .data = &[_]u8{},
             .block_number = 1,
             .transaction_hash = null,
@@ -460,7 +255,7 @@ test "filter logs by topics" {
         // Non-matching log (different topic0)
         .{
             .address = Address.ZERO,
-            .topics = &[_]Hash{ Hash.ZERO, from_topic },
+            .topics = &[_]Hash{ Hash.ZERO, topic1, topic2 },
             .data = &[_]u8{},
             .block_number = 2,
             .transaction_hash = null,
@@ -471,7 +266,7 @@ test "filter logs by topics" {
         // Matching log
         .{
             .address = Address.ZERO,
-            .topics = &[_]Hash{ topic0, from_topic },
+            .topics = &[_]Hash{ topic0, topic1, topic2 },
             .data = &[_]u8{},
             .block_number = 3,
             .transaction_hash = null,
@@ -481,381 +276,246 @@ test "filter logs by topics" {
         },
     };
 
-    const filter_topics = [_]?Hash{ topic0, from_topic };
-    const filtered = filterLogsByTopics(&logs, &filter_topics);
+    const filter_topics = [_]?Hash{topic0};
+    const filtered = try filterLogs(allocator, &logs, &filter_topics);
+    defer allocator.free(filtered);
 
-    try testing.expectEqual(@as(usize, 2), filtered.len);
-    try testing.expectEqual(@as(u64, 1), filtered[0].block_number.?);
-    try testing.expectEqual(@as(u64, 3), filtered[1].block_number.?);
+    try std.testing.expectEqual(@as(usize, 2), filtered.len);
+    try std.testing.expectEqual(@as(u64, 1), filtered[0].block_number.?);
+    try std.testing.expectEqual(@as(u64, 3), filtered[1].block_number.?);
 }
 
-test "parse event with indexed uint256 in topic" {
-    const allocator = testing.allocator;
+test "EventLog: filterLogs - wildcard topics" {
+    const allocator = std.testing.allocator;
 
-    // Event with indexed uint256 value
-    const event_sig = EventSignature{
-        .name = "ValueChanged",
-        .inputs = &[_]EventInput{
-            .{ .name = "oldValue", .type = .uint256, .indexed = true },
-            .{ .name = "newValue", .type = .uint256, .indexed = false },
+    const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
+    const topic1_a = try Hash.fromHex("0x0000000000000000000000001111111111111111111111111111111111111111");
+    const topic1_b = try Hash.fromHex("0x0000000000000000000000002222222222222222222222222222222222222222");
+
+    const logs = [_]EventLog{
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, topic1_a },
+            .data = &[_]u8{},
+            .block_number = 1,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, topic1_b },
+            .data = &[_]u8{},
+            .block_number = 2,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{Hash.ZERO},
+            .data = &[_]u8{},
+            .block_number = 3,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
         },
     };
 
-    const topic0 = hash.keccak256("ValueChanged(uint256,uint256)");
+    // Filter: Transfer signature, any from address
+    const filter_topics = [_]?Hash{ topic0, null };
+    const filtered = try filterLogs(allocator, &logs, &filter_topics);
+    defer allocator.free(filtered);
 
-    // Create topic for indexed uint256
-    const old_value: u256 = 12345678901234567890;
-    var topic1 = Hash.ZERO;
-    const old_value_bytes = std.mem.toBytes(old_value);
-    @memcpy(&topic1.bytes, &old_value_bytes);
+    // Should match both Transfer logs (regardless of topic1)
+    try std.testing.expectEqual(@as(usize, 2), filtered.len);
+    try std.testing.expectEqual(@as(u64, 1), filtered[0].block_number.?);
+    try std.testing.expectEqual(@as(u64, 2), filtered[1].block_number.?);
+}
 
-    // Non-indexed parameter in data
-    const new_value: u256 = 98765432109876543210;
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(new_value),
+test "EventLog: filterLogs - all wildcards" {
+    const allocator = std.testing.allocator;
+
+    const logs = [_]EventLog{
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{Hash.ZERO},
+            .data = &[_]u8{},
+            .block_number = 1,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ Hash.ZERO, Hash.ZERO },
+            .data = &[_]u8{},
+            .block_number = 2,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
     };
 
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
+    // Empty filter matches all logs
+    const filter_topics = [_]?Hash{};
+    const filtered = try filterLogs(allocator, &logs, &filter_topics);
+    defer allocator.free(filtered);
 
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1 },
-        .data = data,
+    try std.testing.expectEqual(@as(usize, 2), filtered.len);
+}
+
+test "EventLog: filterLogs - multiple topic constraints" {
+    const allocator = std.testing.allocator;
+
+    const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
+    const from_addr = try Hash.fromHex("0x0000000000000000000000001111111111111111111111111111111111111111");
+    const to_addr = try Hash.fromHex("0x0000000000000000000000002222222222222222222222222222222222222222");
+
+    const logs = [_]EventLog{
+        // Matches: correct topic0, from, and to
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, from_addr, to_addr },
+            .data = &[_]u8{},
+            .block_number = 1,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        // Doesn't match: wrong from address
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, Hash.ZERO, to_addr },
+            .data = &[_]u8{},
+            .block_number = 2,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        // Doesn't match: wrong to address
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, from_addr, Hash.ZERO },
+            .data = &[_]u8{},
+            .block_number = 3,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+    };
+
+    // Filter: specific topic0, from, and to
+    const filter_topics = [_]?Hash{ topic0, from_addr, to_addr };
+    const filtered = try filterLogs(allocator, &logs, &filter_topics);
+    defer allocator.free(filtered);
+
+    try std.testing.expectEqual(@as(usize, 1), filtered.len);
+    try std.testing.expectEqual(@as(u64, 1), filtered[0].block_number.?);
+}
+
+test "EventLog: filterLogs - wildcard in middle position" {
+    const allocator = std.testing.allocator;
+
+    const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
+    const to_addr = try Hash.fromHex("0x0000000000000000000000002222222222222222222222222222222222222222");
+
+    const logs = [_]EventLog{
+        // Matches: correct topic0, any from, specific to
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, Hash.ZERO, to_addr },
+            .data = &[_]u8{},
+            .block_number = 1,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        // Matches: correct topic0, different from, specific to
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, try Hash.fromHex("0x0000000000000000000000003333333333333333333333333333333333333333"), to_addr },
+            .data = &[_]u8{},
+            .block_number = 2,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+        // Doesn't match: wrong to address
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{ topic0, Hash.ZERO, Hash.ZERO },
+            .data = &[_]u8{},
+            .block_number = 3,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+    };
+
+    // Filter: Transfer signature, any from address, specific to address
+    const filter_topics = [_]?Hash{ topic0, null, to_addr };
+    const filtered = try filterLogs(allocator, &logs, &filter_topics);
+    defer allocator.free(filtered);
+
+    try std.testing.expectEqual(@as(usize, 2), filtered.len);
+    try std.testing.expectEqual(@as(u64, 1), filtered[0].block_number.?);
+    try std.testing.expectEqual(@as(u64, 2), filtered[1].block_number.?);
+}
+
+test "EventLog: filterLogs - no matches" {
+    const allocator = std.testing.allocator;
+
+    const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
+    const different_topic = Hash.keccak256("Approval(address,address,uint256)");
+
+    const logs = [_]EventLog{
+        .{
+            .address = Address.ZERO,
+            .topics = &[_]Hash{topic0},
+            .data = &[_]u8{},
+            .block_number = 1,
+            .transaction_hash = null,
+            .transaction_index = null,
+            .log_index = null,
+            .removed = false,
+        },
+    };
+
+    // Filter for different event signature
+    const filter_topics = [_]?Hash{different_topic};
+    const filtered = try filterLogs(allocator, &logs, &filter_topics);
+    defer allocator.free(filtered);
+
+    try std.testing.expectEqual(@as(usize, 0), filtered.len);
+}
+
+test "EventLog: removed flag - tracks reorgs" {
+    const log_removed = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{},
+        .data = &[_]u8{},
         .block_number = 12345,
         .transaction_hash = null,
         .transaction_index = null,
         .log_index = null,
-        .removed = false,
+        .removed = true,
     };
 
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 2), parsed.len);
-    try testing.expectEqual(old_value, parsed[0].uint256);
-    try testing.expectEqual(new_value, parsed[1].uint256);
-}
-
-test "parse event with mixed parameter ordering" {
-    const allocator = testing.allocator;
-
-    // Event with alternating indexed/non-indexed parameters
-    const event_sig = EventSignature{
-        .name = "ComplexEvent",
-        .inputs = &[_]EventInput{
-            .{ .name = "addr1", .type = .address, .indexed = true },
-            .{ .name = "value1", .type = .uint256, .indexed = false },
-            .{ .name = "addr2", .type = .address, .indexed = true },
-            .{ .name = "value2", .type = .uint256, .indexed = false },
-            .{ .name = "value3", .type = .uint256, .indexed = false },
-        },
-    };
-
-    const topic0 = hash.keccak256("ComplexEvent(address,uint256,address,uint256,uint256)");
-
-    const addr1 = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const addr2 = try Address.fromHex("0x0000000000000000000000000000000000000002");
-
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &addr1.bytes);
-
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &addr2.bytes);
-
-    // Non-indexed parameters in data
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(100),
-        abi_encoding.uint256Value(200),
-        abi_encoding.uint256Value(300),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1, topic2 },
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 5), parsed.len);
-    try testing.expectEqualSlices(u8, &addr1.bytes, &parsed[0].address.bytes);
-    try testing.expectEqual(@as(u256, 100), parsed[1].uint256);
-    try testing.expectEqualSlices(u8, &addr2.bytes, &parsed[2].address.bytes);
-    try testing.expectEqual(@as(u256, 200), parsed[3].uint256);
-    try testing.expectEqual(@as(u256, 300), parsed[4].uint256);
-}
-
-test "parse event with indexed string cannot recover original value" {
-    const allocator = testing.allocator;
-
-    // Event with indexed string (dynamic type) - hash stored in topic
-    const event_sig = EventSignature{
-        .name = "NameChanged",
-        .inputs = &[_]EventInput{
-            .{ .name = "newName", .type = .string, .indexed = true },
-            .{ .name = "timestamp", .type = .uint256, .indexed = false },
-        },
-    };
-
-    const topic0 = hash.keccak256("NameChanged(string,uint256)");
-
-    // Original value is hashed when indexed
-    const original_name = "Alice";
-    const name_hash = hash.keccak256(original_name);
-
-    const timestamp: u256 = 1234567890;
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(timestamp),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, name_hash },
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 2), parsed.len);
-    // First value is the hash bytes, not the original string
-    try testing.expectEqual(@as(usize, 32), parsed[0].bytes.len);
-    try testing.expectEqual(timestamp, parsed[1].uint256);
-}
-
-test "parse event with indexed bytes type" {
-    const allocator = testing.allocator;
-
-    // Event with indexed bytes (dynamic type) - hash stored in topic
-    const event_sig = EventSignature{
-        .name = "DataUpdated",
-        .inputs = &[_]EventInput{
-            .{ .name = "data", .type = .bytes, .indexed = true },
-            .{ .name = "updateId", .type = .uint256, .indexed = false },
-        },
-    };
-
-    const topic0 = hash.keccak256("DataUpdated(bytes,uint256)");
-
-    // Original bytes are hashed when indexed
-    const original_data = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
-    const data_hash = hash.keccak256(&original_data);
-
-    const update_id: u256 = 42;
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(update_id),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, data_hash },
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 2), parsed.len);
-    // First value is the hash bytes, not the original data
-    try testing.expectEqual(@as(usize, 32), parsed[0].bytes.len);
-    try testing.expectEqualSlices(u8, &data_hash.bytes, parsed[0].bytes);
-    try testing.expectEqual(update_id, parsed[1].uint256);
-}
-
-test "parse event with missing topics returns incomplete data" {
-    const allocator = testing.allocator;
-
-    // Event expects 2 indexed parameters but only 1 topic provided
-    const event_sig = EventSignature{
-        .name = "Transfer",
-        .inputs = &[_]EventInput{
-            .{ .name = "from", .type = .address, .indexed = true },
-            .{ .name = "to", .type = .address, .indexed = true },
-            .{ .name = "value", .type = .uint256, .indexed = false },
-        },
-    };
-
-    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
-
-    const from_addr = try Address.fromHex("0x0000000000000000000000000000000000000001");
-
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &from_addr.bytes);
-
-    // Missing topic2 (to address)
-    const value: u256 = 1000;
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(value),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1 }, // Missing topic2
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    // Should only have 2 values (from and value), missing 'to'
-    try testing.expectEqual(@as(usize, 2), parsed.len);
-    try testing.expectEqualSlices(u8, &from_addr.bytes, &parsed[0].address.bytes);
-}
-
-test "parse event with empty data and all indexed parameters" {
-    const allocator = testing.allocator;
-
-    // All parameters are indexed, no data field needed
-    const event_sig = EventSignature{
-        .name = "AllIndexed",
-        .inputs = &[_]EventInput{
-            .{ .name = "addr1", .type = .address, .indexed = true },
-            .{ .name = "addr2", .type = .address, .indexed = true },
-            .{ .name = "addr3", .type = .address, .indexed = true },
-        },
-    };
-
-    const topic0 = hash.keccak256("AllIndexed(address,address,address)");
-
-    const addr1 = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const addr2 = try Address.fromHex("0x0000000000000000000000000000000000000002");
-    const addr3 = try Address.fromHex("0x0000000000000000000000000000000000000003");
-
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &addr1.bytes);
-
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &addr2.bytes);
-
-    var topic3 = Hash.ZERO;
-    @memcpy(topic3.bytes[12..32], &addr3.bytes);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1, topic2, topic3 },
-        .data = &[_]u8{}, // Empty data
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 3), parsed.len);
-    try testing.expectEqualSlices(u8, &addr1.bytes, &parsed[0].address.bytes);
-    try testing.expectEqualSlices(u8, &addr2.bytes, &parsed[1].address.bytes);
-    try testing.expectEqualSlices(u8, &addr3.bytes, &parsed[2].address.bytes);
-}
-
-test "parse event with zero address and zero value" {
-    const allocator = testing.allocator;
-
-    const event_sig = EventSignature{
-        .name = "Transfer",
-        .inputs = &[_]EventInput{
-            .{ .name = "from", .type = .address, .indexed = true },
-            .{ .name = "to", .type = .address, .indexed = true },
-            .{ .name = "value", .type = .uint256, .indexed = false },
-        },
-    };
-
-    const topic0 = hash.keccak256("Transfer(address,address,uint256)");
-
-    // Zero address (mint/burn scenarios)
-    const zero_addr = Address.ZERO;
-
-    var topic1 = Hash.ZERO;
-    @memcpy(topic1.bytes[12..32], &zero_addr.bytes);
-
-    var topic2 = Hash.ZERO;
-    @memcpy(topic2.bytes[12..32], &zero_addr.bytes);
-
-    // Zero value
-    const values = [_]abi_encoding.AbiValue{
-        abi_encoding.uint256Value(0),
-    };
-
-    const data = try abi_encoding.encodeAbiParameters(allocator, &values);
-    defer allocator.free(data);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1, topic2 },
-        .data = data,
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
-        .removed = false,
-    };
-
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 3), parsed.len);
-    try testing.expectEqualSlices(u8, &zero_addr.bytes, &parsed[0].address.bytes);
-    try testing.expectEqualSlices(u8, &zero_addr.bytes, &parsed[1].address.bytes);
-    try testing.expectEqual(@as(u256, 0), parsed[2].uint256);
-}
-
-test "parse event with maximum uint256 value" {
-    const allocator = testing.allocator;
-
-    const event_sig = EventSignature{
-        .name = "MaxValue",
-        .inputs = &[_]EventInput{
-            .{ .name = "value", .type = .uint256, .indexed = true },
-        },
-    };
-
-    const topic0 = hash.keccak256("MaxValue(uint256)");
-
-    // Maximum uint256 value
-    const max_value: u256 = std.math.maxInt(u256);
-    var topic1 = Hash.ZERO;
-    const max_value_bytes = std.mem.toBytes(max_value);
-    @memcpy(&topic1.bytes, &max_value_bytes);
-
-    const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{ topic0, topic1 },
+    const log_active = EventLog{
+        .address = Address.ZERO,
+        .topics = &[_]Hash{},
         .data = &[_]u8{},
         .block_number = 12345,
         .transaction_hash = null,
@@ -864,37 +524,31 @@ test "parse event with maximum uint256 value" {
         .removed = false,
     };
 
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 1), parsed.len);
-    try testing.expectEqual(max_value, parsed[0].uint256);
+    try std.testing.expect(log_removed.removed);
+    try std.testing.expect(!log_active.removed);
 }
 
-test "parse event with only signature topic" {
-    const allocator = testing.allocator;
-
-    // Event with no indexed parameters and no data
-    const event_sig = EventSignature{
-        .name = "SimpleEvent",
-        .inputs = &[_]EventInput{},
-    };
-
-    const topic0 = hash.keccak256("SimpleEvent()");
+test "EventLog: full metadata" {
+    const tx_hash = try Hash.fromHex("0x1234567890123456789012345678901234567890123456789012345678901234");
+    const contract_addr = try Address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
 
     const log = EventLog{
-        .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-        .topics = &[_]Hash{topic0},
-        .data = &[_]u8{},
-        .block_number = 12345,
-        .transaction_hash = null,
-        .transaction_index = null,
-        .log_index = null,
+        .address = contract_addr,
+        .topics = &[_]Hash{Hash.ZERO},
+        .data = &[_]u8{ 0x01, 0x02, 0x03 },
+        .block_number = 17000000,
+        .transaction_hash = tx_hash,
+        .transaction_index = 42,
+        .log_index = 123,
         .removed = false,
     };
 
-    const parsed = try parseEventLog(allocator, log, event_sig);
-    defer allocator.free(parsed);
-
-    try testing.expectEqual(@as(usize, 0), parsed.len);
+    try std.testing.expect(log.address.eql(contract_addr));
+    try std.testing.expectEqual(@as(usize, 1), log.topics.len);
+    try std.testing.expectEqual(@as(usize, 3), log.data.len);
+    try std.testing.expectEqual(@as(u64, 17000000), log.block_number.?);
+    try std.testing.expect(log.transaction_hash.?.eql(tx_hash));
+    try std.testing.expectEqual(@as(u32, 42), log.transaction_index.?);
+    try std.testing.expectEqual(@as(u32, 123), log.log_index.?);
+    try std.testing.expect(!log.removed);
 }
