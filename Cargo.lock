@@ -178,17 +178,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bn254_wrapper"
-version = "0.1.0"
-dependencies = [
- "ark-bls12-381",
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "ark-serialize",
-]
-
-[[package]]
 name = "cc"
 version = "1.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -313,13 +302,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keccak_wrapper"
-version = "0.1.0"
-dependencies = [
- "keccak-asm",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -366,6 +348,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
 dependencies = [
  "zerocopy",
+]
+
+[[package]]
+name = "primitives"
+version = "0.1.0"
+dependencies = [
+ "ark-bls12-381",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "keccak-asm",
 ]
 
 [[package]]
