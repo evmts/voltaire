@@ -67,64 +67,35 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *
     return &cargo_build.step;
 }
 
-pub fn checkSubmodules() void {
-    const submodules = [_]struct {
+pub fn checkVendoredDeps() void {
+    // Verify vendored c-kzg-4844 dependencies exist
+    const deps = [_]struct {
         path: []const u8,
         name: []const u8,
-        required: bool,
     }{
-        // Critical submodules required for building
-        // Check for actual content files instead of .git to handle different submodule states
-        .{ .path = "lib/c-kzg-4844/src", .name = "c-kzg-4844", .required = true },
-        .{ .path = "lib/c-kzg-4844/blst/src", .name = "c-kzg-4844/blst (nested)", .required = true },
-
-        // Optional submodules for benchmarking/specs
-        .{ .path = "third_party/mcl/include", .name = "third_party/mcl", .required = false },
-        .{ .path = "evm-bench/README.md", .name = "evm-bench", .required = false },
-        .{ .path = "bench/official/evms/evmone/evmone/lib", .name = "bench/official/evms/evmone/evmone", .required = false },
-        .{ .path = "specs/execution-specs/README.md", .name = "specs/execution-specs", .required = false },
-        .{ .path = "lib/zig/lib", .name = "lib/zig", .required = false },
+        .{ .path = "lib/c-kzg-4844/src", .name = "c-kzg-4844 source" },
+        .{ .path = "lib/c-kzg-4844/blst/src", .name = "blst source" },
     };
 
-    var has_error = false;
-    var has_warning = false;
+    var missing = false;
 
-    for (submodules) |submodule| {
-        std.fs.cwd().access(submodule.path, .{}) catch {
-            if (submodule.required) {
-                if (!has_error) {
-                    std.debug.print("\n", .{});
-                    std.debug.print("❌ ERROR: Required git submodules are not initialized!\n", .{});
-                    std.debug.print("\n", .{});
-                    std.debug.print("The following required submodules are missing:\n", .{});
-                    has_error = true;
-                }
-                std.debug.print("  • {s}\n", .{submodule.name});
-            } else {
-                if (!has_warning) {
-                    if (!has_error) std.debug.print("\n", .{});
-                    std.debug.print("⚠️  WARNING: Optional submodules are missing (non-critical):\n", .{});
-                    has_warning = true;
-                }
-                std.debug.print("  • {s}\n", .{submodule.name});
+    for (deps) |dep| {
+        std.fs.cwd().access(dep.path, .{}) catch {
+            if (!missing) {
+                std.debug.print("\n", .{});
+                std.debug.print("❌ ERROR: Required vendored dependencies are missing!\n", .{});
+                std.debug.print("\n", .{});
+                missing = true;
             }
+            std.debug.print("  • {s}\n", .{dep.name});
         };
     }
 
-    if (has_error) {
+    if (missing) {
         std.debug.print("\n", .{});
-        std.debug.print("To fix this, run:\n", .{});
-        std.debug.print("\n", .{});
-        std.debug.print("  git submodule update --init --recursive\n", .{});
-        std.debug.print("\n", .{});
-        std.debug.print("This will download and initialize all required dependencies.\n", .{});
+        std.debug.print("Vendored dependencies should be present in lib/c-kzg-4844/\n", .{});
+        std.debug.print("This may indicate a corrupted clone or checkout.\n", .{});
         std.debug.print("\n", .{});
         std.process.exit(1);
-    }
-
-    if (has_warning) {
-        std.debug.print("\n", .{});
-        std.debug.print("Build will continue, but some features may be unavailable.\n", .{});
-        std.debug.print("\n", .{});
     }
 }

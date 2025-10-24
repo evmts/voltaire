@@ -49,6 +49,10 @@ pub const SHA256_Accel = @import("sha256_accel.zig");
 pub const Keccak256_Accel = @import("keccak256_accel.zig");
 pub const keccak_asm = @import("keccak_asm.zig");
 
+// Rust FFI wrappers (compiled from src/crypto/*.rs)
+pub const bn254_wrapper = @import("bn254_wrapper.rs");
+pub const keccak_wrapper = @import("keccak_wrapper.rs");
+
 // KZG commitments for EIP-4844
 const builtin = @import("builtin");
 pub const kzg_trusted_setup = @import("kzg_trusted_setup.zig");

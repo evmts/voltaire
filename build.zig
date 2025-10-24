@@ -5,13 +5,13 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // STEP 1: Verify all required submodules are initialized
-    lib_build.checkSubmodules();
+    // STEP 1: Verify vendored dependencies exist
+    lib_build.checkVendoredDeps();
 
     // STEP 2: Verify Cargo is installed for Rust dependencies
     lib_build.checkCargoInstalled();
 
-    // STEP 3: Build Rust workspace (bn254_wrapper, keccak_wrapper)
+    // STEP 3: Build Rust crate (crypto_wrappers: bn254 + keccak FFI)
     const cargo_build_step = lib_build.createCargoBuildStep(b, optimize);
 
     // Build crypto C/Rust libraries that primitives + crypto depend on

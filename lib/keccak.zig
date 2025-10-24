@@ -9,34 +9,14 @@ pub fn createKeccakLibrary(
     rust_target: ?[]const u8,
 ) ?*std.Build.Step.Compile {
     _ = config;
+    _ = target;
+    _ = optimize;
+    _ = workspace_build_step;
+    _ = rust_target;
 
-    const lib = b.addLibrary(.{
-        .name = "keccak_wrapper",
-        .use_llvm = true,
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-
-    const profile_dir = switch (optimize) {
-        .Debug => "debug",
-        .ReleaseSafe, .ReleaseSmall => "release",
-        .ReleaseFast => "release-fast",
-    };
-    // Cargo workspace builds to target/ at repo root
-    const lib_path = if (rust_target) |target_triple|
-        b.fmt("target/{s}/{s}/libkeccak_wrapper.a", .{ target_triple, profile_dir })
-    else
-        b.fmt("target/{s}/libkeccak_wrapper.a", .{profile_dir});
-
-    lib.addObjectFile(b.path(lib_path));
-    lib.linkLibC();
-    lib.addIncludePath(b.path("lib/keccak"));
-
-    if (workspace_build_step) |build_step| {
-        lib.step.dependOn(build_step);
-    }
-
-    return lib;
+    // Keccak wrapper is now part of crypto_wrappers library (see bn254.zig)
+    // This function is kept for backwards compatibility but returns null
+    // since the combined library is created by createBn254Library()
+    _ = b;
+    return null;
 }
