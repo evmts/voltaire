@@ -6,9 +6,8 @@ pub fn createBlstLibrary(
     optimize: std.builtin.OptimizeMode,
 ) *std.Build.Step.Compile {
     // Build blst assembly first
-    const blst_build_cmd = b.addSystemCommand(&.{
-        "sh", "-c", "cd lib/c-kzg-4844/blst && ./build.sh",
-    });
+    const blst_build_cmd = b.addSystemCommand(&.{"./build.sh"});
+    blst_build_cmd.setCwd(b.path("lib/c-kzg-4844/blst"));
 
     // Build blst library
     const lib = b.addLibrary(.{
