@@ -25,5 +25,5 @@ pub fn main() !void {
 
     var output: [64]u8 = undefined;
     try crypto.Crypto.bls12_381.g1_add(&input, &output);
-    _ = output;
+    _ = &output;
 }

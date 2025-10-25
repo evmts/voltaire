@@ -21,7 +21,8 @@
 /// Embedded trusted setup data from the KZG ceremony
 /// Format: Text file with G1 and G2 points in hex format
 /// Size: ~4096 G1 points + 65 G2 points
-pub const data = @embedFile("../../lib/c-kzg-4844/src/trusted_setup.txt");
+/// Re-export from c_kzg module to avoid duplicate embedding
+pub const data = @import("c_kzg").embedded_trusted_setup;
 
 /// Parse the header to get the number of G1 and G2 points
 pub fn parseHeader() struct { n_g1: usize, n_g2: usize } {
