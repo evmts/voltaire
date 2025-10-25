@@ -30,9 +30,20 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-v2-${{ hashFiles('**/Cargo.lock') }}
       - name: Clean Zig cache
-        run: rm -rf .zig-cache zig-out ~/.cache/zig
+        shell: bash
+        run: rm -rf .zig-cache zig-out ~/.cache/zig target
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
+      - name: Debug - Check library format
+        shell: bash
+        run: |
+          echo "Checking target directory structure:"
+          ls -la target/ || true
+          ls -la target/debug/ || true
+          echo "Checking libcrypto_wrappers.a format:"
+          file target/debug/libcrypto_wrappers.a || true
+          echo "First bytes of libcrypto_wrappers.a:"
+          hexdump -C target/debug/libcrypto_wrappers.a | head -5 || true
       - name: Test
         run: zig build test -Doptimize=${{ matrix.optimize }}
 
