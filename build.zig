@@ -340,4 +340,87 @@ pub fn build(b: *std.Build) void {
 
     const c_example_step = b.step("example-c", "Run the C API example");
     c_example_step.dependOn(&run_c_example.step);
+
+    // WASM library for TypeScript bindings
+    const wasm_lib = b.addLibrary(.{
+        .name = "primitives_wasm",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/c_api.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    wasm_lib.root_module.addImport("primitives", primitives_mod);
+    wasm_lib.root_module.addImport("crypto", crypto_mod);
+    wasm_lib.linkLibrary(c_kzg_lib);
+    wasm_lib.linkLibrary(blst_lib);
+    wasm_lib.addObjectFile(rust_crypto_lib_path);
+    wasm_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
+    wasm_lib.step.dependOn(cargo_build_step);
+    wasm_lib.linkLibC();
+
+    b.installArtifact(wasm_lib);
+
+    // Benchmark executables for WASM size and performance measurement
+    const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";
+    buildBenchmarks(b, target, optimize, bench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+}
+
+fn buildBenchmarks(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    filter: []const u8,
+    primitives_mod: *std.Build.Module,
+    crypto_mod: *std.Build.Module,
+    precompiles_mod: *std.Build.Module,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+    rust_crypto_lib_path: std.Build.LazyPath,
+    cargo_build_step: *std.Build.Step,
+) void {
+    // Try to open bench directory
+    const bench_dir = std.fs.cwd().openDir("bench", .{ .iterate = true }) catch return;
+    var walker = bench_dir.walk(b.allocator) catch return;
+    defer walker.deinit();
+
+    while (walker.next() catch null) |entry| {
+        if (entry.kind != .file) continue;
+        if (!std.mem.endsWith(u8, entry.basename, ".zig")) continue;
+
+        // Check if benchmark matches filter
+        if (!std.mem.eql(u8, filter, "*") and std.mem.indexOf(u8, entry.basename, filter) == null) {
+            continue;
+        }
+
+        // Build path: bench/[path].zig
+        const bench_path = b.fmt("bench/{s}", .{entry.path});
+        const bench_name_raw = entry.basename[0 .. entry.basename.len - 4]; // Remove .zig
+        const bench_name = b.fmt("bench-{s}", .{bench_name_raw});
+
+        // Create benchmark module
+        const bench_mod = b.createModule(.{
+            .root_source_file = b.path(bench_path),
+            .target = target,
+            .optimize = optimize,
+        });
+        bench_mod.addImport("primitives", primitives_mod);
+        bench_mod.addImport("crypto", crypto_mod);
+        bench_mod.addImport("precompiles", precompiles_mod);
+
+        // Create benchmark executable
+        const bench_exe = b.addExecutable(.{
+            .name = bench_name,
+            .root_module = bench_mod,
+        });
+        bench_exe.linkLibrary(c_kzg_lib);
+        bench_exe.linkLibrary(blst_lib);
+        bench_exe.addObjectFile(rust_crypto_lib_path);
+        bench_exe.addIncludePath(b.path("lib"));
+        bench_exe.step.dependOn(cargo_build_step);
+        bench_exe.linkLibC();
+
+        b.installArtifact(bench_exe);
+    }
 }
