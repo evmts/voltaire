@@ -13,9 +13,31 @@ import {
 	type RlpInput,
 	decode as decodeRlp,
 	encodeList as encodeRlp,
-	fromHex,
-	toHex,
 } from "./rlp";
+
+/**
+ * Helper: Convert hex string to bytes (no RLP encoding)
+ */
+function hexToBytes(hex: string): Uint8Array {
+	const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(clean.length / 2);
+	for (let i = 0; i < clean.length; i += 2) {
+		bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
+	}
+	return bytes;
+}
+
+/**
+ * Helper: Convert bytes to hex string (no RLP encoding)
+ */
+function bytesToHexString(bytes: Uint8Array): string {
+	return (
+		"0x" +
+		Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+	);
+}
 
 // Transaction Types
 export type TransactionType = "legacy" | "eip1559" | "eip7702";
@@ -108,16 +130,6 @@ export function encodeLegacyForSigning(
 	tx: LegacyTransaction,
 	chainId: bigint,
 ): string {
-	// Helper to convert addresses and hex strings to bytes
-	const hexToBytes = (hex: string): Uint8Array => {
-		const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-		const bytes = new Uint8Array(clean.length / 2);
-		for (let i = 0; i < clean.length; i += 2) {
-			bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
-		}
-		return bytes;
-	};
-
 	const fields: RlpInput[] = [
 		tx.nonce,
 		tx.gasPrice,
@@ -135,13 +147,7 @@ export function encodeLegacyForSigning(
 	}
 
 	const encoded = encodeRlp(fields);
-	// Convert bytes to hex string directly (don't use toHex which would RLP encode again)
-	return (
-		"0x" +
-		Array.from(encoded)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return bytesToHexString(encoded);
 }
 
 /**
@@ -155,16 +161,6 @@ export function serializeLegacy(tx: LegacyTransaction): string {
  * Encode an EIP-1559 transaction for signing
  */
 export function encodeEip1559ForSigning(tx: Eip1559Transaction): string {
-	// Helper to convert hex strings to bytes
-	const hexToBytes = (hex: string): Uint8Array => {
-		const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-		const bytes = new Uint8Array(clean.length / 2);
-		for (let i = 0; i < clean.length; i += 2) {
-			bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
-		}
-		return bytes;
-	};
-
 	const fields: RlpInput[] = [
 		tx.chainId,
 		tx.nonce,
@@ -174,7 +170,7 @@ export function encodeEip1559ForSigning(tx: Eip1559Transaction): string {
 		tx.to ? hexToBytes(tx.to) : new Uint8Array([]),
 		tx.value,
 		hexToBytes(tx.data),
-		encodeAccessListRlp(tx.accessList, hexToBytes),
+		encodeAccessListRlp(tx.accessList),
 	];
 
 	// Add signature fields if signed
@@ -186,13 +182,7 @@ export function encodeEip1559ForSigning(tx: Eip1559Transaction): string {
 	const result = new Uint8Array(1 + encoded.length);
 	result[0] = 0x02; // EIP-1559 type
 	result.set(encoded, 1);
-	// Convert bytes to hex string directly (don't use toHex which would RLP encode again)
-	return (
-		"0x" +
-		Array.from(result)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return bytesToHexString(result);
 }
 
 /**
@@ -206,16 +196,6 @@ export function serializeEip1559(tx: Eip1559Transaction): string {
  * Encode an EIP-7702 transaction for signing
  */
 export function encodeEip7702ForSigning(tx: Eip7702Transaction): string {
-	// Helper to convert hex strings to bytes
-	const hexToBytes = (hex: string): Uint8Array => {
-		const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-		const bytes = new Uint8Array(clean.length / 2);
-		for (let i = 0; i < clean.length; i += 2) {
-			bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
-		}
-		return bytes;
-	};
-
 	const fields: RlpInput[] = [
 		tx.chainId,
 		tx.nonce,
@@ -225,8 +205,8 @@ export function encodeEip7702ForSigning(tx: Eip7702Transaction): string {
 		tx.to ? hexToBytes(tx.to) : new Uint8Array([]),
 		tx.value,
 		hexToBytes(tx.data),
-		encodeAccessListRlp(tx.accessList, hexToBytes),
-		encodeAuthorizationListRlp(tx.authorizationList, hexToBytes),
+		encodeAccessListRlp(tx.accessList),
+		encodeAuthorizationListRlp(tx.authorizationList),
 	];
 
 	// Add signature fields if signed
@@ -238,13 +218,7 @@ export function encodeEip7702ForSigning(tx: Eip7702Transaction): string {
 	const result = new Uint8Array(1 + encoded.length);
 	result[0] = 0x04; // EIP-7702 type
 	result.set(encoded, 1);
-	// Convert bytes to hex string directly (don't use toHex which would RLP encode again)
-	return (
-		"0x" +
-		Array.from(result)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return bytesToHexString(result);
 }
 
 /**
@@ -257,10 +231,7 @@ export function serializeEip7702(tx: Eip7702Transaction): string {
 /**
  * Encode access list to RLP format
  */
-function encodeAccessListRlp(
-	accessList: AccessList,
-	hexToBytes: (hex: string) => Uint8Array,
-): RlpInput {
+function encodeAccessListRlp(accessList: AccessList): RlpInput {
 	return accessList.map((item) => [
 		hexToBytes(item.address),
 		item.storageKeys.map((key) => hexToBytes(key)),
@@ -270,10 +241,7 @@ function encodeAccessListRlp(
 /**
  * Encode authorization list to RLP format
  */
-function encodeAuthorizationListRlp(
-	authList: Authorization[],
-	hexToBytes: (hex: string) => Uint8Array,
-): RlpInput {
+function encodeAuthorizationListRlp(authList: Authorization[]): RlpInput {
 	return authList.map((auth) => [
 		auth.chainId,
 		hexToBytes(auth.address),
@@ -288,7 +256,7 @@ function encodeAuthorizationListRlp(
  * Parse a transaction from raw hex data
  */
 export function parseTransaction(data: string): Transaction {
-	const bytes = fromHex(data);
+	const bytes = hexToBytes(data);
 
 	// Check for typed transaction
 	if (bytes.length > 0 && bytes[0] <= 0x7f) {
@@ -325,13 +293,13 @@ function parseLegacyTransaction(data: Uint8Array): LegacyTransaction {
 		gasLimit: bytesToBigInt(decoded[2] as Uint8Array),
 		to:
 			decoded[3] && (decoded[3] as Uint8Array).length > 0
-				? toHex(decoded[3] as Uint8Array)
+				? bytesToHexString(decoded[3] as Uint8Array)
 				: undefined,
 		value: bytesToBigInt(decoded[4] as Uint8Array),
-		data: toHex(decoded[5] as Uint8Array),
+		data: bytesToHexString(decoded[5] as Uint8Array),
 		v: bytesToBigInt(decoded[6] as Uint8Array),
-		r: toHex(decoded[7] as Uint8Array),
-		s: toHex(decoded[8] as Uint8Array),
+		r: bytesToHexString(decoded[7] as Uint8Array),
+		s: bytesToHexString(decoded[8] as Uint8Array),
 	};
 }
 
@@ -353,19 +321,19 @@ function parseEip1559Transaction(data: Uint8Array): Eip1559Transaction {
 		gasLimit: bytesToBigInt(decoded[4] as Uint8Array),
 		to:
 			decoded[5] && (decoded[5] as Uint8Array).length > 0
-				? toHex(decoded[5] as Uint8Array)
+				? bytesToHexString(decoded[5] as Uint8Array)
 				: undefined,
 		value: bytesToBigInt(decoded[6] as Uint8Array),
-		data: toHex(decoded[7] as Uint8Array),
+		data: bytesToHexString(decoded[7] as Uint8Array),
 		accessList: decodeAccessList(decoded[8] as RlpDecoded[]),
 		v: decoded.length > 9 ? bytesToBigInt(decoded[9] as Uint8Array) : 0n,
 		r:
 			decoded.length > 10
-				? toHex(decoded[10] as Uint8Array)
+				? bytesToHexString(decoded[10] as Uint8Array)
 				: "0x0000000000000000000000000000000000000000000000000000000000000000",
 		s:
 			decoded.length > 11
-				? toHex(decoded[11] as Uint8Array)
+				? bytesToHexString(decoded[11] as Uint8Array)
 				: "0x0000000000000000000000000000000000000000000000000000000000000000",
 	};
 }
@@ -388,20 +356,20 @@ function parseEip7702Transaction(data: Uint8Array): Eip7702Transaction {
 		gasLimit: bytesToBigInt(decoded[4] as Uint8Array),
 		to:
 			decoded[5] && (decoded[5] as Uint8Array).length > 0
-				? toHex(decoded[5] as Uint8Array)
+				? bytesToHexString(decoded[5] as Uint8Array)
 				: undefined,
 		value: bytesToBigInt(decoded[6] as Uint8Array),
-		data: toHex(decoded[7] as Uint8Array),
+		data: bytesToHexString(decoded[7] as Uint8Array),
 		accessList: decodeAccessList(decoded[8] as RlpDecoded[]),
 		authorizationList: decodeAuthorizationList(decoded[9] as RlpDecoded[]),
 		v: decoded.length > 10 ? bytesToBigInt(decoded[10] as Uint8Array) : 0n,
 		r:
 			decoded.length > 11
-				? toHex(decoded[11] as Uint8Array)
+				? bytesToHexString(decoded[11] as Uint8Array)
 				: "0x0000000000000000000000000000000000000000000000000000000000000000",
 		s:
 			decoded.length > 12
-				? toHex(decoded[12] as Uint8Array)
+				? bytesToHexString(decoded[12] as Uint8Array)
 				: "0x0000000000000000000000000000000000000000000000000000000000000000",
 	};
 }
@@ -420,9 +388,9 @@ function decodeAccessList(data: RlpDecoded[]): AccessList {
 		}
 
 		return {
-			address: toHex(item[0] as Uint8Array),
+			address: bytesToHexString(item[0] as Uint8Array),
 			storageKeys: (item[1] as RlpDecoded[]).map((key) =>
-				toHex(key as Uint8Array),
+				bytesToHexString(key as Uint8Array),
 			),
 		};
 	});
@@ -443,11 +411,11 @@ function decodeAuthorizationList(data: RlpDecoded[]): Authorization[] {
 
 		return {
 			chainId: bytesToBigInt(item[0] as Uint8Array),
-			address: toHex(item[1] as Uint8Array),
+			address: bytesToHexString(item[1] as Uint8Array),
 			nonce: bytesToBigInt(item[2] as Uint8Array),
 			v: bytesToBigInt(item[3] as Uint8Array),
-			r: toHex(item[4] as Uint8Array),
-			s: toHex(item[5] as Uint8Array),
+			r: bytesToHexString(item[4] as Uint8Array),
+			s: bytesToHexString(item[5] as Uint8Array),
 		};
 	});
 }
@@ -553,7 +521,7 @@ export function hashTransaction(tx: Transaction): string {
  * Detect transaction type from raw data
  */
 export function detectTransactionType(data: string): TransactionType {
-	const bytes = fromHex(data);
+	const bytes = hexToBytes(data);
 
 	if (bytes.length === 0) {
 		return "legacy";
