@@ -9,8 +9,7 @@ pub const KeccakLib = @import("keccak.zig");
 // Re-export the main functions for convenience
 pub const createBlstLibrary = BlstLib.createBlstLibrary;
 pub const createCKzgLibrary = CKzgLib.createCKzgLibrary;
-pub const createBn254Library = Bn254Lib.createBn254Library;
-pub const createKeccakLibrary = KeccakLib.createKeccakLibrary;
+pub const getRustLibraryPath = Bn254Lib.getRustLibraryPath;
 
 pub fn checkCargoInstalled() void {
     const result = std.process.Child.run(.{

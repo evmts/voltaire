@@ -17,14 +17,11 @@ pub fn build(b: *std.Build) void {
     // Build crypto C/Rust libraries that primitives + crypto depend on
     const blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
-    const bn254_lib = lib_build.Bn254Lib.createBn254Library(b, target, optimize, .{ .enable_tracy = false }, cargo_build_step, null);
-    const keccak_lib = lib_build.KeccakLib.createKeccakLibrary(b, target, optimize, .{}, cargo_build_step, null);
+    const rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, null);
 
     // Install crypto libraries
     b.installArtifact(blst_lib);
     b.installArtifact(c_kzg_lib);
-    if (bn254_lib) |bn254| b.installArtifact(bn254);
-    if (keccak_lib) |keccak| b.installArtifact(keccak);
 
     // Create c_kzg module with proper bindings root
     const c_kzg_mod = b.addModule("c_kzg", .{
@@ -64,8 +61,9 @@ pub fn build(b: *std.Build) void {
     });
     primitives_tests.linkLibrary(c_kzg_lib);
     primitives_tests.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| primitives_tests.linkLibrary(bn254);
-    if (keccak_lib) |keccak| primitives_tests.linkLibrary(keccak);
+    primitives_tests.addObjectFile(rust_crypto_lib_path);
+    primitives_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    primitives_tests.step.dependOn(cargo_build_step);
     primitives_tests.linkLibC();
 
     // Crypto tests
@@ -75,8 +73,9 @@ pub fn build(b: *std.Build) void {
     });
     crypto_tests.linkLibrary(c_kzg_lib);
     crypto_tests.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| crypto_tests.linkLibrary(bn254);
-    if (keccak_lib) |keccak| crypto_tests.linkLibrary(keccak);
+    crypto_tests.addObjectFile(rust_crypto_lib_path);
+    crypto_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    crypto_tests.step.dependOn(cargo_build_step);
     crypto_tests.linkLibC();
 
     // Precompiles module - export for external packages
@@ -94,8 +93,9 @@ pub fn build(b: *std.Build) void {
     });
     precompiles_tests.linkLibrary(c_kzg_lib);
     precompiles_tests.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| precompiles_tests.linkLibrary(bn254);
-    if (keccak_lib) |keccak| precompiles_tests.linkLibrary(keccak);
+    precompiles_tests.addObjectFile(rust_crypto_lib_path);
+    precompiles_tests.addIncludePath(b.path("lib")); // For Rust FFI headers
+    precompiles_tests.step.dependOn(cargo_build_step);
     precompiles_tests.linkLibC();
 
     const run_primitives_tests = b.addRunArtifact(primitives_tests);
@@ -121,8 +121,9 @@ pub fn build(b: *std.Build) void {
     });
     keccak256_example.linkLibrary(c_kzg_lib);
     keccak256_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| keccak256_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| keccak256_example.linkLibrary(keccak);
+    keccak256_example.addObjectFile(rust_crypto_lib_path);
+    keccak256_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    keccak256_example.step.dependOn(cargo_build_step);
     keccak256_example.linkLibC();
 
     const run_keccak256_example = b.addRunArtifact(keccak256_example);
@@ -143,8 +144,9 @@ pub fn build(b: *std.Build) void {
     });
     abi_example.linkLibrary(c_kzg_lib);
     abi_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| abi_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| abi_example.linkLibrary(keccak);
+    abi_example.addObjectFile(rust_crypto_lib_path);
+    abi_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    abi_example.step.dependOn(cargo_build_step);
     abi_example.linkLibC();
 
     const run_abi_example = b.addRunArtifact(abi_example);
@@ -166,8 +168,9 @@ pub fn build(b: *std.Build) void {
     });
     secp256k1_example.linkLibrary(c_kzg_lib);
     secp256k1_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| secp256k1_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| secp256k1_example.linkLibrary(keccak);
+    secp256k1_example.addObjectFile(rust_crypto_lib_path);
+    secp256k1_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    secp256k1_example.step.dependOn(cargo_build_step);
     secp256k1_example.linkLibC();
 
     const run_secp256k1_example = b.addRunArtifact(secp256k1_example);
@@ -188,8 +191,9 @@ pub fn build(b: *std.Build) void {
     });
     address_example.linkLibrary(c_kzg_lib);
     address_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| address_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| address_example.linkLibrary(keccak);
+    address_example.addObjectFile(rust_crypto_lib_path);
+    address_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    address_example.step.dependOn(cargo_build_step);
     address_example.linkLibC();
 
     const run_address_example = b.addRunArtifact(address_example);
@@ -210,8 +214,9 @@ pub fn build(b: *std.Build) void {
     });
     hex_example.linkLibrary(c_kzg_lib);
     hex_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| hex_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| hex_example.linkLibrary(keccak);
+    hex_example.addObjectFile(rust_crypto_lib_path);
+    hex_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    hex_example.step.dependOn(cargo_build_step);
     hex_example.linkLibC();
 
     const run_hex_example = b.addRunArtifact(hex_example);
@@ -232,8 +237,9 @@ pub fn build(b: *std.Build) void {
     });
     rlp_example.linkLibrary(c_kzg_lib);
     rlp_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| rlp_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| rlp_example.linkLibrary(keccak);
+    rlp_example.addObjectFile(rust_crypto_lib_path);
+    rlp_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    rlp_example.step.dependOn(cargo_build_step);
     rlp_example.linkLibC();
 
     const run_rlp_example = b.addRunArtifact(rlp_example);
@@ -255,8 +261,9 @@ pub fn build(b: *std.Build) void {
     });
     eip712_example.linkLibrary(c_kzg_lib);
     eip712_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| eip712_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| eip712_example.linkLibrary(keccak);
+    eip712_example.addObjectFile(rust_crypto_lib_path);
+    eip712_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    eip712_example.step.dependOn(cargo_build_step);
     eip712_example.linkLibC();
 
     const run_eip712_example = b.addRunArtifact(eip712_example);
@@ -278,8 +285,9 @@ pub fn build(b: *std.Build) void {
     });
     transaction_example.linkLibrary(c_kzg_lib);
     transaction_example.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| transaction_example.linkLibrary(bn254);
-    if (keccak_lib) |keccak| transaction_example.linkLibrary(keccak);
+    transaction_example.addObjectFile(rust_crypto_lib_path);
+    transaction_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    transaction_example.step.dependOn(cargo_build_step);
     transaction_example.linkLibC();
 
     const run_transaction_example = b.addRunArtifact(transaction_example);
@@ -300,8 +308,9 @@ pub fn build(b: *std.Build) void {
     c_api_lib.root_module.addImport("crypto", crypto_mod);
     c_api_lib.linkLibrary(c_kzg_lib);
     c_api_lib.linkLibrary(blst_lib);
-    if (bn254_lib) |bn254| c_api_lib.linkLibrary(bn254);
-    if (keccak_lib) |keccak| c_api_lib.linkLibrary(keccak);
+    c_api_lib.addObjectFile(rust_crypto_lib_path);
+    c_api_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
+    c_api_lib.step.dependOn(cargo_build_step);
     c_api_lib.linkLibC();
 
     b.installArtifact(c_api_lib);
