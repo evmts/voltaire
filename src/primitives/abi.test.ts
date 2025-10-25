@@ -145,7 +145,8 @@ describe('ABI Decoding', () => {
     const address = '5B38Da6a701c568545dCfcB03FcB875f56beddC4';
     const data = hexToBytes('0x' + '0'.repeat(24) + address);
     const result = decodeAbiParameters(params, data);
-    expect(result[0]).toBe('0x' + address);
+    // Address is returned in lowercase
+    expect(result[0]).toBe('0x' + address.toLowerCase());
   });
 
   test('decode multiple parameters', () => {
