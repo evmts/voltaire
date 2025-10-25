@@ -366,3 +366,84 @@ export function encodeUint(value: number | bigint): Uint8Array {
 
 	return encodeBytes(new Uint8Array(bytes));
 }
+
+/**
+ * Encode input to RLP and return as hex string
+ *
+ * @param input - Data to encode
+ * @returns Hex string with 0x prefix
+ */
+export function toHex(input: RlpInput): string {
+	const encoded = encode(input);
+	return bytesToHexString(encoded);
+}
+
+/**
+ * Decode RLP data from hex string
+ *
+ * @param hex - Hex string with or without 0x prefix
+ * @returns Decoded data structure
+ */
+export function fromHex(hex: string): RlpDecoded {
+	const bytes = hexStringToBytes(hex);
+	return decode(bytes);
+}
+
+/**
+ * Calculate the encoded length of input without actually encoding
+ *
+ * @param input - Data to measure
+ * @returns Length in bytes if encoded
+ */
+export function getLength(input: RlpInput): number {
+	// For now, we encode and measure - optimization possible later
+	const encoded = encode(input);
+	return encoded.length;
+}
+
+/**
+ * Validate RLP-encoded data
+ *
+ * @param data - Bytes to validate
+ * @returns true if valid RLP, false otherwise
+ */
+export function isValid(data: Uint8Array): boolean {
+	if (data.length === 0) {
+		return false;
+	}
+
+	try {
+		decode(data);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Helper: Convert hex string to bytes
+ */
+function hexStringToBytes(hex: string): Uint8Array {
+	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (cleanHex.length % 2 !== 0) {
+		throw new Error("Hex string must have even length");
+	}
+
+	const bytes = new Uint8Array(cleanHex.length / 2);
+	for (let i = 0; i < cleanHex.length; i += 2) {
+		bytes[i / 2] = Number.parseInt(cleanHex.slice(i, i + 2), 16);
+	}
+	return bytes;
+}
+
+/**
+ * Helper: Convert bytes to hex string with 0x prefix
+ */
+function bytesToHexString(bytes: Uint8Array): string {
+	return (
+		"0x" +
+		Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+	);
+}

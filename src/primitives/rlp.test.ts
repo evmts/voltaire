@@ -4,6 +4,10 @@ import {
 	decode,
 	encodeList,
 	encodeUint,
+	toHex,
+	fromHex,
+	getLength,
+	isValid,
 	InputTooShort,
 	LeadingZeros,
 	NonCanonicalSize,
@@ -279,5 +283,277 @@ describe("RLP Edge Cases", () => {
 		const result = encodeList(nested as RlpDecoded[]);
 		const decoded = decode(result);
 		expect(Array.isArray(decoded)).toBe(true);
+	});
+});
+
+describe("RLP Utility Functions", () => {
+	test("toHex - encode and convert to hex string", () => {
+		const input = new TextEncoder().encode("dog");
+		const hex = toHex(input);
+		expect(hex).toBe("0x83646f67");
+	});
+
+	test("fromHex - decode from hex string", () => {
+		const hex = "0x83646f67";
+		const decoded = fromHex(hex);
+		expect(decoded).toBeInstanceOf(Uint8Array);
+		const text = new TextDecoder().decode(decoded as Uint8Array);
+		expect(text).toBe("dog");
+	});
+
+	test("fromHex - works without 0x prefix", () => {
+		const hex = "83646f67";
+		const decoded = fromHex(hex);
+		expect(decoded).toBeInstanceOf(Uint8Array);
+		const text = new TextDecoder().decode(decoded as Uint8Array);
+		expect(text).toBe("dog");
+	});
+
+	test("getLength - calculate encoded length", () => {
+		const input = new TextEncoder().encode("dog");
+		const length = getLength(input);
+		expect(length).toBe(4); // 0x83 + 3 bytes
+	});
+
+	test("getLength - empty string", () => {
+		const input = new Uint8Array([]);
+		const length = getLength(input);
+		expect(length).toBe(1); // 0x80
+	});
+
+	test("getLength - list", () => {
+		const input = [
+			new TextEncoder().encode("cat"),
+			new TextEncoder().encode("dog"),
+		];
+		const length = getLength(input);
+		expect(length).toBe(9); // 0xc8 + 0x83 cat + 0x83 dog
+	});
+
+	test("isValid - valid RLP data", () => {
+		const input = hexToBytes("0x83646f67");
+		expect(isValid(input)).toBe(true);
+	});
+
+	test("isValid - invalid RLP data", () => {
+		const input = hexToBytes("0x83646f"); // Says 3 bytes but only 2
+		expect(isValid(input)).toBe(false);
+	});
+
+	test("isValid - empty data", () => {
+		const input = new Uint8Array([]);
+		expect(isValid(input)).toBe(false);
+	});
+
+	test("isValid - single byte", () => {
+		const input = hexToBytes("0x00");
+		expect(isValid(input)).toBe(true);
+	});
+});
+
+describe("RLP Large Data Tests", () => {
+	test("encode/decode array with 1000 items", () => {
+		const items: Uint8Array[] = [];
+		for (let i = 0; i < 1000; i++) {
+			items.push(new Uint8Array([i % 256]));
+		}
+
+		const encoded = encodeList(items);
+		const decoded = decode(encoded) as RlpDecoded[];
+
+		expect(Array.isArray(decoded)).toBe(true);
+		expect(decoded.length).toBe(1000);
+	});
+
+	test("encode/decode very long string (10KB)", () => {
+		const longString = new Uint8Array(10 * 1024).fill(0x61);
+		const encoded = encode(longString);
+		const decoded = decode(encoded) as Uint8Array;
+
+		expect(compareBytes(decoded, longString)).toBe(true);
+	});
+
+	test("deeply nested structure (20 levels)", () => {
+		let nested: RlpDecoded = new Uint8Array([0x01]);
+		for (let i = 0; i < 20; i++) {
+			nested = [nested];
+		}
+
+		const encoded = encodeList(nested as RlpDecoded[]);
+		const decoded = decode(encoded);
+
+		expect(Array.isArray(decoded)).toBe(true);
+	});
+});
+
+describe("RLP Boundary Tests", () => {
+	test("string at 55 byte boundary", () => {
+		const input = new Uint8Array(55).fill(0x61);
+		const encoded = encode(input);
+		expect(encoded[0]).toBe(0xb7); // Short string max
+		const decoded = decode(encoded) as Uint8Array;
+		expect(compareBytes(decoded, input)).toBe(true);
+	});
+
+	test("string at 56 byte boundary", () => {
+		const input = new Uint8Array(56).fill(0x61);
+		const encoded = encode(input);
+		expect(encoded[0]).toBe(0xb8); // Long string min
+		expect(encoded[1]).toBe(56);
+		const decoded = decode(encoded) as Uint8Array;
+		expect(compareBytes(decoded, input)).toBe(true);
+	});
+
+	test("list at 55 byte boundary", () => {
+		// Create list with exactly 55 bytes of payload
+		// Each item "a" encodes to 1 byte (< 0x80)
+		const items: Uint8Array[] = [];
+		for (let i = 0; i < 55; i++) {
+			items.push(new Uint8Array([0x61]));
+		}
+		const encoded = encodeList(items);
+		expect(encoded[0]).toBe(0xf7); // Short list max (0xc0 + 55)
+	});
+
+	test("list at 56 byte boundary", () => {
+		// Create list with exactly 56 bytes of payload
+		const items: Uint8Array[] = [];
+		for (let i = 0; i < 56; i++) {
+			items.push(new Uint8Array([0x61]));
+		}
+		const encoded = encodeList(items);
+		expect(encoded[0]).toBe(0xf8); // Long list min (0xf7 + 1)
+		expect(encoded[1]).toBe(56);
+	});
+
+	test("integer at byte boundaries", () => {
+		// 0x7f = 127 (single byte < 0x80)
+		const encoded127 = encodeUint(127);
+		expect(bytesToHex(encoded127)).toBe("0x7f");
+
+		// 0x80 = 128 (needs encoding)
+		const encoded128 = encodeUint(128);
+		expect(bytesToHex(encoded128)).toBe("0x8180");
+
+		// 0xff = 255
+		const encoded255 = encodeUint(255);
+		expect(bytesToHex(encoded255)).toBe("0x81ff");
+
+		// 0x100 = 256
+		const encoded256 = encodeUint(256);
+		expect(bytesToHex(encoded256)).toBe("0x820100");
+	});
+});
+
+describe("RLP Ethereum Specific Tests", () => {
+	test("encode transaction-like structure", () => {
+		const tx = [
+			1n, // nonce
+			BigInt("20000000000"), // gasPrice
+			21000n, // gasLimit
+			new TextEncoder().encode("0x1234567890123456789012345678901234567890"), // to
+			BigInt("1000000000000000000"), // value
+			new Uint8Array([]), // data
+		];
+
+		const encoded = encodeList(
+			tx.map((item) =>
+				typeof item === "bigint" ? encodeUint(item) : encode(item),
+			),
+		);
+		expect(encoded.length).toBeGreaterThan(0);
+
+		const decoded = decode(encoded) as RlpDecoded[];
+		expect(Array.isArray(decoded)).toBe(true);
+		expect(decoded.length).toBe(6);
+	});
+
+	test("encode empty transaction fields", () => {
+		const fields = [
+			new Uint8Array([]), // empty data
+			new Uint8Array([0x00]), // zero value
+			encodeUint(0), // zero as uint
+		];
+
+		const encoded = encodeList(fields);
+		const decoded = decode(encoded) as RlpDecoded[];
+
+		expect(Array.isArray(decoded)).toBe(true);
+		expect(decoded.length).toBe(3);
+	});
+
+	test("encode address (20 bytes)", () => {
+		const address = new Uint8Array(20).fill(0xab);
+		const encoded = encode(address);
+		expect(encoded[0]).toBe(0x94); // 0x80 + 20
+		expect(encoded.length).toBe(21);
+	});
+
+	test("encode hash (32 bytes)", () => {
+		const hash = new Uint8Array(32).fill(0xcd);
+		const encoded = encode(hash);
+		expect(encoded[0]).toBe(0xa0); // 0x80 + 32
+		expect(encoded.length).toBe(33);
+	});
+});
+
+describe("RLP Round-Trip Tests", () => {
+	test("round-trip: simple string", () => {
+		const original = new TextEncoder().encode("hello world");
+		const encoded = encode(original);
+		const decoded = decode(encoded) as Uint8Array;
+		expect(compareBytes(decoded, original)).toBe(true);
+	});
+
+	test("round-trip: integer zero", () => {
+		const encoded = encodeUint(0);
+		const decoded = decode(encoded) as Uint8Array;
+		expect(decoded.length).toBe(0);
+	});
+
+	test("round-trip: large integer", () => {
+		const original = BigInt("0x123456789abcdef");
+		const encoded = encodeUint(original);
+		const decoded = decode(encoded) as Uint8Array;
+
+		// Convert back to bigint
+		let result = 0n;
+		for (let i = 0; i < decoded.length; i++) {
+			result = (result << 8n) | BigInt(decoded[i]);
+		}
+		expect(result).toBe(original);
+	});
+
+	test("round-trip: nested list", () => {
+		const original = [
+			new TextEncoder().encode("a"),
+			[new TextEncoder().encode("b"), new TextEncoder().encode("c")],
+			new TextEncoder().encode("d"),
+		];
+
+		const encoded = encodeList(original);
+		const decoded = decode(encoded) as RlpDecoded[];
+
+		expect(Array.isArray(decoded)).toBe(true);
+		expect(decoded.length).toBe(3);
+		expect(Array.isArray(decoded[1])).toBe(true);
+	});
+
+	test("round-trip: empty structures", () => {
+		const testCases = [
+			new Uint8Array([]), // empty string
+			[] as RlpDecoded[], // empty list
+			[new Uint8Array([])], // list with empty string
+			[[] as RlpDecoded[]], // list with empty list
+		];
+
+		for (const original of testCases) {
+			const encoded = Array.isArray(original)
+				? encodeList(original)
+				: encode(original);
+			const decoded = decode(encoded);
+			// Just verify it decodes without error
+			expect(decoded).toBeDefined();
+		}
 	});
 });
