@@ -3,7 +3,7 @@
  * Provides jump destination analysis and bytecode boundary checking.
  */
 
-import { hexToBytes } from "../utils/hex";
+import { hexToBytes } from "./hex.ts";
 
 export interface JumpDestination {
 	position: number;

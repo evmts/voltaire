@@ -6,6 +6,7 @@ import {
 	calculateCreateAddress,
 	calculateCreate2Address,
 } from "./address.ts";
+import { hexToBytes } from "./hex.ts";
 
 describe("Address creation", () => {
 	test("fromHex - valid address", () => {
@@ -149,7 +150,7 @@ describe("Address numeric conversion", () => {
 describe("CREATE address calculation", () => {
 	test("calculateCreateAddress - nonce 0", () => {
 		const deployer = Address.fromHex(
-			"0xa0cf798816d4b9b9866b5330eea46a18382f251e",
+			"0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0",
 		);
 		const addr = calculateCreateAddress(deployer, 0n);
 		expect(addr.toHex()).toBe("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
@@ -157,7 +158,7 @@ describe("CREATE address calculation", () => {
 
 	test("calculateCreateAddress - nonce 1", () => {
 		const deployer = Address.fromHex(
-			"0xa0cf798816d4b9b9866b5330eea46a18382f251e",
+			"0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0",
 		);
 		const addr = calculateCreateAddress(deployer, 1n);
 		expect(addr.toHex()).toBe("0x343c43a37d37dff08ae8c4a11544c718abb4fcf8");
@@ -165,7 +166,7 @@ describe("CREATE address calculation", () => {
 
 	test("calculateCreateAddress - various nonces", () => {
 		const deployer = Address.fromHex(
-			"0xa0cf798816d4b9b9866b5330eea46a18382f251e",
+			"0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0",
 		);
 
 		const testCases = [
@@ -183,7 +184,7 @@ describe("CREATE address calculation", () => {
 
 	test("calculateCreateAddress - deterministic", () => {
 		const deployer = Address.fromHex(
-			"0xa0cf798816d4b9b9866b5330eea46a18382f251e",
+			"0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0",
 		);
 		const addr1 = calculateCreateAddress(deployer, 42n);
 		const addr2 = calculateCreateAddress(deployer, 42n);
@@ -192,10 +193,14 @@ describe("CREATE address calculation", () => {
 });
 
 describe("CREATE2 address calculation", () => {
-	test("calculateCreate2Address - zero values", () => {
+	test("calculateCreate2Address - EIP-1014 Example 0", () => {
+		// EIP-1014 Example 0: deployer=0x0...0, salt=0x0...0, init_code=0x00
+		// init_code_hash = keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
 		const deployer = Address.fromHex("0x" + "00".repeat(20));
 		const salt = new Uint8Array(32);
-		const initCodeHash = new Uint8Array(32);
+		const initCodeHash = hexToBytes(
+			"0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+		);
 
 		const addr = calculateCreate2Address(deployer, salt, initCodeHash);
 		expect(addr.toHex()).toBe("0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38");
