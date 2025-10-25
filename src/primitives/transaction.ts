@@ -11,8 +11,8 @@ import { keccak256, keccak256Hex } from "./keccak";
 import {
 	type RlpDecoded,
 	type RlpInput,
-	decodeRlp,
-	encodeRlp,
+	decode as decodeRlp,
+	encodeList as encodeRlp,
 	fromHex,
 	toHex,
 } from "./rlp";
@@ -108,20 +108,30 @@ export function encodeLegacyForSigning(
 	tx: LegacyTransaction,
 	chainId: bigint,
 ): string {
+	// Helper to convert addresses and hex strings to bytes
+	const hexToBytes = (hex: string): Uint8Array => {
+		const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+		const bytes = new Uint8Array(clean.length / 2);
+		for (let i = 0; i < clean.length; i += 2) {
+			bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
+		}
+		return bytes;
+	};
+
 	const fields: RlpInput[] = [
 		tx.nonce,
 		tx.gasPrice,
 		tx.gasLimit,
-		tx.to || null,
+		tx.to ? hexToBytes(tx.to) : new Uint8Array([]),
 		tx.value,
-		tx.data,
+		hexToBytes(tx.data),
 	];
 
 	// For unsigned transactions, add EIP-155 fields
 	if (tx.v === 0n) {
 		fields.push(chainId, 0n, 0n);
 	} else {
-		fields.push(tx.v, tx.r, tx.s);
+		fields.push(tx.v, hexToBytes(tx.r), hexToBytes(tx.s));
 	}
 
 	const encoded = encodeRlp(fields);
@@ -139,21 +149,31 @@ export function serializeLegacy(tx: LegacyTransaction): string {
  * Encode an EIP-1559 transaction for signing
  */
 export function encodeEip1559ForSigning(tx: Eip1559Transaction): string {
+	// Helper to convert hex strings to bytes
+	const hexToBytes = (hex: string): Uint8Array => {
+		const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+		const bytes = new Uint8Array(clean.length / 2);
+		for (let i = 0; i < clean.length; i += 2) {
+			bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
+		}
+		return bytes;
+	};
+
 	const fields: RlpInput[] = [
 		tx.chainId,
 		tx.nonce,
 		tx.maxPriorityFeePerGas,
 		tx.maxFeePerGas,
 		tx.gasLimit,
-		tx.to || null,
+		tx.to ? hexToBytes(tx.to) : new Uint8Array([]),
 		tx.value,
-		tx.data,
-		encodeAccessListRlp(tx.accessList),
+		hexToBytes(tx.data),
+		encodeAccessListRlp(tx.accessList, hexToBytes),
 	];
 
 	// Add signature fields if signed
 	if (tx.v !== 0n) {
-		fields.push(tx.v, tx.r, tx.s);
+		fields.push(tx.v, hexToBytes(tx.r), hexToBytes(tx.s));
 	}
 
 	const encoded = encodeRlp(fields);
@@ -174,22 +194,32 @@ export function serializeEip1559(tx: Eip1559Transaction): string {
  * Encode an EIP-7702 transaction for signing
  */
 export function encodeEip7702ForSigning(tx: Eip7702Transaction): string {
+	// Helper to convert hex strings to bytes
+	const hexToBytes = (hex: string): Uint8Array => {
+		const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+		const bytes = new Uint8Array(clean.length / 2);
+		for (let i = 0; i < clean.length; i += 2) {
+			bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
+		}
+		return bytes;
+	};
+
 	const fields: RlpInput[] = [
 		tx.chainId,
 		tx.nonce,
 		tx.maxPriorityFeePerGas,
 		tx.maxFeePerGas,
 		tx.gasLimit,
-		tx.to || null,
+		tx.to ? hexToBytes(tx.to) : new Uint8Array([]),
 		tx.value,
-		tx.data,
-		encodeAccessListRlp(tx.accessList),
-		encodeAuthorizationListRlp(tx.authorizationList),
+		hexToBytes(tx.data),
+		encodeAccessListRlp(tx.accessList, hexToBytes),
+		encodeAuthorizationListRlp(tx.authorizationList, hexToBytes),
 	];
 
 	// Add signature fields if signed
 	if (tx.v !== 0n) {
-		fields.push(tx.v, tx.r, tx.s);
+		fields.push(tx.v, hexToBytes(tx.r), hexToBytes(tx.s));
 	}
 
 	const encoded = encodeRlp(fields);
@@ -209,21 +239,30 @@ export function serializeEip7702(tx: Eip7702Transaction): string {
 /**
  * Encode access list to RLP format
  */
-function encodeAccessListRlp(accessList: AccessList): RlpInput {
-	return accessList.map((item) => [item.address, item.storageKeys]);
+function encodeAccessListRlp(
+	accessList: AccessList,
+	hexToBytes: (hex: string) => Uint8Array,
+): RlpInput {
+	return accessList.map((item) => [
+		hexToBytes(item.address),
+		item.storageKeys.map((key) => hexToBytes(key)),
+	]);
 }
 
 /**
  * Encode authorization list to RLP format
  */
-function encodeAuthorizationListRlp(authList: Authorization[]): RlpInput {
+function encodeAuthorizationListRlp(
+	authList: Authorization[],
+	hexToBytes: (hex: string) => Uint8Array,
+): RlpInput {
 	return authList.map((auth) => [
 		auth.chainId,
-		auth.address,
+		hexToBytes(auth.address),
 		auth.nonce,
 		auth.v,
-		auth.r,
-		auth.s,
+		hexToBytes(auth.r),
+		hexToBytes(auth.s),
 	]);
 }
 
