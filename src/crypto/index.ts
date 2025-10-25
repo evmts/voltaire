@@ -6,8 +6,16 @@
 // Keccak-256 (fully implemented)
 export { keccak256, keccak256Empty } from "./keccak.ts";
 
-// EIP-191 Personal Message Signing (fully implemented)
-export { hashMessage } from "./eip191.ts";
+// EIP-191 Personal Message Signing (hash implemented, sign/verify require C API)
+export {
+	hashMessage,
+	signMessage,
+	verifyMessage,
+	recoverMessageAddress,
+	type Hex as Eip191Hex,
+	type Address as Eip191Address,
+	type Signature as Eip191Signature,
+} from "./eip191.ts";
 
 // Hash algorithms (stubs - require C API bindings)
 export { sha256, ripemd160, blake2b } from "./hash-algorithms.ts";
@@ -29,12 +37,17 @@ export {
 	extractRecoveryId,
 } from "./secp256k1.ts";
 
-// EIP-712 Typed Data (stubs - require complex encoding)
+// EIP-712 Typed Data (hash implemented, sign/verify require C API)
 export {
 	type TypedDataDomain,
 	type TypedDataField,
-	type TypedMessage,
+	type TypedData,
 	hashTypedData,
-	calculateDomainSeparator,
-	hashStruct,
+	hashDomain,
+	signTypedData,
+	verifyTypedData,
+	recoverTypedDataAddress,
+	type Hex as Eip712Hex,
+	type Address as Eip712Address,
+	type Signature as Eip712Signature,
 } from "./eip712.ts";
