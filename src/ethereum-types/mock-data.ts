@@ -138,6 +138,31 @@ export const mockEip7702Transaction: TransactionInfo = {
 };
 
 /**
+ * Mock ERC-20 Transfer event log
+ * Event signature: Transfer(address indexed from, address indexed to, uint256 value)
+ */
+export const mockTransferLog: Log = {
+	address: "0x1234567890123456789012345678901234567890" as Address,
+	topics: [
+		// Transfer event signature
+		"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as Hash32,
+		// from address (indexed)
+		"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb" as Hash32,
+		// to address (indexed)
+		"0x0000000000000000000000001234567890123456789012345678901234567890" as Hash32,
+	],
+	data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as `0x${string}`, // 1 ETH value
+	blockNumber: "0x1" as Uint,
+	transactionHash:
+		"0xdef789def789def789def789def789def789def789def789def789def789def7" as Hash32,
+	transactionIndex: "0x1" as Uint,
+	blockHash:
+		"0x1234567890123456789012345678901234567890123456789012345678901234" as Hash32,
+	logIndex: "0x0" as Uint,
+	removed: false,
+};
+
+/**
  * Mock successful transaction receipt
  */
 export const mockSuccessfulReceipt: ReceiptInfo = {
@@ -201,31 +226,6 @@ export const mockContractCreationReceipt: ReceiptInfo = {
 	logsBloom: "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
 	status: "0x1" as Uint,
 	effectiveGasPrice: "0x4a817c800" as Uint,
-};
-
-/**
- * Mock ERC-20 Transfer event log
- * Event signature: Transfer(address indexed from, address indexed to, uint256 value)
- */
-export const mockTransferLog: Log = {
-	address: "0x1234567890123456789012345678901234567890" as Address,
-	topics: [
-		// Transfer event signature
-		"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as Hash32,
-		// from address (indexed)
-		"0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb" as Hash32,
-		// to address (indexed)
-		"0x0000000000000000000000001234567890123456789012345678901234567890" as Hash32,
-	],
-	data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000" as `0x${string}`, // 1 ETH value
-	blockNumber: "0x1" as Uint,
-	transactionHash:
-		"0xdef789def789def789def789def789def789def789def789def789def789def7" as Hash32,
-	transactionIndex: "0x1" as Uint,
-	blockHash:
-		"0x1234567890123456789012345678901234567890123456789012345678901234" as Hash32,
-	logIndex: "0x0" as Uint,
-	removed: false,
 };
 
 /**

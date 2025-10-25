@@ -118,7 +118,7 @@ export function topicMatches(
 	}
 
 	// Array of topics (OR logic)
-	return filterTopic.includes(logTopic);
+	return (filterTopic as readonly Bytes32[]).includes(logTopic);
 }
 
 /**

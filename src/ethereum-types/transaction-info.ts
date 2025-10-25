@@ -9,6 +9,7 @@
 
 import type {
 	Address,
+	Byte,
 	Bytes,
 	Bytes32,
 	Hash32,

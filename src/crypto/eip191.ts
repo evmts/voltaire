@@ -44,13 +44,17 @@ export function hashMessage(message: string | Uint8Array): Hex {
 	const bytes =
 		typeof message === "string" ? new TextEncoder().encode(message) : message;
 
+	// Handle empty message (FFI doesn't like empty pointers)
+	const messageBytes = bytes.length === 0 ? new Uint8Array(1) : bytes;
+	const messageLength = bytes.length; // Use original length
+
 	// Allocate output buffer for 32-byte hash
 	const hashBuffer = new Uint8Array(32);
 
 	// Call C function
 	const result = primitives_eip191_hash_message(
-		ptr(bytes),
-		bytes.length,
+		ptr(messageBytes),
+		messageLength,
 		ptr(hashBuffer),
 	);
 

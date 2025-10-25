@@ -162,8 +162,9 @@ export async function recoverTransactionAddress(
 		encodeLegacyForSigning,
 		encodeEip1559ForSigning,
 		encodeEip7702ForSigning,
-		fromHex,
 	} = await import("../../primitives/transaction.ts");
+
+	const { fromHex } = await import("../../primitives/rlp.ts");
 
 	// Encode transaction for signing
 	let encoded: string;
