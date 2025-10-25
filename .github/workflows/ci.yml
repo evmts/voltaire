@@ -48,6 +48,16 @@ jobs:
           file * || true
           echo "First object file hex dump:"
           hexdump -C $(ls | head -1) | head -3 || true
+      - name: Debug - Check .zig-cache file
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          echo "Finding libcrypto_wrappers.a in .zig-cache:"
+          find .zig-cache -name "libcrypto_wrappers.a" -type f || true
+          echo "Checking format of cached file:"
+          find .zig-cache -name "libcrypto_wrappers.a" -type f -exec file {} \; || true
+          echo "Hex dump of cached file:"
+          find .zig-cache -name "libcrypto_wrappers.a" -type f -exec hexdump -C {} \; | head -5 || true
       - name: Test
         run: zig build test -Doptimize=${{ matrix.optimize }}
 
