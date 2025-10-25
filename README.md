@@ -42,6 +42,76 @@ zig fetch --save https://github.com/evmts/primitives
 
 <br />
 
+## Using as a Dependency
+
+When using primitives in your Zig project, you need to import the modules and link the C artifact libraries.
+
+### Required Steps
+
+1. **Add dependency to build.zig.zon**
+   ```zig
+   .dependencies = .{
+       .primitives = .{
+           .url = "https://github.com/evmts/primitives/archive/<commit-hash>.tar.gz",
+           .hash = "<hash>",
+       },
+   },
+   ```
+
+2. **Import modules and link artifacts in build.zig**
+   ```zig
+   const primitives_dep = b.dependency("primitives", .{
+       .target = target,
+       .optimize = optimize,
+   });
+
+   // Import Zig modules
+   const primitives_mod = primitives_dep.module("primitives");
+   const crypto_mod = primitives_dep.module("crypto");
+   const precompiles_mod = primitives_dep.module("precompiles");
+
+   // Add imports to your executable/library
+   exe.root_module.addImport("primitives", primitives_mod);
+   exe.root_module.addImport("crypto", crypto_mod);
+   exe.root_module.addImport("precompiles", precompiles_mod);
+
+   // Link required C artifacts
+   exe.linkLibrary(primitives_dep.artifact("blst"));
+   exe.linkLibrary(primitives_dep.artifact("c_kzg"));
+
+   // Link optional Rust artifacts (not available in WASM builds)
+   if (primitives_dep.builder.lazyDependency("crypto_wrappers", .{})) |_| {
+       if (primitives_dep.artifact("bn254")) |bn254| exe.linkLibrary(bn254);
+       if (primitives_dep.artifact("keccak-asm")) |keccak| exe.linkLibrary(keccak);
+   }
+
+   exe.linkLibC();
+   ```
+
+### Artifacts Reference
+
+| Artifact | Type | Purpose | Required |
+|----------|------|---------|----------|
+| `blst` | C (static) | BLS12-381 curve operations | Yes |
+| `c_kzg` | C (static) | KZG commitments for EIP-4844 | Yes |
+| `bn254` | Rust (static) | BN254 precompiles via Arkworks | Optional* |
+| `keccak-asm` | Rust (static) | Hardware-accelerated Keccak hashing | Optional* |
+
+\* Not available in WASM builds. The library falls back to pure Zig implementations.
+
+### Undefined Symbol Errors
+
+If you see errors like:
+```
+Undefined symbols:
+  "_bls12_381_g1_add"
+  "_keccak256"
+```
+
+You're missing the required C artifact linkage. Add the corresponding `linkLibrary()` calls shown above.
+
+<br />
+
 ## Documentation
 
 [`examples/`](./examples/) — Example code and usage
