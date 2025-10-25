@@ -135,7 +135,13 @@ export function encodeLegacyForSigning(
 	}
 
 	const encoded = encodeRlp(fields);
-	return toHex(encoded);
+	// Convert bytes to hex string directly (don't use toHex which would RLP encode again)
+	return (
+		"0x" +
+		Array.from(encoded)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+	);
 }
 
 /**
@@ -180,7 +186,13 @@ export function encodeEip1559ForSigning(tx: Eip1559Transaction): string {
 	const result = new Uint8Array(1 + encoded.length);
 	result[0] = 0x02; // EIP-1559 type
 	result.set(encoded, 1);
-	return toHex(result);
+	// Convert bytes to hex string directly (don't use toHex which would RLP encode again)
+	return (
+		"0x" +
+		Array.from(result)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+	);
 }
 
 /**
@@ -226,7 +238,13 @@ export function encodeEip7702ForSigning(tx: Eip7702Transaction): string {
 	const result = new Uint8Array(1 + encoded.length);
 	result[0] = 0x04; // EIP-7702 type
 	result.set(encoded, 1);
-	return toHex(result);
+	// Convert bytes to hex string directly (don't use toHex which would RLP encode again)
+	return (
+		"0x" +
+		Array.from(result)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")
+	);
 }
 
 /**
