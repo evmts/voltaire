@@ -85,14 +85,19 @@ zig build test
 ### 3. Test Thoroughly
 
 ```bash
-# Run all tests
+# Run Zig tests
 zig build test
 
-# Verify build succeeds
+# Verify Zig build succeeds
 zig build
+
+# If modifying TypeScript code, test that too
+cd ts
+bun test
+cd ..
 ```
 
-**CRITICAL**: ALL tests must pass before submitting.
+**CRITICAL**: ALL tests must pass before submitting (both Zig and TypeScript if applicable).
 
 ### 4. Submit Pull Request
 
@@ -179,15 +184,119 @@ pub fn timingUnsafeCompare(a: []const u8, b: []const u8) bool {
 }
 ```
 
+## TypeScript/JavaScript Contributions
+
+This library provides TypeScript bindings for JavaScript environments. When contributing TypeScript code:
+
+### Pure TypeScript vs FFI
+
+The TypeScript layer has two types of implementations:
+
+1. **Pure TypeScript** (`src/primitives/`, `ts/src/primitives/`)
+   - No native dependencies
+   - Works in any JavaScript environment
+   - Examples: ABI encoding, numeric conversions, bytecode analysis
+
+2. **FFI Wrappers** (`src/crypto/`)
+   - Uses Bun FFI to call native Zig library
+   - Requires compiled native library
+   - Examples: Keccak-256, EIP-191
+
+### TypeScript Development Workflow
+
+```bash
+# Build Zig library first (required for FFI modules)
+zig build
+
+# Install TypeScript dependencies
+cd ts
+bun install
+
+# Run TypeScript tests
+bun test
+
+# Run specific test file
+bun test src/crypto/keccak.test.ts
+```
+
+### Adding New FFI Bindings
+
+To add a new FFI wrapper for a Zig crypto function:
+
+1. **Add C API binding** in `src/c_api.zig`:
+   ```zig
+   export fn primitives_my_function(input: [*]const u8, len: usize, output: [*]u8) callconv(.C) void {
+       const data = input[0..len];
+       const result = crypto.myFunction(data);
+       @memcpy(output, &result);
+   }
+   ```
+
+2. **Create TypeScript wrapper** in `src/crypto/my-function.ts`:
+   ```typescript
+   import { getCApiPath } from './utils';
+   import { dlopen, FFIType } from 'bun:ffi';
+
+   const lib = dlopen(getCApiPath(), {
+     primitives_my_function: {
+       args: [FFIType.ptr, FFIType.u64, FFIType.ptr],
+       returns: FFIType.void
+     }
+   });
+
+   export function myFunction(data: Uint8Array): Uint8Array {
+     const output = new Uint8Array(32);
+     lib.symbols.primitives_my_function(data, data.length, output);
+     return output;
+   }
+   ```
+
+3. **Add tests** in `src/crypto/my-function.test.ts` using known test vectors
+
+4. **Update documentation** in `src/crypto/README.md`
+
+### TypeScript Code Standards
+
+- Use TypeScript strict mode (enabled in tsconfig.json)
+- Prefer `Uint8Array` for byte data
+- Use `bigint` for large integers
+- Write comprehensive tests with known test vectors
+- Document all public APIs with JSDoc comments
+- Handle errors gracefully (throw descriptive errors)
+
+### Testing TypeScript Code
+
+```typescript
+// ✅ CORRECT - Use known test vectors
+import { describe, test, expect } from 'bun:test';
+
+describe('keccak256', () => {
+  test('matches NIST test vector', () => {
+    const input = 'abc';
+    const expected = new Uint8Array([/* known hash */]);
+    const result = keccak256(input);
+    expect(result).toEqual(expected);
+  });
+});
+
+// ❌ WRONG - No test vectors
+test('keccak256 works', () => {
+  const result = keccak256('hello');
+  expect(result.length).toBe(32);  // Too weak!
+});
+```
+
 ## Areas Looking for Contributors
 
 We especially welcome contributions in:
 
-- **Test Coverage** - More comprehensive unit tests
+- **Test Coverage** - More comprehensive unit tests (both Zig and TypeScript)
 - **Documentation** - Improving code documentation
 - **Performance** - Optimization opportunities (with benchmarks)
 - **Bug Fixes** - Addressing any issues
 - **Platform Support** - Testing on different platforms
+- **TypeScript FFI Bindings** - Adding C API wrappers for remaining crypto functions (EIP-712, secp256k1, hash algorithms)
+- **TypeScript Primitives** - Pure TypeScript implementations of additional Ethereum primitives
 
 ## Questions?
 
