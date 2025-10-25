@@ -48,16 +48,11 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *
     const cargo_build = b.addSystemCommand(&[_][]const u8{"cargo"});
     cargo_build.addArg("build");
 
-    // Map Zig optimize mode to Cargo profile
-    const profile_args = switch (optimize) {
-        .Debug => &[_][]const u8{},
-        .ReleaseSafe, .ReleaseSmall => &[_][]const u8{"--release"},
-        .ReleaseFast => &[_][]const u8{ "--profile", "release-fast" },
-    };
-
-    for (profile_args) |arg| {
-        cargo_build.addArg(arg);
-    }
+    // Always build Rust in release mode for FFI libraries
+    // Rust debug mode doesn't provide significant benefits when called from Zig,
+    // and release mode works correctly across all platforms
+    _ = optimize;
+    cargo_build.addArg("--release");
 
     // Set working directory to the primitives package root (where Cargo.toml lives)
     cargo_build.setCwd(b.path("."));

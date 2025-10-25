@@ -19,11 +19,10 @@ pub fn createBn254Library(
         }),
     });
 
-    const profile_dir = switch (optimize) {
-        .Debug => "debug",
-        .ReleaseSafe, .ReleaseSmall => "release",
-        .ReleaseFast => "release-fast",
-    };
+    // Cargo always builds in release mode (see lib/build.zig createCargoBuildStep)
+    // This ensures consistent behavior across all platforms regardless of Zig optimize mode
+    const profile_dir = "release";
+
     // Cargo builds to target/ at repo root (single crate now)
     const lib_path = if (rust_target) |target_triple|
         b.fmt("target/{s}/{s}/libcrypto_wrappers.a", .{ target_triple, profile_dir })
