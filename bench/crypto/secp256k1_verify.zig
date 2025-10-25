@@ -1,0 +1,20 @@
+const crypto = @import("crypto");
+
+pub fn main() !void {
+    const private_key = [_]u8{
+        0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3,
+        0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x24,
+        0x4e, 0x21, 0xdb, 0x63, 0x5c, 0x51, 0xcb, 0x29,
+        0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
+    };
+
+    const message = "Hello, Ethereum!";
+    const message_hash = crypto.Hash.keccak256(message);
+    const signature = try crypto.Crypto.unaudited_signHash(message_hash, private_key);
+
+    const public_key = try crypto.Crypto.unaudited_getPublicKey(private_key);
+    const address = public_key.toAddress();
+
+    const is_valid = try crypto.Crypto.unaudited_verifySignature(message_hash, signature, address);
+    _ = is_valid;
+}
