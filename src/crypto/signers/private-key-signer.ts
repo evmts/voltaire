@@ -6,7 +6,7 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1";
-import { keccak_256 } from "@noble/hashes/legacy";
+import { keccak_256 } from "@noble/hashes/sha3.js";
 import type { Transaction } from "../../primitives/transaction.ts";
 import { Address } from "../../primitives/address.ts";
 import { hashMessage } from "../eip191.ts";
@@ -93,8 +93,9 @@ export class PrivateKeySignerImpl implements PrivateKeySigner {
 			encodeLegacyForSigning,
 			encodeEip1559ForSigning,
 			encodeEip7702ForSigning,
-			fromHex,
 		} = await import("../../primitives/transaction.ts");
+
+		const { fromHex } = await import("../../primitives/rlp.ts");
 
 		// Determine transaction type and encode for signing
 		let encoded: string;
