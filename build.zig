@@ -294,77 +294,85 @@ pub fn build(b: *std.Build) void {
     const example_transaction_step = b.step("example-transaction", "Run the transaction operations example");
     example_transaction_step.dependOn(&run_transaction_example.step);
 
-    // C API library
-    const c_api_lib = b.addLibrary(.{
-        .name = "primitives_c",
-        .linkage = .static,
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/c_api.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-    c_api_lib.root_module.addImport("primitives", primitives_mod);
-    c_api_lib.root_module.addImport("crypto", crypto_mod);
-    c_api_lib.linkLibrary(c_kzg_lib);
-    c_api_lib.linkLibrary(blst_lib);
-    c_api_lib.addObjectFile(rust_crypto_lib_path);
-    c_api_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
-    c_api_lib.step.dependOn(cargo_build_step);
-    c_api_lib.linkLibC();
+    // C API library - skip for WASM targets
+    const is_wasm = target.result.cpu.arch == .wasm32 or target.result.cpu.arch == .wasm64;
+    if (!is_wasm) {
+        // C API library
+        const c_api_lib = b.addLibrary(.{
+            .name = "primitives_c",
+            .linkage = .static,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/c_api.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        c_api_lib.root_module.addImport("primitives", primitives_mod);
+        c_api_lib.root_module.addImport("crypto", crypto_mod);
+        c_api_lib.linkLibrary(c_kzg_lib);
+        c_api_lib.linkLibrary(blst_lib);
+        c_api_lib.addObjectFile(rust_crypto_lib_path);
+        c_api_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
+        c_api_lib.step.dependOn(cargo_build_step);
+        c_api_lib.linkLibC();
 
-    b.installArtifact(c_api_lib);
+        b.installArtifact(c_api_lib);
 
-    // C API shared library for FFI (TypeScript/Bun)
-    const c_api_shared = b.addLibrary(.{
-        .name = "primitives_c",
-        .linkage = .dynamic,
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/c_api.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-    c_api_shared.root_module.addImport("primitives", primitives_mod);
-    c_api_shared.root_module.addImport("crypto", crypto_mod);
-    c_api_shared.linkLibrary(c_kzg_lib);
-    c_api_shared.linkLibrary(blst_lib);
-    c_api_shared.addObjectFile(rust_crypto_lib_path);
-    c_api_shared.addIncludePath(b.path("lib")); // For Rust FFI headers
-    c_api_shared.step.dependOn(cargo_build_step);
-    c_api_shared.linkLibC();
+        // C API shared library for FFI (TypeScript/Bun)
+        const c_api_shared = b.addLibrary(.{
+            .name = "primitives_c",
+            .linkage = .dynamic,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/c_api.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        c_api_shared.root_module.addImport("primitives", primitives_mod);
+        c_api_shared.root_module.addImport("crypto", crypto_mod);
+        c_api_shared.linkLibrary(c_kzg_lib);
+        c_api_shared.linkLibrary(blst_lib);
+        c_api_shared.addObjectFile(rust_crypto_lib_path);
+        c_api_shared.addIncludePath(b.path("lib")); // For Rust FFI headers
+        c_api_shared.step.dependOn(cargo_build_step);
+        c_api_shared.linkLibC();
 
-    b.installArtifact(c_api_shared);
+        b.installArtifact(c_api_shared);
 
-    // Install C API header for external consumers
-    b.installFile("src/primitives.h", "include/primitives.h");
+        // Install C API header for external consumers
+        b.installFile("src/primitives.h", "include/primitives.h");
 
-    // C example executable
-    const c_example = b.addExecutable(.{
-        .name = "c_example",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-    c_example.addCSourceFile(.{
-        .file = b.path("examples/c/basic_usage.c"),
-    });
-    c_example.addIncludePath(b.path("src")); // For primitives.h
-    c_example.linkLibrary(c_api_lib);
-    c_example.linkLibC();
+        // C example executable
+        const c_example = b.addExecutable(.{
+            .name = "c_example",
+            .root_module = b.createModule(.{
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        c_example.addCSourceFile(.{
+            .file = b.path("examples/c/basic_usage.c"),
+        });
+        c_example.addIncludePath(b.path("src")); // For primitives.h
+        c_example.linkLibrary(c_api_lib);
+        c_example.linkLibC();
 
-    const install_c_example = b.addInstallArtifact(c_example, .{});
+        const install_c_example = b.addInstallArtifact(c_example, .{});
 
-    const run_c_example = b.addRunArtifact(c_example);
-    run_c_example.step.dependOn(&install_c_example.step);
+        const run_c_example = b.addRunArtifact(c_example);
+        run_c_example.step.dependOn(&install_c_example.step);
 
-    const c_example_step = b.step("example-c", "Run the C API example");
-    c_example_step.dependOn(&run_c_example.step);
+        const c_example_step = b.step("example-c", "Run the C API example");
+        c_example_step.dependOn(&run_c_example.step);
+    }
 
-    // NOTE: WASM library target removed due to incompatibility with Rust/C dependencies
-    // Individual benchmark executables can still be built for WASM with pure Zig code
-    // For TypeScript bindings, use the native C library (libprimitives_c) with FFI
+    // NOTE: WASM builds are supported with all features!
+    // - Rust crypto_wrappers: built with portable features (tiny-keccak + arkworks pure Rust)
+    // - blst: built with __BLST_PORTABLE__ and __BLST_NO_ASM__ (C-only, no assembly)
+    // - c-kzg-4844: works in WASM as pure C
+    // - All Zig crypto: fully compatible
+    // C API library is skipped for WASM (dynamic linking not supported)
+    // For JavaScript/TypeScript: use native libprimitives_c with FFI, or compile to WASM for browser
 
     // Benchmark executables for WASM size and performance measurement
     const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";

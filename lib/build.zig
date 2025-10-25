@@ -53,9 +53,18 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, t
     _ = optimize;
     cargo_build.addArg("--release");
 
+    // Handle WASM targets - use portable pure Rust implementation
+    const is_wasm = target.result.cpu.arch == .wasm32 or target.result.cpu.arch == .wasm64;
+    if (is_wasm) {
+        cargo_build.addArg("--target");
+        cargo_build.addArg("wasm32-unknown-unknown");
+        cargo_build.addArg("--no-default-features");
+        cargo_build.addArg("--features");
+        cargo_build.addArg("portable");
+    }
     // On Windows, force GNU toolchain to produce .a files with lib prefix
     // MSVC toolchain produces .lib files without lib prefix which breaks our build
-    if (target.result.os.tag == .windows) {
+    else if (target.result.os.tag == .windows) {
         const rust_target = switch (target.result.cpu.arch) {
             .x86_64 => "x86_64-pc-windows-gnu",
             .x86 => "i686-pc-windows-gnu",
