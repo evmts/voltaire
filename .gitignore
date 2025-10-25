@@ -213,8 +213,6 @@ data/fixtures/out/
 bubblesort_bytecode.txt
 
 # TypeScript wrapper build artifacts
-wasm/
 native/
 dist/
-*.wasm
 scripts/*.js

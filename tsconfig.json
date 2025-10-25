@@ -1,24 +1,22 @@
 {
-  "extends": "@tevm/tsconfig/base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "declarationDir": "./types",
-    "rootDir": "./src",
-    "composite": true,
-    "incremental": true
-  },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "types",
-    "wasm",
-    "native",
-    "zig-out",
-    "zig-cache",
-    "**/*.spec.ts",
-    "**/*.test.ts"
-  ]
+	"extends": "@tevm/tsconfig/base.json",
+	"compilerOptions": {
+		"outDir": "./dist",
+		"declarationDir": "./types",
+		"rootDir": "./src/typescript",
+		"composite": true,
+		"incremental": true
+	},
+	"include": ["src/typescript/**/*"],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"types",
+		"wasm",
+		"native",
+		"zig-out",
+		"zig-cache",
+		"**/*.spec.ts",
+		"**/*.test.ts"
+	]
 }

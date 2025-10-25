@@ -1,68 +1,57 @@
 {
-  "name": "@tevm/primitives",
-  "version": "0.0.1",
-  "private": false,
-  "description": "Ethereum primitives library with WASM and native bindings",
-  "keywords": [
-    "ethereum",
-    "primitives",
-    "wasm",
-    "crypto"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/evmts/primitives.git"
-  },
-  "license": "MIT",
-  "contributors": [
-    "Fucory (x.com/fucory)"
-  ],
-  "sideEffects": false,
-  "type": "module",
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "types": "./types/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./wasm/index.js"
-    },
-    "./native": {
-      "types": "./types/native.d.ts",
-      "import": "./dist/native.js",
-      "default": "./native/index.js"
-    }
-  },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./types/index.d.ts",
-  "files": [
-    "dist",
-    "types",
-    "wasm",
-    "native"
-  ],
-  "scripts": {
-    "build": "echo 'Build script TBD'",
-    "test": "bun test",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
-    "lint": "biome lint --write .",
-    "lint:check": "biome lint .",
-    "lint:deps": "bunx depcheck",
-    "lint:package": "bunx publint --strict && bunx attw --pack",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist types wasm native zig-out zig-cache node_modules",
-    "all": "bun run format:check && bun run lint:check && bun run typecheck && bun run build && bun run test && bun run lint:deps && bun run lint:package"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@tevm/tsconfig": "2.0.0-next.80",
-    "@types/bun": "latest",
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
-  },
-  "optionalDependencies": {
-    "ffi-napi": "^4.0.3",
-    "ref-napi": "^3.0.3"
-  }
+	"name": "@tevm/primitives",
+	"version": "0.0.1",
+	"private": false,
+	"description": "Ethereum primitives library with WASM and native bindings",
+	"keywords": ["ethereum", "primitives", "wasm", "crypto"],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/evmts/primitives.git"
+	},
+	"license": "MIT",
+	"contributors": ["Fucory (x.com/fucory)"],
+	"sideEffects": false,
+	"type": "module",
+	"exports": {
+		"./package.json": "./package.json",
+		".": {
+			"types": "./types/index.d.ts",
+			"import": "./dist/index.js",
+			"default": "./wasm/index.js"
+		},
+		"./native": {
+			"types": "./types/native.d.ts",
+			"import": "./dist/native.js",
+			"default": "./native/index.js"
+		}
+	},
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./types/index.d.ts",
+	"files": ["dist", "types", "wasm", "native"],
+	"scripts": {
+		"build": "echo 'Build script TBD'",
+		"test": "bun test",
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"lint": "biome lint --write .",
+		"lint:check": "biome lint .",
+		"lint:deps": "bunx depcheck",
+		"lint:package": "bunx publint --strict && bunx attw --pack",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist types wasm native zig-out zig-cache node_modules",
+		"all": "bun run format:check && bun run lint:check && bun run typecheck && bun run build && bun run test && bun run lint:deps && bun run lint:package"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@noble/hashes": "^2.0.1",
+		"@tevm/tsconfig": "2.0.0-next.80",
+		"@types/bun": "latest",
+		"@types/node": "^22.10.2",
+		"typescript": "^5.7.2"
+	},
+	"optionalDependencies": {
+		"ffi-napi": "^4.0.3",
+		"ref-napi": "^3.0.3"
+	}
 }
