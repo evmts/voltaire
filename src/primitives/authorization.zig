@@ -38,7 +38,7 @@ pub const Authorization = struct {
             .r = r_value,
             .s = s_value,
         };
-        
+
         return try crypto.unaudited_recoverAddress(h, signature);
     }
 

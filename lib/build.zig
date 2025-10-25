@@ -51,7 +51,7 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *
     // Map Zig optimize mode to Cargo profile
     const profile_args = switch (optimize) {
         .Debug => &[_][]const u8{},
-        .ReleaseSafe, .ReleaseSmall => &[_][]const u8{ "--release" },
+        .ReleaseSafe, .ReleaseSmall => &[_][]const u8{"--release"},
         .ReleaseFast => &[_][]const u8{ "--profile", "release-fast" },
     };
 

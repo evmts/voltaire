@@ -17,9 +17,9 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
     return struct {
         pub const DIGEST_SIZE = 32;
         pub const BLOCK_SIZE = 64;
-        
+
         const Self = @This();
-        
+
         /// Hash function selector based on CPU features and vector size
         pub fn hash(data: []const u8, output: *[DIGEST_SIZE]u8) void {
             // If vector size is 1, use scalar implementation
@@ -27,9 +27,9 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                 hash_software_optimized(data, output);
                 return;
             }
-            
+
             const features = cpu_features.cpu_features;
-            
+
             if (features.has_sha and builtin.target.cpu.arch == .x86_64) {
                 // Use x86-64 SHA extensions
                 hash_sha_ni(data, output);
@@ -41,7 +41,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                 hash_software_optimized(data, output);
             }
         }
-        
+
         /// x86-64 SHA-NI implementation (SHA extensions)
         fn hash_sha_ni(data: []const u8, output: *[DIGEST_SIZE]u8) void {
             // For now, fall back to standard implementation
@@ -50,7 +50,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
             hasher.update(data);
             hasher.final(output);
         }
-        
+
         /// AVX2 SIMD implementation for parallel processing
         fn hash_avx2(data: []const u8, output: *[DIGEST_SIZE]u8) void {
             // Initialize state with SHA256 initial values
@@ -58,18 +58,18 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
                 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
             };
-            
+
             // Process complete blocks using SIMD
             var i: usize = 0;
             while (i + BLOCK_SIZE <= data.len) : (i += BLOCK_SIZE) {
-                process_block_simd(&state, data[i..i + BLOCK_SIZE]);
+                process_block_simd(&state, data[i .. i + BLOCK_SIZE]);
             }
-            
+
             // Handle remaining data
             if (i < data.len) {
                 var last_block: [BLOCK_SIZE]u8 = undefined;
-                @memcpy(last_block[0..data.len - i], data[i..]);
-                
+                @memcpy(last_block[0 .. data.len - i], data[i..]);
+
                 // Padding
                 last_block[data.len - i] = 0x80;
                 if (data.len - i < 56) {
@@ -79,7 +79,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                     process_block_simd(&state, &last_block);
                     @memset(last_block[0..56], 0);
                 }
-                
+
                 // Length in bits (big-endian)
                 const bit_len = data.len * 8;
                 std.mem.writeInt(u64, last_block[56..64], bit_len, .big);
@@ -92,13 +92,13 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                 std.mem.writeInt(u64, last_block[56..64], bit_len, .big);
                 process_block_simd(&state, &last_block);
             }
-            
+
             // Write final state to output (big-endian)
             for (state, 0..) |s, idx| {
                 std.mem.writeInt(u32, output[idx * 4 ..][0..4], s, .big);
             }
         }
-        
+
         /// Process a single block using SIMD operations
         fn process_block_simd(state: *[8]u32, block: *const [BLOCK_SIZE]u8) void {
             // SHA256 constants (first 32 bits of fractional parts of cube roots of first 64 primes)
@@ -120,15 +120,15 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
                 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
             };
-            
+
             // Prepare message schedule using SIMD where possible
             var W: [64]u32 = undefined;
-            
+
             // First 16 words come directly from the block (big-endian)
             for (0..16) |j| {
                 W[j] = std.mem.readInt(u32, block[j * 4 ..][0..4], .big);
             }
-            
+
             // Extend message schedule using SIMD operations if vector size allows
             if (vector_size >= 4) {
                 var j: usize = 16;
@@ -136,17 +136,17 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                     // Process 4 words at a time using vectors
                     const vec_size = 4;
                     var w_vec: @Vector(vec_size, u32) = undefined;
-                    
+
                     inline for (0..vec_size) |k| {
                         if (j + k < 64) {
                             const w0 = W[j + k - 16];
                             const w1 = W[j + k - 15];
                             const w9 = W[j + k - 7];
                             const w14 = W[j + k - 2];
-                            
+
                             const s0 = rotr(w1, 7) ^ rotr(w1, 18) ^ (w1 >> 3);
                             const s1 = rotr(w14, 17) ^ rotr(w14, 19) ^ (w14 >> 10);
-                            
+
                             w_vec[k] = w0 +% s0 +% w9 +% s1;
                             W[j + k] = w_vec[k];
                         }
@@ -160,7 +160,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                     W[j] = W[j - 16] +% s0 +% W[j - 7] +% s1;
                 }
             }
-            
+
             // Working variables
             var a = state[0];
             var b = state[1];
@@ -170,7 +170,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
             var f = state[5];
             var g = state[6];
             var h = state[7];
-            
+
             // Main loop - process with optimized operations
             for (0..64) |round| {
                 const s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
@@ -179,7 +179,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                 const s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
                 const maj = (a & b) ^ (a & c) ^ (b & c);
                 const temp2 = s0 +% maj;
-                
+
                 h = g;
                 g = f;
                 f = e;
@@ -189,7 +189,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
                 b = a;
                 a = temp1 +% temp2;
             }
-            
+
             // Update state
             state[0] +%= a;
             state[1] +%= b;
@@ -200,7 +200,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
             state[6] +%= g;
             state[7] +%= h;
         }
-        
+
         /// Optimized software implementation
         fn hash_software_optimized(data: []const u8, output: *[DIGEST_SIZE]u8) void {
             // Use standard library implementation as baseline
@@ -209,7 +209,7 @@ pub fn SHA256_Accel(comptime vector_size: comptime_int) type {
             hasher.update(data);
             hasher.final(output);
         }
-        
+
         /// Right rotate helper
         inline fn rotr(x: u32, n: u5) u32 {
             return (x >> n) | (x << (32 - n));
@@ -250,7 +250,7 @@ test "SHA256 hardware acceleration with different vector sizes" {
             },
         },
     };
-    
+
     // Test with vector size 1 (scalar)
     const SHA256_Scalar = SHA256_Accel(1);
     for (test_vectors) |tv| {
@@ -258,7 +258,7 @@ test "SHA256 hardware acceleration with different vector sizes" {
         SHA256_Scalar.hash(tv.input, &output);
         try std.testing.expectEqualSlices(u8, &tv.expected, &output);
     }
-    
+
     // Test with vector size 4 (SIMD)
     const SHA256_SIMD4 = SHA256_Accel(4);
     for (test_vectors) |tv| {
@@ -266,7 +266,7 @@ test "SHA256 hardware acceleration with different vector sizes" {
         SHA256_SIMD4.hash(tv.input, &output);
         try std.testing.expectEqualSlices(u8, &tv.expected, &output);
     }
-    
+
     // Test with vector size 8 (wider SIMD)
     const SHA256_SIMD8 = SHA256_Accel(8);
     for (test_vectors) |tv| {
@@ -278,22 +278,22 @@ test "SHA256 hardware acceleration with different vector sizes" {
 
 test "SHA256 edge cases with vector optimization" {
     const SHA256 = SHA256_Accel(4);
-    
+
     // Test data exactly at block boundary (64 bytes)
     const block_data = "a" ** 64;
     var output1: [32]u8 = undefined;
     var output2: [32]u8 = undefined;
-    
+
     SHA256.hash(block_data, &output1);
     std.crypto.hash.sha2.Sha256.hash(block_data, &output2, .{});
     try std.testing.expectEqualSlices(u8, &output2, &output1);
-    
+
     // Test data one byte over block boundary
     const over_block = "a" ** 65;
     SHA256.hash(over_block, &output1);
     std.crypto.hash.sha2.Sha256.hash(over_block, &output2, .{});
     try std.testing.expectEqualSlices(u8, &output2, &output1);
-    
+
     // Test large data (multiple blocks)
     const large_data = "a" ** 1000;
     SHA256.hash(large_data, &output1);

@@ -48,7 +48,6 @@ pub fn zero() Address {
 
 pub const ZERO = ZERO_ADDRESS;
 
-
 pub fn toU256(addr: Address) u256 {
     var result: u256 = 0;
     for (addr.bytes) |byte| {
@@ -110,7 +109,7 @@ pub fn eql(self: Address, other: Address) bool {
     return equals(self, other);
 }
 
-pub const FromBytesError = error{ InvalidAddressLength };
+pub const FromBytesError = error{InvalidAddressLength};
 
 pub fn fromBytes(bytes: []const u8) FromBytesError!Address {
     if (bytes.len != 20) return error.InvalidAddressLength;

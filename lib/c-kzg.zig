@@ -24,7 +24,7 @@ pub fn createCKzgLibrary(
         .files = &.{
             "lib/c-kzg-4844/src/ckzg.c",
         },
-        .flags = &.{"-std=c99", "-fno-sanitize=undefined"},
+        .flags = &.{ "-std=c99", "-fno-sanitize=undefined" },
     });
 
     lib.addIncludePath(b.path("lib/c-kzg-4844/src"));

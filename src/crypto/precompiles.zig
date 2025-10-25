@@ -268,7 +268,8 @@ fn modexp(
 
     if (base_len > std.math.maxInt(usize) or
         exp_len > std.math.maxInt(usize) or
-        mod_len > std.math.maxInt(usize)) {
+        mod_len > std.math.maxInt(usize))
+    {
         return error.InvalidInput;
     }
 

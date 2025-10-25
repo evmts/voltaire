@@ -18,7 +18,6 @@
 /// const setup_data = kzg_trusted_setup.data;
 /// try c_kzg.loadTrustedSetupFromText(setup_data, 0);
 /// ```
-
 /// Embedded trusted setup data from the KZG ceremony
 /// Format: Text file with G1 and G2 points in hex format
 /// Size: ~4096 G1 points + 65 G2 points

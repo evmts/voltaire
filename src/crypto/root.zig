@@ -59,60 +59,72 @@ pub const kzg_trusted_setup = @import("kzg_trusted_setup.zig");
 pub const kzg_setup = @import("kzg_setup.zig");
 pub const c_kzg = if (builtin.target.cpu.arch != .wasm32)
     @import("c_kzg")
-else struct {
-    // Stub for WASM builds - KZG operations not supported
-    pub const KZGCommitment = [48]u8;
-    pub const KZGProof = [48]u8;
-    pub const Bytes32 = [32]u8;
-    pub const Blob = [131072]u8;
-    
-    pub fn verifyKZGProof(commitment: *const KZGCommitment, z: *const Bytes32, y: *const Bytes32, proof: *const KZGProof) !bool {
-        _ = commitment;
-        _ = z;
-        _ = y;
-        _ = proof;
-        return error.NotSupported;
-    }
-    
-    pub fn blobToKZGCommitment(blob: *const Blob) !KZGCommitment {
-        _ = blob;
-        return error.NotSupported;
-    }
-    
-    pub fn computeKZGProof(blob: *const Blob, z: *const Bytes32) !struct { proof: KZGProof, y: Bytes32 } {
-        _ = blob;
-        _ = z;
-        return error.NotSupported;
-    }
-    
-    pub fn loadTrustedSetupFile(path: []const u8, precompute: usize) !void {
-        _ = path;
-        _ = precompute;
-        return error.NotSupported;
-    }
-    
-    pub fn loadTrustedSetupFromText(data: []const u8, precompute: usize) !void {
-        _ = data;
-        _ = precompute;
-        return error.NotSupported;
-    }
-    
-    pub fn freeTrustedSetup() !void {
-        return error.NotSupported;
-    }
-};
+else
+    struct {
+        // Stub for WASM builds - KZG operations not supported
+        pub const KZGCommitment = [48]u8;
+        pub const KZGProof = [48]u8;
+        pub const Bytes32 = [32]u8;
+        pub const Blob = [131072]u8;
+
+        pub fn verifyKZGProof(commitment: *const KZGCommitment, z: *const Bytes32, y: *const Bytes32, proof: *const KZGProof) !bool {
+            _ = commitment;
+            _ = z;
+            _ = y;
+            _ = proof;
+            return error.NotSupported;
+        }
+
+        pub fn blobToKZGCommitment(blob: *const Blob) !KZGCommitment {
+            _ = blob;
+            return error.NotSupported;
+        }
+
+        pub fn computeKZGProof(blob: *const Blob, z: *const Bytes32) !struct { proof: KZGProof, y: Bytes32 } {
+            _ = blob;
+            _ = z;
+            return error.NotSupported;
+        }
+
+        pub fn loadTrustedSetupFile(path: []const u8, precompute: usize) !void {
+            _ = path;
+            _ = precompute;
+            return error.NotSupported;
+        }
+
+        pub fn loadTrustedSetupFromText(data: []const u8, precompute: usize) !void {
+            _ = data;
+            _ = precompute;
+            return error.NotSupported;
+        }
+
+        pub fn freeTrustedSetup() !void {
+            return error.NotSupported;
+        }
+    };
 
 // BN254 elliptic curve - dual implementations
 pub const bn254 = @import("bn254.zig"); // Pure Zig implementation
 pub const bn254_arkworks = if (builtin.target.cpu.arch != .wasm32)
     @import("bn254_arkworks.zig") // Rust arkworks - production-grade, audited
-else struct {
-    // Stub for WASM builds - Rust FFI not supported
-    pub const BN254Error = error{NotSupported};
-    pub fn init() BN254Error!void { return error.NotSupported; }
-    pub fn ecmul(input: []const u8, output: []u8) BN254Error!void { _ = input; _ = output; return error.NotSupported; }
-    pub fn ecpairing(input: []const u8, output: []u8) BN254Error!void { _ = input; _ = output; return error.NotSupported; }
-};
+else
+    struct {
+        // Stub for WASM builds - Rust FFI not supported
+        pub const BN254Error = error{NotSupported};
+        pub fn init() BN254Error!void {
+            return error.NotSupported;
+        }
+        pub fn ecmul(input: []const u8, output: []u8) BN254Error!void {
+            _ = input;
+            _ = output;
+            return error.NotSupported;
+        }
+        pub fn ecpairing(input: []const u8, output: []u8) BN254Error!void {
+            _ = input;
+            _ = output;
+            return error.NotSupported;
+        }
+    };
 
 // Export BLS12-381 from crypto.zig
 pub const bls12_381 = Crypto.bls12_381;

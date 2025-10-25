@@ -2,7 +2,6 @@ const std = @import("std");
 
 /// EIP-1559 fee market mechanism
 /// Base fee adjusts based on block fullness; burned, not paid to miners
-
 /// Calculate fee delta safely (avoids overflow and division by zero)
 fn calculateFeeDelta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
     // Using u128 for intermediate calculation to avoid overflow

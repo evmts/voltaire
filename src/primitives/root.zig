@@ -135,7 +135,6 @@ pub const Bytecode = @import("bytecode.zig").Bytecode;
 pub const Opcode = @import("opcode.zig").Opcode;
 pub const OpcodeInfo = @import("opcode_info.zig");
 
-
 // Logging
 pub const logs = @import("logs.zig");
 

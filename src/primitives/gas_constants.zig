@@ -413,7 +413,7 @@ pub fn memoryGasCost(current_size: u64, new_size: u64) u64 {
 /// ## Parameters
 /// - `bytes`: Size in bytes
 ///
-/// ## Returns  
+/// ## Returns
 /// - Number of 32-byte words (rounded up)
 ///
 /// ## Formula
@@ -745,21 +745,21 @@ test "memoryGasCost edge cases" {
 test "wordCount edge cases" {
     // Test zero size
     try testing.expectEqual(@as(usize, 0), wordCount(0));
-    
+
     // Test exact word boundaries
     try testing.expectEqual(@as(usize, 1), wordCount(32));
     try testing.expectEqual(@as(usize, 2), wordCount(64));
-    
+
     // Test partial words (should round up)
     try testing.expectEqual(@as(usize, 1), wordCount(1));
     try testing.expectEqual(@as(usize, 1), wordCount(31));
     try testing.expectEqual(@as(usize, 2), wordCount(33));
-    
+
     // Test overflow protection
     const max_safe_bytes = std.math.maxInt(usize) - 31;
     const max_words = wordCount(max_safe_bytes);
     try testing.expect(max_words > 0); // Should not overflow
-    
+
     const overflow_bytes = std.math.maxInt(usize);
     const overflow_words = wordCount(overflow_bytes);
     try testing.expectEqual(std.math.maxInt(usize) / 32, overflow_words);
@@ -934,21 +934,21 @@ test "gas calculation overflow protection" {
 
 test "gas constants match Ethereum specifications" {
     // Verify key constants match Yellow Paper and EIPs
-    
+
     // Basic operations
     try testing.expectEqual(@as(u64, 3), GasFastestStep);
     try testing.expectEqual(@as(u64, 5), GasFastStep);
     try testing.expectEqual(@as(u64, 8), GasMidStep);
-    
+
     // Storage operations (EIP-2929)
     try testing.expectEqual(@as(u64, 100), SloadGas);
     try testing.expectEqual(@as(u64, 2100), ColdSloadCost);
     try testing.expectEqual(@as(u64, 2600), ColdAccountAccessCost);
-    
+
     // Contract creation
     try testing.expectEqual(@as(u64, 32000), CreateGas);
     try testing.expectEqual(@as(u64, 53000), TxGasContractCreation);
-    
+
     // Memory and hashing
     try testing.expectEqual(@as(u64, 3), MemoryGas);
     try testing.expectEqual(@as(u64, 512), QuadCoeffDiv);
@@ -979,7 +979,7 @@ test "wordCount - special boundary cases" {
     try testing.expectEqual(@as(usize, 16), wordCount(512)); // 2^9
     try testing.expectEqual(@as(usize, 32), wordCount(1024)); // 2^10
     try testing.expectEqual(@as(usize, 256), wordCount(8192)); // 2^13
-    
+
     // Test maximum contract size
     const max_contract_size = 24576; // 24KB max contract size
     try testing.expectEqual(@as(usize, 768), wordCount(max_contract_size));
@@ -1111,7 +1111,7 @@ test "storage refunds - clearing storage" {
 test "precompile gas costs - identity" {
     // Identity precompile (0x04)
     const sizes = [_]usize{ 0, 32, 64, 128, 256 };
-    
+
     for (sizes) |size| {
         const cost = IDENTITY_BASE_COST + wordCount(size) * IDENTITY_WORD_COST;
         try testing.expectEqual(15 + wordCount(size) * 3, cost);
@@ -1121,7 +1121,7 @@ test "precompile gas costs - identity" {
 test "precompile gas costs - sha256" {
     // SHA256 precompile (0x02)
     const sizes = [_]usize{ 0, 32, 64, 128, 256 };
-    
+
     for (sizes) |size| {
         const cost = SHA256_BASE_COST + wordCount(size) * SHA256_WORD_COST;
         try testing.expectEqual(60 + wordCount(size) * 12, cost);
@@ -1141,10 +1141,10 @@ test "transaction gas costs - data costs" {
     // Test transaction data gas costs
     const zero_bytes = 100;
     const non_zero_bytes = 50;
-    
+
     const data_cost = zero_bytes * TxDataZeroGas + non_zero_bytes * TxDataNonZeroGas;
     try testing.expectEqual(@as(u64, 100 * 4 + 50 * 16), data_cost);
-    
+
     // Total transaction cost
     const total_tx_cost = TxGas + data_cost;
     try testing.expectEqual(@as(u64, 21000 + 400 + 800), total_tx_cost);
@@ -1168,7 +1168,7 @@ test "transient storage gas costs" {
     // TLOAD and TSTORE have same cost
     try testing.expectEqual(@as(u64, 100), TLoadGas);
     try testing.expectEqual(@as(u64, 100), TStoreGas);
-    
+
     // Much cheaper than persistent storage
     try testing.expect(TStoreGas < SstoreResetGas);
     try testing.expect(TLoadGas == SloadGas); // Same as warm SLOAD
@@ -1180,33 +1180,33 @@ test "transient storage gas costs" {
 
 test "hardfork - EIP-150 Tangerine Whistle gas repricing" {
     // EIP-150 increased costs for IO-heavy operations
-    
+
     // CALL operations base cost
     try testing.expectEqual(@as(u64, 700), CallCodeCost);
     try testing.expectEqual(@as(u64, 40), CallGas); // Base CALL gas
-    
+
     // SELFDESTRUCT was free before EIP-150, then 5000 gas
     try testing.expectEqual(@as(u64, 5000), SelfdestructGas);
-    
+
     // EXT* operations cost 20 gas (previously cheaper)
     try testing.expectEqual(@as(u64, 20), GasExtStep);
 }
 
 test "hardfork - EIP-1108 Istanbul bn256 precompile repricing" {
     // Istanbul dramatically reduced bn256 precompile costs
-    
+
     // ECADD: 500 → 150 gas
     try testing.expectEqual(@as(u64, 150), ECADD_GAS_COST);
     try testing.expectEqual(@as(u64, 500), ECADD_GAS_COST_BYZANTIUM);
-    
+
     // ECMUL: 40,000 → 6,000 gas
     try testing.expectEqual(@as(u64, 6000), ECMUL_GAS_COST);
     try testing.expectEqual(@as(u64, 40000), ECMUL_GAS_COST_BYZANTIUM);
-    
+
     // ECPAIRING base: 100,000 → 45,000 gas
     try testing.expectEqual(@as(u64, 45000), ECPAIRING_BASE_GAS_COST);
     try testing.expectEqual(@as(u64, 100000), ECPAIRING_BASE_GAS_COST_BYZANTIUM);
-    
+
     // ECPAIRING per pair: 80,000 → 34,000 gas
     try testing.expectEqual(@as(u64, 34000), ECPAIRING_PER_PAIR_GAS_COST);
     try testing.expectEqual(@as(u64, 80000), ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM);
@@ -1214,18 +1214,18 @@ test "hardfork - EIP-1108 Istanbul bn256 precompile repricing" {
 
 test "hardfork - EIP-2929 Berlin cold/warm access" {
     // Berlin introduced cold/warm access patterns
-    
+
     // Cold access costs (first time in transaction)
     try testing.expectEqual(@as(u64, 2600), ColdAccountAccessCost);
     try testing.expectEqual(@as(u64, 2100), ColdSloadCost);
-    
+
     // Warm access costs (subsequent accesses)
     try testing.expectEqual(@as(u64, 100), WarmStorageReadCost);
     try testing.expectEqual(@as(u64, 100), SloadGas);
-    
+
     // CALL cold account cost
     try testing.expectEqual(@as(u64, 2600), CALL_COLD_ACCOUNT_COST);
-    
+
     // Verify cold costs are higher than warm
     try testing.expect(ColdAccountAccessCost > WarmStorageReadCost);
     try testing.expect(ColdSloadCost > SloadGas);
@@ -1233,26 +1233,26 @@ test "hardfork - EIP-2929 Berlin cold/warm access" {
 
 test "hardfork - EIP-3529 London gas refund changes" {
     // London reduced refunds to prevent refund abuse
-    
+
     // SSTORE refund reduced from 15,000 to 4,800
     try testing.expectEqual(@as(u64, 4800), SstoreRefundGas);
-    
+
     // SELFDESTRUCT refund removed (was 24,000)
     try testing.expectEqual(@as(u64, 24000), SelfdestructRefundGas);
-    
+
     // Max refund quotient changed from 2 to 5 (max 1/5 of gas used)
     try testing.expectEqual(@as(u64, 5), MaxRefundQuotient);
 }
 
 test "hardfork - EIP-3860 Shanghai initcode limit" {
     // Shanghai introduced init code size limit and per-word cost
-    
+
     // Maximum init code size (2 * max contract size)
     try testing.expectEqual(@as(u64, 49152), MaxInitcodeSize);
-    
+
     // Cost per 32-byte word of init code
     try testing.expectEqual(@as(u64, 2), InitcodeWordGas);
-    
+
     // Verify max size is 2x contract size limit
     const max_contract_size = 24576;
     try testing.expectEqual(max_contract_size * 2, MaxInitcodeSize);
@@ -1260,15 +1260,15 @@ test "hardfork - EIP-3860 Shanghai initcode limit" {
 
 test "hardfork - EIP-1153 Cancun transient storage" {
     // Cancun introduced transient storage opcodes
-    
+
     // TLOAD and TSTORE both cost 100 gas
     try testing.expectEqual(@as(u64, 100), TLoadGas);
     try testing.expectEqual(@as(u64, 100), TStoreGas);
-    
+
     // Same as warm storage access
     try testing.expectEqual(TLoadGas, WarmStorageReadCost);
     try testing.expectEqual(TStoreGas, WarmStorageReadCost);
-    
+
     // Much cheaper than persistent storage
     try testing.expect(TStoreGas < SstoreSetGas);
     try testing.expect(TStoreGas < SstoreResetGas);
@@ -1276,13 +1276,13 @@ test "hardfork - EIP-1153 Cancun transient storage" {
 
 test "hardfork - EIP-4844 Cancun blob transactions" {
     // Cancun introduced blob-carrying transactions
-    
+
     // BLOBHASH opcode cost
     try testing.expectEqual(@as(u64, 3), BlobHashGas);
-    
+
     // BLOBBASEFEE opcode cost
     try testing.expectEqual(@as(u64, 2), BlobBaseFeeGas);
-    
+
     // Blob opcodes are cheap (similar to basic operations)
     try testing.expect(BlobHashGas == GasFastestStep);
     try testing.expect(BlobBaseFeeGas == GasQuickStep);
@@ -1453,17 +1453,17 @@ test "hardfork - CREATE2 gas calculation across hardforks" {
 test "hardfork - transaction type gas costs" {
     // Legacy transaction (all hardforks)
     try testing.expectEqual(@as(u64, 21000), TxGas);
-    
+
     // Contract creation transaction
     try testing.expectEqual(@as(u64, 53000), TxGasContractCreation);
-    
+
     // Transaction data costs (unchanged across hardforks)
     try testing.expectEqual(@as(u64, 4), TxDataZeroGas);
     try testing.expectEqual(@as(u64, 16), TxDataNonZeroGas);
-    
+
     // EIP-2930 (Berlin) introduced access list transactions
     // Access list costs are handled via warm/cold mechanics
-    
+
     // EIP-1559 (London) introduced base fee transactions
     // Gas costs remain the same, just fee calculation changes
 }
@@ -1524,16 +1524,16 @@ test "hardfork - EIP-2200 Istanbul SSTORE gas metering" {
 
 test "hardfork - MODEXP precompile gas thresholds" {
     // EIP-2565 introduced new gas calculation for MODEXP
-    
+
     // Minimum gas cost
     try testing.expectEqual(@as(u64, 200), MODEXP_MIN_GAS);
-    
+
     // Quadratic threshold (64 bytes)
     try testing.expectEqual(@as(usize, 64), MODEXP_QUADRATIC_THRESHOLD);
-    
+
     // Linear threshold (1024 bytes)
     try testing.expectEqual(@as(usize, 1024), MODEXP_LINEAR_THRESHOLD);
-    
+
     // For inputs smaller than 64 bytes, use simple quadratic formula
     // For inputs between 64-1024 bytes, use optimized formula
     // For inputs larger than 1024 bytes, use linear approximation
@@ -1547,10 +1547,10 @@ test "hardfork - gas stipends and retention" {
     // Test gas stipend for value transfers
     try testing.expectEqual(@as(u64, 2300), CallStipend);
     try testing.expectEqual(@as(u64, 2300), GAS_STIPEND_VALUE_TRANSFER);
-    
+
     // Test 63/64 gas retention rule
     try testing.expectEqual(@as(u64, 64), CALL_GAS_RETENTION_DIVISOR);
-    
+
     // Calculate retained gas for various amounts
     const test_gas_amounts = [_]u64{ 64000, 100000, 1000000 };
     for (test_gas_amounts) |gas| {
@@ -1570,20 +1570,20 @@ test "hardfork - gas stipends and retention" {
 
 test "hardfork - gas cost evolution timeline" {
     // Test how specific operations changed across hardforks
-    
+
     // SLOAD evolution
     // Pre-Berlin: 200 gas (after EIP-1884)
     // Post-Berlin: 100 gas warm, 2100 gas cold
     try testing.expectEqual(@as(u64, 100), SloadGas); // Warm
     try testing.expectEqual(@as(u64, 2100), ColdSloadCost); // Cold
-    
+
     // SELFDESTRUCT evolution
     // Pre-EIP-150: 0 gas
     // Post-EIP-150: 5000 gas
     // Post-London: No refund (was 24000)
     try testing.expectEqual(@as(u64, 5000), SelfdestructGas);
     try testing.expectEqual(@as(u64, 24000), SelfdestructRefundGas);
-    
+
     // BALANCE evolution
     // Pre-EIP-1884: 20 gas
     // Post-EIP-1884: 400 gas

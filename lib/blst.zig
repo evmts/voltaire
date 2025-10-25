@@ -28,7 +28,7 @@ pub fn createBlstLibrary(
         .files = &.{
             "lib/c-kzg-4844/blst/src/server.c",
         },
-        .flags = &.{"-std=c99", "-D__BLST_PORTABLE__", "-fno-sanitize=undefined"},
+        .flags = &.{ "-std=c99", "-D__BLST_PORTABLE__", "-fno-sanitize=undefined" },
     });
 
     lib.addAssemblyFile(b.path("lib/c-kzg-4844/blst/build/assembly.S"));

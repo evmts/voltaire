@@ -26,10 +26,10 @@ pub const KZGError = ckzg.KZGError;
 pub fn loadTrustedSetupFile(trusted_setup_path: []const u8, precompute: u64) KZGError!void {
     const file = std.fs.cwd().openFile(trusted_setup_path, .{}) catch return KZGError.FileNotFound;
     defer file.close();
-    
+
     const file_data = file.readToEndAlloc(std.heap.page_allocator, 1024 * 1024 * 10) catch return KZGError.MallocError;
     defer std.heap.page_allocator.free(file_data);
-    
+
     try ckzg.loadTrustedSetupFromText(file_data, precompute);
 }
 
@@ -37,7 +37,6 @@ pub fn loadTrustedSetupFile(trusted_setup_path: []const u8, precompute: u64) KZG
 pub fn freeTrustedSetup() KZGError!void {
     try ckzg.freeTrustedSetup();
 }
-
 
 /// Blob to KZG commitment
 pub fn blobToKzgCommitment(blob: *const Blob) KZGError!KZGCommitment {

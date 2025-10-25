@@ -825,4 +825,3 @@ fn benchmarkFinalExponentiationHard(allocator: std.mem.Allocator) void {
 
     _ = allocator;
 }
-

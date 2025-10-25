@@ -85,7 +85,7 @@ pub fn loadTrustedSetupFromText(trusted_setup_text: []const u8, precompute: u64)
     }
 
     var lines = std.mem.splitScalar(u8, trusted_setup_text, '\n');
-    
+
     const n_g1_line = lines.next() orelse return KZGError.InternalError;
     const n_g1 = std.fmt.parseInt(usize, std.mem.trim(u8, n_g1_line, " \t\r\n"), 10) catch return KZGError.InternalError;
     if (n_g1 != 4096) return KZGError.InternalError;
@@ -104,19 +104,19 @@ pub fn loadTrustedSetupFromText(trusted_setup_text: []const u8, precompute: u64)
     for (0..4096) |i| {
         const line = lines.next() orelse return KZGError.InternalError;
         const trimmed = std.mem.trim(u8, line, " \t\r\n");
-        _ = std.fmt.hexToBytes(g1_lagrange_bytes[i*48..(i+1)*48], trimmed) catch return KZGError.InternalError;
+        _ = std.fmt.hexToBytes(g1_lagrange_bytes[i * 48 .. (i + 1) * 48], trimmed) catch return KZGError.InternalError;
     }
 
     for (0..65) |i| {
         const line = lines.next() orelse return KZGError.InternalError;
         const trimmed = std.mem.trim(u8, line, " \t\r\n");
-        _ = std.fmt.hexToBytes(g2_monomial_bytes[i*96..(i+1)*96], trimmed) catch return KZGError.InternalError;
+        _ = std.fmt.hexToBytes(g2_monomial_bytes[i * 96 .. (i + 1) * 96], trimmed) catch return KZGError.InternalError;
     }
 
     for (0..4096) |i| {
         const line = lines.next() orelse return KZGError.InternalError;
         const trimmed = std.mem.trim(u8, line, " \t\r\n");
-        _ = std.fmt.hexToBytes(g1_monomial_bytes[i*48..(i+1)*48], trimmed) catch return KZGError.InternalError;
+        _ = std.fmt.hexToBytes(g1_monomial_bytes[i * 48 .. (i + 1) * 48], trimmed) catch return KZGError.InternalError;
     }
 
     const ret = c.load_trusted_setup(
@@ -148,7 +148,7 @@ pub fn loadTrustedSetupFile(file_path: []const u8, precompute: u64) KZGError!voi
     @memcpy(path_buf[0..file_path.len], file_path);
     path_buf[file_path.len] = 0;
 
-    const file = std.c.fopen(@ptrCast(path_buf[0..file_path.len+1]), "r");
+    const file = std.c.fopen(@ptrCast(path_buf[0 .. file_path.len + 1]), "r");
     if (file == null) {
         return KZGError.FileNotFound;
     }
@@ -316,7 +316,7 @@ test "error handling" {
     const error_internal = KZGError.InternalError;
     const error_malloc = KZGError.MallocError;
     const error_unknown = KZGError.UnknownError;
-    
+
     try testing.expect(error_bad_args == KZGError.BadArgs);
     try testing.expect(error_internal == KZGError.InternalError);
     try testing.expect(error_malloc == KZGError.MallocError);
@@ -331,21 +331,21 @@ test "embedded trusted setup" {
 test "end to end KZG with embedded setup" {
     try loadTrustedSetupFromText(embedded_trusted_setup, 0);
     defer freeTrustedSetup() catch unreachable;
-    
+
     var test_blob: Blob = undefined;
     var prng = std.Random.DefaultPrng.init(42);
     const random = prng.random();
-    
+
     random.bytes(&test_blob);
     for (0..FIELD_ELEMENTS_PER_BLOB) |i| {
         test_blob[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
-    
+
     const commitment = try blobToKZGCommitment(&test_blob);
     const proof = try computeBlobKZGProof(&test_blob, &commitment);
     const is_valid = try verifyBlobKZGProof(&test_blob, &commitment, &proof);
     try testing.expect(is_valid);
-    
+
     var wrong_proof = proof;
     wrong_proof[0] = wrong_proof[0] ^ 1;
     const should_fail = verifyBlobKZGProof(&test_blob, &commitment, &wrong_proof) catch false;
@@ -355,21 +355,21 @@ test "end to end KZG with embedded setup" {
 test "end to end KZG functionality with file" {
     try loadTrustedSetupFile("src/trusted_setup.txt", 0);
     defer freeTrustedSetup() catch unreachable;
-    
+
     var test_blob: Blob = undefined;
     var prng = std.Random.DefaultPrng.init(42);
     const random = prng.random();
-    
+
     random.bytes(&test_blob);
     for (0..FIELD_ELEMENTS_PER_BLOB) |i| {
         test_blob[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
-    
+
     const commitment = try blobToKZGCommitment(&test_blob);
     const proof = try computeBlobKZGProof(&test_blob, &commitment);
     const is_valid = try verifyBlobKZGProof(&test_blob, &commitment, &proof);
     try testing.expect(is_valid);
-    
+
     var wrong_proof = proof;
     wrong_proof[0] = wrong_proof[0] ^ 1;
     const should_fail = verifyBlobKZGProof(&test_blob, &commitment, &wrong_proof) catch false;

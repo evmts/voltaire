@@ -859,7 +859,7 @@ pub const Trie = struct {
     // Internal methods
 
     /// Store a node and return its hash
-    fn store_node(self: *Trie, node: Node) ![ 32]u8 {
+    fn store_node(self: *Trie, node: Node) ![32]u8 {
         const hash = try hash_node(self.allocator, &node);
         const hash_str = try hash_to_string(self.allocator, &hash);
         errdefer self.allocator.free(hash_str);
@@ -877,7 +877,7 @@ pub const Trie = struct {
     }
 
     /// Insert at a specific node
-    fn insert_at(self: *Trie, node_hash: [32]u8, nibbles: []const u8, value: []const u8) ![ 32]u8 {
+    fn insert_at(self: *Trie, node_hash: [32]u8, nibbles: []const u8, value: []const u8) ![32]u8 {
         const hash_str = try hash_to_string(self.allocator, &node_hash);
         defer self.allocator.free(hash_str);
 
