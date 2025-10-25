@@ -12,12 +12,12 @@ pub fn build(b: *std.Build) void {
     lib_build.checkCargoInstalled();
 
     // STEP 3: Build Rust crate (crypto_wrappers: bn254 + keccak FFI)
-    const cargo_build_step = lib_build.createCargoBuildStep(b, optimize);
+    const cargo_build_step = lib_build.createCargoBuildStep(b, optimize, target);
 
     // Build crypto C/Rust libraries that primitives + crypto depend on
     const blst_lib = lib_build.BlstLib.createBlstLibrary(b, target, optimize);
     const c_kzg_lib = lib_build.CKzgLib.createCKzgLibrary(b, target, optimize, blst_lib);
-    const rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, null);
+    const rust_crypto_lib_path = lib_build.Bn254Lib.getRustLibraryPath(b, target);
 
     // Install crypto libraries
     b.installArtifact(blst_lib);

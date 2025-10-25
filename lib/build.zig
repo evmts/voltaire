@@ -43,7 +43,7 @@ pub fn checkCargoInstalled() void {
     }
 }
 
-pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *std.Build.Step {
+pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode, target: std.Build.ResolvedTarget) *std.Build.Step {
     const cargo_build = b.addSystemCommand(&[_][]const u8{"cargo"});
     cargo_build.addArg("build");
 
@@ -52,6 +52,19 @@ pub fn createCargoBuildStep(b: *std.Build, optimize: std.builtin.OptimizeMode) *
     // and release mode works correctly across all platforms
     _ = optimize;
     cargo_build.addArg("--release");
+
+    // On Windows, force GNU toolchain to produce .a files with lib prefix
+    // MSVC toolchain produces .lib files without lib prefix which breaks our build
+    if (target.result.os.tag == .windows) {
+        const rust_target = switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-pc-windows-gnu",
+            .x86 => "i686-pc-windows-gnu",
+            .aarch64 => "aarch64-pc-windows-gnu",
+            else => @panic("Unsupported Windows architecture for Rust build"),
+        };
+        cargo_build.addArg("--target");
+        cargo_build.addArg(rust_target);
+    }
 
     // Set working directory to the primitives package root (where Cargo.toml lives)
     cargo_build.setCwd(b.path("."));

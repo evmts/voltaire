@@ -5,15 +5,22 @@ const std = @import("std");
 // See: https://github.com/dajuguan/zigbuild-examples
 pub fn getRustLibraryPath(
     b: *std.Build,
-    rust_target: ?[]const u8,
+    target: std.Build.ResolvedTarget,
 ) std.Build.LazyPath {
     // Cargo always builds in release mode (see lib/build.zig createCargoBuildStep)
     const profile_dir = "release";
 
-    const lib_path = if (rust_target) |target_triple|
-        b.fmt("target/{s}/{s}/libcrypto_wrappers.a", .{ target_triple, profile_dir })
-    else
-        b.fmt("target/{s}/libcrypto_wrappers.a", .{profile_dir});
-
-    return b.path(lib_path);
+    // On Windows, we force GNU toolchain with --target, so library goes in target-specific dir
+    // On other platforms, we don't specify --target, so it goes in target/release
+    if (target.result.os.tag == .windows) {
+        const rust_target = switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-pc-windows-gnu",
+            .x86 => "i686-pc-windows-gnu",
+            .aarch64 => "aarch64-pc-windows-gnu",
+            else => @panic("Unsupported Windows architecture for Rust build"),
+        };
+        return b.path(b.fmt("target/{s}/{s}/libcrypto_wrappers.a", .{ rust_target, profile_dir }));
+    } else {
+        return b.path(b.fmt("target/{s}/libcrypto_wrappers.a", .{profile_dir}));
+    }
 }
