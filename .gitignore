@@ -211,3 +211,10 @@ test/execution-spec-tests/fixtures/
 # Solidity compilation artifacts
 data/fixtures/out/
 bubblesort_bytecode.txt
+
+# TypeScript wrapper build artifacts
+wasm/
+native/
+dist/
+*.wasm
+scripts/*.js
