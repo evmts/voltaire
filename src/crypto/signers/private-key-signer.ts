@@ -6,7 +6,7 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1";
-import { keccak_256 } from "@noble/hashes/sha3";
+import { keccak_256 } from "@noble/hashes/legacy";
 import type { Transaction } from "../../primitives/transaction.ts";
 import { Address } from "../../primitives/address.ts";
 import { hashMessage } from "../eip191.ts";
