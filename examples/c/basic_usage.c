@@ -137,6 +137,9 @@ int main(void) {
     }
     printf("Hex encoded: %.*s\n", result, hex_result);
 
+    // Null-terminate the hex string for decoding
+    hex_result[result] = '\0';
+
     // Decode back
     uint8_t decoded[64];
     result = primitives_hex_to_bytes((const char*)hex_result, decoded, 64);
