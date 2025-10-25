@@ -14,6 +14,9 @@
 		"typescript": "^5.0.0"
 	},
 	"dependencies": {
-		"@noble/hashes": "^2.0.1"
+		"@noble/hashes": "^2.0.1",
+		"@noble/curves": "^1.6.0",
+		"@scure/bip32": "^1.5.0",
+		"@scure/bip39": "^1.4.0"
 	}
 }
