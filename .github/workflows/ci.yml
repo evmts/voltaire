@@ -27,15 +27,20 @@ jobs:
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
       - name: Debug - List target directory (Windows)
-        if: runner.os == 'Windows'
+        if: always() && runner.os == 'Windows'
         shell: bash
         run: |
           echo "=== Listing target directory structure ==="
-          find target -name "*.a" -o -name "*.lib" | head -20 || true
+          find target -name "*.a" -o -name "*.lib" 2>/dev/null | head -20 || echo "No .a or .lib files found"
+          echo ""
           echo "=== Listing target/release ==="
-          ls -la target/release/ || echo "target/release/ does not exist"
-          echo "=== Listing target subdirectories ==="
-          ls -la target/ || true
+          ls -la target/release/ 2>/dev/null || echo "target/release/ does not exist"
+          echo ""
+          echo "=== Listing all target subdirectories ==="
+          find target -type d -maxdepth 2 2>/dev/null || echo "target/ does not exist"
+          echo ""
+          echo "=== Listing files in target root ==="
+          ls -la target/ 2>/dev/null || echo "target/ does not exist"
       - name: Test
         run: zig build test -Doptimize=${{ matrix.optimize }}
 
