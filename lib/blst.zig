@@ -6,7 +6,10 @@ pub fn createBlstLibrary(
     optimize: std.builtin.OptimizeMode,
 ) *std.Build.Step.Compile {
     // Build blst assembly first - use build.sh on all platforms (including Windows via Git Bash)
-    const blst_build_cmd = b.addSystemCommand(&.{"./build.sh"});
+    const blst_build_cmd = if (target.result.os.tag == .windows)
+        b.addSystemCommand(&.{ "bash", "./build.sh" })
+    else
+        b.addSystemCommand(&.{"./build.sh"});
     blst_build_cmd.setCwd(b.path("lib/c-kzg-4844/blst"));
 
     // Build blst library
