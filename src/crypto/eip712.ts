@@ -110,7 +110,19 @@ function encodeValue(
 	}
 
 	// Handle basic types
-	if (type === "string" || type === "bytes") {
+	if (type === "string") {
+		// Encode string as UTF-8 bytes, then hash
+		const encoder = new TextEncoder();
+		const bytes = encoder.encode(value as string);
+		// Convert bytes to hex string for keccak256
+		const hexString = `0x${Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")}`;
+		return keccak256(hexString);
+	}
+
+	if (type === "bytes") {
+		// For bytes, value should already be a hex string
 		return keccak256(value as string);
 	}
 
