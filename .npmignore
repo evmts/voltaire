@@ -1,0 +1,63 @@
+# Source files - we publish compiled dist/types only
+src/
+examples/
+docs/
+
+# Build artifacts
+zig-out/
+zig-cache/
+target/
+.zig-cache/
+
+# Dependencies
+node_modules/
+deps/
+vendor/
+
+# Development files
+.github/
+.vscode/
+script/
+*.test.ts
+*.test.js
+**/__tests__/
+**/*.test.ts
+**/*.test.js
+
+# Configuration files
+.gitignore
+.gitmodules
+.git/
+build.zig
+build.zig.zon
+tsconfig.json
+biome.json
+bun.lockb
+
+# Documentation
+CLAUDE.md
+CONTRIBUTING.md
+LLMS.txt
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Rust files
+Cargo.toml
+Cargo.lock
+rust-toolchain
+
+# Submodules
+libs/
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*.swo
+*~
+.DS_Store

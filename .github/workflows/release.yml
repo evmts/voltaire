@@ -1,0 +1,192 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Build and test Zig (Debug)
+        run: |
+          zig build -Doptimize=Debug
+          zig build test -Doptimize=Debug
+
+      - name: Build and test Zig (Release)
+        run: |
+          zig build -Doptimize=ReleaseFast
+          zig build test -Doptimize=ReleaseFast
+
+      - name: Build WASM
+        run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+
+      - name: Check Zig formatting
+        run: zig fmt --check .
+
+  typescript-quality:
+    name: TypeScript Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Build Zig library
+        run: zig build -Doptimize=ReleaseFast
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install TypeScript dependencies
+        run: bun install
+
+      - name: Run typecheck
+        run: bun run typecheck
+
+      - name: Run lint
+        run: bun run lint:check
+
+      - name: Run format check
+        run: bun run format:check
+
+      - name: Run TypeScript tests
+        run: bun test
+
+  build-artifacts:
+    name: Build Release Artifacts
+    needs: [validate, typescript-quality]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Build native library
+        run: zig build -Doptimize=ReleaseFast
+
+      - name: Upload native library artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-library-${{ matrix.os }}
+          path: |
+            zig-out/lib/*
+            zig-out/include/*
+
+  publish-npm:
+    name: Publish to npm
+    needs: [build-artifacts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Build Zig library and WASM
+        run: |
+          zig build -Doptimize=ReleaseFast
+          zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build TypeScript package
+        run: bun run build
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  create-release:
+    name: Create GitHub Release
+    needs: [publish-npm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          # Generate changelog
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD)
+          fi
+
+          # Create release notes
+          cat > release_notes.md << EOF
+          ## What's Changed
+
+          $CHANGELOG
+
+          ## Installation
+
+          \`\`\`bash
+          npm install @tevm/primitives@${{ steps.version.outputs.version }}
+          # or
+          bun add @tevm/primitives@${{ steps.version.outputs.version }}
+          \`\`\`
+
+          ## Full Changelog
+
+          https://github.com/evmts/primitives/compare/${PREV_TAG}...v${{ steps.version.outputs.version }}
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
