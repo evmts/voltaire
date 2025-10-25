@@ -1,0 +1,23 @@
+name: WASM Size
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  wasm-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+      - name: Build for WASM
+        run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Measure WASM bundle sizes
+        run: bun run script/wasm-size.ts
