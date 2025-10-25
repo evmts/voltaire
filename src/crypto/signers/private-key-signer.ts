@@ -118,7 +118,10 @@ export class PrivateKeySignerImpl implements PrivateKeySigner {
 		}
 
 		// Hash the encoded transaction
-		const txBytes = fromHex(encoded);
+		// Note: encoded is a hex string, convert to Uint8Array
+		const txBytes = typeof encoded === "string"
+			? hexToBytes(encoded)
+			: encoded;
 		const messageHash = keccak_256(txBytes);
 
 		// Sign the hash

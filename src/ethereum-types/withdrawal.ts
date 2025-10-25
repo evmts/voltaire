@@ -39,7 +39,7 @@ export function gweiToWei(gwei: Uint): bigint {
 	// Parse hex string to bigint
 	const gweiValue = BigInt(gwei);
 	// 1 Gwei = 10^9 Wei
-	return gweiValue * 1_000_000_000n;
+	return gweiValue * BigInt(1000000000);
 }
 
 /**
@@ -50,7 +50,7 @@ export function gweiToWei(gwei: Uint): bigint {
  */
 export function weiToGwei(wei: bigint): Uint {
 	// 1 Gwei = 10^9 Wei
-	const gweiValue = wei / 1_000_000_000n;
+	const gweiValue = wei / BigInt(1000000000);
 	return `0x${gweiValue.toString(16)}` as Uint;
 }
 
@@ -63,7 +63,7 @@ export function weiToGwei(wei: bigint): Uint {
 export function gweiToEth(gwei: Uint): number {
 	const gweiValue = BigInt(gwei);
 	// 1 ETH = 1,000,000,000 Gwei
-	return Number(gweiValue) / 1_000_000_000;
+	return Number(gweiValue) / 1000000000;
 }
 
 /**

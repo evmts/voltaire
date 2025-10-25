@@ -189,7 +189,10 @@ export async function recoverTransactionAddress(
 	}
 
 	// Hash the encoded transaction
-	const txBytes = fromHex(encoded);
+	// Note: encoded is a hex string, convert to Uint8Array
+	const txBytes = typeof encoded === "string"
+		? hexToBytes(encoded)
+		: encoded;
 	const messageHash = keccak_256(txBytes);
 
 	// Parse signature from transaction
@@ -232,9 +235,8 @@ function recoverPublicKey(messageHash: Uint8Array, signature: Signature): Uint8A
 	const r = BigInt(signature.r);
 	const s = BigInt(signature.s);
 
-	// Create signature object for noble/curves
-	const sig = new secp256k1.Signature(r, s);
-	sig.addRecoveryBit(recovery);
+	// Create signature object for noble/curves with recovery bit
+	const sig = new secp256k1.Signature(r, s, recovery);
 
 	// Recover public key
 	const publicKey = sig.recoverPublicKey(messageHash);

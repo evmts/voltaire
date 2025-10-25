@@ -92,7 +92,10 @@ export function normalizeFilterAddress(
 	if (!address) {
 		return [];
 	}
-	return Array.isArray(address) ? address : [address];
+	if (Array.isArray(address)) {
+		return address;
+	}
+	return [address] as readonly Address[];
 }
 
 /**

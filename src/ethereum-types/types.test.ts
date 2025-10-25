@@ -463,11 +463,11 @@ describe("Withdrawal", () => {
 	test("should convert Gwei to Wei", () => {
 		const gwei = "0x3b9aca00" as Uint; // 1 ETH in Gwei
 		const wei = gweiToWei(gwei);
-		expect(wei).toBe(1_000_000_000_000_000_000n);
+		expect(wei).toBe(BigInt("1000000000000000000"));
 	});
 
 	test("should convert Wei to Gwei", () => {
-		const wei = 1_000_000_000_000_000_000n; // 1 ETH in Wei
+		const wei = BigInt("1000000000000000000"); // 1 ETH in Wei
 		const gwei = weiToGwei(wei);
 		expect(gwei).toBe("0x3b9aca00");
 	});
