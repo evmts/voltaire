@@ -106,6 +106,23 @@ function isDynamicType(type: string): boolean {
  * Internal: Encode single value
  */
 function encodeValue(type: string, value: AbiValue): Uint8Array {
+  // Handle arrays FIRST (before checking type prefix)
+  if (type.endsWith('[]')) {
+    const array = value as AbiValue[];
+    const elementType = type.slice(0, -2);
+    const length = encodeBigInt(BigInt(array.length));
+    const encodedElements = array.map(v => encodeValue(elementType, v));
+    const totalLength = length.length + encodedElements.reduce((sum, e) => sum + e.length, 0);
+    const result = new Uint8Array(totalLength);
+    result.set(length, 0);
+    let offset = length.length;
+    for (const encoded of encodedElements) {
+      result.set(encoded, offset);
+      offset += encoded.length;
+    }
+    return result;
+  }
+
   // Handle numeric types
   if (type.startsWith('uint') || type.startsWith('int')) {
     let num: bigint;
@@ -113,9 +130,6 @@ function encodeValue(type: string, value: AbiValue): Uint8Array {
       num = value;
     } else if (typeof value === 'number') {
       num = BigInt(value);
-    } else if (Array.isArray(value)) {
-      // Array values should not reach here, but handle safely
-      throw new AbiError('Cannot encode array as numeric type');
     } else {
       num = BigInt(value as number);
     }
@@ -135,7 +149,7 @@ function encodeValue(type: string, value: AbiValue): Uint8Array {
   }
 
   // Handle fixed bytes (bytes1-bytes32)
-  if (type.startsWith('bytes') && type.length <= 7 && !type.endsWith('[]')) {
+  if (type.startsWith('bytes') && type.length <= 7) {
     const bytes = value as Uint8Array;
     const padded = new Uint8Array(32);
     padded.set(bytes, 0);
@@ -162,23 +176,6 @@ function encodeValue(type: string, value: AbiValue): Uint8Array {
     const result = new Uint8Array(length.length + data.length);
     result.set(length, 0);
     result.set(data, length.length);
-    return result;
-  }
-
-  // Handle arrays
-  if (type.endsWith('[]')) {
-    const array = value as AbiValue[];
-    const elementType = type.slice(0, -2);
-    const length = encodeBigInt(BigInt(array.length));
-    const encodedElements = array.map(v => encodeValue(elementType, v));
-    const totalLength = length.length + encodedElements.reduce((sum, e) => sum + e.length, 0);
-    const result = new Uint8Array(totalLength);
-    result.set(length, 0);
-    let offset = length.length;
-    for (const encoded of encodedElements) {
-      result.set(encoded, offset);
-      offset += encoded.length;
-    }
     return result;
   }
 
