@@ -285,4 +285,46 @@ pub fn build(b: *std.Build) void {
     const run_transaction_example = b.addRunArtifact(transaction_example);
     const example_transaction_step = b.step("example-transaction", "Run the transaction operations example");
     example_transaction_step.dependOn(&run_transaction_example.step);
+
+    // C API library
+    const c_api_lib = b.addLibrary(.{
+        .name = "primitives_c",
+        .linkage = .static,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/c_api.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    c_api_lib.root_module.addImport("primitives", primitives_mod);
+    c_api_lib.root_module.addImport("crypto", crypto_mod);
+    c_api_lib.linkLibrary(c_kzg_lib);
+    c_api_lib.linkLibrary(blst_lib);
+    if (bn254_lib) |bn254| c_api_lib.linkLibrary(bn254);
+    if (keccak_lib) |keccak| c_api_lib.linkLibrary(keccak);
+    c_api_lib.linkLibC();
+
+    b.installArtifact(c_api_lib);
+
+    // C example executable
+    const c_example = b.addExecutable(.{
+        .name = "c_example",
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    c_example.addCSourceFile(.{
+        .file = b.path("examples/c/basic_usage.c"),
+    });
+    c_example.linkLibrary(c_api_lib);
+    c_example.linkLibC();
+
+    const install_c_example = b.addInstallArtifact(c_example, .{});
+
+    const run_c_example = b.addRunArtifact(c_example);
+    run_c_example.step.dependOn(&install_c_example.step);
+
+    const c_example_step = b.step("example-c", "Run the C API example");
+    c_example_step.dependOn(&run_c_example.step);
 }
