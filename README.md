@@ -37,7 +37,11 @@ zig build
 **Alternative:** Use zig fetch
 
 ```bash
-zig fetch --save https://github.com/evmts/primitives
+# Install specific version (recommended)
+zig fetch --save https://github.com/evmts/primitives/archive/refs/tags/v0.1.0.tar.gz
+
+# Install latest from main branch
+zig fetch --save git+https://github.com/evmts/primitives
 ```
 
 <br />
@@ -51,16 +55,18 @@ When using primitives in your Zig project, you need to import the modules and li
 1. **Add dependency to build.zig.zon**
    ```zig
    .dependencies = .{
-       .primitives = .{
-           .url = "https://github.com/evmts/primitives/archive/<commit-hash>.tar.gz",
-           .hash = "<hash>",
+       .guillotine_primitives = .{
+           .url = "https://github.com/evmts/primitives/archive/refs/tags/v0.1.0.tar.gz",
+           .hash = "1220d8e9c88e3e9e7e7c3f3b2b6a5a5b2b6a5a5b2b6a5a5b2b6a5a5b2b6a5a5",
        },
    },
    ```
 
+   Run `zig build` to automatically fetch and compute the correct hash, or use `zig fetch --save` as shown in the Installation section.
+
 2. **Import modules and link artifacts in build.zig**
    ```zig
-   const primitives_dep = b.dependency("primitives", .{
+   const primitives_dep = b.dependency("guillotine_primitives", .{
        .target = target,
        .optimize = optimize,
    });
