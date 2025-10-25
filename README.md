@@ -1,19 +1,22 @@
 <div align="center">
   <h1>
-    Ethereum primitives and cryptography for Zig.
+    Ethereum primitives and cryptography for Zig and TypeScript.
     <br/>
     <br/>
-    <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
+    <img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
   </h1>
   <sup>
     <a href="https://github.com/evmts/primitives">
        <img src="https://img.shields.io/badge/zig-0.15.1+-orange.svg" alt="zig version" />
     </a>
-    <a href="https://github.com/evmts/primitives/actions">
-      <img src="https://img.shields.io/badge/build-passing-brightgreen.svg" alt="build status" />
+    <a href="https://github.com/evmts/primitives/actions/workflows/ci.yml">
+      <img src="https://github.com/evmts/primitives/actions/workflows/ci.yml/badge.svg" alt="CI status" />
     </a>
-    <a href="https://github.com/evmts/primitives">
-      <img src="https://img.shields.io/badge/tests-passing-brightgreen.svg" alt="tests" />
+    <a href="https://www.npmjs.com/package/@tevm/primitives">
+      <img src="https://img.shields.io/npm/v/@tevm/primitives.svg" alt="npm version" />
+    </a>
+    <a href="https://github.com/evmts/primitives/blob/main/LICENSE">
+      <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License" />
     </a>
   </sup>
 </div>
@@ -170,12 +173,12 @@ const msgHash = hashMessage('Sign this message');
 **Primitives (Pure TypeScript)**
 - [`abi`](./src/primitives/abi.ts) - ABI encoding/decoding with full type support
 - [`numeric`](./src/primitives/numeric.ts) - Ether/Gwei/Wei conversions and unit parsing
-- [`bytecode`](./ts/src/primitives/bytecode.ts) - Jump destination analysis and bytecode validation
-- [`opcode`](./ts/src/primitives/opcode.ts) - EVM opcode utilities
-- [`gas`](./ts/src/primitives/gas.ts) - EIP-1559 fee calculations and gas cost utilities
-- [`hardfork`](./ts/src/primitives/hardfork.ts) - Ethereum hardfork enumeration
-- [`siwe`](./ts/src/primitives/siwe.ts) - Sign-In with Ethereum (EIP-4361)
-- [`logs`](./ts/src/primitives/logs.ts) - Event log parsing and filtering
+- [`bytecode`](./src/typescript/primitives/bytecode.ts) - Jump destination analysis and bytecode validation
+- [`opcode`](./src/typescript/primitives/opcode.ts) - EVM opcode utilities
+- [`gas`](./src/typescript/primitives/gas.ts) - EIP-1559 fee calculations and gas cost utilities
+- [`hardfork`](./src/typescript/primitives/hardfork.ts) - Ethereum hardfork enumeration
+- [`siwe`](./src/typescript/primitives/siwe.ts) - Sign-In with Ethereum (EIP-4361)
+- [`logs`](./src/typescript/primitives/logs.ts) - Event log parsing and filtering
 
 **Crypto (Bun FFI - calls native Zig implementation)**
 - [`keccak256`](./src/crypto/keccak.ts) - ✅ Keccak-256 hashing (fully implemented)
@@ -195,12 +198,12 @@ cd primitives
 zig build
 
 # The TypeScript module will automatically find the compiled library
-cd ts
+cd src
 bun install
 bun test
 ```
 
-For detailed TypeScript API documentation, see [`ts/README.md`](./ts/README.md).
+For detailed TypeScript API documentation, see [`src/README_TS.md`](./src/README_TS.md).
 
 <br />
 

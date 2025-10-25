@@ -7,7 +7,10 @@ import { dlopen, FFIType, suffix, ptr } from "bun:ffi";
 import { resolve } from "path";
 
 // Load the C library
-const libPath = resolve(import.meta.dir, `../../zig-out/lib/libprimitives_c.${suffix}`);
+const libPath = resolve(
+	import.meta.dir,
+	`../../zig-out/lib/libprimitives_c.${suffix}`,
+);
 
 // Define the C API
 const {

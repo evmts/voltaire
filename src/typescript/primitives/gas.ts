@@ -37,26 +37,32 @@ export const BASE_FEE_INITIAL = 1000000000; // 1 gwei
  * @returns Next block's base fee in wei
  */
 export function calculateNextBaseFee(
-  parentBaseFee: bigint,
-  parentGasUsed: bigint,
-  parentGasLimit: bigint
+	parentBaseFee: bigint,
+	parentGasUsed: bigint,
+	parentGasLimit: bigint,
 ): bigint {
-  const gasTarget = parentGasLimit / BigInt(ELASTICITY_MULTIPLIER);
+	const gasTarget = parentGasLimit / BigInt(ELASTICITY_MULTIPLIER);
 
-  if (parentGasUsed === gasTarget) {
-    return parentBaseFee;
-  }
+	if (parentGasUsed === gasTarget) {
+		return parentBaseFee;
+	}
 
-  if (parentGasUsed > gasTarget) {
-    const gasUsedDelta = parentGasUsed - gasTarget;
-    const baseFeePerGasDelta = (parentBaseFee * gasUsedDelta) / gasTarget / BigInt(BASE_FEE_MAX_CHANGE_DENOMINATOR);
-    return parentBaseFee + (baseFeePerGasDelta > 0n ? baseFeePerGasDelta : 1n);
-  }
+	if (parentGasUsed > gasTarget) {
+		const gasUsedDelta = parentGasUsed - gasTarget;
+		const baseFeePerGasDelta =
+			(parentBaseFee * gasUsedDelta) /
+			gasTarget /
+			BigInt(BASE_FEE_MAX_CHANGE_DENOMINATOR);
+		return parentBaseFee + (baseFeePerGasDelta > 0n ? baseFeePerGasDelta : 1n);
+	}
 
-  const gasUsedDelta = gasTarget - parentGasUsed;
-  const baseFeePerGasDelta = (parentBaseFee * gasUsedDelta) / gasTarget / BigInt(BASE_FEE_MAX_CHANGE_DENOMINATOR);
-  const newBaseFee = parentBaseFee - baseFeePerGasDelta;
-  return newBaseFee > 0n ? newBaseFee : 0n;
+	const gasUsedDelta = gasTarget - parentGasUsed;
+	const baseFeePerGasDelta =
+		(parentBaseFee * gasUsedDelta) /
+		gasTarget /
+		BigInt(BASE_FEE_MAX_CHANGE_DENOMINATOR);
+	const newBaseFee = parentBaseFee - baseFeePerGasDelta;
+	return newBaseFee > 0n ? newBaseFee : 0n;
 }
 
 /**
@@ -67,12 +73,14 @@ export function calculateNextBaseFee(
  * @returns Actual priority fee per gas
  */
 export function calculatePriorityFee(
-  maxFeePerGas: bigint,
-  baseFee: bigint,
-  maxPriorityFeePerGas: bigint
+	maxFeePerGas: bigint,
+	baseFee: bigint,
+	maxPriorityFeePerGas: bigint,
 ): bigint {
-  const maxPriorityFee = maxFeePerGas - baseFee;
-  return maxPriorityFee < maxPriorityFeePerGas ? maxPriorityFee : maxPriorityFeePerGas;
+	const maxPriorityFee = maxFeePerGas - baseFee;
+	return maxPriorityFee < maxPriorityFeePerGas
+		? maxPriorityFee
+		: maxPriorityFeePerGas;
 }
 
 /**
@@ -83,12 +91,16 @@ export function calculatePriorityFee(
  * @returns Effective gas price
  */
 export function calculateEffectiveGasPrice(
-  baseFee: bigint,
-  maxFeePerGas: bigint,
-  maxPriorityFeePerGas: bigint
+	baseFee: bigint,
+	maxFeePerGas: bigint,
+	maxPriorityFeePerGas: bigint,
 ): bigint {
-  const priorityFee = calculatePriorityFee(maxFeePerGas, baseFee, maxPriorityFeePerGas);
-  return baseFee + priorityFee;
+	const priorityFee = calculatePriorityFee(
+		maxFeePerGas,
+		baseFee,
+		maxPriorityFeePerGas,
+	);
+	return baseFee + priorityFee;
 }
 
 /**
@@ -97,17 +109,17 @@ export function calculateEffectiveGasPrice(
  * @returns Intrinsic gas cost
  */
 export function calculateIntrinsicGas(data: Uint8Array): bigint {
-  let cost = BigInt(TX_BASE_COST);
+	let cost = BigInt(TX_BASE_COST);
 
-  for (const byte of data) {
-    if (byte === 0) {
-      cost += BigInt(TX_DATA_ZERO_COST);
-    } else {
-      cost += BigInt(TX_DATA_NONZERO_COST);
-    }
-  }
+	for (const byte of data) {
+		if (byte === 0) {
+			cost += BigInt(TX_DATA_ZERO_COST);
+		} else {
+			cost += BigInt(TX_DATA_NONZERO_COST);
+		}
+	}
 
-  return cost;
+	return cost;
 }
 
 /**
@@ -116,16 +128,23 @@ export function calculateIntrinsicGas(data: Uint8Array): bigint {
  * @param currentSize - Current memory size in bytes
  * @returns Gas cost for memory expansion
  */
-export function calculateMemoryGasCost(newSize: bigint, currentSize: bigint): bigint {
-  if (newSize <= currentSize) {
-    return 0n;
-  }
+export function calculateMemoryGasCost(
+	newSize: bigint,
+	currentSize: bigint,
+): bigint {
+	if (newSize <= currentSize) {
+		return 0n;
+	}
 
-  const newWords = (newSize + 31n) / 32n;
-  const currentWords = (currentSize + 31n) / 32n;
+	const newWords = (newSize + 31n) / 32n;
+	const currentWords = (currentSize + 31n) / 32n;
 
-  const newCost = (BigInt(MEMORY_COST) * newWords) + (newWords * newWords / BigInt(MEMORY_QUADRATIC_COEFF));
-  const currentCost = (BigInt(MEMORY_COST) * currentWords) + (currentWords * currentWords / BigInt(MEMORY_QUADRATIC_COEFF));
+	const newCost =
+		BigInt(MEMORY_COST) * newWords +
+		(newWords * newWords) / BigInt(MEMORY_QUADRATIC_COEFF);
+	const currentCost =
+		BigInt(MEMORY_COST) * currentWords +
+		(currentWords * currentWords) / BigInt(MEMORY_QUADRATIC_COEFF);
 
-  return newCost - currentCost;
+	return newCost - currentCost;
 }

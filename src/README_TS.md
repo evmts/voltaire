@@ -5,7 +5,7 @@ TypeScript wrapper for EVM primitives and standards, providing a clean API for w
 ## Installation
 
 ```bash
-cd /Users/williamcory/primitives/ts
+cd /Users/williamcory/primitives/src
 bun install
 ```
 
@@ -136,23 +136,33 @@ For production use with actual cryptographic operations, these modules should be
 ## Directory Structure
 
 ```
-ts/
-├── package.json
-├── tsconfig.json
-├── README.md
-├── src/
+src/
+├── package.json              # TypeScript package config
+├── tsconfig.json             # TypeScript compiler config
+├── README_TS.md              # This file
+├── core/                     # Core runtime loaders
+│   ├── runtime.ts            # Runtime detection
+│   ├── loader-wasm.ts        # WASM loader
+│   ├── loader-native.ts      # Native FFI loader
+│   ├── memory.ts             # Memory management
+│   └── error.ts              # Error handling
+├── types/                    # TypeScript type definitions
+│   └── index.ts
+├── typescript/               # TypeScript implementations
 │   ├── utils/
-│   │   └── hex.ts           # Hex conversion utilities
+│   │   └── hex.ts            # Hex conversion utilities
 │   ├── primitives/
-│   │   ├── bytecode.ts      # Bytecode analysis
+│   │   ├── bytecode.ts       # Bytecode analysis
 │   │   ├── bytecode.test.ts
-│   │   ├── opcode.ts        # Opcode enumeration
-│   │   ├── gas.ts           # Gas calculations
-│   │   ├── hardfork.ts      # Hardfork versions
-│   │   ├── siwe.ts          # Sign-In with Ethereum
-│   │   └── logs.ts          # Event logs
+│   │   ├── opcode.ts         # Opcode enumeration
+│   │   ├── gas.ts            # Gas calculations
+│   │   ├── hardfork.ts       # Hardfork versions
+│   │   ├── siwe.ts           # Sign-In with Ethereum
+│   │   └── logs.ts           # Event logs
 │   └── precompiles/
-│       └── index.ts         # All 19 precompiles
+│       └── index.ts          # All 19 precompiles
+├── primitives/               # Zig primitives (colocated)
+└── crypto/                   # Zig crypto (colocated)
 ```
 
 ## Testing Approach

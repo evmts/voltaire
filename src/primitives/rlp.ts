@@ -51,7 +51,7 @@ export type RlpInput = string | number | bigint | Uint8Array | RlpInput[];
 export type RlpDecoded = Uint8Array | RlpDecoded[];
 
 /**
- * Helper: Convert input to bytes
+ * Helper: Convert input to raw bytes (not RLP encoded)
  */
 function toBytes(data: RlpInput): Uint8Array {
 	if (data instanceof Uint8Array) {
@@ -61,7 +61,18 @@ function toBytes(data: RlpInput): Uint8Array {
 		return new TextEncoder().encode(data);
 	}
 	if (typeof data === "number" || typeof data === "bigint") {
-		return encodeUint(data);
+		// Convert to raw bytes (NOT RLP encoded)
+		const n = typeof data === "bigint" ? data : BigInt(data);
+		if (n === 0n) {
+			return new Uint8Array(0);
+		}
+		const bytes: number[] = [];
+		let remaining = n;
+		while (remaining > 0n) {
+			bytes.unshift(Number(remaining & 0xffn));
+			remaining = remaining >> 8n;
+		}
+		return new Uint8Array(bytes);
 	}
 	if (Array.isArray(data)) {
 		return encodeList(data);

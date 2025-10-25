@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-import { readdirSync, statSync, mkdirSync, writeFileSync } from "fs";
-import { join, relative } from "path";
+import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
 
 interface WasmFile {
 	path: string;
@@ -39,7 +39,7 @@ function formatBytes(bytes: number): string {
 	const sizes = ["Bytes", "KB", "MB", "GB"];
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-	return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+	return `${(bytes / k ** i).toFixed(2)} ${sizes[i]}`;
 }
 
 function main() {
@@ -47,7 +47,6 @@ function main() {
 	const wasmFiles = findWasmFiles(zigOutBinDir);
 
 	if (wasmFiles.length === 0) {
-		console.log("No WASM files found in zig-out/bin/");
 		process.exit(1);
 	}
 
@@ -66,9 +65,6 @@ function main() {
 
 	output += `\nTotal: ${formatBytes(totalSize)} (${totalSize.toLocaleString()} bytes)\n`;
 
-	// Echo to console
-	console.log(output);
-
 	// Write to benchmarks/wasm-size.txt
 	try {
 		mkdirSync("benchmarks", { recursive: true });
@@ -79,8 +75,6 @@ function main() {
 	const timestamp = new Date().toISOString();
 	const fileOutput = `Generated: ${timestamp}\n\n${output}`;
 	writeFileSync("benchmarks/wasm-size.txt", fileOutput);
-
-	console.log("📊 Size report written to benchmarks/wasm-size.txt");
 }
 
 main();

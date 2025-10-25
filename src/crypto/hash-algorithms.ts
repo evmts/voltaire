@@ -9,7 +9,7 @@
  * @returns 32-byte hash as hex string with 0x prefix
  */
 export function sha256(data: Uint8Array | string): string {
-  throw new Error("not implemented - requires C API binding");
+	throw new Error("not implemented - requires C API binding");
 }
 
 /**
@@ -18,7 +18,7 @@ export function sha256(data: Uint8Array | string): string {
  * @returns 20-byte hash as hex string with 0x prefix
  */
 export function ripemd160(data: Uint8Array | string): string {
-  throw new Error("not implemented - requires C API binding");
+	throw new Error("not implemented - requires C API binding");
 }
 
 /**
@@ -27,5 +27,5 @@ export function ripemd160(data: Uint8Array | string): string {
  * @returns 64-byte hash as hex string with 0x prefix
  */
 export function blake2b(data: Uint8Array | string): string {
-  throw new Error("not implemented - requires C API binding");
+	throw new Error("not implemented - requires C API binding");
 }

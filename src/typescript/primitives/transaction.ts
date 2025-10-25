@@ -7,8 +7,15 @@
  * - EIP-7702 (Type 4)
  */
 
-import { encodeRlp, toHex, decodeRlp, fromHex, type RlpInput, type RlpDecoded } from "./rlp";
 import { keccak256, keccak256Hex } from "./keccak";
+import {
+	type RlpDecoded,
+	type RlpInput,
+	decodeRlp,
+	encodeRlp,
+	fromHex,
+	toHex,
+} from "./rlp";
 
 // Transaction Types
 export type TransactionType = "legacy" | "eip1559" | "eip7702";
@@ -203,10 +210,7 @@ export function serializeEip7702(tx: Eip7702Transaction): string {
  * Encode access list to RLP format
  */
 function encodeAccessListRlp(accessList: AccessList): RlpInput {
-	return accessList.map((item) => [
-		item.address,
-		item.storageKeys,
-	]);
+	return accessList.map((item) => [item.address, item.storageKeys]);
 }
 
 /**
@@ -262,7 +266,10 @@ function parseLegacyTransaction(data: Uint8Array): LegacyTransaction {
 		nonce: bytesToBigInt(decoded[0] as Uint8Array),
 		gasPrice: bytesToBigInt(decoded[1] as Uint8Array),
 		gasLimit: bytesToBigInt(decoded[2] as Uint8Array),
-		to: decoded[3] && (decoded[3] as Uint8Array).length > 0 ? toHex(decoded[3] as Uint8Array) : undefined,
+		to:
+			decoded[3] && (decoded[3] as Uint8Array).length > 0
+				? toHex(decoded[3] as Uint8Array)
+				: undefined,
 		value: bytesToBigInt(decoded[4] as Uint8Array),
 		data: toHex(decoded[5] as Uint8Array),
 		v: bytesToBigInt(decoded[6] as Uint8Array),
@@ -287,13 +294,22 @@ function parseEip1559Transaction(data: Uint8Array): Eip1559Transaction {
 		maxPriorityFeePerGas: bytesToBigInt(decoded[2] as Uint8Array),
 		maxFeePerGas: bytesToBigInt(decoded[3] as Uint8Array),
 		gasLimit: bytesToBigInt(decoded[4] as Uint8Array),
-		to: decoded[5] && (decoded[5] as Uint8Array).length > 0 ? toHex(decoded[5] as Uint8Array) : undefined,
+		to:
+			decoded[5] && (decoded[5] as Uint8Array).length > 0
+				? toHex(decoded[5] as Uint8Array)
+				: undefined,
 		value: bytesToBigInt(decoded[6] as Uint8Array),
 		data: toHex(decoded[7] as Uint8Array),
 		accessList: decodeAccessList(decoded[8] as RlpDecoded[]),
 		v: decoded.length > 9 ? bytesToBigInt(decoded[9] as Uint8Array) : 0n,
-		r: decoded.length > 10 ? toHex(decoded[10] as Uint8Array) : "0x0000000000000000000000000000000000000000000000000000000000000000",
-		s: decoded.length > 11 ? toHex(decoded[11] as Uint8Array) : "0x0000000000000000000000000000000000000000000000000000000000000000",
+		r:
+			decoded.length > 10
+				? toHex(decoded[10] as Uint8Array)
+				: "0x0000000000000000000000000000000000000000000000000000000000000000",
+		s:
+			decoded.length > 11
+				? toHex(decoded[11] as Uint8Array)
+				: "0x0000000000000000000000000000000000000000000000000000000000000000",
 	};
 }
 
@@ -313,14 +329,23 @@ function parseEip7702Transaction(data: Uint8Array): Eip7702Transaction {
 		maxPriorityFeePerGas: bytesToBigInt(decoded[2] as Uint8Array),
 		maxFeePerGas: bytesToBigInt(decoded[3] as Uint8Array),
 		gasLimit: bytesToBigInt(decoded[4] as Uint8Array),
-		to: decoded[5] && (decoded[5] as Uint8Array).length > 0 ? toHex(decoded[5] as Uint8Array) : undefined,
+		to:
+			decoded[5] && (decoded[5] as Uint8Array).length > 0
+				? toHex(decoded[5] as Uint8Array)
+				: undefined,
 		value: bytesToBigInt(decoded[6] as Uint8Array),
 		data: toHex(decoded[7] as Uint8Array),
 		accessList: decodeAccessList(decoded[8] as RlpDecoded[]),
 		authorizationList: decodeAuthorizationList(decoded[9] as RlpDecoded[]),
 		v: decoded.length > 10 ? bytesToBigInt(decoded[10] as Uint8Array) : 0n,
-		r: decoded.length > 11 ? toHex(decoded[11] as Uint8Array) : "0x0000000000000000000000000000000000000000000000000000000000000000",
-		s: decoded.length > 12 ? toHex(decoded[12] as Uint8Array) : "0x0000000000000000000000000000000000000000000000000000000000000000",
+		r:
+			decoded.length > 11
+				? toHex(decoded[11] as Uint8Array)
+				: "0x0000000000000000000000000000000000000000000000000000000000000000",
+		s:
+			decoded.length > 12
+				? toHex(decoded[12] as Uint8Array)
+				: "0x0000000000000000000000000000000000000000000000000000000000000000",
 	};
 }
 
@@ -339,7 +364,9 @@ function decodeAccessList(data: RlpDecoded[]): AccessList {
 
 		return {
 			address: toHex(item[0] as Uint8Array),
-			storageKeys: (item[1] as RlpDecoded[]).map((key) => toHex(key as Uint8Array)),
+			storageKeys: (item[1] as RlpDecoded[]).map((key) =>
+				toHex(key as Uint8Array),
+			),
 		};
 	});
 }

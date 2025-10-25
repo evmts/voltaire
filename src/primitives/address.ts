@@ -7,6 +7,7 @@
 
 import { hexToBytes, bytesToHex } from "./hex.ts";
 import { keccak256 } from "./keccak.ts";
+import { encode as rlpEncode } from "./rlp.ts";
 
 /**
  * Ethereum address (20 bytes)
@@ -163,7 +164,7 @@ export function calculateCreateAddress(
 	nonce: bigint,
 ): Address {
 	// RLP encode [sender_address, nonce]
-	const rlpEncoded = encodeRlpList(sender.bytes, nonce);
+	const rlpEncoded = rlpEncode([sender.bytes, nonce]);
 
 	// Hash and take last 20 bytes
 	const hash = keccak256(rlpEncoded);
@@ -202,57 +203,3 @@ export function calculateCreate2Address(
  * Zero address constant
  */
 export const ZERO_ADDRESS = new Address(new Uint8Array(20));
-
-// Helper: Simple RLP encoding for [address, nonce]
-function encodeRlpList(address: Uint8Array, nonce: bigint): Uint8Array {
-	// Encode nonce as minimal big-endian bytes (strip leading zeros)
-	let nonceBytes: Uint8Array;
-	if (nonce === 0n) {
-		// For nonce 0, use empty bytes
-		nonceBytes = new Uint8Array([]);
-	} else {
-		const hex = nonce.toString(16);
-		const padded = hex.length % 2 === 0 ? hex : "0" + hex;
-		nonceBytes = new Uint8Array(
-			padded.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
-		);
-	}
-
-	// RLP encode both items
-	const addressRlp = new Uint8Array([0x80 + 20, ...address]); // Address is always 20 bytes
-	const nonceRlp = encodeRlpItem(nonceBytes);
-
-	const listLength = addressRlp.length + nonceRlp.length;
-	const prefix = new Uint8Array([0xc0 + listLength]);
-
-	return new Uint8Array([...prefix, ...addressRlp, ...nonceRlp]);
-}
-
-function encodeRlpItem(bytes: Uint8Array): Uint8Array {
-	// Empty bytes
-	if (bytes.length === 0) {
-		return new Uint8Array([0x80]);
-	}
-
-	// Single byte < 0x80
-	if (bytes.length === 1 && bytes[0]! < 0x80) {
-		return bytes;
-	}
-
-	// Short string (< 56 bytes)
-	if (bytes.length < 56) {
-		return new Uint8Array([0x80 + bytes.length, ...bytes]);
-	}
-
-	// Long string (>= 56 bytes)
-	const lengthBytes = toBigEndian(bytes.length);
-	return new Uint8Array([0xb7 + lengthBytes.length, ...lengthBytes, ...bytes]);
-}
-
-function toBigEndian(value: number): Uint8Array {
-	const hex = value.toString(16);
-	const padded = hex.length % 2 === 0 ? hex : "0" + hex;
-	return new Uint8Array(
-		padded.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
-	);
-}

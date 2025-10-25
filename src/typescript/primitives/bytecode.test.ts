@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
 	analyzeJumpDestinations,
-	validateBytecode,
 	isBytecodeBoundary,
 	isValidJumpDest,
+	validateBytecode,
 } from "./bytecode";
 
 describe("bytecode", () => {
