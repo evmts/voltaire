@@ -315,6 +315,27 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(c_api_lib);
 
+    // C API shared library for FFI (TypeScript/Bun)
+    const c_api_shared = b.addLibrary(.{
+        .name = "primitives_c",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/c_api.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    c_api_shared.root_module.addImport("primitives", primitives_mod);
+    c_api_shared.root_module.addImport("crypto", crypto_mod);
+    c_api_shared.linkLibrary(c_kzg_lib);
+    c_api_shared.linkLibrary(blst_lib);
+    c_api_shared.addObjectFile(rust_crypto_lib_path);
+    c_api_shared.addIncludePath(b.path("lib")); // For Rust FFI headers
+    c_api_shared.step.dependOn(cargo_build_step);
+    c_api_shared.linkLibC();
+
+    b.installArtifact(c_api_shared);
+
     // Install C API header for external consumers
     b.installFile("src/primitives.h", "include/primitives.h");
 
@@ -341,26 +362,9 @@ pub fn build(b: *std.Build) void {
     const c_example_step = b.step("example-c", "Run the C API example");
     c_example_step.dependOn(&run_c_example.step);
 
-    // WASM library for TypeScript bindings
-    const wasm_lib = b.addLibrary(.{
-        .name = "primitives_wasm",
-        .linkage = .dynamic,
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/c_api.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-    wasm_lib.root_module.addImport("primitives", primitives_mod);
-    wasm_lib.root_module.addImport("crypto", crypto_mod);
-    wasm_lib.linkLibrary(c_kzg_lib);
-    wasm_lib.linkLibrary(blst_lib);
-    wasm_lib.addObjectFile(rust_crypto_lib_path);
-    wasm_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
-    wasm_lib.step.dependOn(cargo_build_step);
-    wasm_lib.linkLibC();
-
-    b.installArtifact(wasm_lib);
+    // NOTE: WASM library target removed due to incompatibility with Rust/C dependencies
+    // Individual benchmark executables can still be built for WASM with pure Zig code
+    // For TypeScript bindings, use the native C library (libprimitives_c) with FFI
 
     // Benchmark executables for WASM size and performance measurement
     const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";
