@@ -315,6 +315,9 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(c_api_lib);
 
+    // Install C API header for external consumers
+    b.installFile("src/primitives.h", "include/primitives.h");
+
     // C example executable
     const c_example = b.addExecutable(.{
         .name = "c_example",
@@ -326,6 +329,7 @@ pub fn build(b: *std.Build) void {
     c_example.addCSourceFile(.{
         .file = b.path("examples/c/basic_usage.c"),
     });
+    c_example.addIncludePath(b.path("src")); // For primitives.h
     c_example.linkLibrary(c_api_lib);
     c_example.linkLibC();
 
