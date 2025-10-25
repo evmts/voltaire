@@ -108,7 +108,17 @@ function isDynamicType(type: string): boolean {
 function encodeValue(type: string, value: AbiValue): Uint8Array {
   // Handle numeric types
   if (type.startsWith('uint') || type.startsWith('int')) {
-    const num = typeof value === 'bigint' ? value : BigInt(value as number);
+    let num: bigint;
+    if (typeof value === 'bigint') {
+      num = value;
+    } else if (typeof value === 'number') {
+      num = BigInt(value);
+    } else if (Array.isArray(value)) {
+      // Array values should not reach here, but handle safely
+      throw new AbiError('Cannot encode array as numeric type');
+    } else {
+      num = BigInt(value as number);
+    }
     return encodeBigInt(num);
   }
 
