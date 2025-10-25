@@ -1,4 +1,9 @@
+// Use assembly-optimized version for native targets, portable for WASM
+#[cfg(feature = "asm")]
 use keccak_asm::{Digest, Keccak256};
+
+#[cfg(feature = "portable")]
+use tiny_keccak::{Hasher, Keccak};
 
 /// Result codes for Keccak operations
 #[repr(C)]
@@ -34,11 +39,20 @@ pub unsafe extern "C" fn keccak256(
     let input_slice = std::slice::from_raw_parts(input, input_len);
     let output_slice = std::slice::from_raw_parts_mut(output, 32);
 
-    let mut hasher = Keccak256::new();
-    hasher.update(input_slice);
-    let result = hasher.finalize();
+    #[cfg(feature = "asm")]
+    {
+        let mut hasher = Keccak256::new();
+        hasher.update(input_slice);
+        let result = hasher.finalize();
+        output_slice.copy_from_slice(&result);
+    }
 
-    output_slice.copy_from_slice(&result);
+    #[cfg(feature = "portable")]
+    {
+        let mut hasher = Keccak::v256();
+        hasher.update(input_slice);
+        hasher.finalize(output_slice);
+    }
 
     KeccakResult::Success
 }
@@ -76,11 +90,20 @@ pub unsafe extern "C" fn keccak256_batch(
         let input = std::slice::from_raw_parts(inputs_slice[i], lens_slice[i]);
         let output = std::slice::from_raw_parts_mut(outputs_slice[i], 32);
 
-        let mut hasher = Keccak256::new();
-        hasher.update(input);
-        let result = hasher.finalize();
+        #[cfg(feature = "asm")]
+        {
+            let mut hasher = Keccak256::new();
+            hasher.update(input);
+            let result = hasher.finalize();
+            output.copy_from_slice(&result);
+        }
 
-        output.copy_from_slice(&result);
+        #[cfg(feature = "portable")]
+        {
+            let mut hasher = Keccak::v256();
+            hasher.update(input);
+            hasher.finalize(output);
+        }
     }
 
     KeccakResult::Success
