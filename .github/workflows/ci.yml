@@ -28,7 +28,6 @@ jobs:
             ~/.cargo/bin/
             ~/.cargo/registry
             ~/.cargo/git
-            target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
@@ -52,7 +51,6 @@ jobs:
             ~/.cargo/bin/
             ~/.cargo/registry
             ~/.cargo/git
-            target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Build keccak256 example
         run: zig build example-keccak256
