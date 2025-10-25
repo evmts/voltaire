@@ -30,4 +30,5 @@ pub fn main() !void {
 
     const result = try precompiles.point_evaluation.execute(allocator, &input, 1000000);
     defer result.deinit(allocator);
+    _ = &result;
 }

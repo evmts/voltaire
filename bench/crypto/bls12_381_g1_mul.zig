@@ -21,4 +21,5 @@ pub fn main() !void {
 
     var output: [64]u8 = undefined;
     try crypto.Crypto.bls12_381.g1_mul(&input, &output);
+    _ = &output;
 }
