@@ -2,8 +2,8 @@
 	"name": "@tevm/primitives",
 	"version": "0.0.1",
 	"private": false,
-	"description": "Ethereum primitives library with WASM and native bindings",
-	"keywords": ["ethereum", "primitives", "wasm", "crypto"],
+	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
+	"keywords": ["ethereum", "primitives", "crypto", "zig", "bun", "ffi", "abi", "keccak", "eip191"],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/evmts/primitives.git"
