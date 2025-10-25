@@ -209,11 +209,26 @@ For detailed TypeScript API documentation, see [`src/README_TS.md`](./src/README
 
 ## Documentation
 
-[`examples/`](./examples/) — Example code and usage
+### Getting Started
+- [`WASM_SUPPORT.md`](./WASM_SUPPORT.md) — WebAssembly build guide and feature parity
+- [`WASM-QUICK-START.md`](./WASM-QUICK-START.md) — Quick start for WASM deployment
+- [`examples/`](./examples/) — Example code and usage patterns
 
-[`docs/`](./docs/) — ⚠️ AI-generated, unverified
+### TypeScript/JavaScript
+- [`TYPESCRIPT_API.md`](./TYPESCRIPT_API.md) — Complete TypeScript API reference
+- [`PACKAGE_README.md`](./PACKAGE_README.md) — npm package documentation
+- [`examples/typescript/`](./examples/typescript/) — TypeScript usage examples
 
-[`LLMS.txt`](./LLMS.txt) — For LLMs
+### Development
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — Contribution guidelines
+- [`CLAUDE.md`](./CLAUDE.md) — Coding standards and development protocols
+- [`CI_CD_SETUP.md`](./CI_CD_SETUP.md) — CI/CD infrastructure documentation
+- [`RELEASE.md`](./RELEASE.md) — Release process guide
+
+### Reference
+- [`CHANGELOG.md`](./CHANGELOG.md) — Version history
+- [`docs/`](./docs/) — ⚠️ AI-generated, unverified
+- [`LLMS.txt`](./LLMS.txt) — For LLMs
 
 ## API
 
