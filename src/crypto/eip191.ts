@@ -25,13 +25,21 @@ const {
 	},
 });
 
+export type Hex = `0x${string}`;
+export type Address = `0x${string}`;
+export type Signature = {
+	r: Hex;
+	s: Hex;
+	v: number;
+};
+
 /**
  * Hash a message using EIP-191 personal message format
  * Format: "\x19Ethereum Signed Message:\n" + len(message) + message
  * @param message - Message to hash (string or Uint8Array)
  * @returns 32-byte hash as hex string with 0x prefix
  */
-export function hashMessage(message: string | Uint8Array): string {
+export function hashMessage(message: string | Uint8Array): Hex {
 	// Convert string to bytes
 	const bytes =
 		typeof message === "string" ? new TextEncoder().encode(message) : message;
@@ -61,5 +69,58 @@ export function hashMessage(message: string | Uint8Array): string {
 	}
 
 	// Convert buffer to string
-	return new TextDecoder().decode(hexBuffer);
+	return new TextDecoder().decode(hexBuffer) as Hex;
+}
+
+/**
+ * Sign a message using EIP-191 personal message format
+ * NOTE: This is a stub implementation that requires proper secp256k1 signing
+ * to be exposed via the C API. For now, it throws an error.
+ * @param message - Message to sign
+ * @param privateKey - Private key as hex string (0x-prefixed)
+ * @returns Signature object with r, s, v components
+ */
+export function signMessage(
+	message: string | Uint8Array,
+	privateKey: Hex,
+): Signature {
+	throw new Error(
+		"signMessage not yet implemented - requires secp256k1 C API bindings",
+	);
+}
+
+/**
+ * Verify a signature against a message and address
+ * NOTE: This is a stub implementation that requires proper signature recovery
+ * to be exposed via the C API. For now, it throws an error.
+ * @param message - Original message that was signed
+ * @param signature - Signature object or compact hex string
+ * @param address - Expected signer address
+ * @returns true if signature is valid, false otherwise
+ */
+export function verifyMessage(
+	message: string | Uint8Array,
+	signature: Signature | Hex,
+	address: Address,
+): boolean {
+	throw new Error(
+		"verifyMessage not yet implemented - requires secp256k1 C API bindings",
+	);
+}
+
+/**
+ * Recover the address that signed a message
+ * NOTE: This is a stub implementation that requires proper signature recovery
+ * to be exposed via the C API. For now, it throws an error.
+ * @param message - Original message that was signed
+ * @param signature - Signature object or compact hex string
+ * @returns Recovered Ethereum address
+ */
+export function recoverMessageAddress(
+	message: string | Uint8Array,
+	signature: Signature | Hex,
+): Address {
+	throw new Error(
+		"recoverMessageAddress not yet implemented - requires secp256k1 C API bindings",
+	);
 }
