@@ -30,7 +30,7 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-v2-${{ hashFiles('**/Cargo.lock') }}
       - name: Clean Zig cache
-        run: rm -rf .zig-cache zig-out
+        run: rm -rf .zig-cache zig-out ~/.cache/zig
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
       - name: Test
@@ -55,7 +55,7 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-v2-${{ hashFiles('**/Cargo.lock') }}
       - name: Clean Zig cache
-        run: rm -rf .zig-cache zig-out
+        run: rm -rf .zig-cache zig-out ~/.cache/zig
       - name: Build keccak256 example
         run: zig build example-keccak256
       - name: Build ABI example
