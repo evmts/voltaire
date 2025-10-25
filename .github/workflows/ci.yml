@@ -26,6 +26,16 @@ jobs:
           version: 0.15.1
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
+      - name: Debug - List target directory (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "=== Listing target directory structure ==="
+          find target -name "*.a" -o -name "*.lib" | head -20 || true
+          echo "=== Listing target/release ==="
+          ls -la target/release/ || echo "target/release/ does not exist"
+          echo "=== Listing target subdirectories ==="
+          ls -la target/ || true
       - name: Test
         run: zig build test -Doptimize=${{ matrix.optimize }}
 
