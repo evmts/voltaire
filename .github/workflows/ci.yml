@@ -37,13 +37,17 @@ jobs:
       - name: Debug - Check library format
         shell: bash
         run: |
-          echo "Checking target directory structure:"
-          ls -la target/ || true
-          ls -la target/debug/ || true
           echo "Checking libcrypto_wrappers.a format:"
           file target/debug/libcrypto_wrappers.a || true
-          echo "First bytes of libcrypto_wrappers.a:"
-          hexdump -C target/debug/libcrypto_wrappers.a | head -5 || true
+          echo "Listing object files in archive:"
+          ar t target/debug/libcrypto_wrappers.a | head -10 || true
+          echo "Extracting first object file and checking its format:"
+          mkdir -p /tmp/ar_extract
+          cd /tmp/ar_extract
+          ar x /home/runner/work/primitives/primitives/target/debug/libcrypto_wrappers.a $(ar t /home/runner/work/primitives/primitives/target/debug/libcrypto_wrappers.a | head -1) || true
+          file * || true
+          echo "First object file hex dump:"
+          hexdump -C $(ls | head -1) | head -3 || true
       - name: Test
         run: zig build test -Doptimize=${{ matrix.optimize }}
 
