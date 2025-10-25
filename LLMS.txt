@@ -247,6 +247,273 @@ const recovered = try Eip712.unaudited_recoverTypedDataAddress(allocator, &typed
 
 ---
 
+## TypeScript/JavaScript API
+
+<ts_overview>
+The library provides TypeScript bindings in two forms:
+1. **Pure TypeScript** (no dependencies) - primitives, ABI, numeric, bytecode, opcodes, gas, logs
+2. **Bun FFI wrappers** (requires native lib) - Keccak-256, EIP-191
+
+Install: `npm install @tevm/primitives` or `bun add @tevm/primitives`
+</ts_overview>
+
+### ABI Encoding/Decoding (Pure TypeScript)
+
+```typescript
+import {
+  encodeAbiParameters,
+  decodeAbiParameters,
+  encodeFunctionData,
+  decodeFunctionData,
+  encodeEventTopics,
+  encodePacked,
+  computeSelector,
+  uint256Value,
+  addressValue,
+  bytesValue
+} from '@tevm/primitives';
+
+// Basic encoding
+const encoded = encodeAbiParameters(
+  [{ type: 'address' }, { type: 'uint256' }],
+  ['0xa0Ee7A142d267C1f36714E4a8F75612F20a79720', 1000000000000000000n]
+);
+
+// Decoding
+const [address, amount] = decodeAbiParameters(
+  [{ type: 'address' }, { type: 'uint256' }],
+  encoded
+);
+
+// Function data
+const calldata = encodeFunctionData(
+  'transfer(address,uint256)',
+  [{ type: 'address' }, { type: 'uint256' }],
+  ['0x1234...', 1000n]
+);
+
+const { selector, parameters } = decodeFunctionData(
+  [{ type: 'address' }, { type: 'uint256' }],
+  calldata
+);
+
+// Event topics
+const topics = encodeEventTopics(
+  'Transfer(address,address,uint256)',
+  [{ type: 'address', indexed: true }, { type: 'address', indexed: true }, { type: 'uint256' }],
+  ['0xfrom...', '0xto...', null]  // null = not indexed
+);
+
+// Packed encoding (for keccak256)
+const packed = encodePacked(
+  [{ type: 'address' }, { type: 'uint256' }],
+  ['0x1234...', 42n]
+);
+
+// Compute function selector
+const selector = computeSelector('transfer(address,uint256)');  // 0xa9059cbb
+
+// Type-safe value helpers
+const params = [
+  addressValue('0x1234...'),
+  uint256Value(1000n),
+  bytesValue(new Uint8Array([1, 2, 3]))
+];
+```
+
+### Numeric Conversions (Pure TypeScript)
+
+```typescript
+import {
+  parseEther,
+  formatEther,
+  parseGwei,
+  formatGwei,
+  parseUnits,
+  formatUnits,
+  gweiToWei,
+  weiToGwei,
+  etherToWei,
+  weiToEther
+} from '@tevm/primitives';
+
+// Parse string to wei
+const oneEth = parseEther('1.0');  // 1000000000000000000n
+const gasPrice = parseGwei('20');  // 20000000000n
+const custom = parseUnits('1.5', 6);  // 1500000n (6 decimals)
+
+// Format wei to string
+const ethStr = formatEther(1000000000000000000n);  // "1.0"
+const gweiStr = formatGwei(20000000000n);  // "20"
+const customStr = formatUnits(1500000n, 6);  // "1.5"
+
+// Direct conversions
+const wei1 = gweiToWei(20n);  // 20000000000n
+const gwei1 = weiToGwei(20000000000n);  // 20n
+const wei2 = etherToWei(1n);  // 1000000000000000000n
+const eth1 = weiToEther(1000000000000000000n);  // 1n
+```
+
+### Keccak-256 (Bun FFI - Requires Native Lib)
+
+```typescript
+import { keccak256, keccak256Empty } from '@tevm/primitives';
+
+// Hash string or Uint8Array
+const hash1 = keccak256('hello world');
+const hash2 = keccak256(new Uint8Array([1, 2, 3]));
+
+// Pre-computed empty hash constant
+const emptyHash = keccak256Empty;  // Hash of empty input
+
+// Returns Uint8Array (32 bytes)
+```
+
+### EIP-191 Personal Message (Bun FFI - Requires Native Lib)
+
+```typescript
+import { hashMessage } from '@tevm/primitives';
+
+// Hash message with EIP-191 prefix
+const msgHash = hashMessage('Sign this message');
+// Adds prefix: "\x19Ethereum Signed Message:\n{length}{message}"
+
+// Returns Uint8Array (32 bytes)
+```
+
+### Bytecode Analysis (Pure TypeScript)
+
+```typescript
+import {
+  analyzeJumpDestinations,
+  validateBytecode,
+  isValidJumpDest,
+  isBytecodeBoundary
+} from '@tevm/primitives';
+
+const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x5b]); // PUSH1 0x80, PUSH1 0x40, JUMPDEST
+
+// Analyze all valid JUMPDEST positions
+const jumpDests = analyzeJumpDestinations(bytecode);  // Set { 4 }
+
+// Validate bytecode structure
+const isValid = validateBytecode(bytecode);  // true
+
+// Check specific position
+const canJump = isValidJumpDest(bytecode, 4);  // true
+const isBoundary = isBytecodeBoundary(bytecode, 2);  // true
+```
+
+### Opcode Utilities (Pure TypeScript)
+
+```typescript
+import { Opcode, isPush, isDup, isSwap, isStateModifying } from '@tevm/primitives';
+
+// Check opcode types
+isPush(Opcode.PUSH1);  // true
+isDup(Opcode.DUP1);  // true
+isSwap(Opcode.SWAP1);  // true
+isStateModifying(Opcode.SSTORE);  // true
+
+// Gas costs and stack operations available
+```
+
+### Gas Calculations (Pure TypeScript)
+
+```typescript
+import {
+  calculateNextBaseFee,
+  calculateIntrinsicGas,
+  calculateMemoryGasCost
+} from '@tevm/primitives';
+
+// EIP-1559 base fee calculation
+const nextBaseFee = calculateNextBaseFee(
+  1000000000n,  // current base fee
+  15000000,     // gas used
+  15000000      // gas target
+);
+
+// Transaction intrinsic gas
+const intrinsicGas = calculateIntrinsicGas(
+  new Uint8Array([1, 2, 3]),  // calldata
+  false,  // not contract creation
+  []      // access list
+);
+
+// Memory expansion gas
+const memoryGas = calculateMemoryGasCost(1024);  // bytes
+```
+
+### Hardfork Utilities (Pure TypeScript)
+
+```typescript
+import { Hardfork, isAtLeast, isBefore } from '@tevm/primitives';
+
+// Version comparisons
+isAtLeast(Hardfork.LONDON, Hardfork.BERLIN);  // true
+isBefore(Hardfork.BERLIN, Hardfork.LONDON);  // true
+
+// Supported: FRONTIER, HOMESTEAD, DAO, TANGERINE, SPURIOUS, BYZANTIUM,
+// CONSTANTINOPLE, PETERSBURG, ISTANBUL, MUIR_GLACIER, BERLIN, LONDON,
+// ARROW_GLACIER, GRAY_GLACIER, PARIS, SHANGHAI, CANCUN, PRAGUE
+```
+
+### SIWE (Sign-In with Ethereum) (Pure TypeScript)
+
+```typescript
+import { parseSiweMessage, validateSiweMessage } from '@tevm/primitives';
+
+const message = `example.com wants you to sign in with your Ethereum account:
+0x1234567890123456789012345678901234567890
+
+Sign in to Example
+
+URI: https://example.com
+Version: 1
+Chain ID: 1
+Nonce: 32891757
+Issued At: 2023-01-01T00:00:00Z`;
+
+// Parse SIWE message
+const parsed = parseSiweMessage(message);
+
+// Validate message structure and expiration
+const isValid = validateSiweMessage(parsed);
+```
+
+### Event Logs (Pure TypeScript)
+
+```typescript
+import { parseEventLog, filterLogsByTopics } from '@tevm/primitives';
+
+// Parse event log
+const log = parseEventLog(
+  'Transfer(address,address,uint256)',
+  logData  // { topics: [...], data: '0x...' }
+);
+
+// Filter logs by topics
+const filtered = filterLogsByTopics(logs, [
+  '0x...',  // topic0 (event signature)
+  '0x...',  // topic1
+  null      // any topic2
+]);
+```
+
+<ts_status>
+**Implementation Status:**
+- ✅ Fully implemented: ABI, numeric, Keccak-256, EIP-191, bytecode, opcodes, gas, hardforks, SIWE, logs
+- 🚧 Interface only: EIP-712, secp256k1 operations, SHA256, RIPEMD160, Blake2
+
+**Requirements:**
+- Pure TypeScript modules work in any JS environment
+- FFI modules (Keccak-256, EIP-191) require Bun runtime + compiled native library
+- Build native lib: `zig build` → creates `libprimitives_c.dylib` or `.so`
+</ts_status>
+
+---
+
 ## Memory Patterns
 
 ```zig

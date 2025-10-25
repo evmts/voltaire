@@ -118,6 +118,92 @@ You're missing the required C artifact linkage. Add the corresponding `linkLibra
 
 <br />
 
+## JavaScript/TypeScript Usage
+
+This library provides TypeScript/JavaScript bindings via two approaches:
+
+1. **Pure TypeScript implementations** (no native dependencies) - ABI encoding, numeric conversions, bytecode analysis, opcodes, gas calculations, hardforks, SIWE, event logs
+2. **FFI wrappers** for performance-critical crypto operations via Bun runtime - Keccak-256, EIP-191
+
+### Installation
+
+```bash
+# Using npm
+npm install @tevm/primitives
+
+# Using bun
+bun add @tevm/primitives
+```
+
+**Note:** Crypto operations (Keccak-256, EIP-191) require [Bun](https://bun.sh) runtime for FFI access to the native library. Pure TypeScript primitives work in any JavaScript environment.
+
+### Quick Start
+
+```typescript
+import {
+  encodeAbiParameters,
+  parseEther,
+  formatGwei,
+  keccak256,
+  hashMessage
+} from '@tevm/primitives';
+
+// ABI encoding (pure TypeScript)
+const encoded = encodeAbiParameters(
+  [{ type: 'address' }, { type: 'uint256' }],
+  ['0x1234...', 1000000000000000000n]
+);
+
+// Unit conversions (pure TypeScript)
+const oneEth = parseEther('1.0');  // 1000000000000000000n
+const gasPrice = formatGwei(20000000000n);  // "20"
+
+// Keccak-256 hashing (requires Bun, uses FFI)
+const hash = keccak256('hello world');
+
+// EIP-191 message hashing (requires Bun, uses FFI)
+const msgHash = hashMessage('Sign this message');
+```
+
+### Available Modules
+
+**Primitives (Pure TypeScript)**
+- [`abi`](./src/primitives/abi.ts) - ABI encoding/decoding with full type support
+- [`numeric`](./src/primitives/numeric.ts) - Ether/Gwei/Wei conversions and unit parsing
+- [`bytecode`](./ts/src/primitives/bytecode.ts) - Jump destination analysis and bytecode validation
+- [`opcode`](./ts/src/primitives/opcode.ts) - EVM opcode utilities
+- [`gas`](./ts/src/primitives/gas.ts) - EIP-1559 fee calculations and gas cost utilities
+- [`hardfork`](./ts/src/primitives/hardfork.ts) - Ethereum hardfork enumeration
+- [`siwe`](./ts/src/primitives/siwe.ts) - Sign-In with Ethereum (EIP-4361)
+- [`logs`](./ts/src/primitives/logs.ts) - Event log parsing and filtering
+
+**Crypto (Bun FFI - calls native Zig implementation)**
+- [`keccak256`](./src/crypto/keccak.ts) - ✅ Keccak-256 hashing (fully implemented)
+- [`eip191`](./src/crypto/eip191.ts) - ✅ EIP-191 personal message hashing (fully implemented)
+- [`eip712`](./src/crypto/eip712.ts) - 🚧 EIP-712 typed data hashing (interface only)
+- [`secp256k1`](./src/crypto/secp256k1.ts) - 🚧 secp256k1 operations (partial implementation)
+- [`hash-algorithms`](./src/crypto/hash-algorithms.ts) - 🚧 SHA256, RIPEMD160, Blake2 (interface only)
+
+### Build from Source (for FFI modules)
+
+If you want to use the crypto FFI modules, you need to build the native library:
+
+```bash
+# Clone and build
+git clone https://github.com/evmts/primitives.git
+cd primitives
+zig build
+
+# The TypeScript module will automatically find the compiled library
+cd ts
+bun install
+bun test
+```
+
+For detailed TypeScript API documentation, see [`ts/README.md`](./ts/README.md).
+
+<br />
+
 ## Documentation
 
 [`examples/`](./examples/) — Example code and usage
