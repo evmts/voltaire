@@ -21,43 +21,8 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-v2-${{ hashFiles('**/Cargo.lock') }}
-      - name: Clean Zig cache
-        shell: bash
-        run: rm -rf .zig-cache zig-out ~/.cache/zig target
       - name: Build
         run: zig build -Doptimize=${{ matrix.optimize }}
-      - name: Debug - Check library format
-        shell: bash
-        run: |
-          echo "Checking libcrypto_wrappers.a format:"
-          file target/debug/libcrypto_wrappers.a || true
-          echo "Listing object files in archive:"
-          ar t target/debug/libcrypto_wrappers.a | head -10 || true
-          echo "Extracting first object file and checking its format:"
-          mkdir -p /tmp/ar_extract
-          cd /tmp/ar_extract
-          ar x /home/runner/work/primitives/primitives/target/debug/libcrypto_wrappers.a $(ar t /home/runner/work/primitives/primitives/target/debug/libcrypto_wrappers.a | head -1) || true
-          file * || true
-          echo "First object file hex dump:"
-          hexdump -C $(ls | head -1) | head -3 || true
-      - name: Debug - Check .zig-cache file
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          echo "Finding libcrypto_wrappers.a in .zig-cache:"
-          find .zig-cache -name "libcrypto_wrappers.a" -type f || true
-          echo "Checking format of cached file:"
-          find .zig-cache -name "libcrypto_wrappers.a" -type f -exec file {} \; || true
-          echo "Hex dump of cached file:"
-          find .zig-cache -name "libcrypto_wrappers.a" -type f -exec hexdump -C {} \; | head -5 || true
       - name: Test
         run: zig build test -Doptimize=${{ matrix.optimize }}
 
@@ -71,16 +36,6 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-v2-${{ hashFiles('**/Cargo.lock') }}
-      - name: Clean Zig cache
-        run: rm -rf .zig-cache zig-out ~/.cache/zig
       - name: Build keccak256 example
         run: zig build example-keccak256
       - name: Build ABI example
