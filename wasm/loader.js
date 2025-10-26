@@ -3,8 +3,11 @@
  * Handles WASM instantiation, memory management, and exports wrapping
  */
 
+/** @type {WebAssembly.Instance | null} */
 let wasmInstance = null;
+/** @type {WebAssembly.Memory | null} */
 let wasmMemory = null;
+/** @type {Record<string, Function> | null} */
 let wasmExports = null;
 let memoryOffset = 0; // Simple bump allocator
 
@@ -175,8 +178,9 @@ function malloc(size) {
 
 /**
  * Reset memory allocator (call after operations to free memory)
+ * @returns {void}
  */
-function resetMemory() {
+export function resetMemory() {
   memoryOffset = 65536;
 }
 
@@ -744,9 +748,13 @@ export function bytecodeAnalyzeJumpdests(code) {
 
     // Read u32 array
     const memory = new Uint32Array(wasmMemory.buffer);
+    /** @type {number[]} */
     const results = [];
     for (let i = 0; i < count; i++) {
-      results.push(memory[(outPtr / 4) + i]);
+      const value = memory[(outPtr / 4) + i];
+      if (value !== undefined) {
+        results.push(value);
+      }
     }
     return results;
   } finally {

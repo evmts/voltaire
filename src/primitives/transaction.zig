@@ -392,7 +392,7 @@ pub fn encodeAccessList(allocator: Allocator, access_list: []const AccessListIte
 }
 
 // Encode access list (internal version that writes to output)
-fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
+fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessListItem, output: *std.array_list.AlignedManaged(u8, null)) !void {
     var list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer list.deinit();
 
@@ -1384,8 +1384,8 @@ test "transaction with non-empty data" {
 test "transaction data affects hash" {
     const allocator = testing.allocator;
 
-    const data1 = [_]u8{0x01, 0x02, 0x03};
-    const data2 = [_]u8{0x04, 0x05, 0x06};
+    const data1 = [_]u8{ 0x01, 0x02, 0x03 };
+    const data2 = [_]u8{ 0x04, 0x05, 0x06 };
 
     const tx1 = LegacyTransaction{
         .nonce = 0,

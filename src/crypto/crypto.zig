@@ -726,14 +726,16 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
         return CryptoError.SigningFailed;
     }
 
+    // Calculate recovery ID before normalizing s
+    var recoveryId = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
+
     // Ensure s is in lower half to prevent malleability (EIP-2)
     const half_n = SECP256K1_N >> 1;
     if (s > half_n) {
         s = SECP256K1_N - s;
+        // When we flip s, we also need to flip the recovery ID
+        recoveryId ^= 1;
     }
-
-    // Calculate recovery ID
-    const recoveryId = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
 
     // Verify signature by recovering public key
     const recovered_address = unaudited_recoverAddress(hash, .{ .v = recoveryId, .r = r, .s = s }) catch {
