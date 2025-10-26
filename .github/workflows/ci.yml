@@ -121,3 +121,16 @@ jobs:
         run: bun run format:check
       - name: Run TypeScript tests
         run: bun test
+
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Zig 0.15.1
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+      - name: Compile benchmarks (catch API regressions)
+        run: zig build -Dwith-benches=true --summary failures
