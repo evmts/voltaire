@@ -303,8 +303,8 @@ This library includes high-performance native implementations written in Zig. Th
 
 For details on building and using the native Zig implementations, see:
 - [ZIG_API.md](./ZIG_API.md) - Complete Zig API reference
-- [WASM_SUPPORT.md](./WASM_SUPPORT.md) - WebAssembly build guide
-- [WASM-QUICK-START.md](./WASM-QUICK-START.md) - Quick start for WASM deployment
+- [WASM_SUPPORT.md](./docs/WASM_SUPPORT.md) - WebAssembly build guide
+- [WASM-QUICK-START.md](./docs/WASM-QUICK-START.md) - Quick start for WASM deployment
 
 ## Documentation
 
@@ -317,16 +317,15 @@ For details on building and using the native Zig implementations, see:
 ### Native Zig
 
 - [ZIG_API.md](./ZIG_API.md) — Complete Zig API reference and build instructions
-- [WASM_SUPPORT.md](./WASM_SUPPORT.md) — WebAssembly build guide and feature parity
-- [WASM-QUICK-START.md](./WASM-QUICK-START.md) — Quick start for WASM deployment
+- [WASM_SUPPORT.md](./docs/WASM_SUPPORT.md) — WebAssembly build guide and feature parity
+- [WASM-QUICK-START.md](./docs/WASM-QUICK-START.md) — Quick start for WASM deployment
 - [examples/](./examples/) — Example code and usage patterns
 
 ### Development
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — Contribution guidelines
 - [CLAUDE.md](./CLAUDE.md) — Coding standards and development protocols
-- [CI_CD_SETUP.md](./CI_CD_SETUP.md) — CI/CD infrastructure documentation
-- [RELEASE.md](./RELEASE.md) — Release process guide
+- [RELEASE.md](./docs/RELEASE.md) — Release process guide
 
 ### Reference
 
