@@ -85,11 +85,10 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         pub const DivRemResult = struct { quotient: Self, remainder: Self };
 
         pub fn from_limbs(limbs_arr: [limbs]u64) Self {
-            const result = Self{ .limbs = limbs_arr };
+            var result = Self{ .limbs = limbs_arr };
+            // Automatically mask the top limb to ensure validity
             if (bits > 0 and MASK != std.math.maxInt(u64) and limbs > 0) {
-                if (result.limbs[limbs - 1] > MASK) {
-                    std.debug.panic("Uint{}.from_limbs: top limb 0x{X} exceeds mask 0x{X}", .{ bits, result.limbs[limbs - 1], MASK });
-                }
+                result.limbs[limbs - 1] &= MASK;
             }
             return result;
         }
@@ -99,6 +98,28 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
             if (limbs == 0) return ZERO;
             var limbs_arr: [limbs]u64 = .{0} ** limbs;
             limbs_arr[0] = value;
+            return Self.from_limbs(limbs_arr).masked();
+        }
+
+        pub fn from_int(comptime value: comptime_int) Self {
+            if (bits == 0) return ZERO;
+            if (limbs == 0) return ZERO;
+
+            // Compile-time validation
+            if (value < 0) {
+                @compileError("from_int does not support negative values");
+            }
+            if (bits < 256 and value >= (@as(comptime_int, 1) << bits)) {
+                @compileError("Value too large for Uint" ++ @typeName(Self));
+            }
+
+            var limbs_arr: [limbs]u64 = .{0} ** limbs;
+            var remaining = value;
+            var i: usize = 0;
+            while (i < limbs and remaining > 0) : (i += 1) {
+                limbs_arr[i] = @truncate(remaining);
+                remaining = remaining >> 64;
+            }
             return Self.from_limbs(limbs_arr).masked();
         }
 
@@ -133,8 +154,8 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
 
             // For 256-bit or smaller, use native u256 operations for better performance
             if (comptime bits <= 256) {
-                const self_u256 = self.to_u256() orelse std.debug.panic("Uint{}.eq: failed to convert to u256", .{bits});
-                const other_u256 = other.to_u256() orelse std.debug.panic("Uint{}.eq: failed to convert to u256", .{bits});
+                const self_u256 = self.to_u256() orelse unreachable; // bits <= 256 always fits
+                const other_u256 = other.to_u256() orelse unreachable; // bits <= 256 always fits
                 return self_u256 == other_u256;
             }
 
@@ -794,13 +815,13 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         }
 
         pub fn log2(self: Self) usize {
-            std.debug.assert(!self.is_zero());
+            if (self.is_zero()) unreachable; // Use checked_log2 for safety
             return self.bit_len() - 1;
         }
 
         pub fn checked_log2(self: Self) ?usize {
             if (self.is_zero()) return null;
-            return self.log2();
+            return self.bit_len() - 1;
         }
 
         pub fn log10(self: Self) usize {
@@ -813,8 +834,8 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         }
 
         pub fn log(self: Self, base: Self) usize {
-            std.debug.assert(!self.is_zero());
-            std.debug.assert(base.ge(Self.from_u64(2)));
+            if (self.is_zero()) unreachable; // Use checked_log for safety
+            if (!base.ge(Self.from_u64(2))) unreachable; // Base must be >= 2
 
             if (base.eq(Self.from_u64(2))) {
                 return self.log2();
@@ -1633,7 +1654,7 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         }
 
         pub fn root(self: Self, degree: usize) Self {
-            std.debug.assert(degree > 0);
+            if (degree == 0) unreachable; // Use checked_root for safety
 
             // Handle zero case
             if (self.is_zero()) {
