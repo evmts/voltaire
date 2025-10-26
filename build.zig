@@ -384,7 +384,7 @@ pub fn build(b: *std.Build) void {
     // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
     const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
-        .os_tag = .freestanding,
+        .os_tag = .wasi,
     });
     addTypeScriptWasmBuild(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 
@@ -504,27 +504,28 @@ fn addTypeScriptWasmBuild(
     rust_crypto_lib_path: std.Build.LazyPath,
     cargo_build_step: *std.Build.Step,
 ) void {
-    // WASM TypeScript library with ReleaseSmall optimization
-    const ts_wasm_lib = b.addLibrary(.{
+    // WASM TypeScript executable with ReleaseSmall optimization
+    // Note: WASM must be built as executable, not library (no dynamic linking in WASM)
+    const ts_wasm_exe = b.addExecutable(.{
         .name = "primitives_ts_wasm",
-        .linkage = .dynamic,
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/c_api.zig"),
             .target = wasm_target,
             .optimize = .ReleaseSmall, // Minimal size for WASM
         }),
     });
-    ts_wasm_lib.root_module.addImport("primitives", primitives_mod);
-    ts_wasm_lib.root_module.addImport("crypto", crypto_mod);
-    ts_wasm_lib.linkLibrary(c_kzg_lib);
-    ts_wasm_lib.linkLibrary(blst_lib);
-    ts_wasm_lib.addObjectFile(rust_crypto_lib_path);
-    ts_wasm_lib.addIncludePath(b.path("lib"));
-    ts_wasm_lib.step.dependOn(cargo_build_step);
-    ts_wasm_lib.linkLibC();
+    ts_wasm_exe.root_module.addImport("primitives", primitives_mod);
+    ts_wasm_exe.root_module.addImport("crypto", crypto_mod);
+    ts_wasm_exe.linkLibrary(c_kzg_lib);
+    ts_wasm_exe.linkLibrary(blst_lib);
+    ts_wasm_exe.addObjectFile(rust_crypto_lib_path);
+    ts_wasm_exe.addIncludePath(b.path("lib"));
+    ts_wasm_exe.step.dependOn(cargo_build_step);
+    ts_wasm_exe.rdynamic = true; // Export all symbols
+    // Note: WASM reactor pattern - main() exists but not used
 
-    // Install to wasm/ directory
-    const install_wasm = b.addInstallArtifact(ts_wasm_lib, .{
+    // Install to wasm/ directory with .wasm extension
+    const install_wasm = b.addInstallArtifact(ts_wasm_exe, .{
         .dest_dir = .{ .override = .{ .custom = "wasm" } },
     });
 

@@ -6,6 +6,7 @@
 let wasmInstance = null;
 let wasmMemory = null;
 let wasmExports = null;
+let memoryOffset = 0; // Simple bump allocator
 
 /**
  * Error codes from C API
@@ -66,6 +67,10 @@ export async function loadWasm(wasmPath) {
   }
 
   wasmExports = wasmInstance.exports;
+
+  // Initialize memory offset after WASM's own data
+  // Start at 64KB to leave room for WASM's stack and globals
+  memoryOffset = 65536;
 }
 
 /**
@@ -80,30 +85,32 @@ export function getExports() {
 }
 
 /**
- * Allocate memory in WASM linear memory
+ * Allocate memory in WASM linear memory (simple bump allocator)
  * @param {number} size - Number of bytes to allocate
  * @returns {number} Pointer to allocated memory
  */
 function malloc(size) {
-  if (!wasmExports.malloc) {
-    throw new Error('WASM module does not export malloc');
+  // Align to 8 bytes
+  const aligned = (size + 7) & ~7;
+  const ptr = memoryOffset;
+  memoryOffset += aligned;
+
+  // Grow memory if needed
+  const pagesNeeded = Math.ceil(memoryOffset / 65536);
+  const currentPages = wasmMemory.buffer.byteLength / 65536;
+
+  if (pagesNeeded > currentPages) {
+    wasmMemory.grow(pagesNeeded - currentPages);
   }
-  const ptr = wasmExports.malloc(size);
-  if (ptr === 0) {
-    throw new Error('Failed to allocate memory');
-  }
+
   return ptr;
 }
 
 /**
- * Free memory in WASM linear memory
- * @param {number} ptr - Pointer to free
+ * Reset memory allocator (call after operations to free memory)
  */
-function free(ptr) {
-  if (!wasmExports.free) {
-    throw new Error('WASM module does not export free');
-  }
-  wasmExports.free(ptr);
+function resetMemory() {
+  memoryOffset = 65536;
 }
 
 /**
@@ -177,16 +184,16 @@ function checkResult(code) {
  * @returns {Uint8Array} 20-byte address
  */
 export function addressFromHex(hex) {
-  const hexPtr = writeString(hex);
-  const outPtr = malloc(20);
-
+  const savedOffset = memoryOffset;
   try {
+    const hexPtr = writeString(hex);
+    const outPtr = malloc(20);
+
     const result = wasmExports.primitives_address_from_hex(hexPtr, outPtr);
     checkResult(result);
     return readBytes(outPtr, 20);
   } finally {
-    free(hexPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -196,17 +203,17 @@ export function addressFromHex(hex) {
  * @returns {string} Hex string with 0x prefix
  */
 export function addressToHex(address) {
-  const addrPtr = malloc(20);
-  const outPtr = malloc(42);
-
+  const savedOffset = memoryOffset;
   try {
+    const addrPtr = malloc(20);
+    const outPtr = malloc(42);
+
     writeBytes(address, addrPtr);
     const result = wasmExports.primitives_address_to_hex(addrPtr, outPtr);
     checkResult(result);
     return readString(outPtr);
   } finally {
-    free(addrPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -216,17 +223,17 @@ export function addressToHex(address) {
  * @returns {string} Checksummed hex string
  */
 export function addressToChecksumHex(address) {
-  const addrPtr = malloc(20);
-  const outPtr = malloc(42);
-
+  const savedOffset = memoryOffset;
   try {
+    const addrPtr = malloc(20);
+    const outPtr = malloc(42);
+
     writeBytes(address, addrPtr);
     const result = wasmExports.primitives_address_to_checksum_hex(addrPtr, outPtr);
     checkResult(result);
     return readString(outPtr);
   } finally {
-    free(addrPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -236,13 +243,13 @@ export function addressToChecksumHex(address) {
  * @returns {boolean} True if zero address
  */
 export function addressIsZero(address) {
-  const addrPtr = malloc(20);
-
+  const savedOffset = memoryOffset;
   try {
+    const addrPtr = malloc(20);
     writeBytes(address, addrPtr);
     return wasmExports.primitives_address_is_zero(addrPtr) !== 0;
   } finally {
-    free(addrPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -253,16 +260,16 @@ export function addressIsZero(address) {
  * @returns {boolean} True if equal
  */
 export function addressEquals(a, b) {
-  const aPtr = malloc(20);
-  const bPtr = malloc(20);
-
+  const savedOffset = memoryOffset;
   try {
+    const aPtr = malloc(20);
+    const bPtr = malloc(20);
+
     writeBytes(a, aPtr);
     writeBytes(b, bPtr);
     return wasmExports.primitives_address_equals(aPtr, bPtr) !== 0;
   } finally {
-    free(aPtr);
-    free(bPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -272,12 +279,12 @@ export function addressEquals(a, b) {
  * @returns {boolean} True if checksum is valid
  */
 export function addressValidateChecksum(hex) {
-  const hexPtr = writeString(hex);
-
+  const savedOffset = memoryOffset;
   try {
+    const hexPtr = writeString(hex);
     return wasmExports.primitives_address_validate_checksum(hexPtr) !== 0;
   } finally {
-    free(hexPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -288,17 +295,17 @@ export function addressValidateChecksum(hex) {
  * @returns {Uint8Array} Contract address (20 bytes)
  */
 export function calculateCreateAddress(sender, nonce) {
-  const senderPtr = malloc(20);
-  const outPtr = malloc(20);
-
+  const savedOffset = memoryOffset;
   try {
+    const senderPtr = malloc(20);
+    const outPtr = malloc(20);
+
     writeBytes(sender, senderPtr);
     const result = wasmExports.primitives_calculate_create_address(senderPtr, nonce, outPtr);
     checkResult(result);
     return readBytes(outPtr, 20);
   } finally {
-    free(senderPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -310,12 +317,13 @@ export function calculateCreateAddress(sender, nonce) {
  * @returns {Uint8Array} Contract address (20 bytes)
  */
 export function calculateCreate2Address(sender, salt, initCode) {
-  const senderPtr = malloc(20);
-  const saltPtr = malloc(32);
-  const codePtr = malloc(initCode.length);
-  const outPtr = malloc(20);
-
+  const savedOffset = memoryOffset;
   try {
+    const senderPtr = malloc(20);
+    const saltPtr = malloc(32);
+    const codePtr = malloc(initCode.length);
+    const outPtr = malloc(20);
+
     writeBytes(sender, senderPtr);
     writeBytes(salt, saltPtr);
     writeBytes(initCode, codePtr);
@@ -329,10 +337,7 @@ export function calculateCreate2Address(sender, salt, initCode) {
     checkResult(result);
     return readBytes(outPtr, 20);
   } finally {
-    free(senderPtr);
-    free(saltPtr);
-    free(codePtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -346,17 +351,17 @@ export function calculateCreate2Address(sender, salt, initCode) {
  * @returns {Uint8Array} 32-byte hash
  */
 export function keccak256(data) {
-  const dataPtr = malloc(data.length);
-  const outPtr = malloc(32);
-
+  const savedOffset = memoryOffset;
   try {
+    const dataPtr = malloc(data.length);
+    const outPtr = malloc(32);
+
     writeBytes(data, dataPtr);
     const result = wasmExports.primitives_keccak256(dataPtr, data.length, outPtr);
     checkResult(result);
     return readBytes(outPtr, 32);
   } finally {
-    free(dataPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -366,17 +371,17 @@ export function keccak256(data) {
  * @returns {string} Hex string with 0x prefix
  */
 export function hashToHex(hash) {
-  const hashPtr = malloc(32);
-  const outPtr = malloc(66);
-
+  const savedOffset = memoryOffset;
   try {
+    const hashPtr = malloc(32);
+    const outPtr = malloc(66);
+
     writeBytes(hash, hashPtr);
     const result = wasmExports.primitives_hash_to_hex(hashPtr, outPtr);
     checkResult(result);
     return readString(outPtr);
   } finally {
-    free(hashPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -386,16 +391,16 @@ export function hashToHex(hash) {
  * @returns {Uint8Array} 32-byte hash
  */
 export function hashFromHex(hex) {
-  const hexPtr = writeString(hex);
-  const outPtr = malloc(32);
-
+  const savedOffset = memoryOffset;
   try {
+    const hexPtr = writeString(hex);
+    const outPtr = malloc(32);
+
     const result = wasmExports.primitives_hash_from_hex(hexPtr, outPtr);
     checkResult(result);
     return readBytes(outPtr, 32);
   } finally {
-    free(hexPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -406,16 +411,16 @@ export function hashFromHex(hex) {
  * @returns {boolean} True if equal
  */
 export function hashEquals(a, b) {
-  const aPtr = malloc(32);
-  const bPtr = malloc(32);
-
+  const savedOffset = memoryOffset;
   try {
+    const aPtr = malloc(32);
+    const bPtr = malloc(32);
+
     writeBytes(a, aPtr);
     writeBytes(b, bPtr);
     return wasmExports.primitives_hash_equals(aPtr, bPtr) !== 0;
   } finally {
-    free(aPtr);
-    free(bPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -425,17 +430,17 @@ export function hashEquals(a, b) {
  * @returns {Uint8Array} 32-byte hash
  */
 export function eip191HashMessage(message) {
-  const msgPtr = malloc(message.length);
-  const outPtr = malloc(32);
-
+  const savedOffset = memoryOffset;
   try {
+    const msgPtr = malloc(message.length);
+    const outPtr = malloc(32);
+
     writeBytes(message, msgPtr);
     const result = wasmExports.primitives_eip191_hash_message(msgPtr, message.length, outPtr);
     checkResult(result);
     return readBytes(outPtr, 32);
   } finally {
-    free(msgPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -449,10 +454,11 @@ export function eip191HashMessage(message) {
  * @returns {Uint8Array} RLP-encoded data
  */
 export function rlpEncodeBytes(data) {
-  const dataPtr = malloc(data.length);
-  const outPtr = malloc(data.length + 10); // RLP adds small overhead
-
+  const savedOffset = memoryOffset;
   try {
+    const dataPtr = malloc(data.length);
+    const outPtr = malloc(data.length + 10); // RLP adds small overhead
+
     writeBytes(data, dataPtr);
     const resultLen = wasmExports.primitives_rlp_encode_bytes(
       dataPtr,
@@ -465,8 +471,7 @@ export function rlpEncodeBytes(data) {
     }
     return readBytes(outPtr, resultLen);
   } finally {
-    free(dataPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -476,10 +481,11 @@ export function rlpEncodeBytes(data) {
  * @returns {Uint8Array} RLP-encoded data
  */
 export function rlpEncodeUint(value) {
-  const valuePtr = malloc(32);
-  const outPtr = malloc(40); // u256 RLP max size
-
+  const savedOffset = memoryOffset;
   try {
+    const valuePtr = malloc(32);
+    const outPtr = malloc(40); // u256 RLP max size
+
     writeBytes(value, valuePtr);
     const resultLen = wasmExports.primitives_rlp_encode_uint(valuePtr, outPtr, 40);
     if (resultLen < 0) {
@@ -487,8 +493,7 @@ export function rlpEncodeUint(value) {
     }
     return readBytes(outPtr, resultLen);
   } finally {
-    free(valuePtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -498,10 +503,11 @@ export function rlpEncodeUint(value) {
  * @returns {string} Hex string with 0x prefix
  */
 export function rlpToHex(rlpData) {
-  const dataPtr = malloc(rlpData.length);
-  const outPtr = malloc(rlpData.length * 2 + 2);
-
+  const savedOffset = memoryOffset;
   try {
+    const dataPtr = malloc(rlpData.length);
+    const outPtr = malloc(rlpData.length * 2 + 2);
+
     writeBytes(rlpData, dataPtr);
     const resultLen = wasmExports.primitives_rlp_to_hex(
       dataPtr,
@@ -514,8 +520,7 @@ export function rlpToHex(rlpData) {
     }
     return readString(outPtr);
   } finally {
-    free(dataPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -525,18 +530,18 @@ export function rlpToHex(rlpData) {
  * @returns {Uint8Array} RLP bytes
  */
 export function rlpFromHex(hex) {
-  const hexPtr = writeString(hex);
-  const outPtr = malloc(hex.length); // Worst case: all hex chars
-
+  const savedOffset = memoryOffset;
   try {
+    const hexPtr = writeString(hex);
+    const outPtr = malloc(hex.length); // Worst case: all hex chars
+
     const resultLen = wasmExports.primitives_rlp_from_hex(hexPtr, outPtr, hex.length);
     if (resultLen < 0) {
       checkResult(resultLen);
     }
     return readBytes(outPtr, resultLen);
   } finally {
-    free(hexPtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -550,10 +555,11 @@ export function rlpFromHex(hex) {
  * @returns {number[]} Array of JUMPDEST positions
  */
 export function bytecodeAnalyzeJumpdests(code) {
-  const codePtr = malloc(code.length);
-  const outPtr = malloc(code.length * 4); // u32 per potential JUMPDEST
-
+  const savedOffset = memoryOffset;
   try {
+    const codePtr = malloc(code.length);
+    const outPtr = malloc(code.length * 4); // u32 per potential JUMPDEST
+
     writeBytes(code, codePtr);
     const count = wasmExports.primitives_bytecode_analyze_jumpdests(
       codePtr,
@@ -573,8 +579,7 @@ export function bytecodeAnalyzeJumpdests(code) {
     }
     return results;
   } finally {
-    free(codePtr);
-    free(outPtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -585,13 +590,13 @@ export function bytecodeAnalyzeJumpdests(code) {
  * @returns {boolean} True if at boundary
  */
 export function bytecodeIsBoundary(code, position) {
-  const codePtr = malloc(code.length);
-
+  const savedOffset = memoryOffset;
   try {
+    const codePtr = malloc(code.length);
     writeBytes(code, codePtr);
     return wasmExports.primitives_bytecode_is_boundary(codePtr, code.length, position) !== 0;
   } finally {
-    free(codePtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -602,13 +607,13 @@ export function bytecodeIsBoundary(code, position) {
  * @returns {boolean} True if valid JUMPDEST
  */
 export function bytecodeIsValidJumpdest(code, position) {
-  const codePtr = malloc(code.length);
-
+  const savedOffset = memoryOffset;
   try {
+    const codePtr = malloc(code.length);
     writeBytes(code, codePtr);
     return wasmExports.primitives_bytecode_is_valid_jumpdest(codePtr, code.length, position) !== 0;
   } finally {
-    free(codePtr);
+    memoryOffset = savedOffset;
   }
 }
 
@@ -618,13 +623,13 @@ export function bytecodeIsValidJumpdest(code, position) {
  * @throws {Error} If bytecode is invalid
  */
 export function bytecodeValidate(code) {
-  const codePtr = malloc(code.length);
-
+  const savedOffset = memoryOffset;
   try {
+    const codePtr = malloc(code.length);
     writeBytes(code, codePtr);
     const result = wasmExports.primitives_bytecode_validate(codePtr, code.length);
     checkResult(result);
   } finally {
-    free(codePtr);
+    memoryOffset = savedOffset;
   }
 }

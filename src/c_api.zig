@@ -1,6 +1,7 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const crypto = @import("crypto");
+const builtin = @import("builtin");
 
 // Error codes for C API
 pub const PRIMITIVES_SUCCESS: c_int = 0;
@@ -892,4 +893,18 @@ export fn primitives_calculate_create2_address(
 
 export fn primitives_version_string() [*:0]const u8 {
     return "primitives-0.1.0";
+}
+
+// ============================================================================
+// WASM Memory Management
+// ============================================================================
+
+// Note: For WASM, we use a simplified memory model where JavaScript manages
+// the linear memory directly. The functions use stack-based allocators internally,
+// so no explicit malloc/free exports are needed. JavaScript will allocate buffers
+// in the linear memory and pass pointers to these functions.
+
+// Dummy main function for WASM builds (required but not called)
+pub fn main() void {
+    // WASM reactor pattern - main exists but does nothing
 }
