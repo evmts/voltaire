@@ -8,7 +8,7 @@ export function getAddress(signer: Signer): string {
 	return signer.address;
 }
 
-export async function recoverTransactionAddress(transaction: any): Promise<string> {
+export async function recoverTransactionAddress(_transaction: any): Promise<string> {
 	// Note: Transaction address recovery requires:
 	// 1. Deserialize transaction from RLP
 	// 2. Extract signature (r, s, v)

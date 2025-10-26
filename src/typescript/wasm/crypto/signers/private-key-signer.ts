@@ -86,7 +86,7 @@ export class PrivateKeySignerImpl implements Signer {
 		}
 	}
 
-	async signTransaction(transaction: any): Promise<any> {
+	async signTransaction(_transaction: any): Promise<any> {
 		// Note: Transaction signing requires:
 		// 1. Serialize transaction to RLP
 		// 2. Hash the serialized transaction
@@ -99,7 +99,7 @@ export class PrivateKeySignerImpl implements Signer {
 		);
 	}
 
-	async signTypedData(typedData: any): Promise<string> {
+	async signTypedData(_typedData: any): Promise<string> {
 		// Note: EIP-712 signing requires:
 		// 1. Hash the typed data according to EIP-712
 		// 2. Sign the hash
