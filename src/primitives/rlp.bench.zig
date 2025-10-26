@@ -66,11 +66,10 @@ fn benchDecodeSmallBytes(allocator: std.mem.Allocator) void {
 // Benchmark: RLP decode list (generic decode)
 fn benchDecodeList(allocator: std.mem.Allocator) void {
     // Encoded list of [0xdead, 0xbeef, 0xcafe]
-    const encoded = [_]u8{ 0xc8, 0x82, 0xde, 0xad, 0x82, 0xbe, 0xef, 0x82, 0xca, 0xfe };
-    const decoded = rlp.decode(allocator, &encoded, false);
-    if (decoded) |d| {
-        defer d.data.deinit(allocator);
-    } else |_| {}
+    // 0xc9 = list with 9-byte payload
+    const encoded = [_]u8{ 0xc9, 0x82, 0xde, 0xad, 0x82, 0xbe, 0xef, 0x82, 0xca, 0xfe };
+    const decoded = rlp.decode(allocator, &encoded, false) catch unreachable;
+    defer decoded.data.deinit(allocator);
 }
 
 pub fn main() !void {
