@@ -3,40 +3,40 @@ const zbench = @import("zbench");
 const primitives = @import("primitives");
 const Hex = primitives.Hex;
 
-// Benchmark: Hex.toBytes
+// Benchmark: Hex.hexToBytes
 fn benchToBytes(allocator: std.mem.Allocator) void {
     const hex_str = "0xdeadbeef";
-    const bytes = Hex.toBytes(allocator, hex_str) catch unreachable;
+    const bytes = Hex.hexToBytes(allocator, hex_str) catch unreachable;
     defer allocator.free(bytes);
 }
 
-// Benchmark: Hex.bytesToHex
+// Benchmark: Hex.bytesToHex (dynamic)
 fn benchBytesToHex(allocator: std.mem.Allocator) void {
     const bytes = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
     const hex_str = Hex.bytesToHex(allocator, &bytes) catch unreachable;
     defer allocator.free(hex_str);
 }
 
-// Benchmark: Hex.toBytesFixed (20 bytes - address size)
+// Benchmark: Hex.hexToBytesFixed (20 bytes - address size)
 fn benchToBytesFixed20(allocator: std.mem.Allocator) void {
     const hex_str = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
-    var buffer: [20]u8 = undefined;
-    Hex.toBytesFixed(&buffer, hex_str) catch unreachable;
+    const bytes = Hex.hexToBytesFixed(20, hex_str) catch unreachable;
+    _ = bytes;
     _ = allocator;
 }
 
 // Benchmark: Hex.bytesToHexFixed (32 bytes - hash size)
 fn benchBytesToHexFixed32(allocator: std.mem.Allocator) void {
     const bytes = [_]u8{0xab} ** 32;
-    const hex_str = Hex.bytesToHexFixed(&bytes);
-    _ = hex_str;
+    const hex_arr = Hex.bytesToHexFixed(32, bytes);
+    _ = hex_arr;
     _ = allocator;
 }
 
-// Benchmark: Hex.toU256
+// Benchmark: Hex.hexToU256
 fn benchToU256(allocator: std.mem.Allocator) void {
     const hex_str = "0x1234567890abcdef";
-    const value = Hex.toU256(hex_str) catch unreachable;
+    const value = Hex.hexToU256(hex_str) catch unreachable;
     _ = value;
     _ = allocator;
 }
@@ -48,10 +48,10 @@ fn benchU256ToHex(allocator: std.mem.Allocator) void {
     defer allocator.free(hex_str);
 }
 
-// Benchmark: Hex.toU64
+// Benchmark: Hex.hexToU64
 fn benchToU64(allocator: std.mem.Allocator) void {
     const hex_str = "0x1234567890abcdef";
-    const value = Hex.toU64(hex_str) catch unreachable;
+    const value = Hex.hexToU64(hex_str) catch unreachable;
     _ = value;
     _ = allocator;
 }
@@ -78,11 +78,11 @@ fn benchPadLeft(allocator: std.mem.Allocator) void {
     defer allocator.free(padded);
 }
 
-// Benchmark: Hex.trimLeftZeros
+// Benchmark: Hex.trimLeftZeros (no allocation)
 fn benchTrimLeftZeros(allocator: std.mem.Allocator) void {
     const bytes = [_]u8{ 0x00, 0x00, 0xde, 0xad, 0xbe, 0xef };
-    const trimmed = Hex.trimLeftZeros(allocator, &bytes) catch unreachable;
-    defer allocator.free(trimmed);
+    const trimmed = Hex.trimLeftZeros(&bytes);
+    _ = trimmed;
 }
 
 // Benchmark: Hex.concat (two byte arrays)

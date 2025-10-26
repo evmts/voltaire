@@ -35,25 +35,25 @@ fn benchKeccak256VeryLarge(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-// Benchmark: computeFunctionSelector (Keccak256 + slice)
+// Benchmark: selectorFromSignature (Keccak256 + slice)
 fn benchComputeFunctionSelector(allocator: std.mem.Allocator) void {
     const signature = "transfer(address,uint256)";
-    const selector = HashUtils.computeFunctionSelector(signature);
+    const selector = HashUtils.selectorFromSignature(signature);
     _ = selector;
     _ = allocator;
 }
 
-// Benchmark: hashMessage (EIP-191 personal sign)
+// Benchmark: eip191HashMessage (EIP-191 personal sign)
 fn benchHashMessage(allocator: std.mem.Allocator) void {
     const message = "Hello, Ethereum!";
-    const hash = HashUtils.hashMessage(allocator, message) catch unreachable;
+    const hash = HashUtils.eip191HashMessage(message, allocator) catch unreachable;
     _ = hash;
 }
 
-// Benchmark: hashMessageBytes
+// Benchmark: eip191HashMessage with bytes
 fn benchHashMessageBytes(allocator: std.mem.Allocator) void {
     const message = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
-    const hash = HashUtils.hashMessageBytes(allocator, &message) catch unreachable;
+    const hash = HashUtils.eip191HashMessage(&message, allocator) catch unreachable;
     _ = hash;
 }
 

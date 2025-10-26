@@ -35,24 +35,21 @@ fn benchRecoverPubkey(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-// Benchmark: isValidSignatureComponent (r)
-fn benchIsValidSignatureComponentR(allocator: std.mem.Allocator) void {
-    const valid = secp256k1.isValidSignatureComponent(&test_r);
+// Benchmark: unauditedValidateSignature
+fn benchValidateSignature(allocator: std.mem.Allocator) void {
+    const r_u256: u256 = std.mem.readInt(u256, &test_r, .big);
+    const s_u256: u256 = std.mem.readInt(u256, &test_s, .big);
+    const valid = secp256k1.unauditedValidateSignature(r_u256, s_u256);
     _ = valid;
     _ = allocator;
 }
 
-// Benchmark: isValidSignatureComponent (s)
-fn benchIsValidSignatureComponentS(allocator: std.mem.Allocator) void {
-    const valid = secp256k1.isValidSignatureComponent(&test_s);
+// Benchmark: unauditedValidateSignature with high-S (malleable)
+fn benchValidateHighS(allocator: std.mem.Allocator) void {
+    const r_u256: u256 = std.mem.readInt(u256, &test_r, .big);
+    const s_high: u256 = secp256k1.SECP256K1_N; // invalid (>= n)
+    const valid = secp256k1.unauditedValidateSignature(r_u256, s_high);
     _ = valid;
-    _ = allocator;
-}
-
-// Benchmark: isMalleableSignature
-fn benchIsMalleableSignature(allocator: std.mem.Allocator) void {
-    const malleable = secp256k1.isMalleableSignature(&test_s);
-    _ = malleable;
     _ = allocator;
 }
 
@@ -101,9 +98,8 @@ pub fn main() !void {
     defer bench.deinit();
 
     try bench.add("recoverPubkey", benchRecoverPubkey, .{});
-    try bench.add("isValidSignatureComponent (r)", benchIsValidSignatureComponentR, .{});
-    try bench.add("isValidSignatureComponent (s)", benchIsValidSignatureComponentS, .{});
-    try bench.add("isMalleableSignature", benchIsMalleableSignature, .{});
+    try bench.add("validateSignature", benchValidateSignature, .{});
+    try bench.add("validateSignature (high-S)", benchValidateHighS, .{});
     try bench.add("AffinePoint.isOnCurve", benchAffinePointIsOnCurve, .{});
     try bench.add("AffinePoint.double", benchAffinePointDouble, .{});
     try bench.add("AffinePoint.add", benchAffinePointAdd, .{});

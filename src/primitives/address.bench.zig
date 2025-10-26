@@ -36,20 +36,20 @@ fn benchFromPublicKey(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-// Benchmark: Address.calculateCreate (CREATE opcode)
+// Benchmark: Address.calculateCreateAddress (CREATE opcode)
 fn benchCalculateCreate(allocator: std.mem.Allocator) void {
     const deployer = Address{ .bytes = [_]u8{0x12} ** 20 };
     const nonce: u64 = 42;
-    const addr = deployer.calculateCreate(allocator, nonce) catch unreachable;
+    const addr = Address.calculateCreateAddress(allocator, deployer, nonce) catch unreachable;
     _ = addr;
 }
 
-// Benchmark: Address.calculateCreate2 (CREATE2 opcode)
+// Benchmark: Address.getCreate2Address (CREATE2 opcode, pre-hashed init code)
 fn benchCalculateCreate2(allocator: std.mem.Allocator) void {
     const deployer = Address{ .bytes = [_]u8{0x12} ** 20 };
     const salt = [_]u8{0xab} ** 32;
     const init_code_hash = [_]u8{0xcd} ** 32;
-    const addr = deployer.calculateCreate2(allocator, salt, init_code_hash) catch unreachable;
+    const addr = Address.getCreate2Address(deployer, salt, init_code_hash);
     _ = addr;
 }
 

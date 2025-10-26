@@ -33,70 +33,70 @@ fn benchFormatGwei(allocator: std.mem.Allocator) void {
     defer allocator.free(formatted);
 }
 
-// Benchmark: weiToGwei
+// Benchmark: wei->gwei via convertUnits
 fn benchWeiToGwei(allocator: std.mem.Allocator) void {
     const wei: u256 = 50_000_000_000;
-    const gwei = Numeric.weiToGwei(wei);
+    const gwei = Numeric.convertUnits(wei, .wei, .gwei) catch unreachable;
     _ = gwei;
     _ = allocator;
 }
 
-// Benchmark: gweiToWei
+// Benchmark: gwei->wei via convertUnits
 fn benchGweiToWei(allocator: std.mem.Allocator) void {
     const gwei: u256 = 50;
-    const wei = Numeric.gweiToWei(gwei);
+    const wei = Numeric.convertUnits(gwei, .gwei, .wei) catch unreachable;
     _ = wei;
     _ = allocator;
 }
 
-// Benchmark: etherToWei
+// Benchmark: ether->wei via convertUnits
 fn benchEtherToWei(allocator: std.mem.Allocator) void {
     const ether: u256 = 1;
-    const wei = Numeric.etherToWei(ether);
+    const wei = Numeric.convertUnits(ether, .ether, .wei) catch unreachable;
     _ = wei;
     _ = allocator;
 }
 
-// Benchmark: weiToEther
+// Benchmark: wei->ether via convertUnits
 fn benchWeiToEther(allocator: std.mem.Allocator) void {
     const wei: u256 = 1_000_000_000_000_000_000;
-    const ether = Numeric.weiToEther(wei);
+    const ether = Numeric.convertUnits(wei, .wei, .ether) catch unreachable;
     _ = ether;
     _ = allocator;
 }
 
-// Benchmark: safeAdd
+// Benchmark: safeAdd (optional)
 fn benchSafeAdd(allocator: std.mem.Allocator) void {
     const a: u256 = 1000;
     const b: u256 = 2000;
-    const result = Numeric.safeAdd(a, b) catch unreachable;
+    const result = Numeric.safeAdd(a, b) orelse 0;
     _ = result;
     _ = allocator;
 }
 
-// Benchmark: safeSub
+// Benchmark: safeSub (optional)
 fn benchSafeSub(allocator: std.mem.Allocator) void {
     const a: u256 = 2000;
     const b: u256 = 1000;
-    const result = Numeric.safeSub(a, b) catch unreachable;
+    const result = Numeric.safeSub(a, b) orelse 0;
     _ = result;
     _ = allocator;
 }
 
-// Benchmark: safeMul
+// Benchmark: safeMul (optional)
 fn benchSafeMul(allocator: std.mem.Allocator) void {
     const a: u256 = 1000;
     const b: u256 = 2000;
-    const result = Numeric.safeMul(a, b) catch unreachable;
+    const result = Numeric.safeMul(a, b) orelse 0;
     _ = result;
     _ = allocator;
 }
 
-// Benchmark: safeDiv
+// Benchmark: safeDiv (optional)
 fn benchSafeDiv(allocator: std.mem.Allocator) void {
     const a: u256 = 2000;
     const b: u256 = 10;
-    const result = Numeric.safeDiv(a, b) catch unreachable;
+    const result = Numeric.safeDiv(a, b) orelse 0;
     _ = result;
     _ = allocator;
 }
@@ -110,11 +110,11 @@ fn benchCalculateGasCost(allocator: std.mem.Allocator) void {
     _ = allocator;
 }
 
-// Benchmark: calculatePercentageOf
+// Benchmark: calculatePercentageOf (plain u256)
 fn benchCalculatePercentageOf(allocator: std.mem.Allocator) void {
     const percentage: u256 = 15; // 15%
     const whole: u256 = 1000;
-    const result = Numeric.calculatePercentageOf(percentage, whole) catch unreachable;
+    const result = Numeric.calculatePercentageOf(percentage, whole);
     _ = result;
     _ = allocator;
 }

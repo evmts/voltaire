@@ -1,7 +1,7 @@
 const std = @import("std");
 const zbench = @import("zbench");
 const primitives = @import("primitives");
-const rlp = primitives.rlp;
+const rlp = primitives.Rlp;
 
 // Benchmark: RLP encode small byte string
 fn benchEncodeSmallBytes(allocator: std.mem.Allocator) void {
@@ -31,62 +31,44 @@ fn benchEncodeEmptyString(allocator: std.mem.Allocator) void {
     defer allocator.free(encoded);
 }
 
-// Benchmark: RLP encode u64
+// Benchmark: RLP encode u64 (generic encode)
 fn benchEncodeU64(allocator: std.mem.Allocator) void {
     const value: u64 = 1234567890;
-    const encoded = rlp.encodeInteger(allocator, u64, value) catch unreachable;
+    const encoded = rlp.encode(allocator, value) catch unreachable;
     defer allocator.free(encoded);
 }
 
-// Benchmark: RLP encode u256
+// Benchmark: RLP encode u256 (generic encode)
 fn benchEncodeU256(allocator: std.mem.Allocator) void {
     const value: u256 = 0x123456789abcdef0;
-    const encoded = rlp.encodeInteger(allocator, u256, value) catch unreachable;
+    const encoded = rlp.encode(allocator, value) catch unreachable;
     defer allocator.free(encoded);
 }
 
-// Benchmark: RLP encode list (3 items)
+// Benchmark: RLP encode list (3 items) using generic encode
 fn benchEncodeList(allocator: std.mem.Allocator) void {
     const item1 = [_]u8{ 0xde, 0xad };
     const item2 = [_]u8{ 0xbe, 0xef };
     const item3 = [_]u8{ 0xca, 0xfe };
 
     const items = [_][]const u8{ &item1, &item2, &item3 };
-    var encoded_items = std.ArrayList([]const u8).init(allocator);
-    defer {
-        for (encoded_items.items) |item| {
-            allocator.free(item);
-        }
-        encoded_items.deinit(allocator);
-    }
-
-    for (items) |item| {
-        const enc = rlp.encodeBytes(allocator, item) catch unreachable;
-        encoded_items.append(allocator, enc) catch unreachable;
-    }
-
-    const list_encoded = rlp.encodeList(allocator, encoded_items.items) catch unreachable;
+    const list_encoded = rlp.encode(allocator, &items) catch unreachable;
     defer allocator.free(list_encoded);
 }
 
-// Benchmark: RLP decode small byte string
+// Benchmark: RLP decode small byte string (generic decode)
 fn benchDecodeSmallBytes(allocator: std.mem.Allocator) void {
     const encoded = [_]u8{ 0x84, 0xde, 0xad, 0xbe, 0xef };
-    const decoded = rlp.decodeBytes(allocator, &encoded) catch unreachable;
-    defer allocator.free(decoded);
+    const decoded = rlp.decode(allocator, &encoded, false) catch unreachable;
+    defer decoded.data.deinit(allocator);
 }
 
-// Benchmark: RLP decode list
+// Benchmark: RLP decode list (generic decode)
 fn benchDecodeList(allocator: std.mem.Allocator) void {
     // Encoded list of [0xdead, 0xbeef, 0xcafe]
     const encoded = [_]u8{ 0xc8, 0x82, 0xde, 0xad, 0x82, 0xbe, 0xef, 0x82, 0xca, 0xfe };
-    const decoded = rlp.decodeList(allocator, &encoded) catch unreachable;
-    defer {
-        for (decoded) |item| {
-            allocator.free(item);
-        }
-        allocator.free(decoded);
-    }
+    const decoded = rlp.decode(allocator, &encoded, false) catch unreachable;
+    defer decoded.data.deinit(allocator);
 }
 
 pub fn main() !void {
