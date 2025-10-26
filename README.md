@@ -308,19 +308,66 @@ For details on building and using the native Zig implementations, see:
 
 ### Benchmarking
 
-Run performance benchmarks to measure native Zig implementation performance:
+This project includes comprehensive performance benchmarks using [zbench](https://github.com/hendriknielaender/zbench) for measuring native Zig implementation performance.
+
+#### Running Benchmarks
+
+Benchmarks are **opt-in** to keep the default build fast. Enable them with the `-Dwith-benches=true` flag:
 
 ```bash
-# Run all performance benchmarks
-zig build bench
+# Build and run all benchmarks
+zig build -Dwith-benches=true bench
 
-# Filter specific benchmarks
-zig build bench -Dfilter=keccak   # Only keccak benchmarks
-zig build bench -Dfilter=address  # Only address benchmarks
-zig build bench -Dfilter=secp     # Only secp256k1 benchmarks
+# Filter by pattern (matches benchmark file names)
+zig build -Dwith-benches=true bench --filter numeric     # Numeric operations
+zig build -Dwith-benches=true bench --filter eip712      # EIP-712 signing
+zig build -Dwith-benches=true bench --filter primitives  # All primitives benchmarks
+zig build -Dwith-benches=true bench --filter crypto      # All crypto benchmarks
+
+# Run a specific benchmark binary directly
+./zig-out/bin/zbench-rlp
+./zig-out/bin/zbench-hash
 ```
 
-See [bench/README.md](./bench/README.md) for complete benchmark documentation including bundle size analysis and detailed performance measurement.
+#### Why Are Benchmarks Gated?
+
+Benchmarks are behind a build flag because they:
+- Add ~10 additional executables to the build
+- Include the zbench dependency
+- Are primarily useful for performance testing and development
+- Keep the default `zig build` fast for regular development
+
+#### What Gets Benchmarked
+
+Benchmarks are co-located with source code in `src/**/*.bench.zig` files:
+
+- **Primitives**: Numeric operations, hex encoding, RLP encoding, address operations
+- **Crypto**: Keccak-256 hashing, secp256k1 signatures, EIP-712 typed data signing
+- **Precompiles**: ecrecover, SHA-256, BN254 operations
+
+#### Expected Output
+
+Benchmarks use zbench's default configuration:
+- **Warmup iterations**: Automatic (warm up CPU caches)
+- **Measurement iterations**: Adaptive based on operation speed
+- **Output**: Operations per second, mean time, variance
+
+**Note**: Benchmarks produce no output on macOS by default when run via `zig build bench`. Individual benchmark binaries in `zig-out/bin/zbench-*` will show detailed results when run directly.
+
+#### Comparing with TypeScript
+
+For benchmarks comparing Zig implementations against ethers.js, viem, and other libraries:
+
+```bash
+# Run TypeScript comparison benchmarks
+bun run vitest bench comparisons/
+
+# Run specific comparison category
+bun run vitest bench comparisons/keccak256/
+bun run vitest bench comparisons/abi/
+```
+
+See [BENCHMARK_RESULTS.md](./BENCHMARK_RESULTS.md) for TypeScript/FFI performance comparisons and [ZIG_BENCHMARK_RESULTS.md](./ZIG_BENCHMARK_RESULTS.md) for detailed Zig benchmark documentation.
 
 ## Documentation
 
