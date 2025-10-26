@@ -294,6 +294,21 @@ pub fn build(b: *std.Build) void {
     const example_transaction_step = b.step("example-transaction", "Run the transaction operations example");
     example_transaction_step.dependOn(&run_transaction_example.step);
 
+    // Generate C header from c_api.zig
+    const generate_header = b.addExecutable(.{
+        .name = "generate_c_header",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("scripts/generate_c_header.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    const run_generate_header = b.addRunArtifact(generate_header);
+
+    const generate_header_step = b.step("generate-header", "Generate primitives.h from c_api.zig");
+    generate_header_step.dependOn(&run_generate_header.step);
+
     // C API library - skip for WASM targets
     const is_wasm = target.result.cpu.arch == .wasm32 or target.result.cpu.arch == .wasm64;
     if (!is_wasm) {
@@ -314,6 +329,7 @@ pub fn build(b: *std.Build) void {
         c_api_lib.addObjectFile(rust_crypto_lib_path);
         c_api_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
         c_api_lib.step.dependOn(cargo_build_step);
+        c_api_lib.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_lib.linkLibC();
 
         b.installArtifact(c_api_lib);
@@ -335,12 +351,15 @@ pub fn build(b: *std.Build) void {
         c_api_shared.addObjectFile(rust_crypto_lib_path);
         c_api_shared.addIncludePath(b.path("lib")); // For Rust FFI headers
         c_api_shared.step.dependOn(cargo_build_step);
+        c_api_shared.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_shared.linkLibC();
 
         b.installArtifact(c_api_shared);
 
-        // Install C API header for external consumers
-        b.installFile("src/primitives.h", "include/primitives.h");
+        // Install C API header for external consumers (depends on generation)
+        const install_header = b.addInstallFile(b.path("src/primitives.h"), "include/primitives.h");
+        install_header.step.dependOn(&run_generate_header.step);
+        b.getInstallStep().dependOn(&install_header.step);
 
         // C example executable
         const c_example = b.addExecutable(.{
@@ -396,6 +415,10 @@ pub fn build(b: *std.Build) void {
     // Benchmark executables for WASM size and performance measurement
     const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";
     buildBenchmarks(b, target, optimize, bench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+
+    // zbench performance benchmarks colocated with source code
+    const zbench_filter = b.option([]const u8, "filter", "Pattern to filter zbench benchmarks (default: \"*\")") orelse "*";
+    buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 }
 
 fn buildBenchmarks(
@@ -453,6 +476,79 @@ fn buildBenchmarks(
         bench_exe.linkLibC();
 
         b.installArtifact(bench_exe);
+    }
+}
+
+fn buildZBenchmarks(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    filter: []const u8,
+    primitives_mod: *std.Build.Module,
+    crypto_mod: *std.Build.Module,
+    precompiles_mod: *std.Build.Module,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+    rust_crypto_lib_path: std.Build.LazyPath,
+    cargo_build_step: *std.Build.Step,
+) void {
+    // Import zbench dependency
+    const zbench_dep = b.dependency("zbench", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zbench_mod = zbench_dep.module("zbench");
+
+    // Create bench step to run all benchmarks
+    const bench_step = b.step("bench", "Run zbench performance benchmarks");
+
+    // Recursively find all *.bench.zig files in src/
+    const src_dir = std.fs.cwd().openDir("src", .{ .iterate = true }) catch return;
+    var walker = src_dir.walk(b.allocator) catch return;
+    defer walker.deinit();
+
+    while (walker.next() catch null) |entry| {
+        if (entry.kind != .file) continue;
+        if (!std.mem.endsWith(u8, entry.basename, ".bench.zig")) continue;
+
+        // Check if benchmark matches filter
+        if (!std.mem.eql(u8, filter, "*") and std.mem.indexOf(u8, entry.basename, filter) == null) {
+            continue;
+        }
+
+        // Build path: src/[path].bench.zig
+        const bench_path = b.fmt("src/{s}", .{entry.path});
+        const bench_name_raw = entry.basename[0 .. entry.basename.len - 10]; // Remove .bench.zig
+        const bench_name = b.fmt("zbench-{s}", .{bench_name_raw});
+
+        // Create benchmark module
+        const bench_mod = b.createModule(.{
+            .root_source_file = b.path(bench_path),
+            .target = target,
+            .optimize = optimize,
+        });
+        bench_mod.addImport("primitives", primitives_mod);
+        bench_mod.addImport("crypto", crypto_mod);
+        bench_mod.addImport("precompiles", precompiles_mod);
+        bench_mod.addImport("zbench", zbench_mod);
+
+        // Create benchmark executable
+        const bench_exe = b.addExecutable(.{
+            .name = bench_name,
+            .root_module = bench_mod,
+        });
+        bench_exe.linkLibrary(c_kzg_lib);
+        bench_exe.linkLibrary(blst_lib);
+        bench_exe.addObjectFile(rust_crypto_lib_path);
+        bench_exe.addIncludePath(b.path("lib"));
+        bench_exe.step.dependOn(cargo_build_step);
+        bench_exe.linkLibC();
+
+        b.installArtifact(bench_exe);
+
+        // Add run step for this benchmark
+        const run_bench = b.addRunArtifact(bench_exe);
+        bench_step.dependOn(&run_bench.step);
     }
 }
 

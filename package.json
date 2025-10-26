@@ -54,12 +54,16 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@ethereumjs/rlp": "^10.0.0",
+		"@ethersproject/rlp": "^5.8.0",
 		"@noble/curves": "^2.0.1",
 		"@noble/hashes": "^2.0.1",
+		"@noble/secp256k1": "^3.0.0",
 		"@tevm/tsconfig": "2.0.0-next.80",
 		"@types/bun": "latest",
 		"@types/node": "^22.10.2",
 		"ethers": "^6.13.4",
+		"mitata": "^1.0.34",
 		"typescript": "^5.7.2",
 		"viem": "^2.21.54",
 		"vitest": "^2.1.8"
