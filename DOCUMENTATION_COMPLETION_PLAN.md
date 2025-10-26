@@ -418,10 +418,10 @@ This implementation uses **BLST**, an audited, production-grade BLS12-381 librar
 **Line 73:**
 
 ```markdown
-# Current:
+# Old (incorrect):
 const addr_bytes = try Address.fromBytes(&bytes_20);
 
-# Change to:
+# Correct:
 const addr_bytes = try Address.fromBytes(bytes_20);
 ```
 
