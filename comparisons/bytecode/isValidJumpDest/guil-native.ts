@@ -1,56 +1,10 @@
-// Import directly to avoid hex.ts FFI issues in Node.js benchmarks
+import { isValidJumpDest } from "../../../src/typescript/native/primitives/bytecode.native.js";
 import {
 	SIMPLE_BYTECODE,
 	COMPLEX_BYTECODE,
 	LARGE_BYTECODE,
 	INVALID_JUMPDEST_BYTECODE,
 } from "../test-data.js";
-
-// Inline implementation to avoid Bun FFI imports
-const JUMPDEST = 0x5b;
-const PUSH1 = 0x60;
-const PUSH32 = 0x7f;
-
-function isBytecodeBoundary(bytecode: Uint8Array, position: number): boolean {
-	if (position >= bytecode.length) {
-		return false;
-	}
-
-	let i = 0;
-	while (i < bytecode.length) {
-		if (i === position) {
-			return true;
-		}
-
-		if (i > position) {
-			return false;
-		}
-
-		const opcode = bytecode[i];
-
-		if (opcode >= PUSH1 && opcode <= PUSH32) {
-			const pushSize = opcode - PUSH1 + 1;
-			i += 1 + pushSize;
-			continue;
-		}
-
-		i++;
-	}
-
-	return false;
-}
-
-function isValidJumpDest(bytecode: Uint8Array, position: number): boolean {
-	if (position >= bytecode.length) {
-		return false;
-	}
-
-	if (!isBytecodeBoundary(bytecode, position)) {
-		return false;
-	}
-
-	return bytecode[position] === JUMPDEST;
-}
 
 export function main(): void {
 	// Test with simple bytecode

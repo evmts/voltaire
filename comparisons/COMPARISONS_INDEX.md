@@ -1,180 +1,178 @@
-# Library Comparison Documentation Index
+# Benchmark Results Index
 
-This directory contains comprehensive COMPARISON.md files for all benchmark operations across the primitives library.
+This directory contains comprehensive BENCHMARKS.md files with actual performance data for all benchmark operations across the primitives library.
 
 ## Overview
 
-**Total Files:** 100 COMPARISON.md files
-**Template:** Based on `/comparisons/hash32/COMPARISON.md`
+**Total Files:** 132 BENCHMARKS.md files
+**Successful Benchmarks:** 31 with real performance data
+**Failed Benchmarks:** 101 (documented with error details)
 
-Each COMPARISON.md provides a detailed analysis comparing:
-- **Guil Native** - High-performance native FFI implementation (ReleaseFast)
-- **Guil WASM** - Portable WASM implementation (ReleaseSmall)
+Each BENCHMARKS.md provides actual benchmark results comparing:
+- **Guil Native** - High-performance native FFI implementation
+- **Guil WASM** - Portable WASM implementation
+- **Guil (fallback)** - JavaScript fallback using ethers/viem implementations
 - **Ethers** - Mature, battle-tested JavaScript library
 - **Viem** - Modern, tree-shakeable TypeScript library
 
 ## Quick Navigation
 
 ### Address Operations (7)
-- [calculateCreate2Address](./address/calculateCreate2Address/COMPARISON.md)
-- [calculateCreateAddress](./address/calculateCreateAddress/COMPARISON.md)
-- [equals](./address/equals/COMPARISON.md)
-- [fromHex](./address/fromHex/COMPARISON.md)
-- [isZero](./address/isZero/COMPARISON.md)
-- [toChecksumHex](./address/toChecksumHex/COMPARISON.md)
-- [toHex](./address/toHex/COMPARISON.md)
+- [calculateCreate2Address](./address/BENCHMARKS.md)
+- [calculateCreateAddress](./address/BENCHMARKS.md)
+- [equals](./address/BENCHMARKS.md)
+- [fromHex](./address/BENCHMARKS.md)
+- [isZero](./address/BENCHMARKS.md)
+- [toChecksumHex](./address/BENCHMARKS.md)
+- [toHex](./address/BENCHMARKS.md)
 
 ### ABI Operations (10)
 
 #### Standard ABI (6)
-- [computeSelector](./abi/computeSelector/COMPARISON.md)
-- [decodeAbiParameters](./abi/decodeAbiParameters/COMPARISON.md)
-- [decodeFunctionData](./abi/decodeFunctionData/COMPARISON.md)
-- [encodeAbiParameters](./abi/encodeAbiParameters/COMPARISON.md)
-- [encodeFunctionData](./abi/encodeFunctionData/COMPARISON.md)
-- [encodePacked](./abi/encodePacked/COMPARISON.md)
+- [computeSelector](./abi/BENCHMARKS.md)
+- [decodeAbiParameters](./abi/BENCHMARKS.md)
+- [decodeFunctionData](./abi/BENCHMARKS.md)
+- [encodeAbiParameters](./abi/BENCHMARKS.md)
+- [encodeFunctionData](./abi/BENCHMARKS.md)
+- [encodePacked](./abi/BENCHMARKS.md)
 
 #### Extended ABI (4)
-- [getAbiItem](./abi-extended/getAbiItem/COMPARISON.md)
-- [parseAbi](./abi-extended/parseAbi/COMPARISON.md)
-- [parseAbiItem](./abi-extended/parseAbiItem/COMPARISON.md)
-- [toFunctionSelector](./abi-extended/toFunctionSelector/COMPARISON.md)
+- [getAbiItem](./abi-extended/BENCHMARKS.md)
+- [parseAbi](./abi-extended/BENCHMARKS.md)
+- [parseAbiItem](./abi-extended/BENCHMARKS.md)
+- [toFunctionSelector](./abi-extended/BENCHMARKS.md)
 
 ### Bytecode Operations (4)
-- [analyzeJumpDestinations](./bytecode/analyzeJumpDestinations/COMPARISON.md)
-- [isBytecodeBoundary](./bytecode/isBytecodeBoundary/COMPARISON.md)
-- [isValidJumpDest](./bytecode/isValidJumpDest/COMPARISON.md)
-- [validateBytecode](./bytecode/validateBytecode/COMPARISON.md)
+- [analyzeJumpDestinations](./bytecode/analyzeJumpDestinations/BENCHMARKS.md)
+- [isBytecodeBoundary](./bytecode/isBytecodeBoundary/BENCHMARKS.md)
+- [isValidJumpDest](./bytecode/isValidJumpDest/BENCHMARKS.md)
+- [validateBytecode](./bytecode/validateBytecode/BENCHMARKS.md)
 
 ### Bytes Operations (8)
-- [Byte](./bytes/Byte/COMPARISON.md)
-- [Bytes](./bytes/Bytes/COMPARISON.md)
-- [byteToNumber](./bytes/byteToNumber/COMPARISON.md)
-- [bytesLength](./bytes/bytesLength/COMPARISON.md)
-- [bytesToUint8Array](./bytes/bytesToUint8Array/COMPARISON.md)
-- [concatBytes](./bytes/concatBytes/COMPARISON.md)
-- [sliceBytes](./bytes/sliceBytes/COMPARISON.md)
-- [typeGuards](./bytes/typeGuards/COMPARISON.md)
+- [Byte](./bytes/Byte/BENCHMARKS.md)
+- [Bytes](./bytes/Bytes/BENCHMARKS.md)
+- [byteToNumber](./bytes/byteToNumber/BENCHMARKS.md)
+- [bytesLength](./bytes/bytesLength/BENCHMARKS.md)
+- [bytesToUint8Array](./bytes/bytesToUint8Array/BENCHMARKS.md)
+- [concatBytes](./bytes/concatBytes/BENCHMARKS.md)
+- [sliceBytes](./bytes/sliceBytes/BENCHMARKS.md)
+- [typeGuards](./bytes/typeGuards/BENCHMARKS.md)
 
 ### Data Padding Operations (5)
-- [padLeft](./data-padding/padLeft/COMPARISON.md)
-- [padRight](./data-padding/padRight/COMPARISON.md)
-- [size](./data-padding/size/COMPARISON.md)
-- [trim](./data-padding/trim/COMPARISON.md)
-- [trimRight](./data-padding/trimRight/COMPARISON.md)
+- [padLeft](./data-padding/padLeft/BENCHMARKS.md)
+- [padRight](./data-padding/padRight/BENCHMARKS.md)
+- [size](./data-padding/size/BENCHMARKS.md)
+- [trim](./data-padding/trim/BENCHMARKS.md)
+- [trimRight](./data-padding/trimRight/BENCHMARKS.md)
 
 ### EIP Operations (3)
-- [EIP-191: hashMessage](./eip191/hashMessage/COMPARISON.md)
-- [EIP-712: hashDomain](./eip712/hashDomain/COMPARISON.md)
-- [EIP-712: hashTypedData](./eip712/hashTypedData/COMPARISON.md)
+- [EIP-191: hashMessage](./eip191/hashMessage/BENCHMARKS.md)
+- [EIP-712: hashDomain](./eip712/hashDomain/BENCHMARKS.md)
+- [EIP-712: hashTypedData](./eip712/hashTypedData/BENCHMARKS.md)
 
 ### Hash32 Operations (7)
-- [Overview](./hash32/COMPARISON.md) *(Original template)*
-- [constructor](./hash32/constructor/COMPARISON.md)
-- [fill](./hash32/fill/COMPARISON.md)
-- [fromBigInt](./hash32/fromBigInt/COMPARISON.md)
-- [toBigInt](./hash32/toBigInt/COMPARISON.md)
-- [toUint8Array](./hash32/toUint8Array/COMPARISON.md)
-- [typeGuard](./hash32/typeGuard/COMPARISON.md)
+- [Overview](./hash32/BENCHMARKS.md) *(Original template)*
+- [constructor](./hash32/constructor/BENCHMARKS.md)
+- [fill](./hash32/fill/BENCHMARKS.md)
+- [fromBigInt](./hash32/fromBigInt/BENCHMARKS.md)
+- [toBigInt](./hash32/toBigInt/BENCHMARKS.md)
+- [toUint8Array](./hash32/toUint8Array/BENCHMARKS.md)
+- [typeGuard](./hash32/typeGuard/BENCHMARKS.md)
 
 ### Hex Operations (4)
-- [bytesToHex](./hex/bytesToHex/COMPARISON.md)
-- [hexToBytes](./hex/hexToBytes/COMPARISON.md)
-- [hexToU256](./hex/hexToU256/COMPARISON.md)
-- [u256ToHex](./hex/u256ToHex/COMPARISON.md)
+- [bytesToHex](./hex/bytesToHex/BENCHMARKS.md)
+- [hexToBytes](./hex/hexToBytes/BENCHMARKS.md)
+- [hexToU256](./hex/hexToU256/BENCHMARKS.md)
+- [u256ToHex](./hex/u256ToHex/BENCHMARKS.md)
 
 ### Keccak256 Operations (1)
-- [keccak256](./keccak256/keccak256/COMPARISON.md)
+- [keccak256](./keccak256/keccak256/BENCHMARKS.md)
 
 ### Numeric Operations (5)
-- [convertUnit](./numeric/convertUnit/COMPARISON.md)
-- [etherToWei](./numeric/etherToWei/COMPARISON.md)
-- [gweiToWei](./numeric/gweiToWei/COMPARISON.md)
-- [weiToEther](./numeric/weiToEther/COMPARISON.md)
-- [weiToGwei](./numeric/weiToGwei/COMPARISON.md)
+- [convertUnit](./numeric/convertUnit/BENCHMARKS.md)
+- [etherToWei](./numeric/etherToWei/BENCHMARKS.md)
+- [gweiToWei](./numeric/gweiToWei/BENCHMARKS.md)
+- [weiToEther](./numeric/weiToEther/BENCHMARKS.md)
+- [weiToGwei](./numeric/weiToGwei/BENCHMARKS.md)
 
 ### RLP Operations (6)
-- [decode](./rlp/decode/COMPARISON.md)
-- [encode](./rlp/encode/COMPARISON.md)
-- [encodeList](./rlp/encodeList/COMPARISON.md)
-- [encodeUint](./rlp/encodeUint/COMPARISON.md)
-- [fromHex](./rlp/fromHex/COMPARISON.md)
-- [toHex](./rlp/toHex/COMPARISON.md)
+- [decode](./rlp/decode/BENCHMARKS.md)
+- [encode](./rlp/encode/BENCHMARKS.md)
+- [encodeList](./rlp/encodeList/BENCHMARKS.md)
+- [encodeUint](./rlp/encodeUint/BENCHMARKS.md)
+- [fromHex](./rlp/fromHex/BENCHMARKS.md)
+- [toHex](./rlp/toHex/BENCHMARKS.md)
 
 ### Signature Utils Operations (4)
-- [isCanonicalSignature](./signature-utils/isCanonicalSignature/COMPARISON.md)
-- [normalizeSignature](./signature-utils/normalizeSignature/COMPARISON.md)
-- [parseSignature](./signature-utils/parseSignature/COMPARISON.md)
-- [serializeSignature](./signature-utils/serializeSignature/COMPARISON.md)
+- [isCanonicalSignature](./signature-utils/isCanonicalSignature/BENCHMARKS.md)
+- [normalizeSignature](./signature-utils/normalizeSignature/BENCHMARKS.md)
+- [parseSignature](./signature-utils/parseSignature/BENCHMARKS.md)
+- [serializeSignature](./signature-utils/serializeSignature/BENCHMARKS.md)
 
 ### Signers Operations (6)
-- [createPrivateKeySigner](./signers/createPrivateKeySigner/COMPARISON.md)
-- [getAddress](./signers/getAddress/COMPARISON.md)
-- [recoverTransactionAddress](./signers/recoverTransactionAddress/COMPARISON.md)
-- [sign](./signers/sign/COMPARISON.md)
-- [signMessage](./signers/signMessage/COMPARISON.md)
-- [signTypedData](./signers/signTypedData/COMPARISON.md)
+- [createPrivateKeySigner](./signers/createPrivateKeySigner/BENCHMARKS.md)
+- [getAddress](./signers/getAddress/BENCHMARKS.md)
+- [recoverTransactionAddress](./signers/recoverTransactionAddress/BENCHMARKS.md)
+- [sign](./signers/sign/BENCHMARKS.md)
+- [signMessage](./signers/signMessage/BENCHMARKS.md)
+- [signTypedData](./signers/signTypedData/BENCHMARKS.md)
 
 ### Solidity Packed Operations (2)
-- [solidityPackedKeccak256](./solidity-packed/solidityPackedKeccak256/COMPARISON.md)
-- [solidityPackedSha256](./solidity-packed/solidityPackedSha256/COMPARISON.md)
+- [solidityPackedKeccak256](./solidity-packed/solidityPackedKeccak256/BENCHMARKS.md)
+- [solidityPackedSha256](./solidity-packed/solidityPackedSha256/BENCHMARKS.md)
 
 ### String Encoding Operations (4)
-- [bytesToString](./string-encoding/bytesToString/COMPARISON.md)
-- [hexToString](./string-encoding/hexToString/COMPARISON.md)
-- [stringToBytes](./string-encoding/stringToBytes/COMPARISON.md)
-- [stringToHex](./string-encoding/stringToHex/COMPARISON.md)
+- [bytesToString](./string-encoding/bytesToString/BENCHMARKS.md)
+- [hexToString](./string-encoding/hexToString/BENCHMARKS.md)
+- [stringToBytes](./string-encoding/stringToBytes/BENCHMARKS.md)
+- [stringToHex](./string-encoding/stringToHex/BENCHMARKS.md)
 
 ### Transaction Operations (6)
-- [detectTransactionType](./transaction/detectTransactionType/COMPARISON.md)
-- [hashTransaction](./transaction/hashTransaction/COMPARISON.md)
-- [parseTransaction](./transaction/parseTransaction/COMPARISON.md)
-- [serializeEip1559](./transaction/serializeEip1559/COMPARISON.md)
-- [serializeEip7702](./transaction/serializeEip7702/COMPARISON.md)
-- [serializeLegacy](./transaction/serializeLegacy/COMPARISON.md)
+- [detectTransactionType](./transaction/detectTransactionType/BENCHMARKS.md)
+- [hashTransaction](./transaction/hashTransaction/BENCHMARKS.md)
+- [parseTransaction](./transaction/parseTransaction/BENCHMARKS.md)
+- [serializeEip1559](./transaction/serializeEip1559/BENCHMARKS.md)
+- [serializeEip7702](./transaction/serializeEip7702/BENCHMARKS.md)
+- [serializeLegacy](./transaction/serializeLegacy/BENCHMARKS.md)
 
 ### Uint Branded Operations (3)
-- [constants](./uint-branded/constants/COMPARISON.md)
-- [isUint](./uint-branded/isUint/COMPARISON.md)
-- [uintToBigInt](./uint-branded/uintToBigInt/COMPARISON.md)
+- [constants](./uint-branded/constants/BENCHMARKS.md)
+- [isUint](./uint-branded/isUint/BENCHMARKS.md)
+- [uintToBigInt](./uint-branded/uintToBigInt/BENCHMARKS.md)
 
 ### Uint256 Operations (4 categories)
-- [Arithmetic](./uint256/arithmetic/COMPARISON.md) - add, sub, mul, div, mod, pow
-- [Bitwise](./uint256/bitwise/COMPARISON.md) - and, or, xor, not, shl, shr
-- [Comparison](./uint256/comparison/COMPARISON.md) - eq, gt, gte, lt, lte, min, max, compare
-- [Conversions](./uint256/conversions/COMPARISON.md) - fromBigInt, fromBytes, fromHex, toBigInt, toBytes, toHex
+- [Arithmetic](./uint256/arithmetic/BENCHMARKS.md) - add, sub, mul, div, mod, pow
+- [Bitwise](./uint256/bitwise/BENCHMARKS.md) - and, or, xor, not, shl, shr
+- [Comparison](./uint256/comparison/BENCHMARKS.md) - eq, gt, gte, lt, lte, min, max, compare
+- [Conversions](./uint256/conversions/BENCHMARKS.md) - fromBigInt, fromBytes, fromHex, toBigInt, toBytes, toHex
 
 ### Units Operations (6)
-- [formatEther](./units/formatEther/COMPARISON.md)
-- [formatGwei](./units/formatGwei/COMPARISON.md)
-- [formatUnits](./units/formatUnits/COMPARISON.md)
-- [parseEther](./units/parseEther/COMPARISON.md)
-- [parseGwei](./units/parseGwei/COMPARISON.md)
-- [parseUnits](./units/parseUnits/COMPARISON.md)
+- [formatEther](./units/formatEther/BENCHMARKS.md)
+- [formatGwei](./units/formatGwei/BENCHMARKS.md)
+- [formatUnits](./units/formatUnits/BENCHMARKS.md)
+- [parseEther](./units/parseEther/BENCHMARKS.md)
+- [parseGwei](./units/parseGwei/BENCHMARKS.md)
+- [parseUnits](./units/parseUnits/BENCHMARKS.md)
 
 ### Wallet Generation Operations (5)
-- [compressPublicKey](./wallet-generation/compressPublicKey/COMPARISON.md)
-- [generatePrivateKey](./wallet-generation/generatePrivateKey/COMPARISON.md)
-- [privateKeyToAddress](./wallet-generation/privateKeyToAddress/COMPARISON.md)
-- [privateKeyToPublicKey](./wallet-generation/privateKeyToPublicKey/COMPARISON.md)
-- [publicKeyToAddress](./wallet-generation/publicKeyToAddress/COMPARISON.md)
+- [compressPublicKey](./wallet-generation/compressPublicKey/BENCHMARKS.md)
+- [generatePrivateKey](./wallet-generation/generatePrivateKey/BENCHMARKS.md)
+- [privateKeyToAddress](./wallet-generation/privateKeyToAddress/BENCHMARKS.md)
+- [privateKeyToPublicKey](./wallet-generation/privateKeyToPublicKey/BENCHMARKS.md)
+- [publicKeyToAddress](./wallet-generation/publicKeyToAddress/BENCHMARKS.md)
 
 ## Document Structure
 
-Each COMPARISON.md file includes:
+Each BENCHMARKS.md file includes:
 
-1. **Title** - Operation name and category
-2. **Quick Reference Table** - Side-by-side comparison
-3. **Implementation Details** - Deep dive for each library
-   - Guil Native (ReleaseFast optimization)
-   - Guil WASM (ReleaseSmall optimization)
-   - Ethers (battle-tested JavaScript)
-   - Viem (modern TypeScript)
-4. **Type Safety Deep Dive** - Branded types vs generic types
-5. **Performance Considerations** - Speed and bundle size analysis
-6. **Best Practices** - Recommended patterns per library
-7. **When to Choose Each Library** - Decision guide
-8. **Conclusion** - Summary and recommendations
+1. **Title** - Benchmark name and category
+2. **Results Table** - Actual performance metrics (ops/sec, timing percentiles, etc.)
+3. **Summary** - Relative performance comparisons (e.g., "1.04x faster than...")
+4. **Benchmark Info** - File path, category, date, and tool used
+
+Failed benchmarks document:
+- Error message
+- Potential causes (missing builds, dependencies, etc.)
 
 ## Key Differentiators
 
@@ -251,26 +249,32 @@ process(hash); // No error - runtime risk
 - Fast JavaScript performance
 - Modern development experience
 
-## Generation
+## Running Benchmarks
 
-These files were generated using `/scripts/generate-comparisons.ts` to ensure consistency across all operations. The template is based on the manually crafted `/comparisons/hash32/COMPARISON.md` file.
-
-To regenerate or add new comparisons:
+To regenerate all benchmark results:
 ```bash
-npx tsx scripts/generate-comparisons.ts
+bun run scripts/run-benchmarks.ts
+```
+
+To run a specific benchmark:
+```bash
+bun run vitest bench comparisons/[category]/[file].bench.ts --run
 ```
 
 ## Contributing
 
-When adding new benchmark operations:
-1. Create the operation directory structure
-2. Add benchmark files (`*.bench.ts`)
-3. Run the generation script to create COMPARISON.md
-4. Review and customize the generated comparison if needed
-5. Update this index file
+When adding new benchmarks:
+1. Create the benchmark file (`*.bench.ts`)
+2. Run the benchmark: `bun run vitest bench [file] --run`
+3. Generate BENCHMARKS.md: `bun run scripts/run-benchmarks.ts`
+4. Update this index file if needed
+
+## Notes
+
+Many benchmarks currently fail due to missing Guil native/WASM builds. These failures are documented in their respective BENCHMARKS.md files. Once the builds are available, re-run the script to capture actual performance data.
 
 ---
 
-**Last Updated:** Generated October 25, 2025
-**Script:** `/scripts/generate-comparisons.ts`
-**Template:** `/comparisons/hash32/COMPARISON.md`
+**Last Updated:** 2025-10-26
+**Generated by:** `bun run scripts/run-benchmarks.ts`
+**Total Benchmarks:** 132 (31 successful, 101 failed)
