@@ -374,6 +374,11 @@ pub fn build(b: *std.Build) void {
     // C API library is skipped for WASM (dynamic linking not supported)
     // For JavaScript/TypeScript: use native libprimitives_c with FFI, or compile to WASM for browser
 
+    // Go build and test steps (optional, requires Go toolchain)
+    if (!is_wasm) {
+        addGoBuildSteps(b);
+    }
+
     // Benchmark executables for WASM size and performance measurement
     const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";
     buildBenchmarks(b, target, optimize, bench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
@@ -435,4 +440,26 @@ fn buildBenchmarks(
 
         b.installArtifact(bench_exe);
     }
+}
+
+fn addGoBuildSteps(b: *std.Build) void {
+    // go mod download step
+    const go_mod_download = b.addSystemCommand(&[_][]const u8{ "go", "mod", "download" });
+
+    const go_step = b.step("go", "Download Go dependencies");
+    go_step.dependOn(&go_mod_download.step);
+
+    // go test step - runs tests in src/...
+    const go_test = b.addSystemCommand(&[_][]const u8{ "go", "test", "-v", "./src/..." });
+    // Go tests depend on the C library being built
+    // Note: Users must run 'zig build' before 'zig build test-go' to ensure C library exists
+
+    const test_go_step = b.step("test-go", "Run Go tests (requires 'zig build' first)");
+    test_go_step.dependOn(&go_test.step);
+
+    // go build step - verifies Go code compiles
+    const go_build = b.addSystemCommand(&[_][]const u8{ "go", "build", "./src/..." });
+
+    const build_go_step = b.step("build-go", "Build Go packages (requires 'zig build' first)");
+    build_go_step.dependOn(&go_build.step);
 }
