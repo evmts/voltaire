@@ -1,104 +1,60 @@
 const std = @import("std");
 const zbench = @import("zbench");
 const crypto = @import("crypto");
-const eip712 = crypto.eip712;
+const eip712 = crypto.Eip712;
+const Crypto = crypto.Crypto;
 
-// Benchmark: hashDomain - simple domain
-fn benchHashDomainSimple(allocator: std.mem.Allocator) void {
-    const domain = eip712.Domain{
-        .name = "MyDApp",
-        .version = "1",
-        .chain_id = 1,
-        .verifying_contract = null,
-        .salt = null,
+// Build a simple TypedData with a Message type { name: string, age: uint256 }
+fn buildSimpleTypedData(allocator: std.mem.Allocator) !eip712.TypedData {
+    var typed = eip712.TypedData.init(allocator);
+
+    // Domain
+    typed.domain = try eip712.create_domain(allocator, "MyDApp", "1", 1, null);
+
+    // Primary type
+    typed.primary_type = try allocator.dupe(u8, "Message");
+
+    // Define Message type
+    const props = [_]eip712.TypeProperty{
+        .{ .name = "name", .type = "string" },
+        .{ .name = "age", .type = "uint256" },
     };
-    const hash = eip712.hashDomain(allocator, domain) catch unreachable;
-    _ = hash;
+    try typed.types.put(allocator, "Message", &props);
+
+    // Message values
+    try typed.message.put(try allocator.dupe(u8, "name"), eip712.MessageValue{ .string = try allocator.dupe(u8, "Alice") });
+    try typed.message.put(try allocator.dupe(u8, "age"), eip712.MessageValue{ .number = 30 });
+
+    return typed;
 }
 
-// Benchmark: hashDomain - full domain with all fields
-fn benchHashDomainFull(allocator: std.mem.Allocator) void {
-    const contract_addr = [_]u8{0x12} ** 20;
-    const salt = [_]u8{0xab} ** 32;
-    const domain = eip712.Domain{
-        .name = "MyDApp",
-        .version = "1",
-        .chain_id = 1,
-        .verifying_contract = &contract_addr,
-        .salt = &salt,
-    };
-    const hash = eip712.hashDomain(allocator, domain) catch unreachable;
-    _ = hash;
+// Benchmark: hash typed data (simple)
+fn benchHashTypedData(allocator: std.mem.Allocator) void {
+    var typed = buildSimpleTypedData(allocator) catch return;
+    defer typed.deinit(allocator);
+    const h = eip712.unaudited_hashTypedData(allocator, &typed) catch return;
+    _ = h;
 }
 
-// Benchmark: hashStruct - simple struct
-fn benchHashStructSimple(allocator: std.mem.Allocator) void {
-    const type_hash = [_]u8{0xab} ** 32;
-    const values = [_][]const u8{
-        &[_]u8{ 0xde, 0xad, 0xbe, 0xef },
-        &[_]u8{ 0xca, 0xfe, 0xba, 0xbe },
-    };
-    const hash = eip712.hashStruct(allocator, type_hash, &values) catch unreachable;
-    _ = hash;
+// Benchmark: sign typed data (simple)
+fn benchSignTypedData(allocator: std.mem.Allocator) void {
+    var typed = buildSimpleTypedData(allocator) catch return;
+    defer typed.deinit(allocator);
+    const pk = Crypto.unaudited_randomPrivateKey() catch return;
+    const sig = eip712.unaudited_signTypedData(allocator, &typed, pk) catch return;
+    _ = sig;
 }
 
-// Benchmark: encodeType - simple type
-fn benchEncodeTypeSimple(allocator: std.mem.Allocator) void {
-    const type_def = eip712.TypeDefinition{
-        .name = "Person",
-        .fields = &[_]eip712.Field{
-            .{ .name = "name", .type_name = "string" },
-            .{ .name = "age", .type_name = "uint256" },
-        },
-    };
-    const encoded = eip712.encodeType(allocator, type_def) catch unreachable;
-    defer allocator.free(encoded);
-}
-
-// Benchmark: encodeType - complex type with nested struct
-fn benchEncodeTypeNested(allocator: std.mem.Allocator) void {
-    const type_def = eip712.TypeDefinition{
-        .name = "Mail",
-        .fields = &[_]eip712.Field{
-            .{ .name = "from", .type_name = "Person" },
-            .{ .name = "to", .type_name = "Person" },
-            .{ .name = "contents", .type_name = "string" },
-        },
-    };
-    const encoded = eip712.encodeType(allocator, type_def) catch unreachable;
-    defer allocator.free(encoded);
-}
-
-// Benchmark: hashType
-fn benchHashType(allocator: std.mem.Allocator) void {
-    const type_def = eip712.TypeDefinition{
-        .name = "Person",
-        .fields = &[_]eip712.Field{
-            .{ .name = "name", .type_name = "string" },
-            .{ .name = "age", .type_name = "uint256" },
-        },
-    };
-    const hash = eip712.hashType(allocator, type_def) catch unreachable;
-    _ = hash;
-}
-
-// Benchmark: getStructHash - complete workflow
-fn benchGetStructHash(allocator: std.mem.Allocator) void {
-    const type_def = eip712.TypeDefinition{
-        .name = "Person",
-        .fields = &[_]eip712.Field{
-            .{ .name = "name", .type_name = "string" },
-            .{ .name = "age", .type_name = "uint256" },
-        },
-    };
-    const type_hash = eip712.hashType(allocator, type_def) catch unreachable;
-
-    const name_hash = crypto.HashUtils.keccak256("Alice");
-    const age = [_]u8{0x00} ** 31 ++ [_]u8{0x1e}; // 30
-
-    const values = [_][]const u8{ &name_hash, &age };
-    const struct_hash = eip712.hashStruct(allocator, type_hash, &values) catch unreachable;
-    _ = struct_hash;
+// Benchmark: verify typed data (simple)
+fn benchVerifyTypedData(allocator: std.mem.Allocator) void {
+    var typed = buildSimpleTypedData(allocator) catch return;
+    defer typed.deinit(allocator);
+    const pk = Crypto.unaudited_randomPrivateKey() catch return;
+    const sig = eip712.unaudited_signTypedData(allocator, &typed, pk) catch return;
+    const pub = Crypto.unaudited_getPublicKey(pk) catch return;
+    const addr = pub.toAddress();
+    const ok = eip712.unaudited_verifyTypedData(allocator, &typed, sig, addr) catch return;
+    _ = ok;
 }
 
 pub fn main() !void {
@@ -109,13 +65,9 @@ pub fn main() !void {
     var bench = zbench.Benchmark.init(std.heap.page_allocator, .{});
     defer bench.deinit();
 
-    try bench.add("hashDomain (simple)", benchHashDomainSimple, .{});
-    try bench.add("hashDomain (full)", benchHashDomainFull, .{});
-    try bench.add("hashStruct (simple)", benchHashStructSimple, .{});
-    try bench.add("encodeType (simple)", benchEncodeTypeSimple, .{});
-    try bench.add("encodeType (nested)", benchEncodeTypeNested, .{});
-    try bench.add("hashType", benchHashType, .{});
-    try bench.add("getStructHash (complete)", benchGetStructHash, .{});
+    try bench.add("EIP712 hashTypedData", benchHashTypedData, .{});
+    try bench.add("EIP712 signTypedData", benchSignTypedData, .{});
+    try bench.add("EIP712 verifyTypedData", benchVerifyTypedData, .{});
 
     try writer.writeAll("\n");
     try bench.run(writer);
