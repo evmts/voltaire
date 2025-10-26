@@ -9,9 +9,9 @@
 
 ## Overview
 
-This directory contains comprehensive documentation for the Primitives library - an Ethereum primitives and cryptographic operations library written in Zig. The documentation is built using [Astro](https://astro.build) with the [Starlight](https://starlight.astro.build/) theme.
+This directory contains comprehensive documentation for the Primitives library - an Ethereum primitives and cryptographic operations library for **TypeScript and Zig**. The documentation is built using [Astro](https://astro.build) with the [Starlight](https://starlight.astro.build/) theme.
 
-**Live Documentation Site:** The built documentation provides searchable, organized access to all modules, functions, and types.
+**Live Documentation Site:** The built documentation provides searchable, organized access to all TypeScript and Zig modules, functions, and types.
 
 ## Documentation Structure
 
@@ -31,6 +31,13 @@ docs/
 
 ### Coverage
 
+**TypeScript:**
+- Complete implementations of Ethereum primitives (transactions, bytecode, opcodes, gas calculations)
+- Ethereum types (blocks, receipts, logs, filters)
+- Crypto wrappers (keccak256, EIP-191, EIP-712, signers)
+- Standards (SIWE, event logs, hardforks)
+
+**Zig (Native):**
 - **Primitives:** Hardfork management, event logging, SIWE
 - **Crypto:** secp256k1, hash functions, ECDSA operations
 - **Precompiles:** Complete coverage of 0x01-0x13 (ECRecover through BLS12-381)
@@ -122,9 +129,11 @@ Each section has a badge in the sidebar (configured in `astro.config.mjs`).
 
 ## Related Files
 
-- **Source code:** `/src/` (repository root)
-- **Main README:** `/README.md` (repository root)
-- **CLAUDE.md:** `/CLAUDE.md` (project coding guidelines)
+- **Main README:** `/README.md` - TypeScript-first overview
+- **TypeScript API:** `/docs/TYPESCRIPT_API.md` - Complete TypeScript API reference
+- **Zig API:** `/ZIG_API.md` - Complete Zig API reference
+- **Source code:** `/src/` - TypeScript and Zig implementations
+- **CLAUDE.md:** `/CLAUDE.md` - Project coding guidelines
 
 ## Technical Stack
 
