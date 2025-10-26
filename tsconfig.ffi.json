@@ -1,0 +1,30 @@
+{
+  "extends": "@tevm/tsconfig/base.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "strictNullChecks": true,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "allowJs": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node", "bun"],
+    "target": "es2022",
+    "noImplicitAny": false,
+    "checkJs": false
+  },
+  "include": [
+    "src/typescript/wasm/**/*.wasm.ts",
+    "wasm/loader.js"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/typescript/wasm/**/index.ts"
+  ]
+}
