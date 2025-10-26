@@ -12,6 +12,23 @@
 
 Implements the BLAKE2b compression function F. This precompile enables efficient verification of Zcash Equihash proofs and other systems using BLAKE2b. It provides direct access to the compression function rather than the full hash, allowing for flexible cryptographic constructions.
 
+## Audit Status
+
+⚠️ UNAUDITED - Cryptographic Function
+
+This BLAKE2b compression function implementation has NOT been security audited.
+
+Known risks:
+- Custom cryptographic implementation
+- Critical for Zcash interoperability
+- No formal security audit
+
+Use case: EIP-152 precompile (0x09) for Zcash-Ethereum bridge
+
+Recommendation: Use only after independent security audit for production systems handling valuable assets.
+
+Report issues: security@tevm.sh
+
 ## Gas Cost
 
 **Dynamic:**

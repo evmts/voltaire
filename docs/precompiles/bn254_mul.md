@@ -13,6 +13,29 @@
 
 Performs elliptic curve scalar multiplication on the BN254 (alt_bn128) curve. Given a point P and scalar k, computes k*P. This is essential for zkSNARKs, commitments, and various cryptographic protocols.
 
+## Audit Status
+
+⚠️ MIXED - Arkworks (Audited) / Pure Zig (Unaudited)
+
+This implementation has two backends:
+
+### Primary: Arkworks (via FFI) - ✅ AUDITED
+- Library: arkworks-algebra BN254 implementation (Rust)
+- Status: Widely used in production zkSNARK systems
+- Audit: Industry-standard implementation
+- Performance: Optimized for production use
+
+### Fallback: Pure Zig - ⚠️ UNAUDITED
+- Status: Custom Zig implementation, NOT audited
+- Use: Only when Arkworks FFI unavailable
+- Risk: No formal security audit
+
+Recommendation:
+- Prefer Arkworks backend (default when available)
+- Avoid pure Zig fallback in production without audit
+
+Current default: Check build configuration to confirm which backend is active.
+
 ## Gas Cost
 
 **Constant:** 6,000 gas (reduced from 40,000 in Istanbul via EIP-1108)

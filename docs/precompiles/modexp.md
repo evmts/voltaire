@@ -13,6 +13,27 @@
 
 Performs arbitrary-precision modular exponentiation: `(base ^ exponent) mod modulus`. This operation is essential for RSA signature verification, zero-knowledge proofs, and other cryptographic protocols.
 
+## Audit Status
+
+⚠️ UNAUDITED - High Complexity
+
+This is a custom Zig implementation of modular exponentiation that has NOT been security audited.
+
+Known risks:
+- Variable-time modular arithmetic (potential timing attacks)
+- Complex algorithm with multiple edge cases
+- Gas calculation complexity across hardforks
+- No formal security audit
+
+Critical for: EIP-198 precompile (0x05)
+
+Recommendation:
+- Use only after independent security audit
+- Be aware of timing attack surface
+- Validate gas calculations thoroughly
+
+Report issues: security@tevm.sh
+
 ## Gas Cost
 
 **Dynamic and complex:**

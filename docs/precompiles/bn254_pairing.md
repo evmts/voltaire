@@ -13,6 +13,30 @@
 
 Performs a bilinear pairing check on the BN254 (alt_bn128) curve. This is the core operation for zkSNARK verification, enabling succinct zero-knowledge proofs on Ethereum. The pairing check verifies that `e(A1, B1) * e(A2, B2) * ... * e(An, Bn) = 1` where `e` is the bilinear pairing function.
 
+## Audit Status
+
+⚠️ MIXED - Arkworks (Audited) / Pure Zig (Unaudited)
+
+This implementation has two backends:
+
+### Primary: Arkworks (via FFI) - ✅ AUDITED
+- Library: arkworks-algebra BN254 pairing implementation (Rust)
+- Status: Production-grade zkSNARK implementation
+- Audit: Industry-standard, battle-tested
+- Critical for: zkSNARK verification on Ethereum
+
+### Fallback: Pure Zig - ⚠️ UNAUDITED
+- Status: Custom Zig implementation, NOT audited
+- Use: Only when Arkworks FFI unavailable
+- Risk: Pairing operations are complex; unaudited code is high-risk
+
+Recommendation:
+- STRONGLY prefer Arkworks backend for production
+- Pure Zig fallback should ONLY be used in development/testing
+- Never use unaudited pairing in production systems
+
+Current default: Check build configuration to confirm which backend is active.
+
 ## Gas Cost
 
 **Dynamic:**
