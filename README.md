@@ -392,8 +392,8 @@ Key areas for contribution:
 - [x] Signer implementations (private key, HD wallet, hardware wallet)
 - [ ] ABI encoding/decoding (full implementation)
 - [ ] Complete transaction parsing for all types
-- [ ] Native FFI bindings for Bun
-- [ ] WASM builds for browser performance
+- [x] Native FFI bindings for Bun (Phase 2 complete - see PHASE_2-4_COMPLETION_SUMMARY.md)
+- [x] WASM builds for browser performance (Phase 3 complete - see PHASE_2-4_COMPLETION_SUMMARY.md)
 - [ ] Additional hash algorithms
 - [ ] More EIP implementations
 

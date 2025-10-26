@@ -10,6 +10,49 @@ These benchmark files are designed to be used with bundle size analysis tools. E
 - Uses the `_ = result` pattern to avoid unused variable warnings
 - Uses minimal code (just the method call with test data)
 
+## Running Benchmarks
+
+The repository provides two types of benchmarks:
+
+### 1. Bundle Size Benchmarks (bench/*.zig)
+
+These are minimal executables for WASM bundle size analysis. Build all benchmarks:
+
+```bash
+zig build  # Builds all benchmarks to zig-out/bin/bench-*
+```
+
+Filter specific benchmarks:
+
+```bash
+zig build -Dbench-filter=address  # Only address benchmarks
+zig build -Dbench-filter=keccak   # Only keccak benchmarks
+```
+
+### 2. Performance Benchmarks (src/**/*.bench.zig)
+
+These use the zbench framework for detailed performance measurement. Run all performance benchmarks:
+
+```bash
+zig build bench  # Runs all zbench performance benchmarks
+```
+
+Filter specific benchmarks:
+
+```bash
+zig build bench -Dfilter=keccak   # Only keccak performance benchmarks
+zig build bench -Dfilter=address  # Only address performance benchmarks
+zig build bench -Dfilter=secp     # Only secp256k1 benchmarks
+```
+
+The benchmark output includes:
+- Average time per operation
+- Operations per second
+- Statistical analysis (min, max, median, standard deviation)
+- Memory allocation tracking (if enabled in benchmark source)
+
+**Note**: Benchmark iterations and warmup are configured in the benchmark source files themselves via zbench Config. See individual .bench.zig files for configuration details.
+
 ## Benchmark Files by Category
 
 ### Address Operations (14 benchmarks)
