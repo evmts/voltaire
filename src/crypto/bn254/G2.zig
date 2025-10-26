@@ -23,12 +23,15 @@ pub fn initUnchecked(x: *const Fp2Mont, y: *const Fp2Mont, z: *const Fp2Mont) G2
     return G2{ .x = x.*, .y = y.*, .z = z.* };
 }
 
-// Checked constructor - validates point is on curve
-// WARNING: DOES NOT CHECK IF POINT IS IN RIGHT SUBGROUP
+// Checked constructor - validates point is on curve AND in correct subgroup
 pub fn init(x: *const Fp2Mont, y: *const Fp2Mont, z: *const Fp2Mont) !G2 {
     const point = G2{ .x = x.*, .y = y.*, .z = z.* };
     if (!point.isOnCurve()) {
         return error.InvalidPoint;
+    }
+    // CRITICAL: Check subgroup membership to prevent wrong-subgroup attacks
+    if (!point.isInSubgroup()) {
+        return error.NotInSubgroup;
     }
     return point;
 }
@@ -635,4 +638,54 @@ test "G2.decomposeScalar recomposes original" {
         const expected = @as(i512, @intCast(scalar_val.value));
         try std.testing.expect(reconstructed == expected);
     }
+}
+
+test "G2.init validates subgroup membership for valid points" {
+    // Generator should be in subgroup
+    const gen_affine = G2.GENERATOR.toAffine();
+    const valid_point = try G2.init(&gen_affine.x, &gen_affine.y, &gen_affine.z);
+    try std.testing.expect(valid_point.isInSubgroup());
+
+    // Multiple of generator should be in subgroup
+    var scalar = Fr.init(17);
+    const multiple = G2.GENERATOR.mul(&scalar);
+    const multiple_affine = multiple.toAffine();
+    const valid_multiple = try G2.init(&multiple_affine.x, &multiple_affine.y, &multiple_affine.z);
+    try std.testing.expect(valid_multiple.isInSubgroup());
+
+    // Infinity should be in subgroup
+    const infinity = try G2.init(&G2.INFINITY.x, &G2.INFINITY.y, &G2.INFINITY.z);
+    try std.testing.expect(infinity.isInfinity());
+    try std.testing.expect(infinity.isInSubgroup());
+}
+
+test "G2.init rejects points not in subgroup" {
+    // Known point on curve but not in subgroup
+    const x = Fp2Mont{ .u0 = FpMont{ .value = 122 }, .u1 = FpMont{ .value = 3333 } };
+    const y = Fp2Mont{ .u0 = FpMont{ .value = 4562906498667794019468448659772613644715180855375958127421599247974276735405 }, .u1 = FpMont{ .value = 11306249705311604911826567979787687424320829738512421461876664403170710609448 } };
+    const z = Fp2Mont.ONE;
+
+    // Verify it's on curve but not in subgroup using unchecked constructor
+    const unchecked_point = G2.initUnchecked(&x, &y, &z);
+    try std.testing.expect(unchecked_point.isOnCurve());
+    try std.testing.expect(!unchecked_point.isInSubgroup());
+
+    // Now verify init() rejects it
+    const result = G2.init(&x, &y, &z);
+    try std.testing.expectError(error.NotInSubgroup, result);
+}
+
+test "G2.init rejects points not on curve" {
+    // Random point not on curve
+    const x = Fp2Mont{ .u0 = FpMont{ .value = 12345 }, .u1 = FpMont{ .value = 67890 } };
+    const y = Fp2Mont{ .u0 = FpMont{ .value = 11111 }, .u1 = FpMont{ .value = 22222 } };
+    const z = Fp2Mont.ONE;
+
+    // Verify it's not on curve
+    const unchecked_point = G2.initUnchecked(&x, &y, &z);
+    try std.testing.expect(!unchecked_point.isOnCurve());
+
+    // Now verify init() rejects it
+    const result = G2.init(&x, &y, &z);
+    try std.testing.expectError(error.InvalidPoint, result);
 }
