@@ -376,7 +376,92 @@ All six phases of FFI implementation successfully completed with performance tar
 
 ---
 
-## Next Steps (Phase 7 - Future Work)
+## ✅ Phase 7: BLS12-381 Hash-to-Curve Implementation - COMPLETE
+
+**Completion Date**: October 25, 2025
+
+Successfully implemented the three missing BLS12-381 hash-to-curve functions required for EIP-2537 precompiles.
+
+### Implemented Functions
+
+1. **`mapFpToG1`** (lines 368-391 in crypto.zig)
+   - Maps BLS12-381 base field element (Fp) to G1 curve point
+   - Input: 64 bytes (Fp field element, big-endian padded)
+   - Output: 128 bytes (uncompressed G1 point: x || y)
+   - Uses `blst_map_to_g1` FFI from blst library
+   - Implements draft-irtf-cfrg-hash-to-curve specification
+
+2. **`mapFp2ToG2`** (lines 397-423 in crypto.zig)
+   - Maps BLS12-381 field extension element (Fp2) to G2 curve point
+   - Input: 128 bytes (Fp2 element: c0 || c1, each 64 bytes)
+   - Output: 256 bytes (uncompressed G2 point: x0 || x1 || y0 || y1)
+   - Uses `blst_map_to_g2` FFI from blst library
+   - Implements draft-irtf-cfrg-hash-to-curve specification
+
+3. **`pairingCheck`** (lines 430-501 in crypto.zig)
+   - Verifies BLS12-381 pairing product equals identity element
+   - Input: concatenated pairs of (G1 point || G2 point), each pair 384 bytes
+   - Output: boolean indicating if pairing check succeeds
+   - Uses `blst_miller_loop`, `blst_final_exp`, and `blst_fp12_is_one`
+   - Validates all input points on curve and in correct subgroups
+
+### Implementation Details
+
+- **FFI Integration**: Properly imports blst types through c_kzg module
+- **Input Validation**: Strict length checking and point validation
+- **Error Handling**: Returns typed errors (InvalidInput, InvalidPoint)
+- **Point Encoding**: Big-endian serialization matching EIP-2537
+- **Security**: Point-on-curve and subgroup membership checks
+
+### Testing Status
+
+- ✅ All existing precompile tests passing
+- ✅ Manual verification test created and passing
+- ✅ Integration with existing BLS12-381 operations confirmed
+- ✅ Empty input pairing check returns true (identity element)
+- ✅ Field element mapping generates valid curve points
+
+### Files Modified
+
+1. `src/crypto/crypto.zig` - Replaced stub implementations with full FFI calls
+2. `lib/c-kzg-4844/bindings/zig/root.zig` - Added blst FFI re-export
+
+### Build Status
+
+- ✅ `zig build` completes successfully
+- ✅ `zig build test` all tests passing
+- ✅ No compilation errors or warnings
+- ✅ Precompile tests for BLS12-381 operations work correctly
+
+### EIP-2537 Compliance
+
+These implementations complete the EIP-2537 precompile requirements:
+- ✅ 0x0B: BLS12_G1ADD (G1 addition)
+- ✅ 0x0C: BLS12_G1MUL (G1 scalar multiplication)
+- ✅ 0x0D: BLS12_G1MSM (G1 multi-scalar multiplication)
+- ✅ 0x0E: BLS12_G2ADD (G2 addition)
+- ✅ 0x0F: BLS12_G2MUL (G2 scalar multiplication)
+- ✅ 0x10: BLS12_G2MSM (G2 multi-scalar multiplication)
+- ✅ 0x11: BLS12_PAIRING (Pairing check) - **NOW COMPLETE**
+- ✅ 0x12: BLS12_MAP_FP_TO_G1 (Hash to G1) - **NOW COMPLETE**
+- ✅ 0x13: BLS12_MAP_FP2_TO_G2 (Hash to G2) - **NOW COMPLETE**
+
+### Performance Characteristics
+
+- **mapFpToG1**: Single field element mapping to G1 point
+- **mapFp2ToG2**: Single Fp2 element mapping to G2 point
+- **pairingCheck**: Scales with number of pairs (O(n) Miller loops + final exp)
+
+### Security Considerations
+
+- All points validated on curve before use
+- Subgroup membership checked (prevents invalid curve attacks)
+- No stubs or placeholders remaining
+- Proper error propagation throughout call stack
+
+---
+
+## Next Steps (Phase 8 - Future Work)
 
 1. **Cross-Platform Expansion**
    - Test on Linux (x86_64, ARM64)
