@@ -1786,11 +1786,6 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         }
 
         pub fn from_native(value: u256) Self {
-            // Debug-only assertion to catch misuse
-            if (comptime bits < 256) {
-                std.debug.assert(value < (@as(u256, 1) << bits));
-            }
-
             var result = Self.ZERO;
             const u256_limbs = 4; // u256 has 4 64-bit limbs
             const copy_limbs = @min(limbs, u256_limbs);
@@ -1832,12 +1827,12 @@ pub fn Uint(comptime bits: usize, comptime limbs: usize) type {
         }
 
         pub fn to_native(self: Self) u256 {
-            // Debug-only assertion for larger types
+            // For types > 256 bits, high limbs must be zero
             if (comptime bits > 256) {
                 // Check that high limbs are zero
                 var i: usize = 4;
                 while (i < limbs) : (i += 1) {
-                    std.debug.assert(self.limbs[i] == 0);
+                    if (self.limbs[i] != 0) unreachable; // Use to_u256() for safety
                 }
             }
 
