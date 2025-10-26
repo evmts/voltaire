@@ -3,7 +3,8 @@
  * Validates WASM doesn't leak memory and handles large allocations
  */
 
-import { test, expect, describe } from "bun:test";
+import { test, expect, describe, beforeAll } from "bun:test";
+import { loadWasm } from "../../../wasm/index.js";
 import { Address as WasmAddress } from "./primitives/address.wasm";
 import {
 	analyzeJumpDestinations as wasmAnalyzeJumpDestinations,
@@ -16,6 +17,11 @@ import {
 } from "./primitives/rlp.wasm";
 
 describe("WASM Memory Management", () => {
+	// Initialize WASM before running tests
+	beforeAll(async () => {
+		await loadWasm();
+	});
+
 	test("no memory leaks on repeated address operations", () => {
 		// Note: Bun doesn't expose performance.memory like Chrome
 		// We rely on WASM's internal cleanup and verify operations complete

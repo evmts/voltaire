@@ -414,7 +414,7 @@ pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
 
     // Serialize result to output
     // Point at infinity is represented as (0, 0)
-    if (try result_affine.isInfinity()) {
+    if (result_affine.isInfinity()) {
         @memset(output[0..64], 0);
     } else {
         const x_result = result_affine.x.value;
@@ -454,12 +454,12 @@ pub fn bn254Mul(input: *const [96]u8, output: []u8) !void {
     };
 
     // Perform scalar multiplication
-    const result = point.mulByInt(scalar_value);
+    const result = try point.mulByInt(scalar_value);
     const result_affine = try result.toAffine();
 
     // Serialize result to output
     // Point at infinity is represented as (0, 0)
-    if (try result_affine.isInfinity()) {
+    if (result_affine.isInfinity()) {
         @memset(output[0..64], 0);
     } else {
         const x_result = result_affine.x.value;
@@ -529,7 +529,7 @@ pub fn bn254Pairing(input: []const u8) !bool {
         };
 
         // Compute pairing for this pair and accumulate
-        const pair_result = pairing(&g1_point, &g2_point);
+        const pair_result = try pairing(&g1_point, &g2_point);
         result = result.mul(&pair_result);
     }
 
