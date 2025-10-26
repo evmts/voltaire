@@ -467,8 +467,9 @@ pub fn signLegacyTransaction(allocator: Allocator, tx: LegacyTransaction, privat
     // Create signed transaction
     var signed_tx = tx;
     signed_tx.v = @as(u64, signature.v) + (chain_id * 2) + 8; // EIP-155
-    signed_tx.r = signature.r;
-    signed_tx.s = signature.s;
+    // Convert u256 to [32]u8 using big-endian encoding
+    std.mem.writeInt(u256, &signed_tx.r, signature.r, .big);
+    std.mem.writeInt(u256, &signed_tx.s, signature.s, .big);
 
     return signed_tx;
 }

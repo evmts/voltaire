@@ -170,6 +170,13 @@ export function getExports() {
  * @returns {number} Pointer to allocated memory
  */
 function malloc(size) {
+  // Check if WASM is initialized
+  if (!wasmMemory || !wasmMemory.buffer) {
+    throw new Error(
+      "WASM memory not initialized. Ensure loadWasm() is called before using primitives.",
+    );
+  }
+
   // Align to 8 bytes
   const aligned = (size + 7) & ~7;
   const ptr = memoryOffset;

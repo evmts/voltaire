@@ -132,5 +132,7 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
+      - name: Clean Rust build cache (for panic=abort)
+        run: cargo clean
       - name: Compile benchmarks (catch API regressions)
         run: zig build -Dwith-benches=true --summary failures
