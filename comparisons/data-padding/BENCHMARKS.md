@@ -8,21 +8,21 @@ Test: **trimRight**
 
 | Implementation | ops/sec | min | max | mean | p75 | p99 | p995 | p999 | rme | samples | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| guil-native | 6,167,609.43 | 0.0001 | 2.3844 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | 0.0005 | ±1.30% | 3083805 |  |
-| guil-wasm | 6,304,024.58 | 0.0001 | 0.2584 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | 0.0004 | ±0.45% | 3152013 |  |
-| ethers | 6,414,687.77 | 0.0001 | 0.2347 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | 0.0003 | ±0.51% | 3207344 | fastest |
-| viem | 2,552,206.59 | 0.0002 | 0.1467 | 0.0004 | 0.0004 | 0.0005 | 0.0005 | 0.0007 | ±0.08% | 1276104 | slowest |
+| guil-native | 6,978,417.27 | 0.0001 | 1.9637 | 0.0001 | 0.0002 | 0.0002 | 0.0003 | 0.0004 | ±0.77% | 3489209 | fastest |
+| guil-wasm | 6,934,569.07 | 0.0001 | 0.0354 | 0.0001 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | ±0.05% | 3467285 |  |
+| ethers | 6,799,890.31 | 0.0001 | 0.0375 | 0.0001 | 0.0002 | 0.0002 | 0.0003 | 0.0003 | ±0.05% | 3399946 |  |
+| viem | 2,374,992.36 | 0.0003 | 0.2300 | 0.0004 | 0.0004 | 0.0005 | 0.0005 | 0.0009 | ±0.23% | 1187497 | slowest |
 
 ## Summary
 
-ethers - comparisons/data-padding/trimRight.bench.ts > trimRight
-1.02x faster than guil-wasm
-1.04x faster than guil-native
-2.51x faster than viem
-ethers - comparisons/data-padding/trimRight.bench.ts > trimRight
-1.02x faster than guil-wasm
-1.04x faster than guil-native
-2.51x faster than viem
+guil-native - comparisons/data-padding/trimRight.bench.ts > trimRight
+1.01x faster than guil-wasm
+1.03x faster than ethers
+2.94x faster than viem
+guil-native - comparisons/data-padding/trimRight.bench.ts > trimRight
+1.01x faster than guil-wasm
+1.03x faster than ethers
+2.94x faster than viem
 
 ## Benchmark Info
 

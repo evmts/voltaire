@@ -1,4 +1,4 @@
-# hashMessage - Benchmark Results
+# typeGuard - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

@@ -8,18 +8,18 @@ Test: **normalize**
 
 | Implementation | ops/sec | min | max | mean | p75 | p99 | p995 | p999 | rme | samples | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| guil | 1,556,787.05 | 0.0005 | 0.1851 | 0.0006 | 0.0006 | 0.0008 | 0.0009 | 0.0013 | ±0.35% | 778394 |  |
-| ethers | 1,553,149.16 | 0.0005 | 0.1928 | 0.0006 | 0.0006 | 0.0008 | 0.0009 | 0.0013 | ±0.42% | 776575 | slowest |
-| viem | 1,584,878.91 | 0.0005 | 0.1229 | 0.0006 | 0.0006 | 0.0008 | 0.0008 | 0.0010 | ±0.32% | 792440 | fastest |
+| guil | 1,529,105.83 | 0.0005 | 2.5670 | 0.0007 | 0.0006 | 0.0010 | 0.0015 | 0.0020 | ±1.02% | 764553 |  |
+| ethers | 1,548,459.50 | 0.0005 | 0.1736 | 0.0006 | 0.0007 | 0.0008 | 0.0009 | 0.0012 | ±0.22% | 774230 | fastest |
+| viem | 1,515,328.11 | 0.0005 | 0.1955 | 0.0007 | 0.0007 | 0.0010 | 0.0011 | 0.0018 | ±0.40% | 757665 | slowest |
 
 ## Summary
 
-viem - comparisons/ens/normalize.bench.ts > normalize
-1.02x faster than guil
-1.02x faster than ethers
-viem - comparisons/ens/normalize.bench.ts > normalize
-1.02x faster than guil
-1.02x faster than ethers
+ethers - comparisons/ens/normalize.bench.ts > normalize
+1.01x faster than guil
+1.02x faster than viem
+ethers - comparisons/ens/normalize.bench.ts > normalize
+1.01x faster than guil
+1.02x faster than viem
 
 ## Benchmark Info
 

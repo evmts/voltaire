@@ -1,4 +1,4 @@
-# hashMessage - Benchmark Results
+# hashTypedData - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

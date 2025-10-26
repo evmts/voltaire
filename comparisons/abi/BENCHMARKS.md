@@ -1,4 +1,4 @@
-# hashMessage - Benchmark Results
+# encodePacked - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

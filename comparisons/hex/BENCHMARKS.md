@@ -1,4 +1,4 @@
-# hashMessage - Benchmark Results
+# u256ToHex - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 
