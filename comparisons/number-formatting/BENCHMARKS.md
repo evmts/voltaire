@@ -8,18 +8,18 @@ Test: **toQuantity**
 
 | Implementation | ops/sec | min | max | mean | p75 | p99 | p995 | p999 | rme | samples | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| guil | 22,633,002.55 | 0.0000 | 0.3471 | 0.0000 | 0.0000 | 0.0001 | 0.0001 | 0.0001 | ±0.14% | 11316502 | fastest |
-| ethers | 10,026,595.44 | 0.0000 | 0.2584 | 0.0001 | 0.0001 | 0.0001 | 0.0002 | 0.0005 | ±0.44% | 5013298 | slowest |
-| viem | 20,564,870.64 | 0.0000 | 0.0256 | 0.0000 | 0.0000 | 0.0001 | 0.0001 | 0.0002 | ±0.05% | 10282436 |  |
+| guil | 24,548,073.56 | 0.0000 | 0.0219 | 0.0000 | 0.0000 | 0.0001 | 0.0001 | 0.0002 | ±0.07% | 12274037 | fastest |
+| ethers | 10,314,435.48 | 0.0000 | 0.3413 | 0.0001 | 0.0001 | 0.0002 | 0.0002 | 0.0005 | ±0.47% | 5157218 | slowest |
+| viem | 22,709,764.32 | 0.0000 | 0.1477 | 0.0000 | 0.0000 | 0.0001 | 0.0001 | 0.0001 | ±0.11% | 11354883 |  |
 
 ## Summary
 
 guil - comparisons/number-formatting/toQuantity.bench.ts > toQuantity
-1.10x faster than viem
-2.26x faster than ethers
+1.08x faster than viem
+2.38x faster than ethers
 guil - comparisons/number-formatting/toQuantity.bench.ts > toQuantity
-1.10x faster than viem
-2.26x faster than ethers
+1.08x faster than viem
+2.38x faster than ethers
 
 ## Benchmark Info
 
