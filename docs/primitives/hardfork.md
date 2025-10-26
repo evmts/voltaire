@@ -13,7 +13,9 @@ This module is critical for:
 - **Consensus Validation**: Ensuring transactions and blocks conform to the correct protocol version
 - **Testing**: Supporting both block-based and timestamp-based fork transitions
 
-The module supports all major Ethereum hardforks from FRONTIER (genesis) through OSAKA (future), and provides flexible transition parsing for testing scenarios.
+> **Note on Future Hardforks**: Prague (April 2025) is finalized. Fusaka EIP list (November 2025 expected) is preliminary and subject to change. Always verify against official Ethereum EIP specifications.
+
+The module supports all major Ethereum hardforks from FRONTIER (genesis) through FUSAKA (future), and provides flexible transition parsing for testing scenarios.
 
 ## Complete API Reference
 
@@ -39,8 +41,8 @@ pub const Hardfork = enum {
     MERGE,             // Block 15,537,394 (EIP-3675 - PoS transition)
     SHANGHAI,          // Timestamp 1681338455 (EIP-3651, EIP-3855, EIP-3860, EIP-4895)
     CANCUN,            // Timestamp 1710338135 (EIP-4844, EIP-1153, EIP-4788, EIP-5656, EIP-6780, EIP-7516)
-    PRAGUE,            // Future (EIP-2537, EIP-7702)
-    OSAKA,             // Future
+    PRAGUE,            // April 8, 2025 - Pectra upgrade (EIP-2537: BLS12-381 precompiles, EIP-7702: Set EOA code)
+    FUSAKA,            // November 2025 expected - Combines Fulu + Osaka (EIP-7607, EIP-7691, EIP-7742)
 
     pub const DEFAULT = Hardfork.PRAGUE;
 
@@ -436,9 +438,16 @@ The `ForkTransition` type enables testing across all scenarios.
 - EIP-6780: SELFDESTRUCT only in same transaction
 - EIP-7516: BLOBBASEFEE opcode
 
-**Prague (Future)**
+**Prague (April 8, 2025 - Pectra upgrade)**
 - EIP-2537: BLS12-381 precompiles
 - EIP-7702: Set EOA account code
+
+**Fusaka (November 2025 expected)**
+- EIP-7607: Fusaka meta EIP (combines Fulu + Osaka)
+- EIP-7691: Blob throughput increase (6→9 blobs)
+- EIP-7742: Uncouple blob count between CL/EL
+- Additional EIPs TBD - subject to change
+- Note: Previously called "Osaka", now part of Fusaka upgrade
 
 ## Safety Considerations
 

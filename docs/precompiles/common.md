@@ -40,23 +40,48 @@ Error set for all possible precompile execution errors.
 
 ```zig
 pub const PrecompileError = error{
+    // Input validation
     InvalidInput,
     InvalidSignature,
     InvalidPoint,
     InvalidPairing,
+    InvalidOutputSize,
+
+    // Resource errors
     OutOfGas,
+
+    // Keccak-specific errors (from keccak_asm implementation)
+    ExecutionError,     // Keccak execution failed
+    StateError,         // Invalid Keccak state
+    MemoryError,        // Keccak memory allocation/access error
+
+    // General errors
     NotImplemented,
+    Unknown,            // Unknown/unexpected error
 } || std.mem.Allocator.Error;
 ```
 
-**Error Values:**
-- `InvalidInput` - Input data format or length is invalid
-- `InvalidSignature` - Cryptographic signature verification failed (ECRECOVER)
-- `InvalidPoint` - Elliptic curve point is invalid or not on the curve
-- `InvalidPairing` - Pairing check failed for BN254/BLS12-381 operations
-- `OutOfGas` - Insufficient gas provided for the operation
-- `NotImplemented` - Precompile not available at the specified address/hardfork
-- `Allocator.Error` - Memory allocation failures (OutOfMemory)
+### Error Categories
+
+**Input Validation:** InvalidInput, InvalidSignature, InvalidPoint, InvalidPairing, InvalidOutputSize
+- Returned when input data doesn't meet precompile requirements
+- Always check input lengths and formats
+
+**Resource Errors:** OutOfGas
+- Insufficient gas provided for operation
+- Check gas costs before calling precompiles
+
+**Keccak Errors:** ExecutionError, StateError, MemoryError
+- Specific to keccak_asm implementation
+- Indicate internal cryptographic operation failures
+
+**General Errors:** NotImplemented, Unknown
+- NotImplemented: Feature not yet implemented
+- Unknown: Unexpected error condition
+
+**Memory Errors:** Via std.mem.Allocator.Error
+- OutOfMemory: Allocation failed
+- Handle memory errors appropriately
 
 ## Usage
 
