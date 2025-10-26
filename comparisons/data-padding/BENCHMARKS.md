@@ -1,32 +1,32 @@
-# padRight - Benchmark Results
+# trimRight - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 
 ## Results
 
-Test: **padRight**
+Test: **trimRight**
 
 | Implementation | ops/sec | min | max | mean | p75 | p99 | p995 | p999 | rme | samples | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| guil-native | 9,173,402.39 | 0.0000 | 0.2180 | 0.0001 | 0.0001 | 0.0002 | 0.0002 | 0.0005 | ±0.19% | 4586702 | fastest |
-| guil-wasm | 8,970,371.21 | 0.0000 | 2.6803 | 0.0001 | 0.0001 | 0.0002 | 0.0003 | 0.0006 | ±1.11% | 4485186 |  |
-| ethers | 505,544.26 | 0.0017 | 1.4632 | 0.0020 | 0.0020 | 0.0025 | 0.0043 | 0.0051 | ±0.72% | 252773 | slowest |
-| viem | 5,272,057.04 | 0.0001 | 0.2254 | 0.0002 | 0.0002 | 0.0003 | 0.0004 | 0.0007 | ±0.47% | 2636029 |  |
+| guil-native | 6,450,253.90 | 0.0001 | 0.0750 | 0.0002 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | ±0.06% | 3225127 | fastest |
+| guil-wasm | 6,351,963.61 | 0.0001 | 0.0221 | 0.0002 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | ±0.04% | 3175982 |  |
+| ethers | 6,327,474.39 | 0.0001 | 0.0289 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | 0.0003 | ±0.05% | 3163738 |  |
+| viem | 2,234,993.86 | 0.0003 | 0.3367 | 0.0004 | 0.0005 | 0.0005 | 0.0006 | 0.0011 | ±0.31% | 1117497 | slowest |
 
 ## Summary
 
-guil-native - comparisons/data-padding/padRight.bench.ts > padRight
+guil-native - comparisons/data-padding/trimRight.bench.ts > trimRight
 1.02x faster than guil-wasm
-1.74x faster than viem
-18.15x faster than ethers
-guil-native - comparisons/data-padding/padRight.bench.ts > padRight
+1.02x faster than ethers
+2.89x faster than viem
+guil-native - comparisons/data-padding/trimRight.bench.ts > trimRight
 1.02x faster than guil-wasm
-1.74x faster than viem
-18.15x faster than ethers
+1.02x faster than ethers
+2.89x faster than viem
 
 ## Benchmark Info
 
-- **File**: `data-padding/padRight.bench.ts`
+- **File**: `data-padding/trimRight.bench.ts`
 - **Category**: data-padding
 - **Date**: 2025-10-26
 - **Tool**: Vitest Benchmark
