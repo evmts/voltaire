@@ -68,9 +68,10 @@ export function validateFilter(filter: Filter): boolean {
 /**
  * Type guard to check if filter uses block range
  */
-export function usesBlockRange(
-	filter: Filter,
-): filter is Filter & { fromBlock?: Uint | BlockTag; toBlock?: Uint | BlockTag } {
+export function usesBlockRange(filter: Filter): filter is Filter & {
+	fromBlock?: Uint | BlockTag;
+	toBlock?: Uint | BlockTag;
+} {
 	return filter.blockHash === undefined;
 }
 

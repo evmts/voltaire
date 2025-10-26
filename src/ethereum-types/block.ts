@@ -175,9 +175,7 @@ export function isPostLondonBlock(
 /**
  * Type guard to check if block is post-Shanghai (has withdrawals)
  */
-export function isPostShanghaiBlock(
-	block: BlockInfo,
-): block is BlockInfo & {
+export function isPostShanghaiBlock(block: BlockInfo): block is BlockInfo & {
 	withdrawalsRoot: Hash32;
 	withdrawals: readonly Withdrawal[];
 } {

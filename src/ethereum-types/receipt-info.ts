@@ -112,5 +112,7 @@ export function isSuccessful(receipt: ReceiptInfo): boolean {
 export function isEip4844Receipt(
 	receipt: ReceiptInfo,
 ): receipt is ReceiptInfo & { blobGasUsed: Uint; blobGasPrice: Uint } {
-	return receipt.blobGasUsed !== undefined && receipt.blobGasPrice !== undefined;
+	return (
+		receipt.blobGasUsed !== undefined && receipt.blobGasPrice !== undefined
+	);
 }
