@@ -1,5 +1,5 @@
-import { PrivateKeySignerImpl } from "../../../native/crypto/signers/private-key-signer.js";
-import type { Eip1559Transaction } from "../../../native/primitives/transaction.js";
+import { PrivateKeySignerImpl } from "../../../src/typescript/native/crypto/signers/private-key-signer.js";
+import type { Eip1559Transaction } from "../../../src/typescript/native/primitives/transaction-types.js";
 
 const testPrivateKey =
 	"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

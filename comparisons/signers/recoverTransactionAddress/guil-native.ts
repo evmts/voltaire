@@ -1,9 +1,9 @@
-import { PrivateKeySignerImpl } from "../../../native/crypto/signers/private-key-signer.js";
-import { recoverTransactionAddress } from "../../../native/crypto/signers/utils.js";
+import { PrivateKeySignerImpl } from "../../../src/typescript/native/crypto/signers/private-key-signer.js";
+import { recoverTransactionAddress } from "../../../src/typescript/native/crypto/signers/utils.js";
 import type {
 	Eip1559Transaction,
 	Transaction,
-} from "../../../native/primitives/transaction.js";
+} from "../../../src/typescript/native/primitives/transaction-types.js";
 
 const testPrivateKey =
 	"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
