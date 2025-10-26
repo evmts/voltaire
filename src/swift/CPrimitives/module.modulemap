@@ -1,0 +1,5 @@
+module CPrimitives {
+    header "primitives.h"
+    link "primitives_c"
+    export *
+}
