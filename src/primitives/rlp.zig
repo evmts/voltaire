@@ -671,9 +671,300 @@ test "RLP integers" {
     }
 }
 
-test "RLP nested lists" {
-    // Skip this test for now - requires refactoring to properly handle nested structures
-    return error.SkipZigTest;
+test "RLP nested lists - simple two level [[1,2],[3,4]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Manually construct [[1, 2], [3, 4]]
+    // [1, 2] = 0xc2 0x01 0x02 (list prefix 0xc0+2, then bytes 1 and 2)
+    // [3, 4] = 0xc2 0x03 0x04 (list prefix 0xc0+2, then bytes 3 and 4)
+    // [[1,2],[3,4]] = 0xc6 0xc2 0x01 0x02 0xc2 0x03 0x04 (list prefix 0xc0+6, then both sublists)
+    const manual_encoding = [_]u8{ 0xc6, 0xc2, 0x01, 0x02, 0xc2, 0x03, 0x04 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+
+            // Verify first inner list [1, 2]
+            switch (outer_list[0]) {
+                .List => |inner_list1| {
+                    try testing.expectEqual(@as(usize, 2), inner_list1.len);
+                    switch (inner_list1[0]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 1), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                    switch (inner_list1[1]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 2), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+
+            // Verify second inner list [3, 4]
+            switch (outer_list[1]) {
+                .List => |inner_list2| {
+                    try testing.expectEqual(@as(usize, 2), inner_list2.len);
+                    switch (inner_list2[0]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 3), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                    switch (inner_list2[1]) {
+                        .String => |bytes| {
+                            try testing.expectEqual(@as(usize, 1), bytes.len);
+                            try testing.expectEqual(@as(u8, 4), bytes[0]);
+                        },
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+
+test "RLP nested lists - empty nested lists [[],[]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [] = 0xc0 (empty list)
+    // [[],[]] = 0xc2 0xc0 0xc0 (list of 2 bytes, containing two empty lists)
+    const manual_encoding = [_]u8{ 0xc2, 0xc0, 0xc0 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+            switch (outer_list[0]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+            switch (outer_list[1]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+
+test "RLP nested lists - single element [[1],[2]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [1] = 0xc1 0x01 (list of 1 byte containing 1)
+    // [2] = 0xc1 0x02 (list of 1 byte containing 2)
+    // [[1],[2]] = 0xc4 0xc1 0x01 0xc1 0x02 (list of 4 bytes total)
+    const manual_encoding = [_]u8{ 0xc4, 0xc1, 0x01, 0xc1, 0x02 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+            switch (outer_list[0]) {
+                .List => |inner1| {
+                    try testing.expectEqual(@as(usize, 1), inner1.len);
+                    switch (inner1[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+            switch (outer_list[1]) {
+                .List => |inner2| {
+                    try testing.expectEqual(@as(usize, 1), inner2.len);
+                    switch (inner2[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 2), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+
+test "RLP nested lists - three levels [[[1,2],[3]],[[4]]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [1,2] = 0xc2 0x01 0x02
+    // [3] = 0xc1 0x03
+    // [[1,2],[3]] = 0xc5 0xc2 0x01 0x02 0xc1 0x03
+    // [4] = 0xc1 0x04
+    // [[4]] = 0xc2 0xc1 0x04
+    // [[[1,2],[3]],[[4]]] = 0xc9 0xc5 0xc2 0x01 0x02 0xc1 0x03 0xc2 0xc1 0x04
+    const manual_encoding = [_]u8{ 0xc9, 0xc5, 0xc2, 0x01, 0x02, 0xc1, 0x03, 0xc2, 0xc1, 0x04 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+
+            // Verify [[1,2],[3]]
+            switch (outer_list[0]) {
+                .List => |middle1| {
+                    try testing.expectEqual(@as(usize, 2), middle1.len);
+                    // Verify [1,2]
+                    switch (middle1[0]) {
+                        .List => |inner1| {
+                            try testing.expectEqual(@as(usize, 2), inner1.len);
+                            switch (inner1[0]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                                .List => unreachable,
+                            }
+                            switch (inner1[1]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 2), bytes[0]),
+                                .List => unreachable,
+                            }
+                        },
+                        .String => unreachable,
+                    }
+                    // Verify [3]
+                    switch (middle1[1]) {
+                        .List => |inner2| {
+                            try testing.expectEqual(@as(usize, 1), inner2.len);
+                            switch (inner2[0]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 3), bytes[0]),
+                                .List => unreachable,
+                            }
+                        },
+                        .String => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+
+            // Verify [[4]]
+            switch (outer_list[1]) {
+                .List => |middle2| {
+                    try testing.expectEqual(@as(usize, 1), middle2.len);
+                    switch (middle2[0]) {
+                        .List => |inner| {
+                            try testing.expectEqual(@as(usize, 1), inner.len);
+                            switch (inner[0]) {
+                                .String => |bytes| try testing.expectEqual(@as(u8, 4), bytes[0]),
+                                .List => unreachable,
+                            }
+                        },
+                        .String => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+
+test "RLP nested lists - mixed types with strings and lists" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // ["cat", [1,2], "dog"]
+    // "cat" = 0x83 'c' 'a' 't' (0x83 = 0x80+3, total 4 bytes)
+    // [1,2] = 0xc2 0x01 0x02 (total 3 bytes)
+    // "dog" = 0x83 'd' 'o' 'g' (total 4 bytes)
+    // ["cat", [1,2], "dog"] = 0xcb 0x83 'c' 'a' 't' 0xc2 0x01 0x02 0x83 'd' 'o' 'g'
+    // Total payload: 4+3+4 = 11 bytes, so 0xc0+11 = 0xcb
+    const manual_encoding = [_]u8{ 0xcb, 0x83, 'c', 'a', 't', 0xc2, 0x01, 0x02, 0x83, 'd', 'o', 'g' };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 3), outer_list.len);
+
+            // Verify "cat"
+            switch (outer_list[0]) {
+                .String => |bytes| try testing.expectEqualSlices(u8, "cat", bytes),
+                .List => unreachable,
+            }
+
+            // Verify [1,2]
+            switch (outer_list[1]) {
+                .List => |inner| {
+                    try testing.expectEqual(@as(usize, 2), inner.len);
+                    switch (inner[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                        .List => unreachable,
+                    }
+                    switch (inner[1]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 2), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+
+            // Verify "dog"
+            switch (outer_list[2]) {
+                .String => |bytes| try testing.expectEqualSlices(u8, "dog", bytes),
+                .List => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
+}
+
+test "RLP nested lists - edge case with empty and non-empty [[],[1],[]]" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // [] = 0xc0
+    // [1] = 0xc1 0x01
+    // [[],[1],[]] = 0xc4 0xc0 0xc1 0x01 0xc0 (list of 4 bytes total)
+    const manual_encoding = [_]u8{ 0xc4, 0xc0, 0xc1, 0x01, 0xc0 };
+
+    const decoded = try decode(allocator, &manual_encoding, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 3), outer_list.len);
+            switch (outer_list[0]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+            switch (outer_list[1]) {
+                .List => |inner| {
+                    try testing.expectEqual(@as(usize, 1), inner.len);
+                    switch (inner[0]) {
+                        .String => |bytes| try testing.expectEqual(@as(u8, 1), bytes[0]),
+                        .List => unreachable,
+                    }
+                },
+                .String => unreachable,
+            }
+            switch (outer_list[2]) {
+                .List => |inner| try testing.expectEqual(@as(usize, 0), inner.len),
+                .String => unreachable,
+            }
+        },
+        .String => unreachable,
+    }
 }
 
 test "RLP stream decoding" {
