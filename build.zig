@@ -542,7 +542,7 @@ pub fn build(b: *std.Build) void {
     // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
     const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
-        .os_tag = .wasi,
+        .os_tag = .freestanding,
     });
     addTypeScriptWasmBuild(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 
