@@ -51,8 +51,8 @@ fn benchVerifyTypedData(allocator: std.mem.Allocator) void {
     defer typed.deinit(allocator);
     const pk = Crypto.unaudited_randomPrivateKey() catch return;
     const sig = eip712.unaudited_signTypedData(allocator, &typed, pk) catch return;
-    const pub = Crypto.unaudited_getPublicKey(pk) catch return;
-    const addr = pub.toAddress();
+    const pub_key = Crypto.unaudited_getPublicKey(pk) catch return;
+    const addr = pub_key.toAddress();
     const ok = eip712.unaudited_verifyTypedData(allocator, &typed, sig, addr) catch return;
     _ = ok;
 }

@@ -51,6 +51,7 @@ fn benchCalculateCreate2(allocator: std.mem.Allocator) void {
     const init_code_hash = [_]u8{0xcd} ** 32;
     const addr = Address.getCreate2Address(deployer, salt, init_code_hash);
     _ = addr;
+    _ = allocator;
 }
 
 // Benchmark: Address.toU256

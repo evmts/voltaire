@@ -83,6 +83,7 @@ fn benchTrimLeftZeros(allocator: std.mem.Allocator) void {
     const bytes = [_]u8{ 0x00, 0x00, 0xde, 0xad, 0xbe, 0xef };
     const trimmed = Hex.trimLeftZeros(&bytes);
     _ = trimmed;
+    _ = allocator;
 }
 
 // Benchmark: Hex.concat (two byte arrays)
