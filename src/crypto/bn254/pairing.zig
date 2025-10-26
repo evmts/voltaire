@@ -29,7 +29,7 @@ pub fn millerLoop(p: *const G1, q: *const G2) !Fp12Mont {
         return result;
     }
     const p_affine = try p.toAffine();
-    const q_affine = try q.toAffine();
+    const q_affine = q.toAffine();
     var t = q_affine;
     for (1..miller_loop_iterations + 1) |j| {
         const i = miller_loop_iterations - j;
