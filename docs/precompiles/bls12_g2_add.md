@@ -14,9 +14,9 @@ Performs elliptic curve point addition on the BLS12-381 G2 group. G2 operations 
 
 ## Gas Cost
 
-**Constant:** 800 gas
+**Constant:** 600 gas
 
-(Higher than G1ADD's 500 gas due to operations in Fp²)
+(Higher than G1ADD's 375 gas due to operations in Fp²)
 
 ## API Reference
 
@@ -116,7 +116,7 @@ defer result.deinit(allocator);
 
 - **InvalidInput:** Input length is not 512 bytes
 - **InvalidPoint:** Point coordinates are not on the G2 curve
-- **OutOfGas:** Insufficient gas (< 800)
+- **OutOfGas:** Insufficient gas (< 600)
 
 ## Use Cases
 
@@ -138,7 +138,7 @@ Test cases should include:
 
 ## Performance Notes
 
-- 800 gas (vs 500 for G1) reflects Fp² operations
+- 600 gas (vs 375 for G1) reflects Fp² operations
 - Uses optimized BLST library
 - Constant-time execution
 - More expensive than G1 operations
@@ -150,7 +150,7 @@ Test cases should include:
 | Field            | Fp           | Fp²          |
 | Point size       | 128 bytes    | 256 bytes    |
 | Input size       | 256 bytes    | 512 bytes    |
-| Gas cost         | 500          | 800          |
+| Gas cost         | 375          | 600          |
 | Use case         | Signatures   | Public keys  |
 
 ## BLS Signature Schemes

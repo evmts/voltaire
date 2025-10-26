@@ -14,7 +14,7 @@ Maps a field element from Fp² (quadratic extension field) to a point on the BLS
 
 ## Gas Cost
 
-**Constant:** 75,000 gas
+**Constant:** 23,800 gas
 
 (Higher than G1 map's 5,500 gas due to operations in Fp²)
 
@@ -117,7 +117,7 @@ This precompile handles step 2.
 
 - **InvalidInput:** Input length is not 128 bytes
 - **InvalidPoint:** Fp² element is invalid or components ≥ modulus
-- **OutOfGas:** Insufficient gas (< 75,000)
+- **OutOfGas:** Insufficient gas (< 23,800)
 
 ## Use Cases
 
@@ -142,13 +142,13 @@ Test cases should include:
 | Precompile     | Field  | Gas    | Ratio |
 |----------------|--------|--------|-------|
 | MAP_FP_TO_G1   | Fp     | 5,500  | 1×    |
-| MAP_FP2_TO_G2  | Fp²    | 75,000 | 13.6× |
+| MAP_FP2_TO_G2  | Fp²    | 23,800 | 4.3×  |
 
 The G2 operation is significantly more expensive due to working in the extension field Fp².
 
 ## Performance Notes
 
-- 75,000 gas reflects Fp² arithmetic complexity
+- 23,800 gas reflects Fp² arithmetic complexity
 - Deterministic performance (no retries)
 - Uses optimized BLST implementation
 - More expensive than G1 mapping but still efficient

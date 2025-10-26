@@ -15,9 +15,9 @@ Performs a bilinear pairing check on the BLS12-381 curve. Verifies that `e(A₁,
 ## Gas Cost
 
 **Dynamic:**
-- Base gas: 65,000
-- Per-pair gas: 43,000
-- Formula: `65,000 + 43,000 * k`
+- Base gas: 37,700
+- Per-pair gas: 32,600
+- Formula: `37,700 + 32,600 * k`
 
 ## API Reference
 
@@ -108,7 +108,7 @@ const signature_valid = (result.output[31] == 1);
 
 3. **Gas Calculation:**
    - `k = input.len / 384`
-   - `gas = 65,000 + 43,000 * k`
+   - `gas = 37,700 + 32,600 * k`
 
 4. **Error Handling:**
    - `InvalidInput`: Length not multiple of 384
@@ -137,11 +137,11 @@ const signature_valid = (result.output[31] == 1);
 
 | Pairs | Input Size | Gas Cost |
 |-------|------------|----------|
-| 0     | 0 bytes    | 65,000   |
-| 1     | 384 bytes  | 108,000  |
-| 2     | 768 bytes  | 151,000  |
-| 3     | 1152 bytes | 194,000  |
-| 10    | 3840 bytes | 495,000  |
+| 0     | 0 bytes    | 37,700   |
+| 1     | 384 bytes  | 70,300   |
+| 2     | 768 bytes  | 102,900  |
+| 3     | 1152 bytes | 135,500  |
+| 10    | 3840 bytes | 363,700  |
 
 ## BLS Signature Verification
 
@@ -178,8 +178,8 @@ Test cases should include:
 
 ## Performance Notes
 
-- Base cost (65,000) reflects setup overhead
-- Each additional pair costs 43,000 gas
+- Base cost (37,700) reflects setup overhead
+- Each additional pair costs 32,600 gas
 - Pairing is expensive but necessary for BLS
 - Most signature verifications use 1-2 pairings
 
@@ -188,8 +188,8 @@ Test cases should include:
 | Feature      | BLS12_PAIRING | BN254PAIRING |
 |--------------|---------------|--------------|
 | Curve        | BLS12-381     | BN254        |
-| Base gas     | 65,000        | 45,000       |
-| Per-pair gas | 43,000        | 34,000       |
+| Base gas     | 37,700        | 45,000       |
+| Per-pair gas | 32,600        | 34,000       |
 | Pair size    | 384 bytes     | 192 bytes    |
 | Security     | ~128-bit      | ~100-bit     |
 | Use case     | BLS sigs      | zkSNARKs     |

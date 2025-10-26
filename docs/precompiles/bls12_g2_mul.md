@@ -14,7 +14,7 @@ Performs elliptic curve scalar multiplication on the BLS12-381 G2 group. Given a
 
 ## Gas Cost
 
-**Constant:** 45,000 gas
+**Constant:** 22,500 gas
 
 (Higher than G1MUL's 12,000 gas due to operations in Fp²)
 
@@ -109,7 +109,7 @@ defer result.deinit(allocator);
 
 - **InvalidInput:** Input length is not 288 bytes
 - **InvalidPoint:** Point coordinates are not on the G2 curve
-- **OutOfGas:** Insufficient gas (< 45,000)
+- **OutOfGas:** Insufficient gas (< 22,500)
 
 ## Special Cases
 
@@ -140,10 +140,10 @@ Test cases should include:
 
 ## Performance Notes
 
-- 45,000 gas (vs 12,000 for G1) reflects Fp² operations
+- 22,500 gas (vs 12,000 for G1) reflects Fp² operations
 - Uses optimized BLST library
 - Constant-time execution
-- ~3.75x more expensive than G1MUL
+- ~1.88x more expensive than G1MUL
 
 ## G1 vs G2 Scalar Multiplication
 
@@ -152,8 +152,8 @@ Test cases should include:
 | Field            | Fp           | Fp²          |
 | Input size       | 160 bytes    | 288 bytes    |
 | Output size      | 128 bytes    | 256 bytes    |
-| Gas cost         | 12,000       | 45,000       |
-| Cost ratio       | 1×           | 3.75×        |
+| Gas cost         | 12,000       | 22,500       |
+| Cost ratio       | 1×           | 1.88×        |
 
 ## BLS Signature Context
 
