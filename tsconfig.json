@@ -5,7 +5,8 @@
 		"declarationDir": "./types",
 		"rootDir": "./src/typescript",
 		"composite": true,
-		"incremental": true
+		"incremental": true,
+		"skipLibCheck": true
 	},
 	"include": ["src/typescript/**/*"],
 	"exclude": [
