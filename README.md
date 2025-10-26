@@ -306,6 +306,22 @@ For details on building and using the native Zig implementations, see:
 - [WASM_SUPPORT.md](./docs/WASM_SUPPORT.md) - WebAssembly build guide
 - [WASM-QUICK-START.md](./docs/WASM-QUICK-START.md) - Quick start for WASM deployment
 
+### Benchmarking
+
+Run performance benchmarks to measure native Zig implementation performance:
+
+```bash
+# Run all performance benchmarks
+zig build bench
+
+# Filter specific benchmarks
+zig build bench -Dfilter=keccak   # Only keccak benchmarks
+zig build bench -Dfilter=address  # Only address benchmarks
+zig build bench -Dfilter=secp     # Only secp256k1 benchmarks
+```
+
+See [bench/README.md](./bench/README.md) for complete benchmark documentation including bundle size analysis and detailed performance measurement.
+
 ## Documentation
 
 ### TypeScript
