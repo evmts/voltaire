@@ -290,18 +290,22 @@ fn zigTypeToCType(zig_type: []const u8) ![]const u8 {
     if (std.mem.eql(u8, zig_type, "[*:0]const u8")) return "const char *";
     if (std.mem.eql(u8, zig_type, "[*]const u8")) return "const uint8_t *";
     if (std.mem.eql(u8, zig_type, "[*]u8")) return "uint8_t *";
+    if (std.mem.eql(u8, zig_type, "[*]u32")) return "uint32_t *";
     if (std.mem.eql(u8, zig_type, "*PrimitivesAddress")) return "PrimitivesAddress *";
     if (std.mem.eql(u8, zig_type, "*const PrimitivesAddress")) return "const PrimitivesAddress *";
     if (std.mem.eql(u8, zig_type, "*PrimitivesHash")) return "PrimitivesHash *";
     if (std.mem.eql(u8, zig_type, "*const PrimitivesHash")) return "const PrimitivesHash *";
     if (std.mem.eql(u8, zig_type, "*PrimitivesU256")) return "PrimitivesU256 *";
     if (std.mem.eql(u8, zig_type, "*const PrimitivesU256")) return "const PrimitivesU256 *";
-    if (std.mem.eql(u8, zig_type, "*const [32]u8")) return "const uint8_t (*)[32]";
-    if (std.mem.eql(u8, zig_type, "*[32]u8")) return "uint8_t (*)[32]";
-    if (std.mem.eql(u8, zig_type, "*const [20]u8")) return "const uint8_t (*)[20]";
-    if (std.mem.eql(u8, zig_type, "*[20]u8")) return "uint8_t (*)[20]";
-    if (std.mem.eql(u8, zig_type, "*[64]u8")) return "uint8_t (*)[64]";
-    if (std.mem.eql(u8, zig_type, "*const [64]u8")) return "const uint8_t (*)[64]";
+    // For pointer-to-array types, use simpler pointer syntax that's more C-compatible
+    if (std.mem.eql(u8, zig_type, "*const [32]u8")) return "const uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*[32]u8")) return "uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*const [20]u8")) return "const uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*[20]u8")) return "uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*[64]u8")) return "uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*[33]u8")) return "uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*const [64]u8")) return "const uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*const [33]u8")) return "const uint8_t *";
     if (std.mem.eql(u8, zig_type, "*u8")) return "uint8_t *";
     if (std.mem.eql(u8, zig_type, "void")) return "void";
 

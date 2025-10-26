@@ -190,22 +190,22 @@ int primitives_calculate_create_address(const PrimitivesAddress * sender, uint64
  * Recover public key from ECDSA signature
  * Returns PRIMITIVES_SUCCESS on success
  */
-int primitives_secp256k1_recover_pubkey(const uint8_t (*)[32] message_hash, const uint8_t (*)[32] r, const uint8_t (*)[32] s, uint8_t v, uint8_t (*)[64] out_pubkey);
+int primitives_secp256k1_recover_pubkey(const uint8_t * message_hash, const uint8_t * r, const uint8_t * s, uint8_t v, uint8_t * out_pubkey);
 
 /**
  * Recover Ethereum address from ECDSA signature
  */
-int primitives_secp256k1_recover_address(const uint8_t (*)[32] message_hash, const uint8_t (*)[32] r, const uint8_t (*)[32] s, uint8_t v, PrimitivesAddress * out_address);
+int primitives_secp256k1_recover_address(const uint8_t * message_hash, const uint8_t * r, const uint8_t * s, uint8_t v, PrimitivesAddress * out_address);
 
 /**
  * Derive public key from private key
  */
-int primitives_secp256k1_pubkey_from_private(const uint8_t (*)[32] private_key, uint8_t (*)[64] out_pubkey);
+int primitives_secp256k1_pubkey_from_private(const uint8_t * private_key, uint8_t * out_pubkey);
 
 /**
  * Validate ECDSA signature components
  */
-bool primitives_secp256k1_validate_signature(const uint8_t (*)[32] r, const uint8_t (*)[32] s);
+bool primitives_secp256k1_validate_signature(const uint8_t * r, const uint8_t * s);
 
 // ============================================================================
 // Hash Algorithms (SHA256, RIPEMD160)
@@ -214,12 +214,12 @@ bool primitives_secp256k1_validate_signature(const uint8_t (*)[32] r, const uint
 /**
  * Compute SHA256 hash of input data
  */
-int primitives_sha256(const uint8_t * data, size_t data_len, uint8_t (*)[32] out_hash);
+int primitives_sha256(const uint8_t * data, size_t data_len, uint8_t * out_hash);
 
 /**
  * Compute RIPEMD160 hash of input data
  */
-int primitives_ripemd160(const uint8_t * data, size_t data_len, uint8_t (*)[20] out_hash);
+int primitives_ripemd160(const uint8_t * data, size_t data_len, uint8_t * out_hash);
 
 // ============================================================================
 // RLP Encoding/Decoding
@@ -235,7 +235,7 @@ int primitives_rlp_encode_bytes(const uint8_t * data, size_t data_len, uint8_t *
  * Encode unsigned integer as RLP
  * value_bytes must be 32 bytes (big-endian u256)
  */
-int primitives_rlp_encode_uint(const uint8_t (*)[32] value_bytes, uint8_t * out_buf, size_t buf_len);
+int primitives_rlp_encode_uint(const uint8_t * value_bytes, uint8_t * out_buf, size_t buf_len);
 
 /**
  * Convert RLP bytes to hex string
@@ -266,25 +266,25 @@ int primitives_tx_detect_type(const uint8_t * data, size_t data_len);
  * Modifies signature in-place if needed
  * Returns true if normalization was performed
  */
-bool primitives_signature_normalize(uint8_t (*)[32] r, uint8_t (*)[32] s);
+bool primitives_signature_normalize(uint8_t * r, uint8_t * s);
 
 /**
  * Check if signature is in canonical form
  */
-bool primitives_signature_is_canonical(const uint8_t (*)[32] r, const uint8_t (*)[32] s);
+bool primitives_signature_is_canonical(const uint8_t * r, const uint8_t * s);
 
 /**
  * Parse signature from DER or compact format
  * Input: 64 or 65 byte signature (r + s + optional v)
  * Output: r, s, v components
  */
-int primitives_signature_parse(const uint8_t * sig_data, size_t sig_len, uint8_t (*)[32] out_r, uint8_t (*)[32] out_s, uint8_t * out_v);
+int primitives_signature_parse(const uint8_t * sig_data, size_t sig_len, uint8_t * out_r, uint8_t * out_s, uint8_t * out_v);
 
 /**
  * Serialize signature to compact format (64 or 65 bytes)
  * include_v: if true, append v byte to create 65-byte signature
  */
-int primitives_signature_serialize(const uint8_t (*)[32] r, const uint8_t (*)[32] s, uint8_t v, bool include_v, uint8_t * out_buf);
+int primitives_signature_serialize(const uint8_t * r, const uint8_t * s, uint8_t v, bool include_v, uint8_t * out_buf);
 
 // ============================================================================
 // Wallet Generation
@@ -293,12 +293,12 @@ int primitives_signature_serialize(const uint8_t (*)[32] r, const uint8_t (*)[32
 /**
  * Generate a cryptographically secure random private key
  */
-int primitives_generate_private_key(uint8_t (*)[32] out_private_key);
+int primitives_generate_private_key(uint8_t * out_private_key);
 
 /**
  * Compress public key from uncompressed format (64 bytes) to compressed (33 bytes)
  */
-int primitives_compress_public_key(const uint8_t (*)[64] uncompressed, *[33]u8 out_compressed);
+int primitives_compress_public_key(const uint8_t * uncompressed, uint8_t * out_compressed);
 
 // ============================================================================
 // Bytecode Operations
@@ -309,7 +309,7 @@ int primitives_compress_public_key(const uint8_t (*)[64] uncompressed, *[33]u8 o
  * Returns the number of valid jump destinations found
  * out_jumpdests must have space for at least max_jumpdests u32 values
  */
-int primitives_bytecode_analyze_jumpdests(const uint8_t * code, size_t code_len, [*]u32 out_jumpdests, size_t max_jumpdests);
+int primitives_bytecode_analyze_jumpdests(const uint8_t * code, size_t code_len, uint32_t * out_jumpdests, size_t max_jumpdests);
 
 /**
  * Check if a position is at a bytecode boundary (not inside PUSH data)
@@ -340,7 +340,7 @@ int primitives_solidity_keccak256(const uint8_t * packed_data, size_t data_len, 
 /**
  * Compute SHA256 of tightly packed arguments
  */
-int primitives_solidity_sha256(const uint8_t * packed_data, size_t data_len, uint8_t (*)[32] out_hash);
+int primitives_solidity_sha256(const uint8_t * packed_data, size_t data_len, uint8_t * out_hash);
 
 // ============================================================================
 // Additional Hash Algorithms
@@ -349,7 +349,7 @@ int primitives_solidity_sha256(const uint8_t * packed_data, size_t data_len, uin
 /**
  * Compute Blake2b hash (for EIP-152)
  */
-int primitives_blake2b(const uint8_t * data, size_t data_len, uint8_t (*)[64] out_hash);
+int primitives_blake2b(const uint8_t * data, size_t data_len, uint8_t * out_hash);
 
 // ============================================================================
 // CREATE2 Address Calculation
@@ -359,7 +359,7 @@ int primitives_blake2b(const uint8_t * data, size_t data_len, uint8_t (*)[64] ou
  * Calculate CREATE2 contract address
  * Formula: keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]
  */
-int primitives_calculate_create2_address(const PrimitivesAddress * sender, const uint8_t (*)[32] salt, const uint8_t * init_code, size_t init_code_len, PrimitivesAddress * out_address);
+int primitives_calculate_create2_address(const PrimitivesAddress * sender, const uint8_t * salt, const uint8_t * init_code, size_t init_code_len, PrimitivesAddress * out_address);
 
 // ============================================================================
 // Version info

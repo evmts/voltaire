@@ -14,7 +14,7 @@ Performs elliptic curve point addition on the BLS12-381 G1 group. BLS12-381 is a
 
 ## Gas Cost
 
-**Constant:** 500 gas
+**Constant:** 375 gas
 
 ## API Reference
 
@@ -108,7 +108,7 @@ p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb1
 
 - **InvalidInput:** Input length is not 256 bytes
 - **InvalidPoint:** Point coordinates are not on the curve
-- **OutOfGas:** Insufficient gas (< 500)
+- **OutOfGas:** Insufficient gas (< 375)
 
 ## Use Cases
 
@@ -130,7 +130,7 @@ Test cases should include:
 
 ## Performance Notes
 
-- 500 gas makes it efficient for signature operations
+- 375 gas makes it efficient for signature operations
 - Uses optimized BLST library
 - Constant-time execution for security
 
