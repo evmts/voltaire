@@ -20,8 +20,8 @@ export declare class PrivateKeySignerImpl implements Signer {
     private constructor();
     static fromPrivateKey(options: PrivateKeySignerOptions): PrivateKeySignerImpl;
     signMessage(message: string | Uint8Array): Promise<string>;
-    signTransaction(transaction: any): Promise<any>;
-    signTypedData(typedData: any): Promise<string>;
+    signTransaction(_transaction: any): Promise<any>;
+    signTypedData(_typedData: any): Promise<string>;
 }
 export default PrivateKeySignerImpl;
 //# sourceMappingURL=private-key-signer.d.ts.map
