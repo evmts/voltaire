@@ -92,7 +92,7 @@ zig build test
 zig build
 
 # If modifying TypeScript code, test that too
-cd ts
+cd src
 bun test
 cd ..
 ```
@@ -209,14 +209,14 @@ The TypeScript layer has two types of implementations:
 zig build
 
 # Install TypeScript dependencies
-cd ts
+cd src
 bun install
 
 # Run TypeScript tests
 bun test
 
 # Run specific test file
-bun test src/crypto/keccak.test.ts
+bun test crypto/keccak.test.ts
 ```
 
 ### Adding New FFI Bindings
@@ -253,7 +253,7 @@ To add a new FFI wrapper for a Zig crypto function:
 
 3. **Add tests** in `src/crypto/my-function.test.ts` using known test vectors
 
-4. **Update documentation** in `src/crypto/README.md`
+4. **Update documentation** in [TYPESCRIPT_API.md](./docs/TYPESCRIPT_API.md) and [README.md](./README.md)
 
 ### TypeScript Code Standards
 

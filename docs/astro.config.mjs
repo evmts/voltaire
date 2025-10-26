@@ -7,7 +7,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: "Primitives Library",
-			description: "Ethereum primitives and cryptographic operations in Zig",
+			description: "Ethereum primitives and cryptographic operations for TypeScript and Zig",
 			social: [
 				{
 					icon: "github",
@@ -17,17 +17,22 @@ export default defineConfig({
 			],
 			sidebar: [
 				{
-					label: "Primitives",
-					badge: { text: "Core", variant: "tip" },
+					label: "TypeScript API",
+					badge: { text: "Primary", variant: "success" },
+					autogenerate: { directory: "typescript" },
+				},
+				{
+					label: "Primitives (Zig)",
+					badge: { text: "Native", variant: "tip" },
 					autogenerate: { directory: "primitives" },
 				},
 				{
-					label: "Crypto",
-					badge: { text: "Security", variant: "caution" },
+					label: "Crypto (Zig)",
+					badge: { text: "Native", variant: "caution" },
 					autogenerate: { directory: "crypto" },
 				},
 				{
-					label: "Precompiles",
+					label: "Precompiles (Zig)",
 					badge: { text: "0x01-0x13", variant: "note" },
 					autogenerate: { directory: "precompiles" },
 				},
