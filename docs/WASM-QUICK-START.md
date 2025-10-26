@@ -18,13 +18,10 @@ Output: `zig-out/bin/*.wasm`
 ## Test WASM
 
 ```bash
-# Node.js tests
-bun wasm-test.ts
+# Size analysis (actual working script)
+bun script/wasm-size.ts
 
-# Size analysis
-bun wasm-size-analysis.ts
-
-# Browser tests
+# Browser tests (if available)
 python3 -m http.server 8000
 # Navigate to http://localhost:8000/wasm-browser-test.html
 ```
@@ -108,9 +105,8 @@ console.log('Memory size:', memory.buffer.byteLength);
 ## Files
 
 ### Test Suite
-- `wasm-test.ts` - Node.js tests
-- `wasm-browser-test.html` - Browser tests
-- `wasm-size-analysis.ts` - Size analysis
+- `script/wasm-size.ts` - WASM size analysis script
+- `wasm-browser-test.html` - Browser tests (if available)
 
 ### Documentation
 - `WASM-TEST-RESULTS.md` - Detailed results

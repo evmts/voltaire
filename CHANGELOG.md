@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Documentation improvements for precompiles and hardfork timeline
+- Comprehensive examples for cryptographic operations
+- Signer implementation documentation
+- EIP712 comparison benchmarks and TypeScript bindings
+
+### Changed
+- Documentation updates for error handling
+- Hardfork timeline corrections (Prague April 2025, Osaka→Fusaka)
+- Gas cost formula corrections for BLS12-381 MSM operations
+- Enhanced address parsing to support hex strings without 0x prefix
+
+### Fixed
+- Code quality improvements in benchmark files
+- TypeScript import paths and API structure updates
+
+## [0.1.0] - 2025-10-25
+
+### Added
+- Zig package manager support with `zig fetch`
+- Installation instructions for v0.1.0
+
+### Changed
+- Simplified installation process using zig fetch
+- Updated README with v0.1.0 installation instructions
+
 ## [0.0.1] - 2025-01-25
 
 ### Added
@@ -134,4 +162,6 @@ Unaudited components:
 - Pure Zig EIP-712 implementation
 - TypeScript implementations (RLP, transactions, ABI, etc.)
 
+[Unreleased]: https://github.com/evmts/primitives/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/evmts/primitives/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/evmts/primitives/releases/tag/v0.0.1
