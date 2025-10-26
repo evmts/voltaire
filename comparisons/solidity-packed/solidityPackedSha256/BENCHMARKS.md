@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# solidityPackedSha256 - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

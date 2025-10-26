@@ -8,18 +8,18 @@ Test: **encodeEventTopics**
 
 | Implementation | ops/sec | min | max | mean | p75 | p99 | p995 | p999 | rme | samples | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| guil | (viem | fallback) | 178,645.34 | 0.0050 | 0.2448 | 0.0056 | 0.0055 | 0.0073 | 0.0093 | 0.0186 | ±0.47% 89323 |
-| ethers | 27,464.49 | 0.0335 | 3.1650 | 0.0364 | 0.0358 | 0.0563 | 0.0601 | 0.1510 | ±1.27% | 13733 | slowest |
-| viem | 182,707.35 | 0.0051 | 0.2799 | 0.0055 | 0.0054 | 0.0068 | 0.0084 | 0.0126 | ±0.42% | 91354 | fastest |
+| guil | (viem | fallback) | 180,787.81 | 0.0051 | 0.2228 | 0.0055 | 0.0054 | 0.0080 | 0.0096 | 0.0210 | ±0.39% 90395 |
+| ethers | 26,577.23 | 0.0335 | 3.7351 | 0.0376 | 0.0367 | 0.0589 | 0.0700 | 0.1894 | ±1.50% | 13289 | slowest |
+| viem | 182,825.95 | 0.0050 | 0.3281 | 0.0055 | 0.0054 | 0.0069 | 0.0085 | 0.0135 | ±0.51% | 91413 | fastest |
 
 ## Summary
 
 viem - comparisons/abi-events/encodeEventTopics.bench.ts > encodeEventTopics
-1.02x faster than guil (viem fallback)
-6.65x faster than ethers
+1.01x faster than guil (viem fallback)
+6.88x faster than ethers
 viem - comparisons/abi-events/encodeEventTopics.bench.ts > encodeEventTopics
-1.02x faster than guil (viem fallback)
-6.65x faster than ethers
+1.01x faster than guil (viem fallback)
+6.88x faster than ethers
 
 ## Benchmark Info
 

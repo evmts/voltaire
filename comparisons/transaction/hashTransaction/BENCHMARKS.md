@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# hashTransaction - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

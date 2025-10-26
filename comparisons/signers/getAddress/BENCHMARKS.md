@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# getAddress - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

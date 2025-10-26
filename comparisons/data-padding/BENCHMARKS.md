@@ -1,32 +1,32 @@
-# trimRight - Benchmark Results
+# padRight - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 
 ## Results
 
-Test: **trimRight**
+Test: **padRight**
 
 | Implementation | ops/sec | min | max | mean | p75 | p99 | p995 | p999 | rme | samples | notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| guil-native | 6,978,417.27 | 0.0001 | 1.9637 | 0.0001 | 0.0002 | 0.0002 | 0.0003 | 0.0004 | ±0.77% | 3489209 | fastest |
-| guil-wasm | 6,934,569.07 | 0.0001 | 0.0354 | 0.0001 | 0.0002 | 0.0002 | 0.0002 | 0.0003 | ±0.05% | 3467285 |  |
-| ethers | 6,799,890.31 | 0.0001 | 0.0375 | 0.0001 | 0.0002 | 0.0002 | 0.0003 | 0.0003 | ±0.05% | 3399946 |  |
-| viem | 2,374,992.36 | 0.0003 | 0.2300 | 0.0004 | 0.0004 | 0.0005 | 0.0005 | 0.0009 | ±0.23% | 1187497 | slowest |
+| guil-native | 9,173,402.39 | 0.0000 | 0.2180 | 0.0001 | 0.0001 | 0.0002 | 0.0002 | 0.0005 | ±0.19% | 4586702 | fastest |
+| guil-wasm | 8,970,371.21 | 0.0000 | 2.6803 | 0.0001 | 0.0001 | 0.0002 | 0.0003 | 0.0006 | ±1.11% | 4485186 |  |
+| ethers | 505,544.26 | 0.0017 | 1.4632 | 0.0020 | 0.0020 | 0.0025 | 0.0043 | 0.0051 | ±0.72% | 252773 | slowest |
+| viem | 5,272,057.04 | 0.0001 | 0.2254 | 0.0002 | 0.0002 | 0.0003 | 0.0004 | 0.0007 | ±0.47% | 2636029 |  |
 
 ## Summary
 
-guil-native - comparisons/data-padding/trimRight.bench.ts > trimRight
-1.01x faster than guil-wasm
-1.03x faster than ethers
-2.94x faster than viem
-guil-native - comparisons/data-padding/trimRight.bench.ts > trimRight
-1.01x faster than guil-wasm
-1.03x faster than ethers
-2.94x faster than viem
+guil-native - comparisons/data-padding/padRight.bench.ts > padRight
+1.02x faster than guil-wasm
+1.74x faster than viem
+18.15x faster than ethers
+guil-native - comparisons/data-padding/padRight.bench.ts > padRight
+1.02x faster than guil-wasm
+1.74x faster than viem
+18.15x faster than ethers
 
 ## Benchmark Info
 
-- **File**: `data-padding/trimRight.bench.ts`
+- **File**: `data-padding/padRight.bench.ts`
 - **Category**: data-padding
 - **Date**: 2025-10-26
 - **Tool**: Vitest Benchmark

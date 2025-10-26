@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# signMessage - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

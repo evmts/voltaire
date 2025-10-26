@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# signTypedData - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

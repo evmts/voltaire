@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# serializeLegacy - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

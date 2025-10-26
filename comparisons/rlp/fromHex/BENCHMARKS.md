@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# fromHex - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

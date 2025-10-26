@@ -1,4 +1,4 @@
-# isBytecodeBoundary - Benchmark Results
+# parseUnits - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 

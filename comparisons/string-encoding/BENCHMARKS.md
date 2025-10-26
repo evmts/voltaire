@@ -1,4 +1,4 @@
-# bytesToString - Benchmark Results
+# stringToHex - Benchmark Results
 
 Performance benchmarks comparing implementations across different libraries.
 
