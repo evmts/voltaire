@@ -1,6 +1,6 @@
 {
 	"name": "@tevm/primitives",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"private": false,
 	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
 	"keywords": [
@@ -40,7 +40,7 @@
 	"types": "./types/index.d.ts",
 	"files": ["dist", "types", "wasm", "native"],
 	"scripts": {
-		"build": "echo 'Build script TBD'",
+		"build": "tsc && zig build",
 		"test": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test",
 		"test:native": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test src/typescript/native/**/*.test.ts",
 		"test:wasm": "bun test src/typescript/wasm/**/*.test.ts",

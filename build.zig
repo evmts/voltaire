@@ -6,6 +6,8 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     // Optional: build benchmarks only when requested
     const with_benches = b.option(bool, "with-benches", "Build and install benchmark executables") orelse false;
+    // Optional: run TypeScript type-check during build
+    const with_tsc = b.option(bool, "with-tsc", "Run TypeScript type-check (tsc --noEmit)") orelse true;
 
     // STEP 1: Verify vendored dependencies exist
     lib_build.checkVendoredDeps(b);
@@ -108,6 +110,21 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_primitives_tests.step);
     test_step.dependOn(&run_crypto_tests.step);
     test_step.dependOn(&run_precompiles_tests.step);
+
+    // TypeScript type-check step (validates TS FFI wrappers compile)
+    if (with_tsc) {
+        const tsc_cmd = b.addSystemCommand(&[_][]const u8{
+            // Invoke local TypeScript directly to avoid PATH issues
+            "node",
+            "node_modules/typescript/bin/tsc",
+            "--noEmit",
+            "-p",
+            "tsconfig.ffi.json",
+        });
+        tsc_cmd.setName("tsc --noEmit");
+        const tsc_step = b.step("tsc", "Run TypeScript type-check (tsc --noEmit)");
+        tsc_step.dependOn(&tsc_cmd.step);
+    }
 
     // Example: Keccak-256 hashing demonstration
     const keccak256_example_mod = b.createModule(.{
@@ -543,6 +560,15 @@ pub fn build(b: *std.Build) void {
         const zbench_filter = b.option([]const u8, "filter", "Pattern to filter zbench benchmarks (default: \"*\")") orelse "*";
         buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
     }
+
+    // TypeScript comparisons benchmark runner (generates BENCHMARKS.md files)
+    const with_ts_bench = b.option(bool, "with-ts-bench", "Run TS benchmarks and generate BENCHMARKS.md") orelse false;
+    if (with_ts_bench) {
+        const run_benchmarks = b.addSystemCommand(&[_][]const u8{ "bun", "run", "scripts/run-benchmarks.ts" });
+        run_benchmarks.setName("bench-ts");
+        const bench_ts_step = b.step("bench-ts", "Run TS benchmarks and generate BENCHMARKS.md");
+        bench_ts_step.dependOn(&run_benchmarks.step);
+    }
 }
 
 fn buildBenchmarks(
@@ -764,6 +790,17 @@ fn addTypeScriptWasmBuild(
 
     const build_ts_wasm_step = b.step("build-ts-wasm", "Build WASM TypeScript bindings with ReleaseSmall");
     build_ts_wasm_step.dependOn(&install_wasm.step);
+
+    // Also copy the emitted .wasm into the repository's wasm/ folder for loader.js
+    // The install above places it under zig-out/wasm; mirror to ./wasm/primitives.wasm for consumers
+    const copy_wasm = b.addSystemCommand(&[_][]const u8{
+        "sh",
+        "-c",
+        // robustly copy from zig-out/wasm/primitives_ts_wasm* to repo wasm/primitives.wasm
+        "set -eu; src=$(ls zig-out/wasm/primitives_ts_wasm* 2>/dev/null | head -n1); mkdir -p wasm; cp \"$src\" wasm/primitives.wasm",
+    });
+    copy_wasm.step.dependOn(&install_wasm.step);
+    build_ts_wasm_step.dependOn(&copy_wasm.step);
 }
 
 fn addGoBuildSteps(b: *std.Build) void {
