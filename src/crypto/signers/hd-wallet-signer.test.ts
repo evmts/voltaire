@@ -10,7 +10,8 @@ import type { Eip1559Transaction } from "../../primitives/transaction.ts";
 
 describe("HDWalletSigner", () => {
 	// Standard BIP-39 test vector
-	const TEST_MNEMONIC = "test test test test test test test test test test test junk";
+	const TEST_MNEMONIC =
+		"test test test test test test test test test test test junk";
 
 	// Expected addresses for the test mnemonic (verified with ethers.js)
 	// Derivation path: m/44'/60'/0'/0/0
@@ -86,7 +87,9 @@ describe("HDWalletSigner", () => {
 				index: 0,
 			});
 
-			expect(signer.address.toLowerCase()).toBe(EXPECTED_ADDRESS_0.toLowerCase());
+			expect(signer.address.toLowerCase()).toBe(
+				EXPECTED_ADDRESS_0.toLowerCase(),
+			);
 			expect(signer.index).toBe(0);
 			expect(signer.path).toBe("m/44'/60'/0'/0");
 		});
@@ -97,7 +100,9 @@ describe("HDWalletSigner", () => {
 				index: 1,
 			});
 
-			expect(signer.address.toLowerCase()).toBe(EXPECTED_ADDRESS_1.toLowerCase());
+			expect(signer.address.toLowerCase()).toBe(
+				EXPECTED_ADDRESS_1.toLowerCase(),
+			);
 			expect(signer.index).toBe(1);
 		});
 
@@ -116,8 +121,12 @@ describe("HDWalletSigner", () => {
 			expect(signer0.address).not.toBe(signer2.address);
 
 			// Verify known addresses
-			expect(signer0.address.toLowerCase()).toBe(EXPECTED_ADDRESS_0.toLowerCase());
-			expect(signer1.address.toLowerCase()).toBe(EXPECTED_ADDRESS_1.toLowerCase());
+			expect(signer0.address.toLowerCase()).toBe(
+				EXPECTED_ADDRESS_0.toLowerCase(),
+			);
+			expect(signer1.address.toLowerCase()).toBe(
+				EXPECTED_ADDRESS_1.toLowerCase(),
+			);
 		});
 
 		test("supports custom derivation path", () => {
@@ -128,7 +137,9 @@ describe("HDWalletSigner", () => {
 			});
 
 			expect(signer.path).toBe("m/44'/60'/0'/0");
-			expect(signer.address.toLowerCase()).toBe(EXPECTED_ADDRESS_0.toLowerCase());
+			expect(signer.address.toLowerCase()).toBe(
+				EXPECTED_ADDRESS_0.toLowerCase(),
+			);
 		});
 
 		test("derives at custom path", async () => {
@@ -243,7 +254,9 @@ describe("HDWalletSigner", () => {
 			expect(signedTx.v).toBeLessThanOrEqual(1n);
 			expect(signedTx.r).toMatch(/^0x[0-9a-f]{64}$/);
 			expect(signedTx.s).toMatch(/^0x[0-9a-f]{64}$/);
-			expect(signedTx.r).not.toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
+			expect(signedTx.r).not.toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
 		});
 
 		test("different indices produce different transaction signatures", async () => {
@@ -313,14 +326,16 @@ describe("HDWalletSigner", () => {
 				HDWalletSignerImpl.fromMnemonic({
 					mnemonic: TEST_MNEMONIC,
 					index: 0,
-				})
+				}),
 			);
 
-			const addresses = signers.map(s => s.address);
+			const addresses = signers.map((s) => s.address);
 			const uniqueAddresses = new Set(addresses);
 
 			expect(uniqueAddresses.size).toBe(1);
-			expect(addresses[0]?.toLowerCase()).toBe(EXPECTED_ADDRESS_0.toLowerCase());
+			expect(addresses[0]?.toLowerCase()).toBe(
+				EXPECTED_ADDRESS_0.toLowerCase(),
+			);
 		});
 
 		test("incremental indices produce deterministic sequence", async () => {

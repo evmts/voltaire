@@ -186,9 +186,8 @@ export interface Signature {
  * @returns Parsed signature components
  */
 export function parseSignature(signature: string | Uint8Array): Signature {
-	const bytes = typeof signature === "string"
-		? hexToBytes(signature)
-		: signature;
+	const bytes =
+		typeof signature === "string" ? hexToBytes(signature) : signature;
 
 	if (bytes.length !== 65) {
 		throw new Error("Invalid signature length: expected 65 bytes");
@@ -213,12 +212,18 @@ export function parseSignature(signature: string | Uint8Array): Signature {
  * @param v - Recovery id
  * @returns 65-byte signature as hex string
  */
-export function serializeSignature(r: string | Uint8Array, s: string | Uint8Array, v: number): string {
+export function serializeSignature(
+	r: string | Uint8Array,
+	s: string | Uint8Array,
+	v: number,
+): string {
 	const rBytes = typeof r === "string" ? hexToBytes(r) : r;
 	const sBytes = typeof s === "string" ? hexToBytes(s) : s;
 
 	if (rBytes.length !== 32 || sBytes.length !== 32) {
-		throw new Error("Invalid signature component length: r and s must be 32 bytes");
+		throw new Error(
+			"Invalid signature component length: r and s must be 32 bytes",
+		);
 	}
 
 	const signature = new Uint8Array(65);
@@ -245,6 +250,6 @@ function hexToBytes(hex: string): Uint8Array {
 
 function bytesToHex(bytes: Uint8Array): string {
 	return Array.from(bytes)
-		.map(b => b.toString(16).padStart(2, "0"))
+		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
 }

@@ -6,11 +6,15 @@
 
 import { describe, expect, test } from "bun:test";
 import { PrivateKeySignerImpl } from "./private-key-signer.ts";
-import type { LegacyTransaction, Eip1559Transaction } from "../../primitives/transaction.ts";
+import type {
+	LegacyTransaction,
+	Eip1559Transaction,
+} from "../../primitives/transaction.ts";
 
 describe("PrivateKeySigner", () => {
 	// Test vectors from Ethereum test suite
-	const TEST_PRIVATE_KEY = "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318";
+	const TEST_PRIVATE_KEY =
+		"0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318";
 	const TEST_ADDRESS = "0x2c7536E3605D9C16a7a3D7b1898e529396a65c23";
 
 	describe("Address Derivation", () => {
@@ -171,8 +175,12 @@ describe("PrivateKeySigner", () => {
 			expect(signedTx.v).toBeGreaterThan(35n); // EIP-155
 			expect(signedTx.r).toMatch(/^0x[0-9a-f]{64}$/);
 			expect(signedTx.s).toMatch(/^0x[0-9a-f]{64}$/);
-			expect(signedTx.r).not.toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
-			expect(signedTx.s).not.toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
+			expect(signedTx.r).not.toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
+			expect(signedTx.s).not.toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
 		});
 
 		test("signs EIP-1559 transaction", async () => {
@@ -203,8 +211,12 @@ describe("PrivateKeySigner", () => {
 			expect(signedTx.v).toBeLessThanOrEqual(1n);
 			expect(signedTx.r).toMatch(/^0x[0-9a-f]{64}$/);
 			expect(signedTx.s).toMatch(/^0x[0-9a-f]{64}$/);
-			expect(signedTx.r).not.toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
-			expect(signedTx.s).not.toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
+			expect(signedTx.r).not.toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
+			expect(signedTx.s).not.toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
 		});
 
 		test("signs transaction with data", async () => {
@@ -230,7 +242,9 @@ describe("PrivateKeySigner", () => {
 
 			const signedTx = await signer.signTransaction(tx);
 
-			expect(signedTx.r).not.toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
+			expect(signedTx.r).not.toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
 			expect(signedTx.data).toBe("0x1234567890abcdef");
 		});
 
@@ -257,7 +271,9 @@ describe("PrivateKeySigner", () => {
 
 			const signedTx = await signer.signTransaction(tx);
 
-			expect(signedTx.r).not.toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
+			expect(signedTx.r).not.toBe(
+				"0x0000000000000000000000000000000000000000000000000000000000000000",
+			);
 			expect(signedTx.to).toBeUndefined();
 		});
 	});

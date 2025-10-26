@@ -11,7 +11,11 @@ import type { Transaction } from "../../primitives/transaction.ts";
 import { Address } from "../../primitives/address.ts";
 import { hashMessage } from "../eip191.ts";
 import { hashTypedData, type TypedMessage } from "../eip712.ts";
-import type { PrivateKeySigner, PrivateKeySignerOptions, Signature } from "./types.ts";
+import type {
+	PrivateKeySigner,
+	PrivateKeySignerOptions,
+	Signature,
+} from "./types.ts";
 import { serializeSignature } from "./types.ts";
 
 /**
@@ -35,10 +39,13 @@ export class PrivateKeySignerImpl implements PrivateKeySigner {
 	 * @param options - Private key options
 	 * @returns Private key signer instance
 	 */
-	static fromPrivateKey(options: PrivateKeySignerOptions): PrivateKeySignerImpl {
-		const privateKey = typeof options.privateKey === "string"
-			? hexToBytes(options.privateKey)
-			: options.privateKey;
+	static fromPrivateKey(
+		options: PrivateKeySignerOptions,
+	): PrivateKeySignerImpl {
+		const privateKey =
+			typeof options.privateKey === "string"
+				? hexToBytes(options.privateKey)
+				: options.privateKey;
 
 		return new PrivateKeySignerImpl(privateKey);
 	}
@@ -103,9 +110,7 @@ export class PrivateKeySignerImpl implements PrivateKeySigner {
 
 		if ("gasPrice" in transaction) {
 			// Legacy transaction
-			chainId = transaction.v > 35n
-				? (transaction.v - 35n) / 2n
-				: 1n;
+			chainId = transaction.v > 35n ? (transaction.v - 35n) / 2n : 1n;
 			encoded = encodeLegacyForSigning(transaction, chainId);
 		} else if ("authorizationList" in transaction) {
 			// EIP-7702
@@ -119,9 +124,7 @@ export class PrivateKeySignerImpl implements PrivateKeySigner {
 
 		// Hash the encoded transaction
 		// Note: encoded is a hex string, convert to Uint8Array
-		const txBytes = typeof encoded === "string"
-			? hexToBytes(encoded)
-			: encoded;
+		const txBytes = typeof encoded === "string" ? hexToBytes(encoded) : encoded;
 		const messageHash = keccak_256(txBytes);
 
 		// Sign the hash
@@ -212,6 +215,6 @@ function hexToBytes(hex: string): Uint8Array {
 
 function bytesToHex(bytes: Uint8Array): string {
 	return Array.from(bytes)
-		.map(b => b.toString(16).padStart(2, "0"))
+		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
 }

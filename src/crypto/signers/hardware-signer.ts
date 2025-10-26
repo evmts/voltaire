@@ -14,7 +14,10 @@
 
 import type { Transaction } from "../../primitives/transaction.ts";
 import type { TypedMessage } from "../eip712.ts";
-import type { HardwareWalletSigner, HardwareWalletSignerOptions } from "./types.ts";
+import type {
+	HardwareWalletSigner,
+	HardwareWalletSignerOptions,
+} from "./types.ts";
 
 /**
  * Hardware wallet signer (stub implementation)
@@ -58,10 +61,10 @@ export class HardwareWalletSignerImpl implements HardwareWalletSigner {
 	): Promise<HardwareWalletSignerImpl> {
 		throw new Error(
 			"Hardware wallet support not yet implemented. " +
-			"To use hardware wallets, please implement device-specific integration:\n" +
-			"- Ledger: Install @ledgerhq/hw-app-eth and @ledgerhq/hw-transport-webusb\n" +
-			"- Trezor: Install trezor-connect\n" +
-			"See hardware-signer.ts for implementation guidance.",
+				"To use hardware wallets, please implement device-specific integration:\n" +
+				"- Ledger: Install @ledgerhq/hw-app-eth and @ledgerhq/hw-transport-webusb\n" +
+				"- Trezor: Install trezor-connect\n" +
+				"See hardware-signer.ts for implementation guidance.",
 		);
 
 		// Future implementation would:

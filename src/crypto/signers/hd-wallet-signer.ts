@@ -74,7 +74,7 @@ export class HDWalletSignerImpl implements HDWalletSigner {
 		options?: Omit<HDWalletSignerOptions, "mnemonic">,
 	): HDWalletSignerImpl {
 		// Calculate entropy bits: 12 words = 128 bits, 24 words = 256 bits
-		const entropyBits = (wordCount * 11 - wordCount / 3);
+		const entropyBits = wordCount * 11 - wordCount / 3;
 		const entropy = new Uint8Array(entropyBits / 8);
 		crypto.getRandomValues(entropy);
 
@@ -149,14 +149,11 @@ export class HDWalletSignerImpl implements HDWalletSigner {
 		// Extract index from path if present
 		const pathParts = path.split("/");
 		const lastPart = pathParts[pathParts.length - 1];
-		const index = lastPart && !lastPart.includes("'")
-			? Number.parseInt(lastPart, 10)
-			: 0;
+		const index =
+			lastPart && !lastPart.includes("'") ? Number.parseInt(lastPart, 10) : 0;
 
 		// Remove index from path to get base path
-		const basePath = index > 0
-			? pathParts.slice(0, -1).join("/")
-			: path;
+		const basePath = index > 0 ? pathParts.slice(0, -1).join("/") : path;
 
 		return new HDWalletSignerImpl(
 			this.mnemonic,

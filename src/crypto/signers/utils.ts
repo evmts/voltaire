@@ -171,9 +171,7 @@ export async function recoverTransactionAddress(
 
 	if ("gasPrice" in transaction) {
 		// Legacy transaction - need to extract chainId from v
-		const chainId = transaction.v > 35n
-			? (transaction.v - 35n) / 2n
-			: 1n;
+		const chainId = transaction.v > 35n ? (transaction.v - 35n) / 2n : 1n;
 
 		// Create unsigned version for hashing
 		const unsignedTx = { ...transaction, v: 0n };
@@ -190,9 +188,7 @@ export async function recoverTransactionAddress(
 
 	// Hash the encoded transaction
 	// Note: encoded is a hex string, convert to Uint8Array
-	const txBytes = typeof encoded === "string"
-		? hexToBytes(encoded)
-		: encoded;
+	const txBytes = typeof encoded === "string" ? hexToBytes(encoded) : encoded;
 	const messageHash = keccak_256(txBytes);
 
 	// Parse signature from transaction
@@ -223,7 +219,10 @@ export async function recoverTransactionAddress(
  * @param signature - Parsed signature
  * @returns Recovered public key (64 bytes, uncompressed without prefix)
  */
-function recoverPublicKey(messageHash: Uint8Array, signature: Signature): Uint8Array {
+function recoverPublicKey(
+	messageHash: Uint8Array,
+	signature: Signature,
+): Uint8Array {
 	// Normalize recovery id
 	let recovery = signature.v;
 	if (recovery >= 27) recovery -= 27;
@@ -278,7 +277,9 @@ export function isCanonicalSignature(signature: string | Uint8Array): boolean {
 	const s = BigInt(sig.s);
 
 	// secp256k1 curve order
-	const n = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
+	const n = BigInt(
+		"0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+	);
 
 	// Canonical signature has s <= n/2
 	return s <= n / 2n;
@@ -298,7 +299,9 @@ export function normalizeSignature(signature: string | Uint8Array): string {
 
 	// Flip s value: s' = n - s
 	const s = BigInt(sig.s);
-	const n = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
+	const n = BigInt(
+		"0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+	);
 	const sNormalized = n - s;
 
 	// Flip recovery id
