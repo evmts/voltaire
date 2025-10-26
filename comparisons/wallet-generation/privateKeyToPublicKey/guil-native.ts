@@ -1,4 +1,4 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { secp256k1PubkeyFromPrivate } from "../../../src/typescript/native/primitives/signature.native";
 
 // Test private key - DO NOT use in production
 const testPrivateKey =
@@ -6,6 +6,6 @@ const testPrivateKey =
 
 export function main(): string {
 	const privateKeyBytes = Buffer.from(testPrivateKey.slice(2), "hex");
-	const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes, false);
+	const publicKeyBytes = secp256k1PubkeyFromPrivate(privateKeyBytes);
 	return `0x${Buffer.from(publicKeyBytes).toString("hex")}`;
 }

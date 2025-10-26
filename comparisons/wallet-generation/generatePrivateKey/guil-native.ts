@@ -1,6 +1,6 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { generatePrivateKey } from "../../../src/typescript/native/primitives/wallet.native";
 
 export function main(): string {
-	const privateKey = secp256k1.utils.randomSecretKey();
+	const privateKey = generatePrivateKey();
 	return `0x${Buffer.from(privateKey).toString("hex")}`;
 }

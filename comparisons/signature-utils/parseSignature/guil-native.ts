@@ -1,3 +1,4 @@
+import { signatureParse } from "../../../src/typescript/native/primitives/signature.native.js";
 import {
 	CANONICAL_SIGNATURE_HEX,
 	CANONICAL_SIGNATURE_BYTES,
@@ -6,49 +7,49 @@ import {
 	SIGNATURE_V28_HEX,
 } from "../test-data.js";
 
-// Implementation from src/crypto/signers/types.ts
 function parseSignature(signature: string | Uint8Array): {
 	r: string;
 	s: string;
 	v: number;
-	compact: string;
 } {
-	const bytes =
-		typeof signature === "string" ? hexToBytes(signature) : signature;
+	let bytes: Uint8Array;
 
-	if (bytes.length !== 65) {
-		throw new Error("Invalid signature length: expected 65 bytes");
+	if (typeof signature === "string") {
+		const normalized = signature.startsWith("0x")
+			? signature.slice(2)
+			: signature;
+
+		if (normalized.length !== 130) {
+			throw new Error("Invalid signature length");
+		}
+
+		bytes = new Uint8Array(65);
+		for (let i = 0; i < 65; i++) {
+			bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+		}
+	} else {
+		bytes = signature;
 	}
 
-	const r = `0x${bytesToHex(bytes.slice(0, 32))}`;
-	const s = `0x${bytesToHex(bytes.slice(32, 64))}`;
-	const v = bytes[64]!;
+	const parsed = signatureParse(bytes);
+
+	// Convert r and s to hex strings
+	const r =
+		"0x" +
+		Array.from(parsed.r)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+	const s =
+		"0x" +
+		Array.from(parsed.s)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
 
 	return {
 		r,
 		s,
-		v,
-		compact: `0x${bytesToHex(bytes)}`,
+		v: parsed.v,
 	};
-}
-
-function hexToBytes(hex: string): Uint8Array {
-	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
-	if (normalized.length % 2 !== 0) {
-		throw new Error("Invalid hex string: odd length");
-	}
-
-	const bytes = new Uint8Array(normalized.length / 2);
-	for (let i = 0; i < bytes.length; i++) {
-		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
-	}
-	return bytes;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
 }
 
 export function main(): void {

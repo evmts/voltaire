@@ -1,19 +1,19 @@
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { keccak_256 } from "@noble/hashes/sha3.js";
+import { secp256k1PubkeyFromPrivate } from "../../../src/typescript/native/primitives/signature.native";
+import { Hash } from "../../../src/typescript/native/primitives/keccak.native";
 
 // Test private key - DO NOT use in production
 const testPrivateKey =
 	"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 export function main(): string {
-	// Get uncompressed public key
+	// Get uncompressed public key (64 bytes)
 	const privateKeyBytes = Buffer.from(testPrivateKey.slice(2), "hex");
-	const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes, false);
+	const publicKeyBytes = secp256k1PubkeyFromPrivate(privateKeyBytes);
 
-	// Remove first byte (0x04) and hash the rest
-	const publicKeyWithoutPrefix = publicKeyBytes.slice(1);
-	const hash = keccak_256(publicKeyWithoutPrefix);
+	// Hash the public key
+	const hash = Hash.keccak256(publicKeyBytes);
 
 	// Take last 20 bytes as address
-	return `0x${Buffer.from(hash.slice(-20)).toString("hex")}`;
+	const addressBytes = hash.toBytes().slice(-20);
+	return `0x${Buffer.from(addressBytes).toString("hex")}`;
 }
