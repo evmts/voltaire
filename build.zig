@@ -374,6 +374,20 @@ pub fn build(b: *std.Build) void {
     // C API library is skipped for WASM (dynamic linking not supported)
     // For JavaScript/TypeScript: use native libprimitives_c with FFI, or compile to WASM for browser
 
+    // TypeScript/JavaScript FFI builds with optimized configurations
+    if (!is_wasm) {
+        // Native TypeScript bindings - ReleaseFast for maximum performance
+        const ts_native_target = b.resolveTargetQuery(.{});
+        addTypeScriptNativeBuild(b, ts_native_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+    }
+
+    // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
+    const wasm_target = b.resolveTargetQuery(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
+    });
+    addTypeScriptWasmBuild(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+
     // Go build and test steps (optional, requires Go toolchain)
     if (!is_wasm) {
         addGoBuildSteps(b);
@@ -440,6 +454,82 @@ fn buildBenchmarks(
 
         b.installArtifact(bench_exe);
     }
+}
+
+fn addTypeScriptNativeBuild(
+    b: *std.Build,
+    ts_target: std.Build.ResolvedTarget,
+    primitives_mod: *std.Build.Module,
+    crypto_mod: *std.Build.Module,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+    rust_crypto_lib_path: std.Build.LazyPath,
+    cargo_build_step: *std.Build.Step,
+) void {
+    // Native TypeScript FFI library with ReleaseFast optimization
+    const ts_native_lib = b.addLibrary(.{
+        .name = "primitives_ts_native",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/c_api.zig"),
+            .target = ts_target,
+            .optimize = .ReleaseFast, // Maximum performance for native
+        }),
+    });
+    ts_native_lib.root_module.addImport("primitives", primitives_mod);
+    ts_native_lib.root_module.addImport("crypto", crypto_mod);
+    ts_native_lib.linkLibrary(c_kzg_lib);
+    ts_native_lib.linkLibrary(blst_lib);
+    ts_native_lib.addObjectFile(rust_crypto_lib_path);
+    ts_native_lib.addIncludePath(b.path("lib"));
+    ts_native_lib.step.dependOn(cargo_build_step);
+    ts_native_lib.linkLibC();
+
+    // Install to native/ directory
+    const install_native = b.addInstallArtifact(ts_native_lib, .{
+        .dest_dir = .{ .override = .{ .custom = "native" } },
+    });
+
+    const build_ts_native_step = b.step("build-ts-native", "Build native TypeScript FFI bindings with ReleaseFast");
+    build_ts_native_step.dependOn(&install_native.step);
+}
+
+fn addTypeScriptWasmBuild(
+    b: *std.Build,
+    wasm_target: std.Build.ResolvedTarget,
+    primitives_mod: *std.Build.Module,
+    crypto_mod: *std.Build.Module,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+    rust_crypto_lib_path: std.Build.LazyPath,
+    cargo_build_step: *std.Build.Step,
+) void {
+    // WASM TypeScript library with ReleaseSmall optimization
+    const ts_wasm_lib = b.addLibrary(.{
+        .name = "primitives_ts_wasm",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/c_api.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall, // Minimal size for WASM
+        }),
+    });
+    ts_wasm_lib.root_module.addImport("primitives", primitives_mod);
+    ts_wasm_lib.root_module.addImport("crypto", crypto_mod);
+    ts_wasm_lib.linkLibrary(c_kzg_lib);
+    ts_wasm_lib.linkLibrary(blst_lib);
+    ts_wasm_lib.addObjectFile(rust_crypto_lib_path);
+    ts_wasm_lib.addIncludePath(b.path("lib"));
+    ts_wasm_lib.step.dependOn(cargo_build_step);
+    ts_wasm_lib.linkLibC();
+
+    // Install to wasm/ directory
+    const install_wasm = b.addInstallArtifact(ts_wasm_lib, .{
+        .dest_dir = .{ .override = .{ .custom = "wasm" } },
+    });
+
+    const build_ts_wasm_step = b.step("build-ts-wasm", "Build WASM TypeScript bindings with ReleaseSmall");
+    build_ts_wasm_step.dependOn(&install_wasm.step);
 }
 
 fn addGoBuildSteps(b: *std.Build) void {
