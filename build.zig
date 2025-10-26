@@ -418,9 +418,7 @@ pub fn build(b: *std.Build) void {
 
     // zbench performance benchmarks colocated with source code
     const zbench_filter = b.option([]const u8, "filter", "Pattern to filter zbench benchmarks (default: \"*\")") orelse "*";
-    const zbench_iterations = b.option(u32, "iterations", "Number of iterations per benchmark (default: zbench default)") orelse 0;
-    const zbench_warmup = b.option(u32, "warmup", "Warmup iterations (default: zbench default)") orelse 0;
-    buildZBenchmarks(b, target, optimize, zbench_filter, zbench_iterations, zbench_warmup, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+    buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 }
 
 fn buildBenchmarks(
@@ -486,8 +484,6 @@ fn buildZBenchmarks(
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     filter: []const u8,
-    iterations: u32,
-    warmup: u32,
     primitives_mod: *std.Build.Module,
     crypto_mod: *std.Build.Module,
     precompiles_mod: *std.Build.Module,
@@ -553,17 +549,6 @@ fn buildZBenchmarks(
 
         // Add run step for this benchmark
         const run_bench = b.addRunArtifact(bench_exe);
-
-        // Pass zbench configuration via environment variables if specified
-        if (iterations > 0) {
-            const iter_str = b.fmt("{d}", .{iterations});
-            run_bench.setEnvironmentVariable("ZBENCH_ITERATIONS", iter_str);
-        }
-        if (warmup > 0) {
-            const warmup_str = b.fmt("{d}", .{warmup});
-            run_bench.setEnvironmentVariable("ZBENCH_WARMUP", warmup_str);
-        }
-
         bench_step.dependOn(&run_bench.step);
         bench_count += 1;
     }
