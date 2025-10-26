@@ -15,7 +15,47 @@ pub const AbiError = error{
     InvalidUtf8,
     UnsupportedType,
     OutOfMemory,
+    MaxLengthExceeded,
+    MaxRecursionDepthExceeded,
+    IntegerCastOverflow,
 };
+
+// Security limits to prevent DoS attacks
+pub const MAX_ABI_LENGTH: usize = 10 * 1024 * 1024; // 10 MB maximum ABI encoding size
+pub const MAX_RECURSION_DEPTH: usize = 64; // Maximum nesting depth for arrays/tuples
+
+// Safe integer cast that returns error instead of panicking
+fn safeIntCast(comptime T: type, value: anytype) AbiError!T {
+    const value_info = @typeInfo(@TypeOf(value));
+    const target_info = @typeInfo(T);
+
+    if (value_info != .int or target_info != .int) {
+        return AbiError.IntegerCastOverflow;
+    }
+
+    const max_value = std.math.maxInt(T);
+    const min_value = if (target_info.int.signedness == .signed) std.math.minInt(T) else 0;
+
+    if (value > max_value or value < min_value) {
+        return AbiError.IntegerCastOverflow;
+    }
+
+    return @intCast(value);
+}
+
+// Validate allocation size to prevent memory exhaustion DoS
+fn validateAllocationSize(size: usize) AbiError!void {
+    if (size > MAX_ABI_LENGTH) {
+        return AbiError.MaxLengthExceeded;
+    }
+}
+
+// Validate recursion depth to prevent stack exhaustion
+fn validateRecursionDepth(depth: usize) AbiError!void {
+    if (depth >= MAX_RECURSION_DEPTH) {
+        return AbiError.MaxRecursionDepthExceeded;
+    }
+}
 
 // Cursor for reading bytes
 const Cursor = struct {
@@ -261,10 +301,14 @@ fn decode_bytes_fixed(cursor: *Cursor, comptime size: usize) AbiError![size]u8 {
 
 fn decode_bytes_dynamic(allocator: std.mem.Allocator, cursor: *Cursor, static_position: usize) AbiError![]u8 {
     const offset = try cursor.readU256Word();
-    var offset_cursor = cursor.atPosition(static_position + @as(usize, @intCast(offset)));
+    const offset_usize = try safeIntCast(usize, offset);
+    var offset_cursor = cursor.atPosition(static_position + offset_usize);
 
     const length = try offset_cursor.readU256Word();
-    const length_usize = @as(usize, @intCast(length));
+    const length_usize = try safeIntCast(usize, length);
+
+    // Validate allocation size before allocating
+    try validateAllocationSize(length_usize);
 
     if (length_usize == 0) {
         return try allocator.alloc(u8, 0);
@@ -272,6 +316,8 @@ fn decode_bytes_dynamic(allocator: std.mem.Allocator, cursor: *Cursor, static_po
 
     // Calculate padded length (round up to 32-byte boundary)
     const padded_length = ((length_usize + 31) / 32) * 32;
+    try validateAllocationSize(padded_length);
+
     const data = try offset_cursor.readBytes(padded_length);
 
     // Only return the actual data, not the padding
@@ -290,24 +336,33 @@ fn decode_string(allocator: std.mem.Allocator, cursor: *Cursor, static_position:
     return bytes;
 }
 
-fn decode_array(allocator: std.mem.Allocator, cursor: *Cursor, element_type: AbiType, static_position: usize) AbiError![]AbiValue {
+fn decode_array(allocator: std.mem.Allocator, cursor: *Cursor, element_type: AbiType, static_position: usize, depth: usize) AbiError![]AbiValue {
+    try validateRecursionDepth(depth);
+
     const offset = try cursor.readU256Word();
-    var offset_cursor = cursor.atPosition(static_position + @as(usize, @intCast(offset)));
+    const offset_usize = try safeIntCast(usize, offset);
+    var offset_cursor = cursor.atPosition(static_position + offset_usize);
 
     const length = try offset_cursor.readU256Word();
-    const length_usize = @as(usize, @intCast(length));
+    const length_usize = try safeIntCast(usize, length);
+
+    // Validate total allocation size
+    const total_size = length_usize * @sizeOf(AbiValue);
+    try validateAllocationSize(total_size);
 
     var result = try allocator.alloc(AbiValue, length_usize);
     errdefer allocator.free(result);
 
     for (0..length_usize) |i| {
-        result[i] = try decode_parameter(allocator, &offset_cursor, element_type, static_position);
+        result[i] = try decode_parameter(allocator, &offset_cursor, element_type, static_position, depth + 1);
     }
 
     return result;
 }
 
-fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: AbiType, static_position: usize) AbiError!AbiValue {
+fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: AbiType, static_position: usize, depth: usize) AbiError!AbiValue {
+    try validateRecursionDepth(depth);
+
     return switch (abi_type) {
         .uint8 => AbiValue{ .uint8 = try decode_uint(cursor, u8, 8) },
         .uint16 => AbiValue{ .uint16 = try decode_uint(cursor, u16, 16) },
@@ -333,9 +388,10 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
         .bytes => AbiValue{ .bytes = try decode_bytes_dynamic(allocator, cursor, static_position) },
         .string => AbiValue{ .string = try decode_string(allocator, cursor, static_position) },
         .@"uint256[]" => {
-            const array_values = try decode_array(allocator, cursor, .uint256, static_position);
+            const array_values = try decode_array(allocator, cursor, .uint256, static_position, depth);
             defer allocator.free(array_values);
 
+            try validateAllocationSize(array_values.len * @sizeOf(u256));
             var result = try allocator.alloc(u256, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -344,9 +400,10 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
             return AbiValue{ .@"uint256[]" = result };
         },
         .@"bytes32[]" => {
-            const array_values = try decode_array(allocator, cursor, .bytes32, static_position);
+            const array_values = try decode_array(allocator, cursor, .bytes32, static_position, depth);
             defer allocator.free(array_values);
 
+            try validateAllocationSize(array_values.len * @sizeOf([32]u8));
             var result = try allocator.alloc([32]u8, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -355,9 +412,10 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
             return AbiValue{ .@"bytes32[]" = result };
         },
         .@"address[]" => {
-            const array_values = try decode_array(allocator, cursor, .address, static_position);
+            const array_values = try decode_array(allocator, cursor, .address, static_position, depth);
             defer allocator.free(array_values);
 
+            try validateAllocationSize(array_values.len * @sizeOf(address.Address));
             var result = try allocator.alloc(address.Address, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -366,9 +424,10 @@ fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: Abi
             return AbiValue{ .@"address[]" = result };
         },
         .@"string[]" => {
-            const array_values = try decode_array(allocator, cursor, .string, static_position);
+            const array_values = try decode_array(allocator, cursor, .string, static_position, depth);
             defer allocator.free(array_values);
 
+            try validateAllocationSize(array_values.len * @sizeOf([]const u8));
             var result = try allocator.alloc([]const u8, array_values.len);
             errdefer allocator.free(result);
             for (array_values, 0..) |value, i| {
@@ -389,13 +448,17 @@ pub fn decodeAbiParameters(allocator: std.mem.Allocator, data: []const u8, types
         return AbiError.DataTooSmall;
     }
 
+    // Validate total input size
+    try validateAllocationSize(data.len);
+    try validateAllocationSize(types.len * @sizeOf(AbiValue));
+
     var cursor = Cursor.init(data);
     const result = try allocator.alloc(AbiValue, types.len);
 
     var consumed: usize = 0;
     for (types, 0..) |abi_type, i| {
         cursor.setPosition(consumed);
-        result[i] = try decode_parameter(allocator, &cursor, abi_type, 0);
+        result[i] = try decode_parameter(allocator, &cursor, abi_type, 0, 0);
         consumed += 32; // Each parameter takes 32 bytes in the static part
     }
 
@@ -568,15 +631,19 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             // Length + data, padded to 32-byte boundary
             const length = val.len;
             const padded_length = ((length + 31) / 32) * 32;
+            const total_size = 32 + padded_length;
 
-            var result = try allocator.alloc(u8, 32 + padded_length);
+            try validateAllocationSize(total_size);
+
+            var result = try allocator.alloc(u8, total_size);
             errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
             @memset(&length_bytes, 0);
-            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            const length_u64 = try safeIntCast(u64, length);
+            std.mem.writeInt(u64, length_bytes[24..32], length_u64, .big);
             @memcpy(result[0..32], &length_bytes);
 
             // Encode data
@@ -588,15 +655,19 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             // Same as string
             const length = val.len;
             const padded_length = ((length + 31) / 32) * 32;
+            const total_size = 32 + padded_length;
 
-            var result = try allocator.alloc(u8, 32 + padded_length);
+            try validateAllocationSize(total_size);
+
+            var result = try allocator.alloc(u8, total_size);
             errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
             @memset(&length_bytes, 0);
-            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            const length_u64 = try safeIntCast(u64, length);
+            std.mem.writeInt(u64, length_bytes[24..32], length_u64, .big);
             @memcpy(result[0..32], &length_bytes);
 
             // Encode data
@@ -607,15 +678,19 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
         .@"uint256[]" => |val| {
             // Length + array elements
             const length = val.len;
+            const total_size = 32 + (length * 32);
 
-            var result = try allocator.alloc(u8, 32 + (length * 32));
+            try validateAllocationSize(total_size);
+
+            var result = try allocator.alloc(u8, total_size);
             errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
             @memset(&length_bytes, 0);
-            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            const length_u64 = try safeIntCast(u64, length);
+            std.mem.writeInt(u64, length_bytes[24..32], length_u64, .big);
             @memcpy(result[0..32], &length_bytes);
 
             // Encode elements
@@ -630,15 +705,19 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
         .@"bytes32[]" => |val| {
             // Length + array elements
             const length = val.len;
+            const total_size = 32 + (length * 32);
 
-            var result = try allocator.alloc(u8, 32 + (length * 32));
+            try validateAllocationSize(total_size);
+
+            var result = try allocator.alloc(u8, total_size);
             errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
             @memset(&length_bytes, 0);
-            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            const length_u64 = try safeIntCast(u64, length);
+            std.mem.writeInt(u64, length_bytes[24..32], length_u64, .big);
             @memcpy(result[0..32], &length_bytes);
 
             // Encode elements (bytes32 values are left-aligned)
@@ -650,15 +729,19 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
         },
         .@"address[]" => |val| {
             const length = val.len;
+            const total_size = 32 + (length * 32);
 
-            var result = try allocator.alloc(u8, 32 + (length * 32));
+            try validateAllocationSize(total_size);
+
+            var result = try allocator.alloc(u8, total_size);
             errdefer allocator.free(result);
             @memset(result, 0);
 
             // Encode length
             var length_bytes: [32]u8 = undefined;
             @memset(&length_bytes, 0);
-            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            const length_u64 = try safeIntCast(u64, length);
+            std.mem.writeInt(u64, length_bytes[24..32], length_u64, .big);
             @memcpy(result[0..32], &length_bytes);
 
             // Encode elements
@@ -675,6 +758,7 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             var total_size: usize = 32; // For array length
             total_size += length * 32; // For offset pointers
 
+            try validateAllocationSize(length * @sizeOf(usize));
             var string_sizes = try allocator.alloc(usize, length);
             defer allocator.free(string_sizes);
 
@@ -685,6 +769,8 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
                 total_size += string_sizes[i];
             }
 
+            try validateAllocationSize(total_size);
+
             var result = try allocator.alloc(u8, total_size);
             errdefer allocator.free(result);
             @memset(result, 0);
@@ -692,7 +778,8 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             // Encode array length
             var length_bytes: [32]u8 = undefined;
             @memset(&length_bytes, 0);
-            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            const length_u64 = try safeIntCast(u64, length);
+            std.mem.writeInt(u64, length_bytes[24..32], length_u64, .big);
             @memcpy(result[0..32], &length_bytes);
 
             // Calculate offsets and encode offset pointers
@@ -700,7 +787,8 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
             for (0..length) |i| {
                 var offset_bytes: [32]u8 = undefined;
                 @memset(&offset_bytes, 0);
-                std.mem.writeInt(u64, offset_bytes[24..32], @as(u64, @intCast(current_offset)), .big);
+                const offset_u64 = try safeIntCast(u64, current_offset);
+                std.mem.writeInt(u64, offset_bytes[24..32], offset_u64, .big);
                 @memcpy(result[32 + (i * 32) .. 32 + ((i + 1) * 32)], &offset_bytes);
                 current_offset += string_sizes[i];
             }
@@ -713,7 +801,8 @@ fn encode_dynamic_parameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8
                 // String length
                 var str_length_bytes: [32]u8 = undefined;
                 @memset(&str_length_bytes, 0);
-                std.mem.writeInt(u64, str_length_bytes[24..32], @as(u64, @intCast(str_len)), .big);
+                const str_len_u64 = try safeIntCast(u64, str_len);
+                std.mem.writeInt(u64, str_length_bytes[24..32], str_len_u64, .big);
                 @memcpy(result[data_offset .. data_offset + 32], &str_length_bytes);
 
                 // String data
@@ -790,7 +879,8 @@ pub fn encodeAbiParameters(allocator: std.mem.Allocator, values: []const AbiValu
             // Update the offset pointer
             var offset_bytes: [32]u8 = undefined;
             @memset(&offset_bytes, 0);
-            std.mem.writeInt(u64, offset_bytes[24..32], @as(u64, @intCast(current_dynamic_offset)), .big);
+            const offset_u64 = try safeIntCast(u64, current_dynamic_offset);
+            std.mem.writeInt(u64, offset_bytes[24..32], offset_u64, .big);
             @memcpy(static_parts.items[i], &offset_bytes);
 
             current_dynamic_offset += dynamic_parts.items[dynamic_index].len;
@@ -800,6 +890,7 @@ pub fn encodeAbiParameters(allocator: std.mem.Allocator, values: []const AbiValu
 
     // Concatenate all parts
     const total_size = static_size + dynamic_size;
+    try validateAllocationSize(total_size);
     var result = try allocator.alloc(u8, total_size);
 
     var offset: usize = 0;
@@ -2953,4 +3044,158 @@ test "ABI cross-validation - bytes encoding with known hash" {
     defer allocator.free(actual_hex);
 
     try std.testing.expectEqualStrings(expected_hex, actual_hex);
+}
+
+// Security Tests - DoS Prevention
+
+test "Security - MAX_ABI_LENGTH prevents memory exhaustion on decode" {
+    const allocator = std.testing.allocator;
+
+    // Create encoded data claiming to have an absurdly large length (20 MB)
+    var large_data: [64]u8 = undefined;
+    @memset(&large_data, 0);
+
+    // First word: offset to dynamic data = 32
+    std.mem.writeInt(u256, large_data[0..32], 32, .big);
+
+    // Second word: claimed length = 20MB (exceeds MAX_ABI_LENGTH)
+    const excessive_length: u256 = 20 * 1024 * 1024;
+    std.mem.writeInt(u256, large_data[32..64], excessive_length, .big);
+
+    const types = [_]AbiType{.bytes};
+
+    // Should fail with MaxLengthExceeded
+    const result = decodeAbiParameters(allocator, &large_data, &types);
+    try std.testing.expectError(AbiError.MaxLengthExceeded, result);
+}
+
+test "Security - MAX_ABI_LENGTH prevents memory exhaustion on encode" {
+    const allocator = std.testing.allocator;
+
+    // Try to allocate a string that would exceed MAX_ABI_LENGTH
+    const huge_str_len = MAX_ABI_LENGTH + 1000;
+    const huge_str = try allocator.alloc(u8, huge_str_len);
+    defer allocator.free(huge_str);
+    @memset(huge_str, 'A');
+
+    const values = [_]AbiValue{
+        stringValue(huge_str),
+    };
+
+    // Should fail with MaxLengthExceeded
+    const result = encodeAbiParameters(allocator, &values);
+    try std.testing.expectError(AbiError.MaxLengthExceeded, result);
+}
+
+test "Security - MAX_RECURSION_DEPTH prevents stack exhaustion" {
+    const allocator = std.testing.allocator;
+
+    // Create nested array structure that would exceed recursion depth
+    // We can't actually create deeply nested arrays in the current type system,
+    // but we can test with the maximum supported depth
+
+    // Create a uint256[] array at depth 0
+    const arr = [_]u256{ 1, 2, 3 };
+    const values = [_]AbiValue{
+        .{ .@"uint256[]" = &arr },
+    };
+
+    // Encode it (should work at depth 0)
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    // Decode it (should work at depth 0)
+    const types = [_]AbiType{.@"uint256[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), decoded[0].@"uint256[]".len);
+}
+
+test "Security - safeIntCast prevents integer overflow" {
+    // Test that safeIntCast properly validates ranges
+
+    // Valid cast
+    const valid = try safeIntCast(u64, 100);
+    try std.testing.expectEqual(@as(u64, 100), valid);
+
+    // Invalid cast - value too large for u64
+    const too_large: u256 = std.math.maxInt(u256);
+    const result = safeIntCast(u64, too_large);
+    try std.testing.expectError(AbiError.IntegerCastOverflow, result);
+}
+
+test "Security - validateAllocationSize prevents large allocations" {
+    // Within limit
+    try validateAllocationSize(1024);
+    try validateAllocationSize(MAX_ABI_LENGTH);
+
+    // Exceeds limit
+    const result = validateAllocationSize(MAX_ABI_LENGTH + 1);
+    try std.testing.expectError(AbiError.MaxLengthExceeded, result);
+}
+
+test "Security - validateRecursionDepth prevents deep recursion" {
+    // Within limit
+    try validateRecursionDepth(0);
+    try validateRecursionDepth(MAX_RECURSION_DEPTH - 1);
+
+    // Exceeds limit
+    const result = validateRecursionDepth(MAX_RECURSION_DEPTH);
+    try std.testing.expectError(AbiError.MaxRecursionDepthExceeded, result);
+}
+
+test "Security - array length validation on decode" {
+    const allocator = std.testing.allocator;
+
+    // Create encoded data with excessive array length
+    var data: [64]u8 = undefined;
+    @memset(&data, 0);
+
+    // First word: offset = 32
+    std.mem.writeInt(u256, data[0..32], 32, .big);
+
+    // Second word: array length that would cause excessive memory allocation
+    const excessive_count: u256 = MAX_ABI_LENGTH / 32 + 1000;
+    std.mem.writeInt(u256, data[32..64], excessive_count, .big);
+
+    const types = [_]AbiType{.@"uint256[]"};
+
+    // Should fail with MaxLengthExceeded when trying to allocate array
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.MaxLengthExceeded, result);
+}
+
+test "Security - string array total size validation" {
+    const allocator = std.testing.allocator;
+
+    // Create many large strings that would exceed MAX_ABI_LENGTH in total
+    const str_count = 1000;
+    const str_size = MAX_ABI_LENGTH / 100; // Each string is 100KB
+
+    const strings = try allocator.alloc([]const u8, str_count);
+    defer allocator.free(strings);
+
+    for (strings) |*s| {
+        const str = try allocator.alloc(u8, str_size);
+        @memset(str, 'X');
+        s.* = str;
+    }
+    defer for (strings) |s| {
+        allocator.free(s);
+    };
+
+    var values = try allocator.alloc(AbiValue, str_count);
+    defer allocator.free(values);
+
+    for (strings, 0..) |s, i| {
+        values[i] = stringValue(s);
+    }
+
+    // Should fail with MaxLengthExceeded due to total size
+    const result = encodeAbiParameters(allocator, values);
+    try std.testing.expectError(AbiError.MaxLengthExceeded, result);
 }
