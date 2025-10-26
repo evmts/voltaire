@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./hashDomain.guil.js";
+import * as guilNative from "./hashDomain.guil-native.js";
+import * as guilWasm from "./hashDomain.guil-wasm.js";
 import * as ethers from "./hashDomain.ethers.js";
 import * as viem from "./hashDomain.viem.js";
 
 describe("hashDomain", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {

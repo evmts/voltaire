@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./toBigInt/guil.js";
+import * as guilNative from "./toBigInt/guil-native.js";
+import * as guilWasm from "./toBigInt/guil-wasm.js";
 import * as ethers from "./toBigInt/ethers.js";
 import * as viem from "./toBigInt/viem.js";
 
 describe("Hash32 toBigInt", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {

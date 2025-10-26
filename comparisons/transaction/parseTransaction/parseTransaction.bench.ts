@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./guil.js";
+import * as guilNative from "./guil-native.js";
+import * as guilWasm from "./guil-wasm.js";
 import * as ethers from "./ethers.js";
 import * as viem from "./viem.js";
 
 describe("parseTransaction", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {

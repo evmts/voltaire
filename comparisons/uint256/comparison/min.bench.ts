@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./min-guil.js";
+import * as guilNative from "./min-guil-native.js";
+import * as guilWasm from "./min-guil-wasm.js";
 import * as ethers from "./min-ethers.js";
 import * as viem from "./min-viem.js";
 
 describe("uint256.min", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {

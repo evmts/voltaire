@@ -1,11 +1,16 @@
 import { bench, describe } from 'vitest';
-import * as guil from './weiToGwei/guil.js';
+import * as guilNative from './weiToGwei/guil-native.js';
+import * as guilWasm from './weiToGwei/guil-wasm.js';
 import * as ethers from './weiToGwei/ethers.js';
 import * as viem from './weiToGwei/viem.js';
 
 describe('weiToGwei', () => {
-	bench('guil', () => {
-		guil.main();
+	bench('guil-native', () => {
+		guilNative.main();
+	});
+
+	bench('guil-wasm', () => {
+		guilWasm.main();
 	});
 
 	bench('ethers', () => {

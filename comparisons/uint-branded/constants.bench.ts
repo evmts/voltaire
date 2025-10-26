@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./constants/guil.js";
+import * as guilNative from "./constants/guil-native.js";
+import * as guilWasm from "./constants/guil-wasm.js";
 import * as ethers from "./constants/ethers.js";
 import * as viem from "./constants/viem.js";
 
 describe("constants", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {

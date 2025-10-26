@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./parseGwei-guil.js";
+import * as guilNative from "./parseGwei-guil-native.js";
+import * as guilWasm from "./parseGwei-guil-wasm.js";
 import * as ethers from "./parseGwei-ethers.js";
 import * as viem from "./parseGwei-viem.js";
 
 describe("parseGwei", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {

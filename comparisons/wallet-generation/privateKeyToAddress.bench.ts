@@ -1,0 +1,23 @@
+import { bench, describe } from "vitest";
+import * as guilNative from "./privateKeyToAddress/guil-native.js";
+import * as guilWasm from "./privateKeyToAddress/guil-wasm.js";
+import * as ethers from "./privateKeyToAddress/ethers.js";
+import * as viem from "./privateKeyToAddress/viem.js";
+
+describe("wallet.privateKeyToAddress", () => {
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
+	});
+
+	bench("ethers", () => {
+		ethers.main();
+	});
+
+	bench("viem", () => {
+		viem.main();
+	});
+});

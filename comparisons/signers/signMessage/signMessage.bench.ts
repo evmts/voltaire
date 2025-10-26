@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./guil.js";
+import * as guilNative from "./guil-native.js";
+import * as guilWasm from "./guil-wasm.js";
 import * as ethers from "./ethers.js";
 import * as viem from "./viem.js";
 
 describe("signMessage", () => {
-	bench("guil", async () => {
-		await guil.main();
+	bench("guil-native", async () => {
+		await guilNative.main();
+	});
+
+	bench("guil-wasm", async () => {
+		await guilWasm.main();
 	});
 
 	bench("ethers", async () => {

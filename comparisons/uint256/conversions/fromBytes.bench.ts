@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./fromBytes-guil.js";
+import * as guilNative from "./fromBytes-guil-native.js";
+import * as guilWasm from "./fromBytes-guil-wasm.js";
 import * as ethers from "./fromBytes-ethers.js";
 import * as viem from "./fromBytes-viem.js";
 
 describe("uint256.fromBytes", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {

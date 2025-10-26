@@ -1,11 +1,16 @@
 import { bench, describe } from "vitest";
-import * as guil from "./computeSelector-guil.js";
+import * as guilNative from "./computeSelector-guil-native.js";
+import * as guilWasm from "./computeSelector-guil-wasm.js";
 import * as ethers from "./computeSelector-ethers.js";
 import * as viem from "./computeSelector-viem.js";
 
 describe("computeSelector", () => {
-	bench("guil", () => {
-		guil.main();
+	bench("guil-native", () => {
+		guilNative.main();
+	});
+
+	bench("guil-wasm", () => {
+		guilWasm.main();
 	});
 
 	bench("ethers", () => {
