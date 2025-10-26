@@ -56,3 +56,93 @@ test "bn254Pairing - empty input" {
     try testing.expectEqual(@as(usize, 32), result.output.len);
     try testing.expectEqual(@as(u8, 1), result.output[31]);
 }
+
+test "bn254Pairing - invalid input not multiple of 192" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 191;
+    const result = execute(allocator, &input, 1000000);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "bn254Pairing - single pair gas cost" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 192;
+    const expected_gas = BASE_GAS + PER_POINT_GAS * 1;
+
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "bn254Pairing - two pairs gas cost" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 384;
+    const expected_gas = BASE_GAS + PER_POINT_GAS * 2;
+
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}
+
+test "bn254Pairing - out of gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 192;
+    const required_gas = BASE_GAS + PER_POINT_GAS * 1;
+
+    const result = execute(allocator, &input, required_gas - 1);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "bn254Pairing - exact gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 192;
+    const required_gas = BASE_GAS + PER_POINT_GAS * 1;
+
+    const result = try execute(allocator, &input, required_gas);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(required_gas, result.gas_used);
+}
+
+test "bn254Pairing - gas constants" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 45000), BASE_GAS);
+    try testing.expectEqual(@as(u64, 34000), PER_POINT_GAS);
+}
+
+test "bn254Pairing - output size" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 192;
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "bn254Pairing - empty input gas cost" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const expected_gas = BASE_GAS + PER_POINT_GAS * 0;
+
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(expected_gas, result.gas_used);
+}

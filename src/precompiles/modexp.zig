@@ -131,3 +131,62 @@ test "modexp - simple case" {
     try testing.expectEqual(@as(usize, 1), result.output.len);
     try testing.expectEqual(@as(u8, 3), result.output[0]);
 }
+
+test "modexp - invalid input too short" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 95;
+    const result = execute(allocator, &input, 1000000, .Cancun);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "modexp - minimum gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [96]u8 = [_]u8{0} ** 96;
+    const result = try execute(allocator, &input, MIN_GAS, .Cancun);
+    defer result.deinit(allocator);
+
+    try testing.expect(result.gas_used >= MIN_GAS);
+}
+
+test "modexp - out of gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [99]u8 = [_]u8{0} ** 99;
+    input[31] = 1;
+    input[63] = 1;
+    input[95] = 1;
+    input[96] = 2;
+    input[97] = 3;
+    input[98] = 5;
+
+    const result = execute(allocator, &input, 0);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "modexp - zero modulus" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input: [99]u8 = [_]u8{0} ** 99;
+    input[31] = 1;
+    input[63] = 1;
+    input[95] = 1;
+    input[96] = 2;
+    input[97] = 3;
+    // mod = 0
+    input[98] = 0;
+
+    const result = execute(allocator, &input, 1000000, .Cancun);
+    try testing.expectError(error.InvalidInput, result);
+}
+
+test "modexp - minimum gas constant" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 200), MIN_GAS);
+}

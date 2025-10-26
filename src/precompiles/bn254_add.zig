@@ -46,3 +46,73 @@ test "bn254Add - point at infinity" {
     try testing.expectEqual(@as(usize, 64), result.output.len);
     try testing.expectEqual(GAS, result.gas_used);
 }
+
+test "bn254Add - out of gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = execute(allocator, &input, GAS - 1);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "bn254Add - exact gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(GAS, result.gas_used);
+}
+
+test "bn254Add - input too short" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 127;
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+test "bn254Add - input too long padded correctly" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 200;
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+test "bn254Add - zero input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{};
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}
+
+test "bn254Add - gas cost constant" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 150), GAS);
+}
+
+test "bn254Add - output size validation" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const input = [_]u8{0} ** 128;
+    const result = try execute(allocator, &input, 1000000);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+}

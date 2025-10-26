@@ -1087,3 +1087,57 @@ test "blake2b compression - determinism verification" {
         try std.testing.expectEqual(h1[i], h2[i]);
     }
 }
+
+test "Blake2.compress wrapper - invalid input length" {
+    // Test with invalid input lengths
+    var input_too_short: [200]u8 = undefined;
+    var output: [64]u8 = undefined;
+
+    // Input too short (< 213 bytes)
+    const result = Blake2.compress(&input_too_short, &output);
+    try std.testing.expectError(error.InvalidInput, result);
+}
+
+test "Blake2.compress wrapper - invalid output length" {
+    // Test with invalid output length
+    var input: [213]u8 = undefined;
+    @memset(&input, 0);
+    var output_too_short: [32]u8 = undefined;
+
+    // Output too short (< 64 bytes)
+    const result = Blake2.compress(&input, &output_too_short);
+    try std.testing.expectError(error.InvalidOutput, result);
+}
+
+test "blake2b compression - security property avalanche effect" {
+    // Test avalanche effect: small change in input causes large change in output
+    var h1 = [8]u64{
+        0x6a09e667f3bcc908 ^ 0x01010040,
+        0xbb67ae8584caa73b,
+        0x3c6ef372fe94f82b,
+        0xa54ff53a5f1d36f1,
+        0x510e527fade682d1,
+        0x9b05688c2b3e6c1f,
+        0x1f83d9abfb41bd6b,
+        0x5be0cd19137e2179,
+    };
+
+    var h2 = h1;
+
+    var m1 = [_]u64{0} ** 16;
+    var m2 = [_]u64{0} ** 16;
+    m2[0] = 1; // Single bit difference
+
+    const t = [2]u64{ 128, 0 };
+
+    unauditedBlake2fCompress(&h1, &m1, t, true, 12);
+    unauditedBlake2fCompress(&h2, &m2, t, true, 12);
+
+    // Outputs should be significantly different (avalanche effect)
+    var differences: usize = 0;
+    for (0..8) |i| {
+        if (h1[i] != h2[i]) differences += 1;
+    }
+    // Expect at least 50% of words to differ
+    try std.testing.expect(differences >= 4);
+}

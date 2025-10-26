@@ -76,3 +76,138 @@ test "ecRecover - valid signature" {
     try testing.expectEqual(@as(usize, 32), result.output.len);
     try testing.expectEqual(GAS, result.gas_used);
 }
+
+test "ecRecover - out of gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 128;
+    const result = execute(allocator, &input, GAS - 1);
+    try testing.expectError(error.OutOfGas, result);
+}
+
+test "ecRecover - exact gas" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 128;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(GAS, result.gas_used);
+}
+
+test "ecRecover - input too short padded" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 100;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - input too long truncated" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 200;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - empty input" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{};
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - v value 27" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 128;
+    input[63] = 27;
+
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - v value 28" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 128;
+    input[63] = 28;
+
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - invalid v value returns zero" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 128;
+    input[63] = 29;
+
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - all zero input returns zero" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 128;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "ecRecover - gas cost constant" {
+    const testing = std.testing;
+
+    try testing.expectEqual(@as(u64, 3000), GAS);
+}
+
+test "ecRecover - output always 32 bytes" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0} ** 128;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+}
+
+test "ecRecover - invalid signature graceful failure" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    var input = [_]u8{0xFF} ** 128;
+    const result = try execute(allocator, &input, GAS);
+    defer result.deinit(allocator);
+
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    try testing.expectEqual(GAS, result.gas_used);
+}

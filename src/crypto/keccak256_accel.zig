@@ -334,3 +334,89 @@ test "Keccak256 benchmark comparison" {
         features.has_bmi2,
     });
 }
+
+test "Keccak256 SIMD vs portable consistency" {
+    const test_sizes = [_]usize{ 0, 1, 4, 20, 32, 64, 128, 135, 136, 137, 256, 512, 1024 };
+
+    for (test_sizes) |size| {
+        const data = try std.testing.allocator.alloc(u8, size);
+        defer std.testing.allocator.free(data);
+
+        for (data, 0..) |*byte, i| {
+            byte.* = @as(u8, @intCast((i * 13 + 7) & 0xFF));
+        }
+
+        var accel_output: [32]u8 = undefined;
+        var portable_output: [32]u8 = undefined;
+
+        Keccak256_Accel.hash(data, &accel_output);
+        Keccak256_Accel.hash_software_optimized(data, &portable_output);
+
+        try std.testing.expectEqualSlices(u8, &portable_output, &accel_output);
+    }
+}
+
+test "Keccak256 multi-megabyte input" {
+    const size = 4 * 1024 * 1024;
+
+    const data = try std.testing.allocator.alloc(u8, size);
+    defer std.testing.allocator.free(data);
+
+    for (data, 0..) |*byte, i| {
+        byte.* = @as(u8, @intCast((i * 17 + 11) & 0xFF));
+    }
+
+    var output1: [32]u8 = undefined;
+    var output2: [32]u8 = undefined;
+
+    Keccak256_Accel.hash(data, &output1);
+    std.crypto.hash.sha3.Keccak256.hash(data, &output2, .{});
+
+    try std.testing.expectEqualSlices(u8, &output2, &output1);
+}
+
+test "Keccak256 absorb block alignment" {
+    const sizes_around_rate = [_]usize{
+        Keccak256_Accel.RATE - 2,
+        Keccak256_Accel.RATE - 1,
+        Keccak256_Accel.RATE,
+        Keccak256_Accel.RATE + 1,
+        Keccak256_Accel.RATE + 2,
+        Keccak256_Accel.RATE * 2 - 1,
+        Keccak256_Accel.RATE * 2,
+        Keccak256_Accel.RATE * 2 + 1,
+    };
+
+    for (sizes_around_rate) |size| {
+        const data = try std.testing.allocator.alloc(u8, size);
+        defer std.testing.allocator.free(data);
+
+        @memset(data, 0xAB);
+
+        var accel_output: [32]u8 = undefined;
+        var std_output: [32]u8 = undefined;
+
+        Keccak256_Accel.hash(data, &accel_output);
+        std.crypto.hash.sha3.Keccak256.hash(data, &std_output, .{});
+
+        try std.testing.expectEqualSlices(u8, &std_output, &accel_output);
+    }
+}
+
+test "Keccak256 state transformation correctness" {
+    const test_patterns = [_][]const u8{
+        &[_]u8{0x00} ** 200,
+        &[_]u8{0xFF} ** 200,
+        &[_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05 } ** 40,
+    };
+
+    for (test_patterns) |pattern| {
+        var accel_output: [32]u8 = undefined;
+        var std_output: [32]u8 = undefined;
+
+        Keccak256_Accel.hash(pattern, &accel_output);
+        std.crypto.hash.sha3.Keccak256.hash(pattern, &std_output, .{});
+
+        try std.testing.expectEqualSlices(u8, &std_output, &accel_output);
+    }
+}

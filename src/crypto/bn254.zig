@@ -45,19 +45,19 @@ test "BN254 G1 scalar multiplication basic" {
 
 test "BN254 G1 scalar multiplication by zero" {
     const gen = G1.GENERATOR;
-    const result = gen.mul_by_int(0);
+    const result = gen.mulByInt(0);
     try std.testing.expect(result.isInfinity());
 }
 
 test "BN254 G1 scalar multiplication by one" {
     const gen = G1.GENERATOR;
-    const result = gen.mul_by_int(1);
+    const result = gen.mulByInt(1);
     try std.testing.expect(result.equal(&gen));
 }
 
 test "BN254 G1 scalar multiplication by curve order gives infinity" {
     const gen = G1.GENERATOR;
-    const result = gen.mul_by_int(FR_MOD);
+    const result = gen.mulByInt(FR_MOD);
     try std.testing.expect(result.isInfinity());
 }
 
@@ -143,7 +143,7 @@ test "BN254 G2 point addition on curve" {
 
 test "BN254 G2 scalar multiplication basic" {
     const gen = G2.GENERATOR;
-    const result = gen.mul_by_int(3);
+    const result = gen.mulByInt(3);
     const manual = gen.add(&gen).add(&gen);
     try std.testing.expect(result.equal(&manual));
     try std.testing.expect(result.isOnCurve());
@@ -151,13 +151,13 @@ test "BN254 G2 scalar multiplication basic" {
 
 test "BN254 G2 scalar multiplication by zero" {
     const gen = G2.GENERATOR;
-    const result = gen.mul_by_int(0);
+    const result = gen.mulByInt(0);
     try std.testing.expect(result.isInfinity());
 }
 
 test "BN254 G2 scalar multiplication by curve order" {
     const gen = G2.GENERATOR;
-    const result = gen.mul_by_int(FR_MOD);
+    const result = gen.mulByInt(FR_MOD);
     try std.testing.expect(result.isInfinity());
 }
 
@@ -192,7 +192,7 @@ test "BN254 G2 subgroup check on generator" {
 test "BN254 G2 subgroup check on multiples" {
     const scalars = [_]u256{ 2, 7, 13, 99, 1234 };
     for (scalars) |s| {
-        const point = G2.GENERATOR.mul_by_int(s);
+        const point = G2.GENERATOR.mulByInt(s);
         try std.testing.expect(point.isInSubgroup());
     }
 }
@@ -261,14 +261,14 @@ test "BN254 generator points are not infinity" {
 
 test "BN254 G1 large scalar multiplication" {
     const large_scalar = FR_MOD - 1;
-    const result = G1.GENERATOR.mul_by_int(large_scalar);
+    const result = G1.GENERATOR.mulByInt(large_scalar);
     const neg_gen = G1.GENERATOR.neg();
     try std.testing.expect(result.equal(&neg_gen));
 }
 
 test "BN254 G2 large scalar multiplication" {
     const large_scalar = FR_MOD - 1;
-    const result = G2.GENERATOR.mul_by_int(large_scalar);
+    const result = G2.GENERATOR.mulByInt(large_scalar);
     const neg_gen = G2.GENERATOR.neg();
     try std.testing.expect(result.equal(&neg_gen));
 }
@@ -276,15 +276,15 @@ test "BN254 G2 large scalar multiplication" {
 test "BN254 G1 small scalar edge cases" {
     const gen = G1.GENERATOR;
 
-    const by_2 = gen.mul_by_int(2);
+    const by_2 = gen.mulByInt(2);
     const doubled = gen.double();
     try std.testing.expect(by_2.equal(&doubled));
 
-    const by_3 = gen.mul_by_int(3);
+    const by_3 = gen.mulByInt(3);
     const tripled = gen.add(&gen).add(&gen);
     try std.testing.expect(by_3.equal(&tripled));
 
-    const by_4 = gen.mul_by_int(4);
+    const by_4 = gen.mulByInt(4);
     const quadrupled = doubled.double();
     try std.testing.expect(by_4.equal(&quadrupled));
 }
@@ -292,11 +292,11 @@ test "BN254 G1 small scalar edge cases" {
 test "BN254 G2 small scalar edge cases" {
     const gen = G2.GENERATOR;
 
-    const by_2 = gen.mul_by_int(2);
+    const by_2 = gen.mulByInt(2);
     const doubled = gen.double();
     try std.testing.expect(by_2.equal(&doubled));
 
-    const by_3 = gen.mul_by_int(3);
+    const by_3 = gen.mulByInt(3);
     const tripled = gen.add(&gen).add(&gen);
     try std.testing.expect(by_3.equal(&tripled));
 }
@@ -375,30 +375,657 @@ test "BN254 pairing additivity in second argument" {
 /// Input: 128 bytes (two G1 points, 64 bytes each: x || y)
 /// Output: 64 bytes (resulting G1 point: x || y)
 pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
-    // TODO: Implement EIP-196 format parsing and G1 addition
-    // For now, return error to allow compilation
-    _ = input;
-    _ = output;
-    return error.NotImplemented;
+    if (output.len < 64) return error.InvalidOutput;
+
+    // Parse first G1 point (bytes 0-63)
+    const x1_bytes = input[0..32];
+    const y1_bytes = input[32..64];
+    const x1_value = std.mem.readInt(u256, x1_bytes, .big);
+    const y1_value = std.mem.readInt(u256, y1_bytes, .big);
+
+    // Parse second G1 point (bytes 64-127)
+    const x2_bytes = input[64..96];
+    const y2_bytes = input[96..128];
+    const x2_value = std.mem.readInt(u256, x2_bytes, .big);
+    const y2_value = std.mem.readInt(u256, y2_bytes, .big);
+
+    // Handle point at infinity (represented as (0, 0))
+    const p1 = if (x1_value == 0 and y1_value == 0)
+        G1.INFINITY
+    else blk: {
+        const x1 = FpMont.init(x1_value);
+        const y1 = FpMont.init(y1_value);
+        const z1 = FpMont.ONE;
+        break :blk try G1.init(&x1, &y1, &z1);
+    };
+
+    const p2 = if (x2_value == 0 and y2_value == 0)
+        G1.INFINITY
+    else blk: {
+        const x2 = FpMont.init(x2_value);
+        const y2 = FpMont.init(y2_value);
+        const z2 = FpMont.ONE;
+        break :blk try G1.init(&x2, &y2, &z2);
+    };
+
+    // Perform addition
+    const result = p1.add(&p2);
+    const result_affine = result.toAffine();
+
+    // Serialize result to output
+    // Point at infinity is represented as (0, 0)
+    if (result_affine.isInfinity()) {
+        @memset(output[0..64], 0);
+    } else {
+        const x_result = result_affine.x.value;
+        const y_result = result_affine.y.value;
+
+        // Write x coordinate (big-endian)
+        std.mem.writeInt(u256, output[0..32], x_result, .big);
+        // Write y coordinate (big-endian)
+        std.mem.writeInt(u256, output[32..64], y_result, .big);
+    }
 }
 
 /// EIP-196: BN254 Scalar Multiplication
 /// Input: 96 bytes (G1 point (64) || scalar (32))
 /// Output: 64 bytes (resulting G1 point: x || y)
 pub fn bn254Mul(input: *const [96]u8, output: []u8) !void {
-    // TODO: Implement EIP-196 format parsing and G1 scalar multiplication
-    // For now, return error to allow compilation
-    _ = input;
-    _ = output;
-    return error.NotImplemented;
+    if (output.len < 64) return error.InvalidOutput;
+
+    // Parse G1 point (bytes 0-63)
+    const x_bytes = input[0..32];
+    const y_bytes = input[32..64];
+    const x_value = std.mem.readInt(u256, x_bytes, .big);
+    const y_value = std.mem.readInt(u256, y_bytes, .big);
+
+    // Parse scalar (bytes 64-95)
+    const scalar_bytes = input[64..96];
+    const scalar_value = std.mem.readInt(u256, scalar_bytes, .big);
+
+    // Handle point at infinity (represented as (0, 0))
+    const point = if (x_value == 0 and y_value == 0)
+        G1.INFINITY
+    else blk: {
+        const x = FpMont.init(x_value);
+        const y = FpMont.init(y_value);
+        const z = FpMont.ONE;
+        break :blk try G1.init(&x, &y, &z);
+    };
+
+    // Perform scalar multiplication
+    const result = point.mulByInt(scalar_value);
+    const result_affine = result.toAffine();
+
+    // Serialize result to output
+    // Point at infinity is represented as (0, 0)
+    if (result_affine.isInfinity()) {
+        @memset(output[0..64], 0);
+    } else {
+        const x_result = result_affine.x.value;
+        const y_result = result_affine.y.value;
+
+        // Write x coordinate (big-endian)
+        std.mem.writeInt(u256, output[0..32], x_result, .big);
+        // Write y coordinate (big-endian)
+        std.mem.writeInt(u256, output[32..64], y_result, .big);
+    }
 }
 
 /// EIP-197: BN254 Pairing Check
 /// Input: k*192 bytes (k pairs of G1 point (64) || G2 point (128))
 /// Returns: true if pairing check passes, false otherwise
 pub fn bn254Pairing(input: []const u8) !bool {
-    // TODO: Implement EIP-197 format parsing and pairing check
-    // For now, return error to allow compilation
-    _ = input;
-    return error.NotImplemented;
+    // Input must be a multiple of 192 bytes
+    if (input.len % 192 != 0) return error.InvalidInput;
+
+    // Empty input returns true according to EIP-197
+    if (input.len == 0) return true;
+
+    const n_pairs = input.len / 192;
+
+    // Accumulate pairing result
+    var result = Fp12Mont.ONE;
+
+    var i: usize = 0;
+    while (i < n_pairs) : (i += 1) {
+        const pair_start = i * 192;
+
+        // Parse G1 point (bytes 0-63 of this pair)
+        const g1_x_bytes = input[pair_start .. pair_start + 32];
+        const g1_y_bytes = input[pair_start + 32 .. pair_start + 64];
+        const g1_x_value = std.mem.readInt(u256, g1_x_bytes[0..32], .big);
+        const g1_y_value = std.mem.readInt(u256, g1_y_bytes[0..32], .big);
+
+        const g1_point = if (g1_x_value == 0 and g1_y_value == 0)
+            G1.INFINITY
+        else blk: {
+            const x = FpMont.init(g1_x_value);
+            const y = FpMont.init(g1_y_value);
+            const z = FpMont.ONE;
+            break :blk try G1.init(&x, &y, &z);
+        };
+
+        // Parse G2 point (bytes 64-191 of this pair)
+        // G2 coordinates are in Fp2: x = x_c0 + x_c1*i, y = y_c0 + y_c1*i
+        const g2_x_c0_bytes = input[pair_start + 64 .. pair_start + 96];
+        const g2_x_c1_bytes = input[pair_start + 96 .. pair_start + 128];
+        const g2_y_c0_bytes = input[pair_start + 128 .. pair_start + 160];
+        const g2_y_c1_bytes = input[pair_start + 160 .. pair_start + 192];
+
+        const g2_x_c0_value = std.mem.readInt(u256, g2_x_c0_bytes[0..32], .big);
+        const g2_x_c1_value = std.mem.readInt(u256, g2_x_c1_bytes[0..32], .big);
+        const g2_y_c0_value = std.mem.readInt(u256, g2_y_c0_bytes[0..32], .big);
+        const g2_y_c1_value = std.mem.readInt(u256, g2_y_c1_bytes[0..32], .big);
+
+        const g2_point = if (g2_x_c0_value == 0 and g2_x_c1_value == 0 and
+            g2_y_c0_value == 0 and g2_y_c1_value == 0)
+            G2.INFINITY
+        else blk: {
+            const x = Fp2Mont.initFromInt(g2_x_c0_value, g2_x_c1_value);
+            const y = Fp2Mont.initFromInt(g2_y_c0_value, g2_y_c1_value);
+            const z = Fp2Mont.ONE;
+            break :blk try G2.init(&x, &y, &z);
+        };
+
+        // Compute pairing for this pair and accumulate
+        const pair_result = pairing(&g1_point, &g2_point);
+        result = result.mul(&pair_result);
+    }
+
+    // Check if result equals 1 (identity element)
+    return result.equal(&Fp12Mont.ONE);
+}
+
+// ============================================================================
+// EIP-196/197 Test Vectors and Validation Tests
+// ============================================================================
+
+test "BN254 EIP-196 ECADD - add two points on curve" {
+    // Test vector: G1 + G1 = 2*G1
+    const gen = G1.GENERATOR;
+    const gen_affine = gen.toAffine();
+
+    var input: [128]u8 = undefined;
+    @memset(&input, 0);
+
+    // First point (generator)
+    std.mem.writeInt(u256, input[0..32], gen_affine.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen_affine.y.value, .big);
+
+    // Second point (generator)
+    std.mem.writeInt(u256, input[64..96], gen_affine.x.value, .big);
+    std.mem.writeInt(u256, input[96..128], gen_affine.y.value, .big);
+
+    var output: [64]u8 = undefined;
+    try bn254Add(&input, &output);
+
+    // Parse result
+    const result_x = std.mem.readInt(u256, output[0..32], .big);
+    const result_y = std.mem.readInt(u256, output[32..64], .big);
+
+    // Verify result equals 2*G1
+    const expected = gen.double().toAffine();
+    try std.testing.expectEqual(expected.x.value, result_x);
+    try std.testing.expectEqual(expected.y.value, result_y);
+}
+
+test "BN254 EIP-196 ECADD - add point to infinity" {
+    const gen = G1.GENERATOR.toAffine();
+
+    var input: [128]u8 = undefined;
+    @memset(&input, 0);
+
+    // First point (generator)
+    std.mem.writeInt(u256, input[0..32], gen.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen.y.value, .big);
+
+    // Second point (infinity represented as (0,0))
+    // Already zeroed
+
+    var output: [64]u8 = undefined;
+    try bn254Add(&input, &output);
+
+    // Result should equal generator
+    const result_x = std.mem.readInt(u256, output[0..32], .big);
+    const result_y = std.mem.readInt(u256, output[32..64], .big);
+
+    try std.testing.expectEqual(gen.x.value, result_x);
+    try std.testing.expectEqual(gen.y.value, result_y);
+}
+
+test "BN254 EIP-196 ECADD - add two infinities" {
+    var input: [128]u8 = undefined;
+    @memset(&input, 0); // Both points are infinity
+
+    var output: [64]u8 = undefined;
+    try bn254Add(&input, &output);
+
+    // Result should be infinity (0,0)
+    for (output) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "BN254 EIP-196 ECADD - add point and its negation" {
+    const gen = G1.GENERATOR.toAffine();
+    const neg_gen = gen.neg().toAffine();
+
+    var input: [128]u8 = undefined;
+    @memset(&input, 0);
+
+    // First point (generator)
+    std.mem.writeInt(u256, input[0..32], gen.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen.y.value, .big);
+
+    // Second point (negative generator)
+    std.mem.writeInt(u256, input[64..96], neg_gen.x.value, .big);
+    std.mem.writeInt(u256, input[96..128], neg_gen.y.value, .big);
+
+    var output: [64]u8 = undefined;
+    try bn254Add(&input, &output);
+
+    // Result should be infinity (0,0)
+    for (output) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "BN254 EIP-196 ECADD - invalid point returns error" {
+    var input: [128]u8 = undefined;
+    @memset(&input, 0);
+
+    // Invalid point (1, 2) not on curve
+    std.mem.writeInt(u256, input[0..32], 1, .big);
+    std.mem.writeInt(u256, input[32..64], 2, .big);
+
+    // Second point is infinity
+
+    var output: [64]u8 = undefined;
+    try std.testing.expectError(error.InvalidPoint, bn254Add(&input, &output));
+}
+
+test "BN254 EIP-196 ECMUL - multiply by zero" {
+    const gen = G1.GENERATOR.toAffine();
+
+    var input: [96]u8 = undefined;
+    @memset(&input, 0);
+
+    // Point (generator)
+    std.mem.writeInt(u256, input[0..32], gen.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen.y.value, .big);
+
+    // Scalar is 0 (already zeroed)
+
+    var output: [64]u8 = undefined;
+    try bn254Mul(&input, &output);
+
+    // Result should be infinity (0,0)
+    for (output) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "BN254 EIP-196 ECMUL - multiply by one" {
+    const gen = G1.GENERATOR.toAffine();
+
+    var input: [96]u8 = undefined;
+    @memset(&input, 0);
+
+    // Point (generator)
+    std.mem.writeInt(u256, input[0..32], gen.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen.y.value, .big);
+
+    // Scalar is 1
+    std.mem.writeInt(u256, input[64..96], 1, .big);
+
+    var output: [64]u8 = undefined;
+    try bn254Mul(&input, &output);
+
+    // Result should equal generator
+    const result_x = std.mem.readInt(u256, output[0..32], .big);
+    const result_y = std.mem.readInt(u256, output[32..64], .big);
+
+    try std.testing.expectEqual(gen.x.value, result_x);
+    try std.testing.expectEqual(gen.y.value, result_y);
+}
+
+test "BN254 EIP-196 ECMUL - multiply by two" {
+    const gen = G1.GENERATOR.toAffine();
+
+    var input: [96]u8 = undefined;
+    @memset(&input, 0);
+
+    // Point (generator)
+    std.mem.writeInt(u256, input[0..32], gen.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen.y.value, .big);
+
+    // Scalar is 2
+    std.mem.writeInt(u256, input[64..96], 2, .big);
+
+    var output: [64]u8 = undefined;
+    try bn254Mul(&input, &output);
+
+    // Result should equal 2*G1
+    const result_x = std.mem.readInt(u256, output[0..32], .big);
+    const result_y = std.mem.readInt(u256, output[32..64], .big);
+
+    const expected = G1.GENERATOR.double().toAffine();
+    try std.testing.expectEqual(expected.x.value, result_x);
+    try std.testing.expectEqual(expected.y.value, result_y);
+}
+
+test "BN254 EIP-196 ECMUL - multiply infinity by scalar" {
+    var input: [96]u8 = undefined;
+    @memset(&input, 0);
+
+    // Point is infinity (0,0)
+    // Scalar is 5
+    std.mem.writeInt(u256, input[64..96], 5, .big);
+
+    var output: [64]u8 = undefined;
+    try bn254Mul(&input, &output);
+
+    // Result should be infinity (0,0)
+    for (output) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "BN254 EIP-196 ECMUL - multiply by curve order" {
+    const gen = G1.GENERATOR.toAffine();
+
+    var input: [96]u8 = undefined;
+    @memset(&input, 0);
+
+    // Point (generator)
+    std.mem.writeInt(u256, input[0..32], gen.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen.y.value, .big);
+
+    // Scalar is curve order (should give infinity)
+    std.mem.writeInt(u256, input[64..96], FR_MOD, .big);
+
+    var output: [64]u8 = undefined;
+    try bn254Mul(&input, &output);
+
+    // Result should be infinity (0,0)
+    for (output) |byte| {
+        try std.testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "BN254 EIP-196 ECMUL - multiply by large scalar" {
+    const gen = G1.GENERATOR.toAffine();
+    const scalar: u256 = 123456789;
+
+    var input: [96]u8 = undefined;
+    @memset(&input, 0);
+
+    // Point (generator)
+    std.mem.writeInt(u256, input[0..32], gen.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], gen.y.value, .big);
+
+    // Scalar
+    std.mem.writeInt(u256, input[64..96], scalar, .big);
+
+    var output: [64]u8 = undefined;
+    try bn254Mul(&input, &output);
+
+    // Verify result matches expected
+    const expected = G1.GENERATOR.mulByInt(scalar).toAffine();
+    const result_x = std.mem.readInt(u256, output[0..32], .big);
+    const result_y = std.mem.readInt(u256, output[32..64], .big);
+
+    try std.testing.expectEqual(expected.x.value, result_x);
+    try std.testing.expectEqual(expected.y.value, result_y);
+}
+
+test "BN254 EIP-197 ECPAIRING - empty input" {
+    const input: []const u8 = &[_]u8{};
+    const result = try bn254Pairing(input);
+    try std.testing.expect(result); // Empty input should return true
+}
+
+test "BN254 EIP-197 ECPAIRING - invalid input length" {
+    // Input must be multiple of 192
+    const input = [_]u8{0} ** 100;
+    try std.testing.expectError(error.InvalidInput, bn254Pairing(&input));
+}
+
+test "BN254 EIP-197 ECPAIRING - single valid pairing" {
+    // e(G1, G2) should not equal 1
+    const g1 = G1.GENERATOR.toAffine();
+    const g2 = G2.GENERATOR.toAffine();
+
+    var input: [192]u8 = undefined;
+    @memset(&input, 0);
+
+    // G1 point
+    std.mem.writeInt(u256, input[0..32], g1.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], g1.y.value, .big);
+
+    // G2 point
+    std.mem.writeInt(u256, input[64..96], g2.x.u0.value, .big);
+    std.mem.writeInt(u256, input[96..128], g2.x.u1.value, .big);
+    std.mem.writeInt(u256, input[128..160], g2.y.u0.value, .big);
+    std.mem.writeInt(u256, input[160..192], g2.y.u1.value, .big);
+
+    const result = try bn254Pairing(&input);
+    try std.testing.expect(!result); // e(G1, G2) != 1
+}
+
+test "BN254 EIP-197 ECPAIRING - bilinearity check" {
+    // e(aG1, bG2) = e(G1, G2)^(ab)
+    // Verify: e(2G1, 3G2) * e(-6G1, G2) = 1
+    const g1 = G1.GENERATOR;
+    const g2 = G2.GENERATOR;
+
+    const p1 = g1.mulByInt(2).toAffine();
+    const p2 = g2.mulByInt(3).toAffine();
+    const p3 = g1.mulByInt(6).neg().toAffine();
+    const p4 = g2.toAffine();
+
+    var input: [384]u8 = undefined;
+    @memset(&input, 0);
+
+    // First pair: (2G1, 3G2)
+    std.mem.writeInt(u256, input[0..32], p1.x.value, .big);
+    std.mem.writeInt(u256, input[32..64], p1.y.value, .big);
+    std.mem.writeInt(u256, input[64..96], p2.x.u0.value, .big);
+    std.mem.writeInt(u256, input[96..128], p2.x.u1.value, .big);
+    std.mem.writeInt(u256, input[128..160], p2.y.u0.value, .big);
+    std.mem.writeInt(u256, input[160..192], p2.y.u1.value, .big);
+
+    // Second pair: (-6G1, G2)
+    std.mem.writeInt(u256, input[192..224], p3.x.value, .big);
+    std.mem.writeInt(u256, input[224..256], p3.y.value, .big);
+    std.mem.writeInt(u256, input[256..288], p4.x.u0.value, .big);
+    std.mem.writeInt(u256, input[288..320], p4.x.u1.value, .big);
+    std.mem.writeInt(u256, input[320..352], p4.y.u0.value, .big);
+    std.mem.writeInt(u256, input[352..384], p4.y.u1.value, .big);
+
+    const result = try bn254Pairing(&input);
+    try std.testing.expect(result); // Product should equal 1
+}
+
+test "BN254 EIP-197 ECPAIRING - with infinity points" {
+    // e(0, G2) = 1
+    const g2 = G2.GENERATOR.toAffine();
+
+    var input: [192]u8 = undefined;
+    @memset(&input, 0);
+
+    // G1 point is infinity (0,0) - already zeroed
+
+    // G2 point
+    std.mem.writeInt(u256, input[64..96], g2.x.u0.value, .big);
+    std.mem.writeInt(u256, input[96..128], g2.x.u1.value, .big);
+    std.mem.writeInt(u256, input[128..160], g2.y.u0.value, .big);
+    std.mem.writeInt(u256, input[160..192], g2.y.u1.value, .big);
+
+    const result = try bn254Pairing(&input);
+    try std.testing.expect(result); // e(0, G2) = 1
+}
+
+test "BN254 EIP-196 - scalar validation" {
+    // Scalars must be less than the curve order
+    const valid_scalar = FR_MOD - 1;
+    const result = G1.GENERATOR.mulByInt(valid_scalar);
+    try std.testing.expect(result.isOnCurve());
+
+    // Maximum valid scalar
+    const max_scalar = FR_MOD - 1;
+    const result2 = G1.GENERATOR.mulByInt(max_scalar);
+    try std.testing.expect(result2.isOnCurve());
+}
+
+test "BN254 point serialization - point at infinity" {
+    const inf = G1.INFINITY;
+    try std.testing.expect(inf.x.equal(&FpMont.ZERO));
+    try std.testing.expect(inf.y.equal(&FpMont.ZERO));
+    try std.testing.expect(inf.z.equal(&FpMont.ZERO));
+}
+
+test "BN254 point validation - generator has correct order" {
+    const n_minus_1 = FR_MOD - 1;
+    const result = G1.GENERATOR.mulByInt(n_minus_1);
+    const neg_gen = G1.GENERATOR.neg();
+    try std.testing.expect(result.equal(&neg_gen));
+}
+
+test "BN254 G1 cofactor test" {
+    const gen = G1.GENERATOR;
+    const order_mult = gen.mulByInt(FR_MOD);
+    try std.testing.expect(order_mult.isInfinity());
+}
+
+test "BN254 G2 cofactor test" {
+    const gen = G2.GENERATOR;
+    const order_mult = gen.mulByInt(FR_MOD);
+    try std.testing.expect(order_mult.isInfinity());
+}
+
+test "BN254 field element validation" {
+    const valid_fp = FpMont.init(FP_MOD - 1);
+    try std.testing.expect(!valid_fp.equal(&FpMont.ZERO));
+
+    const zero_fp = FpMont.ZERO;
+    try std.testing.expect(zero_fp.equal(&FpMont.ZERO));
+
+    const one_fp = FpMont.ONE;
+    try std.testing.expect(!one_fp.equal(&FpMont.ZERO));
+}
+
+test "BN254 scalar field arithmetic" {
+    const a = Fr.init(5);
+    const b = Fr.init(7);
+
+    const sum = a.add(&b);
+    const expected_sum = Fr.init(12);
+    try std.testing.expect(sum.equal(&expected_sum));
+
+    const prod = a.mul(&b);
+    const expected_prod = Fr.init(35);
+    try std.testing.expect(prod.equal(&expected_prod));
+}
+
+test "BN254 point doubling formula correctness" {
+    const scalars = [_]u256{ 2, 4, 8, 16, 32, 64 };
+    for (scalars) |s| {
+        const by_doubling = blk: {
+            var result = G1.GENERATOR;
+            var remaining = s;
+            while (remaining > 1) : (remaining /= 2) {
+                result = result.double();
+            }
+            break :blk result;
+        };
+
+        const by_mul = G1.GENERATOR.mulByInt(s);
+        try std.testing.expect(by_doubling.equal(&by_mul));
+    }
+}
+
+test "BN254 mixed addition (affine + projective)" {
+    const affine_gen = G1.GENERATOR.toAffine();
+    const proj_gen = G1.GENERATOR;
+
+    const sum1 = affine_gen.add(&proj_gen);
+    const sum2 = proj_gen.add(&affine_gen);
+
+    try std.testing.expect(sum1.equal(&sum2));
+    try std.testing.expect(sum1.isOnCurve());
+}
+
+test "BN254 scalar multiplication - windowing consistency" {
+    const test_scalars = [_]u256{ 15, 31, 63, 127, 255, 511, 1023 };
+
+    for (test_scalars) |scalar| {
+        const result = G1.GENERATOR.mulByInt(scalar);
+
+        var expected = G1.INFINITY;
+        var base = G1.GENERATOR;
+        var s = scalar;
+        while (s > 0) : (s >>= 1) {
+            if ((s & 1) == 1) {
+                expected = expected.add(&base);
+            }
+            base = base.double();
+        }
+
+        try std.testing.expect(result.equal(&expected));
+    }
+}
+
+test "BN254 pairing bilinearity with specific scalars" {
+    const a = Fr.init(3);
+    const b = Fr.init(5);
+    const ab = a.mul(&b);
+
+    const g1_a = G1.GENERATOR.mul(&a);
+    const g2_b = G2.GENERATOR.mul(&b);
+
+    const e1 = pairing(&g1_a, &G2.GENERATOR);
+    const e_b = e1.pow(b.value);
+
+    const e2 = pairing(&G1.GENERATOR, &g2_b);
+    const e_a = e2.pow(a.value);
+
+    try std.testing.expect(e_a.equal(&e_b));
+
+    const e_ab = pairing(&G1.GENERATOR, &G2.GENERATOR).pow(ab.value);
+    try std.testing.expect(e_ab.equal(&e_a));
+}
+
+test "BN254 negation preserves distance" {
+    const scalar = Fr.init(42);
+    const point = G1.GENERATOR.mul(&scalar);
+    const neg_point = point.neg();
+
+    const sum = point.add(&neg_point);
+    try std.testing.expect(sum.isInfinity());
+
+    const neg_neg_point = neg_point.neg();
+    try std.testing.expect(point.equal(&neg_neg_point));
+}
+
+test "BN254 G2 point compression consistency" {
+    const scalar = Fr.init(17);
+    const point = G2.GENERATOR.mul(&scalar);
+    const affine = point.toAffine();
+
+    try std.testing.expect(point.equal(&affine));
+    try std.testing.expect(affine.z.equal(&Fp2Mont.ONE));
+}
+
+test "BN254 curve equation validation for random multiples" {
+    const test_scalars = [_]u256{ 1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47 };
+
+    for (test_scalars) |scalar| {
+        const g1_point = G1.GENERATOR.mulByInt(scalar);
+        try std.testing.expect(g1_point.isOnCurve());
+
+        const g2_point = G2.GENERATOR.mulByInt(scalar);
+        try std.testing.expect(g2_point.isOnCurve());
+    }
 }

@@ -866,3 +866,61 @@ test "RIPEMD160: cross-validation with known implementation" {
         try std.testing.expectEqualSlices(u8, &tv.expected, &result);
     }
 }
+
+test "RIPEMD160: security property avalanche effect" {
+    // Test avalanche effect: small change in input causes large change in output
+    const input1 = "test message";
+    const input2 = "test messag3"; // One character different
+
+    const result1 = unauditedHash(input1);
+    const result2 = unauditedHash(input2);
+
+    // Count differing bytes
+    var differences: usize = 0;
+    for (result1, result2) |byte1, byte2| {
+        if (byte1 != byte2) differences += 1;
+    }
+
+    // Expect significant difference (at least 50% of bytes should differ)
+    try std.testing.expect(differences >= 10);
+}
+
+test "RIPEMD160: Ripemd160.hash wrapper function" {
+    // Test the convenience wrapper function
+    const input = "test";
+    var output: [20]u8 = undefined;
+
+    Ripemd160.hash(input, &output);
+
+    // Verify it matches the direct implementation
+    const direct_result = unauditedHash(input);
+    try std.testing.expectEqualSlices(u8, &direct_result, &output);
+}
+
+test "RIPEMD160: binary data with all byte values" {
+    // Test with binary data containing all possible byte values
+    var input: [256]u8 = undefined;
+    for (&input, 0..) |*byte, i| {
+        byte.* = @intCast(i);
+    }
+
+    var h = RIPEMD160.init();
+    h.update(&input);
+    const result = h.final();
+
+    // Result should be non-zero and deterministic
+    var all_zero = true;
+    for (result) |byte| {
+        if (byte != 0) {
+            all_zero = false;
+            break;
+        }
+    }
+    try std.testing.expect(!all_zero);
+
+    // Verify determinism
+    var h2 = RIPEMD160.init();
+    h2.update(&input);
+    const result2 = h2.final();
+    try std.testing.expectEqualSlices(u8, &result, &result2);
+}

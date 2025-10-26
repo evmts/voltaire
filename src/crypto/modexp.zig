@@ -769,3 +769,104 @@ test "modexp: boundary at GAS_LINEAR_THRESHOLD" {
     }
     try std.testing.expect(!result_greater);
 }
+
+test "modexp: 1^exp mod m = 1" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{1};
+    const exp = [_]u8{100};
+    const mod = [_]u8{7};
+    var output: [1]u8 = undefined;
+
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
+    try std.testing.expectEqual(@as(u8, 1), output[0]);
+}
+
+test "modexp: base^1 mod m = base mod m" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{10};
+    const exp = [_]u8{1};
+    const mod = [_]u8{7};
+    var output: [1]u8 = undefined;
+
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
+    // 10 mod 7 = 3
+    try std.testing.expectEqual(@as(u8, 3), output[0]);
+}
+
+test "modexp: modulus of 1" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{5};
+    const exp = [_]u8{3};
+    const mod = [_]u8{1};
+    var output: [1]u8 = undefined;
+
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
+    // Any number mod 1 = 0
+    try std.testing.expectEqual(@as(u8, 0), output[0]);
+}
+
+test "modexp: result fits exactly in output buffer" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{2};
+    const exp = [_]u8{8};
+    const mod = [_]u8{ 0xFF, 0xFF };
+    var output: [2]u8 = undefined;
+
+    try unauditedModexp(allocator, &base, &exp, &mod, &output);
+
+    // 2^8 = 256 = 0x0100
+    // 256 mod 65535 = 256 = 0x0100
+    try std.testing.expectEqual(@as(u8, 0x01), output[0]);
+    try std.testing.expectEqual(@as(u8, 0x00), output[1]);
+}
+
+test "modexp: ModExp.modexp wrapper function" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{2};
+    const exp = [_]u8{3};
+    const mod = [_]u8{5};
+
+    const result = try ModExp.modexp(allocator, &base, &exp, &mod);
+    defer allocator.free(result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.len);
+    try std.testing.expectEqual(@as(u8, 3), result[0]);
+}
+
+test "modexp: ModExp.modexp with zero modulus" {
+    const allocator = std.testing.allocator;
+
+    const base = [_]u8{2};
+    const exp = [_]u8{3};
+    const mod = [_]u8{0};
+
+    const result = ModExp.modexp(allocator, &base, &exp, &mod);
+    try std.testing.expectError(ModExpError.DivisionByZero, result);
+}
+
+test "modexp: gas calculation with zero exponent" {
+    const base_len = 32;
+    const exp_len = 1;
+    const mod_len = 32;
+    const exp_bytes = [_]u8{0};
+
+    const gas = ModExp.calculateGas(base_len, exp_len, mod_len, &exp_bytes, void{});
+    // Should return minimum gas cost
+    try std.testing.expectEqual(@as(u64, 200), gas);
+}
+
+test "modexp: gas calculation with small inputs" {
+    const base_len = 1;
+    const exp_len = 1;
+    const mod_len = 1;
+    const exp_bytes = [_]u8{1};
+
+    const gas = ModExp.calculateGas(base_len, exp_len, mod_len, &exp_bytes, void{});
+    // Minimum gas cost
+    try std.testing.expectEqual(@as(u64, 200), gas);
+}

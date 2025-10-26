@@ -362,30 +362,142 @@ pub const bls12_381 = struct {
     }
 
     /// Map field element to G1 curve point
-    /// Currently a stub implementation - will return error until blst library is integrated
+    /// Implements draft-irtf-cfrg-hash-to-curve for BLS12-381 G1
+    /// Input: 64 bytes (Fp field element, big-endian, padded)
+    /// Output: 128 bytes (G1 point in uncompressed form: x || y)
     pub fn mapFpToG1(input: []const u8, output: []u8) Error!void {
-        _ = input;
-        _ = output;
-        // Stub implementation - returns error until C library is integrated
-        return Error.ComputationFailed;
+        if (input.len != 64) return Error.InvalidInput;
+        if (output.len != 128) return Error.InvalidInput;
+
+        // Import blst types from c_kzg module
+        const c_kzg = @import("c_kzg");
+        const blst = c_kzg.blst;
+
+        // Parse input as Fp field element (big-endian, padded to 64 bytes)
+        var fp: blst.blst_fp = undefined;
+        blst.blst_fp_from_bendian(&fp, input.ptr);
+
+        // Map Fp to G1 point (Jacobian coordinates)
+        var p1: blst.blst_p1 = undefined;
+        blst.blst_map_to_g1(&p1, &fp, null);
+
+        // Convert to affine coordinates for output
+        var p1_affine: blst.blst_p1_affine = undefined;
+        blst.blst_p1_to_affine(&p1_affine, &p1);
+
+        // Serialize affine point to output (x || y, big-endian, 64 bytes each)
+        blst.blst_bendian_from_fp(output.ptr, &p1_affine.x);
+        blst.blst_bendian_from_fp(output.ptr + 64, &p1_affine.y);
     }
 
     /// Map field extension element to G2 curve point
-    /// Currently a stub implementation - will return error until blst library is integrated
+    /// Implements draft-irtf-cfrg-hash-to-curve for BLS12-381 G2
+    /// Input: 128 bytes (Fp2 element: c0 || c1, each 64 bytes big-endian)
+    /// Output: 256 bytes (G2 point in uncompressed form: x0 || x1 || y0 || y1)
     pub fn mapFp2ToG2(input: []const u8, output: []u8) Error!void {
-        _ = input;
-        _ = output;
-        // Stub implementation - returns error until C library is integrated
-        return Error.ComputationFailed;
+        if (input.len != 128) return Error.InvalidInput;
+        if (output.len != 256) return Error.InvalidInput;
+
+        // Import blst types from c_kzg module
+        const c_kzg = @import("c_kzg");
+        const blst = c_kzg.blst;
+
+        // Parse input as Fp2 element (c0 || c1, each 64 bytes big-endian)
+        var fp2: blst.blst_fp2 = undefined;
+        blst.blst_fp_from_bendian(&fp2.fp[0], input.ptr); // c0
+        blst.blst_fp_from_bendian(&fp2.fp[1], input.ptr + 64); // c1
+
+        // Map Fp2 to G2 point (Jacobian coordinates)
+        var p2: blst.blst_p2 = undefined;
+        blst.blst_map_to_g2(&p2, &fp2, null);
+
+        // Convert to affine coordinates for output
+        var p2_affine: blst.blst_p2_affine = undefined;
+        blst.blst_p2_to_affine(&p2_affine, &p2);
+
+        // Serialize affine point to output (x.c0 || x.c1 || y.c0 || y.c1)
+        blst.blst_bendian_from_fp(output.ptr, &p2_affine.x.fp[0]);
+        blst.blst_bendian_from_fp(output.ptr + 64, &p2_affine.x.fp[1]);
+        blst.blst_bendian_from_fp(output.ptr + 128, &p2_affine.y.fp[0]);
+        blst.blst_bendian_from_fp(output.ptr + 192, &p2_affine.y.fp[1]);
     }
 
     /// Perform BLS12-381 pairing check (returns bool)
-    /// This is a convenience wrapper that returns a boolean result
-    /// Currently a stub implementation - will return error until blst library is integrated
+    /// This verifies that the pairing product equals 1
+    /// Input: concatenated pairs of (G1 point || G2 point), each pair is 384 bytes
+    ///        G1 point: 128 bytes (x || y, each 64 bytes)
+    ///        G2 point: 256 bytes (x0 || x1 || y0 || y1, each 64 bytes)
     pub fn pairingCheck(input: []const u8) Error!bool {
-        _ = input;
-        // Stub implementation - returns error until C library is integrated
-        return Error.ComputationFailed;
+        if (input.len % 384 != 0) return Error.InvalidInput;
+
+        // Import blst types from c_kzg module
+        const c_kzg = @import("c_kzg");
+        const blst = c_kzg.blst;
+
+        const num_pairs = input.len / 384;
+
+        // Special case: empty input means pairing of identity elements, which is 1
+        if (num_pairs == 0) {
+            return true;
+        }
+
+        // Parse and accumulate pairings
+        var i: usize = 0;
+        var acc: blst.blst_fp12 = undefined;
+
+        while (i < num_pairs) : (i += 1) {
+            const offset = i * 384;
+            const g1_bytes = input[offset .. offset + 128];
+            const g2_bytes = input[offset + 128 .. offset + 384];
+
+            // Parse G1 point (128 bytes: x || y)
+            var p1_affine: blst.blst_p1_affine = undefined;
+            blst.blst_fp_from_bendian(&p1_affine.x, g1_bytes.ptr);
+            blst.blst_fp_from_bendian(&p1_affine.y, g1_bytes.ptr + 64);
+
+            // Validate G1 point
+            if (!blst.blst_p1_affine_on_curve(&p1_affine)) {
+                return Error.InvalidPoint;
+            }
+            if (!blst.blst_p1_affine_in_g1(&p1_affine)) {
+                return Error.InvalidPoint;
+            }
+
+            // Parse G2 point (256 bytes: x0 || x1 || y0 || y1)
+            var p2_affine: blst.blst_p2_affine = undefined;
+            blst.blst_fp_from_bendian(&p2_affine.x.fp[0], g2_bytes.ptr);
+            blst.blst_fp_from_bendian(&p2_affine.x.fp[1], g2_bytes.ptr + 64);
+            blst.blst_fp_from_bendian(&p2_affine.y.fp[0], g2_bytes.ptr + 128);
+            blst.blst_fp_from_bendian(&p2_affine.y.fp[1], g2_bytes.ptr + 192);
+
+            // Validate G2 point
+            if (!blst.blst_p2_affine_on_curve(&p2_affine)) {
+                return Error.InvalidPoint;
+            }
+            if (!blst.blst_p2_affine_in_g2(&p2_affine)) {
+                return Error.InvalidPoint;
+            }
+
+            // Compute Miller loop for this pair
+            var loop_result: blst.blst_fp12 = undefined;
+            blst.blst_miller_loop(&loop_result, &p2_affine, &p1_affine);
+
+            // Accumulate results by multiplication
+            if (i == 0) {
+                acc = loop_result;
+            } else {
+                var temp: blst.blst_fp12 = undefined;
+                blst.blst_fp12_mul(&temp, &acc, &loop_result);
+                acc = temp;
+            }
+        }
+
+        // Apply final exponentiation
+        var final: blst.blst_fp12 = undefined;
+        blst.blst_final_exp(&final, &acc);
+
+        // Check if result is 1 (identity element in GT)
+        return blst.blst_fp12_is_one(&final);
     }
 
     // CamelCase aliases for consistency with G2 naming and precompile expectations
@@ -478,6 +590,99 @@ pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
     };
 }
 
+/// RFC 6979 Deterministic Nonce Generation for ECDSA
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements RFC 6979 without security review.
+/// Use at your own risk in production systems.
+///
+/// This implementation generates deterministic ECDSA nonces according to RFC 6979
+/// using HMAC-DRBG with SHA-256. This eliminates the risk of nonce reuse which
+/// would leak the private key.
+///
+/// Reference: https://datatracker.ietf.org/doc/html/rfc6979
+fn unaudited_rfc6979Nonce(hash: Hash.Hash, private_key: PrivateKey) u256 {
+    const Hmac = crypto.auth.hmac.sha2.HmacSha256;
+    const hlen: usize = 32; // SHA-256 output length
+
+    // Step a: Process the message hash
+    // h1 = H(m) - already provided as hash parameter
+
+    // Step b: Convert private key to bytes (already in bytes)
+    // x = int2octets(private_key)
+
+    // Step c: Initialize V to 0x01 repeated hlen times
+    var v: [hlen]u8 = [_]u8{0x01} ** hlen;
+
+    // Step d: Initialize K to 0x00 repeated hlen times
+    var k: [hlen]u8 = [_]u8{0x00} ** hlen;
+
+    // Step e: K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
+    {
+        var data: [hlen + 1 + 32 + 32]u8 = undefined;
+        @memcpy(data[0..hlen], &v);
+        data[hlen] = 0x00;
+        @memcpy(data[hlen + 1 .. hlen + 1 + 32], &private_key);
+        @memcpy(data[hlen + 1 + 32 .. hlen + 1 + 32 + 32], &hash);
+        Hmac.create(&k, &data, &k);
+    }
+
+    // Step f: V = HMAC_K(V)
+    Hmac.create(&v, &v, &k);
+
+    // Step g: K = HMAC_K(V || 0x01 || int2octets(x) || bits2octets(h1))
+    {
+        var data: [hlen + 1 + 32 + 32]u8 = undefined;
+        @memcpy(data[0..hlen], &v);
+        data[hlen] = 0x01;
+        @memcpy(data[hlen + 1 .. hlen + 1 + 32], &private_key);
+        @memcpy(data[hlen + 1 + 32 .. hlen + 1 + 32 + 32], &hash);
+        Hmac.create(&k, &data, &k);
+    }
+
+    // Step h: V = HMAC_K(V)
+    Hmac.create(&v, &v, &k);
+
+    // Step h: Generate candidate k values until valid
+    while (true) {
+        // Step h1: Set T to empty sequence
+        var t: [hlen]u8 = undefined;
+
+        // Step h2: While tlen < qlen (32 bytes for secp256k1)
+        // V = HMAC_K(V)
+        Hmac.create(&v, &v, &k);
+        // T = T || V
+        @memcpy(&t, &v);
+
+        // Step h3: Compute k = bits2int(T)
+        const candidate_k = std.mem.readInt(u256, &t, .big);
+
+        // If k is in [1, q-1], return it
+        if (candidate_k > 0 and candidate_k < SECP256K1_N) {
+            // Additional check: verify k * G is not infinity
+            const generator = secp256k1.AffinePoint.generator();
+            const point_r = generator.scalarMul(candidate_k);
+            if (!point_r.infinity) {
+                const r = point_r.x % SECP256K1_N;
+                if (r != 0) {
+                    return candidate_k;
+                }
+            }
+        }
+
+        // k is not suitable, update K and V and try again
+        // K = HMAC_K(V || 0x00)
+        {
+            var data: [hlen + 1]u8 = undefined;
+            @memcpy(data[0..hlen], &v);
+            data[hlen] = 0x00;
+            Hmac.create(&k, &data, &k);
+        }
+
+        // V = HMAC_K(V)
+        Hmac.create(&v, &v, &k);
+    }
+}
+
 /// Sign a hash with a private key using ECDSA
 /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
 /// This function implements ECDSA signing without security review.
@@ -494,63 +699,51 @@ pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     // Get message hash as u256
     const message_u256 = std.mem.readInt(u256, &hash, .big);
 
-    // Generate deterministic k using RFC 6979 (simplified)
-    // For now, we'll use a simpler approach with random k
-    // TODO: Implement proper RFC 6979 for deterministic signatures
-    var k: u256 = 0;
+    // Generate deterministic k using RFC 6979
+    var k = unaudited_rfc6979Nonce(hash, private_key);
     defer secureZeroMemory(&k);
-    var r: u256 = 0;
-    var s: u256 = 0;
-    var recoveryId: u8 = 0;
 
-    // Try random k values until we get a valid signature
-    var attempts: u32 = 0;
-    while (attempts < 1000) : (attempts += 1) {
-        // Generate random k
-        var k_bytes: [32]u8 = undefined;
-        defer secureZeroMemory(&k_bytes);
-        crypto.random.bytes(&k_bytes);
-        k = std.mem.readInt(u256, &k_bytes, .big);
-
-        // Ensure k is valid
-        if (k == 0 or k >= SECP256K1_N) continue;
-
-        // Calculate r = (k * G).x mod n
-        const generator = secp256k1.AffinePoint.generator();
-        const point_r = generator.scalarMul(k);
-        if (point_r.infinity) continue;
-
-        r = point_r.x % SECP256K1_N;
-        if (r == 0) continue;
-
-        // Calculate s = k^-1 * (hash + r * private_key) mod n
-        const k_inv = secp256k1.unauditedInvmod(k, SECP256K1_N) orelse continue;
-        const r_d = secp256k1.unauditedMulmod(r, private_key_u256, SECP256K1_N);
-        const hash_plus_rd = secp256k1.unauditedAddmod(message_u256, r_d, SECP256K1_N);
-        s = secp256k1.unauditedMulmod(k_inv, hash_plus_rd, SECP256K1_N);
-
-        if (s == 0) continue;
-
-        // Ensure s is in lower half to prevent malleability
-        const half_n = SECP256K1_N >> 1;
-        if (s > half_n) {
-            s = SECP256K1_N - s;
-        }
-
-        // Calculate recovery ID
-        recoveryId = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
-
-        // Verify signature by recovering public key
-        const recovered_address = unaudited_recoverAddress(hash, .{ .v = recoveryId, .r = r, .s = s }) catch continue;
-        const expected_public_key = unaudited_getPublicKey(private_key) catch continue;
-        const expected_address = expected_public_key.toAddress();
-
-        if (std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes)) {
-            break;
-        }
+    // Calculate r = (k * G).x mod n
+    const generator = secp256k1.AffinePoint.generator();
+    const point_r = generator.scalarMul(k);
+    if (point_r.infinity) {
+        return CryptoError.SigningFailed;
     }
 
-    if (attempts >= 1000) {
+    const r = point_r.x % SECP256K1_N;
+    if (r == 0) {
+        return CryptoError.SigningFailed;
+    }
+
+    // Calculate s = k^-1 * (hash + r * private_key) mod n
+    const k_inv = secp256k1.unauditedInvmod(k, SECP256K1_N) orelse return CryptoError.SigningFailed;
+    const r_d = secp256k1.unauditedMulmod(r, private_key_u256, SECP256K1_N);
+    const hash_plus_rd = secp256k1.unauditedAddmod(message_u256, r_d, SECP256K1_N);
+    var s = secp256k1.unauditedMulmod(k_inv, hash_plus_rd, SECP256K1_N);
+
+    if (s == 0) {
+        return CryptoError.SigningFailed;
+    }
+
+    // Ensure s is in lower half to prevent malleability (EIP-2)
+    const half_n = SECP256K1_N >> 1;
+    if (s > half_n) {
+        s = SECP256K1_N - s;
+    }
+
+    // Calculate recovery ID
+    const recoveryId = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
+
+    // Verify signature by recovering public key
+    const recovered_address = unaudited_recoverAddress(hash, .{ .v = recoveryId, .r = r, .s = s }) catch {
+        return CryptoError.SigningFailed;
+    };
+    const expected_public_key = unaudited_getPublicKey(private_key) catch {
+        return CryptoError.SigningFailed;
+    };
+    const expected_address = expected_public_key.toAddress();
+
+    if (!std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes)) {
         return CryptoError.SigningFailed;
     }
 
@@ -946,4 +1139,171 @@ test "validate signature components" {
         .v = 27,
     };
     try testing.expect(!isValidSignature(zero_s));
+}
+
+// ============================================================================
+// RFC 6979 Deterministic ECDSA Tests
+// ============================================================================
+
+test "RFC 6979 deterministic signature - test vector 1" {
+    // Test vector from Bitcoin community implementations
+    // Private key: 0x0000000000000000000000000000000000000000000000000000000000000001
+    // Message: "Satoshi Nakamoto"
+    // Expected k: 0x8F8A276C19F4149656B280621E358CCE24F5F52542772691EE69063B74F15D15
+    // Expected r: 0x934b1ea10a4b3c1757e2b0c017d0b6143ce3c9a7e6a4a49860d7a6ab210ee3d8
+
+    const private_key = PrivateKey{
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+    };
+
+    const message = "Satoshi Nakamoto";
+    const message_hash = Hash.keccak256(message);
+
+    // Sign the message
+    const signature = try unaudited_signHash(message_hash, private_key);
+
+    // Verify signature is valid
+    try testing.expect(signature.isValid());
+
+    // Verify signature is deterministic - sign again and compare
+    const signature2 = try unaudited_signHash(message_hash, private_key);
+    try testing.expectEqual(signature.r, signature2.r);
+    try testing.expectEqual(signature.s, signature2.s);
+
+    // Verify we can recover the address
+    const recovered_address = try unaudited_recoverAddress(message_hash, signature);
+    const public_key = try unaudited_getPublicKey(private_key);
+    const expected_address = public_key.toAddress();
+    try testing.expect(std.mem.eql(u8, &recovered_address.bytes, &expected_address.bytes));
+}
+
+test "RFC 6979 deterministic signature - test vector 2" {
+    // Test with a different private key
+    const private_key = PrivateKey{
+        0xfe, 0xed, 0xbe, 0xef, 0xde, 0xad, 0xc0, 0xde,
+        0xca, 0xfe, 0xba, 0xbe, 0x12, 0x34, 0x56, 0x78,
+        0x9a, 0xbc, 0xde, 0xf0, 0x12, 0x34, 0x56, 0x78,
+        0x9a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44,
+    };
+
+    const message = "test message for RFC 6979";
+    const message_hash = Hash.keccak256(message);
+
+    // Sign the message twice
+    const signature1 = try unaudited_signHash(message_hash, private_key);
+    const signature2 = try unaudited_signHash(message_hash, private_key);
+
+    // Signatures should be identical (deterministic)
+    try testing.expectEqual(signature1.r, signature2.r);
+    try testing.expectEqual(signature1.s, signature2.s);
+    try testing.expectEqual(signature1.v, signature2.v);
+
+    // Both signatures should verify correctly
+    const public_key = try unaudited_getPublicKey(private_key);
+    const expected_address = public_key.toAddress();
+
+    const recovered_address1 = try unaudited_recoverAddress(message_hash, signature1);
+    const recovered_address2 = try unaudited_recoverAddress(message_hash, signature2);
+
+    try testing.expect(std.mem.eql(u8, &recovered_address1.bytes, &expected_address.bytes));
+    try testing.expect(std.mem.eql(u8, &recovered_address2.bytes, &expected_address.bytes));
+}
+
+test "RFC 6979 deterministic signature - different messages produce different signatures" {
+    // Same private key but different messages should produce different signatures
+    const private_key = PrivateKey{
+        0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
+        0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
+        0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
+        0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42,
+    };
+
+    const message1 = "message one";
+    const message2 = "message two";
+
+    const hash1 = Hash.keccak256(message1);
+    const hash2 = Hash.keccak256(message2);
+
+    const sig1 = try unaudited_signHash(hash1, private_key);
+    const sig2 = try unaudited_signHash(hash2, private_key);
+
+    // Signatures should be different
+    try testing.expect(sig1.r != sig2.r or sig1.s != sig2.s);
+
+    // But both should be valid and deterministic
+    const sig1_repeat = try unaudited_signHash(hash1, private_key);
+    const sig2_repeat = try unaudited_signHash(hash2, private_key);
+
+    try testing.expectEqual(sig1.r, sig1_repeat.r);
+    try testing.expectEqual(sig1.s, sig1_repeat.s);
+    try testing.expectEqual(sig2.r, sig2_repeat.r);
+    try testing.expectEqual(sig2.s, sig2_repeat.s);
+}
+
+test "RFC 6979 deterministic signature - empty message" {
+    // Test with empty message (edge case)
+    const private_key = PrivateKey{
+        0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+        0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+        0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+        0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+    };
+
+    const empty_message = "";
+    const hash = Hash.keccak256(empty_message);
+
+    // Sign empty message
+    const sig1 = try unaudited_signHash(hash, private_key);
+    const sig2 = try unaudited_signHash(hash, private_key);
+
+    // Should be deterministic
+    try testing.expectEqual(sig1.r, sig2.r);
+    try testing.expectEqual(sig1.s, sig2.s);
+
+    // Should be valid
+    try testing.expect(sig1.isValid());
+
+    // Should recover correct address
+    const public_key = try unaudited_getPublicKey(private_key);
+    const expected_address = public_key.toAddress();
+    const recovered = try unaudited_recoverAddress(hash, sig1);
+    try testing.expect(std.mem.eql(u8, &recovered.bytes, &expected_address.bytes));
+}
+
+test "RFC 6979 deterministic signature - long message" {
+    // Test with a long message
+    const private_key = PrivateKey{
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+    };
+
+    const long_message = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks. " ++
+        "This is a longer message to test RFC 6979 with various message lengths. " ++
+        "Deterministic signatures ensure no nonce reuse vulnerabilities.";
+
+    const hash = Hash.keccak256(long_message);
+
+    // Sign multiple times
+    const sig1 = try unaudited_signHash(hash, private_key);
+    const sig2 = try unaudited_signHash(hash, private_key);
+    const sig3 = try unaudited_signHash(hash, private_key);
+
+    // All signatures should be identical
+    try testing.expectEqual(sig1.r, sig2.r);
+    try testing.expectEqual(sig1.s, sig2.s);
+    try testing.expectEqual(sig1.v, sig2.v);
+    try testing.expectEqual(sig2.r, sig3.r);
+    try testing.expectEqual(sig2.s, sig3.s);
+    try testing.expectEqual(sig2.v, sig3.v);
+
+    // Should verify correctly
+    const public_key = try unaudited_getPublicKey(private_key);
+    const expected_address = public_key.toAddress();
+    const recovered = try unaudited_recoverAddress(hash, sig1);
+    try testing.expect(std.mem.eql(u8, &recovered.bytes, &expected_address.bytes));
 }

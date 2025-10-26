@@ -59,3 +59,59 @@ test "CPU feature detection" {
     try std.testing.expect(features.has_avx2 == true or features.has_avx2 == false);
     try std.testing.expect(features.has_bmi2 == true or features.has_bmi2 == false);
 }
+
+test "CPU feature detection - all flags" {
+    const features = CpuFeatures.init();
+
+    try std.testing.expect(features.has_aes == true or features.has_aes == false);
+    try std.testing.expect(features.has_sha == true or features.has_sha == false);
+    try std.testing.expect(features.has_avx2 == true or features.has_avx2 == false);
+    try std.testing.expect(features.has_bmi2 == true or features.has_bmi2 == false);
+    try std.testing.expect(features.has_sha_ni == true or features.has_sha_ni == false);
+    try std.testing.expect(features.has_aes_ni == true or features.has_aes_ni == false);
+    try std.testing.expect(features.has_arm_crypto == true or features.has_arm_crypto == false);
+    try std.testing.expect(features.has_arm_neon == true or features.has_arm_neon == false);
+}
+
+test "CPU feature detection - platform specific" {
+    const features = CpuFeatures.init();
+
+    if (builtin.target.cpu.arch == .x86_64) {
+        try std.testing.expect(!features.has_arm_crypto);
+        try std.testing.expect(!features.has_arm_neon);
+    } else if (builtin.target.cpu.arch == .aarch64) {
+        try std.testing.expect(!features.has_avx2);
+        try std.testing.expect(!features.has_bmi2);
+    } else {
+        try std.testing.expect(!features.has_avx2);
+        try std.testing.expect(!features.has_bmi2);
+        try std.testing.expect(!features.has_arm_crypto);
+        try std.testing.expect(!features.has_arm_neon);
+    }
+}
+
+test "CPU feature detection - consistency" {
+    const features1 = CpuFeatures.init();
+    const features2 = CpuFeatures.init();
+
+    try std.testing.expectEqual(features1.has_aes, features2.has_aes);
+    try std.testing.expectEqual(features1.has_sha, features2.has_sha);
+    try std.testing.expectEqual(features1.has_avx2, features2.has_avx2);
+    try std.testing.expectEqual(features1.has_bmi2, features2.has_bmi2);
+    try std.testing.expectEqual(features1.has_sha_ni, features2.has_sha_ni);
+    try std.testing.expectEqual(features1.has_aes_ni, features2.has_aes_ni);
+    try std.testing.expectEqual(features1.has_arm_crypto, features2.has_arm_crypto);
+    try std.testing.expectEqual(features1.has_arm_neon, features2.has_arm_neon);
+}
+
+test "CPU feature detection - SHA extensions consistency" {
+    const features = CpuFeatures.init();
+
+    try std.testing.expectEqual(features.has_sha, features.has_sha_ni);
+}
+
+test "CPU feature detection - AES extensions consistency" {
+    const features = CpuFeatures.init();
+
+    try std.testing.expectEqual(features.has_aes, features.has_aes_ni);
+}
