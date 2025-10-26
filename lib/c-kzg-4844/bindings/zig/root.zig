@@ -6,6 +6,11 @@ const c = @cImport({
     @cInclude("ckzg.h");
 });
 
+// Re-export blst functions for use in crypto module
+pub const blst = @cImport({
+    @cInclude("blst.h");
+});
+
 pub const BYTES_PER_BLOB = c.BYTES_PER_BLOB;
 pub const BYTES_PER_CELL = c.BYTES_PER_CELL;
 pub const BYTES_PER_COMMITMENT = c.BYTES_PER_COMMITMENT;

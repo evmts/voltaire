@@ -16,6 +16,7 @@
 //! ### Digital Signatures
 //! - **ECDSA**: Elliptic Curve Digital Signature Algorithm
 //! - **secp256k1**: Bitcoin/Ethereum curve for signatures
+//! - **RFC 6979**: Deterministic nonce generation (eliminates nonce reuse vulnerabilities)
 //! - **Recovery**: Public key recovery from signatures
 //! - **Verification**: Signature validation and authenticity
 //!
@@ -76,9 +77,9 @@
 //! ## Security Considerations
 //!
 //! - **Private Key Security**: Never expose private keys in memory longer than necessary
-//! - **Random Number Generation**: Use cryptographically secure randomness
+//! - **Deterministic Signatures**: RFC 6979 eliminates nonce reuse vulnerabilities
 //! - **Side-Channel Resistance**: Constant-time operations where possible
-//! - **Signature Malleability**: Use canonical signature validation
+//! - **Signature Malleability**: Use canonical signature validation (EIP-2)
 //! - **Hash Function Security**: Keccak256 is quantum-resistant
 //!
 //! ## Performance Optimizations
