@@ -234,7 +234,9 @@ console.log("- signTypedData(typedData, privateKey)");
 console.log("- verifyTypedData(typedData, signature, address)");
 console.log("- recoverTypedDataAddress(typedData, signature)");
 console.log();
-console.log("These functions are defined but throw errors until C API is complete.");
+console.log(
+	"These functions are defined but throw errors until C API is complete.",
+);
 console.log();
 
 // =============================================================================
