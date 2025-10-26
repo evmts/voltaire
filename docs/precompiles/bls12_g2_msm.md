@@ -15,10 +15,10 @@ Performs multi-scalar multiplication (MSM) on the BLS12-381 G2 group. Given G2 p
 ## Gas Cost
 
 **Dynamic with discount:**
-- Base gas per pair: 45,000
-- Multiplier: 55
-- Discount factor based on number of pairs (k)
-- Formula: `(45,000 * k * discount) / 1000`
+- Base per-point: 22,500 (same as G2MUL)
+- Discount applied based on number of points
+- Formula: `(22,500 * k * discount) / 1000`
+- Where discount(k) approaches floor of 524 for k ≥ 128
 
 ## API Reference
 
@@ -160,6 +160,13 @@ Test cases should include:
 - Discount rewards batching
 - Pippenger's algorithm provides sub-linear scaling
 - Most efficient for large batches (32+ pairs)
+
+## Discount Floor
+
+Per EIP-2537, the discount factor has a floor:
+- Discount approaches **524** for very large k (≥128 points)
+- This prevents gas cost from becoming too cheap
+- Formula: `max(discount_table[k], 524)` for G2 MSM
 
 ## Comparison: Individual vs Batched
 

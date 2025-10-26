@@ -12,6 +12,21 @@
 
 Computes the RIPEMD-160 cryptographic hash of arbitrary input data. RIPEMD-160 is primarily used in Bitcoin address generation and is maintained for compatibility.
 
+## Audit Status
+
+⚠️ UNAUDITED - Use With Caution
+
+This is a custom Zig implementation that has NOT been security audited.
+
+Known risks:
+- No formal security audit performed
+- Limited production testing
+- May contain implementation vulnerabilities
+
+Recommendation: Use only for non-critical operations or after independent security audit.
+
+Report issues: security@tevm.sh
+
 ## Gas Cost
 
 **Dynamic:**
