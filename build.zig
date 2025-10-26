@@ -570,9 +570,6 @@ pub fn build(b: *std.Build) void {
         const bench_ts_step = b.step("bench-ts", "Run TS benchmarks and generate BENCHMARKS.md");
         bench_ts_step.dependOn(&run_benchmarks.step);
     }
-
-    // TypeScript build, test, and quality steps (wraps package.json scripts)
-    addTypeScriptSteps(b);
 }
 
 fn buildBenchmarks(
