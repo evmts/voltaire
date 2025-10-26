@@ -604,6 +604,13 @@ Base: https://github.com/evmts/primitives/blob/main/docs
 - [BLS12-381 Map Fp2 to G2 (0x13)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_map_fp2_to_g2.md)
 </precompiles_docs>
 
+<benchmarking_docs>
+**Benchmarking & Performance:**
+- [BENCHMARKING.md](https://github.com/evmts/primitives/blob/main/BENCHMARKING.md) — How to run benchmarks
+- [BENCHMARK_RESULTS.md](https://github.com/evmts/primitives/blob/main/BENCHMARK_RESULTS.md) — TypeScript/FFI performance comparisons
+- [ZIG_BENCHMARK_RESULTS.md](https://github.com/evmts/primitives/blob/main/ZIG_BENCHMARK_RESULTS.md) — Native Zig performance data
+</benchmarking_docs>
+
 <external_resources>
 **External Resources:**
 - [Zig 0.15.1 Docs](https://ziglang.org/documentation/0.15.1/)
