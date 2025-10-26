@@ -90,7 +90,7 @@
 //! 5. **Type Safety**: Strongly typed API prevents common mistakes
 
 const std = @import("std");
-const hex = @import("utils").hex;
+const Hex = @import("hex.zig");
 const Allocator = std.mem.Allocator;
 
 /// Maximum recursion depth to prevent stack overflow attacks
@@ -483,12 +483,12 @@ fn _decode(allocator: Allocator, input: []const u8, depth: u32) !Decoded {
 
 /// Converts a byte slice to a hex string
 pub fn bytesToHex(allocator: Allocator, bytes: []const u8) ![]u8 {
-    return try hex.bytesToHex(allocator, bytes);
+    return try Hex.bytesToHex(allocator, bytes);
 }
 
 /// Converts a hex string to bytes
 pub fn hexToBytes(allocator: Allocator, hex_str: []const u8) ![]u8 {
-    return try hex.hexToBytes(allocator, hex_str);
+    return try Hex.hexToBytes(allocator, hex_str);
 }
 
 /// Concatenates multiple byte slices into one

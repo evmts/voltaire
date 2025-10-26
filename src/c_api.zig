@@ -421,6 +421,472 @@ export fn primitives_ripemd160(
 }
 
 // ============================================================================
+// RLP Encoding/Decoding
+// ============================================================================
+
+/// Encode bytes as RLP
+/// Returns the number of bytes written, or negative error code
+export fn primitives_rlp_encode_bytes(
+    data: [*]const u8,
+    data_len: usize,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const input = data[0..data_len];
+
+    var stack_buf: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    const encoded = primitives.Rlp.encodeBytes(allocator, input) catch {
+        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+    };
+    defer allocator.free(encoded);
+
+    if (encoded.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..encoded.len], encoded);
+    return @intCast(encoded.len);
+}
+
+/// Encode unsigned integer as RLP
+/// value_bytes must be 32 bytes (big-endian u256)
+export fn primitives_rlp_encode_uint(
+    value_bytes: *const [32]u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const value = std.mem.readInt(u256, value_bytes, .big);
+
+    var stack_buf: [512]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    // Convert u256 to minimal bytes
+    var value_buf: [32]u8 = undefined;
+    std.mem.writeInt(u256, &value_buf, value, .big);
+
+    // Find first non-zero byte
+    var start: usize = 0;
+    while (start < 32 and value_buf[start] == 0) : (start += 1) {}
+
+    const minimal_bytes = if (start == 32) &[_]u8{} else value_buf[start..];
+
+    const encoded = primitives.Rlp.encodeBytes(allocator, minimal_bytes) catch {
+        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+    };
+    defer allocator.free(encoded);
+
+    if (encoded.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..encoded.len], encoded);
+    return @intCast(encoded.len);
+}
+
+/// Convert RLP bytes to hex string
+export fn primitives_rlp_to_hex(
+    rlp_data: [*]const u8,
+    rlp_len: usize,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const input = rlp_data[0..rlp_len];
+
+    var stack_buf: [8192]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    const hex = primitives.Rlp.bytesToHex(allocator, input) catch {
+        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+    };
+    defer allocator.free(hex);
+
+    if (hex.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..hex.len], hex);
+    return @intCast(hex.len);
+}
+
+/// Convert hex string to RLP bytes
+export fn primitives_rlp_from_hex(
+    hex: [*:0]const u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const hex_slice = std.mem.span(hex);
+
+    var stack_buf: [8192]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    const bytes = primitives.Rlp.hexToBytes(allocator, hex_slice) catch {
+        return PRIMITIVES_ERROR_INVALID_HEX;
+    };
+    defer allocator.free(bytes);
+
+    if (bytes.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..bytes.len], bytes);
+    return @intCast(bytes.len);
+}
+
+// ============================================================================
+// Transaction Operations
+// ============================================================================
+
+/// Detect transaction type from serialized data
+/// Returns type (0-4) or negative error code
+export fn primitives_tx_detect_type(
+    data: [*]const u8,
+    data_len: usize,
+) c_int {
+    const input = data[0..data_len];
+    const tx_type = primitives.Transaction.detectTransactionType(input);
+
+    return switch (tx_type) {
+        .legacy => 0,
+        .eip2930 => 1,
+        .eip1559 => 2,
+        .eip4844 => 3,
+        .eip7702 => 4,
+    };
+}
+
+// ============================================================================
+// Signature Utilities
+// ============================================================================
+
+/// Normalize signature to canonical form (low-s)
+/// Modifies signature in-place if needed
+/// Returns true if normalization was performed
+export fn primitives_signature_normalize(
+    r: *[32]u8,
+    s: *[32]u8,
+) bool {
+    _ = r; // r is not needed for normalization, only s
+    const s_u256 = std.mem.readInt(u256, s, .big);
+
+    // Check if s is in the upper half of the curve order
+    const half_n = crypto.secp256k1.SECP256K1_N / 2;
+
+    if (s_u256 > half_n) {
+        // Normalize: s' = N - s
+        const normalized_s = crypto.secp256k1.SECP256K1_N - s_u256;
+        std.mem.writeInt(u256, s, normalized_s, .big);
+        return true;
+    }
+
+    return false;
+}
+
+/// Check if signature is in canonical form
+export fn primitives_signature_is_canonical(
+    r: *const [32]u8,
+    s: *const [32]u8,
+) bool {
+    const r_u256 = std.mem.readInt(u256, r, .big);
+    const s_u256 = std.mem.readInt(u256, s, .big);
+
+    return crypto.secp256k1.unauditedValidateSignature(r_u256, s_u256);
+}
+
+/// Parse signature from DER or compact format
+/// Input: 64 or 65 byte signature (r + s + optional v)
+/// Output: r, s, v components
+export fn primitives_signature_parse(
+    sig_data: [*]const u8,
+    sig_len: usize,
+    out_r: *[32]u8,
+    out_s: *[32]u8,
+    out_v: *u8,
+) c_int {
+    if (sig_len == 64) {
+        // Compact format: r(32) + s(32)
+        @memcpy(out_r, sig_data[0..32]);
+        @memcpy(out_s, sig_data[32..64]);
+        out_v.* = 0; // No v provided
+        return PRIMITIVES_SUCCESS;
+    } else if (sig_len == 65) {
+        // Compact format with v: r(32) + s(32) + v(1)
+        @memcpy(out_r, sig_data[0..32]);
+        @memcpy(out_s, sig_data[32..64]);
+        out_v.* = sig_data[64];
+        return PRIMITIVES_SUCCESS;
+    } else {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+}
+
+/// Serialize signature to compact format (64 or 65 bytes)
+/// include_v: if true, append v byte to create 65-byte signature
+export fn primitives_signature_serialize(
+    r: *const [32]u8,
+    s: *const [32]u8,
+    v: u8,
+    include_v: bool,
+    out_buf: [*]u8,
+) c_int {
+    @memcpy(out_buf[0..32], r);
+    @memcpy(out_buf[32..64], s);
+
+    if (include_v) {
+        out_buf[64] = v;
+        return 65;
+    }
+
+    return 64;
+}
+
+// ============================================================================
+// Wallet Generation
+// ============================================================================
+
+/// Generate a cryptographically secure random private key
+export fn primitives_generate_private_key(
+    out_private_key: *[32]u8,
+) c_int {
+    var rng = std.crypto.random;
+
+    // Generate random 32 bytes
+    rng.bytes(out_private_key);
+
+    // Ensure the key is valid (< secp256k1 curve order)
+    const key_value = std.mem.readInt(u256, out_private_key, .big);
+    if (key_value == 0 or key_value >= crypto.secp256k1.SECP256K1_N) {
+        // Invalid key, regenerate (extremely rare)
+        return primitives_generate_private_key(out_private_key);
+    }
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Compress public key from uncompressed format (64 bytes) to compressed (33 bytes)
+export fn primitives_compress_public_key(
+    uncompressed: *const [64]u8,
+    out_compressed: *[33]u8,
+) c_int {
+    const x_bytes = uncompressed[0..32];
+    const y_bytes = uncompressed[32..64];
+
+    const y = std.mem.readInt(u256, y_bytes, .big);
+
+    // Prefix: 0x02 if y is even, 0x03 if y is odd
+    out_compressed[0] = if (y & 1 == 0) 0x02 else 0x03;
+
+    // Copy x coordinate
+    @memcpy(out_compressed[1..33], x_bytes);
+
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
+// Bytecode Operations
+// ============================================================================
+
+/// Analyze bytecode to find valid JUMPDEST locations
+/// Returns the number of valid jump destinations found
+/// out_jumpdests must have space for at least max_jumpdests u32 values
+export fn primitives_bytecode_analyze_jumpdests(
+    code: [*]const u8,
+    code_len: usize,
+    out_jumpdests: [*]u32,
+    max_jumpdests: usize,
+) c_int {
+    const bytecode = code[0..code_len];
+
+    var count: usize = 0;
+    var pc: u32 = 0;
+
+    while (pc < bytecode.len and count < max_jumpdests) {
+        const opcode = bytecode[pc];
+
+        // Check if this is a JUMPDEST (0x5b)
+        if (opcode == 0x5b) {
+            out_jumpdests[count] = pc;
+            count += 1;
+            pc += 1;
+        } else if (opcode >= 0x60 and opcode <= 0x7f) {
+            // PUSH1-PUSH32: skip immediate data
+            const push_size = opcode - 0x5f;
+            pc += 1 + push_size;
+        } else {
+            pc += 1;
+        }
+    }
+
+    return @intCast(count);
+}
+
+/// Check if a position is at a bytecode boundary (not inside PUSH data)
+export fn primitives_bytecode_is_boundary(
+    code: [*]const u8,
+    code_len: usize,
+    position: u32,
+) bool {
+    const bytecode = code[0..code_len];
+
+    if (position >= bytecode.len) {
+        return false;
+    }
+
+    var pc: u32 = 0;
+    while (pc < position) {
+        const opcode = bytecode[pc];
+
+        if (opcode >= 0x60 and opcode <= 0x7f) {
+            // PUSH1-PUSH32
+            const push_size = opcode - 0x5f;
+            pc += 1 + push_size;
+
+            // If we jumped past the position, it's inside PUSH data
+            if (pc > position) {
+                return false;
+            }
+        } else {
+            pc += 1;
+        }
+    }
+
+    return pc == position;
+}
+
+/// Check if a position is a valid JUMPDEST
+export fn primitives_bytecode_is_valid_jumpdest(
+    code: [*]const u8,
+    code_len: usize,
+    position: u32,
+) bool {
+    const bytecode = code[0..code_len];
+
+    // Must be at a boundary
+    if (!primitives_bytecode_is_boundary(code, code_len, position)) {
+        return false;
+    }
+
+    // Must be within bounds and be JUMPDEST opcode
+    if (position >= bytecode.len) {
+        return false;
+    }
+
+    return bytecode[position] == 0x5b;
+}
+
+/// Validate bytecode for basic correctness
+/// Returns PRIMITIVES_SUCCESS if valid, error code otherwise
+export fn primitives_bytecode_validate(
+    code: [*]const u8,
+    code_len: usize,
+) c_int {
+    const bytecode = code[0..code_len];
+
+    var pc: usize = 0;
+    while (pc < bytecode.len) {
+        const opcode = bytecode[pc];
+
+        if (opcode >= 0x60 and opcode <= 0x7f) {
+            // PUSH1-PUSH32
+            const push_size: usize = opcode - 0x5f;
+
+            // Check if we have enough bytes for the PUSH data
+            if (pc + 1 + push_size > bytecode.len) {
+                return PRIMITIVES_ERROR_INVALID_INPUT;
+            }
+
+            pc += 1 + push_size;
+        } else {
+            pc += 1;
+        }
+    }
+
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
+// Solidity Packed Hashing
+// ============================================================================
+
+/// Compute keccak256 of tightly packed arguments
+/// This mimics Solidity's abi.encodePacked followed by keccak256
+export fn primitives_solidity_keccak256(
+    packed_data: [*]const u8,
+    data_len: usize,
+    out_hash: *PrimitivesHash,
+) c_int {
+    const input = packed_data[0..data_len];
+    const hash = crypto.HashUtils.keccak256(input);
+    @memcpy(&out_hash.bytes, &hash);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Compute SHA256 of tightly packed arguments
+export fn primitives_solidity_sha256(
+    packed_data: [*]const u8,
+    data_len: usize,
+    out_hash: *[32]u8,
+) c_int {
+    const input = packed_data[0..data_len];
+    crypto.HashAlgorithms.SHA256.hash(input, out_hash);
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
+// Additional Hash Algorithms
+// ============================================================================
+
+/// Compute Blake2b hash (for EIP-152)
+export fn primitives_blake2b(
+    data: [*]const u8,
+    data_len: usize,
+    out_hash: *[64]u8,
+) c_int {
+    const input = data[0..data_len];
+    std.crypto.hash.blake2.Blake2b512.hash(input, out_hash, .{});
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
+// CREATE2 Address Calculation
+// ============================================================================
+
+/// Calculate CREATE2 contract address
+/// Formula: keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]
+export fn primitives_calculate_create2_address(
+    sender: *const PrimitivesAddress,
+    salt: *const [32]u8,
+    init_code: [*]const u8,
+    init_code_len: usize,
+    out_address: *PrimitivesAddress,
+) c_int {
+    const sender_addr = primitives.Address{ .bytes = sender.bytes };
+    const salt_u256 = std.mem.readInt(u256, salt, .big);
+    const code = init_code[0..init_code_len];
+
+    var stack_buf: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+    const allocator = fba.allocator();
+
+    const addr = primitives.Address.calculateCreate2Address(
+        allocator,
+        sender_addr,
+        salt_u256,
+        code,
+    ) catch {
+        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+    };
+
+    @memcpy(&out_address.bytes, &addr.bytes);
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
 // Version info
 // ============================================================================
 
