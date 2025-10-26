@@ -280,40 +280,40 @@ test "pairing bilinearity and infinity montgomery" {
     var i: u256 = 0;
     for (test_cases) |test_case| {
         i += 1;
-        const p1 = G1.GENERATOR.mulByInt(test_case.p1);
-        const p2 = G1.GENERATOR.mulByInt(test_case.p2);
-        const q1 = G2.GENERATOR.mulByInt(test_case.q1);
-        const q2 = G2.GENERATOR.mulByInt(test_case.q2);
+        const p1 = try G1.GENERATOR.mulByInt(test_case.p1);
+        const p2 = try G1.GENERATOR.mulByInt(test_case.p2);
+        const q1 = try G2.GENERATOR.mulByInt(test_case.q1);
+        const q2 = try G2.GENERATOR.mulByInt(test_case.q2);
 
         // Test bilinearity in first argument: e(P1 + P2, Q) = e(P1, Q) * e(P2, Q)
         const p1_plus_p2 = p1.add(&p2);
-        const left_side_1 = pairing(&p1_plus_p2, &q1);
-        const e_p1_q1 = pairing(&p1, &q1);
-        const e_p2_q1 = pairing(&p2, &q1);
+        const left_side_1 = try pairing(&p1_plus_p2, &q1);
+        const e_p1_q1 = try pairing(&p1, &q1);
+        const e_p2_q1 = try pairing(&p2, &q1);
         const right_side_1 = e_p1_q1.mul(&e_p2_q1);
         try std.testing.expect(left_side_1.equal(&right_side_1));
 
         // Test bilinearity in second argument: e(P, Q1 + Q2) = e(P, Q1) * e(P, Q2)
         const q1_plus_q2 = q1.add(&q2);
-        const left_side_2 = pairing(&p1, &q1_plus_q2);
-        const e_p1_q2 = pairing(&p1, &q2);
+        const left_side_2 = try pairing(&p1, &q1_plus_q2);
+        const e_p1_q2 = try pairing(&p1, &q2);
         const right_side_2 = e_p1_q1.mul(&e_p1_q2);
         try std.testing.expect(left_side_2.equal(&right_side_2));
 
         // Test scalar multiplication
-        const scalar_times_p1 = p1.mulByInt(test_case.scalar);
-        const left_side_3 = pairing(&scalar_times_p1, &q1);
+        const scalar_times_p1 = try p1.mulByInt(test_case.scalar);
+        const left_side_3 = try pairing(&scalar_times_p1, &q1);
         const right_side_3 = e_p1_q1.pow(test_case.scalar);
         try std.testing.expect(left_side_3.equal(&right_side_3));
     }
 
     //Test infinity properties
-    const result_inf_gen = pairing(&G1.INFINITY, &G2.GENERATOR);
+    const result_inf_gen = try pairing(&G1.INFINITY, &G2.GENERATOR);
     try std.testing.expect(result_inf_gen.equal(&Fp12Mont.ONE));
 
-    const result_gen_inf = pairing(&G1.GENERATOR, &G2.INFINITY);
+    const result_gen_inf = try pairing(&G1.GENERATOR, &G2.INFINITY);
     try std.testing.expect(result_gen_inf.equal(&Fp12Mont.ONE));
 
-    const result_both_inf = pairing(&G1.INFINITY, &G2.INFINITY);
+    const result_both_inf = try pairing(&G1.INFINITY, &G2.INFINITY);
     try std.testing.expect(result_both_inf.equal(&Fp12Mont.ONE));
 }
