@@ -3,19 +3,19 @@ const encoder = new TextEncoder();
 
 // Helper function to convert bytes to hex (inline for benchmark)
 function bytesToHex(bytes: Uint8Array): string {
-	let hex = '0x';
+	let hex = "0x";
 	for (let i = 0; i < bytes.length; i++) {
-		hex += bytes[i].toString(16).padStart(2, '0');
+		hex += bytes[i].toString(16).padStart(2, "0");
 	}
 	return hex;
 }
 
 const testData = {
-	simple: 'Hello, World!',
-	empty: '',
-	unicode: 'Hello 世界 🌍',
-	long: 'a'.repeat(1000),
-	ethMessage: 'Sign this message to authenticate',
+	simple: "Hello, World!",
+	empty: "",
+	unicode: "Hello 世界 🌍",
+	long: "a".repeat(1000),
+	ethMessage: "Sign this message to authenticate",
 };
 
 export function main(): void {

@@ -1,4 +1,4 @@
-import { zeroPadBytes, getBytes } from "ethers";
+import { getBytes, zeroPadBytes } from "ethers";
 
 // Test data: various sizes to pad
 const empty = "0x";

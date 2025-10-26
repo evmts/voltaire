@@ -14,7 +14,7 @@ const testWei8 = 999999999999999999n; // Just under 1 ETH
 // viem returns string, but for consistency we parse to bigint
 function weiToEther(wei: bigint): bigint {
 	const ether = formatEther(wei);
-	return BigInt(Math.floor(parseFloat(ether)));
+	return BigInt(Math.floor(Number.parseFloat(ether)));
 }
 
 export function main(): void {

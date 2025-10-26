@@ -540,9 +540,10 @@ pub fn build(b: *std.Build) void {
     }
 
     // WASM TypeScript bindings - ReleaseSmall for minimal bundle size
+    // Note: Must use wasi (not freestanding) when linking with C libraries that require libc
     const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
-        .os_tag = .freestanding,
+        .os_tag = .wasi,
     });
     addTypeScriptWasmBuild(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 
@@ -569,6 +570,9 @@ pub fn build(b: *std.Build) void {
         const bench_ts_step = b.step("bench-ts", "Run TS benchmarks and generate BENCHMARKS.md");
         bench_ts_step.dependOn(&run_benchmarks.step);
     }
+
+    // TypeScript build, test, and quality steps (wraps package.json scripts)
+    addTypeScriptSteps(b);
 }
 
 fn buildBenchmarks(

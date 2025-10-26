@@ -3,8 +3,8 @@
  * Primary hash function for Ethereum
  */
 
-import { dlopen, FFIType, suffix, ptr } from "bun:ffi";
-import { resolve } from "path";
+import { FFIType, dlopen, ptr, suffix } from "bun:ffi";
+import { resolve } from "node:path";
 
 // Load the C library
 const libPath = resolve(

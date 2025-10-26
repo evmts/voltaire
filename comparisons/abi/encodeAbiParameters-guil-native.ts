@@ -1,7 +1,7 @@
 import {
-	encodeAbiParameters,
 	type AbiParameter,
 	AbiType,
+	encodeAbiParameters,
 } from "../../../src/primitives/abi.js";
 
 // Simple test case: single uint256

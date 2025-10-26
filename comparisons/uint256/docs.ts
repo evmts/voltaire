@@ -745,5 +745,3 @@ comparisons/uint256/
 // Generate and write documentation
 const docs = generateDocs();
 writeFileSync(DOCS_PATH, docs);
-
-console.log(`Documentation generated at ${DOCS_PATH}`);

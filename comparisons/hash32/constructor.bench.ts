@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./constructor/ethers.js";
 import * as guilNative from "./constructor/guil-native.js";
 import * as guilWasm from "./constructor/guil-wasm.js";
-import * as ethers from "./constructor/ethers.js";
 import * as viem from "./constructor/viem.js";
 
 describe("Hash32 constructor", () => {

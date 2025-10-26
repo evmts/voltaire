@@ -4,7 +4,7 @@ const short = "0x01";
 const medium = "0xabcd";
 const thirtyTwo =
 	"0x0000000000000000000000000000000000000000000000000000000000000001";
-const long = "0x" + "ff".repeat(128);
+const long = `0x${"ff".repeat(128)}`;
 
 // Manual size implementation
 function getSize(value: string): number {

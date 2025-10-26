@@ -33,7 +33,9 @@ export async function runBenchmark(
 /**
  * Parse vitest JSON output into our BenchmarkResult format
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: vitest JSON parsing requires branching
 function parseBenchmarkResults(
+	// biome-ignore lint/suspicious/noExplicitAny: vitest JSON is untyped
 	vitestResults: any,
 ): Record<string, BenchmarkResult> {
 	const benchmarks: Record<string, BenchmarkResult> = {};

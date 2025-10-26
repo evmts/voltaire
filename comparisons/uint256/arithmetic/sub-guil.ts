@@ -1,4 +1,4 @@
-import { sub, fromBigInt } from "../../../src/primitives/uint-utils/uint256.js";
+import { fromBigInt, sub } from "../../../src/primitives/uint-utils/uint256.js";
 import type { Uint256 } from "../../../src/primitives/uint-utils/uint256.js";
 
 // Test data - safe values that won't underflow

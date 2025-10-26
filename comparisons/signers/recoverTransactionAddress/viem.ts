@@ -1,6 +1,6 @@
-import { privateKeyToAccount } from "viem/accounts";
-import { signTransaction, recoverTransactionAddress } from "viem";
+import { recoverTransactionAddress, signTransaction } from "viem";
 import type { Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 const testPrivateKey =
 	"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

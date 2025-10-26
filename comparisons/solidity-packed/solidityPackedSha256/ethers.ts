@@ -9,7 +9,11 @@ const create2Values = [
 
 // Signature verification pattern
 const sigTypes = ["string", "address", "uint256"];
-const sigValues = ["Transfer", "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", 100n];
+const sigValues = [
+	"Transfer",
+	"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+	100n,
+];
 
 // Multi-value pattern
 const multiTypes = ["address", "uint256", "bytes32", "bool"];

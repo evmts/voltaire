@@ -10,8 +10,7 @@ export async function generateToQuantityDocs(): Promise<string> {
 			ethers: "./comparisons/number-formatting/toQuantity/ethers.ts",
 			viem: "./comparisons/number-formatting/toQuantity/viem.ts",
 		},
-		benchmarkResultsPath:
-			"./comparisons/number-formatting/toQuantity.bench.ts",
+		benchmarkResultsPath: "./comparisons/number-formatting/toQuantity.bench.ts",
 		includeBundle: true,
 	});
 }
@@ -41,8 +40,7 @@ export async function generateToBeArrayDocs(): Promise<string> {
 			ethers: "./comparisons/number-formatting/toBeArray/ethers.ts",
 			viem: "./comparisons/number-formatting/toBeArray/viem.ts",
 		},
-		benchmarkResultsPath:
-			"./comparisons/number-formatting/toBeArray.bench.ts",
+		benchmarkResultsPath: "./comparisons/number-formatting/toBeArray.bench.ts",
 		includeBundle: true,
 	});
 }
@@ -129,5 +127,4 @@ ${sections.join("\n\n---\n\n")}`;
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateAllNumberFormattingDocs();
-	console.log(docs);
 }

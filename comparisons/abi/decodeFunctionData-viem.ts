@@ -1,4 +1,4 @@
-import { encodeFunctionData, decodeFunctionData } from "viem";
+import { decodeFunctionData, encodeFunctionData } from "viem";
 
 // Simple function: transfer(address,uint256)
 const transferAbi = [

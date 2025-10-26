@@ -1,4 +1,4 @@
-import { toBigInt, toBeHex } from "ethers";
+import { toBeHex, toBigInt } from "ethers";
 
 // Test data covering edge cases
 const testValues = [

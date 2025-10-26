@@ -10,7 +10,8 @@ export async function generateStringToBytesDocs(): Promise<string> {
 			ethers: "./comparisons/string-encoding/stringToBytes/ethers.ts",
 			viem: "./comparisons/string-encoding/stringToBytes/viem.ts",
 		},
-		benchmarkResultsPath: "./comparisons/string-encoding/stringToBytes.bench.ts",
+		benchmarkResultsPath:
+			"./comparisons/string-encoding/stringToBytes.bench.ts",
 		includeBundle: true,
 	});
 }
@@ -25,7 +26,8 @@ export async function generateBytesToStringDocs(): Promise<string> {
 			ethers: "./comparisons/string-encoding/bytesToString/ethers.ts",
 			viem: "./comparisons/string-encoding/bytesToString/viem.ts",
 		},
-		benchmarkResultsPath: "./comparisons/string-encoding/bytesToString.bench.ts",
+		benchmarkResultsPath:
+			"./comparisons/string-encoding/bytesToString.bench.ts",
 		includeBundle: true,
 	});
 }
@@ -74,5 +76,4 @@ export async function generateAllStringEncodingDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateAllStringEncodingDocs();
-	console.log(docs);
 }

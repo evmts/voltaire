@@ -1,4 +1,4 @@
-import { Wallet, Transaction } from "ethers";
+import { Transaction, Wallet } from "ethers";
 
 const testPrivateKey =
 	"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

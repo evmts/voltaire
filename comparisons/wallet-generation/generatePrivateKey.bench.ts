@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./generatePrivateKey/ethers.js";
 import * as guilNative from "./generatePrivateKey/guil-native.js";
 import * as guilWasm from "./generatePrivateKey/guil-wasm.js";
-import * as ethers from "./generatePrivateKey/ethers.js";
 import * as viem from "./generatePrivateKey/viem.js";
 
 describe("wallet.generatePrivateKey", () => {

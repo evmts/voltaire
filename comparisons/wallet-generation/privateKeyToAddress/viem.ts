@@ -1,5 +1,5 @@
-import { privateKeyToAccount } from "viem/accounts";
 import type { Hex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 // Test private key - DO NOT use in production
 const testPrivateKey: Hex =

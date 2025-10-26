@@ -15,7 +15,7 @@ function padRight(value: string, size: number): string {
 	if (hex.length >= targetLength) {
 		return value;
 	}
-	return "0x" + hex + "0".repeat(targetLength - hex.length);
+	return `0x${hex}${"0".repeat(targetLength - hex.length)}`;
 }
 
 export function main(): void {

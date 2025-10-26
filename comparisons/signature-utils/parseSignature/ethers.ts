@@ -1,7 +1,7 @@
 import { Signature } from "ethers";
 import {
-	CANONICAL_SIGNATURE_HEX,
 	CANONICAL_SIGNATURE_BYTES,
+	CANONICAL_SIGNATURE_HEX,
 	SIGNATURE_V0_HEX,
 	SIGNATURE_V27_HEX,
 	SIGNATURE_V28_HEX,
@@ -19,11 +19,9 @@ function parseSignature(signature: string | Uint8Array): {
 		if (typeof signature === "string") {
 			input = signature;
 		} else {
-			input =
-				"0x" +
-				Array.from(signature)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			input = `0x${Array.from(signature)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 		}
 
 		const sig = Signature.from(input);
@@ -38,18 +36,16 @@ function parseSignature(signature: string | Uint8Array): {
 		if (typeof signature === "string") {
 			hex = signature;
 		} else {
-			hex =
-				"0x" +
-				Array.from(signature)
-					.map((b) => b.toString(16).padStart(2, "0"))
-					.join("");
+			hex = `0x${Array.from(signature)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("")}`;
 		}
 
 		const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 		if (normalized.length !== 130) throw new Error("Invalid signature length");
 
-		const r = "0x" + normalized.slice(0, 64);
-		const s = "0x" + normalized.slice(64, 128);
+		const r = `0x${normalized.slice(0, 64)}`;
+		const s = `0x${normalized.slice(64, 128)}`;
 		const v = Number.parseInt(normalized.slice(128, 130), 16);
 
 		return { r, s, v };

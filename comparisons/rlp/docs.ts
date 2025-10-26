@@ -92,25 +92,4 @@ export async function generateRlpFromHexDocs(): Promise<string> {
 
 // Allow running directly to generate all docs
 if (import.meta.url === `file://${process.argv[1]}`) {
-	console.log("# RLP Benchmarks\n");
-	console.log(
-		"Comprehensive performance comparison of RLP encoding and decoding functions across guil, ethers, and viem.\n",
-	);
-
-	console.log(await generateRlpEncodeDocs());
-	console.log("\n---\n");
-
-	console.log(await generateRlpDecodeDocs());
-	console.log("\n---\n");
-
-	console.log(await generateRlpEncodeListDocs());
-	console.log("\n---\n");
-
-	console.log(await generateRlpEncodeUintDocs());
-	console.log("\n---\n");
-
-	console.log(await generateRlpToHexDocs());
-	console.log("\n---\n");
-
-	console.log(await generateRlpFromHexDocs());
 }

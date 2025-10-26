@@ -1,4 +1,4 @@
-import { mul, fromBigInt } from "../../../src/primitives/uint-utils/uint256.js";
+import { fromBigInt, mul } from "../../../src/primitives/uint-utils/uint256.js";
 import type { Uint256 } from "../../../src/primitives/uint-utils/uint256.js";
 
 // Test data - safe values that won't overflow

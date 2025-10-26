@@ -7,10 +7,14 @@ export async function generateSolidityPackedDocs(): Promise<string> {
 	allDocs += "## Overview\n\n";
 	allDocs +=
 		"Solidity packed hashing combines `abi.encodePacked()` with cryptographic hash functions. These utilities are essential for:\n\n";
-	allDocs += "- **CREATE2 Address Calculation**: Deterministic contract deployment addresses\n";
-	allDocs += "- **Merkle Tree Construction**: Efficient verification of large datasets\n";
-	allDocs += "- **Signature Verification**: Hash messages before signing/verification\n";
-	allDocs += "- **Cross-Chain Message Hashing**: Consistent message identification\n\n";
+	allDocs +=
+		"- **CREATE2 Address Calculation**: Deterministic contract deployment addresses\n";
+	allDocs +=
+		"- **Merkle Tree Construction**: Efficient verification of large datasets\n";
+	allDocs +=
+		"- **Signature Verification**: Hash messages before signing/verification\n";
+	allDocs +=
+		"- **Cross-Chain Message Hashing**: Consistent message identification\n\n";
 	allDocs +=
 		"**Key Difference**: Ethers provides these as single convenience functions, while viem and guil require manual composition of `encodePacked()` and hash functions. This benchmark measures the performance difference between convenience and flexibility.\n\n";
 	allDocs += "---\n\n";
@@ -45,7 +49,7 @@ export async function generateSolidityPackedDocs(): Promise<string> {
 				benchmarkResultsPath: `./comparisons/solidity-packed/${func.name}/${func.name}.bench.ts`,
 				includeBundle: false,
 			});
-			allDocs += funcDocs + "\n\n---\n\n";
+			allDocs += `${funcDocs}\n\n---\n\n`;
 		} catch (error) {
 			allDocs += `*Documentation generation failed: ${error}*\n\n---\n\n`;
 		}
@@ -57,5 +61,4 @@ export async function generateSolidityPackedDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateSolidityPackedDocs();
-	console.log(docs);
 }

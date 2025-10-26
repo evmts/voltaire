@@ -68,7 +68,7 @@ export async function generateAbiDocs(): Promise<string> {
 				benchmarkResultsPath: `./comparisons/abi/${func.name}.bench.ts`,
 				includeBundle: false,
 			});
-			allDocs += funcDocs + "\n\n---\n\n";
+			allDocs += `${funcDocs}\n\n---\n\n`;
 		} catch (error) {
 			allDocs += `*Documentation generation failed: ${error}*\n\n---\n\n`;
 		}
@@ -80,5 +80,4 @@ export async function generateAbiDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateAbiDocs();
-	console.log(docs);
 }

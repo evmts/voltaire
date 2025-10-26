@@ -1,13 +1,14 @@
+import starlight from "@astrojs/starlight";
 // @ts-check
 import { defineConfig } from "astro/config";
-import starlight from "@astrojs/starlight";
 
 // https://astro.build/config
 export default defineConfig({
 	integrations: [
 		starlight({
 			title: "Primitives Library",
-			description: "Ethereum primitives and cryptographic operations for TypeScript and Zig",
+			description:
+				"Ethereum primitives and cryptographic operations for TypeScript and Zig",
 			social: [
 				{
 					icon: "github",

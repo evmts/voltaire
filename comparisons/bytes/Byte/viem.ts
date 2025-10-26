@@ -1,4 +1,4 @@
-import { toHex, numberToHex } from "viem";
+import { numberToHex, toHex } from "viem";
 
 // Test data: various byte values
 const hexValues = ["0x00", "0xff", "0x7f", "0x80"] as const;

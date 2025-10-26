@@ -1,4 +1,4 @@
-import { type Hex, isHex, hexToBytes, bytesToHex } from "viem";
+import { type Hex, bytesToHex, hexToBytes, isHex } from "viem";
 
 const testHash: Hex =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";

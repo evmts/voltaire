@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./toChecksumHex/ethers.js";
 import * as guilNative from "./toChecksumHex/guil-native.js";
 import * as guilWasm from "./toChecksumHex/guil-wasm.js";
-import * as ethers from "./toChecksumHex/ethers.js";
 import * as viem from "./toChecksumHex/viem.js";
 
 describe("address.toChecksumHex", () => {

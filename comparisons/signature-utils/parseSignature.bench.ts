@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./parseSignature/ethers.js";
 import * as guilNative from "./parseSignature/guil-native.js";
 import * as guilWasm from "./parseSignature/guil-wasm.js";
-import * as ethers from "./parseSignature/ethers.js";
 import * as viem from "./parseSignature/viem.js";
 
 describe("parseSignature", () => {

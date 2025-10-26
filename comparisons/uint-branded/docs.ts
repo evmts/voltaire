@@ -96,5 +96,4 @@ ${sections.join("\n\n---\n\n")}`;
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateAllUintBrandedDocs();
-	console.log(docs);
 }

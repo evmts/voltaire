@@ -1,8 +1,8 @@
 // Import directly to avoid hex.ts FFI issues in Node.js benchmarks
 import {
-	SIMPLE_BYTECODE,
 	COMPLEX_BYTECODE,
 	LARGE_BYTECODE,
+	SIMPLE_BYTECODE,
 	TRUNCATED_PUSH,
 } from "../test-data.js";
 

@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./encodeAbiParameters-ethers.js";
 import * as guilNative from "./encodeAbiParameters-guil-native.js";
 import * as guilWasm from "./encodeAbiParameters-guil-wasm.js";
-import * as ethers from "./encodeAbiParameters-ethers.js";
 import * as viem from "./encodeAbiParameters-viem.js";
 
 describe("encodeAbiParameters", () => {

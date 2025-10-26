@@ -1,4 +1,4 @@
-import { pow, fromBigInt } from "../../../src/primitives/uint-utils/uint256.js";
+import { fromBigInt, pow } from "../../../src/primitives/uint-utils/uint256.js";
 import type { Uint256 } from "../../../src/primitives/uint-utils/uint256.js";
 
 // Test data - small exponents to avoid overflow

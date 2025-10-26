@@ -18,5 +18,4 @@ export async function generateKeccak256Docs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateKeccak256Docs();
-	console.log(docs);
 }

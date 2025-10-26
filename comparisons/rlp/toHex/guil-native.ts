@@ -1,4 +1,7 @@
-import { encodeBytes, toHex } from "../../../src/typescript/native/primitives/rlp.native.js";
+import {
+	encodeBytes,
+	toHex,
+} from "../../../src/typescript/native/primitives/rlp.native.js";
 
 // Test data: byte arrays to encode
 const testBytes1 = new Uint8Array([0x12, 0x34]);

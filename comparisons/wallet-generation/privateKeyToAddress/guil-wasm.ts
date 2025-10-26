@@ -1,5 +1,5 @@
-import { secp256k1PubkeyFromPrivate } from "../../../src/typescript/wasm/primitives/signature.wasm";
 import { Hash } from "../../../src/typescript/wasm/primitives/keccak.wasm";
+import { secp256k1PubkeyFromPrivate } from "../../../src/typescript/wasm/primitives/signature.wasm";
 
 // Test private key - DO NOT use in production
 const testPrivateKey =
@@ -7,7 +7,9 @@ const testPrivateKey =
 
 export function main(): string {
 	// Get uncompressed public key (64 bytes)
-	const privateKeyBytes = new Uint8Array(Buffer.from(testPrivateKey.slice(2), "hex"));
+	const privateKeyBytes = new Uint8Array(
+		Buffer.from(testPrivateKey.slice(2), "hex"),
+	);
 	const publicKeyBytes = secp256k1PubkeyFromPrivate(privateKeyBytes);
 
 	// Hash the public key

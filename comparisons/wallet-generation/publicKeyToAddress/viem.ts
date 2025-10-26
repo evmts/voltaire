@@ -1,5 +1,5 @@
-import { publicKeyToAddress } from "viem/utils";
 import type { Hex } from "viem";
+import { publicKeyToAddress } from "viem/utils";
 
 // Test uncompressed public key derived from test private key
 const testPublicKey: Hex =

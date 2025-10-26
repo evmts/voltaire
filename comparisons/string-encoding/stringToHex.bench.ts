@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./stringToHex/ethers.js";
 import * as guilNative from "./stringToHex/guil-native.js";
 import * as guilWasm from "./stringToHex/guil-wasm.js";
-import * as ethers from "./stringToHex/ethers.js";
 import * as viem from "./stringToHex/viem.js";
 
 describe("stringToHex", () => {

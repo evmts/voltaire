@@ -1,7 +1,7 @@
 import {
-	encodePacked,
 	type AbiParameter,
 	AbiType,
+	encodePacked,
 } from "../../src/primitives/abi.js";
 
 // Test cases for packed encoding

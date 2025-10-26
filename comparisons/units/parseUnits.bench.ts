@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./parseUnits-ethers.js";
 import * as guilNative from "./parseUnits-guil-native.js";
 import * as guilWasm from "./parseUnits-guil-wasm.js";
-import * as ethers from "./parseUnits-ethers.js";
 import * as viem from "./parseUnits-viem.js";
 
 describe("parseUnits", () => {

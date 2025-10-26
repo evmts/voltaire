@@ -19,5 +19,4 @@ export async function generateRecoverTransactionAddressDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateRecoverTransactionAddressDocs();
-	console.log(docs);
 }

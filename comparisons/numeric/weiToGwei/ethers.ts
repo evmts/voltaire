@@ -14,7 +14,7 @@ const testWei8 = 0n; // Zero wei
 // ethers returns string, but for consistency we parse to bigint
 function weiToGwei(wei: bigint): bigint {
 	const gwei = formatUnits(wei, "gwei");
-	return BigInt(Math.floor(parseFloat(gwei)));
+	return BigInt(Math.floor(Number.parseFloat(gwei)));
 }
 
 export function main(): void {

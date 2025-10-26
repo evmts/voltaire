@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./Byte/ethers.js";
 import * as guilNative from "./Byte/guil-native.js";
 import * as guilWasm from "./Byte/guil-wasm.js";
-import * as ethers from "./Byte/ethers.js";
 import * as viem from "./Byte/viem.js";
 
 describe("Byte constructor", () => {

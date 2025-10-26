@@ -1,12 +1,12 @@
 import {
-	UINT_ZERO,
-	UINT_ONE,
 	UINT_MAX_U8,
 	UINT_MAX_U16,
 	UINT_MAX_U32,
 	UINT_MAX_U64,
 	UINT_MAX_U128,
 	UINT_MAX_U256,
+	UINT_ONE,
+	UINT_ZERO,
 } from "../../../wasm/primitives/branded-types/uint.js";
 
 export function main(): void {

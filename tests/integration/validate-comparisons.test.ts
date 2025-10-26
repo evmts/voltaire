@@ -3,9 +3,9 @@
  * Ensures all comparison implementations exist and can be imported without errors
  */
 
-import { test, expect, describe } from "bun:test";
-import { readdirSync, statSync, existsSync } from "fs";
-import { join } from "path";
+import { describe, expect, test } from "bun:test";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 const COMPARISONS_DIR = join(import.meta.dir, "../../comparisons");
 
@@ -51,8 +51,8 @@ describe("Comparison files validation", () => {
 	test("all expected categories exist", () => {
 		const allCategories = [...FFI_CATEGORIES, ...JS_CATEGORIES];
 		const dirs = readdirSync(COMPARISONS_DIR, { withFileTypes: true })
-			.filter(d => d.isDirectory() && d.name !== "shared")
-			.map(d => d.name);
+			.filter((d) => d.isDirectory() && d.name !== "shared")
+			.map((d) => d.name);
 
 		for (const category of allCategories) {
 			expect(dirs).toContain(category);
@@ -71,7 +71,9 @@ describe("Comparison files validation", () => {
 				if (!existsSync(categoryDir)) return;
 
 				const files = readdirSync(categoryDir, { recursive: true }) as string[];
-				const benchFiles = files.filter(f => typeof f === 'string' && f.endsWith(".bench.ts"));
+				const benchFiles = files.filter(
+					(f) => typeof f === "string" && f.endsWith(".bench.ts"),
+				);
 
 				expect(benchFiles.length).toBeGreaterThan(0);
 			});
@@ -80,8 +82,8 @@ describe("Comparison files validation", () => {
 				if (!existsSync(categoryDir)) return;
 
 				const files = readdirSync(categoryDir, { recursive: true }) as string[];
-				const nativeFiles = files.filter(f =>
-					typeof f === 'string' && f.includes("guil-native")
+				const nativeFiles = files.filter(
+					(f) => typeof f === "string" && f.includes("guil-native"),
 				);
 
 				// Most FFI categories should have native implementations
@@ -105,8 +107,10 @@ describe("Comparison files validation", () => {
 				if (!existsSync(categoryDir)) return;
 
 				const files = readdirSync(categoryDir, { recursive: true }) as string[];
-				const comparisonFiles = files.filter(f =>
-					typeof f === 'string' && (f.endsWith(".bench.ts") || f.endsWith(".ts"))
+				const comparisonFiles = files.filter(
+					(f) =>
+						typeof f === "string" &&
+						(f.endsWith(".bench.ts") || f.endsWith(".ts")),
 				);
 
 				expect(comparisonFiles.length).toBeGreaterThan(0);
@@ -117,8 +121,12 @@ describe("Comparison files validation", () => {
 
 describe("Benchmark file structure", () => {
 	test("benchmark files follow naming convention", () => {
-		const allFiles = readdirSync(COMPARISONS_DIR, { recursive: true }) as string[];
-		const benchFiles = allFiles.filter(f => typeof f === 'string' && f.endsWith(".bench.ts"));
+		const allFiles = readdirSync(COMPARISONS_DIR, {
+			recursive: true,
+		}) as string[];
+		const benchFiles = allFiles.filter(
+			(f) => typeof f === "string" && f.endsWith(".bench.ts"),
+		);
 
 		for (const file of benchFiles) {
 			// Should end with .bench.ts
@@ -134,7 +142,9 @@ describe("Benchmark file structure", () => {
 			if (!existsSync(categoryDir)) continue;
 
 			const files = readdirSync(categoryDir, { recursive: true }) as string[];
-			const benchFiles = files.filter(f => typeof f === 'string' && f.endsWith(".bench.ts"));
+			const benchFiles = files.filter(
+				(f) => typeof f === "string" && f.endsWith(".bench.ts"),
+			);
 
 			for (const benchFile of benchFiles) {
 				// Extract benchmark name (e.g., "fromHex" from "fromHex.bench.ts")
@@ -165,10 +175,11 @@ describe("Implementation file validation", () => {
 				if (!existsSync(categoryDir)) return;
 
 				const files = readdirSync(categoryDir, { recursive: true }) as string[];
-				const nativeFiles = files.filter(f =>
-					typeof f === 'string' &&
-					f.includes("guil-native.ts") &&
-					!f.includes(".bench.ts")
+				const nativeFiles = files.filter(
+					(f) =>
+						typeof f === "string" &&
+						f.includes("guil-native.ts") &&
+						!f.includes(".bench.ts"),
 				);
 
 				for (const file of nativeFiles) {
@@ -185,8 +196,12 @@ describe("Implementation file validation", () => {
 				const files = readdirSync(categoryDir, { recursive: true }) as string[];
 
 				// Should have implementations for common libraries
-				const hasEthers = files.some(f => typeof f === 'string' && f.includes("ethers"));
-				const hasViem = files.some(f => typeof f === 'string' && f.includes("viem"));
+				const hasEthers = files.some(
+					(f) => typeof f === "string" && f.includes("ethers"),
+				);
+				const hasViem = files.some(
+					(f) => typeof f === "string" && f.includes("viem"),
+				);
 
 				// At least one comparison library should be present
 				expect(hasEthers || hasViem).toBe(true);
@@ -197,13 +212,7 @@ describe("Implementation file validation", () => {
 
 describe("Documentation files", () => {
 	test("categories have documentation", () => {
-		const majorCategories = [
-			"abi",
-			"address",
-			"bytecode",
-			"keccak256",
-			"rlp",
-		];
+		const majorCategories = ["abi", "address", "bytecode", "keccak256", "rlp"];
 
 		for (const category of majorCategories) {
 			const categoryDir = join(COMPARISONS_DIR, category);
@@ -212,11 +221,12 @@ describe("Documentation files", () => {
 			const files = readdirSync(categoryDir);
 
 			// Should have either RESULTS.md or BENCHMARKS.md or docs.ts
-			const hasDocs = files.some(f =>
-				f === "RESULTS.md" ||
-				f === "BENCHMARKS.md" ||
-				f === "docs.ts" ||
-				f === "README.md"
+			const hasDocs = files.some(
+				(f) =>
+					f === "RESULTS.md" ||
+					f === "BENCHMARKS.md" ||
+					f === "docs.ts" ||
+					f === "README.md",
 			);
 
 			expect(hasDocs).toBe(true);
@@ -254,14 +264,17 @@ describe("Benchmark infrastructure", () => {
 
 describe("Native module integration", () => {
 	test("native module directory exists", () => {
-		const nativeDir = join(import.meta.dir, "../../src/typescript/native/primitives");
+		const nativeDir = join(
+			import.meta.dir,
+			"../../src/typescript/native/primitives",
+		);
 		expect(existsSync(nativeDir)).toBe(true);
 	});
 
 	test("native modules export expected functions", async () => {
 		const indexPath = join(
 			import.meta.dir,
-			"../../src/typescript/native/primitives/index.ts"
+			"../../src/typescript/native/primitives/index.ts",
 		);
 		expect(existsSync(indexPath)).toBe(true);
 
@@ -297,7 +310,7 @@ describe("Shared utilities", () => {
 
 		const files = readdirSync(sharedDir);
 		// Should have TypeScript files for shared utilities
-		const tsFiles = files.filter(f => f.endsWith(".ts"));
+		const tsFiles = files.filter((f) => f.endsWith(".ts"));
 		expect(tsFiles.length).toBeGreaterThan(0);
 	});
 });

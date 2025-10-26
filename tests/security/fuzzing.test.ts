@@ -3,28 +3,28 @@
  * Tests with random and malformed inputs to find crashes and vulnerabilities
  */
 
-import { test, expect, describe } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { Address as NativeAddress } from "../../src/typescript/native/primitives/address.native";
-import { Address as WasmAddress } from "../../src/typescript/wasm/primitives/address.wasm";
 import {
 	analyzeJumpDestinations as nativeAnalyzeJumpDestinations,
-	validateBytecode as nativeValidateBytecode,
 	isBytecodeBoundary as nativeIsBytecodeBoundary,
 	isValidJumpDest as nativeIsValidJumpDest,
+	validateBytecode as nativeValidateBytecode,
 } from "../../src/typescript/native/primitives/bytecode.native";
-import {
-	analyzeJumpDestinations as wasmAnalyzeJumpDestinations,
-	validateBytecode as wasmValidateBytecode,
-	isBytecodeBoundary as wasmIsBytecodeBoundary,
-	isValidJumpDest as wasmIsValidJumpDest,
-} from "../../src/typescript/wasm/primitives/bytecode.wasm";
 import { Hash as NativeHash } from "../../src/typescript/native/primitives/keccak.native";
-import { Hash as WasmHash } from "../../src/typescript/wasm/primitives/keccak.wasm";
 import {
 	encodeBytes as nativeEncodeBytes,
 	encodeUintFromBigInt as nativeEncodeUintFromBigInt,
 	fromHex as nativeRlpFromHex,
 } from "../../src/typescript/native/primitives/rlp.native";
+import { Address as WasmAddress } from "../../src/typescript/wasm/primitives/address.wasm";
+import {
+	analyzeJumpDestinations as wasmAnalyzeJumpDestinations,
+	isBytecodeBoundary as wasmIsBytecodeBoundary,
+	isValidJumpDest as wasmIsValidJumpDest,
+	validateBytecode as wasmValidateBytecode,
+} from "../../src/typescript/wasm/primitives/bytecode.wasm";
+import { Hash as WasmHash } from "../../src/typescript/wasm/primitives/keccak.wasm";
 import {
 	encodeBytes as wasmEncodeBytes,
 	encodeUintFromBigInt as wasmEncodeUintFromBigInt,
@@ -45,12 +45,9 @@ function randomBytes(length: number): Uint8Array {
  */
 function randomHex(length: number): string {
 	const bytes = randomBytes(length);
-	return (
-		"0x" +
-		Array.from(bytes)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 /**
@@ -137,7 +134,7 @@ describe("Address fuzzing", () => {
 			"0x",
 			"0xGGGG",
 			"0x123", // too short
-			"0x" + "F".repeat(41), // too long
+			`0x${"F".repeat(41)}`, // too long
 			"0x-1234567890123456789012345678901234567890",
 			"", // empty
 			" ", // whitespace
@@ -158,7 +155,7 @@ describe("Address fuzzing", () => {
 			"0x",
 			"0xGGGG",
 			"0x123",
-			"0x" + "F".repeat(41),
+			`0x${"F".repeat(41)}`,
 			"0x-1234567890123456789012345678901234567890",
 			"",
 			" ",
@@ -316,8 +313,12 @@ describe("Bytecode fuzzing", () => {
 
 			expect(nativeJumps.length).toBe(wasmJumps.length);
 
-			const nativePositions = nativeJumps.map((j) => j.position).sort((a, b) => a - b);
-			const wasmPositions = wasmJumps.map((j) => j.position).sort((a, b) => a - b);
+			const nativePositions = nativeJumps
+				.map((j) => j.position)
+				.sort((a, b) => a - b);
+			const wasmPositions = wasmJumps
+				.map((j) => j.position)
+				.sort((a, b) => a - b);
 
 			expect(nativePositions).toEqual(wasmPositions);
 		}
@@ -352,9 +353,7 @@ describe("RLP fuzzing", () => {
 	test("native RLP encoding handles random uint256 values", () => {
 		for (let i = 0; i < 1000; i++) {
 			// Generate random bigint up to 2^256 - 1
-			const randomBigint = BigInt(
-				`0x${randomHex(32).slice(2)}`,
-			);
+			const randomBigint = BigInt(`0x${randomHex(32).slice(2)}`);
 
 			expect(() => {
 				const encoded = nativeEncodeUintFromBigInt(randomBigint);
@@ -365,9 +364,7 @@ describe("RLP fuzzing", () => {
 
 	test("wasm RLP encoding handles random uint256 values", () => {
 		for (let i = 0; i < 1000; i++) {
-			const randomBigint = BigInt(
-				`0x${randomHex(32).slice(2)}`,
-			);
+			const randomBigint = BigInt(`0x${randomHex(32).slice(2)}`);
 
 			expect(() => {
 				const encoded = wasmEncodeUintFromBigInt(randomBigint);

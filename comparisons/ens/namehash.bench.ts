@@ -1,6 +1,6 @@
 import { bench, describe } from "vitest";
-import * as guil from "./namehash/guil.js";
 import * as ethers from "./namehash/ethers.js";
+import * as guil from "./namehash/guil.js";
 import * as viem from "./namehash/viem.js";
 
 describe("namehash", () => {

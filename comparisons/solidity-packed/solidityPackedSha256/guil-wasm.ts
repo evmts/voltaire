@@ -1,9 +1,15 @@
 import { sha256 } from "@noble/hashes/sha256";
-import { encodePacked, type AbiParameter, AbiType } from "../../../wasm/primitives/abi.js";
+import {
+	type AbiParameter,
+	AbiType,
+	encodePacked,
+} from "../../../wasm/primitives/abi.js";
 
 // Helper to convert Uint8Array to hex string
 function bytesToHex(bytes: Uint8Array): string {
-	return `0x${Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(bytes)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 // CREATE2 address calculation pattern
@@ -22,7 +28,11 @@ const sigParams: AbiParameter[] = [
 	{ type: AbiType.Address, name: "to" },
 	{ type: AbiType.Uint256, name: "amount" },
 ];
-const sigValues = ["Transfer", "0x742d35cc6634c0532925a3b844bc9e7595f0beb1", 100n];
+const sigValues = [
+	"Transfer",
+	"0x742d35cc6634c0532925a3b844bc9e7595f0beb1",
+	100n,
+];
 
 // Multi-value pattern
 const multiParams: AbiParameter[] = [

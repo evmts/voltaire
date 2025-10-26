@@ -36,8 +36,7 @@ export async function generateWalletGenerationDocs(): Promise<string> {
 	markdown +=
 		"- Public key derivation from private keys (secp256k1 elliptic curve)\n";
 	markdown += "- Ethereum address derivation (keccak256 hash of public key)\n";
-	markdown +=
-		"- Combined private key to address conversion (optimized path)\n";
+	markdown += "- Combined private key to address conversion (optimized path)\n";
 	markdown +=
 		"- Public key compression (converting 65-byte uncompressed to 33-byte compressed format)\n\n";
 
@@ -76,7 +75,8 @@ export async function generateWalletGenerationDocs(): Promise<string> {
 		"- Performs elliptic curve point multiplication: `PublicKey = PrivateKey × G`\n";
 	markdown +=
 		"- Returns uncompressed format: `0x04 + x-coordinate (32 bytes) + y-coordinate (32 bytes)`\n";
-	markdown += "- This is a deterministic operation (same input = same output)\n\n";
+	markdown +=
+		"- This is a deterministic operation (same input = same output)\n\n";
 	markdown += "**Implementation Notes:**\n";
 	markdown +=
 		"- **Guil**: Uses `@noble/curves` - `secp256k1.getPublicKey(privateKey, false)`\n";
@@ -88,8 +88,7 @@ export async function generateWalletGenerationDocs(): Promise<string> {
 		description: "Derive uncompressed public key from private key",
 		implementationFiles: {
 			guil: "./comparisons/wallet-generation/privateKeyToPublicKey/guil.ts",
-			ethers:
-				"./comparisons/wallet-generation/privateKeyToPublicKey/ethers.ts",
+			ethers: "./comparisons/wallet-generation/privateKeyToPublicKey/ethers.ts",
 			viem: "./comparisons/wallet-generation/privateKeyToPublicKey/viem.ts",
 		},
 		benchmarkResultsPath:
@@ -178,8 +177,7 @@ export async function generateWalletGenerationDocs(): Promise<string> {
 		"- **Guil**: Uses `@noble/curves` - `ProjectivePoint.fromHex().toHex(true)`\n";
 	markdown +=
 		"- **Ethers**: Uses `SigningKey.computePublicKey(publicKey, true)`\n";
-	markdown +=
-		"- **Viem**: Not exposed, uses `@noble/curves` internally\n\n";
+	markdown += "- **Viem**: Not exposed, uses `@noble/curves` internally\n\n";
 	markdown += await generateDocs({
 		category: "compressPublicKey",
 		description: "Convert uncompressed to compressed public key",
@@ -214,8 +212,7 @@ export async function generateWalletGenerationDocs(): Promise<string> {
 		"All implementations ultimately depend on well-audited cryptographic libraries:\n\n";
 	markdown +=
 		"- **@noble/curves**: Pure TypeScript secp256k1 implementation (used by guil and viem)\n";
-	markdown +=
-		"- **@noble/hashes**: Pure TypeScript keccak256 implementation\n";
+	markdown += "- **@noble/hashes**: Pure TypeScript keccak256 implementation\n";
 	markdown +=
 		"- **Ethers**: Uses platform-specific crypto APIs when available, with fallbacks\n\n";
 
@@ -237,5 +234,4 @@ export async function generateWalletGenerationDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateWalletGenerationDocs();
-	console.log(docs);
 }

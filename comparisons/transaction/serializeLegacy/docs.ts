@@ -13,5 +13,3 @@ const docs = await generateDocs({
 		"./comparisons/transaction/serializeLegacy/serializeLegacy.bench.ts",
 	includeBundle: true,
 });
-
-console.log(docs);

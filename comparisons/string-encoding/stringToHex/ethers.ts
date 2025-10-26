@@ -1,11 +1,11 @@
 import { hexlify, toUtf8Bytes } from "ethers";
 
 const testData = {
-	simple: 'Hello, World!',
-	empty: '',
-	unicode: 'Hello 世界 🌍',
-	long: 'a'.repeat(1000),
-	ethMessage: 'Sign this message to authenticate',
+	simple: "Hello, World!",
+	empty: "",
+	unicode: "Hello 世界 🌍",
+	long: "a".repeat(1000),
+	ethMessage: "Sign this message to authenticate",
 };
 
 export function main(): void {

@@ -21,5 +21,6 @@ const complexValues = [
 export function main(): void {
 	// Run both simple and complex encodings
 	encodeAbiParameters(simpleParams, simpleValues);
+	// biome-ignore lint/suspicious/noExplicitAny: viem type compatibility
 	encodeAbiParameters(complexParams, complexValues as any);
 }

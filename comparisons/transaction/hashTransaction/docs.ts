@@ -13,5 +13,3 @@ const docs = await generateDocs({
 		"./comparisons/transaction/hashTransaction/hashTransaction.bench.ts",
 	includeBundle: true,
 });
-
-console.log(docs);

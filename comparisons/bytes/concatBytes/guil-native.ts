@@ -7,8 +7,8 @@ import {
 const part1 = Bytes("0xff");
 const part2 = Bytes("0xaa");
 const part3 = Bytes("0x1234");
-const part4 = Bytes("0x" + "00".repeat(32));
-const part5 = Bytes("0x" + "ff".repeat(64));
+const part4 = Bytes(`0x${"00".repeat(32)}`);
+const part5 = Bytes(`0x${"ff".repeat(64)}`);
 
 export function main(): void {
 	// Two parts

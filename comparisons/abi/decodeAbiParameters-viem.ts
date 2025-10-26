@@ -1,4 +1,4 @@
-import { encodeAbiParameters, decodeAbiParameters } from "viem";
+import { decodeAbiParameters, encodeAbiParameters } from "viem";
 
 // Simple test case: single uint256
 const simpleParams = [{ type: "uint256", name: "value" }] as const;
@@ -18,6 +18,7 @@ const complexValues = [
 	[100n, 200n, 300n],
 	"Hello, Ethereum!",
 ];
+// biome-ignore lint/suspicious/noExplicitAny: viem type compatibility
 const complexEncoded = encodeAbiParameters(complexParams, complexValues as any);
 
 export function main(): void {

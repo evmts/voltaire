@@ -53,5 +53,4 @@ export async function generateEip712Docs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateEip712Docs();
-	console.log(docs);
 }

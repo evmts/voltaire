@@ -1,9 +1,9 @@
 import { Signature } from "ethers";
 import {
-	SIGNATURE_R_HEX,
-	SIGNATURE_S_HEX,
 	SIGNATURE_R_BYTES,
+	SIGNATURE_R_HEX,
 	SIGNATURE_S_BYTES,
+	SIGNATURE_S_HEX,
 	SIGNATURE_V,
 } from "../test-data.ts";
 

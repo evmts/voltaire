@@ -11,48 +11,25 @@
  */
 
 import {
-	hashMessage,
-	hashTypedData,
-	hashDomain,
 	type TypedData,
 	type TypedDataDomain,
+	hashDomain,
+	hashMessage,
+	hashTypedData,
 } from "../src/crypto/index.ts";
-
-// =============================================================================
-// EIP-191 Personal Message Signing
-// =============================================================================
-
-console.log("=== EIP-191 Personal Message Signing ===\n");
 
 // Example 1: Hash a simple text message
 const message1 = "Hello, Ethereum!";
 const hash1 = hashMessage(message1);
-console.log(`Message: "${message1}"`);
-console.log(`Hash: ${hash1}`);
-console.log();
 
 // Example 2: Hash a message from bytes
 const message2 = new TextEncoder().encode("Sign this message");
 const hash2 = hashMessage(message2);
-console.log("Message (from Uint8Array):", new TextDecoder().decode(message2));
-console.log(`Hash: ${hash2}`);
-console.log();
 
 // Example 3: Demonstrate deterministic hashing
 const message3 = "Deterministic test";
 const hash3a = hashMessage(message3);
 const hash3b = hashMessage(message3);
-console.log(`Message: "${message3}"`);
-console.log("Hash (first call):", hash3a);
-console.log("Hash (second call):", hash3b);
-console.log("Hashes match:", hash3a === hash3b);
-console.log();
-
-// =============================================================================
-// EIP-712 Typed Data Signing
-// =============================================================================
-
-console.log("\n=== EIP-712 Typed Data Signing ===\n");
 
 // Example 4: Simple typed message
 const simpleTypedData: TypedData = {
@@ -75,10 +52,6 @@ const simpleTypedData: TypedData = {
 };
 
 const simpleHash = hashTypedData(simpleTypedData);
-console.log("Simple typed data:");
-console.log("Message:", JSON.stringify(simpleTypedData.message, null, 2));
-console.log("Hash:", simpleHash);
-console.log();
 
 // Example 5: Nested structures (EIP-712 Mail example from spec)
 const mailTypedData: TypedData = {
@@ -115,10 +88,6 @@ const mailTypedData: TypedData = {
 };
 
 const mailHash = hashTypedData(mailTypedData);
-console.log("Nested structure (Mail):");
-console.log("Message:", JSON.stringify(mailTypedData.message, null, 2));
-console.log("Hash:", mailHash);
-console.log();
 
 // Example 6: Transaction data with multiple types
 const transactionTypedData: TypedData = {
@@ -147,10 +116,6 @@ const transactionTypedData: TypedData = {
 };
 
 const txHash = hashTypedData(transactionTypedData);
-console.log("Transaction data:");
-console.log("Message:", JSON.stringify(transactionTypedData.message, null, 2));
-console.log("Hash:", txHash);
-console.log();
 
 // Example 7: Domain separator hashing
 const domain: TypedDataDomain = {
@@ -162,10 +127,6 @@ const domain: TypedDataDomain = {
 };
 
 const domainHash = hashDomain(domain);
-console.log("Domain separator:");
-console.log("Domain:", JSON.stringify(domain, null, 2));
-console.log("Hash:", domainHash);
-console.log();
 
 // Example 8: Different types demonstration
 const multiTypeData: TypedData = {
@@ -191,10 +152,6 @@ const multiTypeData: TypedData = {
 };
 
 const multiTypeHash = hashTypedData(multiTypeData);
-console.log("Multiple types:");
-console.log("Message:", JSON.stringify(multiTypeData.message, null, 2));
-console.log("Hash:", multiTypeHash);
-console.log();
 
 // Example 9: Array handling
 const arrayData: TypedData = {
@@ -216,45 +173,3 @@ const arrayData: TypedData = {
 };
 
 const arrayHash = hashTypedData(arrayData);
-console.log("Array handling:");
-console.log("Message:", JSON.stringify(arrayData.message, null, 2));
-console.log("Hash:", arrayHash);
-console.log();
-
-// =============================================================================
-// Signing and Verification (Not yet implemented)
-// =============================================================================
-
-console.log("\n=== Signing and Verification (Future) ===\n");
-console.log("The following operations require secp256k1 C API bindings:");
-console.log("- signMessage(message, privateKey)");
-console.log("- verifyMessage(message, signature, address)");
-console.log("- recoverMessageAddress(message, signature)");
-console.log("- signTypedData(typedData, privateKey)");
-console.log("- verifyTypedData(typedData, signature, address)");
-console.log("- recoverTypedDataAddress(typedData, signature)");
-console.log();
-console.log(
-	"These functions are defined but throw errors until C API is complete.",
-);
-console.log();
-
-// =============================================================================
-// Zig Implementation Reference
-// =============================================================================
-
-console.log("\n=== Zig Implementation Reference ===\n");
-console.log("Hash functions used:");
-console.log("- EIP-191: crypto.HashUtils.eip191HashMessage() via C FFI");
-console.log("- EIP-712: Pure TypeScript with keccak256 via C FFI");
-console.log();
-console.log("Future signing implementation will use:");
-console.log("- crypto.unaudited_signHash() for signing");
-console.log("- crypto.unaudited_recoverAddress() for recovery");
-console.log("- crypto.unaudited_verifySignature() for verification");
-console.log();
-console.log("Files:");
-console.log("- src/crypto/hash_utils.zig - EIP-191 hash implementation");
-console.log("- src/crypto/crypto.zig - Signature operations");
-console.log("- src/crypto/eip712.zig - EIP-712 implementation (unaudited)");
-console.log();

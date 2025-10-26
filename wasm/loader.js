@@ -96,6 +96,16 @@ export async function loadWasm(wasmPath) {
       mem.setUint32(nread, 0, true);
       return 0;
     },
+    fd_pread: (fd, iovs, iovs_len, offset, nread) => {
+      const mem = new DataView(wasmMemory.buffer);
+      mem.setUint32(nread, 0, true);
+      return 0;
+    },
+    fd_pwrite: (fd, iovs, iovs_len, offset, nwritten) => {
+      const mem = new DataView(wasmMemory.buffer);
+      mem.setUint32(nwritten, 0, true);
+      return 0;
+    },
     // time
     clock_time_get: () => 0,
     // random

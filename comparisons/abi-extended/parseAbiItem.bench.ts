@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./parseAbiItem-ethers.js";
 import * as guilNative from "./parseAbiItem-guil-native.js";
 import * as guilWasm from "./parseAbiItem-guil-wasm.js";
-import * as ethers from "./parseAbiItem-ethers.js";
 import * as viem from "./parseAbiItem-viem.js";
 
 describe("parseAbiItem", () => {

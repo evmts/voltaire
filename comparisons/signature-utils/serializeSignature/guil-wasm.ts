@@ -1,9 +1,9 @@
 import { signatureSerialize } from "../../../src/typescript/wasm/primitives/signature.wasm.js";
 import {
-	SIGNATURE_R_HEX,
-	SIGNATURE_S_HEX,
 	SIGNATURE_R_BYTES,
+	SIGNATURE_R_HEX,
 	SIGNATURE_S_BYTES,
+	SIGNATURE_S_HEX,
 	SIGNATURE_V,
 } from "../test-data.js";
 
@@ -37,12 +37,9 @@ function serializeSignature(
 
 	const serialized = signatureSerialize(rBytes, sBytes, v, true);
 
-	return (
-		"0x" +
-		Array.from(serialized)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")
-	);
+	return `0x${Array.from(serialized)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 export function main(): void {

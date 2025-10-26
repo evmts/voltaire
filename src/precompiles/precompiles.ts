@@ -38,6 +38,7 @@ import { isAtLeast } from "../primitives/hardfork";
 /**
  * Check if an address is a precompile for a given hardfork
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: precompile checks require branching per hardfork
 export function isPrecompile(address: string, hardfork: Hardfork): boolean {
 	const normalized = address.toLowerCase();
 
@@ -111,6 +112,7 @@ export function isPrecompile(address: string, hardfork: Hardfork): boolean {
  * @param hardfork - Current hardfork
  * @returns Precompile execution result
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: precompile execution requires branching per type
 export function execute(
 	address: string,
 	input: Uint8Array,

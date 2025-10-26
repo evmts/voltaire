@@ -10,10 +10,12 @@ export async function generateAbiExtendedDocs(): Promise<string> {
 	allDocs +=
 		"**Note:** Most of these functions are not implemented in guil (@tevm/primitives) as they are parser/developer tools rather than core encoding/decoding primitives. The benchmarks show ethers and viem implementations, with guil using viem as a fallback.\n\n";
 	allDocs += "### Functions Benchmarked\n\n";
-	allDocs += "1. **parseAbi** - Parse human-readable ABI strings to structured format\n";
+	allDocs +=
+		"1. **parseAbi** - Parse human-readable ABI strings to structured format\n";
 	allDocs += "2. **parseAbiItem** - Parse single human-readable ABI item\n";
 	allDocs += "3. **getAbiItem** - Extract specific item from ABI by name\n";
-	allDocs += "4. **toFunctionSelector** - Get 4-byte function selector from signature\n\n";
+	allDocs +=
+		"4. **toFunctionSelector** - Get 4-byte function selector from signature\n\n";
 	allDocs += "---\n\n";
 
 	// Generate docs for each function
@@ -56,7 +58,7 @@ export async function generateAbiExtendedDocs(): Promise<string> {
 				benchmarkResultsPath: `./comparisons/abi-extended/${func.name}.bench.ts`,
 				includeBundle: false,
 			});
-			allDocs += funcDocs + "\n\n---\n\n";
+			allDocs += `${funcDocs}\n\n---\n\n`;
 		} catch (error) {
 			allDocs += `*Documentation generation failed: ${error}*\n\n---\n\n`;
 		}
@@ -68,5 +70,4 @@ export async function generateAbiExtendedDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateAbiExtendedDocs();
-	console.log(docs);
 }

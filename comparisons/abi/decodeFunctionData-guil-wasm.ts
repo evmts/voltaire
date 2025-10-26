@@ -1,8 +1,8 @@
 import {
-	encodeFunctionData,
-	decodeFunctionData,
-	type FunctionDefinition,
 	AbiType,
+	type FunctionDefinition,
+	decodeFunctionData,
+	encodeFunctionData,
 } from "../../../src/primitives/abi.js";
 
 // Simple function: transfer(address,uint256)

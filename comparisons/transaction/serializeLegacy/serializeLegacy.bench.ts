@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./ethers.js";
 import * as guilNative from "./guil-native.js";
 import * as guilWasm from "./guil-wasm.js";
-import * as ethers from "./ethers.js";
 import * as viem from "./viem.js";
 
 describe("serializeLegacy", () => {

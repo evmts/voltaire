@@ -168,5 +168,4 @@ export async function generateHash32Docs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateHash32Docs();
-	console.log(docs);
 }

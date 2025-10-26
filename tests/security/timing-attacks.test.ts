@@ -3,10 +3,10 @@
  * Validates cryptographic operations are constant-time to prevent side-channel attacks
  */
 
-import { test, expect, describe } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { Address as NativeAddress } from "../../src/typescript/native/primitives/address.native";
-import { Address as WasmAddress } from "../../src/typescript/wasm/primitives/address.wasm";
 import { Hash as NativeHash } from "../../src/typescript/native/primitives/keccak.native";
+import { Address as WasmAddress } from "../../src/typescript/wasm/primitives/address.wasm";
 import { Hash as WasmHash } from "../../src/typescript/wasm/primitives/keccak.wasm";
 
 /**
@@ -135,9 +135,14 @@ describe("Native Address constant-time operations", () => {
 		const invalidEndAvg = mean(invalidEndTimes);
 
 		// All timings should be similar (within 30% variance)
-		const variance1 = Math.abs(validAvg - invalidStartAvg) / Math.max(validAvg, invalidStartAvg);
-		const variance2 = Math.abs(validAvg - invalidEndAvg) / Math.max(validAvg, invalidEndAvg);
-		const variance3 = Math.abs(invalidStartAvg - invalidEndAvg) / Math.max(invalidStartAvg, invalidEndAvg);
+		const variance1 =
+			Math.abs(validAvg - invalidStartAvg) /
+			Math.max(validAvg, invalidStartAvg);
+		const variance2 =
+			Math.abs(validAvg - invalidEndAvg) / Math.max(validAvg, invalidEndAvg);
+		const variance3 =
+			Math.abs(invalidStartAvg - invalidEndAvg) /
+			Math.max(invalidStartAvg, invalidEndAvg);
 
 		expect(variance1).toBeLessThan(0.3);
 		expect(variance2).toBeLessThan(0.3);
@@ -201,8 +206,11 @@ describe("WASM Address constant-time operations", () => {
 		const invalidStartAvg = mean(invalidStartTimes);
 		const invalidEndAvg = mean(invalidEndTimes);
 
-		const variance1 = Math.abs(validAvg - invalidStartAvg) / Math.max(validAvg, invalidStartAvg);
-		const variance2 = Math.abs(validAvg - invalidEndAvg) / Math.max(validAvg, invalidEndAvg);
+		const variance1 =
+			Math.abs(validAvg - invalidStartAvg) /
+			Math.max(validAvg, invalidStartAvg);
+		const variance2 =
+			Math.abs(validAvg - invalidEndAvg) / Math.max(validAvg, invalidEndAvg);
 
 		expect(variance1).toBeLessThan(0.3);
 		expect(variance2).toBeLessThan(0.3);

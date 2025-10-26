@@ -39,5 +39,6 @@ const testTypedData = {
 };
 
 export async function main(): Promise<void> {
+	// biome-ignore lint/suspicious/noExplicitAny: test data type compatibility
 	await signer.signTypedData(testTypedData as any);
 }

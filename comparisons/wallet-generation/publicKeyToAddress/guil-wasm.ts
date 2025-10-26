@@ -6,7 +6,9 @@ const testPublicKey =
 
 export function main(): string {
 	// Remove 0x prefix and first byte (0x04 for uncompressed) to get 64 bytes
-	const publicKeyBytes = new Uint8Array(Buffer.from(testPublicKey.slice(4), "hex"));
+	const publicKeyBytes = new Uint8Array(
+		Buffer.from(testPublicKey.slice(4), "hex"),
+	);
 	const hash = Hash.keccak256(publicKeyBytes);
 	// Take last 20 bytes
 	const addressBytes = hash.toBytes().slice(-20);

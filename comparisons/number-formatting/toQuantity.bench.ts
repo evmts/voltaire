@@ -1,6 +1,6 @@
 import { bench, describe } from "vitest";
-import * as guil from "./toQuantity/guil.js";
 import * as ethers from "./toQuantity/ethers.js";
+import * as guil from "./toQuantity/guil.js";
 import * as viem from "./toQuantity/viem.js";
 
 describe("toQuantity", () => {

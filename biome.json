@@ -22,7 +22,10 @@
 			"*.wasm",
 			"*.so",
 			"*.dll",
-			"*.dylib"
+			"*.dylib",
+			"lib/c-kzg-4844",
+			"docs/.astro",
+			"worktrees"
 		]
 	},
 	"formatter": {

@@ -10,7 +10,9 @@ const testValue5 = 50000000000n; // 50 gwei in wei
 // Helper to convert between units using viem
 // viem doesn't have a direct convertUnit function, so we format then parse
 function convertUnit(value: bigint, fromUnit: string, toUnit: string): bigint {
+	// biome-ignore lint/suspicious/noExplicitAny: viem type compatibility
 	const formatted = formatUnits(value, fromUnit as any);
+	// biome-ignore lint/suspicious/noExplicitAny: viem type compatibility
 	return parseUnits(formatted, toUnit as any);
 }
 

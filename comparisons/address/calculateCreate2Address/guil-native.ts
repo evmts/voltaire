@@ -6,5 +6,9 @@ salt[31] = 1; // Set last byte to 1
 const initCode = new Uint8Array([0x60, 0x80, 0x60, 0x40]); // Simple init code
 
 export function main(): void {
-	const contractAddress = Address.calculateCreate2Address(deployer, salt, initCode);
+	const contractAddress = Address.calculateCreate2Address(
+		deployer,
+		salt,
+		initCode,
+	);
 }

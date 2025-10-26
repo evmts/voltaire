@@ -1,7 +1,7 @@
 import { signatureParse } from "../../../src/typescript/wasm/primitives/signature.wasm.js";
 import {
-	CANONICAL_SIGNATURE_HEX,
 	CANONICAL_SIGNATURE_BYTES,
+	CANONICAL_SIGNATURE_HEX,
 	SIGNATURE_V0_HEX,
 	SIGNATURE_V27_HEX,
 	SIGNATURE_V28_HEX,
@@ -34,16 +34,12 @@ function parseSignature(signature: string | Uint8Array): {
 	const parsed = signatureParse(bytes);
 
 	// Convert r and s to hex strings
-	const r =
-		"0x" +
-		Array.from(parsed.r)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
-	const s =
-		"0x" +
-		Array.from(parsed.s)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+	const r = `0x${Array.from(parsed.r)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
+	const s = `0x${Array.from(parsed.s)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 
 	return {
 		r,

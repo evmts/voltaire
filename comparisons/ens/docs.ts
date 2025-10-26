@@ -47,10 +47,4 @@ export async function generateEnsNormalizeDocs(): Promise<string> {
 
 // Allow running directly to generate all docs
 if (import.meta.url === `file://${process.argv[1]}`) {
-	console.log("## ENS Namehash\n");
-	console.log(await generateEnsNamehashDocs());
-	console.log("\n## ENS Labelhash\n");
-	console.log(await generateEnsLabelhashDocs());
-	console.log("\n## ENS Normalize\n");
-	console.log(await generateEnsNormalizeDocs());
 }

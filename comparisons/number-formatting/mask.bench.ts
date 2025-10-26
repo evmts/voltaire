@@ -1,6 +1,6 @@
 import { bench, describe } from "vitest";
-import * as guil from "./mask/guil.js";
 import * as ethers from "./mask/ethers.js";
+import * as guil from "./mask/guil.js";
 import * as viem from "./mask/viem.js";
 
 describe("mask", () => {

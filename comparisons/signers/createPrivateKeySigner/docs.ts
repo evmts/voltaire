@@ -19,5 +19,4 @@ export async function generateCreatePrivateKeySignerDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateCreatePrivateKeySignerDocs();
-	console.log(docs);
 }

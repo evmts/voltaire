@@ -148,5 +148,4 @@ export async function generateAddressDocs(): Promise<string> {
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateAddressDocs();
-	console.log(docs);
 }

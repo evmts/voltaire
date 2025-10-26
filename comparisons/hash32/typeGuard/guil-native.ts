@@ -1,6 +1,6 @@
 import {
-	isHash32,
 	isBytes32,
+	isHash32,
 } from "../../../native/primitives/branded-types/hash.js";
 
 const validHash =

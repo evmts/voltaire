@@ -43,7 +43,7 @@
 		"build": "tsc && zig build",
 		"test": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test",
 		"test:native": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test src/typescript/native/**/*.test.ts",
-		"test:wasm": "bun test src/typescript/wasm/**/*.test.ts",
+		"test:wasm": "bun test --preload ./src/typescript/wasm/setup.ts src/typescript/wasm/**/*.test.ts",
 		"test:integration": "bun test tests/integration/**/*.test.ts",
 		"test:security": "bun test tests/security/**/*.test.ts",
 		"format": "biome format --write .",

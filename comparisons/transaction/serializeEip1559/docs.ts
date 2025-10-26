@@ -13,5 +13,3 @@ const docs = await generateDocs({
 		"./comparisons/transaction/serializeEip1559/serializeEip1559.bench.ts",
 	includeBundle: true,
 });
-
-console.log(docs);

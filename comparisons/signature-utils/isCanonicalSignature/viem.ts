@@ -2,9 +2,9 @@ import { hexToSignature } from "viem";
 import {
 	CANONICAL_SIGNATURE_HEX,
 	NON_CANONICAL_SIGNATURE_HEX,
+	SECP256K1_N_HALF,
 	SIGNATURE_V27_HEX,
 	SIGNATURE_V28_HEX,
-	SECP256K1_N_HALF,
 } from "../test-data.ts";
 
 // Viem doesn't have a direct isCanonicalSignature method
@@ -22,7 +22,7 @@ function isCanonicalSignature(signature: string): boolean {
 			: signature;
 		if (normalized.length !== 130) return false;
 
-		const sHex = "0x" + normalized.slice(64, 128);
+		const sHex = `0x${normalized.slice(64, 128)}`;
 		const s = BigInt(sHex);
 		return s <= SECP256K1_N_HALF;
 	}

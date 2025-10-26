@@ -1,5 +1,9 @@
 import { keccak256 } from "../../../wasm/crypto/keccak.js";
-import { encodePacked, type AbiParameter, AbiType } from "../../../wasm/primitives/abi.js";
+import {
+	type AbiParameter,
+	AbiType,
+	encodePacked,
+} from "../../../wasm/primitives/abi.js";
 
 // CREATE2 address calculation pattern
 const create2Params: AbiParameter[] = [
@@ -17,7 +21,11 @@ const sigParams: AbiParameter[] = [
 	{ type: AbiType.Address, name: "to" },
 	{ type: AbiType.Uint256, name: "amount" },
 ];
-const sigValues = ["Transfer", "0x742d35cc6634c0532925a3b844bc9e7595f0beb1", 100n];
+const sigValues = [
+	"Transfer",
+	"0x742d35cc6634c0532925a3b844bc9e7595f0beb1",
+	100n,
+];
 
 // Multi-value pattern
 const multiParams: AbiParameter[] = [

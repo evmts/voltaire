@@ -1,8 +1,8 @@
 import { isBytecodeBoundary } from "../../../src/typescript/native/primitives/bytecode.native.js";
 import {
-	SIMPLE_BYTECODE,
 	COMPLEX_BYTECODE,
 	LARGE_BYTECODE,
+	SIMPLE_BYTECODE,
 } from "../test-data.js";
 
 export function main(): void {

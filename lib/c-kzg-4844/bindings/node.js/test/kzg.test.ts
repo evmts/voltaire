@@ -1,6 +1,6 @@
-import { randomBytes } from "crypto";
-import { readFileSync, existsSync } from "fs";
-import { resolve } from "path";
+import { randomBytes } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { globSync } from "glob";
 
 const yaml = require("js-yaml");
@@ -135,7 +135,7 @@ function generateRandomBlob(): Uint8Array {
 	return new Uint8Array(
 		randomBytes(BYTES_PER_BLOB).map((x, i) => {
 			// Set the top byte to be low enough that the field element doesn't overflow the BLS modulus
-			if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 0) {
+			if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT === 0) {
 				return Math.floor(Math.random() * MAX_TOP_BYTE);
 			}
 			return x;

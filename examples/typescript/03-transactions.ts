@@ -9,21 +9,16 @@
  */
 
 import {
-	encodeLegacyForSigning,
-	encodeEip1559ForSigning,
-	encodeEip7702ForSigning,
-	hashTransaction,
-	validateTransaction,
-	detectTransactionType,
-	type LegacyTransaction,
 	type Eip1559Transaction,
 	type Eip7702Transaction,
+	type LegacyTransaction,
+	detectTransactionType,
+	encodeEip1559ForSigning,
+	encodeEip7702ForSigning,
+	encodeLegacyForSigning,
+	hashTransaction,
+	validateTransaction,
 } from "../../src/typescript/primitives/transaction";
-
-console.log("=== Transaction Encoding and Validation ===\n");
-
-// Example 3.1: Legacy Transaction
-console.log("3.1: Legacy Transaction (Type 0)");
 const legacyTx: LegacyTransaction = {
 	nonce: 0n,
 	gasPrice: 20000000000n, // 20 gwei
@@ -36,24 +31,7 @@ const legacyTx: LegacyTransaction = {
 	s: "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
 };
 
-console.log(
-	"Transaction:",
-	JSON.stringify(
-		legacyTx,
-		(_, v) => (typeof v === "bigint" ? v.toString() : v),
-		2,
-	),
-);
-console.log("Valid:", validateTransaction(legacyTx));
-console.log("Hash:", hashTransaction(legacyTx));
-
 const legacyEncoded = encodeLegacyForSigning(legacyTx, 1n); // mainnet
-console.log("Encoded for signing:", legacyEncoded.slice(0, 66) + "...");
-console.log("Size:", legacyEncoded.length / 2 - 1, "bytes");
-console.log();
-
-// Example 3.2: EIP-1559 Transaction
-console.log("3.2: EIP-1559 Transaction (Type 2)");
 const eip1559Tx: Eip1559Transaction = {
 	type: "eip1559",
 	chainId: 1n,
@@ -70,24 +48,7 @@ const eip1559Tx: Eip1559Transaction = {
 	s: "0x6d4b6bc588356822e38a0bec5fb4baa8efd8f19ec90b0584df2bbba09cd78c0d",
 };
 
-console.log(
-	"Transaction:",
-	JSON.stringify(
-		eip1559Tx,
-		(_, v) => (typeof v === "bigint" ? v.toString() : v),
-		2,
-	),
-);
-console.log("Valid:", validateTransaction(eip1559Tx));
-console.log("Hash:", hashTransaction(eip1559Tx));
-
 const eip1559Encoded = encodeEip1559ForSigning(eip1559Tx);
-console.log("Encoded for signing:", eip1559Encoded.slice(0, 66) + "...");
-console.log("Size:", eip1559Encoded.length / 2 - 1, "bytes");
-console.log();
-
-// Example 3.3: EIP-1559 with Access List
-console.log("3.3: EIP-1559 with Access List");
 const eip1559WithAccessList: Eip1559Transaction = {
 	...eip1559Tx,
 	accessList: [
@@ -106,22 +67,7 @@ const eip1559WithAccessList: Eip1559Transaction = {
 		},
 	],
 };
-
-console.log(
-	"Access list:",
-	JSON.stringify(eip1559WithAccessList.accessList, null, 2),
-);
 const encodedWithAccess = encodeEip1559ForSigning(eip1559WithAccessList);
-console.log("Encoded size:", encodedWithAccess.length / 2 - 1, "bytes");
-console.log(
-	"Size increase:",
-	(encodedWithAccess.length - eip1559Encoded.length) / 2,
-	"bytes",
-);
-console.log();
-
-// Example 3.4: EIP-7702 Transaction with Authorization
-console.log("3.4: EIP-7702 Transaction (Type 4)");
 const eip7702Tx: Eip7702Transaction = {
 	type: "eip7702",
 	chainId: 1n,
@@ -148,32 +94,7 @@ const eip7702Tx: Eip7702Transaction = {
 	s: "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
 };
 
-console.log("Authorization list length:", eip7702Tx.authorizationList.length);
-console.log(
-	"First authorization:",
-	JSON.stringify(
-		eip7702Tx.authorizationList[0],
-		(_, v) => (typeof v === "bigint" ? v.toString() : v),
-		2,
-	),
-);
-console.log("Valid:", validateTransaction(eip7702Tx));
-console.log("Hash:", hashTransaction(eip7702Tx));
-
 const eip7702Encoded = encodeEip7702ForSigning(eip7702Tx);
-console.log("Encoded for signing:", eip7702Encoded.slice(0, 66) + "...");
-console.log("Size:", eip7702Encoded.length / 2 - 1, "bytes");
-console.log();
-
-// Example 3.5: Type Detection
-console.log("3.5: Transaction Type Detection");
-console.log("Legacy type:", detectTransactionType(legacyEncoded));
-console.log("EIP-1559 type:", detectTransactionType(eip1559Encoded));
-console.log("EIP-7702 type:", detectTransactionType(eip7702Encoded));
-console.log();
-
-// Example 3.6: Contract Creation Transaction
-console.log("3.6: Contract Creation Transaction");
 const contractCreation: LegacyTransaction = {
 	nonce: 5n,
 	gasPrice: 20000000000n,
@@ -185,7 +106,3 @@ const contractCreation: LegacyTransaction = {
 	r: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 	s: "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
 };
-
-console.log("Is contract creation:", contractCreation.to === undefined);
-console.log("Gas limit:", contractCreation.gasLimit.toString());
-console.log("Data length:", contractCreation.data.length / 2 - 1, "bytes");

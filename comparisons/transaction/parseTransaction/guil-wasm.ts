@@ -1,8 +1,8 @@
 import { parseTransaction } from "../../../wasm/primitives/transaction.js";
 import {
-	serializedLegacyTx,
 	serializedEip1559Tx,
 	serializedEip7702Tx,
+	serializedLegacyTx,
 } from "../test-data.js";
 
 // Parse all transaction types

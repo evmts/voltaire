@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./toFunctionSelector-ethers.js";
 import * as guilNative from "./toFunctionSelector-guil-native.js";
 import * as guilWasm from "./toFunctionSelector-guil-wasm.js";
-import * as ethers from "./toFunctionSelector-ethers.js";
 import * as viem from "./toFunctionSelector-viem.js";
 
 describe("toFunctionSelector", () => {

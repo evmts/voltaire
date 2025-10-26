@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./fromBigInt-ethers.js";
 import * as guilNative from "./fromBigInt-guil-native.js";
 import * as guilWasm from "./fromBigInt-guil-wasm.js";
-import * as ethers from "./fromBigInt-ethers.js";
 import * as viem from "./fromBigInt-viem.js";
 
 describe("uint256.fromBigInt", () => {

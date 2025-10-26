@@ -2,10 +2,10 @@ import { hexToSignature, signatureToHex } from "viem";
 import {
 	CANONICAL_SIGNATURE_HEX,
 	NON_CANONICAL_SIGNATURE_HEX,
-	SIGNATURE_V27_HEX,
-	SIGNATURE_V28_HEX,
 	SECP256K1_N,
 	SECP256K1_N_HALF,
+	SIGNATURE_V27_HEX,
+	SIGNATURE_V28_HEX,
 } from "../test-data.ts";
 
 // Viem doesn't have a direct normalizeSignature method
@@ -38,8 +38,8 @@ function normalizeSignature(signature: string): string {
 			: signature;
 		if (normalized.length !== 130) return signature;
 
-		const rHex = "0x" + normalized.slice(0, 64);
-		const sHex = "0x" + normalized.slice(64, 128);
+		const rHex = `0x${normalized.slice(0, 64)}`;
+		const sHex = `0x${normalized.slice(64, 128)}`;
 		const vByte = Number.parseInt(normalized.slice(128, 130), 16);
 
 		const s = BigInt(sHex);

@@ -1,4 +1,4 @@
-import { mod, fromBigInt } from "../../../src/primitives/uint-utils/uint256.js";
+import { fromBigInt, mod } from "../../../src/primitives/uint-utils/uint256.js";
 import type { Uint256 } from "../../../src/primitives/uint-utils/uint256.js";
 
 // Test data

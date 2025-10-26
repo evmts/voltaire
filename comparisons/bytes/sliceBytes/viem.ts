@@ -1,8 +1,8 @@
 import { slice } from "viem";
 
 // Test data: various byte arrays to slice
-const bytes32 = "0x" + "00".repeat(32);
-const bytes1024 = "0x" + "00".repeat(1024);
+const bytes32 = `0x${"00".repeat(32)}`;
+const bytes1024 = `0x${"00".repeat(1024)}`;
 
 export function main(): void {
 	// Slice first 4 bytes

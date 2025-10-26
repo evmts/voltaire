@@ -3,8 +3,8 @@
  * Personal message signing format
  */
 
-import { dlopen, FFIType, suffix, ptr } from "bun:ffi";
-import { resolve } from "path";
+import { FFIType, dlopen, ptr, suffix } from "bun:ffi";
+import { resolve } from "node:path";
 
 // Load the C library (reuse from keccak)
 const libPath = resolve(

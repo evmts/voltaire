@@ -1,9 +1,9 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import {
-	hashTypedData,
-	hashDomain,
 	type TypedData,
 	type TypedDataDomain,
+	hashDomain,
+	hashTypedData,
 } from "./eip712.ts";
 
 describe("EIP-712 Type Hashing", () => {

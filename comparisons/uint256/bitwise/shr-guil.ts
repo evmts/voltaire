@@ -1,4 +1,4 @@
-import { shr, fromBigInt } from "../../../src/primitives/uint-utils/uint256.js";
+import { fromBigInt, shr } from "../../../src/primitives/uint-utils/uint256.js";
 import type { Uint256 } from "../../../src/primitives/uint-utils/uint256.js";
 
 const testPairs: [Uint256, number][] = [

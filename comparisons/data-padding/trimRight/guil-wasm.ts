@@ -17,7 +17,7 @@ function trimRight(value: string): string {
 	}
 	// Remove trailing zeros but keep at least one character
 	const trimmed = hex.replace(/0+$/, "");
-	return "0x" + (trimmed.length === 0 ? "0" : trimmed);
+	return `0x${trimmed.length === 0 ? "0" : trimmed}`;
 }
 
 export function main(): void {

@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
+import * as ethers from "./lte-ethers.js";
 import * as guilNative from "./lte-guil-native.js";
 import * as guilWasm from "./lte-guil-wasm.js";
-import * as ethers from "./lte-ethers.js";
 import * as viem from "./lte-viem.js";
 
 describe("uint256.lte", () => {

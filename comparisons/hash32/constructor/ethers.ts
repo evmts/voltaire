@@ -1,4 +1,4 @@
-import { hexlify, getBytes } from "ethers";
+import { getBytes, hexlify } from "ethers";
 
 const testHash =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";

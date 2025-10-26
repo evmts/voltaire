@@ -385,5 +385,4 @@ npm run docs:numeric
 // Allow running directly to generate docs
 if (import.meta.url === `file://${process.argv[1]}`) {
 	const docs = await generateNumericDocs();
-	console.log(docs);
 }

@@ -1,4 +1,4 @@
-import { not, fromBigInt } from "../../../src/primitives/uint-utils/uint256.js";
+import { fromBigInt, not } from "../../../src/primitives/uint-utils/uint256.js";
 import type { Uint256 } from "../../../src/primitives/uint-utils/uint256.js";
 
 const testValues: Uint256[] = [

@@ -1,4 +1,4 @@
-import { toRlp, toHex } from "viem";
+import { toHex, toRlp } from "viem";
 
 // Test data: various uint values
 // viem requires hex string format

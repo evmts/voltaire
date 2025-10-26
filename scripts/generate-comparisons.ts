@@ -4,8 +4,8 @@
  * Based on the template from comparisons/hash32/COMPARISON.md
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 interface Operation {
 	category: string;
@@ -23,6 +23,7 @@ interface BenchmarkImplementation {
 function findAllOperations(comparisonsDir: string): Operation[] {
 	const operations: Operation[] = [];
 
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: directory scanning requires recursive branching
 	function scanDirectory(dir: string, category: string, subcategory?: string) {
 		const files = fs.readdirSync(dir);
 
@@ -33,7 +34,9 @@ function findAllOperations(comparisonsDir: string): Operation[] {
 			// This directory contains benchmark files directly (e.g., uint256/arithmetic/)
 			for (const benchFile of directBenchFiles) {
 				const operationName = benchFile.replace(".bench.ts", "");
-				const fullCategory = subcategory ? `${category}/${subcategory}` : category;
+				const fullCategory = subcategory
+					? `${category}/${subcategory}`
+					: category;
 				const operationPath = path.join(dir, operationName);
 
 				operations.push({
@@ -58,7 +61,9 @@ function findAllOperations(comparisonsDir: string): Operation[] {
 					// This is an operation directory (contains .bench.ts file)
 					// Only add if parent didn't have bench files (avoid duplicates)
 					const operationName = file;
-					const fullCategory = subcategory ? `${category}/${subcategory}` : category;
+					const fullCategory = subcategory
+						? `${category}/${subcategory}`
+						: category;
 
 					operations.push({
 						category: fullCategory,
@@ -74,16 +79,14 @@ function findAllOperations(comparisonsDir: string): Operation[] {
 		}
 	}
 
-	const categories = fs
-		.readdirSync(comparisonsDir)
-		.filter((item) => {
-			const fullPath = path.join(comparisonsDir, item);
-			return (
-				fs.statSync(fullPath).isDirectory() &&
-				item !== "shared" &&
-				item !== "node_modules"
-			);
-		});
+	const categories = fs.readdirSync(comparisonsDir).filter((item) => {
+		const fullPath = path.join(comparisonsDir, item);
+		return (
+			fs.statSync(fullPath).isDirectory() &&
+			item !== "shared" &&
+			item !== "node_modules"
+		);
+	});
 
 	for (const category of categories) {
 		const categoryPath = path.join(comparisonsDir, category);
@@ -123,7 +126,11 @@ function extractFunctionCall(code: string): string {
 	const lines = code.split("\n");
 	for (const line of lines) {
 		// Look for the main function call (usually in the main() function)
-		if (line.includes("Address.") || line.includes("ethers.") || line.includes("from")) {
+		if (
+			line.includes("Address.") ||
+			line.includes("ethers.") ||
+			line.includes("from")
+		) {
 			return line.trim();
 		}
 	}
@@ -426,10 +433,8 @@ const result = process(input);
 // Main execution
 function main() {
 	const comparisonsDir = path.join(process.cwd(), "comparisons");
-	console.log(`Scanning for operations in: ${comparisonsDir}`);
 
 	const operations = findAllOperations(comparisonsDir);
-	console.log(`Found ${operations.length} operations`);
 
 	let generated = 0;
 	let skipped = 0;
@@ -440,7 +445,10 @@ function main() {
 		let comparisonPath: string;
 		let outputPath: string;
 
-		if (fs.existsSync(operation.path) && fs.statSync(operation.path).isDirectory()) {
+		if (
+			fs.existsSync(operation.path) &&
+			fs.statSync(operation.path).isDirectory()
+		) {
 			// Normal case: operation has its own directory
 			comparisonPath = path.join(operation.path, "COMPARISON.md");
 			outputPath = `${operation.category}/${operation.name}/COMPARISON.md`;
@@ -460,7 +468,6 @@ function main() {
 
 		// Skip if COMPARISON.md already exists
 		if (fs.existsSync(comparisonPath)) {
-			console.log(`  Skipping ${outputPath} (already exists)`);
 			skipped++;
 			continue;
 		}
@@ -468,14 +475,8 @@ function main() {
 		// Generate and write COMPARISON.md
 		const content = generateComparisonMd(operation);
 		fs.writeFileSync(comparisonPath, content);
-		console.log(`✅ Generated ${outputPath}`);
 		generated++;
 	}
-
-	console.log(`\nSummary:`);
-	console.log(`  Generated: ${generated}`);
-	console.log(`  Skipped: ${skipped}`);
-	console.log(`  Total: ${operations.length}`);
 }
 
 main();

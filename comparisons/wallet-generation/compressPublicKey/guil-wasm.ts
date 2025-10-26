@@ -6,7 +6,9 @@ const testPublicKey =
 
 export function main(): string {
 	// Remove 0x04 prefix (uncompressed marker) to get 64 bytes
-	const publicKeyBytes = new Uint8Array(Buffer.from(testPublicKey.slice(4), "hex"));
+	const publicKeyBytes = new Uint8Array(
+		Buffer.from(testPublicKey.slice(4), "hex"),
+	);
 	const compressed = compressPublicKey(publicKeyBytes);
 	return `0x${Buffer.from(compressed).toString("hex")}`;
 }

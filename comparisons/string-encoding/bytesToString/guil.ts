@@ -3,11 +3,11 @@ const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 const testData = {
-	simple: encoder.encode('Hello, World!'),
-	empty: encoder.encode(''),
-	unicode: encoder.encode('Hello 世界 🌍'),
-	long: encoder.encode('a'.repeat(1000)),
-	ethMessage: encoder.encode('Sign this message to authenticate'),
+	simple: encoder.encode("Hello, World!"),
+	empty: encoder.encode(""),
+	unicode: encoder.encode("Hello 世界 🌍"),
+	long: encoder.encode("a".repeat(1000)),
+	ethMessage: encoder.encode("Sign this message to authenticate"),
 };
 
 export function main(): void {

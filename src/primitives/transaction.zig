@@ -462,7 +462,7 @@ pub fn signLegacyTransaction(allocator: Allocator, tx: LegacyTransaction, privat
     const h = hash.keccak256(encoded);
 
     // Sign the hash
-    const signature = try crypto.sign(allocator, private_key, h);
+    const signature = try crypto.unaudited_signHash(h, private_key);
 
     // Create signed transaction
     var signed_tx = tx;

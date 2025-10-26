@@ -1,23 +1,25 @@
 // Guil does not implement event/error encoding utilities
 // Use viem as fallback
-import { encodeErrorResult } from 'viem';
+import { encodeErrorResult } from "viem";
 
-const abi = [{
-  type: 'error',
-  name: 'InsufficientBalance',
-  inputs: [
-    { name: 'available', type: 'uint256' },
-    { name: 'required', type: 'uint256' }
-  ]
-}] as const;
+const abi = [
+	{
+		type: "error",
+		name: "InsufficientBalance",
+		inputs: [
+			{ name: "available", type: "uint256" },
+			{ name: "required", type: "uint256" },
+		],
+	},
+] as const;
 
 const available = 50n;
 const required = 100n;
 
 export function main(): void {
-  const encoded = encodeErrorResult({
-    abi,
-    errorName: 'InsufficientBalance',
-    args: [available, required]
-  });
+	const encoded = encodeErrorResult({
+		abi,
+		errorName: "InsufficientBalance",
+		args: [available, required],
+	});
 }

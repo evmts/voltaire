@@ -11,7 +11,7 @@
  * 3. Uncomment the real imports below
  */
 
-import { test, expect, describe } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 // These imports would require built native modules - skipped for structural validation
 // import { Address } from "../../src/typescript/native/primitives/address.native";

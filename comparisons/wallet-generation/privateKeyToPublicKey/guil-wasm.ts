@@ -5,7 +5,9 @@ const testPrivateKey =
 	"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 export function main(): string {
-	const privateKeyBytes = new Uint8Array(Buffer.from(testPrivateKey.slice(2), "hex"));
+	const privateKeyBytes = new Uint8Array(
+		Buffer.from(testPrivateKey.slice(2), "hex"),
+	);
 	const publicKeyBytes = secp256k1PubkeyFromPrivate(privateKeyBytes);
 	return `0x${Buffer.from(publicKeyBytes).toString("hex")}`;
 }

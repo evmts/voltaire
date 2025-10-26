@@ -1,5 +1,5 @@
-import { secp256k1PubkeyFromPrivate } from "../../../src/typescript/native/primitives/signature.native";
 import { Hash } from "../../../src/typescript/native/primitives/keccak.native";
+import { secp256k1PubkeyFromPrivate } from "../../../src/typescript/native/primitives/signature.native";
 
 // Test private key - DO NOT use in production
 const testPrivateKey =

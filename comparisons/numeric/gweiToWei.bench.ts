@@ -1,23 +1,23 @@
-import { bench, describe } from 'vitest';
-import * as guilNative from './gweiToWei/guil-native.js';
-import * as guilWasm from './gweiToWei/guil-wasm.js';
-import * as ethers from './gweiToWei/ethers.js';
-import * as viem from './gweiToWei/viem.js';
+import { bench, describe } from "vitest";
+import * as ethers from "./gweiToWei/ethers.js";
+import * as guilNative from "./gweiToWei/guil-native.js";
+import * as guilWasm from "./gweiToWei/guil-wasm.js";
+import * as viem from "./gweiToWei/viem.js";
 
-describe('gweiToWei', () => {
-	bench('guil-native', () => {
+describe("gweiToWei", () => {
+	bench("guil-native", () => {
 		guilNative.main();
 	});
 
-	bench('guil-wasm', () => {
+	bench("guil-wasm", () => {
 		guilWasm.main();
 	});
 
-	bench('ethers', () => {
+	bench("ethers", () => {
 		ethers.main();
 	});
 
-	bench('viem', () => {
+	bench("viem", () => {
 		viem.main();
 	});
 });
