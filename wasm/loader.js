@@ -49,10 +49,77 @@ export async function loadWasm(wasmPath) {
     maximum: 512, // 512 pages = 32MB
   });
 
+  // Minimal WASI shim for wasm32-wasi modules
+  const wasi = {
+    // args
+    args_get: (argv, argv_buf) => 0,
+    args_sizes_get: (argc_ptr, argv_buf_size_ptr) => {
+      const mem = new DataView(wasmMemory.buffer);
+      mem.setUint32(argc_ptr, 0, true);
+      mem.setUint32(argv_buf_size_ptr, 0, true);
+      return 0;
+    },
+    // environment
+    environ_get: (environ, environ_buf) => 0,
+    environ_sizes_get: (environ_count_ptr, environ_buf_size_ptr) => {
+      const mem = new DataView(wasmMemory.buffer);
+      mem.setUint32(environ_count_ptr, 0, true);
+      mem.setUint32(environ_buf_size_ptr, 0, true);
+      return 0;
+    },
+    // fds
+    fd_write: (fd, iovs, iovs_len, nwritten) => {
+      try {
+        const memU32 = new Uint32Array(wasmMemory.buffer);
+        let bytes = 0;
+        for (let i = 0; i < iovs_len; i++) {
+          const ptr = memU32[(iovs >> 2) + i * 2];
+          const len = memU32[(iovs >> 2) + i * 2 + 1];
+          bytes += len;
+        }
+        const mem = new DataView(wasmMemory.buffer);
+        mem.setUint32(nwritten, bytes, true);
+        return 0;
+      } catch {
+        return 0;
+      }
+    },
+    fd_fdstat_get: () => 0,
+    fd_filestat_get: () => 0,
+    fd_seek: () => 0,
+    fd_close: () => 0,
+    fd_read: (fd, iovs, iovs_len, nread) => {
+      const mem = new DataView(wasmMemory.buffer);
+      mem.setUint32(nread, 0, true);
+      return 0;
+    },
+    // time
+    clock_time_get: () => 0,
+    // random
+    random_get: (buf, len) => {
+      const view = new Uint8Array(wasmMemory.buffer, buf, len);
+      for (let i = 0; i < view.length; i++) view[i] = 0;
+      return 0;
+    },
+    // process
+    proc_exit: (code) => { throw new Error(`WASI proc_exit(${code})`); },
+    sched_yield: () => 0,
+    poll_oneoff: () => 0,
+    // path/stat
+    path_filestat_get: () => 0,
+    path_open: () => 0,
+    path_readlink: () => 0,
+    fd_prestat_get: () => 0,
+    fd_prestat_dir_name: () => 0,
+    fd_datasync: () => 0,
+    fd_sync: () => 0,
+  };
+
   const importObject = {
     env: {
       memory: wasmMemory,
     },
+    wasi_snapshot_preview1: wasi,
   };
 
   let wasmModule;
