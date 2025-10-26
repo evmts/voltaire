@@ -611,6 +611,12 @@ Base: https://github.com/evmts/primitives/blob/main/docs
 - [ZIG_BENCHMARK_RESULTS.md](https://github.com/evmts/primitives/blob/main/ZIG_BENCHMARK_RESULTS.md) — Native Zig performance data
 </benchmarking_docs>
 
+<examples_docs>
+**Examples:**
+- [Examples Overview](https://github.com/evmts/primitives/blob/main/examples/README.md) — Zig and TypeScript examples
+- [TypeScript Examples](https://github.com/evmts/primitives/blob/main/examples/typescript/) — Organized TypeScript examples
+</examples_docs>
+
 <external_resources>
 **External Resources:**
 - [Zig 0.15.1 Docs](https://ziglang.org/documentation/0.15.1/)
