@@ -67,12 +67,17 @@ pub fn fromU256(value: u256) Address {
 }
 
 pub fn fromHex(hex_str: []const u8) !Address {
-    if (hex_str.len != 42 or !starts_with(u8, hex_str, "0x")) {
-        return error.InvalidHexFormat;
+    // Accept with or without 0x prefix
+    var slice = hex_str;
+    if (slice.len >= 2 and (slice[0] == '0' and (slice[1] == 'x' or slice[1] == 'X'))) {
+        if (slice.len != 42) return error.InvalidHexFormat;
+        slice = slice[2..];
+    } else {
+        if (slice.len != 40) return error.InvalidHexFormat;
     }
 
     var addr: Address = undefined;
-    _ = hex_to_bytes(&addr.bytes, hex_str[2..]) catch return error.InvalidHexString;
+    _ = hex_to_bytes(&addr.bytes, slice) catch return error.InvalidHexString;
     return addr;
 }
 
@@ -165,39 +170,41 @@ pub fn addressToHex(address: Address) [42]u8 {
 
 pub fn addressToChecksumHex(address: Address) [42]u8 {
     var result: [42]u8 = undefined;
-    var hex_without_prefix: [40]u8 = undefined;
-
     result[0] = '0';
     result[1] = 'x';
 
-    const lowercase = "0123456789abcdef";
-    const uppercase = "0123456789ABCDEF";
-
+    // 1) Lowercase hex string of address (no prefix)
+    var lower_hex: [40]u8 = undefined;
+    const lower_alphabet = "0123456789abcdef";
     for (address.bytes, 0..) |b, i| {
-        hex_without_prefix[i * 2] = lowercase[b >> 4];
-        hex_without_prefix[i * 2 + 1] = lowercase[b & 15];
+        lower_hex[i * 2] = lower_alphabet[b >> 4];
+        lower_hex[i * 2 + 1] = lower_alphabet[b & 0x0F];
     }
 
-    var hash: [32]u8 = undefined;
-    Keccak256.hash(&hex_without_prefix, &hash, .{});
+    // 2) keccak256 of the lowercase hex string, then hex-encode the hash
+    var hash_bytes: [32]u8 = undefined;
+    Keccak256.hash(&lower_hex, &hash_bytes, .{});
+    const hash_hex = std.fmt.bytesToHex(&hash_bytes, .lower);
 
-    for (address.bytes, 0..) |b, i| {
-        const high_nibble = b >> 4;
-        const low_nibble = b & 15;
-        const high_hash = (hash[i] >> 4) & 0x0F;
-        const low_hash = hash[i] & 0x0F;
-
-        result[i * 2 + 2] = if (high_nibble > 9 and high_hash >= 8)
-            uppercase[high_nibble]
-        else
-            lowercase[high_nibble];
-
-        result[i * 2 + 3] = if (low_nibble > 9 and low_hash >= 8)
-            uppercase[low_nibble]
-        else
-            lowercase[low_nibble];
+    // 3) For each nibble, if hash nibble >= 8 and char is alpha, uppercase
+    var out_no_prefix: [40]u8 = lower_hex; // start as lowercase
+    for (lower_hex, 0..) |ch, idx| {
+        if (ch >= 'a' and ch <= 'f') {
+            const hv = hash_hex[idx];
+            // hv is an ASCII hex char; convert to its numeric value
+            const hv_nibble: u8 = switch (hv) {
+                '0'...'9' => hv - '0',
+                'a'...'f' => hv - 'a' + 10,
+                'A'...'F' => hv - 'A' + 10,
+                else => 0,
+            };
+            if (hv_nibble >= 8) {
+                out_no_prefix[idx] = ch - 32; // to uppercase
+            }
+        }
     }
 
+    @memcpy(result[2..], &out_no_prefix);
     return result;
 }
 
@@ -265,10 +272,16 @@ pub const PublicKey = struct {
 };
 
 pub fn isValidAddress(addr_str: []const u8) bool {
-    if (addr_str.len != 42 or !starts_with(u8, addr_str, "0x"))
-        return false;
+    // Support with or without 0x prefix
+    var slice = addr_str;
+    if (slice.len >= 2 and (slice[0] == '0' and (slice[1] == 'x' or slice[1] == 'X'))) {
+        if (slice.len != 42) return false;
+        slice = slice[2..];
+    } else {
+        if (slice.len != 40) return false;
+    }
 
-    for (addr_str[2..]) |c| {
+    for (slice) |c| {
         const valid = switch (c) {
             '0'...'9', 'a'...'f', 'A'...'F' => true,
             else => false,
@@ -283,11 +296,19 @@ pub fn isValidChecksumAddress(addr_str: []const u8) bool {
     if (!isValidAddress(addr_str))
         return false;
 
-    var addr: Address = undefined;
-    _ = hex_to_bytes(&addr.bytes, addr_str[2..]) catch return false;
-
-    const checksummed = addressToChecksumHex(addr);
-    return std.mem.eql(u8, &checksummed, addr_str);
+    // Normalize to ensure we compare like-for-like
+    if (starts_with(u8, addr_str, "0x") or starts_with(u8, addr_str, "0X")) {
+        var addr: Address = undefined;
+        _ = hex_to_bytes(&addr.bytes, addr_str[2..]) catch return false;
+        const checksummed = addressToChecksumHex(addr);
+        return std.mem.eql(u8, &checksummed, addr_str);
+    } else {
+        var addr: Address = undefined;
+        _ = hex_to_bytes(&addr.bytes, addr_str) catch return false;
+        const checksummed = addressToChecksumHex(addr);
+        // Compare without 0x prefix
+        return std.mem.eql(u8, checksummed[2..], addr_str);
+    }
 }
 
 pub fn areAddressesEqual(a: []const u8, b: []const u8) !bool {
