@@ -40,13 +40,17 @@ pub fn fromSlice(slice: []const u8) !Hash {
 }
 
 pub fn fromHex(hex: []const u8) !Hash {
-    if (hex.len < 2 or !std.mem.eql(u8, hex[0..2], "0x"))
-        return error.InvalidHexFormat;
+    // Accept with or without 0x prefix
+    var slice = hex;
+    if (slice.len == 0) return error.InvalidHexLength;
+    if (slice.len >= 2 and (slice[0] == '0' and (slice[1] == 'x' or slice[1] == 'X'))) {
+        slice = slice[2..];
+    }
 
-    if (hex.len != 66) return error.InvalidHexLength; // 0x + 64 hex chars
+    if (slice.len != 64) return error.InvalidHexLength;
 
     var hash: Hash = undefined;
-    _ = std.fmt.hexToBytes(&hash, hex[2..]) catch return error.InvalidHexString;
+    _ = std.fmt.hexToBytes(&hash, slice) catch return error.InvalidHexString;
     return hash;
 }
 
