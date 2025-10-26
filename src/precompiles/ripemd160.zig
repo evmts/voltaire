@@ -25,7 +25,7 @@ pub fn execute(
     @memset(output[0..12], 0); // Left-pad with zeros
 
     var hash_output: [20]u8 = undefined;
-    try Ripemd160.hash(input, &hash_output);
+    Ripemd160.hash(input, &hash_output);
     @memcpy(output[12..32], &hash_output);
 
     return PrecompileResult{

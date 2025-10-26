@@ -629,6 +629,12 @@ fn buildBenchmarks(
         bench_exe.step.dependOn(cargo_build_step);
         bench_exe.linkLibC();
 
+        // Link against libgcc_s for unwinding symbols required by Rust std library
+        // Even with panic=abort, Rust std uses unwinding infrastructure
+        if (target.result.os.tag == .linux) {
+            bench_exe.linkSystemLibrary("gcc_s");
+        }
+
         b.installArtifact(bench_exe);
     }
 }
@@ -698,6 +704,12 @@ fn buildZBenchmarks(
         bench_exe.addIncludePath(b.path("lib"));
         bench_exe.step.dependOn(cargo_build_step);
         bench_exe.linkLibC();
+
+        // Link against libgcc_s for unwinding symbols required by Rust std library
+        // Even with panic=abort, Rust std uses unwinding infrastructure
+        if (target.result.os.tag == .linux) {
+            bench_exe.linkSystemLibrary("gcc_s");
+        }
 
         b.installArtifact(bench_exe);
 

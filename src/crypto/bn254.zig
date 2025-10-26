@@ -410,11 +410,11 @@ pub fn bn254Add(input: *const [128]u8, output: []u8) !void {
 
     // Perform addition
     const result = p1.add(&p2);
-    const result_affine = result.toAffine();
+    const result_affine = try result.toAffine();
 
     // Serialize result to output
     // Point at infinity is represented as (0, 0)
-    if (result_affine.isInfinity()) {
+    if (try result_affine.isInfinity()) {
         @memset(output[0..64], 0);
     } else {
         const x_result = result_affine.x.value;
@@ -455,11 +455,11 @@ pub fn bn254Mul(input: *const [96]u8, output: []u8) !void {
 
     // Perform scalar multiplication
     const result = point.mulByInt(scalar_value);
-    const result_affine = result.toAffine();
+    const result_affine = try result.toAffine();
 
     // Serialize result to output
     // Point at infinity is represented as (0, 0)
-    if (result_affine.isInfinity()) {
+    if (try result_affine.isInfinity()) {
         @memset(output[0..64], 0);
     } else {
         const x_result = result_affine.x.value;
