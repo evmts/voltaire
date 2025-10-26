@@ -1,12 +1,12 @@
-import { encode } from "../../../native/primitives/rlp.js";
+import { encodeBytes } from "../../../src/typescript/native/primitives/rlp.native.js";
 
-// Test data: strings, numbers, and byte arrays
-const testString = "0x1234";
-const testBytes = new Uint8Array([1, 2, 3, 4, 5]);
-const testNumber = 42;
+// Test data: byte arrays
+const testBytes1 = new Uint8Array([0x12, 0x34]);
+const testBytes2 = new Uint8Array([1, 2, 3, 4, 5]);
+const testBytes3 = new Uint8Array([42]);
 
 export function main(): void {
-	encode(testString);
-	encode(testBytes);
-	encode(testNumber);
+	encodeBytes(testBytes1);
+	encodeBytes(testBytes2);
+	encodeBytes(testBytes3);
 }

@@ -1,4 +1,4 @@
-import { fromHex } from "../../../native/primitives/rlp.js";
+import { fromHex } from "../../../src/typescript/native/primitives/rlp.native.js";
 
 // Test data: RLP-encoded values as hex strings
 const testEncoded1 = "0x821234";
