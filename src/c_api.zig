@@ -296,6 +296,131 @@ export fn primitives_calculate_create_address(
 }
 
 // ============================================================================
+// Cryptographic Signatures (secp256k1)
+// ============================================================================
+
+/// Signature structure for C API (65 bytes: r + s + v)
+pub const PrimitivesSignature = extern struct {
+    r: [32]u8,
+    s: [32]u8,
+    v: u8,
+};
+
+/// Recover public key from ECDSA signature
+/// Returns PRIMITIVES_SUCCESS on success
+export fn primitives_secp256k1_recover_pubkey(
+    message_hash: *const [32]u8,
+    r: *const [32]u8,
+    s: *const [32]u8,
+    v: u8,
+    out_pubkey: *[64]u8,
+) c_int {
+    const pubkey = crypto.secp256k1.recoverPubkey(message_hash, r, s, v) catch {
+        return PRIMITIVES_ERROR_INVALID_SIGNATURE;
+    };
+    @memcpy(out_pubkey, &pubkey);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Recover Ethereum address from ECDSA signature
+export fn primitives_secp256k1_recover_address(
+    message_hash: *const [32]u8,
+    r: *const [32]u8,
+    s: *const [32]u8,
+    v: u8,
+    out_address: *PrimitivesAddress,
+) c_int {
+    // Parse r and s as u256 (big-endian)
+    const r_u256 = std.mem.readInt(u256, r, .big);
+    const s_u256 = std.mem.readInt(u256, s, .big);
+
+    // Convert v to recovery ID (handle both 0-1 and 27-28 formats)
+    var recovery_id: u8 = undefined;
+    if (v >= 27 and v <= 28) {
+        recovery_id = v - 27;
+    } else if (v <= 1) {
+        recovery_id = v;
+    } else {
+        return PRIMITIVES_ERROR_INVALID_SIGNATURE;
+    }
+
+    const addr = crypto.secp256k1.unauditedRecoverAddress(
+        message_hash,
+        recovery_id,
+        r_u256,
+        s_u256,
+    ) catch {
+        return PRIMITIVES_ERROR_INVALID_SIGNATURE;
+    };
+
+    @memcpy(&out_address.bytes, &addr.bytes);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Derive public key from private key
+export fn primitives_secp256k1_pubkey_from_private(
+    private_key: *const [32]u8,
+    out_pubkey: *[64]u8,
+) c_int {
+    // Use generator point and scalar multiplication
+    const G = crypto.secp256k1.AffinePoint.generator();
+    const scalar = std.mem.readInt(u256, private_key, .big);
+
+    if (scalar == 0 or scalar >= crypto.secp256k1.SECP256K1_N) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    const pubkey_point = G.scalarMul(scalar);
+
+    if (pubkey_point.infinity or !pubkey_point.isOnCurve()) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Serialize public key as uncompressed (x || y)
+    std.mem.writeInt(u256, out_pubkey[0..32], pubkey_point.x, .big);
+    std.mem.writeInt(u256, out_pubkey[32..64], pubkey_point.y, .big);
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Validate ECDSA signature components
+export fn primitives_secp256k1_validate_signature(
+    r: *const [32]u8,
+    s: *const [32]u8,
+) bool {
+    const r_u256 = std.mem.readInt(u256, r, .big);
+    const s_u256 = std.mem.readInt(u256, s, .big);
+
+    return crypto.secp256k1.unauditedValidateSignature(r_u256, s_u256);
+}
+
+// ============================================================================
+// Hash Algorithms (SHA256, RIPEMD160)
+// ============================================================================
+
+/// Compute SHA256 hash of input data
+export fn primitives_sha256(
+    data: [*]const u8,
+    data_len: usize,
+    out_hash: *[32]u8,
+) c_int {
+    const input = data[0..data_len];
+    crypto.HashAlgorithms.SHA256.hash(input, out_hash);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Compute RIPEMD160 hash of input data
+export fn primitives_ripemd160(
+    data: [*]const u8,
+    data_len: usize,
+    out_hash: *[20]u8,
+) c_int {
+    const input = data[0..data_len];
+    crypto.HashAlgorithms.RIPEMD160.hash(input, out_hash);
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
 // Version info
 // ============================================================================
 
