@@ -196,30 +196,76 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
     defer list.deinit();
 
     // Encode fields for signing (EIP-155)
-    try rlp.encodeUint(allocator, tx.nonce, &list);
-    try rlp.encodeUint(allocator, tx.gas_price, &list);
-    try rlp.encodeUint(allocator, tx.gas_limit, &list);
+    {
+        const enc = try rlp.encode(allocator, tx.nonce);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.gas_price);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.gas_limit);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
 
     // Encode 'to' field
     if (tx.to) |to_addr| {
-        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
+        const enc_to = try rlp.encodeBytes(allocator, &to_addr.bytes);
+        defer allocator.free(enc_to);
+        try list.appendSlice(enc_to);
     } else {
         try list.append(0x80); // Empty RLP string for null
     }
 
-    try rlp.encodeUint(allocator, tx.value, &list);
-    try rlp.encodeBytes(allocator, tx.data, &list);
+    {
+        const enc_val = try rlp.encode(allocator, tx.value);
+        defer allocator.free(enc_val);
+        try list.appendSlice(enc_val);
+    }
+    {
+        const enc_data = try rlp.encodeBytes(allocator, tx.data);
+        defer allocator.free(enc_data);
+        try list.appendSlice(enc_data);
+    }
 
     // For unsigned transaction (EIP-155)
     if (tx.v == 0) {
-        try rlp.encodeUint(allocator, chain_id, &list);
-        try rlp.encodeUint(allocator, 0, &list);
-        try rlp.encodeUint(allocator, 0, &list);
+        {
+            const enc_chain = try rlp.encode(allocator, chain_id);
+            defer allocator.free(enc_chain);
+            try list.appendSlice(enc_chain);
+        }
+        {
+            const enc_zero1 = try rlp.encode(allocator, @as(u64, 0));
+            defer allocator.free(enc_zero1);
+            try list.appendSlice(enc_zero1);
+        }
+        {
+            const enc_zero2 = try rlp.encode(allocator, @as(u64, 0));
+            defer allocator.free(enc_zero2);
+            try list.appendSlice(enc_zero2);
+        }
     } else {
         // For signed transaction
-        try rlp.encodeUint(allocator, tx.v, &list);
-        try rlp.encodeBytes(allocator, &tx.r, &list);
-        try rlp.encodeBytes(allocator, &tx.s, &list);
+        {
+            const enc_v = try rlp.encode(allocator, tx.v);
+            defer allocator.free(enc_v);
+            try list.appendSlice(enc_v);
+        }
+        {
+            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            defer allocator.free(enc_r);
+            try list.appendSlice(enc_r);
+        }
+        {
+            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            defer allocator.free(enc_s);
+            try list.appendSlice(enc_s);
+        }
     }
 
     // Wrap in RLP list
@@ -227,7 +273,8 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try result.appendSlice(len_bytes);
     }
@@ -242,21 +289,51 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
     defer list.deinit();
 
     // Encode fields
-    try rlp.encodeUint(allocator, tx.chain_id, &list);
-    try rlp.encodeUint(allocator, tx.nonce, &list);
-    try rlp.encodeUint(allocator, tx.max_priority_fee_per_gas, &list);
-    try rlp.encodeUint(allocator, tx.max_fee_per_gas, &list);
-    try rlp.encodeUint(allocator, tx.gas_limit, &list);
+    {
+        const enc = try rlp.encode(allocator, tx.chain_id);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.nonce);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.max_priority_fee_per_gas);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.max_fee_per_gas);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.gas_limit);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
 
     // Encode 'to' field
     if (tx.to) |to_addr| {
-        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
+        const enc_to = try rlp.encodeBytes(allocator, &to_addr.bytes);
+        defer allocator.free(enc_to);
+        try list.appendSlice(enc_to);
     } else {
         try list.append(0x80); // Empty RLP string for null
     }
 
-    try rlp.encodeUint(allocator, tx.value, &list);
-    try rlp.encodeBytes(allocator, tx.data, &list);
+    {
+        const enc_val = try rlp.encode(allocator, tx.value);
+        defer allocator.free(enc_val);
+        try list.appendSlice(enc_val);
+    }
+    {
+        const enc_data = try rlp.encodeBytes(allocator, tx.data);
+        defer allocator.free(enc_data);
+        try list.appendSlice(enc_data);
+    }
 
     // Encode access list
     try encodeAccessListInternal(allocator, tx.access_list, &list);
@@ -266,9 +343,21 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
         // No signature fields for unsigned
     } else {
         // For signed transaction
-        try rlp.encodeUint(allocator, tx.v, &list);
-        try rlp.encodeBytes(allocator, &tx.r, &list);
-        try rlp.encodeBytes(allocator, &tx.s, &list);
+        {
+            const enc_v = try rlp.encode(allocator, tx.v);
+            defer allocator.free(enc_v);
+            try list.appendSlice(enc_v);
+        }
+        {
+            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            defer allocator.free(enc_r);
+            try list.appendSlice(enc_r);
+        }
+        {
+            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            defer allocator.free(enc_s);
+            try list.appendSlice(enc_s);
+        }
     }
 
     // Wrap in RLP list
@@ -278,7 +367,8 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
     if (list.items.len <= 55) {
         try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try rlp_wrapped.appendSlice(len_bytes);
     }
@@ -311,21 +401,28 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
         defer item_list.deinit();
 
         // Encode address
-        try rlp.encodeBytes(allocator, &item.address.bytes, &item_list);
+        {
+            const enc_addr = try rlp.encodeBytes(allocator, &item.address.bytes);
+            defer allocator.free(enc_addr);
+            try item_list.appendSlice(enc_addr);
+        }
 
         // Encode storage keys
         var keys_list = std.array_list.AlignedManaged(u8, null).init(allocator);
         defer keys_list.deinit();
 
         for (item.storage_keys) |key| {
-            try rlp.encodeBytes(allocator, &key, &keys_list);
+            const enc_key = try rlp.encodeBytes(allocator, &key);
+            defer allocator.free(enc_key);
+            try keys_list.appendSlice(enc_key);
         }
 
         // Wrap storage keys in RLP list
         if (keys_list.items.len <= 55) {
             try item_list.append(@as(u8, @intCast(0xc0 + keys_list.items.len)));
         } else {
-            const len_bytes = rlp.encodeLength(keys_list.items.len);
+            const len_bytes = try rlp.encodeLength(allocator, keys_list.items.len);
+            defer allocator.free(len_bytes);
             try item_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try item_list.appendSlice(len_bytes);
         }
@@ -335,7 +432,8 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
         if (item_list.items.len <= 55) {
             try list.append(@as(u8, @intCast(0xc0 + item_list.items.len)));
         } else {
-            const len_bytes = rlp.encodeLength(item_list.items.len);
+            const len_bytes = try rlp.encodeLength(allocator, item_list.items.len);
+            defer allocator.free(len_bytes);
             try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try list.appendSlice(len_bytes);
         }
@@ -346,7 +444,8 @@ fn encodeAccessListInternal(allocator: Allocator, access_list: []const AccessLis
     if (list.items.len <= 55) {
         try output.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try output.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try output.appendSlice(len_bytes);
     }
@@ -390,37 +489,76 @@ pub fn encodeEip4844ForSigning(allocator: Allocator, tx: Eip4844Transaction) ![]
     defer list.deinit();
 
     // Encode fields
-    try rlp.encodeUint(allocator, tx.chain_id, &list);
-    try rlp.encodeUint(allocator, tx.nonce, &list);
-    try rlp.encodeUint(allocator, tx.max_priority_fee_per_gas, &list);
-    try rlp.encodeUint(allocator, tx.max_fee_per_gas, &list);
-    try rlp.encodeUint(allocator, tx.gas_limit, &list);
+    {
+        const enc = try rlp.encode(allocator, tx.chain_id);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.nonce);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.max_priority_fee_per_gas);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.max_fee_per_gas);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.gas_limit);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
 
     // Encode 'to' field (always present for blob transactions)
-    try rlp.encodeBytes(allocator, &tx.to.bytes, &list);
+    {
+        const enc_to = try rlp.encodeBytes(allocator, &tx.to.bytes);
+        defer allocator.free(enc_to);
+        try list.appendSlice(enc_to);
+    }
 
-    try rlp.encodeUint(allocator, tx.value, &list);
-    try rlp.encodeBytes(allocator, tx.data, &list);
+    {
+        const enc_val = try rlp.encode(allocator, tx.value);
+        defer allocator.free(enc_val);
+        try list.appendSlice(enc_val);
+    }
+    {
+        const enc_data = try rlp.encodeBytes(allocator, tx.data);
+        defer allocator.free(enc_data);
+        try list.appendSlice(enc_data);
+    }
 
     // Encode access list
     try encodeAccessListInternal(allocator, tx.access_list, &list);
 
     // Encode max_fee_per_blob_gas
-    try rlp.encodeUint(allocator, tx.max_fee_per_blob_gas, &list);
+    {
+        const enc_blob = try rlp.encode(allocator, tx.max_fee_per_blob_gas);
+        defer allocator.free(enc_blob);
+        try list.appendSlice(enc_blob);
+    }
 
     // Encode blob_versioned_hashes
     var hashes_list = std.array_list.AlignedManaged(u8, null).init(allocator);
     defer hashes_list.deinit();
 
     for (tx.blob_versioned_hashes) |versioned_hash| {
-        try rlp.encodeBytes(allocator, &versioned_hash.bytes, &hashes_list);
+        const enc_hash = try rlp.encodeBytes(allocator, &versioned_hash.bytes);
+        defer allocator.free(enc_hash);
+        try hashes_list.appendSlice(enc_hash);
     }
 
     // Wrap blob hashes in RLP list
     if (hashes_list.items.len <= 55) {
         try list.append(@as(u8, @intCast(0xc0 + hashes_list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(hashes_list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, hashes_list.items.len);
+        defer allocator.free(len_bytes);
         try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try list.appendSlice(len_bytes);
     }
@@ -431,9 +569,21 @@ pub fn encodeEip4844ForSigning(allocator: Allocator, tx: Eip4844Transaction) ![]
         // No signature fields for unsigned
     } else {
         // For signed transaction
-        try rlp.encodeUint(allocator, tx.v, &list);
-        try rlp.encodeBytes(allocator, &tx.r, &list);
-        try rlp.encodeBytes(allocator, &tx.s, &list);
+        {
+            const enc_v = try rlp.encode(allocator, tx.v);
+            defer allocator.free(enc_v);
+            try list.appendSlice(enc_v);
+        }
+        {
+            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            defer allocator.free(enc_r);
+            try list.appendSlice(enc_r);
+        }
+        {
+            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            defer allocator.free(enc_s);
+            try list.appendSlice(enc_s);
+        }
     }
 
     // Wrap in RLP list
@@ -443,7 +593,8 @@ pub fn encodeEip4844ForSigning(allocator: Allocator, tx: Eip4844Transaction) ![]
     if (list.items.len <= 55) {
         try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try rlp_wrapped.appendSlice(len_bytes);
     }
@@ -463,21 +614,51 @@ pub fn encodeEip7702ForSigning(allocator: Allocator, tx: Eip7702Transaction) ![]
     defer list.deinit();
 
     // Encode fields
-    try rlp.encodeUint(allocator, tx.chain_id, &list);
-    try rlp.encodeUint(allocator, tx.nonce, &list);
-    try rlp.encodeUint(allocator, tx.max_priority_fee_per_gas, &list);
-    try rlp.encodeUint(allocator, tx.max_fee_per_gas, &list);
-    try rlp.encodeUint(allocator, tx.gas_limit, &list);
+    {
+        const enc = try rlp.encode(allocator, tx.chain_id);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.nonce);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.max_priority_fee_per_gas);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.max_fee_per_gas);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
+    {
+        const enc = try rlp.encode(allocator, tx.gas_limit);
+        defer allocator.free(enc);
+        try list.appendSlice(enc);
+    }
 
     // Encode 'to' field
     if (tx.to) |to_addr| {
-        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
+        const enc_to = try rlp.encodeBytes(allocator, &to_addr.bytes);
+        defer allocator.free(enc_to);
+        try list.appendSlice(enc_to);
     } else {
         try list.append(0x80); // Empty RLP string for null
     }
 
-    try rlp.encodeUint(allocator, tx.value, &list);
-    try rlp.encodeBytes(allocator, tx.data, &list);
+    {
+        const enc_val = try rlp.encode(allocator, tx.value);
+        defer allocator.free(enc_val);
+        try list.appendSlice(enc_val);
+    }
+    {
+        const enc_data = try rlp.encodeBytes(allocator, tx.data);
+        defer allocator.free(enc_data);
+        try list.appendSlice(enc_data);
+    }
 
     // Encode access list
     try encodeAccessListInternal(allocator, tx.access_list, &list);
@@ -492,9 +673,21 @@ pub fn encodeEip7702ForSigning(allocator: Allocator, tx: Eip7702Transaction) ![]
         // No signature fields for unsigned
     } else {
         // For signed transaction
-        try rlp.encodeUint(allocator, tx.v, &list);
-        try rlp.encodeBytes(allocator, &tx.r, &list);
-        try rlp.encodeBytes(allocator, &tx.s, &list);
+        {
+            const enc_v = try rlp.encode(allocator, tx.v);
+            defer allocator.free(enc_v);
+            try list.appendSlice(enc_v);
+        }
+        {
+            const enc_r = try rlp.encodeBytes(allocator, &tx.r);
+            defer allocator.free(enc_r);
+            try list.appendSlice(enc_r);
+        }
+        {
+            const enc_s = try rlp.encodeBytes(allocator, &tx.s);
+            defer allocator.free(enc_s);
+            try list.appendSlice(enc_s);
+        }
     }
 
     // Wrap in RLP list
@@ -504,7 +697,8 @@ pub fn encodeEip7702ForSigning(allocator: Allocator, tx: Eip7702Transaction) ![]
     if (list.items.len <= 55) {
         try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encodeLength(list.items.len);
+        const len_bytes = try rlp.encodeLength(allocator, list.items.len);
+        defer allocator.free(len_bytes);
         try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try rlp_wrapped.appendSlice(len_bytes);
     }

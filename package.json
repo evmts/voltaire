@@ -41,7 +41,11 @@
 	"files": ["dist", "types", "wasm", "native"],
 	"scripts": {
 		"build": "echo 'Build script TBD'",
-		"test": "bun test",
+		"test": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test",
+		"test:native": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test src/typescript/native/**/*.test.ts",
+		"test:wasm": "bun test src/typescript/wasm/**/*.test.ts",
+		"test:integration": "bun test tests/integration/**/*.test.ts",
+		"test:security": "bun test tests/security/**/*.test.ts",
 		"format": "biome format --write .",
 		"format:check": "biome format .",
 		"lint": "biome lint --write .",
