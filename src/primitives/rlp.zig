@@ -868,3 +868,331 @@ test "RLP depth protection against attack" {
     const result = decode(allocator, current_encoded, false);
     try testing.expectError(RlpError.RecursionDepthExceeded, result);
 }
+
+test "RLP empty string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const empty_str = "";
+    const encoded = try encode(allocator, empty_str);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 1), encoded.len);
+    try testing.expectEqual(@as(u8, 0x80), encoded[0]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqual(@as(usize, 0), str.len),
+        .List => unreachable,
+    }
+}
+
+test "RLP empty list" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const empty_list = [_][]const u8{};
+    const encoded = try encode(allocator, empty_list[0..]);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 1), encoded.len);
+    try testing.expectEqual(@as(u8, 0xc0), encoded[0]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |items| try testing.expectEqual(@as(usize, 0), items.len),
+        .String => unreachable,
+    }
+}
+
+test "RLP malformed input - truncated string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // String header says 5 bytes but only 3 provided
+    const malformed = [_]u8{ 0x85, 'a', 'b', 'c' };
+    const result = decode(allocator, &malformed, false);
+    try testing.expectError(RlpError.InputTooShort, result);
+}
+
+test "RLP malformed input - truncated list" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // List header says 10 bytes but only 5 provided
+    const malformed = [_]u8{ 0xca, 0x83, 'd', 'o', 'g' };
+    const result = decode(allocator, &malformed, false);
+    try testing.expectError(RlpError.InputTooShort, result);
+}
+
+test "RLP malformed input - leading zeros in length" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Long string with leading zero in length
+    const malformed = [_]u8{ 0xb8, 0x00, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    const result = decode(allocator, &malformed, false);
+    try testing.expectError(RlpError.LeadingZeros, result);
+}
+
+test "RLP non-canonical encoding - single byte as string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Single byte less than 0x80 should not have 0x81 prefix
+    const non_canonical = [_]u8{ 0x81, 0x50 };
+    const result = decode(allocator, &non_canonical, false);
+    try testing.expectError(RlpError.NonCanonicalSize, result);
+}
+
+test "RLP non-canonical encoding - short form for small string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // String of 5 bytes should use short form, not long form
+    const non_canonical = [_]u8{ 0xb8, 0x05, 'h', 'e', 'l', 'l', 'o' };
+    const result = decode(allocator, &non_canonical, false);
+    try testing.expectError(RlpError.NonCanonicalSize, result);
+}
+
+test "RLP encode decode round-trip - large integer" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const large_value: u64 = 0xFFFFFFFFFFFFFFFF;
+    const encoded = try encode(allocator, large_value);
+    defer allocator.free(encoded);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |bytes| {
+            try testing.expectEqual(@as(usize, 8), bytes.len);
+            var value: u64 = 0;
+            for (bytes) |byte| {
+                value = (value << 8) | byte;
+            }
+            try testing.expectEqual(large_value, value);
+        },
+        .List => unreachable,
+    }
+}
+
+test "RLP encode decode round-trip - list with mixed types" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create list with string and integer
+    const str = "hello";
+    const encoded_str = try encode(allocator, str);
+    defer allocator.free(encoded_str);
+
+    const encoded_int = try encode(allocator, 42);
+    defer allocator.free(encoded_int);
+
+    const list = [_][]const u8{ encoded_str, encoded_int };
+    const encoded_list = try encode(allocator, list[0..]);
+    defer allocator.free(encoded_list);
+
+    const decoded = try decode(allocator, encoded_list, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |items| {
+            try testing.expectEqual(@as(usize, 2), items.len);
+        },
+        .String => unreachable,
+    }
+}
+
+test "RLP extra data in non-stream mode" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Valid encoding followed by extra bytes
+    const with_extra = [_]u8{ 0x83, 'd', 'o', 'g', 0x01, 0x02 };
+    const result = decode(allocator, &with_extra, false);
+    try testing.expectError(RlpError.InvalidRemainder, result);
+}
+
+test "RLP extra data allowed in stream mode" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Valid encoding followed by extra bytes
+    const with_extra = [_]u8{ 0x83, 'd', 'o', 'g', 0x01, 0x02 };
+    const decoded = try decode(allocator, &with_extra, true);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqualSlices(u8, "dog", str),
+        .List => unreachable,
+    }
+
+    // Remainder should be the extra bytes
+    try testing.expectEqual(@as(usize, 2), decoded.remainder.len);
+    try testing.expectEqual(@as(u8, 0x01), decoded.remainder[0]);
+}
+
+test "RLP all single byte values" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Test all values from 0x00 to 0x7f (should encode as themselves)
+    var value: u8 = 0;
+    while (value < 0x7f) : (value += 1) {
+        const bytes = [_]u8{value};
+        const encoded = try encode(allocator, &bytes);
+        defer allocator.free(encoded);
+
+        try testing.expectEqual(@as(usize, 1), encoded.len);
+        try testing.expectEqual(value, encoded[0]);
+
+        const decoded = try decode(allocator, encoded, false);
+        defer decoded.data.deinit(allocator);
+
+        switch (decoded.data) {
+            .String => |str| {
+                try testing.expectEqual(@as(usize, 1), str.len);
+                try testing.expectEqual(value, str[0]);
+            },
+            .List => unreachable,
+        }
+    }
+}
+
+test "RLP boundary values - 55 byte string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Exactly 55 bytes - should use short form
+    const str_55 = "a" ** 55;
+    const encoded = try encode(allocator, str_55);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 56), encoded.len);
+    try testing.expectEqual(@as(u8, 0x80 + 55), encoded[0]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqual(@as(usize, 55), str.len),
+        .List => unreachable,
+    }
+}
+
+test "RLP boundary values - 56 byte string" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Exactly 56 bytes - should use long form
+    const str_56 = "a" ** 56;
+    const encoded = try encode(allocator, str_56);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(u8, 0xb8), encoded[0]);
+    try testing.expectEqual(@as(u8, 56), encoded[1]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |str| try testing.expectEqual(@as(usize, 56), str.len),
+        .List => unreachable,
+    }
+}
+
+test "RLP list boundary - 55 byte total" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create list where total encoded size is exactly 55 bytes
+    const items = [_][]const u8{ "a" ** 17, "b" ** 17, "c" ** 17 };
+    const encoded = try encode(allocator, items[0..]);
+    defer allocator.free(encoded);
+
+    // Should use short list form
+    try testing.expect(encoded[0] >= 0xc0 and encoded[0] <= 0xf7);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |list| try testing.expectEqual(@as(usize, 3), list.len),
+        .String => unreachable,
+    }
+}
+
+test "RLP maximum u8 value" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const max_u8: u8 = 255;
+    const encoded = try encode(allocator, max_u8);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(usize, 2), encoded.len);
+    try testing.expectEqual(@as(u8, 0x81), encoded[0]);
+    try testing.expectEqual(@as(u8, 0xff), encoded[1]);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .String => |bytes| {
+            try testing.expectEqual(@as(usize, 1), bytes.len);
+            try testing.expectEqual(@as(u8, 255), bytes[0]);
+        },
+        .List => unreachable,
+    }
+}
+
+test "RLP nested list round-trip - two levels" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    // Create [[1, 2], [3, 4]]
+    const list1_item1 = try encode(allocator, 1);
+    defer allocator.free(list1_item1);
+    const list1_item2 = try encode(allocator, 2);
+    defer allocator.free(list1_item2);
+    const list1_items = [_][]const u8{ list1_item1, list1_item2 };
+    const list1 = try encode(allocator, list1_items[0..]);
+    defer allocator.free(list1);
+
+    const list2_item1 = try encode(allocator, 3);
+    defer allocator.free(list2_item1);
+    const list2_item2 = try encode(allocator, 4);
+    defer allocator.free(list2_item2);
+    const list2_items = [_][]const u8{ list2_item1, list2_item2 };
+    const list2 = try encode(allocator, list2_items[0..]);
+    defer allocator.free(list2);
+
+    const outer_items = [_][]const u8{ list1, list2 };
+    const encoded = try encode(allocator, outer_items[0..]);
+    defer allocator.free(encoded);
+
+    const decoded = try decode(allocator, encoded, false);
+    defer decoded.data.deinit(allocator);
+
+    switch (decoded.data) {
+        .List => |outer_list| {
+            try testing.expectEqual(@as(usize, 2), outer_list.len);
+            for (outer_list) |inner| {
+                switch (inner) {
+                    .List => |inner_list| {
+                        try testing.expectEqual(@as(usize, 2), inner_list.len);
+                    },
+                    .String => unreachable,
+                }
+            }
+        },
+        .String => unreachable,
+    }
+}

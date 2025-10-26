@@ -770,3 +770,253 @@ test "parseUnits with very small decimals" {
     const result3 = try parseUnits("0.001", .kwei);
     try testing.expectEqual(@as(u256, 1), result3);
 }
+
+test "formatEther with various values" {
+    const allocator = testing.allocator;
+
+    const zero_formatted = try formatEther(allocator, 0);
+    defer allocator.free(zero_formatted);
+    try testing.expectEqualStrings("0 ether", zero_formatted);
+
+    const one_wei = try formatEther(allocator, 1);
+    defer allocator.free(one_wei);
+    try testing.expectEqualStrings("0.000000000000000001 ether", one_wei);
+
+    const half_ether = try formatEther(allocator, ETHER / 2);
+    defer allocator.free(half_ether);
+    try testing.expectEqualStrings("0.5 ether", half_ether);
+
+    const quarter_ether = try formatEther(allocator, ETHER / 4);
+    defer allocator.free(quarter_ether);
+    try testing.expectEqualStrings("0.25 ether", quarter_ether);
+
+    const large = try formatEther(allocator, 1000 * ETHER);
+    defer allocator.free(large);
+    try testing.expectEqualStrings("1000 ether", large);
+}
+
+test "formatGwei with various values" {
+    const allocator = testing.allocator;
+
+    const zero_formatted = try formatGwei(allocator, 0);
+    defer allocator.free(zero_formatted);
+    try testing.expectEqualStrings("0 gwei", zero_formatted);
+
+    const one_formatted = try formatGwei(allocator, GWEI);
+    defer allocator.free(one_formatted);
+    try testing.expectEqualStrings("1 gwei", one_formatted);
+
+    const half_gwei = try formatGwei(allocator, GWEI / 2);
+    defer allocator.free(half_gwei);
+    try testing.expectEqualStrings("0.5 gwei", half_gwei);
+
+    const large = try formatGwei(allocator, 1000000 * GWEI);
+    defer allocator.free(large);
+    try testing.expectEqualStrings("1000000 gwei", large);
+}
+
+test "formatWei function" {
+    const allocator = testing.allocator;
+
+    const zero = try formatWei(allocator, 0);
+    defer allocator.free(zero);
+    try testing.expectEqualStrings("0", zero);
+
+    const one = try formatWei(allocator, 1);
+    defer allocator.free(one);
+    try testing.expectEqualStrings("1", one);
+
+    const large = try formatWei(allocator, ETHER);
+    defer allocator.free(large);
+    try testing.expectEqualStrings("1000000000000000000", large);
+
+    const max_u64 = try formatWei(allocator, std.math.maxInt(u64));
+    defer allocator.free(max_u64);
+    try testing.expectEqualStrings("18446744073709551615", max_u64);
+}
+
+test "formatUnits with custom decimals" {
+    const allocator = testing.allocator;
+
+    const result1 = try formatUnits(allocator, ETHER, .ether, 2);
+    defer allocator.free(result1);
+    try testing.expectEqualStrings("1 ether", result1);
+
+    const result2 = try formatUnits(allocator, ETHER / 3, .ether, 2);
+    defer allocator.free(result2);
+    try testing.expectEqualStrings("0.33 ether", result2);
+
+    const result3 = try formatUnits(allocator, ETHER / 3, .ether, 6);
+    defer allocator.free(result3);
+    try testing.expectEqualStrings("0.333333 ether", result3);
+
+    const result4 = try formatUnits(allocator, GWEI, .gwei, 0);
+    defer allocator.free(result4);
+    try testing.expectEqualStrings("1 gwei", result4);
+
+    const result5 = try formatUnits(allocator, 123456789, .wei, null);
+    defer allocator.free(result5);
+    try testing.expectEqualStrings("123456789 wei", result5);
+}
+
+test "formatGasCost function" {
+    const allocator = testing.allocator;
+
+    const result1 = try formatGasCost(allocator, 21000, 20);
+    defer allocator.free(result1);
+
+    const expected_cost = calculateGasCost(21000, 20);
+    const expected_str = try formatEther(allocator, expected_cost);
+    defer allocator.free(expected_str);
+
+    try testing.expectEqualStrings(expected_str, result1);
+
+    const result2 = try formatGasCost(allocator, 100000, 50);
+    defer allocator.free(result2);
+    const expected_cost2 = calculateGasCost(100000, 50);
+    const expected_str2 = try formatEther(allocator, expected_cost2);
+    defer allocator.free(expected_str2);
+    try testing.expectEqualStrings(expected_str2, result2);
+}
+
+test "min and max functions for u256" {
+    const a: u256 = 100;
+    const b: u256 = 200;
+
+    try testing.expectEqual(@as(u256, 100), min(a, b));
+    try testing.expectEqual(@as(u256, 200), max(a, b));
+
+    try testing.expectEqual(@as(u256, 100), min(b, a));
+    try testing.expectEqual(@as(u256, 200), max(b, a));
+
+    try testing.expectEqual(@as(u256, 0), min(0, 100));
+    try testing.expectEqual(@as(u256, 100), max(0, 100));
+
+    const large1: u256 = std.math.maxInt(u256);
+    const large2: u256 = std.math.maxInt(u256) - 1;
+
+    try testing.expectEqual(large2, min(large1, large2));
+    try testing.expectEqual(large1, max(large1, large2));
+}
+
+test "safeMul overflow detection" {
+    const max_val = std.math.maxInt(u256);
+    const half_max = max_val / 2;
+
+    const result1 = safeMul(2, 3);
+    try testing.expectEqual(@as(?u256, 6), result1);
+
+    const result2 = safeMul(max_val, 2);
+    try testing.expectEqual(@as(?u256, null), result2);
+
+    const result3 = safeMul(half_max, 2);
+    try testing.expect(result3 != null);
+
+    const result4 = safeMul(half_max + 1, 2);
+    try testing.expectEqual(@as(?u256, null), result4);
+
+    const result5 = safeMul(0, max_val);
+    try testing.expectEqual(@as(?u256, 0), result5);
+
+    const result6 = safeMul(1, max_val);
+    try testing.expectEqual(@as(?u256, max_val), result6);
+}
+
+test "safeAdd overflow at boundary" {
+    const max_val = std.math.maxInt(u256);
+
+    const result1 = safeAdd(max_val, 0);
+    try testing.expectEqual(@as(?u256, max_val), result1);
+
+    const result2 = safeAdd(max_val, 1);
+    try testing.expectEqual(@as(?u256, null), result2);
+
+    const result3 = safeAdd(max_val - 1, 1);
+    try testing.expectEqual(@as(?u256, max_val), result3);
+
+    const result4 = safeAdd(max_val - 1, 2);
+    try testing.expectEqual(@as(?u256, null), result4);
+}
+
+test "safeSub underflow at boundary" {
+    const result1 = safeSub(0, 1);
+    try testing.expectEqual(@as(?u256, null), result1);
+
+    const result2 = safeSub(1, 1);
+    try testing.expectEqual(@as(?u256, 0), result2);
+
+    const result3 = safeSub(100, 99);
+    try testing.expectEqual(@as(?u256, 1), result3);
+
+    const result4 = safeSub(100, 101);
+    try testing.expectEqual(@as(?u256, null), result4);
+}
+
+test "calculatePercentageOf with zero whole" {
+    const result = calculatePercentageOf(100, 0);
+    try testing.expectEqual(@as(u256, 0), result);
+
+    const result2 = calculatePercentageOf(0, 0);
+    try testing.expectEqual(@as(u256, 0), result2);
+
+    const result3 = calculatePercentageOf(50, 100);
+    try testing.expectEqual(@as(u256, 50), result3);
+
+    const result4 = calculatePercentageOf(100, 100);
+    try testing.expectEqual(@as(u256, 100), result4);
+}
+
+test "formatUnits with all unit types" {
+    const allocator = testing.allocator;
+
+    const units = [_]Unit{ .wei, .kwei, .mwei, .gwei, .szabo, .finney, .ether };
+
+    for (units) |unit| {
+        const multiplier = unit.toMultiplier();
+        const formatted = try formatUnits(allocator, multiplier, unit, null);
+        defer allocator.free(formatted);
+
+        const unit_str = unit.toString();
+        const expected_prefix = "1 ";
+        try testing.expect(std.mem.startsWith(u8, formatted, expected_prefix));
+        try testing.expect(std.mem.endsWith(u8, formatted, unit_str));
+    }
+}
+
+test "parseUnits and formatUnits roundtrip" {
+    const allocator = testing.allocator;
+
+    const test_values = [_]struct {
+        str: []const u8,
+        unit: Unit,
+    }{
+        .{ .str = "1", .unit = .ether },
+        .{ .str = "0.5", .unit = .ether },
+        .{ .str = "100", .unit = .gwei },
+        .{ .str = "1000", .unit = .wei },
+        .{ .str = "1.25", .unit = .finney },
+    };
+
+    for (test_values) |tv| {
+        const parsed = try parseUnits(tv.str, tv.unit);
+        const formatted = try formatUnits(allocator, parsed, tv.unit, null);
+        defer allocator.free(formatted);
+
+        const reparsed = try parseUnits(tv.str, tv.unit);
+        try testing.expectEqual(parsed, reparsed);
+    }
+}
+
+test "Unit enum exhaustive coverage" {
+    try testing.expect(Unit.fromString("wei") != null);
+    try testing.expect(Unit.fromString("kwei") != null);
+    try testing.expect(Unit.fromString("mwei") != null);
+    try testing.expect(Unit.fromString("gwei") != null);
+    try testing.expect(Unit.fromString("szabo") != null);
+    try testing.expect(Unit.fromString("finney") != null);
+    try testing.expect(Unit.fromString("ether") != null);
+
+    try testing.expectEqual(@as(?Unit, null), Unit.fromString("bitcoin"));
+    try testing.expect(Unit.fromString("WEI") == null);
+    try testing.expect(Unit.fromString("GWEI") == null);
+}

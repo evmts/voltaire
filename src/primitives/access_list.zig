@@ -373,3 +373,157 @@ test "deduplicate access list" {
     try testing.expectEqual(@as(usize, 1), deduped.len);
     try testing.expectEqual(@as(usize, 3), deduped[0].storage_keys.len);
 }
+
+// Additional edge case tests for access list
+
+test "access list with single address no storage keys" {
+    const allocator = testing.allocator;
+
+    const accessList = [_]AccessListEntry{
+        .{
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+            .storage_keys = &.{},
+        },
+    };
+
+    // Gas cost should only include address cost
+    const gasCost = calculateAccessListGasCost(&accessList);
+    try testing.expectEqual(@as(u64, ACCESS_LIST_ADDRESS_COST), gasCost);
+
+    // Should still encode properly
+    const encoded = try encodeAccessList(allocator, &accessList);
+    defer allocator.free(encoded);
+    try testing.expect(encoded.len > 0);
+}
+
+test "access list membership with non-existent address" {
+    const storage_keys = [_]Hash{
+        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+    };
+
+    const accessList = [_]AccessListEntry{
+        .{
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+            .storage_keys = &storage_keys,
+        },
+    };
+
+    const non_existent = try Address.fromHex("0x9999999999999999999999999999999999999999");
+    const key = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
+
+    // Address not in list
+    try testing.expect(!isAddressInAccessList(&accessList, non_existent));
+
+    // Storage key should not be found for non-existent address
+    try testing.expect(!isStorageKeyInAccessList(&accessList, non_existent, key));
+}
+
+test "access list with maximum practical size" {
+    const allocator = testing.allocator;
+
+    // Create a large access list (100 addresses with 10 keys each)
+    var entries = try allocator.alloc(AccessListEntry, 100);
+    defer allocator.free(entries);
+
+    var all_keys = try allocator.alloc([10]Hash, 100);
+    defer allocator.free(all_keys);
+
+    for (0..100) |i| {
+        for (0..10) |j| {
+            all_keys[i][j] = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
+        }
+
+        var addr_bytes: [20]u8 = undefined;
+        @memset(&addr_bytes, @intCast(i));
+
+        entries[i] = .{
+            .address = Address{ .bytes = addr_bytes },
+            .storage_keys = &all_keys[i],
+        };
+    }
+
+    const gasCost = calculateAccessListGasCost(entries);
+
+    // Expected: 100 addresses * 2400 + 1000 keys * 1900
+    try testing.expectEqual(@as(u64, 100 * ACCESS_LIST_ADDRESS_COST + 1000 * ACCESS_LIST_STORAGE_KEY_COST), gasCost);
+}
+
+test "deduplicate access list with no duplicates" {
+    const allocator = testing.allocator;
+
+    const keys1 = [_]Hash{
+        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
+    };
+
+    const keys2 = [_]Hash{
+        try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
+    };
+
+    const accessList = [_]AccessListEntry{
+        .{
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+            .storage_keys = &keys1,
+        },
+        .{
+            .address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
+            .storage_keys = &keys2,
+        },
+    };
+
+    const deduped = try deduplicateAccessList(allocator, &accessList);
+    defer {
+        for (deduped) |entry| {
+            allocator.free(entry.storage_keys);
+        }
+        allocator.free(deduped);
+    }
+
+    // Should have two entries since addresses are different
+    try testing.expectEqual(@as(usize, 2), deduped.len);
+    try testing.expectEqual(@as(usize, 1), deduped[0].storage_keys.len);
+    try testing.expectEqual(@as(usize, 1), deduped[1].storage_keys.len);
+}
+
+test "gas savings calculation edge cases" {
+    // Empty access list
+    const empty: AccessList = &.{};
+    try testing.expectEqual(@as(u64, 0), calculateGasSavings(empty));
+
+    // Single address, no keys
+    const single_addr = [_]AccessListEntry{
+        .{
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+            .storage_keys = &.{},
+        },
+    };
+
+    const savings = calculateGasSavings(&single_addr);
+    // Account savings only: 2600 - 2400 = 200
+    try testing.expectEqual(@as(u64, COLD_ACCOUNT_ACCESS_COST - ACCESS_LIST_ADDRESS_COST), savings);
+}
+
+test "access list RLP encoding with large storage keys" {
+    const allocator = testing.allocator;
+
+    // Create an entry with many storage keys
+    var storage_keys: [50]Hash = undefined;
+    for (0..50) |i| {
+        var key_bytes: [32]u8 = undefined;
+        @memset(&key_bytes, @intCast(i));
+        storage_keys[i] = Hash{ .bytes = key_bytes };
+    }
+
+    const accessList = [_]AccessListEntry{
+        .{
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+            .storage_keys = &storage_keys,
+        },
+    };
+
+    const encoded = try encodeAccessList(allocator, &accessList);
+    defer allocator.free(encoded);
+
+    // Should be a large encoding
+    try testing.expect(encoded.len > 1600); // At least 50 * 32 bytes for keys
+    try testing.expect(encoded[0] >= 0xc0); // RLP list prefix
+}

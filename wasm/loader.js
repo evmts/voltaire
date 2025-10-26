@@ -445,6 +445,110 @@ export function eip191HashMessage(message) {
 }
 
 // ============================================================================
+// Hash Algorithms API
+// ============================================================================
+
+/**
+ * Compute SHA-256 hash
+ * @param {Uint8Array} data - Input data
+ * @returns {Uint8Array} 32-byte hash
+ */
+export function sha256(data) {
+  const savedOffset = memoryOffset;
+  try {
+    const dataPtr = malloc(data.length);
+    const outPtr = malloc(32);
+
+    writeBytes(data, dataPtr);
+    const result = wasmExports.primitives_sha256(dataPtr, data.length, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 32);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Compute RIPEMD-160 hash
+ * @param {Uint8Array} data - Input data
+ * @returns {Uint8Array} 20-byte hash
+ */
+export function ripemd160(data) {
+  const savedOffset = memoryOffset;
+  try {
+    const dataPtr = malloc(data.length);
+    const outPtr = malloc(20);
+
+    writeBytes(data, dataPtr);
+    const result = wasmExports.primitives_ripemd160(dataPtr, data.length, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 20);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Compute BLAKE2b hash
+ * @param {Uint8Array} data - Input data
+ * @returns {Uint8Array} 64-byte hash
+ */
+export function blake2b(data) {
+  const savedOffset = memoryOffset;
+  try {
+    const dataPtr = malloc(data.length);
+    const outPtr = malloc(64);
+
+    writeBytes(data, dataPtr);
+    const result = wasmExports.primitives_blake2b(dataPtr, data.length, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 64);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Compute Solidity-style Keccak-256 hash of tightly packed data
+ * @param {Uint8Array} packedData - Pre-packed data bytes
+ * @returns {Uint8Array} 32-byte hash
+ */
+export function solidityKeccak256(packedData) {
+  const savedOffset = memoryOffset;
+  try {
+    const dataPtr = malloc(packedData.length);
+    const outPtr = malloc(32);
+
+    writeBytes(packedData, dataPtr);
+    const result = wasmExports.primitives_solidity_keccak256(dataPtr, packedData.length, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 32);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Compute Solidity-style SHA-256 hash of tightly packed data
+ * @param {Uint8Array} packedData - Pre-packed data bytes
+ * @returns {Uint8Array} 32-byte hash
+ */
+export function soliditySha256(packedData) {
+  const savedOffset = memoryOffset;
+  try {
+    const dataPtr = malloc(packedData.length);
+    const outPtr = malloc(32);
+
+    writeBytes(packedData, dataPtr);
+    const result = wasmExports.primitives_solidity_sha256(dataPtr, packedData.length, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 32);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+// ============================================================================
 // RLP API
 // ============================================================================
 
@@ -629,6 +733,396 @@ export function bytecodeValidate(code) {
     writeBytes(code, codePtr);
     const result = wasmExports.primitives_bytecode_validate(codePtr, code.length);
     checkResult(result);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+// ============================================================================
+// U256 API
+// ============================================================================
+
+/**
+ * Convert hex string to U256 (32-byte big-endian)
+ * @param {string} hex - Hex string (with or without 0x prefix)
+ * @returns {Uint8Array} 32-byte U256 value
+ */
+export function u256FromHex(hex) {
+  const savedOffset = memoryOffset;
+  try {
+    const hexPtr = writeString(hex);
+    const outPtr = malloc(32);
+
+    const result = wasmExports.primitives_u256_from_hex(hexPtr, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 32);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Convert U256 to hex string
+ * @param {Uint8Array} value - 32-byte U256 value (big-endian)
+ * @returns {string} Hex string with 0x prefix (66 chars)
+ */
+export function u256ToHex(value) {
+  const savedOffset = memoryOffset;
+  try {
+    const valuePtr = malloc(32);
+    const outPtr = malloc(66);
+
+    writeBytes(value, valuePtr);
+    const result = wasmExports.primitives_u256_to_hex(valuePtr, outPtr, 66);
+    checkResult(result);
+    return readString(outPtr);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+// ============================================================================
+// Hex API
+// ============================================================================
+
+/**
+ * Convert hex string to bytes
+ * @param {string} hex - Hex string (with or without 0x prefix)
+ * @returns {Uint8Array} Raw bytes
+ */
+export function hexToBytes(hex) {
+  const savedOffset = memoryOffset;
+  try {
+    const hexPtr = writeString(hex);
+    const outPtr = malloc(hex.length); // Worst case: all hex chars become bytes
+
+    const resultLen = wasmExports.primitives_hex_to_bytes(hexPtr, outPtr, hex.length);
+    if (resultLen < 0) {
+      checkResult(resultLen);
+    }
+    return readBytes(outPtr, resultLen);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Convert bytes to hex string
+ * @param {Uint8Array} data - Raw bytes
+ * @returns {string} Hex string with 0x prefix
+ */
+export function bytesToHex(data) {
+  const savedOffset = memoryOffset;
+  try {
+    const dataPtr = malloc(data.length);
+    const outPtr = malloc(data.length * 2 + 3); // "0x" + 2 chars per byte + null terminator
+
+    writeBytes(data, dataPtr);
+    const resultLen = wasmExports.primitives_bytes_to_hex(
+      dataPtr,
+      data.length,
+      outPtr,
+      data.length * 2 + 3
+    );
+    if (resultLen < 0) {
+      checkResult(resultLen);
+    }
+    return readString(outPtr);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+// ============================================================================
+// Transaction API
+// ============================================================================
+
+/**
+ * Detect transaction type from serialized data
+ * @param {Uint8Array} data - RLP-encoded transaction data
+ * @returns {number} Transaction type (0=Legacy, 1=EIP2930, 2=EIP1559, 3=EIP4844, 4=EIP7702)
+ */
+export function txDetectType(data) {
+  const savedOffset = memoryOffset;
+  try {
+    const dataPtr = malloc(data.length);
+    writeBytes(data, dataPtr);
+    const txType = wasmExports.primitives_tx_detect_type(dataPtr, data.length);
+    if (txType < 0) {
+      checkResult(txType);
+    }
+    return txType;
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+// ============================================================================
+// Wallet API
+// ============================================================================
+
+/**
+ * Generate a cryptographically secure random private key
+ * @returns {Uint8Array} 32-byte private key
+ */
+export function generatePrivateKey() {
+  const savedOffset = memoryOffset;
+  try {
+    const outPtr = malloc(32);
+    const result = wasmExports.primitives_generate_private_key(outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 32);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Compress uncompressed secp256k1 public key
+ * @param {Uint8Array} uncompressed - 64-byte uncompressed public key (x, y coordinates)
+ * @returns {Uint8Array} 33-byte compressed public key (0x02/0x03 prefix + x coordinate)
+ */
+export function compressPublicKey(uncompressed) {
+  if (uncompressed.length !== 64) {
+    throw new Error('Uncompressed public key must be 64 bytes');
+  }
+
+  const savedOffset = memoryOffset;
+  try {
+    const uncompressedPtr = malloc(64);
+    const outPtr = malloc(33);
+
+    writeBytes(uncompressed, uncompressedPtr);
+    const result = wasmExports.primitives_compress_public_key(uncompressedPtr, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 33);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+// ============================================================================
+// Signature API (secp256k1)
+// ============================================================================
+
+/**
+ * Recover public key from ECDSA signature
+ * @param {Uint8Array} messageHash - 32-byte message hash
+ * @param {Uint8Array} r - R component (32 bytes)
+ * @param {Uint8Array} s - S component (32 bytes)
+ * @param {number} v - Recovery parameter (0-3)
+ * @returns {Uint8Array} Uncompressed public key (64 bytes)
+ */
+export function secp256k1RecoverPubkey(messageHash, r, s, v) {
+  const savedOffset = memoryOffset;
+  try {
+    const hashPtr = malloc(32);
+    const rPtr = malloc(32);
+    const sPtr = malloc(32);
+    const outPtr = malloc(64);
+
+    writeBytes(messageHash, hashPtr);
+    writeBytes(r, rPtr);
+    writeBytes(s, sPtr);
+
+    const result = wasmExports.primitives_secp256k1_recover_pubkey(
+      hashPtr,
+      rPtr,
+      sPtr,
+      v,
+      outPtr
+    );
+    checkResult(result);
+    return readBytes(outPtr, 64);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Recover Ethereum address from ECDSA signature
+ * @param {Uint8Array} messageHash - 32-byte message hash
+ * @param {Uint8Array} r - R component (32 bytes)
+ * @param {Uint8Array} s - S component (32 bytes)
+ * @param {number} v - Recovery parameter (0-3)
+ * @returns {Uint8Array} Ethereum address (20 bytes)
+ */
+export function secp256k1RecoverAddress(messageHash, r, s, v) {
+  const savedOffset = memoryOffset;
+  try {
+    const hashPtr = malloc(32);
+    const rPtr = malloc(32);
+    const sPtr = malloc(32);
+    const outPtr = malloc(20);
+
+    writeBytes(messageHash, hashPtr);
+    writeBytes(r, rPtr);
+    writeBytes(s, sPtr);
+
+    const result = wasmExports.primitives_secp256k1_recover_address(
+      hashPtr,
+      rPtr,
+      sPtr,
+      v,
+      outPtr
+    );
+    checkResult(result);
+    return readBytes(outPtr, 20);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Derive public key from private key
+ * @param {Uint8Array} privateKey - 32-byte private key
+ * @returns {Uint8Array} Uncompressed public key (64 bytes)
+ */
+export function secp256k1PubkeyFromPrivate(privateKey) {
+  const savedOffset = memoryOffset;
+  try {
+    const keyPtr = malloc(32);
+    const outPtr = malloc(64);
+
+    writeBytes(privateKey, keyPtr);
+
+    const result = wasmExports.primitives_secp256k1_pubkey_from_private(keyPtr, outPtr);
+    checkResult(result);
+    return readBytes(outPtr, 64);
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Validate ECDSA signature components
+ * @param {Uint8Array} r - R component (32 bytes)
+ * @param {Uint8Array} s - S component (32 bytes)
+ * @returns {boolean} True if signature is valid
+ */
+export function secp256k1ValidateSignature(r, s) {
+  const savedOffset = memoryOffset;
+  try {
+    const rPtr = malloc(32);
+    const sPtr = malloc(32);
+
+    writeBytes(r, rPtr);
+    writeBytes(s, sPtr);
+
+    return wasmExports.primitives_secp256k1_validate_signature(rPtr, sPtr) !== 0;
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Normalize signature to canonical form (low-s)
+ * @param {Uint8Array} r - R component (32 bytes)
+ * @param {Uint8Array} s - S component (32 bytes)
+ * @returns {[Uint8Array, Uint8Array]} Normalized [r, s] components
+ */
+export function signatureNormalize(r, s) {
+  const savedOffset = memoryOffset;
+  try {
+    const rPtr = malloc(32);
+    const sPtr = malloc(32);
+
+    writeBytes(r, rPtr);
+    writeBytes(s, sPtr);
+
+    // This modifies s in-place if needed
+    wasmExports.primitives_signature_normalize(rPtr, sPtr);
+
+    // Read back the (potentially modified) values
+    const normalizedR = readBytes(rPtr, 32);
+    const normalizedS = readBytes(sPtr, 32);
+    return [normalizedR, normalizedS];
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Check if signature is in canonical form
+ * @param {Uint8Array} r - R component (32 bytes)
+ * @param {Uint8Array} s - S component (32 bytes)
+ * @returns {boolean} True if signature is canonical
+ */
+export function signatureIsCanonical(r, s) {
+  const savedOffset = memoryOffset;
+  try {
+    const rPtr = malloc(32);
+    const sPtr = malloc(32);
+
+    writeBytes(r, rPtr);
+    writeBytes(s, sPtr);
+
+    return wasmExports.primitives_signature_is_canonical(rPtr, sPtr) !== 0;
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Parse signature from compact format
+ * @param {Uint8Array} sigData - Signature bytes (64 or 65 bytes)
+ * @returns {[Uint8Array, Uint8Array, Uint8Array]} [r, s, v] components
+ */
+export function signatureParse(sigData) {
+  const savedOffset = memoryOffset;
+  try {
+    const sigPtr = malloc(sigData.length);
+    const rPtr = malloc(32);
+    const sPtr = malloc(32);
+    const vPtr = malloc(1);
+
+    writeBytes(sigData, sigPtr);
+
+    const result = wasmExports.primitives_signature_parse(
+      sigPtr,
+      sigData.length,
+      rPtr,
+      sPtr,
+      vPtr
+    );
+    checkResult(result);
+
+    const r = readBytes(rPtr, 32);
+    const s = readBytes(sPtr, 32);
+    const v = readBytes(vPtr, 1);
+    return [r, s, v];
+  } finally {
+    memoryOffset = savedOffset;
+  }
+}
+
+/**
+ * Serialize signature to compact format
+ * @param {Uint8Array} r - R component (32 bytes)
+ * @param {Uint8Array} s - S component (32 bytes)
+ * @param {number} v - Recovery parameter
+ * @param {boolean} includeV - Whether to include v byte
+ * @returns {Uint8Array} Serialized signature
+ */
+export function signatureSerialize(r, s, v, includeV) {
+  const savedOffset = memoryOffset;
+  try {
+    const rPtr = malloc(32);
+    const sPtr = malloc(32);
+    const outPtr = malloc(65);
+
+    writeBytes(r, rPtr);
+    writeBytes(s, sPtr);
+
+    const resultLen = wasmExports.primitives_signature_serialize(
+      rPtr,
+      sPtr,
+      v,
+      includeV ? 1 : 0,
+      outPtr
+    );
+
+    return readBytes(outPtr, resultLen);
   } finally {
     memoryOffset = savedOffset;
   }

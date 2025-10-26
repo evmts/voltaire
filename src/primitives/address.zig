@@ -856,3 +856,150 @@ test "calculate_create2_address with large init code" {
     const expected_addr = getCreate2Address(deployer, @bitCast(salt), expected_hash);
     try std.testing.expectEqual(expected_addr, addr);
 }
+
+test "Address - fromBytes with invalid lengths" {
+    const too_short = [_]u8{0x01} ** 19;
+    const result1 = fromBytes(&too_short);
+    try std.testing.expectError(error.InvalidAddressLength, result1);
+
+    const too_long = [_]u8{0x01} ** 21;
+    const result2 = fromBytes(&too_long);
+    try std.testing.expectError(error.InvalidAddressLength, result2);
+
+    const empty = [_]u8{};
+    const result3 = fromBytes(&empty);
+    try std.testing.expectError(error.InvalidAddressLength, result3);
+
+    const valid = [_]u8{0x01} ** 20;
+    const result4 = try fromBytes(&valid);
+    try std.testing.expectEqual(@as(usize, 20), result4.bytes.len);
+}
+
+test "Address - toU256 and fromU256 conversions" {
+    const zero_addr = zero();
+    const zero_u256 = toU256(zero_addr);
+    try std.testing.expectEqual(@as(u256, 0), zero_u256);
+
+    const zero_back = fromU256(zero_u256);
+    try std.testing.expectEqual(zero_addr, zero_back);
+
+    const test_addr = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const test_u256 = toU256(test_addr);
+    const test_back = fromU256(test_u256);
+    try std.testing.expectEqual(test_addr, test_back);
+
+    const max_u256: u256 = (@as(u256, 1) << 160) - 1;
+    const max_addr = fromU256(max_u256);
+    const max_u256_back = toU256(max_addr);
+    try std.testing.expectEqual(max_u256, max_u256_back);
+
+    const overflow_u256: u256 = (@as(u256, 1) << 160);
+    const overflow_addr = fromU256(overflow_u256);
+    try std.testing.expectEqual(zero_addr, overflow_addr);
+}
+
+test "Address - isZero function" {
+    const zero_addr = zero();
+    try std.testing.expect(isZero(zero_addr));
+
+    const zero_addr_const = ZERO_ADDRESS;
+    try std.testing.expect(isZero(zero_addr_const));
+
+    const non_zero = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    try std.testing.expect(!isZero(non_zero));
+
+    const almost_zero = try fromHex("0x0000000000000000000000000000000000000001");
+    try std.testing.expect(!isZero(almost_zero));
+}
+
+test "Address - formatWithCase function" {
+    const test_addr = try fromHex("0xabcdef0123456789abcdef0123456789abcdef01");
+
+    const lower = formatWithCase(test_addr, false);
+    try std.testing.expectEqualStrings("0xabcdef0123456789abcdef0123456789abcdef01", &lower);
+
+    const upper = formatWithCase(test_addr, true);
+    try std.testing.expectEqualStrings("0xABCDEF0123456789ABCDEF0123456789ABCDEF01", &upper);
+
+    const zero_lower = formatWithCase(zero(), false);
+    try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_lower);
+
+    const zero_upper = formatWithCase(zero(), true);
+    try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_upper);
+}
+
+test "Address - fromHex error cases" {
+    const too_short = "0x1234";
+    const result1 = fromHex(too_short);
+    try std.testing.expectError(error.InvalidHexFormat, result1);
+
+    const too_long = "0x" ++ "a" ** 50;
+    const result2 = fromHex(too_long);
+    try std.testing.expectError(error.InvalidHexFormat, result2);
+
+    const no_prefix = "a0cf798816d4b9b9866b5330eea46a18382f251e";
+    const result3 = fromHex(no_prefix);
+    try std.testing.expectError(error.InvalidHexFormat, result3);
+
+    const invalid_char = "0xa0cf798816d4b9b9866b5330eea46a18382f251g";
+    const result4 = fromHex(invalid_char);
+    try std.testing.expectError(error.InvalidHexString, result4);
+
+    const odd_length = "0xa0cf798816d4b9b9866b5330eea46a18382f251";
+    const result5 = fromHex(odd_length);
+    try std.testing.expectError(error.InvalidHexFormat, result5);
+}
+
+test "PublicKey - fromHex error cases" {
+    const too_short = "0x04";
+    const result1 = PublicKey.fromHex(too_short);
+    try std.testing.expectError(error.InvalidPublicKeyLength, result1);
+
+    const no_prefix = "048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
+    const result2 = PublicKey.fromHex(no_prefix);
+    try std.testing.expectError(error.InvalidPublicKeyFormat, result2);
+
+    const wrong_prefix = "0x028318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
+    const result3 = PublicKey.fromHex(wrong_prefix);
+    try std.testing.expectError(error.InvalidPublicKeyPrefix, result3);
+
+    const invalid_char = "0x048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aag";
+    const result4 = PublicKey.fromHex(invalid_char);
+    try std.testing.expectError(error.InvalidHexString, result4);
+
+    const odd_length = "0x048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa";
+    const result5 = PublicKey.fromHex(odd_length);
+    try std.testing.expectError(error.InvalidPublicKeyLength, result5);
+}
+
+test "Address - equals and eql functions" {
+    const addr1 = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const addr2 = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const addr3 = try fromHex("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
+
+    try std.testing.expect(equals(addr1, addr2));
+    try std.testing.expect(eql(addr1, addr2));
+    try std.testing.expect(!equals(addr1, addr3));
+    try std.testing.expect(!eql(addr1, addr3));
+
+    try std.testing.expect(equals(zero(), zero()));
+    try std.testing.expect(eql(ZERO_ADDRESS, ZERO));
+}
+
+test "Address - toHex function" {
+    const test_addr = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const hex_result = toHex(test_addr);
+    try std.testing.expectEqualStrings("0xa0cf798816d4b9b9866b5330eea46a18382f251e", &hex_result);
+
+    const zero_hex = toHex(zero());
+    try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_hex);
+}
+
+test "Address - toChecksumHex function" {
+    const test_addr = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const checksum = toChecksumHex(test_addr);
+    try std.testing.expectEqualStrings("0xA0Cf798816D4b9b9866b5330EEa46a18382f251e", &checksum);
+
+    const zero_checksum = toChecksumHex(zero());
+    try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_checksum);
+}

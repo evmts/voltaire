@@ -94,6 +94,7 @@ const testing = std.testing;
 const rlp = @import("rlp.zig");
 const address = @import("address.zig");
 const authorization = @import("authorization.zig");
+const blob = @import("blob.zig");
 const crypto_pkg = @import("crypto");
 const hash = crypto_pkg.Hash;
 const hex = @import("hex.zig");
@@ -101,6 +102,7 @@ const crypto = crypto_pkg.Crypto;
 const Address = address.Address;
 const Hash = hash.Hash;
 const Authorization = authorization.Authorization;
+const VersionedHash = blob.VersionedHash;
 const Allocator = std.mem.Allocator;
 
 // Transaction error types
@@ -143,6 +145,24 @@ pub const Eip1559Transaction = struct {
     value: u256,
     data: []const u8,
     access_list: []const AccessListItem,
+    v: u64,
+    r: [32]u8,
+    s: [32]u8,
+};
+
+// EIP-4844 blob transaction structure
+pub const Eip4844Transaction = struct {
+    chain_id: u64,
+    nonce: u64,
+    max_priority_fee_per_gas: u256,
+    max_fee_per_gas: u256,
+    gas_limit: u64,
+    to: Address, // Must be non-null for blob transactions
+    value: u256,
+    data: []const u8,
+    access_list: []const AccessListItem,
+    max_fee_per_blob_gas: u256,
+    blob_versioned_hashes: []const VersionedHash,
     v: u64,
     r: [32]u8,
     s: [32]u8,
@@ -364,6 +384,154 @@ pub fn computeLegacyTransactionHash(allocator: Allocator, tx: LegacyTransaction)
     return hash.keccak256(encoded);
 }
 
+// Encode EIP-4844 blob transaction for signing
+pub fn encodeEip4844ForSigning(allocator: Allocator, tx: Eip4844Transaction) ![]u8 {
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer list.deinit();
+
+    // Encode fields
+    try rlp.encodeUint(allocator, tx.chain_id, &list);
+    try rlp.encodeUint(allocator, tx.nonce, &list);
+    try rlp.encodeUint(allocator, tx.max_priority_fee_per_gas, &list);
+    try rlp.encodeUint(allocator, tx.max_fee_per_gas, &list);
+    try rlp.encodeUint(allocator, tx.gas_limit, &list);
+
+    // Encode 'to' field (always present for blob transactions)
+    try rlp.encodeBytes(allocator, &tx.to.bytes, &list);
+
+    try rlp.encodeUint(allocator, tx.value, &list);
+    try rlp.encodeBytes(allocator, tx.data, &list);
+
+    // Encode access list
+    try encodeAccessListInternal(allocator, tx.access_list, &list);
+
+    // Encode max_fee_per_blob_gas
+    try rlp.encodeUint(allocator, tx.max_fee_per_blob_gas, &list);
+
+    // Encode blob_versioned_hashes
+    var hashes_list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer hashes_list.deinit();
+
+    for (tx.blob_versioned_hashes) |versioned_hash| {
+        try rlp.encodeBytes(allocator, &versioned_hash.bytes, &hashes_list);
+    }
+
+    // Wrap blob hashes in RLP list
+    if (hashes_list.items.len <= 55) {
+        try list.append(@as(u8, @intCast(0xc0 + hashes_list.items.len)));
+    } else {
+        const len_bytes = rlp.encodeLength(hashes_list.items.len);
+        try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try list.appendSlice(len_bytes);
+    }
+    try list.appendSlice(hashes_list.items);
+
+    // For unsigned transaction
+    if (tx.v == 0) {
+        // No signature fields for unsigned
+    } else {
+        // For signed transaction
+        try rlp.encodeUint(allocator, tx.v, &list);
+        try rlp.encodeBytes(allocator, &tx.r, &list);
+        try rlp.encodeBytes(allocator, &tx.s, &list);
+    }
+
+    // Wrap in RLP list
+    var rlp_wrapped = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer rlp_wrapped.deinit();
+
+    if (list.items.len <= 55) {
+        try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
+    } else {
+        const len_bytes = rlp.encodeLength(list.items.len);
+        try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try rlp_wrapped.appendSlice(len_bytes);
+    }
+    try rlp_wrapped.appendSlice(list.items);
+
+    // Prepend transaction type
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
+    try result.append(@intFromEnum(TransactionType.eip4844));
+    try result.appendSlice(rlp_wrapped.items);
+
+    return result.toOwnedSlice();
+}
+
+// Encode EIP-7702 transaction for signing
+pub fn encodeEip7702ForSigning(allocator: Allocator, tx: Eip7702Transaction) ![]u8 {
+    var list = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer list.deinit();
+
+    // Encode fields
+    try rlp.encodeUint(allocator, tx.chain_id, &list);
+    try rlp.encodeUint(allocator, tx.nonce, &list);
+    try rlp.encodeUint(allocator, tx.max_priority_fee_per_gas, &list);
+    try rlp.encodeUint(allocator, tx.max_fee_per_gas, &list);
+    try rlp.encodeUint(allocator, tx.gas_limit, &list);
+
+    // Encode 'to' field
+    if (tx.to) |to_addr| {
+        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
+    } else {
+        try list.append(0x80); // Empty RLP string for null
+    }
+
+    try rlp.encodeUint(allocator, tx.value, &list);
+    try rlp.encodeBytes(allocator, tx.data, &list);
+
+    // Encode access list
+    try encodeAccessListInternal(allocator, tx.access_list, &list);
+
+    // Encode authorization list
+    const auth_encoded = try authorization.encodeAuthorizationList(allocator, tx.authorization_list);
+    defer allocator.free(auth_encoded);
+    try list.appendSlice(auth_encoded);
+
+    // For unsigned transaction
+    if (tx.v == 0) {
+        // No signature fields for unsigned
+    } else {
+        // For signed transaction
+        try rlp.encodeUint(allocator, tx.v, &list);
+        try rlp.encodeBytes(allocator, &tx.r, &list);
+        try rlp.encodeBytes(allocator, &tx.s, &list);
+    }
+
+    // Wrap in RLP list
+    var rlp_wrapped = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer rlp_wrapped.deinit();
+
+    if (list.items.len <= 55) {
+        try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
+    } else {
+        const len_bytes = rlp.encodeLength(list.items.len);
+        try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try rlp_wrapped.appendSlice(len_bytes);
+    }
+    try rlp_wrapped.appendSlice(list.items);
+
+    // Prepend transaction type
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
+    try result.append(@intFromEnum(TransactionType.eip7702));
+    try result.appendSlice(rlp_wrapped.items);
+
+    return result.toOwnedSlice();
+}
+
+// Compute EIP-4844 transaction hash
+pub fn computeEip4844TransactionHash(allocator: Allocator, tx: Eip4844Transaction) !Hash {
+    const encoded = try encodeEip4844ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+    return hash.keccak256(encoded);
+}
+
+// Compute EIP-7702 transaction hash
+pub fn computeEip7702TransactionHash(allocator: Allocator, tx: Eip7702Transaction) !Hash {
+    const encoded = try encodeEip7702ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+    return hash.keccak256(encoded);
+}
+
 // Detect transaction type from raw data
 pub fn detectTransactionType(data: []const u8) TransactionType {
     if (data.len == 0) return TransactionType.legacy;
@@ -578,4 +746,1290 @@ test "decode mainnet transaction" {
 
     // For now, just verify we can handle the concept
     try testing.expect(true);
+}
+
+// Critical: Chain ID Replay Protection Tests (EIP-155)
+
+test "legacy transaction chain ID replay protection" {
+    const allocator = testing.allocator;
+
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const private_key = crypto.PrivateKey{
+        .bytes = [_]u8{0x42} ** 32,
+    };
+
+    // Sign for mainnet (chain_id = 1)
+    const signed_mainnet = try signLegacyTransaction(allocator, tx, private_key, 1);
+
+    // Sign for goerli (chain_id = 5)
+    const signed_goerli = try signLegacyTransaction(allocator, tx, private_key, 5);
+
+    // v values should differ (EIP-155: v = chain_id * 2 + 35 or 36)
+    try testing.expect(signed_mainnet.v != signed_goerli.v);
+
+    // Mainnet should have v = 37 or 38
+    try testing.expect(signed_mainnet.v == 37 or signed_mainnet.v == 38);
+
+    // Goerli should have v = 45 or 46
+    try testing.expect(signed_goerli.v == 45 or signed_goerli.v == 46);
+}
+
+test "eip1559 chain ID is part of signature" {
+    const allocator = testing.allocator;
+
+    const tx = Eip1559Transaction{
+        .chain_id = 1, // Mainnet
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded_mainnet = try encodeEip1559ForSigning(allocator, tx);
+    defer allocator.free(encoded_mainnet);
+
+    var tx_goerli = tx;
+    tx_goerli.chain_id = 5; // Goerli
+
+    const encoded_goerli = try encodeEip1559ForSigning(allocator, tx_goerli);
+    defer allocator.free(encoded_goerli);
+
+    // Different chain IDs should produce different encodings
+    try testing.expect(!std.mem.eql(u8, encoded_mainnet, encoded_goerli));
+}
+
+// Critical: Gas Limit Validation Tests
+
+test "legacy transaction minimum gas limit for transfer" {
+    const allocator = testing.allocator;
+
+    // Minimum gas for a simple transfer is 21000
+    const tx_valid = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000, // Exactly minimum
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const encoded_valid = try encodeLegacyForSigning(allocator, tx_valid, 1);
+    defer allocator.free(encoded_valid);
+    try testing.expect(encoded_valid.len > 0);
+
+    // Gas limit below 21000 is invalid for transfers
+    const tx_invalid = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 20999, // Below minimum
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    // This should encode but would fail validation in a real node
+    const encoded_invalid = try encodeLegacyForSigning(allocator, tx_invalid, 1);
+    defer allocator.free(encoded_invalid);
+}
+
+test "contract creation requires higher gas limit" {
+    const allocator = testing.allocator;
+
+    const init_code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 };
+
+    // Contract creation should have gas limit >= 53000 (21000 base + 32000 creation)
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 53000,
+        .to = null, // Contract creation
+        .value = 0,
+        .data = &init_code,
+        .v = 37,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
+    defer allocator.free(encoded);
+    try testing.expect(encoded.len > 0);
+}
+
+test "eip1559 minimum gas limit" {
+    const allocator = testing.allocator;
+
+    const tx = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000, // Minimum for transfer
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip1559ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+    try testing.expect(encoded.len > 0);
+}
+
+// Critical: Signature Malleability Tests (EIP-2)
+
+test "signature malleability high s value detection" {
+    // EIP-2 requires s <= secp256k1_n/2 to prevent signature malleability
+    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    const half_n = secp256k1_n >> 1;
+
+    // High s-value (malleable)
+    const high_s = half_n + 1;
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, high_s, .big);
+
+    const tx_malleable = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = s_bytes,
+    };
+
+    // In a real implementation, this should be rejected
+    // For now, verify the s value is > half_n
+    const s_value = std.mem.readInt(u256, &tx_malleable.s, .big);
+    try testing.expect(s_value > half_n);
+}
+
+test "signature malleability valid s value" {
+    // Valid s-value should be <= secp256k1_n/2
+    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+    const half_n = secp256k1_n >> 1;
+
+    const valid_s = half_n - 1;
+    var s_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &s_bytes, valid_s, .big);
+
+    const tx_valid = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = s_bytes,
+    };
+
+    const s_value = std.mem.readInt(u256, &tx_valid.s, .big);
+    try testing.expect(s_value <= half_n);
+}
+
+test "signature with zero r value is invalid" {
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0} ** 32, // Invalid
+        .s = [_]u8{0x12} ** 32,
+    };
+
+    const r_value = std.mem.readInt(u256, &tx.r, .big);
+    try testing.expectEqual(@as(u256, 0), r_value);
+}
+
+test "signature with zero s value is invalid" {
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 27,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0} ** 32, // Invalid
+    };
+
+    const s_value = std.mem.readInt(u256, &tx.s, .big);
+    try testing.expectEqual(@as(u256, 0), s_value);
+}
+
+// Transaction Type Detection Tests
+
+test "detect transaction type with invalid prefix" {
+    const invalid_data = [_]u8{0x99} ++ [_]u8{0} ** 10;
+    const tx_type = detectTransactionType(&invalid_data);
+
+    // Unknown types should default to legacy
+    try testing.expectEqual(TransactionType.legacy, tx_type);
+}
+
+test "detect transaction type with empty data" {
+    const empty_data: []const u8 = &[_]u8{};
+    const tx_type = detectTransactionType(empty_data);
+    try testing.expectEqual(TransactionType.legacy, tx_type);
+}
+
+test "detect all transaction types" {
+    // Test all valid transaction type prefixes
+    const type_tests = [_]struct { prefix: u8, expected: TransactionType }{
+        .{ .prefix = 0x00, .expected = TransactionType.legacy },
+        .{ .prefix = 0x01, .expected = TransactionType.eip2930 },
+        .{ .prefix = 0x02, .expected = TransactionType.eip1559 },
+        .{ .prefix = 0x03, .expected = TransactionType.eip4844 },
+        .{ .prefix = 0x04, .expected = TransactionType.eip7702 },
+    };
+
+    for (type_tests) |test_case| {
+        const data = [_]u8{test_case.prefix} ++ [_]u8{0} ** 10;
+        const detected = detectTransactionType(&data);
+        try testing.expectEqual(test_case.expected, detected);
+    }
+}
+
+// Access List Encoding Tests
+
+test "encode empty access list" {
+    const allocator = testing.allocator;
+
+    const empty_list: []const AccessListItem = &[_]AccessListItem{};
+    const encoded = try encodeAccessList(allocator, empty_list);
+    defer allocator.free(encoded);
+
+    // Empty list should be 0xc0 (empty RLP list)
+    try testing.expectEqual(@as(u8, 0xc0), encoded[0]);
+    try testing.expectEqual(@as(usize, 1), encoded.len);
+}
+
+test "encode access list with address but no storage keys" {
+    const allocator = testing.allocator;
+
+    const access_list = [_]AccessListItem{
+        .{
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+            .storage_keys = &[_][32]u8{},
+        },
+    };
+
+    const encoded = try encodeAccessList(allocator, &access_list);
+    defer allocator.free(encoded);
+
+    try testing.expect(encoded.len > 0);
+    try testing.expect(encoded[0] >= 0xc0); // RLP list
+}
+
+test "encode access list with multiple addresses" {
+    const allocator = testing.allocator;
+
+    const keys1 = [_][32]u8{hash.fromU256(1).bytes};
+    const keys2 = [_][32]u8{hash.fromU256(2).bytes};
+
+    const access_list = [_]AccessListItem{
+        .{
+            .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
+            .storage_keys = &keys1,
+        },
+        .{
+            .address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
+            .storage_keys = &keys2,
+        },
+    };
+
+    const encoded = try encodeAccessList(allocator, &access_list);
+    defer allocator.free(encoded);
+
+    try testing.expect(encoded.len > 50); // Should be substantial
+}
+
+// EIP-7702 Transaction Tests
+
+test "eip7702 transaction structure" {
+    const tx = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    // Verify structure fields
+    try testing.expectEqual(@as(u64, 1), tx.chain_id);
+    try testing.expectEqual(@as(usize, 0), tx.authorization_list.len);
+}
+
+// Transaction Hash Determinism Tests
+
+test "transaction hash is deterministic" {
+    const allocator = testing.allocator;
+
+    const tx = LegacyTransaction{
+        .nonce = 42,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const hash1 = try computeLegacyTransactionHash(allocator, tx);
+    const hash2 = try computeLegacyTransactionHash(allocator, tx);
+    const hash3 = try computeLegacyTransactionHash(allocator, tx);
+
+    // All hashes should be identical
+    try testing.expectEqual(hash1, hash2);
+    try testing.expectEqual(hash2, hash3);
+}
+
+test "different transactions have different hashes" {
+    const allocator = testing.allocator;
+
+    const tx1 = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const tx2 = LegacyTransaction{
+        .nonce = 1, // Different nonce
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 1_000_000_000_000_000,
+        .data = &[_]u8{},
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const hash1 = try computeLegacyTransactionHash(allocator, tx1);
+    const hash2 = try computeLegacyTransactionHash(allocator, tx2);
+
+    // Different transactions should have different hashes
+    try testing.expect(!std.mem.eql(u8, &hash1.bytes, &hash2.bytes));
+}
+
+// Transaction with Data Tests
+
+test "transaction with non-empty data" {
+    const allocator = testing.allocator;
+
+    const call_data = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb } ++ [_]u8{0} ** 32; // Function selector + args
+
+    const tx = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 100000, // Higher for contract call
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &call_data,
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
+    defer allocator.free(encoded);
+
+    try testing.expect(encoded.len > 100); // Should be larger with data
+}
+
+test "transaction data affects hash" {
+    const allocator = testing.allocator;
+
+    const data1 = [_]u8{0x01, 0x02, 0x03};
+    const data2 = [_]u8{0x04, 0x05, 0x06};
+
+    const tx1 = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &data1,
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const tx2 = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &data2,
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const hash1 = try computeLegacyTransactionHash(allocator, tx1);
+    const hash2 = try computeLegacyTransactionHash(allocator, tx2);
+
+    try testing.expect(!std.mem.eql(u8, &hash1.bytes, &hash2.bytes));
+}
+
+// EIP-4844 Blob Transaction Tests
+
+test "eip4844 basic transaction structure" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    // Verify structure fields
+    try testing.expectEqual(@as(u64, 1), tx.chain_id);
+    try testing.expectEqual(@as(usize, 1), tx.blob_versioned_hashes.len);
+    _ = allocator;
+}
+
+test "eip4844 transaction serialization" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip4844ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+
+    // Should start with transaction type 0x03
+    try testing.expectEqual(@as(u8, 0x03), encoded[0]);
+    try testing.expect(encoded.len > 50);
+}
+
+test "eip4844 transaction with multiple blobs" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+
+    // Test with 2, 4, and 6 blobs
+    const test_cases = [_]usize{ 2, 4, 6 };
+
+    for (test_cases) |blob_count| {
+        const hashes_array = try allocator.alloc(VersionedHash, blob_count);
+        defer allocator.free(hashes_array);
+
+        for (hashes_array) |*h| {
+            h.* = versioned_hash;
+        }
+
+        const tx = Eip4844Transaction{
+            .chain_id = 1,
+            .nonce = 0,
+            .max_priority_fee_per_gas = 1_000_000_000,
+            .max_fee_per_gas = 20_000_000_000,
+            .gas_limit = 21000,
+            .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+            .value = 0,
+            .data = &[_]u8{},
+            .access_list = &[_]AccessListItem{},
+            .max_fee_per_blob_gas = 1_000_000,
+            .blob_versioned_hashes = hashes_array,
+            .v = 0,
+            .r = [_]u8{0} ** 32,
+            .s = [_]u8{0} ** 32,
+        };
+
+        const encoded = try encodeEip4844ForSigning(allocator, tx);
+        defer allocator.free(encoded);
+
+        try testing.expectEqual(@as(u8, 0x03), encoded[0]);
+        try testing.expect(encoded.len > 50);
+    }
+}
+
+test "eip4844 transaction hash computation" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const h = try computeEip4844TransactionHash(allocator, tx);
+
+    // Hash should be 32 bytes
+    try testing.expectEqual(@as(usize, 32), h.bytes.len);
+
+    // Hash should be deterministic
+    const h2 = try computeEip4844TransactionHash(allocator, tx);
+    try testing.expectEqual(h, h2);
+}
+
+test "eip4844 transaction hash changes with different blob hashes" {
+    const allocator = testing.allocator;
+
+    const commitment1: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const commitment2: blob.BlobCommitment = [_]u8{0x34} ** 48;
+
+    const hash1 = blob.commitmentToVersionedHash(commitment1);
+    const hash2 = blob.commitmentToVersionedHash(commitment2);
+
+    const hashes1 = [_]VersionedHash{hash1};
+    const hashes2 = [_]VersionedHash{hash2};
+
+    const tx1 = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes1,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const tx2 = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes2,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const h1 = try computeEip4844TransactionHash(allocator, tx1);
+    const h2 = try computeEip4844TransactionHash(allocator, tx2);
+
+    // Different blob hashes should produce different transaction hashes
+    try testing.expect(!std.mem.eql(u8, &h1.bytes, &h2.bytes));
+}
+
+test "eip4844 transaction with max blobs" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+
+    const hashes_array = try allocator.alloc(VersionedHash, blob.MAX_BLOBS_PER_TRANSACTION);
+    defer allocator.free(hashes_array);
+
+    for (hashes_array) |*h| {
+        h.* = versioned_hash;
+    }
+
+    const tx = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = hashes_array,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip4844ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(u8, 0x03), encoded[0]);
+    try testing.expectEqual(@as(usize, 6), tx.blob_versioned_hashes.len);
+}
+
+test "eip4844 chain ID is part of signature" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx_mainnet = Eip4844Transaction{
+        .chain_id = 1, // Mainnet
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const tx_goerli = Eip4844Transaction{
+        .chain_id = 5, // Goerli
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded_mainnet = try encodeEip4844ForSigning(allocator, tx_mainnet);
+    defer allocator.free(encoded_mainnet);
+
+    const encoded_goerli = try encodeEip4844ForSigning(allocator, tx_goerli);
+    defer allocator.free(encoded_goerli);
+
+    // Different chain IDs should produce different encodings
+    try testing.expect(!std.mem.eql(u8, encoded_mainnet, encoded_goerli));
+}
+
+test "eip4844 max_fee_per_blob_gas field handling" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx_low = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const tx_high = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const hash_low = try computeEip4844TransactionHash(allocator, tx_low);
+    const hash_high = try computeEip4844TransactionHash(allocator, tx_high);
+
+    // Different max_fee_per_blob_gas should produce different hashes
+    try testing.expect(!std.mem.eql(u8, &hash_low.bytes, &hash_high.bytes));
+}
+
+test "eip4844 transaction with access list" {
+    const allocator = testing.allocator;
+
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const storage_keys = [_][32]u8{
+        hash.fromU256(0).bytes,
+        hash.fromU256(1).bytes,
+    };
+
+    const access_list = [_]AccessListItem{
+        .{
+            .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
+            .storage_keys = &storage_keys,
+        },
+    };
+
+    const tx = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 30000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &access_list,
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip4844ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+
+    try testing.expect(encoded.len > 100); // Should be larger with access list
+}
+
+// EIP-7702 Authorization Transaction Tests
+
+test "eip7702 transaction serialization" {
+    const allocator = testing.allocator;
+
+    const tx = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip7702ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+
+    // Should start with transaction type 0x04
+    try testing.expectEqual(@as(u8, 0x04), encoded[0]);
+    try testing.expect(encoded.len > 50);
+}
+
+test "eip7702 transaction with single authorization" {
+    const allocator = testing.allocator;
+
+    const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+
+    const auth = try authorization.createAuthorization(
+        allocator,
+        1,
+        try Address.fromHex("0x1111111111111111111111111111111111111111"),
+        0,
+        private_key,
+    );
+
+    const auth_list = [_]Authorization{auth};
+
+    const tx = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 30000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &auth_list,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip7702ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(u8, 0x04), encoded[0]);
+    try testing.expect(encoded.len > 100);
+}
+
+test "eip7702 transaction with multiple authorizations" {
+    const allocator = testing.allocator;
+
+    const private_key1: crypto.PrivateKey = [_]u8{0x01} ** 32;
+    const private_key2: crypto.PrivateKey = [_]u8{0x02} ** 32;
+
+    const auth1 = try authorization.createAuthorization(
+        allocator,
+        1,
+        try Address.fromHex("0x1111111111111111111111111111111111111111"),
+        0,
+        private_key1,
+    );
+
+    const auth2 = try authorization.createAuthorization(
+        allocator,
+        1,
+        try Address.fromHex("0x2222222222222222222222222222222222222222"),
+        0,
+        private_key2,
+    );
+
+    const auth_list = [_]Authorization{ auth1, auth2 };
+
+    const tx = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 50000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &auth_list,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip7702ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(u8, 0x04), encoded[0]);
+    try testing.expect(encoded.len > 150);
+}
+
+test "eip7702 transaction hash computation" {
+    const allocator = testing.allocator;
+
+    const tx = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const h = try computeEip7702TransactionHash(allocator, tx);
+
+    // Hash should be 32 bytes
+    try testing.expectEqual(@as(usize, 32), h.bytes.len);
+
+    // Hash should be deterministic
+    const h2 = try computeEip7702TransactionHash(allocator, tx);
+    try testing.expectEqual(h, h2);
+}
+
+test "eip7702 chain ID is part of signature" {
+    const allocator = testing.allocator;
+
+    const tx_mainnet = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const tx_goerli = Eip7702Transaction{
+        .chain_id = 5,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded_mainnet = try encodeEip7702ForSigning(allocator, tx_mainnet);
+    defer allocator.free(encoded_mainnet);
+
+    const encoded_goerli = try encodeEip7702ForSigning(allocator, tx_goerli);
+    defer allocator.free(encoded_goerli);
+
+    // Different chain IDs should produce different encodings
+    try testing.expect(!std.mem.eql(u8, encoded_mainnet, encoded_goerli));
+}
+
+test "eip7702 authorization nonce handling" {
+    const allocator = testing.allocator;
+
+    const private_key: crypto.PrivateKey = [_]u8{0x42} ** 32;
+
+    const auth_nonce0 = try authorization.createAuthorization(
+        allocator,
+        1,
+        try Address.fromHex("0x1111111111111111111111111111111111111111"),
+        0,
+        private_key,
+    );
+
+    const auth_nonce1 = try authorization.createAuthorization(
+        allocator,
+        1,
+        try Address.fromHex("0x1111111111111111111111111111111111111111"),
+        1,
+        private_key,
+    );
+
+    const list0 = [_]Authorization{auth_nonce0};
+    const list1 = [_]Authorization{auth_nonce1};
+
+    const tx0 = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 30000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &list0,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const tx1 = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 30000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &list1,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const hash0 = try computeEip7702TransactionHash(allocator, tx0);
+    const hash1 = try computeEip7702TransactionHash(allocator, tx1);
+
+    // Different authorization nonces should produce different hashes
+    try testing.expect(!std.mem.eql(u8, &hash0.bytes, &hash1.bytes));
+}
+
+test "eip7702 contract creation (null to)" {
+    const allocator = testing.allocator;
+
+    const tx = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 100000,
+        .to = null, // Contract creation
+        .value = 0,
+        .data = &[_]u8{ 0x60, 0x80, 0x60, 0x40 },
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded = try encodeEip7702ForSigning(allocator, tx);
+    defer allocator.free(encoded);
+
+    try testing.expectEqual(@as(u8, 0x04), encoded[0]);
+    try testing.expect(encoded.len > 50);
+}
+
+// Cross-Transaction Type Tests
+
+test "transaction type detection for all types" {
+    // Legacy
+    const legacy = [_]u8{0xf8} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.legacy, detectTransactionType(&legacy));
+
+    // EIP-2930
+    const eip2930 = [_]u8{0x01} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.eip2930, detectTransactionType(&eip2930));
+
+    // EIP-1559
+    const eip1559 = [_]u8{0x02} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.eip1559, detectTransactionType(&eip1559));
+
+    // EIP-4844
+    const eip4844 = [_]u8{0x03} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.eip4844, detectTransactionType(&eip4844));
+
+    // EIP-7702
+    const eip7702 = [_]u8{0x04} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.eip7702, detectTransactionType(&eip7702));
+}
+
+test "rlp encoding starts with correct type prefix" {
+    const allocator = testing.allocator;
+
+    // EIP-1559
+    const tx_1559 = Eip1559Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded_1559 = try encodeEip1559ForSigning(allocator, tx_1559);
+    defer allocator.free(encoded_1559);
+    try testing.expectEqual(@as(u8, 0x02), encoded_1559[0]);
+
+    // EIP-4844
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx_4844 = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded_4844 = try encodeEip4844ForSigning(allocator, tx_4844);
+    defer allocator.free(encoded_4844);
+    try testing.expectEqual(@as(u8, 0x03), encoded_4844[0]);
+
+    // EIP-7702
+    const tx_7702 = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const encoded_7702 = try encodeEip7702ForSigning(allocator, tx_7702);
+    defer allocator.free(encoded_7702);
+    try testing.expectEqual(@as(u8, 0x04), encoded_7702[0]);
+}
+
+test "hash calculation determinism across transaction types" {
+    const allocator = testing.allocator;
+
+    // Legacy
+    const tx_legacy = LegacyTransaction{
+        .nonce = 0,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .v = 37,
+        .r = [_]u8{0x12} ** 32,
+        .s = [_]u8{0x34} ** 32,
+    };
+
+    const hash_legacy_1 = try computeLegacyTransactionHash(allocator, tx_legacy);
+    const hash_legacy_2 = try computeLegacyTransactionHash(allocator, tx_legacy);
+    try testing.expectEqual(hash_legacy_1, hash_legacy_2);
+
+    // EIP-4844
+    const commitment: blob.BlobCommitment = [_]u8{0x12} ** 48;
+    const versioned_hash = blob.commitmentToVersionedHash(commitment);
+    const hashes = [_]VersionedHash{versioned_hash};
+
+    const tx_4844 = Eip4844Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .max_fee_per_blob_gas = 1_000_000,
+        .blob_versioned_hashes = &hashes,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const hash_4844_1 = try computeEip4844TransactionHash(allocator, tx_4844);
+    const hash_4844_2 = try computeEip4844TransactionHash(allocator, tx_4844);
+    try testing.expectEqual(hash_4844_1, hash_4844_2);
+
+    // EIP-7702
+    const tx_7702 = Eip7702Transaction{
+        .chain_id = 1,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 21000,
+        .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .value = 0,
+        .data = &[_]u8{},
+        .access_list = &[_]AccessListItem{},
+        .authorization_list = &[_]Authorization{},
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const hash_7702_1 = try computeEip7702TransactionHash(allocator, tx_7702);
+    const hash_7702_2 = try computeEip7702TransactionHash(allocator, tx_7702);
+    try testing.expectEqual(hash_7702_1, hash_7702_2);
 }

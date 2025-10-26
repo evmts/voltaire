@@ -1616,3 +1616,1341 @@ test "encode_abi_parameters - comprehensive test cases from ox and viem" {
         try std.testing.expectEqualStrings(expected, actual_hex);
     }
 }
+
+test "ABI encode decode round-trip - all uint types" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .uint8 = 255 },
+        .{ .uint16 = 65535 },
+        .{ .uint32 = 4294967295 },
+        .{ .uint64 = 18446744073709551615 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .uint8, .uint16, .uint32, .uint64 };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(u8, 255), decoded[0].uint8);
+    try std.testing.expectEqual(@as(u16, 65535), decoded[1].uint16);
+    try std.testing.expectEqual(@as(u32, 4294967295), decoded[2].uint32);
+    try std.testing.expectEqual(@as(u64, 18446744073709551615), decoded[3].uint64);
+}
+
+test "ABI encode decode round-trip - all int types" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .int8 = -128 },
+        .{ .int16 = -32768 },
+        .{ .int32 = -2147483648 },
+        .{ .int64 = -9223372036854775808 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .int8, .int16, .int32, .int64 };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(i8, -128), decoded[0].int8);
+    try std.testing.expectEqual(@as(i16, -32768), decoded[1].int16);
+    try std.testing.expectEqual(@as(i32, -2147483648), decoded[2].int32);
+    try std.testing.expectEqual(@as(i64, -9223372036854775808), decoded[3].int64);
+}
+
+test "ABI fixed bytes types encoding" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .bytes1 = [_]u8{0xaa} },
+        .{ .bytes4 = [_]u8{ 0x11, 0x22, 0x33, 0x44 } },
+        .{ .bytes32 = [_]u8{0xff} ** 32 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 96), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0xaa), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x11), encoded[32]);
+    try std.testing.expectEqual(@as(u8, 0xff), encoded[64]);
+}
+
+test "ABI fixed bytes decode round-trip" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .bytes8 = [_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 } },
+        .{ .bytes16 = [_]u8{0xab} ** 16 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .bytes8, .bytes16 };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqualSlices(u8, &values[0].bytes8, &decoded[0].bytes8);
+    try std.testing.expectEqualSlices(u8, &values[1].bytes16, &decoded[1].bytes16);
+}
+
+test "ABI dynamic bytes encoding" {
+    const allocator = std.testing.allocator;
+
+    const data = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
+    const values = [_]AbiValue{
+        bytesValue(&data),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.bytes};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].bytes);
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqualSlices(u8, &data, decoded[0].bytes);
+}
+
+test "ABI large dynamic bytes" {
+    const allocator = std.testing.allocator;
+
+    const large_data = [_]u8{0xaa} ** 1000;
+    const values = [_]AbiValue{
+        bytesValue(&large_data),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.bytes};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].bytes);
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1000), decoded[0].bytes.len);
+    try std.testing.expectEqualSlices(u8, &large_data, decoded[0].bytes);
+}
+
+test "ABI uint256 array encoding" {
+    const allocator = std.testing.allocator;
+
+    const arr = [_]u256{ 1, 2, 3, 4, 5 };
+    const values = [_]AbiValue{
+        .{ .@"uint256[]" = &arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 5), decoded[0].@"uint256[]".len);
+    for (arr, 0..) |val, i| {
+        try std.testing.expectEqual(val, decoded[0].@"uint256[]"[i]);
+    }
+}
+
+test "ABI bytes32 array encoding" {
+    const allocator = std.testing.allocator;
+
+    const arr = [_][32]u8{
+        [_]u8{0xaa} ** 32,
+        [_]u8{0xbb} ** 32,
+        [_]u8{0xcc} ** 32,
+    };
+    const values = [_]AbiValue{
+        .{ .@"bytes32[]" = &arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"bytes32[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"bytes32[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), decoded[0].@"bytes32[]".len);
+    for (arr, 0..) |val, i| {
+        try std.testing.expectEqualSlices(u8, &val, &decoded[0].@"bytes32[]"[i]);
+    }
+}
+
+test "ABI address array encoding" {
+    const allocator = std.testing.allocator;
+
+    const addr1: address.Address = [_]u8{0x11} ** 20;
+    const addr2: address.Address = [_]u8{0x22} ** 20;
+    const arr = [_]address.Address{ addr1, addr2 };
+    const values = [_]AbiValue{
+        .{ .@"address[]" = &arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"address[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"address[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 2), decoded[0].@"address[]".len);
+    try std.testing.expectEqualSlices(u8, &addr1, &decoded[0].@"address[]"[0]);
+    try std.testing.expectEqualSlices(u8, &addr2, &decoded[0].@"address[]"[1]);
+}
+
+test "ABI string array encoding" {
+    const allocator = std.testing.allocator;
+
+    const strings = [_][]const u8{ "hello", "world", "test" };
+    const values = [_]AbiValue{
+        .{ .@"string[]" = &strings },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"string[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        for (decoded[0].@"string[]") |str| {
+            allocator.free(str);
+        }
+        allocator.free(decoded[0].@"string[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), decoded[0].@"string[]".len);
+    try std.testing.expectEqualStrings("hello", decoded[0].@"string[]"[0]);
+    try std.testing.expectEqualStrings("world", decoded[0].@"string[]"[1]);
+    try std.testing.expectEqualStrings("test", decoded[0].@"string[]"[2]);
+}
+
+test "ABI empty arrays" {
+    const allocator = std.testing.allocator;
+
+    const empty_arr = [_]u256{};
+    const values = [_]AbiValue{
+        .{ .@"uint256[]" = &empty_arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 0), decoded[0].@"uint256[]".len);
+}
+
+test "ABI malformed input - truncated data" {
+    const allocator = std.testing.allocator;
+
+    const truncated = [_]u8{ 0x00, 0x00, 0x00, 0x00, 0x00 };
+    const types = [_]AbiType{.uint256};
+
+    const result = decodeAbiParameters(allocator, &truncated, &types);
+    try std.testing.expectError(AbiError.DataTooSmall, result);
+}
+
+test "ABI malformed input - invalid offset beyond bounds" {
+    const allocator = std.testing.allocator;
+
+    var data: [64]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 1000, .big);
+
+    const types = [_]AbiType{.string};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI invalid UTF-8 in string" {
+    const allocator = std.testing.allocator;
+
+    var data: [96]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 32, .big);
+    std.mem.writeInt(u64, data[56..64], 5, .big);
+    data[64] = 0xff;
+    data[65] = 0xff;
+    data[66] = 0xff;
+    data[67] = 0xff;
+    data[68] = 0xff;
+
+    const types = [_]AbiType{.string};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.InvalidUtf8, result);
+}
+
+test "ABI complex mixed encoding - multiple dynamic types" {
+    const allocator = std.testing.allocator;
+
+    const arr = [_]u256{ 100, 200, 300 };
+    const values = [_]AbiValue{
+        uint256_value(42),
+        stringValue("test"),
+        .{ .@"uint256[]" = &arr },
+        boolValue(true),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .uint256, .string, .@"uint256[]", .bool };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[1].string);
+        allocator.free(decoded[2].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(u256, 42), decoded[0].uint256);
+    try std.testing.expectEqualStrings("test", decoded[1].string);
+    try std.testing.expectEqual(@as(usize, 3), decoded[2].@"uint256[]".len);
+    try std.testing.expectEqual(true, decoded[3].bool);
+}
+
+test "ABI decode function data with no parameters" {
+    const allocator = std.testing.allocator;
+
+    const selector = [_]u8{ 0x12, 0x34, 0x56, 0x78 };
+    const result = try decodeFunctionData(allocator, &selector, &[_]AbiType{});
+    defer allocator.free(result.parameters);
+
+    try std.testing.expectEqualSlices(u8, &selector, &result.selector);
+    try std.testing.expectEqual(@as(usize, 0), result.parameters.len);
+}
+
+test "ABI encode event topics with indexed values" {
+    const allocator = std.testing.allocator;
+
+    const addr: address.Address = [_]u8{0xaa} ** 20;
+    const indexed = [_]AbiValue{
+        addressValue(addr),
+        uint256_value(1000),
+    };
+
+    const topics = try encodeEventTopics(allocator, "Transfer(address,address,uint256)", &indexed);
+    defer {
+        for (topics) |topic| {
+            allocator.free(topic);
+        }
+        allocator.free(topics);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), topics.len);
+    try std.testing.expectEqual(@as(usize, 32), topics[0].len);
+    try std.testing.expectEqual(@as(usize, 32), topics[1].len);
+}
+
+test "ABI zero values encoding" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .uint8 = 0 },
+        .{ .uint256 = 0 },
+        boolValue(false),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const expected_zeros = [_]u8{0} ** 96;
+    try std.testing.expectEqualSlices(u8, &expected_zeros, encoded);
+}
+
+test "ABI maximum values encoding" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .uint8 = 255 },
+        .{ .uint16 = 65535 },
+        .{ .uint32 = 4294967295 },
+        .{ .uint64 = 18446744073709551615 },
+        .{ .uint128 = 340282366920938463463374607431768211455 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 160), encoded.len);
+}
+
+test "ABI large array encoding - 1000 elements" {
+    const allocator = std.testing.allocator;
+
+    const arr = try allocator.alloc(u256, 1000);
+    defer allocator.free(arr);
+
+    for (arr, 0..) |*val, i| {
+        val.* = i;
+    }
+
+    const values = [_]AbiValue{
+        .{ .@"uint256[]" = arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1000), decoded[0].@"uint256[]".len);
+    for (arr, 0..) |val, i| {
+        try std.testing.expectEqual(val, decoded[0].@"uint256[]"[i]);
+    }
+}
+
+test "ABI cursor bounds checking" {
+    var cursor = Cursor.init(&[_]u8{ 1, 2, 3 });
+    const result = cursor.readBytes(10);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI cursor position manipulation" {
+    const data = [_]u8{ 1, 2, 3, 4, 5 };
+    var cursor = Cursor.init(&data);
+
+    cursor.setPosition(2);
+    const bytes = try cursor.readBytes(2);
+    try std.testing.expectEqual(@as(u8, 3), bytes[0]);
+    try std.testing.expectEqual(@as(u8, 4), bytes[1]);
+}
+
+test "ABI createFunctionSignature" {
+    const allocator = std.testing.allocator;
+
+    const types = [_]AbiType{ .address, .uint256 };
+    const signature = try createFunctionSignature(allocator, "transfer", &types);
+    defer allocator.free(signature);
+
+    try std.testing.expectEqualStrings("transfer(address,uint256)", signature);
+}
+
+// ============================================================================
+// COMPREHENSIVE TEST SUITE - Dynamic Arrays (10+ tests)
+// ============================================================================
+
+test "ABI dynamic array - empty uint256 array" {
+    const allocator = std.testing.allocator;
+
+    const empty_arr = [_]u256{};
+    const values = [_]AbiValue{
+        .{ .@"uint256[]" = &empty_arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 0), decoded[0].@"uint256[]".len);
+}
+
+test "ABI dynamic array - single element uint256 array" {
+    const allocator = std.testing.allocator;
+
+    const arr = [_]u256{42};
+    const values = [_]AbiValue{
+        .{ .@"uint256[]" = &arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), decoded[0].@"uint256[]".len);
+    try std.testing.expectEqual(@as(u256, 42), decoded[0].@"uint256[]"[0]);
+}
+
+test "ABI dynamic array - multiple elements address array" {
+    const allocator = std.testing.allocator;
+
+    const addr1: address.Address = [_]u8{0x11} ** 20;
+    const addr2: address.Address = [_]u8{0x22} ** 20;
+    const addr3: address.Address = [_]u8{0x33} ** 20;
+    const arr = [_]address.Address{ addr1, addr2, addr3 };
+    const values = [_]AbiValue{
+        .{ .@"address[]" = &arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"address[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"address[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), decoded[0].@"address[]".len);
+    try std.testing.expectEqualSlices(u8, &addr1, &decoded[0].@"address[]"[0]);
+    try std.testing.expectEqualSlices(u8, &addr2, &decoded[0].@"address[]"[1]);
+    try std.testing.expectEqualSlices(u8, &addr3, &decoded[0].@"address[]"[2]);
+}
+
+test "ABI dynamic array - empty string array" {
+    const allocator = std.testing.allocator;
+
+    const empty_arr = [_][]const u8{};
+    const values = [_]AbiValue{
+        .{ .@"string[]" = &empty_arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"string[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        for (decoded[0].@"string[]") |str| {
+            allocator.free(str);
+        }
+        allocator.free(decoded[0].@"string[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 0), decoded[0].@"string[]".len);
+}
+
+test "ABI dynamic array - string array with empty strings" {
+    const allocator = std.testing.allocator;
+
+    const strings = [_][]const u8{ "", "test", "" };
+    const values = [_]AbiValue{
+        .{ .@"string[]" = &strings },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"string[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        for (decoded[0].@"string[]") |str| {
+            allocator.free(str);
+        }
+        allocator.free(decoded[0].@"string[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), decoded[0].@"string[]".len);
+    try std.testing.expectEqualStrings("", decoded[0].@"string[]"[0]);
+    try std.testing.expectEqualStrings("test", decoded[0].@"string[]"[1]);
+    try std.testing.expectEqualStrings("", decoded[0].@"string[]"[2]);
+}
+
+test "ABI dynamic array - very large uint256 array (10000 elements)" {
+    const allocator = std.testing.allocator;
+
+    const arr = try allocator.alloc(u256, 10000);
+    defer allocator.free(arr);
+
+    for (arr, 0..) |*val, i| {
+        val.* = i * 123456789;
+    }
+
+    const values = [_]AbiValue{
+        .{ .@"uint256[]" = arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"uint256[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 10000), decoded[0].@"uint256[]".len);
+    for (arr, 0..) |val, i| {
+        try std.testing.expectEqual(val, decoded[0].@"uint256[]"[i]);
+    }
+}
+
+test "ABI dynamic array - bytes32 array with all zeros" {
+    const allocator = std.testing.allocator;
+
+    const arr = [_][32]u8{
+        [_]u8{0} ** 32,
+        [_]u8{0} ** 32,
+        [_]u8{0} ** 32,
+    };
+    const values = [_]AbiValue{
+        .{ .@"bytes32[]" = &arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"bytes32[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"bytes32[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 3), decoded[0].@"bytes32[]".len);
+    for (decoded[0].@"bytes32[]") |val| {
+        try std.testing.expectEqualSlices(u8, &([_]u8{0} ** 32), &val);
+    }
+}
+
+test "ABI dynamic array - mixed static and dynamic array encoding" {
+    const allocator = std.testing.allocator;
+
+    const uint_arr = [_]u256{ 1, 2, 3 };
+    const string_arr = [_][]const u8{ "hello", "world" };
+    const values = [_]AbiValue{
+        uint256_value(99),
+        .{ .@"uint256[]" = &uint_arr },
+        stringValue("middle"),
+        .{ .@"string[]" = &string_arr },
+        boolValue(true),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .uint256, .@"uint256[]", .string, .@"string[]", .bool };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[1].@"uint256[]");
+        allocator.free(decoded[2].string);
+        for (decoded[3].@"string[]") |str| {
+            allocator.free(str);
+        }
+        allocator.free(decoded[3].@"string[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(u256, 99), decoded[0].uint256);
+    try std.testing.expectEqual(@as(usize, 3), decoded[1].@"uint256[]".len);
+    try std.testing.expectEqualStrings("middle", decoded[2].string);
+    try std.testing.expectEqual(@as(usize, 2), decoded[3].@"string[]".len);
+    try std.testing.expectEqual(true, decoded[4].bool);
+}
+
+test "ABI dynamic array - address array with zero addresses" {
+    const allocator = std.testing.allocator;
+
+    const zero_addr: address.Address = [_]u8{0} ** 20;
+    const arr = [_]address.Address{zero_addr} ** 5;
+    const values = [_]AbiValue{
+        .{ .@"address[]" = &arr },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"address[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].@"address[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 5), decoded[0].@"address[]".len);
+    for (decoded[0].@"address[]") |addr| {
+        try std.testing.expectEqualSlices(u8, &zero_addr, &addr);
+    }
+}
+
+test "ABI dynamic array - string array with long strings (>32 bytes each)" {
+    const allocator = std.testing.allocator;
+
+    const long_str1 = "This is a very long string that exceeds thirty-two bytes in length";
+    const long_str2 = "Another extraordinarily lengthy string for comprehensive testing purposes";
+    const strings = [_][]const u8{ long_str1, long_str2 };
+    const values = [_]AbiValue{
+        .{ .@"string[]" = &strings },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.@"string[]"};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        for (decoded[0].@"string[]") |str| {
+            allocator.free(str);
+        }
+        allocator.free(decoded[0].@"string[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 2), decoded[0].@"string[]".len);
+    try std.testing.expectEqualStrings(long_str1, decoded[0].@"string[]"[0]);
+    try std.testing.expectEqualStrings(long_str2, decoded[0].@"string[]"[1]);
+}
+
+// ============================================================================
+// BOUNDARY VALUE TESTS (10+ tests)
+// ============================================================================
+
+test "ABI boundary - uint8 minimum value (0)" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .uint8 = 0 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.uint8};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(u8, 0), decoded[0].uint8);
+}
+
+test "ABI boundary - uint8 maximum value (255)" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .uint8 = 255 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.uint8};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(u8, 255), decoded[0].uint8);
+}
+
+test "ABI boundary - uint256 minimum value (0)" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        uint256_value(0),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.uint256};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(u256, 0), decoded[0].uint256);
+}
+
+test "ABI boundary - uint256 maximum value (2^256-1)" {
+    const allocator = std.testing.allocator;
+
+    const max_u256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+    const values = [_]AbiValue{
+        uint256_value(max_u256),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.uint256};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(max_u256, decoded[0].uint256);
+}
+
+test "ABI boundary - int8 minimum value (-128)" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .int8 = -128 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.int8};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(i8, -128), decoded[0].int8);
+}
+
+test "ABI boundary - int8 maximum value (127)" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .int8 = 127 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.int8};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(i8, 127), decoded[0].int8);
+}
+
+test "ABI boundary - int128 minimum value" {
+    const allocator = std.testing.allocator;
+
+    const min_i128: i128 = -170141183460469231731687303715884105728;
+    const values = [_]AbiValue{
+        .{ .int128 = min_i128 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.int128};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(min_i128, decoded[0].int128);
+}
+
+test "ABI boundary - int128 maximum value" {
+    const allocator = std.testing.allocator;
+
+    const max_i128: i128 = 170141183460469231731687303715884105727;
+    const values = [_]AbiValue{
+        .{ .int128 = max_i128 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.int128};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(max_i128, decoded[0].int128);
+}
+
+test "ABI boundary - address zero (0x0000...0000)" {
+    const allocator = std.testing.allocator;
+
+    const zero_addr: address.Address = [_]u8{0} ** 20;
+    const values = [_]AbiValue{
+        addressValue(zero_addr),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.address};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqualSlices(u8, &zero_addr, &decoded[0].address);
+}
+
+test "ABI boundary - address maximum (0xFFFF...FFFF)" {
+    const allocator = std.testing.allocator;
+
+    const max_addr: address.Address = [_]u8{0xFF} ** 20;
+    const values = [_]AbiValue{
+        addressValue(max_addr),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{.address};
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqualSlices(u8, &max_addr, &decoded[0].address);
+}
+
+test "ABI boundary - bytes1 vs bytes32 comparison" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        .{ .bytes1 = [_]u8{0xAA} },
+        .{ .bytes32 = [_]u8{0xBB} ** 32 },
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .bytes1, .bytes32 };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(u8, 0xAA), decoded[0].bytes1[0]);
+    for (decoded[1].bytes32) |byte| {
+        try std.testing.expectEqual(@as(u8, 0xBB), byte);
+    }
+}
+
+test "ABI boundary - empty string vs long string (>1000 bytes)" {
+    const allocator = std.testing.allocator;
+
+    const long_str = "a" ** 1500;
+    const values = [_]AbiValue{
+        stringValue(""),
+        stringValue(long_str),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .string, .string };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].string);
+        allocator.free(decoded[1].string);
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqualStrings("", decoded[0].string);
+    try std.testing.expectEqualStrings(long_str, decoded[1].string);
+    try std.testing.expectEqual(@as(usize, 1500), decoded[1].string.len);
+}
+
+test "ABI boundary - empty bytes vs maximum bytes" {
+    const allocator = std.testing.allocator;
+
+    const empty_bytes = [_]u8{};
+    const large_bytes = [_]u8{0xCD} ** 5000;
+    const values = [_]AbiValue{
+        bytesValue(&empty_bytes),
+        bytesValue(&large_bytes),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .bytes, .bytes };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[0].bytes);
+        allocator.free(decoded[1].bytes);
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 0), decoded[0].bytes.len);
+    try std.testing.expectEqual(@as(usize, 5000), decoded[1].bytes.len);
+    try std.testing.expectEqualSlices(u8, &large_bytes, decoded[1].bytes);
+}
+
+// ============================================================================
+// FUNCTION SELECTOR TESTS (5+ tests)
+// ============================================================================
+
+test "ABI selector - ERC20 transfer selector accuracy" {
+    const selector = computeSelector("transfer(address,uint256)");
+    const expected = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqualSlices(u8, &expected, &selector);
+}
+
+test "ABI selector - ERC20 approve selector accuracy" {
+    const selector = computeSelector("approve(address,uint256)");
+    const expected = [_]u8{ 0x09, 0x5e, 0xa7, 0xb3 };
+    try std.testing.expectEqualSlices(u8, &expected, &selector);
+}
+
+test "ABI selector - ERC20 balanceOf selector accuracy" {
+    const selector = computeSelector("balanceOf(address)");
+    const expected = [_]u8{ 0x70, 0xa0, 0x82, 0x31 };
+    try std.testing.expectEqualSlices(u8, &expected, &selector);
+}
+
+test "ABI selector - complex function signature parsing" {
+    const allocator = std.testing.allocator;
+
+    const types = [_]AbiType{ .uint256, .address, .bool, .bytes32 };
+    const signature = try createFunctionSignature(allocator, "complexFunction", &types);
+    defer allocator.free(signature);
+
+    try std.testing.expectEqualStrings("complexFunction(uint256,address,bool,bytes32)", signature);
+
+    const selector = computeSelector(signature);
+    try std.testing.expectEqual(@as(usize, 4), selector.len);
+}
+
+test "ABI selector - function data encoding with selector" {
+    const allocator = std.testing.allocator;
+
+    const selector = computeSelector("setValue(uint256)");
+    const params = [_]AbiValue{
+        uint256_value(12345),
+    };
+
+    const encoded = try encodeFunctionData(allocator, selector, &params);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 36), encoded.len);
+    try std.testing.expectEqualSlices(u8, &selector, encoded[0..4]);
+}
+
+test "ABI selector - decoding function data with selector" {
+    const allocator = std.testing.allocator;
+
+    const selector = computeSelector("getValue()");
+    const params = [_]AbiValue{};
+
+    const encoded = try encodeFunctionData(allocator, selector, &params);
+    defer allocator.free(encoded);
+
+    const result = try decodeFunctionData(allocator, encoded, &[_]AbiType{});
+    defer allocator.free(result.parameters);
+
+    try std.testing.expectEqualSlices(u8, &selector, &result.selector);
+    try std.testing.expectEqual(@as(usize, 0), result.parameters.len);
+}
+
+test "ABI selector - function definition get_selector" {
+    const allocator = std.testing.allocator;
+
+    const func_def = CommonPatterns.erc20_transfer();
+    const selector = try func_def.get_selector(allocator);
+
+    const expected = CommonSelectors.ERC20_TRANSFER;
+    try std.testing.expectEqualSlices(u8, &expected, &selector);
+}
+
+test "ABI selector - multiple selectors uniqueness" {
+    const sel1 = computeSelector("func1(uint256)");
+    const sel2 = computeSelector("func2(uint256)");
+    const sel3 = computeSelector("func1(address)");
+
+    const same_as_sel1 = computeSelector("func1(uint256)");
+    try std.testing.expectEqualSlices(u8, &sel1, &same_as_sel1);
+
+    const equal_sel1_sel2 = std.mem.eql(u8, &sel1, &sel2);
+    try std.testing.expect(!equal_sel1_sel2);
+
+    const equal_sel1_sel3 = std.mem.eql(u8, &sel1, &sel3);
+    try std.testing.expect(!equal_sel1_sel3);
+}
+
+// ============================================================================
+// ERROR CONDITION TESTS (10+ tests)
+// ============================================================================
+
+test "ABI error - truncated data insufficient for type" {
+    const allocator = std.testing.allocator;
+
+    const truncated = [_]u8{ 0x01, 0x02, 0x03 };
+    const types = [_]AbiType{.uint256};
+
+    const result = decodeAbiParameters(allocator, &truncated, &types);
+    try std.testing.expectError(AbiError.DataTooSmall, result);
+}
+
+test "ABI error - invalid dynamic offset beyond data bounds" {
+    const allocator = std.testing.allocator;
+
+    var data: [64]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 999999, .big);
+
+    const types = [_]AbiType{.string};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI error - invalid UTF-8 string decoding" {
+    const allocator = std.testing.allocator;
+
+    var data: [96]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 32, .big);
+    std.mem.writeInt(u64, data[56..64], 4, .big);
+    data[64] = 0xFF;
+    data[65] = 0xFF;
+    data[66] = 0xFE;
+    data[67] = 0xFD;
+
+    const types = [_]AbiType{.string};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.InvalidUtf8, result);
+}
+
+test "ABI error - function data too small (less than 4 bytes)" {
+    const allocator = std.testing.allocator;
+
+    const short_data = [_]u8{ 0x01, 0x02 };
+    const result = decodeFunctionData(allocator, &short_data, &[_]AbiType{});
+    try std.testing.expectError(AbiError.DataTooSmall, result);
+}
+
+test "ABI error - cursor reading beyond bounds" {
+    var cursor = Cursor.init(&[_]u8{ 1, 2, 3, 4, 5 });
+    const result = cursor.readBytes(10);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI error - cursor reading word from insufficient data" {
+    var cursor = Cursor.init(&[_]u8{ 1, 2, 3, 4, 5 });
+    const result = cursor.readWord();
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI error - array length causes offset overflow" {
+    const allocator = std.testing.allocator;
+
+    var data: [64]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 32, .big);
+    std.mem.writeInt(u64, data[56..64], std.math.maxInt(u64), .big);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI error - negative offset in dynamic data" {
+    const allocator = std.testing.allocator;
+
+    var data: [64]u8 = undefined;
+    @memset(&data, 0xFF);
+
+    const types = [_]AbiType{.string};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI error - malformed array with invalid element count" {
+    const allocator = std.testing.allocator;
+
+    var data: [128]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 32, .big);
+    std.mem.writeInt(u64, data[56..64], 10, .big);
+
+    const types = [_]AbiType{.@"uint256[]"};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI error - empty data with non-empty type requirements" {
+    const allocator = std.testing.allocator;
+
+    const empty_data = [_]u8{};
+    const types = [_]AbiType{ .uint256, .address };
+
+    const result = decodeAbiParameters(allocator, &empty_data, &types);
+    try std.testing.expectError(AbiError.DataTooSmall, result);
+}
+
+test "ABI error - bytes dynamic length exceeds available data" {
+    const allocator = std.testing.allocator;
+
+    var data: [96]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 32, .big);
+    std.mem.writeInt(u64, data[56..64], 1000, .big);
+
+    const types = [_]AbiType{.bytes};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+test "ABI error - string array with invalid nested offset" {
+    const allocator = std.testing.allocator;
+
+    var data: [128]u8 = undefined;
+    @memset(&data, 0);
+    std.mem.writeInt(u64, data[24..32], 32, .big);
+    std.mem.writeInt(u64, data[56..64], 1, .big);
+    std.mem.writeInt(u64, data[88..96], 999999, .big);
+
+    const types = [_]AbiType{.@"string[]"};
+    const result = decodeAbiParameters(allocator, &data, &types);
+    try std.testing.expectError(AbiError.OutOfBounds, result);
+}
+
+// ============================================================================
+// CROSS-VALIDATION TESTS (5+ tests)
+// ============================================================================
+
+test "ABI cross-validation - ethers.js ERC20 transfer encoding" {
+    const allocator = std.testing.allocator;
+
+    const recipient: address.Address = [_]u8{
+        0xd8, 0xda, 0x6b, 0xf2, 0x69, 0x64, 0xaf, 0x9d,
+        0x7e, 0xed, 0x9e, 0x03, 0xe5, 0x34, 0x15, 0xd3,
+        0x7a, 0xa9, 0x60, 0x45,
+    };
+    const amount: u256 = 1000000000000000000;
+
+    const values = [_]AbiValue{
+        addressValue(recipient),
+        uint256_value(amount),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const expected_hex = "000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa960450000000000000000000000000000000000000000000000000de0b6b3a7640000";
+    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    defer allocator.free(actual_hex);
+
+    try std.testing.expectEqualStrings(expected_hex, actual_hex);
+}
+
+test "ABI cross-validation - web3.js approve encoding" {
+    const allocator = std.testing.allocator;
+
+    const spender: address.Address = [_]u8{
+        0x7a, 0x25, 0x0d, 0x56, 0x30, 0xb4, 0xcf, 0x53,
+        0x99, 0x39, 0xc1, 0xf0, 0x7d, 0x1e, 0x3e, 0xa4,
+        0x0f, 0x60, 0x63, 0xaf,
+    };
+    const max_uint256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+
+    const values = [_]AbiValue{
+        addressValue(spender),
+        uint256_value(max_uint256),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const expected_hex = "0000000000000000000000007a250d5630b4cf539939c1f07d1e3ea40f6063afffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    defer allocator.free(actual_hex);
+
+    try std.testing.expectEqualStrings(expected_hex, actual_hex);
+}
+
+test "ABI cross-validation - viem string encoding 'Hello World'" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        stringValue("Hello World"),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const expected_hex = "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000b48656c6c6f20576f726c64000000000000000000000000000000000000000000";
+    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    defer allocator.free(actual_hex);
+
+    try std.testing.expectEqualStrings(expected_hex, actual_hex);
+}
+
+test "ABI cross-validation - ethers.js multiple parameters encoding" {
+    const allocator = std.testing.allocator;
+
+    const addr: address.Address = [_]u8{
+        0xc9, 0x61, 0x14, 0x5a, 0x54, 0xc9, 0x6e, 0x3a,
+        0xe9, 0xba, 0xa0, 0x48, 0xc4, 0xf4, 0xd6, 0xb0,
+        0x4c, 0x13, 0x91, 0x6b,
+    };
+    const values = [_]AbiValue{
+        uint256_value(420),
+        boolValue(true),
+        addressValue(addr),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const expected_hex = "00000000000000000000000000000000000000000000000000000000000001a40000000000000000000000000000000000000000000000000000000000000001000000000000000000000000c961145a54c96e3ae9baa048c4f4d6b04c13916b";
+    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    defer allocator.free(actual_hex);
+
+    try std.testing.expectEqualStrings(expected_hex, actual_hex);
+}
+
+test "ABI cross-validation - real contract function encoding" {
+    const allocator = std.testing.allocator;
+
+    const addr1: address.Address = [_]u8{0x11} ** 20;
+    const addr2: address.Address = [_]u8{0x22} ** 20;
+    const path = [_]address.Address{ addr1, addr2 };
+
+    const to_addr: address.Address = [_]u8{0x33} ** 20;
+
+    const values = [_]AbiValue{
+        uint256_value(1000000000000000000),
+        uint256_value(900000000000000000),
+        .{ .@"address[]" = &path },
+        addressValue(to_addr),
+        uint256_value(1700000000),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const types = [_]AbiType{ .uint256, .uint256, .@"address[]", .address, .uint256 };
+    const decoded = try decodeAbiParameters(allocator, encoded, &types);
+    defer {
+        allocator.free(decoded[2].@"address[]");
+        allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(u256, 1000000000000000000), decoded[0].uint256);
+    try std.testing.expectEqual(@as(u256, 900000000000000000), decoded[1].uint256);
+    try std.testing.expectEqual(@as(usize, 2), decoded[2].@"address[]".len);
+    try std.testing.expectEqualSlices(u8, &to_addr, &decoded[3].address);
+    try std.testing.expectEqual(@as(u256, 1700000000), decoded[4].uint256);
+}
+
+test "ABI cross-validation - bytes encoding with known hash" {
+    const allocator = std.testing.allocator;
+
+    const data = [_]u8{ 0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe };
+    const values = [_]AbiValue{
+        bytesValue(&data),
+    };
+
+    const encoded = try encodeAbiParameters(allocator, &values);
+    defer allocator.free(encoded);
+
+    const expected_hex = "00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000008deadbeefcafebabe0000000000000000000000000000000000000000000000";
+    const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
+    defer allocator.free(actual_hex);
+
+    try std.testing.expectEqualStrings(expected_hex, actual_hex);
+}

@@ -104,7 +104,7 @@ export function eip191HashMessage(message: string | Uint8Array): Hash {
 		? new TextEncoder().encode(message)
 		: new Uint8Array(message);
 	const hashBytes = loader.eip191HashMessage(input);
-	return new Hash(hashBytes);
+	return Hash.fromBytes(hashBytes);
 }
 
 // Re-export for convenience
