@@ -261,9 +261,9 @@ export fn primitives_eip191_hash_message(
 ) c_int {
     const msg = message[0..message_len];
 
-    var stack_buf: [1024]u8 = undefined;
-    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
-    const allocator = fba.allocator();
+    // Use a heap allocator to support large messages (up to 1MB+)
+    // FixedBufferAllocator with small stack buffers caused OOM for >5KB
+    const allocator = std.heap.page_allocator;
 
     const hash = crypto.HashUtils.eip191HashMessage(msg, allocator) catch {
         return PRIMITIVES_ERROR_OUT_OF_MEMORY;
