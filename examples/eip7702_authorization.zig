@@ -20,8 +20,7 @@ const Transaction = primitives.Transaction;
 const Eip7702Transaction = Transaction.Eip7702Transaction;
 const Address = primitives.Address.Address;
 const AccessListItem = Transaction.AccessListItem;
-const authorization = primitives.authorization;
-const Authorization = authorization.Authorization;
+const Authorization = primitives.Authorization;
 const Crypto = crypto_pkg.Crypto;
 const hash_mod = crypto_pkg.Hash;
 
@@ -55,13 +54,14 @@ pub fn main() !void {
 
     // Private key of the account that will authorize delegation
     const authority_private_key: Crypto.PrivateKey = [_]u8{0x11} ** 32;
-    const authority_address = try Crypto.getAddress(allocator, authority_private_key);
+    const authority_public_key = try Crypto.unaudited_getPublicKey(authority_private_key);
+    const authority_address = authority_public_key.toAddress();
 
     // The contract to delegate to (e.g., a multisig wallet contract)
     const delegation_contract = try Address.fromHex("0x1234567890123456789012345678901234567890");
 
     // Create the authorization
-    const auth1 = try authorization.createAuthorization(
+    const auth1 = try Authorization.createAuthorization(
         allocator,
         1, // chain_id (Ethereum mainnet)
         delegation_contract,
@@ -100,14 +100,15 @@ pub fn main() !void {
 
     // Second authority (different private key)
     const authority2_private_key: Crypto.PrivateKey = [_]u8{0x22} ** 32;
-    const authority2_address = try Crypto.getAddress(allocator, authority2_private_key);
+    const authority2_public_key = try Crypto.unaudited_getPublicKey(authority2_private_key);
+    const authority2_address = authority2_public_key.toAddress();
 
     // Different contracts for different purposes
     const wallet_contract = try Address.fromHex("0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
     const defi_contract = try Address.fromHex("0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
 
     // Create authorizations
-    const auth2 = try authorization.createAuthorization(
+    const auth2 = try Authorization.createAuthorization(
         allocator,
         1, // chain_id
         wallet_contract,
@@ -115,7 +116,7 @@ pub fn main() !void {
         authority_private_key,
     );
 
-    const auth3 = try authorization.createAuthorization(
+    const auth3 = try Authorization.createAuthorization(
         allocator,
         1, // chain_id
         defi_contract,
@@ -175,10 +176,10 @@ pub fn main() !void {
 
     // Assume 1 empty account for this example
     const empty_accounts: usize = 1;
-    const auth_gas_cost = authorization.calculateAuthorizationGasCost(&auth_list, empty_accounts);
+    const auth_gas_cost = Authorization.calculateAuthorizationGasCost(&auth_list, empty_accounts);
 
-    std.debug.print("  Per authorization base cost: {} gas\n", .{authorization.PER_AUTH_BASE_COST});
-    std.debug.print("  Per empty account cost: {} gas\n", .{authorization.PER_EMPTY_ACCOUNT_COST});
+    std.debug.print("  Per authorization base cost: {} gas\n", .{Authorization.PER_AUTH_BASE_COST});
+    std.debug.print("  Per empty account cost: {} gas\n", .{Authorization.PER_EMPTY_ACCOUNT_COST});
     std.debug.print("  Number of authorizations: {}\n", .{auth_list.len});
     std.debug.print("  Number of empty accounts: {}\n", .{empty_accounts});
     std.debug.print("  Total authorization gas: {} gas\n", .{auth_gas_cost});
@@ -231,7 +232,7 @@ pub fn main() !void {
     std.debug.print("9. Processing Authorizations (Creating Delegations)\n", .{});
     std.debug.print("-" ** 80 ++ "\n", .{});
 
-    const delegations = try authorization.processAuthorizations(allocator, &auth_list);
+    const delegations = try Authorization.processAuthorizations(allocator, &auth_list);
     defer allocator.free(delegations);
 
     std.debug.print("  Created {} delegation designations:\n", .{delegations.len});
@@ -251,7 +252,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     // Create a mutable copy for demonstration
-    var mutable_delegation = authorization.DelegationDesignation{
+    var mutable_delegation = Authorization.DelegationDesignation{
         .authority = authority_address,
         .delegated_address = delegation_contract,
     };
@@ -273,7 +274,7 @@ pub fn main() !void {
     std.debug.print("11. RLP Encoding Authorization List\n", .{});
     std.debug.print("-" ** 80 ++ "\n", .{});
 
-    const encoded_auth_list = try authorization.encodeAuthorizationList(allocator, &auth_list);
+    const encoded_auth_list = try Authorization.encodeAuthorizationList(allocator, &auth_list);
     defer allocator.free(encoded_auth_list);
 
     std.debug.print("  Encoded authorization list length: {} bytes\n", .{encoded_auth_list.len});
@@ -290,7 +291,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     // Create authorizations with different nonces
-    const auth_nonce_0 = try authorization.createAuthorization(
+    const auth_nonce_0 = try Authorization.createAuthorization(
         allocator,
         1,
         delegation_contract,
@@ -298,7 +299,7 @@ pub fn main() !void {
         authority_private_key,
     );
 
-    const auth_nonce_1 = try authorization.createAuthorization(
+    const auth_nonce_1 = try Authorization.createAuthorization(
         allocator,
         1,
         delegation_contract,
@@ -306,7 +307,7 @@ pub fn main() !void {
         authority_private_key,
     );
 
-    const auth_nonce_100 = try authorization.createAuthorization(
+    const auth_nonce_100 = try Authorization.createAuthorization(
         allocator,
         1,
         delegation_contract,

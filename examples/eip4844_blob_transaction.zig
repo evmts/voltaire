@@ -18,9 +18,9 @@ const Transaction = primitives.Transaction;
 const Eip4844Transaction = Transaction.Eip4844Transaction;
 const Address = primitives.Address.Address;
 const AccessListItem = Transaction.AccessListItem;
-const blob_module = primitives.blob;
-const VersionedHash = blob_module.VersionedHash;
-const BlobCommitment = blob_module.BlobCommitment;
+const Blob = primitives.Blob;
+const VersionedHash = Blob.VersionedHash;
+const BlobCommitment = Blob.BlobCommitment;
 const Crypto = crypto_pkg.Crypto;
 const hash_mod = crypto_pkg.Hash;
 
@@ -45,14 +45,14 @@ pub fn main() !void {
 
     // Convert commitments to versioned hashes
     // versioned_hash = 0x01 || sha256(commitment)[1:]
-    const versioned_hash_1 = blob_module.commitmentToVersionedHash(commitment1);
-    const versioned_hash_2 = blob_module.commitmentToVersionedHash(commitment2);
-    const versioned_hash_3 = blob_module.commitmentToVersionedHash(commitment3);
+    const versioned_hash_1 = Blob.commitmentToVersionedHash(commitment1);
+    const versioned_hash_2 = Blob.commitmentToVersionedHash(commitment2);
+    const versioned_hash_3 = Blob.commitmentToVersionedHash(commitment3);
 
     std.debug.print("  Blob 1 versioned hash: 0x{X}\n", .{versioned_hash_1.bytes});
     std.debug.print("  Blob 2 versioned hash: 0x{X}\n", .{versioned_hash_2.bytes});
     std.debug.print("  Blob 3 versioned hash: 0x{X}\n", .{versioned_hash_3.bytes});
-    std.debug.print("  Version byte: 0x{x:0>2} (KZG commitment version)\n", .{blob_module.BLOB_COMMITMENT_VERSION_KZG});
+    std.debug.print("  Version byte: 0x{x:0>2} (KZG commitment version)\n", .{Blob.BLOB_COMMITMENT_VERSION_KZG});
     std.debug.print("\n", .{});
 
     // Example 2: Understanding Blob Gas Economics
@@ -60,11 +60,11 @@ pub fn main() !void {
     std.debug.print("-" ** 80 ++ "\n", .{});
 
     // Calculate blob gas pricing based on network congestion
-    const excess_blob_gas: u64 = 2 * blob_module.BLOB_GAS_PER_BLOB; // 2 blobs worth of excess
-    const blob_base_fee = blob_module.calculateBlobGasPrice(excess_blob_gas);
+    const excess_blob_gas: u64 = 2 * Blob.BLOB_GAS_PER_BLOB; // 2 blobs worth of excess
+    const blob_base_fee = Blob.calculateBlobGasPrice(excess_blob_gas);
 
-    std.debug.print("  Blob gas per blob: {} gas\n", .{blob_module.BLOB_GAS_PER_BLOB});
-    std.debug.print("  Max blobs per transaction: {}\n", .{blob_module.MAX_BLOBS_PER_TRANSACTION});
+    std.debug.print("  Blob gas per blob: {} gas\n", .{Blob.BLOB_GAS_PER_BLOB});
+    std.debug.print("  Max blobs per transaction: {}\n", .{Blob.MAX_BLOBS_PER_TRANSACTION});
     std.debug.print("  Current excess blob gas: {} gas\n", .{excess_blob_gas});
     std.debug.print("  Current blob base fee: {} wei\n", .{blob_base_fee});
     std.debug.print("\n", .{});
@@ -124,7 +124,7 @@ pub fn main() !void {
     std.debug.print("4. Calculating Blob Gas Costs\n", .{});
     std.debug.print("-" ** 80 ++ "\n", .{});
 
-    const total_blob_gas = unsigned_blob_tx.blob_versioned_hashes.len * blob_module.BLOB_GAS_PER_BLOB;
+    const total_blob_gas = unsigned_blob_tx.blob_versioned_hashes.len * Blob.BLOB_GAS_PER_BLOB;
     const estimated_blob_cost = total_blob_gas * blob_base_fee;
     const max_blob_cost = total_blob_gas * max_fee_per_blob_gas;
 
@@ -189,14 +189,14 @@ pub fn main() !void {
     std.debug.print("-" ** 80 ++ "\n", .{});
 
     // Create a BlobTransaction for validation
-    const blob_tx_validator = blob_module.BlobTransaction{
+    const blob_tx_validator = Blob.BlobTransaction{
         .max_fee_per_blob_gas = signed_blob_tx.max_fee_per_blob_gas,
         .blob_versioned_hashes = signed_blob_tx.blob_versioned_hashes,
     };
 
     try blob_tx_validator.validate();
     std.debug.print("  Validation passed!\n", .{});
-    std.debug.print("  - Blob count is between 1 and {}\n", .{blob_module.MAX_BLOBS_PER_TRANSACTION});
+    std.debug.print("  - Blob count is between 1 and {}\n", .{Blob.MAX_BLOBS_PER_TRANSACTION});
     std.debug.print("  - All versioned hashes are valid (version 0x01)\n", .{});
     std.debug.print("  - Max fee per blob gas is non-zero\n", .{});
     std.debug.print("\n", .{});
@@ -221,31 +221,31 @@ pub fn main() !void {
     var current_excess: u64 = 0;
 
     // Block 1: Low usage (1 blob)
-    const block1_usage = blob_module.BLOB_GAS_PER_BLOB;
-    var price = blob_module.calculateBlobGasPrice(current_excess);
-    std.debug.print("    Block 1: {} blobs used, price = {} wei\n", .{ block1_usage / blob_module.BLOB_GAS_PER_BLOB, price });
-    current_excess = blob_module.calculateExcessBlobGas(current_excess, block1_usage);
+    const block1_usage = Blob.BLOB_GAS_PER_BLOB;
+    var price = Blob.calculateBlobGasPrice(current_excess);
+    std.debug.print("    Block 1: {} blobs used, price = {} wei\n", .{ block1_usage / Blob.BLOB_GAS_PER_BLOB, price });
+    current_excess = Blob.calculateExcessBlobGas(current_excess, block1_usage);
 
     // Block 2: High usage (6 blobs - maximum)
-    const block2_usage = 6 * blob_module.BLOB_GAS_PER_BLOB;
-    price = blob_module.calculateBlobGasPrice(current_excess);
-    std.debug.print("    Block 2: {} blobs used, price = {} wei\n", .{ block2_usage / blob_module.BLOB_GAS_PER_BLOB, price });
-    current_excess = blob_module.calculateExcessBlobGas(current_excess, block2_usage);
+    const block2_usage = 6 * Blob.BLOB_GAS_PER_BLOB;
+    price = Blob.calculateBlobGasPrice(current_excess);
+    std.debug.print("    Block 2: {} blobs used, price = {} wei\n", .{ block2_usage / Blob.BLOB_GAS_PER_BLOB, price });
+    current_excess = Blob.calculateExcessBlobGas(current_excess, block2_usage);
 
     // Block 3: High usage again (6 blobs)
-    const block3_usage = 6 * blob_module.BLOB_GAS_PER_BLOB;
-    price = blob_module.calculateBlobGasPrice(current_excess);
-    std.debug.print("    Block 3: {} blobs used, price = {} wei (price increased!)\n", .{ block3_usage / blob_module.BLOB_GAS_PER_BLOB, price });
-    current_excess = blob_module.calculateExcessBlobGas(current_excess, block3_usage);
+    const block3_usage = 6 * Blob.BLOB_GAS_PER_BLOB;
+    price = Blob.calculateBlobGasPrice(current_excess);
+    std.debug.print("    Block 3: {} blobs used, price = {} wei (price increased!)\n", .{ block3_usage / Blob.BLOB_GAS_PER_BLOB, price });
+    current_excess = Blob.calculateExcessBlobGas(current_excess, block3_usage);
 
     // Block 4: Low usage (1 blob)
-    const block4_usage = blob_module.BLOB_GAS_PER_BLOB;
-    price = blob_module.calculateBlobGasPrice(current_excess);
-    std.debug.print("    Block 4: {} blobs used, price = {} wei\n", .{ block4_usage / blob_module.BLOB_GAS_PER_BLOB, price });
-    current_excess = blob_module.calculateExcessBlobGas(current_excess, block4_usage);
+    const block4_usage = Blob.BLOB_GAS_PER_BLOB;
+    price = Blob.calculateBlobGasPrice(current_excess);
+    std.debug.print("    Block 4: {} blobs used, price = {} wei\n", .{ block4_usage / Blob.BLOB_GAS_PER_BLOB, price });
+    current_excess = Blob.calculateExcessBlobGas(current_excess, block4_usage);
 
     std.debug.print("\n", .{});
-    std.debug.print("  Target blob gas per block: {} gas (3 blobs)\n", .{3 * blob_module.BLOB_GAS_PER_BLOB});
+    std.debug.print("  Target blob gas per block: {} gas (3 blobs)\n", .{3 * Blob.BLOB_GAS_PER_BLOB});
     std.debug.print("  Usage above target increases price, below target decreases price\n", .{});
     std.debug.print("\n", .{});
 

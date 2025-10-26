@@ -19,7 +19,6 @@ const crypto_pkg = @import("crypto");
 const Address = primitives.Address.Address;
 const Crypto = crypto_pkg.Crypto;
 const hash_mod = crypto_pkg.Hash;
-const Eip191 = primitives.Eip191;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -85,12 +84,6 @@ pub fn main() !void {
     std.debug.print("    3. Take last 20 bytes of hash\n", .{});
     std.debug.print("\n", .{});
 
-    // Verify using crypto module
-    const verified_address = try Crypto.getAddress(allocator, private_key);
-    const addresses_match = std.mem.eql(u8, &address.bytes, &verified_address.bytes);
-    std.debug.print("  Verification: Addresses match = {}\n", .{addresses_match});
-    std.debug.print("\n", .{});
-
     // Example 4: Signing a Message (EIP-191)
     std.debug.print("4. Signing a Message with EIP-191 Prefix\n", .{});
     std.debug.print("-" ** 80 ++ "\n", .{});
@@ -105,7 +98,7 @@ pub fn main() !void {
     std.debug.print("    \"\\x19Ethereum Signed Message:\\n<length>\"\n", .{});
     std.debug.print("\n", .{});
 
-    const message_hash = Eip191.hashPersonalMessage(message);
+    const message_hash = Crypto.hashMessage(message);
     std.debug.print("  Message Hash (with prefix):\n", .{});
     std.debug.print("    0x{X}\n", .{message_hash});
     std.debug.print("\n", .{});
