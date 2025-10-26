@@ -18,18 +18,18 @@ pub const MontgomeryPointLine = struct {
     line: Fp12Mont,
 };
 
-pub fn pairing(g1: *const G1, g2: *const G2) Fp12Mont {
-    const f = millerLoop(g1, g2);
-    return finalExponentiation(&f);
+pub fn pairing(g1: *const G1, g2: *const G2) !Fp12Mont {
+    const f = try millerLoop(g1, g2);
+    return try finalExponentiation(&f);
 }
 
-pub fn millerLoop(p: *const G1, q: *const G2) Fp12Mont {
+pub fn millerLoop(p: *const G1, q: *const G2) !Fp12Mont {
     var result = Fp12Mont.ONE;
     if (p.isInfinity() or q.isInfinity()) {
         return result;
     }
-    const p_affine = p.toAffine();
-    const q_affine = q.toAffine();
+    const p_affine = try p.toAffine();
+    const q_affine = try q.toAffine();
     var t = q_affine;
     for (1..miller_loop_iterations + 1) |j| {
         const i = miller_loop_iterations - j;
@@ -66,20 +66,19 @@ pub fn millerLoop(p: *const G1, q: *const G2) Fp12Mont {
     return result;
 }
 
-pub fn finalExponentiation(f: *const Fp12Mont) Fp12Mont {
-    const easy_part = finalExponentiationEasyPart(f);
+pub fn finalExponentiation(f: *const Fp12Mont) !Fp12Mont {
+    const easy_part = try finalExponentiationEasyPart(f);
     return finalExponentiationHardPart(&easy_part);
 }
 
-pub fn finalExponentiationEasyPart(f: *const Fp12Mont) Fp12Mont {
+pub fn finalExponentiationEasyPart(f: *const Fp12Mont) !Fp12Mont {
     var result = f.*;
     for (0..6) |_| {
         result.frobeniusMapAssign();
     }
-    // f is a pairing result and should not be zero in a valid pairing computation
-    const f_inv = f.inv() catch |err| {
-        std.debug.panic("finalExponentiationEasyPart: field element inversion failed: {}", .{err});
-    };
+    // f should not be zero in a valid pairing computation
+    // If inv() fails, return error instead of panicking
+    const f_inv = try f.inv();
     result.mulAssign(&f_inv);
     result.mulAssign(&result.frobeniusMap().frobeniusMap());
     return result;
@@ -267,7 +266,7 @@ test "finalExponentiation" {
 
     for (test_values) |f| {
         const f_pow_r = f.pow(FR_MOD);
-        const result = finalExponentiation(&f_pow_r);
+        const result = try finalExponentiation(&f_pow_r);
         try std.testing.expect(result.equal(&Fp12Mont.ONE));
     }
 }
