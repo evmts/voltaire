@@ -4,6 +4,8 @@ const lib_build = @import("lib/build.zig");
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+    // Optional: build benchmarks only when requested
+    const with_benches = b.option(bool, "with-benches", "Build and install benchmark executables") orelse false;
 
     // STEP 1: Verify vendored dependencies exist
     lib_build.checkVendoredDeps(b);
@@ -294,6 +296,126 @@ pub fn build(b: *std.Build) void {
     const example_transaction_step = b.step("example-transaction", "Run the transaction operations example");
     example_transaction_step.dependOn(&run_transaction_example.step);
 
+    // EIP-4844 blob transaction example
+    const eip4844_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/eip4844_blob_transaction.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    eip4844_example_mod.addImport("primitives", primitives_mod);
+    eip4844_example_mod.addImport("crypto", crypto_mod);
+
+    const eip4844_example = b.addExecutable(.{
+        .name = "eip4844_example",
+        .root_module = eip4844_example_mod,
+    });
+    eip4844_example.linkLibrary(c_kzg_lib);
+    eip4844_example.linkLibrary(blst_lib);
+    eip4844_example.addObjectFile(rust_crypto_lib_path);
+    eip4844_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    eip4844_example.step.dependOn(cargo_build_step);
+    eip4844_example.linkLibC();
+
+    const run_eip4844_example = b.addRunArtifact(eip4844_example);
+    const example_eip4844_step = b.step("example-eip4844", "Run the EIP-4844 blob transaction example");
+    example_eip4844_step.dependOn(&run_eip4844_example.step);
+
+    // EIP-7702 authorization transaction example
+    const eip7702_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/eip7702_authorization.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    eip7702_example_mod.addImport("primitives", primitives_mod);
+    eip7702_example_mod.addImport("crypto", crypto_mod);
+
+    const eip7702_example = b.addExecutable(.{
+        .name = "eip7702_example",
+        .root_module = eip7702_example_mod,
+    });
+    eip7702_example.linkLibrary(c_kzg_lib);
+    eip7702_example.linkLibrary(blst_lib);
+    eip7702_example.addObjectFile(rust_crypto_lib_path);
+    eip7702_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    eip7702_example.step.dependOn(cargo_build_step);
+    eip7702_example.linkLibC();
+
+    const run_eip7702_example = b.addRunArtifact(eip7702_example);
+    const example_eip7702_step = b.step("example-eip7702", "Run the EIP-7702 authorization transaction example");
+    example_eip7702_step.dependOn(&run_eip7702_example.step);
+
+    // ABI workflow example
+    const abi_workflow_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/abi_workflow.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    abi_workflow_example_mod.addImport("primitives", primitives_mod);
+    abi_workflow_example_mod.addImport("crypto", crypto_mod);
+
+    const abi_workflow_example = b.addExecutable(.{
+        .name = "abi_workflow_example",
+        .root_module = abi_workflow_example_mod,
+    });
+    abi_workflow_example.linkLibrary(c_kzg_lib);
+    abi_workflow_example.linkLibrary(blst_lib);
+    abi_workflow_example.addObjectFile(rust_crypto_lib_path);
+    abi_workflow_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    abi_workflow_example.step.dependOn(cargo_build_step);
+    abi_workflow_example.linkLibC();
+
+    const run_abi_workflow_example = b.addRunArtifact(abi_workflow_example);
+    const example_abi_workflow_step = b.step("example-abi-workflow", "Run the comprehensive ABI workflow example");
+    example_abi_workflow_step.dependOn(&run_abi_workflow_example.step);
+
+    // Signature recovery workflow example
+    const sig_recovery_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/signature_recovery.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    sig_recovery_example_mod.addImport("primitives", primitives_mod);
+    sig_recovery_example_mod.addImport("crypto", crypto_mod);
+
+    const sig_recovery_example = b.addExecutable(.{
+        .name = "signature_recovery_example",
+        .root_module = sig_recovery_example_mod,
+    });
+    sig_recovery_example.linkLibrary(c_kzg_lib);
+    sig_recovery_example.linkLibrary(blst_lib);
+    sig_recovery_example.addObjectFile(rust_crypto_lib_path);
+    sig_recovery_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    sig_recovery_example.step.dependOn(cargo_build_step);
+    sig_recovery_example.linkLibC();
+
+    const run_sig_recovery_example = b.addRunArtifact(sig_recovery_example);
+    const example_sig_recovery_step = b.step("example-signature-recovery", "Run the signature recovery workflow example");
+    example_sig_recovery_step.dependOn(&run_sig_recovery_example.step);
+
+    // BLS12-381 operations example
+    const bls_operations_example_mod = b.createModule(.{
+        .root_source_file = b.path("examples/bls_operations.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bls_operations_example_mod.addImport("crypto", crypto_mod);
+    bls_operations_example_mod.addImport("primitives", primitives_mod);
+
+    const bls_operations_example = b.addExecutable(.{
+        .name = "bls_operations_example",
+        .root_module = bls_operations_example_mod,
+    });
+    bls_operations_example.linkLibrary(c_kzg_lib);
+    bls_operations_example.linkLibrary(blst_lib);
+    bls_operations_example.addObjectFile(rust_crypto_lib_path);
+    bls_operations_example.addIncludePath(b.path("lib")); // For Rust FFI headers
+    bls_operations_example.step.dependOn(cargo_build_step);
+    bls_operations_example.linkLibC();
+
+    const run_bls_operations_example = b.addRunArtifact(bls_operations_example);
+    const example_bls_operations_step = b.step("example-bls", "Run the BLS12-381 operations example");
+    example_bls_operations_step.dependOn(&run_bls_operations_example.step);
+
     // Generate C header from c_api.zig
     const generate_header = b.addExecutable(.{
         .name = "generate_c_header",
@@ -412,13 +534,15 @@ pub fn build(b: *std.Build) void {
         addGoBuildSteps(b);
     }
 
-    // Benchmark executables for WASM size and performance measurement
-    const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";
-    buildBenchmarks(b, target, optimize, bench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+    // Benchmark executables for WASM size and performance measurement (optional)
+    if (with_benches) {
+        const bench_filter = b.option([]const u8, "bench-filter", "Pattern to filter benchmarks (default: \"*\")") orelse "*";
+        buildBenchmarks(b, target, optimize, bench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 
-    // zbench performance benchmarks colocated with source code
-    const zbench_filter = b.option([]const u8, "filter", "Pattern to filter zbench benchmarks (default: \"*\")") orelse "*";
-    buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+        // zbench performance benchmarks colocated with source code
+        const zbench_filter = b.option([]const u8, "filter", "Pattern to filter zbench benchmarks (default: \"*\")") orelse "*";
+        buildZBenchmarks(b, target, optimize, zbench_filter, primitives_mod, crypto_mod, precompiles_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+    }
 }
 
 fn buildBenchmarks(
