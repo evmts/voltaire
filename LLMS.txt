@@ -583,6 +583,7 @@ Base: https://github.com/evmts/primitives/blob/main/docs
 - [Overview](https://github.com/evmts/primitives/blob/main/docs/precompiles/README.md)
 - [Common Types](https://github.com/evmts/primitives/blob/main/docs/precompiles/common.md)
 - [Utils](https://github.com/evmts/primitives/blob/main/docs/precompiles/utils.md)
+- [ECRecover (0x01)](https://github.com/evmts/primitives/blob/main/docs/precompiles/ecrecover.md)
 - [SHA256 (0x02)](https://github.com/evmts/primitives/blob/main/docs/precompiles/sha256.md)
 - [RIPEMD160 (0x03)](https://github.com/evmts/primitives/blob/main/docs/precompiles/ripemd160.md)
 - [Identity (0x04)](https://github.com/evmts/primitives/blob/main/docs/precompiles/identity.md)
