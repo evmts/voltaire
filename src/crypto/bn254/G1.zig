@@ -32,15 +32,13 @@ pub fn init(x: *const FpMont, y: *const FpMont, z: *const FpMont) !G1 {
     return point;
 }
 
-pub fn toAffine(self: *const G1) G1 {
+pub fn toAffine(self: *const G1) !G1 {
     if (self.isInfinity()) {
         return INFINITY;
     }
-    // z cannot be zero here since we checked isInfinity above
-    // If inv() fails, it means z is zero which violates the invariant
-    const z_inv = self.z.inv() catch |err| {
-        std.debug.panic("G1.toAffine: z inversion failed (z should not be zero): {}", .{err});
-    };
+    // z should not be zero since we checked isInfinity above
+    // If inv() fails, return error instead of panicking
+    const z_inv = try self.z.inv();
     const z_inv_sq = z_inv.mul(&z_inv);
     const z_inv_cubed = z_inv_sq.mul(&z_inv);
 
@@ -202,9 +200,9 @@ pub fn addAssign(self: *G1, other: *const G1) void {
 }
 
 // This is a easy to compute morphism, G -> λG, where λ is a fixed field element, it can be found in curve_parameters.zig
-pub fn glsEndomorphism(self: *const G1) G1 {
+pub fn glsEndomorphism(self: *const G1) !G1 {
     const cube_root = FpMont.init(curve_parameters.G1_SCALAR.cube_root);
-    const point_aff = self.toAffine();
+    const point_aff = try self.toAffine();
     return G1{
         .x = point_aff.x.mul(&cube_root),
         .y = point_aff.y,
@@ -236,7 +234,7 @@ pub fn decomposeScalar(scalar: u256) scalar_decomposition {
 
 // This uses GLS in NAF, we first compute k1 and k2 in NAF, such that k = k1 + λ * k2
 // we then use Shamir's trick to reduce the number of doublings
-pub fn mulByInt(self: *const G1, scalar: u256) G1 {
+pub fn mulByInt(self: *const G1, scalar: u256) !G1 {
     const decomposition = decomposeScalar(scalar);
     const k1 = decomposition.k1;
     const naf_k1 = naf(k1);
@@ -244,7 +242,7 @@ pub fn mulByInt(self: *const G1, scalar: u256) G1 {
     const naf_k2 = naf(k2);
 
     const P = self;
-    const Q = self.glsEndomorphism().neg();
+    const Q = (try self.glsEndomorphism()).neg();
     const P_plus_Q = P.add(&Q);
     const P_minus_Q = P.sub(&Q);
 
@@ -273,12 +271,12 @@ pub fn mulByInt(self: *const G1, scalar: u256) G1 {
     return result;
 }
 
-pub fn mul(self: *const G1, scalar: *const Fr) G1 {
-    return self.mulByInt(scalar.value);
+pub fn mul(self: *const G1, scalar: *const Fr) !G1 {
+    return try self.mulByInt(scalar.value);
 }
 
-pub fn mulAssign(self: *G1, scalar: *const Fr) void {
-    self.* = self.mul(scalar);
+pub fn mulAssign(self: *G1, scalar: *const Fr) !void {
+    self.* = try self.mul(scalar);
 }
 
 // ============================================================================
@@ -321,7 +319,7 @@ test "G1.double" {
 
 test "G1.mul" {
     const Gen = G1.GENERATOR;
-    const minus_G = Gen.mul(&Fr.init(1).neg());
+    const minus_G = try Gen.mul(&Fr.init(1).neg());
     const G_plus_minus_G = Gen.add(&minus_G);
     try std.testing.expect(G_plus_minus_G.isInfinity());
 }
@@ -338,7 +336,7 @@ test "G1.isOnCurve identity" {
 
 test "G1.isOnCurve random point" {
     const k = 7; // example scalar
-    const random_point = G1.GENERATOR.mul(&Fr.init(k));
+    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
     try std.testing.expect(random_point.isOnCurve());
 }
 
@@ -359,8 +357,8 @@ test "G1.equal different representations same point" {
 
 test "G1.toAffine random point" {
     const k = 13; // example scalar
-    const random_point = G1.GENERATOR.mul(&Fr.init(k));
-    const affine = random_point.toAffine();
+    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
+    const affine = try random_point.toAffine();
 
     const expected_result = G1{
         .x = FpMont.init(2672242651313367459976336264061690128665099451055893690004467838496751824703),
@@ -382,8 +380,8 @@ test "G1.add generator to identity" {
 test "G1.add random points" {
     const k1 = 3; // example scalar
     const k2 = 5; // example scalar
-    const point1 = G1.GENERATOR.mul(&Fr.init(k1));
-    const point2 = G1.GENERATOR.mul(&Fr.init(k2));
+    const point1 = try G1.GENERATOR.mul(&Fr.init(k1));
+    const point2 = try G1.GENERATOR.mul(&Fr.init(k2));
     const result = point1.add(&point2);
 
     const expected_result = G1{
@@ -399,8 +397,8 @@ test "G1.add random points" {
 test "G1.add commutativity" {
     const k1 = 11; // example scalar
     const k2 = 17; // example scalar
-    const point1 = G1.GENERATOR.mul(&Fr.init(k1));
-    const point2 = G1.GENERATOR.mul(&Fr.init(k2));
+    const point1 = try G1.GENERATOR.mul(&Fr.init(k1));
+    const point2 = try G1.GENERATOR.mul(&Fr.init(k2));
 
     const result1 = point1.add(&point2);
     const result2 = point2.add(&point1);
@@ -415,7 +413,7 @@ test "G1.double identity" {
 
 test "G1.double random point" {
     const k = 9; // example scalar
-    const random_point = G1.GENERATOR.mul(&Fr.init(k));
+    const random_point = try G1.GENERATOR.mul(&Fr.init(k));
     const doubled = random_point.double();
 
     const expected_result = G1{
@@ -462,8 +460,8 @@ test "G1.negAssign basic assignment" {
 test "G1.mulAssign basic assignment" {
     var a = G1.GENERATOR;
     const scalar = Fr.init(7);
-    const expected = a.mul(&scalar);
-    a.mulAssign(&scalar);
+    const expected = try a.mul(&scalar);
+    try a.mulAssign(&scalar);
     try std.testing.expect(a.equal(&expected));
 }
 
@@ -479,9 +477,9 @@ test "G1.glsEndomorphism" {
     };
 
     for (test_values) |value| {
-        const point = gen.mul(&value);
-        const endo = point.glsEndomorphism();
-        const point_times_lambda = point.mul(&Fr.init(curve_parameters.G1_SCALAR.lambda));
+        const point = try gen.mul(&value);
+        const endo = try point.glsEndomorphism();
+        const point_times_lambda = try point.mul(&Fr.init(curve_parameters.G1_SCALAR.lambda));
         try std.testing.expect(point_times_lambda.equal(&endo));
     }
 }

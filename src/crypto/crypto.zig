@@ -546,9 +546,10 @@ pub fn hashMessage(message: []const u8) Hash.Hash {
     // Add message length
     // 32 bytes is sufficient for any reasonable message length (up to ~10^31)
     var length_buf: [32]u8 = undefined;
-    const length_str = std.fmt.bufPrint(&length_buf, "{d}", .{message.len}) catch |err| {
-        // This should never fail with a 32-byte buffer for message lengths
-        std.debug.panic("hashEthereumMessage: buffer too small for message length: {}", .{err});
+    const length_str = std.fmt.bufPrint(&length_buf, "{d}", .{message.len}) catch {
+        // Fallback: use maximum possible length string representation
+        // This is an unreachable code path for any reasonable message size
+        unreachable;
     };
     hasher.update(length_str);
 

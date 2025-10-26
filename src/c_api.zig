@@ -406,7 +406,9 @@ export fn primitives_sha256(
     out_hash: *[32]u8,
 ) c_int {
     const input = data[0..data_len];
-    crypto.HashAlgorithms.SHA256.hash(input, out_hash);
+    crypto.HashAlgorithms.SHA256.hash(input, out_hash) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
     return PRIMITIVES_SUCCESS;
 }
 
@@ -417,7 +419,9 @@ export fn primitives_ripemd160(
     out_hash: *[20]u8,
 ) c_int {
     const input = data[0..data_len];
-    crypto.HashAlgorithms.RIPEMD160.hash(input, out_hash);
+    crypto.HashAlgorithms.RIPEMD160.hash(input, out_hash) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
     return PRIMITIVES_SUCCESS;
 }
 
@@ -834,7 +838,9 @@ export fn primitives_solidity_sha256(
     out_hash: *[32]u8,
 ) c_int {
     const input = packed_data[0..data_len];
-    crypto.HashAlgorithms.SHA256.hash(input, out_hash);
+    crypto.HashAlgorithms.SHA256.hash(input, out_hash) catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
     return PRIMITIVES_SUCCESS;
 }
 

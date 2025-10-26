@@ -2,15 +2,19 @@ const std = @import("std");
 const ripemd160_impl = @import("ripemd160.zig");
 const blake2_impl = @import("blake2.zig");
 
+pub const HashError = error{
+    OutputBufferTooSmall,
+};
+
 /// SHA256 cryptographic hash function
 /// Produces a 256-bit (32-byte) digest
 pub const SHA256 = struct {
     pub const OUTPUT_SIZE: usize = 32;
 
     /// Compute SHA256 hash of input data
-    pub fn hash(input: []const u8, output: []u8) void {
+    pub fn hash(input: []const u8, output: []u8) HashError!void {
         if (output.len < OUTPUT_SIZE) {
-            std.debug.panic("SHA256.hash: output buffer too small (got {}, need {})", .{ output.len, OUTPUT_SIZE });
+            return HashError.OutputBufferTooSmall;
         }
 
         var hasher = std.crypto.hash.sha2.Sha256.init(.{});
@@ -21,7 +25,7 @@ pub const SHA256 = struct {
     /// Compute SHA256 hash and return as fixed-size array
     pub fn hashFixed(input: []const u8) [OUTPUT_SIZE]u8 {
         var result: [OUTPUT_SIZE]u8 = undefined;
-        hash(input, &result);
+        hash(input, &result) catch unreachable; // Buffer size is guaranteed correct
         return result;
     }
 };
@@ -30,7 +34,7 @@ test "SHA256 hash computation" {
     const test_input = "hello world";
     var output: [SHA256.OUTPUT_SIZE]u8 = undefined;
 
-    SHA256.hash(test_input, &output);
+    try SHA256.hash(test_input, &output);
 
     // Known SHA256 hash of "hello world"
     const expected = [_]u8{
@@ -63,9 +67,9 @@ pub const RIPEMD160 = struct {
     pub const OUTPUT_SIZE: usize = 20;
 
     /// Compute RIPEMD160 hash of input data
-    pub fn hash(input: []const u8, output: []u8) void {
+    pub fn hash(input: []const u8, output: []u8) HashError!void {
         if (output.len < OUTPUT_SIZE) {
-            std.debug.panic("RIPEMD160.hash: output buffer too small (got {}, need {})", .{ output.len, OUTPUT_SIZE });
+            return HashError.OutputBufferTooSmall;
         }
 
         const result = ripemd160_impl.unauditedHash(input);
@@ -82,7 +86,7 @@ test "RIPEMD160 hash computation" {
     const test_input = "abc";
     var output: [RIPEMD160.OUTPUT_SIZE]u8 = undefined;
 
-    RIPEMD160.hash(test_input, &output);
+    try RIPEMD160.hash(test_input, &output);
 
     // Known RIPEMD160 hash of "abc"
     const expected = [_]u8{
