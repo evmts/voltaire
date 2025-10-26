@@ -828,3 +828,180 @@ fn addGoBuildSteps(b: *std.Build) void {
     const build_go_step = b.step("build-go", "Build Go packages (requires 'zig build' first)");
     build_go_step.dependOn(&go_build.step);
 }
+
+/// Add TypeScript-related build steps
+/// Wraps package.json scripts to provide unified build interface
+fn addTypeScriptSteps(b: *std.Build) void {
+    // ============================================================================
+    // TypeScript Build Steps
+    // ============================================================================
+
+    // build-ts: Compile TypeScript to JavaScript (dist/ + types/)
+    const tsc_build = b.addSystemCommand(&[_][]const u8{ "bun", "run", "tsc" });
+    tsc_build.setName("tsc-build");
+    const build_ts_step = b.step("build-ts", "Compile TypeScript to JavaScript (dist/ + types/)");
+    build_ts_step.dependOn(&tsc_build.step);
+
+    // build-ts-full: Complete TypeScript build (TS + native FFI + WASM)
+    const build_ts_full_step = b.step("build-ts-full", "Complete TypeScript build (TS + native + WASM)");
+    build_ts_full_step.dependOn(&tsc_build.step);
+    // Note: build-ts-native and build-ts-wasm already exist in main build function
+    // They will be added as dependencies by the user if needed
+
+    // ============================================================================
+    // TypeScript Test Steps
+    // ============================================================================
+
+    // test-ts: Run all TypeScript tests
+    const test_ts_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "test" });
+    test_ts_cmd.setName("test-ts");
+    const test_ts_step = b.step("test-ts", "Run all TypeScript tests");
+    test_ts_step.dependOn(&test_ts_cmd.step);
+
+    // test-ts-native: Run native FFI tests only
+    const test_ts_native_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "test:native" });
+    test_ts_native_cmd.setName("test-ts-native");
+    const test_ts_native_step = b.step("test-ts-native", "Run native FFI TypeScript tests");
+    test_ts_native_step.dependOn(&test_ts_native_cmd.step);
+
+    // test-ts-wasm: Run WASM tests only
+    const test_ts_wasm_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "test:wasm" });
+    test_ts_wasm_cmd.setName("test-ts-wasm");
+    const test_ts_wasm_step = b.step("test-ts-wasm", "Run WASM TypeScript tests");
+    test_ts_wasm_step.dependOn(&test_ts_wasm_cmd.step);
+
+    // test-integration: Run integration tests
+    const test_integration_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "test:integration" });
+    test_integration_cmd.setName("test-integration");
+    const test_integration_step = b.step("test-integration", "Run integration tests");
+    test_integration_step.dependOn(&test_integration_cmd.step);
+
+    // test-security: Run security tests
+    const test_security_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "test:security" });
+    test_security_cmd.setName("test-security");
+    const test_security_step = b.step("test-security", "Run security tests");
+    test_security_step.dependOn(&test_security_cmd.step);
+
+    // test-all: Run ALL tests (Zig + TypeScript + Go)
+    const test_all_step = b.step("test-all", "Run all tests (Zig + TypeScript + Go)");
+    // Note: Zig 'test' step already exists, this depends on it
+    test_all_step.dependOn(&test_ts_cmd.step);
+
+    // ============================================================================
+    // Code Quality Steps
+    // ============================================================================
+
+    // format: Format all code (Zig + TypeScript)
+    const format_ts_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "format" });
+    format_ts_cmd.setName("format-ts");
+    const format_step = b.step("format", "Format all code (Zig + TypeScript)");
+    format_step.dependOn(&format_ts_cmd.step);
+    // Also format Zig files
+    const format_zig_cmd = b.addSystemCommand(&[_][]const u8{
+        "zig",
+        "fmt",
+        "build.zig",
+        "src",
+        "lib",
+        "examples",
+        "scripts",
+    });
+    format_zig_cmd.setName("format-zig");
+    format_step.dependOn(&format_zig_cmd.step);
+
+    // format-check: Check formatting without modifying
+    const format_check_ts_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "format:check" });
+    format_check_ts_cmd.setName("format-check-ts");
+    const format_check_step = b.step("format-check", "Check code formatting (Zig + TypeScript)");
+    format_check_step.dependOn(&format_check_ts_cmd.step);
+    // Also check Zig files
+    const format_check_zig_cmd = b.addSystemCommand(&[_][]const u8{
+        "zig",
+        "fmt",
+        "--check",
+        "build.zig",
+        "src",
+        "lib",
+        "examples",
+        "scripts",
+    });
+    format_check_zig_cmd.setName("format-check-zig");
+    format_check_step.dependOn(&format_check_zig_cmd.step);
+
+    // lint: Lint TypeScript code
+    const lint_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "lint" });
+    lint_cmd.setName("lint");
+    const lint_step = b.step("lint", "Lint TypeScript code (auto-fix)");
+    lint_step.dependOn(&lint_cmd.step);
+
+    // lint-check: Check linting without fixing
+    const lint_check_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "lint:check" });
+    lint_check_cmd.setName("lint-check");
+    const lint_check_step = b.step("lint-check", "Check TypeScript linting without fixing");
+    lint_check_step.dependOn(&lint_check_cmd.step);
+
+    // lint-deps: Check for unused dependencies
+    const lint_deps_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "lint:deps" });
+    lint_deps_cmd.setName("lint-deps");
+    const lint_deps_step = b.step("lint-deps", "Check for unused dependencies (depcheck)");
+    lint_deps_step.dependOn(&lint_deps_cmd.step);
+
+    // lint-pkg: Validate package.json
+    const lint_pkg_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "lint:package" });
+    lint_pkg_cmd.setName("lint-pkg");
+    const lint_pkg_step = b.step("lint-pkg", "Validate package.json (publint + attw)");
+    lint_pkg_step.dependOn(&lint_pkg_cmd.step);
+
+    // ============================================================================
+    // Utility Steps
+    // ============================================================================
+
+    // clean: Clean build artifacts (keeps node_modules)
+    const clean_step = b.step("clean", "Clean build artifacts (keeps node_modules)");
+    const clean_cmd = b.addSystemCommand(&[_][]const u8{
+        "sh",
+        "-c",
+        "rm -rf zig-out zig-cache .zig-cache dist types target",
+    });
+    clean_cmd.setName("clean");
+    clean_step.dependOn(&clean_cmd.step);
+
+    // clean-all: Deep clean including node_modules
+    const clean_all_step = b.step("clean-all", "Deep clean including node_modules");
+    const clean_all_cmd = b.addSystemCommand(&[_][]const u8{ "bun", "run", "clean" });
+    clean_all_cmd.setName("clean-all");
+    clean_all_step.dependOn(&clean_all_cmd.step);
+
+    // deps: Install/update all dependencies
+    const deps_step = b.step("deps", "Install/update all dependencies");
+    const deps_bun = b.addSystemCommand(&[_][]const u8{ "bun", "install" });
+    deps_bun.setName("deps-bun");
+    deps_step.dependOn(&deps_bun.step);
+    const deps_cargo = b.addSystemCommand(&[_][]const u8{ "cargo", "fetch" });
+    deps_cargo.setName("deps-cargo");
+    deps_step.dependOn(&deps_cargo.step);
+
+    // check: Quick validation without building
+    const check_step = b.step("check", "Quick validation (format + lint + typecheck)");
+    check_step.dependOn(format_check_step);
+    check_step.dependOn(lint_check_step);
+    // TypeScript type-check (tsc --noEmit) already exists in main build
+
+    // ============================================================================
+    // CI/CD Pipeline
+    // ============================================================================
+
+    // ci: Complete CI pipeline
+    const ci_step = b.step("ci", "Run complete CI pipeline");
+    ci_step.dependOn(format_check_step);
+    ci_step.dependOn(lint_check_step);
+    ci_step.dependOn(&tsc_build.step); // Build TypeScript
+    ci_step.dependOn(test_all_step); // Run all tests
+    ci_step.dependOn(lint_deps_step);
+    ci_step.dependOn(lint_pkg_step);
+
+    // pre-commit: Fast pre-commit validation
+    const pre_commit_step = b.step("pre-commit", "Fast pre-commit validation (format + lint + typecheck)");
+    pre_commit_step.dependOn(format_step);
+    pre_commit_step.dependOn(lint_step);
+}
