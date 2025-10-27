@@ -67,7 +67,7 @@ export function add(_p1: Point, _p2: Point): Point {
 /**
  * Scalar multiplication
  */
-export function multiply(point: Point, scalar: string): Point {
+export function multiply(_point: Point, _scalar: string): Point {
 	throw new Error("not implemented - requires C API binding");
 }
 

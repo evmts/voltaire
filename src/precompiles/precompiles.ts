@@ -271,7 +271,7 @@ export function identity(
  * MODEXP precompile (0x05)
  * Modular exponentiation
  */
-export function modexp(input: Uint8Array, gasLimit: bigint): PrecompileResult {
+export function modexp(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
 	// Simplified gas calculation
 	const gas = 200n;
 	if (gasLimit < gas) {
@@ -311,7 +311,7 @@ export function bn254Add(
  * BN254 elliptic curve multiplication
  */
 export function bn254Mul(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 6000n;
@@ -351,8 +351,8 @@ export function bn254Pairing(
  * BLAKE2F precompile (0x09)
  * Blake2 compression function
  */
-export function blake2f(input: Uint8Array, gasLimit: bigint): PrecompileResult {
-	if (input.length !== 213) {
+export function blake2f(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
+	if (_input.length !== 213) {
 		return {
 			success: false,
 			output: new Uint8Array(0),
@@ -360,7 +360,7 @@ export function blake2f(input: Uint8Array, gasLimit: bigint): PrecompileResult {
 			error: "Invalid input length",
 		};
 	}
-	const rounds = new DataView(input.buffer).getUint32(0, false);
+	const rounds = new DataView(_input.buffer).getUint32(0, false);
 	const gas = BigInt(rounds);
 	if (gasLimit < gas) {
 		return {
@@ -397,7 +397,7 @@ export function pointEvaluation(
  * BLS12_G1_ADD precompile (0x0b)
  */
 export function bls12G1Add(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 500n;
@@ -416,7 +416,7 @@ export function bls12G1Add(
  * BLS12_G1_MUL precompile (0x0c)
  */
 export function bls12G1Mul(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 12000n;
@@ -455,7 +455,7 @@ export function bls12G1Msm(
  * BLS12_G2_ADD precompile (0x0e)
  */
 export function bls12G2Add(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 800n;
@@ -474,7 +474,7 @@ export function bls12G2Add(
  * BLS12_G2_MUL precompile (0x0f)
  */
 export function bls12G2Mul(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 45000n;
@@ -533,7 +533,7 @@ export function bls12Pairing(
  * BLS12_MAP_FP_TO_G1 precompile (0x12)
  */
 export function bls12MapFpToG1(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 5500n;
@@ -552,7 +552,7 @@ export function bls12MapFpToG1(
  * BLS12_MAP_FP2_TO_G2 precompile (0x13)
  */
 export function bls12MapFp2ToG2(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 75000n;
