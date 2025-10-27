@@ -36,10 +36,11 @@ export async function loadWasm(
 		return; // Already loaded
 	}
 
-	// Create linear memory for WASM
+	// Create linear memory for WASM (imported by WASM module)
+	// Match the memory requirements from build.zig
 	wasmMemory = new WebAssembly.Memory({
-		initial: 256, // 256 pages = 16MB
-		maximum: 512, // 512 pages = 32MB
+		initial: 512, // 512 pages = 32MB
+		maximum: 1024, // 1024 pages = 64MB
 	});
 
 	// Minimal WASI shim for wasm32-wasi modules
@@ -170,8 +171,9 @@ export async function loadWasm(
 	wasmExports = wasmInstance.exports as unknown as WasmExports;
 
 	// Initialize memory offset after WASM's own data
-	// Start at 64KB to leave room for WASM's stack and globals
-	memoryOffset = 65536;
+	// WASM data starts at 16MB (0x1000000), so start at 17MB to be safe
+	// This gives WASM 17MB for its stack, heap, and data
+	memoryOffset = 17 * 1024 * 1024;
 }
 
 /**
@@ -208,7 +210,14 @@ function malloc(size: number): number {
 	const currentPages = wasmMemory.buffer.byteLength / 65536;
 
 	if (pagesNeeded > currentPages) {
-		wasmMemory.grow(pagesNeeded - currentPages);
+		const pagesToGrow = pagesNeeded - currentPages;
+		try {
+			wasmMemory.grow(pagesToGrow);
+		} catch (e) {
+			throw new Error(
+				`Out of memory: failed to grow WASM memory from ${currentPages} to ${pagesNeeded} pages (tried to grow by ${pagesToGrow} pages). Current offset: ${memoryOffset}, requested size: ${size}`,
+			);
+		}
 	}
 
 	return ptr;
@@ -219,7 +228,7 @@ function malloc(size: number): number {
  * @returns void
  */
 export function resetMemory(): void {
-	memoryOffset = 65536;
+	memoryOffset = 17 * 1024 * 1024;
 }
 
 /**
@@ -281,6 +290,21 @@ function readString(ptr: number): string {
 }
 
 /**
+ * Read fixed-length string from WASM memory (no null terminator required)
+ * @param ptr - Pointer to string
+ * @param length - Length of string
+ * @returns String read from memory
+ */
+function readFixedString(ptr: number, length: number): string {
+	if (!wasmMemory) {
+		throw new Error("WASM memory not initialized");
+	}
+	const memory = new Uint8Array(wasmMemory.buffer);
+	const decoder = new TextDecoder();
+	return decoder.decode(memory.slice(ptr, ptr + length));
+}
+
+/**
  * Check result code and throw error if not success
  * @param code - Result code
  * @throws Error if code is not SUCCESS
@@ -332,7 +356,7 @@ export function addressToHex(address: Uint8Array): string {
 		writeBytes(address, addrPtr);
 		const result = exports.primitives_address_to_hex(addrPtr, outPtr);
 		checkResult(result);
-		return readString(outPtr);
+		return readFixedString(outPtr, 42);
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -353,7 +377,7 @@ export function addressToChecksumHex(address: Uint8Array): string {
 		writeBytes(address, addrPtr);
 		const result = exports.primitives_address_to_checksum_hex(addrPtr, outPtr);
 		checkResult(result);
-		return readString(outPtr);
+		return readFixedString(outPtr, 42);
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -432,7 +456,7 @@ export function calculateCreateAddress(
 		writeBytes(sender, senderPtr);
 		const result = exports.primitives_calculate_create_address(
 			senderPtr,
-			nonce,
+			BigInt(nonce),
 			outPtr,
 		);
 		checkResult(result);
@@ -519,7 +543,7 @@ export function hashToHex(hash: Uint8Array): string {
 		writeBytes(hash, hashPtr);
 		const result = exports.primitives_hash_to_hex(hashPtr, outPtr);
 		checkResult(result);
-		return readString(outPtr);
+		return readFixedString(outPtr, 66);
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -785,7 +809,7 @@ export function rlpToHex(rlpData: Uint8Array): string {
 		if (resultLen < 0) {
 			checkResult(resultLen);
 		}
-		return readString(outPtr);
+		return readFixedString(outPtr, resultLen);
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -966,7 +990,7 @@ export function u256ToHex(value: Uint8Array): string {
 		writeBytes(value, valuePtr);
 		const result = exports.primitives_u256_to_hex(valuePtr, outPtr, 66);
 		checkResult(result);
-		return readString(outPtr);
+		return readFixedString(outPtr, 66);
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1024,7 +1048,7 @@ export function bytesToHex(data: Uint8Array): string {
 		if (resultLen < 0) {
 			checkResult(resultLen);
 		}
-		return readString(outPtr);
+		return readFixedString(outPtr, resultLen);
 	} finally {
 		memoryOffset = savedOffset;
 	}

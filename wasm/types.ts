@@ -34,7 +34,7 @@ export interface WasmExports {
 	primitives_address_validate_checksum: (hexPtr: number) => number;
 	primitives_calculate_create_address: (
 		senderPtr: number,
-		nonce: number,
+		nonce: bigint,
 		outPtr: number,
 	) => number;
 	primitives_calculate_create2_address: (

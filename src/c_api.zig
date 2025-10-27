@@ -439,21 +439,42 @@ export fn primitives_rlp_encode_bytes(
 ) c_int {
     const input = data[0..data_len];
 
-    var stack_buf: [4096]u8 = undefined;
-    var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
-    const allocator = fba.allocator();
+    // Use larger stack buffer for WASM (2MB) since web environments have more memory
+    // Native C builds use smaller 4KB buffer for embedded/constrained environments
+    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    if (is_wasm) {
+        var stack_buf: [2 * 1024 * 1024]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
 
-    const encoded = primitives.Rlp.encodeBytes(allocator, input) catch {
-        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
-    };
-    defer allocator.free(encoded);
+        const encoded = primitives.Rlp.encodeBytes(allocator, input) catch {
+            return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+        };
+        defer allocator.free(encoded);
 
-    if (encoded.len > buf_len) {
-        return PRIMITIVES_ERROR_INVALID_LENGTH;
+        if (encoded.len > buf_len) {
+            return PRIMITIVES_ERROR_INVALID_LENGTH;
+        }
+
+        @memcpy(out_buf[0..encoded.len], encoded);
+        return @intCast(encoded.len);
+    } else {
+        var stack_buf: [4096]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
+
+        const encoded = primitives.Rlp.encodeBytes(allocator, input) catch {
+            return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+        };
+        defer allocator.free(encoded);
+
+        if (encoded.len > buf_len) {
+            return PRIMITIVES_ERROR_INVALID_LENGTH;
+        }
+
+        @memcpy(out_buf[0..encoded.len], encoded);
+        return @intCast(encoded.len);
     }
-
-    @memcpy(out_buf[0..encoded.len], encoded);
-    return @intCast(encoded.len);
 }
 
 /// Encode unsigned integer as RLP
