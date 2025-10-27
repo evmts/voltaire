@@ -913,8 +913,11 @@ export fn primitives_version_string() [*:0]const u8 {
 // WASM reactor pattern - main() is required for executable builds but not called
 // JavaScript will invoke exported functions directly
 // Only define main() for WASM targets (not for native C library builds)
-export fn wasmMain() void {
+fn wasmMain(argc: i32, argv: [*][*:0]u8) callconv(.c) i32 {
+    _ = argc;
+    _ = argv;
     // Entry point required for WASM executable, but unused in reactor pattern
+    return 0;
 }
 
 comptime {
