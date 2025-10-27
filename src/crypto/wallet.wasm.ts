@@ -3,7 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-import * as primitives from "../../../../wasm/loader.js";
+import * as primitives from "../wasm-loader/loader.js";
 
 /**
  * Generate a cryptographically secure random private key

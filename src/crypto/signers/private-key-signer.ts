@@ -7,7 +7,7 @@ import { secp256k1PubkeyFromPrivate } from "../signature.wasm.js";
 import { Address } from "../../primitives/address.wasm.js";
 import { Hash, eip191HashMessage } from "../keccak.wasm.js";
 
-const primitives = require("../../../../wasm/loader.js");
+const primitives = require("../wasm-loader/loader.js");
 
 export interface PrivateKeySignerOptions {
 	privateKey: string | Uint8Array;

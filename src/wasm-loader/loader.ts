@@ -3,8 +3,8 @@
  * Handles WASM instantiation, memory management, and exports wrapping
  */
 
-import type { WasmExports, WasiImports } from "./types";
-import { ErrorCode } from "./types";
+import type { WasmExports, WasiImports } from "./types.js";
+import { ErrorCode } from "./types.js";
 
 let wasmInstance: WebAssembly.Instance | null = null;
 let wasmMemory: WebAssembly.Memory | null = null;
