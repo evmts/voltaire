@@ -6,6 +6,25 @@
 import * as loader from "../wasm-loader/loader.js";
 
 /**
+ * Pre-computed empty Keccak-256 hash constant
+ * Hash of empty bytes: keccak256("")
+ */
+const KECCAK256_EMPTY =
+	"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+
+/**
+ * Convert hex string to Uint8Array
+ */
+function hexToBytes(hex: string): Uint8Array {
+	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(cleaned.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(cleaned.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes;
+}
+
+/**
  * Keccak-256 hash (32 bytes)
  */
 export class Hash {
@@ -86,11 +105,27 @@ export class Hash {
 
 /**
  * Compute Keccak-256 hash and return as hex string
- * @param data - Input data
+ * @param data - Input data (Uint8Array or hex string)
  * @returns Hex hash string
  */
 export function keccak256(data: string | Uint8Array): string {
-	return Hash.keccak256(data).toHex();
+	// Convert hex string to bytes if needed
+	const bytes = typeof data === "string" ? hexToBytes(data) : data;
+
+	// Handle empty input
+	if (bytes.length === 0) {
+		return KECCAK256_EMPTY;
+	}
+
+	return Hash.keccak256(bytes).toHex();
+}
+
+/**
+ * Pre-computed empty Keccak-256 hash
+ * @returns Hash of empty bytes
+ */
+export function keccak256Empty(): string {
+	return KECCAK256_EMPTY;
 }
 
 /**
