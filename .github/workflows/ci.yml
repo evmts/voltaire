@@ -113,6 +113,8 @@ jobs:
         run: zig build build-ts-wasm
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       - name: Install TypeScript dependencies
         run: bun install
       - name: Run typecheck
@@ -121,8 +123,18 @@ jobs:
         run: bun run lint:check
       - name: Run format check
         run: bun run format:check
-      - name: Run TypeScript tests
-        run: bun test
+      - name: Run dependency check
+        run: bun run lint:deps
+      - name: Run package validation
+        run: bun run lint:package
+      - name: Build distribution
+        run: bun run build:dist
+      - name: Build types
+        run: bun run build:types
+      - name: Generate documentation
+        run: bun run generate:docs
+      - name: Run TypeScript tests with coverage
+        run: bun run test:coverage
 
   benchmarks:
     runs-on: ubuntu-latest
