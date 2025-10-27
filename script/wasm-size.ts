@@ -43,8 +43,8 @@ function formatBytes(bytes: number): string {
 }
 
 function main() {
-	const zigOutBinDir = "zig-out/bin";
-	const wasmFiles = findWasmFiles(zigOutBinDir);
+	const wasmDir = "zig-out/wasm";
+	const wasmFiles = findWasmFiles(wasmDir);
 
 	if (wasmFiles.length === 0) {
 		process.exit(1);
@@ -57,7 +57,7 @@ function main() {
 	let totalSize = 0;
 
 	for (const file of wasmFiles) {
-		const relativePath = relative(zigOutBinDir, file.path);
+		const relativePath = relative(wasmDir, file.path);
 		const formatted = formatBytes(file.size);
 		output += `  ${relativePath}: ${formatted} (${file.size.toLocaleString()} bytes)\n`;
 		totalSize += file.size;
