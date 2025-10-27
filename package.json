@@ -19,7 +19,11 @@
 		"url": "git+https://github.com/evmts/primitives.git"
 	},
 	"license": "MIT",
-	"contributors": ["Fucory (x.com/fucory)"],
+	"contributors": [
+		"Fucory (x.com/fucory)",
+		"polarzero (github.com/0xpolarzero)",
+		"Vlad (x.com/Vladfdp)"
+	],
 	"sideEffects": false,
 	"type": "module",
 	"exports": {
