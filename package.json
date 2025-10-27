@@ -25,36 +25,39 @@
 	"exports": {
 		"./package.json": "./package.json",
 		".": {
-			"types": "./types/index.d.ts",
-			"import": "./dist/index.js",
-			"default": "./wasm/index.js"
-		},
-		"./native": {
-			"types": "./types/native.d.ts",
-			"import": "./dist/native.js",
-			"default": "./native/index.js"
+			"import": {
+				"types": "./types/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
 		}
 	},
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"types": "./types/index.d.ts",
-	"files": ["dist", "types", "wasm", "native"],
+	"main": "dist/index.cjs",
+	"module": "dist/index.js",
+	"types": "types/index.d.ts",
+	"files": ["dist", "src", "!src/**/*.spec.ts", "!src/**/*.test.ts", "types"],
 	"scripts": {
-		"build": "tsc && zig build",
-		"test": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test",
-		"test:native": "DYLD_LIBRARY_PATH=./zig-out/lib:$DYLD_LIBRARY_PATH bun test src/typescript/native/**/*.test.ts",
-		"test:wasm": "bun test --preload ./src/typescript/wasm/setup.ts src/typescript/wasm/**/*.test.ts",
-		"test:integration": "bun test tests/integration/**/*.test.ts",
-		"test:security": "bun test tests/security/**/*.test.ts",
-		"format": "biome format --write .",
+		"all": "bun i && bun run build && bun lint && bun format && bun test:run && bun generate:docs",
+		"build": "bun run build:zig && bun run build:dist && bun run build:types",
+		"build:zig": "zig build",
+		"build:dist": "tsup",
+		"build:types": "tsup --dts-only && tsc --emitDeclarationOnly --declaration",
+		"clean": "rm -rf node_modules && rm -rf dist && rm -rf types && rm -rf zig-out && rm -rf zig-cache",
+		"format": "biome format . --write",
 		"format:check": "biome format .",
-		"lint": "biome lint --write .",
-		"lint:check": "biome lint .",
+		"generate:docs": "bun run typedoc",
+		"lint": "biome check . --write --unsafe",
+		"lint:check": "biome check . --verbose",
 		"lint:deps": "bunx depcheck",
 		"lint:package": "bunx publint --strict && bunx attw --pack",
-		"typecheck": "tsc --noEmit",
-		"clean": "rm -rf dist types wasm native zig-out zig-cache node_modules",
-		"all": "bun run format:check && bun run lint:check && bun run typecheck && bun run build && bun run test && bun run lint:deps && bun run lint:package"
+		"package:up": "bun up --latest",
+		"test": "vitest --watch",
+		"test:coverage": "vitest --coverage --run",
+		"test:run": "vitest run",
+		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
@@ -63,13 +66,17 @@
 		"@noble/curves": "^2.0.1",
 		"@noble/hashes": "^2.0.1",
 		"@noble/secp256k1": "^3.0.0",
-		"@tevm/tsconfig": "2.0.0-next.80",
+		"@tevm/tsconfig": "^1.0.0-next.142",
+		"@tevm/tsupconfig": "^1.0.0-next.148",
 		"@types/bun": "latest",
 		"@types/node": "^22.10.2",
 		"bindings": "^1.5.0",
 		"ethers": "^6.13.4",
 		"glob": "^11.0.0",
 		"mitata": "^1.0.34",
+		"tsup": "^8.5.0",
+		"typedoc": "^0.28.14",
+		"typedoc-plugin-markdown": "^4.9.0",
 		"typescript": "^5.7.2",
 		"viem": "^2.21.54",
 		"vitest": "^2.1.8"
