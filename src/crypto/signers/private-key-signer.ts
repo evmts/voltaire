@@ -3,9 +3,9 @@
  * Provides wallet/signer functionality using WASM Zig primitives
  */
 
-import { secp256k1PubkeyFromPrivate } from "../../primitives/signature.wasm.js";
+import { secp256k1PubkeyFromPrivate } from "../signature.wasm.js";
 import { Address } from "../../primitives/address.wasm.js";
-import { Hash, eip191HashMessage } from "../../primitives/keccak.wasm.js";
+import { Hash, eip191HashMessage } from "../keccak.wasm.js";
 
 const primitives = require("../../../../wasm/loader.js");
 

@@ -3,7 +3,7 @@
  * Loads the WASM module before running tests
  */
 
-import { loadWasm } from "../../../wasm/loader";
+import { loadWasm } from "../../../wasm/loader.js";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 

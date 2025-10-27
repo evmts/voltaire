@@ -39,28 +39,28 @@ export function generator(): Point {
  * Check if a point is on the curve
  * @param point - Point to check
  */
-export function isOnCurve(point: Point): boolean {
+export function isOnCurve(_point: Point): boolean {
 	throw new Error("not implemented - requires C API binding");
 }
 
 /**
  * Negate a point
  */
-export function negate(point: Point): Point {
+export function negate(_point: Point): Point {
 	throw new Error("not implemented - requires C API binding");
 }
 
 /**
  * Double a point
  */
-export function double(point: Point): Point {
+export function double(_point: Point): Point {
 	throw new Error("not implemented - requires C API binding");
 }
 
 /**
  * Add two points
  */
-export function add(p1: Point, p2: Point): Point {
+export function add(_p1: Point, _p2: Point): Point {
 	throw new Error("not implemented - requires C API binding");
 }
 
@@ -74,6 +74,6 @@ export function multiply(point: Point, scalar: string): Point {
 /**
  * Extract recovery ID from signature
  */
-export function extractRecoveryId(signature: Uint8Array): number {
+export function extractRecoveryId(_signature: Uint8Array): number {
 	throw new Error("not implemented - requires C API binding");
 }

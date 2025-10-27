@@ -8,7 +8,7 @@
  * Use with caution in production systems.
  */
 
-import { keccak256 } from "./keccak.ts";
+import { keccak256 } from "./keccak.js";
 
 export type Hex = `0x${string}`;
 export type Address = `0x${string}`;
@@ -68,8 +68,8 @@ function encodeType(
 	return sortedDeps
 		.map((type) => {
 			const fields = types[type]
-				.map((field) => `${field.type} ${field.name}`)
-				.join(",");
+				?.map((field) => `${field.type} ${field.name}`)
+				.join(",") ?? "";
 			return `${type}(${fields})`;
 		})
 		.join("");
@@ -85,7 +85,7 @@ function hashType(
 	primaryType: string,
 	types: Record<string, TypedDataField[]>,
 ): Hex {
-	return keccak256(encodeType(primaryType, types));
+	return keccak256(encodeType(primaryType, types)) as Hex;
 }
 
 /**
@@ -106,7 +106,7 @@ function encodeValue(
 		const encodedArray = (value as unknown[])
 			.map((item) => encodeValue(baseType, item, types))
 			.join("");
-		return keccak256(encodedArray);
+		return keccak256(encodedArray) as Hex;
 	}
 
 	// Handle basic types
@@ -118,12 +118,12 @@ function encodeValue(
 		const hexString = `0x${Array.from(bytes)
 			.map((b) => b.toString(16).padStart(2, "0"))
 			.join("")}`;
-		return keccak256(hexString);
+		return keccak256(hexString) as Hex;
 	}
 
 	if (type === "bytes") {
 		// For bytes, value should already be a hex string
-		return keccak256(value as string);
+		return keccak256(value as string) as Hex;
 	}
 
 	// Handle bytes32
@@ -171,11 +171,11 @@ function hashStruct(
 ): Hex {
 	const typeHash = hashType(primaryType, types);
 	const encodedValues = types[primaryType]
-		.map((field) => encodeValue(field.type, data[field.name], types))
+		?.map((field) => encodeValue(field.type, data[field.name], types))
 		.map((hex) => hex.slice(2))
-		.join("");
+		.join("") ?? "";
 
-	return keccak256(`${typeHash}${encodedValues}`);
+	return keccak256(`${typeHash}${encodedValues}`) as Hex;
 }
 
 /**
@@ -187,28 +187,30 @@ export function hashDomain(domain: TypedDataDomain): Hex {
 	const types: Record<string, TypedDataField[]> = {
 		EIP712Domain: [],
 	};
+	const eip712Domain = types["EIP712Domain"];
+	if (!eip712Domain) throw new Error("EIP712Domain type not found");
 
 	const domainData: Record<string, unknown> = {};
 
 	if (domain.name !== undefined) {
-		types.EIP712Domain.push({ name: "name", type: "string" });
-		domainData.name = domain.name;
+		eip712Domain.push({ name: "name", type: "string" });
+		domainData["name"] = domain.name;
 	}
 	if (domain.version !== undefined) {
-		types.EIP712Domain.push({ name: "version", type: "string" });
-		domainData.version = domain.version;
+		eip712Domain.push({ name: "version", type: "string" });
+		domainData["version"] = domain.version;
 	}
 	if (domain.chainId !== undefined) {
-		types.EIP712Domain.push({ name: "chainId", type: "uint256" });
-		domainData.chainId = domain.chainId;
+		eip712Domain.push({ name: "chainId", type: "uint256" });
+		domainData["chainId"] = domain.chainId;
 	}
 	if (domain.verifyingContract !== undefined) {
-		types.EIP712Domain.push({ name: "verifyingContract", type: "address" });
-		domainData.verifyingContract = domain.verifyingContract;
+		eip712Domain.push({ name: "verifyingContract", type: "address" });
+		domainData["verifyingContract"] = domain.verifyingContract;
 	}
 	if (domain.salt !== undefined) {
-		types.EIP712Domain.push({ name: "salt", type: "bytes32" });
-		domainData.salt = domain.salt;
+		eip712Domain.push({ name: "salt", type: "bytes32" });
+		domainData["salt"] = domain.salt;
 	}
 
 	return hashStruct("EIP712Domain", domainData, types);
@@ -232,7 +234,7 @@ export function hashTypedData(typedData: TypedData): Hex {
 	const prefix = "0x1901";
 	const encoded = `${prefix}${domainSeparator.slice(2)}${structHash.slice(2)}`;
 
-	return keccak256(encoded);
+	return keccak256(encoded) as Hex;
 }
 
 /**
@@ -244,8 +246,8 @@ export function hashTypedData(typedData: TypedData): Hex {
  * @returns Signature object
  */
 export function signTypedData(
-	typedData: TypedData,
-	privateKey: Hex,
+	_typedData: TypedData,
+	_privateKey: Hex,
 ): Signature {
 	throw new Error(
 		"signTypedData not yet implemented - requires secp256k1 C API bindings",
@@ -262,9 +264,9 @@ export function signTypedData(
  * @returns true if signature is valid
  */
 export function verifyTypedData(
-	typedData: TypedData,
-	signature: Signature | Hex,
-	address: Address,
+	_typedData: TypedData,
+	_signature: Signature | Hex,
+	_address: Address,
 ): boolean {
 	throw new Error(
 		"verifyTypedData not yet implemented - requires secp256k1 C API bindings",
@@ -280,8 +282,8 @@ export function verifyTypedData(
  * @returns Recovered Ethereum address
  */
 export function recoverTypedDataAddress(
-	typedData: TypedData,
-	signature: Signature | Hex,
+	_typedData: TypedData,
+	_signature: Signature | Hex,
 ): Address {
 	throw new Error(
 		"recoverTypedDataAddress not yet implemented - requires secp256k1 C API bindings",

@@ -7,7 +7,7 @@
  * Reference: https://github.com/ethereum/execution-apis/blob/main/src/schemas/log.yaml
  */
 
-import type { Address, Bytes, Bytes32, Hash32, Uint } from "./base-types";
+import type { Address, Bytes, Bytes32, Hash32, Uint } from "./base-types.js";
 
 /**
  * Event log entry

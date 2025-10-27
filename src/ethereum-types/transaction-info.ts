@@ -15,7 +15,7 @@ import type {
 	Hash32,
 	Uint,
 	Uint256,
-} from "./base-types";
+} from "./base-types.js";
 
 /**
  * Transaction with block context

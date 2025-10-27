@@ -14,8 +14,8 @@ import type {
 	Hash32,
 	Uint,
 	Uint256,
-} from "./base-types";
-import type { Withdrawal } from "./withdrawal";
+} from "./base-types.js";
+import type { Withdrawal } from "./withdrawal.js";
 
 /**
  * Block header information

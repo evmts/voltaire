@@ -14,8 +14,8 @@ import type {
 	Hash32,
 	Uint,
 	Uint256,
-} from "./base-types";
-import type { Log } from "./log";
+} from "./base-types.js";
+import type { Log } from "./log.js";
 
 /**
  * Transaction receipt

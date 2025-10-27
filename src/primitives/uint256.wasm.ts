@@ -3,7 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-import * as loader from "../../../../wasm/loader";
+import * as loader from "../../../../wasm/loader.js";
 
 /**
  * Convert hex string to U256 (32-byte big-endian)

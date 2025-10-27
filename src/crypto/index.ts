@@ -4,7 +4,7 @@
  */
 
 // Keccak-256 (fully implemented)
-export { keccak256, keccak256Empty } from "./keccak.ts";
+export { keccak256, keccak256Empty } from "./keccak.js";
 
 // EIP-191 Personal Message Signing (hash implemented, sign/verify require C API)
 export {
@@ -15,10 +15,10 @@ export {
 	type Hex as Eip191Hex,
 	type Address as Eip191Address,
 	type Signature as Eip191Signature,
-} from "./eip191.ts";
+} from "./eip191.js";
 
 // Hash algorithms (stubs - require C API bindings)
-export { sha256, ripemd160, blake2b } from "./hash-algorithms.ts";
+export { sha256, ripemd160, blake2b } from "./hash-algorithms.js";
 
 // secp256k1 operations (stubs - require C API bindings)
 export {
@@ -35,7 +35,7 @@ export {
 	add,
 	multiply,
 	extractRecoveryId,
-} from "./secp256k1.ts";
+} from "./secp256k1.js";
 
 // EIP-712 Typed Data (hash implemented, sign/verify require C API)
 export {
@@ -50,4 +50,4 @@ export {
 	type Hex as Eip712Hex,
 	type Address as Eip712Address,
 	type Signature as Eip712Signature,
-} from "./eip712.ts";
+} from "./eip712.js";

@@ -8,10 +8,10 @@
  */
 
 // Re-export all types
-export * from "./base-types";
-export * from "./transaction-info";
-export * from "./receipt-info";
-export * from "./log";
-export * from "./filter";
-export * from "./withdrawal";
-export * from "./block";
+export * from "./base-types.js";
+export * from "./transaction-info.js";
+export * from "./receipt-info.js";
+export * from "./log.js";
+export * from "./filter.js";
+export * from "./withdrawal.js";
+export * from "./block.js";

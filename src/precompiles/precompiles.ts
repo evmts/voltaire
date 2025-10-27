@@ -2,7 +2,7 @@
  * EVM Precompile implementations
  */
 
-import type { Hardfork } from "../primitives/hardfork";
+import { Hardfork } from "../primitives/hardfork.js";
 
 export enum PrecompileAddress {
 	ECRECOVER = "0x0000000000000000000000000000000000000001",
@@ -33,7 +33,7 @@ export interface PrecompileResult {
 	error?: string;
 }
 
-import { isAtLeast } from "../primitives/hardfork";
+import { isAtLeast } from "../primitives/hardfork.js";
 
 /**
  * Check if an address is a precompile for a given hardfork
@@ -117,7 +117,7 @@ export function execute(
 	address: string,
 	input: Uint8Array,
 	gasLimit: bigint,
-	hardfork: Hardfork,
+	_hardfork: Hardfork,
 ): PrecompileResult {
 	const normalized = address.toLowerCase();
 
@@ -194,7 +194,7 @@ export function execute(
  * Recover signer address from signature
  */
 export function ecrecover(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 3000n;
@@ -291,7 +291,7 @@ export function modexp(input: Uint8Array, gasLimit: bigint): PrecompileResult {
  * BN254 elliptic curve addition
  */
 export function bn254Add(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 150n;
@@ -378,7 +378,7 @@ export function blake2f(input: Uint8Array, gasLimit: bigint): PrecompileResult {
  * KZG point evaluation (EIP-4844)
  */
 export function pointEvaluation(
-	input: Uint8Array,
+	_input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 50000n;

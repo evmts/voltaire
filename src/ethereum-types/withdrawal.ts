@@ -7,7 +7,7 @@
  * Reference: https://eips.ethereum.org/EIPS/eip-4895
  */
 
-import type { Address, Uint, Uint64, Uint256 } from "./base-types";
+import type { Address, Uint, Uint64, Uint256 } from "./base-types.js";
 
 /**
  * Validator withdrawal

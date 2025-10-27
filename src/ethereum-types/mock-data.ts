@@ -14,7 +14,7 @@ import type {
 	TransactionInfo,
 	Uint,
 	Withdrawal,
-} from "./index";
+} from "./index.js";
 
 /**
  * Mock legacy transaction (Type 0)

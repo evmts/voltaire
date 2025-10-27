@@ -85,8 +85,8 @@ export function hashMessage(message: string | Uint8Array): Hex {
  * @returns Signature object with r, s, v components
  */
 export function signMessage(
-	message: string | Uint8Array,
-	privateKey: Hex,
+	_message: string | Uint8Array,
+	_privateKey: Hex,
 ): Signature {
 	throw new Error(
 		"signMessage not yet implemented - requires secp256k1 C API bindings",
@@ -103,9 +103,9 @@ export function signMessage(
  * @returns true if signature is valid, false otherwise
  */
 export function verifyMessage(
-	message: string | Uint8Array,
-	signature: Signature | Hex,
-	address: Address,
+	_message: string | Uint8Array,
+	_signature: Signature | Hex,
+	_address: Address,
 ): boolean {
 	throw new Error(
 		"verifyMessage not yet implemented - requires secp256k1 C API bindings",
@@ -121,8 +121,8 @@ export function verifyMessage(
  * @returns Recovered Ethereum address
  */
 export function recoverMessageAddress(
-	message: string | Uint8Array,
-	signature: Signature | Hex,
+	_message: string | Uint8Array,
+	_signature: Signature | Hex,
 ): Address {
 	throw new Error(
 		"recoverMessageAddress not yet implemented - requires secp256k1 C API bindings",

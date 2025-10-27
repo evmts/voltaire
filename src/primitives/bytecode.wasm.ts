@@ -3,7 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-import * as loader from "../../../../wasm/loader";
+import * as loader from "../../../../wasm/loader.js";
 
 /**
  * Jump destination found in bytecode
@@ -24,8 +24,8 @@ export function analyzeJumpDestinations(code: Uint8Array): JumpDestination[] {
 	const input = new Uint8Array(code);
 	const positions = loader.bytecodeAnalyzeJumpdests(input);
 
-	return positions.map((position) => ({
-		position,
+	return positions.map((pos: number) => ({
+		position: pos,
 		valid: true,
 	}));
 }
