@@ -20,6 +20,15 @@
 
 import type { Address } from "./address.js";
 import type { Hash } from "./hash.js";
+import type {
+  AbiParameter as AbiTypeParameter,
+  AbiFunction as AbiTypeFunction,
+  AbiEvent as AbiTypeEvent,
+  AbiError as AbiTypeError,
+  AbiConstructor as AbiTypeConstructor,
+  AbiParameterToPrimitiveType,
+  AbiParametersToPrimitiveTypes as AbiTypeParametersToPrimitiveTypes,
+} from "abitype";
 
 // ============================================================================
 // Main Abi Namespace
@@ -176,49 +185,40 @@ export namespace Abi {
   /**
    * Convert ABI parameters to primitive TypeScript types
    *
-   * TODO: Complete implementation with all Solidity type mappings
+   * Enhanced with abitype for complete type inference including:
    * - uint/int variants -> bigint
-   * - address -> Address
+   * - address -> Address (our custom type)
    * - bool -> boolean
    * - bytes/bytesN -> Uint8Array
    * - string -> string
    * - arrays -> Array<T>
    * - tuples -> readonly [T1, T2, ...]
+   * - nested structs with full inference
    */
   export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
-    [K in keyof TParams]: TParams[K] extends Parameter<infer TType>
+    [K in keyof TParams]: TParams[K] extends Parameter<infer TType, any, any>
       ? TType extends "address"
-        ? Address
-        : TType extends "bool"
-          ? boolean
-          : TType extends `uint${string}` | `int${string}`
-            ? bigint
-            : TType extends "string"
-              ? string
-              : TType extends `bytes${string}` | "bytes"
-                ? Uint8Array
-                : unknown // TODO: Complete mapping
+        ? Address // Use our custom Address type instead of abitype's `0x${string}`
+        : TParams[K] extends AbiTypeParameter
+          ? AbiParameterToPrimitiveType<TParams[K]>
+          : AbiTypeParametersToPrimitiveTypes<[TParams[K] & AbiTypeParameter]>[0]
       : never;
   };
 
   /**
    * Convert ABI parameters to object with named properties
+   *
+   * Enhanced with abitype for complex types (tuples, arrays, nested structs)
    */
   export type ParametersToObject<TParams extends readonly Parameter[]> = {
     [K in TParams[number] as K extends { name: infer TName extends string }
       ? TName
-      : never]: K extends Parameter<infer TType>
+      : never]: K extends Parameter<infer TType, any, any>
       ? TType extends "address"
-        ? Address
-        : TType extends "bool"
-          ? boolean
-          : TType extends `uint${string}` | `int${string}`
-            ? bigint
-            : TType extends "string"
-              ? string
-              : TType extends `bytes${string}` | "bytes"
-                ? Uint8Array
-                : unknown
+        ? Address // Use our custom Address type
+        : K extends AbiTypeParameter
+          ? AbiParameterToPrimitiveType<K>
+          : AbiTypeParametersToPrimitiveTypes<[K & AbiTypeParameter]>[0]
       : never;
   };
 
