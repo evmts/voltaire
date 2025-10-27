@@ -13,7 +13,7 @@ export * from "./ethereum-types/index.js";
 export * from "./crypto/index.js";
 
 // WASM primitives (high-performance WebAssembly bindings)
-export * from "./typescript/wasm/primitives/index.js";
+export * from "./wasm/index.js";
 
 // EVM precompiles
 export * from "./precompiles/precompiles.js";
