@@ -119,7 +119,7 @@ pub fn build(b: *std.Build) void {
             "node_modules/typescript/bin/tsc",
             "--noEmit",
             "-p",
-            "tsconfig.ffi.json",
+            "tsconfig.json",
         });
         tsc_cmd.setName("tsc --noEmit");
         const tsc_step = b.step("tsc", "Run TypeScript type-check (tsc --noEmit)");
