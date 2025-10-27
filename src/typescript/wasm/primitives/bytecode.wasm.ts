@@ -3,7 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-import * as loader from "../../../../wasm/loader.js";
+import * as loader from "../../../../wasm/loader";
 
 /**
  * Jump destination found in bytecode

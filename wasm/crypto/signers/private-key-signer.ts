@@ -3,11 +3,11 @@
  * Provides wallet/signer functionality using WASM Zig primitives
  */
 
-import { secp256k1PubkeyFromPrivate } from "../../primitives/signature.wasm.js";
-import { Address } from "../../primitives/address.wasm.js";
-import { Hash, eip191HashMessage } from "../../primitives/keccak.wasm.js";
+import { secp256k1PubkeyFromPrivate } from "../../../src/typescript/wasm/primitives/signature.wasm";
+import { Address } from "../../../src/typescript/wasm/primitives/address.wasm";
+import { Hash, eip191HashMessage } from "../../../src/typescript/wasm/primitives/keccak.wasm";
 
-const primitives = require("../../../../wasm/loader.js");
+import * as primitives from "../../loader";
 
 export interface PrivateKeySignerOptions {
 	privateKey: string | Uint8Array;
@@ -71,22 +71,26 @@ export class PrivateKeySignerImpl implements Signer {
 		// Sign the hash
 		// Note: This requires unaudited_signHash to be exposed via WASM
 		// For now, this will throw an error indicating the function is not yet available
-		try {
-			const signature: Uint8Array = primitives.signHash(
-				messageHash.toBytes(),
-				this.privateKey,
-			);
-			return `0x${Array.from(signature)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("")}`;
-		} catch (error) {
+
+		// TypeScript error: signHash not yet implemented in loader.ts
+		// @ts-expect-error - signHash function not yet exposed via WASM
+		const signature: Uint8Array = primitives.signHash?.(
+			messageHash.toBytes(),
+			this.privateKey,
+		);
+
+		if (!signature) {
 			throw new Error(
 				"signHash not yet exposed via WASM. Please add binding for crypto.unaudited_signHash",
 			);
 		}
+
+		return `0x${Array.from(signature)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("")}`;
 	}
 
-	async signTransaction(transaction: any): Promise<any> {
+	async signTransaction(_transaction: any): Promise<any> {
 		// Note: Transaction signing requires:
 		// 1. Serialize transaction to RLP
 		// 2. Hash the serialized transaction
@@ -99,7 +103,7 @@ export class PrivateKeySignerImpl implements Signer {
 		);
 	}
 
-	async signTypedData(typedData: any): Promise<string> {
+	async signTypedData(_typedData: any): Promise<string> {
 		// Note: EIP-712 signing requires:
 		// 1. Hash the typed data according to EIP-712
 		// 2. Sign the hash

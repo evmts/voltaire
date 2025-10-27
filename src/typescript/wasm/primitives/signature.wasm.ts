@@ -3,7 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-const primitives = require('../../../wasm/loader.js');
+import * as primitives from "../../../../wasm/loader";
 
 /**
  * Parsed ECDSA signature components
@@ -168,7 +168,7 @@ export function signatureParse(sigData: Uint8Array): ParsedSignature {
 	return {
 		r: new Uint8Array(r),
 		s: new Uint8Array(s),
-		v: vBytes[0],
+		v: vBytes[0] ?? 0,
 	};
 }
 

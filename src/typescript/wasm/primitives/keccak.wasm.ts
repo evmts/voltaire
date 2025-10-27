@@ -3,7 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
-import * as loader from "../../../../wasm/loader.js";
+import * as loader from "../../../../wasm/loader";
 
 /**
  * Keccak-256 hash (32 bytes)

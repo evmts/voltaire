@@ -19,9 +19,8 @@ export const enum ErrorCode {
 /**
  * Complete interface for all WASM exported functions
  */
-export interface WasmExports extends WebAssembly.Exports {
-	// Memory (if exported by WASM)
-	memory?: WebAssembly.Memory;
+export interface WasmExports {
+	[key: string]: unknown;
 
 	// Address functions
 	primitives_address_from_hex: (hexPtr: number, outPtr: number) => number;
@@ -195,6 +194,7 @@ export interface WasmExports extends WebAssembly.Exports {
  * WASI imports for wasm32-wasi modules
  */
 export interface WasiImports {
+	[key: string]: (...args: number[]) => number | never;
 	args_get: (argv: number, argv_buf: number) => number;
 	args_sizes_get: (argc_ptr: number, argv_buf_size_ptr: number) => number;
 	environ_get: (environ: number, environ_buf: number) => number;
