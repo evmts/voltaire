@@ -31,7 +31,7 @@ describe("WASM Memory Management", () => {
 
 		// Perform many operations
 		for (let i = 0; i < iterations; i++) {
-			const addr = WasmAddress.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+			const addr = WasmAddress.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
 			const hex = addr.toHex();
 			const checksum = addr.toChecksumHex();
 			const bytes = addr.toBytes();
@@ -146,7 +146,7 @@ describe("WASM Memory Management", () => {
 	});
 
 	test("handles CREATE address calculations in bulk", () => {
-		const sender = WasmAddress.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+		const sender = WasmAddress.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
 		const addresses: string[] = [];
 
 		// Calculate 1000 CREATE addresses
@@ -163,7 +163,7 @@ describe("WASM Memory Management", () => {
 	});
 
 	test("handles CREATE2 address calculations in bulk", () => {
-		const sender = WasmAddress.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+		const sender = WasmAddress.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0");
 		const initCode = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
 		const addresses: string[] = [];
 
