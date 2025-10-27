@@ -498,27 +498,7 @@ export namespace Abi {
   // ==========================================================================
 
   /**
-   * Get ABI item by name and optionally type (standard form)
-   */
-  export function getAbiItem<
-    TAbi extends readonly Item[],
-    TName extends string,
-    TType extends Item["type"] | undefined = undefined,
-  >(
-    abi: TAbi,
-    name: TName,
-    type?: TType,
-  ): Extract<TAbi[number], { name: TName }> | undefined {
-    return abi.find(
-      (item) =>
-        "name" in item &&
-        item.name === name &&
-        (type === undefined || item.type === type),
-    ) as any;
-  }
-
-  /**
-   * Get ABI item by name and optionally type (convenience form with this:)
+   * Get ABI item by name and optionally type
    */
   export function getItem<
     TAbi extends readonly Item[],
@@ -529,27 +509,16 @@ export namespace Abi {
     name: TName,
     type?: TType,
   ): Extract<TAbi[number], { name: TName }> | undefined {
-    return getAbiItem(this, name, type);
+    return this.find(
+      (item) =>
+        "name" in item &&
+        item.name === name &&
+        (type === undefined || item.type === type),
+    ) as any;
   }
 
   /**
-   * Encode function data using function name (standard form)
-   */
-  export function encodeFunctionData<
-    TAbi extends readonly Item[],
-    TFunctionName extends ExtractFunctionNames<TAbi>,
-  >(
-    abi: TAbi,
-    functionName: TFunctionName,
-    args: ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["inputs"]>,
-  ): Uint8Array {
-    const fn = getAbiItem(abi, functionName, "function");
-    if (!fn) throw new Error(`Function ${functionName} not found`);
-    return Function.encodeFunctionData.call(fn as any, args);
-  }
-
-  /**
-   * Encode function data using function name (convenience form with this:)
+   * Encode function data using function name
    *
    * @example
    * ```typescript
@@ -566,27 +535,13 @@ export namespace Abi {
     functionName: TFunctionName,
     args: ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["inputs"]>,
   ): Uint8Array {
-    return encodeFunctionData(this, functionName, args);
-  }
-
-  /**
-   * Decode function result using function name (standard form)
-   */
-  export function decodeFunctionResult<
-    TAbi extends readonly Item[],
-    TFunctionName extends ExtractFunctionNames<TAbi>,
-  >(
-    abi: TAbi,
-    functionName: TFunctionName,
-    data: Uint8Array,
-  ): ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["outputs"]> {
-    const fn = getAbiItem(abi, functionName, "function");
+    const fn = getItem.call(this, functionName, "function");
     if (!fn) throw new Error(`Function ${functionName} not found`);
-    return Function.decodeFunctionResult.call(fn as any, data);
+    return Function.encodeFunctionData.call(fn as any, args);
   }
 
   /**
-   * Decode function result using function name (convenience form with this:)
+   * Decode function result using function name
    */
   export function decode<
     TAbi extends readonly Item[],
@@ -596,17 +551,19 @@ export namespace Abi {
     functionName: TFunctionName,
     data: Uint8Array,
   ): ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["outputs"]> {
-    return decodeFunctionResult(this, functionName, data);
+    const fn = getItem.call(this, functionName, "function");
+    if (!fn) throw new Error(`Function ${functionName} not found`);
+    return Function.decodeFunctionResult.call(fn as any, data);
   }
 
   /**
-   * Decode function call data (infer function from selector) (standard form)
+   * Decode function call data (infer function from selector)
    */
-  export function decodeFunctionData<
+  export function decodeData<
     TAbi extends readonly Item[],
     TFunctionName extends ExtractFunctionNames<TAbi>,
   >(
-    abi: TAbi,
+    this: TAbi,
     data: Uint8Array,
   ): {
     functionName: TFunctionName;
@@ -621,26 +578,10 @@ export namespace Abi {
   }
 
   /**
-   * Decode function call data (infer function from selector) (convenience form with this:)
+   * Parse event logs from array of logs
    */
-  export function decodeData<
-    TAbi extends readonly Item[],
-    TFunctionName extends ExtractFunctionNames<TAbi>,
-  >(
+  export function parseLogs<TAbi extends readonly Item[]>(
     this: TAbi,
-    data: Uint8Array,
-  ): {
-    functionName: TFunctionName;
-    args: ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["inputs"]>;
-  } {
-    return decodeFunctionData(this, data);
-  }
-
-  /**
-   * Parse event logs from array of logs (standard form)
-   */
-  export function parseEventLogs<TAbi extends readonly Item[]>(
-    abi: TAbi,
     logs: Array<{ topics: readonly Hash[]; data: Uint8Array }>,
   ): Array<{
     eventName: ExtractEventNames<TAbi>;
@@ -653,20 +594,6 @@ export namespace Abi {
     // 3. Decode using Event.decodeEventLog
     // 4. Return array of parsed logs
     throw new Error("Not implemented");
-  }
-
-  /**
-   * Parse event logs from array of logs (convenience form with this:)
-   */
-  export function parseLogs<TAbi extends readonly Item[]>(
-    this: TAbi,
-    logs: Array<{ topics: readonly Hash[]; data: Uint8Array }>,
-  ): Array<{
-    eventName: ExtractEventNames<TAbi>;
-    args: unknown;
-    log: { topics: readonly Hash[]; data: Uint8Array };
-  }> {
-    return parseEventLogs(this, logs);
   }
 
   // ==========================================================================

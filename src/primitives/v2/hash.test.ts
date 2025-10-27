@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import * as Hash from "./hash"
+import { Hash } from "./hash"
 
 describe("Hash", () => {
 	describe("fromHex", () => {
@@ -114,9 +114,9 @@ describe("Hash", () => {
 		})
 	})
 
-	describe("Hash factory", () => {
+	describe("from", () => {
 		it("creates hash from hex string", () => {
-			const hash = Hash.Hash(
+			const hash = Hash.from(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
 			expect(hash.length).toBe(32)
@@ -139,18 +139,15 @@ describe("Hash", () => {
 		})
 	})
 
-	describe("ZERO_HASH", () => {
+	describe("ZERO", () => {
 		it("is 32 bytes of zeros", () => {
-			expect(Hash.ZERO_HASH.length).toBe(32)
-			expect(Hash.ZERO_HASH.every((b) => b === 0)).toBe(true)
+			expect(Hash.ZERO.length).toBe(32)
+			expect(Hash.ZERO.every((b) => b === 0)).toBe(true)
 		})
 	})
 
 	describe("keccak256", () => {
-		it("throws NotImplementedError", () => {
-			expect(() => Hash.keccak256(new Uint8Array(0))).toThrow(
-				Hash.NotImplementedError,
-			)
+		it("throws error when not implemented", () => {
 			expect(() => Hash.keccak256(new Uint8Array(0))).toThrow(
 				"keccak256 not yet implemented",
 			)
