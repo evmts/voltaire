@@ -921,6 +921,6 @@ comptime {
     }
 }
 
-fn wasmMain() callconv(.C) void {
+fn wasmMain() void {
     // Entry point required for WASM executable, but unused in reactor pattern
 }
