@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
-import { keccak256, keccak256Empty } from "./keccak.ts";
+import { describe, expect, test } from "vitest";
+import { keccak256, keccak256Empty } from "./keccak.wasm.js";
 
 describe("keccak256", () => {
 	test("should hash empty bytes", () => {

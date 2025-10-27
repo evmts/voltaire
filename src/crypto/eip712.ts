@@ -8,7 +8,7 @@
  * Use with caution in production systems.
  */
 
-import { keccak256 } from "./keccak.js";
+import { keccak256 } from "./keccak.wasm.js";
 
 export type Hex = `0x${string}`;
 export type Address = `0x${string}`;

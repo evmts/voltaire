@@ -4,7 +4,7 @@
  * Validates type structure, type guards, and utility functions
  */
 
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import type {
 	AccessList,
 	Address,

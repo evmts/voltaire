@@ -1,5 +1,10 @@
-import { describe, expect, test } from "bun:test";
-import { hashMessage } from "./eip191.ts";
+import { describe, expect, test } from "vitest";
+import { eip191HashMessage } from "./keccak.wasm.js";
+
+// Wrapper to match test API
+function hashMessage(message: string | Uint8Array): string {
+	return eip191HashMessage(message).toHex();
+}
 
 describe("hashMessage", () => {
 	test("should hash simple message from string", () => {
