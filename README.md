@@ -145,6 +145,42 @@ This library provides both WASM and native FFI implementations for browser and N
     - Constants: `SECP256K1_P`, `SECP256K1_N`, `SECP256K1_Gx`, `SECP256K1_Gy`
     - Point operations: `isOnCurve`, `add`, `double`, `multiply`, `negate`
     - `extractRecoveryId(signature)` — extract v from signature
+  - 🚧 [Wallet & Mnemonic](./src/crypto/wallet.ts) — BIP-32/BIP-39 (stubs)
+    - `Mnemonic` — BIP-39 mnemonic phrase management
+      - `fromPhrase(phrase)` — create from phrase
+      - `fromEntropy(entropy)` — create from entropy
+      - `isValidMnemonic(phrase)` — validate phrase
+      - `computeSeed(password)` — derive seed
+    - `HDNodeWallet` — BIP-32 HD wallet derivation
+      - `deriveChild(index)` — derive child at index
+      - `derivePath(path)` — derive at path (e.g., "m/44'/60'/0'/0/0")
+      - `fromMnemonic(mnemonic)` — create from mnemonic
+      - `neuter()` — create neutered wallet (public only)
+    - `HDNodeVoidWallet` — neutered HD wallet (no private keys)
+    - `Wallet` — wallet with private key
+      - `fromPrivateKey(key)` — create from private key
+      - `fromMnemonic(mnemonic)` — create from mnemonic
+      - `encrypt(password)` — encrypt to JSON keystore
+    - `defaultPath`, `getAccountPath(index)`, `getIndexedAccountPath(index)` — derivation paths
+  - 🚧 [Keystore](./src/crypto/keystore.ts) — JSON wallet encryption (stubs)
+    - `encryptKeystoreJson(privateKey, password)` — encrypt to JSON
+    - `decryptKeystoreJson(json, password)` — decrypt from JSON
+    - `isKeystoreJson(json)` — validate keystore format
+    - `decryptCrowdsaleJson(json, password)` — legacy crowdsale format
+    - `isCrowdsaleJson(json)` — validate crowdsale format
+  - 🚧 [Wordlists](./src/crypto/wordlists.ts) — BIP-39 wordlists (stubs)
+    - `Wordlist` — abstract base class
+    - `WordlistOwl` — compressed ASCII-7 format
+    - `WordlistOwlA` — compressed Latin-1 with diacritics
+    - Languages: `LangEn`, `LangEs`, `LangFr`, `LangIt`, `LangPt`, `LangJa`, `LangKo`, `LangCz`, `LangZhCn`, `LangZhTw`
+  - 🚧 [Crypto Extensions](./src/crypto/crypto-extensions.ts) — Additional crypto functions (stubs)
+    - `sha512(data)` — SHA2-512 hash
+    - `computeHmac(algorithm, key, data)` — HMAC with SHA256/SHA512
+    - `pbkdf2(password, salt, iterations, keylen, algo)` — PBKDF2 key derivation
+    - `scrypt(password, salt, N, r, p, keylen)` — scrypt (async)
+    - `scryptSync(...)` — scrypt (sync)
+    - `computeSharedSecret(privateKey, publicKey)` — ECDH
+    - `addPoints(p1, p2)` — elliptic curve point addition
       <br/>
       <br/>
 - [**Ethereum Types**](#ethereum-types) — Standard TypeScript interfaces
@@ -255,6 +291,92 @@ This library provides both WASM and native FFI implementations for browser and N
     - `encodeAuthorizationList(authorizations)` — encode authorization list (RLP)
     - `decodeAuthorizationList(encoded)` — decode authorization list from RLP
     - `getAuthority(authorization)` — compute authority (delegating account)
+  - 🚧 [ABI Interface](./src/utils/abi-interface.ts) — Enhanced ABI parsing (stubs)
+    - `Interface` — comprehensive ABI operations
+      - `parseTransaction(data)` — parse tx to `TransactionDescription`
+      - `parseLog(log)` — parse event to `LogDescription`
+      - `parseError(data)` — parse error to `ErrorDescription`
+      - `parseCallResult(data)` — parse call result
+      - `getFunction(key)`, `getEvent(key)`, `getError(key)` — get fragments
+      - `hasFunction(key)`, `hasEvent(key)` — check existence
+      - `forEachFunction()`, `forEachEvent()`, `forEachError()` — iteration
+    - Fragment types: `FunctionFragment`, `EventFragment`, `ErrorFragment`, `ConstructorFragment`, `FallbackFragment`
+    - `Result` — array with named access
+      - `toArray()`, `toObject()`, `getValue(name)`
+    - `Typed` — values with explicit type info
+      - `uint8()`, `uint256()`, `address()`, `bytes()`, `string()`, `bool()`
+    - `Indexed` — indexed event parameter marker
+    - `encodeBytes32String(text)`, `decodeBytes32String(data)`
+  - 🚧 [Hash Extensions](./src/utils/hash-extensions.ts) — Additional hash utilities (stubs)
+    - `id(text)` — keccak256 of UTF-8 string
+    - `solidityPacked(types, values)` — non-standard packed encoding
+    - `solidityPackedKeccak256(types, values)` — keccak256 of packed
+    - `solidityPackedSha256(types, values)` — SHA256 of packed
+    - `namehash(name)` — EIP-137 ENS namehash
+    - `ensNormalize(name)` — UTS-46 normalization
+    - `dnsEncode(name)` — DNS wire format
+    - `isValidName(name)` — validate ENS name
+    - `labelHash(label)` — hash ENS label
+  - 🚧 [Signature Extensions](./src/utils/signature-extensions.ts) — Signature verification (stubs)
+    - `Signature` — class with r, s, v components
+      - `from(signature)`, `serialize()`, `toCompact()`, `fromCompact()`
+    - `verifyMessage(message, signature, address)` — verify EIP-191 signature
+    - `verifyTypedData(domain, types, value, signature, address)` — verify EIP-712
+    - `verifyAuthorization(auth, signature, signer)` — verify EIP-7702
+  - 🚧 [Encoding](./src/utils/encoding.ts) — Base58/Base64/UTF-8 (stubs)
+    - `encodeBase58(data)`, `decodeBase58(text)` — Base58 encoding
+    - `encodeBase64(data)`, `decodeBase64(text)` — Base64 encoding
+    - `toUtf8String(bytes, onError)` — UTF-8 with error handling
+    - `toUtf8Bytes(text)` — string to UTF-8 bytes
+    - `toUtf8CodePoints(bytes, onError)` — extract code points
+    - `Utf8ErrorFuncs` — error/ignore/replace strategies
+  - 🚧 [Bytes](./src/utils/bytes.ts) — Byte manipulation (stubs)
+    - `concat(arrays)` — combine byte arrays
+    - `dataSlice(data, start, end)` — extract portion
+    - `stripZerosLeft(data)` — remove leading zeros
+    - `zeroPadValue(value, length)` — left-pad
+    - `zeroPadBytes(data, length)` — right-pad
+    - `isBytesLike(value)`, `isHexString(value, length)` — validators
+    - `dataLength(data)` — get byte count
+    - `getBytes(value)`, `getBytesCopy(value)` — to Uint8Array
+    - `hexlify(value)` — to hex string
+  - 🚧 [Math](./src/utils/math.ts) — Math utilities (stubs)
+    - `toTwos(value, width)`, `fromTwos(value, width)` — two's complement
+    - `mask(value, bitcount)` — apply bitmask
+    - `toBeArray(value)` — big-endian byte array
+    - `toBeHex(value, width)` — big-endian hex
+    - `toQuantity(value)` — safe hex for JSON-RPC
+    - `toBigInt(value)`, `toNumber(value)` — conversions
+    - `getBigInt(value)`, `getNumber(value)`, `getUint(value)` — safe getters
+  - 🚧 [Transaction Utils](./src/utils/transaction-utils.ts) — Transaction helpers (stubs)
+    - `Transaction` — class with type detection
+      - `serialized`, `unsignedSerialized`, `unsignedHash`
+      - `isSigned()`, `clone()`, `inferType()`, `inferTypes()`
+    - `inferType(tx)`, `inferTypes(tx)` — type detection
+    - `isLegacy(tx)`, `isBerlin(tx)`, `isLondon(tx)`, `isCancun(tx)` — type checks
+    - `accessListify(accessList)` — normalize access lists
+  - 🚧 [Address Extensions](./src/utils/address-extensions.ts) — Additional address utils (stubs)
+    - `isAddress(value)` — validate address
+    - `isAddressable(value)` — check Addressable interface
+    - `getAddress(address)` — normalized checksummed address
+    - `getIcapAddress(address)` — ICAP format (deprecated)
+    - `resolveAddress(target)` — resolve from Addressable/promise
+  - 🚧 [Constants](./src/utils/constants.ts) — Common constants (stubs)
+    - `MaxInt256`, `MinInt256`, `MaxUint256` — integer bounds
+    - `N` — secp256k1 curve order
+    - `WeiPerEther` — 10^18
+    - `ZeroAddress`, `ZeroHash` — zero values
+    - `EtherSymbol` — "Ξ" (NFKC normalized)
+    - `MessagePrefix` — "\x19Ethereum Signed Message:\n"
+  - 🚧 [Contract](./src/utils/contract.ts) — Contract utilities (stubs)
+    - `EventLog` — parsed event log with named args
+    - `UndecodedEventLog` — decode failure capture
+    - `BaseContractMethod` — method fragment access
+    - `ContractEvent` — event fragment access
+  - 🚧 [Misc](./src/utils/misc.ts) — Miscellaneous utilities (stubs)
+    - `uuidV4()` — generate UUID v4
+    - `defineProperties(target, properties)` — define properties
+    - `resolveProperties(object)` — resolve all promises
       <br/>
       <br/>
 - [**Precompiles**](#precompiles) — All 19 EVM precompiled contracts
