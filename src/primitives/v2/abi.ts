@@ -121,11 +121,6 @@ export namespace Abi {
    */
   export type Item = Function | Event | Error | Constructor | Fallback | Receive;
 
-  /**
-   * Complete ABI (array of items)
-   */
-  export type Abi = readonly Item[];
-
   // ==========================================================================
   // Type Utilities
   // ==========================================================================
@@ -133,7 +128,7 @@ export namespace Abi {
   /**
    * Extract function names from ABI
    */
-  export type ExtractFunctionNames<TAbi extends Abi> = Extract<
+  export type ExtractFunctionNames<TAbi extends readonly Item[]> = Extract<
     TAbi[number],
     { type: "function" }
   >["name"];
@@ -141,7 +136,7 @@ export namespace Abi {
   /**
    * Extract event names from ABI
    */
-  export type ExtractEventNames<TAbi extends Abi> = Extract<
+  export type ExtractEventNames<TAbi extends readonly Item[]> = Extract<
     TAbi[number],
     { type: "event" }
   >["name"];
@@ -149,7 +144,7 @@ export namespace Abi {
   /**
    * Extract error names from ABI
    */
-  export type ExtractErrorNames<TAbi extends Abi> = Extract<
+  export type ExtractErrorNames<TAbi extends readonly Item[]> = Extract<
     TAbi[number],
     { type: "error" }
   >["name"];
@@ -157,7 +152,7 @@ export namespace Abi {
   /**
    * Get function from ABI by name
    */
-  export type GetFunction<TAbi extends Abi, TName extends string> = Extract<
+  export type GetFunction<TAbi extends readonly Item[], TName extends string> = Extract<
     TAbi[number],
     { type: "function"; name: TName }
   >;
@@ -165,7 +160,7 @@ export namespace Abi {
   /**
    * Get event from ABI by name
    */
-  export type GetEvent<TAbi extends Abi, TName extends string> = Extract<
+  export type GetEvent<TAbi extends readonly Item[], TName extends string> = Extract<
     TAbi[number],
     { type: "event"; name: TName }
   >;
@@ -173,7 +168,7 @@ export namespace Abi {
   /**
    * Get error from ABI by name
    */
-  export type GetError<TAbi extends Abi, TName extends string> = Extract<
+  export type GetError<TAbi extends readonly Item[], TName extends string> = Extract<
     TAbi[number],
     { type: "error"; name: TName }
   >;
@@ -506,7 +501,7 @@ export namespace Abi {
    * Get ABI item by name and optionally type
    */
   export function getAbiItem<
-    TAbi extends Abi,
+    TAbi extends readonly Item[],
     TName extends string,
     TType extends Item["type"] | undefined = undefined,
   >(
@@ -526,7 +521,7 @@ export namespace Abi {
    * Encode function data using function name
    */
   export function encodeFunctionData<
-    TAbi extends Abi,
+    TAbi extends readonly Item[],
     TFunctionName extends ExtractFunctionNames<TAbi>,
   >(
     abi: TAbi,
@@ -542,7 +537,7 @@ export namespace Abi {
    * Decode function result using function name
    */
   export function decodeFunctionResult<
-    TAbi extends Abi,
+    TAbi extends readonly Item[],
     TFunctionName extends ExtractFunctionNames<TAbi>,
   >(
     abi: TAbi,
@@ -558,7 +553,7 @@ export namespace Abi {
    * Decode function call data (infer function from selector)
    */
   export function decodeFunctionData<
-    TAbi extends Abi,
+    TAbi extends readonly Item[],
     TFunctionName extends ExtractFunctionNames<TAbi>,
   >(
     abi: TAbi,
@@ -578,7 +573,7 @@ export namespace Abi {
   /**
    * Parse event logs from array of logs
    */
-  export function parseEventLogs<TAbi extends Abi>(
+  export function parseEventLogs<TAbi extends readonly Item[]>(
     abi: TAbi,
     logs: Array<{ topics: readonly Hash[]; data: Uint8Array }>,
   ): Array<{
@@ -689,7 +684,12 @@ export namespace Abi {
   }
 }
 
-// Re-export for convenience at top level
-export type {
-  Abi as default,
-};
+/**
+ * Complete ABI (array of items)
+ *
+ * Uses TypeScript declaration merging - Abi is both a namespace and a type.
+ */
+export type Abi = readonly Abi.Item[];
+
+// Re-export namespace as default
+export default Abi;
