@@ -910,5 +910,8 @@ export fn primitives_version_string() [*:0]const u8 {
 // so no explicit malloc/free exports are needed. JavaScript will allocate buffers
 // in the linear memory and pass pointers to these functions.
 
-// Note: Removed main() function that was causing conflicts with C example builds.
-// WASM builds don't actually require a main() function when using export functions.
+// WASM reactor pattern - main() is required for executable builds but not called
+// JavaScript will invoke exported functions directly
+pub fn main() void {
+    // Entry point required for WASM executable, but unused in reactor pattern
+}

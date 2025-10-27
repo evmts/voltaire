@@ -15,8 +15,8 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.15.1
-      - name: Build for WASM
-        run: zig build -Dtarget=wasm32-wasi -Doptimize=ReleaseSmall
+      - name: Build WASM TypeScript bindings
+        run: zig build build-ts-wasm
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
       - name: Measure WASM bundle sizes
