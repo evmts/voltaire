@@ -15,7 +15,7 @@
  * const hex = Hash.toHex.call(hash);
  *
  * // Compare hashes
- * const same = Hash.equals(hash1, hash2);
+ * const same = Hash.equals.call(hash1, hash2);
  *
  * // Hash data with keccak256
  * const digest = Hash.keccak256(data);
@@ -119,23 +119,7 @@ export namespace Hash {
   // ==========================================================================
 
   /**
-   * Convert Hash to hex string (standard form)
-   *
-   * @param hash - Hash to convert
-   * @returns Hex string with 0x prefix
-   *
-   * @example
-   * ```typescript
-   * const hex = Hash.toHex(hash);
-   * // "0x1234..."
-   * ```
-   */
-  export function toHex(hash: Hash): string {
-    return `0x${Array.from(hash, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
-  }
-
-  /**
-   * Convert Hash to hex string (convenience form with this:)
+   * Convert Hash to hex string
    *
    * @returns Hex string with 0x prefix
    *
@@ -145,27 +129,12 @@ export namespace Hash {
    * // "0x1234..."
    * ```
    */
-  export function toHexString(this: Hash): string {
-    return toHex(this);
+  export function toHex(this: Hash): string {
+    return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
   }
 
   /**
-   * Convert Hash to raw bytes (standard form)
-   *
-   * @param hash - Hash to convert
-   * @returns Copy of hash bytes
-   *
-   * @example
-   * ```typescript
-   * const bytes = Hash.toBytes(hash);
-   * ```
-   */
-  export function toBytes(hash: Hash): Uint8Array {
-    return new Uint8Array(hash);
-  }
-
-  /**
-   * Convert Hash to raw bytes (convenience form with this:)
+   * Convert Hash to raw bytes
    *
    * @returns Copy of hash bytes
    *
@@ -174,23 +143,22 @@ export namespace Hash {
    * const bytes = Hash.toBytes.call(hash);
    * ```
    */
-  export function toBytesArray(this: Hash): Uint8Array {
-    return toBytes(this);
+  export function toBytes(this: Hash): Uint8Array {
+    return new Uint8Array(this);
   }
 
   /**
-   * Convert Hash to string (alias for toHex, standard form)
+   * Convert Hash to string (alias for toHex)
    *
-   * @param hash - Hash to convert
    * @returns Hex string with 0x prefix
    *
    * @example
    * ```typescript
-   * const str = Hash.toString(hash);
+   * const str = Hash.toString.call(hash);
    * ```
    */
-  export function toString(hash: Hash): string {
-    return toHex(hash);
+  export function toString(this: Hash): string {
+    return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
   }
 
   // ==========================================================================
@@ -198,32 +166,7 @@ export namespace Hash {
   // ==========================================================================
 
   /**
-   * Compare two hashes for equality (standard form)
-   *
-   * Uses constant-time comparison to prevent timing attacks.
-   *
-   * @param a - First hash
-   * @param b - Second hash
-   * @returns True if hashes are equal
-   *
-   * @example
-   * ```typescript
-   * const same = Hash.equals(hash1, hash2);
-   * ```
-   */
-  export function equals(a: Hash, b: Hash): boolean {
-    if (a.length !== b.length) {
-      return false;
-    }
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a[i]! ^ b[i]!;
-    }
-    return result === 0;
-  }
-
-  /**
-   * Compare this hash with another for equality (convenience form with this:)
+   * Compare this hash with another for equality
    *
    * Uses constant-time comparison to prevent timing attacks.
    *
@@ -235,27 +178,19 @@ export namespace Hash {
    * const same = Hash.equals.call(hash1, hash2);
    * ```
    */
-  export function isEqual(this: Hash, other: Hash): boolean {
-    return equals(this, other);
+  export function equals(this: Hash, other: Hash): boolean {
+    if (this.length !== other.length) {
+      return false;
+    }
+    let result = 0;
+    for (let i = 0; i < this.length; i++) {
+      result |= this[i]! ^ other[i]!;
+    }
+    return result === 0;
   }
 
   /**
-   * Check if hash is zero hash (standard form)
-   *
-   * @param hash - Hash to check
-   * @returns True if hash is all zeros
-   *
-   * @example
-   * ```typescript
-   * const isZero = Hash.isZero(hash);
-   * ```
-   */
-  export function isZero(hash: Hash): boolean {
-    return equals(hash, ZERO);
-  }
-
-  /**
-   * Check if this hash is zero hash (convenience form with this:)
+   * Check if this hash is zero hash
    *
    * @returns True if hash is all zeros
    *
@@ -264,8 +199,15 @@ export namespace Hash {
    * const isZero = Hash.isZero.call(hash);
    * ```
    */
-  export function isZeroHash(this: Hash): boolean {
-    return isZero(this);
+  export function isZero(this: Hash): boolean {
+    if (this.length !== ZERO.length) {
+      return false;
+    }
+    let result = 0;
+    for (let i = 0; i < this.length; i++) {
+      result |= this[i]! ^ ZERO[i]!;
+    }
+    return result === 0;
   }
 
   // ==========================================================================
@@ -409,22 +351,7 @@ export namespace Hash {
   }
 
   /**
-   * Clone hash
-   *
-   * @param hash - Hash to clone
-   * @returns New hash with same value
-   *
-   * @example
-   * ```typescript
-   * const copy = Hash.clone(hash);
-   * ```
-   */
-  export function clone(hash: Hash): Hash {
-    return new Uint8Array(hash) as Hash;
-  }
-
-  /**
-   * Clone this hash (convenience form with this:)
+   * Clone this hash
    *
    * @returns New hash with same value
    *
@@ -433,29 +360,12 @@ export namespace Hash {
    * const copy = Hash.clone.call(hash);
    * ```
    */
-  export function copy(this: Hash): Hash {
-    return clone(this);
+  export function clone(this: Hash): Hash {
+    return new Uint8Array(this) as Hash;
   }
 
   /**
-   * Get slice of hash bytes
-   *
-   * @param hash - Hash to slice
-   * @param start - Start index (inclusive)
-   * @param end - End index (exclusive)
-   * @returns Slice of hash bytes
-   *
-   * @example
-   * ```typescript
-   * const selector = Hash.slice(hash, 0, 4); // First 4 bytes
-   * ```
-   */
-  export function slice(hash: Hash, start?: number, end?: number): Uint8Array {
-    return hash.slice(start, end);
-  }
-
-  /**
-   * Get slice of this hash (convenience form with this:)
+   * Get slice of this hash
    *
    * @param start - Start index (inclusive)
    * @param end - End index (exclusive)
@@ -466,38 +376,12 @@ export namespace Hash {
    * const selector = Hash.slice.call(hash, 0, 4);
    * ```
    */
-  export function sliceBytes(this: Hash, start?: number, end?: number): Uint8Array {
-    return slice(this, start, end);
+  export function slice(this: Hash, start?: number, end?: number): Uint8Array {
+    return this.slice(start, end);
   }
 
   /**
-   * Format hash for display (truncated)
-   *
-   * @param hash - Hash to format
-   * @param prefixLength - Number of chars to show at start (default 6)
-   * @param suffixLength - Number of chars to show at end (default 4)
-   * @returns Formatted string like "0x1234...5678"
-   *
-   * @example
-   * ```typescript
-   * const display = Hash.format(hash);
-   * // "0x1234...5678"
-   * ```
-   */
-  export function format(
-    hash: Hash,
-    prefixLength: number = 6,
-    suffixLength: number = 4,
-  ): string {
-    const hex = toHex(hash);
-    if (hex.length <= prefixLength + suffixLength + 2) {
-      return hex;
-    }
-    return `${hex.slice(0, prefixLength + 2)}...${hex.slice(-suffixLength)}`;
-  }
-
-  /**
-   * Format this hash for display (convenience form with this:)
+   * Format this hash for display (truncated)
    *
    * @param prefixLength - Number of chars to show at start (default 6)
    * @param suffixLength - Number of chars to show at end (default 4)
@@ -506,14 +390,19 @@ export namespace Hash {
    * @example
    * ```typescript
    * const display = Hash.format.call(hash);
+   * // "0x1234...5678"
    * ```
    */
-  export function formatShort(
+  export function format(
     this: Hash,
     prefixLength: number = 6,
     suffixLength: number = 4,
   ): string {
-    return format(this, prefixLength, suffixLength);
+    const hex = `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+    if (hex.length <= prefixLength + suffixLength + 2) {
+      return hex;
+    }
+    return `${hex.slice(0, prefixLength + 2)}...${hex.slice(-suffixLength)}`;
   }
 }
 

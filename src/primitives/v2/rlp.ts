@@ -3,20 +3,19 @@
  *
  * Complete RLP encoding/decoding with strict validation matching Ethereum's spec.
  * All types namespaced under Rlp for intuitive access.
+ * All functions use the "this:" pattern where data is operated on.
  *
  * @example
  * ```typescript
  * import { Rlp } from './rlp.js';
  *
  * // Encode data
- * const encoded = Rlp.encode([new Uint8Array([1, 2, 3])]);
+ * const list = [new Uint8Array([1, 2, 3])];
+ * const encoded = Rlp.encode.call(list);
  *
  * // Decode data
- * const decoded = Rlp.decode(encoded);
- *
- * // Use convenience methods
  * const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
- * const result = Rlp.decode.call(bytes);
+ * const decoded = Rlp.decode.call(bytes);
  * ```
  */
 
@@ -122,27 +121,24 @@ export namespace Rlp {
   // ==========================================================================
 
   /**
-   * Encodes data to RLP format (standard form)
+   * Encodes data to RLP format (this: pattern)
    *
-   * @param data - Data to encode (Uint8Array, RlpData, or array)
+   * @param this - Data to encode (Uint8Array, RlpData, or array)
    * @returns RLP-encoded bytes
    *
    * @example
    * ```typescript
    * // Encode bytes
-   * const encoded = Rlp.encode(new Uint8Array([1, 2, 3]));
+   * const bytes = new Uint8Array([1, 2, 3]);
+   * const encoded = Rlp.encode.call(bytes);
    *
    * // Encode list
-   * const list = Rlp.encode([
-   *   new Uint8Array([1, 2]),
-   *   new Uint8Array([3, 4])
-   * ]);
+   * const list = [new Uint8Array([1, 2]), new Uint8Array([3, 4])];
+   * const encoded = Rlp.encode.call(list);
    *
    * // Encode nested structures
-   * const nested = Rlp.encode([
-   *   new Uint8Array([1]),
-   *   [new Uint8Array([2]), new Uint8Array([3])]
-   * ]);
+   * const nested = [new Uint8Array([1]), [new Uint8Array([2]), new Uint8Array([3])]];
+   * const encoded = Rlp.encode.call(nested);
    * ```
    *
    * Rules:
@@ -152,48 +148,50 @@ export namespace Rlp {
    * - List 0-55 bytes total: [0xc0 + length, ...encoded_items]
    * - List > 55 bytes total: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
    */
-  export function encode(data: Encodable): Uint8Array {
+  export function encode(this: Encodable): Uint8Array {
     // Handle Uint8Array
-    if (data instanceof Uint8Array) {
-      return encodeBytes(data);
+    if (this instanceof Uint8Array) {
+      return encodeBytes.call(this);
     }
 
     // Handle Data structure
-    if (isData(data)) {
-      if (data.type === "bytes") {
-        return encodeBytes(data.value);
+    if (isData(this)) {
+      if (this.type === "bytes") {
+        return encodeBytes.call(this.value);
       } else {
-        return encodeList(data.value);
+        return encodeList.call(this.value);
       }
     }
 
     // Handle array (list)
-    if (Array.isArray(data)) {
-      return encodeList(data);
+    if (Array.isArray(this)) {
+      return encodeList.call(this);
     }
 
     throw new Error("UnexpectedInput", "Invalid encodable data type");
   }
 
   /**
-   * Encodes a byte array according to RLP string rules (standard form)
+   * Encodes a byte array according to RLP string rules (this: pattern)
    *
-   * @param bytes - Byte array to encode
+   * @param this - Byte array to encode
    * @returns RLP-encoded bytes
    *
    * @example
    * ```typescript
    * // Single byte < 0x80
-   * const b1 = Rlp.encodeBytes(new Uint8Array([0x7f]));
+   * const b1 = new Uint8Array([0x7f]);
+   * const encoded = Rlp.encodeBytes.call(b1);
    * // => Uint8Array([0x7f])
    *
    * // Short string
-   * const b2 = Rlp.encodeBytes(new Uint8Array([1, 2, 3]));
+   * const b2 = new Uint8Array([1, 2, 3]);
+   * const encoded = Rlp.encodeBytes.call(b2);
    * // => Uint8Array([0x83, 1, 2, 3])
    *
    * // Long string (> 55 bytes)
    * const longBytes = new Uint8Array(60).fill(0x42);
-   * const b3 = Rlp.encodeBytes(longBytes);
+   * const encoded = Rlp.encodeBytes.call(longBytes);
    * // => Uint8Array([0xb8, 60, ...longBytes])
    * ```
    *
@@ -202,53 +200,50 @@ export namespace Rlp {
    * - 0-55 bytes: [0x80 + length, ...bytes]
    * - > 55 bytes: [0xb7 + length_of_length, ...length_bytes, ...bytes]
    */
-  export function encodeBytes(bytes: Uint8Array): Uint8Array {
+  export function encodeBytes(this: Uint8Array): Uint8Array {
     // Single byte < 0x80: encoded as itself
-    if (bytes.length === 1 && bytes[0]! < 0x80) {
-      return bytes;
+    if (this.length === 1 && this[0]! < 0x80) {
+      return this;
     }
 
     // Short string (0-55 bytes)
-    if (bytes.length < 56) {
-      const result = new Uint8Array(1 + bytes.length);
-      result[0] = 0x80 + bytes.length;
-      result.set(bytes, 1);
+    if (this.length < 56) {
+      const result = new Uint8Array(1 + this.length);
+      result[0] = 0x80 + this.length;
+      result.set(this, 1);
       return result;
     }
 
     // Long string (56+ bytes)
-    const lengthBytes = encodeLengthValue(bytes.length);
-    const result = new Uint8Array(1 + lengthBytes.length + bytes.length);
+    const lengthBytes = encodeLengthValue(this.length);
+    const result = new Uint8Array(1 + lengthBytes.length + this.length);
     result[0] = 0xb7 + lengthBytes.length;
     result.set(lengthBytes, 1);
-    result.set(bytes, 1 + lengthBytes.length);
+    result.set(this, 1 + lengthBytes.length);
     return result;
   }
 
   /**
-   * Encodes a list of RLP-encodable items (standard form)
+   * Encodes a list of RLP-encodable items (this: pattern)
    *
-   * @param items - Array of items to encode
+   * @param this - Array of items to encode
    * @returns RLP-encoded list
    *
    * @example
    * ```typescript
    * // Empty list
-   * const empty = Rlp.encodeList([]);
+   * const empty = [];
+   * const encoded = Rlp.encodeList.call(empty);
    * // => Uint8Array([0xc0])
    *
    * // Simple list
-   * const list = Rlp.encodeList([
-   *   new Uint8Array([1]),
-   *   new Uint8Array([2])
-   * ]);
+   * const list = [new Uint8Array([1]), new Uint8Array([2])];
+   * const encoded = Rlp.encodeList.call(list);
    * // => Uint8Array([0xc4, 0x01, 0x02])
    *
    * // Nested list
-   * const nested = Rlp.encodeList([
-   *   new Uint8Array([1]),
-   *   [new Uint8Array([2])]
-   * ]);
+   * const nested = [new Uint8Array([1]), [new Uint8Array([2])]];
+   * const encoded = Rlp.encodeList.call(nested);
    * ```
    *
    * Rules:
@@ -257,9 +252,9 @@ export namespace Rlp {
    * - If total < 56: [0xc0 + total_length, ...encoded_items]
    * - If total >= 56: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
    */
-  export function encodeList(items: Encodable[]): Uint8Array {
+  export function encodeList(this: Encodable[]): Uint8Array {
     // Encode each item
-    const encodedItems = items.map((item) => encode(item));
+    const encodedItems = this.map((item) => encode.call(item));
 
     // Calculate total length
     const totalLength = encodedItems.reduce((sum, item) => sum + item.length, 0);
@@ -294,27 +289,27 @@ export namespace Rlp {
   // ==========================================================================
 
   /**
-   * Decodes RLP-encoded bytes (standard form)
+   * Decodes RLP-encoded bytes (this: pattern)
    *
-   * @param bytes - RLP-encoded data
+   * @param this - RLP-encoded data
    * @param stream - If true, allows extra data after decoded value. If false, expects exact match
    * @returns Decoded RLP data with remainder
    *
    * @example
    * ```typescript
    * // Decode single value
-   * const result = Rlp.decode(new Uint8Array([0x83, 1, 2, 3]));
+   * const bytes = new Uint8Array([0x83, 1, 2, 3]);
+   * const result = Rlp.decode.call(bytes);
    * // => { data: { type: 'bytes', value: Uint8Array([1, 2, 3]) }, remainder: Uint8Array([]) }
    *
    * // Stream decoding (multiple values)
-   * const stream = Rlp.decode(
-   *   new Uint8Array([0x01, 0x02]),
-   *   true
-   * );
+   * const stream = new Uint8Array([0x01, 0x02]);
+   * const result = Rlp.decode.call(stream, true);
    * // => { data: { type: 'bytes', value: Uint8Array([1]) }, remainder: Uint8Array([2]) }
    *
    * // Decode list
-   * const list = Rlp.decode(new Uint8Array([0xc3, 0x01, 0x02, 0x03]));
+   * const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
+   * const result = Rlp.decode.call(list);
    * ```
    *
    * Rules:
@@ -330,12 +325,12 @@ export namespace Rlp {
    * - Prevent recursion depth > MAX_DEPTH
    * - In non-stream mode, verify no remainder after decoding
    */
-  export function decode(bytes: Uint8Array, stream = false): Decoded {
-    if (bytes.length === 0) {
+  export function decode(this: Uint8Array, stream = false): Decoded {
+    if (this.length === 0) {
       throw new Error("InputTooShort", "Cannot decode empty input");
     }
 
-    const decoded = decodeInternal(bytes, 0);
+    const decoded = decodeInternal(this, 0);
 
     if (!stream && decoded.remainder.length > 0) {
       throw new Error(
@@ -345,22 +340,6 @@ export namespace Rlp {
     }
 
     return decoded;
-  }
-
-  /**
-   * Decodes RLP-encoded bytes (convenience form with this:)
-   *
-   * @param stream - If true, allows extra data after decoded value
-   * @returns Decoded RLP data with remainder
-   *
-   * @example
-   * ```typescript
-   * const bytes = new Uint8Array([0x83, 1, 2, 3]);
-   * const result = Rlp.decode.call(bytes);
-   * ```
-   */
-  export function decodeThis(this: Uint8Array, stream = false): Decoded {
-    return decode(this, stream);
   }
 
   // ==========================================================================
@@ -633,71 +612,47 @@ export namespace Rlp {
 
   export namespace Data {
     /**
-     * Create bytes Data from Uint8Array (standard form)
+     * Create bytes Data from Uint8Array (this: pattern)
      *
-     * @param value - Byte array
+     * @param this - Byte array
      * @returns RLP bytes Data
-     *
-     * @example
-     * ```typescript
-     * const data = Rlp.Data.fromBytes(new Uint8Array([1, 2, 3]));
-     * // => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
-     * ```
-     */
-    export function fromBytes(value: Uint8Array): Rlp.Data & { type: "bytes" } {
-      return { type: "bytes", value };
-    }
-
-    /**
-     * Create bytes Data from Uint8Array (convenience form with this:)
      *
      * @example
      * ```typescript
      * const bytes = new Uint8Array([1, 2, 3]);
      * const data = Rlp.Data.fromBytes.call(bytes);
+     * // => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
      * ```
      */
-    export function fromBytesThis(this: Uint8Array): Rlp.Data & { type: "bytes" } {
-      return fromBytes(this);
+    export function fromBytes(this: Uint8Array): Rlp.Data & { type: "bytes" } {
+      return { type: "bytes", value: this };
     }
 
     /**
-     * Create list Data from array (standard form)
+     * Create list Data from array (this: pattern)
      *
-     * @param value - Array of Data items
+     * @param this - Array of Data items
      * @returns RLP list Data
      *
      * @example
      * ```typescript
-     * const data = Rlp.Data.fromList([
+     * const items = [
      *   { type: 'bytes', value: new Uint8Array([1]) },
      *   { type: 'bytes', value: new Uint8Array([2]) }
-     * ]);
+     * ];
+     * const data = Rlp.Data.fromList.call(items);
      * // => { type: 'list', value: [...] }
      * ```
      */
-    export function fromList(value: Rlp.Data[]): Rlp.Data & { type: "list" } {
-      return { type: "list", value };
+    export function fromList(this: Rlp.Data[]): Rlp.Data & { type: "list" } {
+      return { type: "list", value: this };
     }
 
     /**
-     * Encode Data to RLP bytes (standard form)
+     * Encode Data to RLP bytes (this: pattern)
      *
-     * @param data - RLP Data structure
+     * @param this - RLP Data structure
      * @returns RLP-encoded bytes
-     *
-     * @example
-     * ```typescript
-     * const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
-     * const encoded = Rlp.Data.encode(data);
-     * ```
-     */
-    export function encode(data: Rlp.Data): Uint8Array {
-      return Rlp.encode(data);
-    }
-
-    /**
-     * Encode Data to RLP bytes (convenience form with this:)
      *
      * @example
      * ```typescript
@@ -705,58 +660,32 @@ export namespace Rlp {
      * const encoded = Rlp.Data.encode.call(data);
      * ```
      */
-    export function encodeThis(this: Rlp.Data): Uint8Array {
-      return encode(this);
+    export function encode(this: Rlp.Data): Uint8Array {
+      return Rlp.encode.call(this);
     }
 
     /**
-     * Convert Data to bytes value (if type is bytes)
+     * Convert Data to bytes value (if type is bytes) (this: pattern)
      *
-     * @param data - RLP Data structure
+     * @param this - RLP Data structure
      * @returns Bytes value or undefined
      *
      * @example
      * ```typescript
      * const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
-     * const bytes = Rlp.Data.toBytes(data);
+     * const bytes = Rlp.Data.toBytes.call(data);
      * // => Uint8Array([1, 2, 3])
      * ```
      */
-    export function toBytes(data: Rlp.Data): Uint8Array | undefined {
-      return data.type === "bytes" ? data.value : undefined;
+    export function toBytes(this: Rlp.Data): Uint8Array | undefined {
+      return this.type === "bytes" ? this.value : undefined;
     }
 
     /**
-     * Convert Data to bytes value (convenience form with this:)
+     * Convert Data to list value (if type is list) (this: pattern)
      *
-     * @example
-     * ```typescript
-     * const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
-     * const bytes = Rlp.Data.toBytes.call(data);
-     * ```
-     */
-    export function toBytesThis(this: Rlp.Data): Uint8Array | undefined {
-      return toBytes(this);
-    }
-
-    /**
-     * Convert Data to list value (if type is list)
-     *
-     * @param data - RLP Data structure
+     * @param this - RLP Data structure
      * @returns List value or undefined
-     *
-     * @example
-     * ```typescript
-     * const data = { type: 'list', value: [...] };
-     * const list = Rlp.Data.toList(data);
-     * ```
-     */
-    export function toList(data: Rlp.Data): Rlp.Data[] | undefined {
-      return data.type === "list" ? data.value : undefined;
-    }
-
-    /**
-     * Convert Data to list value (convenience form with this:)
      *
      * @example
      * ```typescript
@@ -764,8 +693,8 @@ export namespace Rlp {
      * const list = Rlp.Data.toList.call(data);
      * ```
      */
-    export function toListThis(this: Rlp.Data): Rlp.Data[] | undefined {
-      return toList(this);
+    export function toList(this: Rlp.Data): Rlp.Data[] | undefined {
+      return this.type === "list" ? this.value : undefined;
     }
   }
 
@@ -774,42 +703,43 @@ export namespace Rlp {
   // ==========================================================================
 
   /**
-   * Get the total byte length of RLP-encoded data without actually encoding
+   * Get the total byte length of RLP-encoded data without actually encoding (this: pattern)
    *
-   * @param data - Data to measure
+   * @param this - Data to measure
    * @returns Length in bytes after RLP encoding
    *
    * @example
    * ```typescript
-   * const length = Rlp.getEncodedLength(new Uint8Array([1, 2, 3]));
+   * const bytes = new Uint8Array([1, 2, 3]);
+   * const length = Rlp.getEncodedLength.call(bytes);
    * // => 4 (0x83 prefix + 3 bytes)
    * ```
    */
-  export function getEncodedLength(data: Encodable): number {
+  export function getEncodedLength(this: Encodable): number {
     // Handle Uint8Array
-    if (data instanceof Uint8Array) {
-      if (data.length === 1 && data[0]! < 0x80) {
+    if (this instanceof Uint8Array) {
+      if (this.length === 1 && this[0]! < 0x80) {
         return 1;
       }
-      if (data.length < 56) {
-        return 1 + data.length;
+      if (this.length < 56) {
+        return 1 + this.length;
       }
-      const lengthBytes = encodeLengthValue(data.length);
-      return 1 + lengthBytes.length + data.length;
+      const lengthBytes = encodeLengthValue(this.length);
+      return 1 + lengthBytes.length + this.length;
     }
 
     // Handle Data structure
-    if (isData(data)) {
-      if (data.type === "bytes") {
-        return getEncodedLength(data.value);
+    if (isData(this)) {
+      if (this.type === "bytes") {
+        return getEncodedLength.call(this.value);
       } else {
-        return getEncodedLength(data.value);
+        return getEncodedLength.call(this.value);
       }
     }
 
     // Handle array (list)
-    if (Array.isArray(data)) {
-      const totalLength = data.reduce((sum, item) => sum + getEncodedLength(item), 0);
+    if (Array.isArray(this)) {
+      const totalLength = this.reduce((sum, item) => sum + getEncodedLength.call(item), 0);
       if (totalLength < 56) {
         return 1 + totalLength;
       }
@@ -821,22 +751,9 @@ export namespace Rlp {
   }
 
   /**
-   * Get the total byte length of RLP-encoded data (convenience form with this:)
+   * Flatten nested list Data into array of bytes Data (depth-first) (this: pattern)
    *
-   * @example
-   * ```typescript
-   * const bytes = new Uint8Array([1, 2, 3]);
-   * const length = Rlp.getEncodedLength.call(bytes);
-   * ```
-   */
-  export function getEncodedLengthThis(this: Encodable): number {
-    return getEncodedLength(this);
-  }
-
-  /**
-   * Flatten nested list Data into array of bytes Data (depth-first)
-   *
-   * @param data - RLP Data to flatten
+   * @param this - RLP Data to flatten
    * @returns Array of bytes Data
    *
    * @example
@@ -851,14 +768,14 @@ export namespace Rlp {
    *     }
    *   ]
    * };
-   * const flat = Rlp.flatten(nested);
+   * const flat = Rlp.flatten.call(nested);
    * // => [
    * //   { type: 'bytes', value: Uint8Array([1]) },
    * //   { type: 'bytes', value: Uint8Array([2]) }
    * // ]
    * ```
    */
-  export function flatten(data: Data): Array<Data & { type: "bytes" }> {
+  export function flatten(this: Data): Array<Data & { type: "bytes" }> {
     const result: Array<Data & { type: "bytes" }> = [];
 
     function visit(d: Data) {
@@ -871,60 +788,47 @@ export namespace Rlp {
       }
     }
 
-    visit(data);
+    visit(this);
     return result;
   }
 
   /**
-   * Flatten nested list Data (convenience form with this:)
+   * Check if two RLP Data structures are equal (this: pattern)
    *
-   * @example
-   * ```typescript
-   * const nested = { type: 'list', value: [...] };
-   * const flat = Rlp.flatten.call(nested);
-   * ```
-   */
-  export function flattenThis(this: Data): Array<Data & { type: "bytes" }> {
-    return flatten(this);
-  }
-
-  /**
-   * Check if two RLP Data structures are equal
-   *
-   * @param a - First Data
-   * @param b - Second Data
+   * @param this - First Data
+   * @param other - Second Data
    * @returns True if equal
    *
    * @example
    * ```typescript
    * const a = { type: 'bytes', value: new Uint8Array([1, 2]) };
    * const b = { type: 'bytes', value: new Uint8Array([1, 2]) };
-   * Rlp.equals(a, b); // => true
+   * Rlp.equals.call(a, b); // => true
    * ```
    */
-  export function equals(a: Data, b: Data): boolean {
-    if (a.type !== b.type) {
+  export function equals(this: Data, other: Data): boolean {
+    if (this.type !== other.type) {
       return false;
     }
 
-    if (a.type === "bytes" && b.type === "bytes") {
-      if (a.value.length !== b.value.length) {
+    if (this.type === "bytes" && other.type === "bytes") {
+      if (this.value.length !== other.value.length) {
         return false;
       }
-      for (let i = 0; i < a.value.length; i++) {
-        if (a.value[i] !== b.value[i]) {
+      for (let i = 0; i < this.value.length; i++) {
+        if (this.value[i] !== other.value[i]) {
           return false;
         }
       }
       return true;
     }
 
-    if (a.type === "list" && b.type === "list") {
-      if (a.value.length !== b.value.length) {
+    if (this.type === "list" && other.type === "list") {
+      if (this.value.length !== other.value.length) {
         return false;
       }
-      for (let i = 0; i < a.value.length; i++) {
-        if (!equals(a.value[i]!, b.value[i]!)) {
+      for (let i = 0; i < this.value.length; i++) {
+        if (!equals.call(this.value[i]!, other.value[i]!)) {
           return false;
         }
       }
@@ -935,106 +839,76 @@ export namespace Rlp {
   }
 
   /**
-   * Check if two RLP Data structures are equal (convenience form with this:)
+   * Convert RLP Data to human-readable JSON format (this: pattern)
    *
-   * @param other - Data to compare with this
-   * @returns True if equal
-   *
-   * @example
-   * ```typescript
-   * const a = { type: 'bytes', value: new Uint8Array([1, 2]) };
-   * const b = { type: 'bytes', value: new Uint8Array([1, 2]) };
-   * Rlp.equals.call(a, b); // => true
-   * ```
-   */
-  export function equalsThis(this: Data, other: Data): boolean {
-    return equals(this, other);
-  }
-
-  /**
-   * Convert RLP Data to human-readable JSON format
-   *
-   * @param data - RLP Data
+   * @param this - RLP Data
    * @returns JSON-serializable representation
    *
    * @example
    * ```typescript
    * const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
-   * const json = Rlp.toJSON(data);
+   * const json = Rlp.toJSON.call(data);
    * // => { type: 'bytes', value: [1, 2, 3] }
    * ```
    */
-  export function toJSON(data: Data): unknown {
-    if (data.type === "bytes") {
+  export function toJSON(this: Data): unknown {
+    if (this.type === "bytes") {
       return {
         type: "bytes",
-        value: Array.from(data.value),
+        value: Array.from(this.value),
       };
     }
 
     return {
       type: "list",
-      value: data.value.map((item) => toJSON(item)),
+      value: this.value.map((item) => toJSON.call(item)),
     };
   }
 
   /**
-   * Convert RLP Data to JSON (convenience form with this:)
+   * Convert JSON representation back to RLP Data (this: pattern)
    *
-   * @example
-   * ```typescript
-   * const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
-   * const json = Rlp.toJSON.call(data);
-   * ```
-   */
-  export function toJSONThis(this: Data): unknown {
-    return toJSON(this);
-  }
-
-  /**
-   * Convert JSON representation back to RLP Data
-   *
-   * @param json - JSON object from toJSON
+   * @param this - JSON object from toJSON
    * @returns RLP Data
    *
    * @example
    * ```typescript
    * const json = { type: 'bytes', value: [1, 2, 3] };
-   * const data = Rlp.fromJSON(json);
+   * const data = Rlp.fromJSON.call(json);
    * // => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
    * ```
    */
-  export function fromJSON(json: unknown): Data {
+  export function fromJSON(this: unknown): Data {
     if (
-      typeof json !== "object" ||
-      json === null ||
-      !("type" in json) ||
-      !("value" in json)
+      typeof this !== "object" ||
+      this === null ||
+      !("type" in this) ||
+      !("value" in this)
     ) {
       throw new Error("UnexpectedInput", "Invalid JSON format");
     }
 
-    if (json.type === "bytes") {
-      if (!Array.isArray(json.value)) {
+    if (this.type === "bytes") {
+      if (!Array.isArray(this.value)) {
         throw new Error("UnexpectedInput", "Bytes value must be array");
       }
       return {
         type: "bytes",
-        value: new Uint8Array(json.value),
+        value: new Uint8Array(this.value),
       };
     }
 
-    if (json.type === "list") {
-      if (!Array.isArray(json.value)) {
+    if (this.type === "list") {
+      if (!Array.isArray(this.value)) {
         throw new Error("UnexpectedInput", "List value must be array");
       }
       return {
         type: "list",
-        value: json.value.map((item) => fromJSON(item)),
+        value: this.value.map((item) => fromJSON.call(item)),
       };
     }
 
-    throw new Error("UnexpectedInput", `Invalid type: ${json.type}`);
+    throw new Error("UnexpectedInput", `Invalid type: ${this.type}`);
   }
 }
 

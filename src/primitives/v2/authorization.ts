@@ -11,15 +11,10 @@
  * // Types
  * const auth: Authorization.Item = { chainId: 1n, address, nonce: 0n, yParity: 0, r: 0n, s: 0n };
  *
- * // Operations - standard form
- * Authorization.validate(auth);
- * const sigHash = Authorization.hash(auth);
- * const authority = Authorization.verify(auth);
- *
- * // Operations - convenience form with this:
+ * // Operations using this: pattern
  * Authorization.validate.call(auth);
- * const sigHash2 = Authorization.hash.call(auth);
- * const authority2 = Authorization.verify.call(auth);
+ * const sigHash = Authorization.hash.call(auth);
+ * const authority = Authorization.verify.call(auth);
  * ```
  */
 
@@ -122,7 +117,7 @@ export namespace Authorization {
   // ==========================================================================
 
   /**
-   * Check if value is Authorization.Item (standard form)
+   * Check if value is Authorization.Item
    *
    * @param value - Value to check
    * @returns True if value is Authorization.Item
@@ -134,6 +129,8 @@ export namespace Authorization {
    *   // value is Authorization.Item
    * }
    * ```
+   *
+   * Note: Type guards don't use this: pattern as they operate on unknown values
    */
   export function isItem(value: unknown): value is Item {
     if (typeof value !== "object" || value === null) return false;
@@ -151,10 +148,12 @@ export namespace Authorization {
   }
 
   /**
-   * Check if value is Authorization.Unsigned (standard form)
+   * Check if value is Authorization.Unsigned
    *
    * @param value - Value to check
    * @returns True if value is Authorization.Unsigned
+   *
+   * Note: Type guards don't use this: pattern as they operate on unknown values
    */
   export function isUnsigned(value: unknown): value is Unsigned {
     if (typeof value !== "object" || value === null) return false;
@@ -173,16 +172,15 @@ export namespace Authorization {
   // ==========================================================================
 
   /**
-   * Validate authorization structure (standard form)
+   * Validate authorization structure
    *
-   * @param auth - Authorization to validate
    * @throws ValidationError if invalid
    *
    * @example
    * ```typescript
    * const auth: Authorization.Item = {...};
    * try {
-   *   Authorization.validate(auth);
+   *   Authorization.validate.call(auth);
    * } catch (e) {
    *   if (e instanceof Authorization.ValidationError) {
    *     console.error(e.message);
@@ -190,52 +188,39 @@ export namespace Authorization {
    * }
    * ```
    */
-  export function validate(auth: Item): void {
+  export function validate(this: Item): void {
     // Chain ID must be non-zero
-    if (auth.chainId === 0n) {
+    if (this.chainId === 0n) {
       throw new ValidationError("Chain ID must be non-zero");
     }
 
     // Address must not be zero
-    if (auth.address.bytes.every((byte) => byte === 0)) {
+    if (this.address.bytes.every((byte) => byte === 0)) {
       throw new ValidationError("Address cannot be zero address");
     }
 
     // yParity must be 0 or 1
-    if (auth.yParity !== 0 && auth.yParity !== 1) {
+    if (this.yParity !== 0 && this.yParity !== 1) {
       throw new ValidationError("yParity must be 0 or 1");
     }
 
     // r and s must be non-zero
-    if (auth.r === 0n) {
+    if (this.r === 0n) {
       throw new ValidationError("Signature r cannot be zero");
     }
-    if (auth.s === 0n) {
+    if (this.s === 0n) {
       throw new ValidationError("Signature s cannot be zero");
     }
 
     // r must be < N
-    if (auth.r >= SECP256K1_N) {
+    if (this.r >= SECP256K1_N) {
       throw new ValidationError("Signature r must be less than curve order");
     }
 
     // s must be <= N/2 (no malleable signatures)
-    if (auth.s > SECP256K1_HALF_N) {
+    if (this.s > SECP256K1_HALF_N) {
       throw new ValidationError("Signature s too high (malleable signature)");
     }
-  }
-
-  /**
-   * Validate authorization structure (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const auth: Authorization.Item = {...};
-   * Authorization.validate.call(auth);
-   * ```
-   */
-  export function isValid(this: Item): void {
-    return validate(this);
   }
 
   // ==========================================================================
@@ -243,21 +228,20 @@ export namespace Authorization {
   // ==========================================================================
 
   /**
-   * Calculate signing hash for authorization (standard form)
+   * Calculate signing hash for authorization
    *
    * Hash = keccak256(MAGIC || rlp([chain_id, address, nonce]))
    *
-   * @param auth - Authorization (without signature)
    * @returns Hash to sign
    *
    * @example
    * ```typescript
    * const unsigned: Authorization.Unsigned = { chainId: 1n, address, nonce: 0n };
-   * const sigHash = Authorization.hash(unsigned);
+   * const sigHash = Authorization.hash.call(unsigned);
    * // Now sign sigHash with private key
    * ```
    */
-  export function hash(auth: Unsigned): Hash {
+  export function hash(this: Unsigned): Hash {
     // TODO: Implement keccak256(MAGIC || rlp([chain_id, address, nonce]))
     // 1. RLP encode [chainId, address.bytes, nonce]
     // 2. Prepend MAGIC_BYTE
@@ -265,55 +249,12 @@ export namespace Authorization {
     throw new Error("Authorization.hash() not yet implemented");
   }
 
-  /**
-   * Calculate signing hash for authorization (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const unsigned: Authorization.Unsigned = { chainId: 1n, address, nonce: 0n };
-   * const sigHash = Authorization.hash.call(unsigned);
-   * ```
-   */
-  export function getHash(this: Unsigned): Hash {
-    return hash(this);
-  }
-
   // ==========================================================================
   // Creation
   // ==========================================================================
 
   /**
-   * Create signed authorization (standard form)
-   *
-   * @param chainId - Chain ID
-   * @param address - Target address to delegate to
-   * @param nonce - Account nonce
-   * @param privateKey - Private key (32 bytes) for signing
-   * @returns Signed authorization
-   *
-   * @example
-   * ```typescript
-   * const auth = Authorization.create(1n, targetAddress, 0n, privateKey);
-   * Authorization.validate(auth); // Should pass
-   * ```
-   */
-  export function create(
-    chainId: bigint,
-    address: Address,
-    nonce: bigint,
-    privateKey: Uint8Array,
-  ): Item {
-    // TODO: Implement authorization creation with signing
-    // 1. Create unsigned auth
-    // 2. Hash it
-    // 3. Sign hash with privateKey (secp256k1)
-    // 4. Extract r, s, v from signature
-    // 5. Return complete authorization
-    throw new Error("Authorization.create() not yet implemented");
-  }
-
-  /**
-   * Create signed authorization from unsigned (convenience form with this:)
+   * Create signed authorization from unsigned
    *
    * @param privateKey - Private key (32 bytes) for signing
    * @returns Signed authorization
@@ -325,7 +266,12 @@ export namespace Authorization {
    * ```
    */
   export function sign(this: Unsigned, privateKey: Uint8Array): Item {
-    return create(this.chainId, this.address, this.nonce, privateKey);
+    // TODO: Implement authorization creation with signing
+    // 1. Hash this unsigned auth
+    // 2. Sign hash with privateKey (secp256k1)
+    // 3. Extract r, s, v from signature
+    // 4. Return complete authorization
+    throw new Error("Authorization.sign() not yet implemented");
   }
 
   // ==========================================================================
@@ -333,22 +279,21 @@ export namespace Authorization {
   // ==========================================================================
 
   /**
-   * Verify authorization signature and recover authority (standard form)
+   * Verify authorization signature and recover authority
    *
-   * @param auth - Authorization with signature
    * @returns Recovered signer address (authority)
    * @throws ValidationError if validation fails
    *
    * @example
    * ```typescript
    * const auth: Authorization.Item = {...};
-   * const authority = Authorization.verify(auth);
+   * const authority = Authorization.verify.call(auth);
    * console.log(`Authorized by: ${authority}`);
    * ```
    */
-  export function verify(auth: Item): Address {
+  export function verify(this: Item): Address {
     // Validate structure first
-    validate(auth);
+    validate.call(this);
 
     // TODO: Implement signature verification and recovery
     // 1. Hash unsigned portion
@@ -358,57 +303,31 @@ export namespace Authorization {
     throw new Error("Authorization.verify() not yet implemented");
   }
 
-  /**
-   * Verify authorization signature and recover authority (convenience form with this:)
-   *
-   * @returns Recovered signer address (authority)
-   *
-   * @example
-   * ```typescript
-   * const auth: Authorization.Item = {...};
-   * const authority = Authorization.verify.call(auth);
-   * ```
-   */
-  export function getAuthority(this: Item): Address {
-    return verify(this);
-  }
-
   // ==========================================================================
   // Gas Calculations
   // ==========================================================================
 
   /**
-   * Calculate gas cost for authorization list (standard form)
+   * Calculate gas cost for authorization list
    *
-   * @param authList - List of authorizations
    * @param emptyAccounts - Number of empty accounts being authorized
    * @returns Total gas cost
    *
    * @example
    * ```typescript
    * const authList: Authorization.Item[] = [...];
-   * const gas = Authorization.calculateGasCost(authList, 2);
+   * const gas = Authorization.calculateGasCost.call(authList, 2);
    * console.log(`Gas required: ${gas}`);
    * ```
    */
-  export function calculateGasCost(authList: Item[], emptyAccounts: number): bigint {
-    const authCost = BigInt(authList.length) * PER_AUTH_BASE_COST;
+  export function calculateGasCost(this: Item[], emptyAccounts: number): bigint {
+    const authCost = BigInt(this.length) * PER_AUTH_BASE_COST;
     const emptyCost = BigInt(emptyAccounts) * PER_EMPTY_ACCOUNT_COST;
     return authCost + emptyCost;
   }
 
   /**
-   * Calculate gas cost for single authorization (standard form)
-   *
-   * @param isEmpty - Whether the account is empty
-   * @returns Gas cost for this authorization
-   */
-  export function calculateSingleGasCost(isEmpty: boolean): bigint {
-    return PER_AUTH_BASE_COST + (isEmpty ? PER_EMPTY_ACCOUNT_COST : 0n);
-  }
-
-  /**
-   * Calculate gas cost for this authorization (convenience form with this:)
+   * Calculate gas cost for this authorization
    *
    * @param isEmpty - Whether the account is empty
    * @returns Gas cost for this authorization
@@ -420,7 +339,7 @@ export namespace Authorization {
    * ```
    */
   export function getGasCost(this: Item, isEmpty: boolean): bigint {
-    return calculateSingleGasCost(isEmpty);
+    return PER_AUTH_BASE_COST + (isEmpty ? PER_EMPTY_ACCOUNT_COST : 0n);
   }
 
   // ==========================================================================
@@ -428,77 +347,45 @@ export namespace Authorization {
   // ==========================================================================
 
   /**
-   * Process authorization and return delegation designation (standard form)
+   * Process authorization and return delegation designation
    *
-   * @param auth - Authorization to process
    * @returns Delegation designation with authority and delegated address
    * @throws ValidationError if authorization is invalid
    *
    * @example
    * ```typescript
    * const auth: Authorization.Item = {...};
-   * const delegation = Authorization.process(auth);
+   * const delegation = Authorization.process.call(auth);
    * console.log(`${delegation.authority} delegates to ${delegation.delegatedAddress}`);
    * ```
    */
-  export function process(auth: Item): DelegationDesignation {
+  export function process(this: Item): DelegationDesignation {
     // Validate and recover authority
-    const authority = verify(auth);
+    const authority = verify.call(this);
 
     return {
       authority,
-      delegatedAddress: auth.address,
+      delegatedAddress: this.address,
     };
   }
 
   /**
-   * Process this authorization (convenience form with this:)
+   * Process authorization list and return all delegations
    *
-   * @returns Delegation designation
-   *
-   * @example
-   * ```typescript
-   * const auth: Authorization.Item = {...};
-   * const delegation = Authorization.process.call(auth);
-   * ```
-   */
-  export function getDelegation(this: Item): DelegationDesignation {
-    return process(this);
-  }
-
-  /**
-   * Process authorization list and return all delegations (standard form)
-   *
-   * @param authList - List of authorizations
    * @returns Array of delegation designations
    * @throws ValidationError if any authorization is invalid
    *
    * @example
    * ```typescript
    * const authList: Authorization.Item[] = [...];
-   * const delegations = Authorization.processAll(authList);
+   * const delegations = Authorization.processAll.call(authList);
    * delegations.forEach(d => {
    *   console.log(`${d.authority} -> ${d.delegatedAddress}`);
    * });
    * ```
    */
-  export function processAll(authList: Item[]): DelegationDesignation[] {
-    return authList.map((auth) => process(auth));
-  }
-
-  /**
-   * Process authorization list (convenience form with this:)
-   *
-   * @returns Array of delegation designations
-   *
-   * @example
-   * ```typescript
-   * const authList: Authorization.Item[] = [...];
-   * const delegations = Authorization.processAll.call(authList);
-   * ```
-   */
-  export function getDelegations(this: Item[]): DelegationDesignation[] {
-    return processAll(this);
+  export function processAll(this: Item[]): DelegationDesignation[] {
+    return this.map((auth) => process.call(auth));
   }
 
   // ==========================================================================
@@ -506,38 +393,28 @@ export namespace Authorization {
   // ==========================================================================
 
   /**
-   * Format authorization to human-readable string (standard form)
+   * Format authorization to human-readable string
    *
-   * @param auth - Authorization to format
    * @returns Human-readable string
    *
    * @example
    * ```typescript
    * const auth: Authorization.Item = {...};
-   * console.log(Authorization.format(auth));
+   * console.log(Authorization.format.call(auth));
    * // "Authorization(chain=1, to=0x..., nonce=0)"
    * ```
    */
-  export function format(auth: Item | Unsigned): string {
-    if ("r" in auth && "s" in auth) {
-      return `Authorization(chain=${auth.chainId}, to=${formatAddress(
-        auth.address,
-      )}, nonce=${auth.nonce}, r=0x${auth.r.toString(16)}, s=0x${auth.s.toString(
+  export function format(this: Item | Unsigned): string {
+    if ("r" in this && "s" in this) {
+      return `Authorization(chain=${this.chainId}, to=${formatAddress(
+        this.address,
+      )}, nonce=${this.nonce}, r=0x${this.r.toString(16)}, s=0x${this.s.toString(
         16,
-      )}, v=${auth.yParity})`;
+      )}, v=${this.yParity})`;
     }
-    return `Authorization(chain=${auth.chainId}, to=${formatAddress(
-      auth.address,
-    )}, nonce=${auth.nonce})`;
-  }
-
-  /**
-   * Format this authorization (convenience form with this:)
-   *
-   * @returns Human-readable string
-   */
-  export function toString(this: Item | Unsigned): string {
-    return format(this);
+    return `Authorization(chain=${this.chainId}, to=${formatAddress(
+      this.address,
+    )}, nonce=${this.nonce})`;
   }
 
   /**
@@ -551,31 +428,29 @@ export namespace Authorization {
   }
 
   /**
-   * Check if two authorizations are equal (standard form)
-   *
-   * @param a - First authorization
-   * @param b - Second authorization
-   * @returns True if authorizations are equal
-   */
-  export function equals(a: Item, b: Item): boolean {
-    return (
-      a.chainId === b.chainId &&
-      addressesEqual(a.address, b.address) &&
-      a.nonce === b.nonce &&
-      a.yParity === b.yParity &&
-      a.r === b.r &&
-      a.s === b.s
-    );
-  }
-
-  /**
-   * Check if this authorization equals another (convenience form with this:)
+   * Check if this authorization equals another
    *
    * @param other - Other authorization to compare
    * @returns True if equal
+   *
+   * @example
+   * ```typescript
+   * const auth1: Authorization.Item = {...};
+   * const auth2: Authorization.Item = {...};
+   * if (Authorization.equals.call(auth1, auth2)) {
+   *   console.log('Authorizations are equal');
+   * }
+   * ```
    */
-  export function isEqual(this: Item, other: Item): boolean {
-    return equals(this, other);
+  export function equals(this: Item, other: Item): boolean {
+    return (
+      this.chainId === other.chainId &&
+      addressesEqual(this.address, other.address) &&
+      this.nonce === other.nonce &&
+      this.yParity === other.yParity &&
+      this.r === other.r &&
+      this.s === other.s
+    );
   }
 
   /**

@@ -12,11 +12,9 @@
  * const item: AccessList.Item = { address, storageKeys: [] };
  * const list: AccessList = [item];
  *
- * // Standard form operations
- * const cost = AccessList.calculateGasCost(list);
- * const savings = AccessList.calculateGasSavings(list);
- *
- * // Convenience form with this:
+ * // All operations use this: pattern
+ * const cost = AccessList.gasCost.call(list);
+ * const savings = AccessList.gasSavings.call(list);
  * const hasSavings = AccessList.hasSavings.call(list);
  * const deduplicated = AccessList.deduplicate.call(list);
  * ```
@@ -106,7 +104,7 @@ export namespace AccessList {
    * @example
    * ```typescript
    * if (AccessList.is(value)) {
-   *   const cost = AccessList.calculateGasCost(value);
+   *   const cost = AccessList.gasCost.call(value);
    * }
    * ```
    */
@@ -119,21 +117,20 @@ export namespace AccessList {
   // ==========================================================================
 
   /**
-   * Calculate total gas cost for access list (standard form)
+   * Calculate total gas cost for access list
    *
-   * @param accessList - Access list to calculate cost for
    * @returns Total gas cost in wei
    *
    * @example
    * ```typescript
    * const list: AccessList = [{ address, storageKeys: [key1, key2] }];
-   * const cost = AccessList.calculateGasCost(list);
+   * const cost = AccessList.gasCost.call(list);
    * // cost = ADDRESS_COST + (2 * STORAGE_KEY_COST)
    * ```
    */
-  export function calculateGasCost(accessList: AccessList): bigint {
+  export function gasCost(this: AccessList): bigint {
     let totalCost = 0n;
-    for (const item of accessList) {
+    for (const item of this) {
       totalCost += ADDRESS_COST;
       totalCost += STORAGE_KEY_COST * BigInt(item.storageKeys.length);
     }
@@ -141,38 +138,24 @@ export namespace AccessList {
   }
 
   /**
-   * Calculate total gas cost for access list (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const list: AccessList = [{ address, storageKeys: [key1, key2] }];
-   * const cost = AccessList.gasCost.call(list);
-   * ```
-   */
-  export function gasCost(this: AccessList): bigint {
-    return calculateGasCost(this);
-  }
-
-  /**
-   * Calculate gas savings from using access list (standard form)
+   * Calculate gas savings from using access list
    *
    * Compares cold access costs vs access list costs.
    *
-   * @param accessList - Access list
    * @returns Estimated gas savings (can be negative if not beneficial)
    *
    * @example
    * ```typescript
    * const list: AccessList = [{ address, storageKeys: [key1] }];
-   * const savings = AccessList.calculateGasSavings(list);
+   * const savings = AccessList.gasSavings.call(list);
    * if (savings > 0n) {
    *   console.log('Access list saves gas:', savings);
    * }
    * ```
    */
-  export function calculateGasSavings(accessList: AccessList): bigint {
+  export function gasSavings(this: AccessList): bigint {
     let savings = 0n;
-    for (const item of accessList) {
+    for (const item of this) {
       // Save on cold account access
       savings += COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
 
@@ -185,37 +168,9 @@ export namespace AccessList {
   }
 
   /**
-   * Calculate gas savings from using access list (convenience form with this:)
+   * Check if access list provides net gas savings
    *
-   * @example
-   * ```typescript
-   * const list: AccessList = [{ address, storageKeys: [key1] }];
-   * const savings = AccessList.gasSavings.call(list);
-   * ```
-   */
-  export function gasSavings(this: AccessList): bigint {
-    return calculateGasSavings(this);
-  }
-
-  /**
-   * Check if access list provides net gas savings (standard form)
-   *
-   * @param accessList - Access list
    * @returns true if access list saves gas overall
-   *
-   * @example
-   * ```typescript
-   * if (AccessList.hasSavings(list)) {
-   *   // Use the access list in transaction
-   * }
-   * ```
-   */
-  export function calculateHasSavings(accessList: AccessList): boolean {
-    return calculateGasSavings(accessList) > 0n;
-  }
-
-  /**
-   * Check if access list provides net gas savings (convenience form with this:)
    *
    * @example
    * ```typescript
@@ -225,7 +180,7 @@ export namespace AccessList {
    * ```
    */
   export function hasSavings(this: AccessList): boolean {
-    return calculateHasSavings(this);
+    return gasSavings.call(this) > 0n;
   }
 
   // ==========================================================================
@@ -233,19 +188,18 @@ export namespace AccessList {
   // ==========================================================================
 
   /**
-   * Check if address is in access list (standard form)
+   * Check if address is in access list
    *
-   * @param accessList - Access list to search
    * @param address - Address to find
    * @returns true if address is in access list
    *
    * @example
    * ```typescript
-   * const hasAddress = AccessList.hasAddress(list, address);
+   * const hasAddress = AccessList.includesAddress.call(list, address);
    * ```
    */
-  export function hasAddress(accessList: AccessList, address: Address): boolean {
-    for (const item of accessList) {
+  export function includesAddress(this: AccessList, address: Address): boolean {
+    for (const item of this) {
       if (addressEquals(item.address, address)) {
         return true;
       }
@@ -254,36 +208,23 @@ export namespace AccessList {
   }
 
   /**
-   * Check if address is in access list (convenience form with this:)
+   * Check if storage key is in access list for given address
    *
-   * @example
-   * ```typescript
-   * const hasAddress = AccessList.hasAddress.call(list, address);
-   * ```
-   */
-  export function includesAddress(this: AccessList, address: Address): boolean {
-    return hasAddress(this, address);
-  }
-
-  /**
-   * Check if storage key is in access list for given address (standard form)
-   *
-   * @param accessList - Access list to search
    * @param address - Address to check
    * @param storageKey - Storage key to find
    * @returns true if storage key is accessible
    *
    * @example
    * ```typescript
-   * const isAccessible = AccessList.hasStorageKey(list, address, key);
+   * const isAccessible = AccessList.includesStorageKey.call(list, address, key);
    * ```
    */
-  export function hasStorageKey(
-    accessList: AccessList,
+  export function includesStorageKey(
+    this: AccessList,
     address: Address,
     storageKey: Hash,
   ): boolean {
-    for (const item of accessList) {
+    for (const item of this) {
       if (addressEquals(item.address, address)) {
         for (const key of item.storageKeys) {
           if (hashEquals(key, storageKey)) {
@@ -296,41 +237,21 @@ export namespace AccessList {
   }
 
   /**
-   * Check if storage key is in access list for given address (convenience form with this:)
+   * Get all storage keys for an address
    *
-   * @example
-   * ```typescript
-   * const isAccessible = AccessList.includesStorageKey.call(list, address, key);
-   * ```
-   */
-  export function includesStorageKey(
-    this: AccessList,
-    address: Address,
-    storageKey: Hash,
-  ): boolean {
-    return hasStorageKey(this, address, storageKey);
-  }
-
-  /**
-   * Get all storage keys for an address (standard form)
-   *
-   * @param accessList - Access list to search
    * @param address - Address to get keys for
    * @returns Array of storage keys, or undefined if address not found
    *
    * @example
    * ```typescript
-   * const keys = AccessList.getStorageKeys(list, address);
+   * const keys = AccessList.keysFor.call(list, address);
    * if (keys) {
    *   console.log(`Found ${keys.length} storage keys`);
    * }
    * ```
    */
-  export function getStorageKeys(
-    accessList: AccessList,
-    address: Address,
-  ): readonly Hash[] | undefined {
-    for (const item of accessList) {
+  export function keysFor(this: AccessList, address: Address): readonly Hash[] | undefined {
+    for (const item of this) {
       if (addressEquals(item.address, address)) {
         return item.storageKeys;
       }
@@ -338,28 +259,15 @@ export namespace AccessList {
     return undefined;
   }
 
-  /**
-   * Get all storage keys for an address (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const keys = AccessList.getStorageKeys.call(list, address);
-   * ```
-   */
-  export function keysFor(this: AccessList, address: Address): readonly Hash[] | undefined {
-    return getStorageKeys(this, address);
-  }
-
   // ==========================================================================
   // Transformation Operations
   // ==========================================================================
 
   /**
-   * Deduplicate access list entries (standard form)
+   * Deduplicate access list entries
    *
    * Merges duplicate addresses and removes duplicate storage keys.
    *
-   * @param accessList - Access list with potential duplicates
    * @returns Deduplicated access list
    *
    * @example
@@ -368,14 +276,14 @@ export namespace AccessList {
    *   { address: addr1, storageKeys: [key1] },
    *   { address: addr1, storageKeys: [key2, key1] },
    * ];
-   * const deduped = AccessList.deduplicate(list);
+   * const deduped = AccessList.deduplicate.call(list);
    * // Result: [{ address: addr1, storageKeys: [key1, key2] }]
    * ```
    */
-  export function deduplicateAccessList(accessList: AccessList): AccessList {
+  export function deduplicate(this: AccessList): AccessList {
     const result: Item[] = [];
 
-    for (const item of accessList) {
+    for (const item of this) {
       // Find existing entry with same address
       const existing = result.find((r) => addressEquals(r.address, item.address));
 
@@ -403,74 +311,48 @@ export namespace AccessList {
   }
 
   /**
-   * Deduplicate access list entries (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const deduped = AccessList.deduplicate.call(list);
-   * ```
-   */
-  export function deduplicate(this: AccessList): AccessList {
-    return deduplicateAccessList(this);
-  }
-
-  /**
-   * Add address to access list (standard form)
+   * Add address to access list
    *
    * Creates new entry if address doesn't exist, otherwise returns original list.
    *
-   * @param accessList - Access list
    * @param address - Address to add
    * @returns New access list with address added
    *
    * @example
    * ```typescript
-   * const newList = AccessList.addAddress(list, address);
-   * ```
-   */
-  export function addAddress(accessList: AccessList, address: Address): AccessList {
-    if (hasAddress(accessList, address)) {
-      return accessList;
-    }
-    return [...accessList, { address, storageKeys: [] }];
-  }
-
-  /**
-   * Add address to access list (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const newList = AccessList.addAddress.call(list, address);
+   * const newList = AccessList.withAddress.call(list, address);
    * ```
    */
   export function withAddress(this: AccessList, address: Address): AccessList {
-    return addAddress(this, address);
+    if (includesAddress.call(this, address)) {
+      return this;
+    }
+    return [...this, { address, storageKeys: [] }];
   }
 
   /**
-   * Add storage key to access list for address (standard form)
+   * Add storage key to access list for address
    *
    * Adds address if it doesn't exist, then adds storage key if not already present.
    *
-   * @param accessList - Access list
    * @param address - Address to add key for
    * @param storageKey - Storage key to add
    * @returns New access list with storage key added
    *
    * @example
    * ```typescript
-   * const newList = AccessList.addStorageKey(list, address, key);
+   * const newList = AccessList.withStorageKey.call(list, address, key);
    * ```
    */
-  export function addStorageKey(
-    accessList: AccessList,
+  export function withStorageKey(
+    this: AccessList,
     address: Address,
     storageKey: Hash,
   ): AccessList {
     const result: Item[] = [];
     let found = false;
 
-    for (const item of accessList) {
+    for (const item of this) {
       if (addressEquals(item.address, address)) {
         found = true;
         // Check if key already exists
@@ -497,23 +379,7 @@ export namespace AccessList {
   }
 
   /**
-   * Add storage key to access list for address (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const newList = AccessList.withStorageKey.call(list, address, key);
-   * ```
-   */
-  export function withStorageKey(
-    this: AccessList,
-    address: Address,
-    storageKey: Hash,
-  ): AccessList {
-    return addStorageKey(this, address, storageKey);
-  }
-
-  /**
-   * Merge multiple access lists (standard form)
+   * Merge multiple access lists
    *
    * Combines multiple access lists and deduplicates.
    *
@@ -530,7 +396,7 @@ export namespace AccessList {
     for (const list of accessLists) {
       combined.push(...list);
     }
-    return deduplicateAccessList(combined);
+    return deduplicate.call(combined);
   }
 
   // ==========================================================================
@@ -538,27 +404,26 @@ export namespace AccessList {
   // ==========================================================================
 
   /**
-   * Validate access list structure (standard form)
+   * Validate access list structure
    *
-   * @param accessList - Access list to validate
    * @throws Error if invalid
    *
    * @example
    * ```typescript
    * try {
-   *   AccessList.validate(list);
+   *   AccessList.assertValid.call(list);
    *   console.log('Valid access list');
    * } catch (err) {
    *   console.error('Invalid:', err.message);
    * }
    * ```
    */
-  export function validate(accessList: AccessList): void {
-    if (!Array.isArray(accessList)) {
+  export function assertValid(this: AccessList): void {
+    if (!Array.isArray(this)) {
       throw new Error("Access list must be an array");
     }
 
-    for (const item of accessList) {
+    for (const item of this) {
       if (!isItem(item)) {
         throw new Error("Invalid access list item");
       }
@@ -577,26 +442,13 @@ export namespace AccessList {
     }
   }
 
-  /**
-   * Validate access list structure (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * AccessList.validate.call(list);
-   * ```
-   */
-  export function assertValid(this: AccessList): void {
-    validate(this);
-  }
-
   // ==========================================================================
   // Encoding/Decoding
   // ==========================================================================
 
   /**
-   * Encode access list to RLP (standard form)
+   * Encode access list to RLP
    *
-   * @param accessList - Access list to encode
    * @returns RLP-encoded bytes
    *
    * TODO: Implement RLP encoding
@@ -604,29 +456,17 @@ export namespace AccessList {
    *
    * @example
    * ```typescript
-   * const encoded = AccessList.encode(list);
+   * const encoded = AccessList.toBytes.call(list);
    * ```
    */
-  export function encode(_accessList: AccessList): Uint8Array {
+  export function toBytes(this: AccessList): Uint8Array {
     // TODO: Implement RLP encoding
     // Format: [[address, [storageKey1, storageKey2, ...]], ...]
     throw new Error("Not implemented");
   }
 
   /**
-   * Encode access list to RLP (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const encoded = AccessList.encode.call(list);
-   * ```
-   */
-  export function toBytes(this: AccessList): Uint8Array {
-    return encode(this);
-  }
-
-  /**
-   * Decode RLP bytes to access list (standard form)
+   * Decode RLP bytes to access list
    *
    * @param bytes - RLP-encoded access list
    * @returns Decoded access list
@@ -635,24 +475,12 @@ export namespace AccessList {
    *
    * @example
    * ```typescript
-   * const list = AccessList.decode(bytes);
-   * ```
-   */
-  export function decode(_bytes: Uint8Array): AccessList {
-    // TODO: Implement RLP decoding
-    throw new Error("Not implemented");
-  }
-
-  /**
-   * Decode RLP bytes to access list (convenience form)
-   *
-   * @example
-   * ```typescript
    * const list = AccessList.fromBytes(bytes);
    * ```
    */
   export function fromBytes(bytes: Uint8Array): AccessList {
-    return decode(bytes);
+    // TODO: Implement RLP decoding
+    throw new Error("Not implemented");
   }
 
   // ==========================================================================
@@ -660,58 +488,41 @@ export namespace AccessList {
   // ==========================================================================
 
   /**
-   * Count total addresses in access list (standard form)
+   * Count total addresses in access list
    *
-   * @param accessList - Access list
    * @returns Number of unique addresses
    *
    * @example
    * ```typescript
-   * const count = AccessList.countAddresses(list);
+   * const count = AccessList.addressCount.call(list);
    * ```
    */
-  export function countAddresses(accessList: AccessList): number {
-    return accessList.length;
+  export function addressCount(this: AccessList): number {
+    return this.length;
   }
 
   /**
-   * Count total storage keys across all addresses (standard form)
+   * Count total storage keys across all addresses
    *
-   * @param accessList - Access list
    * @returns Total number of storage keys
    *
    * @example
    * ```typescript
-   * const keyCount = AccessList.countStorageKeys(list);
+   * const keyCount = AccessList.storageKeyCount.call(list);
    * ```
    */
-  export function countStorageKeys(accessList: AccessList): number {
+  export function storageKeyCount(this: AccessList): number {
     let count = 0;
-    for (const item of accessList) {
+    for (const item of this) {
       count += item.storageKeys.length;
     }
     return count;
   }
 
   /**
-   * Check if access list is empty (standard form)
+   * Check if access list is empty
    *
-   * @param accessList - Access list
    * @returns true if empty
-   *
-   * @example
-   * ```typescript
-   * if (AccessList.isEmpty(list)) {
-   *   console.log('No access list entries');
-   * }
-   * ```
-   */
-  export function isEmpty(accessList: AccessList): boolean {
-    return accessList.length === 0;
-  }
-
-  /**
-   * Check if access list is empty (convenience form with this:)
    *
    * @example
    * ```typescript
@@ -720,8 +531,8 @@ export namespace AccessList {
    * }
    * ```
    */
-  export function empty(this: AccessList): boolean {
-    return isEmpty(this);
+  export function isEmpty(this: AccessList): boolean {
+    return this.length === 0;
   }
 
   /**

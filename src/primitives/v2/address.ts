@@ -8,16 +8,12 @@
  * ```typescript
  * import { Address } from './address.js';
  *
- * // Types
+ * // Create Address
  * const addr: Address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
  *
- * // Operations - standard form
- * const hex = Address.toHex(addr);
- * const checksummed = Address.toChecksumHex(addr);
- *
- * // Operations - convenience form with this:
- * const hex2 = Address.toHex.call(addr);
- * const checksummed2 = Address.toChecksumHex.call(addr);
+ * // Operations with this: pattern
+ * const hex = Address.toHex.call(addr);
+ * const checksummed = Address.toChecksumHex.call(addr);
  * ```
  */
 
@@ -130,41 +126,33 @@ export namespace Address {
   }
 
   /**
-   * Convert Address to hex string (standard form)
+   * Convert Address to hex string
    *
-   * @param address - Address to convert
    * @returns Lowercase hex string with 0x prefix
    *
    * @example
    * ```typescript
-   * const hex = Address.toHex(addr);
+   * const hex = Address.toHex.call(addr);
    * // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
    * ```
    */
-  export function toHex(address: Address): string;
-  export function toHex(this: Address): string;
-  export function toHex(this: Address | void, address?: Address): string {
-    const addr = address ?? (this as Address);
-    return `0x${Array.from(addr, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+  export function toHex(this: Address): string {
+    return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
   }
 
   /**
-   * Convert Address to EIP-55 checksummed hex string (standard form)
+   * Convert Address to EIP-55 checksummed hex string
    *
-   * @param address - Address to convert
    * @returns Checksummed hex string with mixed case
    *
    * @example
    * ```typescript
-   * const checksummed = Address.toChecksumHex(addr);
+   * const checksummed = Address.toChecksumHex.call(addr);
    * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
    * ```
    */
-  export function toChecksumHex(address: Address): string;
-  export function toChecksumHex(this: Address): string;
-  export function toChecksumHex(this: Address | void, address?: Address): string {
-    const addr = address ?? (this as Address);
-    const lower = toHex(addr).slice(2);
+  export function toChecksumHex(this: Address): string {
+    const lower = toHex.call(this).slice(2);
     const hashBytes = keccak256(new TextEncoder().encode(lower)) as unknown as Uint8Array;
     const hashHex = Array.from(hashBytes, (b) => b.toString(16).padStart(2, "0")).join("");
     let result = "0x";
@@ -181,23 +169,19 @@ export namespace Address {
   }
 
   /**
-   * Convert Address to uint256 (standard form)
+   * Convert Address to uint256
    *
-   * @param address - Address to convert
    * @returns Bigint representation
    *
    * @example
    * ```typescript
-   * const value = Address.toU256(addr);
+   * const value = Address.toU256.call(addr);
    * ```
    */
-  export function toU256(address: Address): bigint;
-  export function toU256(this: Address): bigint;
-  export function toU256(this: Address | void, address?: Address): bigint {
-    const addr = address ?? (this as Address);
+  export function toU256(this: Address): bigint {
     let result = 0n;
     for (let i = 0; i < SIZE; i++) {
-      result = (result << 8n) | BigInt(addr[i] ?? 0);
+      result = (result << 8n) | BigInt(this[i] ?? 0);
     }
     return result;
   }
@@ -207,43 +191,38 @@ export namespace Address {
   // ==========================================================================
 
   /**
-   * Check if address is zero address (standard form)
+   * Check if address is zero address
    *
-   * @param address - Address to check
    * @returns True if all bytes are zero
    *
    * @example
    * ```typescript
-   * if (Address.isZero(addr)) {
+   * if (Address.isZero.call(addr)) {
    *   console.log("Zero address");
    * }
    * ```
    */
-  export function isZero(this: Address, address?: Address): boolean {
-    const addr = address ?? this;
-    return addr.every((b) => b === 0);
+  export function isZero(this: Address): boolean {
+    return this.every((b) => b === 0);
   }
 
   /**
-   * Check if two addresses are equal (standard form)
+   * Check if two addresses are equal
    *
-   * @param a - First address
-   * @param b - Second address
+   * @param other - Address to compare with
    * @returns True if addresses are identical
    *
    * @example
    * ```typescript
-   * if (Address.equals(addr1, addr2)) {
+   * if (Address.equals.call(addr1, addr2)) {
    *   console.log("Addresses match");
    * }
    * ```
    */
-  export function equals(this: Address, a: Address, b?: Address): boolean {
-    const first = b === undefined ? this : a;
-    const second = b === undefined ? a : b;
-    if (first.length !== second.length) return false;
-    for (let i = 0; i < first.length; i++) {
-      if (first[i] !== second[i]) return false;
+  export function equals(this: Address, other: Address): boolean {
+    if (this.length !== other.length) return false;
+    for (let i = 0; i < this.length; i++) {
+      if (this[i] !== other[i]) return false;
     }
     return true;
   }
@@ -285,7 +264,7 @@ export namespace Address {
     if (!isValid(str)) return false;
     try {
       const addr = fromHex(str.startsWith("0x") ? str : `0x${str}`);
-      const checksummed = toChecksumHex(addr) as string;
+      const checksummed = toChecksumHex.call(addr) as string;
       return checksummed === (str.startsWith("0x") ? str : `0x${str}`);
     } catch {
       return false;
@@ -332,48 +311,38 @@ export namespace Address {
   // ==========================================================================
 
   /**
-   * Calculate CREATE contract address (standard form)
+   * Calculate CREATE contract address
    *
    * address = keccak256(rlp([sender, nonce]))[12:32]
    *
-   * @param creator - Creator address
    * @param nonce - Transaction nonce
    * @returns Calculated contract address
    *
    * @example
    * ```typescript
-   * const contractAddr = Address.calculateCreateAddress(deployerAddr, 5n);
+   * const contractAddr = Address.calculateCreateAddress.call(deployerAddr, 5n);
    * ```
    */
-  export function calculateCreateAddress(creator: Address, nonce: bigint): Address;
-  export function calculateCreateAddress(this: Address, nonce: bigint): Address;
-  export function calculateCreateAddress(
-    this: Address | void,
-    creatorOrNonce: Address | bigint,
-    nonce?: bigint,
-  ): Address {
+  export function calculateCreateAddress(this: Address, nonce: bigint): Address {
     // TODO: Implement RLP encoding
-    // const creatorAddr = nonce === undefined ? this as Address : creatorOrNonce as Address;
-    // const nonceValue = nonce === undefined ? creatorOrNonce as bigint : nonce;
-    // const rlp = rlpEncode([creatorAddr, nonceValue]);
+    // const rlp = rlpEncode([this, nonce]);
     // const hash = keccak256(rlp);
     // return hash.slice(12, 32) as Address;
     throw new Error("Not implemented");
   }
 
   /**
-   * Calculate CREATE2 contract address (standard form)
+   * Calculate CREATE2 contract address
    *
    * address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
    *
-   * @param creator - Creator address
    * @param salt - 32-byte salt
    * @param initCode - Contract initialization code
    * @returns Calculated contract address
    *
    * @example
    * ```typescript
-   * const contractAddr = Address.calculateCreate2Address(
+   * const contractAddr = Address.calculateCreate2Address.call(
    *   deployerAddr,
    *   saltBytes,
    *   initCode
@@ -382,24 +351,19 @@ export namespace Address {
    */
   export function calculateCreate2Address(
     this: Address,
-    creator: Address,
     salt: Uint8Array,
-    initCode?: Uint8Array,
+    initCode: Uint8Array,
   ): Address {
-    const creatorAddr = initCode === undefined ? this : creator;
-    const saltValue = initCode === undefined ? creator : salt;
-    const initCodeValue = initCode === undefined ? salt : initCode;
-
-    if (saltValue.length !== 32) {
+    if (salt.length !== 32) {
       throw new Error("Salt must be 32 bytes");
     }
 
     // address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
-    const initCodeHash = keccak256(initCodeValue) as unknown as Uint8Array;
+    const initCodeHash = keccak256(initCode) as unknown as Uint8Array;
     const data = new Uint8Array(1 + SIZE + 32 + 32);
     data[0] = 0xff;
-    data.set(creatorAddr, 1);
-    data.set(saltValue, 1 + SIZE);
+    data.set(this, 1);
+    data.set(salt, 1 + SIZE);
     data.set(initCodeHash, 1 + SIZE + 32);
 
     const hash = keccak256(data) as unknown as Uint8Array;
@@ -411,55 +375,44 @@ export namespace Address {
   // ==========================================================================
 
   /**
-   * Compare two addresses lexicographically (standard form)
+   * Compare two addresses lexicographically
    *
-   * @param a - First address
-   * @param b - Second address
-   * @returns -1 if a < b, 0 if equal, 1 if a > b
+   * @param other - Address to compare with
+   * @returns -1 if this < other, 0 if equal, 1 if this > other
    *
    * @example
    * ```typescript
-   * const sorted = addresses.sort((a, b) => Address.compare(a, b));
+   * const sorted = addresses.sort((a, b) => Address.compare.call(a, b));
    * ```
    */
-  export function compare(a: Address, b: Address): number;
-  export function compare(this: Address, b: Address): number;
-  export function compare(this: Address | void, a: Address, b?: Address): number {
-    const first = b === undefined ? (this as Address) : a;
-    const second = b === undefined ? a : b;
+  export function compare(this: Address, other: Address): number {
     for (let i = 0; i < SIZE; i++) {
-      const firstByte = first[i] ?? 0;
-      const secondByte = second[i] ?? 0;
-      if (firstByte < secondByte) return -1;
-      if (firstByte > secondByte) return 1;
+      const thisByte = this[i] ?? 0;
+      const otherByte = other[i] ?? 0;
+      if (thisByte < otherByte) return -1;
+      if (thisByte > otherByte) return 1;
     }
     return 0;
   }
 
   /**
-   * Check if first address is less than second (standard form)
+   * Check if this address is less than other
    *
-   * @param a - First address
-   * @param b - Second address
-   * @returns True if a < b
+   * @param other - Address to compare with
+   * @returns True if this < other
    */
-  export function lessThan(a: Address, b: Address): boolean;
-  export function lessThan(this: Address, b: Address): boolean;
-  export function lessThan(this: Address | void, a: Address, b?: Address): boolean {
-    return compare(a, b ?? a) < 0;
+  export function lessThan(this: Address, other: Address): boolean {
+    return compare.call(this, other) < 0;
   }
 
   /**
-   * Check if first address is greater than second (standard form)
+   * Check if this address is greater than other
    *
-   * @param a - First address
-   * @param b - Second address
-   * @returns True if a > b
+   * @param other - Address to compare with
+   * @returns True if this > other
    */
-  export function greaterThan(a: Address, b: Address): boolean;
-  export function greaterThan(this: Address, b: Address): boolean;
-  export function greaterThan(this: Address | void, a: Address, b?: Address): boolean {
-    return compare(a, b ?? a) > 0;
+  export function greaterThan(this: Address, other: Address): boolean {
+    return compare.call(this, other) > 0;
   }
 
   // ==========================================================================
@@ -467,58 +420,42 @@ export namespace Address {
   // ==========================================================================
 
   /**
-   * Format address with shortened display (standard form)
+   * Format address with shortened display
    *
-   * @param address - Address to format
    * @param prefixLength - Number of chars to show at start (default: 6)
    * @param suffixLength - Number of chars to show at end (default: 4)
    * @returns Shortened address like "0x742d...51e3"
    *
    * @example
    * ```typescript
-   * const short = Address.toShortHex(addr);
+   * const short = Address.toShortHex.call(addr);
    * // "0x742d...51e3"
-   * const custom = Address.toShortHex(addr, 8, 6);
+   * const custom = Address.toShortHex.call(addr, 8, 6);
    * // "0x742d35...251e3"
    * ```
    */
-  export function toShortHex(address: Address, prefixLength?: number, suffixLength?: number): string;
-  export function toShortHex(this: Address, prefixLength?: number, suffixLength?: number): string;
-  export function toShortHex(
-    this: Address | void,
-    address?: Address | number,
-    prefixLength?: number,
-    suffixLength?: number,
-  ): string {
-    // Handle overloads
-    const addr =
-      typeof address === "number" || address === undefined ? (this as Address) : address;
-    const prefix =
-      typeof address === "number" ? address : prefixLength ?? 6;
+  export function toShortHex(this: Address, prefixLength?: number, suffixLength?: number): string {
+    const prefix = prefixLength ?? 6;
     const suffix = suffixLength ?? 4;
 
-    const hex = toHex(addr);
+    const hex = toHex.call(this);
     if (prefix + suffix >= 40) return hex;
     return `${hex.slice(0, 2 + prefix)}...${hex.slice(-suffix)}`;
   }
 
   /**
-   * Format address for display (checksummed) (standard form)
+   * Format address for display (checksummed)
    *
-   * @param address - Address to format
    * @returns Checksummed hex string
    *
    * @example
    * ```typescript
-   * console.log(Address.format(addr));
+   * console.log(Address.format.call(addr));
    * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
    * ```
    */
-  export function format(address: Address): string;
-  export function format(this: Address): string;
-  export function format(this: Address | void, address?: Address): string {
-    const addr = address ?? (this as Address);
-    return toChecksumHex(addr);
+  export function format(this: Address): string {
+    return toChecksumHex.call(this);
   }
 }
 

@@ -12,14 +12,10 @@
  * const hex: Hex = '0x1234';
  * const sized: Hex.Sized<4> = '0x12345678';
  *
- * // Operations - standard form
- * const bytes = Hex.toBytes(hex);
+ * // Operations - all use this: pattern
+ * const bytes = Hex.toBytes.call(hex);
  * const newHex = Hex.fromBytes(bytes);
- * const size = Hex.size(hex);
- *
- * // Operations - convenience form with this:
- * const bytes2 = Hex.asBytes.call(hex);
- * const size2 = Hex.getSize.call(hex);
+ * const size = Hex.size.call(hex);
  * ```
  */
 
@@ -103,7 +99,7 @@ export namespace Hex {
   // ==========================================================================
 
   /**
-   * Check if string is valid hex (standard form)
+   * Check if string is valid hex
    *
    * @param value - String to validate
    * @returns True if valid hex format
@@ -124,115 +120,63 @@ export namespace Hex {
   }
 
   /**
-   * Check if hex has specific byte size (standard form)
-   *
-   * @param hex - Hex string to check
-   * @param size - Expected byte size
-   * @returns True if hex matches size
-   *
-   * @example
-   * ```typescript
-   * Hex.isSized('0x1234', 2);     // true
-   * Hex.isSized('0x123456', 2);   // false
-   * ```
-   */
-  export function isSized<TSize extends number>(
-    hex: Unsized,
-    size: TSize,
-  ): hex is Sized<TSize> {
-    return (hex.length - 2) / 2 === size;
-  }
-
-  /**
-   * Check if hex has specific byte size (convenience form with this:)
+   * Check if hex has specific byte size
    *
    * @example
    * ```typescript
    * const hex: Hex = '0x1234';
-   * Hex.hasSize.call(hex, 2); // true
+   * Hex.isSized.call(hex, 2); // true
    * ```
    */
-  export function hasSize<TSize extends number>(
+  export function isSized<TSize extends number>(
     this: Unsized,
     size: TSize,
   ): this is Sized<TSize> {
-    return isSized(this, size);
+    return (this.length - 2) / 2 === size;
   }
 
   /**
-   * Validate hex string (standard form)
+   * Validate hex string
    *
-   * @param value - String to validate
    * @returns Validated hex string
    * @throws {InvalidFormatError} If missing 0x prefix
    * @throws {InvalidCharacterError} If contains invalid hex characters
    *
    * @example
    * ```typescript
-   * const hex = Hex.validate('0x1234'); // '0x1234'
-   * Hex.validate('1234');  // throws InvalidFormatError
-   * Hex.validate('0xZZZ'); // throws InvalidCharacterError
-   * ```
-   */
-  export function validate(value: string): Unsized {
-    if (value.length < 2 || !value.startsWith("0x")) throw new InvalidFormatError();
-    for (let i = 2; i < value.length; i++) {
-      if (hexCharToValue(value[i]) === null) throw new InvalidCharacterError();
-    }
-    return value as Unsized;
-  }
-
-  /**
-   * Validate hex string (convenience form with this:)
-   *
-   * @example
-   * ```typescript
    * const str = '0x1234';
-   * const hex = Hex.asValidated.call(str); // validated Hex
+   * const hex = Hex.validate.call(str); // validated Hex
    * ```
    */
-  export function asValidated(this: string): Unsized {
-    return validate(this);
+  export function validate(this: string): Unsized {
+    if (this.length < 2 || !this.startsWith("0x")) throw new InvalidFormatError();
+    for (let i = 2; i < this.length; i++) {
+      if (hexCharToValue(this[i]) === null) throw new InvalidCharacterError();
+    }
+    return this as Unsized;
   }
 
   /**
-   * Assert hex has specific size (standard form)
+   * Assert hex has specific size
    *
-   * @param hex - Hex string to validate
    * @param size - Expected byte size
    * @returns Sized hex string
    * @throws {InvalidLengthError} If size doesn't match
    *
    * @example
    * ```typescript
-   * const sized = Hex.assertSize('0x1234', 2); // Hex.Sized<2>
-   * Hex.assertSize('0x1234', 4); // throws InvalidLengthError
+   * const hex: Hex = '0x1234';
+   * const sized = Hex.assertSize.call(hex, 2); // Hex.Sized<2>
    * ```
    */
   export function assertSize<TSize extends number>(
-    hex: Unsized,
-    size: TSize,
-  ): Sized<TSize> {
-    if (!isSized(hex, size)) {
-      throw new InvalidLengthError(`Expected ${size} bytes, got ${(hex.length - 2) / 2}`);
-    }
-    return hex;
-  }
-
-  /**
-   * Assert hex has specific size (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const hex: Hex = '0x1234';
-   * const sized = Hex.withSize.call(hex, 2); // Hex.Sized<2>
-   * ```
-   */
-  export function withSize<TSize extends number>(
     this: Unsized,
     size: TSize,
   ): Sized<TSize> {
-    return assertSize(this, size);
+    if ((this.length - 2) / 2 !== size) {
+      throw new InvalidLengthError(`Expected ${size} bytes, got ${(this.length - 2) / 2}`);
+    }
+    return this as Sized<TSize>;
   }
 
   // ==========================================================================
@@ -240,7 +184,7 @@ export namespace Hex {
   // ==========================================================================
 
   /**
-   * Convert bytes to hex (standard form)
+   * Convert bytes to hex
    *
    * @param bytes - Byte array to convert
    * @returns Hex string
@@ -260,9 +204,8 @@ export namespace Hex {
   }
 
   /**
-   * Convert hex to bytes (standard form)
+   * Convert hex to bytes
    *
-   * @param hex - Hex string to convert
    * @returns Byte array
    * @throws {InvalidFormatError} If missing 0x prefix
    * @throws {OddLengthError} If hex has odd number of digits
@@ -270,12 +213,13 @@ export namespace Hex {
    *
    * @example
    * ```typescript
-   * const bytes = Hex.toBytes('0x1234'); // Uint8Array([0x12, 0x34])
+   * const hex: Hex = '0x1234';
+   * const bytes = Hex.toBytes.call(hex); // Uint8Array([0x12, 0x34])
    * ```
    */
-  export function toBytes(hex: Unsized): Uint8Array {
-    if (!hex.startsWith("0x")) throw new InvalidFormatError();
-    const hexDigits = hex.slice(2);
+  export function toBytes(this: Unsized): Uint8Array {
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigits = this.slice(2);
     if (hexDigits.length % 2 !== 0) throw new OddLengthError();
     const bytes = new Uint8Array(hexDigits.length / 2);
     for (let i = 0; i < hexDigits.length; i += 2) {
@@ -288,20 +232,7 @@ export namespace Hex {
   }
 
   /**
-   * Convert hex to bytes (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const hex: Hex = '0x1234';
-   * const bytes = Hex.asBytes.call(hex); // Uint8Array([0x12, 0x34])
-   * ```
-   */
-  export function asBytes(this: Unsized): Uint8Array {
-    return toBytes(this);
-  }
-
-  /**
-   * Convert number to hex (standard form)
+   * Convert number to hex
    *
    * @param value - Number to convert
    * @param size - Optional byte size for padding
@@ -323,20 +254,19 @@ export namespace Hex {
   }
 
   /**
-   * Convert hex to number (standard form)
+   * Convert hex to number
    *
-   * @param hex - Hex string to convert
    * @returns Number value
    * @throws {RangeError} If hex represents value larger than MAX_SAFE_INTEGER
    *
    * @example
    * ```typescript
-   * Hex.toNumber('0xff');   // 255
-   * Hex.toNumber('0x1234'); // 4660
+   * const hex: Hex = '0xff';
+   * const num = Hex.toNumber.call(hex); // 255
    * ```
    */
-  export function toNumber(hex: Unsized): number {
-    const num = parseInt(hex.slice(2), 16);
+  export function toNumber(this: Unsized): number {
+    const num = parseInt(this.slice(2), 16);
     if (!Number.isSafeInteger(num)) {
       throw new RangeError("Hex value exceeds MAX_SAFE_INTEGER");
     }
@@ -344,20 +274,7 @@ export namespace Hex {
   }
 
   /**
-   * Convert hex to number (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const hex: Hex = '0xff';
-   * const num = Hex.asNumber.call(hex); // 255
-   * ```
-   */
-  export function asNumber(this: Unsized): number {
-    return toNumber(this);
-  }
-
-  /**
-   * Convert bigint to hex (standard form)
+   * Convert bigint to hex
    *
    * @param value - BigInt to convert
    * @param size - Optional byte size for padding
@@ -378,39 +295,24 @@ export namespace Hex {
   }
 
   /**
-   * Convert hex to bigint (standard form)
+   * Convert hex to bigint
    *
-   * @param hex - Hex string to convert
    * @returns BigInt value
    *
    * @example
    * ```typescript
-   * Hex.toBigInt('0xff');   // 255n
-   * Hex.toBigInt('0x1234'); // 4660n
-   * ```
-   */
-  export function toBigInt(hex: Unsized): bigint {
-    return BigInt(hex);
-  }
-
-  /**
-   * Convert hex to bigint (convenience form with this:)
-   *
-   * @example
-   * ```typescript
    * const hex: Hex = '0xff';
-   * const big = Hex.asBigInt.call(hex); // 255n
+   * const big = Hex.toBigInt.call(hex); // 255n
    * ```
    */
-  export function asBigInt(this: Unsized): bigint {
-    return toBigInt(this);
+  export function toBigInt(this: Unsized): bigint {
+    return BigInt(this);
   }
 
   /**
-   * Convert string to hex (standard form)
+   * Convert string to hex
    *
    * @param str - String to convert
-   * @param encoding - Text encoding (default: utf-8)
    * @returns Hex string
    *
    * @example
@@ -424,37 +326,33 @@ export namespace Hex {
   }
 
   /**
-   * Convert hex to string (standard form)
+   * Convert hex to string
    *
-   * @param hex - Hex string to convert
-   * @param encoding - Text encoding (default: utf-8)
    * @returns Decoded string
    *
    * @example
    * ```typescript
-   * Hex.toString('0x68656c6c6f'); // 'hello'
-   * ```
-   */
-  export function toString(hex: Unsized): string {
-    const decoder = new TextDecoder();
-    return decoder.decode(toBytes(hex));
-  }
-
-  /**
-   * Convert hex to string (convenience form with this:)
-   *
-   * @example
-   * ```typescript
    * const hex: Hex = '0x68656c6c6f';
-   * const str = Hex.asString.call(hex); // 'hello'
+   * const str = Hex.toString.call(hex); // 'hello'
    * ```
    */
-  export function asString(this: Unsized): string {
-    return toString(this);
+  export function toString(this: Unsized): string {
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigits = this.slice(2);
+    if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+    const bytes = new Uint8Array(hexDigits.length / 2);
+    for (let i = 0; i < hexDigits.length; i += 2) {
+      const high = hexCharToValue(hexDigits[i]);
+      const low = hexCharToValue(hexDigits[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytes[i / 2] = high * 16 + low;
+    }
+    const decoder = new TextDecoder();
+    return decoder.decode(bytes);
   }
 
   /**
-   * Convert boolean to hex (standard form)
+   * Convert boolean to hex
    *
    * @param value - Boolean to convert
    * @returns Hex string ('0x01' for true, '0x00' for false)
@@ -470,34 +368,28 @@ export namespace Hex {
   }
 
   /**
-   * Convert hex to boolean (standard form)
+   * Convert hex to boolean
    *
-   * @param hex - Hex string to convert
    * @returns Boolean value (true if non-zero, false if zero)
    *
    * @example
    * ```typescript
-   * Hex.toBoolean('0x01'); // true
-   * Hex.toBoolean('0x00'); // false
-   * Hex.toBoolean('0xff'); // true
-   * ```
-   */
-  export function toBoolean(hex: Unsized): boolean {
-    const bytes = toBytes(hex);
-    return bytes.some((b) => b !== 0);
-  }
-
-  /**
-   * Convert hex to boolean (convenience form with this:)
-   *
-   * @example
-   * ```typescript
    * const hex: Hex = '0x01';
-   * const bool = Hex.asBoolean.call(hex); // true
+   * const bool = Hex.toBoolean.call(hex); // true
    * ```
    */
-  export function asBoolean(this: Unsized): boolean {
-    return toBoolean(this);
+  export function toBoolean(this: Unsized): boolean {
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigits = this.slice(2);
+    if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+    const bytes = new Uint8Array(hexDigits.length / 2);
+    for (let i = 0; i < hexDigits.length; i += 2) {
+      const high = hexCharToValue(hexDigits[i]);
+      const low = hexCharToValue(hexDigits[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytes[i / 2] = high * 16 + low;
+    }
+    return bytes.some((b) => b !== 0);
   }
 
   // ==========================================================================
@@ -505,32 +397,18 @@ export namespace Hex {
   // ==========================================================================
 
   /**
-   * Get byte size of hex (standard form)
+   * Get byte size of hex
    *
-   * @param hex - Hex string
    * @returns Size in bytes
    *
    * @example
    * ```typescript
-   * Hex.size('0x1234');   // 2
-   * Hex.size('0x123456'); // 3
-   * ```
-   */
-  export function size(hex: Unsized): number {
-    return (hex.length - 2) / 2;
-  }
-
-  /**
-   * Get byte size of hex (convenience form with this:)
-   *
-   * @example
-   * ```typescript
    * const hex: Hex = '0x1234';
-   * const s = Hex.getSize.call(hex); // 2
+   * const s = Hex.size.call(hex); // 2
    * ```
    */
-  export function getSize(this: Unsized): number {
-    return size(this);
+  export function size(this: Unsized): number {
+    return (this.length - 2) / 2;
   }
 
   // ==========================================================================
@@ -538,7 +416,7 @@ export namespace Hex {
   // ==========================================================================
 
   /**
-   * Concatenate multiple hex strings (standard form)
+   * Concatenate multiple hex strings
    *
    * @param hexes - Hex strings to concatenate
    * @returns Concatenated hex string
@@ -549,56 +427,72 @@ export namespace Hex {
    * ```
    */
   export function concat(...hexes: Unsized[]): Unsized {
-    return fromBytes(new Uint8Array(hexes.flatMap((h) => Array.from(toBytes(h)))));
+    const allBytes = hexes.flatMap((h) => {
+      if (!h.startsWith("0x")) throw new InvalidFormatError();
+      const hexDigits = h.slice(2);
+      if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+      const bytes = new Uint8Array(hexDigits.length / 2);
+      for (let i = 0; i < hexDigits.length; i += 2) {
+        const high = hexCharToValue(hexDigits[i]);
+        const low = hexCharToValue(hexDigits[i + 1]);
+        if (high === null || low === null) throw new InvalidCharacterError();
+        bytes[i / 2] = high * 16 + low;
+      }
+      return Array.from(bytes);
+    });
+    return fromBytes(new Uint8Array(allBytes));
   }
 
   /**
-   * Slice hex string (standard form)
+   * Slice hex string
    *
-   * @param hex - Hex string to slice
    * @param start - Start byte index
    * @param end - End byte index (optional)
    * @returns Sliced hex string
    *
    * @example
    * ```typescript
-   * Hex.slice('0x123456', 1);    // '0x3456'
-   * Hex.slice('0x123456', 0, 2); // '0x1234'
+   * const hex: Hex = '0x123456';
+   * const sliced = Hex.slice.call(hex, 1); // '0x3456'
    * ```
    */
-  export function slice(hex: Unsized, start: number, end?: number): Unsized {
-    const bytes = toBytes(hex);
+  export function slice(this: Unsized, start: number, end?: number): Unsized {
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigits = this.slice(2);
+    if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+    const bytes = new Uint8Array(hexDigits.length / 2);
+    for (let i = 0; i < hexDigits.length; i += 2) {
+      const high = hexCharToValue(hexDigits[i]);
+      const low = hexCharToValue(hexDigits[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytes[i / 2] = high * 16 + low;
+    }
     return fromBytes(bytes.slice(start, end));
   }
 
   /**
-   * Slice hex string (convenience form with this:)
+   * Pad hex to target size (left-padded with zeros)
    *
-   * @example
-   * ```typescript
-   * const hex: Hex = '0x123456';
-   * const sliced = Hex.getSlice.call(hex, 1); // '0x3456'
-   * ```
-   */
-  export function getSlice(this: Unsized, start: number, end?: number): Unsized {
-    return slice(this, start, end);
-  }
-
-  /**
-   * Pad hex to target size (standard form)
-   *
-   * @param hex - Hex string to pad
    * @param targetSize - Target size in bytes
-   * @returns Padded hex string (left-padded with zeros)
+   * @returns Padded hex string
    *
    * @example
    * ```typescript
-   * Hex.pad('0x1234', 4); // '0x00001234'
-   * Hex.pad('0x1234', 2); // '0x1234' (no change if already >= target)
+   * const hex: Hex = '0x1234';
+   * const padded = Hex.pad.call(hex, 4); // '0x00001234'
    * ```
    */
-  export function pad(hex: Unsized, targetSize: number): Unsized {
-    const bytes = toBytes(hex);
+  export function pad(this: Unsized, targetSize: number): Unsized {
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigits = this.slice(2);
+    if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+    const bytes = new Uint8Array(hexDigits.length / 2);
+    for (let i = 0; i < hexDigits.length; i += 2) {
+      const high = hexCharToValue(hexDigits[i]);
+      const low = hexCharToValue(hexDigits[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytes[i / 2] = high * 16 + low;
+    }
     if (bytes.length >= targetSize) return fromBytes(bytes);
     const padded = new Uint8Array(targetSize);
     padded.set(bytes, targetSize - bytes.length);
@@ -606,32 +500,28 @@ export namespace Hex {
   }
 
   /**
-   * Pad hex to target size (convenience form with this:)
+   * Pad hex to right (suffix with zeros)
    *
-   * @example
-   * ```typescript
-   * const hex: Hex = '0x1234';
-   * const padded = Hex.getPadded.call(hex, 4); // '0x00001234'
-   * ```
-   */
-  export function getPadded(this: Unsized, targetSize: number): Unsized {
-    return pad(this, targetSize);
-  }
-
-  /**
-   * Pad hex to right (suffix with zeros) (standard form)
-   *
-   * @param hex - Hex string to pad
    * @param targetSize - Target size in bytes
    * @returns Right-padded hex string
    *
    * @example
    * ```typescript
-   * Hex.padRight('0x1234', 4); // '0x12340000'
+   * const hex: Hex = '0x1234';
+   * const padded = Hex.padRight.call(hex, 4); // '0x12340000'
    * ```
    */
-  export function padRight(hex: Unsized, targetSize: number): Unsized {
-    const bytes = toBytes(hex);
+  export function padRight(this: Unsized, targetSize: number): Unsized {
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigits = this.slice(2);
+    if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+    const bytes = new Uint8Array(hexDigits.length / 2);
+    for (let i = 0; i < hexDigits.length; i += 2) {
+      const high = hexCharToValue(hexDigits[i]);
+      const low = hexCharToValue(hexDigits[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytes[i / 2] = high * 16 + low;
+    }
     if (bytes.length >= targetSize) return fromBytes(bytes);
     const padded = new Uint8Array(targetSize);
     padded.set(bytes, 0);
@@ -639,48 +529,30 @@ export namespace Hex {
   }
 
   /**
-   * Pad hex to right (convenience form with this:)
+   * Trim leading zeros from hex
    *
-   * @example
-   * ```typescript
-   * const hex: Hex = '0x1234';
-   * const padded = Hex.getRightPadded.call(hex, 4); // '0x12340000'
-   * ```
-   */
-  export function getRightPadded(this: Unsized, targetSize: number): Unsized {
-    return padRight(this, targetSize);
-  }
-
-  /**
-   * Trim leading zeros from hex (standard form)
-   *
-   * @param hex - Hex string to trim
    * @returns Trimmed hex string
    *
    * @example
    * ```typescript
-   * Hex.trim('0x00001234'); // '0x1234'
-   * Hex.trim('0x00000000'); // '0x'
+   * const hex: Hex = '0x00001234';
+   * const trimmed = Hex.trim.call(hex); // '0x1234'
    * ```
    */
-  export function trim(hex: Unsized): Unsized {
-    const bytes = toBytes(hex);
+  export function trim(this: Unsized): Unsized {
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigits = this.slice(2);
+    if (hexDigits.length % 2 !== 0) throw new OddLengthError();
+    const bytes = new Uint8Array(hexDigits.length / 2);
+    for (let i = 0; i < hexDigits.length; i += 2) {
+      const high = hexCharToValue(hexDigits[i]);
+      const low = hexCharToValue(hexDigits[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytes[i / 2] = high * 16 + low;
+    }
     let start = 0;
     while (start < bytes.length && bytes[start] === 0) start++;
     return fromBytes(bytes.slice(start));
-  }
-
-  /**
-   * Trim leading zeros from hex (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const hex: Hex = '0x00001234';
-   * const trimmed = Hex.getTrimmed.call(hex); // '0x1234'
-   * ```
-   */
-  export function getTrimmed(this: Unsized): Unsized {
-    return trim(this);
   }
 
   // ==========================================================================
@@ -688,33 +560,19 @@ export namespace Hex {
   // ==========================================================================
 
   /**
-   * Check if two hex strings are equal (standard form)
+   * Check if two hex strings are equal
    *
-   * @param a - First hex string
-   * @param b - Second hex string
+   * @param other - Hex string to compare with
    * @returns True if equal
    *
    * @example
    * ```typescript
-   * Hex.equals('0x1234', '0x1234'); // true
-   * Hex.equals('0x1234', '0x5678'); // false
-   * ```
-   */
-  export function equals(a: Unsized, b: Unsized): boolean {
-    return a.toLowerCase() === b.toLowerCase();
-  }
-
-  /**
-   * Check if two hex strings are equal (convenience form with this:)
-   *
-   * @example
-   * ```typescript
    * const hex1: Hex = '0x1234';
-   * Hex.isEqual.call(hex1, '0x1234'); // true
+   * Hex.equals.call(hex1, '0x1234'); // true
    * ```
    */
-  export function isEqual(this: Unsized, other: Unsized): boolean {
-    return equals(this, other);
+  export function equals(this: Unsized, other: Unsized): boolean {
+    return this.toLowerCase() === other.toLowerCase();
   }
 
   // ==========================================================================
@@ -722,21 +580,43 @@ export namespace Hex {
   // ==========================================================================
 
   /**
-   * XOR two hex strings of same length (standard form)
+   * XOR with another hex string of same length
    *
-   * @param a - First hex string
-   * @param b - Second hex string
+   * @param other - Hex string to XOR with
    * @returns XOR result
    * @throws {InvalidLengthError} If lengths don't match
    *
    * @example
    * ```typescript
-   * Hex.xor('0x12', '0x34'); // '0x26'
+   * const hex1: Hex = '0x12';
+   * const result = Hex.xor.call(hex1, '0x34'); // '0x26'
    * ```
    */
-  export function xor(a: Unsized, b: Unsized): Unsized {
-    const bytesA = toBytes(a);
-    const bytesB = toBytes(b);
+  export function xor(this: Unsized, other: Unsized): Unsized {
+    // Convert this to bytes
+    if (!this.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigitsA = this.slice(2);
+    if (hexDigitsA.length % 2 !== 0) throw new OddLengthError();
+    const bytesA = new Uint8Array(hexDigitsA.length / 2);
+    for (let i = 0; i < hexDigitsA.length; i += 2) {
+      const high = hexCharToValue(hexDigitsA[i]);
+      const low = hexCharToValue(hexDigitsA[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytesA[i / 2] = high * 16 + low;
+    }
+
+    // Convert other to bytes
+    if (!other.startsWith("0x")) throw new InvalidFormatError();
+    const hexDigitsB = other.slice(2);
+    if (hexDigitsB.length % 2 !== 0) throw new OddLengthError();
+    const bytesB = new Uint8Array(hexDigitsB.length / 2);
+    for (let i = 0; i < hexDigitsB.length; i += 2) {
+      const high = hexCharToValue(hexDigitsB[i]);
+      const low = hexCharToValue(hexDigitsB[i + 1]);
+      if (high === null || low === null) throw new InvalidCharacterError();
+      bytesB[i / 2] = high * 16 + low;
+    }
+
     if (bytesA.length !== bytesB.length) {
       throw new InvalidLengthError("Hex strings must have same length for XOR");
     }
@@ -747,25 +627,12 @@ export namespace Hex {
     return fromBytes(result);
   }
 
-  /**
-   * XOR with another hex string (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const hex1: Hex = '0x12';
-   * const result = Hex.xorWith.call(hex1, '0x34'); // '0x26'
-   * ```
-   */
-  export function xorWith(this: Unsized, other: Unsized): Unsized {
-    return xor(this, other);
-  }
-
   // ==========================================================================
   // Utility Operations
   // ==========================================================================
 
   /**
-   * Generate random hex of specific size (standard form)
+   * Generate random hex of specific size
    *
    * @param size - Size in bytes
    * @returns Random hex string
@@ -782,7 +649,7 @@ export namespace Hex {
   }
 
   /**
-   * Create zero-filled hex of specific size (standard form)
+   * Create zero-filled hex of specific size
    *
    * @param size - Size in bytes
    * @returns Zero-filled hex string

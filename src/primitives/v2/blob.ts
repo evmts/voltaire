@@ -18,14 +18,11 @@
  * const blob: Blob = Blob.fromData(data);
  * const extracted = Blob.toData(blob);
  *
- * // KZG operations
- * const commitment: Blob.Commitment = Blob.blobToCommitment(blob);
- * const proof: Blob.Proof = Blob.computeProof(blob, commitment);
- * const hash: Blob.VersionedHash = await Blob.commitmentToVersionedHash(commitment);
- *
- * // Convenience form with this:
- * const commitment2 = Blob.toCommitment.call(blob);
- * const data2 = Blob.toData.call(blob);
+ * // KZG operations with this: pattern
+ * const commitment: Blob.Commitment = Blob.toCommitment.call(blob);
+ * const proof: Blob.Proof = Blob.toProof.call(blob, commitment);
+ * const hash: Blob.VersionedHash = await Blob.toVersionedHash.call(commitment);
+ * const data = Blob.toData.call(blob);
  * ```
  */
 
@@ -119,36 +116,31 @@ export namespace Blob {
   }
 
   /**
-   * Extract data from blob (standard form)
+   * Extract data from blob
    * Decodes blob format (reads length prefix and extracts data)
    *
-   * @param blob - Blob to decode
    * @returns Original data
    * @throws If blob size or length prefix is invalid
    *
    * @example
    * ```typescript
-   * const data = Blob.toData(blob);
+   * const data = Blob.toData.call(blob);
    * const text = new TextDecoder().decode(data);
    * ```
    */
-  export function toData(blob: Blob.Data): Uint8Array;
-  export function toData(this: Blob.Data): Uint8Array;
-  export function toData(this: Blob.Data | void, blob?: Blob.Data): Uint8Array {
-    const b = this ?? blob!;
-
-    if (b.length !== SIZE) {
-      throw new Error(`Invalid blob size: ${b.length} (expected ${SIZE})`);
+  export function toData(this: Blob.Data): Uint8Array {
+    if (this.length !== SIZE) {
+      throw new Error(`Invalid blob size: ${this.length} (expected ${SIZE})`);
     }
 
-    const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
+    const view = new DataView(this.buffer, this.byteOffset, this.byteLength);
     const length = Number(view.getBigUint64(0, true));
 
     if (length > SIZE - 8) {
       throw new Error(`Invalid length prefix: ${length}`);
     }
 
-    return b.slice(8, 8 + length);
+    return this.slice(8, 8 + length);
   }
 
   /**
@@ -173,32 +165,7 @@ export namespace Blob {
   // ==========================================================================
 
   /**
-   * Compute KZG commitment for blob (standard form)
-   *
-   * @param blob - Blob to commit to
-   * @returns 48-byte KZG commitment
-   *
-   * @example
-   * ```typescript
-   * const commitment = Blob.blobToCommitment(blob);
-   * ```
-   *
-   * TODO: Implement using c-kzg-4844 library
-   * - Load KZG trusted setup
-   * - Call blobToKzgCommitment(blob)
-   * - Return 48-byte commitment
-   */
-  export function blobToCommitment(blob: Blob.Data): Blob.Commitment {
-    if (!isValid(blob)) {
-      throw new Error(`Invalid blob size: ${blob.length}`);
-    }
-    // TODO: const commitment = blobToKzgCommitment(blob);
-    // TODO: return commitment as Blob.Commitment;
-    throw new Error("Not implemented: requires c-kzg-4844 library");
-  }
-
-  /**
-   * Compute KZG commitment for blob (convenience form with this:)
+   * Compute KZG commitment for blob
    *
    * @returns 48-byte KZG commitment
    *
@@ -206,42 +173,23 @@ export namespace Blob {
    * ```typescript
    * const commitment = Blob.toCommitment.call(blob);
    * ```
-   */
-  export function toCommitment(this: Blob.Data): Blob.Commitment {
-    return blobToCommitment(this);
-  }
-
-  /**
-   * Generate KZG proof for blob and commitment (standard form)
-   *
-   * @param blob - Blob to generate proof for
-   * @param commitment - KZG commitment for the blob
-   * @returns 48-byte KZG proof
-   *
-   * @example
-   * ```typescript
-   * const commitment = Blob.blobToCommitment(blob);
-   * const proof = Blob.computeProof(blob, commitment);
-   * ```
    *
    * TODO: Implement using c-kzg-4844 library
-   * - Call computeBlobKzgProof(blob, commitment)
-   * - Return 48-byte proof
+   * - Load KZG trusted setup
+   * - Call blobToKzgCommitment(blob)
+   * - Return 48-byte commitment
    */
-  export function computeProof(blob: Blob.Data, commitment: Blob.Commitment): Blob.Proof {
-    if (!isValid(blob)) {
-      throw new Error(`Invalid blob size: ${blob.length}`);
+  export function toCommitment(this: Blob.Data): Blob.Commitment {
+    if (this.length !== SIZE) {
+      throw new Error(`Invalid blob size: ${this.length}`);
     }
-    if (commitment.length !== 48) {
-      throw new Error(`Invalid commitment size: ${commitment.length}`);
-    }
-    // TODO: const proof = computeBlobKzgProof(blob, commitment);
-    // TODO: return proof as Blob.Proof;
+    // TODO: const commitment = blobToKzgCommitment(this);
+    // TODO: return commitment as Blob.Commitment;
     throw new Error("Not implemented: requires c-kzg-4844 library");
   }
 
   /**
-   * Generate KZG proof for blob (convenience form with this:)
+   * Generate KZG proof for blob
    *
    * @param commitment - KZG commitment for the blob
    * @returns 48-byte KZG proof
@@ -251,48 +199,25 @@ export namespace Blob {
    * const commitment = Blob.toCommitment.call(blob);
    * const proof = Blob.toProof.call(blob, commitment);
    * ```
-   */
-  export function toProof(this: Blob.Data, commitment: Blob.Commitment): Blob.Proof {
-    return computeProof(this, commitment);
-  }
-
-  /**
-   * Verify KZG proof for blob and commitment (standard form)
-   *
-   * @param blob - Blob to verify
-   * @param commitment - KZG commitment
-   * @param proof - KZG proof
-   * @returns true if proof is valid
-   *
-   * @example
-   * ```typescript
-   * const isValid = Blob.verifyProof(blob, commitment, proof);
-   * ```
    *
    * TODO: Implement using c-kzg-4844 library
-   * - Call verifyBlobKzgProof(blob, commitment, proof)
-   * - Return boolean result
+   * - Call computeBlobKzgProof(blob, commitment)
+   * - Return 48-byte proof
    */
-  export function verifyProof(
-    blob: Blob.Data,
-    commitment: Blob.Commitment,
-    proof: Blob.Proof,
-  ): boolean {
-    if (!isValid(blob)) {
-      throw new Error(`Invalid blob size: ${blob.length}`);
+  export function toProof(this: Blob.Data, commitment: Blob.Commitment): Blob.Proof {
+    if (this.length !== SIZE) {
+      throw new Error(`Invalid blob size: ${this.length}`);
     }
     if (commitment.length !== 48) {
       throw new Error(`Invalid commitment size: ${commitment.length}`);
     }
-    if (proof.length !== 48) {
-      throw new Error(`Invalid proof size: ${proof.length}`);
-    }
-    // TODO: return verifyBlobKzgProof(blob, commitment, proof);
+    // TODO: const proof = computeBlobKzgProof(this, commitment);
+    // TODO: return proof as Blob.Proof;
     throw new Error("Not implemented: requires c-kzg-4844 library");
   }
 
   /**
-   * Verify KZG proof (convenience form with this:)
+   * Verify KZG proof
    *
    * @param commitment - KZG commitment
    * @param proof - KZG proof
@@ -302,13 +227,27 @@ export namespace Blob {
    * ```typescript
    * const isValid = Blob.verify.call(blob, commitment, proof);
    * ```
+   *
+   * TODO: Implement using c-kzg-4844 library
+   * - Call verifyBlobKzgProof(blob, commitment, proof)
+   * - Return boolean result
    */
   export function verify(
     this: Blob.Data,
     commitment: Blob.Commitment,
     proof: Blob.Proof,
   ): boolean {
-    return verifyProof(this, commitment, proof);
+    if (this.length !== SIZE) {
+      throw new Error(`Invalid blob size: ${this.length}`);
+    }
+    if (commitment.length !== 48) {
+      throw new Error(`Invalid commitment size: ${commitment.length}`);
+    }
+    if (proof.length !== 48) {
+      throw new Error(`Invalid proof size: ${proof.length}`);
+    }
+    // TODO: return verifyBlobKzgProof(this, commitment, proof);
+    throw new Error("Not implemented: requires c-kzg-4844 library");
   }
 
   /**
@@ -349,15 +288,14 @@ export namespace Blob {
   // ==========================================================================
 
   /**
-   * Create versioned hash from KZG commitment (standard form)
+   * Create versioned hash from commitment
    * Formula: BLOB_COMMITMENT_VERSION_KZG || sha256(commitment)[1:]
    *
-   * @param commitment - 48-byte KZG commitment
    * @returns 32-byte versioned hash
    *
    * @example
    * ```typescript
-   * const hash = await Blob.commitmentToVersionedHash(commitment);
+   * const hash = await Blob.toVersionedHash.call(commitment);
    * ```
    *
    * TODO: Implement SHA-256 hashing
@@ -365,15 +303,13 @@ export namespace Blob {
    * - Prepend version byte
    * - Take first 32 bytes
    */
-  export async function commitmentToVersionedHash(
-    commitment: Blob.Commitment,
-  ): Promise<Blob.VersionedHash> {
-    if (commitment.length !== 48) {
-      throw new Error(`Invalid commitment size: ${commitment.length}`);
+  export async function toVersionedHash(this: Blob.Commitment): Promise<Blob.VersionedHash> {
+    if (this.length !== 48) {
+      throw new Error(`Invalid commitment size: ${this.length}`);
     }
 
     // TODO: Implement versioned hash calculation
-    // const hashBuffer = await crypto.subtle.digest('SHA-256', commitment);
+    // const hashBuffer = await crypto.subtle.digest('SHA-256', this);
     // const hash = new Uint8Array(hashBuffer);
     // const versionedHash = new Uint8Array(32);
     // versionedHash[0] = COMMITMENT_VERSION_KZG;
@@ -383,38 +319,7 @@ export namespace Blob {
   }
 
   /**
-   * Create versioned hash from commitment (convenience form with this:)
-   *
-   * @returns 32-byte versioned hash
-   *
-   * @example
-   * ```typescript
-   * const hash = await Blob.toVersionedHash.call(commitment);
-   * ```
-   */
-  export async function toVersionedHash(this: Blob.Commitment): Promise<Blob.VersionedHash> {
-    return commitmentToVersionedHash(this);
-  }
-
-  /**
-   * Validate versioned hash has correct version byte (standard form)
-   *
-   * @param hash - Versioned hash to validate
-   * @returns true if version byte is BLOB_COMMITMENT_VERSION_KZG
-   *
-   * @example
-   * ```typescript
-   * if (!Blob.isValidVersionedHash(hash)) {
-   *   throw new Error("Invalid version byte");
-   * }
-   * ```
-   */
-  export function isValidVersionedHash(hash: Blob.VersionedHash): boolean {
-    return hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG;
-  }
-
-  /**
-   * Validate versioned hash (convenience form with this:)
+   * Validate versioned hash
    *
    * @returns true if version byte is correct
    *
@@ -426,7 +331,7 @@ export namespace Blob {
    * ```
    */
   export function isValidVersion(this: Blob.VersionedHash): boolean {
-    return isValidVersionedHash(this);
+    return this.length === 32 && this[0] === COMMITMENT_VERSION_KZG;
   }
 
   // ==========================================================================
@@ -445,19 +350,12 @@ export namespace Blob {
     }
 
     /**
-     * Create versioned hash from commitment (standard form)
+     * Create versioned hash from commitment
      *
-     * @param commitment - KZG commitment
      * @returns Versioned hash
      */
-    export function toVersionedHash(commitment: Blob.Commitment): Promise<Blob.VersionedHash>;
-    export function toVersionedHash(this: Blob.Commitment): Promise<Blob.VersionedHash>;
-    export function toVersionedHash(
-      this: Blob.Commitment | void,
-      commitment?: Blob.Commitment,
-    ): Promise<Blob.VersionedHash> {
-      const c = this ?? commitment!;
-      return commitmentToVersionedHash(c);
+    export function toVersionedHash(this: Blob.Commitment): Promise<Blob.VersionedHash> {
+      return Blob.toVersionedHash.call(this);
     }
   }
 
@@ -599,7 +497,7 @@ export namespace Blob {
    * ```
    */
   export function joinData(blobs: readonly Blob.Data[]): Uint8Array {
-    const chunks = blobs.map(toData);
+    const chunks = blobs.map(b => toData.call(b));
     const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 
     const result = new Uint8Array(totalLength);
