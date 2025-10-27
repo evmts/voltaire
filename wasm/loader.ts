@@ -36,13 +36,6 @@ export async function loadWasm(
 		return; // Already loaded
 	}
 
-	// Create linear memory for WASM (imported by WASM module)
-	// Match the memory requirements from build.zig
-	wasmMemory = new WebAssembly.Memory({
-		initial: 512, // 512 pages = 32MB
-		maximum: 1024, // 1024 pages = 64MB
-	});
-
 	// Minimal WASI shim for wasm32-wasi modules
 	const wasi: WasiImports = {
 		// args
@@ -151,9 +144,7 @@ export async function loadWasm(
 	};
 
 	const importObject = {
-		env: {
-			memory: wasmMemory,
-		},
+		env: {},
 		wasi_snapshot_preview1: wasi,
 	};
 
@@ -170,10 +161,17 @@ export async function loadWasm(
 
 	wasmExports = wasmInstance.exports as unknown as WasmExports;
 
-	// Initialize memory offset after WASM's own data
-	// WASM data starts at 16MB (0x1000000), so start at 17MB to be safe
-	// This gives WASM 17MB for its stack, heap, and data
-	memoryOffset = 17 * 1024 * 1024;
+	// Get memory from WASM exports (WASM creates its own memory)
+	wasmMemory = wasmExports.memory as WebAssembly.Memory;
+	if (!wasmMemory) {
+		throw new Error("WASM module does not export memory");
+	}
+
+	// Initialize memory offset for JS allocations
+	// WASM static data is at 16MB+ (seen in objdump: segment starts at i32=16777216)
+	// WASM stack typically starts high and grows down
+	// Start JS allocations at 64KB to be safe, leaving low memory for WASM stack
+	memoryOffset = 64 * 1024;
 }
 
 /**
@@ -228,7 +226,7 @@ function malloc(size: number): number {
  * @returns void
  */
 export function resetMemory(): void {
-	memoryOffset = 17 * 1024 * 1024;
+	memoryOffset = 64 * 1024;
 }
 
 /**
@@ -240,7 +238,14 @@ function writeBytes(data: Uint8Array, ptr: number): void {
 	if (!wasmMemory) {
 		throw new Error("WASM memory not initialized");
 	}
+	// CRITICAL: Get fresh buffer reference - wasmMemory.buffer may change after grow()
 	const memory = new Uint8Array(wasmMemory.buffer);
+
+	// Validate bounds
+	if (ptr < 0 || ptr + data.length > memory.length) {
+		throw new Error(`Write out of bounds: ptr=${ptr}, data.length=${data.length}, memory.length=${memory.length}`);
+	}
+
 	memory.set(data, ptr);
 }
 
@@ -254,7 +259,14 @@ function readBytes(ptr: number, length: number): Uint8Array {
 	if (!wasmMemory) {
 		throw new Error("WASM memory not initialized");
 	}
+	// CRITICAL: Get fresh buffer reference - wasmMemory.buffer may change after grow()
 	const memory = new Uint8Array(wasmMemory.buffer);
+
+	// Validate bounds
+	if (ptr < 0 || ptr + length > memory.length) {
+		throw new Error(`Read out of bounds: ptr=${ptr}, length=${length}, memory.length=${memory.length}`);
+	}
+
 	return memory.slice(ptr, ptr + length);
 }
 
@@ -281,7 +293,14 @@ function readFixedString(ptr: number, length: number): string {
 	if (!wasmMemory) {
 		throw new Error("WASM memory not initialized");
 	}
+	// CRITICAL: Get fresh buffer reference - wasmMemory.buffer may change after grow()
 	const memory = new Uint8Array(wasmMemory.buffer);
+
+	// Validate bounds
+	if (ptr < 0 || ptr + length > memory.length) {
+		throw new Error(`Read string out of bounds: ptr=${ptr}, length=${length}, memory.length=${memory.length}`);
+	}
+
 	const decoder = new TextDecoder();
 	return decoder.decode(memory.slice(ptr, ptr + length));
 }
@@ -850,7 +869,14 @@ export function bytecodeAnalyzeJumpdests(code: Uint8Array): number[] {
 		if (!wasmMemory) {
 			throw new Error("WASM memory not initialized");
 		}
+		// CRITICAL: Get fresh buffer reference - wasmMemory.buffer may change after grow()
 		const memory = new Uint32Array(wasmMemory.buffer);
+
+		// Validate bounds
+		if (outPtr < 0 || outPtr + count * 4 > wasmMemory.buffer.byteLength) {
+			throw new Error(`Read u32 array out of bounds: outPtr=${outPtr}, count=${count}, memory.length=${wasmMemory.buffer.byteLength}`);
+		}
+
 		const results: number[] = [];
 		for (let i = 0; i < count; i++) {
 			const value = memory[outPtr / 4 + i];

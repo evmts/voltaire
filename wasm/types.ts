@@ -22,6 +22,9 @@ export const enum ErrorCode {
 export interface WasmExports {
 	[key: string]: unknown;
 
+	// Memory export
+	memory: WebAssembly.Memory;
+
 	// Address functions
 	primitives_address_from_hex: (hexPtr: number, outPtr: number) => number;
 	primitives_address_to_hex: (addrPtr: number, outPtr: number) => number;
