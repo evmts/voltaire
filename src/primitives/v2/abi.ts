@@ -233,7 +233,7 @@ export namespace Abi {
      * TODO: Implement ABI encoding for single parameter
      */
     export function encode<T extends Abi.Parameter>(
-      param: T,
+      this: T,
       value: unknown,
     ): Uint8Array {
       throw new Error("Not implemented");
@@ -245,7 +245,7 @@ export namespace Abi {
      * TODO: Implement ABI decoding for single parameter
      */
     export function decode<T extends Abi.Parameter>(
-      param: T,
+      this: T,
       data: Uint8Array,
     ): unknown {
       throw new Error("Not implemented");
@@ -298,7 +298,7 @@ export namespace Abi {
     /**
      * Get function selector (4 bytes)
      */
-    export function getSelector<T extends Abi.Function>(fn: T): Uint8Array {
+    export function getSelector<T extends Abi.Function>(this: T): Uint8Array {
       // TODO: keccak256(signature).slice(0, 4)
       throw new Error("Not implemented");
     }
@@ -306,19 +306,19 @@ export namespace Abi {
     /**
      * Get function signature (e.g., "transfer(address,uint256)")
      */
-    export function getSignature<T extends Abi.Function>(fn: T): string {
-      const inputs = fn.inputs.map((p) => p.type).join(",");
-      return `${fn.name}(${inputs})`;
+    export function getSignature<T extends Abi.Function>(this: T): string {
+      const inputs = this.inputs.map((p) => p.type).join(",");
+      return `${this.name}(${inputs})`;
     }
 
     /**
      * Encode function call data
      */
     export function encodeFunctionData<T extends Abi.Function>(
-      fn: T,
+      this: T,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
-      // TODO: concat(getSelector(fn), encodeParameters(fn.inputs, args))
+      // TODO: concat(getSelector.call(this), encodeParameters(this.inputs, args))
       throw new Error("Not implemented");
     }
 
@@ -326,10 +326,10 @@ export namespace Abi {
      * Decode function call data
      */
     export function decodeFunctionData<T extends Abi.Function>(
-      fn: T,
+      this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
-      // TODO: skip 4-byte selector, decodeParameters(fn.inputs, data.slice(4))
+      // TODO: skip 4-byte selector, decodeParameters(this.inputs, data.slice(4))
       throw new Error("Not implemented");
     }
 
@@ -337,10 +337,10 @@ export namespace Abi {
      * Encode function result
      */
     export function encodeFunctionResult<T extends Abi.Function>(
-      fn: T,
+      this: T,
       values: ParametersToPrimitiveTypes<T["outputs"]>,
     ): Uint8Array {
-      // TODO: encodeParameters(fn.outputs, values)
+      // TODO: encodeParameters(this.outputs, values)
       throw new Error("Not implemented");
     }
 
@@ -348,10 +348,10 @@ export namespace Abi {
      * Decode function result
      */
     export function decodeFunctionResult<T extends Abi.Function>(
-      fn: T,
+      this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["outputs"]> {
-      // TODO: decodeParameters(fn.outputs, data)
+      // TODO: decodeParameters(this.outputs, data)
       throw new Error("Not implemented");
     }
 
@@ -359,11 +359,11 @@ export namespace Abi {
      * Prepare encode function data (validation without encoding)
      */
     export function prepareEncodeFunctionData<T extends Abi.Function>(
-      fn: T,
+      this: T,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): { functionName: string; args: unknown[] } {
       // TODO: Validate args, return prepared data
-      return { functionName: fn.name, args: args as unknown[] };
+      return { functionName: this.name, args: args as unknown[] };
     }
   }
 
@@ -375,7 +375,7 @@ export namespace Abi {
     /**
      * Get event selector (32 bytes, topic0)
      */
-    export function getSelector<T extends Abi.Event>(event: T): Hash {
+    export function getSelector<T extends Abi.Event>(this: T): Hash {
       // TODO: keccak256(signature)
       throw new Error("Not implemented");
     }
@@ -383,20 +383,20 @@ export namespace Abi {
     /**
      * Get event signature (e.g., "Transfer(address,address,uint256)")
      */
-    export function getSignature<T extends Abi.Event>(event: T): string {
-      const inputs = event.inputs.map((p) => p.type).join(",");
-      return `${event.name}(${inputs})`;
+    export function getSignature<T extends Abi.Event>(this: T): string {
+      const inputs = this.inputs.map((p) => p.type).join(",");
+      return `${this.name}(${inputs})`;
     }
 
     /**
      * Encode event topics for indexed parameters
      */
     export function encodeEventTopics<T extends Abi.Event>(
-      event: T,
+      this: T,
       args: Partial<ParametersToObject<T["inputs"]>>,
     ): (Hash | null)[] {
       // TODO:
-      // 1. topic0 = getSelector(event)
+      // 1. topic0 = getSelector.call(this)
       // 2. For each indexed parameter, hash if dynamic type, else encode
       // 3. Return array of topics
       throw new Error("Not implemented");
@@ -406,7 +406,7 @@ export namespace Abi {
      * Decode event log
      */
     export function decodeEventLog<T extends Abi.Event>(
-      event: T,
+      this: T,
       data: Uint8Array,
       topics: readonly Hash[],
     ): ParametersToObject<T["inputs"]> {
@@ -427,7 +427,7 @@ export namespace Abi {
     /**
      * Get error selector (4 bytes)
      */
-    export function getSelector<T extends Abi.Error>(error: T): Uint8Array {
+    export function getSelector<T extends Abi.Error>(this: T): Uint8Array {
       // TODO: keccak256(signature).slice(0, 4)
       throw new Error("Not implemented");
     }
@@ -435,19 +435,19 @@ export namespace Abi {
     /**
      * Get error signature (e.g., "InsufficientBalance(uint256,uint256)")
      */
-    export function getSignature<T extends Abi.Error>(error: T): string {
-      const inputs = error.inputs.map((p) => p.type).join(",");
-      return `${error.name}(${inputs})`;
+    export function getSignature<T extends Abi.Error>(this: T): string {
+      const inputs = this.inputs.map((p) => p.type).join(",");
+      return `${this.name}(${inputs})`;
     }
 
     /**
      * Encode error result
      */
     export function encodeErrorResult<T extends Abi.Error>(
-      error: T,
+      this: T,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
-      // TODO: concat(getSelector(error), encodeParameters(error.inputs, args))
+      // TODO: concat(getSelector.call(this), encodeParameters(this.inputs, args))
       throw new Error("Not implemented");
     }
 
@@ -455,10 +455,10 @@ export namespace Abi {
      * Decode error result
      */
     export function decodeErrorResult<T extends Abi.Error>(
-      error: T,
+      this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
-      // TODO: skip 4-byte selector, decodeParameters(error.inputs, data.slice(4))
+      // TODO: skip 4-byte selector, decodeParameters(this.inputs, data.slice(4))
       throw new Error("Not implemented");
     }
   }
@@ -472,11 +472,11 @@ export namespace Abi {
      * Encode deploy data (bytecode + constructor args)
      */
     export function encodeDeployData<T extends Abi.Constructor>(
-      constructor: T,
+      this: T,
       bytecode: Uint8Array,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
-      // TODO: concat(bytecode, encodeParameters(constructor.inputs, args))
+      // TODO: concat(bytecode, encodeParameters(this.inputs, args))
       throw new Error("Not implemented");
     }
 
@@ -484,11 +484,11 @@ export namespace Abi {
      * Decode deploy data (extract constructor args from deploy transaction)
      */
     export function decodeDeployData<T extends Abi.Constructor>(
-      constructor: T,
+      this: T,
       data: Uint8Array,
       bytecodeLength: number,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
-      // TODO: decodeParameters(constructor.inputs, data.slice(bytecodeLength))
+      // TODO: decodeParameters(this.inputs, data.slice(bytecodeLength))
       throw new Error("Not implemented");
     }
   }
@@ -530,7 +530,7 @@ export namespace Abi {
   ): Uint8Array {
     const fn = getAbiItem(abi, functionName, "function");
     if (!fn) throw new Error(`Function ${functionName} not found`);
-    return Function.encodeFunctionData(fn as any, args);
+    return Function.encodeFunctionData.call(fn as any, args);
   }
 
   /**
@@ -546,7 +546,7 @@ export namespace Abi {
   ): ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["outputs"]> {
     const fn = getAbiItem(abi, functionName, "function");
     if (!fn) throw new Error(`Function ${functionName} not found`);
-    return Function.decodeFunctionResult(fn as any, data);
+    return Function.decodeFunctionResult.call(fn as any, data);
   }
 
   /**
