@@ -66,7 +66,7 @@ describe("Hash", () => {
 			const hash = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const hex = Hash.toHex(hash)
+			const hex = Hash.toHex.call(hash)
 			expect(hex).toBe(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
@@ -77,7 +77,7 @@ describe("Hash", () => {
 			bytes[0] = 0x01
 			bytes[1] = 0x0a
 			const hash = Hash.fromBytes(bytes)
-			const hex = Hash.toHex(hash)
+			const hex = Hash.toHex.call(hash)
 			expect(hex.slice(0, 8)).toBe("0x010a00")
 		})
 	})
@@ -90,7 +90,7 @@ describe("Hash", () => {
 			const b = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			expect(Hash.equals(a, b)).toBe(true)
+			expect(Hash.equals.call(a, b)).toBe(true)
 		})
 
 		it("returns false for different hashes", () => {
@@ -100,7 +100,7 @@ describe("Hash", () => {
 			const b = Hash.fromHex(
 				"0x0000000000000000000000000000000000000000000000000000000000000000",
 			)
-			expect(Hash.equals(a, b)).toBe(false)
+			expect(Hash.equals.call(a, b)).toBe(false)
 		})
 
 		it("uses constant time comparison", () => {
@@ -110,7 +110,7 @@ describe("Hash", () => {
 			const b = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdee",
 			)
-			expect(Hash.equals(a, b)).toBe(false)
+			expect(Hash.equals.call(a, b)).toBe(false)
 		})
 	})
 

@@ -22,15 +22,15 @@ describe('Hex', () => {
     });
   });
 
-  describe('Hex factory', () => {
-    it('creates branded hex from valid string', () => {
-      const hex = Hex('0x1234');
+  describe('validate', () => {
+    it('creates validated hex from valid string', () => {
+      const hex = Hex.validate.call('0x1234');
       expect(hex).toBe('0x1234');
     });
 
     it('throws on invalid hex', () => {
-      expect(() => Hex('1234')).toThrow(InvalidHexFormatError);
-      expect(() => Hex('0xg')).toThrow(InvalidHexCharacterError);
+      expect(() => Hex.validate.call('1234')).toThrow(InvalidHexFormatError);
+      expect(() => Hex.validate.call('0xg')).toThrow(InvalidHexCharacterError);
     });
   });
 
@@ -55,111 +55,111 @@ describe('Hex', () => {
 
   describe('toBytes', () => {
     it('converts empty hex', () => {
-      const bytes = Hex.toBytes(Hex('0x'));
+      const bytes = Hex.toBytes.call('0x' as Hex);
       expect(bytes.length).toBe(0);
     });
 
     it('converts single byte', () => {
-      const bytes = Hex.toBytes(Hex('0x61'));
+      const bytes = Hex.toBytes.call('0x61' as Hex);
       expect(Array.from(bytes)).toEqual([0x61]);
     });
 
     it('converts multiple bytes', () => {
-      const bytes = Hex.toBytes(Hex('0x616263'));
+      const bytes = Hex.toBytes.call('0x616263' as Hex);
       expect(Array.from(bytes)).toEqual([0x61, 0x62, 0x63]);
     });
 
     it('handles mixed case', () => {
-      const bytes = Hex.toBytes(Hex('0xDeAdBeEf'));
+      const bytes = Hex.toBytes.call('0xDeAdBeEf' as Hex);
       expect(Array.from(bytes)).toEqual([0xde, 0xad, 0xbe, 0xef]);
     });
 
     it('throws on odd length', () => {
-      expect(() => Hex.toBytes('0x1' as Hex)).toThrow(OddLengthHexError);
-      expect(() => Hex.toBytes('0x123' as Hex)).toThrow(OddLengthHexError);
+      expect(() => Hex.toBytes.call('0x1' as Hex)).toThrow(OddLengthHexError);
+      expect(() => Hex.toBytes.call('0x123' as Hex)).toThrow(OddLengthHexError);
     });
 
     it('throws on invalid character', () => {
-      expect(() => Hex.toBytes('0xdeadbeeg' as Hex)).toThrow(InvalidHexCharacterError);
+      expect(() => Hex.toBytes.call('0xdeadbeeg' as Hex)).toThrow(InvalidHexCharacterError);
     });
   });
 
   describe('concat', () => {
     it('concatenates hex strings', () => {
-      const hex1 = Hex('0x1234');
-      const hex2 = Hex('0xabcd');
+      const hex1 = '0x1234' as Hex;
+      const hex2 = '0xabcd' as Hex;
       expect(Hex.concat(hex1, hex2)).toBe('0x1234abcd');
     });
 
     it('concatenates multiple hex strings', () => {
-      const hex1 = Hex('0x12');
-      const hex2 = Hex('0x34');
-      const hex3 = Hex('0xab');
+      const hex1 = '0x12' as Hex;
+      const hex2 = '0x34' as Hex;
+      const hex3 = '0xab' as Hex;
       expect(Hex.concat(hex1, hex2, hex3)).toBe('0x1234ab');
     });
 
     it('concatenates empty hex strings', () => {
-      const hex1 = Hex('0x');
-      const hex2 = Hex('0x1234');
+      const hex1 = '0x' as Hex;
+      const hex2 = '0x1234' as Hex;
       expect(Hex.concat(hex1, hex2)).toBe('0x1234');
     });
   });
 
   describe('slice', () => {
     it('slices hex string', () => {
-      const hex = Hex('0x1234abcd');
-      expect(Hex.slice(hex, 0, 2)).toBe('0x1234');
-      expect(Hex.slice(hex, 1, 3)).toBe('0x34ab');
+      const hex = '0x1234abcd' as Hex;
+      expect(Hex.slice.call(hex, 0, 2)).toBe('0x1234');
+      expect(Hex.slice.call(hex, 1, 3)).toBe('0x34ab');
     });
 
     it('slices from start to end', () => {
-      const hex = Hex('0x1234abcd');
-      expect(Hex.slice(hex, 2)).toBe('0xabcd');
+      const hex = '0x1234abcd' as Hex;
+      expect(Hex.slice.call(hex, 2)).toBe('0xabcd');
     });
 
     it('handles empty slice', () => {
-      const hex = Hex('0x1234');
-      expect(Hex.slice(hex, 2, 2)).toBe('0x');
+      const hex = '0x1234' as Hex;
+      expect(Hex.slice.call(hex, 2, 2)).toBe('0x');
     });
   });
 
   describe('size', () => {
     it('returns byte size', () => {
-      expect(Hex.size(Hex('0x'))).toBe(0);
-      expect(Hex.size(Hex('0x12'))).toBe(1);
-      expect(Hex.size(Hex('0x1234'))).toBe(2);
-      expect(Hex.size(Hex('0x1234abcd'))).toBe(4);
+      expect(Hex.size.call('0x' as Hex)).toBe(0);
+      expect(Hex.size.call('0x12' as Hex)).toBe(1);
+      expect(Hex.size.call('0x1234' as Hex)).toBe(2);
+      expect(Hex.size.call('0x1234abcd' as Hex)).toBe(4);
     });
   });
 
   describe('pad', () => {
     it('pads hex to target size', () => {
-      const hex = Hex('0x1234');
-      expect(Hex.pad(hex, 4)).toBe('0x00001234');
+      const hex = '0x1234' as Hex;
+      expect(Hex.pad.call(hex, 4)).toBe('0x00001234');
     });
 
     it('does not pad if already at target size', () => {
-      const hex = Hex('0x1234');
-      expect(Hex.pad(hex, 2)).toBe('0x1234');
+      const hex = '0x1234' as Hex;
+      expect(Hex.pad.call(hex, 2)).toBe('0x1234');
     });
 
     it('does not pad if larger than target size', () => {
-      const hex = Hex('0x1234abcd');
-      expect(Hex.pad(hex, 2)).toBe('0x1234abcd');
+      const hex = '0x1234abcd' as Hex;
+      expect(Hex.pad.call(hex, 2)).toBe('0x1234abcd');
     });
   });
 
   describe('trim', () => {
     it('removes leading zeros', () => {
-      expect(Hex.trim(Hex('0x00001234'))).toBe('0x1234');
+      expect(Hex.trim.call('0x00001234' as Hex)).toBe('0x1234');
     });
 
     it('removes all leading zeros', () => {
-      expect(Hex.trim(Hex('0x0000'))).toBe('0x');
+      expect(Hex.trim.call('0x0000' as Hex)).toBe('0x');
     });
 
     it('does not trim non-zero values', () => {
-      expect(Hex.trim(Hex('0x1234'))).toBe('0x1234');
+      expect(Hex.trim.call('0x1234' as Hex)).toBe('0x1234');
     });
   });
 
@@ -167,7 +167,7 @@ describe('Hex', () => {
     it('maintains data integrity', () => {
       const original = new Uint8Array([0x12, 0x34, 0xab, 0xcd]);
       const hex = Hex.fromBytes(original);
-      const result = Hex.toBytes(hex);
+      const result = Hex.toBytes.call(hex);
       expect(Array.from(result)).toEqual(Array.from(original));
     });
   });
