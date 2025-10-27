@@ -272,24 +272,6 @@ function writeString(str: string): number {
 }
 
 /**
- * Read null-terminated string from WASM memory
- * @param ptr - Pointer to string
- * @returns String read from memory
- */
-function readString(ptr: number): string {
-	if (!wasmMemory) {
-		throw new Error("WASM memory not initialized");
-	}
-	const memory = new Uint8Array(wasmMemory.buffer);
-	let length = 0;
-	while (memory[ptr + length] !== 0) {
-		length++;
-	}
-	const decoder = new TextDecoder();
-	return decoder.decode(memory.slice(ptr, ptr + length));
-}
-
-/**
  * Read fixed-length string from WASM memory (no null terminator required)
  * @param ptr - Pointer to string
  * @param length - Length of string
