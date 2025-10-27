@@ -43,9 +43,10 @@ export class Hash {
 	 * @returns Hash instance
 	 */
 	static keccak256(data: string | Uint8Array): Hash {
-		const input = typeof data === "string"
-			? new TextEncoder().encode(data)
-			: new Uint8Array(data);
+		const input =
+			typeof data === "string"
+				? new TextEncoder().encode(data)
+				: new Uint8Array(data);
 		const hashBytes = loader.keccak256(input);
 		return new Hash(hashBytes);
 	}
@@ -135,9 +136,10 @@ export function keccak256Empty(): string {
  * @returns Hash of formatted message
  */
 export function eip191HashMessage(message: string | Uint8Array): Hash {
-	const input = typeof message === "string"
-		? new TextEncoder().encode(message)
-		: new Uint8Array(message);
+	const input =
+		typeof message === "string"
+			? new TextEncoder().encode(message)
+			: new Uint8Array(message);
 	const hashBytes = loader.eip191HashMessage(input);
 	return Hash.fromBytes(hashBytes);
 }

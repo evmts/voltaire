@@ -7,13 +7,7 @@
  * Reference: https://github.com/ethereum/execution-apis/blob/main/src/schemas/receipt.yaml
  */
 
-import type {
-	Address,
-	Byte,
-	Bytes256,
-	Hash32,
-	Uint,
-} from "./base-types.js";
+import type { Address, Byte, Bytes256, Hash32, Uint } from "./base-types.js";
 import type { Log } from "./log.js";
 
 /**

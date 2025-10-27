@@ -351,7 +351,10 @@ export function bn254Pairing(
  * BLAKE2F precompile (0x09)
  * Blake2 compression function
  */
-export function blake2f(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
+export function blake2f(
+	_input: Uint8Array,
+	gasLimit: bigint,
+): PrecompileResult {
 	if (_input.length !== 213) {
 		return {
 			success: false,

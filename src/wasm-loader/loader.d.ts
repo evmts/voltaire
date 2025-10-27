@@ -67,7 +67,10 @@ export function addressValidateChecksum(hex: string): boolean;
  * @param nonce - Nonce
  * @returns Contract address (20 bytes)
  */
-export function calculateCreateAddress(sender: Uint8Array, nonce: number): Uint8Array;
+export function calculateCreateAddress(
+	sender: Uint8Array,
+	nonce: number,
+): Uint8Array;
 
 /**
  * Calculate CREATE2 contract address
@@ -76,7 +79,11 @@ export function calculateCreateAddress(sender: Uint8Array, nonce: number): Uint8
  * @param initCode - Init code
  * @returns Contract address (20 bytes)
  */
-export function calculateCreate2Address(sender: Uint8Array, salt: Uint8Array, initCode: Uint8Array): Uint8Array;
+export function calculateCreate2Address(
+	sender: Uint8Array,
+	salt: Uint8Array,
+	initCode: Uint8Array,
+): Uint8Array;
 
 // ============================================================================
 // Keccak-256 API
@@ -214,7 +221,10 @@ export function bytecodeIsBoundary(code: Uint8Array, position: number): boolean;
  * @param position - Position to check
  * @returns True if valid JUMPDEST
  */
-export function bytecodeIsValidJumpdest(code: Uint8Array, position: number): boolean;
+export function bytecodeIsValidJumpdest(
+	code: Uint8Array,
+	position: number,
+): boolean;
 
 /**
  * Validate bytecode for basic correctness
@@ -299,7 +309,12 @@ export function compressPublicKey(uncompressed: Uint8Array): Uint8Array;
  * @param v - Recovery parameter (0-3)
  * @returns Uncompressed public key (64 bytes)
  */
-export function secp256k1RecoverPubkey(messageHash: Uint8Array, r: Uint8Array, s: Uint8Array, v: number): Uint8Array;
+export function secp256k1RecoverPubkey(
+	messageHash: Uint8Array,
+	r: Uint8Array,
+	s: Uint8Array,
+	v: number,
+): Uint8Array;
 
 /**
  * Recover Ethereum address from ECDSA signature
@@ -309,7 +324,12 @@ export function secp256k1RecoverPubkey(messageHash: Uint8Array, r: Uint8Array, s
  * @param v - Recovery parameter (0-3)
  * @returns Ethereum address (20 bytes)
  */
-export function secp256k1RecoverAddress(messageHash: Uint8Array, r: Uint8Array, s: Uint8Array, v: number): Uint8Array;
+export function secp256k1RecoverAddress(
+	messageHash: Uint8Array,
+	r: Uint8Array,
+	s: Uint8Array,
+	v: number,
+): Uint8Array;
 
 /**
  * Derive public key from private key
@@ -324,7 +344,10 @@ export function secp256k1PubkeyFromPrivate(privateKey: Uint8Array): Uint8Array;
  * @param s - S component (32 bytes)
  * @returns True if signature is valid
  */
-export function secp256k1ValidateSignature(r: Uint8Array, s: Uint8Array): boolean;
+export function secp256k1ValidateSignature(
+	r: Uint8Array,
+	s: Uint8Array,
+): boolean;
 
 /**
  * Normalize signature to canonical form (low-s)
@@ -332,7 +355,10 @@ export function secp256k1ValidateSignature(r: Uint8Array, s: Uint8Array): boolea
  * @param s - S component (32 bytes)
  * @returns Normalized [r, s] components
  */
-export function signatureNormalize(r: Uint8Array, s: Uint8Array): [Uint8Array, Uint8Array];
+export function signatureNormalize(
+	r: Uint8Array,
+	s: Uint8Array,
+): [Uint8Array, Uint8Array];
 
 /**
  * Check if signature is in canonical form
@@ -347,7 +373,9 @@ export function signatureIsCanonical(r: Uint8Array, s: Uint8Array): boolean;
  * @param sigData - Signature bytes (64 or 65 bytes)
  * @returns [r, s, v] components
  */
-export function signatureParse(sigData: Uint8Array): [Uint8Array, Uint8Array, Uint8Array];
+export function signatureParse(
+	sigData: Uint8Array,
+): [Uint8Array, Uint8Array, Uint8Array];
 
 /**
  * Serialize signature to compact format
@@ -357,4 +385,9 @@ export function signatureParse(sigData: Uint8Array): [Uint8Array, Uint8Array, Ui
  * @param includeV - Whether to include v byte
  * @returns Serialized signature
  */
-export function signatureSerialize(r: Uint8Array, s: Uint8Array, v: number, includeV: boolean): Uint8Array;
+export function signatureSerialize(
+	r: Uint8Array,
+	s: Uint8Array,
+	v: number,
+	includeV: boolean,
+): Uint8Array;

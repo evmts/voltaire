@@ -36,7 +36,10 @@ export function analyzeJumpDestinations(code: Uint8Array): JumpDestination[] {
  * @param position - Position to check
  * @returns true if position is a valid instruction boundary
  */
-export function isBytecodeBoundary(code: Uint8Array, position: number): boolean {
+export function isBytecodeBoundary(
+	code: Uint8Array,
+	position: number,
+): boolean {
 	const input = new Uint8Array(code);
 	return loader.bytecodeIsBoundary(input, position);
 }

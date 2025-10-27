@@ -11,9 +11,10 @@ import * as loader from "../wasm-loader/loader.js";
  * @returns 32-byte SHA-256 hash
  */
 export function sha256(data: string | Uint8Array): Uint8Array {
-	const input = typeof data === "string"
-		? new TextEncoder().encode(data)
-		: new Uint8Array(data);
+	const input =
+		typeof data === "string"
+			? new TextEncoder().encode(data)
+			: new Uint8Array(data);
 
 	if (input.length === 0) {
 		throw new Error("Input data cannot be empty");
@@ -28,9 +29,10 @@ export function sha256(data: string | Uint8Array): Uint8Array {
  * @returns 20-byte RIPEMD-160 hash
  */
 export function ripemd160(data: string | Uint8Array): Uint8Array {
-	const input = typeof data === "string"
-		? new TextEncoder().encode(data)
-		: new Uint8Array(data);
+	const input =
+		typeof data === "string"
+			? new TextEncoder().encode(data)
+			: new Uint8Array(data);
 
 	if (input.length === 0) {
 		throw new Error("Input data cannot be empty");
@@ -45,9 +47,10 @@ export function ripemd160(data: string | Uint8Array): Uint8Array {
  * @returns 64-byte BLAKE2b hash
  */
 export function blake2b(data: string | Uint8Array): Uint8Array {
-	const input = typeof data === "string"
-		? new TextEncoder().encode(data)
-		: new Uint8Array(data);
+	const input =
+		typeof data === "string"
+			? new TextEncoder().encode(data)
+			: new Uint8Array(data);
 
 	if (input.length === 0) {
 		throw new Error("Input data cannot be empty");

@@ -67,9 +67,9 @@ function encodeType(
 
 	return sortedDeps
 		.map((type) => {
-			const fields = types[type]
-				?.map((field) => `${field.type} ${field.name}`)
-				.join(",") ?? "";
+			const fields =
+				types[type]?.map((field) => `${field.type} ${field.name}`).join(",") ??
+				"";
 			return `${type}(${fields})`;
 		})
 		.join("");
@@ -170,10 +170,11 @@ function hashStruct(
 	types: Record<string, TypedDataField[]>,
 ): Hex {
 	const typeHash = hashType(primaryType, types);
-	const encodedValues = types[primaryType]
-		?.map((field) => encodeValue(field.type, data[field.name], types))
-		.map((hex) => hex.slice(2))
-		.join("") ?? "";
+	const encodedValues =
+		types[primaryType]
+			?.map((field) => encodeValue(field.type, data[field.name], types))
+			.map((hex) => hex.slice(2))
+			.join("") ?? "";
 
 	return keccak256(`${typeHash}${encodedValues}`) as Hex;
 }

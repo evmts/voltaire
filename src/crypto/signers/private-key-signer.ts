@@ -40,7 +40,9 @@ export class PrivateKeySignerImpl implements Signer {
 		this.address = addressObj.toChecksumHex();
 	}
 
-	static fromPrivateKey(options: PrivateKeySignerOptions): PrivateKeySignerImpl {
+	static fromPrivateKey(
+		options: PrivateKeySignerOptions,
+	): PrivateKeySignerImpl {
 		let privateKeyBytes: Uint8Array;
 
 		if (typeof options.privateKey === "string") {

@@ -88,7 +88,12 @@ export async function loadWasm(
 		fd_filestat_get: (): number => 0,
 		fd_seek: (): number => 0,
 		fd_close: (): number => 0,
-		fd_read: (_fd: number, _iovs: number, _iovs_len: number, nread: number): number => {
+		fd_read: (
+			_fd: number,
+			_iovs: number,
+			_iovs_len: number,
+			nread: number,
+		): number => {
 			if (!wasmMemory) return -1;
 			const mem = new DataView(wasmMemory.buffer);
 			mem.setUint32(nread, 0, true);
@@ -243,7 +248,9 @@ function writeBytes(data: Uint8Array, ptr: number): void {
 
 	// Validate bounds
 	if (ptr < 0 || ptr + data.length > memory.length) {
-		throw new Error(`Write out of bounds: ptr=${ptr}, data.length=${data.length}, memory.length=${memory.length}`);
+		throw new Error(
+			`Write out of bounds: ptr=${ptr}, data.length=${data.length}, memory.length=${memory.length}`,
+		);
 	}
 
 	memory.set(data, ptr);
@@ -264,7 +271,9 @@ function readBytes(ptr: number, length: number): Uint8Array {
 
 	// Validate bounds
 	if (ptr < 0 || ptr + length > memory.length) {
-		throw new Error(`Read out of bounds: ptr=${ptr}, length=${length}, memory.length=${memory.length}`);
+		throw new Error(
+			`Read out of bounds: ptr=${ptr}, length=${length}, memory.length=${memory.length}`,
+		);
 	}
 
 	return memory.slice(ptr, ptr + length);
@@ -298,7 +307,9 @@ function readFixedString(ptr: number, length: number): string {
 
 	// Validate bounds
 	if (ptr < 0 || ptr + length > memory.length) {
-		throw new Error(`Read string out of bounds: ptr=${ptr}, length=${length}, memory.length=${memory.length}`);
+		throw new Error(
+			`Read string out of bounds: ptr=${ptr}, length=${length}, memory.length=${memory.length}`,
+		);
 	}
 
 	const decoder = new TextDecoder();
@@ -828,7 +839,11 @@ export function rlpFromHex(hex: string): Uint8Array {
 		const hexPtr = writeString(hex);
 		const outPtr = malloc(hex.length); // Worst case: all hex chars
 
-		const resultLen = exports.primitives_rlp_from_hex(hexPtr, outPtr, hex.length);
+		const resultLen = exports.primitives_rlp_from_hex(
+			hexPtr,
+			outPtr,
+			hex.length,
+		);
 		if (resultLen < 0) {
 			checkResult(resultLen);
 		}
@@ -874,7 +889,9 @@ export function bytecodeAnalyzeJumpdests(code: Uint8Array): number[] {
 
 		// Validate bounds
 		if (outPtr < 0 || outPtr + count * 4 > wasmMemory.buffer.byteLength) {
-			throw new Error(`Read u32 array out of bounds: outPtr=${outPtr}, count=${count}, memory.length=${wasmMemory.buffer.byteLength}`);
+			throw new Error(
+				`Read u32 array out of bounds: outPtr=${outPtr}, count=${count}, memory.length=${wasmMemory.buffer.byteLength}`,
+			);
 		}
 
 		const results: number[] = [];
@@ -906,8 +923,11 @@ export function bytecodeIsBoundary(
 		const codePtr = malloc(code.length);
 		writeBytes(code, codePtr);
 		return (
-			exports.primitives_bytecode_is_boundary(codePtr, code.length, position) !==
-			0
+			exports.primitives_bytecode_is_boundary(
+				codePtr,
+				code.length,
+				position,
+			) !== 0
 		);
 	} finally {
 		memoryOffset = savedOffset;
@@ -1225,9 +1245,7 @@ export function secp256k1RecoverAddress(
  * @param privateKey - 32-byte private key
  * @returns Uncompressed public key (64 bytes)
  */
-export function secp256k1PubkeyFromPrivate(
-	privateKey: Uint8Array,
-): Uint8Array {
+export function secp256k1PubkeyFromPrivate(privateKey: Uint8Array): Uint8Array {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();

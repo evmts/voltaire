@@ -5,8 +5,8 @@
  * struct PrimitivesAddress { uint8_t bytes[20]; }
  */
 export interface Address {
-  /** Raw 20-byte address data */
-  bytes: Uint8Array;
+	/** Raw 20-byte address data */
+	bytes: Uint8Array;
 }
 
 /**
@@ -28,20 +28,20 @@ export const ADDRESS_HEX_LENGTH = 42;
  * Type guard: Check if string is valid address hex (42 chars)
  */
 export function isAddressHex(value: unknown): value is AddressHex {
-  return typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
+	return typeof value === "string" && /^0x[0-9a-fA-F]{40}$/.test(value);
 }
 
 /**
  * Type guard: Check if value is Address
  */
 export function isAddress(value: unknown): value is Address {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'bytes' in value &&
-    value.bytes instanceof Uint8Array &&
-    value.bytes.length === 20
-  );
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"bytes" in value &&
+		value.bytes instanceof Uint8Array &&
+		value.bytes.length === 20
+	);
 }
 
 /**
@@ -52,17 +52,19 @@ export function isAddress(value: unknown): value is Address {
  * @throws Error if bytes length is not 20
  */
 export function createAddress(bytes: Uint8Array): Address {
-  if (bytes.length !== ADDRESS_SIZE) {
-    throw new Error(`Address must be ${ADDRESS_SIZE} bytes, got ${bytes.length}`);
-  }
-  return { bytes: new Uint8Array(bytes) };
+	if (bytes.length !== ADDRESS_SIZE) {
+		throw new Error(
+			`Address must be ${ADDRESS_SIZE} bytes, got ${bytes.length}`,
+		);
+	}
+	return { bytes: new Uint8Array(bytes) };
 }
 
 /**
  * Zero address (0x0000000000000000000000000000000000000000)
  */
 export const ZERO_ADDRESS: Address = {
-  bytes: new Uint8Array(20),
+	bytes: new Uint8Array(20),
 };
 
 /**
@@ -72,7 +74,7 @@ export const ZERO_ADDRESS: Address = {
  * @returns true if all bytes are zero
  */
 export function isZeroAddress(address: Address): boolean {
-  return address.bytes.every((byte) => byte === 0);
+	return address.bytes.every((byte) => byte === 0);
 }
 
 /**
@@ -83,15 +85,15 @@ export function isZeroAddress(address: Address): boolean {
  * @returns true if addresses are equal
  */
 export function addressEquals(a: Address, b: Address): boolean {
-  if (a.bytes.length !== b.bytes.length) {
-    return false;
-  }
-  for (let i = 0; i < a.bytes.length; i++) {
-    if (a.bytes[i] !== b.bytes[i]) {
-      return false;
-    }
-  }
-  return true;
+	if (a.bytes.length !== b.bytes.length) {
+		return false;
+	}
+	for (let i = 0; i < a.bytes.length; i++) {
+		if (a.bytes[i] !== b.bytes[i]) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /**
@@ -101,7 +103,7 @@ export function addressEquals(a: Address, b: Address): boolean {
  * @returns Hex string with 0x prefix
  */
 function bytesToHex(bytes: Uint8Array): string {
-  return `0x${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /**
@@ -111,5 +113,5 @@ function bytesToHex(bytes: Uint8Array): string {
  * @returns 42-character hex string
  */
 export function addressToHex(address: Address): AddressHex {
-  return bytesToHex(address.bytes) as AddressHex;
+	return bytesToHex(address.bytes) as AddressHex;
 }

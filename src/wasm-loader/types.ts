@@ -64,9 +64,21 @@ export interface WasmExports {
 	) => number;
 
 	// Hash algorithm functions
-	primitives_sha256: (dataPtr: number, dataLen: number, outPtr: number) => number;
-	primitives_ripemd160: (dataPtr: number, dataLen: number, outPtr: number) => number;
-	primitives_blake2b: (dataPtr: number, dataLen: number, outPtr: number) => number;
+	primitives_sha256: (
+		dataPtr: number,
+		dataLen: number,
+		outPtr: number,
+	) => number;
+	primitives_ripemd160: (
+		dataPtr: number,
+		dataLen: number,
+		outPtr: number,
+	) => number;
+	primitives_blake2b: (
+		dataPtr: number,
+		dataLen: number,
+		outPtr: number,
+	) => number;
 	primitives_solidity_keccak256: (
 		dataPtr: number,
 		dataLen: number,
