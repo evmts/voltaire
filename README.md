@@ -162,6 +162,101 @@ This library provides both WASM and native FFI implementations for browser and N
   - [Withdrawal](./src/ethereum-types/withdrawal.ts) — EIP-4895 beacon chain withdrawal data
     <br/>
     <br/>
+- [**Utilities**](#utilities) — Low-level utilities for Ethereum development
+  - [ABI Utilities](./src/utils/abi.ts) — Encoding/decoding for function calls, events, and errors
+    - `decodeFunctionResult(abi, data)` — decode function return values from bytes
+    - `decodeFunctionData(abi, data)` — decode function parameters from calldata
+    - `encodeFunctionData(abi, args)` — encode function call with 4-byte selector
+    - `encodeFunctionResult(abi, values)` — encode function return values
+    - `decodeEventLog(abi, data, topics)` — decode event log data and topics
+    - `encodeEventTopics(abi, args)` — encode event topics for filtering
+    - `decodeErrorResult(abi, data)` — decode custom error parameters
+    - `encodeErrorResult(abi, args)` — encode custom error with selector
+    - `getFunctionSelector(signature)` — compute 4-byte function selector
+    - `getEventSelector(signature)` — compute 32-byte event topic hash
+    - `getErrorSelector(signature)` — compute 4-byte error selector
+    - `encodePacked(types, values)` — Solidity-style packed encoding
+    - `decodeAbiParameters(types, data)` — decode ABI-encoded parameters
+    - `encodeAbiParameters(types, values)` — encode parameters using ABI encoding
+  - [Unit Conversion](./src/utils/units.ts) — Convert between wei, gwei, and ether
+    - `formatEther(wei, decimals)` — format wei to ether string
+    - `formatGwei(wei, decimals)` — format wei to gwei string
+    - `formatUnits(wei, unit)` — format wei with custom unit decimals
+    - `parseEther(ether)` — parse ether string to wei
+    - `parseGwei(gwei)` — parse gwei string to wei
+    - `parseUnits(value, unit)` — parse custom unit string to wei
+  - [Blob/KZG Utilities](./src/utils/blobs.ts) — EIP-4844 blob transaction utilities
+    - `toBlob(data)` — convert data to blob format (128KB)
+    - `fromBlob(blob)` — extract original data from blob
+    - `blobToKzgCommitment(blob)` — compute KZG commitment (48 bytes)
+    - `computeBlobKzgProof(blob, commitment)` — generate KZG proof
+    - `verifyBlobKzgProof(blob, commitment, proof)` — verify single KZG proof
+    - `verifyBlobKzgProofBatch(blobs, commitments, proofs)` — verify batch of proofs
+    - `commitmentToVersionedHash(commitment, version)` — compute versioned hash
+    - `extractBlobVersionedHashes(transaction)` — extract hashes from blob tx
+    - `computeBlobGasUsed(blobCount)` — compute gas used by blobs
+    - `computeBlobGasPrice(excessBlobGas)` — compute blob gas price
+  - [Signature Utilities](./src/utils/signatures.ts) — Advanced signature operations
+    - `recoverAddress(hash, signature)` — recover address from signature
+    - `recoverPublicKey(hash, signature)` — recover public key from signature
+    - `signHash(hash, privateKey)` — sign message hash with private key
+    - `verifySignature(hash, signature, address)` — verify signature against address
+    - `parseSignature(signature)` — parse signature into r, s, v components
+    - `serializeSignature(components)` — serialize components to 65-byte signature
+    - `normalizeSignature(signature)` — normalize to canonical form (low-s)
+    - `isCanonicalSignature(signature)` — check if signature is canonical
+    - `compactSignature(signature)` — encode as ERC-2098 compact (64 bytes)
+    - `decompactSignature(compact)` — decode compact signature to standard
+    - `verifyErc1271Signature(hash, signature, address)` — verify smart contract signature
+    - `verifyErc6492Signature(hash, signature, address)` — verify universal signature (undeployed contracts)
+    - `verifyErc8010Signature(hash, signature, paymaster)` — verify paymaster signature
+    - `extractV(signature)` — extract v (recovery id) from signature
+    - `extractYParity(signature)` — extract yParity from signature
+    - `vToYParity(v)` — convert v to yParity (0 or 1)
+    - `yParityToV(yParity)` — convert yParity to v (27 or 28)
+  - [Hex Utilities](./src/utils/hex-utils.ts) — Extended hex string manipulation
+    - `boolToHex(value)` — encode boolean as hex
+    - `hexToBool(hex)` — decode hex to boolean
+    - `numberToHex(value)` — encode number/bigint as hex
+    - `hexToNumber(hex)` — decode hex to number
+    - `hexToBigInt(hex)` — decode hex to bigint
+    - `hexSize(hex)` — get size in bytes
+    - `isHex(hex)` — validate hex string format
+    - `padHex(hex, size)` — pad with zeros to size
+    - `trimHex(hex)` — remove leading zeros
+    - `sliceHex(hex, start, end)` — slice by byte positions
+    - `concatHex(hexStrings)` — concatenate multiple hex strings
+    - `stringToHex(value)` — encode UTF-8 string as hex
+    - `hexToString(hex)` — decode hex to UTF-8 string
+    - `hexEquals(a, b)` — compare hex strings for equality
+  - [ENS Utilities](./src/utils/ens.ts) — Ethereum Name Service utilities
+    - `namehash(name)` — compute EIP-137 namehash (32 bytes)
+    - `labelHash(label)` — hash single ENS label
+    - `normalize(name)` — normalize ENS name (UTS-46)
+    - `isValidName(name)` — validate ENS name format
+    - `getParentDomain(name)` — extract parent domain
+    - `getLabel(name)` — extract first label
+    - `encodeDnsName(name)` — encode to DNS wire format
+    - `decodeDnsName(encoded)` — decode DNS wire format
+  - [SIWE Utilities](./src/utils/siwe.ts) — EIP-4361 Sign-In with Ethereum
+    - `parseSiweMessage(message)` — parse SIWE message string
+    - `formatSiweMessage(fields)` — format SIWE fields to string
+    - `validateSiweMessage(message)` — validate SIWE format and fields
+    - `generateSiweNonce(length)` — generate cryptographically secure nonce
+    - `verifySiweMessage(message, signature)` — verify SIWE signature
+    - `hashSiweMessage(message)` — hash SIWE message for signing
+    - `isSiweMessageExpired(message, now)` — check if message is expired
+    - `isSiweMessageNotYetValid(message, now)` — check if message is not yet valid
+  - [Authorization Utilities](./src/utils/authorization.ts) — EIP-7702 set code authorization
+    - `createAuthorization(chainId, address, nonce, privateKey)` — create signed authorization
+    - `hashAuthorization(authorization)` — hash authorization for signing
+    - `verifyAuthorization(authorization)` — verify authorization signature
+    - `recoverAuthorizationAddress(authorization)` — recover signer address
+    - `encodeAuthorizationList(authorizations)` — encode authorization list (RLP)
+    - `decodeAuthorizationList(encoded)` — decode authorization list from RLP
+    - `getAuthority(authorization)` — compute authority (delegating account)
+      <br/>
+      <br/>
 - [**Precompiles**](#precompiles) — All 19 EVM precompiled contracts
   - [Precompile Execution](./src/precompiles/precompiles.ts) — Gas cost calculations and dispatch
     - [`isPrecompile(address, hardfork)`](./src/precompiles/precompiles.ts#L42) — check if address is precompile for hardfork
