@@ -4,7 +4,6 @@
 [test]
 # Exclude vendored libraries and git submodules from test discovery
 # The c-kzg-4844 submodule has its own tests with dependencies we don't need
-preload = []
 
 # Explicitly exclude lib directory containing git submodules
 # This prevents bun from discovering and running tests in:
