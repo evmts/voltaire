@@ -17,3 +17,6 @@ export * as wasm from "./wasm/index.js";
 
 // EVM precompiles (namespace export to avoid conflicts with crypto module)
 export * as precompiles from "./precompiles/precompiles.js";
+
+// Utilities (namespace export to avoid conflicts with types)
+export * as utils from "./utils/index.js";
