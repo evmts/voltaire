@@ -109,6 +109,8 @@ jobs:
           version: 0.15.1
       - name: Build Zig library (required for FFI tests)
         run: zig build -Doptimize=ReleaseFast
+      - name: Build WASM for TypeScript tests
+        run: zig build build-ts-wasm
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
       - name: Install TypeScript dependencies
