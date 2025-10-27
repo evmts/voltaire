@@ -1,9 +1,9 @@
 <div align="center">
   <h1>
-    Ethereum primitives and cryptography for TypeScript and Zig.
+    Ethereum primitives and cryptography
     <br/>
     <br/>
-    <img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
+    <img width="240" height="240" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
   </h1>
   <sup>
     <a href="https://www.npmjs.com/package/@tevm/primitives">
@@ -21,444 +21,231 @@
   </sup>
 </div>
 
-## Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [What's Included](#whats-included)
-- [API Documentation](#api-documentation)
-- [Platform Compatibility](#platform-compatibility)
-- [Performance](#performance)
-- [Native Zig Implementation](#native-zig-implementation)
-- [Benchmarking](#benchmarking)
-- [Documentation](#documentation)
-- [Comparison with Other Libraries](#comparison-with-other-libraries)
-- [Security](#security)
-- [Contributing](#contributing)
-- [Roadmap](#roadmap)
-- [License](#license)
-- [Related Projects](#related-projects)
-- [Credits](#credits)
-- [Support](#support)
-
 ## Features
 
-- **Pure TypeScript** - Works in any JavaScript environment (Node.js, Bun, Deno, browsers)
+- **Simple apis** - The minimal apis needed for Ethereum development
+- **All platforms** - Works in any JavaScript environment (Node.js, Bun, Deno, browsers)
+- **High-performance** - High-performance Zig and rust implementations available to TypeScript projects
 - **Type-safe** - Full TypeScript support with comprehensive type definitions
-- **Zero native dependencies** - All TypeScript implementations work standalone
-- **Optional native performance** - High-performance Zig implementations available via FFI/WASM
-- **Battle-tested** - Validated against Ethereum test vectors
-- **Modern** - Supports latest EIPs including EIP-1559, EIP-4844, EIP-7702
+- **Zig support** - All primitives offered both in TypeScript and [Zig](./ZIG_API.md)
 
 ## Installation
 
 ```bash
-# Using npm
 npm install @tevm/primitives
+```
 
-# Using bun
+```bash
 bun add @tevm/primitives
 ```
 
-**No native dependencies required** - TypeScript implementations work out of the box.
+```bash
+pnpm install @tevm/primitives
+```
 
-## Quick Start
+Or use the [zig api](./ZIG_API.md)
 
-```typescript
-import {
-  keccak256,
-  hexToBytes,
-  bytesToHex,
-  hashMessage,
-  Hardfork,
-  isAtLeast,
-  Opcode,
-  calculateNextBaseFee,
-} from '@tevm/primitives';
+```bash
+# Install specific version (recommended)
+zig fetch --save https://github.com/evmts/primitives/archive/refs/tags/v0.1.0.tar.gz
 
-// Keccak-256 hashing (via @noble/hashes)
-const data = new TextEncoder().encode('hello world');
-const hash = keccak256(data);
-console.log('Hash:', bytesToHex(hash));
-
-// EIP-191 personal message hashing
-const msgHash = hashMessage('Sign this message');
-
-// Hex utilities
-const bytes = hexToBytes('0xabcd1234');
-const hex = bytesToHex(bytes); // "0xabcd1234"
-
-// Hardfork comparisons
-if (isAtLeast(Hardfork.CANCUN, Hardfork.LONDON)) {
-  console.log('Cancun includes London features');
-}
-
-// EVM opcodes
-const addOpcode = Opcode.ADD;      // 0x01
-const pushOpcode = Opcode.PUSH1;   // 0x60
-
-// EIP-1559 gas calculations
-const nextBaseFee = calculateNextBaseFee(
-  1000000000n,  // parent base fee (1 gwei)
-  15000000n,    // parent gas used
-  30000000n     // parent gas limit
-);
-console.log('Next base fee:', nextBaseFee);
+# Install latest from main branch
+zig fetch --save git+https://github.com/evmts/primitives
 ```
 
 ## What's Included
 
-### Core Primitives
-
-- **Hex Utilities** - Convert between hex strings and bytes
-- **Keccak-256** - Cryptographic hashing (via @noble/hashes)
-- **EIP-191** - Personal message hashing
-- **EIP-712** - Typed structured data hashing
-- **Signers** - Private key, HD wallet, and hardware wallet signers (via @noble/curves)
-
-### Ethereum Types
-
-- **Transactions** - Legacy, EIP-1559 (Type 2), EIP-7702 (Type 4)
-- **Blocks** - Block headers and complete blocks
-- **Receipts** - Transaction receipts with logs
-- **Logs** - Event log parsing and filtering
-- **Filters** - Block and log filters
-
-### EVM Features
-
-- **Bytecode Analysis** - Jump destination analysis, validation
-- **Opcodes** - Complete EVM opcode enumeration with utilities
-- **Gas Calculations** - EIP-1559 fee market, intrinsic gas, memory costs
-- **Hardforks** - Version comparisons, chronological ordering
-- **Precompiles** - Gas cost calculations for all precompiles (0x01-0x13)
-
-### Standards
-
-- **SIWE (EIP-4361)** - Sign-In with Ethereum message handling
-- **Event Logs** - Topic filtering, signature hashing
-- **Access Lists (EIP-2930)** - Gas cost calculations
-
-## API Documentation
-
-### Comprehensive TypeScript API
-
-See [TYPESCRIPT_API.md](./docs/TYPESCRIPT_API.md) for complete API documentation including:
-- Hex utilities and conversions
-- Keccak-256 hashing
-- Transaction encoding and validation
-- Bytecode analysis and validation
-- Opcode utilities
-- Gas calculations
-- Hardfork enumeration
-- Event log parsing
-- SIWE message handling
-- Precompile gas costs
-
-### Examples
-
-#### Working with Transactions
-
-```typescript
-import {
-  type Transaction,
-  validateTransaction,
-  hashTransaction,
-} from '@tevm/primitives';
-
-const tx: Transaction = {
-  type: "eip1559",
-  chainId: 1n,
-  nonce: 42n,
-  maxPriorityFeePerGas: 2000000000n,
-  maxFeePerGas: 100000000000n,
-  gasLimit: 21000n,
-  to: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-  value: 1000000000000000000n,
-  data: '0x',
-  accessList: [],
-};
-
-// Validate structure
-if (validateTransaction(tx)) {
-  // Compute hash
-  const hash = hashTransaction(tx);
-  console.log('Transaction hash:', hash);
-}
-```
-
-#### Analyzing Bytecode
-
-```typescript
-import {
-  analyzeJumpDestinations,
-  validateBytecode,
-  isValidJumpDest,
-  hexToBytes,
-} from '@tevm/primitives';
-
-const bytecode = '0x608060405234801561001057600080fd5b50...';
-
-if (validateBytecode(bytecode)) {
-  // Find all JUMPDEST positions
-  const jumps = analyzeJumpDestinations(bytecode);
-  console.log('Valid jump destinations:', jumps);
-
-  // Check specific position
-  const isValid = isValidJumpDest(hexToBytes(bytecode), 100);
-  console.log('Position 100 is valid JUMPDEST:', isValid);
-}
-```
-
-#### Parsing Event Logs
-
-```typescript
-import {
-  parseEventLog,
-  filterLogsByTopics,
-  type EventLog,
-  type EventSignature,
-} from '@tevm/primitives';
-
-const transferSignature: EventSignature = {
-  name: 'Transfer',
-  inputs: [
-    { name: 'from', type: 'address', indexed: true },
-    { name: 'to', type: 'address', indexed: true },
-    { name: 'value', type: 'uint256', indexed: false },
-  ],
-};
-
-// Parse log
-const decoded = parseEventLog(log, transferSignature);
-console.log('From:', decoded.args.from);
-console.log('To:', decoded.args.to);
-console.log('Value:', decoded.args.value);
-
-// Filter logs by topics
-const filtered = filterLogsByTopics(logs, [
-  '0xddf252ad...', // Transfer event signature
-  null,            // any from address
-  '0x...',         // specific to address
-]);
-```
-
-#### Sign-In with Ethereum (SIWE)
-
-```typescript
-import {
-  parseMessage,
-  formatMessage,
-  validateMessage,
-  isExpired,
-  type SiweMessage,
-} from '@tevm/primitives';
-
-const message = `example.com wants you to sign in with your Ethereum account:
-0x1234567890123456789012345678901234567890
-
-I accept the Terms of Service
-
-URI: https://example.com/login
-Version: 1
-Chain ID: 1
-Nonce: abcd1234
-Issued At: 2024-01-01T00:00:00.000Z`;
-
-// Parse and validate
-const parsed = parseMessage(message);
-if (validateMessage(parsed) && !isExpired(parsed)) {
-  const formatted = formatMessage(parsed);
-  console.log('Valid SIWE message:', formatted);
-}
-```
-
-## Platform Compatibility
-
-### TypeScript/JavaScript
-
-Works in all modern JavaScript environments:
-- **Node.js** 18+ (LTS)
-- **Bun** - Full support including optional FFI for native bindings
-- **Deno** - Full support via npm imports
-- **Browsers** - Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
-
-All require BigInt support (available in all modern runtimes).
-
-### Package Exports
-
-```json
-{
-  "exports": {
-    ".": {
-      "types": "./types/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  }
-}
-```
-
-## Performance
-
-TypeScript implementations prioritize correctness and compatibility:
-
-- **Keccak-256**: ~2-5 MB/s (via @noble/hashes)
-- **Transaction encoding**: ~1-5k tx/s
-- **Hex conversions**: ~50-100 MB/s
-- **Bytecode analysis**: ~10-50 MB/s
-
-For high-performance applications requiring 10-100x faster operations, see [Native Zig Implementation](#native-zig-implementation).
-
-## Native Zig Implementation
-
-This library includes high-performance native implementations written in Zig. These are optional and provide significant performance benefits for computationally intensive operations.
-
-### Benefits
-
-- **10-100x faster** cryptographic operations
-- **Hardware acceleration** for Keccak-256 (x86-64/ARM assembly)
-- **Zero-copy operations** with efficient memory management
-- **WASM builds** for near-native browser performance
-
-### Usage
-
-For details on building and using the native Zig implementations, see:
-- [ZIG_API.md](./ZIG_API.md) - Complete Zig API reference
-- [WASM_SUPPORT.md](./docs/WASM_SUPPORT.md) - WebAssembly build guide
-- [WASM-QUICK-START.md](./docs/WASM-QUICK-START.md) - Quick start for WASM deployment
-
-### Benchmarking
-
-Comprehensive performance benchmarks are available for both native Zig and TypeScript implementations.
-
-```bash
-# Run Zig benchmarks (opt-in with flag)
-zig build -Dwith-benches=true bench
-
-# Run TypeScript comparison benchmarks
-bun run vitest bench comparisons/
-```
-
-See [BENCHMARKING.md](./BENCHMARKING.md) for detailed instructions, [ZIG_BENCHMARK_RESULTS.md](./ZIG_BENCHMARK_RESULTS.md) for Zig performance data, and [BENCHMARK_RESULTS.md](./BENCHMARK_RESULTS.md) for TypeScript/FFI comparisons.
-
-## Documentation
-
-### TypeScript
-
-- [TYPESCRIPT_API.md](./docs/TYPESCRIPT_API.md) — Complete TypeScript API reference
-- [PACKAGE_README.md](./docs/PACKAGE_README.md) — npm package documentation
-- [examples/](./examples/) — Usage examples for both Zig and TypeScript
-
-### Native Zig
-
-- [ZIG_API.md](./ZIG_API.md) — Complete Zig API reference and build instructions
-- [WASM_SUPPORT.md](./docs/WASM_SUPPORT.md) — WebAssembly build guide and feature parity
-- [WASM-QUICK-START.md](./docs/WASM-QUICK-START.md) — Quick start for WASM deployment
-- [examples/](./examples/) — Example code and usage patterns
-
-### Development
-
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — Contribution guidelines
-- [CLAUDE.md](./CLAUDE.md) — Coding standards and development protocols
-- [RELEASE.md](./docs/RELEASE.md) — Release process guide
-
-### Reference
-
-- [CHANGELOG.md](./CHANGELOG.md) — Version history
-- [docs/](./docs/) — ⚠️ AI-generated, unverified
-- [LLMS.txt](./LLMS.txt) — For LLMs
-
-## Comparison with Other Libraries
-
-### vs ethers.js
-
-- **Smaller** - No wallet/provider code, just primitives
-- **Faster** - Optimized implementations with optional native backend
-- **Modern** - Latest EIPs (4844, 7702)
-- **Type-safe** - Better TypeScript support
-
-### vs viem
-
-- **Complementary** - Can be used together
-- **Lower-level** - Focus on primitives, not RPC
-- **Portable** - Works everywhere, not just Node/Bun
-- **Native option** - Optional Zig implementations for performance
-
-### vs ethereum-cryptography
-
-- **Broader** - Includes transactions, RLP, EVM features, etc.
-- **Native option** - Zig implementations available
-- **Type-safe** - Full TypeScript with comprehensive types
-
-## Security
-
-This is production-ready software with audited dependencies where possible:
-
-### Audited Components
-- **@noble/hashes** - Widely used, audited cryptographic library by Paul Miller
-- **@noble/curves** - Audited elliptic curve implementations
-- **BLST** - Audited BLS12-381 implementation (C library)
-- **c-kzg-4844** - Audited KZG implementation (C library)
-- **Arkworks** - Audited BN254 implementation (Rust library)
-
-### Not Audited
-- TypeScript implementations (RLP, transactions, ABI parsing, etc.)
-- Zig cryptographic primitives
-- FFI/WASM bindings
-
-**Report security issues to:** security@tevm.sh
-
-## Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
-Key areas for contribution:
-- Additional EIP implementations
-- Performance optimizations
-- Test coverage improvements
-- Documentation enhancements
-- Bug fixes
-
-## Roadmap
-
-- [x] Core primitives (hex, keccak256, transactions, etc.)
-- [x] EVM features (bytecode, opcodes, gas calculations)
-- [x] Ethereum types (blocks, receipts, logs, filters)
-- [x] Signer implementations (private key, HD wallet, hardware wallet)
-- [ ] ABI encoding/decoding (full implementation)
-- [ ] Complete transaction parsing for all types
-- [x] Native FFI bindings for Bun
-- [x] WASM builds for browser performance
-- [ ] Additional hash algorithms
-- [ ] More EIP implementations
+### TypeScript/JavaScript API
+
+This library provides both WASM and native FFI implementations for browser and Node.js/Bun environments. The API is split across multiple modules for different use cases.
+
+**Legend**: 🚧 Partial implementation (stubs for signing/verification, requires C API completion)
+
+- [**WASM Primitives**](#wasm-primitives) — High-performance WebAssembly bindings
+  - [`Address`](./src/typescript/wasm/primitives/address.wasm.ts) — Ethereum address type with EIP-55 checksumming
+    - [`Address.fromHex(hex)`](./src/typescript/wasm/primitives/address.wasm.ts#L27) — create address from hex string
+    - [`Address.fromBytes(bytes)`](./src/typescript/wasm/primitives/address.wasm.ts#L37) — create from 20-byte buffer
+    - [`toHex()`](./src/typescript/wasm/primitives/address.wasm.ts#L45) — convert to lowercase hex string
+    - [`toChecksumHex()`](./src/typescript/wasm/primitives/address.wasm.ts#L53) — convert to EIP-55 checksummed hex
+    - [`isZero()`](./src/typescript/wasm/primitives/address.wasm.ts#L61) — check if zero address (0x0000...0000)
+    - [`equals(other)`](./src/typescript/wasm/primitives/address.wasm.ts#L70) — compare addresses for equality
+    - [`Address.validateChecksum(hex)`](./src/typescript/wasm/primitives/address.wasm.ts#L79) — validate EIP-55 checksum
+    - [`Address.calculateCreateAddress(sender, nonce)`](./src/typescript/wasm/primitives/address.wasm.ts#L89) — compute CREATE contract address
+    - [`Address.calculateCreate2Address(sender, salt, initCode)`](./src/typescript/wasm/primitives/address.wasm.ts#L101) — compute CREATE2 contract address
+  - [`Hash`](./src/typescript/wasm/primitives/keccak.wasm.ts) — Keccak-256 hash type with constant-time comparison
+    - [`Hash.keccak256(data)`](./src/typescript/wasm/primitives/keccak.wasm.ts#L26) — compute Keccak-256 hash
+    - [`Hash.fromHex(hex)`](./src/typescript/wasm/primitives/keccak.wasm.ts#L39) — create from 32-byte hex string
+    - [`Hash.fromBytes(bytes)`](./src/typescript/wasm/primitives/keccak.wasm.ts#L49) — create from 32-byte buffer
+    - [`toHex()`](./src/typescript/wasm/primitives/keccak.wasm.ts#L57) — convert to hex string (66 chars: "0x" + 64 hex)
+    - [`equals(other)`](./src/typescript/wasm/primitives/keccak.wasm.ts#L66) — constant-time hash comparison
+    - [`keccak256(data)`](./src/typescript/wasm/primitives/keccak.wasm.ts#L92) — compute hash and return hex string
+    - [`eip191HashMessage(message)`](./src/typescript/wasm/primitives/keccak.wasm.ts#L102) — EIP-191 personal message hash
+  - [Hash Algorithms](./src/typescript/wasm/primitives/hash.wasm.ts) — Additional cryptographic hash functions
+    - [`sha256(data)`](./src/typescript/wasm/primitives/hash.wasm.ts#L13) — SHA-256 hash (32 bytes)
+    - [`ripemd160(data)`](./src/typescript/wasm/primitives/hash.wasm.ts#L30) — RIPEMD-160 hash (20 bytes)
+    - [`blake2b(data)`](./src/typescript/wasm/primitives/hash.wasm.ts#L47) — BLAKE2b hash (64 bytes)
+    - [`solidityKeccak256(packedData)`](./src/typescript/wasm/primitives/hash.wasm.ts#L64) — Solidity-style Keccak-256
+    - [`soliditySha256(packedData)`](./src/typescript/wasm/primitives/hash.wasm.ts#L79) — Solidity-style SHA-256
+  - [Hex Utilities](./src/typescript/wasm/primitives/hex.wasm.ts) — Hexadecimal encoding/decoding
+    - `hexToBytes(hex)` — convert hex string to Uint8Array
+    - `bytesToHex(bytes)` — convert bytes to hex string with 0x prefix
+  - [RLP Encoding](./src/typescript/wasm/primitives/rlp.wasm.ts) — Recursive Length Prefix serialization
+    - `rlpEncodeBytes(bytes)` — encode byte array to RLP format
+    - `rlpEncodeUint(value)` — encode unsigned integer to RLP
+    - `rlpEncodeUintFromBigInt(value)` — encode BigInt to RLP
+    - `rlpToHex(data)` — encode data to hex string
+    - `rlpFromHex(hex)` — decode RLP from hex string
+  - [Bytecode Analysis](./src/typescript/wasm/primitives/bytecode.wasm.ts) — EVM bytecode utilities with jump destination analysis
+    - `analyzeJumpDestinations(bytecode)` — find all valid JUMPDEST positions
+    - `isValidJumpDest(bytecode, position)` — check if position is valid JUMPDEST
+    - `validateBytecode(bytecode)` — validate bytecode structure
+    - `isBytecodeBoundary(bytecode, position)` — check if at opcode boundary
+  - [Signatures (secp256k1)](./src/typescript/wasm/primitives/signature.wasm.ts) — ECDSA signature operations
+    - `secp256k1RecoverPubkey(hash, signature)` — recover 64-byte public key from signature
+    - `secp256k1RecoverAddress(hash, signature)` — recover address from signature and hash
+    - `secp256k1PubkeyFromPrivate(privateKey)` — derive public key from private key
+    - `secp256k1ValidateSignature(signature)` — validate signature format and components
+    - `signatureNormalize(signature)` — normalize signature to canonical form (low-s)
+    - `signatureIsCanonical(signature)` — check if signature is canonical
+    - `signatureParse(signature)` — parse signature into r, s, v components
+    - `signatureSerialize(r, s, v)` — serialize components into 65-byte signature
+  - [Transactions](./src/typescript/wasm/primitives/transaction.wasm.ts) — Transaction type detection
+    - `detectTransactionType(data)` — detect type from raw transaction data
+    - `TransactionType` — enum (Legacy, EIP1559, EIP2930, EIP4844, EIP7702)
+  - [U256 Operations](./src/typescript/wasm/primitives/uint256.wasm.ts) — 256-bit unsigned integer utilities
+    - `u256FromHex(hex)` — parse hex string to u256 bytes
+    - `u256ToHex(bytes)` — convert u256 bytes to hex string
+    - `u256FromBigInt(value)` — convert BigInt to u256 bytes
+    - `u256ToBigInt(bytes)` — convert u256 bytes to BigInt
+  - [Wallet](./src/typescript/wasm/primitives/wallet.wasm.ts) — Key generation utilities
+    - `generatePrivateKey()` — generate cryptographically secure random private key
+    - `compressPublicKey(publicKey)` — compress 64-byte public key to 33-byte format
+      <br/>
+      <br/>
+- [**Cryptography (Native FFI)**](#cryptography) — Native Zig implementations via FFI
+  - 🚧 [Keccak-256](./src/crypto/keccak.ts) — Primary Ethereum hash function
+    - [`keccak256(data)`](./src/crypto/keccak.ts#L53) — compute Keccak-256 hash via native FFI
+    - [`keccak256Empty()`](./src/crypto/keccak.ts#L95) — pre-computed empty hash constant
+  - 🚧 [EIP-191](./src/crypto/eip191.ts) — Personal message signing (EIP-191: Signed Data Standard)
+    - [`hashMessage(message)`](./src/crypto/eip191.ts#L42) — hash with "\x19Ethereum Signed Message:\n{length}" prefix
+    - [`signMessage(message, privateKey)`](./src/crypto/eip191.ts#L87) — sign message (stub, requires C API)
+    - [`verifyMessage(message, signature, address)`](./src/crypto/eip191.ts#L105) — verify signature (stub, requires C API)
+    - [`recoverMessageAddress(message, signature)`](./src/crypto/eip191.ts#L123) — recover signer (stub, requires C API)
+  - 🚧 [EIP-712](./src/crypto/eip712.ts) — Typed structured data signing (⚠️ UNAUDITED in Zig)
+    - [`hashTypedData(typedData)`](./src/crypto/eip712.ts#L223) — hash typed data (keccak256("\x19\x01" ‖ domainSeparator ‖ hashStruct))
+    - [`hashDomain(domain)`](./src/crypto/eip712.ts#L186) — compute EIP-712 domain separator hash
+    - [`signTypedData(typedData, privateKey)`](./src/crypto/eip712.ts#L246) — sign typed data (stub, requires C API)
+    - [`verifyTypedData(typedData, signature, address)`](./src/crypto/eip712.ts#L264) — verify signature (stub, requires C API)
+    - [`recoverTypedDataAddress(typedData, signature)`](./src/crypto/eip712.ts#L282) — recover signer (stub, requires C API)
+  - 🚧 [Hash Algorithms](./src/crypto/hash-algorithms.ts) — Additional hash functions (stubs, require C API)
+    - `sha256(data)` — SHA-256 hash
+    - `ripemd160(data)` — RIPEMD-160 hash
+    - `blake2b(data)` — BLAKE2b hash
+  - 🚧 [secp256k1](./src/crypto/secp256k1.ts) — Elliptic curve operations (stubs, require C API)
+    - Constants: `SECP256K1_P`, `SECP256K1_N`, `SECP256K1_Gx`, `SECP256K1_Gy`
+    - Point operations: `isOnCurve`, `add`, `double`, `multiply`, `negate`
+    - `extractRecoveryId(signature)` — extract v from signature
+      <br/>
+      <br/>
+- [**Ethereum Types**](#ethereum-types) — Standard TypeScript interfaces
+  - [Base Types](./src/ethereum-types/base-types.ts) — Common type aliases
+    - `Address` — 20-byte Ethereum address (`0x${string}`)
+    - `Bytes`, `Bytes32`, `Bytes256` — Variable and fixed-length byte arrays
+    - `Hash32` — 32-byte hash (transaction/block hash)
+    - `Uint`, `Uint64`, `Uint256` — Unsigned integers as hex strings
+    - `BlockTag`, `BlockNumber`, `BlockIdentifier` — Block reference types
+  - [TransactionInfo](./src/ethereum-types/transaction-info.ts) — All transaction types (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702)
+  - [ReceiptInfo](./src/ethereum-types/receipt-info.ts) — Transaction receipt with logs and status
+  - [Log](./src/ethereum-types/log.ts) — Event log with topics and data
+  - [Block](./src/ethereum-types/block.ts) — Block header and body structures
+  - [Filter](./src/ethereum-types/filter.ts) — Event filter criteria for eth_getLogs
+  - [Withdrawal](./src/ethereum-types/withdrawal.ts) — EIP-4895 beacon chain withdrawal data
+    <br/>
+    <br/>
+- [**Precompiles**](#precompiles) — All 19 EVM precompiled contracts
+  - [Precompile Execution](./src/precompiles/precompiles.ts) — Gas cost calculations and dispatch
+    - [`isPrecompile(address, hardfork)`](./src/precompiles/precompiles.ts#L42) — check if address is precompile for hardfork
+    - [`execute(address, input, gasLimit, hardfork)`](./src/precompiles/precompiles.ts#L116) — execute precompile and return result
+    - Individual precompile functions (gas calculations only, crypto requires native bindings):
+      - [`ecrecover(input, gasLimit)`](./src/precompiles/precompiles.ts#L196) — 0x01: Recover signer from ECDSA signature (3000 gas)
+      - [`sha256(input, gasLimit)`](./src/precompiles/precompiles.ts#L216) — 0x02: SHA-256 hash (60 + 12/word gas)
+      - [`ripemd160(input, gasLimit)`](./src/precompiles/precompiles.ts#L233) — 0x03: RIPEMD-160 hash (600 + 120/word gas)
+      - [`identity(input, gasLimit)`](./src/precompiles/precompiles.ts#L254) — 0x04: Identity/copy (15 + 3/word gas)
+      - [`modexp(input, gasLimit)`](./src/precompiles/precompiles.ts#L274) — 0x05: Modular exponentiation (200 gas base)
+      - [`bn254Add(input, gasLimit)`](./src/precompiles/precompiles.ts#L293) — 0x06: BN254 elliptic curve addition (150 gas)
+      - [`bn254Mul(input, gasLimit)`](./src/precompiles/precompiles.ts#L313) — 0x07: BN254 scalar multiplication (6000 gas)
+      - [`bn254Pairing(input, gasLimit)`](./src/precompiles/precompiles.ts#L333) — 0x08: BN254 pairing check (45000 + 34000k gas)
+      - [`blake2f(input, gasLimit)`](./src/precompiles/precompiles.ts#L354) — 0x09: Blake2b compression (rounds gas)
+      - [`pointEvaluation(input, gasLimit)`](./src/precompiles/precompiles.ts#L380) — 0x0a: KZG point evaluation for EIP-4844 (50000 gas)
+      - BLS12-381 precompiles (EIP-2537, active from Prague hardfork):
+        - [`bls12G1Add(input, gasLimit)`](./src/precompiles/precompiles.ts#L399) — 0x0b: G1 addition (500 gas)
+        - [`bls12G1Mul(input, gasLimit)`](./src/precompiles/precompiles.ts#L418) — 0x0c: G1 multiplication (12000 gas)
+        - [`bls12G1Msm(input, gasLimit)`](./src/precompiles/precompiles.ts#L438) — 0x0d: G1 multi-scalar multiplication (12000k gas)
+        - [`bls12G2Add(input, gasLimit)`](./src/precompiles/precompiles.ts#L457) — 0x0e: G2 addition (800 gas)
+        - [`bls12G2Mul(input, gasLimit)`](./src/precompiles/precompiles.ts#L476) — 0x0f: G2 multiplication (45000 gas)
+        - [`bls12G2Msm(input, gasLimit)`](./src/precompiles/precompiles.ts#L495) — 0x10: G2 multi-scalar multiplication (45000k gas)
+        - [`bls12Pairing(input, gasLimit)`](./src/precompiles/precompiles.ts#L515) — 0x11: Pairing check (115000 + 23000k gas)
+        - [`bls12MapFpToG1(input, gasLimit)`](./src/precompiles/precompiles.ts#L535) — 0x12: Map field element to G1 (5500 gas)
+        - [`bls12MapFp2ToG2(input, gasLimit)`](./src/precompiles/precompiles.ts#L554) — 0x13: Map field element to G2 (75000 gas)
+
+For the complete Zig API with low-level implementations, see [ZIG_API.md](./ZIG_API.md).
 
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details
 
-## Related Projects
+## Alternatives
 
-- [Guillotine](https://github.com/evmts/guillotine) - EVM execution engine using these primitives
-- [Guillotine Mini](https://github.com/evmts/guillotine-mini) - Minimal EVM implementation
-- [Tevm](https://github.com/evmts/tevm-monorepo) - TypeScript EVM tools
+- [Viem](https://viem.sh) - A highly popular JavaScript ethereum library
+- [Ethers]()
 
-## Credits
+## Dependencies
 
-Built with:
-- [@noble/hashes](https://github.com/paulmillr/noble-hashes) by Paul Miller
-- [@noble/curves](https://github.com/paulmillr/noble-curves) by Paul Miller
-- [Zig](https://ziglang.org) by Andrew Kelley and contributors
-- [BLST](https://github.com/supranational/blst) - BLS12-381 signatures
-- [c-kzg-4844](https://github.com/ethereum/c-kzg-4844) - KZG commitments
-- [Arkworks](https://github.com/arkworks-rs/curves) - BN254 curve operations
-- Ethereum specifications and test vectors
+This library has **zero runtime dependencies** for the TypeScript/JavaScript API. All functionality is provided through:
 
-## Support
+- **WASM bindings** — Self-contained WebAssembly module compiled from Zig (82KB)
+- **Native FFI** — Optional native bindings via Bun FFI or Node.js `ffi-napi` for better performance
+
+### Optional Dependencies
+
+- `ffi-napi` ^4.0.3 — Node.js FFI bindings (optional, for native performance in Node.js)
+- `ref-napi` ^3.0.3 — Node.js FFI type helpers (optional, for native bindings)
+
+These are marked as `optionalDependencies` and are only needed if using native FFI mode in Node.js. Bun provides built-in FFI support.
+
+## Dev Dependencies
+
+### Build Tools
+
+- **Zig 0.15.1+** — Systems programming language for native implementations ([download](https://ziglang.org/download/))
+- **Cargo (Rust)** — Required for building Rust crypto dependencies ([install](https://www.rust-lang.org/tools/install))
+- **TypeScript 5.7.2** — Type checking and compilation
+- **Bun** — Fast JavaScript runtime with built-in FFI support
+
+### Testing & Benchmarking
+
+- **Vitest 2.1.8** — Fast unit test framework
+- **Mitata 1.0.34** — High-precision benchmarking
+
+### Code Quality
+
+- **Biome 1.9.4** — Fast linter and formatter for TypeScript/JavaScript
+- **TypeScript** — Static type checking
+
+### Comparison Libraries (for testing/benchmarks)
+
+- **Viem 2.21.54** — Reference Ethereum library
+- **Ethers 6.13.4** — Reference Ethereum library
+- **@noble/curves 2.0.1** — Reference elliptic curve implementations
+- **@noble/hashes 2.0.1** — Reference hash implementations
+
+### Additional Tools
+
+- **glob 11.0.0** — File pattern matching
+- **bindings 1.5.0** — Helper for loading native modules
+
+## Links
 
 - [GitHub Issues](https://github.com/evmts/primitives/issues)
-- [Discord](https://discord.gg/tevm)
-- [Twitter](https://twitter.com/tevm_sh)
-
----
-
-Made with ❤️ by the Tevm team
+- [Telegram](https://t.me/+ANThR9bHDLAwMjUx)
+- [Twitter](https://twitter.com/tevmtools)

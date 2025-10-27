@@ -35,6 +35,7 @@ When using primitives in your Zig project, you need to import the modules and li
 ### Required Steps
 
 1. **Add dependency to build.zig.zon**
+
    ```zig
    .dependencies = .{
        .guillotine_primitives = .{
@@ -47,6 +48,7 @@ When using primitives in your Zig project, you need to import the modules and li
    Run `zig build` to automatically fetch and compute the correct hash, or use `zig fetch --save` as shown in the Installation section.
 
 2. **Import modules and link artifacts in build.zig**
+
    ```zig
    const primitives_dep = b.dependency("guillotine_primitives", .{
        .target = target,
@@ -78,18 +80,19 @@ When using primitives in your Zig project, you need to import the modules and li
 
 ### Artifacts Reference
 
-| Artifact | Type | Purpose | Required |
-|----------|------|---------|----------|
-| `blst` | C (static) | BLS12-381 curve operations | Yes |
-| `c_kzg` | C (static) | KZG commitments for EIP-4844 | Yes |
-| `bn254` | Rust (static) | BN254 precompiles via Arkworks | Optional* |
-| `keccak-asm` | Rust (static) | Hardware-accelerated Keccak hashing | Optional* |
+| Artifact     | Type          | Purpose                             | Required   |
+| ------------ | ------------- | ----------------------------------- | ---------- |
+| `blst`       | C (static)    | BLS12-381 curve operations          | Yes        |
+| `c_kzg`      | C (static)    | KZG commitments for EIP-4844        | Yes        |
+| `bn254`      | Rust (static) | BN254 precompiles via Arkworks      | Optional\* |
+| `keccak-asm` | Rust (static) | Hardware-accelerated Keccak hashing | Optional\* |
 
 \* Not available in WASM builds. The library falls back to pure Zig implementations.
 
 ### Undefined Symbol Errors
 
 If you see errors like:
+
 ```
 Undefined symbols:
   "_bls12_381_g1_add"
@@ -253,8 +256,8 @@ const Address = @import("../primitives/address.zig");
     - [`get`](./src/primitives/trie.zig#L827) &mdash; retrieve value from trie
     - [`delete`](./src/primitives/trie.zig#L837) &mdash; delete key from trie
     - [`clear`](./src/primitives/trie.zig#L848) &mdash; clear trie to empty state
-    <br/>
-    <br/>
+      <br/>
+      <br/>
 - [**Cryptography primitives**](#cryptography)
   - [`keccak256`](./src/crypto/hash_utils.zig) &mdash; Keccak-256 via Zig std library
     - [`keccak256`](./src/crypto/hash_utils.zig#L92) &mdash; compute Keccak-256 hash
@@ -310,8 +313,8 @@ const Address = @import("../primitives/address.zig");
     - [`unaudited_blake2f_compress`](./src/crypto/blake2.zig#L100) &mdash; BLAKE2F wrapper for EIP-152 precompile
   - 🚧 [`ModExp`](./src/crypto/modexp.zig) &mdash; ⚠️ (unaudited) modular exponentiation
     - [`unaudited_modexp`](./src/crypto/modexp.zig#L42) &mdash; modular exponentiation (base^exp mod m)
-    <br/>
-    <br/>
+      <br/>
+      <br/>
 - [**Ethereum precompiles**](#precompiles)
   - 🚧 [`ECRECOVER`](./src/precompiles/ecrecover.zig#L11) &mdash; ⚠️ (unaudited) 0x01: recover signer address from signature
   - [`SHA256`](./src/precompiles/sha256.zig#L12) &mdash; 0x02: SHA-256 hash function
