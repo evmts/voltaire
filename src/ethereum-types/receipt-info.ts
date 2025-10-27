@@ -13,7 +13,6 @@ import type {
 	Bytes256,
 	Hash32,
 	Uint,
-	Uint256,
 } from "./base-types.js";
 import type { Log } from "./log.js";
 

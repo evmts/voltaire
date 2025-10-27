@@ -5,6 +5,14 @@
  * Based on: https://github.com/ethereum/execution-apis
  */
 
+import type { AddressHex } from "../primitives/address.js";
+
+/**
+ * Address - 20-byte Ethereum address as hex string
+ * Re-exported from primitives for consistency
+ */
+export type { AddressHex as Address };
+
 /**
  * Byte - Single byte as hex string
  * Example: "0xff"
@@ -27,12 +35,6 @@ export type Bytes32 = `0x${string}`;
  * Bytes256 - 256-byte fixed-length data (logs bloom)
  */
 export type Bytes256 = `0x${string}`;
-
-/**
- * Address - 20-byte Ethereum address
- * Example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
- */
-export type Address = `0x${string}`;
 
 /**
  * Hash32 - 32-byte hash (transaction hash, block hash)
