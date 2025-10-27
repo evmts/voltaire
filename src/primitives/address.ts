@@ -1,3 +1,7 @@
+declare const addressSymbol: unique symbol;
+
+type Address = Uint8Array & {__brand: addressSymbol}
+
 /**
  * Ethereum address (20 bytes)
  *
