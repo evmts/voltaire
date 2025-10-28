@@ -3,6 +3,9 @@
  * TypeScript implementations with native Zig bindings via Bun FFI and WASM
  */
 
+// Type factory for composable branded types
+export { Type } from "./Type.js";
+
 // Core primitives - Data-first, tree-shakeable API
 export * from "./primitives/index.js";
 
