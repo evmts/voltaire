@@ -20,4 +20,4 @@ jobs:
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
       - name: Measure WASM bundle sizes
-        run: bun run script/wasm-size.ts
+        run: bun run scripts/wasm-size.ts
