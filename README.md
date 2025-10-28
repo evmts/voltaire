@@ -3,7 +3,7 @@
     Ethereum primitives and cryptography
     <br/>
     <br/>
-    <img width="240" height="240" alt="image" src="https://github.com/user-attachments/assets/492fabbc-d8d0-4f5b-b9f5-ea05adc5f8ca" />
+    <img width="512" height="512" alt="voltaire-logo" src="https://github.com/user-attachments/assets/409b49cb-113b-4b76-989d-762f6294e26a" />
   </h1>
   <sup>
     <a href="https://www.npmjs.com/package/@tevm/voltaire">
