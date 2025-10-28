@@ -1,0 +1,82 @@
+{
+  "timestamp": "2025-10-27T19:18:00.000Z",
+  "runtime": "bun",
+  "version": "v1.2.20",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M4 Pro",
+  "results": [
+    {
+      "name": "SHA256: 4 bytes (tiny)",
+      "avg_time_ns": 625.27,
+      "ops_per_sec": 1599312,
+      "throughput_mb_per_sec": 0.0061
+    },
+    {
+      "name": "SHA256: 32 bytes (small)",
+      "avg_time_ns": 612.33,
+      "ops_per_sec": 1633200,
+      "throughput_mb_per_sec": 0.0499
+    },
+    {
+      "name": "SHA256: 256 bytes (medium)",
+      "avg_time_ns": 1810,
+      "ops_per_sec": 552486,
+      "throughput_mb_per_sec": 0.135
+    },
+    {
+      "name": "SHA256: 1 KB (large)",
+      "avg_time_ns": 5350,
+      "ops_per_sec": 186916,
+      "throughput_mb_per_sec": 0.178
+    },
+    {
+      "name": "SHA256: 64 KB (xlarge)",
+      "avg_time_ns": 301910,
+      "ops_per_sec": 3312,
+      "throughput_mb_per_sec": 0.202
+    },
+    {
+      "name": "SHA256: 1 MB (huge)",
+      "avg_time_ns": 4830000,
+      "ops_per_sec": 207,
+      "throughput_mb_per_sec": 0.197
+    },
+    {
+      "name": "SHA256.hashString: small text",
+      "avg_time_ns": 836.99,
+      "ops_per_sec": 1194759
+    },
+    {
+      "name": "SHA256.hashString: medium text",
+      "avg_time_ns": 3150,
+      "ops_per_sec": 317460
+    },
+    {
+      "name": "SHA256.hashHex: small hex",
+      "avg_time_ns": 769.44,
+      "ops_per_sec": 1299715
+    },
+    {
+      "name": "SHA256.hashHex: 32-byte hex",
+      "avg_time_ns": 1160,
+      "ops_per_sec": 862069
+    },
+    {
+      "name": "SHA256.create (incremental): 1KB in 32-byte chunks",
+      "avg_time_ns": 6780,
+      "ops_per_sec": 147493
+    },
+    {
+      "name": "SHA256.create (incremental): 1KB in single chunk",
+      "avg_time_ns": 5410,
+      "ops_per_sec": 184843
+    }
+  ],
+  "summary": {
+    "total_benchmarks": 12,
+    "fastest": "SHA256: 32 bytes (small) - 1,633,200 ops/sec",
+    "slowest": "SHA256: 1 MB (huge) - 207 ops/sec",
+    "notes": "Benchmarks run on Apple M4 Pro using Bun runtime with @noble/hashes"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "hash_32_bytes": {
+    "opsPerSec": 982813,
+    "avgTime": 0.0010174875
+  },
+  "hash_1_KB": {
+    "opsPerSec": 202534,
+    "avgTime": 0.0049374499999999995
+  },
+  "hash_64_KB": {
+    "opsPerSec": 3669,
+    "avgTime": 0.272581833
+  },
+  "hash_1_MB": {
+    "opsPerSec": 231,
+    "avgTime": 4.338023708
+  },
+  "hashString": {
+    "opsPerSec": 1241285,
+    "avgTime": 0.0008056166999999732
+  }
+}

@@ -214,31 +214,31 @@ Benchmark results (ops/sec) on M1 MacBook Pro:
 
 | Input Size | Ops/Sec | Throughput |
 |-----------|---------|------------|
-| Empty     | ~400K   | N/A        |
-| 32 bytes  | ~350K   | ~11 MB/s   |
-| 256 bytes | ~100K   | ~25 MB/s   |
-| 1 KB      | ~30K    | ~30 MB/s   |
-| 4 KB      | ~8K     | ~32 MB/s   |
-| 16 KB     | ~2K     | ~32 MB/s   |
-| 64 KB     | ~500    | ~32 MB/s   |
+| Empty     | 376K    | N/A        |
+| 32 bytes  | 370K    | 11.3 MB/s  |
+| 256 bytes | 190K    | 46.3 MB/s  |
+| 1 KB      | 49K     | 48.0 MB/s  |
+| 4 KB      | 13K     | 50.6 MB/s  |
+| 16 KB     | 3.3K    | 51.3 MB/s  |
+| 64 KB     | 837     | 52.3 MB/s  |
 
 ### Operation Performance
 
 | Operation | Ops/Sec |
 |-----------|---------|
-| hash (32B) | ~350K |
-| hashString | ~320K |
-| hashHex | ~180K |
-| selector | ~320K |
-| topic | ~320K |
-| contractAddress | ~310K |
-| create2Address | ~330K |
+| hash (32B) | 370K |
+| hashString | 354K |
+| hashHex | 329K |
+| selector | 355K |
+| topic | 354K |
+| contractAddress | 317K |
+| create2Address | 345K |
 
 Performance characteristics:
-- Small inputs (<1KB): Overhead-dominated, ~350K ops/sec
-- Large inputs (>4KB): Throughput-limited, ~32 MB/s
-- Selector/topic computation: ~320K ops/sec
-- Address derivation: ~310-330K ops/sec
+- Small inputs (<1KB): Overhead-dominated, ~350-370K ops/sec
+- Large inputs (>4KB): Throughput-limited, ~50 MB/s
+- Selector/topic computation: ~354-355K ops/sec
+- Address derivation: ~317-345K ops/sec
 
 ## Implementation Details
 
@@ -288,7 +288,7 @@ keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bc
 
 Single 0xFF byte:
 ```
-keccak256(0xFF) = 0x37ffe1b257da0e9e635c2daa5e92b5e43b44ba5c6c4f8b08db3d67af43c38ca1
+keccak256(0xFF) = 0x8b1a944cf13a9a1c08facb2c9e98623ef3254d2ddb48113885c3e8e97fec8db9
 ```
 
 ## Edge Cases
