@@ -55,7 +55,7 @@ pub const Authorization = struct {
         try list.appendSlice(chain_id_encoded);
 
         // Encode address
-        const address_encoded = try rlp.encode_bytes(allocator, &self.address.bytes);
+        const address_encoded = try rlp.encodeBytes(allocator, &self.address.bytes);
         defer allocator.free(address_encoded);
         try list.appendSlice(address_encoded);
 
@@ -71,7 +71,7 @@ pub const Authorization = struct {
         if (list.items.len <= 55) {
             try rlp_list.append(@as(u8, @intCast(0xc0 + list.items.len)));
         } else {
-            const len_bytes = try rlp.encode_length(allocator, list.items.len);
+            const len_bytes = try rlp.encodeLength(allocator, list.items.len);
             defer allocator.free(len_bytes);
             try rlp_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try rlp_list.appendSlice(len_bytes);
@@ -151,7 +151,7 @@ pub fn encodeAuthorizationList(allocator: Allocator, auth_list: AuthorizationLis
         const chain_id_enc = try rlp.encode(allocator, auth.chain_id);
         defer allocator.free(chain_id_enc);
         try auth_fields.appendSlice(chain_id_enc);
-        const addr_enc = try rlp.encode_bytes(allocator, &auth.address.bytes);
+        const addr_enc = try rlp.encodeBytes(allocator, &auth.address.bytes);
         defer allocator.free(addr_enc);
         try auth_fields.appendSlice(addr_enc);
         const nonce_enc = try rlp.encode(allocator, auth.nonce);
@@ -160,10 +160,10 @@ pub fn encodeAuthorizationList(allocator: Allocator, auth_list: AuthorizationLis
         const v_enc = try rlp.encode(allocator, auth.v);
         defer allocator.free(v_enc);
         try auth_fields.appendSlice(v_enc);
-        const r_enc = try rlp.encode_bytes(allocator, &auth.r);
+        const r_enc = try rlp.encodeBytes(allocator, &auth.r);
         defer allocator.free(r_enc);
         try auth_fields.appendSlice(r_enc);
-        const s_enc = try rlp.encode_bytes(allocator, &auth.s);
+        const s_enc = try rlp.encodeBytes(allocator, &auth.s);
         defer allocator.free(s_enc);
         try auth_fields.appendSlice(s_enc);
 
@@ -171,7 +171,7 @@ pub fn encodeAuthorizationList(allocator: Allocator, auth_list: AuthorizationLis
         if (auth_fields.items.len <= 55) {
             try list.append(@as(u8, @intCast(0xc0 + auth_fields.items.len)));
         } else {
-            const len_bytes = try rlp.encode_length(allocator, auth_fields.items.len);
+            const len_bytes = try rlp.encodeLength(allocator, auth_fields.items.len);
             defer allocator.free(len_bytes);
             try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try list.appendSlice(len_bytes);
@@ -184,7 +184,7 @@ pub fn encodeAuthorizationList(allocator: Allocator, auth_list: AuthorizationLis
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = rlp.encode_length(list.items.len);
+        const len_bytes = rlp.encodeLength(list.items.len);
         try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try result.appendSlice(len_bytes);
     }
