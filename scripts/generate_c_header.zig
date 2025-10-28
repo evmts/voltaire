@@ -304,6 +304,7 @@ fn zigTypeToCType(zig_type: []const u8) ![]const u8 {
     if (std.mem.eql(u8, zig_type, "*[20]u8")) return "uint8_t *";
     if (std.mem.eql(u8, zig_type, "*[64]u8")) return "uint8_t *";
     if (std.mem.eql(u8, zig_type, "*[33]u8")) return "uint8_t *";
+    if (std.mem.eql(u8, zig_type, "*[4]u8")) return "uint8_t *";
     if (std.mem.eql(u8, zig_type, "*const [64]u8")) return "const uint8_t *";
     if (std.mem.eql(u8, zig_type, "*const [33]u8")) return "const uint8_t *";
     if (std.mem.eql(u8, zig_type, "*u8")) return "uint8_t *";

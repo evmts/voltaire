@@ -1261,17 +1261,17 @@ fn abiEncodeParametersImpl(
 
     // Parse types array
     var types_list = std.array_list.AlignedManaged(primitives.Abi.AbiType, null).init(allocator);
-    defer types_list.deinit(allocator);
+    defer types_list.deinit();
 
-    if (!parseJsonStringArray(allocator, types_str, &types_list, true)) {
+    if (!parseJsonTypeArray(allocator, types_str, &types_list)) {
         return PRIMITIVES_ERROR_INVALID_INPUT;
     }
 
     // Parse values array
     var values_strs = std.array_list.AlignedManaged([]const u8, null).init(allocator);
-    defer values_strs.deinit(allocator);
+    defer values_strs.deinit();
 
-    if (!parseJsonStringArray(allocator, values_str, &values_strs, false)) {
+    if (!parseJsonStringValueArray(values_str, &values_strs)) {
         return PRIMITIVES_ERROR_INVALID_INPUT;
     }
 
@@ -1285,14 +1285,14 @@ fn abiEncodeParametersImpl(
         for (abi_values.items) |*v| {
             freeAbiValue(allocator, v);
         }
-        abi_values.deinit(allocator);
+        abi_values.deinit();
     }
 
     for (types_list.items, values_strs.items) |abi_type, value_str| {
         const abi_value = parseAbiValue(allocator, abi_type, value_str) catch {
             return PRIMITIVES_ERROR_INVALID_INPUT;
         };
-        abi_values.append(allocator, abi_value) catch {
+        abi_values.append(abi_value) catch {
             return PRIMITIVES_ERROR_OUT_OF_MEMORY;
         };
     }
@@ -1357,9 +1357,9 @@ fn abiDecodeParametersImpl(
 ) c_int {
     // Parse types array
     var types_list = std.array_list.AlignedManaged(primitives.Abi.AbiType, null).init(allocator);
-    defer types_list.deinit(allocator);
+    defer types_list.deinit();
 
-    if (!parseJsonStringArray(allocator, types_str, &types_list, true)) {
+    if (!parseJsonTypeArray(allocator, types_str, &types_list)) {
         return PRIMITIVES_ERROR_INVALID_INPUT;
     }
 
@@ -1393,13 +1393,11 @@ fn abiDecodeParametersImpl(
     return @intCast(json_result.len);
 }
 
-/// Helper: Parse JSON string array into ArrayList
-/// If is_type is true, parses as AbiType; otherwise parses as string slices
-fn parseJsonStringArray(
+/// Helper: Parse JSON string array into ArrayList of AbiType
+fn parseJsonTypeArray(
     allocator: std.mem.Allocator,
     json_str: []const u8,
-    list: anytype,
-    is_type: bool,
+    list: *std.array_list.AlignedManaged(primitives.Abi.AbiType, null),
 ) bool {
     var str = json_str;
     // Trim whitespace
@@ -1427,13 +1425,60 @@ fn parseJsonStringArray(
         const element = str[0..end_quote];
         str = str[end_quote + 1 ..]; // Skip element and closing quote
 
-        // Append to list
-        if (is_type) {
-            const abi_type = parseAbiType(allocator, element) catch return false;
-            list.append(allocator, abi_type) catch return false;
-        } else {
-            list.append(allocator, element) catch return false;
+        // Parse and append AbiType
+        const abi_type = parseAbiType(allocator, element) catch return false;
+        list.append(abi_type) catch return false;
+
+        // Trim whitespace
+        while (str.len > 0 and std.mem.indexOfScalar(u8, " \t\n\r", str[0]) != null) {
+            str = str[1..];
         }
+
+        if (str.len == 0) return false;
+        if (str[0] == ',') {
+            str = str[1..]; // Skip comma
+            continue;
+        }
+        if (str[0] == ']') break;
+        return false;
+    }
+
+    return true;
+}
+
+/// Helper: Parse JSON string array into ArrayList of string slices
+fn parseJsonStringValueArray(
+    json_str: []const u8,
+    list: *std.array_list.AlignedManaged([]const u8, null),
+) bool {
+    var str = json_str;
+    // Trim whitespace
+    while (str.len > 0 and std.mem.indexOfScalar(u8, " \t\n\r", str[0]) != null) {
+        str = str[1..];
+    }
+
+    if (str.len < 2 or str[0] != '[') return false;
+    str = str[1..]; // Skip '['
+
+    while (true) {
+        // Trim whitespace
+        while (str.len > 0 and std.mem.indexOfScalar(u8, " \t\n\r", str[0]) != null) {
+            str = str[1..];
+        }
+
+        if (str.len == 0) return false;
+        if (str[0] == ']') break;
+
+        // Parse string element
+        if (str[0] != '"') return false;
+        str = str[1..]; // Skip opening quote
+
+        const end_quote = std.mem.indexOfScalar(u8, str, '"') orelse return false;
+        const element = str[0..end_quote];
+        str = str[end_quote + 1 ..]; // Skip element and closing quote
+
+        // Append string slice
+        list.append(element) catch return false;
 
         // Trim whitespace
         while (str.len > 0 and std.mem.indexOfScalar(u8, " \t\n\r", str[0]) != null) {
@@ -1455,30 +1500,30 @@ fn parseJsonStringArray(
 /// Helper: Format ABI values to JSON string array
 fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitives.Abi.AbiValue) ![]u8 {
     var result = std.array_list.AlignedManaged(u8, null).init(allocator);
-    defer result.deinit(allocator);
+    defer result.deinit();
 
-    try result.append(allocator, '[');
+    try result.append('[');
 
     for (values, 0..) |value, i| {
-        if (i > 0) try result.append(allocator, ',');
-        try result.append(allocator, '"');
+        if (i > 0) try result.append(',');
+        try result.append('"');
 
         switch (value) {
             .uint256 => |val| {
                 var buf: [66]u8 = undefined;
                 const hex = std.fmt.bufPrint(&buf, "0x{x}", .{val}) catch return error.OutOfMemory;
-                try result.appendSlice(allocator, hex);
+                try result.appendSlice(hex);
             },
             .address => |addr| {
                 const hex = addr.toHex();
-                try result.appendSlice(allocator, &hex);
+                try result.appendSlice(&hex);
             },
             .bool => |b| {
                 const str = if (b) "true" else "false";
-                try result.appendSlice(allocator, str);
+                try result.appendSlice(str);
             },
             .string => |s| {
-                try result.appendSlice(allocator, s);
+                try result.appendSlice(s);
             },
             .bytes => |b| {
                 var temp_buf: [2048]u8 = undefined;
@@ -1487,19 +1532,19 @@ fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitive
 
                 const hex = primitives.Hex.bytesToHex(temp_allocator, b) catch return error.OutOfMemory;
                 defer temp_allocator.free(hex);
-                try result.appendSlice(allocator, hex);
+                try result.appendSlice(hex);
             },
             else => {
                 // For other types, just return "unsupported"
-                try result.appendSlice(allocator, "unsupported");
+                try result.appendSlice("unsupported");
             },
         }
 
-        try result.append(allocator, '"');
+        try result.append('"');
     }
 
-    try result.append(allocator, ']');
-    return result.toOwnedSlice(allocator);
+    try result.append(']');
+    return result.toOwnedSlice();
 }
 
 /// Helper: Free ABI type (no-op for enum-based AbiType)

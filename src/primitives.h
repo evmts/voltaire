@@ -392,6 +392,38 @@ int primitives_blake2b(const uint8_t * data, size_t data_len, uint8_t * out_hash
 int primitives_calculate_create2_address(const PrimitivesAddress * sender, const uint8_t * salt, const uint8_t * init_code, size_t init_code_len, PrimitivesAddress * out_address);
 
 // ============================================================================
+// ABI Encoding/Decoding API
+// ============================================================================
+
+/**
+ * Compute function selector from signature
+ * signature: null-terminated string (e.g., "transfer(address,uint256)")
+ * out_selector: 4-byte buffer for selector output
+ */
+int primitives_abi_compute_selector(const char * signature, uint8_t * out_selector);
+
+/**
+ * Encode ABI parameters
+ * types_json: JSON array of type strings, e.g., ["address","uint256","bool"]
+ * values_json: JSON array of value strings, e.g., ["0x...", "42", "true"]
+ * out_buf: output buffer for encoded data
+ * buf_len: size of output buffer
+ * Returns: number of bytes written, or negative error code
+ */
+int primitives_abi_encode_parameters(const char * types_json, const char * values_json, uint8_t * out_buf, size_t buf_len);
+
+/**
+ * Decode ABI parameters
+ * data: encoded ABI data
+ * data_len: length of encoded data
+ * types_json: JSON array of type strings
+ * out_buf: output buffer for JSON-encoded values
+ * buf_len: size of output buffer
+ * Returns: number of bytes written to out_buf, or negative error code
+ */
+int primitives_abi_decode_parameters(const uint8_t * data, size_t data_len, const char * types_json, uint8_t * out_buf, size_t buf_len);
+
+// ============================================================================
 // Version info
 // ============================================================================
 
