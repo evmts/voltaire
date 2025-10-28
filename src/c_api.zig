@@ -11,6 +11,9 @@ pub const PRIMITIVES_ERROR_INVALID_CHECKSUM: c_int = -3;
 pub const PRIMITIVES_ERROR_OUT_OF_MEMORY: c_int = -4;
 pub const PRIMITIVES_ERROR_INVALID_INPUT: c_int = -5;
 pub const PRIMITIVES_ERROR_INVALID_SIGNATURE: c_int = -6;
+pub const PRIMITIVES_ERROR_INVALID_SELECTOR: c_int = -7;
+pub const PRIMITIVES_ERROR_UNSUPPORTED_TYPE: c_int = -8;
+pub const PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED: c_int = -9;
 
 // C-compatible Address type (20 bytes)
 pub const PrimitivesAddress = extern struct {
@@ -393,6 +396,141 @@ export fn primitives_secp256k1_validate_signature(
     const s_u256 = std.mem.readInt(u256, s, .big);
 
     return crypto.secp256k1.unauditedValidateSignature(r_u256, s_u256);
+}
+
+// ============================================================================
+// WASM-specific secp256k1 functions (inline to avoid module conflicts)
+// ============================================================================
+
+/// Sign message hash with private key (WASM variant)
+export fn secp256k1Sign(
+    msgHash_ptr: [*]const u8,
+    privKey_ptr: [*]const u8,
+    sig_ptr: [*]u8,
+    recid_ptr: [*]u8,
+) c_int {
+    const msgHash = msgHash_ptr[0..32];
+    const privKey = privKey_ptr[0..32];
+
+    const pub_key = crypto.secp256k1.AffinePoint.generator().scalarMul(std.mem.readInt(u256, privKey[0..32], .big));
+    if (pub_key.infinity or !pub_key.isOnCurve()) return 1;
+
+    var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
+    hasher.update(privKey);
+    hasher.update(msgHash);
+    var k_hash: [32]u8 = undefined;
+    hasher.final(&k_hash);
+
+    var k = std.mem.readInt(u256, &k_hash, .big);
+    if (k == 0 or k >= crypto.secp256k1.SECP256K1_N) {
+        k = (k % (crypto.secp256k1.SECP256K1_N - 1)) + 1;
+    }
+
+    const R = crypto.secp256k1.AffinePoint.generator().scalarMul(k);
+    if (R.infinity or !R.isOnCurve()) return 1;
+
+    const r = R.x % crypto.secp256k1.SECP256K1_N;
+    if (r == 0) return 1;
+
+    const e = std.mem.readInt(u256, msgHash[0..32], .big);
+    const priv = std.mem.readInt(u256, privKey[0..32], .big);
+
+    const k_inv = crypto.secp256k1.unauditedInvmod(k, crypto.secp256k1.SECP256K1_N) orelse return 1;
+    const r_priv = crypto.secp256k1.unauditedMulmod(r, priv, crypto.secp256k1.SECP256K1_N);
+    const e_plus_r_priv = crypto.secp256k1.unauditedAddmod(e, r_priv, crypto.secp256k1.SECP256K1_N);
+    var s = crypto.secp256k1.unauditedMulmod(k_inv, e_plus_r_priv, crypto.secp256k1.SECP256K1_N);
+
+    const half_n = crypto.secp256k1.SECP256K1_N >> 1;
+    if (s > half_n) {
+        s = crypto.secp256k1.SECP256K1_N - s;
+    }
+
+    const recovery_id: u8 = if ((R.y & 1) == 1) 1 else 0;
+
+    std.mem.writeInt(u256, sig_ptr[0..32], r, .big);
+    std.mem.writeInt(u256, sig_ptr[32..64], s, .big);
+    recid_ptr[0] = recovery_id;
+
+    return 0;
+}
+
+/// Verify signature (WASM variant)
+export fn secp256k1Verify(
+    msgHash_ptr: [*]const u8,
+    sig_ptr: [*]const u8,
+    pubKey_ptr: [*]const u8,
+) c_int {
+    const msgHash = msgHash_ptr[0..32];
+    const r_bytes = sig_ptr[0..32];
+    const s_bytes = sig_ptr[32..64];
+
+    const r = std.mem.readInt(u256, r_bytes, .big);
+    const s = std.mem.readInt(u256, s_bytes, .big);
+
+    if (!crypto.secp256k1.unauditedValidateSignature(r, s)) return 0;
+
+    const x = std.mem.readInt(u256, pubKey_ptr[0..32], .big);
+    const y = std.mem.readInt(u256, pubKey_ptr[32..64], .big);
+    const pub_key = crypto.secp256k1.AffinePoint{ .x = x, .y = y, .infinity = false };
+
+    if (!pub_key.isOnCurve()) return 0;
+
+    var hash_array: [32]u8 = undefined;
+    @memcpy(&hash_array, msgHash);
+
+    // Inline signature verification
+    const e = std.mem.readInt(u256, &hash_array, .big);
+    const s_inv = crypto.secp256k1.unauditedInvmod(s, crypto.secp256k1.SECP256K1_N) orelse return 0;
+    const u_1 = crypto.secp256k1.unauditedMulmod(e, s_inv, crypto.secp256k1.SECP256K1_N);
+    const u_2 = crypto.secp256k1.unauditedMulmod(r, s_inv, crypto.secp256k1.SECP256K1_N);
+    const u1G = crypto.secp256k1.AffinePoint.generator().scalarMul(u_1);
+    const u2Q = pub_key.scalarMul(u_2);
+    const R_prime = u1G.add(u2Q);
+
+    if (R_prime.infinity) return 0;
+    if ((R_prime.x % crypto.secp256k1.SECP256K1_N) == r) {
+        return 1;
+    }
+    return 0;
+}
+
+/// Recover public key from signature (WASM variant)
+export fn secp256k1Recover(
+    msgHash_ptr: [*]const u8,
+    sig_ptr: [*]const u8,
+    recid: u8,
+    pubKey_ptr: [*]u8,
+) c_int {
+    const msgHash = msgHash_ptr[0..32];
+    const r_bytes = sig_ptr[0..32];
+    const s_bytes = sig_ptr[32..64];
+
+    const pub_key = crypto.secp256k1.recoverPubkey(msgHash, r_bytes, s_bytes, recid + 27) catch {
+        return 1;
+    };
+
+    @memcpy(pubKey_ptr[0..64], &pub_key);
+    return 0;
+}
+
+/// Derive public key from private key (WASM variant)
+export fn secp256k1DerivePublicKey(
+    privKey_ptr: [*]const u8,
+    pubKey_ptr: [*]u8,
+) c_int {
+    const privKey = privKey_ptr[0..32];
+    const priv = std.mem.readInt(u256, privKey[0..32], .big);
+
+    if (priv == 0 or priv >= crypto.secp256k1.SECP256K1_N) return 1;
+
+    const pub_key = crypto.secp256k1.AffinePoint.generator().scalarMul(priv);
+
+    if (pub_key.infinity or !pub_key.isOnCurve()) return 1;
+
+    std.mem.writeInt(u256, pubKey_ptr[0..32], pub_key.x, .big);
+    std.mem.writeInt(u256, pubKey_ptr[32..64], pub_key.y, .big);
+
+    return 0;
 }
 
 // ============================================================================
@@ -912,6 +1050,481 @@ export fn primitives_calculate_create2_address(
 
     @memcpy(&out_address.bytes, &addr.bytes);
     return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
+// ABI Encoding/Decoding API
+// ============================================================================
+
+/// Compute function selector from signature
+/// signature: null-terminated string (e.g., "transfer(address,uint256)")
+/// out_selector: 4-byte buffer for selector output
+export fn primitives_abi_compute_selector(
+    signature: [*:0]const u8,
+    out_selector: *[4]u8,
+) c_int {
+    const sig_slice = std.mem.span(signature);
+    const selector = primitives.Abi.computeSelector(sig_slice);
+    @memcpy(out_selector, &selector);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Parse ABI type from string representation
+/// Returns AbiType or error
+fn parseAbiType(allocator: std.mem.Allocator, type_str: []const u8) !primitives.Abi.AbiType {
+    _ = allocator;
+
+    // Basic types
+    if (std.mem.eql(u8, type_str, "address")) return .address;
+    if (std.mem.eql(u8, type_str, "bool")) return .bool;
+    if (std.mem.eql(u8, type_str, "string")) return .string;
+    if (std.mem.eql(u8, type_str, "bytes")) return .bytes;
+
+    // Check for uint types (uint8, uint16, ..., uint256)
+    if (std.mem.startsWith(u8, type_str, "uint")) {
+        const bits_str = type_str[4..];
+        if (bits_str.len == 0) return .uint256; // default uint = uint256
+        const bits = std.fmt.parseInt(u16, bits_str, 10) catch return error.InvalidType;
+        return switch (bits) {
+            8 => .uint8,
+            16 => .uint16,
+            32 => .uint32,
+            64 => .uint64,
+            128 => .uint128,
+            256 => .uint256,
+            else => error.InvalidType,
+        };
+    }
+
+    // Check for int types (int8, int16, ..., int256)
+    if (std.mem.startsWith(u8, type_str, "int")) {
+        const bits_str = type_str[3..];
+        if (bits_str.len == 0) return .int256; // default int = int256
+        const bits = std.fmt.parseInt(u16, bits_str, 10) catch return error.InvalidType;
+        return switch (bits) {
+            8 => .int8,
+            16 => .int16,
+            32 => .int32,
+            64 => .int64,
+            128 => .int128,
+            256 => .int256,
+            else => error.InvalidType,
+        };
+    }
+
+    // Check for bytesN (bytes1, bytes2, ..., bytes32)
+    if (std.mem.startsWith(u8, type_str, "bytes")) {
+        const n_str = type_str[5..];
+        if (n_str.len > 0) {
+            const n = std.fmt.parseInt(u8, n_str, 10) catch return error.InvalidType;
+            return switch (n) {
+                1 => .bytes1,
+                2 => .bytes2,
+                3 => .bytes3,
+                4 => .bytes4,
+                8 => .bytes8,
+                16 => .bytes16,
+                32 => .bytes32,
+                else => error.InvalidType,
+            };
+        }
+    }
+
+    // Check for array types (supported: uint256[], bytes32[], address[], string[])
+    if (std.mem.eql(u8, type_str, "uint256[]")) return .@"uint256[]";
+    if (std.mem.eql(u8, type_str, "bytes32[]")) return .@"bytes32[]";
+    if (std.mem.eql(u8, type_str, "address[]")) return .@"address[]";
+    if (std.mem.eql(u8, type_str, "string[]")) return .@"string[]";
+
+    return error.UnsupportedType;
+}
+
+/// Helper to parse ABI value from JSON-like string format
+/// Format examples:
+/// - address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+/// - uint256: "42" or "0x2a"
+/// - bool: "true" or "false"
+/// - string: "hello world"
+/// - bytes: "0x1234"
+fn parseAbiValue(allocator: std.mem.Allocator, abi_type: primitives.Abi.AbiType, value_str: []const u8) !primitives.Abi.AbiValue {
+    switch (abi_type) {
+        .address => {
+            const addr = primitives.Address.fromHex(value_str) catch return error.InvalidData;
+            return .{ .address = addr };
+        },
+        .bool => {
+            if (std.mem.eql(u8, value_str, "true")) return .{ .bool = true };
+            if (std.mem.eql(u8, value_str, "false")) return .{ .bool = false };
+            return error.InvalidData;
+        },
+        .uint8, .uint16, .uint32, .uint64, .uint128, .uint256 => {
+            // Parse as hex or decimal
+            const val = if (std.mem.startsWith(u8, value_str, "0x"))
+                std.fmt.parseInt(u256, value_str[2..], 16) catch return error.InvalidData
+            else
+                std.fmt.parseInt(u256, value_str, 10) catch return error.InvalidData;
+            return .{ .uint256 = val };
+        },
+        .int8, .int16, .int32, .int64, .int128, .int256 => {
+            // Parse as hex or decimal (supporting negative for int types)
+            const val = if (std.mem.startsWith(u8, value_str, "0x"))
+                std.fmt.parseInt(i256, value_str[2..], 16) catch return error.InvalidData
+            else
+                std.fmt.parseInt(i256, value_str, 10) catch return error.InvalidData;
+            return .{ .int256 = val };
+        },
+        .string => {
+            return .{ .string = value_str };
+        },
+        .bytes => {
+            var stack_buf: [1024]u8 = undefined;
+            var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+            const temp_allocator = fba.allocator();
+
+            const bytes = primitives.Hex.hexToBytes(temp_allocator, value_str) catch return error.InvalidData;
+            defer temp_allocator.free(bytes);
+
+            // Copy to provided allocator
+            const bytes_copy = try allocator.alloc(u8, bytes.len);
+            @memcpy(bytes_copy, bytes);
+            return .{ .bytes = bytes_copy };
+        },
+        .bytes1, .bytes2, .bytes3, .bytes4, .bytes8, .bytes16, .bytes32 => {
+            var stack_buf: [1024]u8 = undefined;
+            var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+            const temp_allocator = fba.allocator();
+
+            const bytes = primitives.Hex.hexToBytes(temp_allocator, value_str) catch return error.InvalidData;
+            defer temp_allocator.free(bytes);
+
+            // Return appropriate fixed bytes type
+            return switch (abi_type) {
+                .bytes32 => blk: {
+                    if (bytes.len != 32) return error.InvalidData;
+                    var arr: [32]u8 = undefined;
+                    @memcpy(&arr, bytes);
+                    break :blk .{ .bytes32 = arr };
+                },
+                .bytes4 => blk: {
+                    if (bytes.len != 4) return error.InvalidData;
+                    var arr: [4]u8 = undefined;
+                    @memcpy(&arr, bytes);
+                    break :blk .{ .bytes4 = arr };
+                },
+                else => error.UnsupportedType,
+            };
+        },
+        else => return error.UnsupportedType,
+    }
+}
+
+/// Encode ABI parameters
+/// types_json: JSON array of type strings, e.g., ["address","uint256","bool"]
+/// values_json: JSON array of value strings, e.g., ["0x...", "42", "true"]
+/// out_buf: output buffer for encoded data
+/// buf_len: size of output buffer
+/// Returns: number of bytes written, or negative error code
+export fn primitives_abi_encode_parameters(
+    types_json: [*:0]const u8,
+    values_json: [*:0]const u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const types_str = std.mem.span(types_json);
+    const values_str = std.mem.span(values_json);
+
+    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    if (is_wasm) {
+        var stack_buf: [2 * 1024 * 1024]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
+
+        return abiEncodeParametersImpl(allocator, types_str, values_str, out_buf, buf_len);
+    } else {
+        var stack_buf: [8192]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
+
+        return abiEncodeParametersImpl(allocator, types_str, values_str, out_buf, buf_len);
+    }
+}
+
+fn abiEncodeParametersImpl(
+    allocator: std.mem.Allocator,
+    types_str: []const u8,
+    values_str: []const u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    // Simple JSON parsing for array of strings
+    // Expected format: ["type1","type2",...] and ["value1","value2",...]
+
+    // Parse types array
+    var types_list = std.array_list.AlignedManaged(primitives.Abi.AbiType, null).init(allocator);
+    defer types_list.deinit(allocator);
+
+    if (!parseJsonStringArray(allocator, types_str, &types_list, true)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Parse values array
+    var values_strs = std.array_list.AlignedManaged([]const u8, null).init(allocator);
+    defer values_strs.deinit(allocator);
+
+    if (!parseJsonStringArray(allocator, values_str, &values_strs, false)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    if (types_list.items.len != values_strs.items.len) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Parse ABI values
+    var abi_values = std.array_list.AlignedManaged(primitives.Abi.AbiValue, null).init(allocator);
+    defer {
+        for (abi_values.items) |*v| {
+            freeAbiValue(allocator, v);
+        }
+        abi_values.deinit(allocator);
+    }
+
+    for (types_list.items, values_strs.items) |abi_type, value_str| {
+        const abi_value = parseAbiValue(allocator, abi_type, value_str) catch {
+            return PRIMITIVES_ERROR_INVALID_INPUT;
+        };
+        abi_values.append(allocator, abi_value) catch {
+            return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+        };
+    }
+
+    // Encode
+    const encoded = primitives.Abi.encodeAbiParameters(allocator, abi_values.items) catch |err| {
+        return switch (err) {
+            error.OutOfMemory => PRIMITIVES_ERROR_OUT_OF_MEMORY,
+            error.MaxLengthExceeded => PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED,
+            else => PRIMITIVES_ERROR_INVALID_INPUT,
+        };
+    };
+    defer allocator.free(encoded);
+
+    if (encoded.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..encoded.len], encoded);
+    return @intCast(encoded.len);
+}
+
+/// Decode ABI parameters
+/// data: encoded ABI data
+/// data_len: length of encoded data
+/// types_json: JSON array of type strings
+/// out_buf: output buffer for JSON-encoded values
+/// buf_len: size of output buffer
+/// Returns: number of bytes written to out_buf, or negative error code
+export fn primitives_abi_decode_parameters(
+    data: [*]const u8,
+    data_len: usize,
+    types_json: [*:0]const u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    const data_slice = data[0..data_len];
+    const types_str = std.mem.span(types_json);
+
+    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    if (is_wasm) {
+        var stack_buf: [2 * 1024 * 1024]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
+
+        return abiDecodeParametersImpl(allocator, data_slice, types_str, out_buf, buf_len);
+    } else {
+        var stack_buf: [8192]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
+
+        return abiDecodeParametersImpl(allocator, data_slice, types_str, out_buf, buf_len);
+    }
+}
+
+fn abiDecodeParametersImpl(
+    allocator: std.mem.Allocator,
+    data: []const u8,
+    types_str: []const u8,
+    out_buf: [*]u8,
+    buf_len: usize,
+) c_int {
+    // Parse types array
+    var types_list = std.array_list.AlignedManaged(primitives.Abi.AbiType, null).init(allocator);
+    defer types_list.deinit(allocator);
+
+    if (!parseJsonStringArray(allocator, types_str, &types_list, true)) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    // Decode
+    const decoded = primitives.Abi.decodeAbiParameters(allocator, data, types_list.items) catch |err| {
+        return switch (err) {
+            error.OutOfMemory => PRIMITIVES_ERROR_OUT_OF_MEMORY,
+            error.InvalidData => PRIMITIVES_ERROR_INVALID_INPUT,
+            error.DataTooSmall => PRIMITIVES_ERROR_INVALID_LENGTH,
+            else => PRIMITIVES_ERROR_INVALID_INPUT,
+        };
+    };
+    defer {
+        for (decoded) |*v| {
+            freeAbiValue(allocator, v);
+        }
+        allocator.free(decoded);
+    }
+
+    // Convert decoded values to JSON string array
+    const json_result = formatAbiValuesToJson(allocator, decoded) catch {
+        return PRIMITIVES_ERROR_OUT_OF_MEMORY;
+    };
+    defer allocator.free(json_result);
+
+    if (json_result.len > buf_len) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_buf[0..json_result.len], json_result);
+    return @intCast(json_result.len);
+}
+
+/// Helper: Parse JSON string array into ArrayList
+/// If is_type is true, parses as AbiType; otherwise parses as string slices
+fn parseJsonStringArray(
+    allocator: std.mem.Allocator,
+    json_str: []const u8,
+    list: anytype,
+    is_type: bool,
+) bool {
+    var str = json_str;
+    // Trim whitespace
+    while (str.len > 0 and std.mem.indexOfScalar(u8, " \t\n\r", str[0]) != null) {
+        str = str[1..];
+    }
+
+    if (str.len < 2 or str[0] != '[') return false;
+    str = str[1..]; // Skip '['
+
+    while (true) {
+        // Trim whitespace
+        while (str.len > 0 and std.mem.indexOfScalar(u8, " \t\n\r", str[0]) != null) {
+            str = str[1..];
+        }
+
+        if (str.len == 0) return false;
+        if (str[0] == ']') break;
+
+        // Parse string element
+        if (str[0] != '"') return false;
+        str = str[1..]; // Skip opening quote
+
+        const end_quote = std.mem.indexOfScalar(u8, str, '"') orelse return false;
+        const element = str[0..end_quote];
+        str = str[end_quote + 1 ..]; // Skip element and closing quote
+
+        // Append to list
+        if (is_type) {
+            const abi_type = parseAbiType(allocator, element) catch return false;
+            list.append(allocator, abi_type) catch return false;
+        } else {
+            list.append(allocator, element) catch return false;
+        }
+
+        // Trim whitespace
+        while (str.len > 0 and std.mem.indexOfScalar(u8, " \t\n\r", str[0]) != null) {
+            str = str[1..];
+        }
+
+        if (str.len == 0) return false;
+        if (str[0] == ',') {
+            str = str[1..]; // Skip comma
+            continue;
+        }
+        if (str[0] == ']') break;
+        return false;
+    }
+
+    return true;
+}
+
+/// Helper: Format ABI values to JSON string array
+fn formatAbiValuesToJson(allocator: std.mem.Allocator, values: []const primitives.Abi.AbiValue) ![]u8 {
+    var result = std.array_list.AlignedManaged(u8, null).init(allocator);
+    defer result.deinit(allocator);
+
+    try result.append(allocator, '[');
+
+    for (values, 0..) |value, i| {
+        if (i > 0) try result.append(allocator, ',');
+        try result.append(allocator, '"');
+
+        switch (value) {
+            .uint256 => |val| {
+                var buf: [66]u8 = undefined;
+                const hex = std.fmt.bufPrint(&buf, "0x{x}", .{val}) catch return error.OutOfMemory;
+                try result.appendSlice(allocator, hex);
+            },
+            .address => |addr| {
+                const hex = addr.toHex();
+                try result.appendSlice(allocator, &hex);
+            },
+            .bool => |b| {
+                const str = if (b) "true" else "false";
+                try result.appendSlice(allocator, str);
+            },
+            .string => |s| {
+                try result.appendSlice(allocator, s);
+            },
+            .bytes => |b| {
+                var temp_buf: [2048]u8 = undefined;
+                var temp_fba = std.heap.FixedBufferAllocator.init(&temp_buf);
+                const temp_allocator = temp_fba.allocator();
+
+                const hex = primitives.Hex.bytesToHex(temp_allocator, b) catch return error.OutOfMemory;
+                defer temp_allocator.free(hex);
+                try result.appendSlice(allocator, hex);
+            },
+            else => {
+                // For other types, just return "unsupported"
+                try result.appendSlice(allocator, "unsupported");
+            },
+        }
+
+        try result.append(allocator, '"');
+    }
+
+    try result.append(allocator, ']');
+    return result.toOwnedSlice(allocator);
+}
+
+/// Helper: Free ABI type (no-op for enum-based AbiType)
+fn freeAbiType(allocator: std.mem.Allocator, abi_type: *primitives.Abi.AbiType) void {
+    _ = allocator;
+    _ = abi_type;
+    // AbiType is a simple enum with no heap allocations
+}
+
+/// Helper: Free ABI value (if it has allocations)
+fn freeAbiValue(allocator: std.mem.Allocator, value: *primitives.Abi.AbiValue) void {
+    switch (value.*) {
+        .string => |s| allocator.free(s),
+        .bytes => |b| allocator.free(b),
+        .@"uint256[]" => |arr| allocator.free(arr),
+        .@"bytes32[]" => |arr| allocator.free(arr),
+        .@"address[]" => |arr| allocator.free(arr),
+        .@"string[]" => |arr| {
+            for (arr) |s| {
+                allocator.free(s);
+            }
+            allocator.free(arr);
+        },
+        else => {},
+    }
 }
 
 // ============================================================================

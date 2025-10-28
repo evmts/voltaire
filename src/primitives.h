@@ -44,6 +44,12 @@ extern "C" {
 /** Invalid signature */
 #define PRIMITIVES_ERROR_INVALID_SIGNATURE -6
 
+#define PRIMITIVES_ERROR_INVALID_SELECTOR -7
+
+#define PRIMITIVES_ERROR_UNSUPPORTED_TYPE -8
+
+#define PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED -9
+
 
 // ============================================================================
 // Types
@@ -206,6 +212,30 @@ int primitives_secp256k1_pubkey_from_private(const uint8_t * private_key, uint8_
  * Validate ECDSA signature components
  */
 bool primitives_secp256k1_validate_signature(const uint8_t * r, const uint8_t * s);
+
+// ============================================================================
+// WASM-specific secp256k1 functions (inline to avoid module conflicts)
+// ============================================================================
+
+/**
+ * Sign message hash with private key (WASM variant)
+ */
+int secp256k1Sign(const uint8_t * msgHash_ptr, const uint8_t * privKey_ptr, uint8_t * sig_ptr, uint8_t * recid_ptr);
+
+/**
+ * Verify signature (WASM variant)
+ */
+int secp256k1Verify(const uint8_t * msgHash_ptr, const uint8_t * sig_ptr, const uint8_t * pubKey_ptr);
+
+/**
+ * Recover public key from signature (WASM variant)
+ */
+int secp256k1Recover(const uint8_t * msgHash_ptr, const uint8_t * sig_ptr, uint8_t recid, uint8_t * pubKey_ptr);
+
+/**
+ * Derive public key from private key (WASM variant)
+ */
+int secp256k1DerivePublicKey(const uint8_t * privKey_ptr, uint8_t * pubKey_ptr);
 
 // ============================================================================
 // Hash Algorithms (SHA256, RIPEMD160)

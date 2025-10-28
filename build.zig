@@ -547,6 +547,9 @@ pub fn build(b: *std.Build) void {
     });
     addTypeScriptWasmBuild(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
 
+    // Individual crypto WASM modules for treeshaking
+    addCryptoWasmBuilds(b, wasm_target, primitives_mod, crypto_mod, c_kzg_lib, blst_lib, rust_crypto_lib_path, cargo_build_step);
+
     // Go build and test steps (optional, requires Go toolchain)
     if (!is_wasm) {
         addGoBuildSteps(b);
@@ -1016,4 +1019,93 @@ fn addTypeScriptSteps(b: *std.Build) void {
     const pre_commit_step = b.step("pre-commit", "Fast pre-commit validation (format + lint + typecheck)");
     pre_commit_step.dependOn(format_step);
     pre_commit_step.dependOn(lint_step);
+}
+
+/// Add individual crypto WASM compilation targets for tree-shaking
+/// Each crypto module is compiled as a separate WASM file for optimal bundle size
+/// Note: These modules must be self-contained with minimal dependencies for WASM
+fn addCryptoWasmBuilds(
+    b: *std.Build,
+    wasm_target: std.Build.ResolvedTarget,
+    primitives_mod: *std.Build.Module,
+    crypto_mod: *std.Build.Module,
+    c_kzg_lib: *std.Build.Step.Compile,
+    blst_lib: *std.Build.Step.Compile,
+    rust_crypto_lib_path: std.Build.LazyPath,
+    cargo_build_step: *std.Build.Step,
+) void {
+    _ = primitives_mod;
+    _ = crypto_mod;
+    _ = c_kzg_lib;
+    _ = blst_lib;
+    _ = rust_crypto_lib_path;
+    _ = cargo_build_step;
+
+    // Define crypto modules to compile to WASM
+    // Note: Only including modules that are self-contained without heavy dependencies
+    const crypto_modules = [_]struct {
+        name: []const u8,
+        source: []const u8,
+        description: []const u8,
+        needs_crypto: bool, // Whether module needs full crypto dependencies
+    }{
+        .{ .name = "keccak256", .source = "src/crypto/keccak256_c.zig", .description = "Keccak-256 hashing", .needs_crypto = false },
+        .{ .name = "blake2", .source = "src/crypto/blake2_c.zig", .description = "BLAKE2b hashing", .needs_crypto = false },
+        .{ .name = "ripemd160", .source = "src/crypto/ripemd160_c.zig", .description = "RIPEMD-160 hashing", .needs_crypto = true },
+        .{ .name = "secp256k1", .source = "src/crypto/secp256k1_c.zig", .description = "secp256k1 ECDSA operations", .needs_crypto = true },
+        .{ .name = "bn254", .source = "src/crypto/bn254_c.zig", .description = "BN254 elliptic curve operations", .needs_crypto = true },
+    };
+
+    // Create a step to build all crypto WASM modules
+    const crypto_wasm_step = b.step("crypto-wasm", "Build all individual crypto WASM modules for tree-shaking");
+
+    // Build each crypto module as individual WASM executable (reactor pattern)
+    inline for (crypto_modules) |module| {
+        // For now, only build simple hash modules that don't need complex dependencies
+        // TODO: Refactor _c.zig files to be standalone WASM modules
+        if (!module.needs_crypto) {
+            const wasm_exe = b.addExecutable(.{
+                .name = module.name,
+                .root_module = b.createModule(.{
+                    .root_source_file = b.path(module.source),
+                    .target = wasm_target,
+                    .optimize = .ReleaseSmall, // Minimize WASM size
+                }),
+            });
+
+            // Configure for WASM reactor pattern (no main() required)
+            wasm_exe.entry = .disabled; // No entry point needed for WASM reactor
+            wasm_exe.rdynamic = true; // Export all symbols
+
+            // Install to zig-out/wasm/crypto/
+            const install_wasm = b.addInstallArtifact(wasm_exe, .{
+                .dest_dir = .{ .override = .{ .custom = "wasm/crypto" } },
+            });
+
+            // Copy to repository wasm/crypto/ folder with .wasm extension
+            const wasm_name = b.fmt("{s}.wasm", .{module.name});
+            const copy_wasm = b.addSystemCommand(&[_][]const u8{
+                "sh",
+                "-c",
+                b.fmt("set -eu; src=$(ls zig-out/wasm/crypto/{s}* 2>/dev/null | head -n1); mkdir -p wasm/crypto; cp \"$src\" wasm/crypto/{s}", .{ module.name, wasm_name }),
+            });
+            copy_wasm.step.dependOn(&install_wasm.step);
+
+            // Create individual build step for each module
+            const module_step_name = b.fmt("{s}-wasm", .{module.name});
+            const module_step_desc = b.fmt("Build {s} WASM module", .{module.description});
+            const module_step = b.step(module_step_name, module_step_desc);
+            module_step.dependOn(&copy_wasm.step);
+
+            // Add to crypto-wasm step
+            crypto_wasm_step.dependOn(&copy_wasm.step);
+        }
+    }
+
+    // Add informational message about complex modules
+    const echo_msg = b.addSystemCommand(&[_][]const u8{
+        "echo",
+        "Note: Complex crypto modules (secp256k1, bn254, ripemd160) require refactoring for standalone WASM builds.",
+    });
+    crypto_wasm_step.dependOn(&echo_msg.step);
 }
