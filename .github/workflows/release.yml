@@ -172,14 +172,14 @@ jobs:
           ## Installation
 
           \`\`\`bash
-          npm install @tevm/primitives@${{ steps.version.outputs.version }}
+          npm install @tevm/voltaire@${{ steps.version.outputs.version }}
           # or
-          bun add @tevm/primitives@${{ steps.version.outputs.version }}
+          bun add @tevm/voltaire@${{ steps.version.outputs.version }}
           \`\`\`
 
           ## Full Changelog
 
-          https://github.com/evmts/primitives/compare/${PREV_TAG}...v${{ steps.version.outputs.version }}
+          https://github.com/evmts/voltaire/compare/${PREV_TAG}...v${{ steps.version.outputs.version }}
           EOF
 
       - name: Create GitHub Release
