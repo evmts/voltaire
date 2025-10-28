@@ -1,5 +1,8 @@
+# We don't publish a rust package at this time in favor of using
+# Alloy for rust
+# This Cargo.toml is only used for internal rust crypto dependencies
 [package]
-name = "primitives"
+name = "voltaire"
 version = "0.1.0"
 edition = "2021"
 
@@ -25,18 +28,17 @@ asm = ["keccak-asm"]
 portable = ["tiny-keccak"]
 
 [profile.dev]
-# Debug profile - disable unwinding to avoid libunwind dependency
 panic = "abort"
 
 [profile.release]
 # Optimize for size by default
 opt-level = "z"
-lto = false  # Disabled for faster compilation
+lto = true  
 panic = "abort"
 
 [profile.release-fast]
 # Optimize for speed
 inherits = "release"
 opt-level = 3
-lto = false  # Disabled for faster compilation
+lto = true  
 panic = "abort"

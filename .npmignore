@@ -37,7 +37,6 @@ bun.lockb
 # Documentation
 CLAUDE.md
 CONTRIBUTING.md
-LLMS.txt
 *.md
 !README.md
 

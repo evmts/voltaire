@@ -369,7 +369,7 @@ zig build
 ```
 
 ### "Undefined symbols" errors
-Link required C artifacts in your build configuration. See [ZIG_API.md](../ZIG_API.md#using-as-a-dependency).
+Link required C artifacts in your build configuration. See [ZIG_API.md](../docs/ZIG_API.md#using-as-a-dependency).
 
 ### "Module not found" in TypeScript
 Install dependencies:
@@ -380,7 +380,7 @@ bun install
 ## Related Documentation
 
 - [README.md](../README.md) - Main project documentation
-- [ZIG_API.md](../ZIG_API.md) - Complete Zig API reference
+- [ZIG_API.md](../docs/ZIG_API.md) - Complete Zig API reference
 - [TYPESCRIPT_API.md](../docs/TYPESCRIPT_API.md) - TypeScript API documentation
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - Contribution guidelines
 

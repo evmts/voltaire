@@ -1,55 +1,66 @@
-# CLAUDE.md
+### Communication
 
-## MISSION CRITICAL - Zero Error Tolerance
-Crypto infrastructure. Every line correct. No stubs/commented tests.
+- Show human plan in most brief form. Prioritize plan before executing.
+- BRIEF CONCISE COMMUNICATION
+- Sacrifice grammar for sake of brevity
+- 1 sentence answers when appropriate
+- No fluff like "Congratulations" or "Success"
+- Talk like we are just trying to get work done
+- Efficient like air traffic controller
 
-LLMS ARE NEVER TO COMMENT OUT TESTS
+## MISSION CRITICAL
+
+Every line correct. No stubs/commented tests.
+
+LLMS ARE NEVER TO COMMENT OUT OR DISABLE TESTS
 
 ### Workflow
-- Run from repo root (never `cd` except submodule debug)
+
+- Run from repo root (never `cd` unless user requests it)
 - Sensitive data: abort everything immediately
-- Plan ownership/deallocation
+- Plan ownership/deallocation when writing zig
+- Think hard about typesafety when writing typescript
 - As often as possible: `zig build && zig build test` (TDD). Always know early and often if build breaks
 - Not obvious? Improve visibility, write unit tests
 - Producing a failing minimal reproduction of the bug in a test we commit is the best way to fix a bug
 
-### LLM communication protocol
-
-- Show human your plan in most brief form possible. Always prioritize coming up with a plan before executing.
-- BE EXCEEDINGLY BRIEF AND CONCISE WITH COMMUNICATION
-- Sacrifice grammar for sake of brevity 
-- Give 1 word answers or 1 sentence answers when appropriate
-- Never add fluff or filler like "Congratulations" or "Success"
-- Talk like we are just trying to get work done 
-- Think air traffic controller. You should never be wasting time
-- Be as efficient with communication as possible
-
-### NEVER
-❌ Broken builds/tests ❌ Stubs ❌ Commented code ❌ `std.debug.{print,assert}` in lib ❌ Skip tests ❌ Swallow errors (`catch {}`)
-
-Crypto ops: graceful errors, never panic. Handle/propagate all errors. Ask vs stubbing.
-
 ## Coding
 
-### Naming
-**TitleCase**: types, fns returning `type` | **camelCase**: regular fns | **snake_case**: vars/consts/params/fields
-
 ### Style
-Minimal else, single word vars (`n` not `number`), direct imports, tests in source, defer/errdefer cleanup, descriptive vars (`top` not `a`)
 
-### Memory
-Same scope: `defer allocator.destroy(thing)` | Transfer: `errdefer allocator.destroy(thing); return thing`
+- Write simple imperative code.
+- Minimal else, single word vars (`n` not `number`), direct imports, tests in source, defer/errdefer cleanup, descriptive vars (`top` not `a`)
+- Never abstract code into a function unless it's reused
+- Long function bodies of easy to read imperative code is good
+- Prioritize colocating related code and docs even when written in different languages
+
+#### TypeScript
+
+- All types are treated as Branded types
+- Type.fromFoo Type.toFoo naming convention with a loose Type.from method
+- Use of namespaces for type with tree shakable methods using type as this arg
+- Code methods organized by what type of data it operates on
+
+#### Zig
+
+- For primitive methods we should be returning most memory to user and not allocating otherwise
+- Minimize allocation when possible
+- Use a subagent to search homebrew for docs when issues using new zig 15.1 api
 
 ### ArrayList (0.15.1 UNMANAGED)
+
 ```zig
 var list = std.ArrayList(T){}; defer list.deinit(allocator); try list.append(allocator, item);
 ```
+
 ❌ `.init(allocator)`, `list.deinit()`, `list.append(item)` don't exist
 
 ## Testing
+
 Self-contained, fix failures immediately, evidence-based debug. **No output = passed**. Debug: `std.testing.log_level = .debug;`
 
 ## Architecture
+
 Ethereum primitives + crypto. No EVM. Use `zig build test` not `zig test`.
 
 **Primitives**: uint256, Address, Hex, RLP, ABI, Transactions, Logs
@@ -67,18 +78,23 @@ All code in primitives is Data based. All methods are unopinionated methods that
 - Bar.
 
 ## Commands
+
 `zig build` | `zig build test` | `-Dtest-filter=[pattern]` | `--release=fast/safe/small`
 
 ## Crypto Security
+
 **Constant-time**: `var result: u8 = 0; for (a,b) |x,y| result |= x^y;` ❌ Early returns leak timing
 **Validate**: sig (r,s,v), curve points, hash lengths. Clear memory after.
 **Test**: known vectors, edge cases (zero/max), malformed inputs, cross-validate refs
 
 ## Refs
+
 Zig: https://ziglang.org/documentation/0.15.1/ | Yellow Paper | EIPs
 
 ## Collab
+
 Propose→wait. Blocked: stop, explain, wait.
 
 ## GitHub
+
 "_Note: Claude AI assistant, not @roninjin10 or @fucory_" (all issue/API ops)
