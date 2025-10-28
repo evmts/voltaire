@@ -1,6 +1,6 @@
 # Ethereum Primitives & Cryptography for Zig
 
-Zig 0.15.1+ | https://github.com/evmts/primitives | Mission-critical crypto infrastructure - zero error tolerance
+Zig 0.15.1+ | https://github.com/evmts/voltaire | Mission-critical crypto infrastructure - zero error tolerance
 
 ---
 
@@ -47,7 +47,7 @@ const crypto = @import("crypto");
 ```zig
 .dependencies = .{
     .primitives = .{
-        .url = "https://github.com/evmts/primitives/archive/<commit>.tar.gz",
+        .url = "https://github.com/evmts/voltaire/archive/<commit>.tar.gz",
         .hash = "<hash>",
     },
 },
@@ -161,7 +161,7 @@ defer allocator.free(packed);
 
 **TypeScript API (Namespace Pattern):**
 ```typescript
-import { Abi } from '@tevm/primitives';
+import { Abi } from '@tevm/voltaire';
 
 // Define ABI items with full type inference
 const transferFunction: Abi.Function = {
@@ -234,7 +234,7 @@ const selector = HashUtils.selectorFromSignature("transfer(address,uint256)");
 
 **TypeScript API:**
 ```typescript
-import { Hash, Keccak256 } from '@tevm/primitives';
+import { Hash, Keccak256 } from '@tevm/voltaire';
 
 // Compute hash
 const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));  // Returns Hash (Uint8Array)
@@ -273,7 +273,7 @@ const sig_bytes = signature.toBytes();  // [65]u8
 
 **TypeScript API (using audited @noble/curves):**
 ```typescript
-import { Secp256k1, Signature } from '@tevm/primitives';
+import { Secp256k1, Signature } from '@tevm/voltaire';
 
 // Key operations
 const privateKey = Secp256k1.generatePrivateKey();  // Random 32 bytes
@@ -374,7 +374,7 @@ The library provides TypeScript bindings in two forms:
 1. **Pure TypeScript** (no dependencies) - primitives, ABI, numeric, bytecode, opcodes, gas, logs
 2. **Bun FFI wrappers** (requires native lib) - Keccak-256, EIP-191
 
-Install: `npm install @tevm/primitives` or `bun add @tevm/primitives`
+Install: `npm install @tevm/voltaire` or `bun add @tevm/voltaire`
 </ts_overview>
 
 ### ABI Encoding/Decoding (Pure TypeScript)
@@ -391,7 +391,7 @@ import {
   uint256Value,
   addressValue,
   bytesValue
-} from '@tevm/primitives';
+} from '@tevm/voltaire';
 
 // Basic encoding
 const encoded = encodeAbiParameters(
@@ -455,7 +455,7 @@ import {
   weiToGwei,
   etherToWei,
   weiToEther
-} from '@tevm/primitives';
+} from '@tevm/voltaire';
 
 // Parse string to wei
 const oneEth = parseEther('1.0');  // 1000000000000000000n
@@ -477,7 +477,7 @@ const eth1 = weiToEther(1000000000000000000n);  // 1n
 ### Keccak-256 (Bun FFI - Requires Native Lib)
 
 ```typescript
-import { keccak256, keccak256Empty } from '@tevm/primitives';
+import { keccak256, keccak256Empty } from '@tevm/voltaire';
 
 // Hash string or Uint8Array
 const hash1 = keccak256('hello world');
@@ -492,7 +492,7 @@ const emptyHash = keccak256Empty;  // Hash of empty input
 ### EIP-191 Personal Message (Bun FFI - Requires Native Lib)
 
 ```typescript
-import { hashMessage } from '@tevm/primitives';
+import { hashMessage } from '@tevm/voltaire';
 
 // Hash message with EIP-191 prefix
 const msgHash = hashMessage('Sign this message');
@@ -509,7 +509,7 @@ import {
   validateBytecode,
   isValidJumpDest,
   isBytecodeBoundary
-} from '@tevm/primitives';
+} from '@tevm/voltaire';
 
 const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x5b]); // PUSH1 0x80, PUSH1 0x40, JUMPDEST
 
@@ -527,7 +527,7 @@ const isBoundary = isBytecodeBoundary(bytecode, 2);  // true
 ### Opcode Utilities (Pure TypeScript)
 
 ```typescript
-import { Opcode, isPush, isDup, isSwap, isStateModifying } from '@tevm/primitives';
+import { Opcode, isPush, isDup, isSwap, isStateModifying } from '@tevm/voltaire';
 
 // Check opcode types
 isPush(Opcode.PUSH1);  // true
@@ -545,7 +545,7 @@ import {
   calculateNextBaseFee,
   calculateIntrinsicGas,
   calculateMemoryGasCost
-} from '@tevm/primitives';
+} from '@tevm/voltaire';
 
 // EIP-1559 base fee calculation
 const nextBaseFee = calculateNextBaseFee(
@@ -568,7 +568,7 @@ const memoryGas = calculateMemoryGasCost(1024);  // bytes
 ### Hardfork Utilities (Pure TypeScript)
 
 ```typescript
-import { Hardfork, isAtLeast, isBefore } from '@tevm/primitives';
+import { Hardfork, isAtLeast, isBefore } from '@tevm/voltaire';
 
 // Version comparisons
 isAtLeast(Hardfork.LONDON, Hardfork.BERLIN);  // true
@@ -582,7 +582,7 @@ isBefore(Hardfork.BERLIN, Hardfork.LONDON);  // true
 ### SIWE (Sign-In with Ethereum) (Pure TypeScript)
 
 ```typescript
-import { parseSiweMessage, validateSiweMessage } from '@tevm/primitives';
+import { parseSiweMessage, validateSiweMessage } from '@tevm/voltaire';
 
 const message = `example.com wants you to sign in with your Ethereum account:
 0x1234567890123456789012345678901234567890
@@ -605,7 +605,7 @@ const isValid = validateSiweMessage(parsed);
 ### Event Logs (Pure TypeScript)
 
 ```typescript
-import { parseEventLog, filterLogsByTopics } from '@tevm/primitives';
+import { parseEventLog, filterLogsByTopics } from '@tevm/voltaire';
 
 // Parse event log
 const log = parseEventLog(
@@ -693,7 +693,7 @@ if (isWasmAvailable()) {
 
 **Usage:**
 ```typescript
-import { Bn254 } from '@tevm/primitives';  // Pure TS (always available)
+import { Bn254 } from '@tevm/voltaire';  // Pure TS (always available)
 import { bn254AddWasm } from './bn254.wasm.js';  // WASM (faster, optional)
 import { bn254AddArk } from './bn254.ark.js';  // Arkworks (fastest, requires native)
 
@@ -745,71 +745,71 @@ return result == 0;
 ## Documentation
 
 <docs_base_url>
-Base: https://github.com/evmts/primitives/blob/main/docs
+Base: https://github.com/evmts/voltaire/blob/main/docs
 </docs_base_url>
 
 <main_docs>
-- [Documentation Overview](https://github.com/evmts/primitives/blob/main/docs/DOCUMENTATION.md)
-- [README](https://github.com/evmts/primitives/blob/main/docs/README.md)
+- [Documentation Overview](https://github.com/evmts/voltaire/blob/main/docs/DOCUMENTATION.md)
+- [README](https://github.com/evmts/voltaire/blob/main/docs/README.md)
 </main_docs>
 
 <crypto_docs>
 **Cryptography:**
-- [Crypto Module](https://github.com/evmts/primitives/blob/main/docs/crypto/crypto.zig.md)
-- [Hash Utils](https://github.com/evmts/primitives/blob/main/docs/crypto/hash.zig.md)
-- [Hash Algorithms](https://github.com/evmts/primitives/blob/main/docs/crypto/hash_algorithms.zig.md)
-- [secp256k1](https://github.com/evmts/primitives/blob/main/docs/crypto/secp256k1.zig.md)
+- [Crypto Module](https://github.com/evmts/voltaire/blob/main/docs/crypto/crypto.zig.md)
+- [Hash Utils](https://github.com/evmts/voltaire/blob/main/docs/crypto/hash.zig.md)
+- [Hash Algorithms](https://github.com/evmts/voltaire/blob/main/docs/crypto/hash_algorithms.zig.md)
+- [secp256k1](https://github.com/evmts/voltaire/blob/main/docs/crypto/secp256k1.zig.md)
 </crypto_docs>
 
 <primitives_docs>
 **Primitives:**
-- [Event Logs](https://github.com/evmts/primitives/blob/main/docs/primitives/logs.md)
-- [Hardforks](https://github.com/evmts/primitives/blob/main/docs/primitives/hardfork.md)
-- [Sign-In with Ethereum (SIWE)](https://github.com/evmts/primitives/blob/main/docs/primitives/siwe.md)
+- [Event Logs](https://github.com/evmts/voltaire/blob/main/docs/primitives/logs.md)
+- [Hardforks](https://github.com/evmts/voltaire/blob/main/docs/primitives/hardfork.md)
+- [Sign-In with Ethereum (SIWE)](https://github.com/evmts/voltaire/blob/main/docs/primitives/siwe.md)
 </primitives_docs>
 
 <precompiles_docs>
 **Precompiles:**
-- [Overview](https://github.com/evmts/primitives/blob/main/docs/precompiles/README.md)
-- [Common Types](https://github.com/evmts/primitives/blob/main/docs/precompiles/common.md)
-- [Utils](https://github.com/evmts/primitives/blob/main/docs/precompiles/utils.md)
-- [ECRecover (0x01)](https://github.com/evmts/primitives/blob/main/docs/precompiles/ecrecover.md)
-- [SHA256 (0x02)](https://github.com/evmts/primitives/blob/main/docs/precompiles/sha256.md)
-- [RIPEMD160 (0x03)](https://github.com/evmts/primitives/blob/main/docs/precompiles/ripemd160.md)
-- [Identity (0x04)](https://github.com/evmts/primitives/blob/main/docs/precompiles/identity.md)
-- [ModExp (0x05)](https://github.com/evmts/primitives/blob/main/docs/precompiles/modexp.md)
-- [BN254 Add (0x06)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bn254_add.md)
-- [BN254 Mul (0x07)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bn254_mul.md)
-- [BN254 Pairing (0x08)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bn254_pairing.md)
-- [Blake2F (0x09)](https://github.com/evmts/primitives/blob/main/docs/precompiles/blake2f.md)
-- [Point Evaluation (0x0a)](https://github.com/evmts/primitives/blob/main/docs/precompiles/point_evaluation.md)
-- [BLS12-381 G1 Add (0x0b)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g1_add.md)
-- [BLS12-381 G1 Mul (0x0c)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g1_mul.md)
-- [BLS12-381 G1 MSM (0x0d)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g1_msm.md)
-- [BLS12-381 G2 Add (0x0e)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g2_add.md)
-- [BLS12-381 G2 Mul (0x0f)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g2_mul.md)
-- [BLS12-381 G2 MSM (0x10)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_g2_msm.md)
-- [BLS12-381 Pairing (0x11)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_pairing.md)
-- [BLS12-381 Map Fp to G1 (0x12)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_map_fp_to_g1.md)
-- [BLS12-381 Map Fp2 to G2 (0x13)](https://github.com/evmts/primitives/blob/main/docs/precompiles/bls12_map_fp2_to_g2.md)
+- [Overview](https://github.com/evmts/voltaire/blob/main/docs/precompiles/README.md)
+- [Common Types](https://github.com/evmts/voltaire/blob/main/docs/precompiles/common.md)
+- [Utils](https://github.com/evmts/voltaire/blob/main/docs/precompiles/utils.md)
+- [ECRecover (0x01)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/ecrecover.md)
+- [SHA256 (0x02)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/sha256.md)
+- [RIPEMD160 (0x03)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/ripemd160.md)
+- [Identity (0x04)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/identity.md)
+- [ModExp (0x05)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/modexp.md)
+- [BN254 Add (0x06)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bn254_add.md)
+- [BN254 Mul (0x07)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bn254_mul.md)
+- [BN254 Pairing (0x08)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bn254_pairing.md)
+- [Blake2F (0x09)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/blake2f.md)
+- [Point Evaluation (0x0a)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/point_evaluation.md)
+- [BLS12-381 G1 Add (0x0b)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_g1_add.md)
+- [BLS12-381 G1 Mul (0x0c)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_g1_mul.md)
+- [BLS12-381 G1 MSM (0x0d)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_g1_msm.md)
+- [BLS12-381 G2 Add (0x0e)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_g2_add.md)
+- [BLS12-381 G2 Mul (0x0f)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_g2_mul.md)
+- [BLS12-381 G2 MSM (0x10)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_g2_msm.md)
+- [BLS12-381 Pairing (0x11)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_pairing.md)
+- [BLS12-381 Map Fp to G1 (0x12)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_map_fp_to_g1.md)
+- [BLS12-381 Map Fp2 to G2 (0x13)](https://github.com/evmts/voltaire/blob/main/docs/precompiles/bls12_map_fp2_to_g2.md)
 </precompiles_docs>
 
 <benchmarking_docs>
 **Benchmarking & Performance:**
-- [BENCHMARKING.md](https://github.com/evmts/primitives/blob/main/BENCHMARKING.md) — How to run benchmarks
-- [BENCHMARK_RESULTS.md](https://github.com/evmts/primitives/blob/main/BENCHMARK_RESULTS.md) — TypeScript/FFI performance comparisons
-- [ZIG_BENCHMARK_RESULTS.md](https://github.com/evmts/primitives/blob/main/ZIG_BENCHMARK_RESULTS.md) — Native Zig performance data
+- [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) — How to run benchmarks
+- [BENCHMARK_RESULTS.md](https://github.com/evmts/voltaire/blob/main/BENCHMARK_RESULTS.md) — TypeScript/FFI performance comparisons
+- [ZIG_BENCHMARK_RESULTS.md](https://github.com/evmts/voltaire/blob/main/ZIG_BENCHMARK_RESULTS.md) — Native Zig performance data
 </benchmarking_docs>
 
 <examples_docs>
 **Examples:**
-- [Examples Overview](https://github.com/evmts/primitives/blob/main/examples/README.md) — Zig and TypeScript examples
-- [TypeScript Examples](https://github.com/evmts/primitives/blob/main/examples/typescript/) — Organized TypeScript examples
+- [Examples Overview](https://github.com/evmts/voltaire/blob/main/examples/README.md) — Zig and TypeScript examples
+- [TypeScript Examples](https://github.com/evmts/voltaire/blob/main/examples/typescript/) — Organized TypeScript examples
 </examples_docs>
 
 <external_resources>
 **External Resources:**
 - [Zig 0.15.1 Docs](https://ziglang.org/documentation/0.15.1/)
 - [Ethereum EIPs](https://eips.ethereum.org/)
-- [Repository](https://github.com/evmts/primitives)
+- [Repository](https://github.com/evmts/voltaire)
 </external_resources>
