@@ -437,31 +437,40 @@ describe("Abi.Function encoding/decoding", () => {
     outputs: [{ type: "bool", name: "" }],
   } as const satisfies Abi.Function;
 
-  it("encodeParams throws not implemented", () => {
-    expect(() =>
-      Abi.Function.encodeParams.call(func, [
-        "0x0000000000000000000000000000000000000000" as Address,
-        100n,
-      ]),
-    ).toThrow(AbiEncodingError);
+  it("encodeParams encodes calldata with selector", () => {
+    const encoded = Abi.Function.encodeParams.call(func, [
+      "0x0000000000000000000000000000000000000000" as Address,
+      100n,
+    ]);
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBe(68); // 4 bytes selector + 64 bytes params
+    // Check selector (transfer(address,uint256) = 0xa9059cbb)
+    expect(Array.from(encoded.slice(0, 4))).toEqual([0xa9, 0x05, 0x9c, 0xbb]);
   });
 
-  it("decodeParams throws not implemented", () => {
-    expect(() => Abi.Function.decodeParams.call(func, new Uint8Array())).toThrow(
-      AbiDecodingError,
-    );
+  it("decodeParams decodes calldata", () => {
+    const encoded = Abi.Function.encodeParams.call(func, [
+      "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
+      1000n,
+    ]);
+    const decoded = Abi.Function.decodeParams.call(func, encoded);
+    expect(decoded).toEqual([
+      "0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+      1000n,
+    ]);
   });
 
-  it("encodeResult throws not implemented", () => {
-    expect(() => Abi.Function.encodeResult.call(func, [true])).toThrow(
-      AbiEncodingError,
-    );
+  it("encodeResult encodes return values", () => {
+    const encoded = Abi.Function.encodeResult.call(func, [true]);
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBe(32);
+    expect(encoded[31]).toBe(1);
   });
 
-  it("decodeResult throws not implemented", () => {
-    expect(() => Abi.Function.decodeResult.call(func, new Uint8Array())).toThrow(
-      AbiDecodingError,
-    );
+  it("decodeResult decodes return values", () => {
+    const encoded = Abi.Function.encodeResult.call(func, [true]);
+    const decoded = Abi.Function.decodeResult.call(func, encoded);
+    expect(decoded).toEqual([true]);
   });
 });
 
@@ -476,18 +485,27 @@ describe("Abi.Event encoding/decoding", () => {
     ],
   } as const satisfies Abi.Event;
 
-  it("encodeTopics throws not implemented", () => {
-    expect(() =>
-      Abi.Event.encodeTopics.call(event, {
-        from: "0x0000000000000000000000000000000000000000" as Address,
-      }),
-    ).toThrow(AbiEncodingError);
+  it("encodeTopics encodes indexed parameters", () => {
+    const topics = Abi.Event.encodeTopics.call(event, {
+      from: "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
+    });
+    expect(topics.length).toBe(3); // topic0 + 2 indexed params
+    expect(topics[0]).toBeInstanceOf(Uint8Array);
+    expect(topics[0]?.length).toBe(32); // topic0 (event selector)
   });
 
-  it("decodeLog throws not implemented", () => {
-    expect(() =>
-      Abi.Event.decodeLog.call(event, new Uint8Array(), []),
-    ).toThrow(AbiDecodingError);
+  it("decodeLog decodes event data and topics", () => {
+    const value = 1000n;
+    const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+    const to = "0x0000000000000000000000000000000000000000" as Address;
+
+    const topics = Abi.Event.encodeTopics.call(event, { from, to });
+    const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
+
+    const decoded = Abi.Event.decodeLog.call(event, data, topics as any);
+    expect(decoded.from).toBe(from);
+    expect(decoded.to).toBe(to);
+    expect(decoded.value).toBe(value);
   });
 });
 
@@ -501,16 +519,16 @@ describe("Abi.Error encoding/decoding", () => {
     ],
   } as const satisfies Abi.Error;
 
-  it("encodeParams throws not implemented", () => {
-    expect(() => Abi.Error.encodeParams.call(error, [100n, 200n])).toThrow(
-      AbiEncodingError,
-    );
+  it("encodeParams encodes error data with selector", () => {
+    const encoded = Abi.Error.encodeParams.call(error, [100n, 200n]);
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBe(68); // 4 bytes selector + 64 bytes params
   });
 
-  it("decodeParams throws not implemented", () => {
-    expect(() => Abi.Error.decodeParams.call(error, new Uint8Array())).toThrow(
-      AbiDecodingError,
-    );
+  it("decodeParams decodes error data", () => {
+    const encoded = Abi.Error.encodeParams.call(error, [100n, 200n]);
+    const decoded = Abi.Error.decodeParams.call(error, encoded);
+    expect(decoded).toEqual([100n, 200n]);
   });
 });
 
@@ -521,16 +539,20 @@ describe("Abi.Constructor encoding/decoding", () => {
     inputs: [{ type: "uint256", name: "initialSupply" }],
   } as const satisfies Abi.Constructor;
 
-  it("encodeParams throws not implemented", () => {
-    expect(() =>
-      Abi.Constructor.encodeParams.call(constructor, new Uint8Array(), [1000n]),
-    ).toThrow(AbiEncodingError);
+  it("encodeParams encodes constructor data with bytecode", () => {
+    const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
+    const encoded = Abi.Constructor.encodeParams.call(constructor, bytecode, [1000n]);
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBe(36); // 4 bytes bytecode + 32 bytes param
+    // Check bytecode prefix
+    expect(Array.from(encoded.slice(0, 4))).toEqual([0x60, 0x80, 0x60, 0x40]);
   });
 
-  it("decodeParams throws not implemented", () => {
-    expect(() =>
-      Abi.Constructor.decodeParams.call(constructor, new Uint8Array(), 0),
-    ).toThrow(AbiDecodingError);
+  it("decodeParams decodes constructor data", () => {
+    const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
+    const encoded = Abi.Constructor.encodeParams.call(constructor, bytecode, [1000n]);
+    const decoded = Abi.Constructor.decodeParams.call(constructor, encoded, bytecode.length);
+    expect(decoded).toEqual([1000n]);
   });
 });
 
@@ -553,18 +575,36 @@ describe("Abi.Parameter encoding/decoding", () => {
 });
 
 describe("Abi.encodeParameters", () => {
-  it("throws not implemented", () => {
-    expect(() =>
-      Abi.encodeParameters([{ type: "uint256", name: "amount" }], [100n] as any),
-    ).toThrow(AbiEncodingError);
+  it("encodes uint256", () => {
+    const encoded = Abi.encodeParameters([{ type: "uint256", name: "amount" }], [100n] as any);
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBe(32);
+    expect(encoded[31]).toBe(100);
+  });
+
+  it("encodes multiple parameters", () => {
+    const encoded = Abi.encodeParameters(
+      [{ type: "uint256" }, { type: "address" }, { type: "bool" }],
+      [42n, "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address, true] as any,
+    );
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBe(96); // 3 * 32 bytes
   });
 });
 
 describe("Abi.decodeParameters", () => {
-  it("throws not implemented", () => {
-    expect(() =>
-      Abi.decodeParameters([{ type: "uint256", name: "amount" }], new Uint8Array()),
-    ).toThrow(AbiDecodingError);
+  it("decodes uint256", () => {
+    const encoded = Abi.encodeParameters([{ type: "uint256" }], [100n] as any);
+    const decoded = Abi.decodeParameters([{ type: "uint256", name: "amount" }], encoded);
+    expect(decoded).toEqual([100n]);
+  });
+
+  it("decodes multiple parameters", () => {
+    const params = [{ type: "uint256" }, { type: "address" }, { type: "bool" }];
+    const values = [42n, "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address, true];
+    const encoded = Abi.encodeParameters(params, values as any);
+    const decoded = Abi.decodeParameters(params, encoded);
+    expect(decoded).toEqual(values);
   });
 });
 
@@ -620,13 +660,15 @@ describe("Abi.encode", () => {
     },
   ] as const satisfies Abi;
 
-  it("throws not implemented error", () => {
-    expect(() =>
-      Abi.encode.call(abi, "transfer", [
-        "0x0000000000000000000000000000000000000000" as Address,
-        100n,
-      ]),
-    ).toThrow(AbiEncodingError);
+  it("encodes function call data", () => {
+    const encoded = Abi.encode.call(abi, "transfer", [
+      "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
+      100n,
+    ]);
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBe(68); // 4 bytes selector + 64 bytes params
+    // Check selector
+    expect(Array.from(encoded.slice(0, 4))).toEqual([0xa9, 0x05, 0x9c, 0xbb]);
   });
 
   it("throws not found error for missing function", () => {
@@ -647,10 +689,10 @@ describe("Abi.decode", () => {
     },
   ] as const satisfies Abi;
 
-  it("throws not implemented error", () => {
-    expect(() => Abi.decode.call(abi, "balanceOf", new Uint8Array())).toThrow(
-      AbiDecodingError,
-    );
+  it("decodes function result", () => {
+    const encoded = Abi.encodeParameters([{ type: "uint256" }], [1000n] as any);
+    const decoded = Abi.decode.call(abi, "balanceOf", encoded);
+    expect(decoded).toEqual([1000n]);
   });
 
   it("throws not found error for missing function", () => {
@@ -666,15 +708,25 @@ describe("Abi.decodeData", () => {
       type: "function",
       name: "transfer",
       stateMutability: "nonpayable",
-      inputs: [],
+      inputs: [
+        { type: "address", name: "to" },
+        { type: "uint256", name: "amount" },
+      ],
       outputs: [],
     },
   ] as const satisfies Abi;
 
-  it("throws not implemented", () => {
-    expect(() => Abi.decodeData.call(abi, new Uint8Array())).toThrow(
-      AbiDecodingError,
-    );
+  it("decodes calldata and identifies function", () => {
+    const encoded = Abi.encode.call(abi, "transfer", [
+      "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
+      100n,
+    ]);
+    const decoded = Abi.decodeData.call(abi, encoded);
+    expect(decoded.functionName).toBe("transfer");
+    expect(decoded.args).toEqual([
+      "0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+      100n,
+    ]);
   });
 });
 
@@ -683,12 +735,31 @@ describe("Abi.parseLogs", () => {
     {
       type: "event",
       name: "Transfer",
-      inputs: [],
+      inputs: [
+        { type: "address", name: "from", indexed: true },
+        { type: "address", name: "to", indexed: true },
+        { type: "uint256", name: "value", indexed: false },
+      ],
     },
   ] as const satisfies Abi;
 
-  it("throws not implemented", () => {
-    expect(() => Abi.parseLogs.call(abi, [])).toThrow(AbiDecodingError);
+  it("parses event logs", () => {
+    const event = abi[0];
+    const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
+    const to = "0x0000000000000000000000000000000000000000" as Address;
+    const value = 1000n;
+
+    const topics = Abi.Event.encodeTopics.call(event, { from, to });
+    const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
+
+    const logs = [{ topics: topics as any, data }];
+    const parsed = Abi.parseLogs.call(abi, logs);
+
+    expect(parsed.length).toBe(1);
+    expect(parsed[0].eventName).toBe("Transfer");
+    expect(parsed[0].args.from).toBe(from);
+    expect(parsed[0].args.to).toBe(to);
+    expect(parsed[0].args.value).toBe(value);
   });
 });
 

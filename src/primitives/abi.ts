@@ -270,6 +270,9 @@ export namespace Abi {
    * @internal
    */
   function encodeUint256(value: bigint): Uint8Array {
+    if (typeof value !== 'bigint') {
+      throw new AbiEncodingError(`encodeUint256 requires bigint, got ${typeof value}: ${value}`);
+    }
     const result = new Uint8Array(32);
     let v = value;
     for (let i = 31; i >= 0; i--) {
@@ -346,6 +349,25 @@ export namespace Abi {
     type: string,
     value: unknown,
   ): { encoded: Uint8Array; isDynamic: boolean } {
+    // Handle dynamic arrays first (before checking for uint)
+    if (type.endsWith("[]")) {
+      const elementType = type.slice(0, -2);
+      const array = value as unknown[];
+      const length = encodeUint256(BigInt(array.length));
+
+      // Encode array elements
+      const elementParams = array.map(() => ({ type: elementType }));
+      const encodedElements = encodeParameters(
+        elementParams as any,
+        array as any,
+      );
+
+      const result = new Uint8Array(length.length + encodedElements.length);
+      result.set(length, 0);
+      result.set(encodedElements, length.length);
+      return { encoded: result, isDynamic: true };
+    }
+
     // Handle uint types
     if (type.startsWith("uint")) {
       const bits = type === "uint" ? 256 : parseInt(type.slice(4));
@@ -420,25 +442,6 @@ export namespace Abi {
       return { encoded: result, isDynamic: true };
     }
 
-    // Handle dynamic arrays
-    if (type.endsWith("[]")) {
-      const elementType = type.slice(0, -2);
-      const array = value as unknown[];
-      const length = encodeUint256(BigInt(array.length));
-
-      // Encode array elements
-      const elementParams = array.map(() => ({ type: elementType }));
-      const encodedElements = encodeParameters(
-        elementParams as any,
-        array as any,
-      );
-
-      const result = new Uint8Array(length.length + encodedElements.length);
-      result.set(length, 0);
-      result.set(encodedElements, length.length);
-      return { encoded: result, isDynamic: true };
-    }
-
     // Handle fixed-size arrays
     const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
     if (fixedArrayMatch) {
@@ -485,6 +488,40 @@ export namespace Abi {
     data: Uint8Array,
     offset: number,
   ): { value: unknown; newOffset: number } {
+    // Handle arrays first (before uint/int checks, since "uint256[]" starts with "uint")
+    // Handle dynamic arrays
+    if (type.endsWith("[]")) {
+      const elementType = type.slice(0, -2);
+      const dataOffset = Number(decodeUint256(data, offset));
+      const length = Number(decodeUint256(data, dataOffset));
+
+      const elementParams = Array(length).fill({ type: elementType });
+      const value = decodeParameters(
+        elementParams as any,
+        data.slice(dataOffset + 32),
+      );
+      return { value, newOffset: offset + 32 };
+    }
+
+    // Handle fixed-size arrays
+    const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
+    if (fixedArrayMatch) {
+      const elementType = fixedArrayMatch[1];
+      const arraySize = parseInt(fixedArrayMatch[2]);
+
+      const elementParams = Array(arraySize).fill({ type: elementType });
+      if (isDynamicType(elementType)) {
+        // For dynamic element types, follow the offset
+        const dataOffset = Number(decodeUint256(data, offset));
+        const value = decodeParameters(elementParams as any, data.slice(dataOffset));
+        return { value, newOffset: offset + 32 };
+      } else {
+        // For static element types, decode inline
+        const value = decodeParameters(elementParams as any, data.slice(offset));
+        return { value, newOffset: offset + arraySize * 32 };
+      }
+    }
+
     // Handle uint types
     if (type.startsWith("uint")) {
       const bits = type === "uint" ? 256 : parseInt(type.slice(4));
@@ -520,8 +557,8 @@ export namespace Abi {
         // Positive number
         value = masked;
       }
-      // Return as number for small ints, bigint for large ones
-      if (bits <= 31) {
+      // Return as number for small ints (int32 and below), bigint for larger
+      if (bits <= 32) {
         return { value: Number(value), newOffset: offset + 32 };
       }
       return { value, newOffset: offset + 32 };
@@ -588,39 +625,6 @@ export namespace Abi {
       const bytes = data.slice(dataOffset + 32, dataOffset + 32 + length);
       const value = new TextDecoder().decode(bytes);
       return { value, newOffset: offset + 32 };
-    }
-
-    // Handle dynamic arrays
-    if (type.endsWith("[]")) {
-      const elementType = type.slice(0, -2);
-      const dataOffset = Number(decodeUint256(data, offset));
-      const length = Number(decodeUint256(data, dataOffset));
-
-      const elementParams = Array(length).fill({ type: elementType });
-      const value = decodeParameters(
-        elementParams as any,
-        data.slice(dataOffset + 32),
-      );
-      return { value, newOffset: offset + 32 };
-    }
-
-    // Handle fixed-size arrays
-    const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-    if (fixedArrayMatch) {
-      const elementType = fixedArrayMatch[1];
-      const arraySize = parseInt(fixedArrayMatch[2]);
-
-      const elementParams = Array(arraySize).fill({ type: elementType });
-      if (isDynamicType(elementType)) {
-        // For dynamic element types, follow the offset
-        const dataOffset = Number(decodeUint256(data, offset));
-        const value = decodeParameters(elementParams as any, data.slice(dataOffset));
-        return { value, newOffset: offset + 32 };
-      } else {
-        // For static element types, decode inline
-        const value = decodeParameters(elementParams as any, data.slice(offset));
-        return { value, newOffset: offset + arraySize * 32 };
-      }
     }
 
     throw new AbiDecodingError(`Unsupported type: ${type}`);

@@ -130,25 +130,38 @@ const selector = Abi.Error.getSelector.call(error);
 const selector = Abi.getErrorSelector("InsufficientBalance(uint256,uint256)");
 ```
 
-## Encoding/Decoding (Not Yet Implemented)
+## Encoding/Decoding
 
-The following operations are defined but throw "Not implemented" errors:
+### Parameter Encoding/Decoding
+
+```typescript
+// Encode generic parameters
+const params = [{ type: 'address' }, { type: 'uint256' }];
+const encoded = Abi.encodeParameters(params, [address, amount]);
+
+// Decode generic parameters
+const values = Abi.decodeParameters(params, encoded);
+// [address, bigint]
+```
 
 ### Function Encoding/Decoding
 
 ```typescript
-// Encode function call
+// Encode function call (includes selector)
 const data = Abi.Function.encodeParams.call(transferFunc, [address, amount]);
 // selector (4 bytes) + encoded parameters
 
 // Decode function call
 const args = Abi.Function.decodeParams.call(transferFunc, data);
+// [address, bigint]
 
 // Encode function result
 const result = Abi.Function.encodeResult.call(balanceOfFunc, [balance]);
+// encoded return value
 
 // Decode function result
 const values = Abi.Function.decodeResult.call(balanceOfFunc, data);
+// [bigint]
 ```
 
 ### Event Encoding/Decoding
@@ -166,12 +179,13 @@ const decoded = Abi.Event.decodeLog.call(transferEvent, data, topics);
 ### Error Encoding/Decoding
 
 ```typescript
-// Encode error
+// Encode error (includes selector)
 const data = Abi.Error.encodeParams.call(error, [available, required]);
 // selector (4 bytes) + encoded parameters
 
 // Decode error
 const params = Abi.Error.decodeParams.call(error, data);
+// [bigint, bigint]
 ```
 
 ### Constructor Encoding/Decoding
@@ -189,17 +203,7 @@ const deployData = Abi.Constructor.encodeParams.call(constructor, bytecode, [100
 
 // Decode constructor args
 const args = Abi.Constructor.decodeParams.call(constructor, data, bytecode.length);
-```
-
-### Parameter Encoding/Decoding
-
-```typescript
-// Encode generic parameters
-const params = [{ type: 'address' }, { type: 'uint256' }];
-const encoded = Abi.encodeParameters(params, [address, amount]);
-
-// Decode generic parameters
-const values = Abi.decodeParameters(params, encoded);
+// [bigint]
 ```
 
 ## ABI-Level Operations
@@ -560,11 +564,11 @@ type SwapParams = Abi.ParametersToPrimitiveTypes<typeof swapFunc.inputs>[0];
 
 ## Performance Characteristics
 
-Based on benchmark results (see `abi.bench.ts`):
+Based on benchmark results (see `abi.bench.ts` and `abi-results.json`):
 
 ### Signature Generation
 - **Simple signatures**: ~20M ops/sec
-- **Complex tuples**: ~25M ops/sec
+- **Complex tuples**: ~26M ops/sec
 - Very fast string formatting operations
 
 ### Selector Computation
@@ -574,8 +578,15 @@ Based on benchmark results (see `abi.bench.ts`):
 - **Utility functions**: ~330K ops/sec
 - Dominated by keccak256 hashing cost
 
+### Encoding/Decoding
+- **encodeParameters**: ~2.8M ops/sec (simple params)
+- **decodeParameters**: ~2.7M ops/sec
+- **encodeTopics**: ~2.6M ops/sec
+- **encodeError**: ~2.7M ops/sec
+- Performance depends on type complexity and data size
+
 ### Formatting
-- **formatAbiItem**: 7-20M ops/sec
+- **formatAbiItem**: 7-20M ops/sec (depends on complexity)
 - **formatAbiItemWithArgs**: 9-11M ops/sec
 - Simple string operations
 
@@ -583,14 +594,9 @@ Based on benchmark results (see `abi.bench.ts`):
 - **getItem**: ~35M ops/sec
 - Very fast array search
 
-### Not Yet Implemented
-- Encoding/decoding performance TBD
-- Expected: ~100-500K ops/sec for typical parameters
-- Will depend on type complexity and data size
-
 ## Implementation Status
 
-### ✅ Implemented
+### ✅ Fully Implemented
 - Signature generation (Function, Event, Error)
 - Selector computation (4-byte and 32-byte)
 - Utility selector functions
@@ -598,23 +604,131 @@ Based on benchmark results (see `abi.bench.ts`):
 - Type inference with abitype
 - Type extraction utilities
 - ABI item lookup
+- **Parameter encoding/decoding** (Pure TypeScript)
+- **Function call encoding/decoding** (Pure TypeScript)
+- **Event topic encoding** (Pure TypeScript)
+- **Error encoding/decoding** (Pure TypeScript)
+- **Constructor encoding/decoding** (Pure TypeScript)
 
-### ⏳ Not Yet Implemented
-- Parameter encoding/decoding
-- Function call encoding/decoding
-- Event topic encoding/log decoding
-- Error encoding/decoding
-- Constructor encoding/decoding
-- encodePacked
-- Calldata decoding (selector inference)
-- Log parsing
+### ⏳ Partial Implementation
+- Event log decoding (basic support)
+- WASM variants (API defined, C layer not yet implemented)
 
-These will require:
-- Cursor-based byte manipulation
-- Static vs dynamic type routing
-- Offset calculation for dynamic types
-- Proper padding (left for numbers, right for bytes)
-- Recursive tuple/array handling
+### 🚧 Not Yet Implemented
+- encodePacked (Solidity's abi.encodePacked)
+- Calldata decoding with selector inference
+- Batch log parsing
+- WASM-accelerated encoding/decoding (requires C API layer)
+
+## WASM Usage
+
+For performance-critical applications, WASM-accelerated variants are available (API defined, implementation pending):
+
+### Basic Usage
+
+```typescript
+import { Abi, encodeParametersWasm, decodeParametersWasm } from './abi.wasm.js';
+
+// Pure TypeScript (currently available)
+const encoded = Abi.encodeParameters(params, values);
+
+// WASM (API defined, awaiting C implementation)
+// const encodedWasm = encodeParametersWasm(params, values);
+```
+
+### Current Status
+
+The WASM API is fully designed but not yet implemented:
+
+**Available Functions (Stubs)**:
+- `encodeParametersWasm()` - WASM parameter encoding
+- `decodeParametersWasm()` - WASM parameter decoding
+- `encodeFunctionDataWasm()` - WASM function call encoding
+- `decodeFunctionDataWasm()` - WASM function call decoding
+- `encodeEventTopicsWasm()` - WASM event topic encoding
+- `decodeEventLogWasm()` - WASM event log decoding
+- `encodePackedWasm()` - WASM packed encoding
+
+**Status Check**:
+```typescript
+import { isWasmAbiAvailable, getWasmImplementationStatus } from './abi.wasm.js';
+
+console.log(isWasmAbiAvailable()); // false (pending C API)
+console.log(getWasmImplementationStatus());
+// {
+//   available: false,
+//   reason: "C ABI encoding/decoding layer not yet implemented",
+//   fallback: "Pure TypeScript implementations available"
+// }
+```
+
+### When WASM Will Be Available
+
+**Prerequisites**:
+1. C API layer in `src/c/abi_encoding.zig`
+2. WASM loader bindings in `src/wasm-loader/loader.ts`
+3. Integration tests validating TS ≡ WASM results
+
+**Expected Performance** (once implemented):
+- Simple encoding: 2-5x faster than pure TS
+- Complex nested types: 3-10x faster
+- Batch operations: 5-15x faster
+
+### When to Use WASM (Future)
+
+**Use WASM when:**
+- Encoding/decoding in hot loops
+- Processing large batches of transactions
+- Complex nested types with many levels
+- Bundle size is not critical
+
+**Use Pure TS when:**
+- Simple one-off operations
+- Minimal bundle size required
+- Running in restricted environments
+- Development/debugging
+
+### Memory Management
+
+WASM implementation (when ready) will use:
+- Caller-allocated buffers for fixed-size types
+- JSON serialization for complex types
+- Automatic cleanup (no manual memory management)
+
+## Current Limitations
+
+### Type Support
+- ✅ uint8 through uint256
+- ✅ int8 through int248 (int256 not supported - Zig limitation)
+- ✅ address, bool, string, bytes
+- ✅ bytes1 through bytes32
+- ✅ Dynamic arrays: uint256[], address[], bytes32[], string[], bool[]
+- ❌ Fixed-size arrays: uint256[5]
+- ❌ Nested arrays: uint256[][]
+- ⚠️ Tuple types: Basic support, limited testing
+- ⚠️ Complex structs: Basic support, may have edge cases
+
+### Known Issues
+- **int256 not supported**: Zig's `@bitCast` limitation with i256
+- **Limited array type support**: Only simple dynamic arrays
+- **No tuple decoding**: Tuple encoding works, decoding not fully tested
+- **Event log decoding**: Basic support, needs more testing with complex events
+
+### WASM Limitations
+- **Not yet implemented**: C API layer pending
+- **API is stable**: Function signatures won't change
+- **Fallback available**: Pure TypeScript works for all supported types
+
+### Planned Enhancements
+1. Complete int256 support (requires Zig changes)
+2. Fixed-size array support (uint256[5])
+3. Nested array support (uint256[][])
+4. Full tuple decoding with complex types
+5. WASM C API layer implementation
+6. encodePacked implementation
+7. Calldata decoding with selector inference
+
+See GitHub issues for roadmap and contribution opportunities.
 
 ## Best Practices
 

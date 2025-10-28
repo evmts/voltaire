@@ -1,134 +1,242 @@
 [
   {
     "name": "Function.getSignature - simple",
-    "opsPerSec": 20316343.083514966,
-    "avgTimeMs": 0.00004922145663170147,
-    "iterations": 40632687
+    "opsPerSec": 20984618.5,
+    "avgTimeMs": 0.000047653951869556266,
+    "iterations": 41969237
   },
   {
     "name": "Function.getSignature - complex tuple",
-    "opsPerSec": 25731892.999999996,
-    "avgTimeMs": 0.00003886227880708194,
-    "iterations": 51463786
+    "opsPerSec": 27178933,
+    "avgTimeMs": 0.00003679320302971423,
+    "iterations": 54357866
   },
   {
     "name": "Event.getSignature",
-    "opsPerSec": 19006910.100854885,
-    "avgTimeMs": 0.00005261244435280526,
-    "iterations": 38013821
+    "opsPerSec": 20047743.089021266,
+    "avgTimeMs": 0.00004988092652422453,
+    "iterations": 40095487
   },
   {
     "name": "Error.getSignature",
-    "opsPerSec": 20011296.668119106,
-    "avgTimeMs": 0.00004997177427253602,
-    "iterations": 40022600
+    "opsPerSec": 20604116.26125662,
+    "avgTimeMs": 0.00004853399133067264,
+    "iterations": 41208272
   },
   {
     "name": "Function.getSelector - transfer",
-    "opsPerSec": 317284.5769010169,
-    "avgTimeMs": 0.0031517447515640494,
-    "iterations": 634570
+    "opsPerSec": 344235.59122023545,
+    "avgTimeMs": 0.002904987239858702,
+    "iterations": 688472
   },
   {
     "name": "Function.getSelector - balanceOf",
-    "opsPerSec": 319278.14081209165,
-    "avgTimeMs": 0.003132065344205763,
-    "iterations": 638557
+    "opsPerSec": 346312.10312632995,
+    "avgTimeMs": 0.0028875687305540505,
+    "iterations": 692625
   },
   {
     "name": "Event.getSelector - Transfer",
-    "opsPerSec": 321723.37275840604,
-    "avgTimeMs": 0.0031082603400124646,
-    "iterations": 643447
+    "opsPerSec": 350731.1420788695,
+    "avgTimeMs": 0.0028511867924608993,
+    "iterations": 701463
   },
   {
     "name": "Error.getSelector - InsufficientBalance",
-    "opsPerSec": 323592.149549702,
-    "avgTimeMs": 0.003090309827947187,
-    "iterations": 647185
+    "opsPerSec": 341871.1938543461,
+    "avgTimeMs": 0.0029250782691742348,
+    "iterations": 683743
   },
   {
     "name": "Abi.getFunctionSelector",
-    "opsPerSec": 333887.89566003246,
-    "avgTimeMs": 0.0029950172288312257,
-    "iterations": 667776
+    "opsPerSec": 358162.1939504056,
+    "avgTimeMs": 0.0027920311436847776,
+    "iterations": 716325
   },
   {
     "name": "Abi.getEventSelector",
-    "opsPerSec": 333192.3750528595,
-    "avgTimeMs": 0.0030012691612206145,
-    "iterations": 666385
+    "opsPerSec": 360022.9400561805,
+    "avgTimeMs": 0.00277760078245001,
+    "iterations": 720046
   },
   {
     "name": "Abi.getErrorSelector",
-    "opsPerSec": 327404.4931245057,
-    "avgTimeMs": 0.003054325829363982,
-    "iterations": 654809
+    "opsPerSec": 350283.3467510362,
+    "avgTimeMs": 0.0028548316934711424,
+    "iterations": 700567
   },
   {
     "name": "formatAbiItem - function",
-    "opsPerSec": 7552204,
-    "avgTimeMs": 0.000132411677438798,
-    "iterations": 15104408
+    "opsPerSec": 8058002.330781952,
+    "avgTimeMs": 0.0001241002371245231,
+    "iterations": 16116005
   },
   {
     "name": "formatAbiItem - event",
-    "opsPerSec": 6844946.71251224,
-    "avgTimeMs": 0.00014609317530143033,
-    "iterations": 13689894
+    "opsPerSec": 7303030.761363454,
+    "avgTimeMs": 0.00013692945198731478,
+    "iterations": 14606067
   },
   {
     "name": "formatAbiItem - error",
-    "opsPerSec": 8971954.5,
-    "avgTimeMs": 0.00011145843416838549,
-    "iterations": 17943909
+    "opsPerSec": 9599938,
+    "avgTimeMs": 0.00010416733941406705,
+    "iterations": 19199876
   },
   {
     "name": "formatAbiItem - complex",
-    "opsPerSec": 20480517,
-    "avgTimeMs": 0.00004882689240706179,
-    "iterations": 40961034
+    "opsPerSec": 21042463,
+    "avgTimeMs": 0.000047522953943176706,
+    "iterations": 42084926
   },
   {
     "name": "formatAbiItemWithArgs - function",
-    "opsPerSec": 11351173.248245416,
-    "avgTimeMs": 0.0000880966203343406,
-    "iterations": 22702364
+    "opsPerSec": 12137950,
+    "avgTimeMs": 0.00008238623490787159,
+    "iterations": 24275900
   },
   {
     "name": "formatAbiItemWithArgs - event",
-    "opsPerSec": 9434090.999999981,
-    "avgTimeMs": 0.00010599855354373854,
-    "iterations": 18868182
+    "opsPerSec": 9929077.791489368,
+    "avgTimeMs": 0.00010071428797316326,
+    "iterations": 19858156
   },
   {
-    "name": "Function.encodeParams - simple",
-    "opsPerSec": 2798006.8838827154,
-    "avgTimeMs": 0.00035739726222986556,
-    "iterations": 5596014
+    "name": "encode uint256",
+    "opsPerSec": 2153701,
+    "avgTimeMs": 0.0004643170059353643,
+    "iterations": 4307402
   },
   {
-    "name": "Function.decodeResult",
-    "opsPerSec": 2717400.330162481,
-    "avgTimeMs": 0.000367998777692136,
-    "iterations": 5434801
+    "name": "encode address",
+    "opsPerSec": 2641967.5,
+    "avgTimeMs": 0.0003785057916117439,
+    "iterations": 5283935
+  },
+  {
+    "name": "encode bool",
+    "opsPerSec": 11220123.769987468,
+    "avgTimeMs": 0.00008912557655334288,
+    "iterations": 22440248
+  },
+  {
+    "name": "encode string",
+    "opsPerSec": 969082.4513584515,
+    "avgTimeMs": 0.0010319039402665981,
+    "iterations": 1938346
+  },
+  {
+    "name": "encode (uint256, address, bool)",
+    "opsPerSec": 866606.3916742022,
+    "avgTimeMs": 0.001153926407198652,
+    "iterations": 1733213
+  },
+  {
+    "name": "encode (string, uint256, bool)",
+    "opsPerSec": 574834.4042900727,
+    "avgTimeMs": 0.0017396314356566945,
+    "iterations": 1149669
+  },
+  {
+    "name": "Function.encodeParams - transfer",
+    "opsPerSec": 242422.6768505717,
+    "avgTimeMs": 0.004125026639386528,
+    "iterations": 484846
+  },
+  {
+    "name": "Function.encodeResult - bool",
+    "opsPerSec": 8943032,
+    "avgTimeMs": 0.00011181889989882627,
+    "iterations": 17886064
   },
   {
     "name": "Event.encodeTopics",
-    "opsPerSec": 2629570,
-    "avgTimeMs": 0.0003802903136254217,
-    "iterations": 5259140
+    "opsPerSec": 309954.5866755586,
+    "avgTimeMs": 0.0032262790840605904,
+    "iterations": 619910
   },
   {
     "name": "Error.encodeParams",
-    "opsPerSec": 2682520.317333983,
-    "avgTimeMs": 0.0003727837562079858,
-    "iterations": 5365065
+    "opsPerSec": 231089.81697686436,
+    "avgTimeMs": 0.004327321788047958,
+    "iterations": 462180
+  },
+  {
+    "name": "decode uint256",
+    "opsPerSec": 1724580.2844274668,
+    "avgTimeMs": 0.0005798512304876454,
+    "iterations": 3449161
+  },
+  {
+    "name": "decode address",
+    "opsPerSec": 2557528.893862552,
+    "avgTimeMs": 0.0003910024251924414,
+    "iterations": 5115058
+  },
+  {
+    "name": "decode bool",
+    "opsPerSec": 14753571.190175008,
+    "avgTimeMs": 0.00006778019959438295,
+    "iterations": 29507143
+  },
+  {
+    "name": "decode string",
+    "opsPerSec": 936803.0709441948,
+    "avgTimeMs": 0.0010674602069697633,
+    "iterations": 1873607
+  },
+  {
+    "name": "decode (uint256, address)",
+    "opsPerSec": 1028404.0932661819,
+    "avgTimeMs": 0.0009723804159744529,
+    "iterations": 2056809
+  },
+  {
+    "name": "Function.decodeParams",
+    "opsPerSec": 245476.91813344866,
+    "avgTimeMs": 0.00407370276441376,
+    "iterations": 490954
+  },
+  {
+    "name": "Function.decodeResult",
+    "opsPerSec": 14987690.5,
+    "avgTimeMs": 0.00006672142048836677,
+    "iterations": 29975381
+  },
+  {
+    "name": "Event.decodeLog",
+    "opsPerSec": 226353.60388119414,
+    "avgTimeMs": 0.004417866483472772,
+    "iterations": 452708
+  },
+  {
+    "name": "Error.decodeParams",
+    "opsPerSec": 239051.07664054257,
+    "avgTimeMs": 0.004183206426230344,
+    "iterations": 478103
   },
   {
     "name": "Abi.getItem",
-    "opsPerSec": 35339613,
-    "avgTimeMs": 0.000028296857693376552,
-    "iterations": 70679226
+    "opsPerSec": 40663310,
+    "avgTimeMs": 0.000024592193798291384,
+    "iterations": 81326620
+  },
+  {
+    "name": "round-trip uint256",
+    "opsPerSec": 781028.6254967694,
+    "avgTimeMs": 0.0012803628027896607,
+    "iterations": 1562058
+  },
+  {
+    "name": "round-trip (uint256, address)",
+    "opsPerSec": 488189.13385815,
+    "avgTimeMs": 0.0020483864360048695,
+    "iterations": 976379
+  },
+  {
+    "name": "round-trip Function call",
+    "opsPerSec": 123449.14767613272,
+    "avgTimeMs": 0.008100501452010729,
+    "iterations": 246899
   }
 ]

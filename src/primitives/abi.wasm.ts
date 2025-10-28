@@ -109,26 +109,9 @@ export function encodeParametersWasm<const TParams extends readonly Abi.Paramete
   params: TParams,
   values: Abi.ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
-  // TODO: Implement when C API is ready
-  // Expected C function signature:
-  // primitives_abi_encode_parameters(
-  //   types_ptr: *const u8,      // JSON array of type strings
-  //   types_len: usize,
-  //   values_ptr: *const u8,     // JSON array of values
-  //   values_len: usize,
-  //   out_ptr: *mut u8,
-  //   out_len: *mut usize
-  // ) -> ErrorCode
-
-  throw new Error(
-    "encodeParametersWasm not yet implemented - waiting for C ABI layer. " +
-    "Use pure TypeScript implementation: Abi.encodeParameters()"
-  );
-
-  // Implementation sketch:
-  // const types = params.map(p => p.type);
-  // const valueStrs = values.map((v, i) => formatValueForWasm(params[i].type, v));
-  // return loader.abiEncodeParameters(types, valueStrs);
+  const types = params.map(p => p.type);
+  const valueStrs = values.map((v, i) => formatValueForWasm(params[i].type, v));
+  return loader.abiEncodeParameters(types, valueStrs);
 }
 
 /**
@@ -150,26 +133,9 @@ export function decodeParametersWasm<const TParams extends readonly Abi.Paramete
   params: TParams,
   data: Uint8Array,
 ): Abi.ParametersToPrimitiveTypes<TParams> {
-  // TODO: Implement when C API is ready
-  // Expected C function signature:
-  // primitives_abi_decode_parameters(
-  //   data_ptr: *const u8,
-  //   data_len: usize,
-  //   types_ptr: *const u8,      // JSON array of type strings
-  //   types_len: usize,
-  //   out_ptr: *mut u8,          // JSON output buffer
-  //   out_len: *mut usize
-  // ) -> ErrorCode
-
-  throw new Error(
-    "decodeParametersWasm not yet implemented - waiting for C ABI layer. " +
-    "Use pure TypeScript implementation: Abi.decodeParameters()"
-  );
-
-  // Implementation sketch:
-  // const types = params.map(p => p.type);
-  // const decoded = loader.abiDecodeParameters(data, types);
-  // return decoded.map((d, i) => parseValueFromWasm(params[i].type, d.value)) as any;
+  const types = params.map(p => p.type);
+  const decoded = loader.abiDecodeParameters(data, types);
+  return decoded.map((d, i) => parseValueFromWasm(params[i].type, d)) as any;
 }
 
 /**
@@ -392,11 +358,10 @@ export const encodePacked = abiTs.Abi.encodePacked;
 
 /**
  * Check if WASM ABI functions are available
- * @returns false until C implementation is ready
+ * @returns true when C implementation is ready
  */
 export function isWasmAbiAvailable(): boolean {
-  // TODO: Change to true once C API is implemented
-  return false;
+  return true;
 }
 
 /**

@@ -14,22 +14,26 @@ import {
   functionDataVectors,
 } from "./abi.testdata.js";
 import { Abi } from "./abi.js";
+import * as loader from "../wasm-loader/loader.js";
 
 // ============================================================================
 // Setup and Status Checks
 // ============================================================================
 
+beforeAll(async () => {
+  // Load WASM module before tests
+  const wasmPath = new URL("../wasm-loader/primitives.wasm", import.meta.url);
+  await loader.loadWasm(wasmPath);
+});
+
 describe("WASM ABI Status", () => {
-  it("reports unavailable status", () => {
-    expect(wasmAbi.isWasmAbiAvailable()).toBe(false);
+  it("reports available status", () => {
+    expect(wasmAbi.isWasmAbiAvailable()).toBe(true);
   });
 
   it("provides implementation status", () => {
     const status = wasmAbi.getImplementationStatus();
-    expect(status.wasmAvailable).toBe(false);
-    expect(status.reason).toContain("not yet implemented");
-    expect(status.requiredFiles).toBeDefined();
-    expect(status.estimatedFunctions).toBeDefined();
+    expect(status).toBeDefined();
   });
 });
 
@@ -77,23 +81,21 @@ describe("Abi.getEventSelector (Pure TS)", () => {
 // WASM Encoding Tests (Currently Throws - Waiting for C API)
 // ============================================================================
 
-describe.skip("WASM Parameter Encoding (Not Implemented)", () => {
-  it("encodeParametersWasm throws not implemented", () => {
-    expect(() => {
-      wasmAbi.encodeParametersWasm(
-        [{ type: "uint256" }],
-        [42n]
-      );
-    }).toThrow(/not yet implemented/i);
+describe("WASM Parameter Encoding", () => {
+  it("encodeParametersWasm works for uint256", () => {
+    const params = [{ type: "uint256" as const }];
+    const values: [bigint] = [42n];
+    const encoded = wasmAbi.encodeParametersWasm(params, values);
+    expect(encoded).toBeInstanceOf(Uint8Array);
+    expect(encoded.length).toBeGreaterThan(0);
   });
 
-  it("decodeParametersWasm throws not implemented", () => {
-    expect(() => {
-      wasmAbi.decodeParametersWasm(
-        [{ type: "uint256" }],
-        new Uint8Array(32)
-      );
-    }).toThrow(/not yet implemented/i);
+  it("decodeParametersWasm works for uint256", () => {
+    const params = [{ type: "uint256" as const }];
+    const values: [bigint] = [42n];
+    const encoded = wasmAbi.encodeParametersWasm(params, values);
+    const decoded = wasmAbi.decodeParametersWasm(params, encoded);
+    expect(decoded).toEqual(values);
   });
 
   it("encodeFunctionDataWasm throws not implemented", () => {
@@ -155,7 +157,7 @@ describe.skip("WASM Parameter Encoding (Not Implemented)", () => {
 // Test Vectors (Ready for Implementation)
 // ============================================================================
 
-describe.skip("WASM Encoding - Basic Types (Future)", () => {
+describe("WASM Encoding - Basic Types", () => {
   // These tests are ready to run once C implementation is complete
   for (const vector of encodeVectors) {
     it(vector.name, () => {
@@ -173,7 +175,7 @@ describe.skip("WASM Encoding - Basic Types (Future)", () => {
   }
 });
 
-describe.skip("WASM Round-Trip Tests (Future)", () => {
+describe("WASM Round-Trip Tests", () => {
   for (const vector of roundTripVectors) {
     it(vector.name, () => {
       const params = vector.params.map(p => ({ type: p.type }));
@@ -274,24 +276,36 @@ describe.skip("WASM Error Handling (Future)", () => {
 // Performance Comparison Tests (Future)
 // ============================================================================
 
-describe.skip("WASM vs Pure TS Performance (Future)", () => {
-  it("WASM encoding should be faster for large arrays", () => {
-    const params = [{ type: "uint256[]" }];
-    const values = [Array(1000).fill(42n)];
+describe("WASM vs Pure TS Performance", () => {
+  it("compares TS vs WASM encoding", () => {
+    const params = Array(10).fill({ type: "uint256" as const });
+    const values = Array(10).fill(42n) as any;
 
-    const wasmStart = performance.now();
-    wasmAbi.encodeParametersWasm(params, values as any);
-    const wasmTime = performance.now() - wasmStart;
+    // Warmup
+    for (let i = 0; i < 100; i++) {
+      Abi.encodeParameters(params, values);
+      wasmAbi.encodeParametersWasm(params, values);
+    }
 
+    // Benchmark
     const tsStart = performance.now();
-    // Pure TS implementation (when available)
-    // Abi.encodeParameters(params, values);
+    for (let i = 0; i < 1000; i++) {
+      Abi.encodeParameters(params, values);
+    }
     const tsTime = performance.now() - tsStart;
 
-    // WASM should be faster (this is aspirational)
-    // expect(wasmTime).toBeLessThan(tsTime);
+    const wasmStart = performance.now();
+    for (let i = 0; i < 1000; i++) {
+      wasmAbi.encodeParametersWasm(params, values);
+    }
+    const wasmTime = performance.now() - wasmStart;
 
-    console.log(`WASM: ${wasmTime}ms, TS: ${tsTime}ms`);
+    console.log(`TS: ${tsTime.toFixed(2)}ms, WASM: ${wasmTime.toFixed(2)}ms`);
+    console.log(`WASM is ${(tsTime / wasmTime).toFixed(2)}x faster (${tsTime > wasmTime ? 'faster' : 'slower'})`);
+
+    // Just log the results, don't assert
+    expect(wasmTime).toBeGreaterThan(0);
+    expect(tsTime).toBeGreaterThan(0);
   });
 
   it("WASM decoding should be faster for complex types", () => {
@@ -325,7 +339,36 @@ describe.skip("WASM vs Pure TS Performance (Future)", () => {
 // Integration Tests (Future)
 // ============================================================================
 
-describe.skip("WASM Integration Tests (Future)", () => {
+describe("WASM Integration Tests", () => {
+  it("encodes uint256 correctly", () => {
+    const params = [{ type: "uint256" as const }];
+    const values: [bigint] = [42n];
+    const encoded = wasmAbi.encodeParametersWasm(params, values);
+
+    // Should match pure TS implementation
+    const expected = Abi.encodeParameters(params, values);
+    expect(encoded).toEqual(expected);
+  });
+
+  it("round-trips uint256", () => {
+    const params = [{ type: "uint256" as const }];
+    const original: [bigint] = [123456789n];
+    const encoded = wasmAbi.encodeParametersWasm(params, original);
+    const decoded = wasmAbi.decodeParametersWasm(params, encoded);
+    expect(decoded).toEqual(original);
+  });
+
+  it("handles address correctly", () => {
+    const params = [{ type: "address" as const }];
+    const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
+    const values: [string] = [addr];
+    const encoded = wasmAbi.encodeParametersWasm(params, values);
+    const decoded = wasmAbi.decodeParametersWasm(params, encoded);
+    expect(decoded[0].toLowerCase()).toBe(addr.toLowerCase());
+  });
+})
+
+describe.skip("WASM Integration Tests (Advanced - Future)", () => {
   it("encodes and decodes ERC20 transfer", () => {
     const transferSig = "transfer(address,uint256)";
     const params = [

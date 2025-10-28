@@ -330,84 +330,252 @@ console.log(
 );
 
 // ============================================================================
-// Encoding/Decoding Benchmarks (Not Implemented)
+// Encoding Benchmarks (IMPLEMENTED)
 // ============================================================================
 
 console.log("\n");
 console.log("================================================================================");
-console.log("ABI ENCODING/DECODING BENCHMARKS (Not Implemented)");
+console.log("ABI ENCODING BENCHMARKS");
 console.log("================================================================================\n");
 
-console.log("--- Function Encoding ---");
+console.log("--- Basic Type Encoding ---");
 results.push(
-  benchmark("Function.encodeParams - simple", () => {
-    try {
-      Abi.Function.encodeParams.call(transferFunc, [testAddress, 100n]);
-    } catch {
-      // Expected - not implemented
-    }
-  }),
+  benchmark("encode uint256", () => {
+    Abi.encodeParameters([{ type: "uint256" }], [42n]);
+  })
 );
 results.push(
-  benchmark("Function.decodeResult", () => {
-    try {
-      Abi.Function.decodeResult.call(balanceOfFunc, testData);
-    } catch {
-      // Expected - not implemented
-    }
-  }),
+  benchmark("encode address", () => {
+    Abi.encodeParameters([{ type: "address" }], [testAddress]);
+  })
+);
+results.push(
+  benchmark("encode bool", () => {
+    Abi.encodeParameters([{ type: "bool" }], [true]);
+  })
+);
+results.push(
+  benchmark("encode string", () => {
+    Abi.encodeParameters([{ type: "string" }], ["Hello World"]);
+  })
+);
+
+console.log(
+  results
+    .slice(-4)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
+);
+
+console.log("\n--- Mixed Type Encoding ---");
+results.push(
+  benchmark("encode (uint256, address, bool)", () => {
+    Abi.encodeParameters(
+      [{ type: "uint256" }, { type: "address" }, { type: "bool" }],
+      [123n, testAddress, true]
+    );
+  })
+);
+results.push(
+  benchmark("encode (string, uint256, bool)", () => {
+    Abi.encodeParameters(
+      [{ type: "string" }, { type: "uint256" }, { type: "bool" }],
+      ["test", 420n, true]
+    );
+  })
 );
 
 console.log(
   results
     .slice(-2)
     .map(
-      (r) =>
-        `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
     )
-    .join("\n"),
+    .join("\n")
+);
+
+console.log("\n--- Function Encoding ---");
+results.push(
+  benchmark("Function.encodeParams - transfer", () => {
+    Abi.Function.encodeParams.call(transferFunc, [testAddress, 100n]);
+  })
+);
+results.push(
+  benchmark("Function.encodeResult - bool", () => {
+    Abi.Function.encodeResult.call(transferFunc, [true]);
+  })
+);
+
+console.log(
+  results
+    .slice(-2)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
 );
 
 console.log("\n--- Event Encoding ---");
 results.push(
   benchmark("Event.encodeTopics", () => {
-    try {
-      Abi.Event.encodeTopics.call(transferEvent, { from: testAddress });
-    } catch {
-      // Expected - not implemented
-    }
-  }),
+    Abi.Event.encodeTopics.call(transferEvent, { from: testAddress });
+  })
 );
 
 console.log(
   results
     .slice(-1)
     .map(
-      (r) =>
-        `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
     )
-    .join("\n"),
+    .join("\n")
 );
 
 console.log("\n--- Error Encoding ---");
 results.push(
   benchmark("Error.encodeParams", () => {
-    try {
-      Abi.Error.encodeParams.call(insufficientBalanceError, [100n, 200n]);
-    } catch {
-      // Expected - not implemented
-    }
-  }),
+    Abi.Error.encodeParams.call(insufficientBalanceError, [100n, 200n]);
+  })
 );
 
 console.log(
   results
     .slice(-1)
     .map(
-      (r) =>
-        `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
     )
-    .join("\n"),
+    .join("\n")
+);
+
+// ============================================================================
+// Decoding Benchmarks (IMPLEMENTED)
+// ============================================================================
+
+console.log("\n");
+console.log("================================================================================");
+console.log("ABI DECODING BENCHMARKS");
+console.log("================================================================================\n");
+
+const encodedUint256 = Abi.encodeParameters([{ type: "uint256" }], [42n]);
+const encodedAddress = Abi.encodeParameters([{ type: "address" }], [testAddress]);
+const encodedBool = Abi.encodeParameters([{ type: "bool" }], [true]);
+const encodedString = Abi.encodeParameters([{ type: "string" }], ["Hello World"]);
+const encodedMixed = Abi.encodeParameters(
+  [{ type: "uint256" }, { type: "address" }],
+  [123n, testAddress]
+);
+
+console.log("--- Basic Type Decoding ---");
+results.push(
+  benchmark("decode uint256", () => {
+    Abi.decodeParameters([{ type: "uint256" }], encodedUint256);
+  })
+);
+results.push(
+  benchmark("decode address", () => {
+    Abi.decodeParameters([{ type: "address" }], encodedAddress);
+  })
+);
+results.push(
+  benchmark("decode bool", () => {
+    Abi.decodeParameters([{ type: "bool" }], encodedBool);
+  })
+);
+results.push(
+  benchmark("decode string", () => {
+    Abi.decodeParameters([{ type: "string" }], encodedString);
+  })
+);
+
+console.log(
+  results
+    .slice(-4)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
+);
+
+console.log("\n--- Mixed Type Decoding ---");
+results.push(
+  benchmark("decode (uint256, address)", () => {
+    Abi.decodeParameters(
+      [{ type: "uint256" }, { type: "address" }],
+      encodedMixed
+    );
+  })
+);
+
+console.log(
+  results
+    .slice(-1)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
+);
+
+console.log("\n--- Function Decoding ---");
+const encodedTransferCall = Abi.Function.encodeParams.call(transferFunc, [testAddress, 100n]);
+const encodedBoolResult = Abi.Function.encodeResult.call(transferFunc, [true]);
+
+results.push(
+  benchmark("Function.decodeParams", () => {
+    Abi.Function.decodeParams.call(transferFunc, encodedTransferCall);
+  })
+);
+results.push(
+  benchmark("Function.decodeResult", () => {
+    Abi.Function.decodeResult.call(transferFunc, encodedBoolResult);
+  })
+);
+
+console.log(
+  results
+    .slice(-2)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
+);
+
+console.log("\n--- Event Decoding ---");
+const encodedEventData = Abi.encodeParameters([{ type: "uint256" }], [1000n]);
+const eventTopics = Abi.Event.encodeTopics.call(transferEvent, { from: testAddress, to: testAddress });
+
+results.push(
+  benchmark("Event.decodeLog", () => {
+    Abi.Event.decodeLog.call(transferEvent, encodedEventData, eventTopics as any);
+  })
+);
+
+console.log(
+  results
+    .slice(-1)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
+);
+
+console.log("\n--- Error Decoding ---");
+const encodedError = Abi.Error.encodeParams.call(insufficientBalanceError, [100n, 200n]);
+
+results.push(
+  benchmark("Error.decodeParams", () => {
+    Abi.Error.decodeParams.call(insufficientBalanceError, encodedError);
+  })
+);
+
+console.log(
+  results
+    .slice(-1)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
 );
 
 // ============================================================================
@@ -436,17 +604,86 @@ console.log(
 );
 
 // ============================================================================
+// Round-Trip Benchmarks
+// ============================================================================
+
+console.log("\n");
+console.log("================================================================================");
+console.log("ROUND-TRIP BENCHMARKS");
+console.log("================================================================================\n");
+
+console.log("--- Encode + Decode Round-Trip ---");
+results.push(
+  benchmark("round-trip uint256", () => {
+    const encoded = Abi.encodeParameters([{ type: "uint256" }], [42n]);
+    Abi.decodeParameters([{ type: "uint256" }], encoded);
+  })
+);
+results.push(
+  benchmark("round-trip (uint256, address)", () => {
+    const params = [{ type: "uint256" }, { type: "address" }];
+    const values = [123n, testAddress];
+    const encoded = Abi.encodeParameters(params, values as any);
+    Abi.decodeParameters(params, encoded);
+  })
+);
+results.push(
+  benchmark("round-trip Function call", () => {
+    const encoded = Abi.Function.encodeParams.call(transferFunc, [testAddress, 100n]);
+    Abi.Function.decodeParams.call(transferFunc, encoded);
+  })
+);
+
+console.log(
+  results
+    .slice(-3)
+    .map(
+      (r) => `  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`
+    )
+    .join("\n")
+);
+
+// ============================================================================
 // Summary
 // ============================================================================
 
 console.log("\n");
 console.log("================================================================================");
-console.log("Benchmarks complete!");
+console.log("BENCHMARK SUMMARY");
 console.log("================================================================================");
 console.log(`\nTotal benchmarks run: ${results.length}`);
-console.log("\nNote: Most encoding/decoding operations throw 'Not implemented'");
-console.log("These benchmarks measure error handling overhead.");
-console.log("Real performance metrics will be available after implementation.\n");
+
+// Calculate statistics
+const allOpsPerSec = results.map(r => r.opsPerSec);
+const avgOps = allOpsPerSec.reduce((a, b) => a + b, 0) / allOpsPerSec.length;
+const maxOps = Math.max(...allOpsPerSec);
+const minOps = Math.min(...allOpsPerSec);
+
+console.log(`\nPerformance Statistics:`);
+console.log(`  Average: ${avgOps.toFixed(0)} ops/sec`);
+console.log(`  Max: ${maxOps.toFixed(0)} ops/sec (${results.find(r => r.opsPerSec === maxOps)?.name})`);
+console.log(`  Min: ${minOps.toFixed(0)} ops/sec (${results.find(r => r.opsPerSec === minOps)?.name})`);
+
+// Top 5 fastest operations
+console.log(`\nTop 5 Fastest Operations:`);
+const sortedResults = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+sortedResults.slice(0, 5).forEach((r, i) => {
+  console.log(`  ${i + 1}. ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec`);
+});
+
+// Encoding vs Decoding comparison
+const encodingOps = results.filter(r => r.name.includes('encode')).map(r => r.opsPerSec);
+const decodingOps = results.filter(r => r.name.includes('decode')).map(r => r.opsPerSec);
+if (encodingOps.length > 0 && decodingOps.length > 0) {
+  const avgEncoding = encodingOps.reduce((a, b) => a + b, 0) / encodingOps.length;
+  const avgDecoding = decodingOps.reduce((a, b) => a + b, 0) / decodingOps.length;
+  console.log(`\nEncoding vs Decoding:`);
+  console.log(`  Avg Encoding: ${avgEncoding.toFixed(0)} ops/sec`);
+  console.log(`  Avg Decoding: ${avgDecoding.toFixed(0)} ops/sec`);
+  console.log(`  Ratio: ${(avgEncoding / avgDecoding).toFixed(2)}x (encoding ${avgEncoding > avgDecoding ? 'faster' : 'slower'})`);
+}
+
+console.log("\n");
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
