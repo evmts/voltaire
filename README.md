@@ -175,9 +175,9 @@ const create2 = Address.calculateCreate2Address.call(deployer, salt, initCodeHas
 
 **Utilities:**
 - `Hash.random()` — Generate random 32-byte hash
-- `Hash.clone.call(hash)` — Clone hash
+- `Hash.clone.call(hash)` — Create copy of hash
 - `Hash.slice.call(hash, start?, end?)` — Get slice of hash bytes
-- `Hash.format.call(hash, prefix?, suffix?)` — Truncated display (0x1234...5678)
+- `Hash.format.call(hash, prefix?, suffix?)` — Truncated display (0x1234...5678 by default)
 
 **Examples:**
 ```typescript
@@ -303,10 +303,11 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 - `Uint.maximum.call(a, b)` — Get maximum of two values
 
 **Utilities:**
-- `Uint.isValid(value)` — Check if value is valid Uint256
+- `Uint.isValid(value)` — Check if value is valid Uint256 (0 ≤ value < 2^256)
+- `Uint.tryFrom(value)` — Try to create Uint, returns undefined if invalid
 - `Uint.bitLength.call(uint)` — Get number of bits required (0-256)
-- `Uint.leadingZeros.call(uint)` — Get number of leading zero bits
-- `Uint.popCount.call(uint)` — Count number of set bits
+- `Uint.leadingZeros.call(uint)` — Count leading zero bits
+- `Uint.popCount.call(uint)` — Count number of 1 bits (population count)
 
 **Examples:**
 ```typescript
@@ -454,25 +455,223 @@ Full abitype integration for type inference.
 - Opcode parsing
 
 **EventLog** — Event log parsing and filtering
-- Topic filtering
-- Address filtering
 
-**FeeMarket** — Fee calculations
-- EIP-1559 base fee computation
-- EIP-4844 blob fee computation
+**Type:** `EventLog.Data` — `{ address, topics, data, blockNumber?, transactionHash?, transactionIndex?, blockHash?, logIndex?, removed? }`
+
+**Creation:**
+- `EventLog.create(params)` — Create event log
+
+**Query:**
+- `EventLog.getTopic0.call(log)` — Get event signature topic
+- `EventLog.getIndexedTopics.call(log)` — Get indexed topics (excluding topic0)
+- `EventLog.matchesTopics.call(log, topics)` — Check if log matches topic filter
+- `EventLog.matchesAddress.call(log, address)` — Check if log matches address
+- `EventLog.matchesFilter.call(log, filter)` — Check if log matches complete filter
+
+**Filtering & Sorting:**
+- `EventLog.filterLogs(logs, filter)` — Filter array of logs
+- `EventLog.sortLogs(logs)` — Sort by block/tx/log index
+
+**Utilities:**
+- `EventLog.isRemoved.call(log)` — Check if log was removed (reorg)
+- `EventLog.clone.call(log)` — Clone log object
+
+**FeeMarket** — Fee calculations (EIP-1559 & EIP-4844)
+
+**Constants:**
+- `FeeMarket.Eip1559.MIN_BASE_FEE` — 7 wei
+- `FeeMarket.Eip1559.BASE_FEE_CHANGE_DENOMINATOR` — 8
+- `FeeMarket.Eip1559.ELASTICITY_MULTIPLIER` — 2
+- `FeeMarket.Eip4844.MIN_BLOB_BASE_FEE` — 1 wei
+- `FeeMarket.Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION` — 3338477
+- `FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK` — 393216
+- `FeeMarket.Eip4844.BLOB_GAS_PER_BLOB` — 131072
+- `FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK` — 6
+- `FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK` — 786432
+
+**Types:**
+- `FeeMarket.State` — Combined EIP-1559 and EIP-4844 state
+- `FeeMarket.Eip1559State` — `{ baseFee, gasUsed, gasTarget }`
+- `FeeMarket.Eip4844State` — `{ excessBlobGas, blobGasUsed }`
+- `FeeMarket.TxFeeParams` — Transaction fee parameters
+- `FeeMarket.BlobTxFeeParams` — Blob transaction fee parameters
+
+**Fee Calculations:**
+- `FeeMarket.calculateBaseFee(parentState)` — Compute next block base fee
+- `FeeMarket.calculateBlobBaseFee(excessBlobGas)` — Compute blob base fee
+- `FeeMarket.calculateExcessBlobGas(parentExcess, parentBlobGasUsed)` — Compute excess blob gas
+- `FeeMarket.calculateTxFee(tx, baseFee)` — Compute transaction fee
+- `FeeMarket.calculateBlobTxFee(blobTx, baseFee, blobBaseFee)` — Compute blob tx fee
+- `FeeMarket.projectBaseFees(currentState, numBlocks)` — Project future base fees
+
+**State Management:**
+- `FeeMarket.nextState(currentState, gasUsed, blobGasUsed)` — Compute next block state
+- `FeeMarket.State.next.call(state, gasUsed, blobGasUsed)` — Convenience method
+- `FeeMarket.State.getBlobBaseFee.call(state)` — Get current blob base fee
+- `FeeMarket.State.getGasTarget.call(state)` — Get gas target
+- `FeeMarket.State.isAboveGasTarget.call(state, gasUsed)` — Check if above target
+- `FeeMarket.State.isAboveBlobGasTarget.call(state, blobGasUsed)` — Check if above blob target
+
+**Validation:**
+- `FeeMarket.canIncludeTx(tx, state)` — Check if tx fees sufficient
+- `FeeMarket.validateTxFeeParams(params)` — Validate fee parameters
+- `FeeMarket.validateState(state)` — Validate state
+
+**Utilities:**
+- `FeeMarket.weiToGwei(wei)` — Convert wei to gwei
+- `FeeMarket.gweiToWei(gwei)` — Convert gwei to wei
 
 **GasConstants** — EVM gas cost constants
-- Operation costs
-- Storage costs
+
+**Execution Costs:**
+- `Gas.QuickStep` — 2 (PUSH, DUP, SWAP, etc.)
+- `Gas.FastestStep` — 3 (ADD, SUB, LT, GT, EQ, etc.)
+- `Gas.FastStep` — 5 (MUL, DIV, MOD, etc.)
+- `Gas.MidStep` — 8 (ADDMOD, MULMOD)
+- `Gas.SlowStep` — 10 (SIGNEXTEND, etc.)
+- `Gas.ExtStep` — 20 (SHA3 base)
+- `Gas.Jumpdest` — 1
+
+**Memory & Copy:**
+- `Gas.Memory` — 3 per word
+- `Gas.Copy` — 3 per word (CALLDATACOPY, CODECOPY, etc.)
+- `Gas.QuadCoeffDiv` — 512 (quadratic memory expansion)
+
+**Keccak-256:**
+- `Gas.Keccak256Base` — 30
+- `Gas.Keccak256Word` — 6 per word
+
+**Storage (EIP-2929):**
+- `Gas.Sload` — 100 (warm)
+- `Gas.ColdSload` — 2100 (cold)
+- `Gas.SstoreSentry` — 2300 (minimum to call with value)
+- `Gas.SstoreSet` — 20000 (zero → non-zero)
+- `Gas.SstoreReset` — 5000 (non-zero → non-zero)
+- `Gas.SstoreClear` — 5000 (non-zero → zero)
+- `Gas.SstoreRefund` — 4800 (refund for clearing)
+- `Gas.ColdAccountAccess` — 2600
+- `Gas.WarmStorageRead` — 100
+
+**Transient Storage (EIP-1153):**
+- `Gas.TLoad` — 100
+- `Gas.TStore` — 100
+
+**Logs:**
+- `Gas.LogBase` — 375
+- `Gas.LogData` — 8 per byte
+- `Gas.LogTopic` — 375 per topic
+
+**Calls:**
+- `Gas.Call` — 40 (warm)
+- `Gas.CallValue` — 9000 (non-zero value transfer)
+- `Gas.CallStipend` — 2300 (stipend for callee)
+- `Gas.CallNewAccount` — 25000 (create new account)
+- `Gas.CallCode` — 700
+- `Gas.DelegateCall` — 700
+- `Gas.StaticCall` — 700
+- `Gas.CallGasRetentionDivisor` — 64 (EIP-150: 63/64ths rule)
+
+**Contract Creation:**
+- `Gas.Create` — 32000
+- `Gas.CreateData` — 200 per byte (initcode execution)
+- `Gas.InitcodeWord` — 2 per word (EIP-3860)
+- `Gas.MaxInitcodeSize` — 49152 bytes (EIP-3860)
+
+**Selfdestruct:**
+- `Gas.Selfdestruct` — 5000
+- `Gas.SelfdestructRefund` — 24000 (removed in EIP-3529)
+
+**Transactions:**
+- `Gas.Tx` — 21000 (base transaction cost)
+- `Gas.TxContractCreation` — 53000 (create contract)
+- `Gas.TxDataZero` — 4 per zero byte
+- `Gas.TxDataNonZero` — 16 per non-zero byte (68 pre-Istanbul)
+
+**EIP-4844 Blob:**
+- `Gas.BlobHash` — 3 (BLOBHASH opcode)
+- `Gas.BlobBaseFee` — 2 (BLOBBASEFEE opcode)
+
+**Refunds:**
+- `Gas.MaxRefundQuotient` — 5 (max refund = gasUsed / 5, EIP-3529)
+
+**Precompile Costs:**
+- `Gas.Precompile.EcRecover` — 3000
+- `Gas.Precompile.Sha256Base` — 60, `Sha256Word` — 12
+- `Gas.Precompile.Ripemd160Base` — 600, `Ripemd160Word` — 120
+- `Gas.Precompile.IdentityBase` — 15, `IdentityWord` — 3
+- `Gas.Precompile.ModExpMin` — 200
+- `Gas.Precompile.Bn254Add` — 150
+- `Gas.Precompile.Bn254Mul` — 6000
+- `Gas.Precompile.Bn254PairingBase` — 45000, `Bn254PairingPerPair` — 34000
+- `Gas.Precompile.Blake2fRound` — 1
+
+**Calculation Methods:**
+- `Gas.calculateKeccak256Cost(dataSize)` — Keccak-256 operation cost
+- `Gas.calculateSstoreCost(current, new, original, isWarm)` — SSTORE cost
+- `Gas.calculateLogCost(dataSize, topicCount)` — LOG operation cost
+- `Gas.calculateCallCost(details, hardfork)` — CALL/STATICCALL/etc. cost
+- `Gas.calculateMemoryExpansionCost(oldSize, newSize)` — Memory expansion cost
+- `Gas.calculateCreateCost(initcodeSize, hardfork)` — CREATE/CREATE2 cost
+- `Gas.calculateTxIntrinsicGas(tx, hardfork)` — Transaction intrinsic gas
+- `Gas.calculateCopyCost(size)` — Copy operation cost
+- `Gas.calculateMaxRefund(gasUsed, hardfork)` — Maximum gas refund
+
+**Feature Detection:**
+- `Gas.hasEIP2929(hardfork)` — Access list support
+- `Gas.hasEIP3529(hardfork)` — Reduced refunds
+- `Gas.hasEIP3860(hardfork)` — Initcode size limit
+- `Gas.hasEIP1153(hardfork)` — Transient storage
+- `Gas.hasEIP4844(hardfork)` — Blob transactions
 
 **Hardfork** — Network upgrade tracking
 - Hardfork ordering
 - Feature detection
 
-**Opcode** — EVM opcode definitions
-- Gas costs
-- Stack effects
-- Metadata
+**Opcode** — EVM opcode definitions and bytecode analysis
+
+**Types:**
+- `Opcode.Code` — Enum of all EVM opcodes (0x00-0xFF)
+- `Opcode.Info` — Opcode metadata `{ name, gasCost, stackIn, stackOut, terminating }`
+- `Opcode.Instruction` — Parsed instruction `{ opcode, offset, pushData? }`
+
+**Opcode Queries:**
+- `Opcode.getInfo(opcode)` — Get opcode metadata
+- `Opcode.getName(opcode)` — Get opcode mnemonic (e.g., "ADD", "PUSH1")
+- `Opcode.isValid(byte)` — Check if byte is valid opcode
+- `Opcode.isPush.call(opcode)` — Check if PUSH1-PUSH32
+- `Opcode.isDup.call(opcode)` — Check if DUP1-DUP16
+- `Opcode.isSwap.call(opcode)` — Check if SWAP1-SWAP16
+- `Opcode.isLog.call(opcode)` — Check if LOG0-LOG4
+- `Opcode.isTerminating.call(opcode)` — Check if STOP/RETURN/REVERT/INVALID/SELFDESTRUCT
+- `Opcode.isJump.call(opcode)` — Check if JUMP/JUMPI
+
+**PUSH Operations:**
+- `Opcode.getPushBytes(opcode)` — Get number of bytes for PUSH (1-32)
+- `Opcode.getPushOpcode(numBytes)` — Get PUSH opcode for byte count (1-32)
+
+**DUP/SWAP Operations:**
+- `Opcode.getDupPosition(opcode)` — Get DUP stack position (1-16)
+- `Opcode.getSwapPosition(opcode)` — Get SWAP stack position (1-16)
+
+**LOG Operations:**
+- `Opcode.getLogTopics(opcode)` — Get number of topics (0-4)
+
+**Bytecode Analysis:**
+- `Opcode.parseBytecode(bytecode)` — Parse bytecode into instructions
+- `Opcode.disassemble(bytecode)` — Disassemble to human-readable format
+- `Opcode.findJumpDests(bytecode)` — Find all valid JUMPDEST locations
+- `Opcode.isValidJumpDest(bytecode, offset)` — Check if offset is valid JUMPDEST
+- `Opcode.formatInstruction(instruction)` — Format instruction for display
+
+**Examples:**
+```typescript
+import { Opcode } from '@tevm/voltaire';
+
+const info = Opcode.getInfo(0x01); // { name: "ADD", gasCost: 3, ... }
+const isPush = Opcode.isPush.call(0x60); // true (PUSH1)
+const jumpDests = Opcode.findJumpDests(bytecode);
+const instructions = Opcode.parseBytecode(bytecode);
+```
 
 **SIWE** — EIP-4361 Sign-In with Ethereum
 - Message parsing
@@ -567,34 +766,59 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 
 #### EIP-712 — Typed structured data signing
 
-**Operations:**
-- `EIP712.hash(domain, types, message)` — Compute EIP-712 hash
-- `EIP712.sign(domain, types, message, privateKey)` — Sign typed data
-- `EIP712.verify(signature, domain, types, message, publicKey)` — Verify signature
-- `EIP712.recover(signature, domain, types, message)` — Recover signer address
+**Types:**
+- `Eip712.Domain` — `{ name?, version?, chainId?, verifyingContract?, salt? }`
+- `Eip712.TypeProperty` — `{ name, type }`
+- `Eip712.TypeDefinitions` — `{ [typeName: string]: readonly TypeProperty[] }`
+- `Eip712.Message` — `{ [key: string]: MessageValue }`
+- `Eip712.MessageValue` — string | bigint | number | boolean | Address | Uint8Array | MessageValue[] | object
+- `Eip712.TypedData` — `{ domain, types, primaryType, message }`
+- `Eip712.Signature` — `{ r, s, v }`
+
+**Domain Operations:**
+- `Eip712.Domain.hash(domain)` — Hash EIP-712 domain separator
+
+**Type Encoding:**
+- `Eip712.encodeType(primaryType, types)` — Encode type string (e.g., "Person(string name,address wallet)")
+- `Eip712.hashType(primaryType, types)` — Hash type string with Keccak-256
+- `Eip712.encodeValue(type, value, types)` — Encode single value to bytes
+- `Eip712.encodeData(primaryType, data, types)` — Encode structured data to bytes
+- `Eip712.hashStruct(primaryType, data, types)` — Hash structured data
+
+**High-Level Operations:**
+- `Eip712.hashTypedData(typedData)` — Compute EIP-712 hash for signing
+- `Eip712.signTypedData(typedData, privateKey)` — Sign typed data
+- `Eip712.verifyTypedData(signature, typedData, address)` — Verify signature
+- `Eip712.recoverAddress(signature, typedData)` — Recover signer address
+
+**Utilities:**
+- `Eip712.format(typedData)` — Format typed data for display
+- `Eip712.validate(typedData)` — Validate typed data structure
 
 **Examples:**
 ```typescript
-import { EIP712 } from '@tevm/voltaire';
+import { Eip712, Address } from '@tevm/voltaire';
 
-const domain = {
-  name: 'MyApp',
-  version: '1',
-  chainId: 1,
-  verifyingContract: contractAddress,
+const typedData: Eip712.TypedData = {
+  domain: {
+    name: 'MyApp',
+    version: '1',
+    chainId: 1,
+    verifyingContract: Address.fromHex('0x...'),
+  },
+  types: {
+    Person: [
+      { name: 'name', type: 'string' },
+      { name: 'wallet', type: 'address' },
+    ],
+  },
+  primaryType: 'Person',
+  message: { name: 'Alice', wallet: aliceAddress },
 };
 
-const types = {
-  Person: [
-    { name: 'name', type: 'string' },
-    { name: 'wallet', type: 'address' },
-  ],
-};
-
-const message = { name: 'Alice', wallet: aliceAddress };
-
-const hash = EIP712.hash(domain, types, message);
-const signature = EIP712.sign(domain, types, message, privateKey);
+const hash = Eip712.hashTypedData(typedData);
+const signature = Eip712.signTypedData(typedData, privateKey);
+const valid = Eip712.verifyTypedData(signature, typedData, aliceAddress);
 ```
 
 ---
