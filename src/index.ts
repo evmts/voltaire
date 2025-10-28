@@ -16,7 +16,7 @@ export * as types from "./types/index.js";
 export * as wasm from "./wasm/index.js";
 
 // EVM precompiles and opcodes
-export * as evm from "./evm/precompiles.js";
+export * as evm from "./precompiles/precompiles.js";
 
 // Legacy: precompiles alias (deprecated, use evm instead)
-export * as precompiles from "./evm/precompiles.js";
+export * as precompiles from "./precompiles/precompiles.js";
