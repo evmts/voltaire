@@ -15,14 +15,14 @@ Complete ECDSA signing and verification using the secp256k1 elliptic curve. All 
 ## Installation
 
 ```bash
-npm install @tevm/primitives
+npm install @tevm/voltaire
 ```
 
 ## Quick Start
 
 ```typescript
-import { Secp256k1 } from '@tevm/primitives/crypto/secp256k1';
-import { Hash } from '@tevm/primitives/primitives/hash';
+import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
+import { Hash } from '@tevm/voltaire/primitives/hash';
 
 // Generate keys
 const privateKey = new Uint8Array(32); // Your private key
@@ -283,8 +283,8 @@ const signature = Secp256k1.Signature.fromBytes(bytes);
 ### Ethereum Transaction Signing
 
 ```typescript
-import { Secp256k1 } from '@tevm/primitives/crypto/secp256k1';
-import { Hash } from '@tevm/primitives/primitives/hash';
+import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
+import { Hash } from '@tevm/voltaire/primitives/hash';
 
 // Transaction data
 const txData = { to: '0x...', value: 1000n, ... };
@@ -301,8 +301,8 @@ const signedTx = { ...txData, ...signature };
 ### Verify Message Signature
 
 ```typescript
-import { Secp256k1 } from '@tevm/primitives/crypto/secp256k1';
-import { Hash } from '@tevm/primitives/primitives/hash';
+import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
+import { Hash } from '@tevm/voltaire/primitives/hash';
 
 function verifyMessage(
   message: string,
@@ -329,7 +329,7 @@ function verifyMessage(
 ### Key Generation
 
 ```typescript
-import { Secp256k1 } from '@tevm/primitives/crypto/secp256k1';
+import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
 import { randomBytes } from 'crypto';
 
 // Generate random private key
@@ -349,7 +349,7 @@ console.log('Public key:', Buffer.from(publicKey).toString('hex'));
 ### Signature Verification Before Broadcasting
 
 ```typescript
-import { Secp256k1 } from '@tevm/primitives/crypto/secp256k1';
+import { Secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
 
 function prepareTransaction(txHash: Hash, privateKey: Uint8Array) {
   // Sign transaction

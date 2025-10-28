@@ -17,7 +17,7 @@ type Hash = Uint8Array & { __brand: typeof hashSymbol };
 ### Creation
 
 ```typescript
-import { Hash, Keccak256 } from '@tevm/primitives';
+import { Hash, Keccak256 } from '@tevm/voltaire';
 
 // From hex string (66 chars: "0x" + 64 hex)
 const hash = Hash.fromHex('0x1234567890abcdef...');
@@ -78,7 +78,7 @@ const formatted = Hash.format.call(hash);  // "0x1234...cdef" (shortened)
 Ethereum uses Keccak-256 (not SHA3-256, despite common confusion):
 
 ```typescript
-import { Keccak256 } from '@tevm/primitives';
+import { Keccak256 } from '@tevm/voltaire';
 
 // Hash raw bytes
 const data = new Uint8Array([1, 2, 3]);
@@ -163,7 +163,7 @@ function computeStorageKey(address: Address, slot: bigint): Hash {
 ### Verify Data Integrity
 
 ```typescript
-import { Hash, Keccak256 } from '@tevm/primitives';
+import { Hash, Keccak256 } from '@tevm/voltaire';
 
 function verifyDataIntegrity(data: Uint8Array, expectedHash: Hash): boolean {
     const actualHash = Keccak256.hash(data);
@@ -217,7 +217,7 @@ function buildMerkleProof(leaves: Hash[], index: number): Hash[] {
 ### EIP-191 Message Hashing
 
 ```typescript
-import { Keccak256 } from '@tevm/primitives';
+import { Keccak256 } from '@tevm/voltaire';
 
 function hashEIP191Message(message: string): Hash {
     const prefix = '\x19Ethereum Signed Message:\n';

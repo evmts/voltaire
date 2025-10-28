@@ -9,7 +9,7 @@ Precompiled contracts are special Ethereum addresses (0x01-0x13) that execute op
 ## TypeScript API
 
 ```typescript
-import { Precompiles, Hardfork } from '@tevm/primitives';
+import { Precompiles, Hardfork } from '@tevm/voltaire';
 
 // Check if address is a precompile
 const isPrecompile = Precompiles.isPrecompile('0x01', Hardfork.CANCUN);  // true
@@ -409,7 +409,7 @@ if (!result.success) {
 ### Verify zkSNARK Proof
 
 ```typescript
-import { Precompiles, Hardfork } from '@tevm/primitives';
+import { Precompiles, Hardfork } from '@tevm/voltaire';
 
 function verifyGroth16Proof(
     proof: { a: Point; b: Point; c: Point },

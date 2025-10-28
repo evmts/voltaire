@@ -13,7 +13,7 @@ Standard SHA-2 family hash (256-bit output).
 ### API
 
 ```typescript
-import { Sha256 } from '@tevm/primitives';
+import { Sha256 } from '@tevm/voltaire';
 
 // Hash data
 const hash = Sha256.hash(new Uint8Array([1, 2, 3]));  // 32 bytes
@@ -57,7 +57,7 @@ RACE Integrity Primitives Evaluation Message Digest (160-bit output).
 ### API
 
 ```typescript
-import { Ripemd160 } from '@tevm/primitives';
+import { Ripemd160 } from '@tevm/voltaire';
 
 // Hash data
 const hash = Ripemd160.hash(new Uint8Array([1, 2, 3]));  // 20 bytes
@@ -97,7 +97,7 @@ Modern hash function, faster than SHA-2/SHA-3.
 ### API
 
 ```typescript
-import { Blake2b } from '@tevm/primitives';
+import { Blake2b } from '@tevm/voltaire';
 
 // Hash with default 64-byte output
 const hash = Blake2b.hash(data);

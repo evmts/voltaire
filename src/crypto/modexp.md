@@ -52,7 +52,7 @@ where:
 ## TypeScript API
 
 ```typescript
-import { Precompiles, Hardfork } from '@tevm/primitives';
+import { Precompiles, Hardfork } from '@tevm/voltaire';
 
 function modexp(
     base: bigint,
