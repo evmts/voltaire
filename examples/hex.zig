@@ -14,28 +14,13 @@ pub fn main() !void {
 
     std.debug.print("\n=== Hex Utilities Example ===\n\n", .{});
 
-    // 1. Validating hex strings
     try demonstrateValidation();
-
-    // 2. Converting between hex and bytes
     try demonstrateHexToBytes(allocator);
-
-    // 3. Converting bytes to hex
     try demonstrateBytesToHex(allocator);
-
-    // 4. Converting hex to/from strings
     try demonstrateStringConversions(allocator);
-
-    // 5. Converting hex to/from u256
     try demonstrateNumericConversions(allocator);
-
-    // 6. Padding operations
     try demonstratePadding(allocator);
-
-    // 7. Trimming zeros
     try demonstrateTrimming();
-
-    // 8. Additional utilities
     try demonstrateUtilities(allocator);
 
     std.debug.print("=== All examples completed successfully ===\n\n", .{});
