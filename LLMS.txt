@@ -1,314 +1,177 @@
 # Ethereum Primitives & Cryptography for Zig
 
-Zig 0.15.1+ | https://github.com/evmts/voltaire | Mission-critical crypto infrastructure - zero error tolerance
+Zig 0.15.1+ | github.com/evmts/voltaire | Mission-critical crypto - zero error tolerance
 
----
+## Critical: Zig 0.15.1 ArrayList
 
-## Critical Context
-
-<zig_version_breaking_changes>
-**Zig 0.15.1 ArrayList API (LLMs get this wrong):**
 ```zig
-// ✅ CORRECT - UNMANAGED, allocator required every call
+// ✅ CORRECT - UNMANAGED
 var list = std.ArrayList(T){};
 defer list.deinit(allocator);
 try list.append(allocator, item);
 
 // ❌ WRONG - old API
-var list = std.ArrayList(T).init(allocator);  // No init() method!
+var list = std.ArrayList(T).init(allocator);  // No init()!
 list.deinit();  // Missing allocator
 ```
-</zig_version_breaking_changes>
 
----
+## Modules
 
-## Library Scope
-
-<modules>
-**primitives:** Uint256, Address, Hex, RLP, ABI, Transactions (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702), Event Logs, Access Lists, Bytecode, Opcodes, Hardforks, Merkle Patricia Trie
+**primitives:** Uint256, Address, Hex, RLP, ABI, Transactions (Legacy/2930/1559/4844/7702), Logs, AccessList, Bytecode, Opcodes, Hardforks, MPT
 
 **crypto:**
-- **Production-ready**: Keccak-256, secp256k1 ECDSA (via @noble/curves), EIP-712 (via @noble), BLS12-381 (via BLST), BN254 alt_bn128 (via Arkworks Rust + Pure TS @noble), KZG (via c-kzg-4844), SHA256, RIPEMD160, Blake2
-- **⚠️ Unaudited**: Pure Zig implementations of secp256k1, BN254, ModExp (use for testing only)
+- Production: Keccak-256, secp256k1 (@noble), EIP-712 (@noble), BLS12-381 (BLST), BN254 (Arkworks+@noble), KZG (c-kzg-4844), SHA256, RIPEMD160, Blake2
+- ⚠️ Unaudited: Pure Zig secp256k1, BN254, ModExp
 
-**precompiles:** All Ethereum precompiles (0x01-0x13)
+**precompiles:** 0x01-0x13
 
-External C libs: blst, c-kzg-4844, arkworks (Rust)
-</modules>
+C libs: blst, c-kzg-4844, arkworks
 
-<usage>
-**Import modules:**
-```zig
-const primitives = @import("primitives");
-const crypto = @import("crypto");
-```
+## Usage
 
-**Add to build.zig.zon:**
+Import: `@import("primitives")`, `@import("crypto")`
+
+build.zig.zon:
 ```zig
 .dependencies = .{
-    .primitives = .{
-        .url = "https://github.com/evmts/voltaire/archive/<commit>.tar.gz",
-        .hash = "<hash>",
-    },
-},
-```
-
-**Add to build.zig:**
-```zig
-const primitives = b.dependency("primitives", .{
-    .target = target,
-    .optimize = optimize,
-});
-exe.root_module.addImport("primitives", primitives.module("primitives"));
-exe.root_module.addImport("crypto", primitives.module("crypto"));
-```
-</usage>
-
----
-
-## API Quick Reference
-
-### Address
-
-```zig
-const addr = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const addr_u256 = Address.fromU256(some_u256);
-const addr_bytes = try Address.fromBytes(bytes_20);
-const addr_pubkey = Address.fromPublicKey(public_key_x, public_key_y);
-
-const as_u256 = addr.toU256();
-const hex = addr.toHex();  // [42]u8
-const checksummed = addr.toChecksumHex();  // EIP-55
-
-const is_valid = Address.isValid(hex_string);
-const is_checksum_valid = Address.isValidChecksum(hex_string);
-const zero_addr = Address.zero();
-
-// Contract addresses
-const create_addr = try Address.calculateCreateAddress(allocator, deployer, nonce);
-const create2_addr = try Address.calculateCreate2Address(allocator, deployer, salt, init_code);
-```
-
-### Hex
-
-```zig
-const valid = Hex.isHex("0x1234abcd");  // Requires 0x prefix
-
-const bytes = try Hex.hexToBytes(allocator, "0x1234");
-defer allocator.free(bytes);
-
-const hex = try Hex.bytesToHex(allocator, &bytes);
-defer allocator.free(hex);
-
-const value = try Hex.hexToU256("0xdeadbeef");
-const hex_str = try Hex.u256ToHex(allocator, value);
-defer allocator.free(hex_str);
-
-const padded = try Hex.padLeft(allocator, &bytes, 32);
-defer allocator.free(padded);
-
-const trimmed = Hex.trimLeftZeros(&bytes);  // No alloc
-```
-
-### RLP
-
-```zig
-const encoded = try Rlp.encode(allocator, value);
-defer allocator.free(encoded);
-
-const decoded = try Rlp.decode(allocator, encoded, false);
-defer decoded.data.deinit(allocator);
-
-switch (decoded.data) {
-    .String => |str| { /* bytes */ },
-    .List => |items| { /* nested items */ },
+    .primitives = .{ .url = "github.com/evmts/voltaire/archive/<commit>.tar.gz", .hash = "<hash>" },
 }
-
-// Stream mode for multiple items
-const item = try Rlp.decode(allocator, data, true);  // Stream=true
-remaining = item.remainder;
 ```
 
-### ABI
-
-**Zig API:**
+build.zig:
 ```zig
-const selector = abi.computeSelector("transfer(address,uint256)");
+const p = b.dependency("primitives", .{ .target = target, .optimize = optimize });
+exe.root_module.addImport("primitives", p.module("primitives"));
+exe.root_module.addImport("crypto", p.module("crypto"));
+```
 
-const params = [_]abi.AbiValue{
-    abi.addressValue(recipient),
-    abi.uint256_value(amount),
-};
+## API
 
-const calldata = try abi.encodeFunctionData(allocator, selector, &params);
-defer allocator.free(calldata);
+### Address (Zig)
+```zig
+const a = try Address.fromHex("0xa0cf...");  // fromU256/fromBytes/fromPublicKey
+const hex = a.toHex();  // [42]u8, toU256/toChecksumHex
+const valid = Address.isValid(hex) / .isValidChecksum(hex) / .zero();
+const create = try Address.calculateCreateAddress(alloc, deployer, nonce);  // CREATE2
+```
 
+### Hex (Zig)
+```zig
+const ok = Hex.isHex("0x1234");  // needs 0x
+const b = try Hex.hexToBytes(alloc, "0x12"); defer alloc.free(b);
+const h = try Hex.bytesToHex(alloc, &b); defer alloc.free(h);
+const v = try Hex.hexToU256("0xdead") / .u256ToHex(alloc, v);
+const pad = try Hex.padLeft(alloc, &b, 32);  // trimLeftZeros (no alloc)
+```
+
+### RLP (Zig)
+```zig
+const enc = try Rlp.encode(alloc, val); defer alloc.free(enc);
+const dec = try Rlp.decode(alloc, enc, false); defer dec.data.deinit(alloc);
+switch (dec.data) { .String => |s| {}, .List => |l| {} }
+// Stream: Rlp.decode(alloc, data, true)
+```
+
+### ABI (Zig)
+```zig
+const sel = abi.computeSelector("transfer(address,uint256)");
+const params = [_]abi.AbiValue{ abi.addressValue(r), abi.uint256_value(a) };
+const data = try abi.encodeFunctionData(alloc, sel, &params); defer alloc.free(data);
 const types = [_]abi.AbiType{ .address, .uint256 };
-const result = try abi.decodeFunctionData(allocator, calldata, &types);
-defer {
-    for (result.parameters) |param| {
-        switch (param) {
-            .string, .bytes => |slice| allocator.free(slice),
-            else => {},
-        }
-    }
-    allocator.free(result.parameters);
-}
-
-const packed = try abi.encodePacked(allocator, &values);  // No padding
-defer allocator.free(packed);
+const res = try abi.decodeFunctionData(alloc, data, &types);  // cleanup params
+const packed = try abi.encodePacked(alloc, &values);  // no padding
 ```
 
-**TypeScript API (Namespace Pattern):**
-```typescript
-import { Abi } from '@tevm/voltaire';
+**ABI (TS):** `Abi.Function.{getSelector,encodeParams,decodeResult}`, `Abi.Event.{getSelector,encodeTopics,decodeLog}`, `Abi.{encodeParameters,decodeParameters,encodePacked}`
 
-// Define ABI items with full type inference
-const transferFunction: Abi.Function = {
-    type: 'function',
-    name: 'transfer',
-    stateMutability: 'nonpayable',
-    inputs: [
-        { type: 'address', name: 'to' },
-        { type: 'uint256', name: 'amount' }
-    ],
-    outputs: [{ type: 'bool' }]
-};
-
-// Function operations
-const selector = Abi.Function.getSelector.call(transferFunction);  // 4 bytes
-const signature = Abi.Function.getSignature.call(transferFunction);  // "transfer(address,uint256)"
-const calldata = Abi.Function.encodeParams.call(transferFunction, [address, amount]);
-const result = Abi.Function.decodeResult.call(transferFunction, returnData);
-
-// Event operations
-const transferEvent: Abi.Event = {
-    type: 'event',
-    name: 'Transfer',
-    inputs: [
-        { type: 'address', name: 'from', indexed: true },
-        { type: 'address', name: 'to', indexed: true },
-        { type: 'uint256', name: 'value' }
-    ]
-};
-
-const eventSelector = Abi.Event.getSelector.call(transferEvent);  // 32 bytes (topic0)
-const topics = Abi.Event.encodeTopics.call(transferEvent, { from, to });
-const decoded = Abi.Event.decodeLog.call(transferEvent, logData, logTopics);
-
-// Direct parameter encoding
-const encoded = Abi.encodeParameters(
-    [{ type: 'address' }, { type: 'uint256' }],
-    [address, amount]
-);
-
-const decoded = Abi.decodeParameters(
-    [{ type: 'address' }, { type: 'uint256' }],
-    data
-);
-
-// Packed encoding (no padding)
-const packed = Abi.encodePacked(['address', 'uint256'], [address, amount]);
-
-// ABI-level operations (work with full ABI arrays)
-const abi: Abi = [transferFunction, transferEvent];
-const calldata = Abi.encode.call(abi, 'transfer', [address, amount]);
-const result = Abi.decode.call(abi, 'transfer', returnData);
-const { functionName, args } = Abi.decodeData.call(abi, calldata);  // Infer from selector
-const parsedLogs = Abi.parseLogs.call(abi, logs);
-```
-
-### Keccak-256
-
-**Zig API:**
+### Keccak-256 (Zig)
 ```zig
-const hash = HashUtils.keccak256("hello");
-const hash_hex = try HashUtils.fromHex("0x1234...");
-
-const hex_lower = HashUtils.toHex(hash);  // [66]u8
-const message_hash = try HashUtils.eip191HashMessage("Sign this", allocator);
-
-const are_equal = HashUtils.equal(hash1, hash2);  // Constant-time
-const selector = HashUtils.selectorFromSignature("transfer(address,uint256)");
+const h = HashUtils.keccak256("hello") / .fromHex("0x12...");
+const hex = HashUtils.toHex(h);  // [66]u8
+const msg = try HashUtils.eip191HashMessage("Sign", alloc);
+const eq = HashUtils.equal(h1, h2);  // constant-time
+const sel = HashUtils.selectorFromSignature("transfer(address,uint256)");
 ```
 
-**TypeScript API:**
-```typescript
-import { Hash, Keccak256 } from '@tevm/voltaire';
+**Keccak (TS):** `Keccak256.{hash,hashString,hashHex}`, `Hash.{toHex,fromHex,fromBytes,equals,isZero}`
 
-// Compute hash
-const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));  // Returns Hash (Uint8Array)
-const hashString = Keccak256.hashString('hello');  // Hash UTF-8 encoded string
-const hashHex = Keccak256.hashHex('0x1234');  // Hash hex-decoded data
-
-// Hash operations
-const hex = Hash.toHex.call(hash);  // "0x..." (66 chars)
-const hash2 = Hash.fromHex('0x...');
-const hash3 = Hash.fromBytes(bytes);
-const isEqual = Hash.equals.call(hash, hash2);  // Constant-time comparison
-const isZero = Hash.isZero.call(hash);
-
-// Ethereum-specific
-const funcSelector = Hash.keccak256String('transfer(address,uint256)').slice(0, 4);
-const eventTopic = Hash.keccak256String('Transfer(address,address,uint256)');
-```
-
-### secp256k1
-
-**Zig API (⚠️ UNAUDITED in pure Zig, use Arkworks bindings for production):**
+### secp256k1 (⚠️ Zig UNAUDITED - use @noble for prod)
 ```zig
-const private_key = try Crypto.unaudited_randomPrivateKey();
-const public_key = try Crypto.unaudited_getPublicKey(private_key);
-const address = Crypto.publicKeyToAddress(public_key);
-
-const signature = try Crypto.unaudited_signMessage("Hello", private_key);
-const hash_sig = try Crypto.unaudited_signHash(hash, private_key);
-
-const is_valid = try Crypto.unaudited_verifyMessage(message, signature, address);
-const recovered = try Crypto.unaudited_recoverAddress(hash, signature);
-
-const sig_valid = signature.isValid();  // Validates r, s, v
-const sig_bytes = signature.toBytes();  // [65]u8
+const priv = try Crypto.unaudited_randomPrivateKey();
+const pub = try Crypto.unaudited_getPublicKey(priv);
+const addr = Crypto.publicKeyToAddress(pub);
+const sig = try Crypto.unaudited_signMessage("Hi", priv) / .unaudited_signHash(h, priv);
+const ok = try Crypto.unaudited_verifyMessage(m, sig, addr);
+const rec = try Crypto.unaudited_recoverAddress(h, sig);
+sig.isValid();  // r,s,v check. sig.toBytes() = [65]u8
 ```
 
-**TypeScript API (using audited @noble/curves):**
-```typescript
-import { Secp256k1, Signature } from '@tevm/voltaire';
+**secp256k1 (TS @noble):** `Secp256k1.{generatePrivateKey,derivePublicKey,publicKeyToAddress,sign,signMessage,verify,verifyMessage,recover,recoverAddress}`, `Signature.{toBytes,toCompact,fromBytes,fromCompact,isCanonical,normalize}`
 
-// Key operations
-const privateKey = Secp256k1.generatePrivateKey();  // Random 32 bytes
-const publicKey = Secp256k1.derivePublicKey(privateKey);  // 64 bytes (uncompressed)
-const address = Secp256k1.publicKeyToAddress(publicKey);
-
-// Signing
-const signature = Secp256k1.sign(hash, privateKey);  // Returns Signature (65 bytes: r, s, v)
-const msgSignature = Secp256k1.signMessage('Hello', privateKey);
-
-// Verification
-const isValid = Secp256k1.verify(hash, signature, publicKey);
-const isMsgValid = Secp256k1.verifyMessage('Hello', msgSignature, address);
-
-// Recovery
-const recoveredPubkey = Secp256k1.recover(hash, signature);
-const recoveredAddr = Secp256k1.recoverAddress(hash, signature);
-
-// Signature operations
-const sigBytes = Signature.toBytes.call(signature);  // [65]u8
-const sigCompact = Signature.toCompact.call(signature);  // [64]u8 (ERC-2098)
-const sig2 = Signature.fromBytes(bytes);
-const sig3 = Signature.fromCompact(compactBytes);
-const isCanonical = Signature.isCanonical.call(signature);  // Check low-s
-const normalized = Signature.normalize.call(signature);  // Force low-s
-
-// Validation
-const isValidSig = Secp256k1.isValidSignature(signature);
-const isValidKey = Secp256k1.isValidPrivateKey(privateKey);
-const isValidPub = Secp256k1.isValidPublicKey(publicKey);
+### Uint256 (Zig)
+```zig
+const v = try Uint256.fromInt(42) / .max() / .zero();
+// Arithmetic: try a.{add,sub,mul,div,mod,pow}(b)
+// Bitwise: a.{bitAnd,bitOr,xor,bitNot,shl,shr}(b/bits)
+// Compare: a.{eq,lt,gt}(b)
+const bytes = v.toBytes();  // [32]u8 BE. fromBytes/toHex/fromHex
 ```
+
+**Uint256 (TS):** `Uint256.{MAX,ZERO,ONE,from,fromHex,fromBytes}`, `.{plus,minus,times,div,mod,and,or,xor,not,shl,shr,eq,lt,gt,toHex,toBytes,toBigInt}`
+
+### AccessList (EIP-2930)
+```zig
+// AccessListItem = { address, storage_keys }. Gas: 2400/addr, 1900/key
+const cost = AccessList.calculateGasCost(al) / .calculateGasSavings(al);
+const has = AccessList.isAddressInAccessList(al, a) / .isStorageKeyInAccessList(al, a, k);
+const dup = try AccessList.deduplicateAccessList(alloc, al);
+```
+
+**AccessList (TS):** `.{gasCost,gasSavings,includesAddress,includesStorageKey,deduplicate,merge,difference,serialize,deserialize}`
+
+### Authorization (EIP-7702)
+```zig
+// struct: chain_id, address, nonce, v, r, s. Gas: 25000/empty, 12500/base
+const auth = Authorization.create(chain, addr, nonce);
+const gas = Authorization.calculateGasCost(auths, empty_ct);
+const enc = try Authorization.encodeList(alloc, auths);
+```
+
+**Authorization (TS):** `.{create,signingHash,sign,authority,isValid,validate,gasCost,serialize,deserialize}`
+
+### Blob (EIP-4844)
+```zig
+// 131072 bytes, max 6/tx, 131072 gas/blob
+const h = Blob.commitmentToVersionedHash(c) / .isValidVersionedHash(h);
+const price = Blob.calculateBlobGasPrice(excess);
+const blob = try Blob.encodeBlobData(alloc, data);
+```
+
+**Blob (TS):** `.{fromData,toData,commitmentToVersionedHash,isValidVersionedHash,calculateGas,estimateBlobCount,calculateGasPrice,calculateExcessGas,isValid}`
+
+### FeeMarket (EIP-1559)
+```zig
+// MIN_BASE_FEE=7, DENOM=8
+const next = FeeMarket.nextBaseFee(parent_fee, used, target);
+const res = FeeMarket.getEffectiveGasPrice(base, max, priority);  // .effective_gas_price, .miner_fee
+const tgt = FeeMarket.getGasTarget(limit);
+```
+
+**FeeMarket (TS):** `.{calculateNextBaseFee,getEffectiveGasPrice,getGasTarget}`
 
 ### Transactions
 
+**Zig API:**
 ```zig
+pub const TransactionType = enum(u8) {
+    legacy = 0,
+    eip2930 = 1,
+    eip1559 = 2,
+    eip4844 = 3,
+    eip7702 = 4
+};
+
+// Legacy
 const tx = LegacyTransaction{
     .nonce = 0,
     .gas_price = 20_000_000_000,  // 20 gwei
@@ -339,10 +202,371 @@ const eip1559 = Eip1559Transaction{
     .access_list = &[_]AccessListItem{},
     .v = 0, .r = [_]u8{0} ** 32, .s = [_]u8{0} ** 32,
 };
+const encoded = try Transaction.encodeEip1559ForSigning(allocator, eip1559);
+
+// EIP-4844 (Blob transactions)
+const eip4844 = Eip4844Transaction{
+    .chain_id = 1,
+    .nonce = 0,
+    .max_priority_fee_per_gas = 2_000_000_000,
+    .max_fee_per_gas = 30_000_000_000,
+    .max_fee_per_blob_gas = 1_000_000,
+    .gas_limit = 21000,
+    .to = recipient,
+    .value = 0,
+    .data = &[_]u8{},
+    .access_list = &[_]AccessListItem{},
+    .blob_versioned_hashes = &[_]VersionedHash{},
+    .v = 0, .r = [_]u8{0} ** 32, .s = [_]u8{0} ** 32,
+};
+const blob_hash = try Transaction.computeEip4844TransactionHash(allocator, eip4844);
+
+// EIP-7702 (Set code transactions)
+const eip7702 = Eip7702Transaction{
+    .chain_id = 1,
+    .nonce = 0,
+    .max_priority_fee_per_gas = 2_000_000_000,
+    .max_fee_per_gas = 30_000_000_000,
+    .gas_limit = 100000,
+    .to = recipient,
+    .value = 0,
+    .data = &[_]u8{},
+    .access_list = &[_]AccessListItem{},
+    .authorization_list = &[_]Authorization{},
+    .v = 0, .r = [_]u8{0} ** 32, .s = [_]u8{0} ** 32,
+};
+const auth_hash = try Transaction.computeEip7702TransactionHash(allocator, eip7702);
+```
+
+**TypeScript API:**
+```typescript
+import { Transaction } from '@tevm/voltaire';
+
+type Transaction = Transaction.Legacy | Transaction.EIP2930 | Transaction.EIP1559 |
+                   Transaction.EIP4844 | Transaction.EIP7702;
+
+// Type detection
+const type = Transaction.getType(tx);
+const isLegacy = Transaction.isLegacy(tx);
+const isEIP4844 = Transaction.isEIP4844(tx);
+
+// Serialization
+const serialized = Transaction.serialize(tx);
+const deserialized = Transaction.deserialize(data);
+const forSigning = Transaction.serializeForSigning(tx);
+
+// Hashing
+const hash = Transaction.hash(tx);
+const signingHash = Transaction.signingHash(tx);
+
+// Signing
+const signed = Transaction.sign(tx, privateKey);
+const sender = Transaction.recoverSender(signedTx);
+
+// Type-specific operations
+namespace Transaction.Legacy {
+    function serialize(tx: Legacy): Hex;
+    function hash(tx: Legacy): Hash;
+    function sign(tx: Legacy, key: Uint8Array): Legacy;
+}
+
+namespace Transaction.EIP4844 {
+    function serialize(tx: EIP4844): Hex;
+    function hash(tx: EIP4844): Hash;
+    function getBlobVersionedHashes(tx: EIP4844): Hash[];
+    function calculateBlobGas(tx: EIP4844): bigint;
+}
+
+namespace Transaction.EIP7702 {
+    function serialize(tx: EIP7702): Hex;
+    function hash(tx: EIP7702): Hash;
+    function getAuthorizationList(tx: EIP7702): Authorization[];
+}
+```
+
+### Hash (Advanced Operations)
+
+**Zig API:**
+```zig
+pub const Hash = [32]u8;
+pub const ZERO_HASH: Hash = [_]u8{0} ** 32;
+pub const EMPTY_KECCAK256: Hash;
+
+// Construction
+const hash = HashUtils.keccak256(data);
+const from_hex = try HashUtils.fromHex("0x1234...");
+const from_u256 = HashUtils.fromU256(value);
+
+// Conversion
+const hex = HashUtils.toHex(hash);  // [66]u8 with 0x prefix
+const u256 = HashUtils.toU256(hash);
+
+// Comparison (constant-time)
+const is_equal = HashUtils.equal(hash1, hash2);
+const is_zero = HashUtils.isZero(hash);
+const order = HashUtils.compare(hash1, hash2);
+const is_less = HashUtils.lessThan(hash1, hash2);
+const is_greater = HashUtils.greaterThan(hash1, hash2);
+
+// Bitwise operations
+const xor_result = HashUtils.xor(hash1, hash2);
+const and_result = HashUtils.bitAnd(hash1, hash2);
+const or_result = HashUtils.bitOr(hash1, hash2);
+const not_result = HashUtils.bitNot(hash);
+
+// Ethereum-specific
+const selector = HashUtils.selectorFromSignature("transfer(address,uint256)");  // [4]u8
+const msg_hash = try HashUtils.eip191HashMessage("Sign this", allocator);
+```
+
+**TypeScript API:**
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Constants
+const SIZE = 32;
+const ZERO: Hash;
+const EMPTY_KECCAK256: Hash;
+
+// Construction
+const hash = Hash.fromHex('0x...');
+const fromBytes = Hash.fromBytes(bytes);
+const fromString = Hash.fromString('hello');
+const keccak = Hash.keccak256(data);
+const keccakString = Hash.keccak256String('hello');
+const keccakHex = Hash.keccak256Hex('0x1234');
+
+// Conversion
+const hex = Hash.toHex.call(hash);
+const bytes = Hash.toBytes.call(hash);
+const bigint = Hash.toBigInt.call(hash);
+
+// Comparison
+const isEqual = Hash.equals.call(hash1, hash2);
+const isZero = Hash.isZero.call(hash);
+const cmp = Hash.compare(hash1, hash2);
+const less = Hash.lessThan(hash1, hash2);
+const greater = Hash.greaterThan(hash1, hash2);
+
+// Bitwise
+const xor = Hash.xor.call(hash1, hash2);
+const and = Hash.and.call(hash1, hash2);
+const or = Hash.or.call(hash1, hash2);
+const not = Hash.not.call(hash);
+```
+
+### KZG Commitments (EIP-4844)
+
+**Zig API (via c-kzg-4844):**
+```zig
+pub const BYTES_PER_BLOB = 131072;
+pub const BYTES_PER_COMMITMENT = 48;
+pub const BYTES_PER_PROOF = 48;
+pub const FIELD_ELEMENTS_PER_BLOB = 4096;
+
+pub const Blob = [BYTES_PER_BLOB]u8;
+pub const KZGCommitment = [48]u8;
+pub const KZGProof = [48]u8;
+pub const Bytes32 = [32]u8;
+
+// Initialization (required before use)
+try Kzg.loadTrustedSetupFile("trusted_setup.txt", 0);
+defer Kzg.freeTrustedSetup() catch {};
+
+// Commitment operations
+const commitment = try Kzg.blobToKzgCommitment(&blob);
+const proof_result = try Kzg.computeKZGProof(&blob, &z_point);
+// proof_result.proof, proof_result.y
+
+// Verification
+const is_valid = try Kzg.verifyKZGProof(&commitment, &z, &y, &proof);
+
+// Point evaluation precompile (0x0a)
+const blob_valid = try Kzg.verifyBlobKzgProof(&blob, &commitment, &proof);
+```
+
+**TypeScript API:**
+```typescript
+import { Kzg } from '@tevm/voltaire';
+
+// Constants
+const BYTES_PER_BLOB = 131072;
+const BYTES_PER_COMMITMENT = 48;
+const BYTES_PER_PROOF = 48;
+
+type Blob = Uint8Array;  // 131072 bytes
+type Commitment = Uint8Array;  // 48 bytes
+type Proof = Uint8Array;  // 48 bytes
+
+// Initialization (loads trusted setup)
+await Kzg.loadTrustedSetup();  // Uses default path
+await Kzg.loadTrustedSetup('/path/to/trusted_setup.txt');
+Kzg.freeTrustedSetup();
+
+// Commitment operations
+const commitment = Kzg.blobToCommitment(blob);
+const { proof, y } = Kzg.computeProof(blob, z);
+const isValid = Kzg.verifyProof(commitment, z, y, proof);
+
+// Batch operations
+const commitments = Kzg.blobsToCommitments(blobs);
+const batchValid = Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs);
+
+// Point evaluation precompile (0x0a)
+const blobValid = Kzg.verifyBlobKzgProof(blob, commitment, proof);
+```
+
+### BN254 (alt_bn128) — Comprehensive
+
+**Zig API (⚠️ Pure Zig UNAUDITED — use Arkworks for production):**
+```zig
+// Field Elements
+pub const FpMont = @import("bn254/FpMont.zig");  // Base field Fp
+pub const Fp2Mont = @import("bn254/Fp2Mont.zig");  // Extension field Fp2
+pub const Fp6Mont = @import("bn254/Fp6Mont.zig");  // Fp6 for pairing
+pub const Fp12Mont = @import("bn254/Fp12Mont.zig");  // Fp12 for pairing result
+pub const Fr = @import("bn254/Fr.zig").Fr;  // Scalar field
+
+// Curve Groups
+pub const G1 = @import("bn254/G1.zig");  // Curve over Fp
+pub const G2 = @import("bn254/G2.zig");  // Curve over Fp2
+
+// G1 Operations
+const g1_zero = G1.zero();
+const g1_generator = G1.generator();
+const g1_point = try G1.fromAffine(x, y);
+const g1_sum = try G1.add(p1, p2);
+const g1_double = try G1.double(p);
+const g1_scalar_mul = try G1.multiply(p, scalar);
+const on_curve = G1.isOnCurve(p);
+const in_subgroup = G1.isInSubgroup(p);
+
+// G2 Operations (similar API)
+const g2_zero = G2.zero();
+const g2_generator = G2.generator();
+const g2_point = try G2.fromAffine(x, y);  // x, y are Fp2 elements
+const g2_sum = try G2.add(p1, p2);
+
+// Pairing
+const pairing_result = try bn254.pairing(g1_points, g2_points);  // bool
+
+// Precompile Operations (0x06, 0x07, 0x08)
+const result = try bn254.bn254Add(&input_128_bytes, output);
+const result = try bn254.bn254Mul(&input_96_bytes, output);
+const valid = try bn254.bn254Pairing(input_bytes);  // Variable length
+```
+
+**TypeScript Pure API (✅ AUDITED via @noble/curves):**
+```typescript
+import { Bn254 } from '@tevm/voltaire';
+
+// Field Elements
+namespace Bn254.Fp {
+    function from(value: bigint): Fp;
+    function add(a: Fp, b: Fp): Fp;
+    function mul(a: Fp, b: Fp): Fp;
+    function inv(a: Fp): Fp;
+    function sub(a: Fp, b: Fp): Fp;
+    function square(a: Fp): Fp;
+    function isZero(a: Fp): boolean;
+    function equals(a: Fp, b: Fp): boolean;
+}
+
+namespace Bn254.Fp2 {
+    type Fp2 = { c0: Fp; c1: Fp };  // c0 + c1*u
+
+    function from(c0: bigint, c1: bigint): Fp2;
+    function add(a: Fp2, b: Fp2): Fp2;
+    function mul(a: Fp2, b: Fp2): Fp2;
+    function inv(a: Fp2): Fp2;
+    function square(a: Fp2): Fp2;
+    function isZero(a: Fp2): boolean;
+}
+
+// G1 Operations (curve over Fp)
+namespace Bn254.G1 {
+    type Point = { x: Fp; y: Fp; z: Fp };  // Projective coordinates
+
+    const ZERO: Point;  // Point at infinity
+    const GENERATOR: Point;
+
+    // Construction
+    function fromAffine(x: bigint, y: bigint): Point;
+    function toAffine(point: Point): { x: bigint; y: bigint };
+
+    // Operations
+    function add(a: Point, b: Point): Point;
+    function double(point: Point): Point;
+    function multiply(point: Point, scalar: bigint): Point;
+    function multiplyUnsafe(point: Point, scalar: bigint): Point;  // Faster, no checks
+    function negate(point: Point): Point;
+
+    // Validation
+    function isZero(point: Point): boolean;
+    function equals(a: Point, b: Point): boolean;
+    function isOnCurve(point: Point): boolean;
+    function isInSubgroup(point: Point): boolean;
+
+    // Serialization
+    function toBytes(point: Point): Uint8Array;  // 64 bytes (x || y)
+    function fromBytes(bytes: Uint8Array): Point;
+    function toHex(point: Point): Hex;
+    function fromHex(hex: Hex): Point;
+}
+
+// G2 Operations (curve over Fp2)
+namespace Bn254.G2 {
+    type Point = { x: Fp2; y: Fp2; z: Fp2 };
+
+    const ZERO: Point;
+    const GENERATOR: Point;
+
+    // Construction
+    function fromAffine(x: [bigint, bigint], y: [bigint, bigint]): Point;
+    function toAffine(point: Point): { x: [bigint, bigint]; y: [bigint, bigint] };
+
+    // Operations (same as G1)
+    function add(a: Point, b: Point): Point;
+    function double(point: Point): Point;
+    function multiply(point: Point, scalar: bigint): Point;
+    function negate(point: Point): Point;
+
+    // Validation
+    function isZero(point: Point): boolean;
+    function equals(a: Point, b: Point): boolean;
+    function isOnCurve(point: Point): boolean;
+    function isInSubgroup(point: Point): boolean;
+
+    // Serialization
+    function toBytes(point: Point): Uint8Array;  // 128 bytes
+    function fromBytes(bytes: Uint8Array): Point;
+}
+
+// Pairing
+function pairing(g1Points: G1.Point[], g2Points: G2.Point[]): boolean;
+
+// Precompile Interface (matches Ethereum precompiles 0x06, 0x07, 0x08)
+function ecAdd(p1: G1.Point, p2: G1.Point): G1.Point;  // 0x06
+function ecMul(point: G1.Point, scalar: bigint): G1.Point;  // 0x07
+function ecPairing(pairs: Array<[G1.Point, G2.Point]>): boolean;  // 0x08
+```
+
+**TypeScript Arkworks API (✅ PRODUCTION — Rust via FFI):**
+```typescript
+import { Bn254Ark } from '@tevm/voltaire/bn254-ark';
+
+// Same interface as pure TypeScript, but calls Arkworks Rust library
+// Significantly faster for production use
+// All G1/G2/pairing operations available with identical API
+
+// Example usage (API identical to pure TS):
+const sum = Bn254Ark.G1.add(p1, p2);  // Uses Arkworks
+const result = Bn254Ark.pairing(g1Points, g2Points);  // Arkworks pairing
 ```
 
 ### EIP-712 (⚠️ UNAUDITED)
 
+**Zig API:**
 ```zig
 const domain = try Eip712.create_domain(allocator, "MyDApp", "1.0.0", 1, null);
 defer {
@@ -363,6 +587,44 @@ try typed_data.types.put(allocator, "Transfer", &props);
 const hash = try Eip712.unaudited_hashTypedData(allocator, &typed_data);
 const signature = try Eip712.unaudited_signTypedData(allocator, &typed_data, private_key);
 const recovered = try Eip712.unaudited_recoverTypedDataAddress(allocator, &typed_data, signature);
+```
+
+**TypeScript API:**
+```typescript
+import { Eip712 } from '@tevm/voltaire';
+
+type Domain = {
+    name?: string;
+    version?: string;
+    chainId?: number;
+    verifyingContract?: Address;
+    salt?: Hash;
+};
+
+type TypedData<T = Record<string, any>> = {
+    domain: Domain;
+    types: Record<string, Array<{ name: string; type: string }>>;
+    primaryType: string;
+    message: T;
+};
+
+// Hashing
+const domainHash = Eip712.hashDomain(domain);
+const structHash = Eip712.hashStruct(typedData, 'Transfer', message);
+const typedDataHash = Eip712.hashTypedData(typedData);
+
+// Signing/Verification
+const signature = Eip712.sign(typedData, privateKey);
+const isValid = Eip712.verify(typedData, signature, address);
+const recovered = Eip712.recoverAddress(typedData, signature);
+
+// Encoding
+const typeString = Eip712.encodeType(typedData, 'Transfer');
+const encoded = Eip712.encodeData(typedData, 'Transfer', message);
+
+// Validation
+Eip712.validateTypedData(typedData);  // Throws on invalid
+const valid = Eip712.isValidTypedData(typedData);
 ```
 
 ---

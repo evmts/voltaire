@@ -770,13 +770,60 @@ const instructions = Opcode.parseBytecode(bytecode);
 ```
 
 **SIWE** — EIP-4361 Sign-In with Ethereum
-- Message parsing
-- Signature verification
 
-**State** — State constants
-- `EMPTY_CODE_HASH` — Keccak-256 of empty bytes
-- `EMPTY_TRIE_ROOT` — Empty trie root hash
-- Storage key utilities
+**Type:** `Siwe.Message` — `{ domain, address, statement?, uri, version, chainId, nonce, issuedAt, expirationTime?, notBefore?, requestId?, resources? }`
+
+**Creation & Parsing:**
+- `Siwe.create(params)` — Create SIWE message
+- `Siwe.parse(message)` — Parse EIP-4361 string to message object
+- `Siwe.format.call(message)` — Format message to EIP-4361 string
+- `Siwe.toEIP4361String.call(message)` — Alias for format
+- `Siwe.fromEIP4361String(str)` — Alias for parse
+
+**Signing & Verification:**
+- `Siwe.sign.call(message, privateKey)` — Sign SIWE message
+- `Siwe.verify.call(message, signature, address)` — Verify signature
+
+**Validation:**
+- `Siwe.isExpired.call(message, now?)` — Check if message expired
+- `Siwe.isNotYetValid.call(message, now?)` — Check if not yet valid
+- `Siwe.isValid.call(message, now?)` — Check if currently valid (not expired, not before)
+
+**Examples:**
+```typescript
+import { Siwe, Address } from '@tevm/voltaire';
+
+const message = Siwe.create({
+  domain: 'example.com',
+  address: Address.fromHex('0x...'),
+  uri: 'https://example.com/login',
+  version: '1',
+  chainId: 1n,
+  nonce: 'random-nonce',
+  issuedAt: new Date().toISOString(),
+});
+
+const eip4361String = Siwe.format.call(message);
+const signature = Siwe.sign.call(message, privateKey);
+const valid = Siwe.verify.call(message, signature, message.address);
+```
+
+**State** — State constants and storage keys
+
+**Constants:**
+- `EMPTY_CODE_HASH` — Keccak-256 hash of empty bytes (0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470)
+- `EMPTY_TRIE_ROOT` — Root hash of empty Patricia Merkle Trie
+
+**StorageKey Type:**
+- `StorageKey` — `{ address: Address, slot: bigint }` — Identifies a storage location
+
+**StorageKey Operations:**
+- `StorageKey.create(address, slot)` — Create storage key
+- `StorageKey.is(value)` — Type guard for StorageKey
+- `StorageKey.equals.call(key1, key2)` — Check equality
+- `StorageKey.toString.call(key)` — Convert to string representation
+- `StorageKey.fromString(str)` — Parse from string
+- `StorageKey.hashCode.call(key)` — Compute hash code for maps/sets
 
 ---
 
