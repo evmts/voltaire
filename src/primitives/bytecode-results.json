@@ -1,0 +1,290 @@
+[
+  {
+    "name": "analyzeJumpDestinations - small (100b)",
+    "opsPerSec": 9343491.803786673,
+    "avgTimeMs": 0.00010702636883512074,
+    "iterations": 18686984
+  },
+  {
+    "name": "analyzeJumpDestinations - medium (1kb)",
+    "opsPerSec": 1683106.7896116516,
+    "avgTimeMs": 0.0005941393654711198,
+    "iterations": 3366214
+  },
+  {
+    "name": "analyzeJumpDestinations - large (10kb)",
+    "opsPerSec": 174028.92386234584,
+    "avgTimeMs": 0.005746171255940101,
+    "iterations": 348058
+  },
+  {
+    "name": "analyzeJumpDestinations - huge (50kb)",
+    "opsPerSec": 40833.763511258614,
+    "avgTimeMs": 0.024489537921829854,
+    "iterations": 81668
+  },
+  {
+    "name": "isValidJumpDest - small",
+    "opsPerSec": 8607801.31923617,
+    "avgTimeMs": 0.00011617368511576391,
+    "iterations": 17215603
+  },
+  {
+    "name": "isValidJumpDest - medium",
+    "opsPerSec": 1659480.9785821903,
+    "avgTimeMs": 0.0006025980489721367,
+    "iterations": 3319071
+  },
+  {
+    "name": "isValidJumpDest - large",
+    "opsPerSec": 187135.1802795445,
+    "avgTimeMs": 0.005343730657731964,
+    "iterations": 374271
+  },
+  {
+    "name": "validate - small (100b)",
+    "opsPerSec": 26287320,
+    "avgTimeMs": 0.000038041154442522096,
+    "iterations": 52574640
+  },
+  {
+    "name": "validate - medium (1kb)",
+    "opsPerSec": 5843170.257508432,
+    "avgTimeMs": 0.00017113997298213367,
+    "iterations": 11686341
+  },
+  {
+    "name": "validate - large (10kb)",
+    "opsPerSec": 684886.6431740589,
+    "avgTimeMs": 0.001460095637674536,
+    "iterations": 1369774
+  },
+  {
+    "name": "validate - huge (50kb)",
+    "opsPerSec": 129534.69040818512,
+    "avgTimeMs": 0.0077199397076476994,
+    "iterations": 259071
+  },
+  {
+    "name": "validate - invalid (incomplete PUSH)",
+    "opsPerSec": 39485891,
+    "avgTimeMs": 0.000025325501708952194,
+    "iterations": 78971782
+  },
+  {
+    "name": "validate - simple pattern",
+    "opsPerSec": 38056135.5,
+    "avgTimeMs": 0.00002627697181706745,
+    "iterations": 76112271
+  },
+  {
+    "name": "parseInstructions - small (100b)",
+    "opsPerSec": 3536849.204673088,
+    "avgTimeMs": 0.00028273752770650856,
+    "iterations": 7073699
+  },
+  {
+    "name": "parseInstructions - medium (1kb)",
+    "opsPerSec": 411539.3026669042,
+    "avgTimeMs": 0.002429901575668922,
+    "iterations": 823079
+  },
+  {
+    "name": "parseInstructions - large (10kb)",
+    "opsPerSec": 43401.336355261294,
+    "avgTimeMs": 0.023040765192447254,
+    "iterations": 86803
+  },
+  {
+    "name": "parseInstructions - huge (50kb)",
+    "opsPerSec": 8770.55562225829,
+    "avgTimeMs": 0.11401786193136466,
+    "iterations": 17542
+  },
+  {
+    "name": "parseInstructions - simple PUSH",
+    "opsPerSec": 11942609.749205198,
+    "avgTimeMs": 0.00008373379194330216,
+    "iterations": 23885220
+  },
+  {
+    "name": "parseInstructions - with JUMPDESTs",
+    "opsPerSec": 10845752,
+    "avgTimeMs": 0.00009220199761159946,
+    "iterations": 21691504
+  },
+  {
+    "name": "analyze - small (100b)",
+    "opsPerSec": 2232252.954238807,
+    "avgTimeMs": 0.0004479779041622985,
+    "iterations": 4464506
+  },
+  {
+    "name": "analyze - medium (1kb)",
+    "opsPerSec": 288845.5847844721,
+    "avgTimeMs": 0.0034620574198707932,
+    "iterations": 577692
+  },
+  {
+    "name": "analyze - large (10kb)",
+    "opsPerSec": 32283.416595793176,
+    "avgTimeMs": 0.03097565578391443,
+    "iterations": 64567
+  },
+  {
+    "name": "analyze - huge (50kb)",
+    "opsPerSec": 6645.38405596531,
+    "avgTimeMs": 0.15048039234125796,
+    "iterations": 13292
+  },
+  {
+    "name": "toHex - small (100b)",
+    "opsPerSec": 328030.8154826659,
+    "avgTimeMs": 0.0030484940828763175,
+    "iterations": 656062
+  },
+  {
+    "name": "toHex - medium (1kb)",
+    "opsPerSec": 32558.823645131724,
+    "avgTimeMs": 0.030713640360576187,
+    "iterations": 65118
+  },
+  {
+    "name": "toHex - large (10kb)",
+    "opsPerSec": 3326.233971133216,
+    "avgTimeMs": 0.3006403063279729,
+    "iterations": 6653
+  },
+  {
+    "name": "fromHex - small (100b)",
+    "opsPerSec": 607370.9620393153,
+    "avgTimeMs": 0.0016464402523334162,
+    "iterations": 1214742
+  },
+  {
+    "name": "fromHex - medium (1kb)",
+    "opsPerSec": 52237.45322136058,
+    "avgTimeMs": 0.019143352869107465,
+    "iterations": 104475
+  },
+  {
+    "name": "fromHex - large (10kb)",
+    "opsPerSec": 4359.426707138495,
+    "avgTimeMs": 0.2293879602018576,
+    "iterations": 8719
+  },
+  {
+    "name": "hex round-trip - small",
+    "opsPerSec": 181750.44320298644,
+    "avgTimeMs": 0.005502049856809198,
+    "iterations": 363501
+  },
+  {
+    "name": "hex round-trip - medium",
+    "opsPerSec": 16958.386234665926,
+    "avgTimeMs": 0.058967875018427394,
+    "iterations": 33917
+  },
+  {
+    "name": "formatInstructions - small (100b)",
+    "opsPerSec": 163158.2825100094,
+    "avgTimeMs": 0.0061290176913859845,
+    "iterations": 326317
+  },
+  {
+    "name": "formatInstructions - medium (1kb)",
+    "opsPerSec": 16353.48058024184,
+    "avgTimeMs": 0.061149062127373234,
+    "iterations": 32707
+  },
+  {
+    "name": "formatInstructions - large (10kb)",
+    "opsPerSec": 1761.560307501012,
+    "avgTimeMs": 0.5676785493757077,
+    "iterations": 3524
+  },
+  {
+    "name": "hasMetadata - without metadata",
+    "opsPerSec": 23013060,
+    "avgTimeMs": 0.00004345358678941436,
+    "iterations": 46026120
+  },
+  {
+    "name": "hasMetadata - with metadata",
+    "opsPerSec": 22898045,
+    "avgTimeMs": 0.000043671850588117894,
+    "iterations": 45796090
+  },
+  {
+    "name": "stripMetadata - without metadata",
+    "opsPerSec": 22897688.5,
+    "avgTimeMs": 0.00004367253052638916,
+    "iterations": 45795377
+  },
+  {
+    "name": "stripMetadata - with metadata",
+    "opsPerSec": 10153161,
+    "avgTimeMs": 0.00009849149442227893,
+    "iterations": 20306322
+  },
+  {
+    "name": "equals - small (100b)",
+    "opsPerSec": 20429928.081186555,
+    "avgTimeMs": 0.00004894779834887802,
+    "iterations": 40859857
+  },
+  {
+    "name": "equals - medium (1kb)",
+    "opsPerSec": 3054281.3732473133,
+    "avgTimeMs": 0.00032740925860959546,
+    "iterations": 6108563
+  },
+  {
+    "name": "equals - large (10kb)",
+    "opsPerSec": 343921.1847962338,
+    "avgTimeMs": 0.0029076429257839393,
+    "iterations": 687843
+  },
+  {
+    "name": "isPush",
+    "opsPerSec": 42414015,
+    "avgTimeMs": 0.00002357711242380614,
+    "iterations": 84828030
+  },
+  {
+    "name": "getPushSize",
+    "opsPerSec": 43586271,
+    "avgTimeMs": 0.0000229430042317683,
+    "iterations": 87172542
+  },
+  {
+    "name": "isTerminator",
+    "opsPerSec": 43634682.5,
+    "avgTimeMs": 0.000022917549589137035,
+    "iterations": 87269365
+  },
+  {
+    "name": "size - small",
+    "opsPerSec": 45016231,
+    "avgTimeMs": 0.00002221420980357063,
+    "iterations": 90032462
+  },
+  {
+    "name": "size - large",
+    "opsPerSec": 44478647.5,
+    "avgTimeMs": 0.000022482698018189513,
+    "iterations": 88957295
+  },
+  {
+    "name": "extractRuntime - small",
+    "opsPerSec": 22366637,
+    "avgTimeMs": 0.00004470944827333675,
+    "iterations": 44733274
+  },
+  {
+    "name": "extractRuntime - large",
+    "opsPerSec": 2122754.9554221462,
+    "avgTimeMs": 0.0004710859336098607,
+    "iterations": 4245510
+  }
+]

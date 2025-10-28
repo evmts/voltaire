@@ -1,0 +1,332 @@
+[
+  {
+    "name": "getInfo - ADD",
+    "opsPerSec": 47140838.5,
+    "avgTimeMs": 0.00002121302954761825,
+    "iterations": 94281677
+  },
+  {
+    "name": "getInfo - PUSH1",
+    "opsPerSec": 47073416.49999999,
+    "avgTimeMs": 0.000021243412404536224,
+    "iterations": 94146833
+  },
+  {
+    "name": "getInfo - CALL",
+    "opsPerSec": 47152300.5,
+    "avgTimeMs": 0.000021207872985963854,
+    "iterations": 94304601
+  },
+  {
+    "name": "getInfo - invalid",
+    "opsPerSec": 47055064.5,
+    "avgTimeMs": 0.000021251697572319766,
+    "iterations": 94110129
+  },
+  {
+    "name": "info.call - ADD",
+    "opsPerSec": 46945973.5,
+    "avgTimeMs": 0.000021301081337678514,
+    "iterations": 93891947
+  },
+  {
+    "name": "getName - ADD",
+    "opsPerSec": 45942429.5,
+    "avgTimeMs": 0.000021766371758811755,
+    "iterations": 91884859
+  },
+  {
+    "name": "getName - invalid",
+    "opsPerSec": 30927304.5,
+    "avgTimeMs": 0.00003233388800501511,
+    "iterations": 61854609
+  },
+  {
+    "name": "name.call - ADD",
+    "opsPerSec": 27838165.5,
+    "avgTimeMs": 0.00003592190728228841,
+    "iterations": 55676331
+  },
+  {
+    "name": "isValid - valid opcode",
+    "opsPerSec": 28271606.906296287,
+    "avgTimeMs": 0.00003537117657706584,
+    "iterations": 56543215
+  },
+  {
+    "name": "isValid - invalid opcode",
+    "opsPerSec": 34125255,
+    "avgTimeMs": 0.00002930381033050156,
+    "iterations": 68250510
+  },
+  {
+    "name": "valid.call - valid",
+    "opsPerSec": 41365887,
+    "avgTimeMs": 0.000024174508816890594,
+    "iterations": 82731774
+  },
+  {
+    "name": "isPush - PUSH1",
+    "opsPerSec": 46628563.0571554,
+    "avgTimeMs": 0.000021446082281674446,
+    "iterations": 93257266
+  },
+  {
+    "name": "isPush - ADD",
+    "opsPerSec": 41134326.5,
+    "avgTimeMs": 0.00002431059616352294,
+    "iterations": 82268653
+  },
+  {
+    "name": "isDup - DUP1",
+    "opsPerSec": 40816387,
+    "avgTimeMs": 0.000024499963703303773,
+    "iterations": 81632774
+  },
+  {
+    "name": "isSwap - SWAP1",
+    "opsPerSec": 41001513,
+    "avgTimeMs": 0.00002438934387616379,
+    "iterations": 82003026
+  },
+  {
+    "name": "isLog - LOG1",
+    "opsPerSec": 40839357,
+    "avgTimeMs": 0.000024486183756517027,
+    "iterations": 81678714
+  },
+  {
+    "name": "isTerminating - RETURN",
+    "opsPerSec": 42447426.10860414,
+    "avgTimeMs": 0.000023558554467859688,
+    "iterations": 84894854
+  },
+  {
+    "name": "isJump - JUMP",
+    "opsPerSec": 42201481.5,
+    "avgTimeMs": 0.000023695850582875864,
+    "iterations": 84402963
+  },
+  {
+    "name": "push.call - PUSH1",
+    "opsPerSec": 43721305.5,
+    "avgTimeMs": 0.000022872144108322657,
+    "iterations": 87442611
+  },
+  {
+    "name": "dup.call - DUP1",
+    "opsPerSec": 44266920.5,
+    "avgTimeMs": 0.000022590231909174707,
+    "iterations": 88533841
+  },
+  {
+    "name": "getPushBytes - PUSH1",
+    "opsPerSec": 44426602,
+    "avgTimeMs": 0.00002250903636519399,
+    "iterations": 88853204
+  },
+  {
+    "name": "getPushBytes - PUSH32",
+    "opsPerSec": 44886647.5,
+    "avgTimeMs": 0.00002227834012330727,
+    "iterations": 89773295
+  },
+  {
+    "name": "getPushBytes - ADD",
+    "opsPerSec": 43745160.5,
+    "avgTimeMs": 0.000022859671528694013,
+    "iterations": 87490321
+  },
+  {
+    "name": "getPushOpcode - 1",
+    "opsPerSec": 44733923.5,
+    "avgTimeMs": 0.00002235439956434852,
+    "iterations": 89467847
+  },
+  {
+    "name": "getPushOpcode - 32",
+    "opsPerSec": 44402094,
+    "avgTimeMs": 0.000022521460361756813,
+    "iterations": 88804188
+  },
+  {
+    "name": "pushBytes.call - PUSH1",
+    "opsPerSec": 44673192,
+    "avgTimeMs": 0.00002238478951761495,
+    "iterations": 89346384
+  },
+  {
+    "name": "pushOpcode.call - 1",
+    "opsPerSec": 45127489,
+    "avgTimeMs": 0.000022159442551744903,
+    "iterations": 90254978
+  },
+  {
+    "name": "getDupPosition - DUP1",
+    "opsPerSec": 45030904.5,
+    "avgTimeMs": 0.000022206971214624393,
+    "iterations": 90061809
+  },
+  {
+    "name": "getDupPosition - DUP16",
+    "opsPerSec": 44803466,
+    "avgTimeMs": 0.000022319701783786103,
+    "iterations": 89606932
+  },
+  {
+    "name": "getSwapPosition - SWAP1",
+    "opsPerSec": 44109777,
+    "avgTimeMs": 0.000022670710849433676,
+    "iterations": 88219554
+  },
+  {
+    "name": "getSwapPosition - SWAP16",
+    "opsPerSec": 44381066,
+    "avgTimeMs": 0.000022532131157011867,
+    "iterations": 88762132
+  },
+  {
+    "name": "getLogTopics - LOG1",
+    "opsPerSec": 44799818,
+    "avgTimeMs": 0.000022321519252600534,
+    "iterations": 89599636
+  },
+  {
+    "name": "getLogTopics - LOG4",
+    "opsPerSec": 44435493.499999836,
+    "avgTimeMs": 0.00002250453232841903,
+    "iterations": 88870987
+  },
+  {
+    "name": "dupPosition.call - DUP1",
+    "opsPerSec": 43986978.5,
+    "avgTimeMs": 0.000022734000699775276,
+    "iterations": 87973957
+  },
+  {
+    "name": "swapPosition.call - SWAP1",
+    "opsPerSec": 44605133.5,
+    "avgTimeMs": 0.000022418944223090376,
+    "iterations": 89210267
+  },
+  {
+    "name": "logTopics.call - LOG1",
+    "opsPerSec": 43833156.5,
+    "avgTimeMs": 0.000022813780248748457,
+    "iterations": 87666313
+  },
+  {
+    "name": "parseBytecode - simple (5 bytes)",
+    "opsPerSec": 14299517.69971013,
+    "avgTimeMs": 0.00006993242856157808,
+    "iterations": 28599036
+  },
+  {
+    "name": "parseBytecode - complex (46 bytes)",
+    "opsPerSec": 5347104,
+    "avgTimeMs": 0.00018701712179153426,
+    "iterations": 10694208
+  },
+  {
+    "name": "parseBytecode - jump (5 bytes)",
+    "opsPerSec": 18190376.863101393,
+    "avgTimeMs": 0.0000549741221705235,
+    "iterations": 36380756
+  },
+  {
+    "name": "parse.call - simple",
+    "opsPerSec": 14610957,
+    "avgTimeMs": 0.00006844178653047846,
+    "iterations": 29221914
+  },
+  {
+    "name": "formatInstruction - simple",
+    "opsPerSec": 20943799.5,
+    "avgTimeMs": 0.00004774682836321079,
+    "iterations": 41887599
+  },
+  {
+    "name": "formatInstruction - PUSH1",
+    "opsPerSec": 9114789.81314678,
+    "avgTimeMs": 0.0001097118003267221,
+    "iterations": 18229580
+  },
+  {
+    "name": "formatInstruction - PUSH32",
+    "opsPerSec": 1018914.7661590598,
+    "avgTimeMs": 0.0009814363607366671,
+    "iterations": 2037830
+  },
+  {
+    "name": "format.call - simple",
+    "opsPerSec": 20691224,
+    "avgTimeMs": 0.00004832966865565807,
+    "iterations": 41382448
+  },
+  {
+    "name": "disassemble - simple",
+    "opsPerSec": 2930588.876915268,
+    "avgTimeMs": 0.0003412283476120328,
+    "iterations": 5861178
+  },
+  {
+    "name": "disassemble - complex",
+    "opsPerSec": 488577.4491879458,
+    "avgTimeMs": 0.0020467584037332847,
+    "iterations": 977155
+  },
+  {
+    "name": "findJumpDests - jump bytecode",
+    "opsPerSec": 12042732.747102614,
+    "avgTimeMs": 0.00008303763115897362,
+    "iterations": 24085466
+  },
+  {
+    "name": "findJumpDests - complex",
+    "opsPerSec": 4425172.223426723,
+    "avgTimeMs": 0.00022597990530312726,
+    "iterations": 8850345
+  },
+  {
+    "name": "isValidJumpDest",
+    "opsPerSec": 11742482.753407866,
+    "avgTimeMs": 0.00008516086597698288,
+    "iterations": 23484966
+  },
+  {
+    "name": "jumpDests.call",
+    "opsPerSec": 11849279,
+    "avgTimeMs": 0.00008439332047122867,
+    "iterations": 23698558
+  },
+  {
+    "name": "validJumpDest.call",
+    "opsPerSec": 11720535.5,
+    "avgTimeMs": 0.00008532033369976994,
+    "iterations": 23441071
+  },
+  {
+    "name": "Gas cost - simple sequence",
+    "opsPerSec": 12197489.749951418,
+    "avgTimeMs": 0.00008198408201195519,
+    "iterations": 24394980
+  },
+  {
+    "name": "Gas cost - complex sequence",
+    "opsPerSec": 4392477.3177121775,
+    "avgTimeMs": 0.0002276619610459025,
+    "iterations": 8784955
+  },
+  {
+    "name": "Stack analysis - simple sequence",
+    "opsPerSec": 12125578.5,
+    "avgTimeMs": 0.00008247029203596347,
+    "iterations": 24251157
+  },
+  {
+    "name": "Stack analysis - complex sequence",
+    "opsPerSec": 4348886.5,
+    "avgTimeMs": 0.0002299439178281613,
+    "iterations": 8697773
+  }
+]

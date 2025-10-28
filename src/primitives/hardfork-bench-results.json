@@ -1,0 +1,230 @@
+[
+  {
+    "name": "isAtLeast",
+    "opsPerSec": 46849327.5,
+    "avgTimeMs": 0.000021345023575845354,
+    "iterations": 93698655
+  },
+  {
+    "name": "isBefore",
+    "opsPerSec": 47125846.5,
+    "avgTimeMs": 0.0000212197779831923,
+    "iterations": 94251693
+  },
+  {
+    "name": "isAfter",
+    "opsPerSec": 46872324.5,
+    "avgTimeMs": 0.00002133455105261528,
+    "iterations": 93744649
+  },
+  {
+    "name": "isEqual",
+    "opsPerSec": 46378326.5,
+    "avgTimeMs": 0.000021561795680575063,
+    "iterations": 92756653
+  },
+  {
+    "name": "compare",
+    "opsPerSec": 43127858.999999985,
+    "avgTimeMs": 0.000023186868608525185,
+    "iterations": 86255718
+  },
+  {
+    "name": "gte.call",
+    "opsPerSec": 43915482.5,
+    "avgTimeMs": 0.000022771012478344055,
+    "iterations": 87830965
+  },
+  {
+    "name": "lt.call",
+    "opsPerSec": 41846485,
+    "avgTimeMs": 0.000023896869713190964,
+    "iterations": 83692970
+  },
+  {
+    "name": "gt.call",
+    "opsPerSec": 33277144,
+    "avgTimeMs": 0.000030050655789451163,
+    "iterations": 66554288
+  },
+  {
+    "name": "eq.call",
+    "opsPerSec": 28179137,
+    "avgTimeMs": 0.000035487247178648515,
+    "iterations": 56358274
+  },
+  {
+    "name": "lte.call",
+    "opsPerSec": 28125900.5,
+    "avgTimeMs": 0.0000355544171821272,
+    "iterations": 56251801
+  },
+  {
+    "name": "min",
+    "opsPerSec": 34307372,
+    "avgTimeMs": 0.00002914825420029258,
+    "iterations": 68614744
+  },
+  {
+    "name": "max",
+    "opsPerSec": 33574616.5,
+    "avgTimeMs": 0.00002978440572805947,
+    "iterations": 67149233
+  },
+  {
+    "name": "fromString",
+    "opsPerSec": 35086384.5,
+    "avgTimeMs": 0.000028501084231121048,
+    "iterations": 70172769
+  },
+  {
+    "name": "fromString - alias",
+    "opsPerSec": 39449836,
+    "avgTimeMs": 0.000025348647837217877,
+    "iterations": 78899672
+  },
+  {
+    "name": "fromString - with operator",
+    "opsPerSec": 11729745.495668398,
+    "avgTimeMs": 0.0000852533416321167,
+    "iterations": 23460467
+  },
+  {
+    "name": "fromString - invalid",
+    "opsPerSec": 36661851.5,
+    "avgTimeMs": 0.000027276309272050814,
+    "iterations": 73323703
+  },
+  {
+    "name": "toString",
+    "opsPerSec": 40384682.172113955,
+    "avgTimeMs": 0.00002476186381108901,
+    "iterations": 80769366
+  },
+  {
+    "name": "isValidName - valid",
+    "opsPerSec": 36555453.5,
+    "avgTimeMs": 0.00002735569947176281,
+    "iterations": 73110907
+  },
+  {
+    "name": "isValidName - invalid",
+    "opsPerSec": 35592397,
+    "avgTimeMs": 0.000028095888006643666,
+    "iterations": 71184794
+  },
+  {
+    "name": "hasEIP1559",
+    "opsPerSec": 41831352,
+    "avgTimeMs": 0.000023905514696249836,
+    "iterations": 83662704
+  },
+  {
+    "name": "hasEIP3855",
+    "opsPerSec": 42053395.5,
+    "avgTimeMs": 0.000023779292685176873,
+    "iterations": 84106791
+  },
+  {
+    "name": "hasEIP4844",
+    "opsPerSec": 41796943,
+    "avgTimeMs": 0.0000239251947205804,
+    "iterations": 83593886
+  },
+  {
+    "name": "hasEIP1153",
+    "opsPerSec": 41715947.5,
+    "avgTimeMs": 0.00002397164777331259,
+    "iterations": 83431895
+  },
+  {
+    "name": "isPostMerge",
+    "opsPerSec": 42234993,
+    "avgTimeMs": 0.00002367704902898883,
+    "iterations": 84469986
+  },
+  {
+    "name": "supportsEIP1559.call",
+    "opsPerSec": 42073281,
+    "avgTimeMs": 0.000023768053649060553,
+    "iterations": 84146562
+  },
+  {
+    "name": "supportsPUSH0.call",
+    "opsPerSec": 42018613.5,
+    "avgTimeMs": 0.000023798976613066968,
+    "iterations": 84037227
+  },
+  {
+    "name": "supportsBlobs.call",
+    "opsPerSec": 41983250.5,
+    "avgTimeMs": 0.000023819022779096155,
+    "iterations": 83966501
+  },
+  {
+    "name": "supportsTransientStorage.call",
+    "opsPerSec": 42057670.5,
+    "avgTimeMs": 0.00002377687561178644,
+    "iterations": 84115341
+  },
+  {
+    "name": "isPoS.call",
+    "opsPerSec": 41648310,
+    "avgTimeMs": 0.000024010578100287864,
+    "iterations": 83296620
+  },
+  {
+    "name": "allNames",
+    "opsPerSec": 6512935.363228358,
+    "avgTimeMs": 0.00015354059947315612,
+    "iterations": 13025871
+  },
+  {
+    "name": "allIds",
+    "opsPerSec": 3049902.373429042,
+    "avgTimeMs": 0.0003278793474545508,
+    "iterations": 6099805
+  },
+  {
+    "name": "range - short",
+    "opsPerSec": 22384128.5,
+    "avgTimeMs": 0.000044674511227899714,
+    "iterations": 44768257
+  },
+  {
+    "name": "range - medium",
+    "opsPerSec": 19985534,
+    "avgTimeMs": 0.00005003619117707838,
+    "iterations": 39971068
+  },
+  {
+    "name": "range - long",
+    "opsPerSec": 8064176.834684349,
+    "avgTimeMs": 0.0001240052172093945,
+    "iterations": 16128354
+  },
+  {
+    "name": "range - descending",
+    "opsPerSec": 19639442.5,
+    "avgTimeMs": 0.00005091794229902402,
+    "iterations": 39278885
+  },
+  {
+    "name": "parse then check EIP-1559",
+    "opsPerSec": 35547391,
+    "avgTimeMs": 0.0000281314597743615,
+    "iterations": 71094782
+  },
+  {
+    "name": "check multiple features",
+    "opsPerSec": 41596521.5,
+    "avgTimeMs": 0.000024040471749542808,
+    "iterations": 83193043
+  },
+  {
+    "name": "version compatibility check",
+    "opsPerSec": 42151275.5,
+    "avgTimeMs": 0.000023724074494495427,
+    "iterations": 84302551
+  }
+]

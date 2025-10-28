@@ -1,0 +1,230 @@
+[
+  {
+    "name": "EventLog.create - minimal",
+    "opsPerSec": 27361249.5,
+    "avgTimeMs": 0.0000365480384950987,
+    "iterations": 54722499
+  },
+  {
+    "name": "EventLog.create - full",
+    "opsPerSec": 27311540.5,
+    "avgTimeMs": 0.000036614558596575684,
+    "iterations": 54623081
+  },
+  {
+    "name": "EventLog.getTopic0",
+    "opsPerSec": 47355283.505539045,
+    "avgTimeMs": 0.00002111696786448406,
+    "iterations": 94710569
+  },
+  {
+    "name": "EventLog.getSignature (this:)",
+    "opsPerSec": 47288706,
+    "avgTimeMs": 0.000021146698325811663,
+    "iterations": 94577412
+  },
+  {
+    "name": "EventLog.getIndexedTopics",
+    "opsPerSec": 42129242,
+    "avgTimeMs": 0.000023736482132766593,
+    "iterations": 84258484
+  },
+  {
+    "name": "EventLog.getIndexed (this:)",
+    "opsPerSec": 39640050,
+    "avgTimeMs": 0.000025227011570368857,
+    "iterations": 79280100
+  },
+  {
+    "name": "matchesTopics - exact match",
+    "opsPerSec": 3081120.372133503,
+    "avgTimeMs": 0.0003245572646379784,
+    "iterations": 6162241
+  },
+  {
+    "name": "matchesTopics - with null wildcard",
+    "opsPerSec": 4407635.224522802,
+    "avgTimeMs": 0.0002268790290168049,
+    "iterations": 8815271
+  },
+  {
+    "name": "matchesTopics - with array (OR logic)",
+    "opsPerSec": 2564154.1794807287,
+    "avgTimeMs": 0.0003899921494590125,
+    "iterations": 5128309
+  },
+  {
+    "name": "matchesTopics - no match",
+    "opsPerSec": 4774535.103713592,
+    "avgTimeMs": 0.000209444475384045,
+    "iterations": 9549071
+  },
+  {
+    "name": "matches (this:) - with wildcard",
+    "opsPerSec": 2382640.899929083,
+    "avgTimeMs": 0.00041970235633484004,
+    "iterations": 4765282
+  },
+  {
+    "name": "matchesAddress - single match",
+    "opsPerSec": 20749298.5,
+    "avgTimeMs": 0.00004819440040346424,
+    "iterations": 41498597
+  },
+  {
+    "name": "matchesAddress - single no match",
+    "opsPerSec": 12234497.74307555,
+    "avgTimeMs": 0.00008173608929438706,
+    "iterations": 24468996
+  },
+  {
+    "name": "matchesAddress - array match",
+    "opsPerSec": 12662697,
+    "avgTimeMs": 0.00007897211786714947,
+    "iterations": 25325394
+  },
+  {
+    "name": "matchesAddress - array no match",
+    "opsPerSec": 6272002.2397119105,
+    "avgTimeMs": 0.00015943871857512803,
+    "iterations": 12544005
+  },
+  {
+    "name": "matchesAddr (this:) - single",
+    "opsPerSec": 20729219.5,
+    "avgTimeMs": 0.000048241083075993284,
+    "iterations": 41458439
+  },
+  {
+    "name": "matchesFilter - address only",
+    "opsPerSec": 12794560.5,
+    "avgTimeMs": 0.00007815821418797464,
+    "iterations": 25589121
+  },
+  {
+    "name": "matchesFilter - topics only",
+    "opsPerSec": 2598933.817497729,
+    "avgTimeMs": 0.00038477316862297283,
+    "iterations": 5197892
+  },
+  {
+    "name": "matchesFilter - address + topics",
+    "opsPerSec": 2914495.938795586,
+    "avgTimeMs": 0.0003431125041859724,
+    "iterations": 5828992
+  },
+  {
+    "name": "matchesFilter - with block range",
+    "opsPerSec": 4421474.7236578325,
+    "avgTimeMs": 0.00022616888312158257,
+    "iterations": 8842950
+  },
+  {
+    "name": "matchesFilter - complete filter",
+    "opsPerSec": 2174665.8640833846,
+    "avgTimeMs": 0.0004598407583049532,
+    "iterations": 4349332
+  },
+  {
+    "name": "matchesAll (this:) - complete",
+    "opsPerSec": 2640842.3349473462,
+    "avgTimeMs": 0.00037866705890260514,
+    "iterations": 5281685
+  },
+  {
+    "name": "filterLogs - by address",
+    "opsPerSec": 11186.378686154992,
+    "avgTimeMs": 0.08939443479038187,
+    "iterations": 11187
+  },
+  {
+    "name": "filterLogs - by topics",
+    "opsPerSec": 7415.040367720757,
+    "avgTimeMs": 0.13486103249730266,
+    "iterations": 7416
+  },
+  {
+    "name": "filterLogs - address + topics",
+    "opsPerSec": 7488.931041922942,
+    "avgTimeMs": 0.13353040566163749,
+    "iterations": 7489
+  },
+  {
+    "name": "filterLogs - block range",
+    "opsPerSec": 48727.057959788275,
+    "avgTimeMs": 0.020522478513380477,
+    "iterations": 48728
+  },
+  {
+    "name": "filterLogs - complex filter",
+    "opsPerSec": 2747.8386798867896,
+    "avgTimeMs": 0.36392238282387074,
+    "iterations": 2748
+  },
+  {
+    "name": "filter (this:) - complex",
+    "opsPerSec": 4521.774666403061,
+    "avgTimeMs": 0.22115210813799144,
+    "iterations": 4522
+  },
+  {
+    "name": "sortLogs - 10 logs",
+    "opsPerSec": 4622586.616325316,
+    "avgTimeMs": 0.0002163290994847688,
+    "iterations": 9245174
+  },
+  {
+    "name": "sortLogs - 100 logs",
+    "opsPerSec": 607644.9615347584,
+    "avgTimeMs": 0.0016456978388732974,
+    "iterations": 607646
+  },
+  {
+    "name": "sortLogs - 1000 logs",
+    "opsPerSec": 61540.625551669305,
+    "avgTimeMs": 0.016249428585356242,
+    "iterations": 30771
+  },
+  {
+    "name": "sort (this:) - 100 logs",
+    "opsPerSec": 601936.6237896099,
+    "avgTimeMs": 0.0016613044637561747,
+    "iterations": 601937
+  },
+  {
+    "name": "isRemoved - removed log",
+    "opsPerSec": 45554284,
+    "avgTimeMs": 0.000021951832236019777,
+    "iterations": 91108568
+  },
+  {
+    "name": "isRemoved - active log",
+    "opsPerSec": 45951874,
+    "avgTimeMs": 0.00002176189811105419,
+    "iterations": 91903748
+  },
+  {
+    "name": "wasRemoved (this:) - removed",
+    "opsPerSec": 45563216.5,
+    "avgTimeMs": 0.00002194752866053695,
+    "iterations": 91126433
+  },
+  {
+    "name": "clone - minimal log",
+    "opsPerSec": 12327635,
+    "avgTimeMs": 0.00008111856004821687,
+    "iterations": 24655270
+  },
+  {
+    "name": "clone - full log",
+    "opsPerSec": 18937456.5,
+    "avgTimeMs": 0.00005280540182362927,
+    "iterations": 37874913
+  },
+  {
+    "name": "copy (this:) - full log",
+    "opsPerSec": 18929680.49999993,
+    "avgTimeMs": 0.00005282709341026668,
+    "iterations": 37859361
+  }
+]

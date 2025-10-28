@@ -1,0 +1,134 @@
+[
+  {
+    "name": "Function.getSignature - simple",
+    "opsPerSec": 20316343.083514966,
+    "avgTimeMs": 0.00004922145663170147,
+    "iterations": 40632687
+  },
+  {
+    "name": "Function.getSignature - complex tuple",
+    "opsPerSec": 25731892.999999996,
+    "avgTimeMs": 0.00003886227880708194,
+    "iterations": 51463786
+  },
+  {
+    "name": "Event.getSignature",
+    "opsPerSec": 19006910.100854885,
+    "avgTimeMs": 0.00005261244435280526,
+    "iterations": 38013821
+  },
+  {
+    "name": "Error.getSignature",
+    "opsPerSec": 20011296.668119106,
+    "avgTimeMs": 0.00004997177427253602,
+    "iterations": 40022600
+  },
+  {
+    "name": "Function.getSelector - transfer",
+    "opsPerSec": 317284.5769010169,
+    "avgTimeMs": 0.0031517447515640494,
+    "iterations": 634570
+  },
+  {
+    "name": "Function.getSelector - balanceOf",
+    "opsPerSec": 319278.14081209165,
+    "avgTimeMs": 0.003132065344205763,
+    "iterations": 638557
+  },
+  {
+    "name": "Event.getSelector - Transfer",
+    "opsPerSec": 321723.37275840604,
+    "avgTimeMs": 0.0031082603400124646,
+    "iterations": 643447
+  },
+  {
+    "name": "Error.getSelector - InsufficientBalance",
+    "opsPerSec": 323592.149549702,
+    "avgTimeMs": 0.003090309827947187,
+    "iterations": 647185
+  },
+  {
+    "name": "Abi.getFunctionSelector",
+    "opsPerSec": 333887.89566003246,
+    "avgTimeMs": 0.0029950172288312257,
+    "iterations": 667776
+  },
+  {
+    "name": "Abi.getEventSelector",
+    "opsPerSec": 333192.3750528595,
+    "avgTimeMs": 0.0030012691612206145,
+    "iterations": 666385
+  },
+  {
+    "name": "Abi.getErrorSelector",
+    "opsPerSec": 327404.4931245057,
+    "avgTimeMs": 0.003054325829363982,
+    "iterations": 654809
+  },
+  {
+    "name": "formatAbiItem - function",
+    "opsPerSec": 7552204,
+    "avgTimeMs": 0.000132411677438798,
+    "iterations": 15104408
+  },
+  {
+    "name": "formatAbiItem - event",
+    "opsPerSec": 6844946.71251224,
+    "avgTimeMs": 0.00014609317530143033,
+    "iterations": 13689894
+  },
+  {
+    "name": "formatAbiItem - error",
+    "opsPerSec": 8971954.5,
+    "avgTimeMs": 0.00011145843416838549,
+    "iterations": 17943909
+  },
+  {
+    "name": "formatAbiItem - complex",
+    "opsPerSec": 20480517,
+    "avgTimeMs": 0.00004882689240706179,
+    "iterations": 40961034
+  },
+  {
+    "name": "formatAbiItemWithArgs - function",
+    "opsPerSec": 11351173.248245416,
+    "avgTimeMs": 0.0000880966203343406,
+    "iterations": 22702364
+  },
+  {
+    "name": "formatAbiItemWithArgs - event",
+    "opsPerSec": 9434090.999999981,
+    "avgTimeMs": 0.00010599855354373854,
+    "iterations": 18868182
+  },
+  {
+    "name": "Function.encodeParams - simple",
+    "opsPerSec": 2798006.8838827154,
+    "avgTimeMs": 0.00035739726222986556,
+    "iterations": 5596014
+  },
+  {
+    "name": "Function.decodeResult",
+    "opsPerSec": 2717400.330162481,
+    "avgTimeMs": 0.000367998777692136,
+    "iterations": 5434801
+  },
+  {
+    "name": "Event.encodeTopics",
+    "opsPerSec": 2629570,
+    "avgTimeMs": 0.0003802903136254217,
+    "iterations": 5259140
+  },
+  {
+    "name": "Error.encodeParams",
+    "opsPerSec": 2682520.317333983,
+    "avgTimeMs": 0.0003727837562079858,
+    "iterations": 5365065
+  },
+  {
+    "name": "Abi.getItem",
+    "opsPerSec": 35339613,
+    "avgTimeMs": 0.000028296857693376552,
+    "iterations": 70679226
+  }
+]
