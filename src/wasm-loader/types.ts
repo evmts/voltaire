@@ -17,6 +17,8 @@ export const enum ErrorCode {
 	INVALID_SELECTOR = -7,
 	UNSUPPORTED_TYPE = -8,
 	MAX_LENGTH_EXCEEDED = -9,
+	ACCESS_LIST_INVALID = -10,
+	AUTHORIZATION_INVALID = -11,
 }
 
 /**
@@ -251,6 +253,66 @@ export interface WasmExports {
 		outPtr: number,
 		outLen: number,
 	) => number;
+
+	// Blob functions (EIP-4844)
+	primitives_blob_from_data: (
+		dataPtr: number,
+		dataLen: number,
+		outPtr: number,
+	) => number;
+	primitives_blob_to_data: (
+		blobPtr: number,
+		outPtr: number,
+		outLenPtr: number,
+	) => number;
+	primitives_blob_is_valid: (blobLen: number) => number;
+	primitives_blob_calculate_gas: (blobCount: number) => bigint;
+	primitives_blob_estimate_count: (dataSize: number) => number;
+	primitives_blob_calculate_gas_price: (excessBlobGas: bigint) => bigint;
+	primitives_blob_calculate_excess_gas: (
+		parentExcess: bigint,
+		parentUsed: bigint,
+	) => bigint;
+
+	// Event log functions
+	primitives_eventlog_matches_address: (
+		logAddressPtr: number,
+		filterAddressesPtr: number,
+		filterCount: number,
+	) => number;
+	primitives_eventlog_matches_topic: (
+		logTopicPtr: number,
+		filterTopicPtr: number,
+		nullTopic: number,
+	) => number;
+	primitives_eventlog_matches_topics: (
+		logTopicsPtr: number,
+		logTopicCount: number,
+		filterTopicsPtr: number,
+		filterNullsPtr: number,
+		filterCount: number,
+	) => number;
+
+	// Access List functions (EIP-2930)
+	primitives_access_list_gas_cost: (jsonPtr: number, outCostPtr: number) => number;
+	primitives_access_list_gas_savings: (jsonPtr: number, outSavingsPtr: number) => number;
+	primitives_access_list_includes_address: (jsonPtr: number, addressPtr: number) => number;
+	primitives_access_list_includes_storage_key: (
+		jsonPtr: number,
+		addressPtr: number,
+		keyPtr: number,
+	) => number;
+
+	// Authorization functions (EIP-7702)
+	primitives_authorization_validate: (authPtr: number) => number;
+	primitives_authorization_signing_hash: (
+		chainId: bigint,
+		addressPtr: number,
+		nonce: bigint,
+		outHashPtr: number,
+	) => number;
+	primitives_authorization_authority: (authPtr: number, outAddressPtr: number) => number;
+	primitives_authorization_gas_cost: (count: number, emptyAccounts: number) => bigint;
 }
 
 /**

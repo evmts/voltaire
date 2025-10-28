@@ -25,6 +25,8 @@ const ErrorMessages: Record<ErrorCode, string> = {
 	[ErrorCode.INVALID_SELECTOR]: "Invalid function selector",
 	[ErrorCode.UNSUPPORTED_TYPE]: "Unsupported ABI type",
 	[ErrorCode.MAX_LENGTH_EXCEEDED]: "Maximum length exceeded",
+	[ErrorCode.ACCESS_LIST_INVALID]: "Invalid access list",
+	[ErrorCode.AUTHORIZATION_INVALID]: "Invalid authorization",
 };
 
 /**
@@ -1186,6 +1188,80 @@ export function compressPublicKey(uncompressed: Uint8Array): Uint8Array {
 // ============================================================================
 
 /**
+ * Sign message hash with private key
+ * @param messageHash - 32-byte message hash
+ * @param privateKey - 32-byte private key
+ * @returns Object with r (32 bytes), s (32 bytes), and v (recovery ID 0-1)
+ */
+export function secp256k1Sign(
+	messageHash: Uint8Array,
+	privateKey: Uint8Array,
+): { r: Uint8Array; s: Uint8Array; v: number } {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const hashPtr = malloc(32);
+		const keyPtr = malloc(32);
+		const sigPtr = malloc(64);
+		const recidPtr = malloc(1);
+
+		writeBytes(messageHash, hashPtr);
+		writeBytes(privateKey, keyPtr);
+
+		const result = exports.secp256k1Sign(hashPtr, keyPtr, sigPtr, recidPtr);
+		if (result !== 0) {
+			throw new Error("secp256k1 signing failed");
+		}
+
+		const sig = readBytes(sigPtr, 64);
+		const recid = readBytes(recidPtr, 1);
+
+		return {
+			r: sig.slice(0, 32),
+			s: sig.slice(32, 64),
+			v: recid[0],
+		};
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Verify ECDSA signature
+ * @param messageHash - 32-byte message hash
+ * @param r - R component (32 bytes)
+ * @param s - S component (32 bytes)
+ * @param publicKey - Uncompressed public key (64 bytes)
+ * @returns True if signature is valid
+ */
+export function secp256k1Verify(
+	messageHash: Uint8Array,
+	r: Uint8Array,
+	s: Uint8Array,
+	publicKey: Uint8Array,
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const hashPtr = malloc(32);
+		const sigPtr = malloc(64);
+		const pubKeyPtr = malloc(64);
+
+		writeBytes(messageHash, hashPtr);
+		const sig = new Uint8Array(64);
+		sig.set(r, 0);
+		sig.set(s, 32);
+		writeBytes(sig, sigPtr);
+		writeBytes(publicKey, pubKeyPtr);
+
+		const result = exports.secp256k1Verify(hashPtr, sigPtr, pubKeyPtr);
+		return result !== 0; // Returns 1 for valid, 0 for invalid
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
  * Recover public key from ECDSA signature
  * @param messageHash - 32-byte message hash
  * @param r - R component (32 bytes)
@@ -1551,6 +1627,572 @@ export function abiDecodeParameters(
 
 		// Parse JSON array
 		return JSON.parse(jsonStr) as string[];
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+// ============================================================================
+// Access List API (EIP-2930)
+// ============================================================================
+
+/**
+ * Calculate gas cost for access list
+ * @param accessList - Access list items
+ * @returns Gas cost
+ */
+export function accessListGasCost(
+	accessList: Array<{ address: Uint8Array; storageKeys: Uint8Array[] }>,
+): bigint {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const jsonStr = JSON.stringify(
+			accessList.map((item) => ({
+				address: Array.from(item.address),
+				storageKeys: item.storageKeys.map((k) => Array.from(k)),
+			})),
+		);
+
+		const jsonPtr = writeString(jsonStr);
+		const outPtr = malloc(8);
+
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+
+		const result = exports.primitives_access_list_gas_cost(jsonPtr, outPtr);
+		checkResult(result);
+
+		const view = new DataView(wasmMemory.buffer);
+		return view.getBigUint64(outPtr, true);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Calculate gas savings from using access list
+ * @param accessList - Access list items
+ * @returns Gas savings
+ */
+export function accessListGasSavings(
+	accessList: Array<{ address: Uint8Array; storageKeys: Uint8Array[] }>,
+): bigint {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const jsonStr = JSON.stringify(
+			accessList.map((item) => ({
+				address: Array.from(item.address),
+				storageKeys: item.storageKeys.map((k) => Array.from(k)),
+			})),
+		);
+
+		const jsonPtr = writeString(jsonStr);
+		const outPtr = malloc(8);
+
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+
+		const result = exports.primitives_access_list_gas_savings(jsonPtr, outPtr);
+		checkResult(result);
+
+		const view = new DataView(wasmMemory.buffer);
+		return view.getBigUint64(outPtr, true);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Check if address is in access list
+ * @param accessList - Access list items
+ * @param address - Address to check
+ * @returns True if address is in list
+ */
+export function accessListIncludesAddress(
+	accessList: Array<{ address: Uint8Array; storageKeys: Uint8Array[] }>,
+	address: Uint8Array,
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const jsonStr = JSON.stringify(
+			accessList.map((item) => ({
+				address: Array.from(item.address),
+				storageKeys: item.storageKeys.map((k) => Array.from(k)),
+			})),
+		);
+
+		const jsonPtr = writeString(jsonStr);
+		const addrPtr = malloc(20);
+		writeBytes(address, addrPtr);
+
+		const result = exports.primitives_access_list_includes_address(
+			jsonPtr,
+			addrPtr,
+		);
+		return result !== 0;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Check if storage key is in access list for address
+ * @param accessList - Access list items
+ * @param address - Address to check
+ * @param storageKey - Storage key to check
+ * @returns True if storage key is in list
+ */
+export function accessListIncludesStorageKey(
+	accessList: Array<{ address: Uint8Array; storageKeys: Uint8Array[] }>,
+	address: Uint8Array,
+	storageKey: Uint8Array,
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const jsonStr = JSON.stringify(
+			accessList.map((item) => ({
+				address: Array.from(item.address),
+				storageKeys: item.storageKeys.map((k) => Array.from(k)),
+			})),
+		);
+
+		const jsonPtr = writeString(jsonStr);
+		const addrPtr = malloc(20);
+		const keyPtr = malloc(32);
+		writeBytes(address, addrPtr);
+		writeBytes(storageKey, keyPtr);
+
+		const result = exports.primitives_access_list_includes_storage_key(
+			jsonPtr,
+			addrPtr,
+			keyPtr,
+		);
+		return result !== 0;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+// ============================================================================
+// Authorization API (EIP-7702)
+// ============================================================================
+
+/**
+ * Validate authorization structure
+ * @param auth - Authorization to validate
+ * @throws Error if invalid
+ */
+export function authorizationValidate(auth: {
+	chainId: bigint;
+	address: Uint8Array;
+	nonce: bigint;
+	yParity: number;
+	r: bigint;
+	s: bigint;
+}): void {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const authPtr = malloc(20 + 8 + 8 + 8 + 32 + 32); // Full struct size
+
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+
+		// Write authorization structure
+		const view = new DataView(wasmMemory.buffer);
+		const memory = new Uint8Array(wasmMemory.buffer);
+
+		view.setBigUint64(authPtr, auth.chainId, true);
+		memory.set(auth.address, authPtr + 8);
+		view.setBigUint64(authPtr + 28, auth.nonce, true);
+		view.setBigUint64(authPtr + 36, BigInt(auth.yParity), true);
+
+		// Write r and s as big-endian
+		const rBytes = new Uint8Array(32);
+		const sBytes = new Uint8Array(32);
+		const rView = new DataView(rBytes.buffer);
+		const sView = new DataView(sBytes.buffer);
+		rView.setBigUint64(0, auth.r >> 192n, false);
+		rView.setBigUint64(8, (auth.r >> 128n) & 0xffffffffffffffffn, false);
+		rView.setBigUint64(16, (auth.r >> 64n) & 0xffffffffffffffffn, false);
+		rView.setBigUint64(24, auth.r & 0xffffffffffffffffn, false);
+		sView.setBigUint64(0, auth.s >> 192n, false);
+		sView.setBigUint64(8, (auth.s >> 128n) & 0xffffffffffffffffn, false);
+		sView.setBigUint64(16, (auth.s >> 64n) & 0xffffffffffffffffn, false);
+		sView.setBigUint64(24, auth.s & 0xffffffffffffffffn, false);
+
+		memory.set(rBytes, authPtr + 44);
+		memory.set(sBytes, authPtr + 76);
+
+		const result = exports.primitives_authorization_validate(authPtr);
+		checkResult(result);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Calculate signing hash for authorization
+ * @param chainId - Chain ID
+ * @param address - Target address
+ * @param nonce - Nonce
+ * @returns Signing hash
+ */
+export function authorizationSigningHash(
+	chainId: bigint,
+	address: Uint8Array,
+	nonce: bigint,
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const addrPtr = malloc(20);
+		const outPtr = malloc(32);
+
+		writeBytes(address, addrPtr);
+
+		const result = exports.primitives_authorization_signing_hash(
+			chainId,
+			addrPtr,
+			nonce,
+			outPtr,
+		);
+		checkResult(result);
+
+		return readBytes(outPtr, 32);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Recover authority (signer) from authorization
+ * @param auth - Authorization to recover from
+ * @returns Recovered authority address
+ */
+export function authorizationAuthority(auth: {
+	chainId: bigint;
+	address: Uint8Array;
+	nonce: bigint;
+	yParity: number;
+	r: bigint;
+	s: bigint;
+}): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const authPtr = malloc(108);
+		const outPtr = malloc(20);
+
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+
+		// Write authorization structure (same as validate)
+		const view = new DataView(wasmMemory.buffer);
+		const memory = new Uint8Array(wasmMemory.buffer);
+
+		view.setBigUint64(authPtr, auth.chainId, true);
+		memory.set(auth.address, authPtr + 8);
+		view.setBigUint64(authPtr + 28, auth.nonce, true);
+		view.setBigUint64(authPtr + 36, BigInt(auth.yParity), true);
+
+		const rBytes = new Uint8Array(32);
+		const sBytes = new Uint8Array(32);
+		const rView = new DataView(rBytes.buffer);
+		const sView = new DataView(sBytes.buffer);
+		rView.setBigUint64(0, auth.r >> 192n, false);
+		rView.setBigUint64(8, (auth.r >> 128n) & 0xffffffffffffffffn, false);
+		rView.setBigUint64(16, (auth.r >> 64n) & 0xffffffffffffffffn, false);
+		rView.setBigUint64(24, auth.r & 0xffffffffffffffffn, false);
+		sView.setBigUint64(0, auth.s >> 192n, false);
+		sView.setBigUint64(8, (auth.s >> 128n) & 0xffffffffffffffffn, false);
+		sView.setBigUint64(16, (auth.s >> 64n) & 0xffffffffffffffffn, false);
+		sView.setBigUint64(24, auth.s & 0xffffffffffffffffn, false);
+
+		memory.set(rBytes, authPtr + 44);
+		memory.set(sBytes, authPtr + 76);
+
+		const result = exports.primitives_authorization_authority(authPtr, outPtr);
+		checkResult(result);
+
+		return readBytes(outPtr, 20);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Calculate gas cost for authorization list
+ * @param authCount - Number of authorizations
+ * @param emptyAccounts - Number of empty accounts
+ * @returns Gas cost
+ */
+export function authorizationGasCost(
+	authCount: number,
+	emptyAccounts: number,
+): bigint {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		return exports.primitives_authorization_gas_cost(authCount, emptyAccounts);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+// ============================================================================
+// Blob API (EIP-4844)
+// ============================================================================
+
+/**
+ * Blob size constant (131072 bytes = 128 KB)
+ */
+export const BLOB_SIZE = 131072;
+
+/**
+ * Encode data as blob (with length prefix)
+ * @param data - Data to encode
+ * @returns Blob (131072 bytes)
+ */
+export function blobFromData(data: Uint8Array): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const dataPtr = malloc(data.length);
+		const blobPtr = malloc(BLOB_SIZE);
+
+		writeBytes(data, dataPtr);
+		const result = exports.primitives_blob_from_data(
+			dataPtr,
+			data.length,
+			blobPtr,
+		);
+		checkResult(result);
+		return readBytes(blobPtr, BLOB_SIZE);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Decode blob to extract original data
+ * @param blob - Blob data (131072 bytes)
+ * @returns Original data
+ */
+export function blobToData(blob: Uint8Array): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const blobPtr = malloc(BLOB_SIZE);
+		const outPtr = malloc(BLOB_SIZE); // Max size
+		const outLenPtr = malloc(8); // usize pointer
+
+		writeBytes(blob, blobPtr);
+		const result = exports.primitives_blob_to_data(blobPtr, outPtr, outLenPtr);
+		checkResult(result);
+
+		// Read length
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+		const memory = new DataView(wasmMemory.buffer);
+		const dataLen = Number(memory.getBigUint64(outLenPtr, true));
+
+		return readBytes(outPtr, dataLen);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Validate blob size
+ * @param blobLen - Length to validate
+ * @returns true if valid blob size
+ */
+export function blobIsValid(blobLen: number): boolean {
+	const exports = getExports();
+	return exports.primitives_blob_is_valid(blobLen) !== 0;
+}
+
+/**
+ * Calculate total blob gas for number of blobs
+ * @param blobCount - Number of blobs
+ * @returns Total blob gas
+ */
+export function blobCalculateGas(blobCount: number): bigint {
+	const exports = getExports();
+	return exports.primitives_blob_calculate_gas(blobCount);
+}
+
+/**
+ * Estimate number of blobs needed for data size
+ * @param dataSize - Size of data in bytes
+ * @returns Number of blobs required
+ */
+export function blobEstimateCount(dataSize: number): number {
+	const exports = getExports();
+	return exports.primitives_blob_estimate_count(dataSize);
+}
+
+/**
+ * Calculate blob gas price from excess blob gas
+ * @param excessBlobGas - Excess blob gas
+ * @returns Blob gas price
+ */
+export function blobCalculateGasPrice(excessBlobGas: bigint): bigint {
+	const exports = getExports();
+	return exports.primitives_blob_calculate_gas_price(excessBlobGas);
+}
+
+/**
+ * Calculate excess blob gas for next block
+ * @param parentExcess - Parent block excess blob gas
+ * @param parentUsed - Parent block blob gas used
+ * @returns Excess blob gas for next block
+ */
+export function blobCalculateExcessGas(
+	parentExcess: bigint,
+	parentUsed: bigint,
+): bigint {
+	const exports = getExports();
+	return exports.primitives_blob_calculate_excess_gas(
+		parentExcess,
+		parentUsed,
+	);
+}
+
+// ============================================================================
+// Event Log API
+// ============================================================================
+
+/**
+ * Check if event log matches address filter
+ * @param logAddress - Log address (20 bytes)
+ * @param filterAddresses - Array of filter addresses
+ * @returns true if matches
+ */
+export function eventLogMatchesAddress(
+	logAddress: Uint8Array,
+	filterAddresses: Uint8Array[],
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		// Write log address
+		const logAddrPtr = malloc(20);
+		writeBytes(logAddress, logAddrPtr);
+
+		// Write filter addresses as contiguous array
+		const filterPtr = malloc(filterAddresses.length * 20);
+		for (let i = 0; i < filterAddresses.length; i++) {
+			writeBytes(filterAddresses[i], filterPtr + i * 20);
+		}
+
+		const result = exports.primitives_eventlog_matches_address(
+			logAddrPtr,
+			filterPtr,
+			filterAddresses.length,
+		);
+
+		return result !== 0;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Check if event log matches single topic filter
+ * @param logTopic - Log topic (32 bytes)
+ * @param filterTopic - Filter topic (32 bytes) or null
+ * @returns true if matches
+ */
+export function eventLogMatchesTopic(
+	logTopic: Uint8Array,
+	filterTopic: Uint8Array | null,
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		const logTopicPtr = malloc(32);
+		writeBytes(logTopic, logTopicPtr);
+
+		const filterTopicPtr = malloc(32);
+		const nullTopic = filterTopic === null ? 1 : 0;
+
+		if (filterTopic !== null) {
+			writeBytes(filterTopic, filterTopicPtr);
+		}
+
+		const result = exports.primitives_eventlog_matches_topic(
+			logTopicPtr,
+			filterTopicPtr,
+			nullTopic,
+		);
+
+		return result !== 0;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Check if event log matches topic array filter
+ * @param logTopics - Array of log topics
+ * @param filterTopics - Array of filter topics (null entries match any)
+ * @returns true if matches
+ */
+export function eventLogMatchesTopics(
+	logTopics: Uint8Array[],
+	filterTopics: (Uint8Array | null)[],
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		// Write log topics as contiguous array
+		const logTopicsPtr = malloc(logTopics.length * 32);
+		for (let i = 0; i < logTopics.length; i++) {
+			writeBytes(logTopics[i], logTopicsPtr + i * 32);
+		}
+
+		// Write filter topics
+		const filterTopicsPtr = malloc(filterTopics.length * 32);
+		const filterNullsPtr = malloc(filterTopics.length * 4); // c_int array
+
+		if (!wasmMemory) {
+			throw new Error("WASM memory not initialized");
+		}
+		const memory = new Int32Array(wasmMemory.buffer);
+
+		for (let i = 0; i < filterTopics.length; i++) {
+			const filterTopic = filterTopics[i];
+			if (filterTopic === null) {
+				memory[filterNullsPtr / 4 + i] = 1;
+			} else {
+				memory[filterNullsPtr / 4 + i] = 0;
+				writeBytes(filterTopic, filterTopicsPtr + i * 32);
+			}
+		}
+
+		const result = exports.primitives_eventlog_matches_topics(
+			logTopicsPtr,
+			logTopics.length,
+			filterTopicsPtr,
+			filterNullsPtr,
+			filterTopics.length,
+		);
+
+		return result !== 0;
 	} finally {
 		memoryOffset = savedOffset;
 	}

@@ -1,0 +1,248 @@
+[
+  {
+    "name": "Access EMPTY_CODE_HASH",
+    "opsPerSec": 47059604,
+    "avgTimeMs": 0.000021249647574594977,
+    "iterations": 94119208
+  },
+  {
+    "name": "Access EMPTY_TRIE_ROOT",
+    "opsPerSec": 47201547.50876751,
+    "avgTimeMs": 0.000021185746077800815,
+    "iterations": 94403097
+  },
+  {
+    "name": "Read EMPTY_CODE_HASH byte",
+    "opsPerSec": 47269399.03097732,
+    "avgTimeMs": 0.000021155335597659373,
+    "iterations": 94538800
+  },
+  {
+    "name": "Compare constants",
+    "opsPerSec": 47289497,
+    "avgTimeMs": 0.000021146344610093866,
+    "iterations": 94578994
+  },
+  {
+    "name": "StorageKey.create - simple",
+    "opsPerSec": 47035619.99999998,
+    "avgTimeMs": 0.000021260483012661477,
+    "iterations": 94071240
+  },
+  {
+    "name": "StorageKey.create - with slot",
+    "opsPerSec": 46272956,
+    "avgTimeMs": 0.00002161089514142991,
+    "iterations": 92545912
+  },
+  {
+    "name": "StorageKey.create - large slot",
+    "opsPerSec": 46123232.5,
+    "avgTimeMs": 0.00002168104761521214,
+    "iterations": 92246465
+  },
+  {
+    "name": "Literal key creation",
+    "opsPerSec": 47036792.5,
+    "avgTimeMs": 0.0000212599530463307,
+    "iterations": 94073585
+  },
+  {
+    "name": "StorageKey.is - valid key",
+    "opsPerSec": 43773301,
+    "avgTimeMs": 0.00002284497575359921,
+    "iterations": 87546602
+  },
+  {
+    "name": "StorageKey.is - invalid (null)",
+    "opsPerSec": 43650100,
+    "avgTimeMs": 0.00002290945496115702,
+    "iterations": 87300200
+  },
+  {
+    "name": "StorageKey.is - invalid (object)",
+    "opsPerSec": 39183354,
+    "avgTimeMs": 0.000025521041409574075,
+    "iterations": 78366708
+  },
+  {
+    "name": "StorageKey.is - invalid (no slot)",
+    "opsPerSec": 45331059.5,
+    "avgTimeMs": 0.000022059930013327837,
+    "iterations": 90662119
+  },
+  {
+    "name": "StorageKey.equals - same keys",
+    "opsPerSec": 38570414.5,
+    "avgTimeMs": 0.00002592660755564346,
+    "iterations": 77140829
+  },
+  {
+    "name": "StorageKey.equals - equal keys",
+    "opsPerSec": 38389591.5,
+    "avgTimeMs": 0.00002604872729630374,
+    "iterations": 76779183
+  },
+  {
+    "name": "StorageKey.equals - different slots",
+    "opsPerSec": 40828512,
+    "avgTimeMs": 0.000024492687854997017,
+    "iterations": 81657024
+  },
+  {
+    "name": "StorageKey.equals - different addresses",
+    "opsPerSec": 44003744.5,
+    "avgTimeMs": 0.000022725338749296666,
+    "iterations": 88007489
+  },
+  {
+    "name": "StorageKey.equals - method form",
+    "opsPerSec": 44082425.59631021,
+    "avgTimeMs": 0.00002268477712995226,
+    "iterations": 88164853
+  },
+  {
+    "name": "StorageKey.toString - zero slot",
+    "opsPerSec": 990222.7935385461,
+    "avgTimeMs": 0.0010098737440960284,
+    "iterations": 1980446
+  },
+  {
+    "name": "StorageKey.toString - small slot",
+    "opsPerSec": 950969.0644561698,
+    "avgTimeMs": 0.0010515589175047134,
+    "iterations": 1901939
+  },
+  {
+    "name": "StorageKey.toString - large slot",
+    "opsPerSec": 1000766.9374520634,
+    "avgTimeMs": 0.0009992336502902303,
+    "iterations": 2001534
+  },
+  {
+    "name": "StorageKey.toString - method form",
+    "opsPerSec": 883399.61351267,
+    "avgTimeMs": 0.001131990533733302,
+    "iterations": 1766800
+  },
+  {
+    "name": "StorageKey.fromString - valid",
+    "opsPerSec": 2291216.5,
+    "avgTimeMs": 0.00043644937089096556,
+    "iterations": 4582433
+  },
+  {
+    "name": "StorageKey.fromString - with slot",
+    "opsPerSec": 2272390,
+    "avgTimeMs": 0.0004400653056913646,
+    "iterations": 4544780
+  },
+  {
+    "name": "StorageKey.fromString - invalid",
+    "opsPerSec": 31639459.5,
+    "avgTimeMs": 0.00003160610249994947,
+    "iterations": 63278919
+  },
+  {
+    "name": "Round-trip: toString + fromString",
+    "opsPerSec": 589837.8525405363,
+    "avgTimeMs": 0.0016953811894113316,
+    "iterations": 1179676
+  },
+  {
+    "name": "StorageKey.hashCode - zero slot",
+    "opsPerSec": 22958700,
+    "avgTimeMs": 0.00004355647314525648,
+    "iterations": 45917400
+  },
+  {
+    "name": "StorageKey.hashCode - small slot",
+    "opsPerSec": 19656549.5,
+    "avgTimeMs": 0.00005087362866000465,
+    "iterations": 39313099
+  },
+  {
+    "name": "StorageKey.hashCode - large slot",
+    "opsPerSec": 17262015.137497686,
+    "avgTimeMs": 0.000057930664064112316,
+    "iterations": 34524031
+  },
+  {
+    "name": "StorageKey.hashCode - method form",
+    "opsPerSec": 19621942.587939207,
+    "avgTimeMs": 0.0000509633536801121,
+    "iterations": 39243886
+  },
+  {
+    "name": "Map.set with StorageKey",
+    "opsPerSec": 756660.1801586953,
+    "avgTimeMs": 0.0013215972324462334,
+    "iterations": 1513322
+  },
+  {
+    "name": "Map.get with StorageKey",
+    "opsPerSec": 825218.6736260152,
+    "avgTimeMs": 0.0012118000136933339,
+    "iterations": 1650438
+  },
+  {
+    "name": "Map.has with StorageKey",
+    "opsPerSec": 850647.251611002,
+    "avgTimeMs": 0.0011755754199007235,
+    "iterations": 1701295
+  },
+  {
+    "name": "Map.delete with StorageKey",
+    "opsPerSec": 477455.1717495712,
+    "avgTimeMs": 0.0020944374658999555,
+    "iterations": 954911
+  },
+  {
+    "name": "Create 10 StorageKeys",
+    "opsPerSec": 10833448.272497587,
+    "avgTimeMs": 0.00009230671295478995,
+    "iterations": 21666897
+  },
+  {
+    "name": "Convert 10 keys to string",
+    "opsPerSec": 84707.2564666378,
+    "avgTimeMs": 0.01180536404686714,
+    "iterations": 169415
+  },
+  {
+    "name": "Populate Map with 10 keys",
+    "opsPerSec": 75530.77654219752,
+    "avgTimeMs": 0.013239636156015425,
+    "iterations": 151062
+  },
+  {
+    "name": "Lookup 10 keys in Map",
+    "opsPerSec": 82023.79834449184,
+    "avgTimeMs": 0.012191583664537198,
+    "iterations": 164048
+  },
+  {
+    "name": "Zero address and slot",
+    "opsPerSec": 876360.8904548835,
+    "avgTimeMs": 0.0011410824135259395,
+    "iterations": 1752722
+  },
+  {
+    "name": "Max address and slot",
+    "opsPerSec": 1307091.7379655156,
+    "avgTimeMs": 0.0007650572419319986,
+    "iterations": 2614185
+  },
+  {
+    "name": "Equality check - identical addresses",
+    "opsPerSec": 38654741,
+    "avgTimeMs": 0.000025870047868125673,
+    "iterations": 77309482
+  },
+  {
+    "name": "Hash collision check",
+    "opsPerSec": 12366921.5,
+    "avgTimeMs": 0.00008086086743576403,
+    "iterations": 24733843
+  }
+]
