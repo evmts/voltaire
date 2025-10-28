@@ -23,7 +23,7 @@ EVM bytecode is the low-level compiled form of smart contract code that executes
 ## Quick Start
 
 ```typescript
-import { Bytecode } from '@tevm/primitives';
+import { Bytecode } from '@tevm/voltaire';
 
 // Parse hex bytecode
 const code = Bytecode.fromHex('0x60016002015b00');

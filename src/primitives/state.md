@@ -20,8 +20,8 @@ The State module provides fundamental primitives for working with Ethereum's wor
 ## Quick Start
 
 ```typescript
-import { StorageKey, EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from '@tevm/primitives';
-import type { Address } from '@tevm/primitives';
+import { StorageKey, EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from '@tevm/voltaire';
+import type { Address } from '@tevm/voltaire';
 
 // Check if account has code
 function hasCode(codeHash: Uint8Array): boolean {
@@ -369,7 +369,7 @@ function hasStorageChanges(account: Account): boolean {
 
 ```typescript
 // Solidity storage layout helpers
-import { Hex } from '@tevm/primitives';
+import { Hex } from '@tevm/voltaire';
 import { keccak256 } from 'some-hash-library';
 
 function getArraySlot(baseSlot: bigint, index: bigint): bigint {

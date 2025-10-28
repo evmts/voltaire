@@ -23,8 +23,8 @@ Sign-In with Ethereum (SIWE) provides a standard way for users to authenticate u
 ## Quick Start
 
 ```typescript
-import { Siwe } from '@tevm/primitives';
-import type { Address } from '@tevm/primitives';
+import { Siwe } from '@tevm/voltaire';
+import type { Address } from '@tevm/voltaire';
 
 // Create message
 const message = Siwe.create({

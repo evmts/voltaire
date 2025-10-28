@@ -23,7 +23,7 @@ Hex strings are the fundamental data format in Ethereum, used for representing a
 ## Quick Start
 
 ```typescript
-import { Hex } from '@tevm/primitives';
+import { Hex } from '@tevm/voltaire';
 
 // Basic hex strings
 const hex: Hex = '0x1234';

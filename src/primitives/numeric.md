@@ -25,7 +25,7 @@ Ethereum uses wei as the base unit (10^-18 ether):
 ### Parsing (String → Wei)
 
 ```typescript
-import { parseEther, parseGwei, parseUnits } from '@tevm/primitives';
+import { parseEther, parseGwei, parseUnits } from '@tevm/voltaire';
 
 // Parse ether to wei
 const oneEth = parseEther('1.0');  // 1000000000000000000n
@@ -43,7 +43,7 @@ const daiAmount = parseUnits('1000', 18);  // 1000000000000000000000n (DAI has 1
 ### Formatting (Wei → String)
 
 ```typescript
-import { formatEther, formatGwei, formatUnits } from '@tevm/primitives';
+import { formatEther, formatGwei, formatUnits } from '@tevm/voltaire';
 
 // Format wei to ether string
 const ethStr = formatEther(1500000000000000000n);  // "1.5"
@@ -65,7 +65,7 @@ const rounded = formatEther(1500000000000000000n, 2);  // "1.50"
 ### Direct Conversion
 
 ```typescript
-import { gweiToWei, weiToGwei, etherToWei, weiToEther } from '@tevm/primitives';
+import { gweiToWei, weiToGwei, etherToWei, weiToEther } from '@tevm/voltaire';
 
 // Gwei conversions
 const wei1 = gweiToWei(20n);  // 20000000000n
@@ -82,7 +82,7 @@ const gasInWei = gweiToWei(parseGwei('50'));  // Parse string, then convert
 ### Unit Conversion
 
 ```typescript
-import { convertUnits } from '@tevm/primitives';
+import { convertUnits } from '@tevm/voltaire';
 
 // Convert between any units
 const gweiAmount = 100n;
@@ -102,7 +102,7 @@ const inGwei = convertUnits(value, 'wei', 'gwei');
 Safe math operations that check for overflow/underflow:
 
 ```typescript
-import { safeAdd, safeSub, safeMul, safeDiv } from '@tevm/primitives';
+import { safeAdd, safeSub, safeMul, safeDiv } from '@tevm/voltaire';
 
 // Safe addition (checks overflow)
 const sum = safeAdd(2n ** 255n, 2n ** 255n);  // Throws if > 2^256-1
@@ -123,7 +123,7 @@ const error = safeDiv(100n, 0n);  // Throws
 ### Gas Cost Calculation
 
 ```typescript
-import { calculateGasCost, formatGasCost } from '@tevm/primitives';
+import { calculateGasCost, formatGasCost } from '@tevm/voltaire';
 
 // Calculate total gas cost
 const gasUsed = 21000n;  // Basic transfer
@@ -146,7 +146,7 @@ const cost = formatGasCost(complexGas, urgentGasPrice);
 ### Min/Max Operations
 
 ```typescript
-import { min, max } from '@tevm/primitives';
+import { min, max } from '@tevm/voltaire';
 
 // Find minimum
 const minimum = min(100n, 50n, 75n);  // 50n
@@ -165,7 +165,7 @@ const maxGas = max(...gasOptions);  // Choose fastest
 ### Percentage Calculations
 
 ```typescript
-import { calculatePercentage, calculatePercentageOf } from '@tevm/primitives';
+import { calculatePercentage, calculatePercentageOf } from '@tevm/voltaire';
 
 // Calculate percentage of value
 const total = parseEther('100');  // 100 ETH
@@ -187,7 +187,7 @@ const percent = calculatePercentageOf(part, whole);
 ### Gas Price Estimation
 
 ```typescript
-import { parseGwei, formatEther, calculateGasCost } from '@tevm/primitives';
+import { parseGwei, formatEther, calculateGasCost } from '@tevm/voltaire';
 
 function estimateTransactionCost(
     gasEstimate: bigint,
@@ -218,7 +218,7 @@ const costs = estimateTransactionCost(21000n, {
 ### ERC-20 Token Amounts
 
 ```typescript
-import { parseUnits, formatUnits } from '@tevm/primitives';
+import { parseUnits, formatUnits } from '@tevm/voltaire';
 
 // Handle different token decimals
 const tokens = {
@@ -243,7 +243,7 @@ const displayBalance = formatTokenBalance(1000500000n, 6);  // "1000.5" USDC
 ### Fee Calculation with Percentage
 
 ```typescript
-import { parseEther, calculatePercentage, formatEther } from '@tevm/primitives';
+import { parseEther, calculatePercentage, formatEther } from '@tevm/voltaire';
 
 function calculateWithFee(amount: bigint, feeBasisPoints: number): {
     original: string;

@@ -23,7 +23,7 @@ Hash represents fixed 32-byte (256-bit) hash values commonly used in Ethereum fo
 ## Quick Start
 
 ```typescript
-import { Hash } from '@tevm/primitives';
+import { Hash } from '@tevm/voltaire';
 
 // Create from hex
 const hash = Hash.fromHex('0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef');

@@ -21,7 +21,7 @@ RLP (Recursive Length Prefix) is the primary encoding method for serializing obj
 ## Quick Start
 
 ```typescript
-import { Rlp } from '@tevm/primitives';
+import { Rlp } from '@tevm/voltaire';
 
 // Encode bytes
 const data = new Uint8Array([1, 2, 3]);

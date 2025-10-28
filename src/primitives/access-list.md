@@ -20,8 +20,8 @@ Access lists (introduced in [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930))
 ## Quick Start
 
 ```typescript
-import { AccessList } from '@tevm/primitives';
-import type { Address, Hash } from '@tevm/primitives';
+import { AccessList } from '@tevm/voltaire';
+import type { Address, Hash } from '@tevm/voltaire';
 
 // Create addresses and storage keys
 const tokenAddress = new Uint8Array(20).fill(1) as Address;

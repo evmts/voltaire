@@ -31,7 +31,7 @@ Ethereum uses hex-prefix encoding for paths:
 ## Constants
 
 ```typescript
-import { State } from '@tevm/primitives';
+import { State } from '@tevm/voltaire';
 
 // Empty trie root
 const EMPTY_TRIE_ROOT = State.EMPTY_TRIE_ROOT;
@@ -75,7 +75,7 @@ transactionIndex → receiptData
 ## Storage Key Generation
 
 ```typescript
-import { Keccak256 } from '@tevm/primitives';
+import { Keccak256 } from '@tevm/voltaire';
 
 // Simple storage slot
 function simpleStorageKey(slot: bigint): Uint8Array {
@@ -115,7 +115,7 @@ function nestedMappingKey(
 ## Merkle Proof Verification
 
 ```typescript
-import { Keccak256, Rlp } from '@tevm/primitives';
+import { Keccak256, Rlp } from '@tevm/voltaire';
 
 function verifyMerkleProof(
     rootHash: Uint8Array,

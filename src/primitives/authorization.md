@@ -24,8 +24,8 @@ Authorizations (introduced in [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702
 ## Quick Start
 
 ```typescript
-import { Authorization } from '@tevm/primitives';
-import type { Address } from '@tevm/primitives';
+import { Authorization } from '@tevm/voltaire';
+import type { Address } from '@tevm/voltaire';
 
 // Create unsigned authorization
 const unsigned: Authorization.Unsigned = {
