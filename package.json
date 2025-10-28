@@ -1,5 +1,5 @@
 {
-	"name": "@tevm/primitives",
+	"name": "@tevm/voltaire",
 	"version": "0.1.0",
 	"private": false,
 	"description": "Ethereum primitives and cryptography library with TypeScript implementations and native Zig bindings via Bun FFI",
@@ -16,7 +16,7 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/evmts/primitives.git"
+		"url": "git+https://github.com/evmts/voltaire.git"
 	},
 	"license": "MIT",
 	"contributors": [

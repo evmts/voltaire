@@ -671,5 +671,11 @@ export namespace Hex {
  */
 export type Hex = Hex.Unsized;
 
+// Re-export error types for backward compatibility
+export const InvalidHexFormatError = Hex.InvalidFormatError;
+export const InvalidHexCharacterError = Hex.InvalidCharacterError;
+export const OddLengthHexError = Hex.OddLengthError;
+export const InvalidHexLengthError = Hex.InvalidLengthError;
+
 // Re-export namespace as default
 export default Hex;

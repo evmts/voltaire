@@ -11,8 +11,8 @@ This document covers the native Zig implementation of Ethereum primitives and cr
 **Recommended:** Build from source
 
 ```bash
-git clone https://github.com/evmts/primitives.git
-cd primitives
+git clone https://github.com/evmts/voltaire.git
+cd voltaire
 zig build
 ```
 
@@ -22,10 +22,10 @@ zig build
 
 ```bash
 # Install specific version (recommended)
-zig fetch --save https://github.com/evmts/primitives/archive/refs/tags/v0.1.0.tar.gz
+zig fetch --save https://github.com/evmts/voltaire/archive/refs/tags/v0.1.0.tar.gz
 
 # Install latest from main branch
-zig fetch --save git+https://github.com/evmts/primitives
+zig fetch --save git+https://github.com/evmts/voltaire
 ```
 
 ## Using as a Dependency
@@ -39,7 +39,7 @@ When using primitives in your Zig project, you need to import the modules and li
    ```zig
    .dependencies = .{
        .guillotine_primitives = .{
-           .url = "https://github.com/evmts/primitives/archive/refs/tags/v0.1.0.tar.gz",
+           .url = "https://github.com/evmts/voltaire/archive/refs/tags/v0.1.0.tar.gz",
            .hash = "1220d8e9c88e3e9e7e7c3f3b2b6a5a5b2b6a5a5b2b6a5a5b2b6a5a5b2b6a5a5",
        },
    },
