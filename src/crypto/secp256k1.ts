@@ -212,17 +212,23 @@ export namespace Secp256k1 {
     }
 
     try {
-      // Create 64-byte compact signature (r || s)
-      const compactSig = concat(signature.r, signature.s);
+      // Reconstruct 65-byte recovered format signature
+      // Convert Ethereum v (27/28) back to recovery byte
+      const recoveryBit = signature.v >= 27 ? signature.v - 27 : signature.v;
+      const sig65 = new Uint8Array(65);
+      sig65.set(signature.r, 0);
+      sig65.set(signature.s, 32);
+      sig65[64] = recoveryBit;
 
       // Add 0x04 prefix for uncompressed public key
       const prefixedPublicKey = new Uint8Array(PUBLIC_KEY_SIZE + 1);
       prefixedPublicKey[0] = 0x04;
       prefixedPublicKey.set(publicKey, 1);
 
-      // Verify using noble/curves with prehash:false since we already have the hash
-      return secp256k1.verify(compactSig, messageHash, prefixedPublicKey, {
+      // Verify using noble/curves with format:'recovered' and prehash:false
+      return secp256k1.verify(sig65, messageHash, prefixedPublicKey, {
         prehash: false,
+        format: "recovered",
       });
     } catch {
       return false;

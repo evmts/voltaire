@@ -593,7 +593,7 @@ export namespace Eip712 {
       .recoverPublicKey(hash);
 
     // Convert point to uncompressed format (remove 0x04 prefix)
-    const uncompressedWithPrefix = point.toRawBytes(false);
+    const uncompressedWithPrefix = point.toBytes(false);
     if (uncompressedWithPrefix[0] !== 0x04) {
       throw new Eip712Error("Invalid recovered public key format");
     }
