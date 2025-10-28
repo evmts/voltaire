@@ -7,7 +7,7 @@
  *
  * @example
  * ```typescript
- * import { Address } from '@tevm/primitives/v2';
+ * import { Address } from '@tevm/primitives';
  *
  * // Create from hex
  * const addr = Address.fromHex('0xa0cf798816d4b9b9866b5330eea46a18382f251e');
@@ -24,7 +24,7 @@ export * from './hash.js';
 export * from './hex.js';
 
 // Numeric types
-export * from './u256.js';
+export * from './uint.js';
 
 // Encoding
 export * from './rlp.js';

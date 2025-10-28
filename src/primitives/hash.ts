@@ -22,6 +22,8 @@
  * ```
  */
 
+import { keccak_256 } from "@noble/hashes/sha3.js";
+
 // ============================================================================
 // Main Hash Namespace
 // ============================================================================
@@ -282,10 +284,8 @@ export namespace Hash {
    * const hash = Hash.keccak256(data);
    * ```
    */
-  export function keccak256(_data: Uint8Array): Hash {
-    // TODO: Implement Keccak-256 hashing
-    // Will integrate with crypto/keccak256.zig
-    throw new Error("keccak256 not yet implemented");
+  export function keccak256(data: Uint8Array): Hash {
+    return keccak_256(data) as Hash;
   }
 
   /**

@@ -17,7 +17,9 @@
  * ```
  */
 
-import { keccak256 } from "../../crypto/keccak.js";
+import type { Hex } from "./hex.js";
+import { Rlp } from "./rlp.js";
+import { Hash } from "./hash.js";
 
 // ============================================================================
 // Main Address Namespace
@@ -30,6 +32,88 @@ export namespace Address {
 
   export const SIZE = 20;
   export const HEX_SIZE = 42; // 0x + 40 hex chars
+
+  // ==========================================================================
+  // Error Types
+  // ==========================================================================
+
+  export class InvalidHexFormatError extends Error {
+    constructor(message = "Invalid hex format for address") {
+      super(message);
+      this.name = "InvalidHexFormatError";
+    }
+  }
+
+  export class InvalidHexStringError extends Error {
+    constructor(message = "Invalid hex string") {
+      super(message);
+      this.name = "InvalidHexStringError";
+    }
+  }
+
+  export class InvalidAddressLengthError extends Error {
+    constructor(message = "Invalid address length") {
+      super(message);
+      this.name = "InvalidAddressLengthError";
+    }
+  }
+
+  export class InvalidValueError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "InvalidValueError";
+    }
+  }
+
+  export class NotImplementedError extends Error {
+    constructor(message = "Not implemented") {
+      super(message);
+      this.name = "NotImplementedError";
+    }
+  }
+
+  // ==========================================================================
+  // Branded Types
+  // ==========================================================================
+
+  /**
+   * EIP-55 checksummed address hex string
+   */
+  export type ChecksumHex = Hex & { readonly __checksummed: true };
+
+  // ==========================================================================
+  // Universal Constructor
+  // ==========================================================================
+
+  /**
+   * Create Address from various input types (universal constructor)
+   *
+   * @param value - Number, bigint, hex string, or Uint8Array
+   * @returns Address
+   * @throws {InvalidValueError} If value type is unsupported or invalid
+   * @throws {InvalidHexFormatError} If hex string is invalid
+   * @throws {InvalidAddressLengthError} If bytes length is not 20
+   *
+   * @example
+   * ```typescript
+   * const addr1 = Address.from(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n);
+   * const addr2 = Address.from(12345);
+   * const addr3 = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+   * const addr4 = Address.from(new Uint8Array(20));
+   * ```
+   */
+  export function from(value: number | bigint | string | Uint8Array): Address {
+    // Route to appropriate from* method based on type
+    if (typeof value === "number" || typeof value === "bigint") {
+      return fromNumber(value);
+    } else if (typeof value === "string") {
+      return fromHex(value);
+    } else if (value instanceof Uint8Array) {
+      return fromBytes(value);
+    } else {
+      throw new InvalidValueError("Unsupported address value type");
+    }
+  }
 
   // ==========================================================================
   // Conversion Operations
@@ -49,12 +133,16 @@ export namespace Address {
    */
   export function fromHex(hex: string): Address {
     if (!hex.startsWith("0x") || hex.length !== HEX_SIZE) {
-      throw new Error("InvalidHexFormat");
+      throw new InvalidHexFormatError();
+    }
+    // Validate hex characters
+    const hexPart = hex.slice(2);
+    if (!/^[0-9a-fA-F]{40}$/.test(hexPart)) {
+      throw new InvalidHexStringError();
     }
     const bytes = new Uint8Array(SIZE);
     for (let i = 0; i < SIZE; i++) {
-      const byte = Number.parseInt(hex.slice(2 + i * 2, 4 + i * 2), 16);
-      if (Number.isNaN(byte)) throw new Error("InvalidHexString");
+      const byte = Number.parseInt(hexPart.slice(i * 2, i * 2 + 2), 16);
       bytes[i] = byte;
     }
     return bytes as Address;
@@ -75,25 +163,35 @@ export namespace Address {
    */
   export function fromBytes(bytes: Uint8Array): Address {
     if (bytes.length !== SIZE) {
-      throw new Error("InvalidAddressLength");
+      throw new InvalidAddressLengthError();
     }
     return new Uint8Array(bytes) as Address;
   }
 
   /**
-   * Create Address from uint256 value (takes lower 160 bits) (standard form)
+   * Create Address from number value (takes lower 160 bits) (standard form)
    *
-   * @param value - Bigint value
+   * @param value - Number or bigint value
    * @returns Address from lower 160 bits
+   * @throws {InvalidValueError} If value is negative
    *
    * @example
    * ```typescript
-   * const addr = Address.fromU256(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n);
+   * const addr = Address.fromNumber(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n);
+   * const addr2 = Address.fromNumber(12345);
    * ```
    */
-  export function fromU256(value: bigint): Address {
+  export function fromNumber(value: bigint | number): Address {
+    // Convert number to bigint if needed
+    const bigintValue = typeof value === "number" ? BigInt(value) : value;
+
+    // Validate non-negative
+    if (bigintValue < 0n) {
+      throw new InvalidValueError("Address value cannot be negative");
+    }
+
     const bytes = new Uint8Array(SIZE);
-    let v = value & ((1n << 160n) - 1n);
+    let v = bigintValue & ((1n << 160n) - 1n);
     for (let i = 19; i >= 0; i--) {
       bytes[i] = Number(v & 0xffn);
       v >>= 8n;
@@ -121,7 +219,7 @@ export namespace Address {
       pubkey[63 - i] = Number((y >> BigInt(i * 8)) & 0xffn);
     }
     // Address = keccak256(pubkey)[12:32]
-    const hash = keccak256(pubkey) as unknown as Uint8Array;
+    const hash = Hash.keccak256(pubkey) as unknown as Uint8Array;
     return hash.slice(12, 32) as Address;
   }
 
@@ -136,8 +234,8 @@ export namespace Address {
    * // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
    * ```
    */
-  export function toHex(this: Address): string {
-    return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+  export function toHex(this: Address): Hex {
+    return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}` as Hex;
   }
 
   /**
@@ -151,9 +249,9 @@ export namespace Address {
    * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
    * ```
    */
-  export function toChecksumHex(this: Address): string {
+  export function toChecksumHex(this: Address): ChecksumHex {
     const lower = toHex.call(this).slice(2);
-    const hashBytes = keccak256(new TextEncoder().encode(lower)) as unknown as Uint8Array;
+    const hashBytes = Hash.keccak256(new TextEncoder().encode(lower)) as unknown as Uint8Array;
     const hashHex = Array.from(hashBytes, (b) => b.toString(16).padStart(2, "0")).join("");
     let result = "0x";
     for (let i = 0; i < 40; i++) {
@@ -165,7 +263,7 @@ export namespace Address {
         result += ch ?? "";
       }
     }
-    return result;
+    return result as ChecksumHex;
   }
 
   /**
@@ -317,6 +415,7 @@ export namespace Address {
    *
    * @param nonce - Transaction nonce
    * @returns Calculated contract address
+   * @throws {InvalidValueError} If nonce is negative
    *
    * @example
    * ```typescript
@@ -324,11 +423,35 @@ export namespace Address {
    * ```
    */
   export function calculateCreateAddress(this: Address, nonce: bigint): Address {
-    // TODO: Implement RLP encoding
-    // const rlp = rlpEncode([this, nonce]);
-    // const hash = keccak256(rlp);
-    // return hash.slice(12, 32) as Address;
-    throw new Error("Not implemented");
+    // Validate non-negative nonce
+    if (nonce < 0n) {
+      throw new InvalidValueError("Nonce cannot be negative");
+    }
+
+    // Convert nonce to big-endian bytes and strip leading zeros
+    let nonceBytes: Uint8Array;
+    if (nonce === 0n) {
+      // Special case: nonce 0 encodes as empty bytes for RLP
+      nonceBytes = new Uint8Array(0);
+    } else {
+      // Find minimum bytes needed to represent nonce
+      const hex = nonce.toString(16);
+      const hexPadded = hex.length % 2 === 0 ? hex : `0${hex}`;
+      const byteLength = hexPadded.length / 2;
+      nonceBytes = new Uint8Array(byteLength);
+      for (let i = 0; i < byteLength; i++) {
+        nonceBytes[i] = Number.parseInt(hexPadded.slice(i * 2, i * 2 + 2), 16);
+      }
+    }
+
+    // RLP encode [sender_address, nonce]
+    const encoded = Rlp.encode.call([this, nonceBytes]);
+
+    // Hash the encoded data
+    const hash = Hash.keccak256(encoded) as unknown as Uint8Array;
+
+    // Return bytes 12-32 (last 20 bytes) as Address
+    return hash.slice(12, 32) as Address;
   }
 
   /**
@@ -359,14 +482,14 @@ export namespace Address {
     }
 
     // address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
-    const initCodeHash = keccak256(initCode) as unknown as Uint8Array;
+    const initCodeHash = Hash.keccak256(initCode) as unknown as Uint8Array;
     const data = new Uint8Array(1 + SIZE + 32 + 32);
     data[0] = 0xff;
     data.set(this, 1);
     data.set(salt, 1 + SIZE);
     data.set(initCodeHash, 1 + SIZE + 32);
 
-    const hash = keccak256(data) as unknown as Uint8Array;
+    const hash = Hash.keccak256(data) as unknown as Uint8Array;
     return hash.slice(12, 32) as Address;
   }
 
