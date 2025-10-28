@@ -59,22 +59,22 @@ zig fetch --save git+https://github.com/evmts/primitives
 This library uses a **data-first architecture** with branded primitive types and namespaced methods:
 
 ```typescript
-import { Address, Hash, U256, Keccak256 } from '@tevm/primitives';
+import { Address, Hash, Uint, Keccak256 } from '@tevm/primitives';
 
 // Address operations
 const addr = Address.fromHex('0xa0cf798816d4b9b9866b5330eea46a18382f251e');
-const checksum = Address.toChecksumHex(addr);
-const isZero = Address.isZero(addr);
+const checksum = Address.toChecksumHex.call(addr);
+const isZero = Address.isZero.call(addr);
 
 // Hash operations
 const data = new Uint8Array([1, 2, 3]);
-const hash = Keccak256.hash.call(data);
-const hashHex = Hash.toHex(hash);
+const hash = Keccak256.hash(data);
+const hashHex = Hash.toHex.call(hash);
 
-// U256 arithmetic
-const a = U256.fromHex('0x100');
-const b = U256.fromHex('0x200');
-const sum = U256.add(a, b);
+// Uint arithmetic
+const a = Uint.fromHex('0x100');
+const b = Uint.fromHex('0x200');
+const sum = Uint.plus.call(a, b);
 ```
 
 ### Benefits
@@ -214,22 +214,7 @@ This library provides both WASM and native FFI implementations for browser and N
     - `addPoints(p1, p2)` — elliptic curve point addition
       <br/>
       <br/>
-- [**Ethereum Types**](#ethereum-types) — Standard TypeScript interfaces
-  - [Base Types](./src/ethereum-types/base-types.ts) — Common type aliases
-    - `Address` — 20-byte Ethereum address (`0x${string}`)
-    - `Bytes`, `Bytes32`, `Bytes256` — Variable and fixed-length byte arrays
-    - `Hash32` — 32-byte hash (transaction/block hash)
-    - `Uint`, `Uint64`, `Uint256` — Unsigned integers as hex strings
-    - `BlockTag`, `BlockNumber`, `BlockIdentifier` — Block reference types
-  - [TransactionInfo](./src/ethereum-types/transaction-info.ts) — All transaction types (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702)
-  - [ReceiptInfo](./src/ethereum-types/receipt-info.ts) — Transaction receipt with logs and status
-  - [Log](./src/ethereum-types/log.ts) — Event log with topics and data
-  - [Block](./src/ethereum-types/block.ts) — Block header and body structures
-  - [Filter](./src/ethereum-types/filter.ts) — Event filter criteria for eth_getLogs
-  - [Withdrawal](./src/ethereum-types/withdrawal.ts) — EIP-4895 beacon chain withdrawal data
-    <br/>
-    <br/>
-- [**Utilities**](#utilities) — Low-level utilities for Ethereum development
+- [**Primitives**](#primitives) — Core Ethereum primitive types
   - [ABI Utilities](./src/utils/abi.ts) — Encoding/decoding for function calls, events, and errors
     - `decodeFunctionResult(abi, data)` — decode function return values from bytes
     - `decodeFunctionData(abi, data)` — decode function parameters from calldata
