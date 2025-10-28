@@ -4,6 +4,10 @@
 
 import { describe, it, expect } from "vitest";
 import { Gas } from "./gas-constants.js";
+import {
+  isWasmGasAvailable,
+  getGasImplementationStatus,
+} from "./gas-constants.wasm.js";
 
 // ============================================================================
 // Basic Opcode Constants
@@ -1012,5 +1016,39 @@ describe("Gas Edge Cases", () => {
     // Precompile costs vary by hardfork
     expect(Gas.Precompile.getEcAddCost("byzantium")).toBe(500n);
     expect(Gas.Precompile.getEcAddCost("istanbul")).toBe(150n);
+  });
+});
+
+// ============================================================================
+// WASM Implementation Status Tests
+// ============================================================================
+
+describe("Gas WASM Implementation Status", () => {
+  it("reports WASM is not available", () => {
+    expect(isWasmGasAvailable()).toBe(false);
+  });
+
+  it("provides implementation status details", () => {
+    const status = getGasImplementationStatus();
+
+    expect(status.available).toBe(false);
+    expect(status.reason).toBe("Pure TS optimal - constants and simple math");
+    expect(status.recommendation).toContain("pure TypeScript");
+    expect(status.performance.typescriptAvg).toBe(
+      "5-200ns per operation (constant access to simple calculation)",
+    );
+    expect(status.performance.wasmOverhead).toBe("1-2μs per WASM call");
+    expect(status.performance.verdict).toBe(
+      "TypeScript 10-400x faster for these operations",
+    );
+    expect(status.notes).toContain("EVM interpreter");
+  });
+
+  it("status explains WASM makes sense at interpreter level", () => {
+    const status = getGasImplementationStatus();
+
+    // WASM makes sense for EVM execution, not constants
+    expect(status.notes).toContain("interpreter level");
+    expect(status.notes).toContain("using these constants");
   });
 });

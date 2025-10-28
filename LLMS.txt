@@ -27,11 +27,13 @@ list.deinit();  // Missing allocator
 <modules>
 **primitives:** Uint256, Address, Hex, RLP, ABI, Transactions (Legacy, EIP-1559, EIP-2930, EIP-4844, EIP-7702), Event Logs, Access Lists, Bytecode, Opcodes, Hardforks, Merkle Patricia Trie
 
-**crypto:** Keccak-256, secp256k1 ECDSA (⚠️ unaudited), EIP-712 (⚠️ unaudited), BLS12-381 (via BLST), BN254 alt_bn128 (⚠️ unaudited), KZG (via c-kzg-4844), SHA256, RIPEMD160 (⚠️ unaudited), Blake2 (⚠️ unaudited), ModExp (⚠️ unaudited)
+**crypto:**
+- **Production-ready**: Keccak-256, secp256k1 ECDSA (via @noble/curves), EIP-712 (via @noble), BLS12-381 (via BLST), BN254 alt_bn128 (via Arkworks Rust + Pure TS @noble), KZG (via c-kzg-4844), SHA256, RIPEMD160, Blake2
+- **⚠️ Unaudited**: Pure Zig implementations of secp256k1, BN254, ModExp (use for testing only)
 
 **precompiles:** All Ethereum precompiles (0x01-0x13)
 
-External C libs: blst, c-kzg-4844, arkworks (Rust, no WASM)
+External C libs: blst, c-kzg-4844, arkworks (Rust)
 </modules>
 
 <usage>
@@ -129,6 +131,7 @@ remaining = item.remainder;
 
 ### ABI
 
+**Zig API:**
 ```zig
 const selector = abi.computeSelector("transfer(address,uint256)");
 
@@ -156,8 +159,68 @@ const packed = try abi.encodePacked(allocator, &values);  // No padding
 defer allocator.free(packed);
 ```
 
+**TypeScript API (Namespace Pattern):**
+```typescript
+import { Abi } from '@tevm/primitives';
+
+// Define ABI items with full type inference
+const transferFunction: Abi.Function = {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+        { type: 'address', name: 'to' },
+        { type: 'uint256', name: 'amount' }
+    ],
+    outputs: [{ type: 'bool' }]
+};
+
+// Function operations
+const selector = Abi.Function.getSelector.call(transferFunction);  // 4 bytes
+const signature = Abi.Function.getSignature.call(transferFunction);  // "transfer(address,uint256)"
+const calldata = Abi.Function.encodeParams.call(transferFunction, [address, amount]);
+const result = Abi.Function.decodeResult.call(transferFunction, returnData);
+
+// Event operations
+const transferEvent: Abi.Event = {
+    type: 'event',
+    name: 'Transfer',
+    inputs: [
+        { type: 'address', name: 'from', indexed: true },
+        { type: 'address', name: 'to', indexed: true },
+        { type: 'uint256', name: 'value' }
+    ]
+};
+
+const eventSelector = Abi.Event.getSelector.call(transferEvent);  // 32 bytes (topic0)
+const topics = Abi.Event.encodeTopics.call(transferEvent, { from, to });
+const decoded = Abi.Event.decodeLog.call(transferEvent, logData, logTopics);
+
+// Direct parameter encoding
+const encoded = Abi.encodeParameters(
+    [{ type: 'address' }, { type: 'uint256' }],
+    [address, amount]
+);
+
+const decoded = Abi.decodeParameters(
+    [{ type: 'address' }, { type: 'uint256' }],
+    data
+);
+
+// Packed encoding (no padding)
+const packed = Abi.encodePacked(['address', 'uint256'], [address, amount]);
+
+// ABI-level operations (work with full ABI arrays)
+const abi: Abi = [transferFunction, transferEvent];
+const calldata = Abi.encode.call(abi, 'transfer', [address, amount]);
+const result = Abi.decode.call(abi, 'transfer', returnData);
+const { functionName, args } = Abi.decodeData.call(abi, calldata);  // Infer from selector
+const parsedLogs = Abi.parseLogs.call(abi, logs);
+```
+
 ### Keccak-256
 
+**Zig API:**
 ```zig
 const hash = HashUtils.keccak256("hello");
 const hash_hex = try HashUtils.fromHex("0x1234...");
@@ -169,8 +232,30 @@ const are_equal = HashUtils.equal(hash1, hash2);  // Constant-time
 const selector = HashUtils.selectorFromSignature("transfer(address,uint256)");
 ```
 
-### secp256k1 (⚠️ UNAUDITED)
+**TypeScript API:**
+```typescript
+import { Hash, Keccak256 } from '@tevm/primitives';
 
+// Compute hash
+const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));  // Returns Hash (Uint8Array)
+const hashString = Keccak256.hashString('hello');  // Hash UTF-8 encoded string
+const hashHex = Keccak256.hashHex('0x1234');  // Hash hex-decoded data
+
+// Hash operations
+const hex = Hash.toHex.call(hash);  // "0x..." (66 chars)
+const hash2 = Hash.fromHex('0x...');
+const hash3 = Hash.fromBytes(bytes);
+const isEqual = Hash.equals.call(hash, hash2);  // Constant-time comparison
+const isZero = Hash.isZero.call(hash);
+
+// Ethereum-specific
+const funcSelector = Hash.keccak256String('transfer(address,uint256)').slice(0, 4);
+const eventTopic = Hash.keccak256String('Transfer(address,address,uint256)');
+```
+
+### secp256k1
+
+**Zig API (⚠️ UNAUDITED in pure Zig, use Arkworks bindings for production):**
 ```zig
 const private_key = try Crypto.unaudited_randomPrivateKey();
 const public_key = try Crypto.unaudited_getPublicKey(private_key);
@@ -184,6 +269,41 @@ const recovered = try Crypto.unaudited_recoverAddress(hash, signature);
 
 const sig_valid = signature.isValid();  // Validates r, s, v
 const sig_bytes = signature.toBytes();  // [65]u8
+```
+
+**TypeScript API (using audited @noble/curves):**
+```typescript
+import { Secp256k1, Signature } from '@tevm/primitives';
+
+// Key operations
+const privateKey = Secp256k1.generatePrivateKey();  // Random 32 bytes
+const publicKey = Secp256k1.derivePublicKey(privateKey);  // 64 bytes (uncompressed)
+const address = Secp256k1.publicKeyToAddress(publicKey);
+
+// Signing
+const signature = Secp256k1.sign(hash, privateKey);  // Returns Signature (65 bytes: r, s, v)
+const msgSignature = Secp256k1.signMessage('Hello', privateKey);
+
+// Verification
+const isValid = Secp256k1.verify(hash, signature, publicKey);
+const isMsgValid = Secp256k1.verifyMessage('Hello', msgSignature, address);
+
+// Recovery
+const recoveredPubkey = Secp256k1.recover(hash, signature);
+const recoveredAddr = Secp256k1.recoverAddress(hash, signature);
+
+// Signature operations
+const sigBytes = Signature.toBytes.call(signature);  // [65]u8
+const sigCompact = Signature.toCompact.call(signature);  // [64]u8 (ERC-2098)
+const sig2 = Signature.fromBytes(bytes);
+const sig3 = Signature.fromCompact(compactBytes);
+const isCanonical = Signature.isCanonical.call(signature);  // Check low-s
+const normalized = Signature.normalize.call(signature);  // Force low-s
+
+// Validation
+const isValidSig = Secp256k1.isValidSignature(signature);
+const isValidKey = Secp256k1.isValidPrivateKey(privateKey);
+const isValidPub = Secp256k1.isValidPublicKey(publicKey);
 ```
 
 ### Transactions
@@ -503,14 +623,84 @@ const filtered = filterLogsByTopics(logs, [
 
 <ts_status>
 **Implementation Status:**
-- ✅ Fully implemented: ABI, numeric, Keccak-256, EIP-191, bytecode, opcodes, gas, hardforks, SIWE, logs
-- 🚧 Interface only: EIP-712, secp256k1 operations, SHA256, RIPEMD160, Blake2
+- ✅ Fully implemented: All primitives, all crypto modules use audited libraries (@noble, c-kzg-4844)
+- ✅ WASM bindings: Available for performance-critical primitives (see WASM section below)
 
 **Requirements:**
-- Pure TypeScript modules work in any JS environment
-- FFI modules (Keccak-256, EIP-191) require Bun runtime + compiled native library
-- Build native lib: `zig build` → creates `libprimitives_c.dylib` or `.so`
+- Pure TypeScript modules work in any JS environment (Node.js, Bun, Deno, browsers)
+- WASM modules provide optional performance boost, fallback to TypeScript if unavailable
+- Build WASM: `zig build` → creates WebAssembly modules
 </ts_status>
+
+---
+
+## WASM Bindings
+
+<wasm_overview>
+The library provides WebAssembly bindings for performance-critical operations. WASM modules are colocated with TypeScript implementations (e.g., `address.ts` + `address.wasm.ts` in same directory).
+
+**Architecture:**
+- TypeScript implementations are primary (always available)
+- WASM modules are performance optimization layer
+- Automatic fallback if WASM unavailable
+- Zero-copy operations where possible
+
+**Available WASM modules** (all in `src/` directories):
+</wasm_overview>
+
+<wasm_primitives>
+### Primitives WASM
+
+- **`address.wasm.ts`**: Address operations (checksum, CREATE/CREATE2 addresses)
+- **`bytecode.wasm.ts`**: Bytecode analysis (JUMPDEST detection, opcode parsing)
+- **`hash.wasm.ts`**: SHA256, RIPEMD160, BLAKE2b hash functions
+- **`hex.wasm.ts`**: Hex encoding/decoding
+- **`rlp.wasm.ts`**: RLP encoding/decoding
+- **`transaction.wasm.ts`**: Transaction type detection
+- **`uint256.wasm.ts`**: U256 operations
+- **`wallet.wasm.ts`**: Key generation, public key compression
+- **`abi.wasm.ts`**: ABI encoding/decoding (awaiting C API layer)
+
+**Usage Pattern:**
+```typescript
+import { isWasmAvailable, addressFromHexWasm } from './address.wasm.js';
+
+// Check availability
+if (isWasmAvailable()) {
+    const addr = addressFromHexWasm('0x...');  // Fast WASM path
+} else {
+    const addr = Address.fromHex('0x...');  // TypeScript fallback
+}
+```
+</wasm_primitives>
+
+<wasm_crypto>
+### Crypto WASM
+
+- **`blake2.wasm.ts`**: BLAKE2b with variable output lengths
+- **`bn254.wasm.ts`**: BN254 curve operations (G1, G2, pairing) - **Pure TS only**
+- **`bn254.ark.ts`**: BN254 via Arkworks Rust library (audited, production-ready)
+- **`eip712.wasm.ts`**: EIP-712 typed data hashing
+- **`keccak256.wasm.ts`**: Keccak-256 with hardware acceleration detection
+- **`ripemd160.wasm.ts`**: RIPEMD-160 hash
+- **`secp256k1.wasm.ts`**: ECDSA operations (sign, verify, recover)
+- **`sha256.wasm.ts`**: SHA-256 with hardware acceleration
+
+**BN254 Implementations:**
+1. **Pure TypeScript** (`bn254.ts`): Field arithmetic, curve ops, pairing - complete, audited by @noble
+2. **Pure Zig** (`bn254_c.zig`): Native implementation - ⚠️ UNAUDITED, use for testing only
+3. **Arkworks** (`bn254.ark.ts` + `bn254_ark_c.zig`): Rust library via FFI - audited, production-ready
+
+**Usage:**
+```typescript
+import { Bn254 } from '@tevm/primitives';  // Pure TS (always available)
+import { bn254AddWasm } from './bn254.wasm.js';  // WASM (faster, optional)
+import { bn254AddArk } from './bn254.ark.js';  // Arkworks (fastest, requires native)
+
+// Automatic selection based on availability
+const result = Bn254.G1.add(point1, point2);  // Uses best available
+```
+</wasm_crypto>
 
 ---
 

@@ -1,248 +1,248 @@
 [
   {
     "name": "Siwe.create - minimal fields",
-    "opsPerSec": 3570342.0537072434,
-    "avgTimeMs": 0.0002800852089120301,
-    "iterations": 7140685
+    "opsPerSec": 3777992.843213297,
+    "avgTimeMs": 0.0002646908137468757,
+    "iterations": 7555986
   },
   {
     "name": "Siwe.create - with statement",
-    "opsPerSec": 3460022.5,
-    "avgTimeMs": 0.0002890154616046572,
-    "iterations": 6920045
+    "opsPerSec": 3718066.2676208583,
+    "avgTimeMs": 0.0002689570136790184,
+    "iterations": 7436133
   },
   {
     "name": "Siwe.create - all fields",
-    "opsPerSec": 3058546.0534522757,
-    "avgTimeMs": 0.00032695273588287773,
-    "iterations": 6117093
+    "opsPerSec": 3283065.0896168635,
+    "avgTimeMs": 0.0003045934127723008,
+    "iterations": 6566131
   },
   {
     "name": "Siwe.create - custom nonce",
-    "opsPerSec": 4209347.325312086,
-    "avgTimeMs": 0.0002375665210581925,
-    "iterations": 8418695
+    "opsPerSec": 4618962.308313064,
+    "avgTimeMs": 0.000216498843950346,
+    "iterations": 9237925
   },
   {
     "name": "generateNonce - default length (11)",
-    "opsPerSec": 12685762.473540865,
-    "avgTimeMs": 0.00007882852939157066,
-    "iterations": 25371526
+    "opsPerSec": 13616850.648946838,
+    "avgTimeMs": 0.00007343842021777206,
+    "iterations": 27233703
   },
   {
     "name": "generateNonce - 8 chars",
-    "opsPerSec": 18507888.548702717,
-    "avgTimeMs": 0.00005403101479504497,
-    "iterations": 37016785
+    "opsPerSec": 20236712.5,
+    "avgTimeMs": 0.00004941514092271657,
+    "iterations": 40473425
   },
   {
     "name": "generateNonce - 16 chars",
-    "opsPerSec": 10800968.778580144,
-    "avgTimeMs": 0.00009258428762271234,
-    "iterations": 21601938
+    "opsPerSec": 12188097.4883879,
+    "avgTimeMs": 0.000082047259709954,
+    "iterations": 24376197
   },
   {
     "name": "generateNonce - 32 chars",
-    "opsPerSec": 6525295.729200224,
-    "avgTimeMs": 0.00015324975932126303,
-    "iterations": 13050592
+    "opsPerSec": 7064405.351647489,
+    "avgTimeMs": 0.00014155473110936227,
+    "iterations": 14128811
   },
   {
     "name": "Message.format - basic",
-    "opsPerSec": 652431.9725978568,
-    "avgTimeMs": 0.0015327268466292282,
-    "iterations": 1304864
+    "opsPerSec": 719487.8499867836,
+    "avgTimeMs": 0.001389877535831035,
+    "iterations": 1438976
   },
   {
     "name": "Message.format - with statement",
-    "opsPerSec": 657473.7534473415,
-    "avgTimeMs": 0.0015209732628210415,
-    "iterations": 1314948
+    "opsPerSec": 606287.8359991399,
+    "avgTimeMs": 0.0016493815983493003,
+    "iterations": 1212576
   },
   {
     "name": "Message.format - all fields",
-    "opsPerSec": 548852.4086160739,
-    "avgTimeMs": 0.0018219834409062543,
-    "iterations": 1097705
+    "opsPerSec": 597873.9503764628,
+    "avgTimeMs": 0.001672593360808463,
+    "iterations": 1195748
   },
   {
     "name": "format.call - basic",
-    "opsPerSec": 650391.4320340948,
-    "avgTimeMs": 0.0015375356296938088,
-    "iterations": 1300783
+    "opsPerSec": 715060.4106174484,
+    "avgTimeMs": 0.001398483240229324,
+    "iterations": 1430121
   },
   {
     "name": "format.call - all fields",
-    "opsPerSec": 552601.6662285932,
-    "avgTimeMs": 0.0018096217603266018,
-    "iterations": 1105204
+    "opsPerSec": 603785.647691075,
+    "avgTimeMs": 0.0016562169104616523,
+    "iterations": 1207572
   },
   {
     "name": "parse - basic message",
-    "opsPerSec": 928123.3259768765,
-    "avgTimeMs": 0.0010774430207833331,
-    "iterations": 1856247
+    "opsPerSec": 1017512.372810953,
+    "avgTimeMs": 0.0009827890320757734,
+    "iterations": 2035025
   },
   {
     "name": "parse - complex message",
-    "opsPerSec": 590775.7046121476,
-    "avgTimeMs": 0.001692689784283722,
-    "iterations": 1181552
+    "opsPerSec": 641217.9467789099,
+    "avgTimeMs": 0.0015595321450739075,
+    "iterations": 1282436
   },
   {
     "name": "parse - multiline statement",
-    "opsPerSec": 1129341.4531323304,
-    "avgTimeMs": 0.0008854717917476685,
-    "iterations": 2258683
+    "opsPerSec": 1202143.299242069,
+    "avgTimeMs": 0.0008318475847517373,
+    "iterations": 2404287
   },
   {
     "name": "Message.validate - basic",
-    "opsPerSec": 15231753.86788225,
-    "avgTimeMs": 0.00006565232137243268,
-    "iterations": 30463509
+    "opsPerSec": 16618702.422662219,
+    "avgTimeMs": 0.000060173169635454956,
+    "iterations": 33237409
   },
   {
     "name": "Message.validate - with timestamps",
-    "opsPerSec": 1628112.898242945,
-    "avgTimeMs": 0.0006142080202664062,
-    "iterations": 3256226
+    "opsPerSec": 1777271.703195622,
+    "avgTimeMs": 0.0005626601707560812,
+    "iterations": 3554544
   },
   {
     "name": "Message.validate - invalid version",
-    "opsPerSec": 30334361,
-    "avgTimeMs": 0.00003296591611077616,
-    "iterations": 60668722
+    "opsPerSec": 33260319.000000004,
+    "avgTimeMs": 0.000030065857155489098,
+    "iterations": 66520638
   },
   {
     "name": "Message.validate - expired",
-    "opsPerSec": 2354740.9505504407,
-    "avgTimeMs": 0.0004246751642749669,
-    "iterations": 4709482
+    "opsPerSec": 2578963.8929729904,
+    "avgTimeMs": 0.0003877526175239372,
+    "iterations": 5157928
   },
   {
     "name": "validate.call - basic",
-    "opsPerSec": 15813216.5,
-    "avgTimeMs": 0.00006323824125218295,
-    "iterations": 31626433
+    "opsPerSec": 17090239.5,
+    "avgTimeMs": 0.00005851293072867703,
+    "iterations": 34180479
   },
   {
     "name": "validate.call - with options",
-    "opsPerSec": 1620333.0608897393,
-    "avgTimeMs": 0.0006171570673568132,
-    "iterations": 3240667
+    "opsPerSec": 1783623.4259796287,
+    "avgTimeMs": 0.0005606564622522631,
+    "iterations": 3567247
   },
   {
     "name": "roundtrip - basic message",
-    "opsPerSec": 385795.573888789,
-    "avgTimeMs": 0.002592046326296797,
-    "iterations": 771592
+    "opsPerSec": 414793.3875909916,
+    "avgTimeMs": 0.0024108388173874487,
+    "iterations": 829587
   },
   {
     "name": "roundtrip - complex message",
-    "opsPerSec": 284074.2099602316,
-    "avgTimeMs": 0.003520206921071761,
-    "iterations": 568149
+    "opsPerSec": 303015.82319026795,
+    "avgTimeMs": 0.003300157692993101,
+    "iterations": 606032
   },
   {
     "name": "full cycle - basic",
-    "opsPerSec": 372519.9068700229,
-    "avgTimeMs": 0.002684420299581233,
-    "iterations": 745040
+    "opsPerSec": 401842.79907859967,
+    "avgTimeMs": 0.0024885353234969923,
+    "iterations": 803686
   },
   {
     "name": "full cycle - complex",
-    "opsPerSec": 252424.62653776535,
-    "avgTimeMs": 0.003961578605526389,
-    "iterations": 504850
+    "opsPerSec": 271547.64929621073,
+    "avgTimeMs": 0.003682594942698899,
+    "iterations": 543096
   },
   {
     "name": "Message.getMessageHash",
-    "opsPerSec": 2921527.4386479137,
-    "avgTimeMs": 0.0003422867048145203,
-    "iterations": 5843055
+    "opsPerSec": 3092207,
+    "avgTimeMs": 0.0003233936149811445,
+    "iterations": 6184414
   },
   {
     "name": "Message.verify",
-    "opsPerSec": 2895732.1973959883,
-    "avgTimeMs": 0.0003453358017358299,
-    "iterations": 5791465
+    "opsPerSec": 3054763.9373773406,
+    "avgTimeMs": 0.0003273575374398807,
+    "iterations": 6109528
   },
   {
     "name": "verifyMessage",
-    "opsPerSec": 1828193.839052853,
-    "avgTimeMs": 0.0005469879498762987,
-    "iterations": 3656394
+    "opsPerSec": 1955360.3367274136,
+    "avgTimeMs": 0.000511414689772039,
+    "iterations": 3910721
   },
   {
     "name": "format with address 0x00...",
-    "opsPerSec": 703602.8388749491,
-    "avgTimeMs": 0.0014212563462634486,
-    "iterations": 1407206
+    "opsPerSec": 726743.1064686094,
+    "avgTimeMs": 0.0013760020440499266,
+    "iterations": 1453487
   },
   {
     "name": "format with address 0x2a...",
-    "opsPerSec": 936900.7268934377,
-    "avgTimeMs": 0.001067348942417609,
-    "iterations": 1873802
+    "opsPerSec": 973313.7162790513,
+    "avgTimeMs": 0.0010274179673774348,
+    "iterations": 1946628
   },
   {
     "name": "format with address 0xff...",
-    "opsPerSec": 937456.2464180848,
-    "avgTimeMs": 0.0010667164508433198,
-    "iterations": 1874913
+    "opsPerSec": 976839.8979202317,
+    "avgTimeMs": 0.0010237092097989426,
+    "iterations": 1953680
   },
   {
     "name": "format with address 0xff...",
-    "opsPerSec": 918860.2414415275,
-    "avgTimeMs": 0.0010883047877130682,
-    "iterations": 1837725
+    "opsPerSec": 965458.9802080948,
+    "avgTimeMs": 0.0010357767864818661,
+    "iterations": 1930918
   },
   {
     "name": "format - statement length 0",
-    "opsPerSec": 667398.819468619,
-    "avgTimeMs": 0.0014983544633719867,
-    "iterations": 1334798
+    "opsPerSec": 717756.8343569266,
+    "avgTimeMs": 0.0013932295063354553,
+    "iterations": 1435651
   },
   {
     "name": "format - statement length 10",
-    "opsPerSec": 665839.4723676646,
-    "avgTimeMs": 0.001501863499386858,
-    "iterations": 1331679
+    "opsPerSec": 714401.4253450491,
+    "avgTimeMs": 0.001399773243057304,
+    "iterations": 1428803
   },
   {
     "name": "format - statement length 100",
-    "opsPerSec": 654660.2273340159,
-    "avgTimeMs": 0.0015275099330110784,
-    "iterations": 1309321
+    "opsPerSec": 687804.3424928073,
+    "avgTimeMs": 0.0014539018412935616,
+    "iterations": 1375609
   },
   {
     "name": "format - statement length 1000",
-    "opsPerSec": 620513.4869692168,
-    "avgTimeMs": 0.0016115685170427394,
-    "iterations": 1241027
+    "opsPerSec": 661210.5,
+    "avgTimeMs": 0.0015123776770030119,
+    "iterations": 1322421
   },
   {
     "name": "format - 0 resources",
-    "opsPerSec": 671604.9439209853,
-    "avgTimeMs": 0.0014889705757104292,
-    "iterations": 1343210
+    "opsPerSec": 716260.6268282122,
+    "avgTimeMs": 0.0013961398442746454,
+    "iterations": 1432522
   },
   {
     "name": "format - 1 resources",
-    "opsPerSec": 641438.8527897825,
-    "avgTimeMs": 0.0015589950556483179,
-    "iterations": 1282878
+    "opsPerSec": 688538.4283920042,
+    "avgTimeMs": 0.0014523517624649876,
+    "iterations": 1377077
   },
   {
     "name": "format - 5 resources",
-    "opsPerSec": 576604.723806336,
-    "avgTimeMs": 0.0017342903356717372,
-    "iterations": 1153210
+    "opsPerSec": 615630.691784776,
+    "avgTimeMs": 0.0016243504642383865,
+    "iterations": 1231264
   },
   {
     "name": "format - 10 resources",
-    "opsPerSec": 523736.9782649138,
-    "avgTimeMs": 0.0019093553472449018,
-    "iterations": 1047474
+    "opsPerSec": 554198.4423633626,
+    "avgTimeMs": 0.0018044078141676652,
+    "iterations": 1108397
   }
 ]

@@ -4,6 +4,10 @@
 
 import { describe, it, expect } from "vitest";
 import { FeeMarket } from "./fee-market.js";
+import {
+  isWasmFeeMarketAvailable,
+  getFeeMarketImplementationStatus,
+} from "./fee-market.wasm.js";
 
 // ============================================================================
 // Constants Tests
@@ -1034,5 +1038,36 @@ describe("FeeMarket.gweiToWei", () => {
   it("truncates sub-wei precision", () => {
     const wei = FeeMarket.gweiToWei(1.0000000001);
     expect(wei).toBe(1_000_000_000n);
+  });
+});
+
+// ============================================================================
+// WASM Implementation Status Tests
+// ============================================================================
+
+describe("FeeMarket WASM Implementation Status", () => {
+  it("reports WASM is not available", () => {
+    expect(isWasmFeeMarketAvailable()).toBe(false);
+  });
+
+  it("provides implementation status details", () => {
+    const status = getFeeMarketImplementationStatus();
+
+    expect(status.available).toBe(false);
+    expect(status.reason).toBe("Pure TS optimal - WASM overhead exceeds benefit");
+    expect(status.recommendation).toContain("pure TypeScript");
+    expect(status.performance.typescriptAvg).toBe("100-800ns per operation");
+    expect(status.performance.wasmOverhead).toBe("1-2μs per WASM call");
+    expect(status.performance.verdict).toBe(
+      "TypeScript 10-20x faster for these operations",
+    );
+  });
+
+  it("status explains why WASM is not needed", () => {
+    const status = getFeeMarketImplementationStatus();
+
+    // WASM not needed for lightweight calculations
+    expect(status.reason).toContain("optimal");
+    expect(status.performance.verdict).toContain("faster");
   });
 });
