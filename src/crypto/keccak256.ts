@@ -19,7 +19,7 @@
  * ```
  */
 
-import { keccak_256 } from "@noble/hashes/sha3";
+import { keccak_256 } from "@noble/hashes/sha3.js";
 import { Hash } from "../primitives/hash.js";
 
 // ============================================================================
@@ -97,11 +97,11 @@ export namespace Keccak256 {
    */
   export function hashHex(hex: string): Hash {
     const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
-    if (normalized.length % 2 !== 0) {
-      throw new Error("Hex string must have even length");
-    }
     if (!/^[0-9a-fA-F]*$/.test(normalized)) {
       throw new Error("Invalid hex string");
+    }
+    if (normalized.length % 2 !== 0) {
+      throw new Error("Hex string must have even length");
     }
     const bytes = new Uint8Array(normalized.length / 2);
     for (let i = 0; i < bytes.length; i++) {
