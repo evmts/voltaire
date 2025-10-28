@@ -14,7 +14,7 @@ import { join } from "node:path";
 
 // Load WASM module before tests
 beforeAll(async () => {
-	const wasmPath = join(import.meta.dirname, "../../wasm/blake2.wasm");
+	const wasmPath = join(import.meta.dirname, "../../wasm/crypto/blake2.wasm");
 	const wasmBuffer = readFileSync(wasmPath);
 	await loader.loadWasm(wasmBuffer.buffer);
 });
