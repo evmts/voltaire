@@ -39,6 +39,7 @@ export * from './authorization.js';
 export * from './bytecode.js';
 export * from './opcode.js';
 export * from './gas-constants.js';
+export * from './state.js';
 
 // Protocol
 export * from './blob.js';
