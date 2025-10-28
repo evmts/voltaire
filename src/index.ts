@@ -3,20 +3,20 @@
  * TypeScript implementations with native Zig bindings via Bun FFI and WASM
  */
 
-// Core type definitions (exported as namespace to avoid conflicts with ethereum-types)
-export * as types from "./types/index.js";
+// Core primitives - Data-first, tree-shakeable API
+export * from "./primitives/index.js";
 
-// Ethereum type interfaces (JSON-RPC types)
-export * from "./ethereum-types/index.js";
-
-// Cryptography (native FFI and pure TypeScript)
+// Cryptography - Data-first crypto operations
 export * from "./crypto/index.js";
 
-// WASM primitives (high-performance WebAssembly bindings) - exported as namespace to avoid conflicts
+// Core type definitions (exported as namespace to avoid conflicts)
+export * as types from "./types/index.js";
+
+// WASM primitives (high-performance WebAssembly bindings)
 export * as wasm from "./wasm/index.js";
 
-// EVM precompiles (namespace export to avoid conflicts with crypto module)
-export * as precompiles from "./precompiles/precompiles.js";
+// EVM precompiles and opcodes
+export * as evm from "./evm/precompiles.js";
 
-// Utilities (namespace export to avoid conflicts with types)
-export * as utils from "./utils/index.js";
+// Legacy: precompiles alias (deprecated, use evm instead)
+export * as precompiles from "./evm/precompiles.js";
