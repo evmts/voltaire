@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-10-28T02:25:50.332Z",
+  "benchmarks": {
+    "sign": "See stdout for results",
+    "verify_valid": "See stdout for results",
+    "verify_invalid": "See stdout for results",
+    "derivePublicKey": "See stdout for results",
+    "recoverPublicKey": "See stdout for results",
+    "isValidSignature": "See stdout for results",
+    "isValidPublicKey": "See stdout for results",
+    "isValidPrivateKey": "See stdout for results",
+    "toBytes": "See stdout for results",
+    "toCompact": "See stdout for results",
+    "fromBytes": "See stdout for results",
+    "fromCompact": "See stdout for results"
+  },
+  "note": "Run 'bun run src/crypto/secp256k1.bench.ts' to see detailed results"
+}

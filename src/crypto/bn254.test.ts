@@ -61,7 +61,7 @@ describe("Bn254.G1", () => {
     });
 
     it("should reject off-curve points", () => {
-      expect(() => Bn254.G1.fromAffine(1n, 2n)).toThrow(Bn254InvalidPointError);
+      expect(() => Bn254.G1.fromAffine(1n, 3n)).toThrow(Bn254InvalidPointError);
     });
   });
 

@@ -736,23 +736,15 @@ describe("Eip712", () => {
       const privateKey = new Uint8Array(32);
       privateKey[0] = 1;
 
-      const owner = Eip712.recoverAddress(
-        Eip712.signTypedData(
-          {
-            domain: { name: "Test" },
-            types: { T: [] },
-            primaryType: "T",
-            message: {},
-          },
-          privateKey,
-        ),
-        {
-          domain: { name: "Test" },
-          types: { T: [] },
-          primaryType: "T",
-          message: {},
-        },
-      );
+      // Derive owner address from private key by signing a test message
+      const testMessage: Eip712.TypedData = {
+        domain: { name: "Test" },
+        types: { Test: [{ name: "value", type: "uint256" }] },
+        primaryType: "Test",
+        message: { value: 1n },
+      };
+      const testSig = Eip712.signTypedData(testMessage, privateKey);
+      const owner = Eip712.recoverAddress(testSig, testMessage);
 
       const spender = Address.fromHex(
         "0x1234567890123456789012345678901234567890",
@@ -798,23 +790,15 @@ describe("Eip712", () => {
       const privateKey = new Uint8Array(32);
       privateKey[0] = 1;
 
-      const from = Eip712.recoverAddress(
-        Eip712.signTypedData(
-          {
-            domain: { name: "Test" },
-            types: { T: [] },
-            primaryType: "T",
-            message: {},
-          },
-          privateKey,
-        ),
-        {
-          domain: { name: "Test" },
-          types: { T: [] },
-          primaryType: "T",
-          message: {},
-        },
-      );
+      // Derive from address from private key by signing a test message
+      const testMessage: Eip712.TypedData = {
+        domain: { name: "Test" },
+        types: { Test: [{ name: "value", type: "uint256" }] },
+        primaryType: "Test",
+        message: { value: 1n },
+      };
+      const testSig = Eip712.signTypedData(testMessage, privateKey);
+      const from = Eip712.recoverAddress(testSig, testMessage);
 
       const typedData: Eip712.TypedData = {
         domain: {
