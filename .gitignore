@@ -90,6 +90,7 @@ _
 zig-out/
 zig-cache/
 bin/
+/wasm/
 
 # Python
 __pycache__/
