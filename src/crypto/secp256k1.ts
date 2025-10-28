@@ -150,19 +150,38 @@ export namespace Secp256k1 {
     }
 
     try {
-      // Sign with prehash:false (we already have the hash) and format:'recovered' to get recovery bit
-      const sigBytes = secp256k1.sign(messageHash, privateKey, {
+      // Sign with compact format (prehash:false since we already have the hash)
+      const sigCompact = secp256k1.sign(messageHash, privateKey, {
         prehash: false,
-        format: "recovered",
       });
 
-      // sigBytes is 65 bytes: r (32) || s (32) || recovery_byte (1)
-      const r = sigBytes.slice(0, 32);
-      const s = sigBytes.slice(32, 64);
+      // Extract r and s
+      const r = sigCompact.slice(0, 32);
+      const s = sigCompact.slice(32, 64);
 
-      // Convert recovery byte to Ethereum v (27 or 28)
-      // The recovery byte's lowest bit determines the y-coordinate parity
-      const v = 27 + (sigBytes[64] & 1);
+      // Compute recovery bit by trying all possibilities (0-3)
+      // In practice, only 0-1 are typically needed for secp256k1
+      const publicKey = secp256k1.getPublicKey(privateKey, false);
+      const sig = secp256k1.Signature.fromBytes(sigCompact);
+
+      let recoveryBit = 0;
+      for (let i = 0; i < 4; i++) {
+        try {
+          const sigWithRecovery = sig.addRecoveryBit(i);
+          const recovered = sigWithRecovery.recoverPublicKey(messageHash);
+          const uncompressed = recovered.toBytes(false);
+
+          if (uncompressed.every((byte, idx) => byte === publicKey[idx])) {
+            recoveryBit = i;
+            break;
+          }
+        } catch {
+          // This recovery bit doesn't work, try next
+        }
+      }
+
+      // Convert recovery bit to Ethereum v (27 or 28)
+      const v = 27 + recoveryBit;
 
       return { r, s, v };
     } catch (error) {
@@ -212,23 +231,17 @@ export namespace Secp256k1 {
     }
 
     try {
-      // Reconstruct 65-byte recovered format signature
-      // Convert Ethereum v (27/28) back to recovery byte
-      const recoveryBit = signature.v >= 27 ? signature.v - 27 : signature.v;
-      const sig65 = new Uint8Array(65);
-      sig65.set(signature.r, 0);
-      sig65.set(signature.s, 32);
-      sig65[64] = recoveryBit;
+      // Create 64-byte compact signature (r || s)
+      const compactSig = concat(signature.r, signature.s);
 
       // Add 0x04 prefix for uncompressed public key
       const prefixedPublicKey = new Uint8Array(PUBLIC_KEY_SIZE + 1);
       prefixedPublicKey[0] = 0x04;
       prefixedPublicKey.set(publicKey, 1);
 
-      // Verify using noble/curves with format:'recovered' and prehash:false
-      return secp256k1.verify(sig65, messageHash, prefixedPublicKey, {
+      // Verify using noble/curves with prehash:false (we already have the hash)
+      return secp256k1.verify(compactSig, messageHash, prefixedPublicKey, {
         prehash: false,
-        format: "recovered",
       });
     } catch {
       return false;
@@ -286,23 +299,14 @@ export namespace Secp256k1 {
     }
 
     try {
-      // Create 65-byte recovered signature: r || s || recovery_byte
-      // The recovery byte for noble is constructed from the recovery bit
-      const recoveryByte = recoveryBit;
-      const sig65 = new Uint8Array(65);
-      sig65.set(signature.r, 0);
-      sig65.set(signature.s, 32);
-      sig65[64] = recoveryByte;
+      // Create compact signature from r and s
+      const compactSig = concat(signature.r, signature.s);
+      const sig = secp256k1.Signature.fromBytes(compactSig);
 
-      // Use noble's recoverPublicKey function with format: 'recovered'
-      const recoveredCompressed = secp256k1.recoverPublicKey(sig65, messageHash, {
-        format: "recovered",
-        prehash: false,
-      });
-
-      // recoveredCompressed is 33 bytes (compressed), convert to uncompressed
-      const point = secp256k1.Point.fromBytes(recoveredCompressed);
-      const uncompressed = point.toBytes(false); // 65 bytes with 0x04 prefix
+      // Add recovery bit and recover public key
+      const sigWithRecovery = sig.addRecoveryBit(recoveryBit);
+      const recovered = sigWithRecovery.recoverPublicKey(messageHash);
+      const uncompressed = recovered.toBytes(false); // 65 bytes with 0x04 prefix
 
       if (uncompressed[0] !== 0x04) {
         throw new InvalidSignatureError("Invalid recovered public key format");
@@ -433,8 +437,8 @@ export namespace Secp256k1 {
       prefixedKey[0] = 0x04;
       prefixedKey.set(publicKey, 1);
 
-      // Try to create a point - will throw if invalid
-      secp256k1.ProjectivePoint.fromHex(prefixedKey);
+      // Try to create a point from bytes - will throw if invalid
+      secp256k1.Point.fromBytes(prefixedKey);
       return true;
     } catch {
       return false;
