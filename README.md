@@ -439,20 +439,116 @@ Full abitype integration for type inference.
 #### Additional Primitives
 
 **AccessList** — EIP-2930 access lists
-- Access list encoding/decoding
-- Gas cost calculations
 
-**Authorization** — EIP-7702 set code authorization
-- Authorization list encoding/decoding
-- Signature verification
+**Type:** `AccessList` — Array of `{ address: Address, storageKeys: Hash[] }`
+
+**Creation:**
+- `AccessList.create()` — Create empty access list
+- `AccessList.fromTuple(tuple)` — From RLP-compatible tuple format
+- `AccessList.fromJson(json)` — From JSON format
+
+**Conversion:**
+- `AccessList.toTuple.call(accessList)` — To RLP-compatible tuple
+- `AccessList.toJson.call(accessList)` — To JSON format
+
+**Queries:**
+- `AccessList.isEmpty.call(accessList)` — Check if empty
+- `AccessList.contains.call(accessList, address, storageKey?)` — Check if contains address/key
+- `AccessList.containsAddress.call(accessList, address)` — Check if contains address
+- `AccessList.containsStorageKey.call(accessList, address, key)` — Check if contains storage key
+- `AccessList.size.call(accessList)` — Get total size (addresses + storage keys)
+- `AccessList.addressCount.call(accessList)` — Get number of unique addresses
+- `AccessList.storageKeyCount.call(accessList, address?)` — Get storage key count
+
+**Modification:**
+- `AccessList.add.call(accessList, address, storageKeys?)` — Add address with optional keys
+- `AccessList.addAddress.call(accessList, address)` — Add address only
+- `AccessList.addStorageKey.call(accessList, address, key)` — Add storage key to address
+- `AccessList.merge.call(list1, list2)` — Merge two access lists
+
+**Authorization** — EIP-7702 set code delegation
+
+**Type:** `Authorization.Data` — `{ chainId: bigint, address: Address, nonce: bigint, yParity: 0|1, r: Uint8Array, s: Uint8Array }`
+
+**Creation:**
+- `Authorization.create(params)` — Create authorization
+- `Authorization.sign(unsigned, privateKey)` — Sign authorization tuple
+- `Authorization.fromTuple(tuple)` — From RLP tuple
+- `Authorization.toTuple.call(auth)` — To RLP tuple
+
+**Hashing & Signing:**
+- `Authorization.hash.call(auth)` — Compute authorization hash
+- `Authorization.verify.call(auth, address)` — Verify signature
+- `Authorization.recover.call(auth)` — Recover signer address
+
+**Validation:**
+- `Authorization.isValid.call(auth)` — Validate authorization structure
+
+**Serialization:**
+- `Authorization.serialize.call(auth)` — Serialize to bytes
+- `Authorization.deserialize(bytes)` — Deserialize from bytes
 
 **Blob** — EIP-4844 blob transaction utilities
-- Blob gas calculations
-- Commitment handling
+
+**Type:** `Blob` — Uint8Array (131072 bytes)
+
+**Constants:**
+- `Blob.SIZE` — 131072 bytes (128 KiB)
+- `Blob.FIELD_ELEMENTS_PER_BLOB` — 4096
+- `Blob.BYTES_PER_FIELD_ELEMENT` — 32
+
+**Creation:**
+- `Blob.create(data?)` — Create blob (zero-filled if no data)
+- `Blob.fromHex.call(hex)` — From hex string
+- `Blob.fromBytes.call(bytes)` — From bytes (must be 131072 bytes)
+- `Blob.fromFieldElements(elements)` — From field elements array
+
+**Conversion:**
+- `Blob.toHex.call(blob)` — To hex string
+- `Blob.toBytes.call(blob)` — To Uint8Array
+- `Blob.toFieldElements.call(blob)` — To field elements array
+
+**Validation:**
+- `Blob.isEmpty.call(blob)` — Check if all zeros
+- `Blob.isValid.call(blob)` — Validate blob format
+
+**KZG Operations:**
+- `Blob.hash.call(blob)` — Compute Keccak-256 hash
+- `Blob.commitment.call(blob)` — Compute KZG commitment
+- `Blob.proof.call(blob, commitment)` — Compute KZG proof
+- `Blob.verify.call(blob, commitment, proof)` — Verify KZG proof
+- `Blob.toVersionedHash.call(blob)` — Compute versioned hash for transaction
+
+**Related Types:**
+- `BlobCommitment` — 48-byte KZG commitment
+- `BlobProof` — 48-byte KZG proof
+- `BlobVersionedHash` — 32-byte versioned hash (0x01 + commitment hash)
 
 **Bytecode** — EVM bytecode analysis
-- JUMPDEST detection
-- Opcode parsing
+
+**Type:** `Bytecode` — Branded Uint8Array
+
+**Creation:**
+- `Bytecode.create(bytes)` — Create from bytes
+- `Bytecode.fromHex.call(hex)` — From hex string
+- `Bytecode.toHex.call(bytecode)` — To hex string
+
+**Queries:**
+- `Bytecode.isEmpty.call(bytecode)` — Check if empty
+- `Bytecode.size.call(bytecode)` — Get size in bytes
+- `Bytecode.isEOF.call(bytecode)` — Check if EOF format (EIP-3540+)
+- `Bytecode.getCodeHash.call(bytecode)` — Compute Keccak-256 hash
+
+**Analysis:**
+- `Bytecode.disassemble.call(bytecode)` — Disassemble to human-readable format
+- `Bytecode.findJumpDests.call(bytecode)` — Find all valid JUMPDEST offsets
+- `Bytecode.extractMetadata.call(bytecode)` — Extract Solidity metadata
+- `Bytecode.hasMetadata.call(bytecode)` — Check if has metadata
+- `Bytecode.stripMetadata.call(bytecode)` — Remove metadata suffix
+
+**CREATE2 Support:**
+- `Bytecode.isCreate2.call(bytecode)` — Check if contains CREATE2 deployment
+- `Bytecode.getCreate2Salt.call(bytecode)` — Extract CREATE2 salt if present
 
 **EventLog** — Event log parsing and filtering
 
@@ -740,13 +836,20 @@ const selector = Keccak256.selector('transfer(address,uint256)');
 - `Secp256k1.recoverPublicKey(signature, messageHash)` — Recover public key from signature
 
 **Key Operations:**
-- `Secp256k1.derivePublicKey(privateKey)` — Derive uncompressed public key
-- `Secp256k1.generatePrivateKey()` — Generate random private key
+- `Secp256k1.derivePublicKey(privateKey)` — Derive uncompressed 64-byte public key
+- `Secp256k1.generatePrivateKey()` — Generate cryptographically random private key
 
 **Validation:**
-- `Secp256k1.isValidPrivateKey(key)` — Check if valid private key
-- `Secp256k1.isValidPublicKey(key)` — Check if valid public key
-- `Secp256k1.normalizeSignature(sig)` — Normalize s value to lower range
+- `Secp256k1.isValidPrivateKey(key)` — Check if valid private key (0 < key < order)
+- `Secp256k1.isValidPublicKey(key)` — Check if valid uncompressed public key
+- `Secp256k1.isValidSignature(sig)` — Check if valid signature (r, s, v)
+- `Secp256k1.normalizeSignature(sig)` — Normalize s value to lower range (for EIP-2)
+
+**Signature Serialization:**
+- `Secp256k1.Signature.toCompact.call(sig)` — Serialize to 64-byte compact format (r || s)
+- `Secp256k1.Signature.fromCompact(bytes, v)` — Deserialize from compact format
+- `Secp256k1.Signature.toBytes.call(sig)` — Serialize to 65-byte format (r || s || v)
+- `Secp256k1.Signature.fromBytes(bytes)` — Deserialize from 65-byte format
 
 **Examples:**
 ```typescript
@@ -825,11 +928,16 @@ const valid = Eip712.verifyTypedData(signature, typedData, aliceAddress);
 
 #### SHA256 — SHA-256 hash function
 
+**Constants:**
+- `Sha256.OUTPUT_SIZE` — 32 bytes
+- `Sha256.BLOCK_SIZE` — 64 bytes
+
 **Operations:**
-- `SHA256.hash(data)` — Hash bytes to 32-byte hash
-- `SHA256.hashString(str)` — Hash UTF-8 string
-- `SHA256.hashHex(hex)` — Hash hex string
-- `SHA256.create()` — Create incremental hasher (`.update()`, `.digest()`)
+- `Sha256.hash(data)` — Hash bytes to 32-byte hash
+- `Sha256.hashString(str)` — Hash UTF-8 string
+- `Sha256.hashHex(hex)` — Hash hex string
+- `Sha256.toHex(hash)` — Convert hash to hex string
+- `Sha256.create()` — Create incremental hasher (`.update()`, `.digest()`)
 
 **Examples:**
 ```typescript
@@ -850,10 +958,8 @@ const digest = hasher.digest();
 #### RIPEMD160 — RIPEMD-160 hash function
 
 **Operations:**
-- `RIPEMD160.hash(data)` — Hash bytes to 20-byte hash
-- `RIPEMD160.hashString(str)` — Hash UTF-8 string
-- `RIPEMD160.hashHex(hex)` — Hash hex string
-- `RIPEMD160.create()` — Create incremental hasher
+- `Ripemd160.hash(data)` — Hash bytes to 20-byte hash
+- `Ripemd160.hashString(str)` — Hash UTF-8 string (convenience method)
 
 **Examples:**
 ```typescript
@@ -867,10 +973,8 @@ const hash = RIPEMD160.hash(data); // 20 bytes
 #### Blake2 — BLAKE2b hash function
 
 **Operations:**
-- `Blake2.hash(data, size?)` — Hash bytes (default 32 bytes, customizable 1-64)
-- `Blake2.hashString(str, size?)` — Hash UTF-8 string
-- `Blake2.hashHex(hex, size?)` — Hash hex string
-- `Blake2.create(size?)` — Create incremental hasher
+- `Blake2.hash(data, outputLength?)` — Hash bytes (default 64 bytes, customizable 1-64)
+- `Blake2.hashString(str, outputLength?)` — Hash UTF-8 string (convenience method)
 
 **Examples:**
 ```typescript
@@ -882,36 +986,149 @@ const hash64 = Blake2.hash(data, 64); // 64 bytes
 
 ---
 
-#### BN254 — BN254/alt_bn128 elliptic curve
+#### BN254 — BN254/alt_bn128 elliptic curve (zkSNARK verification)
 
-**Operations:**
-- `BN254.g1Add(p1, p2)` — G1 point addition
-- `BN254.g1Mul(p, scalar)` — G1 scalar multiplication
-- `BN254.g2Add(p1, p2)` — G2 point addition
-- `BN254.g2Mul(p, scalar)` — G2 scalar multiplication
-- `BN254.pairing(pairs)` — Pairing check
+Used for zkSNARK verification (EIP-196, EIP-197). Supports G1/G2 point operations and pairing checks.
 
-Used for zkSNARK verification (EIP-196, EIP-197).
+**Scalar Field (Fr):**
+- `Bn254.Fr.mod(a)` — Reduce scalar modulo field order
+- `Bn254.Fr.add(a, b)` — Add scalars
+- `Bn254.Fr.mul(a, b)` — Multiply scalars
+- `Bn254.Fr.neg(a)` — Negate scalar
+- `Bn254.Fr.inv(a)` — Modular inverse
+- `Bn254.Fr.pow(base, exponent)` — Exponentiation
+- `Bn254.Fr.isValid(scalar)` — Check if valid scalar
+
+**G1 Points (over Fp):**
+
+**Type:** `Bn254.G1Point` — `{ x: bigint, y: bigint, z: bigint }` (projective coordinates)
+
+- `Bn254.G1.infinity()` — Get point at infinity
+- `Bn254.G1.generator()` — Get generator point
+- `Bn254.G1.fromAffine(x, y)` — Create from affine coordinates
+- `Bn254.G1.isZero.call(p)` — Check if point at infinity
+- `Bn254.G1.isOnCurve.call(p)` — Check if point on curve
+- `Bn254.G1.toAffine.call(p)` — Convert to affine coordinates
+- `Bn254.G1.negate.call(p)` — Negate point
+- `Bn254.G1.equal.call(p, q)` — Check point equality
+- `Bn254.G1.double.call(p)` — Double point
+- `Bn254.G1.add.call(p, q)` — Add two points
+- `Bn254.G1.mul.call(p, scalar)` — Scalar multiplication
+
+**G2 Points (over Fp2):**
+
+**Type:** `Bn254.G2Point` — `{ x: Fp2, y: Fp2, z: Fp2 }` (projective coordinates over extension field)
+
+- `Bn254.G2.infinity()` — Get point at infinity
+- `Bn254.G2.generator()` — Get generator point
+- `Bn254.G2.fromAffine(x, y)` — Create from affine coordinates
+- `Bn254.G2.isZero.call(p)` — Check if point at infinity
+- `Bn254.G2.isOnCurve.call(p)` — Check if point on curve
+- `Bn254.G2.isInSubgroup.call(p)` — Check if in correct subgroup
+- `Bn254.G2.toAffine.call(p)` — Convert to affine coordinates
+- `Bn254.G2.negate.call(p)` — Negate point
+- `Bn254.G2.equal.call(p, q)` — Check point equality
+- `Bn254.G2.double.call(p)` — Double point
+- `Bn254.G2.add.call(p, q)` — Add two points
+- `Bn254.G2.mul.call(p, scalar)` — Scalar multiplication
+- `Bn254.G2.frobenius.call(p)` — Frobenius endomorphism
+
+**Pairing:**
+- `Bn254.Pairing.pair(p, q)` — Compute pairing e(p, q) where p ∈ G1, q ∈ G2
+- `Bn254.Pairing.pairingCheck(pairs)` — Check if product of pairings equals 1
+- `Bn254.Pairing.multiPairing(pairs)` — Compute product of multiple pairings
+
+**Serialization:**
+- `Bn254.serializeG1(point)` — Serialize G1 point to 64 bytes
+- `Bn254.deserializeG1(bytes)` — Deserialize G1 point from bytes
+- `Bn254.serializeG2(point)` — Serialize G2 point to 128 bytes
+- `Bn254.deserializeG2(bytes)` — Deserialize G2 point from bytes
+
+**Examples:**
+```typescript
+import { Bn254 } from '@tevm/voltaire';
+
+// G1 operations
+const g1 = Bn254.G1.generator();
+const p = Bn254.G1.mul.call(g1, 5n);
+const q = Bn254.G1.mul.call(g1, 7n);
+const sum = Bn254.G1.add.call(p, q); // 5*G + 7*G = 12*G
+
+// Pairing check for zkSNARK verification
+const g2 = Bn254.G2.generator();
+const valid = Bn254.Pairing.pairingCheck([[p, g2], [g1, Bn254.G2.negate.call(g2)]]);
+```
 
 ---
 
 #### KZG — KZG commitments for EIP-4844
 
-**Operations:**
-- `KZG.blobToKzgCommitment(blob)` — Compute KZG commitment
-- `KZG.computeBlobKzgProof(blob, commitment)` — Compute proof
-- `KZG.verifyBlobKzgProof(blob, commitment, proof)` — Verify proof
-- `KZG.verifyBlobKzgProofBatch(blobs, commitments, proofs)` — Batch verification
+Polynomial commitments for blob transactions using the c-kzg-4844 library with trusted setup.
 
-Uses c-kzg-4844 library.
+**Constants:**
+- `Kzg.BYTES_PER_BLOB` — 131072 (128 KiB)
+- `Kzg.BYTES_PER_COMMITMENT` — 48
+- `Kzg.BYTES_PER_PROOF` — 48
+- `Kzg.BYTES_PER_FIELD_ELEMENT` — 32
+- `Kzg.FIELD_ELEMENTS_PER_BLOB` — 4096
+
+**Types:**
+- `Kzg.Blob` — Uint8Array (131072 bytes)
+- `Kzg.KzgCommitment` — Uint8Array (48 bytes)
+- `Kzg.KzgProof` — Uint8Array (48 bytes)
+- `Kzg.Bytes32` — Uint8Array (32 bytes)
+- `Kzg.ProofResult` — `{ proof: KzgProof, y: Bytes32 }`
+
+**Setup Management:**
+- `Kzg.isInitialized()` — Check if trusted setup loaded
+- `Kzg.loadTrustedSetup(filePath?)` — Load trusted setup (mainnet by default)
+- `Kzg.freeTrustedSetup()` — Free trusted setup memory
+
+**Validation:**
+- `Kzg.validateBlob(blob)` — Validate blob format and field elements
+
+**Commitment & Proof:**
+- `Kzg.blobToKzgCommitment(blob)` — Compute KZG commitment (48 bytes)
+- `Kzg.computeKzgProof(blob, z)` — Compute proof for evaluation at point z
+- `Kzg.verifyKzgProof(commitment, z, y, proof)` — Verify proof that p(z) = y
+
+**Blob Verification:**
+- `Kzg.verifyBlobKzgProof(blob, commitment, proof)` — Verify blob matches commitment
+- `Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs)` — Batch verify multiple blobs (faster)
+
+**Utilities:**
+- `Kzg.createEmptyBlob()` — Create zero-filled blob
+- `Kzg.generateRandomBlob(seed?)` — Generate random valid blob
 
 **Examples:**
 ```typescript
-import { KZG } from '@tevm/voltaire';
+import { Kzg } from '@tevm/voltaire';
 
-const commitment = KZG.blobToKzgCommitment(blobData);
-const proof = KZG.computeBlobKzgProof(blobData, commitment);
-const valid = KZG.verifyBlobKzgProof(blobData, commitment, proof);
+// Initialize (required once)
+Kzg.loadTrustedSetup(); // Uses mainnet setup
+
+// Create and commit to blob
+const blob = Kzg.generateRandomBlob();
+Kzg.validateBlob(blob); // Throws if invalid
+const commitment = Kzg.blobToKzgCommitment(blob);
+
+// Generate and verify proof
+const { proof, y } = Kzg.computeKzgProof(blob, z);
+const valid = Kzg.verifyKzgProof(commitment, z, y, proof);
+
+// Or verify blob directly
+const blobProof = Kzg.computeBlobKzgProof(blob, commitment);
+const blobValid = Kzg.verifyBlobKzgProof(blob, commitment, blobProof);
+
+// Batch verification (more efficient)
+const allValid = Kzg.verifyBlobKzgProofBatch(
+  [blob1, blob2, blob3],
+  [commitment1, commitment2, commitment3],
+  [proof1, proof2, proof3]
+);
+
+// Cleanup when done
+Kzg.freeTrustedSetup();
 ```
 
 ---
