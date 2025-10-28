@@ -31,7 +31,7 @@
 - **All platforms** - Works in any JavaScript environment (Node.js, Bun, Deno, browsers)
 - **High-performance** - High-performance Zig and rust implementations available to TypeScript projects
 - **Type-safe** - Full TypeScript support with comprehensive type definitions
-- **Zig support** - All primitives offered both in TypeScript and [Zig](_media/ZIG_API.md)
+- **Zig support** - All primitives offered both in TypeScript and [Zig](./ZIG_API.md)
 
 ## Installation
 
@@ -47,7 +47,7 @@ bun add @tevm/primitives
 pnpm install @tevm/primitives
 ```
 
-Or use the [zig api](_media/ZIG_API.md)
+Or use the [zig api](./ZIG_API.md)
 
 ```bash
 # Install specific version (recommended)
@@ -192,7 +192,7 @@ This library provides both WASM and native FFI implementations for browser and N
         - [`bls12MapFpToG1(input, gasLimit)`](@tevm/namespaces/precompiles/README.md) — 0x12: Map field element to G1 (5500 gas)
         - [`bls12MapFp2ToG2(input, gasLimit)`](@tevm/namespaces/precompiles/README.md) — 0x13: Map field element to G2 (75000 gas)
 
-For the complete Zig API with low-level implementations, see [ZIG_API.md](_media/ZIG_API.md).
+For the complete Zig API with low-level implementations, see [ZIG_API.md](./ZIG_API.md).
 
 ## License
 

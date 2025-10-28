@@ -23,12 +23,14 @@
 
 ## Features
 
-- **Simple apis** - The minimal apis needed for Ethereum development
-- **Data-first architecture** - Branded primitive types with namespaced methods for optimal tree-shaking
-- **All platforms** - Works in any JavaScript environment (Node.js, Bun, Deno, browsers)
-- **High-performance** - High-performance Zig and rust implementations available to TypeScript projects
-- **Type-safe** - Full TypeScript support with comprehensive type definitions
-- **Zig support** - All primitives offered both in TypeScript and [Zig](./ZIG_API.md)
+Voltaire is a modern Ethereum library for TypeScript and Zig similar to [ethers.js](https://docs.ethers.org/v5/api/other/assembly/dialect/) and [viem](https://github.com/wevm/viem).
+
+- **Simple apis** - The minimal close-to-spec apis needed for Ethereum development
+- **LLM-Optimized** - API and documentation built and tested to perform well with both LLMs
+- **High-performance** - High-performance wasm implementations provided
+- **Type-safe** - Branded types provided for opt-in typesafety
+- **Zig support** - All functionality offered both in TypeScript and [Zig](./docs/ZIG_API.md). More languages will be added in future.
+- **Feature rich** - Voltaire supports advanced Compilation and EVM execution to TypeScript applications.
 
 ## Installation
 
@@ -44,7 +46,7 @@ bun add @tevm/voltaire
 pnpm install @tevm/voltaire
 ```
 
-Or use the [zig api](./ZIG_API.md)
+Or use the [zig api](./docs/ZIG_API.md)
 
 ```bash
 # Install specific version (recommended)
@@ -59,10 +61,10 @@ zig fetch --save git+https://github.com/evmts/voltaire
 This library uses a **data-first architecture** with branded primitive types and namespaced methods:
 
 ```typescript
-import { Address, Hash, Uint, Keccak256 } from '@tevm/voltaire';
+import { Address, Hash, Uint, Keccak256 } from "@tevm/voltaire";
 
 // Address operations
-const addr = Address.fromHex('0xa0cf798816d4b9b9866b5330eea46a18382f251e');
+const addr = Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const checksum = Address.toChecksumHex.call(addr);
 const isZero = Address.isZero.call(addr);
 
@@ -93,10 +95,12 @@ const sum = Uint.plus.call(a, b);
 **Type:** `Address` (branded `Uint8Array` with 20 bytes)
 
 **Constants:**
+
 - `Address.SIZE` — Address size (20 bytes)
 - `Address.HEX_SIZE` — Hex string size (42 chars: "0x" + 40 hex)
 
 **Creation:**
+
 - `Address.from(value)` — Universal constructor (hex/bytes/number/bigint)
 - `Address.fromHex(hex)` — From hex string (with or without 0x)
 - `Address.fromBytes(bytes)` — From 20-byte Uint8Array
@@ -105,38 +109,48 @@ const sum = Uint.plus.call(a, b);
 - `Address.zero()` — Zero address (0x0000...0000)
 
 **Conversion:**
+
 - `Address.toHex.call(address)` — To lowercase hex string
 - `Address.toChecksumHex.call(address)` — To EIP-55 checksummed hex
 - `Address.toU256.call(address)` — To 256-bit unsigned integer (bigint)
 
 **Validation:**
+
 - `Address.isValid(value)` — Check if valid address format
 - `Address.isValidChecksum(address)` — Validate EIP-55 checksum
 - `Address.isZero.call(address)` — Check if zero address
 - `Address.is(value)` — Type guard for Address type
 
 **Comparison:**
+
 - `Address.equals.call(a, b)` — Compare two addresses
 - `Address.compare.call(a, b)` — Compare for sorting (-1, 0, 1)
 - `Address.lessThan.call(a, b)` — Check if a < b
 - `Address.greaterThan.call(a, b)` — Check if a > b
 
 **Contract Addresses:**
+
 - `Address.calculateCreateAddress.call(from, nonce)` — Predict CREATE address
 - `Address.calculateCreate2Address.call(from, salt, initCodeHash)` — Predict CREATE2 address
 
 **Formatting:**
+
 - `Address.toShortHex.call(address, prefix?, suffix?)` — Short format (0x1234...5678)
 - `Address.format.call(address)` — EIP-55 checksummed (alias for toChecksumHex)
 
 **Examples:**
-```typescript
-import { Address } from '@tevm/voltaire';
 
-const addr = Address.fromHex('0xa0cf798816d4b9b9866b5330eea46a18382f251e');
+```typescript
+import { Address } from "@tevm/voltaire";
+
+const addr = Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const checksum = Address.toChecksumHex.call(addr);
 const isValid = Address.isValid(checksum); // true
-const create2 = Address.calculateCreate2Address.call(deployer, salt, initCodeHash);
+const create2 = Address.calculateCreate2Address.call(
+  deployer,
+  salt,
+  initCodeHash,
+);
 ```
 
 ---
@@ -146,42 +160,50 @@ const create2 = Address.calculateCreate2Address.call(deployer, salt, initCodeHas
 **Type:** `Hash` (branded `Uint8Array` with 32 bytes)
 
 **Constants:**
+
 - `Hash.SIZE` — Hash size (32 bytes)
 - `Hash.ZERO` — Zero hash constant
 
 **Creation:**
+
 - `Hash.from(value)` — From hex string (alias for fromHex)
 - `Hash.fromHex(hex)` — From hex string (with or without 0x)
 - `Hash.fromBytes(bytes)` — From 32-byte Uint8Array
 
 **Conversion:**
+
 - `Hash.toHex.call(hash)` — To hex string with 0x prefix
 - `Hash.toBytes.call(hash)` — To Uint8Array copy
 - `Hash.toString.call(hash)` — To string (alias for toHex)
 
 **Hashing:**
+
 - `Hash.keccak256(data)` — Hash bytes with Keccak-256
 - `Hash.keccak256String(str)` — Hash UTF-8 string
 - `Hash.keccak256Hex(hex)` — Hash hex string
 
 **Comparison:**
+
 - `Hash.equals.call(hash1, hash2)` — Constant-time equality check
 - `Hash.isZero.call(hash)` — Check if zero hash
 
 **Validation:**
+
 - `Hash.isHash(value)` — Type guard for Hash
 - `Hash.isValidHex(hex)` — Validate hex string format
 - `Hash.assert(value, msg?)` — Assert value is Hash, throws if not
 
 **Utilities:**
+
 - `Hash.random()` — Generate random 32-byte hash
 - `Hash.clone.call(hash)` — Create copy of hash
 - `Hash.slice.call(hash, start?, end?)` — Get slice of hash bytes
 - `Hash.format.call(hash, prefix?, suffix?)` — Truncated display (0x1234...5678 by default)
 
 **Examples:**
+
 ```typescript
-import { Hash, Keccak256 } from '@tevm/voltaire';
+import { Hash, Keccak256 } from "@tevm/voltaire";
 
 const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));
 const hex = Hash.toHex.call(hash);
@@ -196,17 +218,20 @@ const formatted = Hash.format.call(hash); // "0x1234...5678"
 **Type:** `Hex` (branded string `0x${string}`)
 
 **Types:**
+
 - `Hex.Unsized` — Hex string with 0x prefix (variable length)
 - `Hex.Sized<N>` — Hex string of exactly N bytes
 - `Hex.Bytes<N>` — Alias for Sized<N>
 
 **Validation:**
+
 - `Hex.isHex(value)` — Check if valid hex format
 - `Hex.isSized.call(hex, size)` — Check if hex has specific byte size
 - `Hex.validate.call(str)` — Validate hex string, throws if invalid
 - `Hex.assertSize.call(hex, size)` — Assert hex has size, returns sized type
 
 **Conversion:**
+
 - `Hex.fromBytes(bytes)` — Convert bytes to hex
 - `Hex.toBytes.call(hex)` — Convert hex to bytes
 - `Hex.fromNumber(n, size?)` — Convert number to hex (with optional padding)
@@ -219,9 +244,11 @@ const formatted = Hash.format.call(hash); // "0x1234...5678"
 - `Hex.toBoolean.call(hex)` — Hex to boolean
 
 **Size:**
+
 - `Hex.size.call(hex)` — Get byte size of hex
 
 **Manipulation:**
+
 - `Hex.concat(...hexes)` — Concatenate multiple hex strings
 - `Hex.slice.call(hex, start, end?)` — Slice hex string
 - `Hex.pad.call(hex, targetSize)` — Left-pad with zeros
@@ -229,23 +256,27 @@ const formatted = Hash.format.call(hash); // "0x1234...5678"
 - `Hex.trim.call(hex)` — Trim leading zeros
 
 **Comparison:**
+
 - `Hex.equals.call(hex1, hex2)` — Check equality (case-insensitive)
 
 **Bitwise:**
+
 - `Hex.xor.call(hex1, hex2)` — XOR two hex strings of same length
 
 **Utilities:**
+
 - `Hex.random(size)` — Generate random hex of size bytes
 - `Hex.zero(size)` — Create zero-filled hex of size bytes
 
 **Examples:**
+
 ```typescript
-import { Hex } from '@tevm/voltaire';
+import { Hex } from "@tevm/voltaire";
 
 const hex = Hex.fromBytes(new Uint8Array([0x12, 0x34])); // '0x1234'
 const bytes = Hex.toBytes.call(hex);
 const padded = Hex.pad.call(hex, 4); // '0x00001234'
-const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
+const trimmed = Hex.trim.call("0x00001234"); // '0x1234'
 ```
 
 ---
@@ -255,12 +286,14 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 **Type:** `Uint` (branded `bigint`)
 
 **Constants:**
+
 - `Uint.MAX` — Maximum value (2^256 - 1)
 - `Uint.MIN` — Minimum value (0)
 - `Uint.ZERO` — Zero value
 - `Uint.ONE` — One value
 
 **Creation:**
+
 - `Uint.from(value)` — From bigint, number, or string (decimal/hex)
 - `Uint.fromHex.call(hex)` — From hex string
 - `Uint.fromBigInt.call(bigint)` — From bigint
@@ -269,6 +302,7 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 - `Uint.tryFrom(value)` — Try to create, returns undefined if invalid
 
 **Conversion:**
+
 - `Uint.toHex.call(uint, padded?)` — To hex string (padded to 64 chars by default)
 - `Uint.toBigInt.call(uint)` — To bigint
 - `Uint.toNumber.call(uint)` — To number (throws if > MAX_SAFE_INTEGER)
@@ -276,6 +310,7 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 - `Uint.toString.call(uint, radix?)` — To string (default radix 10)
 
 **Arithmetic:**
+
 - `Uint.plus.call(a, b)` — Add with wrapping
 - `Uint.minus.call(a, b)` — Subtract with wrapping
 - `Uint.times.call(a, b)` — Multiply with wrapping
@@ -284,6 +319,7 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 - `Uint.toPower.call(base, exponent)` — Exponentiation with wrapping
 
 **Bitwise:**
+
 - `Uint.bitwiseAnd.call(a, b)` — Bitwise AND
 - `Uint.bitwiseOr.call(a, b)` — Bitwise OR
 - `Uint.bitwiseXor.call(a, b)` — Bitwise XOR
@@ -292,6 +328,7 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 - `Uint.shiftRight.call(a, bits)` — Right shift
 
 **Comparison:**
+
 - `Uint.equals.call(a, b)` — Check equality
 - `Uint.notEquals.call(a, b)` — Check inequality
 - `Uint.lessThan.call(a, b)` — Check less than
@@ -303,6 +340,7 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 - `Uint.maximum.call(a, b)` — Get maximum of two values
 
 **Utilities:**
+
 - `Uint.isValid(value)` — Check if value is valid Uint256 (0 ≤ value < 2^256)
 - `Uint.tryFrom(value)` — Try to create Uint, returns undefined if invalid
 - `Uint.bitLength.call(uint)` — Get number of bits required (0-256)
@@ -310,11 +348,12 @@ const trimmed = Hex.trim.call('0x00001234'); // '0x1234'
 - `Uint.popCount.call(uint)` — Count number of 1 bits (population count)
 
 **Examples:**
+
 ```typescript
-import { Uint } from '@tevm/voltaire';
+import { Uint } from "@tevm/voltaire";
 
 const a = Uint.from(100n);
-const b = Uint.from('0xff');
+const b = Uint.from("0xff");
 const sum = Uint.plus.call(a, b); // 355n
 const hex = Uint.toHex.call(sum); // "0x0000...0163"
 ```
@@ -324,28 +363,34 @@ const hex = Uint.toHex.call(sum); // "0x0000...0163"
 #### RLP — Recursive Length Prefix encoding
 
 **Constants:**
+
 - `Rlp.MAX_DEPTH` — Maximum recursion depth (32)
 
 **Types:**
+
 - `Rlp.Data` — Discriminated union: `{ type: "bytes", value: Uint8Array }` or `{ type: "list", value: Data[] }`
 - `Rlp.Decoded` — `{ data: Data, remainder: Uint8Array }`
 - `Rlp.Encodable` — `Uint8Array | Data | Encodable[]`
 
 **Type Guards:**
+
 - `Rlp.isData(value)` — Check if value is RLP Data
 - `Rlp.isBytesData(value)` — Check if bytes Data
 - `Rlp.isListData(value)` — Check if list Data
 
 **Encoding:**
+
 - `Rlp.encode.call(data)` — Encode data to RLP bytes
 
 **Decoding:**
+
 - `Rlp.decode.call(bytes)` — Decode RLP bytes to Data
 - `Rlp.decodeStream.call(bytes)` — Decode with remainder for stream processing
 
 **Examples:**
+
 ```typescript
-import { Rlp } from '@tevm/voltaire';
+import { Rlp } from "@tevm/voltaire";
 
 // Encode list
 const list = [new Uint8Array([1, 2, 3])];
@@ -360,6 +405,7 @@ const decoded = Rlp.decode.call(encoded);
 #### Transaction — All Ethereum transaction types
 
 **Transaction Types:**
+
 - `Transaction.Legacy` — Type 0: Original format with fixed gas price
 - `Transaction.EIP2930` — Type 1: Access lists with explicit chain ID
 - `Transaction.EIP1559` — Type 2: Dynamic fee market
@@ -368,6 +414,7 @@ const decoded = Rlp.decode.call(encoded);
 - `Transaction.Any` — Union of all types
 
 **Universal Operations:**
+
 - `Transaction.serialize(tx)` — Serialize any transaction type to bytes
 - `Transaction.deserialize(bytes)` — Deserialize bytes to transaction
 - `Transaction.hash(tx)` — Compute transaction hash
@@ -376,6 +423,7 @@ const decoded = Rlp.decode.call(encoded);
 **Type-Specific Operations:**
 
 Each transaction type has its own namespace with:
+
 - `.serialize.call(tx)` — Serialize to bytes
 - `.deserialize.call(bytes)` — Deserialize from bytes
 - `.hash.call(tx)` — Compute hash
@@ -383,8 +431,9 @@ Each transaction type has its own namespace with:
 - `.signatureHash.call(tx)` — Get hash to sign
 
 **Examples:**
+
 ```typescript
-import { Transaction } from '@tevm/voltaire';
+import { Transaction } from "@tevm/voltaire";
 
 // EIP-1559 transaction
 const tx: Transaction.EIP1559 = {
@@ -413,6 +462,7 @@ const sender = Transaction.from(tx);
 #### ABI — Application Binary Interface encoding/decoding
 
 **Types:**
+
 - `Abi.Parameter` — ABI parameter type
 - `Abi.Function` — Function descriptor
 - `Abi.Event` — Event descriptor
@@ -420,15 +470,18 @@ const sender = Transaction.from(tx);
 - `Abi.Constructor` — Constructor descriptor
 
 **Function Operations:**
+
 - `Abi.Function.encode(func, args)` — Encode function call data
 - `Abi.Function.decode(func, data)` — Decode function return data
 - `Abi.Function.selector(func)` — Get 4-byte function selector
 
 **Event Operations:**
+
 - `Abi.Event.topic(event)` — Get event topic (32-byte hash)
 - `Abi.Event.decode(event, log)` — Decode event log
 
 **Error Operations:**
+
 - `Abi.Error.selector(error)` — Get 4-byte error selector
 - `Abi.Error.decode(error, data)` — Decode error data
 
@@ -443,15 +496,18 @@ Full abitype integration for type inference.
 **Type:** `AccessList` — Array of `{ address: Address, storageKeys: Hash[] }`
 
 **Creation:**
+
 - `AccessList.create()` — Create empty access list
 - `AccessList.fromTuple(tuple)` — From RLP-compatible tuple format
 - `AccessList.fromJson(json)` — From JSON format
 
 **Conversion:**
+
 - `AccessList.toTuple.call(accessList)` — To RLP-compatible tuple
 - `AccessList.toJson.call(accessList)` — To JSON format
 
 **Queries:**
+
 - `AccessList.isEmpty.call(accessList)` — Check if empty
 - `AccessList.contains.call(accessList, address, storageKey?)` — Check if contains address/key
 - `AccessList.containsAddress.call(accessList, address)` — Check if contains address
@@ -461,6 +517,7 @@ Full abitype integration for type inference.
 - `AccessList.storageKeyCount.call(accessList, address?)` — Get storage key count
 
 **Modification:**
+
 - `AccessList.add.call(accessList, address, storageKeys?)` — Add address with optional keys
 - `AccessList.addAddress.call(accessList, address)` — Add address only
 - `AccessList.addStorageKey.call(accessList, address, key)` — Add storage key to address
@@ -471,20 +528,24 @@ Full abitype integration for type inference.
 **Type:** `Authorization.Data` — `{ chainId: bigint, address: Address, nonce: bigint, yParity: 0|1, r: Uint8Array, s: Uint8Array }`
 
 **Creation:**
+
 - `Authorization.create(params)` — Create authorization
 - `Authorization.sign(unsigned, privateKey)` — Sign authorization tuple
 - `Authorization.fromTuple(tuple)` — From RLP tuple
 - `Authorization.toTuple.call(auth)` — To RLP tuple
 
 **Hashing & Signing:**
+
 - `Authorization.hash.call(auth)` — Compute authorization hash
 - `Authorization.verify.call(auth, address)` — Verify signature
 - `Authorization.recover.call(auth)` — Recover signer address
 
 **Validation:**
+
 - `Authorization.isValid.call(auth)` — Validate authorization structure
 
 **Serialization:**
+
 - `Authorization.serialize.call(auth)` — Serialize to bytes
 - `Authorization.deserialize(bytes)` — Deserialize from bytes
 
@@ -493,26 +554,31 @@ Full abitype integration for type inference.
 **Type:** `Blob` — Uint8Array (131072 bytes)
 
 **Constants:**
+
 - `Blob.SIZE` — 131072 bytes (128 KiB)
 - `Blob.FIELD_ELEMENTS_PER_BLOB` — 4096
 - `Blob.BYTES_PER_FIELD_ELEMENT` — 32
 
 **Creation:**
+
 - `Blob.create(data?)` — Create blob (zero-filled if no data)
 - `Blob.fromHex.call(hex)` — From hex string
 - `Blob.fromBytes.call(bytes)` — From bytes (must be 131072 bytes)
 - `Blob.fromFieldElements(elements)` — From field elements array
 
 **Conversion:**
+
 - `Blob.toHex.call(blob)` — To hex string
 - `Blob.toBytes.call(blob)` — To Uint8Array
 - `Blob.toFieldElements.call(blob)` — To field elements array
 
 **Validation:**
+
 - `Blob.isEmpty.call(blob)` — Check if all zeros
 - `Blob.isValid.call(blob)` — Validate blob format
 
 **KZG Operations:**
+
 - `Blob.hash.call(blob)` — Compute Keccak-256 hash
 - `Blob.commitment.call(blob)` — Compute KZG commitment
 - `Blob.proof.call(blob, commitment)` — Compute KZG proof
@@ -520,6 +586,7 @@ Full abitype integration for type inference.
 - `Blob.toVersionedHash.call(blob)` — Compute versioned hash for transaction
 
 **Related Types:**
+
 - `BlobCommitment` — 48-byte KZG commitment
 - `BlobProof` — 48-byte KZG proof
 - `BlobVersionedHash` — 32-byte versioned hash (0x01 + commitment hash)
@@ -529,17 +596,20 @@ Full abitype integration for type inference.
 **Type:** `Bytecode` — Branded Uint8Array
 
 **Creation:**
+
 - `Bytecode.create(bytes)` — Create from bytes
 - `Bytecode.fromHex.call(hex)` — From hex string
 - `Bytecode.toHex.call(bytecode)` — To hex string
 
 **Queries:**
+
 - `Bytecode.isEmpty.call(bytecode)` — Check if empty
 - `Bytecode.size.call(bytecode)` — Get size in bytes
 - `Bytecode.isEOF.call(bytecode)` — Check if EOF format (EIP-3540+)
 - `Bytecode.getCodeHash.call(bytecode)` — Compute Keccak-256 hash
 
 **Analysis:**
+
 - `Bytecode.disassemble.call(bytecode)` — Disassemble to human-readable format
 - `Bytecode.findJumpDests.call(bytecode)` — Find all valid JUMPDEST offsets
 - `Bytecode.extractMetadata.call(bytecode)` — Extract Solidity metadata
@@ -547,6 +617,7 @@ Full abitype integration for type inference.
 - `Bytecode.stripMetadata.call(bytecode)` — Remove metadata suffix
 
 **CREATE2 Support:**
+
 - `Bytecode.isCreate2.call(bytecode)` — Check if contains CREATE2 deployment
 - `Bytecode.getCreate2Salt.call(bytecode)` — Extract CREATE2 salt if present
 
@@ -555,9 +626,11 @@ Full abitype integration for type inference.
 **Type:** `EventLog.Data` — `{ address, topics, data, blockNumber?, transactionHash?, transactionIndex?, blockHash?, logIndex?, removed? }`
 
 **Creation:**
+
 - `EventLog.create(params)` — Create event log
 
 **Query:**
+
 - `EventLog.getTopic0.call(log)` — Get event signature topic
 - `EventLog.getIndexedTopics.call(log)` — Get indexed topics (excluding topic0)
 - `EventLog.matchesTopics.call(log, topics)` — Check if log matches topic filter
@@ -565,16 +638,19 @@ Full abitype integration for type inference.
 - `EventLog.matchesFilter.call(log, filter)` — Check if log matches complete filter
 
 **Filtering & Sorting:**
+
 - `EventLog.filterLogs(logs, filter)` — Filter array of logs
 - `EventLog.sortLogs(logs)` — Sort by block/tx/log index
 
 **Utilities:**
+
 - `EventLog.isRemoved.call(log)` — Check if log was removed (reorg)
 - `EventLog.clone.call(log)` — Clone log object
 
 **FeeMarket** — Fee calculations (EIP-1559 & EIP-4844)
 
 **Constants:**
+
 - `FeeMarket.Eip1559.MIN_BASE_FEE` — 7 wei
 - `FeeMarket.Eip1559.BASE_FEE_CHANGE_DENOMINATOR` — 8
 - `FeeMarket.Eip1559.ELASTICITY_MULTIPLIER` — 2
@@ -586,6 +662,7 @@ Full abitype integration for type inference.
 - `FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK` — 786432
 
 **Types:**
+
 - `FeeMarket.State` — Combined EIP-1559 and EIP-4844 state
 - `FeeMarket.Eip1559State` — `{ baseFee, gasUsed, gasTarget }`
 - `FeeMarket.Eip4844State` — `{ excessBlobGas, blobGasUsed }`
@@ -593,6 +670,7 @@ Full abitype integration for type inference.
 - `FeeMarket.BlobTxFeeParams` — Blob transaction fee parameters
 
 **Fee Calculations:**
+
 - `FeeMarket.calculateBaseFee(parentState)` — Compute next block base fee
 - `FeeMarket.calculateBlobBaseFee(excessBlobGas)` — Compute blob base fee
 - `FeeMarket.calculateExcessBlobGas(parentExcess, parentBlobGasUsed)` — Compute excess blob gas
@@ -601,6 +679,7 @@ Full abitype integration for type inference.
 - `FeeMarket.projectBaseFees(currentState, numBlocks)` — Project future base fees
 
 **State Management:**
+
 - `FeeMarket.nextState(currentState, gasUsed, blobGasUsed)` — Compute next block state
 - `FeeMarket.State.next.call(state, gasUsed, blobGasUsed)` — Convenience method
 - `FeeMarket.State.getBlobBaseFee.call(state)` — Get current blob base fee
@@ -609,17 +688,20 @@ Full abitype integration for type inference.
 - `FeeMarket.State.isAboveBlobGasTarget.call(state, blobGasUsed)` — Check if above blob target
 
 **Validation:**
+
 - `FeeMarket.canIncludeTx(tx, state)` — Check if tx fees sufficient
 - `FeeMarket.validateTxFeeParams(params)` — Validate fee parameters
 - `FeeMarket.validateState(state)` — Validate state
 
 **Utilities:**
+
 - `FeeMarket.weiToGwei(wei)` — Convert wei to gwei
 - `FeeMarket.gweiToWei(gwei)` — Convert gwei to wei
 
 **GasConstants** — EVM gas cost constants
 
 **Execution Costs:**
+
 - `Gas.QuickStep` — 2 (PUSH, DUP, SWAP, etc.)
 - `Gas.FastestStep` — 3 (ADD, SUB, LT, GT, EQ, etc.)
 - `Gas.FastStep` — 5 (MUL, DIV, MOD, etc.)
@@ -629,15 +711,18 @@ Full abitype integration for type inference.
 - `Gas.Jumpdest` — 1
 
 **Memory & Copy:**
+
 - `Gas.Memory` — 3 per word
 - `Gas.Copy` — 3 per word (CALLDATACOPY, CODECOPY, etc.)
 - `Gas.QuadCoeffDiv` — 512 (quadratic memory expansion)
 
 **Keccak-256:**
+
 - `Gas.Keccak256Base` — 30
 - `Gas.Keccak256Word` — 6 per word
 
 **Storage (EIP-2929):**
+
 - `Gas.Sload` — 100 (warm)
 - `Gas.ColdSload` — 2100 (cold)
 - `Gas.SstoreSentry` — 2300 (minimum to call with value)
@@ -649,15 +734,18 @@ Full abitype integration for type inference.
 - `Gas.WarmStorageRead` — 100
 
 **Transient Storage (EIP-1153):**
+
 - `Gas.TLoad` — 100
 - `Gas.TStore` — 100
 
 **Logs:**
+
 - `Gas.LogBase` — 375
 - `Gas.LogData` — 8 per byte
 - `Gas.LogTopic` — 375 per topic
 
 **Calls:**
+
 - `Gas.Call` — 40 (warm)
 - `Gas.CallValue` — 9000 (non-zero value transfer)
 - `Gas.CallStipend` — 2300 (stipend for callee)
@@ -668,29 +756,35 @@ Full abitype integration for type inference.
 - `Gas.CallGasRetentionDivisor` — 64 (EIP-150: 63/64ths rule)
 
 **Contract Creation:**
+
 - `Gas.Create` — 32000
 - `Gas.CreateData` — 200 per byte (initcode execution)
 - `Gas.InitcodeWord` — 2 per word (EIP-3860)
 - `Gas.MaxInitcodeSize` — 49152 bytes (EIP-3860)
 
 **Selfdestruct:**
+
 - `Gas.Selfdestruct` — 5000
 - `Gas.SelfdestructRefund` — 24000 (removed in EIP-3529)
 
 **Transactions:**
+
 - `Gas.Tx` — 21000 (base transaction cost)
 - `Gas.TxContractCreation` — 53000 (create contract)
 - `Gas.TxDataZero` — 4 per zero byte
 - `Gas.TxDataNonZero` — 16 per non-zero byte (68 pre-Istanbul)
 
 **EIP-4844 Blob:**
+
 - `Gas.BlobHash` — 3 (BLOBHASH opcode)
 - `Gas.BlobBaseFee` — 2 (BLOBBASEFEE opcode)
 
 **Refunds:**
+
 - `Gas.MaxRefundQuotient` — 5 (max refund = gasUsed / 5, EIP-3529)
 
 **Precompile Costs:**
+
 - `Gas.Precompile.EcRecover` — 3000
 - `Gas.Precompile.Sha256Base` — 60, `Sha256Word` — 12
 - `Gas.Precompile.Ripemd160Base` — 600, `Ripemd160Word` — 120
@@ -702,6 +796,7 @@ Full abitype integration for type inference.
 - `Gas.Precompile.Blake2fRound` — 1
 
 **Calculation Methods:**
+
 - `Gas.calculateKeccak256Cost(dataSize)` — Keccak-256 operation cost
 - `Gas.calculateSstoreCost(current, new, original, isWarm)` — SSTORE cost
 - `Gas.calculateLogCost(dataSize, topicCount)` — LOG operation cost
@@ -713,6 +808,7 @@ Full abitype integration for type inference.
 - `Gas.calculateMaxRefund(gasUsed, hardfork)` — Maximum gas refund
 
 **Feature Detection:**
+
 - `Gas.hasEIP2929(hardfork)` — Access list support
 - `Gas.hasEIP3529(hardfork)` — Reduced refunds
 - `Gas.hasEIP3860(hardfork)` — Initcode size limit
@@ -720,17 +816,20 @@ Full abitype integration for type inference.
 - `Gas.hasEIP4844(hardfork)` — Blob transactions
 
 **Hardfork** — Network upgrade tracking
+
 - Hardfork ordering
 - Feature detection
 
 **Opcode** — EVM opcode definitions and bytecode analysis
 
 **Types:**
+
 - `Opcode.Code` — Enum of all EVM opcodes (0x00-0xFF)
 - `Opcode.Info` — Opcode metadata `{ name, gasCost, stackIn, stackOut, terminating }`
 - `Opcode.Instruction` — Parsed instruction `{ opcode, offset, pushData? }`
 
 **Opcode Queries:**
+
 - `Opcode.getInfo(opcode)` — Get opcode metadata
 - `Opcode.getName(opcode)` — Get opcode mnemonic (e.g., "ADD", "PUSH1")
 - `Opcode.isValid(byte)` — Check if byte is valid opcode
@@ -742,17 +841,21 @@ Full abitype integration for type inference.
 - `Opcode.isJump.call(opcode)` — Check if JUMP/JUMPI
 
 **PUSH Operations:**
+
 - `Opcode.getPushBytes(opcode)` — Get number of bytes for PUSH (1-32)
 - `Opcode.getPushOpcode(numBytes)` — Get PUSH opcode for byte count (1-32)
 
 **DUP/SWAP Operations:**
+
 - `Opcode.getDupPosition(opcode)` — Get DUP stack position (1-16)
 - `Opcode.getSwapPosition(opcode)` — Get SWAP stack position (1-16)
 
 **LOG Operations:**
+
 - `Opcode.getLogTopics(opcode)` — Get number of topics (0-4)
 
 **Bytecode Analysis:**
+
 - `Opcode.parseBytecode(bytecode)` — Parse bytecode into instructions
 - `Opcode.disassemble(bytecode)` — Disassemble to human-readable format
 - `Opcode.findJumpDests(bytecode)` — Find all valid JUMPDEST locations
@@ -760,8 +863,9 @@ Full abitype integration for type inference.
 - `Opcode.formatInstruction(instruction)` — Format instruction for display
 
 **Examples:**
+
 ```typescript
-import { Opcode } from '@tevm/voltaire';
+import { Opcode } from "@tevm/voltaire";
 
 const info = Opcode.getInfo(0x01); // { name: "ADD", gasCost: 3, ... }
 const isPush = Opcode.isPush.call(0x60); // true (PUSH1)
@@ -774,6 +878,7 @@ const instructions = Opcode.parseBytecode(bytecode);
 **Type:** `Siwe.Message` — `{ domain, address, statement?, uri, version, chainId, nonce, issuedAt, expirationTime?, notBefore?, requestId?, resources? }`
 
 **Creation & Parsing:**
+
 - `Siwe.create(params)` — Create SIWE message
 - `Siwe.parse(message)` — Parse EIP-4361 string to message object
 - `Siwe.format.call(message)` — Format message to EIP-4361 string
@@ -781,25 +886,28 @@ const instructions = Opcode.parseBytecode(bytecode);
 - `Siwe.fromEIP4361String(str)` — Alias for parse
 
 **Signing & Verification:**
+
 - `Siwe.sign.call(message, privateKey)` — Sign SIWE message
 - `Siwe.verify.call(message, signature, address)` — Verify signature
 
 **Validation:**
+
 - `Siwe.isExpired.call(message, now?)` — Check if message expired
 - `Siwe.isNotYetValid.call(message, now?)` — Check if not yet valid
 - `Siwe.isValid.call(message, now?)` — Check if currently valid (not expired, not before)
 
 **Examples:**
+
 ```typescript
-import { Siwe, Address } from '@tevm/voltaire';
+import { Siwe, Address } from "@tevm/voltaire";
 
 const message = Siwe.create({
-  domain: 'example.com',
-  address: Address.fromHex('0x...'),
-  uri: 'https://example.com/login',
-  version: '1',
+  domain: "example.com",
+  address: Address.fromHex("0x..."),
+  uri: "https://example.com/login",
+  version: "1",
   chainId: 1n,
-  nonce: 'random-nonce',
+  nonce: "random-nonce",
   issuedAt: new Date().toISOString(),
 });
 
@@ -811,13 +919,16 @@ const valid = Siwe.verify.call(message, signature, message.address);
 **State** — State constants and storage keys
 
 **Constants:**
+
 - `EMPTY_CODE_HASH` — Keccak-256 hash of empty bytes (0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470)
 - `EMPTY_TRIE_ROOT` — Root hash of empty Patricia Merkle Trie
 
 **StorageKey Type:**
+
 - `StorageKey` — `{ address: Address, slot: bigint }` — Identifies a storage location
 
 **StorageKey Operations:**
+
 - `StorageKey.create(address, slot)` — Create storage key
 - `StorageKey.is(value)` — Type guard for StorageKey
 - `StorageKey.equals.call(key1, key2)` — Check equality
@@ -834,29 +945,33 @@ All crypto implementations use audited libraries (@noble/curves, c-kzg-4844) for
 #### Keccak256 — Primary Ethereum hash function
 
 **Constants:**
+
 - `Keccak256.DIGEST_SIZE` — 32 bytes
 - `Keccak256.RATE` — 136 bytes
 - `Keccak256.STATE_SIZE` — 25 words
 
 **Hashing:**
+
 - `Keccak256.hash(data)` — Hash bytes to 32-byte hash
 - `Keccak256.hashString(str)` — Hash UTF-8 string
 - `Keccak256.hashHex(hex)` — Hash hex string
 - `Keccak256.hashMultiple(chunks)` — Hash multiple chunks in sequence
 
 **Utilities:**
+
 - `Keccak256.selector(signature)` — Compute 4-byte function selector
 - `Keccak256.topic(signature)` — Compute 32-byte event topic
 - `Keccak256.contractAddress(sender, nonce)` — Compute CREATE address
 - `Keccak256.create2Address(sender, salt, initCodeHash)` — Compute CREATE2 address
 
 **Examples:**
+
 ```typescript
-import { Keccak256, Hash } from '@tevm/voltaire';
+import { Keccak256, Hash } from "@tevm/voltaire";
 
 const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));
 const hex = Hash.toHex.call(hash);
-const selector = Keccak256.selector('transfer(address,uint256)');
+const selector = Keccak256.selector("transfer(address,uint256)");
 ```
 
 ---
@@ -864,45 +979,53 @@ const selector = Keccak256.selector('transfer(address,uint256)');
 #### Secp256k1 — ECDSA signatures
 
 **Constants:**
+
 - `Secp256k1.CURVE_ORDER` — Curve order
 - `Secp256k1.PRIVATE_KEY_SIZE` — 32 bytes
 - `Secp256k1.PUBLIC_KEY_SIZE` — 64 bytes (uncompressed)
 - `Secp256k1.SIGNATURE_COMPONENT_SIZE` — 32 bytes (r and s)
 
 **Types:**
+
 - `Secp256k1.Signature` — `{ r: Uint8Array, s: Uint8Array, v: number }`
 - `Secp256k1.PublicKey` — 64-byte uncompressed public key
 - `Secp256k1.PrivateKey` — 32-byte private key
 
 **Signing:**
+
 - `Secp256k1.sign(messageHash, privateKey)` — Sign hash, returns signature with v=27/28
 - `Secp256k1.signRecoverable(messageHash, privateKey)` — Sign with explicit recovery ID
 
 **Verification:**
+
 - `Secp256k1.verify(signature, messageHash, publicKey)` — Verify signature
 - `Secp256k1.recoverPublicKey(signature, messageHash)` — Recover public key from signature
 
 **Key Operations:**
+
 - `Secp256k1.derivePublicKey(privateKey)` — Derive uncompressed 64-byte public key
 - `Secp256k1.generatePrivateKey()` — Generate cryptographically random private key
 
 **Validation:**
+
 - `Secp256k1.isValidPrivateKey(key)` — Check if valid private key (0 < key < order)
 - `Secp256k1.isValidPublicKey(key)` — Check if valid uncompressed public key
 - `Secp256k1.isValidSignature(sig)` — Check if valid signature (r, s, v)
 - `Secp256k1.normalizeSignature(sig)` — Normalize s value to lower range (for EIP-2)
 
 **Signature Serialization:**
+
 - `Secp256k1.Signature.toCompact.call(sig)` — Serialize to 64-byte compact format (r || s)
 - `Secp256k1.Signature.fromCompact(bytes, v)` — Deserialize from compact format
 - `Secp256k1.Signature.toBytes.call(sig)` — Serialize to 65-byte format (r || s || v)
 - `Secp256k1.Signature.fromBytes(bytes)` — Deserialize from 65-byte format
 
 **Examples:**
-```typescript
-import { Secp256k1, Hash, Keccak256 } from '@tevm/voltaire';
 
-const messageHash = Keccak256.hashString('Hello, Ethereum!');
+```typescript
+import { Secp256k1, Hash, Keccak256 } from "@tevm/voltaire";
+
+const messageHash = Keccak256.hashString("Hello, Ethereum!");
 const privateKey = Secp256k1.generatePrivateKey();
 const signature = Secp256k1.sign(messageHash, privateKey);
 
@@ -917,6 +1040,7 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 #### EIP-712 — Typed structured data signing
 
 **Types:**
+
 - `Eip712.Domain` — `{ name?, version?, chainId?, verifyingContract?, salt? }`
 - `Eip712.TypeProperty` — `{ name, type }`
 - `Eip712.TypeDefinitions` — `{ [typeName: string]: readonly TypeProperty[] }`
@@ -926,9 +1050,11 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 - `Eip712.Signature` — `{ r, s, v }`
 
 **Domain Operations:**
+
 - `Eip712.Domain.hash(domain)` — Hash EIP-712 domain separator
 
 **Type Encoding:**
+
 - `Eip712.encodeType(primaryType, types)` — Encode type string (e.g., "Person(string name,address wallet)")
 - `Eip712.hashType(primaryType, types)` — Hash type string with Keccak-256
 - `Eip712.encodeValue(type, value, types)` — Encode single value to bytes
@@ -936,34 +1062,37 @@ const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
 - `Eip712.hashStruct(primaryType, data, types)` — Hash structured data
 
 **High-Level Operations:**
+
 - `Eip712.hashTypedData(typedData)` — Compute EIP-712 hash for signing
 - `Eip712.signTypedData(typedData, privateKey)` — Sign typed data
 - `Eip712.verifyTypedData(signature, typedData, address)` — Verify signature
 - `Eip712.recoverAddress(signature, typedData)` — Recover signer address
 
 **Utilities:**
+
 - `Eip712.format(typedData)` — Format typed data for display
 - `Eip712.validate(typedData)` — Validate typed data structure
 
 **Examples:**
+
 ```typescript
-import { Eip712, Address } from '@tevm/voltaire';
+import { Eip712, Address } from "@tevm/voltaire";
 
 const typedData: Eip712.TypedData = {
   domain: {
-    name: 'MyApp',
-    version: '1',
+    name: "MyApp",
+    version: "1",
     chainId: 1,
-    verifyingContract: Address.fromHex('0x...'),
+    verifyingContract: Address.fromHex("0x..."),
   },
   types: {
     Person: [
-      { name: 'name', type: 'string' },
-      { name: 'wallet', type: 'address' },
+      { name: "name", type: "string" },
+      { name: "wallet", type: "address" },
     ],
   },
-  primaryType: 'Person',
-  message: { name: 'Alice', wallet: aliceAddress },
+  primaryType: "Person",
+  message: { name: "Alice", wallet: aliceAddress },
 };
 
 const hash = Eip712.hashTypedData(typedData);
@@ -976,10 +1105,12 @@ const valid = Eip712.verifyTypedData(signature, typedData, aliceAddress);
 #### SHA256 — SHA-256 hash function
 
 **Constants:**
+
 - `Sha256.OUTPUT_SIZE` — 32 bytes
 - `Sha256.BLOCK_SIZE` — 64 bytes
 
 **Operations:**
+
 - `Sha256.hash(data)` — Hash bytes to 32-byte hash
 - `Sha256.hashString(str)` — Hash UTF-8 string
 - `Sha256.hashHex(hex)` — Hash hex string
@@ -987,11 +1118,12 @@ const valid = Eip712.verifyTypedData(signature, typedData, aliceAddress);
 - `Sha256.create()` — Create incremental hasher (`.update()`, `.digest()`)
 
 **Examples:**
+
 ```typescript
-import { SHA256 } from '@tevm/voltaire';
+import { SHA256 } from "@tevm/voltaire";
 
 const hash = SHA256.hash(data);
-const hashHex = SHA256.hashHex('0x1234...');
+const hashHex = SHA256.hashHex("0x1234...");
 
 // Incremental hashing
 const hasher = SHA256.create();
@@ -1005,12 +1137,14 @@ const digest = hasher.digest();
 #### RIPEMD160 — RIPEMD-160 hash function
 
 **Operations:**
+
 - `Ripemd160.hash(data)` — Hash bytes to 20-byte hash
 - `Ripemd160.hashString(str)` — Hash UTF-8 string (convenience method)
 
 **Examples:**
+
 ```typescript
-import { RIPEMD160 } from '@tevm/voltaire';
+import { RIPEMD160 } from "@tevm/voltaire";
 
 const hash = RIPEMD160.hash(data); // 20 bytes
 ```
@@ -1020,12 +1154,14 @@ const hash = RIPEMD160.hash(data); // 20 bytes
 #### Blake2 — BLAKE2b hash function
 
 **Operations:**
+
 - `Blake2.hash(data, outputLength?)` — Hash bytes (default 64 bytes, customizable 1-64)
 - `Blake2.hashString(str, outputLength?)` — Hash UTF-8 string (convenience method)
 
 **Examples:**
+
 ```typescript
-import { Blake2 } from '@tevm/voltaire';
+import { Blake2 } from "@tevm/voltaire";
 
 const hash32 = Blake2.hash(data); // 32 bytes
 const hash64 = Blake2.hash(data, 64); // 64 bytes
@@ -1038,6 +1174,7 @@ const hash64 = Blake2.hash(data, 64); // 64 bytes
 Used for zkSNARK verification (EIP-196, EIP-197). Supports G1/G2 point operations and pairing checks.
 
 **Scalar Field (Fr):**
+
 - `Bn254.Fr.mod(a)` — Reduce scalar modulo field order
 - `Bn254.Fr.add(a, b)` — Add scalars
 - `Bn254.Fr.mul(a, b)` — Multiply scalars
@@ -1081,19 +1218,22 @@ Used for zkSNARK verification (EIP-196, EIP-197). Supports G1/G2 point operation
 - `Bn254.G2.frobenius.call(p)` — Frobenius endomorphism
 
 **Pairing:**
+
 - `Bn254.Pairing.pair(p, q)` — Compute pairing e(p, q) where p ∈ G1, q ∈ G2
 - `Bn254.Pairing.pairingCheck(pairs)` — Check if product of pairings equals 1
 - `Bn254.Pairing.multiPairing(pairs)` — Compute product of multiple pairings
 
 **Serialization:**
+
 - `Bn254.serializeG1(point)` — Serialize G1 point to 64 bytes
 - `Bn254.deserializeG1(bytes)` — Deserialize G1 point from bytes
 - `Bn254.serializeG2(point)` — Serialize G2 point to 128 bytes
 - `Bn254.deserializeG2(bytes)` — Deserialize G2 point from bytes
 
 **Examples:**
+
 ```typescript
-import { Bn254 } from '@tevm/voltaire';
+import { Bn254 } from "@tevm/voltaire";
 
 // G1 operations
 const g1 = Bn254.G1.generator();
@@ -1103,7 +1243,10 @@ const sum = Bn254.G1.add.call(p, q); // 5*G + 7*G = 12*G
 
 // Pairing check for zkSNARK verification
 const g2 = Bn254.G2.generator();
-const valid = Bn254.Pairing.pairingCheck([[p, g2], [g1, Bn254.G2.negate.call(g2)]]);
+const valid = Bn254.Pairing.pairingCheck([
+  [p, g2],
+  [g1, Bn254.G2.negate.call(g2)],
+]);
 ```
 
 ---
@@ -1113,6 +1256,7 @@ const valid = Bn254.Pairing.pairingCheck([[p, g2], [g1, Bn254.G2.negate.call(g2)
 Polynomial commitments for blob transactions using the c-kzg-4844 library with trusted setup.
 
 **Constants:**
+
 - `Kzg.BYTES_PER_BLOB` — 131072 (128 KiB)
 - `Kzg.BYTES_PER_COMMITMENT` — 48
 - `Kzg.BYTES_PER_PROOF` — 48
@@ -1120,6 +1264,7 @@ Polynomial commitments for blob transactions using the c-kzg-4844 library with t
 - `Kzg.FIELD_ELEMENTS_PER_BLOB` — 4096
 
 **Types:**
+
 - `Kzg.Blob` — Uint8Array (131072 bytes)
 - `Kzg.KzgCommitment` — Uint8Array (48 bytes)
 - `Kzg.KzgProof` — Uint8Array (48 bytes)
@@ -1127,29 +1272,35 @@ Polynomial commitments for blob transactions using the c-kzg-4844 library with t
 - `Kzg.ProofResult` — `{ proof: KzgProof, y: Bytes32 }`
 
 **Setup Management:**
+
 - `Kzg.isInitialized()` — Check if trusted setup loaded
 - `Kzg.loadTrustedSetup(filePath?)` — Load trusted setup (mainnet by default)
 - `Kzg.freeTrustedSetup()` — Free trusted setup memory
 
 **Validation:**
+
 - `Kzg.validateBlob(blob)` — Validate blob format and field elements
 
 **Commitment & Proof:**
+
 - `Kzg.blobToKzgCommitment(blob)` — Compute KZG commitment (48 bytes)
 - `Kzg.computeKzgProof(blob, z)` — Compute proof for evaluation at point z
 - `Kzg.verifyKzgProof(commitment, z, y, proof)` — Verify proof that p(z) = y
 
 **Blob Verification:**
+
 - `Kzg.verifyBlobKzgProof(blob, commitment, proof)` — Verify blob matches commitment
 - `Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs)` — Batch verify multiple blobs (faster)
 
 **Utilities:**
+
 - `Kzg.createEmptyBlob()` — Create zero-filled blob
 - `Kzg.generateRandomBlob(seed?)` — Generate random valid blob
 
 **Examples:**
+
 ```typescript
-import { Kzg } from '@tevm/voltaire';
+import { Kzg } from "@tevm/voltaire";
 
 // Initialize (required once)
 Kzg.loadTrustedSetup(); // Uses mainnet setup
@@ -1171,7 +1322,7 @@ const blobValid = Kzg.verifyBlobKzgProof(blob, commitment, blobProof);
 const allValid = Kzg.verifyBlobKzgProofBatch(
   [blob1, blob2, blob3],
   [commitment1, commitment2, commitment3],
-  [proof1, proof2, proof3]
+  [proof1, proof2, proof3],
 );
 
 // Cleanup when done
@@ -1188,6 +1339,7 @@ All 19 EVM precompiled contracts with gas cost calculations:
 - `execute(address, input, gasLimit, hardfork)` — Execute precompile
 
 Individual precompiles (0x01-0x13):
+
 - `ecrecover` — Recover signer from ECDSA signature
 - `sha256` — SHA-256 hash
 - `ripemd160` — RIPEMD-160 hash
@@ -1210,29 +1362,29 @@ Individual precompiles (0x01-0x13):
 
 ### Primitive Types
 
-| Type | Size | Description | Key Methods |
-|------|------|-------------|-------------|
-| Address | 20 bytes | Ethereum address | fromHex, toChecksumHex, calculateCreate2Address |
-| Hash | 32 bytes | Keccak-256 hash | keccak256, toHex, equals |
-| Hex | Variable | Hex encoding | fromBytes, toBytes, concat, slice |
-| Uint | 32 bytes | 256-bit unsigned int | from, plus, minus, times, dividedBy |
-| RLP | Variable | RLP encoding | encode, decode |
-| Transaction | Variable | Ethereum transactions | serialize, deserialize, hash, from |
-| ABI | Variable | ABI encoding | Function.encode, Event.decode |
+| Type        | Size     | Description           | Key Methods                                     |
+| ----------- | -------- | --------------------- | ----------------------------------------------- |
+| Address     | 20 bytes | Ethereum address      | fromHex, toChecksumHex, calculateCreate2Address |
+| Hash        | 32 bytes | Keccak-256 hash       | keccak256, toHex, equals                        |
+| Hex         | Variable | Hex encoding          | fromBytes, toBytes, concat, slice               |
+| Uint        | 32 bytes | 256-bit unsigned int  | from, plus, minus, times, dividedBy             |
+| RLP         | Variable | RLP encoding          | encode, decode                                  |
+| Transaction | Variable | Ethereum transactions | serialize, deserialize, hash, from              |
+| ABI         | Variable | ABI encoding          | Function.encode, Event.decode                   |
 
 ### Crypto Functions
 
-| Function | Input | Output | Use Case |
-|----------|-------|--------|----------|
-| Keccak256.hash | Uint8Array | 32-byte Hash | General hashing, contract addresses |
-| Secp256k1.sign | Hash, PrivateKey | Signature | Sign transactions/messages |
-| Secp256k1.recover | Signature, Hash | PublicKey | Recover signer address |
-| EIP712.hash | Domain, Types, Message | Hash | Typed data signing |
-| SHA256.hash | Uint8Array | 32-byte hash | Bitcoin compatibility |
-| RIPEMD160.hash | Uint8Array | 20-byte hash | Bitcoin addresses |
-| Blake2.hash | Uint8Array, size? | 1-64 byte hash | Zcash compatibility |
-| BN254.pairing | Point pairs | boolean | zkSNARK verification |
-| KZG.verify | Blob, Commitment, Proof | boolean | EIP-4844 blob verification |
+| Function          | Input                   | Output         | Use Case                            |
+| ----------------- | ----------------------- | -------------- | ----------------------------------- |
+| Keccak256.hash    | Uint8Array              | 32-byte Hash   | General hashing, contract addresses |
+| Secp256k1.sign    | Hash, PrivateKey        | Signature      | Sign transactions/messages          |
+| Secp256k1.recover | Signature, Hash         | PublicKey      | Recover signer address              |
+| EIP712.hash       | Domain, Types, Message  | Hash           | Typed data signing                  |
+| SHA256.hash       | Uint8Array              | 32-byte hash   | Bitcoin compatibility               |
+| RIPEMD160.hash    | Uint8Array              | 20-byte hash   | Bitcoin addresses                   |
+| Blake2.hash       | Uint8Array, size?       | 1-64 byte hash | Zcash compatibility                 |
+| BN254.pairing     | Point pairs             | boolean        | zkSNARK verification                |
+| KZG.verify        | Blob, Commitment, Proof | boolean        | EIP-4844 blob verification          |
 
 ---
 
@@ -1250,7 +1402,7 @@ type Uint = bigint & { __brand: symbol };
 type Hex = `0x${string}`;
 
 // Methods are namespaced and use .call() for instance methods
-const addr = Address.fromHex('0x...');
+const addr = Address.fromHex("0x...");
 const hex = Address.toHex.call(addr);
 const checksum = Address.toChecksumHex.call(addr);
 
@@ -1266,6 +1418,55 @@ const checksum = Address.toChecksumHex.call(addr);
 4. **Interop**: Works seamlessly with other libraries
 5. **Type safety**: TypeScript brands ensure type correctness
 6. **Performance**: Direct function calls, no prototype chain
+
+### Type.from
+
+`Type.from` allows you to create new composable branded types with both **static** and **instance** methods — all without using classes or `this` binding.
+It produces a callable factory that returns a branded value with attached instance methods and exported static helpers.
+
+```typescript
+import { Type } from "@tevm/voltaire"
+
+const Address = Type({
+  from(value: string | Uint8Array) {
+    // Validation and branding logic
+    return new Uint8Array(20) as Uint8Array & { __tag: "Address" }
+  },
+  staticMethods: {
+    isAddress(v: unknown) {
+      return v instanceof Uint8Array && v.length === 20
+    },
+  },
+  instanceMethods: {
+    toHex(self) {
+      return "0x" + Buffer.from(self).toString("hex")
+    },
+  },
+})
+
+const addr = Address("0x1234")
+Address.isAddress(addr)   // true
+addr.toHex()              // "0x..."
+const { toHex } = addr; toHex() // ✅ works safely
+```
+
+#### Design goals
+
+* **No `this` footguns** – methods receive the branded value explicitly.
+* **Tree-shakable** – all methods are standalone functions.
+* **Composable** – users can merge or extend static/instance maps.
+* **Type-safe** – brand and method inference preserved.
+* **Generic-friendly** – supports generic `from` functions with full type inference.
+
+#### Advanced usage
+
+```typescript
+const CustomAddress = Type({
+  from: Address,
+  staticMethods: { ...Address, verify: (a) => !!a },
+  instanceMethods: { ...Address.instanceMethods, toChecksumHex },
+})
+```
 
 ---
 
@@ -1285,12 +1486,14 @@ Benchmark results available in each primitive's bench.ts file.
 ## Testing
 
 Comprehensive test coverage:
+
 - 300+ tests for Address
 - Cross-validation against viem, ethers.js
 - EIP compliance test vectors
 - Fuzzing for edge cases
 
 Run tests:
+
 ```bash
 bun test                    # All tests
 bun test address            # Specific primitive
@@ -1310,7 +1513,7 @@ MIT License - see [LICENSE](./LICENSE) for details
 - [GitHub Issues](https://github.com/evmts/voltaire/issues)
 - [Telegram](https://t.me/+ANThR9bHDLAwMjUx)
 - [Twitter](https://twitter.com/tevmtools)
-- [Complete Zig API](./ZIG_API.md)
+- [Complete Zig API](./docs/ZIG_API.md)
 
 ---
 
