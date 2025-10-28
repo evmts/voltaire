@@ -60,7 +60,7 @@ describe("Keccak256 - Known Test Vectors", () => {
   test("0xff byte", () => {
     const result = Keccak256.hash(new Uint8Array([0xff]));
     const expected = Hash.fromHex(
-      "0x37ffe1b257da0e9e635c2daa5e92b5e43b44ba5c6c4f8b08db3d67af43c38ca1",
+      "0x8b1a944cf13a9a1c08facb2c9e98623ef3254d2ddb48113885c3e8e97fec8db9",
     );
     expect(Hash.equals.call(result, expected)).toBe(true);
   });

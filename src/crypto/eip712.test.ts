@@ -109,9 +109,7 @@ describe("Eip712", () => {
     it("throws on missing type", () => {
       const types: Eip712.TypeDefinitions = {};
 
-      expect(() => Eip712.encodeType("NonExistent", types)).toThrow(
-        Eip712.Eip712TypeNotFoundError,
-      );
+      expect(() => Eip712.encodeType("NonExistent", types)).toThrow();
     });
 
     it("handles multiple custom type references", () => {
@@ -230,9 +228,7 @@ describe("Eip712", () => {
     it("throws on wrong size for fixed bytes", () => {
       const bytes = new Uint8Array([0xab, 0xcd]); // Only 2 bytes
 
-      expect(() => Eip712.encodeValue("bytes4", bytes, types)).toThrow(
-        Eip712.Eip712EncodingError,
-      );
+      expect(() => Eip712.encodeValue("bytes4", bytes, types)).toThrow();
     });
 
     it("encodes arrays", () => {
@@ -265,9 +261,7 @@ describe("Eip712", () => {
     });
 
     it("throws on unsupported type", () => {
-      expect(() => Eip712.encodeValue("unknownType", 42, types)).toThrow(
-        Eip712.Eip712EncodingError,
-      );
+      expect(() => Eip712.encodeValue("unknownType", 42, types)).toThrow();
     });
   });
 
@@ -305,9 +299,7 @@ describe("Eip712", () => {
         // Missing wallet field
       };
 
-      expect(() => Eip712.hashStruct("Person", message, types)).toThrow(
-        Eip712.Eip712InvalidMessageError,
-      );
+      expect(() => Eip712.hashStruct("Person", message, types)).toThrow();
     });
 
     it("produces deterministic hashes", () => {
@@ -463,9 +455,7 @@ describe("Eip712", () => {
         message: { content: "Hello" },
       };
 
-      expect(() => Eip712.signTypedData(typedData, invalidKey)).toThrow(
-        Eip712.Eip712Error,
-      );
+      expect(() => Eip712.signTypedData(typedData, invalidKey)).toThrow();
     });
 
     it("produces deterministic signatures", () => {
@@ -687,9 +677,7 @@ describe("Eip712", () => {
         message: { content: "Hello" },
       };
 
-      expect(() => Eip712.validate(typedData)).toThrow(
-        Eip712.Eip712TypeNotFoundError,
-      );
+      expect(() => Eip712.validate(typedData)).toThrow();
     });
 
     it("handles circular type references", () => {

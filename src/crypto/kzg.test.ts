@@ -62,7 +62,9 @@ describe("Kzg Initialization", () => {
 
 describe("Kzg Blob Validation", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should validate empty blob", () => {
@@ -123,7 +125,9 @@ describe("Kzg Utility Functions", () => {
 
 describe("Kzg Blob to Commitment", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should throw if not initialized", () => {
@@ -174,7 +178,9 @@ describe("Kzg Blob to Commitment", () => {
 
 describe("Kzg Compute Proof", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should throw if not initialized", () => {
@@ -233,7 +239,9 @@ describe("Kzg Compute Proof", () => {
 
 describe("Kzg Verify Proof", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should throw if not initialized", () => {
@@ -320,17 +328,17 @@ describe("Kzg Verify Proof", () => {
 
 describe("Kzg Verify Blob Proof", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should verify valid blob proof", () => {
     const blob = Kzg.generateRandomBlob(5555);
     const commitment = Kzg.blobToKzgCommitment(blob);
-    // For blob proof, we need to compute the proof for the blob
-    // In c-kzg, this requires computing proof for challenge point
-    // For simplicity in this test, we'll use a known good pattern
-    const z = new Uint8Array(32);
-    const { proof } = Kzg.computeKzgProof(blob, z);
+    // For blob proof, we need to use computeBlobKzgProof from c-kzg directly
+    const ckzg = require("c-kzg");
+    const proof = ckzg.computeBlobKzgProof(blob, commitment);
     const valid = Kzg.verifyBlobKzgProof(blob, commitment, proof);
     expect(valid).toBe(true);
   });
@@ -347,7 +355,9 @@ describe("Kzg Verify Blob Proof", () => {
 
 describe("Kzg Batch Verification", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should verify batch of valid proofs", () => {
@@ -357,8 +367,11 @@ describe("Kzg Batch Verification", () => {
       Kzg.generateRandomBlob(3),
     ];
     const commitments = blobs.map((blob) => Kzg.blobToKzgCommitment(blob));
-    const z = new Uint8Array(32);
-    const proofs = blobs.map((blob) => Kzg.computeKzgProof(blob, z).proof);
+    // For blob batch verification, use computeBlobKzgProof
+    const ckzg = require("c-kzg");
+    const proofs = blobs.map((blob, i) =>
+      ckzg.computeBlobKzgProof(blob, commitments[i]),
+    );
     const valid = Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs);
     expect(valid).toBe(true);
   });
@@ -382,7 +395,9 @@ describe("Kzg Batch Verification", () => {
 
 describe("Kzg Integration Tests", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should complete full workflow", () => {
@@ -455,7 +470,9 @@ describe("Kzg Integration Tests", () => {
 
 describe("Kzg Edge Cases", () => {
   beforeAll(() => {
-    Kzg.loadTrustedSetup();
+    if (!Kzg.isInitialized()) {
+      Kzg.loadTrustedSetup();
+    }
   });
 
   it("should handle all-zero blob", () => {

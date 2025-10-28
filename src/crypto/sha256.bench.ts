@@ -153,15 +153,15 @@ await run({
 // Export results
 const output = {
   timestamp: new Date().toISOString(),
-  runtime: "node",
+  runtime: "bun",
   version: process.version,
   platform: process.platform,
   arch: process.arch,
   results,
   summary: {
     total_benchmarks: results.length,
-    fastest: results.reduce((a, b) => (a.ops_per_sec > b.ops_per_sec ? a : b)),
-    slowest: results.reduce((a, b) => (a.ops_per_sec < b.ops_per_sec ? a : b)),
+    fastest: results.length > 0 ? results.reduce((a, b) => (a.ops_per_sec > b.ops_per_sec ? a : b)) : null,
+    slowest: results.length > 0 ? results.reduce((a, b) => (a.ops_per_sec < b.ops_per_sec ? a : b)) : null,
   },
 };
 
@@ -171,5 +171,9 @@ writeFileSync(outputPath, JSON.stringify(output, null, 2));
 console.log(`\nResults exported to: ${outputPath}`);
 console.log(`\nSummary:`);
 console.log(`  Total benchmarks: ${output.summary.total_benchmarks}`);
-console.log(`  Fastest: ${output.summary.fastest.name} (${output.summary.fastest.ops_per_sec.toFixed(0)} ops/sec)`);
-console.log(`  Slowest: ${output.summary.slowest.name} (${output.summary.slowest.ops_per_sec.toFixed(0)} ops/sec)`);
+if (output.summary.fastest) {
+  console.log(`  Fastest: ${output.summary.fastest.name} (${output.summary.fastest.ops_per_sec.toFixed(0)} ops/sec)`);
+}
+if (output.summary.slowest) {
+  console.log(`  Slowest: ${output.summary.slowest.name} (${output.summary.slowest.ops_per_sec.toFixed(0)} ops/sec)`);
+}
