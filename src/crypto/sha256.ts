@@ -16,7 +16,7 @@
  * ```
  */
 
-import { sha256 as nobleSha256 } from "@noble/hashes/sha256";
+import { sha256 as nobleSha256 } from "@noble/hashes/sha2.js";
 
 // ============================================================================
 // Core Namespace

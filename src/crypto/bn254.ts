@@ -450,8 +450,15 @@ export namespace Bn254 {
      * Validate and create point
      */
     export function fromAffine(x: bigint, y: bigint): G1Point {
-      const point = { x: Fp.mod(x), y: Fp.mod(y), z: 1n };
-      if (!isOnCurve.call(point)) {
+      const x_mod = Fp.mod(x);
+      const y_mod = Fp.mod(y);
+      const point = { x: x_mod, y: y_mod, z: 1n };
+
+      const y2 = Fp.mul(y_mod, y_mod);
+      const x3 = Fp.mul(Fp.mul(x_mod, x_mod), x_mod);
+      const rhs = Fp.add(x3, B_G1);
+
+      if (y2 !== rhs) {
         throw new Bn254InvalidPointError("Point not on G1 curve");
       }
       return point;

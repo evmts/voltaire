@@ -151,15 +151,26 @@ export namespace Kzg {
    */
   export function loadTrustedSetup(filePath?: string): void {
     try {
+      // c-kzg doesn't allow reloading, so skip if already initialized
+      if (initialized) {
+        return;
+      }
       if (filePath) {
         // Load from file if path provided
-        ckzg.loadTrustedSetup(filePath);
+        // c-kzg expects loadTrustedSetup(precompute: number, filePath: string)
+        ckzg.loadTrustedSetup(0, filePath);
       } else {
-        // Use embedded trusted setup (preferred)
-        ckzg.loadTrustedSetup();
+        // Use embedded trusted setup (c-kzg uses DEFAULT_TRUSTED_SETUP_PATH)
+        // Just pass precompute=0 to use default embedded setup
+        ckzg.loadTrustedSetup(0);
       }
       initialized = true;
     } catch (error) {
+      // If already loaded by c-kzg, just mark as initialized
+      if (error instanceof Error && error.message.includes("already loaded")) {
+        initialized = true;
+        return;
+      }
       throw new KzgError(
         `Failed to load trusted setup: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -169,21 +180,21 @@ export namespace Kzg {
   /**
    * Free trusted setup resources
    *
-   * Should be called during application shutdown.
-   * After calling this, loadTrustedSetup must be called again before
-   * performing any KZG operations.
+   * Note: c-kzg v4+ does not provide a freeTrustedSetup function.
+   * The trusted setup persists for the lifetime of the process.
+   * This function is provided for API compatibility and only resets
+   * the initialized flag.
    *
    * @example
    * ```typescript
-   * // Cleanup on shutdown
+   * // Reset initialization state
    * Kzg.freeTrustedSetup();
    * ```
    */
   export function freeTrustedSetup(): void {
-    if (initialized) {
-      ckzg.freeTrustedSetup();
-      initialized = false;
-    }
+    // c-kzg v4+ doesn't have freeTrustedSetup function
+    // Just reset our tracking flag for testing purposes
+    initialized = false;
   }
 
   /**
@@ -346,6 +357,11 @@ export namespace Kzg {
     try {
       return ckzg.verifyKzgProof(commitment, z, y, proof);
     } catch (error) {
+      // If verification fails due to bad args/invalid proof, return false
+      // rather than throwing (this is a verification failure, not an error)
+      if (error instanceof Error && error.message.includes("C_KZG_BADARGS")) {
+        return false;
+      }
       throw new KzgError(
         `Failed to verify proof: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -485,9 +501,13 @@ export namespace Kzg {
         blob[i] = (x >>> 16) & 0xff;
       }
     } else {
-      // Use crypto random
+      // Use crypto random in chunks (getRandomValues has 65536 byte limit)
       if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-        crypto.getRandomValues(blob);
+        const chunkSize = 65536;
+        for (let offset = 0; offset < blob.length; offset += chunkSize) {
+          const end = Math.min(offset + chunkSize, blob.length);
+          crypto.getRandomValues(blob.subarray(offset, end));
+        }
       } else {
         throw new KzgError("crypto.getRandomValues not available");
       }

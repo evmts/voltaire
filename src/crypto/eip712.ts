@@ -48,8 +48,8 @@
 
 import type { Address } from "../primitives/address.js";
 import { Hash } from "../primitives/hash.js";
-import { secp256k1 } from "@noble/curves/secp256k1";
-import { keccak_256 } from "@noble/hashes/sha3";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { keccak_256 } from "@noble/hashes/sha3.js";
 
 // ============================================================================
 // Error Types
@@ -310,25 +310,45 @@ export namespace Eip712 {
   ): Uint8Array {
     const result = new Uint8Array(32);
 
+    // array types (hash the array encoding) - CHECK BEFORE uint/int to avoid matching "uint256[]"
+    if (type.endsWith("[]")) {
+      const baseType = type.slice(0, -2);
+      const arr = value as MessageValue[];
+      const encodedElements: Uint8Array[] = [];
+      for (const elem of arr) {
+        encodedElements.push(encodeValue(baseType, elem, types));
+      }
+      // Concatenate all encoded elements and hash
+      const totalLength = encodedElements.reduce((sum, e) => sum + e.length, 0);
+      const concatenated = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const elem of encodedElements) {
+        concatenated.set(elem, offset);
+        offset += elem.length;
+      }
+      const hash = keccak_256(concatenated);
+      return hash;
+    }
+
     // uint/int types
     if (type.startsWith("uint") || type.startsWith("int")) {
-      const num = typeof value === "bigint" ? value : BigInt(value as number);
+      let num: bigint;
+      if (typeof value === "bigint") {
+        num = value;
+      } else if (typeof value === "number") {
+        num = BigInt(value);
+      } else if (typeof value === "string") {
+        num = BigInt(value);
+      } else {
+        throw new Eip712EncodingError(
+          `Cannot encode value of type ${typeof value} as ${type}`,
+        );
+      }
       // Big-endian encoding
+      let v = num;
       for (let i = 31; i >= 0; i--) {
-        result[i] = Number(num & 0xffn);
-        if (i > 0) {
-          // Shift only if not at the end
-          const shifted = num >> 8n;
-          // Continue with shifted value
-          if (i === 31) {
-            let v = num;
-            for (let j = 31; j >= 0; j--) {
-              result[j] = Number(v & 0xffn);
-              v >>= 8n;
-            }
-            break;
-          }
-        }
+        result[i] = Number(v & 0xffn);
+        v >>= 8n;
       }
       return result;
     }
@@ -378,26 +398,6 @@ export namespace Eip712 {
         result.set(bytes, 0); // Left-aligned
         return result;
       }
-    }
-
-    // array types (hash the array encoding)
-    if (type.endsWith("[]")) {
-      const baseType = type.slice(0, -2);
-      const arr = value as MessageValue[];
-      const encodedElements: Uint8Array[] = [];
-      for (const elem of arr) {
-        encodedElements.push(encodeValue(baseType, elem, types));
-      }
-      // Concatenate all encoded elements and hash
-      const totalLength = encodedElements.reduce((sum, e) => sum + e.length, 0);
-      const concatenated = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const elem of encodedElements) {
-        concatenated.set(elem, offset);
-        offset += elem.length;
-      }
-      const hash = keccak_256(concatenated);
-      return hash;
     }
 
     // Custom struct type (hash the struct)
@@ -544,13 +544,21 @@ export namespace Eip712 {
     }
 
     const hash = hashTypedData(typedData);
-    const sig = secp256k1.sign(hash, privateKey);
 
-    return {
-      r: sig.r.toBytesBE(),
-      s: sig.s.toBytesBE(),
-      v: sig.recovery! + 27, // EIP-155 style v value
-    };
+    // Sign with prehash:false (we already have the hash) and format:'recovered' to get recovery bit
+    const sigBytes = secp256k1.sign(hash, privateKey, {
+      prehash: false,
+      format: "recovered",
+    });
+
+    // sigBytes is 65 bytes: r (32) || s (32) || recovery_byte (1)
+    const r = sigBytes.slice(0, 32);
+    const s = sigBytes.slice(32, 64);
+
+    // Convert recovery byte to Ethereum v (27 or 28)
+    const v = 27 + (sigBytes[64]! & 1);
+
+    return { r, s, v };
   }
 
   /**
@@ -571,17 +579,25 @@ export namespace Eip712 {
   ): Address {
     const hash = hashTypedData(typedData);
 
-    // Convert signature to secp256k1 format
-    const r = BigInt(`0x${Array.from(signature.r).map((b) => b.toString(16).padStart(2, "0")).join("")}`);
-    const s = BigInt(`0x${Array.from(signature.s).map((b) => b.toString(16).padStart(2, "0")).join("")}`);
-    const recovery = signature.v - 27;
+    // Convert Ethereum v (27 or 28) to recovery bit (0 or 1)
+    const recoveryBit = signature.v - 27;
 
-    // Recover public key
-    const sig = new secp256k1.Signature(r, s).addRecoveryBit(recovery);
-    const publicKey = sig.recoverPublicKey(hash);
+    // Concatenate r and s for compact signature (64 bytes)
+    const compactSig = new Uint8Array(64);
+    compactSig.set(signature.r, 0);
+    compactSig.set(signature.s, 32);
 
-    // Get uncompressed public key (remove 0x04 prefix)
-    const uncompressedPubKey = publicKey.toRawBytes(false).slice(1);
+    // Recover public key point using fromBytes which expects 64-byte compact format
+    const point = secp256k1.Signature.fromBytes(compactSig)
+      .addRecoveryBit(recoveryBit)
+      .recoverPublicKey(hash);
+
+    // Convert point to uncompressed format (remove 0x04 prefix)
+    const uncompressedWithPrefix = point.toRawBytes(false);
+    if (uncompressedWithPrefix[0] !== 0x04) {
+      throw new Eip712Error("Invalid recovered public key format");
+    }
+    const uncompressedPubKey = uncompressedWithPrefix.slice(1);
 
     // Address is last 20 bytes of keccak256(publicKey)
     const pubKeyHash = keccak_256(uncompressedPubKey);

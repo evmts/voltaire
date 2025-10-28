@@ -16,7 +16,7 @@
  * ```
  */
 
-import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
+import { ripemd160 as nobleRipemd160 } from '@noble/hashes/legacy.js';
 
 // ============================================================================
 // Ripemd160 Namespace
