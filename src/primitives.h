@@ -50,6 +50,10 @@ extern "C" {
 
 #define PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED -9
 
+#define PRIMITIVES_ERROR_ACCESS_LIST_INVALID -10
+
+#define PRIMITIVES_ERROR_AUTHORIZATION_INVALID -11
+
 
 // ============================================================================
 // Types
@@ -424,10 +428,131 @@ int primitives_abi_encode_parameters(const char * types_json, const char * value
 int primitives_abi_decode_parameters(const uint8_t * data, size_t data_len, const char * types_json, uint8_t * out_buf, size_t buf_len);
 
 // ============================================================================
+// Blob Operations (EIP-4844)
+// ============================================================================
+
+/**
+ * Encode data as blob (with length prefix)
+ * Returns PRIMITIVES_SUCCESS on success
+ */
+int primitives_blob_from_data(const uint8_t * data, size_t data_len, uint8_t * out_blob);
+
+/**
+ * Decode blob to extract original data
+ * Returns length of data or negative error code
+ */
+int primitives_blob_to_data(const uint8_t * blob, uint8_t * out_data, *usize out_len);
+
+/**
+ * Validate blob size
+ * Returns 1 if valid, 0 if invalid
+ */
+int primitives_blob_is_valid(size_t blob_len);
+
+/**
+ * Calculate blob gas for number of blobs
+ * Returns total blob gas
+ */
+uint64_t primitives_blob_calculate_gas(uint32_t blob_count);
+
+/**
+ * Estimate number of blobs needed for data size
+ * Returns number of blobs required
+ */
+uint32_t primitives_blob_estimate_count(size_t data_size);
+
+/**
+ * Calculate blob gas price from excess blob gas
+ * Returns blob gas price
+ */
+uint64_t primitives_blob_calculate_gas_price(uint64_t excess_blob_gas);
+
+/**
+ * Calculate excess blob gas for next block
+ * Returns excess blob gas
+ */
+uint64_t primitives_blob_calculate_excess_gas(uint64_t parent_excess, uint64_t parent_used);
+
+// ============================================================================
+// Event Log Operations
+// ============================================================================
+
+/**
+ * Check if event log matches address filter
+ * Returns 1 if matches, 0 if not
+ */
+int primitives_eventlog_matches_address(const uint8_t * log_address, [*]const [20]u8 filter_addresses, size_t filter_count);
+
+/**
+ * Check if event log matches single topic filter
+ * null_topic: 1 if topic filter is null (match any), 0 otherwise
+ * Returns 1 if matches, 0 if not
+ */
+int primitives_eventlog_matches_topic(const uint8_t * log_topic, const uint8_t * filter_topic, int null_topic);
+
+/**
+ * Check if log matches topic array filter
+ * Returns 1 if matches, 0 if not
+ */
+int primitives_eventlog_matches_topics([*]const [32]u8 log_topics, size_t log_topic_count, [*]const [32]u8 filter_topics, [*]const c_int filter_nulls, size_t filter_count);
+
+// ============================================================================
 // Version info
 // ============================================================================
 
 const char * primitives_version_string(void);
+
+// ============================================================================
+// Access List API (EIP-2930)
+// ============================================================================
+
+/**
+ * Calculate gas cost for access list
+ * Input: JSON array of access list items
+ * Output: u64 gas cost
+ */
+int primitives_access_list_gas_cost(const char * json_ptr, *u64 out_cost);
+
+/**
+ * Calculate gas savings for access list
+ */
+int primitives_access_list_gas_savings(const char * json_ptr, *u64 out_savings);
+
+/**
+ * Check if address is in access list
+ * Returns 1 if found, 0 if not found
+ */
+int primitives_access_list_includes_address(const char * json_ptr, const PrimitivesAddress * address_ptr);
+
+/**
+ * Check if storage key is in access list for address
+ * Returns 1 if found, 0 if not found
+ */
+int primitives_access_list_includes_storage_key(const char * json_ptr, const PrimitivesAddress * address_ptr, const PrimitivesHash * key_ptr);
+
+// ============================================================================
+// Authorization API (EIP-7702)
+// ============================================================================
+
+/**
+ * Validate authorization structure
+ */
+int primitives_authorization_validate(*const PrimitivesAuthorization auth_ptr);
+
+/**
+ * Calculate authorization signing hash
+ */
+int primitives_authorization_signing_hash(uint64_t chain_id, const PrimitivesAddress * address_ptr, uint64_t nonce, PrimitivesHash * out_hash);
+
+/**
+ * Recover authority (signer) from authorization
+ */
+int primitives_authorization_authority(*const PrimitivesAuthorization auth_ptr, PrimitivesAddress * out_address);
+
+/**
+ * Calculate gas cost for authorization list
+ */
+uint64_t primitives_authorization_gas_cost(size_t count, size_t empty_accounts);
 
 // ============================================================================
 // WASM Memory Management

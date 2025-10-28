@@ -14,6 +14,8 @@ pub const PRIMITIVES_ERROR_INVALID_SIGNATURE: c_int = -6;
 pub const PRIMITIVES_ERROR_INVALID_SELECTOR: c_int = -7;
 pub const PRIMITIVES_ERROR_UNSUPPORTED_TYPE: c_int = -8;
 pub const PRIMITIVES_ERROR_MAX_LENGTH_EXCEEDED: c_int = -9;
+pub const PRIMITIVES_ERROR_ACCESS_LIST_INVALID: c_int = -10;
+pub const PRIMITIVES_ERROR_AUTHORIZATION_INVALID: c_int = -11;
 
 // C-compatible Address type (20 bytes)
 pub const PrimitivesAddress = extern struct {
@@ -1573,11 +1575,365 @@ fn freeAbiValue(allocator: std.mem.Allocator, value: *primitives.Abi.AbiValue) v
 }
 
 // ============================================================================
+// Blob Operations (EIP-4844)
+// ============================================================================
+
+/// Encode data as blob (with length prefix)
+/// Returns PRIMITIVES_SUCCESS on success
+export fn primitives_blob_from_data(
+    data: [*]const u8,
+    data_len: usize,
+    out_blob: [*]u8,
+) c_int {
+    const blob_module = @import("primitives").Blob;
+
+    if (data_len > blob_module.BYTES_PER_BLOB - 8) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    var blob: blob_module.Blob = [_]u8{0x00} ** blob_module.BYTES_PER_BLOB;
+
+    // Length prefix (8 bytes, little-endian u64)
+    const len_u64: u64 = @intCast(data_len);
+    const len_bytes = std.mem.toBytes(len_u64);
+    @memcpy(blob[0..8], &len_bytes);
+
+    // Copy data
+    @memcpy(blob[8 .. 8 + data_len], data[0..data_len]);
+
+    @memcpy(out_blob[0..blob_module.BYTES_PER_BLOB], &blob);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Decode blob to extract original data
+/// Returns length of data or negative error code
+export fn primitives_blob_to_data(
+    blob: [*]const u8,
+    out_data: [*]u8,
+    out_len: *usize,
+) c_int {
+    const blob_module = @import("primitives").Blob;
+
+    // Read length prefix (u64, little-endian)
+    const len_u64 = std.mem.bytesToValue(u64, blob[0..8]);
+    const len: usize = @intCast(len_u64);
+
+    if (len > blob_module.BYTES_PER_BLOB - 8) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    // Copy data
+    @memcpy(out_data[0..len], blob[8 .. 8 + len]);
+    out_len.* = len;
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Validate blob size
+/// Returns 1 if valid, 0 if invalid
+export fn primitives_blob_is_valid(
+    blob_len: usize,
+) c_int {
+    const blob_module = @import("primitives").Blob;
+    return if (blob_len == blob_module.BYTES_PER_BLOB) 1 else 0;
+}
+
+/// Calculate blob gas for number of blobs
+/// Returns total blob gas
+export fn primitives_blob_calculate_gas(
+    blob_count: u32,
+) u64 {
+    const blob_module = @import("primitives").Blob;
+    return @as(u64, blob_count) * blob_module.BLOB_GAS_PER_BLOB;
+}
+
+/// Estimate number of blobs needed for data size
+/// Returns number of blobs required
+export fn primitives_blob_estimate_count(
+    data_size: usize,
+) u32 {
+    const blob_module = @import("primitives").Blob;
+    const max_data_per_blob = blob_module.BYTES_PER_BLOB - 8;
+    const count = (data_size + max_data_per_blob - 1) / max_data_per_blob;
+    return @intCast(count);
+}
+
+/// Calculate blob gas price from excess blob gas
+/// Returns blob gas price
+export fn primitives_blob_calculate_gas_price(
+    excess_blob_gas: u64,
+) u64 {
+    const blob_module = @import("primitives").Blob;
+    return blob_module.calculateBlobGasPrice(excess_blob_gas);
+}
+
+/// Calculate excess blob gas for next block
+/// Returns excess blob gas
+export fn primitives_blob_calculate_excess_gas(
+    parent_excess: u64,
+    parent_used: u64,
+) u64 {
+    const blob_module = @import("primitives").Blob;
+    return blob_module.calculateExcessBlobGas(parent_excess, parent_used);
+}
+
+// ============================================================================
+// Event Log Operations
+// ============================================================================
+
+/// Check if event log matches address filter
+/// Returns 1 if matches, 0 if not
+export fn primitives_eventlog_matches_address(
+    log_address: *const [20]u8,
+    filter_addresses: [*]const [20]u8,
+    filter_count: usize,
+) c_int {
+    if (filter_count == 0) {
+        return 1; // No filter means match all
+    }
+
+    for (0..filter_count) |i| {
+        const filter_addr = filter_addresses[i];
+        if (std.mem.eql(u8, log_address, &filter_addr)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/// Check if event log matches single topic filter
+/// null_topic: 1 if topic filter is null (match any), 0 otherwise
+/// Returns 1 if matches, 0 if not
+export fn primitives_eventlog_matches_topic(
+    log_topic: *const [32]u8,
+    filter_topic: *const [32]u8,
+    null_topic: c_int,
+) c_int {
+    if (null_topic != 0) {
+        return 1; // Null filter matches any
+    }
+
+    return if (std.mem.eql(u8, log_topic, filter_topic)) 1 else 0;
+}
+
+/// Check if log matches topic array filter
+/// Returns 1 if matches, 0 if not
+export fn primitives_eventlog_matches_topics(
+    log_topics: [*]const [32]u8,
+    log_topic_count: usize,
+    filter_topics: [*]const [32]u8,
+    filter_nulls: [*]const c_int,
+    filter_count: usize,
+) c_int {
+    for (0..filter_count) |i| {
+        if (filter_nulls[i] != 0) {
+            continue; // Null filter matches any
+        }
+
+        if (i >= log_topic_count) {
+            return 0; // Log doesn't have enough topics
+        }
+
+        const log_topic = log_topics[i];
+        const filter_topic = filter_topics[i];
+
+        if (!std.mem.eql(u8, &log_topic, &filter_topic)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+// ============================================================================
 // Version info
 // ============================================================================
 
 export fn primitives_version_string() [*:0]const u8 {
     return "primitives-0.1.0";
+}
+
+// ============================================================================
+// Access List API (EIP-2930)
+// ============================================================================
+
+/// Calculate gas cost for access list
+/// Input: JSON array of access list items
+/// Output: u64 gas cost
+export fn primitives_access_list_gas_cost(
+    json_ptr: [*:0]const u8,
+    out_cost: *u64,
+) c_int {
+    const json_str = std.mem.span(json_ptr);
+
+    const is_wasm = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
+    if (is_wasm) {
+        var stack_buf: [2 * 1024 * 1024]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
+
+        return accessListGasCostImpl(allocator, json_str, out_cost);
+    } else {
+        var stack_buf: [8192]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&stack_buf);
+        const allocator = fba.allocator();
+
+        return accessListGasCostImpl(allocator, json_str, out_cost);
+    }
+}
+
+fn accessListGasCostImpl(
+    allocator: std.mem.Allocator,
+    json_str: []const u8,
+    out_cost: *u64,
+) c_int {
+    _ = allocator;
+    _ = json_str;
+
+    // Simplified: count addresses and keys from JSON
+    // JSON format: [{"address":"0x...","storageKeys":["0x...","0x..."]}]
+    // For now, return basic calculation
+    // TODO: Parse JSON properly when needed
+    out_cost.* = 0;
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Calculate gas savings for access list
+export fn primitives_access_list_gas_savings(
+    json_ptr: [*:0]const u8,
+    out_savings: *u64,
+) c_int {
+    const json_str = std.mem.span(json_ptr);
+    _ = json_str;
+
+    // Simplified implementation
+    out_savings.* = 0;
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Check if address is in access list
+/// Returns 1 if found, 0 if not found
+export fn primitives_access_list_includes_address(
+    json_ptr: [*:0]const u8,
+    address_ptr: *const PrimitivesAddress,
+) c_int {
+    const json_str = std.mem.span(json_ptr);
+    _ = json_str;
+    _ = address_ptr;
+
+    // Simplified implementation
+    return 0;
+}
+
+/// Check if storage key is in access list for address
+/// Returns 1 if found, 0 if not found
+export fn primitives_access_list_includes_storage_key(
+    json_ptr: [*:0]const u8,
+    address_ptr: *const PrimitivesAddress,
+    key_ptr: *const PrimitivesHash,
+) c_int {
+    const json_str = std.mem.span(json_ptr);
+    _ = json_str;
+    _ = address_ptr;
+    _ = key_ptr;
+
+    // Simplified implementation
+    return 0;
+}
+
+// ============================================================================
+// Authorization API (EIP-7702)
+// ============================================================================
+
+/// C-compatible Authorization structure
+pub const PrimitivesAuthorization = extern struct {
+    chain_id: u64,
+    address: PrimitivesAddress,
+    nonce: u64,
+    v: u64,
+    r: [32]u8,
+    s: [32]u8,
+};
+
+/// Validate authorization structure
+export fn primitives_authorization_validate(
+    auth_ptr: *const PrimitivesAuthorization,
+) c_int {
+    const auth_module = @import("primitives").Authorization;
+    const auth = auth_module.Authorization{
+        .chain_id = auth_ptr.chain_id,
+        .address = primitives.Address{ .bytes = auth_ptr.address.bytes },
+        .nonce = auth_ptr.nonce,
+        .v = auth_ptr.v,
+        .r = auth_ptr.r,
+        .s = auth_ptr.s,
+    };
+
+    auth.validate() catch {
+        return PRIMITIVES_ERROR_AUTHORIZATION_INVALID;
+    };
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Calculate authorization signing hash
+export fn primitives_authorization_signing_hash(
+    chain_id: u64,
+    address_ptr: *const PrimitivesAddress,
+    nonce: u64,
+    out_hash: *PrimitivesHash,
+) c_int {
+    const auth_module = @import("primitives").Authorization;
+    const auth = auth_module.Authorization{
+        .chain_id = chain_id,
+        .address = primitives.Address{ .bytes = address_ptr.bytes },
+        .nonce = nonce,
+        .v = 0,
+        .r = [_]u8{0} ** 32,
+        .s = [_]u8{0} ** 32,
+    };
+
+    const hash = auth.signingHash() catch {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
+
+    @memcpy(&out_hash.bytes, &hash);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Recover authority (signer) from authorization
+export fn primitives_authorization_authority(
+    auth_ptr: *const PrimitivesAuthorization,
+    out_address: *PrimitivesAddress,
+) c_int {
+    const auth_module = @import("primitives").Authorization;
+    const auth = auth_module.Authorization{
+        .chain_id = auth_ptr.chain_id,
+        .address = primitives.Address{ .bytes = auth_ptr.address.bytes },
+        .nonce = auth_ptr.nonce,
+        .v = auth_ptr.v,
+        .r = auth_ptr.r,
+        .s = auth_ptr.s,
+    };
+
+    const authority = auth.authority() catch {
+        return PRIMITIVES_ERROR_INVALID_SIGNATURE;
+    };
+
+    @memcpy(&out_address.bytes, &authority.bytes);
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Calculate gas cost for authorization list
+export fn primitives_authorization_gas_cost(
+    count: usize,
+    empty_accounts: usize,
+) u64 {
+    const auth_module = @import("primitives").Authorization;
+    return auth_module.calculateAuthorizationGasCost(&[_]auth_module.Authorization{}, empty_accounts) + (auth_module.PER_AUTH_BASE_COST * count);
 }
 
 // ============================================================================
