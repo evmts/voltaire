@@ -14,6 +14,9 @@ export const enum ErrorCode {
 	OUT_OF_MEMORY = -4,
 	INVALID_INPUT = -5,
 	INVALID_SIGNATURE = -6,
+	INVALID_SELECTOR = -7,
+	UNSUPPORTED_TYPE = -8,
+	MAX_LENGTH_EXCEEDED = -9,
 }
 
 /**
@@ -78,6 +81,12 @@ export interface WasmExports {
 		dataPtr: number,
 		dataLen: number,
 		outPtr: number,
+	) => number;
+	blake2Hash: (
+		inputPtr: number,
+		inputLen: number,
+		outputPtr: number,
+		outputLen: number,
 	) => number;
 	primitives_solidity_keccak256: (
 		dataPtr: number,
@@ -202,6 +211,45 @@ export interface WasmExports {
 		v: number,
 		includeV: number,
 		outPtr: number,
+	) => number;
+
+	// WASM-specific secp256k1 functions
+	secp256k1Sign: (
+		msgHashPtr: number,
+		privKeyPtr: number,
+		sigPtr: number,
+		recidPtr: number,
+	) => number;
+	secp256k1Verify: (
+		msgHashPtr: number,
+		sigPtr: number,
+		pubKeyPtr: number,
+	) => number;
+	secp256k1Recover: (
+		msgHashPtr: number,
+		sigPtr: number,
+		recid: number,
+		pubKeyPtr: number,
+	) => number;
+	secp256k1DerivePublicKey: (privKeyPtr: number, pubKeyPtr: number) => number;
+
+	// ABI functions
+	primitives_abi_compute_selector: (
+		signaturePtr: number,
+		outPtr: number,
+	) => number;
+	primitives_abi_encode_parameters: (
+		typesJsonPtr: number,
+		valuesJsonPtr: number,
+		outPtr: number,
+		outLen: number,
+	) => number;
+	primitives_abi_decode_parameters: (
+		dataPtr: number,
+		dataLen: number,
+		typesJsonPtr: number,
+		outPtr: number,
+		outLen: number,
 	) => number;
 }
 

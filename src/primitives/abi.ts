@@ -262,6 +262,371 @@ export namespace Abi {
   };
 
   // ==========================================================================
+  // Internal Encoding/Decoding Helpers
+  // ==========================================================================
+
+  /**
+   * Encode a uint256 value to 32 bytes (left-padded)
+   * @internal
+   */
+  function encodeUint256(value: bigint): Uint8Array {
+    const result = new Uint8Array(32);
+    let v = value;
+    for (let i = 31; i >= 0; i--) {
+      result[i] = Number(v & 0xffn);
+      v >>= 8n;
+    }
+    return result;
+  }
+
+  /**
+   * Encode a uint value of specific bit size (left-padded to 32 bytes)
+   * @internal
+   */
+  function encodeUint(value: bigint | number, bits: number): Uint8Array {
+    const bigintValue = typeof value === "number" ? BigInt(value) : value;
+    const max = (1n << BigInt(bits)) - 1n;
+    if (bigintValue < 0n || bigintValue > max) {
+      throw new AbiEncodingError(`Value ${bigintValue} out of range for uint${bits}`);
+    }
+    return encodeUint256(bigintValue);
+  }
+
+  /**
+   * Encode an int value of specific bit size (two's complement, left-padded to 32 bytes)
+   * @internal
+   */
+  function encodeInt(value: bigint | number, bits: number): Uint8Array {
+    const bigintValue = typeof value === "number" ? BigInt(value) : value;
+    const min = -(1n << (BigInt(bits) - 1n));
+    const max = (1n << (BigInt(bits) - 1n)) - 1n;
+    if (bigintValue < min || bigintValue > max) {
+      throw new AbiEncodingError(`Value ${bigintValue} out of range for int${bits}`);
+    }
+    // Two's complement for negative numbers
+    const unsigned = bigintValue < 0n ? (1n << 256n) + bigintValue : bigintValue;
+    return encodeUint256(unsigned);
+  }
+
+  /**
+   * Pad bytes to 32-byte boundary (right-padded with zeros)
+   * @internal
+   */
+  function padRight(data: Uint8Array): Uint8Array {
+    const paddedLength = Math.ceil(data.length / 32) * 32;
+    if (paddedLength === data.length) return data;
+    const result = new Uint8Array(paddedLength);
+    result.set(data, 0);
+    return result;
+  }
+
+  /**
+   * Check if type is dynamic
+   * @internal
+   */
+  function isDynamicType(type: string): boolean {
+    if (type === "string" || type === "bytes") return true;
+    if (type.endsWith("[]")) return true;
+    // Fixed-size arrays like uint256[3] are static if the element type is static
+    if (type.includes("[") && type.endsWith("]")) {
+      const match = type.match(/^(.+)\[(\d+)\]$/);
+      if (match) {
+        const elementType = match[1];
+        return isDynamicType(elementType);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Encode a single value based on its type
+   * @internal
+   */
+  function encodeValue(
+    type: string,
+    value: unknown,
+  ): { encoded: Uint8Array; isDynamic: boolean } {
+    // Handle uint types
+    if (type.startsWith("uint")) {
+      const bits = type === "uint" ? 256 : parseInt(type.slice(4));
+      const encoded = encodeUint(value as bigint | number, bits);
+      return { encoded, isDynamic: false };
+    }
+
+    // Handle int types
+    if (type.startsWith("int")) {
+      const bits = type === "int" ? 256 : parseInt(type.slice(3));
+      const encoded = encodeInt(value as bigint | number, bits);
+      return { encoded, isDynamic: false };
+    }
+
+    // Handle address
+    if (type === "address") {
+      const addr = value as string;
+      const hex = addr.toLowerCase().replace(/^0x/, "");
+      if (hex.length !== 40) {
+        throw new AbiEncodingError(`Invalid address length: ${hex.length}`);
+      }
+      const result = new Uint8Array(32);
+      for (let i = 0; i < 20; i++) {
+        result[12 + i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      }
+      return { encoded: result, isDynamic: false };
+    }
+
+    // Handle bool
+    if (type === "bool") {
+      const result = new Uint8Array(32);
+      result[31] = value ? 1 : 0;
+      return { encoded: result, isDynamic: false };
+    }
+
+    // Handle fixed-size bytes (bytes1-bytes32)
+    if (type.startsWith("bytes") && type.length > 5) {
+      const size = parseInt(type.slice(5));
+      if (size >= 1 && size <= 32) {
+        const bytes = value as Uint8Array;
+        if (bytes.length !== size) {
+          throw new AbiEncodingError(
+            `Invalid ${type} length: expected ${size}, got ${bytes.length}`,
+          );
+        }
+        const result = new Uint8Array(32);
+        result.set(bytes, 0); // Right-pad with zeros
+        return { encoded: result, isDynamic: false };
+      }
+    }
+
+    // Handle dynamic bytes
+    if (type === "bytes") {
+      const bytes = value as Uint8Array;
+      const length = encodeUint256(BigInt(bytes.length));
+      const data = padRight(bytes);
+      const result = new Uint8Array(length.length + data.length);
+      result.set(length, 0);
+      result.set(data, length.length);
+      return { encoded: result, isDynamic: true };
+    }
+
+    // Handle string
+    if (type === "string") {
+      const str = value as string;
+      const bytes = new TextEncoder().encode(str);
+      const length = encodeUint256(BigInt(bytes.length));
+      const data = padRight(bytes);
+      const result = new Uint8Array(length.length + data.length);
+      result.set(length, 0);
+      result.set(data, length.length);
+      return { encoded: result, isDynamic: true };
+    }
+
+    // Handle dynamic arrays
+    if (type.endsWith("[]")) {
+      const elementType = type.slice(0, -2);
+      const array = value as unknown[];
+      const length = encodeUint256(BigInt(array.length));
+
+      // Encode array elements
+      const elementParams = array.map(() => ({ type: elementType }));
+      const encodedElements = encodeParameters(
+        elementParams as any,
+        array as any,
+      );
+
+      const result = new Uint8Array(length.length + encodedElements.length);
+      result.set(length, 0);
+      result.set(encodedElements, length.length);
+      return { encoded: result, isDynamic: true };
+    }
+
+    // Handle fixed-size arrays
+    const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
+    if (fixedArrayMatch) {
+      const elementType = fixedArrayMatch[1];
+      const arraySize = parseInt(fixedArrayMatch[2]);
+      const array = value as unknown[];
+
+      if (array.length !== arraySize) {
+        throw new AbiEncodingError(
+          `Array length mismatch: expected ${arraySize}, got ${array.length}`,
+        );
+      }
+
+      const elementParams = array.map(() => ({ type: elementType }));
+      const encoded = encodeParameters(elementParams as any, array as any);
+      const isDynamic = isDynamicType(elementType);
+      return { encoded, isDynamic };
+    }
+
+    throw new AbiEncodingError(`Unsupported type: ${type}`);
+  }
+
+  /**
+   * Decode a uint256 value from 32 bytes
+   * @internal
+   */
+  function decodeUint256(data: Uint8Array, offset: number): bigint {
+    if (offset + 32 > data.length) {
+      throw new AbiDecodingError("Data too small for uint256");
+    }
+    let result = 0n;
+    for (let i = 0; i < 32; i++) {
+      result = (result << 8n) | BigInt(data[offset + i]);
+    }
+    return result;
+  }
+
+  /**
+   * Decode a single value based on its type
+   * @internal
+   */
+  function decodeValue(
+    type: string,
+    data: Uint8Array,
+    offset: number,
+  ): { value: unknown; newOffset: number } {
+    // Handle uint types
+    if (type.startsWith("uint")) {
+      const bits = type === "uint" ? 256 : parseInt(type.slice(4));
+      const value = decodeUint256(data, offset);
+      const max = (1n << BigInt(bits)) - 1n;
+      if (value > max) {
+        throw new AbiDecodingError(`Value ${value} out of range for ${type}`);
+      }
+      // Always return bigint for uint64 and above, number for smaller types
+      if (bits < 64) {
+        return { value: Number(value), newOffset: offset + 32 };
+      }
+      return { value, newOffset: offset + 32 };
+    }
+
+    // Handle int types
+    if (type.startsWith("int")) {
+      const bits = type === "int" ? 256 : parseInt(type.slice(3));
+      const unsigned = decodeUint256(data, offset);
+
+      // First, mask to the actual bit width
+      const mask = (1n << BigInt(bits)) - 1n;
+      const masked = unsigned & mask;
+
+      // Check if the value has the sign bit set
+      const signBitMask = 1n << (BigInt(bits) - 1n);
+      let value: bigint;
+      if (masked >= signBitMask) {
+        // Negative number in two's complement
+        // To get the actual negative value, subtract 2^bits
+        value = masked - (1n << BigInt(bits));
+      } else {
+        // Positive number
+        value = masked;
+      }
+      // Return as number for small ints, bigint for large ones
+      if (bits <= 31) {
+        return { value: Number(value), newOffset: offset + 32 };
+      }
+      return { value, newOffset: offset + 32 };
+    }
+
+    // Handle address
+    if (type === "address") {
+      if (offset + 32 > data.length) {
+        throw new AbiDecodingError("Data too small for address");
+      }
+      let hex = "0x";
+      for (let i = 12; i < 32; i++) {
+        hex += data[offset + i].toString(16).padStart(2, "0");
+      }
+      return { value: hex, newOffset: offset + 32 };
+    }
+
+    // Handle bool
+    if (type === "bool") {
+      if (offset + 32 > data.length) {
+        throw new AbiDecodingError("Data too small for bool");
+      }
+      // Check if any byte is non-zero
+      let isTrue = false;
+      for (let i = 0; i < 32; i++) {
+        if (data[offset + i] !== 0) {
+          isTrue = true;
+          break;
+        }
+      }
+      return { value: isTrue, newOffset: offset + 32 };
+    }
+
+    // Handle fixed-size bytes (bytes1-bytes32)
+    if (type.startsWith("bytes") && type.length > 5) {
+      const size = parseInt(type.slice(5));
+      if (size >= 1 && size <= 32) {
+        if (offset + 32 > data.length) {
+          throw new AbiDecodingError(`Data too small for ${type}`);
+        }
+        const value = data.slice(offset, offset + size);
+        return { value, newOffset: offset + 32 };
+      }
+    }
+
+    // Handle dynamic bytes
+    if (type === "bytes") {
+      const dataOffset = Number(decodeUint256(data, offset));
+      const length = Number(decodeUint256(data, dataOffset));
+      if (dataOffset + 32 + length > data.length) {
+        throw new AbiDecodingError("Data too small for bytes");
+      }
+      const value = data.slice(dataOffset + 32, dataOffset + 32 + length);
+      return { value, newOffset: offset + 32 };
+    }
+
+    // Handle string
+    if (type === "string") {
+      const dataOffset = Number(decodeUint256(data, offset));
+      const length = Number(decodeUint256(data, dataOffset));
+      if (dataOffset + 32 + length > data.length) {
+        throw new AbiDecodingError("Data too small for string");
+      }
+      const bytes = data.slice(dataOffset + 32, dataOffset + 32 + length);
+      const value = new TextDecoder().decode(bytes);
+      return { value, newOffset: offset + 32 };
+    }
+
+    // Handle dynamic arrays
+    if (type.endsWith("[]")) {
+      const elementType = type.slice(0, -2);
+      const dataOffset = Number(decodeUint256(data, offset));
+      const length = Number(decodeUint256(data, dataOffset));
+
+      const elementParams = Array(length).fill({ type: elementType });
+      const value = decodeParameters(
+        elementParams as any,
+        data.slice(dataOffset + 32),
+      );
+      return { value, newOffset: offset + 32 };
+    }
+
+    // Handle fixed-size arrays
+    const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
+    if (fixedArrayMatch) {
+      const elementType = fixedArrayMatch[1];
+      const arraySize = parseInt(fixedArrayMatch[2]);
+
+      const elementParams = Array(arraySize).fill({ type: elementType });
+      if (isDynamicType(elementType)) {
+        // For dynamic element types, follow the offset
+        const dataOffset = Number(decodeUint256(data, offset));
+        const value = decodeParameters(elementParams as any, data.slice(dataOffset));
+        return { value, newOffset: offset + 32 };
+      } else {
+        // For static element types, decode inline
+        const value = decodeParameters(elementParams as any, data.slice(offset));
+        return { value, newOffset: offset + arraySize * 32 };
+      }
+    }
+
+    throw new AbiDecodingError(`Unsupported type: ${type}`);
+  }
+
+  // ==========================================================================
   // Parameter Operations
   // ==========================================================================
 
@@ -326,12 +691,56 @@ export namespace Abi {
     params: TParams,
     values: ParametersToPrimitiveTypes<TParams>,
   ): Uint8Array {
-    // TODO: Implement ABI parameter encoding
-    // 1. Validate values match params length
-    // 2. Encode each value according to its type
-    // 3. Handle static vs dynamic types
-    // 4. Return concatenated encoded data
-    throw new AbiEncodingError("Not implemented");
+    if (params.length !== values.length) {
+      throw new AbiParameterMismatchError(
+        `Parameter count mismatch: expected ${params.length}, got ${values.length}`,
+      );
+    }
+
+    // Separate static and dynamic data
+    const staticParts: Uint8Array[] = [];
+    const dynamicParts: Uint8Array[] = [];
+
+    // First pass: collect all encodings
+    const encodings: Array<{ encoded: Uint8Array; isDynamic: boolean }> = [];
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+      const value = values[i];
+      encodings.push(encodeValue(param.type, value));
+    }
+
+    // Calculate initial offset
+    let dynamicOffset = params.length * 32; // Each static slot is 32 bytes
+
+    // Second pass: build static and dynamic parts
+    for (const { encoded, isDynamic } of encodings) {
+      if (isDynamic) {
+        // Static part: offset to dynamic data
+        staticParts.push(encodeUint256(BigInt(dynamicOffset)));
+        dynamicParts.push(encoded);
+        dynamicOffset += encoded.length;
+      } else {
+        // Static part: actual value
+        staticParts.push(encoded);
+      }
+    }
+
+    // Concatenate all parts
+    const totalLength = staticParts.reduce((sum, part) => sum + part.length, 0) +
+                       dynamicParts.reduce((sum, part) => sum + part.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+
+    for (const part of staticParts) {
+      result.set(part, offset);
+      offset += part.length;
+    }
+    for (const part of dynamicParts) {
+      result.set(part, offset);
+      offset += part.length;
+    }
+
+    return result;
   }
 
   /**
@@ -352,12 +761,16 @@ export namespace Abi {
     params: TParams,
     data: Uint8Array,
   ): ParametersToPrimitiveTypes<TParams> {
-    // TODO: Implement ABI parameter decoding
-    // 1. Read static data section
-    // 2. Follow offsets for dynamic types
-    // 3. Decode each parameter by type
-    // 4. Return typed array
-    throw new AbiDecodingError("Not implemented");
+    const result: unknown[] = [];
+    let offset = 0;
+
+    for (const param of params) {
+      const { value } = decodeValue(param.type, data, offset);
+      result.push(value);
+      offset += 32; // Each parameter takes 32 bytes in static section
+    }
+
+    return result as ParametersToPrimitiveTypes<TParams>;
   }
 
   // ==========================================================================
@@ -414,8 +827,12 @@ export namespace Abi {
       this: T,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
-      // TODO: concat(getSelector.call(this), encodeParameters(this.inputs, args))
-      throw new AbiEncodingError("Not implemented");
+      const selector = getSelector.call(this);
+      const encoded = encodeParameters(this.inputs, args);
+      const result = new Uint8Array(selector.length + encoded.length);
+      result.set(selector, 0);
+      result.set(encoded, selector.length);
+      return result;
     }
 
     /**
@@ -436,8 +853,18 @@ export namespace Abi {
       this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
-      // TODO: skip 4-byte selector, decodeParameters(this.inputs, data.slice(4))
-      throw new AbiDecodingError("Not implemented");
+      if (data.length < 4) {
+        throw new AbiDecodingError("Data too short for function selector");
+      }
+      const selector = data.slice(0, 4);
+      const expectedSelector = getSelector.call(this);
+      // Check selector match
+      for (let i = 0; i < 4; i++) {
+        if (selector[i] !== expectedSelector[i]) {
+          throw new AbiInvalidSelectorError("Function selector mismatch");
+        }
+      }
+      return decodeParameters(this.inputs, data.slice(4));
     }
 
     /**
@@ -458,8 +885,7 @@ export namespace Abi {
       this: T,
       values: ParametersToPrimitiveTypes<T["outputs"]>,
     ): Uint8Array {
-      // TODO: encodeParameters(this.outputs, values)
-      throw new AbiEncodingError("Not implemented");
+      return encodeParameters(this.outputs, values);
     }
 
     /**
@@ -479,8 +905,7 @@ export namespace Abi {
       this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["outputs"]> {
-      // TODO: decodeParameters(this.outputs, data)
-      throw new AbiDecodingError("Not implemented");
+      return decodeParameters(this.outputs, data);
     }
   }
 
@@ -536,11 +961,35 @@ export namespace Abi {
       this: T,
       args: Partial<ParametersToObject<T["inputs"]>>,
     ): (Hash | null)[] {
-      // TODO:
-      // 1. topic0 = getSelector.call(this)
-      // 2. For each indexed parameter, hash if dynamic type, else encode
-      // 3. Return array of topics
-      throw new AbiEncodingError("Not implemented");
+      const topics: (Hash | null)[] = [];
+
+      // topic0: event selector (unless anonymous)
+      if (!this.anonymous) {
+        topics.push(getSelector.call(this));
+      }
+
+      // Encode indexed parameters
+      for (const param of this.inputs) {
+        if (!param.indexed) continue;
+
+        const value = param.name ? (args as any)[param.name] : undefined;
+        if (value === undefined || value === null) {
+          topics.push(null);
+          continue;
+        }
+
+        // For dynamic types (string, bytes, arrays), hash the value
+        if (isDynamicType(param.type)) {
+          const { encoded } = encodeValue(param.type, value);
+          topics.push(Hash.keccak256(encoded));
+        } else {
+          // For static types, encode normally
+          const { encoded } = encodeValue(param.type, value);
+          topics.push(encoded as Hash);
+        }
+      }
+
+      return topics;
     }
 
     /**
@@ -563,12 +1012,65 @@ export namespace Abi {
       data: Uint8Array,
       topics: readonly Hash[],
     ): ParametersToObject<T["inputs"]> {
-      // TODO:
-      // 1. Verify topics[0] matches selector
-      // 2. Decode indexed params from topics
-      // 3. Decode non-indexed params from data
-      // 4. Combine into object
-      throw new AbiDecodingError("Not implemented");
+      let topicIndex = 0;
+
+      // Verify topic0 (selector) if not anonymous
+      if (!this.anonymous) {
+        if (topics.length === 0) {
+          throw new AbiDecodingError("Missing topic0 for non-anonymous event");
+        }
+        const topic0 = topics[0];
+        const expectedSelector = getSelector.call(this);
+        // Check selector match
+        for (let i = 0; i < 32; i++) {
+          if (topic0[i] !== expectedSelector[i]) {
+            throw new AbiInvalidSelectorError("Event selector mismatch");
+          }
+        }
+        topicIndex = 1;
+      }
+
+      const result: any = {};
+      const nonIndexedParams: Parameter[] = [];
+
+      // Decode indexed parameters from topics
+      for (const param of this.inputs) {
+        if (param.indexed) {
+          if (topicIndex >= topics.length) {
+            throw new AbiDecodingError(`Missing topic for indexed parameter ${param.name}`);
+          }
+          const topic = topics[topicIndex++];
+
+          // For dynamic types, we can't decode (only have hash)
+          if (isDynamicType(param.type)) {
+            // Store the hash itself
+            if (param.name) {
+              result[param.name] = topic;
+            }
+          } else {
+            // Decode static types
+            const { value } = decodeValue(param.type, topic as Uint8Array, 0);
+            if (param.name) {
+              result[param.name] = value;
+            }
+          }
+        } else {
+          nonIndexedParams.push(param);
+        }
+      }
+
+      // Decode non-indexed parameters from data
+      if (nonIndexedParams.length > 0) {
+        const decoded = decodeParameters(nonIndexedParams as any, data);
+        for (let i = 0; i < nonIndexedParams.length; i++) {
+          const param = nonIndexedParams[i];
+          if (param.name) {
+            result[param.name] = (decoded as any)[i];
+          }
+        }
+      }
+
+      return result as ParametersToObject<T["inputs"]>;
     }
   }
 
@@ -626,8 +1128,12 @@ export namespace Abi {
       this: T,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
-      // TODO: concat(getSelector.call(this), encodeParameters(this.inputs, args))
-      throw new AbiEncodingError("Not implemented");
+      const selector = getSelector.call(this);
+      const encoded = encodeParameters(this.inputs, args);
+      const result = new Uint8Array(selector.length + encoded.length);
+      result.set(selector, 0);
+      result.set(encoded, selector.length);
+      return result;
     }
 
     /**
@@ -648,8 +1154,18 @@ export namespace Abi {
       this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
-      // TODO: skip 4-byte selector, decodeParameters(this.inputs, data.slice(4))
-      throw new AbiDecodingError("Not implemented");
+      if (data.length < 4) {
+        throw new AbiDecodingError("Data too short for error selector");
+      }
+      const selector = data.slice(0, 4);
+      const expectedSelector = getSelector.call(this);
+      // Check selector match
+      for (let i = 0; i < 4; i++) {
+        if (selector[i] !== expectedSelector[i]) {
+          throw new AbiInvalidSelectorError("Error selector mismatch");
+        }
+      }
+      return decodeParameters(this.inputs, data.slice(4));
     }
   }
 
@@ -678,8 +1194,11 @@ export namespace Abi {
       bytecode: Uint8Array,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
-      // TODO: concat(bytecode, encodeParameters(this.inputs, args))
-      throw new AbiEncodingError("Not implemented");
+      const encoded = encodeParameters(this.inputs, args);
+      const result = new Uint8Array(bytecode.length + encoded.length);
+      result.set(bytecode, 0);
+      result.set(encoded, bytecode.length);
+      return result;
     }
 
     /**
@@ -701,8 +1220,7 @@ export namespace Abi {
       data: Uint8Array,
       bytecodeLength: number,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
-      // TODO: decodeParameters(this.inputs, data.slice(bytecodeLength))
-      throw new AbiDecodingError("Not implemented");
+      return decodeParameters(this.inputs, data.slice(bytecodeLength));
     }
   }
 
@@ -811,12 +1329,40 @@ export namespace Abi {
     functionName: TFunctionName;
     args: ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["inputs"]>;
   } {
-    // TODO:
-    // 1. Extract selector from data[0:4]
-    // 2. Find matching function in abi
-    // 3. Decode args
-    // 4. Return { functionName, args }
-    throw new AbiDecodingError("Not implemented");
+    if (data.length < 4) {
+      throw new AbiDecodingError("Data too short for function selector");
+    }
+
+    const selector = data.slice(0, 4);
+
+    // Find matching function by selector
+    for (const item of this) {
+      if (item.type !== "function") continue;
+
+      const fn = item as Abi.Function;
+      const fnSelector = Function.getSelector.call(fn);
+
+      // Check if selector matches
+      let matches = true;
+      for (let i = 0; i < 4; i++) {
+        if (selector[i] !== fnSelector[i]) {
+          matches = false;
+          break;
+        }
+      }
+
+      if (matches) {
+        const args = Function.decodeParams.call(fn, data);
+        return {
+          functionName: fn.name as TFunctionName,
+          args: args as any,
+        };
+      }
+    }
+
+    throw new AbiItemNotFoundError(
+      `Function with selector 0x${Array.from(selector).map(b => b.toString(16).padStart(2, '0')).join('')} not found`,
+    );
   }
 
   /**
@@ -840,12 +1386,55 @@ export namespace Abi {
     args: unknown;
     log: { topics: readonly Hash[]; data: Uint8Array };
   }> {
-    // TODO:
-    // 1. For each log, extract topic0
-    // 2. Find matching event in abi
-    // 3. Decode using Event.decodeLog
-    // 4. Return array of parsed logs
-    throw new AbiDecodingError("Not implemented");
+    const results: Array<{
+      eventName: ExtractEventNames<TAbi>;
+      args: unknown;
+      log: { topics: readonly Hash[]; data: Uint8Array };
+    }> = [];
+
+    for (const log of logs) {
+      if (log.topics.length === 0) continue;
+
+      const topic0 = log.topics[0];
+
+      // Find matching event by selector
+      for (const item of this) {
+        if (item.type !== "event") continue;
+
+        const event = item as Abi.Event;
+
+        // Skip anonymous events (they don't have topic0)
+        if (event.anonymous) continue;
+
+        const eventSelector = Event.getSelector.call(event);
+
+        // Check if selector matches
+        let matches = true;
+        for (let i = 0; i < 32; i++) {
+          if (topic0[i] !== eventSelector[i]) {
+            matches = false;
+            break;
+          }
+        }
+
+        if (matches) {
+          try {
+            const args = Event.decodeLog.call(event, log.data, log.topics);
+            results.push({
+              eventName: event.name as ExtractEventNames<TAbi>,
+              args,
+              log,
+            });
+            break; // Found match, move to next log
+          } catch (e) {
+            // Decoding failed, try next event
+            continue;
+          }
+        }
+      }
+    }
+
+    return results;
   }
 
   // ==========================================================================
@@ -861,11 +1450,102 @@ export namespace Abi {
     types: readonly string[],
     values: readonly unknown[],
   ): Uint8Array {
-    // TODO:
-    // 1. No 32-byte padding
-    // 2. Dynamic types encoded directly without length prefix
-    // 3. Static types encoded as minimal bytes
-    throw new Error("Not implemented");
+    if (types.length !== values.length) {
+      throw new AbiEncodingError(
+        `Type count mismatch: expected ${types.length}, got ${values.length}`,
+      );
+    }
+
+    const parts: Uint8Array[] = [];
+
+    for (let i = 0; i < types.length; i++) {
+      const type = types[i];
+      const value = values[i];
+
+      // Handle uint types - minimal encoding (no padding)
+      if (type.startsWith("uint")) {
+        const bits = type === "uint" ? 256 : parseInt(type.slice(4));
+        const bytes = Math.ceil(bits / 8);
+        const bigintValue = typeof value === "number" ? BigInt(value) : (value as bigint);
+        const result = new Uint8Array(bytes);
+        let v = bigintValue;
+        for (let j = bytes - 1; j >= 0; j--) {
+          result[j] = Number(v & 0xffn);
+          v >>= 8n;
+        }
+        parts.push(result);
+        continue;
+      }
+
+      // Handle int types - minimal encoding with two's complement
+      if (type.startsWith("int")) {
+        const bits = type === "int" ? 256 : parseInt(type.slice(3));
+        const bytes = Math.ceil(bits / 8);
+        const bigintValue = typeof value === "number" ? BigInt(value) : (value as bigint);
+        const unsigned = bigintValue < 0n ? (1n << BigInt(bits)) + bigintValue : bigintValue;
+        const result = new Uint8Array(bytes);
+        let v = unsigned;
+        for (let j = bytes - 1; j >= 0; j--) {
+          result[j] = Number(v & 0xffn);
+          v >>= 8n;
+        }
+        parts.push(result);
+        continue;
+      }
+
+      // Handle address - 20 bytes, no padding
+      if (type === "address") {
+        const addr = value as string;
+        const hex = addr.toLowerCase().replace(/^0x/, "");
+        const result = new Uint8Array(20);
+        for (let j = 0; j < 20; j++) {
+          result[j] = parseInt(hex.slice(j * 2, j * 2 + 2), 16);
+        }
+        parts.push(result);
+        continue;
+      }
+
+      // Handle bool - 1 byte
+      if (type === "bool") {
+        parts.push(new Uint8Array([value ? 1 : 0]));
+        continue;
+      }
+
+      // Handle fixed-size bytes (bytes1-bytes32) - no padding
+      if (type.startsWith("bytes") && type.length > 5) {
+        const size = parseInt(type.slice(5));
+        if (size >= 1 && size <= 32) {
+          parts.push(value as Uint8Array);
+          continue;
+        }
+      }
+
+      // Handle dynamic bytes - no length prefix, just raw bytes
+      if (type === "bytes") {
+        parts.push(value as Uint8Array);
+        continue;
+      }
+
+      // Handle string - no length prefix, just UTF-8 bytes
+      if (type === "string") {
+        const str = value as string;
+        parts.push(new TextEncoder().encode(str));
+        continue;
+      }
+
+      throw new AbiEncodingError(`Unsupported type for encodePacked: ${type}`);
+    }
+
+    // Concatenate all parts
+    const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const part of parts) {
+      result.set(part, offset);
+      offset += part.length;
+    }
+
+    return result;
   }
 
   /**

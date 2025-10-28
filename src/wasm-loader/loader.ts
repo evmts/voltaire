@@ -22,6 +22,9 @@ const ErrorMessages: Record<ErrorCode, string> = {
 	[ErrorCode.OUT_OF_MEMORY]: "Out of memory",
 	[ErrorCode.INVALID_INPUT]: "Invalid input",
 	[ErrorCode.INVALID_SIGNATURE]: "Invalid signature",
+	[ErrorCode.INVALID_SELECTOR]: "Invalid function selector",
+	[ErrorCode.UNSUPPORTED_TYPE]: "Unsupported ABI type",
+	[ErrorCode.MAX_LENGTH_EXCEEDED]: "Maximum length exceeded",
 };
 
 /**
@@ -689,6 +692,28 @@ export function blake2b(data: Uint8Array): Uint8Array {
 		const result = exports.primitives_blake2b(dataPtr, data.length, outPtr);
 		checkResult(result);
 		return readBytes(outPtr, 64);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Compute BLAKE2b hash with variable output length
+ * @param data - Input data
+ * @param outputLength - Output length in bytes (1-64)
+ * @returns BLAKE2b hash of specified length
+ */
+export function blake2Hash(data: Uint8Array, outputLength: number): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const dataPtr = malloc(data.length);
+		const outPtr = malloc(outputLength);
+
+		writeBytes(data, dataPtr);
+		const result = exports.blake2Hash(dataPtr, data.length, outPtr, outputLength);
+		checkResult(result);
+		return readBytes(outPtr, outputLength);
 	} finally {
 		memoryOffset = savedOffset;
 	}
@@ -1412,6 +1437,120 @@ export function signatureSerialize(
 		);
 
 		return readBytes(outPtr, resultLen);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+// ============================================================================
+// ABI API
+// ============================================================================
+
+/**
+ * Compute function selector from signature
+ * @param signature - Function signature string (e.g., "transfer(address,uint256)")
+ * @returns 4-byte selector
+ */
+export function abiComputeSelector(signature: string): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const sigPtr = writeString(signature);
+		const outPtr = malloc(4);
+
+		const result = exports.primitives_abi_compute_selector(sigPtr, outPtr);
+		checkResult(result);
+		return readBytes(outPtr, 4);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Encode ABI parameters
+ * @param types - Array of type strings (e.g., ["address", "uint256", "bool"])
+ * @param values - Array of value strings (e.g., ["0x...", "42", "true"])
+ * @returns Encoded ABI data
+ */
+export function abiEncodeParameters(
+	types: string[],
+	values: string[],
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		// Convert arrays to JSON strings
+		const typesJson = JSON.stringify(types);
+		const valuesJson = JSON.stringify(values);
+
+		const typesPtr = writeString(typesJson);
+		const valuesPtr = writeString(valuesJson);
+
+		// Allocate output buffer (estimate: 32 bytes per parameter + overhead)
+		const estimatedSize = types.length * 64 + 1024;
+		const outPtr = malloc(estimatedSize);
+
+		const resultLen = exports.primitives_abi_encode_parameters(
+			typesPtr,
+			valuesPtr,
+			outPtr,
+			estimatedSize,
+		);
+
+		if (resultLen < 0) {
+			checkResult(resultLen);
+		}
+
+		return readBytes(outPtr, resultLen);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Decode ABI parameters
+ * @param data - Encoded ABI data
+ * @param types - Array of type strings (e.g., ["address", "uint256", "bool"])
+ * @returns Array of decoded value strings
+ */
+export function abiDecodeParameters(
+	data: Uint8Array,
+	types: string[],
+): string[] {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+
+		// Convert types array to JSON string
+		const typesJson = JSON.stringify(types);
+
+		const dataPtr = malloc(data.length);
+		writeBytes(data, dataPtr);
+
+		const typesPtr = writeString(typesJson);
+
+		// Allocate output buffer for JSON result (estimate: 66 bytes per value + overhead)
+		const estimatedSize = types.length * 128 + 1024;
+		const outPtr = malloc(estimatedSize);
+
+		const resultLen = exports.primitives_abi_decode_parameters(
+			dataPtr,
+			data.length,
+			typesPtr,
+			outPtr,
+			estimatedSize,
+		);
+
+		if (resultLen < 0) {
+			checkResult(resultLen);
+		}
+
+		// Read JSON string result
+		const jsonStr = readFixedString(outPtr, resultLen);
+
+		// Parse JSON array
+		return JSON.parse(jsonStr) as string[];
 	} finally {
 		memoryOffset = savedOffset;
 	}
