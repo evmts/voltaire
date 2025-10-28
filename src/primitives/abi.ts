@@ -19,7 +19,7 @@
  */
 
 import type { Address } from "./address.js";
-import type { Hash } from "./hash.js";
+import { Hash } from "./hash.js";
 import type {
   AbiParameter as AbiTypeParameter,
   AbiFunction as AbiTypeFunction,
@@ -29,6 +29,45 @@ import type {
   AbiParameterToPrimitiveType,
   AbiParametersToPrimitiveTypes as AbiTypeParametersToPrimitiveTypes,
 } from "abitype";
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+export class AbiEncodingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AbiEncodingError";
+  }
+}
+
+export class AbiDecodingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AbiDecodingError";
+  }
+}
+
+export class AbiParameterMismatchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AbiParameterMismatchError";
+  }
+}
+
+export class AbiItemNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AbiItemNotFoundError";
+  }
+}
+
+export class AbiInvalidSelectorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AbiInvalidSelectorError";
+  }
+}
 
 // ============================================================================
 // Main Abi Namespace
@@ -230,25 +269,41 @@ export namespace Abi {
     /**
      * Encode single parameter value
      *
-     * TODO: Implement ABI encoding for single parameter
+     * @param value - Value to encode
+     * @returns Encoded parameter data
+     * @throws {AbiEncodingError} If encoding fails
+     *
+     * @example
+     * ```typescript
+     * const param: Abi.Parameter = { type: 'uint256', name: 'amount' };
+     * const encoded = Abi.Parameter.encode.call(param, 1000n);
+     * ```
      */
     export function encode<T extends Abi.Parameter>(
       this: T,
       value: unknown,
     ): Uint8Array {
-      throw new Error("Not implemented");
+      throw new AbiEncodingError("Not implemented");
     }
 
     /**
      * Decode single parameter value
      *
-     * TODO: Implement ABI decoding for single parameter
+     * @param data - Encoded data
+     * @returns Decoded parameter value
+     * @throws {AbiDecodingError} If decoding fails
+     *
+     * @example
+     * ```typescript
+     * const param: Abi.Parameter = { type: 'uint256', name: 'amount' };
+     * const value = Abi.Parameter.decode.call(param, data);
+     * ```
      */
     export function decode<T extends Abi.Parameter>(
       this: T,
       data: Uint8Array,
     ): unknown {
-      throw new Error("Not implemented");
+      throw new AbiDecodingError("Not implemented");
     }
   }
 
@@ -258,6 +313,14 @@ export namespace Abi {
    * @param params - Parameter definitions
    * @param values - Values to encode
    * @returns Encoded data
+   * @throws {AbiEncodingError} If encoding fails
+   * @throws {AbiParameterMismatchError} If values don't match params
+   *
+   * @example
+   * ```typescript
+   * const params = [{ type: 'address' }, { type: 'uint256' }];
+   * const encoded = Abi.encodeParameters(params, [address, amount]);
+   * ```
    */
   export function encodeParameters<const TParams extends readonly Parameter[]>(
     params: TParams,
@@ -268,7 +331,7 @@ export namespace Abi {
     // 2. Encode each value according to its type
     // 3. Handle static vs dynamic types
     // 4. Return concatenated encoded data
-    throw new Error("Not implemented");
+    throw new AbiEncodingError("Not implemented");
   }
 
   /**
@@ -277,6 +340,13 @@ export namespace Abi {
    * @param params - Parameter definitions
    * @param data - Encoded data
    * @returns Decoded values
+   * @throws {AbiDecodingError} If decoding fails
+   *
+   * @example
+   * ```typescript
+   * const params = [{ type: 'address' }, { type: 'uint256' }];
+   * const values = Abi.decodeParameters(params, data);
+   * ```
    */
   export function decodeParameters<const TParams extends readonly Parameter[]>(
     params: TParams,
@@ -287,7 +357,7 @@ export namespace Abi {
     // 2. Follow offsets for dynamic types
     // 3. Decode each parameter by type
     // 4. Return typed array
-    throw new Error("Not implemented");
+    throw new AbiDecodingError("Not implemented");
   }
 
   // ==========================================================================
@@ -297,14 +367,29 @@ export namespace Abi {
   export namespace Function {
     /**
      * Get function selector (4 bytes)
+     *
+     * @throws {AbiEncodingError} If selector computation fails
+     *
+     * @example
+     * ```typescript
+     * const func: Abi.Function = { type: 'function', name: 'transfer', ... };
+     * const selector = Abi.Function.getSelector.call(func);
+     * ```
      */
     export function getSelector<T extends Abi.Function>(this: T): Uint8Array {
-      // TODO: keccak256(signature).slice(0, 4)
-      throw new Error("Not implemented");
+      const signature = getSignature.call(this);
+      const hash = Hash.keccak256String(signature);
+      return hash.slice(0, 4);
     }
 
     /**
      * Get function signature (e.g., "transfer(address,uint256)")
+     *
+     * @example
+     * ```typescript
+     * const func: Abi.Function = { type: 'function', name: 'transfer', ... };
+     * const sig = Abi.Function.getSignature.call(func);
+     * ```
      */
     export function getSignature<T extends Abi.Function>(this: T): string {
       const inputs = this.inputs.map((p) => p.type).join(",");
@@ -312,58 +397,90 @@ export namespace Abi {
     }
 
     /**
-     * Encode function call data
+     * Encode function input parameters
+     *
+     * @param args - Input argument values matching function inputs
+     * @returns Encoded calldata (selector + encoded parameters)
+     * @throws {AbiEncodingError} If encoding fails
+     * @throws {AbiParameterMismatchError} If args don't match inputs
+     *
+     * @example
+     * ```typescript
+     * const func: Abi.Function = { type: 'function', name: 'transfer', ... };
+     * const data = Abi.Function.encodeParams.call(func, [address, amount]);
+     * ```
      */
-    export function encodeFunctionData<T extends Abi.Function>(
+    export function encodeParams<T extends Abi.Function>(
       this: T,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
       // TODO: concat(getSelector.call(this), encodeParameters(this.inputs, args))
-      throw new Error("Not implemented");
+      throw new AbiEncodingError("Not implemented");
     }
 
     /**
-     * Decode function call data
+     * Decode function input parameters from calldata
+     *
+     * @param data - Calldata to decode (must start with function selector)
+     * @returns Decoded input arguments
+     * @throws {AbiDecodingError} If decoding fails
+     * @throws {AbiInvalidSelectorError} If selector doesn't match
+     *
+     * @example
+     * ```typescript
+     * const func: Abi.Function = { type: 'function', name: 'transfer', ... };
+     * const args = Abi.Function.decodeParams.call(func, data);
+     * ```
      */
-    export function decodeFunctionData<T extends Abi.Function>(
+    export function decodeParams<T extends Abi.Function>(
       this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
       // TODO: skip 4-byte selector, decodeParameters(this.inputs, data.slice(4))
-      throw new Error("Not implemented");
+      throw new AbiDecodingError("Not implemented");
     }
 
     /**
-     * Encode function result
+     * Encode function output result
+     *
+     * @param values - Output values matching function outputs
+     * @returns Encoded result data
+     * @throws {AbiEncodingError} If encoding fails
+     * @throws {AbiParameterMismatchError} If values don't match outputs
+     *
+     * @example
+     * ```typescript
+     * const func: Abi.Function = { type: 'function', name: 'balanceOf', ... };
+     * const result = Abi.Function.encodeResult.call(func, [balance]);
+     * ```
      */
-    export function encodeFunctionResult<T extends Abi.Function>(
+    export function encodeResult<T extends Abi.Function>(
       this: T,
       values: ParametersToPrimitiveTypes<T["outputs"]>,
     ): Uint8Array {
       // TODO: encodeParameters(this.outputs, values)
-      throw new Error("Not implemented");
+      throw new AbiEncodingError("Not implemented");
     }
 
     /**
-     * Decode function result
+     * Decode function output result
+     *
+     * @param data - Result data to decode
+     * @returns Decoded output values
+     * @throws {AbiDecodingError} If decoding fails
+     *
+     * @example
+     * ```typescript
+     * const func: Abi.Function = { type: 'function', name: 'balanceOf', ... };
+     * const result = Abi.Function.decodeResult.call(func, data);
+     * ```
      */
-    export function decodeFunctionResult<T extends Abi.Function>(
+    export function decodeResult<T extends Abi.Function>(
       this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["outputs"]> {
       // TODO: decodeParameters(this.outputs, data)
-      throw new Error("Not implemented");
-    }
-
-    /**
-     * Prepare encode function data (validation without encoding)
-     */
-    export function prepareEncodeFunctionData<T extends Abi.Function>(
-      this: T,
-      args: ParametersToPrimitiveTypes<T["inputs"]>,
-    ): { functionName: string; args: unknown[] } {
-      // TODO: Validate args, return prepared data
-      return { functionName: this.name, args: args as unknown[] };
+      throw new AbiDecodingError("Not implemented");
     }
   }
 
@@ -374,14 +491,28 @@ export namespace Abi {
   export namespace Event {
     /**
      * Get event selector (32 bytes, topic0)
+     *
+     * @throws {AbiEncodingError} If selector computation fails
+     *
+     * @example
+     * ```typescript
+     * const event: Abi.Event = { type: 'event', name: 'Transfer', ... };
+     * const selector = Abi.Event.getSelector.call(event);
+     * ```
      */
     export function getSelector<T extends Abi.Event>(this: T): Hash {
-      // TODO: keccak256(signature)
-      throw new Error("Not implemented");
+      const signature = getSignature.call(this);
+      return Hash.keccak256String(signature);
     }
 
     /**
      * Get event signature (e.g., "Transfer(address,address,uint256)")
+     *
+     * @example
+     * ```typescript
+     * const event: Abi.Event = { type: 'event', name: 'Transfer', ... };
+     * const sig = Abi.Event.getSignature.call(event);
+     * ```
      */
     export function getSignature<T extends Abi.Event>(this: T): string {
       const inputs = this.inputs.map((p) => p.type).join(",");
@@ -390,8 +521,18 @@ export namespace Abi {
 
     /**
      * Encode event topics for indexed parameters
+     *
+     * @param args - Indexed parameter values (partial, only indexed params)
+     * @returns Array of topics (topic0 + indexed params)
+     * @throws {AbiEncodingError} If encoding fails
+     *
+     * @example
+     * ```typescript
+     * const event: Abi.Event = { type: 'event', name: 'Transfer', ... };
+     * const topics = Abi.Event.encodeTopics.call(event, { from, to });
+     * ```
      */
-    export function encodeEventTopics<T extends Abi.Event>(
+    export function encodeTopics<T extends Abi.Event>(
       this: T,
       args: Partial<ParametersToObject<T["inputs"]>>,
     ): (Hash | null)[] {
@@ -399,13 +540,25 @@ export namespace Abi {
       // 1. topic0 = getSelector.call(this)
       // 2. For each indexed parameter, hash if dynamic type, else encode
       // 3. Return array of topics
-      throw new Error("Not implemented");
+      throw new AbiEncodingError("Not implemented");
     }
 
     /**
      * Decode event log
+     *
+     * @param data - Non-indexed event data
+     * @param topics - Event topics (topic0 + indexed params)
+     * @returns Decoded event parameters as object
+     * @throws {AbiDecodingError} If decoding fails
+     * @throws {AbiInvalidSelectorError} If topic0 doesn't match selector
+     *
+     * @example
+     * ```typescript
+     * const event: Abi.Event = { type: 'event', name: 'Transfer', ... };
+     * const decoded = Abi.Event.decodeLog.call(event, data, topics);
+     * ```
      */
-    export function decodeEventLog<T extends Abi.Event>(
+    export function decodeLog<T extends Abi.Event>(
       this: T,
       data: Uint8Array,
       topics: readonly Hash[],
@@ -415,7 +568,7 @@ export namespace Abi {
       // 2. Decode indexed params from topics
       // 3. Decode non-indexed params from data
       // 4. Combine into object
-      throw new Error("Not implemented");
+      throw new AbiDecodingError("Not implemented");
     }
   }
 
@@ -426,14 +579,29 @@ export namespace Abi {
   export namespace Error {
     /**
      * Get error selector (4 bytes)
+     *
+     * @throws {AbiEncodingError} If selector computation fails
+     *
+     * @example
+     * ```typescript
+     * const error: Abi.Error = { type: 'error', name: 'InsufficientBalance', ... };
+     * const selector = Abi.Error.getSelector.call(error);
+     * ```
      */
     export function getSelector<T extends Abi.Error>(this: T): Uint8Array {
-      // TODO: keccak256(signature).slice(0, 4)
-      throw new Error("Not implemented");
+      const signature = getSignature.call(this);
+      const hash = Hash.keccak256String(signature);
+      return hash.slice(0, 4);
     }
 
     /**
      * Get error signature (e.g., "InsufficientBalance(uint256,uint256)")
+     *
+     * @example
+     * ```typescript
+     * const error: Abi.Error = { type: 'error', name: 'InsufficientBalance', ... };
+     * const sig = Abi.Error.getSignature.call(error);
+     * ```
      */
     export function getSignature<T extends Abi.Error>(this: T): string {
       const inputs = this.inputs.map((p) => p.type).join(",");
@@ -441,25 +609,47 @@ export namespace Abi {
     }
 
     /**
-     * Encode error result
+     * Encode error parameters
+     *
+     * @param args - Error parameter values
+     * @returns Encoded error data (selector + encoded parameters)
+     * @throws {AbiEncodingError} If encoding fails
+     * @throws {AbiParameterMismatchError} If args don't match inputs
+     *
+     * @example
+     * ```typescript
+     * const error: Abi.Error = { type: 'error', name: 'InsufficientBalance', ... };
+     * const data = Abi.Error.encodeParams.call(error, [available, required]);
+     * ```
      */
-    export function encodeErrorResult<T extends Abi.Error>(
+    export function encodeParams<T extends Abi.Error>(
       this: T,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
       // TODO: concat(getSelector.call(this), encodeParameters(this.inputs, args))
-      throw new Error("Not implemented");
+      throw new AbiEncodingError("Not implemented");
     }
 
     /**
-     * Decode error result
+     * Decode error parameters
+     *
+     * @param data - Error data to decode (must start with error selector)
+     * @returns Decoded error parameters
+     * @throws {AbiDecodingError} If decoding fails
+     * @throws {AbiInvalidSelectorError} If selector doesn't match
+     *
+     * @example
+     * ```typescript
+     * const error: Abi.Error = { type: 'error', name: 'InsufficientBalance', ... };
+     * const params = Abi.Error.decodeParams.call(error, data);
+     * ```
      */
-    export function decodeErrorResult<T extends Abi.Error>(
+    export function decodeParams<T extends Abi.Error>(
       this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
       // TODO: skip 4-byte selector, decodeParameters(this.inputs, data.slice(4))
-      throw new Error("Not implemented");
+      throw new AbiDecodingError("Not implemented");
     }
   }
 
@@ -469,27 +659,50 @@ export namespace Abi {
 
   export namespace Constructor {
     /**
-     * Encode deploy data (bytecode + constructor args)
+     * Encode constructor parameters with bytecode
+     *
+     * @param bytecode - Contract bytecode
+     * @param args - Constructor argument values
+     * @returns Deploy data (bytecode + encoded constructor args)
+     * @throws {AbiEncodingError} If encoding fails
+     * @throws {AbiParameterMismatchError} If args don't match inputs
+     *
+     * @example
+     * ```typescript
+     * const constructor: Abi.Constructor = { type: 'constructor', ... };
+     * const deployData = Abi.Constructor.encodeParams.call(constructor, bytecode, [arg1, arg2]);
+     * ```
      */
-    export function encodeDeployData<T extends Abi.Constructor>(
+    export function encodeParams<T extends Abi.Constructor>(
       this: T,
       bytecode: Uint8Array,
       args: ParametersToPrimitiveTypes<T["inputs"]>,
     ): Uint8Array {
       // TODO: concat(bytecode, encodeParameters(this.inputs, args))
-      throw new Error("Not implemented");
+      throw new AbiEncodingError("Not implemented");
     }
 
     /**
-     * Decode deploy data (extract constructor args from deploy transaction)
+     * Decode constructor parameters from deploy data
+     *
+     * @param data - Deploy transaction data
+     * @param bytecodeLength - Length of contract bytecode
+     * @returns Decoded constructor arguments
+     * @throws {AbiDecodingError} If decoding fails
+     *
+     * @example
+     * ```typescript
+     * const constructor: Abi.Constructor = { type: 'constructor', ... };
+     * const args = Abi.Constructor.decodeParams.call(constructor, data, bytecode.length);
+     * ```
      */
-    export function decodeDeployData<T extends Abi.Constructor>(
+    export function decodeParams<T extends Abi.Constructor>(
       this: T,
       data: Uint8Array,
       bytecodeLength: number,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
       // TODO: decodeParameters(this.inputs, data.slice(bytecodeLength))
-      throw new Error("Not implemented");
+      throw new AbiDecodingError("Not implemented");
     }
   }
 
@@ -520,11 +733,17 @@ export namespace Abi {
   /**
    * Encode function data using function name
    *
+   * @param functionName - Name of function to encode
+   * @param args - Function argument values
+   * @returns Encoded calldata (selector + params)
+   * @throws {AbiItemNotFoundError} If function not found in ABI
+   * @throws {AbiEncodingError} If encoding fails
+   * @throws {AbiParameterMismatchError} If args don't match function inputs
+   *
    * @example
    * ```typescript
    * const abi: Abi = [...];
-   * const richAbi = attach(abi, { encode: Abi.encode });
-   * const data = richAbi.encode("transfer", [address, amount]);
+   * const data = Abi.encode.call(abi, "transfer", [address, amount]);
    * ```
    */
   export function encode<
@@ -536,12 +755,24 @@ export namespace Abi {
     args: ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["inputs"]>,
   ): Uint8Array {
     const fn = getItem.call(this, functionName, "function");
-    if (!fn) throw new Error(`Function ${functionName} not found`);
-    return Function.encodeFunctionData.call(fn as any, args);
+    if (!fn) throw new AbiItemNotFoundError(`Function ${functionName} not found`);
+    return Function.encodeParams.call(fn as any, args);
   }
 
   /**
    * Decode function result using function name
+   *
+   * @param functionName - Name of function to decode result for
+   * @param data - Result data to decode
+   * @returns Decoded output values
+   * @throws {AbiItemNotFoundError} If function not found in ABI
+   * @throws {AbiDecodingError} If decoding fails
+   *
+   * @example
+   * ```typescript
+   * const abi: Abi = [...];
+   * const result = Abi.decode.call(abi, "balanceOf", data);
+   * ```
    */
   export function decode<
     TAbi extends readonly Item[],
@@ -552,12 +783,23 @@ export namespace Abi {
     data: Uint8Array,
   ): ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["outputs"]> {
     const fn = getItem.call(this, functionName, "function");
-    if (!fn) throw new Error(`Function ${functionName} not found`);
-    return Function.decodeFunctionResult.call(fn as any, data);
+    if (!fn) throw new AbiItemNotFoundError(`Function ${functionName} not found`);
+    return Function.decodeResult.call(fn as any, data);
   }
 
   /**
    * Decode function call data (infer function from selector)
+   *
+   * @param data - Calldata to decode
+   * @returns Decoded function name and arguments
+   * @throws {AbiDecodingError} If decoding fails
+   * @throws {AbiItemNotFoundError} If selector doesn't match any function
+   *
+   * @example
+   * ```typescript
+   * const abi: Abi = [...];
+   * const { functionName, args } = Abi.decodeData.call(abi, calldata);
+   * ```
    */
   export function decodeData<
     TAbi extends readonly Item[],
@@ -574,11 +816,21 @@ export namespace Abi {
     // 2. Find matching function in abi
     // 3. Decode args
     // 4. Return { functionName, args }
-    throw new Error("Not implemented");
+    throw new AbiDecodingError("Not implemented");
   }
 
   /**
    * Parse event logs from array of logs
+   *
+   * @param logs - Array of logs to parse
+   * @returns Array of parsed event logs with decoded arguments
+   * @throws {AbiDecodingError} If log decoding fails
+   *
+   * @example
+   * ```typescript
+   * const abi: Abi = [...];
+   * const parsed = Abi.parseLogs.call(abi, logs);
+   * ```
    */
   export function parseLogs<TAbi extends readonly Item[]>(
     this: TAbi,
@@ -591,9 +843,9 @@ export namespace Abi {
     // TODO:
     // 1. For each log, extract topic0
     // 2. Find matching event in abi
-    // 3. Decode using Event.decodeEventLog
+    // 3. Decode using Event.decodeLog
     // 4. Return array of parsed logs
-    throw new Error("Not implemented");
+    throw new AbiDecodingError("Not implemented");
   }
 
   // ==========================================================================
@@ -668,26 +920,52 @@ export namespace Abi {
 
   /**
    * Get function selector from signature string
+   *
+   * @param signature - Function signature (e.g., "transfer(address,uint256)")
+   * @returns 4-byte selector
+   *
+   * @example
+   * ```typescript
+   * const selector = Abi.getFunctionSelector("transfer(address,uint256)");
+   * // Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
+   * ```
    */
   export function getFunctionSelector(signature: string): Uint8Array {
-    // TODO: keccak256(signature).slice(0, 4)
-    throw new Error("Not implemented");
+    const hash = Hash.keccak256String(signature);
+    return hash.slice(0, 4);
   }
 
   /**
    * Get event selector from signature string
+   *
+   * @param signature - Event signature (e.g., "Transfer(address,address,uint256)")
+   * @returns 32-byte selector (topic0)
+   *
+   * @example
+   * ```typescript
+   * const selector = Abi.getEventSelector("Transfer(address,address,uint256)");
+   * // 32-byte Hash
+   * ```
    */
   export function getEventSelector(signature: string): Hash {
-    // TODO: keccak256(signature)
-    throw new Error("Not implemented");
+    return Hash.keccak256String(signature);
   }
 
   /**
    * Get error selector from signature string
+   *
+   * @param signature - Error signature (e.g., "InsufficientBalance(uint256,uint256)")
+   * @returns 4-byte selector
+   *
+   * @example
+   * ```typescript
+   * const selector = Abi.getErrorSelector("InsufficientBalance(uint256,uint256)");
+   * // Uint8Array([...])
+   * ```
    */
   export function getErrorSelector(signature: string): Uint8Array {
-    // TODO: keccak256(signature).slice(0, 4)
-    throw new Error("Not implemented");
+    const hash = Hash.keccak256String(signature);
+    return hash.slice(0, 4);
   }
 }
 
