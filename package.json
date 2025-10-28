@@ -42,7 +42,13 @@
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
 	"types": "types/index.d.ts",
-	"files": ["dist", "src", "!src/**/*.spec.ts", "!src/**/*.test.ts", "types"],
+	"files": [
+		"dist",
+		"src",
+		"!src/**/*.spec.ts",
+		"!src/**/*.test.ts",
+		"types"
+	],
 	"scripts": {
 		"all": "bun i && bun run build && bun lint && bun format && bun test:run && bun generate:docs",
 		"build": "bun run build:zig && bun run build:dist && bun run build:types",
@@ -91,6 +97,7 @@
 		"ref-napi": "^3.0.3"
 	},
 	"dependencies": {
-		"abitype": "^1.1.1"
+		"abitype": "^1.1.1",
+		"c-kzg": "^4.1.0"
 	}
 }
