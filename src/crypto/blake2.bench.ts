@@ -5,9 +5,16 @@
  */
 
 import { bench, group, run } from "mitata";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Blake2 } from "./blake2.js";
+import { Blake2Wasm } from "./blake2.wasm.js";
+import * as loader from "../wasm-loader/loader.js";
+
+// Load WASM module
+const wasmPath = join(import.meta.dirname, "../../wasm/blake2.wasm");
+const wasmBuffer = readFileSync(wasmPath);
+await loader.loadWasm(wasmBuffer.buffer);
 
 // Test data generators
 function generateTestData(size: number): Uint8Array {
@@ -32,33 +39,62 @@ const results: {
   benchmarks: [],
 };
 
-// Benchmark: Different input sizes with default output
-group("BLAKE2b - Variable Input Sizes (64-byte output)", () => {
-  const empty = new Uint8Array([]);
-  const small = generateTestData(32);
-  const medium = generateTestData(1024); // 1 KB
-  const large = generateTestData(1024 * 64); // 64 KB
-  const xlarge = generateTestData(1024 * 1024); // 1 MB
+// Benchmark: Different input sizes with default output (Noble)
+group("BLAKE2b Noble - Variable Input Sizes (64-byte output)", () => {
+	const empty = new Uint8Array([]);
+	const small = generateTestData(32);
+	const medium = generateTestData(1024); // 1 KB
+	const large = generateTestData(1024 * 64); // 64 KB
+	const xlarge = generateTestData(1024 * 1024); // 1 MB
 
-  bench("Empty input", () => {
-    Blake2.hash(empty);
-  });
+	bench("Empty input", () => {
+		Blake2.hash(empty);
+	});
 
-  bench("32 bytes", () => {
-    Blake2.hash(small);
-  });
+	bench("32 bytes", () => {
+		Blake2.hash(small);
+	});
 
-  bench("1 KB", () => {
-    Blake2.hash(medium);
-  });
+	bench("1 KB", () => {
+		Blake2.hash(medium);
+	});
 
-  bench("64 KB", () => {
-    Blake2.hash(large);
-  });
+	bench("64 KB", () => {
+		Blake2.hash(large);
+	});
 
-  bench("1 MB", () => {
-    Blake2.hash(xlarge);
-  });
+	bench("1 MB", () => {
+		Blake2.hash(xlarge);
+	});
+});
+
+// Benchmark: Different input sizes with default output (WASM)
+group("BLAKE2b WASM - Variable Input Sizes (64-byte output)", () => {
+	const empty = new Uint8Array([]);
+	const small = generateTestData(32);
+	const medium = generateTestData(1024); // 1 KB
+	const large = generateTestData(1024 * 64); // 64 KB
+	const xlarge = generateTestData(1024 * 1024); // 1 MB
+
+	bench("Empty input", () => {
+		Blake2Wasm.hash(empty);
+	});
+
+	bench("32 bytes", () => {
+		Blake2Wasm.hash(small);
+	});
+
+	bench("1 KB", () => {
+		Blake2Wasm.hash(medium);
+	});
+
+	bench("64 KB", () => {
+		Blake2Wasm.hash(large);
+	});
+
+	bench("1 MB", () => {
+		Blake2Wasm.hash(xlarge);
+	});
 });
 
 // Benchmark: Different output lengths
@@ -161,21 +197,25 @@ group("BLAKE2b - Sequential Operations", () => {
   });
 });
 
-// Benchmark: Comparison with different algorithms (if available)
-group("BLAKE2b - Multiple Output Formats", () => {
-  const input = generateTestData(1024);
+// Benchmark: Comparison Noble vs WASM
+group("BLAKE2b - Noble vs WASM Comparison (1 KB input)", () => {
+	const input = generateTestData(1024);
 
-  bench("32-byte hash (SHA-256 size)", () => {
-    Blake2.hash(input, 32);
-  });
+	bench("Noble - 32-byte output", () => {
+		Blake2.hash(input, 32);
+	});
 
-  bench("48-byte hash (SHA-384 size)", () => {
-    Blake2.hash(input, 48);
-  });
+	bench("WASM - 32-byte output", () => {
+		Blake2Wasm.hash(input, 32);
+	});
 
-  bench("64-byte hash (SHA-512 size)", () => {
-    Blake2.hash(input, 64);
-  });
+	bench("Noble - 64-byte output", () => {
+		Blake2.hash(input, 64);
+	});
+
+	bench("WASM - 64-byte output", () => {
+		Blake2Wasm.hash(input, 64);
+	});
 });
 
 // Run benchmarks and save results
@@ -193,15 +233,17 @@ group("BLAKE2b - Multiple Output Formats", () => {
     percentiles: true,
   });
 
-  console.log("\n📊 Benchmark Summary:");
-  console.log("=====================");
-  console.log("BLAKE2b implementation using @noble/hashes");
-  console.log(`Timestamp: ${results.timestamp}`);
-  console.log("\nPerformance characteristics:");
-  console.log("- Fast hashing for all input sizes");
-  console.log("- Linear scaling with input size");
-  console.log("- Minimal overhead for variable output lengths");
-  console.log("- Excellent throughput on modern hardware");
+	console.log("\n📊 Benchmark Summary:");
+	console.log("=====================");
+	console.log("BLAKE2b implementations:");
+	console.log("- Noble: @noble/hashes (JavaScript)");
+	console.log("- WASM: Zig implementation (WebAssembly)");
+	console.log(`Timestamp: ${results.timestamp}`);
+	console.log("\nPerformance characteristics:");
+	console.log("- Fast hashing for all input sizes");
+	console.log("- Linear scaling with input size");
+	console.log("- Minimal overhead for variable output lengths");
+	console.log("- WASM offers native-speed performance");
 
   // Save results to JSON file
   const outputPath = join(import.meta.dirname, "blake2-results.json");

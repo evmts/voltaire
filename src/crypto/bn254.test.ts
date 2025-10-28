@@ -6,10 +6,24 @@
  * - G2 point operations
  * - Pairing operations and bilinearity
  * - Edge cases and known test vectors
+ *
+ * Tests all three implementations:
+ * - Pure TypeScript (Bn254)
+ * - WASM native Zig (Bn254Wasm) - skipped until WASM loader ready
+ * - WASM Arkworks (Bn254Ark) - skipped until WASM loader ready
  */
 
 import { describe, it, expect } from "vitest";
 import { Bn254, Bn254InvalidPointError, Bn254SubgroupCheckError } from "./bn254.js";
+// import { Bn254Wasm } from "./bn254.wasm.js";
+// import { Bn254Ark } from "./bn254.ark.js";
+
+// Test parameterization for multiple implementations
+const implementations = [
+  { name: "Pure TS", impl: Bn254 },
+  // { name: "WASM", impl: Bn254Wasm }, // TODO: Enable when WASM loader ready
+  // { name: "Arkworks", impl: Bn254Ark }, // TODO: Enable when WASM loader ready
+];
 
 describe("Bn254.Fr", () => {
   it("should perform modular addition", () => {
@@ -530,3 +544,20 @@ describe("Edge cases", () => {
     }
   });
 });
+
+// ============================================================================
+// Cross-Implementation Validation Tests
+// ============================================================================
+// TODO: Once WASM implementations are ready, add tests that verify:
+// 1. All implementations produce identical results for same operations
+// 2. Serialization compatibility between implementations
+// 3. Performance characteristics match expectations (Ark >> WASM >> Pure)
+//
+// Example test structure:
+// describe.each(implementations)("$name implementation", ({ impl }) => {
+//   it("should match reference results", () => {
+//     const g1 = impl.G1.generator();
+//     const result = impl.G1.mul.call(g1, 5n);
+//     // Verify against known test vectors
+//   });
+// });

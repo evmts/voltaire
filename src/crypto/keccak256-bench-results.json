@@ -1,0 +1,230 @@
+[
+  {
+    "name": "hash - empty (Noble)",
+    "opsPerSec": 370277.5834377186,
+    "avgTimeMs": 0.0027006765862406085,
+    "iterations": 740556
+  },
+  {
+    "name": "hash - 32 bytes (Noble)",
+    "opsPerSec": 371987.7210092093,
+    "avgTimeMs": 0.002688260777229373,
+    "iterations": 743976
+  },
+  {
+    "name": "hash - 256 bytes (Noble)",
+    "opsPerSec": 190030.4960093596,
+    "avgTimeMs": 0.005262313265502116,
+    "iterations": 380061
+  },
+  {
+    "name": "hash - 1 KB (Noble)",
+    "opsPerSec": 49687.56833925004,
+    "avgTimeMs": 0.02012575848293351,
+    "iterations": 99376
+  },
+  {
+    "name": "hash - 4 KB (Noble)",
+    "opsPerSec": 12904.735181929327,
+    "avgTimeMs": 0.07749093537388611,
+    "iterations": 25810
+  },
+  {
+    "name": "hash - 16 KB (Noble)",
+    "opsPerSec": 3317.7184086500674,
+    "avgTimeMs": 0.30141195750452066,
+    "iterations": 6636
+  },
+  {
+    "name": "hash - 64 KB (Noble)",
+    "opsPerSec": 832.7640154971085,
+    "avgTimeMs": 1.2008203781512605,
+    "iterations": 1666
+  },
+  {
+    "name": "hash - empty (WASM)",
+    "opsPerSec": 3069319.0518794204,
+    "avgTimeMs": 0.00032580516495594525,
+    "iterations": 6138639
+  },
+  {
+    "name": "hash - 32 bytes (WASM)",
+    "opsPerSec": 3092872.306695483,
+    "avgTimeMs": 0.0003233240498921308,
+    "iterations": 6185745
+  },
+  {
+    "name": "hash - 256 bytes (WASM)",
+    "opsPerSec": 1880315.7254739036,
+    "avgTimeMs": 0.0005318255793175192,
+    "iterations": 3760632
+  },
+  {
+    "name": "hash - 1 KB (WASM)",
+    "opsPerSec": 572374.8091130011,
+    "avgTimeMs": 0.0017471069377593363,
+    "iterations": 1144750
+  },
+  {
+    "name": "hash - 4 KB (WASM)",
+    "opsPerSec": 165061.47251726483,
+    "avgTimeMs": 0.006058348957812694,
+    "iterations": 330123
+  },
+  {
+    "name": "hash - 16 KB (WASM)",
+    "opsPerSec": 43113.66944749635,
+    "avgTimeMs": 0.023194499860834064,
+    "iterations": 86228
+  },
+  {
+    "name": "hash - 64 KB (WASM)",
+    "opsPerSec": 10782.04940198242,
+    "avgTimeMs": 0.09274674625550659,
+    "iterations": 21565
+  },
+  {
+    "name": "hashString - empty (Noble)",
+    "opsPerSec": 352955.0515706067,
+    "avgTimeMs": 0.002833221951492471,
+    "iterations": 705911
+  },
+  {
+    "name": "hashString - short (Noble)",
+    "opsPerSec": 347114.17458046105,
+    "avgTimeMs": 0.0028808964693206444,
+    "iterations": 694229
+  },
+  {
+    "name": "hashString - medium (Noble)",
+    "opsPerSec": 349609.93444813736,
+    "avgTimeMs": 0.002860330618403363,
+    "iterations": 699220
+  },
+  {
+    "name": "hashString - long (Noble)",
+    "opsPerSec": 49254.413804775686,
+    "avgTimeMs": 0.02030274898740223,
+    "iterations": 98509
+  },
+  {
+    "name": "hashString - empty (WASM)",
+    "opsPerSec": 2359526.607138824,
+    "avgTimeMs": 0.00042381382645759007,
+    "iterations": 4719054
+  },
+  {
+    "name": "hashString - short (WASM)",
+    "opsPerSec": 2366477.5,
+    "avgTimeMs": 0.0004225689870281885,
+    "iterations": 4732955
+  },
+  {
+    "name": "hashString - medium (WASM)",
+    "opsPerSec": 2278878.6672837096,
+    "avgTimeMs": 0.0004388123046462766,
+    "iterations": 4557758
+  },
+  {
+    "name": "hashString - long (WASM)",
+    "opsPerSec": 516371.6664239033,
+    "avgTimeMs": 0.0019365896020698263,
+    "iterations": 1032744
+  },
+  {
+    "name": "hashHex - short (Noble)",
+    "opsPerSec": 351993.1700064028,
+    "avgTimeMs": 0.0028409642152482954,
+    "iterations": 703987
+  },
+  {
+    "name": "hashHex - medium (Noble)",
+    "opsPerSec": 305344.55465496733,
+    "avgTimeMs": 0.003274988811017043,
+    "iterations": 610690
+  },
+  {
+    "name": "hashHex - short (WASM)",
+    "opsPerSec": 2620154.6187675074,
+    "avgTimeMs": 0.0003816568659106039,
+    "iterations": 5240310
+  },
+  {
+    "name": "hashHex - medium (WASM)",
+    "opsPerSec": 1208497.2734067638,
+    "avgTimeMs": 0.0008274739397474947,
+    "iterations": 2416995
+  },
+  {
+    "name": "hashMultiple - 3 chunks (Noble)",
+    "opsPerSec": 343618.7280257772,
+    "avgTimeMs": 0.0029102022632625053,
+    "iterations": 687238
+  },
+  {
+    "name": "hashMultiple - 10 chunks (Noble)",
+    "opsPerSec": 124766.88827125185,
+    "avgTimeMs": 0.008014947025255056,
+    "iterations": 249534
+  },
+  {
+    "name": "hashMultiple - 3 chunks (WASM)",
+    "opsPerSec": 2546528.0747298067,
+    "avgTimeMs": 0.00039269152770134006,
+    "iterations": 5093057
+  },
+  {
+    "name": "hashMultiple - 10 chunks (WASM)",
+    "opsPerSec": 1097814,
+    "avgTimeMs": 0.0009109011180400323,
+    "iterations": 2195628
+  },
+  {
+    "name": "selector - function sig (Noble)",
+    "opsPerSec": 334578.6583951898,
+    "avgTimeMs": 0.002988833791122575,
+    "iterations": 669158
+  },
+  {
+    "name": "selector - function sig (WASM)",
+    "opsPerSec": 2080888.696190246,
+    "avgTimeMs": 0.00048056390609974974,
+    "iterations": 4161778
+  },
+  {
+    "name": "topic - event sig (Noble)",
+    "opsPerSec": 335366.9091155662,
+    "avgTimeMs": 0.0029818087975263053,
+    "iterations": 670734
+  },
+  {
+    "name": "topic - event sig (WASM)",
+    "opsPerSec": 2052059.7865857845,
+    "avgTimeMs": 0.00048731523639659603,
+    "iterations": 4104120
+  },
+  {
+    "name": "contractAddress (Noble)",
+    "opsPerSec": 309326.716502064,
+    "avgTimeMs": 0.0032328277728746633,
+    "iterations": 618654
+  },
+  {
+    "name": "contractAddress (WASM)",
+    "opsPerSec": 1326940.3341324602,
+    "avgTimeMs": 0.0007536133873372609,
+    "iterations": 2653881
+  },
+  {
+    "name": "create2Address (Noble)",
+    "opsPerSec": 338905.7812363169,
+    "avgTimeMs": 0.002950672592105197,
+    "iterations": 677812
+  },
+  {
+    "name": "create2Address (WASM)",
+    "opsPerSec": 2406108.9494717126,
+    "avgTimeMs": 0.00041560877790657025,
+    "iterations": 4812218
+  }
+]

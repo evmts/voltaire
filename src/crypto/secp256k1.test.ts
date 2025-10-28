@@ -6,69 +6,88 @@
  * - Public key derivation and recovery
  * - Edge cases and invalid inputs
  * - Cross-validation with Ethereum test vectors
+ * - Cross-validation between Noble and WASM implementations
  */
 
 import { describe, it, expect } from "vitest";
 import { Secp256k1 } from "./secp256k1.js";
+import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 import { Hash } from "../primitives/hash.js";
+import { loadWasm } from "../wasm-loader/loader.js";
 
-describe("Secp256k1", () => {
-  // Test vectors from Ethereum
-  const TEST_PRIVATE_KEY = new Uint8Array([
-    0xac, 0x0c, 0x3e, 0x9c, 0xd8, 0x4b, 0x8d, 0x8d, 0x8d, 0x0c, 0x3e, 0x9c,
-    0xd8, 0x4b, 0x8d, 0x8d, 0xac, 0x0c, 0x3e, 0x9c, 0xd8, 0x4b, 0x8d, 0x8d,
-    0x8d, 0x0c, 0x3e, 0x9c, 0xd8, 0x4b, 0x8d, 0x8d,
-  ]);
+// Load WASM before running tests
+await loadWasm(new URL("../../zig-out/lib/primitives.wasm", import.meta.url));
 
-  const TEST_MESSAGE = "Hello, Ethereum!";
-  const TEST_MESSAGE_HASH = Hash.keccak256String(TEST_MESSAGE);
+// Test vectors from Ethereum
+const TEST_PRIVATE_KEY = new Uint8Array([
+  0xac, 0x0c, 0x3e, 0x9c, 0xd8, 0x4b, 0x8d, 0x8d, 0x8d, 0x0c, 0x3e, 0x9c, 0xd8,
+  0x4b, 0x8d, 0x8d, 0xac, 0x0c, 0x3e, 0x9c, 0xd8, 0x4b, 0x8d, 0x8d, 0x8d, 0x0c,
+  0x3e, 0x9c, 0xd8, 0x4b, 0x8d, 0x8d,
+]);
 
-  describe("Key Generation", () => {
-    it("derives public key from private key", () => {
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+const TEST_MESSAGE = "Hello, Ethereum!";
+const TEST_MESSAGE_HASH = Hash.keccak256String(TEST_MESSAGE);
 
-      expect(publicKey).toBeInstanceOf(Uint8Array);
-      expect(publicKey.length).toBe(64);
+// Parameterized test helper
+const implementations = [
+  { name: "Noble", impl: Secp256k1 },
+  { name: "Wasm", impl: Secp256k1Wasm },
+] as const;
 
-      // Public key should be deterministic
-      const publicKey2 = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      expect(publicKey).toEqual(publicKey2);
+// Run tests for each implementation
+for (const { name, impl } of implementations) {
+  describe(`Secp256k1 (${name})`, () => {
+    const Secp256k1Impl = impl;
+
+    describe("Key Generation", () => {
+      it("derives public key from private key", () => {
+        const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+
+        expect(publicKey).toBeInstanceOf(Uint8Array);
+        expect(publicKey.length).toBe(64);
+
+        // Public key should be deterministic
+        const publicKey2 = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+        expect(publicKey).toEqual(publicKey2);
+      });
+
+      it("derives different public keys from different private keys", () => {
+        const privateKey2 = new Uint8Array(32);
+        privateKey2.fill(1);
+
+        const publicKey1 = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+        const publicKey2 = Secp256k1Impl.derivePublicKey(privateKey2);
+
+        expect(publicKey1).not.toEqual(publicKey2);
+      });
+
+      it("throws on invalid private key length", () => {
+        const invalidKey = new Uint8Array(16);
+        expect(() => Secp256k1Impl.derivePublicKey(invalidKey)).toThrow(
+          "Private key must be 32 bytes",
+        );
+      });
+
+      it("throws on zero private key", () => {
+        const zeroKey = new Uint8Array(32);
+        expect(() => Secp256k1Impl.derivePublicKey(zeroKey)).toThrow();
+      });
+
+      it("throws on private key >= curve order", () => {
+        // Create a key larger than the curve order
+        const largeKey = new Uint8Array(32);
+        largeKey.fill(0xff);
+
+        expect(() => Secp256k1Impl.derivePublicKey(largeKey)).toThrow();
+      });
     });
 
-    it("derives different public keys from different private keys", () => {
-      const privateKey2 = new Uint8Array(32);
-      privateKey2.fill(1);
-
-      const publicKey1 = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      const publicKey2 = Secp256k1.derivePublicKey(privateKey2);
-
-      expect(publicKey1).not.toEqual(publicKey2);
-    });
-
-    it("throws on invalid private key length", () => {
-      const invalidKey = new Uint8Array(16);
-      expect(() => Secp256k1.derivePublicKey(invalidKey)).toThrow(
-        "Private key must be 32 bytes",
-      );
-    });
-
-    it("throws on zero private key", () => {
-      const zeroKey = new Uint8Array(32);
-      expect(() => Secp256k1.derivePublicKey(zeroKey)).toThrow();
-    });
-
-    it("throws on private key >= curve order", () => {
-      // Create a key larger than the curve order
-      const largeKey = new Uint8Array(32);
-      largeKey.fill(0xff);
-
-      expect(() => Secp256k1.derivePublicKey(largeKey)).toThrow();
-    });
-  });
-
-  describe("Signing", () => {
-    it("signs a message hash", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+    describe("Signing", () => {
+      it("signs a message hash", () => {
+        const signature = Secp256k1Impl.sign(
+          TEST_MESSAGE_HASH,
+          TEST_PRIVATE_KEY,
+        );
 
       expect(signature.r).toBeInstanceOf(Uint8Array);
       expect(signature.r.length).toBe(32);
@@ -78,8 +97,8 @@ describe("Secp256k1", () => {
     });
 
     it("produces deterministic signatures", () => {
-      const sig1 = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const sig2 = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const sig1 = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const sig2 = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
       expect(sig1.r).toEqual(sig2.r);
       expect(sig1.s).toEqual(sig2.s);
@@ -88,8 +107,8 @@ describe("Secp256k1", () => {
 
     it("produces different signatures for different messages", () => {
       const hash2 = Hash.keccak256String("Different message");
-      const sig1 = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const sig2 = Secp256k1.sign(hash2, TEST_PRIVATE_KEY);
+      const sig1 = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const sig2 = Secp256k1Impl.sign(hash2, TEST_PRIVATE_KEY);
 
       expect(sig1.r).not.toEqual(sig2.r);
     });
@@ -98,15 +117,15 @@ describe("Secp256k1", () => {
       const privateKey2 = new Uint8Array(32);
       privateKey2.fill(1);
 
-      const sig1 = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const sig2 = Secp256k1.sign(TEST_MESSAGE_HASH, privateKey2);
+      const sig1 = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const sig2 = Secp256k1Impl.sign(TEST_MESSAGE_HASH, privateKey2);
 
       expect(sig1.r).not.toEqual(sig2.r);
     });
 
     it("throws on invalid private key length", () => {
       const invalidKey = new Uint8Array(16);
-      expect(() => Secp256k1.sign(TEST_MESSAGE_HASH, invalidKey)).toThrow(
+      expect(() => Secp256k1Impl.sign(TEST_MESSAGE_HASH, invalidKey)).toThrow(
         "Private key must be 32 bytes",
       );
     });
@@ -114,30 +133,30 @@ describe("Secp256k1", () => {
 
   describe("Verification", () => {
     it("verifies valid signature", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
 
-      const valid = Secp256k1.verify(signature, TEST_MESSAGE_HASH, publicKey);
+      const valid = Secp256k1Impl.verify(signature, TEST_MESSAGE_HASH, publicKey);
       expect(valid).toBe(true);
     });
 
     it("rejects signature with wrong message", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
       const wrongHash = Hash.keccak256String("Wrong message");
 
-      const valid = Secp256k1.verify(signature, wrongHash, publicKey);
+      const valid = Secp256k1Impl.verify(signature, wrongHash, publicKey);
       expect(valid).toBe(false);
     });
 
     it("rejects signature with wrong public key", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
       const privateKey2 = new Uint8Array(32);
       privateKey2.fill(1);
-      const wrongPublicKey = Secp256k1.derivePublicKey(privateKey2);
+      const wrongPublicKey = Secp256k1Impl.derivePublicKey(privateKey2);
 
-      const valid = Secp256k1.verify(
+      const valid = Secp256k1Impl.verify(
         signature,
         TEST_MESSAGE_HASH,
         wrongPublicKey,
@@ -146,8 +165,8 @@ describe("Secp256k1", () => {
     });
 
     it("rejects signature with modified r", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
 
       // Modify r
       const modifiedSig = {
@@ -156,7 +175,7 @@ describe("Secp256k1", () => {
       };
       modifiedSig.r[0] ^= 0x01;
 
-      const valid = Secp256k1.verify(
+      const valid = Secp256k1Impl.verify(
         modifiedSig,
         TEST_MESSAGE_HASH,
         publicKey,
@@ -165,8 +184,8 @@ describe("Secp256k1", () => {
     });
 
     it("rejects signature with modified s", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
 
       // Modify s
       const modifiedSig = {
@@ -175,7 +194,7 @@ describe("Secp256k1", () => {
       };
       modifiedSig.s[0] ^= 0x01;
 
-      const valid = Secp256k1.verify(
+      const valid = Secp256k1Impl.verify(
         modifiedSig,
         TEST_MESSAGE_HASH,
         publicKey,
@@ -184,16 +203,16 @@ describe("Secp256k1", () => {
     });
 
     it("throws on invalid public key length", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
       const invalidKey = new Uint8Array(32);
 
       expect(() =>
-        Secp256k1.verify(signature, TEST_MESSAGE_HASH, invalidKey),
+        Secp256k1Impl.verify(signature, TEST_MESSAGE_HASH, invalidKey),
       ).toThrow("Public key must be 64 bytes");
     });
 
     it("throws on invalid signature r length", () => {
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
       const invalidSig = {
         r: new Uint8Array(16),
         s: new Uint8Array(32),
@@ -201,12 +220,12 @@ describe("Secp256k1", () => {
       };
 
       expect(() =>
-        Secp256k1.verify(invalidSig, TEST_MESSAGE_HASH, publicKey),
+        Secp256k1Impl.verify(invalidSig, TEST_MESSAGE_HASH, publicKey),
       ).toThrow("Signature r must be 32 bytes");
     });
 
     it("throws on invalid signature s length", () => {
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
       const invalidSig = {
         r: new Uint8Array(32),
         s: new Uint8Array(16),
@@ -214,17 +233,17 @@ describe("Secp256k1", () => {
       };
 
       expect(() =>
-        Secp256k1.verify(invalidSig, TEST_MESSAGE_HASH, publicKey),
+        Secp256k1Impl.verify(invalidSig, TEST_MESSAGE_HASH, publicKey),
       ).toThrow("Signature s must be 32 bytes");
     });
   });
 
   describe("Public Key Recovery", () => {
     it("recovers public key from signature", () => {
-      const originalPublicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const originalPublicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
-      const recoveredPublicKey = Secp256k1.recoverPublicKey(
+      const recoveredPublicKey = Secp256k1Impl.recoverPublicKey(
         signature,
         TEST_MESSAGE_HASH,
       );
@@ -233,15 +252,15 @@ describe("Secp256k1", () => {
     });
 
     it("recovers public key with v = 27", () => {
-      const originalPublicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const originalPublicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
       // Force v = 27
       const sig27 = { ...signature, v: 27 };
 
       // Try recovery - should work if v is correct
       try {
-        const recovered = Secp256k1.recoverPublicKey(sig27, TEST_MESSAGE_HASH);
+        const recovered = Secp256k1Impl.recoverPublicKey(sig27, TEST_MESSAGE_HASH);
         // If recovery succeeds, verify it matches
         if (
           recovered.every((byte, i) => byte === originalPublicKey[i]) ||
@@ -256,15 +275,15 @@ describe("Secp256k1", () => {
     });
 
     it("recovers public key with v = 28", () => {
-      const originalPublicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const originalPublicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
       // Force v = 28
       const sig28 = { ...signature, v: 28 };
 
       // Try recovery - should work if v is correct
       try {
-        const recovered = Secp256k1.recoverPublicKey(sig28, TEST_MESSAGE_HASH);
+        const recovered = Secp256k1Impl.recoverPublicKey(sig28, TEST_MESSAGE_HASH);
         // If recovery succeeds, verify it matches
         if (
           recovered.every((byte, i) => byte === originalPublicKey[i]) ||
@@ -279,11 +298,11 @@ describe("Secp256k1", () => {
     });
 
     it("throws on invalid v value", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
       const invalidSig = { ...signature, v: 99 };
 
       expect(() =>
-        Secp256k1.recoverPublicKey(invalidSig, TEST_MESSAGE_HASH),
+        Secp256k1Impl.recoverPublicKey(invalidSig, TEST_MESSAGE_HASH),
       ).toThrow("Invalid v value");
     });
 
@@ -295,7 +314,7 @@ describe("Secp256k1", () => {
       };
 
       expect(() =>
-        Secp256k1.recoverPublicKey(invalidSig, TEST_MESSAGE_HASH),
+        Secp256k1Impl.recoverPublicKey(invalidSig, TEST_MESSAGE_HASH),
       ).toThrow("Signature r must be 32 bytes");
     });
 
@@ -307,15 +326,15 @@ describe("Secp256k1", () => {
       };
 
       expect(() =>
-        Secp256k1.recoverPublicKey(invalidSig, TEST_MESSAGE_HASH),
+        Secp256k1Impl.recoverPublicKey(invalidSig, TEST_MESSAGE_HASH),
       ).toThrow("Signature s must be 32 bytes");
     });
   });
 
   describe("Signature Validation", () => {
     it("validates correct signature", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      expect(Secp256k1.isValidSignature(signature)).toBe(true);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      expect(Secp256k1Impl.isValidSignature(signature)).toBe(true);
     });
 
     it("rejects signature with zero r", () => {
@@ -326,7 +345,7 @@ describe("Secp256k1", () => {
       };
       signature.s.fill(1);
 
-      expect(Secp256k1.isValidSignature(signature)).toBe(false);
+      expect(Secp256k1Impl.isValidSignature(signature)).toBe(false);
     });
 
     it("rejects signature with zero s", () => {
@@ -337,11 +356,11 @@ describe("Secp256k1", () => {
       };
       signature.r.fill(1);
 
-      expect(Secp256k1.isValidSignature(signature)).toBe(false);
+      expect(Secp256k1Impl.isValidSignature(signature)).toBe(false);
     });
 
     it("rejects signature with high s value", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
       // Create high s (> n/2)
       const highS = new Uint8Array(32);
@@ -349,18 +368,18 @@ describe("Secp256k1", () => {
 
       const invalidSig = { ...signature, s: highS };
 
-      expect(Secp256k1.isValidSignature(invalidSig)).toBe(false);
+      expect(Secp256k1Impl.isValidSignature(invalidSig)).toBe(false);
     });
 
     it("rejects signature with invalid v", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
       const invalidSig = { ...signature, v: 99 };
 
-      expect(Secp256k1.isValidSignature(invalidSig)).toBe(false);
+      expect(Secp256k1Impl.isValidSignature(invalidSig)).toBe(false);
     });
 
     it("accepts v values 0, 1, 27, 28", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 
       const sig0 = { ...signature, v: 0 };
       const sig1 = { ...signature, v: 1 };
@@ -369,57 +388,57 @@ describe("Secp256k1", () => {
 
       // Note: These should pass format validation
       // but may not be valid for the specific signature
-      expect(Secp256k1.isValidSignature(sig0)).toBe(true);
-      expect(Secp256k1.isValidSignature(sig1)).toBe(true);
-      expect(Secp256k1.isValidSignature(sig27)).toBe(true);
-      expect(Secp256k1.isValidSignature(sig28)).toBe(true);
+      expect(Secp256k1Impl.isValidSignature(sig0)).toBe(true);
+      expect(Secp256k1Impl.isValidSignature(sig1)).toBe(true);
+      expect(Secp256k1Impl.isValidSignature(sig27)).toBe(true);
+      expect(Secp256k1Impl.isValidSignature(sig28)).toBe(true);
     });
   });
 
   describe("Public Key Validation", () => {
     it("validates correct public key", () => {
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      expect(Secp256k1.isValidPublicKey(publicKey)).toBe(true);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+      expect(Secp256k1Impl.isValidPublicKey(publicKey)).toBe(true);
     });
 
     it("rejects invalid length", () => {
       const invalid = new Uint8Array(32);
-      expect(Secp256k1.isValidPublicKey(invalid)).toBe(false);
+      expect(Secp256k1Impl.isValidPublicKey(invalid)).toBe(false);
     });
 
     it("rejects point not on curve", () => {
       const invalid = new Uint8Array(64);
       invalid.fill(1);
-      expect(Secp256k1.isValidPublicKey(invalid)).toBe(false);
+      expect(Secp256k1Impl.isValidPublicKey(invalid)).toBe(false);
     });
   });
 
   describe("Private Key Validation", () => {
     it("validates correct private key", () => {
-      expect(Secp256k1.isValidPrivateKey(TEST_PRIVATE_KEY)).toBe(true);
+      expect(Secp256k1Impl.isValidPrivateKey(TEST_PRIVATE_KEY)).toBe(true);
     });
 
     it("rejects invalid length", () => {
       const invalid = new Uint8Array(16);
-      expect(Secp256k1.isValidPrivateKey(invalid)).toBe(false);
+      expect(Secp256k1Impl.isValidPrivateKey(invalid)).toBe(false);
     });
 
     it("rejects zero private key", () => {
       const zero = new Uint8Array(32);
-      expect(Secp256k1.isValidPrivateKey(zero)).toBe(false);
+      expect(Secp256k1Impl.isValidPrivateKey(zero)).toBe(false);
     });
 
     it("rejects private key >= curve order", () => {
       const large = new Uint8Array(32);
       large.fill(0xff);
-      expect(Secp256k1.isValidPrivateKey(large)).toBe(false);
+      expect(Secp256k1Impl.isValidPrivateKey(large)).toBe(false);
     });
   });
 
   describe("Signature Formatting", () => {
     it("converts signature to compact format", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const compact = Secp256k1.Signature.toCompact.call(signature);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const compact = Secp256k1Impl.Signature.toCompact.call(signature);
 
       expect(compact).toBeInstanceOf(Uint8Array);
       expect(compact.length).toBe(64);
@@ -428,8 +447,8 @@ describe("Secp256k1", () => {
     });
 
     it("converts signature to bytes with v", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const bytes = Secp256k1.Signature.toBytes.call(signature);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const bytes = Secp256k1Impl.Signature.toBytes.call(signature);
 
       expect(bytes).toBeInstanceOf(Uint8Array);
       expect(bytes.length).toBe(65);
@@ -439,10 +458,10 @@ describe("Secp256k1", () => {
     });
 
     it("creates signature from compact format", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const compact = Secp256k1.Signature.toCompact.call(signature);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const compact = Secp256k1Impl.Signature.toCompact.call(signature);
 
-      const restored = Secp256k1.Signature.fromCompact(compact, signature.v);
+      const restored = Secp256k1Impl.Signature.fromCompact(compact, signature.v);
 
       expect(restored.r).toEqual(signature.r);
       expect(restored.s).toEqual(signature.s);
@@ -450,10 +469,10 @@ describe("Secp256k1", () => {
     });
 
     it("creates signature from bytes", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const bytes = Secp256k1.Signature.toBytes.call(signature);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const bytes = Secp256k1Impl.Signature.toBytes.call(signature);
 
-      const restored = Secp256k1.Signature.fromBytes(bytes);
+      const restored = Secp256k1Impl.Signature.fromBytes(bytes);
 
       expect(restored.r).toEqual(signature.r);
       expect(restored.s).toEqual(signature.s);
@@ -462,14 +481,14 @@ describe("Secp256k1", () => {
 
     it("throws on invalid compact length", () => {
       const invalid = new Uint8Array(32);
-      expect(() => Secp256k1.Signature.fromCompact(invalid, 27)).toThrow(
+      expect(() => Secp256k1Impl.Signature.fromCompact(invalid, 27)).toThrow(
         "Compact signature must be 64 bytes",
       );
     });
 
     it("throws on invalid bytes length", () => {
       const invalid = new Uint8Array(32);
-      expect(() => Secp256k1.Signature.fromBytes(invalid)).toThrow(
+      expect(() => Secp256k1Impl.Signature.fromBytes(invalid)).toThrow(
         "Signature must be 65 bytes",
       );
     });
@@ -477,20 +496,20 @@ describe("Secp256k1", () => {
 
   describe("Round-trip Tests", () => {
     it("sign -> verify round-trip", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      const valid = Secp256k1.verify(signature, TEST_MESSAGE_HASH, publicKey);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+      const valid = Secp256k1Impl.verify(signature, TEST_MESSAGE_HASH, publicKey);
 
       expect(valid).toBe(true);
     });
 
     it("sign -> recover -> verify round-trip", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const recoveredKey = Secp256k1.recoverPublicKey(
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const recoveredKey = Secp256k1Impl.recoverPublicKey(
         signature,
         TEST_MESSAGE_HASH,
       );
-      const valid = Secp256k1.verify(
+      const valid = Secp256k1Impl.verify(
         signature,
         TEST_MESSAGE_HASH,
         recoveredKey,
@@ -500,23 +519,23 @@ describe("Secp256k1", () => {
     });
 
     it("sign -> toBytes -> fromBytes -> verify round-trip", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const bytes = Secp256k1.Signature.toBytes.call(signature);
-      const restored = Secp256k1.Signature.fromBytes(bytes);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const bytes = Secp256k1Impl.Signature.toBytes.call(signature);
+      const restored = Secp256k1Impl.Signature.fromBytes(bytes);
 
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      const valid = Secp256k1.verify(restored, TEST_MESSAGE_HASH, publicKey);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+      const valid = Secp256k1Impl.verify(restored, TEST_MESSAGE_HASH, publicKey);
 
       expect(valid).toBe(true);
     });
 
     it("sign -> toCompact -> fromCompact -> verify round-trip", () => {
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const compact = Secp256k1.Signature.toCompact.call(signature);
-      const restored = Secp256k1.Signature.fromCompact(compact, signature.v);
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+      const compact = Secp256k1Impl.Signature.toCompact.call(signature);
+      const restored = Secp256k1Impl.Signature.fromCompact(compact, signature.v);
 
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
-      const valid = Secp256k1.verify(restored, TEST_MESSAGE_HASH, publicKey);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
+      const valid = Secp256k1Impl.verify(restored, TEST_MESSAGE_HASH, publicKey);
 
       expect(valid).toBe(true);
     });
@@ -531,19 +550,19 @@ describe("Secp256k1", () => {
       privateKey[31] = 0x01;
 
       const message = Hash.keccak256String("test message");
-      const signature = Secp256k1.sign(message, privateKey);
+      const signature = Secp256k1Impl.sign(message, privateKey);
 
       // Should be deterministic
-      const signature2 = Secp256k1.sign(message, privateKey);
+      const signature2 = Secp256k1Impl.sign(message, privateKey);
       expect(signature.r).toEqual(signature2.r);
       expect(signature.s).toEqual(signature2.s);
 
       // Should verify
-      const publicKey = Secp256k1.derivePublicKey(privateKey);
-      expect(Secp256k1.verify(signature, message, publicKey)).toBe(true);
+      const publicKey = Secp256k1Impl.derivePublicKey(privateKey);
+      expect(Secp256k1Impl.verify(signature, message, publicKey)).toBe(true);
 
       // Should recover
-      const recovered = Secp256k1.recoverPublicKey(signature, message);
+      const recovered = Secp256k1Impl.recoverPublicKey(signature, message);
       expect(recovered).toEqual(publicKey);
     });
   });
@@ -551,19 +570,19 @@ describe("Secp256k1", () => {
   describe("Edge Cases", () => {
     it("handles all-zeros message hash", () => {
       const zeroHash = new Uint8Array(32) as Hash;
-      const signature = Secp256k1.sign(zeroHash, TEST_PRIVATE_KEY);
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(zeroHash, TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
 
-      expect(Secp256k1.verify(signature, zeroHash, publicKey)).toBe(true);
+      expect(Secp256k1Impl.verify(signature, zeroHash, publicKey)).toBe(true);
     });
 
     it("handles all-ones message hash", () => {
       const onesHash = new Uint8Array(32) as Hash;
       onesHash.fill(0xff);
-      const signature = Secp256k1.sign(onesHash, TEST_PRIVATE_KEY);
-      const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+      const signature = Secp256k1Impl.sign(onesHash, TEST_PRIVATE_KEY);
+      const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
 
-      expect(Secp256k1.verify(signature, onesHash, publicKey)).toBe(true);
+      expect(Secp256k1Impl.verify(signature, onesHash, publicKey)).toBe(true);
     });
 
     it("handles maximum valid private key", () => {
@@ -579,27 +598,72 @@ describe("Secp256k1", () => {
         0,
       );
 
-      const publicKey = Secp256k1.derivePublicKey(maxKey);
+      const publicKey = Secp256k1Impl.derivePublicKey(maxKey);
       expect(publicKey.length).toBe(64);
 
-      const signature = Secp256k1.sign(TEST_MESSAGE_HASH, maxKey);
-      expect(Secp256k1.verify(signature, TEST_MESSAGE_HASH, publicKey)).toBe(
+      const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, maxKey);
+      expect(Secp256k1Impl.verify(signature, TEST_MESSAGE_HASH, publicKey)).toBe(
         true,
       );
     });
   });
 
-  describe("Constants", () => {
-    it("exports correct curve order", () => {
-      expect(Secp256k1.CURVE_ORDER).toBeDefined();
-      expect(typeof Secp256k1.CURVE_ORDER).toBe("bigint");
-      expect(Secp256k1.CURVE_ORDER > 0n).toBe(true);
-    });
+    describe("Constants", () => {
+      it("exports correct curve order", () => {
+        expect(Secp256k1Impl.CURVE_ORDER).toBeDefined();
+        expect(typeof Secp256k1Impl.CURVE_ORDER).toBe("bigint");
+        expect(Secp256k1Impl.CURVE_ORDER > 0n).toBe(true);
+      });
 
-    it("exports correct size constants", () => {
-      expect(Secp256k1.PRIVATE_KEY_SIZE).toBe(32);
-      expect(Secp256k1.PUBLIC_KEY_SIZE).toBe(64);
-      expect(Secp256k1.SIGNATURE_COMPONENT_SIZE).toBe(32);
+      it("exports correct size constants", () => {
+        expect(Secp256k1Impl.PRIVATE_KEY_SIZE).toBe(32);
+        expect(Secp256k1Impl.PUBLIC_KEY_SIZE).toBe(64);
+        expect(Secp256k1Impl.SIGNATURE_COMPONENT_SIZE).toBe(32);
+      });
     });
+  });
+}
+
+// Cross-validation tests between Noble and WASM
+describe("Cross-validation (Noble vs WASM)", () => {
+  it("derives same public key from private key", () => {
+    const nobleKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+    const wasmKey = Secp256k1Wasm.derivePublicKey(TEST_PRIVATE_KEY);
+
+    expect(nobleKey).toEqual(wasmKey);
+  });
+
+  it("signs and verifies across implementations", () => {
+    // Sign with Noble, verify with WASM
+    const nobleSig = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+    const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+
+    expect(Secp256k1Wasm.verify(nobleSig, TEST_MESSAGE_HASH, publicKey)).toBe(
+      true,
+    );
+
+    // Sign with WASM, verify with Noble
+    const wasmSig = Secp256k1Wasm.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+    expect(Secp256k1.verify(wasmSig, TEST_MESSAGE_HASH, publicKey)).toBe(true);
+  });
+
+  it("recovers same public key across implementations", () => {
+    const publicKey = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
+
+    // Sign with Noble, recover with WASM
+    const nobleSig = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+    const wasmRecovered = Secp256k1Wasm.recoverPublicKey(
+      nobleSig,
+      TEST_MESSAGE_HASH,
+    );
+    expect(wasmRecovered).toEqual(publicKey);
+
+    // Sign with WASM, recover with Noble
+    const wasmSig = Secp256k1Wasm.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
+    const nobleRecovered = Secp256k1.recoverPublicKey(
+      wasmSig,
+      TEST_MESSAGE_HASH,
+    );
+    expect(nobleRecovered).toEqual(publicKey);
   });
 });

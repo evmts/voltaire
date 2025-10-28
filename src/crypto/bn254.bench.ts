@@ -6,10 +6,17 @@
  * - G2 scalar multiplication
  * - Pairing computation
  * - Multi-pairing operations
+ *
+ * Compares three implementations:
+ * - Pure TypeScript (baseline)
+ * - WASM native Zig (optimized)
+ * - WASM Arkworks (production-grade, expected fastest)
  */
 
 import { bench, describe } from "vitest";
 import { Bn254 } from "./bn254.js";
+// import { Bn254Wasm } from "./bn254.wasm.js";
+// import { Bn254Ark } from "./bn254.ark.js";
 import fs from "fs";
 import path from "path";
 
@@ -340,3 +347,51 @@ if (import.meta.vitest) {
     fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
   });
 }
+
+// ============================================================================
+// WASM and Arkworks Benchmarks (TODO)
+// ============================================================================
+// TODO: Once WASM implementations are ready, add benchmarks for:
+//
+// describe("BN254 WASM Benchmarks", () => {
+//   const g1 = Bn254Wasm.G1.generator();
+//   const g2 = Bn254Wasm.G2.generator();
+//   const scalar = 123456789n;
+//
+//   bench("WASM G1.mul", () => {
+//     Bn254Wasm.G1.mul.call(g1, scalar);
+//   });
+//
+//   bench("WASM G2.mul", () => {
+//     Bn254Wasm.G2.mul.call(g2, scalar);
+//   });
+//
+//   bench("WASM Pairing.pair", () => {
+//     Bn254Wasm.Pairing.pair(g1, g2);
+//   });
+// });
+//
+// describe("BN254 Arkworks Benchmarks", () => {
+//   const g1 = Bn254Ark.G1.generator();
+//   const g2 = Bn254Ark.G2.generator();
+//   const scalar = 123456789n;
+//
+//   bench("Arkworks G1.mul", () => {
+//     Bn254Ark.G1.mul.call(g1, scalar);
+//   });
+//
+//   bench("Arkworks G2.mul", () => {
+//     Bn254Ark.G2.mul.call(g2, scalar);
+//   });
+//
+//   bench("Arkworks Pairing.pair", () => {
+//     Bn254Ark.Pairing.pair(g1, g2);
+//   });
+// });
+//
+// Expected performance hierarchy:
+// Arkworks (Rust, optimized) >> WASM (Zig, optimized) >> Pure TS (baseline)
+// Typical speedups:
+// - Arkworks: 50-100x faster than Pure TS
+// - WASM: 10-30x faster than Pure TS
+
