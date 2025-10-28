@@ -1,6 +1,6 @@
-# Contributing to Primitives
+# Contributing to Voltaire
 
-Thank you for your interest in contributing to the Ethereum Primitives library!
+Thank you for your interest in contributing to Voltaire (Ethereum primitives and cryptography library)!
 
 We welcome contributions! This document provides guidelines and instructions for contributing to the project.
 
@@ -68,7 +68,7 @@ If your contribution is large, please open a discussion to chat about the change
 
 ```bash
 git clone <repository-url>
-cd primitives
+cd voltaire
 git submodule update --init --recursive
 zig build
 zig build test
@@ -318,4 +318,4 @@ By contributing, you agree that your contributions will be licensed under the sa
 
 ---
 
-Thank you for helping make Ethereum primitives more robust and secure! 🙏
+Thank you for helping make Voltaire more robust and secure! 🙏

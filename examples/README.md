@@ -353,7 +353,7 @@ pub fn main() !void {
 ### TypeScript Example Template
 
 ```typescript
-import { someFunction } from '@tevm/primitives';
+import { someFunction } from '@tevm/voltaire';
 
 // Your example code here
 const result = someFunction(input);
@@ -386,7 +386,7 @@ bun install
 
 ## Questions?
 
-- Open a [GitHub issue](https://github.com/evmts/primitives/issues)
+- Open a [GitHub issue](https://github.com/evmts/voltaire/issues)
 - Check existing examples for similar use cases
 - Review API documentation linked above
 

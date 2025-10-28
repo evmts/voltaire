@@ -1,6 +1,6 @@
 # TypeScript Examples
 
-This directory contains comprehensive examples demonstrating the usage of @tevm/primitives TypeScript API.
+This directory contains comprehensive examples demonstrating the usage of @tevm/voltaire TypeScript API.
 
 ## Running Examples
 
@@ -112,7 +112,7 @@ SIWE messages and event logs:
 Each example follows this structure:
 
 1. **Header comment** - Describes what the example demonstrates
-2. **Imports** - Relevant imports from @tevm/primitives
+2. **Imports** - Relevant imports from @tevm/voltaire
 3. **Numbered sections** - Each major concept is in its own section
 4. **Console output** - Clear, formatted output showing results
 5. **Comments** - Explanations of important concepts
@@ -122,7 +122,7 @@ Each example follows this structure:
 ### Working with Hex
 
 ```typescript
-import { hexToBytes, bytesToHex } from '@tevm/primitives';
+import { hexToBytes, bytesToHex } from '@tevm/voltaire';
 
 // Hex to bytes
 const bytes = hexToBytes('0x1234');
@@ -134,7 +134,7 @@ const hex = bytesToHex(bytes);
 ### Hashing Data
 
 ```typescript
-import { keccak256, keccak256Hex } from '@tevm/primitives';
+import { keccak256, keccak256Hex } from '@tevm/voltaire';
 
 // Bytes input/output
 const hash = keccak256(bytes);
@@ -150,7 +150,7 @@ import {
   encodeLegacyForSigning,
   encodeEip1559ForSigning,
   hashTransaction,
-} from '@tevm/primitives';
+} from '@tevm/voltaire';
 
 // Legacy transaction
 const encoded = encodeLegacyForSigning(tx, chainId);
@@ -165,7 +165,7 @@ const hash = hashTransaction(tx);
 ### RLP Encoding
 
 ```typescript
-import { encodeRlp, decodeRlp, toHex } from '@tevm/primitives';
+import { encodeRlp, decodeRlp, toHex } from '@tevm/voltaire';
 
 // Encode
 const encoded = encodeRlp([1n, '0x1234', [5n, 6n]]);
@@ -207,6 +207,6 @@ Have an idea for a new example? Please contribute!
 
 ## Support
 
-- [GitHub Issues](https://github.com/evmts/primitives/issues)
+- [GitHub Issues](https://github.com/evmts/voltaire/issues)
 - [Discord](https://discord.gg/tevm)
-- [Documentation](https://github.com/evmts/primitives)
+- [Documentation](https://github.com/evmts/voltaire)
