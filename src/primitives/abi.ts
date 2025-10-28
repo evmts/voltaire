@@ -652,7 +652,8 @@ export namespace Abi {
       this: T,
       value: unknown,
     ): Uint8Array {
-      throw new AbiEncodingError("Not implemented");
+      const result = encodeValue(this.type, value);
+      return result.encoded;
     }
 
     /**
@@ -672,7 +673,7 @@ export namespace Abi {
       this: T,
       data: Uint8Array,
     ): unknown {
-      throw new AbiDecodingError("Not implemented");
+      return decodeValue(this.type, data, 0);
     }
   }
 

@@ -21,6 +21,9 @@
  * ```
  */
 
+import { Keccak256 } from "../crypto/keccak256.js";
+import type { Hash } from "./hash.js";
+
 // ============================================================================
 // Main Bytecode Namespace
 // ============================================================================
@@ -515,7 +518,7 @@ export namespace Bytecode {
    * Compute bytecode hash (keccak256) (standard form)
    *
    * @param code - Bytecode to hash
-   * @returns Bytecode hash
+   * @returns Bytecode hash (32 bytes)
    *
    * @example
    * ```typescript
@@ -523,10 +526,8 @@ export namespace Bytecode {
    * const hash = Bytecode.hash(code);
    * ```
    */
-  export function hash(code: Uint8Array): Uint8Array {
-    // TODO: Implement keccak256 hashing
-    // return keccak256(code);
-    throw new Error("Not implemented: requires keccak256");
+  export function hash(code: Uint8Array): Hash {
+    return Keccak256.hash(code);
   }
 
   /**
@@ -538,7 +539,7 @@ export namespace Bytecode {
    * const hash = Bytecode.hash.call(code);
    * ```
    */
-  export function getHash(this: Uint8Array): Uint8Array {
+  export function getHash(this: Uint8Array): Hash {
     return hash(this);
   }
 

@@ -22,6 +22,7 @@
 
 import type { Address } from "./address.js";
 import type { Hash } from "./hash.js";
+import { Rlp } from "./rlp.js";
 
 // ============================================================================
 // Main AccessList Namespace
@@ -451,7 +452,6 @@ export namespace AccessList {
    *
    * @returns RLP-encoded bytes
    *
-   * TODO: Implement RLP encoding
    * Format: [[address, [storageKey1, storageKey2, ...]], ...]
    *
    * @example
@@ -460,9 +460,12 @@ export namespace AccessList {
    * ```
    */
   export function toBytes(this: AccessList): Uint8Array {
-    // TODO: Implement RLP encoding
     // Format: [[address, [storageKey1, storageKey2, ...]], ...]
-    throw new Error("Not implemented");
+    const encoded = this.map((item) => [
+      item.address,
+      item.storageKeys.map((key) => key as Uint8Array),
+    ]);
+    return Rlp.encode.call(encoded);
   }
 
   /**
@@ -471,16 +474,50 @@ export namespace AccessList {
    * @param bytes - RLP-encoded access list
    * @returns Decoded access list
    *
-   * TODO: Implement RLP decoding
-   *
    * @example
    * ```typescript
    * const list = AccessList.fromBytes(bytes);
    * ```
    */
   export function fromBytes(bytes: Uint8Array): AccessList {
-    // TODO: Implement RLP decoding
-    throw new Error("Not implemented");
+    const decoded = Rlp.decode.call(bytes);
+
+    if (decoded.data.type !== "list") {
+      throw new Error("Invalid access list: expected list");
+    }
+
+    const result: Item[] = [];
+
+    for (const itemData of decoded.data.value) {
+      if (itemData.type !== "list" || itemData.value.length !== 2) {
+        throw new Error("Invalid access list item: expected [address, keys]");
+      }
+
+      const addressData = itemData.value[0];
+      const keysData = itemData.value[1];
+
+      if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
+        throw new Error("Invalid access list address");
+      }
+
+      if (keysData?.type !== "list") {
+        throw new Error("Invalid access list storage keys");
+      }
+
+      const address = addressData.value as Address;
+      const storageKeys: Hash[] = [];
+
+      for (const keyData of keysData.value) {
+        if (keyData.type !== "bytes" || keyData.value.length !== 32) {
+          throw new Error("Invalid storage key");
+        }
+        storageKeys.push(keyData.value as Hash);
+      }
+
+      result.push({ address, storageKeys });
+    }
+
+    return result;
   }
 
   // ==========================================================================

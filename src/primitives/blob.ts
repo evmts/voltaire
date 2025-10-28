@@ -21,10 +21,12 @@
  * // KZG operations with this: pattern
  * const commitment: Blob.Commitment = Blob.toCommitment.call(blob);
  * const proof: Blob.Proof = Blob.toProof.call(blob, commitment);
- * const hash: Blob.VersionedHash = await Blob.toVersionedHash.call(commitment);
+ * const hash: Blob.VersionedHash = Blob.toVersionedHash.call(commitment);
  * const data = Blob.toData.call(blob);
  * ```
  */
+
+import { Sha256 } from "../crypto/sha256.js";
 
 // ============================================================================
 // Main Blob Namespace
@@ -303,19 +305,20 @@ export namespace Blob {
    * - Prepend version byte
    * - Take first 32 bytes
    */
-  export async function toVersionedHash(this: Blob.Commitment): Promise<Blob.VersionedHash> {
+  export function toVersionedHash(this: Blob.Commitment): Blob.VersionedHash {
     if (this.length !== 48) {
       throw new Error(`Invalid commitment size: ${this.length}`);
     }
 
-    // TODO: Implement versioned hash calculation
-    // const hashBuffer = await crypto.subtle.digest('SHA-256', this);
-    // const hash = new Uint8Array(hashBuffer);
-    // const versionedHash = new Uint8Array(32);
-    // versionedHash[0] = COMMITMENT_VERSION_KZG;
-    // versionedHash.set(hash.slice(1), 1);
-    // return versionedHash as Blob.VersionedHash;
-    throw new Error("Not implemented: requires SHA-256");
+    // Hash the commitment with SHA-256
+    const hash = Sha256.hash(this);
+
+    // Create versioned hash: version byte + hash[1:32]
+    const versionedHash = new Uint8Array(32);
+    versionedHash[0] = COMMITMENT_VERSION_KZG;
+    versionedHash.set(hash.slice(1), 1);
+
+    return versionedHash as Blob.VersionedHash;
   }
 
   /**
@@ -354,7 +357,7 @@ export namespace Blob {
      *
      * @returns Versioned hash
      */
-    export function toVersionedHash(this: Blob.Commitment): Promise<Blob.VersionedHash> {
+    export function toVersionedHash(this: Blob.Commitment): Blob.VersionedHash {
       return Blob.toVersionedHash.call(this);
     }
   }

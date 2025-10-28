@@ -32,7 +32,9 @@
  * ```
  */
 
-import type { Address } from "./address.js";
+import { Address } from "./address.js";
+import { Keccak256 } from "../crypto/keccak256.js";
+import { Secp256k1 } from "../crypto/secp256k1.js";
 
 // ============================================================================
 // Main Siwe Namespace
@@ -322,12 +324,34 @@ export namespace Siwe {
      * // Returns hash with "\x19Ethereum Signed Message:\n" prefix
      * ```
      */
-    export function getMessageHash<T extends Siwe.Message>(_message: T): Uint8Array {
-      // TODO: Implement EIP-191 personal sign message hash
-      // 1. Format the message
-      // 2. Prefix with "\x19Ethereum Signed Message:\n{length}"
-      // 3. Hash with keccak256
-      throw new Error("Not implemented");
+    export function getMessageHash<T extends Siwe.Message>(message: T): Uint8Array {
+      // Format the message to text
+      const messageText = format(message);
+
+      // Create EIP-191 personal sign prefix: "\x19Ethereum Signed Message:\n{length}"
+      const messageBytes = new TextEncoder().encode(messageText);
+      const lengthString = messageBytes.length.toString();
+      const lengthBytes = new TextEncoder().encode(lengthString);
+
+      // Build the full message: prefix + length + message
+      const prefix = new Uint8Array([0x19]); // "\x19"
+      const ethSignedMessage = new TextEncoder().encode("Ethereum Signed Message:\n");
+
+      const fullMessage = new Uint8Array(
+        prefix.length + ethSignedMessage.length + lengthBytes.length + messageBytes.length
+      );
+
+      let offset = 0;
+      fullMessage.set(prefix, offset);
+      offset += prefix.length;
+      fullMessage.set(ethSignedMessage, offset);
+      offset += ethSignedMessage.length;
+      fullMessage.set(lengthBytes, offset);
+      offset += lengthBytes.length;
+      fullMessage.set(messageBytes, offset);
+
+      // Hash with keccak256
+      return Keccak256.hash(fullMessage);
     }
 
     /**
@@ -346,16 +370,77 @@ export namespace Siwe {
      * ```
      */
     export function verify<T extends Siwe.Message>(
-      _message: T,
-      _signature: Signature,
+      message: T,
+      signature: Signature,
     ): boolean {
-      // TODO: Implement SIWE signature verification
-      // 1. Validate message structure
-      // 2. Get message hash with getMessageHash
-      // 3. Recover public key from signature using secp256k1
-      // 4. Derive address from public key
-      // 5. Compare with message.address
-      throw new Error("Not implemented");
+      // Validate message structure
+      const validationResult = validate(message);
+      if (!validationResult.valid) {
+        return false;
+      }
+
+      // Get message hash
+      const messageHash = getMessageHash(message);
+
+      // Signature is 65 bytes: r (32) + s (32) + v (1)
+      if (signature.length !== 65) {
+        return false;
+      }
+
+      const r = signature.slice(0, 32);
+      const s = signature.slice(32, 64);
+      const v = signature[64];
+
+      if (v === undefined) {
+        return false;
+      }
+
+      // Normalize v to recovery id (0 or 1)
+      let recoveryId: number;
+      if (v >= 27) {
+        recoveryId = v - 27;
+      } else {
+        recoveryId = v;
+      }
+
+      if (recoveryId !== 0 && recoveryId !== 1) {
+        return false;
+      }
+
+      try {
+        // Recover public key from signature
+        const publicKey = Secp256k1.recoverPublicKey(
+          { r, s, v: recoveryId },
+          messageHash
+        );
+
+        // Derive address from public key
+        let x = 0n;
+        let y = 0n;
+        for (let i = 0; i < 32; i++) {
+          const xByte = publicKey[i];
+          const yByte = publicKey[32 + i];
+          if (xByte !== undefined && yByte !== undefined) {
+            x = (x << 8n) | BigInt(xByte);
+            y = (y << 8n) | BigInt(yByte);
+          }
+        }
+        const recoveredAddress = Address.fromPublicKey(x, y);
+
+        // Compare with message address
+        if (recoveredAddress.length !== message.address.length) {
+          return false;
+        }
+        for (let i = 0; i < recoveredAddress.length; i++) {
+          if (recoveredAddress[i] !== message.address[i]) {
+            return false;
+          }
+        }
+
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
 

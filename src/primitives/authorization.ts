@@ -18,8 +18,11 @@
  * ```
  */
 
-import type { Address } from "./address.js";
+import { Address } from "./address.js";
 import type { Hash } from "./hash.js";
+import { Rlp } from "./rlp.js";
+import { Keccak256 } from "../crypto/keccak256.js";
+import { Secp256k1 } from "../crypto/secp256k1.js";
 
 // ============================================================================
 // Main Authorization Namespace
@@ -195,7 +198,7 @@ export namespace Authorization {
     }
 
     // Address must not be zero
-    if (this.address.bytes.every((byte) => byte === 0)) {
+    if (Array.from(this.address).every((byte) => byte === 0)) {
       throw new ValidationError("Address cannot be zero address");
     }
 
@@ -242,11 +245,39 @@ export namespace Authorization {
    * ```
    */
   export function hash(this: Unsigned): Hash {
-    // TODO: Implement keccak256(MAGIC || rlp([chain_id, address, nonce]))
-    // 1. RLP encode [chainId, address.bytes, nonce]
-    // 2. Prepend MAGIC_BYTE
-    // 3. keccak256 hash
-    throw new Error("Authorization.hash() not yet implemented");
+    // Helper to encode bigint compact (remove leading zeros)
+    function encodeBigintCompact(value: bigint): Uint8Array {
+      if (value === 0n) return new Uint8Array(0);
+      let byteLength = 0;
+      let temp = value;
+      while (temp > 0n) {
+        byteLength++;
+        temp >>= 8n;
+      }
+      const bytes = new Uint8Array(byteLength);
+      let val = value;
+      for (let i = byteLength - 1; i >= 0; i--) {
+        bytes[i] = Number(val & 0xffn);
+        val >>= 8n;
+      }
+      return bytes;
+    }
+
+    // RLP encode [chainId, address, nonce]
+    const fields = [
+      encodeBigintCompact(this.chainId),
+      this.address,
+      encodeBigintCompact(this.nonce),
+    ];
+    const rlpEncoded = Rlp.encode.call(fields);
+
+    // Prepend MAGIC_BYTE (0x05)
+    const data = new Uint8Array(1 + rlpEncoded.length);
+    data[0] = MAGIC_BYTE;
+    data.set(rlpEncoded, 1);
+
+    // keccak256 hash
+    return Keccak256.hash(data);
   }
 
   // ==========================================================================
@@ -266,12 +297,49 @@ export namespace Authorization {
    * ```
    */
   export function sign(this: Unsigned, privateKey: Uint8Array): Item {
-    // TODO: Implement authorization creation with signing
-    // 1. Hash this unsigned auth
-    // 2. Sign hash with privateKey (secp256k1)
-    // 3. Extract r, s, v from signature
-    // 4. Return complete authorization
-    throw new Error("Authorization.sign() not yet implemented");
+    // Hash the unsigned authorization
+    const messageHash = hash.call(this);
+
+    // Sign with secp256k1
+    const signature = Secp256k1.sign(messageHash, privateKey);
+
+    // Extract r, s, yParity from signature
+    // Signature is 64 bytes: r (32 bytes) + s (32 bytes)
+    const r = signature.slice(0, 32);
+    const s = signature.slice(32, 64);
+
+    // Convert r and s to bigint
+    let rBigint = 0n;
+    let sBigint = 0n;
+    for (let i = 0; i < 32; i++) {
+      const rByte = r[i];
+      const sByte = s[i];
+      if (rByte !== undefined && sByte !== undefined) {
+        rBigint = (rBigint << 8n) | BigInt(rByte);
+        sBigint = (sBigint << 8n) | BigInt(sByte);
+      }
+    }
+
+    // Recover yParity by trying both values
+    let yParity = 0;
+    try {
+      const recovered = Secp256k1.recoverPublicKey({ r, s, v: 0 }, messageHash);
+      const recoveredAddress = addressFromPublicKey(recovered);
+      if (!addressesEqual(recoveredAddress, this.address)) {
+        yParity = 1;
+      }
+    } catch {
+      yParity = 1;
+    }
+
+    return {
+      chainId: this.chainId,
+      address: this.address,
+      nonce: this.nonce,
+      yParity,
+      r: rBigint,
+      s: sBigint,
+    };
   }
 
   // ==========================================================================
@@ -295,12 +363,32 @@ export namespace Authorization {
     // Validate structure first
     validate.call(this);
 
-    // TODO: Implement signature verification and recovery
-    // 1. Hash unsigned portion
-    // 2. Recover public key from signature (r, s, yParity) and hash
-    // 3. Derive address from public key
-    // 4. Return authority address
-    throw new Error("Authorization.verify() not yet implemented");
+    // Hash the unsigned portion
+    const unsigned: Unsigned = {
+      chainId: this.chainId,
+      address: this.address,
+      nonce: this.nonce,
+    };
+    const messageHash = hash.call(unsigned);
+
+    // Convert r and s bigints to Uint8Array
+    const r = new Uint8Array(32);
+    const s = new Uint8Array(32);
+    let rVal = this.r;
+    let sVal = this.s;
+    for (let i = 31; i >= 0; i--) {
+      r[i] = Number(rVal & 0xffn);
+      s[i] = Number(sVal & 0xffn);
+      rVal >>= 8n;
+      sVal >>= 8n;
+    }
+
+    // Recover public key from signature
+    const signature = { r, s, v: this.yParity };
+    const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+
+    // Derive address from public key
+    return addressFromPublicKey(publicKey);
   }
 
   // ==========================================================================
@@ -421,7 +509,7 @@ export namespace Authorization {
    * Helper to format address (shortened)
    */
   function formatAddress(addr: Address): string {
-    const hex = Array.from(addr.bytes)
+    const hex = Array.from(addr)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
     return `0x${hex.slice(0, 4)}...${hex.slice(-4)}`;
@@ -457,11 +545,30 @@ export namespace Authorization {
    * Helper to check address equality
    */
   function addressesEqual(a: Address, b: Address): boolean {
-    if (a.bytes.length !== b.bytes.length) return false;
-    for (let i = 0; i < a.bytes.length; i++) {
-      if (a.bytes[i] !== b.bytes[i]) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
     }
     return true;
+  }
+
+  /**
+   * Helper to derive address from public key
+   */
+  function addressFromPublicKey(publicKey: Uint8Array): Address {
+    // Public key is 64 bytes (uncompressed, no prefix)
+    // Extract x and y coordinates
+    let x = 0n;
+    let y = 0n;
+    for (let i = 0; i < 32; i++) {
+      const xByte = publicKey[i];
+      const yByte = publicKey[32 + i];
+      if (xByte !== undefined && yByte !== undefined) {
+        x = (x << 8n) | BigInt(xByte);
+        y = (y << 8n) | BigInt(yByte);
+      }
+    }
+    return Address.fromPublicKey(x, y);
   }
 }
 
