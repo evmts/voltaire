@@ -1,0 +1,302 @@
+[
+  {
+    "name": "encode single byte (< 0x80)",
+    "opsPerSec": 46966523.5,
+    "avgTimeMs": 0.0000212917611413159,
+    "iterations": 93933047
+  },
+  {
+    "name": "encode short bytes (5 bytes)",
+    "opsPerSec": 29264988.5,
+    "avgTimeMs": 0.0000341705242768163,
+    "iterations": 58529977
+  },
+  {
+    "name": "encode medium bytes (32 bytes)",
+    "opsPerSec": 27212535.999999993,
+    "avgTimeMs": 0.000036747769483887875,
+    "iterations": 54425072
+  },
+  {
+    "name": "encode long bytes (200 bytes)",
+    "opsPerSec": 17751729.5,
+    "avgTimeMs": 0.00005633253931680291,
+    "iterations": 35503459
+  },
+  {
+    "name": "encode very long bytes (10KB)",
+    "opsPerSec": 1542615.7747780972,
+    "avgTimeMs": 0.0006482495617833601,
+    "iterations": 3085232
+  },
+  {
+    "name": "encode empty list",
+    "opsPerSec": 22322619.5,
+    "avgTimeMs": 0.00004479760988624117,
+    "iterations": 44645239
+  },
+  {
+    "name": "encode short list (2 items)",
+    "opsPerSec": 16400701.5,
+    "avgTimeMs": 0.00006097300167312965,
+    "iterations": 32801403
+  },
+  {
+    "name": "encode medium list (10 items)",
+    "opsPerSec": 5042783.684826018,
+    "avgTimeMs": 0.00019830317191852758,
+    "iterations": 10085568
+  },
+  {
+    "name": "encode long list (100 items)",
+    "opsPerSec": 555626.872761446,
+    "avgTimeMs": 0.0017997689619114986,
+    "iterations": 1111254
+  },
+  {
+    "name": "encode nested list (3 levels)",
+    "opsPerSec": 4980088.5,
+    "avgTimeMs": 0.00020079964442398966,
+    "iterations": 9960177
+  },
+  {
+    "name": "encode deeply nested list (4+ levels)",
+    "opsPerSec": 5904853.882942764,
+    "avgTimeMs": 0.0001693522007189171,
+    "iterations": 11809709
+  },
+  {
+    "name": "decode single byte (< 0x80)",
+    "opsPerSec": 16711533,
+    "avgTimeMs": 0.000059838914838034305,
+    "iterations": 33423066
+  },
+  {
+    "name": "decode short bytes (5 bytes)",
+    "opsPerSec": 16089176,
+    "avgTimeMs": 0.00006215358698295053,
+    "iterations": 32178352
+  },
+  {
+    "name": "decode medium bytes (32 bytes)",
+    "opsPerSec": 16523444,
+    "avgTimeMs": 0.00006052007075522512,
+    "iterations": 33046888
+  },
+  {
+    "name": "decode long bytes (200 bytes)",
+    "opsPerSec": 11234983.769682836,
+    "avgTimeMs": 0.00008900769422546571,
+    "iterations": 22469968
+  },
+  {
+    "name": "decode very long bytes (10KB)",
+    "opsPerSec": 1807677,
+    "avgTimeMs": 0.000553196173873983,
+    "iterations": 3615354
+  },
+  {
+    "name": "decode empty list",
+    "opsPerSec": 21437719,
+    "avgTimeMs": 0.000046646753789430675,
+    "iterations": 42875438
+  },
+  {
+    "name": "decode short list (2 items)",
+    "opsPerSec": 4350841.636704727,
+    "avgTimeMs": 0.0002298405879827397,
+    "iterations": 8701684
+  },
+  {
+    "name": "decode medium list (10 items)",
+    "opsPerSec": 962431.1592993698,
+    "avgTimeMs": 0.0010390353536849114,
+    "iterations": 1924863
+  },
+  {
+    "name": "decode long list (100 items)",
+    "opsPerSec": 89064.7996042011,
+    "avgTimeMs": 0.011227780272834421,
+    "iterations": 178130
+  },
+  {
+    "name": "decode nested list (3 levels)",
+    "opsPerSec": 1487136.783621595,
+    "avgTimeMs": 0.0006724331016577504,
+    "iterations": 2974274
+  },
+  {
+    "name": "decode deeply nested list (4+ levels)",
+    "opsPerSec": 2194850.088465605,
+    "avgTimeMs": 0.000455611982456209,
+    "iterations": 4389701
+  },
+  {
+    "name": "round-trip single byte",
+    "opsPerSec": 14832747.688512301,
+    "avgTimeMs": 0.00006741839212801295,
+    "iterations": 29665496
+  },
+  {
+    "name": "round-trip short bytes (5 bytes)",
+    "opsPerSec": 12019635.24758766,
+    "avgTimeMs": 0.0000831972001979594,
+    "iterations": 24039271
+  },
+  {
+    "name": "round-trip medium bytes (32 bytes)",
+    "opsPerSec": 11601009,
+    "avgTimeMs": 0.00008619939869023461,
+    "iterations": 23202018
+  },
+  {
+    "name": "round-trip long bytes (200 bytes)",
+    "opsPerSec": 7000810.7094663335,
+    "avgTimeMs": 0.0001428405996819516,
+    "iterations": 14001622
+  },
+  {
+    "name": "round-trip short list",
+    "opsPerSec": 3446046.7846220783,
+    "avgTimeMs": 0.0002901875866753992,
+    "iterations": 6892094
+  },
+  {
+    "name": "round-trip nested list",
+    "opsPerSec": 1100061.7249845676,
+    "avgTimeMs": 0.0009090398995692979,
+    "iterations": 2200124
+  },
+  {
+    "name": "getEncodedLength - bytes",
+    "opsPerSec": 34413151.5,
+    "avgTimeMs": 0.000029058657995911825,
+    "iterations": 68826303
+  },
+  {
+    "name": "getEncodedLength - list",
+    "opsPerSec": 17661509,
+    "avgTimeMs": 0.000056620303508607336,
+    "iterations": 35323018
+  },
+  {
+    "name": "flatten nested list",
+    "opsPerSec": 20470961.21242028,
+    "avgTimeMs": 0.00004884968466420977,
+    "iterations": 40942070
+  },
+  {
+    "name": "equals - bytes Data",
+    "opsPerSec": 33777866.5,
+    "avgTimeMs": 0.000029605185395590334,
+    "iterations": 67555733
+  },
+  {
+    "name": "equals - list Data",
+    "opsPerSec": 26729997.93866995,
+    "avgTimeMs": 0.0000374111514072851,
+    "iterations": 53459997
+  },
+  {
+    "name": "toJSON - bytes",
+    "opsPerSec": 13616839,
+    "avgTimeMs": 0.0000734384830429441,
+    "iterations": 27233678
+  },
+  {
+    "name": "toJSON - list",
+    "opsPerSec": 9919515.79169017,
+    "avgTimeMs": 0.0001008113723492154,
+    "iterations": 19839032
+  },
+  {
+    "name": "fromJSON - bytes",
+    "opsPerSec": 23475969,
+    "avgTimeMs": 0.00004259675074541119,
+    "iterations": 46951938
+  },
+  {
+    "name": "Data.fromBytes",
+    "opsPerSec": 37128207.5,
+    "avgTimeMs": 0.000026933699936901076,
+    "iterations": 74256415
+  },
+  {
+    "name": "Data.fromList",
+    "opsPerSec": 17339328.635874104,
+    "avgTimeMs": 0.00005767235981277014,
+    "iterations": 34678658
+  },
+  {
+    "name": "Data.encode",
+    "opsPerSec": 23924283,
+    "avgTimeMs": 0.000041798535822369264,
+    "iterations": 47848566
+  },
+  {
+    "name": "Data.toBytes",
+    "opsPerSec": 39540804,
+    "avgTimeMs": 0.00002529033046470173,
+    "iterations": 79081608
+  },
+  {
+    "name": "Data.toList",
+    "opsPerSec": 39172658.5,
+    "avgTimeMs": 0.000025528009542676304,
+    "iterations": 78345317
+  },
+  {
+    "name": "isData - valid bytes",
+    "opsPerSec": 37769254,
+    "avgTimeMs": 0.000026476562126432257,
+    "iterations": 75538508
+  },
+  {
+    "name": "isData - valid list",
+    "opsPerSec": 38483385.5,
+    "avgTimeMs": 0.000025985239786140958,
+    "iterations": 76966771
+  },
+  {
+    "name": "isData - invalid",
+    "opsPerSec": 38420039.5,
+    "avgTimeMs": 0.000026028083599445545,
+    "iterations": 76840079
+  },
+  {
+    "name": "isBytesData",
+    "opsPerSec": 39104322.5,
+    "avgTimeMs": 0.000025572620520404105,
+    "iterations": 78208645
+  },
+  {
+    "name": "isListData",
+    "opsPerSec": 39449003,
+    "avgTimeMs": 0.00002534918309595809,
+    "iterations": 78898006
+  },
+  {
+    "name": "encode simple transaction",
+    "opsPerSec": 4370431.861916955,
+    "avgTimeMs": 0.0002288103399377518,
+    "iterations": 8740865
+  },
+  {
+    "name": "decode simple transaction",
+    "opsPerSec": 1458698.6659579987,
+    "avgTimeMs": 0.0006855425478457205,
+    "iterations": 2917398
+  },
+  {
+    "name": "encode tx with data (100 bytes)",
+    "opsPerSec": 3456304.85194286,
+    "avgTimeMs": 0.0002893263305283617,
+    "iterations": 6912611
+  },
+  {
+    "name": "encode tx with access list",
+    "opsPerSec": 1992148.4581648826,
+    "avgTimeMs": 0.0005019706216680131,
+    "iterations": 3984297
+  }
+]
