@@ -1,121 +1,470 @@
-declare const addressSymbol: unique symbol;
-
-type Address = Uint8Array & {__brand: addressSymbol}
-
 /**
- * Ethereum address (20 bytes)
+ * Address Types and Utilities
  *
- * Maps to C type: PrimitivesAddress
- * struct PrimitivesAddress { uint8_t bytes[20]; }
- */
-export interface Address {
-	/** Raw 20-byte address data */
-	bytes: Uint8Array;
-}
-
-/**
- * Address as hex string (42 characters: "0x" + 40 hex)
- */
-export type AddressHex = `0x${string}`;
-
-/**
- * Address size in bytes
- */
-export const ADDRESS_SIZE = 20;
-
-/**
- * Address hex string length (with 0x prefix)
- */
-export const ADDRESS_HEX_LENGTH = 42;
-
-/**
- * Type guard: Check if string is valid address hex (42 chars)
- */
-export function isAddressHex(value: unknown): value is AddressHex {
-	return typeof value === "string" && /^0x[0-9a-fA-F]{40}$/.test(value);
-}
-
-/**
- * Type guard: Check if value is Address
- */
-export function isAddress(value: unknown): value is Address {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"bytes" in value &&
-		value.bytes instanceof Uint8Array &&
-		value.bytes.length === 20
-	);
-}
-
-/**
- * Create Address from bytes
+ * Ethereum address (20 bytes) with type-safe operations.
+ * All types namespaced under Address for intuitive access.
  *
- * @param bytes 20-byte Uint8Array
- * @returns Address object
- * @throws Error if bytes length is not 20
- */
-export function createAddress(bytes: Uint8Array): Address {
-	if (bytes.length !== ADDRESS_SIZE) {
-		throw new Error(
-			`Address must be ${ADDRESS_SIZE} bytes, got ${bytes.length}`,
-		);
-	}
-	return { bytes: new Uint8Array(bytes) };
-}
-
-/**
- * Zero address (0x0000000000000000000000000000000000000000)
- */
-export const ZERO_ADDRESS: Address = {
-	bytes: new Uint8Array(20),
-};
-
-/**
- * Check if address is zero address
+ * @example
+ * ```typescript
+ * import { Address } from './address.js';
  *
- * @param address Address to check
- * @returns true if all bytes are zero
+ * // Create Address
+ * const addr: Address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+ *
+ * // Operations with this: pattern
+ * const hex = Address.toHex.call(addr);
+ * const checksummed = Address.toChecksumHex.call(addr);
+ * ```
  */
-export function isZeroAddress(address: Address): boolean {
-	return address.bytes.every((byte) => byte === 0);
+
+import { keccak256 } from "../../crypto/keccak.js";
+
+// ============================================================================
+// Main Address Namespace
+// ============================================================================
+
+export namespace Address {
+  // ==========================================================================
+  // Core Constants
+  // ==========================================================================
+
+  export const SIZE = 20;
+  export const HEX_SIZE = 42; // 0x + 40 hex chars
+
+  // ==========================================================================
+  // Conversion Operations
+  // ==========================================================================
+
+  /**
+   * Parse hex string to Address (standard form)
+   *
+   * @param hex - Hex string with 0x prefix
+   * @returns Address bytes
+   * @throws If invalid format or length
+   *
+   * @example
+   * ```typescript
+   * const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+   * ```
+   */
+  export function fromHex(hex: string): Address {
+    if (!hex.startsWith("0x") || hex.length !== HEX_SIZE) {
+      throw new Error("InvalidHexFormat");
+    }
+    const bytes = new Uint8Array(SIZE);
+    for (let i = 0; i < SIZE; i++) {
+      const byte = Number.parseInt(hex.slice(2 + i * 2, 4 + i * 2), 16);
+      if (Number.isNaN(byte)) throw new Error("InvalidHexString");
+      bytes[i] = byte;
+    }
+    return bytes as Address;
+  }
+
+  /**
+   * Create Address from raw bytes (standard form)
+   *
+   * @param bytes - Raw 20-byte array
+   * @returns Address
+   * @throws If length is not 20 bytes
+   *
+   * @example
+   * ```typescript
+   * const bytes = new Uint8Array(20);
+   * const addr = Address.fromBytes(bytes);
+   * ```
+   */
+  export function fromBytes(bytes: Uint8Array): Address {
+    if (bytes.length !== SIZE) {
+      throw new Error("InvalidAddressLength");
+    }
+    return new Uint8Array(bytes) as Address;
+  }
+
+  /**
+   * Create Address from uint256 value (takes lower 160 bits) (standard form)
+   *
+   * @param value - Bigint value
+   * @returns Address from lower 160 bits
+   *
+   * @example
+   * ```typescript
+   * const addr = Address.fromU256(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n);
+   * ```
+   */
+  export function fromU256(value: bigint): Address {
+    const bytes = new Uint8Array(SIZE);
+    let v = value & ((1n << 160n) - 1n);
+    for (let i = 19; i >= 0; i--) {
+      bytes[i] = Number(v & 0xffn);
+      v >>= 8n;
+    }
+    return bytes as Address;
+  }
+
+  /**
+   * Create Address from secp256k1 public key (standard form)
+   *
+   * @param x - Public key x coordinate
+   * @param y - Public key y coordinate
+   * @returns Address derived from keccak256(pubkey)[12:32]
+   *
+   * @example
+   * ```typescript
+   * const addr = Address.fromPublicKey(xCoord, yCoord);
+   * ```
+   */
+  export function fromPublicKey(x: bigint, y: bigint): Address {
+    // Encode uncompressed public key (64 bytes: 32 bytes x + 32 bytes y)
+    const pubkey = new Uint8Array(64);
+    for (let i = 31; i >= 0; i--) {
+      pubkey[31 - i] = Number((x >> BigInt(i * 8)) & 0xffn);
+      pubkey[63 - i] = Number((y >> BigInt(i * 8)) & 0xffn);
+    }
+    // Address = keccak256(pubkey)[12:32]
+    const hash = keccak256(pubkey) as unknown as Uint8Array;
+    return hash.slice(12, 32) as Address;
+  }
+
+  /**
+   * Convert Address to hex string
+   *
+   * @returns Lowercase hex string with 0x prefix
+   *
+   * @example
+   * ```typescript
+   * const hex = Address.toHex.call(addr);
+   * // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
+   * ```
+   */
+  export function toHex(this: Address): string {
+    return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  /**
+   * Convert Address to EIP-55 checksummed hex string
+   *
+   * @returns Checksummed hex string with mixed case
+   *
+   * @example
+   * ```typescript
+   * const checksummed = Address.toChecksumHex.call(addr);
+   * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+   * ```
+   */
+  export function toChecksumHex(this: Address): string {
+    const lower = toHex.call(this).slice(2);
+    const hashBytes = keccak256(new TextEncoder().encode(lower)) as unknown as Uint8Array;
+    const hashHex = Array.from(hashBytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    let result = "0x";
+    for (let i = 0; i < 40; i++) {
+      const ch = lower[i];
+      if (ch !== undefined && ch >= "a" && ch <= "f") {
+        const hv = Number.parseInt(hashHex[i] ?? "0", 16);
+        result += hv >= 8 ? ch.toUpperCase() : ch;
+      } else {
+        result += ch ?? "";
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Convert Address to uint256
+   *
+   * @returns Bigint representation
+   *
+   * @example
+   * ```typescript
+   * const value = Address.toU256.call(addr);
+   * ```
+   */
+  export function toU256(this: Address): bigint {
+    let result = 0n;
+    for (let i = 0; i < SIZE; i++) {
+      result = (result << 8n) | BigInt(this[i] ?? 0);
+    }
+    return result;
+  }
+
+  // ==========================================================================
+  // Validation Operations
+  // ==========================================================================
+
+  /**
+   * Check if address is zero address
+   *
+   * @returns True if all bytes are zero
+   *
+   * @example
+   * ```typescript
+   * if (Address.isZero.call(addr)) {
+   *   console.log("Zero address");
+   * }
+   * ```
+   */
+  export function isZero(this: Address): boolean {
+    return this.every((b) => b === 0);
+  }
+
+  /**
+   * Check if two addresses are equal
+   *
+   * @param other - Address to compare with
+   * @returns True if addresses are identical
+   *
+   * @example
+   * ```typescript
+   * if (Address.equals.call(addr1, addr2)) {
+   *   console.log("Addresses match");
+   * }
+   * ```
+   */
+  export function equals(this: Address, other: Address): boolean {
+    if (this.length !== other.length) return false;
+    for (let i = 0; i < this.length; i++) {
+      if (this[i] !== other[i]) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Check if string is valid address format (standard form)
+   *
+   * @param str - String to validate
+   * @returns True if valid hex format (with or without 0x)
+   *
+   * @example
+   * ```typescript
+   * if (Address.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")) {
+   *   const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+   * }
+   * ```
+   */
+  export function isValid(str: string): boolean {
+    if (!str.startsWith("0x")) {
+      return str.length === 40 && /^[0-9a-fA-F]{40}$/.test(str);
+    }
+    return str.length === HEX_SIZE && /^0x[0-9a-fA-F]{40}$/.test(str);
+  }
+
+  /**
+   * Check if string has valid EIP-55 checksum (standard form)
+   *
+   * @param str - Address string to validate
+   * @returns True if checksum is valid
+   *
+   * @example
+   * ```typescript
+   * if (Address.isValidChecksum("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")) {
+   *   console.log("Valid checksum");
+   * }
+   * ```
+   */
+  export function isValidChecksum(str: string): boolean {
+    if (!isValid(str)) return false;
+    try {
+      const addr = fromHex(str.startsWith("0x") ? str : `0x${str}`);
+      const checksummed = toChecksumHex.call(addr) as string;
+      return checksummed === (str.startsWith("0x") ? str : `0x${str}`);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Type guard for Address (standard form)
+   *
+   * @param value - Value to check
+   * @returns True if value is an Address
+   *
+   * @example
+   * ```typescript
+   * if (Address.is(value)) {
+   *   const hex = Address.toHex(value);
+   * }
+   * ```
+   */
+  export function is(value: unknown): value is Address {
+    return value instanceof Uint8Array && value.length === SIZE;
+  }
+
+  // ==========================================================================
+  // Special Address Operations
+  // ==========================================================================
+
+  /**
+   * Create zero address (standard form)
+   *
+   * @returns Zero address (0x0000...0000)
+   *
+   * @example
+   * ```typescript
+   * const zero = Address.zero();
+   * ```
+   */
+  export function zero(): Address {
+    return new Uint8Array(SIZE) as Address;
+  }
+
+  // ==========================================================================
+  // Contract Address Calculation
+  // ==========================================================================
+
+  /**
+   * Calculate CREATE contract address
+   *
+   * address = keccak256(rlp([sender, nonce]))[12:32]
+   *
+   * @param nonce - Transaction nonce
+   * @returns Calculated contract address
+   *
+   * @example
+   * ```typescript
+   * const contractAddr = Address.calculateCreateAddress.call(deployerAddr, 5n);
+   * ```
+   */
+  export function calculateCreateAddress(this: Address, nonce: bigint): Address {
+    // TODO: Implement RLP encoding
+    // const rlp = rlpEncode([this, nonce]);
+    // const hash = keccak256(rlp);
+    // return hash.slice(12, 32) as Address;
+    throw new Error("Not implemented");
+  }
+
+  /**
+   * Calculate CREATE2 contract address
+   *
+   * address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
+   *
+   * @param salt - 32-byte salt
+   * @param initCode - Contract initialization code
+   * @returns Calculated contract address
+   *
+   * @example
+   * ```typescript
+   * const contractAddr = Address.calculateCreate2Address.call(
+   *   deployerAddr,
+   *   saltBytes,
+   *   initCode
+   * );
+   * ```
+   */
+  export function calculateCreate2Address(
+    this: Address,
+    salt: Uint8Array,
+    initCode: Uint8Array,
+  ): Address {
+    if (salt.length !== 32) {
+      throw new Error("Salt must be 32 bytes");
+    }
+
+    // address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]
+    const initCodeHash = keccak256(initCode) as unknown as Uint8Array;
+    const data = new Uint8Array(1 + SIZE + 32 + 32);
+    data[0] = 0xff;
+    data.set(this, 1);
+    data.set(salt, 1 + SIZE);
+    data.set(initCodeHash, 1 + SIZE + 32);
+
+    const hash = keccak256(data) as unknown as Uint8Array;
+    return hash.slice(12, 32) as Address;
+  }
+
+  // ==========================================================================
+  // Comparison Operations
+  // ==========================================================================
+
+  /**
+   * Compare two addresses lexicographically
+   *
+   * @param other - Address to compare with
+   * @returns -1 if this < other, 0 if equal, 1 if this > other
+   *
+   * @example
+   * ```typescript
+   * const sorted = addresses.sort((a, b) => Address.compare.call(a, b));
+   * ```
+   */
+  export function compare(this: Address, other: Address): number {
+    for (let i = 0; i < SIZE; i++) {
+      const thisByte = this[i] ?? 0;
+      const otherByte = other[i] ?? 0;
+      if (thisByte < otherByte) return -1;
+      if (thisByte > otherByte) return 1;
+    }
+    return 0;
+  }
+
+  /**
+   * Check if this address is less than other
+   *
+   * @param other - Address to compare with
+   * @returns True if this < other
+   */
+  export function lessThan(this: Address, other: Address): boolean {
+    return compare.call(this, other) < 0;
+  }
+
+  /**
+   * Check if this address is greater than other
+   *
+   * @param other - Address to compare with
+   * @returns True if this > other
+   */
+  export function greaterThan(this: Address, other: Address): boolean {
+    return compare.call(this, other) > 0;
+  }
+
+  // ==========================================================================
+  // Formatting Operations
+  // ==========================================================================
+
+  /**
+   * Format address with shortened display
+   *
+   * @param prefixLength - Number of chars to show at start (default: 6)
+   * @param suffixLength - Number of chars to show at end (default: 4)
+   * @returns Shortened address like "0x742d...51e3"
+   *
+   * @example
+   * ```typescript
+   * const short = Address.toShortHex.call(addr);
+   * // "0x742d...51e3"
+   * const custom = Address.toShortHex.call(addr, 8, 6);
+   * // "0x742d35...251e3"
+   * ```
+   */
+  export function toShortHex(this: Address, prefixLength?: number, suffixLength?: number): string {
+    const prefix = prefixLength ?? 6;
+    const suffix = suffixLength ?? 4;
+
+    const hex = toHex.call(this);
+    if (prefix + suffix >= 40) return hex;
+    return `${hex.slice(0, 2 + prefix)}...${hex.slice(-suffix)}`;
+  }
+
+  /**
+   * Format address for display (checksummed)
+   *
+   * @returns Checksummed hex string
+   *
+   * @example
+   * ```typescript
+   * console.log(Address.format.call(addr));
+   * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
+   * ```
+   */
+  export function format(this: Address): string {
+    return toChecksumHex.call(this);
+  }
 }
 
 /**
- * Compare two addresses for equality
+ * Address type - 20-byte Ethereum address
  *
- * @param a First address
- * @param b Second address
- * @returns true if addresses are equal
+ * Uses TypeScript declaration merging - Address is both a namespace and a type.
  */
-export function addressEquals(a: Address, b: Address): boolean {
-	if (a.bytes.length !== b.bytes.length) {
-		return false;
-	}
-	for (let i = 0; i < a.bytes.length; i++) {
-		if (a.bytes[i] !== b.bytes[i]) {
-			return false;
-		}
-	}
-	return true;
-}
+export type Address = Uint8Array & { readonly __tag: "Address" };
 
-/**
- * Convert bytes to hex string with 0x prefix
- *
- * @param bytes Input bytes
- * @returns Hex string with 0x prefix
- */
-function bytesToHex(bytes: Uint8Array): string {
-	return `0x${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
-}
-
-/**
- * Convert Address to hex string
- *
- * @param address Address object
- * @returns 42-character hex string
- */
-export function addressToHex(address: Address): AddressHex {
-	return bytesToHex(address.bytes) as AddressHex;
-}
+// Re-export namespace as default
+export default Address;

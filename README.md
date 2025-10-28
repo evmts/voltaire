@@ -24,6 +24,7 @@
 ## Features
 
 - **Simple apis** - The minimal apis needed for Ethereum development
+- **Data-first architecture** - Branded primitive types with namespaced methods for optimal tree-shaking
 - **All platforms** - Works in any JavaScript environment (Node.js, Bun, Deno, browsers)
 - **High-performance** - High-performance Zig and rust implementations available to TypeScript projects
 - **Type-safe** - Full TypeScript support with comprehensive type definitions
@@ -52,6 +53,36 @@ zig fetch --save https://github.com/evmts/primitives/archive/refs/tags/v0.1.0.ta
 # Install latest from main branch
 zig fetch --save git+https://github.com/evmts/primitives
 ```
+
+## Quick Start
+
+This library uses a **data-first architecture** with branded primitive types and namespaced methods:
+
+```typescript
+import { Address, Hash, U256, Keccak256 } from '@tevm/primitives';
+
+// Address operations
+const addr = Address.fromHex('0xa0cf798816d4b9b9866b5330eea46a18382f251e');
+const checksum = Address.toChecksumHex(addr);
+const isZero = Address.isZero(addr);
+
+// Hash operations
+const data = new Uint8Array([1, 2, 3]);
+const hash = Keccak256.hash.call(data);
+const hashHex = Hash.toHex(hash);
+
+// U256 arithmetic
+const a = U256.fromHex('0x100');
+const b = U256.fromHex('0x200');
+const sum = U256.add(a, b);
+```
+
+### Benefits
+
+- **Tree-shaking**: Only methods you use are included in your bundle
+- **Zero overhead**: No class instances, just primitives with type safety
+- **Interop**: Easy to serialize, works seamlessly with other libraries
+- **Performance**: Direct function calls, no prototype chain lookup
 
 ## What's Included
 
