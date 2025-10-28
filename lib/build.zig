@@ -4,7 +4,6 @@ const std = @import("std");
 pub const BlstLib = @import("blst.zig");
 pub const CKzgLib = @import("c-kzg.zig");
 pub const Bn254Lib = @import("bn254.zig");
-pub const KeccakLib = @import("keccak.zig");
 
 // Re-export the main functions for convenience
 pub const createBlstLibrary = BlstLib.createBlstLibrary;
