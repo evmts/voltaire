@@ -76,11 +76,9 @@ export async function loadWasm(
 				const memU32 = new Uint32Array(wasmMemory.buffer);
 				let bytes = 0;
 				for (let i = 0; i < iovs_len; i++) {
-					const ptr = memU32[(iovs >> 2) + i * 2];
-					const len = memU32[(iovs >> 2) + i * 2 + 1];
-					if (ptr !== undefined && len !== undefined) {
-						bytes += len;
-					}
+					void (memU32[(iovs >> 2) + i * 2] ?? 0);
+					const len = memU32[(iovs >> 2) + i * 2 + 1] ?? 0;
+					bytes += len;
 				}
 				const mem = new DataView(wasmMemory.buffer);
 				mem.setUint32(nwritten, bytes, true);
@@ -923,10 +921,8 @@ export function bytecodeAnalyzeJumpdests(code: Uint8Array): number[] {
 
 		const results: number[] = [];
 		for (let i = 0; i < count; i++) {
-			const value = memory[outPtr / 4 + i];
-			if (value !== undefined) {
-				results.push(value);
-			}
+			const value = memory[outPtr / 4 + i] ?? 0;
+			results.push(value);
 		}
 		return results;
 	} finally {
@@ -1219,7 +1215,7 @@ export function secp256k1Sign(
 		return {
 			r: sig.slice(0, 32),
 			s: sig.slice(32, 64),
-			v: recid[0],
+			v: recid[0] ?? 0,
 		};
 	} finally {
 		memoryOffset = savedOffset;
@@ -2094,7 +2090,7 @@ export function eventLogMatchesAddress(
 		// Write filter addresses as contiguous array
 		const filterPtr = malloc(filterAddresses.length * 20);
 		for (let i = 0; i < filterAddresses.length; i++) {
-			writeBytes(filterAddresses[i], filterPtr + i * 20);
+			writeBytes(filterAddresses[i]!, filterPtr + i * 20);
 		}
 
 		const result = exports.primitives_eventlog_matches_address(
@@ -2162,7 +2158,7 @@ export function eventLogMatchesTopics(
 		// Write log topics as contiguous array
 		const logTopicsPtr = malloc(logTopics.length * 32);
 		for (let i = 0; i < logTopics.length; i++) {
-			writeBytes(logTopics[i], logTopicsPtr + i * 32);
+			writeBytes(logTopics[i]!, logTopicsPtr + i * 32);
 		}
 
 		// Write filter topics
@@ -2176,11 +2172,12 @@ export function eventLogMatchesTopics(
 
 		for (let i = 0; i < filterTopics.length; i++) {
 			const filterTopic = filterTopics[i];
+			const idx = filterNullsPtr / 4 + i;
 			if (filterTopic === null) {
-				memory[filterNullsPtr / 4 + i] = 1;
+				memory[idx] = 1;
 			} else {
-				memory[filterNullsPtr / 4 + i] = 0;
-				writeBytes(filterTopic, filterTopicsPtr + i * 32);
+				memory[idx] = 0;
+				writeBytes(filterTopic!, filterTopicsPtr + i * 32);
 			}
 		}
 

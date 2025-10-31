@@ -10,6 +10,7 @@ import { Ripemd160 } from "../crypto/ripemd160.js";
 import { Bn254 } from "../crypto/bn254.js";
 import { Gas } from "../primitives/gas-constants.js";
 import { Kzg } from "../crypto/kzg.js";
+import type { Hash } from "../primitives/hash.js";
 
 export enum PrecompileAddress {
 	ECRECOVER = "0x0000000000000000000000000000000000000001",
@@ -44,7 +45,7 @@ export interface PrecompileResult {
 function beBytesToBigInt(bytes: Uint8Array): bigint {
   let result = 0n;
   for (let i = 0; i < bytes.length; i++) {
-    result = (result << 8n) | BigInt(bytes[i]);
+    result = (result << 8n) | BigInt(bytes[i] ?? 0);
   }
   return result;
 }
@@ -119,10 +120,12 @@ export function isPrecompile(address: string, hardfork: Hardfork.Id): boolean {
 		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_MAP_FP_TO_G1.toLowerCase()) {
-		return isAtLeast(hardfork, Hardfork.PRAGUE);
+		// TODO: Add PRAGUE hardfork support
+		return Hardfork.isAtLeast(hardfork, Hardfork.Id.CANCUN);
 	}
 	if (normalized === PrecompileAddress.BLS12_MAP_FP2_TO_G2.toLowerCase()) {
-		return isAtLeast(hardfork, Hardfork.PRAGUE);
+		// TODO: Add PRAGUE hardfork support
+		return Hardfork.isAtLeast(hardfork, Hardfork.Id.CANCUN);
 	}
 
 	return false;
@@ -227,13 +230,14 @@ export function ecrecover(_input: Uint8Array, gasLimit: bigint): PrecompileResul
   buf.set(_input.slice(0, Math.min(128, _input.length)), 0);
 
   const hash = buf.slice(0, 32);
-  const v = buf[63]; // last byte of v (32-byte padded)
+  const v = buf[63] ?? 0; // last byte of v (32-byte padded)
   const r = buf.slice(64, 96);
   const s = buf.slice(96, 128);
 
   try {
-    const pub = Secp256k1.recoverPublicKey({ r, s, v }, hash);
-    const addr = Keccak256.hash(pub).slice(12);
+    const pub = Secp256k1.recoverPublicKey({ r, s, v }, hash as Hash);
+    const hashResult = Keccak256.hash(pub);
+    const addr = hashResult.slice(12);
     const out = new Uint8Array(32);
     // left pad 12 zero bytes, then 20-byte address
     out.set(addr, 12);
