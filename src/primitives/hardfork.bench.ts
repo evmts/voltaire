@@ -186,7 +186,7 @@ console.log("--- String to ID ---");
 let stringIdx = 0;
 results.push(
   benchmark("fromString", () => {
-    Hardfork.fromString(testStrings[stringIdx % testStrings.length]);
+    Hardfork.fromString(testStrings[stringIdx % testStrings.length]!);
     stringIdx++;
   }),
 );

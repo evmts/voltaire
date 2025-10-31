@@ -185,7 +185,7 @@ export namespace Bytecode {
     let pc = 0;
 
     while (pc < code.length) {
-      const opcode = code[pc];
+      const opcode = code[pc] ?? 0;
 
       if (opcode === JUMPDEST) {
         validJumpdests.add(pc);
@@ -274,7 +274,7 @@ export namespace Bytecode {
     let pc = 0;
 
     while (pc < code.length) {
-      const opcode = code[pc];
+      const opcode = code[pc] ?? 0;
 
       if (isPush(opcode)) {
         const pushSize = getPushSize(opcode);
@@ -333,7 +333,7 @@ export namespace Bytecode {
     let pc = 0;
 
     while (pc < code.length) {
-      const opcode = code[pc];
+      const opcode = code[pc] ?? 0;
 
       if (isPush(opcode)) {
         const pushSize = getPushSize(opcode);
@@ -686,8 +686,10 @@ export namespace Bytecode {
     if (code.length < 2) return false;
 
     const lastTwo = code.slice(-2);
+    const b0 = lastTwo[0] ?? 0;
+    const b1 = lastTwo[1] ?? 0;
     // Check for common metadata length markers
-    return lastTwo[0] === 0x00 && lastTwo[1] >= 0x20 && lastTwo[1] <= 0x40;
+    return b0 === 0x00 && b1 >= 0x20 && b1 <= 0x40;
   }
 
   /**
@@ -719,7 +721,7 @@ export namespace Bytecode {
     if (!hasMetadata(code)) return code;
 
     // Last 2 bytes indicate metadata length
-    const metadataLength = code[code.length - 1] + 2;
+    const metadataLength = (code[code.length - 1] ?? 0) + 2;
     return code.slice(0, -metadataLength);
   }
 

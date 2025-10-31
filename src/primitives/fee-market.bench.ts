@@ -475,13 +475,13 @@ console.log(`Total benchmarks run: ${results.length}`);
 
 // Find fastest and slowest
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(`\nFastest: ${sorted[0].name}`);
+console.log(`\nFastest: ${sorted[0]!.name}`);
 console.log(
-  `  ${sorted[0].opsPerSec.toFixed(0)} ops/sec (${sorted[0].avgTimeMs.toFixed(6)} ms/op)`,
+  `  ${sorted[0]!.opsPerSec.toFixed(0)} ops/sec (${sorted[0]!.avgTimeMs.toFixed(6)} ms/op)`,
 );
-console.log(`\nSlowest: ${sorted[sorted.length - 1].name}`);
+console.log(`\nSlowest: ${sorted[sorted.length - 1]!.name}`);
 console.log(
-  `  ${sorted[sorted.length - 1].opsPerSec.toFixed(0)} ops/sec (${sorted[sorted.length - 1].avgTimeMs.toFixed(6)} ms/op)`,
+  `  ${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec (${sorted[sorted.length - 1]!.avgTimeMs.toFixed(6)} ms/op)`,
 );
 
 // Calculate statistics by category

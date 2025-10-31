@@ -25,7 +25,7 @@ function createHash(byte: number): Hash {
 
 const addr1 = createAddress(0x01);
 const addr2 = createAddress(0x02);
-const addr3 = createAddress(0x03);
+const _addr3 = createAddress(0x03);
 const zeroAddr = createAddress(0x00);
 const maxAddr = createAddress(0xff);
 

@@ -501,9 +501,9 @@ console.log(`\nTotal benchmarks run: ${results.length}`);
 
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(`\nFastest: ${sorted[0].name} - ${sorted[0].opsPerSec.toFixed(0)} ops/sec`);
+console.log(`\nFastest: ${sorted[0]!.name} - ${sorted[0]!.opsPerSec.toFixed(0)} ops/sec`);
 console.log(
-  `Slowest: ${sorted[sorted.length - 1].name} - ${sorted[sorted.length - 1].opsPerSec.toFixed(0)} ops/sec`,
+  `Slowest: ${sorted[sorted.length - 1]!.name} - ${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec`,
 );
 
 // Group by operation type

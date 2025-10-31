@@ -400,7 +400,7 @@ export namespace Blob {
      * @returns Version byte
      */
     export function getVersion(hash: Blob.VersionedHash): number {
-      return hash[0];
+      return hash[0] ?? 0;
     }
 
     /**
@@ -409,7 +409,7 @@ export namespace Blob {
      * @returns Version byte
      */
     export function version(this: Blob.VersionedHash): number {
-      return getVersion(this);
+      return this[0] ?? 0;
     }
   }
 

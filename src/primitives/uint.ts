@@ -201,7 +201,7 @@ export namespace Uint {
 
     let value = 0n;
     for (let i = 0; i < this.length; i++) {
-      value = (value << 8n) | BigInt(this[i]);
+      value = (value << 8n) | BigInt(this[i] ?? 0);
     }
 
     return value as Type;

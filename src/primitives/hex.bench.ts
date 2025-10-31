@@ -80,7 +80,7 @@ const longString = "hello world ".repeat(10);
 // Invalid hex strings
 const invalidNoPrefix = "1234";
 const invalidChars = "0xZZZZ";
-const invalidOdd = "0x123";
+// const invalidOdd = "0x123";
 
 // ============================================================================
 // Type Guard Benchmarks
@@ -647,9 +647,9 @@ console.log(`\nTotal benchmarks run: ${results.length}`);
 
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(`\nFastest: ${sorted[0].name} - ${sorted[0].opsPerSec.toFixed(0)} ops/sec`);
+console.log(`\nFastest: ${sorted[0]!.name} - ${sorted[0]!.opsPerSec.toFixed(0)} ops/sec`);
 console.log(
-  `Slowest: ${sorted[sorted.length - 1].name} - ${sorted[sorted.length - 1].opsPerSec.toFixed(0)} ops/sec`,
+  `Slowest: ${sorted[sorted.length - 1]!.name} - ${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec`,
 );
 
 // Export results for analysis

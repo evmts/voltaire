@@ -86,7 +86,8 @@ export namespace Hex {
    * Convert hex character to numeric value
    * @internal
    */
-  function hexCharToValue(c: string): number | null {
+  function hexCharToValue(c: string | undefined): number | null {
+    if (!c) return null;
     const code = c.charCodeAt(0);
     if (code >= 48 && code <= 57) return code - 48; // 0-9
     if (code >= 97 && code <= 102) return code - 97 + 10; // a-f
@@ -198,7 +199,8 @@ export namespace Hex {
     const hexChars = "0123456789abcdef";
     let result = "0x";
     for (let i = 0; i < bytes.length; i++) {
-      result += hexChars[bytes[i] >> 4] + hexChars[bytes[i] & 0x0f];
+      const b = bytes[i]!;
+      result += hexChars[b >> 4]! + hexChars[b & 0x0f]!;
     }
     return result as Unsized;
   }
@@ -622,7 +624,7 @@ export namespace Hex {
     }
     const result = new Uint8Array(bytesA.length);
     for (let i = 0; i < bytesA.length; i++) {
-      result[i] = bytesA[i] ^ bytesB[i];
+      result[i] = bytesA[i]! ^ bytesB[i]!;
     }
     return fromBytes(result);
   }

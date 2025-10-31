@@ -27,7 +27,7 @@ function createStorageKey(byte: number): Hash {
 
 const addr1 = createAddress(1);
 const addr2 = createAddress(2);
-const addr3 = createAddress(3);
+const _addr3 = createAddress(3);
 
 const key1 = createStorageKey(10);
 const key2 = createStorageKey(20);

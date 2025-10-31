@@ -35,6 +35,7 @@
 import { Address } from "./address.js";
 import { Keccak256 } from "../crypto/keccak256.js";
 import { Secp256k1 } from "../crypto/secp256k1.js";
+import type { Hash } from "./hash.js";
 
 // ============================================================================
 // Main Siwe Namespace
@@ -411,7 +412,7 @@ export namespace Siwe {
         // Recover public key from signature
         const publicKey = Secp256k1.recoverPublicKey(
           { r, s, v: recoveryId },
-          messageHash
+          messageHash as Hash
         );
 
         // Derive address from public key

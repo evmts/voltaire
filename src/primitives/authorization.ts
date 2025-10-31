@@ -301,12 +301,12 @@ export namespace Authorization {
     const messageHash = hash.call(this);
 
     // Sign with secp256k1
-    const signature = Secp256k1.sign(messageHash, privateKey);
+    const sig = Secp256k1.sign(messageHash, privateKey);
 
     // Extract r, s, yParity from signature
-    // Signature is 64 bytes: r (32 bytes) + s (32 bytes)
-    const r = signature.slice(0, 32);
-    const s = signature.slice(32, 64);
+    // Signature is { r, s, v }
+    const r = sig.r;
+    const s = sig.s;
 
     // Convert r and s to bigint
     let rBigint = 0n;

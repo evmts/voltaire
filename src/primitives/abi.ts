@@ -22,10 +22,10 @@ import type { Address } from "./address.js";
 import { Hash } from "./hash.js";
 import type {
   AbiParameter as AbiTypeParameter,
-  AbiFunction as AbiTypeFunction,
-  AbiEvent as AbiTypeEvent,
-  AbiError as AbiTypeError,
-  AbiConstructor as AbiTypeConstructor,
+  AbiFunction as _AbiTypeFunction,
+  AbiEvent as _AbiTypeEvent,
+  AbiError as _AbiTypeError,
+  AbiConstructor as _AbiTypeConstructor,
   AbiParameterToPrimitiveType,
   AbiParametersToPrimitiveTypes as AbiTypeParametersToPrimitiveTypes,
 } from "abitype";
@@ -333,7 +333,7 @@ export namespace Abi {
     // Fixed-size arrays like uint256[3] are static if the element type is static
     if (type.includes("[") && type.endsWith("]")) {
       const match = type.match(/^(.+)\[(\d+)\]$/);
-      if (match) {
+      if (match && match[1]) {
         const elementType = match[1];
         return isDynamicType(elementType);
       }
@@ -444,7 +444,7 @@ export namespace Abi {
 
     // Handle fixed-size arrays
     const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-    if (fixedArrayMatch) {
+    if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
       const elementType = fixedArrayMatch[1];
       const arraySize = parseInt(fixedArrayMatch[2]);
       const array = value as unknown[];
@@ -474,7 +474,7 @@ export namespace Abi {
     }
     let result = 0n;
     for (let i = 0; i < 32; i++) {
-      result = (result << 8n) | BigInt(data[offset + i]);
+      result = (result << 8n) | BigInt(data[offset + i] ?? 0);
     }
     return result;
   }
@@ -505,7 +505,7 @@ export namespace Abi {
 
     // Handle fixed-size arrays
     const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-    if (fixedArrayMatch) {
+    if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
       const elementType = fixedArrayMatch[1];
       const arraySize = parseInt(fixedArrayMatch[2]);
 
@@ -571,7 +571,10 @@ export namespace Abi {
       }
       let hex = "0x";
       for (let i = 12; i < 32; i++) {
-        hex += data[offset + i].toString(16).padStart(2, "0");
+        const byte = data[offset + i];
+        if (byte !== undefined) {
+          hex += byte.toString(16).padStart(2, "0");
+        }
       }
       return { value: hex, newOffset: offset + 32 };
     }
@@ -710,6 +713,7 @@ export namespace Abi {
     const encodings: Array<{ encoded: Uint8Array; isDynamic: boolean }> = [];
     for (let i = 0; i < params.length; i++) {
       const param = params[i];
+      if (!param) continue;
       const value = values[i];
       encodings.push(encodeValue(param.type, value));
     }
@@ -865,11 +869,13 @@ export namespace Abi {
       const expectedSelector = getSelector.call(this);
       // Check selector match
       for (let i = 0; i < 4; i++) {
-        if (selector[i] !== expectedSelector[i]) {
+        const selByte = selector[i];
+        const expByte = expectedSelector[i];
+        if (selByte !== expByte) {
           throw new AbiInvalidSelectorError("Function selector mismatch");
         }
       }
-      return decodeParameters(this.inputs, data.slice(4));
+      return decodeParameters(this.inputs, data.slice(4)) as any;
     }
 
     /**
@@ -910,7 +916,7 @@ export namespace Abi {
       this: T,
       data: Uint8Array,
     ): ParametersToPrimitiveTypes<T["outputs"]> {
-      return decodeParameters(this.outputs, data);
+      return decodeParameters(this.outputs, data) as any;
     }
   }
 
@@ -1025,10 +1031,15 @@ export namespace Abi {
           throw new AbiDecodingError("Missing topic0 for non-anonymous event");
         }
         const topic0 = topics[0];
+        if (!topic0) {
+          throw new AbiDecodingError("Missing topic0 for non-anonymous event");
+        }
         const expectedSelector = getSelector.call(this);
         // Check selector match
         for (let i = 0; i < 32; i++) {
-          if (topic0[i] !== expectedSelector[i]) {
+          const t0Byte = topic0[i];
+          const expByte = expectedSelector[i];
+          if (t0Byte !== expByte) {
             throw new AbiInvalidSelectorError("Event selector mismatch");
           }
         }
@@ -1069,13 +1080,13 @@ export namespace Abi {
         const decoded = decodeParameters(nonIndexedParams as any, data);
         for (let i = 0; i < nonIndexedParams.length; i++) {
           const param = nonIndexedParams[i];
-          if (param.name) {
+          if (param && param.name) {
             result[param.name] = (decoded as any)[i];
           }
         }
       }
 
-      return result as ParametersToObject<T["inputs"]>;
+      return result as any;
     }
   }
 
@@ -1166,11 +1177,13 @@ export namespace Abi {
       const expectedSelector = getSelector.call(this);
       // Check selector match
       for (let i = 0; i < 4; i++) {
-        if (selector[i] !== expectedSelector[i]) {
+        const selByte = selector[i];
+        const expByte = expectedSelector[i];
+        if (selByte !== expByte) {
           throw new AbiInvalidSelectorError("Error selector mismatch");
         }
       }
-      return decodeParameters(this.inputs, data.slice(4));
+      return decodeParameters(this.inputs, data.slice(4)) as any;
     }
   }
 
@@ -1225,7 +1238,7 @@ export namespace Abi {
       data: Uint8Array,
       bytecodeLength: number,
     ): ParametersToPrimitiveTypes<T["inputs"]> {
-      return decodeParameters(this.inputs, data.slice(bytecodeLength));
+      return decodeParameters(this.inputs, data.slice(bytecodeLength)) as ParametersToPrimitiveTypes<T["inputs"]>;
     }
   }
 
@@ -1307,7 +1320,7 @@ export namespace Abi {
   ): ParametersToPrimitiveTypes<GetFunction<TAbi, TFunctionName>["outputs"]> {
     const fn = getItem.call(this, functionName, "function");
     if (!fn) throw new AbiItemNotFoundError(`Function ${functionName} not found`);
-    return Function.decodeResult.call(fn as any, data);
+    return Function.decodeResult.call(fn as any, data) as any;
   }
 
   /**
@@ -1401,6 +1414,7 @@ export namespace Abi {
       if (log.topics.length === 0) continue;
 
       const topic0 = log.topics[0];
+      if (!topic0) continue;
 
       // Find matching event by selector
       for (const item of this) {
@@ -1416,7 +1430,9 @@ export namespace Abi {
         // Check if selector matches
         let matches = true;
         for (let i = 0; i < 32; i++) {
-          if (topic0[i] !== eventSelector[i]) {
+          const t0Byte = topic0[i];
+          const evByte = eventSelector[i];
+          if (t0Byte !== evByte) {
             matches = false;
             break;
           }
@@ -1465,6 +1481,7 @@ export namespace Abi {
 
     for (let i = 0; i < types.length; i++) {
       const type = types[i];
+      if (!type) continue;
       const value = values[i];
 
       // Handle uint types - minimal encoding (no padding)
@@ -1594,7 +1611,7 @@ export namespace Abi {
 
     const formattedArgs = args
       .map((arg, i) => {
-        const param = item.inputs[i];
+        void item.inputs[i];
         // TODO: Format based on type (addresses with checksum, bigints as strings, etc.)
         return String(arg);
       })

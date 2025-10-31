@@ -95,22 +95,22 @@ const results: BenchmarkResult[] = [];
 console.log("--- Constant Access ---");
 results.push(
   benchmark("Access EMPTY_CODE_HASH", () => {
-    const _ = EMPTY_CODE_HASH;
+    void EMPTY_CODE_HASH;
   }),
 );
 results.push(
   benchmark("Access EMPTY_TRIE_ROOT", () => {
-    const _ = EMPTY_TRIE_ROOT;
+    void EMPTY_TRIE_ROOT;
   }),
 );
 results.push(
   benchmark("Read EMPTY_CODE_HASH byte", () => {
-    const _ = EMPTY_CODE_HASH[0];
+    void EMPTY_CODE_HASH[0];
   }),
 );
 results.push(
   benchmark("Compare constants", () => {
-    const _ = EMPTY_CODE_HASH !== EMPTY_TRIE_ROOT;
+    void (EMPTY_CODE_HASH !== EMPTY_TRIE_ROOT);
   }),
 );
 
@@ -140,17 +140,17 @@ console.log(
 console.log("--- Key Creation ---");
 results.push(
   benchmark("StorageKey.create - simple", () => {
-    const _ = StorageKey.create(addr1, 0n);
+    void StorageKey.create(addr1, 0n);
   }),
 );
 results.push(
   benchmark("StorageKey.create - with slot", () => {
-    const _ = StorageKey.create(addr1, 42n);
+    void StorageKey.create(addr1, 42n);
   }),
 );
 results.push(
   benchmark("StorageKey.create - large slot", () => {
-    const _ = StorageKey.create(
+    void StorageKey.create(
       addr1,
       0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
     );
@@ -158,7 +158,7 @@ results.push(
 );
 results.push(
   benchmark("Literal key creation", () => {
-    const _: StorageKey = { address: addr1, slot: 42n };
+    void ({ address: addr1, slot: 42n } as StorageKey);
   }),
 );
 
@@ -188,22 +188,22 @@ console.log(
 console.log("--- Type Checking ---");
 results.push(
   benchmark("StorageKey.is - valid key", () => {
-    const _ = StorageKey.is(key1);
+    void StorageKey.is(key1);
   }),
 );
 results.push(
   benchmark("StorageKey.is - invalid (null)", () => {
-    const _ = StorageKey.is(null);
+    void StorageKey.is(null);
   }),
 );
 results.push(
   benchmark("StorageKey.is - invalid (object)", () => {
-    const _ = StorageKey.is({ foo: "bar" });
+    void StorageKey.is({ foo: "bar" });
   }),
 );
 results.push(
   benchmark("StorageKey.is - invalid (no slot)", () => {
-    const _ = StorageKey.is({ address: addr1 });
+    void StorageKey.is({ address: addr1 });
   }),
 );
 
@@ -233,29 +233,29 @@ console.log(
 console.log("--- Equality Checks ---");
 results.push(
   benchmark("StorageKey.equals - same keys", () => {
-    const _ = StorageKey.equals(key1, key1);
+    void StorageKey.equals(key1, key1);
   }),
 );
 results.push(
   benchmark("StorageKey.equals - equal keys", () => {
     const k1: StorageKey = { address: addr1, slot: 42n };
     const k2: StorageKey = { address: addr1, slot: 42n };
-    const _ = StorageKey.equals(k1, k2);
+    void StorageKey.equals(k1, k2);
   }),
 );
 results.push(
   benchmark("StorageKey.equals - different slots", () => {
-    const _ = StorageKey.equals(key1, key2);
+    void StorageKey.equals(key1, key2);
   }),
 );
 results.push(
   benchmark("StorageKey.equals - different addresses", () => {
-    const _ = StorageKey.equals(key1, key3);
+    void StorageKey.equals(key1, key3);
   }),
 );
 results.push(
   benchmark("StorageKey.equals - method form", () => {
-    const _ = StorageKey.equals_.call(key1, key2);
+    void StorageKey.equals_.call(key1, key2);
   }),
 );
 
@@ -285,22 +285,22 @@ console.log(
 console.log("--- String Conversion ---");
 results.push(
   benchmark("StorageKey.toString - zero slot", () => {
-    const _ = StorageKey.toString(key1);
+    void StorageKey.toString(key1);
   }),
 );
 results.push(
   benchmark("StorageKey.toString - small slot", () => {
-    const _ = StorageKey.toString(key2);
+    void StorageKey.toString(key2);
   }),
 );
 results.push(
   benchmark("StorageKey.toString - large slot", () => {
-    const _ = StorageKey.toString(keyLarge);
+    void StorageKey.toString(keyLarge);
   }),
 );
 results.push(
   benchmark("StorageKey.toString - method form", () => {
-    const _ = StorageKey.toString_.call(key2);
+    void StorageKey.toString_.call(key2);
   }),
 );
 
@@ -317,17 +317,17 @@ console.log(
 console.log("\n--- String Parsing ---");
 results.push(
   benchmark("StorageKey.fromString - valid", () => {
-    const _ = StorageKey.fromString(str1);
+    void StorageKey.fromString(str1);
   }),
 );
 results.push(
   benchmark("StorageKey.fromString - with slot", () => {
-    const _ = StorageKey.fromString(str2);
+    void StorageKey.fromString(str2);
   }),
 );
 results.push(
   benchmark("StorageKey.fromString - invalid", () => {
-    const _ = StorageKey.fromString("invalid");
+    void StorageKey.fromString("invalid");
   }),
 );
 
@@ -345,7 +345,7 @@ console.log("\n--- Round-trip Conversion ---");
 results.push(
   benchmark("Round-trip: toString + fromString", () => {
     const str = StorageKey.toString(key2);
-    const _ = StorageKey.fromString(str);
+    void StorageKey.fromString(str);
   }),
 );
 
@@ -375,22 +375,22 @@ console.log(
 console.log("--- Hash Code Generation ---");
 results.push(
   benchmark("StorageKey.hashCode - zero slot", () => {
-    const _ = StorageKey.hashCode(key1);
+    void StorageKey.hashCode(key1);
   }),
 );
 results.push(
   benchmark("StorageKey.hashCode - small slot", () => {
-    const _ = StorageKey.hashCode(key2);
+    void StorageKey.hashCode(key2);
   }),
 );
 results.push(
   benchmark("StorageKey.hashCode - large slot", () => {
-    const _ = StorageKey.hashCode(keyLarge);
+    void StorageKey.hashCode(keyLarge);
   }),
 );
 results.push(
   benchmark("StorageKey.hashCode - method form", () => {
-    const _ = StorageKey.hashCode_.call(key2);
+    void StorageKey.hashCode_.call(key2);
   }),
 );
 
@@ -437,14 +437,14 @@ results.push(
 results.push(
   benchmark("Map.get with StorageKey", () => {
     const keyStr = StorageKey.toString(key2);
-    const _ = testMap.get(keyStr);
+    void testMap.get(keyStr);
   }),
 );
 
 results.push(
   benchmark("Map.has with StorageKey", () => {
     const keyStr = StorageKey.toString(key2);
-    const _ = testMap.has(keyStr);
+    void testMap.has(keyStr);
   }),
 );
 
@@ -484,7 +484,7 @@ console.log("--- Batch Operations ---");
 results.push(
   benchmark("Create 10 StorageKeys", () => {
     for (let i = 0; i < 10; i++) {
-      const _: StorageKey = { address: addr1, slot: BigInt(i) };
+      void ({ address: addr1, slot: BigInt(i) } as StorageKey);
     }
   }),
 );
@@ -496,7 +496,7 @@ results.push(
       keys.push({ address: addr1, slot: BigInt(i) });
     }
     for (const key of keys) {
-      const _ = StorageKey.toString(key);
+      void StorageKey.toString(key);
     }
   }),
 );
@@ -515,7 +515,7 @@ results.push(
   benchmark("Lookup 10 keys in Map", () => {
     for (let i = 0; i < 10; i++) {
       const key: StorageKey = { address: addr1, slot: BigInt(i) };
-      const _ = testMap.get(StorageKey.toString(key));
+      void testMap.get(StorageKey.toString(key));
     }
   }),
 );
@@ -548,7 +548,7 @@ console.log("--- Edge Cases ---");
 results.push(
   benchmark("Zero address and slot", () => {
     const key: StorageKey = { address: zeroAddr, slot: 0n };
-    const _ = StorageKey.toString(key);
+    void StorageKey.toString(key);
   }),
 );
 
@@ -558,7 +558,7 @@ results.push(
       address: maxAddr,
       slot: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
     };
-    const _ = StorageKey.toString(key);
+    void StorageKey.toString(key);
   }),
 );
 
@@ -566,7 +566,7 @@ results.push(
   benchmark("Equality check - identical addresses", () => {
     const k1: StorageKey = { address: addr1, slot: 0n };
     const k2: StorageKey = { address: addr1, slot: 0n };
-    const _ = StorageKey.equals(k1, k2);
+    void StorageKey.equals(k1, k2);
   }),
 );
 
@@ -574,7 +574,7 @@ results.push(
   benchmark("Hash collision check", () => {
     const hash1 = StorageKey.hashCode(key1);
     const hash2 = StorageKey.hashCode(key2);
-    const _ = hash1 === hash2;
+    void (hash1 === hash2);
   }),
 );
 
@@ -608,9 +608,9 @@ console.log(
 
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(`\nFastest: ${sorted[0].name} (${sorted[0].opsPerSec.toFixed(0)} ops/sec)`);
+console.log(`\nFastest: ${sorted[0]!.name} (${sorted[0]!.opsPerSec.toFixed(0)} ops/sec)`);
 console.log(
-  `Slowest: ${sorted[sorted.length - 1].name} (${sorted[sorted.length - 1].opsPerSec.toFixed(0)} ops/sec)`,
+  `Slowest: ${sorted[sorted.length - 1]!.name} (${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec)`,
 );
 
 // Export results for analysis

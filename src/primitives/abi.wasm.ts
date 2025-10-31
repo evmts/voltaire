@@ -110,7 +110,7 @@ export function encodeParametersWasm<const TParams extends readonly Abi.Paramete
   values: Abi.ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
   const types = params.map(p => p.type);
-  const valueStrs = values.map((v, i) => formatValueForWasm(params[i].type, v));
+  const valueStrs = values.map((v, i) => formatValueForWasm(params[i]!.type, v));
   return loader.abiEncodeParameters(types, valueStrs);
 }
 
@@ -135,7 +135,7 @@ export function decodeParametersWasm<const TParams extends readonly Abi.Paramete
 ): Abi.ParametersToPrimitiveTypes<TParams> {
   const types = params.map(p => p.type);
   const decoded = loader.abiDecodeParameters(data, types);
-  return decoded.map((d, i) => parseValueFromWasm(params[i].type, d)) as any;
+  return decoded.map((d, i) => parseValueFromWasm(params[i]!.type, d)) as any;
 }
 
 /**
@@ -158,9 +158,9 @@ export function decodeParametersWasm<const TParams extends readonly Abi.Paramete
  * ```
  */
 export function encodeFunctionDataWasm<const TParams extends readonly Abi.Parameter[]>(
-  signature: string,
-  params: TParams,
-  values: Abi.ParametersToPrimitiveTypes<TParams>,
+  _signature: string,
+  _params: TParams,
+  _values: Abi.ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
   // TODO: Implement when C API is ready
   // This should call both selector computation and parameter encoding
@@ -195,9 +195,9 @@ export function encodeFunctionDataWasm<const TParams extends readonly Abi.Parame
  * ```
  */
 export function decodeFunctionDataWasm<const TParams extends readonly Abi.Parameter[]>(
-  signature: string,
-  params: TParams,
-  data: Uint8Array,
+  _signature: string,
+  _params: TParams,
+  _data: Uint8Array,
 ): Abi.ParametersToPrimitiveTypes<TParams> {
   // TODO: Implement when C API is ready
 
@@ -239,9 +239,9 @@ export function decodeFunctionDataWasm<const TParams extends readonly Abi.Parame
  * ```
  */
 export function encodeEventTopicsWasm(
-  signature: string,
-  params: readonly Abi.Parameter[],
-  values: Record<string, unknown>,
+  _signature: string,
+  _params: readonly Abi.Parameter[],
+  _values: Record<string, unknown>,
 ): Uint8Array[] {
   // TODO: Implement when C API is ready
 
@@ -284,10 +284,10 @@ export function encodeEventTopicsWasm(
  * ```
  */
 export function decodeEventLogWasm(
-  signature: string,
-  params: readonly Abi.Parameter[],
-  data: Uint8Array,
-  topics: readonly Uint8Array[],
+  _signature: string,
+  _params: readonly Abi.Parameter[],
+  _data: Uint8Array,
+  _topics: readonly Uint8Array[],
 ): Record<string, unknown> {
   // TODO: Implement when C API is ready
 
@@ -325,8 +325,8 @@ export function decodeEventLogWasm(
  * ```
  */
 export function encodePackedWasm(
-  types: readonly string[],
-  values: readonly unknown[],
+  _types: readonly string[],
+  _values: readonly unknown[],
 ): Uint8Array {
   // TODO: Implement when C API is ready
 

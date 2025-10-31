@@ -108,9 +108,9 @@ export namespace StorageKey {
     if (typeof value !== "object" || value === null) return false;
     const obj = value as Record<string, unknown>;
     return (
-      obj.address instanceof Uint8Array &&
-      obj.address.length === 20 &&
-      typeof obj.slot === "bigint"
+      obj['address'] instanceof Uint8Array &&
+      obj['address'].length === 20 &&
+      typeof obj['slot'] === "bigint"
     );
   }
 
@@ -151,7 +151,7 @@ export namespace StorageKey {
     if (a.slot !== b.slot) return false;
     if (a.address.length !== b.address.length) return false;
     for (let i = 0; i < a.address.length; i++) {
-      if (a.address[i] !== b.address[i]) return false;
+      if ((a.address[i] ?? 0) !== (b.address[i] ?? 0)) return false;
     }
     return true;
   }
@@ -174,7 +174,7 @@ export namespace StorageKey {
    */
   export function toString(key: StorageKey): string {
     const addrHex = Array.from(key.address)
-      .map((b) => b.toString(16).padStart(2, "0"))
+      .map((b) => (b ?? 0).toString(16).padStart(2, "0"))
       .join("");
     const slotHex = key.slot.toString(16).padStart(64, "0");
     return `${addrHex}_${slotHex}`;
@@ -198,7 +198,9 @@ export namespace StorageKey {
     const parts = str.split("_");
     if (parts.length !== 2) return undefined;
 
-    const [addrHex, slotHex] = parts;
+    const addrHex = parts[0];
+    const slotHex = parts[1];
+    if (!addrHex || !slotHex) return undefined;
     if (addrHex.length !== 40 || slotHex.length !== 64) return undefined;
 
     // Validate hex characters
@@ -235,7 +237,7 @@ export namespace StorageKey {
     let hash = 0;
     // Hash address bytes
     for (let i = 0; i < key.address.length; i++) {
-      hash = ((hash << 5) - hash + key.address[i]) | 0;
+      hash = ((hash << 5) - hash + (key.address[i] ?? 0)) | 0;
     }
     // Hash slot (convert to bytes)
     const slotLow = Number(key.slot & 0xffffffffn);

@@ -73,7 +73,7 @@ function createStorageKey(byte: number): Hash {
 
 const addr1 = createAddress(1);
 const addr2 = createAddress(2);
-const addr3 = createAddress(3);
+// const _addr3 = createAddress(3);
 
 const key1 = createStorageKey(10);
 const key2 = createStorageKey(20);
@@ -86,7 +86,7 @@ const smallList: AccessList = [
 ];
 
 // Medium list
-const mediumList: AccessList = [];
+const mediumList: AccessList.Item[] = [];
 for (let i = 0; i < 10; i++) {
   mediumList.push({
     address: createAddress(i),
@@ -95,7 +95,7 @@ for (let i = 0; i < 10; i++) {
 }
 
 // Large list
-const largeList: AccessList = [];
+const largeList: AccessList.Item[] = [];
 for (let i = 0; i < 100; i++) {
   largeList.push({
     address: createAddress(i % 50),
@@ -189,7 +189,7 @@ results.push(
 );
 results.push(
   benchmark("includesAddress - medium list (found)", () =>
-    AccessList.includesAddress.call(mediumList, mediumList[5].address),
+    AccessList.includesAddress.call(mediumList, mediumList[5]!.address),
   ),
 );
 results.push(
@@ -478,9 +478,9 @@ console.log(`\nTotal benchmarks run: ${results.length}`);
 
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(`\nFastest: ${sorted[0].name} - ${sorted[0].opsPerSec.toFixed(0)} ops/sec`);
+console.log(`\nFastest: ${sorted[0]!.name} - ${sorted[0]!.opsPerSec.toFixed(0)} ops/sec`);
 console.log(
-  `Slowest: ${sorted[sorted.length - 1].name} - ${sorted[sorted.length - 1].opsPerSec.toFixed(0)} ops/sec`,
+  `Slowest: ${sorted[sorted.length - 1]!.name} - ${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec`,
 );
 
 // Export results for analysis

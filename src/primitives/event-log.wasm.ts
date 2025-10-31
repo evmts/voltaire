@@ -5,11 +5,10 @@
 
 // Re-export pure TypeScript implementation
 export * from "./event-log.js";
-export { EventLog, EventFilter, LogsFilter } from "./event-log.js";
-export type { Topic } from "./event-log.js";
+export { EventLog } from "./event-log.js";
 
 import * as loader from "../wasm-loader/loader.js";
-import type { Hash } from "./hash.js";
+import { Hash } from "./hash.js";
 import type { Address } from "./address.js";
 
 // ============================================================================
@@ -34,9 +33,10 @@ export function matchesAddressWasm(
 	logAddress: Address,
 	filterAddresses: Address[],
 ): boolean {
+	const { Hex } = require('./hex.js');
 	return loader.eventLogMatchesAddress(
-		logAddress.toBytes(),
-		filterAddresses.map((a) => a.toBytes()),
+		Hex.toBytes(logAddress),
+		filterAddresses.map((a) => Hex.toBytes(a)),
 	);
 }
 
@@ -56,8 +56,8 @@ export function matchesTopicWasm(
 	filterTopic: Hash | null,
 ): boolean {
 	return loader.eventLogMatchesTopic(
-		logTopic.toBytes(),
-		filterTopic ? filterTopic.toBytes() : null,
+		Hash.toBytes.call(logTopic),
+		filterTopic ? Hash.toBytes.call(filterTopic) : null,
 	);
 }
 
@@ -80,8 +80,8 @@ export function matchesTopicsWasm(
 	filterTopics: (Hash | null)[],
 ): boolean {
 	return loader.eventLogMatchesTopics(
-		logTopics.map((t) => t.toBytes()),
-		filterTopics.map((t) => (t ? t.toBytes() : null)),
+		logTopics.map((t) => Hash.toBytes.call(t)),
+		filterTopics.map((t) => (t ? Hash.toBytes.call(t) : null)),
 	);
 }
 

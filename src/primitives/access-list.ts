@@ -620,5 +620,9 @@ export namespace AccessList {
  */
 export type AccessList = readonly AccessList.Item[];
 
+export namespace AccessList {
+  export type Type = AccessList;
+}
+
 // Re-export namespace as default
 export default AccessList;

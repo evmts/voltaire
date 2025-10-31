@@ -14,7 +14,7 @@ import type { AccessList } from "./access-list.js";
  * @returns Gas cost as bigint
  */
 export function gasCostWasm(accessList: AccessList.Type): bigint {
-	return loader.accessListGasCost(accessList);
+	return loader.accessListGasCost(accessList as any);
 }
 
 /**
@@ -23,7 +23,7 @@ export function gasCostWasm(accessList: AccessList.Type): bigint {
  * @returns Gas savings as bigint
  */
 export function gasSavingsWasm(accessList: AccessList.Type): bigint {
-	return loader.accessListGasSavings(accessList);
+	return loader.accessListGasSavings(accessList as any);
 }
 
 /**
@@ -36,7 +36,7 @@ export function includesAddressWasm(
 	accessList: AccessList.Type,
 	address: Address,
 ): boolean {
-	return loader.accessListIncludesAddress(accessList, address);
+	return loader.accessListIncludesAddress(accessList as any, address);
 }
 
 /**
@@ -51,5 +51,5 @@ export function includesStorageKeyWasm(
 	address: Address,
 	storageKey: Hash,
 ): boolean {
-	return loader.accessListIncludesStorageKey(accessList, address, storageKey);
+	return loader.accessListIncludesStorageKey(accessList as any, address, storageKey);
 }
