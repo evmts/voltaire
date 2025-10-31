@@ -4,15 +4,13 @@
  * Operations for encoding and decoding ABI function calls and results.
  */
 
-import type { Function } from "./types.js";
+import type { Function, ParametersToPrimitiveTypes } from "./types.js";
 import {
-  AbiEncodingError,
   AbiDecodingError,
   AbiInvalidSelectorError,
 } from "./errors.js";
 import { encodeParameters, decodeParameters } from "./encoding.js";
 import { Hash } from "../hash.js";
-import type { Abi } from "../abi.js";
 
 /**
  * Get function selector (4 bytes)
@@ -62,7 +60,7 @@ export function getSignature<T extends Function>(func: T): string {
  */
 export function encodeParams<T extends Function>(
   func: T,
-  args: Abi.ParametersToPrimitiveTypes<T["inputs"]>,
+  args: ParametersToPrimitiveTypes<T["inputs"]>,
 ): Uint8Array {
   const selector = getSelector(func);
   const encoded = encodeParameters(func.inputs, args);
@@ -90,7 +88,7 @@ export function encodeParams<T extends Function>(
 export function decodeParams<T extends Function>(
   func: T,
   data: Uint8Array,
-): Abi.ParametersToPrimitiveTypes<T["inputs"]> {
+): ParametersToPrimitiveTypes<T["inputs"]> {
   if (data.length < 4) {
     throw new AbiDecodingError("Data too short for function selector");
   }
@@ -124,7 +122,7 @@ export function decodeParams<T extends Function>(
  */
 export function encodeResult<T extends Function>(
   func: T,
-  values: Abi.ParametersToPrimitiveTypes<T["outputs"]>,
+  values: ParametersToPrimitiveTypes<T["outputs"]>,
 ): Uint8Array {
   return encodeParameters(func.outputs, values);
 }
@@ -146,6 +144,6 @@ export function encodeResult<T extends Function>(
 export function decodeResult<T extends Function>(
   func: T,
   data: Uint8Array,
-): Abi.ParametersToPrimitiveTypes<T["outputs"]> {
+): ParametersToPrimitiveTypes<T["outputs"]> {
   return decodeParameters(func.outputs, data) as any;
 }

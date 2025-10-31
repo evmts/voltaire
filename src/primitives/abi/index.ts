@@ -36,5 +36,5 @@ export * as Event from './event.js';
 export * as Error from './error.js';
 export * as Constructor from './constructor.js';
 
-// Export WASM variants
-export * from './wasm.js';
+// Export WASM variants as namespace to avoid conflicts
+export * as Wasm from './wasm.js';

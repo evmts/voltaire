@@ -4,9 +4,9 @@
  * Functions for working with Ethereum event encoding and decoding
  */
 
-import type { Event, Parameter, ParametersToPrimitiveTypes, ParametersToObject } from "./types.js";
-import { AbiEncodingError, AbiDecodingError, AbiInvalidSelectorError } from "./errors.js";
-import { encodeParameters, decodeParameters, encodeValue, decodeValue, isDynamicType } from "./encoding.js";
+import type { Event, Parameter, ParametersToObject } from "./types.js";
+import { AbiDecodingError, AbiInvalidSelectorError } from "./errors.js";
+import { decodeParameters, encodeValue, decodeValue, isDynamicType } from "./encoding.js";
 import { Hash } from "../hash.js";
 
 /**

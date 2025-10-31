@@ -9,10 +9,10 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { Parameter } from "./types.js";
+import type { Parameter, ParametersToPrimitiveTypes } from "./types.js";
 
 // Import pure TS implementations for fallback
-import * as abiTs from "./index.js";
+import * as abiTs from "./encoding.js";
 
 // ============================================================================
 // Helper Functions
@@ -102,9 +102,9 @@ function parseValueFromWasm(type: string, value: unknown): unknown {
  * const encoded = encodeParametersWasm(params, [address, amount]);
  * ```
  */
-export function encodeParametersWasm<const TParams extends readonly Abi.Parameter[]>(
+export function encodeParametersWasm<const TParams extends readonly Parameter[]>(
   params: TParams,
-  values: Abi.ParametersToPrimitiveTypes<TParams>,
+  values: ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
   const types = params.map(p => p.type);
   const valueStrs = values.map((v, i) => formatValueForWasm(params[i]!.type, v));
@@ -126,10 +126,10 @@ export function encodeParametersWasm<const TParams extends readonly Abi.Paramete
  * const decoded = decodeParametersWasm(params, data);
  * ```
  */
-export function decodeParametersWasm<const TParams extends readonly Abi.Parameter[]>(
+export function decodeParametersWasm<const TParams extends readonly Parameter[]>(
   params: TParams,
   data: Uint8Array,
-): Abi.ParametersToPrimitiveTypes<TParams> {
+): ParametersToPrimitiveTypes<TParams> {
   const types = params.map(p => p.type);
   const decoded = loader.abiDecodeParameters(data, types);
   return decoded.map((d, i) => parseValueFromWasm(params[i]!.type, d)) as any;
@@ -154,10 +154,10 @@ export function decodeParametersWasm<const TParams extends readonly Abi.Paramete
  * );
  * ```
  */
-export function encodeFunctionDataWasm<const TParams extends readonly Abi.Parameter[]>(
+export function encodeFunctionDataWasm<const TParams extends readonly Parameter[]>(
   _signature: string,
   _params: TParams,
-  _values: Abi.ParametersToPrimitiveTypes<TParams>,
+  _values: ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
   // TODO: Implement when C API is ready
   // This should call both selector computation and parameter encoding
@@ -191,11 +191,11 @@ export function encodeFunctionDataWasm<const TParams extends readonly Abi.Parame
  * );
  * ```
  */
-export function decodeFunctionDataWasm<const TParams extends readonly Abi.Parameter[]>(
+export function decodeFunctionDataWasm<const TParams extends readonly Parameter[]>(
   _signature: string,
   _params: TParams,
   _data: Uint8Array,
-): Abi.ParametersToPrimitiveTypes<TParams> {
+): ParametersToPrimitiveTypes<TParams> {
   // TODO: Implement when C API is ready
 
   throw new Error(
@@ -237,7 +237,7 @@ export function decodeFunctionDataWasm<const TParams extends readonly Abi.Parame
  */
 export function encodeEventTopicsWasm(
   _signature: string,
-  _params: readonly Abi.Parameter[],
+  _params: readonly Parameter[],
   _values: Record<string, unknown>,
 ): Uint8Array[] {
   // TODO: Implement when C API is ready
@@ -282,7 +282,7 @@ export function encodeEventTopicsWasm(
  */
 export function decodeEventLogWasm(
   _signature: string,
-  _params: readonly Abi.Parameter[],
+  _params: readonly Parameter[],
   _data: Uint8Array,
   _topics: readonly Uint8Array[],
 ): Record<string, unknown> {
@@ -345,9 +345,10 @@ export function encodePackedWasm(
  * Pure TypeScript implementations (fallback when WASM not available)
  * These are NOT yet implemented in abi.ts either
  */
-export const encodeParameters = abiTs.Abi.encodeParameters;
-export const decodeParameters = abiTs.Abi.decodeParameters;
-export const encodePacked = abiTs.Abi.encodePacked;
+export const encodeParameters = abiTs.encodeParameters;
+export const decodeParameters = abiTs.decodeParameters;
+// TODO: encodePacked not yet implemented
+// export const encodePacked = abiTs.encodePacked;
 
 // ============================================================================
 // Status and Documentation

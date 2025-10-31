@@ -11,6 +11,8 @@ import {
   AbiDecodingError,
   AbiParameterMismatchError,
 } from "./errors.js";
+import { Uint } from "../uint.js";
+import { Address } from "../address.js";
 
 // ============================================================================
 // Internal Encoding Helpers
@@ -21,16 +23,7 @@ import {
  * @internal
  */
 function encodeUint256(value: bigint): Uint8Array {
-  if (typeof value !== 'bigint') {
-    throw new AbiEncodingError(`encodeUint256 requires bigint, got ${typeof value}: ${value}`);
-  }
-  const result = new Uint8Array(32);
-  let v = value;
-  for (let i = 31; i >= 0; i--) {
-    result[i] = Number(v & 0xffn);
-    v >>= 8n;
-  }
-  return result;
+  return Uint.toAbiEncoded.call(Uint.from(value));
 }
 
 /**
@@ -78,14 +71,14 @@ function padRight(data: Uint8Array): Uint8Array {
  * Check if type is dynamic
  * @internal
  */
-function isDynamicType(type: string): boolean {
+function isDynamicType(type: Abi.AbiType): boolean {
   if (type === "string" || type === "bytes") return true;
   if (type.endsWith("[]")) return true;
   // Fixed-size arrays like uint256[3] are static if the element type is static
   if (type.includes("[") && type.endsWith("]")) {
     const match = type.match(/^(.+)\[(\d+)\]$/);
     if (match && match[1]) {
-      const elementType = match[1];
+      const elementType = match[1] as Abi.AbiType;
       return isDynamicType(elementType);
     }
   }
@@ -97,12 +90,12 @@ function isDynamicType(type: string): boolean {
  * @internal
  */
 function encodeValue(
-  type: string,
+  type: Abi.AbiType,
   value: unknown,
 ): { encoded: Uint8Array; isDynamic: boolean } {
   // Handle dynamic arrays first (before checking for uint)
   if (type.endsWith("[]")) {
-    const elementType = type.slice(0, -2);
+    const elementType = type.slice(0, -2) as Abi.AbiType;
     const array = value as unknown[];
     const length = encodeUint256(BigInt(array.length));
 
@@ -135,16 +128,14 @@ function encodeValue(
 
   // Handle address
   if (type === "address") {
-    const addr = value as string;
-    const hex = addr.toLowerCase().replace(/^0x/, "");
-    if (hex.length !== 40) {
-      throw new AbiEncodingError(`Invalid address length: ${hex.length}`);
+    const addr = value as Address | string;
+    // If it's a string, convert to Address first
+    if (typeof addr === "string") {
+      const addressValue = Address.fromHex(addr);
+      return { encoded: Address.toAbiEncoded.call(addressValue), isDynamic: false };
     }
-    const result = new Uint8Array(32);
-    for (let i = 0; i < 20; i++) {
-      result[12 + i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    }
-    return { encoded: result, isDynamic: false };
+    // If it's already an Address, encode directly
+    return { encoded: Address.toAbiEncoded.call(addr), isDynamic: false };
   }
 
   // Handle bool
@@ -196,7 +187,7 @@ function encodeValue(
   // Handle fixed-size arrays
   const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
   if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
-    const elementType = fixedArrayMatch[1];
+    const elementType = fixedArrayMatch[1] as Abi.AbiType;
     const arraySize = parseInt(fixedArrayMatch[2]);
     const array = value as unknown[];
 
@@ -227,11 +218,8 @@ function decodeUint256(data: Uint8Array, offset: number): bigint {
   if (offset + 32 > data.length) {
     throw new AbiDecodingError("Data too small for uint256");
   }
-  let result = 0n;
-  for (let i = 0; i < 32; i++) {
-    result = (result << 8n) | BigInt(data[offset + i] ?? 0);
-  }
-  return result;
+  const slice = data.slice(offset, offset + 32);
+  return Uint.toBigInt.call(Uint.fromAbiEncoded(slice));
 }
 
 /**
@@ -239,14 +227,14 @@ function decodeUint256(data: Uint8Array, offset: number): bigint {
  * @internal
  */
 function decodeValue(
-  type: string,
+  type: Abi.AbiType,
   data: Uint8Array,
   offset: number,
 ): { value: unknown; newOffset: number } {
   // Handle arrays first (before uint/int checks, since "uint256[]" starts with "uint")
   // Handle dynamic arrays
   if (type.endsWith("[]")) {
-    const elementType = type.slice(0, -2);
+    const elementType = type.slice(0, -2) as Abi.AbiType;
     const dataOffset = Number(decodeUint256(data, offset));
     const length = Number(decodeUint256(data, dataOffset));
 
@@ -261,7 +249,7 @@ function decodeValue(
   // Handle fixed-size arrays
   const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
   if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
-    const elementType = fixedArrayMatch[1];
+    const elementType = fixedArrayMatch[1] as Abi.AbiType;
     const arraySize = parseInt(fixedArrayMatch[2]);
 
     const elementParams = Array(arraySize).fill({ type: elementType });
@@ -324,13 +312,9 @@ function decodeValue(
     if (offset + 32 > data.length) {
       throw new AbiDecodingError("Data too small for address");
     }
-    let hex = "0x";
-    for (let i = 12; i < 32; i++) {
-      const byte = data[offset + i];
-      if (byte !== undefined) {
-        hex += byte.toString(16).padStart(2, "0");
-      }
-    }
+    const slice = data.slice(offset, offset + 32);
+    const addr = Address.fromAbiEncoded(slice);
+    const hex = Address.toHex.call(addr);
     return { value: hex, newOffset: offset + 32 };
   }
 

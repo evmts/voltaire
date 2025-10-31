@@ -4,7 +4,7 @@
  * Standalone utility functions for working with ABI items and signatures.
  */
 
-import type { Item, Function, Event, Error } from "./types.js";
+import type { Item } from "./types.js";
 import { Hash } from "../hash.js";
 
 /**
