@@ -129,8 +129,10 @@ export function Type<
     // Attach bound instance methods
     for (const key in config.instanceMethods) {
       const method = config.instanceMethods[key];
-      // Bind the actual value (not the wrapper) to the method
-      result[key] = (...args: any[]) => method(value, ...args);
+      if (method) {
+        // Bind the actual value (not the wrapper) to the method
+        result[key] = (...args: any[]) => method(value, ...args);
+      }
     }
 
     return result as BrandedWithMethods<BrandedType, InstanceMethodsBound<TInstanceMethods>>;
