@@ -8,9 +8,6 @@
 	},
 	"include": ["src", "src/**/*.json"],
 	"exclude": [
-		"src/**/*.spec.ts",
-		"**/*.spec.ts",
-		"**/*.test.ts",
 		"node_modules"
 	]
 }

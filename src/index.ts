@@ -13,7 +13,7 @@ export * from "./primitives/index.js";
 export * from "./crypto/index.js";
 
 // Core type definitions (exported as namespace to avoid conflicts)
-export * as types from "./types/index.js";
+// export * as types from "./types/index.js"; // TODO: types/index.ts was removed
 
 // WASM primitives (high-performance WebAssembly bindings)
 export * as wasm from "./wasm/index.js";

@@ -5,7 +5,7 @@
 
 import { Address } from "../../primitives/address.wasm.js";
 import { Keccak256Wasm } from "../keccak256.wasm.js";
-import * as primitives from "../wasm-loader/loader.js";
+import * as primitives from "../../wasm-loader/loader.js";
 import { secp256k1 } from '@noble/curves/secp256k1.js';
 
 export interface PrivateKeySignerOptions {
