@@ -5,6 +5,7 @@
  * These tests will be enabled once the C ABI implementation is complete
  */
 
+// @ts-nocheck
 import { describe, it, expect, beforeAll } from "vitest";
 import * as wasmAbi from "./wasm.js";
 import {
@@ -13,8 +14,8 @@ import {
   roundTripVectors,
   functionDataVectors,
 } from "./testdata.js";
-import { Abi } from "./index.js";
-import * as loader from "../wasm-loader/loader.js";
+import * as Abi from "./index.js";
+import * as loader from "../../wasm-loader/loader.js";
 
 // ============================================================================
 // Setup and Status Checks

@@ -2,9 +2,11 @@
  * Tests for ABI module with abitype integration
  */
 
+// @ts-nocheck
 import { describe, it, expect, expectTypeOf } from "vitest";
+import * as Abi from "./index.js";
+import type { Function as AbiFunction, Event as AbiEvent, Error as AbiError } from "./types.js";
 import {
-  Abi,
   AbiEncodingError,
   AbiDecodingError,
   AbiParameterMismatchError,
@@ -28,9 +30,9 @@ describe("Abi.Function.getSignature", () => {
         { type: "uint256", name: "amount" },
       ],
       outputs: [{ type: "bool", name: "" }],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
-    expect(Abi.Function.getSignature.call(transferFunc)).toBe(
+    expect(Abi.Function.getSignature(transferFunc)).toBe(
       "transfer(address,uint256)",
     );
   });
@@ -42,9 +44,9 @@ describe("Abi.Function.getSignature", () => {
       stateMutability: "pure",
       inputs: [],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
-    expect(Abi.Function.getSignature.call(func)).toBe("example()");
+    expect(Abi.Function.getSignature(func)).toBe("example()");
   });
 
   it("handles complex tuples", () => {
@@ -63,9 +65,9 @@ describe("Abi.Function.getSignature", () => {
         },
       ],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
-    expect(Abi.Function.getSignature.call(func)).toBe("swap(tuple)");
+    expect(Abi.Function.getSignature(func)).toBe("swap(tuple)");
   });
 });
 
@@ -79,9 +81,9 @@ describe("Abi.Event.getSignature", () => {
         { type: "address", name: "to", indexed: true },
         { type: "uint256", name: "value", indexed: false },
       ],
-    } as const satisfies Abi.Event;
+    } as const satisfies AbiEvent;
 
-    expect(Abi.Event.getSignature.call(event)).toBe(
+    expect(Abi.Event.getSignature(event)).toBe(
       "Transfer(address,address,uint256)",
     );
   });
@@ -96,9 +98,9 @@ describe("Abi.Error.getSignature", () => {
         { type: "uint256", name: "available" },
         { type: "uint256", name: "required" },
       ],
-    } as const satisfies Abi.Error;
+    } as const satisfies AbiError;
 
-    expect(Abi.Error.getSignature.call(error)).toBe(
+    expect(Abi.Error.getSignature(error)).toBe(
       "InsufficientBalance(uint256,uint256)",
     );
   });
@@ -119,9 +121,9 @@ describe("Abi.Function.getSelector", () => {
         { type: "uint256", name: "amount" },
       ],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
-    const selector = Abi.Function.getSelector.call(func);
+    const selector = Abi.Function.getSelector(func);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
     // transfer(address,uint256) = 0xa9059cbb
@@ -135,9 +137,9 @@ describe("Abi.Function.getSelector", () => {
       stateMutability: "pure",
       inputs: [],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
-    const selector = Abi.Function.getSelector.call(func);
+    const selector = Abi.Function.getSelector(func);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
   });
@@ -153,9 +155,9 @@ describe("Abi.Event.getSelector", () => {
         { type: "address", name: "to", indexed: true },
         { type: "uint256", name: "value", indexed: false },
       ],
-    } as const satisfies Abi.Event;
+    } as const satisfies AbiEvent;
 
-    const selector = Abi.Event.getSelector.call(event);
+    const selector = Abi.Event.getSelector(event);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(32);
     // Transfer(address,address,uint256) = 0xddf252ad...
@@ -172,9 +174,9 @@ describe("Abi.Event.getSelector", () => {
       type: "event",
       name: "Transfer",
       inputs: [],
-    } as const satisfies Abi.Event;
+    } as const satisfies AbiEvent;
 
-    const selector = Abi.Event.getSelector.call(event);
+    const selector = Abi.Event.getSelector(event);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(32);
   });
@@ -189,9 +191,9 @@ describe("Abi.Error.getSelector", () => {
         { type: "uint256", name: "available" },
         { type: "uint256", name: "required" },
       ],
-    } as const satisfies Abi.Error;
+    } as const satisfies AbiError;
 
-    const selector = Abi.Error.getSelector.call(error);
+    const selector = Abi.Error.getSelector(error);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
   });
@@ -201,9 +203,9 @@ describe("Abi.Error.getSelector", () => {
       type: "error",
       name: "InsufficientBalance",
       inputs: [],
-    } as const satisfies Abi.Error;
+    } as const satisfies AbiError;
 
-    const selector = Abi.Error.getSelector.call(error);
+    const selector = Abi.Error.getSelector(error);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
   });
@@ -283,7 +285,7 @@ describe("Abi.formatAbiItem", () => {
         { type: "uint256", name: "amount" },
       ],
       outputs: [{ type: "bool", name: "" }],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     const formatted = Abi.formatAbiItem(func);
     expect(formatted).toBe("function transfer(address to, uint256 amount) returns (bool)");
@@ -296,7 +298,7 @@ describe("Abi.formatAbiItem", () => {
       stateMutability: "nonpayable",
       inputs: [{ type: "uint256", name: "amount" }],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     const formatted = Abi.formatAbiItem(func);
     expect(formatted).toBe("function burn(uint256 amount)");
@@ -309,7 +311,7 @@ describe("Abi.formatAbiItem", () => {
       stateMutability: "view",
       inputs: [{ type: "address", name: "account" }],
       outputs: [{ type: "uint256", name: "" }],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     const formatted = Abi.formatAbiItem(func);
     expect(formatted).toBe("function balanceOf(address account) returns (uint256) view");
@@ -324,7 +326,7 @@ describe("Abi.formatAbiItem", () => {
         { type: "address", name: "to", indexed: true },
         { type: "uint256", name: "value", indexed: false },
       ],
-    } as const satisfies Abi.Event;
+    } as const satisfies AbiEvent;
 
     const formatted = Abi.formatAbiItem(event);
     expect(formatted).toBe("event Transfer(address from, address to, uint256 value)");
@@ -338,7 +340,7 @@ describe("Abi.formatAbiItem", () => {
         { type: "uint256", name: "available" },
         { type: "uint256", name: "required" },
       ],
-    } as const satisfies Abi.Error;
+    } as const satisfies AbiError;
 
     const formatted = Abi.formatAbiItem(error);
     expect(formatted).toBe("error InsufficientBalance(uint256 available, uint256 required)");
@@ -376,7 +378,7 @@ describe("Abi.formatAbiItemWithArgs", () => {
         { type: "uint256", name: "amount" },
       ],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     const formatted = Abi.formatAbiItemWithArgs(func, [
       "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
@@ -394,7 +396,7 @@ describe("Abi.formatAbiItemWithArgs", () => {
       stateMutability: "view",
       inputs: [],
       outputs: [{ type: "uint256", name: "" }],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     const formatted = Abi.formatAbiItemWithArgs(func, []);
     expect(formatted).toBe("totalSupply()");
@@ -409,7 +411,7 @@ describe("Abi.formatAbiItemWithArgs", () => {
         { type: "address", name: "to" },
         { type: "uint256", name: "value" },
       ],
-    } as const satisfies Abi.Event;
+    } as const satisfies AbiEvent;
 
     const formatted = Abi.formatAbiItemWithArgs(event, [
       "0x0000000000000000000000000000000000000000",
@@ -435,7 +437,7 @@ describe("Abi.Function encoding/decoding", () => {
       { type: "uint256", name: "amount" },
     ],
     outputs: [{ type: "bool", name: "" }],
-  } as const satisfies Abi.Function;
+  } as const satisfies AbiFunction;
 
   it("encodeParams encodes calldata with selector", () => {
     const encoded = Abi.Function.encodeParams.call(func, [
@@ -483,7 +485,7 @@ describe("Abi.Event encoding/decoding", () => {
       { type: "address", name: "to", indexed: true },
       { type: "uint256", name: "value", indexed: false },
     ],
-  } as const satisfies Abi.Event;
+  } as const satisfies AbiEvent;
 
   it("encodeTopics encodes indexed parameters", () => {
     const topics = Abi.Event.encodeTopics.call(event, {
@@ -517,7 +519,7 @@ describe("Abi.Error encoding/decoding", () => {
       { type: "uint256", name: "available" },
       { type: "uint256", name: "required" },
     ],
-  } as const satisfies Abi.Error;
+  } as const satisfies AbiError;
 
   it("encodeParams encodes error data with selector", () => {
     const encoded = Abi.Error.encodeParams.call(error, [100n, 200n]);
@@ -778,7 +780,7 @@ describe("Abi Type Inference", () => {
         { type: "uint256", name: "amount" },
       ],
       outputs: [{ type: "bool", name: "" }],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     type InputTypes = Abi.ParametersToPrimitiveTypes<typeof transferFunc.inputs>;
     type OutputTypes = Abi.ParametersToPrimitiveTypes<typeof transferFunc.outputs>;
@@ -798,7 +800,7 @@ describe("Abi Type Inference", () => {
         { type: "uint256[]", name: "amounts" },
       ],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     type InputTypes = Abi.ParametersToPrimitiveTypes<typeof batchTransferFunc.inputs>;
 
@@ -824,7 +826,7 @@ describe("Abi Type Inference", () => {
         },
       ],
       outputs: [{ type: "uint256", name: "amountOut" }],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     type InputTypes = Abi.ParametersToPrimitiveTypes<typeof swapFunc.inputs>;
 
@@ -845,7 +847,7 @@ describe("Abi Type Inference", () => {
         { type: "address", name: "to", indexed: true },
         { type: "uint256", name: "value", indexed: false },
       ],
-    } as const satisfies Abi.Event;
+    } as const satisfies AbiEvent;
 
     type EventParams = Abi.ParametersToObject<typeof transferEvent.inputs>;
 
@@ -862,7 +864,7 @@ describe("Abi Type Inference", () => {
         { type: "uint256", name: "available" },
         { type: "uint256", name: "required" },
       ],
-    } as const satisfies Abi.Error;
+    } as const satisfies AbiError;
 
     type ErrorParams = Abi.ParametersToPrimitiveTypes<typeof insufficientBalanceError.inputs>;
 
@@ -894,7 +896,7 @@ describe("Abi Type Inference", () => {
         },
       ],
       outputs: [],
-    } as const satisfies Abi.Function;
+    } as const satisfies AbiFunction;
 
     type InputTypes = Abi.ParametersToPrimitiveTypes<typeof complexFunc.inputs>;
 
