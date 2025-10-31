@@ -152,7 +152,7 @@ Hardfork.range(start: Id, end: Id): Id[]
 ### Version Compatibility Checks
 
 ```typescript
-import { Hardfork } from './hardfork.js';
+import { Hardfork } from '@tevm/voltaire';
 
 // Check if network supports EIP-1559
 const currentFork = Hardfork.Id.CANCUN;

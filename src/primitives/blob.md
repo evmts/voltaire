@@ -15,7 +15,7 @@ EIP-4844 introduces "blob-carrying transactions" to Ethereum, enabling large dat
 ## Core Types
 
 ```typescript
-import { Blob } from './blob.js';
+import { Blob } from '@tevm/voltaire';
 
 // Blob data (exactly 131072 bytes)
 type Blob.Data = Uint8Array;

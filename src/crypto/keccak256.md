@@ -138,7 +138,7 @@ const address = Keccak256.create2Address(deployer, salt, initCodeHash);
 ### Basic Hashing
 
 ```typescript
-import { Keccak256 } from './keccak256.js';
+import { Keccak256 } from '@tevm/voltaire';
 
 // Hash bytes
 const data = new Uint8Array([1, 2, 3, 4, 5]);

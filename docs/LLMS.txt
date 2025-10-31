@@ -925,7 +925,7 @@ The library provides WebAssembly bindings for performance-critical operations. W
 
 **Usage Pattern:**
 ```typescript
-import { isWasmAvailable, addressFromHexWasm } from './address.wasm.js';
+import { isWasmAvailable, addressFromHexWasm } from '@tevm/voltaire';
 
 // Check availability
 if (isWasmAvailable()) {
@@ -956,8 +956,8 @@ if (isWasmAvailable()) {
 **Usage:**
 ```typescript
 import { Bn254 } from '@tevm/voltaire';  // Pure TS (always available)
-import { bn254AddWasm } from './bn254.wasm.js';  // WASM (faster, optional)
-import { bn254AddArk } from './bn254.ark.js';  // Arkworks (fastest, requires native)
+import { bn254AddWasm } from '@tevm/voltaire';  // WASM (faster, optional)
+import { bn254AddArk } from '@tevm/voltaire';  // Arkworks (fastest, requires native)
 
 // Automatic selection based on availability
 const result = Bn254.G1.add(point1, point2);  // Uses best available

@@ -970,7 +970,7 @@ function unsafeProcess(value: any): string {
 WASM-accelerated address operations available via separate module:
 
 ```typescript
-import { Address as WasmAddress } from './address.wasm.js';
+import { Address as WasmAddress } from '@tevm/voltaire';
 
 // Same API as TypeScript implementation
 const addr = WasmAddress.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f251e3');

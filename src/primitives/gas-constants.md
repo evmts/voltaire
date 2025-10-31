@@ -22,7 +22,7 @@ The `Gas` namespace provides comprehensive gas cost definitions for EVM operatio
 ### Basic Operations
 
 ```typescript
-import { Gas } from './gas-constants.js';
+import { Gas } from '@tevm/voltaire';
 
 // Opcode costs
 Gas.QuickStep      // 2 gas  - ADDRESS, CALLER, etc.

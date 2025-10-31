@@ -40,7 +40,7 @@ Hash data with BLAKE2b.
 
 **Example:**
 ```typescript
-import { Blake2 } from './blake2.js';
+import { Blake2 } from '@tevm/voltaire';
 
 // Hash with default 64-byte output
 const hash = Blake2.hash(new Uint8Array([1, 2, 3]));
@@ -67,7 +67,7 @@ Hash string with BLAKE2b (convenience function).
 
 **Example:**
 ```typescript
-import { Blake2 } from './blake2.js';
+import { Blake2 } from '@tevm/voltaire';
 
 // Hash string with default output
 const hash = Blake2.hashString("hello world");

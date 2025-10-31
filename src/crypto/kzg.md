@@ -31,7 +31,7 @@ The `c-kzg` package provides optimized native bindings to the reference C implem
 ## Quick Start
 
 ```typescript
-import { Kzg } from './kzg.js';
+import { Kzg } from '@tevm/voltaire';
 
 // Initialize trusted setup (required once)
 Kzg.loadTrustedSetup();
@@ -342,7 +342,7 @@ Proof verification error.
 ### Basic Workflow
 
 ```typescript
-import { Kzg } from './kzg.js';
+import { Kzg } from '@tevm/voltaire';
 
 // Initialize once
 Kzg.loadTrustedSetup();
@@ -521,7 +521,7 @@ interface BlobTransaction {
 ### Computing Blob Versioned Hash
 
 ```typescript
-import { Hash } from '../primitives/hash.js';
+import { Hash } from '@tevm/voltaire';
 
 function computeBlobVersionedHash(commitment: KzgCommitment): Hash {
   const hash = Hash.sha256(commitment);
@@ -573,7 +573,7 @@ await sendBlobTransaction(tx);
 
 ```typescript
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Kzg } from './kzg.js';
+import { Kzg } from '@tevm/voltaire';
 
 describe('KZG', () => {
   beforeAll(() => {

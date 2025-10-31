@@ -16,7 +16,7 @@ The Uint module provides a safe, branded bigint type for 256-bit unsigned intege
 ## Core Type
 
 ```typescript
-import { Uint } from './uint.js';
+import { Uint } from '@tevm/voltaire';
 
 // Branded bigint type (256-bit unsigned integer)
 type Uint.Type = bigint & { __brand: Symbol("Uint256") };

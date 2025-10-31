@@ -15,7 +15,7 @@ Complete EVM opcode implementation with:
 ## Quick Start
 
 ```typescript
-import { Opcode } from './opcode.js';
+import { Opcode } from '@tevm/voltaire';
 
 // Get opcode info
 const info = Opcode.getInfo(Opcode.Code.ADD);

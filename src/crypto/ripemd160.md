@@ -21,7 +21,7 @@ RIPEMD160 (RACE Integrity Primitives Evaluation Message Digest 160-bit) is a cry
 Compute RIPEMD160 hash of data.
 
 ```typescript
-import { Ripemd160 } from './ripemd160.js';
+import { Ripemd160 } from '@tevm/voltaire';
 
 // Hash bytes
 const data = new Uint8Array([1, 2, 3, 4]);
@@ -49,8 +49,8 @@ const hash = Ripemd160.hashString("message");
 Bitcoin uses RIPEMD160(SHA256(pubkey)) for address generation:
 
 ```typescript
-import { Ripemd160 } from './ripemd160.js';
-import { Hash } from '../primitives/hash.js';
+import { Ripemd160 } from '@tevm/voltaire';
+import { Hash } from '@tevm/voltaire';
 
 // Step 1: SHA256 of public key
 const pubkey = new Uint8Array([/* public key bytes */]);
