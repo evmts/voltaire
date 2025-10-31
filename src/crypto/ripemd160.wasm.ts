@@ -27,7 +27,7 @@ let memoryOffset = 0;
 /**
  * WASM exports interface
  */
-interface WasmExports extends WebAssembly.Exports {
+interface WasmExports {
   memory: WebAssembly.Memory;
   ripemd160Hash: (inputPtr: number, inputLen: number, outputPtr: number) => number;
 }
@@ -155,11 +155,11 @@ function readBytes(ptr: number, length: number): Uint8Array {
 }
 
 /**
- * Reset memory allocator
+ * Reset memory allocator (currently unused)
  */
-function resetMemory(): void {
-  memoryOffset = 64 * 1024;
-}
+// function _resetMemory(): void {
+//   memoryOffset = 64 * 1024;
+// }
 
 // ============================================================================
 // Ripemd160Wasm Namespace

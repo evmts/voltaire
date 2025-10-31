@@ -185,23 +185,23 @@ export namespace Eip712 {
 
       if (domain.name !== undefined) {
         domainFields.push({ name: "name", type: "string" });
-        domainValues.name = domain.name;
+        domainValues["name"] = domain.name;
       }
       if (domain.version !== undefined) {
         domainFields.push({ name: "version", type: "string" });
-        domainValues.version = domain.version;
+        domainValues["version"] = domain.version;
       }
       if (domain.chainId !== undefined) {
         domainFields.push({ name: "chainId", type: "uint256" });
-        domainValues.chainId = domain.chainId;
+        domainValues["chainId"] = domain.chainId;
       }
       if (domain.verifyingContract !== undefined) {
         domainFields.push({ name: "verifyingContract", type: "address" });
-        domainValues.verifyingContract = domain.verifyingContract;
+        domainValues["verifyingContract"] = domain.verifyingContract;
       }
       if (domain.salt !== undefined) {
         domainFields.push({ name: "salt", type: "bytes32" });
-        domainValues.salt = domain.salt;
+        domainValues["salt"] = domain.salt;
       }
 
       const types: TypeDefinitions = {
@@ -387,7 +387,7 @@ export namespace Eip712 {
     // bytesN type (fixed)
     if (type.startsWith("bytes")) {
       const match = type.match(/^bytes(\d+)$/);
-      if (match) {
+      if (match && match[1]) {
         const size = Number.parseInt(match[1], 10);
         const bytes = value as Uint8Array;
         if (bytes.length !== size) {

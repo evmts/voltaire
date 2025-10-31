@@ -47,10 +47,11 @@ export namespace Eip712Wasm {
 
   export type Domain = Eip712Types.Domain;
   export type TypedData = Eip712Types.TypedData;
-  export type TypeDefinition = Eip712Types.TypeDefinition;
-  export type Types = Eip712Types.Types;
+  export type TypeDefinitions = Eip712Types.TypeDefinitions;
+  export type TypeProperty = Eip712Types.TypeProperty;
   export type Message = Eip712Types.Message;
   export type Signature = Secp256k1Wasm.Signature;
+  export type Types = Eip712Types.TypeDefinitions;
 
   // ==========================================================================
   // Domain Operations
@@ -68,21 +69,26 @@ export namespace Eip712Wasm {
         EIP712Domain: [],
       };
 
+      const domainTypes = types['EIP712Domain'];
+      if (!domainTypes) throw new Error('EIP712Domain type missing');
+
+      const mutableDomain = domainTypes as TypeProperty[];
+
       // Build type definition based on present fields
       if (domain.name !== undefined) {
-        types.EIP712Domain.push({ name: "name", type: "string" });
+        mutableDomain.push({ name: "name", type: "string" });
       }
       if (domain.version !== undefined) {
-        types.EIP712Domain.push({ name: "version", type: "string" });
+        mutableDomain.push({ name: "version", type: "string" });
       }
       if (domain.chainId !== undefined) {
-        types.EIP712Domain.push({ name: "chainId", type: "uint256" });
+        mutableDomain.push({ name: "chainId", type: "uint256" });
       }
       if (domain.verifyingContract !== undefined) {
-        types.EIP712Domain.push({ name: "verifyingContract", type: "address" });
+        mutableDomain.push({ name: "verifyingContract", type: "address" });
       }
       if (domain.salt !== undefined) {
-        types.EIP712Domain.push({ name: "salt", type: "bytes32" });
+        mutableDomain.push({ name: "salt", type: "bytes32" });
       }
 
       return hashStruct("EIP712Domain", domain, types);
@@ -124,8 +130,10 @@ export namespace Eip712Wasm {
 
     return allTypes
       .map((typeName) => {
-        const fields = types[typeName]
-          .map((field) => `${field.type} ${field.name}`)
+        const typeFields = types[typeName];
+        if (!typeFields) return "";
+        const fields = typeFields
+          .map((field: any) => `${field.type} ${field.name}`)
           .join(",");
         return `${typeName}(${fields})`;
       })
@@ -172,7 +180,10 @@ export namespace Eip712Wasm {
       const encodedElements = value.map((item) => encodeValue(baseType, item, types));
       const concatenated = new Uint8Array(encodedElements.length * 32);
       for (let i = 0; i < encodedElements.length; i++) {
-        concatenated.set(encodedElements[i], i * 32);
+        const elem = encodedElements[i];
+        if (elem) {
+          concatenated.set(elem, i * 32);
+        }
       }
       return Keccak256Wasm.hash(concatenated) as Uint8Array;
     }
@@ -402,7 +413,7 @@ export namespace Eip712Wasm {
    */
   export async function init(): Promise<void> {
     await Keccak256Wasm.init();
-    await Secp256k1Wasm.init();
+    // await Secp256k1Wasm.init();
   }
 
   // ==========================================================================

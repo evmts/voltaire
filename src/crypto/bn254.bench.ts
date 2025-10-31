@@ -22,12 +22,12 @@ import path from "path";
 
 const results: Record<string, { ops_per_sec: number; avg_time_ms: number }> = {};
 
-function recordBenchmark(name: string, opsPerSec: number, avgTimeMs: number) {
-  results[name] = {
-    ops_per_sec: opsPerSec,
-    avg_time_ms: avgTimeMs,
-  };
-}
+// function _recordBenchmark(name: string, opsPerSec: number, avgTimeMs: number) {
+//   _results[name] = {
+//     ops_per_sec: opsPerSec,
+//     avg_time_ms: avgTimeMs,
+//   };
+// }
 
 describe("BN254 Performance Benchmarks", () => {
   const g1 = Bn254.G1.generator();
@@ -335,7 +335,7 @@ describe("BN254 Performance Benchmarks", () => {
   );
 });
 
-if (import.meta.vitest) {
+if ((import.meta as any).vitest) {
   const { afterAll } = await import("vitest");
 
   afterAll(() => {

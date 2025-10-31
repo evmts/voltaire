@@ -3,9 +3,9 @@
  * Provides wallet/signer functionality using WASM Zig primitives
  */
 
-import { secp256k1PubkeyFromPrivate } from "../signature.wasm.js";
 import { Address } from "../../primitives/address.wasm.js";
-import { Hash, eip191HashMessage } from "../keccak.wasm.js";
+import { Keccak256Wasm } from "../keccak256.wasm.js";
+// import { Secp256k1Wasm } from "../secp256k1.wasm.js";
 
 const primitives = require("../wasm-loader/loader.js");
 
@@ -30,12 +30,14 @@ export class PrivateKeySignerImpl implements Signer {
 	private constructor(privateKey: Uint8Array) {
 		this.privateKey = privateKey;
 
-		// Derive public key from private key
-		this.publicKey = secp256k1PubkeyFromPrivate(privateKey);
+		// Derive public key from private key (using noble as fallback)
+		const { secp256k1 } = require('@noble/curves/secp256k1.js');
+		const pubKey = secp256k1.getPublicKey(privateKey, false);
+		this.publicKey = pubKey.slice(1); // Remove 0x04 prefix for uncompressed
 
 		// Derive address from public key (keccak256(pubkey)[12:])
-		const pubkeyHash = Hash.keccak256(this.publicKey);
-		const addressBytes = pubkeyHash.toBytes().slice(-20);
+		const pubkeyHash = Keccak256Wasm.hash(this.publicKey);
+		const addressBytes = pubkeyHash.slice(-20);
 		const addressObj = Address.fromBytes(addressBytes);
 		this.address = addressObj.toChecksumHex();
 	}
@@ -68,20 +70,25 @@ export class PrivateKeySignerImpl implements Signer {
 
 	async signMessage(message: string | Uint8Array): Promise<string> {
 		// Hash message with EIP-191 prefix
-		const messageHash = eip191HashMessage(message);
+		const msgBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
+		const prefix = new TextEncoder().encode("\x19Ethereum Signed Message:\n" + msgBytes.length);
+		const combined = new Uint8Array(prefix.length + msgBytes.length);
+		combined.set(prefix);
+		combined.set(msgBytes, prefix.length);
+		const messageHash = Keccak256Wasm.hash(combined);
 
 		// Sign the hash
 		// Note: This requires unaudited_signHash to be exposed via WASM
 		// For now, this will throw an error indicating the function is not yet available
 		try {
-			const signature: Uint8Array = primitives.signHash(
-				messageHash.toBytes(),
+			const signature: Uint8Array = (primitives as any).signHash(
+				messageHash,
 				this.privateKey,
 			);
 			return `0x${Array.from(signature)
 				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("")}`;
-		} catch (error) {
+		} catch (_error) {
 			throw new Error(
 				"signHash not yet exposed via WASM. Please add binding for crypto.unaudited_signHash",
 			);

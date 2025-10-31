@@ -223,14 +223,11 @@ group("BLAKE2b - Noble vs WASM Comparison (1 KB input)", () => {
   console.log("Running BLAKE2b benchmarks...\n");
 
   await run({
-    units: false,
-    silent: false,
-    avg: true,
-    json: false,
+    // units: false,
+    // silent: false,
+    throw: false,
     colors: true,
-    min_max: true,
-    collect: false,
-    percentiles: true,
+    // percentiles: true,
   });
 
 	console.log("\n📊 Benchmark Summary:");

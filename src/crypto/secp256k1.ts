@@ -566,7 +566,7 @@ export namespace Secp256k1 {
       return {
         r: bytes.slice(0, 32),
         s: bytes.slice(32, 64),
-        v: bytes[64],
+        v: bytes[64] ?? 0,
       };
     }
   }
@@ -577,17 +577,17 @@ export namespace Secp256k1 {
 // ============================================================================
 
 /**
- * Convert bigint to 32-byte big-endian array
+ * Convert bigint to 32-byte big-endian array (currently unused)
  */
-function numberToBytes32(value: bigint): Uint8Array {
-  const bytes = new Uint8Array(32);
-  let v = value;
-  for (let i = 31; i >= 0; i--) {
-    bytes[i] = Number(v & 0xffn);
-    v >>= 8n;
-  }
-  return bytes;
-}
+// function _numberToBytes32(value: bigint): Uint8Array {
+//   const bytes = new Uint8Array(32);
+//   let v = value;
+//   for (let i = 31; i >= 0; i--) {
+//     bytes[i] = Number(v & 0xffn);
+//     v >>= 8n;
+//   }
+//   return bytes;
+// }
 
 /**
  * Convert 32-byte big-endian array to bigint
@@ -598,7 +598,7 @@ function bytes32ToBigInt(bytes: Uint8Array): bigint {
   }
   let result = 0n;
   for (let i = 0; i < 32; i++) {
-    result = (result << 8n) | BigInt(bytes[i]);
+    result = (result << 8n) | BigInt(bytes[i] ?? 0);
   }
   return result;
 }

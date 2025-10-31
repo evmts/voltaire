@@ -444,13 +444,13 @@ console.log("===================================================================
 
 // Calculate MB/s for different sizes
 const throughputTests = [
-  { name: "32 bytes", size: 32, noble: results.find((r) => r.name === "hash - 32 bytes (Noble)")!, wasm: results.find((r) => r.name === "hash - 32 bytes (WASM)")! },
-  { name: "256 bytes", size: 256, noble: results.find((r) => r.name === "hash - 256 bytes (Noble)")!, wasm: results.find((r) => r.name === "hash - 256 bytes (WASM)")! },
-  { name: "1 KB", size: 1024, noble: results.find((r) => r.name === "hash - 1 KB (Noble)")!, wasm: results.find((r) => r.name === "hash - 1 KB (WASM)")! },
-  { name: "4 KB", size: 4096, noble: results.find((r) => r.name === "hash - 4 KB (Noble)")!, wasm: results.find((r) => r.name === "hash - 4 KB (WASM)")! },
-  { name: "16 KB", size: 16384, noble: results.find((r) => r.name === "hash - 16 KB (Noble)")!, wasm: results.find((r) => r.name === "hash - 16 KB (WASM)")! },
-  { name: "64 KB", size: 65536, noble: results.find((r) => r.name === "hash - 64 KB (Noble)")!, wasm: results.find((r) => r.name === "hash - 64 KB (WASM)")! },
-];
+  { name: "32 bytes", size: 32, noble: results.find((r) => r.name === "hash - 32 bytes (Noble)"), wasm: results.find((r) => r.name === "hash - 32 bytes (WASM)") },
+  { name: "256 bytes", size: 256, noble: results.find((r) => r.name === "hash - 256 bytes (Noble)"), wasm: results.find((r) => r.name === "hash - 256 bytes (WASM)") },
+  { name: "1 KB", size: 1024, noble: results.find((r) => r.name === "hash - 1 KB (Noble)"), wasm: results.find((r) => r.name === "hash - 1 KB (WASM)") },
+  { name: "4 KB", size: 4096, noble: results.find((r) => r.name === "hash - 4 KB (Noble)"), wasm: results.find((r) => r.name === "hash - 4 KB (WASM)") },
+  { name: "16 KB", size: 16384, noble: results.find((r) => r.name === "hash - 16 KB (Noble)"), wasm: results.find((r) => r.name === "hash - 16 KB (WASM)") },
+  { name: "64 KB", size: 65536, noble: results.find((r) => r.name === "hash - 64 KB (Noble)"), wasm: results.find((r) => r.name === "hash - 64 KB (WASM)") },
+].filter((t) => t.noble && t.wasm) as Array<{ name: string; size: number; noble: BenchmarkResult; wasm: BenchmarkResult }>;
 
 console.log("Noble Implementation:");
 for (const test of throughputTests) {
@@ -490,11 +490,19 @@ const wasmResults = results.filter((r) => r.name.includes("WASM"));
 const sortedNoble = [...nobleResults].sort((a, b) => b.opsPerSec - a.opsPerSec);
 const sortedWasm = [...wasmResults].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
-console.log(`\nNoble - Fastest: ${sortedNoble[0].name} - ${sortedNoble[0].opsPerSec.toFixed(0)} ops/sec`);
-console.log(`Noble - Slowest: ${sortedNoble[sortedNoble.length - 1].name} - ${sortedNoble[sortedNoble.length - 1].opsPerSec.toFixed(0)} ops/sec`);
+const nobleFirst = sortedNoble[0];
+const nobleLast = sortedNoble[sortedNoble.length - 1];
+if (nobleFirst && nobleLast) {
+  console.log(`\nNoble - Fastest: ${nobleFirst.name} - ${nobleFirst.opsPerSec.toFixed(0)} ops/sec`);
+  console.log(`Noble - Slowest: ${nobleLast.name} - ${nobleLast.opsPerSec.toFixed(0)} ops/sec`);
+}
 
-console.log(`\nWASM - Fastest: ${sortedWasm[0].name} - ${sortedWasm[0].opsPerSec.toFixed(0)} ops/sec`);
-console.log(`WASM - Slowest: ${sortedWasm[sortedWasm.length - 1].name} - ${sortedWasm[sortedWasm.length - 1].opsPerSec.toFixed(0)} ops/sec`);
+const wasmFirst = sortedWasm[0];
+const wasmLast = sortedWasm[sortedWasm.length - 1];
+if (wasmFirst && wasmLast) {
+  console.log(`\nWASM - Fastest: ${wasmFirst.name} - ${wasmFirst.opsPerSec.toFixed(0)} ops/sec`);
+  console.log(`WASM - Slowest: ${wasmLast.name} - ${wasmLast.opsPerSec.toFixed(0)} ops/sec`);
+}
 
 // Overall speedup
 const avgNobleOps = nobleResults.reduce((sum, r) => sum + r.opsPerSec, 0) / nobleResults.length;

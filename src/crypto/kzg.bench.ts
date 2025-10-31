@@ -28,8 +28,8 @@ testZ[31] = 0x42;
 
 const testProofs = testBlobs.map((blob) => Kzg.computeKzgProof(blob, testZ));
 
-// Benchmark results storage
-const results: Record<string, { opsPerSec: number; avgTime: number }> = {};
+// Benchmark results storage (unused in current implementation)
+// const _results: Record<string, { opsPerSec: number; avgTime: number }> = {};
 
 // Helper to capture benchmark results
 function benchmarkWithResults(name: string, fn: () => void) {
@@ -45,7 +45,8 @@ function benchmarkWithResults(name: string, fn: () => void) {
 console.log("Benchmarking blobToKzgCommitment...");
 
 benchmarkWithResults("blobToKzgCommitment", () => {
-  Kzg.blobToKzgCommitment(testBlobs[0]);
+  const blob = testBlobs[0];
+  if (blob) Kzg.blobToKzgCommitment(blob);
 });
 
 benchmarkWithResults("blobToKzgCommitment (5 blobs)", () => {
@@ -61,7 +62,8 @@ benchmarkWithResults("blobToKzgCommitment (5 blobs)", () => {
 console.log("Benchmarking computeKzgProof...");
 
 benchmarkWithResults("computeKzgProof", () => {
-  Kzg.computeKzgProof(testBlobs[0], testZ);
+  const blob = testBlobs[0];
+  if (blob) Kzg.computeKzgProof(blob, testZ);
 });
 
 benchmarkWithResults("computeKzgProof (5 blobs)", () => {
@@ -77,22 +79,30 @@ benchmarkWithResults("computeKzgProof (5 blobs)", () => {
 console.log("Benchmarking verifyKzgProof...");
 
 benchmarkWithResults("verifyKzgProof", () => {
-  Kzg.verifyKzgProof(
-    testCommitments[0],
-    testZ,
-    testProofs[0].y,
-    testProofs[0].proof,
-  );
+  const commitment = testCommitments[0];
+  const proof = testProofs[0];
+  if (commitment && proof) {
+    Kzg.verifyKzgProof(
+      commitment,
+      testZ,
+      proof.y,
+      proof.proof,
+    );
+  }
 });
 
 benchmarkWithResults("verifyKzgProof (5 proofs)", () => {
   for (let i = 0; i < 5; i++) {
-    Kzg.verifyKzgProof(
-      testCommitments[i],
-      testZ,
-      testProofs[i].y,
-      testProofs[i].proof,
-    );
+    const commitment = testCommitments[i];
+    const proof = testProofs[i];
+    if (commitment && proof) {
+      Kzg.verifyKzgProof(
+        commitment,
+        testZ,
+        proof.y,
+        proof.proof,
+      );
+    }
   }
 });
 
@@ -103,7 +113,12 @@ benchmarkWithResults("verifyKzgProof (5 proofs)", () => {
 console.log("Benchmarking verifyBlobKzgProof...");
 
 benchmarkWithResults("verifyBlobKzgProof", () => {
-  Kzg.verifyBlobKzgProof(testBlobs[0], testCommitments[0], testProofs[0].proof);
+  const blob = testBlobs[0];
+  const commitment = testCommitments[0];
+  const proof = testProofs[0];
+  if (blob && commitment && proof) {
+    Kzg.verifyBlobKzgProof(blob, commitment, proof.proof);
+  }
 });
 
 // ============================================================================
@@ -136,9 +151,11 @@ console.log("Benchmarking full workflow...");
 
 benchmarkWithResults("full workflow (commit + prove + verify)", () => {
   const blob = testBlobs[0];
-  const commitment = Kzg.blobToKzgCommitment(blob);
-  const { proof, y } = Kzg.computeKzgProof(blob, testZ);
-  Kzg.verifyKzgProof(commitment, testZ, y, proof);
+  if (blob) {
+    const commitment = Kzg.blobToKzgCommitment(blob);
+    const { proof, y } = Kzg.computeKzgProof(blob, testZ);
+    Kzg.verifyKzgProof(commitment, testZ, y, proof);
+  }
 });
 
 // ============================================================================
@@ -156,7 +173,8 @@ benchmarkWithResults("generateRandomBlob", () => {
 });
 
 benchmarkWithResults("validateBlob", () => {
-  Kzg.validateBlob(testBlobs[0]);
+  const blob = testBlobs[0];
+  if (blob) Kzg.validateBlob(blob);
 });
 
 // ============================================================================
@@ -167,7 +185,7 @@ console.log("\nRunning benchmarks...\n");
 
 // Run mitata benchmarks and capture results
 await run({
-  silent: false,
+  // silent: false,
   colors: true,
 });
 

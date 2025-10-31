@@ -182,14 +182,18 @@ if (!originalSummary) {
     let throughput: number | undefined;
 
     if (sizeMatch) {
-      const value = Number.parseFloat(sizeMatch[1]);
-      const unit = sizeMatch[2].toUpperCase();
-      let bytes = value;
+      const sizeValue = sizeMatch[1];
+      const unit = sizeMatch[2];
+      if (sizeValue && unit) {
+        const value = Number.parseFloat(sizeValue);
+        const unitUpper = unit.toUpperCase();
+        let bytes = value;
 
-      if (unit === "KB") bytes *= 1024;
-      if (unit === "MB") bytes *= 1024 * 1024;
+        if (unitUpper === "KB") bytes *= 1024;
+        if (unitUpper === "MB") bytes *= 1024 * 1024;
 
-      throughput = (bytes * result.ops) / (1024 * 1024);
+        throughput = (bytes * result.ops) / (1024 * 1024);
+      }
     }
 
     results.push({
@@ -198,20 +202,17 @@ if (!originalSummary) {
       avg_time_ns: result.avg * 1_000_000,
       min_time_ns: result.min * 1_000_000,
       max_time_ns: result.max * 1_000_000,
-      throughput_mb_per_sec: throughput,
+      throughput_mb_per_sec: throughput ?? 0,
     });
   };
 }
 
 await run({
-  units: false,
-  silent: false,
-  avg: true,
-  json: false,
+  // units: false,
+  // silent: false,
+  throw: false,
   colors: true,
-  min_max: true,
-  collect: false,
-  percentiles: false,
+  // percentiles: false,
 });
 
 // Export results

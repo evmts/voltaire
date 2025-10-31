@@ -270,7 +270,7 @@ export namespace Secp256k1Wasm {
       return {
         r: bytes.slice(0, 32),
         s: bytes.slice(32, 64),
-        v: bytes[64],
+        v: bytes[64] ?? 0,
       };
     }
   }
@@ -286,7 +286,7 @@ function bytes32ToBigInt(bytes: Uint8Array): bigint {
   }
   let result = 0n;
   for (let i = 0; i < 32; i++) {
-    result = (result << 8n) | BigInt(bytes[i]);
+    result = (result << 8n) | BigInt(bytes[i] ?? 0);
   }
   return result;
 }

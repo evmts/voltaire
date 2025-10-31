@@ -165,11 +165,11 @@ bench("Wasm: Signature.fromCompact", () => {
 await run({
   format: "json",
   throw: true,
-  percentiles: false,
+  // percentiles: false,
 });
 
 // Note: mitata outputs to stdout with performance comparison
-const results = {
+const benchResults = {
   timestamp: new Date().toISOString(),
   implementations: ["Noble (@noble/curves)", "Wasm (Zig)"],
   operations: [
@@ -191,7 +191,7 @@ const results = {
 
 writeFileSync(
   "src/crypto/secp256k1-bench-results.json",
-  JSON.stringify(results, null, 2),
+  JSON.stringify(benchResults, null, 2),
 );
 
 console.log("\nBenchmark comparison complete!");
