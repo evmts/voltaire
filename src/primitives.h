@@ -81,6 +81,16 @@ typedef struct {
     uint8_t v;
 } PrimitivesSignature;
 
+/** Authorization structure (EIP-7702) */
+typedef struct {
+    uint64_t chain_id;
+    PrimitivesAddress address;
+    uint64_t nonce;
+    uint64_t v;
+    uint8_t r[32];
+    uint8_t s[32];
+} PrimitivesAuthorization;
+
 
 // ============================================================================
 // Address API
@@ -441,7 +451,7 @@ int primitives_blob_from_data(const uint8_t * data, size_t data_len, uint8_t * o
  * Decode blob to extract original data
  * Returns length of data or negative error code
  */
-int primitives_blob_to_data(const uint8_t * blob, uint8_t * out_data, *usize out_len);
+int primitives_blob_to_data(const uint8_t * blob, uint8_t * out_data, size_t * out_len);
 
 /**
  * Validate blob size
@@ -481,7 +491,7 @@ uint64_t primitives_blob_calculate_excess_gas(uint64_t parent_excess, uint64_t p
  * Check if event log matches address filter
  * Returns 1 if matches, 0 if not
  */
-int primitives_eventlog_matches_address(const uint8_t * log_address, [*]const [20]u8 filter_addresses, size_t filter_count);
+int primitives_eventlog_matches_address(const uint8_t * log_address, const uint8_t * filter_addresses, size_t filter_count);
 
 /**
  * Check if event log matches single topic filter
@@ -494,7 +504,7 @@ int primitives_eventlog_matches_topic(const uint8_t * log_topic, const uint8_t *
  * Check if log matches topic array filter
  * Returns 1 if matches, 0 if not
  */
-int primitives_eventlog_matches_topics([*]const [32]u8 log_topics, size_t log_topic_count, [*]const [32]u8 filter_topics, [*]const c_int filter_nulls, size_t filter_count);
+int primitives_eventlog_matches_topics(const uint8_t * log_topics, size_t log_topic_count, const uint8_t * filter_topics, const int * filter_nulls, size_t filter_count);
 
 // ============================================================================
 // Version info
@@ -511,12 +521,12 @@ const char * primitives_version_string(void);
  * Input: JSON array of access list items
  * Output: u64 gas cost
  */
-int primitives_access_list_gas_cost(const char * json_ptr, *u64 out_cost);
+int primitives_access_list_gas_cost(const char * json_ptr, uint64_t * out_cost);
 
 /**
  * Calculate gas savings for access list
  */
-int primitives_access_list_gas_savings(const char * json_ptr, *u64 out_savings);
+int primitives_access_list_gas_savings(const char * json_ptr, uint64_t * out_savings);
 
 /**
  * Check if address is in access list
@@ -537,7 +547,7 @@ int primitives_access_list_includes_storage_key(const char * json_ptr, const Pri
 /**
  * Validate authorization structure
  */
-int primitives_authorization_validate(*const PrimitivesAuthorization auth_ptr);
+int primitives_authorization_validate(const PrimitivesAuthorization * auth_ptr);
 
 /**
  * Calculate authorization signing hash
@@ -547,7 +557,7 @@ int primitives_authorization_signing_hash(uint64_t chain_id, const PrimitivesAdd
 /**
  * Recover authority (signer) from authorization
  */
-int primitives_authorization_authority(*const PrimitivesAuthorization auth_ptr, PrimitivesAddress * out_address);
+int primitives_authorization_authority(const PrimitivesAuthorization * auth_ptr, PrimitivesAddress * out_address);
 
 /**
  * Calculate gas cost for authorization list
