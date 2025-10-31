@@ -28,7 +28,7 @@ export * from './uint.js';
 
 // Encoding
 export * from './rlp.js';
-export * from './abi.js';
+export * as Abi from './abi/index.js';
 
 // Transactions
 export * from './transaction.js';
