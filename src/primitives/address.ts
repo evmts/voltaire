@@ -284,6 +284,50 @@ export namespace Address {
     return result;
   }
 
+  /**
+   * Convert Address to ABI-encoded bytes (32 bytes, left-padded)
+   *
+   * Ethereum ABI encoding pads addresses to 32 bytes by prepending 12 zero bytes.
+   *
+   * @param this - Address to encode
+   * @returns 32-byte ABI-encoded Uint8Array
+   *
+   * @example
+   * ```typescript
+   * const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+   * const encoded = Address.toAbiEncoded.call(addr);
+   * // encoded.length === 32
+   * ```
+   */
+  export function toAbiEncoded(this: Address): Uint8Array {
+    const result = new Uint8Array(32);
+    result.set(this, 12); // Left-pad with 12 zero bytes
+    return result;
+  }
+
+  /**
+   * Decode Address from ABI-encoded bytes (32 bytes)
+   *
+   * Extracts the last 20 bytes from 32-byte ABI-encoded address data.
+   *
+   * @param bytes - 32-byte ABI-encoded data
+   * @returns Decoded Address
+   * @throws Error if bytes length is not 32
+   *
+   * @example
+   * ```typescript
+   * const encoded = new Uint8Array(32);
+   * // ... set encoded[12:32] to address bytes ...
+   * const addr = Address.fromAbiEncoded(encoded);
+   * ```
+   */
+  export function fromAbiEncoded(bytes: Uint8Array): Address {
+    if (bytes.length !== 32) {
+      throw new Error(`ABI-encoded Address must be exactly 32 bytes, got ${bytes.length}`);
+    }
+    return bytes.slice(12, 32) as Address;
+  }
+
   // ==========================================================================
   // Validation Operations
   // ==========================================================================

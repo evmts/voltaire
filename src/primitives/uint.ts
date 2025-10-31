@@ -313,6 +313,46 @@ export namespace Uint {
   }
 
   /**
+   * Convert Uint256 to ABI-encoded bytes (32 bytes, big-endian)
+   *
+   * This is identical to toBytes() - all Uint256 values in ABI encoding
+   * are represented as 32-byte big-endian values.
+   *
+   * @param this - Uint256 value to encode
+   * @returns 32-byte ABI-encoded Uint8Array
+   *
+   * @example
+   * ```typescript
+   * const value = Uint.from(255);
+   * const encoded = Uint.toAbiEncoded.call(value);
+   * ```
+   */
+  export function toAbiEncoded(this: Type): Uint8Array {
+    return toBytes.call(this);
+  }
+
+  /**
+   * Decode Uint256 from ABI-encoded bytes (32 bytes, big-endian)
+   *
+   * @param bytes - 32-byte ABI-encoded data
+   * @returns Decoded Uint256 value
+   * @throws Error if bytes length is not 32
+   *
+   * @example
+   * ```typescript
+   * const encoded = new Uint8Array(32);
+   * encoded[31] = 255;
+   * const value = Uint.fromAbiEncoded(encoded); // 255n
+   * ```
+   */
+  export function fromAbiEncoded(bytes: Uint8Array): Type {
+    if (bytes.length !== 32) {
+      throw new Error(`ABI-encoded Uint256 must be exactly 32 bytes, got ${bytes.length}`);
+    }
+    return fromBytes.call(bytes);
+  }
+
+  /**
    * Convert Uint256 to string representation
    *
    * @param this - Uint256 value to convert
