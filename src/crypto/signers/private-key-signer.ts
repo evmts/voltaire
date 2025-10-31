@@ -5,9 +5,8 @@
 
 import { Address } from "../../primitives/address.wasm.js";
 import { Keccak256Wasm } from "../keccak256.wasm.js";
-// import { Secp256k1Wasm } from "../secp256k1.wasm.js";
-
-const primitives = require("../wasm-loader/loader.js");
+import * as primitives from "../wasm-loader/loader.js";
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 
 export interface PrivateKeySignerOptions {
 	privateKey: string | Uint8Array;
@@ -15,7 +14,6 @@ export interface PrivateKeySignerOptions {
 
 export interface Signer {
 	address: string;
-	privateKey: Uint8Array;
 	publicKey: Uint8Array;
 	signMessage(message: string | Uint8Array): Promise<string>;
 	signTransaction(transaction: any): Promise<any>;
@@ -24,14 +22,16 @@ export interface Signer {
 
 export class PrivateKeySignerImpl implements Signer {
 	public readonly address: string;
-	public readonly privateKey: Uint8Array;
 	public readonly publicKey: Uint8Array;
+	private readonly signWithPrivateKey: (hash: Uint8Array) => Uint8Array;
 
 	private constructor(privateKey: Uint8Array) {
-		this.privateKey = privateKey;
+		// Private key only exists in this closure
+		this.signWithPrivateKey = (hash: Uint8Array) => {
+			return (primitives as any).signHash(hash, privateKey);
+		};
 
-		// Derive public key from private key (using noble as fallback)
-		const { secp256k1 } = require('@noble/curves/secp256k1.js');
+		// Derive public key from private key
 		const pubKey = secp256k1.getPublicKey(privateKey, false);
 		this.publicKey = pubKey.slice(1); // Remove 0x04 prefix for uncompressed
 
@@ -81,10 +81,7 @@ export class PrivateKeySignerImpl implements Signer {
 		// Note: This requires unaudited_signHash to be exposed via WASM
 		// For now, this will throw an error indicating the function is not yet available
 		try {
-			const signature: Uint8Array = (primitives as any).signHash(
-				messageHash,
-				this.privateKey,
-			);
+			const signature: Uint8Array = this.signWithPrivateKey(messageHash);
 			return `0x${Array.from(signature)
 				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("")}`;
