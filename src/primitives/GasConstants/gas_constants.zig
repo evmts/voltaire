@@ -4,7 +4,7 @@
 /// to the Ethereum Yellow Paper and various EIPs. Gas costs are critical for
 /// preventing denial-of-service attacks and fairly pricing computational resources.
 const std = @import("std");
-const @"u256" = @import("../Uint/uint.zig").Uint(256);
+const @"u256" = @import("../Uint.zig").Uint(256);
 ///
 /// ## Gas Cost Categories
 ///

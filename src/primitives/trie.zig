@@ -1167,7 +1167,7 @@ fn common_prefix_length(a: []const u8, b: []const u8) usize {
 fn hash_node(allocator: Allocator, node: *const Node) ![32]u8 {
     // For now, use a simple hash based on node content
     // In production, this should use RLP encoding + Keccak256
-    const Rlp = @import("Rlp/rlp.zig");
+    const Rlp = @import("Rlp.zig");
 
     const encoded = switch (node.*) {
         .Empty => try Rlp.encode(allocator, ""),
