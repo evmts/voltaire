@@ -1419,55 +1419,6 @@ const checksum = Address.toChecksumHex.call(addr);
 5. **Type safety**: TypeScript brands ensure type correctness
 6. **Performance**: Direct function calls, no prototype chain
 
-### Type.from
-
-`Type.from` allows you to create new composable branded types with both **static** and **instance** methods — all without using classes or `this` binding.
-It produces a callable factory that returns a branded value with attached instance methods and exported static helpers.
-
-```typescript
-import { Type } from "@tevm/voltaire"
-
-const Address = Type({
-  from(value: string | Uint8Array) {
-    // Validation and branding logic
-    return new Uint8Array(20) as Uint8Array & { __tag: "Address" }
-  },
-  staticMethods: {
-    isAddress(v: unknown) {
-      return v instanceof Uint8Array && v.length === 20
-    },
-  },
-  instanceMethods: {
-    toHex(self) {
-      return "0x" + Buffer.from(self).toString("hex")
-    },
-  },
-})
-
-const addr = Address("0x1234")
-Address.isAddress(addr)   // true
-addr.toHex()              // "0x..."
-const { toHex } = addr; toHex() // ✅ works safely
-```
-
-#### Design goals
-
-* **No `this` footguns** – methods receive the branded value explicitly.
-* **Tree-shakable** – all methods are standalone functions.
-* **Composable** – users can merge or extend static/instance maps.
-* **Type-safe** – brand and method inference preserved.
-* **Generic-friendly** – supports generic `from` functions with full type inference.
-
-#### Advanced usage
-
-```typescript
-const CustomAddress = Type({
-  from: Address,
-  staticMethods: { ...Address, verify: (a) => !!a },
-  instanceMethods: { ...Address.instanceMethods, toChecksumHex },
-})
-```
-
 ---
 
 ## Performance
