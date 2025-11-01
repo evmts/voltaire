@@ -12,7 +12,7 @@ import {
   encodeVectors,
   roundTripVectors,
   functionDataVectors,
-} from "./testdata.js";
+} from "./TestData.js";
 import * as Abi from "./index.js";
 import * as loader from "../../wasm-loader/loader.js";
 

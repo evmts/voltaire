@@ -6,8 +6,8 @@
 
 import * as Abi from "./index.js";
 import type { FunctionType as AbiFunction } from "./index.js";
-import type { Item } from "./item.js";
-import type { Address } from "../address.js";
+import type { Item } from "./Item.js";
+import type { Address } from "../Address/index.js";
 
 // Helper to work around strict type checking in benchmarks
 const encodeParams = Abi.encodeParameters as any;

@@ -2,7 +2,7 @@ import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
 import type { Item } from "../Item.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../Errors.js";
 import { encodeParameters, decodeParameters } from "../Encoding.js";
-import { Hash } from "../../Hash/index.js";
+import * as Hash from "../../Hash/index.js";
 
 export type Error<
   TName extends string = string,

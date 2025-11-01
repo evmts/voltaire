@@ -2,7 +2,8 @@ import type { Parameter, ParametersToObject } from "../Parameter.js";
 import type { Item } from "../Item.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../Errors.js";
 import { decodeParameters, encodeValue, decodeValue, isDynamicType } from "../Encoding.js";
-import { Hash } from "../../Hash/index.js";
+import type { Hash as HashType } from "../../Hash/index.js";
+import * as Hash from "../../Hash/index.js";
 
 export type Event<
   TName extends string = string,

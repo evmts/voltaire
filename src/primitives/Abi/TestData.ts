@@ -3,7 +3,7 @@
  * Extracted from Zig implementation tests in abi_encoding.zig
  */
 
-import type { Address } from "../address.js";
+import type { Address } from "../Address/index.js";
 
 export interface EncodeTestVector {
   name: string;

@@ -1,4 +1,4 @@
-import type { AbiType } from "./type.js";
+import type { AbiType } from "./Type.js";
 import type { Address } from "../Address/index.js";
 import type {
   AbiParameter as AbiTypeParameter,

@@ -1,7 +1,7 @@
 import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
 import type { StateMutability } from "./statemutability.js";
 import type { Item } from "../Item.js";
-import { Hash } from "../../Hash/index.js";
+import * as Hash from "../../Hash/index.js";
 
 export type Function<
   TName extends string = string,

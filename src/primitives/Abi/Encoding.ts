@@ -4,8 +4,9 @@ import {
   AbiDecodingError,
   AbiParameterMismatchError,
 } from "./Errors.js";
-import { Uint } from "../Uint/index.js";
-import { Address } from "../Address/index.js";
+import * as Uint from "../Uint/index.js";
+import type { Address as AddressType } from "../Address/index.js";
+import * as Address from "../Address/index.js";
 
 function encodeUint256(value: bigint): Uint8Array {
   return Uint.toAbiEncoded.call(Uint.from(value));
@@ -86,7 +87,7 @@ function encodeValue(
   }
 
   if (type === "address") {
-    const addr = value as Address | string;
+    const addr = value as AddressType | string;
     if (typeof addr === "string") {
       const addressValue = Address.fromHex(addr);
       return { encoded: Address.toAbiEncoded.call(addressValue), isDynamic: false };
@@ -293,7 +294,7 @@ function decodeValue(
 
 export function encodeParameters<const TParams extends readonly Parameter[]>(
   params: TParams,
-  values: import("./parameter.js").ParametersToPrimitiveTypes<TParams>,
+  values: import("./Parameter.js").ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
   if (params.length !== values.length) {
     throw new AbiParameterMismatchError(
@@ -344,7 +345,7 @@ export function encodeParameters<const TParams extends readonly Parameter[]>(
 export function decodeParameters<const TParams extends readonly Parameter[]>(
   params: TParams,
   data: Uint8Array,
-): import("./parameter.js").ParametersToPrimitiveTypes<TParams> {
+): import("./Parameter.js").ParametersToPrimitiveTypes<TParams> {
   const result: unknown[] = [];
   let offset = 0;
 
@@ -354,7 +355,7 @@ export function decodeParameters<const TParams extends readonly Parameter[]>(
     offset += 32;
   }
 
-  return result as import("./parameter.js").ParametersToPrimitiveTypes<TParams>;
+  return result as import("./Parameter.js").ParametersToPrimitiveTypes<TParams>;
 }
 
 export { encodeUint256, encodeUint, encodeInt, encodeValue, decodeUint256, decodeValue, isDynamicType, padRight };
