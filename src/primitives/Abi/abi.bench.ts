@@ -5,7 +5,6 @@
  */
 
 import * as Abi from "./index.js";
-import type { FunctionType as AbiFunction } from "./index.js";
 import type { Item } from "./Item.js";
 import type { Address } from "../Address/index.js";
 
@@ -71,7 +70,7 @@ const transferFunc = {
     { type: "uint256", name: "amount" },
   ],
   outputs: [{ type: "bool", name: "" }],
-} as const satisfies AbiFunction;
+} as const satisfies Abi.Function.Function;
 
 const balanceOfFunc = {
   type: "function",
@@ -79,7 +78,7 @@ const balanceOfFunc = {
   stateMutability: "view",
   inputs: [{ type: "address", name: "account" }],
   outputs: [{ type: "uint256", name: "" }],
-} as const satisfies AbiFunction;
+} as const satisfies Abi.Function.Function;
 
 const complexFunc = {
   type: "function",
@@ -104,7 +103,7 @@ const complexFunc = {
     },
   ],
   outputs: [],
-} as const satisfies AbiFunction;
+} as const satisfies Abi.Function.Function;
 
 const transferEvent = {
   type: "event",
@@ -114,7 +113,7 @@ const transferEvent = {
     { type: "address", name: "to", indexed: true },
     { type: "uint256", name: "value", indexed: false },
   ],
-} as const satisfies Abi.EventType;
+} as const satisfies Abi.Event.Event;
 
 const insufficientBalanceError = {
   type: "error",
@@ -123,7 +122,7 @@ const insufficientBalanceError = {
     { type: "uint256", name: "available" },
     { type: "uint256", name: "required" },
   ],
-} as const satisfies Abi.ErrorType;
+} as const satisfies Abi.Error.Error;
 
 // const testData = new Uint8Array(32);
 
