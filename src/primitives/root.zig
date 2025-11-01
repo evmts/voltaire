@@ -102,48 +102,48 @@
 //! 5. **Testability**: Comprehensive test coverage for all operations
 
 // Core types
-pub const Address = @import("address.zig");
+pub const Address = @import("Address/address.zig");
 
 // Encoding/Decoding
-pub const Hex = @import("hex.zig");
-pub const Rlp = @import("rlp.zig");
+pub const Hex = @import("Hex/hex.zig");
+pub const Rlp = @import("Rlp/rlp.zig");
 pub const Abi = @import("abi/abi.zig");
 pub const AbiEncoding = @import("abi/abi_encoding.zig");
 
 // Utilities
-pub const Numeric = @import("numeric.zig");
-pub const GasConstants = @import("gas_constants.zig");
-pub const Uint = @import("uint.zig").Uint;
+pub const Numeric = @import("Uint/numeric.zig");
+pub const GasConstants = @import("GasConstants/gas_constants.zig");
+pub const Uint = @import("Uint/uint.zig").Uint;
 // Note: Zig 0.14 includes a builtin `u256` primitive. Avoid exporting
 // a shadowing alias here to prevent name conflicts in tests/builds.
 
 // State management
-pub const State = @import("state.zig");
+pub const State = @import("State/state.zig");
 pub const StorageKey = State.StorageKey;
 
 // Transaction types
-pub const Transaction = @import("transaction.zig");
-pub const AccessList = @import("access_list.zig");
-pub const Authorization = @import("authorization.zig");
-pub const Blob = @import("blob.zig");
+pub const Transaction = @import("Transaction/transaction.zig");
+pub const AccessList = @import("AccessList/access_list.zig");
+pub const Authorization = @import("Authorization/authorization.zig");
+pub const Blob = @import("Blob/blob.zig");
 
 // Contract utilities
-pub const EventLog = @import("event_log.zig");
-pub const Bytecode = @import("bytecode.zig").Bytecode;
+pub const EventLog = @import("EventLog/event_log.zig");
+pub const Bytecode = @import("Bytecode/bytecode.zig").Bytecode;
 
 // Opcodes
-pub const Opcode = @import("opcode.zig").Opcode;
-pub const OpcodeInfo = @import("opcode_info.zig");
+pub const Opcode = @import("Opcode/opcode.zig").Opcode;
+pub const OpcodeInfo = @import("Opcode/opcode_info.zig");
 
 // Logging
-pub const logs = @import("logs.zig");
+pub const logs = @import("EventLog/logs.zig");
 
 // Standards
-pub const Siwe = @import("siwe.zig");
+pub const Siwe = @import("Siwe/siwe.zig");
 
 // Protocol
-pub const Hardfork = @import("hardfork.zig").Hardfork;
-pub const ForkTransition = @import("hardfork.zig").ForkTransition;
+pub const Hardfork = @import("Hardfork/hardfork.zig").Hardfork;
+pub const ForkTransition = @import("Hardfork/hardfork.zig").ForkTransition;
 
 // Data structures
 pub const Trie = @import("trie.zig").Trie;
