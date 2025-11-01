@@ -274,7 +274,7 @@ describe("Kzg Verify Proof", () => {
     const { proof, y } = Kzg.computeKzgProof(blob, z);
     // Corrupt the proof
     const corruptedProof = new Uint8Array(proof);
-    corruptedProof[0] ^= 1;
+    corruptedProof[0]! ^= 1;
     const valid = Kzg.verifyKzgProof(commitment, z, y, corruptedProof);
     expect(valid).toBe(false);
   });
@@ -282,7 +282,6 @@ describe("Kzg Verify Proof", () => {
   it("should reject proof with wrong commitment", () => {
     const blob1 = Kzg.generateRandomBlob(2222);
     const blob2 = Kzg.generateRandomBlob(3333);
-    const commitment1 = Kzg.blobToKzgCommitment(blob1);
     const commitment2 = Kzg.blobToKzgCommitment(blob2);
     const z = new Uint8Array(32);
     z[31] = 0x66;
@@ -300,7 +299,7 @@ describe("Kzg Verify Proof", () => {
     const { proof, y } = Kzg.computeKzgProof(blob, z);
     // Corrupt y value
     const wrongY = new Uint8Array(y);
-    wrongY[0] ^= 1;
+    wrongY[0]! ^= 1;
     const valid = Kzg.verifyKzgProof(commitment, z, wrongY, proof);
     expect(valid).toBe(false);
   });
@@ -338,7 +337,7 @@ describe("Kzg Verify Blob Proof", () => {
     const commitment = Kzg.blobToKzgCommitment(blob);
     // For blob proof, we need to use computeBlobKzgProof from c-kzg directly
     const ckzg = require("c-kzg");
-    const proof = ckzg.computeBlobKzgProof(blob, commitment);
+    const proof = ckzg.computeBlobKzgProof(blob, commitment)!;
     const valid = Kzg.verifyBlobKzgProof(blob, commitment, proof);
     expect(valid).toBe(true);
   });
@@ -370,7 +369,7 @@ describe("Kzg Batch Verification", () => {
     // For blob batch verification, use computeBlobKzgProof
     const ckzg = require("c-kzg");
     const proofs = blobs.map((blob, i) =>
-      ckzg.computeBlobKzgProof(blob, commitments[i]),
+      ckzg.computeBlobKzgProof(blob, commitments[i]!),
     );
     const valid = Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs);
     expect(valid).toBe(true);
@@ -378,9 +377,9 @@ describe("Kzg Batch Verification", () => {
 
   it("should reject mismatched array lengths", () => {
     const blobs = [Kzg.generateRandomBlob(1), Kzg.generateRandomBlob(2)];
-    const commitments = [Kzg.blobToKzgCommitment(blobs[0])];
+    const commitments = [Kzg.blobToKzgCommitment(blobs[0]!)];
     const proofs = [
-      Kzg.computeKzgProof(blobs[0], new Uint8Array(32)).proof,
+      Kzg.computeKzgProof(blobs[0]!, new Uint8Array(32)).proof,
     ];
     expect(() =>
       Kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs),

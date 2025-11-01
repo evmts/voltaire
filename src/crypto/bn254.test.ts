@@ -14,16 +14,9 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Bn254, Bn254InvalidPointError, Bn254SubgroupCheckError } from "./bn254.js";
+import { Bn254, Bn254InvalidPointError } from "./bn254.js";
 // import { Bn254Wasm } from "./bn254.wasm.js";
 // import { Bn254Ark } from "./bn254.ark.js";
-
-// Test parameterization for multiple implementations
-const implementations = [
-  { name: "Pure TS", impl: Bn254 },
-  // { name: "WASM", impl: Bn254Wasm }, // TODO: Enable when WASM loader ready
-  // { name: "Arkworks", impl: Bn254Ark }, // TODO: Enable when WASM loader ready
-];
 
 describe("Bn254.Fr", () => {
   it("should perform modular addition", () => {

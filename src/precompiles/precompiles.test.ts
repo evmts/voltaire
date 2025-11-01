@@ -8,8 +8,6 @@ import {
   identity as evmIdentity,
   sha256 as evmSha256,
   ripemd160 as evmRipemd160,
-  PrecompileAddress,
-  execute,
 } from "./precompiles.js";
 import { Secp256k1 } from "../crypto/secp256k1.js";
 import { Keccak256 } from "../crypto/keccak256.js";

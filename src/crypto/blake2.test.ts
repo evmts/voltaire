@@ -9,8 +9,6 @@ import { describe, expect, it, beforeAll } from "vitest";
 import { Blake2 } from "./blake2.js";
 import { Blake2Wasm } from "./blake2.wasm.js";
 import * as loader from "../wasm-loader/loader.js";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 // Load WASM module before tests
 beforeAll(async () => {

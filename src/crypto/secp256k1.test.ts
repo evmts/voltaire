@@ -173,7 +173,7 @@ for (const { name, impl } of implementations) {
         ...signature,
         r: new Uint8Array(signature.r),
       };
-      modifiedSig.r[0] ^= 0x01;
+      modifiedSig.r[0]! ^= 0x01;
 
       const valid = Secp256k1Impl.verify(
         modifiedSig,
@@ -192,7 +192,7 @@ for (const { name, impl } of implementations) {
         ...signature,
         s: new Uint8Array(signature.s),
       };
-      modifiedSig.s[0] ^= 0x01;
+      modifiedSig.s[0]! ^= 0x01;
 
       const valid = Secp256k1Impl.verify(
         modifiedSig,
@@ -438,7 +438,7 @@ for (const { name, impl } of implementations) {
   describe("Signature Formatting", () => {
     it("converts signature to compact format", () => {
       const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const compact = Secp256k1Impl.Signature.toCompact.call(signature);
+      const compact = (Secp256k1Impl.Signature.toCompact as any).call(signature);
 
       expect(compact).toBeInstanceOf(Uint8Array);
       expect(compact.length).toBe(64);
@@ -448,7 +448,7 @@ for (const { name, impl } of implementations) {
 
     it("converts signature to bytes with v", () => {
       const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const bytes = Secp256k1Impl.Signature.toBytes.call(signature);
+      const bytes = (Secp256k1Impl.Signature.toBytes as any).call(signature);
 
       expect(bytes).toBeInstanceOf(Uint8Array);
       expect(bytes.length).toBe(65);
@@ -459,7 +459,7 @@ for (const { name, impl } of implementations) {
 
     it("creates signature from compact format", () => {
       const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const compact = Secp256k1Impl.Signature.toCompact.call(signature);
+      const compact = (Secp256k1Impl.Signature.toCompact as any).call(signature);
 
       const restored = Secp256k1Impl.Signature.fromCompact(compact, signature.v);
 
@@ -470,7 +470,7 @@ for (const { name, impl } of implementations) {
 
     it("creates signature from bytes", () => {
       const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const bytes = Secp256k1Impl.Signature.toBytes.call(signature);
+      const bytes = (Secp256k1Impl.Signature.toBytes as any).call(signature);
 
       const restored = Secp256k1Impl.Signature.fromBytes(bytes);
 
@@ -520,7 +520,7 @@ for (const { name, impl } of implementations) {
 
     it("sign -> toBytes -> fromBytes -> verify round-trip", () => {
       const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const bytes = Secp256k1Impl.Signature.toBytes.call(signature);
+      const bytes = (Secp256k1Impl.Signature.toBytes as any).call(signature);
       const restored = Secp256k1Impl.Signature.fromBytes(bytes);
 
       const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
@@ -531,7 +531,7 @@ for (const { name, impl } of implementations) {
 
     it("sign -> toCompact -> fromCompact -> verify round-trip", () => {
       const signature = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
-      const compact = Secp256k1Impl.Signature.toCompact.call(signature);
+      const compact = (Secp256k1Impl.Signature.toCompact as any).call(signature);
       const restored = Secp256k1Impl.Signature.fromCompact(compact, signature.v);
 
       const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);

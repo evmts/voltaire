@@ -391,3 +391,29 @@ export function signatureSerialize(
 	v: number,
 	includeV: boolean,
 ): Uint8Array;
+
+// ============================================================================
+// ABI API
+// ============================================================================
+
+/**
+ * Encode ABI parameters
+ * @param types - Array of parameter types
+ * @param values - Array of parameter values (formatted as strings)
+ * @returns Encoded bytes
+ */
+export function abiEncodeParameters(
+	types: readonly string[],
+	values: readonly string[],
+): Uint8Array;
+
+/**
+ * Decode ABI parameters
+ * @param data - Encoded data
+ * @param types - Array of parameter types
+ * @returns Decoded values
+ */
+export function abiDecodeParameters(
+	data: Uint8Array,
+	types: readonly string[],
+): unknown[];
