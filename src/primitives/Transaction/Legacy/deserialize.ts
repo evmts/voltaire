@@ -1,4 +1,4 @@
-import { Rlp } from "../../Rlp/index.js";
+import * as Rlp from "../../Rlp/index.js";
 import { Type, type Legacy } from "../types.js";
 import { decodeAddress, decodeBigint } from "../utils.js";
 

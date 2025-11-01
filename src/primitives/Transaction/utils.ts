@@ -1,7 +1,9 @@
-import { Secp256k1 } from "../crypto/secp256k1.js";
-import { Address } from "../Address/index.js";
+import { Secp256k1 } from "../../crypto/secp256k1.js";
+import type { Address } from "../Address/index.js";
+import * as AddressNamespace from "../Address/index.js";
+const Address = AddressNamespace;
 import type { Hash } from "../Hash/index.js";
-import { Rlp } from "../Rlp/index.js";
+import * as Rlp from "../Rlp/index.js";
 
 /**
  * Encode bigint as big-endian bytes, removing leading zeros

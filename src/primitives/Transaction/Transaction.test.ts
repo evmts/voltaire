@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { Transaction } from "./Transaction/index.js";
-import type { Address } from "./Address/index.js";
-import type { Hash } from "./Hash/index.js";
+import { Transaction } from "../Transaction/index.js";
+import type { Address } from "../Address/index.js";
+import type { Hash } from "../Hash/index.js";
 
 // ============================================================================
 // Test Data Helpers

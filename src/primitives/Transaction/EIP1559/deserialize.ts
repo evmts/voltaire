@@ -1,4 +1,4 @@
-import { Rlp } from "../../Rlp/index.js";
+import * as Rlp from "../../Rlp/index.js";
 import { Type, type EIP1559 } from "../types.js";
 import {
 	decodeAddress,

@@ -4,9 +4,9 @@
  * Measures performance of transaction operations
  */
 
-import { Transaction } from "./Transaction/index.js";
-import type { Address } from "./Address/index.js";
-import type { Hash } from "./Hash/index.js";
+import { Transaction } from "../Transaction/index.js";
+import type { Address } from "../Address/index.js";
+import type { Hash } from "../Hash/index.js";
 
 // ============================================================================
 // Benchmark Runner

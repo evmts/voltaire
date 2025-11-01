@@ -1,4 +1,4 @@
-import { Rlp } from "../../Rlp/index.js";
+import * as Rlp from "../../Rlp/index.js";
 import type { Legacy } from "../types.js";
 import {
 	encodeBigintCompact,

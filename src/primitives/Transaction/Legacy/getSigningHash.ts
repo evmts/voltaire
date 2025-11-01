@@ -1,6 +1,6 @@
-import { Keccak256 } from "../../crypto/keccak256.js";
+import { Keccak256 } from "../../../crypto/keccak256.js";
 import type { Hash } from "../../Hash/index.js";
-import { Rlp } from "../../Rlp/index.js";
+import * as Rlp from "../../Rlp/index.js";
 import type { Legacy } from "../types.js";
 import {
 	encodeBigintCompact,

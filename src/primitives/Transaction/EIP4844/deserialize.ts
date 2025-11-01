@@ -1,6 +1,6 @@
 import type { Address } from "../../Address/index.js";
 import type { Hash } from "../../Hash/index.js";
-import { Rlp } from "../../Rlp/index.js";
+import * as Rlp from "../../Rlp/index.js";
 import { Type, type EIP4844 } from "../types.js";
 import {
 	decodeBigint,

@@ -1,4 +1,4 @@
-import { Secp256k1 } from "../../crypto/secp256k1.js";
+import { Secp256k1 } from "../../../crypto/secp256k1.js";
 import type { EIP1559 } from "../types.js";
 import { getSigningHash } from "./getSigningHash.js";
 
