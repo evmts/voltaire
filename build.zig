@@ -6,8 +6,6 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     // Optional: build benchmarks only when requested
     const with_benches = b.option(bool, "with-benches", "Build and install benchmark executables") orelse false;
-    // Optional: run TypeScript type-check during build
-    const with_tsc = b.option(bool, "with-tsc", "Run TypeScript type-check (tsc --noEmit)") orelse true;
 
     // STEP 1: Verify vendored dependencies exist
     lib_build.checkVendoredDeps(b);
@@ -111,20 +109,15 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_crypto_tests.step);
     test_step.dependOn(&run_precompiles_tests.step);
 
-    // TypeScript type-check step (validates TS FFI wrappers compile)
-    if (with_tsc) {
-        const tsc_cmd = b.addSystemCommand(&[_][]const u8{
-            // Invoke local TypeScript directly to avoid PATH issues
-            "node",
-            "node_modules/typescript/bin/tsc",
-            "--noEmit",
-            "-p",
-            "tsconfig.json",
-        });
-        tsc_cmd.setName("tsc --noEmit");
-        const tsc_step = b.step("tsc", "Run TypeScript type-check (tsc --noEmit)");
-        tsc_step.dependOn(&tsc_cmd.step);
-    }
+    // TypeScript build steps (typecheck + build)
+    const bun_typecheck = b.addSystemCommand(&[_][]const u8{ "bun", "run", "typecheck" });
+    bun_typecheck.setName("bun-typecheck");
+    const bun_build = b.addSystemCommand(&[_][]const u8{ "bun", "run", "build:dist" });
+    bun_build.setName("bun-build");
+    bun_build.step.dependOn(&bun_typecheck.step);
+
+    // Add typecheck + build to default install step
+    b.getInstallStep().dependOn(&bun_build.step);
 
     // Example: Keccak-256 hashing demonstration
     const keccak256_example_mod = b.createModule(.{
