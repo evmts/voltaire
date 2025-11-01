@@ -90,7 +90,7 @@
 //! 5. **Type Safety**: Strongly typed API prevents common mistakes
 
 const std = @import("std");
-const Hex = @import("../Hex/hex.zig");
+const Hex = @import("Hex.zig");
 const Allocator = std.mem.Allocator;
 
 /// Maximum recursion depth to prevent stack overflow attacks
