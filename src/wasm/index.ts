@@ -4,7 +4,7 @@
  */
 
 // Address operations
-import { Address as AddressClass } from "../primitives/address.wasm.js";
+import { Address as AddressClass } from "../primitives/Address/Address.wasm.js";
 
 // Keccak-256 hashing
 // TODO: Restore after refactoring keccak256.wasm.ts
@@ -17,7 +17,7 @@ import {
 	isBytecodeBoundary as isBytecodeBoundaryFn,
 	isValidJumpDest as isValidJumpDestFn,
 	validateBytecode as validateBytecodeFn,
-} from "../primitives/bytecode.wasm.js";
+} from "../primitives/Bytecode/Bytecode.wasm.js";
 
 // Hash algorithms
 import {
@@ -26,10 +26,10 @@ import {
 	blake2b as blake2bFn,
 	solidityKeccak256 as solidityKeccak256Fn,
 	soliditySha256 as soliditySha256Fn,
-} from "../primitives/hash.wasm.js";
+} from "../primitives/Hash/Hash.wasm.js";
 
 // Hex utilities
-import { hexToBytes as hexToBytesFn, bytesToHex as bytesToHexFn } from "../primitives/hex.wasm.js";
+import { hexToBytes as hexToBytesFn, bytesToHex as bytesToHexFn } from "../primitives/Hex/Hex.wasm.js";
 
 // RLP encoding
 import {
@@ -38,7 +38,7 @@ import {
 	encodeUintFromBigInt as rlpEncodeUintFromBigIntFn,
 	toHex as rlpToHexFn,
 	fromHex as rlpFromHexFn,
-} from "../primitives/rlp.wasm.js";
+} from "../primitives/Rlp/Rlp.wasm.js";
 
 // Signature operations (secp256k1)
 // TODO: Restore after creating signature.wasm.ts or updating secp256k1.wasm.ts exports
@@ -58,7 +58,7 @@ import {
 import {
 	TransactionType as TransactionTypeEnum,
 	detectTransactionType as detectTransactionTypeFn,
-} from "../primitives/transaction.wasm.js";
+} from "../primitives/Transaction/Transaction.wasm.js";
 
 // U256 operations
 import {
@@ -66,7 +66,7 @@ import {
 	u256ToHex as u256ToHexFn,
 	u256FromBigInt as u256FromBigIntFn,
 	u256ToBigInt as u256ToBigIntFn,
-} from "../primitives/uint256.wasm.js";
+} from "../primitives/Uint/Uint256.wasm.js";
 
 // Wallet key generation
 // TODO: Restore after creating wallet.wasm.ts

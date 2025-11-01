@@ -59,7 +59,7 @@ describe("Abi.getFunctionSelector (Pure TS)", () => {
         expect(selector.length).toBe(4);
 
         const hex = Array.from(selector)
-          .map((b) => b.toString(16).padStart(2, "0"))
+          .map((b: number) => b.toString(16).padStart(2, "0"))
           .join("");
         expect(hex).toBe(vector.expected);
       });
@@ -85,7 +85,7 @@ describe("Abi.getEventSelector (Pure TS)", () => {
         expect(selector.length).toBe(32);
 
         const hex = Array.from(selector)
-          .map((b) => b.toString(16).padStart(2, "0"))
+          .map((b: number) => b.toString(16).padStart(2, "0"))
           .join("");
         expect(hex).toBe(vector.expected);
       });

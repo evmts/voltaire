@@ -18,7 +18,7 @@ export type Event<
 export function getSelector<
   TName extends string = string,
   TInputs extends readonly Parameter[] = readonly Parameter[],
->(this: Event<TName, TInputs>): Hash {
+>(this: Event<TName, TInputs>): HashType {
   const signature = getSignature.call(this);
   return Hash.keccak256String(signature);
 }
@@ -37,8 +37,8 @@ export function encodeTopics<
 >(
   this: Event<TName, TInputs>,
   args: Partial<ParametersToObject<TInputs>>,
-): (Hash | null)[] {
-  const topics: (Hash | null)[] = [];
+): (HashType | null)[] {
+  const topics: (HashType | null)[] = [];
 
   if (!this.anonymous) {
     topics.push(getSelector.call(this));
@@ -58,7 +58,7 @@ export function encodeTopics<
       topics.push(Hash.keccak256(encoded));
     } else {
       const { encoded } = encodeValue(param.type, value);
-      topics.push(encoded as Hash);
+      topics.push(encoded as HashType);
     }
   }
 
@@ -71,7 +71,7 @@ export function decodeLog<
 >(
   this: Event<TName, TInputs>,
   data: Uint8Array,
-  topics: readonly Hash[],
+  topics: readonly HashType[],
 ): ParametersToObject<TInputs> {
   let topicIndex = 0;
 
