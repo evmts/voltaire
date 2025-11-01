@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Hardfork } from "./Hardfork/index.js";
+import * as Hardfork from "./Hardfork.js";
 
 // ============================================================================
 // Comparison Operations Tests

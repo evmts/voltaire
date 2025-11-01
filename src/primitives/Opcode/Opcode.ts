@@ -2,36 +2,31 @@
  * EVM Opcode Types and Utilities
  *
  * Complete EVM opcode definitions with metadata and helper functions
- * for bytecode analysis. All types namespaced under Opcode.
+ * for bytecode analysis. Import as namespace with `import * as Opcode`.
  *
  * @example
  * ```typescript
- * import { Opcode } from './opcode.js';
+ * import * as Opcode from './opcode.js';
  *
  * // Types
  * const op: Opcode.Code = Opcode.Code.ADD;
- * const info = Opcode.getInfo(op);
+ * const info = getInfo(op);
  *
  * // Operations
- * const name = Opcode.getName(op);
- * const isPush = Opcode.isPush(op);
- * const pushBytes = Opcode.getPushBytes(op);
+ * const name = getName(op);
+ * const isPush = isPush(op);
+ * const pushBytes = getPushBytes(op);
  * ```
  */
 
 // ============================================================================
-// Main Opcode Namespace
+// Core Types
 // ============================================================================
 
-export namespace Opcode {
-  // ==========================================================================
-  // Core Types
-  // ==========================================================================
-
-  /**
-   * EVM opcode byte values
-   */
-  export enum Code {
+/**
+ * EVM opcode byte values
+ */
+export enum Code {
     // 0x00s: Stop and Arithmetic Operations
     STOP = 0x00,
     ADD = 0x01,
@@ -204,12 +199,12 @@ export namespace Opcode {
     REVERT = 0xfd,
     INVALID = 0xfe,
     SELFDESTRUCT = 0xff,
-  }
+}
 
-  /**
-   * Opcode metadata structure
-   */
-  export type Info = {
+/**
+ * Opcode metadata structure
+ */
+export type Info = {
     /** Base gas cost (may be dynamic at runtime) */
     gasCost: number;
     /** Number of stack items consumed */
@@ -218,40 +213,40 @@ export namespace Opcode {
     stackOutputs: number;
     /** Opcode name */
     name: string;
-  };
+};
 
-  /**
-   * Bytecode instruction with opcode and optional immediate data
-   */
-  export type Instruction = {
+/**
+ * Bytecode instruction with opcode and optional immediate data
+ */
+export type Instruction = {
     /** Program counter offset */
     offset: number;
     /** The opcode */
     opcode: Code;
     /** Immediate data for PUSH operations */
     immediate?: Uint8Array;
-  };
+};
 
-  // ==========================================================================
-  // Constants
-  // ==========================================================================
+// ============================================================================
+// Constants
+// ============================================================================
 
-  const GAS_FASTEST_STEP = 3;
-  const GAS_FAST_STEP = 5;
-  const GAS_MID_STEP = 8;
-  const GAS_QUICK_STEP = 2;
-  const LOG_GAS = 375;
-  const LOG_TOPIC_GAS = 375;
+const GAS_FASTEST_STEP = 3;
+const GAS_FAST_STEP = 5;
+const GAS_MID_STEP = 8;
+const GAS_QUICK_STEP = 2;
+const LOG_GAS = 375;
+const LOG_TOPIC_GAS = 375;
 
-  // ==========================================================================
-  // Opcode Info Table
-  // ==========================================================================
+// ============================================================================
+// Opcode Info Table
+// ============================================================================
 
-  function createInfoTable(): Map<Code, Info> {
+function createInfoTable(): Map<Code, Info> {
     const table = new Map<Code, Info>();
 
     const add = (op: Code, gasCost: number, stackInputs: number, stackOutputs: number, name: string) => {
-      table.set(op, { gasCost, stackInputs, stackOutputs, name });
+        table.set(op, { gasCost, stackInputs, stackOutputs, name });
     };
 
     // 0x00s: Stop and Arithmetic Operations
@@ -371,648 +366,646 @@ export namespace Opcode {
     add(Code.SELFDESTRUCT, 5000, 1, 0, "SELFDESTRUCT");
 
     return table;
-  }
+}
 
-  const INFO_TABLE = createInfoTable();
+const INFO_TABLE = createInfoTable();
 
-  // ==========================================================================
-  // Basic Operations
-  // ==========================================================================
+// ============================================================================
+// Basic Operations
+// ============================================================================
 
-  /**
-   * Get metadata for an opcode (standard form)
-   *
-   * @param opcode - Opcode to query
-   * @returns Metadata with gas cost and stack requirements, or undefined if invalid
-   *
-   * @example
-   * ```typescript
-   * const info = Opcode.getInfo(Opcode.Code.ADD);
-   * console.log(info?.name); // "ADD"
-   * console.log(info?.gasCost); // 3
-   * ```
-   */
-  export function getInfo(opcode: Code): Info | undefined {
+/**
+ * Get metadata for an opcode (standard form)
+ *
+ * @param opcode - Opcode to query
+ * @returns Metadata with gas cost and stack requirements, or undefined if invalid
+ *
+ * @example
+ * ```typescript
+ * const info = getInfo(Code.ADD);
+ * console.log(info?.name); // "ADD"
+ * console.log(info?.gasCost); // 3
+ * ```
+ */
+export function getInfo(opcode: Code): Info | undefined {
     return INFO_TABLE.get(opcode);
-  }
+}
 
-  /**
-   * Get metadata for an opcode (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const add = Opcode.Code.ADD;
-   * const info = Opcode.info.call(add);
-   * ```
-   */
-  export function info(this: Code): Info | undefined {
+/**
+ * Get metadata for an opcode (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const add = Code.ADD;
+ * const info = info.call(add);
+ * ```
+ */
+export function info(this: Code): Info | undefined {
     return getInfo(this);
-  }
+}
 
-  /**
-   * Get name of an opcode (standard form)
-   *
-   * @param opcode - Opcode to query
-   * @returns Opcode name or "UNKNOWN" if invalid
-   *
-   * @example
-   * ```typescript
-   * const name = Opcode.getName(Opcode.Code.ADD); // "ADD"
-   * ```
-   */
-  export function getName(opcode: Code): string {
+/**
+ * Get name of an opcode (standard form)
+ *
+ * @param opcode - Opcode to query
+ * @returns Opcode name or "UNKNOWN" if invalid
+ *
+ * @example
+ * ```typescript
+ * const name = getName(Code.ADD); // "ADD"
+ * ```
+ */
+export function getName(opcode: Code): string {
     return getInfo(opcode)?.name ?? "UNKNOWN";
-  }
+}
 
-  /**
-   * Get name of an opcode (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const name = Opcode.name.call(Opcode.Code.ADD); // "ADD"
-   * ```
-   */
-  export function name(this: Code): string {
+/**
+ * Get name of an opcode (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const name = name.call(Code.ADD); // "ADD"
+ * ```
+ */
+export function name(this: Code): string {
     return getName(this);
-  }
+}
 
-  /**
-   * Check if opcode is valid (standard form)
-   *
-   * @param opcode - Byte value to check
-   * @returns True if opcode is defined in the EVM
-   *
-   * @example
-   * ```typescript
-   * Opcode.isValid(0x01); // true (ADD)
-   * Opcode.isValid(0x0c); // false (undefined)
-   * ```
-   */
-  export function isValid(opcode: number): opcode is Code {
+/**
+ * Check if opcode is valid (standard form)
+ *
+ * @param opcode - Byte value to check
+ * @returns True if opcode is defined in the EVM
+ *
+ * @example
+ * ```typescript
+ * isValid(0x01); // true (ADD)
+ * isValid(0x0c); // false (undefined)
+ * ```
+ */
+export function isValid(opcode: number): opcode is Code {
     return INFO_TABLE.has(opcode as Code);
-  }
+}
 
-  /**
-   * Check if opcode is valid (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const valid = Opcode.valid.call(0x01); // true
-   * ```
-   */
-  export function valid(this: number): this is Code {
+/**
+ * Check if opcode is valid (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const valid = valid.call(0x01); // true
+ * ```
+ */
+export function valid(this: number): this is Code {
     return isValid(this);
-  }
+}
 
-  // ==========================================================================
-  // Category Checks
-  // ==========================================================================
+// ============================================================================
+// Category Checks
+// ============================================================================
 
-  /**
-   * Check if opcode is a PUSH instruction (standard form)
-   *
-   * @param opcode - Opcode to check
-   * @returns True if PUSH0-PUSH32
-   *
-   * @example
-   * ```typescript
-   * Opcode.isPush(Opcode.Code.PUSH1); // true
-   * Opcode.isPush(Opcode.Code.ADD); // false
-   * ```
-   */
-  export function isPush(opcode: Code): boolean {
+/**
+ * Check if opcode is a PUSH instruction (standard form)
+ *
+ * @param opcode - Opcode to check
+ * @returns True if PUSH0-PUSH32
+ *
+ * @example
+ * ```typescript
+ * isPush(Code.PUSH1); // true
+ * isPush(Code.ADD); // false
+ * ```
+ */
+export function isPush(opcode: Code): boolean {
     return opcode === Code.PUSH0 || (opcode >= Code.PUSH1 && opcode <= Code.PUSH32);
-  }
+}
 
-  /**
-   * Check if opcode is a PUSH instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const isPushOp = Opcode.push.call(Opcode.Code.PUSH1); // true
-   * ```
-   */
-  export function push(this: Code): boolean {
+/**
+ * Check if opcode is a PUSH instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const isPushOp = push.call(Code.PUSH1); // true
+ * ```
+ */
+export function push(this: Code): boolean {
     return isPush(this);
-  }
+}
 
-  /**
-   * Check if opcode is a DUP instruction (standard form)
-   *
-   * @param opcode - Opcode to check
-   * @returns True if DUP1-DUP16
-   *
-   * @example
-   * ```typescript
-   * Opcode.isDup(Opcode.Code.DUP1); // true
-   * Opcode.isDup(Opcode.Code.ADD); // false
-   * ```
-   */
-  export function isDup(opcode: Code): boolean {
+/**
+ * Check if opcode is a DUP instruction (standard form)
+ *
+ * @param opcode - Opcode to check
+ * @returns True if DUP1-DUP16
+ *
+ * @example
+ * ```typescript
+ * isDup(Code.DUP1); // true
+ * isDup(Code.ADD); // false
+ * ```
+ */
+export function isDup(opcode: Code): boolean {
     return opcode >= Code.DUP1 && opcode <= Code.DUP16;
-  }
+}
 
-  /**
-   * Check if opcode is a DUP instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const isDupOp = Opcode.dup.call(Opcode.Code.DUP1); // true
-   * ```
-   */
-  export function dup(this: Code): boolean {
+/**
+ * Check if opcode is a DUP instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const isDupOp = dup.call(Code.DUP1); // true
+ * ```
+ */
+export function dup(this: Code): boolean {
     return isDup(this);
-  }
+}
 
-  /**
-   * Check if opcode is a SWAP instruction (standard form)
-   *
-   * @param opcode - Opcode to check
-   * @returns True if SWAP1-SWAP16
-   *
-   * @example
-   * ```typescript
-   * Opcode.isSwap(Opcode.Code.SWAP1); // true
-   * Opcode.isSwap(Opcode.Code.ADD); // false
-   * ```
-   */
-  export function isSwap(opcode: Code): boolean {
+/**
+ * Check if opcode is a SWAP instruction (standard form)
+ *
+ * @param opcode - Opcode to check
+ * @returns True if SWAP1-SWAP16
+ *
+ * @example
+ * ```typescript
+ * isSwap(Code.SWAP1); // true
+ * isSwap(Code.ADD); // false
+ * ```
+ */
+export function isSwap(opcode: Code): boolean {
     return opcode >= Code.SWAP1 && opcode <= Code.SWAP16;
-  }
+}
 
-  /**
-   * Check if opcode is a SWAP instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const isSwapOp = Opcode.swap.call(Opcode.Code.SWAP1); // true
-   * ```
-   */
-  export function swap(this: Code): boolean {
+/**
+ * Check if opcode is a SWAP instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const isSwapOp = swap.call(Code.SWAP1); // true
+ * ```
+ */
+export function swap(this: Code): boolean {
     return isSwap(this);
-  }
+}
 
-  /**
-   * Check if opcode is a LOG instruction (standard form)
-   *
-   * @param opcode - Opcode to check
-   * @returns True if LOG0-LOG4
-   *
-   * @example
-   * ```typescript
-   * Opcode.isLog(Opcode.Code.LOG1); // true
-   * Opcode.isLog(Opcode.Code.ADD); // false
-   * ```
-   */
-  export function isLog(opcode: Code): boolean {
+/**
+ * Check if opcode is a LOG instruction (standard form)
+ *
+ * @param opcode - Opcode to check
+ * @returns True if LOG0-LOG4
+ *
+ * @example
+ * ```typescript
+ * isLog(Code.LOG1); // true
+ * isLog(Code.ADD); // false
+ * ```
+ */
+export function isLog(opcode: Code): boolean {
     return opcode >= Code.LOG0 && opcode <= Code.LOG4;
-  }
+}
 
-  /**
-   * Check if opcode is a LOG instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const isLogOp = Opcode.log.call(Opcode.Code.LOG1); // true
-   * ```
-   */
-  export function log(this: Code): boolean {
+/**
+ * Check if opcode is a LOG instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const isLogOp = log.call(Code.LOG1); // true
+ * ```
+ */
+export function log(this: Code): boolean {
     return isLog(this);
-  }
+}
 
-  /**
-   * Check if opcode terminates execution (standard form)
-   *
-   * @param opcode - Opcode to check
-   * @returns True if STOP, RETURN, REVERT, INVALID, or SELFDESTRUCT
-   *
-   * @example
-   * ```typescript
-   * Opcode.isTerminating(Opcode.Code.RETURN); // true
-   * Opcode.isTerminating(Opcode.Code.ADD); // false
-   * ```
-   */
-  export function isTerminating(opcode: Code): boolean {
+/**
+ * Check if opcode terminates execution (standard form)
+ *
+ * @param opcode - Opcode to check
+ * @returns True if STOP, RETURN, REVERT, INVALID, or SELFDESTRUCT
+ *
+ * @example
+ * ```typescript
+ * isTerminating(Code.RETURN); // true
+ * isTerminating(Code.ADD); // false
+ * ```
+ */
+export function isTerminating(opcode: Code): boolean {
     return (
-      opcode === Code.STOP ||
-      opcode === Code.RETURN ||
-      opcode === Code.REVERT ||
-      opcode === Code.INVALID ||
-      opcode === Code.SELFDESTRUCT
+        opcode === Code.STOP ||
+        opcode === Code.RETURN ||
+        opcode === Code.REVERT ||
+        opcode === Code.INVALID ||
+        opcode === Code.SELFDESTRUCT
     );
-  }
+}
 
-  /**
-   * Check if opcode terminates execution (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const terminates = Opcode.terminating.call(Opcode.Code.RETURN); // true
-   * ```
-   */
-  export function terminating(this: Code): boolean {
+/**
+ * Check if opcode terminates execution (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const terminates = terminating.call(Code.RETURN); // true
+ * ```
+ */
+export function terminating(this: Code): boolean {
     return isTerminating(this);
-  }
+}
 
-  /**
-   * Check if opcode is a jump (standard form)
-   *
-   * @param opcode - Opcode to check
-   * @returns True if JUMP or JUMPI
-   *
-   * @example
-   * ```typescript
-   * Opcode.isJump(Opcode.Code.JUMP); // true
-   * Opcode.isJump(Opcode.Code.JUMPI); // true
-   * Opcode.isJump(Opcode.Code.ADD); // false
-   * ```
-   */
-  export function isJump(opcode: Code): boolean {
+/**
+ * Check if opcode is a jump (standard form)
+ *
+ * @param opcode - Opcode to check
+ * @returns True if JUMP or JUMPI
+ *
+ * @example
+ * ```typescript
+ * isJump(Code.JUMP); // true
+ * isJump(Code.JUMPI); // true
+ * isJump(Code.ADD); // false
+ * ```
+ */
+export function isJump(opcode: Code): boolean {
     return opcode === Code.JUMP || opcode === Code.JUMPI;
-  }
+}
 
-  /**
-   * Check if opcode is a jump (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const isJumpOp = Opcode.jump.call(Opcode.Code.JUMP); // true
-   * ```
-   */
-  export function jump(this: Code): boolean {
+/**
+ * Check if opcode is a jump (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const isJumpOp = jump.call(Code.JUMP); // true
+ * ```
+ */
+export function jump(this: Code): boolean {
     return isJump(this);
-  }
+}
 
-  // ==========================================================================
-  // PUSH Operations
-  // ==========================================================================
+// ============================================================================
+// PUSH Operations
+// ============================================================================
 
-  /**
-   * Get number of bytes pushed by PUSH instruction (standard form)
-   *
-   * @param opcode - Opcode to query
-   * @returns Number of bytes (0-32), or undefined if not a PUSH
-   *
-   * @example
-   * ```typescript
-   * Opcode.getPushBytes(Opcode.Code.PUSH1); // 1
-   * Opcode.getPushBytes(Opcode.Code.PUSH32); // 32
-   * Opcode.getPushBytes(Opcode.Code.PUSH0); // 0
-   * Opcode.getPushBytes(Opcode.Code.ADD); // undefined
-   * ```
-   */
-  export function getPushBytes(opcode: Code): number | undefined {
+/**
+ * Get number of bytes pushed by PUSH instruction (standard form)
+ *
+ * @param opcode - Opcode to query
+ * @returns Number of bytes (0-32), or undefined if not a PUSH
+ *
+ * @example
+ * ```typescript
+ * getPushBytes(Code.PUSH1); // 1
+ * getPushBytes(Code.PUSH32); // 32
+ * getPushBytes(Code.PUSH0); // 0
+ * getPushBytes(Code.ADD); // undefined
+ * ```
+ */
+export function getPushBytes(opcode: Code): number | undefined {
     if (opcode === Code.PUSH0) return 0;
     if (opcode >= Code.PUSH1 && opcode <= Code.PUSH32) {
-      return opcode - Code.PUSH1 + 1;
+        return opcode - Code.PUSH1 + 1;
     }
     return undefined;
-  }
+}
 
-  /**
-   * Get number of bytes pushed by PUSH instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const bytes = Opcode.pushBytes.call(Opcode.Code.PUSH1); // 1
-   * ```
-   */
-  export function pushBytes(this: Code): number | undefined {
+/**
+ * Get number of bytes pushed by PUSH instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const bytes = pushBytes.call(Code.PUSH1); // 1
+ * ```
+ */
+export function pushBytes(this: Code): number | undefined {
     return getPushBytes(this);
-  }
+}
 
-  /**
-   * Get PUSH opcode for given byte count (standard form)
-   *
-   * @param bytes - Number of bytes (0-32)
-   * @returns PUSH opcode for that size
-   *
-   * @example
-   * ```typescript
-   * Opcode.getPushOpcode(1); // Opcode.Code.PUSH1
-   * Opcode.getPushOpcode(32); // Opcode.Code.PUSH32
-   * Opcode.getPushOpcode(0); // Opcode.Code.PUSH0
-   * ```
-   */
-  export function getPushOpcode(bytes: number): Code {
+/**
+ * Get PUSH opcode for given byte count (standard form)
+ *
+ * @param bytes - Number of bytes (0-32)
+ * @returns PUSH opcode for that size
+ *
+ * @example
+ * ```typescript
+ * getPushOpcode(1); // Code.PUSH1
+ * getPushOpcode(32); // Code.PUSH32
+ * getPushOpcode(0); // Code.PUSH0
+ * ```
+ */
+export function getPushOpcode(bytes: number): Code {
     if (bytes === 0) return Code.PUSH0;
     if (bytes < 1 || bytes > 32) {
-      throw new Error(`Invalid PUSH size: ${bytes} (must be 0-32)`);
+        throw new Error(`Invalid PUSH size: ${bytes} (must be 0-32)`);
     }
     return (Code.PUSH1 + bytes - 1) as Code;
-  }
+}
 
-  /**
-   * Get PUSH opcode for given byte count (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const pushOp = Opcode.pushOpcode.call(1); // Opcode.Code.PUSH1
-   * ```
-   */
-  export function pushOpcode(this: number): Code {
+/**
+ * Get PUSH opcode for given byte count (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const pushOp = pushOpcode.call(1); // Code.PUSH1
+ * ```
+ */
+export function pushOpcode(this: number): Code {
     return getPushOpcode(this);
-  }
+}
 
-  // ==========================================================================
-  // DUP/SWAP Operations
-  // ==========================================================================
+// ============================================================================
+// DUP/SWAP Operations
+// ============================================================================
 
-  /**
-   * Get position for DUP instruction (standard form)
-   *
-   * @param opcode - Opcode to query
-   * @returns Stack position (1-16), or undefined if not a DUP
-   *
-   * @example
-   * ```typescript
-   * Opcode.getDupPosition(Opcode.Code.DUP1); // 1
-   * Opcode.getDupPosition(Opcode.Code.DUP16); // 16
-   * Opcode.getDupPosition(Opcode.Code.ADD); // undefined
-   * ```
-   */
-  export function getDupPosition(opcode: Code): number | undefined {
+/**
+ * Get position for DUP instruction (standard form)
+ *
+ * @param opcode - Opcode to query
+ * @returns Stack position (1-16), or undefined if not a DUP
+ *
+ * @example
+ * ```typescript
+ * getDupPosition(Code.DUP1); // 1
+ * getDupPosition(Code.DUP16); // 16
+ * getDupPosition(Code.ADD); // undefined
+ * ```
+ */
+export function getDupPosition(opcode: Code): number | undefined {
     if (isDup(opcode)) {
-      return opcode - Code.DUP1 + 1;
+        return opcode - Code.DUP1 + 1;
     }
     return undefined;
-  }
+}
 
-  /**
-   * Get position for DUP instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const pos = Opcode.dupPosition.call(Opcode.Code.DUP1); // 1
-   * ```
-   */
-  export function dupPosition(this: Code): number | undefined {
+/**
+ * Get position for DUP instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const pos = dupPosition.call(Code.DUP1); // 1
+ * ```
+ */
+export function dupPosition(this: Code): number | undefined {
     return getDupPosition(this);
-  }
+}
 
-  /**
-   * Get position for SWAP instruction (standard form)
-   *
-   * @param opcode - Opcode to query
-   * @returns Stack position (1-16), or undefined if not a SWAP
-   *
-   * @example
-   * ```typescript
-   * Opcode.getSwapPosition(Opcode.Code.SWAP1); // 1
-   * Opcode.getSwapPosition(Opcode.Code.SWAP16); // 16
-   * Opcode.getSwapPosition(Opcode.Code.ADD); // undefined
-   * ```
-   */
-  export function getSwapPosition(opcode: Code): number | undefined {
+/**
+ * Get position for SWAP instruction (standard form)
+ *
+ * @param opcode - Opcode to query
+ * @returns Stack position (1-16), or undefined if not a SWAP
+ *
+ * @example
+ * ```typescript
+ * getSwapPosition(Code.SWAP1); // 1
+ * getSwapPosition(Code.SWAP16); // 16
+ * getSwapPosition(Code.ADD); // undefined
+ * ```
+ */
+export function getSwapPosition(opcode: Code): number | undefined {
     if (isSwap(opcode)) {
-      return opcode - Code.SWAP1 + 1;
+        return opcode - Code.SWAP1 + 1;
     }
     return undefined;
-  }
+}
 
-  /**
-   * Get position for SWAP instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const pos = Opcode.swapPosition.call(Opcode.Code.SWAP1); // 1
-   * ```
-   */
-  export function swapPosition(this: Code): number | undefined {
+/**
+ * Get position for SWAP instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const pos = swapPosition.call(Code.SWAP1); // 1
+ * ```
+ */
+export function swapPosition(this: Code): number | undefined {
     return getSwapPosition(this);
-  }
+}
 
-  /**
-   * Get number of topics for LOG instruction (standard form)
-   *
-   * @param opcode - Opcode to query
-   * @returns Number of topics (0-4), or undefined if not a LOG
-   *
-   * @example
-   * ```typescript
-   * Opcode.getLogTopics(Opcode.Code.LOG0); // 0
-   * Opcode.getLogTopics(Opcode.Code.LOG4); // 4
-   * Opcode.getLogTopics(Opcode.Code.ADD); // undefined
-   * ```
-   */
-  export function getLogTopics(opcode: Code): number | undefined {
+/**
+ * Get number of topics for LOG instruction (standard form)
+ *
+ * @param opcode - Opcode to query
+ * @returns Number of topics (0-4), or undefined if not a LOG
+ *
+ * @example
+ * ```typescript
+ * getLogTopics(Code.LOG0); // 0
+ * getLogTopics(Code.LOG4); // 4
+ * getLogTopics(Code.ADD); // undefined
+ * ```
+ */
+export function getLogTopics(opcode: Code): number | undefined {
     if (isLog(opcode)) {
-      return opcode - Code.LOG0;
+        return opcode - Code.LOG0;
     }
     return undefined;
-  }
+}
 
-  /**
-   * Get number of topics for LOG instruction (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const topics = Opcode.logTopics.call(Opcode.Code.LOG1); // 1
-   * ```
-   */
-  export function logTopics(this: Code): number | undefined {
+/**
+ * Get number of topics for LOG instruction (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const topics = logTopics.call(Code.LOG1); // 1
+ * ```
+ */
+export function logTopics(this: Code): number | undefined {
     return getLogTopics(this);
-  }
+}
 
-  // ==========================================================================
-  // Bytecode Parsing
-  // ==========================================================================
+// ============================================================================
+// Bytecode Parsing
+// ============================================================================
 
-  /**
-   * Parse bytecode into instructions (standard form)
-   *
-   * @param bytecode - Raw bytecode bytes
-   * @returns Array of parsed instructions
-   *
-   * @example
-   * ```typescript
-   * const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
-   * const instructions = Opcode.parseBytecode(bytecode);
-   * // [
-   * //   { offset: 0, opcode: PUSH1, immediate: [0x01] },
-   * //   { offset: 2, opcode: PUSH1, immediate: [0x02] },
-   * //   { offset: 4, opcode: ADD }
-   * // ]
-   * ```
-   */
-  export function parseBytecode(bytecode: Uint8Array): Instruction[] {
+/**
+ * Parse bytecode into instructions (standard form)
+ *
+ * @param bytecode - Raw bytecode bytes
+ * @returns Array of parsed instructions
+ *
+ * @example
+ * ```typescript
+ * const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
+ * const instructions = parseBytecode(bytecode);
+ * // [
+ * //   { offset: 0, opcode: PUSH1, immediate: [0x01] },
+ * //   { offset: 2, opcode: PUSH1, immediate: [0x02] },
+ * //   { offset: 4, opcode: ADD }
+ * // ]
+ * ```
+ */
+export function parseBytecode(bytecode: Uint8Array): Instruction[] {
     const instructions: Instruction[] = [];
     let offset = 0;
 
     while (offset < bytecode.length) {
-      const opcode = bytecode[offset] as Code;
-      const pushBytes = getPushBytes(opcode);
+        const opcode = bytecode[offset] as Code;
+        const pushBytesCount = getPushBytes(opcode);
 
-      if (pushBytes !== undefined && pushBytes > 0) {
-        const immediateEnd = Math.min(offset + 1 + pushBytes, bytecode.length);
-        const immediate = bytecode.slice(offset + 1, immediateEnd);
-        instructions.push({ offset, opcode, immediate });
-        offset = immediateEnd;
-      } else {
-        instructions.push({ offset, opcode });
-        offset++;
-      }
+        if (pushBytesCount !== undefined && pushBytesCount > 0) {
+            const immediateEnd = Math.min(offset + 1 + pushBytesCount, bytecode.length);
+            const immediate = bytecode.slice(offset + 1, immediateEnd);
+            instructions.push({ offset, opcode, immediate });
+            offset = immediateEnd;
+        } else {
+            instructions.push({ offset, opcode });
+            offset++;
+        }
     }
 
     return instructions;
-  }
+}
 
-  /**
-   * Parse bytecode into instructions (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
-   * const instructions = Opcode.parse.call(bytecode);
-   * ```
-   */
-  export function parse(this: Uint8Array): Instruction[] {
+/**
+ * Parse bytecode into instructions (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
+ * const instructions = parse.call(bytecode);
+ * ```
+ */
+export function parse(this: Uint8Array): Instruction[] {
     return parseBytecode(this);
-  }
+}
 
-  /**
-   * Format instruction to human-readable string (standard form)
-   *
-   * @param instruction - Instruction to format
-   * @returns Human-readable string
-   *
-   * @example
-   * ```typescript
-   * const inst: Opcode.Instruction = {
-   *   offset: 0,
-   *   opcode: Opcode.Code.PUSH1,
-   *   immediate: new Uint8Array([0x42])
-   * };
-   * Opcode.formatInstruction(inst); // "0x0000: PUSH1 0x42"
-   * ```
-   */
-  export function formatInstruction(instruction: Instruction): string {
+/**
+ * Format instruction to human-readable string (standard form)
+ *
+ * @param instruction - Instruction to format
+ * @returns Human-readable string
+ *
+ * @example
+ * ```typescript
+ * const inst: Instruction = {
+ *   offset: 0,
+ *   opcode: Code.PUSH1,
+ *   immediate: new Uint8Array([0x42])
+ * };
+ * formatInstruction(inst); // "0x0000: PUSH1 0x42"
+ * ```
+ */
+export function formatInstruction(instruction: Instruction): string {
     const offsetHex = instruction.offset.toString(16).padStart(4, "0");
-    const name = getName(instruction.opcode);
+    const nameStr = getName(instruction.opcode);
 
     if (instruction.immediate && instruction.immediate.length > 0) {
-      const hex = Array.from(instruction.immediate)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      return `0x${offsetHex}: ${name} 0x${hex}`;
+        const hex = Array.from(instruction.immediate)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+        return `0x${offsetHex}: ${nameStr} 0x${hex}`;
     }
 
-    return `0x${offsetHex}: ${name}`;
-  }
+    return `0x${offsetHex}: ${nameStr}`;
+}
 
-  /**
-   * Format instruction to human-readable string (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const formatted = Opcode.format.call(instruction);
-   * ```
-   */
-  export function format(this: Instruction): string {
+/**
+ * Format instruction to human-readable string (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const formatted = format.call(instruction);
+ * ```
+ */
+export function format(this: Instruction): string {
     return formatInstruction(this);
-  }
+}
 
-  /**
-   * Disassemble bytecode to human-readable strings (standard form)
-   *
-   * @param bytecode - Raw bytecode bytes
-   * @returns Array of formatted instruction strings
-   *
-   * @example
-   * ```typescript
-   * const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
-   * const asm = Opcode.disassemble(bytecode);
-   * // [
-   * //   "0x0000: PUSH1 0x01",
-   * //   "0x0002: PUSH1 0x02",
-   * //   "0x0004: ADD"
-   * // ]
-   * ```
-   */
-  export function disassemble(bytecode: Uint8Array): string[] {
+/**
+ * Disassemble bytecode to human-readable strings (standard form)
+ *
+ * @param bytecode - Raw bytecode bytes
+ * @returns Array of formatted instruction strings
+ *
+ * @example
+ * ```typescript
+ * const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
+ * const asm = disassemble(bytecode);
+ * // [
+ * //   "0x0000: PUSH1 0x01",
+ * //   "0x0002: PUSH1 0x02",
+ * //   "0x0004: ADD"
+ * // ]
+ * ```
+ */
+export function disassemble(bytecode: Uint8Array): string[] {
     const instructions = parseBytecode(bytecode);
     return instructions.map((inst) => formatInstruction(inst));
-  }
+}
 
-  // ==========================================================================
-  // Jump Destination Analysis
-  // ==========================================================================
+// ============================================================================
+// Jump Destination Analysis
+// ============================================================================
 
-  /**
-   * Find all valid JUMPDEST locations (standard form)
-   *
-   * @param bytecode - Raw bytecode bytes
-   * @returns Set of valid jump destinations (byte offsets)
-   *
-   * @example
-   * ```typescript
-   * const bytecode = new Uint8Array([0x5b, 0x60, 0x01, 0x5b]);
-   * const dests = Opcode.findJumpDests(bytecode); // Set { 0, 3 }
-   * ```
-   */
-  export function findJumpDests(bytecode: Uint8Array): Set<number> {
+/**
+ * Find all valid JUMPDEST locations (standard form)
+ *
+ * @param bytecode - Raw bytecode bytes
+ * @returns Set of valid jump destinations (byte offsets)
+ *
+ * @example
+ * ```typescript
+ * const bytecode = new Uint8Array([0x5b, 0x60, 0x01, 0x5b]);
+ * const dests = findJumpDests(bytecode); // Set { 0, 3 }
+ * ```
+ */
+export function findJumpDests(bytecode: Uint8Array): Set<number> {
     const dests = new Set<number>();
     const instructions = parseBytecode(bytecode);
 
     for (const inst of instructions) {
-      if (inst.opcode === Code.JUMPDEST) {
-        dests.add(inst.offset);
-      }
+        if (inst.opcode === Code.JUMPDEST) {
+            dests.add(inst.offset);
+        }
     }
 
     return dests;
-  }
-
-  /**
-   * Find all valid JUMPDEST locations (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const dests = Opcode.jumpDests.call(bytecode);
-   * ```
-   */
-  export function jumpDests(this: Uint8Array): Set<number> {
-    return findJumpDests(this);
-  }
-
-  /**
-   * Check if offset is a valid jump destination (standard form)
-   *
-   * @param bytecode - Raw bytecode bytes
-   * @param offset - Byte offset to check
-   * @returns True if offset is a JUMPDEST and not inside immediate data
-   *
-   * @example
-   * ```typescript
-   * const bytecode = new Uint8Array([0x5b, 0x60, 0x01]);
-   * Opcode.isValidJumpDest(bytecode, 0); // true (JUMPDEST)
-   * Opcode.isValidJumpDest(bytecode, 2); // false (immediate data)
-   * ```
-   */
-  export function isValidJumpDest(bytecode: Uint8Array, offset: number): boolean {
-    const dests = findJumpDests(bytecode);
-    return dests.has(offset);
-  }
-
-  /**
-   * Check if offset is a valid jump destination (convenience form with this:)
-   *
-   * @example
-   * ```typescript
-   * const valid = Opcode.validJumpDest.call(bytecode, offset);
-   * ```
-   */
-  export function validJumpDest(this: Uint8Array, offset: number): boolean {
-    return isValidJumpDest(this, offset);
-  }
 }
 
 /**
- * Opcode type alias for the namespace
+ * Find all valid JUMPDEST locations (convenience form with this:)
  *
- * Uses TypeScript declaration merging - Opcode is both a namespace and a type.
+ * @example
+ * ```typescript
+ * const dests = jumpDests.call(bytecode);
+ * ```
  */
-export type Opcode = Opcode.Code;
+export function jumpDests(this: Uint8Array): Set<number> {
+    return findJumpDests(this);
+}
 
-// Re-export namespace as default
-export default Opcode;
+/**
+ * Check if offset is a valid jump destination (standard form)
+ *
+ * @param bytecode - Raw bytecode bytes
+ * @param offset - Byte offset to check
+ * @returns True if offset is a JUMPDEST and not inside immediate data
+ *
+ * @example
+ * ```typescript
+ * const bytecode = new Uint8Array([0x5b, 0x60, 0x01]);
+ * isValidJumpDest(bytecode, 0); // true (JUMPDEST)
+ * isValidJumpDest(bytecode, 2); // false (immediate data)
+ * ```
+ */
+export function isValidJumpDest(bytecode: Uint8Array, offset: number): boolean {
+    const dests = findJumpDests(bytecode);
+    return dests.has(offset);
+}
+
+/**
+ * Check if offset is a valid jump destination (convenience form with this:)
+ *
+ * @example
+ * ```typescript
+ * const valid = validJumpDest.call(bytecode, offset);
+ * ```
+ */
+export function validJumpDest(this: Uint8Array, offset: number): boolean {
+    return isValidJumpDest(this, offset);
+}
+
+// ============================================================================
+// Branded Types
+// ============================================================================
+
+/**
+ * Opcode type alias
+ */
+export type Opcode = Code;

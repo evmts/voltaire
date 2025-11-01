@@ -4,9 +4,9 @@
  * Measures performance of access list operations
  */
 
-import { AccessList } from "./AccessList/index.js";
-import type { Address } from "./Address/index.js";
-import type { Hash } from "./Hash/index.js";
+import * as AccessList from "./AccessList.js";
+import type { Address } from "../Address/index.js";
+import type { Hash } from "../Hash/index.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -80,7 +80,7 @@ const key2 = createStorageKey(20);
 const key3 = createStorageKey(30);
 
 // Small list
-const smallList: AccessList = [
+const smallList: AccessList.Type =[
   { address: addr1, storageKeys: [key1] },
   { address: addr2, storageKeys: [key2, key3] },
 ];
@@ -104,7 +104,7 @@ for (let i = 0; i < 100; i++) {
 }
 
 // List with duplicates
-const duplicateList: AccessList = [
+const duplicateList: AccessList.Type =[
   { address: addr1, storageKeys: [key1] },
   { address: addr2, storageKeys: [key2] },
   { address: addr1, storageKeys: [key2, key3] },
@@ -157,10 +157,10 @@ console.log(
 
 console.log("\n--- Has Savings Check ---");
 results.push(
-  benchmark("hasSavings - small list", () => AccessList.hasSavings.call(smallList)),
+  benchmark("hasSavings - small list", () => AccessList.hasSavings_.call(smallList)),
 );
 results.push(
-  benchmark("hasSavings - medium list", () => AccessList.hasSavings.call(mediumList)),
+  benchmark("hasSavings - medium list", () => AccessList.hasSavings_.call(mediumList)),
 );
 
 console.log(

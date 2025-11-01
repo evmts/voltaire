@@ -4,7 +4,7 @@
  * Measures performance of gas cost calculations
  */
 
-import { Gas } from "./GasConstants/index.js";
+import * as Gas from "./index.js";
 
 // ============================================================================
 // Benchmark Runner

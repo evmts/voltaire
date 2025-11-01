@@ -4,7 +4,7 @@
  * Measures performance of opcode operations
  */
 
-import { Opcode } from "./Opcode/index.js";
+import * as Opcode from "./Opcode.js";
 
 // Benchmark runner
 interface BenchmarkResult {

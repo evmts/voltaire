@@ -2,13 +2,13 @@
  * EVM Precompile implementations
  */
 
-import { Hardfork } from "../primitives/hardfork.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 import { Secp256k1 } from "../crypto/secp256k1.js";
 import { Keccak256 } from "../crypto/keccak256.js";
 import { Sha256 } from "../crypto/sha256.js";
 import { Ripemd160 } from "../crypto/ripemd160.js";
 import { Bn254 } from "../crypto/bn254.js";
-import { Gas } from "../primitives/GasConstants.js";
+import * as Gas from "../primitives/GasConstants/index.js";
 import { Kzg } from "../crypto/kzg.js";
 import type { Hash } from "../primitives/hash.js";
 

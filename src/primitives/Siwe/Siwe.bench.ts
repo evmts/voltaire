@@ -4,8 +4,7 @@
  * Measures performance of Sign-In with Ethereum operations
  */
 
-import { Siwe } from "./Siwe/index.js";
-import type { Address } from "./Address/index.js";
+import * as Siwe from "./Siwe.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -56,10 +55,10 @@ function benchmark(name: string, fn: () => void, duration = 2000): BenchmarkResu
 // Test Data
 // ============================================================================
 
-function createTestAddress(seed: number): Address {
+function createTestAddress(seed: number): Siwe.Address {
   const addr = new Uint8Array(20);
   addr.fill(seed);
-  return addr as Address;
+  return addr as Siwe.Address;
 }
 
 const testAddress = createTestAddress(1);
@@ -473,7 +472,7 @@ const addresses = [
   createTestAddress(0),
   createTestAddress(42),
   createTestAddress(255),
-  new Uint8Array(20).fill(0xff) as Address,
+  new Uint8Array(20).fill(0xff) as Siwe.Address,
 ];
 
 for (const addr of addresses) {

@@ -4,7 +4,7 @@
  * Measures performance of hardfork comparison, parsing, and utility operations
  */
 
-import { Hardfork } from "./Hardfork/index.js";
+import * as Hardfork from "./Hardfork.js";
 
 // ============================================================================
 // Benchmark Runner

@@ -4,7 +4,7 @@
  * Measures performance of EIP-1559 and EIP-4844 fee calculations
  */
 
-import { FeeMarket } from "./FeeMarket/index.js";
+import * as FeeMarket from "./index.js";
 
 // Benchmark runner
 interface BenchmarkResult {

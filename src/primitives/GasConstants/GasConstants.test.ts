@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Gas } from "./GasConstants/index.js";
+import * as Gas from "./index.js";
 import {
   isWasmGasAvailable,
   getGasImplementationStatus,

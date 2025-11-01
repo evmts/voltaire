@@ -44,8 +44,7 @@
  */
 
 // Re-export everything from pure TypeScript implementation
-export * from "./Hardfork/index.js";
-export { Hardfork } from "./Hardfork/index.js";
+export * from "./Hardfork.js";
 
 // ============================================================================
 // Implementation Status

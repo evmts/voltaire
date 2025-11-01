@@ -41,8 +41,7 @@
  */
 
 // Re-export everything from pure TypeScript implementation
-export * from "./FeeMarket/index.js";
-export { FeeMarket } from "./FeeMarket/index.js";
+export * from "./FeeMarket.js";
 
 // ============================================================================
 // Implementation Status
