@@ -4,7 +4,8 @@
  * Measures performance of transaction operations
  */
 
-import { Transaction } from "../Transaction/index.js";
+import * as Transaction from "../Transaction/index.js";
+import type { Legacy, EIP2930, EIP1559, EIP4844, EIP7702 } from "../Transaction/types.js";
 import type { Address } from "../Address/index.js";
 import type { Hash } from "../Hash/index.js";
 
@@ -85,7 +86,7 @@ const testSignature = {
   s: createBytes(32, 2),
 };
 
-const legacyTx: Transaction.Legacy = {
+const legacyTx: Legacy = {
   type: Transaction.Type.Legacy,
   nonce: 0n,
   gasPrice: 20000000000n,
@@ -98,12 +99,12 @@ const legacyTx: Transaction.Legacy = {
   s: testSignature.s,
 };
 
-const eip155Tx: Transaction.Legacy = {
+const eip155Tx: Legacy = {
   ...legacyTx,
   v: 37n, // Chain ID 1
 };
 
-const eip2930Tx: Transaction.EIP2930 = {
+const eip2930Tx: EIP2930 = {
   type: Transaction.Type.EIP2930,
   chainId: 1n,
   nonce: 0n,
@@ -120,7 +121,7 @@ const eip2930Tx: Transaction.EIP2930 = {
   s: testSignature.s,
 };
 
-const eip1559Tx: Transaction.EIP1559 = {
+const eip1559Tx: EIP1559 = {
   type: Transaction.Type.EIP1559,
   chainId: 1n,
   nonce: 0n,
@@ -138,7 +139,7 @@ const eip1559Tx: Transaction.EIP1559 = {
   s: testSignature.s,
 };
 
-const eip4844Tx: Transaction.EIP4844 = {
+const eip4844Tx: EIP4844 = {
   type: Transaction.Type.EIP4844,
   chainId: 1n,
   nonce: 0n,
@@ -156,7 +157,7 @@ const eip4844Tx: Transaction.EIP4844 = {
   s: testSignature.s,
 };
 
-const eip7702Tx: Transaction.EIP7702 = {
+const eip7702Tx: EIP7702 = {
   type: Transaction.Type.EIP7702,
   chainId: 1n,
   nonce: 0n,
@@ -499,7 +500,7 @@ console.log("===================================================================
 console.log("--- Transaction Object Creation ---");
 results.push(
   benchmark("Create Legacy Transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -516,7 +517,7 @@ results.push(
 );
 results.push(
   benchmark("Create EIP-1559 Transaction", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -536,7 +537,7 @@ results.push(
 );
 results.push(
   benchmark("Create EIP-4844 Transaction", () => {
-    const tx: Transaction.EIP4844 = {
+    const tx: EIP4844 = {
       type: Transaction.Type.EIP4844,
       chainId: 1n,
       nonce: 0n,

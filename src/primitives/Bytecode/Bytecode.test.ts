@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Bytecode } from "./Bytecode/index.js";
+import * as Bytecode from "./Bytecode.js";
 
 // ============================================================================
 // Opcode Utility Tests

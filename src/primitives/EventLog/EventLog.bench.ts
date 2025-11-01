@@ -4,9 +4,9 @@
  * Measures performance of event log operations
  */
 
-import { EventLog } from "./EventLog/index.js";
-import type { Address } from "./Address/index.js";
-import type { Hash } from "./Hash/index.js";
+import * as EventLog from "./EventLog.js";
+import type { Address } from "../Address/index.js";
+import type { Hash } from "../Hash/index.js";
 
 // ============================================================================
 // Benchmark Infrastructure
@@ -201,7 +201,7 @@ results.push(
 );
 results.push(
   benchmark("matches (this:) - with wildcard", () =>
-    EventLog.matches.call(testLog, [topic0, null, topic2]),
+    EventLog.matches(testLog, [topic0, null, topic2]),
   ),
 );
 
@@ -246,7 +246,7 @@ results.push(
 );
 results.push(
   benchmark("matchesAddr (this:) - single", () =>
-    EventLog.matchesAddr.call(testLog, addr1),
+    EventLog.matchesAddr(testLog, addr1),
   ),
 );
 
@@ -310,7 +310,7 @@ results.push(
 );
 results.push(
   benchmark("matchesAll (this:) - complete", () =>
-    EventLog.matchesAll.call(testLog, {
+    EventLog.matchesAll(testLog, {
       address: addr1,
       topics: [topic0, null, topic2],
       fromBlock: 50n,

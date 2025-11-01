@@ -5,15 +5,15 @@
 
 import * as loader from "../../wasm-loader/loader.js";
 import type { Address } from "../Address/index.js";
-import type { Hash } from "./Hash/index.js";
-import type { Authorization } from "../Authorization/index.js";
+import type { Hash } from "../Hash/index.js";
+import type { Item } from "./Authorization.js";
 
 /**
  * Validate authorization structure
  * @param auth - Authorization to validate
  * @throws Error if authorization is invalid
  */
-export function validateWasm(auth: Authorization.Item): void {
+export function validateWasm(auth: Item): void {
 	loader.authorizationValidate({
 		chainId: auth.chainId,
 		address: auth.address,
@@ -44,7 +44,7 @@ export function signingHashWasm(
  * @param auth - Authorization to recover from
  * @returns Recovered authority address
  */
-export function authorityWasm(auth: Authorization.Item): Address {
+export function authorityWasm(auth: Item): Address {
 	return loader.authorizationAuthority({
 		chainId: auth.chainId,
 		address: auth.address,

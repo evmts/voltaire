@@ -25,7 +25,7 @@
  * ```
  */
 
-import * as Sha256 from "../crypto/sha256.js";
+import { Sha256 } from "../../crypto/sha256.js";
 
 // ============================================================================
 // Constants

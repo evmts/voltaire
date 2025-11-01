@@ -57,8 +57,8 @@
  */
 
 // Re-export everything from pure TypeScript implementation
-export * from "./Opcode/index.js";
-export { Opcode } from "./Opcode/index.js";
+export * from "./Opcode.js";
+export type { Opcode } from "./Opcode.js";
 
 // ============================================================================
 // Implementation Status

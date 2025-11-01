@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { Blob } from "./Blob/index.js";
+import * as Blob from "./Blob.js";
 
 // ============================================================================
 // Type Guard Tests

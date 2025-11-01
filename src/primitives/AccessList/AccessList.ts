@@ -613,3 +613,4 @@ function hashEquals(a: Hash, b: Hash): boolean {
  * Branded type for access list.
  */
 export type Type = readonly Item[];
+export type { Type as AccessList };

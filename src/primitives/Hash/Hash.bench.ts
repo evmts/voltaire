@@ -5,7 +5,7 @@
  * conversion, comparison, validation, hashing, and utilities
  */
 
-import { Hash } from "./Hash/index.js";
+import * as Hash from "./Hash.js";
 
 // Benchmark runner
 interface BenchmarkResult {

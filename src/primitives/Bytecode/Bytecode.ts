@@ -20,8 +20,8 @@
  * ```
  */
 
-import * as Keccak256 from "../../crypto/keccak256.js";
-import type { Hash } from "./Hash/index.js";
+import { Keccak256 } from "../../crypto/keccak256.js";
+import type { Hash } from "../Hash/index.js";
 
 // ==========================================================================
 // Core Types
@@ -521,7 +521,7 @@ export function isEqual(this: Uint8Array, other: Uint8Array): boolean {
  * ```
  */
 export function hash(code: Uint8Array): Hash {
-  return Keccak256.hash(code);
+  return Keccak256.hash(code) as Hash;
 }
 
 /**

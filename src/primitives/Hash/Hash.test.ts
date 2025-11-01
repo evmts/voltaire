@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Hash } from "./Hash/index.js"
+import * as Hash from "./Hash.js";
 
 describe("Hash", () => {
 	describe("fromHex", () => {

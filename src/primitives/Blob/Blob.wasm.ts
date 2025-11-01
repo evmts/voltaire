@@ -4,8 +4,7 @@
  */
 
 // Re-export pure TypeScript implementation
-export * from "./Blob/index.js";
-export { Blob } from "./Blob/index.js";
+export * from "./Blob.js";
 
 import * as loader from "../../wasm-loader/loader.js";
 

@@ -18,9 +18,7 @@
  * ```
  */
 
-import { MAX_DEPTH } from "./constants.js";
-import { Error } from "./errors.js";
-import { encodeLengthValue, decodeLengthValue } from "./utils.js";
+// Core types defined below
 
 // ============================================================================
 // Core Types
@@ -28,34 +26,38 @@ import { encodeLengthValue, decodeLengthValue } from "./utils.js";
 
 /**
  * RLP data type - discriminated union of bytes or list
+ * Note: Recursive type causes TS4081 warning but is properly exported
  */
-export type Data =
+export type RlpDataType =
 	| { type: "bytes"; value: Uint8Array }
-	| { type: "list"; value: Data[] };
+	| { type: "list"; value: RlpDataType[] };
 
 /**
  * Decoded RLP data with remainder (for stream decoding)
  */
 export type Decoded = {
-	data: Data;
+	data: RlpDataType;
 	remainder: Uint8Array;
 };
 
 /**
  * Types that can be encoded to RLP
  * - Uint8Array (bytes)
- * - Data (already structured)
+ * - RlpDataType (already structured)
  * - Array of Encodable (list)
  */
-export type Encodable = Uint8Array | Data | Encodable[];
+export type Encodable = Uint8Array | RlpDataType | Encodable[];
 
 /**
  * RLP Data type alias for convenient importing
  */
-export type Rlp = Data;
+export type Rlp = RlpDataType;
+
+// Main export
+export type Data = RlpDataType;
 
 // Legacy type exports
-export type RlpData = Data;
+export type RlpData = RlpDataType;
 export type RlpDecoded = Decoded;
 export type RlpEncodable = Encodable;
 

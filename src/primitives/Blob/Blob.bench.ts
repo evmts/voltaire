@@ -4,7 +4,7 @@
  * Measures performance of blob encoding, validation, and utility functions
  */
 
-import { Blob } from "./Blob/index.js";
+import * as Blob from "./Blob.js";
 
 // Benchmark runner
 interface BenchmarkResult {

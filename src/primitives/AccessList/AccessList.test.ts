@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import type { AccessList as AccessListType } from "./AccessList.js";
 import * as AccessList from "./AccessList.js";
 import type { Address } from "../Address/index.js";
 import type { Hash } from "../Hash/index.js";
@@ -446,24 +447,24 @@ describe("AccessList.merge", () => {
   });
 
   it("merges two lists", () => {
-    const list1: AccessList = [{ address: addr1, storageKeys: [key1] }];
-    const list2: AccessList = [{ address: addr2, storageKeys: [key2] }];
+    const list1: AccessListType = [{ address: addr1, storageKeys: [key1] }];
+    const list2: AccessListType = [{ address: addr2, storageKeys: [key2] }];
     const result = AccessList.merge(list1, list2);
     expect(result.length).toBe(2);
   });
 
   it("deduplicates merged lists", () => {
-    const list1: AccessList = [{ address: addr1, storageKeys: [key1] }];
-    const list2: AccessList = [{ address: addr1, storageKeys: [key2] }];
+    const list1: AccessListType = [{ address: addr1, storageKeys: [key1] }];
+    const list2: AccessListType = [{ address: addr1, storageKeys: [key2] }];
     const result = AccessList.merge(list1, list2);
     expect(result.length).toBe(1);
     expect(result[0]!.storageKeys.length).toBe(2);
   });
 
   it("merges multiple lists", () => {
-    const list1: AccessList = [{ address: addr1, storageKeys: [key1] }];
-    const list2: AccessList = [{ address: addr2, storageKeys: [key2] }];
-    const list3: AccessList = [{ address: addr3, storageKeys: [key3] }];
+    const list1: AccessListType = [{ address: addr1, storageKeys: [key1] }];
+    const list2: AccessListType = [{ address: addr2, storageKeys: [key2] }];
+    const list3: AccessListType = [{ address: addr3, storageKeys: [key3] }];
     const result = AccessList.merge(list1, list2, list3);
     expect(result.length).toBe(3);
   });
@@ -650,7 +651,7 @@ describe("AccessList edge cases", () => {
   });
 
   it("maintains immutability through transformations", () => {
-    const original: AccessList = [{ address: addr1, storageKeys: [key1] }];
+    const original: AccessListType = [{ address: addr1, storageKeys: [key1] }];
     const modified = AccessList.withStorageKey.call(original, addr1, key2);
 
     expect(original[0]!.storageKeys.length).toBe(1);

@@ -4,15 +4,16 @@
 
 import { describe, it, expect } from "vitest";
 import * as Siwe from "./Siwe.js";
+import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // Test Utilities
 // ============================================================================
 
-function createTestAddress(seed: number): Siwe.Address {
+function createTestAddress(seed: number): Address {
   const addr = new Uint8Array(20);
   addr.fill(seed);
-  return addr as Siwe.Address;
+  return addr as Address;
 }
 
 function createBasicMessage(): Siwe.Message {

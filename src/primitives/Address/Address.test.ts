@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import type { Address as AddressType } from './index.js';
 import * as Address from './index.js';
 import type { Hex } from '../Hex/index.js';
 
@@ -177,37 +178,37 @@ describe('Address', () => {
   // Conversion Operations - toChecksumHex
   // ==========================================================================
 
-  describe('toChecksumHex', () => {
+  describe('toChecksummed', () => {
     it('produces EIP-55 checksummed address', () => {
       const addr = Address.fromHex('0x742d35cc6634c0532925a3b844bc9e7595f251e3');
-      const checksummed = Address.toChecksumHex.call(addr);
+      const checksummed = Address.toChecksummed.call(addr);
       // Verified against ethers.js v6.15.0 and EIP-55 spec
       expect(checksummed).toBe('0x742d35Cc6634c0532925a3b844bc9e7595F251E3');
     });
 
-    it('returns branded ChecksumHex type', () => {
+    it('returns branded Checksummed type', () => {
       const addr = Address.fromHex('0x742d35cc6634c0532925a3b844bc9e7595f251e3');
-      const checksummed: Address.ChecksumHex = Address.toChecksumHex.call(addr);
+      const checksummed: Address.Checksummed.Checksummed = Address.toChecksummed.call(addr);
       expect(checksummed.startsWith('0x')).toBe(true);
     });
 
     it('handles all lowercase address', () => {
       const addr = Address.fromHex('0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed');
-      const checksummed = Address.toChecksumHex.call(addr);
+      const checksummed = Address.toChecksummed.call(addr);
       // Verified against ethers.js v6.15.0 and EIP-55 spec
       expect(checksummed).toBe('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed');
     });
 
     it('handles zero address', () => {
       const addr = Address.zero();
-      const checksummed = Address.toChecksumHex.call(addr);
+      const checksummed = Address.toChecksummed.call(addr);
       expect(checksummed).toBe('0x0000000000000000000000000000000000000000');
     });
 
     it('is deterministic', () => {
       const addr = Address.fromHex('0x742d35cc6634c0532925a3b844bc9e7595f251e3');
-      const checksummed1 = Address.toChecksumHex.call(addr);
-      const checksummed2 = Address.toChecksumHex.call(addr);
+      const checksummed1 = Address.toChecksummed.call(addr);
+      const checksummed2 = Address.toChecksummed.call(addr);
       expect(checksummed1).toBe(checksummed2);
     });
   });
@@ -467,7 +468,7 @@ describe('Address', () => {
 
     it('produces different addresses for sequential nonces', () => {
       const deployer = Address.fromHex('0x742d35Cc6634C0532925a3b8D39c0E6cfC8C74E4');
-      const addresses: Address[] = [];
+      const addresses: AddressType[] = [];
 
       for (let i = 0n; i < 10n; i++) {
         const addr = Address.calculateCreateAddress.call(deployer, i);

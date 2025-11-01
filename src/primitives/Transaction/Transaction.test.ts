@@ -3,7 +3,8 @@
  */
 
 import { describe, it, expect, expectTypeOf } from "vitest";
-import { Transaction } from "../Transaction/index.js";
+import * as Transaction from "../Transaction/index.js";
+import type { Legacy, EIP2930, EIP1559, EIP4844, EIP7702, Any, Authorization } from "../Transaction/types.js";
 import type { Address } from "../Address/index.js";
 import type { Hash } from "../Hash/index.js";
 
@@ -55,7 +56,7 @@ describe("Transaction.Type", () => {
 // ============================================================================
 
 describe("Transaction type guards", () => {
-  const legacyTx: Transaction.Legacy = {
+  const legacyTx: Legacy = {
     type: Transaction.Type.Legacy,
     nonce: 0n,
     gasPrice: 20000000000n,
@@ -68,7 +69,7 @@ describe("Transaction type guards", () => {
     s: testSignature.s,
   };
 
-  const eip2930Tx: Transaction.EIP2930 = {
+  const eip2930Tx: EIP2930 = {
     type: Transaction.Type.EIP2930,
     chainId: 1n,
     nonce: 0n,
@@ -83,7 +84,7 @@ describe("Transaction type guards", () => {
     s: testSignature.s,
   };
 
-  const eip1559Tx: Transaction.EIP1559 = {
+  const eip1559Tx: EIP1559 = {
     type: Transaction.Type.EIP1559,
     chainId: 1n,
     nonce: 0n,
@@ -99,7 +100,7 @@ describe("Transaction type guards", () => {
     s: testSignature.s,
   };
 
-  const eip4844Tx: Transaction.EIP4844 = {
+  const eip4844Tx: EIP4844 = {
     type: Transaction.Type.EIP4844,
     chainId: 1n,
     nonce: 0n,
@@ -117,7 +118,7 @@ describe("Transaction type guards", () => {
     s: testSignature.s,
   };
 
-  const eip7702Tx: Transaction.EIP7702 = {
+  const eip7702Tx: EIP7702 = {
     type: Transaction.Type.EIP7702,
     chainId: 1n,
     nonce: 0n,
@@ -206,7 +207,7 @@ describe("Transaction type guards", () => {
 
 describe("Transaction creation", () => {
   it("creates valid legacy transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 5n,
       gasPrice: 25000000000n,
@@ -225,7 +226,7 @@ describe("Transaction creation", () => {
   });
 
   it("creates contract creation transaction (to: null)", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -242,7 +243,7 @@ describe("Transaction creation", () => {
   });
 
   it("creates valid EIP-1559 transaction", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -264,7 +265,7 @@ describe("Transaction creation", () => {
   });
 
   it("creates valid EIP-4844 blob transaction", () => {
-    const tx: Transaction.EIP4844 = {
+    const tx: EIP4844 = {
       type: Transaction.Type.EIP4844,
       chainId: 1n,
       nonce: 0n,
@@ -287,7 +288,7 @@ describe("Transaction creation", () => {
   });
 
   it("creates valid EIP-7702 transaction with authorization", () => {
-    const authorization: Transaction.Authorization = {
+    const authorization: Authorization = {
       chainId: 1n,
       address: testAddress,
       nonce: 0n,
@@ -296,7 +297,7 @@ describe("Transaction creation", () => {
       s: testSignature.s,
     };
 
-    const tx: Transaction.EIP7702 = {
+    const tx: EIP7702 = {
       type: Transaction.Type.EIP7702,
       chainId: 1n,
       nonce: 0n,
@@ -322,8 +323,8 @@ describe("Transaction creation", () => {
 // Legacy Transaction Tests
 // ============================================================================
 
-describe("Transaction.Legacy", () => {
-  const legacyTx: Transaction.Legacy = {
+describe("Legacy", () => {
+  const legacyTx: Legacy = {
     type: Transaction.Type.Legacy,
     nonce: 0n,
     gasPrice: 20000000000n,
@@ -354,7 +355,7 @@ describe("Transaction.Legacy", () => {
 
   describe("getChainId", () => {
     it("extracts chain ID from EIP-155 v value", () => {
-      const tx: Transaction.Legacy = {
+      const tx: Legacy = {
         ...legacyTx,
         v: 37n, // chainId = (37 - 35) / 2 = 1
       };
@@ -362,7 +363,7 @@ describe("Transaction.Legacy", () => {
     });
 
     it("extracts chain ID for different networks", () => {
-      const tx: Transaction.Legacy = {
+      const tx: Legacy = {
         ...legacyTx,
         v: 41n, // chainId = (41 - 35) / 2 = 3
       };
@@ -370,7 +371,7 @@ describe("Transaction.Legacy", () => {
     });
 
     it("returns null for pre-EIP-155 v value (27)", () => {
-      const tx: Transaction.Legacy = {
+      const tx: Legacy = {
         ...legacyTx,
         v: 27n,
       };
@@ -378,7 +379,7 @@ describe("Transaction.Legacy", () => {
     });
 
     it("returns null for pre-EIP-155 v value (28)", () => {
-      const tx: Transaction.Legacy = {
+      const tx: Legacy = {
         ...legacyTx,
         v: 28n,
       };
@@ -386,7 +387,7 @@ describe("Transaction.Legacy", () => {
     });
 
     it("handles large chain IDs", () => {
-      const tx: Transaction.Legacy = {
+      const tx: Legacy = {
         ...legacyTx,
         v: 999999999999n, // Large chain ID
       };
@@ -407,8 +408,8 @@ describe("Transaction.Legacy", () => {
 // EIP-1559 Transaction Tests
 // ============================================================================
 
-describe("Transaction.EIP1559", () => {
-  const eip1559Tx: Transaction.EIP1559 = {
+describe("EIP1559", () => {
+  const eip1559Tx: EIP1559 = {
     type: Transaction.Type.EIP1559,
     chainId: 1n,
     nonce: 0n,
@@ -445,7 +446,7 @@ describe("Transaction.EIP1559", () => {
     });
 
     it("caps priority fee when maxFee is low", () => {
-      const tx: Transaction.EIP1559 = {
+      const tx: EIP1559 = {
         ...eip1559Tx,
         maxPriorityFeePerGas: 5000000000n,
         maxFeePerGas: 12000000000n,
@@ -463,7 +464,7 @@ describe("Transaction.EIP1559", () => {
     });
 
     it("handles maxFee equal to baseFee", () => {
-      const tx: Transaction.EIP1559 = {
+      const tx: EIP1559 = {
         ...eip1559Tx,
         maxFeePerGas: 10000000000n,
       };
@@ -478,8 +479,8 @@ describe("Transaction.EIP1559", () => {
 // EIP-4844 Transaction Tests
 // ============================================================================
 
-describe("Transaction.EIP4844", () => {
-  const eip4844Tx: Transaction.EIP4844 = {
+describe("EIP4844", () => {
+  const eip4844Tx: EIP4844 = {
     type: Transaction.Type.EIP4844,
     chainId: 1n,
     nonce: 0n,
@@ -506,7 +507,7 @@ describe("Transaction.EIP4844", () => {
     });
 
     it("calculates cost for multiple blobs", () => {
-      const tx: Transaction.EIP4844 = {
+      const tx: EIP4844 = {
         ...eip4844Tx,
         blobVersionedHashes: [testHash, createHash(20), createHash(30)],
       };
@@ -577,7 +578,7 @@ describe("Transaction.detectType", () => {
 });
 
 describe("Transaction.serialize", () => {
-  const legacyTx: Transaction.Legacy = {
+  const legacyTx: Legacy = {
     type: Transaction.Type.Legacy,
     nonce: 0n,
     gasPrice: 20000000000n,
@@ -595,7 +596,7 @@ describe("Transaction.serialize", () => {
   });
 
   it("throws not implemented for EIP-1559", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -616,7 +617,7 @@ describe("Transaction.serialize", () => {
 
 describe("Transaction.hash", () => {
   it("throws not implemented", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -634,7 +635,7 @@ describe("Transaction.hash", () => {
 
 describe("Transaction.getSigningHash", () => {
   it("throws not implemented", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -663,7 +664,7 @@ describe("Transaction.deserialize", () => {
 
 describe("Transaction.format", () => {
   it("formats legacy transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 5n,
       gasPrice: 20000000000n,
@@ -682,7 +683,7 @@ describe("Transaction.format", () => {
   });
 
   it("formats EIP-1559 transaction", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 10n,
@@ -704,7 +705,7 @@ describe("Transaction.format", () => {
   });
 
   it("formats contract creation", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -723,7 +724,7 @@ describe("Transaction.format", () => {
 
 describe("Transaction.getGasPrice", () => {
   it("returns gasPrice for legacy transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 25000000000n,
@@ -739,7 +740,7 @@ describe("Transaction.getGasPrice", () => {
   });
 
   it("returns gasPrice for EIP-2930 transaction", () => {
-    const tx: Transaction.EIP2930 = {
+    const tx: EIP2930 = {
       type: Transaction.Type.EIP2930,
       chainId: 1n,
       nonce: 0n,
@@ -757,7 +758,7 @@ describe("Transaction.getGasPrice", () => {
   });
 
   it("calculates effective gas price for EIP-1559", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -777,7 +778,7 @@ describe("Transaction.getGasPrice", () => {
   });
 
   it("throws when baseFee missing for EIP-1559", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -798,7 +799,7 @@ describe("Transaction.getGasPrice", () => {
 
 describe("Transaction.hasAccessList", () => {
   it("returns false for legacy transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -814,7 +815,7 @@ describe("Transaction.hasAccessList", () => {
   });
 
   it("returns true for EIP-2930 transaction", () => {
-    const tx: Transaction.EIP2930 = {
+    const tx: EIP2930 = {
       type: Transaction.Type.EIP2930,
       chainId: 1n,
       nonce: 0n,
@@ -832,7 +833,7 @@ describe("Transaction.hasAccessList", () => {
   });
 
   it("returns true for EIP-1559 transaction", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -853,7 +854,7 @@ describe("Transaction.hasAccessList", () => {
 
 describe("Transaction.getAccessList", () => {
   it("returns empty array for legacy transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -872,7 +873,7 @@ describe("Transaction.getAccessList", () => {
     const accessList: Transaction.AccessList = [
       { address: testAddress, storageKeys: [testHash] },
     ];
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -893,7 +894,7 @@ describe("Transaction.getAccessList", () => {
 
 describe("Transaction.getChainId", () => {
   it("extracts chain ID from legacy transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -909,7 +910,7 @@ describe("Transaction.getChainId", () => {
   });
 
   it("returns null for pre-EIP-155 legacy transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -925,7 +926,7 @@ describe("Transaction.getChainId", () => {
   });
 
   it("returns chain ID for EIP-1559 transaction", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 137n,
       nonce: 0n,
@@ -946,7 +947,7 @@ describe("Transaction.getChainId", () => {
 
 describe("Transaction.isSigned", () => {
   it("returns true for transaction with signature", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -962,7 +963,7 @@ describe("Transaction.isSigned", () => {
   });
 
   it("returns false for transaction with zero r", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -978,7 +979,7 @@ describe("Transaction.isSigned", () => {
   });
 
   it("returns false for transaction with zero s", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -996,7 +997,7 @@ describe("Transaction.isSigned", () => {
 
 describe("Transaction.assertSigned", () => {
   it("does not throw for signed transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -1012,7 +1013,7 @@ describe("Transaction.assertSigned", () => {
   });
 
   it("throws for unsigned transaction", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -1035,7 +1036,7 @@ describe("Transaction.assertSigned", () => {
 describe("Transaction edge cases", () => {
   it("handles max uint256 values", () => {
     const maxUint256 = 2n ** 256n - 1n;
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: maxUint256,
       gasPrice: maxUint256,
@@ -1052,7 +1053,7 @@ describe("Transaction edge cases", () => {
   });
 
   it("handles empty data field", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -1070,7 +1071,7 @@ describe("Transaction edge cases", () => {
   it("handles large data field", () => {
     const largeData = new Uint8Array(10000);
     largeData.fill(0xff);
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -1086,7 +1087,7 @@ describe("Transaction edge cases", () => {
   });
 
   it("handles empty access list", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -1108,7 +1109,7 @@ describe("Transaction edge cases", () => {
     const hashes: Transaction.VersionedHash[] = Array.from({ length: 6 }, (_, i) =>
       createHash(i),
     );
-    const tx: Transaction.EIP4844 = {
+    const tx: EIP4844 = {
       type: Transaction.Type.EIP4844,
       chainId: 1n,
       nonce: 0n,
@@ -1131,7 +1132,7 @@ describe("Transaction edge cases", () => {
   });
 
   it("handles zero value transfers", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -1153,7 +1154,7 @@ describe("Transaction edge cases", () => {
 
 describe("Transaction type inference", () => {
   it("infers Legacy type correctly", () => {
-    const tx: Transaction.Legacy = {
+    const tx: Legacy = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -1166,12 +1167,12 @@ describe("Transaction type inference", () => {
       s: testSignature.s,
     };
 
-    expectTypeOf(tx).toMatchTypeOf<Transaction.Legacy>();
+    expectTypeOf(tx).toMatchTypeOf<Legacy>();
     expectTypeOf(tx.gasPrice).toEqualTypeOf<bigint>();
   });
 
   it("infers EIP1559 type correctly", () => {
-    const tx: Transaction.EIP1559 = {
+    const tx: EIP1559 = {
       type: Transaction.Type.EIP1559,
       chainId: 1n,
       nonce: 0n,
@@ -1187,13 +1188,13 @@ describe("Transaction type inference", () => {
       s: testSignature.s,
     };
 
-    expectTypeOf(tx).toMatchTypeOf<Transaction.EIP1559>();
+    expectTypeOf(tx).toMatchTypeOf<EIP1559>();
     expectTypeOf(tx.maxPriorityFeePerGas).toEqualTypeOf<bigint>();
     expectTypeOf(tx.maxFeePerGas).toEqualTypeOf<bigint>();
   });
 
   it("infers union type correctly", () => {
-    const tx: Transaction.Any = {
+    const tx: Any = {
       type: Transaction.Type.Legacy,
       nonce: 0n,
       gasPrice: 20000000000n,
@@ -1206,11 +1207,6 @@ describe("Transaction type inference", () => {
       s: testSignature.s,
     };
 
-    expectTypeOf(tx).toMatchTypeOf<Transaction.Any>();
-
-    if (Transaction.isEIP1559(tx)) {
-    // @ts-expect-error - Testing type inference
-      expectTypeOf(tx).toEqualTypeOf<Transaction.EIP1559>();
-    }
+    expectTypeOf(tx).toMatchTypeOf<Any>();
   });
 });

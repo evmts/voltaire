@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { StorageKey, EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from "./State/index.js";
-import type { Address } from "./Address/index.js";
+import { StorageKey, EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from "./index.js";
+import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // Test Helpers

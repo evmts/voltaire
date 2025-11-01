@@ -7,8 +7,8 @@
  * @module State
  */
 
-import type { Address } from "./Address/index.js";
-import type { Hash } from "./Hash/index.js";
+import type { Address } from "../Address/index.js";
+import type { Hash } from "../Hash/index.js";
 
 /**
  * Hash of empty EVM bytecode (Keccak256 of empty bytes).

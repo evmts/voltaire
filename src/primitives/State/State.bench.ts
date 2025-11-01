@@ -4,8 +4,8 @@
  * Measures performance of StorageKey operations and state constants
  */
 
-import { StorageKey, EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from "./State/index.js";
-import type { Address } from "./Address/index.js";
+import { StorageKey, EMPTY_CODE_HASH, EMPTY_TRIE_ROOT } from "./index.js";
+import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // Benchmark Runner

@@ -4,7 +4,8 @@
  * Measures performance of hex operations
  */
 
-import { Hex } from "./Hex/index.js";
+import type { Hex as HexType } from "./Hex.js";
+import * as Hex from "./Hex.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -56,11 +57,11 @@ function benchmark(name: string, fn: () => void, duration = 2000): BenchmarkResu
 // ============================================================================
 
 // Small data (4 bytes)
-const smallHex: Hex = "0x12345678";
+const smallHex: HexType = "0x12345678" as HexType;
 const smallBytes = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
 
 // Medium data (32 bytes)
-const mediumHex: Hex = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const mediumHex: HexType = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" as HexType;
 const mediumBytes = new Uint8Array(32);
 for (let i = 0; i < 32; i++) mediumBytes[i] = i;
 
@@ -69,7 +70,7 @@ let largeHexStr = "0x";
 for (let i = 0; i < 256; i++) {
   largeHexStr += (i % 256).toString(16).padStart(2, "0");
 }
-const largeHex: Hex = largeHexStr as Hex;
+const largeHex: HexType = largeHexStr as HexType;
 const largeBytes = new Uint8Array(256);
 for (let i = 0; i < 256; i++) largeBytes[i] = i % 256;
 
@@ -249,7 +250,7 @@ console.log(
 
 console.log("\n--- To Number ---");
 const hexFromNum = Hex.fromNumber(0x123456);
-results.push(benchmark("toNumber - small", () => Hex.toNumber.call("0xff" as Hex)));
+results.push(benchmark("toNumber - small", () => Hex.toNumber.call("0xff" as HexType)));
 results.push(benchmark("toNumber - medium", () => Hex.toNumber.call(hexFromNum)));
 results.push(benchmark("toNumber - large", () => Hex.toNumber.call(smallHex)));
 
@@ -293,7 +294,7 @@ console.log(
 );
 
 console.log("\n--- To BigInt ---");
-results.push(benchmark("toBigInt - small", () => Hex.toBigInt.call("0xff" as Hex)));
+results.push(benchmark("toBigInt - small", () => Hex.toBigInt.call("0xff" as HexType)));
 results.push(benchmark("toBigInt - medium", () => Hex.toBigInt.call(mediumHex)));
 results.push(benchmark("toBigInt - large", () => Hex.toBigInt.call(largeHex)));
 
@@ -367,10 +368,10 @@ console.log(
 );
 
 console.log("\n--- To Boolean ---");
-results.push(benchmark("toBoolean - true (0x01)", () => Hex.toBoolean.call("0x01" as Hex)));
-results.push(benchmark("toBoolean - false (0x00)", () => Hex.toBoolean.call("0x00" as Hex)));
+results.push(benchmark("toBoolean - true (0x01)", () => Hex.toBoolean.call("0x01" as HexType)));
+results.push(benchmark("toBoolean - false (0x00)", () => Hex.toBoolean.call("0x00" as HexType)));
 results.push(
-  benchmark("toBoolean - true (non-zero)", () => Hex.toBoolean.call("0xff" as Hex)),
+  benchmark("toBoolean - true (non-zero)", () => Hex.toBoolean.call("0xff" as HexType)),
 );
 
 console.log(
@@ -536,9 +537,9 @@ console.log("===================================================================
 console.log("HEX COMPARISON BENCHMARKS");
 console.log("================================================================================\n");
 
-const hexUpper: Hex = "0xABCDEF" as Hex;
-const hexLower: Hex = "0xabcdef" as Hex;
-const hexDifferent: Hex = "0x123456" as Hex;
+const hexUpper: HexType = "0xABCDEF" as HexType;
+const hexLower: HexType = "0xabcdef" as HexType;
+const hexDifferent: HexType = "0x123456" as HexType;
 
 console.log("--- Equality ---");
 results.push(benchmark("equals - same (exact)", () => Hex.equals.call(smallHex, smallHex)));
@@ -568,8 +569,8 @@ console.log("===================================================================
 console.log("HEX BITWISE OPERATION BENCHMARKS");
 console.log("================================================================================\n");
 
-const xorA: Hex = "0x12345678" as Hex;
-const xorB: Hex = "0xabcdef01" as Hex;
+const xorA: HexType = "0x12345678" as HexType;
+const xorB: HexType = "0xabcdef01" as HexType;
 const xorMediumA = mediumHex;
 const xorMediumB = Hex.random(32);
 

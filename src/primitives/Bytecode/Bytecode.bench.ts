@@ -4,7 +4,7 @@
  * Measures performance of bytecode analysis and manipulation operations
  */
 
-import { Bytecode } from "./Bytecode/index.js";
+import * as Bytecode from "./Bytecode.js";
 
 // ============================================================================
 // Benchmark Runner

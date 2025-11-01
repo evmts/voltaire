@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { EventLog } from "./EventLog/index.js";
-import type { Address } from "./Address/index.js";
-import type { Hash } from "./Hash/index.js";
+import * as EventLog from "./EventLog.js";
+import type { Address } from "../Address/index.js";
+import type { Hash } from "../Hash/index.js";
 
 // ============================================================================
 // Test Data
@@ -252,7 +252,7 @@ describe("EventLog.matches", () => {
       data: new Uint8Array([]),
     });
 
-    expect(EventLog.matches.call(log, [topic0, null, topic2])).toBe(true);
+    expect(EventLog.matches(log, [topic0, null, topic2])).toBe(true);
   });
 });
 
@@ -306,8 +306,8 @@ describe("EventLog.matchesAddr", () => {
       data: new Uint8Array([]),
     });
 
-    expect(EventLog.matchesAddr.call(log, addr1)).toBe(true);
-    expect(EventLog.matchesAddr.call(log, [addr1, addr2])).toBe(true);
+    expect(EventLog.matchesAddr(log, addr1)).toBe(true);
+    expect(EventLog.matchesAddr(log, [addr1, addr2])).toBe(true);
   });
 });
 
@@ -463,7 +463,7 @@ describe("EventLog.matchesAll", () => {
     });
 
     expect(
-      EventLog.matchesAll.call(log, {
+      EventLog.matchesAll(log, {
         address: addr1,
         topics: [topic0],
         fromBlock: 50n,

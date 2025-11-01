@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Rlp } from "./Rlp/index.js";
+import * as Rlp from "./index.js";
 
 // ============================================================================
 // Type Guard Tests
@@ -521,7 +521,7 @@ describe("Rlp.Data namespace", () => {
 
   it("encode encodes Data", () => {
     const data: Rlp.Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
-    const encoded = Rlp.Data.encode.call(data);
+    const encoded = Rlp.Data.encodeData.call(data);
     expect(encoded).toEqual(new Uint8Array([0x83, 1, 2, 3]));
   });
 
@@ -905,7 +905,7 @@ describe("Rlp.Error types", () => {
     } catch (err) {
       expect(err).toBeInstanceOf(Rlp.Error);
       if (err instanceof Rlp.Error) {
-        expect(err.type).toBe("InputTooShort");
+        expect((err as Rlp.Error).type).toBe("InputTooShort");
       }
     }
   });

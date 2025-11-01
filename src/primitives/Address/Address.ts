@@ -40,7 +40,6 @@ import { fromBytes } from "./fromBytes.js";
 import { fromNumber } from "./fromNumber.js";
 import { fromPublicKey } from "./fromPublicKey.js";
 import { fromAbiEncoded } from "./fromAbiEncoded.js";
-import { toHex } from "./toHex.js";
 import { toChecksummed } from "./toChecksummed.js";
 import { toLowercase } from "./toLowercase.js";
 import { toUppercase } from "./toUppercase.js";
@@ -111,16 +110,16 @@ export const AddressClass = function AddressClass(
 // Address Type
 // ============================================================================
 if (!("toBase64" in Uint8Array.prototype)) {
-  AddressClass.prototype.toBase64 = Uint8Array.prototype.toBase64;
+  AddressClass.prototype.toBase64 = (Uint8Array.prototype as any).toBase64;
 }
 if (!("setFromBase64" in Uint8Array.prototype)) {
-  AddressClass.prototype.setFromBase64 = Uint8Array.prototype.setFromBase64;
+  AddressClass.prototype.setFromBase64 = (Uint8Array.prototype as any).setFromBase64;
 }
 if (!("toHex" in Uint8Array.prototype)) {
-  AddressClass.prototype.toHex = Uint8Array.prototype.toHex;
+  AddressClass.prototype.toHex = (Uint8Array.prototype as any).toHex;
 }
 if (!("setFromHex" in Uint8Array.prototype)) {
-  AddressClass.prototype.setFromHex = Uint8Array.prototype.setFromHex;
+  AddressClass.prototype.setFromHex = (Uint8Array.prototype as any).setFromHex;
 }
 
 AddressClass.prototype.toChecksummed = toChecksummed;
@@ -139,12 +138,12 @@ AddressClass.prototype.calculateCreateAddress = calculateCreateAddress;
 AddressClass.prototype.calculateCreate2Address = calculateCreate2Address;
 
 if (!("fromBase64" in Uint8Array)) {
-  AddressClass.fromBase64 = Uint8Array.fromBase64;
+  AddressClass.fromBase64 = (Uint8Array as any).fromBase64;
 }
 if (!("fromHex" in Uint8Array)) {
-  AddressClass.fromHex = Uint8Array.fromHex as typeof Uint8Array.fromHex & typeof fromHex;
+  AddressClass.fromHex = fromHex as any;
 } else {
-  AddressClass.fromHex = fromHex;
+  AddressClass.fromHex = fromHex as any;
 }
 
 AddressClass.from = from;

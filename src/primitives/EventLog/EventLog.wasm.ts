@@ -4,12 +4,11 @@
  */
 
 // Re-export pure TypeScript implementation
-export * from "./EventLog/index.js";
-export { EventLog } from "./EventLog/index.js";
+export * from "./EventLog.js";
 
 import * as loader from "../../wasm-loader/loader.js";
-import { Hash } from "./Hash/index.js";
-import type { Address } from "./Address/index.js";
+import type { Hash as HashType } from "../Hash/index.js";
+import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // WASM-Accelerated Functions
@@ -52,12 +51,12 @@ export function matchesAddressWasm(
  * ```
  */
 export function matchesTopicWasm(
-	logTopic: Hash,
-	filterTopic: Hash | null,
+	logTopic: HashType,
+	filterTopic: HashType | null,
 ): boolean {
 	return loader.eventLogMatchesTopic(
-		Hash.toBytes.call(logTopic),
-		filterTopic ? Hash.toBytes.call(filterTopic) : null,
+		logTopic as Uint8Array,
+		filterTopic ? (filterTopic as Uint8Array) : null,
 	);
 }
 
@@ -76,12 +75,12 @@ export function matchesTopicWasm(
  * ```
  */
 export function matchesTopicsWasm(
-	logTopics: Hash[],
-	filterTopics: (Hash | null)[],
+	logTopics: HashType[],
+	filterTopics: (HashType | null)[],
 ): boolean {
 	return loader.eventLogMatchesTopics(
-		logTopics.map((t) => Hash.toBytes.call(t)),
-		filterTopics.map((t) => (t ? Hash.toBytes.call(t) : null)),
+		logTopics.map((t) => t as Uint8Array),
+		filterTopics.map((t) => (t ? (t as Uint8Array) : null)),
 	);
 }
 
@@ -124,9 +123,9 @@ export function filterByAddressWasm<T extends { address: Address }>(
  * ]);
  * ```
  */
-export function filterByTopicsWasm<T extends { topics: Hash[] }>(
+export function filterByTopicsWasm<T extends { topics: HashType[] }>(
 	logs: T[],
-	filterTopics: (Hash | null)[],
+	filterTopics: (HashType | null)[],
 ): T[] {
 	return logs.filter((log) => matchesTopicsWasm(log.topics, filterTopics));
 }
@@ -147,10 +146,10 @@ export function filterByTopicsWasm<T extends { topics: Hash[] }>(
  * );
  * ```
  */
-export function filterLogsWasm<T extends { address: Address; topics: Hash[] }>(
+export function filterLogsWasm<T extends { address: Address; topics: HashType[] }>(
 	logs: T[],
 	filterAddresses: Address[],
-	filterTopics: (Hash | null)[],
+	filterTopics: (HashType | null)[],
 ): T[] {
 	return logs.filter(
 		(log) =>

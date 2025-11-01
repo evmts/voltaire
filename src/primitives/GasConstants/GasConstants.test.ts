@@ -7,7 +7,7 @@ import * as Gas from "./index.js";
 import {
   isWasmGasAvailable,
   getGasImplementationStatus,
-} from "./gas-constants.wasm.js";
+} from "./GasConstants.wasm.js";
 
 // ============================================================================
 // Basic Opcode Constants

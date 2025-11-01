@@ -4,7 +4,7 @@
  * Measures performance of RLP operations
  */
 
-import { Rlp } from "./Rlp/index.js";
+import * as Rlp from "./index.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -397,7 +397,7 @@ results.push(
   ])),
 );
 results.push(
-  benchmark("Data.encode", () => Rlp.Data.encode.call(data1)),
+  benchmark("Data.encodeData", () => Rlp.Data.encodeData.call(data1)),
 );
 results.push(
   benchmark("Data.toBytes", () => Rlp.Data.toBytes.call(data1)),

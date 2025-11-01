@@ -43,8 +43,7 @@
  */
 
 // Re-export everything from pure TypeScript implementation
-export * from "./GasConstants/index.js";
-export { Gas } from "./GasConstants/index.js";
+export * from "./GasConstants.js";
 
 // ============================================================================
 // Implementation Status
