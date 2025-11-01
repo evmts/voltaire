@@ -1,40 +1,17 @@
-/**
- * ABI (Application Binary Interface) Module
- *
- * Complete ABI encoding/decoding with type inference.
- * All types namespaced under Abi for intuitive access.
- *
- * @example
- * ```typescript
- * import { Abi } from '@tevm/voltaire';
- *
- * // Types
- * const func: Abi.Function = { type: 'function', name: 'transfer', ... };
- * const event: Abi.Event = { type: 'event', name: 'Transfer', ... };
- *
- * // Operations
- * const selector = Abi.Function.getSelector(func);
- * const topics = Abi.Event.encodeTopics(event, values);
- * ```
- */
+export type { AbiType } from './Type.js';
+export type { Parameter, ParametersToPrimitiveTypes, ParametersToObject } from './Parameter.js';
+export type { Function as FunctionType, StateMutability } from './function/index.js';
+export type { Event as EventType } from './event/index.js';
+export type { Error as ErrorType } from './error/index.js';
+export type { Constructor as ConstructorType } from './constructor/index.js';
+export type { Fallback, Receive } from './Item.js';
 
-// Export all types directly (these become Abi.Function, Abi.Event, etc.)
-export * from './types.js';
+export * from './Errors.js';
+export * from './Encoding.js';
 
-// Export all error classes
-export * from './errors.js';
-
-// Export encoding/decoding utilities
-export * from './encoding.js';
-
-// Export utility functions
-export * from './utils.js';
-
-// Export namespaced operations (Abi.Function.*, Abi.Event.*, etc.)
-export * as Function from './function.js';
-export * as Event from './event.js';
-export * as Error from './error.js';
-export * as Constructor from './constructor.js';
-
-// Export WASM variants as namespace to avoid conflicts
-export * as Wasm from './wasm.js';
+export * as Item from './Item.js';
+export * as Function from './function/index.js';
+export * as Event from './event/index.js';
+export * as Error from './error/index.js';
+export * as Constructor from './constructor/index.js';
+export * as Wasm from './wasm/index.js';
