@@ -4,8 +4,8 @@
  * Measures performance of EIP-7702 authorization operations
  */
 
-import { Authorization } from "./Authorization/index.js";
-import { Address } from "./Address/index.js";
+import { Authorization } from "../Authorization/index.js";
+import { Address } from "../Address/index.js";
 
 // Benchmark runner
 interface BenchmarkResult {

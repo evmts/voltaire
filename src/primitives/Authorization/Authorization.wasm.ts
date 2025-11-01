@@ -3,10 +3,10 @@
  * Provides lightweight bindings to Zig implementation via WASM
  */
 
-import * as loader from "../wasm-loader/loader.js";
-import type { Address } from "./Address/index.js";
+import * as loader from "../../wasm-loader/loader.js";
+import type { Address } from "../Address/index.js";
 import type { Hash } from "./Hash/index.js";
-import type { Authorization } from "./Authorization/index.js";
+import type { Authorization } from "../Authorization/index.js";
 
 /**
  * Validate authorization structure

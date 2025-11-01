@@ -1,10 +1,11 @@
 import type { Address } from "./Address.js";
+import * as Hex from "../Hex/index.js";
 import * as AddressModule from "./Address.js";
 
 /**
  * Uppercase address hex string
  */
-export type Uppercase = Address & { readonly __uppercase: true };
+export type Uppercase = Hex.Sized<20> & { readonly __tag: 'Hex'; readonly __variant: 'Address'; readonly __uppercase: true };
 
 /**
  * Create uppercase address hex string from Address

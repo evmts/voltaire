@@ -1,12 +1,12 @@
 import type { Address } from "./Address.js";
-import type { Hex } from "../Hex/index.js";
+import * as Hex from "../Hex/index.js";
 import * as Hash from "../Hash/index.js";
 import * as AddressModule from "./Address.js";
 
 /**
  * EIP-55 checksummed address
  */
-export type Checksummed = Address & { readonly __checksummed: true };
+export type Checksummed = Hex.Sized<20> & { readonly __tag: 'Hex'; readonly __variant: 'Address'; readonly __checksummed: true };
 
 /**
  * Create checksummed address from Address

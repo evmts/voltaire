@@ -4,7 +4,7 @@
  * Measures performance of all Uint256 operations
  */
 
-import { Uint } from "./Uint/index.js";
+import { Uint } from "../Uint/index.js";
 
 // Benchmark runner
 interface BenchmarkResult {

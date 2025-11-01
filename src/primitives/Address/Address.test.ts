@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Address } from './address.js';
-import type { Hex } from './hex.js';
+import * as Address from './index.js';
+import type { Hex } from '../Hex/index.js';
 
 describe('Address', () => {
   // ==========================================================================

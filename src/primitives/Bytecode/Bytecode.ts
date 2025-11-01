@@ -20,7 +20,7 @@
  * ```
  */
 
-import * as Keccak256 from "../crypto/keccak256.js";
+import * as Keccak256 from "../../crypto/keccak256.js";
 import type { Hash } from "./Hash/index.js";
 
 // ==========================================================================

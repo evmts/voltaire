@@ -1,10 +1,11 @@
 import type { Address } from "./Address.js";
+import * as Hex from "../Hex/index.js";
 import * as AddressModule from "./Address.js";
 
 /**
  * Lowercase address hex string
  */
-export type Lowercase = Address & { readonly __lowercase: true };
+export type Lowercase = Hex.Sized<20> & { readonly __tag: 'Hex'; readonly __variant: 'Address'; readonly __lowercase: true };
 
 /**
  * Create lowercase address hex string from Address

@@ -7,7 +7,7 @@
 export * from "./EventLog/index.js";
 export { EventLog } from "./EventLog/index.js";
 
-import * as loader from "../wasm-loader/loader.js";
+import * as loader from "../../wasm-loader/loader.js";
 import { Hash } from "./Hash/index.js";
 import type { Address } from "./Address/index.js";
 

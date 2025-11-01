@@ -7,7 +7,7 @@
 export * from "./Blob/index.js";
 export { Blob } from "./Blob/index.js";
 
-import * as loader from "../wasm-loader/loader.js";
+import * as loader from "../../wasm-loader/loader.js";
 
 // ============================================================================
 // WASM-Accelerated Functions

@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Authorization } from "./Authorization/index.js";
-import type { Address } from "./Address/index.js";
+import { Authorization } from "../Authorization/index.js";
+import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // Test Data Helpers

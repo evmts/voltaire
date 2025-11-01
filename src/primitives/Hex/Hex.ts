@@ -26,13 +26,14 @@
 /**
  * Hex string with 0x prefix (unsized)
  */
-export type Unsized = `0x${string}`;
+export type Unsized = `0x${string}` & { readonly __tag: 'Hex' };
 
 /**
  * Hex string with specific byte size
  * @example Hex.Sized<4> = '0x12345678' (4 bytes = 8 hex chars)
  */
 export type Sized<TSize extends number = number> = `0x${string}` & {
+	readonly __tag: 'Hex';
 	readonly size: TSize;
 };
 
