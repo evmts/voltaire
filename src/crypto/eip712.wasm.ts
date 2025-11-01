@@ -16,8 +16,8 @@
  * ```
  */
 
-import type { Address } from "../primitives/address.js";
-import { Hash } from "../primitives/hash.js";
+import type { Address } from "../primitives/Address/index.js";
+import type { Hash } from "../primitives/Hash/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 import {

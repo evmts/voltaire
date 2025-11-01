@@ -19,7 +19,7 @@
  * ```
  */
 
-import { Hash } from "../primitives/hash.js";
+import type { Hash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // WASM Interface

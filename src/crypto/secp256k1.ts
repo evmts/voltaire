@@ -25,7 +25,7 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import type { Hash } from "../primitives/hash.js";
+import type { Hash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // Error Types

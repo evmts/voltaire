@@ -10,7 +10,7 @@ import { Ripemd160 } from "../crypto/ripemd160.js";
 import { Bn254 } from "../crypto/bn254.js";
 import * as Gas from "../primitives/GasConstants/index.js";
 import { Kzg } from "../crypto/kzg.js";
-import type { Hash } from "../primitives/hash.js";
+import type { Hash } from "../primitives/Hash/index.js";
 
 export enum PrecompileAddress {
 	ECRECOVER = "0x0000000000000000000000000000000000000001",

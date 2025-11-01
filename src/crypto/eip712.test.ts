@@ -6,8 +6,10 @@
 
 import { describe, it, expect } from "vitest";
 import { Eip712 } from "./eip712.js";
-import { Address } from "../primitives/address.js";
-import { Hash } from "../primitives/hash.js";
+import * as Address from "../primitives/Address/index.js";
+import type { Hash } from "../primitives/Hash/index.js";
+import * as HashNamespace from "../primitives/Hash/index.js";
+const Hash = HashNamespace;
 
 describe("Eip712", () => {
   describe("Domain.hash", () => {

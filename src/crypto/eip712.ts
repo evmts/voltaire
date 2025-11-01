@@ -46,8 +46,8 @@
  * ```
  */
 
-import type { Address } from "../primitives/address.js";
-import { Hash } from "../primitives/hash.js";
+import type { Address } from "../primitives/Address/index.js";
+import type { Hash } from "../primitives/Hash/index.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
 

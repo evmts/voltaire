@@ -7,7 +7,7 @@
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import * as loader from "../wasm-loader/loader.js";
-import type { Hash } from "../primitives/hash.js";
+import type { Hash } from "../primitives/Hash/index.js";
 import {
   Secp256k1Error,
   InvalidSignatureError,

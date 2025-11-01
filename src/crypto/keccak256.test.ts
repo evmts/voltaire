@@ -12,7 +12,9 @@
 import { describe, expect, test, beforeAll } from "bun:test";
 import { Keccak256 } from "./keccak256.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
-import { Hash } from "../primitives/hash.js";
+import type { Hash } from "../primitives/Hash/index.js";
+import * as HashNamespace from "../primitives/Hash/index.js";
+const Hash = HashNamespace;
 
 // ============================================================================
 // Test Setup
