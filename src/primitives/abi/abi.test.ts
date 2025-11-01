@@ -32,7 +32,7 @@ describe("Abi.Function.getSignature", () => {
       outputs: [{ type: "bool", name: "" }],
     } as const satisfies AbiFunction;
 
-    expect(Abi.Function.getSignature(transferFunc)).toBe(
+    expect(Abi.Function.getSignature.call(transferFunc)).toBe(
       "transfer(address,uint256)",
     );
   });
@@ -46,7 +46,7 @@ describe("Abi.Function.getSignature", () => {
       outputs: [],
     } as const satisfies AbiFunction;
 
-    expect(Abi.Function.getSignature(func)).toBe("example()");
+    expect(Abi.Function.getSignature.call(func)).toBe("example()");
   });
 
   it("handles complex tuples", () => {
@@ -67,7 +67,7 @@ describe("Abi.Function.getSignature", () => {
       outputs: [],
     } as const satisfies AbiFunction;
 
-    expect(Abi.Function.getSignature(func)).toBe("swap(tuple)");
+    expect(Abi.Function.getSignature.call(func)).toBe("swap(tuple)");
   });
 });
 
@@ -83,7 +83,7 @@ describe("Abi.Event.getSignature", () => {
       ],
     } as const satisfies AbiEvent;
 
-    expect(Abi.Event.getSignature(event)).toBe(
+    expect(Abi.Event.getSignature.call(event)).toBe(
       "Transfer(address,address,uint256)",
     );
   });
@@ -100,7 +100,7 @@ describe("Abi.Error.getSignature", () => {
       ],
     } as const satisfies AbiError;
 
-    expect(Abi.Error.getSignature(error)).toBe(
+    expect(Abi.Error.getSignature.call(error)).toBe(
       "InsufficientBalance(uint256,uint256)",
     );
   });
@@ -123,7 +123,7 @@ describe("Abi.Function.getSelector", () => {
       outputs: [],
     } as const satisfies AbiFunction;
 
-    const selector = Abi.Function.getSelector(func);
+    const selector = Abi.Function.getSelector.call(func);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
     // transfer(address,uint256) = 0xa9059cbb
@@ -139,7 +139,7 @@ describe("Abi.Function.getSelector", () => {
       outputs: [],
     } as const satisfies AbiFunction;
 
-    const selector = Abi.Function.getSelector(func);
+    const selector = Abi.Function.getSelector.call(func);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
   });
@@ -157,7 +157,7 @@ describe("Abi.Event.getSelector", () => {
       ],
     } as const satisfies AbiEvent;
 
-    const selector = Abi.Event.getSelector(event);
+    const selector = Abi.Event.getSelector.call(event);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(32);
     // Transfer(address,address,uint256) = 0xddf252ad...
@@ -176,7 +176,7 @@ describe("Abi.Event.getSelector", () => {
       inputs: [],
     } as const satisfies AbiEvent;
 
-    const selector = Abi.Event.getSelector(event);
+    const selector = Abi.Event.getSelector.call(event);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(32);
   });
@@ -193,7 +193,7 @@ describe("Abi.Error.getSelector", () => {
       ],
     } as const satisfies AbiError;
 
-    const selector = Abi.Error.getSelector(error);
+    const selector = Abi.Error.getSelector.call(error);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
   });
@@ -205,66 +205,7 @@ describe("Abi.Error.getSelector", () => {
       inputs: [],
     } as const satisfies AbiError;
 
-    const selector = Abi.Error.getSelector(error);
-    expect(selector).toBeInstanceOf(Uint8Array);
-    expect(selector.length).toBe(4);
-  });
-});
-
-// ============================================================================
-// Utility Selector Tests
-// ============================================================================
-
-describe("Abi.getFunctionSelector", () => {
-  it("computes correct function selector from signature string", () => {
-    const selector = Abi.getFunctionSelector("transfer(address,uint256)");
-    expect(selector).toBeInstanceOf(Uint8Array);
-    expect(selector.length).toBe(4);
-    expect(Array.from(selector)).toEqual([0xa9, 0x05, 0x9c, 0xbb]);
-  });
-
-  it("handles function with no params", () => {
-    const selector = Abi.getFunctionSelector("example()");
-    expect(selector).toBeInstanceOf(Uint8Array);
-    expect(selector.length).toBe(4);
-  });
-
-  it("handles complex function signatures", () => {
-    const selector = Abi.getFunctionSelector("swap(address,uint256,bool)");
-    expect(selector).toBeInstanceOf(Uint8Array);
-    expect(selector.length).toBe(4);
-  });
-});
-
-describe("Abi.getEventSelector", () => {
-  it("computes correct event selector from signature string", () => {
-    const selector = Abi.getEventSelector("Transfer(address,address,uint256)");
-    expect(selector).toBeInstanceOf(Uint8Array);
-    expect(selector.length).toBe(32);
-    const hex = Array.from(selector)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    expect(hex).toBe(
-      "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-    );
-  });
-
-  it("handles event with no params", () => {
-    const selector = Abi.getEventSelector("Example()");
-    expect(selector).toBeInstanceOf(Uint8Array);
-    expect(selector.length).toBe(32);
-  });
-});
-
-describe("Abi.getErrorSelector", () => {
-  it("computes correct error selector from signature string", () => {
-    const selector = Abi.getErrorSelector("InsufficientBalance(uint256,uint256)");
-    expect(selector).toBeInstanceOf(Uint8Array);
-    expect(selector.length).toBe(4);
-  });
-
-  it("handles error with no params", () => {
-    const selector = Abi.getErrorSelector("CustomError()");
+    const selector = Abi.Error.getSelector.call(error);
     expect(selector).toBeInstanceOf(Uint8Array);
     expect(selector.length).toBe(4);
   });
@@ -274,7 +215,7 @@ describe("Abi.getErrorSelector", () => {
 // Formatting Tests
 // ============================================================================
 
-describe("Abi.formatAbiItem", () => {
+describe("Abi.Item.format", () => {
   it("formats function with inputs and outputs", () => {
     const func = {
       type: "function",
@@ -287,7 +228,7 @@ describe("Abi.formatAbiItem", () => {
       outputs: [{ type: "bool", name: "" }],
     } as const satisfies AbiFunction;
 
-    const formatted = Abi.formatAbiItem(func);
+    const formatted = Abi.Item.format.call(func);
     expect(formatted).toBe("function transfer(address to, uint256 amount) returns (bool)");
   });
 
@@ -300,7 +241,7 @@ describe("Abi.formatAbiItem", () => {
       outputs: [],
     } as const satisfies AbiFunction;
 
-    const formatted = Abi.formatAbiItem(func);
+    const formatted = Abi.Item.format.call(func);
     expect(formatted).toBe("function burn(uint256 amount)");
   });
 
@@ -313,7 +254,7 @@ describe("Abi.formatAbiItem", () => {
       outputs: [{ type: "uint256", name: "" }],
     } as const satisfies AbiFunction;
 
-    const formatted = Abi.formatAbiItem(func);
+    const formatted = Abi.Item.format.call(func);
     expect(formatted).toBe("function balanceOf(address account) returns (uint256) view");
   });
 
@@ -328,7 +269,7 @@ describe("Abi.formatAbiItem", () => {
       ],
     } as const satisfies AbiEvent;
 
-    const formatted = Abi.formatAbiItem(event);
+    const formatted = Abi.Item.format.call(event);
     expect(formatted).toBe("event Transfer(address from, address to, uint256 value)");
   });
 
@@ -342,7 +283,7 @@ describe("Abi.formatAbiItem", () => {
       ],
     } as const satisfies AbiError;
 
-    const formatted = Abi.formatAbiItem(error);
+    const formatted = Abi.Item.format.call(error);
     expect(formatted).toBe("error InsufficientBalance(uint256 available, uint256 required)");
   });
 
@@ -352,7 +293,7 @@ describe("Abi.formatAbiItem", () => {
       stateMutability: "payable",
     } as const satisfies Abi.Fallback;
 
-    const formatted = Abi.formatAbiItem(fallback);
+    const formatted = Abi.Item.format.call(fallback);
     expect(formatted).toBe("fallback");
   });
 
@@ -362,12 +303,12 @@ describe("Abi.formatAbiItem", () => {
       stateMutability: "payable",
     } as const satisfies Abi.Receive;
 
-    const formatted = Abi.formatAbiItem(receive);
+    const formatted = Abi.Item.format.call(receive);
     expect(formatted).toBe("receive");
   });
 });
 
-describe("Abi.formatAbiItemWithArgs", () => {
+describe("Abi.Item.formatWithArgs", () => {
   it("formats function call with arguments", () => {
     const func = {
       type: "function",
@@ -380,7 +321,7 @@ describe("Abi.formatAbiItemWithArgs", () => {
       outputs: [],
     } as const satisfies AbiFunction;
 
-    const formatted = Abi.formatAbiItemWithArgs(func, [
+    const formatted = Abi.Item.formatWithArgs.call(func, [
       "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
       1000000000000000000n,
     ]);
@@ -398,7 +339,7 @@ describe("Abi.formatAbiItemWithArgs", () => {
       outputs: [{ type: "uint256", name: "" }],
     } as const satisfies AbiFunction;
 
-    const formatted = Abi.formatAbiItemWithArgs(func, []);
+    const formatted = Abi.Item.formatWithArgs.call(func, []);
     expect(formatted).toBe("totalSupply()");
   });
 
@@ -413,7 +354,7 @@ describe("Abi.formatAbiItemWithArgs", () => {
       ],
     } as const satisfies AbiEvent;
 
-    const formatted = Abi.formatAbiItemWithArgs(event, [
+    const formatted = Abi.Item.formatWithArgs.call(event, [
       "0x0000000000000000000000000000000000000000",
       "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
       1000n,
@@ -541,19 +482,15 @@ describe("Abi.Constructor encoding/decoding", () => {
     inputs: [{ type: "uint256", name: "initialSupply" }],
   } as const satisfies Abi.Constructor;
 
-  it("encodeParams encodes constructor data with bytecode", () => {
-    const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
-    const encoded = Abi.Constructor.encodeParams.call(constructor, bytecode, [1000n]);
+  it("encodeParams encodes constructor data", () => {
+    const encoded = Abi.Constructor.encodeParams.call(constructor, [1000n]);
     expect(encoded).toBeInstanceOf(Uint8Array);
-    expect(encoded.length).toBe(36); // 4 bytes bytecode + 32 bytes param
-    // Check bytecode prefix
-    expect(Array.from(encoded.slice(0, 4))).toEqual([0x60, 0x80, 0x60, 0x40]);
+    expect(encoded.length).toBe(32); // 32 bytes param
   });
 
   it("decodeParams decodes constructor data", () => {
-    const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40]);
-    const encoded = Abi.Constructor.encodeParams.call(constructor, bytecode, [1000n]);
-    const decoded = Abi.Constructor.decodeParams.call(constructor, encoded, bytecode.length);
+    const encoded = Abi.Constructor.encodeParams.call(constructor, [1000n]);
+    const decoded = Abi.Constructor.decodeParams.call(constructor, encoded);
     expect(decoded).toEqual([1000n]);
   });
 });
@@ -614,7 +551,7 @@ describe("Abi.decodeParameters", () => {
 // Top-level ABI Operations
 // ============================================================================
 
-describe("Abi.getItem", () => {
+describe("Abi.Item.getItem", () => {
   const abi = [
     {
       type: "function",
@@ -631,19 +568,19 @@ describe("Abi.getItem", () => {
   ] as const satisfies Abi;
 
   it("finds function by name", () => {
-    const func = Abi.getItem.call(abi, "transfer", "function");
+    const func = Abi.Item.getItem(abi, "transfer", "function");
     expect(func).toBeDefined();
     expect(func?.name).toBe("transfer");
   });
 
   it("finds event by name", () => {
-    const event = Abi.getItem.call(abi, "Transfer", "event");
+    const event = Abi.Item.getItem(abi, "Transfer", "event");
     expect(event).toBeDefined();
     expect(event?.name).toBe("Transfer");
   });
 
   it("returns undefined for missing item", () => {
-    const missing = Abi.getItem.call(abi, "missing", "function");
+    const missing = Abi.Item.getItem(abi, "missing", "function");
     expect(missing).toBeUndefined();
   });
 });
@@ -932,9 +869,9 @@ describe("Abi Type Inference", () => {
       },
     ] as const satisfies Abi;
 
-    type FunctionNames = Abi.ExtractFunctionNames<typeof abi>;
-    type BalanceOfFunc = Abi.GetFunction<typeof abi, "balanceOf">;
-    type TransferFunc = Abi.GetFunction<typeof abi, "transfer">;
+    type FunctionNames = Abi.Function.ExtractNames<typeof abi>;
+    type BalanceOfFunc = Abi.Function.Get<typeof abi, "balanceOf">;
+    type TransferFunc = Abi.Function.Get<typeof abi, "transfer">;
 
     expectTypeOf<FunctionNames>().toMatchTypeOf<"balanceOf" | "transfer">();
     expectTypeOf<BalanceOfFunc>().toMatchTypeOf<Abi.Function>();

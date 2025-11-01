@@ -4,9 +4,9 @@
  * Measures performance of ABI operations
  */
 
-// @ts-nocheck
 import * as Abi from "./index.js";
-import type { Function as AbiFunction } from "./types.js";
+import type { FunctionType as AbiFunction } from "./index.js";
+import type { Item } from "./item.js";
 import type { Address } from "../address.js";
 
 // Helper to work around strict type checking in benchmarks
@@ -114,7 +114,7 @@ const transferEvent = {
     { type: "address", name: "to", indexed: true },
     { type: "uint256", name: "value", indexed: false },
   ],
-} as const satisfies Abi.Event;
+} as const satisfies Abi.EventType;
 
 const insufficientBalanceError = {
   type: "error",
@@ -123,7 +123,7 @@ const insufficientBalanceError = {
     { type: "uint256", name: "available" },
     { type: "uint256", name: "required" },
   ],
-} as const satisfies Abi.Error;
+} as const satisfies Abi.ErrorType;
 
 // const testData = new Uint8Array(32);
 
@@ -140,12 +140,12 @@ const results: BenchmarkResult[] = [];
 console.log("--- Function Signatures ---");
 results.push(
   benchmark("Function.getSignature - simple", () =>
-    AbiFunction.getSignature.call(transferFunc),
+    Abi.Function.getSignature.call(transferFunc),
   ),
 );
 results.push(
   benchmark("Function.getSignature - complex tuple", () =>
-    AbiFunction.getSignature.call(complexFunc),
+    Abi.Function.getSignature.call(complexFunc),
   ),
 );
 
@@ -200,12 +200,12 @@ console.log("===================================================================
 console.log("--- Function Selectors ---");
 results.push(
   benchmark("Function.getSelector - transfer", () =>
-    AbiFunction.getSelector.call(transferFunc),
+    Abi.Function.getSelector.call(transferFunc),
   ),
 );
 results.push(
   benchmark("Function.getSelector - balanceOf", () =>
-    AbiFunction.getSelector.call(balanceOfFunc),
+    Abi.Function.getSelector.call(balanceOfFunc),
   ),
 );
 
@@ -261,19 +261,22 @@ console.log("===================================================================
 
 console.log("--- Utility Selector Functions ---");
 results.push(
-  benchmark("Abi.getFunctionSelector", () =>
-    Abi.getFunctionSelector("transfer(address,uint256)"),
-  ),
+  benchmark("Abi.getFunctionSelector", () => {
+    const func = { type: "function" as const, name: "transfer", stateMutability: "nonpayable" as const, inputs: [{ type: "address" }, { type: "uint256" }] as const, outputs: [] as const };
+    return Abi.Function.getSelector.call(func);
+  }),
 );
 results.push(
-  benchmark("Abi.getEventSelector", () =>
-    Abi.getEventSelector("Transfer(address,address,uint256)"),
-  ),
+  benchmark("Abi.getEventSelector", () => {
+    const event = { type: "event" as const, name: "Transfer", inputs: [{ type: "address", indexed: true }, { type: "address", indexed: true }, { type: "uint256", indexed: false }] as const };
+    return Abi.Event.getSelector.call(event);
+  }),
 );
 results.push(
-  benchmark("Abi.getErrorSelector", () =>
-    Abi.getErrorSelector("InsufficientBalance(uint256,uint256)"),
-  ),
+  benchmark("Abi.getErrorSelector", () => {
+    const error = { type: "error" as const, name: "InsufficientBalance", inputs: [{ type: "uint256" }, { type: "uint256" }] as const };
+    return Abi.Error.getSelector.call(error);
+  }),
 );
 
 console.log(
@@ -295,13 +298,13 @@ console.log("FORMATTING BENCHMARKS");
 console.log("================================================================================\n");
 
 console.log("--- Format ABI Items ---");
-results.push(benchmark("formatAbiItem - function", () => Abi.formatAbiItem(transferFunc)));
-results.push(benchmark("formatAbiItem - event", () => Abi.formatAbiItem(transferEvent)));
+results.push(benchmark("formatAbiItem - function", () => Abi.Item.format.call(transferFunc)));
+results.push(benchmark("formatAbiItem - event", () => Abi.Item.format.call(transferEvent)));
 results.push(
-  benchmark("formatAbiItem - error", () => Abi.formatAbiItem(insufficientBalanceError)),
+  benchmark("formatAbiItem - error", () => Abi.Item.format.call(insufficientBalanceError)),
 );
 results.push(
-  benchmark("formatAbiItem - complex", () => Abi.formatAbiItem(complexFunc)),
+  benchmark("formatAbiItem - complex", () => Abi.Item.format.call(complexFunc)),
 );
 
 console.log(
@@ -316,12 +319,12 @@ console.log(
 console.log("\n--- Format ABI Items With Args ---");
 results.push(
   benchmark("formatAbiItemWithArgs - function", () =>
-    Abi.formatAbiItemWithArgs(transferFunc, ["0x0000000000000000000000000000000000000000" as unknown as Address, 100n]),
+    Abi.Item.formatWithArgs.call(transferFunc, ["0x0000000000000000000000000000000000000000" as unknown as Address, 100n]),
   ),
 );
 results.push(
   benchmark("formatAbiItemWithArgs - event", () =>
-    Abi.formatAbiItemWithArgs(transferEvent, ["0x0000000000000000000000000000000000000000" as unknown as Address, "0x0000000000000000000000000000000000000000" as unknown as Address, 1000n]),
+    Abi.Item.formatWithArgs.call(transferEvent, ["0x0000000000000000000000000000000000000000" as unknown as Address, "0x0000000000000000000000000000000000000000" as unknown as Address, 1000n]),
   ),
 );
 
@@ -409,7 +412,7 @@ results.push(
 );
 results.push(
   benchmark("Function.encodeResult - bool", () => {
-    AbiFunction.encodeResult.call(transferFunc, [true] as [boolean]);
+    Abi.Function.encodeResult.call(transferFunc, [true] as [boolean]);
   })
 );
 
@@ -524,7 +527,7 @@ console.log(
 
 console.log("\n--- Function Decoding ---");
 const encodedTransferCall = Abi.Function.encodeParams.call(transferFunc, ["0x0000000000000000000000000000000000000000" as unknown as Address, 100n] as [Address, bigint]);
-const encodedBoolResult = AbiFunction.encodeResult.call(transferFunc, [true] as [boolean]);
+const encodedBoolResult = Abi.Function.encodeResult.call(transferFunc, [true] as [boolean]);
 
 results.push(
   benchmark("Function.decodeParams", () => {
@@ -533,7 +536,7 @@ results.push(
 );
 results.push(
   benchmark("Function.decodeResult", () => {
-    AbiFunction.decodeResult.call(transferFunc, encodedBoolResult);
+    Abi.Function.decodeResult.call(transferFunc, encodedBoolResult);
   })
 );
 
@@ -587,7 +590,7 @@ console.log(
 // ABI-Level Operations
 // ============================================================================
 
-const testAbi = [transferFunc, balanceOfFunc] as const satisfies Abi;
+const testAbi = [transferFunc, balanceOfFunc] as const satisfies readonly Item[];
 
 console.log("\n");
 console.log("================================================================================");
@@ -596,7 +599,7 @@ console.log("===================================================================
 
 console.log("--- ABI Lookup Operations ---");
 results.push(
-  benchmark("Abi.getItem", () => Abi.getItem.call(testAbi, "transfer", "function")),
+  benchmark("Abi.getItem", () => Abi.Item.getItem(testAbi, "transfer", "function")),
 );
 
 console.log(

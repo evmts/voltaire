@@ -5,9 +5,8 @@
  * These tests will be enabled once the C ABI implementation is complete
  */
 
-// @ts-nocheck
 import { describe, it, expect, beforeAll } from "vitest";
-import * as wasmAbi from "./wasm.js";
+import * as wasmAbi from "./wasm/wasm.js";
 import {
   selectorVectors,
   encodeVectors,
@@ -47,7 +46,15 @@ describe("Abi.getFunctionSelector (Pure TS)", () => {
     // Only test function selectors (4 bytes)
     if (vector.expected.length === 8) {
       it(vector.name, () => {
-        const selector = Abi.getFunctionSelector(vector.signature);
+        // Parse signature to extract name and params
+        const match = vector.signature.match(/^(\w+)\((.*)\)$/);
+        if (!match) throw new Error(`Invalid signature: ${vector.signature}`);
+        const [, name, paramsStr] = match;
+        if (!name) throw new Error(`No name in signature: ${vector.signature}`);
+        const inputs = paramsStr ? paramsStr.split(',').map(type => ({ type: type.trim() as any })) : [];
+        const func = { type: "function" as const, name, stateMutability: "nonpayable" as const, inputs, outputs: [] as const };
+
+        const selector = Abi.Function.getSelector.call(func);
         expect(selector).toBeInstanceOf(Uint8Array);
         expect(selector.length).toBe(4);
 
@@ -65,7 +72,15 @@ describe("Abi.getEventSelector (Pure TS)", () => {
     // Only test event selectors (32 bytes)
     if (vector.expected.length === 64) {
       it(vector.name, () => {
-        const selector = Abi.getEventSelector(vector.signature);
+        // Parse signature to extract name and params
+        const match = vector.signature.match(/^(\w+)\((.*)\)$/);
+        if (!match) throw new Error(`Invalid signature: ${vector.signature}`);
+        const [, name, paramsStr] = match;
+        if (!name) throw new Error(`No name in signature: ${vector.signature}`);
+        const inputs = paramsStr ? paramsStr.split(',').map(type => ({ type: type.trim() as any, indexed: false })) : [];
+        const event = { type: "event" as const, name, inputs };
+
+        const selector = Abi.Event.getSelector.call(event);
         expect(selector).toBeInstanceOf(Uint8Array);
         expect(selector.length).toBe(32);
 
@@ -103,8 +118,8 @@ describe("WASM Parameter Encoding", () => {
     expect(() => {
       wasmAbi.encodeFunctionDataWasm(
         "transfer(address,uint256)",
-        [{ type: "address" }, { type: "uint256" }],
-        ["0x0000000000000000000000000000000000000000", 42n]
+        [{ type: "address" }, { type: "uint256" }] as any,
+        ["0x0000000000000000000000000000000000000000" as any, 42n]
       );
     }).toThrow(/not yet implemented/i);
   });
@@ -163,7 +178,7 @@ describe("WASM Encoding - Basic Types", () => {
   for (const vector of encodeVectors) {
     it(vector.name, () => {
       // Convert test vector format to param/value format
-      const params = vector.params.map(p => ({ type: p.type }));
+      const params = vector.params.map(p => ({ type: p.type })) as any;
       const values = vector.params.map(p => p.value);
 
       const encoded = wasmAbi.encodeParametersWasm(params, values as any);
@@ -179,7 +194,7 @@ describe("WASM Encoding - Basic Types", () => {
 describe("WASM Round-Trip Tests", () => {
   for (const vector of roundTripVectors) {
     it(vector.name, () => {
-      const params = vector.params.map(p => ({ type: p.type }));
+      const params = vector.params.map(p => ({ type: p.type })) as any;
       const values = vector.params.map(p => p.value);
 
       const encoded = wasmAbi.encodeParametersWasm(params, values as any);
@@ -194,7 +209,7 @@ describe.skip("WASM Function Data Tests (Future)", () => {
   for (const vector of functionDataVectors) {
     if (vector.expectedCalldata) {
       it(vector.name, () => {
-        const params = vector.params.map(p => ({ type: p.type }));
+        const params = vector.params.map(p => ({ type: p.type })) as any;
         const values = vector.params.map(p => p.value);
 
         const calldata = wasmAbi.encodeFunctionDataWasm(
@@ -318,7 +333,7 @@ describe("WASM vs Pure TS Performance", () => {
         { type: "uint256" },
         { type: "bytes" }
       ]
-    }];
+    }] as any;
 
     // Create test data
     const testData = new Uint8Array(1000);
@@ -362,10 +377,10 @@ describe("WASM Integration Tests", () => {
   it("handles address correctly", () => {
     const params = [{ type: "address" as const }];
     const addr = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
-    const values: [string] = [addr];
-    const encoded = wasmAbi.encodeParametersWasm(params, values);
+    const values: [any] = [addr];
+    const encoded = wasmAbi.encodeParametersWasm(params, values as any);
     const decoded = wasmAbi.decodeParametersWasm(params, encoded);
-    expect(decoded[0].toLowerCase()).toBe(addr.toLowerCase());
+    expect(String(decoded[0]).toLowerCase()).toBe(addr.toLowerCase());
   });
 })
 
@@ -375,7 +390,7 @@ describe.skip("WASM Integration Tests (Advanced - Future)", () => {
     const params = [
       { type: "address" },
       { type: "uint256" }
-    ];
+    ] as any;
     const values = [
       "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
       1000000000000000000n
@@ -388,8 +403,16 @@ describe.skip("WASM Integration Tests (Advanced - Future)", () => {
     );
 
     expect(calldata.length).toBeGreaterThan(4);
+
+    const match = transferSig.match(/^(\w+)\((.*)\)$/);
+    if (!match) throw new Error(`Invalid signature: ${transferSig}`);
+    const [, name, paramsStr] = match;
+    if (!name) throw new Error(`No name in signature: ${transferSig}`);
+    const inputs = paramsStr ? paramsStr.split(',').map(type => ({ type: type.trim() as any })) : [];
+    const func = { type: "function" as const, name, stateMutability: "nonpayable" as const, inputs, outputs: [] as const };
+
     expect(calldata.slice(0, 4)).toEqual(
-      Abi.getFunctionSelector(transferSig)
+      Abi.Function.getSelector.call(func)
     );
 
     const decoded = wasmAbi.decodeFunctionDataWasm(
@@ -407,7 +430,7 @@ describe.skip("WASM Integration Tests (Advanced - Future)", () => {
       { type: "address", indexed: true, name: "from" },
       { type: "address", indexed: true, name: "to" },
       { type: "uint256", indexed: false, name: "value" }
-    ];
+    ] as any;
 
     const from = "0x0000000000000000000000000000000000000000";
     const to = "0xd8da6bf26964af9d7eed9e03e53415d37aa96045";
@@ -423,7 +446,7 @@ describe.skip("WASM Integration Tests (Advanced - Future)", () => {
 
     // Encode non-indexed data
     const data = wasmAbi.encodeParametersWasm(
-      [{ type: "uint256" }],
+      [{ type: "uint256" }] as any,
       [value]
     );
 

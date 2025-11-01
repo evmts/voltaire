@@ -1,5 +1,5 @@
 const std = @import("std");
-const address = @import("../address.zig");
+const address = @import("../Address/address.zig");
 const crypto_pkg = @import("crypto");
 const hash = crypto_pkg.Hash;
 
