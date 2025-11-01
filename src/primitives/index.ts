@@ -19,35 +19,35 @@
  */
 
 // Core primitives
-export * from './Address/index.js';
-export * from './Hash/index.js';
-export * from './Hex/index.js';
+export * as Address from './Address/index.js';
+export * as Hash from './Hash/index.js';
+export * as Hex from './Hex/index.js';
 
 // Numeric types
-export * from './Uint/index.js';
+export * as Uint from './Uint/index.js';
 
 // Encoding
-export * from './Rlp/index.js';
+export * as Rlp from './Rlp/index.js';
 export * as Abi from './abi/index.js';
 
 // Transactions
-export * from './Transaction/index.js';
-export * from './AccessList/index.js';
-export * from './Authorization/index.js';
+export * as Transaction from './Transaction/index.js';
+export * as AccessList from './AccessList/index.js';
+export * as Authorization from './Authorization/index.js';
 
 // EVM
-export * from './Bytecode/index.js';
-export * from './Opcode/index.js';
-export * from './GasConstants/index.js';
-export * from './State/index.js';
+export * as Bytecode from './Bytecode/index.js';
+export * as Opcode from './Opcode/index.js';
+export * as GasConstants from './GasConstants/index.js';
+export * as State from './State/index.js';
 
 // Protocol
-export * from './Blob/index.js';
-export * from './FeeMarket/index.js';
-export * from './Hardfork/index.js';
+export * as Blob from './Blob/index.js';
+export * as FeeMarket from './FeeMarket/index.js';
+export * as Hardfork from './Hardfork/index.js';
 
 // Events & Logs
-export * from './EventLog/index.js';
+export * as EventLog from './EventLog/index.js';
 
 // Sign-in with Ethereum
-export * from './Siwe/index.js';
+export * as Siwe from './Siwe/index.js';
