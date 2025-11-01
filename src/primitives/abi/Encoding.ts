@@ -1,35 +1,16 @@
-/**
- * ABI Encoding and Decoding
- *
- * Low-level ABI encoding/decoding functions following Ethereum's ABI specification.
- * Handles parameter encoding/decoding for functions, events, errors, and constructors.
- */
-
-import type * as Abi from "./types.js";
+import type { Parameter } from "./Parameter.js";
 import {
   AbiEncodingError,
   AbiDecodingError,
   AbiParameterMismatchError,
-} from "./errors.js";
-import { Uint } from "../uint.js";
-import { Address } from "../address.js";
+} from "./Errors.js";
+import { Uint } from "../Uint/index.js";
+import { Address } from "../Address/index.js";
 
-// ============================================================================
-// Internal Encoding Helpers
-// ============================================================================
-
-/**
- * Encode a uint256 value to 32 bytes (left-padded)
- * @internal
- */
 function encodeUint256(value: bigint): Uint8Array {
   return Uint.toAbiEncoded.call(Uint.from(value));
 }
 
-/**
- * Encode a uint value of specific bit size (left-padded to 32 bytes)
- * @internal
- */
 function encodeUint(value: bigint | number, bits: number): Uint8Array {
   const bigintValue = typeof value === "number" ? BigInt(value) : value;
   const max = (1n << BigInt(bits)) - 1n;
@@ -39,10 +20,6 @@ function encodeUint(value: bigint | number, bits: number): Uint8Array {
   return encodeUint256(bigintValue);
 }
 
-/**
- * Encode an int value of specific bit size (two's complement, left-padded to 32 bytes)
- * @internal
- */
 function encodeInt(value: bigint | number, bits: number): Uint8Array {
   const bigintValue = typeof value === "number" ? BigInt(value) : value;
   const min = -(1n << (BigInt(bits) - 1n));
@@ -50,15 +27,10 @@ function encodeInt(value: bigint | number, bits: number): Uint8Array {
   if (bigintValue < min || bigintValue > max) {
     throw new AbiEncodingError(`Value ${bigintValue} out of range for int${bits}`);
   }
-  // Two's complement for negative numbers
   const unsigned = bigintValue < 0n ? (1n << 256n) + bigintValue : bigintValue;
   return encodeUint256(unsigned);
 }
 
-/**
- * Pad bytes to 32-byte boundary (right-padded with zeros)
- * @internal
- */
 function padRight(data: Uint8Array): Uint8Array {
   const paddedLength = Math.ceil(data.length / 32) * 32;
   if (paddedLength === data.length) return data;
@@ -67,39 +39,28 @@ function padRight(data: Uint8Array): Uint8Array {
   return result;
 }
 
-/**
- * Check if type is dynamic
- * @internal
- */
-function isDynamicType(type: Abi.AbiType): boolean {
+function isDynamicType(type: Parameter["type"]): boolean {
   if (type === "string" || type === "bytes") return true;
   if (type.endsWith("[]")) return true;
-  // Fixed-size arrays like uint256[3] are static if the element type is static
   if (type.includes("[") && type.endsWith("]")) {
     const match = type.match(/^(.+)\[(\d+)\]$/);
     if (match && match[1]) {
-      const elementType = match[1] as Abi.AbiType;
+      const elementType = match[1] as Parameter["type"];
       return isDynamicType(elementType);
     }
   }
   return false;
 }
 
-/**
- * Encode a single value based on its type
- * @internal
- */
 function encodeValue(
-  type: Abi.AbiType,
+  type: Parameter["type"],
   value: unknown,
 ): { encoded: Uint8Array; isDynamic: boolean } {
-  // Handle dynamic arrays first (before checking for uint)
   if (type.endsWith("[]")) {
-    const elementType = type.slice(0, -2) as Abi.AbiType;
+    const elementType = type.slice(0, -2) as Parameter["type"];
     const array = value as unknown[];
     const length = encodeUint256(BigInt(array.length));
 
-    // Encode array elements
     const elementParams = array.map(() => ({ type: elementType }));
     const encodedElements = encodeParameters(
       elementParams as any,
@@ -112,40 +73,33 @@ function encodeValue(
     return { encoded: result, isDynamic: true };
   }
 
-  // Handle uint types
   if (type.startsWith("uint")) {
     const bits = type === "uint" ? 256 : parseInt(type.slice(4));
     const encoded = encodeUint(value as bigint | number, bits);
     return { encoded, isDynamic: false };
   }
 
-  // Handle int types
   if (type.startsWith("int")) {
     const bits = type === "int" ? 256 : parseInt(type.slice(3));
     const encoded = encodeInt(value as bigint | number, bits);
     return { encoded, isDynamic: false };
   }
 
-  // Handle address
   if (type === "address") {
     const addr = value as Address | string;
-    // If it's a string, convert to Address first
     if (typeof addr === "string") {
       const addressValue = Address.fromHex(addr);
       return { encoded: Address.toAbiEncoded.call(addressValue), isDynamic: false };
     }
-    // If it's already an Address, encode directly
     return { encoded: Address.toAbiEncoded.call(addr), isDynamic: false };
   }
 
-  // Handle bool
   if (type === "bool") {
     const result = new Uint8Array(32);
     result[31] = value ? 1 : 0;
     return { encoded: result, isDynamic: false };
   }
 
-  // Handle fixed-size bytes (bytes1-bytes32)
   if (type.startsWith("bytes") && type.length > 5) {
     const size = parseInt(type.slice(5));
     if (size >= 1 && size <= 32) {
@@ -156,12 +110,11 @@ function encodeValue(
         );
       }
       const result = new Uint8Array(32);
-      result.set(bytes, 0); // Right-pad with zeros
+      result.set(bytes, 0);
       return { encoded: result, isDynamic: false };
     }
   }
 
-  // Handle dynamic bytes
   if (type === "bytes") {
     const bytes = value as Uint8Array;
     const length = encodeUint256(BigInt(bytes.length));
@@ -172,7 +125,6 @@ function encodeValue(
     return { encoded: result, isDynamic: true };
   }
 
-  // Handle string
   if (type === "string") {
     const str = value as string;
     const bytes = new TextEncoder().encode(str);
@@ -184,10 +136,9 @@ function encodeValue(
     return { encoded: result, isDynamic: true };
   }
 
-  // Handle fixed-size arrays
   const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
   if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
-    const elementType = fixedArrayMatch[1] as Abi.AbiType;
+    const elementType = fixedArrayMatch[1] as Parameter["type"];
     const arraySize = parseInt(fixedArrayMatch[2]);
     const array = value as unknown[];
 
@@ -206,14 +157,6 @@ function encodeValue(
   throw new AbiEncodingError(`Unsupported type: ${type}`);
 }
 
-// ============================================================================
-// Internal Decoding Helpers
-// ============================================================================
-
-/**
- * Decode a uint256 value from 32 bytes
- * @internal
- */
 function decodeUint256(data: Uint8Array, offset: number): bigint {
   if (offset + 32 > data.length) {
     throw new AbiDecodingError("Data too small for uint256");
@@ -222,19 +165,13 @@ function decodeUint256(data: Uint8Array, offset: number): bigint {
   return Uint.toBigInt.call(Uint.fromAbiEncoded(slice));
 }
 
-/**
- * Decode a single value based on its type
- * @internal
- */
 function decodeValue(
-  type: Abi.AbiType,
+  type: Parameter["type"],
   data: Uint8Array,
   offset: number,
 ): { value: unknown; newOffset: number } {
-  // Handle arrays first (before uint/int checks, since "uint256[]" starts with "uint")
-  // Handle dynamic arrays
   if (type.endsWith("[]")) {
-    const elementType = type.slice(0, -2) as Abi.AbiType;
+    const elementType = type.slice(0, -2) as Parameter["type"];
     const dataOffset = Number(decodeUint256(data, offset));
     const length = Number(decodeUint256(data, dataOffset));
 
@@ -246,26 +183,22 @@ function decodeValue(
     return { value, newOffset: offset + 32 };
   }
 
-  // Handle fixed-size arrays
   const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
   if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
-    const elementType = fixedArrayMatch[1] as Abi.AbiType;
+    const elementType = fixedArrayMatch[1] as Parameter["type"];
     const arraySize = parseInt(fixedArrayMatch[2]);
 
     const elementParams = Array(arraySize).fill({ type: elementType });
     if (isDynamicType(elementType)) {
-      // For dynamic element types, follow the offset
       const dataOffset = Number(decodeUint256(data, offset));
       const value = decodeParameters(elementParams as any, data.slice(dataOffset));
       return { value, newOffset: offset + 32 };
     } else {
-      // For static element types, decode inline
       const value = decodeParameters(elementParams as any, data.slice(offset));
       return { value, newOffset: offset + arraySize * 32 };
     }
   }
 
-  // Handle uint types
   if (type.startsWith("uint")) {
     const bits = type === "uint" ? 256 : parseInt(type.slice(4));
     const value = decodeUint256(data, offset);
@@ -273,41 +206,32 @@ function decodeValue(
     if (value > max) {
       throw new AbiDecodingError(`Value ${value} out of range for ${type}`);
     }
-    // Always return bigint for uint64 and above, number for smaller types
     if (bits < 64) {
       return { value: Number(value), newOffset: offset + 32 };
     }
     return { value, newOffset: offset + 32 };
   }
 
-  // Handle int types
   if (type.startsWith("int")) {
     const bits = type === "int" ? 256 : parseInt(type.slice(3));
     const unsigned = decodeUint256(data, offset);
 
-    // First, mask to the actual bit width
     const mask = (1n << BigInt(bits)) - 1n;
     const masked = unsigned & mask;
 
-    // Check if the value has the sign bit set
     const signBitMask = 1n << (BigInt(bits) - 1n);
     let value: bigint;
     if (masked >= signBitMask) {
-      // Negative number in two's complement
-      // To get the actual negative value, subtract 2^bits
       value = masked - (1n << BigInt(bits));
     } else {
-      // Positive number
       value = masked;
     }
-    // Return as number for small ints (int32 and below), bigint for larger
     if (bits <= 32) {
       return { value: Number(value), newOffset: offset + 32 };
     }
     return { value, newOffset: offset + 32 };
   }
 
-  // Handle address
   if (type === "address") {
     if (offset + 32 > data.length) {
       throw new AbiDecodingError("Data too small for address");
@@ -318,12 +242,10 @@ function decodeValue(
     return { value: hex, newOffset: offset + 32 };
   }
 
-  // Handle bool
   if (type === "bool") {
     if (offset + 32 > data.length) {
       throw new AbiDecodingError("Data too small for bool");
     }
-    // Check if any byte is non-zero
     let isTrue = false;
     for (let i = 0; i < 32; i++) {
       if (data[offset + i] !== 0) {
@@ -334,7 +256,6 @@ function decodeValue(
     return { value: isTrue, newOffset: offset + 32 };
   }
 
-  // Handle fixed-size bytes (bytes1-bytes32)
   if (type.startsWith("bytes") && type.length > 5) {
     const size = parseInt(type.slice(5));
     if (size >= 1 && size <= 32) {
@@ -346,7 +267,6 @@ function decodeValue(
     }
   }
 
-  // Handle dynamic bytes
   if (type === "bytes") {
     const dataOffset = Number(decodeUint256(data, offset));
     const length = Number(decodeUint256(data, dataOffset));
@@ -357,7 +277,6 @@ function decodeValue(
     return { value, newOffset: offset + 32 };
   }
 
-  // Handle string
   if (type === "string") {
     const dataOffset = Number(decodeUint256(data, offset));
     const length = Number(decodeUint256(data, dataOffset));
@@ -372,28 +291,9 @@ function decodeValue(
   throw new AbiDecodingError(`Unsupported type: ${type}`);
 }
 
-// ============================================================================
-// Public Encoding/Decoding Functions
-// ============================================================================
-
-/**
- * Encode ABI parameters
- *
- * @param params - Parameter definitions
- * @param values - Values to encode
- * @returns Encoded data
- * @throws {AbiEncodingError} If encoding fails
- * @throws {AbiParameterMismatchError} If values don't match params
- *
- * @example
- * ```typescript
- * const params = [{ type: 'address' }, { type: 'uint256' }];
- * const encoded = encodeParameters(params, [address, amount]);
- * ```
- */
-export function encodeParameters<const TParams extends readonly Abi.Parameter[]>(
+export function encodeParameters<const TParams extends readonly Parameter[]>(
   params: TParams,
-  values: Abi.ParametersToPrimitiveTypes<TParams>,
+  values: import("./parameter.js").ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
   if (params.length !== values.length) {
     throw new AbiParameterMismatchError(
@@ -401,11 +301,9 @@ export function encodeParameters<const TParams extends readonly Abi.Parameter[]>
     );
   }
 
-  // Separate static and dynamic data
   const staticParts: Uint8Array[] = [];
   const dynamicParts: Uint8Array[] = [];
 
-  // First pass: collect all encodings
   const encodings: Array<{ encoded: Uint8Array; isDynamic: boolean }> = [];
   for (let i = 0; i < params.length; i++) {
     const param = params[i];
@@ -414,23 +312,18 @@ export function encodeParameters<const TParams extends readonly Abi.Parameter[]>
     encodings.push(encodeValue(param.type, value));
   }
 
-  // Calculate initial offset
-  let dynamicOffset = params.length * 32; // Each static slot is 32 bytes
+  let dynamicOffset = params.length * 32;
 
-  // Second pass: build static and dynamic parts
   for (const { encoded, isDynamic } of encodings) {
     if (isDynamic) {
-      // Static part: offset to dynamic data
       staticParts.push(encodeUint256(BigInt(dynamicOffset)));
       dynamicParts.push(encoded);
       dynamicOffset += encoded.length;
     } else {
-      // Static part: actual value
       staticParts.push(encoded);
     }
   }
 
-  // Concatenate all parts
   const totalLength = staticParts.reduce((sum, part) => sum + part.length, 0) +
                      dynamicParts.reduce((sum, part) => sum + part.length, 0);
   const result = new Uint8Array(totalLength);
@@ -448,35 +341,20 @@ export function encodeParameters<const TParams extends readonly Abi.Parameter[]>
   return result;
 }
 
-/**
- * Decode ABI parameters
- *
- * @param params - Parameter definitions
- * @param data - Encoded data
- * @returns Decoded values
- * @throws {AbiDecodingError} If decoding fails
- *
- * @example
- * ```typescript
- * const params = [{ type: 'address' }, { type: 'uint256' }];
- * const values = decodeParameters(params, data);
- * ```
- */
-export function decodeParameters<const TParams extends readonly Abi.Parameter[]>(
+export function decodeParameters<const TParams extends readonly Parameter[]>(
   params: TParams,
   data: Uint8Array,
-): Abi.ParametersToPrimitiveTypes<TParams> {
+): import("./parameter.js").ParametersToPrimitiveTypes<TParams> {
   const result: unknown[] = [];
   let offset = 0;
 
   for (const param of params) {
     const { value } = decodeValue(param.type, data, offset);
     result.push(value);
-    offset += 32; // Each parameter takes 32 bytes in static section
+    offset += 32;
   }
 
-  return result as Abi.ParametersToPrimitiveTypes<TParams>;
+  return result as import("./parameter.js").ParametersToPrimitiveTypes<TParams>;
 }
 
-// Re-export for internal use by other modules
 export { encodeUint256, encodeUint, encodeInt, encodeValue, decodeUint256, decodeValue, isDynamicType, padRight };

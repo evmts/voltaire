@@ -1,9 +1,3 @@
-/**
- * ABI Error Types
- *
- * Custom error classes for ABI encoding/decoding operations.
- */
-
 export class AbiEncodingError extends Error {
   constructor(message: string) {
     super(message);
