@@ -1,0 +1,11 @@
+import { Keccak256 } from "../../crypto/keccak256.js";
+import type { Hash } from "../../Hash/index.js";
+import type { EIP4844 } from "../types.js";
+import { serialize } from "./serialize.js";
+
+/**
+ * Compute transaction hash
+ */
+export function hash(this: EIP4844): Hash {
+	return Keccak256.hash(serialize.call(this));
+}
