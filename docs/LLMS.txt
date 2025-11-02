@@ -20,7 +20,7 @@ list.deinit();  // Missing allocator
 **primitives:** Uint256, Address, Hex, RLP, ABI, Transactions (Legacy/2930/1559/4844/7702), Logs, AccessList, Bytecode, Opcodes, Hardforks, MPT
 
 **crypto:**
-- Production: Keccak-256, secp256k1 (@noble), EIP-712 (@noble), BLS12-381 (BLST), BN254 (Arkworks+@noble), KZG (c-kzg-4844), SHA256, RIPEMD160, Blake2
+- Production: Keccak-256, secp256k1 (@noble), Ed25519 (@noble), X25519 (@noble), P256 (@noble), EIP-712 (@noble), BLS12-381 (BLST), BN254 (Arkworks+@noble), KZG (c-kzg-4844), SHA256, RIPEMD160, Blake2, BIP-39 (@scure), HD Wallet (@scure), AES-GCM (WebCrypto)
 - ⚠️ Unaudited: Pure Zig secp256k1, BN254, ModExp
 
 **precompiles:** 0x01-0x13
@@ -107,6 +107,82 @@ sig.isValid();  // r,s,v check. sig.toBytes() = [65]u8
 ```
 
 **secp256k1 (TS @noble):** `Secp256k1.{generatePrivateKey,derivePublicKey,publicKeyToAddress,sign,signMessage,verify,verifyMessage,recover,recoverAddress}`, `Signature.{toBytes,toCompact,fromBytes,fromCompact,isCanonical,normalize}`
+
+### Ed25519 (TS @noble)
+```typescript
+const seed = crypto.getRandomValues(new Uint8Array(32));
+const kp = Ed25519.keypairFromSeed(seed);
+const msg = new TextEncoder().encode("Hi");
+const sig = Ed25519.sign(msg, kp.secretKey);
+const ok = Ed25519.verify(sig, msg, kp.publicKey);
+// Constants: SECRET_KEY_SIZE=32, PUBLIC_KEY_SIZE=32, SIGNATURE_SIZE=64
+// Methods: keypairFromSeed, derivePublicKey, sign, verify, validateSecretKey, validatePublicKey, validateSeed
+```
+
+### X25519 (TS @noble)
+```typescript
+const alice = X25519.generateKeypair();
+const bob = X25519.generateKeypair();
+const sharedA = X25519.scalarmult(alice.secretKey, bob.publicKey);
+const sharedB = X25519.scalarmult(bob.secretKey, alice.publicKey);
+// sharedA === sharedB
+// Constants: SECRET_KEY_SIZE=32, PUBLIC_KEY_SIZE=32, SHARED_SECRET_SIZE=32
+// Methods: derivePublicKey, keypairFromSeed, scalarmult, generateSecretKey, generateKeypair, validateSecretKey, validatePublicKey
+```
+
+### P256 (TS @noble)
+```typescript
+const priv = new Uint8Array(32);
+const hash = Hash.keccak256String("Hello!");
+const sig = P256.sign(hash, priv);
+const pub = P256.derivePublicKey(priv);
+const ok = P256.verify(sig, hash, pub);
+const shared = P256.ecdh(priv, theirPublic);
+// Constants: CURVE_ORDER, PRIVATE_KEY_SIZE=32, PUBLIC_KEY_SIZE=64, SIGNATURE_COMPONENT_SIZE=32, SHARED_SECRET_SIZE=32
+// Methods: sign, verify, derivePublicKey, ecdh, validatePrivateKey, validatePublicKey
+```
+
+### BIP-39 (TS @scure)
+```typescript
+const mnem = Bip39.generateMnemonic(256); // 24 words
+const ok = Bip39.validateMnemonic(mnem);
+const seed = await Bip39.mnemonicToSeed(mnem, "passphrase");
+// or sync: Bip39.mnemonicToSeedSync(mnem, "passphrase")
+const entropy = crypto.getRandomValues(new Uint8Array(32));
+const mnem2 = Bip39.entropyToMnemonic(entropy);
+// Constants: ENTROPY_128/160/192/224/256, SEED_LENGTH=64
+// Methods: generateMnemonic, entropyToMnemonic, validateMnemonic, assertValidMnemonic, mnemonicToSeed, mnemonicToSeedSync, getWordCount, getEntropyBits
+```
+
+### HDWallet (TS @scure)
+```typescript
+const mnem = Bip39.generateMnemonic(256);
+const seed = await Bip39.mnemonicToSeed(mnem);
+const root = HDWallet.fromSeed(seed);
+const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
+const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
+const custom = HDWallet.derivePath(root, "m/44'/60'/5'/0/10");
+const priv = HDWallet.getPrivateKey(eth0);
+const pub = HDWallet.getPublicKey(eth0);
+const xprv = HDWallet.toExtendedPrivateKey(root);
+const xpub = HDWallet.toExtendedPublicKey(root);
+// Constants: HARDENED_OFFSET=0x80000000, CoinType.{BTC,BTC_TESTNET,ETH,ETC}, BIP44_PATH.{ETH,BTC}
+// Methods: fromSeed, fromExtendedKey, fromPublicExtendedKey, derivePath, deriveChild, deriveEthereum, deriveBitcoin, toExtendedPrivateKey, toExtendedPublicKey, getPrivateKey, getPublicKey, getChainCode, canDeriveHardened, toPublic, isHardenedPath, isValidPath, parseIndex
+```
+
+### AES-GCM (TS WebCrypto)
+```typescript
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const plain = new TextEncoder().encode("Secret");
+const cipher = await AesGcm.encrypt(plain, key, nonce);
+const dec = await AesGcm.decrypt(cipher, key, nonce);
+// Password-based
+const salt = crypto.getRandomValues(new Uint8Array(16));
+const pwKey = await AesGcm.deriveKey("password", salt, 100000, 256);
+// Constants: AES128_KEY_SIZE=16, AES256_KEY_SIZE=32, NONCE_SIZE=12, TAG_SIZE=16
+// Methods: generateKey, importKey, exportKey, encrypt, decrypt, generateNonce, deriveKey
+```
 
 ### Uint256 (Zig)
 ```zig

@@ -1134,6 +1134,291 @@ const digest = hasher.digest();
 
 ---
 
+#### Ed25519 — EdDSA signatures
+
+**Constants:**
+
+- `Ed25519.SECRET_KEY_SIZE` — 32 bytes
+- `Ed25519.PUBLIC_KEY_SIZE` — 32 bytes
+- `Ed25519.SIGNATURE_SIZE` — 64 bytes
+
+**Keypair:**
+
+- `Ed25519.keypairFromSeed(seed)` — Generate keypair from 32-byte seed
+- `Ed25519.derivePublicKey(secretKey)` — Derive public key from secret key
+
+**Signing:**
+
+- `Ed25519.sign(message, secretKey)` — Sign message with secret key
+
+**Verification:**
+
+- `Ed25519.verify(signature, message, publicKey)` — Verify signature
+
+**Validation:**
+
+- `Ed25519.validateSecretKey(key)` — Check if secret key is valid
+- `Ed25519.validatePublicKey(key)` — Check if public key is valid
+- `Ed25519.validateSeed(seed)` — Check if seed is valid
+
+**Examples:**
+
+```typescript
+import { Ed25519 } from "@tevm/voltaire";
+
+const seed = crypto.getRandomValues(new Uint8Array(32));
+const keypair = Ed25519.keypairFromSeed(seed);
+
+const message = new TextEncoder().encode("Hello!");
+const signature = Ed25519.sign(message, keypair.secretKey);
+
+const valid = Ed25519.verify(signature, message, keypair.publicKey);
+```
+
+---
+
+#### X25519 — Curve25519 ECDH
+
+**Constants:**
+
+- `X25519.SECRET_KEY_SIZE` — 32 bytes
+- `X25519.PUBLIC_KEY_SIZE` — 32 bytes
+- `X25519.SHARED_SECRET_SIZE` — 32 bytes
+
+**Key Derivation:**
+
+- `X25519.derivePublicKey(secretKey)` — Derive public key from secret key
+- `X25519.keypairFromSeed(seed)` — Generate keypair from seed
+- `X25519.generateSecretKey()` — Generate random secret key
+- `X25519.generateKeypair()` — Generate random keypair
+
+**ECDH:**
+
+- `X25519.scalarmult(secretKey, publicKey)` — Compute shared secret
+
+**Validation:**
+
+- `X25519.validateSecretKey(key)` — Check if secret key is valid
+- `X25519.validatePublicKey(key)` — Check if public key is valid
+
+**Examples:**
+
+```typescript
+import { X25519 } from "@tevm/voltaire";
+
+const alice = X25519.generateKeypair();
+const bob = X25519.generateKeypair();
+
+const aliceShared = X25519.scalarmult(alice.secretKey, bob.publicKey);
+const bobShared = X25519.scalarmult(bob.secretKey, alice.publicKey);
+// aliceShared === bobShared
+```
+
+---
+
+#### P256 — NIST P-256 ECDSA
+
+**Constants:**
+
+- `P256.CURVE_ORDER` — Curve order
+- `P256.PRIVATE_KEY_SIZE` — 32 bytes
+- `P256.PUBLIC_KEY_SIZE` — 64 bytes (uncompressed, no prefix)
+- `P256.SIGNATURE_COMPONENT_SIZE` — 32 bytes (r and s)
+- `P256.SHARED_SECRET_SIZE` — 32 bytes
+
+**Key Derivation:**
+
+- `P256.derivePublicKey(privateKey)` — Derive public key from private key
+
+**Signing:**
+
+- `P256.sign(messageHash, privateKey)` — Sign message hash with private key
+
+**Verification:**
+
+- `P256.verify(signature, messageHash, publicKey)` — Verify signature
+
+**ECDH:**
+
+- `P256.ecdh(privateKey, publicKey)` — Compute shared secret
+
+**Validation:**
+
+- `P256.validatePrivateKey(key)` — Check if private key is valid
+- `P256.validatePublicKey(key)` — Check if public key is valid
+
+**Examples:**
+
+```typescript
+import { P256, Hash } from "@tevm/voltaire";
+
+const privateKey = new Uint8Array(32); // Your private key
+const messageHash = Hash.keccak256String("Hello!");
+const signature = P256.sign(messageHash, privateKey);
+
+const publicKey = P256.derivePublicKey(privateKey);
+const valid = P256.verify(signature, messageHash, publicKey);
+
+// ECDH
+const sharedSecret = P256.ecdh(privateKey, theirPublicKey);
+```
+
+---
+
+#### BIP-39 — Mnemonic phrases
+
+**Constants:**
+
+- `Bip39.ENTROPY_128` — 128 bits (12 words)
+- `Bip39.ENTROPY_160` — 160 bits (15 words)
+- `Bip39.ENTROPY_192` — 192 bits (18 words)
+- `Bip39.ENTROPY_224` — 224 bits (21 words)
+- `Bip39.ENTROPY_256` — 256 bits (24 words)
+- `Bip39.SEED_LENGTH` — 64 bytes
+
+**Generation:**
+
+- `Bip39.generateMnemonic(strength)` — Generate mnemonic (128-256 bits)
+- `Bip39.entropyToMnemonic(entropy)` — Convert entropy to mnemonic
+
+**Validation:**
+
+- `Bip39.validateMnemonic(mnemonic)` — Check if mnemonic is valid
+- `Bip39.assertValidMnemonic(mnemonic)` — Validate or throw
+
+**Seed Derivation:**
+
+- `Bip39.mnemonicToSeed(mnemonic, passphrase?)` — Async seed derivation
+- `Bip39.mnemonicToSeedSync(mnemonic, passphrase?)` — Sync seed derivation
+
+**Utilities:**
+
+- `Bip39.getWordCount(entropyBits)` — Get word count from entropy
+- `Bip39.getEntropyBits(wordCount)` — Get entropy from word count
+
+**Examples:**
+
+```typescript
+import { Bip39 } from "@tevm/voltaire";
+
+// Generate 24-word mnemonic
+const mnemonic = Bip39.generateMnemonic(256);
+
+// Validate
+if (Bip39.validateMnemonic(mnemonic)) {
+  const seed = await Bip39.mnemonicToSeed(mnemonic, "passphrase");
+}
+```
+
+---
+
+#### HDWallet — BIP-32/BIP-44 HD wallets
+
+**Constants:**
+
+- `HDWallet.HARDENED_OFFSET` — 0x80000000
+- `HDWallet.CoinType` — BTC (0), BTC_TESTNET (1), ETH (60), ETC (61)
+- `HDWallet.BIP44_PATH` — ETH, BTC path templates
+
+**Key Generation:**
+
+- `HDWallet.fromSeed(seed)` — Create root HD key from BIP-39 seed
+- `HDWallet.fromExtendedKey(xprv)` — Create from extended private key
+- `HDWallet.fromPublicExtendedKey(xpub)` — Create from extended public key
+
+**Derivation:**
+
+- `HDWallet.derivePath(key, path)` — Derive child key from BIP-32 path
+- `HDWallet.deriveChild(key, index)` — Derive by index
+- `HDWallet.deriveEthereum(key, account?, index?)` — Derive Ethereum key (BIP-44)
+- `HDWallet.deriveBitcoin(key, account?, index?)` — Derive Bitcoin key (BIP-44)
+
+**Serialization:**
+
+- `HDWallet.toExtendedPrivateKey(key)` — Serialize to xprv
+- `HDWallet.toExtendedPublicKey(key)` — Serialize to xpub
+
+**Properties:**
+
+- `HDWallet.getPrivateKey(key)` — Get 32-byte private key
+- `HDWallet.getPublicKey(key)` — Get 33-byte compressed public key
+- `HDWallet.getChainCode(key)` — Get 32-byte chain code
+- `HDWallet.canDeriveHardened(key)` — Check if can derive hardened children
+- `HDWallet.toPublic(key)` — Create public-only version
+
+**Path Utilities:**
+
+- `HDWallet.isHardenedPath(path)` — Check if path uses hardened derivation
+- `HDWallet.isValidPath(path)` — Validate BIP-32 path format
+- `HDWallet.parseIndex(indexStr)` — Parse hardened index notation
+
+**Examples:**
+
+```typescript
+import { HDWallet, Bip39 } from "@tevm/voltaire";
+
+const mnemonic = Bip39.generateMnemonic(256);
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+const root = HDWallet.fromSeed(seed);
+
+// Derive Ethereum accounts
+const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
+const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
+
+// Custom path
+const custom = HDWallet.derivePath(root, "m/44'/60'/0'/0/5");
+```
+
+---
+
+#### AES-GCM — Authenticated encryption
+
+**Constants:**
+
+- `AesGcm.AES128_KEY_SIZE` — 16 bytes
+- `AesGcm.AES256_KEY_SIZE` — 32 bytes
+- `AesGcm.NONCE_SIZE` — 12 bytes
+- `AesGcm.TAG_SIZE` — 16 bytes
+
+**Key Generation:**
+
+- `AesGcm.generateKey(bits)` — Generate AES key (128 or 256 bit)
+- `AesGcm.importKey(keyMaterial)` — Import raw key bytes
+- `AesGcm.exportKey(key)` — Export key to raw bytes
+- `AesGcm.deriveKey(password, salt, iterations, bits)` — Derive key from password
+
+**Encryption:**
+
+- `AesGcm.encrypt(plaintext, key, nonce, additionalData?)` — Encrypt data
+
+**Decryption:**
+
+- `AesGcm.decrypt(ciphertext, key, nonce, additionalData?)` — Decrypt data
+
+**Utilities:**
+
+- `AesGcm.generateNonce()` — Generate random 12-byte nonce
+
+**Examples:**
+
+```typescript
+import { AesGcm } from "@tevm/voltaire";
+
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+
+const plaintext = new TextEncoder().encode("Secret message");
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+
+// Password-based encryption
+const salt = crypto.getRandomValues(new Uint8Array(16));
+const passwordKey = await AesGcm.deriveKey("password", salt, 100000, 256);
+```
+
+---
+
 #### RIPEMD160 — RIPEMD-160 hash function
 
 **Operations:**
@@ -1379,12 +1664,19 @@ Individual precompiles (0x01-0x13):
 | Keccak256.hash    | Uint8Array              | 32-byte Hash   | General hashing, contract addresses |
 | Secp256k1.sign    | Hash, PrivateKey        | Signature      | Sign transactions/messages          |
 | Secp256k1.recover | Signature, Hash         | PublicKey      | Recover signer address              |
+| Ed25519.sign      | Message, SecretKey      | Signature      | EdDSA signatures                    |
+| X25519.scalarmult | SecretKey, PublicKey    | SharedSecret   | ECDH key exchange                   |
+| P256.sign         | Hash, PrivateKey        | Signature      | NIST P-256 signatures               |
+| P256.ecdh         | PrivateKey, PublicKey   | SharedSecret   | P-256 ECDH                          |
 | EIP712.hash       | Domain, Types, Message  | Hash           | Typed data signing                  |
 | SHA256.hash       | Uint8Array              | 32-byte hash   | Bitcoin compatibility               |
 | RIPEMD160.hash    | Uint8Array              | 20-byte hash   | Bitcoin addresses                   |
 | Blake2.hash       | Uint8Array, size?       | 1-64 byte hash | Zcash compatibility                 |
 | BN254.pairing     | Point pairs             | boolean        | zkSNARK verification                |
 | KZG.verify        | Blob, Commitment, Proof | boolean        | EIP-4844 blob verification          |
+| Bip39.generate    | strength                | Mnemonic       | Mnemonic phrase generation          |
+| HDWallet.derive   | Key, Path               | ExtendedKey    | HD wallet derivation                |
+| AesGcm.encrypt    | Data, Key, Nonce        | Ciphertext     | Authenticated encryption            |
 
 ---
 

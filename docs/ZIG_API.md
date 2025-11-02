@@ -118,7 +118,7 @@ const Address = @import("../primitives/address.zig");
 
 ## API
 
-**Legend**: 🚧 Unstable API, unaudited, or unsafe implementation
+**Legend**: 🚧 Unstable API, unaudited, or unsafe implementation | 📦 TypeScript-only (via @noble or @scure)
 
 - [**Ethereum primitives**](#primitives)
   - 🚧 [`Uint`](./src/primitives/uint.zig) &mdash; unsigned integer with overflow-checked arithmetic (Note: Zig 0.14+ includes native `u256` support which is recommended for most use cases. This library provides additional micro-performance optimizations when needed)
@@ -313,6 +313,35 @@ const Address = @import("../primitives/address.zig");
     - [`unaudited_blake2f_compress`](./src/crypto/blake2.zig#L100) &mdash; BLAKE2F wrapper for EIP-152 precompile
   - 🚧 [`ModExp`](./src/crypto/modexp.zig) &mdash; ⚠️ (unaudited) modular exponentiation
     - [`unaudited_modexp`](./src/crypto/modexp.zig#L42) &mdash; modular exponentiation (base^exp mod m)
+  - 📦 [`Ed25519`](./src/crypto/ed25519.ts) &mdash; EdDSA signatures (via @noble/curves)
+    - `keypairFromSeed(seed)` &mdash; generate keypair from 32-byte seed
+    - `sign(message, secretKey)` &mdash; sign message with secret key
+    - `verify(signature, message, publicKey)` &mdash; verify signature
+    - `derivePublicKey(secretKey)` &mdash; derive public key from secret key
+  - 📦 [`X25519`](./src/crypto/x25519.ts) &mdash; Curve25519 ECDH (via @noble/curves)
+    - `derivePublicKey(secretKey)` &mdash; derive public key from secret key
+    - `scalarmult(secretKey, publicKey)` &mdash; compute shared secret
+    - `generateKeypair()` &mdash; generate random keypair
+  - 📦 [`P256`](./src/crypto/p256.ts) &mdash; NIST P-256 ECDSA (via @noble/curves)
+    - `sign(messageHash, privateKey)` &mdash; sign message hash
+    - `verify(signature, messageHash, publicKey)` &mdash; verify signature
+    - `derivePublicKey(privateKey)` &mdash; derive public key
+    - `ecdh(privateKey, publicKey)` &mdash; ECDH key exchange
+  - 📦 [`BIP-39`](./src/crypto/bip39.ts) &mdash; Mnemonic phrases (via @scure/bip39)
+    - `generateMnemonic(strength)` &mdash; generate 12-24 word mnemonic
+    - `validateMnemonic(mnemonic)` &mdash; validate mnemonic phrase
+    - `mnemonicToSeed(mnemonic, passphrase?)` &mdash; derive 64-byte seed
+    - `entropyToMnemonic(entropy)` &mdash; convert entropy to mnemonic
+  - 📦 [`HDWallet`](./src/crypto/hdwallet.ts) &mdash; BIP-32/BIP-44 HD wallets (via @scure/bip32)
+    - `fromSeed(seed)` &mdash; create root HD key from BIP-39 seed
+    - `derivePath(key, path)` &mdash; derive child key from BIP-32 path
+    - `deriveEthereum(key, account?, index?)` &mdash; derive Ethereum key (m/44'/60'/account'/0/index)
+    - `deriveBitcoin(key, account?, index?)` &mdash; derive Bitcoin key (m/44'/0'/account'/0/index)
+  - 📦 [`AES-GCM`](./src/crypto/aes_gcm.ts) &mdash; Authenticated encryption (via WebCrypto)
+    - `generateKey(bits)` &mdash; generate AES key (128 or 256 bit)
+    - `encrypt(plaintext, key, nonce, additionalData?)` &mdash; encrypt data
+    - `decrypt(ciphertext, key, nonce, additionalData?)` &mdash; decrypt data
+    - `deriveKey(password, salt, iterations, bits)` &mdash; PBKDF2 key derivation
       <br/>
       <br/>
 - [**Ethereum precompiles**](#precompiles)
