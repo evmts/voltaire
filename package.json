@@ -97,6 +97,8 @@
 		"ref-napi": "^3.0.3"
 	},
 	"dependencies": {
+		"@scure/bip32": "^2.0.1",
+		"@scure/bip39": "^2.0.1",
 		"abitype": "^1.1.1",
 		"c-kzg": "^4.1.0"
 	}
