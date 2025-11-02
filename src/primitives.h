@@ -565,6 +565,98 @@ int primitives_authorization_authority(const PrimitivesAuthorization * auth_ptr,
 uint64_t primitives_authorization_gas_cost(size_t count, size_t empty_accounts);
 
 // ============================================================================
+// ============================================================================
+// ============================================================================
+
+/**
+ * Encrypt with AES-128-GCM
+ */
+int aesGcm128Encrypt(const uint8_t * plaintext_ptr, size_t plaintext_len, const uint8_t * key_ptr, const uint8_t * nonce_ptr, const uint8_t * ad_ptr, size_t ad_len, uint8_t * out_ptr);
+
+/**
+ * Decrypt with AES-128-GCM
+ */
+int aesGcm128Decrypt(const uint8_t * ciphertext_ptr, size_t ciphertext_len, const uint8_t * key_ptr, const uint8_t * nonce_ptr, const uint8_t * ad_ptr, size_t ad_len, uint8_t * out_ptr);
+
+/**
+ * Encrypt with AES-256-GCM
+ */
+int aesGcm256Encrypt(const uint8_t * plaintext_ptr, size_t plaintext_len, const uint8_t * key_ptr, const uint8_t * nonce_ptr, const uint8_t * ad_ptr, size_t ad_len, uint8_t * out_ptr);
+
+/**
+ * Decrypt with AES-256-GCM
+ */
+int aesGcm256Decrypt(const uint8_t * ciphertext_ptr, size_t ciphertext_len, const uint8_t * key_ptr, const uint8_t * nonce_ptr, const uint8_t * ad_ptr, size_t ad_len, uint8_t * out_ptr);
+
+// ============================================================================
+// X25519 API
+// ============================================================================
+
+/**
+ * Derive X25519 public key from secret key
+ */
+int x25519DerivePublicKey(const uint8_t * secret_ptr, uint8_t * pub_ptr);
+
+/**
+ * Perform X25519 scalar multiplication (ECDH)
+ */
+int x25519Scalarmult(const uint8_t * secret_ptr, const uint8_t * pub_ptr, uint8_t * shared_ptr);
+
+/**
+ * Generate X25519 keypair from seed
+ */
+int x25519KeypairFromSeed(const uint8_t * seed_ptr, uint8_t * secret_ptr, uint8_t * pub_ptr);
+
+// ============================================================================
+// Ed25519 API
+// ============================================================================
+
+/**
+ * Sign message with Ed25519 secret key
+ */
+int ed25519Sign(const uint8_t * msg_ptr, size_t msg_len, const uint8_t * secret_ptr, uint8_t * sig_ptr);
+
+/**
+ * Verify Ed25519 signature
+ */
+int ed25519Verify(const uint8_t * msg_ptr, size_t msg_len, const uint8_t * sig_ptr, const uint8_t * pub_ptr);
+
+/**
+ * Derive Ed25519 public key from secret key
+ */
+int ed25519DerivePublicKey(const uint8_t * secret_ptr, uint8_t * pub_ptr);
+
+/**
+ * Generate Ed25519 keypair from seed
+ */
+int ed25519KeypairFromSeed(const uint8_t * seed_ptr, uint8_t * secret_ptr, uint8_t * pub_ptr);
+
+// ============================================================================
+// P256 (secp256r1) API
+// ============================================================================
+
+/**
+ * Sign message hash with P256 private key
+ * Returns signature as r || s (64 bytes)
+ */
+int p256Sign(const uint8_t * msgHash_ptr, const uint8_t * privKey_ptr, uint8_t * sig_ptr);
+
+/**
+ * Verify P256 signature
+ */
+int p256Verify(const uint8_t * msgHash_ptr, const uint8_t * sig_ptr, const uint8_t * pubKey_ptr);
+
+/**
+ * Derive P256 public key from private key
+ */
+int p256DerivePublicKey(const uint8_t * privKey_ptr, uint8_t * pubKey_ptr);
+
+/**
+ * Perform P256 ECDH key exchange
+ */
+int p256Ecdh(const uint8_t * privKey_ptr, const uint8_t * pubKey_ptr, uint8_t * shared_ptr);
+
+// ============================================================================
 // WASM Memory Management
 // ============================================================================
 
