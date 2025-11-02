@@ -117,6 +117,12 @@ pub const Uint = @import("Uint/Uint.zig").Uint;
 // Note: Zig 0.14 includes a builtin `u256` primitive. Avoid exporting
 // a shadowing alias here to prevent name conflicts in tests/builds.
 
+// Denominations
+pub const Denomination = @import("Denomination/denomination.zig");
+pub const Wei = Denomination.Wei;
+pub const Gwei = Denomination.Gwei;
+pub const Ether = Denomination.Ether;
+
 // State management
 pub const State = @import("State/state.zig");
 pub const StorageKey = State.StorageKey;
@@ -147,6 +153,8 @@ pub const ForkTransition = @import("Hardfork/hardfork.zig").ForkTransition;
 
 // Data structures
 pub const Trie = @import("trie.zig").Trie;
+pub const BloomFilter = @import("BloomFilter/bloom_filter.zig").BloomFilter;
+pub const BinaryTree = @import("BinaryTree/binary_tree.zig");
 
 // Export common constants
 pub const ZERO_ADDRESS = Address.ZERO_ADDRESS;

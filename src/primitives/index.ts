@@ -51,3 +51,6 @@ export * as EventLog from "./EventLog/index.js";
 
 // Sign-in with Ethereum
 export * as Siwe from "./Siwe/index.js";
+
+// Data structures
+export * as BinaryTree from "./BinaryTree/BinaryTree.js";
