@@ -10,8 +10,8 @@
  * @see https://eips.ethereum.org/EIPS/eip-7864
  */
 
-import { blake3 } from "@noble/hashes/blake3";
-import type { Hex } from "../Hex/types.js";
+import { blake3 } from "@noble/hashes/blake3.js";
+import type { Hex } from "../Hex/index.js";
 
 export interface BinaryTree {
   readonly root: Node;
@@ -59,7 +59,7 @@ export function splitKey(k: Uint8Array): { stem: Uint8Array; idx: number } {
   if (k.length !== 32) throw new Error("Invalid key length");
   return {
     stem: k.slice(0, 31),
-    idx: k[31],
+    idx: k[31] ?? 0,
   };
 }
 
@@ -70,7 +70,9 @@ export function getStemBit(stem: Uint8Array, pos: number): 0 | 1 {
   if (pos >= 248) return 0;
   const byteIdx = Math.floor(pos / 8);
   const bitIdx = 7 - (pos % 8);
-  return ((stem[byteIdx] >> bitIdx) & 1) as 0 | 1;
+  const byte = stem[byteIdx];
+  if (byte === undefined) return 0;
+  return ((byte >> bitIdx) & 1) as 0 | 1;
 }
 
 /**
@@ -203,7 +205,7 @@ export function get(tree: BinaryTree, k: Uint8Array): Uint8Array | null {
   return getNode(tree.root, stem, idx, 0);
 }
 
-function getNode(node: Node, stem: Uint8Array, idx: number, depth: number): Uint8Array | null {
+function getNode(node: Node, stem: Uint8Array, idx: number, _depth: number): Uint8Array | null {
   switch (node.type) {
     case "empty":
       return null;
@@ -213,8 +215,6 @@ function getNode(node: Node, stem: Uint8Array, idx: number, depth: number): Uint
       }
       return null;
     case "internal": {
-      const bit = getStemBit(stem, depth);
-      const childHash = bit === 0 ? node.left : node.right;
       // Would need to traverse to child node
       // Simplified for now
       return null;
