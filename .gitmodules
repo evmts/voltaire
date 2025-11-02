@@ -1,0 +1,3 @@
+[submodule "lib/libwally-core"]
+	path = lib/libwally-core
+	url = https://github.com/evmts/libwally-core
