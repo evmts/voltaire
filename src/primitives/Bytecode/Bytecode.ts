@@ -13,10 +13,6 @@
  * // Operations - standard form
  * const jumpdests = Bytecode.analyzeJumpDestinations(code);
  * const isValid = Bytecode.validate(code);
- *
- * // Operations - convenience form
- * const jumpdests2 = Bytecode.analyzeJumpDestinations.call(code);
- * const isValid2 = Bytecode.validate.call(code);
  * ```
  */
 
@@ -154,32 +150,24 @@ export function isTerminator(opcode: Opcode): boolean {
 }
 
 // ==========================================================================
-// Jump Destination Analysis
+// Jump Destination Analysis (Internal)
 // ==========================================================================
 
 /**
- * Analyze bytecode to identify valid JUMPDEST locations (standard form)
- *
- * This must skip over PUSH instruction immediate data to avoid
- * treating data bytes as instructions.
- *
- * @param code - Bytecode to analyze
- * @returns Set of valid JUMPDEST positions
+ * Analyze bytecode to identify valid JUMPDEST locations (internal method)
  *
  * @example
  * ```typescript
- * const code = new Uint8Array([0x60, 0x5b, 0x5b]); // PUSH1 0x5b, JUMPDEST
- * const jumpdests = analyzeJumpDestinations(code);
- * jumpdests.has(1); // false (inside PUSH data)
- * jumpdests.has(2); // true (actual JUMPDEST)
+ * const code = new Uint8Array([0x60, 0x5b, 0x5b]);
+ * const jumpdests = _analyzeJumpDestinations.call(code);
  * ```
  */
-export function analyzeJumpDestinations(code: Uint8Array): Set<number> {
+export function _analyzeJumpDestinations(this: Bytecode): Set<number> {
   const validJumpdests = new Set<number>();
   let pc = 0;
 
-  while (pc < code.length) {
-    const opcode = code[pc] ?? 0;
+  while (pc < this.length) {
+    const opcode = this[pc] ?? 0;
 
     if (opcode === JUMPDEST) {
       validJumpdests.add(pc);
@@ -195,86 +183,44 @@ export function analyzeJumpDestinations(code: Uint8Array): Set<number> {
   return validJumpdests;
 }
 
-/**
- * Analyze bytecode to identify valid JUMPDEST locations (convenience form)
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x60, 0x5b, 0x5b]);
- * const jumpdests = analyzeJumpDestinations.call(code);
- * ```
- */
-export function analyzeJumpDests(this: Uint8Array): Set<number> {
-  return analyzeJumpDestinations(this);
-}
-
 // ==========================================================================
-// Validation
+// Validation (Internal)
 // ==========================================================================
 
 /**
- * Check if a position is a valid JUMPDEST (standard form)
- *
- * @param code - Bytecode to check
- * @param position - Position to check
- * @returns true if position is a valid JUMPDEST
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x5b, 0x60, 0x5b, 0x5b]);
- * isValidJumpDest(code, 0); // true
- * isValidJumpDest(code, 2); // false (inside PUSH data)
- * isValidJumpDest(code, 3); // true
- * ```
- */
-export function isValidJumpDest(code: Uint8Array, position: number): boolean {
-  const validJumpdests = analyzeJumpDestinations(code);
-  return validJumpdests.has(position);
-}
-
-/**
- * Check if a position is a valid JUMPDEST (convenience form)
+ * Check if a position is a valid JUMPDEST (internal method)
  *
  * @example
  * ```typescript
  * const code = new Uint8Array([0x5b]);
- * isValidJumpDest.call(code, 0); // true
+ * _isValidJumpDest.call(code, 0); // true
  * ```
  */
-export function isJumpDest(this: Uint8Array, position: number): boolean {
-  return isValidJumpDest(this, position);
+export function _isValidJumpDest(this: Bytecode, position: number): boolean {
+  const validJumpdests = _analyzeJumpDestinations.call(this);
+  return validJumpdests.has(position);
 }
 
 /**
- * Validate bytecode structure (standard form)
- *
- * Performs basic validation checks on bytecode:
- * - Checks for incomplete PUSH instructions
- * - Validates bytecode can be parsed without errors
- *
- * @param code - Bytecode to validate
- * @returns true if bytecode is valid
+ * Validate bytecode structure (internal method)
  *
  * @example
  * ```typescript
- * const valid = new Uint8Array([0x60, 0x01]); // PUSH1 0x01
- * validate(valid); // true
- *
- * const invalid = new Uint8Array([0x60]); // PUSH1 with no data
- * validate(invalid); // false
+ * const code = new Uint8Array([0x60, 0x01]);
+ * _validate.call(code); // true
  * ```
  */
-export function validate(code: Uint8Array): boolean {
+export function _validate(this: Bytecode): boolean {
   let pc = 0;
 
-  while (pc < code.length) {
-    const opcode = code[pc] ?? 0;
+  while (pc < this.length) {
+    const opcode = this[pc] ?? 0;
 
     if (isPush(opcode)) {
       const pushSize = getPushSize(opcode);
 
       // Check if we have enough bytes for the PUSH data
-      if (pc + pushSize >= code.length) {
+      if (pc + pushSize >= this.length) {
         // Incomplete PUSH instruction
         return false;
       }
@@ -288,50 +234,29 @@ export function validate(code: Uint8Array): boolean {
   return true;
 }
 
+// ==========================================================================
+// Instruction Parsing (Internal)
+// ==========================================================================
+
 /**
- * Validate bytecode structure (convenience form)
+ * Parse bytecode into instructions (internal method)
  *
  * @example
  * ```typescript
  * const code = new Uint8Array([0x60, 0x01]);
- * validate.call(code); // true
+ * const instructions = _parseInstructions.call(code);
  * ```
  */
-export function isValid(this: Uint8Array): boolean {
-  return validate(this);
-}
-
-// ==========================================================================
-// Instruction Parsing
-// ==========================================================================
-
-/**
- * Parse bytecode into instructions (standard form)
- *
- * @param code - Bytecode to parse
- * @returns Array of instructions
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
- * const instructions = parseInstructions(code);
- * // [
- * //   { opcode: 0x60, position: 0, pushData: Uint8Array([0x01]) },
- * //   { opcode: 0x60, position: 2, pushData: Uint8Array([0x02]) },
- * //   { opcode: 0x01, position: 4 }
- * // ]
- * ```
- */
-export function parseInstructions(code: Uint8Array): Instruction[] {
+export function _parseInstructions(this: Bytecode): Instruction[] {
   const instructions: Instruction[] = [];
   let pc = 0;
 
-  while (pc < code.length) {
-    const opcode = code[pc] ?? 0;
+  while (pc < this.length) {
+    const opcode = this[pc] ?? 0;
 
     if (isPush(opcode)) {
       const pushSize = getPushSize(opcode);
-      const pushData = code.slice(pc + 1, pc + 1 + pushSize);
+      const pushData = this.slice(pc + 1, pc + 1 + pushSize);
       instructions.push({ opcode, position: pc, pushData });
       pc += 1 + pushSize;
     } else {
@@ -343,240 +268,178 @@ export function parseInstructions(code: Uint8Array): Instruction[] {
   return instructions;
 }
 
-/**
- * Parse bytecode into instructions (convenience form)
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x60, 0x01]);
- * const instructions = parseInstructions.call(code);
- * ```
- */
-export function parse(this: Uint8Array): Instruction[] {
-  return parseInstructions(this);
-}
-
 // ==========================================================================
-// Complete Analysis
+// Complete Analysis (Internal)
 // ==========================================================================
 
 /**
- * Perform complete bytecode analysis (standard form)
- *
- * @param code - Bytecode to analyze
- * @returns Complete analysis result
+ * Perform complete bytecode analysis (internal method)
  *
  * @example
  * ```typescript
- * const code = new Uint8Array([0x60, 0x01, 0x5b, 0x00]);
- * const analysis = analyze(code);
- * // {
- * //   valid: true,
- * //   jumpDestinations: Set([2]),
- * //   instructions: [...],
- * // }
+ * const code = new Uint8Array([0x60, 0x01, 0x5b]);
+ * const analysis = _analyze.call(code);
  * ```
  */
-export function analyze(code: Uint8Array): Analysis {
+export function _analyze(this: Bytecode): Analysis {
   return {
-    valid: validate(code),
-    jumpDestinations: analyzeJumpDestinations(code),
-    instructions: parseInstructions(code),
+    valid: _validate.call(this),
+    jumpDestinations: _analyzeJumpDestinations.call(this),
+    instructions: _parseInstructions.call(this),
   };
 }
 
-/**
- * Perform complete bytecode analysis (convenience form)
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x60, 0x01, 0x5b, 0x00]);
- * const analysis = analyze.call(code);
- * ```
- */
-export function getAnalysis(this: Uint8Array): Analysis {
-  return analyze(this);
-}
-
 // ==========================================================================
-// Size and Slicing Operations
+// Size and Slicing Operations (Internal)
 // ==========================================================================
 
 /**
- * Get bytecode size in bytes (standard form)
- *
- * @param code - Bytecode
- * @returns Size in bytes
+ * Get bytecode size in bytes (internal method)
  *
  * @example
  * ```typescript
  * const code = new Uint8Array([0x60, 0x01]);
- * size(code); // 2
+ * _size.call(code); // 2
  * ```
  */
-export function size(code: Uint8Array): number {
-  return code.length;
+export function _size(this: Bytecode): number {
+  return this.length;
 }
 
 /**
- * Get bytecode size in bytes (convenience form)
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x60, 0x01]);
- * size.call(code); // 2
- * ```
- */
-export function getSize(this: Uint8Array): number {
-  return size(this);
-}
-
-/**
- * Extract runtime bytecode from creation bytecode (standard form)
- *
- * Creation bytecode typically contains constructor code followed by
- * runtime code. This extracts just the runtime portion.
- *
- * @param code - Creation bytecode
- * @param offset - Offset where runtime code starts
- * @returns Runtime bytecode
+ * Extract runtime bytecode from creation bytecode (internal method)
  *
  * @example
  * ```typescript
  * const creation = new Uint8Array([...constructor, ...runtime]);
- * const runtime = extractRuntime(creation, constructorLength);
+ * const runtime = _extractRuntime.call(creation, constructorLength);
  * ```
  */
-export function extractRuntime(code: Uint8Array, offset: number): Uint8Array {
-  return code.slice(offset);
-}
-
-/**
- * Extract runtime bytecode from creation bytecode (convenience form)
- *
- * @example
- * ```typescript
- * const creation = new Uint8Array([...constructor, ...runtime]);
- * const runtime = extractRuntime.call(creation, constructorLength);
- * ```
- */
-export function getRuntime(this: Uint8Array, offset: number): Uint8Array {
-  return extractRuntime(this, offset);
+export function _extractRuntime(this: Bytecode, offset: number): Bytecode {
+  return this.slice(offset) as Bytecode;
 }
 
 // ==========================================================================
-// Bytecode Comparison
+// Bytecode Comparison (Internal)
 // ==========================================================================
 
 /**
- * Compare two bytecode arrays for equality (standard form)
- *
- * @param a - First bytecode
- * @param b - Second bytecode
- * @returns true if bytecode is identical
+ * Compare two bytecode arrays for equality (internal method)
  *
  * @example
  * ```typescript
  * const code1 = new Uint8Array([0x60, 0x01]);
  * const code2 = new Uint8Array([0x60, 0x01]);
- * equals(code1, code2); // true
+ * _equals.call(code1, code2); // true
  * ```
  */
-export function equals(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
+export function _equals(this: Bytecode, other: Bytecode): boolean {
+  if (this.length !== other.length) return false;
+  for (let i = 0; i < this.length; i++) {
+    if (this[i] !== other[i]) return false;
   }
   return true;
 }
 
-/**
- * Compare two bytecode arrays for equality (convenience form)
- *
- * @example
- * ```typescript
- * const code1 = new Uint8Array([0x60, 0x01]);
- * const code2 = new Uint8Array([0x60, 0x01]);
- * equals.call(code1, code2); // true
- * ```
- */
-export function isEqual(this: Uint8Array, other: Uint8Array): boolean {
-  return equals(this, other);
-}
-
 // ==========================================================================
-// Bytecode Hashing
+// Bytecode Hashing (Internal)
 // ==========================================================================
 
 /**
- * Compute bytecode hash (keccak256) (standard form)
- *
- * @param code - Bytecode to hash
- * @returns Bytecode hash (32 bytes)
+ * Compute bytecode hash (keccak256) (internal method)
  *
  * @example
  * ```typescript
  * const code = new Uint8Array([0x60, 0x01]);
- * const hash = hash(code);
+ * const hash = _hash.call(code);
  * ```
  */
-export function hash(code: Uint8Array): Hash {
-  return Keccak256.hash(code) as Hash;
+export function _hash(this: Bytecode): Hash {
+  return Keccak256.hash(this) as Hash;
 }
 
+// ==========================================================================
+// Bytecode Formatting (Internal)
+// ==========================================================================
+
 /**
- * Compute bytecode hash (keccak256) (convenience form)
+ * Format bytecode as hex string (internal method)
  *
  * @example
  * ```typescript
  * const code = new Uint8Array([0x60, 0x01]);
- * const hash = hash.call(code);
+ * _toHex.call(code); // "0x6001"
  * ```
  */
-export function getHash(this: Uint8Array): Hash {
-  return hash(this);
-}
-
-// ==========================================================================
-// Bytecode Formatting
-// ==========================================================================
-
-/**
- * Format bytecode as hex string (standard form)
- *
- * @param code - Bytecode to format
- * @param prefix - Whether to include 0x prefix
- * @returns Hex string
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x60, 0x01]);
- * toHex(code); // "0x6001"
- * toHex(code, false); // "6001"
- * ```
- */
-export function toHex(code: Uint8Array, prefix = true): string {
-  const hex = Array.from(code)
+export function _toHex(this: Bytecode, prefix = true): string {
+  const hex = Array.from(this)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
   return prefix ? `0x${hex}` : hex;
 }
 
 /**
- * Format bytecode as hex string (convenience form)
+ * Format all instructions to human-readable strings (internal method)
  *
  * @example
  * ```typescript
- * const code = new Uint8Array([0x60, 0x01]);
- * toHex.call(code); // "0x6001"
+ * const code = new Uint8Array([0x60, 0x01, 0x5b]);
+ * const formatted = _formatInstructions.call(code);
  * ```
  */
-export function asHex(this: Uint8Array, prefix = true): string {
-  return toHex(this, prefix);
+export function _formatInstructions(this: Bytecode): string[] {
+  const instructions = _parseInstructions.call(this);
+  return instructions.map(formatInstruction);
+}
+
+// ==========================================================================
+// Metadata Extraction (Internal)
+// ==========================================================================
+
+/**
+ * Check if bytecode contains CBOR metadata (internal method)
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([...bytecode, ...metadata]);
+ * _hasMetadata.call(code); // true
+ * ```
+ */
+export function _hasMetadata(this: Bytecode): boolean {
+  // Solidity metadata starts with 0xa2 0x64 ('ipfs') or 0xa2 0x65 ('bzzr')
+  // and ends with 0x00 0x33 (length 51) at the very end
+  if (this.length < 2) return false;
+
+  const lastTwo = this.slice(-2);
+  const b0 = lastTwo[0] ?? 0;
+  const b1 = lastTwo[1] ?? 0;
+  // Check for common metadata length markers
+  return b0 === 0x00 && b1 >= 0x20 && b1 <= 0x40;
 }
 
 /**
- * Parse hex string to bytecode (standard form)
+ * Extract bytecode without metadata (internal method)
+ *
+ * @example
+ * ```typescript
+ * const withMeta = new Uint8Array([...bytecode, ...metadata]);
+ * const without = _stripMetadata.call(withMeta);
+ * ```
+ */
+export function _stripMetadata(this: Bytecode): Bytecode {
+  if (!_hasMetadata.call(this)) return this;
+
+  // Last 2 bytes indicate metadata length
+  const metadataLength = (this[this.length - 1] ?? 0) + 2;
+  return this.slice(0, -metadataLength) as Bytecode;
+}
+
+// ==========================================================================
+// Standalone Utility Functions
+// ==========================================================================
+
+/**
+ * Parse hex string to bytecode
  *
  * @param hex - Hex string (with or without 0x prefix)
  * @returns Bytecode
@@ -587,7 +450,7 @@ export function asHex(this: Uint8Array, prefix = true): string {
  * // Uint8Array([0x60, 0x01])
  * ```
  */
-export function fromHex(hex: string): Uint8Array {
+export function fromHex(hex: string): Bytecode {
   const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
   if (cleaned.length % 2 !== 0) {
     throw new Error("Invalid hex string: odd length");
@@ -596,11 +459,11 @@ export function fromHex(hex: string): Uint8Array {
   for (let i = 0; i < bytes.length; i++) {
     bytes[i] = parseInt(cleaned.slice(i * 2, i * 2 + 2), 16);
   }
-  return bytes;
+  return bytes as Bytecode;
 }
 
 /**
- * Format instruction to human-readable string (standard form)
+ * Format instruction to human-readable string
  *
  * @param instruction - Instruction to format
  * @returns Human-readable string
@@ -625,8 +488,237 @@ export function formatInstruction(instruction: Instruction): string {
   return `0x${pos}: 0x${opcode}`;
 }
 
+// ==========================================================================
+// Branded Types
+// ==========================================================================
+
 /**
- * Format all instructions to human-readable strings (standard form)
+ * Complete Bytecode type (Uint8Array)
+ */
+export type Bytecode = Uint8Array;
+
+// ==========================================================================
+// from() - Main Type Constructor
+// ==========================================================================
+
+/**
+ * Create Bytecode from various input types
+ *
+ * @param value - Hex string or Uint8Array
+ * @returns Bytecode
+ *
+ * @example
+ * ```typescript
+ * const code1 = from("0x6001");
+ * const code2 = from(new Uint8Array([0x60, 0x01]));
+ * ```
+ */
+export function from(value: string | Uint8Array): Bytecode {
+  if (typeof value === "string") {
+    return fromHex(value);
+  }
+  return value as Bytecode;
+}
+
+// ==========================================================================
+// Public Wrapper Functions (Namespace+Type Overloading Pattern)
+// ==========================================================================
+
+/**
+ * Analyze bytecode to identify valid JUMPDEST locations
+ *
+ * This must skip over PUSH instruction immediate data to avoid
+ * treating data bytes as instructions.
+ *
+ * @param code - Bytecode to analyze
+ * @returns Set of valid JUMPDEST positions
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x60, 0x5b, 0x5b]); // PUSH1 0x5b, JUMPDEST
+ * const jumpdests = analyzeJumpDestinations(code);
+ * jumpdests.has(1); // false (inside PUSH data)
+ * jumpdests.has(2); // true (actual JUMPDEST)
+ * ```
+ */
+export function analyzeJumpDestinations(code: Bytecode | string): Set<number> {
+  return _analyzeJumpDestinations.call(from(code));
+}
+
+/**
+ * Check if a position is a valid JUMPDEST
+ *
+ * @param code - Bytecode to check
+ * @param position - Position to check
+ * @returns true if position is a valid JUMPDEST
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x5b, 0x60, 0x5b, 0x5b]);
+ * isValidJumpDest(code, 0); // true
+ * isValidJumpDest(code, 2); // false (inside PUSH data)
+ * isValidJumpDest(code, 3); // true
+ * ```
+ */
+export function isValidJumpDest(code: Bytecode | string, position: number): boolean {
+  return _isValidJumpDest.call(from(code), position);
+}
+
+/**
+ * Validate bytecode structure
+ *
+ * Performs basic validation checks on bytecode:
+ * - Checks for incomplete PUSH instructions
+ * - Validates bytecode can be parsed without errors
+ *
+ * @param code - Bytecode to validate
+ * @returns true if bytecode is valid
+ *
+ * @example
+ * ```typescript
+ * const valid = new Uint8Array([0x60, 0x01]); // PUSH1 0x01
+ * validate(valid); // true
+ *
+ * const invalid = new Uint8Array([0x60]); // PUSH1 with no data
+ * validate(invalid); // false
+ * ```
+ */
+export function validate(code: Bytecode | string): boolean {
+  return _validate.call(from(code));
+}
+
+/**
+ * Parse bytecode into instructions
+ *
+ * @param code - Bytecode to parse
+ * @returns Array of instructions
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
+ * const instructions = parseInstructions(code);
+ * // [
+ * //   { opcode: 0x60, position: 0, pushData: Uint8Array([0x01]) },
+ * //   { opcode: 0x60, position: 2, pushData: Uint8Array([0x02]) },
+ * //   { opcode: 0x01, position: 4 }
+ * // ]
+ * ```
+ */
+export function parseInstructions(code: Bytecode | string): Instruction[] {
+  return _parseInstructions.call(from(code));
+}
+
+/**
+ * Perform complete bytecode analysis
+ *
+ * @param code - Bytecode to analyze
+ * @returns Complete analysis result
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x60, 0x01, 0x5b, 0x00]);
+ * const analysis = analyze(code);
+ * // {
+ * //   valid: true,
+ * //   jumpDestinations: Set([2]),
+ * //   instructions: [...],
+ * // }
+ * ```
+ */
+export function analyze(code: Bytecode | string): Analysis {
+  return _analyze.call(from(code));
+}
+
+/**
+ * Get bytecode size in bytes
+ *
+ * @param code - Bytecode
+ * @returns Size in bytes
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x60, 0x01]);
+ * size(code); // 2
+ * ```
+ */
+export function size(code: Bytecode | string): number {
+  return _size.call(from(code));
+}
+
+/**
+ * Extract runtime bytecode from creation bytecode
+ *
+ * Creation bytecode typically contains constructor code followed by
+ * runtime code. This extracts just the runtime portion.
+ *
+ * @param code - Creation bytecode
+ * @param offset - Offset where runtime code starts
+ * @returns Runtime bytecode
+ *
+ * @example
+ * ```typescript
+ * const creation = new Uint8Array([...constructor, ...runtime]);
+ * const runtime = extractRuntime(creation, constructorLength);
+ * ```
+ */
+export function extractRuntime(code: Bytecode | string, offset: number): Bytecode {
+  return _extractRuntime.call(from(code), offset);
+}
+
+/**
+ * Compare two bytecode arrays for equality
+ *
+ * @param a - First bytecode
+ * @param b - Second bytecode
+ * @returns true if bytecode is identical
+ *
+ * @example
+ * ```typescript
+ * const code1 = new Uint8Array([0x60, 0x01]);
+ * const code2 = new Uint8Array([0x60, 0x01]);
+ * equals(code1, code2); // true
+ * ```
+ */
+export function equals(a: Bytecode | string, b: Bytecode | string): boolean {
+  return _equals.call(from(a), from(b));
+}
+
+/**
+ * Compute bytecode hash (keccak256)
+ *
+ * @param code - Bytecode to hash
+ * @returns Bytecode hash (32 bytes)
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x60, 0x01]);
+ * const hash = hash(code);
+ * ```
+ */
+export function hash(code: Bytecode | string): Hash {
+  return _hash.call(from(code));
+}
+
+/**
+ * Format bytecode as hex string
+ *
+ * @param code - Bytecode to format
+ * @param prefix - Whether to include 0x prefix
+ * @returns Hex string
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x60, 0x01]);
+ * toHex(code); // "0x6001"
+ * toHex(code, false); // "6001"
+ * ```
+ */
+export function toHex(code: Bytecode | string, prefix = true): string {
+  return _toHex.call(from(code), prefix);
+}
+
+/**
+ * Format all instructions to human-readable strings
  *
  * @param code - Bytecode to format
  * @returns Array of formatted instructions
@@ -638,30 +730,12 @@ export function formatInstruction(instruction: Instruction): string {
  * // ["0x0000: PUSH1 0x01", "0x0002: JUMPDEST"]
  * ```
  */
-export function formatInstructions(code: Uint8Array): string[] {
-  const instructions = parseInstructions(code);
-  return instructions.map(formatInstruction);
+export function formatInstructions(code: Bytecode | string): string[] {
+  return _formatInstructions.call(from(code));
 }
 
 /**
- * Format all instructions to human-readable strings (convenience form)
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([0x60, 0x01, 0x5b]);
- * const formatted = formatInstructions.call(code);
- * ```
- */
-export function disassemble(this: Uint8Array): string[] {
-  return formatInstructions(this);
-}
-
-// ==========================================================================
-// Metadata Extraction
-// ==========================================================================
-
-/**
- * Check if bytecode contains CBOR metadata (standard form)
+ * Check if bytecode contains CBOR metadata
  *
  * Solidity compiler includes CBOR-encoded metadata at the end of bytecode.
  *
@@ -674,33 +748,12 @@ export function disassemble(this: Uint8Array): string[] {
  * hasMetadata(code); // true
  * ```
  */
-export function hasMetadata(code: Uint8Array): boolean {
-  // Solidity metadata starts with 0xa2 0x64 ('ipfs') or 0xa2 0x65 ('bzzr')
-  // and ends with 0x00 0x33 (length 51) at the very end
-  if (code.length < 2) return false;
-
-  const lastTwo = code.slice(-2);
-  const b0 = lastTwo[0] ?? 0;
-  const b1 = lastTwo[1] ?? 0;
-  // Check for common metadata length markers
-  return b0 === 0x00 && b1 >= 0x20 && b1 <= 0x40;
+export function hasMetadata(code: Bytecode | string): boolean {
+  return _hasMetadata.call(from(code));
 }
 
 /**
- * Check if bytecode contains CBOR metadata (convenience form)
- *
- * @example
- * ```typescript
- * const code = new Uint8Array([...bytecode, ...metadata]);
- * hasMetadata.call(code); // true
- * ```
- */
-export function containsMetadata(this: Uint8Array): boolean {
-  return hasMetadata(this);
-}
-
-/**
- * Extract bytecode without metadata (standard form)
+ * Extract bytecode without metadata
  *
  * @param code - Bytecode with metadata
  * @returns Bytecode without metadata
@@ -711,32 +764,6 @@ export function containsMetadata(this: Uint8Array): boolean {
  * const without = stripMetadata(withMeta);
  * ```
  */
-export function stripMetadata(code: Uint8Array): Uint8Array {
-  if (!hasMetadata(code)) return code;
-
-  // Last 2 bytes indicate metadata length
-  const metadataLength = (code[code.length - 1] ?? 0) + 2;
-  return code.slice(0, -metadataLength);
+export function stripMetadata(code: Bytecode | string): Bytecode {
+  return _stripMetadata.call(from(code));
 }
-
-/**
- * Extract bytecode without metadata (convenience form)
- *
- * @example
- * ```typescript
- * const withMeta = new Uint8Array([...bytecode, ...metadata]);
- * const without = stripMetadata.call(withMeta);
- * ```
- */
-export function withoutMetadata(this: Uint8Array): Uint8Array {
-  return stripMetadata(this);
-}
-
-// ==========================================================================
-// Branded Types
-// ==========================================================================
-
-/**
- * Complete Bytecode type (Uint8Array)
- */
-export type Bytecode = Uint8Array;

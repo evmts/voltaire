@@ -7,26 +7,26 @@ import * as EIP7702 from "./EIP7702/getEffectiveGasPrice.js";
 /**
  * Get transaction gas price (handles different types)
  */
-export function getGasPrice(tx: Any, baseFee?: bigint): bigint {
-	if (isLegacy(tx) || isEIP2930(tx)) {
-		return tx.gasPrice;
+export function getGasPrice(this: Any, baseFee?: bigint): bigint {
+	if (isLegacy(this) || isEIP2930(this)) {
+		return this.gasPrice;
 	}
 
 	if (!baseFee) {
 		throw new Error("baseFee required for EIP-1559+ transactions");
 	}
 
-	if (isEIP1559(tx)) {
-		return EIP1559.getEffectiveGasPrice.call(tx, baseFee);
+	if (isEIP1559(this)) {
+		return EIP1559.getEffectiveGasPrice.call(this, baseFee);
 	}
 
-	if (isEIP4844(tx)) {
-		return EIP4844.getEffectiveGasPrice.call(tx, baseFee);
+	if (isEIP4844(this)) {
+		return EIP4844.getEffectiveGasPrice.call(this, baseFee);
 	}
 
-	if (isEIP7702(tx)) {
-		return EIP7702.getEffectiveGasPrice.call(tx, baseFee);
+	if (isEIP7702(this)) {
+		return EIP7702.getEffectiveGasPrice.call(this, baseFee);
 	}
 
-	throw new Error(`Unknown transaction type: ${(tx as any).type}`);
+	throw new Error(`Unknown transaction type: ${(this as any).type}`);
 }

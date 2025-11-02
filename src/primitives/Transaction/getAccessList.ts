@@ -4,9 +4,9 @@ import type { Any, AccessList } from "./types.js";
 /**
  * Get access list (empty for legacy transactions)
  */
-export function getAccessList(tx: Any): AccessList {
-	if (isLegacy(tx)) {
+export function getAccessList(this: Any): AccessList {
+	if (isLegacy(this)) {
 		return [];
 	}
-	return tx.accessList;
+	return this.accessList;
 }

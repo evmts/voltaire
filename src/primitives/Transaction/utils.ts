@@ -1,7 +1,6 @@
 import { Secp256k1 } from "../../crypto/secp256k1.js";
 import type { Address } from "../Address/index.js";
 import * as AddressNamespace from "../Address/index.js";
-const Address = AddressNamespace;
 import type { Hash } from "../Hash/index.js";
 import * as Rlp from "../Rlp/index.js";
 
@@ -86,7 +85,7 @@ export function recoverAddress(
 		y = (y << 8n) | BigInt(publicKey[32 + i]!);
 	}
 
-	return Address.fromPublicKey(x, y);
+	return AddressNamespace.fromPublicKey(x, y);
 }
 
 /**

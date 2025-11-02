@@ -8,19 +8,19 @@ import * as EIP7702 from "./EIP7702/serialize.js";
 /**
  * Serialize transaction to RLP encoded bytes
  */
-export function serialize(tx: Any): Uint8Array {
-	switch (tx.type) {
+export function serialize(this: Any): Uint8Array {
+	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.serialize.call(tx);
+			return Legacy.serialize.call(this);
 		case Type.EIP2930:
-			return EIP2930.serialize.call(tx);
+			return EIP2930.serialize.call(this);
 		case Type.EIP1559:
-			return EIP1559.serialize.call(tx);
+			return EIP1559.serialize.call(this);
 		case Type.EIP4844:
-			return EIP4844.serialize.call(tx);
+			return EIP4844.serialize.call(this);
 		case Type.EIP7702:
-			return EIP7702.serialize.call(tx);
+			return EIP7702.serialize.call(this);
 		default:
-			throw new Error(`Unknown transaction type: ${(tx as any).type}`);
+			throw new Error(`Unknown transaction type: ${(this as any).type}`);
 	}
 }

@@ -109,22 +109,45 @@ export function is(value: unknown): value is Type {
 }
 
 // ============================================================================
+// Conversion
+// ============================================================================
+
+/**
+ * Convert value to AccessList
+ *
+ * @param value - Value to convert (AccessList or Uint8Array)
+ * @returns AccessList
+ *
+ * @example
+ * ```typescript
+ * const list = from([{ address, storageKeys: [] }]);
+ * const list2 = from(bytes); // from RLP bytes
+ * ```
+ */
+export function from(value: Type | Uint8Array): Type {
+  if (value instanceof Uint8Array) {
+    return fromBytes(value);
+  }
+  return value;
+}
+
+// ============================================================================
 // Gas Cost Operations
 // ============================================================================
 
 /**
- * Calculate total gas cost for access list
+ * Calculate total gas cost for access list (internal method, use with .call)
  *
  * @returns Total gas cost in wei
  *
  * @example
  * ```typescript
  * const list: Type = [{ address, storageKeys: [key1, key2] }];
- * const cost = gasCost.call(list);
+ * const cost = AccessList._gasCost.call(list);
  * // cost = ADDRESS_COST + (2 * STORAGE_KEY_COST)
  * ```
  */
-export function gasCost(this: Type): bigint {
+export function _gasCost(this: Type): bigint {
   let totalCost = 0n;
   for (const item of this) {
     totalCost += ADDRESS_COST;
@@ -134,7 +157,7 @@ export function gasCost(this: Type): bigint {
 }
 
 /**
- * Calculate gas savings from using access list
+ * Calculate gas savings from using access list (internal method, use with .call)
  *
  * Compares cold access costs vs access list costs.
  *
@@ -143,13 +166,13 @@ export function gasCost(this: Type): bigint {
  * @example
  * ```typescript
  * const list: Type = [{ address, storageKeys: [key1] }];
- * const savings = gasSavings.call(list);
+ * const savings = AccessList._gasSavings.call(list);
  * if (savings > 0n) {
  *   console.log('Access list saves gas:', savings);
  * }
  * ```
  */
-export function gasSavings(this: Type): bigint {
+export function _gasSavings(this: Type): bigint {
   let savings = 0n;
   for (const item of this) {
     // Save on cold account access
@@ -164,19 +187,19 @@ export function gasSavings(this: Type): bigint {
 }
 
 /**
- * Check if access list provides net gas savings
+ * Check if access list provides net gas savings (internal method, use with .call)
  *
  * @returns true if access list saves gas overall
  *
  * @example
  * ```typescript
- * if (hasSavings_.call(list)) {
+ * if (AccessList._hasSavings.call(list)) {
  *   // Use the access list in transaction
  * }
  * ```
  */
-export function hasSavings_(this: Type): boolean {
-  return gasSavings.call(this) > 0n;
+export function _hasSavings(this: Type): boolean {
+  return _gasSavings.call(this) > 0n;
 }
 
 // ============================================================================
@@ -194,7 +217,7 @@ export function hasSavings_(this: Type): boolean {
  * const hasAddress = includesAddress.call(list, address);
  * ```
  */
-export function includesAddress(this: Type, address: Address): boolean {
+export function _includesAddress(this: Type, address: Address): boolean {
   for (const item of this) {
     if (addressEquals(item.address, address)) {
       return true;
@@ -215,7 +238,7 @@ export function includesAddress(this: Type, address: Address): boolean {
  * const isAccessible = includesStorageKey.call(list, address, key);
  * ```
  */
-export function includesStorageKey(
+export function _includesStorageKey(
   this: Type,
   address: Address,
   storageKey: Hash,
@@ -246,7 +269,7 @@ export function includesStorageKey(
  * }
  * ```
  */
-export function keysFor(this: Type, address: Address): readonly Hash[] | undefined {
+export function _keysFor(this: Type, address: Address): readonly Hash[] | undefined {
   for (const item of this) {
     if (addressEquals(item.address, address)) {
       return item.storageKeys;
@@ -276,7 +299,7 @@ export function keysFor(this: Type, address: Address): readonly Hash[] | undefin
  * // Result: [{ address: addr1, storageKeys: [key1, key2] }]
  * ```
  */
-export function deduplicate(this: Type): Type {
+export function _deduplicate(this: Type): Type {
   const result: Item[] = [];
 
   for (const item of this) {
@@ -319,8 +342,8 @@ export function deduplicate(this: Type): Type {
  * const newList = withAddress.call(list, address);
  * ```
  */
-export function withAddress(this: Type, address: Address): Type {
-  if (includesAddress.call(this, address)) {
+export function _withAddress(this: Type, address: Address): Type {
+  if (_includesAddress.call(this, address)) {
     return this;
   }
   return [...this, { address, storageKeys: [] }];
@@ -340,7 +363,7 @@ export function withAddress(this: Type, address: Address): Type {
  * const newList = withStorageKey.call(list, address, key);
  * ```
  */
-export function withStorageKey(
+export function _withStorageKey(
   this: Type,
   address: Address,
   storageKey: Hash,
@@ -392,7 +415,7 @@ export function merge(...accessLists: Type[]): Type {
   for (const list of accessLists) {
     combined.push(...list);
   }
-  return deduplicate.call(combined);
+  return _deduplicate.call(combined);
 }
 
 // ============================================================================
@@ -414,7 +437,7 @@ export function merge(...accessLists: Type[]): Type {
  * }
  * ```
  */
-export function assertValid(this: Type): void {
+export function _assertValid(this: Type): void {
   if (!Array.isArray(this)) {
     throw new Error("Access list must be an array");
   }
@@ -454,7 +477,7 @@ export function assertValid(this: Type): void {
  * const encoded = toBytes.call(list);
  * ```
  */
-export function toBytes(this: Type): Uint8Array {
+export function _toBytes(this: Type): Uint8Array {
   // Format: [[address, [storageKey1, storageKey2, ...]], ...]
   const encoded = this.map((item) => [
     item.address,
@@ -529,7 +552,7 @@ export function fromBytes(bytes: Uint8Array): Type {
  * const count = addressCount.call(list);
  * ```
  */
-export function addressCount(this: Type): number {
+export function _addressCount(this: Type): number {
   return this.length;
 }
 
@@ -543,7 +566,7 @@ export function addressCount(this: Type): number {
  * const keyCount = storageKeyCount.call(list);
  * ```
  */
-export function storageKeyCount(this: Type): number {
+export function _storageKeyCount(this: Type): number {
   let count = 0;
   for (const item of this) {
     count += item.storageKeys.length;
@@ -563,7 +586,7 @@ export function storageKeyCount(this: Type): number {
  * }
  * ```
  */
-export function isEmpty(this: Type): boolean {
+export function _isEmpty(this: Type): boolean {
   return this.length === 0;
 }
 
@@ -605,6 +628,240 @@ function hashEquals(a: Hash, b: Hash): boolean {
     if (a[i] !== b[i]) return false;
   }
   return true;
+}
+
+// ============================================================================
+// Public Wrapper Functions (Namespace+Type Overloading Pattern)
+// ============================================================================
+
+/**
+ * Calculate total gas cost for access list
+ *
+ * @param list - Access list or Uint8Array
+ * @returns Total gas cost in wei
+ *
+ * @example
+ * ```typescript
+ * const cost = AccessList.gasCost([{ address, storageKeys: [key1, key2] }]);
+ * // cost = ADDRESS_COST + (2 * STORAGE_KEY_COST)
+ * ```
+ */
+export function gasCost(list: Type | Uint8Array): bigint {
+  return _gasCost.call(from(list));
+}
+
+/**
+ * Calculate gas savings from using access list
+ *
+ * @param list - Access list or Uint8Array
+ * @returns Estimated gas savings (can be negative if not beneficial)
+ *
+ * @example
+ * ```typescript
+ * const savings = AccessList.gasSavings([{ address, storageKeys: [key1] }]);
+ * ```
+ */
+export function gasSavings(list: Type | Uint8Array): bigint {
+  return _gasSavings.call(from(list));
+}
+
+/**
+ * Check if access list provides net gas savings
+ *
+ * @param list - Access list or Uint8Array
+ * @returns true if access list saves gas overall
+ *
+ * @example
+ * ```typescript
+ * if (AccessList.hasSavings(list)) {
+ *   // Use the access list in transaction
+ * }
+ * ```
+ */
+export function hasSavings(list: Type | Uint8Array): boolean {
+  return _hasSavings.call(from(list));
+}
+
+/**
+ * Check if address is in access list
+ *
+ * @param list - Access list or Uint8Array
+ * @param address - Address to find
+ * @returns true if address is in access list
+ *
+ * @example
+ * ```typescript
+ * const hasAddress = AccessList.includesAddress(list, address);
+ * ```
+ */
+export function includesAddress(list: Type | Uint8Array, address: Address): boolean {
+  return _includesAddress.call(from(list), address);
+}
+
+/**
+ * Check if storage key is in access list for given address
+ *
+ * @param list - Access list or Uint8Array
+ * @param address - Address to check
+ * @param storageKey - Storage key to find
+ * @returns true if storage key is accessible
+ *
+ * @example
+ * ```typescript
+ * const isAccessible = AccessList.includesStorageKey(list, address, key);
+ * ```
+ */
+export function includesStorageKey(
+  list: Type | Uint8Array,
+  address: Address,
+  storageKey: Hash,
+): boolean {
+  return _includesStorageKey.call(from(list), address, storageKey);
+}
+
+/**
+ * Get all storage keys for an address
+ *
+ * @param list - Access list or Uint8Array
+ * @param address - Address to get keys for
+ * @returns Array of storage keys, or undefined if address not found
+ *
+ * @example
+ * ```typescript
+ * const keys = AccessList.keysFor(list, address);
+ * ```
+ */
+export function keysFor(list: Type | Uint8Array, address: Address): readonly Hash[] | undefined {
+  return _keysFor.call(from(list), address);
+}
+
+/**
+ * Deduplicate access list entries
+ *
+ * @param list - Access list or Uint8Array
+ * @returns Deduplicated access list
+ *
+ * @example
+ * ```typescript
+ * const deduped = AccessList.deduplicate(list);
+ * ```
+ */
+export function deduplicate(list: Type | Uint8Array): Type {
+  return _deduplicate.call(from(list));
+}
+
+/**
+ * Add address to access list
+ *
+ * @param list - Access list or Uint8Array
+ * @param address - Address to add
+ * @returns New access list with address added
+ *
+ * @example
+ * ```typescript
+ * const newList = AccessList.withAddress(list, address);
+ * ```
+ */
+export function withAddress(list: Type | Uint8Array, address: Address): Type {
+  return _withAddress.call(from(list), address);
+}
+
+/**
+ * Add storage key to access list for address
+ *
+ * @param list - Access list or Uint8Array
+ * @param address - Address to add key for
+ * @param storageKey - Storage key to add
+ * @returns New access list with storage key added
+ *
+ * @example
+ * ```typescript
+ * const newList = AccessList.withStorageKey(list, address, key);
+ * ```
+ */
+export function withStorageKey(
+  list: Type | Uint8Array,
+  address: Address,
+  storageKey: Hash,
+): Type {
+  return _withStorageKey.call(from(list), address, storageKey);
+}
+
+/**
+ * Validate access list structure
+ *
+ * @param list - Access list or Uint8Array
+ * @throws Error if invalid
+ *
+ * @example
+ * ```typescript
+ * AccessList.assertValid(list);
+ * ```
+ */
+export function assertValid(list: Type | Uint8Array): void {
+  return _assertValid.call(from(list));
+}
+
+/**
+ * Encode access list to RLP
+ *
+ * @param list - Access list or Uint8Array
+ * @returns RLP-encoded bytes
+ *
+ * @example
+ * ```typescript
+ * const encoded = AccessList.toBytes(list);
+ * ```
+ */
+export function toBytes(list: Type | Uint8Array): Uint8Array {
+  return _toBytes.call(from(list));
+}
+
+/**
+ * Count total addresses in access list
+ *
+ * @param list - Access list or Uint8Array
+ * @returns Number of unique addresses
+ *
+ * @example
+ * ```typescript
+ * const count = AccessList.addressCount(list);
+ * ```
+ */
+export function addressCount(list: Type | Uint8Array): number {
+  return _addressCount.call(from(list));
+}
+
+/**
+ * Count total storage keys across all addresses
+ *
+ * @param list - Access list or Uint8Array
+ * @returns Total number of storage keys
+ *
+ * @example
+ * ```typescript
+ * const keyCount = AccessList.storageKeyCount(list);
+ * ```
+ */
+export function storageKeyCount(list: Type | Uint8Array): number {
+  return _storageKeyCount.call(from(list));
+}
+
+/**
+ * Check if access list is empty
+ *
+ * @param list - Access list or Uint8Array
+ * @returns true if empty
+ *
+ * @example
+ * ```typescript
+ * if (AccessList.isEmpty(list)) {
+ *   console.log('No access list entries');
+ * }
+ * ```
+ */
+export function isEmpty(list: Type | Uint8Array): boolean {
+  return _isEmpty.call(from(list));
 }
 
 /**

@@ -2,23 +2,21 @@
  * RLP (Recursive Length Prefix) - Ethereum's serialization format
  *
  * Complete RLP encoding/decoding with strict validation matching Ethereum's spec.
- * All functions use the "this:" pattern where data is operated on.
+ * Functions use the namespace+type overloading pattern.
  *
  * @example
  * ```typescript
- * import * as Rlp from './rlp.js';
+ * import { Rlp } from './index.js';
  *
  * // Encode data
  * const list = [new Uint8Array([1, 2, 3])];
- * const encoded = Rlp.encode.call(list);
+ * const encoded = Rlp.encode(list);
  *
  * // Decode data
  * const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
- * const decoded = Rlp.decode.call(bytes);
+ * const decoded = Rlp.decode(bytes);
  * ```
  */
-
-// Core types defined below
 
 // ============================================================================
 // Core Types
@@ -49,7 +47,7 @@ export type Decoded = {
 export type Encodable = Uint8Array | RlpDataType | Encodable[];
 
 /**
- * RLP Data type alias for convenient importing
+ * RLP Data type alias for convenient importing (namespace+type overloading)
  */
 export type Rlp = RlpDataType;
 

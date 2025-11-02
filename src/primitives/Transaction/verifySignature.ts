@@ -8,19 +8,19 @@ import * as EIP7702 from "./EIP7702/verifySignature.js";
 /**
  * Verify transaction signature
  */
-export function verifySignature(tx: Any): boolean {
-	switch (tx.type) {
+export function verifySignature(this: Any): boolean {
+	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.verifySignature.call(tx);
+			return Legacy.verifySignature.call(this);
 		case Type.EIP2930:
-			return EIP2930.verifySignature.call(tx);
+			return EIP2930.verifySignature.call(this);
 		case Type.EIP1559:
-			return EIP1559.verifySignature.call(tx);
+			return EIP1559.verifySignature.call(this);
 		case Type.EIP4844:
-			return EIP4844.verifySignature.call(tx);
+			return EIP4844.verifySignature.call(this);
 		case Type.EIP7702:
-			return EIP7702.verifySignature.call(tx);
+			return EIP7702.verifySignature.call(this);
 		default:
-			throw new Error(`Unknown transaction type: ${(tx as any).type}`);
+			throw new Error(`Unknown transaction type: ${(this as any).type}`);
 	}
 }

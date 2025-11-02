@@ -97,73 +97,77 @@ export function fromBytes(bytes: Uint8Array): Hash {
 }
 
 /**
- * Create Hash from string (alias for fromHex)
+ * Create Hash from string or bytes
  *
- * @param value - Hex string with optional 0x prefix
+ * @param value - Hex string with optional 0x prefix or Uint8Array
  * @returns Hash bytes
  *
  * @example
  * ```typescript
  * const hash = Hash.from('0x1234...');
+ * const hash2 = Hash.from(new Uint8Array(32));
  * ```
  */
-export function from(value: string): Hash {
-  return fromHex(value);
+export function from(value: string | Uint8Array): Hash {
+  if (typeof value === 'string') {
+    return fromHex(value);
+  }
+  return fromBytes(value);
 }
 
 // ============================================================================
-// Conversion Functions
+// Conversion Functions (Internal implementations with this: pattern)
 // ============================================================================
 
 /**
- * Convert Hash to hex string
+ * Convert Hash to hex string (internal)
  *
  * @returns Hex string with 0x prefix
  *
  * @example
  * ```typescript
- * const hex = Hash.toHex.call(hash);
+ * const hex = Hash._toHex.call(hash);
  * // "0x1234..."
  * ```
  */
-export function toHex(this: Hash): string {
+export function _toHex(this: Hash): string {
   return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /**
- * Convert Hash to raw bytes
+ * Convert Hash to raw bytes (internal)
  *
  * @returns Copy of hash bytes
  *
  * @example
  * ```typescript
- * const bytes = Hash.toBytes.call(hash);
+ * const bytes = Hash._toBytes.call(hash);
  * ```
  */
-export function toBytes(this: Hash): Uint8Array {
+export function _toBytes(this: Hash): Uint8Array {
   return new Uint8Array(this);
 }
 
 /**
- * Convert Hash to string (alias for toHex)
+ * Convert Hash to string (internal, alias for toHex)
  *
  * @returns Hex string with 0x prefix
  *
  * @example
  * ```typescript
- * const str = Hash.toString.call(hash);
+ * const str = Hash._toString.call(hash);
  * ```
  */
-export function toString(this: Hash): string {
+export function _toString(this: Hash): string {
   return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
 // ============================================================================
-// Comparison Functions
+// Comparison Functions (Internal implementations with this: pattern)
 // ============================================================================
 
 /**
- * Compare this hash with another for equality
+ * Compare this hash with another for equality (internal)
  *
  * Uses constant-time comparison to prevent timing attacks.
  *
@@ -172,10 +176,10 @@ export function toString(this: Hash): string {
  *
  * @example
  * ```typescript
- * const same = Hash.equals.call(hash1, hash2);
+ * const same = Hash._equals.call(hash1, hash2);
  * ```
  */
-export function equals(this: Hash, other: Hash): boolean {
+export function _equals(this: Hash, other: Hash): boolean {
   if (this.length !== other.length) {
     return false;
   }
@@ -187,16 +191,16 @@ export function equals(this: Hash, other: Hash): boolean {
 }
 
 /**
- * Check if this hash is zero hash
+ * Check if this hash is zero hash (internal)
  *
  * @returns True if hash is all zeros
  *
  * @example
  * ```typescript
- * const isZero = Hash.isZero.call(hash);
+ * const isZero = Hash._isZero.call(hash);
  * ```
  */
-export function isZero(this: Hash): boolean {
+export function _isZero(this: Hash): boolean {
   if (this.length !== ZERO.length) {
     return false;
   }
@@ -346,21 +350,21 @@ export function random(): Hash {
 }
 
 /**
- * Clone this hash
+ * Clone this hash (internal)
  *
  * @returns New hash with same value
  *
  * @example
  * ```typescript
- * const copy = Hash.clone.call(hash);
+ * const copy = Hash._clone.call(hash);
  * ```
  */
-export function clone(this: Hash): Hash {
+export function _clone(this: Hash): Hash {
   return new Uint8Array(this) as Hash;
 }
 
 /**
- * Get slice of this hash
+ * Get slice of this hash (internal)
  *
  * @param start - Start index (inclusive)
  * @param end - End index (exclusive)
@@ -368,15 +372,15 @@ export function clone(this: Hash): Hash {
  *
  * @example
  * ```typescript
- * const selector = Hash.slice.call(hash, 0, 4);
+ * const selector = Hash._slice.call(hash, 0, 4);
  * ```
  */
-export function slice(this: Hash, start?: number, end?: number): Uint8Array {
+export function _slice(this: Hash, start?: number, end?: number): Uint8Array {
   return this.slice(start, end);
 }
 
 /**
- * Format this hash for display (truncated)
+ * Format this hash for display (internal, truncated)
  *
  * @param prefixLength - Number of chars to show at start (default 6)
  * @param suffixLength - Number of chars to show at end (default 4)
@@ -384,11 +388,11 @@ export function slice(this: Hash, start?: number, end?: number): Uint8Array {
  *
  * @example
  * ```typescript
- * const display = Hash.format.call(hash);
+ * const display = Hash._format.call(hash);
  * // "0x1234...5678"
  * ```
  */
-export function format(
+export function _format(
   this: Hash,
   prefixLength: number = 6,
   suffixLength: number = 4,
@@ -410,3 +414,138 @@ export function format(
  * Branded type for type safety.
  */
 export type Hash = Uint8Array & { __brand: typeof hashSymbol };
+
+// ============================================================================
+// Public Wrapper Functions (namespace+type overloading pattern)
+// ============================================================================
+
+/**
+ * Convert Hash to hex string
+ *
+ * @param value - Value to convert to Hash first
+ * @returns Hex string with 0x prefix
+ *
+ * @example
+ * ```typescript
+ * const hex = Hash.toHex("0x1234...");
+ * // "0x1234..."
+ * ```
+ */
+export function toHex(value: string | Uint8Array): string {
+  return _toHex.call(from(value));
+}
+
+/**
+ * Convert Hash to raw bytes
+ *
+ * @param value - Value to convert to Hash first
+ * @returns Copy of hash bytes
+ *
+ * @example
+ * ```typescript
+ * const bytes = Hash.toBytes("0x1234...");
+ * ```
+ */
+export function toBytes(value: string | Uint8Array): Uint8Array {
+  return _toBytes.call(from(value));
+}
+
+/**
+ * Convert Hash to string
+ *
+ * @param value - Value to convert to Hash first
+ * @returns Hex string with 0x prefix
+ *
+ * @example
+ * ```typescript
+ * const str = Hash.toString("0x1234...");
+ * ```
+ */
+export function toString(value: string | Uint8Array): string {
+  return _toString.call(from(value));
+}
+
+/**
+ * Compare two hashes for equality
+ *
+ * @param value - First hash value
+ * @param other - Hash to compare with
+ * @returns True if hashes are equal
+ *
+ * @example
+ * ```typescript
+ * const same = Hash.equals("0x1234...", hash2);
+ * ```
+ */
+export function equals(value: string | Uint8Array, other: Hash): boolean {
+  return _equals.call(from(value), other);
+}
+
+/**
+ * Check if hash is zero hash
+ *
+ * @param value - Value to check
+ * @returns True if hash is all zeros
+ *
+ * @example
+ * ```typescript
+ * const isZero = Hash.isZero("0x00...");
+ * ```
+ */
+export function isZero(value: string | Uint8Array): boolean {
+  return _isZero.call(from(value));
+}
+
+/**
+ * Clone hash
+ *
+ * @param value - Value to clone
+ * @returns New hash with same value
+ *
+ * @example
+ * ```typescript
+ * const copy = Hash.clone("0x1234...");
+ * ```
+ */
+export function clone(value: string | Uint8Array): Hash {
+  return _clone.call(from(value));
+}
+
+/**
+ * Get slice of hash
+ *
+ * @param value - Hash value to slice
+ * @param start - Start index (inclusive)
+ * @param end - End index (exclusive)
+ * @returns Slice of hash bytes
+ *
+ * @example
+ * ```typescript
+ * const selector = Hash.slice("0x1234...", 0, 4);
+ * ```
+ */
+export function slice(value: string | Uint8Array, start?: number, end?: number): Uint8Array {
+  return _slice.call(from(value), start, end);
+}
+
+/**
+ * Format hash for display (truncated)
+ *
+ * @param value - Hash value to format
+ * @param prefixLength - Number of chars to show at start (default 6)
+ * @param suffixLength - Number of chars to show at end (default 4)
+ * @returns Formatted string like "0x1234...5678"
+ *
+ * @example
+ * ```typescript
+ * const display = Hash.format("0x1234...");
+ * // "0x1234...5678"
+ * ```
+ */
+export function format(
+  value: string | Uint8Array,
+  prefixLength: number = 6,
+  suffixLength: number = 4,
+): string {
+  return _format.call(from(value), prefixLength, suffixLength);
+}

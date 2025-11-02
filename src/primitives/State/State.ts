@@ -87,6 +87,14 @@ export interface StorageKey {
 }
 
 /**
+ * Inputs that can be converted to StorageKey
+ */
+export type StorageKeyLike = StorageKey | {
+  address: Address;
+  slot: bigint;
+};
+
+/**
  * StorageKey namespace with utility functions
  */
 export namespace StorageKey {
@@ -115,6 +123,21 @@ export namespace StorageKey {
   }
 
   /**
+   * Convert StorageKeyLike to StorageKey
+   *
+   * @param value - Value to convert
+   * @returns StorageKey
+   *
+   * @example
+   * ```typescript
+   * const key = StorageKey.from({ address: addr, slot: 0n });
+   * ```
+   */
+  export function from(value: StorageKeyLike): StorageKey {
+    return { address: value.address, slot: value.slot };
+  }
+
+  /**
    * Create a new StorageKey
    *
    * @param address - Contract address
@@ -129,6 +152,67 @@ export namespace StorageKey {
   export function create(address: Address, slot: bigint): StorageKey {
     return { address, slot };
   }
+
+  // ============================================================================
+  // Internal methods (with this: parameter)
+  // ============================================================================
+
+  /**
+   * Internal: Check equality with another storage key
+   *
+   * @this StorageKey
+   * @param other - Storage key to compare with
+   * @returns True if keys are equal
+   */
+  export function _equals(
+    this: StorageKey,
+    other: StorageKey,
+  ): boolean {
+    if (this.slot !== other.slot) return false;
+    if (this.address.length !== other.address.length) return false;
+    for (let i = 0; i < this.address.length; i++) {
+      if ((this.address[i] ?? 0) !== (other.address[i] ?? 0)) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Internal: Convert to string representation
+   *
+   * @this StorageKey
+   * @returns String representation
+   */
+  export function _toString(this: StorageKey): string {
+    const addrHex = Array.from(this.address)
+      .map((b) => (b ?? 0).toString(16).padStart(2, "0"))
+      .join("");
+    const slotHex = this.slot.toString(16).padStart(64, "0");
+    return `${addrHex}_${slotHex}`;
+  }
+
+  /**
+   * Internal: Compute hash code
+   *
+   * @this StorageKey
+   * @returns Hash code
+   */
+  export function _hashCode(this: StorageKey): number {
+    let hash = 0;
+    // Hash address bytes
+    for (let i = 0; i < this.address.length; i++) {
+      hash = ((hash << 5) - hash + (this.address[i] ?? 0)) | 0;
+    }
+    // Hash slot (convert to bytes)
+    const slotLow = Number(this.slot & 0xffffffffn);
+    const slotHigh = Number((this.slot >> 32n) & 0xffffffffn);
+    hash = ((hash << 5) - hash + slotLow) | 0;
+    hash = ((hash << 5) - hash + slotHigh) | 0;
+    return hash;
+  }
+
+  // ============================================================================
+  // Public wrapper functions
+  // ============================================================================
 
   /**
    * Check equality between two storage keys.
@@ -147,13 +231,8 @@ export namespace StorageKey {
    * StorageKey.equals(key1, key2); // true
    * ```
    */
-  export function equals(a: StorageKey, b: StorageKey): boolean {
-    if (a.slot !== b.slot) return false;
-    if (a.address.length !== b.address.length) return false;
-    for (let i = 0; i < a.address.length; i++) {
-      if ((a.address[i] ?? 0) !== (b.address[i] ?? 0)) return false;
-    }
-    return true;
+  export function equals(a: StorageKeyLike, b: StorageKeyLike): boolean {
+    return _equals.call(from(a), from(b));
   }
 
   /**
@@ -172,12 +251,8 @@ export namespace StorageKey {
    * map.set(str, value);
    * ```
    */
-  export function toString(key: StorageKey): string {
-    const addrHex = Array.from(key.address)
-      .map((b) => (b ?? 0).toString(16).padStart(2, "0"))
-      .join("");
-    const slotHex = key.slot.toString(16).padStart(64, "0");
-    return `${addrHex}_${slotHex}`;
+  export function toString(key: StorageKeyLike): string {
+    return _toString.call(from(key));
   }
 
   /**
@@ -233,67 +308,7 @@ export namespace StorageKey {
    * const hash = StorageKey.hashCode(key);
    * ```
    */
-  export function hashCode(key: StorageKey): number {
-    let hash = 0;
-    // Hash address bytes
-    for (let i = 0; i < key.address.length; i++) {
-      hash = ((hash << 5) - hash + (key.address[i] ?? 0)) | 0;
-    }
-    // Hash slot (convert to bytes)
-    const slotLow = Number(key.slot & 0xffffffffn);
-    const slotHigh = Number((key.slot >> 32n) & 0xffffffffn);
-    hash = ((hash << 5) - hash + slotLow) | 0;
-    hash = ((hash << 5) - hash + slotHigh) | 0;
-    return hash;
+  export function hashCode(key: StorageKeyLike): number {
+    return _hashCode.call(from(key));
   }
-
-  /**
-   * Method form: Check equality with another storage key
-   *
-   * @this StorageKey
-   * @param other - Storage key to compare with
-   * @returns True if keys are equal
-   *
-   * @example
-   * ```typescript
-   * const key1: StorageKey = { address: addr, slot: 0n };
-   * const isEqual = StorageKey.equals.call(key1, key2);
-   * ```
-   */
-  export const equals_ = function (
-    this: StorageKey,
-    other: StorageKey,
-  ): boolean {
-    return equals(this, other);
-  };
-
-  /**
-   * Method form: Convert to string
-   *
-   * @this StorageKey
-   * @returns String representation
-   *
-   * @example
-   * ```typescript
-   * const str = StorageKey.toString.call(key);
-   * ```
-   */
-  export const toString_ = function (this: StorageKey): string {
-    return toString(this);
-  };
-
-  /**
-   * Method form: Compute hash code
-   *
-   * @this StorageKey
-   * @returns Hash code
-   *
-   * @example
-   * ```typescript
-   * const hash = StorageKey.hashCode.call(key);
-   * ```
-   */
-  export const hashCode_ = function (this: StorageKey): number {
-    return hashCode(this);
-  };
 }

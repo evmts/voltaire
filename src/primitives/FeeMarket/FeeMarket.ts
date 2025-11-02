@@ -465,6 +465,46 @@ export function canIncludeTx(params: TxFeeParams | BlobTxFeeParams): boolean {
 // State Operations
 // ============================================================================
 
+/**
+ * Calculate next block's fee market state (internal, takes this)
+ * @internal
+ */
+export function _nextState(this: State): State {
+  return nextState(this);
+}
+
+/**
+ * Get current blob base fee (internal, takes this)
+ * @internal
+ */
+export function _getBlobBaseFee(this: State): bigint {
+  return calculateBlobBaseFee(this.excessBlobGas);
+}
+
+/**
+ * Get gas target for block (internal, takes this)
+ * @internal
+ */
+export function _getGasTarget(this: State): bigint {
+  return this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
+}
+
+/**
+ * Check if block is above gas target (internal, takes this)
+ * @internal
+ */
+export function _isAboveGasTarget(this: State): boolean {
+  return this.gasUsed > this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
+}
+
+/**
+ * Check if block is above blob gas target (internal, takes this)
+ * @internal
+ */
+export function _isAboveBlobGasTarget(this: State): boolean {
+  return this.blobGasUsed > Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
+}
+
 export namespace State {
   /**
    * Calculate next block's fee market state (convenience form)
@@ -483,37 +523,27 @@ export namespace State {
    * // nextState.excessBlobGas === 0n (below blob target)
    * ```
    */
-  export function next(this: State): State {
-    return nextState(this);
-  }
+  export const next = _nextState;
 
   /**
    * Get current blob base fee (convenience form)
    */
-  export function getBlobBaseFee(this: State): bigint {
-    return calculateBlobBaseFee(this.excessBlobGas);
-  }
+  export const getBlobBaseFee = _getBlobBaseFee;
 
   /**
    * Get gas target for block (convenience form)
    */
-  export function getGasTarget(this: State): bigint {
-    return this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
-  }
+  export const getGasTarget = _getGasTarget;
 
   /**
    * Check if block is above gas target (convenience form)
    */
-  export function isAboveGasTarget(this: State): boolean {
-    return this.gasUsed > this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
-  }
+  export const isAboveGasTarget = _isAboveGasTarget;
 
   /**
    * Check if block is above blob gas target (convenience form)
    */
-  export function isAboveBlobGasTarget(this: State): boolean {
-    return this.blobGasUsed > Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
-  }
+  export const isAboveBlobGasTarget = _isAboveBlobGasTarget;
 }
 
 /**

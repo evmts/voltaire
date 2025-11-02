@@ -9,19 +9,19 @@ import * as EIP7702 from "./EIP7702/getSender.js";
 /**
  * Get sender address from transaction signature
  */
-export function getSender(tx: Any): Address {
-	switch (tx.type) {
+export function getSender(this: Any): Address {
+	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.getSender.call(tx);
+			return Legacy.getSender.call(this);
 		case Type.EIP2930:
-			return EIP2930.getSender.call(tx);
+			return EIP2930.getSender.call(this);
 		case Type.EIP1559:
-			return EIP1559.getSender.call(tx);
+			return EIP1559.getSender.call(this);
 		case Type.EIP4844:
-			return EIP4844.getSender.call(tx);
+			return EIP4844.getSender.call(this);
 		case Type.EIP7702:
-			return EIP7702.getSender.call(tx);
+			return EIP7702.getSender.call(this);
 		default:
-			throw new Error(`Unknown transaction type: ${(tx as any).type}`);
+			throw new Error(`Unknown transaction type: ${(this as any).type}`);
 	}
 }

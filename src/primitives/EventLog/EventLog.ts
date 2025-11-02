@@ -75,30 +75,128 @@ export type Filter<
 export type EventLog = Data;
 
 // ============================================================================
-// Exports
+// Factory
 // ============================================================================
 
 export { create } from "./create.js";
-export { matchesTopics, matchesTopics as matches } from "./matchesTopics.js";
-export { matchesAddress, matchesAddress as matchesAddr } from "./matchesAddress.js";
-export { matchesFilter, matchesFilter as matchesAll } from "./matchesFilter.js";
 
-// Simple getters
-export function getTopic0<T extends Data>(log: T): Hash | undefined {
-	return log.topics[0];
+// ============================================================================
+// Internal Methods (this: pattern for method-style calls)
+// ============================================================================
+
+export function _getTopic0<T extends Data>(this: T): Hash | undefined {
+	return this.topics[0];
 }
 
-export function getSignature<T extends Data>(this: T): Hash | undefined {
-	return getTopic0(this);
+export function _getIndexedTopics<T extends Data>(this: T): readonly Hash[] {
+	return this.topics.slice(1);
+}
+
+export function _matchesTopics<T extends Data>(
+	this: T,
+	filterTopics: readonly (Hash | Hash[] | null)[],
+): boolean {
+	const { matchesTopics } = require("./matchesTopics.js");
+	return matchesTopics(this, filterTopics);
+}
+
+export function _matchesAddress<T extends Data>(
+	this: T,
+	filterAddress: Address | Address[],
+): boolean {
+	const { matchesAddress } = require("./matchesAddress.js");
+	return matchesAddress(this, filterAddress);
+}
+
+export function _matchesFilter<T extends Data>(this: T, filter: Filter): boolean {
+	const { matchesFilter } = require("./matchesFilter.js");
+	return matchesFilter(this, filter);
+}
+
+export function _isRemoved<T extends Data>(this: T): boolean {
+	return this.removed === true;
+}
+
+export function _clone<T extends Data>(this: T): T {
+	return {
+		...this,
+		topics: [...this.topics],
+		data: new Uint8Array(this.data),
+	} as T;
+}
+
+export function _filterLogs<T extends Data>(this: readonly T[], filter: Filter): T[] {
+	const { matchesFilter } = require("./matchesFilter.js");
+	return this.filter((log) => matchesFilter(log, filter));
+}
+
+export function _sortLogs<T extends Data>(this: readonly T[]): T[] {
+	return [...this].sort((a, b) => {
+		const blockA = a.blockNumber ?? 0n;
+		const blockB = b.blockNumber ?? 0n;
+		if (blockA !== blockB) {
+			return blockA < blockB ? -1 : 1;
+		}
+		const indexA = a.logIndex ?? 0;
+		const indexB = b.logIndex ?? 0;
+		return indexA - indexB;
+	});
+}
+
+// ============================================================================
+// Public API - Single log operations
+// ============================================================================
+
+// Simple getters (standard function form)
+export function getTopic0<T extends Data>(log: T): Hash | undefined {
+	return log.topics[0];
 }
 
 export function getIndexedTopics<T extends Data>(log: T): readonly Hash[] {
 	return log.topics.slice(1);
 }
 
-export function getIndexed<T extends Data>(this: T): readonly Hash[] {
-	return getIndexedTopics(this);
+// Aliases with this: pattern for method-style calls
+export function getSignature<T extends Data>(this: T): Hash | undefined {
+	return _getTopic0.call(this);
 }
+
+export function getIndexed<T extends Data>(this: T): readonly Hash[] {
+	return _getIndexedTopics.call(this);
+}
+
+// Matching operations
+export { matchesTopics, matchesTopics as matches } from "./matchesTopics.js";
+export { matchesAddress, matchesAddress as matchesAddr } from "./matchesAddress.js";
+export { matchesFilter, matchesFilter as matchesAll } from "./matchesFilter.js";
+
+// State checks (standard function form)
+export function isRemoved<T extends Data>(log: T): boolean {
+	return log.removed === true;
+}
+
+// Alias with this: pattern
+export function wasRemoved<T extends Data>(this: T): boolean {
+	return _isRemoved.call(this);
+}
+
+// Clone operations (standard function form)
+export function clone<T extends Data>(log: T): T {
+	return {
+		...log,
+		topics: [...log.topics],
+		data: new Uint8Array(log.data),
+	} as T;
+}
+
+// Alias with this: pattern
+export function copy<T extends Data>(this: T): T {
+	return _clone.call(this) as T;
+}
+
+// ============================================================================
+// Public API - Array operations
+// ============================================================================
 
 export function filterLogs<T extends Data>(logs: readonly T[], filter: Filter): T[] {
 	const { matchesFilter } = require("./matchesFilter.js");
@@ -106,7 +204,7 @@ export function filterLogs<T extends Data>(logs: readonly T[], filter: Filter): 
 }
 
 export function filter<T extends Data>(this: readonly T[], filter: Filter): T[] {
-	return filterLogs(this, filter);
+	return _filterLogs.call(this, filter) as T[];
 }
 
 export function sortLogs<T extends Data>(logs: readonly T[]): T[] {
@@ -123,25 +221,5 @@ export function sortLogs<T extends Data>(logs: readonly T[]): T[] {
 }
 
 export function sort<T extends Data>(this: readonly T[]): T[] {
-	return sortLogs(this);
-}
-
-export function isRemoved<T extends Data>(log: T): boolean {
-	return log.removed === true;
-}
-
-export function wasRemoved<T extends Data>(this: T): boolean {
-	return isRemoved(this);
-}
-
-export function clone<T extends Data>(log: T): T {
-	return {
-		...log,
-		topics: [...log.topics],
-		data: new Uint8Array(log.data),
-	} as T;
-}
-
-export function copy<T extends Data>(this: T): T {
-	return clone(this);
+	return _sortLogs.call(this) as T[];
 }

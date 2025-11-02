@@ -9,19 +9,19 @@ import * as EIP7702 from "./EIP7702/getSigningHash.js";
 /**
  * Get signing hash for transaction
  */
-export function getSigningHash(tx: Any): Hash {
-	switch (tx.type) {
+export function getSigningHash(this: Any): Hash {
+	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.getSigningHash.call(tx);
+			return Legacy.getSigningHash.call(this);
 		case Type.EIP2930:
-			return EIP2930.getSigningHash.call(tx);
+			return EIP2930.getSigningHash.call(this);
 		case Type.EIP1559:
-			return EIP1559.getSigningHash.call(tx);
+			return EIP1559.getSigningHash.call(this);
 		case Type.EIP4844:
-			return EIP4844.getSigningHash.call(tx);
+			return EIP4844.getSigningHash.call(this);
 		case Type.EIP7702:
-			return EIP7702.getSigningHash.call(tx);
+			return EIP7702.getSigningHash.call(this);
 		default:
-			throw new Error(`Unknown transaction type: ${(tx as any).type}`);
+			throw new Error(`Unknown transaction type: ${(this as any).type}`);
 	}
 }

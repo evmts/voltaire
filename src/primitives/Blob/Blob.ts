@@ -112,7 +112,26 @@ export function fromData(data: Uint8Array): Data {
 }
 
 /**
- * Extract data from blob
+ * Create blob from Uint8Array (either raw blob data or data to encode)
+ *
+ * @param value - Uint8Array (either 131072 bytes blob or data to encode)
+ * @returns Blob
+ *
+ * @example
+ * ```typescript
+ * const blob1 = Blob.from(new Uint8Array(131072)); // Raw blob
+ * const blob2 = Blob.from(new TextEncoder().encode("Hello")); // Encoded data
+ * ```
+ */
+export function from(value: Uint8Array): Data {
+  if (isValid(value)) {
+    return value;
+  }
+  return fromData(value);
+}
+
+/**
+ * Extract data from blob (internal method)
  * Decodes blob format (reads length prefix and extracts data)
  *
  * @returns Original data
@@ -120,11 +139,11 @@ export function fromData(data: Uint8Array): Data {
  *
  * @example
  * ```typescript
- * const data = Blob.toData.call(blob);
+ * const data = Blob._toData.call(blob);
  * const text = new TextDecoder().decode(data);
  * ```
  */
-export function toData(this: Data): Uint8Array {
+export function _toData(this: Data): Uint8Array {
   if (this.length !== SIZE) {
     throw new Error(`Invalid blob size: ${this.length} (expected ${SIZE})`);
   }
@@ -137,6 +156,22 @@ export function toData(this: Data): Uint8Array {
   }
 
   return this.slice(8, 8 + length);
+}
+
+/**
+ * Extract data from blob (public wrapper)
+ *
+ * @param blob - Blob data
+ * @returns Original data
+ *
+ * @example
+ * ```typescript
+ * const data = Blob.toData(blob);
+ * const text = new TextDecoder().decode(data);
+ * ```
+ */
+export function toData(blob: Data): Uint8Array {
+  return _toData.call(blob);
 }
 
 /**
@@ -161,13 +196,13 @@ export function isValid(blob: Uint8Array): blob is Data {
 // ============================================================================
 
 /**
- * Compute KZG commitment for blob
+ * Compute KZG commitment for blob (internal method)
  *
  * @returns 48-byte KZG commitment
  *
  * @example
  * ```typescript
- * const commitment = Blob.toCommitment.call(blob);
+ * const commitment = Blob._toCommitment.call(blob);
  * ```
  *
  * TODO: Implement using c-kzg-4844 library
@@ -175,7 +210,7 @@ export function isValid(blob: Uint8Array): blob is Data {
  * - Call blobToKzgCommitment(blob)
  * - Return 48-byte commitment
  */
-export function toCommitment(this: Data): Commitment {
+export function _toCommitment(this: Data): Commitment {
   if (this.length !== SIZE) {
     throw new Error(`Invalid blob size: ${this.length}`);
   }
@@ -185,22 +220,37 @@ export function toCommitment(this: Data): Commitment {
 }
 
 /**
- * Generate KZG proof for blob
+ * Compute KZG commitment for blob (public wrapper)
+ *
+ * @param blob - Blob data
+ * @returns 48-byte KZG commitment
+ *
+ * @example
+ * ```typescript
+ * const commitment = Blob.toCommitment(blob);
+ * ```
+ */
+export function toCommitment(blob: Data): Commitment {
+  return _toCommitment.call(blob);
+}
+
+/**
+ * Generate KZG proof for blob (internal method)
  *
  * @param commitment - KZG commitment for the blob
  * @returns 48-byte KZG proof
  *
  * @example
  * ```typescript
- * const commitment = Blob.toCommitment.call(blob);
- * const proof = Blob.toProof.call(blob, commitment);
+ * const commitment = Blob._toCommitment.call(blob);
+ * const proof = Blob._toProof.call(blob, commitment);
  * ```
  *
  * TODO: Implement using c-kzg-4844 library
  * - Call computeBlobKzgProof(blob, commitment)
  * - Return 48-byte proof
  */
-export function toProof(this: Data, commitment: Commitment): Proof {
+export function _toProof(this: Data, commitment: Commitment): Proof {
   if (this.length !== SIZE) {
     throw new Error(`Invalid blob size: ${this.length}`);
   }
@@ -213,7 +263,24 @@ export function toProof(this: Data, commitment: Commitment): Proof {
 }
 
 /**
- * Verify KZG proof
+ * Generate KZG proof for blob (public wrapper)
+ *
+ * @param blob - Blob data
+ * @param commitment - KZG commitment for the blob
+ * @returns 48-byte KZG proof
+ *
+ * @example
+ * ```typescript
+ * const commitment = Blob.toCommitment(blob);
+ * const proof = Blob.toProof(blob, commitment);
+ * ```
+ */
+export function toProof(blob: Data, commitment: Commitment): Proof {
+  return _toProof.call(blob, commitment);
+}
+
+/**
+ * Verify KZG proof (internal method)
  *
  * @param commitment - KZG commitment
  * @param proof - KZG proof
@@ -221,14 +288,14 @@ export function toProof(this: Data, commitment: Commitment): Proof {
  *
  * @example
  * ```typescript
- * const isValid = Blob.verify.call(blob, commitment, proof);
+ * const isValid = Blob._verify.call(blob, commitment, proof);
  * ```
  *
  * TODO: Implement using c-kzg-4844 library
  * - Call verifyBlobKzgProof(blob, commitment, proof)
  * - Return boolean result
  */
-export function verify(
+export function _verify(
   this: Data,
   commitment: Commitment,
   proof: Proof,
@@ -244,6 +311,27 @@ export function verify(
   }
   // TODO: return verifyBlobKzgProof(this, commitment, proof);
   throw new Error("Not implemented: requires c-kzg-4844 library");
+}
+
+/**
+ * Verify KZG proof (public wrapper)
+ *
+ * @param blob - Blob data
+ * @param commitment - KZG commitment
+ * @param proof - KZG proof
+ * @returns true if proof is valid
+ *
+ * @example
+ * ```typescript
+ * const isValid = Blob.verify(blob, commitment, proof);
+ * ```
+ */
+export function verify(
+  blob: Data,
+  commitment: Commitment,
+  proof: Proof,
+): boolean {
+  return _verify.call(blob, commitment, proof);
 }
 
 /**
@@ -284,14 +372,14 @@ export function verifyBatch(
 // ============================================================================
 
 /**
- * Create versioned hash from commitment
+ * Create versioned hash from commitment (internal method)
  * Formula: BLOB_COMMITMENT_VERSION_KZG || sha256(commitment)[1:]
  *
  * @returns 32-byte versioned hash
  *
  * @example
  * ```typescript
- * const hash = await Blob.toVersionedHash.call(commitment);
+ * const hash = Blob._toVersionedHash.call(commitment);
  * ```
  *
  * TODO: Implement SHA-256 hashing
@@ -299,7 +387,7 @@ export function verifyBatch(
  * - Prepend version byte
  * - Take first 32 bytes
  */
-export function toVersionedHash(this: Commitment): VersionedHash {
+export function _toVersionedHash(this: Commitment): VersionedHash {
   if (this.length !== 48) {
     throw new Error(`Invalid commitment size: ${this.length}`);
   }
@@ -316,19 +404,51 @@ export function toVersionedHash(this: Commitment): VersionedHash {
 }
 
 /**
- * Validate versioned hash
+ * Create versioned hash from commitment (public wrapper)
+ *
+ * @param commitment - KZG commitment
+ * @returns 32-byte versioned hash
+ *
+ * @example
+ * ```typescript
+ * const hash = Blob.toVersionedHash(commitment);
+ * ```
+ */
+export function toVersionedHash(commitment: Commitment): VersionedHash {
+  return _toVersionedHash.call(commitment);
+}
+
+/**
+ * Validate versioned hash (internal method)
  *
  * @returns true if version byte is correct
  *
  * @example
  * ```typescript
- * if (!Blob.isValidVersion.call(hash)) {
+ * if (!Blob._isValidVersion.call(hash)) {
  *   throw new Error("Invalid version");
  * }
  * ```
  */
-export function isValidVersion(this: VersionedHash): boolean {
+export function _isValidVersion(this: VersionedHash): boolean {
   return this.length === 32 && this[0] === COMMITMENT_VERSION_KZG;
+}
+
+/**
+ * Validate versioned hash (public wrapper)
+ *
+ * @param hash - Versioned hash
+ * @returns true if version byte is correct
+ *
+ * @example
+ * ```typescript
+ * if (!Blob.isValidVersion(hash)) {
+ *   throw new Error("Invalid version");
+ * }
+ * ```
+ */
+export function isValidVersion(hash: VersionedHash): boolean {
+  return _isValidVersion.call(hash);
 }
 
 // ============================================================================
@@ -347,12 +467,12 @@ export namespace Commitment {
   }
 
   /**
-   * Create versioned hash from commitment
+   * Create versioned hash from commitment (internal form)
    *
    * @returns Versioned hash
    */
   export function toVersionedHash(this: Commitment): VersionedHash {
-    return toVersionedHash.call(this);
+    return _toVersionedHash.call(this);
   }
 }
 
@@ -388,7 +508,7 @@ export namespace VersionedHash {
   }
 
   /**
-   * Get version byte from hash
+   * Get version byte from hash (standard form)
    *
    * @param hash - Versioned hash
    * @returns Version byte
@@ -398,7 +518,7 @@ export namespace VersionedHash {
   }
 
   /**
-   * Get version byte (convenience form with this:)
+   * Get version byte (internal form with this:)
    *
    * @returns Version byte
    */
@@ -494,7 +614,7 @@ export function splitData(data: Uint8Array): Data[] {
  * ```
  */
 export function joinData(blobs: readonly Data[]): Uint8Array {
-  const chunks = blobs.map(b => toData.call(b));
+  const chunks = blobs.map(b => _toData.call(b));
   const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 
   const result = new Uint8Array(totalLength);

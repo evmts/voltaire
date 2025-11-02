@@ -442,34 +442,30 @@ export namespace Message {
 }
 
 // ============================================================================
-// Convenience Methods with this: parameter
+// Internal Methods with this: parameter
 // ============================================================================
 
 /**
- * Format message to string (convenience form with this:)
+ * Format message to string (internal method with this:)
  *
  * @example
  * ```typescript
- * const message: Message = { ... };
- * const richMessage = attach(message, { format });
- * const text = richMessage.format();
+ * const text = format.call(message);
  * ```
  */
-export function format<T extends Message>(this: T): string {
+export function _format<T extends Message>(this: T): string {
   return Message.format(this);
 }
 
 /**
- * Validate message (convenience form with this:)
+ * Validate message (internal method with this:)
  *
  * @example
  * ```typescript
- * const message: Message = { ... };
- * const richMessage = attach(message, { validate });
- * const result = richMessage.validate();
+ * const result = validate.call(message);
  * ```
  */
-export function validate<T extends Message>(
+export function _validate<T extends Message>(
   this: T,
   options?: { now?: Date },
 ): ValidationResult {
@@ -477,34 +473,108 @@ export function validate<T extends Message>(
 }
 
 /**
- * Get message hash (convenience form with this:)
+ * Get message hash (internal method with this:)
  *
  * @example
  * ```typescript
- * const message: Message = { ... };
- * const richMessage = attach(message, { getMessageHash });
- * const hash = richMessage.getMessageHash();
+ * const hash = getMessageHash.call(message);
  * ```
  */
-export function getMessageHash<T extends Message>(this: T): Uint8Array {
+export function _getMessageHash<T extends Message>(this: T): Uint8Array {
   return Message.getMessageHash(this);
 }
 
 /**
- * Verify signature (convenience form with this:)
+ * Verify signature (internal method with this:)
  *
  * @example
  * ```typescript
- * const message: Message = { ... };
- * const richMessage = attach(message, { verify });
- * const valid = richMessage.verify(signature);
+ * const valid = verify.call(message, signature);
  * ```
  */
-export function verify<T extends Message>(
+export function _verify<T extends Message>(
   this: T,
   signature: Signature,
 ): boolean {
   return Message.verify(this, signature);
+}
+
+// ============================================================================
+// Public Wrapper Functions
+// ============================================================================
+
+/**
+ * Format message to string (public wrapper)
+ *
+ * @param message - Message to format
+ * @returns Formatted string according to EIP-4361 specification
+ *
+ * @example
+ * ```typescript
+ * const text = format(message);
+ * ```
+ */
+export function format<T extends Message>(message: T): string {
+  return Message.format(message);
+}
+
+/**
+ * Validate message (public wrapper)
+ *
+ * @param message - Message to validate
+ * @param options - Validation options (current time for timestamp checks)
+ * @returns Validation result with error details if invalid
+ *
+ * @example
+ * ```typescript
+ * const result = validate(message);
+ * if (!result.valid) {
+ *   console.error(result.error.message);
+ * }
+ * ```
+ */
+export function validate<T extends Message>(
+  message: T,
+  options?: { now?: Date },
+): ValidationResult {
+  return Message.validate(message, options);
+}
+
+/**
+ * Get message hash (public wrapper)
+ *
+ * @param message - Message to hash
+ * @returns Message hash ready for signing with EIP-191 prefix
+ *
+ * @example
+ * ```typescript
+ * const hash = getMessageHash(message);
+ * ```
+ */
+export function getMessageHash<T extends Message>(message: T): Uint8Array {
+  return Message.getMessageHash(message);
+}
+
+/**
+ * Verify signature (public wrapper)
+ *
+ * @param message - The SIWE message that was signed
+ * @param signature - The signature to verify (65 bytes: r, s, v)
+ * @returns true if signature is valid and matches message address
+ *
+ * @example
+ * ```typescript
+ * const valid = verify(message, signature);
+ * if (valid) {
+ *   // Signature is valid, user is authenticated
+ * }
+ * ```
+ */
+export function verify<T extends Message>(
+  message: T,
+  signature: Signature,
+): boolean {
+  return Message.verify(message, signature);
 }
 
 // ============================================================================

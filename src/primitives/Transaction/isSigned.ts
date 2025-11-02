@@ -4,9 +4,9 @@ import { assertSigned } from "./assertSigned.js";
 /**
  * Check if transaction is signed
  */
-export function isSigned(tx: Any): boolean {
+export function isSigned(this: Any): boolean {
 	try {
-		assertSigned(tx);
+		assertSigned.call(this);
 		return true;
 	} catch {
 		return false;

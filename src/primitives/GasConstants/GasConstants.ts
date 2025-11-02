@@ -973,6 +973,6 @@ export function getSelfdestructRefund(hardfork: Hardfork): bigint {
 }
 
 /**
- * Gas cost type (namespace as type via declaration merging pattern)
+ * GasConstants type (namespace as type via declaration merging pattern)
  */
-export type Gas = bigint;
+export type GasConstants = bigint;

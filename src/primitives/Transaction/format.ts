@@ -3,7 +3,7 @@ import { Type, type Any } from "./types.js";
 /**
  * Format transaction to human-readable string
  */
-export function format(tx: Any): string {
+export function format(this: Any): string {
 	const typeNames = {
 		[Type.Legacy]: "Legacy",
 		[Type.EIP2930]: "EIP-2930",
@@ -12,9 +12,9 @@ export function format(tx: Any): string {
 		[Type.EIP7702]: "EIP-7702",
 	};
 
-	const typeName = typeNames[tx.type];
-	const toStr = tx.to ? `to ${tx.to}` : "contract creation";
-	const valueEth = Number(tx.value) / 1e18;
+	const typeName = typeNames[this.type];
+	const toStr = this.to ? `to ${this.to}` : "contract creation";
+	const valueEth = Number(this.value) / 1e18;
 
-	return `${typeName} tx ${toStr}, value: ${valueEth} ETH, nonce: ${tx.nonce}`;
+	return `${typeName} tx ${toStr}, value: ${valueEth} ETH, nonce: ${this.nonce}`;
 }
