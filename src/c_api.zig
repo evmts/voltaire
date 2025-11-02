@@ -2097,150 +2097,16 @@ export fn x25519KeypairFromSeed(
 }
 
 // ============================================================================
-// Ed25519 API
+// Ed25519 API - DISABLED (Use TypeScript @noble/curves implementation)
 // ============================================================================
-
-/// Sign message with Ed25519 secret key
-export fn ed25519Sign(
-    msg_ptr: [*]const u8,
-    msg_len: usize,
-    secret_ptr: [*]const u8,
-    sig_ptr: [*]u8,
-) c_int {
-    const message = msg_ptr[0..msg_len];
-    const secret = secret_ptr[0..64];
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-
-    const signature = crypto.ed25519.sign(allocator, message, secret) catch return 1;
-    defer allocator.free(signature);
-
-    @memcpy(sig_ptr[0..64], signature);
-    return 0;
-}
-
-/// Verify Ed25519 signature
-export fn ed25519Verify(
-    msg_ptr: [*]const u8,
-    msg_len: usize,
-    sig_ptr: [*]const u8,
-    pub_ptr: [*]const u8,
-) c_int {
-    const message = msg_ptr[0..msg_len];
-    const signature = sig_ptr[0..64];
-    const public_key = pub_ptr[0..32];
-
-    const valid = crypto.ed25519.verify(signature, message, public_key) catch return 1;
-    return if (valid) 0 else 1;
-}
-
-/// Derive Ed25519 public key from secret key
-export fn ed25519DerivePublicKey(
-    secret_ptr: [*]const u8,
-    pub_ptr: [*]u8,
-) c_int {
-    const secret = secret_ptr[0..64];
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-
-    const public_key = crypto.ed25519.publicKeyFromSecret(allocator, secret) catch return 1;
-    defer allocator.free(public_key);
-
-    @memcpy(pub_ptr[0..32], public_key);
-    return 0;
-}
-
-/// Generate Ed25519 keypair from seed
-export fn ed25519KeypairFromSeed(
-    seed_ptr: [*]const u8,
-    secret_ptr: [*]u8,
-    pub_ptr: [*]u8,
-) c_int {
-    const seed = seed_ptr[0..32];
-
-    const key_pair = crypto.ed25519.keypairFromSeed(seed) catch return 1;
-
-    @memcpy(secret_ptr[0..64], &key_pair.secret_key.bytes);
-    @memcpy(pub_ptr[0..32], &key_pair.public_key.bytes);
-    return 0;
-}
+// Note: Ed25519 Zig wrappers disabled due to API changes in Zig 0.15.1
+// Use the TypeScript implementation in src/crypto/ed25519.ts instead
 
 // ============================================================================
-// P256 (secp256r1) API
+// P256 (secp256r1) API - DISABLED (Use TypeScript @noble/curves implementation)
 // ============================================================================
-
-/// Sign message hash with P256 private key
-/// Returns signature as r || s (64 bytes)
-export fn p256Sign(
-    msgHash_ptr: [*]const u8,
-    privKey_ptr: [*]const u8,
-    sig_ptr: [*]u8,
-) c_int {
-    const msgHash = msgHash_ptr[0..32];
-    const privKey = privKey_ptr[0..32];
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-
-    const signature = crypto.p256.sign(allocator, msgHash, privKey) catch return 1;
-    defer allocator.free(signature);
-
-    @memcpy(sig_ptr[0..64], signature);
-    return 0;
-}
-
-/// Verify P256 signature
-export fn p256Verify(
-    msgHash_ptr: [*]const u8,
-    sig_ptr: [*]const u8,
-    pubKey_ptr: [*]const u8,
-) c_int {
-    const msgHash = msgHash_ptr[0..32];
-    const r = sig_ptr[0..32];
-    const s = sig_ptr[32..64];
-    const pubKey = pubKey_ptr[0..64];
-
-    const valid = crypto.p256.verify(msgHash, r, s, pubKey) catch return 1;
-    return if (valid) 0 else 1;
-}
-
-/// Derive P256 public key from private key
-export fn p256DerivePublicKey(
-    privKey_ptr: [*]const u8,
-    pubKey_ptr: [*]u8,
-) c_int {
-    const privKey = privKey_ptr[0..32];
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-
-    const pubKey = crypto.p256.publicKeyFromPrivate(allocator, privKey) catch return 1;
-    defer allocator.free(pubKey);
-
-    @memcpy(pubKey_ptr[0..64], pubKey);
-    return 0;
-}
-
-/// Perform P256 ECDH key exchange
-export fn p256Ecdh(
-    privKey_ptr: [*]const u8,
-    pubKey_ptr: [*]const u8,
-    shared_ptr: [*]u8,
-) c_int {
-    const privKey = privKey_ptr[0..32];
-    const pubKey = pubKey_ptr[0..64];
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-
-    const shared = crypto.p256.ecdh(allocator, privKey, pubKey) catch return 1;
-    defer allocator.free(shared);
-
-    @memcpy(shared_ptr[0..32], shared);
-    return 0;
-}
+// Note: P256 Zig wrappers disabled due to API changes in Zig 0.15.1
+// Use the TypeScript implementation in src/crypto/p256.ts instead
 
 // ============================================================================
 // WASM Memory Management

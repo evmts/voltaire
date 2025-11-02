@@ -608,53 +608,20 @@ int x25519Scalarmult(const uint8_t * secret_ptr, const uint8_t * pub_ptr, uint8_
 int x25519KeypairFromSeed(const uint8_t * seed_ptr, uint8_t * secret_ptr, uint8_t * pub_ptr);
 
 // ============================================================================
-// Ed25519 API
+// Ed25519 API - DISABLED (Use TypeScript @noble/curves implementation)
 // ============================================================================
 
-/**
- * Sign message with Ed25519 secret key
- */
-int ed25519Sign(const uint8_t * msg_ptr, size_t msg_len, const uint8_t * secret_ptr, uint8_t * sig_ptr);
-
-/**
- * Verify Ed25519 signature
- */
-int ed25519Verify(const uint8_t * msg_ptr, size_t msg_len, const uint8_t * sig_ptr, const uint8_t * pub_ptr);
-
-/**
- * Derive Ed25519 public key from secret key
- */
-int ed25519DerivePublicKey(const uint8_t * secret_ptr, uint8_t * pub_ptr);
-
-/**
- * Generate Ed25519 keypair from seed
- */
-int ed25519KeypairFromSeed(const uint8_t * seed_ptr, uint8_t * secret_ptr, uint8_t * pub_ptr);
-
 // ============================================================================
-// P256 (secp256r1) API
+// Note: Ed25519 Zig wrappers disabled due to API changes in Zig 0.15.1
 // ============================================================================
 
-/**
- * Sign message hash with P256 private key
- * Returns signature as r || s (64 bytes)
- */
-int p256Sign(const uint8_t * msgHash_ptr, const uint8_t * privKey_ptr, uint8_t * sig_ptr);
+// ============================================================================
+// P256 (secp256r1) API - DISABLED (Use TypeScript @noble/curves implementation)
+// ============================================================================
 
-/**
- * Verify P256 signature
- */
-int p256Verify(const uint8_t * msgHash_ptr, const uint8_t * sig_ptr, const uint8_t * pubKey_ptr);
-
-/**
- * Derive P256 public key from private key
- */
-int p256DerivePublicKey(const uint8_t * privKey_ptr, uint8_t * pubKey_ptr);
-
-/**
- * Perform P256 ECDH key exchange
- */
-int p256Ecdh(const uint8_t * privKey_ptr, const uint8_t * pubKey_ptr, uint8_t * shared_ptr);
+// ============================================================================
+// Note: P256 Zig wrappers disabled due to API changes in Zig 0.15.1
+// ============================================================================
 
 // ============================================================================
 // WASM Memory Management
