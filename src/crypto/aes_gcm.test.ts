@@ -119,7 +119,9 @@ describe("AesGcm", () => {
 
       const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
       // Corrupt one byte
-      ciphertext[0] ^= 1;
+      if (ciphertext[0] !== undefined) {
+        ciphertext[0] ^= 1;
+      }
 
       await expect(AesGcm.decrypt(ciphertext, key, nonce)).rejects.toThrow();
     });

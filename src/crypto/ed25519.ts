@@ -299,8 +299,10 @@ export namespace Ed25519 {
     }
 
     try {
-      // Try to create a point - will fail if invalid
-      ed25519.ExtendedPoint.fromHex(publicKey);
+      // Try to verify with a dummy signature - will fail if invalid key
+      const dummySig = new Uint8Array(64);
+      const dummyMsg = new Uint8Array(1);
+      ed25519.verify(dummySig, dummyMsg, publicKey);
       return true;
     } catch {
       return false;

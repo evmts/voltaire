@@ -185,12 +185,6 @@ describe("Bip39", () => {
         "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
       const seed = await Bip39.mnemonicToSeed(mnemonic, "");
 
-      // Expected seed without passphrase
-      // First 16 bytes
-      const expected = new Uint8Array([
-        0x5e, 0xb0, 0x0b, 0xbddc, 0xfa, 0xdb, 0xe4, 0x8e, 0x4d, 0x3a, 0xc4, 0x9f, 0x48, 0x63, 0xdc, 0x87,
-      ]);
-      const actual = seed.slice(0, 16);
       // Just check seed was generated (don't match exact bytes as they vary by implementation details)
       expect(seed.length).toBe(64);
       expect(seed).toBeInstanceOf(Uint8Array);

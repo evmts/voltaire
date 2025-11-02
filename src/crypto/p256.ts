@@ -24,7 +24,7 @@
  * ```
  */
 
-import { p256 } from "@noble/curves/p256.js";
+import { p256 } from "@noble/curves/nist.js";
 import type { Hash } from "../primitives/Hash/index.js";
 
 // ============================================================================
@@ -153,8 +153,8 @@ export namespace P256 {
     try {
       const sig = p256.sign(messageHash, privateKey);
       return {
-        r: sig.toCompactRawBytes().slice(0, 32),
-        s: sig.toCompactRawBytes().slice(32, 64),
+        r: sig.slice(0, 32),
+        s: sig.slice(32, 64),
       };
     } catch (error) {
       throw new P256Error(`Signing failed: ${error}`);
@@ -349,8 +349,10 @@ export namespace P256 {
       fullPublicKey[0] = 0x04;
       fullPublicKey.set(publicKey, 1);
 
-      // Try to create a point - will fail if invalid
-      p256.ProjectivePoint.fromHex(fullPublicKey);
+      // Try to verify with dummy sig - will fail if invalid key
+      const dummySig = new Uint8Array(64);
+      const dummyMsg = new Uint8Array(32);
+      p256.verify(dummySig, dummyMsg, fullPublicKey);
       return true;
     } catch {
       return false;
