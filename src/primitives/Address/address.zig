@@ -1,6 +1,6 @@
 const std = @import("std");
 const crypto = std.crypto;
-const rlp = @import("../Rlp.zig");
+const rlp = @import("../Rlp/Rlp.zig");
 
 const starts_with = std.mem.startsWith;
 const hex_to_bytes = std.fmt.hexToBytes;

@@ -105,15 +105,15 @@
 pub const Address = @import("Address/address.zig");
 
 // Encoding/Decoding
-pub const Hex = @import("Hex.zig");
-pub const Rlp = @import("Rlp.zig");
-pub const Abi = @import("Abi.zig");
+pub const Hex = @import("Hex/Hex.zig");
+pub const Rlp = @import("Rlp/Rlp.zig");
+pub const Abi = @import("Abi/Abi.zig");
 pub const AbiEncoding = @import("abi/abi_encoding.zig");
 
 // Utilities
 pub const Numeric = @import("Uint/numeric.zig");
 pub const GasConstants = @import("GasConstants/gas_constants.zig");
-pub const Uint = @import("Uint.zig").Uint;
+pub const Uint = @import("Uint/Uint.zig").Uint;
 // Note: Zig 0.14 includes a builtin `u256` primitive. Avoid exporting
 // a shadowing alias here to prevent name conflicts in tests/builds.
 
@@ -122,13 +122,13 @@ pub const State = @import("State/state.zig");
 pub const StorageKey = State.StorageKey;
 
 // Transaction types
-pub const Transaction = @import("Transaction.zig");
+pub const Transaction = @import("Transaction/Transaction.zig");
 pub const AccessList = @import("AccessList/access_list.zig");
 pub const Authorization = @import("Authorization/authorization.zig");
 pub const Blob = @import("Blob/blob.zig");
 
 // Contract utilities
-pub const EventLog = @import("EventLog.zig");
+pub const EventLog = @import("EventLog/EventLog.zig");
 pub const Bytecode = @import("Bytecode/bytecode.zig").Bytecode;
 
 // Opcodes

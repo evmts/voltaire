@@ -1,6 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
-const hex = @import("../Hex.zig");
+const hex = @import("../Hex/Hex.zig");
 const Hash = [32]u8;
 const Sha256 = std.crypto.hash.sha2.Sha256;
 const Allocator = std.mem.Allocator;

@@ -1,7 +1,7 @@
 // ABI encoding and decoding functionality
 // Re-exports from the ABI module
 
-pub const mod = @import("abi/abi_encoding.zig");
+pub const mod = @import("../abi/abi_encoding.zig");
 
 // Re-export main types and functions
 pub const AbiType = mod.AbiType;
