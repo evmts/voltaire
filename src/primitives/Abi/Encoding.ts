@@ -9,7 +9,7 @@ import type { Address as AddressType } from "../Address/index.js";
 import * as Address from "../Address/index.js";
 
 function encodeUint256(value: bigint): Uint8Array {
-  return Uint.toAbiEncoded.call(Uint.from(value));
+  return Uint.toAbiEncoded(Uint.from(value));
 }
 
 function encodeUint(value: bigint | number, bits: number): Uint8Array {
@@ -163,7 +163,7 @@ function decodeUint256(data: Uint8Array, offset: number): bigint {
     throw new AbiDecodingError("Data too small for uint256");
   }
   const slice = data.slice(offset, offset + 32);
-  return Uint.toBigInt.call(Uint.fromAbiEncoded(slice));
+  return Uint.toBigInt(Uint.fromAbiEncoded(slice));
 }
 
 function decodeValue(

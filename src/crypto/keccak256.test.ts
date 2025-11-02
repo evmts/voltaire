@@ -54,7 +54,7 @@ describe("Keccak256 - Known Test Vectors", () => {
     const expected = Hash.fromHex(
       "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("abc", (impl) => {
@@ -62,7 +62,7 @@ describe("Keccak256 - Known Test Vectors", () => {
     const expected = Hash.fromHex(
       "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("hello", (impl) => {
@@ -70,7 +70,7 @@ describe("Keccak256 - Known Test Vectors", () => {
     const expected = Hash.fromHex(
       "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("The quick brown fox jumps over the lazy dog", (impl) => {
@@ -78,7 +78,7 @@ describe("Keccak256 - Known Test Vectors", () => {
     const expected = Hash.fromHex(
       "0x4d741b6f1eb29cb2a9b9911c82f56fa8d73b04959d3d9d222895df6c0b28aa15",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("zero byte", (impl) => {
@@ -86,7 +86,7 @@ describe("Keccak256 - Known Test Vectors", () => {
     const expected = Hash.fromHex(
       "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("0xff byte", (impl) => {
@@ -94,7 +94,7 @@ describe("Keccak256 - Known Test Vectors", () => {
     const expected = Hash.fromHex(
       "0x8b1a944cf13a9a1c08facb2c9e98623ef3254d2ddb48113885c3e8e97fec8db9",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 });
 
@@ -119,13 +119,13 @@ describe("Keccak256 - Input Types", () => {
   testBoth("hashHex - with 0x prefix", (impl) => {
     const result = impl.hashHex("0x1234");
     const expected = impl.hash(new Uint8Array([0x12, 0x34]));
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("hashHex - without prefix", (impl) => {
     const result = impl.hashHex("1234");
     const expected = impl.hash(new Uint8Array([0x12, 0x34]));
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("hashHex - throws on odd length", (impl) => {
@@ -147,7 +147,7 @@ describe("Keccak256 - Edge Cases", () => {
     const expected = Hash.fromHex(
       "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("single byte", (impl) => {
@@ -214,20 +214,20 @@ describe("Keccak256 - Multiple Chunks", () => {
     const resultMultiple = impl.hashMultiple([chunk1, chunk2, chunk3]);
     const resultSingle = impl.hash(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
 
-    expect(Hash.equals.call(resultMultiple, resultSingle)).toBe(true);
+    expect(Hash.equals(resultMultiple, resultSingle)).toBe(true);
   });
 
   testBoth("hashMultiple - empty array", (impl) => {
     const result = impl.hashMultiple([]);
     const expected = impl.hash(new Uint8Array(0));
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("hashMultiple - single chunk", (impl) => {
     const chunk = new Uint8Array([1, 2, 3]);
     const resultMultiple = impl.hashMultiple([chunk]);
     const resultSingle = impl.hash(chunk);
-    expect(Hash.equals.call(resultMultiple, resultSingle)).toBe(true);
+    expect(Hash.equals(resultMultiple, resultSingle)).toBe(true);
   });
 });
 
@@ -259,7 +259,7 @@ describe("Keccak256 - Ethereum Utilities", () => {
     const expected = Hash.fromHex(
       "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("topic - Approval event", (impl) => {
@@ -267,7 +267,7 @@ describe("Keccak256 - Ethereum Utilities", () => {
     const expected = Hash.fromHex(
       "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
     );
-    expect(Hash.equals.call(result, expected)).toBe(true);
+    expect(Hash.equals(result, expected)).toBe(true);
   });
 
   testBoth("contractAddress - basic", (impl) => {
@@ -331,7 +331,7 @@ describe("Keccak256 - Consistency", () => {
     const data = new Uint8Array([1, 2, 3, 4, 5]);
     const result1 = impl.hash(data);
     const result2 = impl.hash(data);
-    expect(Hash.equals.call(result1, result2)).toBe(true);
+    expect(Hash.equals(result1, result2)).toBe(true);
   });
 
   testBoth("different inputs produce different outputs", (impl) => {
@@ -339,7 +339,7 @@ describe("Keccak256 - Consistency", () => {
     const data2 = new Uint8Array([1, 2, 4]);
     const result1 = impl.hash(data1);
     const result2 = impl.hash(data2);
-    expect(Hash.equals.call(result1, result2)).toBe(false);
+    expect(Hash.equals(result1, result2)).toBe(false);
   });
 
   testBoth("modifying input does not affect result", (impl) => {
@@ -347,7 +347,7 @@ describe("Keccak256 - Consistency", () => {
     const result = impl.hash(data);
     data[0] = 99;
     const result2 = impl.hash(new Uint8Array([1, 2, 3, 4, 5]));
-    expect(Hash.equals.call(result, result2)).toBe(true);
+    expect(Hash.equals(result, result2)).toBe(true);
   });
 });
 
@@ -378,7 +378,7 @@ describe("Keccak256 - Cross-validation", () => {
     const data = new Uint8Array([1, 2, 3, 4, 5]);
     const nobleResult = Keccak256.hash(data);
     const wasmResult = Keccak256Wasm.hash(data);
-    expect(Hash.equals.call(nobleResult, wasmResult)).toBe(true);
+    expect(Hash.equals(nobleResult, wasmResult)).toBe(true);
   });
 
   test("Noble and WASM produce identical results - strings", () => {
@@ -386,7 +386,7 @@ describe("Keccak256 - Cross-validation", () => {
     for (const str of testStrings) {
       const nobleResult = Keccak256.hashString(str);
       const wasmResult = Keccak256Wasm.hashString(str);
-      expect(Hash.equals.call(nobleResult, wasmResult)).toBe(true);
+      expect(Hash.equals(nobleResult, wasmResult)).toBe(true);
     }
   });
 
@@ -399,7 +399,7 @@ describe("Keccak256 - Cross-validation", () => {
       }
       const nobleResult = Keccak256.hash(data);
       const wasmResult = Keccak256Wasm.hash(data);
-      expect(Hash.equals.call(nobleResult, wasmResult)).toBe(true);
+      expect(Hash.equals(nobleResult, wasmResult)).toBe(true);
     }
   });
 
@@ -424,7 +424,7 @@ describe("Keccak256 - Cross-validation", () => {
     for (const sig of signatures) {
       const nobleResult = Keccak256.topic(sig);
       const wasmResult = Keccak256Wasm.topic(sig);
-      expect(Hash.equals.call(nobleResult, wasmResult)).toBe(true);
+      expect(Hash.equals(nobleResult, wasmResult)).toBe(true);
     }
   });
 

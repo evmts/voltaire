@@ -217,10 +217,10 @@ describe("Siwe.Message.format", () => {
   });
 });
 
-describe("Siwe.format (this: pattern)", () => {
-  it("formats message using this: pattern", () => {
+describe("Siwe.format", () => {
+  it("formats message using public wrapper", () => {
     const message = createBasicMessage();
-    const formatted = Siwe.format.call(message);
+    const formatted = Siwe.format(message);
 
     expect(formatted).toContain("example.com wants you to sign in");
     expect(formatted).toContain("0x0101010101010101010101010101010101010101");
@@ -582,10 +582,10 @@ describe("Siwe.Message.validate", () => {
   });
 });
 
-describe("Siwe.validate (this: pattern)", () => {
-  it("validates message using this: pattern", () => {
+describe("Siwe.validate", () => {
+  it("validates message using public wrapper", () => {
     const message = createBasicMessage();
-    const result = Siwe.validate.call(message);
+    const result = Siwe.validate(message);
 
     expect(result.valid).toBe(true);
   });
@@ -596,7 +596,7 @@ describe("Siwe.validate (this: pattern)", () => {
       ...createBasicMessage(),
       notBefore: "2021-09-30T00:00:00.000Z",
     };
-    const result = Siwe.validate.call(message, { now });
+    const result = Siwe.validate(message, { now });
 
     expect(result.valid).toBe(false);
   });
@@ -607,32 +607,38 @@ describe("Siwe.validate (this: pattern)", () => {
 // ============================================================================
 
 describe("Siwe.Message.getMessageHash", () => {
-  it("throws not implemented", () => {
+  it("returns message hash", () => {
     const message = createBasicMessage();
-    expect(() => Siwe.Message.getMessageHash(message)).toThrow("Not implemented");
+    const hash = Siwe.Message.getMessageHash(message);
+    expect(hash).toBeInstanceOf(Uint8Array);
+    expect(hash.length).toBe(32);
   });
 });
 
 describe("Siwe.Message.verify", () => {
-  it("throws not implemented", () => {
+  it("returns false for invalid signature", () => {
     const message = createBasicMessage();
     const signature = new Uint8Array(65);
-    expect(() => Siwe.Message.verify(message, signature)).toThrow("Not implemented");
+    const result = Siwe.Message.verify(message, signature);
+    expect(result).toBe(false);
   });
 });
 
-describe("Siwe.getMessageHash (this: pattern)", () => {
-  it("throws not implemented", () => {
+describe("Siwe.getMessageHash", () => {
+  it("returns message hash using public wrapper", () => {
     const message = createBasicMessage();
-    expect(() => Siwe.getMessageHash.call(message)).toThrow("Not implemented");
+    const hash = Siwe.getMessageHash(message);
+    expect(hash).toBeInstanceOf(Uint8Array);
+    expect(hash.length).toBe(32);
   });
 });
 
-describe("Siwe.verify (this: pattern)", () => {
-  it("throws not implemented", () => {
+describe("Siwe.verify", () => {
+  it("returns false for invalid signature using public wrapper", () => {
     const message = createBasicMessage();
     const signature = new Uint8Array(65);
-    expect(() => Siwe.verify.call(message, signature)).toThrow("Not implemented");
+    const result = Siwe.verify(message, signature);
+    expect(result).toBe(false);
   });
 });
 
@@ -667,7 +673,7 @@ describe("Siwe.verifyMessage", () => {
     }
   });
 
-  it("throws when signature verification not implemented", () => {
+  it("returns false for invalid signature", () => {
     const message = createBasicMessage();
     const signature = new Uint8Array(65);
     const result = Siwe.verifyMessage(message, signature);
@@ -675,7 +681,7 @@ describe("Siwe.verifyMessage", () => {
     expect(result.valid).toBe(false);
     if (!result.valid) {
       expect(result.error.type).toBe("signature_mismatch");
-      expect(result.error.message).toContain("Not implemented");
+      expect(result.error.message).toContain("does not match message address");
     }
   });
 });

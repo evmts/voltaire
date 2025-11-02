@@ -106,10 +106,10 @@ console.log("BLOB DECODING BENCHMARKS");
 console.log("================================================================================\n");
 
 console.log("--- Data Decoding (toData) ---");
-results.push(benchmark("toData - small (13 bytes)", () => Blob.toData.call(smallBlob)));
-results.push(benchmark("toData - medium (10 KB)", () => Blob.toData.call(mediumBlob)));
-results.push(benchmark("toData - large (100 KB)", () => Blob.toData.call(largeBlob)));
-results.push(benchmark("toData - max (128 KB)", () => Blob.toData.call(maxBlob)));
+results.push(benchmark("toData - small (13 bytes)", () => Blob.toData(smallBlob)));
+results.push(benchmark("toData - medium (10 KB)", () => Blob.toData(mediumBlob)));
+results.push(benchmark("toData - large (100 KB)", () => Blob.toData(largeBlob)));
+results.push(benchmark("toData - max (128 KB)", () => Blob.toData(maxBlob)));
 
 console.log(
   results
@@ -167,7 +167,7 @@ const versionedHash = new Uint8Array(32) as Blob.VersionedHash;
 versionedHash[0] = Blob.COMMITMENT_VERSION_KZG;
 
 results.push(
-  benchmark("isValidVersion", () => Blob.isValidVersion.call(versionedHash)),
+  benchmark("isValidVersion", () => Blob.isValidVersion(versionedHash)),
 );
 results.push(
   benchmark("VersionedHash.getVersion", () =>
@@ -292,19 +292,19 @@ console.log("--- Encode + Decode Cycles ---");
 results.push(
   benchmark("encode + decode - small", () => {
     const blob = Blob.fromData(smallData);
-    Blob.toData.call(blob);
+    Blob.toData(blob);
   }),
 );
 results.push(
   benchmark("encode + decode - medium", () => {
     const blob = Blob.fromData(mediumData);
-    Blob.toData.call(blob);
+    Blob.toData(blob);
   }),
 );
 results.push(
   benchmark("encode + decode - large", () => {
     const blob = Blob.fromData(largeData);
-    Blob.toData.call(blob);
+    Blob.toData(blob);
   }),
 );
 
@@ -353,7 +353,7 @@ console.log("--- KZG Commitment/Proof Generation ---");
 results.push(
   benchmark("toCommitment", () => {
     try {
-      Blob.toCommitment.call(smallBlob);
+      Blob.toCommitment(smallBlob);
     } catch {
       // Expected - not implemented
     }
@@ -362,7 +362,7 @@ results.push(
 results.push(
   benchmark("toProof", () => {
     try {
-      Blob.toProof.call(smallBlob, validCommitment as Blob.Commitment);
+      Blob.toProof(smallBlob, validCommitment as Blob.Commitment);
     } catch {
       // Expected - not implemented
     }
@@ -383,7 +383,7 @@ console.log("\n--- KZG Verification ---");
 results.push(
   benchmark("verify", () => {
     try {
-      Blob.verify.call(
+      Blob.verify(
         smallBlob,
         validCommitment as Blob.Commitment,
         validProof as Blob.Proof,
@@ -427,9 +427,9 @@ console.log(
 
 console.log("\n--- Versioned Hash ---");
 results.push(
-  benchmark("toVersionedHash", async () => {
+  benchmark("toVersionedHash", () => {
     try {
-      await Blob.toVersionedHash.call(validCommitment as Blob.Commitment);
+      Blob.toVersionedHash(validCommitment as Blob.Commitment);
     } catch {
       // Expected - not implemented
     }

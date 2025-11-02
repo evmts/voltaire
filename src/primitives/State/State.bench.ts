@@ -254,8 +254,8 @@ results.push(
   }),
 );
 results.push(
-  benchmark("StorageKey.equals - method form", () => {
-    void StorageKey.equals_.call(key1, key2);
+  benchmark("StorageKey.equals - with conversion", () => {
+    void StorageKey.equals(key1, key2);
   }),
 );
 
@@ -299,8 +299,8 @@ results.push(
   }),
 );
 results.push(
-  benchmark("StorageKey.toString - method form", () => {
-    void StorageKey.toString_.call(key2);
+  benchmark("StorageKey.toString - with conversion", () => {
+    void StorageKey.toString(key2);
   }),
 );
 
@@ -389,8 +389,8 @@ results.push(
   }),
 );
 results.push(
-  benchmark("StorageKey.hashCode - method form", () => {
-    void StorageKey.hashCode_.call(key2);
+  benchmark("StorageKey.hashCode - with conversion", () => {
+    void StorageKey.hashCode(key2);
   }),
 );
 

@@ -66,7 +66,7 @@ describe("Hash", () => {
 			const hash = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const hex = Hash.toHex.call(hash)
+			const hex = Hash.toHex(hash)
 			expect(hex).toBe(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
@@ -77,7 +77,7 @@ describe("Hash", () => {
 			bytes[0] = 0x01
 			bytes[1] = 0x0a
 			const hash = Hash.fromBytes(bytes)
-			const hex = Hash.toHex.call(hash)
+			const hex = Hash.toHex(hash)
 			expect(hex.slice(0, 8)).toBe("0x010a00")
 		})
 	})
@@ -90,7 +90,7 @@ describe("Hash", () => {
 			const b = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			expect(Hash.equals.call(a, b)).toBe(true)
+			expect(Hash.equals(a, b)).toBe(true)
 		})
 
 		it("returns false for different hashes", () => {
@@ -100,7 +100,7 @@ describe("Hash", () => {
 			const b = Hash.fromHex(
 				"0x0000000000000000000000000000000000000000000000000000000000000000",
 			)
-			expect(Hash.equals.call(a, b)).toBe(false)
+			expect(Hash.equals(a, b)).toBe(false)
 		})
 
 		it("uses constant time comparison", () => {
@@ -110,7 +110,7 @@ describe("Hash", () => {
 			const b = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdee",
 			)
-			expect(Hash.equals.call(a, b)).toBe(false)
+			expect(Hash.equals(a, b)).toBe(false)
 		})
 	})
 
@@ -157,7 +157,7 @@ describe("Hash", () => {
 			const data = new Uint8Array([1, 2, 3, 4])
 			const hash1 = Hash.keccak256(data)
 			const hash2 = Hash.keccak256(data)
-			expect(Hash.equals.call(hash1, hash2)).toBe(true)
+			expect(Hash.equals(hash1, hash2)).toBe(true)
 		})
 
 		it("produces different hashes for different data", () => {
@@ -165,7 +165,7 @@ describe("Hash", () => {
 			const data2 = new Uint8Array([1, 2, 4])
 			const hash1 = Hash.keccak256(data1)
 			const hash2 = Hash.keccak256(data2)
-			expect(Hash.equals.call(hash1, hash2)).toBe(false)
+			expect(Hash.equals(hash1, hash2)).toBe(false)
 		})
 	})
 
@@ -179,13 +179,13 @@ describe("Hash", () => {
 		it("hashes string consistently", () => {
 			const hash1 = Hash.keccak256String("hello")
 			const hash2 = Hash.keccak256String("hello")
-			expect(Hash.equals.call(hash1, hash2)).toBe(true)
+			expect(Hash.equals(hash1, hash2)).toBe(true)
 		})
 
 		it("produces different hashes for different strings", () => {
 			const hash1 = Hash.keccak256String("hello")
 			const hash2 = Hash.keccak256String("world")
-			expect(Hash.equals.call(hash1, hash2)).toBe(false)
+			expect(Hash.equals(hash1, hash2)).toBe(false)
 		})
 	})
 
@@ -209,7 +209,7 @@ describe("Hash", () => {
 			const data = new Uint8Array([0x12, 0x34])
 			const hash1 = Hash.keccak256(data)
 			const hash2 = Hash.keccak256Hex("0x1234")
-			expect(Hash.equals.call(hash1, hash2)).toBe(true)
+			expect(Hash.equals(hash1, hash2)).toBe(true)
 		})
 	})
 
@@ -266,7 +266,7 @@ describe("Hash", () => {
 		it("creates different hashes", () => {
 			const hash1 = Hash.random()
 			const hash2 = Hash.random()
-			expect(Hash.equals.call(hash1, hash2)).toBe(false)
+			expect(Hash.equals(hash1, hash2)).toBe(false)
 		})
 	})
 
@@ -275,8 +275,8 @@ describe("Hash", () => {
 			const original = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const copy = Hash.clone.call(original)
-			expect(Hash.equals.call(original, copy)).toBe(true)
+			const copy = Hash.clone(original)
+			expect(Hash.equals(original, copy)).toBe(true)
 			expect(original).not.toBe(copy)
 		})
 
@@ -284,7 +284,7 @@ describe("Hash", () => {
 			const original = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const copy = Hash.clone.call(original)
+			const copy = Hash.clone(original)
 			// Modify original
 			;(original as any as Uint8Array)[0] = 0xff
 			expect(copy[0]).toBe(0x12)
@@ -296,7 +296,7 @@ describe("Hash", () => {
 			const hash = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const slice = Hash.slice.call(hash, 0, 4)
+			const slice = Hash.slice(hash, 0, 4)
 			expect(slice.length).toBe(4)
 			expect(slice[0]).toBe(0x12)
 			expect(slice[1]).toBe(0x34)
@@ -308,7 +308,7 @@ describe("Hash", () => {
 			const hash = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const slice = Hash.slice.call(hash, 28)
+			const slice = Hash.slice(hash, 28)
 			expect(slice.length).toBe(4)
 			expect(slice[0]).toBe(0x90)
 			expect(slice[3]).toBe(0xef)
@@ -320,7 +320,7 @@ describe("Hash", () => {
 			const hash = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const formatted = Hash.format.call(hash)
+			const formatted = Hash.format(hash)
 			expect(formatted).toContain("0x1234")
 			expect(formatted).toContain("cdef")
 			expect(formatted).toContain("...")
@@ -332,7 +332,7 @@ describe("Hash", () => {
 			const hash = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const bytes = Hash.toBytes.call(hash)
+			const bytes = Hash.toBytes(hash)
 			expect(bytes.length).toBe(32)
 			expect(bytes[0]).toBe(0x12)
 		})
@@ -341,7 +341,7 @@ describe("Hash", () => {
 			const hash = Hash.fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			)
-			const bytes = Hash.toBytes.call(hash)
+			const bytes = Hash.toBytes(hash)
 			bytes[0] = 0xff
 			expect(hash[0]).toBe(0x12)
 		})
@@ -349,14 +349,14 @@ describe("Hash", () => {
 
 	describe("isZero", () => {
 		it("returns true for zero hash", () => {
-			expect(Hash.isZero.call(Hash.ZERO)).toBe(true)
+			expect(Hash.isZero(Hash.ZERO)).toBe(true)
 		})
 
 		it("returns false for non-zero hash", () => {
 			const hash = Hash.fromHex(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			)
-			expect(Hash.isZero.call(hash)).toBe(false)
+			expect(Hash.isZero(hash)).toBe(false)
 		})
 	})
 })

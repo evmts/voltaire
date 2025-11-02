@@ -173,7 +173,7 @@ describe("Blob.toData", () => {
   it("decodes encoded data", () => {
     const original = new TextEncoder().encode("Hello, blob!");
     const blob = Blob.fromData(original);
-    const decoded = Blob.toData.call(blob);
+    const decoded = Blob.toData(blob);
 
     expect(decoded).toEqual(original);
   });
@@ -181,7 +181,7 @@ describe("Blob.toData", () => {
   it("decodes empty data", () => {
     const original = new Uint8Array(0);
     const blob = Blob.fromData(original);
-    const decoded = Blob.toData.call(blob);
+    const decoded = Blob.toData(blob);
 
     expect(decoded.length).toBe(0);
   });
@@ -189,14 +189,14 @@ describe("Blob.toData", () => {
   it("decodes max size data", () => {
     const original = new Uint8Array(Blob.SIZE - 8).fill(0xAB);
     const blob = Blob.fromData(original);
-    const decoded = Blob.toData.call(blob);
+    const decoded = Blob.toData(blob);
 
     expect(decoded).toEqual(original);
   });
 
   it("throws on invalid blob size", () => {
     const invalid = new Uint8Array(100) as Blob.Data;
-    expect(() => Blob.toData.call(invalid)).toThrow("Invalid blob size");
+    expect(() => Blob.toData(invalid)).toThrow("Invalid blob size");
   });
 
   it("throws on invalid length prefix", () => {
@@ -204,7 +204,7 @@ describe("Blob.toData", () => {
     const view = new DataView(blob.buffer);
     view.setBigUint64(0, BigInt(Blob.SIZE), true); // Invalid: exceeds max
 
-    expect(() => Blob.toData.call(blob)).toThrow("Invalid length prefix");
+    expect(() => Blob.toData(blob)).toThrow("Invalid length prefix");
   });
 
   it("handles roundtrip encoding", () => {
@@ -217,7 +217,7 @@ describe("Blob.toData", () => {
 
     for (const original of testData) {
       const blob = Blob.fromData(original);
-      const decoded = Blob.toData.call(blob);
+      const decoded = Blob.toData(blob);
       expect(decoded).toEqual(original);
     }
   });
@@ -230,12 +230,12 @@ describe("Blob.toData", () => {
 describe("Blob.toCommitment", () => {
   it("throws not implemented error", () => {
     const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
-    expect(() => Blob.toCommitment.call(blob)).toThrow("Not implemented");
+    expect(() => Blob.toCommitment(blob)).toThrow("Not implemented");
   });
 
   it("validates blob size before attempting", () => {
     const invalid = new Uint8Array(100) as Blob.Data;
-    expect(() => Blob.toCommitment.call(invalid)).toThrow("Invalid blob size");
+    expect(() => Blob.toCommitment(invalid)).toThrow("Invalid blob size");
   });
 });
 
@@ -243,19 +243,19 @@ describe("Blob.toProof", () => {
   it("throws not implemented error", () => {
     const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
     const commitment = new Uint8Array(48) as Blob.Commitment;
-    expect(() => Blob.toProof.call(blob, commitment)).toThrow("Not implemented");
+    expect(() => Blob.toProof(blob, commitment)).toThrow("Not implemented");
   });
 
   it("validates blob size", () => {
     const invalid = new Uint8Array(100) as Blob.Data;
     const commitment = new Uint8Array(48) as Blob.Commitment;
-    expect(() => Blob.toProof.call(invalid, commitment)).toThrow("Invalid blob size");
+    expect(() => Blob.toProof(invalid, commitment)).toThrow("Invalid blob size");
   });
 
   it("validates commitment size", () => {
     const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
     const invalid = new Uint8Array(32) as Blob.Commitment;
-    expect(() => Blob.toProof.call(blob, invalid)).toThrow("Invalid commitment size");
+    expect(() => Blob.toProof(blob, invalid)).toThrow("Invalid commitment size");
   });
 });
 
@@ -264,28 +264,28 @@ describe("Blob.verify", () => {
     const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
     const commitment = new Uint8Array(48) as Blob.Commitment;
     const proof = new Uint8Array(48) as Blob.Proof;
-    expect(() => Blob.verify.call(blob, commitment, proof)).toThrow("Not implemented");
+    expect(() => Blob.verify(blob, commitment, proof)).toThrow("Not implemented");
   });
 
   it("validates blob size", () => {
     const invalid = new Uint8Array(100) as Blob.Data;
     const commitment = new Uint8Array(48) as Blob.Commitment;
     const proof = new Uint8Array(48) as Blob.Proof;
-    expect(() => Blob.verify.call(invalid, commitment, proof)).toThrow("Invalid blob size");
+    expect(() => Blob.verify(invalid, commitment, proof)).toThrow("Invalid blob size");
   });
 
   it("validates commitment size", () => {
     const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
     const invalid = new Uint8Array(32) as Blob.Commitment;
     const proof = new Uint8Array(48) as Blob.Proof;
-    expect(() => Blob.verify.call(blob, invalid, proof)).toThrow("Invalid commitment size");
+    expect(() => Blob.verify(blob, invalid, proof)).toThrow("Invalid commitment size");
   });
 
   it("validates proof size", () => {
     const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
     const commitment = new Uint8Array(48) as Blob.Commitment;
     const invalid = new Uint8Array(32) as Blob.Proof;
-    expect(() => Blob.verify.call(blob, commitment, invalid)).toThrow("Invalid proof size");
+    expect(() => Blob.verify(blob, commitment, invalid)).toThrow("Invalid proof size");
   });
 });
 
@@ -344,23 +344,26 @@ describe("Blob.verifyBatch", () => {
 // ============================================================================
 
 describe("Blob.toVersionedHash", () => {
-  it("throws not implemented error", async () => {
-    const commitment = new Uint8Array(48) as Blob.Commitment;
-    await expect(Blob.toVersionedHash.call(commitment)).rejects.toThrow("Not implemented");
+  it("creates versioned hash from commitment", () => {
+    const commitment = new Uint8Array(48).fill(0xab) as Blob.Commitment;
+    const hash = Blob.toVersionedHash(commitment);
+
+    expect(hash.length).toBe(32);
+    expect(hash[0]).toBe(Blob.COMMITMENT_VERSION_KZG);
+    expect(Blob.VersionedHash.isValid(hash)).toBe(true);
   });
 
-  it("validates commitment size", async () => {
+  it("validates commitment size", () => {
     const invalid = new Uint8Array(32) as Blob.Commitment;
-    await expect(Blob.toVersionedHash.call(invalid)).rejects.toThrow(
-      "Invalid commitment size",
-    );
+    expect(() => Blob.toVersionedHash(invalid)).toThrow("Invalid commitment size");
   });
 
-  it("convenience form - Commitment.toVersionedHash", async () => {
-    const commitment = new Uint8Array(48) as Blob.Commitment;
-    await expect(Blob.Commitment.toVersionedHash.call(commitment)).rejects.toThrow(
-      "Not implemented",
-    );
+  it("convenience form - Commitment.toVersionedHash", () => {
+    const commitment = new Uint8Array(48).fill(0xab) as Blob.Commitment;
+    const hash = Blob.Commitment.toVersionedHash.call(commitment);
+
+    expect(hash.length).toBe(32);
+    expect(hash[0]).toBe(Blob.COMMITMENT_VERSION_KZG);
   });
 });
 
@@ -368,19 +371,19 @@ describe("Blob.isValidVersion", () => {
   it("validates correct version", () => {
     const hash = new Uint8Array(32) as Blob.VersionedHash;
     hash[0] = Blob.COMMITMENT_VERSION_KZG;
-    expect(Blob.isValidVersion.call(hash)).toBe(true);
+    expect(Blob.isValidVersion(hash)).toBe(true);
   });
 
   it("rejects incorrect version", () => {
     const hash = new Uint8Array(32) as Blob.VersionedHash;
     hash[0] = 0x00;
-    expect(Blob.isValidVersion.call(hash)).toBe(false);
+    expect(Blob.isValidVersion(hash)).toBe(false);
   });
 
   it("rejects incorrect size", () => {
     const hash = new Uint8Array(64) as Blob.VersionedHash;
     hash[0] = Blob.COMMITMENT_VERSION_KZG;
-    expect(Blob.isValidVersion.call(hash)).toBe(false);
+    expect(Blob.isValidVersion(hash)).toBe(false);
   });
 });
 
@@ -604,7 +607,7 @@ describe("Edge Cases", () => {
     const maxSize = Blob.SIZE - 8;
     const data = new Uint8Array(maxSize);
     const blob = Blob.fromData(data);
-    const decoded = Blob.toData.call(blob);
+    const decoded = Blob.toData(blob);
 
     expect(decoded.length).toBe(maxSize);
     expect(decoded).toEqual(data);
@@ -622,7 +625,7 @@ describe("Edge Cases", () => {
     const text = "Hello 世界 🌍 Ethereum!";
     const original = new TextEncoder().encode(text);
     const blob = Blob.fromData(original);
-    const decoded = Blob.toData.call(blob);
+    const decoded = Blob.toData(blob);
     const result = new TextDecoder().decode(decoded);
 
     expect(result).toBe(text);
@@ -638,7 +641,7 @@ describe("Edge Cases", () => {
 
     for (const pattern of patterns) {
       const blob = Blob.fromData(pattern);
-      const decoded = Blob.toData.call(blob);
+      const decoded = Blob.toData(blob);
       expect(decoded).toEqual(pattern);
     }
   });
@@ -652,8 +655,8 @@ describe("Edge Cases", () => {
     const blob2 = Blob.fromData(data2);
     const blob3 = Blob.fromData(data3);
 
-    expect(Blob.toData.call(blob1)).toEqual(data1);
-    expect(Blob.toData.call(blob2)).toEqual(data2);
-    expect(Blob.toData.call(blob3)).toEqual(data3);
+    expect(Blob.toData(blob1)).toEqual(data1);
+    expect(Blob.toData(blob2)).toEqual(data2);
+    expect(Blob.toData(blob3)).toEqual(data3);
   });
 });

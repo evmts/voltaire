@@ -127,9 +127,9 @@ describe("Bytecode.analyzeJumpDestinations", () => {
     expect(jumpdests.size).toBe(0);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x5b, 0x00, 0x5b]);
-    const jumpdests = Bytecode.analyzeJumpDests.call(code);
+    const jumpdests = Bytecode.analyzeJumpDestinations(code);
     expect(jumpdests.has(0)).toBe(true);
     expect(jumpdests.has(2)).toBe(true);
   });
@@ -156,9 +156,9 @@ describe("Bytecode.isValidJumpDest", () => {
     expect(Bytecode.isValidJumpDest(code, 10)).toBe(false);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x5b]);
-    expect(Bytecode.isJumpDest.call(code, 0)).toBe(true);
+    expect(Bytecode.isValidJumpDest(code, 0)).toBe(true);
   });
 });
 
@@ -207,9 +207,9 @@ describe("Bytecode.validate", () => {
     expect(Bytecode.validate(code)).toBe(true);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01]);
-    expect(Bytecode.isValid.call(code)).toBe(true);
+    expect(Bytecode.validate(code)).toBe(true);
   });
 });
 
@@ -272,9 +272,9 @@ describe("Bytecode.parseInstructions", () => {
     expect(instructions[2]?.position).toBe(3);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01]);
-    const instructions = Bytecode.parse.call(code);
+    const instructions = Bytecode.parseInstructions(code);
     expect(instructions).toHaveLength(1);
   });
 });
@@ -311,9 +311,9 @@ describe("Bytecode.analyze", () => {
     expect(analysis.instructions).toHaveLength(0);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01, 0x5b]);
-    const analysis = Bytecode.getAnalysis.call(code);
+    const analysis = Bytecode.analyze(code);
     expect(analysis.valid).toBe(true);
   });
 });
@@ -333,9 +333,9 @@ describe("Bytecode.size", () => {
     expect(Bytecode.size(code)).toBe(0);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01]);
-    expect(Bytecode.getSize.call(code)).toBe(2);
+    expect(Bytecode.size(code)).toBe(2);
   });
 });
 
@@ -358,9 +358,9 @@ describe("Bytecode.extractRuntime", () => {
     expect(runtime).toEqual(new Uint8Array([]));
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x00, 0x60, 0x01]);
-    const runtime = Bytecode.getRuntime.call(code, 2);
+    const runtime = Bytecode.extractRuntime(code, 2);
     expect(runtime).toEqual(new Uint8Array([0x60, 0x01]));
   });
 });
@@ -394,10 +394,10 @@ describe("Bytecode.equals", () => {
     expect(Bytecode.equals(code1, code2)).toBe(true);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code1 = new Uint8Array([0x60, 0x01]);
     const code2 = new Uint8Array([0x60, 0x01]);
-    expect(Bytecode.isEqual.call(code1, code2)).toBe(true);
+    expect(Bytecode.equals(code1, code2)).toBe(true);
   });
 });
 
@@ -406,14 +406,18 @@ describe("Bytecode.equals", () => {
 // ============================================================================
 
 describe("Bytecode.hash", () => {
-  it("throws not implemented error", () => {
+  it("computes keccak256 hash", () => {
     const code = new Uint8Array([0x60, 0x01]);
-    expect(() => Bytecode.hash(code)).toThrow("Not implemented");
+    const result = Bytecode.hash(code);
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result.length).toBe(32);
   });
 
-  it("uses convenience form and throws", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01]);
-    expect(() => Bytecode.getHash.call(code)).toThrow("Not implemented");
+    const result = Bytecode.hash(code);
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result.length).toBe(32);
   });
 });
 
@@ -442,9 +446,9 @@ describe("Bytecode.toHex", () => {
     expect(Bytecode.toHex(code)).toBe("0x");
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01]);
-    expect(Bytecode.asHex.call(code)).toBe("0x6001");
+    expect(Bytecode.toHex(code)).toBe("0x6001");
   });
 });
 
@@ -525,9 +529,9 @@ describe("Bytecode.formatInstructions", () => {
     expect(formatted).toEqual([]);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01]);
-    const formatted = Bytecode.disassemble.call(code);
+    const formatted = Bytecode.formatInstructions(code);
     expect(formatted).toHaveLength(1);
   });
 });
@@ -561,9 +565,9 @@ describe("Bytecode.hasMetadata", () => {
     expect(Bytecode.hasMetadata(code)).toBe(false);
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const code = new Uint8Array([0x60, 0x01, 0x00, 0x33]);
-    expect(Bytecode.containsMetadata.call(code)).toBe(true);
+    expect(Bytecode.hasMetadata(code)).toBe(true);
   });
 });
 
@@ -594,11 +598,11 @@ describe("Bytecode.stripMetadata", () => {
     expect(stripped).toEqual(new Uint8Array([0x60, 0x01]));
   });
 
-  it("uses convenience form", () => {
+  it("works with direct call", () => {
     const metadataBytes = 0x33;
     const metadata = new Array(metadataBytes).fill(0xaa);
     const code = new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]);
-    const stripped = Bytecode.withoutMetadata.call(code);
+    const stripped = Bytecode.stripMetadata(code);
     expect(stripped).toEqual(new Uint8Array([0x60, 0x01]));
   });
 });

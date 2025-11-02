@@ -173,7 +173,7 @@ console.log("===================================================================
 
 console.log("--- toHex ---");
 results.push(
-  benchmark("toHex", () => Hash.toHex.call(hash1)),
+  benchmark("toHex", () => Hash.toHex(hash1)),
 );
 
 console.log(
@@ -187,7 +187,7 @@ console.log(
 
 console.log("\n--- toBytes ---");
 results.push(
-  benchmark("toBytes", () => Hash.toBytes.call(hash1)),
+  benchmark("toBytes", () => Hash.toBytes(hash1)),
 );
 
 console.log(
@@ -201,7 +201,7 @@ console.log(
 
 console.log("\n--- toString ---");
 results.push(
-  benchmark("toString", () => Hash.toString.call(hash1)),
+  benchmark("toString", () => Hash.toString(hash1)),
 );
 
 console.log(
@@ -224,13 +224,13 @@ console.log("===================================================================
 
 console.log("--- equals ---");
 results.push(
-  benchmark("equals - same value", () => Hash.equals.call(hash1, hash2)),
+  benchmark("equals - same value", () => Hash.equals(hash1, hash2)),
 );
 results.push(
-  benchmark("equals - different value", () => Hash.equals.call(hash1, hash3)),
+  benchmark("equals - different value", () => Hash.equals(hash1, hash3)),
 );
 results.push(
-  benchmark("equals - zero hash", () => Hash.equals.call(zeroHash, Hash.ZERO)),
+  benchmark("equals - zero hash", () => Hash.equals(zeroHash, Hash.ZERO)),
 );
 
 console.log(
@@ -244,10 +244,10 @@ console.log(
 
 console.log("\n--- isZero ---");
 results.push(
-  benchmark("isZero - zero hash", () => Hash.isZero.call(zeroHash)),
+  benchmark("isZero - zero hash", () => Hash.isZero(zeroHash)),
 );
 results.push(
-  benchmark("isZero - non-zero hash", () => Hash.isZero.call(hash1)),
+  benchmark("isZero - non-zero hash", () => Hash.isZero(hash1)),
 );
 
 console.log(
@@ -440,7 +440,7 @@ console.log(
 
 console.log("\n--- clone ---");
 results.push(
-  benchmark("clone", () => Hash.clone.call(hash1)),
+  benchmark("clone", () => Hash.clone(hash1)),
 );
 
 console.log(
@@ -454,13 +454,13 @@ console.log(
 
 console.log("\n--- slice ---");
 results.push(
-  benchmark("slice - first 4 bytes", () => Hash.slice.call(hash1, 0, 4)),
+  benchmark("slice - first 4 bytes", () => Hash.slice(hash1, 0, 4)),
 );
 results.push(
-  benchmark("slice - last 4 bytes", () => Hash.slice.call(hash1, 28, 32)),
+  benchmark("slice - last 4 bytes", () => Hash.slice(hash1, 28, 32)),
 );
 results.push(
-  benchmark("slice - middle", () => Hash.slice.call(hash1, 10, 20)),
+  benchmark("slice - middle", () => Hash.slice(hash1, 10, 20)),
 );
 
 console.log(
@@ -474,10 +474,10 @@ console.log(
 
 console.log("\n--- format ---");
 results.push(
-  benchmark("format - default", () => Hash.format.call(hash1)),
+  benchmark("format - default", () => Hash.format(hash1)),
 );
 results.push(
-  benchmark("format - custom lengths", () => Hash.format.call(hash1, 10, 8)),
+  benchmark("format - custom lengths", () => Hash.format(hash1, 10, 8)),
 );
 
 console.log(

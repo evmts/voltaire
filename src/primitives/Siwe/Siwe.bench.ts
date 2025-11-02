@@ -229,11 +229,11 @@ console.log(
     .join("\n"),
 );
 
-console.log("\n--- this: Pattern ---");
-results.push(benchmark("format.call - basic", () => Siwe.format.call(basicMessage)));
+console.log("\n--- Public Wrapper ---");
+results.push(benchmark("format - basic", () => Siwe.format(basicMessage)));
 
 results.push(
-  benchmark("format.call - all fields", () => Siwe.format.call(messageWithAllFields)),
+  benchmark("format - all fields", () => Siwe.format(messageWithAllFields)),
 );
 
 console.log(
@@ -331,13 +331,13 @@ console.log(
     .join("\n"),
 );
 
-console.log("\n--- this: Pattern ---");
-results.push(benchmark("validate.call - basic", () => Siwe.validate.call(basicMessage)));
+console.log("\n--- Public Wrapper ---");
+results.push(benchmark("validate - basic", () => Siwe.validate(basicMessage)));
 
 results.push(
-  benchmark("validate.call - with options", () => {
+  benchmark("validate - with options", () => {
     const now = new Date("2021-09-30T18:00:00.000Z");
-    Siwe.validate.call(messageWithAllFields, { now });
+    Siwe.validate(messageWithAllFields, { now });
   }),
 );
 

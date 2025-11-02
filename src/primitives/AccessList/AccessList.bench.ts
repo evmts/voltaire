@@ -122,9 +122,9 @@ console.log("===================================================================
 const results: BenchmarkResult[] = [];
 
 console.log("--- Gas Cost Calculations ---");
-results.push(benchmark("gasCost - small list", () => AccessList.gasCost.call(smallList)));
-results.push(benchmark("gasCost - medium list", () => AccessList.gasCost.call(mediumList)));
-results.push(benchmark("gasCost - large list", () => AccessList.gasCost.call(largeList)));
+results.push(benchmark("gasCost - small list", () => AccessList.gasCost(smallList)));
+results.push(benchmark("gasCost - medium list", () => AccessList.gasCost(mediumList)));
+results.push(benchmark("gasCost - large list", () => AccessList.gasCost(largeList)));
 
 console.log(
   results
@@ -137,13 +137,13 @@ console.log(
 
 console.log("\n--- Gas Savings Calculations ---");
 results.push(
-  benchmark("gasSavings - small list", () => AccessList.gasSavings.call(smallList)),
+  benchmark("gasSavings - small list", () => AccessList.gasSavings(smallList)),
 );
 results.push(
-  benchmark("gasSavings - medium list", () => AccessList.gasSavings.call(mediumList)),
+  benchmark("gasSavings - medium list", () => AccessList.gasSavings(mediumList)),
 );
 results.push(
-  benchmark("gasSavings - large list", () => AccessList.gasSavings.call(largeList)),
+  benchmark("gasSavings - large list", () => AccessList.gasSavings(largeList)),
 );
 
 console.log(
@@ -157,10 +157,10 @@ console.log(
 
 console.log("\n--- Has Savings Check ---");
 results.push(
-  benchmark("hasSavings - small list", () => AccessList.hasSavings_.call(smallList)),
+  benchmark("hasSavings - small list", () => AccessList.hasSavings(smallList)),
 );
 results.push(
-  benchmark("hasSavings - medium list", () => AccessList.hasSavings_.call(mediumList)),
+  benchmark("hasSavings - medium list", () => AccessList.hasSavings(mediumList)),
 );
 
 console.log(
@@ -184,17 +184,17 @@ console.log("===================================================================
 console.log("--- Address Lookup ---");
 results.push(
   benchmark("includesAddress - small list (found)", () =>
-    AccessList.includesAddress.call(smallList, addr1),
+    AccessList.includesAddress(smallList, addr1),
   ),
 );
 results.push(
   benchmark("includesAddress - medium list (found)", () =>
-    AccessList.includesAddress.call(mediumList, mediumList[5]!.address),
+    AccessList.includesAddress(mediumList, mediumList[5]!.address),
   ),
 );
 results.push(
   benchmark("includesAddress - large list (not found)", () =>
-    AccessList.includesAddress.call(largeList, createAddress(200)),
+    AccessList.includesAddress(largeList, createAddress(200)),
   ),
 );
 
@@ -210,12 +210,12 @@ console.log(
 console.log("\n--- Storage Key Lookup ---");
 results.push(
   benchmark("includesStorageKey - found", () =>
-    AccessList.includesStorageKey.call(smallList, addr1, key1),
+    AccessList.includesStorageKey(smallList, addr1, key1),
   ),
 );
 results.push(
   benchmark("includesStorageKey - not found", () =>
-    AccessList.includesStorageKey.call(smallList, addr1, createStorageKey(99)),
+    AccessList.includesStorageKey(smallList, addr1, createStorageKey(99)),
   ),
 );
 
@@ -230,11 +230,11 @@ console.log(
 
 console.log("\n--- Keys Retrieval ---");
 results.push(
-  benchmark("keysFor - found", () => AccessList.keysFor.call(smallList, addr1)),
+  benchmark("keysFor - found", () => AccessList.keysFor(smallList, addr1)),
 );
 results.push(
   benchmark("keysFor - not found", () =>
-    AccessList.keysFor.call(smallList, createAddress(99)),
+    AccessList.keysFor(smallList, createAddress(99)),
   ),
 );
 
@@ -259,16 +259,16 @@ console.log("===================================================================
 console.log("--- Deduplication ---");
 results.push(
   benchmark("deduplicate - no duplicates", () =>
-    AccessList.deduplicate.call(smallList),
+    AccessList.deduplicate(smallList),
   ),
 );
 results.push(
   benchmark("deduplicate - with duplicates", () =>
-    AccessList.deduplicate.call(duplicateList),
+    AccessList.deduplicate(duplicateList),
   ),
 );
 results.push(
-  benchmark("deduplicate - large list", () => AccessList.deduplicate.call(largeList)),
+  benchmark("deduplicate - large list", () => AccessList.deduplicate(largeList)),
 );
 
 console.log(
@@ -283,12 +283,12 @@ console.log(
 console.log("\n--- Adding Addresses ---");
 results.push(
   benchmark("withAddress - new address", () =>
-    AccessList.withAddress.call(smallList, createAddress(99)),
+    AccessList.withAddress(smallList, createAddress(99)),
   ),
 );
 results.push(
   benchmark("withAddress - existing address", () =>
-    AccessList.withAddress.call(smallList, addr1),
+    AccessList.withAddress(smallList, addr1),
   ),
 );
 
@@ -304,17 +304,17 @@ console.log(
 console.log("\n--- Adding Storage Keys ---");
 results.push(
   benchmark("withStorageKey - new key to existing address", () =>
-    AccessList.withStorageKey.call(smallList, addr1, createStorageKey(99)),
+    AccessList.withStorageKey(smallList, addr1, createStorageKey(99)),
   ),
 );
 results.push(
   benchmark("withStorageKey - duplicate key", () =>
-    AccessList.withStorageKey.call(smallList, addr1, key1),
+    AccessList.withStorageKey(smallList, addr1, key1),
   ),
 );
 results.push(
   benchmark("withStorageKey - new address with key", () =>
-    AccessList.withStorageKey.call(smallList, createAddress(99), key1),
+    AccessList.withStorageKey(smallList, createAddress(99), key1),
   ),
 );
 
@@ -360,15 +360,15 @@ console.log("===================================================================
 
 console.log("--- Validation ---");
 results.push(
-  benchmark("assertValid - small list", () => AccessList.assertValid.call(smallList)),
+  benchmark("assertValid - small list", () => AccessList.assertValid(smallList)),
 );
 results.push(
   benchmark("assertValid - medium list", () =>
-    AccessList.assertValid.call(mediumList),
+    AccessList.assertValid(mediumList),
   ),
 );
 results.push(
-  benchmark("assertValid - large list", () => AccessList.assertValid.call(largeList)),
+  benchmark("assertValid - large list", () => AccessList.assertValid(largeList)),
 );
 
 console.log(
@@ -420,22 +420,22 @@ console.log("===================================================================
 console.log("--- Counting Operations ---");
 results.push(
   benchmark("addressCount - small list", () =>
-    AccessList.addressCount.call(smallList),
+    AccessList.addressCount(smallList),
   ),
 );
 results.push(
   benchmark("storageKeyCount - small list", () =>
-    AccessList.storageKeyCount.call(smallList),
+    AccessList.storageKeyCount(smallList),
   ),
 );
 results.push(
   benchmark("addressCount - large list", () =>
-    AccessList.addressCount.call(largeList),
+    AccessList.addressCount(largeList),
   ),
 );
 results.push(
   benchmark("storageKeyCount - large list", () =>
-    AccessList.storageKeyCount.call(largeList),
+    AccessList.storageKeyCount(largeList),
   ),
 );
 
@@ -450,10 +450,10 @@ console.log(
 
 console.log("\n--- Other Utilities ---");
 results.push(
-  benchmark("isEmpty - empty", () => AccessList.isEmpty.call([])),
+  benchmark("isEmpty - empty", () => AccessList.isEmpty([])),
 );
 results.push(
-  benchmark("isEmpty - non-empty", () => AccessList.isEmpty.call(smallList)),
+  benchmark("isEmpty - non-empty", () => AccessList.isEmpty(smallList)),
 );
 results.push(benchmark("create", () => AccessList.create()));
 

@@ -109,9 +109,9 @@ console.log(
 );
 
 console.log("\n--- Sized Type Guards ---");
-results.push(benchmark("isSized - correct size (4)", () => Hex.isSized.call(smallHex, 4)));
-results.push(benchmark("isSized - wrong size", () => Hex.isSized.call(smallHex, 8)));
-results.push(benchmark("isSized - large (256)", () => Hex.isSized.call(largeHex, 256)));
+results.push(benchmark("isSized - correct size (4)", () => Hex.isSized(smallHex, 4)));
+results.push(benchmark("isSized - wrong size", () => Hex.isSized(smallHex, 8)));
+results.push(benchmark("isSized - large (256)", () => Hex.isSized(largeHex, 256)));
 
 console.log(
   results
@@ -132,12 +132,12 @@ console.log("HEX VALIDATION BENCHMARKS");
 console.log("================================================================================\n");
 
 console.log("--- Validate ---");
-results.push(benchmark("validate - valid small", () => Hex.validate.call(smallHex)));
-results.push(benchmark("validate - valid large", () => Hex.validate.call(largeHex)));
+results.push(benchmark("validate - valid small", () => Hex.validate(smallHex)));
+results.push(benchmark("validate - valid large", () => Hex.validate(largeHex)));
 results.push(
   benchmark("validate - invalid (no prefix)", () => {
     try {
-      Hex.validate.call(invalidNoPrefix);
+      Hex.validate(invalidNoPrefix);
     } catch {
       // Expected
     }
@@ -146,7 +146,7 @@ results.push(
 results.push(
   benchmark("validate - invalid (bad chars)", () => {
     try {
-      Hex.validate.call(invalidChars);
+      Hex.validate(invalidChars);
     } catch {
       // Expected
     }
@@ -163,11 +163,11 @@ console.log(
 );
 
 console.log("\n--- Assert Size ---");
-results.push(benchmark("assertSize - correct size", () => Hex.assertSize.call(smallHex, 4)));
+results.push(benchmark("assertSize - correct size", () => Hex.assertSize(smallHex, 4)));
 results.push(
   benchmark("assertSize - wrong size", () => {
     try {
-      Hex.assertSize.call(smallHex, 8);
+      Hex.assertSize(smallHex, 8);
     } catch {
       // Expected
     }
@@ -207,9 +207,9 @@ console.log(
 );
 
 console.log("\n--- To Bytes ---");
-results.push(benchmark("toBytes - small (4 bytes)", () => Hex.toBytes.call(smallHex)));
-results.push(benchmark("toBytes - medium (32 bytes)", () => Hex.toBytes.call(mediumHex)));
-results.push(benchmark("toBytes - large (256 bytes)", () => Hex.toBytes.call(largeHex)));
+results.push(benchmark("toBytes - small (4 bytes)", () => Hex.toBytes(smallHex)));
+results.push(benchmark("toBytes - medium (32 bytes)", () => Hex.toBytes(mediumHex)));
+results.push(benchmark("toBytes - large (256 bytes)", () => Hex.toBytes(largeHex)));
 
 console.log(
   results
@@ -250,9 +250,9 @@ console.log(
 
 console.log("\n--- To Number ---");
 const hexFromNum = Hex.fromNumber(0x123456);
-results.push(benchmark("toNumber - small", () => Hex.toNumber.call("0xff" as HexType)));
-results.push(benchmark("toNumber - medium", () => Hex.toNumber.call(hexFromNum)));
-results.push(benchmark("toNumber - large", () => Hex.toNumber.call(smallHex)));
+results.push(benchmark("toNumber - small", () => Hex.toNumber("0xff" as HexType)));
+results.push(benchmark("toNumber - medium", () => Hex.toNumber(hexFromNum)));
+results.push(benchmark("toNumber - large", () => Hex.toNumber(smallHex)));
 
 console.log(
   results
@@ -294,9 +294,9 @@ console.log(
 );
 
 console.log("\n--- To BigInt ---");
-results.push(benchmark("toBigInt - small", () => Hex.toBigInt.call("0xff" as HexType)));
-results.push(benchmark("toBigInt - medium", () => Hex.toBigInt.call(mediumHex)));
-results.push(benchmark("toBigInt - large", () => Hex.toBigInt.call(largeHex)));
+results.push(benchmark("toBigInt - small", () => Hex.toBigInt("0xff" as HexType)));
+results.push(benchmark("toBigInt - medium", () => Hex.toBigInt(mediumHex)));
+results.push(benchmark("toBigInt - large", () => Hex.toBigInt(largeHex)));
 
 console.log(
   results
@@ -333,8 +333,8 @@ console.log(
 );
 
 console.log("\n--- To String ---");
-results.push(benchmark("toString - short", () => Hex.toString.call(hexFromString)));
-results.push(benchmark("toString - long", () => Hex.toString.call(hexFromLongString)));
+results.push(benchmark("toString - short", () => Hex.toString(hexFromString)));
+results.push(benchmark("toString - long", () => Hex.toString(hexFromLongString)));
 
 console.log(
   results
@@ -368,10 +368,10 @@ console.log(
 );
 
 console.log("\n--- To Boolean ---");
-results.push(benchmark("toBoolean - true (0x01)", () => Hex.toBoolean.call("0x01" as HexType)));
-results.push(benchmark("toBoolean - false (0x00)", () => Hex.toBoolean.call("0x00" as HexType)));
+results.push(benchmark("toBoolean - true (0x01)", () => Hex.toBoolean("0x01" as HexType)));
+results.push(benchmark("toBoolean - false (0x00)", () => Hex.toBoolean("0x00" as HexType)));
 results.push(
-  benchmark("toBoolean - true (non-zero)", () => Hex.toBoolean.call("0xff" as HexType)),
+  benchmark("toBoolean - true (non-zero)", () => Hex.toBoolean("0xff" as HexType)),
 );
 
 console.log(
@@ -393,9 +393,9 @@ console.log("HEX SIZE OPERATION BENCHMARKS");
 console.log("================================================================================\n");
 
 console.log("--- Size Calculation ---");
-results.push(benchmark("size - small (4 bytes)", () => Hex.size.call(smallHex)));
-results.push(benchmark("size - medium (32 bytes)", () => Hex.size.call(mediumHex)));
-results.push(benchmark("size - large (256 bytes)", () => Hex.size.call(largeHex)));
+results.push(benchmark("size - small (4 bytes)", () => Hex.size(smallHex)));
+results.push(benchmark("size - medium (32 bytes)", () => Hex.size(mediumHex)));
+results.push(benchmark("size - large (256 bytes)", () => Hex.size(largeHex)));
 
 console.log(
   results
@@ -448,10 +448,10 @@ console.log("HEX MANIPULATION BENCHMARKS - SLICE");
 console.log("================================================================================\n");
 
 console.log("--- Slicing ---");
-results.push(benchmark("slice - small (start only)", () => Hex.slice.call(smallHex, 1)));
-results.push(benchmark("slice - small (start + end)", () => Hex.slice.call(smallHex, 1, 3)));
-results.push(benchmark("slice - medium", () => Hex.slice.call(mediumHex, 8, 24)));
-results.push(benchmark("slice - large", () => Hex.slice.call(largeHex, 64, 192)));
+results.push(benchmark("slice - small (start only)", () => Hex.slice(smallHex, 1)));
+results.push(benchmark("slice - small (start + end)", () => Hex.slice(smallHex, 1, 3)));
+results.push(benchmark("slice - medium", () => Hex.slice(mediumHex, 8, 24)));
+results.push(benchmark("slice - large", () => Hex.slice(largeHex, 64, 192)));
 
 console.log(
   results
@@ -472,9 +472,9 @@ console.log("HEX MANIPULATION BENCHMARKS - PADDING");
 console.log("================================================================================\n");
 
 console.log("--- Left Padding ---");
-results.push(benchmark("pad - small to medium", () => Hex.pad.call(smallHex, 32)));
-results.push(benchmark("pad - small to large", () => Hex.pad.call(smallHex, 256)));
-results.push(benchmark("pad - no-op (already sized)", () => Hex.pad.call(smallHex, 4)));
+results.push(benchmark("pad - small to medium", () => Hex.pad(smallHex, 32)));
+results.push(benchmark("pad - small to large", () => Hex.pad(smallHex, 256)));
+results.push(benchmark("pad - no-op (already sized)", () => Hex.pad(smallHex, 4)));
 
 console.log(
   results
@@ -486,10 +486,10 @@ console.log(
 );
 
 console.log("\n--- Right Padding ---");
-results.push(benchmark("padRight - small to medium", () => Hex.padRight.call(smallHex, 32)));
-results.push(benchmark("padRight - small to large", () => Hex.padRight.call(smallHex, 256)));
+results.push(benchmark("padRight - small to medium", () => Hex.padRight(smallHex, 32)));
+results.push(benchmark("padRight - small to large", () => Hex.padRight(smallHex, 256)));
 results.push(
-  benchmark("padRight - no-op (already sized)", () => Hex.padRight.call(smallHex, 4)),
+  benchmark("padRight - no-op (already sized)", () => Hex.padRight(smallHex, 4)),
 );
 
 console.log(
@@ -510,14 +510,14 @@ console.log("===================================================================
 console.log("HEX MANIPULATION BENCHMARKS - TRIM");
 console.log("================================================================================\n");
 
-const paddedSmall = Hex.pad.call(smallHex, 32);
-const paddedMedium = Hex.pad.call(mediumHex, 256);
+const paddedSmall = Hex.pad(smallHex, 32);
+const paddedMedium = Hex.pad(mediumHex, 256);
 
 console.log("--- Trimming ---");
-results.push(benchmark("trim - no leading zeros", () => Hex.trim.call(smallHex)));
-results.push(benchmark("trim - padded small", () => Hex.trim.call(paddedSmall)));
-results.push(benchmark("trim - padded medium", () => Hex.trim.call(paddedMedium)));
-results.push(benchmark("trim - all zeros", () => Hex.trim.call(Hex.zero(32))));
+results.push(benchmark("trim - no leading zeros", () => Hex.trim(smallHex)));
+results.push(benchmark("trim - padded small", () => Hex.trim(paddedSmall)));
+results.push(benchmark("trim - padded medium", () => Hex.trim(paddedMedium)));
+results.push(benchmark("trim - all zeros", () => Hex.trim(Hex.zero(32))));
 
 console.log(
   results
@@ -542,14 +542,14 @@ const hexLower: HexType = "0xabcdef" as HexType;
 const hexDifferent: HexType = "0x123456" as HexType;
 
 console.log("--- Equality ---");
-results.push(benchmark("equals - same (exact)", () => Hex.equals.call(smallHex, smallHex)));
+results.push(benchmark("equals - same (exact)", () => Hex.equals(smallHex, smallHex)));
 results.push(
-  benchmark("equals - same (case diff)", () => Hex.equals.call(hexUpper, hexLower)),
+  benchmark("equals - same (case diff)", () => Hex.equals(hexUpper, hexLower)),
 );
 results.push(
-  benchmark("equals - different", () => Hex.equals.call(hexUpper, hexDifferent)),
+  benchmark("equals - different", () => Hex.equals(hexUpper, hexDifferent)),
 );
-results.push(benchmark("equals - large", () => Hex.equals.call(largeHex, largeHex)));
+results.push(benchmark("equals - large", () => Hex.equals(largeHex, largeHex)));
 
 console.log(
   results
@@ -575,15 +575,15 @@ const xorMediumA = mediumHex;
 const xorMediumB = Hex.random(32);
 
 console.log("--- XOR Operations ---");
-results.push(benchmark("xor - small (4 bytes)", () => Hex.xor.call(xorA, xorB)));
-results.push(benchmark("xor - medium (32 bytes)", () => Hex.xor.call(xorMediumA, xorMediumB)));
+results.push(benchmark("xor - small (4 bytes)", () => Hex.xor(xorA, xorB)));
+results.push(benchmark("xor - medium (32 bytes)", () => Hex.xor(xorMediumA, xorMediumB)));
 results.push(
-  benchmark("xor - large (256 bytes)", () => Hex.xor.call(largeHex, Hex.random(256))),
+  benchmark("xor - large (256 bytes)", () => Hex.xor(largeHex, Hex.random(256))),
 );
 results.push(
   benchmark("xor - length mismatch", () => {
     try {
-      Hex.xor.call(smallHex, mediumHex);
+      Hex.xor(smallHex, mediumHex);
     } catch {
       // Expected
     }

@@ -235,10 +235,10 @@ describe("StorageKey.equals", () => {
     expect(StorageKey.equals(key1, key2)).toBe(false);
   });
 
-  it("works with method form", () => {
+  it("works with from conversion", () => {
     const key1: StorageKey = { address: addr1, slot: 42n };
     const key2: StorageKey = { address: addr1, slot: 42n };
-    expect((StorageKey.equals_ as any).call(key1, key2)).toBe(true);
+    expect(StorageKey.equals(key1, key2)).toBe(true);
   });
 });
 
@@ -296,10 +296,10 @@ describe("StorageKey.toString", () => {
     expect(str.split("_").length).toBe(2);
   });
 
-  it("works with method form", () => {
+  it("works consistently", () => {
     const key: StorageKey = { address: addr1, slot: 42n };
     const str1 = StorageKey.toString(key);
-    const str2 = StorageKey.toString_.call(key);
+    const str2 = StorageKey.toString(key);
     expect(str1).toBe(str2);
   });
 });
@@ -423,10 +423,10 @@ describe("StorageKey.hashCode", () => {
     expect(typeof hash).toBe("number");
   });
 
-  it("works with method form", () => {
+  it("works consistently", () => {
     const key: StorageKey = { address: addr1, slot: 42n };
     const hash1 = StorageKey.hashCode(key);
-    const hash2 = StorageKey.hashCode_.call(key);
+    const hash2 = StorageKey.hashCode(key);
     expect(hash1).toBe(hash2);
   });
 });
