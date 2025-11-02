@@ -235,6 +235,57 @@ export interface WasmExports {
 	) => number;
 	secp256k1DerivePublicKey: (privKeyPtr: number, pubKeyPtr: number) => number;
 
+	// X25519 functions
+	x25519DerivePublicKey: (secretPtr: number, pubPtr: number) => number;
+	x25519Scalarmult: (
+		secretPtr: number,
+		pubPtr: number,
+		sharedPtr: number,
+	) => number;
+	x25519KeypairFromSeed: (
+		seedPtr: number,
+		secretPtr: number,
+		pubPtr: number,
+	) => number;
+
+	// Ed25519 functions
+	ed25519Sign: (
+		msgPtr: number,
+		msgLen: number,
+		secretPtr: number,
+		sigPtr: number,
+	) => number;
+	ed25519Verify: (
+		msgPtr: number,
+		msgLen: number,
+		sigPtr: number,
+		pubPtr: number,
+	) => number;
+	ed25519DerivePublicKey: (secretPtr: number, pubPtr: number) => number;
+	ed25519KeypairFromSeed: (
+		seedPtr: number,
+		secretPtr: number,
+		pubPtr: number,
+	) => number;
+
+	// P256 functions
+	p256Sign: (
+		msgHashPtr: number,
+		privKeyPtr: number,
+		sigPtr: number,
+	) => number;
+	p256Verify: (
+		msgHashPtr: number,
+		sigPtr: number,
+		pubKeyPtr: number,
+	) => number;
+	p256DerivePublicKey: (privKeyPtr: number, pubKeyPtr: number) => number;
+	p256Ecdh: (
+		privKeyPtr: number,
+		pubKeyPtr: number,
+		sharedPtr: number,
+	) => number;
+
 	// ABI functions
 	primitives_abi_compute_selector: (
 		signaturePtr: number,

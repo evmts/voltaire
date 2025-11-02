@@ -2194,3 +2194,332 @@ export function eventLogMatchesTopics(
 		memoryOffset = savedOffset;
 	}
 }
+
+// ============================================================================
+// X25519 Operations
+// ============================================================================
+
+/**
+ * Derive X25519 public key from secret key
+ * @param secretKey - 32-byte secret key
+ * @returns 32-byte public key
+ */
+export function x25519DerivePublicKey(secretKey: Uint8Array): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const secretPtr = malloc(32);
+		const pubKeyPtr = malloc(32);
+
+		writeBytes(secretKey, secretPtr);
+
+		const result = exports.x25519DerivePublicKey(secretPtr, pubKeyPtr);
+		if (result !== 0) {
+			throw new Error("X25519 public key derivation failed");
+		}
+
+		return readBytes(pubKeyPtr, 32);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Perform X25519 scalar multiplication (ECDH)
+ * @param secretKey - Your 32-byte secret key
+ * @param publicKey - Their 32-byte public key
+ * @returns 32-byte shared secret
+ */
+export function x25519Scalarmult(
+	secretKey: Uint8Array,
+	publicKey: Uint8Array,
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const secretPtr = malloc(32);
+		const pubKeyPtr = malloc(32);
+		const sharedPtr = malloc(32);
+
+		writeBytes(secretKey, secretPtr);
+		writeBytes(publicKey, pubKeyPtr);
+
+		const result = exports.x25519Scalarmult(secretPtr, pubKeyPtr, sharedPtr);
+		if (result !== 0) {
+			throw new Error("X25519 scalar multiplication failed");
+		}
+
+		return readBytes(sharedPtr, 32);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Generate X25519 keypair from seed
+ * @param seed - 32-byte seed
+ * @returns Object with secretKey (32 bytes) and publicKey (32 bytes)
+ */
+export function x25519KeypairFromSeed(seed: Uint8Array): { secretKey: Uint8Array; publicKey: Uint8Array } {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const seedPtr = malloc(32);
+		const secretPtr = malloc(32);
+		const pubKeyPtr = malloc(32);
+
+		writeBytes(seed, seedPtr);
+
+		const result = exports.x25519KeypairFromSeed(seedPtr, secretPtr, pubKeyPtr);
+		if (result !== 0) {
+			throw new Error("X25519 keypair generation failed");
+		}
+
+		return {
+			secretKey: readBytes(secretPtr, 32),
+			publicKey: readBytes(pubKeyPtr, 32),
+		};
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+// ============================================================================
+// Ed25519 Operations
+// ============================================================================
+
+/**
+ * Sign message with Ed25519 secret key
+ * @param message - Message to sign (any length)
+ * @param secretKey - 64-byte secret key
+ * @returns 64-byte signature
+ */
+export function ed25519Sign(
+	message: Uint8Array,
+	secretKey: Uint8Array,
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const msgPtr = malloc(message.length);
+		const secretPtr = malloc(64);
+		const sigPtr = malloc(64);
+
+		writeBytes(message, msgPtr);
+		writeBytes(secretKey, secretPtr);
+
+		const result = exports.ed25519Sign(msgPtr, message.length, secretPtr, sigPtr);
+		if (result !== 0) {
+			throw new Error("Ed25519 signing failed");
+		}
+
+		return readBytes(sigPtr, 64);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Verify Ed25519 signature
+ * @param message - Message that was signed
+ * @param signature - 64-byte signature
+ * @param publicKey - 32-byte public key
+ * @returns True if signature is valid
+ */
+export function ed25519Verify(
+	message: Uint8Array,
+	signature: Uint8Array,
+	publicKey: Uint8Array,
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const msgPtr = malloc(message.length);
+		const sigPtr = malloc(64);
+		const pubKeyPtr = malloc(32);
+
+		writeBytes(message, msgPtr);
+		writeBytes(signature, sigPtr);
+		writeBytes(publicKey, pubKeyPtr);
+
+		const result = exports.ed25519Verify(msgPtr, message.length, sigPtr, pubKeyPtr);
+		return result === 0;
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Derive Ed25519 public key from secret key
+ * @param secretKey - 64-byte secret key
+ * @returns 32-byte public key
+ */
+export function ed25519DerivePublicKey(secretKey: Uint8Array): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const secretPtr = malloc(64);
+		const pubKeyPtr = malloc(32);
+
+		writeBytes(secretKey, secretPtr);
+
+		const result = exports.ed25519DerivePublicKey(secretPtr, pubKeyPtr);
+		if (result !== 0) {
+			throw new Error("Ed25519 public key derivation failed");
+		}
+
+		return readBytes(pubKeyPtr, 32);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Generate Ed25519 keypair from seed
+ * @param seed - 32-byte seed
+ * @returns Object with secretKey (64 bytes) and publicKey (32 bytes)
+ */
+export function ed25519KeypairFromSeed(seed: Uint8Array): { secretKey: Uint8Array; publicKey: Uint8Array } {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const seedPtr = malloc(32);
+		const secretPtr = malloc(64);
+		const pubKeyPtr = malloc(32);
+
+		writeBytes(seed, seedPtr);
+
+		const result = exports.ed25519KeypairFromSeed(seedPtr, secretPtr, pubKeyPtr);
+		if (result !== 0) {
+			throw new Error("Ed25519 keypair generation failed");
+		}
+
+		return {
+			secretKey: readBytes(secretPtr, 64),
+			publicKey: readBytes(pubKeyPtr, 32),
+		};
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+// ============================================================================
+// P256 (secp256r1) Operations
+// ============================================================================
+
+/**
+ * Sign message hash with P256 private key
+ * @param messageHash - 32-byte message hash
+ * @param privateKey - 32-byte private key
+ * @returns Signature as 64 bytes (r || s)
+ */
+export function p256Sign(
+	messageHash: Uint8Array,
+	privateKey: Uint8Array,
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const hashPtr = malloc(32);
+		const keyPtr = malloc(32);
+		const sigPtr = malloc(64);
+
+		writeBytes(messageHash, hashPtr);
+		writeBytes(privateKey, keyPtr);
+
+		const result = exports.p256Sign(hashPtr, keyPtr, sigPtr);
+		if (result !== 0) {
+			throw new Error("P256 signing failed");
+		}
+
+		return readBytes(sigPtr, 64);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Verify P256 signature
+ * @param messageHash - 32-byte message hash
+ * @param signature - 64-byte signature (r || s)
+ * @param publicKey - Uncompressed public key (64 bytes)
+ * @returns True if signature is valid
+ */
+export function p256Verify(
+	messageHash: Uint8Array,
+	signature: Uint8Array,
+	publicKey: Uint8Array,
+): boolean {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const hashPtr = malloc(32);
+		const sigPtr = malloc(64);
+		const pubKeyPtr = malloc(64);
+
+		writeBytes(messageHash, hashPtr);
+		writeBytes(signature, sigPtr);
+		writeBytes(publicKey, pubKeyPtr);
+
+		const result = exports.p256Verify(hashPtr, sigPtr, pubKeyPtr);
+		return result === 0; // Returns 0 for valid, 1 for invalid
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Derive P256 public key from private key
+ * @param privateKey - 32-byte private key
+ * @returns Uncompressed public key (64 bytes)
+ */
+export function p256DerivePublicKey(privateKey: Uint8Array): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const keyPtr = malloc(32);
+		const pubKeyPtr = malloc(64);
+
+		writeBytes(privateKey, keyPtr);
+
+		const result = exports.p256DerivePublicKey(keyPtr, pubKeyPtr);
+		if (result !== 0) {
+			throw new Error("P256 public key derivation failed");
+		}
+
+		return readBytes(pubKeyPtr, 64);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
+
+/**
+ * Perform P256 ECDH key exchange
+ * @param privateKey - 32-byte private key
+ * @param publicKey - 64-byte public key
+ * @returns Shared secret (32 bytes)
+ */
+export function p256Ecdh(
+	privateKey: Uint8Array,
+	publicKey: Uint8Array,
+): Uint8Array {
+	const savedOffset = memoryOffset;
+	try {
+		const exports = getExports();
+		const privKeyPtr = malloc(32);
+		const pubKeyPtr = malloc(64);
+		const sharedPtr = malloc(32);
+
+		writeBytes(privateKey, privKeyPtr);
+		writeBytes(publicKey, pubKeyPtr);
+
+		const result = exports.p256Ecdh(privKeyPtr, pubKeyPtr, sharedPtr);
+		if (result !== 0) {
+			throw new Error("P256 ECDH failed");
+		}
+
+		return readBytes(sharedPtr, 32);
+	} finally {
+		memoryOffset = savedOffset;
+	}
+}
