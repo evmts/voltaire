@@ -1,8 +1,6 @@
 import { Keccak256 } from "../../../crypto/keccak256.js";
-import { Hash, type BrandedHash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
 import { Type } from "../types.js";
-import type { BrandedTransactionEIP2930 } from "./BrandedTransactionEIP2930.js";
 import {
 	encodeAccessList,
 	encodeAddress,
@@ -10,9 +8,17 @@ import {
 } from "../utils.js";
 
 /**
- * Get signing hash
+ * Get signing hash for EIP-2930 transaction
+ *
+ * @param {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} tx - Transaction
+ * @returns {import('../../Hash/index.js').BrandedHash} Signing hash
+ *
+ * @example
+ * ```typescript
+ * const signingHash = TransactionEIP2930.getSigningHash(tx);
+ * ```
  */
-export function getSigningHash(tx: BrandedTransactionEIP2930): BrandedHash {
+export function getSigningHash(tx) {
 	const fields = [
 		encodeBigintCompact(tx.chainId),
 		encodeBigintCompact(tx.nonce),

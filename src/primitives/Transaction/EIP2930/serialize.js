@@ -1,6 +1,5 @@
 import * as Rlp from "../../Rlp/index.js";
 import { Type } from "../types.js";
-import type { BrandedTransactionEIP2930 } from "./BrandedTransactionEIP2930.js";
 import {
 	encodeAccessList,
 	encodeAddress,
@@ -9,8 +8,16 @@ import {
 
 /**
  * Serialize EIP-2930 transaction to RLP encoded bytes
+ *
+ * @param {import('./BrandedTransactionEIP2930.js').BrandedTransactionEIP2930} tx - Transaction to serialize
+ * @returns {Uint8Array} RLP encoded transaction bytes
+ *
+ * @example
+ * ```typescript
+ * const bytes = TransactionEIP2930.serialize(tx);
+ * ```
  */
-export function serialize(tx: BrandedTransactionEIP2930): Uint8Array {
+export function serialize(tx) {
 	const fields = [
 		encodeBigintCompact(tx.chainId),
 		encodeBigintCompact(tx.nonce),
