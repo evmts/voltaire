@@ -46,7 +46,7 @@
  * ```
  */
 
-import type { Address } from "../primitives/Address/index.js";
+import type { BrandedAddress } from "../primitives/Address/index.js";
 import type { Hash } from "../primitives/Hash/index.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
@@ -99,7 +99,7 @@ export namespace Eip712 {
     name?: string;
     version?: string;
     chainId?: bigint;
-    verifyingContract?: Address;
+    verifyingContract?: BrandedAddress;
     salt?: Hash;
   };
 
@@ -126,7 +126,7 @@ export namespace Eip712 {
     | bigint
     | number
     | boolean
-    | Address
+    | BrandedAddress
     | Uint8Array
     | MessageValue[]
     | { [key: string]: MessageValue };
@@ -576,7 +576,7 @@ export namespace Eip712 {
   export function recoverAddress(
     signature: Signature,
     typedData: TypedData,
-  ): Address {
+  ): BrandedAddress {
     const hash = hashTypedData(typedData);
 
     // Convert Ethereum v (27 or 28) to recovery bit (0 or 1)
@@ -601,7 +601,7 @@ export namespace Eip712 {
 
     // Address is last 20 bytes of keccak256(publicKey)
     const pubKeyHash = keccak_256(uncompressedPubKey);
-    return pubKeyHash.slice(-20) as Address;
+    return pubKeyHash.slice(-20) as BrandedAddress;
   }
 
   /**
@@ -620,7 +620,7 @@ export namespace Eip712 {
   export function verifyTypedData(
     signature: Signature,
     typedData: TypedData,
-    address: Address,
+    address: BrandedAddress,
   ): boolean {
     try {
       const recoveredAddress = recoverAddress(signature, typedData);

@@ -356,7 +356,7 @@ export namespace Eip712Wasm {
 
     // Derive address from public key: keccak256(publicKey)[12:]
     const pubKeyHash = Keccak256Wasm.hash(publicKey);
-    return pubKeyHash.slice(12) as Address;
+    return pubKeyHash.slice(12) as BrandedAddress;
   }
 
   /**
