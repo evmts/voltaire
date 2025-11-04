@@ -10,6 +10,7 @@ let wasmInstance: WebAssembly.Instance | null = null;
 let wasmMemory: WebAssembly.Memory | null = null;
 let wasmExports: WasmExports | null = null;
 let memoryOffset = 0; // Simple bump allocator
+let loadedWasmPath: string | null = null; // Track loaded WASM file
 
 /**
  * Error messages for error codes
@@ -32,13 +33,25 @@ const ErrorMessages: Record<ErrorCode, string> = {
 /**
  * Load and instantiate the WASM module
  * @param wasmPath - Path to WASM file or ArrayBuffer
+ * @param forceReload - Force reload even if already loaded (for benchmarking different modes)
  * @returns Promise that resolves when WASM is loaded
  */
 export async function loadWasm(
 	wasmPath: string | URL | ArrayBuffer,
+	forceReload = false,
 ): Promise<void> {
-	if (wasmInstance) {
-		return; // Already loaded
+	const pathStr = wasmPath instanceof URL ? wasmPath.href : typeof wasmPath === "string" ? wasmPath : "[ArrayBuffer]";
+
+	if (wasmInstance && !forceReload && loadedWasmPath === pathStr) {
+		return; // Already loaded same file
+	}
+
+	// Reset state for reload
+	if (forceReload || loadedWasmPath !== pathStr) {
+		wasmInstance = null;
+		wasmMemory = null;
+		wasmExports = null;
+		memoryOffset = 0;
 	}
 
 	// Minimal WASI shim for wasm32-wasi modules
@@ -180,6 +193,9 @@ export async function loadWasm(
 	// WASM stack typically starts high and grows down
 	// Start JS allocations at 64KB to be safe, leaving low memory for WASM stack
 	memoryOffset = 64 * 1024;
+
+	// Track loaded path for reload detection
+	loadedWasmPath = pathStr;
 }
 
 /**

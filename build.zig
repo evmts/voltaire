@@ -813,6 +813,39 @@ fn addTypeScriptWasmBuild(
     });
     copy_wasm.step.dependOn(&install_wasm.step);
     build_ts_wasm_step.dependOn(&copy_wasm.step);
+
+    // Build WASM with ReleaseFast optimization for performance benchmarking
+    const ts_wasm_fast_exe = b.addExecutable(.{
+        .name = "primitives_ts_wasm_fast",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/c_api.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseFast, // Maximum performance for benchmarking
+        }),
+    });
+    ts_wasm_fast_exe.root_module.addImport("primitives", primitives_mod);
+    ts_wasm_fast_exe.root_module.addImport("crypto", crypto_mod);
+    ts_wasm_fast_exe.linkLibrary(c_kzg_lib);
+    ts_wasm_fast_exe.linkLibrary(blst_lib);
+    ts_wasm_fast_exe.addObjectFile(rust_crypto_lib_path);
+    ts_wasm_fast_exe.addIncludePath(b.path("lib"));
+    ts_wasm_fast_exe.step.dependOn(cargo_build_step);
+    ts_wasm_fast_exe.rdynamic = true;
+
+    const install_wasm_fast = b.addInstallArtifact(ts_wasm_fast_exe, .{
+        .dest_dir = .{ .override = .{ .custom = "wasm" } },
+    });
+
+    const build_ts_wasm_fast_step = b.step("build-ts-wasm-fast", "Build WASM TypeScript bindings with ReleaseFast");
+    build_ts_wasm_fast_step.dependOn(&install_wasm_fast.step);
+
+    const copy_wasm_fast = b.addSystemCommand(&[_][]const u8{
+        "sh",
+        "-c",
+        "set -eu; src=$(ls zig-out/wasm/primitives_ts_wasm_fast* 2>/dev/null | head -n1); mkdir -p wasm; cp \"$src\" wasm/primitives-fast.wasm",
+    });
+    copy_wasm_fast.step.dependOn(&install_wasm_fast.step);
+    build_ts_wasm_fast_step.dependOn(&copy_wasm_fast.step);
 }
 
 fn addGoBuildSteps(b: *std.Build) void {
@@ -1044,6 +1077,7 @@ fn addCryptoWasmBuilds(
     }{
         .{ .name = "keccak256", .source = "src/crypto/keccak256_c.zig", .description = "Keccak-256 hashing", .needs_crypto = false },
         .{ .name = "blake2", .source = "src/crypto/blake2_c.zig", .description = "BLAKE2b hashing", .needs_crypto = false },
+        .{ .name = "address", .source = "src/primitives/Address/address_c.zig", .description = "Address operations", .needs_crypto = false },
         .{ .name = "ripemd160", .source = "src/crypto/ripemd160_c.zig", .description = "RIPEMD-160 hashing", .needs_crypto = true },
         .{ .name = "secp256k1", .source = "src/crypto/secp256k1_c.zig", .description = "secp256k1 ECDSA operations", .needs_crypto = true },
         .{ .name = "bn254", .source = "src/crypto/bn254_c.zig", .description = "BN254 elliptic curve operations", .needs_crypto = true },
