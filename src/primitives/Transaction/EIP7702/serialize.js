@@ -1,8 +1,5 @@
-import { Keccak256 } from "../../../crypto/keccak256.js";
-import { Hash, type BrandedHash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
 import { Type } from "../types.js";
-import type { BrandedTransactionEIP7702 } from "./BrandedTransactionEIP7702.js";
 import {
 	encodeAccessList,
 	encodeAddress,
@@ -11,9 +8,18 @@ import {
 } from "../utils.js";
 
 /**
- * Get signing hash
+ * Serialize EIP-7702 transaction to RLP encoded bytes
+ *
+ * @param {import('./BrandedTransactionEIP7702.js').BrandedTransactionEIP7702} tx - Transaction to serialize
+ * @returns {Uint8Array} RLP encoded transaction with type prefix
+ *
+ * @example
+ * ```javascript
+ * const serialized = TransactionEIP7702.serialize(tx);
+ * // Uint8Array with 0x04 prefix followed by RLP encoded data
+ * ```
  */
-export function getSigningHash(tx: BrandedTransactionEIP7702): BrandedHash {
+export function serialize(tx) {
 	const fields = [
 		encodeBigintCompact(tx.chainId),
 		encodeBigintCompact(tx.nonce),
@@ -25,6 +31,9 @@ export function getSigningHash(tx: BrandedTransactionEIP7702): BrandedHash {
 		tx.data,
 		encodeAccessList(tx.accessList),
 		encodeAuthorizationList(tx.authorizationList),
+		new Uint8Array([tx.yParity]),
+		tx.r,
+		tx.s,
 	];
 	const rlpEncoded = Rlp.encode(fields);
 
@@ -32,6 +41,5 @@ export function getSigningHash(tx: BrandedTransactionEIP7702): BrandedHash {
 	const result = new Uint8Array(1 + rlpEncoded.length);
 	result[0] = Type.EIP7702;
 	result.set(rlpEncoded, 1);
-
-	return Keccak256.hash(result);
+	return result;
 }
