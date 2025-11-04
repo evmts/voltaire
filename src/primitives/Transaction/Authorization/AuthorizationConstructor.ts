@@ -19,7 +19,7 @@ export interface AuthorizationConstructor {
 		yParity: number;
 		r: Uint8Array;
 		s: Uint8Array;
-	}): BrandedAuthorization;
+	}): AuthorizationPrototype;
 	prototype: AuthorizationPrototype;
 	getSigningHash: typeof getSigningHash;
 	verifySignature: typeof verifySignature;

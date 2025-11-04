@@ -29,9 +29,9 @@ export interface TransactionLegacyConstructor {
 		v: bigint;
 		r: Uint8Array;
 		s: Uint8Array;
-	}): BrandedTransactionLegacy;
+	}): TransactionLegacyPrototype;
 	prototype: TransactionLegacyPrototype;
-	deserialize: typeof deserialize;
+	deserialize(bytes: Uint8Array): TransactionLegacyPrototype;
 	serialize: typeof serialize;
 	hash: typeof hash;
 	getChainId: typeof getChainId;

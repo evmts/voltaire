@@ -40,10 +40,10 @@ type AccessListPrototype = BrandedAccessList & {
 };
 
 export interface AccessListConstructor {
-	(value: readonly Item[] | Uint8Array): BrandedAccessList;
+	(value: readonly Item[] | Uint8Array): AccessListPrototype;
 	prototype: AccessListPrototype;
-	from: typeof from;
-	fromBytes: typeof fromBytes;
+	from(value: readonly Item[] | Uint8Array): AccessListPrototype;
+	fromBytes(value: Uint8Array): AccessListPrototype;
 	is: typeof is;
 	isItem: typeof isItem;
 	create: typeof create;

@@ -30,11 +30,11 @@ type HashPrototype = BrandedHash & {
 };
 
 export interface HashConstructor {
-	(value: string | Uint8Array): BrandedHash;
+	(value: string | Uint8Array): HashPrototype;
 	prototype: HashPrototype;
-	from: typeof from;
-	fromBytes: typeof fromBytes;
-	fromHex: typeof fromHex;
+	from(value: string | Uint8Array): HashPrototype;
+	fromBytes(value: Uint8Array): HashPrototype;
+	fromHex(value: string): HashPrototype;
 	isHash: typeof isHash;
 	isValidHex: typeof isValidHex;
 	assert: typeof assert;

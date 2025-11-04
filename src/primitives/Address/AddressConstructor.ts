@@ -48,16 +48,16 @@ type AddressPrototype = BrandedAddress & {
 };
 
 export interface AddressConstructor {
-	new (value: number | bigint | string | Uint8Array): BrandedAddress;
-	(value: number | bigint | string | Uint8Array): BrandedAddress;
+	new (value: number | bigint | string | Uint8Array): AddressPrototype;
+	(value: number | bigint | string | Uint8Array): AddressPrototype;
 	prototype: AddressPrototype;
-	fromBase64: typeof Uint8Array.fromBase64;
-	fromHex: typeof Uint8Array.fromHex & typeof fromHex;
-	from: typeof from;
-	fromBytes: typeof fromBytes;
-	fromNumber: typeof fromNumber;
-	fromPublicKey: typeof fromPublicKey;
-	fromAbiEncoded: typeof fromAbiEncoded;
+	fromBase64(value: string): AddressPrototype;
+	fromHex(value: string): AddressPrototype;
+	from(value: number | bigint | string | Uint8Array): AddressPrototype;
+	fromBytes(value: Uint8Array): AddressPrototype;
+	fromNumber(value: number | bigint): AddressPrototype;
+	fromPublicKey(value: Uint8Array): AddressPrototype;
+	fromAbiEncoded(value: Uint8Array): AddressPrototype;
 	isValid: typeof isValid;
 	isValidChecksum: typeof isValidChecksum;
 	is: typeof is;

@@ -32,9 +32,9 @@ declare function clone<T extends BrandedEventLog>(log: T): T;
 declare function copy<T extends BrandedEventLog>(log: T): T;
 
 export interface EventLogConstructor {
-	(params: Parameters<typeof create>[0]): BrandedEventLog;
+	(params: Parameters<typeof create>[0]): EventLogPrototype;
 	prototype: EventLogPrototype;
-	create: typeof create;
+	create(params: Parameters<typeof create>[0]): EventLogPrototype;
 	getTopic0: typeof getTopic0;
 	getIndexedTopics: typeof getIndexedTopics;
 	getSignature: typeof getSignature;

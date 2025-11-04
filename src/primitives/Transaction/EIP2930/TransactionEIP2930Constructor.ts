@@ -30,9 +30,9 @@ export interface TransactionEIP2930Constructor {
 		yParity: number;
 		r: Uint8Array;
 		s: Uint8Array;
-	}): BrandedTransactionEIP2930;
+	}): TransactionEIP2930Prototype;
 	prototype: TransactionEIP2930Prototype;
-	deserialize: typeof deserialize;
+	deserialize(bytes: Uint8Array): TransactionEIP2930Prototype;
 	serialize: typeof serialize;
 	hash: typeof hash;
 	getSigningHash: typeof getSigningHash;

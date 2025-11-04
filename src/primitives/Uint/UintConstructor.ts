@@ -72,14 +72,14 @@ type UintPrototype = BrandedUint & {
 };
 
 export interface UintConstructor {
-	(value: bigint | number | string): BrandedUint;
+	(value: bigint | number | string): UintPrototype;
 	prototype: UintPrototype;
-	from: typeof from;
-	fromHex: typeof fromHex;
-	fromBigInt: typeof fromBigInt;
-	fromNumber: typeof fromNumber;
-	fromBytes: typeof fromBytes;
-	fromAbiEncoded: typeof fromAbiEncoded;
+	from(value: bigint | number | string): UintPrototype;
+	fromHex(value: string): UintPrototype;
+	fromBigInt(value: bigint): UintPrototype;
+	fromNumber(value: number | bigint): UintPrototype;
+	fromBytes(value: Uint8Array): UintPrototype;
+	fromAbiEncoded(value: Uint8Array): UintPrototype;
 	tryFrom: typeof tryFrom;
 	isValid: typeof isValid;
 	toHex: typeof toHex;

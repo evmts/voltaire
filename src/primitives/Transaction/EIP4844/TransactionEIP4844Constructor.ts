@@ -37,9 +37,9 @@ export interface TransactionEIP4844Constructor {
 		yParity: number;
 		r: Uint8Array;
 		s: Uint8Array;
-	}): BrandedTransactionEIP4844;
+	}): TransactionEIP4844Prototype;
 	prototype: TransactionEIP4844Prototype;
-	deserialize: typeof deserialize;
+	deserialize(bytes: Uint8Array): TransactionEIP4844Prototype;
 	serialize: typeof serialize;
 	hash: typeof hash;
 	getSigningHash: typeof getSigningHash;
