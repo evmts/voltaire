@@ -1,0 +1,66 @@
+import type { BrandedAddress } from "./BrandedAddress.js";
+import type { calculateCreate2Address } from "./calculateCreate2Address.js";
+import type { calculateCreateAddress } from "./calculateCreateAddress.js";
+import type { compare } from "./compare.js";
+import type { SIZE } from "./constants.js";
+import type { equals } from "./equals.js";
+import type { format } from "./format.js";
+import type { from } from "./from.js";
+import type { fromAbiEncoded } from "./fromAbiEncoded.js";
+import type { fromBytes } from "./fromBytes.js";
+import type { fromHex } from "./fromHex.js";
+import type { fromNumber } from "./fromNumber.js";
+import type { fromPublicKey } from "./fromPublicKey.js";
+import type { greaterThan } from "./greaterThan.js";
+import type { is } from "./is.js";
+import type { isValid } from "./isValid.js";
+import type { isValidChecksum } from "./isValidChecksum.js";
+import type { isZero } from "./isZero.js";
+import type { lessThan } from "./lessThan.js";
+import type { toAbiEncoded } from "./toAbiEncoded.js";
+import type { toChecksummed } from "./toChecksummed.js";
+import type { toHex } from "./toHex.js";
+import type { toLowercase } from "./toLowercase.js";
+import type { toShortHex } from "./toShortHex.js";
+import type { toU256 } from "./toU256.js";
+import type { toUppercase } from "./toUppercase.js";
+import type { zero } from "./zero.js";
+
+type AddressPrototype = BrandedAddress & {
+	toBase64: typeof Uint8Array.prototype.toBase64;
+	setFromBase64: typeof Uint8Array.prototype.setFromBase64;
+	toHex: typeof toHex;
+	setFromHex: typeof Uint8Array.prototype.setFromHex;
+	toChecksummed: typeof toChecksummed;
+	toLowercase: typeof toLowercase;
+	toUppercase: typeof toUppercase;
+	toU256: typeof toU256;
+	toShortHex: typeof toShortHex;
+	format: typeof format;
+	compare: typeof compare;
+	lessThan: typeof lessThan;
+	greaterThan: typeof greaterThan;
+	isZero: typeof isZero;
+	equals: typeof equals;
+	toAbiEncoded: typeof toAbiEncoded;
+	calculateCreateAddress: typeof calculateCreateAddress;
+	calculateCreate2Address: typeof calculateCreate2Address;
+};
+
+export interface AddressConstructor {
+	new (value: number | bigint | string | Uint8Array): BrandedAddress;
+	(value: number | bigint | string | Uint8Array): BrandedAddress;
+	prototype: AddressPrototype;
+	fromBase64: typeof Uint8Array.fromBase64;
+	fromHex: typeof Uint8Array.fromHex & typeof fromHex;
+	from: typeof from;
+	fromBytes: typeof fromBytes;
+	fromNumber: typeof fromNumber;
+	fromPublicKey: typeof fromPublicKey;
+	fromAbiEncoded: typeof fromAbiEncoded;
+	isValid: typeof isValid;
+	isValidChecksum: typeof isValidChecksum;
+	is: typeof is;
+	zero: typeof zero;
+	SIZE: typeof SIZE;
+}

@@ -1,0 +1,169 @@
+// @ts-nocheck
+export * from "./errors.js";
+export * from "./constants.js";
+export * from "./BrandedAddress.js";
+import * as Checksummed from "./ChecksumAddress.js";
+export { Checksummed };
+import * as Lowercase from "./LowercaseAddress.js";
+export { Lowercase };
+import * as Uppercase from "./UppercaseAddress.js";
+export { Uppercase };
+
+import { calculateCreate2Address } from "./calculateCreate2Address.js";
+import { calculateCreateAddress } from "./calculateCreateAddress.js";
+import { compare } from "./compare.js";
+import { SIZE } from "./constants.js";
+import { equals } from "./equals.js";
+import { format } from "./format.js";
+import { from } from "./from.js";
+import { fromAbiEncoded } from "./fromAbiEncoded.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+import { fromNumber } from "./fromNumber.js";
+import { fromPublicKey } from "./fromPublicKey.js";
+import { greaterThan } from "./greaterThan.js";
+import { is } from "./is.js";
+import { isValid } from "./isValid.js";
+import { isValidChecksum } from "./isValidChecksum.js";
+import { isZero } from "./isZero.js";
+import { lessThan } from "./lessThan.js";
+import {
+	setFromBase64Polyfill,
+	setFromHexPolyfill,
+	toBase64Polyfill,
+	toHexPolyfill,
+} from "./polyfills.js";
+import { toAbiEncoded } from "./toAbiEncoded.js";
+import { toChecksummed } from "./toChecksummed.js";
+import { toHex } from "./toHex.js";
+import { toLowercase } from "./toLowercase.js";
+import { toShortHex } from "./toShortHex.js";
+import { toU256 } from "./toU256.js";
+import { toUppercase } from "./toUppercase.js";
+import { zero } from "./zero.js";
+
+// Export individual functions
+export {
+	from,
+	fromHex,
+	fromBytes,
+	fromNumber,
+	fromPublicKey,
+	fromAbiEncoded,
+	toHex,
+	toChecksummed,
+	toLowercase,
+	toUppercase,
+	toU256,
+	toAbiEncoded,
+	toShortHex,
+	format,
+	isZero,
+	equals,
+	isValid,
+	isValidChecksum,
+	is,
+	zero,
+	calculateCreateAddress,
+	calculateCreate2Address,
+	compare,
+	lessThan,
+	greaterThan,
+};
+
+/**
+ * @typedef {import('./BrandedAddress.js').BrandedAddress} BrandedAddress
+ * @typedef {import('./AddressConstructor.js').AddressConstructor} AddressConstructor
+ */
+
+/**
+ * Factory function for creating Address instances
+ *
+ * @type {AddressConstructor}
+ * @param {number | bigint | string | Uint8Array} value
+ * @returns {BrandedAddress}
+ */
+export function Address(value) {
+	return from(value);
+}
+
+// Static methods
+Address.fromBase64 = Uint8Array.fromBase64;
+Address.fromHex = fromHex;
+Address.from = from;
+Address.fromBytes = fromBytes;
+Address.fromNumber = fromNumber;
+Address.fromPublicKey = fromPublicKey;
+Address.fromAbiEncoded = fromAbiEncoded;
+Address.toHex = toHex;
+Address.toChecksummed = toChecksummed;
+Address.toLowercase = toLowercase;
+Address.toUppercase = toUppercase;
+Address.toU256 = toU256;
+Address.toAbiEncoded = toAbiEncoded;
+Address.toShortHex = toShortHex;
+Address.format = format;
+Address.isZero = isZero;
+Address.equals = equals;
+Address.isValid = isValid;
+Address.isValidChecksum = isValidChecksum;
+Address.is = is;
+Address.zero = zero;
+Address.compare = compare;
+Address.lessThan = lessThan;
+Address.greaterThan = greaterThan;
+Address.calculateCreateAddress = calculateCreateAddress;
+Address.calculateCreate2Address = calculateCreate2Address;
+Address.SIZE = SIZE;
+
+// Prototype methods
+Address.prototype.toBase64 = Uint8Array.prototype.toBase64 ?? toBase64Polyfill;
+Address.prototype.setFromBase64 =
+	Uint8Array.prototype.setFromBase64 ?? setFromBase64Polyfill;
+Address.prototype.toHex = function () {
+	return toHex(this);
+};
+Address.prototype.setFromHex =
+	Uint8Array.prototype.setFromHex ?? setFromHexPolyfill;
+Address.prototype.toChecksummed = function () {
+	return toChecksummed(this);
+};
+Address.prototype.toLowercase = function () {
+	return toLowercase(this);
+};
+Address.prototype.toUppercase = function () {
+	return toUppercase(this);
+};
+Address.prototype.toU256 = function () {
+	return toU256(this);
+};
+Address.prototype.toAbiEncoded = function () {
+	return toAbiEncoded(this);
+};
+Address.prototype.toShortHex = function (prefixLength, suffixLength) {
+	return toShortHex(this, prefixLength, suffixLength);
+};
+Address.prototype.format = function () {
+	return format(this);
+};
+Address.prototype.compare = function (other) {
+	return compare(this, other);
+};
+Address.prototype.lessThan = function (other) {
+	return lessThan(this, other);
+};
+Address.prototype.greaterThan = function (other) {
+	return greaterThan(this, other);
+};
+Address.prototype.isZero = function () {
+	return isZero(this);
+};
+Address.prototype.equals = function (other) {
+	return equals(this, other);
+};
+Address.prototype.calculateCreateAddress = function (nonce) {
+	return calculateCreateAddress(this, nonce);
+};
+Address.prototype.calculateCreate2Address = function (salt, initCode) {
+	return calculateCreate2Address(this, salt, initCode);
+};
