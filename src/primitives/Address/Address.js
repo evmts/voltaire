@@ -85,41 +85,35 @@ export function Address(value) {
 	return from(value);
 }
 
-// Static methods - wrapped to set prototype without mutating originals
-Address.fromBase64 = function (value) {
-	return Uint8Array.fromBase64(value);
-};
-Address.fromBase64.prototype = Address.prototype;
-
-Address.fromHex = function (value) {
-	return fromHex(value);
-};
-Address.fromHex.prototype = Address.prototype;
-
 Address.from = function (value) {
 	return from(value);
 };
 Address.from.prototype = Address.prototype;
-
+Address.fromBase64 = function (value) {
+	return Uint8Array.fromBase64(value);
+};
+Address.fromBase64.prototype = Address.prototype;
+Address.fromHex = function (value) {
+	return fromHex(value);
+};
+Address.fromHex.prototype = Address.prototype;
 Address.fromBytes = function (value) {
 	return fromBytes(value);
 };
 Address.fromBytes.prototype = Address.prototype;
-
 Address.fromNumber = function (value) {
 	return fromNumber(value);
 };
 Address.fromNumber.prototype = Address.prototype;
-
 Address.fromPublicKey = function (x, y) {
 	return fromPublicKey(x, y);
 };
 Address.fromPublicKey.prototype = Address.prototype;
-
 Address.fromAbiEncoded = function (value) {
 	return fromAbiEncoded(value);
 };
 Address.fromAbiEncoded.prototype = Address.prototype;
+
 Address.toHex = toHex;
 Address.toChecksummed = toChecksummed;
 Address.toLowercase = toLowercase;
@@ -141,7 +135,6 @@ Address.calculateCreateAddress = calculateCreateAddress;
 Address.calculateCreate2Address = calculateCreate2Address;
 Address.SIZE = SIZE;
 
-// Prototype methods
 Address.prototype.toBase64 = Uint8Array.prototype.toBase64 ?? toBase64Polyfill;
 Address.prototype.setFromBase64 =
 	Uint8Array.prototype.setFromBase64 ?? setFromBase64Polyfill;
