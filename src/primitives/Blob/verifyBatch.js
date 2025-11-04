@@ -1,16 +1,15 @@
-import type { BrandedBlob, Commitment, Proof } from "./BrandedBlob.js";
 import { MAX_PER_TRANSACTION } from "./constants.js";
 
 /**
  * Verify multiple blob proofs in batch
  *
- * @param blobs - Array of blobs
- * @param commitments - Array of commitments
- * @param proofs - Array of proofs
- * @returns true if all proofs are valid
+ * @param {readonly import('./BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs
+ * @param {readonly import('./BrandedBlob.js').Commitment[]} commitments - Array of commitments
+ * @param {readonly import('./BrandedBlob.js').Proof[]} proofs - Array of proofs
+ * @returns {boolean} true if all proofs are valid
  *
  * @example
- * ```typescript
+ * ```javascript
  * const isValid = Blob.verifyBatch(blobs, commitments, proofs);
  * ```
  *
@@ -19,11 +18,7 @@ import { MAX_PER_TRANSACTION } from "./constants.js";
  * - Call verifyBlobKzgProofBatch(blobs, commitments, proofs)
  * - Return boolean result
  */
-export function verifyBatch(
-	blobs: readonly BrandedBlob[],
-	commitments: readonly Commitment[],
-	proofs: readonly Proof[],
-): boolean {
+export function verifyBatch(blobs, commitments, proofs) {
 	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
 		throw new Error("Arrays must have same length");
 	}

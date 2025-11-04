@@ -1,16 +1,15 @@
-import type { BrandedBlob, Commitment, Proof } from "./BrandedBlob.js";
 import { SIZE } from "./constants.js";
 
 /**
  * Verify KZG proof
  *
- * @param blob - Blob data
- * @param commitment - KZG commitment
- * @param proof - KZG proof
- * @returns true if proof is valid
+ * @param {import('./BrandedBlob.js').BrandedBlob} blob - Blob data
+ * @param {import('./BrandedBlob.js').Commitment} commitment - KZG commitment
+ * @param {import('./BrandedBlob.js').Proof} proof - KZG proof
+ * @returns {boolean} true if proof is valid
  *
  * @example
- * ```typescript
+ * ```javascript
  * const isValid = Blob.verify(blob, commitment, proof);
  * ```
  *
@@ -18,11 +17,7 @@ import { SIZE } from "./constants.js";
  * - Call verifyBlobKzgProof(blob, commitment, proof)
  * - Return boolean result
  */
-export function verify(
-	blob: BrandedBlob,
-	commitment: Commitment,
-	proof: Proof,
-): boolean {
+export function verify(blob, commitment, proof) {
 	if (blob.length !== SIZE) {
 		throw new Error(`Invalid blob size: ${blob.length}`);
 	}

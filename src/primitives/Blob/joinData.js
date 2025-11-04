@@ -1,19 +1,18 @@
-import type { BrandedBlob } from "./BrandedBlob.js";
 import { toData } from "./toData.js";
 
 /**
  * Join multiple blobs into single data buffer
  *
- * @param blobs - Array of blobs to join
- * @returns Combined data
+ * @param {readonly import('./BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs to join
+ * @returns {Uint8Array} Combined data
  *
  * @example
- * ```typescript
+ * ```javascript
  * const blobs = Blob.splitData(largeData);
  * const reconstructed = Blob.joinData(blobs);
  * ```
  */
-export function joinData(blobs: readonly BrandedBlob[]): Uint8Array {
+export function joinData(blobs) {
 	const chunks = blobs.map((b) => toData(b));
 	const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 

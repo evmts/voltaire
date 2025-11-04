@@ -1,15 +1,14 @@
-import type { BrandedBlob, Commitment, Proof } from "./BrandedBlob.js";
 import { SIZE } from "./constants.js";
 
 /**
  * Generate KZG proof for blob
  *
- * @param blob - Blob data
- * @param commitment - KZG commitment for the blob
- * @returns 48-byte KZG proof
+ * @param {import('./BrandedBlob.js').BrandedBlob} blob - Blob data
+ * @param {import('./BrandedBlob.js').Commitment} commitment - KZG commitment for the blob
+ * @returns {import('./BrandedBlob.js').Proof} 48-byte KZG proof
  *
  * @example
- * ```typescript
+ * ```javascript
  * const commitment = Blob.toCommitment(blob);
  * const proof = Blob.toProof(blob, commitment);
  * ```
@@ -18,7 +17,7 @@ import { SIZE } from "./constants.js";
  * - Call computeBlobKzgProof(blob, commitment)
  * - Return 48-byte proof
  */
-export function toProof(blob: BrandedBlob, commitment: Commitment): Proof {
+export function toProof(blob, commitment) {
 	if (blob.length !== SIZE) {
 		throw new Error(`Invalid blob size: ${blob.length}`);
 	}
@@ -26,6 +25,6 @@ export function toProof(blob: BrandedBlob, commitment: Commitment): Proof {
 		throw new Error(`Invalid commitment size: ${commitment.length}`);
 	}
 	// TODO: const proof = computeBlobKzgProof(blob, commitment);
-	// TODO: return proof as Proof;
+	// TODO: return proof;
 	throw new Error("Not implemented: requires c-kzg-4844 library");
 }

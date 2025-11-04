@@ -1,21 +1,20 @@
-import type { BrandedBlob } from "./BrandedBlob.js";
 import { SIZE } from "./constants.js";
 
 /**
  * Extract data from blob
  * Decodes blob format (reads length prefix and extracts data)
  *
- * @param blob - Blob data
- * @returns Original data
- * @throws If blob size or length prefix is invalid
+ * @param {import('./BrandedBlob.js').BrandedBlob} blob - Blob data
+ * @returns {Uint8Array} Original data
+ * @throws {Error} If blob size or length prefix is invalid
  *
  * @example
- * ```typescript
+ * ```javascript
  * const data = Blob.toData(blob);
  * const text = new TextDecoder().decode(data);
  * ```
  */
-export function toData(blob: BrandedBlob): Uint8Array {
+export function toData(blob) {
 	if (blob.length !== SIZE) {
 		throw new Error(`Invalid blob size: ${blob.length} (expected ${SIZE})`);
 	}

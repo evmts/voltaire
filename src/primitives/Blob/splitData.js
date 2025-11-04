@@ -1,4 +1,3 @@
-import type { BrandedBlob } from "./BrandedBlob.js";
 import { SIZE, MAX_PER_TRANSACTION } from "./constants.js";
 import { fromData } from "./fromData.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
@@ -6,16 +5,16 @@ import { estimateBlobCount } from "./estimateBlobCount.js";
 /**
  * Split large data into multiple blobs
  *
- * @param data - Data to split
- * @returns Array of blobs containing the data
+ * @param {Uint8Array} data - Data to split
+ * @returns {import('./BrandedBlob.js').BrandedBlob[]} Array of blobs containing the data
  *
  * @example
- * ```typescript
+ * ```javascript
  * const largeData = new Uint8Array(300000);
  * const blobs = Blob.splitData(largeData); // [blob1, blob2, blob3]
  * ```
  */
-export function splitData(data: Uint8Array): BrandedBlob[] {
+export function splitData(data) {
 	const maxDataPerBlob = SIZE - 8;
 	const blobCount = estimateBlobCount(data.length);
 
@@ -25,7 +24,7 @@ export function splitData(data: Uint8Array): BrandedBlob[] {
 		);
 	}
 
-	const blobs: BrandedBlob[] = [];
+	const blobs = [];
 	for (let i = 0; i < blobCount; i++) {
 		const start = i * maxDataPerBlob;
 		const end = Math.min(start + maxDataPerBlob, data.length);

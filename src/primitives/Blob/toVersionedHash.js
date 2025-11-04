@@ -1,4 +1,3 @@
-import type { Commitment, VersionedHash } from "./BrandedBlob.js";
 import { COMMITMENT_VERSION_KZG } from "./constants.js";
 import { Sha256 } from "../../crypto/sha256.js";
 
@@ -6,15 +5,15 @@ import { Sha256 } from "../../crypto/sha256.js";
  * Create versioned hash from commitment
  * Formula: BLOB_COMMITMENT_VERSION_KZG || sha256(commitment)[1:]
  *
- * @param commitment - KZG commitment
- * @returns 32-byte versioned hash
+ * @param {import('./BrandedBlob.js').Commitment} commitment - KZG commitment
+ * @returns {import('./BrandedBlob.js').VersionedHash} 32-byte versioned hash
  *
  * @example
- * ```typescript
+ * ```javascript
  * const hash = Blob.toVersionedHash(commitment);
  * ```
  */
-export function toVersionedHash(commitment: Commitment): VersionedHash {
+export function toVersionedHash(commitment) {
 	if (commitment.length !== 48) {
 		throw new Error(`Invalid commitment size: ${commitment.length}`);
 	}
@@ -27,5 +26,5 @@ export function toVersionedHash(commitment: Commitment): VersionedHash {
 	versionedHash[0] = COMMITMENT_VERSION_KZG;
 	versionedHash.set(hash.slice(1), 1);
 
-	return versionedHash as VersionedHash;
+	return versionedHash;
 }
