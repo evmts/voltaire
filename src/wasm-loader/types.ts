@@ -6,7 +6,7 @@
 /**
  * Error codes returned by WASM functions
  */
-export const enum ErrorCode {
+export enum ErrorCode {
 	SUCCESS = 0,
 	INVALID_HEX = -1,
 	INVALID_LENGTH = -2,
@@ -269,16 +269,8 @@ export interface WasmExports {
 	) => number;
 
 	// P256 functions
-	p256Sign: (
-		msgHashPtr: number,
-		privKeyPtr: number,
-		sigPtr: number,
-	) => number;
-	p256Verify: (
-		msgHashPtr: number,
-		sigPtr: number,
-		pubKeyPtr: number,
-	) => number;
+	p256Sign: (msgHashPtr: number, privKeyPtr: number, sigPtr: number) => number;
+	p256Verify: (msgHashPtr: number, sigPtr: number, pubKeyPtr: number) => number;
 	p256DerivePublicKey: (privKeyPtr: number, pubKeyPtr: number) => number;
 	p256Ecdh: (
 		privKeyPtr: number,
@@ -345,9 +337,18 @@ export interface WasmExports {
 	) => number;
 
 	// Access List functions (EIP-2930)
-	primitives_access_list_gas_cost: (jsonPtr: number, outCostPtr: number) => number;
-	primitives_access_list_gas_savings: (jsonPtr: number, outSavingsPtr: number) => number;
-	primitives_access_list_includes_address: (jsonPtr: number, addressPtr: number) => number;
+	primitives_access_list_gas_cost: (
+		jsonPtr: number,
+		outCostPtr: number,
+	) => number;
+	primitives_access_list_gas_savings: (
+		jsonPtr: number,
+		outSavingsPtr: number,
+	) => number;
+	primitives_access_list_includes_address: (
+		jsonPtr: number,
+		addressPtr: number,
+	) => number;
 	primitives_access_list_includes_storage_key: (
 		jsonPtr: number,
 		addressPtr: number,
@@ -362,8 +363,14 @@ export interface WasmExports {
 		nonce: bigint,
 		outHashPtr: number,
 	) => number;
-	primitives_authorization_authority: (authPtr: number, outAddressPtr: number) => number;
-	primitives_authorization_gas_cost: (count: number, emptyAccounts: number) => bigint;
+	primitives_authorization_authority: (
+		authPtr: number,
+		outAddressPtr: number,
+	) => number;
+	primitives_authorization_gas_cost: (
+		count: number,
+		emptyAccounts: number,
+	) => bigint;
 }
 
 /**

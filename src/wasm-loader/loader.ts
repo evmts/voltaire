@@ -3,7 +3,7 @@
  * Handles WASM instantiation, memory management, and exports wrapping
  */
 
-import type { WasmExports, WasiImports } from "./types.js";
+import type { WasiImports, WasmExports } from "./types.js";
 import { ErrorCode } from "./types.js";
 
 let wasmInstance: WebAssembly.Instance | null = null;
@@ -711,7 +711,12 @@ export function blake2Hash(data: Uint8Array, outputLength: number): Uint8Array {
 		const outPtr = malloc(outputLength);
 
 		writeBytes(data, dataPtr);
-		const result = exports.blake2Hash(dataPtr, data.length, outPtr, outputLength);
+		const result = exports.blake2Hash(
+			dataPtr,
+			data.length,
+			outPtr,
+			outputLength,
+		);
 		checkResult(result);
 		return readBytes(outPtr, outputLength);
 	} finally {
@@ -2059,10 +2064,7 @@ export function blobCalculateExcessGas(
 	parentUsed: bigint,
 ): bigint {
 	const exports = getExports();
-	return exports.primitives_blob_calculate_excess_gas(
-		parentExcess,
-		parentUsed,
-	);
+	return exports.primitives_blob_calculate_excess_gas(parentExcess, parentUsed);
 }
 
 // ============================================================================
@@ -2260,7 +2262,10 @@ export function x25519Scalarmult(
  * @param seed - 32-byte seed
  * @returns Object with secretKey (32 bytes) and publicKey (32 bytes)
  */
-export function x25519KeypairFromSeed(seed: Uint8Array): { secretKey: Uint8Array; publicKey: Uint8Array } {
+export function x25519KeypairFromSeed(seed: Uint8Array): {
+	secretKey: Uint8Array;
+	publicKey: Uint8Array;
+} {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -2308,7 +2313,12 @@ export function ed25519Sign(
 		writeBytes(message, msgPtr);
 		writeBytes(secretKey, secretPtr);
 
-		const result = exports.ed25519Sign(msgPtr, message.length, secretPtr, sigPtr);
+		const result = exports.ed25519Sign(
+			msgPtr,
+			message.length,
+			secretPtr,
+			sigPtr,
+		);
 		if (result !== 0) {
 			throw new Error("Ed25519 signing failed");
 		}
@@ -2342,7 +2352,12 @@ export function ed25519Verify(
 		writeBytes(signature, sigPtr);
 		writeBytes(publicKey, pubKeyPtr);
 
-		const result = exports.ed25519Verify(msgPtr, message.length, sigPtr, pubKeyPtr);
+		const result = exports.ed25519Verify(
+			msgPtr,
+			message.length,
+			sigPtr,
+			pubKeyPtr,
+		);
 		return result === 0;
 	} finally {
 		memoryOffset = savedOffset;
@@ -2379,7 +2394,10 @@ export function ed25519DerivePublicKey(secretKey: Uint8Array): Uint8Array {
  * @param seed - 32-byte seed
  * @returns Object with secretKey (64 bytes) and publicKey (32 bytes)
  */
-export function ed25519KeypairFromSeed(seed: Uint8Array): { secretKey: Uint8Array; publicKey: Uint8Array } {
+export function ed25519KeypairFromSeed(seed: Uint8Array): {
+	secretKey: Uint8Array;
+	publicKey: Uint8Array;
+} {
 	const savedOffset = memoryOffset;
 	try {
 		const exports = getExports();
@@ -2389,7 +2407,11 @@ export function ed25519KeypairFromSeed(seed: Uint8Array): { secretKey: Uint8Arra
 
 		writeBytes(seed, seedPtr);
 
-		const result = exports.ed25519KeypairFromSeed(seedPtr, secretPtr, pubKeyPtr);
+		const result = exports.ed25519KeypairFromSeed(
+			seedPtr,
+			secretPtr,
+			pubKeyPtr,
+		);
 		if (result !== 0) {
 			throw new Error("Ed25519 keypair generation failed");
 		}

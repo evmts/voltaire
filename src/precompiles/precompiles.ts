@@ -2,14 +2,14 @@
  * EVM Precompile implementations
  */
 
-import * as Hardfork from "../primitives/Hardfork/index.js";
-import { Secp256k1 } from "../crypto/secp256k1.js";
-import { Keccak256 } from "../crypto/keccak256.js";
-import { Sha256 } from "../crypto/sha256.js";
-import { Ripemd160 } from "../crypto/ripemd160.js";
 import { Bn254 } from "../crypto/bn254.js";
-import * as Gas from "../primitives/GasConstants/index.js";
+import { Keccak256 } from "../crypto/keccak256.js";
 import { Kzg } from "../crypto/kzg.js";
+import { Ripemd160 } from "../crypto/ripemd160.js";
+import { Secp256k1 } from "../crypto/secp256k1.js";
+import { Sha256 } from "../crypto/sha256.js";
+import * as Gas from "../primitives/GasConstants/index.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 import type { Hash } from "../primitives/Hash/index.js";
 
 export enum PrecompileAddress {
@@ -43,21 +43,21 @@ export interface PrecompileResult {
 
 // Utilities
 function beBytesToBigInt(bytes: Uint8Array): bigint {
-  let result = 0n;
-  for (let i = 0; i < bytes.length; i++) {
-    result = (result << 8n) | BigInt(bytes[i] ?? 0);
-  }
-  return result;
+	let result = 0n;
+	for (let i = 0; i < bytes.length; i++) {
+		result = (result << 8n) | BigInt(bytes[i] ?? 0);
+	}
+	return result;
 }
 
 function bigIntToFixedBytes(value: bigint, size: number): Uint8Array {
-  const out = new Uint8Array(size);
-  let v = value;
-  for (let i = size - 1; i >= 0; i--) {
-    out[i] = Number(v & 0xffn);
-    v >>= 8n;
-  }
-  return out;
+	const out = new Uint8Array(size);
+	let v = value;
+	for (let i = size - 1; i >= 0; i--) {
+		out[i] = Number(v & 0xffn);
+		v >>= 8n;
+	}
+	return out;
 }
 
 /**
@@ -220,61 +220,82 @@ export function execute(
  * ECRECOVER precompile (0x01)
  * Recover signer address from signature
  */
-export function ecrecover(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  const gas = 3000n;
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
-  // Spec: input padded/truncated to 128 bytes
-  const buf = new Uint8Array(128);
-  buf.set(_input.slice(0, Math.min(128, _input.length)), 0);
+export function ecrecover(
+	_input: Uint8Array,
+	gasLimit: bigint,
+): PrecompileResult {
+	const gas = 3000n;
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
+	// Spec: input padded/truncated to 128 bytes
+	const buf = new Uint8Array(128);
+	buf.set(_input.slice(0, Math.min(128, _input.length)), 0);
 
-  const hash = buf.slice(0, 32);
-  const v = buf[63] ?? 0; // last byte of v (32-byte padded)
-  const r = buf.slice(64, 96);
-  const s = buf.slice(96, 128);
+	const hash = buf.slice(0, 32);
+	const v = buf[63] ?? 0; // last byte of v (32-byte padded)
+	const r = buf.slice(64, 96);
+	const s = buf.slice(96, 128);
 
-  try {
-    const pub = Secp256k1.recoverPublicKey({ r, s, v }, hash as Hash);
-    const hashResult = Keccak256.hash(pub);
-    const addr = hashResult.slice(12);
-    const out = new Uint8Array(32);
-    // left pad 12 zero bytes, then 20-byte address
-    out.set(addr, 12);
-    return { success: true, output: out, gasUsed: gas };
-  } catch {
-    // Invalid signature: return zero address (32 bytes all zero)
-    return { success: true, output: new Uint8Array(32), gasUsed: gas };
-  }
+	try {
+		const pub = Secp256k1.recoverPublicKey({ r, s, v }, hash as Hash);
+		const hashResult = Keccak256.hash(pub);
+		const addr = hashResult.slice(12);
+		const out = new Uint8Array(32);
+		// left pad 12 zero bytes, then 20-byte address
+		out.set(addr, 12);
+		return { success: true, output: out, gasUsed: gas };
+	} catch {
+		// Invalid signature: return zero address (32 bytes all zero)
+		return { success: true, output: new Uint8Array(32), gasUsed: gas };
+	}
 }
 
 /**
  * SHA256 precompile (0x02)
  */
 export function sha256(input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  const words = BigInt(Math.ceil(input.length / 32));
-  const gas = 60n + words * 12n;
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
-  const out = Sha256.hash(input);
-  return { success: true, output: out, gasUsed: gas };
+	const words = BigInt(Math.ceil(input.length / 32));
+	const gas = 60n + words * 12n;
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
+	const out = Sha256.hash(input);
+	return { success: true, output: out, gasUsed: gas };
 }
 
 /**
  * RIPEMD160 precompile (0x03)
  */
-export function ripemd160(input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  const words = BigInt(Math.ceil(input.length / 32));
-  const gas = 600n + words * 120n;
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
-  const h20 = Ripemd160.hash(input);
-  const out = new Uint8Array(32);
-  // left pad 12 zero bytes, then 20 bytes hash
-  out.set(h20, 12);
-  return { success: true, output: out, gasUsed: gas };
+export function ripemd160(
+	input: Uint8Array,
+	gasLimit: bigint,
+): PrecompileResult {
+	const words = BigInt(Math.ceil(input.length / 32));
+	const gas = 600n + words * 120n;
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
+	const h20 = Ripemd160.hash(input);
+	const out = new Uint8Array(32);
+	// left pad 12 zero bytes, then 20 bytes hash
+	out.set(h20, 12);
+	return { success: true, output: out, gasUsed: gas };
 }
 
 /**
@@ -302,142 +323,218 @@ export function identity(
  * Modular exponentiation
  */
 export function modexp(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  if (_input.length < 96) {
-    return { success: false, output: new Uint8Array(0), gasUsed: 0n, error: "Invalid input length" };
-  }
-  const baseLen = beBytesToBigInt(_input.slice(0, 32));
-  const expLen = beBytesToBigInt(_input.slice(32, 64));
-  const modLen = beBytesToBigInt(_input.slice(64, 96));
+	if (_input.length < 96) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: 0n,
+			error: "Invalid input length",
+		};
+	}
+	const baseLen = beBytesToBigInt(_input.slice(0, 32));
+	const expLen = beBytesToBigInt(_input.slice(32, 64));
+	const modLen = beBytesToBigInt(_input.slice(64, 96));
 
-  // guard values to JS numbers for slicing
-  const bLen = Number(baseLen);
-  const eLen = Number(expLen);
-  const mLen = Number(modLen);
+	// guard values to JS numbers for slicing
+	const bLen = Number(baseLen);
+	const eLen = Number(expLen);
+	const mLen = Number(modLen);
 
-  const baseStart = 96;
-  const expStart = baseStart + bLen;
-  const modStart = expStart + eLen;
+	const baseStart = 96;
+	const expStart = baseStart + bLen;
+	const modStart = expStart + eLen;
 
-  const expHead = _input.slice(expStart, Math.min(expStart + 32, _input.length));
-  const expHeadVal = beBytesToBigInt(expHead);
-  const gas = Gas.Precompile.calculateModExpCost(baseLen, expLen, modLen, expHeadVal);
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
+	const expHead = _input.slice(
+		expStart,
+		Math.min(expStart + 32, _input.length),
+	);
+	const expHeadVal = beBytesToBigInt(expHead);
+	const gas = Gas.Precompile.calculateModExpCost(
+		baseLen,
+		expLen,
+		modLen,
+		expHeadVal,
+	);
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
 
-  if (mLen === 0) {
-    return { success: true, output: new Uint8Array(0), gasUsed: gas };
-  }
+	if (mLen === 0) {
+		return { success: true, output: new Uint8Array(0), gasUsed: gas };
+	}
 
-  const baseBytes = _input.slice(baseStart, Math.min(baseStart + bLen, _input.length));
-  const expBytes = _input.slice(expStart, Math.min(expStart + eLen, _input.length));
-  const modBytes = _input.slice(modStart, Math.min(modStart + mLen, _input.length));
+	const baseBytes = _input.slice(
+		baseStart,
+		Math.min(baseStart + bLen, _input.length),
+	);
+	const expBytes = _input.slice(
+		expStart,
+		Math.min(expStart + eLen, _input.length),
+	);
+	const modBytes = _input.slice(
+		modStart,
+		Math.min(modStart + mLen, _input.length),
+	);
 
-  const base = beBytesToBigInt(baseBytes);
-  const exp = beBytesToBigInt(expBytes);
-  const mod = beBytesToBigInt(modBytes);
+	const base = beBytesToBigInt(baseBytes);
+	const exp = beBytesToBigInt(expBytes);
+	const mod = beBytesToBigInt(modBytes);
 
-  if (mod === 0n) {
-    // Division by zero -> empty output per Zig precompile tests
-    return { success: true, output: new Uint8Array(0), gasUsed: gas };
-  }
+	if (mod === 0n) {
+		// Division by zero -> empty output per Zig precompile tests
+		return { success: true, output: new Uint8Array(0), gasUsed: gas };
+	}
 
-  // fast modular exponentiation
-  const result = (function powmod(a: bigint, e: bigint, m: bigint): bigint {
-    let res = 1n;
-    let x = a % m;
-    let k = e;
-    while (k > 0n) {
-      if (k & 1n) res = (res * x) % m;
-      x = (x * x) % m;
-      k >>= 1n;
-    }
-    return res % m;
-  })(base, exp, mod);
+	// fast modular exponentiation
+	const result = (function powmod(a: bigint, e: bigint, m: bigint): bigint {
+		let res = 1n;
+		let x = a % m;
+		let k = e;
+		while (k > 0n) {
+			if (k & 1n) res = (res * x) % m;
+			x = (x * x) % m;
+			k >>= 1n;
+		}
+		return res % m;
+	})(base, exp, mod);
 
-  const out = bigIntToFixedBytes(result, mLen);
-  return { success: true, output: out, gasUsed: gas };
+	const out = bigIntToFixedBytes(result, mLen);
+	return { success: true, output: out, gasUsed: gas };
 }
 
 /**
  * BN254_ADD precompile (0x06)
  * BN254 elliptic curve addition
  */
-export function bn254Add(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  const gas = 150n;
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
-  // Input: 128 bytes (G1 point A || G1 point B)
-  const buf = new Uint8Array(128);
-  buf.set(_input.slice(0, Math.min(128, _input.length)), 0);
-  const aBytes = buf.slice(0, 64);
-  const bBytes = buf.slice(64, 128);
-  try {
-    const a = Bn254.deserializeG1(aBytes);
-    const b = Bn254.deserializeG1(bBytes);
-    const sum = Bn254.G1.add.call(a, b);
-    const out = Bn254.serializeG1(sum);
-    return { success: true, output: out, gasUsed: gas };
-  } catch (e) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: String(e) };
-  }
+export function bn254Add(
+	_input: Uint8Array,
+	gasLimit: bigint,
+): PrecompileResult {
+	const gas = 150n;
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
+	// Input: 128 bytes (G1 point A || G1 point B)
+	const buf = new Uint8Array(128);
+	buf.set(_input.slice(0, Math.min(128, _input.length)), 0);
+	const aBytes = buf.slice(0, 64);
+	const bBytes = buf.slice(64, 128);
+	try {
+		const a = Bn254.deserializeG1(aBytes);
+		const b = Bn254.deserializeG1(bBytes);
+		const sum = Bn254.G1.add.call(a, b);
+		const out = Bn254.serializeG1(sum);
+		return { success: true, output: out, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
  * BN254_MUL precompile (0x07)
  * BN254 elliptic curve multiplication
  */
-export function bn254Mul(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  const gas = 6000n;
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
-  // Input: 96 bytes (G1 point || scalar)
-  const buf = new Uint8Array(96);
-  buf.set(_input.slice(0, Math.min(96, _input.length)), 0);
-  const pBytes = buf.slice(0, 64);
-  const sBytes = buf.slice(64, 96);
-  try {
-    const p = Bn254.deserializeG1(pBytes);
-    const s = beBytesToBigInt(sBytes);
-    const prod = Bn254.G1.mul.call(p, s);
-    const out = Bn254.serializeG1(prod);
-    return { success: true, output: out, gasUsed: gas };
-  } catch (e) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: String(e) };
-  }
+export function bn254Mul(
+	_input: Uint8Array,
+	gasLimit: bigint,
+): PrecompileResult {
+	const gas = 6000n;
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
+	// Input: 96 bytes (G1 point || scalar)
+	const buf = new Uint8Array(96);
+	buf.set(_input.slice(0, Math.min(96, _input.length)), 0);
+	const pBytes = buf.slice(0, 64);
+	const sBytes = buf.slice(64, 96);
+	try {
+		const p = Bn254.deserializeG1(pBytes);
+		const s = beBytesToBigInt(sBytes);
+		const prod = Bn254.G1.mul.call(p, s);
+		const out = Bn254.serializeG1(prod);
+		return { success: true, output: out, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
  * BN254_PAIRING precompile (0x08)
  * BN254 pairing check
  */
-export function bn254Pairing(input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  if (input.length % 192 !== 0) {
-    return { success: false, output: new Uint8Array(0), gasUsed: 0n, error: "Invalid input length" };
-  }
-  const k = input.length / 192;
-  const gas = 45000n + BigInt(k) * 34000n;
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
+export function bn254Pairing(
+	input: Uint8Array,
+	gasLimit: bigint,
+): PrecompileResult {
+	if (input.length % 192 !== 0) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: 0n,
+			error: "Invalid input length",
+		};
+	}
+	const k = input.length / 192;
+	const gas = 45000n + BigInt(k) * 34000n;
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
 
-  try {
-    const pairs: Array<[ReturnType<typeof Bn254.deserializeG1>, ReturnType<typeof Bn254.deserializeG2>]> = [];
-    for (let i = 0; i < k; i++) {
-      const off = i * 192;
-      const g1 = Bn254.deserializeG1(input.slice(off, off + 64));
-      const g2 = Bn254.deserializeG2(input.slice(off + 64, off + 192));
-      pairs.push([g1, g2]);
-    }
-    const ok = Bn254.Pairing.pairingCheck(pairs);
-    const out = new Uint8Array(32);
-    if (ok) out[31] = 1;
-    return { success: true, output: out, gasUsed: gas };
-  } catch (e) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: String(e) };
-  }
+	try {
+		const pairs: Array<
+			[
+				ReturnType<typeof Bn254.deserializeG1>,
+				ReturnType<typeof Bn254.deserializeG2>,
+			]
+		> = [];
+		for (let i = 0; i < k; i++) {
+			const off = i * 192;
+			const g1 = Bn254.deserializeG1(input.slice(off, off + 64));
+			const g2 = Bn254.deserializeG2(input.slice(off + 64, off + 192));
+			pairs.push([g1, g2]);
+		}
+		const ok = Bn254.Pairing.pairingCheck(pairs);
+		const out = new Uint8Array(32);
+		if (ok) out[31] = 1;
+		return { success: true, output: out, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
@@ -473,40 +570,57 @@ export function blake2f(
  * POINT_EVALUATION precompile (0x0a)
  * KZG point evaluation (EIP-4844)
  */
-export function pointEvaluation(_input: Uint8Array, gasLimit: bigint): PrecompileResult {
-  const gas = 50000n;
-  if (gasLimit < gas) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Out of gas" };
-  }
-  // EIP-4844: input = commitment(48) | z(32) | y(32) | proof(48) = 160 bytes per spec
-  // Some implementations use 160 or 192 including flags; we tolerate 160 or 192 with trailing zeros.
-  if (!(_input.length === 160 || _input.length === 192)) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: "Invalid input length" };
-  }
-  const commitment = _input.slice(0, 48);
-  const z = _input.slice(48, 80);
-  const y = _input.slice(80, 112);
-  const proof = _input.slice(112, 160);
-  try {
-    if (!Kzg.isInitialized()) Kzg.loadTrustedSetup();
-    const ok = Kzg.verifyKzgProof(commitment, z, y, proof);
-    const out = new Uint8Array(64);
-    if (ok) {
-      // FIELD_ELEMENTS_PER_BLOB (4096) || BLS_MODULUS (per Zig impl format)
-      out[30] = 0x10;
-      out[31] = 0x00;
-      const blsModulus = Uint8Array.from([
-        0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48,
-        0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
-        0x53, 0xbd, 0xa4, 0x02, 0xff, 0xfe, 0x5b, 0xfe,
-        0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
-      ]);
-      out.set(blsModulus, 32);
-    }
-    return { success: true, output: out, gasUsed: gas };
-  } catch (e) {
-    return { success: false, output: new Uint8Array(0), gasUsed: gas, error: String(e) };
-  }
+export function pointEvaluation(
+	_input: Uint8Array,
+	gasLimit: bigint,
+): PrecompileResult {
+	const gas = 50000n;
+	if (gasLimit < gas) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Out of gas",
+		};
+	}
+	// EIP-4844: input = commitment(48) | z(32) | y(32) | proof(48) = 160 bytes per spec
+	// Some implementations use 160 or 192 including flags; we tolerate 160 or 192 with trailing zeros.
+	if (!(_input.length === 160 || _input.length === 192)) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: "Invalid input length",
+		};
+	}
+	const commitment = _input.slice(0, 48);
+	const z = _input.slice(48, 80);
+	const y = _input.slice(80, 112);
+	const proof = _input.slice(112, 160);
+	try {
+		if (!Kzg.isInitialized()) Kzg.loadTrustedSetup();
+		const ok = Kzg.verifyKzgProof(commitment, z, y, proof);
+		const out = new Uint8Array(64);
+		if (ok) {
+			// FIELD_ELEMENTS_PER_BLOB (4096) || BLS_MODULUS (per Zig impl format)
+			out[30] = 0x10;
+			out[31] = 0x00;
+			const blsModulus = Uint8Array.from([
+				0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48, 0x33, 0x39, 0xd8, 0x08,
+				0x09, 0xa1, 0xd8, 0x05, 0x53, 0xbd, 0xa4, 0x02, 0xff, 0xfe, 0x5b, 0xfe,
+				0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01,
+			]);
+			out.set(blsModulus, 32);
+		}
+		return { success: true, output: out, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
