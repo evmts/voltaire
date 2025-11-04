@@ -7,10 +7,8 @@
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import * as Address from "../primitives/Address/index.js";
-import type { Hash } from "../primitives/Hash/index.js";
-import * as HashNamespace from "../primitives/Hash/index.js";
+import { Hash } from "../primitives/Hash/index.js";
 import { Eip712 } from "./eip712.js";
-const Hash = HashNamespace;
 
 // Test data setup
 const privateKey = new Uint8Array(32);

@@ -10,11 +10,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Hash } from "../primitives/Hash/index.js";
-import * as HashNamespace from "../primitives/Hash/index.js";
+import { Hash } from "../primitives/Hash/index.js";
 import { Secp256k1 } from "./secp256k1.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
-const Hash = HashNamespace;
 import { loadWasm } from "../wasm-loader/loader.js";
 
 // Load WASM before running tests
