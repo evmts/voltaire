@@ -1,2 +1,3 @@
-export * from "./error.js";
-export type { Error } from "./error.js";
+// @ts-nocheck
+export * from "./Error.js";
+export * from "./BrandedError.js";

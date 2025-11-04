@@ -3,11 +3,11 @@
  */
 
 import { Bn254 } from "../crypto/bn254.js";
-import { Keccak256 } from "../crypto/keccak256.js";
+import { Keccak256 } from "../crypto/Keccak256/index.js";
 import { Kzg } from "../crypto/kzg.js";
-import { Ripemd160 } from "../crypto/ripemd160.js";
-import { Secp256k1 } from "../crypto/secp256k1.js";
-import { Sha256 } from "../crypto/sha256.js";
+import { Ripemd160 } from "../crypto/Ripemd160/index.js";
+import { Secp256k1 } from "../crypto/Secp256k1/index.js";
+import { SHA256 } from "../crypto/SHA256/index.js";
 import * as Gas from "../primitives/GasConstants/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
@@ -64,7 +64,10 @@ function bigIntToFixedBytes(value: bigint, size: number): Uint8Array {
  * Check if an address is a precompile for a given hardfork
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: precompile checks require branching per hardfork
-export function isPrecompile(address: string, hardfork: Hardfork.Id): boolean {
+export function isPrecompile(
+	address: string,
+	hardfork: Hardfork.BrandedHardfork,
+): boolean {
 	const normalized = address.toLowerCase();
 
 	// Available in all hardforks
@@ -75,57 +78,57 @@ export function isPrecompile(address: string, hardfork: Hardfork.Id): boolean {
 
 	// Available from Byzantium
 	if (normalized === PrecompileAddress.MODEXP.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.BYZANTIUM);
+		return Hardfork.isAtLeast(hardfork, Hardfork.BYZANTIUM);
 	}
 	if (normalized === PrecompileAddress.BN254_ADD.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.BYZANTIUM);
+		return Hardfork.isAtLeast(hardfork, Hardfork.BYZANTIUM);
 	}
 	if (normalized === PrecompileAddress.BN254_MUL.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.BYZANTIUM);
+		return Hardfork.isAtLeast(hardfork, Hardfork.BYZANTIUM);
 	}
 	if (normalized === PrecompileAddress.BN254_PAIRING.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.BYZANTIUM);
+		return Hardfork.isAtLeast(hardfork, Hardfork.BYZANTIUM);
 	}
 
 	// Available from Istanbul
 	if (normalized === PrecompileAddress.BLAKE2F.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.ISTANBUL);
+		return Hardfork.isAtLeast(hardfork, Hardfork.ISTANBUL);
 	}
 
 	// Available from Cancun
 	if (normalized === PrecompileAddress.POINT_EVALUATION.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.CANCUN);
+		return Hardfork.isAtLeast(hardfork, Hardfork.CANCUN);
 	}
 
 	// BLS precompiles from Prague
 	if (normalized === PrecompileAddress.BLS12_G1_ADD.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_G1_MUL.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_G1_MSM.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_G2_ADD.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_G2_MUL.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_G2_MSM.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_PAIRING.toLowerCase()) {
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.PRAGUE);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_MAP_FP_TO_G1.toLowerCase()) {
 		// TODO: Add PRAGUE hardfork support
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.CANCUN);
+		return Hardfork.isAtLeast(hardfork, Hardfork.CANCUN);
 	}
 	if (normalized === PrecompileAddress.BLS12_MAP_FP2_TO_G2.toLowerCase()) {
 		// TODO: Add PRAGUE hardfork support
-		return Hardfork.isAtLeast(hardfork, Hardfork.Id.CANCUN);
+		return Hardfork.isAtLeast(hardfork, Hardfork.CANCUN);
 	}
 
 	return false;
@@ -144,7 +147,7 @@ export function execute(
 	address: string,
 	input: Uint8Array,
 	gasLimit: bigint,
-	_hardfork: Hardfork.Id,
+	_hardfork: Hardfork.BrandedHardfork,
 ): PrecompileResult {
 	const normalized = address.toLowerCase();
 
@@ -270,7 +273,7 @@ export function sha256(input: Uint8Array, gasLimit: bigint): PrecompileResult {
 			error: "Out of gas",
 		};
 	}
-	const out = Sha256.hash(input);
+	const out = SHA256.hash(input);
 	return { success: true, output: out, gasUsed: gas };
 }
 

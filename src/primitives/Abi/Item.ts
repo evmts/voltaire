@@ -1,7 +1,7 @@
-import type { Constructor } from "./constructor/constructor.js";
-import type { Error } from "./error/error.js";
-import type { Event } from "./event/event.js";
-import type { Function } from "./function/function.js";
+import type { BrandedConstructor as Constructor } from "./constructor/BrandedConstructor.js";
+import type { BrandedError as Error } from "./error/BrandedError.js";
+import type { BrandedEvent as Event } from "./event/BrandedEvent.js";
+import type { BrandedFunction as Function } from "./function/BrandedFunction.js";
 import type { StateMutability } from "./function/statemutability.js";
 
 export type Fallback<

@@ -9,9 +9,9 @@ import * as Opcode from "./Opcode.js";
 // Opcode Info Tests
 // ============================================================================
 
-describe("Opcode.getInfo", () => {
+describe("Opcode.info", () => {
 	it("returns info for valid opcodes", () => {
-		const addInfo = Opcode.getInfo(Opcode.Code.ADD);
+		const addInfo = Opcode.info(Opcode.ADD);
 		expect(addInfo).toBeDefined();
 		expect(addInfo?.name).toBe("ADD");
 		expect(addInfo?.gasCost).toBe(3);
@@ -20,7 +20,7 @@ describe("Opcode.getInfo", () => {
 	});
 
 	it("returns info for STOP", () => {
-		const stopInfo = Opcode.getInfo(Opcode.Code.STOP);
+		const stopInfo = Opcode.info(Opcode.STOP);
 		expect(stopInfo).toBeDefined();
 		expect(stopInfo?.name).toBe("STOP");
 		expect(stopInfo?.gasCost).toBe(0);
@@ -29,7 +29,7 @@ describe("Opcode.getInfo", () => {
 	});
 
 	it("returns info for complex opcodes", () => {
-		const callInfo = Opcode.getInfo(Opcode.Code.CALL);
+		const callInfo = Opcode.info(Opcode.CALL);
 		expect(callInfo).toBeDefined();
 		expect(callInfo?.name).toBe("CALL");
 		expect(callInfo?.stackInputs).toBe(7);
@@ -37,31 +37,24 @@ describe("Opcode.getInfo", () => {
 	});
 
 	it("returns undefined for invalid opcodes", () => {
-		const invalid = Opcode.getInfo(0x0c as Opcode.Code);
+		const invalid = Opcode.info(0x0c as any);
 		expect(invalid).toBeUndefined();
-	});
-
-	it("works with this: pattern", () => {
-		const opcode = Opcode.Code.MUL;
-		const info = Opcode.info.call(opcode);
-		expect(info).toBeDefined();
-		expect(info?.name).toBe("MUL");
 	});
 });
 
-describe("Opcode.getName", () => {
+describe("Opcode.name", () => {
 	it("returns correct names for opcodes", () => {
-		expect(Opcode.getName(Opcode.Code.ADD)).toBe("ADD");
-		expect(Opcode.getName(Opcode.Code.PUSH1)).toBe("PUSH1");
-		expect(Opcode.getName(Opcode.Code.JUMPDEST)).toBe("JUMPDEST");
+		expect(Opcode.name(Opcode.ADD)).toBe("ADD");
+		expect(Opcode.name(Opcode.PUSH1)).toBe("PUSH1");
+		expect(Opcode.name(Opcode.JUMPDEST)).toBe("JUMPDEST");
 	});
 
 	it("returns UNKNOWN for invalid opcodes", () => {
-		expect(Opcode.getName(0x0c as Opcode.Code)).toBe("UNKNOWN");
+		expect(Opcode.name(0x0c as any)).toBe("UNKNOWN");
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.name.call(Opcode.Code.SUB)).toBe("SUB");
+		expect(Opcode.name(Opcode.SUB)).toBe("SUB");
 	});
 });
 
@@ -79,8 +72,8 @@ describe("Opcode.isValid", () => {
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.valid.call(0x01)).toBe(true);
-		expect(Opcode.valid.call(0x0c)).toBe(false);
+		expect(Opcode.isValid(0x01)).toBe(true);
+		expect(Opcode.isValid(0x0c)).toBe(false);
 	});
 });
 
@@ -90,117 +83,117 @@ describe("Opcode.isValid", () => {
 
 describe("Opcode.isPush", () => {
 	it("identifies PUSH0", () => {
-		expect(Opcode.isPush(Opcode.Code.PUSH0)).toBe(true);
+		expect(Opcode.isPush(Opcode.PUSH0)).toBe(true);
 	});
 
 	it("identifies PUSH1-PUSH32", () => {
-		expect(Opcode.isPush(Opcode.Code.PUSH1)).toBe(true);
-		expect(Opcode.isPush(Opcode.Code.PUSH16)).toBe(true);
-		expect(Opcode.isPush(Opcode.Code.PUSH32)).toBe(true);
+		expect(Opcode.isPush(Opcode.PUSH1)).toBe(true);
+		expect(Opcode.isPush(Opcode.PUSH16)).toBe(true);
+		expect(Opcode.isPush(Opcode.PUSH32)).toBe(true);
 	});
 
 	it("rejects non-PUSH opcodes", () => {
-		expect(Opcode.isPush(Opcode.Code.ADD)).toBe(false);
-		expect(Opcode.isPush(Opcode.Code.DUP1)).toBe(false);
-		expect(Opcode.isPush(Opcode.Code.SWAP1)).toBe(false);
+		expect(Opcode.isPush(Opcode.ADD)).toBe(false);
+		expect(Opcode.isPush(Opcode.DUP1)).toBe(false);
+		expect(Opcode.isPush(Opcode.SWAP1)).toBe(false);
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.push.call(Opcode.Code.PUSH1)).toBe(true);
-		expect(Opcode.push.call(Opcode.Code.ADD)).toBe(false);
+		expect(Opcode.isPush(Opcode.PUSH1)).toBe(true);
+		expect(Opcode.isPush(Opcode.ADD)).toBe(false);
 	});
 });
 
 describe("Opcode.isDup", () => {
 	it("identifies DUP1-DUP16", () => {
-		expect(Opcode.isDup(Opcode.Code.DUP1)).toBe(true);
-		expect(Opcode.isDup(Opcode.Code.DUP8)).toBe(true);
-		expect(Opcode.isDup(Opcode.Code.DUP16)).toBe(true);
+		expect(Opcode.isDup(Opcode.DUP1)).toBe(true);
+		expect(Opcode.isDup(Opcode.DUP8)).toBe(true);
+		expect(Opcode.isDup(Opcode.DUP16)).toBe(true);
 	});
 
 	it("rejects non-DUP opcodes", () => {
-		expect(Opcode.isDup(Opcode.Code.ADD)).toBe(false);
-		expect(Opcode.isDup(Opcode.Code.PUSH1)).toBe(false);
-		expect(Opcode.isDup(Opcode.Code.SWAP1)).toBe(false);
+		expect(Opcode.isDup(Opcode.ADD)).toBe(false);
+		expect(Opcode.isDup(Opcode.PUSH1)).toBe(false);
+		expect(Opcode.isDup(Opcode.SWAP1)).toBe(false);
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.dup.call(Opcode.Code.DUP1)).toBe(true);
-		expect(Opcode.dup.call(Opcode.Code.ADD)).toBe(false);
+		expect(Opcode.isDup(Opcode.DUP1)).toBe(true);
+		expect(Opcode.isDup(Opcode.ADD)).toBe(false);
 	});
 });
 
 describe("Opcode.isSwap", () => {
 	it("identifies SWAP1-SWAP16", () => {
-		expect(Opcode.isSwap(Opcode.Code.SWAP1)).toBe(true);
-		expect(Opcode.isSwap(Opcode.Code.SWAP8)).toBe(true);
-		expect(Opcode.isSwap(Opcode.Code.SWAP16)).toBe(true);
+		expect(Opcode.isSwap(Opcode.SWAP1)).toBe(true);
+		expect(Opcode.isSwap(Opcode.SWAP8)).toBe(true);
+		expect(Opcode.isSwap(Opcode.SWAP16)).toBe(true);
 	});
 
 	it("rejects non-SWAP opcodes", () => {
-		expect(Opcode.isSwap(Opcode.Code.ADD)).toBe(false);
-		expect(Opcode.isSwap(Opcode.Code.PUSH1)).toBe(false);
-		expect(Opcode.isSwap(Opcode.Code.DUP1)).toBe(false);
+		expect(Opcode.isSwap(Opcode.ADD)).toBe(false);
+		expect(Opcode.isSwap(Opcode.PUSH1)).toBe(false);
+		expect(Opcode.isSwap(Opcode.DUP1)).toBe(false);
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.swap.call(Opcode.Code.SWAP1)).toBe(true);
-		expect(Opcode.swap.call(Opcode.Code.ADD)).toBe(false);
+		expect(Opcode.isSwap(Opcode.SWAP1)).toBe(true);
+		expect(Opcode.isSwap(Opcode.ADD)).toBe(false);
 	});
 });
 
 describe("Opcode.isLog", () => {
 	it("identifies LOG0-LOG4", () => {
-		expect(Opcode.isLog(Opcode.Code.LOG0)).toBe(true);
-		expect(Opcode.isLog(Opcode.Code.LOG1)).toBe(true);
-		expect(Opcode.isLog(Opcode.Code.LOG4)).toBe(true);
+		expect(Opcode.isLog(Opcode.LOG0)).toBe(true);
+		expect(Opcode.isLog(Opcode.LOG1)).toBe(true);
+		expect(Opcode.isLog(Opcode.LOG4)).toBe(true);
 	});
 
 	it("rejects non-LOG opcodes", () => {
-		expect(Opcode.isLog(Opcode.Code.ADD)).toBe(false);
-		expect(Opcode.isLog(Opcode.Code.PUSH1)).toBe(false);
+		expect(Opcode.isLog(Opcode.ADD)).toBe(false);
+		expect(Opcode.isLog(Opcode.PUSH1)).toBe(false);
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.log.call(Opcode.Code.LOG1)).toBe(true);
-		expect(Opcode.log.call(Opcode.Code.ADD)).toBe(false);
+		expect(Opcode.isLog(Opcode.LOG1)).toBe(true);
+		expect(Opcode.isLog(Opcode.ADD)).toBe(false);
 	});
 });
 
 describe("Opcode.isTerminating", () => {
 	it("identifies terminating opcodes", () => {
-		expect(Opcode.isTerminating(Opcode.Code.STOP)).toBe(true);
-		expect(Opcode.isTerminating(Opcode.Code.RETURN)).toBe(true);
-		expect(Opcode.isTerminating(Opcode.Code.REVERT)).toBe(true);
-		expect(Opcode.isTerminating(Opcode.Code.INVALID)).toBe(true);
-		expect(Opcode.isTerminating(Opcode.Code.SELFDESTRUCT)).toBe(true);
+		expect(Opcode.isTerminating(Opcode.STOP)).toBe(true);
+		expect(Opcode.isTerminating(Opcode.RETURN)).toBe(true);
+		expect(Opcode.isTerminating(Opcode.REVERT)).toBe(true);
+		expect(Opcode.isTerminating(Opcode.INVALID)).toBe(true);
+		expect(Opcode.isTerminating(Opcode.SELFDESTRUCT)).toBe(true);
 	});
 
 	it("rejects non-terminating opcodes", () => {
-		expect(Opcode.isTerminating(Opcode.Code.ADD)).toBe(false);
-		expect(Opcode.isTerminating(Opcode.Code.JUMP)).toBe(false);
+		expect(Opcode.isTerminating(Opcode.ADD)).toBe(false);
+		expect(Opcode.isTerminating(Opcode.JUMP)).toBe(false);
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.terminating.call(Opcode.Code.RETURN)).toBe(true);
-		expect(Opcode.terminating.call(Opcode.Code.ADD)).toBe(false);
+		expect(Opcode.isTerminating(Opcode.RETURN)).toBe(true);
+		expect(Opcode.isTerminating(Opcode.ADD)).toBe(false);
 	});
 });
 
 describe("Opcode.isJump", () => {
 	it("identifies JUMP and JUMPI", () => {
-		expect(Opcode.isJump(Opcode.Code.JUMP)).toBe(true);
-		expect(Opcode.isJump(Opcode.Code.JUMPI)).toBe(true);
+		expect(Opcode.isJump(Opcode.JUMP)).toBe(true);
+		expect(Opcode.isJump(Opcode.JUMPI)).toBe(true);
 	});
 
 	it("rejects non-jump opcodes", () => {
-		expect(Opcode.isJump(Opcode.Code.JUMPDEST)).toBe(false);
-		expect(Opcode.isJump(Opcode.Code.ADD)).toBe(false);
+		expect(Opcode.isJump(Opcode.JUMPDEST)).toBe(false);
+		expect(Opcode.isJump(Opcode.ADD)).toBe(false);
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.jump.call(Opcode.Code.JUMP)).toBe(true);
-		expect(Opcode.jump.call(Opcode.Code.ADD)).toBe(false);
+		expect(Opcode.isJump(Opcode.JUMP)).toBe(true);
+		expect(Opcode.isJump(Opcode.ADD)).toBe(false);
 	});
 });
 
@@ -208,48 +201,48 @@ describe("Opcode.isJump", () => {
 // PUSH Operations Tests
 // ============================================================================
 
-describe("Opcode.getPushBytes", () => {
+describe("Opcode.pushBytes", () => {
 	it("returns 0 for PUSH0", () => {
-		expect(Opcode.getPushBytes(Opcode.Code.PUSH0)).toBe(0);
+		expect(Opcode.pushBytes(Opcode.PUSH0)).toBe(0);
 	});
 
 	it("returns correct byte counts for PUSH1-PUSH32", () => {
-		expect(Opcode.getPushBytes(Opcode.Code.PUSH1)).toBe(1);
-		expect(Opcode.getPushBytes(Opcode.Code.PUSH2)).toBe(2);
-		expect(Opcode.getPushBytes(Opcode.Code.PUSH16)).toBe(16);
-		expect(Opcode.getPushBytes(Opcode.Code.PUSH32)).toBe(32);
+		expect(Opcode.pushBytes(Opcode.PUSH1)).toBe(1);
+		expect(Opcode.pushBytes(Opcode.PUSH2)).toBe(2);
+		expect(Opcode.pushBytes(Opcode.PUSH16)).toBe(16);
+		expect(Opcode.pushBytes(Opcode.PUSH32)).toBe(32);
 	});
 
 	it("returns undefined for non-PUSH opcodes", () => {
-		expect(Opcode.getPushBytes(Opcode.Code.ADD)).toBeUndefined();
-		expect(Opcode.getPushBytes(Opcode.Code.DUP1)).toBeUndefined();
+		expect(Opcode.pushBytes(Opcode.ADD)).toBeUndefined();
+		expect(Opcode.pushBytes(Opcode.DUP1)).toBeUndefined();
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.pushBytes.call(Opcode.Code.PUSH1)).toBe(1);
-		expect(Opcode.pushBytes.call(Opcode.Code.ADD)).toBeUndefined();
+		expect(Opcode.pushBytes(Opcode.PUSH1)).toBe(1);
+		expect(Opcode.pushBytes(Opcode.ADD)).toBeUndefined();
 	});
 });
 
-describe("Opcode.getPushOpcode", () => {
+describe("Opcode.pushOpcode", () => {
 	it("returns PUSH0 for 0 bytes", () => {
-		expect(Opcode.getPushOpcode(0)).toBe(Opcode.Code.PUSH0);
+		expect(Opcode.pushOpcode(0)).toBe(Opcode.PUSH0);
 	});
 
 	it("returns correct PUSH opcodes for byte counts", () => {
-		expect(Opcode.getPushOpcode(1)).toBe(Opcode.Code.PUSH1);
-		expect(Opcode.getPushOpcode(2)).toBe(Opcode.Code.PUSH2);
-		expect(Opcode.getPushOpcode(16)).toBe(Opcode.Code.PUSH16);
-		expect(Opcode.getPushOpcode(32)).toBe(Opcode.Code.PUSH32);
+		expect(Opcode.pushOpcode(1)).toBe(Opcode.PUSH1);
+		expect(Opcode.pushOpcode(2)).toBe(Opcode.PUSH2);
+		expect(Opcode.pushOpcode(16)).toBe(Opcode.PUSH16);
+		expect(Opcode.pushOpcode(32)).toBe(Opcode.PUSH32);
 	});
 
 	it("throws for invalid byte counts", () => {
-		expect(() => Opcode.getPushOpcode(-1)).toThrow("Invalid PUSH size");
-		expect(() => Opcode.getPushOpcode(33)).toThrow("Invalid PUSH size");
+		expect(() => Opcode.pushOpcode(-1)).toThrow("Invalid PUSH size");
+		expect(() => Opcode.pushOpcode(33)).toThrow("Invalid PUSH size");
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.pushOpcode.call(1)).toBe(Opcode.Code.PUSH1);
+		expect(Opcode.pushOpcode(1)).toBe(Opcode.PUSH1);
 	});
 });
 
@@ -257,51 +250,51 @@ describe("Opcode.getPushOpcode", () => {
 // DUP/SWAP/LOG Operations Tests
 // ============================================================================
 
-describe("Opcode.getDupPosition", () => {
+describe("Opcode.dupPosition", () => {
 	it("returns correct positions for DUP opcodes", () => {
-		expect(Opcode.getDupPosition(Opcode.Code.DUP1)).toBe(1);
-		expect(Opcode.getDupPosition(Opcode.Code.DUP8)).toBe(8);
-		expect(Opcode.getDupPosition(Opcode.Code.DUP16)).toBe(16);
+		expect(Opcode.dupPosition(Opcode.DUP1)).toBe(1);
+		expect(Opcode.dupPosition(Opcode.DUP8)).toBe(8);
+		expect(Opcode.dupPosition(Opcode.DUP16)).toBe(16);
 	});
 
 	it("returns undefined for non-DUP opcodes", () => {
-		expect(Opcode.getDupPosition(Opcode.Code.ADD)).toBeUndefined();
+		expect(Opcode.dupPosition(Opcode.ADD)).toBeUndefined();
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.dupPosition.call(Opcode.Code.DUP1)).toBe(1);
+		expect(Opcode.dupPosition(Opcode.DUP1)).toBe(1);
 	});
 });
 
-describe("Opcode.getSwapPosition", () => {
+describe("Opcode.swapPosition", () => {
 	it("returns correct positions for SWAP opcodes", () => {
-		expect(Opcode.getSwapPosition(Opcode.Code.SWAP1)).toBe(1);
-		expect(Opcode.getSwapPosition(Opcode.Code.SWAP8)).toBe(8);
-		expect(Opcode.getSwapPosition(Opcode.Code.SWAP16)).toBe(16);
+		expect(Opcode.swapPosition(Opcode.SWAP1)).toBe(1);
+		expect(Opcode.swapPosition(Opcode.SWAP8)).toBe(8);
+		expect(Opcode.swapPosition(Opcode.SWAP16)).toBe(16);
 	});
 
 	it("returns undefined for non-SWAP opcodes", () => {
-		expect(Opcode.getSwapPosition(Opcode.Code.ADD)).toBeUndefined();
+		expect(Opcode.swapPosition(Opcode.ADD)).toBeUndefined();
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.swapPosition.call(Opcode.Code.SWAP1)).toBe(1);
+		expect(Opcode.swapPosition(Opcode.SWAP1)).toBe(1);
 	});
 });
 
-describe("Opcode.getLogTopics", () => {
+describe("Opcode.logTopics", () => {
 	it("returns correct topic counts for LOG opcodes", () => {
-		expect(Opcode.getLogTopics(Opcode.Code.LOG0)).toBe(0);
-		expect(Opcode.getLogTopics(Opcode.Code.LOG1)).toBe(1);
-		expect(Opcode.getLogTopics(Opcode.Code.LOG4)).toBe(4);
+		expect(Opcode.logTopics(Opcode.LOG0)).toBe(0);
+		expect(Opcode.logTopics(Opcode.LOG1)).toBe(1);
+		expect(Opcode.logTopics(Opcode.LOG4)).toBe(4);
 	});
 
 	it("returns undefined for non-LOG opcodes", () => {
-		expect(Opcode.getLogTopics(Opcode.Code.ADD)).toBeUndefined();
+		expect(Opcode.logTopics(Opcode.ADD)).toBeUndefined();
 	});
 
 	it("works with this: pattern", () => {
-		expect(Opcode.logTopics.call(Opcode.Code.LOG1)).toBe(1);
+		expect(Opcode.logTopics(Opcode.LOG1)).toBe(1);
 	});
 });
 
@@ -309,90 +302,90 @@ describe("Opcode.getLogTopics", () => {
 // Bytecode Parsing Tests
 // ============================================================================
 
-describe("Opcode.parseBytecode", () => {
+describe("Opcode.parse", () => {
 	it("parses simple bytecode", () => {
 		const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
-		const instructions = Opcode.parseBytecode(bytecode);
+		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(3);
-		expect(instructions[0]!.opcode).toBe(Opcode.Code.PUSH1);
+		expect(instructions[0]!.opcode).toBe(Opcode.PUSH1);
 		expect(instructions[0]!.offset).toBe(0);
 		expect(instructions[0]!.immediate).toEqual(new Uint8Array([0x01]));
 
-		expect(instructions[1]!.opcode).toBe(Opcode.Code.PUSH1);
+		expect(instructions[1]!.opcode).toBe(Opcode.PUSH1);
 		expect(instructions[1]!.offset).toBe(2);
 		expect(instructions[1]!.immediate).toEqual(new Uint8Array([0x02]));
 
-		expect(instructions[2]!.opcode).toBe(Opcode.Code.ADD);
+		expect(instructions[2]!.opcode).toBe(Opcode.ADD);
 		expect(instructions[2]!.offset).toBe(4);
 		expect(instructions[2]!.immediate).toBeUndefined();
 	});
 
 	it("parses PUSH0", () => {
 		const bytecode = new Uint8Array([0x5f, 0x01]);
-		const instructions = Opcode.parseBytecode(bytecode);
+		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(2);
-		expect(instructions[0]!.opcode).toBe(Opcode.Code.PUSH0);
+		expect(instructions[0]!.opcode).toBe(Opcode.PUSH0);
 		expect(instructions[0]!.immediate).toBeUndefined();
 	});
 
 	it("parses PUSH32", () => {
 		const bytecode = new Uint8Array([0x7f, ...new Array(32).fill(0xff)]);
-		const instructions = Opcode.parseBytecode(bytecode);
+		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(1);
-		expect(instructions[0]!.opcode).toBe(Opcode.Code.PUSH32);
+		expect(instructions[0]!.opcode).toBe(Opcode.PUSH32);
 		expect(instructions[0]!.immediate).toHaveLength(32);
 	});
 
 	it("handles truncated PUSH data", () => {
 		const bytecode = new Uint8Array([0x60]); // PUSH1 without data
-		const instructions = Opcode.parseBytecode(bytecode);
+		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(1);
-		expect(instructions[0]!.opcode).toBe(Opcode.Code.PUSH1);
+		expect(instructions[0]!.opcode).toBe(Opcode.PUSH1);
 		expect(instructions[0]!.immediate).toHaveLength(0);
 	});
 
 	it("parses empty bytecode", () => {
 		const bytecode = new Uint8Array([]);
-		const instructions = Opcode.parseBytecode(bytecode);
+		const instructions = Opcode.parse(bytecode);
 		expect(instructions).toHaveLength(0);
 	});
 
 	it("works with this: pattern", () => {
 		const bytecode = new Uint8Array([0x60, 0x01, 0x01]);
-		const instructions = Opcode.parse.call(bytecode);
+		const instructions = Opcode.parse(bytecode);
 		expect(instructions).toHaveLength(2);
 	});
 });
 
-describe("Opcode.formatInstruction", () => {
+describe("Opcode.format", () => {
 	it("formats simple opcodes", () => {
 		const inst: Opcode.Instruction = {
 			offset: 0,
-			opcode: Opcode.Code.ADD,
+			opcode: Opcode.ADD,
 		};
-		expect(Opcode.formatInstruction(inst)).toBe("0x0000: ADD");
+		expect(Opcode.format(inst)).toBe("0x0000: ADD");
 	});
 
 	it("formats PUSH with immediate data", () => {
 		const inst: Opcode.Instruction = {
 			offset: 10,
-			opcode: Opcode.Code.PUSH1,
+			opcode: Opcode.PUSH1,
 			immediate: new Uint8Array([0x42]),
 		};
-		expect(Opcode.formatInstruction(inst)).toBe("0x000a: PUSH1 0x42");
+		expect(Opcode.format(inst)).toBe("0x000a: PUSH1 0x42");
 	});
 
 	it("formats PUSH32 with full data", () => {
 		const inst: Opcode.Instruction = {
 			offset: 0,
-			opcode: Opcode.Code.PUSH32,
+			opcode: Opcode.PUSH32,
 			immediate: new Uint8Array(32).fill(0xff),
 		};
-		const result = Opcode.formatInstruction(inst);
+		const result = Opcode.format(inst);
 		expect(result).toContain("PUSH32");
 		expect(result).toContain("ff".repeat(32));
 	});
@@ -400,9 +393,9 @@ describe("Opcode.formatInstruction", () => {
 	it("works with this: pattern", () => {
 		const inst: Opcode.Instruction = {
 			offset: 0,
-			opcode: Opcode.Code.ADD,
+			opcode: Opcode.ADD,
 		};
-		expect(Opcode.format.call(inst)).toBe("0x0000: ADD");
+		expect(Opcode.format(inst)).toBe("0x0000: ADD");
 	});
 });
 
@@ -438,10 +431,10 @@ describe("Opcode.disassemble", () => {
 // Jump Destination Analysis Tests
 // ============================================================================
 
-describe("Opcode.findJumpDests", () => {
+describe("Opcode.jumpDests", () => {
 	it("finds JUMPDEST opcodes", () => {
 		const bytecode = new Uint8Array([0x5b, 0x60, 0x01, 0x5b]);
-		const dests = Opcode.findJumpDests(bytecode);
+		const dests = Opcode.jumpDests(bytecode);
 
 		expect(dests.size).toBe(2);
 		expect(dests.has(0)).toBe(true);
@@ -454,7 +447,7 @@ describe("Opcode.findJumpDests", () => {
 			0x5b, // PUSH1 0x5b (JUMPDEST value, but in data)
 			0x5b, // JUMPDEST (real)
 		]);
-		const dests = Opcode.findJumpDests(bytecode);
+		const dests = Opcode.jumpDests(bytecode);
 
 		expect(dests.size).toBe(1);
 		expect(dests.has(2)).toBe(true);
@@ -463,13 +456,13 @@ describe("Opcode.findJumpDests", () => {
 
 	it("handles bytecode with no JUMPDESTs", () => {
 		const bytecode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
-		const dests = Opcode.findJumpDests(bytecode);
+		const dests = Opcode.jumpDests(bytecode);
 		expect(dests.size).toBe(0);
 	});
 
 	it("works with this: pattern", () => {
 		const bytecode = new Uint8Array([0x5b]);
-		const dests = Opcode.jumpDests.call(bytecode);
+		const dests = Opcode.jumpDests(bytecode);
 		expect(dests.has(0)).toBe(true);
 	});
 });
@@ -496,7 +489,7 @@ describe("Opcode.isValidJumpDest", () => {
 
 	it("works with this: pattern", () => {
 		const bytecode = new Uint8Array([0x5b]);
-		expect(Opcode.validJumpDest.call(bytecode, 0)).toBe(true);
+		expect(Opcode.isValidJumpDest(bytecode, 0)).toBe(true);
 	});
 });
 
@@ -507,126 +500,126 @@ describe("Opcode.isValidJumpDest", () => {
 describe("Opcode edge cases", () => {
 	it("validates all arithmetic opcodes", () => {
 		const ops = [
-			Opcode.Code.ADD,
-			Opcode.Code.MUL,
-			Opcode.Code.SUB,
-			Opcode.Code.DIV,
-			Opcode.Code.SDIV,
-			Opcode.Code.MOD,
-			Opcode.Code.SMOD,
-			Opcode.Code.ADDMOD,
-			Opcode.Code.MULMOD,
-			Opcode.Code.EXP,
-			Opcode.Code.SIGNEXTEND,
+			Opcode.ADD,
+			Opcode.MUL,
+			Opcode.SUB,
+			Opcode.DIV,
+			Opcode.SDIV,
+			Opcode.MOD,
+			Opcode.SMOD,
+			Opcode.ADDMOD,
+			Opcode.MULMOD,
+			Opcode.EXP,
+			Opcode.SIGNEXTEND,
 		];
 
 		for (const op of ops) {
 			expect(Opcode.isValid(op)).toBe(true);
-			expect(Opcode.getInfo(op)).toBeDefined();
+			expect(Opcode.info(op)).toBeDefined();
 		}
 	});
 
 	it("validates all comparison opcodes", () => {
 		const ops = [
-			Opcode.Code.LT,
-			Opcode.Code.GT,
-			Opcode.Code.SLT,
-			Opcode.Code.SGT,
-			Opcode.Code.EQ,
-			Opcode.Code.ISZERO,
+			Opcode.LT,
+			Opcode.GT,
+			Opcode.SLT,
+			Opcode.SGT,
+			Opcode.EQ,
+			Opcode.ISZERO,
 		];
 
 		for (const op of ops) {
 			expect(Opcode.isValid(op)).toBe(true);
-			expect(Opcode.getInfo(op)).toBeDefined();
+			expect(Opcode.info(op)).toBeDefined();
 		}
 	});
 
 	it("validates all bitwise opcodes", () => {
 		const ops = [
-			Opcode.Code.AND,
-			Opcode.Code.OR,
-			Opcode.Code.XOR,
-			Opcode.Code.NOT,
-			Opcode.Code.BYTE,
-			Opcode.Code.SHL,
-			Opcode.Code.SHR,
-			Opcode.Code.SAR,
+			Opcode.AND,
+			Opcode.OR,
+			Opcode.XOR,
+			Opcode.NOT,
+			Opcode.BYTE,
+			Opcode.SHL,
+			Opcode.SHR,
+			Opcode.SAR,
 		];
 
 		for (const op of ops) {
 			expect(Opcode.isValid(op)).toBe(true);
-			expect(Opcode.getInfo(op)).toBeDefined();
+			expect(Opcode.info(op)).toBeDefined();
 		}
 	});
 
 	it("validates all storage/memory opcodes", () => {
 		const ops = [
-			Opcode.Code.MLOAD,
-			Opcode.Code.MSTORE,
-			Opcode.Code.MSTORE8,
-			Opcode.Code.SLOAD,
-			Opcode.Code.SSTORE,
-			Opcode.Code.TLOAD,
-			Opcode.Code.TSTORE,
-			Opcode.Code.MCOPY,
+			Opcode.MLOAD,
+			Opcode.MSTORE,
+			Opcode.MSTORE8,
+			Opcode.SLOAD,
+			Opcode.SSTORE,
+			Opcode.TLOAD,
+			Opcode.TSTORE,
+			Opcode.MCOPY,
 		];
 
 		for (const op of ops) {
 			expect(Opcode.isValid(op)).toBe(true);
-			expect(Opcode.getInfo(op)).toBeDefined();
+			expect(Opcode.info(op)).toBeDefined();
 		}
 	});
 
 	it("validates all block information opcodes", () => {
 		const ops = [
-			Opcode.Code.BLOCKHASH,
-			Opcode.Code.COINBASE,
-			Opcode.Code.TIMESTAMP,
-			Opcode.Code.NUMBER,
-			Opcode.Code.DIFFICULTY,
-			Opcode.Code.GASLIMIT,
-			Opcode.Code.CHAINID,
-			Opcode.Code.SELFBALANCE,
-			Opcode.Code.BASEFEE,
-			Opcode.Code.BLOBHASH,
-			Opcode.Code.BLOBBASEFEE,
+			Opcode.BLOCKHASH,
+			Opcode.COINBASE,
+			Opcode.TIMESTAMP,
+			Opcode.NUMBER,
+			Opcode.DIFFICULTY,
+			Opcode.GASLIMIT,
+			Opcode.CHAINID,
+			Opcode.SELFBALANCE,
+			Opcode.BASEFEE,
+			Opcode.BLOBHASH,
+			Opcode.BLOBBASEFEE,
 		];
 
 		for (const op of ops) {
 			expect(Opcode.isValid(op)).toBe(true);
-			expect(Opcode.getInfo(op)).toBeDefined();
+			expect(Opcode.info(op)).toBeDefined();
 		}
 	});
 
 	it("validates all system opcodes", () => {
 		const ops = [
-			Opcode.Code.CREATE,
-			Opcode.Code.CALL,
-			Opcode.Code.CALLCODE,
-			Opcode.Code.RETURN,
-			Opcode.Code.DELEGATECALL,
-			Opcode.Code.CREATE2,
-			Opcode.Code.STATICCALL,
-			Opcode.Code.REVERT,
-			Opcode.Code.SELFDESTRUCT,
+			Opcode.CREATE,
+			Opcode.CALL,
+			Opcode.CALLCODE,
+			Opcode.RETURN,
+			Opcode.DELEGATECALL,
+			Opcode.CREATE2,
+			Opcode.STATICCALL,
+			Opcode.REVERT,
+			Opcode.SELFDESTRUCT,
 		];
 
 		for (const op of ops) {
 			expect(Opcode.isValid(op)).toBe(true);
-			expect(Opcode.getInfo(op)).toBeDefined();
+			expect(Opcode.info(op)).toBeDefined();
 		}
 	});
 
 	it("validates EIP-3074 opcodes", () => {
-		expect(Opcode.isValid(Opcode.Code.AUTH)).toBe(true);
-		expect(Opcode.isValid(Opcode.Code.AUTHCALL)).toBe(true);
+		expect(Opcode.isValid(Opcode.AUTH)).toBe(true);
+		expect(Opcode.isValid(Opcode.AUTHCALL)).toBe(true);
 	});
 
 	it("correctly identifies stack requirements for DUP opcodes", () => {
 		for (let i = 0; i < 16; i++) {
-			const dupCode = (0x80 + i) as Opcode.Code;
-			const info = Opcode.getInfo(dupCode);
+			const dupCode = (0x80 + i) as any;
+			const info = Opcode.info(dupCode);
 			expect(info?.stackInputs).toBe(i + 1);
 			expect(info?.stackOutputs).toBe(i + 2);
 		}
@@ -634,25 +627,25 @@ describe("Opcode edge cases", () => {
 
 	it("correctly identifies stack requirements for SWAP opcodes", () => {
 		for (let i = 0; i < 16; i++) {
-			const swapCode = (0x90 + i) as Opcode.Code;
-			const info = Opcode.getInfo(swapCode);
+			const swapCode = (0x90 + i) as any;
+			const info = Opcode.info(swapCode);
 			expect(info?.stackInputs).toBe(i + 2);
 			expect(info?.stackOutputs).toBe(i + 2);
 		}
 	});
 
 	it("correctly calculates gas for LOG opcodes", () => {
-		expect(Opcode.getInfo(Opcode.Code.LOG0)?.gasCost).toBe(375);
-		expect(Opcode.getInfo(Opcode.Code.LOG1)?.gasCost).toBe(750);
-		expect(Opcode.getInfo(Opcode.Code.LOG2)?.gasCost).toBe(1125);
-		expect(Opcode.getInfo(Opcode.Code.LOG3)?.gasCost).toBe(1500);
-		expect(Opcode.getInfo(Opcode.Code.LOG4)?.gasCost).toBe(1875);
+		expect(Opcode.info(Opcode.LOG0)?.gasCost).toBe(375);
+		expect(Opcode.info(Opcode.LOG1)?.gasCost).toBe(750);
+		expect(Opcode.info(Opcode.LOG2)?.gasCost).toBe(1125);
+		expect(Opcode.info(Opcode.LOG3)?.gasCost).toBe(1500);
+		expect(Opcode.info(Opcode.LOG4)?.gasCost).toBe(1875);
 	});
 });
 
 describe("Opcode stack analysis", () => {
 	it("detects potential stack underflow", () => {
-		const info = Opcode.getInfo(Opcode.Code.ADD);
+		const info = Opcode.info(Opcode.ADD);
 		const stackSize = 1;
 
 		expect(info).toBeDefined();
@@ -663,14 +656,14 @@ describe("Opcode stack analysis", () => {
 	});
 
 	it("calculates stack change", () => {
-		const addInfo = Opcode.getInfo(Opcode.Code.ADD);
+		const addInfo = Opcode.info(Opcode.ADD);
 		expect(addInfo).toBeDefined();
 		if (addInfo) {
 			const stackChange = addInfo.stackOutputs - addInfo.stackInputs;
 			expect(stackChange).toBe(-1); // 2 inputs, 1 output
 		}
 
-		const push1Info = Opcode.getInfo(Opcode.Code.PUSH1);
+		const push1Info = Opcode.info(Opcode.PUSH1);
 		expect(push1Info).toBeDefined();
 		if (push1Info) {
 			const stackChange = push1Info.stackOutputs - push1Info.stackInputs;
@@ -689,11 +682,11 @@ describe("Opcode gas estimation", () => {
 			0x01, // ADD
 		]);
 
-		const instructions = Opcode.parseBytecode(bytecode);
+		const instructions = Opcode.parse(bytecode);
 		let totalGas = 0;
 
 		for (const inst of instructions) {
-			const info = Opcode.getInfo(inst.opcode);
+			const info = Opcode.info(inst.opcode);
 			if (info) {
 				totalGas += info.gasCost;
 			}
@@ -703,7 +696,7 @@ describe("Opcode gas estimation", () => {
 	});
 
 	it("accounts for complex operations", () => {
-		const info = Opcode.getInfo(Opcode.Code.SSTORE);
+		const info = Opcode.info(Opcode.SSTORE);
 		expect(info?.gasCost).toBe(100); // Base cost
 	});
 });

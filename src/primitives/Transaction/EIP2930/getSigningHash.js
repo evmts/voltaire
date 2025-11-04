@@ -1,4 +1,4 @@
-import { Keccak256 } from "../../../crypto/keccak256.js";
+import { Keccak256 } from "../../../crypto/Keccak256/index.js";
 import * as Rlp from "../../Rlp/index.js";
 import { Type } from "../types.js";
 import {

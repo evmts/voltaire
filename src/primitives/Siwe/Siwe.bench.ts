@@ -5,6 +5,7 @@
  */
 
 import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedMessage } from "./BrandedMessage.js";
 import * as Siwe from "./Siwe.js";
 
 // Benchmark runner
@@ -63,13 +64,13 @@ function benchmark(
 function createTestAddress(seed: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(seed);
-	return addr as Address;
+	return addr as BrandedAddress;
 }
 
 const testAddress = createTestAddress(1);
 const testSignature = new Uint8Array(65);
 
-const basicMessage: Siwe.Message = {
+const basicMessage: BrandedMessage= {
 	domain: "example.com",
 	address: testAddress,
 	uri: "https://example.com/login",
@@ -79,12 +80,12 @@ const basicMessage: Siwe.Message = {
 	issuedAt: "2021-09-30T16:25:24.000Z",
 };
 
-const messageWithStatement: Siwe.Message = {
+const messageWithStatement: BrandedMessage= {
 	...basicMessage,
 	statement: "Sign in to Example App",
 };
 
-const messageWithAllFields: Siwe.Message = {
+const messageWithAllFields: BrandedMessage= {
 	...basicMessage,
 	statement: "Sign in to Example App",
 	expirationTime: "2021-10-01T16:25:24.000Z",
@@ -97,8 +98,8 @@ const messageWithAllFields: Siwe.Message = {
 	],
 };
 
-const formattedBasic = Siwe.Message.format(basicMessage);
-const formattedComplex = Siwe.Message.format(messageWithAllFields);
+const formattedBasic = Siwe.format(basicMessage);
+const formattedComplex = Siwe.format(messageWithAllFields);
 
 // ============================================================================
 // Message Creation Benchmarks
@@ -232,18 +233,18 @@ console.log(
 
 console.log("--- Standard Form ---");
 results.push(
-	benchmark("Message.format - basic", () => Siwe.Message.format(basicMessage)),
+	benchmark("Message.format - basic", () => Siwe.format(basicMessage)),
 );
 
 results.push(
 	benchmark("Message.format - with statement", () =>
-		Siwe.Message.format(messageWithStatement),
+		Siwe.format(messageWithStatement),
 	),
 );
 
 results.push(
 	benchmark("Message.format - all fields", () =>
-		Siwe.Message.format(messageWithAllFields),
+		Siwe.format(messageWithAllFields),
 	),
 );
 
@@ -340,21 +341,21 @@ console.log(
 console.log("--- Standard Form ---");
 results.push(
 	benchmark("Message.validate - basic", () =>
-		Siwe.Message.validate(basicMessage),
+		Siwe.validate(basicMessage),
 	),
 );
 
 results.push(
 	benchmark("Message.validate - with timestamps", () => {
 		const now = new Date("2021-09-30T18:00:00.000Z");
-		Siwe.Message.validate(messageWithAllFields, { now });
+		Siwe.validate(messageWithAllFields, { now });
 	}),
 );
 
 const invalidMessage = { ...basicMessage, version: "2" as "1" };
 results.push(
 	benchmark("Message.validate - invalid version", () =>
-		Siwe.Message.validate(invalidMessage),
+		Siwe.validate(invalidMessage),
 	),
 );
 
@@ -365,7 +366,7 @@ const expiredMessage = {
 results.push(
 	benchmark("Message.validate - expired", () => {
 		const now = new Date("2021-09-30T18:00:00.000Z");
-		Siwe.Message.validate(expiredMessage, { now });
+		Siwe.validate(expiredMessage, { now });
 	}),
 );
 
@@ -415,14 +416,14 @@ console.log(
 console.log("--- Format + Parse ---");
 results.push(
 	benchmark("roundtrip - basic message", () => {
-		const formatted = Siwe.Message.format(basicMessage);
+		const formatted = Siwe.format(basicMessage);
 		Siwe.parse(formatted);
 	}),
 );
 
 results.push(
 	benchmark("roundtrip - complex message", () => {
-		const formatted = Siwe.Message.format(messageWithAllFields);
+		const formatted = Siwe.format(messageWithAllFields);
 		Siwe.parse(formatted);
 	}),
 );
@@ -440,17 +441,17 @@ console.log(
 console.log("\n--- Format + Parse + Validate ---");
 results.push(
 	benchmark("full cycle - basic", () => {
-		const formatted = Siwe.Message.format(basicMessage);
+		const formatted = Siwe.format(basicMessage);
 		const parsed = Siwe.parse(formatted);
-		Siwe.Message.validate(parsed);
+		Siwe.validate(parsed);
 	}),
 );
 
 results.push(
 	benchmark("full cycle - complex", () => {
-		const formatted = Siwe.Message.format(messageWithAllFields);
+		const formatted = Siwe.format(messageWithAllFields);
 		const parsed = Siwe.parse(formatted);
-		Siwe.Message.validate(parsed);
+		Siwe.validate(parsed);
 	}),
 );
 
@@ -481,7 +482,7 @@ console.log("--- Signature Verification ---");
 results.push(
 	benchmark("Message.getMessageHash", () => {
 		try {
-			Siwe.Message.getMessageHash(basicMessage);
+			Siwe.getMessageHash(basicMessage);
 		} catch {
 			// Expected - not implemented
 		}
@@ -491,7 +492,7 @@ results.push(
 results.push(
 	benchmark("Message.verify", () => {
 		try {
-			Siwe.Message.verify(basicMessage, testSignature);
+			Siwe.verify(basicMessage, testSignature);
 		} catch {
 			// Expected - not implemented
 		}
@@ -536,7 +537,7 @@ const addresses = [
 	createTestAddress(0),
 	createTestAddress(42),
 	createTestAddress(255),
-	new Uint8Array(20).fill(0xff) as Address,
+	new Uint8Array(20).fill(0xff) as BrandedAddress,
 ];
 
 for (const addr of addresses) {
@@ -544,7 +545,7 @@ for (const addr of addresses) {
 	results.push(
 		benchmark(
 			`format with address 0x${addr[0]?.toString(16).padStart(2, "0")}...`,
-			() => Siwe.Message.format(msg),
+			() => Siwe.format(msg),
 		),
 	);
 }
@@ -580,7 +581,7 @@ for (const len of statementLengths) {
 	const msg = len === 0 ? basicMessage : { ...basicMessage, statement };
 	results.push(
 		benchmark(`format - statement length ${len}`, () =>
-			Siwe.Message.format(msg),
+			Siwe.format(msg),
 		),
 	);
 }
@@ -604,7 +605,7 @@ for (const count of resourceCounts) {
 		.map((_, i) => `https://example.com/resource${i}`);
 	const msg = count === 0 ? basicMessage : { ...basicMessage, resources };
 	results.push(
-		benchmark(`format - ${count} resources`, () => Siwe.Message.format(msg)),
+		benchmark(`format - ${count} resources`, () => Siwe.format(msg)),
 	);
 }
 

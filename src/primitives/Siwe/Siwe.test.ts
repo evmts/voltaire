@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedMessage, Signature } from "./BrandedMessage.js";
 import * as Siwe from "./Siwe.js";
 
 // ============================================================================
@@ -13,10 +14,10 @@ import * as Siwe from "./Siwe.js";
 function createTestAddress(seed: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(seed);
-	return addr as Address;
+	return addr as BrandedAddress;
 }
 
-function createBasicMessage(): Siwe.Message {
+function createBasicMessage(): BrandedMessage {
 	return {
 		domain: "example.com",
 		address: createTestAddress(1),
@@ -145,10 +146,10 @@ describe("Siwe.generateNonce", () => {
 // Message Formatting Tests
 // ============================================================================
 
-describe("Siwe.Message.format", () => {
+describe("Siwe.format", () => {
 	it("formats basic message correctly", () => {
 		const message = createBasicMessage();
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 
 		expect(formatted).toContain(
 			"example.com wants you to sign in with your Ethereum account:",
@@ -166,7 +167,7 @@ describe("Siwe.Message.format", () => {
 			...createBasicMessage(),
 			statement: "Sign in to access your account",
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 
 		expect(formatted).toContain("Sign in to access your account");
 	});
@@ -178,7 +179,7 @@ describe("Siwe.Message.format", () => {
 			notBefore: "2021-09-30T16:00:00.000Z",
 			requestId: "request-123",
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 
 		expect(formatted).toContain("Expiration Time: 2021-10-01T16:25:24.000Z");
 		expect(formatted).toContain("Not Before: 2021-09-30T16:00:00.000Z");
@@ -193,7 +194,7 @@ describe("Siwe.Message.format", () => {
 				"https://example.com/resource2",
 			],
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 
 		expect(formatted).toContain("Resources:");
 		expect(formatted).toContain("- https://example.com/resource1");
@@ -209,7 +210,7 @@ describe("Siwe.Message.format", () => {
 			requestId: "request-123",
 			resources: ["https://example.com/resource1"],
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 
 		expect(formatted).toContain("example.com wants you to sign in");
 		expect(formatted).toContain("Welcome to Example");
@@ -222,16 +223,6 @@ describe("Siwe.Message.format", () => {
 		expect(formatted).toContain("Not Before:");
 		expect(formatted).toContain("Request ID:");
 		expect(formatted).toContain("Resources:");
-	});
-});
-
-describe("Siwe.format", () => {
-	it("formats message using public wrapper", () => {
-		const message = createBasicMessage();
-		const formatted = Siwe.format(message);
-
-		expect(formatted).toContain("example.com wants you to sign in");
-		expect(formatted).toContain("0x0101010101010101010101010101010101010101");
 	});
 });
 
@@ -412,17 +403,17 @@ Issued At: 2021-09-30T16:25:24Z`;
 // Validation Tests
 // ============================================================================
 
-describe("Siwe.Message.validate", () => {
+describe("Siwe.validate", () => {
 	it("validates correct message", () => {
 		const message = createBasicMessage();
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(true);
 	});
 
 	it("rejects empty domain", () => {
 		const message = { ...createBasicMessage(), domain: "" };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -434,9 +425,9 @@ describe("Siwe.Message.validate", () => {
 	it("rejects invalid address", () => {
 		const message = {
 			...createBasicMessage(),
-			address: new Uint8Array(10) as Address,
+			address: new Uint8Array(10) as BrandedAddress,
 		};
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -446,7 +437,7 @@ describe("Siwe.Message.validate", () => {
 
 	it("rejects missing URI", () => {
 		const message = { ...createBasicMessage(), uri: "" };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -456,7 +447,7 @@ describe("Siwe.Message.validate", () => {
 
 	it("rejects invalid version", () => {
 		const message = { ...createBasicMessage(), version: "2" as "1" };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -467,7 +458,7 @@ describe("Siwe.Message.validate", () => {
 
 	it("rejects invalid chain ID", () => {
 		const message = { ...createBasicMessage(), chainId: 0 };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -477,7 +468,7 @@ describe("Siwe.Message.validate", () => {
 
 	it("rejects negative chain ID", () => {
 		const message = { ...createBasicMessage(), chainId: -1 };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -487,7 +478,7 @@ describe("Siwe.Message.validate", () => {
 
 	it("rejects short nonce", () => {
 		const message = { ...createBasicMessage(), nonce: "1234567" };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -498,14 +489,14 @@ describe("Siwe.Message.validate", () => {
 
 	it("accepts nonce with exactly 8 characters", () => {
 		const message = { ...createBasicMessage(), nonce: "12345678" };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(true);
 	});
 
 	it("rejects invalid issuedAt timestamp", () => {
 		const message = { ...createBasicMessage(), issuedAt: "invalid-timestamp" };
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -519,7 +510,7 @@ describe("Siwe.Message.validate", () => {
 			...createBasicMessage(),
 			expirationTime: "2021-10-01T00:00:00.000Z",
 		};
-		const result = Siwe.Message.validate(message, { now });
+		const result = Siwe.validate(message, { now });
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -533,7 +524,7 @@ describe("Siwe.Message.validate", () => {
 			...createBasicMessage(),
 			expirationTime: "2021-10-01T00:00:00.000Z",
 		};
-		const result = Siwe.Message.validate(message, { now });
+		const result = Siwe.validate(message, { now });
 
 		expect(result.valid).toBe(true);
 	});
@@ -544,7 +535,7 @@ describe("Siwe.Message.validate", () => {
 			...createBasicMessage(),
 			notBefore: "2021-09-30T00:00:00.000Z",
 		};
-		const result = Siwe.Message.validate(message, { now });
+		const result = Siwe.validate(message, { now });
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -558,7 +549,7 @@ describe("Siwe.Message.validate", () => {
 			...createBasicMessage(),
 			notBefore: "2021-09-30T00:00:00.000Z",
 		};
-		const result = Siwe.Message.validate(message, { now });
+		const result = Siwe.validate(message, { now });
 
 		expect(result.valid).toBe(true);
 	});
@@ -568,7 +559,7 @@ describe("Siwe.Message.validate", () => {
 			...createBasicMessage(),
 			expirationTime: "invalid-timestamp",
 		};
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -582,7 +573,7 @@ describe("Siwe.Message.validate", () => {
 			...createBasicMessage(),
 			notBefore: "invalid-timestamp",
 		};
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -597,7 +588,7 @@ describe("Siwe.Message.validate", () => {
 			...createBasicMessage(),
 			expirationTime: future,
 		};
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		expect(result.valid).toBe(true);
 	});
@@ -624,29 +615,11 @@ describe("Siwe.validate", () => {
 });
 
 // ============================================================================
-// Signature Tests (Not Implemented)
+// Signature Tests
 // ============================================================================
 
-describe("Siwe.Message.getMessageHash", () => {
-	it("returns message hash", () => {
-		const message = createBasicMessage();
-		const hash = Siwe.Message.getMessageHash(message);
-		expect(hash).toBeInstanceOf(Uint8Array);
-		expect(hash.length).toBe(32);
-	});
-});
-
-describe("Siwe.Message.verify", () => {
-	it("returns false for invalid signature", () => {
-		const message = createBasicMessage();
-		const signature = new Uint8Array(65);
-		const result = Siwe.Message.verify(message, signature);
-		expect(result).toBe(false);
-	});
-});
-
 describe("Siwe.getMessageHash", () => {
-	it("returns message hash using public wrapper", () => {
+	it("returns message hash", () => {
 		const message = createBasicMessage();
 		const hash = Siwe.getMessageHash(message);
 		expect(hash).toBeInstanceOf(Uint8Array);
@@ -655,7 +628,7 @@ describe("Siwe.getMessageHash", () => {
 });
 
 describe("Siwe.verify", () => {
-	it("returns false for invalid signature using public wrapper", () => {
+	it("returns false for invalid signature", () => {
 		const message = createBasicMessage();
 		const signature = new Uint8Array(65);
 		const result = Siwe.verify(message, signature);
@@ -715,19 +688,19 @@ describe("SIWE Edge Cases", () => {
 	it("handles address with all zeros", () => {
 		const message = {
 			...createBasicMessage(),
-			address: new Uint8Array(20) as Address,
+			address: new Uint8Array(20) as BrandedAddress,
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		expect(formatted).toContain("0x0000000000000000000000000000000000000000");
 	});
 
 	it("handles address with all 0xff", () => {
-		const addr = new Uint8Array(20).fill(0xff) as Address;
+		const addr = new Uint8Array(20).fill(0xff) as BrandedAddress;
 		const message = {
 			...createBasicMessage(),
 			address: addr,
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		expect(formatted).toContain("0xffffffffffffffffffffffffffffffffffffffff");
 	});
 
@@ -737,7 +710,7 @@ describe("SIWE Edge Cases", () => {
 			...createBasicMessage(),
 			statement: longStatement,
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		expect(formatted).toContain(longStatement);
 	});
 
@@ -746,7 +719,7 @@ describe("SIWE Edge Cases", () => {
 			...createBasicMessage(),
 			resources: [],
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		expect(formatted).not.toContain("Resources:");
 	});
 
@@ -755,7 +728,7 @@ describe("SIWE Edge Cases", () => {
 			...createBasicMessage(),
 			domain: "sub.example.com",
 		};
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 		expect(result.valid).toBe(true);
 	});
 
@@ -763,7 +736,7 @@ describe("SIWE Edge Cases", () => {
 		const chainIds = [1, 5, 137, 42161, 10, 100, 1337];
 		for (const chainId of chainIds) {
 			const message = { ...createBasicMessage(), chainId };
-			const result = Siwe.Message.validate(message);
+			const result = Siwe.validate(message);
 			expect(result.valid).toBe(true);
 		}
 	});
@@ -793,7 +766,7 @@ Issued At: 2021-09-30T16:25:24Z`;
 
 		for (const format of formats) {
 			const message = { ...createBasicMessage(), issuedAt: format };
-			const result = Siwe.Message.validate(message);
+			const result = Siwe.validate(message);
 			expect(result.valid).toBe(true);
 		}
 	});
@@ -803,10 +776,10 @@ Issued At: 2021-09-30T16:25:24Z`;
 			...createBasicMessage(),
 			uri: "https://example.com/login?redirect=/dashboard&source=mobile",
 		};
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 		expect(result.valid).toBe(true);
 
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		const parsed = Siwe.parse(formatted);
 		expect(parsed.uri).toBe(message.uri);
 	});
@@ -816,7 +789,7 @@ Issued At: 2021-09-30T16:25:24Z`;
 			...createBasicMessage(),
 			uri: "https://example.com/login#section",
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		const parsed = Siwe.parse(formatted);
 		expect(parsed.uri).toBe(message.uri);
 	});
@@ -830,7 +803,7 @@ Issued At: 2021-09-30T16:25:24Z`;
 				"did:example:123456789abcdefghi",
 			],
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		const parsed = Siwe.parse(formatted);
 		expect(parsed.resources).toEqual(message.resources);
 	});
@@ -841,7 +814,7 @@ Issued At: 2021-09-30T16:25:24Z`;
 			...createBasicMessage(),
 			issuedAt: timestamp,
 		};
-		const formatted = Siwe.Message.format(message);
+		const formatted = Siwe.format(message);
 		const parsed = Siwe.parse(formatted);
 		expect(parsed.issuedAt).toBe(timestamp);
 	});
@@ -876,13 +849,13 @@ describe("SIWE Type Safety", () => {
 	});
 
 	it("signature type is Uint8Array", () => {
-		const signature: Siwe.Signature = new Uint8Array(65);
+		const signature: Signature = new Uint8Array(65);
 		expect(signature).toBeInstanceOf(Uint8Array);
 	});
 
 	it("validation result has correct structure", () => {
 		const message = createBasicMessage();
-		const result = Siwe.Message.validate(message);
+		const result = Siwe.validate(message);
 
 		if (result.valid) {
 			expect(result.valid).toBe(true);

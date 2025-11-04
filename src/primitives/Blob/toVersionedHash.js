@@ -1,5 +1,5 @@
 import { COMMITMENT_VERSION_KZG } from "./constants.js";
-import { Sha256 } from "../../crypto/sha256.js";
+import { SHA256 } from "../../crypto/SHA256/index.js";
 
 /**
  * Create versioned hash from commitment
@@ -19,7 +19,7 @@ export function toVersionedHash(commitment) {
 	}
 
 	// Hash the commitment with SHA-256
-	const hash = Sha256.hash(commitment);
+	const hash = SHA256.hash(commitment);
 
 	// Create versioned hash: version byte + hash[1:32]
 	const versionedHash = new Uint8Array(32);

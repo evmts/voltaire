@@ -103,15 +103,15 @@ console.log(
 const results: BenchmarkResult[] = [];
 
 console.log("--- Info Lookup ---");
-results.push(benchmark("getInfo - ADD", () => Opcode.getInfo(Opcode.Code.ADD)));
+results.push(benchmark("getInfo - ADD", () => Opcode.info(Opcode.ADD)));
 results.push(
-	benchmark("getInfo - PUSH1", () => Opcode.getInfo(Opcode.Code.PUSH1)),
+	benchmark("getInfo - PUSH1", () => Opcode.info(Opcode.PUSH1)),
 );
 results.push(
-	benchmark("getInfo - CALL", () => Opcode.getInfo(Opcode.Code.CALL)),
+	benchmark("getInfo - CALL", () => Opcode.info(Opcode.CALL)),
 );
 results.push(
-	benchmark("getInfo - invalid", () => Opcode.getInfo(0x0c as Opcode.Code)),
+	benchmark("getInfo - invalid", () => Opcode.info(0x0c as any)),
 );
 
 console.log(
@@ -127,8 +127,8 @@ console.log(
 console.log("\n--- Info Lookup (this: pattern) ---");
 results.push(
 	benchmark("info.call - ADD", () => {
-		const op = Opcode.Code.ADD;
-		Opcode.info.call(op);
+		const op = Opcode.ADD;
+		Opcode.info(op);
 	}),
 );
 
@@ -143,14 +143,14 @@ console.log(
 );
 
 console.log("\n--- Name Lookup ---");
-results.push(benchmark("getName - ADD", () => Opcode.getName(Opcode.Code.ADD)));
+results.push(benchmark("getName - ADD", () => Opcode.name(Opcode.ADD)));
 results.push(
-	benchmark("getName - invalid", () => Opcode.getName(0x0c as Opcode.Code)),
+	benchmark("getName - invalid", () => Opcode.name(0x0c as any)),
 );
 results.push(
 	benchmark("name.call - ADD", () => {
-		const op = Opcode.Code.ADD;
-		Opcode.name.call(op);
+		const op = Opcode.ADD;
+		Opcode.name(op);
 	}),
 );
 
@@ -180,7 +180,7 @@ console.log(
 console.log("--- Validity Checks ---");
 results.push(benchmark("isValid - valid opcode", () => Opcode.isValid(0x01)));
 results.push(benchmark("isValid - invalid opcode", () => Opcode.isValid(0x0c)));
-results.push(benchmark("valid.call - valid", () => Opcode.valid.call(0x01)));
+results.push(benchmark("valid.call - valid", () => Opcode.isValid(0x01)));
 
 console.log(
 	results
@@ -207,20 +207,20 @@ console.log(
 
 console.log("--- Category Checks ---");
 results.push(
-	benchmark("isPush - PUSH1", () => Opcode.isPush(Opcode.Code.PUSH1)),
+	benchmark("isPush - PUSH1", () => Opcode.isPush(Opcode.PUSH1)),
 );
-results.push(benchmark("isPush - ADD", () => Opcode.isPush(Opcode.Code.ADD)));
-results.push(benchmark("isDup - DUP1", () => Opcode.isDup(Opcode.Code.DUP1)));
+results.push(benchmark("isPush - ADD", () => Opcode.isPush(Opcode.ADD)));
+results.push(benchmark("isDup - DUP1", () => Opcode.isDup(Opcode.DUP1)));
 results.push(
-	benchmark("isSwap - SWAP1", () => Opcode.isSwap(Opcode.Code.SWAP1)),
+	benchmark("isSwap - SWAP1", () => Opcode.isSwap(Opcode.SWAP1)),
 );
-results.push(benchmark("isLog - LOG1", () => Opcode.isLog(Opcode.Code.LOG1)));
+results.push(benchmark("isLog - LOG1", () => Opcode.isLog(Opcode.LOG1)));
 results.push(
 	benchmark("isTerminating - RETURN", () =>
-		Opcode.isTerminating(Opcode.Code.RETURN),
+		Opcode.isTerminating(Opcode.RETURN),
 	),
 );
-results.push(benchmark("isJump - JUMP", () => Opcode.isJump(Opcode.Code.JUMP)));
+results.push(benchmark("isJump - JUMP", () => Opcode.isJump(Opcode.JUMP)));
 
 console.log(
 	results
@@ -232,17 +232,17 @@ console.log(
 		.join("\n"),
 );
 
-console.log("\n--- Category Checks (this: pattern) ---");
+console.log("\n--- Category Checks (direct calls) ---");
 results.push(
-	benchmark("push.call - PUSH1", () => {
-		const op = Opcode.Code.PUSH1;
-		Opcode.push.call(op);
+	benchmark("isPush - PUSH1", () => {
+		const op = Opcode.PUSH1;
+		Opcode.isPush(op);
 	}),
 );
 results.push(
-	benchmark("dup.call - DUP1", () => {
-		const op = Opcode.Code.DUP1;
-		Opcode.dup.call(op);
+	benchmark("isDup - DUP1", () => {
+		const op = Opcode.DUP1;
+		Opcode.isDup(op);
 	}),
 );
 
@@ -272,19 +272,19 @@ console.log(
 console.log("--- PUSH Operations ---");
 results.push(
 	benchmark("getPushBytes - PUSH1", () =>
-		Opcode.getPushBytes(Opcode.Code.PUSH1),
+		Opcode.pushBytes(Opcode.PUSH1),
 	),
 );
 results.push(
 	benchmark("getPushBytes - PUSH32", () =>
-		Opcode.getPushBytes(Opcode.Code.PUSH32),
+		Opcode.pushBytes(Opcode.PUSH32),
 	),
 );
 results.push(
-	benchmark("getPushBytes - ADD", () => Opcode.getPushBytes(Opcode.Code.ADD)),
+	benchmark("getPushBytes - ADD", () => Opcode.pushBytes(Opcode.ADD)),
 );
-results.push(benchmark("getPushOpcode - 1", () => Opcode.getPushOpcode(1)));
-results.push(benchmark("getPushOpcode - 32", () => Opcode.getPushOpcode(32)));
+results.push(benchmark("getPushOpcode - 1", () => Opcode.pushOpcode(1)));
+results.push(benchmark("getPushOpcode - 32", () => Opcode.pushOpcode(32)));
 
 console.log(
 	results
@@ -299,13 +299,13 @@ console.log(
 console.log("\n--- PUSH Operations (this: pattern) ---");
 results.push(
 	benchmark("pushBytes.call - PUSH1", () => {
-		const op = Opcode.Code.PUSH1;
-		Opcode.pushBytes.call(op);
+		const op = Opcode.PUSH1;
+		Opcode.pushBytes(op);
 	}),
 );
 results.push(
 	benchmark("pushOpcode.call - 1", () => {
-		Opcode.pushOpcode.call(1);
+		Opcode.pushOpcode(1);
 	}),
 );
 
@@ -335,29 +335,29 @@ console.log(
 console.log("--- Position Operations ---");
 results.push(
 	benchmark("getDupPosition - DUP1", () =>
-		Opcode.getDupPosition(Opcode.Code.DUP1),
+		Opcode.dupPosition(Opcode.DUP1),
 	),
 );
 results.push(
 	benchmark("getDupPosition - DUP16", () =>
-		Opcode.getDupPosition(Opcode.Code.DUP16),
+		Opcode.dupPosition(Opcode.DUP16),
 	),
 );
 results.push(
 	benchmark("getSwapPosition - SWAP1", () =>
-		Opcode.getSwapPosition(Opcode.Code.SWAP1),
+		Opcode.swapPosition(Opcode.SWAP1),
 	),
 );
 results.push(
 	benchmark("getSwapPosition - SWAP16", () =>
-		Opcode.getSwapPosition(Opcode.Code.SWAP16),
+		Opcode.swapPosition(Opcode.SWAP16),
 	),
 );
 results.push(
-	benchmark("getLogTopics - LOG1", () => Opcode.getLogTopics(Opcode.Code.LOG1)),
+	benchmark("getLogTopics - LOG1", () => Opcode.logTopics(Opcode.LOG1)),
 );
 results.push(
-	benchmark("getLogTopics - LOG4", () => Opcode.getLogTopics(Opcode.Code.LOG4)),
+	benchmark("getLogTopics - LOG4", () => Opcode.logTopics(Opcode.LOG4)),
 );
 
 console.log(
@@ -373,20 +373,20 @@ console.log(
 console.log("\n--- Position Operations (this: pattern) ---");
 results.push(
 	benchmark("dupPosition.call - DUP1", () => {
-		const op = Opcode.Code.DUP1;
-		Opcode.dupPosition.call(op);
+		const op = Opcode.DUP1;
+		Opcode.dupPosition(op);
 	}),
 );
 results.push(
 	benchmark("swapPosition.call - SWAP1", () => {
-		const op = Opcode.Code.SWAP1;
-		Opcode.swapPosition.call(op);
+		const op = Opcode.SWAP1;
+		Opcode.swapPosition(op);
 	}),
 );
 results.push(
 	benchmark("logTopics.call - LOG1", () => {
-		const op = Opcode.Code.LOG1;
-		Opcode.logTopics.call(op);
+		const op = Opcode.LOG1;
+		Opcode.logTopics(op);
 	}),
 );
 
@@ -416,17 +416,17 @@ console.log(
 console.log("--- Parse Bytecode ---");
 results.push(
 	benchmark("parseBytecode - simple (5 bytes)", () =>
-		Opcode.parseBytecode(simpleBytecode),
+		Opcode.parse(simpleBytecode),
 	),
 );
 results.push(
 	benchmark("parseBytecode - complex (46 bytes)", () =>
-		Opcode.parseBytecode(complexBytecode),
+		Opcode.parse(complexBytecode),
 	),
 );
 results.push(
 	benchmark("parseBytecode - jump (5 bytes)", () =>
-		Opcode.parseBytecode(jumpBytecode),
+		Opcode.parse(jumpBytecode),
 	),
 );
 
@@ -443,7 +443,7 @@ console.log(
 console.log("\n--- Parse Bytecode (this: pattern) ---");
 results.push(
 	benchmark("parse.call - simple", () => {
-		Opcode.parse.call(simpleBytecode);
+		Opcode.parse(simpleBytecode);
 	}),
 );
 
@@ -472,35 +472,35 @@ console.log(
 
 const simpleInst: Opcode.Instruction = {
 	offset: 0,
-	opcode: Opcode.Code.ADD,
+	opcode: Opcode.ADD,
 };
 
 const pushInst: Opcode.Instruction = {
 	offset: 10,
-	opcode: Opcode.Code.PUSH1,
+	opcode: Opcode.PUSH1,
 	immediate: new Uint8Array([0x42]),
 };
 
 const push32Inst: Opcode.Instruction = {
 	offset: 0,
-	opcode: Opcode.Code.PUSH32,
+	opcode: Opcode.PUSH32,
 	immediate: new Uint8Array(32).fill(0xff),
 };
 
 console.log("--- Format Instruction ---");
 results.push(
 	benchmark("formatInstruction - simple", () =>
-		Opcode.formatInstruction(simpleInst),
+		Opcode.format(simpleInst),
 	),
 );
 results.push(
 	benchmark("formatInstruction - PUSH1", () =>
-		Opcode.formatInstruction(pushInst),
+		Opcode.format(pushInst),
 	),
 );
 results.push(
 	benchmark("formatInstruction - PUSH32", () =>
-		Opcode.formatInstruction(push32Inst),
+		Opcode.format(push32Inst),
 	),
 );
 
@@ -517,7 +517,7 @@ console.log(
 console.log("\n--- Format Instruction (this: pattern) ---");
 results.push(
 	benchmark("format.call - simple", () => {
-		Opcode.format.call(simpleInst);
+		Opcode.format(simpleInst);
 	}),
 );
 
@@ -565,12 +565,12 @@ console.log(
 console.log("--- Jump Destination Analysis ---");
 results.push(
 	benchmark("findJumpDests - jump bytecode", () =>
-		Opcode.findJumpDests(jumpBytecode),
+		Opcode.jumpDests(jumpBytecode),
 	),
 );
 results.push(
 	benchmark("findJumpDests - complex", () =>
-		Opcode.findJumpDests(complexBytecode),
+		Opcode.jumpDests(complexBytecode),
 	),
 );
 results.push(
@@ -590,12 +590,12 @@ console.log(
 console.log("\n--- Jump Destination Analysis (this: pattern) ---");
 results.push(
 	benchmark("jumpDests.call", () => {
-		Opcode.jumpDests.call(jumpBytecode);
+		Opcode.jumpDests(jumpBytecode);
 	}),
 );
 results.push(
 	benchmark("validJumpDest.call", () => {
-		Opcode.validJumpDest.call(jumpBytecode, 0);
+		Opcode.isValidJumpDest(jumpBytecode, 0);
 	}),
 );
 
@@ -625,10 +625,10 @@ console.log(
 console.log("--- Gas Cost Lookup ---");
 results.push(
 	benchmark("Gas cost - simple sequence", () => {
-		const instructions = Opcode.parseBytecode(simpleBytecode);
+		const instructions = Opcode.parse(simpleBytecode);
 		let totalGas = 0;
 		for (const inst of instructions) {
-			const info = Opcode.getInfo(inst.opcode);
+			const info = Opcode.info(inst.opcode);
 			if (info) {
 				totalGas += info.gasCost;
 			}
@@ -638,10 +638,10 @@ results.push(
 
 results.push(
 	benchmark("Gas cost - complex sequence", () => {
-		const instructions = Opcode.parseBytecode(complexBytecode);
+		const instructions = Opcode.parse(complexBytecode);
 		let totalGas = 0;
 		for (const inst of instructions) {
-			const info = Opcode.getInfo(inst.opcode);
+			const info = Opcode.info(inst.opcode);
 			if (info) {
 				totalGas += info.gasCost;
 			}
@@ -675,10 +675,10 @@ console.log(
 console.log("--- Stack Requirements Analysis ---");
 results.push(
 	benchmark("Stack analysis - simple sequence", () => {
-		const instructions = Opcode.parseBytecode(simpleBytecode);
+		const instructions = Opcode.parse(simpleBytecode);
 		let stackSize = 0;
 		for (const inst of instructions) {
-			const info = Opcode.getInfo(inst.opcode);
+			const info = Opcode.info(inst.opcode);
 			if (info) {
 				stackSize = stackSize - info.stackInputs + info.stackOutputs;
 			}
@@ -688,10 +688,10 @@ results.push(
 
 results.push(
 	benchmark("Stack analysis - complex sequence", () => {
-		const instructions = Opcode.parseBytecode(complexBytecode);
+		const instructions = Opcode.parse(complexBytecode);
 		let stackSize = 0;
 		for (const inst of instructions) {
-			const info = Opcode.getInfo(inst.opcode);
+			const info = Opcode.info(inst.opcode);
 			if (info) {
 				stackSize = stackSize - info.stackInputs + info.stackOutputs;
 			}

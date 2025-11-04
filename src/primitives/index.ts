@@ -43,6 +43,7 @@ export * as State from "./State/index.js";
 
 // Protocol
 export * as Blob from "./Blob/index.js";
+export * as Chain from "./Chain/index.js";
 export * as FeeMarket from "./FeeMarket/index.js";
 export * as Hardfork from "./Hardfork/index.js";
 
