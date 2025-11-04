@@ -15,21 +15,21 @@ export function encodeParams<
 	TStateMutability extends StateMutability = StateMutability,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Constructor<TStateMutability, TInputs>,
+	constructor: Constructor<TStateMutability, TInputs>,
 	args: ParametersToPrimitiveTypes<TInputs>,
 ): Uint8Array {
-	return encodeParameters(this.inputs, args);
+	return encodeParameters(constructor.inputs, args);
 }
 
 export function decodeParams<
 	TStateMutability extends StateMutability = StateMutability,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Constructor<TStateMutability, TInputs>,
+	constructor: Constructor<TStateMutability, TInputs>,
 	data: Uint8Array,
 ): ParametersToPrimitiveTypes<TInputs> {
 	return decodeParameters(
-		this.inputs,
+		constructor.inputs,
 		data,
 	) as ParametersToPrimitiveTypes<TInputs>;
 }

@@ -95,11 +95,11 @@ function encodeValue(
 		if (typeof addr === "string") {
 			const addressValue = Address.fromHex(addr);
 			return {
-				encoded: Address.toAbiEncoded.call(addressValue),
+				encoded: Address.toAbiEncoded(addressValue),
 				isDynamic: false,
 			};
 		}
-		return { encoded: Address.toAbiEncoded.call(addr), isDynamic: false };
+		return { encoded: Address.toAbiEncoded(addr), isDynamic: false };
 	}
 
 	if (type === "bool") {
@@ -249,7 +249,7 @@ function decodeValue(
 		}
 		const slice = data.slice(offset, offset + 32);
 		const addr = Address.fromAbiEncoded(slice);
-		const hex = Address.toHex.call(addr);
+		const hex = Address.toHex(addr);
 		return { value: hex, newOffset: offset + 32 };
 	}
 

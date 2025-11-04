@@ -18,45 +18,45 @@ export type Receive = {
 
 export type Item = Function | Event | Error | Constructor | Fallback | Receive;
 
-export function format(this: Item): string {
-	if (!("name" in this)) {
-		return this.type;
+export function format(item: Item): string {
+	if (!("name" in item)) {
+		return item.type;
 	}
 
 	const inputs =
-		"inputs" in this
-			? this.inputs
+		"inputs" in item
+			? item.inputs
 					.map((p) => `${p.type}${p.name ? ` ${p.name}` : ""}`)
 					.join(", ")
 			: "";
 
-	let result = `${this.type} ${this.name}(${inputs})`;
+	let result = `${item.type} ${item.name}(${inputs})`;
 
-	if (this.type === "function" && this.outputs.length > 0) {
-		const outputs = this.outputs.map((p) => p.type).join(", ");
+	if (item.type === "function" && item.outputs.length > 0) {
+		const outputs = item.outputs.map((p) => p.type).join(", ");
 		result += ` returns (${outputs})`;
 	}
 
-	if ("stateMutability" in this && this.stateMutability !== "nonpayable") {
-		result += ` ${this.stateMutability}`;
+	if ("stateMutability" in item && item.stateMutability !== "nonpayable") {
+		result += ` ${item.stateMutability}`;
 	}
 
 	return result;
 }
 
-export function formatWithArgs(this: Item, args: readonly unknown[]): string {
-	if (!("name" in this) || !("inputs" in this)) {
-		return format.call(this);
+export function formatWithArgs(item: Item, args: readonly unknown[]): string {
+	if (!("name" in item) || !("inputs" in item)) {
+		return format(item);
 	}
 
 	const formattedArgs = args
 		.map((arg, i) => {
-			void this.inputs[i];
+			void item.inputs[i];
 			return String(arg);
 		})
 		.join(", ");
 
-	return `${this.name}(${formattedArgs})`;
+	return `${item.name}(${formattedArgs})`;
 }
 
 export function getItem<

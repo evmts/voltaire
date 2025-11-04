@@ -36,7 +36,7 @@ describe("Abi.Function.getSignature", () => {
 			outputs: [{ type: "bool", name: "" }],
 		} as const satisfies AbiFunction;
 
-		expect(Abi.Function.getSignature.call(transferFunc)).toBe(
+		expect(Abi.Function.getSignature(transferFunc)).toBe(
 			"transfer(address,uint256)",
 		);
 	});
@@ -50,7 +50,7 @@ describe("Abi.Function.getSignature", () => {
 			outputs: [],
 		} as const satisfies AbiFunction;
 
-		expect(Abi.Function.getSignature.call(func)).toBe("example()");
+		expect(Abi.Function.getSignature(func)).toBe("example()");
 	});
 
 	it("handles complex tuples", () => {
@@ -71,7 +71,7 @@ describe("Abi.Function.getSignature", () => {
 			outputs: [],
 		} as const satisfies AbiFunction;
 
-		expect(Abi.Function.getSignature.call(func)).toBe("swap(tuple)");
+		expect(Abi.Function.getSignature(func)).toBe("swap(tuple)");
 	});
 });
 
@@ -87,7 +87,7 @@ describe("Abi.Event.getSignature", () => {
 			],
 		} as const satisfies AbiEvent;
 
-		expect(Abi.Event.getSignature.call(event)).toBe(
+		expect(Abi.Event.getSignature(event)).toBe(
 			"Transfer(address,address,uint256)",
 		);
 	});
@@ -104,7 +104,7 @@ describe("Abi.Error.getSignature", () => {
 			],
 		} as const satisfies AbiError;
 
-		expect(Abi.Error.getSignature.call(error)).toBe(
+		expect(Abi.Error.getSignature(error)).toBe(
 			"InsufficientBalance(uint256,uint256)",
 		);
 	});
@@ -127,7 +127,7 @@ describe("Abi.Function.getSelector", () => {
 			outputs: [],
 		} as const satisfies AbiFunction;
 
-		const selector = Abi.Function.getSelector.call(func);
+		const selector = Abi.Function.getSelector(func);
 		expect(selector).toBeInstanceOf(Uint8Array);
 		expect(selector.length).toBe(4);
 		// transfer(address,uint256) = 0xa9059cbb
@@ -143,7 +143,7 @@ describe("Abi.Function.getSelector", () => {
 			outputs: [],
 		} as const satisfies AbiFunction;
 
-		const selector = Abi.Function.getSelector.call(func);
+		const selector = Abi.Function.getSelector(func);
 		expect(selector).toBeInstanceOf(Uint8Array);
 		expect(selector.length).toBe(4);
 	});
@@ -161,7 +161,7 @@ describe("Abi.Event.getSelector", () => {
 			],
 		} as const satisfies AbiEvent;
 
-		const selector = Abi.Event.getSelector.call(event);
+		const selector = Abi.Event.getSelector(event);
 		expect(selector).toBeInstanceOf(Uint8Array);
 		expect(selector.length).toBe(32);
 		// Transfer(address,address,uint256) = 0xddf252ad...
@@ -180,7 +180,7 @@ describe("Abi.Event.getSelector", () => {
 			inputs: [],
 		} as const satisfies AbiEvent;
 
-		const selector = Abi.Event.getSelector.call(event);
+		const selector = Abi.Event.getSelector(event);
 		expect(selector).toBeInstanceOf(Uint8Array);
 		expect(selector.length).toBe(32);
 	});
@@ -197,7 +197,7 @@ describe("Abi.Error.getSelector", () => {
 			],
 		} as const satisfies AbiError;
 
-		const selector = Abi.Error.getSelector.call(error);
+		const selector = Abi.Error.getSelector(error);
 		expect(selector).toBeInstanceOf(Uint8Array);
 		expect(selector.length).toBe(4);
 	});
@@ -209,7 +209,7 @@ describe("Abi.Error.getSelector", () => {
 			inputs: [],
 		} as const satisfies AbiError;
 
-		const selector = Abi.Error.getSelector.call(error);
+		const selector = Abi.Error.getSelector(error);
 		expect(selector).toBeInstanceOf(Uint8Array);
 		expect(selector.length).toBe(4);
 	});
@@ -232,7 +232,7 @@ describe("Abi.Item.format", () => {
 			outputs: [{ type: "bool", name: "" }],
 		} as const satisfies AbiFunction;
 
-		const formatted = Abi.Item.format.call(func);
+		const formatted = Abi.Item.format(func);
 		expect(formatted).toBe(
 			"function transfer(address to, uint256 amount) returns (bool)",
 		);
@@ -247,7 +247,7 @@ describe("Abi.Item.format", () => {
 			outputs: [],
 		} as const satisfies AbiFunction;
 
-		const formatted = Abi.Item.format.call(func);
+		const formatted = Abi.Item.format(func);
 		expect(formatted).toBe("function burn(uint256 amount)");
 	});
 
@@ -260,7 +260,7 @@ describe("Abi.Item.format", () => {
 			outputs: [{ type: "uint256", name: "" }],
 		} as const satisfies AbiFunction;
 
-		const formatted = Abi.Item.format.call(func);
+		const formatted = Abi.Item.format(func);
 		expect(formatted).toBe(
 			"function balanceOf(address account) returns (uint256) view",
 		);
@@ -277,7 +277,7 @@ describe("Abi.Item.format", () => {
 			],
 		} as const satisfies AbiEvent;
 
-		const formatted = Abi.Item.format.call(event);
+		const formatted = Abi.Item.format(event);
 		expect(formatted).toBe(
 			"event Transfer(address from, address to, uint256 value)",
 		);
@@ -293,7 +293,7 @@ describe("Abi.Item.format", () => {
 			],
 		} as const satisfies AbiError;
 
-		const formatted = Abi.Item.format.call(error);
+		const formatted = Abi.Item.format(error);
 		expect(formatted).toBe(
 			"error InsufficientBalance(uint256 available, uint256 required)",
 		);
@@ -305,7 +305,7 @@ describe("Abi.Item.format", () => {
 			stateMutability: "payable",
 		} as const satisfies Abi.Fallback;
 
-		const formatted = Abi.Item.format.call(fallback);
+		const formatted = Abi.Item.format(fallback);
 		expect(formatted).toBe("fallback");
 	});
 
@@ -315,7 +315,7 @@ describe("Abi.Item.format", () => {
 			stateMutability: "payable",
 		} as const satisfies Abi.Receive;
 
-		const formatted = Abi.Item.format.call(receive);
+		const formatted = Abi.Item.format(receive);
 		expect(formatted).toBe("receive");
 	});
 });
@@ -333,7 +333,7 @@ describe("Abi.Item.formatWithArgs", () => {
 			outputs: [],
 		} as const satisfies AbiFunction;
 
-		const formatted = Abi.Item.formatWithArgs.call(func, [
+		const formatted = Abi.Item.formatWithArgs(func, [
 			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 			1000000000000000000n,
 		]);
@@ -351,7 +351,7 @@ describe("Abi.Item.formatWithArgs", () => {
 			outputs: [{ type: "uint256", name: "" }],
 		} as const satisfies AbiFunction;
 
-		const formatted = Abi.Item.formatWithArgs.call(func, []);
+		const formatted = Abi.Item.formatWithArgs(func, []);
 		expect(formatted).toBe("totalSupply()");
 	});
 
@@ -366,7 +366,7 @@ describe("Abi.Item.formatWithArgs", () => {
 			],
 		} as const satisfies AbiEvent;
 
-		const formatted = Abi.Item.formatWithArgs.call(event, [
+		const formatted = Abi.Item.formatWithArgs(event, [
 			"0x0000000000000000000000000000000000000000",
 			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 			1000n,
@@ -393,7 +393,7 @@ describe("Abi.Function encoding/decoding", () => {
 	} as const satisfies AbiFunction;
 
 	it("encodeParams encodes calldata with selector", () => {
-		const encoded = Abi.Function.encodeParams.call(func, [
+		const encoded = Abi.Function.encodeParams(func, [
 			"0x0000000000000000000000000000000000000000" as Address,
 			100n,
 		]);
@@ -404,11 +404,11 @@ describe("Abi.Function encoding/decoding", () => {
 	});
 
 	it("decodeParams decodes calldata", () => {
-		const encoded = Abi.Function.encodeParams.call(func, [
+		const encoded = Abi.Function.encodeParams(func, [
 			"0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
 			1000n,
 		]);
-		const decoded = Abi.Function.decodeParams.call(func, encoded);
+		const decoded = Abi.Function.decodeParams(func, encoded);
 		expect(decoded).toEqual([
 			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			1000n,
@@ -416,15 +416,15 @@ describe("Abi.Function encoding/decoding", () => {
 	});
 
 	it("encodeResult encodes return values", () => {
-		const encoded = Abi.Function.encodeResult.call(func, [true]);
+		const encoded = Abi.Function.encodeResult(func, [true]);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBe(32);
 		expect(encoded[31]).toBe(1);
 	});
 
 	it("decodeResult decodes return values", () => {
-		const encoded = Abi.Function.encodeResult.call(func, [true]);
-		const decoded = Abi.Function.decodeResult.call(func, encoded);
+		const encoded = Abi.Function.encodeResult(func, [true]);
+		const decoded = Abi.Function.decodeResult(func, encoded);
 		expect(decoded).toEqual([true]);
 	});
 });
@@ -441,7 +441,7 @@ describe("Abi.Event encoding/decoding", () => {
 	} as const satisfies AbiEvent;
 
 	it("encodeTopics encodes indexed parameters", () => {
-		const topics = Abi.Event.encodeTopics.call(event, {
+		const topics = Abi.Event.encodeTopics(event, {
 			from: "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address,
 		});
 		expect(topics.length).toBe(3); // topic0 + 2 indexed params
@@ -454,10 +454,10 @@ describe("Abi.Event encoding/decoding", () => {
 		const from = "0x742d35cc6634c0532925a3b844bc9e7595f251e3" as Address;
 		const to = "0x0000000000000000000000000000000000000000" as Address;
 
-		const topics = Abi.Event.encodeTopics.call(event, { from, to });
+		const topics = Abi.Event.encodeTopics(event, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
-		const decoded = Abi.Event.decodeLog.call(event, data, topics as any);
+		const decoded = Abi.Event.decodeLog(event, data, topics as any);
 		expect(decoded.from).toBe(from);
 		expect(decoded.to).toBe(to);
 		expect(decoded.value).toBe(value);
@@ -475,14 +475,14 @@ describe("Abi.Error encoding/decoding", () => {
 	} as const satisfies AbiError;
 
 	it("encodeParams encodes error data with selector", () => {
-		const encoded = Abi.Error.encodeParams.call(error, [100n, 200n]);
+		const encoded = Abi.Error.encodeParams(error, [100n, 200n]);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBe(68); // 4 bytes selector + 64 bytes params
 	});
 
 	it("decodeParams decodes error data", () => {
-		const encoded = Abi.Error.encodeParams.call(error, [100n, 200n]);
-		const decoded = Abi.Error.decodeParams.call(error, encoded);
+		const encoded = Abi.Error.encodeParams(error, [100n, 200n]);
+		const decoded = Abi.Error.decodeParams(error, encoded);
 		expect(decoded).toEqual([100n, 200n]);
 	});
 });
@@ -495,14 +495,14 @@ describe("Abi.Constructor encoding/decoding", () => {
 	} as const satisfies Abi.Constructor;
 
 	it("encodeParams encodes constructor data", () => {
-		const encoded = Abi.Constructor.encodeParams.call(constructor, [1000n]);
+		const encoded = Abi.Constructor.encodeParams(constructor, [1000n]);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 		expect(encoded.length).toBe(32); // 32 bytes param
 	});
 
 	it("decodeParams decodes constructor data", () => {
-		const encoded = Abi.Constructor.encodeParams.call(constructor, [1000n]);
-		const decoded = Abi.Constructor.decodeParams.call(constructor, encoded);
+		const encoded = Abi.Constructor.encodeParams(constructor, [1000n]);
+		const decoded = Abi.Constructor.decodeParams(constructor, encoded);
 		expect(decoded).toEqual([1000n]);
 	});
 });
@@ -722,7 +722,7 @@ describe("Abi.parseLogs", () => {
 		const to = "0x0000000000000000000000000000000000000000" as Address;
 		const value = 1000n;
 
-		const topics = Abi.Event.encodeTopics.call(event, { from, to });
+		const topics = Abi.Event.encodeTopics(event, { from, to });
 		const data = Abi.encodeParameters([{ type: "uint256" }], [value]);
 
 		const logs = [{ topics: topics as any, data }];

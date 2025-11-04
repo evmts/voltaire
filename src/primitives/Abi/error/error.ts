@@ -16,8 +16,8 @@ export type Error<
 export function getSelector<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
->(this: Error<TName, TInputs>): Uint8Array {
-	const signature = getSignature.call(this);
+>(error: Error<TName, TInputs>): Uint8Array {
+	const signature = getSignature(error);
 	const hash = Hash.keccak256String(signature);
 	return hash.slice(0, 4);
 }
@@ -25,20 +25,20 @@ export function getSelector<
 export function getSignature<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
->(this: Error<TName, TInputs>): string {
-	const inputs = this.inputs.map((p) => p.type).join(",");
-	return `${this.name}(${inputs})`;
+>(error: Error<TName, TInputs>): string {
+	const inputs = error.inputs.map((p) => p.type).join(",");
+	return `${error.name}(${inputs})`;
 }
 
 export function encodeParams<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Error<TName, TInputs>,
+	error: Error<TName, TInputs>,
 	args: ParametersToPrimitiveTypes<TInputs>,
 ): Uint8Array {
-	const selector = getSelector.call(this);
-	const encoded = encodeParameters(this.inputs, args);
+	const selector = getSelector(error);
+	const encoded = encodeParameters(error.inputs, args);
 	const result = new Uint8Array(selector.length + encoded.length);
 	result.set(selector, 0);
 	result.set(encoded, selector.length);
@@ -49,14 +49,14 @@ export function decodeParams<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Error<TName, TInputs>,
+	error: Error<TName, TInputs>,
 	data: Uint8Array,
 ): ParametersToPrimitiveTypes<TInputs> {
 	if (data.length < 4) {
 		throw new AbiDecodingError("Data too short for error selector");
 	}
 	const selector = data.slice(0, 4);
-	const expectedSelector = getSelector.call(this);
+	const expectedSelector = getSelector(error);
 	for (let i = 0; i < 4; i++) {
 		const selByte = selector[i];
 		const expByte = expectedSelector[i];
@@ -64,7 +64,7 @@ export function decodeParams<
 			throw new AbiInvalidSelectorError("Error selector mismatch");
 		}
 	}
-	return decodeParameters(this.inputs, data.slice(4)) as any;
+	return decodeParameters(error.inputs, data.slice(4)) as any;
 }
 
 export type ExtractNames<TAbi extends readonly Item[]> = Extract<

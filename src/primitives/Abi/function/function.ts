@@ -1,4 +1,8 @@
 import * as Hash from "../../Hash/index.js";
+import {
+	decodeParameters,
+	encodeParameters,
+} from "../Encoding.js";
 import type { Item } from "../Item.js";
 import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
 import type { StateMutability } from "./statemutability.js";
@@ -42,8 +46,8 @@ export function getSelector<
 	TStateMutability extends StateMutability = StateMutability,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 	TOutputs extends readonly Parameter[] = readonly Parameter[],
->(this: Function<TName, TStateMutability, TInputs, TOutputs>): Uint8Array {
-	const signature = getSignature.call(this);
+>(fn: Function<TName, TStateMutability, TInputs, TOutputs>): Uint8Array {
+	const signature = getSignature(fn);
 	const hash = Hash.keccak256String(signature);
 	return hash.slice(0, 4);
 }
@@ -53,9 +57,9 @@ export function getSignature<
 	TStateMutability extends StateMutability = StateMutability,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 	TOutputs extends readonly Parameter[] = readonly Parameter[],
->(this: Function<TName, TStateMutability, TInputs, TOutputs>): string {
-	const inputs = this.inputs.map((p) => p.type).join(",");
-	return `${this.name}(${inputs})`;
+>(fn: Function<TName, TStateMutability, TInputs, TOutputs>): string {
+	const inputs = fn.inputs.map((p) => p.type).join(",");
+	return `${fn.name}(${inputs})`;
 }
 
 export function encodeParams<
@@ -64,12 +68,11 @@ export function encodeParams<
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 	TOutputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Function<TName, TStateMutability, TInputs, TOutputs>,
+	fn: Function<TName, TStateMutability, TInputs, TOutputs>,
 	args: ParametersToPrimitiveTypes<TInputs>,
 ): Uint8Array {
-	const { encodeParameters } = require("../Encoding.js");
-	const selector = getSelector.call(this);
-	const encoded = encodeParameters(this.inputs, args);
+	const selector = getSelector(fn);
+	const encoded = encodeParameters(fn.inputs, args);
 	const result = new Uint8Array(selector.length + encoded.length);
 	result.set(selector, 0);
 	result.set(encoded, selector.length);
@@ -82,15 +85,14 @@ export function decodeParams<
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 	TOutputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Function<TName, TStateMutability, TInputs, TOutputs>,
+	fn: Function<TName, TStateMutability, TInputs, TOutputs>,
 	data: Uint8Array,
 ): ParametersToPrimitiveTypes<TInputs> {
-	const { decodeParameters } = require("../Encoding.js");
 	if (data.length < 4) {
 		throw new FunctionDecodingError("Data too short for function selector");
 	}
 	const selector = data.slice(0, 4);
-	const expectedSelector = getSelector.call(this);
+	const expectedSelector = getSelector(fn);
 	for (let i = 0; i < 4; i++) {
 		const selByte = selector[i];
 		const expByte = expectedSelector[i];
@@ -98,7 +100,7 @@ export function decodeParams<
 			throw new FunctionInvalidSelectorError();
 		}
 	}
-	return decodeParameters(this.inputs, data.slice(4)) as any;
+	return decodeParameters(fn.inputs, data.slice(4)) as any;
 }
 
 export function encodeResult<
@@ -107,11 +109,10 @@ export function encodeResult<
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 	TOutputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Function<TName, TStateMutability, TInputs, TOutputs>,
+	fn: Function<TName, TStateMutability, TInputs, TOutputs>,
 	values: ParametersToPrimitiveTypes<TOutputs>,
 ): Uint8Array {
-	const { encodeParameters } = require("../Encoding.js");
-	return encodeParameters(this.outputs, values);
+	return encodeParameters(fn.outputs, values);
 }
 
 export function decodeResult<
@@ -120,11 +121,10 @@ export function decodeResult<
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 	TOutputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Function<TName, TStateMutability, TInputs, TOutputs>,
+	fn: Function<TName, TStateMutability, TInputs, TOutputs>,
 	data: Uint8Array,
 ): ParametersToPrimitiveTypes<TOutputs> {
-	const { decodeParameters } = require("../Encoding.js");
-	return decodeParameters(this.outputs, data) as any;
+	return decodeParameters(fn.outputs, data) as any;
 }
 
 export type ExtractNames<TAbi extends readonly Item[]> = Extract<

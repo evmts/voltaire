@@ -62,7 +62,7 @@ describe("Abi.getFunctionSelector (Pure TS)", () => {
 					outputs: [] as const,
 				};
 
-				const selector = Abi.Function.getSelector.call(func);
+				const selector = Abi.Function.getSelector(func);
 				expect(selector).toBeInstanceOf(Uint8Array);
 				expect(selector.length).toBe(4);
 
@@ -92,7 +92,7 @@ describe("Abi.getEventSelector (Pure TS)", () => {
 					: [];
 				const event = { type: "event" as const, name, inputs };
 
-				const selector = Abi.Event.getSelector.call(event);
+				const selector = Abi.Event.getSelector(event);
 				expect(selector).toBeInstanceOf(Uint8Array);
 				expect(selector.length).toBe(32);
 
@@ -426,7 +426,7 @@ describe.skip("WASM Integration Tests (Advanced - Future)", () => {
 			outputs: [] as const,
 		};
 
-		expect(calldata.slice(0, 4)).toEqual(Abi.Function.getSelector.call(func));
+		expect(calldata.slice(0, 4)).toEqual(Abi.Function.getSelector(func));
 
 		const decoded = wasmAbi.decodeFunctionDataWasm(
 			transferSig,

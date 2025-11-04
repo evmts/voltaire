@@ -23,33 +23,33 @@ export type Event<
 export function getSelector<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
->(this: Event<TName, TInputs>): HashType {
-	const signature = getSignature.call(this);
+>(event: Event<TName, TInputs>): HashType {
+	const signature = getSignature(event);
 	return Hash.keccak256String(signature);
 }
 
 export function getSignature<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
->(this: Event<TName, TInputs>): string {
-	const inputs = this.inputs.map((p) => p.type).join(",");
-	return `${this.name}(${inputs})`;
+>(event: Event<TName, TInputs>): string {
+	const inputs = event.inputs.map((p) => p.type).join(",");
+	return `${event.name}(${inputs})`;
 }
 
 export function encodeTopics<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Event<TName, TInputs>,
+	event: Event<TName, TInputs>,
 	args: Partial<ParametersToObject<TInputs>>,
 ): (HashType | null)[] {
 	const topics: (HashType | null)[] = [];
 
-	if (!this.anonymous) {
-		topics.push(getSelector.call(this));
+	if (!event.anonymous) {
+		topics.push(getSelector(event));
 	}
 
-	for (const param of this.inputs) {
+	for (const param of event.inputs) {
 		if (!param.indexed) continue;
 
 		const value = param.name ? (args as any)[param.name] : undefined;
@@ -74,13 +74,13 @@ export function decodeLog<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
 >(
-	this: Event<TName, TInputs>,
+	event: Event<TName, TInputs>,
 	data: Uint8Array,
 	topics: readonly HashType[],
 ): ParametersToObject<TInputs> {
 	let topicIndex = 0;
 
-	if (!this.anonymous) {
+	if (!event.anonymous) {
 		if (topics.length === 0) {
 			throw new AbiDecodingError("Missing topic0 for non-anonymous event");
 		}
@@ -88,7 +88,7 @@ export function decodeLog<
 		if (!topic0) {
 			throw new AbiDecodingError("Missing topic0 for non-anonymous event");
 		}
-		const expectedSelector = getSelector.call(this);
+		const expectedSelector = getSelector(event);
 		for (let i = 0; i < 32; i++) {
 			const t0Byte = topic0[i];
 			const expByte = expectedSelector[i];
@@ -102,7 +102,7 @@ export function decodeLog<
 	const result: any = {};
 	const nonIndexedParams: Parameter[] = [];
 
-	for (const param of this.inputs) {
+	for (const param of event.inputs) {
 		if (param.indexed) {
 			if (topicIndex >= topics.length) {
 				throw new AbiDecodingError(
