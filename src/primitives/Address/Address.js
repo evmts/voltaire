@@ -80,8 +80,6 @@ export {
  * Factory function for creating Address instances
  *
  * @type {AddressConstructor}
- * @param {number | bigint | string | Uint8Array} value
- * @returns {BrandedAddress}
  */
 export function Address(value) {
 	return from(value);
