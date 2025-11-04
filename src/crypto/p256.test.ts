@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import * as Hash from "../primitives/Hash/Hash.js";
+import { Hash } from "../primitives/Hash/index.js";
 import { P256 } from "./p256.js";
 
 describe("P256", () => {
