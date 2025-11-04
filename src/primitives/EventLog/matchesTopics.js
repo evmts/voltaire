@@ -1,13 +1,18 @@
-import { Hash, type BrandedHash } from "../Hash/index.js";
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('../Hash/index.js').Hash} Hash
+ * @typedef {import('../Hash/index.js').BrandedHash} BrandedHash
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ */
+
 import { hashEquals } from "./utils.js";
 
 /**
  * Check if log matches topic filter
  *
- * @param log Event log to check
- * @param filterTopics Topic filter array
- * @returns True if log matches topic filter
+ * @template {BrandedEventLog} T
+ * @param {T} log - Event log to check
+ * @param {readonly (Hash | Hash[] | null)[]} filterTopics - Topic filter array
+ * @returns {boolean} True if log matches topic filter
  *
  * @example
  * ```typescript
@@ -16,10 +21,7 @@ import { hashEquals } from "./utils.js";
  * const matches2 = log.matchesTopics([topic0, null, topic2]);
  * ```
  */
-export function matchesTopics<T extends BrandedEventLog>(
-	log: T,
-	filterTopics: readonly (Hash | Hash[] | null)[],
-): boolean {
+export function matchesTopics(log, filterTopics) {
 	for (let i = 0; i < filterTopics.length; i++) {
 		const filterTopic = filterTopics[i];
 		if (filterTopic === null) {
@@ -30,12 +32,12 @@ export function matchesTopics<T extends BrandedEventLog>(
 			return false;
 		}
 
-		const logTopic = log.topics[i]!;
+		const logTopic = log.topics[i];
 
 		// Handle array of possible topics
 		if (Array.isArray(filterTopic)) {
 			let anyMatch = false;
-			for (const possibleTopic of filterTopic as BrandedHash[]) {
+			for (const possibleTopic of filterTopic) {
 				if (hashEquals(logTopic, possibleTopic)) {
 					anyMatch = true;
 					break;
@@ -46,7 +48,7 @@ export function matchesTopics<T extends BrandedEventLog>(
 			}
 		} else {
 			// Single topic - must match exactly
-			if (!hashEquals(logTopic, filterTopic as BrandedHash)) {
+			if (!hashEquals(logTopic, filterTopic)) {
 				return false;
 			}
 		}

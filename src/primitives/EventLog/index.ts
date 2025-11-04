@@ -1,8 +1,8 @@
 // Export factory function
-export { EventLog } from "./EventLog.factory.js";
+export { EventLog } from "./EventLog.js";
 
 // Export all methods
-export * from "./EventLog.factory.js";
+export * from "./EventLog.js";
 
 // Export type definitions
 export type * from "./EventLog.ts";

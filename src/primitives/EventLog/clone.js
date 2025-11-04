@@ -1,10 +1,13 @@
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ */
 
 /**
  * Clone event log with deep copy of topics and data
  *
- * @param log Event log
- * @returns Cloned log
+ * @template {BrandedEventLog} T
+ * @param {T} log - Event log
+ * @returns {T} Cloned log
  *
  * @example
  * ```typescript
@@ -13,10 +16,10 @@ import type { BrandedEventLog } from "./BrandedEventLog.js";
  * const cloned2 = log.clone();
  * ```
  */
-export function clone<T extends BrandedEventLog>(log: T): T {
+export function clone(log) {
 	return {
 		...log,
 		topics: [...log.topics],
 		data: new Uint8Array(log.data),
-	} as T;
+	};
 }

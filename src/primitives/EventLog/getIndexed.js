@@ -1,12 +1,16 @@
-import { Hash, type BrandedHash } from "../Hash/index.js";
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('../Hash/index.js').Hash} Hash
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ */
+
 import { getIndexedTopics } from "./getIndexedTopics.js";
 
 /**
  * Get indexed parameters (alias for getIndexedTopics)
  *
- * @param log Event log
- * @returns Array of indexed topic hashes
+ * @template {BrandedEventLog} T
+ * @param {T} log - Event log
+ * @returns {readonly Hash[]} Array of indexed topic hashes
  *
  * @example
  * ```typescript
@@ -15,6 +19,6 @@ import { getIndexedTopics } from "./getIndexedTopics.js";
  * const indexed2 = log.getIndexed();
  * ```
  */
-export function getIndexed<T extends BrandedEventLog>(log: T): readonly Hash[] {
+export function getIndexed(log) {
 	return getIndexedTopics(log);
 }

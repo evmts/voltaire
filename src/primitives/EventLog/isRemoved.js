@@ -1,10 +1,13 @@
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ */
 
 /**
  * Check if log was removed
  *
- * @param log Event log
- * @returns True if log was removed
+ * @template {BrandedEventLog} T
+ * @param {T} log - Event log
+ * @returns {boolean} True if log was removed
  *
  * @example
  * ```typescript
@@ -13,6 +16,6 @@ import type { BrandedEventLog } from "./BrandedEventLog.js";
  * const removed2 = log.isRemoved();
  * ```
  */
-export function isRemoved<T extends BrandedEventLog>(log: T): boolean {
+export function isRemoved(log) {
 	return log.removed === true;
 }

@@ -1,4 +1,8 @@
-import type { BrandedEventLog, Filter } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ * @typedef {import('./BrandedEventLog.js').Filter} Filter
+ */
+
 import { matchesAddress } from "./matchesAddress.js";
 import { matchesTopics } from "./matchesTopics.js";
 import { hashEquals } from "./utils.js";
@@ -6,9 +10,10 @@ import { hashEquals } from "./utils.js";
 /**
  * Check if log matches complete filter
  *
- * @param log Event log to check
- * @param filter Complete filter object
- * @returns True if log matches all filter criteria
+ * @template {BrandedEventLog} T
+ * @param {T} log - Event log to check
+ * @param {Filter} filter - Complete filter object
+ * @returns {boolean} True if log matches all filter criteria
  *
  * @example
  * ```typescript
@@ -22,7 +27,7 @@ import { hashEquals } from "./utils.js";
  * const matches2 = log.matchesFilter({ address: "0x..." as Address });
  * ```
  */
-export function matchesFilter<T extends BrandedEventLog>(log: T, filter: Filter): boolean {
+export function matchesFilter(log, filter) {
 	// Check address filter
 	if (filter.address !== undefined) {
 		if (!matchesAddress(log, filter.address)) {

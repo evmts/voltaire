@@ -1,11 +1,17 @@
-import type { BrandedAddress } from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+/**
+ * @typedef {import('../Address/index.js').BrandedAddress} BrandedAddress
+ * @typedef {import('../Hash/index.js').Hash} Hash
+ * @typedef {import('../Hash/index.js').BrandedHash} BrandedHash
+ */
 
 /**
  * Compare two hashes for equality
  * @internal
+ * @param {BrandedHash} a
+ * @param {Hash} b
+ * @returns {boolean}
  */
-export function hashEquals(a: BrandedHash, b: Hash): boolean {
+export function hashEquals(a, b) {
 	if (a.length !== b.length) {
 		return false;
 	}
@@ -20,8 +26,11 @@ export function hashEquals(a: BrandedHash, b: Hash): boolean {
 /**
  * Compare two addresses for equality (byte-wise comparison)
  * @internal
+ * @param {BrandedAddress} a
+ * @param {BrandedAddress} b
+ * @returns {boolean}
  */
-export function addressEquals(a: BrandedAddress, b: BrandedAddress): boolean {
+export function addressEquals(a, b) {
 	if (a.length !== b.length) {
 		return false;
 	}

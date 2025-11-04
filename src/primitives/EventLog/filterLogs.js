@@ -1,12 +1,17 @@
-import type { BrandedEventLog, Filter } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ * @typedef {import('./BrandedEventLog.js').Filter} Filter
+ */
+
 import { matchesFilter } from "./matchesFilter.js";
 
 /**
  * Filter array of logs by filter criteria
  *
- * @param logs Array of event logs
- * @param filter Filter criteria
- * @returns Filtered array of logs
+ * @template {BrandedEventLog} T
+ * @param {readonly T[]} logs - Array of event logs
+ * @param {Filter} filter - Filter criteria
+ * @returns {T[]} Filtered array of logs
  *
  * @example
  * ```typescript
@@ -17,9 +22,6 @@ import { matchesFilter } from "./matchesFilter.js";
  * });
  * ```
  */
-export function filterLogs<T extends BrandedEventLog>(
-	logs: readonly T[],
-	filter: Filter,
-): T[] {
+export function filterLogs(logs, filter) {
 	return logs.filter((log) => matchesFilter(log, filter));
 }

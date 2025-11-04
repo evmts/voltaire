@@ -1,13 +1,17 @@
-import type { BrandedAddress } from "../Address/index.js";
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('../Address/index.js').BrandedAddress} BrandedAddress
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ */
+
 import { addressEquals } from "./utils.js";
 
 /**
  * Check if log matches address filter
  *
- * @param log Event log to check
- * @param filterAddress Address or array of addresses to match
- * @returns True if log matches address filter
+ * @template {BrandedEventLog} T
+ * @param {T} log - Event log to check
+ * @param {BrandedAddress | BrandedAddress[]} filterAddress - Address or array of addresses to match
+ * @returns {boolean} True if log matches address filter
  *
  * @example
  * ```typescript
@@ -16,10 +20,7 @@ import { addressEquals } from "./utils.js";
  * const matches2 = log.matchesAddress("0x..." as Address);
  * ```
  */
-export function matchesAddress<T extends BrandedEventLog>(
-	log: T,
-	filterAddress: Address | BrandedAddress[],
-): boolean {
+export function matchesAddress(log, filterAddress) {
 	if (Array.isArray(filterAddress)) {
 		return filterAddress.some((addr) => addressEquals(log.address, addr));
 	}

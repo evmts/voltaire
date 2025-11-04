@@ -1,11 +1,14 @@
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ */
+
 import { create } from "./create.js";
 
 /**
  * Create EventLog from parameters
  *
- * @param params - Event log parameters
- * @returns EventLog
+ * @param {Parameters<typeof create>[0]} params - Event log parameters
+ * @returns {BrandedEventLog}
  *
  * @example
  * ```typescript
@@ -16,6 +19,6 @@ import { create } from "./create.js";
  * });
  * ```
  */
-export function from(params: Parameters<typeof create>[0]): BrandedEventLog {
-	return create(params) as BrandedEventLog;
+export function from(params) {
+	return create(params);
 }

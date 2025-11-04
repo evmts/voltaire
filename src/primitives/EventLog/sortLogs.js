@@ -1,10 +1,13 @@
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+/**
+ * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ */
 
 /**
  * Sort logs by block number and log index
  *
- * @param logs Array of event logs
- * @returns Sorted array of logs
+ * @template {BrandedEventLog} T
+ * @param {readonly T[]} logs - Array of event logs
+ * @returns {T[]} Sorted array of logs
  *
  * @example
  * ```typescript
@@ -12,7 +15,7 @@ import type { BrandedEventLog } from "./BrandedEventLog.js";
  * const sorted = EventLog.sortLogs(logs);
  * ```
  */
-export function sortLogs<T extends BrandedEventLog>(logs: readonly T[]): T[] {
+export function sortLogs(logs) {
 	return [...logs].sort((a, b) => {
 		const blockA = a.blockNumber ?? 0n;
 		const blockB = b.blockNumber ?? 0n;
