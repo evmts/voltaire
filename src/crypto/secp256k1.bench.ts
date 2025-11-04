@@ -11,7 +11,7 @@
 
 import { bench, run } from "mitata";
 import { Hash } from "../primitives/Hash/index.js";
-import { Secp256k1 } from "./secp256k1.js";
+import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 import { writeFileSync } from "node:fs";
 import { loadWasm } from "../wasm-loader/loader.js";
@@ -75,20 +75,20 @@ bench("Noble: isValidPrivateKey", () => {
 });
 
 bench("Noble: Signature.toBytes", () => {
-	Secp256k1.Signature.toBytes.call(TEST_SIGNATURE);
+	Secp256k1.Signature.toBytes(TEST_SIGNATURE);
 });
 
 bench("Noble: Signature.toCompact", () => {
-	Secp256k1.Signature.toCompact.call(TEST_SIGNATURE);
+	Secp256k1.Signature.toCompact(TEST_SIGNATURE);
 });
 
-const TEST_SIGNATURE_BYTES = Secp256k1.Signature.toBytes.call(TEST_SIGNATURE);
+const TEST_SIGNATURE_BYTES = Secp256k1.Signature.toBytes(TEST_SIGNATURE);
 bench("Noble: Signature.fromBytes", () => {
 	Secp256k1.Signature.fromBytes(TEST_SIGNATURE_BYTES);
 });
 
 const TEST_SIGNATURE_COMPACT =
-	Secp256k1.Signature.toCompact.call(TEST_SIGNATURE);
+	Secp256k1.Signature.toCompact(TEST_SIGNATURE);
 bench("Noble: Signature.fromCompact", () => {
 	Secp256k1.Signature.fromCompact(TEST_SIGNATURE_COMPACT, TEST_SIGNATURE.v);
 });

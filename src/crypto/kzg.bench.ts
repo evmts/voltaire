@@ -2,7 +2,10 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bench, run } from "mitata";
-import { Kzg } from "./kzg.js";
+import { KZG } from "./KZG/index.js";
+
+// Create alias for backwards compatibility
+const Kzg = KZG;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

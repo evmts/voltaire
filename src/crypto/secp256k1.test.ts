@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from "vitest";
 import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
-import { Secp256k1 } from "./secp256k1.js";
+import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 
@@ -496,9 +496,7 @@ for (const { name, impl } of implementations) {
 					TEST_MESSAGE_HASH,
 					TEST_PRIVATE_KEY,
 				);
-				const compact = (Secp256k1Impl.Signature.toCompact as any).call(
-					signature,
-				);
+				const compact = Secp256k1Impl.Signature.toCompact(signature);
 
 				expect(compact).toBeInstanceOf(Uint8Array);
 				expect(compact.length).toBe(64);
@@ -511,7 +509,7 @@ for (const { name, impl } of implementations) {
 					TEST_MESSAGE_HASH,
 					TEST_PRIVATE_KEY,
 				);
-				const bytes = (Secp256k1Impl.Signature.toBytes as any).call(signature);
+				const bytes = Secp256k1Impl.Signature.toBytes(signature);
 
 				expect(bytes).toBeInstanceOf(Uint8Array);
 				expect(bytes.length).toBe(65);
@@ -525,9 +523,7 @@ for (const { name, impl } of implementations) {
 					TEST_MESSAGE_HASH,
 					TEST_PRIVATE_KEY,
 				);
-				const compact = (Secp256k1Impl.Signature.toCompact as any).call(
-					signature,
-				);
+				const compact = Secp256k1Impl.Signature.toCompact(signature);
 
 				const restored = Secp256k1Impl.Signature.fromCompact(
 					compact,
@@ -544,7 +540,7 @@ for (const { name, impl } of implementations) {
 					TEST_MESSAGE_HASH,
 					TEST_PRIVATE_KEY,
 				);
-				const bytes = (Secp256k1Impl.Signature.toBytes as any).call(signature);
+				const bytes = Secp256k1Impl.Signature.toBytes(signature);
 
 				const restored = Secp256k1Impl.Signature.fromBytes(bytes);
 
@@ -607,7 +603,7 @@ for (const { name, impl } of implementations) {
 					TEST_MESSAGE_HASH,
 					TEST_PRIVATE_KEY,
 				);
-				const bytes = (Secp256k1Impl.Signature.toBytes as any).call(signature);
+				const bytes = Secp256k1Impl.Signature.toBytes(signature);
 				const restored = Secp256k1Impl.Signature.fromBytes(bytes);
 
 				const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
@@ -625,9 +621,7 @@ for (const { name, impl } of implementations) {
 					TEST_MESSAGE_HASH,
 					TEST_PRIVATE_KEY,
 				);
-				const compact = (Secp256k1Impl.Signature.toCompact as any).call(
-					signature,
-				);
+				const compact = Secp256k1Impl.Signature.toCompact(signature);
 				const restored = Secp256k1Impl.Signature.fromCompact(
 					compact,
 					signature.v,

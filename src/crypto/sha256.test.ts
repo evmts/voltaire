@@ -13,7 +13,7 @@
 
 import { beforeAll, describe, expect, test } from "vitest";
 import * as loader from "../wasm-loader/loader.js";
-import { Sha256 } from "./sha256.js";
+import { SHA256 } from "./SHA256/index.js";
 import { Sha256Wasm } from "./sha256.wasm.js";
 
 // Load WASM module before running tests
@@ -23,7 +23,7 @@ beforeAll(async () => {
 
 // Test both Noble and WASM implementations
 describe.each([
-	{ name: "Sha256 (Noble)", impl: Sha256 },
+	{ name: "SHA256 (Noble)", impl: SHA256 },
 	{ name: "Sha256Wasm", impl: Sha256Wasm },
 ])("$name", ({ impl }) => {
 	describe("NIST test vectors", () => {
@@ -327,25 +327,25 @@ describe.each([
 // Cross-validation: Noble and WASM produce identical results
 describe("Cross-validation: Noble === WASM", () => {
 	test("empty string", () => {
-		const noble = Sha256.hashString("");
+		const noble = SHA256.hashString("");
 		const wasm = Sha256Wasm.hashString("");
 		expect(wasm).toEqual(noble);
 	});
 
 	test("abc", () => {
-		const noble = Sha256.hashString("abc");
+		const noble = SHA256.hashString("abc");
 		const wasm = Sha256Wasm.hashString("abc");
 		expect(wasm).toEqual(noble);
 	});
 
 	test("hello world", () => {
-		const noble = Sha256.hashString("hello world");
+		const noble = SHA256.hashString("hello world");
 		const wasm = Sha256Wasm.hashString("hello world");
 		expect(wasm).toEqual(noble);
 	});
 
 	test("quick brown fox", () => {
-		const noble = Sha256.hashString(
+		const noble = SHA256.hashString(
 			"The quick brown fox jumps over the lazy dog",
 		);
 		const wasm = Sha256Wasm.hashString(
@@ -356,20 +356,20 @@ describe("Cross-validation: Noble === WASM", () => {
 
 	test("binary data", () => {
 		const data = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
-		const noble = Sha256.hash(data);
+		const noble = SHA256.hash(data);
 		const wasm = Sha256Wasm.hash(data);
 		expect(wasm).toEqual(noble);
 	});
 
 	test("hex input", () => {
-		const noble = Sha256.hashHex("0xdeadbeef");
+		const noble = SHA256.hashHex("0xdeadbeef");
 		const wasm = Sha256Wasm.hashHex("0xdeadbeef");
 		expect(wasm).toEqual(noble);
 	});
 
 	test("large input (1KB)", () => {
 		const data = new Uint8Array(1024).fill(0xab);
-		const noble = Sha256.hash(data);
+		const noble = SHA256.hash(data);
 		const wasm = Sha256Wasm.hash(data);
 		expect(wasm).toEqual(noble);
 	});
@@ -379,7 +379,7 @@ describe("Cross-validation: Noble === WASM", () => {
 		for (let i = 0; i < data.length; i++) {
 			data[i] = i & 0xff;
 		}
-		const noble = Sha256.hash(data);
+		const noble = SHA256.hash(data);
 		const wasm = Sha256Wasm.hash(data);
 		expect(wasm).toEqual(noble);
 	});
@@ -388,7 +388,7 @@ describe("Cross-validation: Noble === WASM", () => {
 		const chunk1 = new Uint8Array([0x61, 0x62]);
 		const chunk2 = new Uint8Array([0x63]);
 
-		const nobleHasher = Sha256.create();
+		const nobleHasher = SHA256.create();
 		nobleHasher.update(chunk1);
 		nobleHasher.update(chunk2);
 		const nobleHash = nobleHasher.digest();

@@ -11,7 +11,7 @@
 
 import { beforeAll, describe, expect, test } from "bun:test";
 import { Hash } from "../primitives/Hash/index.js";
-import { Keccak256 } from "./keccak256.js";
+import { Keccak256 } from "./Keccak256/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 
 // ============================================================================

@@ -8,7 +8,7 @@ import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import * as Address from "../primitives/Address/index.js";
 import { Hash } from "../primitives/Hash/index.js";
-import { Eip712 } from "./eip712.js";
+import { EIP712, type TypedData, type TypeDefinitions } from "./EIP712/index.js";
 
 // Test data setup
 const privateKey = new Uint8Array(32);
@@ -16,7 +16,7 @@ for (let i = 0; i < 32; i++) {
 	privateKey[i] = i + 1;
 }
 
-const simpleTypedData: Eip712.TypedData = {
+const simpleTypedData: TypedData = {
 	domain: {
 		name: "TestApp",
 		version: "1",
@@ -31,7 +31,7 @@ const simpleTypedData: Eip712.TypedData = {
 	},
 };
 
-const complexTypedData: Eip712.TypedData = {
+const complexTypedData: TypedData = {
 	domain: {
 		name: "Ether Mail",
 		version: "1",
@@ -65,7 +65,7 @@ const complexTypedData: Eip712.TypedData = {
 	},
 };
 
-const permitTypedData: Eip712.TypedData = {
+const permitTypedData: TypedData = {
 	domain: {
 		name: "USD Coin",
 		version: "1",
@@ -94,19 +94,19 @@ const permitTypedData: Eip712.TypedData = {
 };
 
 // Pre-computed signature for verification benchmark
-const testSignature = Eip712.signTypedData(simpleTypedData, privateKey);
-const testAddress = Eip712.recoverAddress(testSignature, simpleTypedData);
+const testSignature = EIP712.signTypedData(simpleTypedData, privateKey);
+const testAddress = EIP712.recoverAddress(testSignature, simpleTypedData);
 
 // ============================================================================
 // Domain Operations
 // ============================================================================
 
 bench("Domain.hash - minimal", () => {
-	Eip712.Domain.hash({ name: "Test" });
+	EIP712.Domain.hash({ name: "Test" });
 });
 
 bench("Domain.hash - complete", () => {
-	Eip712.Domain.hash({
+	EIP712.Domain.hash({
 		name: "TestDomain",
 		version: "1",
 		chainId: 1n,
@@ -124,31 +124,31 @@ bench("Domain.hash - complete", () => {
 // ============================================================================
 
 bench("encodeType - simple", () => {
-	const types: Eip712.TypeDefinitions = {
+	const types: TypeDefinitions = {
 		Person: [
 			{ name: "name", type: "string" },
 			{ name: "wallet", type: "address" },
 		],
 	};
-	Eip712.encodeType("Person", types);
+	EIP712.encodeType("Person", types);
 });
 
 bench("encodeType - nested", () => {
-	Eip712.encodeType("Mail", complexTypedData.types);
+	EIP712.encodeType("Mail", complexTypedData.types);
 });
 
 bench("hashType - simple", () => {
-	const types: Eip712.TypeDefinitions = {
+	const types: TypeDefinitions = {
 		Person: [
 			{ name: "name", type: "string" },
 			{ name: "wallet", type: "address" },
 		],
 	};
-	Eip712.hashType("Person", types);
+	EIP712.hashType("Person", types);
 });
 
 bench("hashType - nested", () => {
-	Eip712.hashType("Mail", complexTypedData.types);
+	EIP712.hashType("Mail", complexTypedData.types);
 });
 
 // ============================================================================
@@ -156,25 +156,25 @@ bench("hashType - nested", () => {
 // ============================================================================
 
 bench("encodeValue - uint256", () => {
-	Eip712.encodeValue("uint256", 42n, {});
+	EIP712.encodeValue("uint256", 42n, {});
 });
 
 bench("encodeValue - address", () => {
 	const address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
-	Eip712.encodeValue("address", address, {});
+	EIP712.encodeValue("address", address, {});
 });
 
 bench("encodeValue - string", () => {
-	Eip712.encodeValue("string", "Hello, World!", {});
+	EIP712.encodeValue("string", "Hello, World!", {});
 });
 
 bench("encodeValue - bytes", () => {
 	const bytes = new Uint8Array([1, 2, 3, 4, 5]);
-	Eip712.encodeValue("bytes", bytes, {});
+	EIP712.encodeValue("bytes", bytes, {});
 });
 
 bench("encodeValue - struct", () => {
-	const types: Eip712.TypeDefinitions = {
+	const types: TypeDefinitions = {
 		Person: [
 			{ name: "name", type: "string" },
 			{ name: "wallet", type: "address" },
@@ -184,7 +184,7 @@ bench("encodeValue - struct", () => {
 		name: "Alice",
 		wallet: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
 	};
-	Eip712.encodeValue("Person", person, types);
+	EIP712.encodeValue("Person", person, types);
 });
 
 // ============================================================================
@@ -192,15 +192,15 @@ bench("encodeValue - struct", () => {
 // ============================================================================
 
 bench("hashStruct - simple", () => {
-	const types: Eip712.TypeDefinitions = {
+	const types: TypeDefinitions = {
 		Message: [{ name: "content", type: "string" }],
 	};
 	const message = { content: "Hello!" };
-	Eip712.hashStruct("Message", message, types);
+	EIP712.hashStruct("Message", message, types);
 });
 
 bench("hashStruct - complex", () => {
-	Eip712.hashStruct(
+	EIP712.hashStruct(
 		complexTypedData.primaryType,
 		complexTypedData.message,
 		complexTypedData.types,
@@ -212,15 +212,15 @@ bench("hashStruct - complex", () => {
 // ============================================================================
 
 bench("hashTypedData - simple message", () => {
-	Eip712.hashTypedData(simpleTypedData);
+	EIP712.hashTypedData(simpleTypedData);
 });
 
 bench("hashTypedData - nested types", () => {
-	Eip712.hashTypedData(complexTypedData);
+	EIP712.hashTypedData(complexTypedData);
 });
 
 bench("hashTypedData - ERC-2612 permit", () => {
-	Eip712.hashTypedData(permitTypedData);
+	EIP712.hashTypedData(permitTypedData);
 });
 
 // ============================================================================
@@ -228,15 +228,15 @@ bench("hashTypedData - ERC-2612 permit", () => {
 // ============================================================================
 
 bench("signTypedData - simple message", () => {
-	Eip712.signTypedData(simpleTypedData, privateKey);
+	EIP712.signTypedData(simpleTypedData, privateKey);
 });
 
 bench("signTypedData - nested types", () => {
-	Eip712.signTypedData(complexTypedData, privateKey);
+	EIP712.signTypedData(complexTypedData, privateKey);
 });
 
 bench("signTypedData - ERC-2612 permit", () => {
-	Eip712.signTypedData(permitTypedData, privateKey);
+	EIP712.signTypedData(permitTypedData, privateKey);
 });
 
 // ============================================================================
@@ -244,18 +244,18 @@ bench("signTypedData - ERC-2612 permit", () => {
 // ============================================================================
 
 bench("recoverAddress", () => {
-	Eip712.recoverAddress(testSignature, simpleTypedData);
+	EIP712.recoverAddress(testSignature, simpleTypedData);
 });
 
 bench("verifyTypedData - valid signature", () => {
-	Eip712.verifyTypedData(testSignature, simpleTypedData, testAddress);
+	EIP712.verifyTypedData(testSignature, simpleTypedData, testAddress);
 });
 
 bench("verifyTypedData - invalid signature", () => {
 	const wrongAddress = Address.fromHex(
 		"0x1234567890123456789012345678901234567890",
 	);
-	Eip712.verifyTypedData(testSignature, simpleTypedData, wrongAddress);
+	EIP712.verifyTypedData(testSignature, simpleTypedData, wrongAddress);
 });
 
 // ============================================================================
@@ -263,21 +263,21 @@ bench("verifyTypedData - invalid signature", () => {
 // ============================================================================
 
 bench("sign + verify (simple)", () => {
-	const sig = Eip712.signTypedData(simpleTypedData, privateKey);
-	const addr = Eip712.recoverAddress(sig, simpleTypedData);
-	Eip712.verifyTypedData(sig, simpleTypedData, addr);
+	const sig = EIP712.signTypedData(simpleTypedData, privateKey);
+	const addr = EIP712.recoverAddress(sig, simpleTypedData);
+	EIP712.verifyTypedData(sig, simpleTypedData, addr);
 });
 
 bench("sign + verify (complex)", () => {
-	const sig = Eip712.signTypedData(complexTypedData, privateKey);
-	const addr = Eip712.recoverAddress(sig, complexTypedData);
-	Eip712.verifyTypedData(sig, complexTypedData, addr);
+	const sig = EIP712.signTypedData(complexTypedData, privateKey);
+	const addr = EIP712.recoverAddress(sig, complexTypedData);
+	EIP712.verifyTypedData(sig, complexTypedData, addr);
 });
 
 bench("sign + verify (permit)", () => {
-	const sig = Eip712.signTypedData(permitTypedData, privateKey);
-	const addr = Eip712.recoverAddress(sig, permitTypedData);
-	Eip712.verifyTypedData(sig, permitTypedData, addr);
+	const sig = EIP712.signTypedData(permitTypedData, privateKey);
+	const addr = EIP712.recoverAddress(sig, permitTypedData);
+	EIP712.verifyTypedData(sig, permitTypedData, addr);
 });
 
 // ============================================================================
@@ -285,15 +285,15 @@ bench("sign + verify (permit)", () => {
 // ============================================================================
 
 bench("validate - simple", () => {
-	Eip712.validate(simpleTypedData);
+	EIP712.validate(simpleTypedData);
 });
 
 bench("validate - complex", () => {
-	Eip712.validate(complexTypedData);
+	EIP712.validate(complexTypedData);
 });
 
 bench("format", () => {
-	Eip712.format(simpleTypedData);
+	EIP712.format(simpleTypedData);
 });
 
 // ============================================================================

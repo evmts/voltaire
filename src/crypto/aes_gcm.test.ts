@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { AesGcm } from "./aes_gcm.js";
+import { AesGcm } from "./AesGcm/AesGcm.js";
 
 describe("AesGcm", () => {
 	describe("Key Generation", () => {

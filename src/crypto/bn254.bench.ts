@@ -18,7 +18,7 @@
 import fs from "fs";
 import path from "path";
 import { bench, describe } from "vitest";
-import { Bn254 } from "./bn254.js";
+import { BN254 as Bn254 } from "./BN254/BN254.js";
 
 const results: Record<string, { ops_per_sec: number; avg_time_ms: number }> =
 	{};

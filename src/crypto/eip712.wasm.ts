@@ -23,8 +23,12 @@ import {
 	Eip712Error,
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
-	type Eip712 as Eip712Types,
-} from "./eip712.js";
+	type Domain,
+	type TypedData,
+	type TypeDefinitions,
+	type TypeProperty,
+	type Message,
+} from "./EIP712/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 
@@ -45,13 +49,9 @@ export namespace Eip712Wasm {
 	// Core Types (same as Noble implementation)
 	// ==========================================================================
 
-	export type Domain = Eip712Types.Domain;
-	export type TypedData = Eip712Types.TypedData;
-	export type TypeDefinitions = Eip712Types.TypeDefinitions;
-	export type TypeProperty = Eip712Types.TypeProperty;
-	export type Message = Eip712Types.Message;
+	export type { Domain, TypedData, TypeDefinitions, TypeProperty, Message };
 	export type Signature = Secp256k1Wasm.Signature;
-	export type Types = Eip712Types.TypeDefinitions;
+	export type Types = TypeDefinitions;
 
 	// ==========================================================================
 	// Domain Operations

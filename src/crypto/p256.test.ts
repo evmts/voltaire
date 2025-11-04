@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Hash } from "../primitives/Hash/index.js";
-import { P256 } from "./p256.js";
+import { P256 } from "./P256/index.js";
 
 describe("P256", () => {
 	describe("Key Generation", () => {

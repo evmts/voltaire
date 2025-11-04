@@ -13,7 +13,7 @@ import {
 	InvalidPublicKeyError,
 	InvalidSignatureError,
 	Secp256k1Error,
-} from "./secp256k1.js";
+} from "./Secp256k1/index.js";
 
 // ============================================================================
 // Main Secp256k1Wasm Namespace

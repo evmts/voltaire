@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Bip39 } from "./bip39.js";
+import { Bip39 } from "./Bip39/index.js";
 
 describe("Bip39", () => {
 	describe("Mnemonic Generation", () => {

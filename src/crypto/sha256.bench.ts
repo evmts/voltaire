@@ -9,7 +9,7 @@
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import * as loader from "../wasm-loader/loader.js";
-import { Sha256 } from "./sha256.js";
+import { SHA256 } from "./SHA256/index.js";
 import { Sha256Wasm } from "./sha256.wasm.js";
 
 // Load WASM module before benchmarking
@@ -44,7 +44,7 @@ for (const [name, size] of Object.entries(SIZES)) {
 // ============================================================================
 
 bench("SHA256 (Noble): 4 bytes (tiny)", () => {
-	Sha256.hash(testData.tiny);
+	SHA256.hash(testData.tiny);
 });
 
 bench("SHA256 (WASM): 4 bytes (tiny)", () => {
@@ -52,7 +52,7 @@ bench("SHA256 (WASM): 4 bytes (tiny)", () => {
 });
 
 bench("SHA256 (Noble): 32 bytes (small)", () => {
-	Sha256.hash(testData.small);
+	SHA256.hash(testData.small);
 });
 
 bench("SHA256 (WASM): 32 bytes (small)", () => {
@@ -60,7 +60,7 @@ bench("SHA256 (WASM): 32 bytes (small)", () => {
 });
 
 bench("SHA256 (Noble): 256 bytes (medium)", () => {
-	Sha256.hash(testData.medium);
+	SHA256.hash(testData.medium);
 });
 
 bench("SHA256 (WASM): 256 bytes (medium)", () => {
@@ -68,7 +68,7 @@ bench("SHA256 (WASM): 256 bytes (medium)", () => {
 });
 
 bench("SHA256 (Noble): 1 KB (large)", () => {
-	Sha256.hash(testData.large);
+	SHA256.hash(testData.large);
 });
 
 bench("SHA256 (WASM): 1 KB (large)", () => {
@@ -76,7 +76,7 @@ bench("SHA256 (WASM): 1 KB (large)", () => {
 });
 
 bench("SHA256 (Noble): 64 KB (xlarge)", () => {
-	Sha256.hash(testData.xlarge);
+	SHA256.hash(testData.xlarge);
 });
 
 bench("SHA256 (WASM): 64 KB (xlarge)", () => {
@@ -84,7 +84,7 @@ bench("SHA256 (WASM): 64 KB (xlarge)", () => {
 });
 
 bench("SHA256 (Noble): 1 MB (huge)", () => {
-	Sha256.hash(testData.huge);
+	SHA256.hash(testData.huge);
 });
 
 bench("SHA256 (WASM): 1 MB (huge)", () => {
@@ -92,7 +92,7 @@ bench("SHA256 (WASM): 1 MB (huge)", () => {
 });
 
 bench("SHA256 (Noble).hashString: small text", () => {
-	Sha256.hashString("hello world");
+	SHA256.hashString("hello world");
 });
 
 bench("SHA256 (WASM).hashString: small text", () => {
@@ -100,7 +100,7 @@ bench("SHA256 (WASM).hashString: small text", () => {
 });
 
 bench("SHA256 (Noble).hashString: medium text", () => {
-	Sha256.hashString("The quick brown fox jumps over the lazy dog. ".repeat(10));
+	SHA256.hashString("The quick brown fox jumps over the lazy dog. ".repeat(10));
 });
 
 bench("SHA256 (WASM).hashString: medium text", () => {
@@ -110,7 +110,7 @@ bench("SHA256 (WASM).hashString: medium text", () => {
 });
 
 bench("SHA256 (Noble).hashHex: small hex", () => {
-	Sha256.hashHex("0xdeadbeef");
+	SHA256.hashHex("0xdeadbeef");
 });
 
 bench("SHA256 (WASM).hashHex: small hex", () => {
@@ -118,7 +118,7 @@ bench("SHA256 (WASM).hashHex: small hex", () => {
 });
 
 bench("SHA256 (Noble).hashHex: 32-byte hex", () => {
-	Sha256.hashHex(
+	SHA256.hashHex(
 		"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 	);
 });
@@ -130,7 +130,7 @@ bench("SHA256 (WASM).hashHex: 32-byte hex", () => {
 });
 
 bench("SHA256 (Noble).create (incremental): 1KB in 32-byte chunks", () => {
-	const hasher = Sha256.create();
+	const hasher = SHA256.create();
 	for (let i = 0; i < 32; i++) {
 		hasher.update(testData.small);
 	}
@@ -146,7 +146,7 @@ bench("SHA256 (WASM).create (incremental): 1KB in 32-byte chunks", () => {
 });
 
 bench("SHA256 (Noble).create (incremental): 1KB in single chunk", () => {
-	const hasher = Sha256.create();
+	const hasher = SHA256.create();
 	hasher.update(testData.large);
 	hasher.digest();
 });

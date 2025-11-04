@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { Bn254, Bn254InvalidPointError } from "./bn254.js";
+import { BN254 as Bn254, Bn254InvalidPointError } from "./BN254/BN254.js";
 // import { Bn254Wasm } from "./bn254.wasm.js";
 // import { Bn254Ark } from "./bn254.ark.js";
 

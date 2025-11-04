@@ -9,7 +9,7 @@ import { writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { bench, describe } from "vitest";
-import { Ripemd160 } from "./ripemd160.js";
+import { Ripemd160 } from "./Ripemd160/index.js";
 import { Ripemd160Wasm } from "./ripemd160.wasm.js";
 
 const __filename = fileURLToPath(import.meta.url);

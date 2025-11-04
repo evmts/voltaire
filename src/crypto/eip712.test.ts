@@ -7,12 +7,12 @@
 import { describe, expect, it } from "vitest";
 import * as Address from "../primitives/Address/index.js";
 import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
-import { Eip712 } from "./eip712.js";
+import { EIP712, type TypedData, type Domain, type TypeDefinitions, type Message } from "./EIP712/index.js";
 
-describe("Eip712", () => {
+describe("EIP712", () => {
 	describe("Domain.hash", () => {
 		it("hashes domain with all fields", () => {
-			const domain: Eip712.Domain = {
+			const domain: Domain = {
 				name: "TestDomain",
 				version: "1",
 				chainId: 1n,
@@ -24,7 +24,7 @@ describe("Eip712", () => {
 				),
 			};
 
-			const hash = Eip712.Domain.hash(domain);
+			const hash = EIP712.Domain.hash(domain);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -32,11 +32,11 @@ describe("Eip712", () => {
 		});
 
 		it("hashes domain with minimal fields", () => {
-			const domain: Eip712.Domain = {
+			const domain: Domain = {
 				name: "MinimalDomain",
 			};
 
-			const hash = Eip712.Domain.hash(domain);
+			const hash = EIP712.Domain.hash(domain);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -44,28 +44,28 @@ describe("Eip712", () => {
 		});
 
 		it("produces deterministic hashes", () => {
-			const domain: Eip712.Domain = {
+			const domain: Domain = {
 				name: "TestDomain",
 				version: "1",
 				chainId: 1n,
 			};
 
-			const hash1 = Eip712.Domain.hash(domain);
-			const hash2 = Eip712.Domain.hash(domain);
+			const hash1 = EIP712.Domain.hash(domain);
+			const hash2 = EIP712.Domain.hash(domain);
 
 			expect(Hash.equals(hash1, hash2)).toBe(true);
 		});
 
 		it("produces different hashes for different domains", () => {
-			const domain1: Eip712.Domain = {
+			const domain1: Domain = {
 				name: "Domain1",
 			};
-			const domain2: Eip712.Domain = {
+			const domain2: Domain = {
 				name: "Domain2",
 			};
 
-			const hash1 = Eip712.Domain.hash(domain1);
-			const hash2 = Eip712.Domain.hash(domain2);
+			const hash1 = EIP712.Domain.hash(domain1);
+			const hash2 = EIP712.Domain.hash(domain2);
 
 			expect(Hash.equals(hash1, hash2)).toBe(false);
 		});
@@ -73,20 +73,20 @@ describe("Eip712", () => {
 
 	describe("encodeType", () => {
 		it("encodes simple type", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "wallet", type: "address" },
 				],
 			};
 
-			const encoded = Eip712.encodeType("Person", types);
+			const encoded = EIP712.encodeType("Person", types);
 
 			expect(encoded).toBe("Person(string name,address wallet)");
 		});
 
 		it("encodes nested types in alphabetical order", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "wallet", type: "address" },
@@ -98,7 +98,7 @@ describe("Eip712", () => {
 				],
 			};
 
-			const encoded = Eip712.encodeType("Mail", types);
+			const encoded = EIP712.encodeType("Mail", types);
 
 			expect(encoded).toContain("Mail(");
 			expect(encoded).toContain("Person(");
@@ -107,13 +107,13 @@ describe("Eip712", () => {
 		});
 
 		it("throws on missing type", () => {
-			const types: Eip712.TypeDefinitions = {};
+			const types: TypeDefinitions = {};
 
-			expect(() => Eip712.encodeType("NonExistent", types)).toThrow();
+			expect(() => EIP712.encodeType("NonExistent", types)).toThrow();
 		});
 
 		it("handles multiple custom type references", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Address: [
 					{ name: "street", type: "string" },
 					{ name: "city", type: "string" },
@@ -124,7 +124,7 @@ describe("Eip712", () => {
 				],
 			};
 
-			const encoded = Eip712.encodeType("Person", types);
+			const encoded = EIP712.encodeType("Person", types);
 
 			expect(encoded).toContain("Person(");
 			expect(encoded).toContain("Address(");
@@ -133,14 +133,14 @@ describe("Eip712", () => {
 
 	describe("hashType", () => {
 		it("hashes type string", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "wallet", type: "address" },
 				],
 			};
 
-			const hash = Eip712.hashType("Person", types);
+			const hash = EIP712.hashType("Person", types);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -148,25 +148,25 @@ describe("Eip712", () => {
 		});
 
 		it("produces deterministic type hashes", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "wallet", type: "address" },
 				],
 			};
 
-			const hash1 = Eip712.hashType("Person", types);
-			const hash2 = Eip712.hashType("Person", types);
+			const hash1 = EIP712.hashType("Person", types);
+			const hash2 = EIP712.hashType("Person", types);
 
 			expect(Hash.equals(hash1, hash2)).toBe(true);
 		});
 	});
 
 	describe("encodeValue", () => {
-		const types: Eip712.TypeDefinitions = {};
+		const types: TypeDefinitions = {};
 
 		it("encodes uint256", () => {
-			const encoded = Eip712.encodeValue("uint256", 42n, types);
+			const encoded = EIP712.encodeValue("uint256", 42n, types);
 
 			expect(encoded.length).toBe(32);
 			expect(encoded[31]).toBe(42);
@@ -176,7 +176,7 @@ describe("Eip712", () => {
 			const address = Address.fromHex(
 				"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 			);
-			const encoded = Eip712.encodeValue("address", address, types);
+			const encoded = EIP712.encodeValue("address", address, types);
 
 			expect(encoded.length).toBe(32);
 			// Address should be right-aligned
@@ -184,21 +184,21 @@ describe("Eip712", () => {
 		});
 
 		it("encodes bool true", () => {
-			const encoded = Eip712.encodeValue("bool", true, types);
+			const encoded = EIP712.encodeValue("bool", true, types);
 
 			expect(encoded.length).toBe(32);
 			expect(encoded[31]).toBe(1);
 		});
 
 		it("encodes bool false", () => {
-			const encoded = Eip712.encodeValue("bool", false, types);
+			const encoded = EIP712.encodeValue("bool", false, types);
 
 			expect(encoded.length).toBe(32);
 			expect(encoded[31]).toBe(0);
 		});
 
 		it("encodes string (as hash)", () => {
-			const encoded = Eip712.encodeValue("string", "Hello, World!", types);
+			const encoded = EIP712.encodeValue("string", "Hello, World!", types);
 
 			expect(encoded.length).toBe(32);
 			// Should be keccak256 of the string
@@ -208,7 +208,7 @@ describe("Eip712", () => {
 
 		it("encodes dynamic bytes (as hash)", () => {
 			const bytes = new Uint8Array([1, 2, 3, 4]);
-			const encoded = Eip712.encodeValue("bytes", bytes, types);
+			const encoded = EIP712.encodeValue("bytes", bytes, types);
 
 			expect(encoded.length).toBe(32);
 			// Should be keccak256 of the bytes
@@ -218,7 +218,7 @@ describe("Eip712", () => {
 
 		it("encodes fixed bytes", () => {
 			const bytes = new Uint8Array([0xab, 0xcd, 0xef, 0x12]);
-			const encoded = Eip712.encodeValue("bytes4", bytes, types);
+			const encoded = EIP712.encodeValue("bytes4", bytes, types);
 
 			expect(encoded.length).toBe(32);
 			// Should be left-aligned
@@ -228,12 +228,12 @@ describe("Eip712", () => {
 		it("throws on wrong size for fixed bytes", () => {
 			const bytes = new Uint8Array([0xab, 0xcd]); // Only 2 bytes
 
-			expect(() => Eip712.encodeValue("bytes4", bytes, types)).toThrow();
+			expect(() => EIP712.encodeValue("bytes4", bytes, types)).toThrow();
 		});
 
 		it("encodes arrays", () => {
 			const arr = [1n, 2n, 3n];
-			const encoded = Eip712.encodeValue("uint256[]", arr, types);
+			const encoded = EIP712.encodeValue("uint256[]", arr, types);
 
 			expect(encoded.length).toBe(32);
 			// Should be hash of concatenated encoded elements
@@ -241,7 +241,7 @@ describe("Eip712", () => {
 		});
 
 		it("encodes custom struct", () => {
-			const typesWithStruct: Eip712.TypeDefinitions = {
+			const typesWithStruct: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "age", type: "uint256" },
@@ -253,7 +253,7 @@ describe("Eip712", () => {
 				age: 30n,
 			};
 
-			const encoded = Eip712.encodeValue("Person", person, typesWithStruct);
+			const encoded = EIP712.encodeValue("Person", person, typesWithStruct);
 
 			expect(encoded.length).toBe(32);
 			// Should be hash of struct
@@ -261,25 +261,25 @@ describe("Eip712", () => {
 		});
 
 		it("throws on unsupported type", () => {
-			expect(() => Eip712.encodeValue("unknownType", 42, types)).toThrow();
+			expect(() => EIP712.encodeValue("unknownType", 42, types)).toThrow();
 		});
 	});
 
 	describe("hashStruct", () => {
 		it("hashes simple struct", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "wallet", type: "address" },
 				],
 			};
 
-			const message: Eip712.Message = {
+			const message: Message = {
 				name: "Alice",
 				wallet: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
 			};
 
-			const hash = Eip712.hashStruct("Person", message, types);
+			const hash = EIP712.hashStruct("Person", message, types);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -287,36 +287,36 @@ describe("Eip712", () => {
 		});
 
 		it("throws on missing field", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "wallet", type: "address" },
 				],
 			};
 
-			const message: Eip712.Message = {
+			const message: Message = {
 				name: "Alice",
 				// Missing wallet field
 			};
 
-			expect(() => Eip712.hashStruct("Person", message, types)).toThrow();
+			expect(() => EIP712.hashStruct("Person", message, types)).toThrow();
 		});
 
 		it("produces deterministic hashes", () => {
-			const types: Eip712.TypeDefinitions = {
+			const types: TypeDefinitions = {
 				Person: [
 					{ name: "name", type: "string" },
 					{ name: "age", type: "uint256" },
 				],
 			};
 
-			const message: Eip712.Message = {
+			const message: Message = {
 				name: "Alice",
 				age: 30n,
 			};
 
-			const hash1 = Eip712.hashStruct("Person", message, types);
-			const hash2 = Eip712.hashStruct("Person", message, types);
+			const hash1 = EIP712.hashStruct("Person", message, types);
+			const hash2 = EIP712.hashStruct("Person", message, types);
 
 			expect(Hash.equals(hash1, hash2)).toBe(true);
 		});
@@ -324,7 +324,7 @@ describe("Eip712", () => {
 
 	describe("hashTypedData", () => {
 		it("hashes complete typed data", () => {
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -343,7 +343,7 @@ describe("Eip712", () => {
 				},
 			};
 
-			const hash = Eip712.hashTypedData(typedData);
+			const hash = EIP712.hashTypedData(typedData);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -351,7 +351,7 @@ describe("Eip712", () => {
 		});
 
 		it("produces deterministic hashes", () => {
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -366,14 +366,14 @@ describe("Eip712", () => {
 				},
 			};
 
-			const hash1 = Eip712.hashTypedData(typedData);
-			const hash2 = Eip712.hashTypedData(typedData);
+			const hash1 = EIP712.hashTypedData(typedData);
+			const hash2 = EIP712.hashTypedData(typedData);
 
 			expect(Hash.equals(hash1, hash2)).toBe(true);
 		});
 
 		it("handles nested types", () => {
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -408,7 +408,7 @@ describe("Eip712", () => {
 				},
 			};
 
-			const hash = Eip712.hashTypedData(typedData);
+			const hash = EIP712.hashTypedData(typedData);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -421,7 +421,7 @@ describe("Eip712", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[0] = 1; // Non-zero private key
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -436,7 +436,7 @@ describe("Eip712", () => {
 				},
 			};
 
-			const signature = Eip712.signTypedData(typedData, privateKey);
+			const signature = EIP712.signTypedData(typedData, privateKey);
 
 			expect(signature.r).toBeInstanceOf(Uint8Array);
 			expect(signature.r.length).toBe(32);
@@ -448,21 +448,21 @@ describe("Eip712", () => {
 
 		it("throws on invalid private key length", () => {
 			const invalidKey = new Uint8Array(16); // Wrong length
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: { name: "Test" },
 				types: { Message: [{ name: "content", type: "string" }] },
 				primaryType: "Message",
 				message: { content: "Hello" },
 			};
 
-			expect(() => Eip712.signTypedData(typedData, invalidKey)).toThrow();
+			expect(() => EIP712.signTypedData(typedData, invalidKey)).toThrow();
 		});
 
 		it("produces deterministic signatures", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[0] = 1;
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -477,8 +477,8 @@ describe("Eip712", () => {
 				},
 			};
 
-			const sig1 = Eip712.signTypedData(typedData, privateKey);
-			const sig2 = Eip712.signTypedData(typedData, privateKey);
+			const sig1 = EIP712.signTypedData(typedData, privateKey);
+			const sig2 = EIP712.signTypedData(typedData, privateKey);
 
 			expect(sig1.v).toBe(sig2.v);
 			expect(sig1.r).toEqual(sig2.r);
@@ -491,7 +491,7 @@ describe("Eip712", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[0] = 1;
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -506,8 +506,8 @@ describe("Eip712", () => {
 				},
 			};
 
-			const signature = Eip712.signTypedData(typedData, privateKey);
-			const recovered = Eip712.recoverAddress(signature, typedData);
+			const signature = EIP712.signTypedData(typedData, privateKey);
+			const recovered = EIP712.recoverAddress(signature, typedData);
 
 			expect(recovered).toBeInstanceOf(Uint8Array);
 			expect(recovered.length).toBe(20);
@@ -519,7 +519,7 @@ describe("Eip712", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[0] = 1;
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -534,9 +534,9 @@ describe("Eip712", () => {
 				},
 			};
 
-			const signature = Eip712.signTypedData(typedData, privateKey);
-			const address = Eip712.recoverAddress(signature, typedData);
-			const valid = Eip712.verifyTypedData(signature, typedData, address);
+			const signature = EIP712.signTypedData(typedData, privateKey);
+			const address = EIP712.recoverAddress(signature, typedData);
+			const valid = EIP712.verifyTypedData(signature, typedData, address);
 
 			expect(valid).toBe(true);
 		});
@@ -547,7 +547,7 @@ describe("Eip712", () => {
 			const privateKey2 = new Uint8Array(32);
 			privateKey2[0] = 2;
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -562,12 +562,12 @@ describe("Eip712", () => {
 				},
 			};
 
-			const signature = Eip712.signTypedData(typedData, privateKey1);
-			const wrongAddress = Eip712.recoverAddress(
-				Eip712.signTypedData(typedData, privateKey2),
+			const signature = EIP712.signTypedData(typedData, privateKey1);
+			const wrongAddress = EIP712.recoverAddress(
+				EIP712.signTypedData(typedData, privateKey2),
 				typedData,
 			);
-			const valid = Eip712.verifyTypedData(signature, typedData, wrongAddress);
+			const valid = EIP712.verifyTypedData(signature, typedData, wrongAddress);
 
 			expect(valid).toBe(false);
 		});
@@ -576,7 +576,7 @@ describe("Eip712", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[0] = 1;
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -591,14 +591,14 @@ describe("Eip712", () => {
 				},
 			};
 
-			const signature = Eip712.signTypedData(typedData, privateKey);
-			const address = Eip712.recoverAddress(signature, typedData);
+			const signature = EIP712.signTypedData(typedData, privateKey);
+			const address = EIP712.recoverAddress(signature, typedData);
 
 			// Tamper with message
 			const tamperedData = { ...typedData };
 			tamperedData.message = { content: "Goodbye!" };
 
-			const valid = Eip712.verifyTypedData(signature, tamperedData, address);
+			const valid = EIP712.verifyTypedData(signature, tamperedData, address);
 
 			expect(valid).toBe(false);
 		});
@@ -607,7 +607,7 @@ describe("Eip712", () => {
 	describe("EIP-712 test vectors", () => {
 		it("handles EIP-712 example from spec", () => {
 			// Based on https://eips.ethereum.org/EIPS/eip-712
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "Ether Mail",
 					version: "1",
@@ -645,7 +645,7 @@ describe("Eip712", () => {
 				},
 			};
 
-			const hash = Eip712.hashTypedData(typedData);
+			const hash = EIP712.hashTypedData(typedData);
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
@@ -655,7 +655,7 @@ describe("Eip712", () => {
 
 	describe("validate", () => {
 		it("validates valid typed data", () => {
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: { name: "Test" },
 				types: {
 					Message: [{ name: "content", type: "string" }],
@@ -664,11 +664,11 @@ describe("Eip712", () => {
 				message: { content: "Hello" },
 			};
 
-			expect(() => Eip712.validate(typedData)).not.toThrow();
+			expect(() => EIP712.validate(typedData)).not.toThrow();
 		});
 
 		it("throws on missing primary type", () => {
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: { name: "Test" },
 				types: {
 					Message: [{ name: "content", type: "string" }],
@@ -677,11 +677,11 @@ describe("Eip712", () => {
 				message: { content: "Hello" },
 			};
 
-			expect(() => Eip712.validate(typedData)).toThrow();
+			expect(() => EIP712.validate(typedData)).toThrow();
 		});
 
 		it("handles circular type references", () => {
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: { name: "Test" },
 				types: {
 					TypeA: [
@@ -700,13 +700,13 @@ describe("Eip712", () => {
 				},
 			};
 
-			expect(() => Eip712.validate(typedData)).not.toThrow();
+			expect(() => EIP712.validate(typedData)).not.toThrow();
 		});
 	});
 
 	describe("format", () => {
 		it("formats typed data for display", () => {
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "TestApp",
 					version: "1",
@@ -721,7 +721,7 @@ describe("Eip712", () => {
 				},
 			};
 
-			const formatted = Eip712.format(typedData);
+			const formatted = EIP712.format(typedData);
 
 			expect(formatted).toContain("EIP-712 Typed Data");
 			expect(formatted).toContain("Domain:");
@@ -737,20 +737,20 @@ describe("Eip712", () => {
 			privateKey[0] = 1;
 
 			// Derive owner address from private key by signing a test message
-			const testMessage: Eip712.TypedData = {
+			const testMessage: TypedData = {
 				domain: { name: "Test" },
 				types: { Test: [{ name: "value", type: "uint256" }] },
 				primaryType: "Test",
 				message: { value: 1n },
 			};
-			const testSig = Eip712.signTypedData(testMessage, privateKey);
-			const owner = Eip712.recoverAddress(testSig, testMessage);
+			const testSig = EIP712.signTypedData(testMessage, privateKey);
+			const owner = EIP712.recoverAddress(testSig, testMessage);
 
 			const spender = Address.fromHex(
 				"0x1234567890123456789012345678901234567890",
 			);
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "USD Coin",
 					version: "1",
@@ -778,8 +778,8 @@ describe("Eip712", () => {
 				},
 			};
 
-			const signature = Eip712.signTypedData(typedData, privateKey);
-			const valid = Eip712.verifyTypedData(signature, typedData, owner);
+			const signature = EIP712.signTypedData(typedData, privateKey);
+			const valid = EIP712.verifyTypedData(signature, typedData, owner);
 
 			expect(valid).toBe(true);
 		});
@@ -791,16 +791,16 @@ describe("Eip712", () => {
 			privateKey[0] = 1;
 
 			// Derive from address from private key by signing a test message
-			const testMessage: Eip712.TypedData = {
+			const testMessage: TypedData = {
 				domain: { name: "Test" },
 				types: { Test: [{ name: "value", type: "uint256" }] },
 				primaryType: "Test",
 				message: { value: 1n },
 			};
-			const testSig = Eip712.signTypedData(testMessage, privateKey);
-			const from = Eip712.recoverAddress(testSig, testMessage);
+			const testSig = EIP712.signTypedData(testMessage, privateKey);
+			const from = EIP712.recoverAddress(testSig, testMessage);
 
-			const typedData: Eip712.TypedData = {
+			const typedData: TypedData = {
 				domain: {
 					name: "MinimalForwarder",
 					version: "0.0.1",
@@ -830,8 +830,8 @@ describe("Eip712", () => {
 				},
 			};
 
-			const signature = Eip712.signTypedData(typedData, privateKey);
-			const valid = Eip712.verifyTypedData(signature, typedData, from);
+			const signature = EIP712.signTypedData(typedData, privateKey);
+			const valid = EIP712.verifyTypedData(signature, typedData, from);
 
 			expect(valid).toBe(true);
 		});

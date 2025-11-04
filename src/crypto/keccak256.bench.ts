@@ -4,7 +4,7 @@
  */
 
 import { bench, run } from "mitata";
-import { Keccak256 } from "./keccak256.js";
+import { Keccak256 } from "./Keccak256/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 import { keccak256 as ethersKeccak256 } from "ethers";
 import { keccak256 as viemKeccak256 } from "viem";

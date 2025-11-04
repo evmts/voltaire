@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { X25519 } from "./x25519.js";
+import { X25519 } from "./X25519/X25519.js";
 
 describe("X25519", () => {
 	describe("Key Derivation", () => {

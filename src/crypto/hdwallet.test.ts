@@ -1,12 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { Bip39 } from "./bip39.js";
-import { HDWallet } from "./hdwallet.js";
+import { HDWallet } from "./HDWallet/index.js";
+import type { BrandedExtendedKey } from "./HDWallet/index.js";
 
 describe("HDWallet", () => {
 	const testMnemonic =
 		"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 	let testSeed: Uint8Array;
-	let rootKey: HDWallet.ExtendedKey;
+	let rootKey: BrandedExtendedKey;
 
 	// Setup
 	testSeed = Bip39.mnemonicToSeedSync(testMnemonic);

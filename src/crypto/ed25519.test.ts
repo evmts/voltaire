@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Ed25519 } from "./ed25519.js";
+import { Ed25519 } from "./Ed25519/index.js";
 
 describe("Ed25519", () => {
 	describe("Keypair Generation", () => {

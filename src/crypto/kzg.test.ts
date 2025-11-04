@@ -5,11 +5,14 @@ import {
 	BYTES_PER_FIELD_ELEMENT,
 	BYTES_PER_PROOF,
 	FIELD_ELEMENTS_PER_BLOB,
-	Kzg,
+	KZG,
 	KzgError,
 	KzgInvalidBlobError,
 	KzgNotInitializedError,
-} from "./kzg.js";
+} from "./KZG/index.js";
+
+// Create alias for backwards compatibility with existing tests
+const Kzg = KZG;
 
 describe("Kzg Constants", () => {
 	it("should have correct EIP-4844 constants", () => {
