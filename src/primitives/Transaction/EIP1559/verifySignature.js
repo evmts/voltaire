@@ -1,11 +1,18 @@
 import { Secp256k1 } from "../../../crypto/secp256k1.js";
-import type { BrandedTransactionEIP1559 } from "./BrandedTransactionEIP1559.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
  * Verify transaction signature
+ *
+ * @param {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} tx - Signed transaction
+ * @returns {boolean} True if signature is valid
+ *
+ * @example
+ * ```typescript
+ * const isValid = verifySignature(tx);
+ * ```
  */
-export function verifySignature(tx: BrandedTransactionEIP1559): boolean {
+export function verifySignature(tx) {
 	try {
 		const signingHash = getSigningHash(tx);
 		const v = 27 + tx.yParity;
@@ -13,11 +20,7 @@ export function verifySignature(tx: BrandedTransactionEIP1559): boolean {
 			{ r: tx.r, s: tx.s, v },
 			signingHash,
 		);
-		return Secp256k1.verify(
-			{ r: tx.r, s: tx.s, v },
-			signingHash,
-			publicKey,
-		);
+		return Secp256k1.verify({ r: tx.r, s: tx.s, v }, signingHash, publicKey);
 	} catch {
 		return false;
 	}

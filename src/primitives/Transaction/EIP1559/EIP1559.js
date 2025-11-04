@@ -1,13 +1,6 @@
-/**
- * EIP-1559 Transaction (Type 2) Factory
- *
- * Factory function pattern with both static and instance methods.
- */
+// @ts-nocheck
+export * from "./BrandedTransactionEIP1559.js";
 
-// Import types
-import type { TransactionEIP1559Constructor } from "./TransactionEIP1559Constructor.js";
-
-// Import all method functions
 import { Type } from "../types.js";
 import { deserialize } from "./deserialize.js";
 import { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
@@ -17,10 +10,7 @@ import { hash } from "./hash.js";
 import { serialize } from "./serialize.js";
 import { verifySignature } from "./verifySignature.js";
 
-// Re-export types
-export * from "./BrandedTransactionEIP1559.js";
-
-// Re-export method functions for tree-shaking
+// Export individual functions
 export {
 	deserialize,
 	getEffectiveGasPrice,
@@ -32,9 +22,16 @@ export {
 };
 
 /**
- * Factory function for creating EIP-1559 Transaction instances
+ * @typedef {import('./BrandedTransactionEIP1559.js').BrandedTransactionEIP1559} BrandedTransactionEIP1559
+ * @typedef {import('./TransactionEIP1559Constructor.js').TransactionEIP1559Constructor} TransactionEIP1559Constructor
  */
-export const TransactionEIP1559 = ((tx) => {
+
+/**
+ * Factory function for creating EIP-1559 Transaction instances
+ *
+ * @type {TransactionEIP1559Constructor}
+ */
+export function TransactionEIP1559(tx) {
 	return {
 		__tag: "TransactionEIP1559",
 		type: Type.EIP1559,
@@ -51,13 +48,14 @@ export const TransactionEIP1559 = ((tx) => {
 		r: tx.r,
 		s: tx.s,
 	};
-}) as TransactionEIP1559Constructor;
-
-// Initialize prototype
-TransactionEIP1559.prototype = {} as any;
+}
 
 // Attach static methods
-TransactionEIP1559.deserialize = deserialize;
+TransactionEIP1559.deserialize = function (bytes) {
+	return deserialize(bytes);
+};
+TransactionEIP1559.deserialize.prototype = TransactionEIP1559.prototype;
+
 TransactionEIP1559.serialize = serialize;
 TransactionEIP1559.hash = hash;
 TransactionEIP1559.getSigningHash = getSigningHash;
@@ -66,9 +64,15 @@ TransactionEIP1559.verifySignature = verifySignature;
 TransactionEIP1559.getEffectiveGasPrice = getEffectiveGasPrice;
 
 // Bind prototype methods using Function.prototype.call.bind
-TransactionEIP1559.prototype.serialize = Function.prototype.call.bind(serialize) as any;
-TransactionEIP1559.prototype.hash = Function.prototype.call.bind(hash) as any;
-TransactionEIP1559.prototype.getSigningHash = Function.prototype.call.bind(getSigningHash) as any;
-TransactionEIP1559.prototype.getSender = Function.prototype.call.bind(getSender) as any;
-TransactionEIP1559.prototype.verifySignature = Function.prototype.call.bind(verifySignature) as any;
-TransactionEIP1559.prototype.getEffectiveGasPrice = Function.prototype.call.bind(getEffectiveGasPrice) as any;
+TransactionEIP1559.prototype = {};
+TransactionEIP1559.prototype.serialize =
+	Function.prototype.call.bind(serialize);
+TransactionEIP1559.prototype.hash = Function.prototype.call.bind(hash);
+TransactionEIP1559.prototype.getSigningHash =
+	Function.prototype.call.bind(getSigningHash);
+TransactionEIP1559.prototype.getSender = Function.prototype.call.bind(getSender);
+TransactionEIP1559.prototype.verifySignature =
+	Function.prototype.call.bind(verifySignature);
+TransactionEIP1559.prototype.getEffectiveGasPrice = Function.prototype.call.bind(
+	getEffectiveGasPrice,
+);
