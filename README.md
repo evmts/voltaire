@@ -64,7 +64,7 @@ This library uses a **data-first architecture** with branded primitive types and
 import { Address, Hash, Uint, Keccak256 } from "@tevm/voltaire";
 
 // Address operations
-const addr = Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const checksum = Address.toChecksumHex.call(addr);
 const isZero = Address.isZero.call(addr);
 
@@ -101,7 +101,8 @@ const sum = Uint.plus.call(a, b);
 
 **Creation:**
 
-- `Address.from(value)` — Universal constructor (hex/bytes/number/bigint)
+- `new Address(value)` — Universal constructor (hex/bytes/number/bigint)
+- `Address.from(value)` — Alias for constructor
 - `Address.fromHex(hex)` — From hex string (with or without 0x)
 - `Address.fromBytes(bytes)` — From 20-byte Uint8Array
 - `Address.fromNumber(n)` — From number (left-padded to 20 bytes)
@@ -143,7 +144,7 @@ const sum = Uint.plus.call(a, b);
 ```typescript
 import { Address } from "@tevm/voltaire";
 
-const addr = Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const checksum = Address.toChecksumHex.call(addr);
 const isValid = Address.isValid(checksum); // true
 const create2 = Address.calculateCreate2Address.call(
