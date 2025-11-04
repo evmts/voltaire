@@ -1,20 +1,19 @@
-import type { BrandedHash } from "./BrandedHash.js";
 import { SIZE } from "./BrandedHash.js";
 
 /**
  * Create Hash from hex string
  *
- * @param hex - Hex string with optional 0x prefix
- * @returns Hash bytes
- * @throws If hex is invalid or wrong length
+ * @param {string} hex - Hex string with optional 0x prefix
+ * @returns {import('./BrandedHash.js').BrandedHash} Hash bytes
+ * @throws {Error} If hex is invalid or wrong length
  *
  * @example
- * ```typescript
+ * ```js
  * const hash = Hash.fromHex('0x1234...');
  * const hash2 = Hash.fromHex('1234...'); // 0x prefix optional
  * ```
  */
-export function fromHex(hex: string): BrandedHash {
+export function fromHex(hex) {
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (normalized.length !== SIZE * 2) {
 		throw new Error(
@@ -28,5 +27,5 @@ export function fromHex(hex: string): BrandedHash {
 	for (let i = 0; i < SIZE; i++) {
 		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
 	}
-	return bytes as BrandedHash;
+	return /** @type {import('./BrandedHash.ts').BrandedHash} */ (bytes);
 }

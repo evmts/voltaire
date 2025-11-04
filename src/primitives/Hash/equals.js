@@ -1,29 +1,27 @@
-import type { BrandedHash } from "./BrandedHash.js";
-
 /**
  * Compare two hashes for equality
  *
  * Uses constant-time comparison to prevent timing attacks.
  *
- * @param hash - First hash
- * @param other - Hash to compare with
- * @returns True if hashes are equal
+ * @param {import('./BrandedHash.js').BrandedHash} hash - First hash
+ * @param {import('./BrandedHash.js').BrandedHash} other - Hash to compare with
+ * @returns {boolean} True if hashes are equal
  *
  * @example
- * ```typescript
+ * ```js
  * const hash1 = Hash('0x1234...');
  * const hash2 = Hash('0x1234...');
  * const same = Hash.equals(hash1, hash2); // true
  * const same2 = hash1.equals(hash2); // true
  * ```
  */
-export function equals(hash: BrandedHash, other: BrandedHash): boolean {
+export function equals(hash, other) {
 	if (hash.length !== other.length) {
 		return false;
 	}
 	let result = 0;
 	for (let i = 0; i < hash.length; i++) {
-		result |= hash[i]! ^ other[i]!;
+		result |= hash[i] ^ other[i];
 	}
 	return result === 0;
 }

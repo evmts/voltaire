@@ -1,18 +1,18 @@
-import type { BrandedHash } from "./BrandedHash.js";
 import { keccak256 } from "./keccak256.js";
 
 /**
  * Hash hex string with Keccak-256
  *
- * @param hex - Hex string to hash (with or without 0x prefix)
- * @returns 32-byte hash
+ * @param {string} hex - Hex string to hash (with or without 0x prefix)
+ * @returns {import('./BrandedHash.js').BrandedHash} 32-byte hash
+ * @throws {Error} If hex string has odd length
  *
  * @example
- * ```typescript
+ * ```js
  * const hash = Hash.keccak256Hex('0x1234...');
  * ```
  */
-export function keccak256Hex(hex: string): BrandedHash {
+export function keccak256Hex(hex) {
 	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 	if (normalized.length % 2 !== 0) {
 		throw new Error("Hex string must have even length");

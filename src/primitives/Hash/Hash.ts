@@ -9,28 +9,5 @@
 export type { BrandedHash } from "./BrandedHash.js";
 export { hashSymbol, SIZE, ZERO } from "./BrandedHash.js";
 
-// Re-export factory function and all methods
+// Re-export factory function
 export type { HashConstructor } from "./HashConstructor.js";
-export { Hash } from "./Hash.factory.js";
-
-// Re-export all methods for tree-shaking
-export {
-	assert,
-	clone,
-	equals,
-	format,
-	from,
-	fromBytes,
-	fromHex,
-	isHash,
-	isValidHex,
-	isZero,
-	keccak256,
-	keccak256Hex,
-	keccak256String,
-	random,
-	slice,
-	toBytes,
-	toHex,
-	toString,
-} from "./Hash.factory.js";

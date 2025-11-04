@@ -1,18 +1,16 @@
-import type { BrandedHash } from "./BrandedHash.js";
-
 /**
  * Convert Hash to raw bytes
  *
- * @param hash - Hash to convert
- * @returns Copy of hash bytes
+ * @param {import('./BrandedHash.js').BrandedHash} hash - Hash to convert
+ * @returns {Uint8Array} Copy of hash bytes
  *
  * @example
- * ```typescript
+ * ```js
  * const hash = Hash('0x1234...');
  * const bytes = Hash.toBytes(hash);
  * const bytes2 = hash.toBytes(); // Same result
  * ```
  */
-export function toBytes(hash: BrandedHash): Uint8Array {
+export function toBytes(hash) {
 	return new Uint8Array(hash);
 }
