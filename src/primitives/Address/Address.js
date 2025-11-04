@@ -85,14 +85,41 @@ export function Address(value) {
 	return from(value);
 }
 
-// Static methods
-Address.fromBase64 = Uint8Array.fromBase64;
-Address.fromHex = fromHex;
-Address.from = from;
-Address.fromBytes = fromBytes;
-Address.fromNumber = fromNumber;
-Address.fromPublicKey = fromPublicKey;
-Address.fromAbiEncoded = fromAbiEncoded;
+// Static methods - wrapped to set prototype without mutating originals
+Address.fromBase64 = function (value) {
+	return Uint8Array.fromBase64(value);
+};
+Address.fromBase64.prototype = Address.prototype;
+
+Address.fromHex = function (value) {
+	return fromHex(value);
+};
+Address.fromHex.prototype = Address.prototype;
+
+Address.from = function (value) {
+	return from(value);
+};
+Address.from.prototype = Address.prototype;
+
+Address.fromBytes = function (value) {
+	return fromBytes(value);
+};
+Address.fromBytes.prototype = Address.prototype;
+
+Address.fromNumber = function (value) {
+	return fromNumber(value);
+};
+Address.fromNumber.prototype = Address.prototype;
+
+Address.fromPublicKey = function (value) {
+	return fromPublicKey(value);
+};
+Address.fromPublicKey.prototype = Address.prototype;
+
+Address.fromAbiEncoded = function (value) {
+	return fromAbiEncoded(value);
+};
+Address.fromAbiEncoded.prototype = Address.prototype;
 Address.toHex = toHex;
 Address.toChecksummed = toChecksummed;
 Address.toLowercase = toLowercase;
