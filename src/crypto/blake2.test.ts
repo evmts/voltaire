@@ -5,14 +5,16 @@
  * Tests both Noble (Blake2) and WASM (Blake2Wasm) implementations
  */
 
-import { describe, expect, it, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import * as loader from "../wasm-loader/loader.js";
 import { Blake2 } from "./blake2.js";
 import { Blake2Wasm } from "./blake2.wasm.js";
-import * as loader from "../wasm-loader/loader.js";
 
 // Load WASM module before tests
 beforeAll(async () => {
-	await loader.loadWasm(new URL("../../zig-out/lib/primitives.wasm", import.meta.url));
+	await loader.loadWasm(
+		new URL("../../zig-out/lib/primitives.wasm", import.meta.url),
+	);
 });
 
 describe("Blake2 (Noble)", () => {

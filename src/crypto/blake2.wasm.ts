@@ -33,7 +33,8 @@ export namespace Blake2Wasm {
 			);
 		}
 
-		const input = typeof data === "string" ? new TextEncoder().encode(data) : data;
+		const input =
+			typeof data === "string" ? new TextEncoder().encode(data) : data;
 		return loader.blake2Hash(input, outputLength);
 	}
 

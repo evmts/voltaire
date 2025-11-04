@@ -3,10 +3,10 @@
  * Provides wallet/signer functionality using WASM Zig primitives
  */
 
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { Address } from "../../primitives/Address/Address.wasm.js";
-import { Keccak256Wasm } from "../keccak256.wasm.js";
 import * as primitives from "../../wasm-loader/loader.js";
-import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { Keccak256Wasm } from "../keccak256.wasm.js";
 
 export interface PrivateKeySignerOptions {
 	privateKey: string | Uint8Array;
@@ -70,8 +70,11 @@ export class PrivateKeySignerImpl implements Signer {
 
 	async signMessage(message: string | Uint8Array): Promise<string> {
 		// Hash message with EIP-191 prefix
-		const msgBytes = typeof message === "string" ? new TextEncoder().encode(message) : message;
-		const prefix = new TextEncoder().encode("\x19Ethereum Signed Message:\n" + msgBytes.length);
+		const msgBytes =
+			typeof message === "string" ? new TextEncoder().encode(message) : message;
+		const prefix = new TextEncoder().encode(
+			"\x19Ethereum Signed Message:\n" + msgBytes.length,
+		);
 		const combined = new Uint8Array(prefix.length + msgBytes.length);
 		combined.set(prefix);
 		combined.set(msgBytes, prefix.length);

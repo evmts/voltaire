@@ -1,13 +1,13 @@
 {
-  "timestamp": "2025-10-28T02:37:47.502Z",
-  "runtime": "bun",
-  "version": "v24.3.0",
-  "platform": "darwin",
-  "arch": "arm64",
-  "results": [],
-  "summary": {
-    "total_benchmarks": 0,
-    "fastest": null,
-    "slowest": null
-  }
+	"timestamp": "2025-10-28T02:37:47.502Z",
+	"runtime": "bun",
+	"version": "v24.3.0",
+	"platform": "darwin",
+	"arch": "arm64",
+	"results": [],
+	"summary": {
+		"total_benchmarks": 0,
+		"fastest": null,
+		"slowest": null
+	}
 }

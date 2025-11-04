@@ -1,62 +1,62 @@
 {
-  "timestamp": "2025-10-27T19:21:00.000Z",
-  "platform": "darwin",
-  "nodeVersion": "v22.4.1",
-  "results": {
-    "blobToKzgCommitment": {
-      "opsPerSec": 30,
-      "avgTimeMs": 33,
-      "description": "Single blob to commitment conversion"
-    },
-    "computeKzgProof": {
-      "opsPerSec": 18,
-      "avgTimeMs": 55,
-      "description": "Compute proof for single blob"
-    },
-    "verifyKzgProof": {
-      "opsPerSec": 17,
-      "avgTimeMs": 58,
-      "description": "Verify single KZG proof"
-    },
-    "verifyBlobKzgProof": {
-      "opsPerSec": 30,
-      "avgTimeMs": 33,
-      "description": "Verify blob KZG proof"
-    },
-    "verifyBlobKzgProofBatch": {
-      "opsPerSec": 30,
-      "avgTimeMs": 33,
-      "description": "Batch verify blob proofs (1.5x faster per blob)"
-    },
-    "createEmptyBlob": {
-      "opsPerSec": 500000,
-      "avgTimeMs": 0.002,
-      "description": "Create empty blob"
-    },
-    "generateRandomBlob": {
-      "opsPerSec": 7500,
-      "avgTimeMs": 0.13,
-      "description": "Generate random blob with seed"
-    },
-    "validateBlob": {
-      "opsPerSec": 100000,
-      "avgTimeMs": 0.01,
-      "description": "Validate blob format"
-    }
-  },
-  "summary": {
-    "totalBenchmarks": 8,
-    "fastestOperation": "createEmptyBlob",
-    "slowestOperation": "computeKzgProof",
-    "notes": [
-      "Benchmarks performed with c-kzg v4.1.0 native library",
-      "Times measured from actual test suite execution",
-      "Batch operations show ~1.5x performance benefit per item",
-      "Commitment generation takes ~33ms per blob",
-      "Proof computation takes ~55ms per blob",
-      "Verification is relatively fast at ~58ms",
-      "All cryptographic operations use BLS12-381 curve",
-      "Native C implementation provides optimal performance"
-    ]
-  }
+	"timestamp": "2025-10-27T19:21:00.000Z",
+	"platform": "darwin",
+	"nodeVersion": "v22.4.1",
+	"results": {
+		"blobToKzgCommitment": {
+			"opsPerSec": 30,
+			"avgTimeMs": 33,
+			"description": "Single blob to commitment conversion"
+		},
+		"computeKzgProof": {
+			"opsPerSec": 18,
+			"avgTimeMs": 55,
+			"description": "Compute proof for single blob"
+		},
+		"verifyKzgProof": {
+			"opsPerSec": 17,
+			"avgTimeMs": 58,
+			"description": "Verify single KZG proof"
+		},
+		"verifyBlobKzgProof": {
+			"opsPerSec": 30,
+			"avgTimeMs": 33,
+			"description": "Verify blob KZG proof"
+		},
+		"verifyBlobKzgProofBatch": {
+			"opsPerSec": 30,
+			"avgTimeMs": 33,
+			"description": "Batch verify blob proofs (1.5x faster per blob)"
+		},
+		"createEmptyBlob": {
+			"opsPerSec": 500000,
+			"avgTimeMs": 0.002,
+			"description": "Create empty blob"
+		},
+		"generateRandomBlob": {
+			"opsPerSec": 7500,
+			"avgTimeMs": 0.13,
+			"description": "Generate random blob with seed"
+		},
+		"validateBlob": {
+			"opsPerSec": 100000,
+			"avgTimeMs": 0.01,
+			"description": "Validate blob format"
+		}
+	},
+	"summary": {
+		"totalBenchmarks": 8,
+		"fastestOperation": "createEmptyBlob",
+		"slowestOperation": "computeKzgProof",
+		"notes": [
+			"Benchmarks performed with c-kzg v4.1.0 native library",
+			"Times measured from actual test suite execution",
+			"Batch operations show ~1.5x performance benefit per item",
+			"Commitment generation takes ~33ms per blob",
+			"Proof computation takes ~55ms per blob",
+			"Verification is relatively fast at ~58ms",
+			"All cryptographic operations use BLS12-381 curve",
+			"Native C implementation provides optimal performance"
+		]
+	}
 }

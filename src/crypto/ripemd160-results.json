@@ -1,42 +1,42 @@
 {
-  "noble_hash_32_bytes": {
-    "opsPerSec": 397315,
-    "avgTime": 0.0025168916
-  },
-  "noble_hash_1_KB": {
-    "opsPerSec": 64307,
-    "avgTime": 0.015550508400000001
-  },
-  "noble_hash_64_KB": {
-    "opsPerSec": 2824,
-    "avgTime": 0.3541616250000001
-  },
-  "noble_hash_1_MB": {
-    "opsPerSec": 179,
-    "avgTime": 5.591414916000001
-  },
-  "wasm_hash_32_bytes": {
-    "opsPerSec": 2034605,
-    "avgTime": 0.0004914958999999727
-  },
-  "wasm_hash_1_KB": {
-    "opsPerSec": 336349,
-    "avgTime": 0.002973099999999977
-  },
-  "wasm_hash_64_KB": {
-    "opsPerSec": 5807,
-    "avgTime": 0.17219566699999997
-  },
-  "wasm_hash_1_MB": {
-    "opsPerSec": 359,
-    "avgTime": 2.7886316250000007
-  },
-  "noble_hashString": {
-    "opsPerSec": 210423,
-    "avgTime": 0.004752341700000034
-  },
-  "wasm_hashString": {
-    "opsPerSec": 2576268,
-    "avgTime": 0.00038815830000003186
-  }
+	"noble_hash_32_bytes": {
+		"opsPerSec": 397315,
+		"avgTime": 0.0025168916
+	},
+	"noble_hash_1_KB": {
+		"opsPerSec": 64307,
+		"avgTime": 0.015550508400000001
+	},
+	"noble_hash_64_KB": {
+		"opsPerSec": 2824,
+		"avgTime": 0.3541616250000001
+	},
+	"noble_hash_1_MB": {
+		"opsPerSec": 179,
+		"avgTime": 5.591414916000001
+	},
+	"wasm_hash_32_bytes": {
+		"opsPerSec": 2034605,
+		"avgTime": 0.0004914958999999727
+	},
+	"wasm_hash_1_KB": {
+		"opsPerSec": 336349,
+		"avgTime": 0.002973099999999977
+	},
+	"wasm_hash_64_KB": {
+		"opsPerSec": 5807,
+		"avgTime": 0.17219566699999997
+	},
+	"wasm_hash_1_MB": {
+		"opsPerSec": 359,
+		"avgTime": 2.7886316250000007
+	},
+	"noble_hashString": {
+		"opsPerSec": 210423,
+		"avgTime": 0.004752341700000034
+	},
+	"wasm_hashString": {
+		"opsPerSec": 2576268,
+		"avgTime": 0.00038815830000003186
+	}
 }

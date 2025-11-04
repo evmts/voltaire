@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-10-28T02:16:06.289Z",
-  "benchmarks": [],
-  "note": "BLAKE2b benchmarks using @noble/hashes library",
-  "algorithm": "BLAKE2b",
-  "library": "@noble/hashes/blake2b"
+	"timestamp": "2025-10-28T02:16:06.289Z",
+	"benchmarks": [],
+	"note": "BLAKE2b benchmarks using @noble/hashes library",
+	"algorithm": "BLAKE2b",
+	"library": "@noble/hashes/blake2b"
 }

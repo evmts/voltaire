@@ -1,116 +1,116 @@
 [
-  {
-    "name": "hash - empty",
-    "opsPerSec": 372515.04217901314,
-    "avgTimeMs": 0.0026844553555489636,
-    "iterations": 745031
-  },
-  {
-    "name": "hash - 32 bytes",
-    "opsPerSec": 369801.8075181593,
-    "avgTimeMs": 0.002704151195775036,
-    "iterations": 739604
-  },
-  {
-    "name": "hash - 256 bytes",
-    "opsPerSec": 194109.99592369012,
-    "avgTimeMs": 0.005151718206171757,
-    "iterations": 388220
-  },
-  {
-    "name": "hash - 1 KB",
-    "opsPerSec": 50017.03421636887,
-    "avgTimeMs": 0.019993188633978105,
-    "iterations": 100035
-  },
-  {
-    "name": "hash - 4 KB",
-    "opsPerSec": 12979.061411556777,
-    "avgTimeMs": 0.07704717377402828,
-    "iterations": 25959
-  },
-  {
-    "name": "hash - 16 KB",
-    "opsPerSec": 3323.8797171027377,
-    "avgTimeMs": 0.3008532453369434,
-    "iterations": 6648
-  },
-  {
-    "name": "hash - 64 KB",
-    "opsPerSec": 841.3606496424026,
-    "avgTimeMs": 1.1885509506833043,
-    "iterations": 1683
-  },
-  {
-    "name": "hashString - empty",
-    "opsPerSec": 356490.68807064806,
-    "avgTimeMs": 0.002805122359330249,
-    "iterations": 712982
-  },
-  {
-    "name": "hashString - short",
-    "opsPerSec": 355439.2186698585,
-    "avgTimeMs": 0.0028134205441432357,
-    "iterations": 710879
-  },
-  {
-    "name": "hashString - medium",
-    "opsPerSec": 358652.35797366645,
-    "avgTimeMs": 0.002788215322631236,
-    "iterations": 717305
-  },
-  {
-    "name": "hashString - long",
-    "opsPerSec": 49062.394712101006,
-    "avgTimeMs": 0.020382209345222908,
-    "iterations": 98125
-  },
-  {
-    "name": "hashHex - short",
-    "opsPerSec": 359253.6258373488,
-    "avgTimeMs": 0.0027835488025185515,
-    "iterations": 718508
-  },
-  {
-    "name": "hashHex - medium",
-    "opsPerSec": 309848.58697183355,
-    "avgTimeMs": 0.0032273827993635614,
-    "iterations": 619698
-  },
-  {
-    "name": "hashMultiple - 3 chunks",
-    "opsPerSec": 355575.4555530679,
-    "avgTimeMs": 0.0028123425967199666,
-    "iterations": 711151
-  },
-  {
-    "name": "hashMultiple - 10 chunks",
-    "opsPerSec": 127714.63282043062,
-    "avgTimeMs": 0.00782995634811886,
-    "iterations": 255430
-  },
-  {
-    "name": "selector - function sig",
-    "opsPerSec": 357724.34349559946,
-    "avgTimeMs": 0.0027954485574792913,
-    "iterations": 715449
-  },
-  {
-    "name": "topic - event sig",
-    "opsPerSec": 359823.6401763591,
-    "avgTimeMs": 0.002779139245853534,
-    "iterations": 719648
-  },
-  {
-    "name": "contractAddress",
-    "opsPerSec": 318916.8073742481,
-    "avgTimeMs": 0.0031356139810671765,
-    "iterations": 637834
-  },
-  {
-    "name": "create2Address",
-    "opsPerSec": 358693.7085613623,
-    "avgTimeMs": 0.002787893894238539,
-    "iterations": 717388
-  }
+	{
+		"name": "hash - empty",
+		"opsPerSec": 372515.04217901314,
+		"avgTimeMs": 0.0026844553555489636,
+		"iterations": 745031
+	},
+	{
+		"name": "hash - 32 bytes",
+		"opsPerSec": 369801.8075181593,
+		"avgTimeMs": 0.002704151195775036,
+		"iterations": 739604
+	},
+	{
+		"name": "hash - 256 bytes",
+		"opsPerSec": 194109.99592369012,
+		"avgTimeMs": 0.005151718206171757,
+		"iterations": 388220
+	},
+	{
+		"name": "hash - 1 KB",
+		"opsPerSec": 50017.03421636887,
+		"avgTimeMs": 0.019993188633978105,
+		"iterations": 100035
+	},
+	{
+		"name": "hash - 4 KB",
+		"opsPerSec": 12979.061411556777,
+		"avgTimeMs": 0.07704717377402828,
+		"iterations": 25959
+	},
+	{
+		"name": "hash - 16 KB",
+		"opsPerSec": 3323.8797171027377,
+		"avgTimeMs": 0.3008532453369434,
+		"iterations": 6648
+	},
+	{
+		"name": "hash - 64 KB",
+		"opsPerSec": 841.3606496424026,
+		"avgTimeMs": 1.1885509506833043,
+		"iterations": 1683
+	},
+	{
+		"name": "hashString - empty",
+		"opsPerSec": 356490.68807064806,
+		"avgTimeMs": 0.002805122359330249,
+		"iterations": 712982
+	},
+	{
+		"name": "hashString - short",
+		"opsPerSec": 355439.2186698585,
+		"avgTimeMs": 0.0028134205441432357,
+		"iterations": 710879
+	},
+	{
+		"name": "hashString - medium",
+		"opsPerSec": 358652.35797366645,
+		"avgTimeMs": 0.002788215322631236,
+		"iterations": 717305
+	},
+	{
+		"name": "hashString - long",
+		"opsPerSec": 49062.394712101006,
+		"avgTimeMs": 0.020382209345222908,
+		"iterations": 98125
+	},
+	{
+		"name": "hashHex - short",
+		"opsPerSec": 359253.6258373488,
+		"avgTimeMs": 0.0027835488025185515,
+		"iterations": 718508
+	},
+	{
+		"name": "hashHex - medium",
+		"opsPerSec": 309848.58697183355,
+		"avgTimeMs": 0.0032273827993635614,
+		"iterations": 619698
+	},
+	{
+		"name": "hashMultiple - 3 chunks",
+		"opsPerSec": 355575.4555530679,
+		"avgTimeMs": 0.0028123425967199666,
+		"iterations": 711151
+	},
+	{
+		"name": "hashMultiple - 10 chunks",
+		"opsPerSec": 127714.63282043062,
+		"avgTimeMs": 0.00782995634811886,
+		"iterations": 255430
+	},
+	{
+		"name": "selector - function sig",
+		"opsPerSec": 357724.34349559946,
+		"avgTimeMs": 0.0027954485574792913,
+		"iterations": 715449
+	},
+	{
+		"name": "topic - event sig",
+		"opsPerSec": 359823.6401763591,
+		"avgTimeMs": 0.002779139245853534,
+		"iterations": 719648
+	},
+	{
+		"name": "contractAddress",
+		"opsPerSec": 318916.8073742481,
+		"avgTimeMs": 0.0031356139810671765,
+		"iterations": 637834
+	},
+	{
+		"name": "create2Address",
+		"opsPerSec": 358693.7085613623,
+		"avgTimeMs": 0.002787893894238539,
+		"iterations": 717388
+	}
 ]

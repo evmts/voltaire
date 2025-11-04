@@ -23,46 +23,52 @@ import { blake2b } from "@noble/hashes/blake2.js";
  * BLAKE2b operations namespace
  */
 export namespace Blake2 {
-  /**
-   * Hash data with BLAKE2b
-   *
-   * @param data - Input data to hash (Uint8Array or string)
-   * @param outputLength - Output length in bytes (1-64, default 64)
-   * @returns BLAKE2b hash
-   * @throws {Error} If outputLength is invalid
-   *
-   * @example
-   * ```typescript
-   * const hash = Blake2.hash(new Uint8Array([1, 2, 3]));
-   * const hash32 = Blake2.hash("hello", 32);
-   * ```
-   */
-  export function hash(data: Uint8Array | string, outputLength = 64): Uint8Array {
-    if (outputLength < 1 || outputLength > 64) {
-      throw new Error(`Invalid output length: ${outputLength}. Must be between 1 and 64 bytes.`);
-    }
+	/**
+	 * Hash data with BLAKE2b
+	 *
+	 * @param data - Input data to hash (Uint8Array or string)
+	 * @param outputLength - Output length in bytes (1-64, default 64)
+	 * @returns BLAKE2b hash
+	 * @throws {Error} If outputLength is invalid
+	 *
+	 * @example
+	 * ```typescript
+	 * const hash = Blake2.hash(new Uint8Array([1, 2, 3]));
+	 * const hash32 = Blake2.hash("hello", 32);
+	 * ```
+	 */
+	export function hash(
+		data: Uint8Array | string,
+		outputLength = 64,
+	): Uint8Array {
+		if (outputLength < 1 || outputLength > 64) {
+			throw new Error(
+				`Invalid output length: ${outputLength}. Must be between 1 and 64 bytes.`,
+			);
+		}
 
-    const input = typeof data === "string" ? new TextEncoder().encode(data) : data;
-    return blake2b(input, { dkLen: outputLength });
-  }
+		const input =
+			typeof data === "string" ? new TextEncoder().encode(data) : data;
+		return blake2b(input, { dkLen: outputLength });
+	}
 
-  /**
-   * Hash string with BLAKE2b (convenience function)
-   *
-   * @param str - Input string to hash
-   * @param outputLength - Output length in bytes (1-64, default 64)
-   * @returns BLAKE2b hash
-   * @throws {Error} If outputLength is invalid
-   *
-   * @example
-   * ```typescript
-   * const hash = Blake2.hashString("hello world");
-   * const hash48 = Blake2.hashString("hello world", 48);
-   * ```
-   */
-  export function hashString(str: string, outputLength = 64): Uint8Array {
-    return hash(str, outputLength);
-  }
+	/**
+	 * Hash string with BLAKE2b (convenience function)
+	 *
+	 * @param str - Input string to hash
+	 * @param outputLength - Output length in bytes (1-64, default 64)
+	 * @returns BLAKE2b hash
+	 * @throws {Error} If outputLength is invalid
+	 *
+	 * @example
+	 * ```typescript
+	 * const hash = Blake2.hashString("hello world");
+	 * const hash48 = Blake2.hashString("hello world", 48);
+	 * ```
+	 */
+	export function hashString(str: string, outputLength = 64): Uint8Array {
+		return hash(str, outputLength);
+	}
 }
 
 export default Blake2;
