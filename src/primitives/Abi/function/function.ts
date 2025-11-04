@@ -1,4 +1,4 @@
-import * as BrandedHash from "../../Hash/index.js";
+import { Hash } from "../../Hash/index.js";
 import {
 	decodeParameters,
 	encodeParameters,

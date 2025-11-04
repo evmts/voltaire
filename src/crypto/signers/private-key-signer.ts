@@ -39,7 +39,7 @@ export class PrivateKeySignerImpl implements Signer {
 		const pubkeyHash = Keccak256Wasm.hash(this.publicKey);
 		const addressBytes = pubkeyHash.slice(-20);
 		const addressObj = Address.fromBytes(addressBytes);
-		this.address = addressObj.toChecksumHex();
+		this.address = addressObj.toChecksummed();
 	}
 
 	static fromPrivateKey(

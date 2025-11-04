@@ -63,6 +63,46 @@ describe("Address", () => {
 	});
 
 	// ==========================================================================
+	// Conversion Operations - fromBase64
+	// ==========================================================================
+
+	describe("fromBase64", () => {
+		it("converts valid base64 to Address", () => {
+			// Base64 encoding of 20-byte address
+			const base64 = "dC01zGY0wFMpJaO4RLyedZXyUeM="; // 0x742d35cc6634c0532925a3b844bc9e7595f251e3
+			const addr = Address.fromBase64(base64);
+			expect(addr).toBeInstanceOf(Uint8Array);
+			expect(addr.length).toBe(20);
+			expect(addr[0]).toBe(0x74);
+			expect(addr[1]).toBe(0x2d);
+		});
+
+		it("throws on base64 encoding 19 bytes", () => {
+			// Base64 for 19 bytes
+			const base64 = "dC01zGY0wFMpJaO4RLyedZXyUQ==";
+			expect(() => Address.fromBase64(base64)).toThrow(
+				AddressNamespace.InvalidAddressLengthError,
+			);
+		});
+
+		it("throws on base64 encoding 21 bytes", () => {
+			// Base64 for 21 bytes
+			const base64 = "dC01zGY0wFMpJaO4RLyedZXyUeMB";
+			expect(() => Address.fromBase64(base64)).toThrow(
+				AddressNamespace.InvalidAddressLengthError,
+			);
+		});
+
+		it("throws on base64 encoding 32 bytes", () => {
+			// Base64 for 32 bytes
+			const base64 = "dC01zGY0wFMpJaO4RLyedZXyUeMAAAAAAAAAAAAAAA==";
+			expect(() => Address.fromBase64(base64)).toThrow(
+				AddressNamespace.InvalidAddressLengthError,
+			);
+		});
+	});
+
+	// ==========================================================================
 	// Conversion Operations - fromBytes
 	// ==========================================================================
 
@@ -84,14 +124,26 @@ describe("Address", () => {
 			expect(addr[0]).toBe(0);
 		});
 
-		it("throws on invalid length", () => {
+		it("throws on invalid length - 19 bytes", () => {
 			expect(() => Address.fromBytes(new Uint8Array(19))).toThrow(
 				AddressNamespace.InvalidAddressLengthError,
 			);
+		});
+
+		it("throws on invalid length - 21 bytes", () => {
 			expect(() => Address.fromBytes(new Uint8Array(21))).toThrow(
 				AddressNamespace.InvalidAddressLengthError,
 			);
+		});
+
+		it("throws on invalid length - 0 bytes", () => {
 			expect(() => Address.fromBytes(new Uint8Array(0))).toThrow(
+				AddressNamespace.InvalidAddressLengthError,
+			);
+		});
+
+		it("throws on invalid length - 32 bytes", () => {
+			expect(() => Address.fromBytes(new Uint8Array(32))).toThrow(
 				AddressNamespace.InvalidAddressLengthError,
 			);
 		});

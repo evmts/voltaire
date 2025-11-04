@@ -1,4 +1,4 @@
-import * as BrandedHash from "../../Hash/index.js";
+import { Hash } from "../../Hash/index.js";
 import { decodeParameters, encodeParameters } from "../Encoding.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../Errors.js";
 import type { Item } from "../Item.js";

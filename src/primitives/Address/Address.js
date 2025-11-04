@@ -17,6 +17,7 @@ import { equals } from "./equals.js";
 import { format } from "./format.js";
 import { from } from "./from.js";
 import { fromAbiEncoded } from "./fromAbiEncoded.js";
+import { fromBase64 } from "./fromBase64.js";
 import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
 import { fromNumber } from "./fromNumber.js";
@@ -46,6 +47,7 @@ import { zero } from "./zero.js";
 export {
 	from,
 	fromHex,
+	fromBase64,
 	fromBytes,
 	fromNumber,
 	fromPublicKey,
@@ -90,7 +92,7 @@ Address.from = function (value) {
 };
 Address.from.prototype = Address.prototype;
 Address.fromBase64 = function (value) {
-	return Uint8Array.fromBase64(value);
+	return fromBase64(value);
 };
 Address.fromBase64.prototype = Address.prototype;
 Address.fromHex = function (value) {
