@@ -25,7 +25,7 @@
  */
 
 import { p256 } from "@noble/curves/nist.js";
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // Error Types

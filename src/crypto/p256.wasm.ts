@@ -5,7 +5,7 @@
  * using WebAssembly for performance.
  */
 
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
 
 // ============================================================================

@@ -6,7 +6,7 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
 import {
 	InvalidPrivateKeyError,

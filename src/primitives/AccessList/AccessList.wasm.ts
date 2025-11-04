@@ -5,7 +5,7 @@
 
 import * as loader from "../../wasm-loader/loader.js";
 import type { BrandedAddress } from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/index.js";
 import type * as AccessList from "./AccessList.js";
 
 /**

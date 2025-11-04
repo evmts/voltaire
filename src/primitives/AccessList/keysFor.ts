@@ -1,5 +1,5 @@
 import type { BrandedAddress } from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/index.js";
 import type { BrandedAccessList } from "./BrandedAccessList.js";
 
 /**
@@ -33,7 +33,7 @@ function addressEquals(a: BrandedAddress, b: BrandedAddress): boolean {
 export function keysFor(
 	list: BrandedAccessList,
 	address: BrandedAddress,
-): readonly Hash[] | undefined {
+): readonly BrandedHash[] | undefined {
 	for (const item of list) {
 		if (addressEquals(item.address, address)) {
 			return item.storageKeys;

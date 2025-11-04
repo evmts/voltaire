@@ -20,7 +20,7 @@
  */
 
 import { keccak_256 } from "@noble/hashes/sha3.js";
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // Main Keccak256 Namespace

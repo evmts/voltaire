@@ -17,7 +17,7 @@
  */
 
 import type { BrandedAddress } from "../primitives/Address/index.js";
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
 import {
 	Eip712EncodingError,
 	Eip712Error,

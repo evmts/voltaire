@@ -1,5 +1,10 @@
 import type { BrandedAddress } from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/index.js";
+
+/**
+ * Brand symbol for type safety
+ */
+export const accessListSymbol = Symbol("AccessList");
 
 /**
  * Single access list entry
@@ -7,7 +12,7 @@ import { Hash, type BrandedHash } from "../Hash/index.js";
  */
 export type Item<
 	TAddress extends BrandedAddress = BrandedAddress,
-	TStorageKeys extends readonly Hash[] = readonly Hash[],
+	TStorageKeys extends readonly BrandedHash[] = readonly BrandedHash[],
 > = {
 	/** Contract address */
 	address: TAddress;
@@ -20,5 +25,5 @@ export type Item<
  * Array of access list items (EIP-2930)
  */
 export type BrandedAccessList = readonly Item[] & {
-	readonly __tag: "AccessList";
+	readonly __brand?: typeof accessListSymbol;
 };

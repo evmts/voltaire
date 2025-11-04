@@ -1,5 +1,5 @@
 import type { BrandedAddress } from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/index.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 
 /**
@@ -16,7 +16,7 @@ function addressEquals(a: BrandedAddress, b: BrandedAddress): boolean {
 /**
  * Compare two hashes for equality (byte-by-byte)
  */
-function hashEquals(a: BrandedHash, b: Hash): boolean {
+function hashEquals(a: BrandedHash, b: BrandedHash): boolean {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
 		if (a[i] !== b[i]) return false;

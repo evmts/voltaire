@@ -19,7 +19,7 @@
  * ```
  */
 
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // WASM Interface
