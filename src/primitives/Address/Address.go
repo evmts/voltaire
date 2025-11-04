@@ -1,3 +1,4 @@
+// Golang is not currently supported and any golang code is just a POC
 package address
 
 import (

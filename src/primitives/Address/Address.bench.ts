@@ -30,9 +30,10 @@ const wasmAddrZero = WasmAddress.fromHex(zeroAddress);
 
 // CREATE/CREATE2 test data
 const senderAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+const senderAddressLower = senderAddress.toLowerCase();
 const jsSender = JsAddress.fromHex(senderAddress);
 const wasmSender = WasmAddress.fromHex(senderAddress);
-const nonce = 42;
+const nonce = 42n;
 const salt = new Uint8Array(32).fill(0x42);
 const initCode = new Uint8Array([
 	0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15,
@@ -73,7 +74,7 @@ bench("Address.fromHex - WASM", () => {
 });
 
 bench("Address.fromHex - ethers", () => {
-	ethersGetAddress(testAddress);
+	ethersGetAddress(testAddress.toLowerCase());
 });
 
 bench("Address.fromHex - viem", () => {
@@ -171,7 +172,7 @@ bench("address.toChecksummed - WASM", () => {
 });
 
 bench("address.toChecksummed - ethers", () => {
-	ethersGetAddress(testAddress);
+	ethersGetAddress(testAddress.toLowerCase());
 });
 
 bench("address.toChecksummed - viem", () => {
@@ -481,11 +482,11 @@ bench("Address.calculateCreateAddress - WASM", () => {
 });
 
 bench("Address.calculateCreateAddress - ethers", () => {
-	getCreateAddress({ from: senderAddress, nonce });
+	getCreateAddress({ from: senderAddressLower, nonce });
 });
 
 bench("Address.calculateCreateAddress - viem", () => {
-	getContractAddress({ from: senderAddress, nonce, opcode: "CREATE" });
+	getContractAddress({ from: senderAddress, nonce: Number(nonce), opcode: "CREATE" });
 });
 
 await run();
@@ -510,7 +511,7 @@ bench("Address.calculateCreate2Address - WASM", () => {
 });
 
 bench("Address.calculateCreate2Address - ethers", () => {
-	getCreate2Address(senderAddress, salt, initCodeHash);
+	getCreate2Address(senderAddressLower, salt, initCodeHash);
 });
 
 bench("Address.calculateCreate2Address - viem", () => {
