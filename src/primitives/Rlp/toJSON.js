@@ -1,19 +1,17 @@
-import type { BrandedRlp } from "./BrandedRlp.js";
-
 /**
  * Convert RLP Data to human-readable JSON format
  *
- * @param data - RLP Data
- * @returns JSON-serializable representation
+ * @param {import('./BrandedRlp.js').BrandedRlp} data - RLP Data
+ * @returns {unknown} JSON-serializable representation
  *
  * @example
- * ```typescript
+ * ```javascript
  * const data = { type: 'bytes', value: new Uint8Array([1, 2, 3]) };
  * const json = Rlp.toJSON(data);
  * // => { type: 'bytes', value: [1, 2, 3] }
  * ```
  */
-export function toJSON(data: BrandedRlp): unknown {
+export function toJSON(data) {
 	if (data.type === "bytes") {
 		return {
 			type: "bytes",

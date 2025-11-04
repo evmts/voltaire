@@ -1,9 +1,10 @@
-import type { BrandedRlp } from "./BrandedRlp.js";
-
 /**
  * Check if value is RLP Data structure
+ *
+ * @param {unknown} value
+ * @returns {value is import('./BrandedRlp.js').BrandedRlp}
  */
-export function isData(value: unknown): value is BrandedRlp {
+export function isData(value) {
 	return (
 		typeof value === "object" &&
 		value !== null &&

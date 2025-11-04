@@ -1,22 +1,20 @@
-import type { BrandedRlp } from "./BrandedRlp.js";
 import { encodeBytes } from "./encodeBytes.js";
 import { encodeList } from "./encodeList.js";
 import { Error } from "./errors.js";
 import { isData } from "./isData.js";
 
 /**
- * Encodable types
+ * @typedef {Uint8Array | import('./BrandedRlp.js').BrandedRlp | Encodable[]} Encodable
  */
-export type Encodable = Uint8Array | BrandedRlp | Encodable[];
 
 /**
  * Encodes data to RLP format
  *
- * @param data - Data to encode (Uint8Array, RlpData, or array)
- * @returns RLP-encoded bytes
+ * @param {Encodable} data - Data to encode (Uint8Array, RlpData, or array)
+ * @returns {Uint8Array} RLP-encoded bytes
  *
  * @example
- * ```typescript
+ * ```javascript
  * // Encode bytes
  * const bytes = new Uint8Array([1, 2, 3]);
  * const encoded = Rlp.encode(bytes);
@@ -37,7 +35,7 @@ export type Encodable = Uint8Array | BrandedRlp | Encodable[];
  * - List 0-55 bytes total: [0xc0 + length, ...encoded_items]
  * - List > 55 bytes total: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
  */
-export function encode(data: Encodable): Uint8Array {
+export function encode(data) {
 	// Handle Uint8Array
 	if (data instanceof Uint8Array) {
 		return encodeBytes(data);

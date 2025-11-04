@@ -1,15 +1,14 @@
-import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
 import { encodeLengthValue } from "./utils.js";
 
 /**
  * Encodes a list of RLP-encodable items
  *
- * @param items - Array of items to encode
- * @returns RLP-encoded list
+ * @param {Array<Uint8Array | import('./BrandedRlp.js').BrandedRlp | any[]>} items - Array of items to encode
+ * @returns {Uint8Array} RLP-encoded list
  *
  * @example
- * ```typescript
+ * ```javascript
  * // Empty list
  * const empty = [];
  * const encoded = Rlp.encodeList(empty);
@@ -31,7 +30,7 @@ import { encodeLengthValue } from "./utils.js";
  * - If total < 56: [0xc0 + total_length, ...encoded_items]
  * - If total >= 56: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
  */
-export function encodeList(items: Encodable[]): Uint8Array {
+export function encodeList(items) {
 	// Encode each item
 	const encodedItems = items.map((item) => encode(item));
 

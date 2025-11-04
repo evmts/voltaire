@@ -3,11 +3,11 @@ import { encodeLengthValue } from "./utils.js";
 /**
  * Encodes a byte array according to RLP string rules
  *
- * @param bytes - Byte array to encode
- * @returns RLP-encoded bytes
+ * @param {Uint8Array} bytes - Byte array to encode
+ * @returns {Uint8Array} RLP-encoded bytes
  *
  * @example
- * ```typescript
+ * ```javascript
  * // Single byte < 0x80
  * const b1 = new Uint8Array([0x7f]);
  * const encoded = Rlp.encodeBytes(b1);
@@ -29,9 +29,9 @@ import { encodeLengthValue } from "./utils.js";
  * - 0-55 bytes: [0x80 + length, ...bytes]
  * - > 55 bytes: [0xb7 + length_of_length, ...length_bytes, ...bytes]
  */
-export function encodeBytes(bytes: Uint8Array): Uint8Array {
+export function encodeBytes(bytes) {
 	// Single byte < 0x80: encoded as itself
-	if (bytes.length === 1 && bytes[0]! < 0x80) {
+	if (bytes.length === 1 && bytes[0] < 0x80) {
 		return bytes;
 	}
 

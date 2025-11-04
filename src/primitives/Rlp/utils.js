@@ -3,8 +3,11 @@ import { Error } from "./errors.js";
 /**
  * Encodes a length value as big-endian bytes (no leading zeros)
  * @internal
+ *
+ * @param {number} length
+ * @returns {Uint8Array}
  */
-export function encodeLengthValue(length: number): Uint8Array {
+export function encodeLengthValue(length) {
 	if (length === 0) {
 		return new Uint8Array(0);
 	}
@@ -30,8 +33,11 @@ export function encodeLengthValue(length: number): Uint8Array {
 /**
  * Decodes a big-endian length value
  * @internal
+ *
+ * @param {Uint8Array} bytes
+ * @returns {number}
  */
-export function decodeLengthValue(bytes: Uint8Array): number {
+export function decodeLengthValue(bytes) {
 	if (bytes.length === 0) {
 		return 0;
 	}
@@ -44,7 +50,7 @@ export function decodeLengthValue(bytes: Uint8Array): number {
 	// Decode big-endian
 	let result = 0;
 	for (let i = 0; i < bytes.length; i++) {
-		result = result * 256 + bytes[i]!;
+		result = result * 256 + bytes[i];
 	}
 
 	return result;

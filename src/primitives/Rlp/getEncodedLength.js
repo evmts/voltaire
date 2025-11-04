@@ -1,4 +1,3 @@
-import type { Encodable } from "./encode.js";
 import { Error } from "./errors.js";
 import { isData } from "./isData.js";
 import { encodeLengthValue } from "./utils.js";
@@ -6,20 +5,20 @@ import { encodeLengthValue } from "./utils.js";
 /**
  * Get the total byte length of RLP-encoded data without actually encoding
  *
- * @param data - Data to measure
- * @returns Length in bytes after RLP encoding
+ * @param {Uint8Array | import('./BrandedRlp.js').BrandedRlp | any[]} data - Data to measure
+ * @returns {number} Length in bytes after RLP encoding
  *
  * @example
- * ```typescript
+ * ```javascript
  * const bytes = new Uint8Array([1, 2, 3]);
  * const length = Rlp.getEncodedLength(bytes);
  * // => 4 (0x83 prefix + 3 bytes)
  * ```
  */
-export function getEncodedLength(data: Encodable): number {
+export function getEncodedLength(data) {
 	// Handle Uint8Array
 	if (data instanceof Uint8Array) {
-		if (data.length === 1 && data[0]! < 0x80) {
+		if (data.length === 1 && data[0] < 0x80) {
 			return 1;
 		}
 		if (data.length < 56) {

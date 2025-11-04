@@ -1,20 +1,19 @@
-import type { BrandedRlp } from "./BrandedRlp.js";
 import { Error } from "./errors.js";
 
 /**
  * Convert JSON representation back to RLP Data
  *
- * @param json - JSON object from toJSON
- * @returns RLP Data
+ * @param {unknown} json - JSON object from toJSON
+ * @returns {import('./BrandedRlp.js').BrandedRlp} RLP Data
  *
  * @example
- * ```typescript
+ * ```javascript
  * const json = { type: 'bytes', value: [1, 2, 3] };
  * const data = Rlp.fromJSON(json);
  * // => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
  * ```
  */
-export function fromJSON(json: unknown): BrandedRlp {
+export function fromJSON(json) {
 	if (
 		typeof json !== "object" ||
 		json === null ||

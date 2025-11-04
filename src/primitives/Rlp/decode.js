@@ -1,25 +1,23 @@
-import type { BrandedRlp } from "./BrandedRlp.js";
 import { MAX_DEPTH } from "./constants.js";
 import { Error } from "./errors.js";
 import { decodeLengthValue } from "./utils.js";
 
 /**
- * Decoded RLP data with remainder
+ * @typedef {{
+ *   data: import('./BrandedRlp.js').BrandedRlp;
+ *   remainder: Uint8Array;
+ * }} Decoded
  */
-export type Decoded = {
-	data: BrandedRlp;
-	remainder: Uint8Array;
-};
 
 /**
  * Decodes RLP-encoded bytes
  *
- * @param bytes - RLP-encoded data
- * @param stream - If true, allows extra data after decoded value. If false, expects exact match
- * @returns Decoded RLP data with remainder
+ * @param {Uint8Array} bytes - RLP-encoded data
+ * @param {boolean} [stream=false] - If true, allows extra data after decoded value. If false, expects exact match
+ * @returns {Decoded} Decoded RLP data with remainder
  *
  * @example
- * ```typescript
+ * ```javascript
  * // Decode single value
  * const bytes = new Uint8Array([0x83, 1, 2, 3]);
  * const result = Rlp.decode(bytes);
@@ -35,7 +33,7 @@ export type Decoded = {
  * const result = Rlp.decode(list);
  * ```
  */
-export function decode(bytes: Uint8Array, stream = false): Decoded {
+export function decode(bytes, stream = false) {
 	if (bytes.length === 0) {
 		throw new Error("InputTooShort", "Cannot decode empty input");
 	}
@@ -55,8 +53,12 @@ export function decode(bytes: Uint8Array, stream = false): Decoded {
 /**
  * Internal decode implementation with depth tracking
  * @internal
+ *
+ * @param {Uint8Array} bytes
+ * @param {number} depth
+ * @returns {Decoded}
  */
-function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
+function decodeInternal(bytes, depth) {
 	// Check recursion depth
 	if (depth >= MAX_DEPTH) {
 		throw new Error(
@@ -70,7 +72,7 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 		throw new Error("InputTooShort", "Unexpected end of input");
 	}
 
-	const prefix = bytes[0]!;
+	const prefix = bytes[0];
 
 	// Single byte [0x00, 0x7f]
 	if (prefix <= 0x7f) {
@@ -93,7 +95,7 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 		}
 
 		// Check for non-canonical encoding
-		if (length === 1 && bytes.length > 1 && bytes[1]! < 0x80) {
+		if (length === 1 && bytes.length > 1 && bytes[1] < 0x80) {
 			throw new Error(
 				"NonCanonicalSize",
 				"Single byte < 0x80 should not be prefixed",
@@ -179,7 +181,7 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 		}
 
 		// Decode list items
-		const items: BrandedRlp[] = [];
+		const items = [];
 		let offset = 1;
 		const end = 1 + length;
 
@@ -235,7 +237,7 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 		}
 
 		// Decode list items
-		const items: BrandedRlp[] = [];
+		const items = [];
 		let offset = 1 + lengthOfLength;
 		const end = 1 + lengthOfLength + length;
 
