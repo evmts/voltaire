@@ -8,7 +8,7 @@ import { Address as AddressClass } from "../primitives/Address/Address.wasm.js";
 
 // Keccak-256 hashing
 // TODO: Restore after refactoring keccak256.wasm.ts
-// import { Hash as HashClass, keccak256 as keccak256Fn, eip191HashMessage as eip191HashMessageFn } from "../crypto/keccak.wasm.js";
+// import { Hash as BrandedHashClass, keccak256 as keccak256Fn, eip191HashMessage as eip191HashMessageFn } from "../crypto/keccak.wasm.js";
 
 // Bytecode operations
 import {
@@ -75,7 +75,7 @@ import {
 // Re-export all with original names
 export { AddressClass as Address };
 // TODO: Restore Hash/keccak256 exports
-// export { HashClass as Hash, keccak256Fn as keccak256, eip191HashMessageFn as eip191HashMessage };
+// export { HashClass as BrandedHash, keccak256Fn as keccak256, eip191HashMessageFn as eip191HashMessage };
 export { type JumpDestination, analyzeJumpDestinationsFn as analyzeJumpDestinations, isBytecodeBoundaryFn as isBytecodeBoundary, isValidJumpDestFn as isValidJumpDest, validateBytecodeFn as validateBytecode };
 export { sha256Fn as sha256, ripemd160Fn as ripemd160, blake2bFn as blake2b, solidityKeccak256Fn as solidityKeccak256, soliditySha256Fn as soliditySha256 };
 export { hexToBytesFn as hexToBytes, bytesToHexFn as bytesToHex };
