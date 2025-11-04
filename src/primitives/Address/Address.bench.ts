@@ -1,6 +1,6 @@
 /**
- * Benchmark: JavaScript vs WASM Address implementations
- * Compares performance of all Address operations between JS and WASM backends
+ * Benchmark: JS vs WASM vs ethers vs viem Address implementations
+ * Compares performance of Address operations across different backends
  */
 
 import { bench, run } from "mitata";
@@ -53,7 +53,7 @@ const pubkeyX = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817
 const pubkeyY = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n;
 
 console.log("=".repeat(80));
-console.log("JavaScript vs WASM Address Implementation Benchmark");
+console.log("JS vs WASM vs ethers vs viem Address Implementation Benchmark");
 console.log("=".repeat(80));
 console.log("");
 
