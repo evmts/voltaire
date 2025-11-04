@@ -1,7 +1,11 @@
 import type { Unsized } from "./Hex.js";
-import { InvalidFormatError, OddLengthError, InvalidCharacterError } from "./errors.js";
-import { hexCharToValue } from "./utils.js";
+import {
+	InvalidCharacterError,
+	InvalidFormatError,
+	OddLengthError,
+} from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
+import { hexCharToValue } from "./utils.js";
 
 /**
  * Pad hex to target size (left-padded with zeros)

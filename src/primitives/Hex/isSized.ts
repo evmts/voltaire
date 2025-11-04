@@ -1,4 +1,4 @@
-import type { Unsized, Sized } from "./Hex.js";
+import type { Sized, Unsized } from "./Hex.js";
 
 /**
  * Check if hex has specific byte size

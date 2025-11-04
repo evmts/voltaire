@@ -3,7 +3,7 @@ export { getChainById, chainById, allChains } from "@tevm/chains";
 export * from "@tevm/chains";
 
 import type { Chain as ChainType } from "@tevm/chains";
-import { getChainById, chainById } from "@tevm/chains";
+import { chainById, getChainById } from "@tevm/chains";
 
 /**
  * Chain namespace

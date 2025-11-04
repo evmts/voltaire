@@ -51,5 +51,9 @@ export function includesStorageKeyWasm(
 	address: Address,
 	storageKey: Hash,
 ): boolean {
-	return loader.accessListIncludesStorageKey(accessList as any, address, storageKey);
+	return loader.accessListIncludesStorageKey(
+		accessList as any,
+		address,
+		storageKey,
+	);
 }

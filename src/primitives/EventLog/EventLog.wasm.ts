@@ -7,8 +7,8 @@
 export * from "./EventLog.js";
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { Hash as HashType } from "../Hash/index.js";
 import type { Address } from "../Address/index.js";
+import type { Hash as HashType } from "../Hash/index.js";
 
 // ============================================================================
 // WASM-Accelerated Functions
@@ -32,7 +32,7 @@ export function matchesAddressWasm(
 	logAddress: Address,
 	filterAddresses: Address[],
 ): boolean {
-	const { Hex } = require('./hex.js');
+	const { Hex } = require("./hex.js");
 	return loader.eventLogMatchesAddress(
 		Hex.toBytes(logAddress),
 		filterAddresses.map((a) => Hex.toBytes(a)),
@@ -103,9 +103,7 @@ export function filterByAddressWasm<T extends { address: Address }>(
 		return logs; // No filter = return all
 	}
 
-	return logs.filter((log) =>
-		matchesAddressWasm(log.address, filterAddresses),
-	);
+	return logs.filter((log) => matchesAddressWasm(log.address, filterAddresses));
 }
 
 /**
@@ -146,7 +144,9 @@ export function filterByTopicsWasm<T extends { topics: HashType[] }>(
  * );
  * ```
  */
-export function filterLogsWasm<T extends { address: Address; topics: HashType[] }>(
+export function filterLogsWasm<
+	T extends { address: Address; topics: HashType[] },
+>(
 	logs: T[],
 	filterAddresses: Address[],
 	filterTopics: (HashType | null)[],

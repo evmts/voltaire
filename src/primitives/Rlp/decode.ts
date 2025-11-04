@@ -1,4 +1,4 @@
-import type { Decoded, Data } from "./Rlp.js";
+import type { Data, Decoded } from "./Rlp.js";
 import { MAX_DEPTH } from "./constants.js";
 import { Error } from "./errors.js";
 import { decodeLengthValue } from "./utils.js";
@@ -212,7 +212,10 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 
 		// Check for non-canonical encoding
 		if (length < 56) {
-			throw new Error("NonCanonicalSize", "List < 56 bytes should use short form");
+			throw new Error(
+				"NonCanonicalSize",
+				"List < 56 bytes should use short form",
+			);
 		}
 
 		// Check sufficient data
@@ -244,5 +247,8 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 		};
 	}
 
-	throw new Error("UnexpectedInput", `Invalid RLP prefix: 0x${prefix.toString(16)}`);
+	throw new Error(
+		"UnexpectedInput",
+		`Invalid RLP prefix: 0x${prefix.toString(16)}`,
+	);
 }

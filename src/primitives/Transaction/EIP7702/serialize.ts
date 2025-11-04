@@ -1,10 +1,10 @@
 import * as Rlp from "../../Rlp/index.js";
-import { Type, type EIP7702 } from "../types.js";
+import { type EIP7702, Type } from "../types.js";
 import {
-	encodeBigintCompact,
-	encodeAddress,
 	encodeAccessList,
+	encodeAddress,
 	encodeAuthorizationList,
+	encodeBigintCompact,
 } from "../utils.js";
 
 /**

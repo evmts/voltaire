@@ -1,1 +1,1 @@
-export * as AccessList from './AccessList.js';
+export * as AccessList from "./AccessList.js";

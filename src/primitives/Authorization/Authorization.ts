@@ -18,11 +18,11 @@
  * ```
  */
 
+import { Keccak256 } from "../../crypto/keccak256.js";
+import { Secp256k1 } from "../../crypto/secp256k1.js";
 import * as Address from "../Address/index.js";
 import type { Hash } from "../Hash/index.js";
 import * as Rlp from "../Rlp/index.js";
-import { Keccak256 } from "../../crypto/keccak256.js";
-import { Secp256k1 } from "../../crypto/secp256k1.js";
 
 // ==========================================================================
 // Core Types
@@ -33,37 +33,37 @@ import { Secp256k1 } from "../../crypto/secp256k1.js";
  * Allows EOA to delegate code execution to another address
  */
 export type Item = {
-  /** Chain ID where authorization is valid */
-  chainId: bigint;
-  /** Address to delegate code execution to */
-  address: Address.Address;
-  /** Nonce of the authorizing account */
-  nonce: bigint;
-  /** Signature Y parity (0 or 1) */
-  yParity: number;
-  /** Signature r value */
-  r: bigint;
-  /** Signature s value */
-  s: bigint;
+	/** Chain ID where authorization is valid */
+	chainId: bigint;
+	/** Address to delegate code execution to */
+	address: Address.Address;
+	/** Nonce of the authorizing account */
+	nonce: bigint;
+	/** Signature Y parity (0 or 1) */
+	yParity: number;
+	/** Signature r value */
+	r: bigint;
+	/** Signature s value */
+	s: bigint;
 };
 
 /**
  * Authorization without signature (for hashing)
  */
 export type Unsigned = {
-  chainId: bigint;
-  address: Address.Address;
-  nonce: bigint;
+	chainId: bigint;
+	address: Address.Address;
+	nonce: bigint;
 };
 
 /**
  * Delegation designation result
  */
 export type DelegationDesignation = {
-  /** Authority (signer) address */
-  authority: Address.Address;
-  /** Delegated code address */
-  delegatedAddress: Address.Address;
+	/** Authority (signer) address */
+	authority: Address.Address;
+	/** Delegated code address */
+	delegatedAddress: Address.Address;
 };
 
 // ==========================================================================
@@ -89,7 +89,7 @@ export const PER_AUTH_BASE_COST = 12500n;
  * secp256k1 curve order N
  */
 export const SECP256K1_N =
-  0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+	0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
 
 /**
  * secp256k1 curve order N / 2 (for malleability check)
@@ -104,10 +104,10 @@ export const SECP256K1_HALF_N = SECP256K1_N >> 1n;
  * Authorization validation error
  */
 export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AuthorizationValidationError";
-  }
+	constructor(message: string) {
+		super(message);
+		this.name = "AuthorizationValidationError";
+	}
 }
 
 // ==========================================================================
@@ -131,18 +131,18 @@ export class ValidationError extends Error {
  * Note: Type guards don't use this: pattern as they operate on unknown values
  */
 export function isItem(value: unknown): value is Item {
-  if (typeof value !== "object" || value === null) return false;
-  const auth = value as Partial<Item>;
-  return (
-    typeof auth.chainId === "bigint" &&
-    typeof auth.address === "object" &&
-    auth.address !== null &&
-    "bytes" in auth.address &&
-    typeof auth.nonce === "bigint" &&
-    typeof auth.yParity === "number" &&
-    typeof auth.r === "bigint" &&
-    typeof auth.s === "bigint"
-  );
+	if (typeof value !== "object" || value === null) return false;
+	const auth = value as Partial<Item>;
+	return (
+		typeof auth.chainId === "bigint" &&
+		typeof auth.address === "object" &&
+		auth.address !== null &&
+		"bytes" in auth.address &&
+		typeof auth.nonce === "bigint" &&
+		typeof auth.yParity === "number" &&
+		typeof auth.r === "bigint" &&
+		typeof auth.s === "bigint"
+	);
 }
 
 /**
@@ -154,15 +154,15 @@ export function isItem(value: unknown): value is Item {
  * Note: Type guards don't use this: pattern as they operate on unknown values
  */
 export function isUnsigned(value: unknown): value is Unsigned {
-  if (typeof value !== "object" || value === null) return false;
-  const auth = value as Partial<Unsigned>;
-  return (
-    typeof auth.chainId === "bigint" &&
-    typeof auth.address === "object" &&
-    auth.address !== null &&
-    "bytes" in auth.address &&
-    typeof auth.nonce === "bigint"
-  );
+	if (typeof value !== "object" || value === null) return false;
+	const auth = value as Partial<Unsigned>;
+	return (
+		typeof auth.chainId === "bigint" &&
+		typeof auth.address === "object" &&
+		auth.address !== null &&
+		"bytes" in auth.address &&
+		typeof auth.nonce === "bigint"
+	);
 }
 
 // ==========================================================================
@@ -187,38 +187,38 @@ export function isUnsigned(value: unknown): value is Unsigned {
  * ```
  */
 export function validate(this: Item): void {
-  // Chain ID must be non-zero
-  if (this.chainId === 0n) {
-    throw new ValidationError("Chain ID must be non-zero");
-  }
+	// Chain ID must be non-zero
+	if (this.chainId === 0n) {
+		throw new ValidationError("Chain ID must be non-zero");
+	}
 
-  // Address must not be zero
-  if (Array.from(this.address).every((byte) => byte === 0)) {
-    throw new ValidationError("Address cannot be zero address");
-  }
+	// Address must not be zero
+	if (Array.from(this.address).every((byte) => byte === 0)) {
+		throw new ValidationError("Address cannot be zero address");
+	}
 
-  // yParity must be 0 or 1
-  if (this.yParity !== 0 && this.yParity !== 1) {
-    throw new ValidationError("yParity must be 0 or 1");
-  }
+	// yParity must be 0 or 1
+	if (this.yParity !== 0 && this.yParity !== 1) {
+		throw new ValidationError("yParity must be 0 or 1");
+	}
 
-  // r and s must be non-zero
-  if (this.r === 0n) {
-    throw new ValidationError("Signature r cannot be zero");
-  }
-  if (this.s === 0n) {
-    throw new ValidationError("Signature s cannot be zero");
-  }
+	// r and s must be non-zero
+	if (this.r === 0n) {
+		throw new ValidationError("Signature r cannot be zero");
+	}
+	if (this.s === 0n) {
+		throw new ValidationError("Signature s cannot be zero");
+	}
 
-  // r must be < N
-  if (this.r >= SECP256K1_N) {
-    throw new ValidationError("Signature r must be less than curve order");
-  }
+	// r must be < N
+	if (this.r >= SECP256K1_N) {
+		throw new ValidationError("Signature r must be less than curve order");
+	}
 
-  // s must be <= N/2 (no malleable signatures)
-  if (this.s > SECP256K1_HALF_N) {
-    throw new ValidationError("Signature s too high (malleable signature)");
-  }
+	// s must be <= N/2 (no malleable signatures)
+	if (this.s > SECP256K1_HALF_N) {
+		throw new ValidationError("Signature s too high (malleable signature)");
+	}
 }
 
 // ==========================================================================
@@ -240,39 +240,39 @@ export function validate(this: Item): void {
  * ```
  */
 export function hash(this: Unsigned): Hash {
-  // Helper to encode bigint compact (remove leading zeros)
-  function encodeBigintCompact(value: bigint): Uint8Array {
-    if (value === 0n) return new Uint8Array(0);
-    let byteLength = 0;
-    let temp = value;
-    while (temp > 0n) {
-      byteLength++;
-      temp >>= 8n;
-    }
-    const bytes = new Uint8Array(byteLength);
-    let val = value;
-    for (let i = byteLength - 1; i >= 0; i--) {
-      bytes[i] = Number(val & 0xffn);
-      val >>= 8n;
-    }
-    return bytes;
-  }
+	// Helper to encode bigint compact (remove leading zeros)
+	function encodeBigintCompact(value: bigint): Uint8Array {
+		if (value === 0n) return new Uint8Array(0);
+		let byteLength = 0;
+		let temp = value;
+		while (temp > 0n) {
+			byteLength++;
+			temp >>= 8n;
+		}
+		const bytes = new Uint8Array(byteLength);
+		let val = value;
+		for (let i = byteLength - 1; i >= 0; i--) {
+			bytes[i] = Number(val & 0xffn);
+			val >>= 8n;
+		}
+		return bytes;
+	}
 
-  // RLP encode [chainId, address, nonce]
-  const fields = [
-    encodeBigintCompact(this.chainId),
-    this.address,
-    encodeBigintCompact(this.nonce),
-  ];
-  const rlpEncoded = Rlp.encode.call(fields);
+	// RLP encode [chainId, address, nonce]
+	const fields = [
+		encodeBigintCompact(this.chainId),
+		this.address,
+		encodeBigintCompact(this.nonce),
+	];
+	const rlpEncoded = Rlp.encode.call(fields);
 
-  // Prepend MAGIC_BYTE (0x05)
-  const data = new Uint8Array(1 + rlpEncoded.length);
-  data[0] = MAGIC_BYTE;
-  data.set(rlpEncoded, 1);
+	// Prepend MAGIC_BYTE (0x05)
+	const data = new Uint8Array(1 + rlpEncoded.length);
+	data[0] = MAGIC_BYTE;
+	data.set(rlpEncoded, 1);
 
-  // keccak256 hash
-  return Keccak256.hash(data);
+	// keccak256 hash
+	return Keccak256.hash(data);
 }
 
 // ==========================================================================
@@ -292,49 +292,49 @@ export function hash(this: Unsigned): Hash {
  * ```
  */
 export function sign(this: Unsigned, privateKey: Uint8Array): Item {
-  // Hash the unsigned authorization
-  const messageHash = hash.call(this);
+	// Hash the unsigned authorization
+	const messageHash = hash.call(this);
 
-  // Sign with secp256k1
-  const sig = Secp256k1.sign(messageHash, privateKey);
+	// Sign with secp256k1
+	const sig = Secp256k1.sign(messageHash, privateKey);
 
-  // Extract r, s, yParity from signature
-  // Signature is { r, s, v }
-  const r = sig.r;
-  const s = sig.s;
+	// Extract r, s, yParity from signature
+	// Signature is { r, s, v }
+	const r = sig.r;
+	const s = sig.s;
 
-  // Convert r and s to bigint
-  let rBigint = 0n;
-  let sBigint = 0n;
-  for (let i = 0; i < 32; i++) {
-    const rByte = r[i];
-    const sByte = s[i];
-    if (rByte !== undefined && sByte !== undefined) {
-      rBigint = (rBigint << 8n) | BigInt(rByte);
-      sBigint = (sBigint << 8n) | BigInt(sByte);
-    }
-  }
+	// Convert r and s to bigint
+	let rBigint = 0n;
+	let sBigint = 0n;
+	for (let i = 0; i < 32; i++) {
+		const rByte = r[i];
+		const sByte = s[i];
+		if (rByte !== undefined && sByte !== undefined) {
+			rBigint = (rBigint << 8n) | BigInt(rByte);
+			sBigint = (sBigint << 8n) | BigInt(sByte);
+		}
+	}
 
-  // Recover yParity by trying both values
-  let yParity = 0;
-  try {
-    const recovered = Secp256k1.recoverPublicKey({ r, s, v: 0 }, messageHash);
-    const recoveredAddress = addressFromPublicKey(recovered);
-    if (!addressesEqual(recoveredAddress, this.address)) {
-      yParity = 1;
-    }
-  } catch {
-    yParity = 1;
-  }
+	// Recover yParity by trying both values
+	let yParity = 0;
+	try {
+		const recovered = Secp256k1.recoverPublicKey({ r, s, v: 0 }, messageHash);
+		const recoveredAddress = addressFromPublicKey(recovered);
+		if (!addressesEqual(recoveredAddress, this.address)) {
+			yParity = 1;
+		}
+	} catch {
+		yParity = 1;
+	}
 
-  return {
-    chainId: this.chainId,
-    address: this.address,
-    nonce: this.nonce,
-    yParity,
-    r: rBigint,
-    s: sBigint,
-  };
+	return {
+		chainId: this.chainId,
+		address: this.address,
+		nonce: this.nonce,
+		yParity,
+		r: rBigint,
+		s: sBigint,
+	};
 }
 
 // ==========================================================================
@@ -355,35 +355,35 @@ export function sign(this: Unsigned, privateKey: Uint8Array): Item {
  * ```
  */
 export function verify(this: Item): Address.Address {
-  // Validate structure first
-  validate.call(this);
+	// Validate structure first
+	validate.call(this);
 
-  // Hash the unsigned portion
-  const unsigned: Unsigned = {
-    chainId: this.chainId,
-    address: this.address,
-    nonce: this.nonce,
-  };
-  const messageHash = hash.call(unsigned);
+	// Hash the unsigned portion
+	const unsigned: Unsigned = {
+		chainId: this.chainId,
+		address: this.address,
+		nonce: this.nonce,
+	};
+	const messageHash = hash.call(unsigned);
 
-  // Convert r and s bigints to Uint8Array
-  const r = new Uint8Array(32);
-  const s = new Uint8Array(32);
-  let rVal = this.r;
-  let sVal = this.s;
-  for (let i = 31; i >= 0; i--) {
-    r[i] = Number(rVal & 0xffn);
-    s[i] = Number(sVal & 0xffn);
-    rVal >>= 8n;
-    sVal >>= 8n;
-  }
+	// Convert r and s bigints to Uint8Array
+	const r = new Uint8Array(32);
+	const s = new Uint8Array(32);
+	let rVal = this.r;
+	let sVal = this.s;
+	for (let i = 31; i >= 0; i--) {
+		r[i] = Number(rVal & 0xffn);
+		s[i] = Number(sVal & 0xffn);
+		rVal >>= 8n;
+		sVal >>= 8n;
+	}
 
-  // Recover public key from signature
-  const signature = { r, s, v: this.yParity };
-  const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+	// Recover public key from signature
+	const signature = { r, s, v: this.yParity };
+	const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
 
-  // Derive address from public key
-  return addressFromPublicKey(publicKey);
+	// Derive address from public key
+	return addressFromPublicKey(publicKey);
 }
 
 // ==========================================================================
@@ -404,9 +404,9 @@ export function verify(this: Item): Address.Address {
  * ```
  */
 export function calculateGasCost(this: Item[], emptyAccounts: number): bigint {
-  const authCost = BigInt(this.length) * PER_AUTH_BASE_COST;
-  const emptyCost = BigInt(emptyAccounts) * PER_EMPTY_ACCOUNT_COST;
-  return authCost + emptyCost;
+	const authCost = BigInt(this.length) * PER_AUTH_BASE_COST;
+	const emptyCost = BigInt(emptyAccounts) * PER_EMPTY_ACCOUNT_COST;
+	return authCost + emptyCost;
 }
 
 /**
@@ -422,7 +422,7 @@ export function calculateGasCost(this: Item[], emptyAccounts: number): bigint {
  * ```
  */
 export function getGasCost(this: Item, isEmpty: boolean): bigint {
-  return PER_AUTH_BASE_COST + (isEmpty ? PER_EMPTY_ACCOUNT_COST : 0n);
+	return PER_AUTH_BASE_COST + (isEmpty ? PER_EMPTY_ACCOUNT_COST : 0n);
 }
 
 // ==========================================================================
@@ -443,13 +443,13 @@ export function getGasCost(this: Item, isEmpty: boolean): bigint {
  * ```
  */
 export function process(this: Item): DelegationDesignation {
-  // Validate and recover authority
-  const authority = verify.call(this);
+	// Validate and recover authority
+	const authority = verify.call(this);
 
-  return {
-    authority,
-    delegatedAddress: this.address,
-  };
+	return {
+		authority,
+		delegatedAddress: this.address,
+	};
 }
 
 /**
@@ -468,7 +468,7 @@ export function process(this: Item): DelegationDesignation {
  * ```
  */
 export function processAll(this: Item[]): DelegationDesignation[] {
-  return this.map((auth) => process.call(auth));
+	return this.map((auth) => process.call(auth));
 }
 
 // ==========================================================================
@@ -488,26 +488,26 @@ export function processAll(this: Item[]): DelegationDesignation[] {
  * ```
  */
 export function format(this: Item | Unsigned): string {
-  if ("r" in this && "s" in this) {
-    return `Authorization(chain=${this.chainId}, to=${formatAddress(
-      this.address,
-    )}, nonce=${this.nonce}, r=0x${this.r.toString(16)}, s=0x${this.s.toString(
-      16,
-    )}, v=${this.yParity})`;
-  }
-  return `Authorization(chain=${this.chainId}, to=${formatAddress(
-    this.address,
-  )}, nonce=${this.nonce})`;
+	if ("r" in this && "s" in this) {
+		return `Authorization(chain=${this.chainId}, to=${formatAddress(
+			this.address,
+		)}, nonce=${this.nonce}, r=0x${this.r.toString(16)}, s=0x${this.s.toString(
+			16,
+		)}, v=${this.yParity})`;
+	}
+	return `Authorization(chain=${this.chainId}, to=${formatAddress(
+		this.address,
+	)}, nonce=${this.nonce})`;
 }
 
 /**
  * Helper to format address (shortened)
  */
 function formatAddress(addr: Address.Address): string {
-  const hex = Array.from(addr)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `0x${hex.slice(0, 4)}...${hex.slice(-4)}`;
+	const hex = Array.from(addr)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+	return `0x${hex.slice(0, 4)}...${hex.slice(-4)}`;
 }
 
 /**
@@ -526,44 +526,44 @@ function formatAddress(addr: Address.Address): string {
  * ```
  */
 export function equals(this: Item, other: Item): boolean {
-  return (
-    this.chainId === other.chainId &&
-    addressesEqual(this.address, other.address) &&
-    this.nonce === other.nonce &&
-    this.yParity === other.yParity &&
-    this.r === other.r &&
-    this.s === other.s
-  );
+	return (
+		this.chainId === other.chainId &&
+		addressesEqual(this.address, other.address) &&
+		this.nonce === other.nonce &&
+		this.yParity === other.yParity &&
+		this.r === other.r &&
+		this.s === other.s
+	);
 }
 
 /**
  * Helper to check address equality
  */
 function addressesEqual(a: Address.Address, b: Address.Address): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) {
+		if (a[i] !== b[i]) return false;
+	}
+	return true;
 }
 
 /**
  * Helper to derive address from public key
  */
 function addressFromPublicKey(publicKey: Uint8Array): Address.Address {
-  // Public key is 64 bytes (uncompressed, no prefix)
-  // Extract x and y coordinates
-  let x = 0n;
-  let y = 0n;
-  for (let i = 0; i < 32; i++) {
-    const xByte = publicKey[i];
-    const yByte = publicKey[32 + i];
-    if (xByte !== undefined && yByte !== undefined) {
-      x = (x << 8n) | BigInt(xByte);
-      y = (y << 8n) | BigInt(yByte);
-    }
-  }
-  return Address.fromPublicKey(x, y);
+	// Public key is 64 bytes (uncompressed, no prefix)
+	// Extract x and y coordinates
+	let x = 0n;
+	let y = 0n;
+	for (let i = 0; i < 32; i++) {
+		const xByte = publicKey[i];
+		const yByte = publicKey[32 + i];
+		if (xByte !== undefined && yByte !== undefined) {
+			x = (x << 8n) | BigInt(xByte);
+			y = (y << 8n) | BigInt(yByte);
+		}
+	}
+	return Address.fromPublicKey(x, y);
 }
 
 // ==========================================================================

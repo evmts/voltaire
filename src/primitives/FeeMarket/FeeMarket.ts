@@ -37,37 +37,37 @@
  * EIP-1559 Constants
  */
 export namespace Eip1559 {
-  /** Minimum base fee (wei) */
-  export const MIN_BASE_FEE = 7n;
+	/** Minimum base fee (wei) */
+	export const MIN_BASE_FEE = 7n;
 
-  /** Maximum base fee change per block (denominator for 12.5% = 1/8) */
-  export const BASE_FEE_CHANGE_DENOMINATOR = 8n;
+	/** Maximum base fee change per block (denominator for 12.5% = 1/8) */
+	export const BASE_FEE_CHANGE_DENOMINATOR = 8n;
 
-  /** Elasticity multiplier (gas limit = target * elasticity) */
-  export const ELASTICITY_MULTIPLIER = 2n;
+	/** Elasticity multiplier (gas limit = target * elasticity) */
+	export const ELASTICITY_MULTIPLIER = 2n;
 }
 
 /**
  * EIP-4844 Constants
  */
 export namespace Eip4844 {
-  /** Minimum blob base fee (wei) */
-  export const MIN_BLOB_BASE_FEE = 1n;
+	/** Minimum blob base fee (wei) */
+	export const MIN_BLOB_BASE_FEE = 1n;
 
-  /** Blob base fee exponential update denominator */
-  export const BLOB_BASE_FEE_UPDATE_FRACTION = 3338477n;
+	/** Blob base fee exponential update denominator */
+	export const BLOB_BASE_FEE_UPDATE_FRACTION = 3338477n;
 
-  /** Target blob gas per block (3 blobs worth) */
-  export const TARGET_BLOB_GAS_PER_BLOCK = 393216n;
+	/** Target blob gas per block (3 blobs worth) */
+	export const TARGET_BLOB_GAS_PER_BLOCK = 393216n;
 
-  /** Gas per blob (2^17 = 128 KiB) */
-  export const BLOB_GAS_PER_BLOB = 131072n;
+	/** Gas per blob (2^17 = 128 KiB) */
+	export const BLOB_GAS_PER_BLOB = 131072n;
 
-  /** Maximum blobs per block */
-  export const MAX_BLOBS_PER_BLOCK = 6n;
+	/** Maximum blobs per block */
+	export const MAX_BLOBS_PER_BLOCK = 6n;
 
-  /** Maximum blob gas per block */
-  export const MAX_BLOB_GAS_PER_BLOCK = MAX_BLOBS_PER_BLOCK * BLOB_GAS_PER_BLOB;
+	/** Maximum blob gas per block */
+	export const MAX_BLOB_GAS_PER_BLOCK = MAX_BLOBS_PER_BLOCK * BLOB_GAS_PER_BLOB;
 }
 
 // ============================================================================
@@ -78,84 +78,84 @@ export namespace Eip4844 {
  * Complete fee market state for a block
  */
 export type State = {
-  /** Gas used in block */
-  gasUsed: bigint;
-  /** Gas limit of block */
-  gasLimit: bigint;
-  /** Base fee per gas (wei) */
-  baseFee: bigint;
-  /** Excess blob gas accumulated */
-  excessBlobGas: bigint;
-  /** Blob gas used in block */
-  blobGasUsed: bigint;
+	/** Gas used in block */
+	gasUsed: bigint;
+	/** Gas limit of block */
+	gasLimit: bigint;
+	/** Base fee per gas (wei) */
+	baseFee: bigint;
+	/** Excess blob gas accumulated */
+	excessBlobGas: bigint;
+	/** Blob gas used in block */
+	blobGasUsed: bigint;
 };
 
 /**
  * EIP-1559 specific state
  */
 export type Eip1559State = {
-  /** Gas used in block */
-  gasUsed: bigint;
-  /** Gas limit of block */
-  gasLimit: bigint;
-  /** Base fee per gas (wei) */
-  baseFee: bigint;
+	/** Gas used in block */
+	gasUsed: bigint;
+	/** Gas limit of block */
+	gasLimit: bigint;
+	/** Base fee per gas (wei) */
+	baseFee: bigint;
 };
 
 /**
  * EIP-4844 specific state
  */
 export type Eip4844State = {
-  /** Excess blob gas accumulated */
-  excessBlobGas: bigint;
-  /** Blob gas used in block */
-  blobGasUsed: bigint;
+	/** Excess blob gas accumulated */
+	excessBlobGas: bigint;
+	/** Blob gas used in block */
+	blobGasUsed: bigint;
 };
 
 /**
  * Transaction fee parameters
  */
 export type TxFeeParams = {
-  /** Maximum fee per gas willing to pay (wei) */
-  maxFeePerGas: bigint;
-  /** Maximum priority fee per gas (tip to miner, wei) */
-  maxPriorityFeePerGas: bigint;
-  /** Current block base fee (wei) */
-  baseFee: bigint;
+	/** Maximum fee per gas willing to pay (wei) */
+	maxFeePerGas: bigint;
+	/** Maximum priority fee per gas (tip to miner, wei) */
+	maxPriorityFeePerGas: bigint;
+	/** Current block base fee (wei) */
+	baseFee: bigint;
 };
 
 /**
  * Blob transaction fee parameters (EIP-4844)
  */
 export type BlobTxFeeParams = TxFeeParams & {
-  /** Maximum fee per blob gas (wei) */
-  maxFeePerBlobGas: bigint;
-  /** Current blob base fee (wei) */
-  blobBaseFee: bigint;
-  /** Number of blobs in transaction */
-  blobCount: bigint;
+	/** Maximum fee per blob gas (wei) */
+	maxFeePerBlobGas: bigint;
+	/** Current blob base fee (wei) */
+	blobBaseFee: bigint;
+	/** Number of blobs in transaction */
+	blobCount: bigint;
 };
 
 /**
  * Calculated transaction fee breakdown
  */
 export type TxFee = {
-  /** Effective gas price paid (wei per gas) */
-  effectiveGasPrice: bigint;
-  /** Priority fee paid (wei per gas) */
-  priorityFee: bigint;
-  /** Base fee paid (wei per gas) */
-  baseFee: bigint;
+	/** Effective gas price paid (wei per gas) */
+	effectiveGasPrice: bigint;
+	/** Priority fee paid (wei per gas) */
+	priorityFee: bigint;
+	/** Base fee paid (wei per gas) */
+	baseFee: bigint;
 };
 
 /**
  * Calculated blob transaction fee breakdown
  */
 export type BlobTxFee = TxFee & {
-  /** Blob gas price paid (wei per blob gas) */
-  blobGasPrice: bigint;
-  /** Total blob fee (wei) */
-  totalBlobFee: bigint;
+	/** Blob gas price paid (wei per blob gas) */
+	blobGasPrice: bigint;
+	/** Total blob fee (wei) */
+	totalBlobFee: bigint;
 };
 
 // ============================================================================
@@ -193,48 +193,49 @@ export type BlobTxFee = TxFee & {
  * ```
  */
 export function calculateBaseFee(
-  parentGasUsed: bigint,
-  parentGasLimit: bigint,
-  parentBaseFee: bigint,
+	parentGasUsed: bigint,
+	parentGasLimit: bigint,
+	parentBaseFee: bigint,
 ): bigint {
-  // Target is 50% of gas limit (elasticity multiplier = 2)
-  const parentGasTarget = parentGasLimit / Eip1559.ELASTICITY_MULTIPLIER;
+	// Target is 50% of gas limit (elasticity multiplier = 2)
+	const parentGasTarget = parentGasLimit / Eip1559.ELASTICITY_MULTIPLIER;
 
-  // Empty block: base fee stays same
-  if (parentGasUsed === 0n) {
-    return parentBaseFee;
-  }
+	// Empty block: base fee stays same
+	if (parentGasUsed === 0n) {
+		return parentBaseFee;
+	}
 
-  // At target: base fee stays same
-  if (parentGasUsed === parentGasTarget) {
-    return parentBaseFee;
-  }
+	// At target: base fee stays same
+	if (parentGasUsed === parentGasTarget) {
+		return parentBaseFee;
+	}
 
-  let newBaseFee = parentBaseFee;
+	let newBaseFee = parentBaseFee;
 
-  if (parentGasUsed > parentGasTarget) {
-    // Block used more than target: increase base fee
-    const gasUsedDelta = parentGasUsed - parentGasTarget;
-    // baseFee * delta / target / 8 (max 12.5% increase)
-    const baseFeeDelta =
-      (parentBaseFee * gasUsedDelta) /
-      parentGasTarget /
-      Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
-    newBaseFee = parentBaseFee + (baseFeeDelta > 0n ? baseFeeDelta : 1n);
-  } else {
-    // Block used less than target: decrease base fee
-    const gasUsedDelta = parentGasTarget - parentGasUsed;
-    // baseFee * delta / target / 8 (max 12.5% decrease)
-    const baseFeeDelta =
-      (parentBaseFee * gasUsedDelta) /
-      parentGasTarget /
-      Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
-    const delta = baseFeeDelta > 0n ? baseFeeDelta : 1n;
-    newBaseFee = parentBaseFee > delta ? parentBaseFee - delta : Eip1559.MIN_BASE_FEE;
-  }
+	if (parentGasUsed > parentGasTarget) {
+		// Block used more than target: increase base fee
+		const gasUsedDelta = parentGasUsed - parentGasTarget;
+		// baseFee * delta / target / 8 (max 12.5% increase)
+		const baseFeeDelta =
+			(parentBaseFee * gasUsedDelta) /
+			parentGasTarget /
+			Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+		newBaseFee = parentBaseFee + (baseFeeDelta > 0n ? baseFeeDelta : 1n);
+	} else {
+		// Block used less than target: decrease base fee
+		const gasUsedDelta = parentGasTarget - parentGasUsed;
+		// baseFee * delta / target / 8 (max 12.5% decrease)
+		const baseFeeDelta =
+			(parentBaseFee * gasUsedDelta) /
+			parentGasTarget /
+			Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+		const delta = baseFeeDelta > 0n ? baseFeeDelta : 1n;
+		newBaseFee =
+			parentBaseFee > delta ? parentBaseFee - delta : Eip1559.MIN_BASE_FEE;
+	}
 
-  // Enforce minimum base fee
-  return newBaseFee < Eip1559.MIN_BASE_FEE ? Eip1559.MIN_BASE_FEE : newBaseFee;
+	// Enforce minimum base fee
+	return newBaseFee < Eip1559.MIN_BASE_FEE ? Eip1559.MIN_BASE_FEE : newBaseFee;
 }
 
 // ============================================================================
@@ -267,11 +268,11 @@ export function calculateBaseFee(
  * ```
  */
 export function calculateBlobBaseFee(excessBlobGas: bigint): bigint {
-  return fakeExponential(
-    Eip4844.MIN_BLOB_BASE_FEE,
-    excessBlobGas,
-    Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION,
-  );
+	return fakeExponential(
+		Eip4844.MIN_BLOB_BASE_FEE,
+		excessBlobGas,
+		Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION,
+	);
 }
 
 /**
@@ -299,16 +300,16 @@ export function calculateBlobBaseFee(excessBlobGas: bigint): bigint {
  * ```
  */
 export function calculateExcessBlobGas(
-  parentExcessBlobGas: bigint,
-  parentBlobGasUsed: bigint,
+	parentExcessBlobGas: bigint,
+	parentBlobGasUsed: bigint,
 ): bigint {
-  const total = parentExcessBlobGas + parentBlobGasUsed;
+	const total = parentExcessBlobGas + parentBlobGasUsed;
 
-  if (total < Eip4844.TARGET_BLOB_GAS_PER_BLOCK) {
-    return 0n;
-  }
+	if (total < Eip4844.TARGET_BLOB_GAS_PER_BLOCK) {
+		return 0n;
+	}
 
-  return total - Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
+	return total - Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
 }
 
 /**
@@ -324,19 +325,23 @@ export function calculateExcessBlobGas(
  * @param denominator - Exponent denominator (BLOB_BASE_FEE_UPDATE_FRACTION)
  * @returns Approximated result
  */
-function fakeExponential(factor: bigint, numerator: bigint, denominator: bigint): bigint {
-  let output = 0n;
-  let numeratorAccum = factor * denominator;
-  let i = 1n;
+function fakeExponential(
+	factor: bigint,
+	numerator: bigint,
+	denominator: bigint,
+): bigint {
+	let output = 0n;
+	let numeratorAccum = factor * denominator;
+	let i = 1n;
 
-  // Taylor series: sum of (numerator^i) / (denominator^i * i!)
-  while (numeratorAccum > 0n && i <= 256n) {
-    output += numeratorAccum;
-    numeratorAccum = (numeratorAccum * numerator) / (denominator * i);
-    i += 1n;
-  }
+	// Taylor series: sum of (numerator^i) / (denominator^i * i!)
+	while (numeratorAccum > 0n && i <= 256n) {
+		output += numeratorAccum;
+		numeratorAccum = (numeratorAccum * numerator) / (denominator * i);
+		i += 1n;
+	}
 
-  return output / denominator;
+	return output / denominator;
 }
 
 // ============================================================================
@@ -366,22 +371,23 @@ function fakeExponential(factor: bigint, numerator: bigint, denominator: bigint)
  * ```
  */
 export function calculateTxFee(params: TxFeeParams): TxFee {
-  const { maxFeePerGas, maxPriorityFeePerGas, baseFee } = params;
+	const { maxFeePerGas, maxPriorityFeePerGas, baseFee } = params;
 
-  // Effective gas price is capped by maxFeePerGas
-  const effectiveGasPrice =
-    baseFee + maxPriorityFeePerGas < maxFeePerGas
-      ? baseFee + maxPriorityFeePerGas
-      : maxFeePerGas;
+	// Effective gas price is capped by maxFeePerGas
+	const effectiveGasPrice =
+		baseFee + maxPriorityFeePerGas < maxFeePerGas
+			? baseFee + maxPriorityFeePerGas
+			: maxFeePerGas;
 
-  // Priority fee is what remains after base fee
-  const priorityFee = effectiveGasPrice > baseFee ? effectiveGasPrice - baseFee : 0n;
+	// Priority fee is what remains after base fee
+	const priorityFee =
+		effectiveGasPrice > baseFee ? effectiveGasPrice - baseFee : 0n;
 
-  return {
-    effectiveGasPrice,
-    priorityFee,
-    baseFee,
-  };
+	return {
+		effectiveGasPrice,
+		priorityFee,
+		baseFee,
+	};
 }
 
 /**
@@ -407,22 +413,23 @@ export function calculateTxFee(params: TxFeeParams): TxFee {
  * ```
  */
 export function calculateBlobTxFee(params: BlobTxFeeParams): BlobTxFee {
-  const { maxFeePerBlobGas, blobBaseFee, blobCount } = params;
+	const { maxFeePerBlobGas, blobBaseFee, blobCount } = params;
 
-  // Calculate regular gas fee
-  const txFee = calculateTxFee(params);
+	// Calculate regular gas fee
+	const txFee = calculateTxFee(params);
 
-  // Blob gas price is capped by maxFeePerBlobGas
-  const blobGasPrice = blobBaseFee < maxFeePerBlobGas ? blobBaseFee : maxFeePerBlobGas;
+	// Blob gas price is capped by maxFeePerBlobGas
+	const blobGasPrice =
+		blobBaseFee < maxFeePerBlobGas ? blobBaseFee : maxFeePerBlobGas;
 
-  // Total blob fee = blobGasPrice * gasPerBlob * blobCount
-  const totalBlobFee = blobGasPrice * Eip4844.BLOB_GAS_PER_BLOB * blobCount;
+	// Total blob fee = blobGasPrice * gasPerBlob * blobCount
+	const totalBlobFee = blobGasPrice * Eip4844.BLOB_GAS_PER_BLOB * blobCount;
 
-  return {
-    ...txFee,
-    blobGasPrice,
-    totalBlobFee,
-  };
+	return {
+		...txFee,
+		blobGasPrice,
+		totalBlobFee,
+	};
 }
 
 /**
@@ -446,19 +453,19 @@ export function calculateBlobTxFee(params: BlobTxFeeParams): BlobTxFee {
  * ```
  */
 export function canIncludeTx(params: TxFeeParams | BlobTxFeeParams): boolean {
-  const { maxFeePerGas, baseFee } = params;
+	const { maxFeePerGas, baseFee } = params;
 
-  // Must pay at least base fee
-  if (maxFeePerGas < baseFee) {
-    return false;
-  }
+	// Must pay at least base fee
+	if (maxFeePerGas < baseFee) {
+		return false;
+	}
 
-  // For blob txs, must also pay blob base fee
-  if ("maxFeePerBlobGas" in params) {
-    return params.maxFeePerBlobGas >= params.blobBaseFee;
-  }
+	// For blob txs, must also pay blob base fee
+	if ("maxFeePerBlobGas" in params) {
+		return params.maxFeePerBlobGas >= params.blobBaseFee;
+	}
 
-  return true;
+	return true;
 }
 
 // ============================================================================
@@ -470,7 +477,7 @@ export function canIncludeTx(params: TxFeeParams | BlobTxFeeParams): boolean {
  * @internal
  */
 export function _nextState(this: State): State {
-  return nextState(this);
+	return nextState(this);
 }
 
 /**
@@ -478,7 +485,7 @@ export function _nextState(this: State): State {
  * @internal
  */
 export function _getBlobBaseFee(this: State): bigint {
-  return calculateBlobBaseFee(this.excessBlobGas);
+	return calculateBlobBaseFee(this.excessBlobGas);
 }
 
 /**
@@ -486,7 +493,7 @@ export function _getBlobBaseFee(this: State): bigint {
  * @internal
  */
 export function _getGasTarget(this: State): bigint {
-  return this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
+	return this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
 }
 
 /**
@@ -494,7 +501,7 @@ export function _getGasTarget(this: State): bigint {
  * @internal
  */
 export function _isAboveGasTarget(this: State): boolean {
-  return this.gasUsed > this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
+	return this.gasUsed > this.gasLimit / Eip1559.ELASTICITY_MULTIPLIER;
 }
 
 /**
@@ -502,48 +509,48 @@ export function _isAboveGasTarget(this: State): boolean {
  * @internal
  */
 export function _isAboveBlobGasTarget(this: State): boolean {
-  return this.blobGasUsed > Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
+	return this.blobGasUsed > Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
 }
 
 export namespace State {
-  /**
-   * Calculate next block's fee market state (convenience form)
-   *
-   * @example
-   * ```typescript
-   * const state: State = {
-   *   gasUsed: 20_000_000n,
-   *   gasLimit: 30_000_000n,
-   *   baseFee: 1_000_000_000n,
-   *   excessBlobGas: 0n,
-   *   blobGasUsed: 262144n // 2 blobs
-   * };
-   * const nextState = State.next.call(state);
-   * // nextState.baseFee !== state.baseFee (gas below target)
-   * // nextState.excessBlobGas === 0n (below blob target)
-   * ```
-   */
-  export const next = _nextState;
+	/**
+	 * Calculate next block's fee market state (convenience form)
+	 *
+	 * @example
+	 * ```typescript
+	 * const state: State = {
+	 *   gasUsed: 20_000_000n,
+	 *   gasLimit: 30_000_000n,
+	 *   baseFee: 1_000_000_000n,
+	 *   excessBlobGas: 0n,
+	 *   blobGasUsed: 262144n // 2 blobs
+	 * };
+	 * const nextState = State.next.call(state);
+	 * // nextState.baseFee !== state.baseFee (gas below target)
+	 * // nextState.excessBlobGas === 0n (below blob target)
+	 * ```
+	 */
+	export const next = _nextState;
 
-  /**
-   * Get current blob base fee (convenience form)
-   */
-  export const getBlobBaseFee = _getBlobBaseFee;
+	/**
+	 * Get current blob base fee (convenience form)
+	 */
+	export const getBlobBaseFee = _getBlobBaseFee;
 
-  /**
-   * Get gas target for block (convenience form)
-   */
-  export const getGasTarget = _getGasTarget;
+	/**
+	 * Get gas target for block (convenience form)
+	 */
+	export const getGasTarget = _getGasTarget;
 
-  /**
-   * Check if block is above gas target (convenience form)
-   */
-  export const isAboveGasTarget = _isAboveGasTarget;
+	/**
+	 * Check if block is above gas target (convenience form)
+	 */
+	export const isAboveGasTarget = _isAboveGasTarget;
 
-  /**
-   * Check if block is above blob gas target (convenience form)
-   */
-  export const isAboveBlobGasTarget = _isAboveBlobGasTarget;
+	/**
+	 * Check if block is above blob gas target (convenience form)
+	 */
+	export const isAboveBlobGasTarget = _isAboveBlobGasTarget;
 }
 
 /**
@@ -567,16 +574,23 @@ export namespace State {
  * ```
  */
 export function nextState(state: State): State {
-  const nextBaseFee = calculateBaseFee(state.gasUsed, state.gasLimit, state.baseFee);
-  const nextExcessBlobGas = calculateExcessBlobGas(state.excessBlobGas, state.blobGasUsed);
+	const nextBaseFee = calculateBaseFee(
+		state.gasUsed,
+		state.gasLimit,
+		state.baseFee,
+	);
+	const nextExcessBlobGas = calculateExcessBlobGas(
+		state.excessBlobGas,
+		state.blobGasUsed,
+	);
 
-  return {
-    gasUsed: 0n, // Reset for next block
-    gasLimit: state.gasLimit, // Typically unchanged
-    baseFee: nextBaseFee,
-    excessBlobGas: nextExcessBlobGas,
-    blobGasUsed: 0n, // Reset for next block
-  };
+	return {
+		gasUsed: 0n, // Reset for next block
+		gasLimit: state.gasLimit, // Typically unchanged
+		baseFee: nextBaseFee,
+		excessBlobGas: nextExcessBlobGas,
+		blobGasUsed: 0n, // Reset for next block
+	};
 }
 
 /**
@@ -604,28 +618,28 @@ export function nextState(state: State): State {
  * ```
  */
 export function projectBaseFees(
-  initialState: State,
-  blocks: number,
-  avgGasUsed: bigint,
-  avgBlobGasUsed: bigint = 0n,
+	initialState: State,
+	blocks: number,
+	avgGasUsed: bigint,
+	avgBlobGasUsed = 0n,
 ): bigint[] {
-  const fees: bigint[] = [];
-  let state = { ...initialState };
+	const fees: bigint[] = [];
+	let state = { ...initialState };
 
-  for (let i = 0; i < blocks; i++) {
-    // Simulate block with average usage
-    state = {
-      ...state,
-      gasUsed: avgGasUsed,
-      blobGasUsed: avgBlobGasUsed,
-    };
+	for (let i = 0; i < blocks; i++) {
+		// Simulate block with average usage
+		state = {
+			...state,
+			gasUsed: avgGasUsed,
+			blobGasUsed: avgBlobGasUsed,
+		};
 
-    // Calculate next state
-    state = nextState(state);
-    fees.push(state.baseFee);
-  }
+		// Calculate next state
+		state = nextState(state);
+		fees.push(state.baseFee);
+	}
 
-  return fees;
+	return fees;
 }
 
 // ============================================================================
@@ -638,42 +652,47 @@ export function projectBaseFees(
  * @param params - Transaction fee parameters
  * @returns Validation errors, empty array if valid
  */
-export function validateTxFeeParams(params: TxFeeParams | BlobTxFeeParams): string[] {
-  const errors: string[] = [];
+export function validateTxFeeParams(
+	params: TxFeeParams | BlobTxFeeParams,
+): string[] {
+	const errors: string[] = [];
 
-  if (params.maxFeePerGas < 0n) {
-    errors.push("maxFeePerGas must be non-negative");
-  }
+	if (params.maxFeePerGas < 0n) {
+		errors.push("maxFeePerGas must be non-negative");
+	}
 
-  if (params.maxPriorityFeePerGas < 0n) {
-    errors.push("maxPriorityFeePerGas must be non-negative");
-  }
+	if (params.maxPriorityFeePerGas < 0n) {
+		errors.push("maxPriorityFeePerGas must be non-negative");
+	}
 
-  if (params.maxPriorityFeePerGas > params.maxFeePerGas) {
-    errors.push("maxPriorityFeePerGas cannot exceed maxFeePerGas");
-  }
+	if (params.maxPriorityFeePerGas > params.maxFeePerGas) {
+		errors.push("maxPriorityFeePerGas cannot exceed maxFeePerGas");
+	}
 
-  if (params.baseFee < 0n) {
-    errors.push("baseFee must be non-negative");
-  }
+	if (params.baseFee < 0n) {
+		errors.push("baseFee must be non-negative");
+	}
 
-  if ("maxFeePerBlobGas" in params) {
-    if (params.maxFeePerBlobGas < 0n) {
-      errors.push("maxFeePerBlobGas must be non-negative");
-    }
+	if ("maxFeePerBlobGas" in params) {
+		if (params.maxFeePerBlobGas < 0n) {
+			errors.push("maxFeePerBlobGas must be non-negative");
+		}
 
-    if (params.blobBaseFee < 0n) {
-      errors.push("blobBaseFee must be non-negative");
-    }
+		if (params.blobBaseFee < 0n) {
+			errors.push("blobBaseFee must be non-negative");
+		}
 
-    if (params.blobCount < 1n || params.blobCount > Eip4844.MAX_BLOBS_PER_BLOCK) {
-      errors.push(
-        `blobCount must be between 1 and ${Eip4844.MAX_BLOBS_PER_BLOCK}`,
-      );
-    }
-  }
+		if (
+			params.blobCount < 1n ||
+			params.blobCount > Eip4844.MAX_BLOBS_PER_BLOCK
+		) {
+			errors.push(
+				`blobCount must be between 1 and ${Eip4844.MAX_BLOBS_PER_BLOCK}`,
+			);
+		}
+	}
 
-  return errors;
+	return errors;
 }
 
 /**
@@ -683,52 +702,50 @@ export function validateTxFeeParams(params: TxFeeParams | BlobTxFeeParams): stri
  * @returns Validation errors, empty array if valid
  */
 export function validateState(state: State): string[] {
-  const errors: string[] = [];
+	const errors: string[] = [];
 
-  if (state.gasUsed < 0n) {
-    errors.push("gasUsed must be non-negative");
-  }
+	if (state.gasUsed < 0n) {
+		errors.push("gasUsed must be non-negative");
+	}
 
-  if (state.gasLimit <= 0n) {
-    errors.push("gasLimit must be positive");
-  }
+	if (state.gasLimit <= 0n) {
+		errors.push("gasLimit must be positive");
+	}
 
-  if (state.gasUsed > state.gasLimit) {
-    errors.push("gasUsed cannot exceed gasLimit");
-  }
+	if (state.gasUsed > state.gasLimit) {
+		errors.push("gasUsed cannot exceed gasLimit");
+	}
 
-  if (state.baseFee < Eip1559.MIN_BASE_FEE) {
-    errors.push(`baseFee must be at least ${Eip1559.MIN_BASE_FEE}`);
-  }
+	if (state.baseFee < Eip1559.MIN_BASE_FEE) {
+		errors.push(`baseFee must be at least ${Eip1559.MIN_BASE_FEE}`);
+	}
 
-  if (state.excessBlobGas < 0n) {
-    errors.push("excessBlobGas must be non-negative");
-  }
+	if (state.excessBlobGas < 0n) {
+		errors.push("excessBlobGas must be non-negative");
+	}
 
-  if (state.blobGasUsed < 0n) {
-    errors.push("blobGasUsed must be non-negative");
-  }
+	if (state.blobGasUsed < 0n) {
+		errors.push("blobGasUsed must be non-negative");
+	}
 
-  if (state.blobGasUsed > Eip4844.MAX_BLOB_GAS_PER_BLOCK) {
-    errors.push(
-      `blobGasUsed cannot exceed ${Eip4844.MAX_BLOB_GAS_PER_BLOCK}`,
-    );
-  }
+	if (state.blobGasUsed > Eip4844.MAX_BLOB_GAS_PER_BLOCK) {
+		errors.push(`blobGasUsed cannot exceed ${Eip4844.MAX_BLOB_GAS_PER_BLOCK}`);
+	}
 
-  return errors;
+	return errors;
 }
 
 /**
  * Convert wei to gwei for display
  */
 export function weiToGwei(wei: bigint): string {
-  const gwei = Number(wei) / 1_000_000_000;
-  return gwei.toFixed(9);
+	const gwei = Number(wei) / 1_000_000_000;
+	return gwei.toFixed(9);
 }
 
 /**
  * Convert gwei to wei
  */
 export function gweiToWei(gwei: number): bigint {
-  return BigInt(Math.floor(gwei * 1_000_000_000));
+	return BigInt(Math.floor(gwei * 1_000_000_000));
 }

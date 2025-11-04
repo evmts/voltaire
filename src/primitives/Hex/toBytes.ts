@@ -1,5 +1,9 @@
 import type { Unsized } from "./Hex.js";
-import { InvalidFormatError, OddLengthError, InvalidCharacterError } from "./errors.js";
+import {
+	InvalidCharacterError,
+	InvalidFormatError,
+	OddLengthError,
+} from "./errors.js";
 import { hexCharToValue } from "./utils.js";
 
 /**

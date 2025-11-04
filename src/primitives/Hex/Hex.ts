@@ -26,14 +26,14 @@
 /**
  * Hex string with 0x prefix (unsized)
  */
-export type Unsized = `0x${string}` & { readonly __tag: 'Hex' };
+export type Unsized = `0x${string}` & { readonly __tag: "Hex" };
 
 /**
  * Hex string with specific byte size
  * @example Hex.Sized<4> = '0x12345678' (4 bytes = 8 hex chars)
  */
 export type Sized<TSize extends number = number> = `0x${string}` & {
-	readonly __tag: 'Hex';
+	readonly __tag: "Hex";
 	readonly size: TSize;
 };
 
@@ -84,23 +84,23 @@ export { trim as _trim } from "./trim.js";
 export { equals as _equals } from "./equals.js";
 export { xor as _xor } from "./xor.js";
 
+import { assertSize as assertSizeInternal } from "./assertSize.js";
+import { equals as equalsInternal } from "./equals.js";
+import { fromBytes } from "./fromBytes.js";
+import { isSized as isSizedInternal } from "./isSized.js";
+import { pad as padInternal } from "./pad.js";
+import { padRight as padRightInternal } from "./padRight.js";
+import { size as sizeInternal } from "./size.js";
+import { slice as sliceInternal } from "./slice.js";
+import { toBigInt as toBigIntInternal } from "./toBigInt.js";
+import { toBoolean as toBooleanInternal } from "./toBoolean.js";
 // Import internal methods for wrapper usage
 import { toBytes as toBytesInternal } from "./toBytes.js";
 import { toNumber as toNumberInternal } from "./toNumber.js";
-import { toBigInt as toBigIntInternal } from "./toBigInt.js";
 import { toString as toStringInternal } from "./toString.js";
-import { toBoolean as toBooleanInternal } from "./toBoolean.js";
-import { size as sizeInternal } from "./size.js";
-import { isSized as isSizedInternal } from "./isSized.js";
-import { validate as validateInternal } from "./validate.js";
-import { assertSize as assertSizeInternal } from "./assertSize.js";
-import { slice as sliceInternal } from "./slice.js";
-import { pad as padInternal } from "./pad.js";
-import { padRight as padRightInternal } from "./padRight.js";
 import { trim as trimInternal } from "./trim.js";
-import { equals as equalsInternal } from "./equals.js";
+import { validate as validateInternal } from "./validate.js";
 import { xor as xorInternal } from "./xor.js";
-import { fromBytes } from "./fromBytes.js";
 
 // ============================================================================
 // Convenience Constructor
@@ -119,10 +119,10 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function from(value: string | Uint8Array): Unsized {
-  if (typeof value === 'string') {
-    return value as Unsized;
-  }
-  return fromBytes(value);
+	if (typeof value === "string") {
+		return value as Unsized;
+	}
+	return fromBytes(value);
 }
 
 // ============================================================================
@@ -141,7 +141,7 @@ export function from(value: string | Uint8Array): Unsized {
  * ```
  */
 export function toBytes(value: string | Uint8Array): Uint8Array {
-  return toBytesInternal.call(from(value));
+	return toBytesInternal.call(from(value));
 }
 
 /**
@@ -156,7 +156,7 @@ export function toBytes(value: string | Uint8Array): Uint8Array {
  * ```
  */
 export function toNumber(value: string | Uint8Array): number {
-  return toNumberInternal.call(from(value));
+	return toNumberInternal.call(from(value));
 }
 
 /**
@@ -171,7 +171,7 @@ export function toNumber(value: string | Uint8Array): number {
  * ```
  */
 export function toBigInt(value: string | Uint8Array): bigint {
-  return toBigIntInternal.call(from(value));
+	return toBigIntInternal.call(from(value));
 }
 
 /**
@@ -186,7 +186,7 @@ export function toBigInt(value: string | Uint8Array): bigint {
  * ```
  */
 export function toString(value: string | Uint8Array): string {
-  return toStringInternal.call(from(value));
+	return toStringInternal.call(from(value));
 }
 
 /**
@@ -201,7 +201,7 @@ export function toString(value: string | Uint8Array): string {
  * ```
  */
 export function toBoolean(value: string | Uint8Array): boolean {
-  return toBooleanInternal.call(from(value));
+	return toBooleanInternal.call(from(value));
 }
 
 /**
@@ -216,7 +216,7 @@ export function toBoolean(value: string | Uint8Array): boolean {
  * ```
  */
 export function size(value: string | Uint8Array): number {
-  return sizeInternal.call(from(value));
+	return sizeInternal.call(from(value));
 }
 
 /**
@@ -231,8 +231,11 @@ export function size(value: string | Uint8Array): number {
  * const is4 = Hex.isSized('0x1234', 2); // true
  * ```
  */
-export function isSized(value: string | Uint8Array, targetSize: number): boolean {
-  return isSizedInternal.call(from(value), targetSize);
+export function isSized(
+	value: string | Uint8Array,
+	targetSize: number,
+): boolean {
+	return isSizedInternal.call(from(value), targetSize);
 }
 
 /**
@@ -247,7 +250,7 @@ export function isSized(value: string | Uint8Array, targetSize: number): boolean
  * ```
  */
 export function validate(value: string | Uint8Array): Unsized {
-  return validateInternal.call(from(value));
+	return validateInternal.call(from(value));
 }
 
 /**
@@ -262,8 +265,11 @@ export function validate(value: string | Uint8Array): Unsized {
  * const hex = Hex.assertSize('0x1234', 2);
  * ```
  */
-export function assertSize(value: string | Uint8Array, targetSize: number): Unsized {
-  return assertSizeInternal.call(from(value), targetSize);
+export function assertSize(
+	value: string | Uint8Array,
+	targetSize: number,
+): Unsized {
+	return assertSizeInternal.call(from(value), targetSize);
 }
 
 /**
@@ -279,8 +285,12 @@ export function assertSize(value: string | Uint8Array, targetSize: number): Unsi
  * const sliced = Hex.slice('0x123456', 1); // '0x3456'
  * ```
  */
-export function slice(value: string | Uint8Array, start: number, end?: number): Unsized {
-  return sliceInternal.call(from(value), start, end);
+export function slice(
+	value: string | Uint8Array,
+	start: number,
+	end?: number,
+): Unsized {
+	return sliceInternal.call(from(value), start, end);
 }
 
 /**
@@ -296,7 +306,7 @@ export function slice(value: string | Uint8Array, start: number, end?: number): 
  * ```
  */
 export function pad(value: string | Uint8Array, targetSize: number): Unsized {
-  return padInternal.call(from(value), targetSize);
+	return padInternal.call(from(value), targetSize);
 }
 
 /**
@@ -311,8 +321,11 @@ export function pad(value: string | Uint8Array, targetSize: number): Unsized {
  * const padded = Hex.padRight('0x1234', 4); // '0x12340000'
  * ```
  */
-export function padRight(value: string | Uint8Array, targetSize: number): Unsized {
-  return padRightInternal.call(from(value), targetSize);
+export function padRight(
+	value: string | Uint8Array,
+	targetSize: number,
+): Unsized {
+	return padRightInternal.call(from(value), targetSize);
 }
 
 /**
@@ -327,7 +340,7 @@ export function padRight(value: string | Uint8Array, targetSize: number): Unsize
  * ```
  */
 export function trim(value: string | Uint8Array): Unsized {
-  return trimInternal.call(from(value));
+	return trimInternal.call(from(value));
 }
 
 /**
@@ -343,7 +356,7 @@ export function trim(value: string | Uint8Array): Unsized {
  * ```
  */
 export function equals(value: string | Uint8Array, other: Unsized): boolean {
-  return equalsInternal.call(from(value), other);
+	return equalsInternal.call(from(value), other);
 }
 
 /**
@@ -359,5 +372,5 @@ export function equals(value: string | Uint8Array, other: Unsized): boolean {
  * ```
  */
 export function xor(value: string | Uint8Array, other: Unsized): Unsized {
-  return xorInternal.call(from(value), other);
+	return xorInternal.call(from(value), other);
 }

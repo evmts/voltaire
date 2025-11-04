@@ -1,236 +1,236 @@
 [
-  {
-    "name": "fromData - small (13 bytes)",
-    "opsPerSec": 467254.9904212727,
-    "avgTimeMs": 0.0021401590576879863,
-    "iterations": 934510
-  },
-  {
-    "name": "fromData - medium (10 KB)",
-    "opsPerSec": 416692.4912494577,
-    "avgTimeMs": 0.002399851259621903,
-    "iterations": 833385
-  },
-  {
-    "name": "fromData - large (100 KB)",
-    "opsPerSec": 306223.8978743301,
-    "avgTimeMs": 0.0032655844528841622,
-    "iterations": 612448
-  },
-  {
-    "name": "fromData - max (128 KB)",
-    "opsPerSec": 280968.76005267893,
-    "avgTimeMs": 0.003559114542885514,
-    "iterations": 561938
-  },
-  {
-    "name": "toData - small (13 bytes)",
-    "opsPerSec": 12386684.479759252,
-    "avgTimeMs": 0.0000807318537607116,
-    "iterations": 24773370
-  },
-  {
-    "name": "toData - medium (10 KB)",
-    "opsPerSec": 1913149.3000758982,
-    "avgTimeMs": 0.0005226983591716172,
-    "iterations": 3826299
-  },
-  {
-    "name": "toData - large (100 KB)",
-    "opsPerSec": 651860.8305695109,
-    "avgTimeMs": 0.001534069778554313,
-    "iterations": 1303796
-  },
-  {
-    "name": "toData - max (128 KB)",
-    "opsPerSec": 465119.3160453104,
-    "avgTimeMs": 0.002149985961672216,
-    "iterations": 930239
-  },
-  {
-    "name": "Blob.isValid - valid",
-    "opsPerSec": 42589117.60562858,
-    "avgTimeMs": 0.000023480176538521193,
-    "iterations": 85178237
-  },
-  {
-    "name": "Blob.isValid - invalid",
-    "opsPerSec": 42488293,
-    "avgTimeMs": 0.00002353589493463529,
-    "iterations": 84976586
-  },
-  {
-    "name": "Commitment.isValid - valid",
-    "opsPerSec": 42870153,
-    "avgTimeMs": 0.000023326252182958154,
-    "iterations": 85740306
-  },
-  {
-    "name": "Commitment.isValid - invalid",
-    "opsPerSec": 42519314,
-    "avgTimeMs": 0.00002351872374987047,
-    "iterations": 85038628
-  },
-  {
-    "name": "Proof.isValid - valid",
-    "opsPerSec": 42214933.5,
-    "avgTimeMs": 0.000023688299781403187,
-    "iterations": 84429867
-  },
-  {
-    "name": "VersionedHash.isValid - valid",
-    "opsPerSec": 42129574.5,
-    "avgTimeMs": 0.000023736294796900928,
-    "iterations": 84259149
-  },
-  {
-    "name": "isValidVersion",
-    "opsPerSec": 41872111.5,
-    "avgTimeMs": 0.000023882244390756363,
-    "iterations": 83744223
-  },
-  {
-    "name": "VersionedHash.getVersion",
-    "opsPerSec": 42094783.5,
-    "avgTimeMs": 0.0000237559126536427,
-    "iterations": 84189567
-  },
-  {
-    "name": "VersionedHash.version",
-    "opsPerSec": 42240374.99999992,
-    "avgTimeMs": 0.000023674032249950476,
-    "iterations": 84480750
-  },
-  {
-    "name": "calculateGas - 1 blob",
-    "opsPerSec": 42106655.5,
-    "avgTimeMs": 0.000023749214658001036,
-    "iterations": 84213311
-  },
-  {
-    "name": "calculateGas - 3 blobs",
-    "opsPerSec": 42161749,
-    "avgTimeMs": 0.000023718181140919937,
-    "iterations": 84323498
-  },
-  {
-    "name": "calculateGas - 6 blobs",
-    "opsPerSec": 42248225.5,
-    "avgTimeMs": 0.000023669633177847908,
-    "iterations": 84496451
-  },
-  {
-    "name": "estimateBlobCount - small",
-    "opsPerSec": 41954076.5,
-    "avgTimeMs": 0.000023835586036555947,
-    "iterations": 83908153
-  },
-  {
-    "name": "estimateBlobCount - medium",
-    "opsPerSec": 42313535.5,
-    "avgTimeMs": 0.000023633099626005015,
-    "iterations": 84627071
-  },
-  {
-    "name": "estimateBlobCount - large",
-    "opsPerSec": 42235806.5,
-    "avgTimeMs": 0.00002367659298751641,
-    "iterations": 84471613
-  },
-  {
-    "name": "splitData - 2 blobs (200 KB)",
-    "opsPerSec": 84491.85661991283,
-    "avgTimeMs": 0.011835460126039206,
-    "iterations": 168995
-  },
-  {
-    "name": "splitData - 3 blobs (350 KB)",
-    "opsPerSec": 52319.241673744145,
-    "avgTimeMs": 0.019113426877168202,
-    "iterations": 104639
-  },
-  {
-    "name": "splitData - 6 blobs (750 KB)",
-    "opsPerSec": 24063.83806240174,
-    "avgTimeMs": 0.04155613071392956,
-    "iterations": 48128
-  },
-  {
-    "name": "joinData - 2 blobs (200 KB)",
-    "opsPerSec": 110728.98842882042,
-    "avgTimeMs": 0.009031058751546592,
-    "iterations": 221458
-  },
-  {
-    "name": "joinData - 3 blobs (350 KB)",
-    "opsPerSec": 65211.96061197574,
-    "avgTimeMs": 0.015334610255781155,
-    "iterations": 130424
-  },
-  {
-    "name": "joinData - 6 blobs (750 KB)",
-    "opsPerSec": 29622.678944614046,
-    "avgTimeMs": 0.033757919122362784,
-    "iterations": 59250
-  },
-  {
-    "name": "encode + decode - small",
-    "opsPerSec": 392727.7644784533,
-    "avgTimeMs": 0.002546293107970125,
-    "iterations": 785458
-  },
-  {
-    "name": "encode + decode - medium",
-    "opsPerSec": 345263.03187566786,
-    "avgTimeMs": 0.002896342520563014,
-    "iterations": 690560
-  },
-  {
-    "name": "encode + decode - large",
-    "opsPerSec": 166143.9723370283,
-    "avgTimeMs": 0.006018876194746736,
-    "iterations": 332288
-  },
-  {
-    "name": "split + join - 2 blobs",
-    "opsPerSec": 46545.46715858624,
-    "avgTimeMs": 0.021484369178052822,
-    "iterations": 93096
-  },
-  {
-    "name": "split + join - 3 blobs",
-    "opsPerSec": 28228.523758848463,
-    "avgTimeMs": 0.035425161037213,
-    "iterations": 56459
-  },
-  {
-    "name": "toCommitment",
-    "opsPerSec": 3077219.0623615384,
-    "avgTimeMs": 0.0003249687395451703,
-    "iterations": 6154453
-  },
-  {
-    "name": "toProof",
-    "opsPerSec": 2956615.4379110765,
-    "avgTimeMs": 0.00033822457502505815,
-    "iterations": 5913231
-  },
-  {
-    "name": "verify",
-    "opsPerSec": 2450836.846822708,
-    "avgTimeMs": 0.00040802389653004083,
-    "iterations": 4901674
-  },
-  {
-    "name": "verifyBatch - 3 blobs",
-    "opsPerSec": 2721946.9442000985,
-    "avgTimeMs": 0.00036738408958734173,
-    "iterations": 5443894
-  },
-  {
-    "name": "toVersionedHash",
-    "opsPerSec": 701465.9330703169,
-    "avgTimeMs": 0.0014255859805236716,
-    "iterations": 1402934
-  }
+	{
+		"name": "fromData - small (13 bytes)",
+		"opsPerSec": 467254.9904212727,
+		"avgTimeMs": 0.0021401590576879863,
+		"iterations": 934510
+	},
+	{
+		"name": "fromData - medium (10 KB)",
+		"opsPerSec": 416692.4912494577,
+		"avgTimeMs": 0.002399851259621903,
+		"iterations": 833385
+	},
+	{
+		"name": "fromData - large (100 KB)",
+		"opsPerSec": 306223.8978743301,
+		"avgTimeMs": 0.0032655844528841622,
+		"iterations": 612448
+	},
+	{
+		"name": "fromData - max (128 KB)",
+		"opsPerSec": 280968.76005267893,
+		"avgTimeMs": 0.003559114542885514,
+		"iterations": 561938
+	},
+	{
+		"name": "toData - small (13 bytes)",
+		"opsPerSec": 12386684.479759252,
+		"avgTimeMs": 0.0000807318537607116,
+		"iterations": 24773370
+	},
+	{
+		"name": "toData - medium (10 KB)",
+		"opsPerSec": 1913149.3000758982,
+		"avgTimeMs": 0.0005226983591716172,
+		"iterations": 3826299
+	},
+	{
+		"name": "toData - large (100 KB)",
+		"opsPerSec": 651860.8305695109,
+		"avgTimeMs": 0.001534069778554313,
+		"iterations": 1303796
+	},
+	{
+		"name": "toData - max (128 KB)",
+		"opsPerSec": 465119.3160453104,
+		"avgTimeMs": 0.002149985961672216,
+		"iterations": 930239
+	},
+	{
+		"name": "Blob.isValid - valid",
+		"opsPerSec": 42589117.60562858,
+		"avgTimeMs": 0.000023480176538521193,
+		"iterations": 85178237
+	},
+	{
+		"name": "Blob.isValid - invalid",
+		"opsPerSec": 42488293,
+		"avgTimeMs": 0.00002353589493463529,
+		"iterations": 84976586
+	},
+	{
+		"name": "Commitment.isValid - valid",
+		"opsPerSec": 42870153,
+		"avgTimeMs": 0.000023326252182958154,
+		"iterations": 85740306
+	},
+	{
+		"name": "Commitment.isValid - invalid",
+		"opsPerSec": 42519314,
+		"avgTimeMs": 0.00002351872374987047,
+		"iterations": 85038628
+	},
+	{
+		"name": "Proof.isValid - valid",
+		"opsPerSec": 42214933.5,
+		"avgTimeMs": 0.000023688299781403187,
+		"iterations": 84429867
+	},
+	{
+		"name": "VersionedHash.isValid - valid",
+		"opsPerSec": 42129574.5,
+		"avgTimeMs": 0.000023736294796900928,
+		"iterations": 84259149
+	},
+	{
+		"name": "isValidVersion",
+		"opsPerSec": 41872111.5,
+		"avgTimeMs": 0.000023882244390756363,
+		"iterations": 83744223
+	},
+	{
+		"name": "VersionedHash.getVersion",
+		"opsPerSec": 42094783.5,
+		"avgTimeMs": 0.0000237559126536427,
+		"iterations": 84189567
+	},
+	{
+		"name": "VersionedHash.version",
+		"opsPerSec": 42240374.99999992,
+		"avgTimeMs": 0.000023674032249950476,
+		"iterations": 84480750
+	},
+	{
+		"name": "calculateGas - 1 blob",
+		"opsPerSec": 42106655.5,
+		"avgTimeMs": 0.000023749214658001036,
+		"iterations": 84213311
+	},
+	{
+		"name": "calculateGas - 3 blobs",
+		"opsPerSec": 42161749,
+		"avgTimeMs": 0.000023718181140919937,
+		"iterations": 84323498
+	},
+	{
+		"name": "calculateGas - 6 blobs",
+		"opsPerSec": 42248225.5,
+		"avgTimeMs": 0.000023669633177847908,
+		"iterations": 84496451
+	},
+	{
+		"name": "estimateBlobCount - small",
+		"opsPerSec": 41954076.5,
+		"avgTimeMs": 0.000023835586036555947,
+		"iterations": 83908153
+	},
+	{
+		"name": "estimateBlobCount - medium",
+		"opsPerSec": 42313535.5,
+		"avgTimeMs": 0.000023633099626005015,
+		"iterations": 84627071
+	},
+	{
+		"name": "estimateBlobCount - large",
+		"opsPerSec": 42235806.5,
+		"avgTimeMs": 0.00002367659298751641,
+		"iterations": 84471613
+	},
+	{
+		"name": "splitData - 2 blobs (200 KB)",
+		"opsPerSec": 84491.85661991283,
+		"avgTimeMs": 0.011835460126039206,
+		"iterations": 168995
+	},
+	{
+		"name": "splitData - 3 blobs (350 KB)",
+		"opsPerSec": 52319.241673744145,
+		"avgTimeMs": 0.019113426877168202,
+		"iterations": 104639
+	},
+	{
+		"name": "splitData - 6 blobs (750 KB)",
+		"opsPerSec": 24063.83806240174,
+		"avgTimeMs": 0.04155613071392956,
+		"iterations": 48128
+	},
+	{
+		"name": "joinData - 2 blobs (200 KB)",
+		"opsPerSec": 110728.98842882042,
+		"avgTimeMs": 0.009031058751546592,
+		"iterations": 221458
+	},
+	{
+		"name": "joinData - 3 blobs (350 KB)",
+		"opsPerSec": 65211.96061197574,
+		"avgTimeMs": 0.015334610255781155,
+		"iterations": 130424
+	},
+	{
+		"name": "joinData - 6 blobs (750 KB)",
+		"opsPerSec": 29622.678944614046,
+		"avgTimeMs": 0.033757919122362784,
+		"iterations": 59250
+	},
+	{
+		"name": "encode + decode - small",
+		"opsPerSec": 392727.7644784533,
+		"avgTimeMs": 0.002546293107970125,
+		"iterations": 785458
+	},
+	{
+		"name": "encode + decode - medium",
+		"opsPerSec": 345263.03187566786,
+		"avgTimeMs": 0.002896342520563014,
+		"iterations": 690560
+	},
+	{
+		"name": "encode + decode - large",
+		"opsPerSec": 166143.9723370283,
+		"avgTimeMs": 0.006018876194746736,
+		"iterations": 332288
+	},
+	{
+		"name": "split + join - 2 blobs",
+		"opsPerSec": 46545.46715858624,
+		"avgTimeMs": 0.021484369178052822,
+		"iterations": 93096
+	},
+	{
+		"name": "split + join - 3 blobs",
+		"opsPerSec": 28228.523758848463,
+		"avgTimeMs": 0.035425161037213,
+		"iterations": 56459
+	},
+	{
+		"name": "toCommitment",
+		"opsPerSec": 3077219.0623615384,
+		"avgTimeMs": 0.0003249687395451703,
+		"iterations": 6154453
+	},
+	{
+		"name": "toProof",
+		"opsPerSec": 2956615.4379110765,
+		"avgTimeMs": 0.00033822457502505815,
+		"iterations": 5913231
+	},
+	{
+		"name": "verify",
+		"opsPerSec": 2450836.846822708,
+		"avgTimeMs": 0.00040802389653004083,
+		"iterations": 4901674
+	},
+	{
+		"name": "verifyBatch - 3 blobs",
+		"opsPerSec": 2721946.9442000985,
+		"avgTimeMs": 0.00036738408958734173,
+		"iterations": 5443894
+	},
+	{
+		"name": "toVersionedHash",
+		"opsPerSec": 701465.9330703169,
+		"avgTimeMs": 0.0014255859805236716,
+		"iterations": 1402934
+	}
 ]

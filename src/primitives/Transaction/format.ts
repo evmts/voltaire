@@ -1,4 +1,4 @@
-import { Type, type Any } from "./types.js";
+import { type Any, Type } from "./types.js";
 
 /**
  * Format transaction to human-readable string

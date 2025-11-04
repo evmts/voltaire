@@ -1,4 +1,4 @@
-import type { Unsized, Sized } from "./Hex.js";
+import type { Sized, Unsized } from "./Hex.js";
 import { InvalidLengthError } from "./errors.js";
 
 /**
@@ -19,7 +19,9 @@ export function assertSize<TSize extends number>(
 	size: TSize,
 ): Sized<TSize> {
 	if ((this.length - 2) / 2 !== size) {
-		throw new InvalidLengthError(`Expected ${size} bytes, got ${(this.length - 2) / 2}`);
+		throw new InvalidLengthError(
+			`Expected ${size} bytes, got ${(this.length - 2) / 2}`,
+		);
 	}
 	return this as Sized<TSize>;
 }

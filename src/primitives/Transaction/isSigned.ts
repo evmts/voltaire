@@ -1,5 +1,5 @@
-import type { Any } from "./types.js";
 import { assertSigned } from "./assertSigned.js";
+import type { Any } from "./types.js";
 
 /**
  * Check if transaction is signed

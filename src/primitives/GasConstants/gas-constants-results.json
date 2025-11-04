@@ -1,338 +1,338 @@
 [
-  {
-    "name": "calculateKeccak256Cost - 32 bytes",
-    "opsPerSec": 16048417.66298323,
-    "avgTimeMs": 0.0000623114391088268,
-    "iterations": 32096836
-  },
-  {
-    "name": "calculateKeccak256Cost - 1000 bytes",
-    "opsPerSec": 16182975.5,
-    "avgTimeMs": 0.00006179333337061532,
-    "iterations": 32365951
-  },
-  {
-    "name": "keccak256Cost (this:) - 64 bytes",
-    "opsPerSec": 16061607.162706252,
-    "avgTimeMs": 0.00006226027008815897,
-    "iterations": 32123215
-  },
-  {
-    "name": "calculateSstoreCost - warm no-op",
-    "opsPerSec": 38853513,
-    "avgTimeMs": 0.000025737698416099467,
-    "iterations": 77707026
-  },
-  {
-    "name": "calculateSstoreCost - cold set",
-    "opsPerSec": 29297148.5,
-    "avgTimeMs": 0.000034133014685712505,
-    "iterations": 58594297
-  },
-  {
-    "name": "calculateSstoreCost - clear",
-    "opsPerSec": 37170409.5,
-    "avgTimeMs": 0.000026903120343616338,
-    "iterations": 74340819
-  },
-  {
-    "name": "sstoreCost (this:) - warm set",
-    "opsPerSec": 36075267.5,
-    "avgTimeMs": 0.00002771982217456877,
-    "iterations": 72150535
-  },
-  {
-    "name": "calculateLogCost - LOG0 no data",
-    "opsPerSec": 25886231.5,
-    "avgTimeMs": 0.00003863057471304774,
-    "iterations": 51772463
-  },
-  {
-    "name": "calculateLogCost - LOG2 64 bytes",
-    "opsPerSec": 15257265.5,
-    "avgTimeMs": 0.00006554254430454789,
-    "iterations": 30514531
-  },
-  {
-    "name": "calculateLogCost - LOG4 1000 bytes",
-    "opsPerSec": 15250979.5,
-    "avgTimeMs": 0.00006556955899127659,
-    "iterations": 30501959
-  },
-  {
-    "name": "logCost (this:) - LOG2",
-    "opsPerSec": 15259916.179541763,
-    "avgTimeMs": 0.00006553115942672424,
-    "iterations": 30519833
-  },
-  {
-    "name": "calculateCallCost - warm no value",
-    "opsPerSec": 20268442.08449694,
-    "avgTimeMs": 0.000049337783132571716,
-    "iterations": 40536885
-  },
-  {
-    "name": "calculateCallCost - cold with value",
-    "opsPerSec": 16058414.5,
-    "avgTimeMs": 0.00006227264839875693,
-    "iterations": 32116829
-  },
-  {
-    "name": "calculateCallCost - new account",
-    "opsPerSec": 12572756,
-    "avgTimeMs": 0.00007953705615538868,
-    "iterations": 25145512
-  },
-  {
-    "name": "callCost (this:) - warm call",
-    "opsPerSec": 20326440.5,
-    "avgTimeMs": 0.00004919700525037819,
-    "iterations": 40652881
-  },
-  {
-    "name": "calculateMemoryExpansionCost - 0 to 64",
-    "opsPerSec": 8902435.045799837,
-    "avgTimeMs": 0.00011232881732417686,
-    "iterations": 17805175
-  },
-  {
-    "name": "calculateMemoryExpansionCost - 64 to 128",
-    "opsPerSec": 6614660.586583719,
-    "avgTimeMs": 0.00015117933670372516,
-    "iterations": 13229322
-  },
-  {
-    "name": "calculateMemoryExpansionCost - 0 to 10240",
-    "opsPerSec": 8307292.15524738,
-    "avgTimeMs": 0.00012037616846884825,
-    "iterations": 16614585
-  },
-  {
-    "name": "memoryExpansionCost (this:) - expansion",
-    "opsPerSec": 8192437.160013862,
-    "avgTimeMs": 0.00012206379865577242,
-    "iterations": 16384875
-  },
-  {
-    "name": "calculateCreateCost - minimal",
-    "opsPerSec": 21443425,
-    "avgTimeMs": 0.00004663434129575849,
-    "iterations": 42886850
-  },
-  {
-    "name": "calculateCreateCost - typical",
-    "opsPerSec": 9554646,
-    "avgTimeMs": 0.00010466112506941649,
-    "iterations": 19109292
-  },
-  {
-    "name": "calculateCreateCost - large",
-    "opsPerSec": 9768350.299748786,
-    "avgTimeMs": 0.00010237143113363953,
-    "iterations": 19536701
-  },
-  {
-    "name": "createCost (this:) - typical",
-    "opsPerSec": 9773786.294750454,
-    "avgTimeMs": 0.00010231449408067216,
-    "iterations": 19547573
-  },
-  {
-    "name": "calculateTxIntrinsicGas - empty",
-    "opsPerSec": 35082143,
-    "avgTimeMs": 0.000028504530068188822,
-    "iterations": 70164286
-  },
-  {
-    "name": "calculateTxIntrinsicGas - 100 bytes",
-    "opsPerSec": 808524.8653806085,
-    "avgTimeMs": 0.0012368203413623596,
-    "iterations": 1617050
-  },
-  {
-    "name": "calculateTxIntrinsicGas - 1000 bytes",
-    "opsPerSec": 82514.70088420951,
-    "avgTimeMs": 0.012119052596497577,
-    "iterations": 165030
-  },
-  {
-    "name": "txIntrinsicGas (this:) - typical",
-    "opsPerSec": 819535.1074426847,
-    "avgTimeMs": 0.0012202039801814544,
-    "iterations": 1639071
-  },
-  {
-    "name": "calculateCopyCost - 64 bytes",
-    "opsPerSec": 20265081.5,
-    "avgTimeMs": 0.00004934596488052614,
-    "iterations": 40530163
-  },
-  {
-    "name": "calculateCopyCost - 1000 bytes",
-    "opsPerSec": 19974408,
-    "avgTimeMs": 0.00005006406197370155,
-    "iterations": 39948816
-  },
-  {
-    "name": "calculateMaxRefund - typical",
-    "opsPerSec": 30389101,
-    "avgTimeMs": 0.00003290653448418892,
-    "iterations": 60778202
-  },
-  {
-    "name": "copyCost (this:) - 64 bytes",
-    "opsPerSec": 20248956.074771926,
-    "avgTimeMs": 0.00004938526195164674,
-    "iterations": 40497913
-  },
-  {
-    "name": "maxRefund (this:) - typical",
-    "opsPerSec": 30394295,
-    "avgTimeMs": 0.000032900911174284515,
-    "iterations": 60788590
-  },
-  {
-    "name": "Precompile.calculateSha256Cost - 64 bytes",
-    "opsPerSec": 16098225.5,
-    "avgTimeMs": 0.00006211864779754762,
-    "iterations": 32196451
-  },
-  {
-    "name": "Precompile.calculateRipemd160Cost - 64 bytes",
-    "opsPerSec": 16119201,
-    "avgTimeMs": 0.00006203781440531699,
-    "iterations": 32238402
-  },
-  {
-    "name": "Precompile.calculateIdentityCost - 64 bytes",
-    "opsPerSec": 16060198.5,
-    "avgTimeMs": 0.00006226573102443286,
-    "iterations": 32120397
-  },
-  {
-    "name": "Precompile.calculateModExpCost - small",
-    "opsPerSec": 9517468,
-    "avgTimeMs": 0.00010506996188482062,
-    "iterations": 19034936
-  },
-  {
-    "name": "Precompile.calculateModExpCost - RSA-2048",
-    "opsPerSec": 5309405.1681621615,
-    "avgTimeMs": 0.00018834501574611375,
-    "iterations": 10618811
-  },
-  {
-    "name": "Precompile.calculateModExpCost - large",
-    "opsPerSec": 6601987,
-    "avgTimeMs": 0.0001514695500006286,
-    "iterations": 13203974
-  },
-  {
-    "name": "Precompile.calculateEcPairingCost - 1 pair Istanbul",
-    "opsPerSec": 22537237.5,
-    "avgTimeMs": 0.00004437101042219571,
-    "iterations": 45074475
-  },
-  {
-    "name": "Precompile.calculateEcPairingCost - 3 pairs Istanbul",
-    "opsPerSec": 22748822.53364923,
-    "avgTimeMs": 0.000043958319096332855,
-    "iterations": 45497646
-  },
-  {
-    "name": "Precompile.calculateEcPairingCost - 1 pair Byzantium",
-    "opsPerSec": 22819750,
-    "avgTimeMs": 0.00004382168954524042,
-    "iterations": 45639500
-  },
-  {
-    "name": "Precompile.ecPairingCost (this:) - 2 pairs",
-    "opsPerSec": 22775212,
-    "avgTimeMs": 0.00004390738492357393,
-    "iterations": 45550424
-  },
-  {
-    "name": "Precompile.getEcAddCost - Istanbul",
-    "opsPerSec": 47044584,
-    "avgTimeMs": 0.000021256431983753965,
-    "iterations": 94089168
-  },
-  {
-    "name": "Precompile.getEcMulCost - Istanbul",
-    "opsPerSec": 46687191.5,
-    "avgTimeMs": 0.000021419150903519223,
-    "iterations": 93374383
-  },
-  {
-    "name": "hasEIP2929 - Berlin",
-    "opsPerSec": 47050991,
-    "avgTimeMs": 0.000021253537465342653,
-    "iterations": 94101982
-  },
-  {
-    "name": "hasEIP3529 - London",
-    "opsPerSec": 47001613.5,
-    "avgTimeMs": 0.00002127586534875021,
-    "iterations": 94003227
-  },
-  {
-    "name": "hasEIP3860 - Shanghai",
-    "opsPerSec": 46778478,
-    "avgTimeMs": 0.00002137735220885126,
-    "iterations": 93556956
-  },
-  {
-    "name": "hasEIP1153 - Cancun",
-    "opsPerSec": 47018623.5,
-    "avgTimeMs": 0.000021268168346102263,
-    "iterations": 94037247
-  },
-  {
-    "name": "hasEIP4844 - Cancun",
-    "opsPerSec": 46402326.5,
-    "avgTimeMs": 0.00002155064358680378,
-    "iterations": 92804653
-  },
-  {
-    "name": "getColdSloadCost - Berlin",
-    "opsPerSec": 46686062.5,
-    "avgTimeMs": 0.00002141966887869372,
-    "iterations": 93372125
-  },
-  {
-    "name": "getColdAccountAccessCost - London",
-    "opsPerSec": 45751321,
-    "avgTimeMs": 0.000021857292382880047,
-    "iterations": 91502642
-  },
-  {
-    "name": "getSstoreRefund - London",
-    "opsPerSec": 46727705.5,
-    "avgTimeMs": 0.000021400580004939468,
-    "iterations": 93455411
-  },
-  {
-    "name": "getSelfdestructRefund - London",
-    "opsPerSec": 47164853.5,
-    "avgTimeMs": 0.00002120222847718588,
-    "iterations": 94329707
-  },
-  {
-    "name": "Full transaction cost calculation",
-    "opsPerSec": 773421.6937250126,
-    "avgTimeMs": 0.0012929557162842482,
-    "iterations": 1546844
-  },
-  {
-    "name": "Contract deployment estimation",
-    "opsPerSec": 4720399.509078456,
-    "avgTimeMs": 0.00021184647572239615,
-    "iterations": 9440800
-  },
-  {
-    "name": "Complex call with storage and logs",
-    "opsPerSec": 6914896.358244603,
-    "avgTimeMs": 0.00014461532728653325,
-    "iterations": 13829793
-  }
+	{
+		"name": "calculateKeccak256Cost - 32 bytes",
+		"opsPerSec": 16048417.66298323,
+		"avgTimeMs": 0.0000623114391088268,
+		"iterations": 32096836
+	},
+	{
+		"name": "calculateKeccak256Cost - 1000 bytes",
+		"opsPerSec": 16182975.5,
+		"avgTimeMs": 0.00006179333337061532,
+		"iterations": 32365951
+	},
+	{
+		"name": "keccak256Cost (this:) - 64 bytes",
+		"opsPerSec": 16061607.162706252,
+		"avgTimeMs": 0.00006226027008815897,
+		"iterations": 32123215
+	},
+	{
+		"name": "calculateSstoreCost - warm no-op",
+		"opsPerSec": 38853513,
+		"avgTimeMs": 0.000025737698416099467,
+		"iterations": 77707026
+	},
+	{
+		"name": "calculateSstoreCost - cold set",
+		"opsPerSec": 29297148.5,
+		"avgTimeMs": 0.000034133014685712505,
+		"iterations": 58594297
+	},
+	{
+		"name": "calculateSstoreCost - clear",
+		"opsPerSec": 37170409.5,
+		"avgTimeMs": 0.000026903120343616338,
+		"iterations": 74340819
+	},
+	{
+		"name": "sstoreCost (this:) - warm set",
+		"opsPerSec": 36075267.5,
+		"avgTimeMs": 0.00002771982217456877,
+		"iterations": 72150535
+	},
+	{
+		"name": "calculateLogCost - LOG0 no data",
+		"opsPerSec": 25886231.5,
+		"avgTimeMs": 0.00003863057471304774,
+		"iterations": 51772463
+	},
+	{
+		"name": "calculateLogCost - LOG2 64 bytes",
+		"opsPerSec": 15257265.5,
+		"avgTimeMs": 0.00006554254430454789,
+		"iterations": 30514531
+	},
+	{
+		"name": "calculateLogCost - LOG4 1000 bytes",
+		"opsPerSec": 15250979.5,
+		"avgTimeMs": 0.00006556955899127659,
+		"iterations": 30501959
+	},
+	{
+		"name": "logCost (this:) - LOG2",
+		"opsPerSec": 15259916.179541763,
+		"avgTimeMs": 0.00006553115942672424,
+		"iterations": 30519833
+	},
+	{
+		"name": "calculateCallCost - warm no value",
+		"opsPerSec": 20268442.08449694,
+		"avgTimeMs": 0.000049337783132571716,
+		"iterations": 40536885
+	},
+	{
+		"name": "calculateCallCost - cold with value",
+		"opsPerSec": 16058414.5,
+		"avgTimeMs": 0.00006227264839875693,
+		"iterations": 32116829
+	},
+	{
+		"name": "calculateCallCost - new account",
+		"opsPerSec": 12572756,
+		"avgTimeMs": 0.00007953705615538868,
+		"iterations": 25145512
+	},
+	{
+		"name": "callCost (this:) - warm call",
+		"opsPerSec": 20326440.5,
+		"avgTimeMs": 0.00004919700525037819,
+		"iterations": 40652881
+	},
+	{
+		"name": "calculateMemoryExpansionCost - 0 to 64",
+		"opsPerSec": 8902435.045799837,
+		"avgTimeMs": 0.00011232881732417686,
+		"iterations": 17805175
+	},
+	{
+		"name": "calculateMemoryExpansionCost - 64 to 128",
+		"opsPerSec": 6614660.586583719,
+		"avgTimeMs": 0.00015117933670372516,
+		"iterations": 13229322
+	},
+	{
+		"name": "calculateMemoryExpansionCost - 0 to 10240",
+		"opsPerSec": 8307292.15524738,
+		"avgTimeMs": 0.00012037616846884825,
+		"iterations": 16614585
+	},
+	{
+		"name": "memoryExpansionCost (this:) - expansion",
+		"opsPerSec": 8192437.160013862,
+		"avgTimeMs": 0.00012206379865577242,
+		"iterations": 16384875
+	},
+	{
+		"name": "calculateCreateCost - minimal",
+		"opsPerSec": 21443425,
+		"avgTimeMs": 0.00004663434129575849,
+		"iterations": 42886850
+	},
+	{
+		"name": "calculateCreateCost - typical",
+		"opsPerSec": 9554646,
+		"avgTimeMs": 0.00010466112506941649,
+		"iterations": 19109292
+	},
+	{
+		"name": "calculateCreateCost - large",
+		"opsPerSec": 9768350.299748786,
+		"avgTimeMs": 0.00010237143113363953,
+		"iterations": 19536701
+	},
+	{
+		"name": "createCost (this:) - typical",
+		"opsPerSec": 9773786.294750454,
+		"avgTimeMs": 0.00010231449408067216,
+		"iterations": 19547573
+	},
+	{
+		"name": "calculateTxIntrinsicGas - empty",
+		"opsPerSec": 35082143,
+		"avgTimeMs": 0.000028504530068188822,
+		"iterations": 70164286
+	},
+	{
+		"name": "calculateTxIntrinsicGas - 100 bytes",
+		"opsPerSec": 808524.8653806085,
+		"avgTimeMs": 0.0012368203413623596,
+		"iterations": 1617050
+	},
+	{
+		"name": "calculateTxIntrinsicGas - 1000 bytes",
+		"opsPerSec": 82514.70088420951,
+		"avgTimeMs": 0.012119052596497577,
+		"iterations": 165030
+	},
+	{
+		"name": "txIntrinsicGas (this:) - typical",
+		"opsPerSec": 819535.1074426847,
+		"avgTimeMs": 0.0012202039801814544,
+		"iterations": 1639071
+	},
+	{
+		"name": "calculateCopyCost - 64 bytes",
+		"opsPerSec": 20265081.5,
+		"avgTimeMs": 0.00004934596488052614,
+		"iterations": 40530163
+	},
+	{
+		"name": "calculateCopyCost - 1000 bytes",
+		"opsPerSec": 19974408,
+		"avgTimeMs": 0.00005006406197370155,
+		"iterations": 39948816
+	},
+	{
+		"name": "calculateMaxRefund - typical",
+		"opsPerSec": 30389101,
+		"avgTimeMs": 0.00003290653448418892,
+		"iterations": 60778202
+	},
+	{
+		"name": "copyCost (this:) - 64 bytes",
+		"opsPerSec": 20248956.074771926,
+		"avgTimeMs": 0.00004938526195164674,
+		"iterations": 40497913
+	},
+	{
+		"name": "maxRefund (this:) - typical",
+		"opsPerSec": 30394295,
+		"avgTimeMs": 0.000032900911174284515,
+		"iterations": 60788590
+	},
+	{
+		"name": "Precompile.calculateSha256Cost - 64 bytes",
+		"opsPerSec": 16098225.5,
+		"avgTimeMs": 0.00006211864779754762,
+		"iterations": 32196451
+	},
+	{
+		"name": "Precompile.calculateRipemd160Cost - 64 bytes",
+		"opsPerSec": 16119201,
+		"avgTimeMs": 0.00006203781440531699,
+		"iterations": 32238402
+	},
+	{
+		"name": "Precompile.calculateIdentityCost - 64 bytes",
+		"opsPerSec": 16060198.5,
+		"avgTimeMs": 0.00006226573102443286,
+		"iterations": 32120397
+	},
+	{
+		"name": "Precompile.calculateModExpCost - small",
+		"opsPerSec": 9517468,
+		"avgTimeMs": 0.00010506996188482062,
+		"iterations": 19034936
+	},
+	{
+		"name": "Precompile.calculateModExpCost - RSA-2048",
+		"opsPerSec": 5309405.1681621615,
+		"avgTimeMs": 0.00018834501574611375,
+		"iterations": 10618811
+	},
+	{
+		"name": "Precompile.calculateModExpCost - large",
+		"opsPerSec": 6601987,
+		"avgTimeMs": 0.0001514695500006286,
+		"iterations": 13203974
+	},
+	{
+		"name": "Precompile.calculateEcPairingCost - 1 pair Istanbul",
+		"opsPerSec": 22537237.5,
+		"avgTimeMs": 0.00004437101042219571,
+		"iterations": 45074475
+	},
+	{
+		"name": "Precompile.calculateEcPairingCost - 3 pairs Istanbul",
+		"opsPerSec": 22748822.53364923,
+		"avgTimeMs": 0.000043958319096332855,
+		"iterations": 45497646
+	},
+	{
+		"name": "Precompile.calculateEcPairingCost - 1 pair Byzantium",
+		"opsPerSec": 22819750,
+		"avgTimeMs": 0.00004382168954524042,
+		"iterations": 45639500
+	},
+	{
+		"name": "Precompile.ecPairingCost (this:) - 2 pairs",
+		"opsPerSec": 22775212,
+		"avgTimeMs": 0.00004390738492357393,
+		"iterations": 45550424
+	},
+	{
+		"name": "Precompile.getEcAddCost - Istanbul",
+		"opsPerSec": 47044584,
+		"avgTimeMs": 0.000021256431983753965,
+		"iterations": 94089168
+	},
+	{
+		"name": "Precompile.getEcMulCost - Istanbul",
+		"opsPerSec": 46687191.5,
+		"avgTimeMs": 0.000021419150903519223,
+		"iterations": 93374383
+	},
+	{
+		"name": "hasEIP2929 - Berlin",
+		"opsPerSec": 47050991,
+		"avgTimeMs": 0.000021253537465342653,
+		"iterations": 94101982
+	},
+	{
+		"name": "hasEIP3529 - London",
+		"opsPerSec": 47001613.5,
+		"avgTimeMs": 0.00002127586534875021,
+		"iterations": 94003227
+	},
+	{
+		"name": "hasEIP3860 - Shanghai",
+		"opsPerSec": 46778478,
+		"avgTimeMs": 0.00002137735220885126,
+		"iterations": 93556956
+	},
+	{
+		"name": "hasEIP1153 - Cancun",
+		"opsPerSec": 47018623.5,
+		"avgTimeMs": 0.000021268168346102263,
+		"iterations": 94037247
+	},
+	{
+		"name": "hasEIP4844 - Cancun",
+		"opsPerSec": 46402326.5,
+		"avgTimeMs": 0.00002155064358680378,
+		"iterations": 92804653
+	},
+	{
+		"name": "getColdSloadCost - Berlin",
+		"opsPerSec": 46686062.5,
+		"avgTimeMs": 0.00002141966887869372,
+		"iterations": 93372125
+	},
+	{
+		"name": "getColdAccountAccessCost - London",
+		"opsPerSec": 45751321,
+		"avgTimeMs": 0.000021857292382880047,
+		"iterations": 91502642
+	},
+	{
+		"name": "getSstoreRefund - London",
+		"opsPerSec": 46727705.5,
+		"avgTimeMs": 0.000021400580004939468,
+		"iterations": 93455411
+	},
+	{
+		"name": "getSelfdestructRefund - London",
+		"opsPerSec": 47164853.5,
+		"avgTimeMs": 0.00002120222847718588,
+		"iterations": 94329707
+	},
+	{
+		"name": "Full transaction cost calculation",
+		"opsPerSec": 773421.6937250126,
+		"avgTimeMs": 0.0012929557162842482,
+		"iterations": 1546844
+	},
+	{
+		"name": "Contract deployment estimation",
+		"opsPerSec": 4720399.509078456,
+		"avgTimeMs": 0.00021184647572239615,
+		"iterations": 9440800
+	},
+	{
+		"name": "Complex call with storage and logs",
+		"opsPerSec": 6914896.358244603,
+		"avgTimeMs": 0.00014461532728653325,
+		"iterations": 13829793
+	}
 ]

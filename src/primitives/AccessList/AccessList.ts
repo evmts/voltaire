@@ -33,13 +33,13 @@ import * as Rlp from "../Rlp/index.js";
  * Contains address and its accessed storage keys
  */
 export type Item<
-  TAddress extends Address = Address,
-  TStorageKeys extends readonly Hash[] = readonly Hash[],
+	TAddress extends Address = Address,
+	TStorageKeys extends readonly Hash[] = readonly Hash[],
 > = {
-  /** Contract address */
-  address: TAddress;
-  /** Storage keys accessed at this address */
-  storageKeys: TStorageKeys;
+	/** Contract address */
+	address: TAddress;
+	/** Storage keys accessed at this address */
+	storageKeys: TStorageKeys;
 };
 
 // ============================================================================
@@ -79,16 +79,16 @@ export const WARM_STORAGE_ACCESS_COST = 100n;
  * ```
  */
 export function isItem(value: unknown): value is Item {
-  if (typeof value !== "object" || value === null) return false;
-  const item = value as Partial<Item>;
-  return (
-    item.address instanceof Uint8Array &&
-    item.address.length === 20 &&
-    Array.isArray(item.storageKeys) &&
-    item.storageKeys.every(
-      (key) => key instanceof Uint8Array && key.length === 32,
-    )
-  );
+	if (typeof value !== "object" || value === null) return false;
+	const item = value as Partial<Item>;
+	return (
+		item.address instanceof Uint8Array &&
+		item.address.length === 20 &&
+		Array.isArray(item.storageKeys) &&
+		item.storageKeys.every(
+			(key) => key instanceof Uint8Array && key.length === 32,
+		)
+	);
 }
 
 /**
@@ -105,7 +105,7 @@ export function isItem(value: unknown): value is Item {
  * ```
  */
 export function is(value: unknown): value is Type {
-  return Array.isArray(value) && value.every(isItem);
+	return Array.isArray(value) && value.every(isItem);
 }
 
 // ============================================================================
@@ -125,10 +125,10 @@ export function is(value: unknown): value is Type {
  * ```
  */
 export function from(value: Type | Uint8Array): Type {
-  if (value instanceof Uint8Array) {
-    return fromBytes(value);
-  }
-  return value;
+	if (value instanceof Uint8Array) {
+		return fromBytes(value);
+	}
+	return value;
 }
 
 // ============================================================================
@@ -148,12 +148,12 @@ export function from(value: Type | Uint8Array): Type {
  * ```
  */
 export function _gasCost(this: Type): bigint {
-  let totalCost = 0n;
-  for (const item of this) {
-    totalCost += ADDRESS_COST;
-    totalCost += STORAGE_KEY_COST * BigInt(item.storageKeys.length);
-  }
-  return totalCost;
+	let totalCost = 0n;
+	for (const item of this) {
+		totalCost += ADDRESS_COST;
+		totalCost += STORAGE_KEY_COST * BigInt(item.storageKeys.length);
+	}
+	return totalCost;
 }
 
 /**
@@ -173,17 +173,17 @@ export function _gasCost(this: Type): bigint {
  * ```
  */
 export function _gasSavings(this: Type): bigint {
-  let savings = 0n;
-  for (const item of this) {
-    // Save on cold account access
-    savings += COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
+	let savings = 0n;
+	for (const item of this) {
+		// Save on cold account access
+		savings += COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
 
-    // Save on cold storage access
-    for (const _ of item.storageKeys) {
-      savings += COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST;
-    }
-  }
-  return savings;
+		// Save on cold storage access
+		for (const _ of item.storageKeys) {
+			savings += COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST;
+		}
+	}
+	return savings;
 }
 
 /**
@@ -199,7 +199,7 @@ export function _gasSavings(this: Type): bigint {
  * ```
  */
 export function _hasSavings(this: Type): boolean {
-  return _gasSavings.call(this) > 0n;
+	return _gasSavings.call(this) > 0n;
 }
 
 // ============================================================================
@@ -218,12 +218,12 @@ export function _hasSavings(this: Type): boolean {
  * ```
  */
 export function _includesAddress(this: Type, address: Address): boolean {
-  for (const item of this) {
-    if (addressEquals(item.address, address)) {
-      return true;
-    }
-  }
-  return false;
+	for (const item of this) {
+		if (addressEquals(item.address, address)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -239,20 +239,20 @@ export function _includesAddress(this: Type, address: Address): boolean {
  * ```
  */
 export function _includesStorageKey(
-  this: Type,
-  address: Address,
-  storageKey: Hash,
+	this: Type,
+	address: Address,
+	storageKey: Hash,
 ): boolean {
-  for (const item of this) {
-    if (addressEquals(item.address, address)) {
-      for (const key of item.storageKeys) {
-        if (hashEquals(key, storageKey)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
+	for (const item of this) {
+		if (addressEquals(item.address, address)) {
+			for (const key of item.storageKeys) {
+				if (hashEquals(key, storageKey)) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 /**
@@ -269,13 +269,16 @@ export function _includesStorageKey(
  * }
  * ```
  */
-export function _keysFor(this: Type, address: Address): readonly Hash[] | undefined {
-  for (const item of this) {
-    if (addressEquals(item.address, address)) {
-      return item.storageKeys;
-    }
-  }
-  return undefined;
+export function _keysFor(
+	this: Type,
+	address: Address,
+): readonly Hash[] | undefined {
+	for (const item of this) {
+		if (addressEquals(item.address, address)) {
+			return item.storageKeys;
+		}
+	}
+	return undefined;
 }
 
 // ============================================================================
@@ -300,33 +303,33 @@ export function _keysFor(this: Type, address: Address): readonly Hash[] | undefi
  * ```
  */
 export function _deduplicate(this: Type): Type {
-  const result: Item[] = [];
+	const result: Item[] = [];
 
-  for (const item of this) {
-    // Find existing entry with same address
-    const existing = result.find((r) => addressEquals(r.address, item.address));
+	for (const item of this) {
+		// Find existing entry with same address
+		const existing = result.find((r) => addressEquals(r.address, item.address));
 
-    if (existing) {
-      // Merge storage keys, avoiding duplicates
-      const existingKeys = existing.storageKeys as Hash[];
-      for (const newKey of item.storageKeys) {
-        const isDuplicate = existingKeys.some((existingKey) =>
-          hashEquals(existingKey, newKey),
-        );
-        if (!isDuplicate) {
-          existingKeys.push(newKey);
-        }
-      }
-    } else {
-      // Create new entry
-      result.push({
-        address: item.address,
-        storageKeys: [...item.storageKeys],
-      });
-    }
-  }
+		if (existing) {
+			// Merge storage keys, avoiding duplicates
+			const existingKeys = existing.storageKeys as Hash[];
+			for (const newKey of item.storageKeys) {
+				const isDuplicate = existingKeys.some((existingKey) =>
+					hashEquals(existingKey, newKey),
+				);
+				if (!isDuplicate) {
+					existingKeys.push(newKey);
+				}
+			}
+		} else {
+			// Create new entry
+			result.push({
+				address: item.address,
+				storageKeys: [...item.storageKeys],
+			});
+		}
+	}
 
-  return result;
+	return result;
 }
 
 /**
@@ -343,10 +346,10 @@ export function _deduplicate(this: Type): Type {
  * ```
  */
 export function _withAddress(this: Type, address: Address): Type {
-  if (_includesAddress.call(this, address)) {
-    return this;
-  }
-  return [...this, { address, storageKeys: [] }];
+	if (_includesAddress.call(this, address)) {
+		return this;
+	}
+	return [...this, { address, storageKeys: [] }];
 }
 
 /**
@@ -364,37 +367,37 @@ export function _withAddress(this: Type, address: Address): Type {
  * ```
  */
 export function _withStorageKey(
-  this: Type,
-  address: Address,
-  storageKey: Hash,
+	this: Type,
+	address: Address,
+	storageKey: Hash,
 ): Type {
-  const result: Item[] = [];
-  let found = false;
+	const result: Item[] = [];
+	let found = false;
 
-  for (const item of this) {
-    if (addressEquals(item.address, address)) {
-      found = true;
-      // Check if key already exists
-      const hasKey = item.storageKeys.some((k) => hashEquals(k, storageKey));
-      if (hasKey) {
-        result.push(item);
-      } else {
-        result.push({
-          address: item.address,
-          storageKeys: [...item.storageKeys, storageKey],
-        });
-      }
-    } else {
-      result.push(item);
-    }
-  }
+	for (const item of this) {
+		if (addressEquals(item.address, address)) {
+			found = true;
+			// Check if key already exists
+			const hasKey = item.storageKeys.some((k) => hashEquals(k, storageKey));
+			if (hasKey) {
+				result.push(item);
+			} else {
+				result.push({
+					address: item.address,
+					storageKeys: [...item.storageKeys, storageKey],
+				});
+			}
+		} else {
+			result.push(item);
+		}
+	}
 
-  // If address not found, add new entry
-  if (!found) {
-    result.push({ address, storageKeys: [storageKey] });
-  }
+	// If address not found, add new entry
+	if (!found) {
+		result.push({ address, storageKeys: [storageKey] });
+	}
 
-  return result;
+	return result;
 }
 
 /**
@@ -411,11 +414,11 @@ export function _withStorageKey(
  * ```
  */
 export function merge(...accessLists: Type[]): Type {
-  const combined: Item[] = [];
-  for (const list of accessLists) {
-    combined.push(...list);
-  }
-  return _deduplicate.call(combined);
+	const combined: Item[] = [];
+	for (const list of accessLists) {
+		combined.push(...list);
+	}
+	return _deduplicate.call(combined);
 }
 
 // ============================================================================
@@ -438,27 +441,27 @@ export function merge(...accessLists: Type[]): Type {
  * ```
  */
 export function _assertValid(this: Type): void {
-  if (!Array.isArray(this)) {
-    throw new Error("Access list must be an array");
-  }
+	if (!Array.isArray(this)) {
+		throw new Error("Access list must be an array");
+	}
 
-  for (const item of this) {
-    if (!isItem(item)) {
-      throw new Error("Invalid access list item");
-    }
+	for (const item of this) {
+		if (!isItem(item)) {
+			throw new Error("Invalid access list item");
+		}
 
-    // Validate address
-    if (!(item.address instanceof Uint8Array) || item.address.length !== 20) {
-      throw new Error("Invalid address in access list");
-    }
+		// Validate address
+		if (!(item.address instanceof Uint8Array) || item.address.length !== 20) {
+			throw new Error("Invalid address in access list");
+		}
 
-    // Validate storage keys
-    for (const key of item.storageKeys) {
-      if (!(key instanceof Uint8Array) || key.length !== 32) {
-        throw new Error("Invalid storage key in access list");
-      }
-    }
-  }
+		// Validate storage keys
+		for (const key of item.storageKeys) {
+			if (!(key instanceof Uint8Array) || key.length !== 32) {
+				throw new Error("Invalid storage key in access list");
+			}
+		}
+	}
 }
 
 // ============================================================================
@@ -478,12 +481,12 @@ export function _assertValid(this: Type): void {
  * ```
  */
 export function _toBytes(this: Type): Uint8Array {
-  // Format: [[address, [storageKey1, storageKey2, ...]], ...]
-  const encoded = this.map((item) => [
-    item.address,
-    item.storageKeys.map((key) => key as Uint8Array),
-  ]);
-  return Rlp.encode.call(encoded);
+	// Format: [[address, [storageKey1, storageKey2, ...]], ...]
+	const encoded = this.map((item) => [
+		item.address,
+		item.storageKeys.map((key) => key as Uint8Array),
+	]);
+	return Rlp.encode.call(encoded);
 }
 
 /**
@@ -498,44 +501,44 @@ export function _toBytes(this: Type): Uint8Array {
  * ```
  */
 export function fromBytes(bytes: Uint8Array): Type {
-  const decoded = Rlp.decode.call(bytes);
+	const decoded = Rlp.decode.call(bytes);
 
-  if (decoded.data.type !== "list") {
-    throw new Error("Invalid access list: expected list");
-  }
+	if (decoded.data.type !== "list") {
+		throw new Error("Invalid access list: expected list");
+	}
 
-  const result: Item[] = [];
+	const result: Item[] = [];
 
-  for (const itemData of decoded.data.value) {
-    if (itemData.type !== "list" || itemData.value.length !== 2) {
-      throw new Error("Invalid access list item: expected [address, keys]");
-    }
+	for (const itemData of decoded.data.value) {
+		if (itemData.type !== "list" || itemData.value.length !== 2) {
+			throw new Error("Invalid access list item: expected [address, keys]");
+		}
 
-    const addressData = itemData.value[0];
-    const keysData = itemData.value[1];
+		const addressData = itemData.value[0];
+		const keysData = itemData.value[1];
 
-    if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
-      throw new Error("Invalid access list address");
-    }
+		if (addressData?.type !== "bytes" || addressData.value.length !== 20) {
+			throw new Error("Invalid access list address");
+		}
 
-    if (keysData?.type !== "list") {
-      throw new Error("Invalid access list storage keys");
-    }
+		if (keysData?.type !== "list") {
+			throw new Error("Invalid access list storage keys");
+		}
 
-    const address = addressData.value as Address;
-    const storageKeys: Hash[] = [];
+		const address = addressData.value as Address;
+		const storageKeys: Hash[] = [];
 
-    for (const keyData of keysData.value) {
-      if (keyData.type !== "bytes" || keyData.value.length !== 32) {
-        throw new Error("Invalid storage key");
-      }
-      storageKeys.push(keyData.value as Hash);
-    }
+		for (const keyData of keysData.value) {
+			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
+				throw new Error("Invalid storage key");
+			}
+			storageKeys.push(keyData.value as Hash);
+		}
 
-    result.push({ address, storageKeys });
-  }
+		result.push({ address, storageKeys });
+	}
 
-  return result;
+	return result;
 }
 
 // ============================================================================
@@ -553,7 +556,7 @@ export function fromBytes(bytes: Uint8Array): Type {
  * ```
  */
 export function _addressCount(this: Type): number {
-  return this.length;
+	return this.length;
 }
 
 /**
@@ -567,11 +570,11 @@ export function _addressCount(this: Type): number {
  * ```
  */
 export function _storageKeyCount(this: Type): number {
-  let count = 0;
-  for (const item of this) {
-    count += item.storageKeys.length;
-  }
-  return count;
+	let count = 0;
+	for (const item of this) {
+		count += item.storageKeys.length;
+	}
+	return count;
 }
 
 /**
@@ -587,7 +590,7 @@ export function _storageKeyCount(this: Type): number {
  * ```
  */
 export function _isEmpty(this: Type): boolean {
-  return this.length === 0;
+	return this.length === 0;
 }
 
 /**
@@ -601,7 +604,7 @@ export function _isEmpty(this: Type): boolean {
  * ```
  */
 export function create(): Type {
-  return [];
+	return [];
 }
 
 // ============================================================================
@@ -612,22 +615,22 @@ export function create(): Type {
  * Compare two addresses for equality (byte-by-byte)
  */
 function addressEquals(a: Address, b: Address): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) {
+		if (a[i] !== b[i]) return false;
+	}
+	return true;
 }
 
 /**
  * Compare two hashes for equality (byte-by-byte)
  */
 function hashEquals(a: Hash, b: Hash): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
+	if (a.length !== b.length) return false;
+	for (let i = 0; i < a.length; i++) {
+		if (a[i] !== b[i]) return false;
+	}
+	return true;
 }
 
 // ============================================================================
@@ -647,7 +650,7 @@ function hashEquals(a: Hash, b: Hash): boolean {
  * ```
  */
 export function gasCost(list: Type | Uint8Array): bigint {
-  return _gasCost.call(from(list));
+	return _gasCost.call(from(list));
 }
 
 /**
@@ -662,7 +665,7 @@ export function gasCost(list: Type | Uint8Array): bigint {
  * ```
  */
 export function gasSavings(list: Type | Uint8Array): bigint {
-  return _gasSavings.call(from(list));
+	return _gasSavings.call(from(list));
 }
 
 /**
@@ -679,7 +682,7 @@ export function gasSavings(list: Type | Uint8Array): bigint {
  * ```
  */
 export function hasSavings(list: Type | Uint8Array): boolean {
-  return _hasSavings.call(from(list));
+	return _hasSavings.call(from(list));
 }
 
 /**
@@ -694,8 +697,11 @@ export function hasSavings(list: Type | Uint8Array): boolean {
  * const hasAddress = AccessList.includesAddress(list, address);
  * ```
  */
-export function includesAddress(list: Type | Uint8Array, address: Address): boolean {
-  return _includesAddress.call(from(list), address);
+export function includesAddress(
+	list: Type | Uint8Array,
+	address: Address,
+): boolean {
+	return _includesAddress.call(from(list), address);
 }
 
 /**
@@ -712,11 +718,11 @@ export function includesAddress(list: Type | Uint8Array, address: Address): bool
  * ```
  */
 export function includesStorageKey(
-  list: Type | Uint8Array,
-  address: Address,
-  storageKey: Hash,
+	list: Type | Uint8Array,
+	address: Address,
+	storageKey: Hash,
 ): boolean {
-  return _includesStorageKey.call(from(list), address, storageKey);
+	return _includesStorageKey.call(from(list), address, storageKey);
 }
 
 /**
@@ -731,8 +737,11 @@ export function includesStorageKey(
  * const keys = AccessList.keysFor(list, address);
  * ```
  */
-export function keysFor(list: Type | Uint8Array, address: Address): readonly Hash[] | undefined {
-  return _keysFor.call(from(list), address);
+export function keysFor(
+	list: Type | Uint8Array,
+	address: Address,
+): readonly Hash[] | undefined {
+	return _keysFor.call(from(list), address);
 }
 
 /**
@@ -747,7 +756,7 @@ export function keysFor(list: Type | Uint8Array, address: Address): readonly Has
  * ```
  */
 export function deduplicate(list: Type | Uint8Array): Type {
-  return _deduplicate.call(from(list));
+	return _deduplicate.call(from(list));
 }
 
 /**
@@ -763,7 +772,7 @@ export function deduplicate(list: Type | Uint8Array): Type {
  * ```
  */
 export function withAddress(list: Type | Uint8Array, address: Address): Type {
-  return _withAddress.call(from(list), address);
+	return _withAddress.call(from(list), address);
 }
 
 /**
@@ -780,11 +789,11 @@ export function withAddress(list: Type | Uint8Array, address: Address): Type {
  * ```
  */
 export function withStorageKey(
-  list: Type | Uint8Array,
-  address: Address,
-  storageKey: Hash,
+	list: Type | Uint8Array,
+	address: Address,
+	storageKey: Hash,
 ): Type {
-  return _withStorageKey.call(from(list), address, storageKey);
+	return _withStorageKey.call(from(list), address, storageKey);
 }
 
 /**
@@ -799,7 +808,7 @@ export function withStorageKey(
  * ```
  */
 export function assertValid(list: Type | Uint8Array): void {
-  return _assertValid.call(from(list));
+	return _assertValid.call(from(list));
 }
 
 /**
@@ -814,7 +823,7 @@ export function assertValid(list: Type | Uint8Array): void {
  * ```
  */
 export function toBytes(list: Type | Uint8Array): Uint8Array {
-  return _toBytes.call(from(list));
+	return _toBytes.call(from(list));
 }
 
 /**
@@ -829,7 +838,7 @@ export function toBytes(list: Type | Uint8Array): Uint8Array {
  * ```
  */
 export function addressCount(list: Type | Uint8Array): number {
-  return _addressCount.call(from(list));
+	return _addressCount.call(from(list));
 }
 
 /**
@@ -844,7 +853,7 @@ export function addressCount(list: Type | Uint8Array): number {
  * ```
  */
 export function storageKeyCount(list: Type | Uint8Array): number {
-  return _storageKeyCount.call(from(list));
+	return _storageKeyCount.call(from(list));
 }
 
 /**
@@ -861,7 +870,7 @@ export function storageKeyCount(list: Type | Uint8Array): number {
  * ```
  */
 export function isEmpty(list: Type | Uint8Array): boolean {
-  return _isEmpty.call(from(list));
+	return _isEmpty.call(from(list));
 }
 
 /**

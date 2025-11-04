@@ -74,7 +74,9 @@ export type Proof = Uint8Array & { readonly __proof: unique symbol };
 /**
  * Versioned hash (32 bytes) - commitment hash with version prefix
  */
-export type VersionedHash = Uint8Array & { readonly __versionedHash: unique symbol };
+export type VersionedHash = Uint8Array & {
+	readonly __versionedHash: unique symbol;
+};
 
 // ============================================================================
 // Data Encoding/Decoding
@@ -95,20 +97,20 @@ export type VersionedHash = Uint8Array & { readonly __versionedHash: unique symb
  * ```
  */
 export function fromData(data: Uint8Array): Data {
-  if (data.length > SIZE - 8) {
-    throw new Error(`Data too large: ${data.length} bytes (max ${SIZE - 8})`);
-  }
+	if (data.length > SIZE - 8) {
+		throw new Error(`Data too large: ${data.length} bytes (max ${SIZE - 8})`);
+	}
 
-  const blob = new Uint8Array(SIZE);
-  const view = new DataView(blob.buffer);
+	const blob = new Uint8Array(SIZE);
+	const view = new DataView(blob.buffer);
 
-  // Length prefix (8 bytes, little-endian)
-  view.setBigUint64(0, BigInt(data.length), true);
+	// Length prefix (8 bytes, little-endian)
+	view.setBigUint64(0, BigInt(data.length), true);
 
-  // Copy data
-  blob.set(data, 8);
+	// Copy data
+	blob.set(data, 8);
 
-  return blob as Data;
+	return blob as Data;
 }
 
 /**
@@ -124,10 +126,10 @@ export function fromData(data: Uint8Array): Data {
  * ```
  */
 export function from(value: Uint8Array): Data {
-  if (isValid(value)) {
-    return value;
-  }
-  return fromData(value);
+	if (isValid(value)) {
+		return value;
+	}
+	return fromData(value);
 }
 
 /**
@@ -144,18 +146,18 @@ export function from(value: Uint8Array): Data {
  * ```
  */
 export function _toData(this: Data): Uint8Array {
-  if (this.length !== SIZE) {
-    throw new Error(`Invalid blob size: ${this.length} (expected ${SIZE})`);
-  }
+	if (this.length !== SIZE) {
+		throw new Error(`Invalid blob size: ${this.length} (expected ${SIZE})`);
+	}
 
-  const view = new DataView(this.buffer, this.byteOffset, this.byteLength);
-  const length = Number(view.getBigUint64(0, true));
+	const view = new DataView(this.buffer, this.byteOffset, this.byteLength);
+	const length = Number(view.getBigUint64(0, true));
 
-  if (length > SIZE - 8) {
-    throw new Error(`Invalid length prefix: ${length}`);
-  }
+	if (length > SIZE - 8) {
+		throw new Error(`Invalid length prefix: ${length}`);
+	}
 
-  return this.slice(8, 8 + length);
+	return this.slice(8, 8 + length);
 }
 
 /**
@@ -171,7 +173,7 @@ export function _toData(this: Data): Uint8Array {
  * ```
  */
 export function toData(blob: Data): Uint8Array {
-  return _toData.call(blob);
+	return _toData.call(blob);
 }
 
 /**
@@ -188,7 +190,7 @@ export function toData(blob: Data): Uint8Array {
  * ```
  */
 export function isValid(blob: Uint8Array): blob is Data {
-  return blob.length === SIZE;
+	return blob.length === SIZE;
 }
 
 // ============================================================================
@@ -211,12 +213,12 @@ export function isValid(blob: Uint8Array): blob is Data {
  * - Return 48-byte commitment
  */
 export function _toCommitment(this: Data): Commitment {
-  if (this.length !== SIZE) {
-    throw new Error(`Invalid blob size: ${this.length}`);
-  }
-  // TODO: const commitment = blobToKzgCommitment(this);
-  // TODO: return commitment as Commitment;
-  throw new Error("Not implemented: requires c-kzg-4844 library");
+	if (this.length !== SIZE) {
+		throw new Error(`Invalid blob size: ${this.length}`);
+	}
+	// TODO: const commitment = blobToKzgCommitment(this);
+	// TODO: return commitment as Commitment;
+	throw new Error("Not implemented: requires c-kzg-4844 library");
 }
 
 /**
@@ -231,7 +233,7 @@ export function _toCommitment(this: Data): Commitment {
  * ```
  */
 export function toCommitment(blob: Data): Commitment {
-  return _toCommitment.call(blob);
+	return _toCommitment.call(blob);
 }
 
 /**
@@ -251,15 +253,15 @@ export function toCommitment(blob: Data): Commitment {
  * - Return 48-byte proof
  */
 export function _toProof(this: Data, commitment: Commitment): Proof {
-  if (this.length !== SIZE) {
-    throw new Error(`Invalid blob size: ${this.length}`);
-  }
-  if (commitment.length !== 48) {
-    throw new Error(`Invalid commitment size: ${commitment.length}`);
-  }
-  // TODO: const proof = computeBlobKzgProof(this, commitment);
-  // TODO: return proof as Proof;
-  throw new Error("Not implemented: requires c-kzg-4844 library");
+	if (this.length !== SIZE) {
+		throw new Error(`Invalid blob size: ${this.length}`);
+	}
+	if (commitment.length !== 48) {
+		throw new Error(`Invalid commitment size: ${commitment.length}`);
+	}
+	// TODO: const proof = computeBlobKzgProof(this, commitment);
+	// TODO: return proof as Proof;
+	throw new Error("Not implemented: requires c-kzg-4844 library");
 }
 
 /**
@@ -276,7 +278,7 @@ export function _toProof(this: Data, commitment: Commitment): Proof {
  * ```
  */
 export function toProof(blob: Data, commitment: Commitment): Proof {
-  return _toProof.call(blob, commitment);
+	return _toProof.call(blob, commitment);
 }
 
 /**
@@ -296,21 +298,21 @@ export function toProof(blob: Data, commitment: Commitment): Proof {
  * - Return boolean result
  */
 export function _verify(
-  this: Data,
-  commitment: Commitment,
-  proof: Proof,
+	this: Data,
+	commitment: Commitment,
+	proof: Proof,
 ): boolean {
-  if (this.length !== SIZE) {
-    throw new Error(`Invalid blob size: ${this.length}`);
-  }
-  if (commitment.length !== 48) {
-    throw new Error(`Invalid commitment size: ${commitment.length}`);
-  }
-  if (proof.length !== 48) {
-    throw new Error(`Invalid proof size: ${proof.length}`);
-  }
-  // TODO: return verifyBlobKzgProof(this, commitment, proof);
-  throw new Error("Not implemented: requires c-kzg-4844 library");
+	if (this.length !== SIZE) {
+		throw new Error(`Invalid blob size: ${this.length}`);
+	}
+	if (commitment.length !== 48) {
+		throw new Error(`Invalid commitment size: ${commitment.length}`);
+	}
+	if (proof.length !== 48) {
+		throw new Error(`Invalid proof size: ${proof.length}`);
+	}
+	// TODO: return verifyBlobKzgProof(this, commitment, proof);
+	throw new Error("Not implemented: requires c-kzg-4844 library");
 }
 
 /**
@@ -327,11 +329,11 @@ export function _verify(
  * ```
  */
 export function verify(
-  blob: Data,
-  commitment: Commitment,
-  proof: Proof,
+	blob: Data,
+	commitment: Commitment,
+	proof: Proof,
 ): boolean {
-  return _verify.call(blob, commitment, proof);
+	return _verify.call(blob, commitment, proof);
 }
 
 /**
@@ -353,18 +355,20 @@ export function verify(
  * - Return boolean result
  */
 export function verifyBatch(
-  blobs: readonly Data[],
-  commitments: readonly Commitment[],
-  proofs: readonly Proof[],
+	blobs: readonly Data[],
+	commitments: readonly Commitment[],
+	proofs: readonly Proof[],
 ): boolean {
-  if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
-    throw new Error("Arrays must have same length");
-  }
-  if (blobs.length > MAX_PER_TRANSACTION) {
-    throw new Error(`Too many blobs: ${blobs.length} (max ${MAX_PER_TRANSACTION})`);
-  }
-  // TODO: return verifyBlobKzgProofBatch(blobs, commitments, proofs);
-  throw new Error("Not implemented: requires c-kzg-4844 library");
+	if (blobs.length !== commitments.length || blobs.length !== proofs.length) {
+		throw new Error("Arrays must have same length");
+	}
+	if (blobs.length > MAX_PER_TRANSACTION) {
+		throw new Error(
+			`Too many blobs: ${blobs.length} (max ${MAX_PER_TRANSACTION})`,
+		);
+	}
+	// TODO: return verifyBlobKzgProofBatch(blobs, commitments, proofs);
+	throw new Error("Not implemented: requires c-kzg-4844 library");
 }
 
 // ============================================================================
@@ -388,19 +392,19 @@ export function verifyBatch(
  * - Take first 32 bytes
  */
 export function _toVersionedHash(this: Commitment): VersionedHash {
-  if (this.length !== 48) {
-    throw new Error(`Invalid commitment size: ${this.length}`);
-  }
+	if (this.length !== 48) {
+		throw new Error(`Invalid commitment size: ${this.length}`);
+	}
 
-  // Hash the commitment with SHA-256
-  const hash = Sha256.hash(this);
+	// Hash the commitment with SHA-256
+	const hash = Sha256.hash(this);
 
-  // Create versioned hash: version byte + hash[1:32]
-  const versionedHash = new Uint8Array(32);
-  versionedHash[0] = COMMITMENT_VERSION_KZG;
-  versionedHash.set(hash.slice(1), 1);
+	// Create versioned hash: version byte + hash[1:32]
+	const versionedHash = new Uint8Array(32);
+	versionedHash[0] = COMMITMENT_VERSION_KZG;
+	versionedHash.set(hash.slice(1), 1);
 
-  return versionedHash as VersionedHash;
+	return versionedHash as VersionedHash;
 }
 
 /**
@@ -415,7 +419,7 @@ export function _toVersionedHash(this: Commitment): VersionedHash {
  * ```
  */
 export function toVersionedHash(commitment: Commitment): VersionedHash {
-  return _toVersionedHash.call(commitment);
+	return _toVersionedHash.call(commitment);
 }
 
 /**
@@ -431,7 +435,7 @@ export function toVersionedHash(commitment: Commitment): VersionedHash {
  * ```
  */
 export function _isValidVersion(this: VersionedHash): boolean {
-  return this.length === 32 && this[0] === COMMITMENT_VERSION_KZG;
+	return this.length === 32 && this[0] === COMMITMENT_VERSION_KZG;
 }
 
 /**
@@ -448,7 +452,7 @@ export function _isValidVersion(this: VersionedHash): boolean {
  * ```
  */
 export function isValidVersion(hash: VersionedHash): boolean {
-  return _isValidVersion.call(hash);
+	return _isValidVersion.call(hash);
 }
 
 // ============================================================================
@@ -456,24 +460,24 @@ export function isValidVersion(hash: VersionedHash): boolean {
 // ============================================================================
 
 export namespace Commitment {
-  /**
-   * Validate commitment has correct size
-   *
-   * @param commitment - Commitment to validate
-   * @returns true if commitment is 48 bytes
-   */
-  export function isValid(commitment: Uint8Array): commitment is Commitment {
-    return commitment.length === 48;
-  }
+	/**
+	 * Validate commitment has correct size
+	 *
+	 * @param commitment - Commitment to validate
+	 * @returns true if commitment is 48 bytes
+	 */
+	export function isValid(commitment: Uint8Array): commitment is Commitment {
+		return commitment.length === 48;
+	}
 
-  /**
-   * Create versioned hash from commitment (internal form)
-   *
-   * @returns Versioned hash
-   */
-  export function toVersionedHash(this: Commitment): VersionedHash {
-    return _toVersionedHash.call(this);
-  }
+	/**
+	 * Create versioned hash from commitment (internal form)
+	 *
+	 * @returns Versioned hash
+	 */
+	export function toVersionedHash(this: Commitment): VersionedHash {
+		return _toVersionedHash.call(this);
+	}
 }
 
 // ============================================================================
@@ -481,15 +485,15 @@ export namespace Commitment {
 // ============================================================================
 
 export namespace Proof {
-  /**
-   * Validate proof has correct size
-   *
-   * @param proof - Proof to validate
-   * @returns true if proof is 48 bytes
-   */
-  export function isValid(proof: Uint8Array): proof is Proof {
-    return proof.length === 48;
-  }
+	/**
+	 * Validate proof has correct size
+	 *
+	 * @param proof - Proof to validate
+	 * @returns true if proof is 48 bytes
+	 */
+	export function isValid(proof: Uint8Array): proof is Proof {
+		return proof.length === 48;
+	}
 }
 
 // ============================================================================
@@ -497,34 +501,34 @@ export namespace Proof {
 // ============================================================================
 
 export namespace VersionedHash {
-  /**
-   * Validate versioned hash
-   *
-   * @param hash - Hash to validate
-   * @returns true if hash is 32 bytes with correct version
-   */
-  export function isValid(hash: Uint8Array): hash is VersionedHash {
-    return hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG;
-  }
+	/**
+	 * Validate versioned hash
+	 *
+	 * @param hash - Hash to validate
+	 * @returns true if hash is 32 bytes with correct version
+	 */
+	export function isValid(hash: Uint8Array): hash is VersionedHash {
+		return hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG;
+	}
 
-  /**
-   * Get version byte from hash (standard form)
-   *
-   * @param hash - Versioned hash
-   * @returns Version byte
-   */
-  export function getVersion(hash: VersionedHash): number {
-    return hash[0] ?? 0;
-  }
+	/**
+	 * Get version byte from hash (standard form)
+	 *
+	 * @param hash - Versioned hash
+	 * @returns Version byte
+	 */
+	export function getVersion(hash: VersionedHash): number {
+		return hash[0] ?? 0;
+	}
 
-  /**
-   * Get version byte (internal form with this:)
-   *
-   * @returns Version byte
-   */
-  export function version(this: VersionedHash): number {
-    return this[0] ?? 0;
-  }
+	/**
+	 * Get version byte (internal form with this:)
+	 *
+	 * @returns Version byte
+	 */
+	export function version(this: VersionedHash): number {
+		return this[0] ?? 0;
+	}
 }
 
 // ============================================================================
@@ -543,10 +547,12 @@ export namespace VersionedHash {
  * ```
  */
 export function calculateGas(blobCount: number): number {
-  if (blobCount < 0 || blobCount > MAX_PER_TRANSACTION) {
-    throw new Error(`Invalid blob count: ${blobCount} (max ${MAX_PER_TRANSACTION})`);
-  }
-  return blobCount * GAS_PER_BLOB;
+	if (blobCount < 0 || blobCount > MAX_PER_TRANSACTION) {
+		throw new Error(
+			`Invalid blob count: ${blobCount} (max ${MAX_PER_TRANSACTION})`,
+		);
+	}
+	return blobCount * GAS_PER_BLOB;
 }
 
 /**
@@ -561,11 +567,11 @@ export function calculateGas(blobCount: number): number {
  * ```
  */
 export function estimateBlobCount(dataSize: number): number {
-  if (dataSize < 0) {
-    throw new Error(`Invalid data size: ${dataSize}`);
-  }
-  const maxDataPerBlob = SIZE - 8; // Account for length prefix
-  return Math.ceil(dataSize / maxDataPerBlob);
+	if (dataSize < 0) {
+		throw new Error(`Invalid data size: ${dataSize}`);
+	}
+	const maxDataPerBlob = SIZE - 8; // Account for length prefix
+	return Math.ceil(dataSize / maxDataPerBlob);
 }
 
 /**
@@ -581,24 +587,24 @@ export function estimateBlobCount(dataSize: number): number {
  * ```
  */
 export function splitData(data: Uint8Array): Data[] {
-  const maxDataPerBlob = SIZE - 8;
-  const blobCount = estimateBlobCount(data.length);
+	const maxDataPerBlob = SIZE - 8;
+	const blobCount = estimateBlobCount(data.length);
 
-  if (blobCount > MAX_PER_TRANSACTION) {
-    throw new Error(
-      `Data too large: requires ${blobCount} blobs (max ${MAX_PER_TRANSACTION})`,
-    );
-  }
+	if (blobCount > MAX_PER_TRANSACTION) {
+		throw new Error(
+			`Data too large: requires ${blobCount} blobs (max ${MAX_PER_TRANSACTION})`,
+		);
+	}
 
-  const blobs: Data[] = [];
-  for (let i = 0; i < blobCount; i++) {
-    const start = i * maxDataPerBlob;
-    const end = Math.min(start + maxDataPerBlob, data.length);
-    const chunk = data.slice(start, end);
-    blobs.push(fromData(chunk));
-  }
+	const blobs: Data[] = [];
+	for (let i = 0; i < blobCount; i++) {
+		const start = i * maxDataPerBlob;
+		const end = Math.min(start + maxDataPerBlob, data.length);
+		const chunk = data.slice(start, end);
+		blobs.push(fromData(chunk));
+	}
 
-  return blobs;
+	return blobs;
 }
 
 /**
@@ -614,15 +620,15 @@ export function splitData(data: Uint8Array): Data[] {
  * ```
  */
 export function joinData(blobs: readonly Data[]): Uint8Array {
-  const chunks = blobs.map(b => _toData.call(b));
-  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+	const chunks = blobs.map((b) => _toData.call(b));
+	const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
+	const result = new Uint8Array(totalLength);
+	let offset = 0;
+	for (const chunk of chunks) {
+		result.set(chunk, offset);
+		offset += chunk.length;
+	}
 
-  return result;
+	return result;
 }

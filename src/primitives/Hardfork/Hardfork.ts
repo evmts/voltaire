@@ -31,44 +31,44 @@
  * maintaining backward compatibility while adding improvements.
  */
 export enum Id {
-  /** Original Ethereum launch (July 2015). Base EVM with fundamental opcodes. */
-  FRONTIER = 0,
-  /** First planned hardfork (March 2016). Added DELEGATECALL and fixed critical issues. */
-  HOMESTEAD = 1,
-  /** Emergency fork for DAO hack (July 2016). No EVM changes, only state modifications. */
-  DAO = 2,
-  /** Gas repricing fork (October 2016). EIP-150: Increased gas costs for IO-heavy operations. */
-  TANGERINE_WHISTLE = 3,
-  /** State cleaning fork (November 2016). EIP-161: Removed empty accounts. */
-  SPURIOUS_DRAGON = 4,
-  /** Major feature fork (October 2017). Added REVERT, RETURNDATASIZE, RETURNDATACOPY, STATICCALL. */
-  BYZANTIUM = 5,
-  /** Efficiency improvements (February 2019). Added CREATE2, shift opcodes, EXTCODEHASH. */
-  CONSTANTINOPLE = 6,
-  /** Quick fix fork (February 2019). Removed EIP-1283 due to reentrancy concerns. */
-  PETERSBURG = 7,
-  /** Gas optimization fork (December 2019). EIP-2200: Rebalanced SSTORE costs. Added CHAINID and SELFBALANCE. */
-  ISTANBUL = 8,
-  /** Difficulty bomb delay (January 2020). No EVM changes. */
-  MUIR_GLACIER = 9,
-  /** Access list fork (April 2021). EIP-2929: Gas cost for cold/warm access. EIP-2930: Optional access lists. */
-  BERLIN = 10,
-  /** Fee market reform (August 2021). EIP-1559: Base fee and new transaction types. Added BASEFEE opcode. */
-  LONDON = 11,
-  /** Difficulty bomb delay (December 2021). No EVM changes. */
-  ARROW_GLACIER = 12,
-  /** Difficulty bomb delay (June 2022). No EVM changes. */
-  GRAY_GLACIER = 13,
-  /** Proof of Stake transition (September 2022). Replaced DIFFICULTY with PREVRANDAO. */
-  MERGE = 14,
-  /** Withdrawal enabling fork (April 2023). EIP-3855: PUSH0 opcode. */
-  SHANGHAI = 15,
-  /** Proto-danksharding fork (March 2024). EIP-4844: Blob transactions. EIP-1153: Transient storage (TLOAD/TSTORE). EIP-5656: MCOPY opcode. */
-  CANCUN = 16,
-  /** Prague-Electra fork (May 2025). EIP-2537: BLS12-381 precompiles. EIP-7702: Set EOA account code for one transaction. */
-  PRAGUE = 17,
-  /** Osaka fork (TBD). EIP-7883: ModExp gas increase. */
-  OSAKA = 18,
+	/** Original Ethereum launch (July 2015). Base EVM with fundamental opcodes. */
+	FRONTIER = 0,
+	/** First planned hardfork (March 2016). Added DELEGATECALL and fixed critical issues. */
+	HOMESTEAD = 1,
+	/** Emergency fork for DAO hack (July 2016). No EVM changes, only state modifications. */
+	DAO = 2,
+	/** Gas repricing fork (October 2016). EIP-150: Increased gas costs for IO-heavy operations. */
+	TANGERINE_WHISTLE = 3,
+	/** State cleaning fork (November 2016). EIP-161: Removed empty accounts. */
+	SPURIOUS_DRAGON = 4,
+	/** Major feature fork (October 2017). Added REVERT, RETURNDATASIZE, RETURNDATACOPY, STATICCALL. */
+	BYZANTIUM = 5,
+	/** Efficiency improvements (February 2019). Added CREATE2, shift opcodes, EXTCODEHASH. */
+	CONSTANTINOPLE = 6,
+	/** Quick fix fork (February 2019). Removed EIP-1283 due to reentrancy concerns. */
+	PETERSBURG = 7,
+	/** Gas optimization fork (December 2019). EIP-2200: Rebalanced SSTORE costs. Added CHAINID and SELFBALANCE. */
+	ISTANBUL = 8,
+	/** Difficulty bomb delay (January 2020). No EVM changes. */
+	MUIR_GLACIER = 9,
+	/** Access list fork (April 2021). EIP-2929: Gas cost for cold/warm access. EIP-2930: Optional access lists. */
+	BERLIN = 10,
+	/** Fee market reform (August 2021). EIP-1559: Base fee and new transaction types. Added BASEFEE opcode. */
+	LONDON = 11,
+	/** Difficulty bomb delay (December 2021). No EVM changes. */
+	ARROW_GLACIER = 12,
+	/** Difficulty bomb delay (June 2022). No EVM changes. */
+	GRAY_GLACIER = 13,
+	/** Proof of Stake transition (September 2022). Replaced DIFFICULTY with PREVRANDAO. */
+	MERGE = 14,
+	/** Withdrawal enabling fork (April 2023). EIP-3855: PUSH0 opcode. */
+	SHANGHAI = 15,
+	/** Proto-danksharding fork (March 2024). EIP-4844: Blob transactions. EIP-1153: Transient storage (TLOAD/TSTORE). EIP-5656: MCOPY opcode. */
+	CANCUN = 16,
+	/** Prague-Electra fork (May 2025). EIP-2537: BLS12-381 precompiles. EIP-7702: Set EOA account code for one transaction. */
+	PRAGUE = 17,
+	/** Osaka fork (TBD). EIP-7883: ModExp gas increase. */
+	OSAKA = 18,
 }
 
 /**
@@ -81,52 +81,52 @@ export const DEFAULT: Id = Id.PRAGUE;
  * Hardfork name to ID mapping for string parsing
  */
 const NAME_TO_ID: Record<string, Id> = {
-  frontier: Id.FRONTIER,
-  homestead: Id.HOMESTEAD,
-  dao: Id.DAO,
-  tangerinewhistle: Id.TANGERINE_WHISTLE,
-  spuriousdragon: Id.SPURIOUS_DRAGON,
-  byzantium: Id.BYZANTIUM,
-  constantinople: Id.CONSTANTINOPLE,
-  petersburg: Id.PETERSBURG,
-  constantinoplefix: Id.PETERSBURG, // alias
-  istanbul: Id.ISTANBUL,
-  muirglacier: Id.MUIR_GLACIER,
-  berlin: Id.BERLIN,
-  london: Id.LONDON,
-  arrowglacier: Id.ARROW_GLACIER,
-  grayglacier: Id.GRAY_GLACIER,
-  merge: Id.MERGE,
-  paris: Id.MERGE, // alias
-  shanghai: Id.SHANGHAI,
-  cancun: Id.CANCUN,
-  prague: Id.PRAGUE,
-  osaka: Id.OSAKA,
+	frontier: Id.FRONTIER,
+	homestead: Id.HOMESTEAD,
+	dao: Id.DAO,
+	tangerinewhistle: Id.TANGERINE_WHISTLE,
+	spuriousdragon: Id.SPURIOUS_DRAGON,
+	byzantium: Id.BYZANTIUM,
+	constantinople: Id.CONSTANTINOPLE,
+	petersburg: Id.PETERSBURG,
+	constantinoplefix: Id.PETERSBURG, // alias
+	istanbul: Id.ISTANBUL,
+	muirglacier: Id.MUIR_GLACIER,
+	berlin: Id.BERLIN,
+	london: Id.LONDON,
+	arrowglacier: Id.ARROW_GLACIER,
+	grayglacier: Id.GRAY_GLACIER,
+	merge: Id.MERGE,
+	paris: Id.MERGE, // alias
+	shanghai: Id.SHANGHAI,
+	cancun: Id.CANCUN,
+	prague: Id.PRAGUE,
+	osaka: Id.OSAKA,
 };
 
 /**
  * ID to name mapping for toString conversion
  */
 const ID_TO_NAME: Record<Id, string> = {
-  [Id.FRONTIER]: "frontier",
-  [Id.HOMESTEAD]: "homestead",
-  [Id.DAO]: "dao",
-  [Id.TANGERINE_WHISTLE]: "tangerinewhistle",
-  [Id.SPURIOUS_DRAGON]: "spuriousdragon",
-  [Id.BYZANTIUM]: "byzantium",
-  [Id.CONSTANTINOPLE]: "constantinople",
-  [Id.PETERSBURG]: "petersburg",
-  [Id.ISTANBUL]: "istanbul",
-  [Id.MUIR_GLACIER]: "muirglacier",
-  [Id.BERLIN]: "berlin",
-  [Id.LONDON]: "london",
-  [Id.ARROW_GLACIER]: "arrowglacier",
-  [Id.GRAY_GLACIER]: "grayglacier",
-  [Id.MERGE]: "merge",
-  [Id.SHANGHAI]: "shanghai",
-  [Id.CANCUN]: "cancun",
-  [Id.PRAGUE]: "prague",
-  [Id.OSAKA]: "osaka",
+	[Id.FRONTIER]: "frontier",
+	[Id.HOMESTEAD]: "homestead",
+	[Id.DAO]: "dao",
+	[Id.TANGERINE_WHISTLE]: "tangerinewhistle",
+	[Id.SPURIOUS_DRAGON]: "spuriousdragon",
+	[Id.BYZANTIUM]: "byzantium",
+	[Id.CONSTANTINOPLE]: "constantinople",
+	[Id.PETERSBURG]: "petersburg",
+	[Id.ISTANBUL]: "istanbul",
+	[Id.MUIR_GLACIER]: "muirglacier",
+	[Id.BERLIN]: "berlin",
+	[Id.LONDON]: "london",
+	[Id.ARROW_GLACIER]: "arrowglacier",
+	[Id.GRAY_GLACIER]: "grayglacier",
+	[Id.MERGE]: "merge",
+	[Id.SHANGHAI]: "shanghai",
+	[Id.CANCUN]: "cancun",
+	[Id.PRAGUE]: "prague",
+	[Id.OSAKA]: "osaka",
 };
 
 // ============================================================================
@@ -149,7 +149,7 @@ const ID_TO_NAME: Record<Id, string> = {
  * ```
  */
 export function isAtLeast(current: Id, target: Id): boolean {
-  return current >= target;
+	return current >= target;
 }
 
 /**
@@ -168,7 +168,7 @@ export function isAtLeast(current: Id, target: Id): boolean {
  * ```
  */
 export function isBefore(current: Id, target: Id): boolean {
-  return current < target;
+	return current < target;
 }
 
 /**
@@ -187,7 +187,7 @@ export function isBefore(current: Id, target: Id): boolean {
  * ```
  */
 export function isAfter(current: Id, target: Id): boolean {
-  return current > target;
+	return current > target;
 }
 
 /**
@@ -205,7 +205,7 @@ export function isAfter(current: Id, target: Id): boolean {
  * ```
  */
 export function isEqual(a: Id, b: Id): boolean {
-  return a === b;
+	return a === b;
 }
 
 /**
@@ -223,7 +223,7 @@ export function isEqual(a: Id, b: Id): boolean {
  * ```
  */
 export function compare(a: Id, b: Id): number {
-  return a - b;
+	return a - b;
 }
 
 /**
@@ -242,10 +242,10 @@ export function compare(a: Id, b: Id): number {
  * ```
  */
 export function min(forks: Id[]): Id {
-  if (forks.length === 0) {
-    throw new Error("Cannot get min of empty array");
-  }
-  return forks.reduce((a, b) => (a < b ? a : b));
+	if (forks.length === 0) {
+		throw new Error("Cannot get min of empty array");
+	}
+	return forks.reduce((a, b) => (a < b ? a : b));
 }
 
 /**
@@ -264,10 +264,10 @@ export function min(forks: Id[]): Id {
  * ```
  */
 export function max(forks: Id[]): Id {
-  if (forks.length === 0) {
-    throw new Error("Cannot get max of empty array");
-  }
-  return forks.reduce((a, b) => (a > b ? a : b));
+	if (forks.length === 0) {
+		throw new Error("Cannot get max of empty array");
+	}
+	return forks.reduce((a, b) => (a > b ? a : b));
 }
 
 // ============================================================================
@@ -289,16 +289,16 @@ export function max(forks: Id[]): Id {
  * ```
  */
 export function fromString(name: string): Id | undefined {
-  // Handle comparisons like ">=Cancun" or ">Berlin"
-  let cleanName = name;
-  if (name.length > 0 && (name[0] === ">" || name[0] === "<")) {
-    const start = name.length > 1 && name[1] === "=" ? 2 : 1;
-    cleanName = name.substring(start);
-  }
+	// Handle comparisons like ">=Cancun" or ">Berlin"
+	let cleanName = name;
+	if (name.length > 0 && (name[0] === ">" || name[0] === "<")) {
+		const start = name.length > 1 && name[1] === "=" ? 2 : 1;
+		cleanName = name.substring(start);
+	}
 
-  // Case-insensitive comparison
-  const lower = cleanName.toLowerCase();
-  return NAME_TO_ID[lower];
+	// Case-insensitive comparison
+	const lower = cleanName.toLowerCase();
+	return NAME_TO_ID[lower];
 }
 
 /**
@@ -314,7 +314,7 @@ export function fromString(name: string): Id | undefined {
  * ```
  */
 export function toString(fork: Id): string {
-  return ID_TO_NAME[fork];
+	return ID_TO_NAME[fork];
 }
 
 /**
@@ -331,7 +331,7 @@ export function toString(fork: Id): string {
  * ```
  */
 export function isValidName(name: string): boolean {
-  return fromString(name) !== undefined;
+	return fromString(name) !== undefined;
 }
 
 // ============================================================================
@@ -352,7 +352,7 @@ export function isValidName(name: string): boolean {
  * ```
  */
 export function gte(this: Id, target: Id): boolean {
-  return isAtLeast(this, target);
+	return isAtLeast(this, target);
 }
 
 /**
@@ -369,7 +369,7 @@ export function gte(this: Id, target: Id): boolean {
  * ```
  */
 export function lt(this: Id, target: Id): boolean {
-  return isBefore(this, target);
+	return isBefore(this, target);
 }
 
 /**
@@ -386,7 +386,7 @@ export function lt(this: Id, target: Id): boolean {
  * ```
  */
 export function gt(this: Id, target: Id): boolean {
-  return isAfter(this, target);
+	return isAfter(this, target);
 }
 
 /**
@@ -403,7 +403,7 @@ export function gt(this: Id, target: Id): boolean {
  * ```
  */
 export function eq(this: Id, other: Id): boolean {
-  return isEqual(this, other);
+	return isEqual(this, other);
 }
 
 /**
@@ -420,7 +420,7 @@ export function eq(this: Id, other: Id): boolean {
  * ```
  */
 export function lte(this: Id, target: Id): boolean {
-  return this <= target;
+	return this <= target;
 }
 
 // ============================================================================
@@ -440,7 +440,7 @@ export function lte(this: Id, target: Id): boolean {
  * ```
  */
 export function hasEIP1559(fork: Id): boolean {
-  return isAtLeast(fork, Id.LONDON);
+	return isAtLeast(fork, Id.LONDON);
 }
 
 /**
@@ -456,7 +456,7 @@ export function hasEIP1559(fork: Id): boolean {
  * ```
  */
 export function supportsEIP1559(this: Id): boolean {
-  return hasEIP1559(this);
+	return hasEIP1559(this);
 }
 
 /**
@@ -472,7 +472,7 @@ export function supportsEIP1559(this: Id): boolean {
  * ```
  */
 export function hasEIP3855(fork: Id): boolean {
-  return isAtLeast(fork, Id.SHANGHAI);
+	return isAtLeast(fork, Id.SHANGHAI);
 }
 
 /**
@@ -488,7 +488,7 @@ export function hasEIP3855(fork: Id): boolean {
  * ```
  */
 export function supportsPUSH0(this: Id): boolean {
-  return hasEIP3855(this);
+	return hasEIP3855(this);
 }
 
 /**
@@ -504,7 +504,7 @@ export function supportsPUSH0(this: Id): boolean {
  * ```
  */
 export function hasEIP4844(fork: Id): boolean {
-  return isAtLeast(fork, Id.CANCUN);
+	return isAtLeast(fork, Id.CANCUN);
 }
 
 /**
@@ -520,7 +520,7 @@ export function hasEIP4844(fork: Id): boolean {
  * ```
  */
 export function supportsBlobs(this: Id): boolean {
-  return hasEIP4844(this);
+	return hasEIP4844(this);
 }
 
 /**
@@ -536,7 +536,7 @@ export function supportsBlobs(this: Id): boolean {
  * ```
  */
 export function hasEIP1153(fork: Id): boolean {
-  return isAtLeast(fork, Id.CANCUN);
+	return isAtLeast(fork, Id.CANCUN);
 }
 
 /**
@@ -552,7 +552,7 @@ export function hasEIP1153(fork: Id): boolean {
  * ```
  */
 export function supportsTransientStorage(this: Id): boolean {
-  return hasEIP1153(this);
+	return hasEIP1153(this);
 }
 
 /**
@@ -568,7 +568,7 @@ export function supportsTransientStorage(this: Id): boolean {
  * ```
  */
 export function isPostMerge(fork: Id): boolean {
-  return isAtLeast(fork, Id.MERGE);
+	return isAtLeast(fork, Id.MERGE);
 }
 
 /**
@@ -584,7 +584,7 @@ export function isPostMerge(fork: Id): boolean {
  * ```
  */
 export function isPoS(this: Id): boolean {
-  return isPostMerge(this);
+	return isPostMerge(this);
 }
 
 // ============================================================================
@@ -602,7 +602,7 @@ export function isPoS(this: Id): boolean {
  * ```
  */
 export function allNames(): string[] {
-  return Object.values(ID_TO_NAME);
+	return Object.values(ID_TO_NAME);
 }
 
 /**
@@ -616,7 +616,7 @@ export function allNames(): string[] {
  * ```
  */
 export function allIds(): Id[] {
-  return Object.values(Id).filter((v) => typeof v === "number") as Id[];
+	return Object.values(Id).filter((v) => typeof v === "number") as Id[];
 }
 
 /**
@@ -635,12 +635,12 @@ export function allIds(): Id[] {
  * ```
  */
 export function range(start: Id, end: Id): Id[] {
-  const result: Id[] = [];
-  const [min, max] = start <= end ? [start, end] : [end, start];
-  for (let i = min; i <= max; i++) {
-    result.push(i as Id);
-  }
-  return start <= end ? result : result.reverse();
+	const result: Id[] = [];
+	const [min, max] = start <= end ? [start, end] : [end, start];
+	for (let i = min; i <= max; i++) {
+		result.push(i as Id);
+	}
+	return start <= end ? result : result.reverse();
 }
 
 // ============================================================================

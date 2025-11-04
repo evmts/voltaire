@@ -20,10 +20,7 @@ import { hashEquals } from "./utils.js";
  * });
  * ```
  */
-export function matchesFilter<T extends Data>(
-	log: T,
-	filter: Filter,
-): boolean {
+export function matchesFilter<T extends Data>(log: T, filter: Filter): boolean {
 	// Check address filter
 	if (filter.address !== undefined) {
 		if (!matchesAddress(log, filter.address)) {

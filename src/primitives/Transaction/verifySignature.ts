@@ -1,9 +1,9 @@
-import { Type, type Any } from "./types.js";
-import * as Legacy from "./Legacy/verifySignature.js";
-import * as EIP2930 from "./EIP2930/verifySignature.js";
 import * as EIP1559 from "./EIP1559/verifySignature.js";
+import * as EIP2930 from "./EIP2930/verifySignature.js";
 import * as EIP4844 from "./EIP4844/verifySignature.js";
 import * as EIP7702 from "./EIP7702/verifySignature.js";
+import * as Legacy from "./Legacy/verifySignature.js";
+import { type Any, Type } from "./types.js";
 
 /**
  * Verify transaction signature

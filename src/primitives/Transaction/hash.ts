@@ -1,10 +1,10 @@
 import type { Hash } from "../Hash/index.js";
-import { Type, type Any } from "./types.js";
-import * as Legacy from "./Legacy/hash.js";
-import * as EIP2930 from "./EIP2930/hash.js";
 import * as EIP1559 from "./EIP1559/hash.js";
+import * as EIP2930 from "./EIP2930/hash.js";
 import * as EIP4844 from "./EIP4844/hash.js";
 import * as EIP7702 from "./EIP7702/hash.js";
+import * as Legacy from "./Legacy/hash.js";
+import { type Any, Type } from "./types.js";
 
 /**
  * Compute transaction hash

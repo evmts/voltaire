@@ -1,8 +1,8 @@
 import type { Encodable } from "./Rlp.js";
-import { Error } from "./errors.js";
-import { isData } from "./isData.js";
 import { encodeBytes } from "./encodeBytes.js";
 import { encodeList } from "./encodeList.js";
+import { Error } from "./errors.js";
+import { isData } from "./isData.js";
 
 /**
  * Encodes data to RLP format (this: pattern)

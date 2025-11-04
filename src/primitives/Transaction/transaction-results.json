@@ -1,224 +1,224 @@
 [
-  {
-    "name": "Transaction.isLegacy",
-    "opsPerSec": 47216749,
-    "avgTimeMs": 0.00002117892530042676,
-    "iterations": 94433498
-  },
-  {
-    "name": "Transaction.isEIP2930",
-    "opsPerSec": 47221638.49999999,
-    "avgTimeMs": 0.000021176732357561038,
-    "iterations": 94443277
-  },
-  {
-    "name": "Transaction.isEIP1559",
-    "opsPerSec": 47158256.53325575,
-    "avgTimeMs": 0.000021205194456135277,
-    "iterations": 94316515
-  },
-  {
-    "name": "Transaction.isEIP4844",
-    "opsPerSec": 47061420,
-    "avgTimeMs": 0.000021248827595937395,
-    "iterations": 94122840
-  },
-  {
-    "name": "Transaction.isEIP7702",
-    "opsPerSec": 46977790.5,
-    "avgTimeMs": 0.00002128665459479198,
-    "iterations": 93955581
-  },
-  {
-    "name": "Transaction.detectType - typed tx",
-    "opsPerSec": 46137443,
-    "avgTimeMs": 0.00002167436977380823,
-    "iterations": 92274886
-  },
-  {
-    "name": "Transaction.detectType - legacy tx",
-    "opsPerSec": 43647771.5,
-    "avgTimeMs": 0.000022910677123573194,
-    "iterations": 87295543
-  },
-  {
-    "name": "Legacy.getChainId - EIP-155",
-    "opsPerSec": 23256519.5,
-    "avgTimeMs": 0.00004299869548407706,
-    "iterations": 46513039
-  },
-  {
-    "name": "Legacy.getChainId - pre-EIP-155",
-    "opsPerSec": 31911812.5,
-    "avgTimeMs": 0.00003133635859761961,
-    "iterations": 63823625
-  },
-  {
-    "name": "Legacy.serialize",
-    "opsPerSec": 3065909.743996539,
-    "avgTimeMs": 0.0003261674620259561,
-    "iterations": 6131820
-  },
-  {
-    "name": "Legacy.hash",
-    "opsPerSec": 2978978.3138138517,
-    "avgTimeMs": 0.0003356855588249466,
-    "iterations": 5957957
-  },
-  {
-    "name": "Legacy.getSigningHash",
-    "opsPerSec": 2907679,
-    "avgTimeMs": 0.000343916917926635,
-    "iterations": 5815358
-  },
-  {
-    "name": "EIP1559.getEffectiveGasPrice",
-    "opsPerSec": 23116592.5,
-    "avgTimeMs": 0.000043258970802033216,
-    "iterations": 46233185
-  },
-  {
-    "name": "EIP1559.serialize",
-    "opsPerSec": 2877336.820166451,
-    "avgTimeMs": 0.00034754360107974817,
-    "iterations": 5754674
-  },
-  {
-    "name": "EIP1559.hash",
-    "opsPerSec": 2851364.703458069,
-    "avgTimeMs": 0.0003507092581973899,
-    "iterations": 5702730
-  },
-  {
-    "name": "EIP1559.getSigningHash",
-    "opsPerSec": 2830809.3230744195,
-    "avgTimeMs": 0.00035325586638733527,
-    "iterations": 5661619
-  },
-  {
-    "name": "EIP4844.getBlobGasCost",
-    "opsPerSec": 19953589.5,
-    "avgTimeMs": 0.00005011629611804934,
-    "iterations": 39907179
-  },
-  {
-    "name": "EIP4844.getEffectiveGasPrice",
-    "opsPerSec": 23134184.5,
-    "avgTimeMs": 0.00004322607524808147,
-    "iterations": 46268369
-  },
-  {
-    "name": "EIP4844.serialize",
-    "opsPerSec": 2859183.2026449502,
-    "avgTimeMs": 0.0003497502360376656,
-    "iterations": 5718367
-  },
-  {
-    "name": "EIP7702.getEffectiveGasPrice",
-    "opsPerSec": 23055627.015831836,
-    "avgTimeMs": 0.00004337335954096239,
-    "iterations": 46111255
-  },
-  {
-    "name": "Transaction.format - legacy",
-    "opsPerSec": 3289839.930913362,
-    "avgTimeMs": 0.00030396615671278844,
-    "iterations": 6579680
-  },
-  {
-    "name": "Transaction.format - EIP-1559",
-    "opsPerSec": 3286932.9657746865,
-    "avgTimeMs": 0.00030423498453194443,
-    "iterations": 6573871
-  },
-  {
-    "name": "Transaction.getGasPrice - legacy",
-    "opsPerSec": 38015803,
-    "avgTimeMs": 0.000026304850117199944,
-    "iterations": 76031606
-  },
-  {
-    "name": "Transaction.getGasPrice - EIP-1559",
-    "opsPerSec": 19485299.5,
-    "avgTimeMs": 0.000051320740540836955,
-    "iterations": 38970599
-  },
-  {
-    "name": "Transaction.hasAccessList",
-    "opsPerSec": 44195860,
-    "avgTimeMs": 0.000022626553708876804,
-    "iterations": 88391720
-  },
-  {
-    "name": "Transaction.getAccessList",
-    "opsPerSec": 44063990,
-    "avgTimeMs": 0.00002269426804063817,
-    "iterations": 88127980
-  },
-  {
-    "name": "Transaction.getChainId",
-    "opsPerSec": 45282219.5,
-    "avgTimeMs": 0.000022083723170857384,
-    "iterations": 90564439
-  },
-  {
-    "name": "Transaction.isSigned",
-    "opsPerSec": 16910260.65333966,
-    "avgTimeMs": 0.000059135694032161875,
-    "iterations": 33820522
-  },
-  {
-    "name": "Create Legacy Transaction",
-    "opsPerSec": 27233366.5,
-    "avgTimeMs": 0.00003671966152256645,
-    "iterations": 54466733
-  },
-  {
-    "name": "Create EIP-1559 Transaction",
-    "opsPerSec": 23323987.51019627,
-    "avgTimeMs": 0.00004287431553300404,
-    "iterations": 46647976
-  },
-  {
-    "name": "Create EIP-4844 Transaction",
-    "opsPerSec": 22189785,
-    "avgTimeMs": 0.000045065781394456955,
-    "iterations": 44379570
-  },
-  {
-    "name": "Access nonce",
-    "opsPerSec": 44922336.5,
-    "avgTimeMs": 0.00002226064087294302,
-    "iterations": 89844673
-  },
-  {
-    "name": "Access gasPrice",
-    "opsPerSec": 43011061.5,
-    "avgTimeMs": 0.000023249833069104793,
-    "iterations": 86022123
-  },
-  {
-    "name": "Access to address",
-    "opsPerSec": 42627425,
-    "avgTimeMs": 0.00002345907593526937,
-    "iterations": 85254850
-  },
-  {
-    "name": "Access value",
-    "opsPerSec": 42847679.5,
-    "avgTimeMs": 0.00002333848674348864,
-    "iterations": 85695359
-  },
-  {
-    "name": "Access data",
-    "opsPerSec": 42496522.5,
-    "avgTimeMs": 0.00002353133718176587,
-    "iterations": 84993045
-  },
-  {
-    "name": "Access signature (r)",
-    "opsPerSec": 42708036.5,
-    "avgTimeMs": 0.00002341479688489074,
-    "iterations": 85416073
-  }
+	{
+		"name": "Transaction.isLegacy",
+		"opsPerSec": 47216749,
+		"avgTimeMs": 0.00002117892530042676,
+		"iterations": 94433498
+	},
+	{
+		"name": "Transaction.isEIP2930",
+		"opsPerSec": 47221638.49999999,
+		"avgTimeMs": 0.000021176732357561038,
+		"iterations": 94443277
+	},
+	{
+		"name": "Transaction.isEIP1559",
+		"opsPerSec": 47158256.53325575,
+		"avgTimeMs": 0.000021205194456135277,
+		"iterations": 94316515
+	},
+	{
+		"name": "Transaction.isEIP4844",
+		"opsPerSec": 47061420,
+		"avgTimeMs": 0.000021248827595937395,
+		"iterations": 94122840
+	},
+	{
+		"name": "Transaction.isEIP7702",
+		"opsPerSec": 46977790.5,
+		"avgTimeMs": 0.00002128665459479198,
+		"iterations": 93955581
+	},
+	{
+		"name": "Transaction.detectType - typed tx",
+		"opsPerSec": 46137443,
+		"avgTimeMs": 0.00002167436977380823,
+		"iterations": 92274886
+	},
+	{
+		"name": "Transaction.detectType - legacy tx",
+		"opsPerSec": 43647771.5,
+		"avgTimeMs": 0.000022910677123573194,
+		"iterations": 87295543
+	},
+	{
+		"name": "Legacy.getChainId - EIP-155",
+		"opsPerSec": 23256519.5,
+		"avgTimeMs": 0.00004299869548407706,
+		"iterations": 46513039
+	},
+	{
+		"name": "Legacy.getChainId - pre-EIP-155",
+		"opsPerSec": 31911812.5,
+		"avgTimeMs": 0.00003133635859761961,
+		"iterations": 63823625
+	},
+	{
+		"name": "Legacy.serialize",
+		"opsPerSec": 3065909.743996539,
+		"avgTimeMs": 0.0003261674620259561,
+		"iterations": 6131820
+	},
+	{
+		"name": "Legacy.hash",
+		"opsPerSec": 2978978.3138138517,
+		"avgTimeMs": 0.0003356855588249466,
+		"iterations": 5957957
+	},
+	{
+		"name": "Legacy.getSigningHash",
+		"opsPerSec": 2907679,
+		"avgTimeMs": 0.000343916917926635,
+		"iterations": 5815358
+	},
+	{
+		"name": "EIP1559.getEffectiveGasPrice",
+		"opsPerSec": 23116592.5,
+		"avgTimeMs": 0.000043258970802033216,
+		"iterations": 46233185
+	},
+	{
+		"name": "EIP1559.serialize",
+		"opsPerSec": 2877336.820166451,
+		"avgTimeMs": 0.00034754360107974817,
+		"iterations": 5754674
+	},
+	{
+		"name": "EIP1559.hash",
+		"opsPerSec": 2851364.703458069,
+		"avgTimeMs": 0.0003507092581973899,
+		"iterations": 5702730
+	},
+	{
+		"name": "EIP1559.getSigningHash",
+		"opsPerSec": 2830809.3230744195,
+		"avgTimeMs": 0.00035325586638733527,
+		"iterations": 5661619
+	},
+	{
+		"name": "EIP4844.getBlobGasCost",
+		"opsPerSec": 19953589.5,
+		"avgTimeMs": 0.00005011629611804934,
+		"iterations": 39907179
+	},
+	{
+		"name": "EIP4844.getEffectiveGasPrice",
+		"opsPerSec": 23134184.5,
+		"avgTimeMs": 0.00004322607524808147,
+		"iterations": 46268369
+	},
+	{
+		"name": "EIP4844.serialize",
+		"opsPerSec": 2859183.2026449502,
+		"avgTimeMs": 0.0003497502360376656,
+		"iterations": 5718367
+	},
+	{
+		"name": "EIP7702.getEffectiveGasPrice",
+		"opsPerSec": 23055627.015831836,
+		"avgTimeMs": 0.00004337335954096239,
+		"iterations": 46111255
+	},
+	{
+		"name": "Transaction.format - legacy",
+		"opsPerSec": 3289839.930913362,
+		"avgTimeMs": 0.00030396615671278844,
+		"iterations": 6579680
+	},
+	{
+		"name": "Transaction.format - EIP-1559",
+		"opsPerSec": 3286932.9657746865,
+		"avgTimeMs": 0.00030423498453194443,
+		"iterations": 6573871
+	},
+	{
+		"name": "Transaction.getGasPrice - legacy",
+		"opsPerSec": 38015803,
+		"avgTimeMs": 0.000026304850117199944,
+		"iterations": 76031606
+	},
+	{
+		"name": "Transaction.getGasPrice - EIP-1559",
+		"opsPerSec": 19485299.5,
+		"avgTimeMs": 0.000051320740540836955,
+		"iterations": 38970599
+	},
+	{
+		"name": "Transaction.hasAccessList",
+		"opsPerSec": 44195860,
+		"avgTimeMs": 0.000022626553708876804,
+		"iterations": 88391720
+	},
+	{
+		"name": "Transaction.getAccessList",
+		"opsPerSec": 44063990,
+		"avgTimeMs": 0.00002269426804063817,
+		"iterations": 88127980
+	},
+	{
+		"name": "Transaction.getChainId",
+		"opsPerSec": 45282219.5,
+		"avgTimeMs": 0.000022083723170857384,
+		"iterations": 90564439
+	},
+	{
+		"name": "Transaction.isSigned",
+		"opsPerSec": 16910260.65333966,
+		"avgTimeMs": 0.000059135694032161875,
+		"iterations": 33820522
+	},
+	{
+		"name": "Create Legacy Transaction",
+		"opsPerSec": 27233366.5,
+		"avgTimeMs": 0.00003671966152256645,
+		"iterations": 54466733
+	},
+	{
+		"name": "Create EIP-1559 Transaction",
+		"opsPerSec": 23323987.51019627,
+		"avgTimeMs": 0.00004287431553300404,
+		"iterations": 46647976
+	},
+	{
+		"name": "Create EIP-4844 Transaction",
+		"opsPerSec": 22189785,
+		"avgTimeMs": 0.000045065781394456955,
+		"iterations": 44379570
+	},
+	{
+		"name": "Access nonce",
+		"opsPerSec": 44922336.5,
+		"avgTimeMs": 0.00002226064087294302,
+		"iterations": 89844673
+	},
+	{
+		"name": "Access gasPrice",
+		"opsPerSec": 43011061.5,
+		"avgTimeMs": 0.000023249833069104793,
+		"iterations": 86022123
+	},
+	{
+		"name": "Access to address",
+		"opsPerSec": 42627425,
+		"avgTimeMs": 0.00002345907593526937,
+		"iterations": 85254850
+	},
+	{
+		"name": "Access value",
+		"opsPerSec": 42847679.5,
+		"avgTimeMs": 0.00002333848674348864,
+		"iterations": 85695359
+	},
+	{
+		"name": "Access data",
+		"opsPerSec": 42496522.5,
+		"avgTimeMs": 0.00002353133718176587,
+		"iterations": 84993045
+	},
+	{
+		"name": "Access signature (r)",
+		"opsPerSec": 42708036.5,
+		"avgTimeMs": 0.00002341479688489074,
+		"iterations": 85416073
+	}
 ]

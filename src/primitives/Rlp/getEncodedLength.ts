@@ -40,7 +40,10 @@ export function getEncodedLength(this: Encodable): number {
 
 	// Handle array (list)
 	if (Array.isArray(this)) {
-		const totalLength = this.reduce((sum, item) => sum + getEncodedLength.call(item), 0);
+		const totalLength = this.reduce(
+			(sum, item) => sum + getEncodedLength.call(item),
+			0,
+		);
 		if (totalLength < 56) {
 			return 1 + totalLength;
 		}

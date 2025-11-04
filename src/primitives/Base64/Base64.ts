@@ -55,12 +55,12 @@ export type Base64UrlString = string;
  * ```
  */
 export function encode(data: Uint8Array): Base64String {
-  // Convert to binary string
-  let binary = '';
-  for (let i = 0; i < data.length; i++) {
-    binary += String.fromCharCode(data[i] as number);
-  }
-  return btoa(binary);
+	// Convert to binary string
+	let binary = "";
+	for (let i = 0; i < data.length; i++) {
+		binary += String.fromCharCode(data[i] as number);
+	}
+	return btoa(binary);
 }
 
 /**
@@ -80,10 +80,7 @@ export function encode(data: Uint8Array): Base64String {
  * ```
  */
 export function encodeUrlSafe(data: Uint8Array): Base64UrlString {
-  return encode(data)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+	return encode(data).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
 /**
@@ -98,8 +95,8 @@ export function encodeUrlSafe(data: Uint8Array): Base64UrlString {
  * ```
  */
 export function encodeString(str: string): Base64String {
-  const encoder = new TextEncoder();
-  return encode(encoder.encode(str));
+	const encoder = new TextEncoder();
+	return encode(encoder.encode(str));
 }
 
 /**
@@ -109,8 +106,8 @@ export function encodeString(str: string): Base64String {
  * @returns URL-safe base64 string
  */
 export function encodeStringUrlSafe(str: string): Base64UrlString {
-  const encoder = new TextEncoder();
-  return encodeUrlSafe(encoder.encode(str));
+	const encoder = new TextEncoder();
+	return encodeUrlSafe(encoder.encode(str));
 }
 
 // ============================================================================
@@ -131,16 +128,16 @@ export function encodeStringUrlSafe(str: string): Base64UrlString {
  * ```
  */
 export function decode(encoded: Base64String): Uint8Array {
-  try {
-    const binary = atob(encoded);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-  } catch (error) {
-    throw new Error(`Invalid base64: ${error}`);
-  }
+	try {
+		const binary = atob(encoded);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		return bytes;
+	} catch (error) {
+		throw new Error(`Invalid base64: ${error}`);
+	}
 }
 
 /**
@@ -151,15 +148,15 @@ export function decode(encoded: Base64String): Uint8Array {
  * @throws {Error} If input is invalid
  */
 export function decodeUrlSafe(encoded: Base64UrlString): Uint8Array {
-  // Convert to standard base64
-  let standard = encoded.replace(/-/g, '+').replace(/_/g, '/');
+	// Convert to standard base64
+	let standard = encoded.replace(/-/g, "+").replace(/_/g, "/");
 
-  // Add padding
-  const pad = encoded.length % 4;
-  if (pad === 2) standard += '==';
-  else if (pad === 3) standard += '=';
+	// Add padding
+	const pad = encoded.length % 4;
+	if (pad === 2) standard += "==";
+	else if (pad === 3) standard += "=";
 
-  return decode(standard);
+	return decode(standard);
 }
 
 /**
@@ -175,8 +172,8 @@ export function decodeUrlSafe(encoded: Base64UrlString): Uint8Array {
  * ```
  */
 export function decodeToString(encoded: Base64String): string {
-  const decoder = new TextDecoder();
-  return decoder.decode(decode(encoded));
+	const decoder = new TextDecoder();
+	return decoder.decode(decode(encoded));
 }
 
 /**
@@ -186,8 +183,8 @@ export function decodeToString(encoded: Base64String): string {
  * @returns Decoded string
  */
 export function decodeUrlSafeToString(encoded: Base64UrlString): string {
-  const decoder = new TextDecoder();
-  return decoder.decode(decodeUrlSafe(encoded));
+	const decoder = new TextDecoder();
+	return decoder.decode(decodeUrlSafe(encoded));
 }
 
 // ============================================================================
@@ -201,21 +198,21 @@ export function decodeUrlSafeToString(encoded: Base64UrlString): string {
  * @returns True if valid base64
  */
 export function isValid(str: string): boolean {
-  if (str.length === 0) return true;
+	if (str.length === 0) return true;
 
-  // Check if valid base64 pattern
-  const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-  if (!base64Regex.test(str)) return false;
+	// Check if valid base64 pattern
+	const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+	if (!base64Regex.test(str)) return false;
 
-  // Check padding
-  if (str.length % 4 !== 0) return false;
+	// Check padding
+	if (str.length % 4 !== 0) return false;
 
-  try {
-    atob(str);
-    return true;
-  } catch {
-    return false;
-  }
+	try {
+		atob(str);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -225,11 +222,11 @@ export function isValid(str: string): boolean {
  * @returns True if valid URL-safe base64
  */
 export function isValidUrlSafe(str: string): boolean {
-  if (str.length === 0) return true;
+	if (str.length === 0) return true;
 
-  // Check if valid URL-safe base64 pattern (no padding)
-  const urlSafeRegex = /^[A-Za-z0-9_-]*$/;
-  return urlSafeRegex.test(str);
+	// Check if valid URL-safe base64 pattern (no padding)
+	const urlSafeRegex = /^[A-Za-z0-9_-]*$/;
+	return urlSafeRegex.test(str);
 }
 
 // ============================================================================
@@ -243,7 +240,7 @@ export function isValidUrlSafe(str: string): boolean {
  * @returns Size of base64 output
  */
 export function calcEncodedSize(dataLength: number): number {
-  return Math.ceil(dataLength / 3) * 4;
+	return Math.ceil(dataLength / 3) * 4;
 }
 
 /**
@@ -253,6 +250,6 @@ export function calcEncodedSize(dataLength: number): number {
  * @returns Maximum size of decoded output
  */
 export function calcDecodedSize(encodedLength: number): number {
-  const padding = encodedLength > 0 && encodedLength % 4 === 0 ? 2 : 0;
-  return Math.floor((encodedLength * 3) / 4) - padding;
+	const padding = encodedLength > 0 && encodedLength % 4 === 0 ? 2 : 0;
+	return Math.floor((encodedLength * 3) / 4) - padding;
 }

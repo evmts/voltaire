@@ -1,20 +1,15 @@
 import type { Address } from "../../Address/index.js";
 import type { Hash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
-import { Type, type EIP4844 } from "../types.js";
-import {
-	decodeBigint,
-	decodeAccessList,
-} from "../utils.js";
+import { type EIP4844, Type } from "../types.js";
+import { decodeAccessList, decodeBigint } from "../utils.js";
 
 /**
  * Deserialize RLP encoded EIP-4844 transaction
  */
 export function deserialize(data: Uint8Array): EIP4844 {
 	if (data.length === 0 || data[0] !== Type.EIP4844) {
-		throw new Error(
-			"Invalid EIP-4844 transaction: missing or wrong type byte",
-		);
+		throw new Error("Invalid EIP-4844 transaction: missing or wrong type byte");
 	}
 
 	const rlpData = data.slice(1);
@@ -56,8 +51,7 @@ export function deserialize(data: Uint8Array): EIP4844 {
 	const value = decodeBigint(
 		(fields[6] as { type: "bytes"; value: Uint8Array }).value,
 	);
-	const dataBytes = (fields[7] as { type: "bytes"; value: Uint8Array })
-		.value;
+	const dataBytes = (fields[7] as { type: "bytes"; value: Uint8Array }).value;
 	const accessList = decodeAccessList(
 		(fields[8] as { type: "list"; value: Rlp.Data[] }).value,
 	);

@@ -1,5 +1,5 @@
 import * as Rlp from "../../Rlp/index.js";
-import { Type, type Legacy } from "../types.js";
+import { type Legacy, Type } from "../types.js";
 import { decodeAddress, decodeBigint } from "../utils.js";
 
 /**
@@ -21,9 +21,7 @@ export function deserialize(data: Uint8Array): Legacy {
 	// Validate all fields are bytes
 	for (let i = 0; i < fields.length; i++) {
 		if (fields[i]?.type !== "bytes") {
-			throw new Error(
-				`Invalid legacy transaction: field ${i} must be bytes`,
-			);
+			throw new Error(`Invalid legacy transaction: field ${i} must be bytes`);
 		}
 	}
 
@@ -43,8 +41,7 @@ export function deserialize(data: Uint8Array): Legacy {
 	const value = decodeBigint(
 		(fields[4] as { type: "bytes"; value: Uint8Array }).value,
 	);
-	const dataBytes = (fields[5] as { type: "bytes"; value: Uint8Array })
-		.value;
+	const dataBytes = (fields[5] as { type: "bytes"; value: Uint8Array }).value;
 	const v = decodeBigint(
 		(fields[6] as { type: "bytes"; value: Uint8Array }).value,
 	);

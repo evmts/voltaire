@@ -54,8 +54,13 @@ export type Data<
  * Event log filter for querying logs
  */
 export type Filter<
-	TAddress extends Address | Address[] | undefined = Address | Address[] | undefined,
-	TTopics extends readonly (Hash | Hash[] | null)[] | undefined = readonly (Hash | Hash[] | null)[] | undefined,
+	TAddress extends Address | Address[] | undefined =
+		| Address
+		| Address[]
+		| undefined,
+	TTopics extends readonly (Hash | Hash[] | null)[] | undefined =
+		| readonly (Hash | Hash[] | null)[]
+		| undefined,
 > = {
 	/** Contract address(es) to filter by */
 	address?: TAddress;
@@ -108,7 +113,10 @@ export function _matchesAddress<T extends Data>(
 	return matchesAddress(this, filterAddress);
 }
 
-export function _matchesFilter<T extends Data>(this: T, filter: Filter): boolean {
+export function _matchesFilter<T extends Data>(
+	this: T,
+	filter: Filter,
+): boolean {
 	const { matchesFilter } = require("./matchesFilter.js");
 	return matchesFilter(this, filter);
 }
@@ -125,7 +133,10 @@ export function _clone<T extends Data>(this: T): T {
 	} as T;
 }
 
-export function _filterLogs<T extends Data>(this: readonly T[], filter: Filter): T[] {
+export function _filterLogs<T extends Data>(
+	this: readonly T[],
+	filter: Filter,
+): T[] {
 	const { matchesFilter } = require("./matchesFilter.js");
 	return this.filter((log) => matchesFilter(log, filter));
 }
@@ -167,7 +178,10 @@ export function getIndexed<T extends Data>(this: T): readonly Hash[] {
 
 // Matching operations
 export { matchesTopics, matchesTopics as matches } from "./matchesTopics.js";
-export { matchesAddress, matchesAddress as matchesAddr } from "./matchesAddress.js";
+export {
+	matchesAddress,
+	matchesAddress as matchesAddr,
+} from "./matchesAddress.js";
 export { matchesFilter, matchesFilter as matchesAll } from "./matchesFilter.js";
 
 // State checks (standard function form)
@@ -198,12 +212,18 @@ export function copy<T extends Data>(this: T): T {
 // Public API - Array operations
 // ============================================================================
 
-export function filterLogs<T extends Data>(logs: readonly T[], filter: Filter): T[] {
+export function filterLogs<T extends Data>(
+	logs: readonly T[],
+	filter: Filter,
+): T[] {
 	const { matchesFilter } = require("./matchesFilter.js");
 	return logs.filter((log) => matchesFilter(log, filter));
 }
 
-export function filter<T extends Data>(this: readonly T[], filter: Filter): T[] {
+export function filter<T extends Data>(
+	this: readonly T[],
+	filter: Filter,
+): T[] {
 	return _filterLogs.call(this, filter) as T[];
 }
 

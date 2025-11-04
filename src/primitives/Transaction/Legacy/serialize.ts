@@ -1,9 +1,6 @@
 import * as Rlp from "../../Rlp/index.js";
 import type { Legacy } from "../types.js";
-import {
-	encodeBigintCompact,
-	encodeAddress,
-} from "../utils.js";
+import { encodeAddress, encodeBigintCompact } from "../utils.js";
 
 /**
  * Serialize legacy transaction to RLP encoded bytes

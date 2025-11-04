@@ -100,7 +100,8 @@ export function getGasImplementationStatus(): {
 		recommendation:
 			"Use pure TypeScript implementation - constant access and arithmetic already optimal",
 		performance: {
-			typescriptAvg: "5-200ns per operation (constant access to simple calculation)",
+			typescriptAvg:
+				"5-200ns per operation (constant access to simple calculation)",
 			wasmOverhead: "1-2μs per WASM call",
 			verdict: "TypeScript 10-400x faster for these operations",
 		},

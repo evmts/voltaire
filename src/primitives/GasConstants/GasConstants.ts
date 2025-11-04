@@ -31,50 +31,50 @@
  * Ethereum hardfork identifiers
  */
 export type Hardfork =
-  | "homestead"
-  | "byzantium"
-  | "constantinople"
-  | "istanbul"
-  | "berlin"
-  | "london"
-  | "paris"
-  | "shanghai"
-  | "cancun";
+	| "homestead"
+	| "byzantium"
+	| "constantinople"
+	| "istanbul"
+	| "berlin"
+	| "london"
+	| "paris"
+	| "shanghai"
+	| "cancun";
 
 /**
  * Gas configuration for hardfork-specific calculations
  */
 export type Config = {
-  hardfork: Hardfork;
+	hardfork: Hardfork;
 };
 
 /**
  * Gas cost calculation result
  */
 export type CostResult = {
-  base: bigint;
-  dynamic: bigint;
-  total: bigint;
+	base: bigint;
+	dynamic: bigint;
+	total: bigint;
 };
 
 /**
  * Memory expansion details
  */
 export type MemoryExpansion = {
-  oldCost: bigint;
-  newCost: bigint;
-  expansionCost: bigint;
-  words: bigint;
+	oldCost: bigint;
+	newCost: bigint;
+	expansionCost: bigint;
+	words: bigint;
 };
 
 /**
  * Call operation details
  */
 export type CallDetails = {
-  isWarm: boolean;
-  hasValue: boolean;
-  isNewAccount: boolean;
-  gas: bigint;
+	isWarm: boolean;
+	hasValue: boolean;
+	isNewAccount: boolean;
+	gas: bigint;
 };
 
 // ==========================================================================
@@ -145,15 +145,15 @@ export const Keccak256Word = 6n;
  * ```
  */
 export function calculateKeccak256Cost(dataSize: bigint): bigint {
-  const words = (dataSize + 31n) / 32n;
-  return Keccak256Base + words * Keccak256Word;
+	const words = (dataSize + 31n) / 32n;
+	return Keccak256Base + words * Keccak256Word;
 }
 
 /**
  * Calculate KECCAK256 gas cost (convenience form with this:)
  */
 export function keccak256Cost(this: bigint): bigint {
-  return calculateKeccak256Cost(this);
+	return calculateKeccak256Cost(this);
 }
 
 // ==========================================================================
@@ -221,34 +221,36 @@ export const SstoreRefund = 4800n;
  * ```
  */
 export function calculateSstoreCost(
-  isWarm: boolean,
-  currentValue: bigint,
-  newValue: bigint,
+	isWarm: boolean,
+	currentValue: bigint,
+	newValue: bigint,
 ): { cost: bigint; refund: bigint } {
-  let cost = isWarm ? 0n : ColdSload;
-  let refund = 0n;
+	let cost = isWarm ? 0n : ColdSload;
+	let refund = 0n;
 
-  if (currentValue === newValue) {
-    cost += Sload;
-  } else if (currentValue === 0n && newValue !== 0n) {
-    cost += SstoreSet;
-  } else if (currentValue !== 0n && newValue === 0n) {
-    cost += SstoreClear;
-    refund = SstoreRefund;
-  } else {
-    cost += SstoreReset;
-  }
+	if (currentValue === newValue) {
+		cost += Sload;
+	} else if (currentValue === 0n && newValue !== 0n) {
+		cost += SstoreSet;
+	} else if (currentValue !== 0n && newValue === 0n) {
+		cost += SstoreClear;
+		refund = SstoreRefund;
+	} else {
+		cost += SstoreReset;
+	}
 
-  return { cost, refund };
+	return { cost, refund };
 }
 
 /**
  * Calculate SSTORE gas cost (convenience form with this:)
  */
-export function sstoreCost(
-  this: { isWarm: boolean; currentValue: bigint; newValue: bigint },
-): { cost: bigint; refund: bigint } {
-  return calculateSstoreCost(this.isWarm, this.currentValue, this.newValue);
+export function sstoreCost(this: {
+	isWarm: boolean;
+	currentValue: bigint;
+	newValue: bigint;
+}): { cost: bigint; refund: bigint } {
+	return calculateSstoreCost(this.isWarm, this.currentValue, this.newValue);
 }
 
 // ==========================================================================
@@ -293,14 +295,17 @@ export const LogTopic = 375n;
  * ```
  */
 export function calculateLogCost(topicCount: bigint, dataSize: bigint): bigint {
-  return LogBase + topicCount * LogTopic + dataSize * LogData;
+	return LogBase + topicCount * LogTopic + dataSize * LogData;
 }
 
 /**
  * Calculate LOG gas cost (convenience form with this:)
  */
-export function logCost(this: { topicCount: bigint; dataSize: bigint }): bigint {
-  return calculateLogCost(this.topicCount, this.dataSize);
+export function logCost(this: {
+	topicCount: bigint;
+	dataSize: bigint;
+}): bigint {
+	return calculateLogCost(this.topicCount, this.dataSize);
 }
 
 // ==========================================================================
@@ -378,53 +383,56 @@ export const CallGasRetentionDivisor = 64n;
  * ```
  */
 export function calculateCallCost(
-  isWarm: boolean,
-  hasValue: boolean,
-  isNewAccount: boolean,
-  availableGas: bigint,
+	isWarm: boolean,
+	hasValue: boolean,
+	isNewAccount: boolean,
+	availableGas: bigint,
 ): {
-  base: bigint;
-  dynamic: bigint;
-  stipend: bigint;
-  forwarded: bigint;
-  total: bigint;
+	base: bigint;
+	dynamic: bigint;
+	stipend: bigint;
+	forwarded: bigint;
+	total: bigint;
 } {
-  let base = isWarm ? WarmStorageRead : ColdAccountAccess;
-  let dynamic = 0n;
+	const base = isWarm ? WarmStorageRead : ColdAccountAccess;
+	let dynamic = 0n;
 
-  if (hasValue) {
-    dynamic += CallValueTransfer;
-    if (isNewAccount) {
-      dynamic += CallNewAccount;
-    }
-  }
+	if (hasValue) {
+		dynamic += CallValueTransfer;
+		if (isNewAccount) {
+			dynamic += CallNewAccount;
+		}
+	}
 
-  const total = base + dynamic;
-  const forwardedGas = availableGas - total;
-  const forwarded = forwardedGas - forwardedGas / CallGasRetentionDivisor;
-  const stipend = hasValue ? CallStipend : 0n;
+	const total = base + dynamic;
+	const forwardedGas = availableGas - total;
+	const forwarded = forwardedGas - forwardedGas / CallGasRetentionDivisor;
+	const stipend = hasValue ? CallStipend : 0n;
 
-  return { base, dynamic, stipend, forwarded, total };
+	return { base, dynamic, stipend, forwarded, total };
 }
 
 /**
  * Calculate CALL operation gas cost (convenience form with this:)
  */
-export function callCost(
-  this: {
-    isWarm: boolean;
-    hasValue: boolean;
-    isNewAccount: boolean;
-    availableGas: bigint;
-  },
-): {
-  base: bigint;
-  dynamic: bigint;
-  stipend: bigint;
-  forwarded: bigint;
-  total: bigint;
+export function callCost(this: {
+	isWarm: boolean;
+	hasValue: boolean;
+	isNewAccount: boolean;
+	availableGas: bigint;
+}): {
+	base: bigint;
+	dynamic: bigint;
+	stipend: bigint;
+	forwarded: bigint;
+	total: bigint;
 } {
-  return calculateCallCost(this.isWarm, this.hasValue, this.isNewAccount, this.availableGas);
+	return calculateCallCost(
+		this.isWarm,
+		this.hasValue,
+		this.isNewAccount,
+		this.availableGas,
+	);
 }
 
 // ==========================================================================
@@ -455,26 +463,27 @@ export const QuadCoeffDiv = 512n;
  * ```
  */
 export function calculateMemoryExpansionCost(
-  oldSize: bigint,
-  newSize: bigint,
+	oldSize: bigint,
+	newSize: bigint,
 ): MemoryExpansion {
-  const oldWords = (oldSize + 31n) / 32n;
-  const newWords = (newSize + 31n) / 32n;
+	const oldWords = (oldSize + 31n) / 32n;
+	const newWords = (newSize + 31n) / 32n;
 
-  const oldCost = Memory * oldWords + (oldWords * oldWords) / QuadCoeffDiv;
-  const newCost = Memory * newWords + (newWords * newWords) / QuadCoeffDiv;
-  const expansionCost = newCost > oldCost ? newCost - oldCost : 0n;
+	const oldCost = Memory * oldWords + (oldWords * oldWords) / QuadCoeffDiv;
+	const newCost = Memory * newWords + (newWords * newWords) / QuadCoeffDiv;
+	const expansionCost = newCost > oldCost ? newCost - oldCost : 0n;
 
-  return { oldCost, newCost, expansionCost, words: newWords };
+	return { oldCost, newCost, expansionCost, words: newWords };
 }
 
 /**
  * Calculate memory expansion cost (convenience form with this:)
  */
-export function memoryExpansionCost(
-  this: { oldSize: bigint; newSize: bigint },
-): MemoryExpansion {
-  return calculateMemoryExpansionCost(this.oldSize, this.newSize);
+export function memoryExpansionCost(this: {
+	oldSize: bigint;
+	newSize: bigint;
+}): MemoryExpansion {
+	return calculateMemoryExpansionCost(this.oldSize, this.newSize);
 }
 
 // ==========================================================================
@@ -510,31 +519,34 @@ export const MaxInitcodeSize = 49152n;
  * ```
  */
 export function calculateCreateCost(
-  initcodeSize: bigint,
-  deployedSize: bigint,
+	initcodeSize: bigint,
+	deployedSize: bigint,
 ): CostResult {
-  if (initcodeSize > MaxInitcodeSize) {
-    throw new Error(`Initcode size ${initcodeSize} exceeds maximum ${MaxInitcodeSize}`);
-  }
+	if (initcodeSize > MaxInitcodeSize) {
+		throw new Error(
+			`Initcode size ${initcodeSize} exceeds maximum ${MaxInitcodeSize}`,
+		);
+	}
 
-  const initcodeWords = (initcodeSize + 31n) / 32n;
-  const initcodeCost = initcodeWords * InitcodeWord;
-  const deployedCost = deployedSize * CreateData;
+	const initcodeWords = (initcodeSize + 31n) / 32n;
+	const initcodeCost = initcodeWords * InitcodeWord;
+	const deployedCost = deployedSize * CreateData;
 
-  return {
-    base: Create,
-    dynamic: initcodeCost + deployedCost,
-    total: Create + initcodeCost + deployedCost,
-  };
+	return {
+		base: Create,
+		dynamic: initcodeCost + deployedCost,
+		total: Create + initcodeCost + deployedCost,
+	};
 }
 
 /**
  * Calculate contract creation gas cost (convenience form with this:)
  */
-export function createCost(
-  this: { initcodeSize: bigint; deployedSize: bigint },
-): CostResult {
-  return calculateCreateCost(this.initcodeSize, this.deployedSize);
+export function createCost(this: {
+	initcodeSize: bigint;
+	deployedSize: bigint;
+}): CostResult {
+	return calculateCreateCost(this.initcodeSize, this.deployedSize);
 }
 
 // ==========================================================================
@@ -585,22 +597,28 @@ export const MaxRefundQuotient = 5n;
  * // 21000 + (3 * 4) + (2 * 16) = 21044 gas
  * ```
  */
-export function calculateTxIntrinsicGas(data: Uint8Array, isCreate: boolean): bigint {
-  const base = isCreate ? TxContractCreation : Tx;
-  let dataCost = 0n;
+export function calculateTxIntrinsicGas(
+	data: Uint8Array,
+	isCreate: boolean,
+): bigint {
+	const base = isCreate ? TxContractCreation : Tx;
+	let dataCost = 0n;
 
-  for (let i = 0; i < data.length; i++) {
-    dataCost += data[i] === 0 ? TxDataZero : TxDataNonZero;
-  }
+	for (let i = 0; i < data.length; i++) {
+		dataCost += data[i] === 0 ? TxDataZero : TxDataNonZero;
+	}
 
-  return base + dataCost;
+	return base + dataCost;
 }
 
 /**
  * Calculate transaction intrinsic gas cost (convenience form with this:)
  */
-export function txIntrinsicGas(this: { data: Uint8Array; isCreate: boolean }): bigint {
-  return calculateTxIntrinsicGas(this.data, this.isCreate);
+export function txIntrinsicGas(this: {
+	data: Uint8Array;
+	isCreate: boolean;
+}): bigint {
+	return calculateTxIntrinsicGas(this.data, this.isCreate);
 }
 
 /**
@@ -610,15 +628,15 @@ export function txIntrinsicGas(this: { data: Uint8Array; isCreate: boolean }): b
  * @returns Gas cost
  */
 export function calculateCopyCost(size: bigint): bigint {
-  const words = (size + 31n) / 32n;
-  return words * Copy;
+	const words = (size + 31n) / 32n;
+	return words * Copy;
 }
 
 /**
  * Calculate copy operation gas cost (convenience form with this:)
  */
 export function copyCost(this: bigint): bigint {
-  return calculateCopyCost(this);
+	return calculateCopyCost(this);
 }
 
 /**
@@ -628,14 +646,14 @@ export function copyCost(this: bigint): bigint {
  * @returns Maximum refundable gas
  */
 export function calculateMaxRefund(gasUsed: bigint): bigint {
-  return gasUsed / MaxRefundQuotient;
+	return gasUsed / MaxRefundQuotient;
 }
 
 /**
  * Calculate maximum gas refund (convenience form with this:)
  */
 export function maxRefund(this: bigint): bigint {
-  return calculateMaxRefund(this);
+	return calculateMaxRefund(this);
 }
 
 // ==========================================================================
@@ -671,227 +689,237 @@ export const TStore = 100n;
 // ==========================================================================
 
 export namespace Precompile {
-  /**
-   * ECRECOVER (address 0x01) - Fixed cost
-   */
-  export const EcRecover = 3000n;
+	/**
+	 * ECRECOVER (address 0x01) - Fixed cost
+	 */
+	export const EcRecover = 3000n;
 
-  /**
-   * SHA256 (address 0x02) - Base cost
-   */
-  export const Sha256Base = 60n;
+	/**
+	 * SHA256 (address 0x02) - Base cost
+	 */
+	export const Sha256Base = 60n;
 
-  /**
-   * SHA256 - Per-word cost
-   */
-  export const Sha256Word = 12n;
+	/**
+	 * SHA256 - Per-word cost
+	 */
+	export const Sha256Word = 12n;
 
-  /**
-   * Calculate SHA256 precompile cost
-   */
-  export function calculateSha256Cost(dataSize: bigint): bigint {
-    const words = (dataSize + 31n) / 32n;
-    return Sha256Base + words * Sha256Word;
-  }
+	/**
+	 * Calculate SHA256 precompile cost
+	 */
+	export function calculateSha256Cost(dataSize: bigint): bigint {
+		const words = (dataSize + 31n) / 32n;
+		return Sha256Base + words * Sha256Word;
+	}
 
-  /**
-   * RIPEMD160 (address 0x03) - Base cost
-   */
-  export const Ripemd160Base = 600n;
+	/**
+	 * RIPEMD160 (address 0x03) - Base cost
+	 */
+	export const Ripemd160Base = 600n;
 
-  /**
-   * RIPEMD160 - Per-word cost
-   */
-  export const Ripemd160Word = 120n;
+	/**
+	 * RIPEMD160 - Per-word cost
+	 */
+	export const Ripemd160Word = 120n;
 
-  /**
-   * Calculate RIPEMD160 precompile cost
-   */
-  export function calculateRipemd160Cost(dataSize: bigint): bigint {
-    const words = (dataSize + 31n) / 32n;
-    return Ripemd160Base + words * Ripemd160Word;
-  }
+	/**
+	 * Calculate RIPEMD160 precompile cost
+	 */
+	export function calculateRipemd160Cost(dataSize: bigint): bigint {
+		const words = (dataSize + 31n) / 32n;
+		return Ripemd160Base + words * Ripemd160Word;
+	}
 
-  /**
-   * IDENTITY (address 0x04) - Base cost
-   */
-  export const IdentityBase = 15n;
+	/**
+	 * IDENTITY (address 0x04) - Base cost
+	 */
+	export const IdentityBase = 15n;
 
-  /**
-   * IDENTITY - Per-word cost
-   */
-  export const IdentityWord = 3n;
+	/**
+	 * IDENTITY - Per-word cost
+	 */
+	export const IdentityWord = 3n;
 
-  /**
-   * Calculate IDENTITY precompile cost
-   */
-  export function calculateIdentityCost(dataSize: bigint): bigint {
-    const words = (dataSize + 31n) / 32n;
-    return IdentityBase + words * IdentityWord;
-  }
+	/**
+	 * Calculate IDENTITY precompile cost
+	 */
+	export function calculateIdentityCost(dataSize: bigint): bigint {
+		const words = (dataSize + 31n) / 32n;
+		return IdentityBase + words * IdentityWord;
+	}
 
-  /**
-   * MODEXP (address 0x05) - Minimum cost (EIP-2565)
-   */
-  export const ModExpMin = 200n;
+	/**
+	 * MODEXP (address 0x05) - Minimum cost (EIP-2565)
+	 */
+	export const ModExpMin = 200n;
 
-  /**
-   * MODEXP - Quadratic threshold (64 bytes)
-   */
-  export const ModExpQuadraticThreshold = 64n;
+	/**
+	 * MODEXP - Quadratic threshold (64 bytes)
+	 */
+	export const ModExpQuadraticThreshold = 64n;
 
-  /**
-   * MODEXP - Linear threshold (1024 bytes)
-   */
-  export const ModExpLinearThreshold = 1024n;
+	/**
+	 * MODEXP - Linear threshold (1024 bytes)
+	 */
+	export const ModExpLinearThreshold = 1024n;
 
-  /**
-   * Calculate MODEXP precompile cost
-   *
-   * @param baseLength - Length of base in bytes
-   * @param expLength - Length of exponent in bytes
-   * @param modLength - Length of modulus in bytes
-   * @param expHead - First 32 bytes of exponent
-   * @returns Gas cost
-   */
-  export function calculateModExpCost(
-    baseLength: bigint,
-    expLength: bigint,
-    modLength: bigint,
-    expHead: bigint,
-  ): bigint {
-    // Complexity calculation per EIP-2565
-    const maxLength = baseLength > modLength ? baseLength : modLength;
-    const adjExpLen = calculateAdjustedExponentLength(expLength, expHead);
+	/**
+	 * Calculate MODEXP precompile cost
+	 *
+	 * @param baseLength - Length of base in bytes
+	 * @param expLength - Length of exponent in bytes
+	 * @param modLength - Length of modulus in bytes
+	 * @param expHead - First 32 bytes of exponent
+	 * @returns Gas cost
+	 */
+	export function calculateModExpCost(
+		baseLength: bigint,
+		expLength: bigint,
+		modLength: bigint,
+		expHead: bigint,
+	): bigint {
+		// Complexity calculation per EIP-2565
+		const maxLength = baseLength > modLength ? baseLength : modLength;
+		const adjExpLen = calculateAdjustedExponentLength(expLength, expHead);
 
-    let complexity: bigint;
-    if (maxLength <= ModExpQuadraticThreshold) {
-      complexity = (maxLength * maxLength) / 4n;
-    } else if (maxLength <= ModExpLinearThreshold) {
-      complexity = (maxLength * maxLength) / 16n + (96n * maxLength) - 3072n;
-    } else {
-      complexity = (maxLength * maxLength) / 64n + (480n * maxLength) - 199680n;
-    }
+		let complexity: bigint;
+		if (maxLength <= ModExpQuadraticThreshold) {
+			complexity = (maxLength * maxLength) / 4n;
+		} else if (maxLength <= ModExpLinearThreshold) {
+			complexity = (maxLength * maxLength) / 16n + 96n * maxLength - 3072n;
+		} else {
+			complexity = (maxLength * maxLength) / 64n + 480n * maxLength - 199680n;
+		}
 
-    const gas = (complexity * adjExpLen) / 20n;
-    return gas > ModExpMin ? gas : ModExpMin;
-  }
+		const gas = (complexity * adjExpLen) / 20n;
+		return gas > ModExpMin ? gas : ModExpMin;
+	}
 
-  /**
-   * Calculate adjusted exponent length for MODEXP
-   */
-  function calculateAdjustedExponentLength(expLength: bigint, expHead: bigint): bigint {
-    if (expLength <= 32n) {
-      if (expHead === 0n) return 0n;
-      return BigInt(Math.floor(Math.log2(Number(expHead))));
-    }
-    const headBits = expHead === 0n ? 0n : BigInt(Math.floor(Math.log2(Number(expHead))));
-    return 8n * (expLength - 32n) + headBits;
-  }
+	/**
+	 * Calculate adjusted exponent length for MODEXP
+	 */
+	function calculateAdjustedExponentLength(
+		expLength: bigint,
+		expHead: bigint,
+	): bigint {
+		if (expLength <= 32n) {
+			if (expHead === 0n) return 0n;
+			return BigInt(Math.floor(Math.log2(Number(expHead))));
+		}
+		const headBits =
+			expHead === 0n ? 0n : BigInt(Math.floor(Math.log2(Number(expHead))));
+		return 8n * (expLength - 32n) + headBits;
+	}
 
-  /**
-   * BN254 ECADD (address 0x06) - Istanbul onwards
-   */
-  export const EcAddIstanbul = 150n;
+	/**
+	 * BN254 ECADD (address 0x06) - Istanbul onwards
+	 */
+	export const EcAddIstanbul = 150n;
 
-  /**
-   * BN254 ECADD - Byzantium to Berlin
-   */
-  export const EcAddByzantium = 500n;
+	/**
+	 * BN254 ECADD - Byzantium to Berlin
+	 */
+	export const EcAddByzantium = 500n;
 
-  /**
-   * BN254 ECMUL (address 0x07) - Istanbul onwards
-   */
-  export const EcMulIstanbul = 6000n;
+	/**
+	 * BN254 ECMUL (address 0x07) - Istanbul onwards
+	 */
+	export const EcMulIstanbul = 6000n;
 
-  /**
-   * BN254 ECMUL - Byzantium to Berlin
-   */
-  export const EcMulByzantium = 40000n;
+	/**
+	 * BN254 ECMUL - Byzantium to Berlin
+	 */
+	export const EcMulByzantium = 40000n;
 
-  /**
-   * BN254 ECPAIRING (address 0x08) - Base cost (Istanbul onwards)
-   */
-  export const EcPairingBaseIstanbul = 45000n;
+	/**
+	 * BN254 ECPAIRING (address 0x08) - Base cost (Istanbul onwards)
+	 */
+	export const EcPairingBaseIstanbul = 45000n;
 
-  /**
-   * BN254 ECPAIRING - Per-pair cost (Istanbul onwards)
-   */
-  export const EcPairingPerPairIstanbul = 34000n;
+	/**
+	 * BN254 ECPAIRING - Per-pair cost (Istanbul onwards)
+	 */
+	export const EcPairingPerPairIstanbul = 34000n;
 
-  /**
-   * BN254 ECPAIRING - Base cost (Byzantium to Berlin)
-   */
-  export const EcPairingBaseByzantium = 100000n;
+	/**
+	 * BN254 ECPAIRING - Base cost (Byzantium to Berlin)
+	 */
+	export const EcPairingBaseByzantium = 100000n;
 
-  /**
-   * BN254 ECPAIRING - Per-pair cost (Byzantium to Berlin)
-   */
-  export const EcPairingPerPairByzantium = 80000n;
+	/**
+	 * BN254 ECPAIRING - Per-pair cost (Byzantium to Berlin)
+	 */
+	export const EcPairingPerPairByzantium = 80000n;
 
-  /**
-   * Calculate ECPAIRING precompile cost
-   *
-   * @param pairCount - Number of point pairs
-   * @param hardfork - EVM hardfork
-   * @returns Gas cost
-   *
-   * @example
-   * ```typescript
-   * const cost = Precompile.calculateEcPairingCost(2n, 'istanbul');
-   * // 45000 + (2 * 34000) = 113000 gas
-   * ```
-   */
-  export function calculateEcPairingCost(pairCount: bigint, hardfork: Hardfork): bigint {
-    const isIstanbulOrLater =
-      hardfork === "istanbul" ||
-      hardfork === "berlin" ||
-      hardfork === "london" ||
-      hardfork === "paris" ||
-      hardfork === "shanghai" ||
-      hardfork === "cancun";
+	/**
+	 * Calculate ECPAIRING precompile cost
+	 *
+	 * @param pairCount - Number of point pairs
+	 * @param hardfork - EVM hardfork
+	 * @returns Gas cost
+	 *
+	 * @example
+	 * ```typescript
+	 * const cost = Precompile.calculateEcPairingCost(2n, 'istanbul');
+	 * // 45000 + (2 * 34000) = 113000 gas
+	 * ```
+	 */
+	export function calculateEcPairingCost(
+		pairCount: bigint,
+		hardfork: Hardfork,
+	): bigint {
+		const isIstanbulOrLater =
+			hardfork === "istanbul" ||
+			hardfork === "berlin" ||
+			hardfork === "london" ||
+			hardfork === "paris" ||
+			hardfork === "shanghai" ||
+			hardfork === "cancun";
 
-    if (isIstanbulOrLater) {
-      return EcPairingBaseIstanbul + pairCount * EcPairingPerPairIstanbul;
-    } else {
-      return EcPairingBaseByzantium + pairCount * EcPairingPerPairByzantium;
-    }
-  }
+		if (isIstanbulOrLater) {
+			return EcPairingBaseIstanbul + pairCount * EcPairingPerPairIstanbul;
+		} else {
+			return EcPairingBaseByzantium + pairCount * EcPairingPerPairByzantium;
+		}
+	}
 
-  /**
-   * Calculate ECPAIRING precompile cost (convenience form with this:)
-   */
-  export function ecPairingCost(this: { pairCount: bigint; hardfork: Hardfork }): bigint {
-    return calculateEcPairingCost(this.pairCount, this.hardfork);
-  }
+	/**
+	 * Calculate ECPAIRING precompile cost (convenience form with this:)
+	 */
+	export function ecPairingCost(this: {
+		pairCount: bigint;
+		hardfork: Hardfork;
+	}): bigint {
+		return calculateEcPairingCost(this.pairCount, this.hardfork);
+	}
 
-  /**
-   * Get ECADD cost for hardfork
-   */
-  export function getEcAddCost(hardfork: Hardfork): bigint {
-    const isIstanbulOrLater =
-      hardfork === "istanbul" ||
-      hardfork === "berlin" ||
-      hardfork === "london" ||
-      hardfork === "paris" ||
-      hardfork === "shanghai" ||
-      hardfork === "cancun";
-    return isIstanbulOrLater ? EcAddIstanbul : EcAddByzantium;
-  }
+	/**
+	 * Get ECADD cost for hardfork
+	 */
+	export function getEcAddCost(hardfork: Hardfork): bigint {
+		const isIstanbulOrLater =
+			hardfork === "istanbul" ||
+			hardfork === "berlin" ||
+			hardfork === "london" ||
+			hardfork === "paris" ||
+			hardfork === "shanghai" ||
+			hardfork === "cancun";
+		return isIstanbulOrLater ? EcAddIstanbul : EcAddByzantium;
+	}
 
-  /**
-   * Get ECMUL cost for hardfork
-   */
-  export function getEcMulCost(hardfork: Hardfork): bigint {
-    const isIstanbulOrLater =
-      hardfork === "istanbul" ||
-      hardfork === "berlin" ||
-      hardfork === "london" ||
-      hardfork === "paris" ||
-      hardfork === "shanghai" ||
-      hardfork === "cancun";
-    return isIstanbulOrLater ? EcMulIstanbul : EcMulByzantium;
-  }
+	/**
+	 * Get ECMUL cost for hardfork
+	 */
+	export function getEcMulCost(hardfork: Hardfork): bigint {
+		const isIstanbulOrLater =
+			hardfork === "istanbul" ||
+			hardfork === "berlin" ||
+			hardfork === "london" ||
+			hardfork === "paris" ||
+			hardfork === "shanghai" ||
+			hardfork === "cancun";
+		return isIstanbulOrLater ? EcMulIstanbul : EcMulByzantium;
+	}
 }
 
 // ==========================================================================
@@ -902,74 +930,74 @@ export namespace Precompile {
  * Check if a hardfork includes EIP-2929 (cold/warm access costs)
  */
 export function hasEIP2929(hardfork: Hardfork): boolean {
-  return (
-    hardfork === "berlin" ||
-    hardfork === "london" ||
-    hardfork === "paris" ||
-    hardfork === "shanghai" ||
-    hardfork === "cancun"
-  );
+	return (
+		hardfork === "berlin" ||
+		hardfork === "london" ||
+		hardfork === "paris" ||
+		hardfork === "shanghai" ||
+		hardfork === "cancun"
+	);
 }
 
 /**
  * Check if a hardfork includes EIP-3529 (reduced refunds)
  */
 export function hasEIP3529(hardfork: Hardfork): boolean {
-  return (
-    hardfork === "london" ||
-    hardfork === "paris" ||
-    hardfork === "shanghai" ||
-    hardfork === "cancun"
-  );
+	return (
+		hardfork === "london" ||
+		hardfork === "paris" ||
+		hardfork === "shanghai" ||
+		hardfork === "cancun"
+	);
 }
 
 /**
  * Check if a hardfork includes EIP-3860 (initcode size limit)
  */
 export function hasEIP3860(hardfork: Hardfork): boolean {
-  return hardfork === "shanghai" || hardfork === "cancun";
+	return hardfork === "shanghai" || hardfork === "cancun";
 }
 
 /**
  * Check if a hardfork includes EIP-1153 (transient storage)
  */
 export function hasEIP1153(hardfork: Hardfork): boolean {
-  return hardfork === "cancun";
+	return hardfork === "cancun";
 }
 
 /**
  * Check if a hardfork includes EIP-4844 (blob transactions)
  */
 export function hasEIP4844(hardfork: Hardfork): boolean {
-  return hardfork === "cancun";
+	return hardfork === "cancun";
 }
 
 /**
  * Get cold storage cost for hardfork
  */
 export function getColdSloadCost(hardfork: Hardfork): bigint {
-  return hasEIP2929(hardfork) ? ColdSload : Sload;
+	return hasEIP2929(hardfork) ? ColdSload : Sload;
 }
 
 /**
  * Get cold account access cost for hardfork
  */
 export function getColdAccountAccessCost(hardfork: Hardfork): bigint {
-  return hasEIP2929(hardfork) ? ColdAccountAccess : ExtStep;
+	return hasEIP2929(hardfork) ? ColdAccountAccess : ExtStep;
 }
 
 /**
  * Get storage refund for hardfork
  */
 export function getSstoreRefund(hardfork: Hardfork): bigint {
-  return hasEIP3529(hardfork) ? SstoreRefund : 15000n;
+	return hasEIP3529(hardfork) ? SstoreRefund : 15000n;
 }
 
 /**
  * Get selfdestruct refund for hardfork
  */
 export function getSelfdestructRefund(hardfork: Hardfork): bigint {
-  return hasEIP3529(hardfork) ? 0n : SelfdestructRefund;
+	return hasEIP3529(hardfork) ? 0n : SelfdestructRefund;
 }
 
 /**

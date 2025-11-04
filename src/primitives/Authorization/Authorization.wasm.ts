@@ -61,9 +61,6 @@ export function authorityWasm(auth: Item): Address {
  * @param emptyAccounts - Number of empty accounts
  * @returns Gas cost as bigint
  */
-export function gasCostWasm(
-	authCount: number,
-	emptyAccounts: number,
-): bigint {
+export function gasCostWasm(authCount: number, emptyAccounts: number): bigint {
 	return loader.authorizationGasCost(authCount, emptyAccounts);
 }

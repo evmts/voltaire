@@ -1,8 +1,14 @@
-import { isLegacy, isEIP2930, isEIP1559, isEIP4844, isEIP7702 } from "./typeGuards.js";
-import type { Any } from "./types.js";
 import * as EIP1559 from "./EIP1559/getEffectiveGasPrice.js";
 import * as EIP4844 from "./EIP4844/getEffectiveGasPrice.js";
 import * as EIP7702 from "./EIP7702/getEffectiveGasPrice.js";
+import {
+	isEIP1559,
+	isEIP2930,
+	isEIP4844,
+	isEIP7702,
+	isLegacy,
+} from "./typeGuards.js";
+import type { Any } from "./types.js";
 
 /**
  * Get transaction gas price (handles different types)

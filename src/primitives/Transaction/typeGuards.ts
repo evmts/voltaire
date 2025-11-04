@@ -1,4 +1,12 @@
-import { Type, type Any, type Legacy, type EIP2930, type EIP1559, type EIP4844, type EIP7702 } from "./types.js";
+import {
+	type Any,
+	type EIP1559,
+	type EIP2930,
+	type EIP4844,
+	type EIP7702,
+	type Legacy,
+	Type,
+} from "./types.js";
 
 /**
  * Check if transaction is Legacy type

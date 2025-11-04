@@ -1,7 +1,12 @@
 import type { Unsized } from "./Hex.js";
-import { InvalidFormatError, OddLengthError, InvalidCharacterError, InvalidLengthError } from "./errors.js";
-import { hexCharToValue } from "./utils.js";
+import {
+	InvalidCharacterError,
+	InvalidFormatError,
+	InvalidLengthError,
+	OddLengthError,
+} from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
+import { hexCharToValue } from "./utils.js";
 
 /**
  * XOR with another hex string of same length

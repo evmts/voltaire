@@ -1,5 +1,5 @@
 import { isLegacy } from "./typeGuards.js";
-import type { Any, AccessList } from "./types.js";
+import type { AccessList, Any } from "./types.js";
 
 /**
  * Get access list (empty for legacy transactions)

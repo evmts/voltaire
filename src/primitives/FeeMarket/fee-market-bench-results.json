@@ -1,236 +1,236 @@
 [
-  {
-    "name": "calculateBaseFee - at target",
-    "opsPerSec": 30118537,
-    "avgTimeMs": 0.00003320214391555606,
-    "iterations": 60237074
-  },
-  {
-    "name": "calculateBaseFee - above target",
-    "opsPerSec": 10048817.288974836,
-    "avgTimeMs": 0.00009951419866068818,
-    "iterations": 20097635
-  },
-  {
-    "name": "calculateBaseFee - below target",
-    "opsPerSec": 9545340,
-    "avgTimeMs": 0.0001047631619198478,
-    "iterations": 19090680
-  },
-  {
-    "name": "calculateBaseFee - full block",
-    "opsPerSec": 10006879.084714519,
-    "avgTimeMs": 0.00009993125644213064,
-    "iterations": 20013759
-  },
-  {
-    "name": "calculateBaseFee - empty block",
-    "opsPerSec": 31047180.5,
-    "avgTimeMs": 0.00003220904390980044,
-    "iterations": 62094361
-  },
-  {
-    "name": "calculateBlobBaseFee - no excess",
-    "opsPerSec": 11474485.25903581,
-    "avgTimeMs": 0.00008714987883334724,
-    "iterations": 22948971
-  },
-  {
-    "name": "calculateBlobBaseFee - at target",
-    "opsPerSec": 2326032.3057763022,
-    "avgTimeMs": 0.0004299166428242082,
-    "iterations": 4652065
-  },
-  {
-    "name": "calculateBlobBaseFee - high excess",
-    "opsPerSec": 1716364.7494107476,
-    "avgTimeMs": 0.0005826267408156187,
-    "iterations": 3432730
-  },
-  {
-    "name": "calculateBlobBaseFee - very high excess",
-    "opsPerSec": 707791.205204963,
-    "avgTimeMs": 0.001412846037992827,
-    "iterations": 1415583
-  },
-  {
-    "name": "calculateExcessBlobGas - below target",
-    "opsPerSec": 31309385,
-    "avgTimeMs": 0.00003193930509973287,
-    "iterations": 62618770
-  },
-  {
-    "name": "calculateExcessBlobGas - at target",
-    "opsPerSec": 27311344.5,
-    "avgTimeMs": 0.000036614821361138045,
-    "iterations": 54622689
-  },
-  {
-    "name": "calculateExcessBlobGas - above target",
-    "opsPerSec": 25262001.5,
-    "avgTimeMs": 0.00003958514530212501,
-    "iterations": 50524003
-  },
-  {
-    "name": "calculateExcessBlobGas - with previous excess",
-    "opsPerSec": 22881240.5,
-    "avgTimeMs": 0.00004370392418190788,
-    "iterations": 45762481
-  },
-  {
-    "name": "calculateTxFee - normal",
-    "opsPerSec": 19800533.599320546,
-    "avgTimeMs": 0.000050503689457859606,
-    "iterations": 39602973
-  },
-  {
-    "name": "calculateTxFee - capped by maxFee",
-    "opsPerSec": 19868998.582751032,
-    "avgTimeMs": 0.00005032966285820437,
-    "iterations": 39737998
-  },
-  {
-    "name": "calculateTxFee - zero priority",
-    "opsPerSec": 27265763.5,
-    "avgTimeMs": 0.000036676031463413817,
-    "iterations": 54531527
-  },
-  {
-    "name": "calculateBlobTxFee - normal",
-    "opsPerSec": 9696307,
-    "avgTimeMs": 0.00010313204810862528,
-    "iterations": 19392614
-  },
-  {
-    "name": "calculateBlobTxFee - 1 blob",
-    "opsPerSec": 8875934,
-    "avgTimeMs": 0.00011266419962113283,
-    "iterations": 17751868
-  },
-  {
-    "name": "calculateBlobTxFee - 6 blobs",
-    "opsPerSec": 8847538.62840338,
-    "avgTimeMs": 0.00011302578513640908,
-    "iterations": 17695078
-  },
-  {
-    "name": "calculateBlobTxFee - capped blob fee",
-    "opsPerSec": 9503908.305169849,
-    "avgTimeMs": 0.00010521987038280127,
-    "iterations": 19007817
-  },
-  {
-    "name": "canIncludeTx - normal tx",
-    "opsPerSec": 42620168,
-    "avgTimeMs": 0.000023463070347352925,
-    "iterations": 85240336
-  },
-  {
-    "name": "canIncludeTx - blob tx",
-    "opsPerSec": 31745071,
-    "avgTimeMs": 0.00003150095332910107,
-    "iterations": 63490142
-  },
-  {
-    "name": "canIncludeTx - insufficient fee",
-    "opsPerSec": 42650141.5,
-    "avgTimeMs": 0.0000234465810623395,
-    "iterations": 85300283
-  },
-  {
-    "name": "nextState - standard form",
-    "opsPerSec": 7367325.845286158,
-    "avgTimeMs": 0.00013573446064420115,
-    "iterations": 14734652
-  },
-  {
-    "name": "nextState - convenience form",
-    "opsPerSec": 7415940.5,
-    "avgTimeMs": 0.00013484466333029506,
-    "iterations": 14831881
-  },
-  {
-    "name": "State.getBlobBaseFee",
-    "opsPerSec": 2407346.449445725,
-    "avgTimeMs": 0.00041539513360457244,
-    "iterations": 4814693
-  },
-  {
-    "name": "State.getGasTarget",
-    "opsPerSec": 29703873.5,
-    "avgTimeMs": 0.000033665642967406256,
-    "iterations": 59407747
-  },
-  {
-    "name": "State.isAboveGasTarget",
-    "opsPerSec": 26264298,
-    "avgTimeMs": 0.000038074499459304036,
-    "iterations": 52528596
-  },
-  {
-    "name": "State.isAboveBlobGasTarget",
-    "opsPerSec": 31618371,
-    "avgTimeMs": 0.000031627182817229895,
-    "iterations": 63236742
-  },
-  {
-    "name": "projectBaseFees - 10 blocks",
-    "opsPerSec": 765788.9839184314,
-    "avgTimeMs": 0.001305842759559095,
-    "iterations": 1531578
-  },
-  {
-    "name": "projectBaseFees - 50 blocks",
-    "opsPerSec": 162100.81090940433,
-    "avgTimeMs": 0.006169000601476847,
-    "iterations": 324202
-  },
-  {
-    "name": "projectBaseFees - 100 blocks",
-    "opsPerSec": 79684.68787507745,
-    "avgTimeMs": 0.012549462470979504,
-    "iterations": 159370
-  },
-  {
-    "name": "validateTxFeeParams - valid tx",
-    "opsPerSec": 23331289,
-    "avgTimeMs": 0.00004286089808411357,
-    "iterations": 46662578
-  },
-  {
-    "name": "validateTxFeeParams - valid blob tx",
-    "opsPerSec": 14285181,
-    "avgTimeMs": 0.00007000261319755066,
-    "iterations": 28570362
-  },
-  {
-    "name": "validateTxFeeParams - invalid tx",
-    "opsPerSec": 21570267,
-    "avgTimeMs": 0.000046360112278628726,
-    "iterations": 43140534
-  },
-  {
-    "name": "validateState - valid",
-    "opsPerSec": 15893239,
-    "avgTimeMs": 0.00006291983654181504,
-    "iterations": 31786478
-  },
-  {
-    "name": "validateState - invalid",
-    "opsPerSec": 10493322.284886936,
-    "avgTimeMs": 0.00009529870262731333,
-    "iterations": 20986645
-  },
-  {
-    "name": "weiToGwei",
-    "opsPerSec": 14654952,
-    "avgTimeMs": 0.00006823632039190576,
-    "iterations": 29309904
-  },
-  {
-    "name": "gweiToWei",
-    "opsPerSec": 31357249,
-    "avgTimeMs": 0.00003189055264382408,
-    "iterations": 62714498
-  }
+	{
+		"name": "calculateBaseFee - at target",
+		"opsPerSec": 30118537,
+		"avgTimeMs": 0.00003320214391555606,
+		"iterations": 60237074
+	},
+	{
+		"name": "calculateBaseFee - above target",
+		"opsPerSec": 10048817.288974836,
+		"avgTimeMs": 0.00009951419866068818,
+		"iterations": 20097635
+	},
+	{
+		"name": "calculateBaseFee - below target",
+		"opsPerSec": 9545340,
+		"avgTimeMs": 0.0001047631619198478,
+		"iterations": 19090680
+	},
+	{
+		"name": "calculateBaseFee - full block",
+		"opsPerSec": 10006879.084714519,
+		"avgTimeMs": 0.00009993125644213064,
+		"iterations": 20013759
+	},
+	{
+		"name": "calculateBaseFee - empty block",
+		"opsPerSec": 31047180.5,
+		"avgTimeMs": 0.00003220904390980044,
+		"iterations": 62094361
+	},
+	{
+		"name": "calculateBlobBaseFee - no excess",
+		"opsPerSec": 11474485.25903581,
+		"avgTimeMs": 0.00008714987883334724,
+		"iterations": 22948971
+	},
+	{
+		"name": "calculateBlobBaseFee - at target",
+		"opsPerSec": 2326032.3057763022,
+		"avgTimeMs": 0.0004299166428242082,
+		"iterations": 4652065
+	},
+	{
+		"name": "calculateBlobBaseFee - high excess",
+		"opsPerSec": 1716364.7494107476,
+		"avgTimeMs": 0.0005826267408156187,
+		"iterations": 3432730
+	},
+	{
+		"name": "calculateBlobBaseFee - very high excess",
+		"opsPerSec": 707791.205204963,
+		"avgTimeMs": 0.001412846037992827,
+		"iterations": 1415583
+	},
+	{
+		"name": "calculateExcessBlobGas - below target",
+		"opsPerSec": 31309385,
+		"avgTimeMs": 0.00003193930509973287,
+		"iterations": 62618770
+	},
+	{
+		"name": "calculateExcessBlobGas - at target",
+		"opsPerSec": 27311344.5,
+		"avgTimeMs": 0.000036614821361138045,
+		"iterations": 54622689
+	},
+	{
+		"name": "calculateExcessBlobGas - above target",
+		"opsPerSec": 25262001.5,
+		"avgTimeMs": 0.00003958514530212501,
+		"iterations": 50524003
+	},
+	{
+		"name": "calculateExcessBlobGas - with previous excess",
+		"opsPerSec": 22881240.5,
+		"avgTimeMs": 0.00004370392418190788,
+		"iterations": 45762481
+	},
+	{
+		"name": "calculateTxFee - normal",
+		"opsPerSec": 19800533.599320546,
+		"avgTimeMs": 0.000050503689457859606,
+		"iterations": 39602973
+	},
+	{
+		"name": "calculateTxFee - capped by maxFee",
+		"opsPerSec": 19868998.582751032,
+		"avgTimeMs": 0.00005032966285820437,
+		"iterations": 39737998
+	},
+	{
+		"name": "calculateTxFee - zero priority",
+		"opsPerSec": 27265763.5,
+		"avgTimeMs": 0.000036676031463413817,
+		"iterations": 54531527
+	},
+	{
+		"name": "calculateBlobTxFee - normal",
+		"opsPerSec": 9696307,
+		"avgTimeMs": 0.00010313204810862528,
+		"iterations": 19392614
+	},
+	{
+		"name": "calculateBlobTxFee - 1 blob",
+		"opsPerSec": 8875934,
+		"avgTimeMs": 0.00011266419962113283,
+		"iterations": 17751868
+	},
+	{
+		"name": "calculateBlobTxFee - 6 blobs",
+		"opsPerSec": 8847538.62840338,
+		"avgTimeMs": 0.00011302578513640908,
+		"iterations": 17695078
+	},
+	{
+		"name": "calculateBlobTxFee - capped blob fee",
+		"opsPerSec": 9503908.305169849,
+		"avgTimeMs": 0.00010521987038280127,
+		"iterations": 19007817
+	},
+	{
+		"name": "canIncludeTx - normal tx",
+		"opsPerSec": 42620168,
+		"avgTimeMs": 0.000023463070347352925,
+		"iterations": 85240336
+	},
+	{
+		"name": "canIncludeTx - blob tx",
+		"opsPerSec": 31745071,
+		"avgTimeMs": 0.00003150095332910107,
+		"iterations": 63490142
+	},
+	{
+		"name": "canIncludeTx - insufficient fee",
+		"opsPerSec": 42650141.5,
+		"avgTimeMs": 0.0000234465810623395,
+		"iterations": 85300283
+	},
+	{
+		"name": "nextState - standard form",
+		"opsPerSec": 7367325.845286158,
+		"avgTimeMs": 0.00013573446064420115,
+		"iterations": 14734652
+	},
+	{
+		"name": "nextState - convenience form",
+		"opsPerSec": 7415940.5,
+		"avgTimeMs": 0.00013484466333029506,
+		"iterations": 14831881
+	},
+	{
+		"name": "State.getBlobBaseFee",
+		"opsPerSec": 2407346.449445725,
+		"avgTimeMs": 0.00041539513360457244,
+		"iterations": 4814693
+	},
+	{
+		"name": "State.getGasTarget",
+		"opsPerSec": 29703873.5,
+		"avgTimeMs": 0.000033665642967406256,
+		"iterations": 59407747
+	},
+	{
+		"name": "State.isAboveGasTarget",
+		"opsPerSec": 26264298,
+		"avgTimeMs": 0.000038074499459304036,
+		"iterations": 52528596
+	},
+	{
+		"name": "State.isAboveBlobGasTarget",
+		"opsPerSec": 31618371,
+		"avgTimeMs": 0.000031627182817229895,
+		"iterations": 63236742
+	},
+	{
+		"name": "projectBaseFees - 10 blocks",
+		"opsPerSec": 765788.9839184314,
+		"avgTimeMs": 0.001305842759559095,
+		"iterations": 1531578
+	},
+	{
+		"name": "projectBaseFees - 50 blocks",
+		"opsPerSec": 162100.81090940433,
+		"avgTimeMs": 0.006169000601476847,
+		"iterations": 324202
+	},
+	{
+		"name": "projectBaseFees - 100 blocks",
+		"opsPerSec": 79684.68787507745,
+		"avgTimeMs": 0.012549462470979504,
+		"iterations": 159370
+	},
+	{
+		"name": "validateTxFeeParams - valid tx",
+		"opsPerSec": 23331289,
+		"avgTimeMs": 0.00004286089808411357,
+		"iterations": 46662578
+	},
+	{
+		"name": "validateTxFeeParams - valid blob tx",
+		"opsPerSec": 14285181,
+		"avgTimeMs": 0.00007000261319755066,
+		"iterations": 28570362
+	},
+	{
+		"name": "validateTxFeeParams - invalid tx",
+		"opsPerSec": 21570267,
+		"avgTimeMs": 0.000046360112278628726,
+		"iterations": 43140534
+	},
+	{
+		"name": "validateState - valid",
+		"opsPerSec": 15893239,
+		"avgTimeMs": 0.00006291983654181504,
+		"iterations": 31786478
+	},
+	{
+		"name": "validateState - invalid",
+		"opsPerSec": 10493322.284886936,
+		"avgTimeMs": 0.00009529870262731333,
+		"iterations": 20986645
+	},
+	{
+		"name": "weiToGwei",
+		"opsPerSec": 14654952,
+		"avgTimeMs": 0.00006823632039190576,
+		"iterations": 29309904
+	},
+	{
+		"name": "gweiToWei",
+		"opsPerSec": 31357249,
+		"avgTimeMs": 0.00003189055264382408,
+		"iterations": 62714498
+	}
 ]

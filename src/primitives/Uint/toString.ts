@@ -15,6 +15,6 @@ import type { Type } from "./Uint.js";
  * const bin = Uint.toString.call(value, 2); // "11111111"
  * ```
  */
-export function toString(this: Type, radix: number = 10): string {
+export function toString(this: Type, radix = 10): string {
 	return (this as bigint).toString(radix);
 }

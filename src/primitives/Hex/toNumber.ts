@@ -13,7 +13,7 @@ import type { Unsized } from "./Hex.js";
  * ```
  */
 export function toNumber(this: Unsized): number {
-	const num = parseInt(this.slice(2), 16);
+	const num = Number.parseInt(this.slice(2), 16);
 	if (!Number.isSafeInteger(num)) {
 		throw new RangeError("Hex value exceeds MAX_SAFE_INTEGER");
 	}

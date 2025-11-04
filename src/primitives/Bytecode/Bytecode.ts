@@ -32,50 +32,50 @@ export type Opcode = number;
  * Jump destination information
  */
 export type JumpDest = {
-  /** Position in bytecode */
-  readonly position: number;
-  /** Whether this is a valid jump destination */
-  readonly valid: boolean;
+	/** Position in bytecode */
+	readonly position: number;
+	/** Whether this is a valid jump destination */
+	readonly valid: boolean;
 };
 
 /**
  * Bytecode instruction
  */
 export type Instruction = {
-  /** Opcode value */
-  readonly opcode: Opcode;
-  /** Position in bytecode */
-  readonly position: number;
-  /** Push data if PUSH instruction */
-  readonly pushData?: Uint8Array;
+	/** Opcode value */
+	readonly opcode: Opcode;
+	/** Position in bytecode */
+	readonly position: number;
+	/** Push data if PUSH instruction */
+	readonly pushData?: Uint8Array;
 };
 
 /**
  * Bytecode analysis result
  */
 export type Analysis = {
-  /** Valid JUMPDEST positions */
-  readonly jumpDestinations: ReadonlySet<number>;
-  /** All instructions */
-  readonly instructions: readonly Instruction[];
-  /** Whether bytecode is valid */
-  readonly valid: boolean;
+	/** Valid JUMPDEST positions */
+	readonly jumpDestinations: ReadonlySet<number>;
+	/** All instructions */
+	readonly instructions: readonly Instruction[];
+	/** Whether bytecode is valid */
+	readonly valid: boolean;
 };
 
 /**
  * Opcode metadata
  */
 export type OpcodeMetadata = {
-  /** Opcode value */
-  readonly opcode: Opcode;
-  /** Mnemonic name */
-  readonly name: string;
-  /** Gas cost (base) */
-  readonly gas: number;
-  /** Stack items removed */
-  readonly inputs: number;
-  /** Stack items added */
-  readonly outputs: number;
+	/** Opcode value */
+	readonly opcode: Opcode;
+	/** Mnemonic name */
+	readonly name: string;
+	/** Gas cost (base) */
+	readonly gas: number;
+	/** Stack items removed */
+	readonly inputs: number;
+	/** Stack items added */
+	readonly outputs: number;
 };
 
 // ==========================================================================
@@ -118,7 +118,7 @@ export const INVALID: Opcode = 0xfe;
  * ```
  */
 export function isPush(opcode: Opcode): boolean {
-  return opcode >= PUSH1 && opcode <= PUSH32;
+	return opcode >= PUSH1 && opcode <= PUSH32;
 }
 
 /**
@@ -131,8 +131,8 @@ export function isPush(opcode: Opcode): boolean {
  * ```
  */
 export function getPushSize(opcode: Opcode): number {
-  if (!isPush(opcode)) return 0;
-  return opcode - 0x5f;
+	if (!isPush(opcode)) return 0;
+	return opcode - 0x5f;
 }
 
 /**
@@ -146,7 +146,12 @@ export function getPushSize(opcode: Opcode): number {
  * ```
  */
 export function isTerminator(opcode: Opcode): boolean {
-  return opcode === STOP || opcode === RETURN || opcode === REVERT || opcode === INVALID;
+	return (
+		opcode === STOP ||
+		opcode === RETURN ||
+		opcode === REVERT ||
+		opcode === INVALID
+	);
 }
 
 // ==========================================================================
@@ -163,24 +168,24 @@ export function isTerminator(opcode: Opcode): boolean {
  * ```
  */
 export function _analyzeJumpDestinations(this: Bytecode): Set<number> {
-  const validJumpdests = new Set<number>();
-  let pc = 0;
+	const validJumpdests = new Set<number>();
+	let pc = 0;
 
-  while (pc < this.length) {
-    const opcode = this[pc] ?? 0;
+	while (pc < this.length) {
+		const opcode = this[pc] ?? 0;
 
-    if (opcode === JUMPDEST) {
-      validJumpdests.add(pc);
-      pc += 1;
-    } else if (isPush(opcode)) {
-      const pushSize = getPushSize(opcode);
-      pc += 1 + pushSize;
-    } else {
-      pc += 1;
-    }
-  }
+		if (opcode === JUMPDEST) {
+			validJumpdests.add(pc);
+			pc += 1;
+		} else if (isPush(opcode)) {
+			const pushSize = getPushSize(opcode);
+			pc += 1 + pushSize;
+		} else {
+			pc += 1;
+		}
+	}
 
-  return validJumpdests;
+	return validJumpdests;
 }
 
 // ==========================================================================
@@ -197,8 +202,8 @@ export function _analyzeJumpDestinations(this: Bytecode): Set<number> {
  * ```
  */
 export function _isValidJumpDest(this: Bytecode, position: number): boolean {
-  const validJumpdests = _analyzeJumpDestinations.call(this);
-  return validJumpdests.has(position);
+	const validJumpdests = _analyzeJumpDestinations.call(this);
+	return validJumpdests.has(position);
 }
 
 /**
@@ -211,27 +216,27 @@ export function _isValidJumpDest(this: Bytecode, position: number): boolean {
  * ```
  */
 export function _validate(this: Bytecode): boolean {
-  let pc = 0;
+	let pc = 0;
 
-  while (pc < this.length) {
-    const opcode = this[pc] ?? 0;
+	while (pc < this.length) {
+		const opcode = this[pc] ?? 0;
 
-    if (isPush(opcode)) {
-      const pushSize = getPushSize(opcode);
+		if (isPush(opcode)) {
+			const pushSize = getPushSize(opcode);
 
-      // Check if we have enough bytes for the PUSH data
-      if (pc + pushSize >= this.length) {
-        // Incomplete PUSH instruction
-        return false;
-      }
+			// Check if we have enough bytes for the PUSH data
+			if (pc + pushSize >= this.length) {
+				// Incomplete PUSH instruction
+				return false;
+			}
 
-      pc += 1 + pushSize;
-    } else {
-      pc += 1;
-    }
-  }
+			pc += 1 + pushSize;
+		} else {
+			pc += 1;
+		}
+	}
 
-  return true;
+	return true;
 }
 
 // ==========================================================================
@@ -248,24 +253,24 @@ export function _validate(this: Bytecode): boolean {
  * ```
  */
 export function _parseInstructions(this: Bytecode): Instruction[] {
-  const instructions: Instruction[] = [];
-  let pc = 0;
+	const instructions: Instruction[] = [];
+	let pc = 0;
 
-  while (pc < this.length) {
-    const opcode = this[pc] ?? 0;
+	while (pc < this.length) {
+		const opcode = this[pc] ?? 0;
 
-    if (isPush(opcode)) {
-      const pushSize = getPushSize(opcode);
-      const pushData = this.slice(pc + 1, pc + 1 + pushSize);
-      instructions.push({ opcode, position: pc, pushData });
-      pc += 1 + pushSize;
-    } else {
-      instructions.push({ opcode, position: pc });
-      pc += 1;
-    }
-  }
+		if (isPush(opcode)) {
+			const pushSize = getPushSize(opcode);
+			const pushData = this.slice(pc + 1, pc + 1 + pushSize);
+			instructions.push({ opcode, position: pc, pushData });
+			pc += 1 + pushSize;
+		} else {
+			instructions.push({ opcode, position: pc });
+			pc += 1;
+		}
+	}
 
-  return instructions;
+	return instructions;
 }
 
 // ==========================================================================
@@ -282,11 +287,11 @@ export function _parseInstructions(this: Bytecode): Instruction[] {
  * ```
  */
 export function _analyze(this: Bytecode): Analysis {
-  return {
-    valid: _validate.call(this),
-    jumpDestinations: _analyzeJumpDestinations.call(this),
-    instructions: _parseInstructions.call(this),
-  };
+	return {
+		valid: _validate.call(this),
+		jumpDestinations: _analyzeJumpDestinations.call(this),
+		instructions: _parseInstructions.call(this),
+	};
 }
 
 // ==========================================================================
@@ -303,7 +308,7 @@ export function _analyze(this: Bytecode): Analysis {
  * ```
  */
 export function _size(this: Bytecode): number {
-  return this.length;
+	return this.length;
 }
 
 /**
@@ -316,7 +321,7 @@ export function _size(this: Bytecode): number {
  * ```
  */
 export function _extractRuntime(this: Bytecode, offset: number): Bytecode {
-  return this.slice(offset) as Bytecode;
+	return this.slice(offset) as Bytecode;
 }
 
 // ==========================================================================
@@ -334,11 +339,11 @@ export function _extractRuntime(this: Bytecode, offset: number): Bytecode {
  * ```
  */
 export function _equals(this: Bytecode, other: Bytecode): boolean {
-  if (this.length !== other.length) return false;
-  for (let i = 0; i < this.length; i++) {
-    if (this[i] !== other[i]) return false;
-  }
-  return true;
+	if (this.length !== other.length) return false;
+	for (let i = 0; i < this.length; i++) {
+		if (this[i] !== other[i]) return false;
+	}
+	return true;
 }
 
 // ==========================================================================
@@ -355,7 +360,7 @@ export function _equals(this: Bytecode, other: Bytecode): boolean {
  * ```
  */
 export function _hash(this: Bytecode): Hash {
-  return Keccak256.hash(this) as Hash;
+	return Keccak256.hash(this) as Hash;
 }
 
 // ==========================================================================
@@ -372,10 +377,10 @@ export function _hash(this: Bytecode): Hash {
  * ```
  */
 export function _toHex(this: Bytecode, prefix = true): string {
-  const hex = Array.from(this)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return prefix ? `0x${hex}` : hex;
+	const hex = Array.from(this)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+	return prefix ? `0x${hex}` : hex;
 }
 
 /**
@@ -388,8 +393,8 @@ export function _toHex(this: Bytecode, prefix = true): string {
  * ```
  */
 export function _formatInstructions(this: Bytecode): string[] {
-  const instructions = _parseInstructions.call(this);
-  return instructions.map(formatInstruction);
+	const instructions = _parseInstructions.call(this);
+	return instructions.map(formatInstruction);
 }
 
 // ==========================================================================
@@ -406,15 +411,15 @@ export function _formatInstructions(this: Bytecode): string[] {
  * ```
  */
 export function _hasMetadata(this: Bytecode): boolean {
-  // Solidity metadata starts with 0xa2 0x64 ('ipfs') or 0xa2 0x65 ('bzzr')
-  // and ends with 0x00 0x33 (length 51) at the very end
-  if (this.length < 2) return false;
+	// Solidity metadata starts with 0xa2 0x64 ('ipfs') or 0xa2 0x65 ('bzzr')
+	// and ends with 0x00 0x33 (length 51) at the very end
+	if (this.length < 2) return false;
 
-  const lastTwo = this.slice(-2);
-  const b0 = lastTwo[0] ?? 0;
-  const b1 = lastTwo[1] ?? 0;
-  // Check for common metadata length markers
-  return b0 === 0x00 && b1 >= 0x20 && b1 <= 0x40;
+	const lastTwo = this.slice(-2);
+	const b0 = lastTwo[0] ?? 0;
+	const b1 = lastTwo[1] ?? 0;
+	// Check for common metadata length markers
+	return b0 === 0x00 && b1 >= 0x20 && b1 <= 0x40;
 }
 
 /**
@@ -427,11 +432,11 @@ export function _hasMetadata(this: Bytecode): boolean {
  * ```
  */
 export function _stripMetadata(this: Bytecode): Bytecode {
-  if (!_hasMetadata.call(this)) return this;
+	if (!_hasMetadata.call(this)) return this;
 
-  // Last 2 bytes indicate metadata length
-  const metadataLength = (this[this.length - 1] ?? 0) + 2;
-  return this.slice(0, -metadataLength) as Bytecode;
+	// Last 2 bytes indicate metadata length
+	const metadataLength = (this[this.length - 1] ?? 0) + 2;
+	return this.slice(0, -metadataLength) as Bytecode;
 }
 
 // ==========================================================================
@@ -451,15 +456,15 @@ export function _stripMetadata(this: Bytecode): Bytecode {
  * ```
  */
 export function fromHex(hex: string): Bytecode {
-  const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
-  if (cleaned.length % 2 !== 0) {
-    throw new Error("Invalid hex string: odd length");
-  }
-  const bytes = new Uint8Array(cleaned.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(cleaned.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes as Bytecode;
+	const cleaned = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (cleaned.length % 2 !== 0) {
+		throw new Error("Invalid hex string: odd length");
+	}
+	const bytes = new Uint8Array(cleaned.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(cleaned.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes as Bytecode;
 }
 
 /**
@@ -475,17 +480,17 @@ export function fromHex(hex: string): Bytecode {
  * ```
  */
 export function formatInstruction(instruction: Instruction): string {
-  const pos = instruction.position.toString(16).padStart(4, "0");
-  const opcode = instruction.opcode.toString(16).padStart(2, "0").toUpperCase();
+	const pos = instruction.position.toString(16).padStart(4, "0");
+	const opcode = instruction.opcode.toString(16).padStart(2, "0").toUpperCase();
 
-  if (instruction.pushData) {
-    const data = Array.from(instruction.pushData)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    return `0x${pos}: PUSH${instruction.pushData.length} 0x${data}`;
-  }
+	if (instruction.pushData) {
+		const data = Array.from(instruction.pushData)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		return `0x${pos}: PUSH${instruction.pushData.length} 0x${data}`;
+	}
 
-  return `0x${pos}: 0x${opcode}`;
+	return `0x${pos}: 0x${opcode}`;
 }
 
 // ==========================================================================
@@ -514,10 +519,10 @@ export type Bytecode = Uint8Array;
  * ```
  */
 export function from(value: string | Uint8Array): Bytecode {
-  if (typeof value === "string") {
-    return fromHex(value);
-  }
-  return value as Bytecode;
+	if (typeof value === "string") {
+		return fromHex(value);
+	}
+	return value as Bytecode;
 }
 
 // ==========================================================================
@@ -542,7 +547,7 @@ export function from(value: string | Uint8Array): Bytecode {
  * ```
  */
 export function analyzeJumpDestinations(code: Bytecode | string): Set<number> {
-  return _analyzeJumpDestinations.call(from(code));
+	return _analyzeJumpDestinations.call(from(code));
 }
 
 /**
@@ -560,8 +565,11 @@ export function analyzeJumpDestinations(code: Bytecode | string): Set<number> {
  * isValidJumpDest(code, 3); // true
  * ```
  */
-export function isValidJumpDest(code: Bytecode | string, position: number): boolean {
-  return _isValidJumpDest.call(from(code), position);
+export function isValidJumpDest(
+	code: Bytecode | string,
+	position: number,
+): boolean {
+	return _isValidJumpDest.call(from(code), position);
 }
 
 /**
@@ -584,7 +592,7 @@ export function isValidJumpDest(code: Bytecode | string, position: number): bool
  * ```
  */
 export function validate(code: Bytecode | string): boolean {
-  return _validate.call(from(code));
+	return _validate.call(from(code));
 }
 
 /**
@@ -605,7 +613,7 @@ export function validate(code: Bytecode | string): boolean {
  * ```
  */
 export function parseInstructions(code: Bytecode | string): Instruction[] {
-  return _parseInstructions.call(from(code));
+	return _parseInstructions.call(from(code));
 }
 
 /**
@@ -626,7 +634,7 @@ export function parseInstructions(code: Bytecode | string): Instruction[] {
  * ```
  */
 export function analyze(code: Bytecode | string): Analysis {
-  return _analyze.call(from(code));
+	return _analyze.call(from(code));
 }
 
 /**
@@ -642,7 +650,7 @@ export function analyze(code: Bytecode | string): Analysis {
  * ```
  */
 export function size(code: Bytecode | string): number {
-  return _size.call(from(code));
+	return _size.call(from(code));
 }
 
 /**
@@ -661,8 +669,11 @@ export function size(code: Bytecode | string): number {
  * const runtime = extractRuntime(creation, constructorLength);
  * ```
  */
-export function extractRuntime(code: Bytecode | string, offset: number): Bytecode {
-  return _extractRuntime.call(from(code), offset);
+export function extractRuntime(
+	code: Bytecode | string,
+	offset: number,
+): Bytecode {
+	return _extractRuntime.call(from(code), offset);
 }
 
 /**
@@ -680,7 +691,7 @@ export function extractRuntime(code: Bytecode | string, offset: number): Bytecod
  * ```
  */
 export function equals(a: Bytecode | string, b: Bytecode | string): boolean {
-  return _equals.call(from(a), from(b));
+	return _equals.call(from(a), from(b));
 }
 
 /**
@@ -696,7 +707,7 @@ export function equals(a: Bytecode | string, b: Bytecode | string): boolean {
  * ```
  */
 export function hash(code: Bytecode | string): Hash {
-  return _hash.call(from(code));
+	return _hash.call(from(code));
 }
 
 /**
@@ -714,7 +725,7 @@ export function hash(code: Bytecode | string): Hash {
  * ```
  */
 export function toHex(code: Bytecode | string, prefix = true): string {
-  return _toHex.call(from(code), prefix);
+	return _toHex.call(from(code), prefix);
 }
 
 /**
@@ -731,7 +742,7 @@ export function toHex(code: Bytecode | string, prefix = true): string {
  * ```
  */
 export function formatInstructions(code: Bytecode | string): string[] {
-  return _formatInstructions.call(from(code));
+	return _formatInstructions.call(from(code));
 }
 
 /**
@@ -749,7 +760,7 @@ export function formatInstructions(code: Bytecode | string): string[] {
  * ```
  */
 export function hasMetadata(code: Bytecode | string): boolean {
-  return _hasMetadata.call(from(code));
+	return _hasMetadata.call(from(code));
 }
 
 /**
@@ -765,5 +776,5 @@ export function hasMetadata(code: Bytecode | string): boolean {
  * ```
  */
 export function stripMetadata(code: Bytecode | string): Bytecode {
-  return _stripMetadata.call(from(code));
+	return _stripMetadata.call(from(code));
 }

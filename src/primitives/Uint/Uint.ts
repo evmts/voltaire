@@ -87,42 +87,42 @@ export { bitLength as _bitLength } from "./bitLength.js";
 export { leadingZeros as _leadingZeros } from "./leadingZeros.js";
 export { popCount as _popCount } from "./popCount.js";
 
-// Import internal methods for wrapper usage
-import { fromHex as fromHexInternal } from "./fromHex.js";
-import { fromBigInt as fromBigIntInternal } from "./fromBigInt.js";
-import { fromNumber as fromNumberInternal } from "./fromNumber.js";
-import { fromBytes as fromBytesInternal } from "./fromBytes.js";
-import { toHex as toHexInternal } from "./toHex.js";
-import { toBigInt as toBigIntInternal } from "./toBigInt.js";
-import { toNumber as toNumberInternal } from "./toNumber.js";
-import { toBytes as toBytesInternal } from "./toBytes.js";
-import { toAbiEncoded as toAbiEncodedInternal } from "./toAbiEncoded.js";
-import { toString as toStringInternal } from "./toString.js";
-import { plus as plusInternal } from "./plus.js";
-import { minus as minusInternal } from "./minus.js";
-import { times as timesInternal } from "./times.js";
-import { dividedBy as dividedByInternal } from "./dividedBy.js";
-import { modulo as moduloInternal } from "./modulo.js";
-import { toPower as toPowerInternal } from "./toPower.js";
+import { bitLength as bitLengthInternal } from "./bitLength.js";
 import { bitwiseAnd as bitwiseAndInternal } from "./bitwiseAnd.js";
+import { bitwiseNot as bitwiseNotInternal } from "./bitwiseNot.js";
 import { bitwiseOr as bitwiseOrInternal } from "./bitwiseOr.js";
 import { bitwiseXor as bitwiseXorInternal } from "./bitwiseXor.js";
-import { bitwiseNot as bitwiseNotInternal } from "./bitwiseNot.js";
-import { shiftLeft as shiftLeftInternal } from "./shiftLeft.js";
-import { shiftRight as shiftRightInternal } from "./shiftRight.js";
+import { dividedBy as dividedByInternal } from "./dividedBy.js";
 import { equals as equalsInternal } from "./equals.js";
-import { notEquals as notEqualsInternal } from "./notEquals.js";
-import { lessThan as lessThanInternal } from "./lessThan.js";
-import { lessThanOrEqual as lessThanOrEqualInternal } from "./lessThanOrEqual.js";
+import { from } from "./from.js";
+import { fromBigInt as fromBigIntInternal } from "./fromBigInt.js";
+import { fromBytes as fromBytesInternal } from "./fromBytes.js";
+// Import internal methods for wrapper usage
+import { fromHex as fromHexInternal } from "./fromHex.js";
+import { fromNumber as fromNumberInternal } from "./fromNumber.js";
 import { greaterThan as greaterThanInternal } from "./greaterThan.js";
 import { greaterThanOrEqual as greaterThanOrEqualInternal } from "./greaterThanOrEqual.js";
 import { isZero as isZeroInternal } from "./isZero.js";
-import { minimum as minimumInternal } from "./minimum.js";
-import { maximum as maximumInternal } from "./maximum.js";
-import { bitLength as bitLengthInternal } from "./bitLength.js";
 import { leadingZeros as leadingZerosInternal } from "./leadingZeros.js";
+import { lessThan as lessThanInternal } from "./lessThan.js";
+import { lessThanOrEqual as lessThanOrEqualInternal } from "./lessThanOrEqual.js";
+import { maximum as maximumInternal } from "./maximum.js";
+import { minimum as minimumInternal } from "./minimum.js";
+import { minus as minusInternal } from "./minus.js";
+import { modulo as moduloInternal } from "./modulo.js";
+import { notEquals as notEqualsInternal } from "./notEquals.js";
+import { plus as plusInternal } from "./plus.js";
 import { popCount as popCountInternal } from "./popCount.js";
-import { from } from "./from.js";
+import { shiftLeft as shiftLeftInternal } from "./shiftLeft.js";
+import { shiftRight as shiftRightInternal } from "./shiftRight.js";
+import { times as timesInternal } from "./times.js";
+import { toAbiEncoded as toAbiEncodedInternal } from "./toAbiEncoded.js";
+import { toBigInt as toBigIntInternal } from "./toBigInt.js";
+import { toBytes as toBytesInternal } from "./toBytes.js";
+import { toHex as toHexInternal } from "./toHex.js";
+import { toNumber as toNumberInternal } from "./toNumber.js";
+import { toPower as toPowerInternal } from "./toPower.js";
+import { toString as toStringInternal } from "./toString.js";
 
 // ============================================================================
 // Public Wrapper Functions (namespace+type overloading pattern)
@@ -142,7 +142,7 @@ import { from } from "./from.js";
  * ```
  */
 export function fromHex(hex: string): Type {
-  return fromHexInternal.call(hex);
+	return fromHexInternal.call(hex);
 }
 
 /**
@@ -158,7 +158,7 @@ export function fromHex(hex: string): Type {
  * ```
  */
 export function fromBigInt(value: bigint): Type {
-  return fromBigIntInternal.call(value);
+	return fromBigIntInternal.call(value);
 }
 
 /**
@@ -174,7 +174,7 @@ export function fromBigInt(value: bigint): Type {
  * ```
  */
 export function fromNumber(value: number): Type {
-  return fromNumberInternal.call(value);
+	return fromNumberInternal.call(value);
 }
 
 /**
@@ -191,7 +191,7 @@ export function fromNumber(value: number): Type {
  * ```
  */
 export function fromBytes(bytes: Uint8Array): Type {
-  return fromBytesInternal.call(bytes);
+	return fromBytesInternal.call(bytes);
 }
 
 /**
@@ -208,7 +208,7 @@ export function fromBytes(bytes: Uint8Array): Type {
  * ```
  */
 export function toHex(value: number | bigint | string, padded = true): string {
-  return toHexInternal.call(from(value), padded);
+	return toHexInternal.call(from(value), padded);
 }
 
 /**
@@ -223,7 +223,7 @@ export function toHex(value: number | bigint | string, padded = true): string {
  * ```
  */
 export function toBigInt(value: number | bigint | string): bigint {
-  return toBigIntInternal.call(from(value));
+	return toBigIntInternal.call(from(value));
 }
 
 /**
@@ -238,7 +238,7 @@ export function toBigInt(value: number | bigint | string): bigint {
  * ```
  */
 export function toNumber(value: number | bigint | string): number {
-  return toNumberInternal.call(from(value));
+	return toNumberInternal.call(from(value));
 }
 
 /**
@@ -253,7 +253,7 @@ export function toNumber(value: number | bigint | string): number {
  * ```
  */
 export function toBytes(value: number | bigint | string): Uint8Array {
-  return toBytesInternal.call(from(value));
+	return toBytesInternal.call(from(value));
 }
 
 /**
@@ -268,7 +268,7 @@ export function toBytes(value: number | bigint | string): Uint8Array {
  * ```
  */
 export function toAbiEncoded(value: number | bigint | string): Uint8Array {
-  return toAbiEncodedInternal.call(from(value));
+	return toAbiEncodedInternal.call(from(value));
 }
 
 /**
@@ -284,8 +284,8 @@ export function toAbiEncoded(value: number | bigint | string): Uint8Array {
  * const hex = Uint.toString(255, 16); // "ff"
  * ```
  */
-export function toString(value: number | bigint | string, radix: number = 10): string {
-  return toStringInternal.call(from(value), radix);
+export function toString(value: number | bigint | string, radix = 10): string {
+	return toStringInternal.call(from(value), radix);
 }
 
 /**
@@ -301,7 +301,7 @@ export function toString(value: number | bigint | string, radix: number = 10): s
  * ```
  */
 export function plus(a: number | bigint | string, b: Type): Type {
-  return plusInternal.call(from(a), b);
+	return plusInternal.call(from(a), b);
 }
 
 /**
@@ -317,7 +317,7 @@ export function plus(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function minus(a: number | bigint | string, b: Type): Type {
-  return minusInternal.call(from(a), b);
+	return minusInternal.call(from(a), b);
 }
 
 /**
@@ -333,7 +333,7 @@ export function minus(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function times(a: number | bigint | string, b: Type): Type {
-  return timesInternal.call(from(a), b);
+	return timesInternal.call(from(a), b);
 }
 
 /**
@@ -349,7 +349,7 @@ export function times(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function dividedBy(a: number | bigint | string, b: Type): Type {
-  return dividedByInternal.call(from(a), b);
+	return dividedByInternal.call(from(a), b);
 }
 
 /**
@@ -365,7 +365,7 @@ export function dividedBy(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function modulo(a: number | bigint | string, b: Type): Type {
-  return moduloInternal.call(from(a), b);
+	return moduloInternal.call(from(a), b);
 }
 
 /**
@@ -381,7 +381,7 @@ export function modulo(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function toPower(a: number | bigint | string, b: Type): Type {
-  return toPowerInternal.call(from(a), b);
+	return toPowerInternal.call(from(a), b);
 }
 
 /**
@@ -397,7 +397,7 @@ export function toPower(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function bitwiseAnd(a: number | bigint | string, b: Type): Type {
-  return bitwiseAndInternal.call(from(a), b);
+	return bitwiseAndInternal.call(from(a), b);
 }
 
 /**
@@ -413,7 +413,7 @@ export function bitwiseAnd(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function bitwiseOr(a: number | bigint | string, b: Type): Type {
-  return bitwiseOrInternal.call(from(a), b);
+	return bitwiseOrInternal.call(from(a), b);
 }
 
 /**
@@ -429,7 +429,7 @@ export function bitwiseOr(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function bitwiseXor(a: number | bigint | string, b: Type): Type {
-  return bitwiseXorInternal.call(from(a), b);
+	return bitwiseXorInternal.call(from(a), b);
 }
 
 /**
@@ -444,7 +444,7 @@ export function bitwiseXor(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function bitwiseNot(value: number | bigint | string): Type {
-  return bitwiseNotInternal.call(from(value));
+	return bitwiseNotInternal.call(from(value));
 }
 
 /**
@@ -460,7 +460,7 @@ export function bitwiseNot(value: number | bigint | string): Type {
  * ```
  */
 export function shiftLeft(value: number | bigint | string, bits: Type): Type {
-  return shiftLeftInternal.call(from(value), bits);
+	return shiftLeftInternal.call(from(value), bits);
 }
 
 /**
@@ -476,7 +476,7 @@ export function shiftLeft(value: number | bigint | string, bits: Type): Type {
  * ```
  */
 export function shiftRight(value: number | bigint | string, bits: Type): Type {
-  return shiftRightInternal.call(from(value), bits);
+	return shiftRightInternal.call(from(value), bits);
 }
 
 /**
@@ -492,7 +492,7 @@ export function shiftRight(value: number | bigint | string, bits: Type): Type {
  * ```
  */
 export function equals(a: number | bigint | string, b: Type): boolean {
-  return equalsInternal.call(from(a), b);
+	return equalsInternal.call(from(a), b);
 }
 
 /**
@@ -508,7 +508,7 @@ export function equals(a: number | bigint | string, b: Type): boolean {
  * ```
  */
 export function notEquals(a: number | bigint | string, b: Type): boolean {
-  return notEqualsInternal.call(from(a), b);
+	return notEqualsInternal.call(from(a), b);
 }
 
 /**
@@ -524,7 +524,7 @@ export function notEquals(a: number | bigint | string, b: Type): boolean {
  * ```
  */
 export function lessThan(a: number | bigint | string, b: Type): boolean {
-  return lessThanInternal.call(from(a), b);
+	return lessThanInternal.call(from(a), b);
 }
 
 /**
@@ -540,7 +540,7 @@ export function lessThan(a: number | bigint | string, b: Type): boolean {
  * ```
  */
 export function lessThanOrEqual(a: number | bigint | string, b: Type): boolean {
-  return lessThanOrEqualInternal.call(from(a), b);
+	return lessThanOrEqualInternal.call(from(a), b);
 }
 
 /**
@@ -556,7 +556,7 @@ export function lessThanOrEqual(a: number | bigint | string, b: Type): boolean {
  * ```
  */
 export function greaterThan(a: number | bigint | string, b: Type): boolean {
-  return greaterThanInternal.call(from(a), b);
+	return greaterThanInternal.call(from(a), b);
 }
 
 /**
@@ -571,8 +571,11 @@ export function greaterThan(a: number | bigint | string, b: Type): boolean {
  * const greaterOrEq = Uint.greaterThanOrEqual(100, Uint.from(100)); // true
  * ```
  */
-export function greaterThanOrEqual(a: number | bigint | string, b: Type): boolean {
-  return greaterThanOrEqualInternal.call(from(a), b);
+export function greaterThanOrEqual(
+	a: number | bigint | string,
+	b: Type,
+): boolean {
+	return greaterThanOrEqualInternal.call(from(a), b);
 }
 
 /**
@@ -587,7 +590,7 @@ export function greaterThanOrEqual(a: number | bigint | string, b: Type): boolea
  * ```
  */
 export function isZero(value: number | bigint | string): boolean {
-  return isZeroInternal.call(from(value));
+	return isZeroInternal.call(from(value));
 }
 
 /**
@@ -603,7 +606,7 @@ export function isZero(value: number | bigint | string): boolean {
  * ```
  */
 export function minimum(a: number | bigint | string, b: Type): Type {
-  return minimumInternal.call(from(a), b);
+	return minimumInternal.call(from(a), b);
 }
 
 /**
@@ -619,7 +622,7 @@ export function minimum(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function maximum(a: number | bigint | string, b: Type): Type {
-  return maximumInternal.call(from(a), b);
+	return maximumInternal.call(from(a), b);
 }
 
 /**
@@ -634,7 +637,7 @@ export function maximum(a: number | bigint | string, b: Type): Type {
  * ```
  */
 export function bitLength(value: number | bigint | string): number {
-  return bitLengthInternal.call(from(value));
+	return bitLengthInternal.call(from(value));
 }
 
 /**
@@ -649,7 +652,7 @@ export function bitLength(value: number | bigint | string): number {
  * ```
  */
 export function leadingZeros(value: number | bigint | string): number {
-  return leadingZerosInternal.call(from(value));
+	return leadingZerosInternal.call(from(value));
 }
 
 /**
@@ -664,5 +667,5 @@ export function leadingZeros(value: number | bigint | string): number {
  * ```
  */
 export function popCount(value: number | bigint | string): number {
-  return popCountInternal.call(from(value));
+	return popCountInternal.call(from(value));
 }

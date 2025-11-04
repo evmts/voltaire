@@ -632,11 +632,7 @@ describe("Address", () => {
 			// Per EIP-1014 spec: initCode is 0x00 (one byte), not empty
 			const initCode = new Uint8Array([0]);
 
-			const addr = Address.calculateCreate2Address(
-				deployer,
-				salt,
-				initCode,
-			);
+			const addr = Address.calculateCreate2Address(deployer, salt, initCode);
 			// Verified against EIP-1014 spec and ethers.js v6.15.0 getCreate2Address()
 			expect(Address.toHex(addr)).toBe(
 				"0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38",
@@ -655,16 +651,8 @@ describe("Address", () => {
 			initCode[1] = 0xcd;
 			initCode[2] = 0xef;
 
-			const addr1 = Address.calculateCreate2Address(
-				deployer,
-				salt,
-				initCode,
-			);
-			const addr2 = Address.calculateCreate2Address(
-				deployer,
-				salt,
-				initCode,
-			);
+			const addr1 = Address.calculateCreate2Address(deployer, salt, initCode);
+			const addr2 = Address.calculateCreate2Address(deployer, salt, initCode);
 
 			expect(Address.equals(addr1, addr2)).toBe(true);
 		});

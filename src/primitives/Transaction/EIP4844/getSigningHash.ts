@@ -1,11 +1,8 @@
 import { Keccak256 } from "../../../crypto/keccak256.js";
 import type { Hash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
-import { Type, type EIP4844 } from "../types.js";
-import {
-	encodeBigintCompact,
-	encodeAccessList,
-} from "../utils.js";
+import { type EIP4844, Type } from "../types.js";
+import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
 /**
  * Get signing hash

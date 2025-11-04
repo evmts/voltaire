@@ -1,19 +1,13 @@
 import * as Rlp from "../../Rlp/index.js";
-import { Type, type EIP1559 } from "../types.js";
-import {
-	decodeAddress,
-	decodeBigint,
-	decodeAccessList,
-} from "../utils.js";
+import { type EIP1559, Type } from "../types.js";
+import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
 
 /**
  * Deserialize RLP encoded EIP-1559 transaction
  */
 export function deserialize(data: Uint8Array): EIP1559 {
 	if (data.length === 0 || data[0] !== Type.EIP1559) {
-		throw new Error(
-			"Invalid EIP-1559 transaction: missing or wrong type byte",
-		);
+		throw new Error("Invalid EIP-1559 transaction: missing or wrong type byte");
 	}
 
 	const rlpData = data.slice(1);
@@ -51,8 +45,7 @@ export function deserialize(data: Uint8Array): EIP1559 {
 	const value = decodeBigint(
 		(fields[6] as { type: "bytes"; value: Uint8Array }).value,
 	);
-	const dataBytes = (fields[7] as { type: "bytes"; value: Uint8Array })
-		.value;
+	const dataBytes = (fields[7] as { type: "bytes"; value: Uint8Array }).value;
 	const accessList = decodeAccessList(
 		(fields[8] as { type: "list"; value: Rlp.Data[] }).value,
 	);

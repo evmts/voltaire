@@ -2,10 +2,7 @@ import { Keccak256 } from "../../../crypto/keccak256.js";
 import type { Hash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
 import type { Legacy } from "../types.js";
-import {
-	encodeBigintCompact,
-	encodeAddress,
-} from "../utils.js";
+import { encodeAddress, encodeBigintCompact } from "../utils.js";
 import { getChainId } from "./getChainId.js";
 
 /**

@@ -1,9 +1,6 @@
 import * as Rlp from "../../Rlp/index.js";
-import { Type, type EIP4844 } from "../types.js";
-import {
-	encodeBigintCompact,
-	encodeAccessList,
-} from "../utils.js";
+import { type EIP4844, Type } from "../types.js";
+import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
 /**
  * Serialize EIP-4844 transaction to RLP encoded bytes

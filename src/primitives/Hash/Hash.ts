@@ -61,20 +61,20 @@ export const ZERO = new Uint8Array(SIZE) as Hash;
  * ```
  */
 export function fromHex(hex: string): Hash {
-  const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
-  if (normalized.length !== SIZE * 2) {
-    throw new Error(
-      `Hash hex must be ${SIZE * 2} characters, got ${normalized.length}`,
-    );
-  }
-  if (!/^[0-9a-fA-F]+$/.test(normalized)) {
-    throw new Error("Invalid hex string");
-  }
-  const bytes = new Uint8Array(SIZE);
-  for (let i = 0; i < SIZE; i++) {
-    bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes as Hash;
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (normalized.length !== SIZE * 2) {
+		throw new Error(
+			`Hash hex must be ${SIZE * 2} characters, got ${normalized.length}`,
+		);
+	}
+	if (!/^[0-9a-fA-F]+$/.test(normalized)) {
+		throw new Error("Invalid hex string");
+	}
+	const bytes = new Uint8Array(SIZE);
+	for (let i = 0; i < SIZE; i++) {
+		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+	}
+	return bytes as Hash;
 }
 
 /**
@@ -90,10 +90,10 @@ export function fromHex(hex: string): Hash {
  * ```
  */
 export function fromBytes(bytes: Uint8Array): Hash {
-  if (bytes.length !== SIZE) {
-    throw new Error(`Hash must be ${SIZE} bytes, got ${bytes.length}`);
-  }
-  return new Uint8Array(bytes) as Hash;
+	if (bytes.length !== SIZE) {
+		throw new Error(`Hash must be ${SIZE} bytes, got ${bytes.length}`);
+	}
+	return new Uint8Array(bytes) as Hash;
 }
 
 /**
@@ -109,10 +109,10 @@ export function fromBytes(bytes: Uint8Array): Hash {
  * ```
  */
 export function from(value: string | Uint8Array): Hash {
-  if (typeof value === 'string') {
-    return fromHex(value);
-  }
-  return fromBytes(value);
+	if (typeof value === "string") {
+		return fromHex(value);
+	}
+	return fromBytes(value);
 }
 
 // ============================================================================
@@ -131,7 +131,7 @@ export function from(value: string | Uint8Array): Hash {
  * ```
  */
 export function _toHex(this: Hash): string {
-  return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+	return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /**
@@ -145,7 +145,7 @@ export function _toHex(this: Hash): string {
  * ```
  */
 export function _toBytes(this: Hash): Uint8Array {
-  return new Uint8Array(this);
+	return new Uint8Array(this);
 }
 
 /**
@@ -159,7 +159,7 @@ export function _toBytes(this: Hash): Uint8Array {
  * ```
  */
 export function _toString(this: Hash): string {
-  return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+	return `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
 // ============================================================================
@@ -180,14 +180,14 @@ export function _toString(this: Hash): string {
  * ```
  */
 export function _equals(this: Hash, other: Hash): boolean {
-  if (this.length !== other.length) {
-    return false;
-  }
-  let result = 0;
-  for (let i = 0; i < this.length; i++) {
-    result |= this[i]! ^ other[i]!;
-  }
-  return result === 0;
+	if (this.length !== other.length) {
+		return false;
+	}
+	let result = 0;
+	for (let i = 0; i < this.length; i++) {
+		result |= this[i]! ^ other[i]!;
+	}
+	return result === 0;
 }
 
 /**
@@ -201,14 +201,14 @@ export function _equals(this: Hash, other: Hash): boolean {
  * ```
  */
 export function _isZero(this: Hash): boolean {
-  if (this.length !== ZERO.length) {
-    return false;
-  }
-  let result = 0;
-  for (let i = 0; i < this.length; i++) {
-    result |= this[i]! ^ ZERO[i]!;
-  }
-  return result === 0;
+	if (this.length !== ZERO.length) {
+		return false;
+	}
+	let result = 0;
+	for (let i = 0; i < this.length; i++) {
+		result |= this[i]! ^ ZERO[i]!;
+	}
+	return result === 0;
 }
 
 // ============================================================================
@@ -229,7 +229,7 @@ export function _isZero(this: Hash): boolean {
  * ```
  */
 export function isHash(value: unknown): value is Hash {
-  return value instanceof Uint8Array && value.length === SIZE;
+	return value instanceof Uint8Array && value.length === SIZE;
 }
 
 /**
@@ -246,8 +246,8 @@ export function isHash(value: unknown): value is Hash {
  * ```
  */
 export function isValidHex(hex: string): boolean {
-  const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
-  return normalized.length === SIZE * 2 && /^[0-9a-fA-F]+$/.test(normalized);
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	return normalized.length === SIZE * 2 && /^[0-9a-fA-F]+$/.test(normalized);
 }
 
 /**
@@ -262,10 +262,13 @@ export function isValidHex(hex: string): boolean {
  * Hash.assert(value); // throws if not Hash
  * ```
  */
-export function assert(value: unknown, message?: string): asserts value is Hash {
-  if (!isHash(value)) {
-    throw new Error(message ?? "Value is not a Hash");
-  }
+export function assert(
+	value: unknown,
+	message?: string,
+): asserts value is Hash {
+	if (!isHash(value)) {
+		throw new Error(message ?? "Value is not a Hash");
+	}
 }
 
 // ============================================================================
@@ -284,7 +287,7 @@ export function assert(value: unknown, message?: string): asserts value is Hash 
  * ```
  */
 export function keccak256(data: Uint8Array): Hash {
-  return keccak_256(data) as Hash;
+	return keccak_256(data) as Hash;
 }
 
 /**
@@ -299,8 +302,8 @@ export function keccak256(data: Uint8Array): Hash {
  * ```
  */
 export function keccak256String(str: string): Hash {
-  const encoder = new TextEncoder();
-  return keccak256(encoder.encode(str));
+	const encoder = new TextEncoder();
+	return keccak256(encoder.encode(str));
 }
 
 /**
@@ -315,15 +318,15 @@ export function keccak256String(str: string): Hash {
  * ```
  */
 export function keccak256Hex(hex: string): Hash {
-  const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
-  if (normalized.length % 2 !== 0) {
-    throw new Error("Hex string must have even length");
-  }
-  const bytes = new Uint8Array(normalized.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
-  }
-  return keccak256(bytes);
+	const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (normalized.length % 2 !== 0) {
+		throw new Error("Hex string must have even length");
+	}
+	const bytes = new Uint8Array(normalized.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
+	}
+	return keccak256(bytes);
 }
 
 // ============================================================================
@@ -341,12 +344,12 @@ export function keccak256Hex(hex: string): Hash {
  * ```
  */
 export function random(): Hash {
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    const bytes = new Uint8Array(SIZE);
-    crypto.getRandomValues(bytes);
-    return bytes as Hash;
-  }
-  throw new Error("crypto.getRandomValues not available");
+	if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+		const bytes = new Uint8Array(SIZE);
+		crypto.getRandomValues(bytes);
+		return bytes as Hash;
+	}
+	throw new Error("crypto.getRandomValues not available");
 }
 
 /**
@@ -360,7 +363,7 @@ export function random(): Hash {
  * ```
  */
 export function _clone(this: Hash): Hash {
-  return new Uint8Array(this) as Hash;
+	return new Uint8Array(this) as Hash;
 }
 
 /**
@@ -376,7 +379,7 @@ export function _clone(this: Hash): Hash {
  * ```
  */
 export function _slice(this: Hash, start?: number, end?: number): Uint8Array {
-  return this.slice(start, end);
+	return this.slice(start, end);
 }
 
 /**
@@ -393,15 +396,15 @@ export function _slice(this: Hash, start?: number, end?: number): Uint8Array {
  * ```
  */
 export function _format(
-  this: Hash,
-  prefixLength: number = 6,
-  suffixLength: number = 4,
+	this: Hash,
+	prefixLength = 6,
+	suffixLength = 4,
 ): string {
-  const hex = `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
-  if (hex.length <= prefixLength + suffixLength + 2) {
-    return hex;
-  }
-  return `${hex.slice(0, prefixLength + 2)}...${hex.slice(-suffixLength)}`;
+	const hex = `0x${Array.from(this, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+	if (hex.length <= prefixLength + suffixLength + 2) {
+		return hex;
+	}
+	return `${hex.slice(0, prefixLength + 2)}...${hex.slice(-suffixLength)}`;
 }
 
 // ============================================================================
@@ -432,7 +435,7 @@ export type Hash = Uint8Array & { __brand: typeof hashSymbol };
  * ```
  */
 export function toHex(value: string | Uint8Array): string {
-  return _toHex.call(from(value));
+	return _toHex.call(from(value));
 }
 
 /**
@@ -447,7 +450,7 @@ export function toHex(value: string | Uint8Array): string {
  * ```
  */
 export function toBytes(value: string | Uint8Array): Uint8Array {
-  return _toBytes.call(from(value));
+	return _toBytes.call(from(value));
 }
 
 /**
@@ -462,7 +465,7 @@ export function toBytes(value: string | Uint8Array): Uint8Array {
  * ```
  */
 export function toString(value: string | Uint8Array): string {
-  return _toString.call(from(value));
+	return _toString.call(from(value));
 }
 
 /**
@@ -478,7 +481,7 @@ export function toString(value: string | Uint8Array): string {
  * ```
  */
 export function equals(value: string | Uint8Array, other: Hash): boolean {
-  return _equals.call(from(value), other);
+	return _equals.call(from(value), other);
 }
 
 /**
@@ -493,7 +496,7 @@ export function equals(value: string | Uint8Array, other: Hash): boolean {
  * ```
  */
 export function isZero(value: string | Uint8Array): boolean {
-  return _isZero.call(from(value));
+	return _isZero.call(from(value));
 }
 
 /**
@@ -508,7 +511,7 @@ export function isZero(value: string | Uint8Array): boolean {
  * ```
  */
 export function clone(value: string | Uint8Array): Hash {
-  return _clone.call(from(value));
+	return _clone.call(from(value));
 }
 
 /**
@@ -524,8 +527,12 @@ export function clone(value: string | Uint8Array): Hash {
  * const selector = Hash.slice("0x1234...", 0, 4);
  * ```
  */
-export function slice(value: string | Uint8Array, start?: number, end?: number): Uint8Array {
-  return _slice.call(from(value), start, end);
+export function slice(
+	value: string | Uint8Array,
+	start?: number,
+	end?: number,
+): Uint8Array {
+	return _slice.call(from(value), start, end);
 }
 
 /**
@@ -543,9 +550,9 @@ export function slice(value: string | Uint8Array, start?: number, end?: number):
  * ```
  */
 export function format(
-  value: string | Uint8Array,
-  prefixLength: number = 6,
-  suffixLength: number = 4,
+	value: string | Uint8Array,
+	prefixLength = 6,
+	suffixLength = 4,
 ): string {
-  return _format.call(from(value), prefixLength, suffixLength);
+	return _format.call(from(value), prefixLength, suffixLength);
 }

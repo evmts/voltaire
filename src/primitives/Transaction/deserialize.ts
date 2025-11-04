@@ -1,10 +1,10 @@
-import { Type, type Any } from "./types.js";
-import { detectType } from "./detectType.js";
-import * as Legacy from "./Legacy/deserialize.js";
-import * as EIP2930 from "./EIP2930/deserialize.js";
 import * as EIP1559 from "./EIP1559/deserialize.js";
+import * as EIP2930 from "./EIP2930/deserialize.js";
 import * as EIP4844 from "./EIP4844/deserialize.js";
 import * as EIP7702 from "./EIP7702/deserialize.js";
+import * as Legacy from "./Legacy/deserialize.js";
+import { detectType } from "./detectType.js";
+import { type Any, Type } from "./types.js";
 
 /**
  * Deserialize RLP encoded transaction

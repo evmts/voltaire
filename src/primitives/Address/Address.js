@@ -120,50 +120,24 @@ Address.SIZE = SIZE;
 Address.prototype.toBase64 = Uint8Array.prototype.toBase64 ?? toBase64Polyfill;
 Address.prototype.setFromBase64 =
 	Uint8Array.prototype.setFromBase64 ?? setFromBase64Polyfill;
-Address.prototype.toHex = function () {
-	return toHex(this);
-};
+Address.prototype.toHex = Function.prototype.call.bind(toHex);
 Address.prototype.setFromHex =
 	Uint8Array.prototype.setFromHex ?? setFromHexPolyfill;
-Address.prototype.toChecksummed = function () {
-	return toChecksummed(this);
-};
-Address.prototype.toLowercase = function () {
-	return toLowercase(this);
-};
-Address.prototype.toUppercase = function () {
-	return toUppercase(this);
-};
-Address.prototype.toU256 = function () {
-	return toU256(this);
-};
-Address.prototype.toAbiEncoded = function () {
-	return toAbiEncoded(this);
-};
-Address.prototype.toShortHex = function (prefixLength, suffixLength) {
-	return toShortHex(this, prefixLength, suffixLength);
-};
-Address.prototype.format = function () {
-	return format(this);
-};
-Address.prototype.compare = function (other) {
-	return compare(this, other);
-};
-Address.prototype.lessThan = function (other) {
-	return lessThan(this, other);
-};
-Address.prototype.greaterThan = function (other) {
-	return greaterThan(this, other);
-};
-Address.prototype.isZero = function () {
-	return isZero(this);
-};
-Address.prototype.equals = function (other) {
-	return equals(this, other);
-};
-Address.prototype.calculateCreateAddress = function (nonce) {
-	return calculateCreateAddress(this, nonce);
-};
-Address.prototype.calculateCreate2Address = function (salt, initCode) {
-	return calculateCreate2Address(this, salt, initCode);
-};
+Address.prototype.toChecksummed = Function.prototype.call.bind(toChecksummed);
+Address.prototype.toLowercase = Function.prototype.call.bind(toLowercase);
+Address.prototype.toUppercase = Function.prototype.call.bind(toUppercase);
+Address.prototype.toU256 = Function.prototype.call.bind(toU256);
+Address.prototype.toAbiEncoded = Function.prototype.call.bind(toAbiEncoded);
+Address.prototype.toShortHex = Function.prototype.call.bind(toShortHex);
+Address.prototype.format = Function.prototype.call.bind(format);
+Address.prototype.compare = Function.prototype.call.bind(compare);
+Address.prototype.lessThan = Function.prototype.call.bind(lessThan);
+Address.prototype.greaterThan = Function.prototype.call.bind(greaterThan);
+Address.prototype.isZero = Function.prototype.call.bind(isZero);
+Address.prototype.equals = Function.prototype.call.bind(equals);
+Address.prototype.calculateCreateAddress = Function.prototype.call.bind(
+	calculateCreateAddress,
+);
+Address.prototype.calculateCreate2Address = Function.prototype.call.bind(
+	calculateCreate2Address,
+);

@@ -2,7 +2,7 @@ import { Secp256k1 } from "../../crypto/secp256k1.js";
 import type { Address } from "../Address/index.js";
 import * as AddressNamespace from "../Address/index.js";
 import type { Hash } from "../Hash/index.js";
-import * as Rlp from "../Rlp/index.js";
+import type * as Rlp from "../Rlp/index.js";
 
 /**
  * Encode bigint as big-endian bytes, removing leading zeros
@@ -177,7 +177,8 @@ export function decodeAuthorizationList(data: Rlp.Data[]): {
 			throw new Error("Invalid authorization item");
 		}
 
-		const [chainIdData, addressData, nonceData, yParityData, rData, sData] = item.value;
+		const [chainIdData, addressData, nonceData, yParityData, rData, sData] =
+			item.value;
 
 		if (
 			!chainIdData ||
