@@ -1,20 +1,20 @@
 import { Secp256k1 } from "../../../crypto/secp256k1.js";
-import type { EIP4844 } from "../types.js";
+import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
  * Verify transaction signature
  */
-export function verifySignature(this: EIP4844): boolean {
+export function verifySignature(tx: BrandedTransactionEIP4844): boolean {
 	try {
-		const signingHash = getSigningHash.call(this);
-		const v = 27 + this.yParity;
+		const signingHash = getSigningHash(tx);
+		const v = 27 + tx.yParity;
 		const publicKey = Secp256k1.recoverPublicKey(
-			{ r: this.r, s: this.s, v },
+			{ r: tx.r, s: tx.s, v },
 			signingHash,
 		);
 		return Secp256k1.verify(
-			{ r: this.r, s: this.s, v },
+			{ r: tx.r, s: tx.s, v },
 			signingHash,
 			publicKey,
 		);

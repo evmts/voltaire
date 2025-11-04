@@ -1,16 +1,24 @@
 import type { Address } from "../Address/index.js";
 import type { Hash } from "../Hash/index.js";
-import type { Data } from "./EventLog.js";
+import type { BrandedEventLog } from "./BrandedEventLog.js";
 
 /**
- * Create event log (standard form)
+ * Create event log
  *
  * @param params Event log parameters
  * @returns EventLog object
  *
  * @example
  * ```typescript
+ * // Static call
  * const log = EventLog.create({
+ *   address: "0x..." as Address,
+ *   topics: [topic0, topic1],
+ *   data: new Uint8Array([...]),
+ * });
+ *
+ * // Factory call
+ * const log2 = EventLog({
  *   address: "0x..." as Address,
  *   topics: [topic0, topic1],
  *   data: new Uint8Array([...]),
@@ -30,13 +38,13 @@ export function create<
 	blockHash?: Hash;
 	logIndex?: number;
 	removed?: boolean;
-}): Data<TAddress, TTopics> {
-	const result: Data<TAddress, TTopics> = {
+}): BrandedEventLog<TAddress, TTopics> {
+	const result: BrandedEventLog<TAddress, TTopics> = {
 		address: params.address,
 		topics: params.topics,
 		data: params.data,
 		removed: params.removed ?? false,
-	};
+	} as BrandedEventLog<TAddress, TTopics>;
 	if (params.blockNumber !== undefined) {
 		result.blockNumber = params.blockNumber;
 	}

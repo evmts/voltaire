@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 
 /**
  * Convert number to hex
@@ -14,10 +14,10 @@ import type { Unsized } from "./Hex.js";
  * Hex.fromNumber(0x1234);  // '0x1234'
  * ```
  */
-export function fromNumber(value: number, size?: number): Unsized {
+export function fromNumber(value: number, size?: number): BrandedHex {
 	let hex = value.toString(16);
 	if (size !== undefined) {
 		hex = hex.padStart(size * 2, "0");
 	}
-	return `0x${hex}` as Unsized;
+	return `0x${hex}` as BrandedHex;
 }

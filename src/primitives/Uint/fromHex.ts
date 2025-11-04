@@ -1,21 +1,21 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { MAX } from "./constants.js";
 
 /**
  * Create Uint256 from hex string
  *
- * @param this - Hex string to convert
+ * @param hex - Hex string to convert
  * @returns Uint256 value
  * @throws Error if hex is invalid or value out of range
  *
  * @example
  * ```typescript
- * const value = Uint.fromHex.call("0xff");
- * const value2 = Uint.fromHex.call("ff");
+ * const value = Uint.fromHex("0xff");
+ * const value2 = Uint.fromHex("ff");
  * ```
  */
-export function fromHex(this: string): Type {
-	const normalized = this.startsWith("0x") ? this : `0x${this}`;
+export function fromHex(hex: string): BrandedUint {
+	const normalized = hex.startsWith("0x") ? hex : `0x${hex}`;
 	const value = BigInt(normalized);
 
 	if (value < 0n) {
@@ -26,5 +26,5 @@ export function fromHex(this: string): Type {
 		throw new Error(`Uint256 value exceeds maximum: ${value}`);
 	}
 
-	return value as Type;
+	return value as BrandedUint;
 }

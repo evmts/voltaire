@@ -1,20 +1,21 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Count number of set bits (population count)
  *
- * @param this - Value to check
+ * @param uint - Value to check
  * @returns Number of 1 bits
  *
  * @example
  * ```typescript
- * const a = Uint.from(0xff);
- * const count = Uint.popCount.call(a); // 8
+ * const a = Uint(0xffn);
+ * const count1 = Uint.popCount(a); // 8
+ * const count2 = a.popCount(); // 8
  * ```
  */
-export function popCount(this: Type): number {
+export function popCount(uint: BrandedUint): number {
 	let count = 0;
-	let v = this as bigint;
+	let v = uint as bigint;
 	while (v > 0n) {
 		count++;
 		v = v & (v - 1n);

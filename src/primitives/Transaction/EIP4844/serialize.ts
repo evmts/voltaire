@@ -1,26 +1,27 @@
 import * as Rlp from "../../Rlp/index.js";
-import { type EIP4844, Type } from "../types.js";
+import { Type } from "../types.js";
+import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
 /**
  * Serialize EIP-4844 transaction to RLP encoded bytes
  */
-export function serialize(this: EIP4844): Uint8Array {
+export function serialize(tx: BrandedTransactionEIP4844): Uint8Array {
 	const fields = [
-		encodeBigintCompact(this.chainId),
-		encodeBigintCompact(this.nonce),
-		encodeBigintCompact(this.maxPriorityFeePerGas),
-		encodeBigintCompact(this.maxFeePerGas),
-		encodeBigintCompact(this.gasLimit),
-		this.to, // Note: Cannot be null for blob transactions
-		encodeBigintCompact(this.value),
-		this.data,
-		encodeAccessList(this.accessList),
-		encodeBigintCompact(this.maxFeePerBlobGas),
-		this.blobVersionedHashes.map((h) => h as Uint8Array),
-		new Uint8Array([this.yParity]),
-		this.r,
-		this.s,
+		encodeBigintCompact(tx.chainId),
+		encodeBigintCompact(tx.nonce),
+		encodeBigintCompact(tx.maxPriorityFeePerGas),
+		encodeBigintCompact(tx.maxFeePerGas),
+		encodeBigintCompact(tx.gasLimit),
+		tx.to, // Note: Cannot be null for blob transactions
+		encodeBigintCompact(tx.value),
+		tx.data,
+		encodeAccessList(tx.accessList),
+		encodeBigintCompact(tx.maxFeePerBlobGas),
+		tx.blobVersionedHashes.map((h) => h as Uint8Array),
+		new Uint8Array([tx.yParity]),
+		tx.r,
+		tx.s,
 	];
 	const rlpEncoded = Rlp.encode.call(fields);
 

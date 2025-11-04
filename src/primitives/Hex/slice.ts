@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -10,19 +10,21 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Slice hex string
  *
+ * @param hex - Hex string to slice
  * @param start - Start byte index
  * @param end - End byte index (optional)
  * @returns Sliced hex string
  *
  * @example
  * ```typescript
- * const hex: Hex = '0x123456';
- * const sliced = Hex.slice.call(hex, 1); // '0x3456'
+ * const hex = Hex('0x123456');
+ * const sliced1 = Hex.slice(hex, 1); // '0x3456'
+ * const sliced2 = hex.slice(1); // '0x3456'
  * ```
  */
-export function slice(this: Unsized, start: number, end?: number): Unsized {
-	if (!this.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = this.slice(2);
+export function slice(hex: BrandedHex, start: number, end?: number): BrandedHex {
+	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {

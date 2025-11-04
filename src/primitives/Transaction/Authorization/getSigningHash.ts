@@ -1,7 +1,7 @@
 import { Keccak256 } from "../../../crypto/keccak256.js";
 import type { Hash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
-import type { Authorization } from "../types.js";
+import type { BrandedAuthorization } from "./BrandedAuthorization.js";
 import { encodeBigintCompact } from "../utils.js";
 
 /**
@@ -10,12 +10,12 @@ import { encodeBigintCompact } from "../utils.js";
  * Per EIP-7702: keccak256(MAGIC || rlp([chain_id, address, nonce]))
  * MAGIC = 0x05
  */
-export function getSigningHash(this: Authorization): Hash {
+export function getSigningHash(auth: BrandedAuthorization): Hash {
 	const MAGIC = 0x05;
 	const fields = [
-		encodeBigintCompact(this.chainId),
-		this.address,
-		encodeBigintCompact(this.nonce),
+		encodeBigintCompact(auth.chainId),
+		auth.address,
+		encodeBigintCompact(auth.nonce),
 	];
 	const rlpEncoded = Rlp.encode.call(fields);
 

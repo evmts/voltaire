@@ -1,17 +1,18 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Convert Uint256 to bigint
  *
- * @param this - Uint256 value to convert
+ * @param uint - Uint256 value to convert
  * @returns bigint value
  *
  * @example
  * ```typescript
- * const value = Uint.from(255);
- * const bigint = Uint.toBigInt.call(value);
+ * const value = Uint(255n);
+ * const bigint1 = Uint.toBigInt(value);
+ * const bigint2 = value.toBigInt();
  * ```
  */
-export function toBigInt(this: Type): bigint {
-	return this as bigint;
+export function toBigInt(uint: BrandedUint): bigint {
+	return uint as bigint;
 }

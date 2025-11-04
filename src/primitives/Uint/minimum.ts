@@ -1,18 +1,20 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Get minimum of two values
  *
- * @param this - First value
+ * @param uint - First value
  * @param b - Second value
- * @returns min(this, b)
+ * @returns min(uint, b)
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const min = Uint.minimum.call(a, Uint.from(200)); // 100
+ * const a = Uint(100n);
+ * const b = Uint(200n);
+ * const min1 = Uint.minimum(a, b); // 100
+ * const min2 = a.minimum(b); // 100
  * ```
  */
-export function minimum(this: Type, b: Type): Type {
-	return (this as bigint) < (b as bigint) ? this : b;
+export function minimum(uint: BrandedUint, b: BrandedUint): BrandedUint {
+	return (uint as bigint) < (b as bigint) ? uint : b;
 }

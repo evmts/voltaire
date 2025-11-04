@@ -1,13 +1,13 @@
 import type { Address } from "../../Address/index.js";
-import type { EIP7702 } from "../types.js";
+import type { BrandedTransactionEIP7702 } from "./BrandedTransactionEIP7702.js";
 import { recoverAddress } from "../utils.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
  * Get sender address from signature
  */
-export function getSender(this: EIP7702): Address {
-	const signingHash = getSigningHash.call(this);
-	const v = 27 + this.yParity;
-	return recoverAddress({ r: this.r, s: this.s, v }, signingHash);
+export function getSender(tx: BrandedTransactionEIP7702): Address {
+	const signingHash = getSigningHash(tx);
+	const v = 27 + tx.yParity;
+	return recoverAddress({ r: tx.r, s: tx.s, v }, signingHash);
 }

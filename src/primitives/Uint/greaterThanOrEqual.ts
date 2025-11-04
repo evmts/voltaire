@@ -1,18 +1,20 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Check greater than or equal
  *
- * @param this - First value
+ * @param uint - First value
  * @param b - Second value
- * @returns true if this >= b
+ * @returns true if uint >= b
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const isGreaterOrEqual = Uint.greaterThanOrEqual.call(a, Uint.from(100)); // true
+ * const a = Uint(100n);
+ * const b = Uint(100n);
+ * const isGte1 = Uint.greaterThanOrEqual(a, b); // true
+ * const isGte2 = a.greaterThanOrEqual(b); // true
  * ```
  */
-export function greaterThanOrEqual(this: Type, b: Type): boolean {
-	return (this as bigint) >= (b as bigint);
+export function greaterThanOrEqual(uint: BrandedUint, b: BrandedUint): boolean {
+	return (uint as bigint) >= (b as bigint);
 }

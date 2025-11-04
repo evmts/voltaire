@@ -1,11 +1,22 @@
 import type { Address } from "../Address/index.js";
-import type { Data } from "./EventLog.js";
+import type { BrandedEventLog } from "./BrandedEventLog.js";
 import { addressEquals } from "./utils.js";
 
 /**
- * Check if log matches address filter (standard form)
+ * Check if log matches address filter
+ *
+ * @param log Event log to check
+ * @param filterAddress Address or array of addresses to match
+ * @returns True if log matches address filter
+ *
+ * @example
+ * ```typescript
+ * const log = EventLog.create({ ... });
+ * const matches1 = EventLog.matchesAddress(log, "0x..." as Address);
+ * const matches2 = log.matchesAddress("0x..." as Address);
+ * ```
  */
-export function matchesAddress<T extends Data>(
+export function matchesAddress<T extends BrandedEventLog>(
 	log: T,
 	filterAddress: Address | Address[],
 ): boolean {

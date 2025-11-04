@@ -1,12 +1,20 @@
-import type { Data, Decoded } from "./Rlp.js";
+import type { BrandedRlp } from "./BrandedRlp.js";
 import { MAX_DEPTH } from "./constants.js";
 import { Error } from "./errors.js";
 import { decodeLengthValue } from "./utils.js";
 
 /**
- * Decodes RLP-encoded bytes (this: pattern)
+ * Decoded RLP data with remainder
+ */
+export type Decoded = {
+	data: BrandedRlp;
+	remainder: Uint8Array;
+};
+
+/**
+ * Decodes RLP-encoded bytes
  *
- * @param this - RLP-encoded data
+ * @param bytes - RLP-encoded data
  * @param stream - If true, allows extra data after decoded value. If false, expects exact match
  * @returns Decoded RLP data with remainder
  *
@@ -14,25 +22,25 @@ import { decodeLengthValue } from "./utils.js";
  * ```typescript
  * // Decode single value
  * const bytes = new Uint8Array([0x83, 1, 2, 3]);
- * const result = Rlp.decode.call(bytes);
+ * const result = Rlp.decode(bytes);
  * // => { data: { type: 'bytes', value: Uint8Array([1, 2, 3]) }, remainder: Uint8Array([]) }
  *
  * // Stream decoding (multiple values)
  * const stream = new Uint8Array([0x01, 0x02]);
- * const result = Rlp.decode.call(stream, true);
+ * const result = Rlp.decode(stream, true);
  * // => { data: { type: 'bytes', value: Uint8Array([1]) }, remainder: Uint8Array([2]) }
  *
  * // Decode list
  * const list = new Uint8Array([0xc3, 0x01, 0x02, 0x03]);
- * const result = Rlp.decode.call(list);
+ * const result = Rlp.decode(list);
  * ```
  */
-export function decode(this: Uint8Array, stream = false): Decoded {
-	if (this.length === 0) {
+export function decode(bytes: Uint8Array, stream = false): Decoded {
+	if (bytes.length === 0) {
 		throw new Error("InputTooShort", "Cannot decode empty input");
 	}
 
-	const decoded = decodeInternal(this, 0);
+	const decoded = decodeInternal(bytes, 0);
 
 	if (!stream && decoded.remainder.length > 0) {
 		throw new Error(
@@ -171,7 +179,7 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 		}
 
 		// Decode list items
-		const items: Data[] = [];
+		const items: BrandedRlp[] = [];
 		let offset = 1;
 		const end = 1 + length;
 
@@ -227,7 +235,7 @@ function decodeInternal(bytes: Uint8Array, depth: number): Decoded {
 		}
 
 		// Decode list items
-		const items: Data[] = [];
+		const items: BrandedRlp[] = [];
 		let offset = 1 + lengthOfLength;
 		const end = 1 + lengthOfLength + length;
 

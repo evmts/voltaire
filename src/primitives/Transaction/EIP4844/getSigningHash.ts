@@ -1,25 +1,26 @@
 import { Keccak256 } from "../../../crypto/keccak256.js";
 import type { Hash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
-import { type EIP4844, Type } from "../types.js";
+import { Type } from "../types.js";
+import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
 /**
  * Get signing hash
  */
-export function getSigningHash(this: EIP4844): Hash {
+export function getSigningHash(tx: BrandedTransactionEIP4844): Hash {
 	const fields = [
-		encodeBigintCompact(this.chainId),
-		encodeBigintCompact(this.nonce),
-		encodeBigintCompact(this.maxPriorityFeePerGas),
-		encodeBigintCompact(this.maxFeePerGas),
-		encodeBigintCompact(this.gasLimit),
-		this.to,
-		encodeBigintCompact(this.value),
-		this.data,
-		encodeAccessList(this.accessList),
-		encodeBigintCompact(this.maxFeePerBlobGas),
-		this.blobVersionedHashes.map((h) => h as Uint8Array),
+		encodeBigintCompact(tx.chainId),
+		encodeBigintCompact(tx.nonce),
+		encodeBigintCompact(tx.maxPriorityFeePerGas),
+		encodeBigintCompact(tx.maxFeePerGas),
+		encodeBigintCompact(tx.gasLimit),
+		tx.to,
+		encodeBigintCompact(tx.value),
+		tx.data,
+		encodeAccessList(tx.accessList),
+		encodeBigintCompact(tx.maxFeePerBlobGas),
+		tx.blobVersionedHashes.map((h) => h as Uint8Array),
 	];
 	const rlpEncoded = Rlp.encode.call(fields);
 

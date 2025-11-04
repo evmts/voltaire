@@ -1,18 +1,20 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Bitwise OR
  *
- * @param this - First operand
+ * @param uint - First operand
  * @param b - Second operand
- * @returns this | b
+ * @returns uint | b
  *
  * @example
  * ```typescript
- * const a = Uint.from(0xf0);
- * const result = Uint.bitwiseOr.call(a, Uint.from(0x0f)); // 0xff
+ * const a = Uint(0xf0n);
+ * const b = Uint(0x0fn);
+ * const result1 = Uint.bitwiseOr(a, b); // 0xff
+ * const result2 = a.bitwiseOr(b); // 0xff
  * ```
  */
-export function bitwiseOr(this: Type, b: Type): Type {
-	return ((this as bigint) | (b as bigint)) as Type;
+export function bitwiseOr(uint: BrandedUint, b: BrandedUint): BrandedUint {
+	return ((uint as bigint) | (b as bigint)) as BrandedUint;
 }

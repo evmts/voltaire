@@ -5,6 +5,7 @@
  */
 
 import * as Rlp from "./index.js";
+import type { Data } from "./index.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -77,18 +78,18 @@ const nestedList = [
 const deeplyNested = [[[[new Uint8Array([0x01]), new Uint8Array([0x02])]]]];
 
 // Pre-encoded data for decoding benchmarks
-const encodedSingleByte = Rlp.encode.call(singleByte);
-const encodedShortBytes = Rlp.encode.call(shortBytes);
-const encodedMediumBytes = Rlp.encode.call(mediumBytes);
-const encodedLongBytes = Rlp.encode.call(longBytes);
-const encodedVeryLongBytes = Rlp.encode.call(veryLongBytes);
+const encodedSingleByte = Rlp.encode(singleByte);
+const encodedShortBytes = Rlp.encode(shortBytes);
+const encodedMediumBytes = Rlp.encode(mediumBytes);
+const encodedLongBytes = Rlp.encode(longBytes);
+const encodedVeryLongBytes = Rlp.encode(veryLongBytes);
 
-const encodedEmptyList = Rlp.encode.call(emptyList);
-const encodedShortList = Rlp.encode.call(shortList);
-const encodedMediumList = Rlp.encode.call(mediumList);
-const encodedLongList = Rlp.encode.call(longList);
-const encodedNestedList = Rlp.encode.call(nestedList);
-const encodedDeeplyNested = Rlp.encode.call(deeplyNested);
+const encodedEmptyList = Rlp.encode(emptyList);
+const encodedShortList = Rlp.encode(shortList);
+const encodedMediumList = Rlp.encode(mediumList);
+const encodedLongList = Rlp.encode(longList);
+const encodedNestedList = Rlp.encode(nestedList);
+const encodedDeeplyNested = Rlp.encode(deeplyNested);
 
 // ============================================================================
 // Encoding Benchmarks - Bytes
@@ -106,22 +107,22 @@ console.log(
 
 console.log("--- Byte Encoding ---");
 results.push(
-	benchmark("encode single byte (< 0x80)", () => Rlp.encode.call(singleByte)),
+	benchmark("encode single byte (< 0x80)", () => Rlp.encode(singleByte)),
 );
 results.push(
-	benchmark("encode short bytes (5 bytes)", () => Rlp.encode.call(shortBytes)),
+	benchmark("encode short bytes (5 bytes)", () => Rlp.encode(shortBytes)),
 );
 results.push(
 	benchmark("encode medium bytes (32 bytes)", () =>
-		Rlp.encode.call(mediumBytes),
+		Rlp.encode(mediumBytes),
 	),
 );
 results.push(
-	benchmark("encode long bytes (200 bytes)", () => Rlp.encode.call(longBytes)),
+	benchmark("encode long bytes (200 bytes)", () => Rlp.encode(longBytes)),
 );
 results.push(
 	benchmark("encode very long bytes (10KB)", () =>
-		Rlp.encode.call(veryLongBytes),
+		Rlp.encode(veryLongBytes),
 	),
 );
 
@@ -149,22 +150,22 @@ console.log(
 );
 
 console.log("--- List Encoding ---");
-results.push(benchmark("encode empty list", () => Rlp.encode.call(emptyList)));
+results.push(benchmark("encode empty list", () => Rlp.encode(emptyList)));
 results.push(
-	benchmark("encode short list (2 items)", () => Rlp.encode.call(shortList)),
+	benchmark("encode short list (2 items)", () => Rlp.encode(shortList)),
 );
 results.push(
-	benchmark("encode medium list (10 items)", () => Rlp.encode.call(mediumList)),
+	benchmark("encode medium list (10 items)", () => Rlp.encode(mediumList)),
 );
 results.push(
-	benchmark("encode long list (100 items)", () => Rlp.encode.call(longList)),
+	benchmark("encode long list (100 items)", () => Rlp.encode(longList)),
 );
 results.push(
-	benchmark("encode nested list (3 levels)", () => Rlp.encode.call(nestedList)),
+	benchmark("encode nested list (3 levels)", () => Rlp.encode(nestedList)),
 );
 results.push(
 	benchmark("encode deeply nested list (4+ levels)", () =>
-		Rlp.encode.call(deeplyNested),
+		Rlp.encode(deeplyNested),
 	),
 );
 
@@ -194,27 +195,27 @@ console.log(
 console.log("--- Byte Decoding ---");
 results.push(
 	benchmark("decode single byte (< 0x80)", () =>
-		Rlp.decode.call(encodedSingleByte),
+		Rlp.decode(encodedSingleByte),
 	),
 );
 results.push(
 	benchmark("decode short bytes (5 bytes)", () =>
-		Rlp.decode.call(encodedShortBytes),
+		Rlp.decode(encodedShortBytes),
 	),
 );
 results.push(
 	benchmark("decode medium bytes (32 bytes)", () =>
-		Rlp.decode.call(encodedMediumBytes),
+		Rlp.decode(encodedMediumBytes),
 	),
 );
 results.push(
 	benchmark("decode long bytes (200 bytes)", () =>
-		Rlp.decode.call(encodedLongBytes),
+		Rlp.decode(encodedLongBytes),
 	),
 );
 results.push(
 	benchmark("decode very long bytes (10KB)", () =>
-		Rlp.decode.call(encodedVeryLongBytes),
+		Rlp.decode(encodedVeryLongBytes),
 	),
 );
 
@@ -243,31 +244,31 @@ console.log(
 
 console.log("--- List Decoding ---");
 results.push(
-	benchmark("decode empty list", () => Rlp.decode.call(encodedEmptyList)),
+	benchmark("decode empty list", () => Rlp.decode(encodedEmptyList)),
 );
 results.push(
 	benchmark("decode short list (2 items)", () =>
-		Rlp.decode.call(encodedShortList),
+		Rlp.decode(encodedShortList),
 	),
 );
 results.push(
 	benchmark("decode medium list (10 items)", () =>
-		Rlp.decode.call(encodedMediumList),
+		Rlp.decode(encodedMediumList),
 	),
 );
 results.push(
 	benchmark("decode long list (100 items)", () =>
-		Rlp.decode.call(encodedLongList),
+		Rlp.decode(encodedLongList),
 	),
 );
 results.push(
 	benchmark("decode nested list (3 levels)", () =>
-		Rlp.decode.call(encodedNestedList),
+		Rlp.decode(encodedNestedList),
 	),
 );
 results.push(
 	benchmark("decode deeply nested list (4+ levels)", () =>
-		Rlp.decode.call(encodedDeeplyNested),
+		Rlp.decode(encodedDeeplyNested),
 	),
 );
 
@@ -297,38 +298,38 @@ console.log(
 console.log("--- Round-trip Performance ---");
 results.push(
 	benchmark("round-trip single byte", () => {
-		const encoded = Rlp.encode.call(singleByte);
-		Rlp.decode.call(encoded);
+		const encoded = Rlp.encode(singleByte);
+		Rlp.decode(encoded);
 	}),
 );
 results.push(
 	benchmark("round-trip short bytes (5 bytes)", () => {
-		const encoded = Rlp.encode.call(shortBytes);
-		Rlp.decode.call(encoded);
+		const encoded = Rlp.encode(shortBytes);
+		Rlp.decode(encoded);
 	}),
 );
 results.push(
 	benchmark("round-trip medium bytes (32 bytes)", () => {
-		const encoded = Rlp.encode.call(mediumBytes);
-		Rlp.decode.call(encoded);
+		const encoded = Rlp.encode(mediumBytes);
+		Rlp.decode(encoded);
 	}),
 );
 results.push(
 	benchmark("round-trip long bytes (200 bytes)", () => {
-		const encoded = Rlp.encode.call(longBytes);
-		Rlp.decode.call(encoded);
+		const encoded = Rlp.encode(longBytes);
+		Rlp.decode(encoded);
 	}),
 );
 results.push(
 	benchmark("round-trip short list", () => {
-		const encoded = Rlp.encode.call(shortList);
-		Rlp.decode.call(encoded);
+		const encoded = Rlp.encode(shortList);
+		Rlp.decode(encoded);
 	}),
 );
 results.push(
 	benchmark("round-trip nested list", () => {
-		const encoded = Rlp.encode.call(nestedList);
-		Rlp.decode.call(encoded);
+		const encoded = Rlp.encode(nestedList);
+		Rlp.decode(encoded);
 	}),
 );
 
@@ -367,7 +368,7 @@ results.push(
 	),
 );
 
-const flattenData: Rlp.Data = {
+const flattenData: Data = {
 	type: "list",
 	value: [
 		{ type: "bytes", value: new Uint8Array([1]) },
@@ -385,21 +386,21 @@ results.push(
 	benchmark("flatten nested list", () => Rlp.flatten.call(flattenData)),
 );
 
-const data1: Rlp.Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
-const data2: Rlp.Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+const data1: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+const data2: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
 
 results.push(
 	benchmark("equals - bytes Data", () => Rlp.equals.call(data1, data2)),
 );
 
-const listData1: Rlp.Data = {
+const listData1: Data = {
 	type: "list",
 	value: [
 		{ type: "bytes", value: new Uint8Array([1]) },
 		{ type: "bytes", value: new Uint8Array([2]) },
 	],
 };
-const listData2: Rlp.Data = {
+const listData2: Data = {
 	type: "list",
 	value: [
 		{ type: "bytes", value: new Uint8Array([1]) },
@@ -524,13 +525,13 @@ const data = new Uint8Array([]);
 const simpleTx = [nonce, gasPrice, gasLimit, to, value, data];
 
 results.push(
-	benchmark("encode simple transaction", () => Rlp.encode.call(simpleTx)),
+	benchmark("encode simple transaction", () => Rlp.encode(simpleTx)),
 );
 
-const encodedSimpleTx = Rlp.encode.call(simpleTx);
+const encodedSimpleTx = Rlp.encode(simpleTx);
 results.push(
 	benchmark("decode simple transaction", () =>
-		Rlp.decode.call(encodedSimpleTx),
+		Rlp.decode(encodedSimpleTx),
 	),
 );
 
@@ -546,7 +547,7 @@ const txWithData = [
 
 results.push(
 	benchmark("encode tx with data (100 bytes)", () =>
-		Rlp.encode.call(txWithData),
+		Rlp.encode(txWithData),
 	),
 );
 
@@ -566,7 +567,7 @@ const txWithAccessList = [
 
 results.push(
 	benchmark("encode tx with access list", () =>
-		Rlp.encode.call(txWithAccessList),
+		Rlp.encode(txWithAccessList),
 	),
 );
 

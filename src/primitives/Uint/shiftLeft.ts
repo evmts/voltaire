@@ -1,20 +1,22 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { MAX } from "./constants.js";
 
 /**
  * Left shift
  *
- * @param this - Value to shift
+ * @param uint - Value to shift
  * @param bits - Number of bits to shift
- * @returns this << bits (mod 2^256)
+ * @returns uint << bits (mod 2^256)
  *
  * @example
  * ```typescript
- * const a = Uint.from(1);
- * const result = Uint.shiftLeft.call(a, Uint.from(8)); // 256
+ * const a = Uint(1n);
+ * const b = Uint(8n);
+ * const result1 = Uint.shiftLeft(a, b); // 256
+ * const result2 = a.shiftLeft(b); // 256
  * ```
  */
-export function shiftLeft(this: Type, bits: Type): Type {
-	const shifted = (this as bigint) << (bits as bigint);
-	return (shifted & (MAX as bigint)) as Type;
+export function shiftLeft(uint: BrandedUint, bits: BrandedUint): BrandedUint {
+	const shifted = (uint as bigint) << (bits as bigint);
+	return (shifted & (MAX as bigint)) as BrandedUint;
 }

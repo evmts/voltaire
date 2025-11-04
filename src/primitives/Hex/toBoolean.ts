@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -9,17 +9,19 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Convert hex to boolean
  *
+ * @param hex - Hex string to convert
  * @returns Boolean value (true if non-zero, false if zero)
  *
  * @example
  * ```typescript
- * const hex: Hex = '0x01';
- * const bool = Hex.toBoolean.call(hex); // true
+ * const hex = Hex('0x01');
+ * const bool1 = Hex.toBoolean(hex); // true
+ * const bool2 = hex.toBoolean(); // true
  * ```
  */
-export function toBoolean(this: Unsized): boolean {
-	if (!this.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = this.slice(2);
+export function toBoolean(hex: BrandedHex): boolean {
+	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {

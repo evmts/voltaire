@@ -1,26 +1,28 @@
-import type { Data, Filter } from "./EventLog.js";
+import type { BrandedEventLog, Filter } from "./BrandedEventLog.js";
 import { matchesAddress } from "./matchesAddress.js";
 import { matchesTopics } from "./matchesTopics.js";
 import { hashEquals } from "./utils.js";
 
 /**
- * Check if log matches complete filter (standard form)
+ * Check if log matches complete filter
  *
  * @param log Event log to check
  * @param filter Complete filter object
- * @returns true if log matches all filter criteria
+ * @returns True if log matches all filter criteria
  *
  * @example
  * ```typescript
- * const matches = EventLog.matchesFilter(log, {
+ * const log = EventLog.create({ ... });
+ * const matches1 = EventLog.matchesFilter(log, {
  *   address: "0x..." as Address,
  *   topics: [topic0, null, topic2],
  *   fromBlock: 100n,
  *   toBlock: 200n,
  * });
+ * const matches2 = log.matchesFilter({ address: "0x..." as Address });
  * ```
  */
-export function matchesFilter<T extends Data>(log: T, filter: Filter): boolean {
+export function matchesFilter<T extends BrandedEventLog>(log: T, filter: Filter): boolean {
 	// Check address filter
 	if (filter.address !== undefined) {
 		if (!matchesAddress(log, filter.address)) {

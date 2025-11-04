@@ -1,5 +1,6 @@
 import * as Rlp from "../../Rlp/index.js";
-import { type EIP2930, Type } from "../types.js";
+import { Type } from "../types.js";
+import type { BrandedTransactionEIP2930 } from "./BrandedTransactionEIP2930.js";
 import {
 	encodeAccessList,
 	encodeAddress,
@@ -9,19 +10,19 @@ import {
 /**
  * Serialize EIP-2930 transaction to RLP encoded bytes
  */
-export function serialize(this: EIP2930): Uint8Array {
+export function serialize(tx: BrandedTransactionEIP2930): Uint8Array {
 	const fields = [
-		encodeBigintCompact(this.chainId),
-		encodeBigintCompact(this.nonce),
-		encodeBigintCompact(this.gasPrice),
-		encodeBigintCompact(this.gasLimit),
-		encodeAddress(this.to),
-		encodeBigintCompact(this.value),
-		this.data,
-		encodeAccessList(this.accessList),
-		new Uint8Array([this.yParity]),
-		this.r,
-		this.s,
+		encodeBigintCompact(tx.chainId),
+		encodeBigintCompact(tx.nonce),
+		encodeBigintCompact(tx.gasPrice),
+		encodeBigintCompact(tx.gasLimit),
+		encodeAddress(tx.to),
+		encodeBigintCompact(tx.value),
+		tx.data,
+		encodeAccessList(tx.accessList),
+		new Uint8Array([tx.yParity]),
+		tx.r,
+		tx.s,
 	];
 	const rlpEncoded = Rlp.encode.call(fields);
 

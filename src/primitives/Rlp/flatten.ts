@@ -1,9 +1,9 @@
-import type { Data } from "./Rlp.js";
+import type { BrandedRlp } from "./BrandedRlp.js";
 
 /**
- * Flatten nested list Data into array of bytes Data (depth-first) (this: pattern)
+ * Flatten nested list Data into array of bytes Data (depth-first)
  *
- * @param this - RLP Data to flatten
+ * @param data - RLP Data to flatten
  * @returns Array of bytes Data
  *
  * @example
@@ -18,17 +18,17 @@ import type { Data } from "./Rlp.js";
  *     }
  *   ]
  * };
- * const flat = Rlp.flatten.call(nested);
+ * const flat = Rlp.flatten(nested);
  * // => [
  * //   { type: 'bytes', value: Uint8Array([1]) },
  * //   { type: 'bytes', value: Uint8Array([2]) }
  * // ]
  * ```
  */
-export function flatten(this: Data): Array<Data & { type: "bytes" }> {
-	const result: Array<Data & { type: "bytes" }> = [];
+export function flatten(data: BrandedRlp): Array<BrandedRlp & { type: "bytes" }> {
+	const result: Array<BrandedRlp & { type: "bytes" }> = [];
 
-	function visit(d: Data) {
+	function visit(d: BrandedRlp) {
 		if (d.type === "bytes") {
 			result.push(d);
 		} else {
@@ -38,6 +38,6 @@ export function flatten(this: Data): Array<Data & { type: "bytes" }> {
 		}
 	}
 
-	visit(this);
+	visit(data);
 	return result;
 }

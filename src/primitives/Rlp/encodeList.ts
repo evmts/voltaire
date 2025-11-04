@@ -1,28 +1,28 @@
-import type { Encodable } from "./Rlp.js";
+import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
 import { encodeLengthValue } from "./utils.js";
 
 /**
- * Encodes a list of RLP-encodable items (this: pattern)
+ * Encodes a list of RLP-encodable items
  *
- * @param this - Array of items to encode
+ * @param items - Array of items to encode
  * @returns RLP-encoded list
  *
  * @example
  * ```typescript
  * // Empty list
  * const empty = [];
- * const encoded = Rlp.encodeList.call(empty);
+ * const encoded = Rlp.encodeList(empty);
  * // => Uint8Array([0xc0])
  *
  * // Simple list
  * const list = [new Uint8Array([1]), new Uint8Array([2])];
- * const encoded = Rlp.encodeList.call(list);
+ * const encoded = Rlp.encodeList(list);
  * // => Uint8Array([0xc4, 0x01, 0x02])
  *
  * // Nested list
  * const nested = [new Uint8Array([1]), [new Uint8Array([2])]];
- * const encoded = Rlp.encodeList.call(nested);
+ * const encoded = Rlp.encodeList(nested);
  * ```
  *
  * Rules:
@@ -31,9 +31,9 @@ import { encodeLengthValue } from "./utils.js";
  * - If total < 56: [0xc0 + total_length, ...encoded_items]
  * - If total >= 56: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
  */
-export function encodeList(this: Encodable[]): Uint8Array {
+export function encodeList(items: Encodable[]): Uint8Array {
 	// Encode each item
-	const encodedItems = this.map((item) => encode.call(item));
+	const encodedItems = items.map((item) => encode(item));
 
 	// Calculate total length
 	const totalLength = encodedItems.reduce((sum, item) => sum + item.length, 0);

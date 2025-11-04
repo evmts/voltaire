@@ -1,18 +1,20 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Get maximum of two values
  *
- * @param this - First value
+ * @param uint - First value
  * @param b - Second value
- * @returns max(this, b)
+ * @returns max(uint, b)
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const max = Uint.maximum.call(a, Uint.from(200)); // 200
+ * const a = Uint(100n);
+ * const b = Uint(200n);
+ * const max1 = Uint.maximum(a, b); // 200
+ * const max2 = a.maximum(b); // 200
  * ```
  */
-export function maximum(this: Type, b: Type): Type {
-	return (this as bigint) > (b as bigint) ? this : b;
+export function maximum(uint: BrandedUint, b: BrandedUint): BrandedUint {
+	return (uint as bigint) > (b as bigint) ? uint : b;
 }

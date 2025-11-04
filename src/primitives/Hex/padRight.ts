@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -10,18 +10,20 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Pad hex to right (suffix with zeros)
  *
+ * @param hex - Hex string to pad
  * @param targetSize - Target size in bytes
  * @returns Right-padded hex string
  *
  * @example
  * ```typescript
- * const hex: Hex = '0x1234';
- * const padded = Hex.padRight.call(hex, 4); // '0x12340000'
+ * const hex = Hex('0x1234');
+ * const padded1 = Hex.padRight(hex, 4); // '0x12340000'
+ * const padded2 = hex.padRight(4); // '0x12340000'
  * ```
  */
-export function padRight(this: Unsized, targetSize: number): Unsized {
-	if (!this.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = this.slice(2);
+export function padRight(hex: BrandedHex, targetSize: number): BrandedHex {
+	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {

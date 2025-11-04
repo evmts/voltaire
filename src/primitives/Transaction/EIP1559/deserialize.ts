@@ -1,11 +1,12 @@
 import * as Rlp from "../../Rlp/index.js";
-import { type EIP1559, Type } from "../types.js";
+import { Type } from "../types.js";
+import type { BrandedTransactionEIP1559 } from "./BrandedTransactionEIP1559.js";
 import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
 
 /**
  * Deserialize RLP encoded EIP-1559 transaction
  */
-export function deserialize(data: Uint8Array): EIP1559 {
+export function deserialize(data: Uint8Array): BrandedTransactionEIP1559 {
 	if (data.length === 0 || data[0] !== Type.EIP1559) {
 		throw new Error("Invalid EIP-1559 transaction: missing or wrong type byte");
 	}

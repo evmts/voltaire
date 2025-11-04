@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import { fromBytes } from "./fromBytes.js";
 
 /**
@@ -12,6 +12,6 @@ import { fromBytes } from "./fromBytes.js";
  * Hex.zero(4); // '0x00000000'
  * ```
  */
-export function zero(size: number): Unsized {
+export function zero(size: number): BrandedHex {
 	return fromBytes(new Uint8Array(size));
 }

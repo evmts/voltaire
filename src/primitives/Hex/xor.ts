@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -11,20 +11,22 @@ import { hexCharToValue } from "./utils.js";
 /**
  * XOR with another hex string of same length
  *
+ * @param hex - First hex string
  * @param other - Hex string to XOR with
  * @returns XOR result
  * @throws {InvalidLengthError} If lengths don't match
  *
  * @example
  * ```typescript
- * const hex1: Hex = '0x12';
- * const result = Hex.xor.call(hex1, '0x34'); // '0x26'
+ * const hex = Hex('0x12');
+ * const result1 = Hex.xor(hex, '0x34' as BrandedHex); // '0x26'
+ * const result2 = hex.xor('0x34' as BrandedHex); // '0x26'
  * ```
  */
-export function xor(this: Unsized, other: Unsized): Unsized {
-	// Convert this to bytes
-	if (!this.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigitsA = this.slice(2);
+export function xor(hex: BrandedHex, other: BrandedHex): BrandedHex {
+	// Convert hex to bytes
+	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	const hexDigitsA = hex.slice(2);
 	if (hexDigitsA.length % 2 !== 0) throw new OddLengthError();
 	const bytesA = new Uint8Array(hexDigitsA.length / 2);
 	for (let i = 0; i < hexDigitsA.length; i += 2) {

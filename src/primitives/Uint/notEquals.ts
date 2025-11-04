@@ -1,18 +1,20 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Check inequality
  *
- * @param this - First value
+ * @param uint - First value
  * @param b - Second value
- * @returns true if this !== b
+ * @returns true if uint !== b
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const isNotEqual = Uint.notEquals.call(a, Uint.from(200)); // true
+ * const a = Uint(100n);
+ * const b = Uint(200n);
+ * const isNotEq1 = Uint.notEquals(a, b); // true
+ * const isNotEq2 = a.notEquals(b); // true
  * ```
  */
-export function notEquals(this: Type, b: Type): boolean {
-	return (this as bigint) !== (b as bigint);
+export function notEquals(uint: BrandedUint, b: BrandedUint): boolean {
+	return (uint as bigint) !== (b as bigint);
 }

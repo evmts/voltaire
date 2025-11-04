@@ -1,0 +1,21 @@
+import type { BrandedBytecode } from "./BrandedBytecode.js";
+import { parseInstructions } from "./parseInstructions.js";
+import { formatInstruction } from "./formatInstruction.js";
+
+/**
+ * Format all instructions to human-readable strings
+ *
+ * @param code - Bytecode to format
+ * @returns Array of formatted instructions
+ *
+ * @example
+ * ```typescript
+ * const code = new Uint8Array([0x60, 0x01, 0x5b]);
+ * const formatted = Bytecode.formatInstructions(code);
+ * // ["0x0000: PUSH1 0x01", "0x0002: JUMPDEST"]
+ * ```
+ */
+export function formatInstructions(code: BrandedBytecode): string[] {
+	const instructions = parseInstructions(code);
+	return instructions.map(formatInstruction);
+}

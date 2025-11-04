@@ -1,18 +1,20 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Bitwise AND
  *
- * @param this - First operand
+ * @param uint - First operand
  * @param b - Second operand
- * @returns this & b
+ * @returns uint & b
  *
  * @example
  * ```typescript
- * const a = Uint.from(0xff);
- * const result = Uint.bitwiseAnd.call(a, Uint.from(0x0f)); // 0x0f
+ * const a = Uint(0xffn);
+ * const b = Uint(0x0fn);
+ * const result1 = Uint.bitwiseAnd(a, b); // 0x0f
+ * const result2 = a.bitwiseAnd(b); // 0x0f
  * ```
  */
-export function bitwiseAnd(this: Type, b: Type): Type {
-	return ((this as bigint) & (b as bigint)) as Type;
+export function bitwiseAnd(uint: BrandedUint, b: BrandedUint): BrandedUint {
+	return ((uint as bigint) & (b as bigint)) as BrandedUint;
 }

@@ -1,0 +1,67 @@
+import type { BrandedBytecode, Analysis, Instruction } from "./BrandedBytecode.js";
+import type { from } from "./from.js";
+import type { fromHex } from "./fromHex.js";
+import type { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import type { isValidJumpDest } from "./isValidJumpDest.js";
+import type { validate } from "./validate.js";
+import type { parseInstructions } from "./parseInstructions.js";
+import type { analyze } from "./analyze.js";
+import type { size } from "./size.js";
+import type { extractRuntime } from "./extractRuntime.js";
+import type { equals } from "./equals.js";
+import type { hash } from "./hash.js";
+import type { toHex } from "./toHex.js";
+import type { formatInstructions } from "./formatInstructions.js";
+import type { formatInstruction } from "./formatInstruction.js";
+import type { hasMetadata } from "./hasMetadata.js";
+import type { stripMetadata } from "./stripMetadata.js";
+import type { isPush } from "./isPush.js";
+import type { getPushSize } from "./getPushSize.js";
+import type { isTerminator } from "./isTerminator.js";
+
+type BytecodePrototype = BrandedBytecode & {
+	analyzeJumpDestinations: typeof analyzeJumpDestinations;
+	isValidJumpDest: typeof isValidJumpDest;
+	validate: typeof validate;
+	parseInstructions: typeof parseInstructions;
+	analyze: typeof analyze;
+	size: typeof size;
+	extractRuntime: typeof extractRuntime;
+	equals: typeof equals;
+	hash: typeof hash;
+	toHex: typeof toHex;
+	formatInstructions: typeof formatInstructions;
+	hasMetadata: typeof hasMetadata;
+	stripMetadata: typeof stripMetadata;
+};
+
+export interface BytecodeConstructor {
+	(value: string | Uint8Array): BrandedBytecode;
+	prototype: BytecodePrototype;
+	from: typeof from;
+	fromHex: typeof fromHex;
+	analyzeJumpDestinations: typeof analyzeJumpDestinations;
+	isValidJumpDest: typeof isValidJumpDest;
+	validate: typeof validate;
+	parseInstructions: typeof parseInstructions;
+	analyze: typeof analyze;
+	size: typeof size;
+	extractRuntime: typeof extractRuntime;
+	equals: typeof equals;
+	hash: typeof hash;
+	toHex: typeof toHex;
+	formatInstructions: typeof formatInstructions;
+	formatInstruction: typeof formatInstruction;
+	hasMetadata: typeof hasMetadata;
+	stripMetadata: typeof stripMetadata;
+	isPush: typeof isPush;
+	getPushSize: typeof getPushSize;
+	isTerminator: typeof isTerminator;
+	JUMPDEST: number;
+	PUSH1: number;
+	PUSH32: number;
+	STOP: number;
+	RETURN: number;
+	REVERT: number;
+	INVALID: number;
+}

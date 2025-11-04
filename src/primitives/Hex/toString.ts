@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -9,17 +9,19 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Convert hex to string
  *
+ * @param hex - Hex string to convert
  * @returns Decoded string
  *
  * @example
  * ```typescript
- * const hex: Hex = '0x68656c6c6f';
- * const str = Hex.toString.call(hex); // 'hello'
+ * const hex = Hex('0x68656c6c6f');
+ * const str1 = Hex.toString(hex); // 'hello'
+ * const str2 = hex.toString(); // 'hello'
  * ```
  */
-export function toString(this: Unsized): string {
-	if (!this.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = this.slice(2);
+export function toString(hex: BrandedHex): string {
+	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {

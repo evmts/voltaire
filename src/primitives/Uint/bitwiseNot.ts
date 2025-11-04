@@ -1,18 +1,19 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { MAX } from "./constants.js";
 
 /**
  * Bitwise NOT
  *
- * @param this - Operand
- * @returns ~this & MAX
+ * @param uint - Operand
+ * @returns ~uint & MAX
  *
  * @example
  * ```typescript
- * const a = Uint.ZERO;
- * const result = Uint.bitwiseNot.call(a); // MAX
+ * const a = Uint(0n);
+ * const result1 = Uint.bitwiseNot(a); // MAX
+ * const result2 = a.bitwiseNot(); // MAX
  * ```
  */
-export function bitwiseNot(this: Type): Type {
-	return (~(this as bigint) & (MAX as bigint)) as Type;
+export function bitwiseNot(uint: BrandedUint): BrandedUint {
+	return (~(uint as bigint) & (MAX as bigint)) as BrandedUint;
 }

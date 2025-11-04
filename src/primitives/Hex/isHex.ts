@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import { hexCharToValue } from "./utils.js";
 
 /**
@@ -14,7 +14,7 @@ import { hexCharToValue } from "./utils.js";
  * Hex.isHex('0xZZZZ'); // false
  * ```
  */
-export function isHex(value: string): value is Unsized {
+export function isHex(value: string): value is BrandedHex {
 	if (value.length < 3 || !value.startsWith("0x")) return false;
 	for (let i = 2; i < value.length; i++) {
 		if (hexCharToValue(value[i]) === null) return false;

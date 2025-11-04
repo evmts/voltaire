@@ -1,18 +1,19 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { bitLength } from "./bitLength.js";
 
 /**
  * Get number of leading zero bits
  *
- * @param this - Value to check
+ * @param uint - Value to check
  * @returns Number of leading zeros (0-256)
  *
  * @example
  * ```typescript
- * const a = Uint.from(1);
- * const zeros = Uint.leadingZeros.call(a); // 255
+ * const a = Uint(1n);
+ * const zeros1 = Uint.leadingZeros(a); // 255
+ * const zeros2 = a.leadingZeros(); // 255
  * ```
  */
-export function leadingZeros(this: Type): number {
-	return 256 - bitLength.call(this);
+export function leadingZeros(uint: BrandedUint): number {
+	return 256 - bitLength(uint);
 }

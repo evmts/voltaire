@@ -1,21 +1,22 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { MAX } from "./constants.js";
 
 /**
  * Add Uint256 value with wrapping
  *
- * @param this - First operand
+ * @param uint - First operand
  * @param b - Second operand
- * @returns Sum (this + b) mod 2^256
+ * @returns Sum (uint + b) mod 2^256
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const sum = Uint.plus.call(a, Uint.from(50)); // 150
- * const wrapped = Uint.plus.call(Uint.MAX, Uint.ONE); // 0 (wraps)
+ * const a = Uint(100n);
+ * const b = Uint(50n);
+ * const sum1 = Uint.plus(a, b); // 150
+ * const sum2 = a.plus(b); // 150
  * ```
  */
-export function plus(this: Type, b: Type): Type {
-	const sum = (this as bigint) + (b as bigint);
-	return (sum & MAX) as Type;
+export function plus(uint: BrandedUint, b: BrandedUint): BrandedUint {
+	const sum = (uint as bigint) + (b as bigint);
+	return (sum & MAX) as BrandedUint;
 }

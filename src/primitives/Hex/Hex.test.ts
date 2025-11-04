@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Hex as HexType } from "./Hex.js";
-import * as Hex from "./Hex.js";
 import {
+	Hex,
+	type BrandedHex,
 	InvalidHexCharacterError,
 	InvalidHexFormatError,
+	InvalidHexLengthError,
 	OddLengthHexError,
-} from "./Hex.js";
+} from "./index.js";
 
 describe("Hex", () => {
 	describe("isHex", () => {
@@ -65,32 +66,32 @@ describe("Hex", () => {
 
 	describe("toBytes", () => {
 		it("converts empty hex", () => {
-			const bytes = Hex.toBytes("0x" as HexType);
+			const bytes = Hex.toBytes("0x" as BrandedHex);
 			expect(bytes.length).toBe(0);
 		});
 
 		it("converts single byte", () => {
-			const bytes = Hex.toBytes("0x61" as HexType);
+			const bytes = Hex.toBytes("0x61" as BrandedHex);
 			expect(Array.from(bytes)).toEqual([0x61]);
 		});
 
 		it("converts multiple bytes", () => {
-			const bytes = Hex.toBytes("0x616263" as HexType);
+			const bytes = Hex.toBytes("0x616263" as BrandedHex);
 			expect(Array.from(bytes)).toEqual([0x61, 0x62, 0x63]);
 		});
 
 		it("handles mixed case", () => {
-			const bytes = Hex.toBytes("0xDeAdBeEf" as HexType);
+			const bytes = Hex.toBytes("0xDeAdBeEf" as BrandedHex);
 			expect(Array.from(bytes)).toEqual([0xde, 0xad, 0xbe, 0xef]);
 		});
 
 		it("throws on odd length", () => {
-			expect(() => Hex.toBytes("0x1" as HexType)).toThrow(OddLengthHexError);
-			expect(() => Hex.toBytes("0x123" as HexType)).toThrow(OddLengthHexError);
+			expect(() => Hex.toBytes("0x1" as BrandedHex)).toThrow(OddLengthHexError);
+			expect(() => Hex.toBytes("0x123" as BrandedHex)).toThrow(OddLengthHexError);
 		});
 
 		it("throws on invalid character", () => {
-			expect(() => Hex.toBytes("0xdeadbeeg" as HexType)).toThrow(
+			expect(() => Hex.toBytes("0xdeadbeeg" as BrandedHex)).toThrow(
 				InvalidHexCharacterError,
 			);
 		});
@@ -98,87 +99,87 @@ describe("Hex", () => {
 
 	describe("concat", () => {
 		it("concatenates hex strings", () => {
-			const hex1 = "0x1234" as HexType;
-			const hex2 = "0xabcd" as HexType;
+			const hex1 = "0x1234" as BrandedHex;
+			const hex2 = "0xabcd" as BrandedHex;
 			expect(Hex.concat(hex1, hex2)).toBe("0x1234abcd");
 		});
 
 		it("concatenates multiple hex strings", () => {
-			const hex1 = "0x12" as HexType;
-			const hex2 = "0x34" as HexType;
-			const hex3 = "0xab" as HexType;
+			const hex1 = "0x12" as BrandedHex;
+			const hex2 = "0x34" as BrandedHex;
+			const hex3 = "0xab" as BrandedHex;
 			expect(Hex.concat(hex1, hex2, hex3)).toBe("0x1234ab");
 		});
 
 		it("concatenates empty hex strings", () => {
-			const hex1 = "0x" as HexType;
-			const hex2 = "0x1234" as HexType;
+			const hex1 = "0x" as BrandedHex;
+			const hex2 = "0x1234" as BrandedHex;
 			expect(Hex.concat(hex1, hex2)).toBe("0x1234");
 		});
 	});
 
 	describe("slice", () => {
 		it("slices hex string", () => {
-			const hex = "0x1234abcd" as HexType;
+			const hex = "0x1234abcd" as BrandedHex;
 			expect(Hex.slice(hex, 0, 2)).toBe("0x1234");
 			expect(Hex.slice(hex, 1, 3)).toBe("0x34ab");
 		});
 
 		it("slices from start to end", () => {
-			const hex = "0x1234abcd" as HexType;
+			const hex = "0x1234abcd" as BrandedHex;
 			expect(Hex.slice(hex, 2)).toBe("0xabcd");
 		});
 
 		it("handles empty slice", () => {
-			const hex = "0x1234" as HexType;
+			const hex = "0x1234" as BrandedHex;
 			expect(Hex.slice(hex, 2, 2)).toBe("0x");
 		});
 	});
 
 	describe("size", () => {
 		it("returns byte size", () => {
-			expect(Hex.size("0x" as HexType)).toBe(0);
-			expect(Hex.size("0x12" as HexType)).toBe(1);
-			expect(Hex.size("0x1234" as HexType)).toBe(2);
-			expect(Hex.size("0x1234abcd" as HexType)).toBe(4);
+			expect(Hex.size("0x" as BrandedHex)).toBe(0);
+			expect(Hex.size("0x12" as BrandedHex)).toBe(1);
+			expect(Hex.size("0x1234" as BrandedHex)).toBe(2);
+			expect(Hex.size("0x1234abcd" as BrandedHex)).toBe(4);
 		});
 	});
 
 	describe("pad", () => {
 		it("pads hex to target size", () => {
-			const hex = "0x1234" as HexType;
+			const hex = "0x1234" as BrandedHex;
 			expect(Hex.pad(hex, 4)).toBe("0x00001234");
 		});
 
 		it("does not pad if already at target size", () => {
-			const hex = "0x1234" as HexType;
+			const hex = "0x1234" as BrandedHex;
 			expect(Hex.pad(hex, 2)).toBe("0x1234");
 		});
 
 		it("does not pad if larger than target size", () => {
-			const hex = "0x1234abcd" as HexType;
+			const hex = "0x1234abcd" as BrandedHex;
 			expect(Hex.pad(hex, 2)).toBe("0x1234abcd");
 		});
 	});
 
 	describe("trim", () => {
 		it("removes leading zeros", () => {
-			expect(Hex.trim("0x00001234" as HexType)).toBe("0x1234");
+			expect(Hex.trim("0x00001234" as BrandedHex)).toBe("0x1234");
 		});
 
 		it("removes all leading zeros", () => {
-			expect(Hex.trim("0x0000" as HexType)).toBe("0x");
+			expect(Hex.trim("0x0000" as BrandedHex)).toBe("0x");
 		});
 
 		it("does not trim non-zero values", () => {
-			expect(Hex.trim("0x1234" as HexType)).toBe("0x1234");
+			expect(Hex.trim("0x1234" as BrandedHex)).toBe("0x1234");
 		});
 	});
 
 	describe("fromNumber / toNumber", () => {
 		it("converts zero", () => {
 			expect(Hex.fromNumber(0)).toBe("0x0");
-			const hex = "0x00" as HexType;
+			const hex = "0x00" as BrandedHex;
 			expect(Hex.toNumber(hex)).toBe(0);
 		});
 
@@ -208,7 +209,7 @@ describe("Hex", () => {
 		});
 
 		it("throws on unsafe integer", () => {
-			const hex = "0xffffffffffffffff" as HexType;
+			const hex = "0xffffffffffffffff" as BrandedHex;
 			expect(() => Hex.toNumber(hex)).toThrow(RangeError);
 		});
 	});
@@ -216,7 +217,7 @@ describe("Hex", () => {
 	describe("fromBigInt / toBigInt", () => {
 		it("converts zero", () => {
 			expect(Hex.fromBigInt(0n)).toBe("0x0");
-			const hex = "0x00" as HexType;
+			const hex = "0x00" as BrandedHex;
 			expect(Hex.toBigInt(hex)).toBe(0n);
 		});
 
@@ -258,24 +259,24 @@ describe("Hex", () => {
 		});
 
 		it("converts 0x01 to true", () => {
-			const hex = "0x01" as HexType;
+			const hex = "0x01" as BrandedHex;
 			expect(Hex.toBoolean(hex)).toBe(true);
 		});
 
 		it("converts 0x00 to false", () => {
-			const hex = "0x00" as HexType;
+			const hex = "0x00" as BrandedHex;
 			expect(Hex.toBoolean(hex)).toBe(false);
 		});
 
 		it("converts non-zero values to true", () => {
-			expect(Hex.toBoolean("0xff" as HexType)).toBe(true);
-			expect(Hex.toBoolean("0x1234" as HexType)).toBe(true);
-			expect(Hex.toBoolean("0x000001" as HexType)).toBe(true);
+			expect(Hex.toBoolean("0xff" as BrandedHex)).toBe(true);
+			expect(Hex.toBoolean("0x1234" as BrandedHex)).toBe(true);
+			expect(Hex.toBoolean("0x000001" as BrandedHex)).toBe(true);
 		});
 
 		it("converts all-zero values to false", () => {
-			expect(Hex.toBoolean("0x0000" as HexType)).toBe(false);
-			expect(Hex.toBoolean("0x00000000" as HexType)).toBe(false);
+			expect(Hex.toBoolean("0x0000" as BrandedHex)).toBe(false);
+			expect(Hex.toBoolean("0x00000000" as BrandedHex)).toBe(false);
 		});
 
 		it("round-trip boolean conversions", () => {
@@ -286,93 +287,93 @@ describe("Hex", () => {
 
 	describe("padRight", () => {
 		it("pads hex to target size on right", () => {
-			const hex = "0x1234" as HexType;
+			const hex = "0x1234" as BrandedHex;
 			expect(Hex.padRight(hex, 4)).toBe("0x12340000");
 		});
 
 		it("does not pad if already at target size", () => {
-			const hex = "0x1234" as HexType;
+			const hex = "0x1234" as BrandedHex;
 			expect(Hex.padRight(hex, 2)).toBe("0x1234");
 		});
 
 		it("does not pad if larger than target size", () => {
-			const hex = "0x1234abcd" as HexType;
+			const hex = "0x1234abcd" as BrandedHex;
 			expect(Hex.padRight(hex, 2)).toBe("0x1234abcd");
 		});
 
 		it("pads empty hex", () => {
-			const hex = "0x" as HexType;
+			const hex = "0x" as BrandedHex;
 			expect(Hex.padRight(hex, 2)).toBe("0x0000");
 		});
 
 		it("pads single byte", () => {
-			const hex = "0xff" as HexType;
+			const hex = "0xff" as BrandedHex;
 			expect(Hex.padRight(hex, 4)).toBe("0xff000000");
 		});
 	});
 
 	describe("equals", () => {
 		it("compares equal hex strings", () => {
-			const hex1 = "0x1234" as HexType;
-			expect(Hex.equals(hex1, "0x1234" as HexType)).toBe(true);
+			const hex1 = "0x1234" as BrandedHex;
+			expect(Hex.equals(hex1, "0x1234" as BrandedHex)).toBe(true);
 		});
 
 		it("compares case-insensitively", () => {
-			const hex1 = "0xabcd" as HexType;
-			expect(Hex.equals(hex1, "0xABCD" as HexType)).toBe(true);
-			expect(Hex.equals(hex1, "0xAbCd" as HexType)).toBe(true);
+			const hex1 = "0xabcd" as BrandedHex;
+			expect(Hex.equals(hex1, "0xABCD" as BrandedHex)).toBe(true);
+			expect(Hex.equals(hex1, "0xAbCd" as BrandedHex)).toBe(true);
 		});
 
 		it("returns false for different values", () => {
-			const hex1 = "0x1234" as HexType;
-			expect(Hex.equals(hex1, "0x5678" as HexType)).toBe(false);
+			const hex1 = "0x1234" as BrandedHex;
+			expect(Hex.equals(hex1, "0x5678" as BrandedHex)).toBe(false);
 		});
 
 		it("returns false for different lengths", () => {
-			const hex1 = "0x12" as HexType;
-			expect(Hex.equals(hex1, "0x1234" as HexType)).toBe(false);
+			const hex1 = "0x12" as BrandedHex;
+			expect(Hex.equals(hex1, "0x1234" as BrandedHex)).toBe(false);
 		});
 
 		it("compares empty hex strings", () => {
-			const hex1 = "0x" as HexType;
-			expect(Hex.equals(hex1, "0x" as HexType)).toBe(true);
+			const hex1 = "0x" as BrandedHex;
+			expect(Hex.equals(hex1, "0x" as BrandedHex)).toBe(true);
 		});
 	});
 
 	describe("xor", () => {
 		it("performs XOR on same-length hex strings", () => {
-			const hex1 = "0x12" as HexType;
-			const hex2 = "0x34" as HexType;
+			const hex1 = "0x12" as BrandedHex;
+			const hex2 = "0x34" as BrandedHex;
 			expect(Hex.xor(hex1, hex2)).toBe("0x26");
 		});
 
 		it("performs XOR with all zeros", () => {
-			const hex1 = "0xff" as HexType;
-			const hex2 = "0x00" as HexType;
+			const hex1 = "0xff" as BrandedHex;
+			const hex2 = "0x00" as BrandedHex;
 			expect(Hex.xor(hex1, hex2)).toBe("0xff");
 		});
 
 		it("performs XOR with all ones", () => {
-			const hex1 = "0x12" as HexType;
-			const hex2 = "0xff" as HexType;
+			const hex1 = "0x12" as BrandedHex;
+			const hex2 = "0xff" as BrandedHex;
 			expect(Hex.xor(hex1, hex2)).toBe("0xed");
 		});
 
 		it("performs XOR on multi-byte hex", () => {
-			const hex1 = "0x1234" as HexType;
-			const hex2 = "0xabcd" as HexType;
+			const hex1 = "0x1234" as BrandedHex;
+			const hex2 = "0xabcd" as BrandedHex;
 			expect(Hex.xor(hex1, hex2)).toBe("0xb9f9");
 		});
 
 		it("XOR with itself returns zeros", () => {
-			const hex = "0xdeadbeef" as HexType;
+			const hex = "0xdeadbeef" as BrandedHex;
 			expect(Hex.xor(hex, hex)).toBe("0x00000000");
 		});
 
 		it("throws on mismatched lengths", () => {
-			const hex1 = "0x12" as HexType;
-			const hex2 = "0x1234" as HexType;
-			expect(() => Hex.xor(hex1, hex2)).toThrow(Hex.InvalidLengthError);
+			const hex1 = "0x12" as BrandedHex;
+			const hex2 = "0x1234" as BrandedHex;
+			expect(() => Hex.xor(hex1, hex2)).toThrow(InvalidHexLengthError);
 		});
 	});
 

@@ -1,4 +1,4 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { toBytes } from "./toBytes.js";
 
 /**
@@ -7,15 +7,16 @@ import { toBytes } from "./toBytes.js";
  * This is identical to toBytes() - all Uint256 values in ABI encoding
  * are represented as 32-byte big-endian values.
  *
- * @param this - Uint256 value to encode
+ * @param uint - Uint256 value to encode
  * @returns 32-byte ABI-encoded Uint8Array
  *
  * @example
  * ```typescript
- * const value = Uint.from(255);
- * const encoded = Uint.toAbiEncoded.call(value);
+ * const value = Uint(255n);
+ * const encoded1 = Uint.toAbiEncoded(value);
+ * const encoded2 = value.toAbiEncoded();
  * ```
  */
-export function toAbiEncoded(this: Type): Uint8Array {
-	return toBytes.call(this);
+export function toAbiEncoded(uint: BrandedUint): Uint8Array {
+	return toBytes(uint);
 }

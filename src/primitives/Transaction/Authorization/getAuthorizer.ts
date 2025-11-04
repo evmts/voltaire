@@ -1,13 +1,13 @@
 import type { Address } from "../../Address/index.js";
-import type { Authorization } from "../types.js";
+import type { BrandedAuthorization } from "./BrandedAuthorization.js";
 import { recoverAddress } from "../utils.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
  * Get authorizing address from signature
  */
-export function getAuthorizer(this: Authorization): Address {
-	const signingHash = getSigningHash.call(this);
-	const v = 27 + this.yParity;
-	return recoverAddress({ r: this.r, s: this.s, v }, signingHash);
+export function getAuthorizer(auth: BrandedAuthorization): Address {
+	const signingHash = getSigningHash(auth);
+	const v = 27 + auth.yParity;
+	return recoverAddress({ r: auth.r, s: auth.s, v }, signingHash);
 }

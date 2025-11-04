@@ -1,18 +1,20 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Check less than
  *
- * @param this - First value
+ * @param uint - First value
  * @param b - Second value
- * @returns true if this < b
+ * @returns true if uint < b
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const isLess = Uint.lessThan.call(a, Uint.from(200)); // true
+ * const a = Uint(100n);
+ * const b = Uint(200n);
+ * const isLess1 = Uint.lessThan(a, b); // true
+ * const isLess2 = a.lessThan(b); // true
  * ```
  */
-export function lessThan(this: Type, b: Type): boolean {
-	return (this as bigint) < (b as bigint);
+export function lessThan(uint: BrandedUint, b: BrandedUint): boolean {
+	return (uint as bigint) < (b as bigint);
 }

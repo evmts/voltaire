@@ -1,22 +1,24 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Modulo operation
  *
- * @param this - Dividend
+ * @param uint - Dividend
  * @param b - Divisor
- * @returns Remainder (this % b)
+ * @returns Remainder (uint % b)
  * @throws Error if divisor is zero
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const remainder = Uint.modulo.call(a, Uint.from(30)); // 10
+ * const a = Uint(100n);
+ * const b = Uint(30n);
+ * const remainder1 = Uint.modulo(a, b); // 10
+ * const remainder2 = a.modulo(b); // 10
  * ```
  */
-export function modulo(this: Type, b: Type): Type {
+export function modulo(uint: BrandedUint, b: BrandedUint): BrandedUint {
 	if ((b as bigint) === 0n) {
 		throw new Error("Modulo by zero");
 	}
-	return ((this as bigint) % (b as bigint)) as Type;
+	return ((uint as bigint) % (b as bigint)) as BrandedUint;
 }

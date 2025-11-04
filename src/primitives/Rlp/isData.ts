@@ -1,9 +1,9 @@
-import type { Data } from "./Rlp.js";
+import type { BrandedRlp } from "./BrandedRlp.js";
 
 /**
  * Check if value is RLP Data structure
  */
-export function isData(value: unknown): value is Data {
+export function isData(value: unknown): value is BrandedRlp {
 	return (
 		typeof value === "object" &&
 		value !== null &&

@@ -1,4 +1,4 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { from } from "./from.js";
 
 /**
@@ -14,7 +14,7 @@ import { from } from "./from.js";
  * const c = Uint.tryFrom("invalid"); // undefined
  * ```
  */
-export function tryFrom(value: bigint | number | string): Type | undefined {
+export function tryFrom(value: bigint | number | string): BrandedUint | undefined {
 	try {
 		return from(value);
 	} catch {

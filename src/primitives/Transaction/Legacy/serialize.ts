@@ -1,21 +1,21 @@
 import * as Rlp from "../../Rlp/index.js";
-import type { Legacy } from "../types.js";
+import type { BrandedTransactionLegacy } from "./BrandedTransactionLegacy.js";
 import { encodeAddress, encodeBigintCompact } from "../utils.js";
 
 /**
  * Serialize legacy transaction to RLP encoded bytes
  */
-export function serialize(this: Legacy): Uint8Array {
+export function serialize(tx: BrandedTransactionLegacy): Uint8Array {
 	const fields = [
-		encodeBigintCompact(this.nonce),
-		encodeBigintCompact(this.gasPrice),
-		encodeBigintCompact(this.gasLimit),
-		encodeAddress(this.to),
-		encodeBigintCompact(this.value),
-		this.data,
-		encodeBigintCompact(this.v),
-		this.r,
-		this.s,
+		encodeBigintCompact(tx.nonce),
+		encodeBigintCompact(tx.gasPrice),
+		encodeBigintCompact(tx.gasLimit),
+		encodeAddress(tx.to),
+		encodeBigintCompact(tx.value),
+		tx.data,
+		encodeBigintCompact(tx.v),
+		tx.r,
+		tx.s,
 	];
 	return Rlp.encode.call(fields);
 }

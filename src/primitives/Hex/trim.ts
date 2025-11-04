@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -10,17 +10,19 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Trim leading zeros from hex
  *
+ * @param hex - Hex string to trim
  * @returns Trimmed hex string
  *
  * @example
  * ```typescript
- * const hex: Hex = '0x00001234';
- * const trimmed = Hex.trim.call(hex); // '0x1234'
+ * const hex = Hex('0x00001234');
+ * const trimmed1 = Hex.trim(hex); // '0x1234'
+ * const trimmed2 = hex.trim(); // '0x1234'
  * ```
  */
-export function trim(this: Unsized): Unsized {
-	if (!this.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = this.slice(2);
+export function trim(hex: BrandedHex): BrandedHex {
+	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {

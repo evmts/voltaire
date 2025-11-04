@@ -1,4 +1,4 @@
-import type { Sized } from "./Hex.js";
+import type { Sized } from "./BrandedHex.js";
 
 /**
  * Convert boolean to hex

@@ -1,22 +1,24 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 import { MAX } from "./constants.js";
 
 /**
  * Exponentiation
  *
- * @param this - Base value
+ * @param uint - Base value
  * @param exponent - Exponent value
- * @returns this^exponent mod 2^256
+ * @returns uint^exponent mod 2^256
  *
  * @example
  * ```typescript
- * const base = Uint.from(2);
- * const result = Uint.toPower.call(base, Uint.from(8)); // 256
+ * const base = Uint(2n);
+ * const exp = Uint(8n);
+ * const result1 = Uint.toPower(base, exp); // 256
+ * const result2 = base.toPower(exp); // 256
  * ```
  */
-export function toPower(this: Type, exponent: Type): Type {
+export function toPower(uint: BrandedUint, exponent: BrandedUint): BrandedUint {
 	let result = 1n;
-	let b = this as bigint;
+	let b = uint as bigint;
 	let e = exponent as bigint;
 
 	while (e > 0n) {
@@ -27,5 +29,5 @@ export function toPower(this: Type, exponent: Type): Type {
 		e = e >> 1n;
 	}
 
-	return result as Type;
+	return result as BrandedUint;
 }

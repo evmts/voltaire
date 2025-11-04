@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -9,6 +9,7 @@ import { hexCharToValue } from "./utils.js";
 /**
  * Convert hex to bytes
  *
+ * @param hex - Hex string to convert
  * @returns Byte array
  * @throws {InvalidFormatError} If missing 0x prefix
  * @throws {OddLengthError} If hex has odd number of digits
@@ -16,13 +17,14 @@ import { hexCharToValue } from "./utils.js";
  *
  * @example
  * ```typescript
- * const hex: Hex = '0x1234';
- * const bytes = Hex.toBytes.call(hex); // Uint8Array([0x12, 0x34])
+ * const hex = Hex('0x1234');
+ * const bytes = Hex.toBytes(hex); // Uint8Array([0x12, 0x34])
+ * const bytes2 = hex.toBytes(); // Same result
  * ```
  */
-export function toBytes(this: Unsized): Uint8Array {
-	if (!this.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = this.slice(2);
+export function toBytes(hex: BrandedHex): Uint8Array {
+	if (!hex.startsWith("0x")) throw new InvalidFormatError();
+	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
 	const bytes = new Uint8Array(hexDigits.length / 2);
 	for (let i = 0; i < hexDigits.length; i += 2) {

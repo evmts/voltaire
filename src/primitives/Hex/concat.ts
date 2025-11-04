@@ -1,4 +1,4 @@
-import type { Unsized } from "./Hex.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
@@ -18,7 +18,7 @@ import { hexCharToValue } from "./utils.js";
  * Hex.concat('0x12', '0x34', '0x56'); // '0x123456'
  * ```
  */
-export function concat(...hexes: Unsized[]): Unsized {
+export function concat(...hexes: BrandedHex[]): BrandedHex {
 	const allBytes = hexes.flatMap((h) => {
 		if (!h.startsWith("0x")) throw new InvalidFormatError();
 		const hexDigits = h.slice(2);

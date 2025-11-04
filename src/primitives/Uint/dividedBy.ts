@@ -1,22 +1,24 @@
-import type { Type } from "./Uint.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 /**
  * Divide Uint256 value
  *
- * @param this - Dividend
+ * @param uint - Dividend
  * @param b - Divisor
- * @returns Quotient (this / b), floor division
+ * @returns Quotient (uint / b), floor division
  * @throws Error if divisor is zero
  *
  * @example
  * ```typescript
- * const a = Uint.from(100);
- * const quotient = Uint.dividedBy.call(a, Uint.from(10)); // 10
+ * const a = Uint(100n);
+ * const b = Uint(10n);
+ * const quotient1 = Uint.dividedBy(a, b); // 10
+ * const quotient2 = a.dividedBy(b); // 10
  * ```
  */
-export function dividedBy(this: Type, b: Type): Type {
+export function dividedBy(uint: BrandedUint, b: BrandedUint): BrandedUint {
 	if ((b as bigint) === 0n) {
 		throw new Error("Division by zero");
 	}
-	return ((this as bigint) / (b as bigint)) as Type;
+	return ((uint as bigint) / (b as bigint)) as BrandedUint;
 }

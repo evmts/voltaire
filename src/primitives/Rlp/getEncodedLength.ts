@@ -1,47 +1,47 @@
-import type { Encodable } from "./Rlp.js";
+import type { Encodable } from "./encode.js";
 import { Error } from "./errors.js";
 import { isData } from "./isData.js";
 import { encodeLengthValue } from "./utils.js";
 
 /**
- * Get the total byte length of RLP-encoded data without actually encoding (this: pattern)
+ * Get the total byte length of RLP-encoded data without actually encoding
  *
- * @param this - Data to measure
+ * @param data - Data to measure
  * @returns Length in bytes after RLP encoding
  *
  * @example
  * ```typescript
  * const bytes = new Uint8Array([1, 2, 3]);
- * const length = Rlp.getEncodedLength.call(bytes);
+ * const length = Rlp.getEncodedLength(bytes);
  * // => 4 (0x83 prefix + 3 bytes)
  * ```
  */
-export function getEncodedLength(this: Encodable): number {
+export function getEncodedLength(data: Encodable): number {
 	// Handle Uint8Array
-	if (this instanceof Uint8Array) {
-		if (this.length === 1 && this[0]! < 0x80) {
+	if (data instanceof Uint8Array) {
+		if (data.length === 1 && data[0]! < 0x80) {
 			return 1;
 		}
-		if (this.length < 56) {
-			return 1 + this.length;
+		if (data.length < 56) {
+			return 1 + data.length;
 		}
-		const lengthBytes = encodeLengthValue(this.length);
-		return 1 + lengthBytes.length + this.length;
+		const lengthBytes = encodeLengthValue(data.length);
+		return 1 + lengthBytes.length + data.length;
 	}
 
 	// Handle Data structure
-	if (isData(this)) {
-		if (this.type === "bytes") {
-			return getEncodedLength.call(this.value);
+	if (isData(data)) {
+		if (data.type === "bytes") {
+			return getEncodedLength(data.value);
 		} else {
-			return getEncodedLength.call(this.value);
+			return getEncodedLength(data.value);
 		}
 	}
 
 	// Handle array (list)
-	if (Array.isArray(this)) {
-		const totalLength = this.reduce(
-			(sum, item) => sum + getEncodedLength.call(item),
+	if (Array.isArray(data)) {
+		const totalLength = data.reduce(
+			(sum, item) => sum + getEncodedLength(item),
 			0,
 		);
 		if (totalLength < 56) {

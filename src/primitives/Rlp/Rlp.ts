@@ -1,82 +1,24 @@
 /**
- * RLP (Recursive Length Prefix) - Ethereum's serialization format
- *
- * Complete RLP encoding/decoding with strict validation matching Ethereum's spec.
- * Functions use the namespace+type overloading pattern.
- *
- * @example
- * ```typescript
- * import { Rlp } from './index.js';
- *
- * // Encode data
- * const list = [new Uint8Array([1, 2, 3])];
- * const encoded = Rlp.encode(list);
- *
- * // Decode data
- * const bytes = new Uint8Array([0x83, 0x01, 0x02, 0x03]);
- * const decoded = Rlp.decode(bytes);
- * ```
+ * RLP (Recursive Length Prefix) Type Definitions
  */
 
-// ============================================================================
-// Core Types
-// ============================================================================
+// Re-export types
+export type { BrandedRlp } from "./BrandedRlp.js";
 
-/**
- * RLP data type - discriminated union of bytes or list
- * Note: Recursive type causes TS4081 warning but is properly exported
- */
-export type RlpDataType =
-	| { type: "bytes"; value: Uint8Array }
-	| { type: "list"; value: RlpDataType[] };
+// For backwards compatibility, export BrandedRlp as main type
+export type { BrandedRlp as Rlp } from "./BrandedRlp.js";
 
-/**
- * Decoded RLP data with remainder (for stream decoding)
- */
-export type Decoded = {
-	data: RlpDataType;
-	remainder: Uint8Array;
-};
-
-/**
- * Types that can be encoded to RLP
- * - Uint8Array (bytes)
- * - RlpDataType (already structured)
- * - Array of Encodable (list)
- */
-export type Encodable = Uint8Array | RlpDataType | Encodable[];
-
-/**
- * RLP Data type alias for convenient importing (namespace+type overloading)
- */
-export type Rlp = RlpDataType;
-
-// Main export
-export type Data = RlpDataType;
+// Re-export other types
+export type { Decoded } from "./decode.js";
+export type { Encodable } from "./encode.js";
 
 // Legacy type exports
-export type RlpData = RlpDataType;
+export type RlpDataType = BrandedRlp;
+export type Data = BrandedRlp;
+export type RlpData = BrandedRlp;
 export type RlpDecoded = Decoded;
 export type RlpEncodable = Encodable;
 
-// ============================================================================
-// Exports
-// ============================================================================
-
-export * from "./constants.js";
-export * from "./errors.js";
-export { isData } from "./isData.js";
-export { isBytesData } from "./isBytesData.js";
-export { isListData } from "./isListData.js";
-export { encode } from "./encode.js";
-export { encodeBytes } from "./encodeBytes.js";
-export { encodeList } from "./encodeList.js";
-export { decode } from "./decode.js";
-export { getEncodedLength } from "./getEncodedLength.js";
-export { flatten } from "./flatten.js";
-export { equals } from "./equals.js";
-export { toJSON } from "./toJSON.js";
-export { fromJSON } from "./fromJSON.js";
-
-// Data namespace operations
-export * as Data from "./Data.js";
+import type { BrandedRlp } from "./BrandedRlp.js";
+import type { Decoded } from "./decode.js";
+import type { Encodable } from "./encode.js";
