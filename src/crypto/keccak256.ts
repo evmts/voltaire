@@ -20,7 +20,7 @@
  */
 
 import { keccak_256 } from "@noble/hashes/sha3.js";
-import type { Hash } from "../primitives/Hash/index.js";
+import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // Main Keccak256 Namespace
@@ -61,8 +61,8 @@ export namespace Keccak256 {
 	 * const hash = Keccak256.hash(data);
 	 * ```
 	 */
-	export function hash(data: Uint8Array): Hash {
-		return keccak_256(data) as Hash;
+	export function hash(data: Uint8Array): BrandedHash {
+		return keccak_256(data) as BrandedHash;
 	}
 
 	/**
@@ -78,7 +78,7 @@ export namespace Keccak256 {
 	 * const hash = Keccak256.hashString('hello');
 	 * ```
 	 */
-	export function hashString(str: string): Hash {
+	export function hashString(str: string): BrandedHash {
 		const encoder = new TextEncoder();
 		return hash(encoder.encode(str));
 	}
@@ -95,7 +95,7 @@ export namespace Keccak256 {
 	 * const hash = Keccak256.hashHex('0x1234...');
 	 * ```
 	 */
-	export function hashHex(hex: string): Hash {
+	export function hashHex(hex: string): BrandedHash {
 		const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 		if (!/^[0-9a-fA-F]*$/.test(normalized)) {
 			throw new Error("Invalid hex string");
@@ -123,7 +123,7 @@ export namespace Keccak256 {
 	 * const hash = Keccak256.hashMultiple([data1, data2, data3]);
 	 * ```
 	 */
-	export function hashMultiple(chunks: readonly Uint8Array[]): Hash {
+	export function hashMultiple(chunks: readonly Uint8Array[]): BrandedHash {
 		const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 		const combined = new Uint8Array(totalLength);
 		let offset = 0;
@@ -170,7 +170,7 @@ export namespace Keccak256 {
 	 * const topic = Keccak256.topic('Transfer(address,address,uint256)');
 	 * ```
 	 */
-	export function topic(signature: string): Hash {
+	export function topic(signature: string): BrandedHash {
 		return hashString(signature);
 	}
 

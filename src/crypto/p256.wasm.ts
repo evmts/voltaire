@@ -5,7 +5,7 @@
  * using WebAssembly for performance.
  */
 
-import type { Hash } from "../primitives/Hash/index.js";
+import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
 
 // ============================================================================
@@ -72,7 +72,7 @@ export namespace P256Wasm {
 	// Signing Operations
 	// ==========================================================================
 
-	export function sign(messageHash: Hash, privateKey: PrivateKey): Signature {
+	export function sign(messageHash: BrandedHash, privateKey: PrivateKey): Signature {
 		if (privateKey.length !== PRIVATE_KEY_SIZE) {
 			throw new InvalidPrivateKeyError(
 				`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
@@ -96,7 +96,7 @@ export namespace P256Wasm {
 
 	export function verify(
 		signature: Signature,
-		messageHash: Hash,
+		messageHash: BrandedHash,
 		publicKey: PublicKey,
 	): boolean {
 		if (publicKey.length !== PUBLIC_KEY_SIZE) {

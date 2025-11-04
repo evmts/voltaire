@@ -19,7 +19,7 @@
  * ```
  */
 
-import type { Hash } from "../primitives/Hash/index.js";
+import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // WASM Interface
@@ -188,7 +188,7 @@ export namespace Keccak256Wasm {
 	 * const hash = Keccak256Wasm.hash(data);
 	 * ```
 	 */
-	export function hash(data: Uint8Array): Hash {
+	export function hash(data: Uint8Array): BrandedHash {
 		if (!wasmInstance) {
 			throw new Error(
 				"WASM not loaded. Call loadWasm() first or use lazy initialization.",
@@ -213,7 +213,7 @@ export namespace Keccak256Wasm {
 		// Reset memory for next call
 		resetMemory();
 
-		return result as Hash;
+		return result as BrandedHash;
 	}
 
 	/**
@@ -229,7 +229,7 @@ export namespace Keccak256Wasm {
 	 * const hash = Keccak256Wasm.hashString('hello');
 	 * ```
 	 */
-	export function hashString(str: string): Hash {
+	export function hashString(str: string): BrandedHash {
 		const encoder = new TextEncoder();
 		return hash(encoder.encode(str));
 	}
@@ -246,7 +246,7 @@ export namespace Keccak256Wasm {
 	 * const hash = Keccak256Wasm.hashHex('0x1234...');
 	 * ```
 	 */
-	export function hashHex(hex: string): Hash {
+	export function hashHex(hex: string): BrandedHash {
 		const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
 		if (!/^[0-9a-fA-F]*$/.test(normalized)) {
 			throw new Error("Invalid hex string");
@@ -274,7 +274,7 @@ export namespace Keccak256Wasm {
 	 * const hash = Keccak256Wasm.hashMultiple([data1, data2, data3]);
 	 * ```
 	 */
-	export function hashMultiple(chunks: readonly Uint8Array[]): Hash {
+	export function hashMultiple(chunks: readonly Uint8Array[]): BrandedHash {
 		const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 		const combined = new Uint8Array(totalLength);
 		let offset = 0;
@@ -321,7 +321,7 @@ export namespace Keccak256Wasm {
 	 * const topic = Keccak256Wasm.topic('Transfer(address,address,uint256)');
 	 * ```
 	 */
-	export function topic(signature: string): Hash {
+	export function topic(signature: string): BrandedHash {
 		return hashString(signature);
 	}
 

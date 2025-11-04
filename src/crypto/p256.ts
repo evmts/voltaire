@@ -25,7 +25,7 @@
  */
 
 import { p256 } from "@noble/curves/nist.js";
-import type { Hash } from "../primitives/Hash/index.js";
+import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // Error Types
@@ -144,7 +144,7 @@ export namespace P256 {
 	 * const signature = P256.sign(messageHash, privateKey);
 	 * ```
 	 */
-	export function sign(messageHash: Hash, privateKey: PrivateKey): Signature {
+	export function sign(messageHash: BrandedHash, privateKey: PrivateKey): Signature {
 		if (privateKey.length !== PRIVATE_KEY_SIZE) {
 			throw new InvalidPrivateKeyError(
 				`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
@@ -184,7 +184,7 @@ export namespace P256 {
 	 */
 	export function verify(
 		signature: Signature,
-		messageHash: Hash,
+		messageHash: BrandedHash,
 		publicKey: PublicKey,
 	): boolean {
 		if (publicKey.length !== PUBLIC_KEY_SIZE) {

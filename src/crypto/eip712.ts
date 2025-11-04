@@ -49,7 +49,8 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
 import type { BrandedAddress } from "../primitives/Address/index.js";
-import type { Hash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
+import { Hash } from "../primitives/Hash/index.js";
 
 // ============================================================================
 // Error Types
@@ -100,7 +101,7 @@ export namespace Eip712 {
 		version?: string;
 		chainId?: bigint;
 		verifyingContract?: BrandedAddress;
-		salt?: Hash;
+		salt?: BrandedHash;
 	};
 
 	/**
@@ -178,7 +179,7 @@ export namespace Eip712 {
 		 * const hash = Eip712.Domain.hash(domain);
 		 * ```
 		 */
-		export function hash(domain: Eip712.Domain): Hash {
+		export function hash(domain: Eip712.Domain): BrandedHash {
 			// Build EIP712Domain type based on fields present
 			const domainFields: TypeProperty[] = [];
 			const domainValues: Message = {};
@@ -280,10 +281,10 @@ export namespace Eip712 {
 	 * const typeHash = Eip712.hashType('Mail', types);
 	 * ```
 	 */
-	export function hashType(primaryType: string, types: TypeDefinitions): Hash {
+	export function hashType(primaryType: string, types: TypeDefinitions): BrandedHash {
 		const encoded = encodeType(primaryType, types);
 		const encodedBytes = new TextEncoder().encode(encoded);
-		return keccak_256(encodedBytes) as Hash;
+		return keccak_256(encodedBytes) as BrandedHash;
 	}
 
 	// ==========================================================================
@@ -476,9 +477,9 @@ export namespace Eip712 {
 		primaryType: string,
 		data: Message,
 		types: TypeDefinitions,
-	): Hash {
+	): BrandedHash {
 		const encoded = encodeData(primaryType, data, types);
-		return keccak_256(encoded) as Hash;
+		return keccak_256(encoded) as BrandedHash;
 	}
 
 	// ==========================================================================
@@ -498,7 +499,7 @@ export namespace Eip712 {
 	 * const hash = Eip712.hashTypedData(typedData);
 	 * ```
 	 */
-	export function hashTypedData(typedData: TypedData): Hash {
+	export function hashTypedData(typedData: TypedData): BrandedHash {
 		// Hash domain separator
 		const domainHash = Domain.hash(typedData.domain);
 
@@ -516,7 +517,7 @@ export namespace Eip712 {
 		combined.set(domainHash, 2);
 		combined.set(messageHash, 34);
 
-		return keccak_256(combined) as Hash;
+		return keccak_256(combined) as BrandedHash;
 	}
 
 	// ==========================================================================

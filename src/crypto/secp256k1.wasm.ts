@@ -6,7 +6,7 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import type { Hash } from "../primitives/Hash/index.js";
+import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
 import * as loader from "../wasm-loader/loader.js";
 import {
 	InvalidPrivateKeyError,
@@ -47,7 +47,7 @@ export namespace Secp256k1Wasm {
 	// Signing Operations
 	// ==========================================================================
 
-	export function sign(messageHash: Hash, privateKey: PrivateKey): Signature {
+	export function sign(messageHash: BrandedHash, privateKey: PrivateKey): Signature {
 		if (privateKey.length !== PRIVATE_KEY_SIZE) {
 			throw new InvalidPrivateKeyError(
 				`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,
@@ -73,7 +73,7 @@ export namespace Secp256k1Wasm {
 
 	export function verify(
 		signature: Signature,
-		messageHash: Hash,
+		messageHash: BrandedHash,
 		publicKey: PublicKey,
 	): boolean {
 		if (publicKey.length !== PUBLIC_KEY_SIZE) {
@@ -112,7 +112,7 @@ export namespace Secp256k1Wasm {
 
 	export function recoverPublicKey(
 		signature: Signature,
-		messageHash: Hash,
+		messageHash: BrandedHash,
 	): PublicKey {
 		if (signature.r.length !== SIGNATURE_COMPONENT_SIZE) {
 			throw new InvalidSignatureError(

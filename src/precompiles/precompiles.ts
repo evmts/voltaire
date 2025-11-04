@@ -10,7 +10,7 @@ import { Secp256k1 } from "../crypto/secp256k1.js";
 import { Sha256 } from "../crypto/sha256.js";
 import * as Gas from "../primitives/GasConstants/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
-import type { Hash } from "../primitives/Hash/index.js";
+import type { BrandedHash } from "../primitives/Hash/index.js";
 
 export enum PrecompileAddress {
 	ECRECOVER = "0x0000000000000000000000000000000000000001",
@@ -243,7 +243,7 @@ export function ecrecover(
 	const s = buf.slice(96, 128);
 
 	try {
-		const pub = Secp256k1.recoverPublicKey({ r, s, v }, hash as Hash);
+		const pub = Secp256k1.recoverPublicKey({ r, s, v }, hash as BrandedHash);
 		const hashResult = Keccak256.hash(pub);
 		const addr = hashResult.slice(12);
 		const out = new Uint8Array(32);
