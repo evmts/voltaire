@@ -3,9 +3,9 @@
  * Loads WASM module before running tests
  */
 
-import { loadWasm } from "./src/wasm-loader/loader.js";
-import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { loadWasm } from "./src/wasm-loader/loader.js";
 
 // Load WASM module before all tests
 const wasmPath = resolve(
