@@ -1,0 +1,59 @@
+[
+  {
+    "name": "WASM ReleaseSmall - Full Bundle",
+    "path": "wasm/primitives.wasm",
+    "limit": "350 KB"
+  },
+  {
+    "name": "WASM ReleaseFast - Full Bundle",
+    "path": "wasm/primitives-fast.wasm",
+    "limit": "2.5 MB"
+  },
+  {
+    "name": "Keccak256 WASM",
+    "path": "wasm/keccak256.wasm",
+    "limit": "300 KB"
+  },
+  {
+    "name": "Address - JS",
+    "path": "src/primitives/Address/index.js",
+    "import": "{ Address }",
+    "limit": "5 KB"
+  },
+  {
+    "name": "Hex - JS",
+    "path": "src/primitives/Hex/index.js",
+    "import": "{ Hex }",
+    "limit": "3 KB"
+  },
+  {
+    "name": "Uint - JS",
+    "path": "src/primitives/Uint/index.js",
+    "import": "{ Uint256 }",
+    "limit": "10 KB"
+  },
+  {
+    "name": "Hash - JS",
+    "path": "src/primitives/Hash/index.js",
+    "import": "{ Hash }",
+    "limit": "5 KB"
+  },
+  {
+    "name": "Transaction - JS",
+    "path": "src/primitives/Transaction/index.js",
+    "import": "{ Transaction }",
+    "limit": "15 KB"
+  },
+  {
+    "name": "RLP - JS",
+    "path": "src/primitives/Rlp/index.js",
+    "import": "{ Rlp }",
+    "limit": "8 KB"
+  },
+  {
+    "name": "ABI - JS",
+    "path": "src/primitives/Abi/index.js",
+    "import": "{ Abi }",
+    "limit": "20 KB"
+  }
+]
