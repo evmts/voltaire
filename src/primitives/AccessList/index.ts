@@ -1,8 +1,8 @@
 // Export factory function
-export { AccessList } from "./AccessList.factory.js";
+export { AccessList } from "./AccessList.js";
 
 // Export all methods
-export * from "./AccessList.factory.js";
+export * from "./AccessList.js";
 
 // Export type definitions
 export type * from "./AccessList.ts";

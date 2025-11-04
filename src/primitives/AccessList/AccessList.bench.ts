@@ -6,7 +6,7 @@
 
 import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedHash } from "../Hash/index.js";
-import { AccessList } from "./index.js";
+import { AccessList } from "./AccessList.js";
 
 // Benchmark runner
 interface BenchmarkResult {

@@ -5,11 +5,11 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedHash } from "../Hash/index.js";
-import {
-	AccessList,
-	type BrandedAccessList as AccessListType,
-	type Item,
-} from "./index.js";
+import { AccessList } from "./AccessList.js";
+import type {
+	BrandedAccessList as AccessListType,
+	Item,
+} from "./BrandedAccessList.js";
 
 // ============================================================================
 // Test Data
