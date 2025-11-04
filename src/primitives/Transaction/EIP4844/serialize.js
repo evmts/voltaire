@@ -1,12 +1,19 @@
 import * as Rlp from "../../Rlp/index.js";
 import { Type } from "../types.js";
-import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
 /**
  * Serialize EIP-4844 transaction to RLP encoded bytes
+ *
+ * @param {import('./BrandedTransactionEIP4844.js').BrandedTransactionEIP4844} tx - EIP-4844 transaction
+ * @returns {Uint8Array} RLP encoded transaction with type prefix
+ *
+ * @example
+ * ```typescript
+ * const encoded = serialize(tx);
+ * ```
  */
-export function serialize(tx: BrandedTransactionEIP4844): Uint8Array {
+export function serialize(tx) {
 	const fields = [
 		encodeBigintCompact(tx.chainId),
 		encodeBigintCompact(tx.nonce),
@@ -18,7 +25,7 @@ export function serialize(tx: BrandedTransactionEIP4844): Uint8Array {
 		tx.data,
 		encodeAccessList(tx.accessList),
 		encodeBigintCompact(tx.maxFeePerBlobGas),
-		tx.blobVersionedHashes.map((h) => h as Uint8Array),
+		tx.blobVersionedHashes.map((h) => h),
 		new Uint8Array([tx.yParity]),
 		tx.r,
 		tx.s,
