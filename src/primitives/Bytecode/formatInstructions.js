@@ -1,12 +1,11 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
 import { parseInstructions } from "./parseInstructions.js";
 import { formatInstruction } from "./formatInstruction.js";
 
 /**
  * Format all instructions to human-readable strings
  *
- * @param code - Bytecode to format
- * @returns Array of formatted instructions
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to format
+ * @returns {string[]} Array of formatted instructions
  *
  * @example
  * ```typescript
@@ -15,7 +14,7 @@ import { formatInstruction } from "./formatInstruction.js";
  * // ["0x0000: PUSH1 0x01", "0x0002: JUMPDEST"]
  * ```
  */
-export function formatInstructions(code: BrandedBytecode): string[] {
+export function formatInstructions(code) {
 	const instructions = parseInstructions(code);
 	return instructions.map(formatInstruction);
 }

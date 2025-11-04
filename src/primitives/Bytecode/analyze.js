@@ -1,4 +1,3 @@
-import type { BrandedBytecode, Analysis } from "./BrandedBytecode.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
 import { parseInstructions } from "./parseInstructions.js";
 import { validate } from "./validate.js";
@@ -6,8 +5,8 @@ import { validate } from "./validate.js";
 /**
  * Perform complete bytecode analysis
  *
- * @param code - Bytecode to analyze
- * @returns Complete analysis result
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to analyze
+ * @returns {import('./BrandedBytecode.js').Analysis} Complete analysis result
  *
  * @example
  * ```typescript
@@ -20,7 +19,7 @@ import { validate } from "./validate.js";
  * // }
  * ```
  */
-export function analyze(code: BrandedBytecode): Analysis {
+export function analyze(code) {
 	return {
 		valid: validate(code),
 		jumpDestinations: analyzeJumpDestinations(code),

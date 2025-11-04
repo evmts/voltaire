@@ -1,11 +1,10 @@
-import type { Opcode } from "./BrandedBytecode.js";
 import { STOP, RETURN, REVERT, INVALID } from "./constants.js";
 
 /**
  * Check if opcode terminates execution
  *
- * @param opcode - Opcode to check
- * @returns true if opcode terminates execution
+ * @param {import('./BrandedBytecode.js').Opcode} opcode - Opcode to check
+ * @returns {boolean} true if opcode terminates execution
  *
  * @example
  * ```typescript
@@ -14,7 +13,7 @@ import { STOP, RETURN, REVERT, INVALID } from "./constants.js";
  * isTerminator(0x00); // true (STOP)
  * ```
  */
-export function isTerminator(opcode: Opcode): boolean {
+export function isTerminator(opcode) {
 	return (
 		opcode === STOP ||
 		opcode === RETURN ||

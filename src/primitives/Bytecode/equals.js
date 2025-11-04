@@ -1,11 +1,9 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
-
 /**
  * Compare two bytecode arrays for equality
  *
- * @param a - First bytecode
- * @param b - Second bytecode
- * @returns true if bytecode is identical
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} a - First bytecode
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} b - Second bytecode
+ * @returns {boolean} true if bytecode is identical
  *
  * @example
  * ```typescript
@@ -14,7 +12,7 @@ import type { BrandedBytecode } from "./BrandedBytecode.js";
  * Bytecode.equals(code1, code2); // true
  * ```
  */
-export function equals(a: BrandedBytecode, b: BrandedBytecode): boolean {
+export function equals(a, b) {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
 		if (a[i] !== b[i]) return false;

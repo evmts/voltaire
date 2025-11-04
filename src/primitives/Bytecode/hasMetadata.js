@@ -1,12 +1,10 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
-
 /**
  * Check if bytecode contains CBOR metadata
  *
  * Solidity compiler includes CBOR-encoded metadata at the end of bytecode.
  *
- * @param code - Bytecode to check
- * @returns true if metadata is present
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to check
+ * @returns {boolean} true if metadata is present
  *
  * @example
  * ```typescript
@@ -14,7 +12,7 @@ import type { BrandedBytecode } from "./BrandedBytecode.js";
  * Bytecode.hasMetadata(code); // true
  * ```
  */
-export function hasMetadata(code: BrandedBytecode): boolean {
+export function hasMetadata(code) {
 	// Solidity metadata starts with 0xa2 0x64 ('ipfs') or 0xa2 0x65 ('bzzr')
 	// and ends with 0x00 0x33 (length 51) at the very end
 	if (code.length < 2) return false;

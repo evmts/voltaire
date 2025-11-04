@@ -1,10 +1,8 @@
-import type { Instruction } from "./BrandedBytecode.js";
-
 /**
  * Format instruction to human-readable string
  *
- * @param instruction - Instruction to format
- * @returns Human-readable string
+ * @param {import('./BrandedBytecode.js').Instruction} instruction - Instruction to format
+ * @returns {string} Human-readable string
  *
  * @example
  * ```typescript
@@ -12,7 +10,7 @@ import type { Instruction } from "./BrandedBytecode.js";
  * Bytecode.formatInstruction(inst); // "0x0000: PUSH1 0x01"
  * ```
  */
-export function formatInstruction(instruction: Instruction): string {
+export function formatInstruction(instruction) {
 	const pos = instruction.position.toString(16).padStart(4, "0");
 	const opcode = instruction.opcode.toString(16).padStart(2, "0").toUpperCase();
 

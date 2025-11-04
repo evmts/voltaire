@@ -1,4 +1,3 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
 import { isPush } from "./isPush.js";
 import { getPushSize } from "./getPushSize.js";
 
@@ -9,8 +8,8 @@ import { getPushSize } from "./getPushSize.js";
  * - Checks for incomplete PUSH instructions
  * - Validates bytecode can be parsed without errors
  *
- * @param code - Bytecode to validate
- * @returns true if bytecode is valid
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to validate
+ * @returns {boolean} true if bytecode is valid
  *
  * @example
  * ```typescript
@@ -21,7 +20,7 @@ import { getPushSize } from "./getPushSize.js";
  * Bytecode.validate(invalid); // false
  * ```
  */
-export function validate(code: BrandedBytecode): boolean {
+export function validate(code) {
 	let pc = 0;
 
 	while (pc < code.length) {

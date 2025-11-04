@@ -1,12 +1,11 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
 
 /**
  * Check if a position is a valid JUMPDEST
  *
- * @param code - Bytecode to check
- * @param position - Position to check
- * @returns true if position is a valid JUMPDEST
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to check
+ * @param {number} position - Position to check
+ * @returns {boolean} true if position is a valid JUMPDEST
  *
  * @example
  * ```typescript
@@ -16,10 +15,7 @@ import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
  * Bytecode.isValidJumpDest(code, 3); // true
  * ```
  */
-export function isValidJumpDest(
-	code: BrandedBytecode,
-	position: number,
-): boolean {
+export function isValidJumpDest(code, position) {
 	const validJumpdests = analyzeJumpDestinations(code);
 	return validJumpdests.has(position);
 }

@@ -1,11 +1,10 @@
-import type { Opcode } from "./BrandedBytecode.js";
 import { isPush } from "./isPush.js";
 
 /**
  * Get PUSH instruction size (number of bytes pushed)
  *
- * @param opcode - PUSH opcode
- * @returns Number of bytes (1-32), or 0 if not a PUSH
+ * @param {import('./BrandedBytecode.js').Opcode} opcode - PUSH opcode
+ * @returns {number} Number of bytes (1-32), or 0 if not a PUSH
  *
  * @example
  * ```typescript
@@ -13,7 +12,7 @@ import { isPush } from "./isPush.js";
  * getPushSize(0x7f); // 32 (PUSH32)
  * ```
  */
-export function getPushSize(opcode: Opcode): number {
+export function getPushSize(opcode) {
 	if (!isPush(opcode)) return 0;
 	return opcode - 0x5f;
 }

@@ -1,11 +1,10 @@
-import type { Opcode } from "./BrandedBytecode.js";
 import { PUSH1, PUSH32 } from "./constants.js";
 
 /**
  * Check if opcode is a PUSH instruction (PUSH1-PUSH32)
  *
- * @param opcode - Opcode to check
- * @returns true if opcode is PUSH1-PUSH32
+ * @param {import('./BrandedBytecode.js').Opcode} opcode - Opcode to check
+ * @returns {boolean} true if opcode is PUSH1-PUSH32
  *
  * @example
  * ```typescript
@@ -14,6 +13,6 @@ import { PUSH1, PUSH32 } from "./constants.js";
  * isPush(0x00); // false
  * ```
  */
-export function isPush(opcode: Opcode): boolean {
+export function isPush(opcode) {
 	return opcode >= PUSH1 && opcode <= PUSH32;
 }

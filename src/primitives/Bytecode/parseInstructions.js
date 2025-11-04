@@ -1,12 +1,11 @@
-import type { BrandedBytecode, Instruction } from "./BrandedBytecode.js";
 import { isPush } from "./isPush.js";
 import { getPushSize } from "./getPushSize.js";
 
 /**
  * Parse bytecode into instructions
  *
- * @param code - Bytecode to parse
- * @returns Array of instructions
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to parse
+ * @returns {import('./BrandedBytecode.js').Instruction[]} Array of instructions
  *
  * @example
  * ```typescript
@@ -19,8 +18,8 @@ import { getPushSize } from "./getPushSize.js";
  * // ]
  * ```
  */
-export function parseInstructions(code: BrandedBytecode): Instruction[] {
-	const instructions: Instruction[] = [];
+export function parseInstructions(code) {
+	const instructions = [];
 	let pc = 0;
 
 	while (pc < code.length) {

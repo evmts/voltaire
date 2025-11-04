@@ -1,4 +1,3 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
 import { JUMPDEST } from "./constants.js";
 import { isPush } from "./isPush.js";
 import { getPushSize } from "./getPushSize.js";
@@ -9,8 +8,8 @@ import { getPushSize } from "./getPushSize.js";
  * This must skip over PUSH instruction immediate data to avoid
  * treating data bytes as instructions.
  *
- * @param code - Bytecode to analyze
- * @returns Set of valid JUMPDEST positions
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to analyze
+ * @returns {Set<number>} Set of valid JUMPDEST positions
  *
  * @example
  * ```typescript
@@ -20,8 +19,8 @@ import { getPushSize } from "./getPushSize.js";
  * jumpdests.has(2); // true (actual JUMPDEST)
  * ```
  */
-export function analyzeJumpDestinations(code: BrandedBytecode): Set<number> {
-	const validJumpdests = new Set<number>();
+export function analyzeJumpDestinations(code) {
+	const validJumpdests = new Set();
 	let pc = 0;
 
 	while (pc < code.length) {

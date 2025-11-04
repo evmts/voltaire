@@ -1,10 +1,8 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
-
 /**
  * Get bytecode size in bytes
  *
- * @param code - Bytecode
- * @returns Size in bytes
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode
+ * @returns {number} Size in bytes
  *
  * @example
  * ```typescript
@@ -12,6 +10,6 @@ import type { BrandedBytecode } from "./BrandedBytecode.js";
  * Bytecode.size(code); // 2
  * ```
  */
-export function size(code: BrandedBytecode): number {
+export function size(code) {
 	return code.length;
 }

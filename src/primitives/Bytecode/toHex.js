@@ -1,11 +1,9 @@
-import type { BrandedBytecode } from "./BrandedBytecode.js";
-
 /**
  * Format bytecode as hex string
  *
- * @param code - Bytecode to format
- * @param prefix - Whether to include 0x prefix
- * @returns Hex string
+ * @param {import('./BrandedBytecode.js').BrandedBytecode} code - Bytecode to format
+ * @param {boolean} [prefix=true] - Whether to include 0x prefix
+ * @returns {string} Hex string
  *
  * @example
  * ```typescript
@@ -14,7 +12,7 @@ import type { BrandedBytecode } from "./BrandedBytecode.js";
  * Bytecode.toHex(code, false); // "6001"
  * ```
  */
-export function toHex(code: BrandedBytecode, prefix = true): string {
+export function toHex(code, prefix = true) {
 	const hex = Array.from(code)
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
