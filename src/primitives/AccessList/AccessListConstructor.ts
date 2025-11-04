@@ -1,5 +1,5 @@
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedHash } from "../Hash/index.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 import type { addressCount } from "./addressCount.js";
 import type { assertValid } from "./assertValid.js";

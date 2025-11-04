@@ -1,5 +1,5 @@
-import type { Address } from "../../Address/index.js";
-import type { Hash } from "../../Hash/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
+import type { BrandedHash } from "../../Hash/index.js";
 import type { AccessList } from "../types.js";
 import type { BrandedTransactionEIP2930 } from "./BrandedTransactionEIP2930.js";
 import type { deserialize } from "./deserialize.js";
@@ -23,7 +23,7 @@ export interface TransactionEIP2930Constructor {
 		nonce: bigint;
 		gasPrice: bigint;
 		gasLimit: bigint;
-		to: Address | null;
+		to: BrandedAddress | null;
 		value: bigint;
 		data: Uint8Array;
 		accessList: AccessList;

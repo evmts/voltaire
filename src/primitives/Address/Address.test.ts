@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Hex } from "../Hex/index.js";
+import type { BrandedHex } from "../Hex/index.js";
 import { Address } from "./Address.js";
 import type { BrandedAddress } from "./BrandedAddress.js";
 import * as AddressNamespace from "./index.js";
@@ -195,7 +195,7 @@ describe("Address", () => {
 			const addr = Address.fromHex(
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
-			const hex: Hex = Address.toHex(addr);
+			const hex: BrandedHex = Address.toHex(addr);
 			expect(hex.startsWith("0x")).toBe(true);
 		});
 
@@ -232,8 +232,7 @@ describe("Address", () => {
 			const addr = Address.fromHex(
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
-			const checksummed: Address.Checksummed.Checksummed =
-				Address.toChecksummed(addr);
+			const checksummed = Address.toChecksummed(addr);
 			expect(checksummed.startsWith("0x")).toBe(true);
 		});
 

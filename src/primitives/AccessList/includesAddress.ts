@@ -1,10 +1,10 @@
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedAccessList } from "./BrandedAccessList.js";
 
 /**
  * Compare two addresses for equality (byte-by-byte)
  */
-function addressEquals(a: Address, b: Address): boolean {
+function addressEquals(a: BrandedAddress, b: BrandedAddress): boolean {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
 		if (a[i] !== b[i]) return false;
@@ -28,7 +28,7 @@ function addressEquals(a: Address, b: Address): boolean {
  */
 export function includesAddress(
 	list: BrandedAccessList,
-	address: Address,
+	address: BrandedAddress,
 ): boolean {
 	for (const item of list) {
 		if (addressEquals(item.address, address)) {

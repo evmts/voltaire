@@ -1,4 +1,4 @@
-import * as Checksummed from "./ChecksumAddress.js";
+import { from as checksummedFrom } from "./ChecksumAddress.js";
 
 /**
  * Convert Address to EIP-55 checksummed hex string
@@ -13,5 +13,5 @@ import * as Checksummed from "./ChecksumAddress.js";
  * ```
  */
 export function toChecksummed(address) {
-	return Checksummed.from(address);
+	return checksummedFrom(address);
 }

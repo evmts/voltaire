@@ -1,4 +1,4 @@
-import type { Address } from "../../Address/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
 import type { BrandedTransactionLegacy } from "./BrandedTransactionLegacy.js";
 import { recoverAddress } from "../utils.js";
 import { getChainId } from "./getChainId.js";
@@ -7,7 +7,7 @@ import { getSigningHash } from "./getSigningHash.js";
 /**
  * Get sender address from signature
  */
-export function getSender(tx: BrandedTransactionLegacy): Address {
+export function getSender(tx: BrandedTransactionLegacy): BrandedAddress {
 	const signingHash = getSigningHash(tx);
 
 	// Convert EIP-155 v to recovery bit

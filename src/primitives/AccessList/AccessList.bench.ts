@@ -4,9 +4,9 @@
  * Measures performance of access list operations
  */
 
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
-import * as AccessList from "./AccessList.js";
+import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedHash } from "../Hash/index.js";
+import { AccessList } from "./index.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -62,17 +62,17 @@ function benchmark(
 // ============================================================================
 
 // Helper to create test addresses
-function createAddress(byte: number): Address {
+function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
-	return addr as Address;
+	return addr as BrandedAddress;
 }
 
 // Helper to create test storage keys
-function createStorageKey(byte: number): Hash {
+function createStorageKey(byte: number): BrandedHash {
 	const key = new Uint8Array(32);
 	key.fill(byte);
-	return key as Hash;
+	return key as BrandedHash;
 }
 
 const addr1 = createAddress(1);
@@ -84,36 +84,40 @@ const key2 = createStorageKey(20);
 const key3 = createStorageKey(30);
 
 // Small list
-const smallList: AccessList.Type = [
+const smallListArray = [
 	{ address: addr1, storageKeys: [key1] },
 	{ address: addr2, storageKeys: [key2, key3] },
 ];
+const smallList = AccessList.from(smallListArray);
 
 // Medium list
-const mediumList: AccessList.Item[] = [];
+const mediumListArray = [];
 for (let i = 0; i < 10; i++) {
-	mediumList.push({
+	mediumListArray.push({
 		address: createAddress(i),
 		storageKeys: [createStorageKey(i * 2), createStorageKey(i * 2 + 1)],
 	});
 }
+const mediumList = AccessList.from(mediumListArray);
 
 // Large list
-const largeList: AccessList.Item[] = [];
+const largeListArray = [];
 for (let i = 0; i < 100; i++) {
-	largeList.push({
+	largeListArray.push({
 		address: createAddress(i % 50),
 		storageKeys: [createStorageKey(i * 2), createStorageKey(i * 2 + 1)],
 	});
 }
+const largeList = AccessList.from(largeListArray);
 
 // List with duplicates
-const duplicateList: AccessList.Type = [
+const duplicateListArray = [
 	{ address: addr1, storageKeys: [key1] },
 	{ address: addr2, storageKeys: [key2] },
 	{ address: addr1, storageKeys: [key2, key3] },
 	{ address: addr2, storageKeys: [key3] },
 ];
+const duplicateList = AccessList.from(duplicateListArray);
 
 // ============================================================================
 // Gas Cost Benchmarks

@@ -1,4 +1,4 @@
-import * as Uppercase from "./UppercaseAddress.js";
+import { from as uppercaseFrom } from "./UppercaseAddress.js";
 
 /**
  * Convert Address to uppercase hex string
@@ -13,5 +13,5 @@ import * as Uppercase from "./UppercaseAddress.js";
  * ```
  */
 export function toUppercase(address) {
-	return Uppercase.from(address);
+	return uppercaseFrom(address);
 }

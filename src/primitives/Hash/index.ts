@@ -1,6 +1,8 @@
-// Export factory function and all methods from runtime
-export { Hash } from "./Hash.js";
-export * from "./Hash.js";
+// Export factory function
+export { Hash } from "./Hash.factory.js";
 
-// Export only non-colliding types from Hash.ts
-export type { BrandedHash, HashConstructor } from "./Hash.ts";
+// Export all methods
+export * from "./Hash.factory.js";
+
+// Export type definitions
+export type * from "./Hash.ts";

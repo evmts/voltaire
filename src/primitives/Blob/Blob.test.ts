@@ -1,9 +1,5 @@
-/**
- * Tests for Blob module (EIP-4844)
- */
-
 import { describe, expect, expectTypeOf, it } from "vitest";
-import * as Blob from "./Blob.js";
+import { Blob } from "./index.js";
 
 // ============================================================================
 // Type Guard Tests
@@ -380,7 +376,7 @@ describe("Blob.toVersionedHash", () => {
 
 	it("convenience form - Commitment.toVersionedHash", () => {
 		const commitment = new Uint8Array(48).fill(0xab) as Blob.Commitment;
-		const hash = Blob.Commitment.toVersionedHash.call(commitment);
+		const hash = Blob.Commitment.toVersionedHash(commitment);
 
 		expect(hash.length).toBe(32);
 		expect(hash[0]).toBe(Blob.COMMITMENT_VERSION_KZG);
@@ -419,7 +415,7 @@ describe("Blob.VersionedHash.getVersion", () => {
 	it("convenience form - version", () => {
 		const hash = new Uint8Array(32) as Blob.VersionedHash;
 		hash[0] = Blob.COMMITMENT_VERSION_KZG;
-		expect(Blob.VersionedHash.version.call(hash)).toBe(
+		expect(Blob.VersionedHash.version(hash)).toBe(
 			Blob.COMMITMENT_VERSION_KZG,
 		);
 	});

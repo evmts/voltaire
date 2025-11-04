@@ -34,5 +34,7 @@ export function calculateCreate2Address(address, salt, initCode) {
 	data.set(initCodeHash, 1 + SIZE + 32);
 
 	const hash = Hash.keccak256(data);
-	return hash.slice(12, 32);
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+		hash.slice(12, 32)
+	);
 }

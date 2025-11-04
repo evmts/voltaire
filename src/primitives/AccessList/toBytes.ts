@@ -22,5 +22,5 @@ export function toBytes(list: BrandedAccessList): Uint8Array {
 		item.address,
 		item.storageKeys.map((key) => key as Uint8Array),
 	]);
-	return Rlp.encode.call(encoded);
+	return Rlp.encode(encoded);
 }

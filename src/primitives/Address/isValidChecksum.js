@@ -1,4 +1,4 @@
-import * as Checksummed from "./ChecksumAddress.js";
+import { isValid as checksummedIsValid } from "./ChecksumAddress.js";
 
 /**
  * Check if string has valid EIP-55 checksum (standard form)
@@ -14,5 +14,5 @@ import * as Checksummed from "./ChecksumAddress.js";
  * ```
  */
 export function isValidChecksum(str) {
-	return Checksummed.isValid(str);
+	return checksummedIsValid(str);
 }

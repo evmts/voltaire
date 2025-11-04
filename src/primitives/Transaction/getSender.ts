@@ -1,4 +1,4 @@
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import * as EIP1559 from "./EIP1559/getSender.js";
 import * as EIP2930 from "./EIP2930/getSender.js";
 import * as EIP4844 from "./EIP4844/getSender.js";
@@ -9,7 +9,7 @@ import { type Any, Type } from "./types.js";
 /**
  * Get sender address from transaction signature
  */
-export function getSender(this: Any): Address {
+export function getSender(this: Any): BrandedAddress {
 	switch (this.type) {
 		case Type.Legacy:
 			return Legacy.getSender.call(this);

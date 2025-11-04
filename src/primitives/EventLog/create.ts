@@ -1,5 +1,5 @@
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import type { BrandedEventLog } from "./BrandedEventLog.js";
 
 /**
@@ -26,16 +26,16 @@ import type { BrandedEventLog } from "./BrandedEventLog.js";
  * ```
  */
 export function create<
-	TAddress extends Address = Address,
+	TAddress extends BrandedAddress = BrandedAddress,
 	TTopics extends readonly Hash[] = readonly Hash[],
 >(params: {
 	address: TAddress;
 	topics: TTopics;
 	data: Uint8Array;
 	blockNumber?: bigint;
-	transactionHash?: Hash;
+	transactionHash?: BrandedHash;
 	transactionIndex?: number;
-	blockHash?: Hash;
+	blockHash?: BrandedHash;
 	logIndex?: number;
 	removed?: boolean;
 }): BrandedEventLog<TAddress, TTopics> {

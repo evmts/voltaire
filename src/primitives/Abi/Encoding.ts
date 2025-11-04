@@ -1,4 +1,4 @@
-import type { Address as AddressType } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import * as Address from "../Address/index.js";
 import * as Uint from "../Uint/index.js";
 import {
@@ -91,7 +91,7 @@ function encodeValue(
 	}
 
 	if (type === "address") {
-		const addr = value as AddressType | string;
+		const addr = value as BrandedAddress | string;
 		if (typeof addr === "string") {
 			const addressValue = Address.fromHex(addr);
 			return {

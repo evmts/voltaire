@@ -4,7 +4,7 @@
  * Measures performance of EIP-7702 authorization operations
  */
 
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import * as Authorization from "../Authorization/index.js";
 
 // Benchmark runner
@@ -60,7 +60,7 @@ function benchmark(
 // Test Data
 // ============================================================================
 
-function createAddress(byte: number): Address {
+function createAddress(byte: number): BrandedAddress {
 	const bytes = new Uint8Array(20);
 	bytes.fill(byte);
 	return bytes as Address;
@@ -542,7 +542,7 @@ console.log(
 );
 
 console.log(
-	"\nNote: Hash, sign, verify, and process operations throw 'Not implemented'",
+	"\nNote: BrandedHash, sign, verify, and process operations throw 'Not implemented'",
 );
 console.log("These benchmarks measure error handling overhead.");
 console.log(

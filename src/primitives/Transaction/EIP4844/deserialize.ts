@@ -1,5 +1,5 @@
-import type { Address } from "../../Address/index.js";
-import type { Hash } from "../../Hash/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
+import type { BrandedHash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
 import { type EIP4844, Type } from "../types.js";
 import { decodeAccessList, decodeBigint } from "../utils.js";
@@ -13,7 +13,7 @@ export function deserialize(data: Uint8Array): EIP4844 {
 	}
 
 	const rlpData = data.slice(1);
-	const decoded = Rlp.decode.call(rlpData);
+	const decoded = Rlp.decode(rlpData);
 
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid EIP-4844 transaction: expected list");
@@ -67,7 +67,7 @@ export function deserialize(data: Uint8Array): EIP4844 {
 		if (hashData.type !== "bytes" || hashData.value.length !== 32) {
 			throw new Error("Invalid blob versioned hash");
 		}
-		return hashData.value as Hash;
+		return hashData.value as BrandedHash;
 	});
 
 	const yParityBytes = (fields[11] as { type: "bytes"; value: Uint8Array })

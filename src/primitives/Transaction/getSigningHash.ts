@@ -1,4 +1,4 @@
-import type { Hash } from "../Hash/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import * as EIP1559 from "./EIP1559/getSigningHash.js";
 import * as EIP2930 from "./EIP2930/getSigningHash.js";
 import * as EIP4844 from "./EIP4844/getSigningHash.js";
@@ -9,7 +9,7 @@ import { type Any, Type } from "./types.js";
 /**
  * Get signing hash for transaction
  */
-export function getSigningHash(this: Any): Hash {
+export function getSigningHash(this: Any): BrandedHash {
 	switch (this.type) {
 		case Type.Legacy:
 			return Legacy.getSigningHash.call(this);

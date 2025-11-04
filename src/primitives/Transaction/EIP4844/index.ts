@@ -1,1 +1,1 @@
-export * from "./TransactionEIP4844.js";
+export * from "./TransactionEIP4844.factory.js";

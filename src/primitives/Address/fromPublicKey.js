@@ -19,5 +19,7 @@ export function fromPublicKey(x, y) {
 		pubkey[63 - i] = Number((y >> BigInt(i * 8)) & 0xffn);
 	}
 	const hash = Hash.keccak256(pubkey);
-	return hash.slice(12, 32);
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+		hash.slice(12, 32)
+	);
 }

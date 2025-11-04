@@ -20,5 +20,7 @@ export function fromAbiEncoded(bytes) {
 			`ABI-encoded Address must be exactly 32 bytes, got ${bytes.length}`,
 		);
 	}
-	return bytes.slice(12, 32);
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+		bytes.slice(12, 32)
+	);
 }

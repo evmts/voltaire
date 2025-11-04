@@ -1,4 +1,4 @@
-import type { Address } from "../../Address/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
 import type { Type } from "../types.js";
 
 /**
@@ -10,7 +10,7 @@ export type BrandedTransactionLegacy = {
 	nonce: bigint;
 	gasPrice: bigint;
 	gasLimit: bigint;
-	to: Address | null;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	v: bigint;

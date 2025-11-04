@@ -1,4 +1,4 @@
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedEventLog } from "./BrandedEventLog.js";
 import { addressEquals } from "./utils.js";
 
@@ -18,7 +18,7 @@ import { addressEquals } from "./utils.js";
  */
 export function matchesAddress<T extends BrandedEventLog>(
 	log: T,
-	filterAddress: Address | Address[],
+	filterAddress: Address | BrandedAddress[],
 ): boolean {
 	if (Array.isArray(filterAddress)) {
 		return filterAddress.some((addr) => addressEquals(log.address, addr));

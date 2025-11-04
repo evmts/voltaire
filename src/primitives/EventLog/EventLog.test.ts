@@ -3,30 +3,31 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
-import * as EventLog from "./EventLog.js";
+import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedHash } from "../Hash/index.js";
+import { EventLog } from "./index.js";
+import * as EventLogModule from "./index.js";
 
 // ============================================================================
 // Test Data
 // ============================================================================
 
 const addr1 =
-	"0x0000000000000000000000000000000000000001" as unknown as Address;
+	"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
 const addr2 =
-	"0x0000000000000000000000000000000000000002" as unknown as Address;
+	"0x0000000000000000000000000000000000000002" as unknown as BrandedAddress;
 const topic0 =
-	"0x0000000000000000000000000000000000000000000000000000000000000010" as unknown as Hash;
+	"0x0000000000000000000000000000000000000000000000000000000000000010" as unknown as BrandedHash;
 const topic1 =
-	"0x0000000000000000000000000000000000000000000000000000000000000011" as unknown as Hash;
+	"0x0000000000000000000000000000000000000000000000000000000000000011" as unknown as BrandedHash;
 const topic2 =
-	"0x0000000000000000000000000000000000000000000000000000000000000012" as unknown as Hash;
+	"0x0000000000000000000000000000000000000000000000000000000000000012" as unknown as BrandedHash;
 const topic3 =
-	"0x0000000000000000000000000000000000000000000000000000000000000013" as unknown as Hash;
+	"0x0000000000000000000000000000000000000000000000000000000000000013" as unknown as BrandedHash;
 const blockHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000100" as unknown as Hash;
+	"0x0000000000000000000000000000000000000000000000000000000000000100" as unknown as BrandedHash;
 const txHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000200" as unknown as Hash;
+	"0x0000000000000000000000000000000000000000000000000000000000000200" as unknown as BrandedHash;
 
 // ============================================================================
 // Log Creation Tests
@@ -300,9 +301,9 @@ describe("EventLog.matchesAddress", () => {
 
 	it("matches byte-wise for addresses", () => {
 		const addrA =
-			"0x0000000000000000000000000000000000000001" as unknown as Address;
+			"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
 		const addrB =
-			"0x0000000000000000000000000000000000000001" as unknown as Address;
+			"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
 
 		const log = EventLog.create({
 			address: addrA,

@@ -3,14 +3,14 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_ROOT, StorageKey } from "./index.js";
 
 // ============================================================================
 // Test Helpers
 // ============================================================================
 
-function createAddress(byte: number): Address {
+function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
 	return addr as Address;

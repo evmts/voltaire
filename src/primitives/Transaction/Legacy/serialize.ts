@@ -17,5 +17,5 @@ export function serialize(tx: BrandedTransactionLegacy): Uint8Array {
 		tx.r,
 		tx.s,
 	];
-	return Rlp.encode.call(fields);
+	return Rlp.encode(fields);
 }

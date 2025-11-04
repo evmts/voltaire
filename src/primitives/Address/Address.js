@@ -111,8 +111,8 @@ Address.fromNumber = function (value) {
 };
 Address.fromNumber.prototype = Address.prototype;
 
-Address.fromPublicKey = function (value) {
-	return fromPublicKey(value);
+Address.fromPublicKey = function (x, y) {
+	return fromPublicKey(x, y);
 };
 Address.fromPublicKey.prototype = Address.prototype;
 

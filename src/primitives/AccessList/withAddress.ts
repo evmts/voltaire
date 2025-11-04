@@ -1,4 +1,4 @@
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedAccessList } from "./BrandedAccessList.js";
 import { includesAddress } from "./includesAddress.js";
 
@@ -20,7 +20,7 @@ import { includesAddress } from "./includesAddress.js";
  */
 export function withAddress(
 	list: BrandedAccessList,
-	address: Address,
+	address: BrandedAddress,
 ): BrandedAccessList {
 	if (includesAddress(list, address)) {
 		return list;

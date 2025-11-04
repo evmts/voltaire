@@ -34,7 +34,7 @@
 import { Keccak256 } from "../../crypto/keccak256.js";
 import { Secp256k1 } from "../../crypto/secp256k1.js";
 import * as Address from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/index.js";
 
 export type { Address };
 
@@ -50,7 +50,7 @@ export type { Address };
  */
 export type Message<
 	TDomain extends string = string,
-	TAddress extends Address.Address = Address.Address,
+	TAddress extends BrandedAddress.Address = Address.Address,
 	TUri extends string = string,
 	TVersion extends string = string,
 	TChainId extends number = number,
@@ -439,7 +439,7 @@ export namespace Message {
 			// Recover public key from signature
 			const publicKey = Secp256k1.recoverPublicKey(
 				{ r, s, v: recoveryId },
-				messageHash as Hash,
+				messageHash as BrandedHash,
 			);
 
 			// Derive address from public key
@@ -844,7 +844,7 @@ export function generateNonce(length = 11): string {
  */
 export function create<
 	TDomain extends string,
-	TAddress extends Address.Address,
+	TAddress extends BrandedAddress.Address,
 	TUri extends string,
 	TChainId extends number,
 >(params: {

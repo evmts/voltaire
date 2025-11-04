@@ -18,5 +18,7 @@ export function fromBytes(bytes) {
 	if (bytes.length !== SIZE) {
 		throw new InvalidAddressLengthError();
 	}
-	return new Uint8Array(bytes);
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+		new Uint8Array(bytes)
+	);
 }

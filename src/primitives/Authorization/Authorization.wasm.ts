@@ -4,8 +4,8 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import type { Item } from "./Authorization.js";
 
 /**
@@ -33,10 +33,10 @@ export function validateWasm(auth: Item): void {
  */
 export function signingHashWasm(
 	chainId: bigint,
-	address: Address,
+	address: BrandedAddress,
 	nonce: bigint,
-): Hash {
-	return loader.authorizationSigningHash(chainId, address, nonce) as Hash;
+): BrandedHash {
+	return loader.authorizationSigningHash(chainId, address, nonce) as BrandedHash;
 }
 
 /**
@@ -44,7 +44,7 @@ export function signingHashWasm(
  * @param auth - Authorization to recover from
  * @returns Recovered authority address
  */
-export function authorityWasm(auth: Item): Address {
+export function authorityWasm(auth: Item): BrandedAddress {
 	return loader.authorizationAuthority({
 		chainId: auth.chainId,
 		address: auth.address,

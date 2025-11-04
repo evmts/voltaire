@@ -56,11 +56,26 @@ export interface AddressConstructor {
 	from(value: number | bigint | string | Uint8Array): AddressPrototype;
 	fromBytes(value: Uint8Array): AddressPrototype;
 	fromNumber(value: number | bigint): AddressPrototype;
-	fromPublicKey(value: Uint8Array): AddressPrototype;
+	fromPublicKey(x: bigint, y: bigint): AddressPrototype;
 	fromAbiEncoded(value: Uint8Array): AddressPrototype;
+	toHex: typeof toHex;
+	toChecksummed: typeof toChecksummed;
+	toLowercase: typeof toLowercase;
+	toUppercase: typeof toUppercase;
+	toU256: typeof toU256;
+	toAbiEncoded: typeof toAbiEncoded;
+	toShortHex: typeof toShortHex;
+	format: typeof format;
+	isZero: typeof isZero;
+	equals: typeof equals;
 	isValid: typeof isValid;
 	isValidChecksum: typeof isValidChecksum;
 	is: typeof is;
 	zero: typeof zero;
+	compare: typeof compare;
+	lessThan: typeof lessThan;
+	greaterThan: typeof greaterThan;
+	calculateCreateAddress: typeof calculateCreateAddress;
+	calculateCreate2Address: typeof calculateCreate2Address;
 	SIZE: typeof SIZE;
 }

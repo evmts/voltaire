@@ -25,7 +25,7 @@ export function serialize(tx: BrandedTransactionEIP1559): Uint8Array {
 		tx.r,
 		tx.s,
 	];
-	const rlpEncoded = Rlp.encode.call(fields);
+	const rlpEncoded = Rlp.encode(fields);
 
 	// Prepend type byte 0x02
 	const result = new Uint8Array(1 + rlpEncoded.length);

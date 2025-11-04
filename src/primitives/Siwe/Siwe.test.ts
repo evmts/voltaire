@@ -3,14 +3,14 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import * as Siwe from "./Siwe.js";
 
 // ============================================================================
 // Test Utilities
 // ============================================================================
 
-function createTestAddress(seed: number): Address {
+function createTestAddress(seed: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(seed);
 	return addr as Address;

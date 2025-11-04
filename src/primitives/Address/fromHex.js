@@ -27,5 +27,5 @@ export function fromHex(hex) {
 		const byte = Number.parseInt(hexPart.slice(i * 2, i * 2 + 2), 16);
 		bytes[i] = byte;
 	}
-	return bytes;
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (bytes);
 }

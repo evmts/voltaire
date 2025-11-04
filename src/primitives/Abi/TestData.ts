@@ -3,7 +3,7 @@
  * Extracted from Zig implementation tests in abi_encoding.zig
  */
 
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 
 export interface EncodeTestVector {
 	name: string;
@@ -108,7 +108,7 @@ export const encodeVectors: EncodeTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0x14dC79964da2C08b23698B3D3cc7Ca32193d9955" as unknown as Address,
+					"0x14dC79964da2C08b23698B3D3cc7Ca32193d9955" as unknown as BrandedAddress,
 			},
 		],
 		expected:
@@ -156,7 +156,7 @@ export const encodeVectors: EncodeTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0xc961145a54C96E3aE9bAA048c4F4D6b04C13916b" as unknown as Address,
+					"0xc961145a54C96E3aE9bAA048c4F4D6b04C13916b" as unknown as BrandedAddress,
 			},
 		],
 		expected:
@@ -261,7 +261,7 @@ export const crossValidationVectors: EncodeTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0xd8da6bf26964af9d7eed9e03e53415d37aa96045" as unknown as Address,
+					"0xd8da6bf26964af9d7eed9e03e53415d37aa96045" as unknown as BrandedAddress,
 			},
 			{ type: "uint256", value: 1000000000000000000n },
 		],
@@ -276,7 +276,7 @@ export const crossValidationVectors: EncodeTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0x7a250d5630b4cf539939c1f07d1e3ea40f6063af" as unknown as Address,
+					"0x7a250d5630b4cf539939c1f07d1e3ea40f6063af" as unknown as BrandedAddress,
 			},
 			{
 				type: "uint256",
@@ -305,7 +305,7 @@ export const crossValidationVectors: EncodeTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0xc961145a54c96e3ae9baa048c4f4d6b04c13916b" as unknown as Address,
+					"0xc961145a54c96e3ae9baa048c4f4d6b04c13916b" as unknown as BrandedAddress,
 			},
 		],
 		expected:
@@ -394,7 +394,7 @@ export const boundaryVectors: EncodeTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0x0000000000000000000000000000000000000000" as unknown as Address,
+					"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
 			},
 		],
 		expected:
@@ -408,7 +408,7 @@ export const boundaryVectors: EncodeTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" as unknown as Address,
+					"0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" as unknown as BrandedAddress,
 			},
 		],
 		expected:
@@ -519,7 +519,7 @@ export const functionDataVectors: FunctionDataTestVector[] = [
 			{
 				type: "address",
 				value:
-					"0xd8da6bf26964af9d7eed9e03e53415d37aa96045" as unknown as Address,
+					"0xd8da6bf26964af9d7eed9e03e53415d37aa96045" as unknown as BrandedAddress,
 			},
 			{ type: "uint256", value: 1000000000000000000n },
 		],
@@ -558,9 +558,9 @@ export const arrayVectors: Array<{
 			{
 				type: "address[]",
 				value: [
-					"0x0000000000000000000000000000000000000001" as unknown as Address,
-					"0x0000000000000000000000000000000000000002" as unknown as Address,
-					"0x0000000000000000000000000000000000000003" as unknown as Address,
+					"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress,
+					"0x0000000000000000000000000000000000000002" as unknown as BrandedAddress,
+					"0x0000000000000000000000000000000000000003" as unknown as BrandedAddress,
 				],
 			},
 		],
@@ -585,8 +585,8 @@ export const arrayVectors: Array<{
 			{
 				type: "address[]",
 				value: [
-					"0x0000000000000000000000000000000000000000" as unknown as Address,
-					"0x0000000000000000000000000000000000000000" as unknown as Address,
+					"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+					"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
 				],
 			},
 		],

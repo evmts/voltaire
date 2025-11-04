@@ -1,4 +1,4 @@
-import type { Address } from "../../Address/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
 import type { Type, AccessList } from "../types.js";
 
 /**
@@ -11,7 +11,7 @@ export type BrandedTransactionEIP2930 = {
 	nonce: bigint;
 	gasPrice: bigint;
 	gasLimit: bigint;
-	to: Address | null;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	accessList: AccessList;

@@ -4,8 +4,8 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import type * as AccessList from "./AccessList.js";
 
 /**
@@ -34,7 +34,7 @@ export function gasSavingsWasm(accessList: AccessList.Type): bigint {
  */
 export function includesAddressWasm(
 	accessList: AccessList.Type,
-	address: Address,
+	address: BrandedAddress,
 ): boolean {
 	return loader.accessListIncludesAddress(accessList as any, address);
 }
@@ -48,8 +48,8 @@ export function includesAddressWasm(
  */
 export function includesStorageKeyWasm(
 	accessList: AccessList.Type,
-	address: Address,
-	storageKey: Hash,
+	address: BrandedAddress,
+	storageKey: BrandedHash,
 ): boolean {
 	return loader.accessListIncludesStorageKey(
 		accessList as any,

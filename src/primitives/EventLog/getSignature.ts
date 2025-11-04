@@ -1,4 +1,4 @@
-import type { Hash } from "../Hash/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import type { BrandedEventLog } from "./BrandedEventLog.js";
 import { getTopic0 } from "./getTopic0.js";
 
@@ -15,6 +15,6 @@ import { getTopic0 } from "./getTopic0.js";
  * const sig2 = log.getSignature();
  * ```
  */
-export function getSignature<T extends BrandedEventLog>(log: T): Hash | undefined {
+export function getSignature<T extends BrandedEventLog>(log: T): BrandedHash | undefined {
 	return getTopic0(log);
 }

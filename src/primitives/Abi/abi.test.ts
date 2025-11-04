@@ -4,7 +4,7 @@
 
 // @ts-nocheck
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { Address } from "../address.js";
+import type { BrandedAddress } from "../address.js";
 import * as Abi from "./index.js";
 import {
 	AbiDecodingError,
@@ -760,7 +760,7 @@ describe("Abi Type Inference", () => {
 			typeof transferFunc.outputs
 		>;
 
-		expectTypeOf<InputTypes[0]>().toEqualTypeOf<Address>();
+		expectTypeOf<InputTypes[0]>().toEqualTypeOf<BrandedAddress>();
 		expectTypeOf<InputTypes[1]>().toEqualTypeOf<bigint>();
 		expectTypeOf<OutputTypes[0]>().toEqualTypeOf<boolean>();
 	});
@@ -782,7 +782,7 @@ describe("Abi Type Inference", () => {
 		>;
 
 		// abitype should infer arrays properly
-		expectTypeOf<InputTypes[0]>().toMatchTypeOf<readonly Address[]>();
+		expectTypeOf<InputTypes[0]>().toMatchTypeOf<readonly BrandedAddress[]>();
 		expectTypeOf<InputTypes[1]>().toMatchTypeOf<readonly bigint[]>();
 	});
 
@@ -828,8 +828,8 @@ describe("Abi Type Inference", () => {
 
 		type EventParams = Abi.ParametersToObject<typeof transferEvent.inputs>;
 
-		expectTypeOf<EventParams["from"]>().toEqualTypeOf<Address>();
-		expectTypeOf<EventParams["to"]>().toEqualTypeOf<Address>();
+		expectTypeOf<EventParams["from"]>().toEqualTypeOf<BrandedAddress>();
+		expectTypeOf<EventParams["to"]>().toEqualTypeOf<BrandedAddress>();
 		expectTypeOf<EventParams["value"]>().toEqualTypeOf<bigint>();
 	});
 

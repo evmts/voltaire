@@ -1,4 +1,4 @@
-import * as Lowercase from "./LowercaseAddress.js";
+import { from as lowercaseFrom } from "./LowercaseAddress.js";
 
 /**
  * Convert Address to lowercase hex string
@@ -13,5 +13,5 @@ import * as Lowercase from "./LowercaseAddress.js";
  * ```
  */
 export function toLowercase(address) {
-	return Lowercase.from(address);
+	return lowercaseFrom(address);
 }

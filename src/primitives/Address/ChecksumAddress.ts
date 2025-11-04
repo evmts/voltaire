@@ -1,4 +1,5 @@
 import type * as Hex from "../Hex/index.js";
+import type { BrandedAddress } from "./BrandedAddress.js";
 
 /**
  * EIP-55 checksummed address
@@ -9,4 +10,5 @@ export type Checksummed = Hex.Sized<20> & {
 	readonly __checksummed: true;
 };
 
-export type { from, isValid } from "./ChecksumAddress.js";
+export declare function from(addr: BrandedAddress): Checksummed;
+export declare function isValid(str: string): boolean;

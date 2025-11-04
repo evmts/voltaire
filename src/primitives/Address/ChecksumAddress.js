@@ -36,7 +36,7 @@ export function from(addr) {
 			result += ch ?? "";
 		}
 	}
-	return result;
+	return /** @type {Checksummed} */ (result);
 }
 
 /**

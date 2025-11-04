@@ -1,4 +1,4 @@
-import type { Address } from "../../Address/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
 import type { Type, AccessList, AuthorizationList } from "../types.js";
 
 /**
@@ -12,7 +12,7 @@ export type BrandedTransactionEIP7702 = {
 	maxPriorityFeePerGas: bigint;
 	maxFeePerGas: bigint;
 	gasLimit: bigint;
-	to: Address | null;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	accessList: AccessList;

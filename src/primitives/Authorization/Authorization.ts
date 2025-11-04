@@ -21,7 +21,7 @@
 import { Keccak256 } from "../../crypto/keccak256.js";
 import { Secp256k1 } from "../../crypto/secp256k1.js";
 import * as Address from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import * as Rlp from "../Rlp/index.js";
 
 // ==========================================================================
@@ -36,7 +36,7 @@ export type Item = {
 	/** Chain ID where authorization is valid */
 	chainId: bigint;
 	/** Address to delegate code execution to */
-	address: Address.Address;
+	address: BrandedAddress.Address;
 	/** Nonce of the authorizing account */
 	nonce: bigint;
 	/** Signature Y parity (0 or 1) */
@@ -52,7 +52,7 @@ export type Item = {
  */
 export type Unsigned = {
 	chainId: bigint;
-	address: Address.Address;
+	address: BrandedAddress.Address;
 	nonce: bigint;
 };
 
@@ -239,7 +239,7 @@ export function validate(this: Item): void {
  * // Now sign sigHash with private key
  * ```
  */
-export function hash(this: Unsigned): Hash {
+export function hash(this: Unsigned): BrandedHash {
 	// Helper to encode bigint compact (remove leading zeros)
 	function encodeBigintCompact(value: bigint): Uint8Array {
 		if (value === 0n) return new Uint8Array(0);
@@ -264,7 +264,7 @@ export function hash(this: Unsigned): Hash {
 		this.address,
 		encodeBigintCompact(this.nonce),
 	];
-	const rlpEncoded = Rlp.encode.call(fields);
+	const rlpEncoded = Rlp.encode(fields);
 
 	// Prepend MAGIC_BYTE (0x05)
 	const data = new Uint8Array(1 + rlpEncoded.length);
@@ -354,7 +354,7 @@ export function sign(this: Unsigned, privateKey: Uint8Array): Item {
  * console.log(`Authorized by: ${authority}`);
  * ```
  */
-export function verify(this: Item): Address.Address {
+export function verify(this: Item): BrandedAddress.Address {
 	// Validate structure first
 	validate.call(this);
 
@@ -503,7 +503,7 @@ export function format(this: Item | Unsigned): string {
 /**
  * Helper to format address (shortened)
  */
-function formatAddress(addr: Address.Address): string {
+function formatAddress(addr: BrandedAddress.Address): string {
 	const hex = Array.from(addr)
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
@@ -539,7 +539,7 @@ export function equals(this: Item, other: Item): boolean {
 /**
  * Helper to check address equality
  */
-function addressesEqual(a: Address.Address, b: Address.Address): boolean {
+function addressesEqual(a: BrandedAddress.Address, b: BrandedAddress.Address): boolean {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
 		if (a[i] !== b[i]) return false;
@@ -550,7 +550,7 @@ function addressesEqual(a: Address.Address, b: Address.Address): boolean {
 /**
  * Helper to derive address from public key
  */
-function addressFromPublicKey(publicKey: Uint8Array): Address.Address {
+function addressFromPublicKey(publicKey: Uint8Array): BrandedAddress.Address {
 	// Public key is 64 bytes (uncompressed, no prefix)
 	// Extract x and y coordinates
 	let x = 0n;

@@ -1,5 +1,5 @@
 import { Keccak256 } from "../../../crypto/keccak256.js";
-import type { Hash } from "../../Hash/index.js";
+import { Hash, type BrandedHash } from "../../Hash/index.js";
 import * as Rlp from "../../Rlp/index.js";
 import { Type } from "../types.js";
 import type { BrandedTransactionEIP2930 } from "./BrandedTransactionEIP2930.js";
@@ -12,7 +12,7 @@ import {
 /**
  * Get signing hash
  */
-export function getSigningHash(tx: BrandedTransactionEIP2930): Hash {
+export function getSigningHash(tx: BrandedTransactionEIP2930): BrandedHash {
 	const fields = [
 		encodeBigintCompact(tx.chainId),
 		encodeBigintCompact(tx.nonce),
@@ -23,7 +23,7 @@ export function getSigningHash(tx: BrandedTransactionEIP2930): Hash {
 		tx.data,
 		encodeAccessList(tx.accessList),
 	];
-	const rlpEncoded = Rlp.encode.call(fields);
+	const rlpEncoded = Rlp.encode(fields);
 
 	// Prepend type byte 0x01
 	const result = new Uint8Array(1 + rlpEncoded.length);

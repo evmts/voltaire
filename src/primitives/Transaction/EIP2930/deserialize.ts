@@ -11,7 +11,7 @@ export function deserialize(data: Uint8Array): EIP2930 {
 	}
 
 	const rlpData = data.slice(1);
-	const decoded = Rlp.decode.call(rlpData);
+	const decoded = Rlp.decode(rlpData);
 
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid EIP-2930 transaction: expected list");

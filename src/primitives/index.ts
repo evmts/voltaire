@@ -20,7 +20,7 @@
 
 // Core primitives
 export * as Address from "./Address/index.js";
-export * as Hash from "./Hash/index.js";
+export * as BrandedHash from "./Hash/index.js";
 export * as Hex from "./Hex/index.js";
 
 // Numeric types

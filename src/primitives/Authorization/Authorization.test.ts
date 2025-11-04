@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import * as Authorization from "../Authorization/index.js";
 
 // ============================================================================
@@ -13,11 +13,11 @@ import * as Authorization from "../Authorization/index.js";
 // NOTE: Authorization.ts expects Address to have a .bytes property,
 // but the actual Address type is just a branded Uint8Array.
 // Creating test addresses with .bytes property to match authorization.ts expectations.
-function createAddress(byte: number): Address {
+function createAddress(byte: number): BrandedAddress {
 	const bytes = new Uint8Array(20);
 	bytes.fill(byte);
 	// Add bytes property to match what authorization.ts expects
-	return Object.assign(bytes, { bytes }) as unknown as Address;
+	return Object.assign(bytes, { bytes }) as unknown as BrandedAddress;
 }
 
 const addr1 = createAddress(1);
@@ -644,7 +644,7 @@ describe("Authorization.format", () => {
 		for (let i = 0; i < 20; i++) {
 			bytes[i] = 0x12 + i;
 		}
-		const longAddr = Object.assign(bytes, { bytes }) as unknown as Address;
+		const longAddr = Object.assign(bytes, { bytes }) as unknown as BrandedAddress;
 		const auth: Authorization.Item = {
 			chainId: 1n,
 			address: longAddr,

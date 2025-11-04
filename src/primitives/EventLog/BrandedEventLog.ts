@@ -1,11 +1,11 @@
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 
 /**
  * Branded EventLog type
  */
 export type BrandedEventLog<
-	TAddress extends Address = Address,
+	TAddress extends BrandedAddress = BrandedAddress,
 	TTopics extends readonly Hash[] = readonly Hash[],
 > = {
 	/** Contract address that emitted the log */
@@ -17,11 +17,11 @@ export type BrandedEventLog<
 	/** Block number where log was emitted */
 	blockNumber?: bigint;
 	/** Transaction hash that generated the log */
-	transactionHash?: Hash;
+	transactionHash?: BrandedHash;
 	/** Transaction index in block */
 	transactionIndex?: number;
 	/** Block hash */
-	blockHash?: Hash;
+	blockHash?: BrandedHash;
 	/** Log index in block */
 	logIndex?: number;
 	/** Log removed due to chain reorganization */
@@ -32,9 +32,9 @@ export type BrandedEventLog<
  * Event log filter for querying logs
  */
 export type Filter<
-	TAddress extends Address | Address[] | undefined =
-		| Address
-		| Address[]
+	TAddress extends BrandedAddress | BrandedAddress[] | undefined =
+		| BrandedAddress
+		| BrandedAddress[]
 		| undefined,
 	TTopics extends readonly (Hash | Hash[] | null)[] | undefined =
 		| readonly (Hash | Hash[] | null)[]
@@ -49,5 +49,5 @@ export type Filter<
 	/** Ending block number */
 	toBlock?: bigint;
 	/** Block hash to filter by (alternative to fromBlock/toBlock) */
-	blockHash?: Hash;
+	blockHash?: BrandedHash;
 };

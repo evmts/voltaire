@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import * as Transaction from "../Transaction/index.js";
 import type {
 	Any,
@@ -20,16 +20,16 @@ import type {
 // Test Data Helpers
 // ============================================================================
 
-function createAddress(byte: number): Address {
+function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
 	return addr as Address;
 }
 
-function createHash(byte: number): Hash {
+function createHash(byte: number): BrandedHash {
 	const hash = new Uint8Array(32);
 	hash.fill(byte);
-	return hash as Hash;
+	return hash as BrandedHash;
 }
 
 function createBytes(length: number, fill = 0): Uint8Array {

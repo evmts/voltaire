@@ -1,5 +1,5 @@
-import type { Address } from "../../Address/index.js";
-import type { Hash } from "../../Hash/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
+import type { BrandedHash } from "../../Hash/index.js";
 import type { BrandedTransactionLegacy } from "./BrandedTransactionLegacy.js";
 import type { deserialize } from "./deserialize.js";
 import type { getChainId } from "./getChainId.js";
@@ -23,7 +23,7 @@ export interface TransactionLegacyConstructor {
 		nonce: bigint;
 		gasPrice: bigint;
 		gasLimit: bigint;
-		to: Address | null;
+		to: BrandedAddress | null;
 		value: bigint;
 		data: Uint8Array;
 		v: bigint;

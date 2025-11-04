@@ -7,8 +7,8 @@
  * @module State
  */
 
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 
 /**
  * Hash of empty EVM bytecode (Keccak256 of empty bytes).
@@ -23,7 +23,7 @@ export const EMPTY_CODE_HASH: Hash = new Uint8Array([
 	0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc,
 	0xc7, 0x03, 0xc0, 0xe5, 0x00, 0xb6, 0x53, 0xca, 0x82, 0x27, 0x3b, 0x7b, 0xfa,
 	0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70,
-]) as Hash;
+]) as BrandedHash;
 
 /**
  * Root hash of an empty Merkle Patricia Trie.
@@ -38,7 +38,7 @@ export const EMPTY_TRIE_ROOT: Hash = new Uint8Array([
 	0x56, 0xe8, 0x1f, 0x17, 0x1b, 0xcc, 0x55, 0xa6, 0xff, 0x83, 0x45, 0xe6, 0x92,
 	0xc0, 0xf8, 0x6e, 0x5b, 0x48, 0xe0, 0x1b, 0x99, 0x6c, 0xad, 0xc0, 0x01, 0x62,
 	0x2f, 0xb5, 0xe3, 0x63, 0xb4, 0x21,
-]) as Hash;
+]) as BrandedHash;
 
 /**
  * Composite key for EVM storage operations combining address and slot.
@@ -77,7 +77,7 @@ export interface StorageKey {
 	 * The contract address that owns this storage slot.
 	 * Standard 20-byte Ethereum address.
 	 */
-	readonly address: Address;
+	readonly address: BrandedAddress;
 
 	/**
 	 * The 256-bit storage slot number within the contract's storage space.
@@ -92,7 +92,7 @@ export interface StorageKey {
 export type StorageKeyLike =
 	| StorageKey
 	| {
-			address: Address;
+			address: BrandedAddress;
 			slot: bigint;
 	  };
 
@@ -151,7 +151,7 @@ export namespace StorageKey {
 	 * const key = StorageKey.create(contractAddr, 0n);
 	 * ```
 	 */
-	export function create(address: Address, slot: bigint): StorageKey {
+	export function create(address: BrandedAddress, slot: bigint): StorageKey {
 		return { address, slot };
 	}
 

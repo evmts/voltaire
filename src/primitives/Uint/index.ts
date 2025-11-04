@@ -1,6 +1,8 @@
-// Export factory function and methods
-export { Uint } from "./Uint.js";
-export * from "./Uint.js";
+// Export factory function
+export { Uint } from "./Uint.factory.js";
 
-// Export types
-export * from "./Uint.ts";
+// Export all methods
+export * from "./Uint.factory.js";
+
+// Export type definitions
+export type * from "./Uint.ts";

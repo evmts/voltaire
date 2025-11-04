@@ -35,7 +35,9 @@ export function calculateCreateAddress(address, nonce) {
 		}
 	}
 
-	const encoded = Rlp.encode.call([address, nonceBytes]);
+	const encoded = Rlp.encode([address, nonceBytes]);
 	const hash = Hash.keccak256(encoded);
-	return hash.slice(12, 32);
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+		hash.slice(12, 32)
+	);
 }

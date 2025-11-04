@@ -1,5 +1,5 @@
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedHash } from "../Hash/index.js";
 import * as Rlp from "../Rlp/index.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 
@@ -15,7 +15,7 @@ import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
  * ```
  */
 export function fromBytes(bytes: Uint8Array): BrandedAccessList {
-	const decoded = Rlp.decode.call(bytes);
+	const decoded = Rlp.decode(bytes);
 
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid access list: expected list");
@@ -39,14 +39,14 @@ export function fromBytes(bytes: Uint8Array): BrandedAccessList {
 			throw new Error("Invalid access list storage keys");
 		}
 
-		const address = addressData.value as Address;
-		const storageKeys: Hash[] = [];
+		const address = addressData.value as BrandedAddress;
+		const storageKeys: BrandedHash[] = [];
 
 		for (const keyData of keysData.value) {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
 				throw new Error("Invalid storage key");
 			}
-			storageKeys.push(keyData.value as Hash);
+			storageKeys.push(keyData.value as BrandedHash);
 		}
 
 		result.push({ address, storageKeys });

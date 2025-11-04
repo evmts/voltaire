@@ -11,5 +11,7 @@ import { SIZE } from "./constants.js";
  * ```
  */
 export function zero() {
-	return new Uint8Array(SIZE);
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
+		new Uint8Array(SIZE)
+	);
 }

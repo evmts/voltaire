@@ -1,4 +1,4 @@
-import type { Hash } from "../Hash/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import type { BrandedEventLog } from "./BrandedEventLog.js";
 import { getIndexedTopics } from "./getIndexedTopics.js";
 

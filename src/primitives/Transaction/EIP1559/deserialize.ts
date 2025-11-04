@@ -12,7 +12,7 @@ export function deserialize(data: Uint8Array): BrandedTransactionEIP1559 {
 	}
 
 	const rlpData = data.slice(1);
-	const decoded = Rlp.decode.call(rlpData);
+	const decoded = Rlp.decode(rlpData);
 
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid EIP-1559 transaction: expected list");

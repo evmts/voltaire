@@ -1,7 +1,7 @@
 import { Secp256k1 } from "../../crypto/secp256k1.js";
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import * as AddressNamespace from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import type * as Rlp from "../Rlp/index.js";
 
 /**
@@ -32,7 +32,7 @@ export function encodeBigintCompact(value: bigint): Uint8Array {
  * Encode address for RLP (empty bytes for null, 20 bytes otherwise)
  * @internal
  */
-export function encodeAddress(address: Address | null): Uint8Array {
+export function encodeAddress(address: BrandedAddress | null): Uint8Array {
 	if (address === null) {
 		return new Uint8Array(0);
 	}
@@ -43,7 +43,7 @@ export function encodeAddress(address: Address | null): Uint8Array {
  * Decode address from RLP bytes (null for empty, Address otherwise)
  * @internal
  */
-export function decodeAddress(bytes: Uint8Array): Address | null {
+export function decodeAddress(bytes: Uint8Array): BrandedAddress | null {
 	if (bytes.length === 0) {
 		return null;
 	}
@@ -74,8 +74,8 @@ export function decodeBigint(bytes: Uint8Array): bigint {
  */
 export function recoverAddress(
 	signature: { r: Uint8Array; s: Uint8Array; v: number },
-	messageHash: Hash,
-): Address {
+	messageHash: BrandedHash,
+): BrandedAddress {
 	const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
 
 	let x = 0n;
@@ -93,7 +93,7 @@ export function recoverAddress(
  * @internal
  */
 export function encodeAccessList(
-	accessList: readonly { address: Address; storageKeys: readonly Hash[] }[],
+	accessList: readonly { address: BrandedAddress; storageKeys: readonly Hash[] }[],
 ): Rlp.Encodable[] {
 	return accessList.map((item) => [
 		item.address,
@@ -107,7 +107,7 @@ export function encodeAccessList(
  */
 export function decodeAccessList(
 	data: Rlp.Data[],
-): { address: Address; storageKeys: Hash[] }[] {
+): { address: BrandedAddress; storageKeys: BrandedHash[] }[] {
 	return data.map((item) => {
 		if (item.type !== "list" || item.value.length !== 2) {
 			throw new Error("Invalid access list item");
@@ -129,7 +129,7 @@ export function decodeAccessList(
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
 				throw new Error("Invalid storage key");
 			}
-			return keyData.value as Hash;
+			return keyData.value as BrandedHash;
 		});
 
 		return { address, storageKeys };
@@ -143,7 +143,7 @@ export function decodeAccessList(
 export function encodeAuthorizationList(
 	authList: readonly {
 		chainId: bigint;
-		address: Address;
+		address: BrandedAddress;
 		nonce: bigint;
 		yParity: number;
 		r: Uint8Array;
@@ -166,7 +166,7 @@ export function encodeAuthorizationList(
  */
 export function decodeAuthorizationList(data: Rlp.Data[]): {
 	chainId: bigint;
-	address: Address;
+	address: BrandedAddress;
 	nonce: bigint;
 	yParity: number;
 	r: Uint8Array;

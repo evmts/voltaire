@@ -27,5 +27,5 @@ export function fromNumber(value) {
 		bytes[i] = Number(v & 0xffn);
 		v >>= 8n;
 	}
-	return bytes;
+	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (bytes);
 }

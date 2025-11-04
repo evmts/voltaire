@@ -18,5 +18,5 @@ import { toHex } from "./toHex.js";
  * ```
  */
 export function from(addr) {
-	return toHex(addr).toLowerCase();
+	return /** @type {Lowercase} */ (toHex(addr).toLowerCase());
 }

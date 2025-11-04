@@ -1,4 +1,4 @@
-import type { Hash } from "../Hash/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import type { BrandedEventLog } from "./BrandedEventLog.js";
 import { hashEquals } from "./utils.js";
 
@@ -35,7 +35,7 @@ export function matchesTopics<T extends BrandedEventLog>(
 		// Handle array of possible topics
 		if (Array.isArray(filterTopic)) {
 			let anyMatch = false;
-			for (const possibleTopic of filterTopic as Hash[]) {
+			for (const possibleTopic of filterTopic as BrandedHash[]) {
 				if (hashEquals(logTopic, possibleTopic)) {
 					anyMatch = true;
 					break;
@@ -46,7 +46,7 @@ export function matchesTopics<T extends BrandedEventLog>(
 			}
 		} else {
 			// Single topic - must match exactly
-			if (!hashEquals(logTopic, filterTopic as Hash)) {
+			if (!hashEquals(logTopic, filterTopic as BrandedHash)) {
 				return false;
 			}
 		}

@@ -1,5 +1,5 @@
 import type { BrandedBytecode } from "./BrandedBytecode.js";
-import type { Hash } from "../Hash/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import { Keccak256 } from "../../crypto/keccak256.js";
 
 /**
@@ -14,6 +14,6 @@ import { Keccak256 } from "../../crypto/keccak256.js";
  * const codeHash = Bytecode.hash(code);
  * ```
  */
-export function hash(code: BrandedBytecode): Hash {
-	return Keccak256.hash(code) as Hash;
+export function hash(code: BrandedBytecode): BrandedHash {
+	return Keccak256.hash(code) as BrandedHash;
 }

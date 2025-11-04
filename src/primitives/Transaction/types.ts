@@ -1,5 +1,5 @@
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 
 /**
  * Transaction type discriminator
@@ -16,7 +16,7 @@ export enum Type {
  * Access list item for EIP-2930 and later transactions
  */
 export type AccessListItem = {
-	address: Address;
+	address: BrandedAddress;
 	storageKeys: readonly Hash[];
 };
 
@@ -30,7 +30,7 @@ export type AccessList = readonly AccessListItem[];
  */
 export type Authorization = {
 	chainId: bigint;
-	address: Address;
+	address: BrandedAddress;
 	nonce: bigint;
 	yParity: number;
 	r: Uint8Array;
@@ -63,7 +63,7 @@ export type Legacy = {
 	nonce: bigint;
 	gasPrice: bigint;
 	gasLimit: bigint;
-	to: Address | null;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	v: bigint;
@@ -80,7 +80,7 @@ export type EIP2930 = {
 	nonce: bigint;
 	gasPrice: bigint;
 	gasLimit: bigint;
-	to: Address | null;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	accessList: AccessList;
@@ -99,7 +99,7 @@ export type EIP1559 = {
 	maxPriorityFeePerGas: bigint;
 	maxFeePerGas: bigint;
 	gasLimit: bigint;
-	to: Address | null;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	accessList: AccessList;
@@ -118,7 +118,7 @@ export type EIP4844 = {
 	maxPriorityFeePerGas: bigint;
 	maxFeePerGas: bigint;
 	gasLimit: bigint;
-	to: Address;
+	to: BrandedAddress;
 	value: bigint;
 	data: Uint8Array;
 	accessList: AccessList;
@@ -139,7 +139,7 @@ export type EIP7702 = {
 	maxPriorityFeePerGas: bigint;
 	maxFeePerGas: bigint;
 	gasLimit: bigint;
-	to: Address | null;
+	to: BrandedAddress | null;
 	value: bigint;
 	data: Uint8Array;
 	accessList: AccessList;

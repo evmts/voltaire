@@ -3,6 +3,7 @@
  * Uses WebAssembly bindings to Zig implementation
  */
 
+import type { BrandedAddress } from "./BrandedAddress.js";
 import * as loader from "../../wasm-loader/loader.js";
 
 /**
@@ -24,9 +25,9 @@ export class Address {
 	 * @param hex - Hex string representation
 	 * @returns Address instance
 	 */
-	static fromHex(hex: string): Address {
+	static fromHex(hex: string): BrandedAddress {
 		const bytes = loader.addressFromHex(hex);
-		return new Address(bytes);
+		return new Address(bytes) as unknown as BrandedAddress;
 	}
 
 	/**
@@ -34,8 +35,8 @@ export class Address {
 	 * @param bytes - 20-byte buffer
 	 * @returns Address instance
 	 */
-	static fromBytes(bytes: Uint8Array): Address {
-		return new Address(new Uint8Array(bytes));
+	static fromBytes(bytes: Uint8Array): BrandedAddress {
+		return new Address(new Uint8Array(bytes)) as unknown as BrandedAddress;
 	}
 
 	/**
@@ -86,9 +87,9 @@ export class Address {
 	 * @param nonce - Account nonce
 	 * @returns Computed contract address
 	 */
-	static calculateCreateAddress(sender: Address, nonce: number): Address {
-		const bytes = loader.calculateCreateAddress(sender.bytes, nonce);
-		return new Address(bytes);
+	static calculateCreateAddress(sender: BrandedAddress, nonce: number): BrandedAddress {
+		const bytes = loader.calculateCreateAddress((sender as any).bytes, nonce);
+		return new Address(bytes) as unknown as BrandedAddress;
 	}
 
 	/**
@@ -99,12 +100,12 @@ export class Address {
 	 * @returns Computed contract address
 	 */
 	static calculateCreate2Address(
-		sender: Address,
+		sender: BrandedAddress,
 		salt: Uint8Array,
 		initCode: Uint8Array,
-	): Address {
-		const bytes = loader.calculateCreate2Address(sender.bytes, salt, initCode);
-		return new Address(bytes);
+	): BrandedAddress {
+		const bytes = loader.calculateCreate2Address((sender as any).bytes, salt, initCode);
+		return new Address(bytes) as unknown as BrandedAddress;
 	}
 
 	/**

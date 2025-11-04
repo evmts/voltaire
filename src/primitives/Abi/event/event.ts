@@ -1,5 +1,4 @@
-import type { Hash as HashType } from "../../Hash/index.js";
-import * as Hash from "../../Hash/index.js";
+import { Hash, type BrandedHash } from "../../Hash/index.js";
 import {
 	decodeParameters,
 	decodeValue,
@@ -23,7 +22,7 @@ export type Event<
 export function getSelector<
 	TName extends string = string,
 	TInputs extends readonly Parameter[] = readonly Parameter[],
->(event: Event<TName, TInputs>): HashType {
+>(event: Event<TName, TInputs>): BrandedHash {
 	const signature = getSignature(event);
 	return Hash.keccak256String(signature);
 }
@@ -42,8 +41,8 @@ export function encodeTopics<
 >(
 	event: Event<TName, TInputs>,
 	args: Partial<ParametersToObject<TInputs>>,
-): (HashType | null)[] {
-	const topics: (HashType | null)[] = [];
+): (BrandedHash | null)[] {
+	const topics: (BrandedHash | null)[] = [];
 
 	if (!event.anonymous) {
 		topics.push(getSelector(event));
@@ -63,7 +62,7 @@ export function encodeTopics<
 			topics.push(Hash.keccak256(encoded));
 		} else {
 			const { encoded } = encodeValue(param.type, value);
-			topics.push(encoded as HashType);
+			topics.push(encoded as BrandedHash);
 		}
 	}
 
@@ -76,7 +75,7 @@ export function decodeLog<
 >(
 	event: Event<TName, TInputs>,
 	data: Uint8Array,
-	topics: readonly HashType[],
+	topics: readonly BrandedHash[],
 ): ParametersToObject<TInputs> {
 	let topicIndex = 0;
 

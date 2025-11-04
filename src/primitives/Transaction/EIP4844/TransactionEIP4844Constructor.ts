@@ -1,5 +1,5 @@
-import type { Address } from "../../Address/index.js";
-import type { Hash } from "../../Hash/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
+import type { BrandedHash } from "../../Hash/index.js";
 import type { AccessList, VersionedHash } from "../types.js";
 import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
 import type { deserialize } from "./deserialize.js";
@@ -28,7 +28,7 @@ export interface TransactionEIP4844Constructor {
 		maxPriorityFeePerGas: bigint;
 		maxFeePerGas: bigint;
 		gasLimit: bigint;
-		to: Address;
+		to: BrandedAddress;
 		value: bigint;
 		data: Uint8Array;
 		accessList: AccessList;

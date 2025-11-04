@@ -1,9 +1,5 @@
-/**
- * Tests for Bytecode module
- */
-
 import { describe, expect, it } from "vitest";
-import * as Bytecode from "./Bytecode.js";
+import { Bytecode } from "./index.js";
 
 // ============================================================================
 // Opcode Utility Tests

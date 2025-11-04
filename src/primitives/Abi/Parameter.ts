@@ -3,7 +3,7 @@ import type {
 	AbiParameter as AbiTypeParameter,
 	AbiParametersToPrimitiveTypes as AbiTypeParametersToPrimitiveTypes,
 } from "abitype";
-import type { Address } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/index.js";
 import type { AbiType } from "./Type.js";
 
 export type Parameter<
@@ -21,7 +21,7 @@ export type Parameter<
 export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
 	[K in keyof TParams]: TParams[K] extends Parameter<infer TType, any, any>
 		? TType extends "address"
-			? Address
+			? BrandedAddress
 			: TParams[K] extends AbiTypeParameter
 				? AbiParameterToPrimitiveType<TParams[K]>
 				: AbiTypeParametersToPrimitiveTypes<[TParams[K] & AbiTypeParameter]>[0]
@@ -33,7 +33,7 @@ export type ParametersToObject<TParams extends readonly Parameter[]> = {
 		? TName
 		: never]: K extends Parameter<infer TType, any, any>
 		? TType extends "address"
-			? Address
+			? BrandedAddress
 			: K extends AbiTypeParameter
 				? AbiParameterToPrimitiveType<K>
 				: AbiTypeParametersToPrimitiveTypes<[K & AbiTypeParameter]>[0]

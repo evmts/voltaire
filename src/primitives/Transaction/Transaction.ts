@@ -50,8 +50,8 @@ export { getChainId as getChainId_internal } from "./getChainId.js";
 export { assertSigned as assertSigned_internal } from "./assertSigned.js";
 export { isSigned as isSigned_internal } from "./isSigned.js";
 
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 import { assertSigned as _assertSigned } from "./assertSigned.js";
 import { format as _format } from "./format.js";
 import { getAccessList as _getAccessList } from "./getAccessList.js";
@@ -102,21 +102,21 @@ export function serialize(tx: Any): Uint8Array {
 /**
  * Compute transaction hash
  */
-export function hash(tx: Any): Hash {
+export function hash(tx: Any): BrandedHash {
 	return _hash.call(tx);
 }
 
 /**
  * Get signing hash for transaction
  */
-export function getSigningHash(tx: Any): Hash {
+export function getSigningHash(tx: Any): BrandedHash {
 	return _getSigningHash.call(tx);
 }
 
 /**
  * Get sender address from transaction signature
  */
-export function getSender(tx: Any): Address {
+export function getSender(tx: Any): BrandedAddress {
 	return _getSender.call(tx);
 }
 

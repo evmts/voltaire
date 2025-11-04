@@ -1,12 +1,12 @@
-import type { Address } from "../Address/index.js";
-import type { Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/index.js";
+import { Hash, type BrandedHash } from "../Hash/index.js";
 
 /**
  * Single access list entry
  * Contains address and its accessed storage keys
  */
 export type Item<
-	TAddress extends Address = Address,
+	TAddress extends BrandedAddress = BrandedAddress,
 	TStorageKeys extends readonly Hash[] = readonly Hash[],
 > = {
 	/** Contract address */

@@ -1,5 +1,5 @@
-import type { Address } from "../../Address/index.js";
-import type { Hash } from "../../Hash/index.js";
+import type { BrandedAddress } from "../../Address/index.js";
+import type { BrandedHash } from "../../Hash/index.js";
 import type { BrandedAuthorization } from "./BrandedAuthorization.js";
 import type { getAuthorizer } from "./getAuthorizer.js";
 import type { getSigningHash } from "./getSigningHash.js";
@@ -14,7 +14,7 @@ type AuthorizationPrototype = BrandedAuthorization & {
 export interface AuthorizationConstructor {
 	(auth: {
 		chainId: bigint;
-		address: Address;
+		address: BrandedAddress;
 		nonce: bigint;
 		yParity: number;
 		r: Uint8Array;

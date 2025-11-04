@@ -1,1 +1,1 @@
-export * from "./Authorization.js";
+export * from "./Authorization.factory.js";

@@ -1,1 +1,1 @@
-export * from "./TransactionLegacy.js";
+export * from "./TransactionLegacy.factory.js";

@@ -1,4 +1,5 @@
 import type * as Hex from "../Hex/index.js";
+import type { BrandedAddress } from "./BrandedAddress.js";
 
 /**
  * Lowercase address hex string
@@ -9,4 +10,4 @@ export type Lowercase = Hex.Sized<20> & {
 	readonly __lowercase: true;
 };
 
-export type { from } from "./LowercaseAddress.js";
+export declare function from(addr: BrandedAddress): Lowercase;
