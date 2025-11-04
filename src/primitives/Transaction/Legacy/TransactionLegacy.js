@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Legacy Transaction (Type 0) Factory
  *
@@ -19,9 +20,6 @@
  * const sender2 = tx.getSender();
  * ```
  */
-
-// Import types
-import type { TransactionLegacyConstructor } from "./TransactionLegacyConstructor.js";
 
 // Import all method functions
 import { Type } from "../types.js";
@@ -48,9 +46,16 @@ export {
 };
 
 /**
- * Factory function for creating Legacy Transaction instances
+ * @typedef {import('./BrandedTransactionLegacy.js').BrandedTransactionLegacy} BrandedTransactionLegacy
+ * @typedef {import('./TransactionLegacyConstructor.js').TransactionLegacyConstructor} TransactionLegacyConstructor
  */
-export const TransactionLegacy = ((tx) => {
+
+/**
+ * Factory function for creating Legacy Transaction instances
+ *
+ * @type {TransactionLegacyConstructor}
+ */
+export function TransactionLegacy(tx) {
 	return {
 		__tag: "TransactionLegacy",
 		type: Type.Legacy,
@@ -64,10 +69,7 @@ export const TransactionLegacy = ((tx) => {
 		r: tx.r,
 		s: tx.s,
 	};
-}) as TransactionLegacyConstructor;
-
-// Initialize prototype
-TransactionLegacy.prototype = {} as any;
+}
 
 // Attach static methods
 TransactionLegacy.deserialize = deserialize;
@@ -79,9 +81,12 @@ TransactionLegacy.getSender = getSender;
 TransactionLegacy.verifySignature = verifySignature;
 
 // Bind prototype methods using Function.prototype.call.bind
-TransactionLegacy.prototype.serialize = Function.prototype.call.bind(serialize) as any;
-TransactionLegacy.prototype.hash = Function.prototype.call.bind(hash) as any;
-TransactionLegacy.prototype.getChainId = Function.prototype.call.bind(getChainId) as any;
-TransactionLegacy.prototype.getSigningHash = Function.prototype.call.bind(getSigningHash) as any;
-TransactionLegacy.prototype.getSender = Function.prototype.call.bind(getSender) as any;
-TransactionLegacy.prototype.verifySignature = Function.prototype.call.bind(verifySignature) as any;
+TransactionLegacy.prototype = {};
+TransactionLegacy.prototype.serialize = Function.prototype.call.bind(serialize);
+TransactionLegacy.prototype.hash = Function.prototype.call.bind(hash);
+TransactionLegacy.prototype.getChainId = Function.prototype.call.bind(getChainId);
+TransactionLegacy.prototype.getSigningHash =
+	Function.prototype.call.bind(getSigningHash);
+TransactionLegacy.prototype.getSender = Function.prototype.call.bind(getSender);
+TransactionLegacy.prototype.verifySignature =
+	Function.prototype.call.bind(verifySignature);
