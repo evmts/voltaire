@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../../Address/index.js";
+import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { AccessList, Type, VersionedHash } from "../types.js";
 
 /**

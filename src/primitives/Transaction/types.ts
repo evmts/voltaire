@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../Address/index.js";
-import type { BrandedHash, Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { Hash } from "../Hash/index.js";
 
 /**
  * Transaction type discriminator

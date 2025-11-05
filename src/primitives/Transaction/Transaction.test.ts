@@ -5,8 +5,10 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import { Hash } from "../Hash/index.js";
 import * as Transaction from "../Transaction/index.js";
+import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
+import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/BrandedTransactionEIP1559.js";
+import type { BrandedTransactionLegacy } from "../Transaction/Legacy/BrandedTransactionLegacy.js";
 import type {
 	Any,
 	Authorization,
@@ -347,21 +349,21 @@ describe("Legacy", () => {
 	};
 
 	it("serialize throws not implemented", () => {
-		expect(() => Transaction.Legacy.serialize.call(legacyTx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.Legacy.serialize.call(legacyTx as BrandedTransactionLegacy),
+		).toThrow("Not implemented");
 	});
 
 	it("hash throws not implemented", () => {
-		expect(() => Transaction.Legacy.hash.call(legacyTx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.Legacy.hash.call(legacyTx as BrandedTransactionLegacy),
+		).toThrow("Not implemented");
 	});
 
 	it("getSigningHash throws not implemented", () => {
-		expect(() => Transaction.Legacy.getSigningHash.call(legacyTx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.Legacy.getSigningHash.call(legacyTx as BrandedTransactionLegacy),
+		).toThrow("Not implemented");
 	});
 
 	it("deserialize throws not implemented", () => {
@@ -376,7 +378,9 @@ describe("Legacy", () => {
 				...legacyTx,
 				v: 37n, // chainId = (37 - 35) / 2 = 1
 			};
-			expect(Transaction.Legacy.getChainId.call(tx)).toBe(1n);
+			expect(
+				Transaction.Legacy.getChainId.call(tx as BrandedTransactionLegacy),
+			).toBe(1n);
 		});
 
 		it("extracts chain ID for different networks", () => {
@@ -384,7 +388,11 @@ describe("Legacy", () => {
 				...legacyTx,
 				v: 41n, // chainId = (41 - 35) / 2 = 3
 			};
-			expect(Transaction.Legacy.getChainId.call(tx)).toBe(3n);
+			expect(
+				Transaction.Legacy.getChainId.call(
+					tx as BrandedTransactionLegacy,
+				),
+			).toBe(3n);
 		});
 
 		it("returns null for pre-EIP-155 v value (27)", () => {
@@ -392,7 +400,11 @@ describe("Legacy", () => {
 				...legacyTx,
 				v: 27n,
 			};
-			expect(Transaction.Legacy.getChainId.call(tx)).toBeNull();
+			expect(
+				Transaction.Legacy.getChainId.call(
+					tx as BrandedTransactionLegacy,
+				),
+			).toBeNull();
 		});
 
 		it("returns null for pre-EIP-155 v value (28)", () => {
@@ -400,7 +412,11 @@ describe("Legacy", () => {
 				...legacyTx,
 				v: 28n,
 			};
-			expect(Transaction.Legacy.getChainId.call(tx)).toBeNull();
+			expect(
+				Transaction.Legacy.getChainId.call(
+					tx as BrandedTransactionLegacy,
+				),
+			).toBeNull();
 		});
 
 		it("handles large chain IDs", () => {
@@ -408,20 +424,28 @@ describe("Legacy", () => {
 				...legacyTx,
 				v: 999999999999n, // Large chain ID
 			};
-			expect(Transaction.Legacy.getChainId.call(tx)).toBe(499999999982n);
+			expect(
+				Transaction.Legacy.getChainId.call(
+					tx as BrandedTransactionLegacy,
+				),
+			).toBe(499999999982n);
 		});
 	});
 
 	it("getSender throws not implemented", () => {
-		expect(() => Transaction.Legacy.getSender.call(legacyTx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.Legacy.getSender.call(
+				legacyTx as BrandedTransactionLegacy,
+			),
+		).toThrow("Not implemented");
 	});
 
 	it("verifySignature throws not implemented", () => {
-		expect(() => Transaction.Legacy.verifySignature.call(legacyTx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.Legacy.verifySignature.call(
+				legacyTx as BrandedTransactionLegacy,
+			),
+		).toThrow("Not implemented");
 	});
 });
 
@@ -447,28 +471,28 @@ describe("EIP1559", () => {
 	};
 
 	it("serialize throws not implemented", () => {
-		expect(() => Transaction.EIP1559.serialize.call(eip1559Tx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.EIP1559.serialize(eip1559Tx as BrandedTransactionEIP1559),
+		).toThrow("Not implemented");
 	});
 
 	it("hash throws not implemented", () => {
-		expect(() => Transaction.EIP1559.hash.call(eip1559Tx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.EIP1559.hash(eip1559Tx as BrandedTransactionEIP1559),
+		).toThrow("Not implemented");
 	});
 
 	it("getSigningHash throws not implemented", () => {
-		expect(() => Transaction.EIP1559.getSigningHash.call(eip1559Tx)).toThrow(
-			"Not implemented",
-		);
+		expect(() =>
+			Transaction.EIP1559.getSigningHash(eip1559Tx as BrandedTransactionEIP1559),
+		).toThrow("Not implemented");
 	});
 
 	describe("getEffectiveGasPrice", () => {
 		it("returns baseFee + maxPriorityFee when both fit", () => {
 			const baseFee = 10000000000n;
-			const result = Transaction.EIP1559.getEffectiveGasPrice.call(
-				eip1559Tx,
+			const result = Transaction.EIP1559.getEffectiveGasPrice(
+				eip1559Tx as BrandedTransactionEIP1559,
 				baseFee,
 			);
 			// baseFee (10) + maxPriorityFee (2) = 12
@@ -482,15 +506,18 @@ describe("EIP1559", () => {
 				maxFeePerGas: 12000000000n,
 			};
 			const baseFee = 10000000000n;
-			const result = Transaction.EIP1559.getEffectiveGasPrice.call(tx, baseFee);
+			const result = Transaction.EIP1559.getEffectiveGasPrice(
+				tx as BrandedTransactionEIP1559,
+				baseFee,
+			);
 			// baseFee (10) + effective priority (2, capped by maxFee - baseFee) = 12
 			expect(result).toBe(12000000000n);
 		});
 
 		it("handles zero baseFee", () => {
 			const baseFee = 0n;
-			const result = Transaction.EIP1559.getEffectiveGasPrice.call(
-				eip1559Tx,
+			const result = Transaction.EIP1559.getEffectiveGasPrice(
+				eip1559Tx as BrandedTransactionEIP1559,
 				baseFee,
 			);
 			expect(result).toBe(2000000000n);
@@ -502,7 +529,10 @@ describe("EIP1559", () => {
 				maxFeePerGas: 10000000000n,
 			};
 			const baseFee = 10000000000n;
-			const result = Transaction.EIP1559.getEffectiveGasPrice.call(tx, baseFee);
+			const result = Transaction.EIP1559.getEffectiveGasPrice(
+				tx as BrandedTransactionEIP1559,
+				baseFee,
+			);
 			expect(result).toBe(10000000000n);
 		});
 	});
@@ -534,8 +564,8 @@ describe("EIP4844", () => {
 	describe("getBlobGasCost", () => {
 		it("calculates cost for single blob", () => {
 			const blobBaseFee = 1n;
-			const cost = Transaction.EIP4844.getBlobGasCost.call(
-				eip4844Tx,
+			const cost = Transaction.EIP4844.getBlobGasCost(
+				eip4844Tx as BrandedTransactionEIP4844,
 				blobBaseFee,
 			);
 			// 1 blob * 131072 gas/blob * 1 = 131072
@@ -548,15 +578,18 @@ describe("EIP4844", () => {
 				blobVersionedHashes: [testHash, createHash(20), createHash(30)],
 			};
 			const blobBaseFee = 10n;
-			const cost = Transaction.EIP4844.getBlobGasCost.call(tx, blobBaseFee);
+			const cost = Transaction.EIP4844.getBlobGasCost(
+				tx as BrandedTransactionEIP4844,
+				blobBaseFee,
+			);
 			// 3 blobs * 131072 gas/blob * 10 = 3932160
 			expect(cost).toBe(3932160n);
 		});
 
 		it("handles zero blob base fee", () => {
 			const blobBaseFee = 0n;
-			const cost = Transaction.EIP4844.getBlobGasCost.call(
-				eip4844Tx,
+			const cost = Transaction.EIP4844.getBlobGasCost(
+				eip4844Tx as BrandedTransactionEIP4844,
 				blobBaseFee,
 			);
 			expect(cost).toBe(0n);
@@ -564,8 +597,8 @@ describe("EIP4844", () => {
 
 		it("handles high blob base fee", () => {
 			const blobBaseFee = 1000000n;
-			const cost = Transaction.EIP4844.getBlobGasCost.call(
-				eip4844Tx,
+			const cost = Transaction.EIP4844.getBlobGasCost(
+				eip4844Tx as BrandedTransactionEIP4844,
 				blobBaseFee,
 			);
 			expect(cost).toBe(131072000000n);
@@ -574,8 +607,8 @@ describe("EIP4844", () => {
 
 	it("getEffectiveGasPrice works same as EIP-1559", () => {
 		const baseFee = 10000000000n;
-		const result = Transaction.EIP4844.getEffectiveGasPrice.call(
-			eip4844Tx,
+		const result = Transaction.EIP4844.getEffectiveGasPrice(
+			eip4844Tx as BrandedTransactionEIP4844,
 			baseFee,
 		);
 		expect(result).toBe(11000000000n);
@@ -1179,7 +1212,10 @@ describe("Transaction edge cases", () => {
 			s: testSignature.s,
 		};
 		expect(tx.blobVersionedHashes.length).toBe(6);
-		const cost = Transaction.EIP4844.getBlobGasCost.call(tx, 1n);
+		const cost = Transaction.EIP4844.getBlobGasCost(
+			tx as BrandedTransactionEIP4844,
+			1n,
+		);
 		expect(cost).toBe(786432n); // 6 * 131072
 	});
 

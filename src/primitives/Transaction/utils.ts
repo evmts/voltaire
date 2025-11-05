@@ -1,8 +1,10 @@
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
-import type { BrandedAddress } from "../Address/index.js";
-import * as AddressNamespace from "../Address/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import { fromPublicKey } from "../Address/BrandedAddress/fromPublicKey.js";
 import type { BrandedHash, Hash } from "../Hash/index.js";
-import type * as Rlp from "../Rlp/index.js";
+import type { BrandedRlp } from "../Rlp/BrandedRlp.js";
+
+type Encodable = Uint8Array | BrandedRlp | Encodable[];
 
 /**
  * Encode bigint as big-endian bytes, removing leading zeros
@@ -85,7 +87,7 @@ export function recoverAddress(
 		y = (y << 8n) | BigInt(publicKey[32 + i]!);
 	}
 
-	return AddressNamespace.fromPublicKey(x, y);
+	return fromPublicKey(x, y);
 }
 
 /**
@@ -97,7 +99,7 @@ export function encodeAccessList(
 		address: BrandedAddress;
 		storageKeys: readonly Hash[];
 	}[],
-): Rlp.Encodable[] {
+): Encodable[] {
 	return accessList.map((item) => [
 		item.address,
 		item.storageKeys.map((key) => key as Uint8Array),
@@ -109,7 +111,7 @@ export function encodeAccessList(
  * @internal
  */
 export function decodeAccessList(
-	data: Rlp.Data[],
+	data: BrandedRlp[],
 ): { address: BrandedAddress; storageKeys: BrandedHash[] }[] {
 	return data.map((item) => {
 		if (item.type !== "list" || item.value.length !== 2) {
@@ -128,7 +130,7 @@ export function decodeAccessList(
 		}
 
 		const address = addressData.value as BrandedAddress;
-		const storageKeys = keysData.value.map((keyData: Rlp.BrandedRlp) => {
+		const storageKeys = keysData.value.map((keyData: BrandedRlp) => {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
 				throw new Error("Invalid storage key");
 			}
@@ -152,7 +154,7 @@ export function encodeAuthorizationList(
 		r: Uint8Array;
 		s: Uint8Array;
 	}[],
-): Rlp.Encodable[] {
+): Encodable[] {
 	return authList.map((auth) => [
 		encodeBigintCompact(auth.chainId),
 		auth.address,
@@ -167,7 +169,7 @@ export function encodeAuthorizationList(
  * Decode authorization list from RLP (EIP-7702)
  * @internal
  */
-export function decodeAuthorizationList(data: Rlp.Data[]): {
+export function decodeAuthorizationList(data: BrandedRlp[]): {
 	chainId: bigint;
 	address: BrandedAddress;
 	nonce: bigint;
