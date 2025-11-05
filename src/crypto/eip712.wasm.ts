@@ -16,18 +16,20 @@
  * ```
  */
 
-import type { BrandedAddress } from "../primitives/Address/index.js";
+import type { BrandedAddress } from "../primitives/Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
 import {
-	type Domain,
 	Eip712EncodingError,
 	Eip712Error,
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
-	type Message,
-	type TypeDefinitions,
-	type TypeProperty,
-	type TypedData,
+} from "./EIP712/index.js";
+import type {
+	Domain,
+	Message,
+	TypeDefinitions,
+	TypeProperty,
+	TypedData,
 } from "./EIP712/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
@@ -49,7 +51,6 @@ export namespace Eip712Wasm {
 	// Core Types (same as Noble implementation)
 	// ==========================================================================
 
-	export type { Domain, TypedData, TypeDefinitions, TypeProperty, Message };
 	export type Signature = Secp256k1Wasm.Signature;
 	export type Types = TypeDefinitions;
 
@@ -64,7 +65,7 @@ export namespace Eip712Wasm {
 		 * @param domain - Domain separator fields
 		 * @returns 32-byte domain hash
 		 */
-		export function hash(domain: Eip712Wasm.Domain): BrandedHash {
+		export function hash(domain: Domain): BrandedHash {
 			const types: Types = {
 				EIP712Domain: [],
 			};
