@@ -1,0 +1,85 @@
+---
+title: Voltaire
+description: Ethereum primitives and cryptography library for TypeScript and Zig
+template: splash
+hero:
+  tagline: Modern Ethereum library with simple APIs, LLM-optimized docs, and high-performance implementations
+  actions:
+    - text: Get Started
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/evmts/voltaire
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Features
+
+<CardGrid>
+  <Card title="Simple APIs" icon="pencil">
+    Minimal close-to-spec APIs for Ethereum development
+  </Card>
+  <Card title="LLM-Optimized" icon="star">
+    API and documentation built and tested for LLMs
+  </Card>
+  <Card title="High Performance" icon="rocket">
+    Fast WASM implementations with tree-shakeable code
+  </Card>
+  <Card title="Type-Safe" icon="approve-check">
+    Branded types for opt-in type safety
+  </Card>
+  <Card title="Zig Support" icon="seti:zig">
+    Full functionality in TypeScript and Zig
+  </Card>
+  <Card title="Feature Rich" icon="puzzle">
+    Advanced compilation and EVM execution support
+  </Card>
+</CardGrid>
+
+## Quick Example
+
+```typescript
+import { Address, Hash, Uint, Keccak256 } from "@tevm/voltaire";
+
+// Address operations
+const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = Address.toChecksumHex.call(addr);
+const isZero = Address.isZero.call(addr);
+
+// Hash operations
+const data = new Uint8Array([1, 2, 3]);
+const hash = Keccak256.hash(data);
+const hashHex = Hash.toHex.call(hash);
+
+// Uint arithmetic
+const a = Uint.from(0x100);
+const b = Uint.from(0x200);
+const sum = Uint.plus.call(a, b);
+```
+
+## Installation
+
+```bash
+npm install @tevm/voltaire
+```
+
+```bash
+bun add @tevm/voltaire
+```
+
+```bash
+pnpm install @tevm/voltaire
+```
+
+Or use the [Zig API](https://github.com/evmts/voltaire/blob/main/docs/ZIG_API.md):
+
+```bash
+# Install specific version (recommended)
+zig fetch --save https://github.com/evmts/voltaire/archive/refs/tags/v0.1.0.tar.gz
+
+# Install latest from main branch
+zig fetch --save git+https://github.com/evmts/voltaire
+```
