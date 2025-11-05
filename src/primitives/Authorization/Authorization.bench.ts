@@ -4,6 +4,7 @@
  * Measures performance of EIP-7702 authorization operations
  */
 
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import * as Authorization from "../Authorization/index.js";
 
 // Benchmark runner
@@ -59,10 +60,10 @@ function benchmark(
 // Test Data
 // ============================================================================
 
-function createAddress(byte: number) {
+function createAddress(byte: number): BrandedAddress {
 	const bytes = new Uint8Array(20);
 	bytes.fill(byte);
-	return bytes;
+	return Object.assign(bytes, { bytes }) as unknown as BrandedAddress;
 }
 
 const addr1 = createAddress(1);
@@ -70,7 +71,7 @@ const addr2 = createAddress(2);
 
 const validAuth: Authorization.Item = {
 	chainId: 1n,
-	address: addr1 as any,
+	address: addr1,
 	nonce: 0n,
 	yParity: 0,
 	r: 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefn,
@@ -79,7 +80,7 @@ const validAuth: Authorization.Item = {
 
 const validUnsigned: Authorization.Unsigned = {
 	chainId: 1n,
-	address: addr1 as any,
+	address: addr1,
 	nonce: 0n,
 };
 
@@ -87,7 +88,7 @@ const validUnsigned: Authorization.Unsigned = {
 const smallList: Authorization.Item[] = [
 	{
 		chainId: 1n,
-		address: addr1 as any,
+		address: addr1,
 		nonce: 0n,
 		yParity: 0,
 		r: 0x123n,
@@ -95,7 +96,7 @@ const smallList: Authorization.Item[] = [
 	},
 	{
 		chainId: 1n,
-		address: addr2 as any,
+		address: addr2,
 		nonce: 1n,
 		yParity: 1,
 		r: 0x789n,

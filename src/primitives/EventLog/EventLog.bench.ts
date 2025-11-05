@@ -4,6 +4,7 @@
  * Measures performance of event log operations
  */
 
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
 import { clone } from "./clone.js";
 import { copy } from "./copy.js";
@@ -69,11 +70,11 @@ function benchmark(
 // ============================================================================
 
 const addr1 =
-	"0x0000000000000000000000000000000000000001";
+	"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
 const addr2 =
-	"0x0000000000000000000000000000000000000002";
+	"0x0000000000000000000000000000000000000002" as unknown as BrandedAddress;
 const addr3 =
-	"0x0000000000000000000000000000000000000003";
+	"0x0000000000000000000000000000000000000003" as unknown as BrandedAddress;
 
 const topic0 =
 	"0x0000000000000000000000000000000000000000000000000000000000000010" as unknown as BrandedHash;

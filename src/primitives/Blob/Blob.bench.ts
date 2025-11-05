@@ -4,7 +4,6 @@
  * Measures performance of blob encoding, validation, and utility functions
  */
 
-import { from } from "./from.js";
 import { fromData } from "./fromData.js";
 import { isValid } from "./isValid.js";
 import { toData } from "./toData.js";
@@ -19,7 +18,7 @@ import { estimateBlobCount } from "./estimateBlobCount.js";
 import { splitData } from "./splitData.js";
 import { joinData } from "./joinData.js";
 import { SIZE, COMMITMENT_VERSION_KZG, MAX_PER_TRANSACTION } from "./constants.js";
-import * as Blob from "./Blob.js";
+import type { Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -191,20 +190,20 @@ results.push(
 );
 results.push(
 	benchmark("Commitment.isValid - valid", () =>
-		Blob.Commitment.isValid(validCommitment),
+		validCommitment.byteLength === 48,
 	),
 );
 results.push(
 	benchmark("Commitment.isValid - invalid", () =>
-		Blob.Commitment.isValid(invalidCommitment),
+		invalidCommitment.byteLength === 48,
 	),
 );
 results.push(
-	benchmark("Proof.isValid - valid", () => Blob.Proof.isValid(validProof)),
+	benchmark("Proof.isValid - valid", () => validProof.byteLength === 48),
 );
 results.push(
 	benchmark("VersionedHash.isValid - valid", () =>
-		Blob.VersionedHash.isValid(validHash),
+		validHash.byteLength === 32 && validHash[0] === COMMITMENT_VERSION_KZG,
 	),
 );
 
@@ -227,7 +226,7 @@ results.push(
 );
 results.push(
 	benchmark("VersionedHash.getVersion", () =>
-		Blob.VersionedHash.getVersion(versionedHash),
+		versionedHash[0],
 	),
 );
 results.push(
@@ -451,7 +450,7 @@ results.push(
 results.push(
 	benchmark("toProof", () => {
 		try {
-			toProof(smallBlob, validCommitment as Blob.Commitment);
+			toProof(smallBlob, validCommitment as Commitment);
 		} catch {
 			// Expected - not implemented
 		}
@@ -474,8 +473,8 @@ results.push(
 		try {
 			verify(
 				smallBlob,
-				validCommitment as Blob.Commitment,
-				validProof as Blob.Proof,
+				validCommitment as Commitment,
+				validProof as Proof,
 			);
 		} catch {
 			// Expected - not implemented
@@ -488,14 +487,14 @@ results.push(
 			verifyBatch(
 				[smallBlob, smallBlob, smallBlob],
 				[
-					validCommitment as Blob.Commitment,
-					validCommitment as Blob.Commitment,
-					validCommitment as Blob.Commitment,
+					validCommitment as Commitment,
+					validCommitment as Commitment,
+					validCommitment as Commitment,
 				],
 				[
-					validProof as Blob.Proof,
-					validProof as Blob.Proof,
-					validProof as Blob.Proof,
+					validProof as Proof,
+					validProof as Proof,
+					validProof as Proof,
 				],
 			);
 		} catch {
@@ -518,7 +517,7 @@ console.log("\n--- Versioned Hash ---");
 results.push(
 	benchmark("toVersionedHash", () => {
 		try {
-			toVersionedHash(validCommitment as Blob.Commitment);
+			toVersionedHash(validCommitment as Commitment);
 		} catch {
 			// Expected - not implemented
 		}

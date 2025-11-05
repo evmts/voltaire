@@ -97,17 +97,17 @@ function generateBytecode(size: number, includeJumpdests = true): Uint8Array {
 		}
 	}
 
-	return new Uint8Array(bytecode.slice(0, size)) as unknown as BrandedBytecode;
+	return new Uint8Array(bytecode.slice(0, size)) as BrandedBytecode;
 }
 
 // Generate test bytecode samples
-const smallCode = generateBytecode(100);
-const mediumCode = generateBytecode(1000);
-const largeCode = generateBytecode(10000);
-const hugeCode = generateBytecode(50000);
+const smallCode = generateBytecode(100) as BrandedBytecode;
+const mediumCode = generateBytecode(1000) as BrandedBytecode;
+const largeCode = generateBytecode(10000) as BrandedBytecode;
+const hugeCode = generateBytecode(50000) as BrandedBytecode;
 
 // Simple patterns
-const simplePush = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]) as unknown as BrandedBytecode;
+const simplePush = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]) as BrandedBytecode;
 const pushWithJumpdest = new Uint8Array([
 	0x60,
 	0x5b,
@@ -117,7 +117,7 @@ const pushWithJumpdest = new Uint8Array([
 	0x56, // PUSH1 0x00, JUMP
 	0x5b,
 	0x00, // JUMPDEST, STOP
-]) as unknown as BrandedBytecode;
+]) as BrandedBytecode;
 
 // Metadata samples
 const codeWithMetadata = new Uint8Array([
@@ -125,7 +125,7 @@ const codeWithMetadata = new Uint8Array([
 	...new Array(0x33 - 2).fill(0xa2),
 	0x00,
 	0x33,
-]) as unknown as BrandedBytecode;
+]) as BrandedBytecode;
 
 const results: BenchmarkResult[] = [];
 
@@ -238,7 +238,7 @@ console.log(
 );
 
 console.log("\n--- validate - edge cases ---");
-const invalidPush = new Uint8Array([0x60]) as unknown as BrandedBytecode; // Incomplete PUSH
+const invalidPush = new Uint8Array([0x60]) as BrandedBytecode; // Incomplete PUSH
 results.push(
 	benchmark("validate - invalid (incomplete PUSH)", () =>
 		validate(invalidPush),
@@ -553,9 +553,9 @@ console.log(
 	"================================================================================\n",
 );
 
-const smallCode2 = new Uint8Array(smallCode) as unknown as BrandedBytecode;
-const mediumCode2 = new Uint8Array(mediumCode) as unknown as BrandedBytecode;
-const largeCode2 = new Uint8Array(largeCode) as unknown as BrandedBytecode;
+const smallCode2 = new Uint8Array(smallCode) as BrandedBytecode;
+const mediumCode2 = new Uint8Array(mediumCode) as BrandedBytecode;
+const largeCode2 = new Uint8Array(largeCode) as BrandedBytecode;
 
 console.log("--- equals - varying sizes ---");
 results.push(

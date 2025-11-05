@@ -4,6 +4,7 @@
  * Measures performance of StorageKey operations and state constants
  */
 
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedStorageKey } from "./BrandedStorageKey.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_ROOT, StorageKey } from "./index.js";
 
@@ -55,10 +56,10 @@ function benchmark(
 // Test Data
 // ============================================================================
 
-function createAddress(byte: number) {
+function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
-	return addr;
+	return addr as BrandedAddress;
 }
 
 const addr1 = createAddress(0x01);
