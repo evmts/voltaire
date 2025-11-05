@@ -71,19 +71,20 @@ class Address extends Uint8Array {
   static fromBytes(bytes: Uint8Array): Address
   static fromNumber(value: bigint | number): Address
   static fromPublicKey(x: bigint, y: bigint): Address
+  static fromPrivateKey(privateKey: Uint8Array): Address
   static fromAbiEncoded(bytes: Uint8Array): Address
   static fromBase64(b64: string): Address
+  static of(...items: number[]): Address
   static zero(): Address
 
   // Conversions (→ /primitives/address/conversions)
-  toHex(): BrandedLowercaseHex
-  toChecksummed(): BrandedChecksummedHex
-  toLowercase(): BrandedLowercaseHex
-  toUppercase(): BrandedUppercaseHex
+  toHex(): Lowercase
+  toChecksummed(): Checksummed
+  toLowercase(): Lowercase
+  toUppercase(): Uppercase
   toU256(): BrandedU256
   toAbiEncoded(): Bytes<32>
   toShortHex(prefixLength?: number, suffixLength?: number): string
-  prettyPrint(): string
 
   // Comparisons (→ /primitives/address/comparisons)
   equals(other: BrandedAddress): boolean
@@ -94,12 +95,15 @@ class Address extends Uint8Array {
 
   // Contract addresses (→ /primitives/address/contract-addresses)
   calculateCreateAddress(nonce: bigint): Address
-  calculateCreate2Address(salt: Uint8Array, initCode: Uint8Array): Address
+  calculateCreate2Address(salt: bigint | Uint8Array, initCode: Uint8Array): Address
 
-  // Uint8Array methods (inherited)
+  // Uint8Array methods (inherited - see /primitives/address/uint8array-methods)
   toBase64(): string
   setFromBase64(b64: string): void
   setFromHex(hex: string): void
+  slice(start?: number, end?: number): Address
+  subarray(start?: number, end?: number): Address
+  // ... and all other Uint8Array methods
 }
 ```
 
@@ -117,6 +121,30 @@ export type BrandedAddress = Uint8Array & {
 Source: [BrandedAddress.js:5-7](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.js#L5-L7)
 </TabItem>
 </Tabs>
+
+## Constants
+
+Address module exports size constants for validation and buffer allocation:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Size in bytes
+Address.SIZE // 20
+
+// Hex string length (including "0x" prefix)
+Address.HEX_SIZE // 42
+
+// Usage examples
+const buffer = new Uint8Array(Address.SIZE)  // 20-byte buffer
+const isValidLength = hex.length === Address.HEX_SIZE  // validate "0x" + 40 chars
+```
+
+**Available constants:**
+- `Address.SIZE = 20` - Address size in bytes
+- `Address.HEX_SIZE = 42` - Hex string length with "0x" prefix (2 + 40 characters)
+
+Source: [constants.js](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/constants.js)
 
 ## API Documentation
 
@@ -161,6 +189,12 @@ Source: [BrandedAddress.js:5-7](https://github.com/evmts/primitives/blob/main/sr
     Tree-shakeable functional API for minimal bundle size.
 
     [View BrandedAddress →](/primitives/address/branded-address)
+  </Card>
+
+  <Card title="Uint8Array Methods" icon="document">
+    Inherited methods from Uint8Array for byte manipulation, iteration, and search.
+
+    [View Uint8Array Methods →](/primitives/address/uint8array-methods)
   </Card>
 
   <Card title="WASM Implementation" icon="rocket">

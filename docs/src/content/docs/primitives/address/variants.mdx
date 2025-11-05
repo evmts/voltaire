@@ -35,6 +35,19 @@ const checksummed = Address.Checksummed.from(addr)
 typeof checksummed // "string"
 ```
 
+## Relationship to Hex Module
+
+All address variants are built on `Hex.Sized<20>`, a 20-byte hex string type:
+
+```typescript
+// Structure of each variant
+type Checksummed = Hex.Sized<20> & { __checksummed: true }
+type Lowercase = Hex.Sized<20> & { __lowercase: true }
+type Uppercase = Hex.Sized<20> & { __uppercase: true }
+```
+
+These are return types from variant methods, not separate exports. Use `Address.Checksummed.from()`, `Address.Lowercase.from()`, and `Address.Uppercase.from()` to create them.
+
 **Parameters:**
 - `addr: BrandedAddress` - Address to checksum
 

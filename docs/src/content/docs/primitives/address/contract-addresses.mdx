@@ -89,24 +89,28 @@ Calculate CREATE2 contract address using sender address, salt, and initializatio
 ```typescript
 const deployerAddr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
-// 32-byte salt (required)
-const salt = new Uint8Array(32)
+// Salt can be bigint or Uint8Array
+const salt1 = 42n
+const salt2 = new Uint8Array(32)
 
 // Contract initialization code (constructor + bytecode)
 const initCode = Bytes.fromHex("0x608060405234801561001057600080fd5b50...")
 
-const contractAddr = deployerAddr.calculateCreate2Address(salt, initCode)
-console.log(contractAddr.toHex())
+const contractAddr1 = deployerAddr.calculateCreate2Address(salt1, initCode)
+const contractAddr2 = deployerAddr.calculateCreate2Address(salt2, initCode)
 ```
 
 **Parameters:**
-- `salt: Uint8Array` - 32-byte salt value (must be exactly 32 bytes)
+- `salt: bigint | Uint8Array` - 32-byte salt value
+  - If `bigint`: Converted to 32-byte big-endian representation
+  - If `Uint8Array`: Must be exactly 32 bytes
 - `initCode: Uint8Array` - Contract initialization code
 
 **Returns:** `Address` - Calculated contract address
 
 **Throws:**
-- `Error` - If salt is not exactly 32 bytes
+- `Error` - If Uint8Array salt is not exactly 32 bytes
+- `InvalidValueError` - If bigint salt is negative
 
 **Static form:**
 ```typescript
@@ -123,19 +127,21 @@ Defined in: [primitives/Address/BrandedAddress/calculateCreate2Address.js:24](ht
 const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const initCode = Bytes.fromHex("0x6080604052...")
 
-// Same salt produces same address
-const salt1 = new Uint8Array(32)
-const addr1 = deployer.calculateCreate2Address(salt1, initCode)
-const addr2 = deployer.calculateCreate2Address(salt1, initCode)
+// Same salt produces same address (using bigint)
+const addr1 = deployer.calculateCreate2Address(42n, initCode)
+const addr2 = deployer.calculateCreate2Address(42n, initCode)
 addr1.equals(addr2) // true (deterministic)
 
 // Different salt produces different address
-const salt2 = new Uint8Array(32)
-salt2[0] = 1
-const addr3 = deployer.calculateCreate2Address(salt2, initCode)
+const addr3 = deployer.calculateCreate2Address(43n, initCode)
 addr1.equals(addr3) // false
 
-// Salt must be exactly 32 bytes
+// Can also use Uint8Array (must be 32 bytes)
+const saltBytes = new Uint8Array(32)
+saltBytes[31] = 42
+const addr4 = deployer.calculateCreate2Address(saltBytes, initCode)
+
+// Invalid: wrong size Uint8Array
 try {
   const shortSalt = new Uint8Array(16)
   deployer.calculateCreate2Address(shortSalt, initCode) // ✗ throws
@@ -163,18 +169,12 @@ console.log(`Contract will deploy to: ${predictedAddr.prettyPrint()}`)
 ### CREATE2 Factory Pattern
 
 ```typescript
-import { Bytes } from '@tevm/voltaire'
-
 class ContractFactory {
   constructor(public factoryAddr: Address) {}
 
   predictAddress(salt: bigint, initCode: Uint8Array): Address {
-    // Convert bigint salt to 32-byte array
-    const saltBytes = new Uint8Array(32)
-    const saltHex = salt.toString(16).padStart(64, '0')
-    saltBytes.set(Bytes.fromHex(`0x${saltHex}`))
-
-    return this.factoryAddr.calculateCreate2Address(saltBytes, initCode)
+    // Accepts bigint directly - no manual conversion needed
+    return this.factoryAddr.calculateCreate2Address(salt, initCode)
   }
 
   // Use salt for deterministic addresses
@@ -199,23 +199,20 @@ function mineVanityAddress(
   deployer: Address,
   initCode: Uint8Array,
   prefix: Uint8Array
-): { address: Address, salt: Uint8Array } {
-  const salt = new Uint8Array(32)
-
-  for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
-    // Increment salt
-    const view = new DataView(salt.buffer)
-    view.setBigUint64(24, BigInt(i), false) // big-endian
-
+): { address: Address, salt: bigint } {
+  for (let salt = 0n; salt < 2n ** 256n; salt++) {
     const addr = deployer.calculateCreate2Address(salt, initCode)
 
     // Check if address starts with prefix
     if (addr.slice(0, prefix.length).every((b, i) => b === prefix[i])) {
       return { address: addr, salt }
     }
+
+    // Practical limit for demo
+    if (salt > 10000000n) break
   }
 
-  throw new Error("Vanity address not found")
+  throw new Error("Vanity address not found in search space")
 }
 
 // Find address starting with 0x0000
@@ -224,8 +221,8 @@ const initCode = Bytes.fromHex("0x6080604052...")
 const prefix = new Uint8Array([0x00, 0x00])
 
 const { address, salt } = mineVanityAddress(deployer, initCode, prefix)
-console.log(`Found: ${address.prettyPrint()}`)
-console.log(`Salt: 0x${Bytes.toHex(salt)}`)
+console.log(`Found: ${address.toChecksummed()}`)
+console.log(`Salt: ${salt}`)
 ```
 
 ## CREATE vs CREATE2

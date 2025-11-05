@@ -69,6 +69,7 @@ import {
   fromBytes,
   fromNumber,
   fromPublicKey,
+  fromPrivateKey,
   fromAbiEncoded,
   fromBase64,
   zero
@@ -78,6 +79,7 @@ const addr1 = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const addr2 = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 const addr3 = fromNumber(69n)
 const addr4 = fromPublicKey(x, y)
+const addr5 = fromPrivateKey(privateKeyBytes)
 const zeroAddr = zero()
 ```
 
@@ -93,8 +95,7 @@ import {
   toUppercase,
   toU256,
   toAbiEncoded,
-  toShortHex,
-  prettyPrint
+  toShortHex
 } from '@tevm/voltaire/BrandedAddress'
 
 const hex = toHex(addr)                // "0x742d35cc..."
@@ -105,7 +106,7 @@ const short = toShortHex(addr)         // "0x742d35...1e3e"
 
 See [Conversions](/primitives/address/conversions) for details.
 
-**Tree-shaking note:** `toChecksummed` and `prettyPrint` include keccak256.
+**Tree-shaking note:** `toChecksummed` includes keccak256.
 
 ### Comparisons
 
@@ -156,8 +157,9 @@ import {
 const createAddr = calculateCreateAddress(deployerAddr, nonce)
 // Uses keccak256 + RLP
 
-const create2Addr = calculateCreate2Address(deployerAddr, salt, initCode)
+const create2Addr = calculateCreate2Address(deployerAddr, saltBigInt, initCode)
 // Uses keccak256
+// Salt accepts bigint | Uint8Array
 ```
 
 See [Contract Addresses](/primitives/address/contract-addresses) for details.
@@ -264,19 +266,20 @@ const addr = new Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
 
 ## Dependency Table
 
-| Method/Function | Keccak256 | RLP | Notes |
-|-----------------|-----------|-----|-------|
-| `from`, `fromHex`, `fromBytes`, `fromNumber` | ✗ | ✗ | Pure conversions |
-| `fromPublicKey` | ✓ | ✗ | Derives address from pubkey |
-| `toHex`, `toU256`, `toLowercase`, `toUppercase` | ✗ | ✗ | Pure conversions |
-| `toChecksummed`, `prettyPrint` | ✓ | ✗ | EIP-55 checksumming |
-| `isValidChecksum` | ✓ | ✗ | EIP-55 validation |
-| `ChecksumAddress.from`, `ChecksumAddress.isValid` | ✓ | ✗ | EIP-55 operations |
-| `equals`, `compare`, `lessThan`, `greaterThan` | ✗ | ✗ | Byte comparisons |
-| `isZero`, `isValid`, `is` | ✗ | ✗ | Basic validation |
-| `calculateCreateAddress` | ✓ | ✓ | CREATE opcode |
-| `calculateCreate2Address` | ✓ | ✗ | CREATE2 opcode |
-| **Address class** | ✓ | ✓ | All methods on prototype |
+| Method/Function | Keccak256 | Secp256k1 | RLP | Notes |
+|-----------------|-----------|-----------|-----|-------|
+| `from`, `fromHex`, `fromBytes`, `fromNumber` | ✗ | ✗ | ✗ | Pure conversions |
+| `fromPublicKey` | ✓ | ✗ | ✗ | Derives address from pubkey |
+| `fromPrivateKey` | ✓ | ✓ | ✗ | Derives address from privkey |
+| `toHex`, `toU256`, `toLowercase`, `toUppercase` | ✗ | ✗ | ✗ | Pure conversions |
+| `toChecksummed` | ✓ | ✗ | ✗ | EIP-55 checksumming |
+| `isValidChecksum` | ✓ | ✗ | ✗ | EIP-55 validation |
+| `ChecksumAddress.from`, `ChecksumAddress.isValid` | ✓ | ✗ | ✗ | EIP-55 operations |
+| `equals`, `compare`, `lessThan`, `greaterThan` | ✗ | ✗ | ✗ | Byte comparisons |
+| `isZero`, `isValid`, `is` | ✗ | ✗ | ✗ | Basic validation |
+| `calculateCreateAddress` | ✓ | ✗ | ✓ | CREATE opcode |
+| `calculateCreate2Address` | ✓ | ✗ | ✗ | CREATE2 opcode |
+| **Address class** | ✓ | ✓ | ✓ | All methods on prototype |
 
 ## When to Use BrandedAddress vs Address
 

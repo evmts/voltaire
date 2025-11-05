@@ -164,25 +164,15 @@ Standard Uint8Array method - no static form on Address class.
 
 ## Display Formatting
 
-### `instance.prettyPrint()`
-
-Returns checksummed hex string for display. Recommended for showing addresses to users.
+For user-facing display, use `toChecksummed()`:
 
 ```typescript
 const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
-addr.prettyPrint() // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e" (checksummed)
+addr.toChecksummed() // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// For shortened display
+addr.toShortHex() // "0x742d35...1e3e"
 ```
-
-**Returns:** `string`
-
-**Static form:**
-```typescript
-Address.prettyPrint(addr) // "0x742d35Cc..."
-```
-
-Defined in: [primitives/Address/BrandedAddress/prettyPrint.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/prettyPrint.js)
-
-**Note:** Uses keccak256 internally for checksumming.
 
 ## Mutating Methods
 
@@ -221,15 +211,16 @@ addr.setFromBase64("dC01zGY0wFMpJaO4RLyedZX1Hj4=")
 All conversions available as tree-shakeable imports:
 
 ```typescript
-import { toHex, toChecksummed, toU256, prettyPrint } from '@tevm/voltaire/BrandedAddress'
+import { toHex, toChecksummed, toU256, toShortHex } from '@tevm/voltaire/BrandedAddress'
 import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
 
 const addr: BrandedAddress = /* ... */
 const hex = toHex(addr)
 const checksummed = toChecksummed(addr)
 const n = toU256(addr)
+const short = toShortHex(addr)
 ```
 
-**Tree-shaking benefit:** When avoiding `toChecksummed()` and `prettyPrint()`, keccak256 implementation is excluded from bundle.
+**Tree-shaking benefit:** When avoiding `toChecksummed()`, keccak256 implementation is excluded from bundle.
 
 See [BrandedAddress](/primitives/address/branded-address) for details on tree-shakeable API.
