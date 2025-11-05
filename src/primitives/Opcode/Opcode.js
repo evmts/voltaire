@@ -1,15 +1,15 @@
 // @ts-nocheck
 
 // Export constants
-export * from "./constants.js";
+export * from "./BrandedOpcode/constants.js";
 
 /**
- * @typedef {import('./BrandedOpcode.js').BrandedOpcode} BrandedOpcode
- * @typedef {import('./BrandedOpcode.js').Instruction} Instruction
- * @typedef {import('./BrandedOpcode.js').Info} Info
+ * @typedef {import('./BrandedOpcode/BrandedOpcode.js').BrandedOpcode} BrandedOpcode
+ * @typedef {import('./BrandedOpcode/BrandedOpcode.js').Instruction} Instruction
+ * @typedef {import('./BrandedOpcode/BrandedOpcode.js').Info} Info
  */
 
-import * as constants from "./constants.js";
+import * as constants from "./BrandedOpcode/constants.js";
 // Import methods
 import { disassemble } from "./disassemble.js";
 import { dupPosition } from "./dupPosition.js";
