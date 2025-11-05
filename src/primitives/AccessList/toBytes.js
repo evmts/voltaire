@@ -1,4 +1,4 @@
-import * as Rlp from "../Rlp/Rlp.js";
+import { encode } from "../Rlp/encode.js";
 
 /**
  * Encode access list to RLP (EIP-2930)
@@ -21,5 +21,5 @@ export function toBytes(list) {
 		item.address,
 		item.storageKeys.map((key) => key),
 	]);
-	return Rlp.encode(encoded);
+	return encode(encoded);
 }

@@ -1,5 +1,5 @@
 import { Keccak256 } from "../../../crypto/Keccak256/index.js";
-import * as Rlp from "../../Rlp/index.js";
+import { encode } from "../../Rlp/encode.js";
 import { Type } from "../types.js";
 import {
 	encodeAccessList,
@@ -30,7 +30,7 @@ export function getSigningHash(tx) {
 		tx.data,
 		encodeAccessList(tx.accessList),
 	];
-	const rlpEncoded = Rlp.encode(fields);
+	const rlpEncoded = encode(fields);
 
 	// Prepend type byte 0x02
 	const result = new Uint8Array(1 + rlpEncoded.length);

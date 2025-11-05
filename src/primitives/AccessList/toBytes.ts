@@ -1,4 +1,4 @@
-import * as Rlp from "../Rlp/index.js";
+import { encode } from "../Rlp/encode.js";
 import type { BrandedAccessList } from "./BrandedAccessList.js";
 
 /**
@@ -22,5 +22,5 @@ export function toBytes(list: BrandedAccessList): Uint8Array {
 		item.address,
 		item.storageKeys.map((key) => key as Uint8Array),
 	]);
-	return Rlp.encode(encoded);
+	return encode(encoded);
 }

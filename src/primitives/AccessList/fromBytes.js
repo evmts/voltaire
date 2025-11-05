@@ -1,4 +1,4 @@
-import * as Rlp from "../Rlp/Rlp.js";
+import { decode } from "../Rlp/decode.js";
 
 /**
  * Decode RLP bytes to access list (EIP-2930)
@@ -12,7 +12,7 @@ import * as Rlp from "../Rlp/Rlp.js";
  * ```
  */
 export function fromBytes(bytes) {
-	const decoded = Rlp.decode(bytes);
+	const decoded = decode(bytes);
 
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid access list: expected list");

@@ -1,6 +1,6 @@
 import { Keccak256 } from "../../../crypto/Keccak256/index.js";
 import { Hash } from "../../Hash/index.js";
-import * as Rlp from "../../Rlp/index.js";
+import { encode } from "../../Rlp/encode.js";
 import { encodeBigintCompact } from "../utils.ts";
 
 /**
@@ -24,7 +24,7 @@ export function getSigningHash(auth) {
 		auth.address,
 		encodeBigintCompact(auth.nonce),
 	];
-	const rlpEncoded = Rlp.encode(fields);
+	const rlpEncoded = encode(fields);
 
 	// Prepend magic byte
 	const data = new Uint8Array(1 + rlpEncoded.length);

@@ -1,4 +1,4 @@
-import * as Rlp from "../../Rlp/index.js";
+import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
 
@@ -20,7 +20,7 @@ export function deserialize(data) {
 	}
 
 	const rlpData = data.slice(1);
-	const decoded = Rlp.decode(rlpData);
+	const decoded = decode(rlpData);
 
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid EIP-1559 transaction: expected list");

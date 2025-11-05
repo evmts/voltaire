@@ -1,6 +1,6 @@
 import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedHash } from "../Hash/index.js";
-import * as Rlp from "../Rlp/index.js";
+import { decode } from "../Rlp/decode.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 
 /**
@@ -15,7 +15,7 @@ import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
  * ```
  */
 export function fromBytes(bytes: Uint8Array): BrandedAccessList {
-	const decoded = Rlp.decode(bytes);
+	const decoded = decode(bytes);
 
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid access list: expected list");
