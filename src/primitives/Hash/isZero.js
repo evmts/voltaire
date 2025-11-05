@@ -19,7 +19,7 @@ export function isZero(hash) {
 	}
 	let result = 0;
 	for (let i = 0; i < hash.length; i++) {
-		result |= hash[i] ^ ZERO[i];
+		result |= (hash[i] ?? 0) ^ (ZERO[i] ?? 0);
 	}
 	return result === 0;
 }

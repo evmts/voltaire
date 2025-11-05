@@ -1,4 +1,4 @@
-import { recoverAddress } from "../utils.ts";
+import { recoverAddress } from "../utils.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**

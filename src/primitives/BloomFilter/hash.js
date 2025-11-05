@@ -10,7 +10,7 @@
 export function hash(item, seed, m) {
 	let h = seed;
 	for (let i = 0; i < item.length; i++) {
-		h = (h * 31 + item[i]) >>> 0;
+		h = (h * 31 + (item[i] ?? 0)) >>> 0;
 	}
 	return h % m;
 }

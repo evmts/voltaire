@@ -15,5 +15,7 @@
  * ```
  */
 export function extractRuntime(code, offset) {
-	return code.slice(offset);
+	return /** @type {import('./BrandedBytecode.js').BrandedBytecode} */ (
+		code.slice(offset)
+	);
 }

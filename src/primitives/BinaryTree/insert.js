@@ -98,11 +98,11 @@ function splitStems(existing, newStem, newIdx, newVal, depth) {
 
 	const newValues = new Array(256).fill(null);
 	newValues[newIdx] = newVal;
-	const newStemNode = {
+	const newStemNode = /** @type {import('./BrandedBinaryTree.js').StemNode} */ ({
 		type: "stem",
 		stem: newStem,
 		values: newValues,
-	};
+	});
 
 	const existingHash = hashNode(existing);
 	const newHash = hashNode(newStemNode);

@@ -28,5 +28,5 @@ export function fromData(data) {
 	// Copy data
 	blob.set(data, 8);
 
-	return blob;
+	return /** @type {import('./BrandedBlob.js').BrandedBlob} */ (blob);
 }

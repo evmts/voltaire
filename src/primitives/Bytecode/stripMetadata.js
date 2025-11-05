@@ -17,5 +17,7 @@ export function stripMetadata(code) {
 
 	// Last 2 bytes indicate metadata length
 	const metadataLength = (code[code.length - 1] ?? 0) + 2;
-	return code.slice(0, -metadataLength);
+	return /** @type {import('./BrandedBytecode.js').BrandedBytecode} */ (
+		code.slice(0, -metadataLength)
+	);
 }

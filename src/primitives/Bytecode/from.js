@@ -16,5 +16,5 @@ export function from(value) {
 	if (typeof value === "string") {
 		return fromHex(value);
 	}
-	return value;
+	return /** @type {import('./BrandedBytecode.js').BrandedBytecode} */ (value);
 }

@@ -17,7 +17,7 @@
 export function encode(data) {
 	let binary = "";
 	for (let i = 0; i < data.length; i++) {
-		binary += String.fromCharCode(data[i]);
+		binary += String.fromCharCode(data[i] ?? 0);
 	}
 	return btoa(binary);
 }

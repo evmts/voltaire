@@ -19,5 +19,5 @@ export function getStemBit(stem, pos) {
 	const bitIdx = 7 - (pos % 8);
 	const byte = stem[byteIdx];
 	if (byte === undefined) return 0;
-	return (byte >> bitIdx) & 1;
+	return /** @type {0 | 1} */ ((byte >> bitIdx) & 1);
 }

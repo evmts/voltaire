@@ -19,5 +19,5 @@ export function fromHex(hex) {
 	for (let i = 0; i < bytes.length; i++) {
 		bytes[i] = Number.parseInt(cleaned.slice(i * 2, i * 2 + 2), 16);
 	}
-	return bytes;
+	return /** @type {import('./BrandedBytecode.js').BrandedBytecode} */ (bytes);
 }

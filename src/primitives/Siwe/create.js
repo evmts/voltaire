@@ -4,7 +4,7 @@ import { generateNonce } from "./generateNonce.js";
  * Create a new SIWE message with default values
  *
  * @template {string} TDomain
- * @template {import('../Address/BrandedAddress.js').BrandedAddress} TAddress
+ * @template {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} TAddress
  * @template {string} TUri
  * @template {number} TChainId
  * @param {Object} params - Message parameters (domain, address, uri, chainId are required)

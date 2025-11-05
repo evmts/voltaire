@@ -34,7 +34,9 @@ export function equals(data, other) {
 			return false;
 		}
 		for (let i = 0; i < data.value.length; i++) {
-			if (!equals(data.value[i], other.value[i])) {
+			const dataItem = data.value[i];
+			const otherItem = other.value[i];
+			if (!dataItem || !otherItem || !equals(dataItem, otherItem)) {
 				return false;
 			}
 		}

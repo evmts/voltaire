@@ -46,5 +46,7 @@ export function fromHex(hex, m, k) {
 		enumerable: false,
 	});
 
-	return bytes;
+	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (
+		bytes
+	);
 }

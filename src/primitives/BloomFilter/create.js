@@ -1,4 +1,3 @@
-import { SIZE } from "./constants.js";
 import { InvalidBloomFilterParameterError } from "./errors.js";
 
 /**
@@ -37,5 +36,7 @@ export function create(m, k) {
 		writable: false,
 		enumerable: false,
 	});
-	return filter;
+	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (
+		filter
+	);
 }

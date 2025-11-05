@@ -19,6 +19,9 @@ export function add(filter, item) {
 		const h = hash(item, i, filter.m);
 		const idx = Math.floor(h / 8);
 		const bit = h % 8;
-		filter[idx] |= 1 << bit;
+		const byte = filter[idx];
+		if (byte !== undefined) {
+			filter[idx] = byte | (1 << bit);
+		}
 	}
 }

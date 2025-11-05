@@ -21,7 +21,8 @@ export function contains(filter, item) {
 		const h = hash(item, i, filter.m);
 		const idx = Math.floor(h / 8);
 		const bit = h % 8;
-		if ((filter[idx] & (1 << bit)) === 0) {
+		const byte = filter[idx];
+		if (byte === undefined || (byte & (1 << bit)) === 0) {
 			return false;
 		}
 	}

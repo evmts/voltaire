@@ -26,5 +26,7 @@ export function toVersionedHash(commitment) {
 	versionedHash[0] = COMMITMENT_VERSION_KZG;
 	versionedHash.set(hash.slice(1), 1);
 
-	return versionedHash;
+	return /** @type {import('./BrandedBlob.js').VersionedHash} */ (
+		versionedHash
+	);
 }

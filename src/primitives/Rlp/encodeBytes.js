@@ -31,7 +31,7 @@ import { encodeLengthValue } from "./utils.js";
  */
 export function encodeBytes(bytes) {
 	// Single byte < 0x80: encoded as itself
-	if (bytes.length === 1 && bytes[0] < 0x80) {
+	if (bytes.length === 1 && (bytes[0] ?? 0) < 0x80) {
 		return bytes;
 	}
 

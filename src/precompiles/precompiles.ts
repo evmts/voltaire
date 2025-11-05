@@ -7,7 +7,7 @@ import { Ripemd160 } from "../crypto/Ripemd160/index.js";
 import { SHA256 } from "../crypto/SHA256/index.js";
 import { Secp256k1 } from "../crypto/Secp256k1/index.js";
 import { BN254 as Bn254 } from "../crypto/bn254/BN254.js";
-import { Kzg } from "../crypto/kzg.js";
+import * as Kzg from "../crypto/KZG/index.js";
 import * as Gas from "../primitives/GasConstants/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
@@ -435,7 +435,7 @@ export function bn254Add(
 	try {
 		const a = Bn254.deserializeG1(aBytes);
 		const b = Bn254.deserializeG1(bBytes);
-		const sum = Bn254.G1.add.call(a, b);
+		const sum = Bn254.G1.add(a, b);
 		const out = Bn254.serializeG1(sum);
 		return { success: true, output: out, gasUsed: gas };
 	} catch (e) {
@@ -473,7 +473,7 @@ export function bn254Mul(
 	try {
 		const p = Bn254.deserializeG1(pBytes);
 		const s = beBytesToBigInt(sBytes);
-		const prod = Bn254.G1.mul.call(p, s);
+		const prod = Bn254.G1.mul(p, s);
 		const out = Bn254.serializeG1(prod);
 		return { success: true, output: out, gasUsed: gas };
 	} catch (e) {

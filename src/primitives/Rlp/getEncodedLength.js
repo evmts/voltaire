@@ -18,7 +18,7 @@ import { encodeLengthValue } from "./utils.js";
 export function getEncodedLength(data) {
 	// Handle Uint8Array
 	if (data instanceof Uint8Array) {
-		if (data.length === 1 && data[0] < 0x80) {
+		if (data.length === 1 && (data[0] ?? 0) < 0x80) {
 			return 1;
 		}
 		if (data.length < 56) {

@@ -50,7 +50,10 @@ export function decodeLengthValue(bytes) {
 	// Decode big-endian
 	let result = 0;
 	for (let i = 0; i < bytes.length; i++) {
-		result = result * 256 + bytes[i];
+		const byte = bytes[i];
+		if (byte !== undefined) {
+			result = result * 256 + byte;
+		}
 	}
 
 	return result;

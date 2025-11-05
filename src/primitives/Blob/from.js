@@ -15,7 +15,7 @@ import { isValid } from "./isValid.js";
  */
 export function from(value) {
 	if (isValid(value)) {
-		return value;
+		return /** @type {import('./BrandedBlob.js').BrandedBlob} */ (value);
 	}
 	return fromData(value);
 }

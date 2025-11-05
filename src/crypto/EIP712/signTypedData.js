@@ -33,7 +33,11 @@ export function signTypedData(typedData, privateKey) {
 	const s = sigBytes.slice(32, 64);
 
 	// Convert recovery byte to Ethereum v (27 or 28)
-	const v = 27 + (sigBytes[64] & 1);
+	const recoveryByte = sigBytes[64];
+	if (recoveryByte === undefined) {
+		throw new Eip712Error("Invalid signature: missing recovery byte");
+	}
+	const v = 27 + (recoveryByte & 1);
 
 	return { r, s, v };
 }

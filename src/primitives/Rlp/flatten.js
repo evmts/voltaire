@@ -24,6 +24,7 @@
  * ```
  */
 export function flatten(data) {
+	/** @type {Array<import('./BrandedRlp.js').BrandedRlp & { type: "bytes" }>} */
 	const result = [];
 
 	/**

@@ -21,7 +21,7 @@ export function equals(hash, other) {
 	}
 	let result = 0;
 	for (let i = 0; i < hash.length; i++) {
-		result |= hash[i] ^ other[i];
+		result |= (hash[i] ?? 0) ^ (other[i] ?? 0);
 	}
 	return result === 0;
 }

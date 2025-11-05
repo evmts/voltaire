@@ -34,7 +34,7 @@ export function fromString(str) {
 
 		const slot = BigInt("0x" + slotHex);
 
-		return { address, slot };
+		return { address: /** @type {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (address), slot };
 	} catch {
 		return undefined;
 	}

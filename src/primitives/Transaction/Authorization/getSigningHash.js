@@ -1,7 +1,6 @@
 import { Keccak256 } from "../../../crypto/Keccak256/index.js";
-import { Hash } from "../../Hash/index.js";
 import { encode } from "../../Rlp/encode.js";
-import { encodeBigintCompact } from "../utils.ts";
+import { encodeBigintCompact } from "../utils.js";
 
 /**
  * Get signing hash for authorization (EIP-7702)
