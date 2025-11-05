@@ -11,25 +11,25 @@ export * from "./BrandedOpcode/constants.js";
 
 import * as constants from "./BrandedOpcode/constants.js";
 // Import methods
-import { disassemble } from "./disassemble.js";
-import { dupPosition } from "./dupPosition.js";
-import { format } from "./format.js";
-import { info } from "./info.js";
-import { isDup } from "./isDup.js";
-import { isJump } from "./isJump.js";
-import { isLog } from "./isLog.js";
-import { isPush } from "./isPush.js";
-import { isSwap } from "./isSwap.js";
-import { isTerminating } from "./isTerminating.js";
-import { isValid } from "./isValid.js";
-import { isValidJumpDest } from "./isValidJumpDest.js";
-import { jumpDests } from "./jumpDests.js";
-import { logTopics } from "./logTopics.js";
-import { name } from "./name.js";
-import { parse } from "./parse.js";
-import { pushBytes } from "./pushBytes.js";
-import { pushOpcode } from "./pushOpcode.js";
-import { swapPosition } from "./swapPosition.js";
+import { disassemble } from "./BrandedOpcode/disassemble.js";
+import { dupPosition } from "./BrandedOpcode/dupPosition.js";
+import { format } from "./BrandedOpcode/format.js";
+import { info } from "./BrandedOpcode/info.js";
+import { isDup } from "./BrandedOpcode/isDup.js";
+import { isJump } from "./BrandedOpcode/isJump.js";
+import { isLog } from "./BrandedOpcode/isLog.js";
+import { isPush } from "./BrandedOpcode/isPush.js";
+import { isSwap } from "./BrandedOpcode/isSwap.js";
+import { isTerminating } from "./BrandedOpcode/isTerminating.js";
+import { isValid } from "./BrandedOpcode/isValid.js";
+import { isValidJumpDest } from "./BrandedOpcode/isValidJumpDest.js";
+import { jumpDests } from "./BrandedOpcode/jumpDests.js";
+import { logTopics } from "./BrandedOpcode/logTopics.js";
+import { name } from "./BrandedOpcode/name.js";
+import { parse } from "./BrandedOpcode/parse.js";
+import { pushBytes } from "./BrandedOpcode/pushBytes.js";
+import { pushOpcode } from "./BrandedOpcode/pushOpcode.js";
+import { swapPosition } from "./BrandedOpcode/swapPosition.js";
 
 // Export individual functions
 export {

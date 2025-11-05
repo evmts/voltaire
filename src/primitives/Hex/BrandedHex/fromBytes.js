@@ -13,8 +13,8 @@ export function fromBytes(bytes) {
 	const hexChars = "0123456789abcdef";
 	let result = "0x";
 	for (let i = 0; i < bytes.length; i++) {
-		const b = bytes[i];
-		result += hexChars[b >> 4] + hexChars[b & 0x0f];
+		const b = bytes[i] ?? 0;
+		result += (hexChars[b >> 4] ?? "") + (hexChars[b & 0x0f] ?? "");
 	}
 	return /** @type {import('./BrandedHex.js').BrandedHex} */ (result);
 }

@@ -13,12 +13,14 @@
  */
 export function isItem(value) {
 	if (typeof value !== "object" || value === null) return false;
+	/** @type {any} */
 	const item = value;
 	return (
 		item.address instanceof Uint8Array &&
 		item.address.length === 20 &&
 		Array.isArray(item.storageKeys) &&
 		item.storageKeys.every(
+			/** @param {any} key */
 			(key) => key instanceof Uint8Array && key.length === 32,
 		)
 	);
