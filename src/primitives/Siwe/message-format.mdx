@@ -1,0 +1,396 @@
+# Message Format
+
+EIP-4361 SIWE message format specification.
+
+## Format Structure
+
+```
+{domain} wants you to sign in with your Ethereum account:
+{address}
+
+{statement}
+
+URI: {uri}
+Version: {version}
+Chain ID: {chainId}
+Nonce: {nonce}
+Issued At: {issuedAt}
+Expiration Time: {expirationTime}
+Not Before: {notBefore}
+Request ID: {requestId}
+Resources:
+- {resource1}
+- {resource2}
+```
+
+## Field Specifications
+
+### Required Fields
+
+#### domain
+- **Type:** String
+- **Format:** RFC 4501 dns authority
+- **Position:** First line header
+- **Example:** `example.com`
+- **Rules:**
+  - Non-empty
+  - No protocol (no `https://`)
+  - ASCII characters
+
+#### address
+- **Type:** Ethereum address
+- **Format:** 0x-prefixed hex (42 chars)
+- **Position:** Second line
+- **Example:** `0x742d35Cc6634C0532925a3b844Bc9e7595f251e3`
+- **Rules:**
+  - Exactly 40 hex characters after 0x
+  - Case insensitive (checksumming optional)
+  - Represents 20-byte address
+
+#### uri
+- **Type:** String
+- **Format:** RFC 3986 URI
+- **Field:** `URI: {uri}`
+- **Example:** `URI: https://example.com/login`
+- **Rules:**
+  - Valid absolute URI
+  - Typically includes protocol
+
+#### version
+- **Type:** String
+- **Format:** Version number
+- **Field:** `Version: {version}`
+- **Example:** `Version: 1`
+- **Rules:**
+  - Must be "1" per current spec
+  - No other versions supported
+
+#### chainId
+- **Type:** Number
+- **Format:** Decimal integer
+- **Field:** `Chain ID: {chainId}`
+- **Example:** `Chain ID: 1`
+- **Rules:**
+  - Positive integer (>= 1)
+  - EIP-155 chain identifier
+  - Common values: 1 (Ethereum), 137 (Polygon), 42161 (Arbitrum)
+
+#### nonce
+- **Type:** String
+- **Format:** Alphanumeric
+- **Field:** `Nonce: {nonce}`
+- **Example:** `Nonce: a7b9c2d4e6f`
+- **Rules:**
+  - Minimum 8 characters
+  - Should be cryptographically random
+  - Must be unique per authentication request
+  - Prevents replay attacks
+
+#### issuedAt
+- **Type:** String
+- **Format:** ISO 8601 datetime
+- **Field:** `Issued At: {issuedAt}`
+- **Example:** `Issued At: 2021-09-30T16:25:24.000Z`
+- **Rules:**
+  - Valid ISO 8601 format
+  - UTC timezone (Z suffix)
+  - Milliseconds optional
+  - Represents message creation time
+
+### Optional Fields
+
+#### statement
+- **Type:** String
+- **Format:** UTF-8 text
+- **Position:** Between address and field section
+- **Example:**
+  ```
+  Sign in to Example App
+
+  By signing, you agree to our Terms of Service.
+  ```
+- **Rules:**
+  - Human-readable assertion
+  - Can be multi-line
+  - Surrounded by empty lines
+  - ASCII recommended, UTF-8 supported
+
+#### expirationTime
+- **Type:** String
+- **Format:** ISO 8601 datetime
+- **Field:** `Expiration Time: {expirationTime}`
+- **Example:** `Expiration Time: 2021-10-01T16:25:24.000Z`
+- **Rules:**
+  - Valid ISO 8601 format
+  - Should be after issuedAt
+  - Message invalid after this time
+
+#### notBefore
+- **Type:** String
+- **Format:** ISO 8601 datetime
+- **Field:** `Not Before: {notBefore}`
+- **Example:** `Not Before: 2021-09-30T16:00:00.000Z`
+- **Rules:**
+  - Valid ISO 8601 format
+  - Message invalid before this time
+  - Should be before expirationTime
+
+#### requestId
+- **Type:** String
+- **Format:** Any string
+- **Field:** `Request ID: {requestId}`
+- **Example:** `Request ID: req-abc123`
+- **Rules:**
+  - System-specific identifier
+  - Used for request tracking
+  - Can be UUID, sequential ID, etc.
+
+#### resources
+- **Type:** Array of strings
+- **Format:** List of URIs
+- **Field:** `Resources:` followed by list items
+- **Example:**
+  ```
+  Resources:
+  - https://example.com/resource1
+  - https://example.com/resource2
+  ```
+- **Rules:**
+  - Each item prefixed with `- `
+  - Valid URIs
+  - Represents resources user wishes resolved
+  - Used for authorization scope
+
+## Complete Examples
+
+### Minimal Message
+
+```
+example.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc9e7595f251e3
+
+URI: https://example.com
+Version: 1
+Chain ID: 1
+Nonce: abc123def
+Issued At: 2021-09-30T16:25:24.000Z
+```
+
+### Full Message with All Fields
+
+```
+example.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc9e7595f251e3
+
+Sign in to Example App to access your account
+
+URI: https://example.com/login
+Version: 1
+Chain ID: 1
+Nonce: a7b9c2d4e6f8g0h1
+Issued At: 2021-09-30T16:25:24.000Z
+Expiration Time: 2021-10-01T16:25:24.000Z
+Not Before: 2021-09-30T16:00:00.000Z
+Request ID: req-abc123-xyz789
+Resources:
+- https://example.com/api/admin
+- https://example.com/api/users
+- https://example.com/api/settings
+```
+
+### Multi-Line Statement
+
+```
+example.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc9e7595f251e3
+
+Welcome to Example App!
+
+By signing this message, you agree to our Terms of Service
+and Privacy Policy. This signature proves you own this address.
+
+URI: https://example.com
+Version: 1
+Chain ID: 1
+Nonce: xyz789
+Issued At: 2021-09-30T16:25:24.000Z
+```
+
+## Parsing Rules
+
+### Line Structure
+
+1. **Header Line:** `{domain} wants you to sign in with your Ethereum account:`
+2. **Address Line:** `0x{40 hex chars}`
+3. **Empty Line**
+4. **Statement Lines** (optional, until next empty line or field)
+5. **Empty Line** (if statement present)
+6. **Field Lines:** `Key: Value` format
+7. **Resources Section:** `Resources:` followed by `- {uri}` items
+
+### Field Ordering
+
+Fields must appear in this order (if present):
+1. URI (required)
+2. Version (required)
+3. Chain ID (required)
+4. Nonce (required)
+5. Issued At (required)
+6. Expiration Time (optional)
+7. Not Before (optional)
+8. Request ID (optional)
+9. Resources (optional, always last)
+
+### Whitespace
+
+- Empty lines separate sections
+- Spaces after colons in field lines
+- Leading/trailing whitespace trimmed from values
+- Statement preserves internal whitespace
+
+## Formatting Rules
+
+### Address Formatting
+
+- Always lowercase hex
+- Include 0x prefix
+- No EIP-55 checksum required (optional)
+
+### Timestamp Formatting
+
+- ISO 8601 format: `YYYY-MM-DDTHH:mm:ss.sssZ`
+- UTC timezone (Z suffix)
+- Milliseconds recommended but optional
+- Examples:
+  - `2021-09-30T16:25:24Z`
+  - `2021-09-30T16:25:24.000Z`
+  - `2021-09-30T16:25:24.123Z`
+
+### Resource Formatting
+
+- Each resource on separate line
+- Prefix with `- ` (dash + space)
+- Valid RFC 3986 URIs
+
+## Validation Rules
+
+### Domain Validation
+- Non-empty string
+- No protocol prefix
+- Valid DNS characters
+- Example: `example.com` not `https://example.com`
+
+### Address Validation
+- 0x prefix required
+- Exactly 40 hex characters
+- Case insensitive
+- Must represent valid 20-byte Ethereum address
+
+### URI Validation
+- Non-empty string
+- Valid RFC 3986 URI format
+- Typically absolute URI with scheme
+
+### Version Validation
+- Must be exactly "1"
+- String comparison, not numeric
+
+### Chain ID Validation
+- Positive integer (>= 1)
+- Valid EIP-155 chain identifier
+
+### Nonce Validation
+- Minimum 8 characters
+- Alphanumeric recommended
+- Must be unique per request
+
+### Timestamp Validation
+- Valid ISO 8601 format
+- Must parse to valid Date
+- Expiration must be after issuedAt
+- Not before must be before expiration
+
+## Security Considerations
+
+### Domain Binding
+- Domain must match request origin
+- Prevents cross-site authentication attacks
+- Verify server-side
+
+### Nonce Requirements
+- Cryptographically random
+- Minimum 8 characters (spec requirement)
+- Single-use only
+- Stored server-side for verification
+- Prevents replay attacks
+
+### Timestamp Validation
+- Always validate server-side
+- Check against server time, not client
+- Consider clock skew (allow small window)
+- Reject expired messages
+
+### Address Verification
+- Signature proves address ownership
+- Never trust address without signature verification
+- Use constant-time comparison
+
+### URI Verification
+- Validate URI matches expected value
+- Prevents redirect attacks
+- Check scheme, host, path as needed
+
+## Common Patterns
+
+### Session Management
+
+```
+domain: example.com
+uri: https://example.com
+chainId: 1
+issuedAt: {now}
+expirationTime: {now + 1 hour}
+```
+
+### Resource Authorization
+
+```
+domain: example.com
+uri: https://example.com/admin
+statement: Grant admin access
+resources:
+  - https://example.com/api/admin/users
+  - https://example.com/api/admin/settings
+```
+
+### Delayed Activation
+
+```
+domain: example.com
+uri: https://example.com
+notBefore: {future time}
+expirationTime: {later time}
+```
+
+### Request Tracking
+
+```
+domain: example.com
+uri: https://example.com
+requestId: {unique-id}
+```
+
+## References
+
+- [EIP-4361: Sign-In with Ethereum](https://eips.ethereum.org/EIPS/eip-4361)
+- [RFC 4501: DNS URI Scheme](https://www.rfc-editor.org/rfc/rfc4501)
+- [RFC 3986: URI Generic Syntax](https://www.rfc-editor.org/rfc/rfc3986)
+- [ISO 8601: Date and Time Format](https://www.iso.org/iso-8601-date-and-time-format.html)
+- [EIP-155: Chain ID Specification](https://eips.ethereum.org/EIPS/eip-155)
+
+## See Also
+
+- [Siwe.format](./parsing.mdx#format) - Format message to string
+- [Siwe.parse](./parsing.mdx#parse) - Parse string to message
+- [Siwe.validate](./validation.mdx) - Validate message structure
+- [Siwe.create](./constructors.mdx#create) - Create message
