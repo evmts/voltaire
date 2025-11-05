@@ -1,4 +1,4 @@
-import { Hash } from "../../Hash/index.js";
+import { keccak256String } from "../../Hash/keccak256String.js";
 import { getSignature } from "./getSignature.js";
 
 /**
@@ -29,6 +29,6 @@ import { getSignature } from "./getSignature.js";
  */
 export function getSelector(fn) {
 	const signature = getSignature(fn);
-	const hash = Hash.keccak256String(signature);
+	const hash = keccak256String(signature);
 	return hash.slice(0, 4);
 }

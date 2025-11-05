@@ -1,4 +1,4 @@
-import { Hash } from "../../Hash/index.js";
+import { keccak256 } from "../../Hash/keccak256.js";
 import { encodeValue, isDynamicType } from "../Encoding.js";
 import { getSelector } from "./getSelector.js";
 
@@ -7,7 +7,7 @@ import { getSelector } from "./getSelector.js";
  *
  * @param {import('./BrandedEvent.js').Event} event - Event definition
  * @param {import('./BrandedEvent.js').EncodeTopicsArgs<any>} args - Event arguments to encode
- * @returns {(import('../../Hash/index.js').BrandedHash | null)[]} Topics array (nulls for unspecified indexed params)
+ * @returns {(import('../../Hash/BrandedHash.js').BrandedHash | null)[]} Topics array (nulls for unspecified indexed params)
  *
  * @example
  * ```typescript
@@ -34,7 +34,7 @@ export function encodeTopics(event, args) {
 
 		if (isDynamicType(param.type)) {
 			const { encoded } = encodeValue(param.type, value);
-			topics.push(Hash.keccak256(encoded));
+			topics.push(keccak256(encoded));
 		} else {
 			const { encoded } = encodeValue(param.type, value);
 			topics.push(encoded);

@@ -1,11 +1,11 @@
-import { Hash } from "../../Hash/index.js";
+import { keccak256String } from "../../Hash/keccak256String.js";
 import { getSignature } from "./getSignature.js";
 
 /**
  * Get event selector (keccak256 hash of signature)
  *
  * @param {import('./BrandedEvent.js').Event} event - Event definition
- * @returns {import('../../Hash/index.js').BrandedHash} Event selector (32 bytes)
+ * @returns {import('../../Hash/BrandedHash.js').BrandedHash} Event selector (32 bytes)
  *
  * @example
  * ```typescript
@@ -15,5 +15,5 @@ import { getSignature } from "./getSignature.js";
  */
 export function getSelector(event) {
 	const signature = getSignature(event);
-	return Hash.keccak256String(signature);
+	return keccak256String(signature);
 }
