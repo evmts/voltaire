@@ -688,7 +688,7 @@ describe("Rlp.equals", () => {
 
 describe("Rlp.toJSON and fromJSON", () => {
 	it("converts bytes Data to JSON and back", () => {
-		const data: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const data: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
 		const json = Rlp.toJSON(data);
 		expect(json).toEqual({ type: "bytes", value: [1, 2, 3] });
 		const restored = Rlp.fromJSON(json);
@@ -696,7 +696,7 @@ describe("Rlp.toJSON and fromJSON", () => {
 	});
 
 	it("converts list Data to JSON and back", () => {
-		const data: Data = {
+		const data: BrandedRlp = {
 			type: "list",
 			value: [
 				{ type: "bytes", value: new Uint8Array([1]) },
@@ -709,7 +709,7 @@ describe("Rlp.toJSON and fromJSON", () => {
 	});
 
 	it("converts nested list Data to JSON and back", () => {
-		const data: Data = {
+		const data: BrandedRlp = {
 			type: "list",
 			value: [
 				{ type: "bytes", value: new Uint8Array([1]) },
