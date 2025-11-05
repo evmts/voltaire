@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { type BrandedHex, Hex } from "./index.js";
 import {
-	type BrandedHex,
-	Hex,
-	InvalidHexCharacterError,
-	InvalidHexFormatError,
-	InvalidHexLengthError,
-	OddLengthHexError,
-} from "./index.js";
+	InvalidCharacterError as InvalidHexCharacterError,
+	InvalidFormatError as InvalidHexFormatError,
+	InvalidLengthError as InvalidHexLengthError,
+	OddLengthError as OddLengthHexError,
+} from "./errors.js";
 
 describe("Hex", () => {
 	describe("isHex", () => {

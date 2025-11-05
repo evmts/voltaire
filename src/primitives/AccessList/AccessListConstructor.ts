@@ -1,12 +1,8 @@
-import type { BrandedAddress } from "../Address/index.js";
-import type { BrandedHash } from "../Hash/index.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 import type { addressCount } from "./addressCount.js";
 import type { assertValid } from "./assertValid.js";
 import type { create } from "./create.js";
 import type { deduplicate } from "./deduplicate.js";
-import type { from } from "./from.js";
-import type { fromBytes } from "./fromBytes.js";
 import type { gasCost } from "./gasCost.js";
 import type { gasSavings } from "./gasSavings.js";
 import type { hasSavings } from "./hasSavings.js";
