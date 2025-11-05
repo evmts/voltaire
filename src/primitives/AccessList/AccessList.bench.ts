@@ -5,27 +5,25 @@
  */
 
 import type { BrandedHash } from "../Hash/index.js";
-import {
-	from,
-	gasCost,
-	gasSavings,
-	hasSavings,
-	includesAddress,
-	includesStorageKey,
-	keysFor,
-	deduplicate,
-	withAddress,
-	withStorageKey,
-	merge,
-	assertValid,
-	isItem,
-	is,
-	addressCount,
-	storageKeyCount,
-	isEmpty,
-	create,
-} from "./index.js";
 import type { BrandedAccessList } from "./BrandedAccessList.js";
+import { from } from "./from.js";
+import { gasCost } from "./gasCost.js";
+import { gasSavings } from "./gasSavings.js";
+import { hasSavings } from "./hasSavings.js";
+import { includesAddress } from "./includesAddress.js";
+import { includesStorageKey } from "./includesStorageKey.js";
+import { keysFor } from "./keysFor.js";
+import { deduplicate } from "./deduplicate.js";
+import { withAddress } from "./withAddress.js";
+import { withStorageKey } from "./withStorageKey.js";
+import { merge } from "./merge.js";
+import { assertValid } from "./assertValid.js";
+import { isItem } from "./isItem.js";
+import { is } from "./is.js";
+import { addressCount } from "./addressCount.js";
+import { storageKeyCount } from "./storageKeyCount.js";
+import { isEmpty } from "./isEmpty.js";
+import { create } from "./create.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -232,17 +230,17 @@ console.log(
 console.log("--- Address Lookup ---");
 results.push(
 	benchmark("includesAddress - small list (found)", () =>
-		AccessList.includesAddress(smallList, addr1),
+		includesAddress(smallList, addr1),
 	),
 );
 results.push(
 	benchmark("includesAddress - medium list (found)", () =>
-		AccessList.includesAddress(mediumList, mediumList[5]!.address),
+		includesAddress(mediumList, mediumList[5]!.address),
 	),
 );
 results.push(
 	benchmark("includesAddress - large list (not found)", () =>
-		AccessList.includesAddress(largeList, createAddress(200)),
+		includesAddress(largeList, createAddress(200)),
 	),
 );
 
@@ -259,12 +257,12 @@ console.log(
 console.log("\n--- Storage Key Lookup ---");
 results.push(
 	benchmark("includesStorageKey - found", () =>
-		AccessList.includesStorageKey(smallList, addr1, key1),
+		includesStorageKey(smallList, addr1, key1),
 	),
 );
 results.push(
 	benchmark("includesStorageKey - not found", () =>
-		AccessList.includesStorageKey(smallList, addr1, createStorageKey(99)),
+		includesStorageKey(smallList, addr1, createStorageKey(99)),
 	),
 );
 
@@ -280,11 +278,11 @@ console.log(
 
 console.log("\n--- Keys Retrieval ---");
 results.push(
-	benchmark("keysFor - found", () => AccessList.keysFor(smallList, addr1)),
+	benchmark("keysFor - found", () => keysFor(smallList, addr1)),
 );
 results.push(
 	benchmark("keysFor - not found", () =>
-		AccessList.keysFor(smallList, createAddress(99)),
+		keysFor(smallList, createAddress(99)),
 	),
 );
 
@@ -314,17 +312,17 @@ console.log(
 console.log("--- Deduplication ---");
 results.push(
 	benchmark("deduplicate - no duplicates", () =>
-		AccessList.deduplicate(smallList),
+		deduplicate(smallList),
 	),
 );
 results.push(
 	benchmark("deduplicate - with duplicates", () =>
-		AccessList.deduplicate(duplicateList),
+		deduplicate(duplicateList),
 	),
 );
 results.push(
 	benchmark("deduplicate - large list", () =>
-		AccessList.deduplicate(largeList),
+		deduplicate(largeList),
 	),
 );
 
@@ -341,12 +339,12 @@ console.log(
 console.log("\n--- Adding Addresses ---");
 results.push(
 	benchmark("withAddress - new address", () =>
-		AccessList.withAddress(smallList, createAddress(99)),
+		withAddress(smallList, createAddress(99)),
 	),
 );
 results.push(
 	benchmark("withAddress - existing address", () =>
-		AccessList.withAddress(smallList, addr1),
+		withAddress(smallList, addr1),
 	),
 );
 
@@ -363,17 +361,17 @@ console.log(
 console.log("\n--- Adding Storage Keys ---");
 results.push(
 	benchmark("withStorageKey - new key to existing address", () =>
-		AccessList.withStorageKey(smallList, addr1, createStorageKey(99)),
+		withStorageKey(smallList, addr1, createStorageKey(99)),
 	),
 );
 results.push(
 	benchmark("withStorageKey - duplicate key", () =>
-		AccessList.withStorageKey(smallList, addr1, key1),
+		withStorageKey(smallList, addr1, key1),
 	),
 );
 results.push(
 	benchmark("withStorageKey - new address with key", () =>
-		AccessList.withStorageKey(smallList, createAddress(99), key1),
+		withStorageKey(smallList, createAddress(99), key1),
 	),
 );
 
@@ -390,17 +388,17 @@ console.log(
 console.log("\n--- Merging ---");
 results.push(
 	benchmark("merge - two small lists", () =>
-		AccessList.merge(smallList, smallList),
+		merge(smallList, smallList),
 	),
 );
 results.push(
 	benchmark("merge - three lists", () =>
-		AccessList.merge(smallList, mediumList, duplicateList),
+		merge(smallList, mediumList, duplicateList),
 	),
 );
 results.push(
 	benchmark("merge - large lists", () =>
-		AccessList.merge(largeList, largeList),
+		merge(largeList, largeList),
 	),
 );
 
@@ -430,17 +428,17 @@ console.log(
 console.log("--- Validation ---");
 results.push(
 	benchmark("assertValid - small list", () =>
-		AccessList.assertValid(smallList),
+		assertValid(smallList),
 	),
 );
 results.push(
 	benchmark("assertValid - medium list", () =>
-		AccessList.assertValid(mediumList),
+		assertValid(mediumList),
 	),
 );
 results.push(
 	benchmark("assertValid - large list", () =>
-		AccessList.assertValid(largeList),
+		assertValid(largeList),
 	),
 );
 
@@ -470,14 +468,14 @@ console.log(
 console.log("--- Type Guards ---");
 results.push(
 	benchmark("isItem - valid", () =>
-		AccessList.isItem({ address: addr1, storageKeys: [key1] }),
+		isItem({ address: addr1, storageKeys: [key1] }),
 	),
 );
 results.push(
-	benchmark("isItem - invalid", () => AccessList.isItem({ invalid: true })),
+	benchmark("isItem - invalid", () => isItem({ invalid: true })),
 );
-results.push(benchmark("is - valid", () => AccessList.is(smallList)));
-results.push(benchmark("is - invalid", () => AccessList.is({ invalid: true })));
+results.push(benchmark("is - valid", () => is(smallList)));
+results.push(benchmark("is - invalid", () => is({ invalid: true })));
 
 console.log(
 	results
@@ -505,22 +503,22 @@ console.log(
 console.log("--- Counting Operations ---");
 results.push(
 	benchmark("addressCount - small list", () =>
-		AccessList.addressCount(smallList),
+		addressCount(smallList),
 	),
 );
 results.push(
 	benchmark("storageKeyCount - small list", () =>
-		AccessList.storageKeyCount(smallList),
+		storageKeyCount(smallList),
 	),
 );
 results.push(
 	benchmark("addressCount - large list", () =>
-		AccessList.addressCount(largeList),
+		addressCount(largeList),
 	),
 );
 results.push(
 	benchmark("storageKeyCount - large list", () =>
-		AccessList.storageKeyCount(largeList),
+		storageKeyCount(largeList),
 	),
 );
 
@@ -535,11 +533,11 @@ console.log(
 );
 
 console.log("\n--- Other Utilities ---");
-results.push(benchmark("isEmpty - empty", () => AccessList.isEmpty([])));
+results.push(benchmark("isEmpty - empty", () => isEmpty([])));
 results.push(
-	benchmark("isEmpty - non-empty", () => AccessList.isEmpty(smallList)),
+	benchmark("isEmpty - non-empty", () => isEmpty(smallList)),
 );
-results.push(benchmark("create", () => AccessList.create()));
+results.push(benchmark("create", () => create()));
 
 console.log(
 	results

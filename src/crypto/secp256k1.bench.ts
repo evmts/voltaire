@@ -11,7 +11,7 @@
 
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
-import { Hash } from "../primitives/Hash/index.js";
+import { keccak256String } from "../primitives/Hash/keccak256String.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
@@ -26,7 +26,7 @@ const TEST_PRIVATE_KEY = new Uint8Array([
 	0x3e, 0x9c, 0xd8, 0x4b, 0x8d, 0x8d,
 ]);
 
-const TEST_MESSAGE_HASH = Hash.keccak256String("Hello, Ethereum!");
+const TEST_MESSAGE_HASH = keccak256String("Hello, Ethereum!");
 
 const TEST_PUBLIC_KEY = Secp256k1.derivePublicKey(TEST_PRIVATE_KEY);
 const TEST_SIGNATURE = Secp256k1.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
@@ -50,7 +50,7 @@ bench("Noble: verify (valid)", () => {
 });
 
 bench("Noble: verify (invalid)", () => {
-	const wrongHash = Hash.keccak256String("Wrong message");
+	const wrongHash = keccak256String("Wrong message");
 	Secp256k1.verify(TEST_SIGNATURE, wrongHash, TEST_PUBLIC_KEY);
 });
 
@@ -109,7 +109,7 @@ bench("Wasm: verify (valid)", () => {
 });
 
 bench("Wasm: verify (invalid)", () => {
-	const wrongHash = Hash.keccak256String("Wrong message");
+	const wrongHash = keccak256String("Wrong message");
 	Secp256k1Wasm.verify(TEST_SIGNATURE_WASM, wrongHash, TEST_PUBLIC_KEY_WASM);
 });
 

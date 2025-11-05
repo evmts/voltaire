@@ -7,7 +7,7 @@
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import { Address } from "../primitives/Address/index.js";
-import { Hash } from "../primitives/Hash/index.js";
+import { fromHex } from "../primitives/Hash/fromHex.js";
 import {
 	EIP712,
 	type TypeDefinitions,
@@ -117,7 +117,7 @@ bench("Domain.hash - complete", () => {
 		verifyingContract: Address.fromHex(
 			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 		),
-		salt: Hash.fromHex(
+		salt: fromHex(
 			"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		),
 	});
