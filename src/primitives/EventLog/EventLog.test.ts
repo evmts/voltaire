@@ -3,112 +3,48 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-	clone,
-	copy,
-	create,
-	filterLogs,
-	getIndexed,
-	getIndexedTopics,
-	getSignature,
-	getTopic0,
-	isRemoved,
-	matchesAddress,
-	matchesFilter,
-	matchesTopics,
-	sortLogs,
-	wasRemoved,
-} from "./EventLog.js";
-import type { BrandedAddress } from "../Address/index.js";
-import type { BrandedHash } from "../Hash/index.js";
+import { create, getTopic0, getIndexedTopics, getSignature, getIndexed, matchesTopics, matchesAddress, matchesFilter, isRemoved, wasRemoved, clone, copy, filterLogs, sortLogs } from "./EventLog.js";
 
-// Reconstruct EventLog namespace for tests with .call() support
 const EventLog = {
 	create,
-	getTopic0: function (log: any) {
-		return getTopic0(log ?? this);
-	},
-	getIndexedTopics: function (log: any) {
-		return getIndexedTopics(log ?? this);
-	},
-	getSignature: function (log: any) {
-		return getSignature(log ?? this);
-	},
-	getIndexed: function (log: any) {
-		return getIndexed(log ?? this);
-	},
-	matchesTopics: function (log: any, filterTopics?: any) {
-		if (filterTopics === undefined) return matchesTopics(this, log);
-		return matchesTopics(log, filterTopics);
-	},
-	matches: function (log: any, filterTopics?: any) {
-		if (filterTopics === undefined) return matchesTopics(this, log);
-		return matchesTopics(log, filterTopics);
-	},
-	matchesAddress: function (log: any, filterAddress?: any) {
-		if (filterAddress === undefined) return matchesAddress(this, log);
-		return matchesAddress(log, filterAddress);
-	},
-	matchesAddr: function (log: any, filterAddress?: any) {
-		if (filterAddress === undefined) return matchesAddress(this, log);
-		return matchesAddress(log, filterAddress);
-	},
-	matchesFilter: function (log: any, filter?: any) {
-		if (filter === undefined) return matchesFilter(this, log);
-		return matchesFilter(log, filter);
-	},
-	matchesAll: function (log: any, filter?: any) {
-		if (filter === undefined) return matchesFilter(this, log);
-		return matchesFilter(log, filter);
-	},
-	isRemoved: function (log: any) {
-		return isRemoved(log ?? this);
-	},
-	wasRemoved: function (log: any) {
-		return wasRemoved(log ?? this);
-	},
-	clone: function (log: any) {
-		return clone(log ?? this);
-	},
-	copy: function (log: any) {
-		return copy(log ?? this);
-	},
-	filterLogs: function (logs: any, filter?: any) {
-		if (filter === undefined) return filterLogs(this, logs);
-		return filterLogs(logs, filter);
-	},
-	filter: function (logs: any, filter?: any) {
-		if (filter === undefined) return filterLogs(this, logs);
-		return filterLogs(logs, filter);
-	},
-	sortLogs: function (logs: any) {
-		return sortLogs(logs ?? this);
-	},
-	sort: function (logs: any) {
-		return sortLogs(logs ?? this);
-	},
+	getTopic0,
+	getIndexedTopics,
+	getSignature,
+	getIndexed,
+	matchesTopics,
+	matches: matchesTopics,
+	matchesAddress,
+	matchesAddr: matchesAddress,
+	matchesFilter,
+	matchesAll: matchesFilter,
+	isRemoved,
+	wasRemoved,
+	clone,
+	copy,
+	filterLogs,
+	filter: filterLogs,
+	sortLogs,
+	sort: sortLogs,
 };
 
 // ============================================================================
 // Test Data
 // ============================================================================
 
-const addr1 =
-	"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
-const addr2 =
-	"0x0000000000000000000000000000000000000002" as unknown as BrandedAddress;
+const addr1 = "0x0000000000000000000000000000000000000001" as any;
+const addr2 = "0x0000000000000000000000000000000000000002" as any;
 const topic0 =
-	"0x0000000000000000000000000000000000000000000000000000000000000010" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000010" as any;
 const topic1 =
-	"0x0000000000000000000000000000000000000000000000000000000000000011" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000011" as any;
 const topic2 =
-	"0x0000000000000000000000000000000000000000000000000000000000000012" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000012" as any;
 const topic3 =
-	"0x0000000000000000000000000000000000000000000000000000000000000013" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000013" as any;
 const blockHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000100" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000100" as any;
 const txHash =
-	"0x0000000000000000000000000000000000000000000000000000000000000200" as unknown as BrandedHash;
+	"0x0000000000000000000000000000000000000000000000000000000000000200" as any;
 
 // ============================================================================
 // Log Creation Tests
@@ -196,7 +132,7 @@ describe("EventLog.getSignature", () => {
 			data: new Uint8Array([]),
 		});
 
-		expect(EventLog.getSignature.call(log)).toBe(topic0);
+		expect(EventLog.getSignature(log)).toBe(topic0);
 	});
 });
 
@@ -240,7 +176,7 @@ describe("EventLog.getIndexed", () => {
 			data: new Uint8Array([]),
 		});
 
-		expect(EventLog.getIndexed.call(log)).toEqual([topic1, topic2]);
+		expect(EventLog.getIndexed(log)).toEqual([topic1, topic2]);
 	});
 });
 
@@ -382,9 +318,9 @@ describe("EventLog.matchesAddress", () => {
 
 	it("matches byte-wise for addresses", () => {
 		const addrA =
-			"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
+			"0x0000000000000000000000000000000000000001" as any;
 		const addrB =
-			"0x0000000000000000000000000000000000000001" as unknown as BrandedAddress;
+			"0x0000000000000000000000000000000000000001" as any;
 
 		const log = EventLog.create({
 			address: addrA,
@@ -672,7 +608,7 @@ describe("EventLog.filter", () => {
 			}),
 		];
 
-		const filtered = EventLog.filter.call(logs, { address: addr1 });
+		const filtered = EventLog.filterLogs(logs, { address: addr1 });
 		expect(filtered).toHaveLength(1);
 		expect(filtered[0]!.address).toBe(addr1);
 	});
@@ -838,7 +774,7 @@ describe("EventLog.sort", () => {
 			}),
 		];
 
-		const sorted = EventLog.sort.call(logs);
+		const sorted = EventLog.sortLogs(logs);
 		expect(sorted[0]!.blockNumber).toBe(100n);
 		expect(sorted[1]!.blockNumber).toBe(103n);
 	});
@@ -897,8 +833,8 @@ describe("EventLog.wasRemoved", () => {
 			data: new Uint8Array([]),
 		});
 
-		expect(EventLog.wasRemoved.call(removedLog)).toBe(true);
-		expect(EventLog.wasRemoved.call(activeLog)).toBe(false);
+		expect(EventLog.wasRemoved(removedLog)).toBe(true);
+		expect(EventLog.wasRemoved(activeLog)).toBe(false);
 	});
 });
 
@@ -952,7 +888,7 @@ describe("EventLog.copy", () => {
 			blockNumber: 100n,
 		});
 
-		const copied = EventLog.copy.call(original);
+		const copied = EventLog.copy(original);
 
 		expect(copied).toEqual(original);
 		expect(copied).not.toBe(original);
