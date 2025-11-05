@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { Uint } from "../Uint/index.js";
+import * as Uint from "./index.js";
 
 // ============================================================================
 // Constants Tests

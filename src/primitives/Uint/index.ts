@@ -2,4 +2,5 @@
 export * from "./BrandedUint/index.js";
 
 // Export type definitions
-export type { UintConstructor, Type } from "./UintConstructor.js";
+export type { UintConstructor } from "./UintConstructor.js";
+export type { BrandedUint as Type } from "./BrandedUint/BrandedUint.js";
