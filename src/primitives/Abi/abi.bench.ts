@@ -4,8 +4,8 @@
  * Measures performance of ABI operations
  */
 
-import type { BrandedAddress } from "../Address/index.js";
 import type { Item } from "./Item.js";
+import type { BrandedError } from "./error/BrandedError.js";
 import * as Abi from "./index.js";
 
 // Helper to work around strict type checking in benchmarks
@@ -126,7 +126,7 @@ const insufficientBalanceError = {
 		{ type: "uint256", name: "available" },
 		{ type: "uint256", name: "required" },
 	],
-} as const satisfies Abi.Error.Error;
+} as const satisfies BrandedError;
 
 // const testData = new Uint8Array(32);
 
@@ -371,7 +371,7 @@ console.log("\n--- Format ABI Items With Args ---");
 results.push(
 	benchmark("formatAbiItemWithArgs - function", () =>
 		Abi.Item.formatWithArgs(transferFunc, [
-			"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+			"0x0000000000000000000000000000000000000000",
 			100n,
 		]),
 	),
@@ -379,8 +379,8 @@ results.push(
 results.push(
 	benchmark("formatAbiItemWithArgs - event", () =>
 		Abi.Item.formatWithArgs(transferEvent, [
-			"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
-			"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+			"0x0000000000000000000000000000000000000000",
+			"0x0000000000000000000000000000000000000000",
 			1000n,
 		]),
 	),
@@ -420,7 +420,7 @@ results.push(
 		encodeParams(
 			[{ type: "address" }],
 			[
-				"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+				"0x0000000000000000000000000000000000000000",
 			],
 		);
 	}),
@@ -453,7 +453,7 @@ results.push(
 			[{ type: "uint256" }, { type: "address" }, { type: "bool" }],
 			[
 				123n,
-				"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+				"0x0000000000000000000000000000000000000000",
 				true,
 			],
 		);
@@ -482,7 +482,7 @@ console.log("\n--- Function Encoding ---");
 results.push(
 	benchmark("Function.encodeParams - transfer", () => {
 		Abi.Function.encodeParams(transferFunc, [
-			"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+			"0x0000000000000000000000000000000000000000",
 			100n,
 		] as [BrandedAddress, bigint]);
 	}),
@@ -507,7 +507,7 @@ console.log("\n--- Event Encoding ---");
 results.push(
 	benchmark("Event.encodeTopics", () => {
 		Abi.Event.encodeTopics(transferEvent, {
-			from: "0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+			from: "0x0000000000000000000000000000000000000000",
 		});
 	}),
 );
@@ -558,7 +558,7 @@ console.log(
 const encodedUint256 = encodeParams([{ type: "uint256" }], [42n]);
 const encodedAddress = encodeParams(
 	[{ type: "address" }],
-	["0x0000000000000000000000000000000000000000" as unknown as BrandedAddress],
+	["0x0000000000000000000000000000000000000000"],
 );
 const encodedBool = encodeParams([{ type: "bool" }], [true]);
 const encodedString = encodeParams([{ type: "string" }], ["Hello World"]);
@@ -566,7 +566,7 @@ const encodedMixed = encodeParams(
 	[{ type: "uint256" }, { type: "address" }],
 	[
 		123n,
-		"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+		"0x0000000000000000000000000000000000000000",
 	],
 );
 
@@ -621,7 +621,7 @@ console.log(
 
 console.log("\n--- Function Decoding ---");
 const encodedTransferCall = Abi.Function.encodeParams(transferFunc, [
-	"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+	"0x0000000000000000000000000000000000000000",
 	100n,
 ] as [BrandedAddress, bigint]);
 const encodedBoolResult = Abi.Function.encodeResult(transferFunc, [true] as [
@@ -652,8 +652,8 @@ console.log(
 console.log("\n--- Event Decoding ---");
 const encodedEventData = encodeParams([{ type: "uint256" }], [1000n]);
 const eventTopics = Abi.Event.encodeTopics(transferEvent, {
-	from: "0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
-	to: "0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+	from: "0x0000000000000000000000000000000000000000",
+	to: "0x0000000000000000000000000000000000000000",
 });
 
 results.push(
@@ -754,7 +754,7 @@ results.push(
 		const params = [{ type: "uint256" }, { type: "address" }];
 		const values = [
 			123n,
-			"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+			"0x0000000000000000000000000000000000000000",
 		];
 		const encoded = encodeParams(params, values as any);
 		decodeParams(params, encoded);
@@ -763,7 +763,7 @@ results.push(
 results.push(
 	benchmark("round-trip Function call", () => {
 		const encoded = Abi.Function.encodeParams(transferFunc, [
-			"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+			"0x0000000000000000000000000000000000000000",
 			100n,
 		] as [BrandedAddress, bigint]);
 		Abi.Function.decodeParams(transferFunc, encoded);

@@ -4,7 +4,14 @@
  * Measures performance of hardfork comparison, parsing, and utility operations
  */
 
-import { Id } from "./Id.js";
+import {
+	FRONTIER,
+	BERLIN,
+	CANCUN,
+	PRAGUE,
+	LONDON,
+	SHANGHAI,
+} from "./constants.js";
 import { allIds } from "./allIds.js";
 import { allNames } from "./allNames.js";
 import { compare } from "./compare.js";
@@ -83,10 +90,10 @@ function benchmark(
 // ============================================================================
 
 const testForks = {
-	early: Id.FRONTIER,
-	middle: Id.BERLIN,
-	recent: Id.CANCUN,
-	latest: Id.PRAGUE,
+	early: FRONTIER,
+	middle: BERLIN,
+	recent: CANCUN,
+	latest: PRAGUE,
 };
 
 const testStrings = [
@@ -387,22 +394,22 @@ console.log(
 console.log("\n--- Range Generation ---");
 results.push(
 	benchmark("range - short", () =>
-		range(Id.BERLIN, Id.LONDON),
+		range(BERLIN, LONDON),
 	),
 );
 results.push(
 	benchmark("range - medium", () =>
-		range(Id.BERLIN, Id.SHANGHAI),
+		range(BERLIN, SHANGHAI),
 	),
 );
 results.push(
 	benchmark("range - long", () =>
-		range(Id.FRONTIER, Id.PRAGUE),
+		range(FRONTIER, PRAGUE),
 	),
 );
 results.push(
 	benchmark("range - descending", () =>
-		range(Id.SHANGHAI, Id.BERLIN),
+		range(SHANGHAI, BERLIN),
 	),
 );
 
@@ -449,7 +456,7 @@ results.push(
 );
 results.push(
 	benchmark("version compatibility check", () => {
-		const minVersion = Id.LONDON;
+		const minVersion = LONDON;
 		const currentVersion = testForks.recent;
 		isAtLeast(currentVersion, minVersion);
 	}),

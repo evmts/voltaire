@@ -20,9 +20,7 @@ import { estimateBlobCount } from "./estimateBlobCount.js";
 import { splitData } from "./splitData.js";
 import { joinData } from "./joinData.js";
 import { SIZE, COMMITMENT_VERSION_KZG, MAX_PER_TRANSACTION } from "./constants.js";
-import * as Commitment_NS from "./BrandedBlob.js";
-import * as Proof_NS from "./BrandedBlob.js";
-import * as VersionedHash_NS from "./BrandedBlob.js";
+import * as Blob from "./Blob.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -194,20 +192,20 @@ results.push(
 );
 results.push(
 	benchmark("Commitment.isValid - valid", () =>
-		(c: any) => c.length === 48(validCommitment),
+		Blob.Commitment.isValid(validCommitment),
 	),
 );
 results.push(
 	benchmark("Commitment.isValid - invalid", () =>
-		(c: any) => c.length === 48(invalidCommitment),
+		Blob.Commitment.isValid(invalidCommitment),
 	),
 );
 results.push(
-	benchmark("Proof.isValid - valid", () => (p: any) => p.length === 48(validProof)),
+	benchmark("Proof.isValid - valid", () => Blob.Proof.isValid(validProof)),
 );
 results.push(
 	benchmark("VersionedHash.isValid - valid", () =>
-		(v: any) => v.length === 32 && v[0] === COMMITMENT_VERSION_KZG(validHash),
+		Blob.VersionedHash.isValid(validHash),
 	),
 );
 
@@ -222,7 +220,7 @@ console.log(
 );
 
 console.log("\n--- Version Checks ---");
-const versionedHash = new Uint8Array(32) as Blob.VersionedHash;
+const versionedHash = new Uint8Array(32) as VersionedHash;
 versionedHash[0] = COMMITMENT_VERSION_KZG;
 
 results.push(
@@ -230,12 +228,12 @@ results.push(
 );
 results.push(
 	benchmark("VersionedHash.getVersion", () =>
-		(v: VersionedHash) => v[0](versionedHash),
+		Blob.VersionedHash.getVersion(versionedHash),
 	),
 );
 results.push(
 	benchmark("VersionedHash.version", () =>
-		(function (this: VersionedHash) { return this[0]; }).call(versionedHash),
+		versionedHash[0],
 	),
 );
 

@@ -4,6 +4,7 @@
  * Measures performance of bytecode analysis and manipulation operations
  */
 
+import type { BrandedBytecode } from "./BrandedBytecode.js";
 import { analyze } from "./analyze.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
 import { equals } from "./equals.js";
@@ -96,7 +97,7 @@ function generateBytecode(size: number, includeJumpdests = true): Uint8Array {
 		}
 	}
 
-	return new Uint8Array(bytecode.slice(0, size));
+	return new Uint8Array(bytecode.slice(0, size)) as unknown as BrandedBytecode;
 }
 
 // Generate test bytecode samples
@@ -106,7 +107,7 @@ const largeCode = generateBytecode(10000);
 const hugeCode = generateBytecode(50000);
 
 // Simple patterns
-const simplePush = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
+const simplePush = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]) as unknown as BrandedBytecode;
 const pushWithJumpdest = new Uint8Array([
 	0x60,
 	0x5b,
@@ -116,7 +117,7 @@ const pushWithJumpdest = new Uint8Array([
 	0x56, // PUSH1 0x00, JUMP
 	0x5b,
 	0x00, // JUMPDEST, STOP
-]);
+]) as unknown as BrandedBytecode;
 
 // Metadata samples
 const codeWithMetadata = new Uint8Array([
@@ -124,7 +125,7 @@ const codeWithMetadata = new Uint8Array([
 	...new Array(0x33 - 2).fill(0xa2),
 	0x00,
 	0x33,
-]);
+]) as unknown as BrandedBytecode;
 
 const results: BenchmarkResult[] = [];
 
