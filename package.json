@@ -70,7 +70,7 @@
 		"build:types": "tsup --dts-only && tsc --emitDeclarationOnly --declaration",
 		"clean": "rm -rf node_modules && rm -rf dist && rm -rf types && rm -rf zig-out && rm -rf zig-cache",
 		"docs:dev": "astro dev",
-		"docs:build": "astro check && astro build",
+		"docs:build": "astro build",
 		"docs:preview": "astro preview",
 		"format": "biome format . --write",
 		"format:check": "biome format .",

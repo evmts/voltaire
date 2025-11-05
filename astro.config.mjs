@@ -30,6 +30,10 @@ export default defineConfig({
 			],
 			sidebar: [
 				{
+					label: 'Getting Started',
+					link: '/getting-started/',
+				},
+				{
 					label: 'Core Primitives',
 					autogenerate: { directory: 'primitives' },
 				},
