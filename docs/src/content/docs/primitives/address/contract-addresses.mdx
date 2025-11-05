@@ -1,0 +1,258 @@
+---
+title: Contract Address Calculation
+description: CREATE and CREATE2 address derivation
+---
+
+# Contract Address Calculation
+
+Methods for calculating contract addresses from deployer address and deployment parameters.
+
+## Overview
+
+Ethereum provides two opcodes for deploying contracts:
+- **CREATE** - Deterministic based on sender address and nonce
+- **CREATE2** - Deterministic based on sender address, salt, and init code hash
+
+Both methods produce deterministic 20-byte addresses derived from keccak256 hashing.
+
+## CREATE Address
+
+### `instance.calculateCreateAddress(nonce)`
+
+Calculate CREATE contract address using sender address and transaction nonce.
+
+**Formula:** `keccak256(rlp([sender, nonce]))[12:32]`
+
+```typescript
+const deployerAddr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// First contract deployed (nonce 0)
+const contract1 = deployerAddr.calculateCreateAddress(0n)
+console.log(contract1.toHex())
+
+// Second contract (nonce 1)
+const contract2 = deployerAddr.calculateCreateAddress(1n)
+console.log(contract2.toHex())
+
+// Addresses are different for each nonce
+contract1.equals(contract2) // false
+```
+
+**Parameters:**
+- `nonce: bigint` - Transaction nonce (must be ≥ 0)
+
+**Returns:** `Address` - Calculated contract address
+
+**Throws:**
+- `InvalidValueError` - If nonce is negative
+
+**Static form:**
+```typescript
+Address.calculateCreateAddress(deployerAddr, nonce)
+```
+
+Defined in: [primitives/Address/BrandedAddress/calculateCreateAddress.js:20](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js)
+
+**Note:** Uses keccak256 and RLP encoding internally. When using tree-shakeable imports, including this method adds both keccak256 and RLP to bundle.
+
+### Nonce Behavior
+
+```typescript
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Nonce 0 - first contract
+deployer.calculateCreateAddress(0n)
+
+// Nonce increases with each transaction
+deployer.calculateCreateAddress(1n)
+deployer.calculateCreateAddress(2n)
+
+// Large nonces supported
+deployer.calculateCreateAddress(999999n)
+
+// Negative nonce throws
+try {
+  deployer.calculateCreateAddress(-1n) // ✗ throws InvalidValueError
+} catch (e) {
+  console.error(e.message) // "Nonce cannot be negative"
+}
+```
+
+## CREATE2 Address
+
+### `instance.calculateCreate2Address(salt, initCode)`
+
+Calculate CREATE2 contract address using sender address, salt, and initialization code.
+
+**Formula:** `keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:32]`
+
+```typescript
+const deployerAddr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// 32-byte salt (required)
+const salt = new Uint8Array(32)
+
+// Contract initialization code (constructor + bytecode)
+const initCode = Bytes.fromHex("0x608060405234801561001057600080fd5b50...")
+
+const contractAddr = deployerAddr.calculateCreate2Address(salt, initCode)
+console.log(contractAddr.toHex())
+```
+
+**Parameters:**
+- `salt: Uint8Array` - 32-byte salt value (must be exactly 32 bytes)
+- `initCode: Uint8Array` - Contract initialization code
+
+**Returns:** `Address` - Calculated contract address
+
+**Throws:**
+- `Error` - If salt is not exactly 32 bytes
+
+**Static form:**
+```typescript
+Address.calculateCreate2Address(deployerAddr, salt, initCode)
+```
+
+Defined in: [primitives/Address/BrandedAddress/calculateCreate2Address.js:24](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/calculateCreate2Address.js)
+
+**Note:** Uses keccak256 internally (twice - once for initCode, once for final address). When using tree-shakeable imports, including this method adds keccak256 to bundle.
+
+### Salt and Determinism
+
+```typescript
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const initCode = Bytes.fromHex("0x6080604052...")
+
+// Same salt produces same address
+const salt1 = new Uint8Array(32)
+const addr1 = deployer.calculateCreate2Address(salt1, initCode)
+const addr2 = deployer.calculateCreate2Address(salt1, initCode)
+addr1.equals(addr2) // true (deterministic)
+
+// Different salt produces different address
+const salt2 = new Uint8Array(32)
+salt2[0] = 1
+const addr3 = deployer.calculateCreate2Address(salt2, initCode)
+addr1.equals(addr3) // false
+
+// Salt must be exactly 32 bytes
+try {
+  const shortSalt = new Uint8Array(16)
+  deployer.calculateCreate2Address(shortSalt, initCode) // ✗ throws
+} catch (e) {
+  console.error(e.message) // "Salt must be 32 bytes"
+}
+```
+
+## Usage Examples
+
+### Predicting Contract Addresses
+
+```typescript
+// Before deployment, calculate where contract will be deployed
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const currentNonce = 5n
+
+const predictedAddr = deployer.calculateCreateAddress(currentNonce)
+console.log(`Contract will deploy to: ${predictedAddr.prettyPrint()}`)
+
+// Deploy contract...
+// Verify deployed address matches prediction
+```
+
+### CREATE2 Factory Pattern
+
+```typescript
+import { Bytes } from '@tevm/voltaire'
+
+class ContractFactory {
+  constructor(public factoryAddr: Address) {}
+
+  predictAddress(salt: bigint, initCode: Uint8Array): Address {
+    // Convert bigint salt to 32-byte array
+    const saltBytes = new Uint8Array(32)
+    const saltHex = salt.toString(16).padStart(64, '0')
+    saltBytes.set(Bytes.fromHex(`0x${saltHex}`))
+
+    return this.factoryAddr.calculateCreate2Address(saltBytes, initCode)
+  }
+
+  // Use salt for deterministic addresses
+  deployTo(targetAddr: Address, initCode: Uint8Array): bigint | null {
+    // Search for salt that produces target address
+    for (let salt = 0n; salt < 1000000n; salt++) {
+      const predicted = this.predictAddress(salt, initCode)
+      if (predicted.equals(targetAddr)) {
+        return salt
+      }
+    }
+    return null
+  }
+}
+```
+
+### Vanity Address Mining
+
+```typescript
+// Find salt that produces address starting with specific bytes
+function mineVanityAddress(
+  deployer: Address,
+  initCode: Uint8Array,
+  prefix: Uint8Array
+): { address: Address, salt: Uint8Array } {
+  const salt = new Uint8Array(32)
+
+  for (let i = 0; i < Number.MAX_SAFE_INTEGER; i++) {
+    // Increment salt
+    const view = new DataView(salt.buffer)
+    view.setBigUint64(24, BigInt(i), false) // big-endian
+
+    const addr = deployer.calculateCreate2Address(salt, initCode)
+
+    // Check if address starts with prefix
+    if (addr.slice(0, prefix.length).every((b, i) => b === prefix[i])) {
+      return { address: addr, salt }
+    }
+  }
+
+  throw new Error("Vanity address not found")
+}
+
+// Find address starting with 0x0000
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const initCode = Bytes.fromHex("0x6080604052...")
+const prefix = new Uint8Array([0x00, 0x00])
+
+const { address, salt } = mineVanityAddress(deployer, initCode, prefix)
+console.log(`Found: ${address.prettyPrint()}`)
+console.log(`Salt: 0x${Bytes.toHex(salt)}`)
+```
+
+## CREATE vs CREATE2
+
+| Feature | CREATE | CREATE2 |
+|---------|--------|---------|
+| **Determinism** | Nonce-based | Salt-based |
+| **Dependencies** | Keccak256, RLP | Keccak256 only |
+| **Parameters** | `(address, nonce)` | `(address, salt, initCode)` |
+| **Use case** | Sequential deployment | Deterministic deployment |
+| **Predictability** | Requires tracking nonce | Fully deterministic |
+| **Redeployment** | Different address | Same address possible |
+
+## Tree-Shakeable Usage
+
+Both methods available as tree-shakeable imports:
+
+```typescript
+import { calculateCreateAddress, calculateCreate2Address } from '@tevm/voltaire/BrandedAddress'
+import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+
+const deployer: BrandedAddress = /* ... */
+
+const createAddr = calculateCreateAddress(deployer, 0n)
+const create2Addr = calculateCreate2Address(deployer, salt, initCode)
+```
+
+**Tree-shaking consideration:** Both methods include keccak256 in bundle. CREATE also includes RLP encoder.
+
+See [BrandedAddress](/primitives/address/branded-address) for details on tree-shakeable API.
