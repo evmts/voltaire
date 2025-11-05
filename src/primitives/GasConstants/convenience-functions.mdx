@@ -1,0 +1,409 @@
+# Convenience Functions
+
+Simplified call forms using implicit `this` parameter. These functions wrap calculation functions for more ergonomic usage.
+
+## Overview
+
+Convenience functions use JavaScript's `this` binding to provide a cleaner API:
+
+```typescript
+// Verbose
+const cost = calculateKeccak256Cost(64n);
+
+// Concise
+const cost = keccak256Cost.call(64n);
+```
+
+All convenience functions delegate to their corresponding calculation functions.
+
+## keccak256Cost
+
+Calculate KECCAK256 gas cost.
+
+### Signature
+
+```typescript
+function keccak256Cost(this: bigint): bigint
+```
+
+### Usage
+
+```typescript
+const cost = keccak256Cost.call(64n);  // 42n
+```
+
+### Equivalent
+
+```typescript
+calculateKeccak256Cost(64n);
+```
+
+## sstoreCost
+
+Calculate SSTORE gas cost.
+
+### Signature
+
+```typescript
+function sstoreCost(this: {
+  isWarm: boolean;
+  currentValue: bigint;
+  newValue: bigint;
+}): { cost: bigint; refund: bigint }
+```
+
+### Usage
+
+```typescript
+const result = sstoreCost.call({
+  isWarm: false,
+  currentValue: 0n,
+  newValue: 100n
+});
+// { cost: 22100n, refund: 0n }
+```
+
+### Equivalent
+
+```typescript
+calculateSstoreCost(false, 0n, 100n);
+```
+
+## logCost
+
+Calculate LOG operation gas cost.
+
+### Signature
+
+```typescript
+function logCost(this: {
+  topicCount: bigint;
+  dataSize: bigint;
+}): bigint
+```
+
+### Usage
+
+```typescript
+const cost = logCost.call({
+  topicCount: 2n,
+  dataSize: 64n
+});
+// 1637n
+```
+
+### Equivalent
+
+```typescript
+calculateLogCost(2n, 64n);
+```
+
+## callCost
+
+Calculate CALL operation gas cost.
+
+### Signature
+
+```typescript
+function callCost(this: {
+  isWarm: boolean;
+  hasValue: boolean;
+  isNewAccount: boolean;
+  availableGas: bigint;
+}): {
+  base: bigint;
+  dynamic: bigint;
+  stipend: bigint;
+  forwarded: bigint;
+  total: bigint;
+}
+```
+
+### Usage
+
+```typescript
+const result = callCost.call({
+  isWarm: true,
+  hasValue: false,
+  isNewAccount: false,
+  availableGas: 100000n
+});
+// { base: 100n, dynamic: 0n, stipend: 0n, forwarded: 98339n, total: 100n }
+```
+
+### Equivalent
+
+```typescript
+calculateCallCost(true, false, false, 100000n);
+```
+
+## memoryExpansionCost
+
+Calculate memory expansion cost.
+
+### Signature
+
+```typescript
+function memoryExpansionCost(this: {
+  oldSize: bigint;
+  newSize: bigint;
+}): {
+  oldCost: bigint;
+  newCost: bigint;
+  expansionCost: bigint;
+  words: bigint;
+}
+```
+
+### Usage
+
+```typescript
+const expansion = memoryExpansionCost.call({
+  oldSize: 64n,
+  newSize: 128n
+});
+// { oldCost: 6n, newCost: 12n, expansionCost: 6n, words: 4n }
+```
+
+### Equivalent
+
+```typescript
+calculateMemoryExpansionCost(64n, 128n);
+```
+
+## createCost
+
+Calculate CREATE/CREATE2 operation cost.
+
+### Signature
+
+```typescript
+function createCost(this: {
+  initcodeSize: bigint;
+  deployedSize: bigint;
+}): {
+  base: bigint;
+  dynamic: bigint;
+  total: bigint;
+}
+```
+
+### Usage
+
+```typescript
+const result = createCost.call({
+  initcodeSize: 5000n,
+  deployedSize: 2000n
+});
+// { base: 32000n, dynamic: 400314n, total: 432314n }
+```
+
+### Equivalent
+
+```typescript
+calculateCreateCost(5000n, 2000n);
+```
+
+## txIntrinsicGas
+
+Calculate transaction intrinsic gas cost.
+
+### Signature
+
+```typescript
+function txIntrinsicGas(this: {
+  data: Uint8Array;
+  isCreate: boolean;
+}): bigint
+```
+
+### Usage
+
+```typescript
+const cost = txIntrinsicGas.call({
+  data: new Uint8Array([0, 1, 2, 0, 0]),
+  isCreate: false
+});
+// 21044n
+```
+
+### Equivalent
+
+```typescript
+calculateTxIntrinsicGas(new Uint8Array([0, 1, 2, 0, 0]), false);
+```
+
+## copyCost
+
+Calculate copy operation cost.
+
+### Signature
+
+```typescript
+function copyCost(this: bigint): bigint
+```
+
+### Usage
+
+```typescript
+const cost = copyCost.call(64n);  // 6n
+```
+
+### Equivalent
+
+```typescript
+calculateCopyCost(64n);
+```
+
+## maxRefund
+
+Calculate maximum gas refund (EIP-3529).
+
+### Signature
+
+```typescript
+function maxRefund(this: bigint): bigint
+```
+
+### Usage
+
+```typescript
+const max = maxRefund.call(100000n);  // 20000n
+```
+
+### Equivalent
+
+```typescript
+calculateMaxRefund(100000n);
+```
+
+## Precompile Convenience Functions
+
+### Precompile.ecPairingCost
+
+Calculate ECPAIRING precompile cost.
+
+### Signature
+
+```typescript
+function ecPairingCost(this: {
+  pairCount: bigint;
+  hardfork: Hardfork;
+}): bigint
+```
+
+### Usage
+
+```typescript
+const cost = Precompile.ecPairingCost.call({
+  pairCount: 2n,
+  hardfork: 'istanbul'
+});
+// 113000n
+```
+
+### Equivalent
+
+```typescript
+Precompile.calculateEcPairingCost(2n, 'istanbul');
+```
+
+## Pattern Comparison
+
+### Verbose (Function Call)
+
+```typescript
+// Multiple positional arguments
+const cost1 = calculateKeccak256Cost(size);
+const cost2 = calculateSstoreCost(isWarm, currentValue, newValue);
+const cost3 = calculateLogCost(topicCount, dataSize);
+const cost4 = calculateCallCost(isWarm, hasValue, isNewAccount, availableGas);
+```
+
+### Concise (This Binding)
+
+```typescript
+// Single argument or object
+const cost1 = keccak256Cost.call(size);
+const cost2 = sstoreCost.call({ isWarm, currentValue, newValue });
+const cost3 = logCost.call({ topicCount, dataSize });
+const cost4 = callCost.call({ isWarm, hasValue, isNewAccount, availableGas });
+```
+
+## When to Use
+
+**Use calculation functions when:**
+- Arguments are readily available
+- Writing performance-critical code
+- Prefer explicit parameter lists
+
+**Use convenience functions when:**
+- Working with object-based data
+- Building fluent APIs
+- Prefer named parameters
+
+## Complete Example
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+// Verbose style
+function estimateGas1(params: {
+  keccakSize: bigint;
+  isWarm: boolean;
+  currentValue: bigint;
+  newValue: bigint;
+  topicCount: bigint;
+  dataSize: bigint;
+}): bigint {
+  const keccak = GasConstants.calculateKeccak256Cost(params.keccakSize);
+  const sstore = GasConstants.calculateSstoreCost(
+    params.isWarm,
+    params.currentValue,
+    params.newValue
+  );
+  const log = GasConstants.calculateLogCost(params.topicCount, params.dataSize);
+  return keccak + sstore.cost + log;
+}
+
+// Concise style
+function estimateGas2(params: {
+  keccakSize: bigint;
+  isWarm: boolean;
+  currentValue: bigint;
+  newValue: bigint;
+  topicCount: bigint;
+  dataSize: bigint;
+}): bigint {
+  const keccak = GasConstants.keccak256Cost.call(params.keccakSize);
+  const sstore = GasConstants.sstoreCost.call({
+    isWarm: params.isWarm,
+    currentValue: params.currentValue,
+    newValue: params.newValue
+  });
+  const log = GasConstants.logCost.call({
+    topicCount: params.topicCount,
+    dataSize: params.dataSize
+  });
+  return keccak + sstore.cost + log;
+}
+```
+
+## Summary Table
+
+| Convenience Function | Parameters | Returns | Calculation Equivalent |
+|---------------------|------------|---------|------------------------|
+| `keccak256Cost` | `this: bigint` | `bigint` | `calculateKeccak256Cost(size)` |
+| `sstoreCost` | `this: { isWarm, currentValue, newValue }` | `{ cost, refund }` | `calculateSstoreCost(...)` |
+| `logCost` | `this: { topicCount, dataSize }` | `bigint` | `calculateLogCost(...)` |
+| `callCost` | `this: { isWarm, hasValue, isNewAccount, availableGas }` | `{ base, dynamic, stipend, forwarded, total }` | `calculateCallCost(...)` |
+| `memoryExpansionCost` | `this: { oldSize, newSize }` | `{ oldCost, newCost, expansionCost, words }` | `calculateMemoryExpansionCost(...)` |
+| `createCost` | `this: { initcodeSize, deployedSize }` | `{ base, dynamic, total }` | `calculateCreateCost(...)` |
+| `txIntrinsicGas` | `this: { data, isCreate }` | `bigint` | `calculateTxIntrinsicGas(...)` |
+| `copyCost` | `this: bigint` | `bigint` | `calculateCopyCost(size)` |
+| `maxRefund` | `this: bigint` | `bigint` | `calculateMaxRefund(gasUsed)` |
+
+## See Also
+
+- [Calculation Functions](./calculation-functions.mdx) - Detailed calculation function documentation
+- [Usage Patterns](./usage-patterns.mdx) - Common patterns and examples

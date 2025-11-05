@@ -1,0 +1,475 @@
+# Hardfork Utilities
+
+EIP detection and fork-specific cost getters for hardfork-aware gas calculations.
+
+## Overview
+
+Ethereum's gas costs change across hardforks. These utilities help detect which EIPs are active and retrieve fork-specific costs.
+
+**Supported Hardforks:**
+- `homestead`
+- `byzantium`
+- `constantinople`
+- `istanbul`
+- `berlin`
+- `london`
+- `paris`
+- `shanghai`
+- `cancun`
+
+## EIP Detection Functions
+
+### hasEIP2929
+
+Check if hardfork includes EIP-2929 (cold/warm access costs).
+
+#### Signature
+
+```typescript
+function hasEIP2929(hardfork: Hardfork): boolean
+```
+
+#### Activated
+
+Berlin and later (berlin, london, paris, shanghai, cancun).
+
+#### Changes
+
+- Cold SLOAD: 800 → 2100 gas
+- Cold account access: 700 → 2600 gas
+- Warm storage read: New 100 gas cost
+
+#### Example
+
+```typescript
+hasEIP2929('istanbul');  // false
+hasEIP2929('berlin');    // true
+hasEIP2929('london');    // true
+hasEIP2929('cancun');    // true
+```
+
+### hasEIP3529
+
+Check if hardfork includes EIP-3529 (reduced refunds).
+
+#### Signature
+
+```typescript
+function hasEIP3529(hardfork: Hardfork): boolean
+```
+
+#### Activated
+
+London and later (london, paris, shanghai, cancun).
+
+#### Changes
+
+- Max refund: gasUsed/2 → gasUsed/5
+- SSTORE refund: 15000 → 4800 gas
+- SELFDESTRUCT refund: 24000 → 0 gas (removed)
+
+#### Example
+
+```typescript
+hasEIP3529('berlin');    // false
+hasEIP3529('london');    // true
+hasEIP3529('shanghai');  // true
+```
+
+### hasEIP3860
+
+Check if hardfork includes EIP-3860 (initcode size limit).
+
+#### Signature
+
+```typescript
+function hasEIP3860(hardfork: Hardfork): boolean
+```
+
+#### Activated
+
+Shanghai and later (shanghai, cancun).
+
+#### Changes
+
+- Maximum initcode size: unlimited → 49152 bytes (48 KB)
+- Initcode cost: 0 → 2 gas per word
+
+#### Example
+
+```typescript
+hasEIP3860('london');    // false
+hasEIP3860('shanghai');  // true
+hasEIP3860('cancun');    // true
+```
+
+### hasEIP1153
+
+Check if hardfork includes EIP-1153 (transient storage).
+
+#### Signature
+
+```typescript
+function hasEIP1153(hardfork: Hardfork): boolean
+```
+
+#### Activated
+
+Cancun and later (cancun).
+
+#### Changes
+
+- New opcodes: TLOAD (100 gas), TSTORE (100 gas)
+- Transient storage cleared at transaction end
+
+#### Example
+
+```typescript
+hasEIP1153('shanghai');  // false
+hasEIP1153('cancun');    // true
+```
+
+### hasEIP4844
+
+Check if hardfork includes EIP-4844 (blob transactions).
+
+#### Signature
+
+```typescript
+function hasEIP4844(hardfork: Hardfork): boolean
+```
+
+#### Activated
+
+Cancun and later (cancun).
+
+#### Changes
+
+- New opcodes: BLOBHASH (3 gas), BLOBBASEFEE (2 gas)
+- Blob transaction type introduced
+
+#### Example
+
+```typescript
+hasEIP4844('shanghai');  // false
+hasEIP4844('cancun');    // true
+```
+
+## Fork-Specific Cost Getters
+
+### getColdSloadCost
+
+Get cold SLOAD cost for hardfork.
+
+#### Signature
+
+```typescript
+function getColdSloadCost(hardfork: Hardfork): bigint
+```
+
+#### Returns
+
+- Pre-EIP-2929 (homestead - istanbul): `100n`
+- Post-EIP-2929 (berlin+): `2100n`
+
+#### Example
+
+```typescript
+getColdSloadCost('homestead');    // 100n
+getColdSloadCost('byzantium');    // 100n
+getColdSloadCost('istanbul');     // 100n
+getColdSloadCost('berlin');       // 2100n
+getColdSloadCost('london');       // 2100n
+getColdSloadCost('cancun');       // 2100n
+```
+
+### getColdAccountAccessCost
+
+Get cold account access cost for hardfork.
+
+#### Signature
+
+```typescript
+function getColdAccountAccessCost(hardfork: Hardfork): bigint
+```
+
+#### Returns
+
+- Pre-EIP-2929 (homestead - istanbul): `20n` (ExtStep)
+- Post-EIP-2929 (berlin+): `2600n`
+
+#### Applies To
+
+BALANCE, EXTCODESIZE, EXTCODECOPY, EXTCODEHASH, CALL family (when cold).
+
+#### Example
+
+```typescript
+getColdAccountAccessCost('istanbul');  // 20n
+getColdAccountAccessCost('berlin');    // 2600n
+getColdAccountAccessCost('london');    // 2600n
+```
+
+### getSstoreRefund
+
+Get SSTORE refund amount for clearing storage.
+
+#### Signature
+
+```typescript
+function getSstoreRefund(hardfork: Hardfork): bigint
+```
+
+#### Returns
+
+- Pre-EIP-3529 (homestead - berlin): `15000n`
+- Post-EIP-3529 (london+): `4800n`
+
+#### Example
+
+```typescript
+getSstoreRefund('homestead');  // 15000n
+getSstoreRefund('berlin');     // 15000n
+getSstoreRefund('london');     // 4800n
+getSstoreRefund('paris');      // 4800n
+getSstoreRefund('cancun');     // 4800n
+```
+
+### getSelfdestructRefund
+
+Get SELFDESTRUCT refund amount.
+
+#### Signature
+
+```typescript
+function getSelfdestructRefund(hardfork: Hardfork): bigint
+```
+
+#### Returns
+
+- Pre-EIP-3529 (homestead - berlin): `24000n`
+- Post-EIP-3529 (london+): `0n` (removed)
+
+#### Example
+
+```typescript
+getSelfdestructRefund('berlin');    // 24000n
+getSelfdestructRefund('london');    // 0n (refund removed)
+getSelfdestructRefund('shanghai');  // 0n
+```
+
+## Hardfork Timeline
+
+```
+homestead (2016)
+  ↓
+byzantium (2017)
+  ↓
+constantinople (2019)
+  ↓
+istanbul (2019)
+  ↓
+berlin (2021) ← EIP-2929 (cold/warm access)
+  ↓
+london (2021) ← EIP-3529 (reduced refunds)
+  ↓
+paris (2022) ← The Merge
+  ↓
+shanghai (2023) ← EIP-3860 (initcode limit)
+  ↓
+cancun (2024) ← EIP-1153 (transient storage), EIP-4844 (blobs)
+```
+
+## Usage Patterns
+
+### Storage Cost Tracking
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+function calculateSloadCost(
+  hardfork: Hardfork,
+  isWarm: boolean
+): bigint {
+  if (isWarm) {
+    return GasConstants.Sload;  // 100n (always)
+  }
+  return GasConstants.getColdSloadCost(hardfork);
+}
+
+// Pre-EIP-2929
+calculateSloadCost('istanbul', false);  // 100n
+
+// Post-EIP-2929
+calculateSloadCost('berlin', false);    // 2100n
+calculateSloadCost('berlin', true);     // 100n
+```
+
+### Refund Calculation
+
+```typescript
+function calculateNetGas(
+  hardfork: Hardfork,
+  gasUsed: bigint,
+  clearedSlots: bigint
+): bigint {
+  // Get fork-specific refund amount
+  const refundPerSlot = GasConstants.getSstoreRefund(hardfork);
+  const totalRefund = clearedSlots * refundPerSlot;
+
+  // Apply EIP-3529 limit
+  const maxRefund = GasConstants.hasEIP3529(hardfork)
+    ? gasUsed / 5n  // London+: 1/5
+    : gasUsed / 2n; // Berlin and earlier: 1/2
+
+  const actualRefund = totalRefund > maxRefund ? maxRefund : totalRefund;
+  return gasUsed - actualRefund;
+}
+
+// Berlin: clearing 3 slots
+calculateNetGas('berlin', 100000n, 3n);
+// 100000 - 45000 = 55000n (3 * 15000, capped at gasUsed/2)
+
+// London: clearing 3 slots
+calculateNetGas('london', 100000n, 3n);
+// 100000 - 14400 = 85600n (3 * 4800, within gasUsed/5 cap)
+```
+
+### Feature Detection
+
+```typescript
+function estimateTransactionCost(
+  hardfork: Hardfork,
+  data: Uint8Array,
+  operations: {
+    coldSloads: number;
+    sstoreClears: number;
+    usesTransientStorage: boolean;
+    hasBlobs: boolean;
+  }
+): bigint {
+  let cost = GasConstants.calculateTxIntrinsicGas(data, false);
+
+  // Cold storage reads
+  const coldSloadCost = GasConstants.getColdSloadCost(hardfork);
+  cost += coldSloadCost * BigInt(operations.coldSloads);
+
+  // Storage clears
+  cost += GasConstants.SstoreClear * BigInt(operations.sstoreClears);
+
+  // Transient storage (Cancun+)
+  if (operations.usesTransientStorage) {
+    if (!GasConstants.hasEIP1153(hardfork)) {
+      throw new Error('Transient storage not available before Cancun');
+    }
+    cost += GasConstants.TStore;
+  }
+
+  // Blob transactions (Cancun+)
+  if (operations.hasBlobs) {
+    if (!GasConstants.hasEIP4844(hardfork)) {
+      throw new Error('Blob transactions not available before Cancun');
+    }
+    cost += GasConstants.BlobBaseFee;
+  }
+
+  return cost;
+}
+```
+
+### Contract Deployment
+
+```typescript
+function estimateDeploymentCost(
+  hardfork: Hardfork,
+  initcode: Uint8Array,
+  deployedCode: Uint8Array
+): bigint {
+  // Check initcode size limit (Shanghai+)
+  if (GasConstants.hasEIP3860(hardfork)) {
+    if (BigInt(initcode.length) > GasConstants.MaxInitcodeSize) {
+      throw new Error('Initcode exceeds 49152 byte limit (EIP-3860)');
+    }
+  }
+
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(initcode, true);
+  const create = GasConstants.calculateCreateCost(
+    BigInt(initcode.length),
+    BigInt(deployedCode.length)
+  );
+
+  return intrinsic + create.total;
+}
+```
+
+### Multi-Fork Comparison
+
+```typescript
+function compareCosts(operation: string): Record<Hardfork, bigint> {
+  const forks: Hardfork[] = [
+    'homestead', 'byzantium', 'istanbul',
+    'berlin', 'london', 'shanghai', 'cancun'
+  ];
+
+  return Object.fromEntries(
+    forks.map(fork => {
+      let cost: bigint;
+      switch (operation) {
+        case 'coldSload':
+          cost = GasConstants.getColdSloadCost(fork);
+          break;
+        case 'coldAccountAccess':
+          cost = GasConstants.getColdAccountAccessCost(fork);
+          break;
+        case 'sstoreRefund':
+          cost = GasConstants.getSstoreRefund(fork);
+          break;
+        case 'selfdestructRefund':
+          cost = GasConstants.getSelfdestructRefund(fork);
+          break;
+        default:
+          cost = 0n;
+      }
+      return [fork, cost];
+    })
+  );
+}
+
+compareCosts('coldSload');
+// {
+//   homestead: 100n,
+//   byzantium: 100n,
+//   istanbul: 100n,
+//   berlin: 2100n,
+//   london: 2100n,
+//   shanghai: 2100n,
+//   cancun: 2100n
+// }
+```
+
+## Summary Table
+
+### EIP Detection
+
+| Function | EIP | Activated | Key Changes |
+|----------|-----|-----------|-------------|
+| `hasEIP2929` | EIP-2929 | Berlin+ | Cold/warm access costs |
+| `hasEIP3529` | EIP-3529 | London+ | Reduced refunds (gasUsed/5) |
+| `hasEIP3860` | EIP-3860 | Shanghai+ | Initcode size limit (48 KB) |
+| `hasEIP1153` | EIP-1153 | Cancun+ | Transient storage opcodes |
+| `hasEIP4844` | EIP-4844 | Cancun+ | Blob transactions |
+
+### Cost Getters
+
+| Function | Pre-Fork Value | Post-Fork Value | Fork |
+|----------|----------------|-----------------|------|
+| `getColdSloadCost` | 100n | 2100n | Berlin (EIP-2929) |
+| `getColdAccountAccessCost` | 20n | 2600n | Berlin (EIP-2929) |
+| `getSstoreRefund` | 15000n | 4800n | London (EIP-3529) |
+| `getSelfdestructRefund` | 24000n | 0n | London (EIP-3529) |
+
+## See Also
+
+- [Constants](./constants.mdx) - Gas constant definitions
+- [Calculation Functions](./calculation-functions.mdx) - Cost calculations
+- [Usage Patterns](./usage-patterns.mdx) - Common patterns
