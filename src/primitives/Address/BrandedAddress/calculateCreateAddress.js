@@ -1,5 +1,5 @@
 import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
-import { encode } from "../../Rlp/encode.js";
+import { encode } from "../../Rlp/BrandedRlp/encode.js";
 import { InvalidValueError } from "./errors.js";
 
 /**

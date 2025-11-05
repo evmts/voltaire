@@ -1,4 +1,4 @@
-import { encode } from "../../Rlp/encode.js";
+import { encode } from "../../Rlp/BrandedRlp/encode.js";
 
 /**
  * Encode access list to RLP (EIP-2930)

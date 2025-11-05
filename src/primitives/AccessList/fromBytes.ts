@@ -1,6 +1,6 @@
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import { decode } from "../Rlp/decode.js";
+import { decode } from "../Rlp/BrandedRlp/decode.js";
 import type { BrandedAccessList, Item } from "./BrandedAccessList.js";
 
 /**
