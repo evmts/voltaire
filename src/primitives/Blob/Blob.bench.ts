@@ -4,7 +4,6 @@
  * Measures performance of blob encoding, validation, and utility functions
  */
 
-import type { BrandedBlob, Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
 import { from } from "./from.js";
 import { fromData } from "./fromData.js";
 import { isValid } from "./isValid.js";

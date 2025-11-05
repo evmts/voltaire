@@ -5,7 +5,6 @@
  * conversion, comparison, validation, hashing, and utilities
  */
 
-import type { BrandedHash } from "./BrandedHash.js";
 import { assert } from "./assert.js";
 import { clone } from "./clone.js";
 import { ZERO } from "./constants.js";

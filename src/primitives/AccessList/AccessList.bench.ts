@@ -4,7 +4,6 @@
  * Measures performance of access list operations
  */
 
-import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedHash } from "../Hash/index.js";
 import { AccessList } from "./AccessList.js";
 
@@ -62,10 +61,10 @@ function benchmark(
 // ============================================================================
 
 // Helper to create test addresses
-function createAddress(byte: number): BrandedAddress {
+function createAddress(byte: number) {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
-	return addr as BrandedAddress;
+	return addr;
 }
 
 // Helper to create test storage keys

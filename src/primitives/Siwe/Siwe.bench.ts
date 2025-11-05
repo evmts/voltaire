@@ -4,7 +4,6 @@
  * Measures performance of Sign-In with Ethereum operations
  */
 
-import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedMessage } from "./BrandedMessage.js";
 import * as Siwe from "./Siwe.js";
 
@@ -61,10 +60,10 @@ function benchmark(
 // Test Data
 // ============================================================================
 
-function createTestAddress(seed: number): BrandedAddress {
+function createTestAddress(seed: number) {
 	const addr = new Uint8Array(20);
 	addr.fill(seed);
-	return addr as BrandedAddress;
+	return addr;
 }
 
 const testAddress = createTestAddress(1);
@@ -535,7 +534,7 @@ const addresses = [
 	createTestAddress(0),
 	createTestAddress(42),
 	createTestAddress(255),
-	new Uint8Array(20).fill(0xff) as BrandedAddress,
+	new Uint8Array(20).fill(0xff),
 ];
 
 for (const addr of addresses) {

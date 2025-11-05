@@ -6,7 +6,6 @@
 
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import { Hash } from "../Hash/index.js";
 import * as Transaction from "../Transaction/index.js";
 import type {
 	EIP1559,

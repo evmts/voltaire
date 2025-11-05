@@ -501,7 +501,7 @@ bench("Address.calculateCreateAddress - ethers", () => {
 bench("Address.calculateCreateAddress - viem", () => {
 	getContractAddress({
 		from: senderAddress,
-		nonce: Number(nonce),
+		nonce: nonce,
 		opcode: "CREATE",
 	});
 });

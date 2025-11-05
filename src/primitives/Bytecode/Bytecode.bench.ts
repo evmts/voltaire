@@ -238,7 +238,7 @@ console.log(
 );
 
 console.log("\n--- validate - edge cases ---");
-const invalidPush = new Uint8Array([0x60]); // Incomplete PUSH
+const invalidPush = new Uint8Array([0x60]) as unknown as BrandedBytecode; // Incomplete PUSH
 results.push(
 	benchmark("validate - invalid (incomplete PUSH)", () =>
 		validate(invalidPush),
@@ -553,9 +553,9 @@ console.log(
 	"================================================================================\n",
 );
 
-const smallCode2 = new Uint8Array(smallCode);
-const mediumCode2 = new Uint8Array(mediumCode);
-const largeCode2 = new Uint8Array(largeCode);
+const smallCode2 = new Uint8Array(smallCode) as unknown as BrandedBytecode;
+const mediumCode2 = new Uint8Array(mediumCode) as unknown as BrandedBytecode;
+const largeCode2 = new Uint8Array(largeCode) as unknown as BrandedBytecode;
 
 console.log("--- equals - varying sizes ---");
 results.push(

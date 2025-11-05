@@ -4,7 +4,6 @@
  * Measures performance of StorageKey operations and state constants
  */
 
-import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedStorageKey } from "./BrandedStorageKey.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_ROOT, StorageKey } from "./index.js";
 
@@ -56,10 +55,10 @@ function benchmark(
 // Test Data
 // ============================================================================
 
-function createAddress(byte: number): BrandedAddress {
+function createAddress(byte: number) {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
-	return addr as unknown as BrandedAddress;
+	return addr;
 }
 
 const addr1 = createAddress(0x01);
@@ -159,7 +158,7 @@ results.push(
 );
 results.push(
 	benchmark("Literal key creation", () => {
-		void ({ address: addr1, slot: 42n } as StorageKey);
+		void ({ address: addr1, slot: 42n } as BrandedStorageKey);
 	}),
 );
 
@@ -485,7 +484,7 @@ console.log("--- Batch Operations ---");
 results.push(
 	benchmark("Create 10 StorageKeys", () => {
 		for (let i = 0; i < 10; i++) {
-			void ({ address: addr1, slot: BigInt(i) } as StorageKey);
+			void ({ address: addr1, slot: BigInt(i) } as BrandedStorageKey);
 		}
 	}),
 );

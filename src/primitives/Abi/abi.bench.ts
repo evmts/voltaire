@@ -484,7 +484,7 @@ results.push(
 		Abi.Function.encodeParams(transferFunc, [
 			"0x0000000000000000000000000000000000000000",
 			100n,
-		] as [BrandedAddress, bigint]);
+		] as [string, bigint]);
 	}),
 );
 results.push(
@@ -623,7 +623,7 @@ console.log("\n--- Function Decoding ---");
 const encodedTransferCall = Abi.Function.encodeParams(transferFunc, [
 	"0x0000000000000000000000000000000000000000",
 	100n,
-] as [BrandedAddress, bigint]);
+] as [string, bigint]);
 const encodedBoolResult = Abi.Function.encodeResult(transferFunc, [true] as [
 	boolean,
 ]);
@@ -765,7 +765,7 @@ results.push(
 		const encoded = Abi.Function.encodeParams(transferFunc, [
 			"0x0000000000000000000000000000000000000000",
 			100n,
-		] as [BrandedAddress, bigint]);
+		] as [string, bigint]);
 		Abi.Function.decodeParams(transferFunc, encoded);
 	}),
 );
