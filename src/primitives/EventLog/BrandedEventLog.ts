@@ -1,12 +1,12 @@
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash, Hash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/BrandedHash.js";
 
 /**
  * Branded EventLog type
  */
 export type BrandedEventLog<
 	TAddress extends BrandedAddress = BrandedAddress,
-	TTopics extends readonly Hash[] = readonly Hash[],
+	TTopics extends readonly BrandedHash[] = readonly BrandedHash[],
 > = {
 	/** Contract address that emitted the log */
 	address: TAddress;
@@ -36,8 +36,8 @@ export type Filter<
 		| BrandedAddress
 		| BrandedAddress[]
 		| undefined,
-	TTopics extends readonly (Hash | Hash[] | null)[] | undefined =
-		| readonly (Hash | Hash[] | null)[]
+	TTopics extends readonly (BrandedHash | BrandedHash[] | null)[] | undefined =
+		| readonly (BrandedHash | BrandedHash[] | null)[]
 		| undefined,
 > = {
 	/** Contract address(es) to filter by */
