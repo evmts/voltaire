@@ -4,7 +4,6 @@ import { calculateCreateAddress } from "./BrandedAddress/calculateCreateAddress.
 import { compare } from "./BrandedAddress/compare.js";
 import { SIZE } from "./BrandedAddress/constants.js";
 import { equals } from "./BrandedAddress/equals.js";
-import { format } from "./BrandedAddress/format.js";
 // @ts-expect-error - Used in typeof expression
 import { from } from "./BrandedAddress/from.js";
 // @ts-expect-error - Used in typeof expression
@@ -40,7 +39,6 @@ type AddressPrototype = BrandedAddress & {
 	toUppercase(this: BrandedAddress): ReturnType<typeof toUppercase>;
 	toU256(this: BrandedAddress): ReturnType<typeof toU256>;
 	toShortHex(this: BrandedAddress): ReturnType<typeof toShortHex>;
-	format(this: BrandedAddress): ReturnType<typeof format>;
 	compare(this: BrandedAddress, other: BrandedAddress): ReturnType<typeof compare>;
 	lessThan(this: BrandedAddress, other: BrandedAddress): ReturnType<typeof lessThan>;
 	greaterThan(this: BrandedAddress, other: BrandedAddress): ReturnType<typeof greaterThan>;
@@ -68,7 +66,6 @@ export interface AddressConstructor {
 	toU256: typeof toU256;
 	toAbiEncoded: typeof toAbiEncoded;
 	toShortHex: typeof toShortHex;
-	format: typeof format;
 	isZero: typeof isZero;
 	equals: typeof equals;
 	isValid: typeof isValid;
