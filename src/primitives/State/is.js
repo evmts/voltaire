@@ -14,6 +14,7 @@
  */
 export function is(value) {
 	if (typeof value !== "object" || value === null) return false;
+	/** @type {Record<string, any>} */
 	const obj = value;
 	return (
 		obj["address"] instanceof Uint8Array &&

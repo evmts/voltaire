@@ -30,7 +30,14 @@ export function merge(filter1, filter2) {
 
 	const result = new Uint8Array(filter1.length);
 	for (let i = 0; i < filter1.length; i++) {
-		result[i] = filter1[i] | filter2[i];
+		const byte1 = filter1[i];
+		const byte2 = filter2[i];
+		if (byte1 === undefined || byte2 === undefined) {
+			throw new InvalidBloomFilterParameterError(
+				"Invalid bloom filter data at index " + i,
+			);
+		}
+		result[i] = byte1 | byte2;
 	}
 
 	Object.defineProperty(result, "k", {
@@ -49,5 +56,5 @@ export function merge(filter1, filter2) {
 		enumerable: false,
 	});
 
-	return result;
+	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (result);
 }

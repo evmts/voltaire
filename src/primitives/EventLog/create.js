@@ -38,6 +38,7 @@
  * ```
  */
 export function create(params) {
+	/** @type {any} */
 	const result = {
 		__tag: "EventLog",
 		address: params.address,
@@ -60,5 +61,5 @@ export function create(params) {
 	if (params.logIndex !== undefined) {
 		result.logIndex = params.logIndex;
 	}
-	return result;
+	return /** @type {import('./BrandedEventLog.js').BrandedEventLog} */ (result);
 }

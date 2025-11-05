@@ -41,6 +41,7 @@ export function decodeLog(event, data, topics) {
 		topicIndex = 1;
 	}
 
+	/** @type {Record<string, any>} */
 	const result = {};
 	const nonIndexedParams = [];
 
@@ -52,6 +53,11 @@ export function decodeLog(event, data, topics) {
 				);
 			}
 			const topic = topics[topicIndex++];
+			if (!topic) {
+				throw new AbiDecodingError(
+					`Missing topic for indexed parameter ${param.name}`,
+				);
+			}
 
 			if (isDynamicType(param.type)) {
 				if (param.name) {

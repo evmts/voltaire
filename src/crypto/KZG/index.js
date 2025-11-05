@@ -22,11 +22,11 @@
  */
 
 export { KZG } from "./KZG.js";
-export * from "./errors.ts";
+export * from "./errors.js";
 export * from "./constants.js";
-export * from "./BrandedBlob.ts";
-export * from "./BrandedKzgCommitment.ts";
-export * from "./BrandedKzgProof.ts";
+export * from "./BrandedBlob.js";
+export * from "./BrandedKzgCommitment.js";
+export * from "./BrandedKzgProof.js";
 export {
 	loadTrustedSetup,
 	freeTrustedSetup,
