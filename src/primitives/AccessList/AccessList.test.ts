@@ -5,28 +5,26 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import {
-	isItem,
-	is,
-	gasCost,
-	gasSavings,
-	hasSavings,
-	includesAddress,
-	includesStorageKey,
-	keysFor,
-	deduplicate,
-	withAddress,
-	withStorageKey,
-	merge,
-	assertValid,
-	toBytes,
-	addressCount,
-	storageKeyCount,
-	isEmpty,
-	create,
-	from,
-	fromBytes,
-} from "./AccessList.js";
+import { isItem } from "./isItem.js";
+import { is } from "./is.js";
+import { gasCost } from "./gasCost.js";
+import { gasSavings } from "./gasSavings.js";
+import { hasSavings } from "./hasSavings.js";
+import { includesAddress } from "./includesAddress.js";
+import { includesStorageKey } from "./includesStorageKey.js";
+import { keysFor } from "./keysFor.js";
+import { deduplicate } from "./deduplicate.js";
+import { withAddress } from "./withAddress.js";
+import { withStorageKey } from "./withStorageKey.js";
+import { merge } from "./merge.js";
+import { assertValid } from "./assertValid.js";
+import { toBytes } from "./toBytes.js";
+import { addressCount } from "./addressCount.js";
+import { storageKeyCount } from "./storageKeyCount.js";
+import { isEmpty } from "./isEmpty.js";
+import { create } from "./create.js";
+import { from } from "./from.js";
+import { fromBytes } from "./fromBytes.js";
 import {
 	ADDRESS_COST,
 	COLD_ACCOUNT_ACCESS_COST,
