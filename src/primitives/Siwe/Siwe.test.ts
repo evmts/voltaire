@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedMessage, Signature } from "./BrandedMessage.js";
 import * as Siwe from "./Siwe.js";
 
@@ -384,7 +384,7 @@ Issued At: 2021-09-30T16:25:24Z`;
 			resources: ["https://example.com/resource1"],
 		};
 
-		const formatted = Siwe.Message.format(original);
+		const formatted = Siwe.format(original);
 		const parsed = Siwe.parse(formatted);
 
 		expect(parsed.domain).toBe(original.domain);

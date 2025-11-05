@@ -24,7 +24,6 @@ describe("Blob.isValid", () => {
 	it("type guards correctly", () => {
 		const blob = new Uint8Array(Blob.SIZE);
 		if (Blob.isValid(blob)) {
-			// @ts-expect-error - Testing type inference
 			expectTypeOf(blob).toEqualTypeOf<Blob.Data>();
 		}
 	});
@@ -44,7 +43,6 @@ describe("Blob.Commitment.isValid", () => {
 	it("type guards correctly", () => {
 		const commitment = new Uint8Array(48);
 		if (Blob.Commitment.isValid(commitment)) {
-			// @ts-expect-error - Testing type inference
 			expectTypeOf(commitment).toEqualTypeOf<Blob.Commitment>();
 		}
 	});
@@ -64,7 +62,6 @@ describe("Blob.Proof.isValid", () => {
 	it("type guards correctly", () => {
 		const proof = new Uint8Array(48);
 		if (Blob.Proof.isValid(proof)) {
-			// @ts-expect-error - Testing type inference
 			expectTypeOf(proof).toEqualTypeOf<Blob.Proof>();
 		}
 	});
@@ -93,7 +90,6 @@ describe("Blob.VersionedHash.isValid", () => {
 		const hash = new Uint8Array(32);
 		hash[0]! = Blob.COMMITMENT_VERSION_KZG;
 		if (Blob.VersionedHash.isValid(hash)) {
-			// @ts-expect-error - Testing type inference
 			expectTypeOf(hash).toEqualTypeOf<Blob.VersionedHash>();
 		}
 	});
@@ -484,7 +480,7 @@ describe("Blob.splitData", () => {
 		const blobs = Blob.splitData(data);
 
 		expect(blobs.length).toBeGreaterThan(1);
-		expect(blobs.every((b) => Blob.isValid(b))).toBe(true);
+		expect(blobs.every((b: Uint8Array) => Blob.isValid(b))).toBe(true);
 	});
 
 	it("creates single blob for small data", () => {

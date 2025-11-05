@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import { AccessList } from "./AccessList.js";
+import { AccessList } from "./index.js";
 import type {
 	BrandedAccessList as AccessListType,
 	Item,
@@ -370,7 +370,7 @@ describe("AccessList.deduplicate", () => {
 		const result = AccessList.deduplicate(list);
 		expect(result.length).toBe(2);
 		// addr1 should have key1 and key3
-		const addr1Item = result.find((item) =>
+		const addr1Item = result.find((item: Item) =>
 			Array.from(item.address).every((b, i) => b === addr1[i]),
 		);
 		expect(addr1Item?.storageKeys.length).toBe(2);
