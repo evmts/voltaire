@@ -54,7 +54,8 @@ export * as FeeMarket from "./FeeMarket/index.js";
 export * as Hardfork from "./Hardfork/index.js";
 
 // Events & Logs
-export * as EventLog from "./EventLog/index.js";
+export { EventLog } from "./EventLog/index.js";
+export * as BrandedEventLog from "./EventLog/BrandedEventLog/index.js";
 
 // Sign-in with Ethereum
 export * as Siwe from "./Siwe/index.js";

@@ -10,6 +10,7 @@ import { BN254 as Bn254 } from "../crypto/bn254/BN254.js";
 import * as Kzg from "../crypto/KZG/index.js";
 import * as Gas from "../primitives/GasConstants/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
+import type { BrandedHardfork } from "../primitives/Hardfork/BrandedHardfork/index.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
 
 export enum PrecompileAddress {
@@ -66,7 +67,7 @@ function bigIntToFixedBytes(value: bigint, size: number): Uint8Array {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: precompile checks require branching per hardfork
 export function isPrecompile(
 	address: string,
-	hardfork: Hardfork.BrandedHardfork,
+	hardfork: BrandedHardfork,
 ): boolean {
 	const normalized = address.toLowerCase();
 
@@ -147,7 +148,7 @@ export function execute(
 	address: string,
 	input: Uint8Array,
 	gasLimit: bigint,
-	_hardfork: Hardfork.BrandedHardfork,
+	_hardfork: BrandedHardfork,
 ): PrecompileResult {
 	const normalized = address.toLowerCase();
 
