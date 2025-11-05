@@ -6,7 +6,20 @@
 
 import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedHash } from "../Hash/index.js";
-import * as EventLog from "./EventLog.js";
+import { clone } from "./clone.js";
+import { copy } from "./copy.js";
+import { create } from "./create.js";
+import { filterLogs } from "./filterLogs.js";
+import { getIndexed } from "./getIndexed.js";
+import { getIndexedTopics } from "./getIndexedTopics.js";
+import { getSignature } from "./getSignature.js";
+import { getTopic0 } from "./getTopic0.js";
+import { isRemoved } from "./isRemoved.js";
+import { matchesAddress } from "./matchesAddress.js";
+import { matchesFilter } from "./matchesFilter.js";
+import { matchesTopics } from "./matchesTopics.js";
+import { sortLogs } from "./sortLogs.js";
+import { wasRemoved } from "./wasRemoved.js";
 
 // ============================================================================
 // Benchmark Infrastructure
@@ -77,7 +90,7 @@ const blockHash =
 const txHash =
 	"0x0000000000000000000000000000000000000000000000000000000000000200" as unknown as BrandedHash;
 
-const testLog = EventLog.create({
+const testLog = create({
 	address: addr1,
 	topics: [topic0, topic1, topic2],
 	data: new Uint8Array([1, 2, 3, 4, 5]),
@@ -92,7 +105,7 @@ const testLog = EventLog.create({
 // Create large log dataset for filtering benchmarks
 const largeLogs = Array.from({ length: 1000 }, (_, i) => {
 	const blockNum = 1000n + BigInt(i);
-	return EventLog.create({
+	return create({
 		address: i % 3 === 0 ? addr1 : i % 3 === 1 ? addr2 : addr3,
 		topics: [
 			i % 2 === 0 ? topic0 : topic1,
@@ -122,7 +135,7 @@ const results: BenchmarkResult[] = [];
 console.log("--- Log Creation ---");
 results.push(
 	benchmark("EventLog.create - minimal", () =>
-		EventLog.create({
+		create({
 			address: addr1,
 			topics: [topic0],
 			data: new Uint8Array([1, 2, 3]),
@@ -131,7 +144,7 @@ results.push(
 );
 results.push(
 	benchmark("EventLog.create - full", () =>
-		EventLog.create({
+		create({
 			address: addr1,
 			topics: [topic0, topic1, topic2],
 			data: new Uint8Array([1, 2, 3, 4, 5]),
@@ -170,21 +183,21 @@ console.log(
 
 console.log("--- Topic Access ---");
 results.push(
-	benchmark("EventLog.getTopic0", () => EventLog.getTopic0(testLog)),
+	benchmark("EventLog.getTopic0", () => getTopic0(testLog)),
 );
 results.push(
 	benchmark("EventLog.getSignature (this:)", () =>
-		EventLog.getSignature.call(testLog),
+		getSignature(testLog),
 	),
 );
 results.push(
 	benchmark("EventLog.getIndexedTopics", () =>
-		EventLog.getIndexedTopics(testLog),
+		getIndexedTopics(testLog),
 	),
 );
 results.push(
 	benchmark("EventLog.getIndexed (this:)", () =>
-		EventLog.getIndexed.call(testLog),
+		getIndexed(testLog),
 	),
 );
 
@@ -214,27 +227,27 @@ console.log(
 console.log("--- Topic Matching ---");
 results.push(
 	benchmark("matchesTopics - exact match", () =>
-		EventLog.matchesTopics(testLog, [topic0, topic1, topic2]),
+		matchesTopics(testLog, [topic0, topic1, topic2]),
 	),
 );
 results.push(
 	benchmark("matchesTopics - with null wildcard", () =>
-		EventLog.matchesTopics(testLog, [topic0, null, topic2]),
+		matchesTopics(testLog, [topic0, null, topic2]),
 	),
 );
 results.push(
 	benchmark("matchesTopics - with array (OR logic)", () =>
-		EventLog.matchesTopics(testLog, [[topic0, topic1], topic1, topic2]),
+		matchesTopics(testLog, [[topic0, topic1], topic1, topic2]),
 	),
 );
 results.push(
 	benchmark("matchesTopics - no match", () =>
-		EventLog.matchesTopics(testLog, [topic1, topic1, topic2]),
+		matchesTopics(testLog, [topic1, topic1, topic2]),
 	),
 );
 results.push(
 	benchmark("matches (this:) - with wildcard", () =>
-		EventLog.matches(testLog, [topic0, null, topic2]),
+		matchesTopics(testLog, [topic0, null, topic2]),
 	),
 );
 
@@ -264,27 +277,27 @@ console.log(
 console.log("--- Address Matching ---");
 results.push(
 	benchmark("matchesAddress - single match", () =>
-		EventLog.matchesAddress(testLog, addr1),
+		matchesAddress(testLog, addr1),
 	),
 );
 results.push(
 	benchmark("matchesAddress - single no match", () =>
-		EventLog.matchesAddress(testLog, addr2),
+		matchesAddress(testLog, addr2),
 	),
 );
 results.push(
 	benchmark("matchesAddress - array match", () =>
-		EventLog.matchesAddress(testLog, [addr1, addr2, addr3]),
+		matchesAddress(testLog, [addr1, addr2, addr3]),
 	),
 );
 results.push(
 	benchmark("matchesAddress - array no match", () =>
-		EventLog.matchesAddress(testLog, [addr2, addr3]),
+		matchesAddress(testLog, [addr2, addr3]),
 	),
 );
 results.push(
 	benchmark("matchesAddr (this:) - single", () =>
-		EventLog.matchesAddr(testLog, addr1),
+		matchesAddress(testLog, addr1),
 	),
 );
 
@@ -314,17 +327,17 @@ console.log(
 console.log("--- Filter Matching ---");
 results.push(
 	benchmark("matchesFilter - address only", () =>
-		EventLog.matchesFilter(testLog, { address: addr1 }),
+		matchesFilter(testLog, { address: addr1 }),
 	),
 );
 results.push(
 	benchmark("matchesFilter - topics only", () =>
-		EventLog.matchesFilter(testLog, { topics: [topic0, null, topic2] }),
+		matchesFilter(testLog, { topics: [topic0, null, topic2] }),
 	),
 );
 results.push(
 	benchmark("matchesFilter - address + topics", () =>
-		EventLog.matchesFilter(testLog, {
+		matchesFilter(testLog, {
 			address: addr1,
 			topics: [topic0, null, topic2],
 		}),
@@ -332,7 +345,7 @@ results.push(
 );
 results.push(
 	benchmark("matchesFilter - with block range", () =>
-		EventLog.matchesFilter(testLog, {
+		matchesFilter(testLog, {
 			address: addr1,
 			topics: [topic0],
 			fromBlock: 50n,
@@ -342,7 +355,7 @@ results.push(
 );
 results.push(
 	benchmark("matchesFilter - complete filter", () =>
-		EventLog.matchesFilter(testLog, {
+		matchesFilter(testLog, {
 			address: [addr1, addr2],
 			topics: [topic0, null, topic2],
 			fromBlock: 50n,
@@ -353,7 +366,7 @@ results.push(
 );
 results.push(
 	benchmark("matchesAll (this:) - complete", () =>
-		EventLog.matchesAll(testLog, {
+		matchesFilter(testLog, {
 			address: addr1,
 			topics: [topic0, null, topic2],
 			fromBlock: 50n,
@@ -389,14 +402,14 @@ console.log("--- Array Filtering ---");
 results.push(
 	benchmark(
 		"filterLogs - by address",
-		() => EventLog.filterLogs(largeLogs, { address: addr1 }),
+		() => filterLogs(largeLogs, { address: addr1 }),
 		1000,
 	),
 );
 results.push(
 	benchmark(
 		"filterLogs - by topics",
-		() => EventLog.filterLogs(largeLogs, { topics: [topic0] }),
+		() => filterLogs(largeLogs, { topics: [topic0] }),
 		1000,
 	),
 );
@@ -404,7 +417,7 @@ results.push(
 	benchmark(
 		"filterLogs - address + topics",
 		() =>
-			EventLog.filterLogs(largeLogs, {
+			filterLogs(largeLogs, {
 				address: addr1,
 				topics: [topic0],
 			}),
@@ -415,7 +428,7 @@ results.push(
 	benchmark(
 		"filterLogs - block range",
 		() =>
-			EventLog.filterLogs(largeLogs, {
+			filterLogs(largeLogs, {
 				fromBlock: 1100n,
 				toBlock: 1200n,
 			}),
@@ -426,7 +439,7 @@ results.push(
 	benchmark(
 		"filterLogs - complex filter",
 		() =>
-			EventLog.filterLogs(largeLogs, {
+			filterLogs(largeLogs, {
 				address: [addr1, addr2],
 				topics: [[topic0, topic1], null, topic3],
 				fromBlock: 1100n,
@@ -439,7 +452,7 @@ results.push(
 	benchmark(
 		"filter (this:) - complex",
 		() =>
-			EventLog.filter.call(largeLogs, {
+			filterLogs(largeLogs, {
 				address: [addr1, addr2],
 				topics: [topic0],
 			}),
@@ -474,24 +487,24 @@ console.log("--- Log Sorting ---");
 results.push(
 	benchmark(
 		"sortLogs - 10 logs",
-		() => EventLog.sortLogs(largeLogs.slice(0, 10)),
+		() => sortLogs(largeLogs.slice(0, 10)),
 		2000,
 	),
 );
 results.push(
 	benchmark(
 		"sortLogs - 100 logs",
-		() => EventLog.sortLogs(largeLogs.slice(0, 100)),
+		() => sortLogs(largeLogs.slice(0, 100)),
 		1000,
 	),
 );
 results.push(
-	benchmark("sortLogs - 1000 logs", () => EventLog.sortLogs(largeLogs), 500),
+	benchmark("sortLogs - 1000 logs", () => sortLogs(largeLogs), 500),
 );
 results.push(
 	benchmark(
 		"sort (this:) - 100 logs",
-		() => EventLog.sort.call(largeLogs.slice(0, 100)),
+		() => sortLogs(largeLogs.slice(0, 100)),
 		1000,
 	),
 );
@@ -519,7 +532,7 @@ console.log(
 	"================================================================================\n",
 );
 
-const removedLog = EventLog.create({
+const removedLog = create({
 	address: addr1,
 	topics: [topic0],
 	data: new Uint8Array([]),
@@ -528,14 +541,14 @@ const removedLog = EventLog.create({
 
 console.log("--- Removal Checks ---");
 results.push(
-	benchmark("isRemoved - removed log", () => EventLog.isRemoved(removedLog)),
+	benchmark("isRemoved - removed log", () => isRemoved(removedLog)),
 );
 results.push(
-	benchmark("isRemoved - active log", () => EventLog.isRemoved(testLog)),
+	benchmark("isRemoved - active log", () => isRemoved(testLog)),
 );
 results.push(
 	benchmark("wasRemoved (this:) - removed", () =>
-		EventLog.wasRemoved.call(removedLog),
+		wasRemoved(removedLog),
 	),
 );
 
@@ -565,8 +578,8 @@ console.log(
 console.log("--- Cloning ---");
 results.push(
 	benchmark("clone - minimal log", () =>
-		EventLog.clone(
-			EventLog.create({
+		clone(
+			create({
 				address: addr1,
 				topics: [topic0],
 				data: new Uint8Array([1, 2, 3]),
@@ -574,9 +587,9 @@ results.push(
 		),
 	),
 );
-results.push(benchmark("clone - full log", () => EventLog.clone(testLog)));
+results.push(benchmark("clone - full log", () => clone(testLog)));
 results.push(
-	benchmark("copy (this:) - full log", () => EventLog.copy.call(testLog)),
+	benchmark("copy (this:) - full log", () => copy(testLog)),
 );
 
 console.log(
