@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/BrandedHash/index.js";
 import { isItem } from "./isItem.js";
 import { is } from "./is.js";
 import { gasCost } from "./gasCost.js";
@@ -23,7 +23,6 @@ import { addressCount } from "./addressCount.js";
 import { storageKeyCount } from "./storageKeyCount.js";
 import { isEmpty } from "./isEmpty.js";
 import { create } from "./create.js";
-import { from } from "./from.js";
 import { fromBytes } from "./fromBytes.js";
 import {
 	ADDRESS_COST,

@@ -1,8 +1,8 @@
 /**
  * Compare two addresses for equality (byte-by-byte)
  *
- * @param {import('../Address/BrandedAddress.js').BrandedAddress} a
- * @param {import('../Address/BrandedAddress.js').BrandedAddress} b
+ * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} a
+ * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} b
  * @returns {boolean}
  */
 function addressEquals(a, b) {
@@ -17,8 +17,8 @@ function addressEquals(a, b) {
  * Get all storage keys for an address (EIP-2930)
  *
  * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to search
- * @param {import('../Address/BrandedAddress.js').BrandedAddress} address - Address to get keys for
- * @returns {readonly import('../Hash/BrandedHash.js').BrandedHash[] | undefined} Array of storage keys, or undefined if address not found
+ * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} address - Address to get keys for
+ * @returns {readonly import('../Hash/BrandedHash/BrandedHash.js').BrandedHash[] | undefined} Array of storage keys, or undefined if address not found
  *
  * @example
  * ```typescript

@@ -6,7 +6,7 @@ import { includesAddress } from "./includesAddress.js";
  * Creates new entry if address doesn't exist, otherwise returns original list.
  *
  * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to add to
- * @param {import('../Address/BrandedAddress.js').BrandedAddress} address - Address to add
+ * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} address - Address to add
  * @returns {import('./BrandedAccessList.js').BrandedAccessList} New access list with address added
  *
  * @example

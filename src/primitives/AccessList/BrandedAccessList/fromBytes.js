@@ -1,4 +1,4 @@
-import { decode } from "../Rlp/decode.js";
+import { decode } from "../../Rlp/decode.js";
 
 /**
  * Decode RLP bytes to access list (EIP-2930)

@@ -1,8 +1,8 @@
 /**
  * Compare two addresses for equality (byte-by-byte)
  *
- * @param {import('../Address/BrandedAddress.js').BrandedAddress} a
- * @param {import('../Address/BrandedAddress.js').BrandedAddress} b
+ * @param {import('../Address/BrandedAddress/BrandedAddress/BrandedAddress.js').BrandedAddress} a
+ * @param {import('../Address/BrandedAddress/BrandedAddress/BrandedAddress.js').BrandedAddress} b
  * @returns {boolean}
  */
 function addressEquals(a, b) {
@@ -16,8 +16,8 @@ function addressEquals(a, b) {
 /**
  * Compare two hashes for equality (byte-by-byte)
  *
- * @param {import('../Hash/BrandedHash.js').BrandedHash} a
- * @param {import('../Hash/BrandedHash.js').BrandedHash} b
+ * @param {import('../Hash/BrandedHash/BrandedHash.js').BrandedHash} a
+ * @param {import('../Hash/BrandedHash/BrandedHash.js').BrandedHash} b
  * @returns {boolean}
  */
 function hashEquals(a, b) {
