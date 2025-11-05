@@ -112,9 +112,9 @@ toShortHex(addr: Address): string
 ```
 Returns abbreviated format: `0x1234...5678`
 
-### [Address.format(addr)](./BrandedAddress/format.js.md)
+### [Address.prettyPrint(addr)](./BrandedAddress/prettyPrint.js.md)
 ```typescript
-format(addr: Address): string
+prettyPrint(addr: Address): string
 ```
 Returns checksummed representation.
 

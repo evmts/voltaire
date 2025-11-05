@@ -66,6 +66,15 @@ pub fn fromU256(value: u256) Address {
     return addr;
 }
 
+pub fn fromNumber(value: anytype) Address {
+    const T = @TypeOf(value);
+    if (T == u256 or T == comptime_int) {
+        return fromU256(@intCast(value));
+    }
+    const int_val: u256 = @intCast(value);
+    return fromU256(int_val);
+}
+
 pub fn fromHex(hex_str: []const u8) !Address {
     // Accept with or without 0x prefix
     var slice = hex_str;
@@ -98,8 +107,54 @@ pub fn toHex(address: Address) [42]u8 {
     return addressToHex(address);
 }
 
-pub fn toChecksumHex(address: Address) [42]u8 {
+pub fn toChecksummed(address: Address) [42]u8 {
     return addressToChecksumHex(address);
+}
+
+pub fn toLowercase(address: Address) [42]u8 {
+    return addressToHex(address);
+}
+
+pub fn toUppercase(address: Address) [42]u8 {
+    return formatWithCase(address, true);
+}
+
+pub fn toAbiEncoded(address: Address) [32]u8 {
+    var result: [32]u8 = [_]u8{0} ** 32;
+    @memcpy(result[12..32], &address.bytes);
+    return result;
+}
+
+pub fn fromAbiEncoded(bytes: []const u8) !Address {
+    if (bytes.len != 32) return error.InvalidAbiEncodedLength;
+    return fromBytes(bytes[12..32]);
+}
+
+pub fn toShortHex(address: Address) [14]u8 {
+    const hex = addressToHex(address);
+    var result: [14]u8 = undefined;
+    @memcpy(result[0..8], hex[0..8]);   // "0x" + first 6 chars
+    result[8] = '.';
+    result[9] = '.';
+    result[10] = '.';
+    @memcpy(result[11..14], hex[39..42]); // last 3 chars
+    return result;
+}
+
+pub fn compare(a: Address, b: Address) i8 {
+    for (a.bytes, b.bytes) |a_byte, b_byte| {
+        if (a_byte < b_byte) return -1;
+        if (a_byte > b_byte) return 1;
+    }
+    return 0;
+}
+
+pub fn lessThan(a: Address, b: Address) bool {
+    return compare(a, b) < 0;
+}
+
+pub fn greaterThan(a: Address, b: Address) bool {
+    return compare(a, b) > 0;
 }
 
 pub fn isZero(address: Address) bool {
@@ -478,7 +533,7 @@ test "Address - fromPublicKey" {
 
     try std.testing.expectEqualSlices(u8, &expected_addr.bytes, &addr.bytes);
 
-    const addr_checksum = addressToChecksumHex(addr);
+    const addr_checksum = toChecksummed(addr);
     const expected_checksum = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 
     try std.testing.expectEqualStrings(expected_checksum, &addr_checksum);
@@ -1016,11 +1071,11 @@ test "Address - toHex function" {
     try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_hex);
 }
 
-test "Address - toChecksumHex function" {
+test "Address - toChecksummed function" {
     const test_addr = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-    const checksum = toChecksumHex(test_addr);
+    const checksum = toChecksummed(test_addr);
     try std.testing.expectEqualStrings("0xA0Cf798816D4b9b9866b5330EEa46a18382f251e", &checksum);
 
-    const zero_checksum = toChecksumHex(zero());
+    const zero_checksum = toChecksummed(zero());
     try std.testing.expectEqualStrings("0x0000000000000000000000000000000000000000", &zero_checksum);
 }

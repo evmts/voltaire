@@ -317,17 +317,17 @@ export function toShortHex(address) {
 }
 
 /**
- * Format Address for display (checksummed by default)
+ * Pretty print Address for display (checksummed by default)
  *
- * @param {BrandedAddress} address - Address to format
+ * @param {BrandedAddress} address - Address to pretty print
  * @returns {string} Formatted address string
  *
  * @example
  * ```typescript
- * const formatted = Address.format(addr);
+ * const formatted = Address.prettyPrint(addr);
  * ```
  */
-export function format(address) {
+export function prettyPrint(address) {
 	return loader.addressToChecksumHex(address);
 }
 
@@ -574,7 +574,7 @@ Address.toUppercase = toUppercase;
 Address.toU256 = toU256;
 Address.toAbiEncoded = toAbiEncoded;
 Address.toShortHex = toShortHex;
-Address.format = format;
+Address.prettyPrint = prettyPrint;
 Address.isZero = isZero;
 Address.equals = equals;
 Address.isValid = isValid;

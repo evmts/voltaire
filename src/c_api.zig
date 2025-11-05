@@ -69,7 +69,7 @@ export fn primitives_address_to_checksum_hex(
     buf: [*]u8,
 ) c_int {
     const addr = primitives.Address{ .bytes = address.bytes };
-    const hex = addr.toChecksumHex();
+    const hex = primitives.Address.toChecksummed(addr);
     @memcpy(buf[0..42], &hex);
     return PRIMITIVES_SUCCESS;
 }

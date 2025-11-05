@@ -74,7 +74,7 @@ Address.toUppercase = BrandedAddress.toUppercase;
 Address.toU256 = BrandedAddress.toU256;
 Address.toAbiEncoded = BrandedAddress.toAbiEncoded;
 Address.toShortHex = BrandedAddress.toShortHex;
-Address.format = BrandedAddress.format;
+Address.prettyPrint = BrandedAddress.prettyPrint;
 Address.isZero = BrandedAddress.isZero;
 Address.equals = BrandedAddress.equals;
 Address.isValid = BrandedAddress.isValid;
@@ -137,8 +137,8 @@ Address.prototype.toAbiEncoded = BrandedAddress.toAbiEncoded.call.bind(
 Address.prototype.toShortHex = BrandedAddress.toShortHex.call.bind(
 	BrandedAddress.toShortHex,
 );
-Address.prototype.format = BrandedAddress.format.call.bind(
-	BrandedAddress.format,
+Address.prototype.prettyPrint = BrandedAddress.prettyPrint.call.bind(
+	BrandedAddress.prettyPrint,
 );
 Address.prototype.compare = BrandedAddress.compare.call.bind(
 	BrandedAddress.compare,
@@ -164,4 +164,15 @@ Address.prototype.calculateCreate2Address = function (salt, initCode) {
 	const result = BrandedAddress.calculateCreate2Address(this, salt, initCode);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
+};
+
+Address.prototype[Symbol.for("nodejs.util.inspect.custom")] = function (
+	depth,
+	options,
+) {
+	return `Address(${BrandedAddress.toChecksummed(this)})`;
+};
+
+Address.prototype.toString = function () {
+	return `Address(${BrandedAddress.toHex(this)})`;
 };

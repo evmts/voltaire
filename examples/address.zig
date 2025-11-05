@@ -21,7 +21,7 @@ pub fn main() !void {
     std.debug.print("2. EIP-55 Checksum Address\n", .{});
     std.debug.print("   -----------------------\n", .{});
 
-    const checksummed = addr1.toChecksumHex();
+    const checksummed = Address.toChecksummed(addr1);
     std.debug.print("   Lowercase: {s}\n", .{hex_addr});
     std.debug.print("   Checksum:  {s}\n", .{&checksummed});
     std.debug.print("   (Notice mixed case for verification)\n\n", .{});
@@ -54,7 +54,7 @@ pub fn main() !void {
     const public_key_y: u256 = 0x3547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5;
 
     const addr_from_pubkey = Address.fromPublicKey(public_key_x, public_key_y);
-    const pubkey_checksum = addr_from_pubkey.toChecksumHex();
+    const pubkey_checksum = Address.toChecksummed(addr_from_pubkey);
 
     std.debug.print("   Public Key X: 0x{x}\n", .{public_key_x});
     std.debug.print("   Public Key Y: 0x{x}\n", .{public_key_y});
@@ -65,13 +65,13 @@ pub fn main() !void {
     std.debug.print("   ----------------------------------\n", .{});
 
     const deployer = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-    std.debug.print("   Deployer: {s}\n", .{&deployer.toChecksumHex()});
+    std.debug.print("   Deployer: {s}\n", .{&Address.toChecksummed(deployer)});
 
     // Calculate addresses for different nonces
     const nonces = [_]u64{ 0, 1, 2, 3 };
     for (nonces) |nonce| {
         const contract_addr = try Address.calculateCreateAddress(allocator, deployer, nonce);
-        const contract_hex = contract_addr.toChecksumHex();
+        const contract_hex = Address.toChecksummed(contract_addr);
         std.debug.print("   Nonce {}: {s}\n", .{ nonce, &contract_hex });
     }
     std.debug.print("\n", .{});
@@ -81,7 +81,7 @@ pub fn main() !void {
     std.debug.print("   -----------------------------------\n", .{});
 
     const deployer2 = try Address.fromHex("0x742d35cc6632c0532925a3b8d39c0e6cfc8c74e4");
-    std.debug.print("   Deployer: {s}\n", .{&deployer2.toChecksumHex()});
+    std.debug.print("   Deployer: {s}\n", .{&Address.toChecksummed(deployer2)});
 
     // Salt value for CREATE2
     const salt: u256 = 0x00000000000000000000000000000000000000000000000000000000cafebabe;
@@ -92,7 +92,7 @@ pub fn main() !void {
     std.debug.print("   Init Code: 0x{x}\n", .{init_code});
 
     const create2_addr = try Address.calculateCreate2Address(allocator, deployer2, salt, &init_code);
-    const create2_hex = create2_addr.toChecksumHex();
+    const create2_hex = Address.toChecksummed(create2_addr);
     std.debug.print("   CREATE2 Address: {s}\n\n", .{&create2_hex});
 
     // Example 7: Address comparison and special addresses
@@ -100,31 +100,31 @@ pub fn main() !void {
     std.debug.print("   -------------------\n", .{});
 
     const zero_addr = Address.zero();
-    std.debug.print("   Zero Address: {s}\n", .{&zero_addr.toHex()});
-    std.debug.print("   Is Zero: {}\n\n", .{zero_addr.isZero()});
+    std.debug.print("   Zero Address: {s}\n", .{&Address.toHex(zero_addr)});
+    std.debug.print("   Is Zero: {}\n\n", .{Address.isZero(zero_addr)});
 
     const addr_a = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
     const addr_b = try Address.fromHex("0xA0Cf798816D4b9b9866b5330EEa46a18382f251e");
     const addr_c = try Address.fromHex("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
 
-    std.debug.print("   Address A: {s}\n", .{&addr_a.toChecksumHex()});
-    std.debug.print("   Address B: {s}\n", .{&addr_b.toChecksumHex()});
-    std.debug.print("   Address C: {s}\n", .{&addr_c.toChecksumHex()});
-    std.debug.print("   A equals B (case insensitive): {}\n", .{addr_a.equals(addr_b)});
-    std.debug.print("   A equals C: {}\n\n", .{addr_a.equals(addr_c)});
+    std.debug.print("   Address A: {s}\n", .{&Address.toChecksummed(addr_a)});
+    std.debug.print("   Address B: {s}\n", .{&Address.toChecksummed(addr_b)});
+    std.debug.print("   Address C: {s}\n", .{&Address.toChecksummed(addr_c)});
+    std.debug.print("   A equals B (case insensitive): {}\n", .{Address.equals(addr_a, addr_b)});
+    std.debug.print("   A equals C: {}\n\n", .{Address.equals(addr_a, addr_c)});
 
     // Example 8: Converting between Address and u256
     std.debug.print("8. Address <-> u256 Conversion\n", .{});
     std.debug.print("   ----------------------------\n", .{});
 
     const test_addr = try Address.fromHex("0x0000000000000000000000000000000000000001");
-    const as_u256 = test_addr.toU256();
+    const as_u256 = Address.toU256(test_addr);
     const back_to_addr = Address.fromU256(as_u256);
 
-    std.debug.print("   Original: {s}\n", .{&test_addr.toHex()});
+    std.debug.print("   Original: {s}\n", .{&Address.toHex(test_addr)});
     std.debug.print("   As u256:  {}\n", .{as_u256});
-    std.debug.print("   Back:     {s}\n", .{&back_to_addr.toHex()});
-    std.debug.print("   Equal:    {}\n\n", .{test_addr.equals(back_to_addr)});
+    std.debug.print("   Back:     {s}\n", .{&Address.toHex(back_to_addr)});
+    std.debug.print("   Equal:    {}\n\n", .{Address.equals(test_addr, back_to_addr)});
 
     std.debug.print("=== Example Complete ===\n\n", .{});
 }

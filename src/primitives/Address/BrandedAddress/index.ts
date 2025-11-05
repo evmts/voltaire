@@ -14,7 +14,7 @@ import { calculateCreateAddress } from "./calculateCreateAddress.js";
 import { compare } from "./compare.js";
 import { SIZE } from "./constants.js";
 import { equals } from "./equals.js";
-import { format } from "./format.js";
+import { prettyPrint } from "./prettyPrint.js";
 import { from } from "./from.js";
 import { fromAbiEncoded } from "./fromAbiEncoded.js";
 import { fromBase64 } from "./fromBase64.js";
@@ -53,7 +53,7 @@ export {
 	toU256,
 	toAbiEncoded,
 	toShortHex,
-	format,
+	prettyPrint,
 	isZero,
 	equals,
 	isValid,
@@ -83,7 +83,7 @@ export const BrandedAddress = {
 	toU256,
 	toAbiEncoded,
 	toShortHex,
-	format,
+	prettyPrint,
 	isZero,
 	equals,
 	isValid,

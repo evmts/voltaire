@@ -14,15 +14,15 @@ fn benchFromHex(allocator: std.mem.Allocator) void {
 // Benchmark: Address.toHex
 fn benchToHex(allocator: std.mem.Allocator) void {
     const addr = Address{ .bytes = [_]u8{0x74} ** 20 };
-    const hex = addr.toHex();
+    const hex = Address.toHex(addr);
     _ = hex;
     _ = allocator;
 }
 
-// Benchmark: Address.toChecksumHex (EIP-55)
-fn benchToChecksumHex(allocator: std.mem.Allocator) void {
+// Benchmark: Address.toChecksummed (EIP-55)
+fn benchToChecksummed(allocator: std.mem.Allocator) void {
     const addr = Address{ .bytes = [_]u8{0x74} ** 20 };
-    const checksum = addr.toChecksumHex();
+    const checksum = Address.toChecksummed(addr);
     _ = checksum;
     _ = allocator;
 }
@@ -57,7 +57,7 @@ fn benchCalculateCreate2(allocator: std.mem.Allocator) void {
 // Benchmark: Address.toU256
 fn benchToU256(allocator: std.mem.Allocator) void {
     const addr = Address{ .bytes = [_]u8{0x74} ** 20 };
-    const value = addr.toU256();
+    const value = Address.toU256(addr);
     _ = value;
     _ = allocator;
 }
@@ -74,7 +74,7 @@ fn benchFromU256(allocator: std.mem.Allocator) void {
 fn benchEquals(allocator: std.mem.Allocator) void {
     const addr1 = Address{ .bytes = [_]u8{0x74} ** 20 };
     const addr2 = Address{ .bytes = [_]u8{0x74} ** 20 };
-    const result = addr1.equals(addr2);
+    const result = Address.equals(addr1, addr2);
     _ = result;
     _ = allocator;
 }
@@ -82,7 +82,7 @@ fn benchEquals(allocator: std.mem.Allocator) void {
 // Benchmark: Address.isZero
 fn benchIsZero(allocator: std.mem.Allocator) void {
     const addr = Address.ZERO;
-    const result = addr.isZero();
+    const result = Address.isZero(addr);
     _ = result;
     _ = allocator;
 }
@@ -97,7 +97,7 @@ pub fn main() !void {
 
     try bench.add("Address.fromHex", benchFromHex, .{});
     try bench.add("Address.toHex", benchToHex, .{});
-    try bench.add("Address.toChecksumHex (EIP-55)", benchToChecksumHex, .{});
+    try bench.add("Address.toChecksummed (EIP-55)", benchToChecksummed, .{});
     try bench.add("Address.fromPublicKey", benchFromPublicKey, .{});
     try bench.add("Address.calculateCreate", benchCalculateCreate, .{});
     try bench.add("Address.calculateCreate2", benchCalculateCreate2, .{});

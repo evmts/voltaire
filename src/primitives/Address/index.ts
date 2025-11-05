@@ -79,7 +79,7 @@ Address.toUppercase = BrandedAddress.toUppercase;
 Address.toU256 = BrandedAddress.toU256;
 Address.toAbiEncoded = BrandedAddress.toAbiEncoded;
 Address.toShortHex = BrandedAddress.toShortHex;
-Address.format = BrandedAddress.format;
+Address.prettyPrint = BrandedAddress.prettyPrint;
 Address.isZero = BrandedAddress.isZero;
 Address.equals = BrandedAddress.equals;
 Address.isValid = BrandedAddress.isValid;
@@ -144,8 +144,8 @@ Address.prototype.toAbiEncoded = function () {
 Address.prototype.toShortHex = function () {
 	return BrandedAddress.toShortHex(this);
 };
-Address.prototype.format = function () {
-	return BrandedAddress.format(this);
+Address.prototype.prettyPrint = function () {
+	return BrandedAddress.prettyPrint(this);
 };
 Address.prototype.compare = function (other) {
 	return BrandedAddress.compare(this, other);
