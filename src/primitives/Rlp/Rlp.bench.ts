@@ -7,8 +7,6 @@
 import type { BrandedRlp } from "./BrandedRlp.js";
 import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
-import { encodeBytes } from "./encodeBytes.js";
-import { encodeList } from "./encodeList.js";
 import { decode } from "./decode.js";
 import { isData } from "./isData.js";
 import { isBytesData } from "./isBytesData.js";
@@ -19,7 +17,6 @@ import { equals } from "./equals.js";
 import { toJSON } from "./toJSON.js";
 import { fromJSON } from "./fromJSON.js";
 import * as Data from "./Data.js";
-import type { Data as RlpData } from "./index.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -363,16 +360,16 @@ console.log(
 console.log("--- Utility Functions ---");
 results.push(
 	benchmark("getEncodedLength - bytes", () =>
-		getEncodedLength.call(mediumBytes),
+		getEncodedLength(mediumBytes),
 	),
 );
 results.push(
 	benchmark("getEncodedLength - list", () =>
-		getEncodedLength.call(mediumList),
+		getEncodedLength(mediumList),
 	),
 );
 
-const flattenData: RlpData = {
+const flattenData: BrandedRlp = {
 	type: "list",
 	value: [
 		{ type: "bytes", value: new Uint8Array([1]) },
@@ -387,24 +384,24 @@ const flattenData: RlpData = {
 };
 
 results.push(
-	benchmark("flatten nested list", () => flatten.call(flattenData)),
+	benchmark("flatten nested list", () => flatten(flattenData)),
 );
 
-const data1: RlpData = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
-const data2: RlpData = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+const data1: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+const data2: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
 
 results.push(
-	benchmark("equals - bytes Data", () => equals.call(data1, data2)),
+	benchmark("equals - bytes Data", () => equals(data1, data2)),
 );
 
-const listData1: RlpData = {
+const listData1: BrandedRlp = {
 	type: "list",
 	value: [
 		{ type: "bytes", value: new Uint8Array([1]) },
 		{ type: "bytes", value: new Uint8Array([2]) },
 	],
 };
-const listData2: RlpData = {
+const listData2: BrandedRlp = {
 	type: "list",
 	value: [
 		{ type: "bytes", value: new Uint8Array([1]) },
@@ -413,14 +410,14 @@ const listData2: RlpData = {
 };
 
 results.push(
-	benchmark("equals - list Data", () => equals.call(listData1, listData2)),
+	benchmark("equals - list Data", () => equals(listData1, listData2)),
 );
 
-results.push(benchmark("toJSON - bytes", () => toJSON.call(data1)));
-results.push(benchmark("toJSON - list", () => toJSON.call(listData1)));
+results.push(benchmark("toJSON - bytes", () => toJSON(data1)));
+results.push(benchmark("toJSON - list", () => toJSON(listData1)));
 
 const jsonData = { type: "bytes", value: [1, 2, 3] };
-results.push(benchmark("fromJSON - bytes", () => fromJSON.call(jsonData)));
+results.push(benchmark("fromJSON - bytes", () => fromJSON(jsonData)));
 
 console.log(
 	results
@@ -447,21 +444,21 @@ console.log(
 
 console.log("--- Data Operations ---");
 results.push(
-	benchmark("Data.fromBytes", () => Data.fromBytes.call(mediumBytes)),
+	benchmark("Data.fromBytes", () => Data.fromBytes(mediumBytes)),
 );
 results.push(
 	benchmark("Data.fromList", () =>
-		Data.fromList.call([
+		Data.fromList([
 			{ type: "bytes", value: new Uint8Array([1]) },
 			{ type: "bytes", value: new Uint8Array([2]) },
 		]),
 	),
 );
 results.push(
-	benchmark("Data.encodeData", () => Data.encodeData.call(data1)),
+	benchmark("Data.encodeData", () => Data.encodeData(data1)),
 );
-results.push(benchmark("Data.toBytes", () => Data.toBytes.call(data1)));
-results.push(benchmark("Data.toList", () => Data.toList.call(listData1)));
+results.push(benchmark("Data.toBytes", () => Data.toBytes(data1)));
+results.push(benchmark("Data.toList", () => Data.toList(listData1)));
 
 console.log(
 	results

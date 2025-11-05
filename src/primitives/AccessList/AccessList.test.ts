@@ -6,6 +6,12 @@ import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
 import { AccessList } from "./index.js";
+import {
+	ADDRESS_COST,
+	COLD_ACCOUNT_ACCESS_COST,
+	COLD_STORAGE_ACCESS_COST,
+	STORAGE_KEY_COST,
+} from "./constants.js";
 import type {
 	BrandedAccessList as AccessListType,
 	Item,
@@ -211,9 +217,9 @@ describe("AccessList.gasSavings", () => {
 			{ address: addr1, storageKeys: [key1, key2] },
 			{ address: addr2, storageKeys: [key3] },
 		];
-		const expected =
-			(AccessList.COLD_ACCOUNT_ACCESS_COST - AccessList.ADDRESS_COST) * 2n +
-			(AccessList.COLD_STORAGE_ACCESS_COST - AccessList.STORAGE_KEY_COST) * 3n;
+		const addressSavings: bigint = AccessList.COLD_ACCOUNT_ACCESS_COST - AccessList.ADDRESS_COST;
+		const storageSavings: bigint = AccessList.COLD_STORAGE_ACCESS_COST - AccessList.STORAGE_KEY_COST;
+		const expected = addressSavings * 2n + storageSavings * 3n;
 		expect(AccessList.gasSavings(list)).toBe(expected);
 	});
 });

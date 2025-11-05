@@ -5,6 +5,7 @@
  */
 
 import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedStorageKey } from "./BrandedStorageKey.js";
 import { EMPTY_CODE_HASH, EMPTY_TRIE_ROOT, StorageKey } from "./index.js";
 
 // ============================================================================
@@ -58,7 +59,7 @@ function benchmark(
 function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
-	return addr as Address;
+	return addr as unknown as BrandedAddress;
 }
 
 const addr1 = createAddress(0x01);
