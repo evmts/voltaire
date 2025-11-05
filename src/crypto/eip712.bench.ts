@@ -7,7 +7,7 @@
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import { Address } from "../primitives/Address/index.js";
-import { fromHex } from "../primitives/Hash/fromHex.js";
+import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
 import {
 	EIP712,
 	type TypeDefinitions,

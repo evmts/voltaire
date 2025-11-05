@@ -1,4 +1,4 @@
-import { keccak256String } from "../../Hash/keccak256String.js";
+import { keccak256String } from "../../Hash/BrandedHash/keccak256String.js";
 import { getSignature } from "./getSignature.js";
 
 /**

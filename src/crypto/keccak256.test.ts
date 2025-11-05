@@ -10,9 +10,9 @@
  */
 
 import { beforeAll, describe, expect, test } from "bun:test";
-import { equals } from "../primitives/Hash/equals.js";
-import { fromHex } from "../primitives/Hash/fromHex.js";
-import { isHash } from "../primitives/Hash/isHash.js";
+import { equals } from "../primitives/Hash/BrandedHash/equals.js";
+import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
+import { isHash } from "../primitives/Hash/BrandedHash/isHash.js";
 import { Keccak256 } from "./Keccak256/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 

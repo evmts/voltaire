@@ -6,12 +6,12 @@
 
 import { describe, expect, it } from "vitest";
 import { Address } from "../primitives/Address/index.js";
-import { type BrandedHash } from "../primitives/Hash/BrandedHash.js";
-import { equals } from "../primitives/Hash/equals.js";
-import { fromHex } from "../primitives/Hash/fromHex.js";
-import { isZero } from "../primitives/Hash/isZero.js";
-import { keccak256 } from "../primitives/Hash/keccak256.js";
-import { keccak256String } from "../primitives/Hash/keccak256String.js";
+import { type BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
+import { equals } from "../primitives/Hash/BrandedHash/equals.js";
+import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
+import { isZero } from "../primitives/Hash/BrandedHash/isZero.js";
+import { keccak256 } from "../primitives/Hash/BrandedHash/keccak256.js";
+import { keccak256String } from "../primitives/Hash/BrandedHash/keccak256String.js";
 import {
 	type Domain,
 	EIP712,
