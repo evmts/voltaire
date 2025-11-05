@@ -6,7 +6,12 @@
 
 import { describe, expect, it } from "vitest";
 import { Address } from "../primitives/Address/index.js";
-import { type BrandedHash, Hash } from "../primitives/Hash/index.js";
+import { type BrandedHash } from "../primitives/Hash/BrandedHash.js";
+import { equals } from "../primitives/Hash/equals.js";
+import { fromHex } from "../primitives/Hash/fromHex.js";
+import { isZero } from "../primitives/Hash/isZero.js";
+import { keccak256 } from "../primitives/Hash/keccak256.js";
+import { keccak256String } from "../primitives/Hash/keccak256String.js";
 import {
 	type Domain,
 	EIP712,
@@ -25,7 +30,7 @@ describe("EIP712", () => {
 				verifyingContract: Address.fromHex(
 					"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
 				),
-				salt: Hash.fromHex(
+				salt: fromHex(
 					"0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 				),
 			};
@@ -34,7 +39,7 @@ describe("EIP712", () => {
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 
 		it("hashes domain with minimal fields", () => {
@@ -46,7 +51,7 @@ describe("EIP712", () => {
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 
 		it("produces deterministic hashes", () => {
@@ -59,7 +64,7 @@ describe("EIP712", () => {
 			const hash1 = EIP712.Domain.hash(domain);
 			const hash2 = EIP712.Domain.hash(domain);
 
-			expect(Hash.equals(hash1, hash2)).toBe(true);
+			expect(equals(hash1, hash2)).toBe(true);
 		});
 
 		it("produces different hashes for different domains", () => {
@@ -73,7 +78,7 @@ describe("EIP712", () => {
 			const hash1 = EIP712.Domain.hash(domain1);
 			const hash2 = EIP712.Domain.hash(domain2);
 
-			expect(Hash.equals(hash1, hash2)).toBe(false);
+			expect(equals(hash1, hash2)).toBe(false);
 		});
 	});
 
@@ -150,7 +155,7 @@ describe("EIP712", () => {
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 
 		it("produces deterministic type hashes", () => {
@@ -164,7 +169,7 @@ describe("EIP712", () => {
 			const hash1 = EIP712.hashType("Person", types);
 			const hash2 = EIP712.hashType("Person", types);
 
-			expect(Hash.equals(hash1, hash2)).toBe(true);
+			expect(equals(hash1, hash2)).toBe(true);
 		});
 	});
 
@@ -208,8 +213,8 @@ describe("EIP712", () => {
 
 			expect(encoded.length).toBe(32);
 			// Should be keccak256 of the string
-			const expected = Hash.keccak256String("Hello, World!");
-			expect(Hash.equals(encoded as BrandedHash, expected)).toBe(true);
+			const expected = keccak256String("Hello, World!");
+			expect(equals(encoded as BrandedHash, expected)).toBe(true);
 		});
 
 		it("encodes dynamic bytes (as hash)", () => {
@@ -218,8 +223,8 @@ describe("EIP712", () => {
 
 			expect(encoded.length).toBe(32);
 			// Should be keccak256 of the bytes
-			const expected = Hash.keccak256(bytes);
-			expect(Hash.equals(encoded as BrandedHash, expected)).toBe(true);
+			const expected = keccak256(bytes);
+			expect(equals(encoded as BrandedHash, expected)).toBe(true);
 		});
 
 		it("encodes fixed bytes", () => {
@@ -243,7 +248,7 @@ describe("EIP712", () => {
 
 			expect(encoded.length).toBe(32);
 			// Should be hash of concatenated encoded elements
-			expect(Hash.isZero(encoded as BrandedHash)).toBe(false);
+			expect(isZero(encoded as BrandedHash)).toBe(false);
 		});
 
 		it("encodes custom struct", () => {
@@ -263,7 +268,7 @@ describe("EIP712", () => {
 
 			expect(encoded.length).toBe(32);
 			// Should be hash of struct
-			expect(Hash.isZero(encoded as BrandedHash)).toBe(false);
+			expect(isZero(encoded as BrandedHash)).toBe(false);
 		});
 
 		it("throws on unsupported type", () => {
@@ -289,7 +294,7 @@ describe("EIP712", () => {
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 
 		it("throws on missing field", () => {
@@ -324,7 +329,7 @@ describe("EIP712", () => {
 			const hash1 = EIP712.hashStruct("Person", message, types);
 			const hash2 = EIP712.hashStruct("Person", message, types);
 
-			expect(Hash.equals(hash1, hash2)).toBe(true);
+			expect(equals(hash1, hash2)).toBe(true);
 		});
 	});
 
@@ -353,7 +358,7 @@ describe("EIP712", () => {
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 
 		it("produces deterministic hashes", () => {
@@ -375,7 +380,7 @@ describe("EIP712", () => {
 			const hash1 = EIP712.hashTypedData(typedData);
 			const hash2 = EIP712.hashTypedData(typedData);
 
-			expect(Hash.equals(hash1, hash2)).toBe(true);
+			expect(equals(hash1, hash2)).toBe(true);
 		});
 
 		it("handles nested types", () => {
@@ -418,7 +423,7 @@ describe("EIP712", () => {
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 	});
 
@@ -655,7 +660,7 @@ describe("EIP712", () => {
 
 			expect(hash).toBeInstanceOf(Uint8Array);
 			expect(hash.length).toBe(32);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 	});
 

@@ -10,7 +10,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { type BrandedHash, Hash } from "../primitives/Hash/index.js";
+import { type BrandedHash } from "../primitives/Hash/BrandedHash.js";
+import { keccak256String } from "../primitives/Hash/keccak256String.js";
 import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
@@ -26,7 +27,7 @@ const TEST_PRIVATE_KEY = new Uint8Array([
 ]);
 
 const TEST_MESSAGE = "Hello, Ethereum!";
-const TEST_MESSAGE_HASH = Hash.keccak256String(TEST_MESSAGE);
+const TEST_MESSAGE_HASH = keccak256String(TEST_MESSAGE);
 
 // Parameterized test helper
 const implementations = [
@@ -106,7 +107,7 @@ for (const { name, impl } of implementations) {
 			});
 
 			it("produces different signatures for different messages", () => {
-				const hash2 = Hash.keccak256String("Different message");
+				const hash2 = keccak256String("Different message");
 				const sig1 = Secp256k1Impl.sign(TEST_MESSAGE_HASH, TEST_PRIVATE_KEY);
 				const sig2 = Secp256k1Impl.sign(hash2, TEST_PRIVATE_KEY);
 
@@ -153,7 +154,7 @@ for (const { name, impl } of implementations) {
 					TEST_PRIVATE_KEY,
 				);
 				const publicKey = Secp256k1Impl.derivePublicKey(TEST_PRIVATE_KEY);
-				const wrongHash = Hash.keccak256String("Wrong message");
+				const wrongHash = keccak256String("Wrong message");
 
 				const valid = Secp256k1Impl.verify(signature, wrongHash, publicKey);
 				expect(valid).toBe(false);
@@ -646,7 +647,7 @@ for (const { name, impl } of implementations) {
 				privateKey.fill(0x01);
 				privateKey[31] = 0x01;
 
-				const message = Hash.keccak256String("test message");
+				const message = keccak256String("test message");
 				const signature = Secp256k1Impl.sign(message, privateKey);
 
 				// Should be deterministic

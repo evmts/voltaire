@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Hash } from "../primitives/Hash/index.js";
+import { keccak256String } from "../primitives/Hash/keccak256String.js";
 import { P256 } from "./P256/index.js";
 
 describe("P256", () => {
@@ -29,7 +29,7 @@ describe("P256", () => {
 	describe("Signing", () => {
 		it("sign should produce valid signature", () => {
 			const privateKey = new Uint8Array(32).fill(1);
-			const messageHash = Hash.keccak256String("test message");
+			const messageHash = keccak256String("test message");
 
 			const signature = P256.sign(messageHash, privateKey);
 
@@ -41,7 +41,7 @@ describe("P256", () => {
 
 		it("sign should be deterministic", () => {
 			const privateKey = new Uint8Array(32).fill(2);
-			const messageHash = Hash.keccak256String("test");
+			const messageHash = keccak256String("test");
 
 			const sig1 = P256.sign(messageHash, privateKey);
 			const sig2 = P256.sign(messageHash, privateKey);
@@ -52,7 +52,7 @@ describe("P256", () => {
 
 		it("sign should throw for invalid private key length", () => {
 			const invalidKey = new Uint8Array(16);
-			const messageHash = Hash.keccak256String("test");
+			const messageHash = keccak256String("test");
 
 			expect(() => P256.sign(messageHash, invalidKey)).toThrow();
 		});
@@ -62,7 +62,7 @@ describe("P256", () => {
 		it("verify should accept valid signature", () => {
 			const privateKey = new Uint8Array(32).fill(3);
 			const publicKey = P256.derivePublicKey(privateKey);
-			const messageHash = Hash.keccak256String("hello world");
+			const messageHash = keccak256String("hello world");
 
 			const signature = P256.sign(messageHash, privateKey);
 			const valid = P256.verify(signature, messageHash, publicKey);
@@ -73,10 +73,10 @@ describe("P256", () => {
 		it("verify should reject signature with wrong message", () => {
 			const privateKey = new Uint8Array(32).fill(4);
 			const publicKey = P256.derivePublicKey(privateKey);
-			const messageHash = Hash.keccak256String("original");
+			const messageHash = keccak256String("original");
 
 			const signature = P256.sign(messageHash, privateKey);
-			const wrongHash = Hash.keccak256String("modified");
+			const wrongHash = keccak256String("modified");
 			const valid = P256.verify(signature, wrongHash, publicKey);
 
 			expect(valid).toBe(false);
@@ -86,7 +86,7 @@ describe("P256", () => {
 			const privateKey1 = new Uint8Array(32).fill(5);
 			const privateKey2 = new Uint8Array(32).fill(6);
 			const publicKey2 = P256.derivePublicKey(privateKey2);
-			const messageHash = Hash.keccak256String("test");
+			const messageHash = keccak256String("test");
 
 			const signature = P256.sign(messageHash, privateKey1);
 			const valid = P256.verify(signature, messageHash, publicKey2);
@@ -96,7 +96,7 @@ describe("P256", () => {
 
 		it("verify should throw for invalid public key length", () => {
 			const privateKey = new Uint8Array(32).fill(7);
-			const messageHash = Hash.keccak256String("test");
+			const messageHash = keccak256String("test");
 			const signature = P256.sign(messageHash, privateKey);
 			const invalidPubKey = new Uint8Array(32);
 
