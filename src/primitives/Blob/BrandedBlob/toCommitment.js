@@ -3,8 +3,8 @@ import { SIZE } from "./constants.js";
 /**
  * Compute KZG commitment for blob
  *
- * @param {import('./BrandedBlob.js').BrandedBlob} blob - Blob data
- * @returns {import('./BrandedBlob.js').Commitment} 48-byte KZG commitment
+ * @param {import('../BrandedBlob.js').BrandedBlob} blob - Blob data
+ * @returns {import('../BrandedBlob.js').Commitment} 48-byte KZG commitment
  *
  * @example
  * ```javascript

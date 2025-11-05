@@ -1,12 +1,12 @@
-import { SHA256 } from "../../crypto/SHA256/index.js";
+import { SHA256 } from "../../../crypto/SHA256/index.js";
 import { COMMITMENT_VERSION_KZG } from "./constants.js";
 
 /**
  * Create versioned hash from commitment
  * Formula: BLOB_COMMITMENT_VERSION_KZG || sha256(commitment)[1:]
  *
- * @param {import('./BrandedBlob.js').Commitment} commitment - KZG commitment
- * @returns {import('./BrandedBlob.js').VersionedHash} 32-byte versioned hash
+ * @param {import('../BrandedBlob.js').Commitment} commitment - KZG commitment
+ * @returns {import('../BrandedBlob.js').VersionedHash} 32-byte versioned hash
  *
  * @example
  * ```javascript
@@ -26,7 +26,7 @@ export function toVersionedHash(commitment) {
 	versionedHash[0] = COMMITMENT_VERSION_KZG;
 	versionedHash.set(hash.slice(1), 1);
 
-	return /** @type {import('./BrandedBlob.js').VersionedHash} */ (
+	return /** @type {import('../BrandedBlob.js').VersionedHash} */ (
 		versionedHash
 	);
 }

@@ -21,7 +21,7 @@ import { toProof } from "./toProof.js";
 import { toVersionedHash } from "./toVersionedHash.js";
 import { verify } from "./verify.js";
 import { verifyBatch } from "./verifyBatch.js";
-import type { BrandedBlob, Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
+import type { BrandedBlob, Commitment, Proof, VersionedHash } from "../BrandedBlob.js";
 
 // ============================================================================
 // Type Guard Tests

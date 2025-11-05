@@ -6,7 +6,7 @@ import { fromData } from "./fromData.js";
  * Split large data into multiple blobs
  *
  * @param {Uint8Array} data - Data to split
- * @returns {import('./BrandedBlob.js').BrandedBlob[]} Array of blobs containing the data
+ * @returns {import('../BrandedBlob.js').BrandedBlob[]} Array of blobs containing the data
  *
  * @example
  * ```javascript

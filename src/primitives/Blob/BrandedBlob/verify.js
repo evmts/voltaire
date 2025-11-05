@@ -3,9 +3,9 @@ import { SIZE } from "./constants.js";
 /**
  * Verify KZG proof
  *
- * @param {import('./BrandedBlob.js').BrandedBlob} blob - Blob data
- * @param {import('./BrandedBlob.js').Commitment} commitment - KZG commitment
- * @param {import('./BrandedBlob.js').Proof} proof - KZG proof
+ * @param {import('../BrandedBlob.js').BrandedBlob} blob - Blob data
+ * @param {import('../BrandedBlob.js').Commitment} commitment - KZG commitment
+ * @param {import('../BrandedBlob.js').Proof} proof - KZG proof
  * @returns {boolean} true if proof is valid
  *
  * @example

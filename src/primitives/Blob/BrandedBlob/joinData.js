@@ -3,7 +3,7 @@ import { toData } from "./toData.js";
 /**
  * Join multiple blobs into single data buffer
  *
- * @param {readonly import('./BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs to join
+ * @param {readonly import('../BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs to join
  * @returns {Uint8Array} Combined data
  *
  * @example

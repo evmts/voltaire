@@ -3,7 +3,7 @@ import { COMMITMENT_VERSION_KZG } from "./constants.js";
 /**
  * Validate versioned hash
  *
- * @param {import('./BrandedBlob.js').VersionedHash} hash - Versioned hash
+ * @param {import('../BrandedBlob.js').VersionedHash} hash - Versioned hash
  * @returns {boolean} true if version byte is correct
  *
  * @example

@@ -5,7 +5,7 @@ import { SIZE } from "./constants.js";
  * Encodes data with length prefix + data + padding
  *
  * @param {Uint8Array} data - Data to encode (max ~131KB)
- * @returns {import('./BrandedBlob.js').BrandedBlob} Blob containing encoded data
+ * @returns {import('../BrandedBlob.js').BrandedBlob} Blob containing encoded data
  * @throws {Error} If data exceeds maximum size
  *
  * @example
@@ -28,5 +28,5 @@ export function fromData(data) {
 	// Copy data
 	blob.set(data, 8);
 
-	return /** @type {import('./BrandedBlob.js').BrandedBlob} */ (blob);
+	return /** @type {import('../BrandedBlob.js').BrandedBlob} */ (blob);
 }

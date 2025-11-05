@@ -3,9 +3,9 @@ import { MAX_PER_TRANSACTION } from "./constants.js";
 /**
  * Verify multiple blob proofs in batch
  *
- * @param {readonly import('./BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs
- * @param {readonly import('./BrandedBlob.js').Commitment[]} commitments - Array of commitments
- * @param {readonly import('./BrandedBlob.js').Proof[]} proofs - Array of proofs
+ * @param {readonly import('../BrandedBlob.js').BrandedBlob[]} blobs - Array of blobs
+ * @param {readonly import('../BrandedBlob.js').Commitment[]} commitments - Array of commitments
+ * @param {readonly import('../BrandedBlob.js').Proof[]} proofs - Array of proofs
  * @returns {boolean} true if all proofs are valid
  *
  * @example
