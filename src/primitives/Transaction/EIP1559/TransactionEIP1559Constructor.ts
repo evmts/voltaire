@@ -1,8 +1,6 @@
-import type { BrandedAddress } from "../../Address/index.js";
-import type { BrandedHash } from "../../Hash/index.js";
+import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { AccessList } from "../types.js";
 import type { BrandedTransactionEIP1559 } from "./BrandedTransactionEIP1559.js";
-import type { deserialize } from "./deserialize.js";
 import type { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
 import type { getSender } from "./getSender.js";
 import type { getSigningHash } from "./getSigningHash.js";

@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../../Address/index.js";
+import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { AccessList, VersionedHash } from "../types.js";
 import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
 import type { getBlobGasCost } from "./getBlobGasCost.js";
