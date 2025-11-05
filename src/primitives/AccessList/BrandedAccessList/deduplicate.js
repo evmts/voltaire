@@ -1,8 +1,8 @@
 /**
  * Compare two addresses for equality (byte-by-byte)
  *
- * @param {import('../Address/BrandedAddress/BrandedAddress/BrandedAddress.js').BrandedAddress} a
- * @param {import('../Address/BrandedAddress/BrandedAddress/BrandedAddress.js').BrandedAddress} b
+ * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} a
+ * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} b
  * @returns {boolean}
  */
 function addressEquals(a, b) {
