@@ -220,4 +220,4 @@ dist/
 scripts/*.js
 
 # Documentation build artifacts
-docs/.astro/
+.astro/
