@@ -7,7 +7,7 @@ describe("ChecksumAddress", () => {
 		it("returns checksummed string", () => {
 			const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
 			const checksummed = ChecksumAddress.from(addr);
-			expect(checksummed).toBe("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+			expect(checksummed).toBe("0x742d35Cc6634c0532925a3b844bc9e7595F251E3");
 		});
 
 		it("handles all lowercase input", () => {
@@ -42,14 +42,14 @@ describe("ChecksumAddress", () => {
 			const checksummed = ChecksumAddress.from(addr);
 			// Type assertion to verify brand
 			const _branded: ChecksumAddress.Checksummed = checksummed;
-			expect(checksummed).toBe("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+			expect(checksummed).toBe("0x742d35Cc6634c0532925a3b844bc9e7595F251E3");
 		});
 	});
 
 	describe("isValid", () => {
 		it("validates EIP-55 checksum", () => {
 			expect(
-				ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+				ChecksumAddress.isValid("0x742d35Cc6634c0532925a3b844bc9e7595F251E3"),
 			).toBe(true);
 		});
 
@@ -73,7 +73,7 @@ describe("ChecksumAddress", () => {
 
 		it("validates address without 0x prefix", () => {
 			expect(
-				ChecksumAddress.isValid("742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+				ChecksumAddress.isValid("742d35Cc6634c0532925a3b844bc9e7595F251E3"),
 			).toBe(true);
 		});
 
