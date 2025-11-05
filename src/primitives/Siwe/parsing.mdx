@@ -1,0 +1,289 @@
+# Parsing
+
+Methods for converting between SIWE message objects and formatted strings.
+
+## parse
+
+Parse EIP-4361 formatted string to BrandedMessage object.
+
+### Signature
+
+```typescript
+function parse(text: string): BrandedMessage
+```
+
+### Parameters
+
+- `text` - EIP-4361 formatted SIWE message string
+
+### Returns
+
+`BrandedMessage` object with all parsed fields
+
+### Throws
+
+- `Error` - Missing domain header
+- `Error` - Missing or invalid address (must be 40 hex chars with 0x)
+- `Error` - Missing required fields (URI, Version, Chain ID, Nonce, Issued At)
+- `Error` - Chain ID not a number
+
+### Format Specification
+
+```
+{domain} wants you to sign in with your Ethereum account:
+{address}
+
+{statement}
+
+URI: {uri}
+Version: {version}
+Chain ID: {chainId}
+Nonce: {nonce}
+Issued At: {issuedAt}
+Expiration Time: {expirationTime}
+Not Before: {notBefore}
+Request ID: {requestId}
+Resources:
+- {resource1}
+- {resource2}
+```
+
+**Required Lines:**
+1. Header: `{domain} wants you to sign in with your Ethereum account:`
+2. Address: `0x{40 hex chars}`
+3. Empty line
+4. `URI: {uri}`
+5. `Version: {version}`
+6. `Chain ID: {chainId}`
+7. `Nonce: {nonce}`
+8. `Issued At: {issuedAt}`
+
+**Optional:**
+- Statement (between address and URI, surrounded by empty lines)
+- Expiration Time
+- Not Before
+- Request ID
+- Resources (list with `-` prefix)
+
+### Example
+
+```typescript
+const text = `example.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc9e7595f251e3
+
+Sign in to Example App
+
+URI: https://example.com/login
+Version: 1
+Chain ID: 1
+Nonce: abc123def456
+Issued At: 2021-09-30T16:25:24.000Z
+Expiration Time: 2021-10-01T16:25:24.000Z
+Resources:
+- https://example.com/resource1
+- https://example.com/resource2`;
+
+const message = Siwe.parse(text);
+// {
+//   domain: "example.com",
+//   address: Uint8Array(20) [...],
+//   statement: "Sign in to Example App",
+//   uri: "https://example.com/login",
+//   version: "1",
+//   chainId: 1,
+//   nonce: "abc123def456",
+//   issuedAt: "2021-09-30T16:25:24.000Z",
+//   expirationTime: "2021-10-01T16:25:24.000Z",
+//   resources: ["https://example.com/resource1", "https://example.com/resource2"]
+// }
+```
+
+### Parsing Rules
+
+**Address Conversion:**
+- Expects hex string with 0x prefix
+- Converts to 20-byte Uint8Array (BrandedAddress)
+- Validates 40 hex characters (case insensitive)
+
+**Statement Handling:**
+- All lines between address and field section
+- Stops at first line containing `:` or empty line before fields
+- Multi-line statements preserved with newlines
+
+**Field Parsing:**
+- Fields identified by `Key: Value` format
+- Resources section starts with `Resources:` line
+- Resources items prefixed with `- `
+
+**Optional Fields:**
+- Only included if present in text
+- Result object omits undefined fields
+
+### Common Patterns
+
+#### Roundtrip Conversion
+
+```typescript
+const original = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+});
+
+const formatted = Siwe.format(original);
+const parsed = Siwe.parse(formatted);
+// parsed equals original
+```
+
+#### Verify Wallet-Signed Message
+
+```typescript
+// User signs message in wallet
+const signedText = await wallet.getLastSignedMessage();
+
+// Parse to validate format
+try {
+  const message = Siwe.parse(signedText);
+
+  // Validate structure
+  const result = Siwe.validate(message);
+  if (!result.valid) {
+    throw new Error(result.error.message);
+  }
+} catch (err) {
+  console.error("Invalid SIWE message format");
+}
+```
+
+#### Parse and Verify Signature
+
+```typescript
+const messageText = req.body.message;
+const signature = req.body.signature;
+
+const message = Siwe.parse(messageText);
+const result = Siwe.verifyMessage(message, signature);
+
+if (result.valid) {
+  createSession(message.address);
+}
+```
+
+---
+
+## format
+
+Format BrandedMessage to EIP-4361 string for signing.
+
+### Signature
+
+```typescript
+function format(message: BrandedMessage): string
+```
+
+### Parameters
+
+- `message` - BrandedMessage to format
+
+### Returns
+
+EIP-4361 formatted string ready for wallet signing
+
+### Example
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+  uri: "https://example.com",
+  chainId: 1,
+  statement: "Sign in to access your account",
+  nonce: "abc123",
+  issuedAt: "2021-09-30T16:25:24.000Z",
+});
+
+const text = Siwe.format(message);
+console.log(text);
+// example.com wants you to sign in with your Ethereum account:
+// 0x742d35cc6634c0532925a3b844bc9e7595f251e3
+//
+// Sign in to access your account
+//
+// URI: https://example.com
+// Version: 1
+// Chain ID: 1
+// Nonce: abc123
+// Issued At: 2021-09-30T16:25:24.000Z
+```
+
+### Formatting Rules
+
+**Address Formatting:**
+- Converts 20-byte Uint8Array to hex string
+- Lowercase with 0x prefix
+- No EIP-55 checksum
+
+**Line Structure:**
+1. Domain header line
+2. Address (lowercase hex)
+3. Empty line
+4. Statement (if present)
+5. Empty line (if statement present)
+6. Required fields (URI, Version, Chain ID, Nonce, Issued At)
+7. Optional fields (Expiration Time, Not Before, Request ID)
+8. Resources (if present)
+
+**Field Order:**
+- Order matches EIP-4361 specification exactly
+- Optional fields only included if defined
+- Resources always last
+
+### Common Patterns
+
+#### Prepare for Wallet Signing
+
+```typescript
+const message = Siwe.create({
+  domain: window.location.host,
+  address: userAddress,
+  uri: window.location.origin,
+  chainId: await provider.getChainId(),
+});
+
+const text = Siwe.format(message);
+const signature = await wallet.signMessage(text);
+```
+
+#### Display to User
+
+```typescript
+const message = Siwe.create({ ... });
+const formatted = Siwe.format(message);
+
+console.log("Please sign this message:");
+console.log(formatted);
+```
+
+#### Instance Method
+
+```typescript
+const message = Siwe.create({ ... });
+const text = message.format();
+// Same as Siwe.format(message)
+```
+
+### Implementation Notes
+
+- Address bytes converted to lowercase hex
+- Newlines between sections for readability
+- Resources prefixed with `- ` per spec
+- No trailing newline
+- UTF-8 text encoding
+
+### See Also
+
+- [Siwe.parse](#parse) - Parse formatted string
+- [Message Format](./message-format.mdx) - EIP-4361 specification
+- [Siwe.getMessageHash](./signing.mdx) - Hash formatted message
+- [Siwe.create](./constructors.mdx#create) - Create message

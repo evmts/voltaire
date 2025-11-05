@@ -1,0 +1,282 @@
+# Validation
+
+Message structure and timestamp validation.
+
+## validate
+
+Validate SIWE message structure and timestamps.
+
+### Signature
+
+```typescript
+function validate(
+  message: BrandedMessage,
+  options?: { now?: Date }
+): ValidationResult
+
+type ValidationResult =
+  | { valid: true }
+  | { valid: false; error: ValidationError };
+```
+
+### Parameters
+
+- `message` - BrandedMessage to validate
+- `options.now` - Current time for timestamp checks (defaults to `new Date()`)
+
+### Returns
+
+**Success:** `{ valid: true }`
+
+**Failure:** `{ valid: false, error: ValidationError }`
+
+ValidationError types:
+- `invalid_domain` - Domain empty or missing
+- `invalid_address` - Address not 20-byte Uint8Array
+- `invalid_uri` - URI missing
+- `invalid_version` - Version not "1"
+- `invalid_chain_id` - Chain ID not positive integer
+- `invalid_nonce` - Nonce less than 8 characters
+- `invalid_timestamp` - Timestamp not valid ISO 8601
+- `expired` - Current time >= expirationTime
+- `not_yet_valid` - Current time < notBefore
+
+### Validation Rules
+
+**Domain:**
+- Must be non-empty string
+- RFC 4501 dns authority format
+
+**Address:**
+- Must be Uint8Array instance
+- Exactly 20 bytes length
+- Valid Ethereum address format
+
+**URI:**
+- Must be non-empty string
+- RFC 3986 URI format
+
+**Version:**
+- Must be exactly "1"
+- No other versions supported
+
+**Chain ID:**
+- Must be positive integer (>= 1)
+- EIP-155 chain identifier
+
+**Nonce:**
+- Minimum 8 characters
+- Prevents replay attacks
+
+**Timestamps:**
+- Must be valid ISO 8601 format
+- Parsed with `new Date()`
+- Checked against `options.now` or current time
+
+**Expiration Check:**
+- If `expirationTime` present: `now < expirationTime`
+- Returns `expired` error if past
+
+**Not Before Check:**
+- If `notBefore` present: `now >= notBefore`
+- Returns `not_yet_valid` error if too early
+
+### Example
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+});
+
+const result = Siwe.validate(message);
+if (result.valid) {
+  console.log("Message is valid");
+} else {
+  console.error(result.error.type);
+  console.error(result.error.message);
+}
+```
+
+### Error Handling
+
+```typescript
+const result = Siwe.validate(message);
+
+if (!result.valid) {
+  switch (result.error.type) {
+    case "expired":
+      requestReauth("Session expired");
+      break;
+    case "not_yet_valid":
+      showError("Authentication not yet valid");
+      break;
+    case "invalid_nonce":
+      showError("Invalid authentication token");
+      break;
+    case "invalid_address":
+      showError("Invalid Ethereum address");
+      break;
+    case "invalid_chain_id":
+      showError("Invalid chain ID");
+      break;
+    case "invalid_timestamp":
+      showError("Invalid timestamp format");
+      break;
+    default:
+      showError(`Validation failed: ${result.error.message}`);
+  }
+}
+```
+
+### Timestamp Validation
+
+#### Check Expiration
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  expirationTime: "2025-12-31T23:59:59.000Z",
+});
+
+// Validate at specific time
+const result = Siwe.validate(message, {
+  now: new Date("2026-01-01T00:00:00.000Z"),
+});
+// result.valid === false, error.type === "expired"
+```
+
+#### Check Not Before
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  notBefore: "2025-01-01T00:00:00.000Z",
+});
+
+const result = Siwe.validate(message, {
+  now: new Date("2024-12-31T23:59:59.000Z"),
+});
+// result.valid === false, error.type === "not_yet_valid"
+```
+
+#### Session Validation
+
+```typescript
+function validateSession(message: BrandedMessage): boolean {
+  const result = Siwe.validate(message, { now: new Date() });
+  return result.valid;
+}
+
+// Check at session use time
+if (!validateSession(storedMessage)) {
+  requestReauth();
+}
+```
+
+### Common Patterns
+
+#### Pre-Verification Validation
+
+```typescript
+// Always validate before expensive signature verification
+const validationResult = Siwe.validate(message);
+if (!validationResult.valid) {
+  return error(validationResult.error.message);
+}
+
+// Only verify signature if structure valid
+const verified = Siwe.verify(message, signature);
+```
+
+#### Instance Method
+
+```typescript
+const message = Siwe.create({ ... });
+const result = message.validate();
+// Same as Siwe.validate(message)
+
+const resultWithTime = message.validate({ now: new Date() });
+```
+
+#### Backend Validation
+
+```typescript
+app.post('/auth/verify', (req, res) => {
+  const message = Siwe.parse(req.body.message);
+
+  const result = Siwe.validate(message);
+  if (!result.valid) {
+    return res.status(400).json({ error: result.error.message });
+  }
+
+  // Continue with nonce and signature verification
+});
+```
+
+#### Clock Skew Handling
+
+```typescript
+const CLOCK_SKEW_MS = 30000; // 30 seconds
+
+function validateWithSkew(message: BrandedMessage): ValidationResult {
+  const now = new Date(Date.now() - CLOCK_SKEW_MS);
+  return Siwe.validate(message, { now });
+}
+```
+
+### Validation Details
+
+**Domain Validation:**
+- Checks non-empty, non-whitespace
+- Does not validate DNS format (caller responsibility)
+
+**Address Validation:**
+- Runtime type check: `instanceof Uint8Array`
+- Length check: `length === 20`
+- Does not validate checksum
+
+**URI Validation:**
+- Checks non-empty
+- Does not validate RFC 3986 syntax (caller responsibility)
+
+**Version Validation:**
+- Strict equality: `version === "1"`
+- No version coercion
+
+**Chain ID Validation:**
+- `Number.isInteger(chainId)`
+- `chainId >= 1`
+- Rejects floats, negative, zero
+
+**Nonce Validation:**
+- `nonce.length >= 8`
+- Does not validate character set
+- Server must verify uniqueness
+
+**Timestamp Validation:**
+- ISO 8601 format via `new Date()`
+- Checks `isNaN(date.getTime())`
+- Time comparisons use `>=` and `<`
+
+### Performance
+
+- O(1) complexity
+- No crypto operations
+- Fast structure checks
+- Ideal for pre-filtering before expensive verification
+
+### See Also
+
+- [Siwe.verifyMessage](./verification.mdx#verifymessage) - Combined validation and verification
+- [Siwe.verify](./verification.mdx) - Signature verification
+- [Message Format](./message-format.mdx) - Field specifications
+- [Usage Patterns](./usage-patterns.mdx) - Best practices

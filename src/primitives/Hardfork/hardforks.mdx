@@ -1,0 +1,494 @@
+# Hardfork Timeline
+
+Complete list of Ethereum hardforks with dates, features, and EIP changes.
+
+## Overview
+
+Each hardfork represents a protocol upgrade that changes EVM behavior, gas costs, or adds new features. Hardforks build upon previous ones chronologically.
+
+```typescript
+import { FRONTIER, CANCUN, PRAGUE } from '@tevm/voltaire';
+```
+
+## Hardfork Constants
+
+All hardforks exported as constants:
+
+```typescript
+export const FRONTIER: BrandedHardfork
+export const HOMESTEAD: BrandedHardfork
+export const DAO: BrandedHardfork
+export const TANGERINE_WHISTLE: BrandedHardfork
+export const SPURIOUS_DRAGON: BrandedHardfork
+export const BYZANTIUM: BrandedHardfork
+export const CONSTANTINOPLE: BrandedHardfork
+export const PETERSBURG: BrandedHardfork
+export const ISTANBUL: BrandedHardfork
+export const MUIR_GLACIER: BrandedHardfork
+export const BERLIN: BrandedHardfork
+export const LONDON: BrandedHardfork
+export const ARROW_GLACIER: BrandedHardfork
+export const GRAY_GLACIER: BrandedHardfork
+export const MERGE: BrandedHardfork
+export const SHANGHAI: BrandedHardfork
+export const CANCUN: BrandedHardfork
+export const PRAGUE: BrandedHardfork
+export const OSAKA: BrandedHardfork
+
+export const DEFAULT: BrandedHardfork  // PRAGUE
+```
+
+## Complete Timeline
+
+### FRONTIER (July 2015)
+
+**Original Ethereum launch**
+
+Initial release with base EVM functionality.
+
+**Key Features:**
+- Basic EVM opcodes (ADD, MUL, SSTORE, SLOAD, etc.)
+- Contract creation and execution
+- Mining with Ethash PoW
+- Gas mechanism
+
+**Status:** Foundation for all future hardforks
+
+---
+
+### HOMESTEAD (March 2016)
+
+**First planned hardfork**
+
+Fixed critical issues and added DELEGATECALL.
+
+**Key Features:**
+- `DELEGATECALL` opcode (0xF4) - Execute code in caller's context
+- Difficulty adjustment improvements
+- Gas cost changes for transaction creation
+- Contract creation cost changes
+
+**EIPs:**
+- EIP-2: Homestead hard fork changes
+- EIP-7: DELEGATECALL opcode
+
+---
+
+### DAO (July 2016)
+
+**Emergency fork for DAO hack**
+
+State-only changes, no EVM modifications.
+
+**Key Features:**
+- Moved funds from compromised DAO contract
+- No opcode or gas changes
+- Controversial hard fork (created Ethereum Classic split)
+
+**Status:** Historical significance, no protocol changes
+
+---
+
+### TANGERINE_WHISTLE (October 2016)
+
+**Gas repricing fork**
+
+Increased gas costs for IO-heavy operations after DoS attacks.
+
+**Key Features:**
+- Increased gas cost for EXTCODESIZE, EXTCODECOPY, BALANCE, SLOAD
+- Changed gas cost for SUICIDE/SELFDESTRUCT
+- Maximum call depth increased
+
+**EIPs:**
+- EIP-150: Gas cost changes for IO-heavy operations
+- EIP-158: State clearing
+
+---
+
+### SPURIOUS_DRAGON (November 2016)
+
+**State cleaning fork**
+
+Removed empty accounts and added replay protection.
+
+**Key Features:**
+- Empty account removal (state cleaning)
+- EXP opcode repricing
+- Contract code size limit (24KB)
+- Replay attack protection
+
+**EIPs:**
+- EIP-155: Simple replay attack protection
+- EIP-160: EXP cost increase
+- EIP-161: State trie clearing
+- EIP-170: Contract code size limit
+
+---
+
+### BYZANTIUM (October 2017)
+
+**Major feature fork**
+
+Added important opcodes for smart contract functionality.
+
+**Key Features:**
+- `REVERT` opcode (0xFD) - Revert with error message
+- `RETURNDATASIZE` (0x3D) and `RETURNDATACOPY` (0x3E)
+- `STATICCALL` opcode (0xFA) - Non-state-changing calls
+- Modified difficulty adjustment (ice age delay)
+- zkSNARK precompiles
+
+**EIPs:**
+- EIP-140: REVERT instruction
+- EIP-211: RETURNDATASIZE and RETURNDATACOPY
+- EIP-214: STATICCALL opcode
+- EIP-658: Embedding transaction status in receipts
+- EIP-196: zkSNARK precompile (alt_bn128 addition)
+- EIP-197: zkSNARK precompile (alt_bn128 multiplication)
+- EIP-198: BigInt modular exponentiation precompile
+
+---
+
+### CONSTANTINOPLE (February 2019)
+
+**Efficiency improvements**
+
+Added CREATE2 and bitwise shift opcodes.
+
+**Key Features:**
+- `CREATE2` opcode (0xF5) - Deterministic contract addresses
+- `SHL` (0x1B), `SHR` (0x1C), `SAR` (0x1D) - Bitwise shift operators
+- `EXTCODEHASH` opcode (0x3F) - Get contract code hash
+- Gas cost optimizations
+
+**EIPs:**
+- EIP-1014: CREATE2 opcode (Skinny CREATE2)
+- EIP-145: Bitwise shifting instructions
+- EIP-1052: EXTCODEHASH opcode
+- EIP-1234: Constantinople difficulty bomb delay
+
+---
+
+### PETERSBURG (February 2019)
+
+**Quick fix fork**
+
+Removed EIP-1283 due to reentrancy concerns. Deployed simultaneously with Constantinople after delay.
+
+**Key Features:**
+- Removed EIP-1283 (net gas metering for SSTORE)
+- All other Constantinople features retained
+
+**EIPs:**
+- EIP-1283: Removed (was net gas metering for SSTORE)
+
+**Note:** Petersburg = Constantinople - EIP-1283
+
+---
+
+### ISTANBUL (December 2019)
+
+**Gas optimization fork**
+
+Rebalanced SSTORE gas costs and added new opcodes.
+
+**Key Features:**
+- `CHAINID` opcode (0x46) - Get current chain ID
+- `SELFBALANCE` opcode (0x47) - Get contract's own balance (cheaper than BALANCE)
+- SSTORE gas cost rebalancing (EIP-2200)
+- Gas cost reductions for SNARKs and STARKs
+- Blake2 compression precompile
+
+**EIPs:**
+- EIP-152: Blake2 precompile
+- EIP-1108: Reduce alt_bn128 precompile gas costs
+- EIP-1344: CHAINID opcode
+- EIP-1884: Repricing for trie-size-dependent opcodes
+- EIP-2028: Calldata gas cost reduction
+- EIP-2200: Net gas metering for SSTORE (reintroduced safely)
+
+---
+
+### MUIR_GLACIER (January 2020)
+
+**Difficulty bomb delay**
+
+Delayed ice age, no EVM changes.
+
+**Key Features:**
+- Difficulty bomb delayed 4,000,000 blocks
+- No opcode changes
+- No gas cost changes
+
+**EIPs:**
+- EIP-2384: Muir Glacier difficulty bomb delay
+
+**Status:** Administrative fork, no protocol changes
+
+---
+
+### BERLIN (April 2021)
+
+**Access list fork**
+
+Gas cost changes for state access patterns.
+
+**Key Features:**
+- Cold/warm storage access distinction
+- Increased gas costs for SLOAD, *CALL, BALANCE, EXT* operations on first access
+- Optional access lists in transactions (Type 1)
+- `MODEXP` precompile gas cost changes
+
+**EIPs:**
+- EIP-2565: ModExp gas cost
+- EIP-2718: Typed transaction envelope
+- EIP-2929: Gas cost increases for state access opcodes
+- EIP-2930: Optional access lists
+
+**Impact:** Changed gas costs for many operations
+
+---
+
+### LONDON (August 2021)
+
+**Fee market reform**
+
+Introduced EIP-1559 base fee mechanism.
+
+**Key Features:**
+- **EIP-1559**: Base fee + priority fee transaction pricing
+- `BASEFEE` opcode (0x48) - Get current block's base fee
+- Base fee burned (deflationary mechanism)
+- Type 2 transactions (EIP-1559)
+- Ice age delay
+
+**EIPs:**
+- EIP-1559: Fee market change for ETH 1.0 chain
+- EIP-3198: BASEFEE opcode
+- EIP-3529: Reduction in refunds
+- EIP-3541: Reject new contracts starting with 0xEF
+- EIP-3554: Difficulty bomb delay
+
+**Impact:** Fundamental change to transaction fee mechanism
+
+---
+
+### ARROW_GLACIER (December 2021)
+
+**Difficulty bomb delay**
+
+Delayed ice age before Merge, no EVM changes.
+
+**Key Features:**
+- Difficulty bomb delayed ~6 months
+- No opcode changes
+- No gas cost changes
+
+**EIPs:**
+- EIP-4345: Difficulty bomb delay
+
+**Status:** Administrative fork preparing for Merge
+
+---
+
+### GRAY_GLACIER (June 2022)
+
+**Difficulty bomb delay**
+
+Further delayed ice age before Merge, no EVM changes.
+
+**Key Features:**
+- Difficulty bomb delayed 700,000 blocks
+- No opcode changes
+- No gas cost changes
+
+**EIPs:**
+- EIP-5133: Difficulty bomb delay
+
+**Status:** Final delay before Merge
+
+---
+
+### MERGE (September 2022)
+
+**Proof of Stake transition**
+
+Historic transition from Proof of Work to Proof of Stake.
+
+**Key Features:**
+- **Proof of Stake consensus** - No more mining
+- `PREVRANDAO` opcode (replaces DIFFICULTY, still 0x44)
+- Beacon chain integration
+- DIFFICULTY opcode returns PREVRANDAO value
+- Block structure changes
+
+**EIPs:**
+- EIP-3675: Upgrade consensus to Proof of Stake
+- EIP-4399: Supplant DIFFICULTY with PREVRANDAO
+
+**Aliases:** "Paris" (consensus layer name)
+
+**Impact:** Fundamental change from PoW to PoS
+
+---
+
+### SHANGHAI (April 2023)
+
+**Withdrawal enabling fork**
+
+Enabled staking withdrawals and added PUSH0.
+
+**Key Features:**
+- **EIP-3855**: `PUSH0` opcode (0x5F) - Push constant 0 onto stack
+- Staking withdrawals enabled
+- Warm COINBASE (EIP-3651)
+
+**EIPs:**
+- EIP-3651: Warm COINBASE
+- EIP-3855: PUSH0 instruction
+- EIP-3860: Limit and meter initcode
+- EIP-4895: Beacon chain push withdrawals
+
+**Impact:** Enabled staking withdrawals, gas savings with PUSH0
+
+---
+
+### CANCUN (March 2024)
+
+**Proto-danksharding fork**
+
+Introduced blob transactions for L2 scalability.
+
+**Key Features:**
+- **EIP-4844**: Blob transactions (Type 3) - Proto-danksharding
+- `BLOBHASH` opcode (0x49) - Access blob versioned hashes
+- `BLOBBASEFEE` opcode (0x4A) - Get blob gas base fee
+- **EIP-1153**: Transient storage - `TLOAD` (0x5C) and `TSTORE` (0x5D)
+- **EIP-5656**: `MCOPY` opcode (0x5E) - Memory copy instruction
+- Point evaluation precompile for KZG commitments
+
+**EIPs:**
+- EIP-1153: Transient storage opcodes (TLOAD/TSTORE)
+- EIP-4844: Shard blob transactions (proto-danksharding)
+- EIP-4788: Beacon block root in EVM
+- EIP-5656: MCOPY instruction
+- EIP-6780: SELFDESTRUCT only in same transaction
+- EIP-7516: BLOBBASEFEE opcode
+
+**Impact:** Major scalability improvement for L2s via cheap blob data
+
+---
+
+### PRAGUE (May 2025)
+
+**Prague-Electra fork**
+
+Current default. BLS cryptography and account abstraction features.
+
+**Key Features:**
+- **EIP-2537**: BLS12-381 curve precompiles (10 new precompiles)
+- **EIP-7702**: Set EOA code for one transaction (account abstraction)
+- Validator set changes (EIP-7251, EIP-7002)
+- MaxEB (Maximum effective balance increase)
+
+**EIPs:**
+- EIP-2537: BLS12-381 curve operations precompiles
+- EIP-7002: Execution layer triggerable exits
+- EIP-7251: Increase max effective balance
+- EIP-7702: Set EOA account code for one transaction
+- EIP-2935: Serve historical block hashes from state
+
+**Status:** Current default hardfork
+
+**Impact:** Enables native account abstraction patterns, BLS signatures
+
+---
+
+### OSAKA (TBD)
+
+**Future fork**
+
+Planned improvements to ModExp and transaction limits.
+
+**Key Features:**
+- **EIP-7883**: ModExp gas increase for large inputs
+- EIP-7823: ModExp upper bounds
+- Transaction and block limits
+
+**EIPs:**
+- EIP-7883: ModExp gas increase
+- EIP-7823: ModExp upper bounds
+- EIP-7825: Transaction gas limit cap
+- EIP-7934: Block RLP limit
+
+**Status:** Planned, not yet deployed
+
+---
+
+## Summary Tables
+
+### Consensus Changes
+
+| Hardfork | Consensus | Change |
+|----------|-----------|--------|
+| Frontier - Gray Glacier | Proof of Work | Ethash mining |
+| Merge+ | Proof of Stake | Beacon chain validators |
+
+### Major Opcode Additions
+
+| Hardfork | Opcodes | Purpose |
+|----------|---------|---------|
+| Homestead | DELEGATECALL | Execute in caller context |
+| Byzantium | REVERT, STATICCALL | Error handling, view functions |
+| Constantinople | CREATE2, SHL/SHR/SAR | Deterministic addresses, shifts |
+| Istanbul | CHAINID, SELFBALANCE | Chain ID, gas optimization |
+| London | BASEFEE | EIP-1559 base fee |
+| Merge | PREVRANDAO (replaces DIFFICULTY) | PoS randomness |
+| Shanghai | PUSH0 | Gas savings |
+| Cancun | TLOAD/TSTORE, MCOPY, BLOBHASH | Transient storage, blobs |
+
+### Feature Timeline
+
+| Feature | Hardfork | EIP |
+|---------|----------|-----|
+| DELEGATECALL | Homestead | EIP-7 |
+| REVERT | Byzantium | EIP-140 |
+| STATICCALL | Byzantium | EIP-214 |
+| CREATE2 | Constantinople | EIP-1014 |
+| CHAINID | Istanbul | EIP-1344 |
+| Access Lists | Berlin | EIP-2930 |
+| EIP-1559 | London | EIP-1559 |
+| Proof of Stake | Merge | EIP-3675 |
+| PUSH0 | Shanghai | EIP-3855 |
+| Blob Transactions | Cancun | EIP-4844 |
+| Transient Storage | Cancun | EIP-1153 |
+| BLS Precompiles | Prague | EIP-2537 |
+
+## Usage
+
+```typescript
+import {
+  FRONTIER, HOMESTEAD, BYZANTIUM, CONSTANTINOPLE,
+  ISTANBUL, BERLIN, LONDON, MERGE, SHANGHAI, CANCUN,
+  PRAGUE, OSAKA, DEFAULT
+} from '@tevm/voltaire';
+
+// Use constants directly
+console.log(CANCUN);  // "cancun"
+
+// Compare versions
+import { isAtLeast } from '@tevm/voltaire';
+isAtLeast(CANCUN, LONDON);  // true
+
+// Check features
+import { hasEIP4844 } from '@tevm/voltaire';
+hasEIP4844(CANCUN);  // true
+hasEIP4844(SHANGHAI);  // false
+```
+
+## Related
+
+- [features.mdx](./features.mdx) - Feature detection methods
+- [comparisons.mdx](./comparisons.mdx) - Version comparison
+- [index.mdx](./index.mdx) - Main documentation
