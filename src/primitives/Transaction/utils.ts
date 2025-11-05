@@ -128,7 +128,7 @@ export function decodeAccessList(
 		}
 
 		const address = addressData.value as BrandedAddress;
-		const storageKeys = keysData.value.map((keyData) => {
+		const storageKeys = keysData.value.map((keyData: Rlp.BrandedRlp) => {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
 				throw new Error("Invalid storage key");
 			}

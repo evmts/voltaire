@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import * as BytecodeModule from "./Bytecode.js";
+import { Bytecode } from "./Bytecode.js";
 import type { Instruction } from "./BrandedBytecode.js";
-
-const Bytecode = BytecodeModule.Bytecode;
 
 // ============================================================================
 // Opcode Utility Tests

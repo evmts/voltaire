@@ -26,6 +26,9 @@
 export function flatten(data) {
 	const result = [];
 
+	/**
+	 * @param {import('./BrandedRlp.js').BrandedRlp} d
+	 */
 	function visit(d) {
 		if (d.type === "bytes") {
 			result.push(d);
