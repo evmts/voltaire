@@ -1,0 +1,410 @@
+# Blob.VersionedHash
+
+Nested namespace for versioned hash validation and operations.
+
+## Type
+
+```typescript
+type VersionedHash = Uint8Array & { readonly __versionedHash: unique symbol };
+```
+
+32-byte versioned hash for blob transaction field `blobVersionedHashes`.
+
+## Namespace
+
+```typescript
+Blob.VersionedHash.isValid(hash: Uint8Array): hash is VersionedHash
+Blob.VersionedHash.getVersion(hash: VersionedHash): number
+Blob.VersionedHash.version(hash: VersionedHash): number
+```
+
+---
+
+## isValid
+
+Validates versioned hash size and version byte.
+
+### Signature
+
+```typescript
+function isValid(hash: Uint8Array): hash is VersionedHash
+```
+
+### Parameters
+
+- `hash` - Uint8Array to validate
+
+### Returns
+
+`boolean` - `true` if 32 bytes with correct version (0x01)
+
+### Type Guard
+
+TypeScript type guard. Narrows type to `VersionedHash`.
+
+### Validation
+
+Checks:
+1. Length is exactly 32 bytes
+2. First byte is COMMITMENT_VERSION_KZG (0x01)
+
+### Example
+
+```typescript
+const hash = new Uint8Array(32);
+hash[0] = 0x01; // KZG version
+
+if (Blob.VersionedHash.isValid(hash)) {
+  // hash is now VersionedHash type
+  const version = Blob.VersionedHash.getVersion(hash);
+  console.log(version); // 1
+}
+
+// Invalid - wrong size
+Blob.VersionedHash.isValid(new Uint8Array(31)); // false
+Blob.VersionedHash.isValid(new Uint8Array(33)); // false
+
+// Invalid - wrong version
+const wrongVersion = new Uint8Array(32);
+wrongVersion[0] = 0x02; // Future version
+Blob.VersionedHash.isValid(wrongVersion); // false
+
+// Valid
+const valid = new Uint8Array(32);
+valid[0] = 0x01;
+Blob.VersionedHash.isValid(valid); // true
+```
+
+### Implementation
+
+```javascript
+export const VersionedHash = {
+  isValid: (hash) => {
+    return hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG;
+  },
+  // ...
+};
+```
+
+### Format
+
+```
+Byte 0:      COMMITMENT_VERSION_KZG (0x01)
+Bytes 1-31:  SHA-256(commitment)[1:32]
+```
+
+### See Also
+
+- [Blob.isValidVersion](./validation.mdx#isvalidversion) - Alternative validation
+- [getVersion](#getversion) - Extract version byte
+- [Blob.toVersionedHash](./conversions.mdx#toversionedhash) - Create hash
+
+---
+
+## getVersion
+
+Extracts version byte from versioned hash.
+
+### Signature
+
+```typescript
+function getVersion(hash: VersionedHash): number
+```
+
+### Parameters
+
+- `hash` - Versioned hash (32 bytes)
+
+### Returns
+
+`number` - Version byte (0-255)
+
+### Example
+
+```typescript
+const hash = Blob.toVersionedHash(commitment);
+const version = Blob.VersionedHash.getVersion(hash);
+console.log(version); // 1 (0x01)
+
+// Manual hash
+const manual = new Uint8Array(32);
+manual[0] = 0x01;
+Blob.VersionedHash.getVersion(manual); // 1
+
+// Empty hash (edge case)
+const empty = new Uint8Array(32);
+Blob.VersionedHash.getVersion(empty); // 0
+```
+
+### Implementation
+
+```javascript
+export const VersionedHash = {
+  // ...
+  getVersion: (hash) => {
+    return hash[0] ?? 0;
+  },
+};
+```
+
+### Fallback
+
+Returns 0 if first byte is undefined (shouldn't happen with proper types).
+
+### Current Version
+
+```typescript
+COMMITMENT_VERSION_KZG = 0x01
+```
+
+Only version currently valid. Future versions may be added.
+
+### See Also
+
+- [version](#version) - Alias for getVersion
+- [isValid](#isvalid) - Validate hash and version
+
+---
+
+## version
+
+Alias for `getVersion`.
+
+### Signature
+
+```typescript
+function version(hash: VersionedHash): number
+```
+
+### Parameters
+
+- `hash` - Versioned hash (32 bytes)
+
+### Returns
+
+`number` - Version byte (0-255)
+
+### Example
+
+```typescript
+const hash = Blob.toVersionedHash(commitment);
+
+// Both equivalent
+const v1 = Blob.VersionedHash.getVersion(hash);
+const v2 = Blob.VersionedHash.version(hash);
+// v1 === v2 === 1
+```
+
+### Implementation
+
+Same as `getVersion`:
+
+```javascript
+export const VersionedHash = {
+  // ...
+  version: (hash) => {
+    return hash[0] ?? 0;
+  },
+};
+```
+
+### Naming
+
+Both names provided for convenience:
+- `getVersion` - explicit getter style
+- `version` - concise property-like style
+
+### See Also
+
+- [getVersion](#getversion) - Main implementation
+
+---
+
+## Usage Patterns
+
+### Type-Safe Hash Handling
+
+```typescript
+function processVersionedHash(data: Uint8Array): number {
+  if (!Blob.VersionedHash.isValid(data)) {
+    throw new Error("Invalid versioned hash");
+  }
+
+  // data now typed as VersionedHash
+  return Blob.VersionedHash.getVersion(data);
+}
+```
+
+### Transaction Validation
+
+```typescript
+interface BlobTransaction {
+  blobVersionedHashes: Uint8Array[];
+  // ... other fields
+}
+
+function validateBlobTx(tx: BlobTransaction): void {
+  for (const hash of tx.blobVersionedHashes) {
+    if (!Blob.VersionedHash.isValid(hash)) {
+      throw new Error("Invalid versioned hash in transaction");
+    }
+  }
+}
+```
+
+### Version Checking
+
+```typescript
+function checkVersion(hash: Uint8Array): void {
+  if (!Blob.VersionedHash.isValid(hash)) {
+    throw new Error("Invalid hash");
+  }
+
+  const version = Blob.VersionedHash.getVersion(hash);
+
+  switch (version) {
+    case 0x01:
+      console.log("KZG commitment");
+      break;
+    default:
+      throw new Error(`Unsupported version: 0x${version.toString(16)}`);
+  }
+}
+```
+
+### Transaction Building
+
+```typescript
+function buildBlobTransaction(blobs: BrandedBlob[]) {
+  // Generate commitments
+  const commitments = blobs.map(b => Blob.toCommitment(b));
+
+  // Create versioned hashes
+  const hashes = commitments.map(c => Blob.toVersionedHash(c));
+
+  // Validate all hashes
+  for (const hash of hashes) {
+    if (!Blob.VersionedHash.isValid(hash)) {
+      throw new Error("Generated invalid versioned hash");
+    }
+  }
+
+  return {
+    type: 0x03, // EIP-4844
+    blobVersionedHashes: hashes,
+    // ... other fields
+  };
+}
+```
+
+### Hash Array Processing
+
+```typescript
+function filterValidHashes(hashes: Uint8Array[]): VersionedHash[] {
+  return hashes.filter(Blob.VersionedHash.isValid);
+}
+
+// Or throw on invalid
+function requireValidHashes(hashes: Uint8Array[]): VersionedHash[] {
+  const valid: VersionedHash[] = [];
+
+  for (let i = 0; i < hashes.length; i++) {
+    if (!Blob.VersionedHash.isValid(hashes[i])) {
+      throw new Error(`Invalid hash at index ${i}`);
+    }
+    valid.push(hashes[i]);
+  }
+
+  return valid;
+}
+```
+
+### Version Distribution Analysis
+
+```typescript
+function analyzeVersions(hashes: VersionedHash[]): Map<number, number> {
+  const counts = new Map<number, number>();
+
+  for (const hash of hashes) {
+    const version = Blob.VersionedHash.getVersion(hash);
+    counts.set(version, (counts.get(version) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+// Usage
+const hashes = getVersionedHashes();
+const distribution = analyzeVersions(hashes);
+console.log(`KZG (0x01): ${distribution.get(1)} hashes`);
+```
+
+### Commitment Verification
+
+```typescript
+async function verifyCommitmentHash(
+  commitment: Commitment,
+  expectedHash: VersionedHash
+): Promise<boolean> {
+  // Validate inputs
+  if (!Blob.Commitment.isValid(commitment)) {
+    throw new Error("Invalid commitment");
+  }
+  if (!Blob.VersionedHash.isValid(expectedHash)) {
+    throw new Error("Invalid versioned hash");
+  }
+
+  // Generate hash from commitment
+  const computedHash = Blob.toVersionedHash(commitment);
+
+  // Compare byte-by-byte
+  if (computedHash.length !== expectedHash.length) {
+    return false;
+  }
+
+  for (let i = 0; i < computedHash.length; i++) {
+    if (computedHash[i] !== expectedHash[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+```
+
+---
+
+## Related
+
+### Other Namespaces
+
+- [Blob.Commitment](./commitment.mdx) - Commitment validation
+- [Blob.Proof](./proof.mdx) - Proof validation
+
+### Hash Operations
+
+- [Blob.toVersionedHash](./conversions.mdx#toversionedhash) - Create hash
+- [Blob.Commitment.toVersionedHash](./commitment.mdx#toversionedhash) - Alternative
+- [Blob.isValidVersion](./validation.mdx#isvalidversion) - Version validation
+
+### Constants
+
+- 32 bytes total
+- Byte 0: Version (0x01)
+- Bytes 1-31: Hash data
+
+### Format
+
+```
+COMMITMENT_VERSION_KZG || SHA-256(commitment)[1:]
+```
+
+- Version byte identifies commitment scheme
+- Hash provides compact commitment identifier
+- Used in transaction `blobVersionedHashes` field
+
+### References
+
+- [EIP-4844 Specification](https://eips.ethereum.org/EIPS/eip-4844)
+- [SHA-256](https://en.wikipedia.org/wiki/SHA-2)
+- [Versioned Hashes](https://eips.ethereum.org/EIPS/eip-4844#blob-versioned-hashes)

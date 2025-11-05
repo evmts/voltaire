@@ -1,0 +1,437 @@
+# FeeMarket Usage Patterns
+
+Common patterns for working with fee market calculations.
+
+## Estimating Next Base Fee
+
+Calculate what the next block's base fee will be:
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// Get current block state
+const currentState: FeeMarket.State = {
+  gasUsed: 20_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n, // 1 gwei
+  excessBlobGas: 0n,
+  blobGasUsed: 262144n // 2 blobs
+};
+
+// Calculate next block's state
+const nextState = FeeMarket.nextState(currentState);
+
+// Display results
+console.log(`Current: ${FeeMarket.weiToGwei(currentState.baseFee)} gwei`);
+console.log(`Next:    ${FeeMarket.weiToGwei(nextState.baseFee)} gwei`);
+
+// Check trend
+if (nextState.baseFee > currentState.baseFee) {
+  console.log('⬆ Fees rising');
+} else if (nextState.baseFee < currentState.baseFee) {
+  console.log('⬇ Fees falling');
+} else {
+  console.log('→ Fees stable');
+}
+```
+
+Using state convenience method:
+
+```typescript
+const nextState = FeeMarket.State.next.call(currentState);
+```
+
+## Checking Transaction Inclusion
+
+Verify transaction meets minimum fee requirements:
+
+```typescript
+const baseFee = getCurrentBaseFee(); // From RPC or state
+
+const params: FeeMarket.TxFeeParams = {
+  maxFeePerGas: 2_000_000_000n,        // User's max
+  maxPriorityFeePerGas: 1_000_000_000n, // User's tip
+  baseFee
+};
+
+// Validate parameters
+const errors = FeeMarket.validateTxFeeParams(params);
+if (errors.length > 0) {
+  throw new Error(`Invalid params: ${errors.join(', ')}`);
+}
+
+// Check if can be included
+if (!FeeMarket.canIncludeTx(params)) {
+  console.log('❌ Transaction will be rejected - max fee too low');
+  console.log(`Need: ${FeeMarket.weiToGwei(baseFee)} gwei minimum`);
+  console.log(`Have: ${FeeMarket.weiToGwei(params.maxFeePerGas)} gwei`);
+
+  // Suggest fix
+  const suggestedMax = baseFee + 1_000_000_000n; // +1 gwei buffer
+  console.log(`Suggest: ${FeeMarket.weiToGwei(suggestedMax)} gwei`);
+} else {
+  console.log('✓ Transaction can be included');
+}
+```
+
+## Calculating Transaction Cost
+
+Calculate total cost for a transaction:
+
+```typescript
+const params: FeeMarket.TxFeeParams = {
+  maxFeePerGas: 2_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 800_000_000n
+};
+
+// Calculate fee breakdown
+const fee = FeeMarket.calculateTxFee(params);
+
+// Standard transfer uses 21,000 gas
+const gasUsed = 21_000n;
+
+// Calculate costs
+const baseFeeAmount = fee.baseFee * gasUsed;
+const priorityFeeAmount = fee.priorityFee * gasUsed;
+const totalCost = fee.effectiveGasPrice * gasUsed;
+
+// Display breakdown
+console.log('Transaction cost breakdown:');
+console.log(`  Base fee:     ${FeeMarket.weiToGwei(baseFeeAmount)} gwei`);
+console.log(`  Priority fee: ${FeeMarket.weiToGwei(priorityFeeAmount)} gwei`);
+console.log(`  Total:        ${FeeMarket.weiToGwei(totalCost)} gwei`);
+console.log(`  (${gasUsed} gas × ${FeeMarket.weiToGwei(fee.effectiveGasPrice)} gwei/gas)`);
+
+// Convert to ETH for display
+const costInEth = Number(totalCost) / 1e18;
+console.log(`  = ${costInEth.toFixed(6)} ETH`);
+```
+
+## Blob Transaction Fees
+
+Calculate cost for blob transaction (EIP-4844):
+
+```typescript
+const state = getCurrentBlockState();
+const blobBaseFee = FeeMarket.State.getBlobBaseFee.call(state);
+
+const params: FeeMarket.BlobTxFeeParams = {
+  maxFeePerGas: 2_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: state.baseFee,
+  maxFeePerBlobGas: 10_000_000n,  // User's max for blobs
+  blobBaseFee,
+  blobCount: 3n
+};
+
+// Validate
+const errors = FeeMarket.validateTxFeeParams(params);
+if (errors.length > 0) {
+  throw new Error(`Invalid: ${errors.join(', ')}`);
+}
+
+// Check inclusion
+if (!FeeMarket.canIncludeTx(params)) {
+  throw new Error('Fees too low');
+}
+
+// Calculate fee
+const fee = FeeMarket.calculateBlobTxFee(params);
+
+// Calculate costs
+const gasUsed = 100_000n; // Execution gas
+const executionCost = fee.effectiveGasPrice * gasUsed;
+const blobCost = fee.totalBlobFee;
+const totalCost = executionCost + blobCost;
+
+// Display breakdown
+console.log('Blob transaction cost:');
+console.log(`  Execution: ${FeeMarket.weiToGwei(executionCost)} gwei`);
+console.log(`    (${gasUsed} gas × ${FeeMarket.weiToGwei(fee.effectiveGasPrice)} gwei/gas)`);
+console.log(`  Blobs: ${FeeMarket.weiToGwei(blobCost)} gwei`);
+console.log(`    (${params.blobCount} blobs × ${FeeMarket.Eip4844.BLOB_GAS_PER_BLOB} gas/blob × ${FeeMarket.weiToGwei(fee.blobGasPrice)} wei/gas)`);
+console.log(`  Total: ${FeeMarket.weiToGwei(totalCost)} gwei`);
+```
+
+## Projecting Fee Trends
+
+Project fees over multiple blocks:
+
+```typescript
+const state = getCurrentBlockState();
+
+// Estimate average usage from recent blocks
+const avgGasUsed = getRecentAvgGasUsed(); // e.g., 25_000_000n
+const avgBlobGasUsed = getRecentAvgBlobGasUsed(); // e.g., 524288n
+
+// Project next 10 blocks
+const projection = FeeMarket.projectBaseFees(
+  state,
+  10,
+  avgGasUsed,
+  avgBlobGasUsed
+);
+
+// Analyze trend
+console.log('Base fee projection (next 10 blocks):');
+projection.forEach((fee, i) => {
+  const gwei = FeeMarket.weiToGwei(fee);
+  const change = i > 0
+    ? ((Number(fee - projection[i-1]) / Number(projection[i-1])) * 100).toFixed(1)
+    : '0.0';
+  console.log(`  Block +${i+1}: ${gwei} gwei (${change}% change)`);
+});
+
+// Calculate trend
+const firstFee = projection[0];
+const lastFee = projection[projection.length - 1];
+const totalChange = ((Number(lastFee - firstFee) / Number(firstFee)) * 100).toFixed(1);
+
+console.log(`\nOverall trend: ${totalChange}% over ${projection.length} blocks`);
+
+// Make decision
+if (lastFee > firstFee * 11n / 10n) { // >10% increase
+  console.log('⚠️  Fees rising rapidly - submit transaction soon');
+} else if (lastFee < firstFee * 9n / 10n) { // >10% decrease
+  console.log('💡 Fees falling - consider waiting');
+} else {
+  console.log('✓ Fees relatively stable');
+}
+```
+
+## Setting Transaction Fees
+
+Set appropriate fees based on urgency:
+
+```typescript
+const state = getCurrentBlockState();
+
+// Project worst case over next 5 blocks
+const worstCase = FeeMarket.projectBaseFees(
+  state,
+  5,
+  state.gasLimit * 9n / 10n // Assume 90% utilization
+);
+
+const maxProjectedFee = worstCase[worstCase.length - 1];
+
+// Fee strategies
+const strategies = {
+  // Low priority: current + small buffer
+  slow: {
+    maxFeePerGas: state.baseFee + 100_000_000n, // +0.1 gwei
+    maxPriorityFeePerGas: 100_000_000n // 0.1 gwei tip
+  },
+
+  // Standard: small buffer over projection
+  standard: {
+    maxFeePerGas: maxProjectedFee + 500_000_000n, // +0.5 gwei
+    maxPriorityFeePerGas: 1_000_000_000n // 1 gwei tip
+  },
+
+  // High priority: large buffer
+  fast: {
+    maxFeePerGas: maxProjectedFee * 2n, // 2x projected
+    maxPriorityFeePerGas: 2_000_000_000n // 2 gwei tip
+  }
+};
+
+// Choose strategy
+const strategy = strategies.standard;
+
+const params: FeeMarket.TxFeeParams = {
+  ...strategy,
+  baseFee: state.baseFee
+};
+
+console.log('Transaction fee settings (standard):');
+console.log(`  Max fee: ${FeeMarket.weiToGwei(params.maxFeePerGas)} gwei`);
+console.log(`  Priority: ${FeeMarket.weiToGwei(params.maxPriorityFeePerGas)} gwei`);
+console.log(`  Current base: ${FeeMarket.weiToGwei(state.baseFee)} gwei`);
+console.log(`  Projected max: ${FeeMarket.weiToGwei(maxProjectedFee)} gwei`);
+```
+
+## Monitoring Block Utilization
+
+Monitor network congestion:
+
+```typescript
+const state: FeeMarket.State = getCurrentBlockState();
+
+// Gas utilization
+const gasTarget = FeeMarket.getGasTarget(state);
+const gasUtilization = Number(state.gasUsed * 100n / state.gasLimit);
+const gasVsTarget = Number(state.gasUsed * 100n / gasTarget);
+
+console.log('Gas utilization:');
+console.log(`  Used: ${state.gasUsed} / ${state.gasLimit} (${gasUtilization.toFixed(1)}%)`);
+console.log(`  Target: ${gasTarget} (50% of limit)`);
+console.log(`  vs Target: ${gasVsTarget.toFixed(1)}%`);
+
+if (FeeMarket.State.isAboveGasTarget.call(state)) {
+  const excess = state.gasUsed - gasTarget;
+  const excessPct = Number(excess * 100n / gasTarget);
+  console.log(`  ⬆ ${excessPct.toFixed(1)}% above target - base fee rising`);
+} else {
+  const below = gasTarget - state.gasUsed;
+  const belowPct = Number(below * 100n / gasTarget);
+  console.log(`  ⬇ ${belowPct.toFixed(1)}% below target - base fee falling`);
+}
+
+// Blob utilization
+const blobCount = state.blobGasUsed / FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+const targetBlobs = FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK /
+                    FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+const maxBlobs = FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK;
+
+console.log('\nBlob utilization:');
+console.log(`  Blobs: ${blobCount} / ${maxBlobs} (target: ${targetBlobs})`);
+console.log(`  Gas: ${state.blobGasUsed}`);
+
+if (FeeMarket.State.isAboveBlobGasTarget.call(state)) {
+  const excessBlobs = blobCount - targetBlobs;
+  console.log(`  ⬆ ${excessBlobs} blobs above target - blob fees rising`);
+} else {
+  console.log(`  ⬇ Below target - blob fees stable/falling`);
+}
+
+// Excess blob gas
+if (state.excessBlobGas > 0n) {
+  const excessBlobs = state.excessBlobGas / FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+  console.log(`  Excess: ${state.excessBlobGas} gas (~${excessBlobs} blobs worth)`);
+}
+```
+
+## Building Transactions from User Input
+
+Handle user input in gwei:
+
+```typescript
+function buildTransaction(
+  maxFeeGwei: number,
+  priorityFeeGwei: number
+): FeeMarket.TxFeeParams {
+  // Get current base fee
+  const state = getCurrentBlockState();
+
+  // Convert user input
+  const params: FeeMarket.TxFeeParams = {
+    maxFeePerGas: FeeMarket.gweiToWei(maxFeeGwei),
+    maxPriorityFeePerGas: FeeMarket.gweiToWei(priorityFeeGwei),
+    baseFee: state.baseFee
+  };
+
+  // Validate
+  const errors = FeeMarket.validateTxFeeParams(params);
+  if (errors.length > 0) {
+    throw new Error(`Invalid parameters: ${errors.join(', ')}`);
+  }
+
+  // Check if can be included
+  if (!FeeMarket.canIncludeTx(params)) {
+    const currentBaseGwei = FeeMarket.weiToGwei(state.baseFee);
+    throw new Error(
+      `Max fee (${maxFeeGwei} gwei) below current base fee (${currentBaseGwei} gwei)`
+    );
+  }
+
+  // Calculate what user will actually pay
+  const fee = FeeMarket.calculateTxFee(params);
+  const effectiveGwei = FeeMarket.weiToGwei(fee.effectiveGasPrice);
+  const tipGwei = FeeMarket.weiToGwei(fee.priorityFee);
+
+  console.log(`Will pay: ${effectiveGwei} gwei (${tipGwei} gwei tip)`);
+
+  return params;
+}
+
+// Example usage
+try {
+  const params = buildTransaction(2.0, 1.0); // 2 gwei max, 1 gwei tip
+  sendTransaction(params);
+} catch (error) {
+  console.error('Failed to build transaction:', error.message);
+}
+```
+
+## Fee Estimation Service
+
+Build a fee estimation service:
+
+```typescript
+class FeeEstimator {
+  private recentStates: FeeMarket.State[] = [];
+
+  addBlock(state: FeeMarket.State) {
+    this.recentStates.push(state);
+    if (this.recentStates.length > 20) {
+      this.recentStates.shift();
+    }
+  }
+
+  getAverageGasUsed(): bigint {
+    if (this.recentStates.length === 0) return 0n;
+    const sum = this.recentStates.reduce((s, state) => s + state.gasUsed, 0n);
+    return sum / BigInt(this.recentStates.length);
+  }
+
+  estimateBaseFee(blocksAhead: number = 1): bigint {
+    if (this.recentStates.length === 0) {
+      throw new Error('No recent blocks');
+    }
+
+    const currentState = this.recentStates[this.recentStates.length - 1];
+    const avgGasUsed = this.getAverageGasUsed();
+
+    const projection = FeeMarket.projectBaseFees(
+      currentState,
+      blocksAhead,
+      avgGasUsed,
+      0n
+    );
+
+    return projection[projection.length - 1];
+  }
+
+  suggestFees(urgency: 'slow' | 'standard' | 'fast' = 'standard') {
+    const currentState = this.recentStates[this.recentStates.length - 1];
+    const projectedBase = this.estimateBaseFee(5);
+
+    const multipliers = {
+      slow: { max: 1.1, tip: 0.1 },
+      standard: { max: 1.3, tip: 1.0 },
+      fast: { max: 2.0, tip: 2.0 }
+    };
+
+    const m = multipliers[urgency];
+
+    return {
+      maxFeePerGas: (projectedBase * BigInt(Math.floor(m.max * 10))) / 10n,
+      maxPriorityFeePerGas: FeeMarket.gweiToWei(m.tip),
+      baseFee: currentState.baseFee
+    };
+  }
+}
+
+// Usage
+const estimator = new FeeEstimator();
+
+// Feed blocks
+blocks.forEach(block => estimator.addBlock(block.state));
+
+// Get suggestions
+const fees = estimator.suggestFees('standard');
+console.log('Suggested fees:', {
+  maxFee: FeeMarket.weiToGwei(fees.maxFeePerGas),
+  priority: FeeMarket.weiToGwei(fees.maxPriorityFeePerGas)
+});
+```
+
+## References
+
+- [calculations.mdx](./calculations.mdx)
+- [eip1559.mdx](./eip1559.mdx)
+- [eip4844.mdx](./eip4844.mdx)
+- [utilities.mdx](./utilities.mdx)
+- [types.mdx](./types.mdx)

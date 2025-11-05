@@ -1,0 +1,149 @@
+---
+title: Bytecode Conversions
+description: Format conversions between bytecode and hex strings
+---
+
+# Conversions
+
+Methods for converting between bytecode and hex string representations.
+
+## Hex Conversion
+
+### `Bytecode.toHex(code, prefix?)`
+
+Convert bytecode to hex string representation.
+
+```typescript
+const code = Bytecode.from(new Uint8Array([0x60, 0x01, 0x5b]))
+
+Bytecode.toHex(code)         // "0x60015b"
+Bytecode.toHex(code, false)  // "60015b"
+Bytecode.toHex(code, true)   // "0x60015b"
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to convert
+- `prefix?: boolean` - Include `0x` prefix (default: `true`)
+
+**Returns:** `string` - Hex string representation
+
+Defined in: [primitives/Bytecode/BrandedBytecode/toHex.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/toHex.js)
+
+**Example - Format for display:**
+
+```typescript
+const code = Bytecode.fromHex("0x608060405234801561001057600080fd5b50")
+
+// Format for UI display
+console.log(Bytecode.toHex(code))  // "0x608060405234801561001057600080fd5b50"
+
+// Format for storage (no prefix)
+const stored = Bytecode.toHex(code, false)  // "608060405234801561001057600080fd5b50"
+```
+
+### `Bytecode.fromHex(hex)`
+
+Parse hex string to bytecode (see [Constructors](/primitives/bytecode/constructors)).
+
+```typescript
+const code = Bytecode.fromHex("0x6001")
+```
+
+## Round-trip Conversion
+
+Bytecode converts cleanly between formats:
+
+```typescript
+const original = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01])
+const code = Bytecode.from(original)
+
+// Convert to hex and back
+const hex = Bytecode.toHex(code)
+const restored = Bytecode.fromHex(hex)
+
+Bytecode.equals(code, restored)  // true
+```
+
+## Common Patterns
+
+### Display abbreviated bytecode
+
+```typescript
+function abbreviate(code: BrandedBytecode, maxLength: number = 20): string {
+  const hex = Bytecode.toHex(code)
+
+  if (hex.length <= maxLength + 2) {  // +2 for "0x"
+    return hex
+  }
+
+  const start = hex.slice(0, maxLength / 2 + 2)
+  const end = hex.slice(-(maxLength / 2))
+  return `${start}...${end}`
+}
+
+// Usage
+const code = Bytecode.fromHex("0x608060405234801561001057600080fd5b50")
+console.log(abbreviate(code))  // "0x60806040...0fd5b50"
+```
+
+### Store in database
+
+```typescript
+interface StoredContract {
+  address: string
+  bytecode: string
+  deployedAt: number
+}
+
+function storeContract(addr: Address, code: BrandedBytecode): StoredContract {
+  return {
+    address: Address.toHex(addr),
+    bytecode: Bytecode.toHex(code, false),  // Store without prefix
+    deployedAt: Date.now(),
+  }
+}
+
+function loadContract(stored: StoredContract): BrandedBytecode {
+  return Bytecode.fromHex(stored.bytecode)
+}
+```
+
+### Compare hex strings
+
+```typescript
+function compareHex(hex1: string, hex2: string): boolean {
+  const code1 = Bytecode.fromHex(hex1)
+  const code2 = Bytecode.fromHex(hex2)
+
+  return Bytecode.equals(code1, code2)
+}
+
+// Handles prefix differences
+compareHex("0x6001", "6001")  // true
+```
+
+### Export for tools
+
+```typescript
+function exportForAnalysis(code: BrandedBytecode) {
+  return {
+    hex: Bytecode.toHex(code),
+    hexNoPrefix: Bytecode.toHex(code, false),
+    size: Bytecode.size(code),
+    valid: Bytecode.validate(code),
+    hasMetadata: Bytecode.hasMetadata(code),
+  }
+}
+```
+
+## Tree-Shakeable Usage
+
+```typescript
+import { toHex, fromHex } from '@tevm/voltaire/BrandedBytecode'
+
+const code = fromHex("0x6001")
+const hex = toHex(code)
+const hexNoPrefix = toHex(code, false)
+```
+
+See [BrandedBytecode](/primitives/bytecode/branded-bytecode) for details on tree-shakeable API.

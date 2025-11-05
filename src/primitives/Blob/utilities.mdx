@@ -1,0 +1,561 @@
+# Blob Utilities
+
+Utility functions for gas calculation, blob estimation, and data splitting/joining.
+
+## calculateGas
+
+Calculates total blob gas for given number of blobs.
+
+### Signature
+
+```typescript
+function calculateGas(blobCount: number): number
+```
+
+### Parameters
+
+- `blobCount` - Number of blobs (0-6)
+
+### Returns
+
+`number` - Total blob gas
+
+### Formula
+
+```typescript
+gas = blobCount × GAS_PER_BLOB
+gas = blobCount × 131072
+```
+
+### Throws
+
+- `Error` - Invalid blob count (negative or > MAX_PER_TRANSACTION)
+
+### Example
+
+```typescript
+// Single blob
+Blob.calculateGas(1); // 131072
+
+// Target gas per block (3 blobs)
+Blob.calculateGas(3); // 393216
+
+// Maximum per transaction (6 blobs)
+Blob.calculateGas(6); // 786432
+
+// Invalid counts
+Blob.calculateGas(-1);  // throws
+Blob.calculateGas(7);   // throws "Invalid blob count: 7 (max 6)"
+Blob.calculateGas(0);   // 0 (valid)
+```
+
+### Implementation
+
+```javascript
+export function calculateGas(blobCount) {
+  if (blobCount < 0 || blobCount > MAX_PER_TRANSACTION) {
+    throw new Error(
+      `Invalid blob count: ${blobCount} (max ${MAX_PER_TRANSACTION})`
+    );
+  }
+  return blobCount * GAS_PER_BLOB;
+}
+```
+
+### Gas Constants
+
+- `GAS_PER_BLOB = 131072` (2^17)
+- `TARGET_GAS_PER_BLOCK = 393216` (3 blobs)
+- `MAX_PER_TRANSACTION = 6`
+
+### Use Cases
+
+```typescript
+// Estimate transaction cost
+const blobCount = Blob.estimateBlobCount(data.length);
+const blobGas = Blob.calculateGas(blobCount);
+console.log(`Transaction requires ${blobGas} blob gas`);
+
+// Check against block target
+if (blobGas > Blob.TARGET_GAS_PER_BLOCK) {
+  console.warn("Transaction exceeds target gas per block");
+}
+
+// Validate transaction limit
+if (blobGas > Blob.calculateGas(Blob.MAX_PER_TRANSACTION)) {
+  throw new Error("Transaction exceeds max blobs");
+}
+```
+
+### See Also
+
+- [estimateBlobCount](#estimateblobcount) - Estimate blobs needed
+- [constants.mdx](./constants.mdx#gas_per_blob) - Gas constants
+
+---
+
+## estimateBlobCount
+
+Estimates number of blobs needed for data size.
+
+### Signature
+
+```typescript
+function estimateBlobCount(dataSize: number): number
+```
+
+### Parameters
+
+- `dataSize` - Size of data in bytes
+
+### Returns
+
+`number` - Number of blobs required
+
+### Formula
+
+```typescript
+maxDataPerBlob = SIZE - 8 = 131064
+blobCount = ceil(dataSize / maxDataPerBlob)
+```
+
+### Throws
+
+- `Error` - Invalid data size (negative)
+
+### Example
+
+```typescript
+// Small data (< 1 blob)
+Blob.estimateBlobCount(1000);    // 1
+Blob.estimateBlobCount(100000);  // 1
+Blob.estimateBlobCount(131064);  // 1
+
+// Exactly max size
+Blob.estimateBlobCount(131064);  // 1
+
+// Slightly over (needs 2 blobs)
+Blob.estimateBlobCount(131065);  // 2
+
+// Large data
+Blob.estimateBlobCount(200000);  // 2
+Blob.estimateBlobCount(300000);  // 3
+Blob.estimateBlobCount(500000);  // 4
+
+// Maximum for transaction (6 blobs)
+Blob.estimateBlobCount(786384);  // 6
+Blob.estimateBlobCount(786385);  // 7 (too many!)
+
+// Zero
+Blob.estimateBlobCount(0);       // 0
+
+// Invalid
+Blob.estimateBlobCount(-1);      // throws
+```
+
+### Implementation
+
+```javascript
+export function estimateBlobCount(dataSize) {
+  if (dataSize < 0) {
+    throw new Error(`Invalid data size: ${dataSize}`);
+  }
+  const maxDataPerBlob = SIZE - 8; // Account for length prefix
+  return Math.ceil(dataSize / maxDataPerBlob);
+}
+```
+
+### Pre-flight Checks
+
+```typescript
+// Check before encoding
+const dataSize = myData.length;
+const blobCount = Blob.estimateBlobCount(dataSize);
+
+if (blobCount > Blob.MAX_PER_TRANSACTION) {
+  throw new Error(
+    `Data too large: requires ${blobCount} blobs (max ${Blob.MAX_PER_TRANSACTION})`
+  );
+}
+
+// Calculate cost
+const gas = Blob.calculateGas(blobCount);
+console.log(`Will use ${blobCount} blobs (${gas} gas)`);
+
+// Split data
+const blobs = Blob.splitData(myData);
+```
+
+### See Also
+
+- [calculateGas](#calculategas) - Calculate gas for estimated count
+- [splitData](#splitdata) - Split data into blobs
+- [constants.mdx](./constants.mdx#size) - Size constants
+
+---
+
+## splitData
+
+Splits large data into multiple blobs.
+
+### Signature
+
+```typescript
+function splitData(data: Uint8Array): BrandedBlob[]
+```
+
+### Parameters
+
+- `data` - Data to split (any size up to 6 blobs)
+
+### Returns
+
+`BrandedBlob[]` - Array of blobs containing the data
+
+### Maximum Data Size
+
+```typescript
+maxDataPerBlob = SIZE - 8 = 131064
+maxTotalData = maxDataPerBlob × MAX_PER_TRANSACTION = 786384 bytes
+```
+
+### Throws
+
+- `Error` - Data requires more than MAX_PER_TRANSACTION (6) blobs
+
+### Example
+
+```typescript
+// Small data (single blob)
+const small = new Uint8Array(1000);
+const blobs1 = Blob.splitData(small);
+// blobs1.length === 1
+
+// Large data (multiple blobs)
+const large = new Uint8Array(300000);
+const blobs2 = Blob.splitData(large);
+// blobs2.length === 3
+
+// Maximum size (6 blobs)
+const maxData = new Uint8Array(786384);
+const blobs3 = Blob.splitData(maxData);
+// blobs3.length === 6
+
+// Too large
+const tooLarge = new Uint8Array(1000000);
+try {
+  Blob.splitData(tooLarge);
+} catch (err) {
+  console.error(err); // "Data too large: requires 8 blobs (max 6)"
+}
+
+// Empty data
+const empty = new Uint8Array(0);
+const blobs4 = Blob.splitData(empty);
+// blobs4.length === 0
+```
+
+### Implementation
+
+```javascript
+export function splitData(data) {
+  const maxDataPerBlob = SIZE - 8;
+  const blobCount = estimateBlobCount(data.length);
+
+  if (blobCount > MAX_PER_TRANSACTION) {
+    throw new Error(
+      `Data too large: requires ${blobCount} blobs (max ${MAX_PER_TRANSACTION})`
+    );
+  }
+
+  const blobs = [];
+  for (let i = 0; i < blobCount; i++) {
+    const start = i * maxDataPerBlob;
+    const end = Math.min(start + maxDataPerBlob, data.length);
+    const chunk = data.slice(start, end);
+    blobs.push(fromData(chunk));
+  }
+
+  return blobs;
+}
+```
+
+### Splitting Strategy
+
+Data split into equal chunks (except last):
+
+```typescript
+const data = new Uint8Array(250000);
+const blobs = Blob.splitData(data);
+// blobs.length === 2
+// Blob 0: 131064 bytes of data
+// Blob 1: 118936 bytes of data (250000 - 131064)
+```
+
+### Use Cases
+
+```typescript
+// Automatic splitting
+function createBlobTransaction(data: Uint8Array) {
+  const blobs = Blob.splitData(data);
+  const commitments = blobs.map(b => Blob.toCommitment(b));
+  const proofs = blobs.map((b, i) => Blob.toProof(b, commitments[i]));
+  const hashes = commitments.map(c => Blob.toVersionedHash(c));
+
+  return {
+    blobVersionedHashes: hashes,
+    blobs,
+    commitments,
+    proofs,
+  };
+}
+
+// With validation
+function safeSplitData(data: Uint8Array): BrandedBlob[] {
+  const count = Blob.estimateBlobCount(data.length);
+  if (count > Blob.MAX_PER_TRANSACTION) {
+    throw new Error(`Data too large for single transaction`);
+  }
+  return Blob.splitData(data);
+}
+```
+
+### See Also
+
+- [joinData](#joindata) - Reconstruct data from blobs
+- [estimateBlobCount](#estimateblobcount) - Estimate before splitting
+- [fromData](./constructors.mdx#fromdata) - Encode single blob
+
+---
+
+## joinData
+
+Joins multiple blobs into single data buffer.
+
+### Signature
+
+```typescript
+function joinData(blobs: readonly BrandedBlob[]): Uint8Array
+```
+
+### Parameters
+
+- `blobs` - Array of blobs to join
+
+### Returns
+
+`Uint8Array` - Combined data (without encoding overhead)
+
+### Example
+
+```typescript
+// Roundtrip
+const original = new Uint8Array(300000);
+const blobs = Blob.splitData(original);
+const reconstructed = Blob.joinData(blobs);
+// reconstructed equals original
+
+// Single blob
+const singleBlob = Blob.fromData(new TextEncoder().encode("Hello"));
+const data = Blob.joinData([singleBlob]);
+const text = new TextDecoder().decode(data); // "Hello"
+
+// Multiple blobs
+const blob1 = Blob.fromData(new Uint8Array([1, 2, 3]));
+const blob2 = Blob.fromData(new Uint8Array([4, 5, 6]));
+const combined = Blob.joinData([blob1, blob2]);
+// combined = Uint8Array([1, 2, 3, 4, 5, 6])
+
+// Empty array
+Blob.joinData([]);
+// Uint8Array(0)
+```
+
+### Implementation
+
+```javascript
+export function joinData(blobs) {
+  const chunks = blobs.map(b => toData(b));
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return result;
+}
+```
+
+### Process
+
+1. Decode each blob with `toData`
+2. Calculate total length
+3. Allocate result buffer
+4. Copy chunks sequentially
+
+### Performance
+
+Scales linearly with total data size:
+
+- Small (< 10KB): ~1M ops/sec
+- Medium (~300KB): ~100k ops/sec
+- Large (~780KB): ~50k ops/sec
+
+### Validation
+
+```typescript
+// Ensure all blobs valid before joining
+function safeJoinData(blobs: Uint8Array[]): Uint8Array {
+  for (const blob of blobs) {
+    if (!Blob.isValid(blob)) {
+      throw new Error("Invalid blob in array");
+    }
+  }
+  return Blob.joinData(blobs);
+}
+```
+
+### Use Cases
+
+```typescript
+// Receive blob transaction
+interface BlobTx {
+  blobs: BrandedBlob[];
+  // ... other fields
+}
+
+function extractData(tx: BlobTx): Uint8Array {
+  return Blob.joinData(tx.blobs);
+}
+
+// Roundtrip test
+function testRoundtrip(original: Uint8Array): boolean {
+  const blobs = Blob.splitData(original);
+  const recovered = Blob.joinData(blobs);
+  return arraysEqual(original, recovered);
+}
+
+// Progressive decoding
+function processBlobs(blobs: BrandedBlob[]): void {
+  for (const blob of blobs) {
+    const chunk = Blob.toData(blob);
+    processChunk(chunk);
+  }
+}
+```
+
+### See Also
+
+- [splitData](#splitdata) - Create blobs to join
+- [toData](./conversions.mdx#todata) - Decode single blob
+
+---
+
+## Usage Patterns
+
+### Transaction Planning
+
+```typescript
+// Plan before creating transaction
+function planBlobTransaction(data: Uint8Array) {
+  const blobCount = Blob.estimateBlobCount(data.length);
+
+  if (blobCount > Blob.MAX_PER_TRANSACTION) {
+    throw new Error(`Data requires ${blobCount} blobs (max 6)`);
+  }
+
+  const gas = Blob.calculateGas(blobCount);
+
+  console.log(`Blobs: ${blobCount}`);
+  console.log(`Blob gas: ${gas}`);
+  console.log(`Data size: ${data.length} bytes`);
+
+  return { blobCount, gas };
+}
+```
+
+### Complete Workflow
+
+```typescript
+// Full encode/decode cycle
+function blobWorkflow(data: Uint8Array): Uint8Array {
+  // 1. Estimate and validate
+  const count = Blob.estimateBlobCount(data.length);
+  if (count > Blob.MAX_PER_TRANSACTION) {
+    throw new Error("Data too large");
+  }
+
+  // 2. Calculate cost
+  const gas = Blob.calculateGas(count);
+  console.log(`Cost: ${gas} blob gas`);
+
+  // 3. Split into blobs
+  const blobs = Blob.splitData(data);
+
+  // 4. Reconstruct
+  const recovered = Blob.joinData(blobs);
+
+  return recovered;
+}
+```
+
+### Batch Processing
+
+```typescript
+// Process multiple datasets
+function batchEncode(datasets: Uint8Array[]): BrandedBlob[][] {
+  const results: BrandedBlob[][] = [];
+
+  for (const data of datasets) {
+    const count = Blob.estimateBlobCount(data.length);
+    if (count > Blob.MAX_PER_TRANSACTION) {
+      console.warn(`Skipping oversized dataset: ${data.length} bytes`);
+      continue;
+    }
+
+    const blobs = Blob.splitData(data);
+    results.push(blobs);
+  }
+
+  return results;
+}
+```
+
+### Progressive Streaming
+
+```typescript
+// Stream large data in chunks
+async function streamToBlobTransaction(
+  stream: ReadableStream<Uint8Array>
+): Promise<BrandedBlob[]> {
+  const chunks: Uint8Array[] = [];
+  let totalSize = 0;
+
+  const reader = stream.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    totalSize += value.length;
+    const maxSize = (Blob.SIZE - 8) * Blob.MAX_PER_TRANSACTION;
+    if (totalSize > maxSize) {
+      throw new Error("Stream data too large for transaction");
+    }
+
+    chunks.push(value);
+  }
+
+  // Combine and split
+  const combined = new Uint8Array(totalSize);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return Blob.splitData(combined);
+}
+```

@@ -1,0 +1,338 @@
+# BrandedBlob
+
+Branded type for type-safe blob handling.
+
+## Type Definition
+
+```typescript
+type BrandedBlob = Uint8Array & { readonly __blob: unique symbol };
+```
+
+Uint8Array with phantom type tag for compile-time type safety.
+
+## Purpose
+
+Branded types prevent accidental misuse:
+
+```typescript
+// Without branding (unsafe)
+function process(blob: Uint8Array) { ... }
+process(randomData); // Accepts any Uint8Array
+
+// With branding (type-safe)
+function process(blob: BrandedBlob) { ... }
+process(randomData); // Type error!
+process(Blob.fromData(data)); // OK
+```
+
+## Pattern
+
+Branded types add zero runtime overhead:
+- Compile-time only
+- No actual `__blob` property
+- Pure type system feature
+- Full Uint8Array compatibility
+
+## Creation
+
+Only created through Blob constructors:
+
+```typescript
+// Valid ways to create BrandedBlob
+const blob1 = Blob.from(new Uint8Array(131072));
+const blob2 = Blob.fromData(data);
+const blobs3 = Blob.splitData(largeData);
+
+// Invalid (type error)
+const blob4: BrandedBlob = new Uint8Array(131072); // Error!
+```
+
+## Validation
+
+Use `Blob.isValid()` for runtime checks:
+
+```typescript
+function ensureBrandedBlob(data: Uint8Array): BrandedBlob {
+  if (!Blob.isValid(data)) {
+    throw new Error("Invalid blob");
+  }
+  return data as BrandedBlob;
+}
+```
+
+## Type Safety
+
+Prevents mixing different Uint8Array types:
+
+```typescript
+import type { BrandedBlob } from './Blob.js';
+import type { BrandedAddress } from './Address.js';
+
+function processBlob(blob: BrandedBlob) { ... }
+function processAddress(addr: BrandedAddress) { ... }
+
+const blob = Blob.fromData(data);
+const addr = Address.fromHex('0x...');
+
+processBlob(blob);    // OK
+processBlob(addr);    // Type error!
+processAddress(addr); // OK
+processAddress(blob); // Type error!
+```
+
+## Related Types
+
+### Commitment
+
+```typescript
+type Commitment = Uint8Array & { readonly __commitment: unique symbol };
+```
+
+48-byte KZG commitment.
+
+### Proof
+
+```typescript
+type Proof = Uint8Array & { readonly __proof: unique symbol };
+```
+
+48-byte KZG proof.
+
+### VersionedHash
+
+```typescript
+type VersionedHash = Uint8Array & { readonly __versionedHash: unique symbol };
+```
+
+32-byte versioned hash.
+
+## Size
+
+```typescript
+BrandedBlob.length === 131072  // Always true
+```
+
+Exactly 131,072 bytes (128 KB).
+
+## Uint8Array Compatibility
+
+BrandedBlob is Uint8Array:
+
+```typescript
+const blob = Blob.fromData(data);
+
+// All Uint8Array methods work
+blob.slice(0, 100);
+blob.subarray(8, 1000);
+blob.set(otherData, offset);
+blob.copyWithin(0, 8);
+
+// Array-like access
+blob[0] = 0x01;
+const firstByte = blob[0];
+for (const byte of blob) { ... }
+```
+
+## Conversions
+
+### To Other Types
+
+```typescript
+const blob: BrandedBlob = Blob.fromData(data);
+
+// Extract data
+const data: Uint8Array = Blob.toData(blob);
+
+// Generate commitment (when implemented)
+const commitment: Commitment = Blob.toCommitment(blob);
+
+// Generate proof (when implemented)
+const proof: Proof = Blob.toProof(blob, commitment);
+
+// Create versioned hash
+const hash: VersionedHash = Blob.toVersionedHash(commitment);
+```
+
+### Type Assertions
+
+```typescript
+// Safe after validation
+function toBrandedBlob(data: Uint8Array): BrandedBlob {
+  if (!Blob.isValid(data)) {
+    throw new Error("Invalid blob size");
+  }
+  return data as BrandedBlob;
+}
+
+// Unsafe (use with caution)
+const blob = new Uint8Array(131072) as BrandedBlob;
+```
+
+## Arrays
+
+```typescript
+// Type-safe blob arrays
+const blobs: BrandedBlob[] = Blob.splitData(largeData);
+
+// Process each blob
+for (const blob of blobs) {
+  // blob is BrandedBlob
+  const data = Blob.toData(blob);
+}
+
+// Map/filter/reduce work as expected
+const commitments = blobs.map(b => Blob.toCommitment(b));
+const validBlobs = blobs.filter(b => Blob.isValid(b));
+```
+
+## Function Parameters
+
+```typescript
+// Require BrandedBlob
+function processBlob(blob: BrandedBlob): void {
+  // Caller must provide valid blob
+  const data = Blob.toData(blob);
+}
+
+// Accept any Uint8Array, validate internally
+function processBlobUnsafe(data: Uint8Array): void {
+  if (!Blob.isValid(data)) {
+    throw new Error("Invalid blob");
+  }
+  const blob = data as BrandedBlob;
+  // ... process blob
+}
+
+// Return BrandedBlob
+function createBlob(data: Uint8Array): BrandedBlob {
+  return Blob.fromData(data);
+}
+```
+
+## Generics
+
+```typescript
+// Generic over branded types
+type BrandedType = { readonly [key: symbol]: unknown };
+
+function processBranded<T extends BrandedType>(value: T): T {
+  // ... process
+  return value;
+}
+
+const blob = Blob.fromData(data);
+const processed = processBranded(blob); // T = BrandedBlob
+```
+
+## Best Practices
+
+### Prefer Branded Types
+
+```typescript
+// Good
+function encodeBlobs(blobs: BrandedBlob[]): void { ... }
+
+// Less safe
+function encodeBlobs(blobs: Uint8Array[]): void { ... }
+```
+
+### Validate at Boundaries
+
+```typescript
+// Validate external data
+function fromNetwork(data: Uint8Array): BrandedBlob {
+  if (!Blob.isValid(data)) {
+    throw new Error("Invalid blob from network");
+  }
+  return data as BrandedBlob;
+}
+
+// Internal functions can assume valid
+function processValidBlob(blob: BrandedBlob): void {
+  // No need to validate again
+  const data = Blob.toData(blob);
+}
+```
+
+### Type Guards
+
+```typescript
+function isBrandedBlob(value: unknown): value is BrandedBlob {
+  return value instanceof Uint8Array && Blob.isValid(value);
+}
+
+// Usage
+if (isBrandedBlob(unknownValue)) {
+  // unknownValue is BrandedBlob
+  processBlob(unknownValue);
+}
+```
+
+### Narrowing
+
+```typescript
+function processData(data: Uint8Array | BrandedBlob): void {
+  let blob: BrandedBlob;
+
+  if (Blob.isValid(data)) {
+    blob = data as BrandedBlob;
+  } else {
+    blob = Blob.fromData(data);
+  }
+
+  // blob is BrandedBlob
+  const extracted = Blob.toData(blob);
+}
+```
+
+## Runtime Behavior
+
+Branded types are compile-time only:
+
+```typescript
+const blob = Blob.fromData(data);
+
+// No __blob property exists at runtime
+console.log(blob.__blob); // undefined (type error at compile)
+console.log('__blob' in blob); // false
+
+// It's just a Uint8Array
+console.log(blob instanceof Uint8Array); // true
+console.log(Array.isArray(blob)); // false
+console.log(blob.constructor.name); // "Uint8Array"
+```
+
+## Alternatives
+
+### Without Branding
+
+```typescript
+// Less safe but simpler
+type Blob = Uint8Array;
+
+function createBlob(data: Uint8Array): Blob {
+  return new Uint8Array(131072);
+}
+
+// Can pass any Uint8Array (risky)
+const wrong = new Uint8Array(100);
+processBlob(wrong); // No type error!
+```
+
+### With Nominal Types (Theoretical)
+
+```typescript
+// If TypeScript had nominal types
+class Blob extends Uint8Array {
+  private __nominal: void; // Forces nominal typing
+}
+
+// Would require actual classes (runtime overhead)
+```
+
+## See Also
+
+- [Commitment Type](./commitment.mdx) - 48-byte commitment branding
+- [Proof Type](./proof.mdx) - 48-byte proof branding
+- [VersionedHash Type](./versioned-hash.mdx) - 32-byte hash branding
+- [TypeScript Handbook: Branded Types](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates)

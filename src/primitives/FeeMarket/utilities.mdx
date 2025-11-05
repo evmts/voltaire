@@ -1,0 +1,437 @@
+# FeeMarket Utilities
+
+Validation and conversion utilities.
+
+## Validation
+
+### validateTxFeeParams
+
+```typescript
+validateTxFeeParams(params: TxFeeParams | BlobTxFeeParams): string[]
+```
+
+Validate transaction fee parameters. Returns empty array if valid, array of error messages if invalid.
+
+**Parameters:**
+- `params` - Transaction or blob transaction fee parameters
+
+**Returns:** Array of validation error messages (empty if valid)
+
+**Validates:**
+
+Regular tx (`TxFeeParams`):
+- `maxFeePerGas >= 0`
+- `maxPriorityFeePerGas >= 0`
+- `maxPriorityFeePerGas <= maxFeePerGas`
+- `baseFee >= 0`
+
+Blob tx (`BlobTxFeeParams`), additionally:
+- `maxFeePerBlobGas >= 0`
+- `blobBaseFee >= 0`
+- `1 <= blobCount <= 6`
+
+**Examples:**
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// Valid parameters
+const params1 = {
+  maxFeePerGas: 2_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 800_000_000n
+};
+
+const errors1 = FeeMarket.validateTxFeeParams(params1);
+// errors1 === []
+
+// Invalid: priority fee exceeds max fee
+const params2 = {
+  maxFeePerGas: 1_000_000_000n,
+  maxPriorityFeePerGas: 2_000_000_000n, // Too high
+  baseFee: 800_000_000n
+};
+
+const errors2 = FeeMarket.validateTxFeeParams(params2);
+// errors2 === ["maxPriorityFeePerGas cannot exceed maxFeePerGas"]
+
+// Invalid: negative values
+const params3 = {
+  maxFeePerGas: -1n,                     // Negative
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 800_000_000n
+};
+
+const errors3 = FeeMarket.validateTxFeeParams(params3);
+// errors3 === ["maxFeePerGas must be non-negative"]
+
+// Blob tx: invalid blob count
+const params4 = {
+  maxFeePerGas: 2_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 800_000_000n,
+  maxFeePerBlobGas: 10_000_000n,
+  blobBaseFee: 5_000_000n,
+  blobCount: 10n // Too many (max is 6)
+};
+
+const errors4 = FeeMarket.validateTxFeeParams(params4);
+// errors4 === ["blobCount must be between 1 and 6"]
+
+// Multiple errors
+const params5 = {
+  maxFeePerGas: 1_000_000_000n,
+  maxPriorityFeePerGas: 2_000_000_000n, // Exceeds maxFee
+  baseFee: -1n                          // Negative
+};
+
+const errors5 = FeeMarket.validateTxFeeParams(params5);
+// errors5.length === 2
+// errors5[0] === "maxPriorityFeePerGas cannot exceed maxFeePerGas"
+// errors5[1] === "baseFee must be non-negative"
+```
+
+**Usage Pattern:**
+
+```typescript
+function buildAndValidateTx(params: FeeMarket.TxFeeParams) {
+  const errors = FeeMarket.validateTxFeeParams(params);
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid transaction parameters: ${errors.join(', ')}`);
+  }
+
+  // Safe to proceed
+  const fee = FeeMarket.calculateTxFee(params);
+  return fee;
+}
+```
+
+### validateState
+
+```typescript
+validateState(state: State): string[]
+```
+
+Validate block fee market state. Returns empty array if valid, array of error messages if invalid.
+
+**Parameters:**
+- `state` - Block fee market state
+
+**Returns:** Array of validation error messages (empty if valid)
+
+**Validates:**
+- `gasUsed >= 0`
+- `gasLimit > 0`
+- `gasUsed <= gasLimit`
+- `baseFee >= MIN_BASE_FEE` (7 wei)
+- `excessBlobGas >= 0`
+- `blobGasUsed >= 0`
+- `blobGasUsed <= MAX_BLOB_GAS_PER_BLOCK` (786432)
+
+**Examples:**
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// Valid state
+const state1: FeeMarket.State = {
+  gasUsed: 15_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 0n,
+  blobGasUsed: 393216n
+};
+
+const errors1 = FeeMarket.validateState(state1);
+// errors1 === []
+
+// Invalid: gas used exceeds limit
+const state2: FeeMarket.State = {
+  gasUsed: 40_000_000n,    // Exceeds limit
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 0n,
+  blobGasUsed: 0n
+};
+
+const errors2 = FeeMarket.validateState(state2);
+// errors2 === ["gasUsed cannot exceed gasLimit"]
+
+// Invalid: base fee below minimum
+const state3: FeeMarket.State = {
+  gasUsed: 15_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 5n,              // Below MIN_BASE_FEE (7)
+  excessBlobGas: 0n,
+  blobGasUsed: 0n
+};
+
+const errors3 = FeeMarket.validateState(state3);
+// errors3 === ["baseFee must be at least 7"]
+
+// Invalid: blob gas exceeds maximum
+const state4: FeeMarket.State = {
+  gasUsed: 15_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 0n,
+  blobGasUsed: 1_000_000n   // Exceeds MAX (786432)
+};
+
+const errors4 = FeeMarket.validateState(state4);
+// errors4 === ["blobGasUsed cannot exceed 786432"]
+
+// Multiple errors
+const state5: FeeMarket.State = {
+  gasUsed: -1n,             // Negative
+  gasLimit: 0n,             // Not positive
+  baseFee: 1_000_000_000n,
+  excessBlobGas: -100n,     // Negative
+  blobGasUsed: 0n
+};
+
+const errors5 = FeeMarket.validateState(state5);
+// errors5.length === 3
+// errors5[0] === "gasUsed must be non-negative"
+// errors5[1] === "gasLimit must be positive"
+// errors5[2] === "excessBlobGas must be non-negative"
+```
+
+**Usage Pattern:**
+
+```typescript
+function processBlock(state: FeeMarket.State) {
+  const errors = FeeMarket.validateState(state);
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid block state: ${errors.join(', ')}`);
+  }
+
+  // Safe to proceed
+  const nextState = FeeMarket.nextState(state);
+  return nextState;
+}
+```
+
+## Conversion
+
+### weiToGwei
+
+```typescript
+weiToGwei(wei: bigint): string
+```
+
+Convert wei to gwei for human-readable display.
+
+**Parameters:**
+- `wei` - Amount in wei
+
+**Returns:** String formatted to 9 decimal places
+
+**Examples:**
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// Exact gwei
+const gwei1 = FeeMarket.weiToGwei(1_000_000_000n);
+// gwei1 === "1.000000000"
+
+// Fractional gwei
+const gwei2 = FeeMarket.weiToGwei(1_234_567_890n);
+// gwei2 === "1.234567890"
+
+// Small amount
+const gwei3 = FeeMarket.weiToGwei(123n);
+// gwei3 === "0.000000123"
+
+// Large amount
+const gwei4 = FeeMarket.weiToGwei(50_000_000_000n);
+// gwei4 === "50.000000000"
+
+// Base fee example
+const baseFee = 1_500_000_000n;
+console.log(`Base fee: ${FeeMarket.weiToGwei(baseFee)} gwei`);
+// "Base fee: 1.500000000 gwei"
+```
+
+**Display Usage:**
+
+```typescript
+const state: FeeMarket.State = { /* ... */ };
+
+console.log(`Base fee: ${FeeMarket.weiToGwei(state.baseFee)} gwei`);
+
+const blobFee = FeeMarket.State.getBlobBaseFee.call(state);
+console.log(`Blob fee: ${FeeMarket.weiToGwei(blobFee)} wei/gas`);
+// Note: blob fees are per gas, not per gwei
+```
+
+**Precision:** 9 decimal places (1 gwei = 10^9 wei). All wei values represented.
+
+### gweiToWei
+
+```typescript
+gweiToWei(gwei: number): bigint
+```
+
+Convert gwei to wei.
+
+**Parameters:**
+- `gwei` - Amount in gwei (JavaScript number)
+
+**Returns:** Amount in wei (bigint)
+
+**Examples:**
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// Exact gwei
+const wei1 = FeeMarket.gweiToWei(1);
+// wei1 === 1_000_000_000n
+
+// Fractional gwei
+const wei2 = FeeMarket.gweiToWei(1.5);
+// wei2 === 1_500_000_000n
+
+const wei3 = FeeMarket.gweiToWei(0.123456789);
+// wei3 === 123_456_789n
+
+// Large amount
+const wei4 = FeeMarket.gweiToWei(100);
+// wei4 === 100_000_000_000n
+
+// Set transaction fee
+const maxFeePerGas = FeeMarket.gweiToWei(2); // 2 gwei
+const maxPriorityFeePerGas = FeeMarket.gweiToWei(1); // 1 gwei
+```
+
+**Precision:** Floors fractional wei (rounds down).
+
+```typescript
+const wei = FeeMarket.gweiToWei(1.9999999999);
+// wei === 1_999_999_999n (last digit floored)
+```
+
+**Usage:**
+
+```typescript
+// Build transaction from gwei inputs
+function buildTxFromGwei(
+  maxFeeGwei: number,
+  priorityFeeGwei: number,
+  baseFeeGwei: number
+): FeeMarket.TxFeeParams {
+  return {
+    maxFeePerGas: FeeMarket.gweiToWei(maxFeeGwei),
+    maxPriorityFeePerGas: FeeMarket.gweiToWei(priorityFeeGwei),
+    baseFee: FeeMarket.gweiToWei(baseFeeGwei)
+  };
+}
+
+const params = buildTxFromGwei(2, 1, 0.8);
+// params.maxFeePerGas === 2_000_000_000n
+// params.maxPriorityFeePerGas === 1_000_000_000n
+// params.baseFee === 800_000_000n
+```
+
+## Combined Usage
+
+### Validate and Display
+
+```typescript
+function displayFeeInfo(params: FeeMarket.TxFeeParams) {
+  // Validate
+  const errors = FeeMarket.validateTxFeeParams(params);
+  if (errors.length > 0) {
+    console.error('Invalid parameters:', errors.join(', '));
+    return;
+  }
+
+  // Calculate
+  const fee = FeeMarket.calculateTxFee(params);
+
+  // Display
+  console.log(`Max fee: ${FeeMarket.weiToGwei(params.maxFeePerGas)} gwei`);
+  console.log(`Priority fee: ${FeeMarket.weiToGwei(params.maxPriorityFeePerGas)} gwei`);
+  console.log(`Base fee: ${FeeMarket.weiToGwei(params.baseFee)} gwei`);
+  console.log(`Effective price: ${FeeMarket.weiToGwei(fee.effectiveGasPrice)} gwei`);
+  console.log(`Actual priority: ${FeeMarket.weiToGwei(fee.priorityFee)} gwei`);
+}
+```
+
+### State Validation Pipeline
+
+```typescript
+function processBlockSafely(state: FeeMarket.State) {
+  // Validate current state
+  const currentErrors = FeeMarket.validateState(state);
+  if (currentErrors.length > 0) {
+    throw new Error(`Current state invalid: ${currentErrors.join(', ')}`);
+  }
+
+  // Calculate next state
+  const nextState = FeeMarket.nextState(state);
+
+  // Validate next state
+  const nextErrors = FeeMarket.validateState(nextState);
+  if (nextErrors.length > 0) {
+    throw new Error(`Next state invalid: ${nextErrors.join(', ')}`);
+  }
+
+  // Display transition
+  console.log('Current base fee:', FeeMarket.weiToGwei(state.baseFee), 'gwei');
+  console.log('Next base fee:', FeeMarket.weiToGwei(nextState.baseFee), 'gwei');
+
+  return nextState;
+}
+```
+
+### User Input Validation
+
+```typescript
+function buildTxFromUserInput(
+  maxFeeGwei: number,
+  priorityFeeGwei: number,
+  currentBaseFeeWei: bigint
+): FeeMarket.TxFeeParams {
+  const params: FeeMarket.TxFeeParams = {
+    maxFeePerGas: FeeMarket.gweiToWei(maxFeeGwei),
+    maxPriorityFeePerGas: FeeMarket.gweiToWei(priorityFeeGwei),
+    baseFee: currentBaseFeeWei
+  };
+
+  const errors = FeeMarket.validateTxFeeParams(params);
+  if (errors.length > 0) {
+    throw new Error(`Invalid fee parameters: ${errors.join(', ')}`);
+  }
+
+  // Check if transaction can be included
+  if (!FeeMarket.canIncludeTx(params)) {
+    throw new Error(
+      `Max fee (${maxFeeGwei} gwei) below current base fee ` +
+      `(${FeeMarket.weiToGwei(currentBaseFeeWei)} gwei)`
+    );
+  }
+
+  return params;
+}
+```
+
+## Implementation
+
+Locations:
+- `BrandedFeeMarket/validateTxFeeParams.js`
+- `BrandedFeeMarket/validateState.js`
+- `BrandedFeeMarket/weiToGwei.js`
+- `BrandedFeeMarket/gweiToWei.js`
+
+See [branded-feemarket.mdx](./branded-feemarket.mdx) for implementation details.
+
+## References
+
+- [types.mdx](./types.mdx)
+- [constants.mdx](./constants.mdx)
+- [calculations.mdx](./calculations.mdx)

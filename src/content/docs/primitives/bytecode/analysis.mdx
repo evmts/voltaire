@@ -1,0 +1,355 @@
+---
+title: Bytecode Analysis
+description: Analyzing jump destinations, parsing instructions, and complete bytecode analysis
+---
+
+# Analysis
+
+Methods for analyzing bytecode structure, jump destinations, and instructions.
+
+## Complete Analysis
+
+### `Bytecode.analyze(code)`
+
+Perform complete bytecode analysis returning validation, jump destinations, and instructions.
+
+```typescript
+const code = Bytecode.fromHex("0x60016002015b00")
+const analysis = Bytecode.analyze(code)
+
+console.log(analysis.valid)                    // true
+console.log(analysis.jumpDestinations)         // Set(1) { 4 }
+console.log(analysis.instructions.length)      // 4
+
+// Examine instructions
+analysis.instructions.forEach(inst => {
+  console.log(`0x${inst.position.toString(16)}: 0x${inst.opcode.toString(16)}`)
+  if (inst.pushData) {
+    console.log(`  Data: ${Bytecode.toHex(inst.pushData)}`)
+  }
+})
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to analyze
+
+**Returns:** `Analysis` object with:
+- `valid: boolean` - Whether bytecode is structurally valid
+- `jumpDestinations: ReadonlySet<number>` - Valid JUMPDEST positions
+- `instructions: readonly Instruction[]` - All parsed instructions
+
+Defined in: [primitives/Bytecode/BrandedBytecode/analyze.js:22](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js)
+
+## Jump Destination Analysis
+
+### `Bytecode.analyzeJumpDestinations(code)`
+
+Identify all valid JUMPDEST positions in bytecode. Critical: correctly skips PUSH instruction data.
+
+```typescript
+const code = Bytecode.fromHex("0x605b5b")  // PUSH1 0x5b, JUMPDEST
+const jumpdests = Bytecode.analyzeJumpDestinations(code)
+
+jumpdests.has(0)  // false - PUSH1 opcode
+jumpdests.has(1)  // false - 0x5b is PUSH1 data (not actual JUMPDEST)
+jumpdests.has(2)  // true  - Actual JUMPDEST at position 2
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to analyze
+
+**Returns:** `Set<number>` - Set of valid JUMPDEST positions
+
+Defined in: [primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js:22](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js)
+
+**Why this matters:** EVM JUMP/JUMPI must target valid JUMPDEST opcodes. Bytes inside PUSH data that happen to equal 0x5b (JUMPDEST) are NOT valid jump targets.
+
+### `Bytecode.isValidJumpDest(code, position)`
+
+Check if specific position is valid JUMPDEST.
+
+```typescript
+const code = Bytecode.fromHex("0x5b60005b")  // JUMPDEST, PUSH1 0x00, JUMPDEST
+
+Bytecode.isValidJumpDest(code, 0)  // true  - JUMPDEST at start
+Bytecode.isValidJumpDest(code, 1)  // false - PUSH1 opcode
+Bytecode.isValidJumpDest(code, 2)  // false - PUSH1 data
+Bytecode.isValidJumpDest(code, 3)  // true  - JUMPDEST at end
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to check
+- `position: number` - Position to check
+
+**Returns:** `boolean` - `true` if position is valid JUMPDEST
+
+Defined in: [primitives/Bytecode/BrandedBytecode/isValidJumpDest.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/isValidJumpDest.js)
+
+## Instruction Parsing
+
+### `Bytecode.parseInstructions(code)`
+
+Parse bytecode into array of instructions with positions and PUSH data.
+
+```typescript
+const code = Bytecode.fromHex("0x600160020155b")
+const instructions = Bytecode.parseInstructions(code)
+
+// [
+//   { opcode: 0x60, position: 0, pushData: Uint8Array([0x01]) },
+//   { opcode: 0x60, position: 2, pushData: Uint8Array([0x02]) },
+//   { opcode: 0x01, position: 4 },
+//   { opcode: 0x5b, position: 5 }
+// ]
+
+instructions.forEach(inst => {
+  console.log(`Position ${inst.position}: opcode 0x${inst.opcode.toString(16)}`)
+  if (inst.pushData) {
+    console.log(`  Push data: ${Bytecode.toHex(inst.pushData)}`)
+  }
+})
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to parse
+
+**Returns:** `Instruction[]` - Array of parsed instructions
+
+**Instruction type:**
+```typescript
+type Instruction = {
+  opcode: Opcode           // Opcode byte (0x00-0xFF)
+  position: number         // Position in bytecode
+  pushData?: Uint8Array    // Data for PUSH instructions
+}
+```
+
+Defined in: [primitives/Bytecode/BrandedBytecode/parseInstructions.js:21](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/parseInstructions.js)
+
+## Opcode Utilities
+
+### `Bytecode.isPush(opcode)`
+
+Check if opcode is PUSH instruction (PUSH1-PUSH32).
+
+```typescript
+Bytecode.isPush(0x60)  // true  - PUSH1
+Bytecode.isPush(0x7f)  // true  - PUSH32
+Bytecode.isPush(0x5b)  // false - JUMPDEST
+Bytecode.isPush(0x00)  // false - STOP
+```
+
+**Parameters:**
+- `opcode: Opcode` - Opcode byte to check
+
+**Returns:** `boolean` - `true` if PUSH1-PUSH32
+
+Defined in: [primitives/Bytecode/BrandedBytecode/isPush.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/isPush.js)
+
+### `Bytecode.getPushSize(opcode)`
+
+Get number of data bytes for PUSH instruction.
+
+```typescript
+Bytecode.getPushSize(0x60)  // 1  - PUSH1
+Bytecode.getPushSize(0x61)  // 2  - PUSH2
+Bytecode.getPushSize(0x7f)  // 32 - PUSH32
+Bytecode.getPushSize(0x00)  // 0  - Not a PUSH
+```
+
+**Parameters:**
+- `opcode: Opcode` - Opcode byte
+
+**Returns:** `number` - Data bytes (1-32 for PUSH, 0 otherwise)
+
+Defined in: [primitives/Bytecode/BrandedBytecode/getPushSize.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/getPushSize.js)
+
+### `Bytecode.isTerminator(opcode)`
+
+Check if opcode terminates execution.
+
+```typescript
+Bytecode.isTerminator(0x00)  // true - STOP
+Bytecode.isTerminator(0xf3)  // true - RETURN
+Bytecode.isTerminator(0xfd)  // true - REVERT
+Bytecode.isTerminator(0xfe)  // true - INVALID
+Bytecode.isTerminator(0x5b)  // false - JUMPDEST
+```
+
+**Parameters:**
+- `opcode: Opcode` - Opcode byte to check
+
+**Returns:** `boolean` - `true` if STOP, RETURN, REVERT, or INVALID
+
+Defined in: [primitives/Bytecode/BrandedBytecode/isTerminator.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/isTerminator.js)
+
+## Common Analysis Patterns
+
+### Find all PUSH instructions
+
+```typescript
+function findPushInstructions(code: BrandedBytecode): Instruction[] {
+  const instructions = Bytecode.parseInstructions(code)
+  return instructions.filter(inst => Bytecode.isPush(inst.opcode))
+}
+
+// Usage
+const code = Bytecode.fromHex("0x600160025b60035b")
+const pushes = findPushInstructions(code)
+console.log(`Found ${pushes.length} PUSH instructions`)
+```
+
+### Validate jump targets
+
+```typescript
+function validateJumpTargets(code: BrandedBytecode): boolean {
+  const analysis = Bytecode.analyze(code)
+  const instructions = analysis.instructions
+
+  // Find all JUMP/JUMPI instructions
+  for (const inst of instructions) {
+    if (inst.opcode === 0x56 || inst.opcode === 0x57) {  // JUMP/JUMPI
+      // In real validation, would need to track stack to get target
+      // This is simplified example
+    }
+  }
+
+  return true
+}
+```
+
+### Analyze contract structure
+
+```typescript
+function analyzeContract(code: BrandedBytecode) {
+  const analysis = Bytecode.analyze(code)
+
+  return {
+    valid: analysis.valid,
+    size: Bytecode.size(code),
+    instructionCount: analysis.instructions.length,
+    jumpDestCount: analysis.jumpDestinations.size,
+    hasMetadata: Bytecode.hasMetadata(code),
+
+    // Count instruction types
+    pushCount: analysis.instructions.filter(i =>
+      Bytecode.isPush(i.opcode)
+    ).length,
+
+    terminators: analysis.instructions.filter(i =>
+      Bytecode.isTerminator(i.opcode)
+    ).length,
+  }
+}
+
+// Usage
+const code = Bytecode.fromHex("0x608060405234801561001057600080fd5b50")
+const info = analyzeContract(code)
+console.log(info)
+```
+
+### Extract PUSH values
+
+```typescript
+function extractPushValues(code: BrandedBytecode): bigint[] {
+  const instructions = Bytecode.parseInstructions(code)
+  const values: bigint[] = []
+
+  for (const inst of instructions) {
+    if (inst.pushData) {
+      // Convert pushData to bigint
+      let value = 0n
+      for (const byte of inst.pushData) {
+        value = (value << 8n) | BigInt(byte)
+      }
+      values.push(value)
+    }
+  }
+
+  return values
+}
+
+// Usage
+const code = Bytecode.fromHex("0x60ff61123463abcdef")
+const values = extractPushValues(code)  // [255n, 4660n, 11259375n]
+```
+
+### Find reachable code
+
+```typescript
+function findTerminators(code: BrandedBytecode): number[] {
+  const instructions = Bytecode.parseInstructions(code)
+  const terminatorPositions: number[] = []
+
+  for (const inst of instructions) {
+    if (Bytecode.isTerminator(inst.opcode)) {
+      terminatorPositions.push(inst.position)
+    }
+  }
+
+  return terminatorPositions
+}
+
+// Check for dead code after terminators
+function hasDeadCode(code: BrandedBytecode): boolean {
+  const instructions = Bytecode.parseInstructions(code)
+
+  for (let i = 0; i < instructions.length - 1; i++) {
+    const inst = instructions[i]
+    if (Bytecode.isTerminator(inst.opcode)) {
+      // Code after terminator might be dead (unless targeted by JUMP)
+      return true
+    }
+  }
+
+  return false
+}
+```
+
+## Tree-Shakeable Usage
+
+```typescript
+import {
+  analyze,
+  analyzeJumpDestinations,
+  isValidJumpDest,
+  parseInstructions,
+  isPush,
+  getPushSize,
+  isTerminator,
+} from '@tevm/voltaire/BrandedBytecode'
+
+const code = fromHex("0x60016002015b")
+const analysis = analyze(code)
+const jumpdests = analyzeJumpDestinations(code)
+const instructions = parseInstructions(code)
+```
+
+See [BrandedBytecode](/primitives/bytecode/branded-bytecode) for details on tree-shakeable API.
+
+## Performance
+
+All analysis operations are O(n) with single pass:
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| `analyze` | O(n) | Combines validation + parsing + jumpdest analysis |
+| `analyzeJumpDestinations` | O(n) | Single pass, skips PUSH data |
+| `isValidJumpDest` | O(n) | Calls analyzeJumpDestinations internally |
+| `parseInstructions` | O(n) | Single pass with allocations |
+| `isPush` | O(1) | Simple comparison |
+| `getPushSize` | O(1) | Arithmetic |
+| `isTerminator` | O(1) | Set lookup |
+
+For repeated analysis of same bytecode, cache results:
+
+```typescript
+const analysisCache = new WeakMap<BrandedBytecode, Analysis>()
+
+function getCachedAnalysis(code: BrandedBytecode): Analysis {
+  if (!analysisCache.has(code)) {
+    analysisCache.set(code, Bytecode.analyze(code))
+  }
+  return analysisCache.get(code)!
+}
+```

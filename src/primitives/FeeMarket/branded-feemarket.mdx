@@ -1,0 +1,475 @@
+# BrandedFeeMarket
+
+Tree-shakable namespace functions for fee market calculations.
+
+## Overview
+
+`BrandedFeeMarket/` directory contains implementation functions organized as standalone modules. Each function operates on data passed as arguments (no instance methods).
+
+All functions exported through `FeeMarket.js` namespace.
+
+## Pattern
+
+```typescript
+// Import individual function
+import { calculateBaseFee } from './BrandedFeeMarket/calculateBaseFee.js';
+
+// Or use via namespace
+import * as FeeMarket from './FeeMarket.js';
+FeeMarket.calculateBaseFee(/* ... */);
+```
+
+Tree-shakable: bundlers only include functions you use.
+
+## Functions
+
+### EIP-1559 Base Fee
+
+**calculateBaseFee.js**
+```typescript
+calculateBaseFee(
+  parentGasUsed: bigint,
+  parentGasLimit: bigint,
+  parentBaseFee: bigint
+): bigint
+```
+
+Calculate next block's base fee using EIP-1559 formula.
+
+**Implementation:** Standard form per EIP-1559 spec.
+
+**Formula:**
+```javascript
+const gasTarget = gasLimit / ELASTICITY_MULTIPLIER;
+
+if (gasUsed === 0n) return baseFee;
+if (gasUsed === gasTarget) return baseFee;
+
+if (gasUsed > gasTarget) {
+  const delta = (baseFee * (gasUsed - gasTarget)) / gasTarget / 8n;
+  return baseFee + max(delta, 1n);
+} else {
+  const delta = (baseFee * (gasTarget - gasUsed)) / gasTarget / 8n;
+  return max(baseFee - max(delta, 1n), MIN_BASE_FEE);
+}
+```
+
+See [eip1559.mdx#calculatebasefee](./eip1559.mdx#calculatebasefee)
+
+### EIP-4844 Blob Fees
+
+**calculateBlobBaseFee.js**
+```typescript
+calculateBlobBaseFee(excessBlobGas: bigint): bigint
+```
+
+Calculate blob base fee using exponential formula.
+
+**Implementation:** Uses `fakeExponential` helper for Taylor series approximation.
+
+See [eip4844.mdx#calculateblobbasefee](./eip4844.mdx#calculateblobbasefee)
+
+**fakeExponential.js**
+```typescript
+fakeExponential(
+  factor: bigint,
+  numerator: bigint,
+  denominator: bigint
+): bigint
+```
+
+Internal exponential approximation via Taylor series.
+
+**Formula:** `factor * e^(numerator / denominator)`
+
+**Implementation:**
+```javascript
+let output = 0n;
+let numeratorAccum = factor * denominator;
+let i = 1n;
+
+while (numeratorAccum > 0n && i <= 256n) {
+  output += numeratorAccum;
+  numeratorAccum = (numeratorAccum * numerator) / (denominator * i);
+  i += 1n;
+}
+
+return output / denominator;
+```
+
+**calculateExcessBlobGas.js**
+```typescript
+calculateExcessBlobGas(
+  parentExcessBlobGas: bigint,
+  parentBlobGasUsed: bigint
+): bigint
+```
+
+Calculate excess blob gas for next block.
+
+**Implementation:**
+```javascript
+const excess = parentExcessBlobGas + parentBlobGasUsed - TARGET_BLOB_GAS;
+return excess > 0n ? excess : 0n;
+```
+
+See [eip4844.mdx#calculateexcessblobgas](./eip4844.mdx#calculateexcessblobgas)
+
+### Transaction Fees
+
+**calculateTxFee.js**
+```typescript
+calculateTxFee(params: TxFeeParams): TxFee
+```
+
+Calculate EIP-1559 transaction fee breakdown.
+
+**Implementation:**
+```javascript
+const effectiveGasPrice =
+  baseFee + maxPriorityFeePerGas < maxFeePerGas
+    ? baseFee + maxPriorityFeePerGas
+    : maxFeePerGas;
+
+const priorityFee =
+  effectiveGasPrice > baseFee
+    ? effectiveGasPrice - baseFee
+    : 0n;
+
+return { effectiveGasPrice, priorityFee, baseFee };
+```
+
+See [calculations.mdx#calculatetxfee](./calculations.mdx#calculatetxfee)
+
+**calculateBlobTxFee.js**
+```typescript
+calculateBlobTxFee(params: BlobTxFeeParams): BlobTxFee
+```
+
+Calculate blob transaction fee (combines regular + blob fees).
+
+**Implementation:**
+```javascript
+const txFee = calculateTxFee(params);
+
+const blobGasPrice =
+  blobBaseFee < maxFeePerBlobGas ? blobBaseFee : maxFeePerBlobGas;
+
+const totalBlobFee = blobGasPrice * BLOB_GAS_PER_BLOB * blobCount;
+
+return { ...txFee, blobGasPrice, totalBlobFee };
+```
+
+See [calculations.mdx#calculateblobtxfee](./calculations.mdx#calculateblobtxfee)
+
+**canIncludeTx.js**
+```typescript
+canIncludeTx(params: TxFeeParams | BlobTxFeeParams): boolean
+```
+
+Check if transaction meets minimum fees.
+
+**Implementation:**
+```javascript
+if (params.maxFeePerGas < params.baseFee) return false;
+
+if ('maxFeePerBlobGas' in params) {
+  if (params.maxFeePerBlobGas < params.blobBaseFee) return false;
+}
+
+return true;
+```
+
+See [calculations.mdx#canincludetx](./calculations.mdx#canincludetx)
+
+### State Operations
+
+**nextState.js**
+```typescript
+nextState(state: State): State
+```
+
+Calculate next block's complete state.
+
+**Implementation:**
+```javascript
+const nextBaseFee = calculateBaseFee(
+  state.gasUsed,
+  state.gasLimit,
+  state.baseFee
+);
+
+const nextExcessBlobGas = calculateExcessBlobGas(
+  state.excessBlobGas,
+  state.blobGasUsed
+);
+
+return {
+  gasUsed: 0n,
+  gasLimit: state.gasLimit,
+  baseFee: nextBaseFee,
+  excessBlobGas: nextExcessBlobGas,
+  blobGasUsed: 0n
+};
+```
+
+See [calculations.mdx#nextstate](./calculations.mdx#nextstate)
+
+**projectBaseFees.js**
+```typescript
+projectBaseFees(
+  initialState: State,
+  blocks: number,
+  avgGasUsed: bigint,
+  avgBlobGasUsed?: bigint
+): bigint[]
+```
+
+Project future base fees over multiple blocks.
+
+**Implementation:** Iteratively calls `nextState` with constant usage.
+
+See [calculations.mdx#projectbasefees](./calculations.mdx#projectbasefees)
+
+### Query Functions
+
+**getBlobBaseFee.js**
+```typescript
+getBlobBaseFee(state: State): bigint
+```
+
+Get current blob base fee from state.
+
+**Implementation:**
+```javascript
+return calculateBlobBaseFee(state.excessBlobGas);
+```
+
+**getGasTarget.js**
+```typescript
+getGasTarget(state: State): bigint
+```
+
+Get gas target (50% of limit).
+
+**Implementation:**
+```javascript
+return state.gasLimit / ELASTICITY_MULTIPLIER;
+```
+
+**isAboveGasTarget.js**
+```typescript
+isAboveGasTarget(state: State): boolean
+```
+
+Check if gas usage exceeds target.
+
+**Implementation:**
+```javascript
+const target = state.gasLimit / ELASTICITY_MULTIPLIER;
+return state.gasUsed > target;
+```
+
+**isAboveBlobGasTarget.js**
+```typescript
+isAboveBlobGasTarget(state: State): boolean
+```
+
+Check if blob gas usage exceeds target.
+
+**Implementation:**
+```javascript
+return state.blobGasUsed > TARGET_BLOB_GAS_PER_BLOCK;
+```
+
+### Validation
+
+**validateState.js**
+```typescript
+validateState(state: State): string[]
+```
+
+Validate block state parameters.
+
+**Checks:**
+- `gasUsed >= 0`
+- `gasLimit > 0`
+- `gasUsed <= gasLimit`
+- `baseFee >= MIN_BASE_FEE`
+- `excessBlobGas >= 0`
+- `blobGasUsed >= 0`
+- `blobGasUsed <= MAX_BLOB_GAS_PER_BLOCK`
+
+See [utilities.mdx#validatestate](./utilities.mdx#validatestate)
+
+**validateTxFeeParams.js**
+```typescript
+validateTxFeeParams(params: TxFeeParams | BlobTxFeeParams): string[]
+```
+
+Validate transaction fee parameters.
+
+**Checks:**
+- All values non-negative
+- `maxPriorityFeePerGas <= maxFeePerGas`
+- `1 <= blobCount <= 6` (if blob tx)
+
+See [utilities.mdx#validatetxfeeparams](./utilities.mdx#validatetxfeeparams)
+
+### Conversions
+
+**weiToGwei.js**
+```typescript
+weiToGwei(wei: bigint): string
+```
+
+Convert wei to gwei (9 decimal places).
+
+**Implementation:**
+```javascript
+const gwei = Number(wei) / 1_000_000_000;
+return gwei.toFixed(9);
+```
+
+**gweiToWei.js**
+```typescript
+gweiToWei(gwei: number): bigint
+```
+
+Convert gwei to wei (floors fractional).
+
+**Implementation:**
+```javascript
+return BigInt(Math.floor(gwei * 1_000_000_000));
+```
+
+See [utilities.mdx](./utilities.mdx)
+
+## File Organization
+
+```
+BrandedFeeMarket/
+├── calculateBaseFee.js          # EIP-1559 base fee
+├── calculateBlobBaseFee.js      # EIP-4844 blob fee
+├── calculateExcessBlobGas.js    # Blob excess calculation
+├── fakeExponential.js           # Exponential helper
+├── calculateTxFee.js            # Transaction fee
+├── calculateBlobTxFee.js        # Blob transaction fee
+├── canIncludeTx.js              # Inclusion check
+├── nextState.js                 # State transition
+├── projectBaseFees.js           # Fee projection
+├── getBlobBaseFee.js            # Query blob fee
+├── getGasTarget.js              # Query gas target
+├── isAboveGasTarget.js          # Check gas utilization
+├── isAboveBlobGasTarget.js      # Check blob utilization
+├── validateState.js             # State validation
+├── validateTxFeeParams.js       # Param validation
+├── weiToGwei.js                 # Wei to gwei conversion
+├── gweiToWei.js                 # Gwei to wei conversion
+├── index.ts                     # Type exports
+└── FeeMarket.test.ts            # Comprehensive tests
+```
+
+## Testing
+
+**FeeMarket.test.ts** - Comprehensive test suite covering:
+- EIP-1559 base fee calculations (all scenarios)
+- EIP-4844 blob fee calculations
+- Transaction fee calculations
+- State transitions
+- Validation functions
+- Edge cases and boundaries
+
+Run tests:
+```bash
+bun test src/primitives/FeeMarket/BrandedFeeMarket/FeeMarket.test.ts
+```
+
+## Usage
+
+### Tree-Shaking
+
+Bundlers include only what you use:
+
+```typescript
+// Only calculateBaseFee and weiToGwei included in bundle
+import { calculateBaseFee, weiToGwei } from './FeeMarket.js';
+
+const nextFee = calculateBaseFee(30_000_000n, 30_000_000n, 1_000_000_000n);
+console.log(weiToGwei(nextFee));
+```
+
+### Direct Imports
+
+Import specific functions for minimal bundle size:
+
+```typescript
+import { calculateBaseFee } from './BrandedFeeMarket/calculateBaseFee.js';
+import { weiToGwei } from './BrandedFeeMarket/weiToGwei.js';
+
+// Only these 2 functions in bundle
+```
+
+### Namespace Import
+
+Import all via namespace (convenient but larger bundle):
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// All functions available, but bundler still tree-shakes unused
+FeeMarket.calculateBaseFee(/* ... */);
+FeeMarket.weiToGwei(/* ... */);
+```
+
+## Implementation Notes
+
+### Bigint Arithmetic
+
+All calculations use bigint for precision:
+
+```javascript
+// Integer division truncates (floors)
+const target = gasLimit / 2n;
+
+// Avoid overflow in multiplications
+const delta = (baseFee * gasUsed) / gasLimit;
+// Correct order: multiply first, divide last
+```
+
+### Constant-Time Operations
+
+Fee calculations are not constant-time (no security requirement):
+
+```javascript
+// Branch on gas usage is fine
+if (gasUsed > gasTarget) {
+  // increase logic
+} else {
+  // decrease logic
+}
+```
+
+### Pure Functions
+
+All functions pure (no side effects):
+
+```javascript
+// Input immutable
+export function nextState(state) {
+  // Returns new object, doesn't modify state
+  return { ...newValues };
+}
+```
+
+### No WASM
+
+Pure TypeScript optimal for these lightweight calculations. See [wasm.mdx](./wasm.mdx).
+
+## References
+
+- [eip1559.mdx](./eip1559.mdx)
+- [eip4844.mdx](./eip4844.mdx)
+- [calculations.mdx](./calculations.mdx)
+- [utilities.mdx](./utilities.mdx)
+- [types.mdx](./types.mdx)

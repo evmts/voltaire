@@ -1,0 +1,494 @@
+---
+title: Transaction Usage Patterns
+description: Common patterns for building and working with transactions
+---
+
+# Transaction Usage Patterns
+
+Common patterns and best practices for working with Ethereum transactions.
+
+## Building Transactions
+
+### Simple ETH Transfer
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+async function createTransfer(
+  from: BrandedAddress,
+  to: BrandedAddress,
+  value: bigint,
+  nonce: bigint
+): Promise<Transaction.EIP1559> {
+  // Get current base fee
+  const block = await provider.getBlock('latest')
+  const baseFee = block.baseFeePerGas
+
+  return {
+    type: Transaction.Type.EIP1559,
+    chainId: 1n,
+    nonce,
+    maxPriorityFeePerGas: 1000000000n,  // 1 gwei tip
+    maxFeePerGas: baseFee * 2n + 1000000000n,
+    gasLimit: 21000n,
+    to,
+    value,
+    data: new Uint8Array(),
+    accessList: [],
+    yParity: 0,
+    r: new Uint8Array(32),
+    s: new Uint8Array(32),
+  }
+}
+```
+
+### Contract Deployment
+
+```typescript
+async function createDeployment(
+  deployer: BrandedAddress,
+  bytecode: Uint8Array,
+  nonce: bigint
+): Promise<Transaction.EIP1559> {
+  const block = await provider.getBlock('latest')
+  const baseFee = block.baseFeePerGas
+
+  // Estimate gas
+  const estimatedGas = await provider.estimateGas({
+    from: deployer,
+    data: bytecode,
+  })
+
+  return {
+    type: Transaction.Type.EIP1559,
+    chainId: 1n,
+    nonce,
+    maxPriorityFeePerGas: 2000000000n,
+    maxFeePerGas: baseFee * 2n + 2000000000n,
+    gasLimit: estimatedGas * 120n / 100n,  // +20% buffer
+    to: null,  // Contract creation
+    value: 0n,
+    data: bytecode,
+    accessList: [],
+    yParity: 0,
+    r: new Uint8Array(32),
+    s: new Uint8Array(32),
+  }
+}
+```
+
+### Contract Call with Access List
+
+```typescript
+async function createContractCall(
+  from: BrandedAddress,
+  to: BrandedAddress,
+  data: Uint8Array,
+  nonce: bigint
+): Promise<Transaction.EIP1559> {
+  // Generate access list
+  const accessListResult = await provider.send('eth_createAccessList', [{
+    from,
+    to,
+    data,
+  }])
+
+  const block = await provider.getBlock('latest')
+  const baseFee = block.baseFeePerGas
+
+  return {
+    type: Transaction.Type.EIP1559,
+    chainId: 1n,
+    nonce,
+    maxPriorityFeePerGas: 2000000000n,
+    maxFeePerGas: baseFee * 2n + 2000000000n,
+    gasLimit: BigInt(accessListResult.gasUsed) * 120n / 100n,
+    to,
+    value: 0n,
+    data,
+    accessList: accessListResult.accessList,
+    yParity: 0,
+    r: new Uint8Array(32),
+    s: new Uint8Array(32),
+  }
+}
+```
+
+## Signing Transactions
+
+### With Private Key
+
+```typescript
+import { getSigningHash } from '@tevm/voltaire/Transaction'
+import { secp256k1 } from '@noble/curves/secp256k1'
+
+function signTransaction(
+  tx: Transaction.Any,
+  privateKey: Uint8Array
+): Transaction.Any {
+  // Get hash to sign
+  const signingHash = getSigningHash(tx)
+
+  // Sign with secp256k1
+  const signature = secp256k1.sign(signingHash, privateKey)
+
+  // Add signature to transaction
+  if (Transaction.isLegacy(tx)) {
+    const chainId = Transaction.getChainId(tx) || 0n
+    const v = chainId > 0n
+      ? chainId * 2n + 35n + BigInt(signature.recovery)
+      : 27n + BigInt(signature.recovery)
+
+    return {
+      ...tx,
+      v,
+      r: signature.r.toBytes('be', 32),
+      s: signature.s.toBytes('be', 32),
+    }
+  } else {
+    return {
+      ...tx,
+      yParity: signature.recovery,
+      r: signature.r.toBytes('be', 32),
+      s: signature.s.toBytes('be', 32),
+    }
+  }
+}
+```
+
+### With Hardware Wallet
+
+```typescript
+async function signWithHardwareWallet(
+  tx: Transaction.Any,
+  wallet: HardwareWallet
+): Promise<Transaction.Any> {
+  // Serialize unsigned transaction
+  const signingHash = getSigningHash(tx)
+
+  // Send to hardware wallet
+  const signature = await wallet.signHash(signingHash)
+
+  // Add signature
+  if (Transaction.isLegacy(tx)) {
+    return {
+      ...tx,
+      v: signature.v,
+      r: signature.r,
+      s: signature.s,
+    }
+  } else {
+    return {
+      ...tx,
+      yParity: signature.yParity,
+      r: signature.r,
+      s: signature.s,
+    }
+  }
+}
+```
+
+## Transaction Submission
+
+### Submit and Wait
+
+```typescript
+import { serialize, hash } from '@tevm/voltaire/Transaction'
+
+async function submitTransaction(
+  tx: Transaction.Any
+): Promise<TransactionReceipt> {
+  // Serialize
+  const serialized = serialize(tx)
+  const txHash = hash(tx)
+
+  // Submit to network
+  await provider.send('eth_sendRawTransaction', [
+    Hex.fromBytes(serialized)
+  ])
+
+  // Wait for confirmation
+  let receipt = null
+  while (!receipt) {
+    receipt = await provider.getTransactionReceipt(Hex.fromBytes(txHash))
+    if (!receipt) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+  }
+
+  return receipt
+}
+```
+
+### Submit with Retry
+
+```typescript
+async function submitWithRetry(
+  tx: Transaction.Any,
+  maxRetries = 3
+): Promise<string> {
+  const serialized = serialize(tx)
+  const txHash = Hex.fromBytes(hash(tx))
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await provider.send('eth_sendRawTransaction', [
+        Hex.fromBytes(serialized)
+      ])
+      return txHash
+    } catch (error) {
+      if (i === maxRetries - 1) throw error
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
+    }
+  }
+
+  throw new Error('Failed to submit transaction')
+}
+```
+
+### Replace by Fee (RBF)
+
+```typescript
+async function replaceTransaction(
+  original: Transaction.EIP1559,
+  newPriorityFee: bigint
+): Promise<Transaction.EIP1559> {
+  // Keep same nonce to replace
+  // Increase fee by at least 10%
+  const minFeeIncrease = original.maxPriorityFeePerGas * 110n / 100n
+
+  const replacement: Transaction.EIP1559 = {
+    ...original,
+    maxPriorityFeePerGas: newPriorityFee > minFeeIncrease
+      ? newPriorityFee
+      : minFeeIncrease,
+    maxFeePerGas: original.maxFeePerGas * 110n / 100n,
+  }
+
+  return replacement
+}
+```
+
+## Validation
+
+### Complete Transaction Validation
+
+```typescript
+import {
+  isSigned,
+  verifySignature,
+  getSender,
+  getChainId,
+  getGasPrice
+} from '@tevm/voltaire/Transaction'
+
+interface ValidationResult {
+  valid: boolean
+  errors: string[]
+}
+
+async function validateTransaction(
+  tx: Transaction.Any,
+  expectedChainId: bigint,
+  baseFee?: bigint
+): Promise<ValidationResult> {
+  const errors: string[] = []
+
+  // Check signature
+  if (!isSigned(tx)) {
+    errors.push('Transaction not signed')
+    return { valid: false, errors }
+  }
+
+  if (!verifySignature(tx)) {
+    errors.push('Invalid signature')
+  }
+
+  // Check chain ID
+  const txChainId = getChainId(tx)
+  if (txChainId && txChainId !== expectedChainId) {
+    errors.push(`Wrong chain: expected ${expectedChainId}, got ${txChainId}`)
+  }
+
+  // Check gas price
+  try {
+    const gasPrice = getGasPrice(tx, baseFee)
+    if (gasPrice === 0n) {
+      errors.push('Zero gas price')
+    }
+  } catch (e) {
+    errors.push('Cannot calculate gas price: ' + e.message)
+  }
+
+  // Check gas limit
+  if (tx.gasLimit < 21000n) {
+    errors.push('Gas limit too low (minimum 21000)')
+  }
+
+  // Check nonce
+  const sender = getSender(tx)
+  const currentNonce = await provider.getTransactionCount(sender)
+  if (tx.nonce < currentNonce) {
+    errors.push(`Nonce too low: ${tx.nonce} < ${currentNonce}`)
+  }
+
+  // Check balance
+  const balance = await provider.getBalance(sender)
+  const maxCost = tx.gasLimit * getGasPrice(tx, baseFee) + tx.value
+  if (balance < maxCost) {
+    errors.push('Insufficient balance')
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  }
+}
+```
+
+## Transaction Pool
+
+### Simple Pool Implementation
+
+```typescript
+import { hash, getSender, getGasPrice } from '@tevm/voltaire/Transaction'
+
+class TransactionPool {
+  private pending = new Map<string, Transaction.Any>()
+  private byNonce = new Map<string, Map<bigint, Transaction.Any>>()
+
+  add(tx: Transaction.Any, baseFee: bigint): void {
+    const txHash = Hex.fromBytes(hash(tx))
+    const sender = Address.toHex(getSender(tx))
+
+    // Store by hash
+    this.pending.set(txHash, tx)
+
+    // Store by sender + nonce
+    if (!this.byNonce.has(sender)) {
+      this.byNonce.set(sender, new Map())
+    }
+    this.byNonce.get(sender)!.set(tx.nonce, tx)
+  }
+
+  remove(txHash: string): void {
+    const tx = this.pending.get(txHash)
+    if (!tx) return
+
+    this.pending.delete(txHash)
+
+    const sender = Address.toHex(getSender(tx))
+    this.byNonce.get(sender)?.delete(tx.nonce)
+  }
+
+  getByNonce(sender: BrandedAddress, nonce: bigint): Transaction.Any | undefined {
+    return this.byNonce.get(Address.toHex(sender))?.get(nonce)
+  }
+
+  getAll(): Transaction.Any[] {
+    return Array.from(this.pending.values())
+  }
+
+  getPending(sender: BrandedAddress): Transaction.Any[] {
+    const senderNonces = this.byNonce.get(Address.toHex(sender))
+    if (!senderNonces) return []
+
+    return Array.from(senderNonces.values())
+      .sort((a, b) => Number(a.nonce - b.nonce))
+  }
+}
+```
+
+## Gas Estimation
+
+### Dynamic Fee Estimation
+
+```typescript
+async function estimateFees(): Promise<{
+  slow: bigint
+  standard: bigint
+  fast: bigint
+}> {
+  const block = await provider.getBlock('latest')
+  const baseFee = block.baseFeePerGas
+
+  return {
+    slow: baseFee + 1000000000n,      // +1 gwei
+    standard: baseFee + 2000000000n,  // +2 gwei
+    fast: baseFee + 5000000000n,      // +5 gwei
+  }
+}
+```
+
+### Fee History Analysis
+
+```typescript
+async function estimateFromHistory(): Promise<bigint> {
+  const feeHistory = await provider.send('eth_feeHistory', [
+    '0x14',  // 20 blocks
+    'latest',
+    [25, 50, 75]  // 25th, 50th, 75th percentile
+  ])
+
+  // Use median of 50th percentile
+  const rewards = feeHistory.reward.map(r => BigInt(r[1]))
+  rewards.sort((a, b) => Number(a - b))
+
+  return rewards[Math.floor(rewards.length / 2)]
+}
+```
+
+## Error Handling
+
+### Comprehensive Error Handling
+
+```typescript
+async function safeSubmitTransaction(
+  tx: Transaction.Any
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    // Validate
+    assertSigned(tx)
+
+    // Serialize
+    const serialized = serialize(tx)
+    const txHash = Hex.fromBytes(hash(tx))
+
+    // Submit
+    await provider.send('eth_sendRawTransaction', [
+      Hex.fromBytes(serialized)
+    ])
+
+    return { success: true, txHash }
+
+  } catch (error) {
+    if (error.message.includes('nonce too low')) {
+      return { success: false, error: 'Nonce already used' }
+    }
+    if (error.message.includes('insufficient funds')) {
+      return { success: false, error: 'Insufficient balance' }
+    }
+    if (error.message.includes('gas price too low')) {
+      return { success: false, error: 'Gas price too low' }
+    }
+    if (error.message.includes('already known')) {
+      return { success: false, error: 'Transaction already in pool' }
+    }
+
+    return { success: false, error: error.message }
+  }
+}
+```
+
+## Best Practices
+
+1. **Always validate before signing**
+2. **Use appropriate transaction type** (EIP-1559 for modern networks)
+3. **Include access lists when beneficial**
+4. **Set reasonable gas limits** (estimate + 10-20% buffer)
+5. **Cache expensive operations** (getSender, hash)
+6. **Handle errors gracefully**
+7. **Verify signatures** before accepting transactions
+8. **Check chain ID** for replay protection
+9. **Monitor gas prices** and adjust dynamically
+10. **Use proper nonce management** to avoid conflicts

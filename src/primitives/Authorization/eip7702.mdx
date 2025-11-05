@@ -1,0 +1,461 @@
+# EIP-7702 Specification
+
+Detailed explanation of EIP-7702: Set EOA Account Code.
+
+## Overview
+
+EIP-7702 introduces a new transaction type that allows Externally Owned Accounts (EOAs) to temporarily delegate their code execution to a smart contract. This enables account abstraction features for regular EOAs without requiring migration to contract wallets.
+
+**Specification:** [EIP-7702: Set EOA Account Code](https://eips.ethereum.org/EIPS/eip-7702)
+
+**Status:** Draft (as of documentation)
+
+**Authors:** Vitalik Buterin, Sam Wilson, Ansgar Dietrichs, Matt Garnett
+
+## Motivation
+
+**Problem:** EOAs lack programmability of smart contract wallets:
+- No custom validation logic
+- No batching
+- No gas sponsorship
+- No social recovery
+- No multi-sig
+
+**Solution:** Allow EOAs to temporarily delegate code execution to contracts, enabling account abstraction features while maintaining EOA ownership.
+
+## Mechanism
+
+### Account Code Delegation
+
+During EIP-7702 transaction execution:
+
+1. **Authorization Processing** - Process authorization list at transaction start
+2. **Code Delegation** - Set EOA code pointer to delegated contract
+3. **Transaction Execution** - Execute transaction with delegated logic
+4. **Delegation Revert** - Clear code delegation after transaction
+
+**Key Point:** Delegation is **per-transaction only**. EOA reverts to normal after transaction completes.
+
+### Authorization Structure
+
+Authorization tuple:
+```
+[chain_id, address, nonce, y_parity, r, s]
+```
+
+**Fields:**
+- `chain_id` (uint256) - Chain ID where valid
+- `address` (address) - Contract to delegate to
+- `nonce` (uint256) - EOA nonce
+- `y_parity` (uint8) - Signature parity (0 or 1)
+- `r` (uint256) - Signature r value
+- `s` (uint256) - Signature s value
+
+### Signing Hash
+
+Authorization signing hash:
+```
+keccak256(MAGIC || rlp([chain_id, address, nonce]))
+```
+
+Where:
+- `MAGIC` = `0x05` (EIP-7702 identifier)
+- RLP encoding uses compact representation
+
+**TypeScript Implementation:**
+```typescript
+const hash = Authorization.hash.call({
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+});
+```
+
+**Zig Implementation:**
+```zig
+pub fn signingHash(self: *const Authorization) !Hash {
+    // RLP encode [chain_id, address, nonce]
+    const rlp_encoded = try rlp.encode(...);
+
+    // Prepend MAGIC byte (0x05)
+    var data = try allocator.alloc(u8, rlp_encoded.len + 1);
+    data[0] = 0x05;
+    @memcpy(data[1..], rlp_encoded);
+
+    // Keccak256 hash
+    return hash.keccak256(data);
+}
+```
+
+## Transaction Format
+
+### New Transaction Type
+
+EIP-7702 introduces transaction type `0x04`:
+
+```
+TransactionType || TransactionPayload
+```
+
+Where:
+- `TransactionType` = `0x04`
+- `TransactionPayload` = RLP encoded transaction fields
+
+### Transaction Fields
+
+```
+[
+  chain_id,
+  nonce,
+  max_priority_fee_per_gas,
+  max_fee_per_gas,
+  gas_limit,
+  destination,
+  amount,
+  data,
+  access_list,
+  authorization_list,
+  signature_y_parity,
+  signature_r,
+  signature_s
+]
+```
+
+**New Field:** `authorization_list` - List of authorizations to process
+
+### Authorization List
+
+```
+authorization_list = [authorization_1, authorization_2, ..., authorization_n]
+```
+
+Each authorization:
+```
+authorization = [chain_id, address, nonce, y_parity, r, s]
+```
+
+## Gas Costs
+
+### Per Authorization
+
+**Base cost:** 12,500 gas
+
+**Empty account cost:** 25,000 gas additional
+
+**Total per authorization:**
+- Non-empty account: 12,500 gas
+- Empty account: 37,500 gas (12,500 + 25,000)
+
+### Total Transaction Cost
+
+```
+total_gas = tx_base_gas
+          + (auth_count * 12500)
+          + (empty_count * 25000)
+          + execution_gas
+```
+
+**Example:**
+```
+Transaction with:
+- 3 authorizations
+- 2 empty accounts
+- Base tx: 21,000 gas
+- Execution: 50,000 gas
+
+Total: 21000 + (3 * 12500) + (2 * 25000) + 50000 = 158,500 gas
+```
+
+**TypeScript Calculation:**
+```typescript
+const authGas = Authorization.calculateGasCost.call(authList, emptyCount);
+const totalGas = 21000n + authGas + executionGas;
+```
+
+## Processing Rules
+
+### Authorization Validation
+
+Each authorization must:
+1. Have non-zero chain ID
+2. Have non-zero address
+3. Have valid signature (r, s, v)
+4. Have s ≤ N/2 (non-malleable)
+5. Match current chain ID
+
+**Invalid authorizations:** Transaction fails
+
+### Nonce Handling
+
+**Current nonce:** Authorization uses EOA's current nonce
+
+**Nonce increment:** EOA nonce increments during processing (per EIP-7702)
+
+**Multiple authorizations from same EOA:**
+```
+EOA signs 3 authorizations with nonces: n, n+1, n+2
+Transaction includes all 3 in order
+Each processed with correct nonce
+```
+
+### Authority Recovery
+
+1. Hash unsigned authorization
+2. Recover public key from signature
+3. Derive address from public key
+4. This is the "authority" (EOA granting permission)
+
+**TypeScript:**
+```typescript
+const authority = Authorization.verify.call(auth);
+```
+
+**Zig:**
+```zig
+pub fn authority(self: *const Authorization) !Address {
+    const h = try self.signingHash();
+    const signature = crypto.Signature{ .v = self.v, .r = self.r, .s = self.s };
+    return try crypto.unaudited_recoverAddress(h, signature);
+}
+```
+
+### Code Delegation
+
+For each authorization:
+1. Recover authority (signer)
+2. Set authority's code to point to delegated address
+3. Authority's balance, nonce, storage unchanged
+
+**Code pointer format:**
+```
+0xef0100 || address
+```
+
+Where:
+- `0xef0100` - Delegation prefix (EOF format)
+- `address` - 20-byte delegated address
+
+**After transaction:** Code pointer cleared
+
+## Security Considerations
+
+### Replay Protection
+
+**Chain ID:** Authorization includes chain ID, preventing cross-chain replay
+
+**Nonce:** Authorization includes nonce, preventing same-chain replay
+
+**Signature:** Each authorization uniquely signed
+
+### Signature Malleability
+
+**Problem:** ECDSA signatures have malleability - given (r, s), signature (r, -s mod N) also valid
+
+**Solution:** Require s ≤ N/2
+
+**Validation:**
+```typescript
+if (auth.s > Authorization.SECP256K1_HALF_N) {
+  throw new ValidationError('Signature s too high (malleable signature)');
+}
+```
+
+### Temporary Delegation
+
+**Scope:** Delegation only during transaction execution
+
+**Persistence:** Cleared after transaction
+
+**Safety:** EOA retains control - can't be permanently hijacked
+
+### Storage Separation
+
+**EOA storage:** Remains separate from delegated contract
+
+**Delegated contract:** Cannot directly modify EOA's storage
+
+**Context:** Delegated code executes in EOA's context but with separate storage
+
+## Use Cases
+
+### 1. Sponsored Transactions
+
+User signs authorization, relayer pays gas:
+
+```typescript
+// User creates auth
+const auth = Authorization.sign.call({
+  chainId: 1n,
+  address: sponsorContract,
+  nonce: userNonce
+}, userPrivateKey);
+
+// Relayer creates transaction
+const tx = {
+  from: relayerEOA,
+  authorizationList: [auth],
+  gasPrice: relayerGasPrice,
+  // ... other fields
+};
+
+// Relayer pays gas, user's intended action executes
+```
+
+### 2. Batch Operations
+
+Execute multiple operations atomically:
+
+```typescript
+// Delegate to batch executor
+const auth = Authorization.sign.call({
+  chainId: 1n,
+  address: batchExecutor,
+  nonce: myNonce
+}, myPrivateKey);
+
+// Transaction executes:
+// 1. Approve token1
+// 2. Approve token2
+// 3. Swap on DEX
+// 4. Transfer result
+// All atomic, one signature
+```
+
+### 3. Social Recovery
+
+Guardians can recover account:
+
+```typescript
+// Guardians sign recovery authorizations
+const auths = guardians.map(guardian =>
+  Authorization.sign.call({
+    chainId: 1n,
+    address: recoveryModule,
+    nonce: guardianNonce
+  }, guardianKey)
+);
+
+// Recovery transaction with guardian authorizations
+// Recovery module verifies consensus and recovers account
+```
+
+### 4. Upgraded Logic
+
+EOA delegates to upgraded contract:
+
+```typescript
+// Delegate to new version
+const auth = Authorization.sign.call({
+  chainId: 1n,
+  address: contractV2,  // Upgraded contract
+  nonce: myNonce
+}, myPrivateKey);
+
+// EOA now uses v2 logic for this transaction
+```
+
+## Differences from EIP-3074
+
+EIP-7702 improves upon EIP-3074:
+
+**EIP-3074:**
+- New opcodes: AUTH, AUTHCALL
+- More complex implementation
+- Less flexible
+
+**EIP-7702:**
+- Reuses existing infrastructure
+- Simpler implementation
+- More flexible (any contract logic)
+- Better compatibility
+
+## Implementation Notes
+
+### RLP Encoding
+
+Authorization RLP encoding:
+```
+rlp([chain_id, address, nonce])
+```
+
+**Compact encoding:** Remove leading zeros from bigints
+
+**Example:**
+```
+chain_id = 1    → 0x01
+address = 0x... → 20 bytes
+nonce = 0       → 0x (empty)
+
+RLP: [0x01, 0x742d..., 0x]
+```
+
+### Signature Verification
+
+Standard ECDSA signature verification:
+1. Hash authorization
+2. Recover public key from signature
+3. Derive address from public key
+
+**Note:** Use secp256k1 curve (same as Ethereum)
+
+### Gas Metering
+
+Gas charged at transaction start (before execution):
+```
+1. Charge base transaction gas
+2. Charge authorization processing gas
+3. Execute transaction
+4. Charge execution gas
+```
+
+**Revert behavior:** If execution reverts, authorization gas NOT refunded
+
+## Testing
+
+### Test Vectors
+
+**Valid authorization:**
+```typescript
+{
+  chainId: 1n,
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2',
+  nonce: 0n,
+  yParity: 0,
+  r: 0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefn,
+  s: 0x0edcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210n
+}
+```
+
+**Signing hash:**
+```
+Input: { chainId: 1, address: 0x742d..., nonce: 0 }
+RLP: 0xe594742d35cc6634c0532925a3b844bc9e7595f0beb280
+Magic || RLP: 0x05e594742d35cc6634c0532925a3b844bc9e7595f0beb280
+Hash: keccak256(0x05e594...) = 0x...
+```
+
+### Edge Cases
+
+**Zero nonce:** Valid (account starting nonce)
+
+**Large nonce:** Valid (any uint64)
+
+**Zero address:** Invalid (cannot delegate to zero)
+
+**Zero chain ID:** Invalid
+
+**High s value:** Invalid (malleable signature)
+
+## References
+
+- [EIP-7702: Set EOA Account Code](https://eips.ethereum.org/EIPS/eip-7702)
+- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
+- [EIP-3074: AUTH and AUTHCALL opcodes](https://eips.ethereum.org/EIPS/eip-3074)
+- [EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191)
+
+## See Also
+
+- [Signing](./signing.mdx) - Creating authorizations
+- [Validation](./validation.mdx) - Validating authorizations
+- [Processing](./processing.mdx) - Processing authorizations
+- [Gas Calculations](./gas-calculations.mdx) - Gas costs

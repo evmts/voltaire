@@ -1,0 +1,581 @@
+# Processing
+
+Process authorizations and extract delegation designations.
+
+## process
+
+Process single authorization and return delegation designation.
+
+```typescript
+Authorization.process.call(auth: Authorization.Item): Authorization.DelegationDesignation
+```
+
+**Parameters:**
+- `auth`: Authorization to process
+
+**Returns:** DelegationDesignation containing:
+- `authority`: Address of signer (EOA granting permission)
+- `delegatedAddress`: Address of contract receiving delegation
+
+**Throws:** `ValidationError` if authorization is invalid
+
+**Process:**
+1. Validates authorization structure
+2. Verifies signature and recovers authority
+3. Returns delegation designation
+
+### Usage
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const auth: Authorization.Item = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n,
+  yParity: 0,
+  r: 0x123...n,
+  s: 0x456...n
+};
+
+try {
+  const delegation = Authorization.process.call(auth);
+  console.log(`Authority: ${delegation.authority}`);
+  console.log(`Delegated to: ${delegation.delegatedAddress}`);
+  console.log(`${delegation.authority} → ${delegation.delegatedAddress}`);
+} catch (e) {
+  console.error(`Processing failed: ${e}`);
+}
+```
+
+### DelegationDesignation
+
+```typescript
+type DelegationDesignation = {
+  authority: Address;         // Signer (EOA granting permission)
+  delegatedAddress: Address;  // Contract receiving delegation
+};
+```
+
+**authority** - The EOA that signed the authorization. This account's code will be set to point to the delegated address.
+
+**delegatedAddress** - The contract address that authority is delegating to. The authority's code will temporarily point to this address's code.
+
+### Implementation
+
+```typescript
+export function process(auth: BrandedAuthorization): DelegationDesignation {
+  // Validate and recover authority
+  const authority = verify(auth);
+
+  return {
+    authority,
+    delegatedAddress: auth.address
+  };
+}
+```
+
+## processAll
+
+Process authorization list and return all delegation designations.
+
+```typescript
+Authorization.processAll.call(authList: Authorization.Item[]): Authorization.DelegationDesignation[]
+```
+
+**Parameters:**
+- `authList`: Array of authorizations to process
+
+**Returns:** Array of DelegationDesignations
+
+**Note:** Returns empty array for empty input
+
+### Usage
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const authList: Authorization.Item[] = [auth1, auth2, auth3];
+
+const delegations = Authorization.processAll.call(authList);
+
+console.log(`Processed ${delegations.length} authorizations:`);
+delegations.forEach((d, i) => {
+  console.log(`  ${i + 1}. ${d.authority} → ${d.delegatedAddress}`);
+});
+```
+
+### Empty List
+
+```typescript
+const empty = Authorization.processAll.call([]);
+console.log(empty.length); // 0
+```
+
+### Error Handling
+
+If any authorization is invalid, the entire operation fails:
+
+```typescript
+try {
+  const delegations = Authorization.processAll.call(authList);
+  // All authorizations were valid
+} catch (e) {
+  // At least one authorization was invalid
+  console.error(`Failed to process list: ${e}`);
+}
+```
+
+### Implementation
+
+```typescript
+export function processAll(authList: BrandedAuthorization[]): DelegationDesignation[] {
+  return authList.map(auth => process(auth));
+}
+```
+
+## Processing Patterns
+
+### Safe Processing
+
+Process with error handling:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+interface ProcessResult {
+  auth: Authorization.Item;
+  delegation?: Authorization.DelegationDesignation;
+  error?: string;
+}
+
+function safeProcess(auth: Authorization.Item): ProcessResult {
+  try {
+    const delegation = Authorization.process.call(auth);
+    return { auth, delegation };
+  } catch (e) {
+    return {
+      auth,
+      error: e instanceof Error ? e.message : String(e)
+    };
+  }
+}
+
+const result = safeProcess(auth);
+if (result.delegation) {
+  console.log(`Success: ${result.delegation.authority}`);
+} else {
+  console.error(`Failed: ${result.error}`);
+}
+```
+
+### Batch Processing with Errors
+
+Process all, collecting both successes and failures:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function processAllSafe(authList: Authorization.Item[]): {
+  delegations: Authorization.DelegationDesignation[];
+  successes: Authorization.Item[];
+  failures: Array<{ auth: Authorization.Item; error: string }>;
+} {
+  const delegations: Authorization.DelegationDesignation[] = [];
+  const successes: Authorization.Item[] = [];
+  const failures: Array<{ auth: Authorization.Item; error: string }> = [];
+
+  for (const auth of authList) {
+    try {
+      const delegation = Authorization.process.call(auth);
+      delegations.push(delegation);
+      successes.push(auth);
+    } catch (e) {
+      failures.push({
+        auth,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+  }
+
+  return { delegations, successes, failures };
+}
+
+const result = processAllSafe(authList);
+console.log(`Successes: ${result.successes.length}`);
+console.log(`Failures: ${result.failures.length}`);
+```
+
+### Pre-validation
+
+Validate before processing for better error messages:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function processWithValidation(auth: Authorization.Item): Authorization.DelegationDesignation {
+  // Step 1: Type check
+  if (!Authorization.isItem(auth)) {
+    throw new Error('Not a valid authorization item');
+  }
+
+  // Step 2: Structure validation
+  try {
+    Authorization.validate.call(auth);
+  } catch (e) {
+    throw new Error(`Validation failed: ${e}`);
+  }
+
+  // Step 3: Process (includes signature verification)
+  try {
+    return Authorization.process.call(auth);
+  } catch (e) {
+    throw new Error(`Processing failed: ${e}`);
+  }
+}
+```
+
+### Deduplication
+
+Remove duplicate authorizations before processing:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function deduplicateAuths(authList: Authorization.Item[]): Authorization.Item[] {
+  const seen = new Set<string>();
+  const unique: Authorization.Item[] = [];
+
+  for (const auth of authList) {
+    // Create unique key
+    const key = `${auth.chainId}-${auth.address}-${auth.nonce}-${auth.r}-${auth.s}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(auth);
+    }
+  }
+
+  return unique;
+}
+
+const deduplicated = deduplicateAuths(authList);
+const delegations = Authorization.processAll.call(deduplicated);
+```
+
+### Authority Grouping
+
+Group delegations by authority:
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+function groupByAuthority(
+  authList: Authorization.Item[]
+): Map<string, Authorization.DelegationDesignation[]> {
+  const delegations = Authorization.processAll.call(authList);
+  const groups = new Map<string, Authorization.DelegationDesignation[]>();
+
+  for (const delegation of delegations) {
+    const key = Address.toHex(delegation.authority);
+    const group = groups.get(key) || [];
+    group.push(delegation);
+    groups.set(key, group);
+  }
+
+  return groups;
+}
+
+const groups = groupByAuthority(authList);
+for (const [authority, delegations] of groups) {
+  console.log(`${authority} has ${delegations.length} delegations`);
+}
+```
+
+## EIP-7702 Transaction Processing
+
+### Authorization List in Transaction
+
+EIP-7702 transactions include authorization list:
+
+```typescript
+interface EIP7702Transaction {
+  // Standard transaction fields
+  chainId: bigint;
+  nonce: bigint;
+  gasPrice: bigint;
+  gasLimit: bigint;
+  to: Address | null;
+  value: bigint;
+  data: Uint8Array;
+
+  // EIP-7702 specific
+  authorizationList: Authorization.Item[];
+}
+```
+
+### Processing Flow
+
+1. **Before Transaction Execution:**
+   ```typescript
+   // Process authorization list
+   const delegations = Authorization.processAll.call(tx.authorizationList);
+
+   // Apply delegations to accounts
+   for (const delegation of delegations) {
+     // Set authority's code to point to delegatedAddress
+     setAccountCode(delegation.authority, delegation.delegatedAddress);
+   }
+   ```
+
+2. **Execute Transaction:**
+   ```typescript
+   // Transaction executes with delegated code
+   executeTx(tx);
+   ```
+
+3. **After Transaction:**
+   ```typescript
+   // Revert code delegations
+   for (const delegation of delegations) {
+     // Remove delegation
+     clearAccountCode(delegation.authority);
+   }
+   ```
+
+### Gas Cost Calculation
+
+Calculate gas before processing:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+async function processWithGasCheck(
+  authList: Authorization.Item[],
+  gasLimit: bigint
+): Promise<Authorization.DelegationDesignation[]> {
+  // Count empty accounts
+  const emptyCount = await countEmptyAccounts(authList);
+
+  // Calculate gas cost
+  const gasCost = Authorization.calculateGasCost.call(authList, emptyCount);
+
+  // Check against limit
+  if (gasCost > gasLimit) {
+    throw new Error(`Insufficient gas: need ${gasCost}, have ${gasLimit}`);
+  }
+
+  // Process authorizations
+  return Authorization.processAll.call(authList);
+}
+```
+
+## Advanced Patterns
+
+### Delegation Cache
+
+Cache processed delegations:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+class DelegationCache {
+  private cache = new Map<string, Authorization.DelegationDesignation>();
+
+  process(auth: Authorization.Item): Authorization.DelegationDesignation {
+    // Create cache key
+    const key = this.cacheKey(auth);
+
+    // Check cache
+    const cached = this.cache.get(key);
+    if (cached) return cached;
+
+    // Process and cache
+    const delegation = Authorization.process.call(auth);
+    this.cache.set(key, delegation);
+
+    return delegation;
+  }
+
+  processAll(authList: Authorization.Item[]): Authorization.DelegationDesignation[] {
+    return authList.map(auth => this.process(auth));
+  }
+
+  private cacheKey(auth: Authorization.Item): string {
+    return `${auth.chainId}-${auth.address}-${auth.nonce}-${auth.r}-${auth.s}-${auth.yParity}`;
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const cache = new DelegationCache();
+const delegations = cache.processAll(authList);
+```
+
+### Processing Pipeline
+
+Create processing pipeline:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+interface Pipeline {
+  filter?: (auth: Authorization.Item) => boolean;
+  validate?: boolean;
+  deduplicate?: boolean;
+  maxCount?: number;
+}
+
+function processPipeline(
+  authList: Authorization.Item[],
+  options: Pipeline
+): Authorization.DelegationDesignation[] {
+  let auths = authList;
+
+  // Filter
+  if (options.filter) {
+    auths = auths.filter(options.filter);
+  }
+
+  // Deduplicate
+  if (options.deduplicate) {
+    auths = deduplicateAuths(auths);
+  }
+
+  // Limit count
+  if (options.maxCount !== undefined) {
+    auths = auths.slice(0, options.maxCount);
+  }
+
+  // Validate
+  if (options.validate) {
+    for (const auth of auths) {
+      Authorization.validate.call(auth);
+    }
+  }
+
+  // Process
+  return Authorization.processAll.call(auths);
+}
+
+const delegations = processPipeline(authList, {
+  filter: (auth) => auth.chainId === 1n,
+  deduplicate: true,
+  maxCount: 10,
+  validate: true
+});
+```
+
+### Authority Verification
+
+Verify all authorities are expected:
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+function processWithAuthorityCheck(
+  authList: Authorization.Item[],
+  expectedAuthorities: Set<Address>
+): Authorization.DelegationDesignation[] {
+  const delegations = Authorization.processAll.call(authList);
+
+  // Verify all authorities
+  for (const delegation of delegations) {
+    let found = false;
+    for (const expected of expectedAuthorities) {
+      if (Address.equals(delegation.authority, expected)) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      throw new Error(`Unexpected authority: ${delegation.authority}`);
+    }
+  }
+
+  return delegations;
+}
+
+const allowedAuthorities = new Set([eoa1, eoa2, eoa3]);
+const delegations = processWithAuthorityCheck(authList, allowedAuthorities);
+```
+
+## Performance
+
+### Operation Complexity
+
+| Operation | Time Complexity | Notes |
+|-----------|----------------|-------|
+| `process` | O(1) | Constant time per auth |
+| `processAll` | O(n) | n = list length |
+
+### Optimization
+
+1. **Parallel Processing** (if verification allows):
+   ```typescript
+   // Process in parallel (note: may not preserve order)
+   const delegations = await Promise.all(
+     authList.map(auth =>
+       Promise.resolve(Authorization.process.call(auth))
+     )
+   );
+   ```
+
+2. **Early Validation**:
+   ```typescript
+   // Validate all first to fail fast
+   for (const auth of authList) {
+     Authorization.validate.call(auth);
+   }
+   const delegations = Authorization.processAll.call(authList);
+   ```
+
+3. **Batch Size Limits**:
+   ```typescript
+   const MAX_BATCH = 100;
+   if (authList.length > MAX_BATCH) {
+     throw new Error(`Too many authorizations: ${authList.length}`);
+   }
+   ```
+
+## Testing
+
+### Test Processing
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+// Create signed auth
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+// Process
+const delegation = Authorization.process.call(auth);
+
+// Verify result
+expect(delegation.authority).toBeDefined();
+expect(delegation.delegatedAddress).toEqual(unsigned.address);
+```
+
+### Test Batch Processing
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const authList = [auth1, auth2, auth3];
+const delegations = Authorization.processAll.call(authList);
+
+expect(delegations.length).toBe(3);
+expect(delegations[0].authority).toBeDefined();
+expect(delegations[1].authority).toBeDefined();
+expect(delegations[2].authority).toBeDefined();
+```
+
+## See Also
+
+- [Signing](./signing.mdx) - Creating authorizations
+- [Verification](./signing.mdx#verify) - Signature verification
+- [Gas Calculations](./gas-calculations.mdx) - Cost estimation
+- [EIP-7702](./eip7702.mdx) - Specification

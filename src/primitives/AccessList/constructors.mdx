@@ -1,0 +1,245 @@
+# Constructors
+
+Methods for creating AccessList instances.
+
+## AccessList.create()
+
+Create empty access list.
+
+```typescript
+AccessList.create(): BrandedAccessList
+```
+
+**Returns:** Empty access list
+
+**Example:**
+```typescript
+const list = AccessList.create();
+// list = []
+```
+
+**Use Cases:**
+- Starting point for incremental building
+- Default/empty state
+- Conditional list building
+
+## AccessList.from()
+
+Loose constructor accepting items array or RLP bytes.
+
+```typescript
+AccessList.from(value: readonly Item[] | Uint8Array): BrandedAccessList
+```
+
+**Parameters:**
+- `value`: Item array or RLP-encoded bytes
+
+**Returns:** BrandedAccessList
+
+**Example:**
+```typescript
+// From items
+const list = AccessList.from([
+  { address: addr1, storageKeys: [key1] },
+  { address: addr2, storageKeys: [] }
+]);
+
+// From RLP bytes
+const list2 = AccessList.from(bytes);
+```
+
+**Notes:**
+- Same as factory function: `AccessList(value)`
+- Delegates to `fromBytes` for Uint8Array input
+- No validation - use `assertValid` if needed
+
+## AccessList.fromBytes()
+
+Decode RLP bytes to access list.
+
+```typescript
+AccessList.fromBytes(bytes: Uint8Array): BrandedAccessList
+```
+
+**Parameters:**
+- `bytes`: RLP-encoded access list
+
+**Returns:** Decoded BrandedAccessList
+
+**Throws:**
+- Error if invalid RLP structure
+- Error if addresses not 20 bytes
+- Error if storage keys not 32 bytes
+
+**Example:**
+```typescript
+const bytes = new Uint8Array([...]); // RLP bytes
+const list = AccessList.fromBytes(bytes);
+```
+
+**RLP Structure:**
+```
+[
+  [address1, [key1, key2, ...]],
+  [address2, [key3, key4, ...]],
+  ...
+]
+```
+
+**Validation:**
+- Top level must be RLP list
+- Each item must be [address, keys] pair
+- Address must be 20 bytes
+- Keys must be list of 32-byte hashes
+
+## Factory Function
+
+```typescript
+AccessList(value: readonly Item[] | Uint8Array): BrandedAccessList
+```
+
+Convenience factory - same as `AccessList.from()`.
+
+**Example:**
+```typescript
+const list = AccessList([
+  { address: token, storageKeys: [slot1, slot2] }
+]);
+```
+
+## Patterns
+
+### Empty List
+
+```typescript
+let list = AccessList.create();
+```
+
+### From Transaction Data
+
+```typescript
+// Decode from RLP
+const list = AccessList.fromBytes(tx.accessListBytes);
+```
+
+### From Items Array
+
+```typescript
+const items = [
+  { address: router, storageKeys: [] },
+  { address: token, storageKeys: [balanceSlot] }
+];
+const list = AccessList.from(items);
+```
+
+### Incremental Building
+
+```typescript
+// Start empty
+let list = AccessList.create();
+
+// Add addresses
+list = list.withAddress(addr1);
+list = list.withAddress(addr2);
+
+// Add keys
+list = list.withStorageKey(addr1, key1);
+list = list.withStorageKey(addr1, key2);
+```
+
+### Safe Construction
+
+```typescript
+function safeFromBytes(bytes: Uint8Array): BrandedAccessList | null {
+  try {
+    const list = AccessList.fromBytes(bytes);
+    AccessList.assertValid(list);
+    return list;
+  } catch {
+    return null;
+  }
+}
+```
+
+### Clone List
+
+```typescript
+// Lists are readonly, so this creates independent copy
+const clone = AccessList.from(original);
+```
+
+## Best Practices
+
+1. **Use `create()` for incremental building**
+   ```typescript
+   // Good
+   let list = AccessList.create();
+   list = list.withAddress(addr);
+
+   // Avoid
+   let list = AccessList.from([]);
+   ```
+
+2. **Validate untrusted bytes**
+   ```typescript
+   try {
+     const list = AccessList.fromBytes(userBytes);
+     AccessList.assertValid(list);
+   } catch (err) {
+     // Handle invalid data
+   }
+   ```
+
+3. **Use factory for literal values**
+   ```typescript
+   // Concise
+   const list = AccessList([
+     { address: addr, storageKeys: [key] }
+   ]);
+
+   // Verbose
+   const list = AccessList.from([...]);
+   ```
+
+4. **Deduplicate after construction**
+   ```typescript
+   const list = AccessList.from(items);
+   const deduped = list.deduplicate();
+   ```
+
+## Error Handling
+
+### fromBytes Errors
+
+```typescript
+try {
+  const list = AccessList.fromBytes(bytes);
+} catch (err) {
+  if (err.message.includes('expected list')) {
+    // Invalid RLP structure
+  } else if (err.message.includes('address')) {
+    // Invalid address length
+  } else if (err.message.includes('storage key')) {
+    // Invalid key length
+  }
+}
+```
+
+### Validation After Construction
+
+```typescript
+const list = AccessList.from(externalData);
+
+// Validate
+try {
+  AccessList.assertValid(list);
+} catch (err) {
+  console.error('Invalid access list:', err);
+}
+```
+
+## See Also
+
+- [Validation](./validation.mdx) - Type guards and validation
+- [Manipulation](./manipulation.mdx) - Modifying lists
+- [Conversions](./conversions.mdx) - toBytes encoding

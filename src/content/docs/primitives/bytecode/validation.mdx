@@ -1,0 +1,234 @@
+---
+title: Bytecode Validation
+description: Validating bytecode structure and integrity
+---
+
+# Validation
+
+Methods for validating bytecode structure and checking for common issues.
+
+## Structure Validation
+
+### `Bytecode.validate(code)`
+
+Validate bytecode structure for common issues.
+
+```typescript
+// Valid bytecode
+const valid = Bytecode.fromHex("0x60016002015b")
+Bytecode.validate(valid)  // true
+
+// Invalid bytecode - incomplete PUSH
+const invalid = Bytecode.fromHex("0x60")  // PUSH1 with no data
+Bytecode.validate(invalid)  // false
+
+// Invalid - PUSH2 with only 1 byte
+const invalid2 = Bytecode.fromHex("0x6101")  // PUSH2 needs 2 bytes
+Bytecode.validate(invalid2)  // false
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to validate
+
+**Returns:** `boolean` - `true` if valid, `false` otherwise
+
+Defined in: [primitives/Bytecode/BrandedBytecode/validate.js:23](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/validate.js)
+
+**Checks performed:**
+- PUSH instructions have required data bytes
+- Bytecode can be fully parsed without errors
+- No truncated instructions at end
+
+**Does NOT check:**
+- Opcode validity (all bytes 0x00-0xFF are valid)
+- Stack depth or gas usage
+- Jump destination reachability
+
+## Common Validation Patterns
+
+### Safe parsing
+
+```typescript
+function safeParse(hex: string): BrandedBytecode {
+  const code = Bytecode.fromHex(hex)
+
+  if (!Bytecode.validate(code)) {
+    throw new Error("Invalid bytecode structure")
+  }
+
+  return code
+}
+
+// Usage
+try {
+  const code = safeParse(userInput)
+  console.log("Valid bytecode")
+} catch (err) {
+  console.error("Invalid:", err.message)
+}
+```
+
+### Validate before analysis
+
+```typescript
+function analyzeContract(code: BrandedBytecode) {
+  // Validate first to avoid issues
+  if (!Bytecode.validate(code)) {
+    throw new Error("Cannot analyze invalid bytecode")
+  }
+
+  const analysis = Bytecode.analyze(code)
+  return analysis
+}
+```
+
+### Validate deployed code
+
+```typescript
+async function validateDeployedContract(
+  provider: Provider,
+  address: string
+): Promise<boolean> {
+  const hex = await provider.getCode(address)
+
+  if (hex === "0x") {
+    return false  // No code at address
+  }
+
+  const code = Bytecode.fromHex(hex)
+  return Bytecode.validate(code)
+}
+```
+
+### Check compilation output
+
+```typescript
+interface CompilerOutput {
+  bytecode: string
+  deployedBytecode: string
+}
+
+function validateCompilerOutput(output: CompilerOutput): boolean {
+  const creation = Bytecode.fromHex(output.bytecode)
+  const runtime = Bytecode.fromHex(output.deployedBytecode)
+
+  if (!Bytecode.validate(creation)) {
+    console.error("Invalid creation bytecode")
+    return false
+  }
+
+  if (!Bytecode.validate(runtime)) {
+    console.error("Invalid runtime bytecode")
+    return false
+  }
+
+  return true
+}
+```
+
+## What Validation Catches
+
+### Incomplete PUSH instructions
+
+```typescript
+// PUSH1 requires 1 data byte
+const incomplete1 = new Uint8Array([0x60])  // Missing data
+Bytecode.validate(incomplete1)  // false
+
+// PUSH32 requires 32 data bytes
+const incomplete32 = new Uint8Array([0x7f, 0x01, 0x02])  // Only 2 bytes
+Bytecode.validate(incomplete32)  // false
+
+// Complete PUSH1
+const complete = new Uint8Array([0x60, 0x01])
+Bytecode.validate(complete)  // true
+```
+
+### Truncated bytecode
+
+```typescript
+// Bytecode ending mid-instruction
+const truncated = new Uint8Array([
+  0x60, 0x80,     // PUSH1 0x80 - OK
+  0x61, 0x12,     // PUSH2 0x12?? - Missing 1 byte
+])
+Bytecode.validate(truncated)  // false
+
+// Complete version
+const complete = new Uint8Array([
+  0x60, 0x80,     // PUSH1 0x80
+  0x61, 0x12, 0x34,  // PUSH2 0x1234
+])
+Bytecode.validate(complete)  // true
+```
+
+## What Validation Does NOT Catch
+
+### Invalid opcodes
+
+All byte values (0x00-0xFF) are valid opcodes in validation:
+
+```typescript
+// 0xef is not a defined EVM opcode, but passes validation
+const undefinedOpcode = new Uint8Array([0xef, 0x00])
+Bytecode.validate(undefinedOpcode)  // true - structurally valid
+
+// Use analysis to check specific opcodes
+const analysis = Bytecode.analyze(undefinedOpcode)
+// Check analysis.instructions for specific opcodes
+```
+
+### Stack depth issues
+
+```typescript
+// Stack underflow not detected
+const underflow = Bytecode.fromHex("0x01")  // ADD with empty stack
+Bytecode.validate(underflow)  // true - structurally valid
+
+// Would fail at runtime with stack underflow
+```
+
+### Unreachable code
+
+```typescript
+// Dead code after RETURN not detected
+const deadCode = Bytecode.fromHex("0xf360016002")  // RETURN, PUSH1, PUSH1
+Bytecode.validate(deadCode)  // true - structurally valid
+```
+
+## Tree-Shakeable Usage
+
+```typescript
+import { validate } from '@tevm/voltaire/BrandedBytecode'
+
+const code = fromHex("0x60016002015b")
+const valid = validate(code)
+
+if (!valid) {
+  throw new Error("Invalid bytecode")
+}
+```
+
+See [BrandedBytecode](/primitives/bytecode/branded-bytecode) for details on tree-shakeable API.
+
+## Performance
+
+Validation is O(n) with single pass through bytecode:
+
+```typescript
+const large = new Uint8Array(100_000)  // 100KB bytecode
+Bytecode.validate(large)  // Single pass, fast
+```
+
+For repeated validation of same bytecode, cache result:
+
+```typescript
+const validationCache = new WeakMap<BrandedBytecode, boolean>()
+
+function getCachedValidation(code: BrandedBytecode): boolean {
+  if (!validationCache.has(code)) {
+    validationCache.set(code, Bytecode.validate(code))
+  }
+  return validationCache.get(code)!
+}
+```

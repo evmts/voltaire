@@ -1,0 +1,238 @@
+---
+title: Bytecode
+description: EVM bytecode analysis and manipulation
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+# Bytecode
+
+EVM bytecode type with analysis, validation, and disassembly capabilities
+
+## Overview
+
+[Branded](/primitives/branded-types) `Uint8Array` representing EVM bytecode. Provides methods for analyzing jump destinations, parsing instructions, validating structure, and formatting as disassembly.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Namespace API">
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+// Parse from hex (see Constructors)
+const code = Bytecode.fromHex("0x60016002015b00")
+
+// Analyze bytecode (see Analysis)
+const analysis = Bytecode.analyze(code)
+console.log(analysis.valid)                    // true
+console.log(analysis.jumpDestinations.size)    // 1
+console.log(analysis.instructions.length)      // 4
+
+// Check jump destinations (see Analysis)
+const jumpdests = Bytecode.analyzeJumpDestinations(code)
+jumpdests.has(4)  // true - JUMPDEST at position 4
+
+// Validate structure (see Validation)
+Bytecode.validate(code)  // true
+
+// Disassemble (see Formatting)
+const disassembly = Bytecode.formatInstructions(code)
+// ["0x0000: PUSH1 0x01", "0x0002: PUSH1 0x02", ...]
+
+// Metadata operations (see Metadata)
+if (Bytecode.hasMetadata(code)) {
+  const stripped = Bytecode.stripMetadata(code)
+}
+
+// Utilities (see Utilities)
+Bytecode.size(code)        // Get bytecode size
+Bytecode.equals(code1, code2)  // Compare bytecode
+```
+</TabItem>
+<TabItem label="Tree-shakeable">
+```typescript
+import {
+  fromHex,
+  analyze,
+  analyzeJumpDestinations,
+  validate,
+  formatInstructions
+} from '@tevm/voltaire/BrandedBytecode'
+
+const code = fromHex("0x60016002015b00")
+const analysis = analyze(code)
+const jumpdests = analyzeJumpDestinations(code)
+const valid = validate(code)
+const disassembly = formatInstructions(code)
+```
+</TabItem>
+</Tabs>
+
+## Types
+
+<Tabs>
+<TabItem label="type BrandedBytecode">
+```typescript
+export type BrandedBytecode = Uint8Array & {
+  readonly __tag: "Bytecode"
+}
+```
+
+[Branded type](/primitives/branded-types) wrapping `Uint8Array`. Used for all bytecode operations.
+
+Source: [BrandedBytecode/BrandedBytecode.ts:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L8)
+</TabItem>
+<TabItem label="Opcode">
+```typescript
+export type Opcode = number
+```
+
+Single byte EVM instruction (0x00-0xFF).
+
+Source: [BrandedBytecode/BrandedBytecode.ts:13](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L13)
+</TabItem>
+<TabItem label="Instruction">
+```typescript
+export type Instruction = {
+  readonly opcode: Opcode
+  readonly position: number
+  readonly pushData?: Uint8Array
+}
+```
+
+Parsed bytecode instruction with position and optional PUSH data.
+
+Source: [BrandedBytecode/BrandedBytecode.ts:28-35](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L28-L35)
+</TabItem>
+<TabItem label="Analysis">
+```typescript
+export type Analysis = {
+  readonly jumpDestinations: ReadonlySet<number>
+  readonly instructions: readonly Instruction[]
+  readonly valid: boolean
+}
+```
+
+Complete bytecode analysis result with jump destinations, instructions, and validity.
+
+Source: [BrandedBytecode/BrandedBytecode.ts:40-47](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L40-L47)
+</TabItem>
+</Tabs>
+
+## Constants
+
+Bytecode module exports common EVM opcode constants:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+// Opcode constants
+Bytecode.STOP       // 0x00
+Bytecode.JUMPDEST   // 0x5b
+Bytecode.PUSH1      // 0x60
+Bytecode.PUSH32     // 0x7f
+Bytecode.RETURN     // 0xf3
+Bytecode.REVERT     // 0xfd
+Bytecode.INVALID    // 0xfe
+
+// Usage
+if (opcode === Bytecode.JUMPDEST) {
+  console.log("Found jump destination")
+}
+```
+
+**Available constants:**
+- `STOP = 0x00` - Halts execution
+- `JUMPDEST = 0x5b` - Jump destination marker
+- `PUSH1 = 0x60` - PUSH1 opcode
+- `PUSH32 = 0x7f` - PUSH32 opcode
+- `RETURN = 0xf3` - Returns from execution
+- `REVERT = 0xfd` - Reverts state changes
+- `INVALID = 0xfe` - Invalid opcode
+
+Source: [constants.js](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/constants.js)
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Constructors" icon="rocket">
+    Creating Bytecode instances from hex strings or Uint8Array.
+
+    [View constructors →](/primitives/bytecode/constructors)
+  </Card>
+
+  <Card title="Conversions" icon="random">
+    Converting between bytecode and hex strings.
+
+    [View conversions →](/primitives/bytecode/conversions)
+  </Card>
+
+  <Card title="Validation" icon="warning">
+    Validating bytecode structure for incomplete PUSH instructions.
+
+    [View validation →](/primitives/bytecode/validation)
+  </Card>
+
+  <Card title="Analysis" icon="magnifier">
+    Analyzing jump destinations, parsing instructions, complete analysis.
+
+    [View analysis →](/primitives/bytecode/analysis)
+  </Card>
+
+  <Card title="Formatting" icon="document">
+    Disassembling bytecode into human-readable instructions.
+
+    [View formatting →](/primitives/bytecode/formatting)
+  </Card>
+
+  <Card title="Metadata" icon="puzzle">
+    Detecting and stripping Solidity compiler metadata.
+
+    [View metadata →](/primitives/bytecode/metadata)
+  </Card>
+
+  <Card title="Utilities" icon="setting">
+    Size, equality, hashing, extraction operations.
+
+    [View utilities →](/primitives/bytecode/utilities)
+  </Card>
+
+  <Card title="BrandedBytecode" icon="seti:config">
+    Tree-shakeable functional API for minimal bundle size.
+
+    [View BrandedBytecode →](/primitives/bytecode/branded-bytecode)
+  </Card>
+
+  <Card title="WASM Implementation" icon="rocket">
+    WebAssembly-accelerated methods compiled from Zig for performance.
+
+    [View WASM →](/primitives/bytecode/wasm)
+  </Card>
+</CardGrid>
+
+<Aside type="tip" title="Why analyze jump destinations?">
+EVM requires JUMP/JUMPI to target valid JUMPDEST opcodes. Analysis must skip PUSH data to avoid treating data bytes as opcodes. Use `analyzeJumpDestinations` to find all valid jump targets.
+</Aside>
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Hex" icon="seti:text">
+    Hex string utilities for bytecode encoding (used in [conversions](/primitives/bytecode/conversions)).
+
+    [View Hex →](/primitives/hex)
+  </Card>
+
+  <Card title="Hash" icon="document">
+    Keccak-256 hashing for bytecode (used in metadata and contract creation).
+
+    [View Hash →](/primitives/hash)
+  </Card>
+
+  <Card title="Branded Types" icon="open-book">
+    Zero-overhead type branding pattern used throughout primitives.
+
+    [View Branded Types →](/primitives/branded-types)
+  </Card>
+</CardGrid>

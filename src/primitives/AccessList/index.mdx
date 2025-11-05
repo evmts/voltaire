@@ -1,0 +1,200 @@
+# AccessList
+
+EIP-2930 access list primitive for gas-optimized Ethereum transactions.
+
+## Overview
+
+Access lists (EIP-2930) allow transactions to pre-declare addresses and storage slots they will access. This converts expensive "cold" storage accesses into cheaper "warm" accesses, reducing gas costs.
+
+**Key Benefits:**
+- Reduces gas costs for storage-heavy transactions
+- Makes transaction costs predictable
+- Required for some cross-contract interactions
+- Enables EIP-1559 transaction types
+
+**When to Use:**
+- Multi-contract transactions
+- DeFi operations (swaps, liquidity)
+- Contract deployments with storage initialization
+- Cross-contract state reads
+
+## Quick Start
+
+```typescript
+import { AccessList, Address, Hash } from '@tevm/voltaire';
+
+// Create addresses and keys
+const token = Address.fromHex('0x...');
+const balanceSlot = Hash.fromHex('0x...');
+
+// Build access list
+let list = AccessList.create();
+list = list.withAddress(token);
+list = list.withStorageKey(token, balanceSlot);
+
+// Check if beneficial
+if (list.hasSavings()) {
+  transaction.accessList = list;
+}
+```
+
+## Structure
+
+```typescript
+type AccessList = readonly Item[];
+
+type Item = {
+  address: BrandedAddress;              // 20-byte contract address
+  storageKeys: readonly BrandedHash[];  // 32-byte storage keys
+};
+```
+
+## Gas Economics (EIP-2930)
+
+**Costs:**
+- Address: 2,400 gas
+- Storage key: 1,900 gas each
+
+**Savings:**
+- Cold account access: 2,600 → 2,400 gas (200 saved)
+- Cold storage access: 2,100 → 1,900 gas (200 saved per key)
+
+**Formula:**
+```
+Cost = (addresses × 2400) + (keys × 1900)
+Savings = (addresses × 200) + (keys × 200)
+Net = Savings - Cost
+```
+
+## Core API
+
+See [AccessList.js.md](./AccessList.js.md) for complete API reference.
+
+### Constructors
+
+```typescript
+AccessList.create()                     // Empty list
+AccessList.from(items | bytes)          // From items or RLP
+AccessList.fromBytes(bytes)             // From RLP bytes
+```
+
+### Type Guards
+
+```typescript
+AccessList.is(value)                    // Check if AccessList
+AccessList.isItem(value)                // Check if Item
+AccessList.assertValid(list)            // Validate (throws)
+```
+
+### Queries
+
+```typescript
+AccessList.includesAddress(list, addr)           // Has address?
+AccessList.includesStorageKey(list, addr, key)   // Has key?
+AccessList.keysFor(list, addr)                   // Get keys
+AccessList.addressCount(list)                    // Count addresses
+AccessList.storageKeyCount(list)                 // Count keys
+AccessList.isEmpty(list)                         // Is empty?
+```
+
+### Manipulation
+
+```typescript
+AccessList.withAddress(list, addr)               // Add address
+AccessList.withStorageKey(list, addr, key)       // Add key
+AccessList.merge(...lists)                       // Combine lists
+AccessList.deduplicate(list)                     // Remove duplicates
+```
+
+### Gas Analysis
+
+```typescript
+AccessList.gasCost(list)                // Total cost
+AccessList.gasSavings(list)             // Potential savings
+AccessList.hasSavings(list)             // Cost < savings?
+```
+
+### Conversions
+
+```typescript
+AccessList.toBytes(list)                // To RLP bytes
+```
+
+## Documentation
+
+- [Constructors](./constructors.mdx) - Creating access lists
+- [Validation](./validation.mdx) - Type guards and validation
+- [Queries](./queries.mdx) - Inspecting access lists
+- [Manipulation](./manipulation.mdx) - Modifying access lists
+- [Gas Optimization](./gas-optimization.mdx) - Gas cost analysis
+- [Conversions](./conversions.mdx) - Encoding/decoding
+- [BrandedAccessList](./branded-accesslist.mdx) - Type system
+- [WASM](./wasm.mdx) - WebAssembly bindings
+- [Usage Patterns](./usage-patterns.mdx) - Common patterns
+
+## Example: DeFi Swap
+
+```typescript
+// Setup
+const router = Address.fromHex('0x...');
+const token0 = Address.fromHex('0x...');
+const token1 = Address.fromHex('0x...');
+const balanceSlot = calculateSlot(myAddress, 0);
+const allowanceSlot = calculateSlot(myAddress, 1);
+
+// Build access list
+let list = AccessList.create();
+list = list.withAddress(router);
+list = list.withStorageKey(token0, balanceSlot);
+list = list.withStorageKey(token0, allowanceSlot);
+list = list.withStorageKey(token1, balanceSlot);
+
+// Analyze
+const cost = list.gasCost();        // (3 × 2400) + (3 × 1900) = 12,900
+const savings = list.gasSavings();  // (3 × 200) + (3 × 200) = 1,200
+const net = savings - cost;         // -11,700 (not beneficial)
+
+// Only use if beneficial
+if (list.hasSavings()) {
+  tx.accessList = list;
+}
+```
+
+## Performance
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| gasCost | O(n) | n = items |
+| gasSavings | O(n) | n = items |
+| includesAddress | O(n) | n = addresses |
+| includesStorageKey | O(n×m) | Byte comparison |
+| deduplicate | O(n²×m) | Full deduplication |
+| withAddress | O(n) | Check + copy |
+| withStorageKey | O(n×m) | Check + copy |
+| merge | O(k×n²×m) | k lists |
+
+**Optimization Tips:**
+- Deduplicate once at end, not after each addition
+- Check `includesAddress` before `withAddress`
+- Keep lists small - large lists may not benefit
+- Cache gas calculations for repeated analysis
+
+## Best Practices
+
+1. **Always deduplicate** before using
+2. **Check savings** before including in transaction
+3. **Build incrementally** with `withAddress`/`withStorageKey`
+4. **Validate external data** with `assertValid`
+5. **Use type guards** for runtime safety
+
+## References
+
+- [EIP-2930: Optional Access Lists](https://eips.ethereum.org/EIPS/eip-2930)
+- [EIP-2929: Gas Cost Increases](https://eips.ethereum.org/EIPS/eip-2929)
+- [EIP-1559: Fee Market](https://eips.ethereum.org/EIPS/eip-1559)
+
+## See Also
+
+- [Address](../Address/index.mdx) - Ethereum addresses
+- [Hash](../Hash/index.mdx) - 32-byte hashes
+- [RLP](../Rlp/index.mdx) - RLP encoding

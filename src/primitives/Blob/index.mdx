@@ -1,0 +1,238 @@
+# Blob (EIP-4844)
+
+Factory and namespace for EIP-4844 blob primitives. Handles blob encoding/decoding, KZG commitments, proofs, and versioned hashes.
+
+## EIP-4844 Overview
+
+EIP-4844 introduces "blob-carrying transactions" for large data availability at lower cost:
+
+- **Blob size**: 131,072 bytes (128 KB) = 4096 field elements × 32 bytes
+- **Max per transaction**: 6 blobs
+- **Blob gas**: 131,072 per blob (2^17)
+- **Target gas per block**: 393,216 (3 blobs)
+- **Data availability**: Blobs stored temporarily (~18 days), not in execution state
+
+## Types
+
+```typescript
+type BrandedBlob = Uint8Array & { __blob: unique symbol };       // 131072 bytes
+type Commitment = Uint8Array & { __commitment: unique symbol };   // 48 bytes
+type Proof = Uint8Array & { __proof: unique symbol };             // 48 bytes
+type VersionedHash = Uint8Array & { __versionedHash: unique symbol }; // 32 bytes
+```
+
+## Factory
+
+```typescript
+Blob(value: Uint8Array): BrandedBlob
+```
+
+Creates Blob from Uint8Array. If exactly 131072 bytes, returns as-is. Otherwise encodes as blob data.
+
+**Parameters:**
+- `value`: Uint8Array (exact blob or data to encode)
+
+**Returns:** BrandedBlob instance
+
+**Throws:** Error if data too large
+
+## Constructors
+
+### [Blob.from(value)](./constructors.mdx#from)
+```typescript
+from(value: Uint8Array): BrandedBlob
+```
+Universal constructor. Returns raw blob if 131072 bytes, otherwise encodes data.
+
+### [Blob.fromData(data)](./constructors.mdx#fromdata)
+```typescript
+fromData(data: Uint8Array): BrandedBlob
+```
+Encodes arbitrary data with length prefix.
+
+**Format:**
+- 8 bytes: length prefix (little-endian uint64)
+- N bytes: data
+- Padding: zeros to 131072 bytes
+
+**Throws:** Error if data exceeds SIZE - 8 bytes (131064)
+
+## Validation
+
+### [Blob.isValid(blob)](./validation.mdx#isvalid)
+```typescript
+isValid(blob: Uint8Array): boolean
+```
+Validates blob size (exactly 131072 bytes).
+
+### [Blob.verify(blob, commitment, proof)](./validation.mdx#verify)
+```typescript
+verify(blob: BrandedBlob, commitment: Commitment, proof: Proof): boolean
+```
+Verifies KZG proof for single blob.
+
+**Status:** Not implemented (requires c-kzg-4844)
+
+### [Blob.verifyBatch(blobs, commitments, proofs)](./validation.mdx#verifybatch)
+```typescript
+verifyBatch(blobs: BrandedBlob[], commitments: Commitment[], proofs: Proof[]): boolean
+```
+Batch verification (more efficient than individual).
+
+**Status:** Not implemented (requires c-kzg-4844)
+
+### [Blob.isValidVersion(hash)](./validation.mdx#isvalidversion)
+```typescript
+isValidVersion(hash: VersionedHash): boolean
+```
+Validates versioned hash version byte (0x01).
+
+## Conversions
+
+### [Blob.toData(blob)](./conversions.mdx#todata)
+```typescript
+toData(blob: BrandedBlob): Uint8Array
+```
+Extracts original data from encoded blob.
+
+### [Blob.toCommitment(blob)](./conversions.mdx#tocommitment)
+```typescript
+toCommitment(blob: BrandedBlob): Commitment
+```
+Generates 48-byte KZG commitment.
+
+**Status:** Not implemented (requires c-kzg-4844)
+
+### [Blob.toProof(blob, commitment)](./conversions.mdx#toproof)
+```typescript
+toProof(blob: BrandedBlob, commitment: Commitment): Proof
+```
+Generates 48-byte KZG proof.
+
+**Status:** Not implemented (requires c-kzg-4844)
+
+### [Blob.toVersionedHash(commitment)](./conversions.mdx#toversionedhash)
+```typescript
+toVersionedHash(commitment: Commitment): VersionedHash
+```
+Creates 32-byte versioned hash for transaction.
+
+**Formula:** `COMMITMENT_VERSION_KZG || sha256(commitment)[1:]`
+
+## Utilities
+
+### [Blob.calculateGas(blobCount)](./utilities.mdx#calculategas)
+```typescript
+calculateGas(blobCount: number): number
+```
+Calculates total blob gas for N blobs.
+
+### [Blob.estimateBlobCount(dataSize)](./utilities.mdx#estimateblobcount)
+```typescript
+estimateBlobCount(dataSize: number): number
+```
+Estimates blobs needed for data size.
+
+**Formula:** `ceil(dataSize / (SIZE - 8))`
+
+### [Blob.splitData(data)](./utilities.mdx#splitdata)
+```typescript
+splitData(data: Uint8Array): BrandedBlob[]
+```
+Splits large data into multiple blobs (max 6).
+
+**Throws:** Error if requires more than MAX_PER_TRANSACTION blobs
+
+### [Blob.joinData(blobs)](./utilities.mdx#joindata)
+```typescript
+joinData(blobs: BrandedBlob[]): Uint8Array
+```
+Reconstructs original data from multiple blobs.
+
+## Constants
+
+See [constants.mdx](./constants.mdx) for full reference.
+
+```typescript
+Blob.SIZE                      // 131072 (128 KB)
+Blob.FIELD_ELEMENTS_PER_BLOB   // 4096
+Blob.BYTES_PER_FIELD_ELEMENT   // 32
+Blob.MAX_PER_TRANSACTION       // 6
+Blob.COMMITMENT_VERSION_KZG    // 0x01
+Blob.GAS_PER_BLOB              // 131072 (2^17)
+Blob.TARGET_GAS_PER_BLOCK      // 393216 (3 blobs)
+```
+
+## Nested Namespaces
+
+### [Blob.Commitment](./commitment.mdx)
+```typescript
+Commitment.isValid(commitment: Uint8Array): commitment is Commitment
+Commitment.toVersionedHash(commitment: Commitment): VersionedHash
+```
+
+### [Blob.Proof](./proof.mdx)
+```typescript
+Proof.isValid(proof: Uint8Array): proof is Proof
+```
+
+### [Blob.VersionedHash](./versioned-hash.mdx)
+```typescript
+VersionedHash.isValid(hash: Uint8Array): hash is VersionedHash
+VersionedHash.getVersion(hash: VersionedHash): number
+VersionedHash.version(hash: VersionedHash): number
+```
+
+## Example
+
+```javascript
+import { Blob } from './Blob.js';
+
+// Encode small data
+const data = new TextEncoder().encode("Hello, blob!");
+const blob = Blob.fromData(data);
+
+// Decode
+const recovered = Blob.toData(blob);
+
+// Large data - split into multiple blobs
+const largeData = new Uint8Array(300000);
+const blobCount = Blob.estimateBlobCount(largeData.length);
+const gas = Blob.calculateGas(blobCount);
+const blobs = Blob.splitData(largeData);
+
+// Reconstruct
+const reconstructed = Blob.joinData(blobs);
+```
+
+## KZG Workflow (When Implemented)
+
+```javascript
+// 1. Create blobs
+const blobs = Blob.splitData(data);
+
+// 2. Generate commitments
+const commitments = blobs.map(b => Blob.toCommitment(b));
+
+// 3. Generate proofs
+const proofs = blobs.map((b, i) => Blob.toProof(b, commitments[i]));
+
+// 4. Verify batch
+const isValid = Blob.verifyBatch(blobs, commitments, proofs);
+
+// 5. Create versioned hashes for transaction
+const versionedHashes = commitments.map(c => Blob.toVersionedHash(c));
+```
+
+## Implementation
+
+- Namespace pattern (tree-shakable)
+- Pure data operations (no classes)
+- Branded types for safety
+- WASM acceleration available (see [wasm.mdx](./wasm.mdx))
+
+## References
+
+- [EIP-4844 Specification](https://eips.ethereum.org/EIPS/eip-4844)
+- [c-kzg-4844 Library](https://github.com/ethereum/c-kzg-4844)
+- [KZG Commitments](https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html)

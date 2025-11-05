@@ -1,0 +1,307 @@
+---
+title: Bytecode Metadata
+description: Detecting and stripping Solidity compiler metadata
+---
+
+# Metadata
+
+Methods for detecting and stripping Solidity compiler metadata from bytecode.
+
+## Overview
+
+Solidity compiler embeds CBOR-encoded metadata at end of deployed bytecode. Metadata includes:
+- IPFS hash of source files
+- Compiler version
+- Compilation settings
+
+Different compilations of identical source produce different metadata (timestamps, file paths). Strip metadata before comparing bytecode.
+
+## Detection
+
+### `Bytecode.hasMetadata(code)`
+
+Check if bytecode contains Solidity metadata.
+
+```typescript
+// Bytecode with metadata (ends with length marker)
+const withMeta = Bytecode.fromHex("0x6001...a264...0033")
+Bytecode.hasMetadata(withMeta)  // true
+
+// Bytecode without metadata
+const noMeta = Bytecode.fromHex("0x60016002015b00")
+Bytecode.hasMetadata(noMeta)  // false
+
+// Empty bytecode
+const empty = Bytecode.fromHex("0x")
+Bytecode.hasMetadata(empty)  // false
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to check
+
+**Returns:** `boolean` - `true` if metadata detected
+
+Defined in: [primitives/Bytecode/BrandedBytecode/hasMetadata.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/hasMetadata.js)
+
+**Detection algorithm:**
+- Checks last 2 bytes of bytecode
+- Looks for metadata length marker: `0x00 [0x20-0x40]`
+- Common lengths: 51 bytes (0x33), 52 bytes (0x34), etc.
+
+## Stripping
+
+### `Bytecode.stripMetadata(code)`
+
+Remove metadata from bytecode.
+
+```typescript
+const withMeta = Bytecode.fromHex("0x6001...a264...0033")
+const stripped = Bytecode.stripMetadata(withMeta)
+
+Bytecode.hasMetadata(stripped)  // false
+
+// Returns original if no metadata
+const noMeta = Bytecode.fromHex("0x60016002015b00")
+const result = Bytecode.stripMetadata(noMeta)
+result === noMeta  // true (same reference)
+```
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode with potential metadata
+
+**Returns:** `BrandedBytecode` - Bytecode without metadata
+
+Defined in: [primitives/Bytecode/BrandedBytecode/stripMetadata.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/stripMetadata.js)
+
+**Algorithm:**
+1. Check if metadata present
+2. Read length from last 2 bytes
+3. Slice off metadata section
+4. Return shortened bytecode
+
+## Common Patterns
+
+### Compare bytecode ignoring metadata
+
+```typescript
+function compareWithoutMetadata(
+  code1: BrandedBytecode,
+  code2: BrandedBytecode
+): boolean {
+  const stripped1 = Bytecode.stripMetadata(code1)
+  const stripped2 = Bytecode.stripMetadata(code2)
+
+  return Bytecode.equals(stripped1, stripped2)
+}
+
+// Usage - compare contracts compiled at different times
+const v1 = Bytecode.fromHex("0x6001...a264...0033")  // Compiled Monday
+const v2 = Bytecode.fromHex("0x6001...a165...0029")  // Compiled Tuesday
+
+Bytecode.equals(v1, v2)  // false (different metadata)
+compareWithoutMetadata(v1, v2)  // true (same code)
+```
+
+### Verify deployed contract
+
+```typescript
+async function verifyContract(
+  provider: Provider,
+  address: string,
+  expectedBytecode: string
+): Promise<boolean> {
+  const deployed = await provider.getCode(address)
+  const deployedCode = Bytecode.fromHex(deployed)
+  const expected = Bytecode.fromHex(expectedBytecode)
+
+  // Strip metadata from both
+  const deployedStripped = Bytecode.stripMetadata(deployedCode)
+  const expectedStripped = Bytecode.stripMetadata(expected)
+
+  return Bytecode.equals(deployedStripped, expectedStripped)
+}
+```
+
+### Extract metadata section
+
+```typescript
+function extractMetadata(code: BrandedBytecode): Uint8Array | null {
+  if (!Bytecode.hasMetadata(code)) {
+    return null
+  }
+
+  // Calculate metadata length
+  const lengthByte = code[code.length - 1]
+  const metadataLength = lengthByte + 2
+
+  // Extract metadata section
+  return code.slice(-metadataLength)
+}
+
+// Usage
+const code = Bytecode.fromHex("0x6001...a264...0033")
+const metadata = extractMetadata(code)
+if (metadata) {
+  console.log(`Metadata: ${Bytecode.toHex(metadata)}`)
+}
+```
+
+### Analyze metadata presence
+
+```typescript
+function analyzeMetadata(code: BrandedBytecode) {
+  const hasMeta = Bytecode.hasMetadata(code)
+
+  if (!hasMeta) {
+    return {
+      hasMetadata: false,
+      size: Bytecode.size(code),
+      codeSize: Bytecode.size(code),
+    }
+  }
+
+  const stripped = Bytecode.stripMetadata(code)
+  const metadata = extractMetadata(code)!
+
+  return {
+    hasMetadata: true,
+    size: Bytecode.size(code),
+    codeSize: Bytecode.size(stripped),
+    metadataSize: metadata.length,
+    metadataPercent: (metadata.length / code.length * 100).toFixed(2),
+  }
+}
+
+// Usage
+const code = Bytecode.fromHex(deployedBytecode)
+const info = analyzeMetadata(code)
+console.log(`Metadata: ${info.metadataPercent}% of bytecode`)
+```
+
+### Compare multiple versions
+
+```typescript
+function findMatchingVersion(
+  deployed: BrandedBytecode,
+  versions: BrandedBytecode[]
+): number {
+  const deployedStripped = Bytecode.stripMetadata(deployed)
+
+  for (let i = 0; i < versions.length; i++) {
+    const versionStripped = Bytecode.stripMetadata(versions[i])
+
+    if (Bytecode.equals(deployedStripped, versionStripped)) {
+      return i
+    }
+  }
+
+  return -1  // No match found
+}
+```
+
+### Cache stripped bytecode
+
+```typescript
+const strippedCache = new WeakMap<BrandedBytecode, BrandedBytecode>()
+
+function getCachedStripped(code: BrandedBytecode): BrandedBytecode {
+  if (!strippedCache.has(code)) {
+    strippedCache.set(code, Bytecode.stripMetadata(code))
+  }
+  return strippedCache.get(code)!
+}
+
+// Usage - avoid repeated stripping
+function compareMany(target: BrandedBytecode, candidates: BrandedBytecode[]) {
+  const targetStripped = getCachedStripped(target)
+
+  return candidates.filter(c =>
+    Bytecode.equals(targetStripped, getCachedStripped(c))
+  )
+}
+```
+
+## Metadata Format
+
+Solidity metadata format (simplified):
+
+```
+[bytecode] [metadata_content] [length_bytes]
+                              ^^^^^^^^^^^^^^
+                              0x00 [0x20-0x40]
+```
+
+**Example:**
+```
+0x6001...a264...0033
+          ^^^^...^^^^  Metadata content
+                 ^^^^  Length marker: 0x00 0x33 (51 bytes)
+```
+
+**Metadata content** (CBOR-encoded):
+- IPFS hash
+- Compiler version
+- Solidity version
+- Optimization settings
+
+## Edge Cases
+
+### No metadata present
+
+```typescript
+const code = Bytecode.fromHex("0x60016002015b00")
+
+Bytecode.hasMetadata(code)  // false
+Bytecode.stripMetadata(code) === code  // true (returns same reference)
+```
+
+### Very short bytecode
+
+```typescript
+const short = Bytecode.fromHex("0x00")
+
+Bytecode.hasMetadata(short)  // false (< 2 bytes)
+```
+
+### Bytecode ending with similar pattern
+
+```typescript
+// Bytecode that happens to end with 0x00 0x33 but isn't metadata
+const notMeta = Bytecode.fromHex("0x60003300")
+
+Bytecode.hasMetadata(notMeta)  // true (false positive)
+// This is rare but possible
+```
+
+**Note:** Metadata detection is heuristic-based. False positives possible but extremely rare.
+
+## Tree-Shakeable Usage
+
+```typescript
+import { hasMetadata, stripMetadata } from '@tevm/voltaire/BrandedBytecode'
+
+const code = fromHex("0x6001...a264...0033")
+
+if (hasMetadata(code)) {
+  const stripped = stripMetadata(code)
+  console.log(`Stripped ${code.length - stripped.length} bytes`)
+}
+```
+
+See [BrandedBytecode](/primitives/bytecode/branded-bytecode) for details on tree-shakeable API.
+
+## Performance
+
+Both operations are O(1):
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| `hasMetadata` | O(1) | Checks last 2 bytes only |
+| `stripMetadata` | O(1) | Slice operation (view, not copy) |
+
+Stripping is extremely fast:
+
+```typescript
+const large = new Uint8Array(100_000)  // 100KB bytecode
+Bytecode.stripMetadata(large)  // O(1) - just creates slice view
+```
