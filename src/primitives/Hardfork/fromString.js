@@ -26,5 +26,7 @@ export function fromString(name) {
 
 	// Case-insensitive comparison
 	const lower = cleanName.toLowerCase();
-	return NAME_TO_HARDFORK[lower];
+	return /** @type {import('./BrandedHardfork.js').BrandedHardfork | undefined} */ (
+		NAME_TO_HARDFORK[/** @type {keyof typeof NAME_TO_HARDFORK} */ (lower)]
+	);
 }
