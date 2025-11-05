@@ -1,0 +1,643 @@
+---
+title: Error Encoding
+description: Custom error encoding, decoding, and selector computation
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# Error Encoding
+
+Complete custom error ABI encoding and decoding for Solidity 0.8.4+ custom errors.
+
+## Overview
+
+Custom errors (introduced in Solidity 0.8.4) provide gas-efficient error handling with typed parameters. Error encoding enables:
+- Computing error selectors (4-byte keccak256 hash)
+- Encoding error parameters
+- Decoding revert data back into error parameters
+- Type-safe error handling
+
+## Error Type
+
+```typescript
+export type BrandedError<
+  TName extends string = string,
+  TInputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "error"
+  name: TName
+  inputs: TInputs
+}
+```
+
+Source: [BrandedError.ts:3-10](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/BrandedError.ts#L3-L10)
+
+## Quick Start
+
+```typescript
+import { Error } from '@tevm/primitives/Abi'
+
+// Define custom error
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+// Encode error
+const errorData = Error.encodeParams(insufficientBalance, [100n, 1000n])
+
+// Decode from revert data
+try {
+  await contract.method()
+} catch (error) {
+  const [balance, required] = Error.decodeParams(
+    insufficientBalance,
+    error.data
+  )
+  console.log(`Balance ${balance} < Required ${required}`)
+}
+```
+
+## API Reference
+
+### getSignature
+
+Get error signature string in canonical format `ErrorName(type1,type2,...)`.
+
+```typescript
+function getSignature(error: BrandedError): string
+```
+
+**Parameters:**
+- `error: BrandedError` - Error ABI item
+
+**Returns:** `string` - Error signature
+
+**Example:**
+```typescript
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const signature = Error.getSignature(insufficientBalance)
+// "InsufficientBalance(uint256,uint256)"
+
+const unauthorized = {
+  type: "error",
+  name: "Unauthorized",
+  inputs: [
+    { type: "address", name: "sender" }
+  ]
+}
+
+const signature2 = Error.getSignature(unauthorized)
+// "Unauthorized(address)"
+```
+
+**Notes:**
+- Parameter names are excluded
+- Only types matter for selector computation
+- Format: `ErrorName(type1,type2,...)`
+
+Source: [getSignature.js:15-18](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/getSignature.js#L15-L18)
+
+### getSelector
+
+Compute 4-byte error selector (first 4 bytes of keccak256 hash of signature).
+
+```typescript
+function getSelector(error: BrandedError): Uint8Array
+```
+
+**Parameters:**
+- `error: BrandedError` - Error ABI item
+
+**Returns:** `Uint8Array` - 4-byte error selector
+
+**Example:**
+```typescript
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const selector = Error.getSelector(insufficientBalance)
+// Uint8Array(4) - first 4 bytes of keccak256("InsufficientBalance(uint256,uint256)")
+```
+
+**Implementation:**
+1. Get error signature: `InsufficientBalance(uint256,uint256)`
+2. Hash with keccak256
+3. Take first 4 bytes
+
+**Note:** Error selectors are 4 bytes, like function selectors.
+
+Source: [getSelector.js:18-22](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/getSelector.js#L18-L22)
+
+### encodeParams
+
+Encode error parameters with selector prefix.
+
+```typescript
+function encodeParams<TInputs extends readonly Parameter[]>(
+  error: BrandedError<string, TInputs>,
+  args: ParametersToPrimitiveTypes<TInputs>
+): Uint8Array
+```
+
+**Parameters:**
+- `error: BrandedError` - Error ABI item
+- `args` - Array of parameter values matching error inputs
+
+**Returns:** `Uint8Array` - Complete error data (selector + encoded params)
+
+**Example:**
+```typescript
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const errorData = Error.encodeParams(insufficientBalance, [100n, 1000n])
+// Uint8Array containing:
+// - Bytes 0-3: Error selector
+// - Bytes 4+: ABI-encoded parameters
+
+// Use in revert
+// revert(errorData)
+```
+
+**Error Data Structure:**
+```
+[selector (4 bytes)][parameter encoding]
+```
+
+Source: [encodeParams.js:19-26](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/encodeParams.js#L19-L26)
+
+### decodeParams
+
+Decode error parameters from revert data.
+
+```typescript
+function decodeParams<TInputs extends readonly Parameter[]>(
+  error: BrandedError<string, TInputs>,
+  data: Uint8Array
+): ParametersToPrimitiveTypes<TInputs>
+```
+
+**Parameters:**
+- `error: BrandedError` - Error ABI item
+- `data: Uint8Array` - Encoded error data (with selector)
+
+**Returns:** Decoded parameter values
+
+**Throws:**
+- `AbiDecodingError` - If data is too short
+- `AbiInvalidSelectorError` - If selector doesn't match error
+
+**Example:**
+```typescript
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+// Catch revert and decode
+try {
+  await contract.transfer(to, amount)
+} catch (revertError) {
+  const revertData = revertError.data
+
+  try {
+    const [balance, required] = Error.decodeParams(
+      insufficientBalance,
+      revertData
+    )
+    console.log(`Insufficient balance: ${balance} < ${required}`)
+  } catch (decodeError) {
+    // Different error or invalid data
+    console.log("Unknown error")
+  }
+}
+```
+
+**Implementation:**
+1. Verify data length ≥ 4 bytes
+2. Extract selector from bytes 0-3
+3. Compare selector with expected selector
+4. Decode remaining bytes as parameters
+
+Source: [decodeParams.js:22-36](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/decodeParams.js#L22-L36)
+
+## Complete Workflow
+
+<Tabs>
+<TabItem label="Encoding Errors">
+```typescript
+import { Error } from '@tevm/primitives/Abi'
+
+// Define errors
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const unauthorized = {
+  type: "error",
+  name: "Unauthorized",
+  inputs: [
+    { type: "address", name: "sender" }
+  ]
+}
+
+// Encode errors
+const error1 = Error.encodeParams(insufficientBalance, [100n, 1000n])
+const error2 = Error.encodeParams(unauthorized, ["0x..."])
+
+// Use in contract revert
+// if (balance < required) revert(error1)
+// if (sender != owner) revert(error2)
+```
+</TabItem>
+<TabItem label="Decoding Errors">
+```typescript
+import { Error } from '@tevm/primitives/Abi'
+
+// Define possible errors
+const errors = [
+  {
+    type: "error",
+    name: "InsufficientBalance",
+    inputs: [
+      { type: "uint256", name: "balance" },
+      { type: "uint256", name: "required" }
+    ]
+  },
+  {
+    type: "error",
+    name: "Unauthorized",
+    inputs: [
+      { type: "address", name: "sender" }
+    ]
+  }
+]
+
+// Create selector map
+const errorMap = new Map(
+  errors.map(err => [
+    Error.getSelector(err).toString(),
+    err
+  ])
+)
+
+// Decode revert
+try {
+  await contract.method()
+} catch (revertError) {
+  const data = revertError.data
+  const selector = data.slice(0, 4).toString()
+  const error = errorMap.get(selector)
+
+  if (error) {
+    const params = Error.decodeParams(error, data)
+    console.log(`${error.name}:`, params)
+  }
+}
+```
+</TabItem>
+<TabItem label="Type-Safe Handling">
+```typescript
+import { Error } from '@tevm/primitives/Abi'
+
+// Define errors
+const insufficientBalance = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+} as const
+
+const unauthorized = {
+  type: "error",
+  name: "Unauthorized",
+  inputs: [
+    { type: "address", name: "sender" }
+  ]
+} as const
+
+// Type-safe error handling
+async function safeTransfer(to: string, amount: bigint) {
+  try {
+    await contract.transfer(to, amount)
+  } catch (error) {
+    const data = error.data
+
+    // Try InsufficientBalance
+    if (matchesSelector(data, insufficientBalance)) {
+      const [balance, required] = Error.decodeParams(
+        insufficientBalance,
+        data
+      )
+      // TypeScript knows: balance and required are bigint
+      throw new Error(`Need ${required - balance} more tokens`)
+    }
+
+    // Try Unauthorized
+    if (matchesSelector(data, unauthorized)) {
+      const [sender] = Error.decodeParams(unauthorized, data)
+      // TypeScript knows: sender is BrandedAddress
+      throw new Error(`Unauthorized: ${sender}`)
+    }
+
+    throw error
+  }
+}
+
+function matchesSelector(data: Uint8Array, error: any): boolean {
+  const selector = data.slice(0, 4)
+  const expected = Error.getSelector(error)
+  return selector.every((b, i) => b === expected[i])
+}
+```
+</TabItem>
+</Tabs>
+
+## Error Patterns
+
+### Simple Errors
+
+No parameters:
+```typescript
+const unauthorized = {
+  type: "error",
+  name: "Unauthorized",
+  inputs: []
+}
+
+// Encode (just selector)
+const errorData = Error.encodeParams(unauthorized, [])
+
+// Decode (empty array)
+const [] = Error.decodeParams(unauthorized, errorData)
+```
+
+### Errors with Context
+
+Single parameter for context:
+```typescript
+const invalidAmount = {
+  type: "error",
+  name: "InvalidAmount",
+  inputs: [
+    { type: "uint256", name: "amount" }
+  ]
+}
+
+const errorData = Error.encodeParams(invalidAmount, [0n])
+```
+
+### Rich Error Data
+
+Multiple parameters:
+```typescript
+const transferFailed = {
+  type: "error",
+  name: "TransferFailed",
+  inputs: [
+    { type: "address", name: "from" },
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" },
+    { type: "string", name: "reason" }
+  ]
+}
+
+const errorData = Error.encodeParams(transferFailed, [
+  "0x...",
+  "0x...",
+  1000n,
+  "Insufficient balance"
+])
+```
+
+### Complex Types
+
+Arrays and tuples:
+```typescript
+const batchFailed = {
+  type: "error",
+  name: "BatchTransferFailed",
+  inputs: [
+    { type: "uint256[]", name: "failedIndices" },
+    { type: "string[]", name: "reasons" }
+  ]
+}
+
+const errorData = Error.encodeParams(batchFailed, [
+  [0n, 2n, 5n],
+  ["Insufficient balance", "Invalid recipient", "Paused"]
+])
+```
+
+## Error Selector Matching
+
+### Direct Comparison
+
+```typescript
+const selector = Error.getSelector(insufficientBalance)
+const revertSelector = revertData.slice(0, 4)
+
+if (selector.every((b, i) => b === revertSelector[i])) {
+  // Match found
+  const params = Error.decodeParams(insufficientBalance, revertData)
+}
+```
+
+### Selector Map
+
+```typescript
+// Create map for fast lookup
+const selectorToError = new Map()
+
+const errors = [insufficientBalance, unauthorized, invalidAmount]
+
+for (const error of errors) {
+  const selector = Error.getSelector(error)
+  const key = Array.from(selector).join(',')
+  selectorToError.set(key, error)
+}
+
+// Lookup
+const revertSelector = revertData.slice(0, 4)
+const key = Array.from(revertSelector).join(',')
+const matchedError = selectorToError.get(key)
+
+if (matchedError) {
+  const params = Error.decodeParams(matchedError, revertData)
+}
+```
+
+## Panic Codes
+
+Solidity also has built-in Panic errors with specific codes:
+
+```typescript
+// Panic(uint256)
+const panicError = {
+  type: "error",
+  name: "Panic",
+  inputs: [
+    { type: "uint256", name: "code" }
+  ]
+}
+
+// Panic codes:
+// 0x01: assert(false)
+// 0x11: arithmetic overflow/underflow
+// 0x12: division by zero
+// 0x21: enum conversion error
+// 0x22: invalid storage byte array
+// 0x31: pop() on empty array
+// 0x32: array out of bounds
+// 0x41: memory allocation overflow
+// 0x51: invalid internal function call
+
+try {
+  await contract.method()
+} catch (error) {
+  const [code] = Error.decodeParams(panicError, error.data)
+  console.log(`Panic code: 0x${code.toString(16)}`)
+}
+```
+
+## Type Utilities
+
+```typescript
+import type { ExtractNames, Get } from '@tevm/primitives/Abi/error'
+
+// Extract all error names from ABI
+type Names = ExtractNames<typeof abi>
+// "InsufficientBalance" | "Unauthorized" | ...
+
+// Get specific error from ABI
+type InsufficientBalanceError = Get<typeof abi, "InsufficientBalance">
+// BrandedError<"InsufficientBalance", [...inputs]>
+```
+
+Source: [BrandedError.ts:12-18](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/BrandedError.ts#L12-L18)
+
+## Comparison: Errors vs Revert Strings
+
+### Custom Errors (Recommended)
+
+**Pros:**
+- Gas efficient (40-50% cheaper than revert strings)
+- Type-safe parameter decoding
+- Better tooling support
+- Structured error data
+
+**Cons:**
+- Requires Solidity 0.8.4+
+- Need ABI for decoding
+
+```typescript
+// Custom error: ~200 gas cheaper
+revert InsufficientBalance(balance, required)
+```
+
+### Revert Strings (Legacy)
+
+**Pros:**
+- Works in all Solidity versions
+- Human-readable in raw form
+
+**Cons:**
+- More expensive gas costs
+- Unstructured data
+- No type safety
+
+```typescript
+// Revert string
+revert("Insufficient balance")
+```
+
+<Aside type="tip" title="Use Custom Errors">
+Always prefer custom errors over revert strings for gas efficiency and type safety in Solidity 0.8.4+.
+</Aside>
+
+## Error Handling Best Practices
+
+1. **Define all contract errors in ABI**
+   ```typescript
+   const contractErrors = [
+     insufficientBalance,
+     unauthorized,
+     invalidAmount,
+     paused
+   ]
+   ```
+
+2. **Create selector map for O(1) lookup**
+   ```typescript
+   const errorMap = new Map(
+     contractErrors.map(err => [
+       Error.getSelector(err).toString(),
+       err
+     ])
+   )
+   ```
+
+3. **Always verify selector before decoding**
+   ```typescript
+   const selector = data.slice(0, 4).toString()
+   const error = errorMap.get(selector)
+   if (!error) throw new Error("Unknown error")
+   ```
+
+4. **Handle decoding errors gracefully**
+   ```typescript
+   try {
+     const params = Error.decodeParams(error, data)
+   } catch (decodeError) {
+     console.error("Failed to decode error", decodeError)
+   }
+   ```
+
+## Related
+
+- [Abi](/primitives/abi) - Main ABI documentation
+- [Types](/primitives/abi/types) - ABI type system
+- [Function](/primitives/abi/function) - Function encoding
+- [Encoding](/primitives/abi/encoding) - Low-level encoding
+- [Usage Patterns](/primitives/abi/usage-patterns) - Common patterns
+
+## Specification
+
+- [Solidity Custom Errors](https://docs.soliditylang.org/en/latest/contracts.html#errors) - Custom error specification
+- [Error Selector](https://docs.soliditylang.org/en/latest/abi-spec.html#errors) - Error encoding rules

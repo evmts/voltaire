@@ -1,0 +1,381 @@
+---
+title: Base64 Decoding
+description: Decoding base64 strings to bytes and UTF-8 strings
+---
+
+# Decoding
+
+Methods for decoding base64 strings to binary data and UTF-8 strings.
+
+## Standard Base64 Decoding
+
+### `Base64.decode(encoded)`
+
+Decodes standard base64 string to bytes. Accepts strings encoded with RFC 4648 alphabet (A-Z, a-z, 0-9, +, /) with padding.
+
+```typescript
+const encoded = "SGVsbG8="
+const decoded = Base64.decode(encoded)
+// Uint8Array([72, 101, 108, 108, 111])
+
+// Convert to string to verify
+const str = new TextDecoder().decode(decoded)
+console.log(str) // "Hello"
+```
+
+**Parameters:**
+- `encoded: string` - Base64 string to decode
+
+**Returns:** `Uint8Array` - Decoded binary data
+
+**Throws:**
+- `Error` - If input is invalid base64 format
+
+**Example:**
+```typescript
+// Decode base64-encoded binary data
+const b64Hash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+const hash = Base64.decode(b64Hash)
+console.log(hash.length) // 32 bytes
+
+// Handle invalid input
+try {
+  const invalid = Base64.decode("not!valid!base64")
+} catch (error) {
+  console.error("Invalid base64:", error.message)
+}
+```
+
+Defined in: [primitives/Base64/BrandedBase64/decode.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decode.js)
+
+### `Base64.decodeToString(encoded)`
+
+Decodes base64 string directly to UTF-8 string. Combines base64 decoding with `TextDecoder` for convenience.
+
+```typescript
+const encoded = "SGVsbG8sIHdvcmxkIQ=="
+const str = Base64.decodeToString(encoded)
+// "Hello, world!"
+
+// Works with Unicode
+const unicodeB64 = "SGVsbG8sIOS4lueVjCE="
+const unicode = Base64.decodeToString(unicodeB64)
+// "Hello, 世界!"
+```
+
+**Parameters:**
+- `encoded: string` - Base64 string to decode
+
+**Returns:** `string` - Decoded UTF-8 string
+
+**Throws:**
+- `Error` - If input is invalid base64 format
+
+**Example:**
+```typescript
+// Decode JSON data
+const jsonB64 = Base64.encodeString(JSON.stringify({ foo: "bar" }))
+const jsonStr = Base64.decodeToString(jsonB64)
+const obj = JSON.parse(jsonStr)
+console.log(obj.foo) // "bar"
+
+// Decode message
+const messageB64 = "VGhhbmtzIGZvciBkZWNvZGluZyE="
+const message = Base64.decodeToString(messageB64)
+console.log(message) // "Thanks for decoding!"
+```
+
+Defined in: [primitives/Base64/BrandedBase64/decodeToString.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decodeToString.js)
+
+## URL-Safe Base64 Decoding
+
+### `Base64.decodeUrlSafe(encoded)`
+
+Decodes URL-safe base64 string to bytes. Accepts strings encoded with URL-safe alphabet (A-Z, a-z, 0-9, -, _) without padding.
+
+**Automatically handles:**
+- Missing padding characters
+- URL-safe character substitutions (- → +, _ → /)
+
+```typescript
+// Decode URL-safe base64 (no padding)
+const urlSafe = "SGVsbG8"
+const decoded = Base64.decodeUrlSafe(urlSafe)
+// Uint8Array([72, 101, 108, 108, 111])
+
+// Works with URL-safe characters
+const urlSafeData = "AB-_CD"
+const data = Base64.decodeUrlSafe(urlSafeData)
+```
+
+**Parameters:**
+- `encoded: string` - URL-safe base64 string (without padding)
+
+**Returns:** `Uint8Array` - Decoded binary data
+
+**Throws:**
+- `Error` - If input is invalid base64 format
+
+**Example:**
+```typescript
+// Decode token from URL
+const url = new URL("https://example.com/auth?token=eyJhbGciOiJIUzI1...")
+const token = url.searchParams.get("token")
+if (token) {
+  const decoded = Base64.decodeUrlSafe(token)
+  // Process decoded token bytes
+}
+
+// Decode identifier from path
+const path = "/items/SGVsbG8"
+const id = path.split("/").pop()
+if (id) {
+  const decoded = Base64.decodeUrlSafe(id)
+}
+```
+
+Defined in: [primitives/Base64/BrandedBase64/decodeUrlSafe.js:10](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decodeUrlSafe.js)
+
+### `Base64.decodeUrlSafeToString(encoded)`
+
+Decodes URL-safe base64 string directly to UTF-8 string. Combines URL-safe decoding with `TextDecoder`.
+
+```typescript
+// Decode URL-safe string
+const urlSafeStr = "SGVsbG8sIHdvcmxkIQ"
+const str = Base64.decodeUrlSafeToString(urlSafeStr)
+// "Hello, world!"
+
+// Decode OAuth state parameter
+const state = new URL(window.location.href).searchParams.get("state")
+if (state) {
+  const stateObj = JSON.parse(Base64.decodeUrlSafeToString(state))
+  console.log(stateObj.returnUrl)
+}
+```
+
+**Parameters:**
+- `encoded: string` - URL-safe base64 string
+
+**Returns:** `string` - Decoded UTF-8 string
+
+**Throws:**
+- `Error` - If input is invalid
+
+**Example:**
+```typescript
+// Decode email from URL parameter
+const encodedEmail = "dXNlckBleGFtcGxlLmNvbQ"
+const email = Base64.decodeUrlSafeToString(encodedEmail)
+// "user@example.com"
+
+// Decode error message from URL
+const errorParam = new URLSearchParams(window.location.search).get("error")
+if (errorParam) {
+  const errorMsg = Base64.decodeUrlSafeToString(errorParam)
+  console.error(errorMsg)
+}
+```
+
+Defined in: [primitives/Base64/BrandedBase64/decodeUrlSafeToString.js:9](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decodeUrlSafeToString.js)
+
+## Usage Patterns
+
+### Safe Decoding with Validation
+
+```typescript
+function safeDecodeBase64(input: string): Uint8Array | null {
+  // Validate first
+  if (!Base64.isValid(input)) {
+    console.warn("Invalid base64 format")
+    return null
+  }
+
+  // Then decode
+  try {
+    return Base64.decode(input)
+  } catch (error) {
+    console.error("Decoding failed:", error)
+    return null
+  }
+}
+
+// Usage
+const result = safeDecodeBase64(userInput)
+if (result) {
+  // Process decoded data
+}
+```
+
+### Decoding with Size Calculation
+
+```typescript
+// Calculate decoded size before allocating buffer
+const encodedStr = "SGVsbG8sIHdvcmxkIQ==" // 20 chars
+const decodedSize = Base64.calcDecodedSize(encodedStr.length)
+console.log(decodedSize) // 13 bytes
+
+// Decode
+const decoded = Base64.decode(encodedStr)
+console.log(decoded.length) // 13 bytes
+```
+
+### Auto-detecting Format
+
+```typescript
+function decodeBase64Auto(input: string): Uint8Array {
+  // Try URL-safe first (less strict)
+  if (Base64.isValidUrlSafe(input)) {
+    return Base64.decodeUrlSafe(input)
+  }
+
+  // Fall back to standard
+  if (Base64.isValid(input)) {
+    return Base64.decode(input)
+  }
+
+  throw new Error("Invalid base64 format")
+}
+```
+
+### Streaming Decoding
+
+```typescript
+// Decode multiple chunks
+function decodeChunks(chunks: string[]): Uint8Array {
+  const decoded = chunks.map(Base64.decode)
+  const totalLength = decoded.reduce((sum, arr) => sum + arr.length, 0)
+
+  // Combine into single array
+  const result = new Uint8Array(totalLength)
+  let offset = 0
+  for (const chunk of decoded) {
+    result.set(chunk, offset)
+    offset += chunk.length
+  }
+
+  return result
+}
+```
+
+### JSON Decoding
+
+```typescript
+// Decode base64-encoded JSON
+function decodeJsonBase64<T>(encoded: string): T {
+  const jsonStr = Base64.decodeToString(encoded)
+  return JSON.parse(jsonStr)
+}
+
+// Usage
+interface UserData {
+  id: number
+  name: string
+}
+
+const encoded = "eyJpZCI6MSwiIG5hbWUiOiJBbGljZSJ9"
+const user = decodeJsonBase64<UserData>(encoded)
+console.log(user.name) // "Alice"
+```
+
+### Error Handling
+
+```typescript
+// Comprehensive error handling
+function decodeWithErrors(input: string): {
+  success: boolean
+  data?: Uint8Array
+  error?: string
+} {
+  // Check format
+  if (!Base64.isValid(input)) {
+    return {
+      success: false,
+      error: "Invalid base64 format"
+    }
+  }
+
+  // Attempt decode
+  try {
+    const data = Base64.decode(input)
+    return { success: true, data }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error"
+    }
+  }
+}
+```
+
+## Decoding Binary Types
+
+```typescript
+// Decode Ethereum address (20 bytes)
+const addressB64 = "dC01zGY0wFMpJaO4RLyedZX1Hj4="
+const addressBytes = Base64.decode(addressB64)
+console.log(addressBytes.length) // 20
+
+// Decode signature (65 bytes)
+const sigB64 = "..." // 88-char base64 string
+const signature = Base64.decode(sigB64)
+console.log(signature.length) // 65
+
+// Decode arbitrary binary
+const binaryB64 = "AP/AfwA="
+const binary = Base64.decode(binaryB64)
+// Uint8Array([0, 255, 128, 127, 0])
+```
+
+## Tree-Shakeable Usage
+
+All decoding methods available as tree-shakeable imports:
+
+```typescript
+import {
+  decode,
+  decodeToString,
+  decodeUrlSafe,
+  decodeUrlSafeToString
+} from '@tevm/voltaire/BrandedBase64'
+
+const bytes = decode("SGVsbG8=")
+const str = decodeToString("SGVsbG8=")
+const urlSafeBytes = decodeUrlSafe("SGVsbG8")
+const urlSafeStr = decodeUrlSafeToString("SGVsbG8")
+```
+
+**Tree-shaking benefit:** Import only the decoding variant you need. If you only use standard decoding, URL-safe decoding code is excluded from bundle.
+
+See [BrandedBase64](/primitives/base64/branded-base64) for details on tree-shakeable API.
+
+## Decoding Algorithm
+
+Standard base64 decoding process:
+
+1. **Validate format:** Check for valid base64 characters and padding
+2. **Remove padding:** Strip trailing `=` characters
+3. **Convert from base64:** Each 4 base64 characters become 3 bytes
+4. **Return bytes:** Construct `Uint8Array` from decoded data
+
+```typescript
+// Example: "SGVsbG8=" → "Hello"
+// S      G      V      s      b      G      8      = (base64)
+// 010010 000110 010101 101100 011011 000110 1111xx (6-bit groups)
+// 01001000 01100101 01101100 01101100 01101111 (8-bit bytes)
+// 72   101  108  108  111  (decimal)
+// H    e    l    l    o
+```
+
+URL-safe decoding performs character substitutions before standard decoding:
+```typescript
+// URL-safe: SGVs-G8_bG8  (restore padding)
+// Standard: SGVs+G8/bG8= (decode normally)
+```
+
+## Related
+
+- [Encoding](/primitives/base64/encoding) - Encoding to base64 format
+- [Validation](/primitives/base64/validation) - Validating base64 strings
+- [Utilities](/primitives/base64/utilities) - Size calculations
+- [BrandedBase64](/primitives/base64/branded-base64) - Tree-shakeable API

@@ -1,0 +1,325 @@
+---
+title: Uint Conversions
+description: Converting Uint256 to different formats
+---
+
+# Conversions
+
+Methods for converting Uint256 instances to various output formats.
+
+## Hex Conversions
+
+### `instance.toHex(padded?)`
+
+Convert to hex string with optional padding.
+
+```typescript
+const value = Uint.from(255n)
+
+// Padded to 64 characters (32 bytes) - default
+value.toHex()        // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+value.toHex(true)    // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+
+// Unpadded - minimal representation
+value.toHex(false)   // "0xff"
+
+// Zero value
+Uint.ZERO.toHex()       // "0x0000000000000000000000000000000000000000000000000000000000000000"
+Uint.ZERO.toHex(false)  // "0x0"
+```
+
+**Parameters:**
+- `padded?: boolean` - Whether to pad to 64 hex characters (default: `true`)
+
+**Returns:** `string` - Hex string with `0x` prefix
+
+**Static form:**
+```typescript
+Uint.toHex(value)        // Padded
+Uint.toHex(value, false) // Unpadded
+```
+
+Source: [toHex.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toHex.ts#L18)
+
+## Numeric Conversions
+
+### `instance.toBigInt()`
+
+Convert to JavaScript bigint (removes type branding).
+
+```typescript
+const value = Uint.from(100n)
+const bigintValue = value.toBigInt()  // 100n
+
+// Type system
+value.toBigInt()        // bigint (not branded)
+value as bigint         // Can cast directly
+
+// Use case: JavaScript bigint operations
+const a = Uint.from(10n)
+const b = Uint.from(5n)
+const nativeMath = a.toBigInt() * b.toBigInt()  // Native bigint
+const wrapped = Uint.from(nativeMath)           // Back to Uint
+```
+
+**Returns:** `bigint`
+
+**Static form:**
+```typescript
+Uint.toBigInt(value) // bigint
+```
+
+**Note:** Returns unwrapped bigint. Use `from` to convert back to BrandedUint.
+
+Source: [toBigInt.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toBigInt.ts)
+
+### `instance.toNumber()`
+
+Convert to JavaScript number. Throws if value exceeds `Number.MAX_SAFE_INTEGER`.
+
+```typescript
+const small = Uint.from(100n)
+small.toNumber()  // 100
+
+const safe = Uint.from(Number.MAX_SAFE_INTEGER)
+safe.toNumber()   // 9007199254740991
+
+// Throws on unsafe conversion
+const large = Uint.from(2n ** 100n)
+large.toNumber()  // Error: exceeds MAX_SAFE_INTEGER
+
+// Safe check
+if (value.toBigInt() <= BigInt(Number.MAX_SAFE_INTEGER)) {
+  const num = value.toNumber()
+}
+```
+
+**Returns:** `number`
+
+**Throws:**
+- If value exceeds `Number.MAX_SAFE_INTEGER` (2^53 - 1)
+
+**Static form:**
+```typescript
+Uint.toNumber(value) // number
+```
+
+**Note:** Most Uint256 values are too large for safe number conversion. Use `toBigInt()` instead.
+
+Source: [toNumber.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toNumber.ts)
+
+### `instance.toString(radix?)`
+
+Convert to string in specified base (2-36).
+
+```typescript
+const value = Uint.from(255n)
+
+// Decimal (default)
+value.toString()      // "255"
+value.toString(10)    // "255"
+
+// Binary
+value.toString(2)     // "11111111"
+
+// Hex (without 0x prefix)
+value.toString(16)    // "ff"
+
+// Octal
+value.toString(8)     // "377"
+
+// Base 36
+value.toString(36)    // "73"
+
+// Large values
+Uint.MAX.toString(10) // "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+```
+
+**Parameters:**
+- `radix?: number` - Base for string conversion (2-36, default: 10)
+
+**Returns:** `string`
+
+**Static form:**
+```typescript
+Uint.toString(value, 16) // "ff"
+```
+
+**Note:** For hex with `0x` prefix, use `toHex()` instead.
+
+Source: [toString.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toString.ts)
+
+## Byte Conversions
+
+### `instance.toBytes()`
+
+Convert to 32-byte Uint8Array (big-endian).
+
+```typescript
+const value = Uint.from(255n)
+const bytes = value.toBytes()
+// Uint8Array(32) [0, 0, ..., 0, 255]
+//                                 ↑ byte 31
+
+bytes.length           // 32
+bytes[31]              // 255
+bytes[30]              // 0
+
+// Zero value
+Uint.ZERO.toBytes()    // Uint8Array(32) [0, 0, ..., 0]
+
+// Max value
+Uint.MAX.toBytes()     // Uint8Array(32) [255, 255, ..., 255]
+
+// Big-endian byte order (most significant byte first)
+const large = Uint.from(256n)
+const largeBytes = large.toBytes()
+largeBytes[30]         // 1
+largeBytes[31]         // 0
+```
+
+**Returns:** `Uint8Array` - Always 32 bytes, big-endian
+
+**Byte order:** Big-endian (network byte order, most significant byte first)
+
+**Static form:**
+```typescript
+Uint.toBytes(value) // Uint8Array(32)
+```
+
+Source: [toBytes.ts:16](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toBytes.ts#L16)
+
+### `instance.toAbiEncoded()`
+
+Convert to ABI-encoded bytes (alias for `toBytes()`).
+
+```typescript
+const value = Uint.from(255n)
+const encoded = value.toAbiEncoded()
+// Uint8Array(32) [0, 0, ..., 0, 255]
+
+// Identical to toBytes()
+const bytes = value.toBytes()
+encoded.every((v, i) => v === bytes[i])  // true
+```
+
+**Returns:** `Uint8Array` - 32 bytes, big-endian (ABI uint256 encoding)
+
+**Static form:**
+```typescript
+Uint.toAbiEncoded(value)
+```
+
+**Note:** ABI encoding for uint256 is always 32 bytes, big-endian. This is identical to `toBytes()`.
+
+Source: [toAbiEncoded.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toAbiEncoded.ts)
+
+## Conversion Patterns
+
+### Display Formatting
+
+```typescript
+// Decimal for human display
+const value = Uint.from(12345n)
+console.log(`Value: ${value.toString()}`)  // "Value: 12345"
+
+// Hex for debugging
+console.log(`Hex: ${value.toHex(false)}`)  // "Hex: 0x3039"
+
+// Padded hex for storage/comparison
+console.log(`Padded: ${value.toHex()}`)    // "Padded: 0x0000...3039"
+```
+
+### Type Conversion
+
+```typescript
+// To Address (if valid address range)
+import { Address } from '@tevm/voltaire'
+
+const addrValue = Uint.from(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3en)
+const bytes = addrValue.toBytes().slice(-20)  // Last 20 bytes
+const addr = Address.fromBytes(bytes)
+
+// To native JavaScript
+const uint = Uint.from(100n)
+const jsNumber = uint.toNumber()  // Use in native JS math
+const jsBigInt = uint.toBigInt()  // Use in bigint operations
+```
+
+### ABI Encoding/Decoding
+
+```typescript
+// Encode for ABI
+const value = Uint.from(42n)
+const encoded = value.toAbiEncoded()
+// Ready for contract call
+
+// Decode from ABI
+const decoded = Uint.fromAbiEncoded(encodedBytes)
+const result = decoded.toNumber()  // 42
+```
+
+### Storage Formats
+
+```typescript
+const value = Uint.from(255n)
+
+// For JSON serialization
+const json = {
+  value: value.toString()  // "255" as string
+}
+
+// For database (hex)
+const dbValue = value.toHex()  // Padded hex
+
+// For binary protocols
+const binary = value.toBytes()  // 32 bytes
+```
+
+## Round-Trip Conversions
+
+```typescript
+// Hex round-trip
+const original = Uint.from(255n)
+const hex = original.toHex()
+const restored = Uint.fromHex(hex)
+original.equals(restored)  // true
+
+// Bytes round-trip
+const bytes = original.toBytes()
+const restored2 = Uint.fromBytes(bytes)
+original.equals(restored2)  // true
+
+// String round-trip
+const str = original.toString()
+const restored3 = Uint.from(str)
+original.equals(restored3)  // true
+
+// BigInt round-trip
+const bigint = original.toBigInt()
+const restored4 = Uint.fromBigInt(bigint)
+original.equals(restored4)  // true
+```
+
+## Tree-Shakeable Usage
+
+All conversions available as tree-shakeable imports:
+
+```typescript
+import {
+  toHex,
+  toBigInt,
+  toNumber,
+  toBytes,
+  toAbiEncoded,
+  toString
+} from '@tevm/voltaire/BrandedUint'
+
+const value = Uint.from(255n)
+const hex = toHex(value, false)     // "0xff"
+const bigint = toBigInt(value)      // 255n
+const bytes = toBytes(value)        // Uint8Array(32)
+const str = toString(value, 16)     // "ff"
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

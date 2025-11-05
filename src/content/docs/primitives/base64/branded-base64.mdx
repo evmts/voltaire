@@ -1,0 +1,462 @@
+---
+title: BrandedBase64
+description: Tree-shakeable functional API for Base64 operations
+---
+
+# BrandedBase64
+
+Tree-shakeable functional API for Base64 operations with optimal bundle size.
+
+## Overview
+
+`BrandedBase64` is the functional layer providing base64 encoding/decoding operations. It offers:
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods
+- **Bundle optimization** through selective imports
+- **Zero dependencies** on Web APIs (`btoa`/`atob`)
+
+Primary benefit: Import only the encoding/decoding variants you need, reducing bundle size when not using all features.
+
+## Namespace API
+
+All functions exported as both individual exports and namespace:
+
+```typescript
+import * as BrandedBase64 from '@tevm/voltaire/BrandedBase64'
+
+// Namespace usage
+const encoded = BrandedBase64.encode(data)
+const decoded = BrandedBase64.decode(encoded)
+```
+
+## Tree-Shakeable Usage
+
+Import only what you need:
+
+```typescript
+import { encode, decode } from '@tevm/voltaire/BrandedBase64'
+
+const data = new Uint8Array([72, 101, 108, 108, 111])
+const encoded = encode(data)    // "SGVsbG8="
+const decoded = decode(encoded) // Uint8Array([72, 101, 108, 108, 111])
+```
+
+**Bundle impact:** Only `encode` and `decode` included. URL-safe encoding/decoding methods excluded.
+
+## Available Functions
+
+All Base64 functionality available as tree-shakeable functions:
+
+### Standard Encoding/Decoding
+
+```typescript
+import {
+  encode,
+  decode,
+  encodeString,
+  decodeToString
+} from '@tevm/voltaire/BrandedBase64'
+
+// Bytes ↔ Base64
+const data = new Uint8Array([1, 2, 3])
+const b64 = encode(data)
+const original = decode(b64)
+
+// String ↔ Base64
+const str = "Hello, world!"
+const encoded = encodeString(str)
+const decoded = decodeToString(encoded)
+```
+
+See [Encoding](/primitives/base64/encoding) and [Decoding](/primitives/base64/decoding) for details.
+
+### URL-Safe Encoding/Decoding
+
+```typescript
+import {
+  encodeUrlSafe,
+  decodeUrlSafe,
+  encodeStringUrlSafe,
+  decodeUrlSafeToString
+} from '@tevm/voltaire/BrandedBase64'
+
+// Bytes ↔ URL-safe Base64
+const data = new Uint8Array([255, 254, 253])
+const urlSafe = encodeUrlSafe(data)
+const original = decodeUrlSafe(urlSafe)
+
+// String ↔ URL-safe Base64
+const str = "user@example.com"
+const encoded = encodeStringUrlSafe(str)
+const decoded = decodeUrlSafeToString(encoded)
+```
+
+See [Encoding](/primitives/base64/encoding) and [Decoding](/primitives/base64/decoding) for details.
+
+### Validation
+
+```typescript
+import {
+  isValid,
+  isValidUrlSafe
+} from '@tevm/voltaire/BrandedBase64'
+
+const validStandard = isValid("SGVsbG8=")        // true
+const validUrlSafe = isValidUrlSafe("SGVsbG8")   // true
+```
+
+See [Validation](/primitives/base64/validation) for details.
+
+### Utilities
+
+```typescript
+import {
+  calcEncodedSize,
+  calcDecodedSize
+} from '@tevm/voltaire/BrandedBase64'
+
+const encodedSize = calcEncodedSize(1024)   // 1368 chars
+const decodedSize = calcDecodedSize(1368)   // 1026 bytes max
+```
+
+See [Utilities](/primitives/base64/utilities) for details.
+
+## Data-First Pattern
+
+All BrandedBase64 functions follow data-first pattern:
+
+```typescript
+// Data as first parameter
+encode(data)
+decode(encoded)
+encodeString(str)
+isValid(str)
+calcEncodedSize(length)
+
+// vs Base64 namespace: same signatures
+Base64.encode(data)
+Base64.decode(encoded)
+```
+
+This enables functional composition:
+
+```typescript
+import { encode, isValid, decode } from '@tevm/voltaire/BrandedBase64'
+
+// Function composition
+const safeEncode = (data: Uint8Array) => encode(data)
+const safeDecode = (str: string) => isValid(str) ? decode(str) : null
+
+// Array methods
+const dataArray = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6]),
+]
+const encoded = dataArray.map(encode)
+const decoded = encoded.map(decode)
+
+// Partial application
+const validator = (str: string) => isValid(str)
+strings.filter(validator)
+```
+
+## Tree-Shaking Benefits
+
+Primary benefit: **Selective inclusion of encoding variants**
+
+### Example 1: Standard Only (Minimal)
+
+```typescript
+import { encode, decode } from '@tevm/voltaire/BrandedBase64'
+
+const data = new Uint8Array([1, 2, 3])
+const b64 = encode(data)
+const original = decode(b64)
+```
+
+**Bundle:** Only standard base64 encoding/decoding. No URL-safe variants, no validation, no utilities.
+
+### Example 2: URL-Safe Only
+
+```typescript
+import { encodeUrlSafe, decodeUrlSafe } from '@tevm/voltaire/BrandedBase64'
+
+const data = new Uint8Array([255, 254, 253])
+const urlSafe = encodeUrlSafe(data)
+const original = decodeUrlSafe(urlSafe)
+```
+
+**Bundle:** Only URL-safe encoding/decoding. No standard variants.
+
+### Example 3: With Validation
+
+```typescript
+import { encode, decode, isValid } from '@tevm/voltaire/BrandedBase64'
+
+const data = new Uint8Array([1, 2, 3])
+const b64 = encode(data)
+
+if (isValid(b64)) {
+  const original = decode(b64)
+}
+```
+
+**Bundle:** Standard encoding/decoding + validation. No URL-safe variants, no utilities.
+
+### Example 4: Complete (All Features)
+
+```typescript
+import { Base64 } from '@tevm/voltaire'
+
+// Using namespace includes all methods
+const encoded = Base64.encode(data)
+const urlSafe = Base64.encodeUrlSafe(data)
+const valid = Base64.isValid(encoded)
+const size = Base64.calcEncodedSize(data.length)
+```
+
+**Bundle:** All Base64 methods included.
+
+## Function Reference
+
+### Encoding Functions
+
+| Function | Input | Output | Notes |
+|----------|-------|--------|-------|
+| `encode` | `Uint8Array` | `Base64String` | Standard base64 with padding |
+| `encodeString` | `string` | `Base64String` | UTF-8 string to standard base64 |
+| `encodeUrlSafe` | `Uint8Array` | `Base64UrlString` | URL-safe, no padding |
+| `encodeStringUrlSafe` | `string` | `Base64UrlString` | UTF-8 string to URL-safe base64 |
+
+### Decoding Functions
+
+| Function | Input | Output | Notes |
+|----------|-------|--------|-------|
+| `decode` | `string` | `Uint8Array` | Standard base64 to bytes |
+| `decodeToString` | `string` | `string` | Standard base64 to UTF-8 string |
+| `decodeUrlSafe` | `string` | `Uint8Array` | URL-safe base64 to bytes |
+| `decodeUrlSafeToString` | `string` | `string` | URL-safe base64 to UTF-8 string |
+
+### Validation Functions
+
+| Function | Input | Output | Notes |
+|----------|-------|--------|-------|
+| `isValid` | `string` | `boolean` | Validate standard base64 format |
+| `isValidUrlSafe` | `string` | `boolean` | Validate URL-safe base64 format |
+
+### Utility Functions
+
+| Function | Input | Output | Notes |
+|----------|-------|--------|-------|
+| `calcEncodedSize` | `number` | `number` | Calculate encoded string length |
+| `calcDecodedSize` | `number` | `number` | Calculate max decoded byte length |
+
+## Usage Patterns
+
+### Minimal Bundle (Basic Encoding)
+
+```typescript
+// Only import what you need
+import { encode, decode } from '@tevm/voltaire/BrandedBase64'
+
+// Basic encode/decode
+function serializeData(data: Uint8Array): string {
+  return encode(data)
+}
+
+function deserializeData(str: string): Uint8Array {
+  return decode(str)
+}
+```
+
+**Bundle size:** ~200 bytes (encode + decode implementations)
+
+### With Validation
+
+```typescript
+import { decode, isValid } from '@tevm/voltaire/BrandedBase64'
+
+function safeDecode(input: string): Uint8Array | null {
+  if (!isValid(input)) {
+    return null
+  }
+  try {
+    return decode(input)
+  } catch {
+    return null
+  }
+}
+```
+
+**Bundle size:** ~400 bytes (decode + validation)
+
+### URL-Safe for Web APIs
+
+```typescript
+import {
+  encodeUrlSafe,
+  decodeUrlSafe,
+  isValidUrlSafe
+} from '@tevm/voltaire/BrandedBase64'
+
+// Generate URL-safe tokens
+function generateToken(data: Uint8Array): string {
+  return encodeUrlSafe(data)
+}
+
+// Validate and decode tokens
+function parseToken(token: string): Uint8Array | null {
+  if (!isValidUrlSafe(token)) {
+    return null
+  }
+  return decodeUrlSafe(token)
+}
+```
+
+**Bundle size:** ~300 bytes (URL-safe variants only)
+
+### Size Pre-calculation
+
+```typescript
+import {
+  encode,
+  decode,
+  calcEncodedSize,
+  calcDecodedSize
+} from '@tevm/voltaire/BrandedBase64'
+
+function encodeWithAllocation(data: Uint8Array): string {
+  const expectedSize = calcEncodedSize(data.length)
+  console.log(`Will encode to ${expectedSize} characters`)
+  return encode(data)
+}
+
+function decodeWithAllocation(encoded: string): Uint8Array {
+  const maxSize = calcDecodedSize(encoded.length)
+  console.log(`Will decode to max ${maxSize} bytes`)
+  return decode(encoded)
+}
+```
+
+**Bundle size:** ~400 bytes (encode/decode + size utilities)
+
+## When to Use BrandedBase64 vs Base64
+
+### Use BrandedBase64 When:
+- **Bundle size critical** (mobile, embedded)
+- **Selective imports** desired
+- **Only using specific variants** (standard OR URL-safe)
+- **Functional style** preferred
+- **Composing functions** heavily
+
+### Use Base64 Namespace When:
+- **Using multiple variants**
+- **Ergonomics** over bundle size
+- **Simple namespace imports** preferred
+- **All features needed** anyway
+
+## Interoperability
+
+BrandedBase64 functions work with Base64 namespace:
+
+```typescript
+import { Base64 } from '@tevm/voltaire'
+import { encode, decode } from '@tevm/voltaire/BrandedBase64'
+
+// Same implementations
+const data = new Uint8Array([1, 2, 3])
+const b64a = Base64.encode(data)
+const b64b = encode(data)
+console.log(b64a === b64b) // true
+
+// Can mix and match
+const encoded = encode(data)
+const decoded = Base64.decode(encoded) // works
+```
+
+## Types
+
+```typescript
+/**
+ * Standard base64-encoded string
+ */
+export type Base64String = string
+
+/**
+ * URL-safe base64-encoded string (no padding, - and _ instead of + and /)
+ */
+export type Base64UrlString = string
+```
+
+Source: [types.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/types.ts)
+
+## Implementation Details
+
+All BrandedBase64 functions are implemented using Web APIs:
+- `encode` uses `btoa()` for encoding
+- `decode` uses `atob()` for decoding
+- URL-safe variants apply character substitutions
+- No external dependencies
+
+```typescript
+// Example implementation (simplified)
+export function encode(data: Uint8Array): string {
+  let binary = ""
+  for (let i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i] ?? 0)
+  }
+  return btoa(binary)
+}
+
+export function encodeUrlSafe(data: Uint8Array): string {
+  return encode(data)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "")
+}
+```
+
+## Performance
+
+BrandedBase64 functions have same performance as Base64 namespace (same implementations):
+
+- **Encoding:** O(n) where n is input byte length
+- **Decoding:** O(n) where n is input string length
+- **Validation:** O(n) with early exit on invalid chars
+- **Size calculation:** O(1) pure math
+
+```typescript
+// Benchmark example
+const data = new Uint8Array(1024)
+const iterations = 100000
+
+console.time("encode")
+for (let i = 0; i < iterations; i++) {
+  encode(data)
+}
+console.timeEnd("encode") // ~200-300ms for 100k iterations
+```
+
+## Bundle Size Comparison
+
+Approximate gzipped sizes:
+
+| Import Pattern | Size | Includes |
+|---------------|------|----------|
+| `{ encode, decode }` | ~200B | Standard encode/decode only |
+| `{ encodeUrlSafe, decodeUrlSafe }` | ~250B | URL-safe variants only |
+| `{ encode, decode, isValid }` | ~400B | Standard + validation |
+| `{ encode, decode, calcEncodedSize }` | ~250B | Standard + size calc |
+| All functions | ~800B | Complete Base64 implementation |
+| `Base64` namespace | ~800B | Same as all functions |
+
+Tree-shaking savings most significant when using only one variant.
+
+## Related
+
+- [Encoding](/primitives/base64/encoding) - Encoding operations
+- [Decoding](/primitives/base64/decoding) - Decoding operations
+- [Validation](/primitives/base64/validation) - Format validation
+- [Utilities](/primitives/base64/utilities) - Size calculations
+- [Base64](/primitives/base64/) - Main Base64 namespace documentation
+- [Branded Types](/primitives/branded-types) - Type branding pattern

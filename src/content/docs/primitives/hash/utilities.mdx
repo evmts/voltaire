@@ -1,0 +1,304 @@
+---
+title: Hash Utilities
+description: Utility methods for random generation, cloning, slicing, and formatting
+---
+
+# Utilities
+
+Utility methods for working with Hash instances.
+
+## Random Generation
+
+### `Hash.random()`
+
+Generates cryptographically secure random hash using Web Crypto API.
+
+```typescript
+const randomHash = Hash.random()
+
+// Generate multiple random hashes
+const hashes = Array.from({ length: 10 }, () => Hash.random())
+
+// Use as nonce or salt
+const salt = Hash.random()
+const commitment = Hash.keccak256(new Uint8Array([...data, ...salt]))
+```
+
+**Returns:** `Hash` - Random 32-byte hash
+
+**Throws:**
+- `Error` - If `crypto.getRandomValues` not available
+
+Defined in: [primitives/Hash/BrandedHash/random.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/random.js#L14)
+
+**Implementation:** Uses `crypto.getRandomValues()` from Web Crypto API. Available in browsers and Node.js 15+.
+
+```typescript
+const bytes = new Uint8Array(32);
+crypto.getRandomValues(bytes);
+return bytes;
+```
+
+## Cloning
+
+### `instance.clone()`
+
+Creates copy of hash with independent memory.
+
+```typescript
+const hash = Hash.keccak256String("hello")
+const copy = hash.clone()
+
+// Modifying copy doesn't affect original
+copy[0] = 0xff
+console.log(hash[0] !== copy[0]) // true
+```
+
+**Returns:** `Hash` - New hash with same value
+
+**Static form:**
+```typescript
+Hash.clone(hash) // Hash
+```
+
+Defined in: [primitives/Hash/BrandedHash/clone.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/clone.js#L14)
+
+**Implementation:** Creates new Uint8Array copy.
+
+```typescript
+return new Uint8Array(hash);
+```
+
+## Slicing
+
+### `instance.slice(start?, end?)`
+
+Extracts portion of hash bytes.
+
+```typescript
+const hash = Hash.keccak256String("transfer(address,uint256)")
+
+// Get function selector (first 4 bytes)
+const selector = hash.slice(0, 4)
+console.log(Array.from(selector).map(b => b.toString(16).padStart(2, '0')).join(''))
+// "a9059cbb"
+
+// Get last 4 bytes
+const suffix = hash.slice(-4)
+
+// Get middle bytes
+const middle = hash.slice(8, 24)
+```
+
+**Parameters:**
+- `start?: number` - Start index (inclusive)
+- `end?: number` - End index (exclusive)
+
+**Returns:** `Uint8Array` - Slice of hash bytes (not a Hash instance)
+
+**Static form:**
+```typescript
+Hash.slice(hash, 0, 4) // Uint8Array
+```
+
+Defined in: [primitives/Hash/BrandedHash/slice.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/slice.js#L16)
+
+**Note:** Returns `Uint8Array`, not `Hash`. Use `Hash.fromBytes()` to convert back if needed.
+
+## Display Formatting
+
+### `instance.format(prefixLength?, suffixLength?)`
+
+Returns shortened display format with ellipsis.
+
+```typescript
+const hash = Hash.keccak256String("hello")
+console.log(hash.format())      // "0x1c8aff...eac8" (default: 6+4)
+console.log(hash.format(8, 6))  // "0x1c8aff95...6deac8" (custom)
+console.log(hash.format(10, 8)) // "0x1c8aff9506...a36deac8"
+
+// Use in UI
+const displayHash = hash.format() // "0x1c8aff...eac8"
+```
+
+**Parameters:**
+- `prefixLength?: number` - Characters after `0x` to show (default: 6)
+- `suffixLength?: number` - Characters at end to show (default: 4)
+
+**Returns:** `string` - Formatted display string
+
+**Static form:**
+```typescript
+Hash.format(hash, 8, 6) // "0x1c8aff95...6deac8"
+```
+
+Defined in: [primitives/Hash/BrandedHash/format.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/format.js#L16)
+
+**Implementation:** Converts to hex and adds ellipsis.
+
+```typescript
+const hex = hash.toHex();
+if (hex.length <= prefixLength + suffixLength + 2) {
+  return hex;
+}
+return `${hex.slice(0, prefixLength + 2)}...${hex.slice(-suffixLength)}`;
+```
+
+## Usage Examples
+
+### Generating Random Salts
+
+```typescript
+// Create commitment with random salt
+function createCommitment(secret: string): { commitment: Hash; salt: Hash } {
+  const salt = Hash.random()
+  const secretBytes = new TextEncoder().encode(secret)
+  const combined = new Uint8Array([...secretBytes, ...salt])
+  const commitment = Hash.keccak256(combined)
+
+  return { commitment, salt }
+}
+
+// Later reveal
+function revealCommitment(secret: string, salt: Hash): Hash {
+  const secretBytes = new TextEncoder().encode(secret)
+  const combined = new Uint8Array([...secretBytes, ...salt])
+  return Hash.keccak256(combined)
+}
+```
+
+### Extracting Function Selectors
+
+```typescript
+function getFunctionSelector(signature: string): Uint8Array {
+  const hash = Hash.keccak256String(signature)
+  return hash.slice(0, 4)
+}
+
+const transferSelector = getFunctionSelector("transfer(address,uint256)")
+// Uint8Array [0xa9, 0x05, 0x9c, 0xbb]
+
+const approveSelector = getFunctionSelector("approve(address,uint256)")
+// Uint8Array [0x09, 0x5e, 0xa7, 0xb3]
+```
+
+### Extracting Event Topics
+
+```typescript
+function getEventTopic(signature: string): Hash {
+  return Hash.keccak256String(signature)
+}
+
+const transferTopic = getEventTopic("Transfer(address,address,uint256)")
+console.log(transferTopic.toHex())
+// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+```
+
+### Display in UI Lists
+
+```typescript
+interface Transaction {
+  hash: Hash
+  from: string
+  to: string
+  value: bigint
+}
+
+function TransactionRow({ tx }: { tx: Transaction }) {
+  return (
+    <tr>
+      <td>{tx.hash.format()}</td> {/* "0x1c8aff...eac8" */}
+      <td>{tx.from}</td>
+      <td>{tx.to}</td>
+      <td>{tx.value.toString()}</td>
+    </tr>
+  )
+}
+```
+
+### Creating Test Data
+
+```typescript
+// Generate random test hashes
+function generateTestHashes(count: number): Hash[] {
+  return Array.from({ length: count }, () => Hash.random())
+}
+
+// Clone for mutation testing
+const original = Hash.random()
+const mutable = original.clone()
+mutable[0] = 0xff // Doesn't affect original
+```
+
+### Safe Mutation
+
+```typescript
+// Clone before mutation
+function modifyHash(hash: Hash, index: number, value: number): Hash {
+  const modified = hash.clone()
+  modified[index] = value
+  return modified
+}
+
+const original = Hash.random()
+const modified = modifyHash(original, 0, 0xff)
+console.log(original[0] !== modified[0]) // true
+```
+
+### Truncating Hashes for Logs
+
+```typescript
+function logHash(label: string, hash: Hash): void {
+  console.log(`${label}: ${hash.format(8, 8)}`)
+}
+
+logHash("Transaction", txHash)
+// "Transaction: 0x1c8aff95...a36deac8"
+
+logHash("Block", blockHash)
+// "Block: 0xddf252ad...f523b3ef"
+```
+
+### Creating Hash Prefixes
+
+```typescript
+// Get first N bytes for prefix matching
+function getHashPrefix(hash: Hash, bytes: number): Uint8Array {
+  return hash.slice(0, bytes)
+}
+
+const hash = Hash.keccak256String("hello")
+const prefix4 = getHashPrefix(hash, 4)  // First 4 bytes
+const prefix8 = getHashPrefix(hash, 8)  // First 8 bytes
+
+// Use for vanity address generation or proof-of-work
+function hasPrefix(hash: Hash, prefix: Uint8Array): boolean {
+  const hashPrefix = hash.slice(0, prefix.length)
+  return prefix.every((byte, i) => byte === hashPrefix[i])
+}
+```
+
+## Tree-Shakeable Usage
+
+All utility methods available as tree-shakeable imports:
+
+```typescript
+import { random, clone, slice, format } from '@tevm/voltaire/BrandedHash'
+import type { BrandedHash } from '@tevm/voltaire/BrandedHash'
+
+const randomHash = random()
+const copy = clone(hash)
+const selector = slice(hash, 0, 4)
+const display = format(hash)
+const custom = format(hash, 8, 6)
+```
+
+**Tree-shaking benefit:** Pure utility functions with minimal dependencies. `random()` includes Web Crypto API call but no additional libraries.
+
+See [BrandedHash](/primitives/hash/branded-hash) for details on tree-shakeable API.
+
+## Related
+
+- [Constructors](/primitives/hash/constructors) - `random()` alternative constructor
+- [Conversions](/primitives/hash/conversions) - `format()` uses `toHex()`
+- [Hashing](/primitives/hash/hashing) - Using `slice()` for function selectors

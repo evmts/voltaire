@@ -1,0 +1,586 @@
+---
+title: ABI Types
+description: Complete type system for Ethereum ABI encoding and decoding
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# ABI Types
+
+Complete type system for Application Binary Interface operations.
+
+## Overview
+
+The ABI type system provides complete TypeScript types for all Solidity data types, function signatures, events, errors, and constructors. Types are designed for maximum type safety with full inference support.
+
+## Core Types
+
+### Abi
+
+Main ABI type representing a contract interface as an array of items.
+
+```typescript
+export type Abi = ReadonlyArray<
+  Function | Event | BrandedError | Constructor | Fallback | Receive
+>
+```
+
+**Example:**
+```typescript
+const erc20Abi: Abi = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ type: "address", name: "account" }],
+    outputs: [{ type: "uint256" }]
+  },
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { type: "address", name: "to" },
+      { type: "uint256", name: "amount" }
+    ],
+    outputs: [{ type: "bool" }]
+  },
+  {
+    type: "event",
+    name: "Transfer",
+    inputs: [
+      { type: "address", name: "from", indexed: true },
+      { type: "address", name: "to", indexed: true },
+      { type: "uint256", name: "value" }
+    ]
+  }
+]
+```
+
+Source: [Abi.ts:49-51](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Abi.ts#L49-L51)
+
+### AbiType
+
+Union type of all supported Solidity types.
+
+```typescript
+export type AbiType =
+  // Unsigned integers
+  | "uint" | "uint8" | "uint16" | "uint24" | "uint32" | "uint40"
+  | "uint48" | "uint56" | "uint64" | "uint72" | "uint80" | "uint88"
+  | "uint96" | "uint104" | "uint112" | "uint120" | "uint128" | "uint136"
+  | "uint144" | "uint152" | "uint160" | "uint168" | "uint176" | "uint184"
+  | "uint192" | "uint200" | "uint208" | "uint216" | "uint224" | "uint232"
+  | "uint240" | "uint248" | "uint256"
+  // Signed integers
+  | "int" | "int8" | "int16" | "int24" | "int32" | "int40"
+  | "int48" | "int56" | "int64" | "int72" | "int80" | "int88"
+  | "int96" | "int104" | "int112" | "int120" | "int128" | "int136"
+  | "int144" | "int152" | "int160" | "int168" | "int176" | "int184"
+  | "int192" | "int200" | "int208" | "int216" | "int224" | "int232"
+  | "int240" | "int248" | "int256"
+  // Other types
+  | "address" | "bool" | "string" | "bytes"
+  // Fixed-size bytes
+  | "bytes1" | "bytes2" | "bytes3" | "bytes4" | "bytes5" | "bytes6"
+  | "bytes7" | "bytes8" | "bytes9" | "bytes10" | "bytes11" | "bytes12"
+  | "bytes13" | "bytes14" | "bytes15" | "bytes16" | "bytes17" | "bytes18"
+  | "bytes19" | "bytes20" | "bytes21" | "bytes22" | "bytes23" | "bytes24"
+  | "bytes25" | "bytes26" | "bytes27" | "bytes28" | "bytes29" | "bytes30"
+  | "bytes31" | "bytes32"
+  // Tuple and arrays
+  | "tuple"
+  | `${string}[]`  // Dynamic arrays
+  | `${string}[${number}]`  // Fixed arrays
+```
+
+**Type Categories:**
+- **Unsigned Integers**: `uint8` through `uint256` (8-bit increments)
+- **Signed Integers**: `int8` through `int256` (8-bit increments)
+- **Address**: 20-byte Ethereum address
+- **Boolean**: `bool`
+- **Strings**: Dynamic UTF-8 strings
+- **Bytes**: Dynamic (`bytes`) or fixed-size (`bytes1` to `bytes32`)
+- **Arrays**: Dynamic (`type[]`) or fixed-size (`type[n]`)
+- **Tuples**: Complex structured types
+
+Source: [Type.ts:1-107](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Type.ts#L1-L107)
+
+### Parameter
+
+Describes a single parameter in a function, event, error, or constructor.
+
+```typescript
+export type Parameter<
+  TType extends AbiType = AbiType,
+  TName extends string = string,
+  TInternalType extends string = string
+> = {
+  type: TType
+  name?: TName
+  internalType?: TInternalType
+  indexed?: boolean  // For event parameters only
+  components?: readonly Parameter[]  // For tuple types
+}
+```
+
+**Fields:**
+- `type` - The Solidity type (see AbiType)
+- `name` - Optional parameter name
+- `internalType` - Optional internal Solidity type (for structs, enums)
+- `indexed` - Whether parameter is indexed (events only)
+- `components` - Nested parameters for tuple types
+
+**Examples:**
+```typescript
+// Simple parameter
+const addressParam: Parameter = {
+  type: "address",
+  name: "recipient"
+}
+
+// Indexed event parameter
+const fromParam: Parameter = {
+  type: "address",
+  name: "from",
+  indexed: true
+}
+
+// Tuple parameter
+const pointParam: Parameter = {
+  type: "tuple",
+  name: "point",
+  components: [
+    { type: "uint256", name: "x" },
+    { type: "uint256", name: "y" }
+  ]
+}
+
+// Array parameter
+const addressesParam: Parameter = {
+  type: "address[]",
+  name: "recipients"
+}
+
+// Fixed array parameter
+const bytes32ArrayParam: Parameter = {
+  type: "bytes32[10]",
+  name: "hashes"
+}
+```
+
+Source: [Parameter.ts:9-19](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Parameter.ts#L9-L19)
+
+## Item Types
+
+### Function
+
+Describes a contract function.
+
+```typescript
+export type Function<
+  TName extends string = string,
+  TStateMutability extends StateMutability = StateMutability,
+  TInputs extends readonly Parameter[] = readonly Parameter[],
+  TOutputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "function"
+  name: TName
+  stateMutability: TStateMutability
+  inputs: TInputs
+  outputs: TOutputs
+}
+```
+
+**Fields:**
+- `type` - Always `"function"`
+- `name` - Function name
+- `stateMutability` - State mutability (`"pure" | "view" | "nonpayable" | "payable"`)
+- `inputs` - Input parameters
+- `outputs` - Return value parameters
+
+**Example:**
+```typescript
+const transferFn: Function = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [
+    { type: "bool", name: "success" }
+  ]
+}
+```
+
+Source: [BrandedFunction.ts:13-24](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L13-L24)
+
+### Event
+
+Describes a contract event.
+
+```typescript
+export type Event<
+  TName extends string = string,
+  TInputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "event"
+  name: TName
+  inputs: TInputs
+  anonymous?: boolean
+}
+```
+
+**Fields:**
+- `type` - Always `"event"`
+- `name` - Event name
+- `inputs` - Event parameters (can be indexed)
+- `anonymous` - Whether event is anonymous (no topic0)
+
+**Example:**
+```typescript
+const transferEvent: Event = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+}
+
+// Anonymous event (no selector topic)
+const anonymousEvent: Event = {
+  type: "event",
+  name: "Data",
+  anonymous: true,
+  inputs: [
+    { type: "bytes32", name: "data", indexed: true }
+  ]
+}
+```
+
+Source: [BrandedEvent.ts:3-11](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/BrandedEvent.ts#L3-L11)
+
+### BrandedError
+
+Describes a custom contract error (Solidity 0.8.4+).
+
+```typescript
+export type BrandedError<
+  TName extends string = string,
+  TInputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "error"
+  name: TName
+  inputs: TInputs
+}
+```
+
+**Fields:**
+- `type` - Always `"error"`
+- `name` - Error name
+- `inputs` - Error parameters
+
+**Example:**
+```typescript
+const insufficientBalanceError: BrandedError = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+}
+
+const unauthorizedError: BrandedError = {
+  type: "error",
+  name: "Unauthorized",
+  inputs: []
+}
+```
+
+Source: [BrandedError.ts:3-10](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/BrandedError.ts#L3-L10)
+
+### BrandedConstructor
+
+Describes a contract constructor.
+
+```typescript
+export type BrandedConstructor<
+  TStateMutability extends StateMutability = StateMutability,
+  TInputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "constructor"
+  stateMutability: TStateMutability
+  inputs: TInputs
+}
+```
+
+**Fields:**
+- `type` - Always `"constructor"`
+- `stateMutability` - State mutability (`"nonpayable" | "payable"`)
+- `inputs` - Constructor parameters
+
+**Example:**
+```typescript
+const constructor: BrandedConstructor = {
+  type: "constructor",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "string", name: "name" },
+    { type: "string", name: "symbol" },
+    { type: "uint8", name: "decimals" }
+  ]
+}
+
+// Payable constructor
+const payableConstructor: BrandedConstructor = {
+  type: "constructor",
+  stateMutability: "payable",
+  inputs: []
+}
+```
+
+Source: [BrandedConstructor.ts:4-11](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/constructor/BrandedConstructor.ts#L4-L11)
+
+### Fallback
+
+Describes a fallback function.
+
+```typescript
+export type Fallback<
+  TStateMutability extends StateMutability = StateMutability
+> = {
+  type: "fallback"
+  stateMutability: TStateMutability
+}
+```
+
+**Example:**
+```typescript
+const fallback: Fallback = {
+  type: "fallback",
+  stateMutability: "nonpayable"
+}
+
+const payableFallback: Fallback = {
+  type: "fallback",
+  stateMutability: "payable"
+}
+```
+
+Source: [Item.ts:7-12](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L7-L12)
+
+### Receive
+
+Describes a receive ether function.
+
+```typescript
+export type Receive = {
+  type: "receive"
+  stateMutability: "payable"
+}
+```
+
+**Example:**
+```typescript
+const receive: Receive = {
+  type: "receive",
+  stateMutability: "payable"
+}
+```
+
+Source: [Item.ts:14-17](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L14-L17)
+
+### Item
+
+Union of all ABI item types.
+
+```typescript
+export type Item = Function | Event | BrandedError | Constructor | Fallback | Receive
+```
+
+Source: [Item.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L19)
+
+## Type Utilities
+
+### ParametersToPrimitiveTypes
+
+Converts parameter array to TypeScript primitive types.
+
+```typescript
+export type ParametersToPrimitiveTypes<TParams extends readonly Parameter[]> = {
+  [K in keyof TParams]: TParams[K] extends Parameter<infer TType, any, any>
+    ? TType extends "address"
+      ? BrandedAddress
+      : // ... other type mappings
+    : never
+}
+```
+
+**Example:**
+```typescript
+const params = [
+  { type: "address", name: "to" },
+  { type: "uint256", name: "amount" },
+  { type: "bool", name: "success" }
+] as const
+
+type Values = ParametersToPrimitiveTypes<typeof params>
+// [BrandedAddress, bigint, boolean]
+
+// Usage
+const values: Values = [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n,
+  true
+]
+```
+
+Source: [Parameter.ts:21-29](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Parameter.ts#L21-L29)
+
+### ParametersToObject
+
+Converts named parameters to object type.
+
+```typescript
+export type ParametersToObject<TParams extends readonly Parameter[]> = {
+  [K in TParams[number] as K extends { name: infer TName extends string }
+    ? TName
+    : never]: // ... type mapping
+}
+```
+
+**Example:**
+```typescript
+const params = [
+  { type: "address", name: "from" },
+  { type: "address", name: "to" },
+  { type: "uint256", name: "value" }
+] as const
+
+type EventData = ParametersToObject<typeof params>
+// { from: BrandedAddress, to: BrandedAddress, value: bigint }
+
+// Usage
+const decoded: EventData = {
+  from: "0x...",
+  to: "0x...",
+  value: 1000n
+}
+```
+
+Source: [Parameter.ts:31-41](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Parameter.ts#L31-L41)
+
+## State Mutability
+
+State mutability describes how a function interacts with blockchain state.
+
+```typescript
+export type StateMutability = "pure" | "view" | "nonpayable" | "payable"
+```
+
+**Values:**
+- `"pure"` - Does not read or modify state
+- `"view"` - Reads state but does not modify it
+- `"nonpayable"` - Can modify state but does not accept ether
+- `"payable"` - Can modify state and accept ether
+
+**Example:**
+```typescript
+const pureFunction: Function = {
+  type: "function",
+  name: "add",
+  stateMutability: "pure",
+  inputs: [
+    { type: "uint256", name: "a" },
+    { type: "uint256", name: "b" }
+  ],
+  outputs: [{ type: "uint256" }]
+}
+
+const viewFunction: Function = {
+  type: "function",
+  name: "balanceOf",
+  stateMutability: "view",
+  inputs: [{ type: "address", name: "account" }],
+  outputs: [{ type: "uint256" }]
+}
+
+const payableFunction: Function = {
+  type: "function",
+  name: "deposit",
+  stateMutability: "payable",
+  inputs: [],
+  outputs: []
+}
+```
+
+Source: [statemutability.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/statemutability.ts)
+
+## Type Mapping
+
+TypeScript types for each Solidity type:
+
+| Solidity Type | TypeScript Type | Notes |
+|---------------|-----------------|-------|
+| `uint8` - `uint64` | `number` or `bigint` | Small uints may be `number` |
+| `uint72` - `uint256` | `bigint` | Large uints always `bigint` |
+| `int8` - `int32` | `number` | Small ints may be `number` |
+| `int40` - `int256` | `bigint` | Large ints always `bigint` |
+| `address` | `BrandedAddress` or `string` | 20-byte address |
+| `bool` | `boolean` | True/false |
+| `string` | `string` | UTF-8 string |
+| `bytes` | `Uint8Array` | Dynamic bytes |
+| `bytes1` - `bytes32` | `Uint8Array` | Fixed-size bytes |
+| `type[]` | `Array<T>` | Dynamic array |
+| `type[n]` | `Array<T>` | Fixed-size array |
+| `tuple` | `object` or `Array` | Struct or tuple |
+
+<Aside type="tip" title="Numeric Type Selection">
+The encoder automatically selects `number` vs `bigint` based on the type's bit size. Types ≤64 bits use `number`, larger types use `bigint`.
+</Aside>
+
+## Type Inference
+
+Full type inference for encoding/decoding:
+
+```typescript
+import { Function } from '@tevm/primitives/Abi'
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+} as const
+
+// Type-checked encoding
+const encoded = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+// Type-checked decoding (returns [boolean])
+const [success] = Function.decodeResult(transferFn, returnData)
+```
+
+## Related
+
+- [Abi](/primitives/abi) - Main ABI documentation
+- [Function](/primitives/abi/function) - Function encoding/decoding
+- [Event](/primitives/abi/event) - Event encoding/decoding
+- [Encoding](/primitives/abi/encoding) - Encoding implementation
+- [Decoding](/primitives/abi/decoding) - Decoding implementation
+
+## Specification
+
+- [Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html) - Official specification
+- [Contract ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html#json) - JSON format

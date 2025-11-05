@@ -1,0 +1,346 @@
+---
+title: WASM Implementation
+description: WebAssembly-accelerated ABI encoding and decoding
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# WASM Implementation
+
+WebAssembly-accelerated ABI encoding and decoding for performance-critical applications.
+
+## Overview
+
+The WASM module provides WebAssembly implementations of ABI encoding/decoding operations compiled from Zig. This offers significant performance improvements for large-scale encoding/decoding operations.
+
+<Aside type="caution" title="Implementation Status">
+The WASM ABI encoding layer is **not yet implemented**. Currently, the module exports TypeScript fallbacks. Full WASM implementation requires:
+- C ABI encoding/decoding logic in Zig
+- WASM export bindings
+- JavaScript wrapper functions
+
+See implementation status below for details.
+</Aside>
+
+## API
+
+### encodeParametersWasm
+
+WASM-accelerated parameter encoding.
+
+```typescript
+function encodeParametersWasm<const TParams extends readonly Parameter[]>(
+  params: TParams,
+  values: ParametersToPrimitiveTypes<TParams>
+): Uint8Array
+```
+
+**Status:** Planned (falls back to TypeScript)
+
+Source: [wasm.ts:58-65](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/wasm/wasm.ts#L58-L65)
+
+### decodeParametersWasm
+
+WASM-accelerated parameter decoding.
+
+```typescript
+function decodeParametersWasm<const TParams extends readonly Parameter[]>(
+  params: TParams,
+  data: Uint8Array
+): ParametersToPrimitiveTypes<TParams>
+```
+
+**Status:** Planned (falls back to TypeScript)
+
+Source: [wasm.ts:67-74](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/wasm/wasm.ts#L67-L74)
+
+## Current Implementation
+
+The module currently exports TypeScript implementations:
+
+```typescript
+export const encodeParameters = abiTs.encodeParameters
+export const decodeParameters = abiTs.decodeParameters
+```
+
+Source: [wasm.ts:126-127](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/wasm/wasm.ts#L126-L127)
+
+## Implementation Status
+
+Check WASM availability:
+
+```typescript
+import { isWasmAbiAvailable, getImplementationStatus } from '@tevm/primitives/Abi/wasm'
+
+if (isWasmAbiAvailable()) {
+  // Use WASM implementations
+} else {
+  // Falls back to TypeScript
+}
+
+const status = getImplementationStatus()
+console.log(status)
+```
+
+**Current status:**
+```typescript
+{
+  wasmAvailable: false,
+  reason: "C ABI encoding/decoding layer not yet implemented",
+  requiredFiles: [
+    "src/c/abi_encoding.zig - Core ABI encoding/decoding logic",
+    "src/wasm-loader/types.ts - Add ABI function signatures to WasmExports",
+    "src/wasm-loader/loader.ts - Add ABI wrapper functions"
+  ],
+  estimatedFunctions: [
+    "primitives_abi_encode_parameters",
+    "primitives_abi_decode_parameters",
+    "primitives_abi_encode_function_data",
+    "primitives_abi_decode_function_data",
+    "primitives_abi_encode_event_topics",
+    "primitives_abi_decode_event_log",
+    "primitives_abi_encode_packed"
+  ]
+}
+```
+
+Source: [wasm.ts:133-152](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/wasm/wasm.ts#L133-L152)
+
+## Planned Features
+
+### Function Data Encoding
+
+```typescript
+// Planned
+function encodeFunctionDataWasm<const TParams extends readonly Parameter[]>(
+  signature: string,
+  params: TParams,
+  values: ParametersToPrimitiveTypes<TParams>
+): Uint8Array
+
+// Will encode: selector + parameters
+```
+
+### Event Topic Encoding
+
+```typescript
+// Planned
+function encodeEventTopicsWasm(
+  signature: string,
+  params: readonly Parameter[],
+  values: Record<string, unknown>
+): Uint8Array[]
+
+// Will encode indexed event parameters
+```
+
+### Event Log Decoding
+
+```typescript
+// Planned
+function decodeEventLogWasm(
+  signature: string,
+  params: readonly Parameter[],
+  data: Uint8Array,
+  topics: readonly Uint8Array[]
+): Record<string, unknown>
+
+// Will decode event logs with topics
+```
+
+### Packed Encoding
+
+```typescript
+// Planned
+function encodePackedWasm(
+  types: readonly string[],
+  values: readonly unknown[]
+): Uint8Array
+
+// Will implement abi.encodePacked
+```
+
+## Usage (When Implemented)
+
+Future usage pattern:
+
+```typescript
+import {
+  encodeParametersWasm,
+  decodeParametersWasm,
+  isWasmAbiAvailable
+} from '@tevm/primitives/Abi/wasm'
+
+// Check WASM availability
+if (isWasmAbiAvailable()) {
+  // Use WASM for performance
+  const encoded = encodeParametersWasm(params, values)
+  const decoded = decodeParametersWasm(params, data)
+} else {
+  // Fallback to TypeScript
+  import { encodeParameters, decodeParameters } from '@tevm/primitives/Abi'
+  const encoded = encodeParameters(params, values)
+  const decoded = decodeParameters(params, data)
+}
+```
+
+## Performance Benefits (Estimated)
+
+When implemented, WASM encoding/decoding is expected to provide:
+
+**Encoding:**
+- 2-3x faster for simple types
+- 5-10x faster for complex nested structures
+- Lower memory overhead
+
+**Decoding:**
+- 3-5x faster for simple types
+- 10-20x faster for complex structures with offsets
+- Better cache locality
+
+**Especially beneficial for:**
+- Large arrays
+- Nested tuples
+- Batch encoding/decoding
+- Real-time event processing
+
+## Implementation Requirements
+
+### Zig Implementation
+
+Required file: `src/c/abi_encoding.zig`
+
+```zig
+// Core ABI encoding functions
+pub fn encodeParameters(
+    allocator: Allocator,
+    types: []const []const u8,
+    values: []const []const u8
+) ![]u8
+
+pub fn decodeParameters(
+    allocator: Allocator,
+    types: []const []const u8,
+    data: []const u8
+) ![][]u8
+
+// Export for WASM
+export fn primitives_abi_encode_parameters(...) !*u8
+export fn primitives_abi_decode_parameters(...) !*u8
+```
+
+### WASM Loader Updates
+
+Required updates to `src/wasm-loader/`:
+
+**types.ts:**
+```typescript
+export interface WasmExports {
+  // ... existing exports
+  primitives_abi_encode_parameters: (
+    types: number,
+    typesLen: number,
+    values: number,
+    valuesLen: number
+  ) => number
+  primitives_abi_decode_parameters: (
+    types: number,
+    typesLen: number,
+    data: number,
+    dataLen: number
+  ) => number
+}
+```
+
+**loader.ts:**
+```typescript
+export function abiEncodeParameters(
+  types: string[],
+  values: string[]
+): Uint8Array {
+  // Marshal types and values to WASM memory
+  // Call WASM function
+  // Return result
+}
+
+export function abiDecodeParameters(
+  data: Uint8Array,
+  types: string[]
+): unknown[] {
+  // Marshal data and types to WASM memory
+  // Call WASM function
+  // Parse and return results
+}
+```
+
+## Fallback Strategy
+
+The module automatically falls back to TypeScript:
+
+```typescript
+// Always safe to import
+import { encodeParameters, decodeParameters } from '@tevm/primitives/Abi/wasm'
+
+// Currently uses TypeScript implementation
+// Will automatically use WASM when available
+const encoded = encodeParameters(params, values)
+const decoded = decodeParameters(params, data)
+```
+
+No code changes needed when WASM is implemented.
+
+## Development Status
+
+**Not Yet Implemented:**
+- Core Zig ABI encoding/decoding
+- WASM export bindings
+- JavaScript wrapper functions
+- Performance benchmarks
+- WASM module loading
+
+**Estimated Implementation:**
+- Core encoding/decoding: ~500 lines Zig
+- WASM bindings: ~200 lines Zig
+- JavaScript wrappers: ~300 lines TypeScript
+- Tests: ~500 lines
+
+## Contributing
+
+To implement WASM ABI encoding:
+
+1. **Implement core Zig functions** in `src/c/abi_encoding.zig`
+   - Parameter encoding/decoding
+   - Type validation
+   - Memory management
+
+2. **Add WASM exports** in Zig
+   - Export functions with C ABI
+   - Handle memory allocation/deallocation
+   - Convert between Zig and WASM types
+
+3. **Update WASM loader**
+   - Add function signatures to types
+   - Implement JavaScript wrappers
+   - Handle marshalling
+
+4. **Add tests**
+   - Test each type
+   - Test complex nested structures
+   - Performance benchmarks
+
+5. **Update this documentation**
+   - Remove "not yet implemented" notices
+   - Add performance numbers
+   - Add usage examples
+
+## Related
+
+- [Abi](/primitives/abi) - Main ABI documentation
+- [Encoding](/primitives/abi/encoding) - TypeScript encoding (current fallback)
+- [Decoding](/primitives/abi/decoding) - TypeScript decoding (current fallback)
+- [Address WASM](/primitives/address/wasm) - Example WASM implementation
+
+## Specification
+
+- [Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html) - Encoding rules to implement
+- [WebAssembly](https://webassembly.org/) - WASM specification

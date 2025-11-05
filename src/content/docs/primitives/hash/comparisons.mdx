@@ -1,0 +1,250 @@
+---
+title: Hash Comparisons
+description: Comparing Hash instances for equality
+---
+
+# Comparisons
+
+Methods for comparing Hash instances for equality and zero checks.
+
+## Equality
+
+### `instance.equals(other)`
+
+Constant-time equality comparison to prevent timing attacks.
+
+```typescript
+const hash1 = Hash.keccak256String("hello")
+const hash2 = Hash.keccak256String("hello")
+const hash3 = Hash.keccak256String("world")
+
+hash1.equals(hash2) // true
+hash1.equals(hash3) // false
+
+// Compare with hex string by converting first
+const hexHash = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+hash1.equals(hexHash) // true
+```
+
+**Parameters:**
+- `other: BrandedHash` - Hash to compare
+
+**Returns:** `boolean`
+
+**Static form:**
+```typescript
+Hash.equals(hash1, hash2) // boolean
+```
+
+Defined in: [primitives/Hash/BrandedHash/equals.js:18](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/equals.js#L18)
+
+**Implementation:** Uses constant-time comparison (bitwise OR) to prevent timing attacks. All bytes are always compared, regardless of early differences.
+
+```typescript
+// Constant-time implementation
+let result = 0;
+for (let i = 0; i < hash.length; i++) {
+  result |= hash[i] ^ other[i];
+}
+return result === 0;
+```
+
+### `instance.isZero()`
+
+Checks if all bytes are zero using constant-time comparison.
+
+```typescript
+const zeroHash = Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000000")
+zeroHash.isZero() // true
+
+const zero = new Uint8Array(32)
+Hash.fromBytes(zero).isZero() // true
+
+const nonZero = Hash.keccak256String("hello")
+nonZero.isZero() // false
+
+// Compare with ZERO constant
+Hash.equals(zeroHash, Hash.ZERO) // true
+```
+
+**Returns:** `boolean`
+
+**Static form:**
+```typescript
+Hash.isZero(hash) // boolean
+```
+
+Defined in: [primitives/Hash/BrandedHash/isZero.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/isZero.js#L16)
+
+**Implementation:** Uses constant-time comparison against `Hash.ZERO` constant.
+
+## Usage Examples
+
+### Verifying Computed Hashes
+
+```typescript
+const expectedHash = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+const computedHash = Hash.keccak256String("hello")
+
+if (computedHash.equals(expectedHash)) {
+  console.log("Hash matches!")
+} else {
+  console.log("Hash mismatch!")
+}
+```
+
+### Filtering Hashes
+
+```typescript
+const hashes = [
+  Hash.keccak256String("hello"),
+  Hash.fromBytes(new Uint8Array(32)), // zero hash
+  Hash.keccak256String("world"),
+  Hash.ZERO
+]
+
+// Remove zero hashes
+const nonZero = hashes.filter(hash => !hash.isZero())
+console.log(nonZero.length) // 2
+
+// Find specific hash
+const target = Hash.keccak256String("hello")
+const found = hashes.find(hash => hash.equals(target))
+```
+
+### Deduplication
+
+```typescript
+const hashes = [
+  Hash.keccak256String("hello"),
+  Hash.keccak256String("world"),
+  Hash.keccak256String("hello"), // duplicate
+]
+
+const unique = hashes.filter((hash, i, arr) =>
+  arr.findIndex(h => h.equals(hash)) === i
+)
+console.log(unique.length) // 2
+```
+
+### Checking Transaction Receipt Status
+
+```typescript
+const receipt = await eth.getTransactionReceipt(txHash)
+
+// Zero hash indicates pending/not found
+if (Hash.isZero(Hash.fromHex(receipt.blockHash))) {
+  console.log("Transaction pending")
+} else {
+  console.log("Transaction confirmed")
+}
+```
+
+### Event Topic Matching
+
+```typescript
+const transferSignature = Hash.keccak256String("Transfer(address,address,uint256)")
+
+function isTransferEvent(log: Log): boolean {
+  const topic0 = Hash.fromHex(log.topics[0])
+  return topic0.equals(transferSignature)
+}
+```
+
+### Merkle Proof Verification
+
+```typescript
+function verifyMerkleProof(
+  leaf: Hash,
+  proof: Hash[],
+  root: Hash
+): boolean {
+  let computedHash = leaf
+
+  for (const proofElement of proof) {
+    if (computedHash.equals(proofElement)) {
+      // Skip duplicates
+      continue
+    }
+
+    // Combine hashes in order
+    const combined = new Uint8Array([
+      ...computedHash,
+      ...proofElement
+    ])
+    computedHash = Hash.keccak256(combined)
+  }
+
+  return computedHash.equals(root)
+}
+```
+
+### Cache Key Comparison
+
+```typescript
+const cache = new Map<string, any>()
+
+function getCached(data: Uint8Array): any | null {
+  const hash = Hash.keccak256(data)
+  const key = hash.toHex()
+
+  return cache.get(key) ?? null
+}
+
+function setCached(data: Uint8Array, value: any): void {
+  const hash = Hash.keccak256(data)
+  const key = hash.toHex()
+
+  cache.set(key, value)
+}
+```
+
+## Security Notes
+
+### Constant-Time Comparison
+
+Both `equals()` and `isZero()` use constant-time comparison to prevent timing attacks:
+
+```typescript
+// This implementation takes the same time regardless of where hashes differ
+function equals(hash: Hash, other: Hash): boolean {
+  let result = 0;
+  for (let i = 0; i < hash.length; i++) {
+    result |= hash[i] ^ other[i];
+  }
+  return result === 0;
+}
+```
+
+**Why this matters:**
+- Variable-time comparison can leak information about secret values
+- Attack can determine hash equality byte-by-byte through timing analysis
+- Constant-time comparison prevents this by always comparing all bytes
+
+**When to use:**
+- Comparing hashes that may contain sensitive data
+- Verifying signatures or authentication tokens
+- Any security-critical hash comparison
+
+## Tree-Shakeable Usage
+
+All comparison methods available as tree-shakeable imports:
+
+```typescript
+import { equals, isZero } from '@tevm/voltaire/BrandedHash'
+import type { BrandedHash } from '@tevm/voltaire/BrandedHash'
+
+const hash1: BrandedHash = /* ... */
+const hash2: BrandedHash = /* ... */
+
+equals(hash1, hash2)  // boolean
+isZero(hash1)         // boolean
+
+// Functional composition
+const nonZeroHashes = hashes.filter(hash => !isZero(hash))
+const matchesTarget = hashes.some(hash => equals(hash, target))
+```
+
+**Tree-shaking benefit:** Pure comparison functions with no dependencies. Very small bundle impact.
+
+See [BrandedHash](/primitives/hash/branded-hash) for details on tree-shakeable API.

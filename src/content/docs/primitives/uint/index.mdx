@@ -1,0 +1,322 @@
+---
+title: Uint (Uint256)
+description: 256-bit unsigned integer with overflow handling
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+# Uint (Uint256)
+
+256-bit unsigned integer type with wrapping arithmetic and comprehensive operations
+
+## Overview
+
+[Branded](/primitives/branded-types) `bigint` type representing unsigned 256-bit integer (0 to 2^256-1). Zero-overhead design supports both tree-shakeable namespace methods and class instances with automatic wrapping on overflow.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Class API">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Construct from various formats (see Constructors)
+const a = new Uint(100n)
+const b = Uint.fromHex("0xff")
+const c = Uint.fromBytes(new Uint8Array(32))
+
+// Validate (see Validation)
+if (!Uint.isValid(value)) throw new Error("Invalid uint")
+
+// Arithmetic operations (see Arithmetic)
+a.plus(b)              // Addition with wrapping
+a.minus(b)             // Subtraction with wrapping
+a.times(b)             // Multiplication with wrapping
+a.dividedBy(b)         // Division (throws on divide by zero)
+a.modulo(b)            // Modulo
+a.toPower(b)           // Exponentiation with wrapping
+
+// Bitwise operations (see Bitwise)
+a.bitwiseAnd(b)        // Bitwise AND
+a.bitwiseOr(b)         // Bitwise OR
+a.bitwiseXor(b)        // Bitwise XOR
+a.bitwiseNot()         // Bitwise NOT
+a.shiftLeft(8)         // Left shift with wrapping
+a.shiftRight(8)        // Right shift
+
+// Comparisons (see Comparisons)
+a.equals(b)            // Equality
+a.lessThan(b)          // Less than
+a.greaterThan(b)       // Greater than
+a.isZero()             // Check if zero
+
+// Conversions (see Conversions)
+a.toHex()              // "0x0000...0064" (padded)
+a.toHex(false)         // "0x64" (unpadded)
+a.toBigInt()           // 100n
+a.toNumber()           // 100 (throws if > Number.MAX_SAFE_INTEGER)
+a.toBytes()            // Uint8Array(32)
+a.toString(10)         // "100"
+
+// Utilities (see Utilities)
+a.bitLength()          // Number of bits (1-256)
+a.leadingZeros()       // Leading zero bits
+a.popCount()           // Number of 1 bits
+a.minimum(b)           // Smaller of two values
+a.maximum(b)           // Larger of two values
+```
+</TabItem>
+<TabItem label="Namespace API (Tree-shakeable)">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Tree-shakeable imports minimize bundle size
+const a = Uint.from(100n)
+const b = Uint.fromHex("0xff")
+
+// Each function imported independently
+Uint.plus(a, b)              // Addition
+Uint.toHex(a)                // Conversion
+Uint.equals(a, b)            // Comparison
+Uint.bitLength(a)            // Utility
+
+// Or import specific functions
+import { from, plus, toHex } from '@tevm/voltaire/BrandedUint'
+
+const value = from(100n)
+const sum = plus(value, from(50n))
+const hex = toHex(sum)
+
+// See BrandedUint for complete functional API
+```
+</TabItem>
+</Tabs>
+
+## Types
+
+<Tabs>
+<TabItem label="class Uint">
+```typescript
+class Uint {
+  // Constructors (→ /primitives/uint/constructors)
+  constructor(value: bigint | number | string): BrandedUint
+  static from(value: bigint | number | string): BrandedUint
+  static fromHex(hex: string): BrandedUint
+  static fromBigInt(value: bigint): BrandedUint
+  static fromNumber(value: number | bigint): BrandedUint
+  static fromBytes(bytes: Uint8Array): BrandedUint
+  static fromAbiEncoded(bytes: Uint8Array): BrandedUint
+  static tryFrom(value: bigint | number | string): BrandedUint | undefined
+
+  // Conversions (→ /primitives/uint/conversions)
+  toHex(padded?: boolean): string
+  toBigInt(): bigint
+  toNumber(): number
+  toBytes(): Uint8Array
+  toAbiEncoded(): Uint8Array
+  toString(radix?: number): string
+
+  // Arithmetic (→ /primitives/uint/arithmetic)
+  plus(other: BrandedUint): BrandedUint
+  minus(other: BrandedUint): BrandedUint
+  times(other: BrandedUint): BrandedUint
+  dividedBy(other: BrandedUint): BrandedUint
+  modulo(other: BrandedUint): BrandedUint
+  toPower(exponent: BrandedUint): BrandedUint
+
+  // Bitwise (→ /primitives/uint/bitwise)
+  bitwiseAnd(other: BrandedUint): BrandedUint
+  bitwiseOr(other: BrandedUint): BrandedUint
+  bitwiseXor(other: BrandedUint): BrandedUint
+  bitwiseNot(): BrandedUint
+  shiftLeft(bits: number): BrandedUint
+  shiftRight(bits: number): BrandedUint
+
+  // Comparisons (→ /primitives/uint/comparisons)
+  equals(other: BrandedUint): boolean
+  notEquals(other: BrandedUint): boolean
+  lessThan(other: BrandedUint): boolean
+  lessThanOrEqual(other: BrandedUint): boolean
+  greaterThan(other: BrandedUint): boolean
+  greaterThanOrEqual(other: BrandedUint): boolean
+
+  // Utilities (→ /primitives/uint/utilities)
+  isZero(): boolean
+  minimum(other: BrandedUint): BrandedUint
+  maximum(other: BrandedUint): BrandedUint
+  bitLength(): number
+  leadingZeros(): number
+  popCount(): number
+
+  // Constants
+  static MAX: BrandedUint
+  static MIN: BrandedUint
+  static ZERO: BrandedUint
+  static ONE: BrandedUint
+  static SIZE: number
+}
+```
+
+Source: [UintConstructor.ts:68-114](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/UintConstructor.ts#L68-L114)
+</TabItem>
+<TabItem label="type BrandedUint">
+```typescript
+export type BrandedUint = bigint & {
+  readonly __tag: "Uint256"
+}
+```
+
+[Branded type](/primitives/branded-types) wrapping `bigint`, runtime validated to 0 <= value <= 2^256-1. Used as underlying type for Uint class and tree-shakeable functions.
+
+Source: [BrandedUint.ts:1-4](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/BrandedUint.ts#L1-L4)
+</TabItem>
+</Tabs>
+
+## Constants
+
+Uint module exports constants for validation and arithmetic:
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Boundary values
+Uint.MAX   // 2^256 - 1 (largest Uint256)
+Uint.MIN   // 0 (smallest Uint256)
+Uint.ZERO  // 0
+Uint.ONE   // 1
+
+// Size constant
+Uint.SIZE  // 32 (bytes)
+
+// Usage examples
+const maxValue = Uint.MAX
+const isMax = value.equals(Uint.MAX)
+const isZero = value.equals(Uint.ZERO)
+const increment = value.plus(Uint.ONE)
+const buffer = new Uint8Array(Uint.SIZE)  // 32-byte buffer
+```
+
+**Available constants:**
+- `Uint.MAX = 2^256 - 1` - Maximum Uint256 value (115792089237316195423570985008687907853269984665640564039457584007913129639935n)
+- `Uint.MIN = 0` - Minimum Uint256 value
+- `Uint.ZERO = 0` - Zero constant
+- `Uint.ONE = 1` - One constant
+- `Uint.SIZE = 32` - Size in bytes
+
+Source: [constants.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/constants.ts)
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Constructors" icon="rocket">
+    Creating Uint instances from bigint, hex strings, bytes, numbers, and ABI encoding.
+
+    [View constructors →](/primitives/uint/constructors)
+  </Card>
+
+  <Card title="Conversions" icon="random">
+    Format conversions: hex (padded/unpadded), bigint, number, bytes, ABI encoding, strings.
+
+    [View conversions →](/primitives/uint/conversions)
+  </Card>
+
+  <Card title="Arithmetic" icon="rocket">
+    Math operations with automatic wrapping: addition, subtraction, multiplication, division, modulo, exponentiation.
+
+    [View arithmetic →](/primitives/uint/arithmetic)
+  </Card>
+
+  <Card title="Bitwise" icon="seti:config">
+    Bitwise operations: AND, OR, XOR, NOT, left shift, right shift.
+
+    [View bitwise →](/primitives/uint/bitwise)
+  </Card>
+
+  <Card title="Comparisons" icon="approve-check">
+    Equality testing, ordering, zero checks for sorting and filtering.
+
+    [View comparisons →](/primitives/uint/comparisons)
+  </Card>
+
+  <Card title="Validation" icon="warning">
+    Input validation, type guards, safe parsing with tryFrom.
+
+    [View validation →](/primitives/uint/validation)
+  </Card>
+
+  <Card title="Utilities" icon="puzzle">
+    Bit analysis: bitLength, leadingZeros, popCount, minimum, maximum.
+
+    [View utilities →](/primitives/uint/utilities)
+  </Card>
+
+  <Card title="Constants" icon="list-format">
+    MAX, MIN, ZERO, ONE, SIZE constants with usage examples.
+
+    [View constants →](/primitives/uint/constants)
+  </Card>
+
+  <Card title="BrandedUint" icon="seti:config">
+    Tree-shakeable functional API for minimal bundle size.
+
+    [View BrandedUint →](/primitives/uint/branded-uint)
+  </Card>
+
+  <Card title="WASM Implementation" icon="rocket">
+    WebAssembly-accelerated methods compiled from Zig for performance.
+
+    [View WASM →](/primitives/uint/wasm)
+  </Card>
+</CardGrid>
+
+<Aside type="tip" title="Automatic Wrapping">
+Arithmetic operations automatically wrap on overflow/underflow (mod 2^256), matching EVM behavior. Use validation to check bounds before operations if needed.
+</Aside>
+
+## Overflow Behavior
+
+All arithmetic and bitwise operations wrap on overflow:
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Overflow wraps around
+const max = Uint.MAX
+const overflow = max.plus(Uint.ONE)  // Wraps to 0
+
+// Underflow wraps around
+const zero = Uint.ZERO
+const underflow = zero.minus(Uint.ONE)  // Wraps to MAX
+
+// Multiplication wraps
+const large = Uint.from(2n ** 200n)
+const product = large.times(large)  // Result mod 2^256
+
+// Shift operations wrap
+const value = Uint.ONE
+const shifted = value.shiftLeft(260)  // Wraps, keeps only lower 256 bits
+```
+
+This matches Solidity and EVM arithmetic behavior. See [Arithmetic](/primitives/uint/arithmetic) for details.
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Hex" icon="seti:text">
+    Hex string utilities used in conversions.
+
+    [View Hex →](/primitives/hex)
+  </Card>
+
+  <Card title="Bytes" icon="document">
+    Byte array operations for binary encoding.
+
+    [View Bytes →](/primitives/bytes)
+  </Card>
+
+  <Card title="Branded Types" icon="open-book">
+    Zero-overhead type branding pattern used throughout primitives.
+
+    [View Branded Types →](/primitives/branded-types)
+  </Card>
+</CardGrid>

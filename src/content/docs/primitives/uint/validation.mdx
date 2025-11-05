@@ -1,0 +1,467 @@
+---
+title: Uint Validation
+description: Validating Uint256 values and types
+---
+
+# Validation
+
+Methods for validating Uint256 values and checking types at runtime.
+
+## Value Validation
+
+### `Uint.isValid(value)`
+
+Check if value is valid Uint256 (in range 0 to 2^256-1).
+
+```typescript
+// Valid values
+Uint.isValid(0n)               // true
+Uint.isValid(100n)             // true
+Uint.isValid(2n ** 256n - 1n)  // true (MAX)
+
+// Invalid values
+Uint.isValid(-1n)              // false (negative)
+Uint.isValid(2n ** 256n)       // false (exceeds MAX)
+Uint.isValid("100")            // false (not bigint)
+Uint.isValid(100)              // false (not bigint)
+Uint.isValid(null)             // false (not bigint)
+
+// Use before construction
+if (Uint.isValid(value)) {
+  const uint = value as BrandedUint
+}
+
+// Type guard
+function processValue(value: unknown) {
+  if (Uint.isValid(value)) {
+    // TypeScript knows value is BrandedUint here
+    const hex = Uint.toHex(value)
+  }
+}
+```
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:** `value is BrandedUint` - Type predicate
+
+**Validation rules:**
+- Must be `bigint` type
+- Must be >= 0
+- Must be <= 2^256 - 1
+
+**Static only** - No instance method
+
+Source: [isValid.ts:16](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/isValid.ts#L16)
+
+## Safe Parsing
+
+### `Uint.tryFrom(value)`
+
+Try to create Uint256, returns `undefined` if invalid.
+
+```typescript
+// Successful parsing
+const a = Uint.tryFrom(100n)         // BrandedUint
+const b = Uint.tryFrom("255")        // BrandedUint
+const c = Uint.tryFrom("0xff")       // BrandedUint
+const d = Uint.tryFrom(42)           // BrandedUint
+
+// Failed parsing (returns undefined)
+const e = Uint.tryFrom(-1n)          // undefined
+const f = Uint.tryFrom(2n ** 256n)   // undefined
+const g = Uint.tryFrom("invalid")    // undefined
+const h = Uint.tryFrom(3.14)         // undefined
+const i = Uint.tryFrom(null)         // undefined
+
+// Use with nullish coalescing
+const value = Uint.tryFrom(input) ?? Uint.ZERO
+
+// Use with conditional
+const parsed = Uint.tryFrom(userInput)
+if (parsed !== undefined) {
+  // Use parsed value
+  console.log(parsed.toHex())
+} else {
+  console.error("Invalid uint")
+}
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to parse
+
+**Returns:** `BrandedUint | undefined`
+
+**Never throws** - Returns `undefined` instead of throwing on invalid input
+
+**Static only** - No instance method
+
+Source: [tryFrom.ts:17](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/tryFrom.ts#L17)
+
+## Usage Patterns
+
+### Safe Parsing Function
+
+```typescript
+function parseUint(input: unknown): BrandedUint | null {
+  // Handle different input types
+  if (typeof input === "bigint") {
+    return Uint.tryFrom(input) ?? null
+  }
+
+  if (typeof input === "number") {
+    return Uint.tryFrom(input) ?? null
+  }
+
+  if (typeof input === "string") {
+    return Uint.tryFrom(input) ?? null
+  }
+
+  return null
+}
+
+// Usage
+const result = parseUint(userInput)
+if (result === null) {
+  throw new Error("Invalid uint input")
+}
+```
+
+### Validation with Error Messages
+
+```typescript
+function validateUint(value: unknown): BrandedUint {
+  if (typeof value !== "bigint") {
+    throw new Error(`Expected bigint, got ${typeof value}`)
+  }
+
+  if (value < 0n) {
+    throw new Error(`Uint cannot be negative: ${value}`)
+  }
+
+  if (value > Uint.MAX) {
+    throw new Error(`Uint exceeds maximum: ${value}`)
+  }
+
+  return value as BrandedUint
+}
+```
+
+### Range Validation
+
+```typescript
+// Validate value is in specific range
+function validateRange(
+  value: BrandedUint,
+  min: BrandedUint,
+  max: BrandedUint
+): void {
+  if (value.lessThan(min)) {
+    throw new Error(`Value ${value} below minimum ${min}`)
+  }
+
+  if (value.greaterThan(max)) {
+    throw new Error(`Value ${value} above maximum ${max}`)
+  }
+}
+
+// Example usage
+const value = Uint.from(50n)
+const min = Uint.from(10n)
+const max = Uint.from(100n)
+
+try {
+  validateRange(value, min, max)
+  console.log("Value in range")
+} catch (error) {
+  console.error(error.message)
+}
+```
+
+### API Input Validation
+
+```typescript
+// Validate API inputs
+interface TransferParams {
+  amount: unknown
+  recipient: unknown
+}
+
+function validateTransferParams(params: TransferParams): {
+  amount: BrandedUint
+  recipient: string
+} {
+  // Validate amount
+  const amount = Uint.tryFrom(params.amount)
+  if (amount === undefined) {
+    throw new Error("Invalid amount")
+  }
+
+  if (amount.isZero()) {
+    throw new Error("Amount must be greater than zero")
+  }
+
+  // Validate recipient
+  if (typeof params.recipient !== "string") {
+    throw new Error("Invalid recipient")
+  }
+
+  return { amount, recipient: params.recipient }
+}
+```
+
+### Form Validation
+
+```typescript
+// Validate user input from form
+function validateFormInput(input: string): {
+  valid: boolean
+  value?: BrandedUint
+  error?: string
+} {
+  // Check empty
+  if (input.trim() === "") {
+    return { valid: false, error: "Value required" }
+  }
+
+  // Try parsing
+  const value = Uint.tryFrom(input)
+  if (value === undefined) {
+    return { valid: false, error: "Invalid number format" }
+  }
+
+  // Additional validation
+  if (value.isZero()) {
+    return { valid: false, error: "Value must be greater than zero" }
+  }
+
+  if (value.greaterThan(Uint.from(1000000n))) {
+    return { valid: false, error: "Value too large" }
+  }
+
+  return { valid: true, value }
+}
+
+// Usage in form handler
+const result = validateFormInput(formData.amount)
+if (!result.valid) {
+  showError(result.error)
+} else {
+  submitTransaction(result.value)
+}
+```
+
+### Contract Parameter Validation
+
+```typescript
+// Validate contract call parameters
+function validateCallParams(params: {
+  value?: unknown
+  gasLimit?: unknown
+  gasPrice?: unknown
+}) {
+  const validated = {
+    value: Uint.ZERO,
+    gasLimit: Uint.from(21000n),
+    gasPrice: Uint.from(1000000000n)  // 1 gwei
+  }
+
+  // Validate value
+  if (params.value !== undefined) {
+    const value = Uint.tryFrom(params.value)
+    if (value === undefined) {
+      throw new Error("Invalid value parameter")
+    }
+    validated.value = value
+  }
+
+  // Validate gasLimit
+  if (params.gasLimit !== undefined) {
+    const gasLimit = Uint.tryFrom(params.gasLimit)
+    if (gasLimit === undefined) {
+      throw new Error("Invalid gasLimit parameter")
+    }
+    if (gasLimit.lessThan(Uint.from(21000n))) {
+      throw new Error("gasLimit too low (minimum 21000)")
+    }
+    validated.gasLimit = gasLimit
+  }
+
+  // Validate gasPrice
+  if (params.gasPrice !== undefined) {
+    const gasPrice = Uint.tryFrom(params.gasPrice)
+    if (gasPrice === undefined) {
+      throw new Error("Invalid gasPrice parameter")
+    }
+    if (gasPrice.isZero()) {
+      throw new Error("gasPrice must be greater than zero")
+    }
+    validated.gasPrice = gasPrice
+  }
+
+  return validated
+}
+```
+
+### Type Narrowing
+
+```typescript
+// Use in type guards
+function isUint256(value: unknown): value is BrandedUint {
+  return Uint.isValid(value)
+}
+
+// Use with type unions
+type NumericValue = BrandedUint | number | string
+
+function normalizeValue(value: NumericValue): BrandedUint {
+  if (isUint256(value)) {
+    return value
+  }
+
+  const parsed = Uint.tryFrom(value)
+  if (parsed === undefined) {
+    throw new Error("Cannot convert to Uint256")
+  }
+
+  return parsed
+}
+```
+
+### Array Validation
+
+```typescript
+// Validate array of values
+function validateUintArray(values: unknown[]): BrandedUint[] {
+  const result: BrandedUint[] = []
+
+  for (let i = 0; i < values.length; i++) {
+    const value = Uint.tryFrom(values[i])
+    if (value === undefined) {
+      throw new Error(`Invalid value at index ${i}`)
+    }
+    result.push(value)
+  }
+
+  return result
+}
+
+// Usage
+try {
+  const uints = validateUintArray(["100", "200", "0xff"])
+  console.log("All values valid")
+} catch (error) {
+  console.error(error.message)
+}
+```
+
+### JSON Schema Validation
+
+```typescript
+// Validate JSON input
+interface TransactionData {
+  value: unknown
+  nonce: unknown
+  gasLimit: unknown
+}
+
+function validateTransaction(data: TransactionData): {
+  value: BrandedUint
+  nonce: BrandedUint
+  gasLimit: BrandedUint
+} {
+  const value = Uint.tryFrom(data.value)
+  if (value === undefined) {
+    throw new Error("Invalid transaction value")
+  }
+
+  const nonce = Uint.tryFrom(data.nonce)
+  if (nonce === undefined) {
+    throw new Error("Invalid transaction nonce")
+  }
+
+  const gasLimit = Uint.tryFrom(data.gasLimit)
+  if (gasLimit === undefined) {
+    throw new Error("Invalid transaction gasLimit")
+  }
+
+  return { value, nonce, gasLimit }
+}
+```
+
+## Validation Best Practices
+
+### 1. Use tryFrom for User Input
+
+```typescript
+// Good - handles errors gracefully
+const value = Uint.tryFrom(userInput)
+if (value === undefined) {
+  showError("Invalid number")
+  return
+}
+
+// Avoid - throws on invalid input
+try {
+  const value = Uint.from(userInput)
+} catch (error) {
+  showError(error.message)
+}
+```
+
+### 2. Validate Early
+
+```typescript
+// Good - validate at API boundary
+function processPayment(amountStr: string) {
+  const amount = Uint.tryFrom(amountStr)
+  if (amount === undefined) {
+    throw new Error("Invalid amount")
+  }
+
+  // Rest of function works with valid BrandedUint
+  const fee = calculateFee(amount)
+  const total = amount.plus(fee)
+}
+
+// Avoid - delayed validation
+function processPayment(amountStr: string) {
+  // ... much later ...
+  const amount = Uint.from(amountStr)  // May throw deep in call stack
+}
+```
+
+### 3. Provide Clear Error Messages
+
+```typescript
+// Good - specific error messages
+function validateAmount(value: unknown): BrandedUint {
+  if (typeof value !== "string" && typeof value !== "bigint") {
+    throw new Error(`Amount must be string or bigint, got ${typeof value}`)
+  }
+
+  const uint = Uint.tryFrom(value)
+  if (uint === undefined) {
+    throw new Error(`Invalid amount format: ${value}`)
+  }
+
+  if (uint.isZero()) {
+    throw new Error("Amount must be greater than zero")
+  }
+
+  return uint
+}
+```
+
+## Tree-Shakeable Usage
+
+Validation methods available as tree-shakeable imports:
+
+```typescript
+import { isValid, tryFrom } from '@tevm/voltaire/BrandedUint'
+
+const valid = isValid(100n)           // true
+const parsed = tryFrom("255")         // BrandedUint | undefined
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

@@ -1,0 +1,427 @@
+---
+title: BrandedChain
+description: Tree-shakeable functional API for Chain operations
+---
+
+# BrandedChain
+
+Tree-shakeable functional API for Chain operations with optimal bundle size.
+
+## Overview
+
+`BrandedChain` is the functional layer underlying the `Chain` class. It provides:
+- **Zero-overhead** type wrapping for chain configuration objects
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods taking chain as first parameter
+- **Bundle optimization** through selective imports
+
+Primary benefit: When using tree-shakeable imports, you can include only the specific chain lookup functionality you need, or import individual chain objects to minimize bundle size.
+
+## Type Definition
+
+```typescript
+export type Chain = {
+  name: string
+  chain: string
+  chainId: number
+  networkId?: number
+  shortName: string
+  rpc: string[]
+  nativeCurrency: NativeCurrency
+  infoURL?: string
+  explorers?: Explorer[]
+  [key: string]: any
+}
+```
+
+Plain JavaScript object with chain configuration. No special branding beyond TypeScript type safety.
+
+Defined in: [primitives/Chain/ChainType.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Chain/ChainType.ts)
+
+## Namespace API
+
+All functions exported as both individual exports and namespace:
+
+```typescript
+import * as BrandedChain from '@tevm/voltaire/BrandedChain'
+
+// Namespace usage
+const chain = BrandedChain.fromId(9)
+const flare = BrandedChain.byId[14]
+```
+
+## Tree-Shakeable Usage
+
+Import only what you need:
+
+```typescript
+import { fromId, byId } from '@tevm/voltaire/BrandedChain'
+import type { Chain } from '@tevm/voltaire/BrandedChain'
+
+const quai: Chain | undefined = fromId(9)
+const flare = byId[14]
+```
+
+**Bundle impact:** Importing `fromId` or `byId` includes the full chain registry (800+ chains). For minimal bundles, import specific chains:
+
+```typescript
+import { quai9, flr14, injective1776 } from '@tevm/chains'
+
+// Only includes the 3 chains you imported
+console.log(quai9.chainId)      // 9
+console.log(flr14.chainId)      // 14
+console.log(injective1776.chainId) // 1776
+```
+
+## Available Functions
+
+All Chain functionality available as tree-shakeable functions:
+
+### Constructors
+
+```typescript
+import { from, fromId } from '@tevm/voltaire/BrandedChain'
+import { mainnet } from '@tevm/chains'
+
+const chain1 = from(mainnet)
+const chain2 = fromId(9)
+```
+
+See [Constructors](/primitives/chain/constructors) for details.
+
+### Chain Lookup
+
+```typescript
+import { fromId, byId } from '@tevm/voltaire/BrandedChain'
+
+// Function-based lookup
+const quai = fromId(9)
+
+// Record-based lookup
+const flare = byId[14]
+```
+
+See [Chain Lookup](/primitives/chain/chain-lookup) for details.
+
+## Data-First Pattern
+
+All BrandedChain functions follow data-first pattern:
+
+```typescript
+// BrandedChain: chain is first parameter (where applicable)
+from(chain)
+fromId(id)
+
+// vs Chain class: uses static methods
+Chain.from(chain)
+Chain.fromId(id)
+```
+
+This enables functional composition and partial application:
+
+```typescript
+import { fromId } from '@tevm/voltaire/BrandedChain'
+
+// Function composition
+const getChainName = (chainId: number) => fromId(chainId)?.name
+
+// Array methods
+const chainIds = [9, 14, 1776]
+const chains = chainIds
+  .map(fromId)
+  .filter((chain): chain is Chain => chain !== undefined)
+
+chains.forEach(chain => {
+  console.log(chain.name)
+})
+```
+
+## Tree-Shaking Strategies
+
+### Strategy 1: Import Specific Chains (Smallest Bundle)
+
+**Best for:** Applications using a fixed set of known chains.
+
+```typescript
+import { quai9, flr14, ronin2020 } from '@tevm/chains'
+
+// Only these 3 chains in bundle
+const chains = [quai9, flr14, ronin2020]
+
+function getChain(chainId: number) {
+  return chains.find(c => c.chainId === chainId)
+}
+
+const quai = getChain(9)
+```
+
+**Bundle size:** ~1KB (only the chains you import)
+
+### Strategy 2: Import Registry Functions (Larger Bundle)
+
+**Best for:** Applications with dynamic chain selection.
+
+```typescript
+import { fromId, byId } from '@tevm/voltaire/BrandedChain'
+
+// Full chain registry in bundle
+const quai = fromId(9)
+const flare = byId[14]
+
+// Supports any chain ID at runtime
+function getChain(userChainId: number) {
+  return fromId(userChainId)
+}
+```
+
+**Bundle size:** ~150KB (entire chain registry with 800+ chains)
+
+### Strategy 3: Hybrid Approach (Balanced)
+
+**Best for:** Applications with common chains but occasional dynamic lookup.
+
+```typescript
+import { quai9, flr14, ronin2020 } from '@tevm/chains'
+import { fromId } from '@tevm/voltaire/BrandedChain'
+
+// Common chains available without lookup
+const COMMON_CHAINS = [quai9, flr14, ronin2020]
+
+function getChain(chainId: number) {
+  // Try common chains first
+  const common = COMMON_CHAINS.find(c => c.chainId === chainId)
+  if (common) return common
+
+  // Fall back to full registry
+  return fromId(chainId)
+}
+```
+
+**Bundle size:** ~150KB (but common chains fast-path)
+
+### Strategy 4: Code Splitting (Best of Both)
+
+**Best for:** Large applications with route-based chain usage.
+
+```typescript
+// Common chains in main bundle
+import { quai9, flr14 } from '@tevm/chains'
+
+// Lazy load registry for admin panel
+async function loadFullRegistry() {
+  const { fromId } = await import('@tevm/voltaire/BrandedChain')
+  return fromId
+}
+
+// User-facing pages use common chains
+function getUserChain(chainId: number) {
+  if (chainId === 9) return quai9
+  if (chainId === 14) return flr14
+  return null
+}
+
+// Admin pages can load full registry
+async function getAdminChain(chainId: number) {
+  const fromId = await loadFullRegistry()
+  return fromId(chainId)
+}
+```
+
+**Bundle size:**
+- Main bundle: ~1KB
+- Admin bundle: +150KB (loaded on demand)
+
+## Bundle Size Comparison
+
+| Import Strategy | Bundle Size | Flexibility | Use Case |
+|----------------|-------------|-------------|----------|
+| Specific chains only | ~1KB | Low | Fixed chains, production apps |
+| `from()` only | ~1KB | Low | Wrapper around chain objects |
+| `fromId()` or `byId` | ~150KB | High | Dynamic chain selection |
+| Hybrid | ~150KB* | Medium | Common + dynamic |
+| Code splitting | 1KB + 150KB† | High | Large apps, route-based |
+
+\* Full registry included
+† Loaded on demand
+
+## Usage Examples
+
+### Minimal Bundle (Fixed Chains)
+
+```typescript
+import { quai9, flr14 } from '@tevm/chains'
+import { from } from '@tevm/voltaire/BrandedChain'
+
+// Wrap with Chain class if needed
+const quai = from(quai9)
+const flare = from(flr14)
+
+console.log(quai.name)  // "Quai Mainnet"
+console.log(flare.name) // "Flare Mainnet"
+```
+
+### Dynamic Chain Loading
+
+```typescript
+import { fromId } from '@tevm/voltaire/BrandedChain'
+
+function loadChain(chainIdFromUser: number) {
+  const chain = fromId(chainIdFromUser)
+
+  if (!chain) {
+    throw new Error(`Unknown chain ID: ${chainIdFromUser}`)
+  }
+
+  return chain
+}
+
+// Supports any registered chain
+const chain = loadChain(9)
+console.log(chain.name) // "Quai Mainnet"
+```
+
+### Multi-Chain Application
+
+```typescript
+// app.ts - Main bundle with common chains
+import { quai9, flr14, ronin2020 } from '@tevm/chains'
+
+export const SUPPORTED_CHAINS = [quai9, flr14, ronin2020]
+
+export function getChain(chainId: number) {
+  return SUPPORTED_CHAINS.find(c => c.chainId === chainId)
+}
+
+// admin.ts - Admin panel with full registry
+import { fromId } from '@tevm/voltaire/BrandedChain'
+
+export function getAllChains() {
+  return Object.values(byId)
+}
+
+export function findChain(chainId: number) {
+  return fromId(chainId)
+}
+```
+
+### Functional Composition
+
+```typescript
+import { fromId } from '@tevm/voltaire/BrandedChain'
+import type { Chain } from '@tevm/voltaire/BrandedChain'
+
+// Compose functions
+const getChainName = (id: number) => fromId(id)?.name ?? 'Unknown'
+const getChainSymbol = (id: number) => fromId(id)?.nativeCurrency.symbol ?? '?'
+const getChainRpc = (id: number) => fromId(id)?.rpc[0] ?? ''
+
+// Use in pipelines
+const chainIds = [9, 14, 1776, 2020]
+
+const names = chainIds.map(getChainName)
+const symbols = chainIds.map(getChainSymbol)
+const rpcs = chainIds.map(getChainRpc)
+
+console.log(names)   // ["Quai Mainnet", "Flare Mainnet", ...]
+console.log(symbols) // ["QUAI", "FLR", ...]
+console.log(rpcs)    // ["https://...", ...]
+```
+
+### Type-Safe Chain Operations
+
+```typescript
+import { fromId } from '@tevm/voltaire/BrandedChain'
+import type { Chain } from '@tevm/voltaire/BrandedChain'
+
+function requireChain(chainId: number): Chain {
+  const chain = fromId(chainId)
+
+  if (!chain) {
+    throw new Error(`Chain ${chainId} not found`)
+  }
+
+  return chain
+}
+
+function processChain(chain: Chain): void {
+  console.log(`Processing ${chain.name}...`)
+  console.log(`RPC: ${chain.rpc[0]}`)
+  console.log(`Symbol: ${chain.nativeCurrency.symbol}`)
+}
+
+// Type-safe pipeline
+try {
+  const chain = requireChain(9)
+  processChain(chain)
+} catch (error) {
+  console.error(error.message)
+}
+```
+
+## When to Use BrandedChain vs Chain
+
+### Use BrandedChain When:
+- **Bundle size critical** (mobile, embedded)
+- **Fixed chain set** (production apps)
+- **Tree-shaking important**
+- **Functional style** preferred
+- **Direct imports** from @tevm/chains
+
+### Use Chain Class When:
+- **Dynamic chains** needed
+- **Convenience** over size
+- **Traditional API** preferred
+- **Prototype methods** desired
+
+## Interoperability
+
+BrandedChain and Chain are fully compatible:
+
+```typescript
+import { Chain } from '@tevm/voltaire'
+import { fromId } from '@tevm/voltaire/BrandedChain'
+import { quai9 } from '@tevm/chains'
+
+// BrandedChain functions work with Chain class
+const chain1 = Chain.from(quai9)
+const chain2 = fromId(9)
+
+// Both are plain objects with same structure
+console.log(chain1.chainId) // 9
+console.log(chain2?.chainId) // 9
+```
+
+## Re-exports from @tevm/chains
+
+BrandedChain re-exports all chains from @tevm/chains:
+
+```typescript
+import {
+  // Re-exported chains
+  quai9,
+  flr14,
+  injective1776,
+  ronin2020,
+  moca2288,
+
+  // Re-exported utilities
+  getChainById,
+  chainById,
+  allChains,
+
+  // BrandedChain functions
+  from,
+  fromId,
+  byId,
+} from '@tevm/voltaire/BrandedChain'
+```
+
+This provides a single import path for all chain-related functionality.
+
+## Related
+
+- [Chain](/primitives/chain/) - Main Chain class documentation
+- [Constructors](/primitives/chain/constructors) - Creating chains
+- [Chain Lookup](/primitives/chain/chain-lookup) - Looking up chains by ID
+- [Metadata](/primitives/chain/metadata) - Chain properties
+- [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains) - Chain registry source

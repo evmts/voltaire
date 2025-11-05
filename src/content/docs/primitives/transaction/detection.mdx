@@ -1,0 +1,261 @@
+---
+title: Transaction Type Detection
+description: Detect transaction type from serialized bytes
+---
+
+# Transaction Type Detection
+
+Identify transaction type from RLP-encoded transaction data.
+
+## detectType
+
+Detect transaction type from the first byte of serialized data.
+
+```typescript
+function detectType(data: Uint8Array): Type
+```
+
+### Parameters
+
+- `data: Uint8Array` - Serialized transaction bytes
+
+### Returns
+
+`Type` - Transaction type enum value
+
+### Throws
+
+- `Error("Empty transaction data")` - If data is empty
+- `Error("Unknown transaction type: 0xNN")` - If first byte doesn't match any known type
+
+### Usage
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+// Detect Legacy transaction (starts with RLP list marker 0xc0-0xff)
+const legacyData = new Uint8Array([0xf8, 0x6c, ...])
+detectType(legacyData)  // Type.Legacy (0x00)
+
+// Detect EIP-1559 transaction (starts with type byte 0x02)
+const eip1559Data = new Uint8Array([0x02, 0xf8, 0x6c, ...])
+detectType(eip1559Data)  // Type.EIP1559 (0x02)
+
+// Detect EIP-4844 transaction (starts with type byte 0x03)
+const eip4844Data = new Uint8Array([0x03, 0xf9, ...])
+detectType(eip4844Data)  // Type.EIP4844 (0x03)
+
+// Error on empty data
+try {
+  detectType(new Uint8Array())
+} catch (e) {
+  console.error(e.message)  // "Empty transaction data"
+}
+
+// Error on unknown type
+try {
+  detectType(new Uint8Array([0x05, ...]))
+} catch (e) {
+  console.error(e.message)  // "Unknown transaction type: 0x5"
+}
+```
+
+Source: [detectType.ts:6-31](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/detectType.ts#L6-L31)
+
+## Detection Logic
+
+### Legacy Transactions (Type 0)
+
+Legacy transactions use direct RLP encoding without a type prefix:
+
+```typescript
+// First byte is RLP list marker (0xc0-0xff)
+if (firstByte >= 0xc0) {
+  return Type.Legacy
+}
+```
+
+**RLP list markers:**
+- `0xc0-0xf7` - Short list (length 0-55 bytes)
+- `0xf8-0xff` - Long list (length > 55 bytes)
+
+Legacy transactions always start with one of these bytes because they're RLP-encoded lists.
+
+### Typed Transactions (EIP-2718)
+
+All post-EIP-2718 transactions use typed transaction envelope:
+
+```
+TransactionType || TransactionPayload
+```
+
+Where `TransactionType` is a single byte (0x01-0x04) and `TransactionPayload` is RLP-encoded transaction data.
+
+```typescript
+switch (firstByte) {
+  case 0x01: return Type.EIP2930
+  case 0x02: return Type.EIP1559
+  case 0x03: return Type.EIP4844
+  case 0x04: return Type.EIP7702
+  default: throw new Error(`Unknown transaction type: 0x${firstByte.toString(16)}`)
+}
+```
+
+## Type Identification
+
+### From Network Data
+
+```typescript
+import { detectType, deserialize } from '@tevm/voltaire/Transaction'
+
+// Receive transaction from network
+const txData = new Uint8Array([...])
+
+// Detect type
+const type = detectType(txData)
+console.log(`Received ${Type[type]} transaction`)
+
+// Deserialize based on detected type
+const tx = deserialize(txData)
+```
+
+### From Transaction Pool
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+function categorizeTx(data: Uint8Array) {
+  const type = detectType(data)
+
+  switch (type) {
+    case Type.Legacy:
+      return 'legacy-pool'
+    case Type.EIP1559:
+      return 'priority-pool'
+    case Type.EIP4844:
+      return 'blob-pool'
+    default:
+      return 'default-pool'
+  }
+}
+```
+
+### Batch Detection
+
+```typescript
+import { detectType, Type } from '@tevm/voltaire/Transaction'
+
+function analyzeBlock(transactions: Uint8Array[]) {
+  const counts = {
+    [Type.Legacy]: 0,
+    [Type.EIP2930]: 0,
+    [Type.EIP1559]: 0,
+    [Type.EIP4844]: 0,
+    [Type.EIP7702]: 0,
+  }
+
+  for (const tx of transactions) {
+    const type = detectType(tx)
+    counts[type]++
+  }
+
+  return counts
+}
+```
+
+## Type Byte Reference
+
+| Type | Byte | Name | Introduced |
+|------|------|------|------------|
+| Legacy | 0xc0-0xff | Pre-EIP-2718 | Genesis |
+| EIP-2930 | 0x01 | Access List | Berlin |
+| EIP-1559 | 0x02 | Fee Market | London |
+| EIP-4844 | 0x03 | Blob | Dencun |
+| EIP-7702 | 0x04 | Delegation | Pectra |
+
+## Error Handling
+
+### Empty Data
+
+```typescript
+try {
+  detectType(new Uint8Array(0))
+} catch (e) {
+  console.error(e.message)  // "Empty transaction data"
+}
+```
+
+### Invalid Type
+
+```typescript
+try {
+  // Type 0x05 doesn't exist
+  detectType(new Uint8Array([0x05, 0xf8, ...]))
+} catch (e) {
+  console.error(e.message)  // "Unknown transaction type: 0x5"
+}
+```
+
+### Corrupted Data
+
+```typescript
+try {
+  // First byte < 0xc0 and not a known type
+  detectType(new Uint8Array([0x7f, 0x00, ...]))
+} catch (e) {
+  console.error(e.message)  // "Unknown transaction type: 0x7f"
+}
+```
+
+## Integration with Deserialization
+
+`detectType` is used internally by `deserialize`:
+
+```typescript
+function deserialize(data: Uint8Array): Any {
+  const type = detectType(data)
+
+  switch (type) {
+    case Type.Legacy:
+      return Legacy.deserialize(data)
+    case Type.EIP2930:
+      return EIP2930.deserialize(data)
+    case Type.EIP1559:
+      return EIP1559.deserialize(data)
+    case Type.EIP4844:
+      return EIP4844.deserialize(data)
+    case Type.EIP7702:
+      return EIP7702.deserialize(data)
+  }
+}
+```
+
+You typically don't need to call `detectType` directly - use `deserialize` instead:
+
+```typescript
+// Instead of:
+const type = detectType(data)
+let tx
+if (type === Type.EIP1559) {
+  tx = Transaction.EIP1559.deserialize(data)
+}
+
+// Just do:
+const tx = Transaction.deserialize(data)
+```
+
+## Performance
+
+`detectType` is O(1) - it only reads the first byte:
+
+```typescript
+if (data.length === 0) {
+  throw new Error("Empty transaction data")
+}
+
+const firstByte = data[0]!  // Single array access
+
+// Simple comparison/switch - no iteration
+```
+
+Suitable for high-throughput scenarios like block processing or mempool management.

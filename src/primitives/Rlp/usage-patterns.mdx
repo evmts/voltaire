@@ -1,0 +1,628 @@
+---
+title: RLP Usage Patterns
+description: Common RLP usage patterns in Ethereum transactions, blocks, and receipts
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# RLP Usage Patterns
+
+Real-world RLP usage patterns for Ethereum transactions, blocks, receipts, and other data structures.
+
+## Overview
+
+RLP is used throughout Ethereum for serializing structured data. This guide shows common patterns and best practices.
+
+## Transaction Encoding
+
+Legacy Ethereum transactions use RLP encoding with 9 fields.
+
+### Basic Transaction
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Transaction structure
+interface Transaction {
+  nonce: bigint
+  gasPrice: bigint
+  gasLimit: bigint
+  to: Uint8Array  // 20-byte address
+  value: bigint
+  data: Uint8Array
+  v: bigint
+  r: Uint8Array  // 32-byte signature component
+  s: Uint8Array  // 32-byte signature component
+}
+
+// Convert bigint to minimal big-endian bytes
+function bigintToBytes(value: bigint): Uint8Array {
+  if (value === 0n) return new Uint8Array([])
+
+  const hex = value.toString(16)
+  const padded = hex.length % 2 ? '0' + hex : hex
+  const bytes = new Uint8Array(padded.length / 2)
+
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(padded.slice(i * 2, i * 2 + 2), 16)
+  }
+
+  return bytes
+}
+
+// Encode transaction
+function encodeTransaction(tx: Transaction): Uint8Array {
+  const fields = [
+    bigintToBytes(tx.nonce),
+    bigintToBytes(tx.gasPrice),
+    bigintToBytes(tx.gasLimit),
+    tx.to,
+    bigintToBytes(tx.value),
+    tx.data,
+    bigintToBytes(tx.v),
+    tx.r,
+    tx.s
+  ]
+
+  return Rlp.encode(fields)
+}
+
+// Example usage
+const tx: Transaction = {
+  nonce: 0n,
+  gasPrice: 20_000_000_000n,  // 20 gwei
+  gasLimit: 21000n,
+  to: new Uint8Array(20).fill(0x01),
+  value: 1_000_000_000_000_000_000n,  // 1 ETH
+  data: new Uint8Array([]),
+  v: 27n,
+  r: new Uint8Array(32).fill(0x02),
+  s: new Uint8Array(32).fill(0x03)
+}
+
+const encoded = encodeTransaction(tx)
+console.log('Encoded transaction:', encoded)
+```
+
+### Signing Hash
+
+Calculate transaction hash for signing:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire/crypto'
+
+function getSigningHash(tx: Omit<Transaction, 'v' | 'r' | 's'>): Uint8Array {
+  // For signing, use chainId in place of v, r, s
+  const chainId = 1n  // Mainnet
+
+  const fields = [
+    bigintToBytes(tx.nonce),
+    bigintToBytes(tx.gasPrice),
+    bigintToBytes(tx.gasLimit),
+    tx.to,
+    bigintToBytes(tx.value),
+    tx.data,
+    bigintToBytes(chainId),
+    new Uint8Array([]),  // Empty r
+    new Uint8Array([])   // Empty s
+  ]
+
+  const encoded = Rlp.encode(fields)
+  return keccak256(encoded)
+}
+```
+
+### Decoding Transaction
+
+Extract transaction fields from RLP:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function decodeTransaction(bytes: Uint8Array): Transaction {
+  const result = Rlp.decode(bytes)
+
+  if (result.data.type !== 'list') {
+    throw new Error('Transaction must be RLP list')
+  }
+
+  if (result.data.value.length !== 9) {
+    throw new Error('Transaction must have 9 fields')
+  }
+
+  const fields = result.data.value
+
+  // Helper to extract bytes data
+  function getBytes(index: number): Uint8Array {
+    const field = fields[index]
+    if (!field || field.type !== 'bytes') {
+      throw new Error(`Field ${index} must be bytes`)
+    }
+    return field.value
+  }
+
+  // Helper to convert bytes to bigint
+  function bytesToBigint(bytes: Uint8Array): bigint {
+    if (bytes.length === 0) return 0n
+    return BigInt('0x' + Array.from(bytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join(''))
+  }
+
+  return {
+    nonce: bytesToBigint(getBytes(0)),
+    gasPrice: bytesToBigint(getBytes(1)),
+    gasLimit: bytesToBigint(getBytes(2)),
+    to: getBytes(3),
+    value: bytesToBigint(getBytes(4)),
+    data: getBytes(5),
+    v: bytesToBigint(getBytes(6)),
+    r: getBytes(7),
+    s: getBytes(8)
+  }
+}
+```
+
+## Block Encoding
+
+Block headers are RLP-encoded lists of fields.
+
+### Block Header
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface BlockHeader {
+  parentHash: Uint8Array      // 32 bytes
+  unclesHash: Uint8Array      // 32 bytes
+  coinbase: Uint8Array        // 20 bytes (miner address)
+  stateRoot: Uint8Array       // 32 bytes
+  transactionsRoot: Uint8Array // 32 bytes
+  receiptsRoot: Uint8Array    // 32 bytes
+  logsBloom: Uint8Array       // 256 bytes
+  difficulty: bigint
+  number: bigint
+  gasLimit: bigint
+  gasUsed: bigint
+  timestamp: bigint
+  extraData: Uint8Array       // Variable
+  mixHash: Uint8Array         // 32 bytes
+  nonce: Uint8Array           // 8 bytes
+}
+
+function encodeBlockHeader(header: BlockHeader): Uint8Array {
+  const fields = [
+    header.parentHash,
+    header.unclesHash,
+    header.coinbase,
+    header.stateRoot,
+    header.transactionsRoot,
+    header.receiptsRoot,
+    header.logsBloom,
+    bigintToBytes(header.difficulty),
+    bigintToBytes(header.number),
+    bigintToBytes(header.gasLimit),
+    bigintToBytes(header.gasUsed),
+    bigintToBytes(header.timestamp),
+    header.extraData,
+    header.mixHash,
+    header.nonce
+  ]
+
+  return Rlp.encode(fields)
+}
+
+// Get block hash
+function getBlockHash(header: BlockHeader): Uint8Array {
+  const encoded = encodeBlockHeader(header)
+  return keccak256(encoded)
+}
+```
+
+### Complete Block
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface Block {
+  header: BlockHeader
+  transactions: Transaction[]
+  uncles: BlockHeader[]
+}
+
+function encodeBlock(block: Block): Uint8Array {
+  // Encode header
+  const headerFields = [
+    block.header.parentHash,
+    block.header.unclesHash,
+    // ... all header fields
+  ]
+
+  // Encode transactions
+  const txs = block.transactions.map(tx => encodeTransaction(tx))
+
+  // Encode uncles
+  const uncles = block.uncles.map(uncle => {
+    const uncleFields = [
+      uncle.parentHash,
+      uncle.unclesHash,
+      // ... all uncle fields
+    ]
+    return Rlp.encode(uncleFields)
+  })
+
+  // Combine into block
+  return Rlp.encode([
+    Rlp.encode(headerFields),
+    Rlp.encode(txs),
+    Rlp.encode(uncles)
+  ])
+}
+```
+
+## Receipt Encoding
+
+Transaction receipts use RLP encoding.
+
+### Receipt Structure
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface Log {
+  address: Uint8Array  // 20 bytes
+  topics: Uint8Array[]  // Each 32 bytes
+  data: Uint8Array
+}
+
+interface Receipt {
+  status: bigint  // 1 = success, 0 = failure
+  gasUsed: bigint
+  logsBloom: Uint8Array  // 256 bytes
+  logs: Log[]
+}
+
+function encodeLog(log: Log): Uint8Array {
+  return Rlp.encode([
+    log.address,
+    log.topics,
+    log.data
+  ])
+}
+
+function encodeReceipt(receipt: Receipt): Uint8Array {
+  const logs = receipt.logs.map(log => encodeLog(log))
+
+  return Rlp.encode([
+    bigintToBytes(receipt.status),
+    bigintToBytes(receipt.gasUsed),
+    receipt.logsBloom,
+    Rlp.encode(logs)
+  ])
+}
+```
+
+### Receipts Root
+
+Calculate receipts Merkle root:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+import { keccak256 } from '@tevm/voltaire/crypto'
+
+function getReceiptsRoot(receipts: Receipt[]): Uint8Array {
+  // Encode each receipt
+  const encoded = receipts.map(r => encodeReceipt(r))
+
+  // Build Merkle tree
+  // (simplified - actual implementation more complex)
+  const hashes = encoded.map(e => keccak256(e))
+
+  // Return root
+  return calculateMerkleRoot(hashes)
+}
+```
+
+## State Trie Nodes
+
+State trie nodes use RLP encoding.
+
+### Leaf Node
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Leaf node: [encodedPath, value]
+function encodeLeafNode(path: Uint8Array, value: Uint8Array): Uint8Array {
+  return Rlp.encode([path, value])
+}
+
+// Example: account state
+const accountPath = new Uint8Array([0x20, 0x1f, 0x3a, 0x5b])
+const accountValue = Rlp.encode([
+  bigintToBytes(nonce),
+  bigintToBytes(balance),
+  storageRoot,
+  codeHash
+])
+
+const leafNode = encodeLeafNode(accountPath, accountValue)
+```
+
+### Branch Node
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Branch node: [v0, v1, ..., v15, value]
+function encodeBranchNode(branches: Uint8Array[], value?: Uint8Array): Uint8Array {
+  if (branches.length !== 16) {
+    throw new Error('Branch node must have 16 branches')
+  }
+
+  const fields = [...branches, value || new Uint8Array([])]
+  return Rlp.encode(fields)
+}
+```
+
+## Network Messages
+
+DevP2P protocol uses RLP for message encoding.
+
+### Status Message
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface StatusMessage {
+  protocolVersion: bigint
+  networkId: bigint
+  totalDifficulty: bigint
+  bestHash: Uint8Array  // 32 bytes
+  genesisHash: Uint8Array  // 32 bytes
+  forkId: {
+    hash: Uint8Array  // 4 bytes
+    next: bigint
+  }
+}
+
+function encodeStatus(msg: StatusMessage): Uint8Array {
+  return Rlp.encode([
+    bigintToBytes(msg.protocolVersion),
+    bigintToBytes(msg.networkId),
+    bigintToBytes(msg.totalDifficulty),
+    msg.bestHash,
+    msg.genesisHash,
+    Rlp.encode([
+      msg.forkId.hash,
+      bigintToBytes(msg.forkId.next)
+    ])
+  ])
+}
+```
+
+### GetBlockHeaders
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface GetBlockHeaders {
+  requestId: bigint
+  startBlock: bigint | Uint8Array  // Number or hash
+  maxHeaders: bigint
+  skip: bigint
+  reverse: boolean
+}
+
+function encodeGetBlockHeaders(msg: GetBlockHeaders): Uint8Array {
+  const startBlock = typeof msg.startBlock === 'bigint'
+    ? bigintToBytes(msg.startBlock)
+    : msg.startBlock
+
+  return Rlp.encode([
+    bigintToBytes(msg.requestId),
+    [
+      startBlock,
+      bigintToBytes(msg.maxHeaders),
+      bigintToBytes(msg.skip),
+      bigintToBytes(msg.reverse ? 1n : 0n)
+    ]
+  ])
+}
+```
+
+## Optimistic Patterns
+
+### Pre-allocate Buffers
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Calculate size first
+const fields = [field1, field2, field3]
+const totalSize = fields.reduce(
+  (sum, f) => sum + Rlp.getEncodedLength(f),
+  0
+)
+
+// Allocate once
+const buffer = new Uint8Array(totalSize + 10)  // +10 for list prefix
+
+// Encode into buffer (conceptual)
+let offset = 0
+for (const field of fields) {
+  const encoded = Rlp.encode(field)
+  buffer.set(encoded, offset)
+  offset += encoded.length
+}
+```
+
+### Batch Encoding
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Encode many transactions efficiently
+function encodeBatch(transactions: Transaction[]): Uint8Array[] {
+  return transactions.map(tx => {
+    const fields = [
+      bigintToBytes(tx.nonce),
+      bigintToBytes(tx.gasPrice),
+      // ... other fields
+    ]
+    return Rlp.encode(fields)
+  })
+}
+
+// Or encode as single list
+function encodeAsBlock(transactions: Transaction[]): Uint8Array {
+  const encoded = transactions.map(tx => encodeTransaction(tx))
+  return Rlp.encode(encoded)
+}
+```
+
+### Caching
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Cache encoded transactions
+const cache = new Map<string, Uint8Array>()
+
+function getEncodedTransaction(tx: Transaction): Uint8Array {
+  const key = getTxKey(tx)
+
+  let encoded = cache.get(key)
+  if (!encoded) {
+    encoded = encodeTransaction(tx)
+    cache.set(key, encoded)
+  }
+
+  return encoded
+}
+```
+
+## Error Handling
+
+### Validation
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function validateAndDecodeTransaction(bytes: Uint8Array): Transaction {
+  let result
+  try {
+    result = Rlp.decode(bytes)
+  } catch (error) {
+    throw new Error(`Invalid RLP: ${error.message}`)
+  }
+
+  if (result.remainder.length > 0) {
+    throw new Error('Extra data after transaction')
+  }
+
+  if (result.data.type !== 'list') {
+    throw new Error('Transaction must be list')
+  }
+
+  if (result.data.value.length !== 9) {
+    throw new Error(`Expected 9 fields, got ${result.data.value.length}`)
+  }
+
+  // Validate field types
+  for (let i = 0; i < 9; i++) {
+    const field = result.data.value[i]
+    if (!field || field.type !== 'bytes') {
+      throw new Error(`Field ${i} must be bytes`)
+    }
+  }
+
+  return decodeTransaction(bytes)
+}
+```
+
+### Safe Decoding
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function safeDecodeTransaction(bytes: Uint8Array): Transaction | null {
+  try {
+    return validateAndDecodeTransaction(bytes)
+  } catch (error) {
+    console.error('Failed to decode transaction:', error)
+    return null
+  }
+}
+
+// Use in application
+const tx = safeDecodeTransaction(receivedBytes)
+if (tx) {
+  processTransaction(tx)
+} else {
+  console.error('Invalid transaction received')
+}
+```
+
+## Testing Patterns
+
+### Round-trip Testing
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+test('transaction round-trip encoding', () => {
+  const original: Transaction = {
+    nonce: 5n,
+    gasPrice: 20_000_000_000n,
+    gasLimit: 21000n,
+    to: new Uint8Array(20).fill(0x01),
+    value: 1_000_000_000_000_000_000n,
+    data: new Uint8Array([]),
+    v: 27n,
+    r: new Uint8Array(32).fill(0x02),
+    s: new Uint8Array(32).fill(0x03)
+  }
+
+  // Encode
+  const encoded = encodeTransaction(original)
+
+  // Decode
+  const decoded = decodeTransaction(encoded)
+
+  // Should match
+  expect(decoded.nonce).toBe(original.nonce)
+  expect(decoded.gasPrice).toBe(original.gasPrice)
+  // ... check all fields
+})
+```
+
+### Known Vectors
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+test('decodes known transaction', () => {
+  // Known valid transaction from Ethereum
+  const knownTx = '0xf86c...'  // Full hex string
+  const bytes = hexToBytes(knownTx)
+
+  const decoded = decodeTransaction(bytes)
+
+  expect(decoded.nonce).toBe(0n)
+  expect(decoded.gasPrice).toBe(20_000_000_000n)
+  // ... verify known values
+})
+```
+
+<Aside type="tip">
+Always validate RLP structure after decoding. Check list lengths, field types, and value ranges before processing data.
+</Aside>
+
+## Related
+
+- [Encoding](/primitives/rlp/encoding) - Encoding methods
+- [Decoding](/primitives/rlp/decoding) - Decoding methods
+- [Types](/primitives/rlp/types) - Type system
+- [Algorithm](/primitives/rlp/algorithm) - Specification details

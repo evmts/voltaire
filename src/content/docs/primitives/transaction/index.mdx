@@ -1,0 +1,394 @@
+---
+title: Transaction
+description: Complete Ethereum transaction encoding/decoding for all transaction types
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+# Transaction
+
+Complete Ethereum transaction implementation supporting all transaction types from Legacy to EIP-7702.
+
+## Overview
+
+Transaction module provides type-safe encoding, decoding, signing, and hashing for all Ethereum transaction types. Supports Legacy (Type 0), EIP-2930 (Type 1), EIP-1559 (Type 2), EIP-4844 (Type 3), and EIP-7702 (Type 4) transactions with full RLP serialization.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Basic Usage">
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Create a transaction
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gasLimit: 21000n,
+  to: addressBytes,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: signatureR,
+  s: signatureS,
+}
+
+// Serialize to bytes
+const serialized = Transaction.serialize(tx)
+
+// Compute transaction hash
+const hash = Transaction.hash(tx)
+
+// Get signing hash
+const signingHash = Transaction.getSigningHash(tx)
+
+// Recover sender from signature
+const sender = Transaction.getSender(tx)
+
+// Deserialize from bytes
+const decoded = Transaction.deserialize(serialized)
+
+// Detect transaction type from bytes
+const type = Transaction.detectType(serialized)
+```
+</TabItem>
+
+<TabItem label="Type-Specific Operations">
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Legacy transaction
+const legacy: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: addressBytes,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  v: 27n,
+  r: signatureR,
+  s: signatureS,
+}
+
+// Get chain ID from legacy v value
+const chainId = Transaction.Legacy.getChainId.call(legacy)
+
+// EIP-1559 transaction
+const eip1559: Transaction.EIP1559 = { /* ... */ }
+const effectiveGasPrice = Transaction.EIP1559.getEffectiveGasPrice(
+  eip1559,
+  baseFee
+)
+
+// EIP-4844 blob transaction
+const eip4844: Transaction.EIP4844 = {
+  type: Transaction.Type.EIP4844,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gasLimit: 100000n,
+  to: addressBytes,
+  value: 0n,
+  data: new Uint8Array(),
+  accessList: [],
+  maxFeePerBlobGas: 1000000000n,
+  blobVersionedHashes: [hash1, hash2],
+  yParity: 0,
+  r: signatureR,
+  s: signatureS,
+}
+
+const blobCost = Transaction.EIP4844.getBlobGasCost(eip4844, blobBaseFee)
+```
+</TabItem>
+
+<TabItem label="Utilities">
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Format for display
+const formatted = Transaction.format(tx)
+// "EIP-1559 tx to 0x..., value: 1 ETH, nonce: 0"
+
+// Get gas price (handles all types)
+const gasPrice = Transaction.getGasPrice(tx, baseFee)
+
+// Check if transaction has access list
+if (Transaction.hasAccessList(tx)) {
+  const accessList = Transaction.getAccessList(tx)
+}
+
+// Get chain ID
+const chainId = Transaction.getChainId(tx)
+
+// Check if signed
+if (Transaction.isSigned(tx)) {
+  const sender = Transaction.getSender(tx)
+}
+
+// Assert signed (throws if not)
+Transaction.assertSigned(tx)
+
+// Verify signature
+const isValid = Transaction.verifySignature(tx)
+```
+</TabItem>
+</Tabs>
+
+## Transaction Types
+
+Ethereum supports five transaction types, each with different capabilities:
+
+<CardGrid>
+  <Card title="Legacy (Type 0)" icon="document">
+    Original transaction format with fixed gas price.
+
+    [View Legacy →](/primitives/transaction/legacy)
+  </Card>
+
+  <Card title="EIP-2930 (Type 1)" icon="list-format">
+    Access list transactions for gas optimization.
+
+    [View EIP-2930 →](/primitives/transaction/eip2930)
+  </Card>
+
+  <Card title="EIP-1559 (Type 2)" icon="star">
+    Dynamic fee market with base fee and priority fee.
+
+    [View EIP-1559 →](/primitives/transaction/eip1559)
+  </Card>
+
+  <Card title="EIP-4844 (Type 3)" icon="rocket">
+    Blob transactions for L2 data availability.
+
+    [View EIP-4844 →](/primitives/transaction/eip4844)
+  </Card>
+
+  <Card title="EIP-7702 (Type 4)" icon="puzzle">
+    EOA delegation to smart contracts.
+
+    [View EIP-7702 →](/primitives/transaction/eip7702)
+  </Card>
+</CardGrid>
+
+## Type Definitions
+
+```typescript
+// Transaction type enum
+enum Type {
+  Legacy = 0x00,
+  EIP2930 = 0x01,
+  EIP1559 = 0x02,
+  EIP4844 = 0x03,
+  EIP7702 = 0x04,
+}
+
+// Legacy transaction (Type 0)
+type Legacy = {
+  type: Type.Legacy
+  nonce: bigint
+  gasPrice: bigint
+  gasLimit: bigint
+  to: BrandedAddress | null
+  value: bigint
+  data: Uint8Array
+  v: bigint
+  r: Uint8Array
+  s: Uint8Array
+}
+
+// EIP-2930 transaction (Type 1)
+type EIP2930 = {
+  type: Type.EIP2930
+  chainId: bigint
+  nonce: bigint
+  gasPrice: bigint
+  gasLimit: bigint
+  to: BrandedAddress | null
+  value: bigint
+  data: Uint8Array
+  accessList: AccessList
+  yParity: number
+  r: Uint8Array
+  s: Uint8Array
+}
+
+// EIP-1559 transaction (Type 2)
+type EIP1559 = {
+  type: Type.EIP1559
+  chainId: bigint
+  nonce: bigint
+  maxPriorityFeePerGas: bigint
+  maxFeePerGas: bigint
+  gasLimit: bigint
+  to: BrandedAddress | null
+  value: bigint
+  data: Uint8Array
+  accessList: AccessList
+  yParity: number
+  r: Uint8Array
+  s: Uint8Array
+}
+
+// EIP-4844 transaction (Type 3)
+type EIP4844 = {
+  type: Type.EIP4844
+  chainId: bigint
+  nonce: bigint
+  maxPriorityFeePerGas: bigint
+  maxFeePerGas: bigint
+  gasLimit: bigint
+  to: BrandedAddress  // Cannot be null for blob transactions
+  value: bigint
+  data: Uint8Array
+  accessList: AccessList
+  maxFeePerBlobGas: bigint
+  blobVersionedHashes: readonly VersionedHash[]
+  yParity: number
+  r: Uint8Array
+  s: Uint8Array
+}
+
+// EIP-7702 transaction (Type 4)
+type EIP7702 = {
+  type: Type.EIP7702
+  chainId: bigint
+  nonce: bigint
+  maxPriorityFeePerGas: bigint
+  maxFeePerGas: bigint
+  gasLimit: bigint
+  to: BrandedAddress | null
+  value: bigint
+  data: Uint8Array
+  accessList: AccessList
+  authorizationList: AuthorizationList
+  yParity: number
+  r: Uint8Array
+  s: Uint8Array
+}
+
+// Union type for all transactions
+type Any = Legacy | EIP2930 | EIP1559 | EIP4844 | EIP7702
+```
+
+Source: [types.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts)
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Types" icon="seti:config">
+    All transaction type definitions, enums, and type guards.
+
+    [View types →](/primitives/transaction/types)
+  </Card>
+
+  <Card title="Detection" icon="magnifier">
+    Detect transaction type from serialized bytes.
+
+    [View detection →](/primitives/transaction/detection)
+  </Card>
+
+  <Card title="Serialization" icon="document">
+    RLP encode and decode transactions.
+
+    [View serialization →](/primitives/transaction/serialization)
+  </Card>
+
+  <Card title="Hashing" icon="approve-check-circle">
+    Compute transaction and signing hashes.
+
+    [View hashing →](/primitives/transaction/hashing)
+  </Card>
+
+  <Card title="Signing" icon="pen">
+    Signature verification and sender recovery.
+
+    [View signing →](/primitives/transaction/signing)
+  </Card>
+
+  <Card title="Utilities" icon="setting">
+    Helper methods for gas, access lists, formatting, and more.
+
+    [View utilities →](/primitives/transaction/utilities)
+  </Card>
+
+  <Card title="Usage Patterns" icon="open-book">
+    Common patterns for building and working with transactions.
+
+    [View usage patterns →](/primitives/transaction/usage-patterns)
+  </Card>
+</CardGrid>
+
+## Architecture
+
+Transaction module uses namespace pattern for tree-shaking:
+
+```typescript
+// Top-level operations work on any transaction type
+Transaction.serialize(tx)      // Dispatches to type-specific serialize
+Transaction.hash(tx)           // Dispatches to type-specific hash
+Transaction.getSender(tx)      // Dispatches to type-specific getSender
+
+// Type-specific namespaces for specialized operations
+Transaction.Legacy.getChainId.call(legacyTx)
+Transaction.EIP1559.getEffectiveGasPrice(eip1559Tx, baseFee)
+Transaction.EIP4844.getBlobGasCost(eip4844Tx, blobBaseFee)
+
+// Tree-shakeable imports
+import { serialize } from '@tevm/voltaire/Transaction/serialize'
+import { hash } from '@tevm/voltaire/Transaction/hash'
+```
+
+Each transaction type has its own namespace with type-specific methods:
+- `Transaction.Legacy.*` - Legacy transaction operations
+- `Transaction.EIP2930.*` - EIP-2930 operations
+- `Transaction.EIP1559.*` - EIP-1559 operations (effective gas price)
+- `Transaction.EIP4844.*` - EIP-4844 operations (blob gas cost)
+- `Transaction.EIP7702.*` - EIP-7702 operations (authorization)
+
+<Aside type="tip" title="Tree-shaking">
+Import only what you need. Each transaction type's methods are independently tree-shakeable.
+</Aside>
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Address" icon="seti:config">
+    20-byte Ethereum addresses (used in `to` field).
+
+    [View Address →](/primitives/address)
+  </Card>
+
+  <Card title="Hash" icon="document">
+    32-byte hash values (used for transaction hashes).
+
+    [View Hash →](/primitives/hash)
+  </Card>
+
+  <Card title="Hex" icon="seti:text">
+    Hex string utilities for encoding/decoding.
+
+    [View Hex →](/primitives/hex)
+  </Card>
+
+  <Card title="RLP" icon="list-format">
+    Recursive Length Prefix encoding (used for serialization).
+
+    [View RLP →](/primitives/rlp)
+  </Card>
+</CardGrid>
+
+## EIP References
+
+- [EIP-155: Simple replay attack protection](https://eips.ethereum.org/EIPS/eip-155)
+- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
+- [EIP-2930: Optional access lists](https://eips.ethereum.org/EIPS/eip-2930)
+- [EIP-1559: Fee market change](https://eips.ethereum.org/EIPS/eip-1559)
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [EIP-7702: Set EOA account code](https://eips.ethereum.org/EIPS/eip-7702)

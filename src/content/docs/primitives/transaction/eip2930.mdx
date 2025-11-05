@@ -1,0 +1,374 @@
+---
+title: EIP-2930 Transactions
+description: Access list transactions for gas optimization (Type 1)
+---
+
+# EIP-2930 Transactions
+
+Access list transactions introduced in Berlin hard fork for gas optimization.
+
+## Overview
+
+EIP-2930 transactions (Type 1) add access lists to pre-declare which accounts and storage slots will be accessed. This reduces gas costs by avoiding cold access penalties introduced in Berlin.
+
+## Type Definition
+
+```typescript
+type EIP2930 = {
+  type: Type.EIP2930      // 0x01
+  chainId: bigint         // Explicit chain ID
+  nonce: bigint
+  gasPrice: bigint        // Fixed gas price (like Legacy)
+  gasLimit: bigint
+  to: BrandedAddress | null
+  value: bigint
+  data: Uint8Array
+  accessList: AccessList  // Pre-declared access
+  yParity: number         // 0 or 1 (not v)
+  r: Uint8Array           // 32 bytes
+  s: Uint8Array           // 32 bytes
+}
+
+type AccessListItem = {
+  address: BrandedAddress
+  storageKeys: readonly BrandedHash[]
+}
+
+type AccessList = readonly AccessListItem[]
+```
+
+Source: [types.ts:74-90](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L74-L90)
+
+## Creating EIP-2930 Transactions
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Without access list (same cost as Legacy)
+const basic: Transaction.EIP2930 = {
+  type: Transaction.Type.EIP2930,
+  chainId: 1n,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: signatureR,
+  s: signatureS,
+}
+
+// With access list for gas savings
+const withAccessList: Transaction.EIP2930 = {
+  type: Transaction.Type.EIP2930,
+  chainId: 1n,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 100000n,
+  to: contractAddress,
+  value: 0n,
+  data: encodedCall,
+  accessList: [
+    {
+      address: contractAddress,
+      storageKeys: [slot1, slot2, slot3]
+    },
+    {
+      address: anotherContract,
+      storageKeys: [slot4]
+    }
+  ],
+  yParity: 0,
+  r: signatureR,
+  s: signatureS,
+}
+```
+
+## Access Lists
+
+### Purpose
+
+Access lists reduce gas costs by pre-declaring account and storage access:
+
+- **Cold account access**: 2600 gas → 100 gas (list) + 2400 gas (access)
+- **Cold storage access**: 2100 gas → 1900 gas (list) + 100 gas (access)
+
+### Structure
+
+```typescript
+type AccessListItem = {
+  address: BrandedAddress      // Contract address
+  storageKeys: readonly BrandedHash[]  // Storage slot hashes
+}
+
+type AccessList = readonly AccessListItem[]
+```
+
+### Gas Cost
+
+Adding to access list has upfront cost:
+
+- **Per address**: 2400 gas
+- **Per storage key**: 1900 gas
+
+**Break-even point:**
+- Accessing address once: no savings (2400 + 2400 = 4800 vs 2600 + 2600 = 5200)
+- Accessing 2+ times: savings
+
+### Example
+
+```typescript
+// Contract that reads same storage slot multiple times
+const accessList: AccessList = [
+  {
+    address: tokenContract,
+    storageKeys: [
+      balanceSlot,  // Read 3 times in transaction
+    ]
+  }
+]
+
+// Gas cost breakdown:
+// Without access list: 2100 + 100 + 100 = 2300 gas
+// With access list: 1900 + 100 + 100 + 100 = 2200 gas
+// Savings: 100 gas per transaction
+```
+
+## Building Access Lists
+
+### eth_createAccessList RPC
+
+Most nodes provide `eth_createAccessList` to automatically generate access lists:
+
+```typescript
+// RPC call
+const result = await provider.send('eth_createAccessList', [{
+  from: senderAddress,
+  to: contractAddress,
+  data: encodedCall,
+}])
+
+// Returns
+{
+  accessList: [
+    {
+      address: '0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e',
+      storageKeys: [
+        '0x0000000000000000000000000000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000000000000000000000000000002'
+      ]
+    }
+  ],
+  gasUsed: '0x5208'
+}
+```
+
+### Manual Construction
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Calculate storage slot for mapping
+function mapSlot(key: BrandedAddress, slot: bigint): BrandedHash {
+  return keccak256(concat([
+    zeroPadLeft(key, 32),
+    zeroPadLeft(toBytes(slot), 32)
+  ])) as BrandedHash
+}
+
+// Build access list for ERC20 transfer
+const accessList: Transaction.AccessList = [
+  {
+    address: tokenAddress,
+    storageKeys: [
+      mapSlot(senderAddress, 0n),    // balances[sender]
+      mapSlot(recipientAddress, 0n), // balances[recipient]
+    ]
+  }
+]
+```
+
+## Methods
+
+All standard transaction methods work with EIP-2930:
+
+```typescript
+import { EIP2930 } from '@tevm/voltaire/Transaction'
+
+// Serialization
+const bytes = EIP2930.serialize(eip2930Tx)
+const decoded = EIP2930.deserialize(bytes)
+
+// Hashing
+const txHash = EIP2930.hash(eip2930Tx)
+const signingHash = EIP2930.getSigningHash(eip2930Tx)
+
+// Signing
+const sender = EIP2930.getSender(eip2930Tx)
+const isValid = EIP2930.verifySignature(eip2930Tx)
+```
+
+## RLP Encoding
+
+EIP-2930 uses typed transaction envelope:
+
+```
+0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, yParity, r, s])
+```
+
+**Access list encoding:**
+```
+accessList = [
+  [address1, [storageKey1, storageKey2, ...]],
+  [address2, [storageKey3, ...]],
+  ...
+]
+```
+
+**Example:**
+```typescript
+// Transaction with access list
+{
+  type: 0x01,
+  chainId: 1n,
+  // ...
+  accessList: [
+    { address: addr1, storageKeys: [key1, key2] },
+    { address: addr2, storageKeys: [] }
+  ],
+  // ...
+}
+
+// Encodes to:
+// [0x01,  // Type byte
+//  0xf8, 0x...,  // RLP list
+//    ...
+//    [  // Access list
+//      [addr1_bytes, [key1_bytes, key2_bytes]],
+//      [addr2_bytes, []
+//    ],
+//    yParity, r, s
+//  ]
+// ]
+```
+
+## yParity vs v
+
+EIP-2930 uses `yParity` (0 or 1) instead of `v`:
+
+```typescript
+// Legacy
+type Legacy = {
+  v: bigint  // 27/28 or chainId * 2 + 35 + yParity
+}
+
+// EIP-2930
+type EIP2930 = {
+  chainId: bigint  // Explicit field
+  yParity: number  // 0 or 1 only
+}
+```
+
+Converting between formats:
+```typescript
+// Legacy to EIP-2930
+const yParity = Number(legacy.v % 2n)
+
+// EIP-2930 to Legacy (for chain ID 1)
+const v = 1n * 2n + 35n + BigInt(eip2930.yParity)
+```
+
+## Gas Optimization Strategies
+
+### When to Use Access Lists
+
+Access lists are beneficial when:
+
+1. Accessing same account/storage multiple times
+2. Complex contract interactions
+3. Gas savings > access list overhead
+
+### When NOT to Use
+
+Access lists add overhead for:
+
+1. Simple ETH transfers (no storage access)
+2. Single storage reads
+3. Small transactions
+
+### Optimization Example
+
+```typescript
+// Bad: Access list for simple transfer
+const wasteful: Transaction.EIP2930 = {
+  type: Transaction.Type.EIP2930,
+  // ...
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: [],  // Overhead with no benefit
+  // ...
+}
+
+// Good: Access list for contract interaction
+const optimized: Transaction.EIP2930 = {
+  type: Transaction.Type.EIP2930,
+  // ...
+  to: defiContract,
+  value: 0n,
+  data: complexCallData,
+  accessList: [
+    {
+      address: defiContract,
+      storageKeys: [slot1, slot2, slot3]  // Read multiple times
+    }
+  ],
+  // ...
+}
+```
+
+## Comparison with Legacy
+
+| Feature | Legacy | EIP-2930 |
+|---------|--------|----------|
+| Type byte | None (RLP) | 0x01 |
+| Chain ID | In v | Explicit |
+| Signature | v/r/s | yParity/r/s |
+| Gas price | gasPrice | gasPrice |
+| Access list | No | Yes |
+| Gas optimization | No | Yes |
+
+## Comparison with EIP-1559
+
+| Feature | EIP-2930 | EIP-1559 |
+|---------|----------|----------|
+| Type byte | 0x01 | 0x02 |
+| Gas pricing | Fixed | Dynamic |
+| Access list | Yes | Yes |
+| Base fee | No | Yes |
+| Priority fee | No | Yes |
+
+EIP-2930 is a stepping stone between Legacy and EIP-1559 - it adds access lists but keeps fixed gas pricing.
+
+## When to Use
+
+Use EIP-2930 for:
+
+- Gas optimization on Berlin+ networks
+- Fixed gas price with access list benefits
+- Networks without EIP-1559
+
+**Prefer EIP-1559** for:
+- Modern Ethereum (better gas pricing)
+- Most new applications
+
+**Prefer Legacy** for:
+- Maximum compatibility
+- Pre-Berlin networks
+
+## EIP Reference
+
+- [EIP-2930: Optional access lists](https://eips.ethereum.org/EIPS/eip-2930)
+- [EIP-2929: Gas cost increases for state access](https://eips.ethereum.org/EIPS/eip-2929)

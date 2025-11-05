@@ -1,0 +1,656 @@
+---
+title: Function Encoding
+description: Function call encoding, decoding, selectors, and signatures
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# Function Encoding
+
+Complete function ABI encoding and decoding operations for Ethereum smart contract calls.
+
+## Overview
+
+Function encoding creates calldata for contract function calls. This includes:
+- Computing function selectors (first 4 bytes of keccak256 hash)
+- Encoding function parameters
+- Decoding function parameters from calldata
+- Encoding/decoding function return values
+
+## Function Type
+
+```typescript
+export type Function<
+  TName extends string = string,
+  TStateMutability extends StateMutability = StateMutability,
+  TInputs extends readonly Parameter[] = readonly Parameter[],
+  TOutputs extends readonly Parameter[] = readonly Parameter[]
+> = {
+  type: "function"
+  name: TName
+  stateMutability: TStateMutability
+  inputs: TInputs
+  outputs: TOutputs
+}
+```
+
+Source: [BrandedFunction.ts:13-24](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L13-L24)
+
+## Quick Start
+
+```typescript
+import { Function } from '@tevm/primitives/Abi'
+
+// Define function
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+// Encode function call
+const calldata = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+// Decode return value
+const [success] = Function.decodeResult(transferFn, returnData)
+```
+
+## API Reference
+
+### getSignature
+
+Get function signature string in canonical format `name(type1,type2,...)`.
+
+```typescript
+function getSignature(fn: Function): string
+```
+
+**Parameters:**
+- `fn: Function` - Function ABI item
+
+**Returns:** `string` - Function signature
+
+**Example:**
+```typescript
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+const signature = Function.getSignature(transferFn)
+// "transfer(address,uint256)"
+
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  stateMutability: "view",
+  inputs: [{ type: "address", name: "account" }],
+  outputs: [{ type: "uint256" }]
+}
+
+const signature2 = Function.getSignature(balanceOfFn)
+// "balanceOf(address)"
+```
+
+**Notes:**
+- Names are excluded from signature
+- Only types matter for selector computation
+- Format: `functionName(type1,type2,...)`
+
+Source: [getSignature.js:27-30](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/getSignature.js#L27-L30)
+
+### getSelector
+
+Compute 4-byte function selector (first 4 bytes of keccak256 hash of signature).
+
+```typescript
+function getSelector(fn: Function): Uint8Array
+```
+
+**Parameters:**
+- `fn: Function` - Function ABI item
+
+**Returns:** `Uint8Array` - 4-byte function selector
+
+**Example:**
+```typescript
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: []
+}
+
+const selector = Function.getSelector(transferFn)
+// Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
+
+// Selector for "transfer(address,uint256)"
+// keccak256("transfer(address,uint256)").slice(0, 4)
+```
+
+**Implementation:**
+1. Get function signature: `transfer(address,uint256)`
+2. Hash with keccak256: `keccak256("transfer(address,uint256)")`
+3. Take first 4 bytes: `0xa9059cbb`
+
+Source: [getSelector.js:30-34](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/getSelector.js#L30-L34)
+
+### encodeParams
+
+Encode function call data (selector + ABI-encoded parameters).
+
+```typescript
+function encodeParams<TInputs extends readonly Parameter[]>(
+  fn: Function<string, StateMutability, TInputs, any>,
+  args: ParametersToPrimitiveTypes<TInputs>
+): Uint8Array
+```
+
+**Parameters:**
+- `fn: Function` - Function ABI item
+- `args` - Array of parameter values matching function inputs
+
+**Returns:** `Uint8Array` - Complete calldata (selector + encoded params)
+
+**Example:**
+```typescript
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: []
+}
+
+const calldata = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+// Uint8Array containing:
+// - Bytes 0-3: Function selector (0xa9059cbb)
+// - Bytes 4+: ABI-encoded parameters
+```
+
+**Calldata Structure:**
+```
+[selector (4 bytes)][parameter encoding]
+```
+
+Source: [encodeParams.js:33-40](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/encodeParams.js#L33-L40)
+
+### decodeParams
+
+Decode function call data (verify selector and decode parameters).
+
+```typescript
+function decodeParams<TInputs extends readonly Parameter[]>(
+  fn: Function<string, StateMutability, TInputs, any>,
+  data: Uint8Array
+): ParametersToPrimitiveTypes<TInputs>
+```
+
+**Parameters:**
+- `fn: Function` - Function ABI item
+- `data: Uint8Array` - Encoded calldata
+
+**Returns:** Decoded parameter values
+
+**Throws:**
+- `FunctionDecodingError` - If data is too short
+- `FunctionInvalidSelectorError` - If selector doesn't match function
+
+**Example:**
+```typescript
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: []
+}
+
+// Decode calldata
+const [to, amount] = Function.decodeParams(transferFn, calldata)
+// to: "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+// amount: 1000n
+
+// Throws if selector doesn't match
+try {
+  Function.decodeParams(transferFn, wrongCalldata)
+} catch (error) {
+  // FunctionInvalidSelectorError
+}
+```
+
+**Implementation:**
+1. Verify data length ≥ 4 bytes
+2. Extract selector from bytes 0-3
+3. Compare selector with expected selector
+4. Decode remaining bytes as parameters
+
+Source: [decodeParams.js:37-51](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/decodeParams.js#L37-L51)
+
+### encodeResult
+
+Encode function return values.
+
+```typescript
+function encodeResult<TOutputs extends readonly Parameter[]>(
+  fn: Function<string, StateMutability, any, TOutputs>,
+  values: ParametersToPrimitiveTypes<TOutputs>
+): Uint8Array
+```
+
+**Parameters:**
+- `fn: Function` - Function ABI item
+- `values` - Array of return values matching function outputs
+
+**Returns:** `Uint8Array` - ABI-encoded return data
+
+**Example:**
+```typescript
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  stateMutability: "view",
+  inputs: [{ type: "address", name: "account" }],
+  outputs: [{ type: "uint256", name: "" }]
+}
+
+const returnData = Function.encodeResult(balanceOfFn, [1000n])
+// Uint8Array with ABI-encoded uint256
+
+const multiReturnFn = {
+  type: "function",
+  name: "getInfo",
+  stateMutability: "view",
+  inputs: [],
+  outputs: [
+    { type: "string", name: "name" },
+    { type: "uint256", name: "balance" },
+    { type: "bool", name: "active" }
+  ]
+}
+
+const returnData2 = Function.encodeResult(multiReturnFn, [
+  "Alice",
+  1000n,
+  true
+])
+```
+
+**Notes:**
+- No selector prefix (unlike `encodeParams`)
+- Only contains ABI-encoded return values
+- Used for encoding contract return values
+
+Source: [encodeResult.js:26-28](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/encodeResult.js#L26-L28)
+
+### decodeResult
+
+Decode function return values.
+
+```typescript
+function decodeResult<TOutputs extends readonly Parameter[]>(
+  fn: Function<string, StateMutability, any, TOutputs>,
+  data: Uint8Array
+): ParametersToPrimitiveTypes<TOutputs>
+```
+
+**Parameters:**
+- `fn: Function` - Function ABI item
+- `data: Uint8Array` - Encoded return data
+
+**Returns:** Decoded return values
+
+**Example:**
+```typescript
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  stateMutability: "view",
+  inputs: [{ type: "address", name: "account" }],
+  outputs: [{ type: "uint256", name: "" }]
+}
+
+const [balance] = Function.decodeResult(balanceOfFn, returnData)
+// balance: 1000n
+
+const multiReturnFn = {
+  type: "function",
+  name: "getInfo",
+  stateMutability: "view",
+  inputs: [],
+  outputs: [
+    { type: "string", name: "name" },
+    { type: "uint256", name: "balance" },
+    { type: "bool", name: "active" }
+  ]
+}
+
+const [name, balance, active] = Function.decodeResult(
+  multiReturnFn,
+  returnData
+)
+// name: "Alice"
+// balance: 1000n
+// active: true
+```
+
+**Notes:**
+- Expects raw return data (no selector)
+- Returns array of values matching outputs
+- Supports multiple return values
+
+Source: [decodeResult.js:27-29](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/decodeResult.js#L27-L29)
+
+## Complete Workflow
+
+<Tabs>
+<TabItem label="Function Call">
+```typescript
+import { Function } from '@tevm/primitives/Abi'
+
+// 1. Define function
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+// 2. Encode call
+const calldata = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+// 3. Send transaction
+const tx = {
+  to: contractAddress,
+  data: calldata
+}
+
+// 4. Decode return value
+const [success] = Function.decodeResult(transferFn, returnData)
+console.log("Transfer successful:", success)
+```
+</TabItem>
+<TabItem label="View Function">
+```typescript
+import { Function } from '@tevm/primitives/Abi'
+
+// Define view function
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  stateMutability: "view",
+  inputs: [{ type: "address", name: "account" }],
+  outputs: [{ type: "uint256" }]
+}
+
+// Encode call
+const calldata = Function.encodeParams(balanceOfFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+])
+
+// Call contract (eth_call)
+const returnData = await provider.call({
+  to: contractAddress,
+  data: calldata
+})
+
+// Decode result
+const [balance] = Function.decodeResult(balanceOfFn, returnData)
+console.log("Balance:", balance)
+```
+</TabItem>
+<TabItem label="Decoding Transactions">
+```typescript
+import { Function } from '@tevm/primitives/Abi'
+
+// Define function
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+// Get selector
+const selector = Function.getSelector(transferFn)
+
+// Check if transaction matches
+const tx = await provider.getTransaction(txHash)
+const txSelector = tx.data.slice(0, 4)
+
+if (txSelector === selector) {
+  // Decode parameters
+  const [to, amount] = Function.decodeParams(transferFn, tx.data)
+  console.log(`Transfer ${amount} to ${to}`)
+}
+```
+</TabItem>
+</Tabs>
+
+## State Mutability
+
+Functions have different state mutability levels:
+
+```typescript
+type StateMutability = "pure" | "view" | "nonpayable" | "payable"
+```
+
+**pure** - Does not read or modify state
+```typescript
+const addFn = {
+  type: "function",
+  name: "add",
+  stateMutability: "pure",
+  inputs: [
+    { type: "uint256", name: "a" },
+    { type: "uint256", name: "b" }
+  ],
+  outputs: [{ type: "uint256" }]
+}
+```
+
+**view** - Reads state but does not modify
+```typescript
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  stateMutability: "view",
+  inputs: [{ type: "address", name: "account" }],
+  outputs: [{ type: "uint256" }]
+}
+```
+
+**nonpayable** - Can modify state, does not accept ether
+```typescript
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+```
+
+**payable** - Can modify state and accept ether
+```typescript
+const depositFn = {
+  type: "function",
+  name: "deposit",
+  stateMutability: "payable",
+  inputs: [],
+  outputs: []
+}
+```
+
+## Error Handling
+
+```typescript
+import {
+  FunctionDecodingError,
+  FunctionInvalidSelectorError
+} from '@tevm/primitives/Abi/function'
+
+try {
+  const decoded = Function.decodeParams(transferFn, calldata)
+} catch (error) {
+  if (error instanceof FunctionInvalidSelectorError) {
+    console.error("Function selector mismatch")
+  } else if (error instanceof FunctionDecodingError) {
+    console.error("Invalid calldata:", error.message)
+  }
+}
+```
+
+Source: [errors.js](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/errors.js)
+
+## Type Utilities
+
+Extract function information from ABI:
+
+```typescript
+import type { ExtractNames, Get } from '@tevm/primitives/Abi/function'
+
+// Extract all function names from ABI
+type Names = ExtractNames<typeof abi>
+// "transfer" | "balanceOf" | "approve" | ...
+
+// Get specific function from ABI
+type TransferFn = Get<typeof abi, "transfer">
+// Function<"transfer", "nonpayable", [...inputs], [...outputs]>
+```
+
+Source: [BrandedFunction.ts:26-40](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L26-L40)
+
+## Advanced Examples
+
+### Multiple Return Values
+
+```typescript
+const getUserInfoFn = {
+  type: "function",
+  name: "getUserInfo",
+  stateMutability: "view",
+  inputs: [{ type: "address", name: "user" }],
+  outputs: [
+    { type: "string", name: "name" },
+    { type: "uint256", name: "balance" },
+    { type: "bool", name: "active" },
+    { type: "uint256", name: "lastLogin" }
+  ]
+}
+
+const [name, balance, active, lastLogin] = Function.decodeResult(
+  getUserInfoFn,
+  returnData
+)
+```
+
+### Complex Types
+
+```typescript
+const complexFn = {
+  type: "function",
+  name: "processData",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address[]", name: "addresses" },
+    { type: "uint256[5]", name: "amounts" },
+    { type: "bytes", name: "data" },
+    {
+      type: "tuple",
+      name: "config",
+      components: [
+        { type: "bool", name: "enabled" },
+        { type: "uint256", name: "threshold" }
+      ]
+    }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+const calldata = Function.encodeParams(complexFn, [
+  ["0x...", "0x..."],  // address[]
+  [100n, 200n, 300n, 400n, 500n],  // uint256[5]
+  new Uint8Array([1, 2, 3]),  // bytes
+  { enabled: true, threshold: 1000n }  // tuple
+])
+```
+
+### Selector Matching
+
+```typescript
+// Create selector lookup map
+const abi = [transferFn, balanceOfFn, approveFn]
+
+const selectorMap = new Map(
+  abi.map(fn => [
+    Function.getSelector(fn).toString(),
+    fn
+  ])
+)
+
+// Match transaction to function
+const txSelector = tx.data.slice(0, 4).toString()
+const matchedFn = selectorMap.get(txSelector)
+
+if (matchedFn) {
+  const args = Function.decodeParams(matchedFn, tx.data)
+  console.log(`Called ${matchedFn.name} with:`, args)
+}
+```
+
+## Related
+
+- [Abi](/primitives/abi) - Main ABI documentation
+- [Types](/primitives/abi/types) - ABI type system
+- [Encoding](/primitives/abi/encoding) - Low-level encoding
+- [Event](/primitives/abi/event) - Event encoding
+- [Error](/primitives/abi/error) - Error encoding
+- [Usage Patterns](/primitives/abi/usage-patterns) - Common patterns
+
+## Specification
+
+- [Solidity Function Selector](https://docs.soliditylang.org/en/latest/abi-spec.html#function-selector) - Function selector specification
+- [Solidity ABI Encoding](https://docs.soliditylang.org/en/latest/abi-spec.html#argument-encoding) - Parameter encoding rules

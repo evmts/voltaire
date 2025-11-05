@@ -1,0 +1,221 @@
+---
+title: EIP-1559 Transactions
+description: Dynamic fee market transactions (Type 2)
+---
+
+# EIP-1559 Transactions
+
+Dynamic fee market transactions with base fee and priority fee, introduced in London hard fork.
+
+## Overview
+
+EIP-1559 transactions (Type 2) replace fixed gas price with dynamic fee market. Users specify `maxFeePerGas` and `maxPriorityFeePerGas`, with actual fee determined by block's base fee.
+
+## Type Definition
+
+```typescript
+type EIP1559 = {
+  type: Type.EIP1559      // 0x02
+  chainId: bigint
+  nonce: bigint
+  maxPriorityFeePerGas: bigint  // Tip to miner
+  maxFeePerGas: bigint          // Maximum total fee
+  gasLimit: bigint
+  to: BrandedAddress | null
+  value: bigint
+  data: Uint8Array
+  accessList: AccessList
+  yParity: number         // 0 or 1
+  r: Uint8Array           // 32 bytes
+  s: Uint8Array           // 32 bytes
+}
+```
+
+Source: [types.ts:92-109](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L92-L109)
+
+## Creating EIP-1559 Transactions
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 2000000000n,  // 2 gwei tip
+  maxFeePerGas: 30000000000n,         // 30 gwei max
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,  // 1 ETH
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: signatureR,
+  s: signatureS,
+}
+```
+
+## Fee Market Mechanics
+
+### Base Fee
+
+Block base fee adjusts based on block fullness:
+- Block > 50% full: base fee increases
+- Block < 50% full: base fee decreases
+- Maximum 12.5% change per block
+
+### Effective Gas Price
+
+```typescript
+effectiveGasPrice = baseFee + min(maxPriorityFeePerGas, maxFeePerGas - baseFee)
+```
+
+**Examples:**
+```typescript
+// Case 1: Normal case
+baseFee = 15 gwei
+maxPriorityFeePerGas = 2 gwei
+maxFeePerGas = 30 gwei
+// effectiveGasPrice = 15 + min(2, 30 - 15) = 15 + 2 = 17 gwei
+
+// Case 2: maxFeePerGas too low
+baseFee = 15 gwei
+maxPriorityFeePerGas = 5 gwei
+maxFeePerGas = 18 gwei
+// effectiveGasPrice = 15 + min(5, 18 - 15) = 15 + 3 = 18 gwei
+
+// Case 3: maxFeePerGas = baseFee
+baseFee = 20 gwei
+maxPriorityFeePerGas = 2 gwei
+maxFeePerGas = 20 gwei
+// effectiveGasPrice = 20 + min(2, 20 - 20) = 20 + 0 = 20 gwei
+```
+
+## getEffectiveGasPrice
+
+Calculate effective gas price given base fee.
+
+```typescript
+function getEffectiveGasPrice(
+  tx: BrandedTransactionEIP1559,
+  baseFee: bigint
+): bigint
+```
+
+### Usage
+
+```typescript
+import { EIP1559 } from '@tevm/voltaire/Transaction'
+
+const tx: Transaction.EIP1559 = {
+  maxPriorityFeePerGas: 2000000000n,
+  maxFeePerGas: 30000000000n,
+  // ...
+}
+
+const baseFee = 15000000000n  // From block header
+const effectivePrice = EIP1559.getEffectiveGasPrice(tx, baseFee)
+console.log(effectivePrice)  // 17000000000n (17 gwei)
+
+// Total cost
+const totalCost = effectivePrice * gasUsed + tx.value
+```
+
+Source: [EIP1559/getEffectiveGasPrice.js:13-18](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/EIP1559/getEffectiveGasPrice.js#L13-L18)
+
+## Fee Estimation
+
+### Setting maxFeePerGas
+
+Rule of thumb: `maxFeePerGas = baseFee * 2 + maxPriorityFeePerGas`
+
+```typescript
+async function estimateFees(provider) {
+  const block = await provider.getBlock('latest')
+  const baseFee = block.baseFeePerGas
+
+  return {
+    maxFeePerGas: baseFee * 2n + 2000000000n,
+    maxPriorityFeePerGas: 2000000000n  // 2 gwei tip
+  }
+}
+```
+
+### Aggressive vs Conservative
+
+```typescript
+// Aggressive (fast inclusion)
+const aggressive = {
+  maxPriorityFeePerGas: 3000000000n,  // 3 gwei
+  maxFeePerGas: baseFee * 2n + 3000000000n
+}
+
+// Conservative (cheaper, slower)
+const conservative = {
+  maxPriorityFeePerGas: 1000000000n,  // 1 gwei
+  maxFeePerGas: baseFee + 5000000000n  // baseFee + 5 gwei buffer
+}
+```
+
+## Gas Cost Calculation
+
+```typescript
+// Maximum possible cost
+const maxCost = tx.maxFeePerGas * tx.gasLimit + tx.value
+
+// Actual cost (after execution)
+const actualCost = effectiveGasPrice * gasUsed + tx.value
+
+// Refund
+const refund = (tx.maxFeePerGas - effectiveGasPrice) * gasUsed
+```
+
+## RLP Encoding
+
+```
+0x02 || rlp([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, yParity, r, s])
+```
+
+## Methods
+
+```typescript
+import { EIP1559 } from '@tevm/voltaire/Transaction'
+
+// Serialization
+const bytes = EIP1559.serialize(eip1559Tx)
+const decoded = EIP1559.deserialize(bytes)
+
+// Hashing
+const txHash = EIP1559.hash(eip1559Tx)
+const signingHash = EIP1559.getSigningHash(eip1559Tx)
+
+// Signing
+const sender = EIP1559.getSender(eip1559Tx)
+const isValid = EIP1559.verifySignature(eip1559Tx)
+
+// Gas price
+const effectivePrice = EIP1559.getEffectiveGasPrice(eip1559Tx, baseFee)
+```
+
+## Benefits
+
+1. **Predictable pricing** - Base fee makes fees more predictable
+2. **Better UX** - Users specify maximum, pay actual
+3. **Faster confirmation** - Priority fee for faster inclusion
+4. **ETH burn** - Base fee burned, reduces ETH supply
+5. **Less overpaying** - Only pay what's needed
+
+## When to Use
+
+Use EIP-1559 for:
+- Ethereum mainnet (London+)
+- Modern L2s with EIP-1559 support
+- Applications needing predictable fees
+
+**Prefer Legacy/EIP-2930** for:
+- Networks without EIP-1559
+- Specific gas price requirements
+
+## EIP Reference
+
+- [EIP-1559: Fee market change for ETH 1.0 chain](https://eips.ethereum.org/EIPS/eip-1559)

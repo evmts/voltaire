@@ -1,0 +1,386 @@
+---
+title: Transaction Serialization
+description: RLP encode and decode transactions
+---
+
+# Transaction Serialization
+
+RLP encoding and decoding for all transaction types.
+
+## serialize
+
+Serialize transaction to RLP-encoded bytes.
+
+```typescript
+function serialize(tx: Any): Uint8Array
+```
+
+### Parameters
+
+- `tx: Any` - Any transaction type (Legacy, EIP2930, EIP1559, EIP4844, EIP7702)
+
+### Returns
+
+`Uint8Array` - RLP-encoded transaction bytes
+
+### Throws
+
+- `Error("Unknown transaction type")` - If transaction type is invalid
+- `Error("Not implemented")` - If type-specific serialization not implemented yet
+
+### Usage
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Serialize EIP-1559 transaction
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: signatureR,
+  s: signatureS,
+}
+
+const serialized = Transaction.serialize(tx)
+// Uint8Array [0x02, 0xf8, 0x6c, ...]
+//             ^^^^  ^^^^^^^^^^^^
+//             type  RLP payload
+
+// Serialize legacy transaction
+const legacy: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  v: 27n,
+  r: signatureR,
+  s: signatureS,
+}
+
+const legacySerialized = Transaction.serialize(legacy)
+// Uint8Array [0xf8, 0x6c, ...]
+//             ^^^^^^^^^^^^
+//             RLP list (no type prefix)
+```
+
+Source: [serialize.ts:11-26](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/serialize.ts#L11-L26)
+
+## deserialize
+
+Deserialize RLP-encoded transaction bytes.
+
+```typescript
+function deserialize(data: Uint8Array): Any
+```
+
+### Parameters
+
+- `data: Uint8Array` - RLP-encoded transaction bytes
+
+### Returns
+
+Transaction object (type depends on transaction type in data)
+
+### Throws
+
+- `Error("Empty transaction data")` - If data is empty
+- `Error("Unknown transaction type")` - If type byte is invalid
+- `Error("Not implemented")` - If type-specific deserialization not implemented yet
+- RLP decoding errors for malformed data
+
+### Usage
+
+```typescript
+import { deserialize } from '@tevm/voltaire/Transaction'
+
+// Deserialize from network
+const data = new Uint8Array([0x02, 0xf8, 0x6c, ...])
+const tx = deserialize(data)
+
+// Type is automatically inferred
+if (tx.type === Transaction.Type.EIP1559) {
+  console.log('Max fee:', tx.maxFeePerGas)
+}
+
+// Deserialize legacy transaction
+const legacyData = new Uint8Array([0xf8, 0x6c, ...])
+const legacyTx = deserialize(legacyData)
+console.log('Gas price:', legacyTx.gasPrice)
+```
+
+Source: [deserialize.ts:12-28](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/deserialize.ts#L12-L28)
+
+## Serialization Format
+
+### Legacy Transaction
+
+Legacy transactions serialize directly as RLP list (no type prefix):
+
+```
+rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])
+```
+
+**Example:**
+```typescript
+// Transaction structure
+{
+  type: 0x00,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: 0x742d35Cc...,
+  value: 1000000000000000000n,
+  data: 0x,
+  v: 27n,
+  r: 0x1234...,
+  s: 0x5678...
+}
+
+// Serializes to:
+// [0xf8, 0x6c, ...]  // RLP list encoding
+// No type byte prefix
+```
+
+### EIP-2930 Transaction (Type 1)
+
+```
+0x01 || rlp([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, yParity, r, s])
+```
+
+**Format:**
+- Type byte: `0x01`
+- Followed by RLP-encoded list
+- Access list encoded as nested RLP structure
+
+### EIP-1559 Transaction (Type 2)
+
+```
+0x02 || rlp([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, yParity, r, s])
+```
+
+**Format:**
+- Type byte: `0x02`
+- Followed by RLP-encoded list
+- Two gas fee fields instead of one
+
+### EIP-4844 Transaction (Type 3)
+
+```
+0x03 || rlp([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, maxFeePerBlobGas, blobVersionedHashes, yParity, r, s])
+```
+
+**Format:**
+- Type byte: `0x03`
+- Followed by RLP-encoded list
+- Includes blob gas fee and blob hashes
+- Blob data NOT included in transaction (stored separately)
+
+### EIP-7702 Transaction (Type 4)
+
+```
+0x04 || rlp([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, authorizationList, yParity, r, s])
+```
+
+**Format:**
+- Type byte: `0x04`
+- Followed by RLP-encoded list
+- Authorization list encoded as nested RLP structure
+
+## Type-Specific Serialization
+
+### Transaction.Legacy.serialize
+
+```typescript
+function serialize(tx: BrandedTransactionLegacy): Uint8Array
+
+// Usage
+import { Legacy } from '@tevm/voltaire/Transaction'
+const bytes = Legacy.serialize.call(legacyTx)
+```
+
+### Transaction.EIP1559.serialize
+
+```typescript
+function serialize(tx: BrandedTransactionEIP1559): Uint8Array
+
+// Usage
+import { EIP1559 } from '@tevm/voltaire/Transaction'
+const bytes = EIP1559.serialize(eip1559Tx)
+```
+
+### Transaction.EIP4844.serialize
+
+```typescript
+function serialize(tx: BrandedTransactionEIP4844): Uint8Array
+
+// Usage
+import { EIP4844 } from '@tevm/voltaire/Transaction'
+const bytes = EIP4844.serialize(eip4844Tx)
+```
+
+Similar methods exist for EIP2930 and EIP7702.
+
+Source: [serialize.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/serialize.ts)
+
+## Round-Trip Serialization
+
+Serialize and deserialize should be perfect inverses:
+
+```typescript
+import { serialize, deserialize } from '@tevm/voltaire/Transaction'
+
+const original: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  // ... all fields
+}
+
+// Round-trip
+const serialized = serialize(original)
+const deserialized = deserialize(serialized)
+
+// Should be identical (except Uint8Array identity)
+console.assert(deserialized.type === original.type)
+console.assert(deserialized.nonce === original.nonce)
+// ... etc
+```
+
+## Access List Encoding
+
+Access lists are RLP-encoded as nested structures:
+
+```typescript
+type AccessList = [
+  [address1, [storageKey1, storageKey2, ...]],
+  [address2, [storageKey3, storageKey4, ...]],
+  ...
+]
+
+// Example
+const accessList: AccessList = [
+  {
+    address: address1,
+    storageKeys: [key1, key2]
+  },
+  {
+    address: address2,
+    storageKeys: []
+  }
+]
+
+// RLP encoding:
+// [
+//   [address1Bytes, [key1Bytes, key2Bytes]],
+//   [address2Bytes, []]
+// ]
+```
+
+## Authorization List Encoding
+
+Authorization lists for EIP-7702:
+
+```typescript
+type AuthorizationList = [
+  [chainId, address, nonce, yParity, r, s],
+  [chainId, address, nonce, yParity, r, s],
+  ...
+]
+
+// Each authorization is a 6-element list
+```
+
+## Network Transmission
+
+Serialized transactions are used for:
+
+1. **Gossip protocol** - Broadcasting to peers
+2. **Block inclusion** - Stored in blocks
+3. **Transaction pool** - Mempool storage
+4. **RPC responses** - eth_getTransactionByHash
+
+```typescript
+import { serialize, hash } from '@tevm/voltaire/Transaction'
+
+// Prepare for broadcast
+const tx: Transaction.EIP1559 = { /* ... */ }
+const serialized = serialize(tx)
+const txHash = hash(tx)
+
+// Send to network
+network.broadcast({
+  type: 'transaction',
+  hash: txHash,
+  data: serialized
+})
+```
+
+## Storage Optimization
+
+Serialized form is compact for storage:
+
+```typescript
+// Store transaction
+const serialized = Transaction.serialize(tx)
+await db.put(`tx:${txHash}`, serialized)
+
+// Load transaction
+const data = await db.get(`tx:${txHash}`)
+const tx = Transaction.deserialize(data)
+```
+
+## Error Handling
+
+```typescript
+import { serialize, deserialize } from '@tevm/voltaire/Transaction'
+
+// Invalid transaction type
+try {
+  serialize({ type: 0x99, /* ... */ } as any)
+} catch (e) {
+  console.error(e.message)  // "Unknown transaction type: 153"
+}
+
+// Malformed RLP data
+try {
+  deserialize(new Uint8Array([0x02, 0xff, 0xff]))
+} catch (e) {
+  console.error('RLP decode error:', e.message)
+}
+
+// Empty data
+try {
+  deserialize(new Uint8Array())
+} catch (e) {
+  console.error(e.message)  // "Empty transaction data"
+}
+```
+
+## Implementation Status
+
+Transaction serialization implementation status:
+
+| Type | serialize | deserialize | Status |
+|------|-----------|-------------|--------|
+| Legacy | Partial | Partial | In progress |
+| EIP-2930 | Partial | Partial | In progress |
+| EIP-1559 | Partial | Partial | In progress |
+| EIP-4844 | Partial | Partial | In progress |
+| EIP-7702 | Partial | Partial | In progress |
+
+Many methods currently throw "Not implemented" - check test files for implementation status.
+
+## EIP References
+
+- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
+- [RLP Encoding](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/)

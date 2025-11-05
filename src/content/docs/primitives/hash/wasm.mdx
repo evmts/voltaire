@@ -1,0 +1,296 @@
+---
+title: WASM Implementation
+description: WebAssembly-accelerated Hash methods compiled from Zig
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# WASM Implementation
+
+WebAssembly-accelerated implementations of hashing algorithms, compiled from Zig using ReleaseSmall mode.
+
+## Overview
+
+WASM implementations provide performance-critical cryptographic operations using compiled Zig code targeting WebAssembly. These are **purely opt-in** replacements with identical APIs.
+
+All WASM methods are compiled from Zig source with `ReleaseSmall` optimization targeting minimal bundle size.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Direct Import">
+```typescript
+// Import WASM implementation instead of JS version
+import { sha256, ripemd160, blake2b } from '@tevm/voltaire/Hash.wasm'
+
+// Use WASM-accelerated hashing
+const hash = sha256("hello world")
+const hash2 = ripemd160(new Uint8Array([1, 2, 3]))
+const hash3 = blake2b("data")
+```
+</TabItem>
+
+<TabItem label="Override Methods">
+```typescript
+import { Hash } from '@tevm/voltaire'
+import * as WasmHash from '@tevm/voltaire/Hash.wasm'
+
+// Override with WASM versions (if available in future)
+// Currently WASM exports different algorithms than Hash class
+```
+</TabItem>
+</Tabs>
+
+## Available Algorithms
+
+### `sha256(data)`
+
+Compute SHA-256 hash (32 bytes).
+
+```typescript
+import { sha256 } from '@tevm/voltaire/Hash.wasm'
+
+const hash = sha256("hello")
+const hash2 = sha256(new Uint8Array([1, 2, 3]))
+
+console.log(hash) // Uint8Array(32)
+```
+
+**Parameters:**
+- `data: string | Uint8Array` - Data to hash
+
+**Returns:** `Uint8Array` - 32-byte SHA-256 hash
+
+**Throws:**
+- `Error` - If input data is empty
+
+Defined in: [primitives/Hash/Hash.wasm.ts:13](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.wasm.ts#L13)
+
+### `ripemd160(data)`
+
+Compute RIPEMD-160 hash (20 bytes).
+
+```typescript
+import { ripemd160 } from '@tevm/voltaire/Hash.wasm'
+
+const hash = ripemd160("hello")
+const hash2 = ripemd160(new Uint8Array([1, 2, 3]))
+
+console.log(hash) // Uint8Array(20)
+```
+
+**Parameters:**
+- `data: string | Uint8Array` - Data to hash
+
+**Returns:** `Uint8Array` - 20-byte RIPEMD-160 hash
+
+**Throws:**
+- `Error` - If input data is empty
+
+Defined in: [primitives/Hash/Hash.wasm.ts:31](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.wasm.ts#L31)
+
+### `blake2b(data)`
+
+Compute BLAKE2b hash (64 bytes).
+
+```typescript
+import { blake2b } from '@tevm/voltaire/Hash.wasm'
+
+const hash = blake2b("hello")
+const hash2 = blake2b(new Uint8Array([1, 2, 3]))
+
+console.log(hash) // Uint8Array(64)
+```
+
+**Parameters:**
+- `data: string | Uint8Array` - Data to hash
+
+**Returns:** `Uint8Array` - 64-byte BLAKE2b hash
+
+**Throws:**
+- `Error` - If input data is empty
+
+Defined in: [primitives/Hash/Hash.wasm.ts:49](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.wasm.ts#L49)
+
+### `solidityKeccak256(packedData)`
+
+Compute Solidity-style Keccak-256 hash of tightly packed data.
+
+```typescript
+import { solidityKeccak256 } from '@tevm/voltaire/Hash.wasm'
+
+// Pre-packed ABI data
+const packed = new Uint8Array([...])
+const hash = solidityKeccak256(packed)
+
+console.log(hash) // Uint8Array(32)
+```
+
+**Parameters:**
+- `packedData: Uint8Array` - Pre-packed data bytes
+
+**Returns:** `Uint8Array` - 32-byte Keccak-256 hash
+
+**Throws:**
+- `Error` - If packed data is empty
+
+Defined in: [primitives/Hash/Hash.wasm.ts:67](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.wasm.ts#L67)
+
+### `soliditySha256(packedData)`
+
+Compute Solidity-style SHA-256 hash of tightly packed data.
+
+```typescript
+import { soliditySha256 } from '@tevm/voltaire/Hash.wasm'
+
+// Pre-packed ABI data
+const packed = new Uint8Array([...])
+const hash = soliditySha256(packed)
+
+console.log(hash) // Uint8Array(32)
+```
+
+**Parameters:**
+- `packedData: Uint8Array` - Pre-packed data bytes
+
+**Returns:** `Uint8Array` - 32-byte SHA-256 hash
+
+**Throws:**
+- `Error` - If packed data is empty
+
+Defined in: [primitives/Hash/Hash.wasm.ts:82](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.wasm.ts#L82)
+
+## Performance
+
+WASM implementations provide significant speedup for computationally intensive operations:
+
+- **SHA-256** - Native implementation vs JavaScript crypto libraries
+- **RIPEMD-160** - Compiled Zig implementation for Bitcoin compatibility
+- **BLAKE2b** - High-performance hashing in compiled code
+- **Keccak-256** - Ethereum-compatible hashing (Solidity packed data)
+
+<Aside type="tip" title="When to use WASM">
+Use WASM when processing large amounts of data or performing many hash operations. For single operations, JS overhead may outweigh WASM benefits.
+</Aside>
+
+## Usage Examples
+
+### Bitcoin Address Generation
+
+```typescript
+import { sha256, ripemd160 } from '@tevm/voltaire/Hash.wasm'
+
+// Bitcoin address: RIPEMD-160(SHA-256(publicKey))
+function bitcoinAddress(publicKey: Uint8Array): Uint8Array {
+  const sha = sha256(publicKey)
+  return ripemd160(sha)
+}
+```
+
+### BLAKE2b for High-Speed Hashing
+
+```typescript
+import { blake2b } from '@tevm/voltaire/Hash.wasm'
+
+// Fast content hashing
+function hashLargeFile(chunks: Uint8Array[]): Uint8Array {
+  const combined = new Uint8Array(chunks.reduce((sum, c) => sum + c.length, 0))
+  let offset = 0
+  for (const chunk of chunks) {
+    combined.set(chunk, offset)
+    offset += chunk.length
+  }
+  return blake2b(combined)
+}
+```
+
+### Solidity Packed Hashing
+
+```typescript
+import { solidityKeccak256 } from '@tevm/voltaire/Hash.wasm'
+
+// Equivalent to Solidity: keccak256(abi.encodePacked(address, uint256))
+function solidityPackedHash(address: Uint8Array, value: bigint): Uint8Array {
+  const valueBytes = new Uint8Array(32)
+  let v = value
+  for (let i = 31; i >= 0; i--) {
+    valueBytes[i] = Number(v & 0xFFn)
+    v >>= 8n
+  }
+
+  const packed = new Uint8Array([...address, ...valueBytes])
+  return solidityKeccak256(packed)
+}
+```
+
+### Bulk Hashing
+
+```typescript
+import { sha256 } from '@tevm/voltaire/Hash.wasm'
+
+// Hash many items efficiently
+function hashBatch(items: string[]): Uint8Array[] {
+  return items.map(item => sha256(item))
+}
+
+// Compare performance
+const items = Array.from({ length: 1000 }, (_, i) => `item${i}`)
+console.time('WASM hashing')
+const hashes = hashBatch(items)
+console.timeEnd('WASM hashing')
+```
+
+## Files
+
+- **[Hash.wasm.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.wasm.ts)** - TypeScript exports with WASM bindings
+- Zig source implementation (location varies by algorithm)
+
+## Tree-Shakeable Usage
+
+Import only algorithms you need:
+
+```typescript
+import { sha256, ripemd160 } from '@tevm/voltaire/Hash.wasm'
+
+const sha = sha256("hello")
+const ripe = ripemd160("world")
+```
+
+WASM loader only included if you import WASM methods. Using pure JS Hash methods excludes WASM from bundle.
+
+<Aside type="note" title="Bundle Size">
+WASM module compiled with ReleaseSmall. Size varies by algorithm imported. Only included when importing from `Hash.wasm.ts`.
+</Aside>
+
+## Algorithm Comparison
+
+| Algorithm | Output Size | Use Case |
+|-----------|-------------|----------|
+| SHA-256 | 32 bytes | General-purpose, Bitcoin |
+| RIPEMD-160 | 20 bytes | Bitcoin addresses |
+| BLAKE2b | 64 bytes | High-speed hashing |
+| Keccak-256 | 32 bytes | Ethereum (via Hash.keccak256*) |
+
+## Note on Hash Class
+
+The main `Hash` class focuses on Keccak-256 (Ethereum's primary hash function) using @noble/hashes. The WASM module provides additional algorithms for broader compatibility:
+
+```typescript
+// Keccak-256 (Ethereum) - use Hash class
+import { Hash } from '@tevm/voltaire'
+const ethHash = Hash.keccak256String("Transfer(address,address,uint256)")
+
+// SHA-256 (Bitcoin) - use WASM
+import { sha256 } from '@tevm/voltaire/Hash.wasm'
+const btcHash = sha256("hello")
+
+// RIPEMD-160 (Bitcoin addresses) - use WASM
+import { ripemd160 } from '@tevm/voltaire/Hash.wasm'
+const addressHash = ripemd160(sha256(publicKey))
+```
+
+## Related
+
+- [Hash](/primitives/hash/) - Main Hash documentation (Keccak-256)
+- [Hashing](/primitives/hash/hashing) - Keccak-256 methods
+- [Constructors](/primitives/hash/constructors) - Creating hashes

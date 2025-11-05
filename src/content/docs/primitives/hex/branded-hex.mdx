@@ -1,0 +1,391 @@
+---
+title: BrandedHex
+description: Tree-shakeable functional API for Hex operations
+---
+
+# BrandedHex
+
+Tree-shakeable functional API for Hex operations with optimal bundle size.
+
+## Overview
+
+`BrandedHex` is the functional layer underlying the `Hex` namespace. It provides:
+- **Zero-overhead** [branded type](/primitives/branded-types) wrapping hex strings with `0x` prefix
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods taking hex as first parameter
+- **Bundle optimization** through selective imports
+
+Primary benefit: Import only the methods you use, minimizing bundle size.
+
+## Type Definition
+
+```typescript
+export type BrandedHex = `0x${string}` & {
+  readonly __tag: "Hex"
+}
+
+export type Sized<TSize extends number = number> = `0x${string}` & {
+  readonly __tag: "Hex"
+  readonly size: TSize
+}
+
+export type Bytes<N extends number> = Sized<N>
+```
+
+Runtime-validated hex string with `0x` prefix. [Brand](/primitives/branded-types) prevents accidental mixing with plain strings. `Sized<N>` adds compile-time size tracking.
+
+Defined in: [primitives/Hex/BrandedHex/BrandedHex.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js)
+
+## Namespace API
+
+All functions exported as both individual exports and namespace:
+
+```typescript
+import * as BrandedHex from '@tevm/voltaire/BrandedHex'
+
+// Namespace usage
+const hex = BrandedHex.from("0x1234")
+const bytes = BrandedHex.toBytes(hex)
+```
+
+## Tree-Shakeable Usage
+
+Import only what you need:
+
+```typescript
+import { from, toBytes, concat } from '@tevm/voltaire/BrandedHex'
+import type { BrandedHex } from '@tevm/voltaire/BrandedHex'
+
+const hex: BrandedHex = from("0x1234")
+const bytes = toBytes(hex)
+const combined = concat(hex, from("0x5678"))
+```
+
+**Bundle impact:** Only `from`, `toBytes`, and `concat` included. Unused functions excluded from bundle.
+
+## Available Functions
+
+All Hex functionality available as tree-shakeable functions:
+
+### Constructors
+
+```typescript
+import {
+  from,
+  fromBytes,
+  fromNumber,
+  fromBigInt,
+  fromString,
+  fromBoolean,
+  random,
+  zero
+} from '@tevm/voltaire/BrandedHex'
+
+const hex1 = from("0x1234")
+const hex2 = fromBytes(new Uint8Array([0x12, 0x34]))
+const hex3 = fromNumber(255, 2)
+const hex4 = fromBigInt(255n, 32)
+const hex5 = fromString("hello")
+const hex6 = fromBoolean(true)
+const randomHex = random(32)
+const zeroHex = zero(32)
+```
+
+See [Constructors](/primitives/hex/constructors) for details.
+
+### Conversions
+
+```typescript
+import {
+  toBytes,
+  toNumber,
+  toBigInt,
+  toString,
+  toBoolean
+} from '@tevm/voltaire/BrandedHex'
+
+const bytes = toBytes(hex)      // Uint8Array
+const n = toNumber(hex)          // number
+const bigint = toBigInt(hex)     // bigint
+const str = toString(hex)        // string
+const bool = toBoolean(hex)      // boolean
+```
+
+See [Conversions](/primitives/hex/conversions) for details.
+
+### Validation
+
+```typescript
+import {
+  isHex,
+  validate,
+  isSized,
+  assertSize
+} from '@tevm/voltaire/BrandedHex'
+
+isHex("0x1234")          // boolean (type guard)
+validate("0x1234")       // BrandedHex (throws if invalid)
+isSized(hex, 32)         // boolean
+assertSize(hex, 32)      // Sized<32> (throws if wrong size)
+```
+
+See [Validation](/primitives/hex/validation) for details.
+
+### Manipulation
+
+```typescript
+import {
+  concat,
+  slice,
+  pad,
+  padRight,
+  trim,
+  xor
+} from '@tevm/voltaire/BrandedHex'
+
+const combined = concat(hex1, hex2, hex3)
+const sliced = slice(hex, 1, 3)
+const padded = pad(hex, 32)
+const paddedRight = padRight(hex, 32)
+const trimmed = trim(hex)
+const xored = xor(hex1, hex2)
+```
+
+See [Manipulation](/primitives/hex/manipulation) for details.
+
+### Utilities
+
+```typescript
+import {
+  size,
+  equals,
+  random,
+  zero
+} from '@tevm/voltaire/BrandedHex'
+
+const byteSize = size(hex)              // number
+const isEqual = equals(hex1, hex2)      // boolean
+const randomHex = random(32)            // BrandedHex
+const zeroHex = zero(32)                // BrandedHex
+```
+
+See [Utilities](/primitives/hex/utilities) for details.
+
+## Data-First Pattern
+
+All BrandedHex functions follow data-first pattern:
+
+```typescript
+// BrandedHex: hex is first parameter
+toBytes(hex)
+equals(hex1, hex2)
+pad(hex, 32)
+
+// vs Hex namespace: hex is implicit (this context)
+Hex.toBytes(hex)
+Hex.equals(hex1, hex2)
+Hex.pad(hex, 32)
+```
+
+This enables functional composition and partial application:
+
+```typescript
+import { toBytes, pad, concat } from '@tevm/voltaire/BrandedHex'
+
+// Function composition
+const process = (hex: BrandedHex) => toBytes(pad(hex, 32))
+
+// Partial application
+const pad32 = (hex: BrandedHex) => pad(hex, 32)
+
+// Array methods
+const hexes: BrandedHex[] = [...]
+hexes.map(toBytes)
+hexes.map(pad32)
+hexes.filter(hex => size(hex) === 32)
+```
+
+## Tree-Shaking Benefits
+
+Primary benefit: **Minimal bundle size through selective imports**
+
+### Example 1: Minimal Bundle
+
+```typescript
+import { from, toBytes } from '@tevm/voltaire/BrandedHex'
+
+const hex = from("0x1234")
+const bytes = toBytes(hex)
+```
+
+**Bundle:** Only `from` and `toBytes`. No UTF-8 encoding, no crypto, no manipulation.
+
+### Example 2: With Manipulation
+
+```typescript
+import { from, concat, slice, pad } from '@tevm/voltaire/BrandedHex'
+
+const hex1 = from("0x1234")
+const hex2 = from("0x5678")
+const combined = concat(hex1, hex2)
+const sliced = slice(combined, 1, 3)
+const padded = pad(sliced, 32)
+```
+
+**Bundle:** Adds concat, slice, pad. Still excludes conversions, validation, etc.
+
+### Example 3: Full Hex Namespace
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+const hex = Hex("0x1234")
+```
+
+**Bundle:** Includes all Hex methods bound to namespace.
+
+## Bundle Size Comparison
+
+| Import Style | Bundle Size | Use Case |
+|--------------|-------------|----------|
+| `from`, `toBytes` only | ~1KB | Minimal hex/bytes conversion |
+| + manipulation | ~2KB | With concat, slice, pad |
+| + validation | ~2.5KB | With isHex, validate |
+| + all conversions | ~3KB | Full type conversions |
+| `Hex` namespace | ~4KB | Full API surface |
+
+*Approximate sizes, actual depends on build configuration and minification.*
+
+## When to Use BrandedHex vs Hex
+
+### Use BrandedHex When:
+- **Bundle size critical** (mobile, embedded)
+- **Using few methods** (only 2-3 functions)
+- **Functional style** preferred
+- **Tree-shaking important** (library code)
+- **Composing functions** heavily
+
+### Use Hex Namespace When:
+- **Ergonomics** over bundle size
+- **Using many methods** (>5 functions)
+- **Traditional API** expected
+- **Bundle size not critical**
+- **Quick prototyping**
+
+## Interoperability
+
+BrandedHex and Hex namespace are fully compatible:
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+import { toBytes, concat } from '@tevm/voltaire/BrandedHex'
+
+// Hex namespace returns BrandedHex
+const hex1 = Hex("0x1234")
+
+// Works with BrandedHex functions
+const bytes = toBytes(hex1)
+
+// BrandedHex functions work with Hex namespace
+const hex2 = Hex.from("0x5678")
+const combined = concat(hex1, hex2)
+
+// Mix and match
+const result = toBytes(Hex.pad(concat(hex1, hex2), 32))
+```
+
+## Import Paths
+
+```typescript
+// Namespace (includes all methods)
+import * as BrandedHex from '@tevm/voltaire/BrandedHex'
+
+// Individual functions (tree-shakeable)
+import { from, toBytes, concat } from '@tevm/voltaire/BrandedHex'
+
+// Type only
+import type { BrandedHex, Sized } from '@tevm/voltaire/BrandedHex'
+
+// Hex namespace (convenience, larger bundle)
+import { Hex } from '@tevm/voltaire'
+```
+
+## Error Types
+
+All BrandedHex functions may throw:
+
+```typescript
+export class InvalidFormatError extends Error
+export class InvalidCharacterError extends Error
+export class InvalidLengthError extends Error
+export class OddLengthError extends Error
+```
+
+Import errors separately:
+
+```typescript
+import {
+  InvalidFormatError,
+  InvalidCharacterError,
+  InvalidLengthError,
+  OddLengthError
+} from '@tevm/voltaire/BrandedHex'
+```
+
+Defined in: [primitives/Hex/BrandedHex/errors.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/errors.js)
+
+## Function Reference Table
+
+| Category | Functions | Bundle Impact |
+|----------|-----------|---------------|
+| Constructors | `from`, `fromBytes`, `fromNumber`, `fromBigInt` | Minimal (~0.5KB) |
+| Conversions | `toBytes`, `toNumber`, `toBigInt` | Minimal (~0.5KB) |
+| String | `fromString`, `toString` | +TextEncoder/Decoder (~1KB) |
+| Validation | `isHex`, `validate`, `isSized`, `assertSize` | Minimal (~0.3KB) |
+| Manipulation | `concat`, `slice`, `pad`, `padRight`, `trim` | Medium (~1KB) |
+| XOR | `xor` | Minimal (~0.5KB) |
+| Utilities | `size`, `equals`, `random`, `zero` | Minimal (~0.3KB) |
+
+## Usage Recommendations
+
+### For Libraries
+```typescript
+// Export BrandedHex type, use tree-shakeable imports
+import type { BrandedHex } from '@tevm/voltaire/BrandedHex'
+import { from, toBytes } from '@tevm/voltaire/BrandedHex'
+
+export function myFunction(hex: BrandedHex): Uint8Array {
+  return toBytes(hex)
+}
+```
+
+### For Applications
+```typescript
+// Use Hex namespace for convenience
+import { Hex } from '@tevm/voltaire'
+
+const hex = Hex("0x1234")
+const bytes = Hex.toBytes(hex)
+const padded = Hex.pad(hex, 32)
+```
+
+### For Size-Critical Code
+```typescript
+// Import only what you need
+import { from, toBytes, size } from '@tevm/voltaire/BrandedHex'
+
+// Minimal bundle
+const hex = from("0x1234")
+const bytes = toBytes(hex)
+const byteSize = size(hex)
+```
+
+## Related
+
+- [Hex](/primitives/hex/) - Main Hex namespace documentation
+- [Constructors](/primitives/hex/constructors) - Creating hex values
+- [Conversions](/primitives/hex/conversions) - Format conversions
+- [Validation](/primitives/hex/validation) - Input validation
+- [Manipulation](/primitives/hex/manipulation) - Hex operations
+- [Utilities](/primitives/hex/utilities) - Helper functions
+- [Sizing](/primitives/hex/sizing) - Size constraints

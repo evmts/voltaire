@@ -1,0 +1,775 @@
+---
+title: RLP Utilities
+description: Helper methods for working with RLP data structures
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# RLP Utilities
+
+Helper methods for creating, measuring, flattening, and comparing RLP data structures.
+
+## Overview
+
+Utility functions provide convenient ways to work with RLP data:
+- **from** - Create RLP data from various inputs
+- **getEncodedLength** - Calculate encoded size without encoding
+- **flatten** - Extract all bytes from nested structures
+- **equals** - Deep equality comparison
+
+## from
+
+Create RLP data structure from various inputs with automatic type detection.
+
+<Tabs>
+<TabItem label="Signature">
+```typescript
+function from(
+  value: Uint8Array | BrandedRlp | BrandedRlp[]
+): BrandedRlp
+```
+
+**Parameters:**
+- `value` - Uint8Array (becomes bytes data), RlpData (returned as-is), or array (becomes list data)
+
+**Returns:**
+- `BrandedRlp` - RLP data structure
+
+**Throws:**
+- `Error('Invalid input for Rlp.from')` - Unsupported input type
+
+Source: [from.js:15-26](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/from.js#L15-L26)
+</TabItem>
+<TabItem label="Class API">
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// From Uint8Array (becomes bytes data)
+const bytes = Rlp.from(new Uint8Array([1, 2, 3]))
+// => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+
+// From array (becomes list data)
+const list = Rlp.from([
+  new Uint8Array([1]),
+  new Uint8Array([2])
+])
+// => {
+//   type: 'list',
+//   value: [
+//     { type: 'bytes', value: Uint8Array([1]) },
+//     { type: 'bytes', value: Uint8Array([2]) }
+//   ]
+// }
+
+// From existing RLP data (pass through)
+const existing = { type: 'bytes', value: new Uint8Array([1]) }
+const same = Rlp.from(existing)
+// => Returns existing unchanged
+
+// Empty bytes
+const empty = Rlp.from(new Uint8Array([]))
+// => { type: 'bytes', value: Uint8Array([]) }
+
+// Empty list
+const emptyList = Rlp.from([])
+// => { type: 'list', value: [] }
+
+// Constructor also uses from internally
+const rlp = new Rlp(new Uint8Array([1, 2, 3]))
+// => Same as Rlp.from()
+```
+</TabItem>
+<TabItem label="Namespace API">
+```typescript
+import { from } from '@tevm/voltaire/BrandedRlp'
+
+// From bytes
+const bytes = from(new Uint8Array([1, 2, 3]))
+
+// From array
+const list = from([
+  new Uint8Array([1]),
+  new Uint8Array([2])
+])
+
+// Pass through existing data
+const existing = { type: 'bytes', value: new Uint8Array([1]) }
+const same = from(existing)
+```
+</TabItem>
+</Tabs>
+
+### Behavior
+
+The `from` method normalizes various input types into RLP data structures:
+
+1. **Uint8Array** → Creates bytes data
+2. **BrandedRlp** → Returns unchanged (idempotent)
+3. **Array** → Creates list data (doesn't recursively convert items)
+
+**Note:** Arrays are not recursively converted:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Array items remain as-is (not converted to RLP data)
+const list = Rlp.from([
+  new Uint8Array([1]),  // Stays as Uint8Array
+  new Uint8Array([2])   // Stays as Uint8Array
+])
+
+// To recursively convert, use encode + decode
+const encoded = Rlp.encode([
+  new Uint8Array([1]),
+  new Uint8Array([2])
+])
+const decoded = Rlp.decode(encoded)
+// Now fully converted to RLP data structures
+```
+
+### Use Cases
+
+**Normalizing Input:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function processRlpData(input: Uint8Array | BrandedRlp | BrandedRlp[]) {
+  // Normalize to RLP data
+  const data = Rlp.from(input)
+
+  // Now work with consistent type
+  if (data.type === 'bytes') {
+    console.log('Bytes length:', data.value.length)
+  } else {
+    console.log('List items:', data.value.length)
+  }
+}
+```
+
+**Building Structures:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Build transaction structure
+const nonce = Rlp.from(new Uint8Array([0x00]))
+const gasPrice = Rlp.from(new Uint8Array([0x04, 0xa8, 0x17, 0xc8]))
+const gas = Rlp.from(new Uint8Array([0x52, 0x08]))
+
+const transaction = Rlp.from([nonce, gasPrice, gas, /* ... */])
+```
+
+## getEncodedLength
+
+Calculate the byte length of RLP-encoded data without actually encoding it.
+
+<Tabs>
+<TabItem label="Signature">
+```typescript
+function getEncodedLength(
+  data: Uint8Array | BrandedRlp | any[]
+): number
+```
+
+**Parameters:**
+- `data` - Data to measure (Uint8Array, RlpData, or array)
+
+**Returns:**
+- `number` - Length in bytes after RLP encoding
+
+**Throws:**
+- `Error('UnexpectedInput')` - Invalid encodable data type
+
+Source: [getEncodedLength.js:18-54](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/getEncodedLength.js#L18-L54)
+</TabItem>
+<TabItem label="Class API">
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Single byte < 0x80
+const single = new Uint8Array([0x7f])
+console.log(Rlp.getEncodedLength(single))  // 1 (no prefix)
+
+// Short string
+const short = new Uint8Array([1, 2, 3])
+console.log(Rlp.getEncodedLength(short))  // 4 (prefix + 3 bytes)
+
+// Empty string
+const empty = new Uint8Array([])
+console.log(Rlp.getEncodedLength(empty))  // 1 (just prefix 0x80)
+
+// Long string
+const long = new Uint8Array(60).fill(0x42)
+console.log(Rlp.getEncodedLength(long))  // 62 (0xb8 + length byte + 60 bytes)
+
+// Empty list
+const emptyList = []
+console.log(Rlp.getEncodedLength(emptyList))  // 1 (just prefix 0xc0)
+
+// Simple list
+const list = [new Uint8Array([1]), new Uint8Array([2])]
+console.log(Rlp.getEncodedLength(list))  // 4 (0xc4 + 2 items)
+
+// Nested list
+const nested = [
+  new Uint8Array([1]),
+  [new Uint8Array([2]), new Uint8Array([3])]
+]
+console.log(Rlp.getEncodedLength(nested))
+
+// Instance method
+const rlpData = new Rlp(new Uint8Array([1, 2, 3]))
+console.log(rlpData.getEncodedLength())  // 4
+
+// Pre-allocate buffer
+const size = Rlp.getEncodedLength(data)
+const buffer = new Uint8Array(size)
+```
+</TabItem>
+<TabItem label="Namespace API">
+```typescript
+import { getEncodedLength } from '@tevm/voltaire/BrandedRlp'
+
+const bytes = new Uint8Array([1, 2, 3])
+const length = getEncodedLength(bytes)  // 4
+
+const list = [bytes, bytes]
+const listLength = getEncodedLength(list)  // 8
+```
+</TabItem>
+</Tabs>
+
+### Algorithm
+
+Calculates encoded size using RLP rules without allocating buffers:
+
+**For Uint8Array:**
+```typescript
+// Single byte < 0x80: 1 byte (no prefix)
+if (length === 1 && byte < 0x80) return 1
+
+// Short string (< 56 bytes): 1 + length
+if (length < 56) return 1 + length
+
+// Long string: 1 + length_of_length + length
+const lengthBytes = calculateLengthOfLength(length)
+return 1 + lengthBytes + length
+```
+
+**For Arrays (lists):**
+```typescript
+// Calculate total payload size
+const totalLength = items.reduce((sum, item) =>
+  sum + getEncodedLength(item), 0
+)
+
+// Short list (< 56 bytes): 1 + totalLength
+if (totalLength < 56) return 1 + totalLength
+
+// Long list: 1 + length_of_length + totalLength
+const lengthBytes = calculateLengthOfLength(totalLength)
+return 1 + lengthBytes + totalLength
+```
+
+### Performance Benefits
+
+Measuring without encoding saves allocation and copying:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Inefficient: encode just to check size
+const encoded = Rlp.encode(data)
+const size = encoded.length
+
+// Efficient: measure directly
+const size = Rlp.getEncodedLength(data)
+```
+
+**Use Cases:**
+
+**Pre-sizing Buffers:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Calculate total size for multiple items
+const items = [data1, data2, data3]
+const totalSize = items.reduce(
+  (sum, item) => sum + Rlp.getEncodedLength(item),
+  0
+)
+
+// Allocate single buffer
+const buffer = new Uint8Array(totalSize)
+```
+
+**Size Validation:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Check if data will fit in block
+const MAX_BLOCK_SIZE = 1000000
+
+const size = Rlp.getEncodedLength(transactionList)
+if (size > MAX_BLOCK_SIZE) {
+  throw new Error('Transaction list too large for block')
+}
+```
+
+**Choosing Encoding Strategy:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Use different strategies based on size
+const size = Rlp.getEncodedLength(data)
+
+if (size < 1000) {
+  // Small data: use JS encoder
+  const encoded = Rlp.encode(data)
+} else {
+  // Large data: use WASM encoder
+  const encoded = RlpWasm.encode(data)
+}
+```
+
+## flatten
+
+Recursively extract all bytes data from nested lists (depth-first traversal).
+
+<Tabs>
+<TabItem label="Signature">
+```typescript
+function flatten(data: BrandedRlp): BytesData[]
+
+type BytesData = BrandedRlp & { type: "bytes" }
+```
+
+**Parameters:**
+- `data: BrandedRlp` - RLP data to flatten
+
+**Returns:**
+- `BytesData[]` - Array of all bytes data in depth-first order
+
+Source: [flatten.js:26-45](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/flatten.js#L26-L45)
+</TabItem>
+<TabItem label="Class API">
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Flatten bytes data (returns as single-item array)
+const bytes = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+const flat = Rlp.flatten(bytes)
+// => [{ type: 'bytes', value: Uint8Array([1, 2, 3]) }]
+
+// Flatten list of bytes
+const list = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+const flat = Rlp.flatten(list)
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) }
+// ]
+
+// Flatten nested lists
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) },
+        { type: 'bytes', value: new Uint8Array([3]) }
+      ]
+    },
+    { type: 'bytes', value: new Uint8Array([4]) }
+  ]
+}
+const flat = Rlp.flatten(nested)
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) },
+//   { type: 'bytes', value: Uint8Array([3]) },
+//   { type: 'bytes', value: Uint8Array([4]) }
+// ]
+
+// Empty list
+const empty = { type: 'list', value: [] }
+const flat = Rlp.flatten(empty)
+// => []
+
+// Instance method
+const rlpData = new Rlp([new Uint8Array([1]), new Uint8Array([2])])
+const flat = rlpData.flatten()
+```
+</TabItem>
+<TabItem label="Namespace API">
+```typescript
+import { flatten } from '@tevm/voltaire/BrandedRlp'
+
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [{ type: 'bytes', value: new Uint8Array([2]) }]
+    }
+  ]
+}
+
+const flat = flatten(nested)
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) }
+// ]
+```
+</TabItem>
+</Tabs>
+
+### Algorithm
+
+Depth-first traversal that collects all bytes data:
+
+```typescript
+function flatten(data) {
+  const result = []
+
+  function visit(d) {
+    if (d.type === 'bytes') {
+      result.push(d)
+    } else {
+      for (const item of d.value) {
+        visit(item)
+      }
+    }
+  }
+
+  visit(data)
+  return result
+}
+```
+
+### Use Cases
+
+**Extract Transaction Fields:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Decode transaction
+const txBytes = new Uint8Array([...])
+const decoded = Rlp.decode(txBytes)
+
+// Extract all byte fields
+const fields = Rlp.flatten(decoded.data)
+// => [nonce, gasPrice, gas, to, value, data, v, r, s]
+
+// Access specific fields
+const [nonce, gasPrice, gas] = fields
+console.log('Nonce:', nonce.value)
+```
+
+**Count Total Bytes:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function countTotalBytes(data: BrandedRlp): number {
+  const flattened = Rlp.flatten(data)
+  return flattened.reduce((sum, item) => sum + item.value.length, 0)
+}
+
+const nested = { /* ... */ }
+const total = countTotalBytes(nested)
+console.log(`Total bytes: ${total}`)
+```
+
+**Validate Structure:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function validateAllBytes(data: BrandedRlp, minLength: number) {
+  const flattened = Rlp.flatten(data)
+
+  for (const item of flattened) {
+    if (item.value.length < minLength) {
+      throw new Error(`Bytes too short: ${item.value.length} < ${minLength}`)
+    }
+  }
+}
+```
+
+**Map Over Bytes:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function hashAllBytes(data: BrandedRlp): Uint8Array[] {
+  const flattened = Rlp.flatten(data)
+  return flattened.map(item => keccak256(item.value))
+}
+```
+
+## equals
+
+Deep equality comparison for RLP data structures.
+
+<Tabs>
+<TabItem label="Signature">
+```typescript
+function equals(data: BrandedRlp, other: BrandedRlp): boolean
+```
+
+**Parameters:**
+- `data: BrandedRlp` - First RLP data structure
+- `other: BrandedRlp` - Second RLP data structure
+
+**Returns:**
+- `boolean` - True if structures are deeply equal
+
+Source: [equals.js:15-47](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/equals.js#L15-L47)
+</TabItem>
+<TabItem label="Class API">
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Compare bytes data
+const a = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+const b = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+console.log(Rlp.equals(a, b))  // true
+
+const c = { type: 'bytes', value: new Uint8Array([1, 2, 4]) }
+console.log(Rlp.equals(a, c))  // false
+
+// Different lengths
+const d = { type: 'bytes', value: new Uint8Array([1, 2]) }
+console.log(Rlp.equals(a, d))  // false
+
+// Compare list data
+const list1 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+const list2 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+console.log(Rlp.equals(list1, list2))  // true
+
+// Different types
+const bytes = { type: 'bytes', value: new Uint8Array([1]) }
+const list = { type: 'list', value: [] }
+console.log(Rlp.equals(bytes, list))  // false
+
+// Nested comparison
+const nested1 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [{ type: 'bytes', value: new Uint8Array([2]) }]
+    }
+  ]
+}
+const nested2 = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [{ type: 'bytes', value: new Uint8Array([2]) }]
+    }
+  ]
+}
+console.log(Rlp.equals(nested1, nested2))  // true
+
+// Instance method
+const rlp1 = new Rlp(new Uint8Array([1, 2, 3]))
+const rlp2 = new Rlp(new Uint8Array([1, 2, 3]))
+console.log(rlp1.equals(rlp2))  // true
+```
+</TabItem>
+<TabItem label="Namespace API">
+```typescript
+import { equals } from '@tevm/voltaire/BrandedRlp'
+
+const a = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+const b = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+console.log(equals(a, b))  // true
+```
+</TabItem>
+</Tabs>
+
+### Algorithm
+
+Recursive comparison with type checking:
+
+```typescript
+function equals(data, other) {
+  // Different types
+  if (data.type !== other.type) return false
+
+  // Compare bytes
+  if (data.type === 'bytes') {
+    if (data.value.length !== other.value.length) return false
+    for (let i = 0; i < data.value.length; i++) {
+      if (data.value[i] !== other.value[i]) return false
+    }
+    return true
+  }
+
+  // Compare lists
+  if (data.type === 'list') {
+    if (data.value.length !== other.value.length) return false
+    for (let i = 0; i < data.value.length; i++) {
+      if (!equals(data.value[i], other.value[i])) return false
+    }
+    return true
+  }
+
+  return false
+}
+```
+
+### Use Cases
+
+**Deduplication:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function deduplicate(items: BrandedRlp[]): BrandedRlp[] {
+  const unique: BrandedRlp[] = []
+
+  for (const item of items) {
+    const isDuplicate = unique.some(u => Rlp.equals(u, item))
+    if (!isDuplicate) {
+      unique.push(item)
+    }
+  }
+
+  return unique
+}
+```
+
+**Testing:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Test round-trip encoding
+const original = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) }
+  ]
+}
+
+const encoded = Rlp.encode(original)
+const decoded = Rlp.decode(encoded)
+
+console.log(Rlp.equals(original, decoded.data))  // true
+```
+
+**Caching:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const cache = new Map<string, Uint8Array>()
+
+function encodeWithCache(data: BrandedRlp): Uint8Array {
+  // Check cache
+  for (const [key, cached] of cache.entries()) {
+    const cachedData = JSON.parse(key)
+    if (Rlp.equals(data, cachedData)) {
+      return cached
+    }
+  }
+
+  // Encode and cache
+  const encoded = Rlp.encode(data)
+  cache.set(JSON.stringify(data), encoded)
+  return encoded
+}
+```
+
+**Assertions:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function assertRlpEquals(
+  actual: BrandedRlp,
+  expected: BrandedRlp,
+  message?: string
+) {
+  if (!Rlp.equals(actual, expected)) {
+    throw new Error(message || 'RLP data not equal')
+  }
+}
+
+// Usage in tests
+const result = processRlpData(input)
+assertRlpEquals(result, expectedOutput)
+```
+
+## Utility Combinations
+
+Combine utilities for powerful operations:
+
+**Measure Flattened Size:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function getTotalBytesSize(data: BrandedRlp): number {
+  const flattened = Rlp.flatten(data)
+  return flattened.reduce((sum, item) => sum + item.value.length, 0)
+}
+```
+
+**Compare After Normalization:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function normalizeAndCompare(a: unknown, b: unknown): boolean {
+  const dataA = Rlp.from(a)
+  const dataB = Rlp.from(b)
+  return Rlp.equals(dataA, dataB)
+}
+```
+
+**Validate Then Flatten:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function extractAndValidate(data: BrandedRlp): Uint8Array[] {
+  // Validate structure
+  const size = Rlp.getEncodedLength(data)
+  if (size > MAX_SIZE) {
+    throw new Error('Data too large')
+  }
+
+  // Extract all bytes
+  const flattened = Rlp.flatten(data)
+
+  // Return raw byte arrays
+  return flattened.map(item => item.value)
+}
+```
+
+<Aside type="tip">
+Utilities are tree-shakeable. Import only what you need to minimize bundle size.
+</Aside>
+
+## Related
+
+- [Types](/primitives/rlp/types) - RLP type system and guards
+- [Encoding](/primitives/rlp/encoding) - Encode RLP data
+- [Decoding](/primitives/rlp/decoding) - Decode RLP data
+- [BrandedRlp](/primitives/rlp/branded-rlp) - Functional API

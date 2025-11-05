@@ -1,0 +1,212 @@
+---
+title: Hex
+description: Hex string primitive with validation and manipulation
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+# Hex
+
+Hex string type for Ethereum development with validation, conversion, and manipulation utilities.
+
+## Overview
+
+[Branded](/primitives/branded-types) string type representing hex-encoded data with `0x` prefix. Zero-overhead design supports both tree-shakeable namespace methods and functional API.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Namespace API">
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Construct from various formats (see Constructors)
+const hex1 = Hex("0x1234")
+const hex2 = Hex.fromBytes(new Uint8Array([0x12, 0x34]))
+const hex3 = Hex.fromNumber(255)
+const hex4 = Hex.fromBigInt(255n, 32)
+const hex5 = Hex.fromString("hello")
+const hex6 = Hex.fromBoolean(true)
+
+// Validate (see Validation)
+if (!Hex.isHex("0x1234")) throw new Error("Invalid hex")
+Hex.validate("0x1234")  // Throws if invalid
+
+// Convert formats (see Conversions)
+Hex.toBytes(hex1)      // Uint8Array([0x12, 0x34])
+Hex.toNumber(hex3)     // 255
+Hex.toBigInt(hex4)     // 255n
+Hex.toString(hex5)     // "hello"
+Hex.toBoolean(hex6)    // true
+
+// Manipulate (see Manipulation)
+Hex.concat(hex1, hex2) // "0x12341234"
+Hex.slice(hex1, 1)     // "0x34"
+Hex.pad(hex1, 4)       // "0x00001234"
+Hex.trim(hex1)         // Remove leading zeros
+
+// Utilities (see Utilities)
+Hex.size(hex1)         // 2 (bytes)
+Hex.equals(hex1, hex2) // false
+Hex.random(32)         // Random 32-byte hex
+Hex.zero(32)           // "0x0000...0000" (32 bytes)
+```
+</TabItem>
+<TabItem label="Tree-shakeable API">
+```typescript
+import { from, toBytes, concat } from '@tevm/voltaire/BrandedHex'
+
+// Tree-shakeable imports minimize bundle size
+const hex = from("0x1234")
+const bytes = toBytes(hex)
+const combined = concat(hex, from("0x5678"))
+
+// See BrandedHex for complete functional API
+```
+</TabItem>
+</Tabs>
+
+## Types
+
+<Tabs>
+<TabItem label="Hex Function">
+```typescript
+function Hex(value: string | Uint8Array): BrandedHex
+
+namespace Hex {
+  // Constructors (→ /primitives/hex/constructors)
+  function from(value: string | Uint8Array): BrandedHex
+  function fromBytes(value: Uint8Array): BrandedHex
+  function fromNumber(value: number, size?: number): BrandedHex
+  function fromBigInt(value: bigint, size?: number): BrandedHex
+  function fromString(value: string): BrandedHex
+  function fromBoolean(value: boolean): BrandedHex
+
+  // Conversions (→ /primitives/hex/conversions)
+  function toBytes(hex: BrandedHex): Uint8Array
+  function toNumber(hex: BrandedHex): number
+  function toBigInt(hex: BrandedHex): bigint
+  function toString(hex: BrandedHex): string
+  function toBoolean(hex: BrandedHex): boolean
+
+  // Validation (→ /primitives/hex/validation)
+  function isHex(value: unknown): value is BrandedHex
+  function validate(value: string): BrandedHex
+  function isSized<TSize extends number>(hex: BrandedHex, size: TSize): boolean
+  function assertSize<TSize extends number>(hex: BrandedHex, size: TSize): void
+
+  // Manipulation (→ /primitives/hex/manipulation)
+  function concat(...hexes: BrandedHex[]): BrandedHex
+  function slice(hex: BrandedHex, start?: number, end?: number): BrandedHex
+  function pad(hex: BrandedHex, size: number): BrandedHex
+  function padRight(hex: BrandedHex, size: number): BrandedHex
+  function trim(hex: BrandedHex): BrandedHex
+  function xor(a: BrandedHex, b: BrandedHex): BrandedHex
+
+  // Utilities (→ /primitives/hex/utilities)
+  function random(size: number): BrandedHex
+  function zero(size: number): BrandedHex
+  function size(hex: BrandedHex): number
+  function equals(a: BrandedHex, b: BrandedHex): boolean
+}
+```
+
+Source: [Hex.js:1-70](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/Hex.js#L1-L70)
+</TabItem>
+<TabItem label="type BrandedHex">
+```typescript
+export type BrandedHex = `0x${string}` & {
+  readonly __tag: "Hex"
+}
+
+export type Sized<TSize extends number = number> = `0x${string}` & {
+  readonly __tag: "Hex"
+  readonly size: TSize
+}
+
+export type Bytes<N extends number> = Sized<N>
+```
+
+[Branded type](/primitives/branded-types) wrapping hex string with `0x` prefix. Runtime validated for format. `Sized<N>` adds compile-time size tracking.
+
+Source: [BrandedHex.js:1-19](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js#L1-L19)
+</TabItem>
+</Tabs>
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Constructors" icon="rocket">
+    Creating Hex instances from strings, bytes, numbers, booleans, and more.
+
+    [View constructors →](/primitives/hex/constructors)
+  </Card>
+
+  <Card title="Conversions" icon="random">
+    Convert hex to bytes, numbers, bigints, strings, and booleans.
+
+    [View conversions →](/primitives/hex/conversions)
+  </Card>
+
+  <Card title="Validation" icon="warning">
+    Input validation, type guards, and size assertions.
+
+    [View validation →](/primitives/hex/validation)
+  </Card>
+
+  <Card title="Manipulation" icon="pencil">
+    Concat, slice, pad, trim, and XOR operations on hex strings.
+
+    [View manipulation →](/primitives/hex/manipulation)
+  </Card>
+
+  <Card title="Utilities" icon="setting">
+    Random generation, size checking, equality testing, and zero values.
+
+    [View utilities →](/primitives/hex/utilities)
+  </Card>
+
+  <Card title="Sizing" icon="list-format">
+    Size constraints with Sized type for compile-time safety.
+
+    [View sizing →](/primitives/hex/sizing)
+  </Card>
+
+  <Card title="BrandedHex" icon="seti:config">
+    Tree-shakeable functional API for minimal bundle size.
+
+    [View BrandedHex →](/primitives/hex/branded-hex)
+  </Card>
+
+  <Card title="WASM Implementation" icon="rocket">
+    WebAssembly-accelerated methods compiled from Zig for performance.
+
+    [View WASM →](/primitives/hex/wasm)
+  </Card>
+</CardGrid>
+
+<Aside type="tip" title="Why hex strings?">
+Hex strings provide human-readable representation with `0x` prefix convention. All Ethereum data (addresses, hashes, signatures) uses hex encoding. Voltaire primitives normalize to hex internally while providing byte-level APIs.
+</Aside>
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Address" icon="seti:text">
+    20-byte Ethereum address built on hex string primitive.
+
+    [View Address →](/primitives/address)
+  </Card>
+
+  <Card title="Hash" icon="document">
+    32-byte hash values using sized hex type.
+
+    [View Hash →](/primitives/hash)
+  </Card>
+
+  <Card title="Branded Types" icon="open-book">
+    Zero-overhead type branding pattern used throughout primitives.
+
+    [View Branded Types →](/primitives/branded-types)
+  </Card>
+</CardGrid>

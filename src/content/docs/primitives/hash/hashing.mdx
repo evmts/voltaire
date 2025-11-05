@@ -1,0 +1,304 @@
+---
+title: Hash Functions
+description: Keccak-256 hashing methods for bytes, strings, and hex data
+---
+
+# Hashing
+
+Keccak-256 cryptographic hashing methods for computing 32-byte hash digests.
+
+## Overview
+
+Hash provides three Keccak-256 methods for different input types:
+- `keccak256(data)` - Hash raw bytes
+- `keccak256String(str)` - Hash UTF-8 string
+- `keccak256Hex(hex)` - Hash hex-encoded data
+
+All methods return 32-byte Hash instances using [@noble/hashes](https://github.com/paulmillr/noble-hashes) for Keccak-256 implementation.
+
+## Methods
+
+### `Hash.keccak256(data)`
+
+Computes Keccak-256 hash of byte data.
+
+```typescript
+const data = new Uint8Array([1, 2, 3, 4])
+const hash = Hash.keccak256(data)
+
+// Hash arbitrary binary data
+const file = await fetch('/data.bin').then(r => r.arrayBuffer())
+const fileHash = Hash.keccak256(new Uint8Array(file))
+
+// Chain hashing
+const hash1 = Hash.keccak256(data1)
+const hash2 = Hash.keccak256(hash1) // Hash of hash
+```
+
+**Parameters:**
+- `data: Uint8Array` - Data to hash
+
+**Returns:** `Hash` - 32-byte Keccak-256 hash
+
+Defined in: [primitives/Hash/BrandedHash/keccak256.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256.js#L14)
+
+**Note:** Uses [@noble/hashes/sha3](https://github.com/paulmillr/noble-hashes#sha3-keccak) for Keccak-256. When using tree-shakeable imports, this includes the keccak256 implementation in bundle (~2-3KB gzipped).
+
+### `Hash.keccak256String(str)`
+
+Computes Keccak-256 hash of UTF-8 encoded string.
+
+```typescript
+const hash = Hash.keccak256String("hello")
+const hash2 = Hash.keccak256String("Hello, World!")
+
+// Common use: Event signatures
+const transferSig = Hash.keccak256String("Transfer(address,address,uint256)")
+console.log(transferSig.toHex())
+// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+// Common use: Function selectors
+const selector = Hash.keccak256String("transfer(address,uint256)")
+const functionSelector = selector.slice(0, 4)
+console.log(Array.from(functionSelector).map(b => b.toString(16).padStart(2, '0')).join(''))
+// "a9059cbb"
+```
+
+**Parameters:**
+- `str: string` - String to hash (UTF-8 encoded)
+
+**Returns:** `Hash` - 32-byte Keccak-256 hash
+
+Defined in: [primitives/Hash/BrandedHash/keccak256String.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256String.js#L14)
+
+**Implementation:** Encodes string as UTF-8 bytes using `TextEncoder`, then computes Keccak-256.
+
+```typescript
+const encoder = new TextEncoder();
+return keccak256(encoder.encode(str));
+```
+
+### `Hash.keccak256Hex(hex)`
+
+Computes Keccak-256 hash of hex-encoded data.
+
+```typescript
+const hash = Hash.keccak256Hex("0x1234")
+const hash2 = Hash.keccak256Hex("1234") // 0x prefix optional
+
+// Hash ABI-encoded data
+const abiEncoded = "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e"
+const hash3 = Hash.keccak256Hex(abiEncoded)
+
+// Equivalent to converting hex to bytes first
+const bytes = Hash.fromHex("0x1234")
+const hash4 = Hash.keccak256(bytes)
+// hash equals hash4
+```
+
+**Parameters:**
+- `hex: string` - Hex string to hash (with or without `0x` prefix)
+
+**Returns:** `Hash` - 32-byte Keccak-256 hash
+
+**Throws:**
+- `Error` - If hex string has odd length
+
+Defined in: [primitives/Hash/BrandedHash/keccak256Hex.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256Hex.js#L15)
+
+**Implementation:** Decodes hex to bytes then computes Keccak-256.
+
+```typescript
+const normalized = hex.startsWith("0x") ? hex.slice(2) : hex;
+const bytes = /* decode hex */
+return keccak256(bytes);
+```
+
+## Usage Examples
+
+### Event Signatures
+
+```typescript
+// Compute event topic 0 (event signature hash)
+const transferEvent = Hash.keccak256String("Transfer(address,address,uint256)")
+const approvalEvent = Hash.keccak256String("Approval(address,address,uint256)")
+
+// Filter logs by event signature
+function isTransferEvent(log: Log): boolean {
+  return Hash.fromHex(log.topics[0]).equals(transferEvent)
+}
+```
+
+### Function Selectors
+
+```typescript
+// Compute 4-byte function selector
+function getFunctionSelector(signature: string): Uint8Array {
+  const hash = Hash.keccak256String(signature)
+  return hash.slice(0, 4)
+}
+
+const transferSelector = getFunctionSelector("transfer(address,uint256)")
+console.log(Array.from(transferSelector).map(b => b.toString(16).padStart(2, '0')).join(''))
+// "a9059cbb"
+```
+
+### Transaction Hashing
+
+```typescript
+// Hash raw transaction data
+const txData = new Uint8Array([...]) // RLP-encoded transaction
+const txHash = Hash.keccak256(txData)
+
+// Hash signed message (EIP-191)
+const message = "Hello, Ethereum!"
+const prefix = `\x19Ethereum Signed Message:\n${message.length}`
+const prefixBytes = new TextEncoder().encode(prefix)
+const messageBytes = new TextEncoder().encode(message)
+const combined = new Uint8Array([...prefixBytes, ...messageBytes])
+const messageHash = Hash.keccak256(combined)
+```
+
+### Merkle Trees
+
+```typescript
+function hashPair(left: Hash, right: Hash): Hash {
+  // Concatenate and hash
+  const combined = new Uint8Array([...left, ...right])
+  return Hash.keccak256(combined)
+}
+
+function computeMerkleRoot(leaves: Hash[]): Hash {
+  if (leaves.length === 0) throw new Error("Empty tree")
+  if (leaves.length === 1) return leaves[0]
+
+  const nextLevel: Hash[] = []
+  for (let i = 0; i < leaves.length; i += 2) {
+    if (i + 1 < leaves.length) {
+      nextLevel.push(hashPair(leaves[i], leaves[i + 1]))
+    } else {
+      nextLevel.push(leaves[i])
+    }
+  }
+
+  return computeMerkleRoot(nextLevel)
+}
+```
+
+### Content Addressing
+
+```typescript
+// Hash file content for storage
+async function hashFile(file: File): Promise<Hash> {
+  const buffer = await file.arrayBuffer()
+  return Hash.keccak256(new Uint8Array(buffer))
+}
+
+// Use hash as content identifier
+const fileHash = await hashFile(document.getElementById('upload').files[0])
+console.log(`Content hash: ${fileHash.toHex()}`)
+```
+
+### Commitment Schemes
+
+```typescript
+// Create commitment (hash of secret + salt)
+function createCommitment(secret: string, salt: Uint8Array): Hash {
+  const secretBytes = new TextEncoder().encode(secret)
+  const combined = new Uint8Array([...secretBytes, ...salt])
+  return Hash.keccak256(combined)
+}
+
+// Reveal and verify
+function verifyCommitment(
+  commitment: Hash,
+  secret: string,
+  salt: Uint8Array
+): boolean {
+  const computed = createCommitment(secret, salt)
+  return commitment.equals(computed)
+}
+
+// Usage
+const salt = crypto.getRandomValues(new Uint8Array(32))
+const commitment = createCommitment("my secret", salt)
+
+// Later, reveal
+const valid = verifyCommitment(commitment, "my secret", salt) // true
+const invalid = verifyCommitment(commitment, "wrong", salt)   // false
+```
+
+### Solidity keccak256 Equivalent
+
+```typescript
+// Solidity: keccak256(abi.encodePacked(address, uint256))
+function solidityKeccak256PackedAddressUint256(
+  address: Uint8Array,
+  value: bigint
+): Hash {
+  // Pack address (20 bytes) and uint256 (32 bytes)
+  const valueBytes = new Uint8Array(32)
+  let v = value
+  for (let i = 31; i >= 0; i--) {
+    valueBytes[i] = Number(v & 0xFFn)
+    v >>= 8n
+  }
+
+  const packed = new Uint8Array([...address, ...valueBytes])
+  return Hash.keccak256(packed)
+}
+```
+
+### Data Integrity Verification
+
+```typescript
+// Store data with hash
+interface StoredData {
+  content: Uint8Array
+  hash: Hash
+}
+
+function storeData(content: Uint8Array): StoredData {
+  return {
+    content,
+    hash: Hash.keccak256(content)
+  }
+}
+
+function verifyData(stored: StoredData): boolean {
+  const computedHash = Hash.keccak256(stored.content)
+  return stored.hash.equals(computedHash)
+}
+```
+
+## Tree-Shakeable Usage
+
+All hashing methods available as tree-shakeable imports:
+
+```typescript
+import { keccak256, keccak256String, keccak256Hex } from '@tevm/voltaire/BrandedHash'
+
+const hash1 = keccak256(data)
+const hash2 = keccak256String("hello")
+const hash3 = keccak256Hex("0x1234")
+```
+
+**Tree-shaking benefit:** When importing hashing methods, @noble/hashes Keccak-256 implementation is included (~2-3KB gzipped). If you don't use these methods, the crypto library is excluded from bundle.
+
+```typescript
+// Minimal bundle - no hashing
+import { fromHex, toHex } from '@tevm/voltaire/BrandedHash'
+// Only hex conversion code included
+
+// With hashing
+import { fromHex, keccak256String } from '@tevm/voltaire/BrandedHash'
+// Includes @noble/hashes Keccak-256 (~2-3KB gzipped)
+```
+
+See [BrandedHash](/primitives/hash/branded-hash) for details on tree-shakeable API.
+
+## Related
+
+- [Constructors](/primitives/hash/constructors) - Using hashing constructors
+- [Comparisons](/primitives/hash/comparisons) - Comparing computed hashes
+- [Utilities](/primitives/hash/utilities) - Slicing hashes for function selectors

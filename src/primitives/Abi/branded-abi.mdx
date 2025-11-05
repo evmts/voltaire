@@ -1,0 +1,491 @@
+---
+title: BrandedAbi
+description: Tree-shakeable functional API for ABI operations
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# BrandedAbi
+
+Tree-shakeable functional API for ABI operations with optimal bundle size.
+
+## Overview
+
+`BrandedAbi` is the functional layer providing:
+- **Zero-overhead** operations on ABI arrays
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods
+- **Bundle optimization** through selective imports
+- **Sub-namespaces** for Function, Event, Error, Constructor operations
+
+Primary benefit: Import only what you need, minimize bundle size.
+
+## Type Definition
+
+```typescript
+export type BrandedAbi<
+  TItems extends readonly Item[] = readonly Item[]
+> = TItems
+
+export type Item = Function | Event | BrandedError | Constructor | Fallback | Receive
+```
+
+`BrandedAbi` is simply an array of ABI items - functions, events, errors, constructors, fallback, and receive.
+
+Source: [BrandedAbi.ts:14-21](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/BrandedAbi/BrandedAbi.ts#L14-L21)
+
+## Namespace API
+
+```typescript
+import * as BrandedAbi from '@tevm/primitives/Abi/BrandedAbi'
+
+// ABI array operations
+const item = BrandedAbi.getItem(abi, "transfer", "function")
+const formatted = BrandedAbi.format(item)
+const withArgs = BrandedAbi.formatWithArgs(item, [to, amount])
+
+// Sub-namespace operations
+const selector = BrandedAbi.Function.getSelector(functionItem)
+const topics = BrandedAbi.Event.encodeTopics(eventItem, args)
+const errorData = BrandedAbi.Error.encodeParams(errorItem, args)
+const constructorData = BrandedAbi.Constructor.encodeParams(constructor, args)
+```
+
+## Core Functions
+
+### getItem
+
+Find an ABI item by name and optionally type.
+
+```typescript
+function getItem<
+  TAbi extends readonly Item[],
+  TName extends string,
+  TType extends Item["type"] | undefined = undefined
+>(
+  abi: TAbi,
+  name: TName,
+  type?: TType
+): Extract<TAbi[number], { name: TName }> | undefined
+```
+
+**Parameters:**
+- `abi` - ABI array
+- `name` - Item name
+- `type` - Optional item type filter
+
+**Returns:** Matching ABI item or undefined
+
+**Example:**
+```typescript
+import { getItem } from '@tevm/primitives/Abi/BrandedAbi'
+
+const abi = [
+  { type: "function", name: "transfer", inputs: [...], outputs: [...] },
+  { type: "event", name: "Transfer", inputs: [...] }
+]
+
+// Get by name only
+const item = getItem(abi, "Transfer")
+// Could be function or event
+
+// Get by name and type
+const func = getItem(abi, "transfer", "function")
+// Guaranteed to be function or undefined
+
+const event = getItem(abi, "Transfer", "event")
+// Guaranteed to be event or undefined
+```
+
+Source: [getItem.js:62-77](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/BrandedAbi/getItem.js#L62-L77)
+
+### format
+
+Format ABI item as human-readable string.
+
+```typescript
+function format(item: Item): string
+```
+
+**Parameters:**
+- `item` - ABI item
+
+**Returns:** Formatted string
+
+**Example:**
+```typescript
+import { format } from '@tevm/primitives/Abi/BrandedAbi'
+
+const func = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+const formatted = format(func)
+// "function transfer(address to, uint256 amount) returns (bool) nonpayable"
+
+const event = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value" }
+  ]
+}
+
+const formatted2 = format(event)
+// "event Transfer(address from, address to, uint256 value)"
+```
+
+Source: [format.js:21-45](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L21-L45)
+
+### formatWithArgs
+
+Format ABI item with actual argument values.
+
+```typescript
+function formatWithArgs(item: Item, args: readonly unknown[]): string
+```
+
+**Parameters:**
+- `item` - ABI item
+- `args` - Argument values
+
+**Returns:** Formatted string with values
+
+**Example:**
+```typescript
+import { formatWithArgs } from '@tevm/primitives/Abi/BrandedAbi'
+
+const func = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+}
+
+const formatted = formatWithArgs(func, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+// "transfer(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e, 1000)"
+```
+
+Source: [formatWithArgs.js:47-60](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L47-L60)
+
+## Sub-Namespaces
+
+BrandedAbi re-exports specialized namespaces for each item type:
+
+### BrandedAbi.Function
+
+All function encoding/decoding operations.
+
+```typescript
+import { BrandedAbi } from '@tevm/primitives/Abi'
+
+const func = BrandedAbi.getItem(abi, "transfer", "function")
+
+const signature = BrandedAbi.Function.getSignature(func)
+const selector = BrandedAbi.Function.getSelector(func)
+const calldata = BrandedAbi.Function.encodeParams(func, args)
+const decoded = BrandedAbi.Function.decodeParams(func, calldata)
+const result = BrandedAbi.Function.decodeResult(func, returnData)
+```
+
+See [Function](/primitives/abi/function) for complete documentation.
+
+### BrandedAbi.Event
+
+All event encoding/decoding operations.
+
+```typescript
+import { BrandedAbi } from '@tevm/primitives/Abi'
+
+const event = BrandedAbi.getItem(abi, "Transfer", "event")
+
+const signature = BrandedAbi.Event.getSignature(event)
+const selector = BrandedAbi.Event.getSelector(event)
+const topics = BrandedAbi.Event.encodeTopics(event, args)
+const decoded = BrandedAbi.Event.decodeLog(event, logData, logTopics)
+```
+
+See [Event](/primitives/abi/event) for complete documentation.
+
+### BrandedAbi.Error
+
+All error encoding/decoding operations.
+
+```typescript
+import { BrandedAbi } from '@tevm/primitives/Abi'
+
+const error = BrandedAbi.getItem(abi, "InsufficientBalance", "error")
+
+const signature = BrandedAbi.Error.getSignature(error)
+const selector = BrandedAbi.Error.getSelector(error)
+const errorData = BrandedAbi.Error.encodeParams(error, args)
+const decoded = BrandedAbi.Error.decodeParams(error, revertData)
+```
+
+See [Error](/primitives/abi/error) for complete documentation.
+
+### BrandedAbi.Constructor
+
+Constructor encoding/decoding operations.
+
+```typescript
+import { BrandedAbi } from '@tevm/primitives/Abi'
+
+const constructor = abi.find(item => item.type === "constructor")
+
+const params = BrandedAbi.Constructor.encodeParams(constructor, args)
+const decoded = BrandedAbi.Constructor.decodeParams(constructor, data)
+```
+
+See [Constructor](/primitives/abi/constructor) for complete documentation.
+
+## Tree-Shakeable Usage
+
+Import only what you need:
+
+```typescript
+import {
+  getItem,
+  format,
+  formatWithArgs
+} from '@tevm/primitives/Abi/BrandedAbi'
+
+import {
+  getSelector as getFunctionSelector,
+  encodeParams as encodeFunctionParams
+} from '@tevm/primitives/Abi/BrandedAbi/Function'
+
+import {
+  getSelector as getEventSelector,
+  decodeLog
+} from '@tevm/primitives/Abi/BrandedAbi/Event'
+```
+
+## Data-First Pattern
+
+All functions follow data-first pattern:
+
+```typescript
+// Data is first parameter
+getItem(abi, "transfer")
+format(item)
+formatWithArgs(item, args)
+
+// Sub-namespace functions also data-first
+Function.getSelector(func)
+Event.encodeTopics(event, args)
+Error.decodeParams(error, data)
+```
+
+This enables functional composition:
+
+```typescript
+import { getItem, format } from '@tevm/primitives/Abi/BrandedAbi'
+
+// Composition
+const formatFunction = (abi: Abi, name: string) =>
+  format(getItem(abi, name, "function"))
+
+// Array methods
+const allFunctions = abi
+  .filter(item => item.type === "function")
+  .map(format)
+```
+
+## Complete Workflows
+
+<Tabs>
+<TabItem label="Contract Interaction">
+```typescript
+import * as BrandedAbi from '@tevm/primitives/Abi/BrandedAbi'
+
+// Load contract ABI
+const abi = [...] // Contract ABI array
+
+// Get function
+const transferFn = BrandedAbi.getItem(abi, "transfer", "function")
+if (!transferFn) throw new Error("Function not found")
+
+// Encode call
+const calldata = BrandedAbi.Function.encodeParams(transferFn, [
+  recipientAddress,
+  amount
+])
+
+// Send transaction
+const tx = await signer.sendTransaction({
+  to: contractAddress,
+  data: calldata
+})
+
+// Wait for receipt
+const receipt = await tx.wait()
+
+// Find Transfer event
+const transferEvent = BrandedAbi.getItem(abi, "Transfer", "event")
+
+// Decode logs
+const transfers = receipt.logs
+  .filter(log => log.address === contractAddress)
+  .map(log => {
+    try {
+      return BrandedAbi.Event.decodeLog(
+        transferEvent,
+        log.data,
+        log.topics
+      )
+    } catch {
+      return null
+    }
+  })
+  .filter(Boolean)
+```
+</TabItem>
+<TabItem label="Error Handling">
+```typescript
+import * as BrandedAbi from '@tevm/primitives/Abi/BrandedAbi'
+
+// Get all errors from ABI
+const errors = abi.filter(item => item.type === "error")
+
+// Create selector map
+const errorMap = new Map(
+  errors.map(err => [
+    BrandedAbi.Error.getSelector(err).toString(),
+    err
+  ])
+)
+
+// Handle revert
+try {
+  await contract.method()
+} catch (revertError) {
+  const selector = revertError.data.slice(0, 4).toString()
+  const error = errorMap.get(selector)
+
+  if (error) {
+    const params = BrandedAbi.Error.decodeParams(error, revertError.data)
+    console.log(`${error.name}:`, params)
+  } else {
+    console.log("Unknown error")
+  }
+}
+```
+</TabItem>
+<TabItem label="Event Filtering">
+```typescript
+import * as BrandedAbi from '@tevm/primitives/Abi/BrandedAbi'
+
+// Get event
+const transferEvent = BrandedAbi.getItem(abi, "Transfer", "event")
+
+// Create filter for specific sender
+const topics = BrandedAbi.Event.encodeTopics(transferEvent, {
+  from: senderAddress
+})
+
+// Get logs
+const logs = await provider.getLogs({
+  address: contractAddress,
+  topics: topics,
+  fromBlock: startBlock,
+  toBlock: endBlock
+})
+
+// Decode all logs
+const transfers = logs.map(log =>
+  BrandedAbi.Event.decodeLog(transferEvent, log.data, log.topics)
+)
+```
+</TabItem>
+</Tabs>
+
+## Tree-Shaking Benefits
+
+### Example 1: Minimal Bundle
+
+```typescript
+import { getItem, format } from '@tevm/primitives/Abi/BrandedAbi'
+
+const abi = [...]
+const item = getItem(abi, "transfer", "function")
+const formatted = format(item)
+```
+
+**Bundle:** Only getItem, format, and type definitions. No encoding/decoding logic.
+
+### Example 2: Function Only
+
+```typescript
+import { getItem } from '@tevm/primitives/Abi/BrandedAbi'
+import { encodeParams, decodeResult } from '@tevm/primitives/Abi/BrandedAbi/Function'
+
+const func = getItem(abi, "transfer", "function")
+const calldata = encodeParams(func, args)
+const result = decodeResult(func, returnData)
+```
+
+**Bundle:** Function encoding/decoding only. No event/error/constructor code.
+
+### Example 3: Event Only
+
+```typescript
+import { getItem } from '@tevm/primitives/Abi/BrandedAbi'
+import { decodeLog } from '@tevm/primitives/Abi/BrandedAbi/Event'
+
+const event = getItem(abi, "Transfer", "event")
+const decoded = decodeLog(event, log.data, log.topics)
+```
+
+**Bundle:** Event decoding only. No function/error/constructor code.
+
+## ABI Array Utilities
+
+Working with entire ABIs:
+
+```typescript
+import { getItem, format } from '@tevm/primitives/Abi/BrandedAbi'
+
+// Get all functions
+const functions = abi.filter(item => item.type === "function")
+
+// Format all items
+const formatted = abi.map(format)
+
+// Find items by criteria
+const payableFunctions = abi.filter(item =>
+  item.type === "function" && item.stateMutability === "payable"
+)
+
+// Group by type
+const grouped = abi.reduce((acc, item) => {
+  acc[item.type] = acc[item.type] || []
+  acc[item.type].push(item)
+  return acc
+}, {})
+```
+
+## Related
+
+- [Abi](/primitives/abi) - Main ABI documentation
+- [Function](/primitives/abi/function) - Function operations
+- [Event](/primitives/abi/event) - Event operations
+- [Error](/primitives/abi/error) - Error operations
+- [Constructor](/primitives/abi/constructor) - Constructor operations
+- [Types](/primitives/abi/types) - ABI type system
+- [Usage Patterns](/primitives/abi/usage-patterns) - Common patterns

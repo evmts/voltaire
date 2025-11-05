@@ -1,0 +1,348 @@
+---
+title: Hex Sizing
+description: Size constraints and Sized type for compile-time safety
+---
+
+# Sizing
+
+Size constraints for hex strings with compile-time type safety through the `Sized` type.
+
+## Overview
+
+Hex values often have fixed sizes in Ethereum:
+- **Address**: 20 bytes
+- **Hash**: 32 bytes
+- **U256**: 32 bytes
+- **Function Selector**: 4 bytes
+
+The `Sized<N>` type provides compile-time size tracking, enabling type-safe operations.
+
+## Sized Type
+
+```typescript
+export type Sized<TSize extends number = number> = `0x${string}` & {
+  readonly __tag: "Hex"
+  readonly size: TSize
+}
+
+// Aliases for common sizes
+export type Bytes<N extends number> = Sized<N>
+```
+
+`Sized<N>` is a `BrandedHex` with additional compile-time size parameter `N`.
+
+Defined in: [primitives/Hex/BrandedHex/BrandedHex.js:7-11](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js#L7-L11)
+
+## Type-Safe Size Checking
+
+### `Hex.isSized(hex, size)`
+
+Runtime check with type guard:
+
+```typescript
+const hex: BrandedHex = Hex("0x1234")
+
+if (Hex.isSized(hex, 2)) {
+  // TypeScript narrows to Sized<2>
+  hex  // Type: Sized<2>
+}
+
+// Common sizes
+const maybeHash: BrandedHex = Hex.random(32)
+if (Hex.isSized(maybeHash, 32)) {
+  maybeHash  // Type: Sized<32> (Hash)
+}
+
+const maybeAddr: BrandedHex = Hex.random(20)
+if (Hex.isSized(maybeAddr, 20)) {
+  maybeAddr  // Type: Sized<20> (Address)
+}
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `size: TSize` - Expected size in bytes
+
+**Returns:** `hex is Sized<TSize>` (type predicate)
+
+Defined in: [primitives/Hex/BrandedHex/isSized.js:15-17](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L15-L17)
+
+### `Hex.assertSize(hex, size)`
+
+Runtime assertion that throws on mismatch:
+
+```typescript
+const hex: BrandedHex = Hex("0x1234")
+
+// Returns same hex with narrowed type
+const sized = Hex.assertSize(hex, 2)
+sized  // Type: Sized<2>
+
+// Throws if wrong size
+try {
+  Hex.assertSize(hex, 4)  // throws InvalidLengthError
+} catch (e) {
+  console.error("Wrong size")
+}
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `size: TSize` - Expected byte size
+
+**Returns:** `Sized<TSize>` - Sized hex string
+
+**Throws:**
+- `InvalidLengthError` - If size doesn't match
+
+Defined in: [primitives/Hex/BrandedHex/assertSize.js:18-25](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L18-L25)
+
+## Creating Sized Values
+
+### From Constructors
+
+```typescript
+// Create with specific size
+const hash = Hex.fromBigInt(0n, 32)  // BrandedHex
+Hex.assertSize(hash, 32)             // Sized<32>
+
+const addr = Hex.fromNumber(0, 20)   // BrandedHex
+Hex.assertSize(addr, 20)             // Sized<20>
+
+// Pad to size
+const value = Hex("0x1234")
+const padded = Hex.pad(value, 32)    // BrandedHex
+Hex.assertSize(padded, 32)           // Sized<32>
+```
+
+### From Random/Zero
+
+```typescript
+const randomHash = Hex.random(32)
+Hex.assertSize(randomHash, 32)  // Sized<32>
+
+const zeroAddr = Hex.zero(20)
+Hex.assertSize(zeroAddr, 20)    // Sized<20>
+```
+
+## Common Ethereum Sizes
+
+```typescript
+// Type aliases for common sizes
+type Hash = Sized<32>
+type Address = Sized<20>
+type Selector = Sized<4>
+type U256 = Sized<32>
+type U128 = Sized<16>
+type U64 = Sized<8>
+type Byte = Sized<1>
+
+// Create and assert
+function createHash(value: bigint): Hash {
+  return Hex.assertSize(Hex.fromBigInt(value, 32), 32)
+}
+
+function createAddress(value: string): Address {
+  const hex = Hex.from(value)
+  return Hex.assertSize(hex, 20)
+}
+
+function createSelector(sig: string): Selector {
+  const hash = Hex.fromString(sig)  // keccak256 in practice
+  return Hex.assertSize(Hex.slice(hash, 0, 4), 4)
+}
+```
+
+## Type-Safe Functions
+
+### Accept Specific Size
+
+```typescript
+function processHash(hash: Sized<32>): Uint8Array {
+  // TypeScript knows hash is 32 bytes
+  return Hex.toBytes(hash)
+}
+
+function processAddress(addr: Sized<20>): string {
+  // TypeScript knows addr is 20 bytes
+  return Hex.toString(addr)
+}
+
+// Usage - type checked at compile time
+const hash = Hex.assertSize(Hex.random(32), 32)
+processHash(hash)  // ✓ compiles
+
+const wrong = Hex.random(16)
+processHash(wrong)  // ✗ compile error: Type 'BrandedHex' not assignable to 'Sized<32>'
+```
+
+### Generic Size
+
+```typescript
+function toFixedBytes<N extends number>(
+  value: bigint,
+  size: N
+): Sized<N> {
+  return Hex.assertSize(Hex.fromBigInt(value, size), size)
+}
+
+const hash = toFixedBytes(255n, 32)    // Sized<32>
+const addr = toFixedBytes(0n, 20)      // Sized<20>
+const selector = toFixedBytes(0n, 4)   // Sized<4>
+```
+
+## Size Validation Patterns
+
+### Safe Constructor
+
+```typescript
+function createHash(hex: BrandedHex): Hash {
+  if (!Hex.isSized(hex, 32)) {
+    throw new Error("Expected 32-byte hash")
+  }
+  return hex  // TypeScript knows it's Sized<32>
+}
+
+// Alternative with assertSize
+function createHash2(hex: BrandedHex): Hash {
+  return Hex.assertSize(hex, 32)  // Throws if wrong size
+}
+```
+
+### Discriminated Union
+
+```typescript
+type EthValue =
+  | { type: "hash"; value: Sized<32> }
+  | { type: "address"; value: Sized<20> }
+  | { type: "selector"; value: Sized<4> }
+
+function classify(hex: BrandedHex): EthValue {
+  const size = Hex.size(hex)
+
+  if (size === 32) {
+    return { type: "hash", value: Hex.assertSize(hex, 32) }
+  }
+
+  if (size === 20) {
+    return { type: "address", value: Hex.assertSize(hex, 20) }
+  }
+
+  if (size === 4) {
+    return { type: "selector", value: Hex.assertSize(hex, 4) }
+  }
+
+  throw new Error(`Unknown size: ${size}`)
+}
+```
+
+### Array of Sized
+
+```typescript
+// Array of hashes
+const hashes: Sized<32>[] = [
+  Hex.assertSize(Hex.random(32), 32),
+  Hex.assertSize(Hex.random(32), 32),
+  Hex.assertSize(Hex.random(32), 32)
+]
+
+// Type-safe map
+const bytes = hashes.map(hash => Hex.toBytes(hash))
+bytes  // Uint8Array[] where each is 32 bytes
+
+// Filter addresses
+const addrs: Sized<20>[] = [...]
+const nonZero = addrs.filter(addr =>
+  !Hex.equals(addr, Hex.assertSize(Hex.zero(20), 20))
+)
+```
+
+## Size Arithmetic
+
+```typescript
+// Get runtime size
+function getSize(hex: BrandedHex): number {
+  return Hex.size(hex)
+}
+
+// Compile-time size from type
+function getTypeSize<N extends number>(
+  _hex: Sized<N>,
+  size: N
+): N {
+  return size
+}
+
+const hash = Hex.assertSize(Hex.random(32), 32)
+getSize(hash)           // 32 (runtime)
+getTypeSize(hash, 32)   // 32 (compile-time)
+```
+
+## Limitations
+
+### Type Erasure
+
+```typescript
+// Size information lost at runtime
+const sized: Sized<32> = Hex.assertSize(Hex.random(32), 32)
+const unsized: BrandedHex = sized  // Valid - upcasting
+
+// Must re-assert to recover size type
+Hex.assertSize(unsized, 32)  // Sized<32> again
+```
+
+### Dynamic Sizes
+
+```typescript
+// Cannot use dynamic size in type
+function create(size: number): Sized<???> {  // ✗ Cannot use 'size' as type parameter
+  return Hex.assertSize(Hex.random(size), size)
+}
+
+// Solution: Return BrandedHex or use overloads
+function create(size: 32): Sized<32>
+function create(size: 20): Sized<20>
+function create(size: number): BrandedHex
+function create(size: number): BrandedHex {
+  return Hex.random(size)
+}
+```
+
+## Tree-Shakeable Usage
+
+```typescript
+import { isSized, assertSize, size } from '@tevm/voltaire/BrandedHex'
+import type { BrandedHex, Sized } from '@tevm/voltaire/BrandedHex'
+
+const hex: BrandedHex = /* ... */
+
+if (isSized(hex, 32)) {
+  hex  // Sized<32>
+}
+
+const hash: Sized<32> = assertSize(hex, 32)
+const byteSize: number = size(hex)
+```
+
+## Common Size Constants
+
+```typescript
+// Ethereum standard sizes
+const HASH_SIZE = 32
+const ADDRESS_SIZE = 20
+const SELECTOR_SIZE = 4
+const U256_SIZE = 32
+const U128_SIZE = 16
+const U64_SIZE = 8
+
+// Use in assertions
+const hash = Hex.assertSize(value, HASH_SIZE)
+const addr = Hex.assertSize(value, ADDRESS_SIZE)
+```
+
+## Related
+
+- [Validation](/primitives/hex/validation) - `isSized()` and `assertSize()` details
+- [Constructors](/primitives/hex/constructors) - Creating sized values
+- [Utilities](/primitives/hex/utilities) - `size()` function
+- [BrandedHex](/primitives/hex/branded-hex) - Tree-shakeable API

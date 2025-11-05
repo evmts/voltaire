@@ -1,0 +1,509 @@
+---
+title: Uint Utilities
+description: Utility methods for analyzing Uint256 values
+---
+
+# Utilities
+
+Utility methods for bit analysis and min/max operations on Uint256 values.
+
+## Bit Analysis
+
+### `instance.bitLength()`
+
+Get number of bits required to represent the value.
+
+```typescript
+const a = Uint.from(0n)
+a.bitLength()  // 0
+
+const b = Uint.from(1n)
+b.bitLength()  // 1
+
+const c = Uint.from(255n)
+c.bitLength()  // 8 (0b11111111)
+
+const d = Uint.from(256n)
+d.bitLength()  // 9 (0b100000000)
+
+// Powers of 2
+Uint.from(2n ** 0n).bitLength()   // 1
+Uint.from(2n ** 7n).bitLength()   // 8
+Uint.from(2n ** 8n).bitLength()   // 9
+Uint.from(2n ** 255n).bitLength() // 256
+
+// MAX value
+Uint.MAX.bitLength()  // 256
+```
+
+**Returns:** `number` - Number of bits (0-256)
+
+**Static form:**
+```typescript
+Uint.bitLength(value)
+```
+
+**Algorithm:** Converts to binary string and counts length
+
+Source: [bitLength.ts:16](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/bitLength.ts#L16)
+
+### `instance.leadingZeros()`
+
+Get number of leading zero bits.
+
+```typescript
+const a = Uint.from(1n)
+a.leadingZeros()  // 255 (256 - 1)
+
+const b = Uint.from(255n)
+b.leadingZeros()  // 248 (256 - 8)
+
+const c = Uint.from(2n ** 255n)
+c.leadingZeros()  // 0 (highest bit set)
+
+// Zero has 256 leading zeros
+Uint.ZERO.leadingZeros()  // 256
+
+// MAX has no leading zeros
+Uint.MAX.leadingZeros()   // 0
+
+// Powers of 2
+Uint.from(128n).leadingZeros()  // 249 (256 - 7)
+Uint.from(256n).leadingZeros()  // 247 (256 - 9)
+```
+
+**Returns:** `number` - Number of leading zero bits (0-256)
+
+**Static form:**
+```typescript
+Uint.leadingZeros(value)
+```
+
+**Calculation:** `256 - bitLength(value)`
+
+Source: [leadingZeros.ts:17](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/leadingZeros.ts#L17)
+
+### `instance.popCount()`
+
+Count number of set bits (population count, Hamming weight).
+
+```typescript
+const a = Uint.from(0n)
+a.popCount()  // 0 (no bits set)
+
+const b = Uint.from(1n)
+b.popCount()  // 1 (one bit set)
+
+const c = Uint.from(7n)
+c.popCount()  // 3 (0b111 = three bits set)
+
+const d = Uint.from(255n)
+d.popCount()  // 8 (0b11111111 = eight bits set)
+
+// MAX has all 256 bits set
+Uint.MAX.popCount()  // 256
+
+// Powers of 2 have exactly one bit set
+Uint.from(2n ** 7n).popCount()   // 1
+Uint.from(2n ** 100n).popCount() // 1
+
+// Check if power of 2
+const isPowerOf2 = (v: BrandedUint) => v.popCount() === 1
+```
+
+**Returns:** `number` - Number of 1 bits (0-256)
+
+**Static form:**
+```typescript
+Uint.popCount(value)
+```
+
+**Algorithm:** Brian Kernighan's algorithm (clears lowest set bit in each iteration)
+
+Source: [popCount.ts:16](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/popCount.ts#L16)
+
+## Min/Max Operations
+
+### `instance.minimum(other)`
+
+Get the smaller of two values.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+
+a.minimum(b)  // 100n
+b.minimum(a)  // 100n
+
+// Identity
+a.minimum(a)  // a
+
+// With constants
+a.minimum(Uint.ZERO)  // ZERO (if a > 0)
+a.minimum(Uint.MAX)   // a (always)
+
+// Chaining
+const values = [
+  Uint.from(5n),
+  Uint.from(2n),
+  Uint.from(8n),
+  Uint.from(1n)
+]
+const min = values[0]
+  .minimum(values[1])
+  .minimum(values[2])
+  .minimum(values[3])  // 1n
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `BrandedUint` - The smaller value
+
+**Static form:**
+```typescript
+Uint.minimum(a, b)  // min(a, b)
+```
+
+**Commutative:** `a.minimum(b) === b.minimum(a)`
+
+Source: [minimum.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/minimum.ts#L18)
+
+### `instance.maximum(other)`
+
+Get the larger of two values.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+
+a.maximum(b)  // 200n
+b.maximum(a)  // 200n
+
+// Identity
+a.maximum(a)  // a
+
+// With constants
+a.maximum(Uint.ZERO)  // a (if a > 0)
+a.maximum(Uint.MAX)   // MAX (always)
+
+// Chaining
+const values = [
+  Uint.from(5n),
+  Uint.from(2n),
+  Uint.from(8n),
+  Uint.from(1n)
+]
+const max = values[0]
+  .maximum(values[1])
+  .maximum(values[2])
+  .maximum(values[3])  // 8n
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `BrandedUint` - The larger value
+
+**Static form:**
+```typescript
+Uint.maximum(a, b)  // max(a, b)
+```
+
+**Commutative:** `a.maximum(b) === b.maximum(a)`
+
+Source: [maximum.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/maximum.ts#L18)
+
+## Usage Patterns
+
+### Finding Min/Max in Array
+
+```typescript
+// Find minimum value
+function findMin(values: BrandedUint[]): BrandedUint | undefined {
+  if (values.length === 0) return undefined
+
+  return values.reduce((min, val) => min.minimum(val))
+}
+
+// Find maximum value
+function findMax(values: BrandedUint[]): BrandedUint | undefined {
+  if (values.length === 0) return undefined
+
+  return values.reduce((max, val) => max.maximum(val))
+}
+
+// Usage
+const values = [
+  Uint.from(5n),
+  Uint.from(2n),
+  Uint.from(8n),
+  Uint.from(1n)
+]
+
+const min = findMin(values)  // 1n
+const max = findMax(values)  // 8n
+```
+
+### Clamping Values
+
+```typescript
+// Clamp value to range [min, max]
+function clamp(
+  value: BrandedUint,
+  min: BrandedUint,
+  max: BrandedUint
+): BrandedUint {
+  return value.maximum(min).minimum(max)
+}
+
+// Example
+const value = Uint.from(150n)
+const min = Uint.from(0n)
+const max = Uint.from(100n)
+
+const clamped = clamp(value, min, max)  // 100n
+
+// Edge cases
+clamp(Uint.from(50n), min, max)   // 50n (in range)
+clamp(Uint.from(200n), min, max)  // 100n (above max)
+clamp(Uint.from(0n), min, max)    // 0n (at min)
+```
+
+### Bit Analysis
+
+```typescript
+// Check if value is power of 2
+function isPowerOfTwo(value: BrandedUint): boolean {
+  return !value.isZero() && value.popCount() === 1
+}
+
+// Get next higher power of 2
+function nextPowerOfTwo(value: BrandedUint): BrandedUint {
+  if (value.isZero()) return Uint.ONE
+  const bits = value.bitLength()
+  // If already power of 2, return next
+  if (value.equals(Uint.ONE.shiftLeft(bits - 1))) {
+    return Uint.ONE.shiftLeft(bits)
+  }
+  return Uint.ONE.shiftLeft(bits)
+}
+
+// Get previous power of 2
+function prevPowerOfTwo(value: BrandedUint): BrandedUint {
+  if (value.isZero()) return Uint.ZERO
+  const bits = value.bitLength()
+  return Uint.ONE.shiftLeft(bits - 1)
+}
+
+// Examples
+isPowerOfTwo(Uint.from(8n))    // true
+isPowerOfTwo(Uint.from(7n))    // false
+
+nextPowerOfTwo(Uint.from(5n))  // 8n
+prevPowerOfTwo(Uint.from(5n))  // 4n
+```
+
+### Hamming Distance
+
+```typescript
+// Calculate Hamming distance (number of differing bits)
+function hammingDistance(a: BrandedUint, b: BrandedUint): number {
+  return a.bitwiseXor(b).popCount()
+}
+
+// Example
+const a = Uint.from(0b1010n)
+const b = Uint.from(0b1100n)
+hammingDistance(a, b)  // 2 (bits 1 and 2 differ)
+```
+
+### Bit Width Requirements
+
+```typescript
+// Check if value fits in N bits
+function fitsInBits(value: BrandedUint, bits: number): boolean {
+  return value.bitLength() <= bits
+}
+
+// Examples
+fitsInBits(Uint.from(255n), 8)   // true (fits in uint8)
+fitsInBits(Uint.from(256n), 8)   // false (needs uint16)
+fitsInBits(Uint.from(65535n), 16) // true (fits in uint16)
+
+// Determine required type
+function getRequiredType(value: BrandedUint): string {
+  const bits = value.bitLength()
+  if (bits <= 8) return "uint8"
+  if (bits <= 16) return "uint16"
+  if (bits <= 32) return "uint32"
+  if (bits <= 64) return "uint64"
+  if (bits <= 128) return "uint128"
+  return "uint256"
+}
+
+getRequiredType(Uint.from(100n))     // "uint8"
+getRequiredType(Uint.from(1000n))    // "uint16"
+getRequiredType(Uint.from(100000n))  // "uint32"
+```
+
+### Finding Median
+
+```typescript
+// Find median value
+function findMedian(values: BrandedUint[]): BrandedUint | undefined {
+  if (values.length === 0) return undefined
+
+  // Sort values
+  const sorted = [...values].sort((a, b) => {
+    if (a.lessThan(b)) return -1
+    if (a.greaterThan(b)) return 1
+    return 0
+  })
+
+  const mid = Math.floor(sorted.length / 2)
+
+  // Odd length - return middle value
+  if (sorted.length % 2 === 1) {
+    return sorted[mid]
+  }
+
+  // Even length - return average of two middle values
+  const sum = sorted[mid - 1].plus(sorted[mid])
+  return sum.dividedBy(Uint.from(2n))
+}
+
+// Example
+const values = [
+  Uint.from(1n),
+  Uint.from(5n),
+  Uint.from(3n),
+  Uint.from(9n),
+  Uint.from(7n)
+]
+
+findMedian(values)  // 5n
+```
+
+### Range Statistics
+
+```typescript
+// Calculate range (max - min)
+function range(values: BrandedUint[]): BrandedUint | undefined {
+  const min = findMin(values)
+  const max = findMax(values)
+
+  if (min === undefined || max === undefined) {
+    return undefined
+  }
+
+  return max.minus(min)
+}
+
+// Example
+const values = [
+  Uint.from(10n),
+  Uint.from(50n),
+  Uint.from(30n)
+]
+
+range(values)  // 40n (50 - 10)
+```
+
+### Bit Density
+
+```typescript
+// Calculate bit density (percentage of bits set)
+function bitDensity(value: BrandedUint): number {
+  const bitsSet = value.popCount()
+  const totalBits = value.bitLength()
+
+  if (totalBits === 0) return 0
+
+  return bitsSet / totalBits
+}
+
+// Examples
+bitDensity(Uint.from(0b1111n))  // 1.0 (100% bits set)
+bitDensity(Uint.from(0b1010n))  // 0.5 (50% bits set)
+bitDensity(Uint.from(0b10001n)) // 0.4 (40% bits set)
+```
+
+### Parity Check
+
+```typescript
+// Check if value has even parity (even number of 1 bits)
+function isEvenParity(value: BrandedUint): boolean {
+  return value.popCount() % 2 === 0
+}
+
+// Check if value has odd parity (odd number of 1 bits)
+function isOddParity(value: BrandedUint): boolean {
+  return value.popCount() % 2 === 1
+}
+
+// Examples
+isEvenParity(Uint.from(0b1100n))  // true (2 bits set)
+isOddParity(Uint.from(0b111n))    // true (3 bits set)
+```
+
+## Performance Considerations
+
+### Bit Analysis Performance
+
+```typescript
+// bitLength() - O(log n) where n is value
+// Converts to string representation
+
+// leadingZeros() - O(log n)
+// Calculated from bitLength()
+
+// popCount() - O(k) where k is number of set bits
+// Uses Brian Kernighan's algorithm
+```
+
+### Min/Max Performance
+
+```typescript
+// minimum() and maximum() - O(1)
+// Simple comparison operations
+
+// For arrays, prefer single reduce pass
+// Good:
+const min = values.reduce((m, v) => m.minimum(v))
+
+// Avoid multiple iterations:
+// Bad:
+let min = values[0]
+for (const v of values) {
+  min = min.minimum(v)
+}
+```
+
+## Tree-Shakeable Usage
+
+All utility methods available as tree-shakeable imports:
+
+```typescript
+import {
+  bitLength,
+  leadingZeros,
+  popCount,
+  minimum,
+  maximum
+} from '@tevm/voltaire/BrandedUint'
+
+const value = Uint.from(255n)
+
+bitLength(value)     // 8
+leadingZeros(value)  // 248
+popCount(value)      // 8
+
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+
+minimum(a, b)        // 100n
+maximum(a, b)        // 200n
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

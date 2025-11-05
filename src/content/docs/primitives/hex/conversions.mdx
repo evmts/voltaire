@@ -1,0 +1,241 @@
+---
+title: Hex Conversions
+description: Converting Hex to different formats
+---
+
+# Conversions
+
+Methods for converting Hex instances to various output formats.
+
+## Byte Conversions
+
+### `Hex.toBytes(hex)`
+
+Converts hex string to raw byte array.
+
+```typescript
+const hex = Hex("0x1234")
+Hex.toBytes(hex)  // Uint8Array([0x12, 0x34])
+
+const empty = Hex("0x")
+Hex.toBytes(empty)  // Uint8Array([])
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to convert
+
+**Returns:** `Uint8Array`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/toBytes.js:24-36](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toBytes.js#L24-L36)
+
+## Numeric Conversions
+
+### `Hex.toNumber(hex)`
+
+Converts hex to JavaScript number. Safe for values up to `Number.MAX_SAFE_INTEGER` (2^53 - 1).
+
+```typescript
+const hex1 = Hex("0xff")
+Hex.toNumber(hex1)  // 255
+
+const hex2 = Hex("0x1234")
+Hex.toNumber(hex2)  // 4660
+
+const zero = Hex("0x00")
+Hex.toNumber(zero)  // 0
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to convert
+
+**Returns:** `number`
+
+**Throws:**
+- `RangeError` - If hex value exceeds `MAX_SAFE_INTEGER`
+
+Defined in: [primitives/Hex/BrandedHex/toNumber.js:15-21](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toNumber.js#L15-L21)
+
+**Safety:** For large Ethereum values (addresses, hashes, U256), use `toBigInt()` instead.
+
+### `Hex.toBigInt(hex)`
+
+Converts hex to bigint. Handles arbitrary precision for Ethereum values.
+
+```typescript
+const hex1 = Hex("0xff")
+Hex.toBigInt(hex1)  // 255n
+
+const maxU256 = Hex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+Hex.toBigInt(maxU256)  // (2n ** 256n) - 1n
+
+const zero = Hex("0x00")
+Hex.toBigInt(zero)  // 0n
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to convert
+
+**Returns:** `bigint`
+
+Defined in: [primitives/Hex/BrandedHex/toBigInt.js:14-16](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toBigInt.js#L14-L16)
+
+## String Conversions
+
+### `Hex.toString(hex)`
+
+Decodes hex bytes to UTF-8 string.
+
+```typescript
+const hex1 = Hex("0x68656c6c6f")
+Hex.toString(hex1)  // "hello"
+
+const hex2 = Hex("0xf09f94a5")
+Hex.toString(hex2)  // "🔥"
+
+const empty = Hex("0x")
+Hex.toString(empty)  // ""
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to decode
+
+**Returns:** `string` - UTF-8 decoded string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/toString.js:21-34](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toString.js#L21-L34)
+
+**Note:** Uses `TextDecoder` for UTF-8 decoding. Invalid UTF-8 sequences may produce replacement characters.
+
+## Boolean Conversions
+
+### `Hex.toBoolean(hex)`
+
+Converts hex to boolean. Returns `true` if any byte is non-zero, `false` if all bytes are zero.
+
+```typescript
+const hex1 = Hex("0x01")
+Hex.toBoolean(hex1)  // true
+
+const hex2 = Hex("0x00")
+Hex.toBoolean(hex2)  // false
+
+const hex3 = Hex("0x0000")
+Hex.toBoolean(hex3)  // false
+
+const hex4 = Hex("0xff")
+Hex.toBoolean(hex4)  // true
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to convert
+
+**Returns:** `boolean`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/toBoolean.js:21-33](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toBoolean.js#L21-L33)
+
+## Tree-Shakeable Usage
+
+All conversions available as tree-shakeable imports:
+
+```typescript
+import { toBytes, toNumber, toBigInt, toString, toBoolean } from '@tevm/voltaire/BrandedHex'
+import type { BrandedHex } from '@tevm/voltaire/BrandedHex'
+
+const hex: BrandedHex = /* ... */
+const bytes = toBytes(hex)
+const n = toNumber(hex)
+const bigint = toBigInt(hex)
+const str = toString(hex)
+const bool = toBoolean(hex)
+```
+
+See [BrandedHex](/primitives/hex/branded-hex) for details on tree-shakeable API.
+
+## Usage Patterns
+
+### Safe Numeric Conversion
+
+```typescript
+function safeToNumber(hex: BrandedHex): number {
+  const bytes = Hex.toBytes(hex)
+  if (bytes.length > 6) {
+    // More than 6 bytes likely exceeds MAX_SAFE_INTEGER
+    throw new Error("Value too large for number")
+  }
+  return Hex.toNumber(hex)
+}
+```
+
+### Round-Trip Conversion
+
+```typescript
+// Number → Hex → Number
+const original = 255
+const hex = Hex.fromNumber(original)
+const recovered = Hex.toNumber(hex)
+console.log(original === recovered)  // true
+
+// String → Hex → String
+const str = "hello"
+const hex2 = Hex.fromString(str)
+const recovered2 = Hex.toString(hex2)
+console.log(str === recovered2)  // true
+```
+
+### Ethereum Value Handling
+
+```typescript
+// Always use bigint for Ethereum values
+const address = Hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addressBigInt = Hex.toBigInt(address)
+
+const hash = Hex("0x" + "ff".repeat(32))
+const hashBigInt = Hex.toBigInt(hash)
+
+// Number conversion would throw RangeError for these
+```
+
+### Byte Array Operations
+
+```typescript
+// Convert to bytes for manipulation
+const hex = Hex("0x123456")
+const bytes = Hex.toBytes(hex)
+
+// Manipulate bytes
+bytes[0] = 0xff
+
+// Convert back to hex
+const modified = Hex.fromBytes(bytes)
+console.log(modified)  // "0xff3456"
+```
+
+## Conversion Table
+
+| From Type | To Type | Method | Notes |
+|-----------|---------|--------|-------|
+| `BrandedHex` | `Uint8Array` | `toBytes()` | Raw byte representation |
+| `BrandedHex` | `number` | `toNumber()` | Max safe integer (2^53-1) |
+| `BrandedHex` | `bigint` | `toBigInt()` | Arbitrary precision |
+| `BrandedHex` | `string` | `toString()` | UTF-8 decoded |
+| `BrandedHex` | `boolean` | `toBoolean()` | Non-zero check |
+
+## Related
+
+- [Constructors](/primitives/hex/constructors) - Creating Hex from various types
+- [Validation](/primitives/hex/validation) - Type guards and validation
+- [BrandedHex](/primitives/hex/branded-hex) - Tree-shakeable functional API

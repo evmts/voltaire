@@ -1,0 +1,250 @@
+---
+title: Hex Constructors
+description: Creating Hex instances from various input types
+---
+
+# Constructors
+
+Methods for creating Hex instances from different input formats.
+
+## Universal Constructor
+
+### `Hex(value)`
+
+Universal constructor dispatches based on input type.
+
+```typescript
+const hex1 = Hex("0x1234")
+const hex2 = Hex(new Uint8Array([0x12, 0x34]))
+```
+
+**Parameters:**
+- `value: string | Uint8Array` - Input to convert
+
+**Returns:** `BrandedHex`
+
+**Throws:**
+- `InvalidFormatError` - Invalid hex string format
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/Hex.js:10-12](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/Hex.js#L10-L12)
+
+## Static Constructors
+
+### `Hex.from(value)`
+
+Creates hex from string or bytes. Accepts hex strings with `0x` prefix or raw Uint8Array.
+
+```typescript
+const hex1 = Hex.from("0x1234")
+const hex2 = Hex.from(new Uint8Array([0x12, 0x34]))
+```
+
+**Parameters:**
+- `value: string | Uint8Array` - Hex string or byte array
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/from.js:15-20](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/from.js#L15-L20)
+
+### `Hex.fromBytes(bytes)`
+
+Converts raw bytes to hex string with `0x` prefix.
+
+```typescript
+const hex = Hex.fromBytes(new Uint8Array([0x12, 0x34]))
+// "0x1234"
+
+const empty = Hex.fromBytes(new Uint8Array())
+// "0x"
+```
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw byte array
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/fromBytes.js:12-20](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromBytes.js#L12-L20)
+
+### `Hex.fromNumber(value, size?)`
+
+Converts number to hex string with optional size padding.
+
+```typescript
+Hex.fromNumber(255)      // "0xff"
+Hex.fromNumber(255, 2)   // "0x00ff"
+Hex.fromNumber(0x1234)   // "0x1234"
+Hex.fromNumber(0)        // "0x0"
+```
+
+**Parameters:**
+- `value: number` - Number to convert (0 to Number.MAX_SAFE_INTEGER)
+- `size?: number` - Optional byte size for left-padding with zeros
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/fromNumber.js:15-21](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromNumber.js#L15-L21)
+
+### `Hex.fromBigInt(value, size?)`
+
+Converts bigint to hex string with optional size padding.
+
+```typescript
+Hex.fromBigInt(255n)        // "0xff"
+Hex.fromBigInt(255n, 32)    // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+Hex.fromBigInt(0n)          // "0x0"
+
+// Large values
+const maxU256 = (1n << 256n) - 1n
+Hex.fromBigInt(maxU256, 32) // "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+```
+
+**Parameters:**
+- `value: bigint` - BigInt to convert
+- `size?: number` - Optional byte size for left-padding with zeros
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/fromBigInt.js:14-20](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromBigInt.js#L14-L20)
+
+### `Hex.fromString(value)`
+
+Encodes UTF-8 string to hex bytes.
+
+```typescript
+Hex.fromString("hello")       // "0x68656c6c6f"
+Hex.fromString("")            // "0x"
+Hex.fromString("🔥")          // "0xf09f94a5" (UTF-8 encoding)
+Hex.fromString("テスト")      // UTF-8 encoded Japanese
+```
+
+**Parameters:**
+- `value: string` - UTF-8 string to encode
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/fromString.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromString.js)
+
+**Note:** Uses `TextEncoder` for UTF-8 encoding. Emoji and multibyte characters are properly encoded.
+
+### `Hex.fromBoolean(value)`
+
+Converts boolean to hex byte.
+
+```typescript
+Hex.fromBoolean(true)   // "0x01"
+Hex.fromBoolean(false)  // "0x00"
+```
+
+**Parameters:**
+- `value: boolean` - Boolean value
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/fromBoolean.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromBoolean.js)
+
+## Factory Methods
+
+### `Hex.random(size)`
+
+Generates cryptographically secure random hex of specified byte size.
+
+```typescript
+Hex.random(32)  // "0x..." (32 random bytes = 64 hex chars)
+Hex.random(1)   // "0xXX" (1 random byte)
+Hex.random(0)   // "0x" (empty)
+```
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex`
+
+**Security:** Uses `crypto.getRandomValues()` for cryptographic randomness.
+
+Defined in: [primitives/Hex/BrandedHex/random.js:14-18](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/random.js#L14-L18)
+
+### `Hex.zero(size)`
+
+Creates zero-filled hex of specified byte size.
+
+```typescript
+Hex.zero(32)  // "0x0000000000000000000000000000000000000000000000000000000000000000"
+Hex.zero(1)   // "0x00"
+Hex.zero(0)   // "0x"
+```
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/zero.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/zero.js)
+
+## Tree-Shakeable Usage
+
+All constructors available as tree-shakeable imports:
+
+```typescript
+import {
+  from,
+  fromBytes,
+  fromNumber,
+  fromBigInt,
+  fromString,
+  fromBoolean,
+  random,
+  zero
+} from '@tevm/voltaire/BrandedHex'
+
+const hex1 = from("0x1234")
+const hex2 = fromBytes(new Uint8Array([0x12, 0x34]))
+const hex3 = fromNumber(255)
+const hex4 = fromBigInt(255n, 32)
+const hex5 = fromString("hello")
+const hex6 = fromBoolean(true)
+const randomHex = random(32)
+const zeroHex = zero(32)
+```
+
+See [BrandedHex](/primitives/hex/branded-hex) for details on tree-shakeable API.
+
+## Usage Patterns
+
+### Size-Aware Construction
+
+```typescript
+// Construct with specific size
+const hash = Hex.fromBigInt(0n, 32)  // 32-byte zero hash
+const addr = Hex.fromNumber(0, 20)   // 20-byte zero address
+
+// Assert size after construction
+Hex.assertSize(hash, 32)  // ✓ passes
+```
+
+### Type Conversion Chain
+
+```typescript
+// Number → Hex → Bytes
+const n = 255
+const hex = Hex.fromNumber(n)
+const bytes = Hex.toBytes(hex)
+
+// String → Hex → BigInt
+const str = "hello"
+const hex2 = Hex.fromString(str)
+const bigint = Hex.toBigInt(hex2)
+```
+
+### Random Data Generation
+
+```typescript
+// Random private key (32 bytes)
+const privateKey = Hex.random(32)
+
+// Random salt for CREATE2
+const salt = Hex.random(32)
+
+// Random nonce
+const nonce = Hex.random(8)
+```

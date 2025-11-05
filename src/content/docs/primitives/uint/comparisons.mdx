@@ -1,0 +1,466 @@
+---
+title: Uint Comparisons
+description: Comparing Uint256 values
+---
+
+# Comparisons
+
+Methods for comparing Uint256 values for equality, ordering, and zero checks.
+
+## Equality
+
+### `instance.equals(other)`
+
+Check if two Uint256 values are equal.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(100n)
+const c = Uint.from(200n)
+
+a.equals(b)  // true
+a.equals(c)  // false
+
+// Identity
+a.equals(a)  // true
+
+// Constructed same way
+Uint.from(255n).equals(Uint.fromHex("0xff"))  // true
+Uint.from(0n).equals(Uint.ZERO)               // true
+
+// Use in conditionals
+if (value.equals(Uint.ZERO)) {
+  console.log("Value is zero")
+}
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `boolean` - `true` if values are equal
+
+**Static form:**
+```typescript
+Uint.equals(a, b)  // a === b
+```
+
+Source: [equals.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/equals.ts#L18)
+
+### `instance.notEquals(other)`
+
+Check if two Uint256 values are not equal.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+const c = Uint.from(100n)
+
+a.notEquals(b)  // true
+a.notEquals(c)  // false
+
+// Equivalent to
+!a.equals(b)    // true
+!a.equals(c)    // false
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `boolean` - `true` if values are not equal
+
+**Static form:**
+```typescript
+Uint.notEquals(a, b)  // a !== b
+```
+
+Source: [notEquals.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/notEquals.ts)
+
+## Ordering
+
+### `instance.lessThan(other)`
+
+Check if value is less than another.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+
+a.lessThan(b)  // true
+b.lessThan(a)  // false
+
+// Boundaries
+Uint.ZERO.lessThan(Uint.ONE)  // true
+Uint.MAX.lessThan(Uint.ZERO)  // false
+
+// Not reflexive
+a.lessThan(a)  // false
+
+// Use in sorting
+const values = [
+  Uint.from(3n),
+  Uint.from(1n),
+  Uint.from(2n)
+]
+values.sort((a, b) => a.lessThan(b) ? -1 : 1)
+// [1n, 2n, 3n]
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `boolean` - `true` if this < other
+
+**Static form:**
+```typescript
+Uint.lessThan(a, b)  // a < b
+```
+
+Source: [lessThan.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/lessThan.ts#L18)
+
+### `instance.lessThanOrEqual(other)`
+
+Check if value is less than or equal to another.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+const c = Uint.from(100n)
+
+a.lessThanOrEqual(b)  // true
+a.lessThanOrEqual(c)  // true
+b.lessThanOrEqual(a)  // false
+
+// Reflexive
+a.lessThanOrEqual(a)  // true
+
+// Equivalent to
+a.lessThan(b) || a.equals(b)
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `boolean` - `true` if this <= other
+
+**Static form:**
+```typescript
+Uint.lessThanOrEqual(a, b)  // a <= b
+```
+
+Source: [lessThanOrEqual.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/lessThanOrEqual.ts)
+
+### `instance.greaterThan(other)`
+
+Check if value is greater than another.
+
+```typescript
+const a = Uint.from(200n)
+const b = Uint.from(100n)
+
+a.greaterThan(b)  // true
+b.greaterThan(a)  // false
+
+// Boundaries
+Uint.ONE.greaterThan(Uint.ZERO)  // true
+Uint.ZERO.greaterThan(Uint.MAX)  // false
+
+// Not reflexive
+a.greaterThan(a)  // false
+
+// Inverse of lessThan
+a.greaterThan(b) === b.lessThan(a)  // true
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `boolean` - `true` if this > other
+
+**Static form:**
+```typescript
+Uint.greaterThan(a, b)  // a > b
+```
+
+Source: [greaterThan.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/greaterThan.ts#L18)
+
+### `instance.greaterThanOrEqual(other)`
+
+Check if value is greater than or equal to another.
+
+```typescript
+const a = Uint.from(200n)
+const b = Uint.from(100n)
+const c = Uint.from(200n)
+
+a.greaterThanOrEqual(b)  // true
+a.greaterThanOrEqual(c)  // true
+b.greaterThanOrEqual(a)  // false
+
+// Reflexive
+a.greaterThanOrEqual(a)  // true
+
+// Equivalent to
+a.greaterThan(b) || a.equals(b)
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to compare with
+
+**Returns:** `boolean` - `true` if this >= other
+
+**Static form:**
+```typescript
+Uint.greaterThanOrEqual(a, b)  // a >= b
+```
+
+Source: [greaterThanOrEqual.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/greaterThanOrEqual.ts)
+
+## Zero Check
+
+### `instance.isZero()`
+
+Check if value is zero.
+
+```typescript
+Uint.ZERO.isZero()      // true
+Uint.from(0n).isZero()  // true
+Uint.ONE.isZero()       // false
+Uint.MAX.isZero()       // false
+
+// Use in conditionals
+if (balance.isZero()) {
+  console.log("Empty balance")
+}
+
+// Equivalent to
+value.equals(Uint.ZERO)
+
+// Guard against division by zero
+if (!divisor.isZero()) {
+  const quotient = dividend.dividedBy(divisor)
+}
+```
+
+**Returns:** `boolean` - `true` if value is zero
+
+**Static form:**
+```typescript
+Uint.isZero(value)  // value === 0
+```
+
+Source: [isZero.ts:16](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/isZero.ts#L16)
+
+## Usage Patterns
+
+### Sorting
+
+```typescript
+// Sort ascending
+const values = [
+  Uint.from(3n),
+  Uint.from(1n),
+  Uint.from(2n)
+]
+
+values.sort((a, b) => {
+  if (a.lessThan(b)) return -1
+  if (a.greaterThan(b)) return 1
+  return 0
+})
+// [1n, 2n, 3n]
+
+// Sort descending
+values.sort((a, b) => {
+  if (a.greaterThan(b)) return -1
+  if (a.lessThan(b)) return 1
+  return 0
+})
+// [3n, 2n, 1n]
+```
+
+### Range Checks
+
+```typescript
+// Check if value in range [min, max]
+function inRange(
+  value: BrandedUint,
+  min: BrandedUint,
+  max: BrandedUint
+): boolean {
+  return value.greaterThanOrEqual(min) && value.lessThanOrEqual(max)
+}
+
+// Check if value in range (min, max) exclusive
+function inRangeExclusive(
+  value: BrandedUint,
+  min: BrandedUint,
+  max: BrandedUint
+): boolean {
+  return value.greaterThan(min) && value.lessThan(max)
+}
+
+// Example usage
+const value = Uint.from(50n)
+const min = Uint.from(10n)
+const max = Uint.from(100n)
+
+inRange(value, min, max)  // true
+```
+
+### Clamping
+
+```typescript
+// Clamp value to range [min, max]
+function clamp(
+  value: BrandedUint,
+  min: BrandedUint,
+  max: BrandedUint
+): BrandedUint {
+  if (value.lessThan(min)) return min
+  if (value.greaterThan(max)) return max
+  return value
+}
+
+// Example
+const value = Uint.from(150n)
+const clamped = clamp(value, Uint.from(0n), Uint.from(100n))
+// clamped = 100n
+```
+
+### Finding Extremes
+
+```typescript
+// Find maximum in array
+function findMax(values: BrandedUint[]): BrandedUint {
+  if (values.length === 0) throw new Error("Empty array")
+
+  let max = values[0]
+  for (const value of values) {
+    if (value.greaterThan(max)) {
+      max = value
+    }
+  }
+  return max
+}
+
+// Find minimum in array
+function findMin(values: BrandedUint[]): BrandedUint {
+  if (values.length === 0) throw new Error("Empty array")
+
+  let min = values[0]
+  for (const value of values) {
+    if (value.lessThan(min)) {
+      min = value
+    }
+  }
+  return min
+}
+
+// Or use built-in methods
+const values = [Uint.from(3n), Uint.from(1n), Uint.from(2n)]
+const max = values[0].maximum(values[1]).maximum(values[2])  // 3n
+const min = values[0].minimum(values[1]).minimum(values[2])  // 1n
+```
+
+### Filtering
+
+```typescript
+const values = [
+  Uint.from(5n),
+  Uint.from(10n),
+  Uint.from(15n),
+  Uint.from(20n)
+]
+
+// Filter values greater than 10
+const greaterThan10 = values.filter(v =>
+  v.greaterThan(Uint.from(10n))
+)
+// [15n, 20n]
+
+// Filter non-zero values
+const nonZero = values.filter(v => !v.isZero())
+
+// Filter values in range
+const inRange = values.filter(v =>
+  v.greaterThanOrEqual(Uint.from(10n)) &&
+  v.lessThanOrEqual(Uint.from(15n))
+)
+// [10n, 15n]
+```
+
+### Comparison Chains
+
+```typescript
+// Check if values are in ascending order
+function isAscending(values: BrandedUint[]): boolean {
+  for (let i = 1; i < values.length; i++) {
+    if (values[i].lessThanOrEqual(values[i - 1])) {
+      return false
+    }
+  }
+  return true
+}
+
+// Check if all values equal
+function allEqual(values: BrandedUint[]): boolean {
+  if (values.length === 0) return true
+  const first = values[0]
+  return values.every(v => v.equals(first))
+}
+```
+
+## Comparison Properties
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+const c = Uint.from(300n)
+
+// Reflexive
+a.equals(a)                     // true
+a.lessThanOrEqual(a)            // true
+a.greaterThanOrEqual(a)         // true
+
+// Symmetric
+a.equals(b) === b.equals(a)     // true
+a.notEquals(b) === b.notEquals(a)  // true
+
+// Transitive
+if (a.equals(b) && b.equals(c)) {
+  a.equals(c)  // true
+}
+
+if (a.lessThan(b) && b.lessThan(c)) {
+  a.lessThan(c)  // true
+}
+
+// Trichotomy (exactly one is true)
+a.lessThan(b) || a.equals(b) || a.greaterThan(b)  // true
+```
+
+## Tree-Shakeable Usage
+
+All comparison operations available as tree-shakeable imports:
+
+```typescript
+import {
+  equals,
+  notEquals,
+  lessThan,
+  lessThanOrEqual,
+  greaterThan,
+  greaterThanOrEqual,
+  isZero
+} from '@tevm/voltaire/BrandedUint'
+
+const a = Uint.from(100n)
+const b = Uint.from(200n)
+
+equals(a, b)              // false
+lessThan(a, b)            // true
+greaterThan(a, b)         // false
+isZero(a)                 // false
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

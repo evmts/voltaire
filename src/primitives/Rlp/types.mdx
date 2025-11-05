@@ -1,0 +1,705 @@
+---
+title: RLP Types
+description: RLP data type system with bytes and list variants
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# RLP Types
+
+RLP data type system defining bytes data, list data, and type guards for working with RLP structures.
+
+## Overview
+
+RLP uses a discriminated union type to represent two kinds of data:
+- **BytesData** - Leaf nodes containing raw bytes
+- **ListData** - Nested arrays of RLP data
+
+Type guards provide runtime type checking and TypeScript type narrowing for safe data access.
+
+## BrandedRlp
+
+Core type representing RLP data structures.
+
+```typescript
+export type BrandedRlp =
+  | { type: "bytes"; value: Uint8Array }
+  | { type: "list"; value: BrandedRlp[] }
+```
+
+[Branded type](/primitives/branded-types) using discriminated union pattern. The `type` field distinguishes between bytes and list variants.
+
+**Properties:**
+- `type: "bytes" | "list"` - Discriminant field
+- `value: Uint8Array | BrandedRlp[]` - Data payload
+
+Source: [BrandedRlp.ts:4-6](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/BrandedRlp.ts#L4-L6)
+
+### BytesData Variant
+
+Represents a leaf node with raw bytes:
+
+```typescript
+type BytesData = {
+  type: "bytes"
+  value: Uint8Array
+}
+```
+
+**Examples:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Single byte
+const single: BrandedRlp = {
+  type: 'bytes',
+  value: new Uint8Array([0x7f])
+}
+
+// Empty bytes
+const empty: BrandedRlp = {
+  type: 'bytes',
+  value: new Uint8Array([])
+}
+
+// Multiple bytes
+const bytes: BrandedRlp = {
+  type: 'bytes',
+  value: new Uint8Array([1, 2, 3, 4, 5])
+}
+
+// Created via from()
+const data = Rlp.from(new Uint8Array([1, 2, 3]))
+// => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+```
+
+### ListData Variant
+
+Represents a nested array of RLP data:
+
+```typescript
+type ListData = {
+  type: "list"
+  value: BrandedRlp[]
+}
+```
+
+**Examples:**
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Empty list
+const empty: BrandedRlp = {
+  type: 'list',
+  value: []
+}
+
+// List of bytes
+const list: BrandedRlp = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    { type: 'bytes', value: new Uint8Array([2]) }
+  ]
+}
+
+// Nested lists
+const nested: BrandedRlp = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) },
+        { type: 'bytes', value: new Uint8Array([3]) }
+      ]
+    }
+  ]
+}
+
+// Created via from()
+const listData = Rlp.from([
+  new Uint8Array([1]),
+  new Uint8Array([2])
+])
+// => {
+//   type: 'list',
+//   value: [
+//     { type: 'bytes', value: Uint8Array([1]) },
+//     { type: 'bytes', value: Uint8Array([2]) }
+//   ]
+// }
+```
+
+## Type Guards
+
+Runtime type checking functions that narrow TypeScript types.
+
+### isData
+
+Checks if value is any RLP data structure.
+
+<Tabs>
+<TabItem label="Signature">
+```typescript
+function isData(value: unknown): value is BrandedRlp
+```
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:**
+- `boolean` - True if value is RLP data (bytes or list)
+
+Source: [isData.js:7-15](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/isData.js#L7-L15)
+</TabItem>
+<TabItem label="Usage">
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Valid RLP data
+const bytesData = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+console.log(Rlp.isData(bytesData))  // true
+
+const listData = { type: 'list', value: [] }
+console.log(Rlp.isData(listData))  // true
+
+// Invalid data
+console.log(Rlp.isData(null))  // false
+console.log(Rlp.isData(undefined))  // false
+console.log(Rlp.isData({}))  // false
+console.log(Rlp.isData({ type: 'bytes' }))  // false (missing value)
+console.log(Rlp.isData({ type: 'invalid', value: [] }))  // false
+
+// Type narrowing
+function process(value: unknown) {
+  if (Rlp.isData(value)) {
+    // TypeScript knows value is BrandedRlp here
+    if (value.type === 'bytes') {
+      console.log('Bytes length:', value.value.length)
+    } else {
+      console.log('List items:', value.value.length)
+    }
+  }
+}
+```
+</TabItem>
+</Tabs>
+
+### Implementation
+
+Checks for required structure:
+1. Value is object (not null)
+2. Has `type` field
+3. Has `value` field
+4. Type is either "bytes" or "list"
+
+```typescript
+function isData(value) {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    "value" in value &&
+    (value.type === "bytes" || value.type === "list")
+  )
+}
+```
+
+### isBytesData
+
+Checks if value is bytes data specifically.
+
+<Tabs>
+<TabItem label="Signature">
+```typescript
+function isBytesData(value: unknown): boolean
+```
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:**
+- `boolean` - True if value is bytes data
+
+Source: [isBytesData.js:9-11](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/isBytesData.js#L9-L11)
+</TabItem>
+<TabItem label="Usage">
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Bytes data
+const bytes = { type: 'bytes', value: new Uint8Array([1, 2, 3]) }
+console.log(Rlp.isBytesData(bytes))  // true
+
+// List data
+const list = { type: 'list', value: [] }
+console.log(Rlp.isBytesData(list))  // false
+
+// Invalid data
+console.log(Rlp.isBytesData(null))  // false
+console.log(Rlp.isBytesData({ type: 'bytes' }))  // false
+
+// Use in conditionals
+function getBytes(data: BrandedRlp): Uint8Array | undefined {
+  if (Rlp.isBytesData(data)) {
+    return data.value
+  }
+  return undefined
+}
+
+// Filter bytes from mixed array
+const mixed: BrandedRlp[] = [
+  { type: 'bytes', value: new Uint8Array([1]) },
+  { type: 'list', value: [] },
+  { type: 'bytes', value: new Uint8Array([2]) }
+]
+
+const onlyBytes = mixed.filter(Rlp.isBytesData)
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) }
+// ]
+```
+</TabItem>
+</Tabs>
+
+### Implementation
+
+Uses `isData` then checks type field:
+
+```typescript
+function isBytesData(value) {
+  return isData(value) && value.type === "bytes"
+}
+```
+
+### isListData
+
+Checks if value is list data specifically.
+
+<Tabs>
+<TabItem label="Signature">
+```typescript
+function isListData(value: unknown): boolean
+```
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:**
+- `boolean` - True if value is list data
+
+Source: [isListData.js:9-11](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/isListData.js#L9-L11)
+</TabItem>
+<TabItem label="Usage">
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// List data
+const list = { type: 'list', value: [] }
+console.log(Rlp.isListData(list))  // true
+
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) }
+  ]
+}
+console.log(Rlp.isListData(nested))  // true
+
+// Bytes data
+const bytes = { type: 'bytes', value: new Uint8Array([1]) }
+console.log(Rlp.isListData(bytes))  // false
+
+// Invalid data
+console.log(Rlp.isListData(null))  // false
+console.log(Rlp.isListData({ type: 'list' }))  // false
+
+// Use in conditionals
+function getItems(data: BrandedRlp): BrandedRlp[] | undefined {
+  if (Rlp.isListData(data)) {
+    return data.value
+  }
+  return undefined
+}
+
+// Count list depth
+function countDepth(data: BrandedRlp): number {
+  if (Rlp.isBytesData(data)) {
+    return 0
+  }
+  if (Rlp.isListData(data)) {
+    if (data.value.length === 0) return 1
+    return 1 + Math.max(...data.value.map(countDepth))
+  }
+  return 0
+}
+```
+</TabItem>
+</Tabs>
+
+### Implementation
+
+Uses `isData` then checks type field:
+
+```typescript
+function isListData(value) {
+  return isData(value) && value.type === "list"
+}
+```
+
+## Type Patterns
+
+### Discriminated Union Pattern
+
+RLP uses TypeScript discriminated unions for type safety:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function processRlpData(data: BrandedRlp) {
+  // TypeScript uses 'type' field to narrow types
+  if (data.type === 'bytes') {
+    // Here, TypeScript knows data.value is Uint8Array
+    console.log('Bytes length:', data.value.length)
+    const byte = data.value[0]  // OK
+  } else {
+    // Here, TypeScript knows data.value is BrandedRlp[]
+    console.log('List items:', data.value.length)
+    const item = data.value[0]  // OK, item is BrandedRlp
+  }
+}
+```
+
+### Type Narrowing with Guards
+
+Combine type guards with TypeScript narrowing:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function extractBytes(data: unknown): Uint8Array[] {
+  // First check if it's RLP data at all
+  if (!Rlp.isData(data)) {
+    return []
+  }
+
+  // Now TypeScript knows data is BrandedRlp
+  if (Rlp.isBytesData(data)) {
+    // Return single item
+    return [data.value]
+  }
+
+  // Must be list data
+  const bytes: Uint8Array[] = []
+  for (const item of data.value) {
+    // Recursively extract bytes
+    bytes.push(...extractBytes(item))
+  }
+  return bytes
+}
+```
+
+### Exhaustive Type Checking
+
+Ensure all type variants are handled:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function serializeRlp(data: BrandedRlp): string {
+  switch (data.type) {
+    case 'bytes':
+      return `bytes(${data.value.length})`
+    case 'list':
+      return `list(${data.value.length})`
+    default:
+      // TypeScript error if new type added
+      const _exhaustive: never = data
+      return _exhaustive
+  }
+}
+```
+
+## Working with Types
+
+### Creating RLP Data
+
+Use `from()` for automatic type detection:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// From bytes
+const bytesData = Rlp.from(new Uint8Array([1, 2, 3]))
+// => { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+
+// From array (becomes list)
+const listData = Rlp.from([
+  new Uint8Array([1]),
+  new Uint8Array([2])
+])
+// => { type: 'list', value: [...] }
+
+// Already RLP data (pass through)
+const existing = { type: 'bytes', value: new Uint8Array([1]) }
+const same = Rlp.from(existing)
+// => Returns existing unchanged
+```
+
+### Manual Construction
+
+Create structures directly:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Manual bytes data
+const bytes: BrandedRlp = {
+  type: 'bytes',
+  value: new Uint8Array([1, 2, 3])
+}
+
+// Manual list data
+const list: BrandedRlp = {
+  type: 'list',
+  value: [bytes]
+}
+
+// Nested structure
+const nested: BrandedRlp = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) }
+      ]
+    }
+  ]
+}
+```
+
+### Type-safe Access
+
+Use type guards for safe access:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function getFirstByte(data: BrandedRlp): number | undefined {
+  if (Rlp.isBytesData(data)) {
+    return data.value[0]
+  }
+  if (Rlp.isListData(data) && data.value.length > 0) {
+    return getFirstByte(data.value[0])
+  }
+  return undefined
+}
+
+function countItems(data: BrandedRlp): number {
+  if (Rlp.isBytesData(data)) {
+    return 1
+  }
+  if (Rlp.isListData(data)) {
+    return data.value.reduce((sum, item) => sum + countItems(item), 0)
+  }
+  return 0
+}
+```
+
+## Type Validation
+
+### Runtime Validation
+
+Type guards perform runtime validation:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function validateRlpData(value: unknown): asserts value is BrandedRlp {
+  if (!Rlp.isData(value)) {
+    throw new Error('Invalid RLP data structure')
+  }
+
+  if (value.type === 'bytes') {
+    if (!(value.value instanceof Uint8Array)) {
+      throw new Error('Bytes data must have Uint8Array value')
+    }
+  } else if (value.type === 'list') {
+    if (!Array.isArray(value.value)) {
+      throw new Error('List data must have array value')
+    }
+    // Recursively validate items
+    for (const item of value.value) {
+      validateRlpData(item)
+    }
+  }
+}
+
+// Usage
+const data: unknown = JSON.parse(jsonString)
+validateRlpData(data)
+// Now TypeScript knows data is BrandedRlp
+```
+
+### Type Assertions
+
+Assert types when you know the structure:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function processTransaction(data: BrandedRlp) {
+  // We know transactions are lists
+  if (data.type !== 'list') {
+    throw new Error('Transaction must be list')
+  }
+
+  // We know list has 9 items
+  if (data.value.length !== 9) {
+    throw new Error('Invalid transaction')
+  }
+
+  // Access fields safely
+  const [nonce, gasPrice, gas, to, value, calldata, v, r, s] = data.value
+
+  // Each field should be bytes
+  if (!Rlp.isBytesData(nonce)) {
+    throw new Error('Nonce must be bytes')
+  }
+}
+```
+
+## Related Types
+
+### Encodable
+
+Input type for encoding operations:
+
+```typescript
+type Encodable =
+  | Uint8Array
+  | BrandedRlp
+  | Array<Uint8Array | BrandedRlp | any>
+```
+
+Accepts raw bytes, RLP data, or nested arrays. See [Encoding](/primitives/rlp/encoding).
+
+### Decoded
+
+Output type from decoding operations:
+
+```typescript
+type Decoded = {
+  data: BrandedRlp
+  remainder: Uint8Array
+}
+```
+
+Contains decoded RLP data and remaining bytes. See [Decoding](/primitives/rlp/decoding).
+
+## Type Examples
+
+### Transaction Type
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+type Transaction = {
+  nonce: Uint8Array
+  gasPrice: Uint8Array
+  gas: Uint8Array
+  to: Uint8Array
+  value: Uint8Array
+  data: Uint8Array
+  v: Uint8Array
+  r: Uint8Array
+  s: Uint8Array
+}
+
+function toRlp(tx: Transaction): BrandedRlp {
+  return {
+    type: 'list',
+    value: [
+      { type: 'bytes', value: tx.nonce },
+      { type: 'bytes', value: tx.gasPrice },
+      { type: 'bytes', value: tx.gas },
+      { type: 'bytes', value: tx.to },
+      { type: 'bytes', value: tx.value },
+      { type: 'bytes', value: tx.data },
+      { type: 'bytes', value: tx.v },
+      { type: 'bytes', value: tx.r },
+      { type: 'bytes', value: tx.s }
+    ]
+  }
+}
+
+function fromRlp(data: BrandedRlp): Transaction {
+  if (data.type !== 'list' || data.value.length !== 9) {
+    throw new Error('Invalid transaction')
+  }
+
+  const [nonce, gasPrice, gas, to, value, calldata, v, r, s] = data.value
+
+  if (!data.value.every(Rlp.isBytesData)) {
+    throw new Error('All fields must be bytes')
+  }
+
+  return {
+    nonce: nonce.value,
+    gasPrice: gasPrice.value,
+    gas: gas.value,
+    to: to.value,
+    value: value.value,
+    data: calldata.value,
+    v: v.value,
+    r: r.value,
+    s: s.value
+  }
+}
+```
+
+### Merkle Proof Type
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+type MerkleProof = Uint8Array[]
+
+function proofToRlp(proof: MerkleProof): BrandedRlp {
+  return {
+    type: 'list',
+    value: proof.map(node => ({
+      type: 'bytes',
+      value: node
+    }))
+  }
+}
+
+function proofFromRlp(data: BrandedRlp): MerkleProof {
+  if (data.type !== 'list') {
+    throw new Error('Proof must be list')
+  }
+
+  if (!data.value.every(Rlp.isBytesData)) {
+    throw new Error('All proof nodes must be bytes')
+  }
+
+  return data.value.map(node => node.value)
+}
+```
+
+<Aside type="tip">
+Use discriminated unions and type guards together for type-safe RLP data manipulation with full TypeScript inference.
+</Aside>
+
+## Related
+
+- [Encoding](/primitives/rlp/encoding) - Encode typed data to RLP
+- [Decoding](/primitives/rlp/decoding) - Decode RLP to typed structures
+- [Utilities](/primitives/rlp/utilities) - Helper functions for working with types
+- [Branded Types](/primitives/branded-types) - Type branding pattern

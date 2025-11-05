@@ -1,0 +1,299 @@
+---
+title: Legacy Transactions
+description: Original Ethereum transaction format (Type 0)
+---
+
+# Legacy Transactions
+
+Original Ethereum transaction format with fixed gas price and EIP-155 replay protection.
+
+## Overview
+
+Legacy transactions (Type 0) are the original transaction format used since Ethereum genesis. They use a fixed `gasPrice` and encode chain ID in the `v` signature component for replay protection (EIP-155).
+
+## Type Definition
+
+```typescript
+type Legacy = {
+  type: Type.Legacy       // 0x00
+  nonce: bigint
+  gasPrice: bigint        // Fixed gas price in wei
+  gasLimit: bigint
+  to: BrandedAddress | null  // null for contract creation
+  value: bigint           // Amount in wei
+  data: Uint8Array        // Contract data or empty
+  v: bigint               // Signature component + chain ID
+  r: Uint8Array           // 32-byte signature
+  s: Uint8Array           // 32-byte signature
+}
+```
+
+Source: [types.ts:59-72](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L59-L72)
+
+## Creating Legacy Transactions
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Simple transfer
+const transfer: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 20000000000n,  // 20 gwei
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,  // 1 ETH
+  data: new Uint8Array(),
+  v: 37n,  // Chain ID 1
+  r: signatureR,
+  s: signatureS,
+}
+
+// Contract creation (to: null)
+const deploy: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 3000000n,
+  to: null,  // Contract creation
+  value: 0n,
+  data: contractBytecode,
+  v: 37n,
+  r: signatureR,
+  s: signatureS,
+}
+
+// Contract call
+const contractCall: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 1n,
+  gasPrice: 25000000000n,
+  gasLimit: 100000n,
+  to: contractAddress,
+  value: 0n,
+  data: encodedFunctionCall,
+  v: 37n,
+  r: signatureR,
+  s: signatureS,
+}
+```
+
+## EIP-155: Chain ID Encoding
+
+EIP-155 adds replay protection by encoding chain ID in the `v` value.
+
+### v Value Calculation
+
+```typescript
+// Pre-EIP-155 (not recommended)
+v = 27 + yParity  // yParity is 0 or 1
+
+// Post-EIP-155 (recommended)
+v = chainId * 2 + 35 + yParity
+```
+
+### Examples
+
+```typescript
+// Mainnet (chain ID 1)
+v = 1 * 2 + 35 + 0 = 37  // yParity 0
+v = 1 * 2 + 35 + 1 = 38  // yParity 1
+
+// Goerli (chain ID 5)
+v = 5 * 2 + 35 + 0 = 45  // yParity 0
+
+// Polygon (chain ID 137)
+v = 137 * 2 + 35 + 0 = 309  // yParity 0
+```
+
+## getChainId
+
+Extract chain ID from v value.
+
+```typescript
+function getChainId(tx: BrandedTransactionLegacy): bigint | null
+```
+
+### Returns
+
+- `bigint` - Chain ID if EIP-155 transaction
+- `null` - If pre-EIP-155 transaction (v = 27 or 28)
+
+### Usage
+
+```typescript
+import { Legacy } from '@tevm/voltaire/Transaction'
+
+const tx: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  // ...
+  v: 37n,
+  // ...
+}
+
+const chainId = Legacy.getChainId.call(tx)
+console.log(chainId)  // 1n
+
+// Pre-EIP-155
+const oldTx: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  // ...
+  v: 27n,
+  // ...
+}
+
+const noChainId = Legacy.getChainId.call(oldTx)
+console.log(noChainId)  // null
+```
+
+**Implementation:**
+```typescript
+if (tx.v === 27n || tx.v === 28n) {
+  return null  // Pre-EIP-155
+}
+return (tx.v - 35n) / 2n  // EIP-155
+```
+
+Source: [Legacy/getChainId.js](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/Legacy/getChainId.js)
+
+## Methods
+
+All standard transaction methods work with legacy transactions:
+
+```typescript
+import { Legacy } from '@tevm/voltaire/Transaction'
+
+// Serialization
+const bytes = Legacy.serialize.call(legacyTx)
+const decoded = Legacy.deserialize(bytes)
+
+// Hashing
+const txHash = Legacy.hash.call(legacyTx)
+const signingHash = Legacy.getSigningHash.call(legacyTx)
+
+// Signing
+const sender = Legacy.getSender.call(legacyTx)
+const isValid = Legacy.verifySignature.call(legacyTx)
+
+// Chain ID
+const chainId = Legacy.getChainId.call(legacyTx)
+```
+
+## RLP Encoding
+
+Legacy transactions encode directly as RLP list (no type prefix):
+
+```
+rlp([nonce, gasPrice, gasLimit, to, value, data, v, r, s])
+```
+
+**Example:**
+```typescript
+// Transaction
+{
+  nonce: 9n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: 0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e,
+  value: 1000000000000000000n,
+  data: 0x,
+  v: 37n,
+  r: 0x1234...,
+  s: 0x5678...
+}
+
+// RLP encodes to:
+// [0xf8, 0x6c, ...] - RLP list, no type prefix
+```
+
+## Signing Hash
+
+Legacy signing hash includes chain ID for EIP-155 transactions:
+
+```typescript
+// Pre-EIP-155
+signingHash = keccak256(rlp([nonce, gasPrice, gasLimit, to, value, data]))
+
+// Post-EIP-155
+signingHash = keccak256(rlp([nonce, gasPrice, gasLimit, to, value, data, chainId, 0, 0]))
+                                                                          ^^^^^^^^^^^^^^^
+                                                                          adds chain ID + zeros
+```
+
+## Gas Cost Calculation
+
+Legacy transactions use simple gas cost:
+
+```typescript
+const totalCost = gasPrice * gasUsed + value
+```
+
+Example:
+```typescript
+const tx: Transaction.Legacy = {
+  gasPrice: 20000000000n,  // 20 gwei
+  gasLimit: 21000n,
+  value: 1000000000000000000n,  // 1 ETH
+  // ...
+}
+
+// Maximum cost
+const maxCost = tx.gasPrice * tx.gasLimit + tx.value
+// 20 gwei * 21000 + 1 ETH = 0.00042 ETH + 1 ETH = 1.00042 ETH
+```
+
+## Limitations
+
+Legacy transactions have several limitations compared to newer types:
+
+1. **No access lists** - Cannot pre-declare storage access
+2. **Fixed gas price** - No dynamic fee market support
+3. **Chain ID in signature** - Wastes space compared to explicit field
+4. **No blob support** - Cannot attach L2 data
+5. **No authorization lists** - Cannot delegate to contracts
+
+## Migration to EIP-1559
+
+Converting legacy to EIP-1559:
+
+```typescript
+function upgradeToEIP1559(
+  legacy: Transaction.Legacy,
+  baseFee: bigint,
+  priorityFee = 1000000000n
+): Transaction.EIP1559 {
+  return {
+    type: Transaction.Type.EIP1559,
+    chainId: Legacy.getChainId.call(legacy) || 1n,
+    nonce: legacy.nonce,
+    maxPriorityFeePerGas: priorityFee,
+    maxFeePerGas: baseFee + priorityFee,
+    gasLimit: legacy.gasLimit,
+    to: legacy.to,
+    value: legacy.value,
+    data: legacy.data,
+    accessList: [],
+    yParity: Number(legacy.v % 2n),
+    r: legacy.r,
+    s: legacy.s,
+  }
+}
+```
+
+## When to Use
+
+Legacy transactions should be used:
+
+- For backwards compatibility with old infrastructure
+- On networks without EIP-1559 support
+- When interacting with wallets that only support legacy format
+
+**Prefer EIP-1559** for:
+- Modern Ethereum mainnet
+- Better gas price estimation
+- More predictable transaction costs
+- Access list optimization
+
+## EIP Reference
+
+- [EIP-155: Simple replay attack protection](https://eips.ethereum.org/EIPS/eip-155)

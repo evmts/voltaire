@@ -1,0 +1,409 @@
+---
+title: Uint Arithmetic
+description: Arithmetic operations with automatic wrapping
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Arithmetic
+
+Mathematical operations on Uint256 with automatic wrapping on overflow/underflow.
+
+<Aside type="tip" title="Wrapping Behavior">
+All arithmetic operations wrap on overflow (mod 2^256), matching Solidity and EVM behavior. There are no checked arithmetic operations - wrapping is always automatic.
+</Aside>
+
+## Addition
+
+### `instance.plus(other)`
+
+Add two Uint256 values with wrapping.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(50n)
+
+// Basic addition
+a.plus(b)  // 150n
+
+// Overflow wraps to zero and continues
+const max = Uint.MAX
+max.plus(Uint.ONE)      // 0n (wraps around)
+max.plus(Uint.from(2n)) // 1n
+
+// Identity
+a.plus(Uint.ZERO)  // a
+
+// Commutative
+a.plus(b).equals(b.plus(a))  // true
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to add
+
+**Returns:** `BrandedUint` - Sum mod 2^256
+
+**Overflow:** Wraps around (result = (a + b) mod 2^256)
+
+**Static form:**
+```typescript
+Uint.plus(a, b)  // a + b
+```
+
+Source: [plus.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/plus.ts#L19)
+
+## Subtraction
+
+### `instance.minus(other)`
+
+Subtract Uint256 value with wrapping.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(50n)
+
+// Basic subtraction
+a.minus(b)  // 50n
+
+// Underflow wraps to MAX and continues down
+Uint.ZERO.minus(Uint.ONE)      // MAX
+Uint.ZERO.minus(Uint.from(2n)) // MAX - 1
+
+const small = Uint.from(10n)
+const large = Uint.from(20n)
+small.minus(large)  // MAX - 9 (wraps)
+
+// Identity
+a.minus(Uint.ZERO)  // a
+a.minus(a)          // ZERO
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to subtract
+
+**Returns:** `BrandedUint` - Difference mod 2^256
+
+**Underflow:** Wraps around (result = (a - b + 2^256) mod 2^256)
+
+**Static form:**
+```typescript
+Uint.minus(a, b)  // a - b
+```
+
+Source: [minus.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/minus.ts#L19)
+
+## Multiplication
+
+### `instance.times(other)`
+
+Multiply Uint256 values with wrapping.
+
+```typescript
+const a = Uint.from(10n)
+const b = Uint.from(5n)
+
+// Basic multiplication
+a.times(b)  // 50n
+
+// Overflow wraps
+const large = Uint.from(2n ** 200n)
+large.times(large)  // Result mod 2^256
+
+// Identity
+a.times(Uint.ONE)   // a
+a.times(Uint.ZERO)  // ZERO
+
+// Commutative
+a.times(b).equals(b.times(a))  // true
+
+// Distributive
+a.times(b.plus(c)).equals(a.times(b).plus(a.times(c)))  // true
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to multiply
+
+**Returns:** `BrandedUint` - Product mod 2^256
+
+**Overflow:** Wraps around (result = (a * b) mod 2^256)
+
+**Static form:**
+```typescript
+Uint.times(a, b)  // a * b
+```
+
+Source: [times.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/times.ts#L19)
+
+## Division
+
+### `instance.dividedBy(other)`
+
+Divide Uint256 values (floor division).
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from(10n)
+
+// Basic division
+a.dividedBy(b)  // 10n
+
+// Floor division (rounds down)
+const c = Uint.from(7n)
+const d = Uint.from(2n)
+c.dividedBy(d)  // 3n (not 3.5)
+
+// Identity
+a.dividedBy(Uint.ONE)  // a
+
+// Division by zero throws
+a.dividedBy(Uint.ZERO)  // Error: Division by zero
+
+// MAX divided by 2
+Uint.MAX.dividedBy(Uint.from(2n))  // 2^255 - 1 (half of MAX)
+```
+
+**Parameters:**
+- `other: BrandedUint` - Divisor
+
+**Returns:** `BrandedUint` - Quotient (floor division)
+
+**Throws:**
+- If divisor is zero
+
+**Note:** Always rounds down (floor division). No decimal results.
+
+**Static form:**
+```typescript
+Uint.dividedBy(a, b)  // a / b
+```
+
+Source: [dividedBy.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/dividedBy.ts#L19)
+
+## Modulo
+
+### `instance.modulo(other)`
+
+Get remainder of division.
+
+```typescript
+const a = Uint.from(17n)
+const b = Uint.from(5n)
+
+// Basic modulo
+a.modulo(b)  // 2n (17 = 3*5 + 2)
+
+// Even/odd check
+const even = Uint.from(100n)
+const odd = Uint.from(101n)
+even.modulo(Uint.from(2n))  // 0n
+odd.modulo(Uint.from(2n))   // 1n
+
+// Identity
+a.modulo(a)  // ZERO
+a.modulo(Uint.ONE)  // ZERO
+
+// Modulo by zero throws
+a.modulo(Uint.ZERO)  // Error: Division by zero
+
+// Use with division
+const quotient = a.dividedBy(b)   // 3
+const remainder = a.modulo(b)     // 2
+// Verify: a = quotient * b + remainder
+quotient.times(b).plus(remainder).equals(a)  // true
+```
+
+**Parameters:**
+- `other: BrandedUint` - Modulus
+
+**Returns:** `BrandedUint` - Remainder
+
+**Throws:**
+- If modulus is zero
+
+**Static form:**
+```typescript
+Uint.modulo(a, b)  // a % b
+```
+
+Source: [modulo.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/modulo.ts)
+
+## Exponentiation
+
+### `instance.toPower(exponent)`
+
+Raise to power with wrapping.
+
+```typescript
+const base = Uint.from(2n)
+const exp = Uint.from(8n)
+
+// Basic exponentiation
+base.toPower(exp)  // 256n (2^8)
+
+// Large exponents
+Uint.from(2n).toPower(Uint.from(255n))  // 2^255
+Uint.from(2n).toPower(Uint.from(256n))  // 0n (wraps)
+
+// Identity
+a.toPower(Uint.ZERO)  // ONE
+a.toPower(Uint.ONE)   // a
+Uint.ONE.toPower(a)   // ONE
+Uint.ZERO.toPower(a)  // ZERO (if a > 0)
+
+// Overflow wraps
+const large = Uint.from(10n)
+large.toPower(Uint.from(77n))  // Wraps (10^77 > 2^256)
+
+// Powers of 2
+Uint.from(2n).toPower(Uint.from(0n))   // 1
+Uint.from(2n).toPower(Uint.from(1n))   // 2
+Uint.from(2n).toPower(Uint.from(2n))   // 4
+Uint.from(2n).toPower(Uint.from(10n))  // 1024
+```
+
+**Parameters:**
+- `exponent: BrandedUint` - Power to raise to
+
+**Returns:** `BrandedUint` - Result mod 2^256
+
+**Overflow:** Wraps around (result = (base ^ exponent) mod 2^256)
+
+**Algorithm:** Exponentiation by squaring with wrapping at each step
+
+**Static form:**
+```typescript
+Uint.toPower(base, exp)  // base ^ exp
+```
+
+Source: [toPower.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toPower.ts#L19)
+
+## Overflow Examples
+
+### Addition Overflow
+
+```typescript
+// Near MAX
+const almostMax = Uint.MAX.minus(Uint.from(5n))
+almostMax.plus(Uint.from(3n))   // MAX - 2
+almostMax.plus(Uint.from(6n))   // 0n (wraps)
+almostMax.plus(Uint.from(10n))  // 4n (wraps)
+
+// Wrapping multiple times
+const large = Uint.from(2n ** 255n)
+large.plus(large)  // 0n (exactly 2^256)
+```
+
+### Subtraction Underflow
+
+```typescript
+// Below zero
+Uint.from(5n).minus(Uint.from(10n))  // MAX - 4
+
+// Chaining operations
+Uint.ZERO
+  .minus(Uint.ONE)    // MAX
+  .minus(Uint.ONE)    // MAX - 1
+  .minus(Uint.ONE)    // MAX - 2
+```
+
+### Multiplication Overflow
+
+```typescript
+// Large multiplication
+const a = Uint.from(2n ** 128n)
+const b = Uint.from(2n ** 129n)
+a.times(b)  // 0n (2^257 wraps to 0)
+
+// Repeated doubling
+let value = Uint.ONE
+for (let i = 0; i < 256; i++) {
+  value = value.plus(value)  // Double each time
+}
+// After 256 doublings: wraps back to 0
+```
+
+## Usage Patterns
+
+### Avoiding Overflow
+
+```typescript
+// Check before operation
+function safeAdd(a: BrandedUint, b: BrandedUint): BrandedUint | null {
+  // Would overflow if a + b > MAX
+  if (a.greaterThan(Uint.MAX.minus(b))) {
+    return null  // Would overflow
+  }
+  return a.plus(b)
+}
+
+// Check after operation
+function detectOverflow(a: BrandedUint, b: BrandedUint): boolean {
+  const sum = a.plus(b)
+  return sum.lessThan(a)  // If sum < a, overflow occurred
+}
+```
+
+### Fixed-Point Arithmetic
+
+```typescript
+// 18 decimal places (like Solidity)
+const WAD = Uint.from(10n ** 18n)
+
+function wadMul(a: BrandedUint, b: BrandedUint): BrandedUint {
+  return a.times(b).dividedBy(WAD)
+}
+
+function wadDiv(a: BrandedUint, b: BrandedUint): BrandedUint {
+  return a.times(WAD).dividedBy(b)
+}
+
+// Example: 2.5 * 1.5 = 3.75
+const a = Uint.from(25n * 10n ** 17n)  // 2.5 WAD
+const b = Uint.from(15n * 10n ** 17n)  // 1.5 WAD
+const result = wadMul(a, b)             // 3.75 WAD
+```
+
+### Chaining Operations
+
+```typescript
+// Arithmetic expression: (a + b) * c - d
+const result = a
+  .plus(b)
+  .times(c)
+  .minus(d)
+
+// With intermediate checks
+const sum = a.plus(b)
+if (sum.lessThan(a)) {
+  throw new Error("Addition overflow")
+}
+const product = sum.times(c)
+const final = product.minus(d)
+```
+
+## Tree-Shakeable Usage
+
+All arithmetic operations available as tree-shakeable imports:
+
+```typescript
+import {
+  plus,
+  minus,
+  times,
+  dividedBy,
+  modulo,
+  toPower
+} from '@tevm/voltaire/BrandedUint'
+
+const a = Uint.from(100n)
+const b = Uint.from(50n)
+
+const sum = plus(a, b)
+const diff = minus(a, b)
+const product = times(a, b)
+const quotient = dividedBy(a, b)
+const remainder = modulo(a, b)
+const power = toPower(a, Uint.from(2n))
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.
