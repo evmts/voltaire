@@ -33,10 +33,14 @@ address = keccak256(rlp([sender, nonce]))[12:32]
 
 ## Throws
 
-`InvalidValueError` - Nonce negative
+[`InvalidValueError`](./errors.js.md#invalidvalueerror) - Nonce negative
 
 ## Example
 
 ```typescript
 const contractAddr = Address.calculateCreateAddress(deployerAddr, 5n);
 ```
+
+## See Also
+
+- [calculateCreate2Address](./calculateCreate2Address.js.md) - Calculate CREATE2 contract address

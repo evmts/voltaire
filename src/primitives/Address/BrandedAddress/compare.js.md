@@ -22,3 +22,9 @@ function compare(address: BrandedAddress, other: BrandedAddress): number
 ```typescript
 const sorted = addresses.sort((a, b) => Address.compare(a, b));
 ```
+
+## See Also
+
+- [equals](./equals.js.md) - Check equality between addresses
+- [lessThan](./lessThan.js.md) - Check if address is less than another
+- [greaterThan](./greaterThan.js.md) - Check if address is greater than another

@@ -18,7 +18,7 @@ function fromNumber(value: bigint | number): BrandedAddress
 
 ## Throws
 
-- `InvalidValueError` - Negative value
+- [`InvalidValueError`](./errors.js.md#invalidvalueerror) - Negative value
 
 ## Example
 
@@ -26,3 +26,8 @@ function fromNumber(value: bigint | number): BrandedAddress
 const addr = Address.fromNumber(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n);
 const addr2 = Address.fromNumber(12345);
 ```
+
+## See Also
+
+- [from](./from.js.md) - Universal constructor
+- [toU256](./toU256.js.md) - Convert address to bigint

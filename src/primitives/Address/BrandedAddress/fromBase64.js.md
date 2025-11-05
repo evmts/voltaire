@@ -19,10 +19,16 @@ fromBase64(b64: string): BrandedAddress
 ## Throws
 
 - `Error` - If invalid base64 string
-- `InvalidAddressLengthError` - If decoded length is not 20 bytes
+- [`InvalidAddressLengthError`](./errors.js.md#invalidaddresslengtherror) - If decoded length is not 20 bytes
 
 ## Example
 
 ```typescript
 const addr = Address.fromBase64("dC01zGY0wFMpJaO4RLyedZXyUeM=");
 ```
+
+## See Also
+
+- [fromHex](./fromHex.js.md) - Create from hex string
+- [fromBytes](./fromBytes.js.md) - Create from raw bytes
+- [from](./from.js.md) - Universal constructor

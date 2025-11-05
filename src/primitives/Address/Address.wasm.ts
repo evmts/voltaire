@@ -4,10 +4,10 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
+import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
 import type { Checksummed } from "./BrandedAddress/ChecksumAddress.js";
 import type { Lowercase } from "./BrandedAddress/LowercaseAddress.js";
 import type { Uppercase } from "./BrandedAddress/UppercaseAddress.js";
-import type { BrandedAddress } from "./BrandedAddress/index.js";
 
 /**
  * Create Address from hex string
@@ -107,7 +107,7 @@ export function calculateCreateAddress(
 	sender: BrandedAddress,
 	nonce: bigint,
 ): BrandedAddress {
-	return loader.calculateCreateAddress(sender, nonce) as BrandedAddress;
+	return loader.calculateCreateAddress(sender, Number(nonce)) as BrandedAddress;
 }
 
 /**
@@ -184,7 +184,7 @@ export function fromPublicKey(x: bigint, y: bigint): BrandedAddress {
 export function toU256(address: BrandedAddress): bigint {
 	let result = 0n;
 	for (let i = 0; i < 20; i++) {
-		result = (result << 8n) | BigInt(address[i]);
+		result = (result << 8n) | BigInt(address[i] ?? 0);
 	}
 	return result;
 }
@@ -243,8 +243,10 @@ export function format(address: BrandedAddress): string {
  */
 export function compare(a: BrandedAddress, b: BrandedAddress): number {
 	for (let i = 0; i < 20; i++) {
-		if (a[i] < b[i]) return -1;
-		if (a[i] > b[i]) return 1;
+		const aByte = a[i] ?? 0;
+		const bByte = b[i] ?? 0;
+		if (aByte < bByte) return -1;
+		if (aByte > bByte) return 1;
 	}
 	return 0;
 }

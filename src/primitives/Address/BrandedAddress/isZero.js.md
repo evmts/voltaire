@@ -23,3 +23,7 @@ if (Address.isZero(addr)) {
   console.log("Zero address");
 }
 ```
+
+## See Also
+
+- [zero](./zero.js.md) - Create zero address

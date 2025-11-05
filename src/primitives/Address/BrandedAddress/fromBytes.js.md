@@ -18,7 +18,7 @@ function fromBytes(bytes: Uint8Array): BrandedAddress
 
 ## Throws
 
-- `InvalidAddressLengthError` - Length not 20 bytes
+- [`InvalidAddressLengthError`](./errors.js.md#invalidaddresslengtherror) - Length not 20 bytes
 
 ## Example
 
@@ -26,3 +26,9 @@ function fromBytes(bytes: Uint8Array): BrandedAddress
 const bytes = new Uint8Array(20);
 const addr = Address.fromBytes(bytes);
 ```
+
+## See Also
+
+- [from](./from.js.md) - Universal constructor
+- [fromHex](./fromHex.js.md) - Create from hex string
+- [constants](./constants.js.md#size) - SIZE constant

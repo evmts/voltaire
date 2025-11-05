@@ -27,3 +27,8 @@ const encoded = new Uint8Array(32);
 // ... set encoded[12:32] to address bytes ...
 const addr = Address.fromAbiEncoded(encoded);
 ```
+
+## See Also
+
+- [toAbiEncoded](./toAbiEncoded.js.md) - Convert address to ABI encoding
+- [fromBytes](./fromBytes.js.md) - Create from raw bytes

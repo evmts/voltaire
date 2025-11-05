@@ -23,3 +23,7 @@ if (Address.is(value)) {
   const hex = Address.toHex(value);
 }
 ```
+
+## See Also
+
+- [isValid](./isValid.js.md) - Validate address string format

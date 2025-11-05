@@ -17,3 +17,7 @@ function zero(): BrandedAddress
 ```typescript
 const zero = Address.zero();
 ```
+
+## See Also
+
+- [isZero](./isZero.js.md) - Check if address is zero address

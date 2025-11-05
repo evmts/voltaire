@@ -24,3 +24,9 @@ if (Address.lessThan(addr1, addr2)) {
   console.log("addr1 comes before addr2");
 }
 ```
+
+## See Also
+
+- [compare](./compare.js.md) - Lexicographic comparison of addresses
+- [greaterThan](./greaterThan.js.md) - Check if address is greater than another
+- [equals](./equals.js.md) - Check equality between addresses

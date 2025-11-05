@@ -24,3 +24,7 @@ if (Address.equals(addr1, addr2)) {
   console.log("Addresses match");
 }
 ```
+
+## See Also
+
+- [compare](./compare.js.md) - Lexicographic comparison of addresses

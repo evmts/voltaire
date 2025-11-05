@@ -31,3 +31,9 @@ const short = Address.toShortHex(addr);
 const custom = Address.toShortHex(addr, 8, 6);
 // "0x742d35...251e3"
 ```
+
+## See Also
+
+- [toHex](./toHex.js.md) - Convert to full hex string
+- [format](./format.js.md) - Format with checksum
+- [toChecksummed](./toChecksummed.js.md) - Convert to checksummed hex

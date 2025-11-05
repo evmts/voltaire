@@ -23,3 +23,9 @@ const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
 const lower = LowercaseAddress.from(addr);
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 ```
+
+## See Also
+
+- [toLowercase](./toLowercase.js.md) - Convert address to lowercase hex
+- [UppercaseAddress](./UppercaseAddress.js.md) - Uppercase address type
+- [ChecksumAddress](./ChecksumAddress.js.md) - Checksummed address type

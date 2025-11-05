@@ -46,3 +46,7 @@ const contractAddr = Address.calculateCreate2Address(
   initCode
 );
 ```
+
+## See Also
+
+- [calculateCreateAddress](./calculateCreateAddress.js.md) - Calculate CREATE contract address

@@ -22,3 +22,10 @@ Lowercase hex string
 const lower = Address.toLowercase(addr);
 // "0x742d35cc6634c0532925a3b844bc9e7595f251e3"
 ```
+
+## See Also
+
+- [toHex](./toHex.js.md) - Convert to lowercase hex with 0x prefix
+- [toUppercase](./toUppercase.js.md) - Convert to uppercase hex
+- [toChecksummed](./toChecksummed.js.md) - Convert to checksummed hex
+- [LowercaseAddress](./LowercaseAddress.js.md) - Lowercase address type

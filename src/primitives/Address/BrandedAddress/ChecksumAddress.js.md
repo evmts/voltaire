@@ -1,6 +1,6 @@
 # ChecksumAddress.js
 
-EIP-55 checksummed address - uppercase chars where hash nibble ≥ 8.
+[EIP-55](https://eips.ethereum.org/EIPS/eip-55) checksummed address - uppercase chars where hash nibble ≥ 8.
 
 ## Type
 
@@ -33,3 +33,9 @@ if (ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3")) {
   console.log("Valid checksum");
 }
 ```
+
+## See Also
+
+- [toChecksummed](./toChecksummed.js.md) - Convert address to checksummed hex
+- [isValidChecksum](./isValidChecksum.js.md) - Validate EIP-55 checksum
+- [format](./format.js.md) - Format address with checksum

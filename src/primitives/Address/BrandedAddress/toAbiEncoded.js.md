@@ -24,3 +24,7 @@ const encoded = Address.toAbiEncoded(addr);
 // encoded.length === 32
 // [0,0,0,0,0,0,0,0,0,0,0,0, ...20 address bytes]
 ```
+
+## See Also
+
+- [fromAbiEncoded](./fromAbiEncoded.js.md) - Decode address from ABI encoding
