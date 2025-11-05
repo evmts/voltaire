@@ -1,0 +1,551 @@
+# Calculation Functions
+
+Core calculation utilities for complex gas costs with detailed parameters and return values.
+
+## calculateKeccak256Cost
+
+Calculate gas cost for KECCAK256 operation.
+
+### Signature
+
+```typescript
+function calculateKeccak256Cost(size: bigint): bigint
+```
+
+### Parameters
+
+- `size` - Data size in bytes
+
+### Returns
+
+`bigint` - Total gas cost
+
+### Formula
+
+```
+cost = Keccak256Base + ceil(size / 32) * Keccak256Word
+     = 30 + words * 6
+```
+
+### Example
+
+```typescript
+const cost1 = calculateKeccak256Cost(32n);   // 36n (30 + 1*6)
+const cost2 = calculateKeccak256Cost(64n);   // 42n (30 + 2*6)
+const cost3 = calculateKeccak256Cost(100n);  // 48n (30 + 4*6, rounds up)
+```
+
+## calculateSstoreCost
+
+Calculate SSTORE gas cost with refund tracking.
+
+### Signature
+
+```typescript
+function calculateSstoreCost(
+  isWarm: boolean,
+  currentValue: bigint,
+  newValue: bigint
+): { cost: bigint; refund: bigint }
+```
+
+### Parameters
+
+- `isWarm` - Whether slot is warm (previously accessed in transaction)
+- `currentValue` - Current storage value (0n if empty)
+- `newValue` - New storage value to store
+
+### Returns
+
+Object with:
+- `cost` - Gas cost
+- `refund` - Gas refund (if clearing storage)
+
+### Logic
+
+```
+If isWarm:
+  base = 0
+Else:
+  base = ColdSload (2100)
+
+If currentValue === newValue:
+  cost = base + Sload (100)
+Else if currentValue === 0 && newValue !== 0:
+  cost = base + SstoreSet (20000)
+Else if currentValue !== 0 && newValue === 0:
+  cost = base + SstoreClear (5000)
+  refund = SstoreRefund (4800)
+Else:
+  cost = base + SstoreReset (5000)
+```
+
+### Example
+
+```typescript
+// Cold write: zero to non-zero
+const result1 = calculateSstoreCost(false, 0n, 100n);
+// { cost: 22100n, refund: 0n }  // 2100 + 20000
+
+// Warm modify: non-zero to non-zero
+const result2 = calculateSstoreCost(true, 100n, 200n);
+// { cost: 5000n, refund: 0n }   // 5000
+
+// Clear: non-zero to zero (with refund)
+const result3 = calculateSstoreCost(true, 100n, 0n);
+// { cost: 5000n, refund: 4800n }  // 5000, refund 4800
+
+// No-op: same value
+const result4 = calculateSstoreCost(true, 100n, 100n);
+// { cost: 100n, refund: 0n }    // Just warm read
+```
+
+## calculateLogCost
+
+Calculate LOG operation gas cost.
+
+### Signature
+
+```typescript
+function calculateLogCost(topicCount: bigint, dataSize: bigint): bigint
+```
+
+### Parameters
+
+- `topicCount` - Number of indexed topics (0-4)
+- `dataSize` - Size of data in bytes
+
+### Returns
+
+`bigint` - Total gas cost
+
+### Formula
+
+```
+cost = LogBase + topicCount * LogTopic + dataSize * LogData
+     = 375 + topicCount * 375 + dataSize * 8
+```
+
+### Example
+
+```typescript
+// LOG0 with 32 bytes
+const cost0 = calculateLogCost(0n, 32n);
+// 631n  // 375 + 0*375 + 32*8
+
+// LOG2 with 64 bytes (e.g., Transfer event)
+const cost2 = calculateLogCost(2n, 64n);
+// 1637n  // 375 + 2*375 + 64*8
+
+// LOG4 with 128 bytes
+const cost4 = calculateLogCost(4n, 128n);
+// 2899n  // 375 + 4*375 + 128*8
+```
+
+## calculateCallCost
+
+Calculate CALL operation gas cost with gas forwarding.
+
+### Signature
+
+```typescript
+function calculateCallCost(
+  isWarm: boolean,
+  hasValue: boolean,
+  isNewAccount: boolean,
+  availableGas: bigint
+): {
+  base: bigint;
+  dynamic: bigint;
+  stipend: bigint;
+  forwarded: bigint;
+  total: bigint;
+}
+```
+
+### Parameters
+
+- `isWarm` - Whether target account is warm (accessed before)
+- `hasValue` - Whether call transfers value
+- `isNewAccount` - Whether target account doesn't exist
+- `availableGas` - Gas available for the call
+
+### Returns
+
+Object with:
+- `base` - Base cost (warm/cold access)
+- `dynamic` - Additional costs (value transfer, new account)
+- `stipend` - Gas stipend (2300 if value transfer)
+- `forwarded` - Gas forwarded to subcall (63/64 rule)
+- `total` - Total gas charged to caller
+
+### Formula
+
+```
+base = isWarm ? WarmStorageRead (100) : ColdAccountAccess (2600)
+dynamic = 0
+
+If hasValue:
+  dynamic += CallValueTransfer (9000)
+  If isNewAccount:
+    dynamic += CallNewAccount (25000)
+
+total = base + dynamic
+forwardedGas = availableGas - total
+forwarded = forwardedGas - forwardedGas / 64  // 63/64 rule
+stipend = hasValue ? CallStipend (2300) : 0
+```
+
+### Example
+
+```typescript
+// Warm call, no value
+const result1 = calculateCallCost(true, false, false, 100000n);
+// {
+//   base: 100n,
+//   dynamic: 0n,
+//   stipend: 0n,
+//   forwarded: 98339n,  // (100000-100) * 63/64
+//   total: 100n
+// }
+
+// Cold call with value to existing account
+const result2 = calculateCallCost(false, true, false, 100000n);
+// {
+//   base: 2600n,
+//   dynamic: 9000n,
+//   stipend: 2300n,
+//   forwarded: 87481n,  // (100000-11600) * 63/64
+//   total: 11600n
+// }
+
+// Cold call with value to new account
+const result3 = calculateCallCost(false, true, true, 100000n);
+// {
+//   base: 2600n,
+//   dynamic: 34000n,    // 9000 + 25000
+//   stipend: 2300n,
+//   forwarded: 62481n,  // (100000-36600) * 63/64
+//   total: 36600n
+// }
+```
+
+## calculateMemoryExpansionCost
+
+Calculate memory expansion cost.
+
+### Signature
+
+```typescript
+function calculateMemoryExpansionCost(
+  oldSize: bigint,
+  newSize: bigint
+): {
+  oldCost: bigint;
+  newCost: bigint;
+  expansionCost: bigint;
+  words: bigint;
+}
+```
+
+### Parameters
+
+- `oldSize` - Previous memory size in bytes
+- `newSize` - New memory size in bytes
+
+### Returns
+
+Object with:
+- `oldCost` - Cost for old size
+- `newCost` - Cost for new size
+- `expansionCost` - Additional cost (newCost - oldCost)
+- `words` - Number of words at new size
+
+### Formula
+
+```
+words = ceil(size / 32)
+cost = 3 * words + words² / 512
+expansionCost = max(0, newCost - oldCost)
+```
+
+### Example
+
+```typescript
+// Expand from 0 to 32 bytes (1 word)
+const result1 = calculateMemoryExpansionCost(0n, 32n);
+// {
+//   oldCost: 0n,
+//   newCost: 3n,           // 3*1 + 1²/512 = 3
+//   expansionCost: 3n,
+//   words: 1n
+// }
+
+// Expand from 32 to 64 bytes (1 to 2 words)
+const result2 = calculateMemoryExpansionCost(32n, 64n);
+// {
+//   oldCost: 3n,
+//   newCost: 6n,           // 3*2 + 2²/512 = 6
+//   expansionCost: 3n,
+//   words: 2n
+// }
+
+// Expand from 0 to 1024 bytes (32 words)
+const result3 = calculateMemoryExpansionCost(0n, 1024n);
+// {
+//   oldCost: 0n,
+//   newCost: 98n,          // 3*32 + 32²/512 = 96 + 2 = 98
+//   expansionCost: 98n,
+//   words: 32n
+// }
+
+// No expansion (same size)
+const result4 = calculateMemoryExpansionCost(64n, 64n);
+// {
+//   oldCost: 6n,
+//   newCost: 6n,
+//   expansionCost: 0n,
+//   words: 2n
+// }
+```
+
+## calculateCreateCost
+
+Calculate CREATE/CREATE2 operation cost.
+
+### Signature
+
+```typescript
+function calculateCreateCost(
+  initcodeSize: bigint,
+  deployedSize: bigint
+): {
+  base: bigint;
+  dynamic: bigint;
+  total: bigint;
+}
+```
+
+### Parameters
+
+- `initcodeSize` - Size of initialization code in bytes
+- `deployedSize` - Size of deployed contract code in bytes
+
+### Returns
+
+Object with:
+- `base` - Base CREATE cost
+- `dynamic` - Variable costs (initcode + deployed code)
+- `total` - Total cost
+
+### Formula
+
+```
+base = Create (32000)
+initcodeWords = ceil(initcodeSize / 32)
+dynamic = initcodeWords * InitcodeWord (2) + deployedSize * CreateData (200)
+total = base + dynamic
+```
+
+### Throws
+
+Throws if `initcodeSize > MaxInitcodeSize (49152)` - EIP-3860.
+
+### Example
+
+```typescript
+// Small contract
+const result1 = calculateCreateCost(100n, 50n);
+// {
+//   base: 32000n,
+//   dynamic: 10006n,     // 4 words * 2 + 50 * 200
+//   total: 42006n
+// }
+
+// Larger contract
+const result2 = calculateCreateCost(5000n, 2000n);
+// {
+//   base: 32000n,
+//   dynamic: 400314n,    // 157 words * 2 + 2000 * 200
+//   total: 432314n
+// }
+
+// Maximum initcode size (EIP-3860 limit)
+const result3 = calculateCreateCost(49152n, 1000n);
+// {
+//   base: 32000n,
+//   dynamic: 203072n,    // 1536 words * 2 + 1000 * 200
+//   total: 235072n
+// }
+
+// Exceeds limit - throws
+try {
+  calculateCreateCost(50000n, 0n);
+} catch (e) {
+  // Error: Initcode size exceeds maximum
+}
+```
+
+## calculateTxIntrinsicGas
+
+Calculate transaction intrinsic gas cost.
+
+### Signature
+
+```typescript
+function calculateTxIntrinsicGas(data: Uint8Array, isCreate: boolean): bigint
+```
+
+### Parameters
+
+- `data` - Transaction calldata
+- `isCreate` - Whether transaction creates a contract
+
+### Returns
+
+`bigint` - Intrinsic gas cost
+
+### Formula
+
+```
+base = isCreate ? TxContractCreation (53000) : Tx (21000)
+dataCost = sum of:
+  - TxDataZero (4) for each zero byte
+  - TxDataNonZero (16) for each non-zero byte
+total = base + dataCost
+```
+
+### Example
+
+```typescript
+// Empty calldata
+const cost1 = calculateTxIntrinsicGas(new Uint8Array([]), false);
+// 21000n
+
+// Contract creation with empty calldata
+const cost2 = calculateTxIntrinsicGas(new Uint8Array([]), true);
+// 53000n
+
+// Simple transfer: [0, 1, 2, 0, 0]
+const cost3 = calculateTxIntrinsicGas(
+  new Uint8Array([0, 1, 2, 0, 0]),
+  false
+);
+// 21044n  // 21000 + 3*4 + 2*16
+
+// Function call with mixed data
+const data = new Uint8Array([
+  0xa9, 0x05, 0x9c, 0xbb,  // Function selector (non-zero)
+  0x00, 0x00, 0x00, 0x00,  // Padding (zeros)
+  0x00, 0x00, 0x00, 0x64,  // Value = 100
+]);
+const cost4 = calculateTxIntrinsicGas(data, false);
+// 21000 + 8*4 + 4*16 = 21096n
+```
+
+## calculateCopyCost
+
+Calculate copy operation cost (CALLDATACOPY, CODECOPY, etc.).
+
+### Signature
+
+```typescript
+function calculateCopyCost(size: bigint): bigint
+```
+
+### Parameters
+
+- `size` - Number of bytes to copy
+
+### Returns
+
+`bigint` - Total gas cost
+
+### Formula
+
+```
+words = ceil(size / 32)
+cost = words * Copy (3)
+```
+
+### Example
+
+```typescript
+const cost1 = calculateCopyCost(32n);   // 3n  (1 word)
+const cost2 = calculateCopyCost(64n);   // 6n  (2 words)
+const cost3 = calculateCopyCost(100n);  // 12n (4 words, rounds up)
+const cost4 = calculateCopyCost(0n);    // 0n  (no copy)
+```
+
+## calculateMaxRefund
+
+Calculate maximum gas refund (EIP-3529).
+
+### Signature
+
+```typescript
+function calculateMaxRefund(gasUsed: bigint): bigint
+```
+
+### Parameters
+
+- `gasUsed` - Total gas used by transaction
+
+### Returns
+
+`bigint` - Maximum refund allowed
+
+### Formula
+
+```
+maxRefund = gasUsed / MaxRefundQuotient (5)
+```
+
+**Note:** Pre-EIP-3529 (Berlin and earlier), quotient was 2.
+
+### Example
+
+```typescript
+const max1 = calculateMaxRefund(100000n);  // 20000n  (100000 / 5)
+const max2 = calculateMaxRefund(50000n);   // 10000n  (50000 / 5)
+const max3 = calculateMaxRefund(21000n);   // 4200n   (21000 / 5)
+
+// Apply to actual refunds
+function netGas(gasUsed: bigint, refunds: bigint): bigint {
+  const maxRefund = calculateMaxRefund(gasUsed);
+  const actualRefund = refunds > maxRefund ? maxRefund : refunds;
+  return gasUsed - actualRefund;
+}
+
+// Example: 3 storage clears = 14400 refund
+const gasUsed = 100000n;
+const refunds = 4800n * 3n;  // 14400n
+const net = netGas(gasUsed, refunds);
+// 85800n  // 100000 - 14400 (refund not capped)
+
+// Example: many storage clears
+const gasUsed2 = 50000n;
+const refunds2 = 4800n * 10n;  // 48000n
+const net2 = netGas(gasUsed2, refunds2);
+// 40000n  // 50000 - 10000 (refund capped at gasUsed/5)
+```
+
+## Summary Table
+
+| Function | Input | Output | Use Case |
+|----------|-------|--------|----------|
+| `calculateKeccak256Cost` | size | bigint | KECCAK256 operation |
+| `calculateSstoreCost` | isWarm, currentValue, newValue | { cost, refund } | SSTORE with refund tracking |
+| `calculateLogCost` | topicCount, dataSize | bigint | LOG0-LOG4 operations |
+| `calculateCallCost` | isWarm, hasValue, isNewAccount, availableGas | { base, dynamic, stipend, forwarded, total } | CALL family operations |
+| `calculateMemoryExpansionCost` | oldSize, newSize | { oldCost, newCost, expansionCost, words } | Memory operations |
+| `calculateCreateCost` | initcodeSize, deployedSize | { base, dynamic, total } | CREATE/CREATE2 |
+| `calculateTxIntrinsicGas` | data, isCreate | bigint | Transaction base cost |
+| `calculateCopyCost` | size | bigint | Copy operations |
+| `calculateMaxRefund` | gasUsed | bigint | Refund cap (EIP-3529) |
+
+## See Also
+
+- [Constants](./constants.mdx) - Gas constant definitions
+- [Convenience Functions](./convenience-functions.mdx) - Simplified call forms
+- [Usage Patterns](./usage-patterns.mdx) - Common patterns and examples
