@@ -1,0 +1,738 @@
+# Usage Patterns
+
+Common patterns and real-world examples for Hardfork operations.
+
+## Overview
+
+Practical patterns for using Hardfork in production code, covering configuration, validation, feature gating, and transaction handling.
+
+## Configuration Management
+
+### Network Configuration
+
+```typescript
+import { Hardfork, BrandedHardfork, DEFAULT } from '@tevm/voltaire';
+
+interface NetworkConfig {
+  chainId: number;
+  hardfork: BrandedHardfork;
+  networkName: string;
+}
+
+function createNetworkConfig(options: {
+  chainId: number;
+  hardfork?: string;
+  networkName: string;
+}): NetworkConfig {
+  // Use default if not specified
+  const hardforkStr = options.hardfork ?? "prague";
+
+  // Validate
+  if (!Hardfork.isValidName(hardforkStr)) {
+    throw new Error(`Invalid hardfork: ${hardforkStr}`);
+  }
+
+  // Parse and create config
+  const hardfork = Hardfork.fromString(hardforkStr)!;
+
+  return {
+    chainId: options.chainId,
+    hardfork,
+    networkName: options.networkName,
+  };
+}
+
+// Usage
+const mainnetConfig = createNetworkConfig({
+  chainId: 1,
+  hardfork: "cancun",
+  networkName: "mainnet",
+});
+```
+
+### Environment-Based Configuration
+
+```typescript
+function getHardforkFromEnv(): BrandedHardfork {
+  const env = process.env.ETHEREUM_HARDFORK ?? "prague";
+
+  const fork = Hardfork.fromString(env);
+  if (!fork) {
+    throw new Error(
+      `Invalid ETHEREUM_HARDFORK: ${env}. ` +
+      `Valid options: ${Hardfork.allNames().join(", ")}`
+    );
+  }
+
+  return fork;
+}
+
+// Usage
+const fork = getHardforkFromEnv();
+console.log(`Using hardfork: ${Hardfork.toString(fork)}`);
+```
+
+### Configuration Validation
+
+```typescript
+interface Config {
+  hardfork: string;
+  minimumHardfork?: string;
+}
+
+function validateConfig(config: Config): {
+  hardfork: BrandedHardfork;
+  minimumHardfork: BrandedHardfork;
+} {
+  // Validate hardfork
+  const fork = Hardfork.fromString(config.hardfork);
+  if (!fork) {
+    throw new Error(`Invalid hardfork: ${config.hardfork}`);
+  }
+
+  // Validate minimum if specified
+  let minFork = Hardfork.fromString(config.minimumHardfork ?? "london");
+  if (!minFork) {
+    throw new Error(`Invalid minimumHardfork: ${config.minimumHardfork}`);
+  }
+
+  // Check minimum requirement
+  if (Hardfork.isBefore(fork, minFork)) {
+    throw new Error(
+      `Hardfork ${Hardfork.toString(fork)} is before minimum ` +
+      `${Hardfork.toString(minFork)}`
+    );
+  }
+
+  return { hardfork: fork, minimumHardfork: minFork };
+}
+```
+
+## Feature Gating
+
+### Transaction Type Selection
+
+```typescript
+import { Hardfork, BrandedHardfork } from '@tevm/voltaire';
+
+function selectTransactionType(fork: BrandedHardfork): {
+  type: number;
+  name: string;
+  features: string[];
+} {
+  if (Hardfork.hasEIP4844(fork)) {
+    return {
+      type: 3,
+      name: "Blob Transaction",
+      features: ["blobs", "eip1559", "access_lists"],
+    };
+  } else if (Hardfork.hasEIP1559(fork)) {
+    return {
+      type: 2,
+      name: "EIP-1559 Transaction",
+      features: ["eip1559", "access_lists"],
+    };
+  } else {
+    return {
+      type: 0,
+      name: "Legacy Transaction",
+      features: [],
+    };
+  }
+}
+
+// Usage
+const txType = selectTransactionType(CANCUN);
+console.log(txType);
+// {
+//   type: 3,
+//   name: "Blob Transaction",
+//   features: ["blobs", "eip1559", "access_lists"]
+// }
+```
+
+### Opcode Selection
+
+```typescript
+function generatePushZero(fork: BrandedHardfork): {
+  bytecode: number[];
+  gas: number;
+  description: string;
+} {
+  if (Hardfork.hasEIP3855(fork)) {
+    return {
+      bytecode: [0x5F],  // PUSH0
+      gas: 2,
+      description: "PUSH0 (EIP-3855)",
+    };
+  } else {
+    return {
+      bytecode: [0x60, 0x00],  // PUSH1 0x00
+      gas: 3,
+      description: "PUSH1 0x00 (legacy)",
+    };
+  }
+}
+
+// Usage
+const push0 = generatePushZero(SHANGHAI);
+console.log(push0.description);  // "PUSH0 (EIP-3855)"
+```
+
+### Gas Estimation
+
+```typescript
+function estimateStorageGas(
+  fork: BrandedHardfork,
+  operations: {
+    sload: number;
+    sstore: number;
+    tload?: number;
+    tstore?: number;
+  }
+): { total: number; breakdown: Record<string, number> } {
+  const breakdown: Record<string, number> = {};
+
+  // Standard storage
+  breakdown.sload = operations.sload * 100;  // Warm SLOAD
+  breakdown.sstore = operations.sstore * 100;  // Minimum SSTORE
+
+  // Transient storage (Cancun+)
+  if (Hardfork.hasEIP1153(fork)) {
+    breakdown.tload = (operations.tload ?? 0) * 100;
+    breakdown.tstore = (operations.tstore ?? 0) * 100;
+  } else {
+    // Fall back to regular storage if no transient storage
+    breakdown.sload += (operations.tload ?? 0) * 100;
+    breakdown.sstore += (operations.tstore ?? 0) * 20000;
+  }
+
+  const total = Object.values(breakdown).reduce((a, b) => a + b, 0);
+
+  return { total, breakdown };
+}
+
+// Usage
+const gas = estimateStorageGas(CANCUN, {
+  sload: 2,
+  sstore: 1,
+  tload: 3,  // Transient storage available in Cancun
+  tstore: 2,
+});
+console.log(`Total gas: ${gas.total}`);
+```
+
+## Version Migration
+
+### Upgrade Path Planning
+
+```typescript
+import { Hardfork, BrandedHardfork, range } from '@tevm/voltaire';
+
+interface UpgradePlan {
+  current: string;
+  target: string;
+  path: string[];
+  steps: number;
+  features: Array<{
+    hardfork: string;
+    newFeatures: string[];
+  }>;
+}
+
+function planUpgrade(
+  current: BrandedHardfork,
+  target: BrandedHardfork
+): UpgradePlan | null {
+  // Check if upgrade needed
+  if (Hardfork.isAtLeast(current, target)) {
+    return null;  // Already at or past target
+  }
+
+  // Get upgrade path (excluding current)
+  const fullPath = range(current, target);
+  const path = fullPath.slice(1);
+
+  // Analyze new features at each step
+  const features = path.map(fork => {
+    const newFeatures: string[] = [];
+
+    if (Hardfork.hasEIP1559(fork) && !Hardfork.hasEIP1559(current)) {
+      newFeatures.push("EIP-1559 (base fee mechanism)");
+    }
+    if (Hardfork.hasEIP3855(fork) && !Hardfork.hasEIP3855(current)) {
+      newFeatures.push("EIP-3855 (PUSH0 opcode)");
+    }
+    if (Hardfork.hasEIP4844(fork) && !Hardfork.hasEIP4844(current)) {
+      newFeatures.push("EIP-4844 (blob transactions)");
+    }
+    if (Hardfork.hasEIP1153(fork) && !Hardfork.hasEIP1153(current)) {
+      newFeatures.push("EIP-1153 (transient storage)");
+    }
+    if (Hardfork.isPostMerge(fork) && !Hardfork.isPostMerge(current)) {
+      newFeatures.push("Proof of Stake consensus");
+    }
+
+    return {
+      hardfork: Hardfork.toString(fork),
+      newFeatures,
+    };
+  });
+
+  return {
+    current: Hardfork.toString(current),
+    target: Hardfork.toString(target),
+    path: path.map(Hardfork.toString),
+    steps: path.length,
+    features,
+  };
+}
+
+// Usage
+const plan = planUpgrade(BERLIN, CANCUN);
+if (plan) {
+  console.log(`Upgrade from ${plan.current} to ${plan.target}`);
+  console.log(`Steps required: ${plan.steps}`);
+  console.log("Path:", plan.path.join(" → "));
+  plan.features.forEach(({ hardfork, newFeatures }) => {
+    if (newFeatures.length > 0) {
+      console.log(`  ${hardfork}:`);
+      newFeatures.forEach(f => console.log(`    - ${f}`));
+    }
+  });
+}
+```
+
+### Version Compatibility Check
+
+```typescript
+function checkCompatibility(
+  clientVersion: BrandedHardfork,
+  networkVersion: BrandedHardfork
+): {
+  compatible: boolean;
+  reason?: string;
+  recommendedAction?: string;
+} {
+  if (Hardfork.isEqual(clientVersion, networkVersion)) {
+    return { compatible: true };
+  }
+
+  if (Hardfork.isAfter(clientVersion, networkVersion)) {
+    return {
+      compatible: true,
+      reason: "Client is newer than network (backward compatible)",
+    };
+  }
+
+  // Client is behind network
+  return {
+    compatible: false,
+    reason: `Client (${Hardfork.toString(clientVersion)}) is behind network (${Hardfork.toString(networkVersion)})`,
+    recommendedAction: `Upgrade client to ${Hardfork.toString(networkVersion)} or later`,
+  };
+}
+
+// Usage
+const compat = checkCompatibility(LONDON, CANCUN);
+if (!compat.compatible) {
+  console.error(compat.reason);
+  console.error(compat.recommendedAction);
+}
+```
+
+## Capability Detection
+
+### Network Capabilities
+
+```typescript
+interface NetworkCapabilities {
+  consensus: "PoW" | "PoS";
+  transactionTypes: number[];
+  features: {
+    eip1559: boolean;
+    push0: boolean;
+    blobs: boolean;
+    transientStorage: boolean;
+  };
+  opcodes: {
+    basefee: boolean;
+    push0: boolean;
+    blobhash: boolean;
+    tload: boolean;
+    tstore: boolean;
+    prevrandao: boolean;
+  };
+}
+
+function getNetworkCapabilities(fork: BrandedHardfork): NetworkCapabilities {
+  const hasEIP1559 = Hardfork.hasEIP1559(fork);
+  const hasPush0 = Hardfork.hasEIP3855(fork);
+  const hasBlobs = Hardfork.hasEIP4844(fork);
+  const hasTransient = Hardfork.hasEIP1153(fork);
+  const isPoS = Hardfork.isPostMerge(fork);
+
+  // Build transaction types array
+  const transactionTypes = [0];  // Legacy always supported
+  if (hasEIP1559) transactionTypes.push(2);  // EIP-1559
+  if (hasBlobs) transactionTypes.push(3);    // Blob
+
+  return {
+    consensus: isPoS ? "PoS" : "PoW",
+    transactionTypes,
+    features: {
+      eip1559: hasEIP1559,
+      push0: hasPush0,
+      blobs: hasBlobs,
+      transientStorage: hasTransient,
+    },
+    opcodes: {
+      basefee: hasEIP1559,      // 0x48
+      push0: hasPush0,          // 0x5F
+      blobhash: hasBlobs,       // 0x49
+      tload: hasTransient,      // 0x5C
+      tstore: hasTransient,     // 0x5D
+      prevrandao: isPoS,        // 0x44 (replaces DIFFICULTY)
+    },
+  };
+}
+
+// Usage
+const caps = getNetworkCapabilities(CANCUN);
+console.log("Consensus:", caps.consensus);
+console.log("Transaction types:", caps.transactionTypes);
+console.log("Opcodes available:");
+Object.entries(caps.opcodes)
+  .filter(([_, available]) => available)
+  .forEach(([name]) => console.log(`  - ${name.toUpperCase()}`));
+```
+
+### Feature Matrix
+
+```typescript
+function generateFeatureMatrix(): Array<{
+  name: string;
+  date: string;
+  consensus: string;
+  eip1559: boolean;
+  push0: boolean;
+  blobs: boolean;
+  transientStorage: boolean;
+}> {
+  // Simplified dates
+  const dates: Record<string, string> = {
+    frontier: "2015-07",
+    homestead: "2016-03",
+    berlin: "2021-04",
+    london: "2021-08",
+    merge: "2022-09",
+    shanghai: "2023-04",
+    cancun: "2024-03",
+    prague: "2025-05",
+  };
+
+  return Hardfork.allIds().map(fork => {
+    const name = Hardfork.toString(fork);
+    return {
+      name,
+      date: dates[name] ?? "TBD",
+      consensus: Hardfork.isPostMerge(fork) ? "PoS" : "PoW",
+      eip1559: Hardfork.hasEIP1559(fork),
+      push0: Hardfork.hasEIP3855(fork),
+      blobs: Hardfork.hasEIP4844(fork),
+      transientStorage: Hardfork.hasEIP1153(fork),
+    };
+  });
+}
+
+// Usage
+const matrix = generateFeatureMatrix();
+console.table(matrix);
+```
+
+## Smart Contract Deployment
+
+### Bytecode Optimization
+
+```typescript
+interface CompilerOptions {
+  hardfork: BrandedHardfork;
+  optimize: boolean;
+}
+
+function getCompilerOptimizations(options: CompilerOptions): {
+  usePush0: boolean;
+  useTransientStorage: boolean;
+  useCreate2: boolean;
+} {
+  const { hardfork } = options;
+
+  return {
+    // Use PUSH0 for gas savings (Shanghai+)
+    usePush0: options.optimize && Hardfork.hasEIP3855(hardfork),
+
+    // Use transient storage for temporary data (Cancun+)
+    useTransientStorage: options.optimize && Hardfork.hasEIP1153(hardfork),
+
+    // CREATE2 available (Constantinople+)
+    useCreate2: Hardfork.isAtLeast(hardfork, CONSTANTINOPLE),
+  };
+}
+
+// Usage
+const opts = getCompilerOptimizations({
+  hardfork: CANCUN,
+  optimize: true,
+});
+console.log("Optimizations:", opts);
+// { usePush0: true, useTransientStorage: true, useCreate2: true }
+```
+
+### Deployment Validation
+
+```typescript
+interface DeploymentPlan {
+  bytecode: Uint8Array;
+  network: string;
+  hardfork: BrandedHardfork;
+}
+
+function validateDeployment(plan: DeploymentPlan): {
+  valid: boolean;
+  warnings: string[];
+  errors: string[];
+} {
+  const warnings: string[] = [];
+  const errors: string[] = [];
+
+  // Check if bytecode uses features available in hardfork
+  const bytecode = plan.bytecode;
+
+  // Check for PUSH0 (0x5F)
+  if (bytecode.includes(0x5F) && !Hardfork.hasEIP3855(plan.hardfork)) {
+    errors.push(
+      `Bytecode uses PUSH0 but ${Hardfork.toString(plan.hardfork)} ` +
+      "doesn't support EIP-3855. Requires Shanghai or later."
+    );
+  }
+
+  // Check for TLOAD/TSTORE (0x5C/0x5D)
+  if (
+    (bytecode.includes(0x5C) || bytecode.includes(0x5D)) &&
+    !Hardfork.hasEIP1153(plan.hardfork)
+  ) {
+    errors.push(
+      `Bytecode uses transient storage but ${Hardfork.toString(plan.hardfork)} ` +
+      "doesn't support EIP-1153. Requires Cancun or later."
+    );
+  }
+
+  // Warn if not using available optimizations
+  if (
+    Hardfork.hasEIP3855(plan.hardfork) &&
+    !bytecode.includes(0x5F)
+  ) {
+    warnings.push(
+      "PUSH0 optimization available but not used. " +
+      "Consider recompiling with Shanghai+ target."
+    );
+  }
+
+  return {
+    valid: errors.length === 0,
+    warnings,
+    errors,
+  };
+}
+```
+
+## API Validation
+
+### Request Validation
+
+```typescript
+interface TransactionRequest {
+  type?: number;
+  to: string;
+  data: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+  gasPrice?: string;
+  blobs?: string[];
+}
+
+function validateTransactionRequest(
+  req: TransactionRequest,
+  fork: BrandedHardfork
+): { valid: boolean; error?: string } {
+  // Validate type 2 (EIP-1559) transaction
+  if (req.type === 2) {
+    if (!Hardfork.hasEIP1559(fork)) {
+      return {
+        valid: false,
+        error: `Type 2 transactions require London+, current: ${Hardfork.toString(fork)}`,
+      };
+    }
+    if (!req.maxFeePerGas || !req.maxPriorityFeePerGas) {
+      return {
+        valid: false,
+        error: "Type 2 transactions require maxFeePerGas and maxPriorityFeePerGas",
+      };
+    }
+  }
+
+  // Validate type 3 (blob) transaction
+  if (req.type === 3) {
+    if (!Hardfork.hasEIP4844(fork)) {
+      return {
+        valid: false,
+        error: `Type 3 transactions require Cancun+, current: ${Hardfork.toString(fork)}`,
+      };
+    }
+    if (!req.blobs || req.blobs.length === 0) {
+      return {
+        valid: false,
+        error: "Type 3 transactions require blobs",
+      };
+    }
+  }
+
+  return { valid: true };
+}
+```
+
+### RPC Method Availability
+
+```typescript
+function getRPCMethods(fork: BrandedHardfork): {
+  standard: string[];
+  eip1559: string[];
+  debug: string[];
+} {
+  const standard = [
+    "eth_blockNumber",
+    "eth_call",
+    "eth_estimateGas",
+    "eth_getBalance",
+    "eth_getCode",
+    "eth_getTransactionCount",
+    "eth_sendRawTransaction",
+  ];
+
+  const eip1559Methods = Hardfork.hasEIP1559(fork)
+    ? ["eth_maxPriorityFeePerGas", "eth_feeHistory"]
+    : [];
+
+  const debug = [
+    "debug_traceTransaction",
+    "debug_traceCall",
+  ];
+
+  return {
+    standard,
+    eip1559: eip1559Methods,
+    debug,
+  };
+}
+```
+
+## Testing Utilities
+
+### Test Matrix Generation
+
+```typescript
+function generateTestMatrix() {
+  const importantForks = [
+    BERLIN,
+    LONDON,
+    MERGE,
+    SHANGHAI,
+    CANCUN,
+    PRAGUE,
+  ];
+
+  return importantForks.map(fork => ({
+    fork: Hardfork.toString(fork),
+    describe: `Hardfork: ${Hardfork.toString(fork)}`,
+    features: {
+      eip1559: Hardfork.hasEIP1559(fork),
+      push0: Hardfork.hasEIP3855(fork),
+      blobs: Hardfork.hasEIP4844(fork),
+      transientStorage: Hardfork.hasEIP1153(fork),
+      pos: Hardfork.isPostMerge(fork),
+    },
+  }));
+}
+
+// Usage in tests
+const testMatrix = generateTestMatrix();
+testMatrix.forEach(({ fork, describe, features }) => {
+  test.describe(describe, () => {
+    if (features.eip1559) {
+      test("supports EIP-1559 transactions", () => {
+        // Test EIP-1559
+      });
+    }
+
+    if (features.blobs) {
+      test("supports blob transactions", () => {
+        // Test blobs
+      });
+    }
+  });
+});
+```
+
+## Best Practices Summary
+
+### 1. Always Validate Input
+
+```typescript
+const fork = Hardfork.fromString(userInput);
+if (!fork) {
+  throw new Error("Invalid hardfork");
+}
+```
+
+### 2. Use Feature Detection
+
+```typescript
+// Good
+if (Hardfork.hasEIP4844(fork)) { /* ... */ }
+
+// Less clear
+if (Hardfork.isAtLeast(fork, CANCUN)) { /* ... */ }
+```
+
+### 3. Normalize for Storage
+
+```typescript
+const normalized = Hardfork.toString(fork);
+storage.set("hardfork", normalized);
+```
+
+### 4. Handle Aliases
+
+```typescript
+const fork1 = Hardfork.fromString("merge");
+const fork2 = Hardfork.fromString("paris");
+console.log(Hardfork.isEqual(fork1, fork2));  // true
+```
+
+### 5. Provide Clear Error Messages
+
+```typescript
+if (!Hardfork.isValidName(input)) {
+  throw new Error(
+    `Invalid hardfork: ${input}\n` +
+    `Valid options: ${Hardfork.allNames().join(", ")}`
+  );
+}
+```
+
+## Related
+
+- [index.mdx](./index.mdx) - Main documentation
+- [features.mdx](./features.mdx) - Feature detection methods
+- [utilities.mdx](./utilities.mdx) - Utility functions
+- [comparisons.mdx](./comparisons.mdx) - Version comparison

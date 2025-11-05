@@ -1,0 +1,276 @@
+# WebAssembly
+
+WASM implementation status and performance characteristics for GasConstants.
+
+## Status: Not Implemented (Not Needed)
+
+GasConstants **does not have a WASM implementation** and does not need one.
+
+## Why No WASM?
+
+GasConstants provides:
+- EVM opcode gas cost constants (direct bigint values)
+- Simple gas calculation functions (basic arithmetic)
+- Hardfork-specific cost lookups (conditional returns)
+
+These operations are:
+- **Primarily constant lookups** - Zero computation
+- **Simple arithmetic on bigints** - <100ns per operation
+- **Already optimal in TypeScript** - No room for improvement
+
+**WASM overhead (~1-2μs per call) far exceeds calculation time.**
+
+## Performance Comparison
+
+### Pure TypeScript (Current Implementation)
+
+```
+Operation                        Time
+─────────────────────────────────────
+Constant access                  5-10ns
+calculateKeccak256Cost          20-50ns
+calculateMemoryExpansionCost   100-200ns
+calculateCallCost               50-150ns
+calculateSstoreCost             50-100ns
+```
+
+### WASM (Hypothetical)
+
+```
+Operation                        Time
+─────────────────────────────────────
+WASM call overhead              1-2μs
+Actual computation             5-200ns
+Total                          1.2-2μs
+```
+
+**Result:** WASM would be **10-400x SLOWER** for these operations.
+
+## Benchmarks
+
+From `GasConstants.bench.ts`:
+
+```typescript
+// Constant access: 5-10ns
+const cost = GasConstants.QuickStep;
+
+// Simple calculation: 20-50ns
+const keccak = GasConstants.calculateKeccak256Cost(64n);
+
+// Complex calculation: 100-200ns
+const memory = GasConstants.calculateMemoryExpansionCost(0n, 1024n);
+```
+
+Even the most complex calculation (memory expansion with quadratic formula) completes in <200ns. WASM call overhead alone is 1000-2000ns.
+
+## When WASM Makes Sense
+
+WASM is beneficial for:
+
+1. **Complex state machine execution** - EVM interpreter/executor
+2. **Cryptographic operations** - Keccak-256, secp256k1, BLS
+3. **Large batch operations** - Processing thousands of transactions
+4. **Heavy computation** - Operations taking >10μs each
+
+GasConstants provides **building blocks** for these systems, not the systems themselves.
+
+## Zig Implementation
+
+Zig implementation exists at `/Users/williamcory/primitives/src/primitives/GasConstants/gas_constants.zig` for:
+- Documentation and reference
+- Integration with other WASM-accelerated primitives
+- Potential future use in EVM interpreter
+
+But it's not compiled to WASM for direct use because TypeScript is faster for these simple operations.
+
+## Usage
+
+Import normally - always uses pure TypeScript:
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+// All operations use pure TypeScript (optimal)
+const cost = GasConstants.calculateKeccak256Cost(64n);
+const memory = GasConstants.calculateMemoryExpansionCost(0n, 128n);
+const sstore = GasConstants.calculateSstoreCost(false, 0n, 100n);
+```
+
+## WASM Status API
+
+For compatibility with other primitives that do have WASM:
+
+```typescript
+import {
+  isWasmGasAvailable,
+  getGasImplementationStatus
+} from './GasConstants/BrandedGasConstants/GasConstants.wasm.js';
+
+// Check availability
+console.log(isWasmGasAvailable());
+// false (WASM not implemented)
+
+// Get detailed status
+const status = getGasImplementationStatus();
+console.log(status);
+// {
+//   available: false,
+//   reason: "Pure TS optimal - constants and simple math",
+//   recommendation: "Use pure TypeScript implementation - constant access and arithmetic already optimal",
+//   performance: {
+//     typescriptAvg: "5-200ns per operation (constant access to simple calculation)",
+//     wasmOverhead: "1-2μs per WASM call",
+//     verdict: "TypeScript 10-400x faster for these operations"
+//   },
+//   notes: "If building an EVM interpreter/executor, WASM acceleration makes sense at the interpreter level (using these constants), not at the constant level itself."
+// }
+```
+
+## Architecture Rationale
+
+### Data-First Design
+
+GasConstants is pure data:
+```typescript
+// Constants - zero computation
+export const QuickStep = 2n;
+export const Sload = 100n;
+
+// Simple functions - basic arithmetic
+export function calculateKeccak256Cost(size: bigint): bigint {
+  const words = (size + 31n) / 32n;
+  return Keccak256Base + words * Keccak256Word;
+}
+```
+
+TypeScript JIT compilers (V8, SpiderMonkey) optimize these operations perfectly. There's no "heavy lifting" to offload.
+
+### Contrast with Heavy Primitives
+
+Compare to primitives that **do** benefit from WASM:
+
+**Address (WASM-accelerated):**
+```typescript
+// Keccak-256 hash computation - 5-10μs
+Address.fromPublicKey(x, y)
+
+// Checksum validation - 2-5μs
+Address.isValidChecksum(addr)
+```
+
+**Uint256 (WASM-accelerated):**
+```typescript
+// 256-bit multiplication - 500-1000ns
+Uint256.mul(a, b)
+
+// 256-bit division - 1-2μs
+Uint256.div(a, b)
+```
+
+These operations have sufficient computational cost to amortize WASM overhead. GasConstants operations do not.
+
+## Integration with WASM Primitives
+
+When building WASM-accelerated systems (e.g., EVM interpreter), use GasConstants from TypeScript:
+
+```typescript
+// EVM interpreter (WASM-accelerated)
+import { executeEVM } from './evm.wasm.js';
+
+// Gas constants (pure TypeScript)
+import * as GasConstants from './GasConstants/index.js';
+
+class EVMInterpreter {
+  constructor(private hardfork: Hardfork) {}
+
+  execute(bytecode: Uint8Array, gas: bigint): Result {
+    // WASM for heavy execution
+    const result = executeEVM(bytecode, gas);
+
+    // TypeScript for gas calculations
+    const refund = this.calculateRefund(result);
+    return { ...result, refund };
+  }
+
+  private calculateRefund(result: ExecutionResult): bigint {
+    // Pure TypeScript - optimal for simple calculations
+    const maxRefund = GasConstants.calculateMaxRefund(result.gasUsed);
+    return result.refund > maxRefund ? maxRefund : result.refund;
+  }
+}
+```
+
+## Performance Tips
+
+For maximum performance with GasConstants:
+
+### 1. Cache Constants
+
+```typescript
+// Good: reference once
+const sload = GasConstants.Sload;
+for (const slot of slots) {
+  cost += sload;
+}
+
+// Still fine: property access is ~5ns
+for (const slot of slots) {
+  cost += GasConstants.Sload;
+}
+```
+
+### 2. Batch Calculations
+
+```typescript
+// Efficient: single calculation per operation type
+const totalKeccak = operations
+  .filter(op => op.type === 'keccak')
+  .reduce((sum, op) => sum + GasConstants.calculateKeccak256Cost(op.size), 0n);
+
+const totalMemory = operations
+  .filter(op => op.type === 'memory')
+  .reduce((sum, op) => sum + calculateMemoryExpansionCost(op.old, op.new).expansionCost, 0n);
+```
+
+### 3. Use Lookup Tables for Repeated Patterns
+
+```typescript
+// For hardfork-specific costs used repeatedly
+const costs = {
+  coldSload: GasConstants.getColdSloadCost(hardfork),
+  coldAccount: GasConstants.getColdAccountAccessCost(hardfork),
+  sstoreRefund: GasConstants.getSstoreRefund(hardfork),
+};
+
+// Reuse throughout execution
+for (const slot of slots) {
+  const cost = isWarm ? GasConstants.Sload : costs.coldSload;
+  total += cost;
+}
+```
+
+## Comparison with Other Primitives
+
+| Primitive | WASM Status | Reason |
+|-----------|-------------|--------|
+| **GasConstants** | ❌ Not implemented | Constants and simple arithmetic (5-200ns) - WASM overhead too high |
+| **Address** | ✅ Implemented | Keccak-256 hashing (5-10μs) - 25-50x speedup |
+| **Uint256** | ✅ Implemented | 256-bit arithmetic (500-2000ns) - 2-10x speedup |
+| **RLP** | ✅ Implemented | Encoding/decoding (1-10μs) - 5-20x speedup |
+| **Hex** | ⚠️ Conditional | Simple conversions fast in TS, but WASM faster for large batches |
+
+## Summary
+
+- **Status:** WASM not implemented (intentionally)
+- **Reason:** TypeScript optimal for constants and simple arithmetic
+- **Performance:** Pure TypeScript 10-400x faster than WASM would be
+- **Recommendation:** Always use pure TypeScript implementation
+- **When to use WASM:** For EVM interpreters and heavy computation that **uses** these constants, not the constants themselves
+
+GasConstants is designed as a **zero-overhead data layer**. Adding WASM would only add overhead.
+
+## See Also
+
+- [Constants](./constants.mdx) - Gas constant definitions
+- [Calculation Functions](./calculation-functions.mdx) - Calculation implementations
+- [Usage Patterns](./usage-patterns.mdx) - Performance tips and patterns
