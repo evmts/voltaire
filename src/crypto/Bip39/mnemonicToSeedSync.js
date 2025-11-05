@@ -18,7 +18,9 @@ export function mnemonicToSeedSync(mnemonic, passphrase = "") {
 	assertValidMnemonic(mnemonic);
 
 	try {
-		return /** @type {import('./BrandedSeed.js').Seed} */ (_mnemonicToSeedSync(mnemonic, passphrase));
+		return /** @type {import('./BrandedSeed.js').Seed} */ (
+			_mnemonicToSeedSync(mnemonic, passphrase)
+		);
 	} catch (error) {
 		throw new Bip39Error(`Seed derivation failed: ${error}`);
 	}

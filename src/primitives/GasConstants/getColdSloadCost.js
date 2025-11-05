@@ -1,5 +1,5 @@
-import { hasEIP2929 } from "./hasEIP2929.js";
 import { ColdSload, Sload } from "./constants.js";
+import { hasEIP2929 } from "./hasEIP2929.js";
 
 /**
  * Get cold storage cost for hardfork

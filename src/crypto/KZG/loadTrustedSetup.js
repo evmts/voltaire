@@ -61,6 +61,7 @@ export function getInitialized() {
 /**
  * Set initialization state (internal)
  * @internal
+ * @param {boolean} value
  */
 export function setInitialized(value) {
 	initialized = value;

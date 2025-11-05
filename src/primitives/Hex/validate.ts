@@ -16,7 +16,8 @@ import { hexCharToValue } from "./utils.js";
  * ```
  */
 export function validate(value: string): BrandedHex {
-	if (value.length < 2 || !value.startsWith("0x")) throw new InvalidFormatError();
+	if (value.length < 2 || !value.startsWith("0x"))
+		throw new InvalidFormatError();
 	for (let i = 2; i < value.length; i++) {
 		if (hexCharToValue(value[i]) === null) throw new InvalidCharacterError();
 	}

@@ -33,5 +33,7 @@ export function hashTypedData(typedData) {
 	combined.set(domainHash, 2);
 	combined.set(messageHash, 34);
 
-	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (keccak_256(combined));
+	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
+		keccak_256(combined)
+	);
 }

@@ -415,9 +415,7 @@ describe("Blob.VersionedHash.getVersion", () => {
 	it("convenience form - version", () => {
 		const hash = new Uint8Array(32) as Blob.VersionedHash;
 		hash[0] = Blob.COMMITMENT_VERSION_KZG;
-		expect(Blob.VersionedHash.version(hash)).toBe(
-			Blob.COMMITMENT_VERSION_KZG,
-		);
+		expect(Blob.VersionedHash.version(hash)).toBe(Blob.COMMITMENT_VERSION_KZG);
 	});
 });
 

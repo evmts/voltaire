@@ -1,4 +1,11 @@
-import { ColdSload, Sload, SstoreSet, SstoreClear, SstoreReset, SstoreRefund } from "./constants.js";
+import {
+	ColdSload,
+	Sload,
+	SstoreClear,
+	SstoreRefund,
+	SstoreReset,
+	SstoreSet,
+} from "./constants.js";
 
 /**
  * Calculate SSTORE gas cost

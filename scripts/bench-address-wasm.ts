@@ -35,7 +35,11 @@ export async function fromHex(hex: string): Promise<Uint8Array> {
 	await init();
 
 	const exports = wasmInstance!.exports as {
-		addressFromHex: (hexPtr: number, hexLen: number, outputPtr: number) => number;
+		addressFromHex: (
+			hexPtr: number,
+			hexLen: number,
+			outputPtr: number,
+		) => number;
 		memory: WebAssembly.Memory;
 	};
 

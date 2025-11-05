@@ -194,9 +194,13 @@ Uint.prototype.shiftRight = Function.prototype.call.bind(shiftRight) as any;
 Uint.prototype.equals = Function.prototype.call.bind(equals) as any;
 Uint.prototype.notEquals = Function.prototype.call.bind(notEquals) as any;
 Uint.prototype.lessThan = Function.prototype.call.bind(lessThan) as any;
-Uint.prototype.lessThanOrEqual = Function.prototype.call.bind(lessThanOrEqual) as any;
+Uint.prototype.lessThanOrEqual = Function.prototype.call.bind(
+	lessThanOrEqual,
+) as any;
 Uint.prototype.greaterThan = Function.prototype.call.bind(greaterThan) as any;
-Uint.prototype.greaterThanOrEqual = Function.prototype.call.bind(greaterThanOrEqual) as any;
+Uint.prototype.greaterThanOrEqual = Function.prototype.call.bind(
+	greaterThanOrEqual,
+) as any;
 Uint.prototype.isZero = Function.prototype.call.bind(isZero) as any;
 Uint.prototype.minimum = Function.prototype.call.bind(minimum) as any;
 Uint.prototype.maximum = Function.prototype.call.bind(maximum) as any;

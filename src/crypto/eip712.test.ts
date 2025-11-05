@@ -5,9 +5,15 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Address from "../primitives/Address/index.js";
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
-import { EIP712, type TypedData, type Domain, type TypeDefinitions, type Message } from "./EIP712/index.js";
+import { Address } from "../primitives/Address/index.js";
+import { type BrandedHash, Hash } from "../primitives/Hash/index.js";
+import {
+	type Domain,
+	EIP712,
+	type Message,
+	type TypeDefinitions,
+	type TypedData,
+} from "./EIP712/index.js";
 
 describe("EIP712", () => {
 	describe("Domain.hash", () => {

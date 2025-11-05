@@ -22,7 +22,11 @@ import { hexCharToValue } from "./utils.js";
  * const sliced2 = hex.slice(1); // '0x3456'
  * ```
  */
-export function slice(hex: BrandedHex, start: number, end?: number): BrandedHex {
+export function slice(
+	hex: BrandedHex,
+	start: number,
+	end?: number,
+): BrandedHex {
 	if (!hex.startsWith("0x")) throw new InvalidFormatError();
 	const hexDigits = hex.slice(2);
 	if (hexDigits.length % 2 !== 0) throw new OddLengthError();

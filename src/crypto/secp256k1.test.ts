@@ -10,10 +10,10 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { Hash, type BrandedHash } from "../primitives/Hash/index.js";
+import { type BrandedHash, Hash } from "../primitives/Hash/index.js";
+import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
-import { loadWasm } from "../wasm-loader/loader.js";
 
 // Load WASM before running tests
 await loadWasm(new URL("../../zig-out/lib/primitives.wasm", import.meta.url));

@@ -1,7 +1,11 @@
 // @ts-nocheck
 import { p256 } from "@noble/curves/nist.js";
-import { InvalidPrivateKeyError, InvalidPublicKeyError, P256Error } from "./errors.js";
 import { PRIVATE_KEY_SIZE, PUBLIC_KEY_SIZE } from "./constants.js";
+import {
+	InvalidPrivateKeyError,
+	InvalidPublicKeyError,
+	P256Error,
+} from "./errors.js";
 
 /**
  * Perform ECDH key exchange

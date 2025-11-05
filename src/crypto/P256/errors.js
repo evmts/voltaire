@@ -2,6 +2,9 @@
  * Base error for P256 operations
  */
 export class P256Error extends Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "P256Error";
@@ -12,6 +15,9 @@ export class P256Error extends Error {
  * Error for invalid signatures
  */
 export class InvalidSignatureError extends P256Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "InvalidSignatureError";
@@ -22,6 +28,9 @@ export class InvalidSignatureError extends P256Error {
  * Error for invalid public keys
  */
 export class InvalidPublicKeyError extends P256Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "InvalidPublicKeyError";
@@ -32,6 +41,9 @@ export class InvalidPublicKeyError extends P256Error {
  * Error for invalid private keys
  */
 export class InvalidPrivateKeyError extends P256Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "InvalidPrivateKeyError";

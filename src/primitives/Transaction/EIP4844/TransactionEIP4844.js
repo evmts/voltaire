@@ -1,6 +1,7 @@
 // @ts-nocheck
 export * from "./BrandedTransactionEIP4844.js";
 
+import { Type } from "../types.js";
 import { deserialize } from "./deserialize.js";
 import { getBlobGasCost } from "./getBlobGasCost.js";
 import { getEffectiveGasPrice } from "./getEffectiveGasPrice.js";
@@ -9,7 +10,6 @@ import { getSigningHash } from "./getSigningHash.js";
 import { hash } from "./hash.js";
 import { serialize } from "./serialize.js";
 import { verifySignature } from "./verifySignature.js";
-import { Type } from "../types.js";
 
 // Export individual functions
 export {
@@ -54,9 +54,8 @@ export function TransactionEIP4844(tx) {
 	};
 }
 
-TransactionEIP4844.deserialize = function (bytes) {
-	return TransactionEIP4844(deserialize(bytes));
-};
+TransactionEIP4844.deserialize = (bytes) =>
+	TransactionEIP4844(deserialize(bytes));
 TransactionEIP4844.deserialize.prototype = TransactionEIP4844.prototype;
 
 TransactionEIP4844.serialize = serialize;
@@ -72,11 +71,11 @@ TransactionEIP4844.prototype.serialize =
 TransactionEIP4844.prototype.hash = Function.prototype.call.bind(hash);
 TransactionEIP4844.prototype.getSigningHash =
 	Function.prototype.call.bind(getSigningHash);
-TransactionEIP4844.prototype.getSender = Function.prototype.call.bind(getSender);
+TransactionEIP4844.prototype.getSender =
+	Function.prototype.call.bind(getSender);
 TransactionEIP4844.prototype.verifySignature =
 	Function.prototype.call.bind(verifySignature);
-TransactionEIP4844.prototype.getEffectiveGasPrice = Function.prototype.call.bind(
-	getEffectiveGasPrice,
-);
+TransactionEIP4844.prototype.getEffectiveGasPrice =
+	Function.prototype.call.bind(getEffectiveGasPrice);
 TransactionEIP4844.prototype.getBlobGasCost =
 	Function.prototype.call.bind(getBlobGasCost);

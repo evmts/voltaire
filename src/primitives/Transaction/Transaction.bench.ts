@@ -4,8 +4,8 @@
  * Measures performance of transaction operations
  */
 
-import type { BrandedAddress } from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/index.js";
+import { type BrandedHash, Hash } from "../Hash/index.js";
 import * as Transaction from "../Transaction/index.js";
 import type {
 	EIP1559,
@@ -74,7 +74,7 @@ function benchmark(
 function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
-	return addr as Address;
+	return addr as BrandedAddress;
 }
 
 function createHash(byte: number): BrandedHash {

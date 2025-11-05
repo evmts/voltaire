@@ -16,5 +16,7 @@ import { encodeType } from "./encodeType.js";
 export function hashType(primaryType, types) {
 	const encoded = encodeType(primaryType, types);
 	const encodedBytes = new TextEncoder().encode(encoded);
-	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (keccak_256(encodedBytes));
+	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
+		keccak_256(encodedBytes)
+	);
 }

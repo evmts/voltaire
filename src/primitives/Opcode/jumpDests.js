@@ -1,6 +1,6 @@
+import * as constants from "./constants.js";
 // @ts-nocheck
 import { parse } from "./parse.js";
-import * as constants from "./constants.js";
 
 /**
  * Find all valid JUMPDEST locations

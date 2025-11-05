@@ -35,7 +35,9 @@ export {
  * Factory function for KZG operations
  */
 export function KZG() {
-	throw new Error("KZG is not a constructor. Use KZG.loadTrustedSetup() and other static methods.");
+	throw new Error(
+		"KZG is not a constructor. Use KZG.loadTrustedSetup() and other static methods.",
+	);
 }
 
 // Attach static methods

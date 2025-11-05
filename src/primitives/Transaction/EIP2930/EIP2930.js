@@ -48,9 +48,7 @@ export function TransactionEIP2930(tx) {
 }
 
 // Attach static methods
-TransactionEIP2930.deserialize = function (bytes) {
-	return deserialize(bytes);
-};
+TransactionEIP2930.deserialize = (bytes) => deserialize(bytes);
 TransactionEIP2930.deserialize.prototype = TransactionEIP2930.prototype;
 
 TransactionEIP2930.serialize = serialize;

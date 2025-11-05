@@ -20,5 +20,7 @@ export function pushOpcode(bytes) {
 	if (bytes < 1 || bytes > 32) {
 		throw new Error(`Invalid PUSH size: ${bytes} (must be 0-32)`);
 	}
-	return /** @type {import('./BrandedOpcode.js').BrandedOpcode} */ (constants.PUSH1 + bytes - 1);
+	return /** @type {import('./BrandedOpcode.js').BrandedOpcode} */ (
+		constants.PUSH1 + bytes - 1
+	);
 }

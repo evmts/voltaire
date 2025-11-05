@@ -1,5 +1,5 @@
 import type { BrandedAddress } from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import type { BrandedHash, Hash } from "../Hash/index.js";
 
 /**
  * Branded EventLog type

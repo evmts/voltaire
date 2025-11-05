@@ -64,9 +64,7 @@ export function deserialize(data) {
 	const dataBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
 		fields[7]
 	).value;
-	const accessList = decodeAccessList(
-		/** @type {any} */ (fields[8]).value,
-	);
+	const accessList = decodeAccessList(/** @type {any} */ (fields[8]).value);
 	const maxFeePerBlobGas = decodeBigint(
 		/** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[9]).value,
 	);
@@ -75,19 +73,22 @@ export function deserialize(data) {
 	if (blobHashesData.type !== "list") {
 		throw new Error("Invalid blob versioned hashes");
 	}
-	const blobVersionedHashes = blobHashesData.value.map((/** @type {any} */ hashData) => {
-		if (hashData.type !== "bytes" || hashData.value.length !== 32) {
-			throw new Error("Invalid blob versioned hash");
-		}
-		return /** @type {import('../../Hash/index.js').BrandedHash} */ (
-			hashData.value
-		);
-	});
+	const blobVersionedHashes = blobHashesData.value.map(
+		(/** @type {any} */ hashData) => {
+			if (hashData.type !== "bytes" || hashData.value.length !== 32) {
+				throw new Error("Invalid blob versioned hash");
+			}
+			return /** @type {import('../../Hash/index.js').BrandedHash} */ (
+				hashData.value
+			);
+		},
+	);
 
 	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
 		fields[11]
 	).value;
-	const yParity = yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
+	const yParity =
+		yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
 	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[12])
 		.value;
 	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[13])

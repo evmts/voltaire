@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	Hex,
 	type BrandedHex,
+	Hex,
 	InvalidHexCharacterError,
 	InvalidHexFormatError,
 	InvalidHexLengthError,
@@ -87,7 +87,9 @@ describe("Hex", () => {
 
 		it("throws on odd length", () => {
 			expect(() => Hex.toBytes("0x1" as BrandedHex)).toThrow(OddLengthHexError);
-			expect(() => Hex.toBytes("0x123" as BrandedHex)).toThrow(OddLengthHexError);
+			expect(() => Hex.toBytes("0x123" as BrandedHex)).toThrow(
+				OddLengthHexError,
+			);
 		});
 
 		it("throws on invalid character", () => {

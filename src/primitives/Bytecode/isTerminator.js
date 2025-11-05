@@ -1,4 +1,4 @@
-import { STOP, RETURN, REVERT, INVALID } from "./constants.js";
+import { INVALID, RETURN, REVERT, STOP } from "./constants.js";
 
 /**
  * Check if opcode terminates execution

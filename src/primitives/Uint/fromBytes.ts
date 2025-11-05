@@ -15,7 +15,9 @@ import type { BrandedUint } from "./BrandedUint.js";
  */
 export function fromBytes(bytes: Uint8Array): BrandedUint {
 	if (bytes.length > 32) {
-		throw new Error(`Uint256 bytes cannot exceed 32 bytes, got ${bytes.length}`);
+		throw new Error(
+			`Uint256 bytes cannot exceed 32 bytes, got ${bytes.length}`,
+		);
 	}
 
 	let value = 0n;

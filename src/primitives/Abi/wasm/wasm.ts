@@ -59,8 +59,8 @@ export function encodeParametersWasm<const TParams extends readonly Parameter[]>
   params: TParams,
   values: ParametersToPrimitiveTypes<TParams>,
 ): Uint8Array {
-  const types = params.map(p => p.type);
-  const valueStrs = values.map((v, i) => formatValueForWasm(params[i]!.type, v));
+  const types = params.map((p: Parameter) => p.type);
+  const valueStrs = values.map((v: unknown, i: number) => formatValueForWasm(params[i]!.type, v));
   return loader.abiEncodeParameters(types, valueStrs);
 }
 
@@ -68,9 +68,9 @@ export function decodeParametersWasm<const TParams extends readonly Parameter[]>
   params: TParams,
   data: Uint8Array,
 ): ParametersToPrimitiveTypes<TParams> {
-  const types = params.map(p => p.type);
+  const types = params.map((p: Parameter) => p.type);
   const decoded = loader.abiDecodeParameters(data, types);
-  return decoded.map((d: any, i: number) => parseValueFromWasm(params[i]!.type, d)) as any;
+  return decoded.map((d: unknown, i: number) => parseValueFromWasm(params[i]!.type, d)) as any;
 }
 
 export function encodeFunctionDataWasm<const TParams extends readonly Parameter[]>(

@@ -57,13 +57,12 @@ export function deserialize(data) {
 	const dataBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
 		fields[7]
 	).value;
-	const accessList = decodeAccessList(
-		/** @type {any} */ (fields[8]).value,
-	);
+	const accessList = decodeAccessList(/** @type {any} */ (fields[8]).value);
 	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
 		fields[9]
 	).value;
-	const yParity = yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
+	const yParity =
+		yParityBytes.length > 0 ? /** @type {number} */ (yParityBytes[0]) : 0;
 	const r = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[10])
 		.value;
 	const s = /** @type {{ type: "bytes"; value: Uint8Array }} */ (fields[11])

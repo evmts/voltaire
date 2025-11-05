@@ -1,4 +1,4 @@
-import { Secp256k1 } from "../../../crypto/secp256k1.js";
+import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
 import { getChainId } from "./getChainId.js";
 import { getSigningHash } from "./getSigningHash.js";
 

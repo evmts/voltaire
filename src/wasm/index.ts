@@ -4,7 +4,7 @@
  */
 
 // Address operations
-import { Address as AddressClass } from "../primitives/Address/Address.wasm.js";
+import { Address as AddressClass } from "../primitives/Address/index.js";
 
 // Keccak-256 hashing
 // TODO: Restore after refactoring keccak256.wasm.ts

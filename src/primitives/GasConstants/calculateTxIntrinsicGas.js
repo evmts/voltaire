@@ -1,4 +1,9 @@
-import { Tx, TxContractCreation, TxDataZero, TxDataNonZero } from "./constants.js";
+import {
+	Tx,
+	TxContractCreation,
+	TxDataNonZero,
+	TxDataZero,
+} from "./constants.js";
 
 /**
  * Calculate transaction intrinsic gas cost

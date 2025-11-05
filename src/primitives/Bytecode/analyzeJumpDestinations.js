@@ -1,6 +1,6 @@
 import { JUMPDEST } from "./constants.js";
-import { isPush } from "./isPush.js";
 import { getPushSize } from "./getPushSize.js";
+import { isPush } from "./isPush.js";
 
 /**
  * Analyze bytecode to identify valid JUMPDEST locations

@@ -1,5 +1,5 @@
 import { HDKey } from "@scure/bip32";
-import { InvalidSeedError, HDWalletError } from "./errors.js";
+import { HDWalletError, InvalidSeedError } from "./errors.js";
 
 /**
  * Create root HD key from seed

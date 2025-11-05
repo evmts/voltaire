@@ -1,5 +1,5 @@
-import { AesGcmError, InvalidNonceError } from "./errors.js";
 import { NONCE_SIZE, TAG_SIZE } from "./constants.js";
+import { AesGcmError, InvalidNonceError } from "./errors.js";
 
 /**
  * Encrypt data with AES-GCM

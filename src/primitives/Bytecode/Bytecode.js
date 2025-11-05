@@ -4,6 +4,15 @@ export * from "./BrandedBytecode.js";
 
 import { analyze } from "./analyze.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import {
+	INVALID,
+	JUMPDEST,
+	PUSH1,
+	PUSH32,
+	RETURN,
+	REVERT,
+	STOP,
+} from "./constants.js";
 import { equals } from "./equals.js";
 import { extractRuntime } from "./extractRuntime.js";
 import { formatInstruction } from "./formatInstruction.js";
@@ -11,8 +20,8 @@ import { formatInstructions } from "./formatInstructions.js";
 import { from } from "./from.js";
 import { fromHex } from "./fromHex.js";
 import { getPushSize } from "./getPushSize.js";
-import { hash } from "./hash.js";
 import { hasMetadata } from "./hasMetadata.js";
+import { hash } from "./hash.js";
 import { isPush } from "./isPush.js";
 import { isTerminator } from "./isTerminator.js";
 import { isValidJumpDest } from "./isValidJumpDest.js";
@@ -21,15 +30,6 @@ import { size } from "./size.js";
 import { stripMetadata } from "./stripMetadata.js";
 import { toHex } from "./toHex.js";
 import { validate } from "./validate.js";
-import {
-	JUMPDEST,
-	PUSH1,
-	PUSH32,
-	STOP,
-	RETURN,
-	REVERT,
-	INVALID,
-} from "./constants.js";
 
 // Export individual functions
 export {
@@ -68,13 +68,9 @@ export function Bytecode(value) {
 	return from(value);
 }
 
-Bytecode.from = function (value) {
-	return from(value);
-};
+Bytecode.from = (value) => from(value);
 Bytecode.from.prototype = Bytecode.prototype;
-Bytecode.fromHex = function (value) {
-	return fromHex(value);
-};
+Bytecode.fromHex = (value) => fromHex(value);
 Bytecode.fromHex.prototype = Bytecode.prototype;
 
 Bytecode.analyze = analyze;
@@ -108,16 +104,16 @@ Bytecode.prototype.analyzeJumpDestinations = Function.prototype.call.bind(
 	analyzeJumpDestinations,
 );
 Bytecode.prototype.equals = Function.prototype.call.bind(equals);
-Bytecode.prototype.extractRuntime = Function.prototype.call.bind(extractRuntime);
-Bytecode.prototype.formatInstructions = Function.prototype.call.bind(
-	formatInstructions,
-);
+Bytecode.prototype.extractRuntime =
+	Function.prototype.call.bind(extractRuntime);
+Bytecode.prototype.formatInstructions =
+	Function.prototype.call.bind(formatInstructions);
 Bytecode.prototype.hash = Function.prototype.call.bind(hash);
 Bytecode.prototype.hasMetadata = Function.prototype.call.bind(hasMetadata);
-Bytecode.prototype.isValidJumpDest = Function.prototype.call.bind(isValidJumpDest);
-Bytecode.prototype.parseInstructions = Function.prototype.call.bind(
-	parseInstructions,
-);
+Bytecode.prototype.isValidJumpDest =
+	Function.prototype.call.bind(isValidJumpDest);
+Bytecode.prototype.parseInstructions =
+	Function.prototype.call.bind(parseInstructions);
 Bytecode.prototype.size = Function.prototype.call.bind(size);
 Bytecode.prototype.stripMetadata = Function.prototype.call.bind(stripMetadata);
 Bytecode.prototype.toHex = Function.prototype.call.bind(toHex);

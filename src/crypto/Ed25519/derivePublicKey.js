@@ -1,6 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { InvalidSecretKeyError } from "./errors.js";
 import { SECRET_KEY_SIZE } from "./constants.js";
+import { InvalidSecretKeyError } from "./errors.js";
 
 /**
  * Derive public key from secret key

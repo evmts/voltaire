@@ -14,5 +14,7 @@ import { INFO_TABLE } from "./infoTable.js";
  * ```
  */
 export function isValid(opcode) {
-	return INFO_TABLE.has(/** @type {import('./BrandedOpcode.js').BrandedOpcode} */ (opcode));
+	return INFO_TABLE.has(
+		/** @type {import('./BrandedOpcode.js').BrandedOpcode} */ (opcode),
+	);
 }

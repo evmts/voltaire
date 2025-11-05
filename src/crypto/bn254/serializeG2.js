@@ -28,6 +28,10 @@ export function serializeG2(point) {
 	return result;
 }
 
+/**
+ * @param {string} hex
+ * @returns {Uint8Array}
+ */
 function hexToBytes(hex) {
 	const bytes = new Uint8Array(hex.length / 2);
 	for (let i = 0; i < hex.length; i += 2) {

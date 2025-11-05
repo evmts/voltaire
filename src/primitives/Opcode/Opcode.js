@@ -9,6 +9,7 @@ export * from "./constants.js";
  * @typedef {import('./BrandedOpcode.js').Info} Info
  */
 
+import * as constants from "./constants.js";
 // Import methods
 import { disassemble } from "./disassemble.js";
 import { dupPosition } from "./dupPosition.js";
@@ -29,7 +30,6 @@ import { parse } from "./parse.js";
 import { pushBytes } from "./pushBytes.js";
 import { pushOpcode } from "./pushOpcode.js";
 import { swapPosition } from "./swapPosition.js";
-import * as constants from "./constants.js";
 
 // Export individual functions
 export {
@@ -66,7 +66,12 @@ function Opcode(value) {
 
 // Attach all methods to namespace
 Opcode.info = info;
-Object.defineProperty(Opcode, 'name', { value: name, writable: true, enumerable: true, configurable: true });
+Object.defineProperty(Opcode, "name", {
+	value: name,
+	writable: true,
+	enumerable: true,
+	configurable: true,
+});
 Opcode.isValid = isValid;
 Opcode.isPush = isPush;
 Opcode.isDup = isDup;

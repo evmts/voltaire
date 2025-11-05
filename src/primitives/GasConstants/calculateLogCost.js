@@ -1,4 +1,4 @@
-import { LogBase, LogTopic, LogData } from "./constants.js";
+import { LogBase, LogData, LogTopic } from "./constants.js";
 
 /**
  * Calculate LOG gas cost

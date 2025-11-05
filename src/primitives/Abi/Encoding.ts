@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../Address/index.js";
-import * as Address from "../Address/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/index.js";
+import { Address } from "../Address/index.js";
 import * as Uint from "../Uint/index.js";
 import {
 	AbiDecodingError,

@@ -84,7 +84,8 @@ TransactionLegacy.verifySignature = verifySignature;
 TransactionLegacy.prototype = {};
 TransactionLegacy.prototype.serialize = Function.prototype.call.bind(serialize);
 TransactionLegacy.prototype.hash = Function.prototype.call.bind(hash);
-TransactionLegacy.prototype.getChainId = Function.prototype.call.bind(getChainId);
+TransactionLegacy.prototype.getChainId =
+	Function.prototype.call.bind(getChainId);
 TransactionLegacy.prototype.getSigningHash =
 	Function.prototype.call.bind(getSigningHash);
 TransactionLegacy.prototype.getSender = Function.prototype.call.bind(getSender);

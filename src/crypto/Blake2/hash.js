@@ -21,6 +21,7 @@ export function hash(data, outputLength = 64) {
 		);
 	}
 
-	const input = typeof data === "string" ? new TextEncoder().encode(data) : data;
+	const input =
+		typeof data === "string" ? new TextEncoder().encode(data) : data;
 	return blake2b(input, { dkLen: outputLength });
 }

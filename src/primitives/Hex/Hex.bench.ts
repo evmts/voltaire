@@ -4,7 +4,7 @@
  * Measures performance of hex operations
  */
 
-import { Hex, type BrandedHex } from "./index.js";
+import { type BrandedHex, Hex } from "./index.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -450,10 +450,14 @@ console.log(
 
 console.log("\n--- To Boolean ---");
 results.push(
-	benchmark("toBoolean - true (0x01)", () => Hex.toBoolean("0x01" as BrandedHex)),
+	benchmark("toBoolean - true (0x01)", () =>
+		Hex.toBoolean("0x01" as BrandedHex),
+	),
 );
 results.push(
-	benchmark("toBoolean - false (0x00)", () => Hex.toBoolean("0x00" as BrandedHex)),
+	benchmark("toBoolean - false (0x00)", () =>
+		Hex.toBoolean("0x00" as BrandedHex),
+	),
 );
 results.push(
 	benchmark("toBoolean - true (non-zero)", () =>

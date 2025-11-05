@@ -3,13 +3,6 @@ export * from "./errors.js";
 export * from "./constants.js";
 export * from "./BrandedSignature.js";
 
-import { sign } from "./sign.js";
-import { verify } from "./verify.js";
-import { recoverPublicKey } from "./recoverPublicKey.js";
-import { derivePublicKey } from "./derivePublicKey.js";
-import { isValidSignature } from "./isValidSignature.js";
-import { isValidPublicKey } from "./isValidPublicKey.js";
-import { isValidPrivateKey } from "./isValidPrivateKey.js";
 import * as SignatureMethods from "./Signature/index.js";
 import {
 	CURVE_ORDER,
@@ -17,6 +10,13 @@ import {
 	PUBLIC_KEY_SIZE,
 	SIGNATURE_COMPONENT_SIZE,
 } from "./constants.js";
+import { derivePublicKey } from "./derivePublicKey.js";
+import { isValidPrivateKey } from "./isValidPrivateKey.js";
+import { isValidPublicKey } from "./isValidPublicKey.js";
+import { isValidSignature } from "./isValidSignature.js";
+import { recoverPublicKey } from "./recoverPublicKey.js";
+import { sign } from "./sign.js";
+import { verify } from "./verify.js";
 
 // Export individual functions
 export {

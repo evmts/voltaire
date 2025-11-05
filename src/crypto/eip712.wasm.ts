@@ -19,15 +19,15 @@
 import type { BrandedAddress } from "../primitives/Address/index.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
 import {
+	type Domain,
 	Eip712EncodingError,
 	Eip712Error,
 	Eip712InvalidMessageError,
 	Eip712TypeNotFoundError,
-	type Domain,
-	type TypedData,
+	type Message,
 	type TypeDefinitions,
 	type TypeProperty,
-	type Message,
+	type TypedData,
 } from "./EIP712/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";

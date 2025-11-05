@@ -2,19 +2,19 @@
 export * from "./errors.js";
 export * from "./constants.js";
 
+import {
+	PUBLIC_KEY_SIZE,
+	SECRET_KEY_SIZE,
+	SEED_SIZE,
+	SIGNATURE_SIZE,
+} from "./constants.js";
+import { derivePublicKey } from "./derivePublicKey.js";
 import { keypairFromSeed } from "./keypairFromSeed.js";
 import { sign } from "./sign.js";
-import { verify } from "./verify.js";
-import { derivePublicKey } from "./derivePublicKey.js";
-import { validateSecretKey } from "./validateSecretKey.js";
 import { validatePublicKey } from "./validatePublicKey.js";
+import { validateSecretKey } from "./validateSecretKey.js";
 import { validateSeed } from "./validateSeed.js";
-import {
-	SECRET_KEY_SIZE,
-	PUBLIC_KEY_SIZE,
-	SIGNATURE_SIZE,
-	SEED_SIZE,
-} from "./constants.js";
+import { verify } from "./verify.js";
 
 // Export individual functions
 export {

@@ -1,5 +1,5 @@
-import { parseInstructions } from "./parseInstructions.js";
 import { formatInstruction } from "./formatInstruction.js";
+import { parseInstructions } from "./parseInstructions.js";
 
 /**
  * Format all instructions to human-readable strings

@@ -1,5 +1,9 @@
 import * as ckzg from "c-kzg";
-import { BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF } from "./constants.js";
+import {
+	BYTES_PER_COMMITMENT,
+	BYTES_PER_FIELD_ELEMENT,
+	BYTES_PER_PROOF,
+} from "./constants.js";
 import { KzgError, KzgNotInitializedError } from "./errors.ts";
 import { getInitialized } from "./loadTrustedSetup.js";
 

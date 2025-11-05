@@ -1,5 +1,8 @@
-import { Eip712InvalidMessageError, Eip712TypeNotFoundError } from "./errors.js";
 import { encodeValue } from "./encodeValue.js";
+import {
+	Eip712InvalidMessageError,
+	Eip712TypeNotFoundError,
+} from "./errors.js";
 import { hashType } from "./hashType.js";
 
 /**

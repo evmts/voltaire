@@ -20,7 +20,9 @@ import { Bip39Error } from "./errors.js";
  */
 export function generateMnemonic(strength = 256, wl = wordlist) {
 	try {
-		return /** @type {import('./BrandedMnemonic.js').Mnemonic} */ (_generateMnemonic(wl, strength));
+		return /** @type {import('./BrandedMnemonic.js').Mnemonic} */ (
+			_generateMnemonic(wl, strength)
+		);
 	} catch (error) {
 		throw new Bip39Error(`Mnemonic generation failed: ${error}`);
 	}

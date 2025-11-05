@@ -65,4 +65,5 @@ Authorization.prototype.getSigningHash =
 	Function.prototype.call.bind(getSigningHash);
 Authorization.prototype.verifySignature =
 	Function.prototype.call.bind(verifySignature);
-Authorization.prototype.getAuthorizer = Function.prototype.call.bind(getAuthorizer);
+Authorization.prototype.getAuthorizer =
+	Function.prototype.call.bind(getAuthorizer);

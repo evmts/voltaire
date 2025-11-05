@@ -1,6 +1,6 @@
-import { SIZE, MAX_PER_TRANSACTION } from "./constants.js";
-import { fromData } from "./fromData.js";
+import { MAX_PER_TRANSACTION, SIZE } from "./constants.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
+import { fromData } from "./fromData.js";
 
 /**
  * Split large data into multiple blobs

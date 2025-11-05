@@ -2,6 +2,9 @@
  * Base EIP-712 error
  */
 export class Eip712Error extends Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "Eip712Error";
@@ -12,6 +15,9 @@ export class Eip712Error extends Error {
  * EIP-712 encoding error
  */
 export class Eip712EncodingError extends Eip712Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "Eip712EncodingError";
@@ -22,6 +28,9 @@ export class Eip712EncodingError extends Eip712Error {
  * EIP-712 type not found error
  */
 export class Eip712TypeNotFoundError extends Eip712Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "Eip712TypeNotFoundError";
@@ -32,6 +41,9 @@ export class Eip712TypeNotFoundError extends Eip712Error {
  * EIP-712 invalid message error
  */
 export class Eip712InvalidMessageError extends Eip712Error {
+	/**
+	 * @param {string} message
+	 */
 	constructor(message) {
 		super(message);
 		this.name = "Eip712InvalidMessageError";

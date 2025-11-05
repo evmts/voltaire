@@ -1,4 +1,9 @@
-import { Create, InitcodeWord, CreateData, MaxInitcodeSize } from "./constants.js";
+import {
+	Create,
+	CreateData,
+	InitcodeWord,
+	MaxInitcodeSize,
+} from "./constants.js";
 
 /**
  * Calculate contract creation gas cost

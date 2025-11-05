@@ -1,6 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
 import { PUBLIC_KEY_SIZE, SIGNATURE_SIZE } from "./constants.js";
+import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
 
 /**
  * Verify an Ed25519 signature

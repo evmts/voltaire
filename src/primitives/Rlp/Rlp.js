@@ -47,9 +47,7 @@ export function Rlp(value) {
 	return from(value);
 }
 
-Rlp.from = function (value) {
-	return from(value);
-};
+Rlp.from = (value) => from(value);
 Rlp.from.prototype = Rlp.prototype;
 
 Rlp.isData = isData;

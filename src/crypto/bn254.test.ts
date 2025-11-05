@@ -14,7 +14,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { BN254 as Bn254, Bn254InvalidPointError } from "./BN254/BN254.js";
+import {
+	BN254 as Bn254,
+	Bn254InvalidPointError,
+	type BrandedG1Point,
+	type BrandedG2Point,
+} from "./bn254/BN254.js";
 // import { Bn254Wasm } from "./bn254.wasm.js";
 // import { Bn254Ark } from "./bn254.ark.js";
 
@@ -51,20 +56,20 @@ describe("Bn254.G1", () => {
 	describe("Point creation and validation", () => {
 		it("should create generator point", () => {
 			const gen = Bn254.G1.generator();
-			expect(Bn254.G1.isOnCurve.call(gen)).toBe(true);
-			expect(Bn254.G1.isZero.call(gen)).toBe(false);
+			expect(Bn254.G1.isOnCurve(gen)).toBe(true);
+			expect(Bn254.G1.isZero(gen)).toBe(false);
 		});
 
 		it("should create infinity point", () => {
 			const inf = Bn254.G1.infinity();
-			expect(Bn254.G1.isZero.call(inf)).toBe(true);
-			expect(Bn254.G1.isOnCurve.call(inf)).toBe(true);
+			expect(Bn254.G1.isZero(inf)).toBe(true);
+			expect(Bn254.G1.isOnCurve(inf)).toBe(true);
 		});
 
 		it("should validate on-curve points", () => {
 			const gen = Bn254.G1.generator();
-			const point = Bn254.G1.mul.call(gen, 7n);
-			expect(Bn254.G1.isOnCurve.call(point)).toBe(true);
+			const point = Bn254.G1.mul(gen, 7n);
+			expect(Bn254.G1.isOnCurve(point)).toBe(true);
 		});
 
 		it("should reject off-curve points", () => {
@@ -75,121 +80,115 @@ describe("Bn254.G1", () => {
 	describe("Point arithmetic", () => {
 		it("should add two points", () => {
 			const gen = Bn254.G1.generator();
-			const doubled = Bn254.G1.double.call(gen);
-			const sum = Bn254.G1.add.call(gen, gen);
-			expect(Bn254.G1.equal.call(doubled, sum)).toBe(true);
+			const doubled = Bn254.G1.double(gen);
+			const sum = Bn254.G1.add(gen, gen);
+			expect(Bn254.G1.equal(doubled, sum)).toBe(true);
 		});
 
 		it("should double a point", () => {
 			const gen = Bn254.G1.generator();
-			const doubled = Bn254.G1.double.call(gen);
-			const manual = Bn254.G1.add.call(gen, gen);
-			expect(Bn254.G1.equal.call(doubled, manual)).toBe(true);
+			const doubled = Bn254.G1.double(gen);
+			const manual = Bn254.G1.add(gen, gen);
+			expect(Bn254.G1.equal(doubled, manual)).toBe(true);
 		});
 
 		it("should negate a point", () => {
 			const gen = Bn254.G1.generator();
-			const neg = Bn254.G1.negate.call(gen);
-			const sum = Bn254.G1.add.call(gen, neg);
-			expect(Bn254.G1.isZero.call(sum)).toBe(true);
+			const neg = Bn254.G1.negate(gen);
+			const sum = Bn254.G1.add(gen, neg);
+			expect(Bn254.G1.isZero(sum)).toBe(true);
 		});
 
 		it("should handle infinity in addition", () => {
 			const gen = Bn254.G1.generator();
 			const inf = Bn254.G1.infinity();
-			const result = Bn254.G1.add.call(gen, inf);
-			expect(Bn254.G1.equal.call(result, gen)).toBe(true);
+			const result = Bn254.G1.add(gen, inf);
+			expect(Bn254.G1.equal(result, gen)).toBe(true);
 		});
 
 		it("should exhibit commutativity", () => {
 			const gen = Bn254.G1.generator();
-			const p1 = Bn254.G1.mul.call(gen, 11n);
-			const p2 = Bn254.G1.mul.call(gen, 13n);
-			const sum1 = Bn254.G1.add.call(p1, p2);
-			const sum2 = Bn254.G1.add.call(p2, p1);
-			expect(Bn254.G1.equal.call(sum1, sum2)).toBe(true);
+			const p1 = Bn254.G1.mul(gen, 11n);
+			const p2 = Bn254.G1.mul(gen, 13n);
+			const sum1 = Bn254.G1.add(p1, p2);
+			const sum2 = Bn254.G1.add(p2, p1);
+			expect(Bn254.G1.equal(sum1, sum2)).toBe(true);
 		});
 
 		it("should exhibit associativity", () => {
 			const gen = Bn254.G1.generator();
-			const p1 = Bn254.G1.mul.call(gen, 3n);
-			const p2 = Bn254.G1.mul.call(gen, 5n);
-			const p3 = Bn254.G1.mul.call(gen, 7n);
-			const left = Bn254.G1.add.call(Bn254.G1.add.call(p1, p2), p3);
-			const right = Bn254.G1.add.call(p1, Bn254.G1.add.call(p2, p3));
-			expect(Bn254.G1.equal.call(left, right)).toBe(true);
+			const p1 = Bn254.G1.mul(gen, 3n);
+			const p2 = Bn254.G1.mul(gen, 5n);
+			const p3 = Bn254.G1.mul(gen, 7n);
+			const left = Bn254.G1.add(Bn254.G1.add(p1, p2), p3);
+			const right = Bn254.G1.add(p1, Bn254.G1.add(p2, p3));
+			expect(Bn254.G1.equal(left, right)).toBe(true);
 		});
 	});
 
 	describe("Scalar multiplication", () => {
 		it("should multiply by scalar", () => {
 			const gen = Bn254.G1.generator();
-			const result = Bn254.G1.mul.call(gen, 5n);
-			const manual = Bn254.G1.add.call(
-				Bn254.G1.add.call(
-					Bn254.G1.add.call(Bn254.G1.add.call(gen, gen), gen),
-					gen,
-				),
+			const result = Bn254.G1.mul(gen, 5n);
+			const manual = Bn254.G1.add(
+				Bn254.G1.add(Bn254.G1.add(Bn254.G1.add(gen, gen), gen), gen),
 				gen,
 			);
-			expect(Bn254.G1.equal.call(result, manual)).toBe(true);
+			expect(Bn254.G1.equal(result, manual)).toBe(true);
 		});
 
 		it("should multiply by zero", () => {
 			const gen = Bn254.G1.generator();
-			const result = Bn254.G1.mul.call(gen, 0n);
-			expect(Bn254.G1.isZero.call(result)).toBe(true);
+			const result = Bn254.G1.mul(gen, 0n);
+			expect(Bn254.G1.isZero(result)).toBe(true);
 		});
 
 		it("should multiply by one", () => {
 			const gen = Bn254.G1.generator();
-			const result = Bn254.G1.mul.call(gen, 1n);
-			expect(Bn254.G1.equal.call(result, gen)).toBe(true);
+			const result = Bn254.G1.mul(gen, 1n);
+			expect(Bn254.G1.equal(result, gen)).toBe(true);
 		});
 
 		it("should multiply by curve order", () => {
 			const gen = Bn254.G1.generator();
 			const FR_MOD =
 				21888242871839275222246405745257275088548364400416034343698204186575808495617n;
-			const result = Bn254.G1.mul.call(gen, FR_MOD);
-			expect(Bn254.G1.isZero.call(result)).toBe(true);
+			const result = Bn254.G1.mul(gen, FR_MOD);
+			expect(Bn254.G1.isZero(result)).toBe(true);
 		});
 
 		it("should handle large scalars", () => {
 			const gen = Bn254.G1.generator();
 			const large = 123456789n;
-			const result = Bn254.G1.mul.call(gen, large);
-			expect(Bn254.G1.isOnCurve.call(result)).toBe(true);
+			const result = Bn254.G1.mul(gen, large);
+			expect(Bn254.G1.isOnCurve(result)).toBe(true);
 		});
 
 		it("should exhibit distributivity", () => {
 			const gen = Bn254.G1.generator();
 			const a = 7n;
 			const b = 11n;
-			const p = Bn254.G1.mul.call(gen, a);
-			const q = Bn254.G1.mul.call(gen, b);
-			const left = Bn254.G1.mul.call(Bn254.G1.add.call(p, q), 5n);
-			const right = Bn254.G1.add.call(
-				Bn254.G1.mul.call(p, 5n),
-				Bn254.G1.mul.call(q, 5n),
-			);
-			expect(Bn254.G1.equal.call(left, right)).toBe(true);
+			const p = Bn254.G1.mul(gen, a);
+			const q = Bn254.G1.mul(gen, b);
+			const left = Bn254.G1.mul(Bn254.G1.add(p, q), 5n);
+			const right = Bn254.G1.add(Bn254.G1.mul(p, 5n), Bn254.G1.mul(q, 5n));
+			expect(Bn254.G1.equal(left, right)).toBe(true);
 		});
 	});
 
 	describe("Coordinate conversion", () => {
 		it("should convert to affine", () => {
 			const gen = Bn254.G1.generator();
-			const point = Bn254.G1.mul.call(gen, 17n);
-			const affine = Bn254.G1.toAffine.call(point);
+			const point = Bn254.G1.mul(gen, 17n);
+			const affine = Bn254.G1.toAffine(point);
 			expect(affine.z).toBe(1n);
-			expect(Bn254.G1.equal.call(point, affine)).toBe(true);
+			expect(Bn254.G1.equal(point, affine)).toBe(true);
 		});
 
 		it("should handle infinity in toAffine", () => {
 			const inf = Bn254.G1.infinity();
-			const affine = Bn254.G1.toAffine.call(inf);
-			expect(Bn254.G1.isZero.call(affine)).toBe(true);
+			const affine = Bn254.G1.toAffine(inf);
+			expect(Bn254.G1.isZero(affine)).toBe(true);
 		});
 	});
 
@@ -199,22 +198,22 @@ describe("Bn254.G1", () => {
 			const bytes = Bn254.serializeG1(gen);
 			expect(bytes.length).toBe(64);
 			const deserialized = Bn254.deserializeG1(bytes);
-			expect(Bn254.G1.equal.call(gen, deserialized)).toBe(true);
+			expect(Bn254.G1.equal(gen, deserialized)).toBe(true);
 		});
 
 		it("should serialize and deserialize arbitrary point", () => {
 			const gen = Bn254.G1.generator();
-			const point = Bn254.G1.mul.call(gen, 42n);
+			const point = Bn254.G1.mul(gen, 42n);
 			const bytes = Bn254.serializeG1(point);
 			const deserialized = Bn254.deserializeG1(bytes);
-			expect(Bn254.G1.equal.call(point, deserialized)).toBe(true);
+			expect(Bn254.G1.equal(point, deserialized)).toBe(true);
 		});
 
 		it("should serialize and deserialize infinity", () => {
 			const inf = Bn254.G1.infinity();
 			const bytes = Bn254.serializeG1(inf);
 			const deserialized = Bn254.deserializeG1(bytes);
-			expect(Bn254.G1.isZero.call(deserialized)).toBe(true);
+			expect(Bn254.G1.isZero(deserialized)).toBe(true);
 		});
 	});
 });
@@ -223,27 +222,27 @@ describe("Bn254.G2", () => {
 	describe("Point creation and validation", () => {
 		it("should create generator point", () => {
 			const gen = Bn254.G2.generator();
-			expect(Bn254.G2.isOnCurve.call(gen)).toBe(true);
-			expect(Bn254.G2.isZero.call(gen)).toBe(false);
+			expect(Bn254.G2.isOnCurve(gen)).toBe(true);
+			expect(Bn254.G2.isZero(gen)).toBe(false);
 		});
 
 		it("should create infinity point", () => {
 			const inf = Bn254.G2.infinity();
-			expect(Bn254.G2.isZero.call(inf)).toBe(true);
-			expect(Bn254.G2.isOnCurve.call(inf)).toBe(true);
+			expect(Bn254.G2.isZero(inf)).toBe(true);
+			expect(Bn254.G2.isOnCurve(inf)).toBe(true);
 		});
 
 		it("should validate subgroup membership", () => {
 			const gen = Bn254.G2.generator();
-			expect(Bn254.G2.isInSubgroup.call(gen)).toBe(true);
+			expect(Bn254.G2.isInSubgroup(gen)).toBe(true);
 		});
 
 		it("should validate multiples are in subgroup", () => {
 			const gen = Bn254.G2.generator();
 			const multiples = [2n, 7n, 13n, 99n];
 			for (const scalar of multiples) {
-				const point = Bn254.G2.mul.call(gen, scalar);
-				expect(Bn254.G2.isInSubgroup.call(point)).toBe(true);
+				const point = Bn254.G2.mul(gen, scalar);
+				expect(Bn254.G2.isInSubgroup(point)).toBe(true);
 			}
 		});
 	});
@@ -251,99 +250,99 @@ describe("Bn254.G2", () => {
 	describe("Point arithmetic", () => {
 		it("should add two points", () => {
 			const gen = Bn254.G2.generator();
-			const doubled = Bn254.G2.double.call(gen);
-			const sum = Bn254.G2.add.call(gen, gen);
-			expect(Bn254.G2.equal.call(doubled, sum)).toBe(true);
+			const doubled = Bn254.G2.double(gen);
+			const sum = Bn254.G2.add(gen, gen);
+			expect(Bn254.G2.equal(doubled, sum)).toBe(true);
 		});
 
 		it("should double a point", () => {
 			const gen = Bn254.G2.generator();
-			const doubled = Bn254.G2.double.call(gen);
-			const manual = Bn254.G2.add.call(gen, gen);
-			expect(Bn254.G2.equal.call(doubled, manual)).toBe(true);
+			const doubled = Bn254.G2.double(gen);
+			const manual = Bn254.G2.add(gen, gen);
+			expect(Bn254.G2.equal(doubled, manual)).toBe(true);
 		});
 
 		it("should negate a point", () => {
 			const gen = Bn254.G2.generator();
-			const neg = Bn254.G2.negate.call(gen);
-			const sum = Bn254.G2.add.call(gen, neg);
-			expect(Bn254.G2.isZero.call(sum)).toBe(true);
+			const neg = Bn254.G2.negate(gen);
+			const sum = Bn254.G2.add(gen, neg);
+			expect(Bn254.G2.isZero(sum)).toBe(true);
 		});
 
 		it("should handle infinity in addition", () => {
 			const gen = Bn254.G2.generator();
 			const inf = Bn254.G2.infinity();
-			const result = Bn254.G2.add.call(gen, inf);
-			expect(Bn254.G2.equal.call(result, gen)).toBe(true);
+			const result = Bn254.G2.add(gen, inf);
+			expect(Bn254.G2.equal(result, gen)).toBe(true);
 		});
 
 		it("should exhibit commutativity", () => {
 			const gen = Bn254.G2.generator();
-			const p1 = Bn254.G2.mul.call(gen, 11n);
-			const p2 = Bn254.G2.mul.call(gen, 13n);
-			const sum1 = Bn254.G2.add.call(p1, p2);
-			const sum2 = Bn254.G2.add.call(p2, p1);
-			expect(Bn254.G2.equal.call(sum1, sum2)).toBe(true);
+			const p1 = Bn254.G2.mul(gen, 11n);
+			const p2 = Bn254.G2.mul(gen, 13n);
+			const sum1 = Bn254.G2.add(p1, p2);
+			const sum2 = Bn254.G2.add(p2, p1);
+			expect(Bn254.G2.equal(sum1, sum2)).toBe(true);
 		});
 	});
 
 	describe("Scalar multiplication", () => {
 		it("should multiply by scalar", () => {
 			const gen = Bn254.G2.generator();
-			const result = Bn254.G2.mul.call(gen, 3n);
-			const manual = Bn254.G2.add.call(Bn254.G2.add.call(gen, gen), gen);
-			expect(Bn254.G2.equal.call(result, manual)).toBe(true);
+			const result = Bn254.G2.mul(gen, 3n);
+			const manual = Bn254.G2.add(Bn254.G2.add(gen, gen), gen);
+			expect(Bn254.G2.equal(result, manual)).toBe(true);
 		});
 
 		it("should multiply by zero", () => {
 			const gen = Bn254.G2.generator();
-			const result = Bn254.G2.mul.call(gen, 0n);
-			expect(Bn254.G2.isZero.call(result)).toBe(true);
+			const result = Bn254.G2.mul(gen, 0n);
+			expect(Bn254.G2.isZero(result)).toBe(true);
 		});
 
 		it("should multiply by one", () => {
 			const gen = Bn254.G2.generator();
-			const result = Bn254.G2.mul.call(gen, 1n);
-			expect(Bn254.G2.equal.call(result, gen)).toBe(true);
+			const result = Bn254.G2.mul(gen, 1n);
+			expect(Bn254.G2.equal(result, gen)).toBe(true);
 		});
 
 		it("should multiply by curve order", () => {
 			const gen = Bn254.G2.generator();
 			const FR_MOD =
 				21888242871839275222246405745257275088548364400416034343698204186575808495617n;
-			const result = Bn254.G2.mul.call(gen, FR_MOD);
-			expect(Bn254.G2.isZero.call(result)).toBe(true);
+			const result = Bn254.G2.mul(gen, FR_MOD);
+			expect(Bn254.G2.isZero(result)).toBe(true);
 		});
 	});
 
 	describe("Coordinate conversion", () => {
 		it("should convert to affine", () => {
 			const gen = Bn254.G2.generator();
-			const point = Bn254.G2.mul.call(gen, 19n);
-			const affine = Bn254.G2.toAffine.call(point);
+			const point = Bn254.G2.mul(gen, 19n);
+			const affine = Bn254.G2.toAffine(point);
 			expect(affine.z.c0).toBe(1n);
 			expect(affine.z.c1).toBe(0n);
-			expect(Bn254.G2.equal.call(point, affine)).toBe(true);
+			expect(Bn254.G2.equal(point, affine)).toBe(true);
 		});
 	});
 
 	describe("Frobenius map", () => {
 		it.skip("should apply Frobenius endomorphism", () => {
 			const gen = Bn254.G2.generator();
-			const point = Bn254.G2.mul.call(gen, 15n);
-			const frobenius = Bn254.G2.frobenius.call(point);
-			expect(Bn254.G2.isOnCurve.call(frobenius)).toBe(true);
+			const point = Bn254.G2.mul(gen, 15n);
+			const frobenius = Bn254.G2.frobenius(point);
+			expect(Bn254.G2.isOnCurve(frobenius)).toBe(true);
 		});
 
 		it.skip("should have order 12", () => {
 			const gen = Bn254.G2.generator();
-			const point = Bn254.G2.mul.call(gen, 23n);
+			const point = Bn254.G2.mul(gen, 23n);
 			let iter = point;
 			for (let i = 0; i < 12; i++) {
-				iter = Bn254.G2.frobenius.call(iter);
-				expect(Bn254.G2.isOnCurve.call(iter)).toBe(true);
+				iter = Bn254.G2.frobenius(iter);
+				expect(Bn254.G2.isOnCurve(iter)).toBe(true);
 			}
-			expect(Bn254.G2.equal.call(iter, point)).toBe(true);
+			expect(Bn254.G2.equal(iter, point)).toBe(true);
 		});
 	});
 
@@ -353,22 +352,22 @@ describe("Bn254.G2", () => {
 			const bytes = Bn254.serializeG2(gen);
 			expect(bytes.length).toBe(128);
 			const deserialized = Bn254.deserializeG2(bytes);
-			expect(Bn254.G2.equal.call(gen, deserialized)).toBe(true);
+			expect(Bn254.G2.equal(gen, deserialized)).toBe(true);
 		});
 
 		it("should serialize and deserialize arbitrary point", () => {
 			const gen = Bn254.G2.generator();
-			const point = Bn254.G2.mul.call(gen, 42n);
+			const point = Bn254.G2.mul(gen, 42n);
 			const bytes = Bn254.serializeG2(point);
 			const deserialized = Bn254.deserializeG2(bytes);
-			expect(Bn254.G2.equal.call(point, deserialized)).toBe(true);
+			expect(Bn254.G2.equal(point, deserialized)).toBe(true);
 		});
 
 		it("should serialize and deserialize infinity", () => {
 			const inf = Bn254.G2.infinity();
 			const bytes = Bn254.serializeG2(inf);
 			const deserialized = Bn254.deserializeG2(bytes);
-			expect(Bn254.G2.isZero.call(deserialized)).toBe(true);
+			expect(Bn254.G2.isZero(deserialized)).toBe(true);
 		});
 	});
 });
@@ -407,9 +406,9 @@ describe("Bn254.Pairing", () => {
 			const a = 3n;
 			const b = 5n;
 
-			const p1 = Bn254.G1.mul.call(g1, a);
-			const p2 = Bn254.G1.mul.call(g1, b);
-			const p_sum = Bn254.G1.add.call(p1, p2);
+			const p1 = Bn254.G1.mul(g1, a);
+			const p2 = Bn254.G1.mul(g1, b);
+			const p_sum = Bn254.G1.add(p1, p2);
 
 			const e1 = Bn254.Pairing.pair(p1, g2);
 			const e2 = Bn254.Pairing.pair(p2, g2);
@@ -426,9 +425,9 @@ describe("Bn254.Pairing", () => {
 			const a = 7n;
 			const b = 9n;
 
-			const q1 = Bn254.G2.mul.call(g2, a);
-			const q2 = Bn254.G2.mul.call(g2, b);
-			const q_sum = Bn254.G2.add.call(q1, q2);
+			const q1 = Bn254.G2.mul(g2, a);
+			const q2 = Bn254.G2.mul(g2, b);
+			const q_sum = Bn254.G2.add(q1, q2);
 
 			const e1 = Bn254.Pairing.pair(g1, q1);
 			const e2 = Bn254.Pairing.pair(g1, q2);
@@ -445,8 +444,8 @@ describe("Bn254.Pairing", () => {
 			const a = 7n;
 			const b = 11n;
 
-			const p_scaled = Bn254.G1.mul.call(g1, a);
-			const q_scaled = Bn254.G2.mul.call(g2, b);
+			const p_scaled = Bn254.G1.mul(g1, a);
+			const q_scaled = Bn254.G2.mul(g2, b);
 
 			const e_base = Bn254.Pairing.pair(g1, g2);
 			const e_scaled = Bn254.Pairing.pair(p_scaled, q_scaled);
@@ -465,12 +464,10 @@ describe("Bn254.Pairing", () => {
 			const a = 2n;
 			const b = 3n;
 
-			const p1 = Bn254.G1.mul.call(g1, a);
-			const q1 = Bn254.G2.mul.call(g2, b);
+			const p1 = Bn254.G1.mul(g1, a);
+			const q1 = Bn254.G2.mul(g2, b);
 
-			const p2 = Bn254.G1.negate.call(
-				Bn254.G1.mul.call(g1, Bn254.Fr.mul(a, b)),
-			);
+			const p2 = Bn254.G1.negate(Bn254.G1.mul(g1, Bn254.Fr.mul(a, b)));
 			const q2 = g2;
 
 			const valid = Bn254.Pairing.pairingCheck([
@@ -485,11 +482,11 @@ describe("Bn254.Pairing", () => {
 			const g1 = Bn254.G1.generator();
 			const g2 = Bn254.G2.generator();
 
-			const p1 = Bn254.G1.mul.call(g1, 2n);
-			const q1 = Bn254.G2.mul.call(g2, 3n);
+			const p1 = Bn254.G1.mul(g1, 2n);
+			const q1 = Bn254.G2.mul(g2, 3n);
 
-			const p2 = Bn254.G1.mul.call(g1, 5n);
-			const q2 = Bn254.G2.mul.call(g2, 7n);
+			const p2 = Bn254.G1.mul(g1, 5n);
+			const q2 = Bn254.G2.mul(g2, 7n);
 
 			const valid = Bn254.Pairing.pairingCheck([
 				[p1, q1],
@@ -510,9 +507,9 @@ describe("Bn254.Pairing", () => {
 			const g1 = Bn254.G1.generator();
 			const g2 = Bn254.G2.generator();
 
-			const pairs: Array<[Bn254.G1Point, Bn254.G2Point]> = [
-				[Bn254.G1.mul.call(g1, 2n), Bn254.G2.mul.call(g2, 3n)],
-				[Bn254.G1.mul.call(g1, 5n), Bn254.G2.mul.call(g2, 7n)],
+			const pairs: Array<[BrandedG1Point, BrandedG2Point]> = [
+				[Bn254.G1.mul(g1, 2n), Bn254.G2.mul(g2, 3n)],
+				[Bn254.G1.mul(g1, 5n), Bn254.G2.mul(g2, 7n)],
 			];
 
 			const result = Bn254.Pairing.multiPairing(pairs);
@@ -525,23 +522,23 @@ describe("Edge cases", () => {
 	it("should handle negative scalar as modular reduction", () => {
 		const gen = Bn254.G1.generator();
 		const neg_scalar = -5n;
-		const result = Bn254.G1.mul.call(gen, neg_scalar);
-		expect(Bn254.G1.isOnCurve.call(result)).toBe(true);
+		const result = Bn254.G1.mul(gen, neg_scalar);
+		expect(Bn254.G1.isOnCurve(result)).toBe(true);
 	});
 
 	it("should handle very large scalars", () => {
 		const gen = Bn254.G1.generator();
 		const large = BigInt("0x" + "f".repeat(64));
-		const result = Bn254.G1.mul.call(gen, large);
-		expect(Bn254.G1.isOnCurve.call(result)).toBe(true);
+		const result = Bn254.G1.mul(gen, large);
+		expect(Bn254.G1.isOnCurve(result)).toBe(true);
 	});
 
 	it("should maintain point validity through operations", () => {
 		const gen = Bn254.G1.generator();
 		let point = gen;
 		for (let i = 0; i < 10; i++) {
-			point = Bn254.G1.add.call(point, gen);
-			expect(Bn254.G1.isOnCurve.call(point)).toBe(true);
+			point = Bn254.G1.add(point, gen);
+			expect(Bn254.G1.isOnCurve(point)).toBe(true);
 		}
 	});
 });

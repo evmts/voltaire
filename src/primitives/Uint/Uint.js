@@ -99,29 +99,17 @@ export function Uint(value) {
 	return from(value);
 }
 
-Uint.from = function (value) {
-	return from(value);
-};
+Uint.from = (value) => from(value);
 Uint.from.prototype = Uint.prototype;
-Uint.fromHex = function (value) {
-	return fromHex(value);
-};
+Uint.fromHex = (value) => fromHex(value);
 Uint.fromHex.prototype = Uint.prototype;
-Uint.fromBigInt = function (value) {
-	return fromBigInt(value);
-};
+Uint.fromBigInt = (value) => fromBigInt(value);
 Uint.fromBigInt.prototype = Uint.prototype;
-Uint.fromNumber = function (value) {
-	return fromNumber(value);
-};
+Uint.fromNumber = (value) => fromNumber(value);
 Uint.fromNumber.prototype = Uint.prototype;
-Uint.fromBytes = function (value) {
-	return fromBytes(value);
-};
+Uint.fromBytes = (value) => fromBytes(value);
 Uint.fromBytes.prototype = Uint.prototype;
-Uint.fromAbiEncoded = function (value) {
-	return fromAbiEncoded(value);
-};
+Uint.fromAbiEncoded = (value) => fromAbiEncoded(value);
 Uint.fromAbiEncoded.prototype = Uint.prototype;
 
 Uint.tryFrom = tryFrom;
@@ -181,7 +169,8 @@ Uint.prototype.notEquals = Function.prototype.call.bind(notEquals);
 Uint.prototype.lessThan = Function.prototype.call.bind(lessThan);
 Uint.prototype.lessThanOrEqual = Function.prototype.call.bind(lessThanOrEqual);
 Uint.prototype.greaterThan = Function.prototype.call.bind(greaterThan);
-Uint.prototype.greaterThanOrEqual = Function.prototype.call.bind(greaterThanOrEqual);
+Uint.prototype.greaterThanOrEqual =
+	Function.prototype.call.bind(greaterThanOrEqual);
 Uint.prototype.isZero = Function.prototype.call.bind(isZero);
 Uint.prototype.minimum = Function.prototype.call.bind(minimum);
 Uint.prototype.maximum = Function.prototype.call.bind(maximum);

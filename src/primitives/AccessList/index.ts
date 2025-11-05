@@ -8,4 +8,7 @@ export * from "./AccessList.js";
 export type * from "./AccessList.ts";
 
 // Export separate Type and Item for non-namespace usage
-export type { BrandedAccessList as AccessListType, Item as AccessListItem } from "./BrandedAccessList.js";
+export type {
+	BrandedAccessList as AccessListType,
+	Item as AccessListItem,
+} from "./BrandedAccessList.js";

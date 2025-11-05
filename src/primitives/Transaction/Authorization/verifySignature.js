@@ -1,4 +1,4 @@
-import { Secp256k1 } from "../../../crypto/secp256k1.js";
+import { Secp256k1 } from "../../../crypto/Secp256k1/index.js";
 import { getSigningHash } from "./getSigningHash.js";
 
 /**
@@ -23,7 +23,11 @@ export function verifySignature(auth) {
 			{ r: auth.r, s: auth.s, v },
 			signingHash,
 		);
-		return Secp256k1.verify({ r: auth.r, s: auth.s, v }, signingHash, publicKey);
+		return Secp256k1.verify(
+			{ r: auth.r, s: auth.s, v },
+			signingHash,
+			publicKey,
+		);
 	} catch {
 		return false;
 	}

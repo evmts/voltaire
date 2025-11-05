@@ -24,11 +24,16 @@ export function parse(bytecode) {
 	let offset = 0;
 
 	while (offset < bytecode.length) {
-		const opcode = /** @type {import('./BrandedOpcode.js').BrandedOpcode} */ (bytecode[offset]);
+		const opcode = /** @type {import('./BrandedOpcode.js').BrandedOpcode} */ (
+			bytecode[offset]
+		);
 		const pushBytesCount = pushBytes(opcode);
 
 		if (pushBytesCount !== undefined && pushBytesCount > 0) {
-			const immediateEnd = Math.min(offset + 1 + pushBytesCount, bytecode.length);
+			const immediateEnd = Math.min(
+				offset + 1 + pushBytesCount,
+				bytecode.length,
+			);
 			const immediate = bytecode.slice(offset + 1, immediateEnd);
 			instructions.push({ offset, opcode, immediate });
 			offset = immediateEnd;

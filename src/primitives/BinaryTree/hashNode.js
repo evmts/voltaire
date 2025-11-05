@@ -1,6 +1,6 @@
 import { hashInternal } from "./hashInternal.js";
-import { hashStem } from "./hashStem.js";
 import { hashLeaf } from "./hashLeaf.js";
+import { hashStem } from "./hashStem.js";
 
 /**
  * Hash any node type

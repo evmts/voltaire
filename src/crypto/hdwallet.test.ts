@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { Bip39 } from "./bip39.js";
 import { HDWallet } from "./HDWallet/index.js";
 import type { BrandedExtendedKey } from "./HDWallet/index.js";
+import { Bip39 } from "./bip39.js";
 
 describe("HDWallet", () => {
 	const testMnemonic =

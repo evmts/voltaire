@@ -14,5 +14,8 @@ import * as constants from "./constants.js";
  * ```
  */
 export function isPush(opcode) {
-	return opcode === constants.PUSH0 || (opcode >= constants.PUSH1 && opcode <= constants.PUSH32);
+	return (
+		opcode === constants.PUSH0 ||
+		(opcode >= constants.PUSH1 && opcode <= constants.PUSH32)
+	);
 }

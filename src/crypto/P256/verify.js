@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { p256 } from "@noble/curves/nist.js";
-import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
 import { PUBLIC_KEY_SIZE, SIGNATURE_COMPONENT_SIZE } from "./constants.js";
+import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
 
 /**
  * Verify an ECDSA signature

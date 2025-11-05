@@ -66,13 +66,9 @@ export function AccessList(value) {
 	return from(value);
 }
 
-AccessList.from = function (value) {
-	return from(value);
-};
+AccessList.from = (value) => from(value);
 AccessList.from.prototype = AccessList.prototype;
-AccessList.fromBytes = function (value) {
-	return fromBytes(value);
-};
+AccessList.fromBytes = (value) => fromBytes(value);
 AccessList.fromBytes.prototype = AccessList.prototype;
 
 AccessList.is = is;
@@ -102,8 +98,10 @@ AccessList.WARM_STORAGE_ACCESS_COST = WARM_STORAGE_ACCESS_COST;
 AccessList.prototype.gasCost = Function.prototype.call.bind(gasCost);
 AccessList.prototype.gasSavings = Function.prototype.call.bind(gasSavings);
 AccessList.prototype.hasSavings = Function.prototype.call.bind(hasSavings);
-AccessList.prototype.includesAddress = Function.prototype.call.bind(includesAddress);
-AccessList.prototype.includesStorageKey = Function.prototype.call.bind(includesStorageKey);
+AccessList.prototype.includesAddress =
+	Function.prototype.call.bind(includesAddress);
+AccessList.prototype.includesStorageKey =
+	Function.prototype.call.bind(includesStorageKey);
 AccessList.prototype.keysFor = Function.prototype.call.bind(keysFor);
 AccessList.prototype.deduplicate = function () {
 	const result = deduplicate(this);
@@ -123,5 +121,6 @@ AccessList.prototype.withStorageKey = function (address, key) {
 AccessList.prototype.assertValid = Function.prototype.call.bind(assertValid);
 AccessList.prototype.toBytes = Function.prototype.call.bind(toBytes);
 AccessList.prototype.addressCount = Function.prototype.call.bind(addressCount);
-AccessList.prototype.storageKeyCount = Function.prototype.call.bind(storageKeyCount);
+AccessList.prototype.storageKeyCount =
+	Function.prototype.call.bind(storageKeyCount);
 AccessList.prototype.isEmpty = Function.prototype.call.bind(isEmpty);

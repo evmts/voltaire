@@ -145,10 +145,7 @@ export function topic(signature: string): string {
  * @param nonce - Transaction nonce
  * @returns Contract address (20 bytes)
  */
-export function contractAddress(
-	sender: Uint8Array,
-	nonce: bigint,
-): Uint8Array {
+export function contractAddress(sender: Uint8Array, nonce: bigint): Uint8Array {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
@@ -183,7 +180,9 @@ export function create2Address(
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
 	// 0xff ++ sender ++ salt ++ initCodeHash
-	const combined = new Uint8Array(1 + sender.length + salt.length + initCodeHash.length);
+	const combined = new Uint8Array(
+		1 + sender.length + salt.length + initCodeHash.length,
+	);
 	combined[0] = 0xff;
 	combined.set(sender, 1);
 	combined.set(salt, 1 + sender.length);

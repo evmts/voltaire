@@ -51,9 +51,7 @@ export function TransactionEIP1559(tx) {
 }
 
 // Attach static methods
-TransactionEIP1559.deserialize = function (bytes) {
-	return deserialize(bytes);
-};
+TransactionEIP1559.deserialize = (bytes) => deserialize(bytes);
 TransactionEIP1559.deserialize.prototype = TransactionEIP1559.prototype;
 
 TransactionEIP1559.serialize = serialize;
@@ -70,9 +68,9 @@ TransactionEIP1559.prototype.serialize =
 TransactionEIP1559.prototype.hash = Function.prototype.call.bind(hash);
 TransactionEIP1559.prototype.getSigningHash =
 	Function.prototype.call.bind(getSigningHash);
-TransactionEIP1559.prototype.getSender = Function.prototype.call.bind(getSender);
+TransactionEIP1559.prototype.getSender =
+	Function.prototype.call.bind(getSender);
 TransactionEIP1559.prototype.verifySignature =
 	Function.prototype.call.bind(verifySignature);
-TransactionEIP1559.prototype.getEffectiveGasPrice = Function.prototype.call.bind(
-	getEffectiveGasPrice,
-);
+TransactionEIP1559.prototype.getEffectiveGasPrice =
+	Function.prototype.call.bind(getEffectiveGasPrice);

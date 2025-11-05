@@ -16,5 +16,7 @@ import { encodeData } from "./encodeData.js";
  */
 export function hashStruct(primaryType, data, types) {
 	const encoded = encodeData(primaryType, data, types);
-	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (keccak_256(encoded));
+	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
+		keccak_256(encoded)
+	);
 }

@@ -3,17 +3,17 @@ export * from "./errors.js";
 export * from "./BrandedBinaryTree.js";
 
 import { addressToKey } from "./addressToKey.js";
-import { splitKey } from "./splitKey.js";
+import { get } from "./get.js";
 import { getStemBit } from "./getStemBit.js";
 import { hashInternal } from "./hashInternal.js";
-import { hashStem } from "./hashStem.js";
 import { hashLeaf } from "./hashLeaf.js";
 import { hashNode } from "./hashNode.js";
+import { hashStem } from "./hashStem.js";
 import { init } from "./init.js";
 import { insert } from "./insert.js";
-import { get } from "./get.js";
 import { rootHash } from "./rootHash.js";
 import { rootHashHex } from "./rootHashHex.js";
+import { splitKey } from "./splitKey.js";
 
 // Export individual functions
 export {

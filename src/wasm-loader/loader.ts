@@ -40,7 +40,12 @@ export async function loadWasm(
 	wasmPath: string | URL | ArrayBuffer,
 	forceReload = false,
 ): Promise<void> {
-	const pathStr = wasmPath instanceof URL ? wasmPath.href : typeof wasmPath === "string" ? wasmPath : "[ArrayBuffer]";
+	const pathStr =
+		wasmPath instanceof URL
+			? wasmPath.href
+			: typeof wasmPath === "string"
+				? wasmPath
+				: "[ArrayBuffer]";
 
 	if (wasmInstance && !forceReload && loadedWasmPath === pathStr) {
 		return; // Already loaded same file

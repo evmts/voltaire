@@ -47,7 +47,10 @@ export function add(point, other) {
 	const two_u1h2 = Fp2.mulScalar(u1h2, 2n);
 	const x_result = Fp2.sub(Fp2.sub(r2, h3), two_u1h2);
 
-	const y_result = Fp2.sub(Fp2.mul(r, Fp2.sub(u1h2, x_result)), Fp2.mul(s1, h3));
+	const y_result = Fp2.sub(
+		Fp2.mul(r, Fp2.sub(u1h2, x_result)),
+		Fp2.mul(s1, h3),
+	);
 	const z_result = Fp2.mul(Fp2.mul(point.z, other.z), h);
 
 	return /** @type {import('../BrandedG2Point.js').BrandedG2Point} */ ({

@@ -1,5 +1,5 @@
-import { hasEIP2929 } from "./hasEIP2929.js";
 import { ColdAccountAccess, ExtStep } from "./constants.js";
+import { hasEIP2929 } from "./hasEIP2929.js";
 
 /**
  * Get cold account access cost for hardfork

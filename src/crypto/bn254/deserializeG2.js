@@ -34,6 +34,10 @@ export function deserializeG2(bytes) {
 	return G2.fromAffine(x, y);
 }
 
+/**
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
 function bytesToHex(bytes) {
 	return Array.from(bytes)
 		.map((b) => b.toString(16).padStart(2, "0"))

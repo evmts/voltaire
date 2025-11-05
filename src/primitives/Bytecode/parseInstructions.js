@@ -1,5 +1,5 @@
-import { isPush } from "./isPush.js";
 import { getPushSize } from "./getPushSize.js";
+import { isPush } from "./isPush.js";
 
 /**
  * Parse bytecode into instructions

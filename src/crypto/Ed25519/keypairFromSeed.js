@@ -1,6 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { InvalidSeedError, Ed25519Error } from "./errors.js";
 import { SEED_SIZE } from "./constants.js";
+import { Ed25519Error, InvalidSeedError } from "./errors.js";
 
 /**
  * Generate Ed25519 keypair from seed

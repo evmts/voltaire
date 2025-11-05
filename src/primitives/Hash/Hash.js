@@ -2,9 +2,9 @@
 export * from "./BrandedHash.js";
 export * from "./constants.js";
 
-import { SIZE, ZERO } from "./constants.js";
 import { assert } from "./assert.js";
 import { clone } from "./clone.js";
+import { SIZE, ZERO } from "./constants.js";
 import { equals } from "./equals.js";
 import { format } from "./format.js";
 import { from } from "./from.js";
@@ -58,17 +58,11 @@ export function Hash(value) {
 	return from(value);
 }
 
-Hash.from = function (value) {
-	return from(value);
-};
+Hash.from = (value) => from(value);
 Hash.from.prototype = Hash.prototype;
-Hash.fromBytes = function (value) {
-	return fromBytes(value);
-};
+Hash.fromBytes = (value) => fromBytes(value);
 Hash.fromBytes.prototype = Hash.prototype;
-Hash.fromHex = function (value) {
-	return fromHex(value);
-};
+Hash.fromHex = (value) => fromHex(value);
 Hash.fromHex.prototype = Hash.prototype;
 
 Hash.isHash = isHash;

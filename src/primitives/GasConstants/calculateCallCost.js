@@ -1,4 +1,11 @@
-import { WarmStorageRead, ColdAccountAccess, CallValueTransfer, CallNewAccount, CallStipend, CallGasRetentionDivisor } from "./constants.js";
+import {
+	CallGasRetentionDivisor,
+	CallNewAccount,
+	CallStipend,
+	CallValueTransfer,
+	ColdAccountAccess,
+	WarmStorageRead,
+} from "./constants.js";
 
 /**
  * Calculate CALL operation gas cost
@@ -15,7 +22,12 @@ import { WarmStorageRead, ColdAccountAccess, CallValueTransfer, CallNewAccount, 
  * // { base, dynamic, stipend, forwarded, total }
  * ```
  */
-export function calculateCallCost(isWarm, hasValue, isNewAccount, availableGas) {
+export function calculateCallCost(
+	isWarm,
+	hasValue,
+	isNewAccount,
+	availableGas,
+) {
 	const base = isWarm ? WarmStorageRead : ColdAccountAccess;
 	let dynamic = 0n;
 

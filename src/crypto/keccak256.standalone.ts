@@ -25,10 +25,7 @@ let memoryOffset = 0;
 export async function init(): Promise<void> {
 	if (wasmInstance) return;
 
-	const wasmPath = new URL(
-		"../../wasm/crypto/keccak256.wasm",
-		import.meta.url,
-	);
+	const wasmPath = new URL("../../wasm/crypto/keccak256.wasm", import.meta.url);
 
 	// Create memory for WASM (1 page = 64KB)
 	memory = new WebAssembly.Memory({ initial: 1, maximum: 1 });

@@ -31,12 +31,6 @@ export * from "./BrandedP256Signature.js";
 export * from "./BrandedP256PublicKey.js";
 export * from "./BrandedP256PrivateKey.js";
 
-import { sign } from "./sign.js";
-import { verify } from "./verify.js";
-import { derivePublicKey } from "./derivePublicKey.js";
-import { ecdh } from "./ecdh.js";
-import { validatePrivateKey } from "./validatePrivateKey.js";
-import { validatePublicKey } from "./validatePublicKey.js";
 import {
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,
@@ -44,6 +38,12 @@ import {
 	SHARED_SECRET_SIZE,
 	SIGNATURE_COMPONENT_SIZE,
 } from "./constants.js";
+import { derivePublicKey } from "./derivePublicKey.js";
+import { ecdh } from "./ecdh.js";
+import { sign } from "./sign.js";
+import { validatePrivateKey } from "./validatePrivateKey.js";
+import { validatePublicKey } from "./validatePublicKey.js";
+import { verify } from "./verify.js";
 
 // Export individual functions
 export {

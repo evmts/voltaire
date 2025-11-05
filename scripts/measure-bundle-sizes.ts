@@ -5,7 +5,7 @@
  * Compares ReleaseSmall vs ReleaseFast WASM, and WASM vs pure TypeScript
  */
 
-import { statSync, readdirSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 interface SizeResult {
@@ -18,7 +18,8 @@ interface SizeResult {
 
 function formatBytes(bytes: number): { kb: string; mb?: string } {
 	const kb = (bytes / 1024).toFixed(2);
-	const mb = bytes > 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(2) : undefined;
+	const mb =
+		bytes > 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(2) : undefined;
 	return { kb, mb };
 }
 
@@ -38,8 +39,8 @@ function measureDirectory(dirPath: string, pattern: RegExp): SizeResult[] {
 	try {
 		const files = readdirSync(dirPath);
 		return files
-			.filter(file => pattern.test(file))
-			.map(file => {
+			.filter((file) => pattern.test(file))
+			.map((file) => {
 				const fullPath = join(dirPath, file);
 				return measureFile(fullPath, file);
 			});
@@ -49,9 +50,15 @@ function measureDirectory(dirPath: string, pattern: RegExp): SizeResult[] {
 }
 
 // Main measurement
-console.log("================================================================================");
-console.log("Bundle Size Comparison: ReleaseSmall vs ReleaseFast vs Pure TypeScript");
-console.log("================================================================================");
+console.log(
+	"================================================================================",
+);
+console.log(
+	"Bundle Size Comparison: ReleaseSmall vs ReleaseFast vs Pure TypeScript",
+);
+console.log(
+	"================================================================================",
+);
 console.log("");
 
 // WASM Files
@@ -61,19 +68,31 @@ console.log("-".repeat(80));
 const wasmResults: SizeResult[] = [];
 
 try {
-	const releaseSmall = measureFile("wasm/primitives.wasm", "ReleaseSmall (optimized for size)");
+	const releaseSmall = measureFile(
+		"wasm/primitives.wasm",
+		"ReleaseSmall (optimized for size)",
+	);
 	wasmResults.push(releaseSmall);
-	console.log(`✓ ${releaseSmall.name}: ${releaseSmall.kb} KB ${releaseSmall.mb ? `(${releaseSmall.mb} MB)` : ""}`);
+	console.log(
+		`✓ ${releaseSmall.name}: ${releaseSmall.kb} KB ${releaseSmall.mb ? `(${releaseSmall.mb} MB)` : ""}`,
+	);
 } catch {
 	console.log("✗ ReleaseSmall WASM not found - run: zig build build-ts-wasm");
 }
 
 try {
-	const releaseFast = measureFile("wasm/primitives-fast.wasm", "ReleaseFast (optimized for speed)");
+	const releaseFast = measureFile(
+		"wasm/primitives-fast.wasm",
+		"ReleaseFast (optimized for speed)",
+	);
 	wasmResults.push(releaseFast);
-	console.log(`✓ ${releaseFast.name}: ${releaseFast.kb} KB ${releaseFast.mb ? `(${releaseFast.mb} MB)` : ""}`);
+	console.log(
+		`✓ ${releaseFast.name}: ${releaseFast.kb} KB ${releaseFast.mb ? `(${releaseFast.mb} MB)` : ""}`,
+	);
 } catch {
-	console.log("✗ ReleaseFast WASM not found - run: zig build build-ts-wasm-fast");
+	console.log(
+		"✗ ReleaseFast WASM not found - run: zig build build-ts-wasm-fast",
+	);
 }
 
 try {
@@ -87,11 +106,16 @@ try {
 // Standalone crypto modules
 const cryptoWasmResults: SizeResult[] = [];
 try {
-	const standaloneKeccak = measureFile("wasm/crypto/keccak256.wasm", "Standalone Keccak256 (Zig stdlib only)");
+	const standaloneKeccak = measureFile(
+		"wasm/crypto/keccak256.wasm",
+		"Standalone Keccak256 (Zig stdlib only)",
+	);
 	cryptoWasmResults.push(standaloneKeccak);
 	console.log(`✓ ${standaloneKeccak.name}: ${standaloneKeccak.kb} KB`);
 } catch {
-	console.log("✗ Standalone Keccak256 WASM not found - run: zig build keccak256-wasm");
+	console.log(
+		"✗ Standalone Keccak256 WASM not found - run: zig build keccak256-wasm",
+	);
 }
 
 if (wasmResults.length >= 2) {
@@ -170,7 +194,11 @@ try {
 	const nobleFiles = measureDirectory("dist/crypto", /keccak256\.js$/);
 	if (nobleFiles.length > 0) {
 		const nobleSize = nobleFiles[0];
-		cryptoResults.push({ ...nobleSize, type: "Noble (@noble/hashes) - Pure TS", name: "keccak256.js" });
+		cryptoResults.push({
+			...nobleSize,
+			type: "Noble (@noble/hashes) - Pure TS",
+			name: "keccak256.js",
+		});
 		console.log(`✓ Noble Keccak256: ${nobleSize.kb} KB`);
 	}
 } catch {
@@ -179,8 +207,15 @@ try {
 
 // Measure standalone WASM wrapper
 try {
-	const standaloneWrapper = measureFile("dist/crypto/keccak256.standalone.js", "Standalone WASM Wrapper");
-	cryptoResults.push({ ...standaloneWrapper, type: "WASM Wrapper - TS", name: "keccak256.standalone.js" });
+	const standaloneWrapper = measureFile(
+		"dist/crypto/keccak256.standalone.js",
+		"Standalone WASM Wrapper",
+	);
+	cryptoResults.push({
+		...standaloneWrapper,
+		type: "WASM Wrapper - TS",
+		name: "keccak256.standalone.js",
+	});
 	console.log(`✓ WASM Wrapper: ${standaloneWrapper.kb} KB`);
 } catch {
 	console.log("✗ Standalone WASM wrapper not found in dist/");
@@ -189,15 +224,19 @@ try {
 // Show standalone WASM size
 if (cryptoWasmResults.length > 0) {
 	const wasmSize = cryptoWasmResults[0];
-	cryptoResults.push({ ...wasmSize, type: "Zig stdlib - WASM binary", name: "keccak256.wasm" });
+	cryptoResults.push({
+		...wasmSize,
+		type: "Zig stdlib - WASM binary",
+		name: "keccak256.wasm",
+	});
 	console.log(`✓ Standalone WASM: ${wasmSize.kb} KB`);
 }
 
 // Calculate total bundle sizes
 if (cryptoResults.length >= 2) {
-	const nobleOnly = cryptoResults.find(r => r.type.includes("Noble"));
-	const wasmWrapper = cryptoResults.find(r => r.type.includes("Wrapper"));
-	const wasmBinary = cryptoResults.find(r => r.type.includes("binary"));
+	const nobleOnly = cryptoResults.find((r) => r.type.includes("Noble"));
+	const wasmWrapper = cryptoResults.find((r) => r.type.includes("Wrapper"));
+	const wasmBinary = cryptoResults.find((r) => r.type.includes("binary"));
 
 	if (nobleOnly) {
 		console.log(`\n📦 Noble-only bundle: ${nobleOnly.kb} KB`);
@@ -211,7 +250,9 @@ if (cryptoResults.length >= 2) {
 		if (nobleOnly) {
 			const ratio = (totalWasm / nobleOnly.bytes).toFixed(2);
 			const diff = ((totalWasm - nobleOnly.bytes) / 1024).toFixed(2);
-			console.log(`📊 WASM is ${ratio}x ${totalWasm > nobleOnly.bytes ? 'larger' : 'smaller'} (${diff > '0' ? '+' : ''}${diff} KB)`);
+			console.log(
+				`📊 WASM is ${ratio}x ${totalWasm > nobleOnly.bytes ? "larger" : "smaller"} (${diff > "0" ? "+" : ""}${diff} KB)`,
+			);
 		}
 	}
 }
@@ -242,14 +283,20 @@ TypeScript Bundle (tree-shaken):
 
 	if (wasmResults.length > 0) {
 		const tsWasmRatio = (totalTS / wasmResults[0].bytes).toFixed(2);
-		console.log(`TypeScript bundle is ${tsWasmRatio}x the size of ReleaseSmall WASM`);
+		console.log(
+			`TypeScript bundle is ${tsWasmRatio}x the size of ReleaseSmall WASM`,
+		);
 	}
 }
 
 console.log("");
-console.log("================================================================================");
+console.log(
+	"================================================================================",
+);
 console.log("Measurement complete!");
-console.log("================================================================================");
+console.log(
+	"================================================================================",
+);
 
 // Generate BUNDLE-SIZES.md
 const md = `# Bundle Size Comparison
@@ -260,7 +307,7 @@ const md = `# Bundle Size Comparison
 
 | Mode | Size | Optimization | Use Case |
 |------|------|--------------|----------|
-${wasmResults.map(r => `| ${r.name} | ${r.mb ? `${r.mb} MB` : `${r.kb} KB`} | ${r.name.includes("Small") ? "Size" : r.name.includes("Fast") ? "Speed" : "N/A"} | ${r.name.includes("Small") ? "Production" : r.name.includes("Fast") ? "Benchmarking" : "Hashing"} |`).join("\n")}
+${wasmResults.map((r) => `| ${r.name} | ${r.mb ? `${r.mb} MB` : `${r.kb} KB`} | ${r.name.includes("Small") ? "Size" : r.name.includes("Fast") ? "Speed" : "N/A"} | ${r.name.includes("Small") ? "Production" : r.name.includes("Fast") ? "Benchmarking" : "Hashing"} |`).join("\n")}
 
 ${wasmResults.length >= 2 ? `**Size Impact:** ReleaseFast is ${(wasmResults[1].bytes / wasmResults[0].bytes).toFixed(2)}x larger than ReleaseSmall (+${((wasmResults[1].bytes - wasmResults[0].bytes) / 1024).toFixed(2)} KB)` : ""}
 
@@ -268,7 +315,7 @@ ${wasmResults.length >= 2 ? `**Size Impact:** ReleaseFast is ${(wasmResults[1].b
 
 | Primitive | Size | Files |
 |-----------|------|-------|
-${tsResults.map(r => `| ${r.name} | ${r.kb} KB | Multiple |`).join("\n")}
+${tsResults.map((r) => `| ${r.name} | ${r.kb} KB | Multiple |`).join("\n")}
 
 ${tsResults.length > 0 ? `**Total:** ${formatBytes(tsResults.reduce((sum, r) => sum + r.bytes, 0)).kb} KB across ${tsResults.length} primitives` : ""}
 
@@ -278,12 +325,12 @@ Comparing Keccak256 implementations:
 
 | Implementation | Size | Type |
 |----------------|------|------|
-${cryptoResults.map(r => `| ${r.type} | ${r.kb} KB | ${r.name} |`).join("\n")}
+${cryptoResults.map((r) => `| ${r.type} | ${r.kb} KB | ${r.name} |`).join("\n")}
 
 ${(() => {
-	const nobleOnly = cryptoResults.find(r => r.type.includes("Noble"));
-	const wasmWrapper = cryptoResults.find(r => r.type.includes("Wrapper"));
-	const wasmBinary = cryptoResults.find(r => r.type.includes("binary"));
+	const nobleOnly = cryptoResults.find((r) => r.type.includes("Noble"));
+	const wasmWrapper = cryptoResults.find((r) => r.type.includes("Wrapper"));
+	const wasmBinary = cryptoResults.find((r) => r.type.includes("binary"));
 
 	if (nobleOnly && wasmWrapper && wasmBinary) {
 		const totalWasm = wasmWrapper.bytes + wasmBinary.bytes;
@@ -293,7 +340,7 @@ ${(() => {
 		return `**Bundle Comparison:**
 - Noble (pure TS): ${nobleOnly.kb} KB
 - WASM (wrapper + binary): ${kb} KB
-- WASM is ${ratio}x ${totalWasm > nobleOnly.bytes ? 'larger' : 'smaller'} (${diff > '0' ? '+' : ''}${diff} KB)`;
+- WASM is ${ratio}x ${totalWasm > nobleOnly.bytes ? "larger" : "smaller"} (${diff > "0" ? "+" : ""}${diff} KB)`;
 	}
 	return "";
 })()}

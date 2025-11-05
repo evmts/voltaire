@@ -47,7 +47,10 @@ export namespace Secp256k1Wasm {
 	// Signing Operations
 	// ==========================================================================
 
-	export function sign(messageHash: BrandedHash, privateKey: PrivateKey): Signature {
+	export function sign(
+		messageHash: BrandedHash,
+		privateKey: PrivateKey,
+	): Signature {
 		if (privateKey.length !== PRIVATE_KEY_SIZE) {
 			throw new InvalidPrivateKeyError(
 				`Private key must be ${PRIVATE_KEY_SIZE} bytes, got ${privateKey.length}`,

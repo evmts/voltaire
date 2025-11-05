@@ -644,7 +644,9 @@ describe("Authorization.format", () => {
 		for (let i = 0; i < 20; i++) {
 			bytes[i] = 0x12 + i;
 		}
-		const longAddr = Object.assign(bytes, { bytes }) as unknown as BrandedAddress;
+		const longAddr = Object.assign(bytes, {
+			bytes,
+		}) as unknown as BrandedAddress;
 		const auth: Authorization.Item = {
 			chainId: 1n,
 			address: longAddr,

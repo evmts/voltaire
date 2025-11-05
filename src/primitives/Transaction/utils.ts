@@ -1,7 +1,7 @@
-import { Secp256k1 } from "../../crypto/secp256k1.js";
+import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import type { BrandedAddress } from "../Address/index.js";
 import * as AddressNamespace from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import type { BrandedHash, Hash } from "../Hash/index.js";
 import type * as Rlp from "../Rlp/index.js";
 
 /**
@@ -50,7 +50,7 @@ export function decodeAddress(bytes: Uint8Array): BrandedAddress | null {
 	if (bytes.length !== 20) {
 		throw new Error(`Invalid address length: ${bytes.length}`);
 	}
-	return bytes as Address;
+	return bytes as BrandedAddress;
 }
 
 /**
@@ -93,7 +93,10 @@ export function recoverAddress(
  * @internal
  */
 export function encodeAccessList(
-	accessList: readonly { address: BrandedAddress; storageKeys: readonly Hash[] }[],
+	accessList: readonly {
+		address: BrandedAddress;
+		storageKeys: readonly Hash[];
+	}[],
 ): Rlp.Encodable[] {
 	return accessList.map((item) => [
 		item.address,
@@ -124,7 +127,7 @@ export function decodeAccessList(
 			throw new Error("Invalid access list storage keys");
 		}
 
-		const address = addressData.value as Address;
+		const address = addressData.value as BrandedAddress;
 		const storageKeys = keysData.value.map((keyData) => {
 			if (keyData.type !== "bytes" || keyData.value.length !== 32) {
 				throw new Error("Invalid storage key");
@@ -203,7 +206,7 @@ export function decodeAuthorizationList(data: Rlp.Data[]): {
 
 		return {
 			chainId: decodeBigint(chainIdData.value),
-			address: addressData.value as Address,
+			address: addressData.value as BrandedAddress,
 			nonce: decodeBigint(nonceData.value),
 			yParity: yParityData.value[0]!,
 			r: rData.value,

@@ -31,11 +31,7 @@ import * as Eip1559 from "./eip1559Constants.js";
  * // baseFee3 === 1_000_000_000n (unchanged at 0)
  * ```
  */
-export function calculateBaseFee(
-	parentGasUsed,
-	parentGasLimit,
-	parentBaseFee,
-) {
+export function calculateBaseFee(parentGasUsed, parentGasLimit, parentBaseFee) {
 	// Target is 50% of gas limit (elasticity multiplier = 2)
 	const parentGasTarget = parentGasLimit / Eip1559.ELASTICITY_MULTIPLIER;
 

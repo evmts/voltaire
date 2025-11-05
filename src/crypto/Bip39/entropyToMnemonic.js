@@ -24,7 +24,9 @@ export function entropyToMnemonic(entropy, wl = wordlist) {
 	}
 
 	try {
-		return /** @type {import('./BrandedMnemonic.js').Mnemonic} */ (_entropyToMnemonic(entropy, wl));
+		return /** @type {import('./BrandedMnemonic.js').Mnemonic} */ (
+			_entropyToMnemonic(entropy, wl)
+		);
 	} catch (error) {
 		throw new Bip39Error(`Entropy to mnemonic conversion failed: ${error}`);
 	}

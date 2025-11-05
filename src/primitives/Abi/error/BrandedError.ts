@@ -9,12 +9,10 @@ export type BrandedError<
 	inputs: TInputs;
 };
 
-export type ExtractNames<TAbi extends readonly import("../Item.js").Item[]> = Extract<
-	TAbi[number],
-	{ type: "error" }
->["name"];
+export type ExtractNames<TAbi extends readonly import("../Item.js").Item[]> =
+	Extract<TAbi[number], { type: "error" }>["name"];
 
-export type Get<TAbi extends readonly import("../Item.js").Item[], TName extends string> = Extract<
-	TAbi[number],
-	{ type: "error"; name: TName }
->;
+export type Get<
+	TAbi extends readonly import("../Item.js").Item[],
+	TName extends string,
+> = Extract<TAbi[number], { type: "error"; name: TName }>;

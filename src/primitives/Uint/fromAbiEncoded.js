@@ -15,7 +15,9 @@ import { fromBytes } from "./fromBytes.js";
  */
 export function fromAbiEncoded(bytes) {
 	if (bytes.length !== 32) {
-		throw new Error(`ABI-encoded Uint256 must be exactly 32 bytes, got ${bytes.length}`);
+		throw new Error(
+			`ABI-encoded Uint256 must be exactly 32 bytes, got ${bytes.length}`,
+		);
 	}
 	return fromBytes(bytes);
 }

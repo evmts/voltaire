@@ -73,6 +73,5 @@ TransactionEIP7702.prototype.getSender =
 	Function.prototype.call.bind(getSender);
 TransactionEIP7702.prototype.verifySignature =
 	Function.prototype.call.bind(verifySignature);
-TransactionEIP7702.prototype.getEffectiveGasPrice = Function.prototype.call.bind(
-	getEffectiveGasPrice,
-);
+TransactionEIP7702.prototype.getEffectiveGasPrice =
+	Function.prototype.call.bind(getEffectiveGasPrice);

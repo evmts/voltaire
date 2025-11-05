@@ -20,8 +20,8 @@
 
 import { Keccak256 } from "../../crypto/Keccak256/index.js";
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
-import * as Address from "../Address/index.js";
-import { Hash, type BrandedHash } from "../Hash/index.js";
+import { Address } from "../Address/index.js";
+import { type BrandedHash, Hash } from "../Hash/index.js";
 import * as Rlp from "../Rlp/index.js";
 
 // ==========================================================================
@@ -539,7 +539,10 @@ export function equals(this: Item, other: Item): boolean {
 /**
  * Helper to check address equality
  */
-function addressesEqual(a: BrandedAddress.Address, b: BrandedAddress.Address): boolean {
+function addressesEqual(
+	a: BrandedAddress.Address,
+	b: BrandedAddress.Address,
+): boolean {
 	if (a.length !== b.length) return false;
 	for (let i = 0; i < a.length; i++) {
 		if (a[i] !== b[i]) return false;

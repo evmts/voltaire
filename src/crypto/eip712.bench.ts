@@ -6,9 +6,13 @@
 
 import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
-import * as Address from "../primitives/Address/index.js";
+import { Address } from "../primitives/Address/index.js";
 import { Hash } from "../primitives/Hash/index.js";
-import { EIP712, type TypedData, type TypeDefinitions } from "./EIP712/index.js";
+import {
+	EIP712,
+	type TypeDefinitions,
+	type TypedData,
+} from "./EIP712/index.js";
 
 // Test data setup
 const privateKey = new Uint8Array(32);

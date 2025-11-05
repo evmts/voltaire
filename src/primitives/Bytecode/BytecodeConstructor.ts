@@ -1,23 +1,27 @@
-import type { BrandedBytecode, Analysis, Instruction } from "./BrandedBytecode.js";
+import type {
+	Analysis,
+	BrandedBytecode,
+	Instruction,
+} from "./BrandedBytecode.js";
+import type { analyze } from "./analyze.js";
+import type { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import type { equals } from "./equals.js";
+import type { extractRuntime } from "./extractRuntime.js";
+import type { formatInstruction } from "./formatInstruction.js";
+import type { formatInstructions } from "./formatInstructions.js";
 import type { from } from "./from.js";
 import type { fromHex } from "./fromHex.js";
-import type { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
-import type { isValidJumpDest } from "./isValidJumpDest.js";
-import type { validate } from "./validate.js";
-import type { parseInstructions } from "./parseInstructions.js";
-import type { analyze } from "./analyze.js";
-import type { size } from "./size.js";
-import type { extractRuntime } from "./extractRuntime.js";
-import type { equals } from "./equals.js";
-import type { hash } from "./hash.js";
-import type { toHex } from "./toHex.js";
-import type { formatInstructions } from "./formatInstructions.js";
-import type { formatInstruction } from "./formatInstruction.js";
-import type { hasMetadata } from "./hasMetadata.js";
-import type { stripMetadata } from "./stripMetadata.js";
-import type { isPush } from "./isPush.js";
 import type { getPushSize } from "./getPushSize.js";
+import type { hasMetadata } from "./hasMetadata.js";
+import type { hash } from "./hash.js";
+import type { isPush } from "./isPush.js";
 import type { isTerminator } from "./isTerminator.js";
+import type { isValidJumpDest } from "./isValidJumpDest.js";
+import type { parseInstructions } from "./parseInstructions.js";
+import type { size } from "./size.js";
+import type { stripMetadata } from "./stripMetadata.js";
+import type { toHex } from "./toHex.js";
+import type { validate } from "./validate.js";
 
 type BytecodePrototype = BrandedBytecode & {
 	analyzeJumpDestinations: typeof analyzeJumpDestinations;

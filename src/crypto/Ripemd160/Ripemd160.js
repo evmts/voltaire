@@ -25,7 +25,9 @@ export { hashString };
  * ```
  */
 export function Ripemd160() {
-	throw new Error("Ripemd160 is not a constructor. Use Ripemd160.hash() or Ripemd160.hashString() instead.");
+	throw new Error(
+		"Ripemd160 is not a constructor. Use Ripemd160.hash() or Ripemd160.hashString() instead.",
+	);
 }
 
 Ripemd160.hash = hash;

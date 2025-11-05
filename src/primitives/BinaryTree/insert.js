@@ -1,7 +1,7 @@
-import { splitKey } from "./splitKey.js";
+import { InvalidTreeStateError } from "./errors.js";
 import { getStemBit } from "./getStemBit.js";
 import { hashNode } from "./hashNode.js";
-import { InvalidTreeStateError } from "./errors.js";
+import { splitKey } from "./splitKey.js";
 
 /**
  * Insert value at key

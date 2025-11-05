@@ -1,6 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { InvalidSecretKeyError, Ed25519Error } from "./errors.js";
 import { SECRET_KEY_SIZE } from "./constants.js";
+import { Ed25519Error, InvalidSecretKeyError } from "./errors.js";
 
 /**
  * Sign a message with Ed25519 secret key

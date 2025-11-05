@@ -168,9 +168,7 @@ console.log(
 
 console.log("\n--- Event Signatures ---");
 results.push(
-	benchmark("Event.getSignature", () =>
-		Abi.Event.getSignature(transferEvent),
-	),
+	benchmark("Event.getSignature", () => Abi.Event.getSignature(transferEvent)),
 );
 
 console.log(
@@ -345,9 +343,7 @@ console.log(
 
 console.log("--- Format ABI Items ---");
 results.push(
-	benchmark("formatAbiItem - function", () =>
-		Abi.Item.format(transferFunc),
-	),
+	benchmark("formatAbiItem - function", () => Abi.Item.format(transferFunc)),
 );
 results.push(
 	benchmark("formatAbiItem - event", () => Abi.Item.format(transferEvent)),
@@ -423,7 +419,9 @@ results.push(
 	benchmark("encode address", () => {
 		encodeParams(
 			[{ type: "address" }],
-			["0x0000000000000000000000000000000000000000" as unknown as BrandedAddress],
+			[
+				"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+			],
 		);
 	}),
 );
@@ -566,7 +564,10 @@ const encodedBool = encodeParams([{ type: "bool" }], [true]);
 const encodedString = encodeParams([{ type: "string" }], ["Hello World"]);
 const encodedMixed = encodeParams(
 	[{ type: "uint256" }, { type: "address" }],
-	[123n, "0x0000000000000000000000000000000000000000" as unknown as BrandedAddress],
+	[
+		123n,
+		"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
+	],
 );
 
 console.log("--- Basic Type Decoding ---");
@@ -623,9 +624,9 @@ const encodedTransferCall = Abi.Function.encodeParams(transferFunc, [
 	"0x0000000000000000000000000000000000000000" as unknown as BrandedAddress,
 	100n,
 ] as [BrandedAddress, bigint]);
-const encodedBoolResult = Abi.Function.encodeResult(transferFunc, [
-	true,
-] as [boolean]);
+const encodedBoolResult = Abi.Function.encodeResult(transferFunc, [true] as [
+	boolean,
+]);
 
 results.push(
 	benchmark("Function.decodeParams", () => {
@@ -657,11 +658,7 @@ const eventTopics = Abi.Event.encodeTopics(transferEvent, {
 
 results.push(
 	benchmark("Event.decodeLog", () => {
-		Abi.Event.decodeLog(
-			transferEvent,
-			encodedEventData,
-			eventTopics as any,
-		);
+		Abi.Event.decodeLog(transferEvent, encodedEventData, eventTopics as any);
 	}),
 );
 

@@ -1,10 +1,4 @@
 import type { BrandedHash } from "../../primitives/Hash/index.js";
-import type { derivePublicKey } from "./derivePublicKey.js";
-import type { ecdh } from "./ecdh.js";
-import type { sign } from "./sign.js";
-import type { validatePrivateKey } from "./validatePrivateKey.js";
-import type { validatePublicKey } from "./validatePublicKey.js";
-import type { verify } from "./verify.js";
 import type {
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,
@@ -12,6 +6,12 @@ import type {
 	SHARED_SECRET_SIZE,
 	SIGNATURE_COMPONENT_SIZE,
 } from "./constants.js";
+import type { derivePublicKey } from "./derivePublicKey.js";
+import type { ecdh } from "./ecdh.js";
+import type { sign } from "./sign.js";
+import type { validatePrivateKey } from "./validatePrivateKey.js";
+import type { validatePublicKey } from "./validatePublicKey.js";
+import type { verify } from "./verify.js";
 
 export interface P256Constructor {
 	sign: typeof sign;

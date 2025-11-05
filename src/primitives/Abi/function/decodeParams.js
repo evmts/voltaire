@@ -1,5 +1,8 @@
 import { decodeParameters } from "../Encoding.js";
-import { FunctionDecodingError, FunctionInvalidSelectorError } from "./errors.js";
+import {
+	FunctionDecodingError,
+	FunctionInvalidSelectorError,
+} from "./errors.js";
 import { getSelector } from "./getSelector.js";
 
 /**

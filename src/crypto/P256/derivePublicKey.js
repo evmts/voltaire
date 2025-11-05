@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { p256 } from "@noble/curves/nist.js";
-import { InvalidPrivateKeyError } from "./errors.js";
 import { PRIVATE_KEY_SIZE } from "./constants.js";
+import { InvalidPrivateKeyError } from "./errors.js";
 
 /**
  * Derive public key from private key

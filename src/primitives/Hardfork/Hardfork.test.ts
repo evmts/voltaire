@@ -11,114 +11,78 @@ import * as Hardfork from "./Hardfork.js";
 
 describe("Hardfork.isAtLeast", () => {
 	it("returns true when current >= target", () => {
-		expect(Hardfork.isAtLeast(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(
-			true,
-		);
-		expect(Hardfork.isAtLeast(Hardfork.SHANGHAI, Hardfork.SHANGHAI)).toBe(
-			true,
-		);
+		expect(Hardfork.isAtLeast(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(true);
+		expect(Hardfork.isAtLeast(Hardfork.SHANGHAI, Hardfork.SHANGHAI)).toBe(true);
 	});
 
 	it("returns false when current < target", () => {
-		expect(Hardfork.isAtLeast(Hardfork.BERLIN, Hardfork.LONDON)).toBe(
-			false,
-		);
-		expect(Hardfork.isAtLeast(Hardfork.FRONTIER, Hardfork.CANCUN)).toBe(
-			false,
-		);
+		expect(Hardfork.isAtLeast(Hardfork.BERLIN, Hardfork.LONDON)).toBe(false);
+		expect(Hardfork.isAtLeast(Hardfork.FRONTIER, Hardfork.CANCUN)).toBe(false);
 	});
 });
 
 describe("Hardfork.isBefore", () => {
 	it("returns true when current < target", () => {
-		expect(Hardfork.isBefore(Hardfork.BERLIN, Hardfork.LONDON)).toBe(
-			true,
-		);
-		expect(Hardfork.isBefore(Hardfork.FRONTIER, Hardfork.HOMESTEAD)).toBe(
-			true,
-		);
+		expect(Hardfork.isBefore(Hardfork.BERLIN, Hardfork.LONDON)).toBe(true);
+		expect(Hardfork.isBefore(Hardfork.FRONTIER, Hardfork.HOMESTEAD)).toBe(true);
 	});
 
 	it("returns false when current >= target", () => {
-		expect(Hardfork.isBefore(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(
-			false,
-		);
-		expect(Hardfork.isBefore(Hardfork.LONDON, Hardfork.LONDON)).toBe(
-			false,
-		);
+		expect(Hardfork.isBefore(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(false);
+		expect(Hardfork.isBefore(Hardfork.LONDON, Hardfork.LONDON)).toBe(false);
 	});
 });
 
 describe("Hardfork.isAfter", () => {
 	it("returns true when current > target", () => {
-		expect(Hardfork.isAfter(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(
-			true,
-		);
+		expect(Hardfork.isAfter(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(true);
 		expect(Hardfork.isAfter(Hardfork.PRAGUE, Hardfork.BERLIN)).toBe(true);
 	});
 
 	it("returns false when current <= target", () => {
-		expect(Hardfork.isAfter(Hardfork.BERLIN, Hardfork.LONDON)).toBe(
-			false,
-		);
-		expect(Hardfork.isAfter(Hardfork.SHANGHAI, Hardfork.SHANGHAI)).toBe(
-			false,
-		);
+		expect(Hardfork.isAfter(Hardfork.BERLIN, Hardfork.LONDON)).toBe(false);
+		expect(Hardfork.isAfter(Hardfork.SHANGHAI, Hardfork.SHANGHAI)).toBe(false);
 	});
 });
 
 describe("Hardfork.isEqual", () => {
 	it("returns true when hardforks are equal", () => {
 		expect(Hardfork.isEqual(Hardfork.CANCUN, Hardfork.CANCUN)).toBe(true);
-		expect(Hardfork.isEqual(Hardfork.FRONTIER, Hardfork.FRONTIER)).toBe(
-			true,
-		);
+		expect(Hardfork.isEqual(Hardfork.FRONTIER, Hardfork.FRONTIER)).toBe(true);
 	});
 
 	it("returns false when hardforks are not equal", () => {
-		expect(Hardfork.isEqual(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(
-			false,
-		);
-		expect(Hardfork.isEqual(Hardfork.BERLIN, Hardfork.LONDON)).toBe(
-			false,
-		);
+		expect(Hardfork.isEqual(Hardfork.CANCUN, Hardfork.SHANGHAI)).toBe(false);
+		expect(Hardfork.isEqual(Hardfork.BERLIN, Hardfork.LONDON)).toBe(false);
 	});
 });
 
 describe("Hardfork.compare", () => {
 	it("returns negative when a < b", () => {
-		expect(
-			Hardfork.compare(Hardfork.BERLIN, Hardfork.LONDON),
-		).toBeLessThan(0);
-		expect(
-			Hardfork.compare(Hardfork.FRONTIER, Hardfork.CANCUN),
-		).toBeLessThan(0);
+		expect(Hardfork.compare(Hardfork.BERLIN, Hardfork.LONDON)).toBeLessThan(0);
+		expect(Hardfork.compare(Hardfork.FRONTIER, Hardfork.CANCUN)).toBeLessThan(
+			0,
+		);
 	});
 
 	it("returns zero when a == b", () => {
 		expect(Hardfork.compare(Hardfork.CANCUN, Hardfork.CANCUN)).toBe(0);
-		expect(Hardfork.compare(Hardfork.SHANGHAI, Hardfork.SHANGHAI)).toBe(
-			0,
-		);
+		expect(Hardfork.compare(Hardfork.SHANGHAI, Hardfork.SHANGHAI)).toBe(0);
 	});
 
 	it("returns positive when a > b", () => {
 		expect(
 			Hardfork.compare(Hardfork.PRAGUE, Hardfork.SHANGHAI),
 		).toBeGreaterThan(0);
-		expect(
-			Hardfork.compare(Hardfork.LONDON, Hardfork.BERLIN),
-		).toBeGreaterThan(0);
+		expect(Hardfork.compare(Hardfork.LONDON, Hardfork.BERLIN)).toBeGreaterThan(
+			0,
+		);
 	});
 });
 
 describe("Hardfork.min", () => {
 	it("returns minimum hardfork from array", () => {
-		const forks = [
-			Hardfork.CANCUN,
-			Hardfork.BERLIN,
-			Hardfork.SHANGHAI,
-		];
+		const forks = [Hardfork.CANCUN, Hardfork.BERLIN, Hardfork.SHANGHAI];
 		expect(Hardfork.min(forks)).toBe(Hardfork.BERLIN);
 	});
 
@@ -133,11 +97,7 @@ describe("Hardfork.min", () => {
 
 describe("Hardfork.max", () => {
 	it("returns maximum hardfork from array", () => {
-		const forks = [
-			Hardfork.CANCUN,
-			Hardfork.BERLIN,
-			Hardfork.SHANGHAI,
-		];
+		const forks = [Hardfork.CANCUN, Hardfork.BERLIN, Hardfork.SHANGHAI];
 		expect(Hardfork.max(forks)).toBe(Hardfork.CANCUN);
 	});
 
@@ -170,9 +130,7 @@ describe("Hardfork.fromString", () => {
 
 	it("parses alias names", () => {
 		expect(Hardfork.fromString("paris")).toBe(Hardfork.MERGE);
-		expect(Hardfork.fromString("constantinoplefix")).toBe(
-			Hardfork.PETERSBURG,
-		);
+		expect(Hardfork.fromString("constantinoplefix")).toBe(Hardfork.PETERSBURG);
 	});
 
 	it("handles comparison operators in names", () => {
@@ -584,11 +542,7 @@ describe("Hardfork edge cases", () => {
 	});
 
 	it("comparison operations work across full range", () => {
-		expect(Hardfork.isAtLeast(Hardfork.OSAKA, Hardfork.FRONTIER)).toBe(
-			true,
-		);
-		expect(Hardfork.isBefore(Hardfork.FRONTIER, Hardfork.OSAKA)).toBe(
-			true,
-		);
+		expect(Hardfork.isAtLeast(Hardfork.OSAKA, Hardfork.FRONTIER)).toBe(true);
+		expect(Hardfork.isBefore(Hardfork.FRONTIER, Hardfork.OSAKA)).toBe(true);
 	});
 });

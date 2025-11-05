@@ -1,8 +1,8 @@
 // @ts-nocheck
 export * from "./BrandedConstructor.js";
 
-import { encodeParams } from "./encodeParams.js";
 import { decodeParams } from "./decodeParams.js";
+import { encodeParams } from "./encodeParams.js";
 
 // Export individual functions
 export { encodeParams, decodeParams };

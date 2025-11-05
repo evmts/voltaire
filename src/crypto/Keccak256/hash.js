@@ -12,5 +12,7 @@ import { keccak_256 } from "@noble/hashes/sha3.js";
  * ```
  */
 export function hash(data) {
-	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (keccak_256(data));
+	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
+		keccak_256(data)
+	);
 }

@@ -2,18 +2,18 @@
 export * from "./errors.js";
 export * from "./constants.js";
 
-import { derivePublicKey } from "./derivePublicKey.js";
-import { scalarmult } from "./scalarmult.js";
-import { keypairFromSeed } from "./keypairFromSeed.js";
-import { generateSecretKey } from "./generateSecretKey.js";
-import { generateKeypair } from "./generateKeypair.js";
-import { validateSecretKey } from "./validateSecretKey.js";
-import { validatePublicKey } from "./validatePublicKey.js";
 import {
-	SECRET_KEY_SIZE,
 	PUBLIC_KEY_SIZE,
+	SECRET_KEY_SIZE,
 	SHARED_SECRET_SIZE,
 } from "./constants.js";
+import { derivePublicKey } from "./derivePublicKey.js";
+import { generateKeypair } from "./generateKeypair.js";
+import { generateSecretKey } from "./generateSecretKey.js";
+import { keypairFromSeed } from "./keypairFromSeed.js";
+import { scalarmult } from "./scalarmult.js";
+import { validatePublicKey } from "./validatePublicKey.js";
+import { validateSecretKey } from "./validateSecretKey.js";
 
 // Export individual functions
 export {

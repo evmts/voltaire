@@ -1,5 +1,5 @@
 import type { BrandedAddress } from "../../Address/index.js";
-import type { Type, AccessList, AuthorizationList } from "../types.js";
+import type { AccessList, AuthorizationList, Type } from "../types.js";
 
 /**
  * Branded EIP-7702 Transaction type

@@ -3,8 +3,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Rlp from "./index.js";
-import type { Data } from "./index.js";
+import * as Rlp from "./Rlp.js";
+import * as Data from "./Data.js";
+import type { BrandedRlp } from "./BrandedRlp.js";
 
 // ============================================================================
 // Type Guard Tests
@@ -172,13 +173,13 @@ describe("Rlp.encode", () => {
 	});
 
 	it("encodes bytes Data", () => {
-		const input: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const input: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
 		const result = Rlp.encode(input);
 		expect(result).toEqual(new Uint8Array([0x83, 1, 2, 3]));
 	});
 
 	it("encodes list Data", () => {
-		const input: Data = {
+		const input: BrandedRlp = {
 			type: "list",
 			value: [
 				{ type: "bytes", value: new Uint8Array([0x01]) },
@@ -474,7 +475,7 @@ describe("Rlp round-trip encoding/decoding", () => {
 		];
 		const encoded = Rlp.encode(original);
 		const decoded = Rlp.decode(encoded);
-		const expected: Data = {
+		const expected: BrandedRlp = {
 			type: "list",
 			value: [
 				{ type: "bytes", value: new Uint8Array([0x01]) },
@@ -507,46 +508,46 @@ describe("Rlp round-trip encoding/decoding", () => {
 describe("Rlp.Data namespace", () => {
 	it("fromBytes creates bytes Data", () => {
 		const bytes = new Uint8Array([1, 2, 3]);
-		const data = Rlp.Data.fromBytes(bytes);
+		const data = Data.fromBytes(bytes);
 		expect(data).toEqual({ type: "bytes", value: bytes });
 	});
 
 	it("fromList creates list Data", () => {
-		const items: Data[] = [
+		const items: BrandedRlp[] = [
 			{ type: "bytes", value: new Uint8Array([1]) },
 			{ type: "bytes", value: new Uint8Array([2]) },
 		];
-		const data = Rlp.Data.fromList(items);
+		const data = Data.fromList(items);
 		expect(data).toEqual({ type: "list", value: items });
 	});
 
 	it("encode encodes Data", () => {
-		const data: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
-		const encoded = Rlp.Data.encodeData(data);
+		const data: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const encoded = Data.encodeData(data);
 		expect(encoded).toEqual(new Uint8Array([0x83, 1, 2, 3]));
 	});
 
 	it("toBytes extracts bytes value", () => {
-		const bytesData: Data = {
+		const bytesData: BrandedRlp = {
 			type: "bytes",
 			value: new Uint8Array([1, 2, 3]),
 		};
-		const listData: Data = { type: "list", value: [] };
-		expect(Rlp.Data.toBytes(bytesData)).toEqual(new Uint8Array([1, 2, 3]));
-		expect(Rlp.Data.toBytes(listData)).toBeUndefined();
+		const listData: BrandedRlp = { type: "list", value: [] };
+		expect(Data.toBytes(bytesData)).toEqual(new Uint8Array([1, 2, 3]));
+		expect(Data.toBytes(listData)).toBeUndefined();
 	});
 
 	it("toList extracts list value", () => {
-		const bytesData: Data = {
+		const bytesData: BrandedRlp = {
 			type: "bytes",
 			value: new Uint8Array([1, 2, 3]),
 		};
-		const listData: Data = {
+		const listData: BrandedRlp = {
 			type: "list",
 			value: [{ type: "bytes", value: new Uint8Array([1]) }],
 		};
-		expect(Rlp.Data.toList(bytesData)).toBeUndefined();
-		expect(Rlp.Data.toList(listData)).toEqual(listData.value);
+		expect(Data.toList(bytesData)).toBeUndefined();
+		expect(Data.toList(listData)).toEqual(listData.value);
 	});
 });
 
@@ -580,11 +581,11 @@ describe("Rlp.getEncodedLength", () => {
 	});
 
 	it("calculates length for Data structures", () => {
-		const bytesData: Data = {
+		const bytesData: BrandedRlp = {
 			type: "bytes",
 			value: new Uint8Array([1, 2, 3]),
 		};
-		const listData: Data = {
+		const listData: BrandedRlp = {
 			type: "list",
 			value: [{ type: "bytes", value: new Uint8Array([1]) }],
 		};

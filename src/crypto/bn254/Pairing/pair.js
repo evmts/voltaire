@@ -1,5 +1,5 @@
-import { millerLoop } from "./millerLoop.js";
 import { finalExponentiation } from "./finalExponentiation.js";
+import { millerLoop } from "./millerLoop.js";
 
 /**
  * Compute optimal ate pairing e(P, Q)

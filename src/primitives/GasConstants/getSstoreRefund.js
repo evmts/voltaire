@@ -1,5 +1,5 @@
-import { hasEIP3529 } from "./hasEIP3529.js";
 import { SstoreRefund } from "./constants.js";
+import { hasEIP3529 } from "./hasEIP3529.js";
 
 /**
  * Get storage refund for hardfork

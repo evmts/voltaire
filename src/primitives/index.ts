@@ -19,7 +19,8 @@
  */
 
 // Core primitives
-export * as Address from "./Address/index.js";
+export { Address } from "./Address/index.js";
+export * as BrandedAddress from "./Address/BrandedAddress/index.js";
 export * as BrandedHash from "./Hash/index.js";
 export * as Hex from "./Hex/index.js";
 

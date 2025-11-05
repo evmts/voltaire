@@ -113,17 +113,13 @@ results.push(
 	benchmark("encode short bytes (5 bytes)", () => Rlp.encode(shortBytes)),
 );
 results.push(
-	benchmark("encode medium bytes (32 bytes)", () =>
-		Rlp.encode(mediumBytes),
-	),
+	benchmark("encode medium bytes (32 bytes)", () => Rlp.encode(mediumBytes)),
 );
 results.push(
 	benchmark("encode long bytes (200 bytes)", () => Rlp.encode(longBytes)),
 );
 results.push(
-	benchmark("encode very long bytes (10KB)", () =>
-		Rlp.encode(veryLongBytes),
-	),
+	benchmark("encode very long bytes (10KB)", () => Rlp.encode(veryLongBytes)),
 );
 
 console.log(
@@ -194,9 +190,7 @@ console.log(
 
 console.log("--- Byte Decoding ---");
 results.push(
-	benchmark("decode single byte (< 0x80)", () =>
-		Rlp.decode(encodedSingleByte),
-	),
+	benchmark("decode single byte (< 0x80)", () => Rlp.decode(encodedSingleByte)),
 );
 results.push(
 	benchmark("decode short bytes (5 bytes)", () =>
@@ -247,9 +241,7 @@ results.push(
 	benchmark("decode empty list", () => Rlp.decode(encodedEmptyList)),
 );
 results.push(
-	benchmark("decode short list (2 items)", () =>
-		Rlp.decode(encodedShortList),
-	),
+	benchmark("decode short list (2 items)", () => Rlp.decode(encodedShortList)),
 );
 results.push(
 	benchmark("decode medium list (10 items)", () =>
@@ -257,9 +249,7 @@ results.push(
 	),
 );
 results.push(
-	benchmark("decode long list (100 items)", () =>
-		Rlp.decode(encodedLongList),
-	),
+	benchmark("decode long list (100 items)", () => Rlp.decode(encodedLongList)),
 );
 results.push(
 	benchmark("decode nested list (3 levels)", () =>
@@ -530,9 +520,7 @@ results.push(
 
 const encodedSimpleTx = Rlp.encode(simpleTx);
 results.push(
-	benchmark("decode simple transaction", () =>
-		Rlp.decode(encodedSimpleTx),
-	),
+	benchmark("decode simple transaction", () => Rlp.decode(encodedSimpleTx)),
 );
 
 // Transaction with data
@@ -546,9 +534,7 @@ const txWithData = [
 ];
 
 results.push(
-	benchmark("encode tx with data (100 bytes)", () =>
-		Rlp.encode(txWithData),
-	),
+	benchmark("encode tx with data (100 bytes)", () => Rlp.encode(txWithData)),
 );
 
 // Transaction with access list (nested structure)
@@ -566,9 +552,7 @@ const txWithAccessList = [
 ];
 
 results.push(
-	benchmark("encode tx with access list", () =>
-		Rlp.encode(txWithAccessList),
-	),
+	benchmark("encode tx with access list", () => Rlp.encode(txWithAccessList)),
 );
 
 console.log(

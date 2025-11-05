@@ -1,84 +1,84 @@
 {
-  "timestamp": "2025-11-04T09:04:09.491Z",
-  "platform": "darwin",
-  "nodeVersion": "v24.3.0",
-  "results": {
-    "blobToKzgCommitment": {
-      "opsPerSec": 1500,
-      "avgTimeMs": 0.67,
-      "description": "Single blob to commitment conversion"
-    },
-    "blobToKzgCommitment (5 blobs)": {
-      "opsPerSec": 300,
-      "avgTimeMs": 3.33,
-      "description": "Convert 5 blobs to commitments"
-    },
-    "computeKzgProof": {
-      "opsPerSec": 800,
-      "avgTimeMs": 1.25,
-      "description": "Compute proof for single blob"
-    },
-    "computeKzgProof (5 blobs)": {
-      "opsPerSec": 160,
-      "avgTimeMs": 6.25,
-      "description": "Compute proofs for 5 blobs"
-    },
-    "verifyKzgProof": {
-      "opsPerSec": 5000,
-      "avgTimeMs": 0.2,
-      "description": "Verify single KZG proof"
-    },
-    "verifyKzgProof (5 proofs)": {
-      "opsPerSec": 1000,
-      "avgTimeMs": 1,
-      "description": "Verify 5 KZG proofs"
-    },
-    "verifyBlobKzgProof": {
-      "opsPerSec": 2000,
-      "avgTimeMs": 0.5,
-      "description": "Verify blob KZG proof"
-    },
-    "verifyBlobKzgProofBatch (2 blobs)": {
-      "opsPerSec": 1500,
-      "avgTimeMs": 0.67,
-      "description": "Batch verify 2 blob proofs"
-    },
-    "verifyBlobKzgProofBatch (5 blobs)": {
-      "opsPerSec": 800,
-      "avgTimeMs": 1.25,
-      "description": "Batch verify 5 blob proofs"
-    },
-    "full workflow (commit + prove + verify)": {
-      "opsPerSec": 400,
-      "avgTimeMs": 2.5,
-      "description": "Complete workflow: commitment + proof + verification"
-    },
-    "createEmptyBlob": {
-      "opsPerSec": 500000,
-      "avgTimeMs": 0.002,
-      "description": "Create empty blob"
-    },
-    "generateRandomBlob": {
-      "opsPerSec": 50000,
-      "avgTimeMs": 0.02,
-      "description": "Generate random blob with seed"
-    },
-    "validateBlob": {
-      "opsPerSec": 100000,
-      "avgTimeMs": 0.01,
-      "description": "Validate blob format"
-    }
-  },
-  "summary": {
-    "totalBenchmarks": 13,
-    "fastestOperation": "createEmptyBlob",
-    "slowestOperation": "computeKzgProof (5 blobs)",
-    "notes": [
-      "Benchmarks performed with c-kzg native library",
-      "Times are approximate and may vary based on hardware",
-      "Batch operations show significant performance benefits",
-      "Commitment generation is the most expensive operation",
-      "Verification is fast (< 1ms typically)"
-    ]
-  }
+	"timestamp": "2025-11-04T09:04:09.491Z",
+	"platform": "darwin",
+	"nodeVersion": "v24.3.0",
+	"results": {
+		"blobToKzgCommitment": {
+			"opsPerSec": 1500,
+			"avgTimeMs": 0.67,
+			"description": "Single blob to commitment conversion"
+		},
+		"blobToKzgCommitment (5 blobs)": {
+			"opsPerSec": 300,
+			"avgTimeMs": 3.33,
+			"description": "Convert 5 blobs to commitments"
+		},
+		"computeKzgProof": {
+			"opsPerSec": 800,
+			"avgTimeMs": 1.25,
+			"description": "Compute proof for single blob"
+		},
+		"computeKzgProof (5 blobs)": {
+			"opsPerSec": 160,
+			"avgTimeMs": 6.25,
+			"description": "Compute proofs for 5 blobs"
+		},
+		"verifyKzgProof": {
+			"opsPerSec": 5000,
+			"avgTimeMs": 0.2,
+			"description": "Verify single KZG proof"
+		},
+		"verifyKzgProof (5 proofs)": {
+			"opsPerSec": 1000,
+			"avgTimeMs": 1,
+			"description": "Verify 5 KZG proofs"
+		},
+		"verifyBlobKzgProof": {
+			"opsPerSec": 2000,
+			"avgTimeMs": 0.5,
+			"description": "Verify blob KZG proof"
+		},
+		"verifyBlobKzgProofBatch (2 blobs)": {
+			"opsPerSec": 1500,
+			"avgTimeMs": 0.67,
+			"description": "Batch verify 2 blob proofs"
+		},
+		"verifyBlobKzgProofBatch (5 blobs)": {
+			"opsPerSec": 800,
+			"avgTimeMs": 1.25,
+			"description": "Batch verify 5 blob proofs"
+		},
+		"full workflow (commit + prove + verify)": {
+			"opsPerSec": 400,
+			"avgTimeMs": 2.5,
+			"description": "Complete workflow: commitment + proof + verification"
+		},
+		"createEmptyBlob": {
+			"opsPerSec": 500000,
+			"avgTimeMs": 0.002,
+			"description": "Create empty blob"
+		},
+		"generateRandomBlob": {
+			"opsPerSec": 50000,
+			"avgTimeMs": 0.02,
+			"description": "Generate random blob with seed"
+		},
+		"validateBlob": {
+			"opsPerSec": 100000,
+			"avgTimeMs": 0.01,
+			"description": "Validate blob format"
+		}
+	},
+	"summary": {
+		"totalBenchmarks": 13,
+		"fastestOperation": "createEmptyBlob",
+		"slowestOperation": "computeKzgProof (5 blobs)",
+		"notes": [
+			"Benchmarks performed with c-kzg native library",
+			"Times are approximate and may vary based on hardware",
+			"Batch operations show significant performance benefits",
+			"Commitment generation is the most expensive operation",
+			"Verification is fast (< 1ms typically)"
+		]
+	}
 }

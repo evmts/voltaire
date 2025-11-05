@@ -23,7 +23,9 @@ export function format(message) {
 	const lines = [];
 
 	// Header: domain + address
-	lines.push(`${message.domain} wants you to sign in with your Ethereum account:`);
+	lines.push(
+		`${message.domain} wants you to sign in with your Ethereum account:`,
+	);
 
 	// Convert address bytes to hex string for display
 	const addressHex =

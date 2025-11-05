@@ -1,5 +1,5 @@
-import { COMMITMENT_VERSION_KZG } from "./constants.js";
 import { SHA256 } from "../../crypto/SHA256/index.js";
+import { COMMITMENT_VERSION_KZG } from "./constants.js";
 
 /**
  * Create versioned hash from commitment

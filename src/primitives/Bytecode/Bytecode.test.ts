@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { Bytecode } from "./index.js";
+import * as BytecodeModule from "./Bytecode.js";
+import type { Instruction } from "./BrandedBytecode.js";
+
+const Bytecode = BytecodeModule.Bytecode;
 
 // ============================================================================
 // Opcode Utility Tests
@@ -482,12 +485,12 @@ describe("Bytecode.fromHex", () => {
 
 describe("Bytecode.formatInstruction", () => {
 	it("formats non-PUSH instruction", () => {
-		const inst: Bytecode.Instruction = { opcode: 0x00, position: 0 };
+		const inst: Instruction = { opcode: 0x00, position: 0 };
 		expect(Bytecode.formatInstruction(inst)).toBe("0x0000: 0x00");
 	});
 
 	it("formats PUSH instruction", () => {
-		const inst: Bytecode.Instruction = {
+		const inst: Instruction = {
 			opcode: 0x60,
 			position: 0,
 			pushData: new Uint8Array([0x01]),
@@ -497,7 +500,7 @@ describe("Bytecode.formatInstruction", () => {
 
 	it("formats PUSH32 instruction", () => {
 		const data = new Array(32).fill(0xff);
-		const inst: Bytecode.Instruction = {
+		const inst: Instruction = {
 			opcode: 0x7f,
 			position: 10,
 			pushData: new Uint8Array(data),
@@ -507,7 +510,7 @@ describe("Bytecode.formatInstruction", () => {
 	});
 
 	it("pads position correctly", () => {
-		const inst: Bytecode.Instruction = { opcode: 0x5b, position: 0x1234 };
+		const inst: Instruction = { opcode: 0x5b, position: 0x1234 };
 		expect(Bytecode.formatInstruction(inst)).toBe("0x1234: 0x5B");
 	});
 });

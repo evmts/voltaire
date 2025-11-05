@@ -70,7 +70,7 @@ function createTestAddress(seed: number): BrandedAddress {
 const testAddress = createTestAddress(1);
 const testSignature = new Uint8Array(65);
 
-const basicMessage: BrandedMessage= {
+const basicMessage: BrandedMessage = {
 	domain: "example.com",
 	address: testAddress,
 	uri: "https://example.com/login",
@@ -80,12 +80,12 @@ const basicMessage: BrandedMessage= {
 	issuedAt: "2021-09-30T16:25:24.000Z",
 };
 
-const messageWithStatement: BrandedMessage= {
+const messageWithStatement: BrandedMessage = {
 	...basicMessage,
 	statement: "Sign in to Example App",
 };
 
-const messageWithAllFields: BrandedMessage= {
+const messageWithAllFields: BrandedMessage = {
 	...basicMessage,
 	statement: "Sign in to Example App",
 	expirationTime: "2021-10-01T16:25:24.000Z",
@@ -340,9 +340,7 @@ console.log(
 
 console.log("--- Standard Form ---");
 results.push(
-	benchmark("Message.validate - basic", () =>
-		Siwe.validate(basicMessage),
-	),
+	benchmark("Message.validate - basic", () => Siwe.validate(basicMessage)),
 );
 
 results.push(
@@ -580,9 +578,7 @@ for (const len of statementLengths) {
 	const statement = "a".repeat(len);
 	const msg = len === 0 ? basicMessage : { ...basicMessage, statement };
 	results.push(
-		benchmark(`format - statement length ${len}`, () =>
-			Siwe.format(msg),
-		),
+		benchmark(`format - statement length ${len}`, () => Siwe.format(msg)),
 	);
 }
 

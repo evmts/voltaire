@@ -3,11 +3,11 @@
  * Compares performance of Keccak256 operations across different backends
  */
 
+import { keccak256 as ethersKeccak256 } from "ethers";
 import { bench, run } from "mitata";
+import { keccak256 as viemKeccak256 } from "viem";
 import { Keccak256 } from "./Keccak256/index.js";
 import { Keccak256Wasm } from "./keccak256.wasm.js";
-import { keccak256 as ethersKeccak256 } from "ethers";
-import { keccak256 as viemKeccak256 } from "viem";
 
 // Initialize WASM
 await Keccak256Wasm.init();
@@ -24,7 +24,8 @@ const mediumString = "The quick brown fox jumps over the lazy dog";
 const longString = "a".repeat(1000);
 
 const shortHex = "0x1234";
-const mediumHex = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const mediumHex =
+	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 
 const functionSig = "transfer(address,uint256)";
 const eventSig = "Transfer(address,address,uint256)";

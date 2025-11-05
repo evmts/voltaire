@@ -1,5 +1,5 @@
-import { InvalidKeyError } from "./errors.js";
 import { AES128_KEY_SIZE, AES256_KEY_SIZE } from "./constants.js";
+import { InvalidKeyError } from "./errors.js";
 
 /**
  * Import raw key material as CryptoKey

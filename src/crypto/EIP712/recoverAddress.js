@@ -41,5 +41,7 @@ export function recoverAddress(signature, typedData) {
 
 	// Address is last 20 bytes of keccak256(publicKey)
 	const pubKeyHash = keccak_256(uncompressedPubKey);
-	return /** @type {import('../../primitives/Address/index.js').BrandedAddress} */ (pubKeyHash.slice(-20));
+	return /** @type {import('../../primitives/Address/index.js').BrandedAddress} */ (
+		pubKeyHash.slice(-20)
+	);
 }

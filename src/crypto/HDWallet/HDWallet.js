@@ -29,6 +29,7 @@ export * from "./constants.js";
 export * from "./BrandedExtendedKey.js";
 
 import { canDeriveHardened } from "./canDeriveHardened.js";
+import { BIP44_PATH, CoinType, HARDENED_OFFSET } from "./constants.js";
 import { deriveBitcoin } from "./deriveBitcoin.js";
 import { deriveChild } from "./deriveChild.js";
 import { deriveEthereum } from "./deriveEthereum.js";
@@ -45,7 +46,6 @@ import { parseIndex } from "./parseIndex.js";
 import { toExtendedPrivateKey } from "./toExtendedPrivateKey.js";
 import { toExtendedPublicKey } from "./toExtendedPublicKey.js";
 import { toPublic } from "./toPublic.js";
-import { HARDENED_OFFSET, CoinType, BIP44_PATH } from "./constants.js";
 
 // Export individual functions
 export {

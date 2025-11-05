@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { p256 } from "@noble/curves/nist.js";
-import { InvalidPrivateKeyError, P256Error } from "./errors.js";
 import { PRIVATE_KEY_SIZE } from "./constants.js";
+import { InvalidPrivateKeyError, P256Error } from "./errors.js";
 
 /**
  * Sign a message hash with a private key

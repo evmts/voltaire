@@ -104,15 +104,9 @@ const results: BenchmarkResult[] = [];
 
 console.log("--- Info Lookup ---");
 results.push(benchmark("getInfo - ADD", () => Opcode.info(Opcode.ADD)));
-results.push(
-	benchmark("getInfo - PUSH1", () => Opcode.info(Opcode.PUSH1)),
-);
-results.push(
-	benchmark("getInfo - CALL", () => Opcode.info(Opcode.CALL)),
-);
-results.push(
-	benchmark("getInfo - invalid", () => Opcode.info(0x0c as any)),
-);
+results.push(benchmark("getInfo - PUSH1", () => Opcode.info(Opcode.PUSH1)));
+results.push(benchmark("getInfo - CALL", () => Opcode.info(Opcode.CALL)));
+results.push(benchmark("getInfo - invalid", () => Opcode.info(0x0c as any)));
 
 console.log(
 	results
@@ -144,9 +138,7 @@ console.log(
 
 console.log("\n--- Name Lookup ---");
 results.push(benchmark("getName - ADD", () => Opcode.name(Opcode.ADD)));
-results.push(
-	benchmark("getName - invalid", () => Opcode.name(0x0c as any)),
-);
+results.push(benchmark("getName - invalid", () => Opcode.name(0x0c as any)));
 results.push(
 	benchmark("name.call - ADD", () => {
 		const op = Opcode.ADD;
@@ -206,14 +198,10 @@ console.log(
 );
 
 console.log("--- Category Checks ---");
-results.push(
-	benchmark("isPush - PUSH1", () => Opcode.isPush(Opcode.PUSH1)),
-);
+results.push(benchmark("isPush - PUSH1", () => Opcode.isPush(Opcode.PUSH1)));
 results.push(benchmark("isPush - ADD", () => Opcode.isPush(Opcode.ADD)));
 results.push(benchmark("isDup - DUP1", () => Opcode.isDup(Opcode.DUP1)));
-results.push(
-	benchmark("isSwap - SWAP1", () => Opcode.isSwap(Opcode.SWAP1)),
-);
+results.push(benchmark("isSwap - SWAP1", () => Opcode.isSwap(Opcode.SWAP1)));
 results.push(benchmark("isLog - LOG1", () => Opcode.isLog(Opcode.LOG1)));
 results.push(
 	benchmark("isTerminating - RETURN", () =>
@@ -271,14 +259,10 @@ console.log(
 
 console.log("--- PUSH Operations ---");
 results.push(
-	benchmark("getPushBytes - PUSH1", () =>
-		Opcode.pushBytes(Opcode.PUSH1),
-	),
+	benchmark("getPushBytes - PUSH1", () => Opcode.pushBytes(Opcode.PUSH1)),
 );
 results.push(
-	benchmark("getPushBytes - PUSH32", () =>
-		Opcode.pushBytes(Opcode.PUSH32),
-	),
+	benchmark("getPushBytes - PUSH32", () => Opcode.pushBytes(Opcode.PUSH32)),
 );
 results.push(
 	benchmark("getPushBytes - ADD", () => Opcode.pushBytes(Opcode.ADD)),
@@ -334,19 +318,13 @@ console.log(
 
 console.log("--- Position Operations ---");
 results.push(
-	benchmark("getDupPosition - DUP1", () =>
-		Opcode.dupPosition(Opcode.DUP1),
-	),
+	benchmark("getDupPosition - DUP1", () => Opcode.dupPosition(Opcode.DUP1)),
 );
 results.push(
-	benchmark("getDupPosition - DUP16", () =>
-		Opcode.dupPosition(Opcode.DUP16),
-	),
+	benchmark("getDupPosition - DUP16", () => Opcode.dupPosition(Opcode.DUP16)),
 );
 results.push(
-	benchmark("getSwapPosition - SWAP1", () =>
-		Opcode.swapPosition(Opcode.SWAP1),
-	),
+	benchmark("getSwapPosition - SWAP1", () => Opcode.swapPosition(Opcode.SWAP1)),
 );
 results.push(
 	benchmark("getSwapPosition - SWAP16", () =>
@@ -425,9 +403,7 @@ results.push(
 	),
 );
 results.push(
-	benchmark("parseBytecode - jump (5 bytes)", () =>
-		Opcode.parse(jumpBytecode),
-	),
+	benchmark("parseBytecode - jump (5 bytes)", () => Opcode.parse(jumpBytecode)),
 );
 
 console.log(
@@ -489,19 +465,13 @@ const push32Inst: Opcode.Instruction = {
 
 console.log("--- Format Instruction ---");
 results.push(
-	benchmark("formatInstruction - simple", () =>
-		Opcode.format(simpleInst),
-	),
+	benchmark("formatInstruction - simple", () => Opcode.format(simpleInst)),
 );
 results.push(
-	benchmark("formatInstruction - PUSH1", () =>
-		Opcode.format(pushInst),
-	),
+	benchmark("formatInstruction - PUSH1", () => Opcode.format(pushInst)),
 );
 results.push(
-	benchmark("formatInstruction - PUSH32", () =>
-		Opcode.format(push32Inst),
-	),
+	benchmark("formatInstruction - PUSH32", () => Opcode.format(push32Inst)),
 );
 
 console.log(
@@ -569,9 +539,7 @@ results.push(
 	),
 );
 results.push(
-	benchmark("findJumpDests - complex", () =>
-		Opcode.jumpDests(complexBytecode),
-	),
+	benchmark("findJumpDests - complex", () => Opcode.jumpDests(complexBytecode)),
 );
 results.push(
 	benchmark("isValidJumpDest", () => Opcode.isValidJumpDest(jumpBytecode, 0)),

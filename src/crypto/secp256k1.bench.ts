@@ -9,12 +9,12 @@
  * - Comparison between Noble and WASM implementations
  */
 
+import { writeFileSync } from "node:fs";
 import { bench, run } from "mitata";
 import { Hash } from "../primitives/Hash/index.js";
+import { loadWasm } from "../wasm-loader/loader.js";
 import { Secp256k1 } from "./Secp256k1/index.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
-import { writeFileSync } from "node:fs";
-import { loadWasm } from "../wasm-loader/loader.js";
 
 // Load WASM before running benchmarks
 await loadWasm(new URL("../../zig-out/lib/primitives.wasm", import.meta.url));
@@ -87,8 +87,7 @@ bench("Noble: Signature.fromBytes", () => {
 	Secp256k1.Signature.fromBytes(TEST_SIGNATURE_BYTES);
 });
 
-const TEST_SIGNATURE_COMPACT =
-	Secp256k1.Signature.toCompact(TEST_SIGNATURE);
+const TEST_SIGNATURE_COMPACT = Secp256k1.Signature.toCompact(TEST_SIGNATURE);
 bench("Noble: Signature.fromCompact", () => {
 	Secp256k1.Signature.fromCompact(TEST_SIGNATURE_COMPACT, TEST_SIGNATURE.v);
 });

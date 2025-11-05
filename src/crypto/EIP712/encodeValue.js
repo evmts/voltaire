@@ -21,7 +21,9 @@ export function encodeValue(type, value, types) {
 	// array types (hash the array encoding) - CHECK BEFORE uint/int to avoid matching "uint256[]"
 	if (type.endsWith("[]")) {
 		const baseType = type.slice(0, -2);
-		const arr = /** @type {import('./BrandedEIP712.js').MessageValue[]} */ (value);
+		const arr = /** @type {import('./BrandedEIP712.js').MessageValue[]} */ (
+			value
+		);
 		/** @type {Uint8Array[]} */
 		const encodedElements = [];
 		for (const elem of arr) {

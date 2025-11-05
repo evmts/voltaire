@@ -43,12 +43,7 @@ import { serializeG2 } from "./serializeG2.js";
 
 export { Fp, Fp2, Fr, G1, G2, Pairing };
 
-export {
-	serializeG1,
-	deserializeG1,
-	serializeG2,
-	deserializeG2,
-};
+export { serializeG1, deserializeG1, serializeG2, deserializeG2 };
 
 /**
  * BN254 main export

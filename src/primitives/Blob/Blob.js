@@ -2,6 +2,15 @@
 export * from "./constants.js";
 
 import { calculateGas } from "./calculateGas.js";
+import {
+	BYTES_PER_FIELD_ELEMENT,
+	COMMITMENT_VERSION_KZG,
+	FIELD_ELEMENTS_PER_BLOB,
+	GAS_PER_BLOB,
+	MAX_PER_TRANSACTION,
+	SIZE,
+	TARGET_GAS_PER_BLOCK,
+} from "./constants.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
 import { from } from "./from.js";
 import { fromData } from "./fromData.js";
@@ -15,15 +24,6 @@ import { toProof } from "./toProof.js";
 import { toVersionedHash } from "./toVersionedHash.js";
 import { verify } from "./verify.js";
 import { verifyBatch } from "./verifyBatch.js";
-import {
-	SIZE,
-	FIELD_ELEMENTS_PER_BLOB,
-	BYTES_PER_FIELD_ELEMENT,
-	MAX_PER_TRANSACTION,
-	COMMITMENT_VERSION_KZG,
-	GAS_PER_BLOB,
-	TARGET_GAS_PER_BLOCK,
-} from "./constants.js";
 
 // Export individual functions
 export {
@@ -60,13 +60,9 @@ export function Blob(value) {
 	return from(value);
 }
 
-Blob.from = function (value) {
-	return from(value);
-};
+Blob.from = (value) => from(value);
 Blob.from.prototype = Blob.prototype;
-Blob.fromData = function (value) {
-	return fromData(value);
-};
+Blob.fromData = (value) => fromData(value);
 Blob.fromData.prototype = Blob.prototype;
 
 Blob.isValid = isValid;

@@ -18,7 +18,11 @@
 import fs from "fs";
 import path from "path";
 import { bench, describe } from "vitest";
-import { BN254 as Bn254 } from "./BN254/BN254.js";
+import {
+	BN254 as Bn254,
+	type BrandedG1Point,
+	type BrandedG2Point,
+} from "./bn254/BN254.js";
 
 const results: Record<string, { ops_per_sec: number; avg_time_ms: number }> =
 	{};
@@ -39,7 +43,7 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G1.mul",
 		() => {
-			Bn254.G1.mul.call(g1, scalar);
+			Bn254.G1.mul(g1, scalar);
 		},
 		{
 			time: 1000,
@@ -50,9 +54,9 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G1.add",
 		() => {
-			const p1 = Bn254.G1.mul.call(g1, scalar);
-			const p2 = Bn254.G1.mul.call(g1, scalar2);
-			Bn254.G1.add.call(p1, p2);
+			const p1 = Bn254.G1.mul(g1, scalar);
+			const p2 = Bn254.G1.mul(g1, scalar2);
+			Bn254.G1.add(p1, p2);
 		},
 		{
 			time: 1000,
@@ -63,8 +67,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G1.double",
 		() => {
-			const p = Bn254.G1.mul.call(g1, scalar);
-			Bn254.G1.double.call(p);
+			const p = Bn254.G1.mul(g1, scalar);
+			Bn254.G1.double(p);
 		},
 		{
 			time: 1000,
@@ -75,8 +79,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G1.negate",
 		() => {
-			const p = Bn254.G1.mul.call(g1, scalar);
-			Bn254.G1.negate.call(p);
+			const p = Bn254.G1.mul(g1, scalar);
+			Bn254.G1.negate(p);
 		},
 		{
 			time: 1000,
@@ -87,8 +91,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G1.isOnCurve",
 		() => {
-			const p = Bn254.G1.mul.call(g1, scalar);
-			Bn254.G1.isOnCurve.call(p);
+			const p = Bn254.G1.mul(g1, scalar);
+			Bn254.G1.isOnCurve(p);
 		},
 		{
 			time: 1000,
@@ -99,8 +103,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G1.toAffine",
 		() => {
-			const p = Bn254.G1.mul.call(g1, scalar);
-			Bn254.G1.toAffine.call(p);
+			const p = Bn254.G1.mul(g1, scalar);
+			Bn254.G1.toAffine(p);
 		},
 		{
 			time: 1000,
@@ -111,7 +115,7 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.mul",
 		() => {
-			Bn254.G2.mul.call(g2, scalar);
+			Bn254.G2.mul(g2, scalar);
 		},
 		{
 			time: 1000,
@@ -122,9 +126,9 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.add",
 		() => {
-			const q1 = Bn254.G2.mul.call(g2, scalar);
-			const q2 = Bn254.G2.mul.call(g2, scalar2);
-			Bn254.G2.add.call(q1, q2);
+			const q1 = Bn254.G2.mul(g2, scalar);
+			const q2 = Bn254.G2.mul(g2, scalar2);
+			Bn254.G2.add(q1, q2);
 		},
 		{
 			time: 1000,
@@ -135,8 +139,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.double",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
-			Bn254.G2.double.call(q);
+			const q = Bn254.G2.mul(g2, scalar);
+			Bn254.G2.double(q);
 		},
 		{
 			time: 1000,
@@ -147,8 +151,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.negate",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
-			Bn254.G2.negate.call(q);
+			const q = Bn254.G2.mul(g2, scalar);
+			Bn254.G2.negate(q);
 		},
 		{
 			time: 1000,
@@ -159,8 +163,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.isOnCurve",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
-			Bn254.G2.isOnCurve.call(q);
+			const q = Bn254.G2.mul(g2, scalar);
+			Bn254.G2.isOnCurve(q);
 		},
 		{
 			time: 1000,
@@ -171,8 +175,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.isInSubgroup",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
-			Bn254.G2.isInSubgroup.call(q);
+			const q = Bn254.G2.mul(g2, scalar);
+			Bn254.G2.isInSubgroup(q);
 		},
 		{
 			time: 1000,
@@ -183,8 +187,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.toAffine",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
-			Bn254.G2.toAffine.call(q);
+			const q = Bn254.G2.mul(g2, scalar);
+			Bn254.G2.toAffine(q);
 		},
 		{
 			time: 1000,
@@ -195,8 +199,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"G2.frobenius",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
-			Bn254.G2.frobenius.call(q);
+			const q = Bn254.G2.mul(g2, scalar);
+			Bn254.G2.frobenius(q);
 		},
 		{
 			time: 1000,
@@ -207,8 +211,8 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"Pairing.pair",
 		() => {
-			const p = Bn254.G1.mul.call(g1, scalar);
-			const q = Bn254.G2.mul.call(g2, scalar2);
+			const p = Bn254.G1.mul(g1, scalar);
+			const q = Bn254.G2.mul(g2, scalar2);
 			Bn254.Pairing.pair(p, q);
 		},
 		{
@@ -220,10 +224,10 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"Pairing.pairingCheck (2 pairs)",
 		() => {
-			const p1 = Bn254.G1.mul.call(g1, scalar);
-			const q1 = Bn254.G2.mul.call(g2, scalar2);
-			const p2 = Bn254.G1.mul.call(g1, scalar2);
-			const q2 = Bn254.G2.mul.call(g2, scalar);
+			const p1 = Bn254.G1.mul(g1, scalar);
+			const q1 = Bn254.G2.mul(g2, scalar2);
+			const p2 = Bn254.G1.mul(g1, scalar2);
+			const q2 = Bn254.G2.mul(g2, scalar);
 			Bn254.Pairing.pairingCheck([
 				[p1, q1],
 				[p2, q2],
@@ -238,10 +242,10 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"Pairing.multiPairing (4 pairs)",
 		() => {
-			const pairs: Array<[Bn254.G1Point, Bn254.G2Point]> = [];
+			const pairs: Array<[BrandedG1Point, BrandedG2Point]> = [];
 			for (let i = 0; i < 4; i++) {
-				const p = Bn254.G1.mul.call(g1, scalar + BigInt(i));
-				const q = Bn254.G2.mul.call(g2, scalar2 + BigInt(i));
+				const p = Bn254.G1.mul(g1, scalar + BigInt(i));
+				const q = Bn254.G2.mul(g2, scalar2 + BigInt(i));
 				pairs.push([p, q]);
 			}
 			Bn254.Pairing.multiPairing(pairs);
@@ -255,7 +259,7 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"serializeG1",
 		() => {
-			const p = Bn254.G1.mul.call(g1, scalar);
+			const p = Bn254.G1.mul(g1, scalar);
 			Bn254.serializeG1(p);
 		},
 		{
@@ -267,7 +271,7 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"deserializeG1",
 		() => {
-			const p = Bn254.G1.mul.call(g1, scalar);
+			const p = Bn254.G1.mul(g1, scalar);
 			const bytes = Bn254.serializeG1(p);
 			Bn254.deserializeG1(bytes);
 		},
@@ -280,7 +284,7 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"serializeG2",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
+			const q = Bn254.G2.mul(g2, scalar);
 			Bn254.serializeG2(q);
 		},
 		{
@@ -292,7 +296,7 @@ describe("BN254 Performance Benchmarks", () => {
 	bench(
 		"deserializeG2",
 		() => {
-			const q = Bn254.G2.mul.call(g2, scalar);
+			const q = Bn254.G2.mul(g2, scalar);
 			const bytes = Bn254.serializeG2(q);
 			Bn254.deserializeG2(bytes);
 		},

@@ -1,4 +1,4 @@
-import * as Uint from "../Uint/Uint.js";
+import * as Uint from "../Uint/index.js";
 
 const etherSymbol = Symbol("Ether");
 
