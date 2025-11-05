@@ -3,9 +3,41 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Rlp from "./Rlp.js";
-import * as Data from "./Data.js";
 import type { BrandedRlp } from "./BrandedRlp.js";
+import type { Encodable } from "./encode.js";
+import { encode } from "./encode.js";
+import { encodeBytes } from "./encodeBytes.js";
+import { encodeList } from "./encodeList.js";
+import { decode } from "./decode.js";
+import { isData } from "./isData.js";
+import { isBytesData } from "./isBytesData.js";
+import { isListData } from "./isListData.js";
+import { getEncodedLength } from "./getEncodedLength.js";
+import { flatten } from "./flatten.js";
+import { equals } from "./equals.js";
+import { toJSON } from "./toJSON.js";
+import { fromJSON } from "./fromJSON.js";
+import { Error as RlpError } from "./errors.js";
+import { MAX_DEPTH } from "./constants.js";
+import * as Data from "./Data.js";
+
+// Create Rlp namespace for compatibility with tests
+const Rlp = {
+	encode,
+	encodeBytes,
+	encodeList,
+	decode,
+	isData,
+	isBytesData,
+	isListData,
+	getEncodedLength,
+	flatten,
+	equals,
+	toJSON,
+	fromJSON,
+	Error: RlpError,
+	MAX_DEPTH,
+} as const;
 
 // ============================================================================
 // Type Guard Tests
@@ -104,7 +136,7 @@ describe("Rlp.encodeBytes", () => {
 
 describe("Rlp.encodeList", () => {
 	it("encodes empty list", () => {
-		const input: Rlp.Encodable[] = [];
+		const input: Encodable[] = [];
 		const result = Rlp.encodeList(input);
 		expect(result).toEqual(new Uint8Array([0xc0]));
 	});
@@ -432,7 +464,7 @@ describe("Rlp round-trip encoding/decoding", () => {
 	});
 
 	it("round-trips empty list", () => {
-		const original: Rlp.Encodable[] = [];
+		const original: Encodable[] = [];
 		const encoded = Rlp.encode(original);
 		const decoded = Rlp.decode(encoded);
 		expect(decoded.data).toEqual({ type: "list", value: [] });
@@ -908,8 +940,8 @@ describe("Rlp.Error types", () => {
 			expect.fail("Should have thrown");
 		} catch (err) {
 			expect(err).toBeInstanceOf(Rlp.Error);
-			if (err instanceof Rlp.Error) {
-				expect((err as Rlp.Error).type).toBe("InputTooShort");
+			if (err instanceof RlpError) {
+				expect((err as RlpError).type).toBe("InputTooShort");
 			}
 		}
 	});
