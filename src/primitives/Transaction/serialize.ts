@@ -11,15 +11,15 @@ import { type Any, Type } from "./types.js";
 export function serialize(this: Any): Uint8Array {
 	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.serialize.call(this);
+			return Legacy.serialize.call(this as any);
 		case Type.EIP2930:
-			return EIP2930.serialize.call(this);
+			return EIP2930.serialize(this as any);
 		case Type.EIP1559:
-			return EIP1559.serialize.call(this);
+			return EIP1559.serialize(this as any);
 		case Type.EIP4844:
-			return EIP4844.serialize.call(this);
+			return EIP4844.serialize(this as any);
 		case Type.EIP7702:
-			return EIP7702.serialize.call(this);
+			return EIP7702.serialize(this as any);
 		default:
 			throw new Error(`Unknown transaction type: ${(this as any).type}`);
 	}

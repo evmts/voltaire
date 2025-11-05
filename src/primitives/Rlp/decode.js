@@ -73,11 +73,14 @@ function decodeInternal(bytes, depth) {
 	}
 
 	const prefix = bytes[0];
+	if (prefix === undefined) {
+		throw new Error("InputTooShort", "Unexpected end of input");
+	}
 
 	// Single byte [0x00, 0x7f]
 	if (prefix <= 0x7f) {
 		return {
-			data: { type: "bytes", value: new Uint8Array([prefix]) },
+			data: { type: "bytes", value: Uint8Array.of(prefix) },
 			remainder: bytes.slice(1),
 		};
 	}
@@ -95,7 +98,8 @@ function decodeInternal(bytes, depth) {
 		}
 
 		// Check for non-canonical encoding
-		if (length === 1 && bytes.length > 1 && bytes[1] < 0x80) {
+		const nextByte = bytes[1];
+		if (length === 1 && bytes.length > 1 && nextByte !== undefined && nextByte < 0x80) {
 			throw new Error(
 				"NonCanonicalSize",
 				"Single byte < 0x80 should not be prefixed",

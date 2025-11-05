@@ -7,7 +7,8 @@
 export * from "./EventLog.js";
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { Address, BrandedAddress } from "../Address/index.js";
+import type { Address } from "../Address/Address.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
 
 // ============================================================================

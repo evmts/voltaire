@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import * as EIP1559 from "./EIP1559/getSender.js";
 import * as EIP2930 from "./EIP2930/getSender.js";
 import * as EIP4844 from "./EIP4844/getSender.js";
@@ -12,15 +12,15 @@ import { type Any, Type } from "./types.js";
 export function getSender(this: Any): BrandedAddress {
 	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.getSender.call(this);
+			return Legacy.getSender.call(this as any);
 		case Type.EIP2930:
-			return EIP2930.getSender.call(this);
+			return EIP2930.getSender(this as any);
 		case Type.EIP1559:
-			return EIP1559.getSender.call(this);
+			return EIP1559.getSender(this as any);
 		case Type.EIP4844:
-			return EIP4844.getSender.call(this);
+			return EIP4844.getSender(this as any);
 		case Type.EIP7702:
-			return EIP7702.getSender.call(this);
+			return EIP7702.getSender(this as any);
 		default:
 			throw new Error(`Unknown transaction type: ${(this as any).type}`);
 	}

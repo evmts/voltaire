@@ -4,7 +4,7 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import { type BrandedHash, Hash } from "../Hash/index.js";
 import type { Item } from "./Authorization.js";
 
@@ -56,7 +56,7 @@ export function authorityWasm(auth: Item): BrandedAddress {
 		yParity: auth.yParity,
 		r: auth.r,
 		s: auth.s,
-	}) as Address;
+	}) as BrandedAddress;
 }
 
 /**
