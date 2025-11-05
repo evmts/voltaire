@@ -116,47 +116,45 @@ Object.setPrototypeOf(Address.prototype, Uint8Array.prototype);
 Address.prototype.toBase64 = Uint8Array.prototype.toBase64 ?? toBase64Polyfill;
 Address.prototype.setFromBase64 =
 	Uint8Array.prototype.setFromBase64 ?? setFromBase64Polyfill;
-Address.prototype.toHex = function () {
-	return BrandedAddress.toHex(this);
-};
+Address.prototype.toHex = BrandedAddress.toHex.call.bind(BrandedAddress.toHex);
 Address.prototype.setFromHex =
 	Uint8Array.prototype.setFromHex ?? setFromHexPolyfill;
-Address.prototype.toChecksummed = function () {
-	return BrandedAddress.toChecksummed(this);
-};
-Address.prototype.toLowercase = function () {
-	return BrandedAddress.toLowercase(this);
-};
-Address.prototype.toUppercase = function () {
-	return BrandedAddress.toUppercase(this);
-};
-Address.prototype.toU256 = function () {
-	return BrandedAddress.toU256(this);
-};
-Address.prototype.toAbiEncoded = function () {
-	return BrandedAddress.toAbiEncoded(this);
-};
-Address.prototype.toShortHex = function () {
-	return BrandedAddress.toShortHex(this);
-};
-Address.prototype.format = function () {
-	return BrandedAddress.format(this);
-};
-Address.prototype.compare = function (other) {
-	return BrandedAddress.compare(this, other);
-};
-Address.prototype.lessThan = function (other) {
-	return BrandedAddress.lessThan(this, other);
-};
-Address.prototype.greaterThan = function (other) {
-	return BrandedAddress.greaterThan(this, other);
-};
-Address.prototype.isZero = function () {
-	return BrandedAddress.isZero(this);
-};
-Address.prototype.equals = function (other) {
-	return BrandedAddress.equals(this, other);
-};
+Address.prototype.toChecksummed = BrandedAddress.toChecksummed.call.bind(
+	BrandedAddress.toChecksummed,
+);
+Address.prototype.toLowercase = BrandedAddress.toLowercase.call.bind(
+	BrandedAddress.toLowercase,
+);
+Address.prototype.toUppercase = BrandedAddress.toUppercase.call.bind(
+	BrandedAddress.toUppercase,
+);
+Address.prototype.toU256 = BrandedAddress.toU256.call.bind(
+	BrandedAddress.toU256,
+);
+Address.prototype.toAbiEncoded = BrandedAddress.toAbiEncoded.call.bind(
+	BrandedAddress.toAbiEncoded,
+);
+Address.prototype.toShortHex = BrandedAddress.toShortHex.call.bind(
+	BrandedAddress.toShortHex,
+);
+Address.prototype.format = BrandedAddress.format.call.bind(
+	BrandedAddress.format,
+);
+Address.prototype.compare = BrandedAddress.compare.call.bind(
+	BrandedAddress.compare,
+);
+Address.prototype.lessThan = BrandedAddress.lessThan.call.bind(
+	BrandedAddress.lessThan,
+);
+Address.prototype.greaterThan = BrandedAddress.greaterThan.call.bind(
+	BrandedAddress.greaterThan,
+);
+Address.prototype.isZero = BrandedAddress.isZero.call.bind(
+	BrandedAddress.isZero,
+);
+Address.prototype.equals = BrandedAddress.equals.call.bind(
+	BrandedAddress.equals,
+);
 Address.prototype.calculateCreateAddress = function (nonce) {
 	const result = BrandedAddress.calculateCreateAddress(this, nonce);
 	Object.setPrototypeOf(result, Address.prototype);

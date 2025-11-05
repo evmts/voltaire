@@ -1,6 +1,6 @@
 /**
  * @typedef {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} BrandedAddress
- * @typedef {import('../../Hash/BrandedHash.js').BrandedHash} BrandedHash
+ * @typedef {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} BrandedHash
  * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
  */
 

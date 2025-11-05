@@ -16,8 +16,8 @@ function addressEquals(a, b) {
 /**
  * Compare two hashes for equality (byte-by-byte)
  *
- * @param {import('../../Hash/BrandedHash.js').BrandedHash} a
- * @param {import('../../Hash/BrandedHash.js').BrandedHash} b
+ * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} a
+ * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} b
  * @returns {boolean}
  */
 function hashEquals(a, b) {
@@ -33,7 +33,7 @@ function hashEquals(a, b) {
  *
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to search
  * @param {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} address - Address to check
- * @param {import('../../Hash/BrandedHash.js').BrandedHash} storageKey - Storage key to find
+ * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} storageKey - Storage key to find
  * @returns {boolean} true if storage key is accessible
  *
  * @example

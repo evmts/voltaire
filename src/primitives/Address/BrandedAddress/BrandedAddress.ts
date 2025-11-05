@@ -1,34 +1,19 @@
-import type { BrandedHex } from "../../Hex/index.js";
-import type { Checksummed } from "./ChecksumAddress.js";
-import type { Lowercase } from "./LowercaseAddress.js";
-import type { Uppercase } from "./UppercaseAddress.js";
-
 export type BrandedAddress = Uint8Array & {
 	readonly __tag: "Address";
-	toBase64: typeof Uint8Array.prototype.toBase64;
-	setFromBase64: typeof Uint8Array.prototype.setFromBase64;
-	toHex(this: BrandedAddress): BrandedHex;
-	setFromHex: typeof Uint8Array.prototype.setFromHex;
-	toChecksummed(this: BrandedAddress): Checksummed;
-	toLowercase(this: BrandedAddress): Lowercase;
-	toUppercase(this: BrandedAddress): Uppercase;
-	toU256(this: BrandedAddress): Uint8Array;
-	toShortHex(
-		this: BrandedAddress,
-		sliceLength?: number,
-		leadingLength?: number,
-	): string;
-	format(this: BrandedAddress): string;
-	compare(this: BrandedAddress, other: BrandedAddress): number;
-	lessThan(this: BrandedAddress, other: BrandedAddress): boolean;
-	greaterThan(this: BrandedAddress, other: BrandedAddress): boolean;
-	isZero(this: BrandedAddress): boolean;
-	equals(this: BrandedAddress, other: BrandedAddress): boolean;
-	toAbiEncoded(this: BrandedAddress): Uint8Array;
-	calculateCreateAddress(this: BrandedAddress, nonce: bigint): BrandedAddress;
-	calculateCreate2Address(
-		this: BrandedAddress,
-		salt: Uint8Array,
-		initCode: Uint8Array,
-	): BrandedAddress;
+	toChecksummed(): string;
+	toLowercase(): string;
+	toUppercase(): string;
+	toHex(): string;
+	toU256(): bigint;
+	toAbiEncoded(): string;
+	toShortHex(): string;
+	format(): string;
+	isZero(): boolean;
+	equals(other: BrandedAddress): boolean;
+	compare(other: BrandedAddress): number;
+	lessThan(other: BrandedAddress): boolean;
+	greaterThan(other: BrandedAddress): boolean;
+	calculateCreateAddress(nonce: bigint | number): BrandedAddress;
+	calculateCreate2Address(salt: Uint8Array, initCode: Uint8Array): BrandedAddress;
 };
+

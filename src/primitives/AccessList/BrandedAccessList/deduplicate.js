@@ -16,8 +16,8 @@ function addressEquals(a, b) {
 /**
  * Compare two hashes for equality (byte-by-byte)
  *
- * @param {import('../../Hash/BrandedHash.js').BrandedHash} a
- * @param {import('../../Hash/BrandedHash.js').BrandedHash} b
+ * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} a
+ * @param {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} b
  * @returns {boolean}
  */
 function hashEquals(a, b) {
@@ -48,7 +48,7 @@ function hashEquals(a, b) {
  * ```
  */
 export function deduplicate(list) {
-	/** @type {import('../BrandedAccessList.js').BrandedAccessList} */
+	/** @type {Array<import('../BrandedAccessList.js').Item>} */
 	const result = [];
 
 	for (const item of list) {
@@ -57,7 +57,7 @@ export function deduplicate(list) {
 
 		if (existing) {
 			// Merge storage keys, avoiding duplicates
-			const existingKeys = existing.storageKeys;
+			const existingKeys = [...existing.storageKeys];
 			for (const newKey of item.storageKeys) {
 				const isDuplicate = existingKeys.some((existingKey) =>
 					hashEquals(existingKey, newKey),
@@ -66,6 +66,7 @@ export function deduplicate(list) {
 					existingKeys.push(newKey);
 				}
 			}
+			existing.storageKeys = existingKeys;
 		} else {
 			// Create new entry
 			result.push({

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../../Hash/BrandedHash/index.js";
+import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
 import { isItem } from "./isItem.js";
 import { is } from "./is.js";
 import { gasCost } from "./gasCost.js";

@@ -10,7 +10,7 @@ import { BN254 as Bn254 } from "../crypto/bn254/BN254.js";
 import * as Kzg from "../crypto/KZG/index.js";
 import * as Gas from "../primitives/GasConstants/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
-import type { BrandedHardfork } from "../primitives/Hardfork/BrandedHardfork/index.js";
+import type { BrandedHardfork } from "../primitives/Hardfork/BrandedHardfork/BrandedHardfork.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
 
 export enum PrecompileAddress {

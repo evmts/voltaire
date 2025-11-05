@@ -7,7 +7,7 @@ import { getSelector } from "./getSelector.js";
  *
  * @param {import('./BrandedEvent.js').Event} event - Event definition
  * @param {import('./BrandedEvent.js').EncodeTopicsArgs<any>} args - Event arguments to encode
- * @returns {(import('../../Hash/BrandedHash.js').BrandedHash | null)[]} Topics array (nulls for unspecified indexed params)
+ * @returns {(import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash | null)[]} Topics array (nulls for unspecified indexed params)
  *
  * @example
  * ```typescript
@@ -41,7 +41,7 @@ export function encodeTopics(event, args) {
 		}
 	}
 
-	return /** @type {(import('../../Hash/BrandedHash.js').BrandedHash | null)[]} */ (
+	return /** @type {(import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash | null)[]} */ (
 		topics
 	);
 }

@@ -5,7 +5,7 @@
  */
 
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHash } from "../../Hash/BrandedHash/index.js";
+import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
 import type { Item } from "../BrandedAccessList.js";
 import { from } from "./from.js";
 import { gasCost } from "./gasCost.js";

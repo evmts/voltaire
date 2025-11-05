@@ -18,7 +18,7 @@ function addressEquals(a, b) {
  *
  * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to search
  * @param {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} address - Address to get keys for
- * @returns {readonly import('../../Hash/BrandedHash.js').BrandedHash[] | undefined} Array of storage keys, or undefined if address not found
+ * @returns {readonly import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash[] | undefined} Array of storage keys, or undefined if address not found
  *
  * @example
  * ```typescript

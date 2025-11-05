@@ -5,7 +5,7 @@ import { getSignature } from "./getSignature.js";
  * Get event selector (keccak256 hash of signature)
  *
  * @param {import('./BrandedEvent.js').Event} event - Event definition
- * @returns {import('../../Hash/BrandedHash.js').BrandedHash} Event selector (32 bytes)
+ * @returns {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} Event selector (32 bytes)
  *
  * @example
  * ```typescript
