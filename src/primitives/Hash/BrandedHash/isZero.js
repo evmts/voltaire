@@ -1,4 +1,4 @@
-import { ZERO } from "./BrandedHash.js";
+import { ZERO } from "./constants.js";
 
 /**
  * Check if hash is zero hash

@@ -15,11 +15,10 @@ import {
 	assert,
 	random,
 	clone,
-	slice,
+	slice as sliceHash,
 	format,
 	ZERO,
 } from "./BrandedHash/index.js";
-import type { BrandedHash } from "./BrandedHash/BrandedHash.js";
 
 describe("Hash", () => {
 	describe("fromHex", () => {
@@ -316,22 +315,22 @@ describe("Hash", () => {
 			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const slice = slice(hash, 0, 4);
-			expect(slice.length).toBe(4);
-			expect(slice[0]).toBe(0x12);
-			expect(slice[1]).toBe(0x34);
-			expect(slice[2]).toBe(0x56);
-			expect(slice[3]).toBe(0x78);
+			const result = sliceHash(hash, 0, 4);
+			expect(result.length).toBe(4);
+			expect(result[0]).toBe(0x12);
+			expect(result[1]).toBe(0x34);
+			expect(result[2]).toBe(0x56);
+			expect(result[3]).toBe(0x78);
 		});
 
 		it("extracts end portion", () => {
 			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const slice = slice(hash, 28);
-			expect(slice.length).toBe(4);
-			expect(slice[0]).toBe(0x90);
-			expect(slice[3]).toBe(0xef);
+			const result = sliceHash(hash, 28);
+			expect(result.length).toBe(4);
+			expect(result[0]).toBe(0x90);
+			expect(result[3]).toBe(0xef);
 		});
 	});
 

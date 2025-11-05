@@ -1,9 +1,12 @@
 // @ts-nocheck
 import * as BrandedHash from "./BrandedHash/index.js";
 
-// Re-export BrandedHash type and constants
-export type { BrandedHash } from "./BrandedHash/index.js";
+// Re-export constants
 export * from "./BrandedHash/constants.js";
+
+/**
+ * @typedef {import('./BrandedHash/BrandedHash.js').BrandedHash} BrandedHash
+ */
 
 /**
  * Factory function for creating Hash instances

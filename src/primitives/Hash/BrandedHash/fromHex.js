@@ -1,4 +1,4 @@
-import { SIZE } from "./BrandedHash.js";
+import { SIZE } from "./constants.js";
 
 /**
  * Create Hash from hex string
