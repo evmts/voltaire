@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { EventLog } from "./index.js";
+import { EventLog } from "./EventLog.js";
 import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedHash } from "../Hash/index.js";
 

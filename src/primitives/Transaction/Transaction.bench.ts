@@ -275,12 +275,12 @@ console.log(
 console.log("--- Legacy Chain ID ---");
 results.push(
 	benchmark("Legacy.getChainId - EIP-155", () =>
-		Transaction.Legacy.getChainId.call(eip155Tx),
+		Transaction.Legacy.getChainId(eip155Tx),
 	),
 );
 results.push(
 	benchmark("Legacy.getChainId - pre-EIP-155", () =>
-		Transaction.Legacy.getChainId.call(legacyTx),
+		Transaction.Legacy.getChainId(legacyTx),
 	),
 );
 
@@ -298,21 +298,21 @@ console.log("\n--- Legacy Serialization (Not Implemented) ---");
 results.push(
 	benchmark("Legacy.serialize", () => {
 		try {
-			Transaction.Legacy.serialize.call(legacyTx);
+			Transaction.Legacy.serialize(legacyTx);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("Legacy.hash", () => {
 		try {
-			Transaction.Legacy.hash.call(legacyTx);
+			Transaction.Legacy.hash(legacyTx);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("Legacy.getSigningHash", () => {
 		try {
-			Transaction.Legacy.getSigningHash.call(legacyTx);
+			Transaction.Legacy.getSigningHash(legacyTx);
 		} catch {}
 	}),
 );
@@ -344,7 +344,7 @@ console.log("--- EIP-1559 Gas Calculation ---");
 const baseFee = 10000000000n;
 results.push(
 	benchmark("EIP1559.getEffectiveGasPrice", () =>
-		Transaction.EIP1559.getEffectiveGasPrice.call(eip1559Tx, baseFee),
+		Transaction.EIP1559.getEffectiveGasPrice(eip1559Tx, baseFee),
 	),
 );
 
@@ -362,21 +362,21 @@ console.log("\n--- EIP-1559 Serialization (Not Implemented) ---");
 results.push(
 	benchmark("EIP1559.serialize", () => {
 		try {
-			Transaction.EIP1559.serialize.call(eip1559Tx);
+			Transaction.EIP1559.serialize(eip1559Tx);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("EIP1559.hash", () => {
 		try {
-			Transaction.EIP1559.hash.call(eip1559Tx);
+			Transaction.EIP1559.hash(eip1559Tx);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("EIP1559.getSigningHash", () => {
 		try {
-			Transaction.EIP1559.getSigningHash.call(eip1559Tx);
+			Transaction.EIP1559.getSigningHash(eip1559Tx);
 		} catch {}
 	}),
 );
@@ -408,12 +408,12 @@ console.log("--- EIP-4844 Gas Calculation ---");
 const blobBaseFee = 1n;
 results.push(
 	benchmark("EIP4844.getBlobGasCost", () =>
-		Transaction.EIP4844.getBlobGasCost.call(eip4844Tx, blobBaseFee),
+		Transaction.EIP4844.getBlobGasCost(eip4844Tx, blobBaseFee),
 	),
 );
 results.push(
 	benchmark("EIP4844.getEffectiveGasPrice", () =>
-		Transaction.EIP4844.getEffectiveGasPrice.call(eip4844Tx, baseFee),
+		Transaction.EIP4844.getEffectiveGasPrice(eip4844Tx, baseFee),
 	),
 );
 
@@ -431,7 +431,7 @@ console.log("\n--- EIP-4844 Serialization (Not Implemented) ---");
 results.push(
 	benchmark("EIP4844.serialize", () => {
 		try {
-			Transaction.EIP4844.serialize.call(eip4844Tx);
+			Transaction.EIP4844.serialize(eip4844Tx);
 		} catch {}
 	}),
 );
@@ -462,7 +462,7 @@ console.log(
 console.log("--- EIP-7702 Gas Calculation ---");
 results.push(
 	benchmark("EIP7702.getEffectiveGasPrice", () =>
-		Transaction.EIP7702.getEffectiveGasPrice.call(eip7702Tx, baseFee),
+		Transaction.EIP7702.getEffectiveGasPrice(eip7702Tx, baseFee),
 	),
 );
 

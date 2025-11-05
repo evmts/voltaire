@@ -596,7 +596,7 @@ describe("Rlp.getEncodedLength", () => {
 
 describe("Rlp.flatten", () => {
 	it("flattens nested list to bytes array", () => {
-		const nested: Data = {
+		const nested: BrandedRlp = {
 			type: "list",
 			value: [
 				{ type: "bytes", value: new Uint8Array([1]) },
@@ -618,7 +618,7 @@ describe("Rlp.flatten", () => {
 	});
 
 	it("flattens bytes Data as single item", () => {
-		const bytesData: Data = {
+		const bytesData: BrandedRlp = {
 			type: "bytes",
 			value: new Uint8Array([1, 2, 3]),
 		};
@@ -627,7 +627,7 @@ describe("Rlp.flatten", () => {
 	});
 
 	it("flattens empty list", () => {
-		const emptyList: Data = { type: "list", value: [] };
+		const emptyList: BrandedRlp = { type: "list", value: [] };
 		const flat = Rlp.flatten(emptyList);
 		expect(flat).toEqual([]);
 	});
@@ -635,26 +635,26 @@ describe("Rlp.flatten", () => {
 
 describe("Rlp.equals", () => {
 	it("compares equal bytes Data", () => {
-		const a: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
-		const b: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const a: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const b: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
 		expect(Rlp.equals(a, b)).toBe(true);
 	});
 
 	it("compares unequal bytes Data", () => {
-		const a: Data = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
-		const b: Data = { type: "bytes", value: new Uint8Array([1, 2, 4]) };
+		const a: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const b: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 4]) };
 		expect(Rlp.equals(a, b)).toBe(false);
 	});
 
 	it("compares equal list Data", () => {
-		const a: Data = {
+		const a: BrandedRlp = {
 			type: "list",
 			value: [
 				{ type: "bytes", value: new Uint8Array([1]) },
 				{ type: "bytes", value: new Uint8Array([2]) },
 			],
 		};
-		const b: Data = {
+		const b: BrandedRlp = {
 			type: "list",
 			value: [
 				{ type: "bytes", value: new Uint8Array([1]) },
@@ -665,11 +665,11 @@ describe("Rlp.equals", () => {
 	});
 
 	it("compares unequal list Data", () => {
-		const a: Data = {
+		const a: BrandedRlp = {
 			type: "list",
 			value: [{ type: "bytes", value: new Uint8Array([1]) }],
 		};
-		const b: Data = {
+		const b: BrandedRlp = {
 			type: "list",
 			value: [{ type: "bytes", value: new Uint8Array([2]) }],
 		};
@@ -677,8 +677,8 @@ describe("Rlp.equals", () => {
 	});
 
 	it("compares different types", () => {
-		const a: Data = { type: "bytes", value: new Uint8Array([1]) };
-		const b: Data = {
+		const a: BrandedRlp = { type: "bytes", value: new Uint8Array([1]) };
+		const b: BrandedRlp = {
 			type: "list",
 			value: [{ type: "bytes", value: new Uint8Array([1]) }],
 		};
