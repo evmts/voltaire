@@ -18,8 +18,8 @@ import {
 	slice,
 	format,
 	ZERO,
-} from "./index.js";
-import type { BrandedHash } from "./BrandedHash.js";
+} from "./BrandedHash/index.js";
+import type { BrandedHash } from "./BrandedHash/BrandedHash.js";
 
 describe("Hash", () => {
 	describe("fromHex", () => {
