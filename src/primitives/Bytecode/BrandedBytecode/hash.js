@@ -1,4 +1,4 @@
-import { Keccak256 } from "../../crypto/Keccak256/index.js";
+import { Keccak256 } from "../../../crypto/Keccak256/index.js";
 
 /**
  * Compute bytecode hash (keccak256)
