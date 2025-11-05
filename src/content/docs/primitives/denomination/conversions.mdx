@@ -1,0 +1,433 @@
+---
+title: Denomination Conversions
+description: Converting between Wei, Gwei, and Ether
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# Conversions
+
+Type-safe conversions between Wei, Gwei, and Ether denominations.
+
+## Overview
+
+Each denomination type provides conversion methods to other units. All conversions use integer arithmetic - fractional values truncate (round down).
+
+## Conversion Table
+
+| From | To | Function | Formula | Example |
+|------|----|---------|---------| --------|
+| Wei | Gwei | `Wei.toGwei(wei)` | `wei / 10^9` | `1_000_000_000n Wei → 1n Gwei` |
+| Wei | Ether | `Wei.toEther(wei)` | `wei / 10^18` | `1_000_000_000_000_000_000n Wei → 1n Ether` |
+| Gwei | Wei | `Gwei.toWei(gwei)` | `gwei * 10^9` | `1n Gwei → 1_000_000_000n Wei` |
+| Gwei | Ether | `Gwei.toEther(gwei)` | `gwei / 10^9` | `1_000_000_000n Gwei → 1n Ether` |
+| Ether | Wei | `Ether.toWei(ether)` | `ether * 10^18` | `1n Ether → 1_000_000_000_000_000_000n Wei` |
+| Ether | Gwei | `Ether.toGwei(ether)` | `ether * 10^9` | `1n Ether → 1_000_000_000n Gwei` |
+
+## Wei Conversions
+
+<Tabs>
+<TabItem label="Wei → Gwei">
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+const wei = Wei.from(50_000_000_000n)
+const gwei = Wei.toGwei(wei)  // 50n
+
+// Fractional Gwei truncates
+const wei2 = Wei.from(50_000_000_001n)
+const gwei2 = Wei.toGwei(wei2)  // 50n (not 50.000000001)
+```
+
+**Formula:** `gwei = wei / 1_000_000_000` (integer division)
+</TabItem>
+<TabItem label="Wei → Ether">
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+const wei = Wei.from(1_000_000_000_000_000_000n)
+const ether = Wei.toEther(wei)  // 1n
+
+// Fractional Ether truncates
+const wei2 = Wei.from(500_000_000_000_000_000n)  // 0.5 ETH
+const ether2 = Wei.toEther(wei2)  // 0n
+```
+
+**Formula:** `ether = wei / 1_000_000_000_000_000_000` (integer division)
+</TabItem>
+<TabItem label="Wei ← Other Units">
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Ether from '@tevm/voltaire/Ether'
+
+// From Gwei
+const gwei = Gwei.from(50n)
+const wei1 = Wei.fromGwei(gwei)  // 50_000_000_000n
+
+// From Ether
+const ether = Ether.from(1n)
+const wei2 = Wei.fromEther(ether)  // 1_000_000_000_000_000_000n
+```
+</TabItem>
+</Tabs>
+
+## Gwei Conversions
+
+<Tabs>
+<TabItem label="Gwei → Wei">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+const gwei = Gwei.from(50n)
+const wei = Gwei.toWei(gwei)  // 50_000_000_000n
+
+// No truncation (multiplication)
+const gwei2 = Gwei.from(1n)
+const wei2 = Gwei.toWei(gwei2)  // 1_000_000_000n
+```
+
+**Formula:** `wei = gwei * 1_000_000_000`
+</TabItem>
+<TabItem label="Gwei → Ether">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+const gwei = Gwei.from(1_000_000_000n)
+const ether = Gwei.toEther(gwei)  // 1n
+
+// Fractional Ether truncates
+const gwei2 = Gwei.from(500_000_000n)  // 0.5 ETH
+const ether2 = Gwei.toEther(gwei2)  // 0n
+```
+
+**Formula:** `ether = gwei / 1_000_000_000` (integer division)
+</TabItem>
+<TabItem label="Gwei ← Other Units">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from '@tevm/voltaire/Ether'
+
+// From Wei (division)
+const wei = Wei.from(50_000_000_000n)
+const gwei1 = Gwei.fromWei(wei)  // 50n
+
+// From Ether (multiplication)
+const ether = Ether.from(1n)
+const gwei2 = Gwei.fromEther(ether)  // 1_000_000_000n
+```
+</TabItem>
+</Tabs>
+
+## Ether Conversions
+
+<Tabs>
+<TabItem label="Ether → Wei">
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+
+const ether = Ether.from(1n)
+const wei = Ether.toWei(ether)  // 1_000_000_000_000_000_000n
+
+// No truncation (multiplication)
+const ether2 = Ether.from(5n)
+const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n
+```
+
+**Formula:** `wei = ether * 1_000_000_000_000_000_000`
+</TabItem>
+<TabItem label="Ether → Gwei">
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+
+const ether = Ether.from(1n)
+const gwei = Ether.toGwei(ether)  // 1_000_000_000n
+
+// No truncation (multiplication)
+const ether2 = Ether.from(2n)
+const gwei2 = Ether.toGwei(ether2)  // 2_000_000_000n
+```
+
+**Formula:** `gwei = ether * 1_000_000_000`
+</TabItem>
+<TabItem label="Ether ← Other Units">
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+// From Wei (division, truncates)
+const wei = Wei.from(1_000_000_000_000_000_000n)
+const ether1 = Ether.fromWei(wei)  // 1n
+
+// From Gwei (division, truncates)
+const gwei = Gwei.from(1_000_000_000n)
+const ether2 = Ether.fromGwei(gwei)  // 1n
+```
+</TabItem>
+</Tabs>
+
+## Conversion Patterns
+
+### Gas Price Calculation
+
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// Gas price in Gwei (user-friendly)
+const gasPriceGwei = Gwei.from(50n)
+
+// Convert to Wei for calculation
+const gasPriceWei = Gwei.toWei(gasPriceGwei)
+
+// Calculate total: gasPrice * gasUsed
+const gasUsed = Uint.from(21_000n)
+const txCostWei = Uint.times(gasPriceWei, gasUsed)
+
+// Convert to Ether for display
+const txCostEther = Wei.toEther(Wei.from(txCostWei))
+```
+
+### Balance Display
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// Balance from RPC (Wei)
+const balanceWei = Wei.from(1_234_567_890_123_456_789n)
+
+// Convert to Ether for display (with fractional part)
+const balanceU256 = Wei.toU256(balanceWei)
+const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+
+const wholePart = Uint.dividedBy(balanceU256, weiPerEther)
+const fractionalPart = Uint.modulo(balanceU256, weiPerEther)
+
+const display = `${wholePart}.${fractionalPart.toString().padStart(18, '0')} ETH`
+console.log(display)  // "1.234567890123456789 ETH"
+```
+
+### Multi-Step Conversion
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+
+// Start with Ether
+const ether = Ether.from(1n)
+
+// Convert through Gwei to Wei
+const gwei = Ether.toGwei(ether)      // 1_000_000_000n
+const wei = Gwei.toWei(gwei)           // 1_000_000_000_000_000_000n
+
+// Direct conversion (more efficient)
+const weiDirect = Ether.toWei(ether)   // Same result
+```
+
+### Comparing Different Units
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const balance = Wei.from(100_000_000_000n)  // 100 Gwei in Wei
+const threshold = Gwei.from(50n)             // 50 Gwei
+
+// Convert to same unit for comparison
+const thresholdWei = Gwei.toWei(threshold)
+const balanceU256 = Wei.toU256(balance)
+const thresholdU256 = Wei.toU256(thresholdWei)
+
+if (balanceU256 > thresholdU256) {
+  console.log("Balance exceeds threshold")
+}
+```
+
+## Integer Division Behavior
+
+<Aside type="caution" title="Truncation Warning">
+Division operations truncate fractional results. Always convert to smaller units before calculations requiring precision.
+</Aside>
+
+### Truncation Examples
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+// Example 1: Wei → Gwei truncation
+const wei1 = Wei.from(1_500_000_000n)  // 1.5 Gwei
+const gwei1 = Wei.toGwei(wei1)          // 1n (truncates to 1)
+
+const wei2 = Wei.from(1_999_999_999n)  // 1.999... Gwei
+const gwei2 = Wei.toGwei(wei2)          // 1n (truncates to 1)
+
+// Example 2: Gwei → Ether truncation
+const gwei3 = Gwei.from(500_000_000n)  // 0.5 Ether
+const ether1 = Gwei.toEther(gwei3)      // 0n (truncates to 0)
+
+const gwei4 = Gwei.from(999_999_999n)  // 0.999... Ether
+const ether2 = Gwei.toEther(gwei4)      // 0n (truncates to 0)
+```
+
+### Avoiding Truncation
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// ✗ Loses precision
+const gwei = Gwei.from(50n)
+const ether = Gwei.toEther(gwei)  // 0n
+const wei = Ether.toWei(ether)     // 0n (lost data)
+
+// ✓ Preserves precision - work in smallest unit
+const gwei = Gwei.from(50n)
+const wei = Gwei.toWei(gwei)  // 50_000_000_000n
+
+// Perform calculations in Wei
+const doubled = Uint.times(wei, Uint.from(2n))  // 100_000_000_000n
+
+// Convert to display unit only at the end
+const result = Wei.toGwei(Wei.from(doubled))  // 100n
+```
+
+## Round-Trip Safety
+
+### Safe Round Trips (No Loss)
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Ether from '@tevm/voltaire/Ether'
+
+// Gwei → Wei → Gwei
+const gwei1 = Gwei.from(50n)
+const wei1 = Gwei.toWei(gwei1)
+const gwei1Back = Wei.toGwei(wei1)  // 50n ✓
+
+// Ether → Wei → Ether
+const ether1 = Ether.from(1n)
+const wei2 = Ether.toWei(ether1)
+const ether1Back = Wei.toEther(wei2)  // 1n ✓
+```
+
+### Unsafe Round Trips (Loss)
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+// Wei → Gwei → Wei (loses fractional Gwei)
+const wei1 = Wei.from(1_500_000_000n)  // 1.5 Gwei
+const gwei1 = Wei.toGwei(wei1)          // 1n (truncates)
+const wei1Back = Gwei.toWei(gwei1)      // 1_000_000_000n ✗ (lost 0.5 Gwei)
+
+// Gwei → Ether → Gwei (loses fractional Ether)
+const gwei2 = Gwei.from(500_000_000n)  // 0.5 Ether
+const ether1 = Gwei.toEther(gwei2)      // 0n (truncates)
+const gwei2Back = Ether.toGwei(ether1)  // 0n ✗ (lost all)
+```
+
+## Best Practices
+
+### 1. Convert to Smallest Unit Early
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// ✓ Good - convert to Wei first
+const value = Ether.from(1n)
+const valueWei = Ether.toWei(value)
+const fee = Wei.from(21_000_000_000_000_000n)
+
+const total = Uint.plus(valueWei, fee)
+
+// ✗ Bad - mixing units
+const value = Ether.from(1n)
+const fee = Wei.from(21_000_000_000_000_000n)
+// Cannot add different types
+```
+
+### 2. Use Type System for Safety
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+// Function signatures enforce correct units
+function calculateGasCost(
+  gasPrice: Gwei.Type,
+  gasUsed: bigint
+): Wei.Type {
+  const gasPriceWei = Gwei.toWei(gasPrice)
+  const cost = Uint.times(gasPriceWei, Uint.from(gasUsed))
+  return Wei.from(cost)
+}
+
+// Compiler prevents passing wrong unit
+const price = Gwei.from(50n)
+const cost = calculateGasCost(price, 21_000n)  // ✓
+
+const wei = Wei.from(50_000_000_000n)
+// calculateGasCost(wei, 21_000n)  // ✗ Type error
+```
+
+### 3. Display in Appropriate Unit
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+// Gas prices in Gwei (more readable)
+const gasPrice = Wei.from(50_000_000_000n)
+console.log(`Gas: ${Wei.toGwei(gasPrice)} Gwei`)  // "Gas: 50 Gwei"
+// Better than "Gas: 50000000000 Wei"
+
+// Balances in Ether (user-friendly)
+const balance = Wei.from(1_000_000_000_000_000_000n)
+console.log(`Balance: ${Wei.toEther(balance)} ETH`)  // "Balance: 1 ETH"
+// Better than "Balance: 1000000000000000000 Wei"
+```
+
+## Conversion Constants
+
+All conversions based on these constants:
+
+```typescript
+const WEI_PER_GWEI = 1_000_000_000n              // 10^9
+const GWEI_PER_ETHER = 1_000_000_000n            // 10^9
+const WEI_PER_ETHER = 1_000_000_000_000_000_000n // 10^18
+```
+
+## WASM Acceleration
+
+All conversions available in WebAssembly:
+
+```typescript
+import * as WeiWasm from '@tevm/voltaire/Wei.wasm'
+import * as GweiWasm from '@tevm/voltaire/Gwei.wasm'
+import * as EtherWasm from '@tevm/voltaire/Ether.wasm'
+
+const gwei = GweiWasm.from(50n)
+const wei = GweiWasm.toWei(gwei)
+const ether = WeiWasm.toEther(wei)
+```
+
+See [WASM](/primitives/denomination/wasm) for details.
+
+## Related
+
+- [Wei](/primitives/denomination/wei) - Smallest denomination
+- [Gwei](/primitives/denomination/gwei) - Gas price denomination
+- [Ether](/primitives/denomination/ether) - User-facing denomination
+- [Usage Patterns](/primitives/denomination/usage-patterns) - Common patterns
+- [Uint256](/primitives/uint) - Underlying numeric type
