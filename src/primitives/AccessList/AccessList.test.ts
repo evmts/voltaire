@@ -26,7 +26,7 @@ import {
 	create,
 	from,
 	fromBytes,
-} from "./index.js";
+} from "./AccessList.js";
 import {
 	ADDRESS_COST,
 	COLD_ACCOUNT_ACCESS_COST,
