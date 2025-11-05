@@ -29,8 +29,8 @@ import {
 	xor,
 	random,
 	zero,
-} from "./index.js";
-import type { BrandedHex } from "./BrandedHex.js";
+} from "./BrandedHex/index.js";
+import type { BrandedHex } from "./BrandedHex/BrandedHex.js";
 
 // Benchmark runner
 interface BenchmarkResult {
