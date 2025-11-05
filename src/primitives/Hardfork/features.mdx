@@ -1,0 +1,549 @@
+# Feature Detection
+
+Methods for detecting EIP features and protocol capabilities.
+
+## Overview
+
+Feature detection enables checking if specific EIPs or protocol changes are active in a hardfork. This is often clearer than version comparison.
+
+```typescript
+import { Hardfork, CANCUN } from '@tevm/voltaire';
+
+// Standard form
+Hardfork.hasEIP4844(CANCUN);  // true
+
+// Convenience form
+CANCUN.hasEIP4844();  // true
+```
+
+## Core Features
+
+All feature detection methods have two forms:
+1. **Standard form**: `Hardfork.hasFeature(fork)`
+2. **Convenience form**: `fork.hasFeature()` or `fork.supportsFeature()`
+
+---
+
+## EIP-1559 (Base Fee Mechanism)
+
+EIP-1559 base fee pricing mechanism. Active in London+.
+
+### hasEIP1559
+
+Check if EIP-1559 is available.
+
+**Standard Form:**
+```typescript
+Hardfork.hasEIP1559(fork: BrandedHardfork): boolean
+```
+
+**Convenience Form:**
+```typescript
+fork.hasEIP1559(): boolean
+fork.supportsEIP1559(): boolean
+```
+
+**Active Since:** London (August 2021)
+
+**Features:**
+- Base fee per gas burned
+- Priority fee (tip) for miners/validators
+- Type 2 transactions (EIP-1559 format)
+- `BASEFEE` opcode (0x48)
+
+**Example:**
+```typescript
+import { Hardfork, LONDON, BERLIN, CANCUN } from '@tevm/voltaire';
+
+Hardfork.hasEIP1559(LONDON);   // true
+Hardfork.hasEIP1559(BERLIN);   // false
+Hardfork.hasEIP1559(CANCUN);   // true (all post-London)
+
+// Convenience forms
+LONDON.hasEIP1559();           // true
+CANCUN.supportsEIP1559();      // true
+```
+
+**Use Case:**
+```typescript
+function buildTransaction(fork: BrandedHardfork, params: TxParams) {
+  if (Hardfork.hasEIP1559(fork)) {
+    return {
+      type: 2,  // EIP-1559
+      maxFeePerGas: params.maxFee,
+      maxPriorityFeePerGas: params.maxPriorityFee,
+    };
+  } else {
+    return {
+      type: 0,  // Legacy
+      gasPrice: params.gasPrice,
+    };
+  }
+}
+```
+
+**Related EIPs:**
+- EIP-1559: Fee market change
+- EIP-3198: BASEFEE opcode
+
+---
+
+## EIP-3855 (PUSH0 Opcode)
+
+PUSH0 opcode for pushing constant 0 onto stack. Active in Shanghai+.
+
+### hasEIP3855
+
+Check if PUSH0 opcode is available.
+
+**Standard Form:**
+```typescript
+Hardfork.hasEIP3855(fork: BrandedHardfork): boolean
+```
+
+**Convenience Form:**
+```typescript
+fork.hasEIP3855(): boolean
+fork.supportsPUSH0(): boolean
+```
+
+**Active Since:** Shanghai (April 2023)
+
+**Features:**
+- `PUSH0` opcode (0x5F)
+- Pushes constant 0 onto stack
+- Gas cost: 2 (cheaper than PUSH1 0x00 which costs 3)
+- Reduces bytecode size
+
+**Example:**
+```typescript
+import { Hardfork, SHANGHAI, MERGE, CANCUN } from '@tevm/voltaire';
+
+Hardfork.hasEIP3855(SHANGHAI);  // true
+Hardfork.hasEIP3855(MERGE);     // false
+Hardfork.hasEIP3855(CANCUN);    // true
+
+// Convenience forms
+SHANGHAI.hasEIP3855();          // true
+CANCUN.supportsPUSH0();         // true
+```
+
+**Use Case:**
+```typescript
+function getPushZeroOpcode(fork: BrandedHardfork): { opcode: number, gas: number } {
+  if (Hardfork.hasEIP3855(fork)) {
+    return { opcode: 0x5F, gas: 2 };  // PUSH0
+  } else {
+    return { opcode: 0x60, gas: 3 };  // PUSH1 0x00
+  }
+}
+```
+
+**Related EIPs:**
+- EIP-3855: PUSH0 instruction
+
+---
+
+## EIP-4844 (Blob Transactions)
+
+Proto-danksharding with blob transactions. Active in Cancun+.
+
+### hasEIP4844
+
+Check if blob transactions are available.
+
+**Standard Form:**
+```typescript
+Hardfork.hasEIP4844(fork: BrandedHardfork): boolean
+```
+
+**Convenience Form:**
+```typescript
+fork.hasEIP4844(): boolean
+fork.supportsBlobs(): boolean
+```
+
+**Active Since:** Cancun (March 2024)
+
+**Features:**
+- Type 3 blob transactions
+- Shard blob transactions (proto-danksharding)
+- `BLOBHASH` opcode (0x49) - Access blob versioned hashes
+- `BLOBBASEFEE` opcode (0x4A) - Get blob gas base fee
+- Point evaluation precompile (0x0A)
+- Blob gas pricing separate from execution gas
+- ~125KB blobs per transaction (up to 6 blobs)
+
+**Example:**
+```typescript
+import { Hardfork, CANCUN, SHANGHAI, PRAGUE } from '@tevm/voltaire';
+
+Hardfork.hasEIP4844(CANCUN);    // true
+Hardfork.hasEIP4844(SHANGHAI);  // false
+Hardfork.hasEIP4844(PRAGUE);    // true
+
+// Convenience forms
+CANCUN.hasEIP4844();            // true
+PRAGUE.supportsBlobs();         // true
+```
+
+**Use Case:**
+```typescript
+function selectL2DataPostingMethod(fork: BrandedHardfork): string {
+  if (Hardfork.hasEIP4844(fork)) {
+    return "blobs";  // Cheap L2 data availability
+  } else {
+    return "calldata";  // Expensive calldata
+  }
+}
+
+// L2 can save 10-100x on data costs with blobs
+const method = selectL2DataPostingMethod(CANCUN);
+console.log(method);  // "blobs"
+```
+
+**Related EIPs:**
+- EIP-4844: Shard blob transactions
+- EIP-4788: Beacon block root in EVM
+- EIP-7516: BLOBBASEFEE opcode
+
+---
+
+## EIP-1153 (Transient Storage)
+
+Transient storage opcodes TLOAD/TSTORE. Active in Cancun+.
+
+### hasEIP1153
+
+Check if transient storage is available.
+
+**Standard Form:**
+```typescript
+Hardfork.hasEIP1153(fork: BrandedHardfork): boolean
+```
+
+**Convenience Form:**
+```typescript
+fork.hasEIP1153(): boolean
+fork.supportsTransientStorage(): boolean
+```
+
+**Active Since:** Cancun (March 2024)
+
+**Features:**
+- `TLOAD` opcode (0x5C) - Load from transient storage
+- `TSTORE` opcode (0x5D) - Store to transient storage
+- Storage cleared at end of transaction
+- Cheaper than SLOAD/SSTORE
+- Useful for reentrancy locks, intermediate calculations
+
+**Example:**
+```typescript
+import { Hardfork, CANCUN, SHANGHAI } from '@tevm/voltaire';
+
+Hardfork.hasEIP1153(CANCUN);    // true
+Hardfork.hasEIP1153(SHANGHAI);  // false
+
+// Convenience forms
+CANCUN.hasEIP1153();                      // true
+CANCUN.supportsTransientStorage();        // true
+```
+
+**Use Case:**
+```typescript
+function getReentrancyLockImplementation(fork: BrandedHardfork): string {
+  if (Hardfork.hasEIP1153(fork)) {
+    return "transient";  // Use TSTORE/TLOAD (cheaper)
+  } else {
+    return "storage";    // Use SSTORE/SLOAD (expensive)
+  }
+}
+
+// Transient storage saves ~15k gas per lock
+```
+
+**Gas Costs:**
+- TLOAD: 100 gas
+- TSTORE: 100 gas
+- SLOAD (warm): 100 gas
+- SSTORE: 100-20,000 gas (depending on state change)
+
+**Related EIPs:**
+- EIP-1153: Transient storage opcodes
+
+---
+
+## Proof of Stake (Merge)
+
+Post-Merge Proof of Stake consensus. Active in Merge+.
+
+### isPostMerge
+
+Check if hardfork is post-merge (Proof of Stake).
+
+**Standard Form:**
+```typescript
+Hardfork.isPostMerge(fork: BrandedHardfork): boolean
+```
+
+**Convenience Form:**
+```typescript
+fork.isPostMerge(): boolean
+fork.isPoS(): boolean
+```
+
+**Active Since:** Merge (September 2022)
+
+**Features:**
+- Proof of Stake consensus
+- No mining (no block rewards to miners)
+- Validators instead of miners
+- `PREVRANDAO` opcode (replaces DIFFICULTY, opcode 0x44)
+- DIFFICULTY opcode returns beacon chain randomness
+- Block production via beacon chain
+- Finality from Casper FFG
+
+**Example:**
+```typescript
+import { Hardfork, MERGE, LONDON, SHANGHAI, CANCUN } from '@tevm/voltaire';
+
+Hardfork.isPostMerge(MERGE);     // true
+Hardfork.isPostMerge(LONDON);    // false (pre-merge PoW)
+Hardfork.isPostMerge(SHANGHAI);  // true
+Hardfork.isPostMerge(CANCUN);    // true
+
+// Convenience forms
+MERGE.isPostMerge();             // true
+SHANGHAI.isPoS();                // true
+```
+
+**Use Case:**
+```typescript
+function getConsensusInfo(fork: BrandedHardfork) {
+  if (Hardfork.isPostMerge(fork)) {
+    return {
+      consensus: "Proof of Stake",
+      blockProducer: "validator",
+      difficultyOpcode: "PREVRANDAO",
+      finalityMechanism: "Casper FFG",
+    };
+  } else {
+    return {
+      consensus: "Proof of Work",
+      blockProducer: "miner",
+      difficultyOpcode: "DIFFICULTY",
+      finalityMechanism: "longest chain",
+    };
+  }
+}
+```
+
+**Related EIPs:**
+- EIP-3675: Upgrade consensus to Proof of Stake
+- EIP-4399: Supplant DIFFICULTY opcode with PREVRANDAO
+
+---
+
+## Feature Matrix
+
+### By Hardfork
+
+| Hardfork | EIP-1559 | PUSH0 | Blobs | Transient Storage | PoS |
+|----------|----------|-------|-------|-------------------|-----|
+| Frontier - Istanbul | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Berlin | ❌ | ❌ | ❌ | ❌ | ❌ |
+| London | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Arrow/Gray Glacier | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Merge | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Shanghai | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Cancun | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Prague | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Osaka | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+### By EIP
+
+| EIP | Feature | Hardfork | Opcode(s) |
+|-----|---------|----------|-----------|
+| EIP-1559 | Base fee mechanism | London | BASEFEE (0x48) |
+| EIP-3855 | PUSH0 | Shanghai | PUSH0 (0x5F) |
+| EIP-4844 | Blob transactions | Cancun | BLOBHASH (0x49), BLOBBASEFEE (0x4A) |
+| EIP-1153 | Transient storage | Cancun | TLOAD (0x5C), TSTORE (0x5D) |
+| EIP-3675/4399 | Proof of Stake | Merge | PREVRANDAO (0x44, replaces DIFFICULTY) |
+
+---
+
+## Usage Patterns
+
+### Feature-Based Gating
+
+Better than version comparison when you care about specific functionality.
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+function canUseBlobTransactions(fork: BrandedHardfork): boolean {
+  // Good - explicit about what we need
+  return Hardfork.hasEIP4844(fork);
+}
+
+function canUseEIP1559(fork: BrandedHardfork): boolean {
+  // Also good - feature-focused
+  return Hardfork.hasEIP1559(fork);
+}
+```
+
+### Multiple Feature Checks
+
+```typescript
+function getNetworkCapabilities(fork: BrandedHardfork) {
+  return {
+    consensus: Hardfork.isPostMerge(fork) ? "PoS" : "PoW",
+    baseFee: Hardfork.hasEIP1559(fork),
+    push0: Hardfork.hasEIP3855(fork),
+    blobs: Hardfork.hasEIP4844(fork),
+    transientStorage: Hardfork.hasEIP1153(fork),
+  };
+}
+
+const caps = getNetworkCapabilities(CANCUN);
+// {
+//   consensus: "PoS",
+//   baseFee: true,
+//   push0: true,
+//   blobs: true,
+//   transientStorage: true
+// }
+```
+
+### Transaction Type Selection
+
+```typescript
+function selectTransactionType(fork: BrandedHardfork): number {
+  if (Hardfork.hasEIP4844(fork)) {
+    return 3;  // Blob transaction
+  } else if (Hardfork.hasEIP1559(fork)) {
+    return 2;  // EIP-1559
+  } else {
+    return 0;  // Legacy
+  }
+}
+```
+
+### Opcode Selection
+
+```typescript
+function selectPushZeroImplementation(fork: BrandedHardfork): number[] {
+  if (Hardfork.hasEIP3855(fork)) {
+    return [0x5F];  // PUSH0
+  } else {
+    return [0x60, 0x00];  // PUSH1 0x00
+  }
+}
+```
+
+### Gas Estimation
+
+```typescript
+function estimateReentrancyLockGas(fork: BrandedHardfork): number {
+  if (Hardfork.hasEIP1153(fork)) {
+    return 200;  // TSTORE + TLOAD
+  } else {
+    return 20_200;  // SSTORE + SLOAD
+  }
+}
+```
+
+---
+
+## Best Practices
+
+### 1. Prefer Feature Detection Over Version Checks
+
+```typescript
+// Good - explicit about requirements
+if (Hardfork.hasEIP4844(fork)) {
+  // Use blobs
+}
+
+// Less clear - why do we need Cancun?
+if (Hardfork.isAtLeast(fork, CANCUN)) {
+  // What feature are we using?
+}
+```
+
+### 2. Use Descriptive Convenience Forms
+
+```typescript
+// More readable
+if (fork.supportsBlobs()) {
+  // ...
+}
+
+// Less readable
+if (Hardfork.hasEIP4844(fork)) {
+  // ...
+}
+```
+
+### 3. Document Feature Requirements
+
+```typescript
+/**
+ * Builds blob transaction
+ * @requires EIP-4844 (Cancun+)
+ */
+function buildBlobTransaction(fork: BrandedHardfork, data: Uint8Array) {
+  if (!Hardfork.hasEIP4844(fork)) {
+    throw new Error("Blob transactions require Cancun or later");
+  }
+  // ...
+}
+```
+
+### 4. Combine Multiple Features
+
+```typescript
+function getOptimalDataPosting(fork: BrandedHardfork): string {
+  const hasBlobs = Hardfork.hasEIP4844(fork);
+  const hasTransient = Hardfork.hasEIP1153(fork);
+
+  if (hasBlobs && hasTransient) {
+    return "blobs-with-transient-cache";
+  } else if (hasBlobs) {
+    return "blobs-only";
+  } else {
+    return "calldata";
+  }
+}
+```
+
+---
+
+## Future Features
+
+### Planned Features (Osaka+)
+
+Currently in Osaka:
+- EIP-7883: ModExp gas increase
+- EIP-7823: ModExp upper bounds
+- Additional transaction/block limits
+
+No detection methods yet - will be added when features are finalized.
+
+### Adding New Features
+
+When new EIPs are added:
+
+1. Add constant in `constants.js`
+2. Add `hasEIPXXXX` method
+3. Add convenience `supportsFeature` alias
+4. Update feature matrix documentation
+
+---
+
+## Related
+
+- [hardforks.mdx](./hardforks.mdx) - Complete hardfork timeline with all EIPs
+- [comparisons.mdx](./comparisons.mdx) - Version comparison methods
+- [usage-patterns.mdx](./usage-patterns.mdx) - Common usage patterns
+- [index.mdx](./index.mdx) - Main documentation
