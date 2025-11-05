@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Opcode from "./Opcode.js";
+import * as Opcode from "../Opcode.js";
 
 // ============================================================================
 // Opcode Info Tests
