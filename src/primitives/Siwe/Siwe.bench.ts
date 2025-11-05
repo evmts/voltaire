@@ -535,7 +535,7 @@ const addresses = [
 	createTestAddress(0),
 	createTestAddress(42),
 	createTestAddress(255),
-	new Uint8Array(20).fill(0xff),
+	Address.fromBytes(new Uint8Array(20).fill(0xff)),
 ];
 
 for (const addr of addresses) {

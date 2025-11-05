@@ -5,7 +5,27 @@
  */
 
 import type { BrandedHash } from "../Hash/index.js";
-import { AccessList } from "./AccessList.js";
+import {
+	from,
+	gasCost,
+	gasSavings,
+	hasSavings,
+	includesAddress,
+	includesStorageKey,
+	keysFor,
+	deduplicate,
+	withAddress,
+	withStorageKey,
+	merge,
+	assertValid,
+	isItem,
+	is,
+	addressCount,
+	storageKeyCount,
+	isEmpty,
+	create,
+} from "./index.js";
+import type { BrandedAccessList } from "./BrandedAccessList.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -87,7 +107,7 @@ const smallListArray = [
 	{ address: addr1, storageKeys: [key1] },
 	{ address: addr2, storageKeys: [key2, key3] },
 ];
-const smallList = AccessList.from(smallListArray);
+const smallList = from(smallListArray);
 
 // Medium list
 const mediumListArray = [];
@@ -97,7 +117,7 @@ for (let i = 0; i < 10; i++) {
 		storageKeys: [createStorageKey(i * 2), createStorageKey(i * 2 + 1)],
 	});
 }
-const mediumList = AccessList.from(mediumListArray);
+const mediumList = from(mediumListArray);
 
 // Large list
 const largeListArray = [];
@@ -107,7 +127,7 @@ for (let i = 0; i < 100; i++) {
 		storageKeys: [createStorageKey(i * 2), createStorageKey(i * 2 + 1)],
 	});
 }
-const largeList = AccessList.from(largeListArray);
+const largeList = from(largeListArray);
 
 // List with duplicates
 const duplicateListArray = [
@@ -116,7 +136,7 @@ const duplicateListArray = [
 	{ address: addr1, storageKeys: [key2, key3] },
 	{ address: addr2, storageKeys: [key3] },
 ];
-const duplicateList = AccessList.from(duplicateListArray);
+const duplicateList = from(duplicateListArray);
 
 // ============================================================================
 // Gas Cost Benchmarks
@@ -134,13 +154,13 @@ const results: BenchmarkResult[] = [];
 
 console.log("--- Gas Cost Calculations ---");
 results.push(
-	benchmark("gasCost - small list", () => AccessList.gasCost(smallList)),
+	benchmark("gasCost - small list", () => gasCost(smallList)),
 );
 results.push(
-	benchmark("gasCost - medium list", () => AccessList.gasCost(mediumList)),
+	benchmark("gasCost - medium list", () => gasCost(mediumList)),
 );
 results.push(
-	benchmark("gasCost - large list", () => AccessList.gasCost(largeList)),
+	benchmark("gasCost - large list", () => gasCost(largeList)),
 );
 
 console.log(
@@ -155,15 +175,15 @@ console.log(
 
 console.log("\n--- Gas Savings Calculations ---");
 results.push(
-	benchmark("gasSavings - small list", () => AccessList.gasSavings(smallList)),
+	benchmark("gasSavings - small list", () => gasSavings(smallList)),
 );
 results.push(
 	benchmark("gasSavings - medium list", () =>
-		AccessList.gasSavings(mediumList),
+		gasSavings(mediumList),
 	),
 );
 results.push(
-	benchmark("gasSavings - large list", () => AccessList.gasSavings(largeList)),
+	benchmark("gasSavings - large list", () => gasSavings(largeList)),
 );
 
 console.log(
@@ -178,11 +198,11 @@ console.log(
 
 console.log("\n--- Has Savings Check ---");
 results.push(
-	benchmark("hasSavings - small list", () => AccessList.hasSavings(smallList)),
+	benchmark("hasSavings - small list", () => hasSavings(smallList)),
 );
 results.push(
 	benchmark("hasSavings - medium list", () =>
-		AccessList.hasSavings(mediumList),
+		hasSavings(mediumList),
 	),
 );
 

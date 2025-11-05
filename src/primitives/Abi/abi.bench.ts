@@ -7,6 +7,7 @@
 import type { Item } from "./Item.js";
 import type { BrandedError } from "./error/BrandedError.js";
 import * as Abi from "./index.js";
+import { Address } from "../Address/index.js";
 
 // Helper to work around strict type checking in benchmarks
 const encodeParams = Abi.encodeParameters as any;
@@ -479,12 +480,13 @@ console.log(
 );
 
 console.log("\n--- Function Encoding ---");
+const zeroAddr = Address.fromHex("0x0000000000000000000000000000000000000000");
 results.push(
 	benchmark("Function.encodeParams - transfer", () => {
 		Abi.Function.encodeParams(transferFunc, [
-			"0x0000000000000000000000000000000000000000",
+			zeroAddr,
 			100n,
-		] as [string, bigint]);
+		]);
 	}),
 );
 results.push(
@@ -621,9 +623,9 @@ console.log(
 
 console.log("\n--- Function Decoding ---");
 const encodedTransferCall = Abi.Function.encodeParams(transferFunc, [
-	"0x0000000000000000000000000000000000000000",
+	zeroAddr,
 	100n,
-] as [string, bigint]);
+]);
 const encodedBoolResult = Abi.Function.encodeResult(transferFunc, [true] as [
 	boolean,
 ]);
@@ -754,7 +756,7 @@ results.push(
 		const params = [{ type: "uint256" }, { type: "address" }];
 		const values = [
 			123n,
-			"0x0000000000000000000000000000000000000000",
+			zeroAddr,
 		];
 		const encoded = encodeParams(params, values as any);
 		decodeParams(params, encoded);
@@ -763,9 +765,9 @@ results.push(
 results.push(
 	benchmark("round-trip Function call", () => {
 		const encoded = Abi.Function.encodeParams(transferFunc, [
-			"0x0000000000000000000000000000000000000000",
+			zeroAddr,
 			100n,
-		] as [string, bigint]);
+		]);
 		Abi.Function.decodeParams(transferFunc, encoded);
 	}),
 );
