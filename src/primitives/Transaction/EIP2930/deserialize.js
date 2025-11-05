@@ -1,4 +1,4 @@
-import { decode } from "../../Rlp/decode.js";
+import { decode } from "../../Rlp/BrandedRlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeAddress, decodeBigint } from "../utils.js";
 
@@ -59,7 +59,7 @@ export function deserialize(data) {
 		throw new Error("Invalid EIP-2930 transaction: expected list for accessList");
 	}
 	const accessList = decodeAccessList(
-		/** @type {import('../../Rlp/BrandedRlp.js').BrandedRlp[]} */ (accessListField.value),
+		/** @type {import('../../Rlp/BrandedRlp/BrandedRlp.js').BrandedRlp[]} */ (accessListField.value),
 	);
 	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
 		fields[8]

@@ -7,7 +7,7 @@ import { getSigningHash } from "./getSigningHash.js";
  * Recovers the Ethereum address that signed the authorization
  * using the signature components (r, s, yParity) and the signing hash.
  *
- * @param {import('./BrandedAuthorization.js').BrandedAuthorization} auth - Authorization to recover from
+ * @param {import('./BrandedAuthorization.d.ts').BrandedAuthorization} auth - Authorization to recover from
  * @returns {import('../../Address/index.js').BrandedAddress} Recovered authorizer address
  *
  * @example

@@ -2,7 +2,7 @@ import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import { fromPublicKey } from "../Address/BrandedAddress/fromPublicKey.js";
 import type { BrandedHash } from "../Hash/index.js";
-import type { BrandedRlp } from "../Rlp/BrandedRlp.js";
+import type { BrandedRlp } from "../Rlp/BrandedRlp/BrandedRlp.js";
 
 type Encodable = Uint8Array | BrandedRlp | Encodable[];
 

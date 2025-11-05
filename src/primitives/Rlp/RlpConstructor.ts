@@ -1,17 +1,17 @@
-import type { BrandedRlp } from "./BrandedRlp.js";
-import type { decode } from "./decode.js";
-import type { encode } from "./encode.js";
-import type { encodeBytes } from "./encodeBytes.js";
-import type { encodeList } from "./encodeList.js";
-import type { equals } from "./equals.js";
-import type { flatten } from "./flatten.js";
-import type { from } from "./from.js";
-import type { fromJSON } from "./fromJSON.js";
-import type { getEncodedLength } from "./getEncodedLength.js";
-import type { isBytesData } from "./isBytesData.js";
-import type { isData } from "./isData.js";
-import type { isListData } from "./isListData.js";
-import type { toJSON } from "./toJSON.js";
+import type { BrandedRlp } from "./BrandedRlp/BrandedRlp.js";
+import type { decode } from "./BrandedRlp/decode.js";
+import type { encode } from "./BrandedRlp/encode.js";
+import type { encodeBytes } from "./BrandedRlp/encodeBytes.js";
+import type { encodeList } from "./BrandedRlp/encodeList.js";
+import type { equals } from "./BrandedRlp/equals.js";
+import type { flatten } from "./BrandedRlp/flatten.js";
+import type { from } from "./BrandedRlp/from.js";
+import type { fromJSON } from "./BrandedRlp/fromJSON.js";
+import type { getEncodedLength } from "./BrandedRlp/getEncodedLength.js";
+import type { isBytesData } from "./BrandedRlp/isBytesData.js";
+import type { isData } from "./BrandedRlp/isData.js";
+import type { isListData } from "./BrandedRlp/isListData.js";
+import type { toJSON } from "./BrandedRlp/toJSON.js";
 
 type RlpPrototype = BrandedRlp & {
 	encode: typeof encode;

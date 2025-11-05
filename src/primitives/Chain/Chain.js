@@ -1,12 +1,5 @@
 // @ts-nocheck
-export * from "@tevm/chains";
-
-import { byId } from "./byId.js";
-import { from } from "./from.js";
-import { fromId } from "./fromId.js";
-
-// Export individual functions
-export { from, fromId, byId };
+import * as BrandedChain from "./BrandedChain/index.js";
 
 /**
  * @typedef {import('./ChainType.js').Chain} Chain
@@ -19,13 +12,25 @@ export { from, fromId, byId };
  * @type {ChainConstructor}
  */
 export function Chain(chain) {
-	return from(chain);
+	const result = BrandedChain.from(chain);
+	Object.setPrototypeOf(result, Chain.prototype);
+	return result;
 }
 
-Chain.from = (chain) => from(chain);
+// Static constructors
+Chain.from = (chain) => {
+	const result = BrandedChain.from(chain);
+	Object.setPrototypeOf(result, Chain.prototype);
+	return result;
+};
 Chain.from.prototype = Chain.prototype;
 
-Chain.fromId = (id) => fromId(id);
+Chain.fromId = (id) => {
+	const result = BrandedChain.fromId(id);
+	if (result) Object.setPrototypeOf(result, Chain.prototype);
+	return result;
+};
 Chain.fromId.prototype = Chain.prototype;
 
-Chain.byId = byId;
+// Static utility property (doesn't return Chain instances)
+Chain.byId = BrandedChain.byId;

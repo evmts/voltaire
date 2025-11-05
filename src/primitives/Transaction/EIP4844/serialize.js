@@ -1,4 +1,4 @@
-import { encode } from "../../Rlp/encode.js";
+import { encode } from "../../Rlp/BrandedRlp/encode.js";
 import { Type } from "../types.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 

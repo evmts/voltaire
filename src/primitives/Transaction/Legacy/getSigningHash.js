@@ -1,5 +1,5 @@
 import { Keccak256 } from "../../../crypto/Keccak256/index.js";
-import { encode } from "../../Rlp/encode.js";
+import { encode } from "../../Rlp/BrandedRlp/encode.js";
 import { encodeAddress, encodeBigintCompact } from "../utils.js";
 import { getChainId } from "./getChainId.js";
 

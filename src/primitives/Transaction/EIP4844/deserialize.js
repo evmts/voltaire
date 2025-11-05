@@ -1,4 +1,4 @@
-import { decode } from "../../Rlp/decode.js";
+import { decode } from "../../Rlp/BrandedRlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAccessList, decodeBigint } from "../utils.js";
 
