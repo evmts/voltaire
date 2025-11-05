@@ -62,3 +62,5 @@ export * as Siwe from "./Siwe/index.js";
 
 // Data structures
 export * as BinaryTree from "./BinaryTree/BinaryTree.js";
+export { BloomFilter } from "./BloomFilter/index.js";
+export * as BrandedBloomFilter from "./BloomFilter/BrandedBloomFilter/index.js";
