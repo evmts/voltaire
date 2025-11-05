@@ -4,7 +4,35 @@
  * Measures performance of hardfork comparison, parsing, and utility operations
  */
 
-import * as Hardfork from "./Hardfork.js";
+import { Id } from "./Id.js";
+import { allIds } from "./allIds.js";
+import { allNames } from "./allNames.js";
+import { compare } from "./compare.js";
+import { eq } from "./eq.js";
+import { fromString } from "./fromString.js";
+import { gt } from "./gt.js";
+import { gte } from "./gte.js";
+import { hasEIP1153 } from "./hasEIP1153.js";
+import { hasEIP1559 } from "./hasEIP1559.js";
+import { hasEIP3855 } from "./hasEIP3855.js";
+import { hasEIP4844 } from "./hasEIP4844.js";
+import { isAfter } from "./isAfter.js";
+import { isAtLeast } from "./isAtLeast.js";
+import { isBefore } from "./isBefore.js";
+import { isEqual } from "./isEqual.js";
+import { isPoS } from "./isPoS.js";
+import { isPostMerge } from "./isPostMerge.js";
+import { isValidName } from "./isValidName.js";
+import { lt } from "./lt.js";
+import { lte } from "./lte.js";
+import { max } from "./max.js";
+import { min } from "./min.js";
+import { range } from "./range.js";
+import { supportsBlobs } from "./supportsBlobs.js";
+import { supportsEIP1559 } from "./supportsEIP1559.js";
+import { supportsPUSH0 } from "./supportsPUSH0.js";
+import { supportsTransientStorage } from "./supportsTransientStorage.js";
+import { toString } from "./toString.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -55,10 +83,10 @@ function benchmark(
 // ============================================================================
 
 const testForks = {
-	early: Hardfork.Id.FRONTIER,
-	middle: Hardfork.Id.BERLIN,
-	recent: Hardfork.Id.CANCUN,
-	latest: Hardfork.Id.PRAGUE,
+	early: Id.FRONTIER,
+	middle: Id.BERLIN,
+	recent: Id.CANCUN,
+	latest: Id.PRAGUE,
 };
 
 const testStrings = [
@@ -88,27 +116,27 @@ const results: BenchmarkResult[] = [];
 console.log("--- Basic Comparisons ---");
 results.push(
 	benchmark("isAtLeast", () =>
-		Hardfork.isAtLeast(testForks.recent, testForks.middle),
+		isAtLeast(testForks.recent, testForks.middle),
 	),
 );
 results.push(
 	benchmark("isBefore", () =>
-		Hardfork.isBefore(testForks.middle, testForks.recent),
+		isBefore(testForks.middle, testForks.recent),
 	),
 );
 results.push(
 	benchmark("isAfter", () =>
-		Hardfork.isAfter(testForks.recent, testForks.middle),
+		isAfter(testForks.recent, testForks.middle),
 	),
 );
 results.push(
 	benchmark("isEqual", () =>
-		Hardfork.isEqual(testForks.recent, testForks.recent),
+		isEqual(testForks.recent, testForks.recent),
 	),
 );
 results.push(
 	benchmark("compare", () =>
-		Hardfork.compare(testForks.middle, testForks.recent),
+		compare(testForks.middle, testForks.recent),
 	),
 );
 
@@ -125,27 +153,27 @@ console.log(
 console.log("\n--- Convenience Forms ---");
 results.push(
 	benchmark("gte.call", () =>
-		Hardfork.gte.call(testForks.recent, testForks.middle),
+		gte.call(testForks.recent, testForks.middle),
 	),
 );
 results.push(
 	benchmark("lt.call", () =>
-		Hardfork.lt.call(testForks.middle, testForks.recent),
+		lt.call(testForks.middle, testForks.recent),
 	),
 );
 results.push(
 	benchmark("gt.call", () =>
-		Hardfork.gt.call(testForks.recent, testForks.middle),
+		gt.call(testForks.recent, testForks.middle),
 	),
 );
 results.push(
 	benchmark("eq.call", () =>
-		Hardfork.eq.call(testForks.recent, testForks.recent),
+		eq.call(testForks.recent, testForks.recent),
 	),
 );
 results.push(
 	benchmark("lte.call", () =>
-		Hardfork.lte.call(testForks.middle, testForks.recent),
+		lte.call(testForks.middle, testForks.recent),
 	),
 );
 
@@ -167,8 +195,8 @@ const testArray = [
 	testForks.latest,
 ];
 
-results.push(benchmark("min", () => Hardfork.min(testArray)));
-results.push(benchmark("max", () => Hardfork.max(testArray)));
+results.push(benchmark("min", () => min(testArray)));
+results.push(benchmark("max", () => max(testArray)));
 
 console.log(
 	results
@@ -197,20 +225,20 @@ console.log("--- String to ID ---");
 let stringIdx = 0;
 results.push(
 	benchmark("fromString", () => {
-		Hardfork.fromString(testStrings[stringIdx % testStrings.length]!);
+		fromString(testStrings[stringIdx % testStrings.length]!);
 		stringIdx++;
 	}),
 );
 results.push(
-	benchmark("fromString - alias", () => Hardfork.fromString("paris")),
+	benchmark("fromString - alias", () => fromString("paris")),
 );
 results.push(
 	benchmark("fromString - with operator", () =>
-		Hardfork.fromString(">=cancun"),
+		fromString(">=cancun"),
 	),
 );
 results.push(
-	benchmark("fromString - invalid", () => Hardfork.fromString("unknown")),
+	benchmark("fromString - invalid", () => fromString("unknown")),
 );
 
 console.log(
@@ -224,7 +252,7 @@ console.log(
 );
 
 console.log("\n--- ID to String ---");
-results.push(benchmark("toString", () => Hardfork.toString(testForks.recent)));
+results.push(benchmark("toString", () => toString(testForks.recent)));
 
 console.log(
 	results
@@ -238,10 +266,10 @@ console.log(
 
 console.log("\n--- Validation ---");
 results.push(
-	benchmark("isValidName - valid", () => Hardfork.isValidName("cancun")),
+	benchmark("isValidName - valid", () => isValidName("cancun")),
 );
 results.push(
-	benchmark("isValidName - invalid", () => Hardfork.isValidName("unknown")),
+	benchmark("isValidName - invalid", () => isValidName("unknown")),
 );
 
 console.log(
@@ -269,19 +297,19 @@ console.log(
 
 console.log("--- Standard Form ---");
 results.push(
-	benchmark("hasEIP1559", () => Hardfork.hasEIP1559(testForks.recent)),
+	benchmark("hasEIP1559", () => hasEIP1559(testForks.recent)),
 );
 results.push(
-	benchmark("hasEIP3855", () => Hardfork.hasEIP3855(testForks.recent)),
+	benchmark("hasEIP3855", () => hasEIP3855(testForks.recent)),
 );
 results.push(
-	benchmark("hasEIP4844", () => Hardfork.hasEIP4844(testForks.recent)),
+	benchmark("hasEIP4844", () => hasEIP4844(testForks.recent)),
 );
 results.push(
-	benchmark("hasEIP1153", () => Hardfork.hasEIP1153(testForks.recent)),
+	benchmark("hasEIP1153", () => hasEIP1153(testForks.recent)),
 );
 results.push(
-	benchmark("isPostMerge", () => Hardfork.isPostMerge(testForks.recent)),
+	benchmark("isPostMerge", () => isPostMerge(testForks.recent)),
 );
 
 console.log(
@@ -297,26 +325,26 @@ console.log(
 console.log("\n--- Convenience Form ---");
 results.push(
 	benchmark("supportsEIP1559.call", () =>
-		Hardfork.supportsEIP1559.call(testForks.recent),
+		supportsEIP1559.call(testForks.recent),
 	),
 );
 results.push(
 	benchmark("supportsPUSH0.call", () =>
-		Hardfork.supportsPUSH0.call(testForks.recent),
+		supportsPUSH0.call(testForks.recent),
 	),
 );
 results.push(
 	benchmark("supportsBlobs.call", () =>
-		Hardfork.supportsBlobs.call(testForks.recent),
+		supportsBlobs.call(testForks.recent),
 	),
 );
 results.push(
 	benchmark("supportsTransientStorage.call", () =>
-		Hardfork.supportsTransientStorage.call(testForks.recent),
+		supportsTransientStorage.call(testForks.recent),
 	),
 );
 results.push(
-	benchmark("isPoS.call", () => Hardfork.isPoS.call(testForks.recent)),
+	benchmark("isPoS.call", () => isPoS.call(testForks.recent)),
 );
 
 console.log(
@@ -343,8 +371,8 @@ console.log(
 );
 
 console.log("--- Collection Operations ---");
-results.push(benchmark("allNames", () => Hardfork.allNames()));
-results.push(benchmark("allIds", () => Hardfork.allIds()));
+results.push(benchmark("allNames", () => allNames()));
+results.push(benchmark("allIds", () => allIds()));
 
 console.log(
 	results
@@ -359,22 +387,22 @@ console.log(
 console.log("\n--- Range Generation ---");
 results.push(
 	benchmark("range - short", () =>
-		Hardfork.range(Hardfork.Id.BERLIN, Hardfork.Id.LONDON),
+		range(Id.BERLIN, Id.LONDON),
 	),
 );
 results.push(
 	benchmark("range - medium", () =>
-		Hardfork.range(Hardfork.Id.BERLIN, Hardfork.Id.SHANGHAI),
+		range(Id.BERLIN, Id.SHANGHAI),
 	),
 );
 results.push(
 	benchmark("range - long", () =>
-		Hardfork.range(Hardfork.Id.FRONTIER, Hardfork.Id.PRAGUE),
+		range(Id.FRONTIER, Id.PRAGUE),
 	),
 );
 results.push(
 	benchmark("range - descending", () =>
-		Hardfork.range(Hardfork.Id.SHANGHAI, Hardfork.Id.BERLIN),
+		range(Id.SHANGHAI, Id.BERLIN),
 	),
 );
 
@@ -404,26 +432,26 @@ console.log(
 console.log("--- Common Patterns ---");
 results.push(
 	benchmark("parse then check EIP-1559", () => {
-		const fork = Hardfork.fromString("cancun");
+		const fork = fromString("cancun");
 		if (fork !== undefined) {
-			Hardfork.hasEIP1559(fork);
+			hasEIP1559(fork);
 		}
 	}),
 );
 results.push(
 	benchmark("check multiple features", () => {
 		const fork = testForks.recent;
-		Hardfork.hasEIP1559(fork);
-		Hardfork.hasEIP3855(fork);
-		Hardfork.hasEIP4844(fork);
-		Hardfork.isPostMerge(fork);
+		hasEIP1559(fork);
+		hasEIP3855(fork);
+		hasEIP4844(fork);
+		isPostMerge(fork);
 	}),
 );
 results.push(
 	benchmark("version compatibility check", () => {
-		const minVersion = Hardfork.Id.LONDON;
+		const minVersion = Id.LONDON;
 		const currentVersion = testForks.recent;
-		Hardfork.isAtLeast(currentVersion, minVersion);
+		isAtLeast(currentVersion, minVersion);
 	}),
 );
 

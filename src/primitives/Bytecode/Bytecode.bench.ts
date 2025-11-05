@@ -4,7 +4,22 @@
  * Measures performance of bytecode analysis and manipulation operations
  */
 
-import * as Bytecode from "./Bytecode.js";
+import { analyze } from "./analyze.js";
+import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import { equals } from "./equals.js";
+import { extractRuntime } from "./extractRuntime.js";
+import { formatInstructions } from "./formatInstructions.js";
+import { fromHex } from "./fromHex.js";
+import { getPushSize } from "./getPushSize.js";
+import { hasMetadata } from "./hasMetadata.js";
+import { isPush } from "./isPush.js";
+import { isTerminator } from "./isTerminator.js";
+import { isValidJumpDest } from "./isValidJumpDest.js";
+import { parseInstructions } from "./parseInstructions.js";
+import { size } from "./size.js";
+import { stripMetadata } from "./stripMetadata.js";
+import { toHex } from "./toHex.js";
+import { validate } from "./validate.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -128,22 +143,22 @@ console.log(
 console.log("--- analyzeJumpDestinations - varying sizes ---");
 results.push(
 	benchmark("analyzeJumpDestinations - small (100b)", () =>
-		Bytecode.analyzeJumpDestinations(smallCode),
+		analyzeJumpDestinations(smallCode),
 	),
 );
 results.push(
 	benchmark("analyzeJumpDestinations - medium (1kb)", () =>
-		Bytecode.analyzeJumpDestinations(mediumCode),
+		analyzeJumpDestinations(mediumCode),
 	),
 );
 results.push(
 	benchmark("analyzeJumpDestinations - large (10kb)", () =>
-		Bytecode.analyzeJumpDestinations(largeCode),
+		analyzeJumpDestinations(largeCode),
 	),
 );
 results.push(
 	benchmark("analyzeJumpDestinations - huge (50kb)", () =>
-		Bytecode.analyzeJumpDestinations(hugeCode),
+		analyzeJumpDestinations(hugeCode),
 	),
 );
 
@@ -160,17 +175,17 @@ console.log(
 console.log("\n--- isValidJumpDest ---");
 results.push(
 	benchmark("isValidJumpDest - small", () =>
-		Bytecode.isValidJumpDest(smallCode, 10),
+		isValidJumpDest(smallCode, 10),
 	),
 );
 results.push(
 	benchmark("isValidJumpDest - medium", () =>
-		Bytecode.isValidJumpDest(mediumCode, 500),
+		isValidJumpDest(mediumCode, 500),
 	),
 );
 results.push(
 	benchmark("isValidJumpDest - large", () =>
-		Bytecode.isValidJumpDest(largeCode, 5000),
+		isValidJumpDest(largeCode, 5000),
 	),
 );
 
@@ -199,16 +214,16 @@ console.log(
 
 console.log("--- validate - varying sizes ---");
 results.push(
-	benchmark("validate - small (100b)", () => Bytecode.validate(smallCode)),
+	benchmark("validate - small (100b)", () => validate(smallCode)),
 );
 results.push(
-	benchmark("validate - medium (1kb)", () => Bytecode.validate(mediumCode)),
+	benchmark("validate - medium (1kb)", () => validate(mediumCode)),
 );
 results.push(
-	benchmark("validate - large (10kb)", () => Bytecode.validate(largeCode)),
+	benchmark("validate - large (10kb)", () => validate(largeCode)),
 );
 results.push(
-	benchmark("validate - huge (50kb)", () => Bytecode.validate(hugeCode)),
+	benchmark("validate - huge (50kb)", () => validate(hugeCode)),
 );
 
 console.log(
@@ -225,11 +240,11 @@ console.log("\n--- validate - edge cases ---");
 const invalidPush = new Uint8Array([0x60]); // Incomplete PUSH
 results.push(
 	benchmark("validate - invalid (incomplete PUSH)", () =>
-		Bytecode.validate(invalidPush),
+		validate(invalidPush),
 	),
 );
 results.push(
-	benchmark("validate - simple pattern", () => Bytecode.validate(simplePush)),
+	benchmark("validate - simple pattern", () => validate(simplePush)),
 );
 
 console.log(
@@ -258,22 +273,22 @@ console.log(
 console.log("--- parseInstructions - varying sizes ---");
 results.push(
 	benchmark("parseInstructions - small (100b)", () =>
-		Bytecode.parseInstructions(smallCode),
+		parseInstructions(smallCode),
 	),
 );
 results.push(
 	benchmark("parseInstructions - medium (1kb)", () =>
-		Bytecode.parseInstructions(mediumCode),
+		parseInstructions(mediumCode),
 	),
 );
 results.push(
 	benchmark("parseInstructions - large (10kb)", () =>
-		Bytecode.parseInstructions(largeCode),
+		parseInstructions(largeCode),
 	),
 );
 results.push(
 	benchmark("parseInstructions - huge (50kb)", () =>
-		Bytecode.parseInstructions(hugeCode),
+		parseInstructions(hugeCode),
 	),
 );
 
@@ -290,12 +305,12 @@ console.log(
 console.log("\n--- parseInstructions - patterns ---");
 results.push(
 	benchmark("parseInstructions - simple PUSH", () =>
-		Bytecode.parseInstructions(simplePush),
+		parseInstructions(simplePush),
 	),
 );
 results.push(
 	benchmark("parseInstructions - with JUMPDESTs", () =>
-		Bytecode.parseInstructions(pushWithJumpdest),
+		parseInstructions(pushWithJumpdest),
 	),
 );
 
@@ -324,16 +339,16 @@ console.log(
 
 console.log("--- analyze - full bytecode analysis ---");
 results.push(
-	benchmark("analyze - small (100b)", () => Bytecode.analyze(smallCode)),
+	benchmark("analyze - small (100b)", () => analyze(smallCode)),
 );
 results.push(
-	benchmark("analyze - medium (1kb)", () => Bytecode.analyze(mediumCode)),
+	benchmark("analyze - medium (1kb)", () => analyze(mediumCode)),
 );
 results.push(
-	benchmark("analyze - large (10kb)", () => Bytecode.analyze(largeCode)),
+	benchmark("analyze - large (10kb)", () => analyze(largeCode)),
 );
 results.push(
-	benchmark("analyze - huge (50kb)", () => Bytecode.analyze(hugeCode)),
+	benchmark("analyze - huge (50kb)", () => analyze(hugeCode)),
 );
 
 console.log(
@@ -361,13 +376,13 @@ console.log(
 
 console.log("--- toHex - varying sizes ---");
 results.push(
-	benchmark("toHex - small (100b)", () => Bytecode.toHex(smallCode)),
+	benchmark("toHex - small (100b)", () => toHex(smallCode)),
 );
 results.push(
-	benchmark("toHex - medium (1kb)", () => Bytecode.toHex(mediumCode)),
+	benchmark("toHex - medium (1kb)", () => toHex(mediumCode)),
 );
 results.push(
-	benchmark("toHex - large (10kb)", () => Bytecode.toHex(largeCode)),
+	benchmark("toHex - large (10kb)", () => toHex(largeCode)),
 );
 
 console.log(
@@ -380,19 +395,19 @@ console.log(
 		.join("\n"),
 );
 
-const smallHex = Bytecode.toHex(smallCode);
-const mediumHex = Bytecode.toHex(mediumCode);
-const largeHex = Bytecode.toHex(largeCode);
+const smallHex = toHex(smallCode);
+const mediumHex = toHex(mediumCode);
+const largeHex = toHex(largeCode);
 
 console.log("\n--- fromHex - varying sizes ---");
 results.push(
-	benchmark("fromHex - small (100b)", () => Bytecode.fromHex(smallHex)),
+	benchmark("fromHex - small (100b)", () => fromHex(smallHex)),
 );
 results.push(
-	benchmark("fromHex - medium (1kb)", () => Bytecode.fromHex(mediumHex)),
+	benchmark("fromHex - medium (1kb)", () => fromHex(mediumHex)),
 );
 results.push(
-	benchmark("fromHex - large (10kb)", () => Bytecode.fromHex(largeHex)),
+	benchmark("fromHex - large (10kb)", () => fromHex(largeHex)),
 );
 
 console.log(
@@ -408,12 +423,12 @@ console.log(
 console.log("\n--- hex round-trip ---");
 results.push(
 	benchmark("hex round-trip - small", () =>
-		Bytecode.fromHex(Bytecode.toHex(smallCode)),
+		fromHex(toHex(smallCode)),
 	),
 );
 results.push(
 	benchmark("hex round-trip - medium", () =>
-		Bytecode.fromHex(Bytecode.toHex(mediumCode)),
+		fromHex(toHex(mediumCode)),
 	),
 );
 
@@ -443,17 +458,17 @@ console.log(
 console.log("--- formatInstructions (disassembly) ---");
 results.push(
 	benchmark("formatInstructions - small (100b)", () =>
-		Bytecode.formatInstructions(smallCode),
+		formatInstructions(smallCode),
 	),
 );
 results.push(
 	benchmark("formatInstructions - medium (1kb)", () =>
-		Bytecode.formatInstructions(mediumCode),
+		formatInstructions(mediumCode),
 	),
 );
 results.push(
 	benchmark("formatInstructions - large (10kb)", () =>
-		Bytecode.formatInstructions(largeCode),
+		formatInstructions(largeCode),
 	),
 );
 
@@ -483,12 +498,12 @@ console.log(
 console.log("--- hasMetadata ---");
 results.push(
 	benchmark("hasMetadata - without metadata", () =>
-		Bytecode.hasMetadata(mediumCode),
+		hasMetadata(mediumCode),
 	),
 );
 results.push(
 	benchmark("hasMetadata - with metadata", () =>
-		Bytecode.hasMetadata(codeWithMetadata),
+		hasMetadata(codeWithMetadata),
 	),
 );
 
@@ -505,12 +520,12 @@ console.log(
 console.log("\n--- stripMetadata ---");
 results.push(
 	benchmark("stripMetadata - without metadata", () =>
-		Bytecode.stripMetadata(mediumCode),
+		stripMetadata(mediumCode),
 	),
 );
 results.push(
 	benchmark("stripMetadata - with metadata", () =>
-		Bytecode.stripMetadata(codeWithMetadata),
+		stripMetadata(codeWithMetadata),
 	),
 );
 
@@ -544,17 +559,17 @@ const largeCode2 = new Uint8Array(largeCode);
 console.log("--- equals - varying sizes ---");
 results.push(
 	benchmark("equals - small (100b)", () =>
-		Bytecode.equals(smallCode, smallCode2),
+		equals(smallCode, smallCode2),
 	),
 );
 results.push(
 	benchmark("equals - medium (1kb)", () =>
-		Bytecode.equals(mediumCode, mediumCode2),
+		equals(mediumCode, mediumCode2),
 	),
 );
 results.push(
 	benchmark("equals - large (10kb)", () =>
-		Bytecode.equals(largeCode, largeCode2),
+		equals(largeCode, largeCode2),
 	),
 );
 
@@ -582,9 +597,9 @@ console.log(
 );
 
 console.log("--- opcode utilities ---");
-results.push(benchmark("isPush", () => Bytecode.isPush(0x60)));
-results.push(benchmark("getPushSize", () => Bytecode.getPushSize(0x7f)));
-results.push(benchmark("isTerminator", () => Bytecode.isTerminator(0xf3)));
+results.push(benchmark("isPush", () => isPush(0x60)));
+results.push(benchmark("getPushSize", () => getPushSize(0x7f)));
+results.push(benchmark("isTerminator", () => isTerminator(0xf3)));
 
 console.log(
 	results
@@ -610,16 +625,16 @@ console.log(
 );
 
 console.log("--- size and extraction ---");
-results.push(benchmark("size - small", () => Bytecode.size(smallCode)));
-results.push(benchmark("size - large", () => Bytecode.size(largeCode)));
+results.push(benchmark("size - small", () => size(smallCode)));
+results.push(benchmark("size - large", () => size(largeCode)));
 results.push(
 	benchmark("extractRuntime - small", () =>
-		Bytecode.extractRuntime(smallCode, 10),
+		extractRuntime(smallCode, 10),
 	),
 );
 results.push(
 	benchmark("extractRuntime - large", () =>
-		Bytecode.extractRuntime(largeCode, 100),
+		extractRuntime(largeCode, 100),
 	),
 );
 

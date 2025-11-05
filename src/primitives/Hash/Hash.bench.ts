@@ -6,7 +6,24 @@
  */
 
 import type { BrandedHash } from "./BrandedHash.js";
-import * as Hash from "./Hash.js";
+import { assert } from "./assert.js";
+import { clone } from "./clone.js";
+import { ZERO } from "./constants.js";
+import { equals } from "./equals.js";
+import { format } from "./format.js";
+import { fromBytes } from "./fromBytes.js";
+import { fromHex } from "./fromHex.js";
+import { isHash } from "./isHash.js";
+import { isValidHex } from "./isValidHex.js";
+import { isZero } from "./isZero.js";
+import { keccak256 } from "./keccak256.js";
+import { keccak256Hex } from "./keccak256Hex.js";
+import { keccak256String } from "./keccak256String.js";
+import { random } from "./random.js";
+import { slice } from "./slice.js";
+import { toBytes } from "./toBytes.js";
+import { toHex } from "./toHex.js";
+import { toString } from "./toString.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -74,10 +91,10 @@ validBytes.fill(1);
 
 const invalidBytes = new Uint8Array(16);
 
-const hash1 = Hash.fromHex(validHex);
-const hash2 = Hash.fromHex(validHex);
-const hash3 = Hash.fromBytes(validBytes);
-const zeroHash = Hash.ZERO;
+const hash1 = fromHex(validHex);
+const hash2 = fromHex(validHex);
+const hash3 = fromBytes(validBytes);
+const zeroHash = ZERO;
 
 // Different data sizes for keccak256 benchmarks
 const emptyData = new Uint8Array(0);
@@ -104,15 +121,15 @@ const results: BenchmarkResult[] = [];
 
 console.log("--- fromHex ---");
 results.push(
-	benchmark("fromHex - with 0x prefix", () => Hash.fromHex(validHex)),
+	benchmark("fromHex - with 0x prefix", () => fromHex(validHex)),
 );
 results.push(
-	benchmark("fromHex - without prefix", () => Hash.fromHex(validHexNoPrefix)),
+	benchmark("fromHex - without prefix", () => fromHex(validHexNoPrefix)),
 );
 results.push(
 	benchmark("fromHex - invalid length", () => {
 		try {
-			Hash.fromHex(invalidHexShort);
+			fromHex(invalidHexShort);
 		} catch {
 			// Expected
 		}
@@ -121,7 +138,7 @@ results.push(
 results.push(
 	benchmark("fromHex - invalid chars", () => {
 		try {
-			Hash.fromHex(invalidHexBadChars);
+			fromHex(invalidHexBadChars);
 		} catch {
 			// Expected
 		}
@@ -139,11 +156,11 @@ console.log(
 );
 
 console.log("\n--- fromBytes ---");
-results.push(benchmark("fromBytes - valid", () => Hash.fromBytes(validBytes)));
+results.push(benchmark("fromBytes - valid", () => fromBytes(validBytes)));
 results.push(
 	benchmark("fromBytes - invalid length", () => {
 		try {
-			Hash.fromBytes(invalidBytes);
+			fromBytes(invalidBytes);
 		} catch {
 			// Expected
 		}
@@ -161,7 +178,7 @@ console.log(
 );
 
 console.log("\n--- from ---");
-results.push(benchmark("from - alias for fromHex", () => Hash.from(validHex)));
+results.push(benchmark("from - alias for fromHex", () => fromHex(validHex)));
 
 console.log(
 	results
@@ -187,7 +204,7 @@ console.log(
 );
 
 console.log("--- toHex ---");
-results.push(benchmark("toHex", () => Hash.toHex(hash1)));
+results.push(benchmark("toHex", () => toHex(hash1)));
 
 console.log(
 	results
@@ -200,7 +217,7 @@ console.log(
 );
 
 console.log("\n--- toBytes ---");
-results.push(benchmark("toBytes", () => Hash.toBytes(hash1)));
+results.push(benchmark("toBytes", () => toBytes(hash1)));
 
 console.log(
 	results
@@ -213,7 +230,7 @@ console.log(
 );
 
 console.log("\n--- toString ---");
-results.push(benchmark("toString", () => Hash.toString(hash1)));
+results.push(benchmark("toString", () => toString(hash1)));
 
 console.log(
 	results
@@ -239,12 +256,12 @@ console.log(
 );
 
 console.log("--- equals ---");
-results.push(benchmark("equals - same value", () => Hash.equals(hash1, hash2)));
+results.push(benchmark("equals - same value", () => equals(hash1, hash2)));
 results.push(
-	benchmark("equals - different value", () => Hash.equals(hash1, hash3)),
+	benchmark("equals - different value", () => equals(hash1, hash3)),
 );
 results.push(
-	benchmark("equals - zero hash", () => Hash.equals(zeroHash, Hash.ZERO)),
+	benchmark("equals - zero hash", () => equals(zeroHash, ZERO)),
 );
 
 console.log(
@@ -258,8 +275,8 @@ console.log(
 );
 
 console.log("\n--- isZero ---");
-results.push(benchmark("isZero - zero hash", () => Hash.isZero(zeroHash)));
-results.push(benchmark("isZero - non-zero hash", () => Hash.isZero(hash1)));
+results.push(benchmark("isZero - zero hash", () => isZero(zeroHash)));
+results.push(benchmark("isZero - non-zero hash", () => isZero(hash1)));
 
 console.log(
 	results
@@ -285,14 +302,14 @@ console.log(
 );
 
 console.log("--- isHash ---");
-results.push(benchmark("isHash - valid", () => Hash.isHash(hash1)));
+results.push(benchmark("isHash - valid", () => isHash(hash1)));
 results.push(
-	benchmark("isHash - invalid (string)", () => Hash.isHash(validHex)),
+	benchmark("isHash - invalid (string)", () => isHash(validHex)),
 );
 results.push(
-	benchmark("isHash - invalid (wrong length)", () => Hash.isHash(invalidBytes)),
+	benchmark("isHash - invalid (wrong length)", () => isHash(invalidBytes)),
 );
-results.push(benchmark("isHash - invalid (null)", () => Hash.isHash(null)));
+results.push(benchmark("isHash - invalid (null)", () => isHash(null)));
 
 console.log(
 	results
@@ -306,21 +323,21 @@ console.log(
 
 console.log("\n--- isValidHex ---");
 results.push(
-	benchmark("isValidHex - valid with prefix", () => Hash.isValidHex(validHex)),
+	benchmark("isValidHex - valid with prefix", () => isValidHex(validHex)),
 );
 results.push(
 	benchmark("isValidHex - valid without prefix", () =>
-		Hash.isValidHex(validHexNoPrefix),
+		isValidHex(validHexNoPrefix),
 	),
 );
 results.push(
 	benchmark("isValidHex - invalid length", () =>
-		Hash.isValidHex(invalidHexShort),
+		isValidHex(invalidHexShort),
 	),
 );
 results.push(
 	benchmark("isValidHex - invalid chars", () =>
-		Hash.isValidHex(invalidHexBadChars),
+		isValidHex(invalidHexBadChars),
 	),
 );
 
@@ -335,11 +352,11 @@ console.log(
 );
 
 console.log("\n--- assert ---");
-results.push(benchmark("assert - valid", () => Hash.assert(hash1)));
+results.push(benchmark("assert - valid", () => assert(hash1)));
 results.push(
 	benchmark("assert - invalid", () => {
 		try {
-			Hash.assert(validHex);
+			assert(validHex);
 		} catch {
 			// Expected
 		}
@@ -371,16 +388,16 @@ console.log(
 
 console.log("--- keccak256 - different data sizes ---");
 results.push(
-	benchmark("keccak256 - empty data", () => Hash.keccak256(emptyData)),
+	benchmark("keccak256 - empty data", () => keccak256(emptyData)),
 );
 results.push(
-	benchmark("keccak256 - small (32 bytes)", () => Hash.keccak256(smallData)),
+	benchmark("keccak256 - small (32 bytes)", () => keccak256(smallData)),
 );
 results.push(
-	benchmark("keccak256 - medium (1KB)", () => Hash.keccak256(mediumData)),
+	benchmark("keccak256 - medium (1KB)", () => keccak256(mediumData)),
 );
 results.push(
-	benchmark("keccak256 - large (10KB)", () => Hash.keccak256(largeData)),
+	benchmark("keccak256 - large (10KB)", () => keccak256(largeData)),
 );
 
 console.log(
@@ -395,14 +412,14 @@ console.log(
 
 console.log("\n--- keccak256String ---");
 results.push(
-	benchmark("keccak256String - empty", () => Hash.keccak256String("")),
+	benchmark("keccak256String - empty", () => keccak256String("")),
 );
 results.push(
-	benchmark("keccak256String - short", () => Hash.keccak256String("hello")),
+	benchmark("keccak256String - short", () => keccak256String("hello")),
 );
 results.push(
 	benchmark("keccak256String - long", () =>
-		Hash.keccak256String("a".repeat(1000)),
+		keccak256String("a".repeat(1000)),
 	),
 );
 
@@ -418,15 +435,15 @@ console.log(
 
 console.log("\n--- keccak256Hex ---");
 results.push(
-	benchmark("keccak256Hex - short", () => Hash.keccak256Hex("0x1234")),
+	benchmark("keccak256Hex - short", () => keccak256Hex("0x1234")),
 );
 results.push(
-	benchmark("keccak256Hex - hash", () => Hash.keccak256Hex(validHex)),
+	benchmark("keccak256Hex - hash", () => keccak256Hex(validHex)),
 );
 results.push(
 	benchmark("keccak256Hex - invalid", () => {
 		try {
-			Hash.keccak256Hex("0x123");
+			keccak256Hex("0x123");
 		} catch {
 			// Expected
 		}
@@ -457,7 +474,7 @@ console.log(
 );
 
 console.log("--- random ---");
-results.push(benchmark("random", () => Hash.random()));
+results.push(benchmark("random", () => random()));
 
 console.log(
 	results
@@ -470,7 +487,7 @@ console.log(
 );
 
 console.log("\n--- clone ---");
-results.push(benchmark("clone", () => Hash.clone(hash1)));
+results.push(benchmark("clone", () => clone(hash1)));
 
 console.log(
 	results
@@ -483,11 +500,11 @@ console.log(
 );
 
 console.log("\n--- slice ---");
-results.push(benchmark("slice - first 4 bytes", () => Hash.slice(hash1, 0, 4)));
+results.push(benchmark("slice - first 4 bytes", () => slice(hash1, 0, 4)));
 results.push(
-	benchmark("slice - last 4 bytes", () => Hash.slice(hash1, 28, 32)),
+	benchmark("slice - last 4 bytes", () => slice(hash1, 28, 32)),
 );
-results.push(benchmark("slice - middle", () => Hash.slice(hash1, 10, 20)));
+results.push(benchmark("slice - middle", () => slice(hash1, 10, 20)));
 
 console.log(
 	results
@@ -500,9 +517,9 @@ console.log(
 );
 
 console.log("\n--- format ---");
-results.push(benchmark("format - default", () => Hash.format(hash1)));
+results.push(benchmark("format - default", () => format(hash1)));
 results.push(
-	benchmark("format - custom lengths", () => Hash.format(hash1, 10, 8)),
+	benchmark("format - custom lengths", () => format(hash1, 10, 8)),
 );
 
 console.log(
