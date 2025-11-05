@@ -225,4 +225,7 @@ export const Keccak256Wasm = {
 	create2Address,
 	init,
 	isReady,
+	DIGEST_SIZE: 32,
+	RATE: 136,
+	STATE_SIZE: 25,
 };

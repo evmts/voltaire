@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedHex } from "../Hex/index.js";
 import { Address } from "./Address.js";
-import type { BrandedAddress } from "./BrandedAddress/index.js";
 import * as AddressNamespace from "./index.js";
 
 describe("Address", () => {
@@ -645,7 +644,7 @@ describe("Address", () => {
 			const deployer = Address.fromHex(
 				"0x742d35Cc6634C0532925a3b8D39c0E6cfC8C74E4",
 			);
-			const addresses: BrandedAddress[] = [];
+			const addresses = [];
 
 			for (let i = 0n; i < 10n; i++) {
 				const addr = Address.calculateCreateAddress(deployer, i);

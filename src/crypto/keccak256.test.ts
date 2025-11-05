@@ -33,7 +33,7 @@ type Implementation = {
 
 const implementations: Implementation[] = [
 	{ name: "Noble", impl: Keccak256 },
-	{ name: "WASM", impl: Keccak256Wasm },
+	{ name: "WASM", impl: Keccak256Wasm as unknown as typeof Keccak256 },
 ];
 
 function testBoth(testName: string, testFn: (impl: typeof Keccak256) => void) {
@@ -412,7 +412,10 @@ describe("Keccak256 - Cross-validation", () => {
 		for (const sig of signatures) {
 			const nobleResult = Keccak256.selector(sig);
 			const wasmResult = Keccak256Wasm.selector(sig);
-			expect(nobleResult).toEqual(wasmResult);
+			expect(nobleResult.length).toBe(wasmResult.length);
+			for (let i = 0; i < nobleResult.length; i++) {
+				expect(Number(nobleResult[i])).toBe(Number(wasmResult[i]));
+			}
 		}
 	});
 
@@ -435,7 +438,9 @@ describe("Keccak256 - Cross-validation", () => {
 		for (const nonce of nonces) {
 			const nobleResult = Keccak256.contractAddress(sender, nonce);
 			const wasmResult = Keccak256Wasm.contractAddress(sender, nonce);
-			expect(nobleResult).toEqual(wasmResult);
+			for (let i = 0; i < nobleResult.length; i++) {
+				expect(Number(nobleResult[i])).toBe(Number(wasmResult[i]));
+			}
 		}
 	});
 
@@ -449,6 +454,8 @@ describe("Keccak256 - Cross-validation", () => {
 
 		const nobleResult = Keccak256.create2Address(sender, salt, initCodeHash);
 		const wasmResult = Keccak256Wasm.create2Address(sender, salt, initCodeHash);
-		expect(nobleResult).toEqual(wasmResult);
+		for (let i = 0; i < nobleResult.length; i++) {
+			expect(Number(nobleResult[i])).toBe(Number(wasmResult[i]));
+		}
 	});
 });

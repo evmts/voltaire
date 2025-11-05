@@ -1,30 +1,53 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { Blob } from "./index.js";
+import {
+	BYTES_PER_FIELD_ELEMENT,
+	COMMITMENT_VERSION_KZG,
+	FIELD_ELEMENTS_PER_BLOB,
+	GAS_PER_BLOB,
+	MAX_PER_TRANSACTION,
+	SIZE,
+	TARGET_GAS_PER_BLOCK,
+	calculateGas,
+	estimateBlobCount,
+	from,
+	fromData,
+	isValid,
+	isValidVersion,
+	joinData,
+	splitData,
+	toCommitment,
+	toData,
+	toProof,
+	toVersionedHash,
+	verify,
+	verifyBatch,
+} from "./index.js";
+import type { BrandedBlob, Commitment, Proof, VersionedHash } from "./index.js";
 
 // ============================================================================
 // Type Guard Tests
 // ============================================================================
 
-describe("Blob.isValid", () => {
+describe("isValid", () => {
 	it("validates correct blob size", () => {
-		const blob = new Uint8Array(Blob.SIZE);
-		expect(Blob.isValid(blob)).toBe(true);
+		const blob = new Uint8Array(SIZE);
+		expect(isValid(blob)).toBe(true);
 	});
 
 	it("rejects undersized blobs", () => {
 		const blob = new Uint8Array(100);
-		expect(Blob.isValid(blob)).toBe(false);
+		expect(isValid(blob)).toBe(false);
 	});
 
 	it("rejects oversized blobs", () => {
-		const blob = new Uint8Array(Blob.SIZE + 1);
-		expect(Blob.isValid(blob)).toBe(false);
+		const blob = new Uint8Array(SIZE + 1);
+		expect(isValid(blob)).toBe(false);
 	});
 
 	it("type guards correctly", () => {
-		const blob = new Uint8Array(Blob.SIZE);
-		if (Blob.isValid(blob)) {
-			expectTypeOf(blob).toEqualTypeOf<Blob.Data>();
+		const blob = new Uint8Array(SIZE);
+		if (isValid(blob)) {
+			expectTypeOf(blob).toEqualTypeOf<BrandedBlob>();
 		}
 	});
 });
@@ -99,39 +122,39 @@ describe("Blob.VersionedHash.isValid", () => {
 // Data Encoding/Decoding Tests
 // ============================================================================
 
-describe("Blob.fromData", () => {
+describe("fromData", () => {
 	it("encodes simple data", () => {
 		const data = new TextEncoder().encode("Hello, blob!");
-		const blob = Blob.fromData(data);
+		const blob = fromData(data);
 
-		expect(blob.length).toBe(Blob.SIZE);
-		expect(Blob.isValid(blob)).toBe(true);
+		expect(blob.length).toBe(SIZE);
+		expect(isValid(blob)).toBe(true);
 	});
 
 	it("encodes empty data", () => {
 		const data = new Uint8Array(0);
-		const blob = Blob.fromData(data);
+		const blob = fromData(data);
 
-		expect(blob.length).toBe(Blob.SIZE);
-		expect(Blob.isValid(blob)).toBe(true);
+		expect(blob.length).toBe(SIZE);
+		expect(isValid(blob)).toBe(true);
 	});
 
 	it("encodes max size data", () => {
-		const maxSize = Blob.SIZE - 8;
+		const maxSize = SIZE - 8;
 		const data = new Uint8Array(maxSize);
-		const blob = Blob.fromData(data);
+		const blob = fromData(data);
 
-		expect(blob.length).toBe(Blob.SIZE);
+		expect(blob.length).toBe(SIZE);
 	});
 
 	it("throws on oversized data", () => {
-		const oversized = new Uint8Array(Blob.SIZE);
-		expect(() => Blob.fromData(oversized)).toThrow("Data too large");
+		const oversized = new Uint8Array(SIZE);
+		expect(() => fromData(oversized)).toThrow("Data too large");
 	});
 
 	it("includes length prefix", () => {
 		const data = new Uint8Array([1, 2, 3, 4, 5]);
-		const blob = Blob.fromData(data);
+		const blob = fromData(data);
 
 		const view = new DataView(blob.buffer, blob.byteOffset);
 		const length = view.getBigUint64(0, true);
@@ -141,7 +164,7 @@ describe("Blob.fromData", () => {
 
 	it("copies data after length prefix", () => {
 		const data = new Uint8Array([1, 2, 3, 4, 5]);
-		const blob = Blob.fromData(data);
+		const blob = fromData(data);
 
 		expect(blob[8]).toBe(1);
 		expect(blob[9]).toBe(2);
@@ -152,51 +175,51 @@ describe("Blob.fromData", () => {
 
 	it("pads remaining bytes with zeros", () => {
 		const data = new Uint8Array([1, 2, 3]);
-		const blob = Blob.fromData(data);
+		const blob = fromData(data);
 
 		// Check a few bytes after the data
 		expect(blob[11]).toBe(0);
 		expect(blob[100]).toBe(0);
-		expect(blob[Blob.SIZE - 1]).toBe(0);
+		expect(blob[SIZE - 1]).toBe(0);
 	});
 });
 
-describe("Blob.toData", () => {
+describe("toData", () => {
 	it("decodes encoded data", () => {
 		const original = new TextEncoder().encode("Hello, blob!");
-		const blob = Blob.fromData(original);
-		const decoded = Blob.toData(blob);
+		const blob = fromData(original);
+		const decoded = toData(blob);
 
 		expect(decoded).toEqual(original);
 	});
 
 	it("decodes empty data", () => {
 		const original = new Uint8Array(0);
-		const blob = Blob.fromData(original);
-		const decoded = Blob.toData(blob);
+		const blob = fromData(original);
+		const decoded = toData(blob);
 
 		expect(decoded.length).toBe(0);
 	});
 
 	it("decodes max size data", () => {
-		const original = new Uint8Array(Blob.SIZE - 8).fill(0xab);
-		const blob = Blob.fromData(original);
-		const decoded = Blob.toData(blob);
+		const original = new Uint8Array(SIZE - 8).fill(0xab);
+		const blob = fromData(original);
+		const decoded = toData(blob);
 
 		expect(decoded).toEqual(original);
 	});
 
 	it("throws on invalid blob size", () => {
 		const invalid = new Uint8Array(100) as Blob.Data;
-		expect(() => Blob.toData(invalid)).toThrow("Invalid blob size");
+		expect(() => toData(invalid)).toThrow("Invalid blob size");
 	});
 
 	it("throws on invalid length prefix", () => {
-		const blob = new Uint8Array(Blob.SIZE) as Blob.Data;
+		const blob = new Uint8Array(SIZE) as Blob.Data;
 		const view = new DataView(blob.buffer);
-		view.setBigUint64(0, BigInt(Blob.SIZE), true); // Invalid: exceeds max
+		view.setBigUint64(0, BigInt(SIZE), true); // Invalid: exceeds max
 
-		expect(() => Blob.toData(blob)).toThrow("Invalid length prefix");
+		expect(() => toData(blob)).toThrow("Invalid length prefix");
 	});
 
 	it("handles roundtrip encoding", () => {
@@ -208,8 +231,8 @@ describe("Blob.toData", () => {
 		];
 
 		for (const original of testData) {
-			const blob = Blob.fromData(original);
-			const decoded = Blob.toData(blob);
+			const blob = fromData(original);
+			const decoded = toData(blob);
 			expect(decoded).toEqual(original);
 		}
 	});
@@ -219,48 +242,48 @@ describe("Blob.toData", () => {
 // KZG Operations Tests (Not Implemented)
 // ============================================================================
 
-describe("Blob.toCommitment", () => {
+describe("toCommitment", () => {
 	it("throws not implemented error", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
-		expect(() => Blob.toCommitment(blob)).toThrow("Not implemented");
+		const blob = fromData(new Uint8Array([1, 2, 3]));
+		expect(() => toCommitment(blob)).toThrow("Not implemented");
 	});
 
 	it("validates blob size before attempting", () => {
 		const invalid = new Uint8Array(100) as Blob.Data;
-		expect(() => Blob.toCommitment(invalid)).toThrow("Invalid blob size");
+		expect(() => toCommitment(invalid)).toThrow("Invalid blob size");
 	});
 });
 
-describe("Blob.toProof", () => {
+describe("toProof", () => {
 	it("throws not implemented error", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Blob.Commitment;
-		expect(() => Blob.toProof(blob, commitment)).toThrow("Not implemented");
+		expect(() => toProof(blob, commitment)).toThrow("Not implemented");
 	});
 
 	it("validates blob size", () => {
 		const invalid = new Uint8Array(100) as Blob.Data;
 		const commitment = new Uint8Array(48) as Blob.Commitment;
-		expect(() => Blob.toProof(invalid, commitment)).toThrow(
+		expect(() => toProof(invalid, commitment)).toThrow(
 			"Invalid blob size",
 		);
 	});
 
 	it("validates commitment size", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const invalid = new Uint8Array(32) as Blob.Commitment;
-		expect(() => Blob.toProof(blob, invalid)).toThrow(
+		expect(() => toProof(blob, invalid)).toThrow(
 			"Invalid commitment size",
 		);
 	});
 });
 
-describe("Blob.verify", () => {
+describe("verify", () => {
 	it("throws not implemented error", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Blob.Commitment;
 		const proof = new Uint8Array(48) as Blob.Proof;
-		expect(() => Blob.verify(blob, commitment, proof)).toThrow(
+		expect(() => verify(blob, commitment, proof)).toThrow(
 			"Not implemented",
 		);
 	});
@@ -269,57 +292,57 @@ describe("Blob.verify", () => {
 		const invalid = new Uint8Array(100) as Blob.Data;
 		const commitment = new Uint8Array(48) as Blob.Commitment;
 		const proof = new Uint8Array(48) as Blob.Proof;
-		expect(() => Blob.verify(invalid, commitment, proof)).toThrow(
+		expect(() => verify(invalid, commitment, proof)).toThrow(
 			"Invalid blob size",
 		);
 	});
 
 	it("validates commitment size", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const invalid = new Uint8Array(32) as Blob.Commitment;
 		const proof = new Uint8Array(48) as Blob.Proof;
-		expect(() => Blob.verify(blob, invalid, proof)).toThrow(
+		expect(() => verify(blob, invalid, proof)).toThrow(
 			"Invalid commitment size",
 		);
 	});
 
 	it("validates proof size", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Blob.Commitment;
 		const invalid = new Uint8Array(32) as Blob.Proof;
-		expect(() => Blob.verify(blob, commitment, invalid)).toThrow(
+		expect(() => verify(blob, commitment, invalid)).toThrow(
 			"Invalid proof size",
 		);
 	});
 });
 
-describe("Blob.verifyBatch", () => {
+describe("verifyBatch", () => {
 	it("throws not implemented error", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Blob.Commitment;
 		const proof = new Uint8Array(48) as Blob.Proof;
-		expect(() => Blob.verifyBatch([blob], [commitment], [proof])).toThrow(
+		expect(() => verifyBatch([blob], [commitment], [proof])).toThrow(
 			"Not implemented",
 		);
 	});
 
 	it("validates array lengths match", () => {
-		const blob = Blob.fromData(new Uint8Array([1, 2, 3]));
+		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Blob.Commitment;
 		const proof = new Uint8Array(48) as Blob.Proof;
 
-		expect(() => Blob.verifyBatch([blob, blob], [commitment], [proof])).toThrow(
+		expect(() => verifyBatch([blob, blob], [commitment], [proof])).toThrow(
 			"Arrays must have same length",
 		);
 		expect(() =>
-			Blob.verifyBatch([blob], [commitment, commitment], [proof]),
+			verifyBatch([blob], [commitment, commitment], [proof]),
 		).toThrow("Arrays must have same length");
 	});
 
 	it("validates max blobs per transaction", () => {
 		const blobs = Array(7)
 			.fill(null)
-			.map(() => Blob.fromData(new Uint8Array([1, 2, 3])));
+			.map(() => fromData(new Uint8Array([1, 2, 3])));
 		const commitments = Array(7)
 			.fill(null)
 			.map(() => new Uint8Array(48) as Blob.Commitment);
@@ -327,7 +350,7 @@ describe("Blob.verifyBatch", () => {
 			.fill(null)
 			.map(() => new Uint8Array(48) as Blob.Proof);
 
-		expect(() => Blob.verifyBatch(blobs, commitments, proofs)).toThrow(
+		expect(() => verifyBatch(blobs, commitments, proofs)).toThrow(
 			"Too many blobs",
 		);
 	});
@@ -335,7 +358,7 @@ describe("Blob.verifyBatch", () => {
 	it("accepts max blobs per transaction", () => {
 		const blobs = Array(Blob.MAX_PER_TRANSACTION)
 			.fill(null)
-			.map(() => Blob.fromData(new Uint8Array([1, 2, 3])));
+			.map(() => fromData(new Uint8Array([1, 2, 3])));
 		const commitments = Array(Blob.MAX_PER_TRANSACTION)
 			.fill(null)
 			.map(() => new Uint8Array(48) as Blob.Commitment);
@@ -343,7 +366,7 @@ describe("Blob.verifyBatch", () => {
 			.fill(null)
 			.map(() => new Uint8Array(48) as Blob.Proof);
 
-		expect(() => Blob.verifyBatch(blobs, commitments, proofs)).toThrow(
+		expect(() => verifyBatch(blobs, commitments, proofs)).toThrow(
 			"Not implemented",
 		);
 	});
@@ -379,23 +402,23 @@ describe("Blob.toVersionedHash", () => {
 	});
 });
 
-describe("Blob.isValidVersion", () => {
+describe("isValidVersion", () => {
 	it("validates correct version", () => {
 		const hash = new Uint8Array(32) as Blob.VersionedHash;
 		hash[0] = Blob.COMMITMENT_VERSION_KZG;
-		expect(Blob.isValidVersion(hash)).toBe(true);
+		expect(isValidVersion(hash)).toBe(true);
 	});
 
 	it("rejects incorrect version", () => {
 		const hash = new Uint8Array(32) as Blob.VersionedHash;
 		hash[0] = 0x00;
-		expect(Blob.isValidVersion(hash)).toBe(false);
+		expect(isValidVersion(hash)).toBe(false);
 	});
 
 	it("rejects incorrect size", () => {
 		const hash = new Uint8Array(64) as Blob.VersionedHash;
 		hash[0] = Blob.COMMITMENT_VERSION_KZG;
-		expect(Blob.isValidVersion(hash)).toBe(false);
+		expect(isValidVersion(hash)).toBe(false);
 	});
 });
 
@@ -451,7 +474,7 @@ describe("Blob.estimateBlobCount", () => {
 	});
 
 	it("estimates multiple blobs for large data", () => {
-		const maxDataPerBlob = Blob.SIZE - 8;
+		const maxDataPerBlob = SIZE - 8;
 		expect(Blob.estimateBlobCount(maxDataPerBlob + 1)).toBe(2);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * 2)).toBe(2);
 		expect(Blob.estimateBlobCount(maxDataPerBlob * 2 + 1)).toBe(3);
@@ -466,7 +489,7 @@ describe("Blob.estimateBlobCount", () => {
 	});
 
 	it("estimates correctly for exact boundaries", () => {
-		const maxDataPerBlob = Blob.SIZE - 8;
+		const maxDataPerBlob = SIZE - 8;
 		expect(Blob.estimateBlobCount(maxDataPerBlob)).toBe(1);
 		expect(
 			Blob.estimateBlobCount(maxDataPerBlob * Blob.MAX_PER_TRANSACTION),
@@ -480,7 +503,7 @@ describe("Blob.splitData", () => {
 		const blobs = Blob.splitData(data);
 
 		expect(blobs.length).toBeGreaterThan(1);
-		expect(blobs.every((b: Uint8Array) => Blob.isValid(b))).toBe(true);
+		expect(blobs.every((b: Uint8Array) => isValid(b))).toBe(true);
 	});
 
 	it("creates single blob for small data", () => {
@@ -488,11 +511,11 @@ describe("Blob.splitData", () => {
 		const blobs = Blob.splitData(data);
 
 		expect(blobs.length).toBe(1);
-		expect(Blob.isValid(blobs[0]!)).toBe(true);
+		expect(isValid(blobs[0]!)).toBe(true);
 	});
 
 	it("splits at correct boundaries", () => {
-		const maxDataPerBlob = Blob.SIZE - 8;
+		const maxDataPerBlob = SIZE - 8;
 		const data = new Uint8Array(maxDataPerBlob * 2 + 100);
 		const blobs = Blob.splitData(data);
 
@@ -500,7 +523,7 @@ describe("Blob.splitData", () => {
 	});
 
 	it("throws when exceeding max blobs", () => {
-		const maxDataPerBlob = Blob.SIZE - 8;
+		const maxDataPerBlob = SIZE - 8;
 		const tooMuch = new Uint8Array(
 			maxDataPerBlob * (Blob.MAX_PER_TRANSACTION + 1),
 		);
@@ -539,7 +562,7 @@ describe("Blob.joinData", () => {
 
 	it("handles single blob", () => {
 		const original = new Uint8Array(1000).fill(0x12);
-		const blob = Blob.fromData(original);
+		const blob = fromData(original);
 		const joined = Blob.joinData([blob]);
 
 		expect(joined).toEqual(original);
@@ -564,7 +587,7 @@ describe("Blob.joinData", () => {
 	});
 
 	it("roundtrip with max size data", () => {
-		const maxPerTransaction = Blob.MAX_PER_TRANSACTION * (Blob.SIZE - 8);
+		const maxPerTransaction = Blob.MAX_PER_TRANSACTION * (SIZE - 8);
 		const data = new Uint8Array(maxPerTransaction - 100);
 		for (let i = 0; i < data.length; i++) {
 			data[i] = (i * 7) % 256;
@@ -583,8 +606,8 @@ describe("Blob.joinData", () => {
 
 describe("Blob Constants", () => {
 	it("SIZE is correct", () => {
-		expect(Blob.SIZE).toBe(131072);
-		expect(Blob.SIZE).toBe(
+		expect(SIZE).toBe(131072);
+		expect(SIZE).toBe(
 			Blob.FIELD_ELEMENTS_PER_BLOB * Blob.BYTES_PER_FIELD_ELEMENT,
 		);
 	});
@@ -622,17 +645,17 @@ describe("Blob Constants", () => {
 
 describe("Edge Cases", () => {
 	it("handles exact max data size", () => {
-		const maxSize = Blob.SIZE - 8;
+		const maxSize = SIZE - 8;
 		const data = new Uint8Array(maxSize);
-		const blob = Blob.fromData(data);
-		const decoded = Blob.toData(blob);
+		const blob = fromData(data);
+		const decoded = toData(blob);
 
 		expect(decoded.length).toBe(maxSize);
 		expect(decoded).toEqual(data);
 	});
 
 	it("handles data splitting at max transaction capacity", () => {
-		const maxDataPerBlob = Blob.SIZE - 8;
+		const maxDataPerBlob = SIZE - 8;
 		const data = new Uint8Array(maxDataPerBlob * Blob.MAX_PER_TRANSACTION);
 		const blobs = Blob.splitData(data);
 
@@ -642,8 +665,8 @@ describe("Edge Cases", () => {
 	it("handles unicode text encoding", () => {
 		const text = "Hello 世界 🌍 Ethereum!";
 		const original = new TextEncoder().encode(text);
-		const blob = Blob.fromData(original);
-		const decoded = Blob.toData(blob);
+		const blob = fromData(original);
+		const decoded = toData(blob);
 		const result = new TextDecoder().decode(decoded);
 
 		expect(result).toBe(text);
@@ -658,8 +681,8 @@ describe("Edge Cases", () => {
 		];
 
 		for (const pattern of patterns) {
-			const blob = Blob.fromData(pattern);
-			const decoded = Blob.toData(blob);
+			const blob = fromData(pattern);
+			const decoded = toData(blob);
 			expect(decoded).toEqual(pattern);
 		}
 	});
@@ -669,12 +692,12 @@ describe("Edge Cases", () => {
 		const data2 = new TextEncoder().encode("Second blob");
 		const data3 = new TextEncoder().encode("Third blob");
 
-		const blob1 = Blob.fromData(data1);
-		const blob2 = Blob.fromData(data2);
-		const blob3 = Blob.fromData(data3);
+		const blob1 = fromData(data1);
+		const blob2 = fromData(data2);
+		const blob3 = fromData(data3);
 
-		expect(Blob.toData(blob1)).toEqual(data1);
-		expect(Blob.toData(blob2)).toEqual(data2);
-		expect(Blob.toData(blob3)).toEqual(data3);
+		expect(toData(blob1)).toEqual(data1);
+		expect(toData(blob2)).toEqual(data2);
+		expect(toData(blob3)).toEqual(data3);
 	});
 });

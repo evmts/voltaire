@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Hash } from "./Hash.js";
+import { Hash } from "./index.js";
 
 describe("Hash", () => {
 	describe("fromHex", () => {
@@ -142,7 +142,7 @@ describe("Hash", () => {
 	describe("ZERO", () => {
 		it("is 32 bytes of zeros", () => {
 			expect(Hash.ZERO.length).toBe(32);
-			expect(Hash.ZERO.every((b) => b === 0)).toBe(true);
+			expect(Hash.ZERO.every((b: number) => b === 0)).toBe(true);
 		});
 	});
 
