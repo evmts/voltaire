@@ -48,7 +48,7 @@ export function hash(domain) {
 
 	return hashStruct(
 		"EIP712Domain",
-		/** @type {import('../BrandedEIP712.js').Message} */ (domainValues),
+		/** @type {any} */ (domainValues),
 		types,
 	);
 }
