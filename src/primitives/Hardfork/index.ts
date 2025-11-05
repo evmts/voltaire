@@ -1,5 +1,5 @@
 // @ts-nocheck
-import * as BrandedHardforkNamespace from "./BrandedHardfork/index.js";
+import * as BrandedHardfork from "./BrandedHardfork/index.js";
 
 // Re-export BrandedHardfork type and constants
 export type { BrandedHardfork } from "./BrandedHardfork/index.js";

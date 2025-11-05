@@ -1,4 +1,4 @@
-import type { BrandedEventLog } from "./BrandedEventLog.js";
+import type { BrandedEventLog } from "./BrandedEventLog/BrandedEventLog.js";
 import type { create } from "./create.js";
 import type { matchesAddress } from "./matchesAddress.js";
 import type { matchesFilter } from "./matchesFilter.js";

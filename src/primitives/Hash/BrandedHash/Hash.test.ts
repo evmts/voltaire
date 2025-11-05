@@ -61,21 +61,21 @@ describe("Hash", () => {
 			const bytes = new Uint8Array(32);
 			bytes[0] = 0xaa;
 			bytes[31] = 0xbb;
-			const hash = Hash.fromBytes(bytes);
+			const hash = fromBytes(bytes);
 			expect(hash.length).toBe(32);
 			expect(hash[0]).toBe(0xaa);
 			expect(hash[31]).toBe(0xbb);
 		});
 
 		it("throws on invalid byte length", () => {
-			expect(() => Hash.fromBytes(new Uint8Array(20))).toThrow(
+			expect(() => fromBytes(new Uint8Array(20))).toThrow(
 				"Hash must be 32 bytes",
 			);
 		});
 
 		it("creates copy of input bytes", () => {
 			const bytes = new Uint8Array(32);
-			const hash = Hash.fromBytes(bytes);
+			const hash = fromBytes(bytes);
 			bytes[0] = 0xff;
 			expect(hash[0]).toBe(0);
 		});
@@ -83,10 +83,10 @@ describe("Hash", () => {
 
 	describe("toHex", () => {
 		it("converts hash to hex string", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const hex = Hash.toHex(hash);
+			const hex = toHex(hash);
 			expect(hex).toBe(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
@@ -96,47 +96,47 @@ describe("Hash", () => {
 			const bytes = new Uint8Array(32);
 			bytes[0] = 0x01;
 			bytes[1] = 0x0a;
-			const hash = Hash.fromBytes(bytes);
-			const hex = Hash.toHex(hash);
+			const hash = fromBytes(bytes);
+			const hex = toHex(hash);
 			expect(hex.slice(0, 8)).toBe("0x010a00");
 		});
 	});
 
 	describe("equals", () => {
 		it("returns true for equal hashes", () => {
-			const a = Hash.fromHex(
+			const a = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const b = Hash.fromHex(
+			const b = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			expect(Hash.equals(a, b)).toBe(true);
+			expect(equals(a, b)).toBe(true);
 		});
 
 		it("returns false for different hashes", () => {
-			const a = Hash.fromHex(
+			const a = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const b = Hash.fromHex(
+			const b = fromHex(
 				"0x0000000000000000000000000000000000000000000000000000000000000000",
 			);
-			expect(Hash.equals(a, b)).toBe(false);
+			expect(equals(a, b)).toBe(false);
 		});
 
 		it("uses constant time comparison", () => {
-			const a = Hash.fromHex(
+			const a = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const b = Hash.fromHex(
+			const b = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdee",
 			);
-			expect(Hash.equals(a, b)).toBe(false);
+			expect(equals(a, b)).toBe(false);
 		});
 	});
 
 	describe("from", () => {
 		it("creates hash from hex string", () => {
-			const hash = Hash.from(
+			const hash = from(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
 			expect(hash.length).toBe(32);
@@ -146,90 +146,90 @@ describe("Hash", () => {
 
 	describe("isHash", () => {
 		it("returns true for valid hash", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			expect(Hash.isHash(hash)).toBe(true);
+			expect(isHash(hash)).toBe(true);
 		});
 
 		it("returns false for non-hash", () => {
-			expect(Hash.isHash("not a hash")).toBe(false);
-			expect(Hash.isHash(new Uint8Array(20))).toBe(false);
-			expect(Hash.isHash(null)).toBe(false);
+			expect(isHash("not a hash")).toBe(false);
+			expect(isHash(new Uint8Array(20))).toBe(false);
+			expect(isHash(null)).toBe(false);
 		});
 	});
 
 	describe("ZERO", () => {
 		it("is 32 bytes of zeros", () => {
-			expect(Hash.ZERO.length).toBe(32);
-			expect(Hash.ZERO.every((b: number) => b === 0)).toBe(true);
+			expect(ZERO.length).toBe(32);
+			expect(ZERO.every((b: number) => b === 0)).toBe(true);
 		});
 	});
 
 	describe("keccak256", () => {
 		it("hashes empty bytes", () => {
-			const hash = Hash.keccak256(new Uint8Array(0));
+			const hash = keccak256(new Uint8Array(0));
 			expect(hash.length).toBe(32);
-			expect(Hash.isHash(hash)).toBe(true);
+			expect(isHash(hash)).toBe(true);
 		});
 
 		it("hashes data consistently", () => {
 			const data = new Uint8Array([1, 2, 3, 4]);
-			const hash1 = Hash.keccak256(data);
-			const hash2 = Hash.keccak256(data);
-			expect(Hash.equals(hash1, hash2)).toBe(true);
+			const hash1 = keccak256(data);
+			const hash2 = keccak256(data);
+			expect(equals(hash1, hash2)).toBe(true);
 		});
 
 		it("produces different hashes for different data", () => {
 			const data1 = new Uint8Array([1, 2, 3]);
 			const data2 = new Uint8Array([1, 2, 4]);
-			const hash1 = Hash.keccak256(data1);
-			const hash2 = Hash.keccak256(data2);
-			expect(Hash.equals(hash1, hash2)).toBe(false);
+			const hash1 = keccak256(data1);
+			const hash2 = keccak256(data2);
+			expect(equals(hash1, hash2)).toBe(false);
 		});
 	});
 
 	describe("keccak256String", () => {
 		it("hashes empty string", () => {
-			const hash = Hash.keccak256String("");
+			const hash = keccak256String("");
 			expect(hash.length).toBe(32);
-			expect(Hash.isHash(hash)).toBe(true);
+			expect(isHash(hash)).toBe(true);
 		});
 
 		it("hashes string consistently", () => {
-			const hash1 = Hash.keccak256String("hello");
-			const hash2 = Hash.keccak256String("hello");
-			expect(Hash.equals(hash1, hash2)).toBe(true);
+			const hash1 = keccak256String("hello");
+			const hash2 = keccak256String("hello");
+			expect(equals(hash1, hash2)).toBe(true);
 		});
 
 		it("produces different hashes for different strings", () => {
-			const hash1 = Hash.keccak256String("hello");
-			const hash2 = Hash.keccak256String("world");
-			expect(Hash.equals(hash1, hash2)).toBe(false);
+			const hash1 = keccak256String("hello");
+			const hash2 = keccak256String("world");
+			expect(equals(hash1, hash2)).toBe(false);
 		});
 	});
 
 	describe("keccak256Hex", () => {
 		it("hashes hex string with 0x prefix", () => {
-			const hash = Hash.keccak256Hex("0x1234");
+			const hash = keccak256Hex("0x1234");
 			expect(hash.length).toBe(32);
-			expect(Hash.isHash(hash)).toBe(true);
+			expect(isHash(hash)).toBe(true);
 		});
 
 		it("hashes hex string without 0x prefix", () => {
-			const hash = Hash.keccak256Hex("1234");
+			const hash = keccak256Hex("1234");
 			expect(hash.length).toBe(32);
 		});
 
 		it("throws on odd length hex", () => {
-			expect(() => Hash.keccak256Hex("0x123")).toThrow("even length");
+			expect(() => keccak256Hex("0x123")).toThrow("even length");
 		});
 
 		it("produces same hash as keccak256", () => {
 			const data = new Uint8Array([0x12, 0x34]);
-			const hash1 = Hash.keccak256(data);
-			const hash2 = Hash.keccak256Hex("0x1234");
-			expect(Hash.equals(hash1, hash2)).toBe(true);
+			const hash1 = keccak256(data);
+			const hash2 = keccak256Hex("0x1234");
+			expect(equals(hash1, hash2)).toBe(true);
 		});
 	});
 
@@ -237,22 +237,22 @@ describe("Hash", () => {
 		it("returns true for valid hash hex", () => {
 			const hex =
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-			expect(Hash.isValidHex(hex)).toBe(true);
+			expect(isValidHex(hex)).toBe(true);
 		});
 
 		it("returns true for valid hash hex without 0x", () => {
 			const hex =
 				"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-			expect(Hash.isValidHex(hex)).toBe(true);
+			expect(isValidHex(hex)).toBe(true);
 		});
 
 		it("returns false for wrong length", () => {
-			expect(Hash.isValidHex("0x1234")).toBe(false);
+			expect(isValidHex("0x1234")).toBe(false);
 		});
 
 		it("returns false for invalid characters", () => {
 			expect(
-				Hash.isValidHex(
+				isValidHex(
 					"0xzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
 				),
 			).toBe(false);
@@ -261,50 +261,50 @@ describe("Hash", () => {
 
 	describe("assert", () => {
 		it("does not throw for valid hash", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			expect(() => Hash.assert(hash)).not.toThrow();
+			expect(() => assert(hash)).not.toThrow();
 		});
 
 		it("throws for invalid hash", () => {
-			expect(() => Hash.assert(new Uint8Array(20))).toThrow();
+			expect(() => assert(new Uint8Array(20))).toThrow();
 		});
 
 		it("throws for non-Uint8Array", () => {
-			expect(() => Hash.assert("not a hash" as any)).toThrow();
+			expect(() => assert("not a hash" as any)).toThrow();
 		});
 	});
 
 	describe("random", () => {
 		it("creates random 32-byte hash", () => {
-			const hash = Hash.random();
+			const hash = random();
 			expect(hash.length).toBe(32);
-			expect(Hash.isHash(hash)).toBe(true);
+			expect(isHash(hash)).toBe(true);
 		});
 
 		it("creates different hashes", () => {
-			const hash1 = Hash.random();
-			const hash2 = Hash.random();
-			expect(Hash.equals(hash1, hash2)).toBe(false);
+			const hash1 = random();
+			const hash2 = random();
+			expect(equals(hash1, hash2)).toBe(false);
 		});
 	});
 
 	describe("clone", () => {
 		it("creates copy of hash", () => {
-			const original = Hash.fromHex(
+			const original = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const copy = Hash.clone(original);
-			expect(Hash.equals(original, copy)).toBe(true);
+			const copy = clone(original);
+			expect(equals(original, copy)).toBe(true);
 			expect(original).not.toBe(copy);
 		});
 
 		it("copy is independent", () => {
-			const original = Hash.fromHex(
+			const original = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const copy = Hash.clone(original);
+			const copy = clone(original);
 			// Modify original
 			(original as any as Uint8Array)[0] = 0xff;
 			expect(copy[0]).toBe(0x12);
@@ -313,10 +313,10 @@ describe("Hash", () => {
 
 	describe("slice", () => {
 		it("extracts portion of hash", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const slice = Hash.slice(hash, 0, 4);
+			const slice = slice(hash, 0, 4);
 			expect(slice.length).toBe(4);
 			expect(slice[0]).toBe(0x12);
 			expect(slice[1]).toBe(0x34);
@@ -325,10 +325,10 @@ describe("Hash", () => {
 		});
 
 		it("extracts end portion", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const slice = Hash.slice(hash, 28);
+			const slice = slice(hash, 28);
 			expect(slice.length).toBe(4);
 			expect(slice[0]).toBe(0x90);
 			expect(slice[3]).toBe(0xef);
@@ -337,10 +337,10 @@ describe("Hash", () => {
 
 	describe("format", () => {
 		it("formats hash with truncation", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const formatted = Hash.format(hash);
+			const formatted = format(hash);
 			expect(formatted).toContain("0x1234");
 			expect(formatted).toContain("cdef");
 			expect(formatted).toContain("...");
@@ -349,19 +349,19 @@ describe("Hash", () => {
 
 	describe("toBytes", () => {
 		it("returns copy of hash", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const bytes = Hash.toBytes(hash);
+			const bytes = toBytes(hash);
 			expect(bytes.length).toBe(32);
 			expect(bytes[0]).toBe(0x12);
 		});
 
 		it("copy is independent", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 			);
-			const bytes = Hash.toBytes(hash);
+			const bytes = toBytes(hash);
 			bytes[0] = 0xff;
 			expect(hash[0]).toBe(0x12);
 		});
@@ -369,14 +369,14 @@ describe("Hash", () => {
 
 	describe("isZero", () => {
 		it("returns true for zero hash", () => {
-			expect(Hash.isZero(Hash.ZERO)).toBe(true);
+			expect(isZero(ZERO)).toBe(true);
 		});
 
 		it("returns false for non-zero hash", () => {
-			const hash = Hash.fromHex(
+			const hash = fromHex(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			);
-			expect(Hash.isZero(hash)).toBe(false);
+			expect(isZero(hash)).toBe(false);
 		});
 	});
 });
