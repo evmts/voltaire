@@ -1,6 +1,5 @@
 /**
  * @typedef {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} BrandedAddress
- * @typedef {import('../Hash/index.js').Hash} Hash
  * @typedef {import('../Hash/index.js').BrandedHash} BrandedHash
  * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
  */
@@ -10,7 +9,7 @@
  *
  * @param {Object} params - Event log parameters
  * @param {BrandedAddress} params.address - Contract address
- * @param {readonly Hash[]} params.topics - Event topics
+ * @param {readonly BrandedHash[]} params.topics - Event topics
  * @param {Uint8Array} params.data - Event data
  * @param {bigint} [params.blockNumber] - Block number
  * @param {BrandedHash} [params.transactionHash] - Transaction hash

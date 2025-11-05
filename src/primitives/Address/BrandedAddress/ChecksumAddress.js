@@ -1,4 +1,4 @@
-import { keccak256 } from "../../Hash/keccak256.js";
+import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
 import { fromHex } from "./fromHex.js";
 import { isValid as isValidAddress } from "./isValid.js";
 import { toHex } from "./toHex.js";

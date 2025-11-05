@@ -4,7 +4,7 @@ import { Error } from "./errors.js";
 import { isData } from "./isData.js";
 
 /**
- * @typedef {Uint8Array | import('./BrandedRlp.js').BrandedRlp | Encodable[]} Encodable
+ * @typedef {Uint8Array | import('./BrandedRlp.js').BrandedRlp | Array<Uint8Array | import('./BrandedRlp.js').BrandedRlp | any>} Encodable
  */
 
 /**

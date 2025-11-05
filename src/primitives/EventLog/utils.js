@@ -1,6 +1,5 @@
 /**
  * @typedef {import('../Address/index.js').BrandedAddress} BrandedAddress
- * @typedef {import('../Hash/index.js').Hash} Hash
  * @typedef {import('../Hash/index.js').BrandedHash} BrandedHash
  */
 
@@ -8,7 +7,7 @@
  * Compare two hashes for equality
  * @internal
  * @param {BrandedHash} a
- * @param {Hash} b
+ * @param {BrandedHash} b
  * @returns {boolean}
  */
 export function hashEquals(a, b) {

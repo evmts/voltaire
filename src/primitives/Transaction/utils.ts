@@ -1,7 +1,7 @@
 import { Secp256k1 } from "../../crypto/Secp256k1/index.js";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import { fromPublicKey } from "../Address/BrandedAddress/fromPublicKey.js";
-import type { BrandedHash, Hash } from "../Hash/index.js";
+import type { BrandedHash } from "../Hash/index.js";
 import type { BrandedRlp } from "../Rlp/BrandedRlp.js";
 
 type Encodable = Uint8Array | BrandedRlp | Encodable[];
@@ -97,7 +97,7 @@ export function recoverAddress(
 export function encodeAccessList(
 	accessList: readonly {
 		address: BrandedAddress;
-		storageKeys: readonly Hash[];
+		storageKeys: readonly BrandedHash[];
 	}[],
 ): Encodable[] {
 	return accessList.map((item) => [

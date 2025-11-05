@@ -5,10 +5,15 @@ import { compare } from "./BrandedAddress/compare.js";
 import { SIZE } from "./BrandedAddress/constants.js";
 import { equals } from "./BrandedAddress/equals.js";
 import { format } from "./BrandedAddress/format.js";
+// @ts-expect-error - Used in typeof expression
 import { from } from "./BrandedAddress/from.js";
+// @ts-expect-error - Used in typeof expression
 import { fromAbiEncoded } from "./BrandedAddress/fromAbiEncoded.js";
+// @ts-expect-error - Used in typeof expression
 import { fromHex } from "./BrandedAddress/fromHex.js";
+// @ts-expect-error - Used in typeof expression
 import { fromNumber } from "./BrandedAddress/fromNumber.js";
+// @ts-expect-error - Used in typeof expression
 import { fromPublicKey } from "./BrandedAddress/fromPublicKey.js";
 import { greaterThan } from "./BrandedAddress/greaterThan.js";
 import { is } from "./BrandedAddress/is.js";

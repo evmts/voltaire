@@ -1,5 +1,5 @@
 /**
- * @typedef {import('../Hash/index.js').Hash} Hash
+ * @typedef {import('../Hash/index.js').BrandedHash} BrandedHash
  * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
  */
 
@@ -10,7 +10,7 @@ import { getIndexedTopics } from "./getIndexedTopics.js";
  *
  * @template {BrandedEventLog} T
  * @param {T} log - Event log
- * @returns {readonly Hash[]} Array of indexed topic hashes
+ * @returns {readonly BrandedHash[]} Array of indexed topic hashes
  *
  * @example
  * ```typescript
