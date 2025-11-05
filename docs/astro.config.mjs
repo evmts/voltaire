@@ -21,14 +21,6 @@ export default defineConfig({
 			],
 			sidebar: [
 				{
-					label: 'Getting Started',
-					items: [
-						{ label: 'Introduction', slug: 'index' },
-						{ label: 'Installation', slug: 'getting-started/installation' },
-						{ label: 'Quick Start', slug: 'getting-started/quick-start' },
-					],
-				},
-				{
 					label: 'Core Primitives',
 					autogenerate: { directory: 'primitives' },
 				},

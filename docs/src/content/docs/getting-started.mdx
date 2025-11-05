@@ -1,0 +1,346 @@
+---
+title: Getting Started
+description: Learn the core patterns and architecture of Voltaire
+---
+
+import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
+
+# Getting Started
+
+Voltaire is a modern Ethereum library built with performance, type safety, and tree-shaking as first-class priorities.
+
+## Installation
+
+```bash
+npm install @tevm/voltaire
+```
+
+```bash
+bun add @tevm/voltaire
+```
+
+```bash
+pnpm install @tevm/voltaire
+```
+
+### Zig Installation
+
+```bash
+# Install specific version (recommended)
+zig fetch --save https://github.com/evmts/voltaire/archive/refs/tags/v0.1.0.tar.gz
+
+# Install latest from main branch
+zig fetch --save git+https://github.com/evmts/voltaire
+```
+
+## Core Architecture
+
+Voltaire uses a **data-first architecture** with two complementary APIs:
+
+1. **Branded Types with Namespaced Methods** — Tree-shakeable, zero-overhead primitives
+2. **Class APIs** — Convenient wrappers for familiar OOP patterns
+
+Both APIs operate on the same underlying data, giving you flexibility to choose based on your needs.
+
+## Branded Types Pattern
+
+At the core of Voltaire are **branded primitives** — native JavaScript types (Uint8Array, bigint, string) with TypeScript brands for type safety.
+
+### What is a Branded Type?
+
+A branded type is a primitive with a compile-time tag that prevents mixing incompatible values:
+
+```typescript
+// Branded type definition
+type Address = Uint8Array & { readonly __tag: "Address" };
+type Hash = Uint8Array & { readonly __brand: symbol };
+type Uint = bigint & { readonly __brand: symbol };
+
+// These prevent accidents like:
+const address: Address = someHash; // ❌ Type error
+const hash: Hash = someAddress;     // ❌ Type error
+```
+
+**Benefits:**
+- **Zero runtime overhead** — Just primitives at runtime
+- **Type safety** — Compiler prevents mixing incompatible types
+- **Serialization** — Natural JSON serialization (no classes to unwrap)
+- **Interop** — Works seamlessly with other libraries
+
+### Namespaced Methods
+
+Methods are organized in namespaces that match the type they operate on:
+
+```typescript
+import { BrandedAddress } from "@tevm/voltaire/Address";
+
+// Methods are namespaced by type
+const addr = BrandedAddress.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const hex = BrandedAddress.toHex(addr);
+const checksummed = BrandedAddress.toChecksummed(addr);
+const isZero = BrandedAddress.isZero(addr);
+```
+
+**Tree-Shaking:** Only the specific functions you import are bundled.
+
+```typescript
+// This bundles ONLY fromHex and toChecksummed
+import { BrandedAddress } from "@tevm/voltaire/Address";
+
+const addr = BrandedAddress.fromHex("0x...");
+const checksum = BrandedAddress.toChecksummed(addr);
+```
+
+## Class API Pattern
+
+For familiar OOP ergonomics, Voltaire provides class wrappers:
+
+```typescript
+import { Address } from "@tevm/voltaire";
+
+// Constructor accepts multiple formats
+const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+
+// Instance methods
+addr.toHex();           // "0xa0cf..."
+addr.toChecksummed();   // "0xA0Cf..."
+addr.isZero();          // false
+addr.equals(other);     // boolean
+
+// Static methods
+Address.fromHex("0x...");
+Address.fromBytes(bytes);
+Address.zero();
+```
+
+**Under the Hood:** Class instances are just branded Uint8Arrays with methods attached to the prototype. Zero overhead.
+
+## Choosing an API Style
+
+<Tabs syncKey="api-style">
+  <TabItem label="Class API">
+
+**Use when:**
+- You prefer OOP patterns
+- You want familiar method chaining
+- Bundle size isn't critical
+- You're prototyping quickly
+
+```typescript
+import { Address, Hash, Uint } from "@tevm/voltaire";
+
+const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = addr.toChecksummed();
+
+const a = Uint.from(100n);
+const b = Uint.from(200n);
+const sum = Uint.plus(a, b);
+```
+
+  </TabItem>
+  <TabItem label="Branded Types">
+
+**Use when:**
+- Bundle size matters (tree-shaking)
+- You want zero runtime overhead
+- You need maximum performance
+- You're building a library
+
+```typescript
+import { BrandedAddress } from "@tevm/voltaire/Address";
+import { BrandedUint } from "@tevm/voltaire/Uint";
+
+const addr = BrandedAddress.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = BrandedAddress.toChecksummed(addr);
+
+const a = BrandedUint.from(100n);
+const b = BrandedUint.from(200n);
+const sum = BrandedUint.plus(a, b);
+```
+
+  </TabItem>
+</Tabs>
+
+**You can mix both styles** — they operate on the same data:
+
+```typescript
+import { Address } from "@tevm/voltaire";
+import { BrandedAddress } from "@tevm/voltaire/Address";
+
+const addr1 = new Address("0x...");
+const addr2 = BrandedAddress.fromHex("0x...");
+
+// Both work together
+BrandedAddress.equals(addr1, addr2); // ✅ Works
+addr1.equals(addr2);                  // ✅ Works
+```
+
+## Method Naming Convention
+
+Voltaire follows consistent naming patterns across all types:
+
+### Construction
+- `Type.from(value)` — Universal constructor (accepts multiple formats)
+- `Type.fromHex(hex)` — From hex string
+- `Type.fromBytes(bytes)` — From byte array
+- `Type.fromNumber(n)` — From number/bigint
+- `Type.zero()` — Zero value
+
+### Conversion
+- `Type.toHex(value)` — To hex string
+- `Type.toBytes(value)` — To byte array
+- `Type.toNumber(value)` — To number/bigint
+
+### Validation
+- `Type.isValid(value)` — Check if value is valid
+- `Type.is(value)` — Type guard
+- `Type.isZero(value)` — Check if zero
+
+### Comparison
+- `Type.equals(a, b)` — Equality check
+- `Type.compare(a, b)` — Comparison for sorting
+
+## Quick Examples
+
+### Working with Addresses
+
+```typescript
+import { Address } from "@tevm/voltaire";
+
+// Create from hex
+const addr = Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+
+// EIP-55 checksumming
+const checksummed = Address.toChecksummed(addr);
+console.log(checksummed); // "0xA0Cf798816D4b9b9866b5330EEa46A18382f251e"
+
+// Validate checksum
+Address.isValidChecksum(checksummed); // true
+
+// Calculate contract addresses
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+const contractAddr = Address.calculateCreateAddress(deployer, 0n);
+```
+
+### Working with Hashes
+
+```typescript
+import { Keccak256, Hash } from "@tevm/voltaire";
+
+// Hash data
+const data = new Uint8Array([1, 2, 3]);
+const hash = Keccak256.hash(data);
+
+// Convert to hex
+const hex = Hash.toHex(hash);
+
+// Constant-time comparison
+const hash2 = Keccak256.hash(data);
+Hash.equals(hash, hash2); // true
+```
+
+### Working with Uint256
+
+```typescript
+import { Uint } from "@tevm/voltaire";
+
+// Create from various formats
+const a = Uint.from(100n);
+const b = Uint.from("0xff");
+const c = Uint.fromHex("0x200");
+
+// Arithmetic (wrapping on overflow)
+const sum = Uint.plus(a, b);      // 100 + 255 = 355
+const product = Uint.times(a, b); // 100 * 255 = 25500
+const quotient = Uint.dividedBy(product, b); // 25500 / 255 = 100
+
+// Comparison
+Uint.greaterThan(sum, a); // true
+Uint.lessThan(a, b);      // true
+
+// Convert to hex
+const hex = Uint.toHex(sum); // "0x0000...0163"
+```
+
+### Working with Transactions
+
+```typescript
+import { Transaction } from "@tevm/voltaire";
+
+// EIP-1559 transaction
+const tx: Transaction.EIP1559 = {
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 30000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  gasLimit: 21000n,
+  to: recipientAddress,
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: [],
+  r: signature.r,
+  s: signature.s,
+  v: signature.v,
+};
+
+// Serialize
+const serialized = Transaction.serialize(tx);
+
+// Hash
+const txHash = Transaction.hash(tx);
+
+// Recover sender
+const sender = Transaction.from(tx);
+```
+
+## Type Safety
+
+Voltaire provides opt-in type safety through branded types:
+
+```typescript
+import type { BrandedAddress } from "@tevm/voltaire/Address";
+import type { BrandedHash } from "@tevm/voltaire/Hash";
+
+function processAddress(addr: BrandedAddress) {
+  // TypeScript ensures addr is a valid Address
+}
+
+function processHash(hash: BrandedHash) {
+  // TypeScript ensures hash is a valid Hash
+}
+
+// Type errors prevent mistakes
+const addr = Address.fromHex("0x...");
+const hash = Keccak256.hash(data);
+
+processAddress(addr);  // ✅ OK
+processAddress(hash);  // ❌ Type error
+processHash(hash);     // ✅ OK
+processHash(addr);     // ❌ Type error
+```
+
+## Performance
+
+Voltaire is optimized for performance:
+
+- **Zero overhead abstractions** — Branded types compile to primitives
+- **Tree-shaking** — Only bundle what you use
+- **WASM acceleration** — Optional WASM implementations for crypto
+- **Native browser methods** — Uses native toHex/toBase64 when available
+- **Constant-time operations** — Security-critical comparisons are constant-time
+
+## Next Steps
+
+- Explore [Core Primitives](/primitives/address) — Address, Hash, Uint, RLP, ABI, Transactions
+- Learn about [Cryptography](/crypto/keccak256) — Keccak-256, secp256k1, EIP-712, BIP-39, HD Wallets
+- Read the [Zig API](https://github.com/evmts/voltaire/blob/main/docs/ZIG_API.md) — Native Zig implementations
+
+## Design Principles
+
+1. **Simple, close-to-spec APIs** — Minimal abstraction over Ethereum primitives
+2. **LLM-optimized documentation** — Built and tested for AI coding assistants
+3. **Performance first** — Zero-overhead abstractions and optional WASM
+4. **Type safety** — Branded types prevent common mistakes
+5. **Tree-shakeable** — Pay only for what you use
+6. **Multi-language** — TypeScript and Zig implementations
