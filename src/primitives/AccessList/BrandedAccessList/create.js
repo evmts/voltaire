@@ -1,7 +1,7 @@
 /**
  * Create empty access list (EIP-2930)
  *
- * @returns {import('./BrandedAccessList.js').BrandedAccessList} Empty access list
+ * @returns {import('../BrandedAccessList.js').BrandedAccessList} Empty access list
  *
  * @example
  * ```typescript

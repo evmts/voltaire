@@ -5,8 +5,8 @@ import { deduplicate } from "./deduplicate.js";
  *
  * Combines multiple access lists and deduplicates.
  *
- * @param {...import('./BrandedAccessList.js').BrandedAccessList} accessLists - Access lists to merge
- * @returns {import('./BrandedAccessList.js').BrandedAccessList} Merged and deduplicated access list
+ * @param {...import('../BrandedAccessList.js').BrandedAccessList} accessLists - Access lists to merge
+ * @returns {import('../BrandedAccessList.js').BrandedAccessList} Merged and deduplicated access list
  *
  * @example
  * ```typescript

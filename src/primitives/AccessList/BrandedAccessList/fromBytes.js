@@ -4,7 +4,7 @@ import { decode } from "../../Rlp/decode.js";
  * Decode RLP bytes to access list (EIP-2930)
  *
  * @param {Uint8Array} bytes - RLP-encoded access list
- * @returns {import('./BrandedAccessList.js').BrandedAccessList} Decoded access list
+ * @returns {import('../BrandedAccessList.js').BrandedAccessList} Decoded access list
  *
  * @example
  * ```typescript

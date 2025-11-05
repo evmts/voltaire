@@ -11,7 +11,7 @@ import {
  *
  * Compares cold access costs vs access list costs.
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to calculate savings for
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to calculate savings for
  * @returns {bigint} Estimated gas savings (can be negative if not beneficial)
  *
  * @example

@@ -1,7 +1,7 @@
 /**
  * Count total storage keys across all addresses (EIP-2930)
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to count
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to count
  * @returns {number} Total number of storage keys
  *
  * @example

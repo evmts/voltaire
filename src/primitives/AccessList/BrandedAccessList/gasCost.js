@@ -3,7 +3,7 @@ import { ADDRESS_COST, STORAGE_KEY_COST } from "./constants.js";
 /**
  * Calculate total gas cost for access list (EIP-2930)
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to calculate cost for
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to calculate cost for
  * @returns {bigint} Total gas cost in wei
  *
  * @example

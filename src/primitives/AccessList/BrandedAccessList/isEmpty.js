@@ -1,7 +1,7 @@
 /**
  * Check if access list is empty (EIP-2930)
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to check
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to check
  * @returns {boolean} true if empty
  *
  * @example

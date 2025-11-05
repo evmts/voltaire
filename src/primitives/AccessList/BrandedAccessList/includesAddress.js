@@ -1,8 +1,8 @@
 /**
  * Compare two addresses for equality (byte-by-byte)
  *
- * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} a
- * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} b
+ * @param {import('../../Address/BrandedAddress.js').BrandedAddress} a
+ * @param {import('../../Address/BrandedAddress.js').BrandedAddress} b
  * @returns {boolean}
  */
 function addressEquals(a, b) {
@@ -16,8 +16,8 @@ function addressEquals(a, b) {
 /**
  * Check if address is in access list (EIP-2930)
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to search
- * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} address - Address to find
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to search
+ * @param {import('../../Address/BrandedAddress.js').BrandedAddress} address - Address to find
  * @returns {boolean} true if address is in access list
  *
  * @example

@@ -3,7 +3,7 @@ import { encode } from "../../Rlp/encode.js";
 /**
  * Encode access list to RLP (EIP-2930)
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to encode
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to encode
  * @returns {Uint8Array} RLP-encoded bytes
  *
  * Format: [[address, [storageKey1, storageKey2, ...]], ...]

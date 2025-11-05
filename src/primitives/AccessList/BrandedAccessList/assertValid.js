@@ -3,7 +3,7 @@ import { isItem } from "./isItem.js";
 /**
  * Validate access list structure (EIP-2930)
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to validate
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to validate
  * @throws {Error} If invalid
  *
  * @example

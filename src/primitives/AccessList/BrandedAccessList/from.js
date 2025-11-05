@@ -3,8 +3,8 @@ import { fromBytes } from "./fromBytes.js";
 /**
  * Create AccessList from array or bytes (EIP-2930)
  *
- * @param {readonly import('./BrandedAccessList.js').Item[] | Uint8Array} value - AccessList items or RLP bytes
- * @returns {import('./BrandedAccessList.js').BrandedAccessList} AccessList
+ * @param {readonly import('../BrandedAccessList.js').Item[] | Uint8Array} value - AccessList items or RLP bytes
+ * @returns {import('../BrandedAccessList.js').BrandedAccessList} AccessList
  *
  * @example
  * ```typescript

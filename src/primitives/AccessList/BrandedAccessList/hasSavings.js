@@ -3,7 +3,7 @@ import { gasSavings } from "./gasSavings.js";
 /**
  * Check if access list provides net gas savings (EIP-2930)
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to check
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to check
  * @returns {boolean} true if access list saves gas overall
  *
  * @example

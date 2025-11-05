@@ -2,7 +2,7 @@
  * Type guard: Check if value is AccessListItem (EIP-2930)
  *
  * @param {unknown} value - Value to check
- * @returns {value is import('./BrandedAccessList.js').Item} true if value is AccessListItem
+ * @returns {value is import('../BrandedAccessList.js').Item} true if value is AccessListItem
  *
  * @example
  * ```typescript

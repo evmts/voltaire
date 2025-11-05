@@ -1,8 +1,8 @@
 /**
  * Compare two addresses for equality (byte-by-byte)
  *
- * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} a
- * @param {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} b
+ * @param {import('../../Address/BrandedAddress.js').BrandedAddress} a
+ * @param {import('../../Address/BrandedAddress.js').BrandedAddress} b
  * @returns {boolean}
  */
 function addressEquals(a, b) {
@@ -16,8 +16,8 @@ function addressEquals(a, b) {
 /**
  * Compare two hashes for equality (byte-by-byte)
  *
- * @param {import('../Hash/BrandedHash/BrandedHash.js').BrandedHash} a
- * @param {import('../Hash/BrandedHash/BrandedHash.js').BrandedHash} b
+ * @param {import('../../Hash/BrandedHash.js').BrandedHash} a
+ * @param {import('../../Hash/BrandedHash.js').BrandedHash} b
  * @returns {boolean}
  */
 function hashEquals(a, b) {
@@ -33,8 +33,8 @@ function hashEquals(a, b) {
  *
  * Merges duplicate addresses and removes duplicate storage keys.
  *
- * @param {import('./BrandedAccessList.js').BrandedAccessList} list - Access list to deduplicate
- * @returns {import('./BrandedAccessList.js').BrandedAccessList} Deduplicated access list
+ * @param {import('../BrandedAccessList.js').BrandedAccessList} list - Access list to deduplicate
+ * @returns {import('../BrandedAccessList.js').BrandedAccessList} Deduplicated access list
  *
  * @example
  * ```typescript
