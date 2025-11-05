@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { create, getTopic0, getIndexedTopics, getSignature, getIndexed, matchesTopics, matchesAddress, matchesFilter, isRemoved, wasRemoved, clone, copy, filterLogs, sortLogs } from "./EventLog.js";
+import { create, getTopic0, getIndexedTopics, getSignature, getIndexed, matchesTopics, matchesAddress, matchesFilter, isRemoved, wasRemoved, clone, copy, filterLogs, sortLogs } from "./index.js";
 
 const EventLog = {
 	create,

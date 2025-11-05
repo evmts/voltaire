@@ -18,7 +18,7 @@ import { estimateBlobCount } from "./BrandedBlob/estimateBlobCount.js";
 import { splitData } from "./BrandedBlob/splitData.js";
 import { joinData } from "./BrandedBlob/joinData.js";
 import { SIZE, COMMITMENT_VERSION_KZG, MAX_PER_TRANSACTION } from "./BrandedBlob/constants.js";
-import type { Commitment, Proof, VersionedHash } from "./BrandedBlob/BrandedBlob.js";
+import type { Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
 
 // Benchmark runner
 interface BenchmarkResult {

@@ -10,7 +10,7 @@ export type {
 	JumpDest,
 	Opcode,
 	OpcodeMetadata,
-} from "./BrandedBytecode.js";
+} from "./BrandedBytecode/BrandedBytecode.js";
 
 // For backwards compatibility, export BrandedBytecode as Bytecode
-export type { BrandedBytecode as Bytecode } from "./BrandedBytecode.js";
+export type { BrandedBytecode as Bytecode } from "./BrandedBytecode/BrandedBytecode.js";

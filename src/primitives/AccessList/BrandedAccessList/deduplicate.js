@@ -48,6 +48,7 @@ function hashEquals(a, b) {
  * ```
  */
 export function deduplicate(list) {
+	/** @type {import('../BrandedAccessList.js').BrandedAccessList} */
 	const result = [];
 
 	for (const item of list) {

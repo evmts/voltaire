@@ -47,7 +47,7 @@ export function matchesTopics(log, filterTopics) {
 			}
 		} else {
 			// Single topic - must match exactly
-			if (logTopic !== null && !hashEquals(logTopic, filterTopic)) {
+			if (logTopic !== null && filterTopic && !hashEquals(logTopic, filterTopic)) {
 				return false;
 			}
 		}

@@ -18,6 +18,7 @@ export function fromBytes(bytes) {
 		throw new Error("Invalid access list: expected list");
 	}
 
+	/** @type {import('../BrandedAccessList.js').BrandedAccessList} */
 	const result = [];
 
 	for (const itemData of decoded.data.value) {

@@ -3,7 +3,7 @@ import type {
 	Commitment,
 	Proof,
 	VersionedHash,
-} from "./BrandedBlob/BrandedBlob.js";
+} from "./BrandedBlob.js";
 import type { calculateGas } from "./BrandedBlob/calculateGas.js";
 import type { estimateBlobCount } from "./BrandedBlob/estimateBlobCount.js";
 import type { from } from "./BrandedBlob/from.js";
