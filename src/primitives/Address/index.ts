@@ -6,6 +6,7 @@ import {
 	toBase64Polyfill,
 	toHexPolyfill,
 } from "./BrandedAddress/polyfills.js";
+import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 
 // Re-export BrandedAddress type and errors
 export type { BrandedAddress } from "./BrandedAddress/index.js";
@@ -64,6 +65,13 @@ Address.fromPublicKey = (x, y) => {
 };
 Address.fromPublicKey.prototype = Address.prototype;
 
+Address.fromPrivateKey = (value) => {
+	const result = BrandedAddress.fromPrivateKey(value);
+	Object.setPrototypeOf(result, Address.prototype);
+	return result;
+};
+Address.fromPrivateKey.prototype = Address.prototype;
+
 Address.fromAbiEncoded = (value) => {
 	const result = BrandedAddress.fromAbiEncoded(value);
 	Object.setPrototypeOf(result, Address.prototype);
@@ -79,7 +87,6 @@ Address.toUppercase = BrandedAddress.toUppercase;
 Address.toU256 = BrandedAddress.toU256;
 Address.toAbiEncoded = BrandedAddress.toAbiEncoded;
 Address.toShortHex = BrandedAddress.toShortHex;
-Address.prettyPrint = BrandedAddress.prettyPrint;
 Address.isZero = BrandedAddress.isZero;
 Address.equals = BrandedAddress.equals;
 Address.isValid = BrandedAddress.isValid;
@@ -88,6 +95,17 @@ Address.is = BrandedAddress.is;
 
 Address.zero = () => {
 	const result = BrandedAddress.zero();
+	Object.setPrototypeOf(result, Address.prototype);
+	return result;
+};
+
+Address.of = (...items) => {
+	const result = Uint8Array.of(...items);
+	if (result.length !== BrandedAddress.SIZE) {
+		throw new InvalidAddressLengthError(
+			`Address must be ${BrandedAddress.SIZE} bytes, got ${result.length}`,
+		);
+	}
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
@@ -143,9 +161,6 @@ Address.prototype.toAbiEncoded = function () {
 };
 Address.prototype.toShortHex = function () {
 	return BrandedAddress.toShortHex(this);
-};
-Address.prototype.prettyPrint = function () {
-	return BrandedAddress.prettyPrint(this);
 };
 Address.prototype.compare = function (other) {
 	return BrandedAddress.compare(this, other);

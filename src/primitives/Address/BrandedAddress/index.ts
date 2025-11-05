@@ -14,7 +14,6 @@ import { calculateCreateAddress } from "./calculateCreateAddress.js";
 import { compare } from "./compare.js";
 import { SIZE } from "./constants.js";
 import { equals } from "./equals.js";
-import { prettyPrint } from "./prettyPrint.js";
 import { from } from "./from.js";
 import { fromAbiEncoded } from "./fromAbiEncoded.js";
 import { fromBase64 } from "./fromBase64.js";
@@ -22,6 +21,7 @@ import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
 import { fromNumber } from "./fromNumber.js";
 import { fromPublicKey } from "./fromPublicKey.js";
+import { fromPrivateKey } from "./fromPrivateKey.js";
 import { greaterThan } from "./greaterThan.js";
 import { is } from "./is.js";
 import { isValid } from "./isValid.js";
@@ -45,6 +45,7 @@ export {
 	fromBytes,
 	fromNumber,
 	fromPublicKey,
+	fromPrivateKey,
 	fromAbiEncoded,
 	toHex,
 	toChecksummed,
@@ -53,7 +54,6 @@ export {
 	toU256,
 	toAbiEncoded,
 	toShortHex,
-	prettyPrint,
 	isZero,
 	equals,
 	isValid,
@@ -75,6 +75,7 @@ export const BrandedAddress = {
 	fromBytes,
 	fromNumber,
 	fromPublicKey,
+	fromPrivateKey,
 	fromAbiEncoded,
 	toHex,
 	toChecksummed,
@@ -83,7 +84,6 @@ export const BrandedAddress = {
 	toU256,
 	toAbiEncoded,
 	toShortHex,
-	prettyPrint,
 	isZero,
 	equals,
 	isValid,
