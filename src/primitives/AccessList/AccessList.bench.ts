@@ -4,8 +4,9 @@
  * Measures performance of access list operations
  */
 
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import type { BrandedAccessList } from "./BrandedAccessList.js";
+import type { Item } from "./BrandedAccessList.js";
 import { from } from "./from.js";
 import { gasCost } from "./gasCost.js";
 import { gasSavings } from "./gasSavings.js";
@@ -79,10 +80,10 @@ function benchmark(
 // ============================================================================
 
 // Helper to create test addresses
-function createAddress(byte: number) {
+function createAddress(byte: number): BrandedAddress {
 	const addr = new Uint8Array(20);
 	addr.fill(byte);
-	return addr;
+	return addr as BrandedAddress;
 }
 
 // Helper to create test storage keys
@@ -101,14 +102,14 @@ const key2 = createStorageKey(20);
 const key3 = createStorageKey(30);
 
 // Small list
-const smallListArray = [
+const smallListArray: Item[] = [
 	{ address: addr1, storageKeys: [key1] },
 	{ address: addr2, storageKeys: [key2, key3] },
 ];
 const smallList = from(smallListArray);
 
 // Medium list
-const mediumListArray = [];
+const mediumListArray: Item[] = [];
 for (let i = 0; i < 10; i++) {
 	mediumListArray.push({
 		address: createAddress(i),
@@ -118,7 +119,7 @@ for (let i = 0; i < 10; i++) {
 const mediumList = from(mediumListArray);
 
 // Large list
-const largeListArray = [];
+const largeListArray: Item[] = [];
 for (let i = 0; i < 100; i++) {
 	largeListArray.push({
 		address: createAddress(i % 50),
@@ -128,7 +129,7 @@ for (let i = 0; i < 100; i++) {
 const largeList = from(largeListArray);
 
 // List with duplicates
-const duplicateListArray = [
+const duplicateListArray: Item[] = [
 	{ address: addr1, storageKeys: [key1] },
 	{ address: addr2, storageKeys: [key2] },
 	{ address: addr1, storageKeys: [key2, key3] },
