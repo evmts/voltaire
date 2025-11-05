@@ -5,7 +5,28 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import { AccessList } from "./index.js";
+import {
+	isItem,
+	is,
+	gasCost,
+	gasSavings,
+	hasSavings,
+	includesAddress,
+	includesStorageKey,
+	keysFor,
+	deduplicate,
+	withAddress,
+	withStorageKey,
+	merge,
+	assertValid,
+	toBytes,
+	addressCount,
+	storageKeyCount,
+	isEmpty,
+	create,
+	from,
+	fromBytes,
+} from "./index.js";
 import {
 	ADDRESS_COST,
 	COLD_ACCOUNT_ACCESS_COST,
@@ -53,7 +74,7 @@ describe("AccessList.isItem", () => {
 			address: addr1,
 			storageKeys: [key1],
 		};
-		expect(AccessList.isItem(item)).toBe(true);
+		expect(isItem(item)).toBe(true);
 	});
 
 	it("returns true for item with empty storage keys", () => {
@@ -61,24 +82,24 @@ describe("AccessList.isItem", () => {
 			address: addr1,
 			storageKeys: [],
 		};
-		expect(AccessList.isItem(item)).toBe(true);
+		expect(isItem(item)).toBe(true);
 	});
 
 	it("returns false for null", () => {
-		expect(AccessList.isItem(null)).toBe(false);
+		expect(isItem(null)).toBe(false);
 	});
 
 	it("returns false for undefined", () => {
-		expect(AccessList.isItem(undefined)).toBe(false);
+		expect(isItem(undefined)).toBe(false);
 	});
 
 	it("returns false for non-object", () => {
-		expect(AccessList.isItem(42)).toBe(false);
-		expect(AccessList.isItem("string")).toBe(false);
+		expect(isItem(42)).toBe(false);
+		expect(isItem("string")).toBe(false);
 	});
 
 	it("returns false for object without address", () => {
-		expect(AccessList.isItem({ storageKeys: [] })).toBe(false);
+		expect(isItem({ storageKeys: [] })).toBe(false);
 	});
 
 	it("returns false for object with invalid address length", () => {
@@ -86,7 +107,7 @@ describe("AccessList.isItem", () => {
 			address: new Uint8Array(19),
 			storageKeys: [],
 		};
-		expect(AccessList.isItem(item)).toBe(false);
+		expect(isItem(item)).toBe(false);
 	});
 
 	it("returns false for object with non-Uint8Array address", () => {
@@ -94,7 +115,7 @@ describe("AccessList.isItem", () => {
 			address: "0x1234",
 			storageKeys: [],
 		};
-		expect(AccessList.isItem(item)).toBe(false);
+		expect(isItem(item)).toBe(false);
 	});
 
 	it("returns false for object with invalid storage key length", () => {
@@ -102,7 +123,7 @@ describe("AccessList.isItem", () => {
 			address: addr1,
 			storageKeys: [new Uint8Array(31)],
 		};
-		expect(AccessList.isItem(item)).toBe(false);
+		expect(isItem(item)).toBe(false);
 	});
 
 	it("returns false for object with non-array storage keys", () => {
@@ -110,13 +131,13 @@ describe("AccessList.isItem", () => {
 			address: addr1,
 			storageKeys: "not-an-array",
 		};
-		expect(AccessList.isItem(item)).toBe(false);
+		expect(isItem(item)).toBe(false);
 	});
 });
 
 describe("AccessList.is", () => {
 	it("returns true for empty array", () => {
-		expect(AccessList.is([])).toBe(true);
+		expect(is([])).toBe(true);
 	});
 
 	it("returns true for valid access list", () => {
@@ -124,13 +145,13 @@ describe("AccessList.is", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: addr2, storageKeys: [key2, key3] },
 		];
-		expect(AccessList.is(list)).toBe(true);
+		expect(is(list)).toBe(true);
 	});
 
 	it("returns false for non-array", () => {
-		expect(AccessList.is(null)).toBe(false);
-		expect(AccessList.is(undefined)).toBe(false);
-		expect(AccessList.is({})).toBe(false);
+		expect(is(null)).toBe(false);
+		expect(is(undefined)).toBe(false);
+		expect(is({})).toBe(false);
 	});
 
 	it("returns false for array with invalid item", () => {
@@ -138,7 +159,7 @@ describe("AccessList.is", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: "invalid", storageKeys: [] },
 		];
-		expect(AccessList.is(list)).toBe(false);
+		expect(is(list)).toBe(false);
 	});
 });
 
@@ -149,17 +170,17 @@ describe("AccessList.is", () => {
 describe("AccessList.gasCost", () => {
 	it("returns 0 for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.gasCost(list)).toBe(0n);
+		expect(gasCost(list)).toBe(0n);
 	});
 
 	it("calculates cost for single address with no keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		expect(AccessList.gasCost(list)).toBe(ADDRESS_COST);
+		expect(gasCost(list)).toBe(ADDRESS_COST);
 	});
 
 	it("calculates cost for single address with one key", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		expect(AccessList.gasCost(list)).toBe(
+		expect(gasCost(list)).toBe(
 			ADDRESS_COST + STORAGE_KEY_COST,
 		);
 	});
@@ -168,7 +189,7 @@ describe("AccessList.gasCost", () => {
 		const list: AccessListType = [
 			{ address: addr1, storageKeys: [key1, key2, key3] },
 		];
-		expect(AccessList.gasCost(list)).toBe(
+		expect(gasCost(list)).toBe(
 			ADDRESS_COST + STORAGE_KEY_COST * 3n,
 		);
 	});
@@ -178,7 +199,7 @@ describe("AccessList.gasCost", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: addr2, storageKeys: [key2, key3] },
 		];
-		expect(AccessList.gasCost(list)).toBe(
+		expect(gasCost(list)).toBe(
 			ADDRESS_COST * 2n + STORAGE_KEY_COST * 3n,
 		);
 	});
@@ -193,14 +214,14 @@ describe("AccessList.gasCost", () => {
 describe("AccessList.gasSavings", () => {
 	it("returns 0 for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.gasSavings(list)).toBe(0n);
+		expect(gasSavings(list)).toBe(0n);
 	});
 
 	it("calculates savings for single address with no keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
 		const expected =
 			COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
-		expect(AccessList.gasSavings(list)).toBe(expected);
+		expect(gasSavings(list)).toBe(expected);
 	});
 
 	it("calculates savings for single address with one key", () => {
@@ -209,7 +230,7 @@ describe("AccessList.gasSavings", () => {
 			COLD_ACCOUNT_ACCESS_COST -
 			ADDRESS_COST +
 			(COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST);
-		expect(AccessList.gasSavings(list)).toBe(expected);
+		expect(gasSavings(list)).toBe(expected);
 	});
 
 	it("calculates savings for multiple addresses and keys", () => {
@@ -220,25 +241,25 @@ describe("AccessList.gasSavings", () => {
 		const addressSavings = COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
 		const storageSavings = COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST;
 		const expected = addressSavings * 2n + storageSavings * 3n;
-		expect(AccessList.gasSavings(list)).toBe(expected);
+		expect(gasSavings(list)).toBe(expected);
 	});
 });
 
 describe("AccessList.hasSavings", () => {
 	it("returns false for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.hasSavings(list)).toBe(false);
+		expect(hasSavings(list)).toBe(false);
 	});
 
 	it("returns true for address with storage keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		expect(AccessList.hasSavings(list)).toBe(true);
+		expect(hasSavings(list)).toBe(true);
 	});
 
 	it("returns true for address without storage keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
 		// COLD_ACCOUNT_ACCESS_COST (2600) - ADDRESS_COST (2400) = 200 > 0
-		expect(AccessList.hasSavings(list)).toBe(true);
+		expect(hasSavings(list)).toBe(true);
 	});
 });
 
@@ -249,17 +270,17 @@ describe("AccessList.hasSavings", () => {
 describe("AccessList.includesAddress", () => {
 	it("returns false for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.includesAddress(list, addr1)).toBe(false);
+		expect(includesAddress(list, addr1)).toBe(false);
 	});
 
 	it("returns true when address is present", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		expect(AccessList.includesAddress(list, addr1)).toBe(true);
+		expect(includesAddress(list, addr1)).toBe(true);
 	});
 
 	it("returns false when address is not present", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		expect(AccessList.includesAddress(list, addr2)).toBe(false);
+		expect(includesAddress(list, addr2)).toBe(false);
 	});
 
 	it("finds address in list with multiple items", () => {
@@ -267,48 +288,48 @@ describe("AccessList.includesAddress", () => {
 			{ address: addr1, storageKeys: [] },
 			{ address: addr2, storageKeys: [] },
 		];
-		expect(AccessList.includesAddress(list, addr2)).toBe(true);
+		expect(includesAddress(list, addr2)).toBe(true);
 	});
 });
 
 describe("AccessList.includesStorageKey", () => {
 	it("returns false for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.includesStorageKey(list, addr1, key1)).toBe(false);
+		expect(includesStorageKey(list, addr1, key1)).toBe(false);
 	});
 
 	it("returns false when address not in list", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		expect(AccessList.includesStorageKey(list, addr2, key1)).toBe(false);
+		expect(includesStorageKey(list, addr2, key1)).toBe(false);
 	});
 
 	it("returns false when address present but key is not", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		expect(AccessList.includesStorageKey(list, addr1, key2)).toBe(false);
+		expect(includesStorageKey(list, addr1, key2)).toBe(false);
 	});
 
 	it("returns true when both address and key are present", () => {
 		const list: AccessListType = [
 			{ address: addr1, storageKeys: [key1, key2] },
 		];
-		expect(AccessList.includesStorageKey(list, addr1, key1)).toBe(true);
+		expect(includesStorageKey(list, addr1, key1)).toBe(true);
 	});
 });
 
 describe("AccessList.keysFor", () => {
 	it("returns undefined for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.keysFor(list, addr1)).toBeUndefined();
+		expect(keysFor(list, addr1)).toBeUndefined();
 	});
 
 	it("returns undefined when address not in list", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		expect(AccessList.keysFor(list, addr2)).toBeUndefined();
+		expect(keysFor(list, addr2)).toBeUndefined();
 	});
 
 	it("returns empty array when address has no keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		const keys = AccessList.keysFor(list, addr1);
+		const keys = keysFor(list, addr1);
 		expect(keys).toBeDefined();
 		expect(keys?.length).toBe(0);
 	});
@@ -317,7 +338,7 @@ describe("AccessList.keysFor", () => {
 		const list: AccessListType = [
 			{ address: addr1, storageKeys: [key1, key2] },
 		];
-		const keys = AccessList.keysFor(list, addr1);
+		const keys = keysFor(list, addr1);
 		expect(keys).toBeDefined();
 		expect(keys?.length).toBe(2);
 		expect(keys?.[0]).toBe(key1);
@@ -332,7 +353,7 @@ describe("AccessList.keysFor", () => {
 describe("AccessList.deduplicate", () => {
 	it("returns empty array for empty list", () => {
 		const list: AccessListType = [];
-		const result = AccessList.deduplicate(list);
+		const result = deduplicate(list);
 		expect(result.length).toBe(0);
 	});
 
@@ -341,7 +362,7 @@ describe("AccessList.deduplicate", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: addr2, storageKeys: [key2] },
 		];
-		const result = AccessList.deduplicate(list);
+		const result = deduplicate(list);
 		expect(result.length).toBe(2);
 	});
 
@@ -350,7 +371,7 @@ describe("AccessList.deduplicate", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: addr1, storageKeys: [key2] },
 		];
-		const result = AccessList.deduplicate(list);
+		const result = deduplicate(list);
 		expect(result.length).toBe(1);
 		expect(result[0]!.address).toBe(addr1);
 		expect(result[0]!.storageKeys.length).toBe(2);
@@ -361,7 +382,7 @@ describe("AccessList.deduplicate", () => {
 			{ address: addr1, storageKeys: [key1, key2] },
 			{ address: addr1, storageKeys: [key2, key3] },
 		];
-		const result = AccessList.deduplicate(list);
+		const result = deduplicate(list);
 		expect(result.length).toBe(1);
 		expect(result[0]!.storageKeys.length).toBe(3);
 	});
@@ -373,7 +394,7 @@ describe("AccessList.deduplicate", () => {
 			{ address: addr1, storageKeys: [key1, key3] },
 			{ address: addr2, storageKeys: [key2] },
 		];
-		const result = AccessList.deduplicate(list);
+		const result = deduplicate(list);
 		expect(result.length).toBe(2);
 		// addr1 should have key1 and key3
 		const addr1Item = result.find((item: Item) =>
@@ -386,7 +407,7 @@ describe("AccessList.deduplicate", () => {
 describe("AccessList.withAddress", () => {
 	it("adds address to empty list", () => {
 		const list: AccessListType = [];
-		const result = AccessList.withAddress(list, addr1);
+		const result = withAddress(list, addr1);
 		expect(result.length).toBe(1);
 		expect(result[0]!.address).toBe(addr1);
 		expect(result[0]!.storageKeys.length).toBe(0);
@@ -394,19 +415,19 @@ describe("AccessList.withAddress", () => {
 
 	it("adds new address to existing list", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		const result = AccessList.withAddress(list, addr2);
+		const result = withAddress(list, addr2);
 		expect(result.length).toBe(2);
 	});
 
 	it("returns original list when address already exists", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		const result = AccessList.withAddress(list, addr1);
+		const result = withAddress(list, addr1);
 		expect(result).toBe(list);
 	});
 
 	it("does not modify original list", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		const result = AccessList.withAddress(list, addr2);
+		const result = withAddress(list, addr2);
 		expect(list.length).toBe(1);
 		expect(result.length).toBe(2);
 	});
@@ -415,7 +436,7 @@ describe("AccessList.withAddress", () => {
 describe("AccessList.withStorageKey", () => {
 	it("adds address and key to empty list", () => {
 		const list: AccessListType = [];
-		const result = AccessList.withStorageKey(list, addr1, key1);
+		const result = withStorageKey(list, addr1, key1);
 		expect(result.length).toBe(1);
 		expect(result[0]!.address).toBe(addr1);
 		expect(result[0]!.storageKeys.length).toBe(1);
@@ -424,27 +445,27 @@ describe("AccessList.withStorageKey", () => {
 
 	it("adds key to existing address", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		const result = AccessList.withStorageKey(list, addr1, key2);
+		const result = withStorageKey(list, addr1, key2);
 		expect(result.length).toBe(1);
 		expect(result[0]!.storageKeys.length).toBe(2);
 	});
 
 	it("does not add duplicate key", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		const result = AccessList.withStorageKey(list, addr1, key1);
+		const result = withStorageKey(list, addr1, key1);
 		expect(result.length).toBe(1);
 		expect(result[0]!.storageKeys.length).toBe(1);
 	});
 
 	it("adds address with key when address does not exist", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		const result = AccessList.withStorageKey(list, addr2, key1);
+		const result = withStorageKey(list, addr2, key1);
 		expect(result.length).toBe(2);
 	});
 
 	it("does not modify original list", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		const result = AccessList.withStorageKey(list, addr1, key2);
+		const result = withStorageKey(list, addr1, key2);
 		expect(list[0]!.storageKeys.length).toBe(1);
 		expect(result[0]!.storageKeys.length).toBe(2);
 	});
@@ -452,27 +473,27 @@ describe("AccessList.withStorageKey", () => {
 
 describe("AccessList.merge", () => {
 	it("returns empty list for no inputs", () => {
-		const result = AccessList.merge();
+		const result = merge();
 		expect(result.length).toBe(0);
 	});
 
 	it("returns same list for single input", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		const result = AccessList.merge(list);
+		const result = merge(list);
 		expect(result.length).toBe(1);
 	});
 
 	it("merges two lists", () => {
 		const list1: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const list2: AccessListType = [{ address: addr2, storageKeys: [key2] }];
-		const result = AccessList.merge(list1, list2);
+		const result = merge(list1, list2);
 		expect(result.length).toBe(2);
 	});
 
 	it("deduplicates merged lists", () => {
 		const list1: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const list2: AccessListType = [{ address: addr1, storageKeys: [key2] }];
-		const result = AccessList.merge(list1, list2);
+		const result = merge(list1, list2);
 		expect(result.length).toBe(1);
 		expect(result[0]!.storageKeys.length).toBe(2);
 	});
@@ -481,7 +502,7 @@ describe("AccessList.merge", () => {
 		const list1: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const list2: AccessListType = [{ address: addr2, storageKeys: [key2] }];
 		const list3: AccessListType = [{ address: addr3, storageKeys: [key3] }];
-		const result = AccessList.merge(list1, list2, list3);
+		const result = merge(list1, list2, list3);
 		expect(result.length).toBe(3);
 	});
 });
@@ -493,7 +514,7 @@ describe("AccessList.merge", () => {
 describe("AccessList.assertValid", () => {
 	it("does not throw for empty list", () => {
 		const list: AccessListType = [];
-		expect(() => AccessList.assertValid(list)).not.toThrow();
+		expect(() => assertValid(list)).not.toThrow();
 	});
 
 	it("does not throw for valid list", () => {
@@ -501,39 +522,39 @@ describe("AccessList.assertValid", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: addr2, storageKeys: [key2, key3] },
 		];
-		expect(() => AccessList.assertValid(list)).not.toThrow();
+		expect(() => assertValid(list)).not.toThrow();
 	});
 
 	it("throws for non-array", () => {
-		expect(() => AccessList.assertValid({} as any)).toThrow(
+		expect(() => assertValid({} as any)).toThrow(
 			"Access list must be an array",
 		);
 	});
 
 	it("throws for invalid item", () => {
 		const list = [{ address: "invalid", storageKeys: [] }] as any;
-		expect(() => AccessList.assertValid(list)).toThrow(
+		expect(() => assertValid(list)).toThrow(
 			"Invalid access list item",
 		);
 	});
 
 	it("throws for invalid address length", () => {
 		const list = [{ address: new Uint8Array(19), storageKeys: [] }] as any;
-		expect(() => AccessList.assertValid(list)).toThrow(
+		expect(() => assertValid(list)).toThrow(
 			"Invalid access list item",
 		);
 	});
 
 	it("throws for non-Uint8Array address", () => {
 		const list = [{ address: [1, 2, 3], storageKeys: [] }] as any;
-		expect(() => AccessList.assertValid(list)).toThrow(
+		expect(() => assertValid(list)).toThrow(
 			"Invalid access list item",
 		);
 	});
 
 	it("throws for invalid storage key length", () => {
 		const list = [{ address: addr1, storageKeys: [new Uint8Array(31)] }] as any;
-		expect(() => AccessList.assertValid(list)).toThrow(
+		expect(() => assertValid(list)).toThrow(
 			"Invalid access list item",
 		);
 	});
@@ -546,13 +567,13 @@ describe("AccessList.assertValid", () => {
 describe("AccessList.toBytes", () => {
 	it("encodes empty list", () => {
 		const list: AccessListType = [];
-		const encoded = AccessList.toBytes(list);
+		const encoded = toBytes(list);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 	});
 
 	it("encodes list with single item", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		const encoded = AccessList.toBytes(list);
+		const encoded = toBytes(list);
 		expect(encoded).toBeInstanceOf(Uint8Array);
 	});
 });
@@ -560,8 +581,8 @@ describe("AccessList.toBytes", () => {
 describe("AccessList.fromBytes", () => {
 	it("decodes empty list", () => {
 		const list: AccessListType = [];
-		const encoded = AccessList.toBytes(list);
-		const decoded = AccessList.fromBytes(encoded);
+		const encoded = toBytes(list);
+		const decoded = fromBytes(encoded);
 		expect(decoded.length).toBe(0);
 	});
 
@@ -570,8 +591,8 @@ describe("AccessList.fromBytes", () => {
 			{ address: addr1, storageKeys: [key1, key2] },
 			{ address: addr2, storageKeys: [key3] },
 		];
-		const encoded = AccessList.toBytes(list);
-		const decoded = AccessList.fromBytes(encoded);
+		const encoded = toBytes(list);
+		const decoded = fromBytes(encoded);
 		expect(decoded.length).toBe(2);
 		expect(decoded[0]!.address).toEqual(addr1);
 		expect(decoded[0]!.storageKeys.length).toBe(2);
@@ -585,7 +606,7 @@ describe("AccessList.fromBytes", () => {
 describe("AccessList.addressCount", () => {
 	it("returns 0 for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.addressCount(list)).toBe(0);
+		expect(addressCount(list)).toBe(0);
 	});
 
 	it("returns correct count for list", () => {
@@ -594,26 +615,26 @@ describe("AccessList.addressCount", () => {
 			{ address: addr2, storageKeys: [] },
 			{ address: addr3, storageKeys: [] },
 		];
-		expect(AccessList.addressCount(list)).toBe(3);
+		expect(addressCount(list)).toBe(3);
 	});
 });
 
 describe("AccessList.storageKeyCount", () => {
 	it("returns 0 for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.storageKeyCount(list)).toBe(0);
+		expect(storageKeyCount(list)).toBe(0);
 	});
 
 	it("returns 0 when no storage keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		expect(AccessList.storageKeyCount(list)).toBe(0);
+		expect(storageKeyCount(list)).toBe(0);
 	});
 
 	it("returns correct count for single address", () => {
 		const list: AccessListType = [
 			{ address: addr1, storageKeys: [key1, key2, key3] },
 		];
-		expect(AccessList.storageKeyCount(list)).toBe(3);
+		expect(storageKeyCount(list)).toBe(3);
 	});
 
 	it("returns correct total count for multiple addresses", () => {
@@ -621,25 +642,25 @@ describe("AccessList.storageKeyCount", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: addr2, storageKeys: [key2, key3] },
 		];
-		expect(AccessList.storageKeyCount(list)).toBe(3);
+		expect(storageKeyCount(list)).toBe(3);
 	});
 });
 
 describe("AccessList.isEmpty", () => {
 	it("returns true for empty list", () => {
 		const list: AccessListType = [];
-		expect(AccessList.isEmpty(list)).toBe(true);
+		expect(isEmpty(list)).toBe(true);
 	});
 
 	it("returns false for non-empty list", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		expect(AccessList.isEmpty(list)).toBe(false);
+		expect(isEmpty(list)).toBe(false);
 	});
 });
 
 describe("AccessList.create", () => {
 	it("creates empty access list", () => {
-		const list = AccessList.create();
+		const list = create();
 		expect(Array.isArray(list)).toBe(true);
 		expect(list.length).toBe(0);
 	});
@@ -660,27 +681,27 @@ describe("AccessList edge cases", () => {
 		}
 		const list: AccessListType = items;
 
-		expect(AccessList.addressCount(list)).toBe(100);
-		expect(AccessList.storageKeyCount(list)).toBe(200);
+		expect(addressCount(list)).toBe(100);
+		expect(storageKeyCount(list)).toBe(200);
 
-		const deduped = AccessList.deduplicate(list);
+		const deduped = deduplicate(list);
 		expect(deduped.length).toBeLessThan(100);
 	});
 
 	it("handles multiple operations chained", () => {
 		const list: AccessListType = [];
-		const step1 = AccessList.withAddress(list, addr1);
-		const step2 = AccessList.withStorageKey(step1, addr1, key1);
-		const step3 = AccessList.withAddress(step2, addr2);
-		const step4 = AccessList.withStorageKey(step3, addr2, key2);
+		const step1 = withAddress(list, addr1);
+		const step2 = withStorageKey(step1, addr1, key1);
+		const step3 = withAddress(step2, addr2);
+		const step4 = withStorageKey(step3, addr2, key2);
 
 		expect(step4.length).toBe(2);
-		expect(AccessList.storageKeyCount(step4)).toBe(2);
+		expect(storageKeyCount(step4)).toBe(2);
 	});
 
 	it("maintains immutability through transformations", () => {
 		const original: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		const modified = AccessList.withStorageKey(original, addr1, key2);
+		const modified = withStorageKey(original, addr1, key2);
 
 		expect(original[0]!.storageKeys.length).toBe(1);
 		expect(modified[0]!.storageKeys.length).toBe(2);
@@ -693,7 +714,7 @@ describe("AccessList edge cases", () => {
 			{ address: sameAddr, storageKeys: [key2] },
 		];
 
-		const deduped = AccessList.deduplicate(list);
+		const deduped = deduplicate(list);
 		expect(deduped.length).toBe(1);
 		expect(deduped[0]!.storageKeys.length).toBe(2);
 	});
@@ -704,7 +725,7 @@ describe("AccessList edge cases", () => {
 			{ address: addr1, storageKeys: [key1, sameKey] },
 		];
 
-		const result = AccessList.withStorageKey(list, addr1, sameKey);
+		const result = withStorageKey(list, addr1, sameKey);
 		expect(result[0]!.storageKeys.length).toBe(2);
 	});
 });
