@@ -94,50 +94,56 @@ const sum = Uint.plus.call(a, b);
 
 **Type:** `Address` (branded `Uint8Array` with 20 bytes)
 
+**Reference:** [Address.js](./src/primitives/Address/Address.js.md) | [BrandedAddress](./src/primitives/Address/BrandedAddress/index.ts.md)
+
 **Constants:**
 
-- `Address.SIZE` — Address size (20 bytes)
-- `Address.HEX_SIZE` — Hex string size (42 chars: "0x" + 40 hex)
+- `Address.SIZE` — Address size (20 bytes) - [docs](./src/primitives/Address/BrandedAddress/constants.js.md)
 
 **Creation:**
 
-- `new Address(value)` — Universal constructor (hex/bytes/number/bigint)
+- `new Address(value)` — Universal constructor (hex/bytes/number/bigint) - [docs](./src/primitives/Address/BrandedAddress/from.js.md)
 - `Address.from(value)` — Alias for constructor
-- `Address.fromHex(hex)` — From hex string (with or without 0x)
-- `Address.fromBytes(bytes)` — From 20-byte Uint8Array
-- `Address.fromNumber(n)` — From number (left-padded to 20 bytes)
-- `Address.fromPublicKey(x, y)` — From 64-byte secp256k1 public key (Keccak-256 last 20 bytes)
-- `Address.zero()` — Zero address (0x0000...0000)
+- `Address.fromHex(hex)` — From hex string (with or without 0x) - [docs](./src/primitives/Address/BrandedAddress/fromHex.js.md)
+- `Address.fromBytes(bytes)` — From 20-byte Uint8Array - [docs](./src/primitives/Address/BrandedAddress/fromBytes.js.md)
+- `Address.fromNumber(n)` — From number (left-padded to 20 bytes) - [docs](./src/primitives/Address/BrandedAddress/fromNumber.js.md)
+- `Address.fromPublicKey(x, y)` — From 64-byte secp256k1 public key - [docs](./src/primitives/Address/BrandedAddress/fromPublicKey.js.md)
+- `Address.fromAbiEncoded(bytes)` — From 32-byte ABI encoding - [docs](./src/primitives/Address/BrandedAddress/fromAbiEncoded.js.md)
+- `Address.fromBase64(b64)` — From base64 string - [docs](./src/primitives/Address/BrandedAddress/fromBase64.js.md)
+- `Address.zero()` — Zero address (0x0000...0000) - [docs](./src/primitives/Address/BrandedAddress/zero.js.md)
 
 **Conversion:**
 
-- `Address.toHex.call(address)` — To lowercase hex string
-- `Address.toChecksumHex.call(address)` — To EIP-55 checksummed hex
-- `Address.toU256.call(address)` — To 256-bit unsigned integer (bigint)
+- `Address.toHex(address)` — To lowercase hex string - [docs](./src/primitives/Address/BrandedAddress/toHex.js.md)
+- `Address.toChecksummed(address)` — To EIP-55 checksummed hex - [docs](./src/primitives/Address/BrandedAddress/toChecksummed.js.md)
+- `Address.toLowercase(address)` — To lowercase hex - [docs](./src/primitives/Address/BrandedAddress/toLowercase.js.md)
+- `Address.toUppercase(address)` — To uppercase hex - [docs](./src/primitives/Address/BrandedAddress/toUppercase.js.md)
+- `Address.toU256(address)` — To 256-bit unsigned integer (bigint) - [docs](./src/primitives/Address/BrandedAddress/toU256.js.md)
+- `Address.toAbiEncoded(address)` — To 32-byte ABI encoding - [docs](./src/primitives/Address/BrandedAddress/toAbiEncoded.js.md)
 
 **Validation:**
 
-- `Address.isValid(value)` — Check if valid address format
-- `Address.isValidChecksum(address)` — Validate EIP-55 checksum
-- `Address.isZero.call(address)` — Check if zero address
-- `Address.is(value)` — Type guard for Address type
+- `Address.isValid(value)` — Check if valid address format - [docs](./src/primitives/Address/BrandedAddress/isValid.js.md)
+- `Address.isValidChecksum(address)` — Validate EIP-55 checksum - [docs](./src/primitives/Address/BrandedAddress/isValidChecksum.js.md)
+- `Address.isZero(address)` — Check if zero address - [docs](./src/primitives/Address/BrandedAddress/isZero.js.md)
+- `Address.is(value)` — Type guard for Address type - [docs](./src/primitives/Address/BrandedAddress/is.js.md)
 
 **Comparison:**
 
-- `Address.equals.call(a, b)` — Compare two addresses
-- `Address.compare.call(a, b)` — Compare for sorting (-1, 0, 1)
-- `Address.lessThan.call(a, b)` — Check if a < b
-- `Address.greaterThan.call(a, b)` — Check if a > b
+- `Address.equals(a, b)` — Compare two addresses - [docs](./src/primitives/Address/BrandedAddress/equals.js.md)
+- `Address.compare(a, b)` — Compare for sorting (-1, 0, 1) - [docs](./src/primitives/Address/BrandedAddress/compare.js.md)
+- `Address.lessThan(a, b)` — Check if a < b - [docs](./src/primitives/Address/BrandedAddress/lessThan.js.md)
+- `Address.greaterThan(a, b)` — Check if a > b - [docs](./src/primitives/Address/BrandedAddress/greaterThan.js.md)
 
 **Contract Addresses:**
 
-- `Address.calculateCreateAddress.call(from, nonce)` — Predict CREATE address
-- `Address.calculateCreate2Address.call(from, salt, initCodeHash)` — Predict CREATE2 address
+- `Address.calculateCreateAddress(from, nonce)` — Predict CREATE address - [docs](./src/primitives/Address/BrandedAddress/calculateCreateAddress.js.md)
+- `Address.calculateCreate2Address(from, salt, initCode)` — Predict CREATE2 address - [docs](./src/primitives/Address/BrandedAddress/calculateCreate2Address.js.md)
 
 **Formatting:**
 
-- `Address.toShortHex.call(address, prefix?, suffix?)` — Short format (0x1234...5678)
-- `Address.format.call(address)` — EIP-55 checksummed (alias for toChecksumHex)
+- `Address.toShortHex(address, prefix?, suffix?)` — Short format (0x1234...5678) - [docs](./src/primitives/Address/BrandedAddress/toShortHex.js.md)
+- `Address.format(address)` — EIP-55 checksummed (alias for toChecksummed) - [docs](./src/primitives/Address/BrandedAddress/format.js.md)
 
 **Examples:**
 
@@ -145,13 +151,9 @@ const sum = Uint.plus.call(a, b);
 import { Address } from "@tevm/voltaire";
 
 const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = Address.toChecksumHex.call(addr);
+const checksum = Address.toChecksummed(addr);
 const isValid = Address.isValid(checksum); // true
-const create2 = Address.calculateCreate2Address.call(
-  deployer,
-  salt,
-  initCodeHash,
-);
+const create2 = Address.calculateCreate2Address(deployer, salt, initCode);
 ```
 
 ---
