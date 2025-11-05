@@ -37,6 +37,16 @@
 				"types": "./dist/index.d.cts",
 				"default": "./dist/index.cjs"
 			}
+		},
+		"./Address": {
+			"import": {
+				"types": "./types/primitives/Address/index.d.ts",
+				"default": "./src/primitives/Address/index.js"
+			},
+			"require": {
+				"types": "./types/primitives/Address/index.d.ts",
+				"default": "./src/primitives/Address/index.js"
+			}
 		}
 	},
 	"main": "dist/index.cjs",

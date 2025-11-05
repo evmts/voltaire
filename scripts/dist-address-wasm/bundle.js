@@ -1,1 +1,77 @@
-var u=null,c=null,a=0;async function y(){if(u)return;let t=await fetch(new URL("../wasm/crypto/address.wasm",import.meta.url)).then(e=>e.arrayBuffer());c=new WebAssembly.Memory({initial:1,maximum:1}),u=(await WebAssembly.instantiate(t,{env:{memory:c}})).instance}function m(t){if(!c)throw new Error("WASM not initialized");let r=a;if(a+=t,a>c.buffer.byteLength)throw new Error("Out of WASM memory");return r}async function b(t){await y();let r=u.exports,e=new TextEncoder().encode(t),s=m(e.length),n=m(20),o=new Uint8Array(r.memory.buffer);if(o.set(e,s),r.addressFromHex(s,e.length,n)!==0)throw a=0,new Error("Invalid hex format");let d=new Uint8Array(20);return d.set(o.subarray(n,n+20)),a=0,d}async function l(t){await y();let r=u.exports,e=m(20),s=m(42),n=new Uint8Array(r.memory.buffer);n.set(t,e),r.addressToHex(e,s);let o=n.subarray(s,s+42),i=new TextDecoder().decode(o);return a=0,i}async function w(t){await y();let r=u.exports,e=new TextEncoder().encode(t),s=m(e.length);new Uint8Array(r.memory.buffer).set(e,s);let o=r.addressIsValid(s,e.length);return a=0,o===1}async function x(t,r){await y();let e=u.exports,s=m(20),n=m(20),o=new Uint8Array(e.memory.buffer);o.set(t,s),o.set(r,n);let i=e.addressEquals(s,n);return a=0,i===1}async function f(t){await y();let r=u.exports,e=m(20);new Uint8Array(r.memory.buffer).set(t,e);let n=r.addressIsZero(e);return a=0,n===1}var p=new Uint8Array(20);export{p as ZERO,x as equals,b as fromHex,w as isValid,f as isZero,l as toHex};
+var u = null,
+	c = null,
+	a = 0;
+async function y() {
+	if (u) return;
+	const t = await fetch(
+		new URL("../wasm/crypto/address.wasm", import.meta.url),
+	).then((e) => e.arrayBuffer());
+	(c = new WebAssembly.Memory({ initial: 1, maximum: 1 })),
+		(u = (await WebAssembly.instantiate(t, { env: { memory: c } })).instance);
+}
+function m(t) {
+	if (!c) throw new Error("WASM not initialized");
+	const r = a;
+	if (((a += t), a > c.buffer.byteLength))
+		throw new Error("Out of WASM memory");
+	return r;
+}
+async function b(t) {
+	await y();
+	const r = u.exports,
+		e = new TextEncoder().encode(t),
+		s = m(e.length),
+		n = m(20),
+		o = new Uint8Array(r.memory.buffer);
+	if ((o.set(e, s), r.addressFromHex(s, e.length, n) !== 0))
+		throw ((a = 0), new Error("Invalid hex format"));
+	const d = new Uint8Array(20);
+	return d.set(o.subarray(n, n + 20)), (a = 0), d;
+}
+async function l(t) {
+	await y();
+	const r = u.exports,
+		e = m(20),
+		s = m(42),
+		n = new Uint8Array(r.memory.buffer);
+	n.set(t, e), r.addressToHex(e, s);
+	const o = n.subarray(s, s + 42),
+		i = new TextDecoder().decode(o);
+	return (a = 0), i;
+}
+async function w(t) {
+	await y();
+	const r = u.exports,
+		e = new TextEncoder().encode(t),
+		s = m(e.length);
+	new Uint8Array(r.memory.buffer).set(e, s);
+	const o = r.addressIsValid(s, e.length);
+	return (a = 0), o === 1;
+}
+async function x(t, r) {
+	await y();
+	const e = u.exports,
+		s = m(20),
+		n = m(20),
+		o = new Uint8Array(e.memory.buffer);
+	o.set(t, s), o.set(r, n);
+	const i = e.addressEquals(s, n);
+	return (a = 0), i === 1;
+}
+async function f(t) {
+	await y();
+	const r = u.exports,
+		e = m(20);
+	new Uint8Array(r.memory.buffer).set(t, e);
+	const n = r.addressIsZero(e);
+	return (a = 0), n === 1;
+}
+var p = new Uint8Array(20);
+export {
+	p as ZERO,
+	x as equals,
+	b as fromHex,
+	w as isValid,
+	f as isZero,
+	l as toHex,
+};

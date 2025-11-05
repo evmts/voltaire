@@ -1,1 +1,16 @@
-import{keccak_256 as r}from"@noble/hashes/sha3";function s(t){return r(t)}function a(t){let n=new TextEncoder().encode(t);return r(n)}function c(t){let n=t.startsWith("0x")?t.slice(2):t,i=new Uint8Array(n.length/2);for(let e=0;e<n.length;e+=2)i[e/2]=Number.parseInt(n.slice(e,e+2),16);return r(i)}export{a as hashString,c as hashHex,s as hash};
+import { keccak_256 as r } from "@noble/hashes/sha3";
+function s(t) {
+	return r(t);
+}
+function a(t) {
+	const n = new TextEncoder().encode(t);
+	return r(n);
+}
+function c(t) {
+	const n = t.startsWith("0x") ? t.slice(2) : t,
+		i = new Uint8Array(n.length / 2);
+	for (let e = 0; e < n.length; e += 2)
+		i[e / 2] = Number.parseInt(n.slice(e, e + 2), 16);
+	return r(i);
+}
+export { a as hashString, c as hashHex, s as hash };
