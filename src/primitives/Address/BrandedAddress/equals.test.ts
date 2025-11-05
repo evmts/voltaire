@@ -47,6 +47,6 @@ describe("equals", () => {
 	it("works with instance method", () => {
 		const addr1 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
 		const addr2 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-		expect(addr1.equals(addr2)).toBe(true);
+		expect(equals(addr1, addr2)).toBe(true);
 	});
 });

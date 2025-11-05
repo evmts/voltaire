@@ -42,6 +42,6 @@ describe("greaterThan", () => {
 	it("works with instance method", () => {
 		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000002");
 		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000001");
-		expect(addr1.greaterThan(addr2)).toBe(true);
+		expect(greaterThan(addr1, addr2)).toBe(true);
 	});
 });

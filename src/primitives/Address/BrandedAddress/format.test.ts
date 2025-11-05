@@ -30,7 +30,7 @@ describe("format", () => {
 
 	it("works with instance method", () => {
 		const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-		const formatted = addr.format();
+		const formatted = format(addr);
 		expect(formatted).toBe("0x742d35Cc6634c0532925a3b844bc9e7595F251E3");
 	});
 

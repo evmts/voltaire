@@ -1,6 +1,8 @@
 import { HEX_SIZE, SIZE } from "./constants.js";
 import { InvalidHexFormatError, InvalidHexStringError } from "./errors.js";
 
+const HEX_REGEX = /^[0-9a-fA-F]{40}$/
+
 /**
  * Parse hex string to Address (standard form)
  *
@@ -19,13 +21,12 @@ export function fromHex(hex) {
 		throw new InvalidHexFormatError();
 	}
 	const hexPart = hex.slice(2);
-	if (!/^[0-9a-fA-F]{40}$/.test(hexPart)) {
+	if (!HEX_REGEX.test(hexPart)) {
 		throw new InvalidHexStringError();
 	}
 	const bytes = new Uint8Array(SIZE);
 	for (let i = 0; i < SIZE; i++) {
-		const byte = Number.parseInt(hexPart.slice(i * 2, i * 2 + 2), 16);
-		bytes[i] = byte;
+		bytes[i] = Number.parseInt(hexPart.slice(i * 2, i * 2 + 2), 16);
 	}
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (bytes);
 }

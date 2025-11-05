@@ -30,6 +30,6 @@ describe("isZero", () => {
 
 	it("works with instance method", () => {
 		const addr = Address.fromHex("0x0000000000000000000000000000000000000000");
-		expect(addr.isZero()).toBe(true);
+		expect(isZero(addr)).toBe(true);
 	});
 });

@@ -36,7 +36,7 @@ describe("toU256", () => {
 
 	it("works with instance method", () => {
 		const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
-		const value = addr.toU256();
+		const value = toU256(addr);
 		expect(value).toBe(0x742d35cc6634c0532925a3b844bc9e7595f251e3n);
 	});
 

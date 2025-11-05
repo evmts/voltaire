@@ -5,6 +5,7 @@
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { Address } from "../../primitives/Address/index.js";
+import * as BrandedAddress from "../../primitives/Address/BrandedAddress/index.js";
 import * as primitives from "../../wasm-loader/loader.js";
 import { Keccak256Wasm } from "../keccak256.wasm.js";
 
@@ -39,7 +40,7 @@ export class PrivateKeySignerImpl implements Signer {
 		const pubkeyHash = Keccak256Wasm.hash(this.publicKey);
 		const addressBytes = pubkeyHash.slice(-20);
 		const addressObj = Address.fromBytes(addressBytes);
-		this.address = addressObj.toChecksummed();
+		this.address = BrandedAddress.toChecksummed(addressObj);
 	}
 
 	static fromPrivateKey(

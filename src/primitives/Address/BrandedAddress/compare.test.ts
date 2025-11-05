@@ -71,6 +71,6 @@ describe("compare", () => {
 	it("works with instance method", () => {
 		const addr1 = Address.fromHex("0x0000000000000000000000000000000000000001");
 		const addr2 = Address.fromHex("0x0000000000000000000000000000000000000002");
-		expect(addr1.compare(addr2)).toBe(-1);
+		expect(compare(addr1, addr2)).toBe(-1);
 	});
 });
