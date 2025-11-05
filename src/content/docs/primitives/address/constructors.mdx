@@ -1,0 +1,259 @@
+---
+title: Address Constructors
+description: Creating Address instances from various input types
+---
+
+# Constructors
+
+Methods for creating Address instances from different input formats.
+
+## Universal Constructor
+
+### `new Address(value)`
+
+Universal constructor dispatches to appropriate method based on input type.
+
+```typescript
+const addr1 = new Address(69n)
+const addr2 = new Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr3 = new Address(new Uint8Array(20))
+const addr4 = new Address(42)
+```
+
+**Parameters:**
+- `value: number | bigint | string | Uint8Array` - Input to convert
+
+**Returns:** `Address`
+
+**Throws:**
+- `InvalidHexFormatError` - Invalid hex string format
+- `InvalidHexStringError` - Invalid hex characters
+- `InvalidValueError` - Negative number/bigint
+
+Defined in: [primitives/Address/Address.js:12](https://github.com/evmts/primitives/blob/main/src/primitives/Address/Address.js)
+
+## Static Constructors
+
+### `Address.from(value)`
+
+Alias for universal constructor. Preferred for explicit type conversion.
+
+```typescript
+const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+```
+
+**Parameters:**
+- `value: number | bigint | string | Uint8Array`
+
+**Returns:** `Address`
+
+### `Address.fromHex(hex)`
+
+Creates address from hex string. Requires `0x` prefix and exactly 40 hex characters (42 total).
+
+```typescript
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Works with any casing
+const addr2 = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const addr3 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+```
+
+**Parameters:**
+- `hex: string` - Hex string with `0x` prefix
+
+**Returns:** `Address`
+
+**Throws:**
+- `InvalidHexFormatError` - Missing `0x` prefix or wrong length
+- `InvalidHexStringError` - Invalid hex characters
+
+Defined in: [primitives/Address/BrandedAddress/fromHex.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromHex.js)
+
+### `Address.fromBytes(bytes)`
+
+Creates address from raw 20-byte array.
+
+```typescript
+const bytes = new Uint8Array(20)
+const addr = Address.fromBytes(bytes)
+```
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw byte array (must be 20 bytes)
+
+**Returns:** `Address`
+
+**Throws:**
+- `Error` - If bytes length ≠ 20
+
+Defined in: [primitives/Address/BrandedAddress/fromBytes.js:6](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromBytes.js)
+
+### `Address.fromNumber(value)`
+
+Takes lower 160 bits of number/bigint. Useful for creating addresses from numeric values.
+
+```typescript
+const addr1 = Address.fromNumber(69n)
+const addr2 = Address.fromNumber(0x742d35Cc6634C0532925a3b844Bc9e7595f251e3n)
+const addr3 = Address.fromNumber(42)
+```
+
+**Parameters:**
+- `value: bigint | number` - Numeric value
+
+**Returns:** `Address`
+
+**Throws:**
+- `InvalidValueError` - If value is negative
+
+Defined in: [primitives/Address/BrandedAddress/fromNumber.js:10](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromNumber.js)
+
+### `Address.fromPublicKey(x, y)`
+
+Derives address from secp256k1 public key coordinates. Concatenates x and y (32 bytes each), hashes with keccak256, and takes last 20 bytes.
+
+**Formula:** `keccak256(x || y)[12:32]`
+
+```typescript
+// 256-bit secp256k1 public key coordinates
+const x = 0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e1234567890abcdef12345678n
+const y = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn
+const addr = Address.fromPublicKey(x, y)
+```
+
+**Parameters:**
+- `x: bigint` - X coordinate of public key (256 bits)
+- `y: bigint` - Y coordinate of public key (256 bits)
+
+**Returns:** `Address`
+
+Defined in: [primitives/Address/BrandedAddress/fromPublicKey.js:12](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js)
+
+**Note:** Uses keccak256 internally. When using tree-shakeable imports, this method will include keccak256 in bundle.
+
+### `Address.fromPrivateKey(privateKey)`
+
+Derives address from secp256k1 private key. First derives public key via elliptic curve multiplication, then computes address from public key.
+
+**Formula:** `fromPublicKey(derivePublicKey(privateKey))`
+
+```typescript
+// 32-byte secp256k1 private key
+const privateKey = new Uint8Array(32) // Your private key bytes
+const addr = Address.fromPrivateKey(privateKey)
+
+// Works with hex strings via conversion
+const pk = Bytes.fromHex("0x1234567890abcdef...")
+const addr2 = Address.fromPrivateKey(pk)
+```
+
+**Parameters:**
+- `privateKey: Uint8Array` - 32-byte secp256k1 private key
+
+**Returns:** `Address`
+
+**Throws:**
+- `InvalidPrivateKeyError` - If private key is not 32 bytes or invalid
+
+Defined in: [primitives/Address/BrandedAddress/fromPrivateKey.js](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromPrivateKey.js)
+
+**Note:** Uses secp256k1 curve operations and keccak256 internally. When using tree-shakeable imports, this method will include both secp256k1 and keccak256 in bundle.
+
+### `Address.fromAbiEncoded(bytes)`
+
+Extracts last 20 bytes from 32-byte ABI-encoded data.
+
+```typescript
+const abiEncoded = new Uint8Array(32) // last 20 bytes are address
+const addr = Address.fromAbiEncoded(abiEncoded)
+```
+
+**Parameters:**
+- `bytes: Uint8Array` - 32-byte ABI-encoded address
+
+**Returns:** `Address`
+
+**Throws:**
+- `Error` - If bytes length ≠ 32
+
+Defined in: [primitives/Address/BrandedAddress/fromAbiEncoded.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromAbiEncoded.js)
+
+### `Address.fromBase64(b64)`
+
+Decodes base64 string to 20-byte address.
+
+```typescript
+const addr = Address.fromBase64("dC01zGY0wFMpJaO4RLyedZX1Hj4=")
+```
+
+**Parameters:**
+- `b64: string` - Base64 encoded string
+
+**Returns:** `Address`
+
+**Throws:**
+- `Error` - If decoded length ≠ 20
+
+Defined in: [primitives/Address/BrandedAddress/fromBase64.js:6](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromBase64.js)
+
+## Factory Methods
+
+### `Address.of(...items)`
+
+Creates address from variable number of byte arguments. Equivalent to `Uint8Array.of()` but returns Address.
+
+```typescript
+// Create address from individual bytes
+const addr = Address.of(0x00, 0x00, ..., 0x45) // 20 bytes total
+
+// Useful for literal construction
+const addr2 = Address.of(
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 69
+)
+```
+
+**Parameters:**
+- `...items: number[]` - Byte values (0-255), must total 20 bytes
+
+**Returns:** `Address`
+
+**Throws:**
+- `Error` - If total bytes ≠ 20
+
+Defined in: [primitives/Address/Address.js](https://github.com/evmts/primitives/blob/main/src/primitives/Address/Address.js)
+
+### `Address.zero()`
+
+Returns zero address (`0x0000000000000000000000000000000000000000`).
+
+```typescript
+const zeroAddr = Address.zero()
+console.log(zeroAddr.isZero()) // true
+```
+
+**Returns:** `Address`
+
+Defined in: [primitives/Address/BrandedAddress/zero.js:4](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/zero.js)
+
+## Tree-Shakeable Usage
+
+All constructors available as tree-shakeable imports:
+
+```typescript
+import { from, fromHex, fromNumber, fromPrivateKey, zero } from '@tevm/voltaire/BrandedAddress'
+
+const addr1 = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr3 = fromNumber(69n)
+const addr4 = fromPrivateKey(privateKeyBytes)
+const zeroAddr = zero()
+```
+
+**Tree-shaking notes:**
+- `fromPublicKey` includes keccak256
+- `fromPrivateKey` includes secp256k1 + keccak256
+- Other constructors are pure conversions (no crypto)
+
+See [BrandedAddress](/primitives/address/branded-address) for details on tree-shakeable API.
