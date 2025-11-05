@@ -3,21 +3,21 @@ import type {
 	Commitment,
 	Proof,
 	VersionedHash,
-} from "./BrandedBlob.js";
-import type { calculateGas } from "./calculateGas.js";
-import type { estimateBlobCount } from "./estimateBlobCount.js";
-import type { from } from "./from.js";
-import type { fromData } from "./fromData.js";
-import type { isValid } from "./isValid.js";
-import type { isValidVersion } from "./isValidVersion.js";
-import type { joinData } from "./joinData.js";
-import type { splitData } from "./splitData.js";
-import type { toCommitment } from "./toCommitment.js";
-import type { toData } from "./toData.js";
-import type { toProof } from "./toProof.js";
-import type { toVersionedHash } from "./toVersionedHash.js";
-import type { verify } from "./verify.js";
-import type { verifyBatch } from "./verifyBatch.js";
+} from "./BrandedBlob/BrandedBlob.js";
+import type { calculateGas } from "./BrandedBlob/calculateGas.js";
+import type { estimateBlobCount } from "./BrandedBlob/estimateBlobCount.js";
+import type { from } from "./BrandedBlob/from.js";
+import type { fromData } from "./BrandedBlob/fromData.js";
+import type { isValid } from "./BrandedBlob/isValid.js";
+import type { isValidVersion } from "./BrandedBlob/isValidVersion.js";
+import type { joinData } from "./BrandedBlob/joinData.js";
+import type { splitData } from "./BrandedBlob/splitData.js";
+import type { toCommitment } from "./BrandedBlob/toCommitment.js";
+import type { toData } from "./BrandedBlob/toData.js";
+import type { toProof } from "./BrandedBlob/toProof.js";
+import type { toVersionedHash } from "./BrandedBlob/toVersionedHash.js";
+import type { verify } from "./BrandedBlob/verify.js";
+import type { verifyBatch } from "./BrandedBlob/verifyBatch.js";
 
 type BlobPrototype = BrandedBlob & {
 	toData: typeof toData;

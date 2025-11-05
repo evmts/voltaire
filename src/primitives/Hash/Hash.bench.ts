@@ -5,12 +5,12 @@
  * conversion, comparison, validation, hashing, and utilities
  */
 
-import { assert } from "./assert.js";
-import { clone } from "./clone.js";
-import { ZERO } from "./constants.js";
-import { equals } from "./equals.js";
-import { format } from "./format.js";
-import { fromBytes } from "./fromBytes.js";
+import { assert } from "./BrandedHash/assert.js";
+import { clone } from "./BrandedHash/clone.js";
+import { ZERO } from "./BrandedHash/constants.js";
+import { equals } from "./BrandedHash/equals.js";
+import { format } from "./BrandedHash/format.js";
+import { fromBytes } from "./BrandedHash/fromBytes.js";
 import { fromHex } from "./fromHex.js";
 import { isHash } from "./isHash.js";
 import { isValidHex } from "./isValidHex.js";
@@ -18,8 +18,8 @@ import { isZero } from "./isZero.js";
 import { keccak256 } from "./keccak256.js";
 import { keccak256Hex } from "./keccak256Hex.js";
 import { keccak256String } from "./keccak256String.js";
-import { random } from "./random.js";
-import { slice } from "./slice.js";
+import { random } from "./BrandedHash/random.js";
+import { slice } from "./BrandedHash/slice.js";
 import { toBytes } from "./toBytes.js";
 import { toHex } from "./toHex.js";
 import { toString } from "./toString.js";

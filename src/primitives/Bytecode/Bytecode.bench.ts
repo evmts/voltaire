@@ -4,23 +4,23 @@
  * Measures performance of bytecode analysis and manipulation operations
  */
 
-import type { BrandedBytecode } from "./BrandedBytecode.js";
-import { analyze } from "./analyze.js";
-import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
-import { equals } from "./equals.js";
-import { extractRuntime } from "./extractRuntime.js";
-import { formatInstructions } from "./formatInstructions.js";
-import { fromHex } from "./fromHex.js";
-import { getPushSize } from "./getPushSize.js";
-import { hasMetadata } from "./hasMetadata.js";
-import { isPush } from "./isPush.js";
-import { isTerminator } from "./isTerminator.js";
-import { isValidJumpDest } from "./isValidJumpDest.js";
-import { parseInstructions } from "./parseInstructions.js";
-import { size } from "./size.js";
-import { stripMetadata } from "./stripMetadata.js";
-import { toHex } from "./toHex.js";
-import { validate } from "./validate.js";
+import type { BrandedBytecode } from "./BrandedBytecode/BrandedBytecode.js";
+import { analyze } from "./BrandedBytecode/analyze.js";
+import { analyzeJumpDestinations } from "./BrandedBytecode/analyzeJumpDestinations.js";
+import { equals } from "./BrandedBytecode/equals.js";
+import { extractRuntime } from "./BrandedBytecode/extractRuntime.js";
+import { formatInstructions } from "./BrandedBytecode/formatInstructions.js";
+import { fromHex } from "./BrandedBytecode/fromHex.js";
+import { getPushSize } from "./BrandedBytecode/getPushSize.js";
+import { hasMetadata } from "./BrandedBytecode/hasMetadata.js";
+import { isPush } from "./BrandedBytecode/isPush.js";
+import { isTerminator } from "./BrandedBytecode/isTerminator.js";
+import { isValidJumpDest } from "./BrandedBytecode/isValidJumpDest.js";
+import { parseInstructions } from "./BrandedBytecode/parseInstructions.js";
+import { size } from "./BrandedBytecode/size.js";
+import { stripMetadata } from "./BrandedBytecode/stripMetadata.js";
+import { toHex } from "./BrandedBytecode/toHex.js";
+import { validate } from "./BrandedBytecode/validate.js";
 
 // ============================================================================
 // Benchmark Runner

@@ -1,5 +1,4 @@
 import type { BrandedHex } from "../../Hex/index.js";
-import type { BrandedUint } from "../../Uint/index.js";
 import type { Checksummed } from "./ChecksumAddress.js";
 import type { Lowercase } from "./LowercaseAddress.js";
 import type { Uppercase } from "./UppercaseAddress.js";
@@ -13,7 +12,7 @@ export type BrandedAddress = Uint8Array & {
 	toChecksummed(this: BrandedAddress): Checksummed;
 	toLowercase(this: BrandedAddress): Lowercase;
 	toUppercase(this: BrandedAddress): Uppercase;
-	toU256(this: BrandedAddress): BrandedUint;
+	toU256(this: BrandedAddress): Uint8Array;
 	toShortHex(
 		this: BrandedAddress,
 		sliceLength?: number,

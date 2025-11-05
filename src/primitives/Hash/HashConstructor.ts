@@ -1,19 +1,19 @@
-import type { BrandedHash } from "./BrandedHash.js";
-import type { assert } from "./assert.js";
-import type { clone } from "./clone.js";
-import type { equals } from "./equals.js";
-import type { format } from "./format.js";
-import type { isHash } from "./isHash.js";
-import type { isValidHex } from "./isValidHex.js";
-import type { isZero } from "./isZero.js";
+import type { BrandedHash } from "./BrandedHash/BrandedHash.js";
+import type { assert } from "./BrandedHash/assert.js";
+import type { clone } from "./BrandedHash/clone.js";
+import type { equals } from "./BrandedHash/equals.js";
+import type { format } from "./BrandedHash/format.js";
+import type { isHash } from "./BrandedHash/isHash.js";
+import type { isValidHex } from "./BrandedHash/isValidHex.js";
+import type { isZero } from "./BrandedHash/isZero.js";
 import type { keccak256 } from "./keccak256.js";
 import type { keccak256Hex } from "./keccak256Hex.js";
 import type { keccak256String } from "./keccak256String.js";
-import type { random } from "./random.js";
-import type { slice } from "./slice.js";
-import type { toBytes } from "./toBytes.js";
-import type { toHex } from "./toHex.js";
-import type { toString } from "./toString.js";
+import type { random } from "./BrandedHash/random.js";
+import type { slice } from "./BrandedHash/slice.js";
+import type { toBytes } from "./BrandedHash/toBytes.js";
+import type { toHex } from "./BrandedHash/toHex.js";
+import type { toString } from "./BrandedHash/toString.js";
 
 type HashPrototype = BrandedHash & {
 	toBytes: typeof toBytes;
