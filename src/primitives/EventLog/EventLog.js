@@ -38,7 +38,7 @@ export {
 };
 
 /**
- * @typedef {import('./BrandedEventLog.js').BrandedEventLog} BrandedEventLog
+ * @typedef {import('./BrandedEventLog/index.js').BrandedEventLog} BrandedEventLog
  * @typedef {import('./EventLogConstructor.js').EventLogConstructor} EventLogConstructor
  */
 
