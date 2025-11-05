@@ -1,4 +1,4 @@
-import * as Rlp from "../../Rlp/index.js";
+import { decode } from "../../Rlp/decode.js";
 import { Type } from "../types.js";
 import { decodeAddress, decodeBigint } from "../utils.js";
 
@@ -15,7 +15,7 @@ import { decodeAddress, decodeBigint } from "../utils.js";
  * ```
  */
 export function deserialize(data) {
-	const decoded = Rlp.decode(data);
+	const decoded = decode(data);
 	if (decoded.data.type !== "list") {
 		throw new Error("Invalid legacy transaction: expected list");
 	}

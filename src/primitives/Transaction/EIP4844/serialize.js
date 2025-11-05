@@ -1,4 +1,4 @@
-import * as Rlp from "../../Rlp/index.js";
+import { encode } from "../../Rlp/encode.js";
 import { Type } from "../types.js";
 import { encodeAccessList, encodeBigintCompact } from "../utils.js";
 
@@ -30,7 +30,7 @@ export function serialize(tx) {
 		tx.r,
 		tx.s,
 	];
-	const rlpEncoded = Rlp.encode(fields);
+	const rlpEncoded = encode(fields);
 
 	// Prepend type byte 0x03
 	const result = new Uint8Array(1 + rlpEncoded.length);

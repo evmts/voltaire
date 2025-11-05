@@ -1,5 +1,5 @@
 import { Keccak256 } from "../../../crypto/Keccak256/index.js";
-import * as Rlp from "../../Rlp/index.js";
+import { encode } from "../../Rlp/encode.js";
 import { encodeAddress, encodeBigintCompact } from "../utils.js";
 import { getChainId } from "./getChainId.js";
 
@@ -30,7 +30,7 @@ export function getSigningHash() {
 			new Uint8Array(0), // 0
 			new Uint8Array(0), // 0
 		];
-		return Keccak256.hash(Rlp.encode(fields));
+		return Keccak256.hash(encode(fields));
 	}
 	// Pre-EIP-155: [nonce, gasPrice, gasLimit, to, value, data]
 	const fields = [
@@ -41,5 +41,5 @@ export function getSigningHash() {
 		encodeBigintCompact(this.value),
 		this.data,
 	];
-	return Keccak256.hash(Rlp.encode(fields));
+	return Keccak256.hash(encode(fields));
 }

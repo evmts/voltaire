@@ -1,4 +1,4 @@
-import * as Rlp from "../../Rlp/index.js";
+import { encode } from "../../Rlp/encode.js";
 import { encodeAddress, encodeBigintCompact } from "../utils.js";
 
 /**
@@ -24,5 +24,5 @@ export function serialize() {
 		this.r,
 		this.s,
 	];
-	return Rlp.encode(fields);
+	return encode(fields);
 }
