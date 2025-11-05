@@ -1,4 +1,4 @@
-import * as Hash from "../../Hash/index.js";
+import { keccak256 } from "../../Hash/keccak256.js";
 import { encode } from "../../Rlp/encode.js";
 import { InvalidValueError } from "./errors.js";
 
@@ -36,7 +36,7 @@ export function calculateCreateAddress(address, nonce) {
 	}
 
 	const encoded = encode([address, nonceBytes]);
-	const hash = Hash.keccak256(encoded);
+	const hash = keccak256(encoded);
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
 		hash.slice(12, 32)
 	);

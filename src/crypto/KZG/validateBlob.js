@@ -3,7 +3,7 @@ import {
 	BYTES_PER_FIELD_ELEMENT,
 	FIELD_ELEMENTS_PER_BLOB,
 } from "./constants.js";
-import { KzgInvalidBlobError } from "./errors.ts";
+import { KzgInvalidBlobError } from "./errors.js";
 
 /**
  * Validate blob format

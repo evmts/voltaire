@@ -1,4 +1,4 @@
-import * as Hash from "../../Hash/index.js";
+import { keccak256 } from "../../Hash/keccak256.js";
 
 /**
  * Create Address from secp256k1 public key (standard form)
@@ -18,7 +18,7 @@ export function fromPublicKey(x, y) {
 		pubkey[31 - i] = Number((x >> BigInt(i * 8)) & 0xffn);
 		pubkey[63 - i] = Number((y >> BigInt(i * 8)) & 0xffn);
 	}
-	const hash = Hash.keccak256(pubkey);
+	const hash = keccak256(pubkey);
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
 		hash.slice(12, 32)
 	);

@@ -1,5 +1,5 @@
 import * as ckzg from "c-kzg";
-import { KzgError } from "./errors.ts";
+import { KzgError } from "./errors.js";
 
 // Track initialization state
 let initialized = false;

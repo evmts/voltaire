@@ -1,4 +1,4 @@
-import * as Hash from "../../Hash/index.js";
+import { keccak256 } from "../../Hash/keccak256.js";
 import { fromHex } from "./fromHex.js";
 import { isValid as isValidAddress } from "./isValid.js";
 import { toHex } from "./toHex.js";
@@ -22,7 +22,7 @@ import { toHex } from "./toHex.js";
  */
 export function from(addr) {
 	const lower = toHex(addr).slice(2);
-	const hashBytes = Hash.keccak256(new TextEncoder().encode(lower));
+	const hashBytes = keccak256(new TextEncoder().encode(lower));
 	const hashHex = Array.from(hashBytes, (b) =>
 		b.toString(16).padStart(2, "0"),
 	).join("");

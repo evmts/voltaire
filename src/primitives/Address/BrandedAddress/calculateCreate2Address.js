@@ -1,4 +1,4 @@
-import * as Hash from "../../Hash/index.js";
+import { keccak256 } from "../../Hash/keccak256.js";
 import { SIZE } from "./constants.js";
 
 /**
@@ -26,14 +26,14 @@ export function calculateCreate2Address(address, salt, initCode) {
 		throw new Error("Salt must be 32 bytes");
 	}
 
-	const initCodeHash = Hash.keccak256(initCode);
+	const initCodeHash = keccak256(initCode);
 	const data = new Uint8Array(1 + SIZE + 32 + 32);
 	data[0] = 0xff;
 	data.set(address, 1);
 	data.set(salt, 1 + SIZE);
 	data.set(initCodeHash, 1 + SIZE + 32);
 
-	const hash = Hash.keccak256(data);
+	const hash = keccak256(data);
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
 		hash.slice(12, 32)
 	);

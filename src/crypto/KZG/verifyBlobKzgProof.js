@@ -1,6 +1,6 @@
 import * as ckzg from "c-kzg";
 import { BYTES_PER_COMMITMENT, BYTES_PER_PROOF } from "./constants.js";
-import { KzgError, KzgNotInitializedError } from "./errors.ts";
+import { KzgError, KzgNotInitializedError } from "./errors.js";
 import { getInitialized } from "./loadTrustedSetup.js";
 import { validateBlob } from "./validateBlob.js";
 

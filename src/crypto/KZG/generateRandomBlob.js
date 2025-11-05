@@ -3,7 +3,7 @@ import {
 	BYTES_PER_FIELD_ELEMENT,
 	FIELD_ELEMENTS_PER_BLOB,
 } from "./constants.js";
-import { KzgError } from "./errors.ts";
+import { KzgError } from "./errors.js";
 
 /**
  * Generate random valid blob (for testing)
