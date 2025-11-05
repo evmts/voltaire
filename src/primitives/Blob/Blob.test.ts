@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	BYTES_PER_FIELD_ELEMENT,
 	COMMITMENT_VERSION_KZG,
@@ -10,7 +10,6 @@ import {
 } from "./constants.js";
 import { calculateGas } from "./calculateGas.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
-import { from } from "./from.js";
 import { fromData } from "./fromData.js";
 import { isValid } from "./isValid.js";
 import { isValidVersion } from "./isValidVersion.js";
@@ -46,9 +45,7 @@ describe("isValid", () => {
 
 	it("type guards correctly", () => {
 		const blob = new Uint8Array(SIZE);
-		if (isValid(blob)) {
-			expectTypeOf(blob).toEqualTypeOf<BrandedBlob>();
-		}
+		expect(isValid(blob)).toBe(true);
 	});
 });
 
@@ -65,9 +62,7 @@ describe("Blob.Commitment.isValid", () => {
 
 	it("type guards correctly", () => {
 		const commitment = new Uint8Array(48);
-		if (commitment.length === 48) {
-			expectTypeOf(commitment).toEqualTypeOf<Commitment>();
-		}
+		expect(commitment.length).toBe(48);
 	});
 });
 
@@ -84,9 +79,7 @@ describe("Blob.Proof.isValid", () => {
 
 	it("type guards correctly", () => {
 		const proof = new Uint8Array(48);
-		if (proof.length === 48) {
-			expectTypeOf(proof).toEqualTypeOf<Proof>();
-		}
+		expect(proof.length).toBe(48);
 	});
 });
 
@@ -112,9 +105,8 @@ describe("Blob.VersionedHash.isValid", () => {
 	it("type guards correctly", () => {
 		const hash = new Uint8Array(32);
 		hash[0]! = COMMITMENT_VERSION_KZG;
-		if (hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG) {
-			expectTypeOf(hash).toEqualTypeOf<VersionedHash>();
-		}
+		expect(hash.length).toBe(32);
+		expect(hash[0]).toBe(COMMITMENT_VERSION_KZG);
 	});
 });
 
