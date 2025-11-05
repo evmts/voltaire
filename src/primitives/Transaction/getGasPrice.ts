@@ -23,15 +23,15 @@ export function getGasPrice(this: Any, baseFee?: bigint): bigint {
 	}
 
 	if (isEIP1559(this)) {
-		return EIP1559.getEffectiveGasPrice.call(this, baseFee);
+		return EIP1559.getEffectiveGasPrice(this as any, baseFee);
 	}
 
 	if (isEIP4844(this)) {
-		return EIP4844.getEffectiveGasPrice.call(this, baseFee);
+		return EIP4844.getEffectiveGasPrice(this as any, baseFee);
 	}
 
 	if (isEIP7702(this)) {
-		return EIP7702.getEffectiveGasPrice.call(this, baseFee);
+		return EIP7702.getEffectiveGasPrice(this as any, baseFee);
 	}
 
 	throw new Error(`Unknown transaction type: ${(this as any).type}`);

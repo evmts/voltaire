@@ -50,8 +50,8 @@ export { getChainId as getChainId_internal } from "./getChainId.js";
 export { assertSigned as assertSigned_internal } from "./assertSigned.js";
 export { isSigned as isSigned_internal } from "./isSigned.js";
 
-import type { BrandedAddress } from "../Address/index.js";
-import { type BrandedHash, Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedHash } from "../Hash/index.js";
 import { assertSigned as _assertSigned } from "./assertSigned.js";
 import { format as _format } from "./format.js";
 import { getAccessList as _getAccessList } from "./getAccessList.js";

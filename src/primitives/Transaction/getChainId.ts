@@ -7,7 +7,7 @@ import type { Any } from "./types.js";
  */
 export function getChainId(this: Any): bigint | null {
 	if (isLegacy(this)) {
-		return Legacy.getChainId.call(this);
+		return Legacy.getChainId.call(this as any);
 	}
 	return this.chainId;
 }
