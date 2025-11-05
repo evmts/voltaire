@@ -1,32 +1,27 @@
 import { describe, expect, it } from "vitest";
-import {
-	analyze,
-	analyzeJumpDestinations,
-	equals,
-	extractRuntime,
-	formatInstruction,
-	formatInstructions,
-	fromHex,
-	getPushSize,
-	hash,
-	hasMetadata,
-	INVALID,
-	isPush,
-	isTerminator,
-	isValidJumpDest,
-	JUMPDEST,
-	parseInstructions,
-	PUSH1,
-	PUSH32,
-	RETURN,
-	REVERT,
-	size,
-	STOP,
-	stripMetadata,
-	toHex,
-	validate,
-} from "./Bytecode.js";
-import type { Instruction } from "./BrandedBytecode.js";
+import { analyze } from "./analyze.js";
+import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
+import { equals } from "./equals.js";
+import { extractRuntime } from "./extractRuntime.js";
+import { formatInstruction } from "./formatInstruction.js";
+import { formatInstructions } from "./formatInstructions.js";
+import { fromHex } from "./fromHex.js";
+import { getPushSize } from "./getPushSize.js";
+import { hash } from "./hash.js";
+import { hasMetadata } from "./hasMetadata.js";
+import { INVALID, JUMPDEST, PUSH1, PUSH32, RETURN, REVERT, STOP } from "./constants.js";
+import { isPush } from "./isPush.js";
+import { isTerminator } from "./isTerminator.js";
+import { isValidJumpDest } from "./isValidJumpDest.js";
+import { parseInstructions } from "./parseInstructions.js";
+import { size } from "./size.js";
+import { stripMetadata } from "./stripMetadata.js";
+import { toHex } from "./toHex.js";
+import { validate } from "./validate.js";
+import type { BrandedBytecode, Instruction } from "./BrandedBytecode.js";
+
+// Helper to brand Uint8Array as BrandedBytecode for tests
+const bc = (arr: Uint8Array): BrandedBytecode => arr as BrandedBytecode;
 
 // Create namespace for easier access
 const Bytecode = {
@@ -137,14 +132,14 @@ describe("Bytecode.isTerminator", () => {
 
 describe("Bytecode.analyzeJumpDestinations", () => {
 	it("finds JUMPDEST at start", () => {
-		const code = new Uint8Array([0x5b]);
+		const code = bc(new Uint8Array([0x5b]));
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.has(0)).toBe(true);
 		expect(jumpdests.size).toBe(1);
 	});
 
 	it("finds multiple JUMPDESTs", () => {
-		const code = new Uint8Array([0x5b, 0x00, 0x5b]);
+		const code = bc(new Uint8Array([0x5b, 0x00, 0x5b]));
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.has(0)).toBe(true);
 		expect(jumpdests.has(2)).toBe(true);
@@ -152,7 +147,7 @@ describe("Bytecode.analyzeJumpDestinations", () => {
 	});
 
 	it("skips JUMPDEST in PUSH data", () => {
-		const code = new Uint8Array([0x60, 0x5b, 0x5b]); // PUSH1 0x5b, JUMPDEST
+		const code = bc(new Uint8Array([0x60, 0x5b, 0x5b])); // PUSH1 0x5b, JUMPDEST
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.has(1)).toBe(false); // Inside PUSH data
 		expect(jumpdests.has(2)).toBe(true); // Actual JUMPDEST
@@ -161,26 +156,26 @@ describe("Bytecode.analyzeJumpDestinations", () => {
 
 	it("handles PUSH32 skipping correctly", () => {
 		const pushData = new Array(32).fill(0x5b);
-		const code = new Uint8Array([0x7f, ...pushData, 0x5b]);
+		const code = bc(new Uint8Array([0x7f, ...pushData, 0x5b]));
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.has(33)).toBe(true); // After PUSH32
 		expect(jumpdests.size).toBe(1);
 	});
 
 	it("handles empty bytecode", () => {
-		const code = new Uint8Array([]);
+		const code = bc(new Uint8Array([]));
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.size).toBe(0);
 	});
 
 	it("handles incomplete PUSH", () => {
-		const code = new Uint8Array([0x60]); // PUSH1 with no data
+		const code = bc(new Uint8Array([0x60])); // PUSH1 with no data
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.size).toBe(0);
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x5b, 0x00, 0x5b]);
+		const code = bc(new Uint8Array([0x5b, 0x00, 0x5b]));
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.has(0)).toBe(true);
 		expect(jumpdests.has(2)).toBe(true);
@@ -189,27 +184,27 @@ describe("Bytecode.analyzeJumpDestinations", () => {
 
 describe("Bytecode.isValidJumpDest", () => {
 	it("validates correct JUMPDEST", () => {
-		const code = new Uint8Array([0x5b]);
+		const code = bc(new Uint8Array([0x5b]));
 		expect(Bytecode.isValidJumpDest(code, 0)).toBe(true);
 	});
 
 	it("rejects JUMPDEST in PUSH data", () => {
-		const code = new Uint8Array([0x60, 0x5b]);
+		const code = bc(new Uint8Array([0x60, 0x5b]));
 		expect(Bytecode.isValidJumpDest(code, 1)).toBe(false);
 	});
 
 	it("rejects non-JUMPDEST position", () => {
-		const code = new Uint8Array([0x00]);
+		const code = bc(new Uint8Array([0x00]));
 		expect(Bytecode.isValidJumpDest(code, 0)).toBe(false);
 	});
 
 	it("rejects out-of-bounds position", () => {
-		const code = new Uint8Array([0x5b]);
+		const code = bc(new Uint8Array([0x5b]));
 		expect(Bytecode.isValidJumpDest(code, 10)).toBe(false);
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x5b]);
+		const code = bc(new Uint8Array([0x5b]));
 		expect(Bytecode.isValidJumpDest(code, 0)).toBe(true);
 	});
 });
@@ -220,49 +215,49 @@ describe("Bytecode.isValidJumpDest", () => {
 
 describe("Bytecode.validate", () => {
 	it("validates empty bytecode", () => {
-		const code = new Uint8Array([]);
+		const code = bc(new Uint8Array([]));
 		expect(Bytecode.validate(code)).toBe(true);
 	});
 
 	it("validates simple bytecode", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x00]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x00]));
 		expect(Bytecode.validate(code)).toBe(true);
 	});
 
 	it("validates PUSH32", () => {
-		const code = new Uint8Array([0x7f, ...new Array(32).fill(0xff)]);
+		const code = bc(new Uint8Array([0x7f, ...new Array(32).fill(0xff)]));
 		expect(Bytecode.validate(code)).toBe(true);
 	});
 
 	it("rejects incomplete PUSH1", () => {
-		const code = new Uint8Array([0x60]); // PUSH1 with no data
+		const code = bc(new Uint8Array([0x60])); // PUSH1 with no data
 		expect(Bytecode.validate(code)).toBe(false);
 	});
 
 	it("rejects incomplete PUSH32", () => {
-		const code = new Uint8Array([0x7f, ...new Array(31).fill(0xff)]);
+		const code = bc(new Uint8Array([0x7f, ...new Array(31).fill(0xff)]));
 		expect(Bytecode.validate(code)).toBe(false);
 	});
 
 	it("validates PUSH at exact boundary", () => {
-		const code = new Uint8Array([0x60, 0x01]); // Exactly enough bytes
+		const code = bc(new Uint8Array([0x60, 0x01])); // Exactly enough bytes
 		expect(Bytecode.validate(code)).toBe(true);
 	});
 
 	it("validates bytecode with multiple instructions", () => {
-		const code = new Uint8Array([
+		const code = bc(new Uint8Array([
 			0x60,
 			0x00, // PUSH1 0x00
 			0x60,
 			0x01, // PUSH1 0x01
 			0x01, // ADD
 			0x5b, // JUMPDEST
-		]);
+		]));
 		expect(Bytecode.validate(code)).toBe(true);
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		expect(Bytecode.validate(code)).toBe(true);
 	});
 });
@@ -273,7 +268,7 @@ describe("Bytecode.validate", () => {
 
 describe("Bytecode.parseInstructions", () => {
 	it("parses single instruction", () => {
-		const code = new Uint8Array([0x00]);
+		const code = bc(new Uint8Array([0x00]));
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(1);
 		expect(instructions[0]).toEqual({
@@ -283,7 +278,7 @@ describe("Bytecode.parseInstructions", () => {
 	});
 
 	it("parses PUSH instruction with data", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(1);
 		expect(instructions[0]).toEqual({
@@ -295,7 +290,7 @@ describe("Bytecode.parseInstructions", () => {
 
 	it("parses PUSH32 with full data", () => {
 		const data = new Array(32).fill(0xff);
-		const code = new Uint8Array([0x7f, ...data]);
+		const code = bc(new Uint8Array([0x7f, ...data]));
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(1);
 		expect(instructions[0]?.pushData).toHaveLength(32);
@@ -303,7 +298,7 @@ describe("Bytecode.parseInstructions", () => {
 	});
 
 	it("parses multiple instructions", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]));
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(3);
 		expect(instructions[0]?.opcode).toBe(0x60);
@@ -312,14 +307,14 @@ describe("Bytecode.parseInstructions", () => {
 	});
 
 	it("handles incomplete PUSH data", () => {
-		const code = new Uint8Array([0x60]); // PUSH1 with no data
+		const code = bc(new Uint8Array([0x60])); // PUSH1 with no data
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(1);
 		expect(instructions[0]?.pushData).toHaveLength(0);
 	});
 
 	it("tracks correct positions", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x5b, 0x00]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x5b, 0x00]));
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions[0]?.position).toBe(0);
 		expect(instructions[1]?.position).toBe(2);
@@ -327,7 +322,7 @@ describe("Bytecode.parseInstructions", () => {
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(1);
 	});
@@ -339,7 +334,7 @@ describe("Bytecode.parseInstructions", () => {
 
 describe("Bytecode.analyze", () => {
 	it("performs complete analysis", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x5b, 0x00]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x5b, 0x00]));
 		const analysis = Bytecode.analyze(code);
 
 		expect(analysis.valid).toBe(true);
@@ -349,7 +344,7 @@ describe("Bytecode.analyze", () => {
 	});
 
 	it("marks invalid bytecode", () => {
-		const code = new Uint8Array([0x60]); // Incomplete PUSH
+		const code = bc(new Uint8Array([0x60])); // Incomplete PUSH
 		const analysis = Bytecode.analyze(code);
 
 		expect(analysis.valid).toBe(false);
@@ -357,7 +352,7 @@ describe("Bytecode.analyze", () => {
 	});
 
 	it("analyzes empty bytecode", () => {
-		const code = new Uint8Array([]);
+		const code = bc(new Uint8Array([]));
 		const analysis = Bytecode.analyze(code);
 
 		expect(analysis.valid).toBe(true);
@@ -366,7 +361,7 @@ describe("Bytecode.analyze", () => {
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x5b]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x5b]));
 		const analysis = Bytecode.analyze(code);
 		expect(analysis.valid).toBe(true);
 	});
@@ -378,42 +373,42 @@ describe("Bytecode.analyze", () => {
 
 describe("Bytecode.size", () => {
 	it("returns correct size", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x5b]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x5b]));
 		expect(Bytecode.size(code)).toBe(3);
 	});
 
 	it("returns 0 for empty bytecode", () => {
-		const code = new Uint8Array([]);
+		const code = bc(new Uint8Array([]));
 		expect(Bytecode.size(code)).toBe(0);
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		expect(Bytecode.size(code)).toBe(2);
 	});
 });
 
 describe("Bytecode.extractRuntime", () => {
 	it("extracts runtime portion", () => {
-		const code = new Uint8Array([0x60, 0x00, 0x60, 0x01, 0x60, 0x02]);
+		const code = bc(new Uint8Array([0x60, 0x00, 0x60, 0x01, 0x60, 0x02]));
 		const runtime = Bytecode.extractRuntime(code, 2);
 		expect(runtime).toEqual(new Uint8Array([0x60, 0x01, 0x60, 0x02]));
 	});
 
 	it("handles offset 0", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		const runtime = Bytecode.extractRuntime(code, 0);
 		expect(runtime).toEqual(code);
 	});
 
 	it("handles offset at end", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		const runtime = Bytecode.extractRuntime(code, 2);
 		expect(runtime).toEqual(new Uint8Array([]));
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x00, 0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x00, 0x60, 0x01]));
 		const runtime = Bytecode.extractRuntime(code, 2);
 		expect(runtime).toEqual(new Uint8Array([0x60, 0x01]));
 	});
@@ -425,32 +420,32 @@ describe("Bytecode.extractRuntime", () => {
 
 describe("Bytecode.equals", () => {
 	it("returns true for identical bytecode", () => {
-		const code1 = new Uint8Array([0x60, 0x01, 0x5b]);
-		const code2 = new Uint8Array([0x60, 0x01, 0x5b]);
+		const code1 = bc(new Uint8Array([0x60, 0x01, 0x5b]));
+		const code2 = bc(new Uint8Array([0x60, 0x01, 0x5b]));
 		expect(Bytecode.equals(code1, code2)).toBe(true);
 	});
 
 	it("returns false for different bytecode", () => {
-		const code1 = new Uint8Array([0x60, 0x01]);
-		const code2 = new Uint8Array([0x60, 0x02]);
+		const code1 = bc(new Uint8Array([0x60, 0x01]));
+		const code2 = bc(new Uint8Array([0x60, 0x02]));
 		expect(Bytecode.equals(code1, code2)).toBe(false);
 	});
 
 	it("returns false for different lengths", () => {
-		const code1 = new Uint8Array([0x60, 0x01]);
-		const code2 = new Uint8Array([0x60, 0x01, 0x5b]);
+		const code1 = bc(new Uint8Array([0x60, 0x01]));
+		const code2 = bc(new Uint8Array([0x60, 0x01, 0x5b]));
 		expect(Bytecode.equals(code1, code2)).toBe(false);
 	});
 
 	it("returns true for empty bytecode", () => {
-		const code1 = new Uint8Array([]);
-		const code2 = new Uint8Array([]);
+		const code1 = bc(new Uint8Array([]));
+		const code2 = bc(new Uint8Array([]));
 		expect(Bytecode.equals(code1, code2)).toBe(true);
 	});
 
 	it("works with direct call", () => {
-		const code1 = new Uint8Array([0x60, 0x01]);
-		const code2 = new Uint8Array([0x60, 0x01]);
+		const code1 = bc(new Uint8Array([0x60, 0x01]));
+		const code2 = bc(new Uint8Array([0x60, 0x01]));
 		expect(Bytecode.equals(code1, code2)).toBe(true);
 	});
 });
@@ -461,14 +456,14 @@ describe("Bytecode.equals", () => {
 
 describe("Bytecode.hash", () => {
 	it("computes keccak256 hash", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		const result = Bytecode.hash(code);
 		expect(result).toBeInstanceOf(Uint8Array);
 		expect(result.length).toBe(32);
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		const result = Bytecode.hash(code);
 		expect(result).toBeInstanceOf(Uint8Array);
 		expect(result.length).toBe(32);
@@ -481,27 +476,27 @@ describe("Bytecode.hash", () => {
 
 describe("Bytecode.toHex", () => {
 	it("formats bytecode with prefix", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		expect(Bytecode.toHex(code)).toBe("0x6001");
 	});
 
 	it("formats bytecode without prefix", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		expect(Bytecode.toHex(code, false)).toBe("6001");
 	});
 
 	it("pads single digit hex", () => {
-		const code = new Uint8Array([0x01, 0x0f]);
+		const code = bc(new Uint8Array([0x01, 0x0f]));
 		expect(Bytecode.toHex(code)).toBe("0x010f");
 	});
 
 	it("handles empty bytecode", () => {
-		const code = new Uint8Array([]);
+		const code = bc(new Uint8Array([]));
 		expect(Bytecode.toHex(code)).toBe("0x");
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		expect(Bytecode.toHex(code)).toBe("0x6001");
 	});
 });
@@ -529,7 +524,7 @@ describe("Bytecode.fromHex", () => {
 	});
 
 	it("round-trips with toHex", () => {
-		const original = new Uint8Array([0x60, 0x01, 0x5b, 0xff]);
+		const original = bc(new Uint8Array([0x60, 0x01, 0x5b, 0xff]));
 		const hex = Bytecode.toHex(original);
 		const parsed = Bytecode.fromHex(hex);
 		expect(parsed).toEqual(original);
@@ -570,7 +565,7 @@ describe("Bytecode.formatInstruction", () => {
 
 describe("Bytecode.formatInstructions", () => {
 	it("formats multiple instructions", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x5b, 0x00]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x5b, 0x00]));
 		const formatted = Bytecode.formatInstructions(code);
 		expect(formatted).toEqual([
 			"0x0000: PUSH1 0x01",
@@ -580,13 +575,13 @@ describe("Bytecode.formatInstructions", () => {
 	});
 
 	it("handles empty bytecode", () => {
-		const code = new Uint8Array([]);
+		const code = bc(new Uint8Array([]));
 		const formatted = Bytecode.formatInstructions(code);
 		expect(formatted).toEqual([]);
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01]);
+		const code = bc(new Uint8Array([0x60, 0x01]));
 		const formatted = Bytecode.formatInstructions(code);
 		expect(formatted).toHaveLength(1);
 	});
@@ -598,31 +593,31 @@ describe("Bytecode.formatInstructions", () => {
 
 describe("Bytecode.hasMetadata", () => {
 	it("detects metadata marker", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x00, 0x33]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x00, 0x33]));
 		expect(Bytecode.hasMetadata(code)).toBe(true);
 	});
 
 	it("validates length marker range", () => {
-		const code1 = new Uint8Array([0x60, 0x01, 0x00, 0x20]);
+		const code1 = bc(new Uint8Array([0x60, 0x01, 0x00, 0x20]));
 		expect(Bytecode.hasMetadata(code1)).toBe(true);
 
-		const code2 = new Uint8Array([0x60, 0x01, 0x00, 0x40]);
+		const code2 = bc(new Uint8Array([0x60, 0x01, 0x00, 0x40]));
 		expect(Bytecode.hasMetadata(code2)).toBe(true);
 
-		const code3 = new Uint8Array([0x60, 0x01, 0x00, 0x1f]);
+		const code3 = bc(new Uint8Array([0x60, 0x01, 0x00, 0x1f]));
 		expect(Bytecode.hasMetadata(code3)).toBe(false);
 
-		const code4 = new Uint8Array([0x60, 0x01, 0x00, 0x41]);
+		const code4 = bc(new Uint8Array([0x60, 0x01, 0x00, 0x41]));
 		expect(Bytecode.hasMetadata(code4)).toBe(false);
 	});
 
 	it("rejects too-short bytecode", () => {
-		const code = new Uint8Array([0x60]);
+		const code = bc(new Uint8Array([0x60]));
 		expect(Bytecode.hasMetadata(code)).toBe(false);
 	});
 
 	it("works with direct call", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x00, 0x33]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x00, 0x33]));
 		expect(Bytecode.hasMetadata(code)).toBe(true);
 	});
 });
@@ -634,20 +629,20 @@ describe("Bytecode.stripMetadata", () => {
 		// Need 51 bytes of metadata data + 2 bytes length marker
 		const metadataBytes = 0x33;
 		const metadata = new Array(metadataBytes).fill(0xaa); // metadataBytes worth of data
-		const code = new Uint8Array([
+		const code = bc(new Uint8Array([
 			0x60,
 			0x01,
 			0x5b,
 			...metadata,
 			0x00,
 			metadataBytes,
-		]);
+		]));
 		const stripped = Bytecode.stripMetadata(code);
 		expect(stripped).toEqual(new Uint8Array([0x60, 0x01, 0x5b]));
 	});
 
 	it("returns original if no metadata", () => {
-		const code = new Uint8Array([0x60, 0x01, 0x5b]);
+		const code = bc(new Uint8Array([0x60, 0x01, 0x5b]));
 		const stripped = Bytecode.stripMetadata(code);
 		expect(stripped).toBe(code); // Same reference
 	});
@@ -656,7 +651,7 @@ describe("Bytecode.stripMetadata", () => {
 		// metadataLength = 0x28 (40) + 2 = 42 bytes
 		const metadataBytes = 0x28;
 		const metadata = new Array(metadataBytes).fill(0xbb);
-		const code = new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]);
+		const code = bc(new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]));
 		const stripped = Bytecode.stripMetadata(code);
 		expect(stripped).toEqual(new Uint8Array([0x60, 0x01]));
 	});
@@ -664,7 +659,7 @@ describe("Bytecode.stripMetadata", () => {
 	it("works with direct call", () => {
 		const metadataBytes = 0x33;
 		const metadata = new Array(metadataBytes).fill(0xaa);
-		const code = new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]);
+		const code = bc(new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]));
 		const stripped = Bytecode.stripMetadata(code);
 		expect(stripped).toEqual(new Uint8Array([0x60, 0x01]));
 	});
@@ -694,7 +689,7 @@ describe("Bytecode edge cases", () => {
 
 	it("handles real constructor bytecode pattern", () => {
 		// Simplified constructor that returns runtime code
-		const constructor = new Uint8Array([
+		const constructor = bc(new Uint8Array([
 			0x60,
 			0x80, // PUSH1 0x80
 			0x60,
@@ -712,7 +707,7 @@ describe("Bytecode edge cases", () => {
 			0x60,
 			0x00, // PUSH1 0x00
 			0xf3, // RETURN
-		]);
+		]));
 
 		const analysis = Bytecode.analyze(constructor);
 		expect(analysis.valid).toBe(true);
@@ -720,7 +715,7 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("analyzes bytecode with sequential PUSHes", () => {
-		const code = new Uint8Array([
+		const code = bc(new Uint8Array([
 			0x60,
 			0x00, // PUSH1 0x00
 			0x61,
@@ -730,7 +725,7 @@ describe("Bytecode edge cases", () => {
 			0x01,
 			0x00,
 			0x00, // PUSH3 0x010000
-		]);
+		]));
 
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(3);
@@ -740,7 +735,7 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("handles JUMPDEST detection in complex bytecode", () => {
-		const code = new Uint8Array([
+		const code = bc(new Uint8Array([
 			0x60,
 			0x5b, // PUSH1 0x5b (fake JUMPDEST in data)
 			0x56, // JUMP
@@ -748,7 +743,7 @@ describe("Bytecode edge cases", () => {
 			0x60,
 			0x00, // PUSH1 0x00
 			0x5b, // JUMPDEST (real)
-		]);
+		]));
 
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.has(1)).toBe(false); // In PUSH data
@@ -758,18 +753,18 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("validates incomplete multi-byte PUSH", () => {
-		const code1 = new Uint8Array([0x61, 0x01]); // PUSH2 with 1 byte
+		const code1 = bc(new Uint8Array([0x61, 0x01])); // PUSH2 with 1 byte
 		expect(Bytecode.validate(code1)).toBe(false);
 
-		const code2 = new Uint8Array([0x62, 0x01, 0x02]); // PUSH3 with 2 bytes
+		const code2 = bc(new Uint8Array([0x62, 0x01, 0x02])); // PUSH3 with 2 bytes
 		expect(Bytecode.validate(code2)).toBe(false);
 
-		const code3 = new Uint8Array([0x62, 0x01, 0x02, 0x03]); // PUSH3 with 3 bytes
+		const code3 = bc(new Uint8Array([0x62, 0x01, 0x02, 0x03])); // PUSH3 with 3 bytes
 		expect(Bytecode.validate(code3)).toBe(true);
 	});
 
 	it("round-trips complex bytecode through hex", () => {
-		const original = new Uint8Array([
+		const original = bc(new Uint8Array([
 			0x60,
 			0x80,
 			0x60,
@@ -779,7 +774,7 @@ describe("Bytecode edge cases", () => {
 			0x00,
 			0x7f,
 			...new Array(32).fill(0xff),
-		]);
+		]));
 
 		const hex = Bytecode.toHex(original);
 		const parsed = Bytecode.fromHex(hex);
@@ -787,13 +782,13 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("disassembles realistic bytecode snippet", () => {
-		const code = new Uint8Array([
+		const code = bc(new Uint8Array([
 			0x60,
 			0x00, // PUSH1 0x00
 			0x35, // CALLDATALOAD
 			0x5b, // JUMPDEST
 			0x00, // STOP
-		]);
+		]));
 
 		const disassembly = Bytecode.formatInstructions(code);
 		expect(disassembly).toEqual([

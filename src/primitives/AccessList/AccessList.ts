@@ -1,14 +1,14 @@
 /**
- * EIP-2930 Access List Type Definitions
+ * AccessList Type Definitions
  *
- * This file only exports types for the AccessList module.
- * For runtime functionality, import from './AccessList.js'
+ * Note: We don't export an 'AccessList' type alias here to avoid collision with the
+ * AccessList factory function exported from AccessList.js. Use BrandedAccessList for the type.
  */
 
+// Re-export types
 export type {
 	BrandedAccessList,
 	BrandedAccessList as Type,
-	BrandedAccessList as AccessList,
 	Item,
 } from "./BrandedAccessList.js";
 

@@ -3,9 +3,91 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { EventLog } from "./EventLog.js";
+import {
+	clone,
+	copy,
+	create,
+	filterLogs,
+	getIndexed,
+	getIndexedTopics,
+	getSignature,
+	getTopic0,
+	isRemoved,
+	matchesAddress,
+	matchesFilter,
+	matchesTopics,
+	sortLogs,
+	wasRemoved,
+} from "./EventLog.js";
 import type { BrandedAddress } from "../Address/index.js";
 import type { BrandedHash } from "../Hash/index.js";
+
+// Reconstruct EventLog namespace for tests with .call() support
+const EventLog = {
+	create,
+	getTopic0: function (log: any) {
+		return getTopic0(log ?? this);
+	},
+	getIndexedTopics: function (log: any) {
+		return getIndexedTopics(log ?? this);
+	},
+	getSignature: function (log: any) {
+		return getSignature(log ?? this);
+	},
+	getIndexed: function (log: any) {
+		return getIndexed(log ?? this);
+	},
+	matchesTopics: function (log: any, filterTopics?: any) {
+		if (filterTopics === undefined) return matchesTopics(this, log);
+		return matchesTopics(log, filterTopics);
+	},
+	matches: function (log: any, filterTopics?: any) {
+		if (filterTopics === undefined) return matchesTopics(this, log);
+		return matchesTopics(log, filterTopics);
+	},
+	matchesAddress: function (log: any, filterAddress?: any) {
+		if (filterAddress === undefined) return matchesAddress(this, log);
+		return matchesAddress(log, filterAddress);
+	},
+	matchesAddr: function (log: any, filterAddress?: any) {
+		if (filterAddress === undefined) return matchesAddress(this, log);
+		return matchesAddress(log, filterAddress);
+	},
+	matchesFilter: function (log: any, filter?: any) {
+		if (filter === undefined) return matchesFilter(this, log);
+		return matchesFilter(log, filter);
+	},
+	matchesAll: function (log: any, filter?: any) {
+		if (filter === undefined) return matchesFilter(this, log);
+		return matchesFilter(log, filter);
+	},
+	isRemoved: function (log: any) {
+		return isRemoved(log ?? this);
+	},
+	wasRemoved: function (log: any) {
+		return wasRemoved(log ?? this);
+	},
+	clone: function (log: any) {
+		return clone(log ?? this);
+	},
+	copy: function (log: any) {
+		return copy(log ?? this);
+	},
+	filterLogs: function (logs: any, filter?: any) {
+		if (filter === undefined) return filterLogs(this, logs);
+		return filterLogs(logs, filter);
+	},
+	filter: function (logs: any, filter?: any) {
+		if (filter === undefined) return filterLogs(this, logs);
+		return filterLogs(logs, filter);
+	},
+	sortLogs: function (logs: any) {
+		return sortLogs(logs ?? this);
+	},
+	sort: function (logs: any) {
+		return sortLogs(logs ?? this);
+	},
+};
 
 // ============================================================================
 // Test Data

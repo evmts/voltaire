@@ -15,6 +15,10 @@ import type {
 	EIP7702,
 	Legacy,
 } from "../Transaction/types.js";
+import type { BrandedTransactionLegacy } from "../Transaction/Legacy/BrandedTransactionLegacy.js";
+import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/BrandedTransactionEIP1559.js";
+import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
+import type { BrandedTransactionEIP7702 } from "../Transaction/EIP7702/BrandedTransactionEIP7702.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -276,12 +280,12 @@ console.log(
 console.log("--- Legacy Chain ID ---");
 results.push(
 	benchmark("Legacy.getChainId - EIP-155", () =>
-		Transaction.Legacy.getChainId(eip155Tx),
+		Transaction.Legacy.getChainId.call(eip155Tx as BrandedTransactionLegacy),
 	),
 );
 results.push(
 	benchmark("Legacy.getChainId - pre-EIP-155", () =>
-		Transaction.Legacy.getChainId(legacyTx),
+		Transaction.Legacy.getChainId.call(legacyTx as BrandedTransactionLegacy),
 	),
 );
 
@@ -299,21 +303,21 @@ console.log("\n--- Legacy Serialization (Not Implemented) ---");
 results.push(
 	benchmark("Legacy.serialize", () => {
 		try {
-			Transaction.Legacy.serialize(legacyTx);
+			Transaction.Legacy.serialize.call(legacyTx as BrandedTransactionLegacy);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("Legacy.hash", () => {
 		try {
-			Transaction.Legacy.hash(legacyTx);
+			Transaction.Legacy.hash.call(legacyTx as BrandedTransactionLegacy);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("Legacy.getSigningHash", () => {
 		try {
-			Transaction.Legacy.getSigningHash(legacyTx);
+			Transaction.Legacy.getSigningHash.call(legacyTx as BrandedTransactionLegacy);
 		} catch {}
 	}),
 );
@@ -345,7 +349,7 @@ console.log("--- EIP-1559 Gas Calculation ---");
 const baseFee = 10000000000n;
 results.push(
 	benchmark("EIP1559.getEffectiveGasPrice", () =>
-		Transaction.EIP1559.getEffectiveGasPrice(eip1559Tx, baseFee),
+		Transaction.EIP1559.getEffectiveGasPrice(eip1559Tx as BrandedTransactionEIP1559, baseFee),
 	),
 );
 
@@ -363,21 +367,21 @@ console.log("\n--- EIP-1559 Serialization (Not Implemented) ---");
 results.push(
 	benchmark("EIP1559.serialize", () => {
 		try {
-			Transaction.EIP1559.serialize(eip1559Tx);
+			Transaction.EIP1559.serialize(eip1559Tx as BrandedTransactionEIP1559);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("EIP1559.hash", () => {
 		try {
-			Transaction.EIP1559.hash(eip1559Tx);
+			Transaction.EIP1559.hash(eip1559Tx as BrandedTransactionEIP1559);
 		} catch {}
 	}),
 );
 results.push(
 	benchmark("EIP1559.getSigningHash", () => {
 		try {
-			Transaction.EIP1559.getSigningHash(eip1559Tx);
+			Transaction.EIP1559.getSigningHash(eip1559Tx as BrandedTransactionEIP1559);
 		} catch {}
 	}),
 );
@@ -409,12 +413,12 @@ console.log("--- EIP-4844 Gas Calculation ---");
 const blobBaseFee = 1n;
 results.push(
 	benchmark("EIP4844.getBlobGasCost", () =>
-		Transaction.EIP4844.getBlobGasCost(eip4844Tx, blobBaseFee),
+		Transaction.EIP4844.getBlobGasCost(eip4844Tx as BrandedTransactionEIP4844, blobBaseFee),
 	),
 );
 results.push(
 	benchmark("EIP4844.getEffectiveGasPrice", () =>
-		Transaction.EIP4844.getEffectiveGasPrice(eip4844Tx, baseFee),
+		Transaction.EIP4844.getEffectiveGasPrice(eip4844Tx as BrandedTransactionEIP4844, baseFee),
 	),
 );
 
@@ -432,7 +436,7 @@ console.log("\n--- EIP-4844 Serialization (Not Implemented) ---");
 results.push(
 	benchmark("EIP4844.serialize", () => {
 		try {
-			Transaction.EIP4844.serialize(eip4844Tx);
+			Transaction.EIP4844.serialize(eip4844Tx as BrandedTransactionEIP4844);
 		} catch {}
 	}),
 );
@@ -463,7 +467,7 @@ console.log(
 console.log("--- EIP-7702 Gas Calculation ---");
 results.push(
 	benchmark("EIP7702.getEffectiveGasPrice", () =>
-		Transaction.EIP7702.getEffectiveGasPrice(eip7702Tx, baseFee),
+		Transaction.EIP7702.getEffectiveGasPrice(eip7702Tx as BrandedTransactionEIP7702, baseFee),
 	),
 );
 
