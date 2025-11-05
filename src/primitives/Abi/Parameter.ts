@@ -3,7 +3,7 @@ import type {
 	AbiParameter as AbiTypeParameter,
 	AbiParametersToPrimitiveTypes as AbiTypeParametersToPrimitiveTypes,
 } from "abitype";
-import type { BrandedAddress } from "../Address/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { AbiType } from "./Type.js";
 
 export type Parameter<

@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../Address/index.js";
-import type { BrandedHash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedHash } from "../Hash/Hash.js";
 
 /**
  * Brand symbol for type safety

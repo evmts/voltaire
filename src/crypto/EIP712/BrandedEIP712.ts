@@ -1,5 +1,5 @@
-import type { BrandedAddress } from "../../primitives/Address/index.js";
-import type { BrandedHash } from "../../primitives/Hash/index.js";
+import type { BrandedAddress } from "../../primitives/Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedHash } from "../../primitives/Hash/Hash.js";
 
 /**
  * EIP-712 Domain separator fields
