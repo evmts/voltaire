@@ -3,8 +3,9 @@
  */
 
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { BrandedAddress } from "../Address/BrandedAddress/index.js";
-import { type BrandedHash, Hash } from "../Hash/index.js";
+import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedHash } from "../Hash/index.js";
+import { Hash } from "../Hash/index.js";
 import * as Transaction from "../Transaction/index.js";
 import type {
 	Any,

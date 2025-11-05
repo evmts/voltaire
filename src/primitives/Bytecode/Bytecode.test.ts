@@ -1,6 +1,61 @@
 import { describe, expect, it } from "vitest";
-import { Bytecode } from "./Bytecode.js";
+import {
+	analyze,
+	analyzeJumpDestinations,
+	equals,
+	extractRuntime,
+	formatInstruction,
+	formatInstructions,
+	fromHex,
+	getPushSize,
+	hash,
+	hasMetadata,
+	INVALID,
+	isPush,
+	isTerminator,
+	isValidJumpDest,
+	JUMPDEST,
+	parseInstructions,
+	PUSH1,
+	PUSH32,
+	RETURN,
+	REVERT,
+	size,
+	STOP,
+	stripMetadata,
+	toHex,
+	validate,
+} from "./Bytecode.js";
 import type { Instruction } from "./BrandedBytecode.js";
+
+// Create namespace for easier access
+const Bytecode = {
+	analyze,
+	analyzeJumpDestinations,
+	equals,
+	extractRuntime,
+	formatInstruction,
+	formatInstructions,
+	fromHex,
+	getPushSize,
+	hash,
+	hasMetadata,
+	INVALID,
+	isPush,
+	isTerminator,
+	isValidJumpDest,
+	JUMPDEST,
+	parseInstructions,
+	PUSH1,
+	PUSH32,
+	RETURN,
+	REVERT,
+	size,
+	STOP,
+	stripMetadata,
+	toHex,
+	validate,
+};
 
 // ============================================================================
 // Opcode Utility Tests
