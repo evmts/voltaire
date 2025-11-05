@@ -1,7 +1,4 @@
-// Export factory function
-export { Hash } from "./Hash.js";
-
-// Export all methods
+// Export all methods and factory function
 export * from "./Hash.js";
 
 // Export type definitions

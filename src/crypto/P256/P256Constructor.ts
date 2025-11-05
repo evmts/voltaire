@@ -1,4 +1,3 @@
-import type { BrandedHash } from "../../primitives/Hash/index.js";
 import type {
 	CURVE_ORDER,
 	PRIVATE_KEY_SIZE,

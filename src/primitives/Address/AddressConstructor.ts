@@ -7,7 +7,6 @@ import { equals } from "./BrandedAddress/equals.js";
 import { format } from "./BrandedAddress/format.js";
 import { from } from "./BrandedAddress/from.js";
 import { fromAbiEncoded } from "./BrandedAddress/fromAbiEncoded.js";
-import { fromBytes } from "./BrandedAddress/fromBytes.js";
 import { fromHex } from "./BrandedAddress/fromHex.js";
 import { fromNumber } from "./BrandedAddress/fromNumber.js";
 import { fromPublicKey } from "./BrandedAddress/fromPublicKey.js";
@@ -54,7 +53,6 @@ export interface AddressConstructor {
 	fromBase64(value: string): AddressPrototype;
 	fromHex(value: string): AddressPrototype;
 	from(value: number | bigint | string | Uint8Array): AddressPrototype;
-	fromBytes(value: Uint8Array): AddressPrototype;
 	fromNumber(value: number | bigint): AddressPrototype;
 	fromPublicKey(x: bigint, y: bigint): AddressPrototype;
 	fromAbiEncoded(value: Uint8Array): AddressPrototype;

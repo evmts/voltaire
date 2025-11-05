@@ -37,7 +37,7 @@ export * as Wasm from "./wasm/index.js";
 
 import type { Fallback, Receive } from "./Item.js";
 import type { BrandedConstructor as Constructor } from "./constructor/index.js";
-import type { Error } from "./error/index.js";
+import type { BrandedError } from "./error/index.js";
 import type { Event } from "./event/index.js";
 // Main Abi type (array of ABI items)
 import type { Function } from "./function/index.js";
@@ -46,5 +46,5 @@ import type { Function } from "./function/index.js";
  * ABI type: Array of ABI items (functions, events, errors, constructor, fallback, receive)
  */
 export type Abi = ReadonlyArray<
-	Function | Event | Error | Constructor | Fallback | Receive
+	Function | Event | BrandedError | Constructor | Fallback | Receive
 >;

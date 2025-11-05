@@ -1,8 +1,4 @@
-import type {
-	Analysis,
-	BrandedBytecode,
-	Instruction,
-} from "./BrandedBytecode.js";
+import type { BrandedBytecode } from "./BrandedBytecode.js";
 import type { analyze } from "./analyze.js";
 import type { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
 import type { equals } from "./equals.js";

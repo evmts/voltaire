@@ -1,4 +1,3 @@
-import type { BrandedHash } from "../../Hash/index.js";
 import type { Parameter, ParametersToObject } from "../Parameter.js";
 
 export type Event<
