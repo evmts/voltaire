@@ -68,10 +68,10 @@ const addr3 = createAddress(0x03);
 const zeroAddr = createAddress(0x00);
 const maxAddr = createAddress(0xff);
 
-const key1: StorageKey = { address: addr1, slot: 0n };
-const key2: StorageKey = { address: addr1, slot: 42n };
-const key3: StorageKey = { address: addr2, slot: 100n };
-const keyLarge: StorageKey = {
+const key1: BrandedStorageKey = { address: addr1, slot: 0n };
+const key2: BrandedStorageKey = { address: addr1, slot: 42n };
+const key3: BrandedStorageKey = { address: addr2, slot: 100n };
+const keyLarge: BrandedStorageKey = {
 	address: addr3,
 	slot: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
 };
@@ -239,8 +239,8 @@ results.push(
 );
 results.push(
 	benchmark("StorageKey.equals - equal keys", () => {
-		const k1: StorageKey = { address: addr1, slot: 42n };
-		const k2: StorageKey = { address: addr1, slot: 42n };
+		const k1: BrandedStorageKey = { address: addr1, slot: 42n };
+		const k2: BrandedStorageKey = { address: addr1, slot: 42n };
 		void StorageKey.equals(k1, k2);
 	}),
 );
@@ -423,7 +423,7 @@ console.log("--- Map Operations ---");
 // Pre-populate map for get benchmarks
 const testMap = new Map<string, bigint>();
 for (let i = 0; i < 100; i++) {
-	const key: StorageKey = { address: createAddress(i % 20), slot: BigInt(i) };
+	const key: BrandedStorageKey = { address: createAddress(i % 20), slot: BigInt(i) };
 	testMap.set(StorageKey.toString(key), BigInt(i * 100));
 }
 
@@ -492,7 +492,7 @@ results.push(
 
 results.push(
 	benchmark("Convert 10 keys to string", () => {
-		const keys: StorageKey[] = [];
+		const keys: BrandedStorageKey[] = [];
 		for (let i = 0; i < 10; i++) {
 			keys.push({ address: addr1, slot: BigInt(i) });
 		}
@@ -506,7 +506,7 @@ results.push(
 	benchmark("Populate Map with 10 keys", () => {
 		const map = new Map<string, bigint>();
 		for (let i = 0; i < 10; i++) {
-			const key: StorageKey = { address: addr1, slot: BigInt(i) };
+			const key: BrandedStorageKey = { address: addr1, slot: BigInt(i) };
 			map.set(StorageKey.toString(key), BigInt(i * 100));
 		}
 	}),
@@ -515,7 +515,7 @@ results.push(
 results.push(
 	benchmark("Lookup 10 keys in Map", () => {
 		for (let i = 0; i < 10; i++) {
-			const key: StorageKey = { address: addr1, slot: BigInt(i) };
+			const key: BrandedStorageKey = { address: addr1, slot: BigInt(i) };
 			void testMap.get(StorageKey.toString(key));
 		}
 	}),
@@ -548,14 +548,14 @@ console.log("--- Edge Cases ---");
 
 results.push(
 	benchmark("Zero address and slot", () => {
-		const key: StorageKey = { address: zeroAddr, slot: 0n };
+		const key: BrandedStorageKey = { address: zeroAddr, slot: 0n };
 		void StorageKey.toString(key);
 	}),
 );
 
 results.push(
 	benchmark("Max address and slot", () => {
-		const key: StorageKey = {
+		const key: BrandedStorageKey = {
 			address: maxAddr,
 			slot: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn,
 		};
@@ -565,8 +565,8 @@ results.push(
 
 results.push(
 	benchmark("Equality check - identical addresses", () => {
-		const k1: StorageKey = { address: addr1, slot: 0n };
-		const k2: StorageKey = { address: addr1, slot: 0n };
+		const k1: BrandedStorageKey = { address: addr1, slot: 0n };
+		const k2: BrandedStorageKey = { address: addr1, slot: 0n };
 		void StorageKey.equals(k1, k2);
 	}),
 );

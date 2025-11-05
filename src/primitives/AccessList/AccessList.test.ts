@@ -154,13 +154,13 @@ describe("AccessList.gasCost", () => {
 
 	it("calculates cost for single address with no keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		expect(AccessList.gasCost(list)).toBe(AccessList.ADDRESS_COST);
+		expect(AccessList.gasCost(list)).toBe(ADDRESS_COST);
 	});
 
 	it("calculates cost for single address with one key", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		expect(AccessList.gasCost(list)).toBe(
-			AccessList.ADDRESS_COST + AccessList.STORAGE_KEY_COST,
+			ADDRESS_COST + STORAGE_KEY_COST,
 		);
 	});
 
@@ -169,7 +169,7 @@ describe("AccessList.gasCost", () => {
 			{ address: addr1, storageKeys: [key1, key2, key3] },
 		];
 		expect(AccessList.gasCost(list)).toBe(
-			AccessList.ADDRESS_COST + AccessList.STORAGE_KEY_COST * 3n,
+			ADDRESS_COST + STORAGE_KEY_COST * 3n,
 		);
 	});
 
@@ -179,14 +179,14 @@ describe("AccessList.gasCost", () => {
 			{ address: addr2, storageKeys: [key2, key3] },
 		];
 		expect(AccessList.gasCost(list)).toBe(
-			AccessList.ADDRESS_COST * 2n + AccessList.STORAGE_KEY_COST * 3n,
+			ADDRESS_COST * 2n + STORAGE_KEY_COST * 3n,
 		);
 	});
 
 	it("verifies EIP-2930 gas cost constants", () => {
 		// Verify constants match EIP-2930 specification
-		expect(AccessList.ADDRESS_COST).toBe(2400n);
-		expect(AccessList.STORAGE_KEY_COST).toBe(1900n);
+		expect(ADDRESS_COST).toBe(2400n);
+		expect(STORAGE_KEY_COST).toBe(1900n);
 	});
 });
 
@@ -199,16 +199,16 @@ describe("AccessList.gasSavings", () => {
 	it("calculates savings for single address with no keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
 		const expected =
-			AccessList.COLD_ACCOUNT_ACCESS_COST - AccessList.ADDRESS_COST;
+			COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
 		expect(AccessList.gasSavings(list)).toBe(expected);
 	});
 
 	it("calculates savings for single address with one key", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const expected =
-			AccessList.COLD_ACCOUNT_ACCESS_COST -
-			AccessList.ADDRESS_COST +
-			(AccessList.COLD_STORAGE_ACCESS_COST - AccessList.STORAGE_KEY_COST);
+			COLD_ACCOUNT_ACCESS_COST -
+			ADDRESS_COST +
+			(COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST);
 		expect(AccessList.gasSavings(list)).toBe(expected);
 	});
 
@@ -217,8 +217,8 @@ describe("AccessList.gasSavings", () => {
 			{ address: addr1, storageKeys: [key1, key2] },
 			{ address: addr2, storageKeys: [key3] },
 		];
-		const addressSavings: bigint = AccessList.COLD_ACCOUNT_ACCESS_COST - AccessList.ADDRESS_COST;
-		const storageSavings: bigint = AccessList.COLD_STORAGE_ACCESS_COST - AccessList.STORAGE_KEY_COST;
+		const addressSavings = COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
+		const storageSavings = COLD_STORAGE_ACCESS_COST - STORAGE_KEY_COST;
 		const expected = addressSavings * 2n + storageSavings * 3n;
 		expect(AccessList.gasSavings(list)).toBe(expected);
 	});
