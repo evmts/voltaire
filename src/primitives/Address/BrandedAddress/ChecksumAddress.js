@@ -53,6 +53,7 @@ export function from(addr) {
  * ```
  */
 export function isValid(str) {
+	if (typeof str !== "string") return false;
 	if (!isValidAddress(str)) return false;
 	try {
 		const addr = fromHex(str.startsWith("0x") ? str : `0x${str}`);
