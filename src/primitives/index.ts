@@ -30,26 +30,31 @@ export * as BrandedHex from "./Hex/BrandedHex/index.js";
 export * as Uint from "./Uint/index.js";
 
 // Encoding
-export * as Rlp from "./Rlp/index.js";
+export { Rlp } from "./Rlp/index.js";
+export * as BrandedRlp from "./Rlp/BrandedRlp/index.js";
 export * as Abi from "./Abi/index.js";
+export * as BrandedAbi from "./Abi/BrandedAbi/index.js";
 
 // Transactions
 export * as Transaction from "./Transaction/index.js";
 export { AccessList } from "./AccessList/index.js";
 export * as BrandedAccessList from "./AccessList/BrandedAccessList/index.js";
 export * as Authorization from "./Authorization/index.js";
+export * as BrandedAuthorization from "./Authorization/BrandedAuthorization/index.js";
 
 // EVM
 export { Bytecode } from "./Bytecode/index.js";
 export * as BrandedBytecode from "./Bytecode/BrandedBytecode/index.js";
 export * as Opcode from "./Opcode/index.js";
 export * as GasConstants from "./GasConstants/index.js";
-export * as State from "./State/index.js";
+export { StorageKey } from "./State/index.js";
+export * as BrandedStorageKey from "./State/BrandedState/index.js";
 
 // Protocol
 export { Blob } from "./Blob/index.js";
 export * as BrandedBlob from "./Blob/BrandedBlob/index.js";
-export * as Chain from "./Chain/index.js";
+export { Chain } from "./Chain/index.js";
+export * as BrandedChain from "./Chain/BrandedChain/index.js";
 export * as FeeMarket from "./FeeMarket/index.js";
 export * as Hardfork from "./Hardfork/index.js";
 
@@ -58,9 +63,15 @@ export * from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/BrandedEventLog/index.js";
 
 // Sign-in with Ethereum
-export * as Siwe from "./Siwe/index.js";
+export { Siwe } from "./Siwe/index.js";
+export * as BrandedSiwe from "./Siwe/BrandedSiwe/index.js";
 
 // Data structures
-export * as BinaryTree from "./BinaryTree/BinaryTree.js";
+export * as BinaryTree from "./BinaryTree/index.js";
+export * as BrandedBinaryTree from "./BinaryTree/BrandedBinaryTree/index.js";
 export { BloomFilter } from "./BloomFilter/index.js";
 export * as BrandedBloomFilter from "./BloomFilter/BrandedBloomFilter/index.js";
+
+// Utilities
+export * as Base64 from "./Base64/index.js";
+export * as BrandedBase64 from "./Base64/BrandedBase64/index.js";

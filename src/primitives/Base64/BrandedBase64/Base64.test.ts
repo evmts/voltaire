@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import * as Base64 from "./Base64.js";
+import * as Base64 from "./index.js";
 
 describe("Base64", () => {
 	describe("Standard Encoding", () => {

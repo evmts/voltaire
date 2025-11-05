@@ -5,6 +5,7 @@
  */
 
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedAuthorization } from "../Authorization/BrandedAuthorization/BrandedAuthorization.js";
 import * as Authorization from "../Authorization/index.js";
 
 // Benchmark runner
@@ -69,7 +70,7 @@ function createAddress(byte: number): BrandedAddress {
 const addr1 = createAddress(1);
 const addr2 = createAddress(2);
 
-const validAuth: Authorization.Item = {
+const validAuth: BrandedAuthorization = {
 	chainId: 1n,
 	address: addr1,
 	nonce: 0n,
@@ -78,14 +79,14 @@ const validAuth: Authorization.Item = {
 	s: 0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210n,
 };
 
-const validUnsigned: Authorization.Unsigned = {
+const validUnsigned: {chainId: bigint, address: BrandedAddress, nonce: bigint} = {
 	chainId: 1n,
 	address: addr1,
 	nonce: 0n,
 };
 
 // Small list
-const smallList: Authorization.Item[] = [
+const smallList: BrandedAuthorization[] = [
 	{
 		chainId: 1n,
 		address: addr1,
@@ -105,7 +106,7 @@ const smallList: Authorization.Item[] = [
 ];
 
 // Medium list
-const mediumList: Authorization.Item[] = [];
+const mediumList: BrandedAuthorization[] = [];
 for (let i = 0; i < 10; i++) {
 	mediumList.push({
 		chainId: 1n,
@@ -118,7 +119,7 @@ for (let i = 0; i < 10; i++) {
 }
 
 // Large list
-const largeList: Authorization.Item[] = [];
+const largeList: BrandedAuthorization[] = [];
 for (let i = 0; i < 100; i++) {
 	largeList.push({
 		chainId: 1n,

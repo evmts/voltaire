@@ -34,6 +34,7 @@ export * as Event from "./event/index.js";
 export * as Error from "./error/index.js";
 export * as Constructor from "./constructor/index.js";
 export * as Wasm from "./wasm/index.js";
+export * as BrandedAbi from "./BrandedAbi/index.js";
 
 import type { Fallback, Receive } from "./Item.js";
 import type { BrandedConstructor as Constructor } from "./constructor/index.js";
