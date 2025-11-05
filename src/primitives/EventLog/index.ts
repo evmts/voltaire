@@ -1,4 +1,4 @@
-// Export all methods from EventLog factory
+// Export factory function and all methods
 export * from "./EventLog.js";
 
 // Export type definitions

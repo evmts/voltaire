@@ -21,9 +21,9 @@
 // Core primitives
 export { Address } from "./Address/index.js";
 export * as BrandedAddress from "./Address/BrandedAddress/index.js";
-export { Hash } from "./Hash/index.js";
+export * from "./Hash/index.js";
 export * as BrandedHash from "./Hash/BrandedHash/index.js";
-export { Hex } from "./Hex/index.js";
+export * from "./Hex/index.js";
 export * as BrandedHex from "./Hex/BrandedHex/index.js";
 
 // Numeric types
@@ -54,7 +54,7 @@ export * as FeeMarket from "./FeeMarket/index.js";
 export * as Hardfork from "./Hardfork/index.js";
 
 // Events & Logs
-export { EventLog } from "./EventLog/index.js";
+export * from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/BrandedEventLog/index.js";
 
 // Sign-in with Ethereum

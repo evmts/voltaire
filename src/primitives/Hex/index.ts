@@ -1,4 +1,4 @@
-// Export all methods
+// Export factory function and all methods
 export * from "./Hex.js";
 
 // Export type definitions

@@ -21,13 +21,13 @@ import {
 	random,
 	zero,
 } from "./index.js";
-import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError as InvalidHexCharacterError,
 	InvalidFormatError as InvalidHexFormatError,
 	InvalidLengthError as InvalidHexLengthError,
 	OddLengthError as OddLengthHexError,
 } from "./errors.js";
+import type { BrandedHex } from "./BrandedHex.js";
 
 describe("Hex", () => {
 	describe("isHex", () => {
@@ -449,7 +449,7 @@ describe("Hex", () => {
 		});
 
 		it("creates zero hex that converts to 0", () => {
-			const hex = zero(4);
+			const hex = zero(4) as BrandedHex;
 			expect(toNumber(hex)).toBe(0);
 			expect(toBigInt(hex)).toBe(0n);
 			expect(toBoolean(hex)).toBe(false);
