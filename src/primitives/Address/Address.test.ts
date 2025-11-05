@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedHex } from "../Hex/index.js";
 import { Address } from "./Address.js";
-import type { BrandedAddress } from "./BrandedAddress.js";
+import type { BrandedAddress } from "./BrandedAddress/index.js";
 import * as AddressNamespace from "./index.js";
 
 describe("Address", () => {

@@ -16,7 +16,12 @@ export { Uppercase };
 
 import * as loader from "../../wasm-loader/loader.js";
 import { HEX_SIZE, SIZE } from "./constants.js";
-import { InvalidHexFormatError, InvalidHexStringError, InvalidAddressLengthError, InvalidValueError } from "./errors.js";
+import {
+	InvalidAddressLengthError,
+	InvalidHexFormatError,
+	InvalidHexStringError,
+	InvalidValueError,
+} from "./errors.js";
 import {
 	setFromBase64Polyfill,
 	setFromHexPolyfill,
@@ -124,7 +129,7 @@ export function fromNumber(value) {
 	const bytes = new Uint8Array(SIZE);
 	let temp = n;
 	for (let i = SIZE - 1; i >= 0; i--) {
-		bytes[i] = Number(temp & 0xFFn);
+		bytes[i] = Number(temp & 0xffn);
 		temp >>= 8n;
 	}
 	return /** @type {BrandedAddress} */ (bytes);
@@ -150,14 +155,14 @@ export function fromPublicKey(x, y) {
 	// Write x coordinate (32 bytes, big-endian)
 	let tempX = x;
 	for (let i = 32; i >= 1; i--) {
-		pubkey[i] = Number(tempX & 0xFFn);
+		pubkey[i] = Number(tempX & 0xffn);
 		tempX >>= 8n;
 	}
 
 	// Write y coordinate (32 bytes, big-endian)
 	let tempY = y;
 	for (let i = 64; i >= 33; i--) {
-		pubkey[i] = Number(tempY & 0xFFn);
+		pubkey[i] = Number(tempY & 0xffn);
 		tempY >>= 8n;
 	}
 
@@ -540,39 +545,25 @@ export function Address(value) {
 }
 
 // Static factory methods
-Address.from = function (value) {
-	return from(value);
-};
+Address.from = (value) => from(value);
 Address.from.prototype = Address.prototype;
 
-Address.fromBase64 = function (value) {
-	return /** @type {BrandedAddress} */ (Uint8Array.fromBase64(value));
-};
+Address.fromBase64 = (value) => Uint8Array.fromBase64(value);
 Address.fromBase64.prototype = Address.prototype;
 
-Address.fromHex = function (value) {
-	return fromHex(value);
-};
+Address.fromHex = (value) => fromHex(value);
 Address.fromHex.prototype = Address.prototype;
 
-Address.fromBytes = function (value) {
-	return fromBytes(value);
-};
+Address.fromBytes = (value) => fromBytes(value);
 Address.fromBytes.prototype = Address.prototype;
 
-Address.fromNumber = function (value) {
-	return fromNumber(value);
-};
+Address.fromNumber = (value) => fromNumber(value);
 Address.fromNumber.prototype = Address.prototype;
 
-Address.fromPublicKey = function (x, y) {
-	return fromPublicKey(x, y);
-};
+Address.fromPublicKey = (x, y) => fromPublicKey(x, y);
 Address.fromPublicKey.prototype = Address.prototype;
 
-Address.fromAbiEncoded = function (value) {
-	return fromAbiEncoded(value);
-};
+Address.fromAbiEncoded = (value) => fromAbiEncoded(value);
 Address.fromAbiEncoded.prototype = Address.prototype;
 
 // Static utility methods

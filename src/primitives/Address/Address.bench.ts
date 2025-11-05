@@ -3,12 +3,23 @@
  * Compares performance of Address operations across different backends
  */
 
+import {
+	getAddress as ethersGetAddress,
+	isAddress as ethersIsAddress,
+	getCreate2Address,
+	getCreateAddress,
+} from "ethers";
 import { bench, run } from "mitata";
+import {
+	getContractAddress,
+	isAddressEqual,
+	keccak256,
+	getAddress as viemGetAddress,
+	isAddress as viemIsAddress,
+} from "viem";
+import { loadWasm } from "../../wasm-loader/loader.js";
 import { Address as JsAddress } from "./Address.js";
 import { Address as WasmAddress } from "./Address.wasm.js";
-import { loadWasm } from "../../wasm-loader/loader.js";
-import { getAddress as ethersGetAddress, isAddress as ethersIsAddress, getCreateAddress, getCreate2Address } from "ethers";
-import { getAddress as viemGetAddress, isAddress as viemIsAddress, isAddressEqual, getContractAddress, keccak256 } from "viem";
 
 // Load WASM before running benchmarks
 await loadWasm(new URL("../../wasm-loader/primitives.wasm", import.meta.url));
@@ -36,8 +47,8 @@ const wasmSender = WasmAddress.fromHex(senderAddress);
 const nonce = 42n;
 const salt = new Uint8Array(32).fill(0x42);
 const initCode = new Uint8Array([
-	0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15,
-	0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15,
+	0x60, 0x80, 0x60, 0x40, 0x52, 0x34, 0x80, 0x15, 0x60, 0x80, 0x60, 0x40, 0x52,
+	0x34, 0x80, 0x15,
 ]);
 
 // Test bytes for fromBytes
@@ -50,8 +61,10 @@ for (let i = 0; i < 20; i++) {
 const testNumber = 123456789n;
 
 // Test public key coordinates for fromPublicKey
-const pubkeyX = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n;
-const pubkeyY = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n;
+const pubkeyX =
+	0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n;
+const pubkeyY =
+	0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n;
 
 console.log("=".repeat(80));
 console.log("JS vs WASM vs ethers vs viem Address Implementation Benchmark");
@@ -486,7 +499,11 @@ bench("Address.calculateCreateAddress - ethers", () => {
 });
 
 bench("Address.calculateCreateAddress - viem", () => {
-	getContractAddress({ from: senderAddress, nonce: Number(nonce), opcode: "CREATE" });
+	getContractAddress({
+		from: senderAddress,
+		nonce: Number(nonce),
+		opcode: "CREATE",
+	});
 });
 
 await run();
@@ -519,7 +536,7 @@ bench("Address.calculateCreate2Address - viem", () => {
 		from: senderAddress,
 		bytecode: initCode,
 		salt,
-		opcode: "CREATE2"
+		opcode: "CREATE2",
 	});
 });
 

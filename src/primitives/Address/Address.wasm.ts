@@ -4,10 +4,10 @@
  */
 
 import * as loader from "../../wasm-loader/loader.js";
-import type { BrandedAddress } from "./BrandedAddress.js";
-import type { Checksummed } from "./ChecksumAddress.js";
-import type { Lowercase } from "./LowercaseAddress.js";
-import type { Uppercase } from "./UppercaseAddress.js";
+import type { Checksummed } from "./BrandedAddress/ChecksumAddress.js";
+import type { Lowercase } from "./BrandedAddress/LowercaseAddress.js";
+import type { Uppercase } from "./BrandedAddress/UppercaseAddress.js";
+import type { BrandedAddress } from "./BrandedAddress/index.js";
 
 /**
  * Create Address from hex string
@@ -218,10 +218,7 @@ export function fromAbiEncoded(encoded: Uint8Array): BrandedAddress {
  * @param sliceLength - Number of characters to show on each side (default: 4)
  * @returns Abbreviated hex string
  */
-export function toShortHex(
-	address: BrandedAddress,
-	sliceLength = 4,
-): string {
+export function toShortHex(address: BrandedAddress, sliceLength = 4): string {
 	const hex = loader.addressToHex(address);
 	if (hex.length <= 2 + sliceLength * 2) {
 		return hex;

@@ -1,11 +1,16 @@
 // @ts-nocheck
-import * as BrandedAddress from "./BrandedAddress/index.ts";
+import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
 	setFromBase64Polyfill,
 	setFromHexPolyfill,
 	toBase64Polyfill,
 	toHexPolyfill,
 } from "./BrandedAddress/polyfills.js";
+
+// Re-export BrandedAddress type and errors
+export type { BrandedAddress } from "./BrandedAddress/index.js";
+export * from "./BrandedAddress/errors.js";
+export * from "./BrandedAddress/constants.js";
 
 /**
  * Factory function for creating Address instances
