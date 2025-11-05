@@ -1,0 +1,610 @@
+---
+title: Ethereum Log Filtering
+description: Using bloom filters for efficient Ethereum log filtering and event queries
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Ethereum Log Filtering
+
+Using bloom filters for efficient Ethereum log filtering and event queries.
+
+## Overview
+
+Ethereum uses bloom filters to enable fast log filtering across blocks without scanning every transaction. Each block header contains a 256-byte (2048-bit) bloom filter summarizing all logs in that block.
+
+**Key concept:** Before fetching logs from a block, check the bloom filter. If filter returns false, block definitely has no matching logs. If true, block might have matching logs (fetch to confirm).
+
+## Block Log Blooms
+
+Every Ethereum block header includes a `logsBloom` field:
+
+```typescript
+interface BlockHeader {
+  number: number
+  hash: string
+  parentHash: string
+  logsBloom: string  // 512 hex chars (256 bytes, 2048 bits)
+  // ... other fields
+}
+```
+
+### Loading Block Bloom Filters
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+// From JSON-RPC response
+const block = await provider.getBlock(12345678)
+
+// Parse bloom filter
+const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+// Check if block contains logs from address
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+if (blockFilter.contains(address)) {
+  // Block might contain logs from this address
+  const logs = await provider.getLogs({
+    fromBlock: block.number,
+    toBlock: block.number,
+    address: address.toHex()
+  })
+}
+```
+
+## Log Structure
+
+Ethereum logs contain:
+
+```typescript
+interface Log {
+  address: string        // Contract emitting log
+  topics: string[]       // Indexed event parameters
+  data: string          // Non-indexed event parameters
+  blockNumber: number
+  transactionHash: string
+  // ... other fields
+}
+```
+
+**Bloom filter includes:**
+1. Log address (20 bytes)
+2. Each topic (32 bytes each)
+
+**Bloom filter excludes:**
+- Log data (non-indexed parameters)
+- Block number, transaction hash, etc.
+
+### Building Block Bloom Filters
+
+```typescript
+import { BloomFilter, Address, Hex } from '@tevm/voltaire'
+
+function buildBlockBloom(logs: Log[]): BloomFilter {
+  const filter = BloomFilter.create(2048, 3)
+
+  for (const log of logs) {
+    // Add log address
+    const address = Address.from(log.address)
+    filter.add(address)
+
+    // Add each topic
+    for (const topic of log.topics) {
+      const topicBytes = Hex.toBytes(topic)
+      filter.add(topicBytes)
+    }
+  }
+
+  return filter
+}
+
+// Usage
+const blockLogs = await provider.getLogs({
+  fromBlock: 12345678,
+  toBlock: 12345678
+})
+
+const bloom = buildBlockBloom(blockLogs)
+console.log(bloom.toHex())  // "0x000..."
+```
+
+## Event Topic Hashing
+
+Event signatures are keccak256 hashed to produce topics:
+
+```typescript
+import { keccak256 } from '@tevm/voltaire'
+
+// ERC-20 Transfer event: Transfer(address indexed from, address indexed to, uint256 value)
+const transferSig = "Transfer(address,address,uint256)"
+const transferTopic = keccak256(new TextEncoder().encode(transferSig))
+
+console.log(transferTopic)
+// "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+// Check if block contains Transfer events
+const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+if (blockFilter.contains(Hex.toBytes(transferTopic))) {
+  // Block might contain Transfer events
+}
+```
+
+### Common Event Signatures
+
+```typescript
+// ERC-20
+const TRANSFER = keccak256(new TextEncoder().encode("Transfer(address,address,uint256)"))
+const APPROVAL = keccak256(new TextEncoder().encode("Approval(address,address,uint256)"))
+
+// ERC-721
+const TRANSFER_NFT = keccak256(new TextEncoder().encode("Transfer(address,address,uint256)"))
+const APPROVAL_NFT = keccak256(new TextEncoder().encode("Approval(address,address,uint256)"))
+const APPROVAL_FOR_ALL = keccak256(new TextEncoder().encode("ApprovalForAll(address,address,bool)"))
+
+// Uniswap V2
+const SWAP = keccak256(new TextEncoder().encode("Swap(address,uint256,uint256,uint256,uint256,address)"))
+const SYNC = keccak256(new TextEncoder().encode("Sync(uint112,uint112)"))
+const MINT = keccak256(new TextEncoder().encode("Mint(address,uint256,uint256)"))
+const BURN = keccak256(new TextEncoder().encode("Burn(address,uint256,uint256,address)"))
+```
+
+## Filtering Patterns
+
+### Filter by Address
+
+```typescript
+import { BloomFilter, Address } from '@tevm/voltaire'
+
+async function findBlocksWithAddress(
+  startBlock: number,
+  endBlock: number,
+  address: string
+): Promise<number[]> {
+  const addr = Address.from(address)
+  const matchingBlocks: number[] = []
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    if (filter.contains(addr)) {
+      matchingBlocks.push(blockNum)
+    }
+  }
+
+  return matchingBlocks
+}
+
+// Usage
+const blocks = await findBlocksWithAddress(
+  12345000,
+  12346000,
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+)
+
+console.log(`Found ${blocks.length} blocks with address`)
+// Now fetch actual logs from these blocks
+```
+
+### Filter by Event Topic
+
+```typescript
+async function findBlocksWithEvent(
+  startBlock: number,
+  endBlock: number,
+  eventSig: string
+): Promise<number[]> {
+  const topic = keccak256(new TextEncoder().encode(eventSig))
+  const topicBytes = Hex.toBytes(topic)
+  const matchingBlocks: number[] = []
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    if (filter.contains(topicBytes)) {
+      matchingBlocks.push(blockNum)
+    }
+  }
+
+  return matchingBlocks
+}
+
+// Usage
+const transferBlocks = await findBlocksWithEvent(
+  12345000,
+  12346000,
+  "Transfer(address,address,uint256)"
+)
+```
+
+### Filter by Address AND Event
+
+```typescript
+async function findBlocksWithAddressAndEvent(
+  startBlock: number,
+  endBlock: number,
+  address: string,
+  eventSig: string
+): Promise<number[]> {
+  const addr = Address.from(address)
+  const topic = keccak256(new TextEncoder().encode(eventSig))
+  const topicBytes = Hex.toBytes(topic)
+  const matchingBlocks: number[] = []
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    // Both must match
+    if (filter.contains(addr) && filter.contains(topicBytes)) {
+      matchingBlocks.push(blockNum)
+    }
+  }
+
+  return matchingBlocks
+}
+
+// Usage: Find Transfer events from specific ERC-20 contract
+const blocks = await findBlocksWithAddressAndEvent(
+  12345000,
+  12346000,
+  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",  // USDC
+  "Transfer(address,address,uint256)"
+)
+```
+
+### Filter by Multiple Addresses (OR)
+
+```typescript
+async function findBlocksWithAnyAddress(
+  startBlock: number,
+  endBlock: number,
+  addresses: string[]
+): Promise<number[]> {
+  const addrs = addresses.map(a => Address.from(a))
+  const matchingBlocks: number[] = []
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    // Check if any address matches
+    const matches = addrs.some(addr => filter.contains(addr))
+    if (matches) {
+      matchingBlocks.push(blockNum)
+    }
+  }
+
+  return matchingBlocks
+}
+
+// Usage: Monitor multiple DEX contracts
+const dexAddresses = [
+  "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",  // Uniswap V2
+  "0xE592427A0AEce92De3Edee1F18E0157C05861564",  // Uniswap V3
+  "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"   // SushiSwap
+]
+
+const blocks = await findBlocksWithAnyAddress(
+  12345000,
+  12346000,
+  dexAddresses
+)
+```
+
+## Block Range Queries
+
+### Efficient Range Scanning
+
+```typescript
+async function scanRange(
+  startBlock: number,
+  endBlock: number,
+  address: string,
+  eventSig: string
+): Promise<Log[]> {
+  const addr = Address.from(address)
+  const topic = keccak256(new TextEncoder().encode(eventSig))
+  const topicBytes = Hex.toBytes(topic)
+  const allLogs: Log[] = []
+
+  // Step 1: Filter blocks using bloom filters
+  const candidateBlocks: number[] = []
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    if (filter.contains(addr) && filter.contains(topicBytes)) {
+      candidateBlocks.push(blockNum)
+    }
+  }
+
+  console.log(`Bloom filter reduced ${endBlock - startBlock + 1} blocks to ${candidateBlocks.length}`)
+
+  // Step 2: Fetch logs only from candidate blocks
+  for (const blockNum of candidateBlocks) {
+    const logs = await provider.getLogs({
+      fromBlock: blockNum,
+      toBlock: blockNum,
+      address: address,
+      topics: [topic]
+    })
+
+    allLogs.push(...logs)
+  }
+
+  return allLogs
+}
+```
+
+### Merge Range Bloom Filters
+
+```typescript
+// Build single bloom filter for entire block range
+async function buildRangeFilter(
+  startBlock: number,
+  endBlock: number
+): Promise<BloomFilter> {
+  let rangeFilter = BloomFilter.create(2048, 3)
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    rangeFilter = rangeFilter.merge(blockFilter)
+  }
+
+  return rangeFilter
+}
+
+// Quick check before scanning range
+async function quickCheckRange(
+  startBlock: number,
+  endBlock: number,
+  address: string
+): Promise<boolean> {
+  const rangeFilter = await buildRangeFilter(startBlock, endBlock)
+  const addr = Address.from(address)
+
+  // If false, definitely no logs in entire range
+  return rangeFilter.contains(addr)
+}
+
+// Usage
+const mightExist = await quickCheckRange(12345000, 12346000, "0x...")
+if (!mightExist) {
+  console.log("No logs in range, skip scanning")
+  return []
+}
+
+// Continue with detailed scan
+```
+
+## Performance Optimization
+
+### Batch Block Fetching
+
+```typescript
+async function scanRangeBatch(
+  startBlock: number,
+  endBlock: number,
+  address: string,
+  batchSize: number = 100
+): Promise<Log[]> {
+  const addr = Address.from(address)
+  const allLogs: Log[] = []
+
+  // Fetch blocks in batches
+  for (let i = startBlock; i <= endBlock; i += batchSize) {
+    const batchEnd = Math.min(i + batchSize - 1, endBlock)
+    const blockNumbers = Array.from(
+      { length: batchEnd - i + 1 },
+      (_, idx) => i + idx
+    )
+
+    // Parallel block fetches
+    const blocks = await Promise.all(
+      blockNumbers.map(n => provider.getBlock(n))
+    )
+
+    // Filter using bloom filters
+    const candidateBlocks = blocks
+      .filter(block => {
+        const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+        return filter.contains(addr)
+      })
+      .map(block => block.number)
+
+    // Fetch logs from candidates
+    if (candidateBlocks.length > 0) {
+      const logs = await provider.getLogs({
+        fromBlock: Math.min(...candidateBlocks),
+        toBlock: Math.max(...candidateBlocks),
+        address: address.toHex()
+      })
+
+      allLogs.push(...logs)
+    }
+  }
+
+  return allLogs
+}
+```
+
+### Caching Block Blooms
+
+```typescript
+class BloomCache {
+  private cache = new Map<number, BloomFilter>()
+
+  async getBlockBloom(blockNum: number): Promise<BloomFilter> {
+    if (this.cache.has(blockNum)) {
+      return this.cache.get(blockNum)!
+    }
+
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    this.cache.set(blockNum, filter)
+
+    return filter
+  }
+
+  async checkAddress(
+    blockNum: number,
+    address: Address
+  ): Promise<boolean> {
+    const filter = await this.getBlockBloom(blockNum)
+    return filter.contains(address)
+  }
+
+  clear() {
+    this.cache.clear()
+  }
+}
+
+// Usage
+const cache = new BloomCache()
+
+for (let block = 12345000; block <= 12346000; block++) {
+  if (await cache.checkAddress(block, address)) {
+    // Process block...
+  }
+}
+```
+
+## False Positive Handling
+
+<Aside type="caution" title="Always Verify Bloom Matches">
+Bloom filters can produce false positives. Always fetch and verify actual logs when bloom filter returns true.
+</Aside>
+
+```typescript
+async function findLogsWithVerification(
+  startBlock: number,
+  endBlock: number,
+  address: string
+): Promise<{ logs: Log[], falsePositives: number }> {
+  const addr = Address.from(address)
+  let falsePositives = 0
+  const logs: Log[] = []
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    if (filter.contains(addr)) {
+      // Bloom says "might exist", verify
+      const blockLogs = await provider.getLogs({
+        fromBlock: blockNum,
+        toBlock: blockNum,
+        address: address
+      })
+
+      if (blockLogs.length === 0) {
+        // False positive!
+        falsePositives++
+      } else {
+        logs.push(...blockLogs)
+      }
+    }
+  }
+
+  const fpRate = (falsePositives / (endBlock - startBlock + 1)) * 100
+  console.log(`False positive rate: ${fpRate.toFixed(2)}%`)
+
+  return { logs, falsePositives }
+}
+```
+
+## Use Cases
+
+### Event Indexer
+
+```typescript
+class EventIndexer {
+  private filters = new Map<string, BloomFilter>()
+
+  async indexBlock(blockNum: number) {
+    const block = await provider.getBlock(blockNum)
+    const logs = await provider.getLogs({
+      fromBlock: blockNum,
+      toBlock: blockNum
+    })
+
+    // Store block bloom
+    const bloom = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    this.filters.set(`block:${blockNum}`, bloom)
+
+    // Process logs...
+  }
+
+  async queryAddress(
+    address: string,
+    startBlock: number,
+    endBlock: number
+  ): Promise<number[]> {
+    const addr = Address.from(address)
+    const matches: number[] = []
+
+    for (let block = startBlock; block <= endBlock; block++) {
+      const bloom = this.filters.get(`block:${block}`)
+      if (bloom && bloom.contains(addr)) {
+        matches.push(block)
+      }
+    }
+
+    return matches
+  }
+}
+```
+
+### DEX Monitor
+
+```typescript
+// Monitor Uniswap Swap events
+class UniswapMonitor {
+  private swapTopic: Uint8Array
+
+  constructor() {
+    const sig = "Swap(address,uint256,uint256,uint256,uint256,address)"
+    const hash = keccak256(new TextEncoder().encode(sig))
+    this.swapTopic = Hex.toBytes(hash)
+  }
+
+  async monitorPair(
+    pairAddress: string,
+    startBlock: number,
+    endBlock: number
+  ): Promise<Log[]> {
+    const addr = Address.from(pairAddress)
+    const swaps: Log[] = []
+
+    for (let block = startBlock; block <= endBlock; block++) {
+      const blockData = await provider.getBlock(block)
+      const filter = BloomFilter.fromHex(blockData.logsBloom, 2048, 3)
+
+      // Check if block has Swap events from this pair
+      if (filter.contains(addr) && filter.contains(this.swapTopic)) {
+        const logs = await provider.getLogs({
+          fromBlock: block,
+          toBlock: block,
+          address: pairAddress,
+          topics: [Hex.fromBytes(this.swapTopic)]
+        })
+
+        swaps.push(...logs)
+      }
+    }
+
+    return swaps
+  }
+}
+```
+
+## Related
+
+- [Queries](/primitives/bloomfilter/queries) - Membership testing
+- [Operations](/primitives/bloomfilter/operations) - Merging filters
+- [Usage Patterns](/primitives/bloomfilter/usage-patterns) - Advanced patterns
+- [Algorithm](/primitives/bloomfilter/algorithm) - Understanding false positives

@@ -1,0 +1,308 @@
+---
+title: BinaryTree
+description: Binary State Tree implementation for Ethereum state (EIP-7864)
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+# BinaryTree
+
+Binary State Tree implementation following EIP-7864 for unified Ethereum state representation.
+
+## Overview
+
+[Branded](/primitives/branded-types) binary tree data structure with four node types (Internal, Stem, Leaf, Empty). Designed for Ethereum state trees with 32-byte keys split into 31-byte stems and 1-byte subindices. Uses BLAKE3 hashing.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Class API">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Create empty tree (see Constructors)
+const tree = BinaryTree()
+console.log(tree.root.type) // 'empty'
+
+// Insert values (see Operations)
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+value[0] = 0x42
+const tree2 = BinaryTree.insert(tree, key, value)
+
+// Get values (see Operations)
+const retrieved = BinaryTree.get(tree2, key)
+console.log(retrieved) // Uint8Array [0x42, 0, 0, ...]
+
+// Calculate root hash (see Hashing)
+const hash = BinaryTree.rootHash(tree2)
+const hex = BinaryTree.rootHashHex(tree2) // "0x..."
+
+// Key utilities (see Key Utilities)
+const addr = new Uint8Array(20) // Ethereum address
+const treeKey = BinaryTree.addressToKey(addr)
+const { stem, idx } = BinaryTree.splitKey(treeKey)
+```
+</TabItem>
+<TabItem label="Namespace API (Tree-shakeable)">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Tree-shakeable imports minimize bundle size
+const tree = BinaryTree.init()
+
+// Each function imported independently
+const tree2 = BinaryTree.insert(tree, key, value)
+const retrieved = BinaryTree.get(tree2, key)
+const hash = BinaryTree.rootHash(tree2)
+
+// See BrandedBinaryTree for complete functional API
+```
+</TabItem>
+</Tabs>
+
+## Types
+
+<Tabs>
+<TabItem label="interface BinaryTree">
+```typescript
+export interface BinaryTree {
+  readonly root: Node
+}
+
+export type Node =
+  | { readonly type: "empty" }
+  | {
+      readonly type: "internal"
+      readonly left: Uint8Array   // 32-byte hash
+      readonly right: Uint8Array  // 32-byte hash
+    }
+  | {
+      readonly type: "stem"
+      readonly stem: Uint8Array       // 31 bytes
+      readonly values: (Uint8Array | null)[]  // 256 values
+    }
+  | {
+      readonly type: "leaf"
+      readonly value: Uint8Array  // 32 bytes
+    }
+
+export type InternalNode = Extract<Node, { type: "internal" }>
+export type StemNode = Extract<Node, { type: "stem" }>
+export type LeafNode = Extract<Node, { type: "leaf" }>
+export type EmptyNode = Extract<Node, { type: "empty" }>
+```
+
+Source: [BrandedBinaryTree.ts:7-43](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts#L7-L43)
+</TabItem>
+<TabItem label="AccountData">
+```typescript
+export interface AccountData {
+  readonly version: number    // 1 byte
+  readonly codeSize: number   // 3 bytes
+  readonly nonce: bigint      // 8 bytes
+  readonly balance: bigint    // 16 bytes
+}
+```
+
+Account basic data layout stored at index 0 in stem node. Total 28 bytes defining Ethereum account state.
+
+Source: [BrandedBinaryTree.ts:37-42](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts#L37-L42)
+</TabItem>
+</Tabs>
+
+## Node Types
+
+Binary State Tree uses four distinct node types:
+
+### Empty Node
+
+```typescript
+{ type: "empty" }
+```
+
+Represents empty tree or empty subtree. Hash is 32 zero bytes.
+
+### Internal Node
+
+```typescript
+{
+  type: "internal"
+  left: Uint8Array   // 32-byte hash of left child
+  right: Uint8Array  // 32-byte hash of right child
+}
+```
+
+Branch node with two children. Each child is represented by its 32-byte hash. Used for tree traversal based on stem bits.
+
+### Stem Node
+
+```typescript
+{
+  type: "stem"
+  stem: Uint8Array       // 31-byte stem (tree path)
+  values: (Uint8Array | null)[]  // 256 possible values
+}
+```
+
+Leaf-level node storing up to 256 values indexed by the last byte (subindex) of the 32-byte key. Stem defines the tree path (first 31 bytes).
+
+### Leaf Node
+
+```typescript
+{
+  type: "leaf"
+  value: Uint8Array  // 32-byte value
+}
+```
+
+Simple leaf with single value. Currently not actively used in standard Binary State Tree operations.
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Constructors" icon="rocket">
+    Creating BinaryTree instances with init factory function.
+
+    [View constructors →](/primitives/binarytree/constructors)
+  </Card>
+
+  <Card title="Operations" icon="list-format">
+    Insert, get, and tree manipulation operations.
+
+    [View operations →](/primitives/binarytree/operations)
+  </Card>
+
+  <Card title="Hashing" icon="random">
+    BLAKE3 hashing for nodes, root hash calculation, hex conversion.
+
+    [View hashing →](/primitives/binarytree/hashing)
+  </Card>
+
+  <Card title="Key Utilities" icon="puzzle">
+    Address to key conversion, key splitting, stem bit extraction.
+
+    [View key utilities →](/primitives/binarytree/key-utilities)
+  </Card>
+
+  <Card title="BrandedBinaryTree" icon="seti:config">
+    Tree-shakeable functional API for minimal bundle size.
+
+    [View BrandedBinaryTree →](/primitives/binarytree/branded-binarytree)
+  </Card>
+
+  <Card title="WASM Implementation" icon="rocket">
+    WebAssembly-accelerated methods compiled from Zig for performance.
+
+    [View WASM →](/primitives/binarytree/wasm)
+  </Card>
+
+  <Card title="Usage Patterns" icon="open-book">
+    Common patterns for EIP-7864 Binary State Tree implementation.
+
+    [View usage patterns →](/primitives/binarytree/usage-patterns)
+  </Card>
+</CardGrid>
+
+<Aside type="tip" title="What is Binary State Tree?">
+Binary State Tree (EIP-7864) is a unified tree structure for Ethereum state. It uses 32-byte keys split into 31-byte stems (tree path) and 1-byte subindices (value selector). Each stem can store up to 256 values, enabling efficient storage of account data, storage slots, and code.
+</Aside>
+
+## Key Concepts
+
+### 32-Byte Keys
+
+Keys are 32 bytes split into:
+- **Stem** (31 bytes): Defines tree path through internal nodes
+- **Subindex** (1 byte): Selects one of 256 values in stem node
+
+```typescript
+const key = new Uint8Array(32)
+const { stem, idx } = BinaryTree.splitKey(key)
+// stem.length === 31
+// idx is 0-255
+```
+
+### Ethereum Address Mapping
+
+Ethereum addresses (20 bytes) convert to 32-byte keys by prepending 12 zero bytes:
+
+```typescript
+const address = new Uint8Array(20) // Ethereum address
+const key = BinaryTree.addressToKey(address)
+// key = [0,0,0,0,0,0,0,0,0,0,0,0, ...address bytes]
+```
+
+### Tree Traversal
+
+Internal nodes branch left or right based on stem bits:
+
+```typescript
+const stem = new Uint8Array(31)
+const bit = BinaryTree.getStemBit(stem, depth)
+// bit is 0 (left) or 1 (right)
+```
+
+Tree depth determines which bit position to check (0-247 bits across 31 bytes).
+
+### BLAKE3 Hashing
+
+All node hashing uses BLAKE3 (subject to change in final EIP-7864 spec):
+
+```typescript
+// Empty node hash
+const emptyHash = new Uint8Array(32) // All zeros
+
+// Internal node hash
+const parentHash = BinaryTree.hashInternal(leftHash, rightHash)
+
+// Stem node hash
+const stemHash = BinaryTree.hashStem(stemNode)
+```
+
+## Immutable Operations
+
+All tree operations are immutable, returning new tree instances:
+
+```typescript
+const tree1 = BinaryTree.init()
+
+// Insert returns new tree
+const tree2 = BinaryTree.insert(tree1, key1, value1)
+const tree3 = BinaryTree.insert(tree2, key2, value2)
+
+// Original unchanged
+console.log(tree1.root.type) // Still 'empty'
+```
+
+## EIP-7864 Compliance
+
+Implementation follows [EIP-7864](https://eips.ethereum.org/EIPS/eip-7864) Binary State Tree specification:
+
+- 32-byte keys (31-byte stem + 1-byte subindex)
+- Four node types (Empty, Internal, Stem, Leaf)
+- BLAKE3 hashing (current draft, TBD in final spec)
+- Efficient storage for account data at index 0
+- Support for 256 values per stem
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Bytes" icon="document">
+    Byte array operations for key and value manipulation.
+
+    [View Bytes →](/primitives/bytes)
+  </Card>
+
+  <Card title="Hex" icon="seti:text">
+    Hex string utilities for root hash display.
+
+    [View Hex →](/primitives/hex)
+  </Card>
+
+  <Card title="Branded Types" icon="open-book">
+    Zero-overhead type branding pattern used throughout primitives.
+
+    [View Branded Types →](/primitives/branded-types)
+  </Card>
+</CardGrid>

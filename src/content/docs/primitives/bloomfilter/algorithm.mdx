@@ -1,0 +1,465 @@
+---
+title: Bloom Filter Algorithm
+description: Understanding bloom filter theory, mathematics, and false positive rates
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Algorithm
+
+Understanding bloom filter theory, mathematics, and performance characteristics.
+
+## What is a Bloom Filter?
+
+A bloom filter is a space-efficient probabilistic data structure invented by Burton Howard Bloom in 1970. It tests whether an element is a member of a set with:
+
+- **Guaranteed no false negatives**: If filter says "not present", element definitely not in set
+- **Possible false positives**: If filter says "present", element might be in set (or collision)
+- **Fixed size**: Memory usage doesn't grow with number of items added
+- **Constant time**: O(k) for both add and contains operations
+- **No deletions**: Cannot remove items once added (append-only)
+
+### Perfect For Ethereum
+
+Bloom filters are ideal for Ethereum log filtering because:
+
+1. **Block headers are fixed size** - 256-byte bloom filter per block
+2. **False positives acceptable** - Can verify actual logs if bloom matches
+3. **No false negatives critical** - Cannot miss relevant logs
+4. **Fast lookups** - O(k) membership testing for quick filtering
+5. **Small footprint** - 256 bytes vs storing all log data
+
+## Data Structure
+
+A bloom filter consists of:
+
+1. **Bit array** of `m` bits (initially all 0)
+2. **Hash functions** `k` independent hash functions
+3. **Parameters** `m` and `k` determined at creation
+
+```
+Bit array (m = 16 bits, all zeros initially):
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│0│0│0│0│0│0│0│0│0│0│0│0│0│0│0│0│
+└─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘
+ 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+```
+
+## Operations
+
+### Add Operation
+
+To add item to filter:
+
+1. Compute `k` hash values: `h₀, h₁, ..., h_{k-1}`
+2. Set bit at each position: `bits[hᵢ mod m] = 1`
+
+```typescript
+// Pseudocode
+function add(filter, item) {
+  for (let i = 0; i < filter.k; i++) {
+    const h = hash(item, i, filter.m)  // Hash with seed i
+    const bitPos = h % filter.m         // Modulo m for position
+    setBit(filter, bitPos)              // Set bit to 1
+  }
+}
+```
+
+**Example:** Add "Transfer" with k=3, m=16:
+
+```
+Item: "Transfer"
+Hash seeds: 0, 1, 2
+
+h₀ = hash("Transfer", 0, 16) → 3
+h₁ = hash("Transfer", 1, 16) → 7
+h₂ = hash("Transfer", 2, 16) → 12
+
+Before:
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│0│0│0│0│0│0│0│0│0│0│0│0│0│0│0│0│
+└─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘
+
+After:
+┌─┬─┬─┬─┬──┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│0│0│0│1│0│0│0│1│0│0│0│0│1│0│0│0│
+└─┴─┴─┴─┴──┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘
+       ↑       ↑           ↑
+      h₀      h₁          h₂
+```
+
+### Contains Operation
+
+To check if item might be in filter:
+
+1. Compute same `k` hash values: `h₀, h₁, ..., h_{k-1}`
+2. Check if all bits set: return `bits[h₀] AND bits[h₁] AND ... AND bits[h_{k-1}]`
+3. If all bits set → return `true` (might be present)
+4. If any bit not set → return `false` (definitely not present)
+
+```typescript
+// Pseudocode
+function contains(filter, item) {
+  for (let i = 0; i < filter.k; i++) {
+    const h = hash(item, i, filter.m)
+    const bitPos = h % filter.m
+    if (!getBit(filter, bitPos)) {
+      return false  // Definitely not present
+    }
+  }
+  return true  // Might be present
+}
+```
+
+**Example:** Check "Transfer" (added above):
+
+```
+All 3 bits are set → returns true ✓
+
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│0│0│0│1│0│0│0│1│0│0│0│0│1│0│0│0│
+└─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘
+       ✓       ✓           ✓
+```
+
+**Example:** Check "Approval" (never added):
+
+```
+Suppose hashes are: 3, 8, 14
+
+Bits at positions: 3=SET, 8=NOT SET, 14=NOT SET
+At least one bit not set → returns false ✓
+
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│0│0│0│1│0│0│0│1│0│0│0│0│1│0│0│0│
+└─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘
+       ✓       ✗               ✗
+```
+
+## False Positives
+
+False positive occurs when all `k` bits happen to be set by other items:
+
+```
+Filter state after adding multiple items:
+┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐
+│1│0│1│1│1│0│0│1│1│1│0│0│1│1│0│1│
+└─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘
+
+Check "NotAdded" with hashes: 0, 3, 8
+Bits: 0=SET, 3=SET, 8=SET
+All bits set by chance → false positive!
+```
+
+<Aside type="caution" title="False Positives Increase Over Time">
+As more items added, more bits set, higher probability of false positives. Empty filter has 0% false positive rate.
+</Aside>
+
+## Mathematical Analysis
+
+### False Positive Probability
+
+The probability of false positive after adding `n` items:
+
+```
+P(false positive) ≈ (1 - e^(-kn/m))^k
+
+Where:
+  k = number of hash functions
+  n = number of items added
+  m = number of bits
+  e = Euler's number (≈2.71828)
+```
+
+**Derivation:**
+
+1. Probability a specific bit is 0 after one hash: `(m-1)/m`
+2. After `kn` hash operations: `((m-1)/m)^(kn) ≈ e^(-kn/m)`
+3. Probability bit is 1: `1 - e^(-kn/m)`
+4. Probability all `k` bits are 1 (false positive): `(1 - e^(-kn/m))^k`
+
+### Optimal Hash Functions
+
+For given `m` and `n`, optimal number of hash functions:
+
+```
+k_optimal = (m/n) * ln(2)
+
+Where ln(2) ≈ 0.693
+```
+
+This minimizes false positive rate.
+
+### Required Bits for Target Error Rate
+
+For desired false positive rate `p` and `n` items:
+
+```
+m = -n * ln(p) / (ln(2))²
+
+Where ln(2) ≈ 0.693
+```
+
+### Examples
+
+**Ethereum Standard (m=2048, k=3):**
+
+```typescript
+const m = 2048
+const k = 3
+
+// False positive rates for different item counts:
+function falsePositiveRate(n: number): number {
+  return Math.pow(1 - Math.exp(-k * n / m), k)
+}
+
+console.log(falsePositiveRate(10))   // ~0.0046 (0.46%)
+console.log(falsePositiveRate(50))   // ~0.0455 (4.55%)
+console.log(falsePositiveRate(100))  // ~0.1423 (14.23%)
+console.log(falsePositiveRate(200))  // ~0.3768 (37.68%)
+```
+
+**Ethereum Choice:** Optimized for ~50 addresses/topics per block, targeting ~4-5% false positive rate.
+
+### Computing Optimal Parameters
+
+```typescript
+// Given expected items and target error rate, compute m and k
+function computeOptimalParams(n: number, p: number) {
+  // Required bits
+  const m = Math.ceil(-n * Math.log(p) / (Math.log(2) ** 2))
+
+  // Optimal hash functions
+  const k = Math.ceil((m / n) * Math.log(2))
+
+  return { m, k }
+}
+
+// Example: 100 items, 1% false positive rate
+const params = computeOptimalParams(100, 0.01)
+console.log(params)  // { m: 959, k: 7 }
+
+// Example: 50 items, 5% false positive rate (Ethereum-like)
+const ethParams = computeOptimalParams(50, 0.05)
+console.log(ethParams)  // { m: 480, k: 7 }
+// (Ethereum uses m=2048, k=3 for historical reasons)
+```
+
+## Hash Functions
+
+### Requirements
+
+Bloom filter hash functions must be:
+
+1. **Deterministic**: Same input → same output
+2. **Independent**: Different seeds → uncorrelated outputs
+3. **Uniform**: Evenly distributed across `[0, m)`
+4. **Fast**: O(n) for input length n
+
+### Implementation
+
+This library uses simple multiplicative hashing:
+
+```typescript
+function hash(item: Uint8Array, seed: number, m: number): number {
+  let h = seed
+  for (let i = 0; i < item.length; i++) {
+    h = (h * 31 + item[i]) >>> 0  // Unsigned 32-bit
+  }
+  return h % m
+}
+```
+
+**Properties:**
+- Uses different seed for each of k hash functions (0, 1, 2, ...)
+- Multiplier 31 provides good distribution
+- `>>> 0` forces unsigned 32-bit arithmetic
+- Modulo `m` maps to bit range
+
+**Alternative:** Ethereum clients often use keccak256 for production:
+
+```typescript
+// Ethereum production approach (not used in this library)
+function ethereumHash(item: Uint8Array, seed: number, m: number): number {
+  const input = new Uint8Array(item.length + 4)
+  input.set(item)
+  input.set(new Uint32Array([seed]), item.length)
+  const hash = keccak256(input)
+  return Number(BigInt('0x' + hash.slice(2, 18)) % BigInt(m))
+}
+```
+
+### Hash Collision Example
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+// Demonstrate hash independence
+const item = new TextEncoder().encode("Transfer")
+
+for (let seed = 0; seed < 5; seed++) {
+  const h = BloomFilter.hash(item, seed, 2048)
+  console.log(`seed ${seed}: hash=${h}`)
+}
+
+// Output (deterministic):
+// seed 0: hash=1247
+// seed 1: hash=892
+// seed 2: hash=1653
+// seed 3: hash=423
+// seed 4: hash=1998
+
+// Different items with same seed
+const items = ["Transfer", "Approval", "Swap"]
+for (const item of items) {
+  const bytes = new TextEncoder().encode(item)
+  const h = BloomFilter.hash(bytes, 0, 2048)
+  console.log(`${item}: hash=${h}`)
+}
+```
+
+## Performance Characteristics
+
+### Time Complexity
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| `create(m, k)` | O(m/8) | Allocate and zero m/8 bytes |
+| `add(item)` | O(k * n) | k hashes, each O(n) for n-byte item |
+| `contains(item)` | O(k * n) | k hashes, each O(n) for n-byte item |
+| `merge(f1, f2)` | O(m/8) | Bitwise OR of m/8 bytes |
+| `isEmpty()` | O(m/8) | Check m/8 bytes |
+
+### Space Complexity
+
+| Structure | Space | Notes |
+|-----------|-------|-------|
+| Bit array | m/8 bytes | Fixed size, doesn't grow |
+| Ethereum | 256 bytes | m=2048 → 2048/8 = 256 |
+| Metadata | 2 words | Store k and m values |
+
+### Comparison to Alternatives
+
+**vs Hash Set:**
+
+```
+Hash Set:
+  Space: O(n * item_size) - grows with items
+  Add: O(1) average, O(n) worst case
+  Contains: O(1) average, O(n) worst case
+  False positives: 0%
+
+Bloom Filter:
+  Space: O(m/8) - fixed size
+  Add: O(k * item_size)
+  Contains: O(k * item_size)
+  False positives: (1 - e^(-kn/m))^k
+```
+
+**When to use Bloom Filter:**
+- Fixed memory budget
+- False positives acceptable
+- Many membership tests
+- Network/storage optimization
+
+**When to use Hash Set:**
+- No false positives acceptable
+- Memory not constrained
+- Need deletions
+- Need to enumerate items
+
+## Practical Considerations
+
+### Choosing Parameters
+
+```typescript
+// Conservative (lower false positives, more memory)
+const conservative = BloomFilter.create(8192, 7)
+// ~0.01% false positive @ 100 items
+
+// Standard Ethereum
+const standard = BloomFilter.create(2048, 3)
+// ~4.5% false positive @ 50 items
+
+// Aggressive (higher false positives, less memory)
+const aggressive = BloomFilter.create(512, 2)
+// ~10% false positive @ 20 items
+```
+
+### Item Count Tracking
+
+```typescript
+// Track items added to estimate false positive rate
+class TrackedBloomFilter {
+  private filter: BloomFilter
+  private itemCount = 0
+
+  constructor(m: number, k: number) {
+    this.filter = BloomFilter.create(m, k)
+  }
+
+  add(item: Uint8Array): void {
+    this.filter.add(item)
+    this.itemCount++
+  }
+
+  estimateFalsePositiveRate(): number {
+    const { m, k } = this.filter
+    const n = this.itemCount
+    return Math.pow(1 - Math.exp(-k * n / m), k)
+  }
+
+  shouldReset(threshold: number): boolean {
+    return this.estimateFalsePositiveRate() > threshold
+  }
+}
+
+// Usage
+const tracked = new TrackedBloomFilter(2048, 3)
+
+// Add items
+for (let i = 0; i < 100; i++) {
+  tracked.add(new TextEncoder().encode(`item-${i}`))
+}
+
+// Check if rate too high
+if (tracked.shouldReset(0.1)) {  // 10% threshold
+  console.log("False positive rate too high, consider resetting")
+}
+
+console.log(`Current FP rate: ${(tracked.estimateFalsePositiveRate() * 100).toFixed(2)}%`)
+// "Current FP rate: 14.23%"
+```
+
+### Merge Considerations
+
+When merging filters:
+
+1. **Parameters must match**: Same m and k
+2. **False positive rate increases**: Combined filter has higher rate
+3. **Item count unknown**: Cannot compute exact FP rate after merge
+4. **Commutative and associative**: `merge(a, b) = merge(b, a)`
+
+```typescript
+// Merged filter false positive rate
+// Conservative estimate: use sum of item counts
+
+const f1Count = 50  // items in f1
+const f2Count = 30  // items in f2
+const totalCount = f1Count + f2Count  // 80
+
+const m = 2048
+const k = 3
+
+const estimatedFpRate = Math.pow(1 - Math.exp(-k * totalCount / m), k)
+console.log(`Merged FP rate: ${(estimatedFpRate * 100).toFixed(2)}%`)
+// "Merged FP rate: 10.72%"
+```
+
+## Related
+
+- [Operations](/primitives/bloomfilter/operations) - Add and merge implementation
+- [Queries](/primitives/bloomfilter/queries) - Contains implementation
+- [Conversions](/primitives/bloomfilter/conversions) - Hash function details
+- [Constructors](/primitives/bloomfilter/constructors) - Parameter selection
+- [Usage Patterns](/primitives/bloomfilter/usage-patterns) - Practical applications

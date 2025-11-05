@@ -1,0 +1,257 @@
+---
+title: BloomFilter Constructors
+description: Creating BloomFilter instances from parameters and hex strings
+---
+
+# Constructors
+
+Methods for creating BloomFilter instances with custom parameters or from serialized hex data.
+
+## Factory Methods
+
+### `BloomFilter.create(m, k)`
+
+Creates a new empty bloom filter with specified bit count and hash functions.
+
+```typescript
+import { BloomFilter, BITS, DEFAULT_HASH_COUNT } from '@tevm/voltaire'
+
+// Standard Ethereum bloom filter (2048 bits, 3 hash functions)
+const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT)
+const filter2 = BloomFilter.create(2048, 3)  // Equivalent
+
+// Custom parameters for different use cases
+const smallFilter = BloomFilter.create(1024, 2)   // Smaller, faster
+const largeFilter = BloomFilter.create(8192, 5)   // Lower false positive rate
+```
+
+**Parameters:**
+- `m: number` - Number of bits in the filter (must be positive)
+- `k: number` - Number of hash functions (must be positive)
+
+**Returns:** `BloomFilter` - Empty bloom filter (all bits zero)
+
+**Throws:**
+- `InvalidBloomFilterParameterError` - If `m <= 0` or `k <= 0`
+
+**Size calculation:**
+- Bloom filter size in bytes: `Math.ceil(m / 8)`
+- Example: 2048 bits = 256 bytes
+- Example: 1024 bits = 128 bytes
+
+```typescript
+// Verify size
+const filter = BloomFilter.create(2048, 3)
+console.log(filter.length)  // 256 bytes
+console.log(filter.m)       // 2048 bits
+console.log(filter.k)       // 3 hash functions
+```
+
+Defined in: [BrandedBloomFilter/create.js:3-42](https://github.com/evmts/primitives/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/create.js#L3-L42)
+
+### Choosing Parameters
+
+The relationship between false positive rate, filter size, and hash count:
+
+```typescript
+// False positive probability ≈ (1 - e^(-kn/m))^k
+// where:
+//   k = number of hash functions
+//   n = number of items added
+//   m = number of bits
+
+// Ethereum standard (optimized for ~50 items per block)
+const ethFilter = BloomFilter.create(2048, 3)  // ~4.5% false positive @ 50 items
+
+// Lower false positive rate (larger filter)
+const lowFpFilter = BloomFilter.create(4096, 3)  // ~0.5% false positive @ 50 items
+
+// Fewer items (smaller filter)
+const smallFilter = BloomFilter.create(512, 2)  // ~5% false positive @ 10 items
+```
+
+See [Algorithm](/primitives/bloomfilter/algorithm) for detailed false positive rate calculations.
+
+## Deserialization
+
+### `BloomFilter.fromHex(hex, m, k)`
+
+Creates bloom filter from hex string representation with specified parameters.
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+// From block header logsBloom field
+const logsBloom = "0x000000000000000000000000..."  // 512 hex chars (256 bytes)
+const filter = BloomFilter.fromHex(logsBloom, 2048, 3)
+
+// Works with or without 0x prefix
+const filter2 = BloomFilter.fromHex(
+  "000000000000000000000000...",  // No prefix
+  2048,
+  3
+)
+
+// Restore previously serialized filter
+const original = BloomFilter.create(2048, 3)
+original.add(new TextEncoder().encode("Transfer"))
+const hex = original.toHex()
+const restored = BloomFilter.fromHex(hex, 2048, 3)
+console.log(restored.contains(new TextEncoder().encode("Transfer")))  // true
+```
+
+**Parameters:**
+- `hex: string` - Hex string (with or without `0x` prefix)
+- `m: number` - Number of bits (must match hex data length)
+- `k: number` - Number of hash functions
+
+**Returns:** `BloomFilter` - Bloom filter with data from hex string
+
+**Throws:**
+- `InvalidBloomFilterLengthError` - If hex length doesn't match `Math.ceil(m / 8) * 2`
+
+**Length validation:**
+```typescript
+// Expected hex length (without 0x prefix):
+// expectedChars = Math.ceil(m / 8) * 2
+
+// Examples:
+// m = 2048 → 256 bytes → 512 hex chars
+// m = 1024 → 128 bytes → 256 hex chars
+// m = 512  → 64 bytes  → 128 hex chars
+
+// This will throw (wrong length):
+BloomFilter.fromHex("0x1234", 2048, 3)
+// InvalidBloomFilterLengthError: Expected 512 hex chars, got 4
+```
+
+Defined in: [BrandedBloomFilter/fromHex.js:3-52](https://github.com/evmts/primitives/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/fromHex.js#L3-L52)
+
+## Tree-Shakeable Usage
+
+All constructors available as tree-shakeable imports:
+
+```typescript
+import { create, fromHex } from '@tevm/voltaire/BrandedBloomFilter'
+import type { BrandedBloomFilter } from '@tevm/voltaire/BrandedBloomFilter'
+
+// Create new filter
+const filter: BrandedBloomFilter = create(2048, 3)
+
+// Deserialize from hex
+const restored: BrandedBloomFilter = fromHex(hexString, 2048, 3)
+```
+
+See [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) for details on tree-shakeable API.
+
+## Usage Examples
+
+### Standard Ethereum Bloom Filter
+
+```typescript
+import { BloomFilter, BITS, DEFAULT_HASH_COUNT, SIZE } from '@tevm/voltaire'
+
+// Create standard Ethereum bloom filter
+const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT)
+
+// Verify parameters
+console.log(filter.m)       // 2048 bits
+console.log(filter.k)       // 3 hash functions
+console.log(filter.length)  // 256 bytes (SIZE constant)
+```
+
+### Loading Block Bloom Filters
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+// From Ethereum block header
+interface BlockHeader {
+  logsBloom: string  // 512 hex chars
+  // ... other fields
+}
+
+async function loadBlockFilter(block: BlockHeader) {
+  // Parse bloom filter from block
+  const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+  // Check for relevant logs
+  const addressBytes = Address.from("0x...").bytes
+  if (filter.contains(addressBytes)) {
+    // Block might contain logs from this address
+    return fetchLogs(block.number)
+  }
+
+  return []
+}
+```
+
+### Custom Filter Sizes
+
+```typescript
+// Application-specific bloom filters
+
+// Fast membership testing (more false positives)
+const fastFilter = BloomFilter.create(512, 2)
+
+// Accurate membership testing (fewer false positives)
+const accurateFilter = BloomFilter.create(16384, 7)
+
+// Memory-constrained environment
+const tinyFilter = BloomFilter.create(256, 2)
+```
+
+### Round-Trip Serialization
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+function saveAndRestore() {
+  // Create and populate filter
+  const original = BloomFilter.create(2048, 3)
+  original.add(new TextEncoder().encode("event1"))
+  original.add(new TextEncoder().encode("event2"))
+
+  // Serialize to hex
+  const hex = original.toHex()
+
+  // Save to storage/database
+  await db.saveFilter({ hex, m: 2048, k: 3 })
+
+  // Later: restore from storage
+  const saved = await db.loadFilter()
+  const restored = BloomFilter.fromHex(saved.hex, saved.m, saved.k)
+
+  // Verify restoration
+  console.log(restored.contains(new TextEncoder().encode("event1")))  // true
+  console.log(restored.contains(new TextEncoder().encode("event2")))  // true
+}
+```
+
+## Parameter Selection Guide
+
+Choose bloom filter parameters based on your use case:
+
+| Use Case | Bits (m) | Hash Functions (k) | False Positive @ n items |
+|----------|----------|-------------------|------------------------|
+| Ethereum logs | 2048 | 3 | ~4.5% @ 50 items |
+| High throughput | 512 | 2 | ~10% @ 20 items |
+| Low false positives | 4096 | 5 | ~0.1% @ 100 items |
+| Memory constrained | 256 | 2 | ~20% @ 10 items |
+| Event indexing | 8192 | 7 | ~0.01% @ 200 items |
+
+General guidelines:
+- **Increase `m`** to reduce false positive rate (more memory)
+- **Increase `k`** to reduce false positive rate (slower operations)
+- **Optimal `k`**: `k = (m/n) * ln(2)` where `n` = expected items
+- **Ethereum choice**: Optimized for ~50 addresses/topics per block
+
+See [Algorithm](/primitives/bloomfilter/algorithm) for mathematical analysis.
+
+## Related
+
+- [Operations](/primitives/bloomfilter/operations) - Adding items and merging filters
+- [Queries](/primitives/bloomfilter/queries) - Testing membership
+- [Conversions](/primitives/bloomfilter/conversions) - Serialization to hex
+- [Algorithm](/primitives/bloomfilter/algorithm) - Understanding bloom filter mathematics
+- [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) - Tree-shakeable API

@@ -1,0 +1,750 @@
+---
+title: BinaryTree Usage Patterns
+description: Common patterns for EIP-7864 Binary State Tree implementation
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# Usage Patterns
+
+Common patterns and best practices for implementing Ethereum state with Binary State Tree (EIP-7864).
+
+## Overview
+
+Binary State Tree provides unified structure for Ethereum state including accounts, storage, and code. This guide covers practical implementation patterns for state management, account operations, and tree maintenance.
+
+## Account Management
+
+### Account Data Structure
+
+AccountData stored at subindex 0 of account stem:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+interface AccountData {
+  version: number    // 1 byte
+  codeSize: number   // 3 bytes (24-bit)
+  nonce: bigint      // 8 bytes (64-bit)
+  balance: bigint    // 16 bytes (128-bit)
+}
+
+function packAccountData(data: AccountData): Uint8Array {
+  const packed = new Uint8Array(32)
+
+  // Version (1 byte)
+  packed[0] = data.version
+
+  // Code size (3 bytes, 24-bit big-endian)
+  packed[1] = (data.codeSize >> 16) & 0xFF
+  packed[2] = (data.codeSize >> 8) & 0xFF
+  packed[3] = data.codeSize & 0xFF
+
+  // Nonce (8 bytes, 64-bit big-endian)
+  const nonceBytes = new Uint8Array(8)
+  new DataView(nonceBytes.buffer).setBigUint64(0, data.nonce, false)
+  packed.set(nonceBytes, 4)
+
+  // Balance (16 bytes, 128-bit big-endian)
+  const balanceHex = data.balance.toString(16).padStart(32, '0')
+  for (let i = 0; i < 16; i++) {
+    packed[12 + i] = parseInt(balanceHex.substr(i * 2, 2), 16)
+  }
+
+  return packed
+}
+
+function unpackAccountData(packed: Uint8Array): AccountData {
+  const version = packed[0]
+
+  const codeSize = (packed[1] << 16) | (packed[2] << 8) | packed[3]
+
+  const nonceView = new DataView(packed.buffer, packed.byteOffset + 4, 8)
+  const nonce = nonceView.getBigUint64(0, false)
+
+  let balanceHex = ''
+  for (let i = 0; i < 16; i++) {
+    balanceHex += packed[12 + i].toString(16).padStart(2, '0')
+  }
+  const balance = BigInt('0x' + balanceHex)
+
+  return { version, codeSize, nonce, balance }
+}
+```
+
+### Create Account
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+function createAccount(
+  tree: BinaryTree,
+  address: Uint8Array,
+  initialBalance: bigint = 0n
+): BinaryTree {
+  // Convert address to tree key
+  const baseKey = BinaryTree.addressToKey(address)
+
+  // Account data at subindex 0
+  const accountKey = baseKey.slice()
+  accountKey[31] = 0
+
+  // Pack account data
+  const accountData = packAccountData({
+    version: 1,
+    codeSize: 0,
+    nonce: 0n,
+    balance: initialBalance
+  })
+
+  // Insert into tree
+  return BinaryTree.insert(tree, accountKey, accountData)
+}
+
+// Usage
+let tree = BinaryTree.init()
+const address = new Uint8Array(20)
+// ... set address bytes
+
+tree = createAccount(tree, address, 1000000000000000000n) // 1 ETH
+```
+
+### Update Account Balance
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+function updateBalance(
+  tree: BinaryTree,
+  address: Uint8Array,
+  newBalance: bigint
+): BinaryTree {
+  const baseKey = BinaryTree.addressToKey(address)
+  const accountKey = baseKey.slice()
+  accountKey[31] = 0
+
+  // Get existing account data
+  const existing = BinaryTree.get(tree, accountKey)
+  if (!existing) {
+    throw new Error('Account does not exist')
+  }
+
+  // Unpack, modify, repack
+  const accountData = unpackAccountData(existing)
+  accountData.balance = newBalance
+  const updated = packAccountData(accountData)
+
+  // Update tree
+  return BinaryTree.insert(tree, accountKey, updated)
+}
+
+// Usage
+tree = updateBalance(tree, address, 2000000000000000000n) // 2 ETH
+```
+
+### Increment Nonce
+
+```typescript
+function incrementNonce(
+  tree: BinaryTree,
+  address: Uint8Array
+): BinaryTree {
+  const baseKey = BinaryTree.addressToKey(address)
+  const accountKey = baseKey.slice()
+  accountKey[31] = 0
+
+  const existing = BinaryTree.get(tree, accountKey)
+  if (!existing) {
+    throw new Error('Account does not exist')
+  }
+
+  const accountData = unpackAccountData(existing)
+  accountData.nonce += 1n
+  const updated = packAccountData(accountData)
+
+  return BinaryTree.insert(tree, accountKey, updated)
+}
+
+// Usage
+tree = incrementNonce(tree, address)
+```
+
+## Storage Management
+
+### Write Storage Slot
+
+Storage slots stored at subindices 1-255 (slot 0 at subindex 1, etc.):
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+function writeStorage(
+  tree: BinaryTree,
+  address: Uint8Array,
+  slot: number, // 0-254
+  value: Uint8Array // 32 bytes
+): BinaryTree {
+  if (slot < 0 || slot > 254) {
+    throw new Error('Storage slot must be 0-254')
+  }
+
+  const baseKey = BinaryTree.addressToKey(address)
+  const storageKey = baseKey.slice()
+  storageKey[31] = 1 + slot  // Slot 0 → subindex 1
+
+  return BinaryTree.insert(tree, storageKey, value)
+}
+
+// Usage
+const storageValue = new Uint8Array(32)
+storageValue[31] = 0x42
+
+tree = writeStorage(tree, address, 0, storageValue)
+```
+
+### Read Storage Slot
+
+```typescript
+function readStorage(
+  tree: BinaryTree,
+  address: Uint8Array,
+  slot: number
+): Uint8Array | null {
+  if (slot < 0 || slot > 254) {
+    throw new Error('Storage slot must be 0-254')
+  }
+
+  const baseKey = BinaryTree.addressToKey(address)
+  const storageKey = baseKey.slice()
+  storageKey[31] = 1 + slot
+
+  return BinaryTree.get(tree, storageKey)
+}
+
+// Usage
+const value = readStorage(tree, address, 0)
+if (value) {
+  console.log('Storage slot 0:', value)
+}
+```
+
+### Batch Storage Updates
+
+```typescript
+function batchWriteStorage(
+  tree: BinaryTree,
+  address: Uint8Array,
+  slots: Map<number, Uint8Array>
+): BinaryTree {
+  let result = tree
+
+  for (const [slot, value] of slots) {
+    result = writeStorage(result, address, slot, value)
+  }
+
+  return result
+}
+
+// Usage
+const updates = new Map([
+  [0, new Uint8Array(32)],
+  [1, new Uint8Array(32)],
+  [2, new Uint8Array(32)]
+])
+
+tree = batchWriteStorage(tree, address, updates)
+```
+
+## State Snapshots
+
+### Capture State Root
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+interface StateSnapshot {
+  root: string
+  timestamp: number
+  blockNumber: number
+}
+
+function captureSnapshot(
+  tree: BinaryTree,
+  blockNumber: number
+): StateSnapshot {
+  return {
+    root: BinaryTree.rootHashHex(tree),
+    timestamp: Date.now(),
+    blockNumber
+  }
+}
+
+// Usage
+const snapshot = captureSnapshot(tree, 18000000)
+console.log(`State root at block ${snapshot.blockNumber}: ${snapshot.root}`)
+```
+
+### State History Tracking
+
+```typescript
+class StateHistory {
+  private snapshots: Map<number, StateSnapshot> = new Map()
+  private trees: Map<string, BinaryTree> = new Map()
+
+  capture(tree: BinaryTree, blockNumber: number): void {
+    const snapshot = captureSnapshot(tree, blockNumber)
+    this.snapshots.set(blockNumber, snapshot)
+    this.trees.set(snapshot.root, tree)
+  }
+
+  getSnapshot(blockNumber: number): StateSnapshot | undefined {
+    return this.snapshots.get(blockNumber)
+  }
+
+  getTree(blockNumber: number): BinaryTree | undefined {
+    const snapshot = this.snapshots.get(blockNumber)
+    if (!snapshot) return undefined
+    return this.trees.get(snapshot.root)
+  }
+
+  getRoot(blockNumber: number): string | undefined {
+    return this.snapshots.get(blockNumber)?.root
+  }
+}
+
+// Usage
+const history = new StateHistory()
+
+let tree = BinaryTree.init()
+history.capture(tree, 0)
+
+tree = createAccount(tree, address1, 1000n)
+history.capture(tree, 1)
+
+tree = createAccount(tree, address2, 2000n)
+history.capture(tree, 2)
+
+console.log(history.getRoot(1)) // Root after first account
+console.log(history.getRoot(2)) // Root after second account
+```
+
+## Transaction Processing
+
+### Apply Transaction
+
+```typescript
+interface Transaction {
+  from: Uint8Array
+  to: Uint8Array | null
+  value: bigint
+  data: Uint8Array
+}
+
+function applyTransaction(
+  tree: BinaryTree,
+  tx: Transaction
+): BinaryTree {
+  let result = tree
+
+  // Increment sender nonce
+  result = incrementNonce(result, tx.from)
+
+  // Deduct value from sender
+  const senderKey = BinaryTree.addressToKey(tx.from)
+  const senderAccountKey = senderKey.slice()
+  senderAccountKey[31] = 0
+  const senderData = BinaryTree.get(result, senderAccountKey)
+  if (!senderData) throw new Error('Sender account not found')
+
+  const senderAccount = unpackAccountData(senderData)
+  if (senderAccount.balance < tx.value) {
+    throw new Error('Insufficient balance')
+  }
+  senderAccount.balance -= tx.value
+  result = BinaryTree.insert(
+    result,
+    senderAccountKey,
+    packAccountData(senderAccount)
+  )
+
+  // Add value to recipient (if not contract creation)
+  if (tx.to) {
+    const recipientKey = BinaryTree.addressToKey(tx.to)
+    const recipientAccountKey = recipientKey.slice()
+    recipientAccountKey[31] = 0
+
+    const recipientData = BinaryTree.get(result, recipientAccountKey)
+    if (!recipientData) {
+      // Create account
+      result = createAccount(result, tx.to, tx.value)
+    } else {
+      // Update balance
+      const recipientAccount = unpackAccountData(recipientData)
+      recipientAccount.balance += tx.value
+      result = BinaryTree.insert(
+        result,
+        recipientAccountKey,
+        packAccountData(recipientAccount)
+      )
+    }
+  }
+
+  return result
+}
+```
+
+### Process Block
+
+```typescript
+interface Block {
+  number: number
+  transactions: Transaction[]
+}
+
+function processBlock(
+  tree: BinaryTree,
+  block: Block
+): { tree: BinaryTree; stateRoot: string } {
+  let result = tree
+
+  for (const tx of block.transactions) {
+    result = applyTransaction(result, tx)
+  }
+
+  return {
+    tree: result,
+    stateRoot: BinaryTree.rootHashHex(result)
+  }
+}
+
+// Usage
+const block: Block = {
+  number: 18000001,
+  transactions: [/* ... */]
+}
+
+const { tree: newTree, stateRoot } = processBlock(tree, block)
+console.log(`Block ${block.number} state root: ${stateRoot}`)
+```
+
+## Account Iteration
+
+### Find All Accounts
+
+```typescript
+function* iterateAccounts(tree: BinaryTree): Generator<{
+  address: Uint8Array
+  data: AccountData
+}> {
+  // Simplified: Assumes single stem node at root
+  // Full implementation needs tree traversal
+
+  if (tree.root.type === 'stem') {
+    const stem = tree.root.stem
+
+    // Check subindex 0 for each potential address
+    for (let i = 0; i < 256; i++) {
+      const value = tree.root.values[i]
+      if (value && i === 0) { // AccountData at subindex 0
+        // Reconstruct address from stem
+        const address = stem.slice(12, 31) // Last 20 bytes of stem
+        const data = unpackAccountData(value)
+        yield { address, data }
+      }
+    }
+  }
+}
+
+// Usage
+for (const { address, data } of iterateAccounts(tree)) {
+  console.log('Address:', address)
+  console.log('Balance:', data.balance)
+  console.log('Nonce:', data.nonce)
+}
+```
+
+## State Verification
+
+### Verify Account Existence
+
+```typescript
+function accountExists(
+  tree: BinaryTree,
+  address: Uint8Array
+): boolean {
+  const baseKey = BinaryTree.addressToKey(address)
+  const accountKey = baseKey.slice()
+  accountKey[31] = 0
+
+  const data = BinaryTree.get(tree, accountKey)
+  return data !== null
+}
+
+// Usage
+if (accountExists(tree, address)) {
+  console.log('Account exists')
+}
+```
+
+### Verify State Root
+
+```typescript
+function verifyStateRoot(
+  tree: BinaryTree,
+  expectedRoot: string
+): boolean {
+  const actualRoot = BinaryTree.rootHashHex(tree)
+  return actualRoot === expectedRoot
+}
+
+// Usage
+const expectedRoot = "0xabcdef..."
+if (verifyStateRoot(tree, expectedRoot)) {
+  console.log('State root matches')
+}
+```
+
+## Optimization Patterns
+
+### Lazy Hashing
+
+Defer hash calculation until needed:
+
+```typescript
+class LazyStateTree {
+  private tree: BinaryTree
+  private cachedRoot: string | null = null
+
+  constructor(tree?: BinaryTree) {
+    this.tree = tree || BinaryTree.init()
+  }
+
+  insert(address: Uint8Array, key: number, value: Uint8Array): void {
+    const baseKey = BinaryTree.addressToKey(address)
+    const fullKey = baseKey.slice()
+    fullKey[31] = key
+
+    this.tree = BinaryTree.insert(this.tree, fullKey, value)
+    this.cachedRoot = null // Invalidate cache
+  }
+
+  rootHash(): string {
+    if (this.cachedRoot === null) {
+      this.cachedRoot = BinaryTree.rootHashHex(this.tree)
+    }
+    return this.cachedRoot
+  }
+
+  getTree(): BinaryTree {
+    return this.tree
+  }
+}
+
+// Usage
+const lazyTree = new LazyStateTree()
+lazyTree.insert(address, 0, accountData)
+lazyTree.insert(address, 1, storageValue)
+// Hash only calculated when needed
+console.log(lazyTree.rootHash())
+```
+
+### Batch Commit
+
+Accumulate changes before committing:
+
+```typescript
+class BatchedStateTree {
+  private tree: BinaryTree
+  private pending: Map<string, { key: Uint8Array; value: Uint8Array }> = new Map()
+
+  constructor(tree?: BinaryTree) {
+    this.tree = tree || BinaryTree.init()
+  }
+
+  stage(key: Uint8Array, value: Uint8Array): void {
+    const keyHex = Buffer.from(key).toString('hex')
+    this.pending.set(keyHex, { key, value })
+  }
+
+  commit(): string {
+    for (const { key, value } of this.pending.values()) {
+      this.tree = BinaryTree.insert(this.tree, key, value)
+    }
+    this.pending.clear()
+    return BinaryTree.rootHashHex(this.tree)
+  }
+
+  rollback(): void {
+    this.pending.clear()
+  }
+
+  getTree(): BinaryTree {
+    return this.tree
+  }
+}
+
+// Usage
+const batched = new BatchedStateTree()
+batched.stage(key1, value1)
+batched.stage(key2, value2)
+batched.stage(key3, value3)
+const root = batched.commit() // Single tree update
+```
+
+## Error Handling
+
+### Safe Account Operations
+
+```typescript
+function safeUpdateAccount(
+  tree: BinaryTree,
+  address: Uint8Array,
+  updateFn: (data: AccountData) => AccountData
+): BinaryTree | Error {
+  try {
+    const baseKey = BinaryTree.addressToKey(address)
+    const accountKey = baseKey.slice()
+    accountKey[31] = 0
+
+    const existing = BinaryTree.get(tree, accountKey)
+    if (!existing) {
+      return new Error('Account not found')
+    }
+
+    const accountData = unpackAccountData(existing)
+    const updated = updateFn(accountData)
+    const packed = packAccountData(updated)
+
+    return BinaryTree.insert(tree, accountKey, packed)
+  } catch (error) {
+    return error as Error
+  }
+}
+
+// Usage
+const result = safeUpdateAccount(tree, address, (data) => ({
+  ...data,
+  balance: data.balance + 1000n
+}))
+
+if (result instanceof Error) {
+  console.error('Update failed:', result.message)
+} else {
+  tree = result
+}
+```
+
+## Testing Patterns
+
+### State Assertions
+
+```typescript
+function assertAccountBalance(
+  tree: BinaryTree,
+  address: Uint8Array,
+  expectedBalance: bigint
+): void {
+  const baseKey = BinaryTree.addressToKey(address)
+  const accountKey = baseKey.slice()
+  accountKey[31] = 0
+
+  const data = BinaryTree.get(tree, accountKey)
+  if (!data) throw new Error('Account not found')
+
+  const account = unpackAccountData(data)
+  if (account.balance !== expectedBalance) {
+    throw new Error(
+      `Balance mismatch: expected ${expectedBalance}, got ${account.balance}`
+    )
+  }
+}
+
+// Usage in tests
+let tree = BinaryTree.init()
+tree = createAccount(tree, address, 1000n)
+assertAccountBalance(tree, address, 1000n) // Passes
+```
+
+<Aside type="tip" title="Best Practices">
+1. **Immutability**: Always treat trees as immutable, assign results to new variables
+2. **Subindex 0**: Reserve for AccountData, use 1-255 for storage
+3. **Validation**: Check account existence before updates
+4. **Batching**: Group related operations for efficiency
+5. **Caching**: Cache root hashes when state is stable
+</Aside>
+
+## Complete Example
+
+Full state management implementation:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+class EthereumState {
+  private tree: BinaryTree
+
+  constructor() {
+    this.tree = BinaryTree.init()
+  }
+
+  // Account operations
+  createAccount(address: Uint8Array, balance: bigint = 0n): void {
+    this.tree = createAccount(this.tree, address, balance)
+  }
+
+  getBalance(address: Uint8Array): bigint {
+    const baseKey = BinaryTree.addressToKey(address)
+    const accountKey = baseKey.slice()
+    accountKey[31] = 0
+
+    const data = BinaryTree.get(this.tree, accountKey)
+    if (!data) return 0n
+
+    return unpackAccountData(data).balance
+  }
+
+  setBalance(address: Uint8Array, balance: bigint): void {
+    this.tree = updateBalance(this.tree, address, balance)
+  }
+
+  // Storage operations
+  setStorage(address: Uint8Array, slot: number, value: Uint8Array): void {
+    this.tree = writeStorage(this.tree, address, slot, value)
+  }
+
+  getStorage(address: Uint8Array, slot: number): Uint8Array | null {
+    return readStorage(this.tree, address, slot)
+  }
+
+  // State root
+  stateRoot(): string {
+    return BinaryTree.rootHashHex(this.tree)
+  }
+
+  // Export tree
+  getTree(): BinaryTree {
+    return this.tree
+  }
+}
+
+// Usage
+const state = new EthereumState()
+
+const addr1 = new Uint8Array(20)
+const addr2 = new Uint8Array(20)
+
+state.createAccount(addr1, 1000n)
+state.createAccount(addr2, 2000n)
+
+state.setStorage(addr1, 0, new Uint8Array(32))
+
+console.log('State root:', state.stateRoot())
+console.log('Address 1 balance:', state.getBalance(addr1))
+```
+
+## Related
+
+- [BinaryTree](/primitives/binarytree/) - Main documentation
+- [Constructors](/primitives/binarytree/constructors) - Creating trees
+- [Operations](/primitives/binarytree/operations) - Insert and get
+- [Key Utilities](/primitives/binarytree/key-utilities) - Address conversion

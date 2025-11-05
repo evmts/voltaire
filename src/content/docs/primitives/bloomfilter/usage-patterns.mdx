@@ -1,0 +1,731 @@
+---
+title: BloomFilter Usage Patterns
+description: Common patterns for log filtering, event indexing, and optimization
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Usage Patterns
+
+Common patterns for log filtering, event indexing, and optimization with bloom filters.
+
+## Event Monitoring
+
+### Real-Time Event Watcher
+
+Monitor blockchain for specific events in real-time:
+
+```typescript
+import { BloomFilter, Address } from '@tevm/voltaire'
+
+class EventWatcher {
+  private watching = new Set<string>()
+  private eventTopics = new Map<string, Uint8Array>()
+
+  watchAddress(address: string) {
+    this.watching.add(address.toLowerCase())
+  }
+
+  watchEvent(name: string, signature: string) {
+    const topic = keccak256(new TextEncoder().encode(signature))
+    this.eventTopics.set(name, Hex.toBytes(topic))
+  }
+
+  async processBlock(blockNum: number): Promise<Log[]> {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    // Quick bloom check
+    const hasWatchedAddress = Array.from(this.watching).some(addr =>
+      filter.contains(Address.from(addr))
+    )
+
+    const hasWatchedEvent = Array.from(this.eventTopics.values()).some(topic =>
+      filter.contains(topic)
+    )
+
+    if (!hasWatchedAddress && !hasWatchedEvent) {
+      return []  // Skip block entirely
+    }
+
+    // Fetch and filter logs
+    const logs = await provider.getLogs({
+      fromBlock: blockNum,
+      toBlock: blockNum
+    })
+
+    return logs.filter(log =>
+      this.watching.has(log.address.toLowerCase()) ||
+      log.topics.some(t => {
+        const topicBytes = Hex.toBytes(t)
+        return Array.from(this.eventTopics.values()).some(watched =>
+          topicBytes.every((byte, i) => byte === watched[i])
+        )
+      })
+    )
+  }
+}
+
+// Usage
+const watcher = new EventWatcher()
+watcher.watchAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")  // USDC
+watcher.watchEvent("Transfer", "Transfer(address,address,uint256)")
+
+// Process new blocks
+provider.on("block", async (blockNum) => {
+  const logs = await watcher.processBlock(blockNum)
+  console.log(`Block ${blockNum}: ${logs.length} relevant logs`)
+})
+```
+
+### Multi-Contract Event Aggregator
+
+Aggregate events from multiple contracts efficiently:
+
+```typescript
+class EventAggregator {
+  private contracts = new Map<string, {
+    address: Address
+    events: Map<string, Uint8Array>
+  }>()
+
+  addContract(address: string, events: Record<string, string>) {
+    const addr = Address.from(address)
+    const eventMap = new Map<string, Uint8Array>()
+
+    for (const [name, sig] of Object.entries(events)) {
+      const topic = keccak256(new TextEncoder().encode(sig))
+      eventMap.set(name, Hex.toBytes(topic))
+    }
+
+    this.contracts.set(address.toLowerCase(), {
+      address: addr,
+      events: eventMap
+    })
+  }
+
+  async scanRange(
+    startBlock: number,
+    endBlock: number
+  ): Promise<Map<string, Log[]>> {
+    const results = new Map<string, Log[]>()
+
+    // Initialize result maps
+    for (const [address] of this.contracts) {
+      results.set(address, [])
+    }
+
+    // Scan blocks
+    for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+      const block = await provider.getBlock(blockNum)
+      const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+      // Check which contracts might have events
+      const candidates = Array.from(this.contracts.entries()).filter(
+        ([_, { address }]) => filter.contains(address)
+      )
+
+      if (candidates.length === 0) continue
+
+      // Fetch logs for candidate contracts
+      const logs = await provider.getLogs({
+        fromBlock: blockNum,
+        toBlock: blockNum,
+        address: candidates.map(([addr]) => addr)
+      })
+
+      // Categorize by contract
+      for (const log of logs) {
+        const existing = results.get(log.address.toLowerCase()) || []
+        existing.push(log)
+        results.set(log.address.toLowerCase(), existing)
+      }
+    }
+
+    return results
+  }
+}
+
+// Usage
+const aggregator = new EventAggregator()
+
+// Add DEX contracts
+aggregator.addContract("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", {
+  "Swap": "Swap(address,uint256,uint256,uint256,uint256,address)"
+})
+
+aggregator.addContract("0xE592427A0AEce92De3Edee1F18E0157C05861564", {
+  "Swap": "Swap(address,address,int256,int256,uint160,uint128,int24)"
+})
+
+const logs = await aggregator.scanRange(12345000, 12346000)
+```
+
+## Hierarchical Filtering
+
+### Two-Level Bloom Filter
+
+Use coarse filter for quick rejection, fine filter for accuracy:
+
+```typescript
+class HierarchicalFilter {
+  private coarseFilter: BloomFilter    // Larger range, faster
+  private fineFilters: Map<number, BloomFilter>  // Per-block
+
+  constructor() {
+    this.coarseFilter = BloomFilter.create(2048, 3)
+    this.fineFilters = new Map()
+  }
+
+  async indexRange(startBlock: number, endBlock: number) {
+    for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+      const block = await provider.getBlock(blockNum)
+      const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+      // Merge into coarse filter
+      this.coarseFilter = this.coarseFilter.merge(blockFilter)
+
+      // Store fine filter
+      this.fineFilters.set(blockNum, blockFilter)
+    }
+  }
+
+  async findLogs(address: string): Promise<Log[]> {
+    const addr = Address.from(address)
+
+    // Step 1: Check coarse filter
+    if (!this.coarseFilter.contains(addr)) {
+      return []  // Definitely not in range
+    }
+
+    // Step 2: Check fine filters
+    const candidateBlocks: number[] = []
+    for (const [blockNum, filter] of this.fineFilters) {
+      if (filter.contains(addr)) {
+        candidateBlocks.push(blockNum)
+      }
+    }
+
+    // Step 3: Fetch logs from candidates
+    const allLogs: Log[] = []
+    for (const blockNum of candidateBlocks) {
+      const logs = await provider.getLogs({
+        fromBlock: blockNum,
+        toBlock: blockNum,
+        address: address
+      })
+      allLogs.push(...logs)
+    }
+
+    return allLogs
+  }
+}
+```
+
+### Temporal Bloom Filters
+
+Index by time ranges for faster temporal queries:
+
+```typescript
+class TemporalBloomIndex {
+  private hourlyFilters = new Map<string, BloomFilter>()  // "YYYY-MM-DD-HH" -> filter
+  private blockToTime = new Map<number, Date>()
+
+  async indexBlock(blockNum: number) {
+    const block = await provider.getBlock(blockNum)
+    const blockTime = new Date(block.timestamp * 1000)
+    const hourKey = this.getHourKey(blockTime)
+
+    this.blockToTime.set(blockNum, blockTime)
+
+    // Get or create hourly filter
+    let hourFilter = this.hourlyFilters.get(hourKey)
+    if (!hourFilter) {
+      hourFilter = BloomFilter.create(2048, 3)
+      this.hourlyFilters.set(hourKey, hourFilter)
+    }
+
+    // Merge block filter
+    const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    this.hourlyFilters.set(hourKey, hourFilter.merge(blockFilter))
+  }
+
+  async queryTimeRange(
+    address: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<number[]> {
+    const addr = Address.from(address)
+    const candidateBlocks: number[] = []
+
+    // Get relevant hour keys
+    const hourKeys = this.getHourKeyRange(startTime, endTime)
+
+    // Check each hour
+    for (const hourKey of hourKeys) {
+      const hourFilter = this.hourlyFilters.get(hourKey)
+      if (!hourFilter || !hourFilter.contains(addr)) continue
+
+      // Check individual blocks in this hour
+      for (const [blockNum, blockTime] of this.blockToTime) {
+        if (
+          this.getHourKey(blockTime) === hourKey &&
+          blockTime >= startTime &&
+          blockTime <= endTime
+        ) {
+          candidateBlocks.push(blockNum)
+        }
+      }
+    }
+
+    return candidateBlocks
+  }
+
+  private getHourKey(date: Date): string {
+    return date.toISOString().slice(0, 13)  // "YYYY-MM-DDTHH"
+  }
+
+  private getHourKeyRange(start: Date, end: Date): string[] {
+    const keys: string[] = []
+    const current = new Date(start)
+
+    while (current <= end) {
+      keys.push(this.getHourKey(current))
+      current.setHours(current.getHours() + 1)
+    }
+
+    return keys
+  }
+}
+```
+
+## Caching Strategies
+
+### LRU Bloom Cache
+
+Cache most recently used bloom filters:
+
+```typescript
+class LRUBloomCache {
+  private cache = new Map<number, BloomFilter>()
+  private maxSize: number
+
+  constructor(maxSize: number = 1000) {
+    this.maxSize = maxSize
+  }
+
+  async get(blockNum: number): Promise<BloomFilter> {
+    // Check cache
+    if (this.cache.has(blockNum)) {
+      const filter = this.cache.get(blockNum)!
+      // Move to end (most recent)
+      this.cache.delete(blockNum)
+      this.cache.set(blockNum, filter)
+      return filter
+    }
+
+    // Fetch and cache
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    // Evict oldest if at capacity
+    if (this.cache.size >= this.maxSize) {
+      const oldest = this.cache.keys().next().value
+      this.cache.delete(oldest)
+    }
+
+    this.cache.set(blockNum, filter)
+    return filter
+  }
+
+  async checkAddress(
+    blockNum: number,
+    address: Address
+  ): Promise<boolean> {
+    const filter = await this.get(blockNum)
+    return filter.contains(address)
+  }
+
+  getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      utilization: (this.cache.size / this.maxSize) * 100
+    }
+  }
+}
+
+// Usage
+const cache = new LRUBloomCache(500)  // Cache 500 blocks
+
+for (let block = 12345000; block <= 12346000; block++) {
+  if (await cache.checkAddress(block, address)) {
+    console.log(`Block ${block} might contain address`)
+  }
+}
+
+console.log(cache.getStats())  // { size: 500, maxSize: 500, utilization: 100 }
+```
+
+### Persistent Bloom Storage
+
+Store bloom filters for offline querying:
+
+```typescript
+import { promises as fs } from 'fs'
+
+class PersistentBloomStorage {
+  private dataDir: string
+
+  constructor(dataDir: string) {
+    this.dataDir = dataDir
+  }
+
+  async saveFilter(blockNum: number, filter: BloomFilter): Promise<void> {
+    const data = {
+      hex: filter.toHex(),
+      m: filter.m,
+      k: filter.k,
+      blockNum
+    }
+
+    await fs.writeFile(
+      `${this.dataDir}/bloom-${blockNum}.json`,
+      JSON.stringify(data)
+    )
+  }
+
+  async loadFilter(blockNum: number): Promise<BloomFilter | null> {
+    try {
+      const content = await fs.readFile(
+        `${this.dataDir}/bloom-${blockNum}.json`,
+        'utf-8'
+      )
+      const data = JSON.parse(content)
+      return BloomFilter.fromHex(data.hex, data.m, data.k)
+    } catch {
+      return null
+    }
+  }
+
+  async indexRange(startBlock: number, endBlock: number): Promise<void> {
+    for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+      const block = await provider.getBlock(blockNum)
+      const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+      await this.saveFilter(blockNum, filter)
+    }
+  }
+
+  async queryOffline(
+    startBlock: number,
+    endBlock: number,
+    address: string
+  ): Promise<number[]> {
+    const addr = Address.from(address)
+    const matches: number[] = []
+
+    for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+      const filter = await this.loadFilter(blockNum)
+      if (filter && filter.contains(addr)) {
+        matches.push(blockNum)
+      }
+    }
+
+    return matches
+  }
+}
+
+// Usage
+const storage = new PersistentBloomStorage('./bloom-cache')
+
+// Index once
+await storage.indexRange(12345000, 12346000)
+
+// Query multiple times without RPC
+const blocks = await storage.queryOffline(12345000, 12346000, "0x...")
+```
+
+## Performance Optimization
+
+### Parallel Block Processing
+
+Process multiple blocks concurrently:
+
+```typescript
+async function scanRangeParallel(
+  startBlock: number,
+  endBlock: number,
+  address: string,
+  concurrency: number = 10
+): Promise<Log[]> {
+  const addr = Address.from(address)
+  const allLogs: Log[] = []
+
+  // Split range into chunks
+  const chunkSize = Math.ceil((endBlock - startBlock + 1) / concurrency)
+  const chunks: Array<[number, number]> = []
+
+  for (let i = startBlock; i <= endBlock; i += chunkSize) {
+    chunks.push([i, Math.min(i + chunkSize - 1, endBlock)])
+  }
+
+  // Process chunks in parallel
+  const results = await Promise.all(
+    chunks.map(async ([start, end]) => {
+      const chunkLogs: Log[] = []
+
+      for (let blockNum = start; blockNum <= end; blockNum++) {
+        const block = await provider.getBlock(blockNum)
+        const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+        if (filter.contains(addr)) {
+          const logs = await provider.getLogs({
+            fromBlock: blockNum,
+            toBlock: blockNum,
+            address: address
+          })
+          chunkLogs.push(...logs)
+        }
+      }
+
+      return chunkLogs
+    })
+  )
+
+  // Flatten results
+  for (const logs of results) {
+    allLogs.push(...logs)
+  }
+
+  return allLogs
+}
+
+// Usage
+const logs = await scanRangeParallel(
+  12345000,
+  12346000,
+  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",  // USDC
+  20  // 20 parallel chunks
+)
+```
+
+### Adaptive Batch Sizing
+
+Adjust batch size based on hit rate:
+
+```typescript
+class AdaptiveBatchScanner {
+  private batchSize = 100
+  private hitRate = 0.1
+  private readonly minBatch = 10
+  private readonly maxBatch = 1000
+
+  async scanRange(
+    startBlock: number,
+    endBlock: number,
+    address: string
+  ): Promise<Log[]> {
+    const addr = Address.from(address)
+    const allLogs: Log[] = []
+
+    for (let i = startBlock; i <= endBlock; i += this.batchSize) {
+      const batchEnd = Math.min(i + this.batchSize - 1, endBlock)
+      const batchLogs = await this.scanBatch(i, batchEnd, addr)
+
+      allLogs.push(...batchLogs)
+
+      // Adjust batch size based on hit rate
+      this.adjustBatchSize()
+    }
+
+    return allLogs
+  }
+
+  private async scanBatch(
+    start: number,
+    end: number,
+    address: Address
+  ): Promise<Log[]> {
+    let hits = 0
+    const total = end - start + 1
+    const logs: Log[] = []
+
+    for (let blockNum = start; blockNum <= end; blockNum++) {
+      const block = await provider.getBlock(blockNum)
+      const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+      if (filter.contains(address)) {
+        hits++
+        const blockLogs = await provider.getLogs({
+          fromBlock: blockNum,
+          toBlock: blockNum,
+          address: address.toHex()
+        })
+        logs.push(...blockLogs)
+      }
+    }
+
+    // Update hit rate (exponential moving average)
+    this.hitRate = 0.7 * this.hitRate + 0.3 * (hits / total)
+
+    return logs
+  }
+
+  private adjustBatchSize() {
+    // Higher hit rate → smaller batches (more RPC calls needed)
+    // Lower hit rate → larger batches (fewer RPC calls needed)
+    if (this.hitRate > 0.3) {
+      this.batchSize = Math.max(this.minBatch, this.batchSize * 0.8)
+    } else if (this.hitRate < 0.1) {
+      this.batchSize = Math.min(this.maxBatch, this.batchSize * 1.2)
+    }
+
+    this.batchSize = Math.floor(this.batchSize)
+  }
+
+  getStats() {
+    return {
+      batchSize: this.batchSize,
+      hitRate: this.hitRate,
+      efficiency: (1 - this.hitRate) * 100  // % of blocks skipped
+    }
+  }
+}
+```
+
+## Testing and Validation
+
+### Bloom Filter Validator
+
+Validate bloom filter correctness:
+
+```typescript
+class BloomValidator {
+  async validateBlock(blockNum: number): Promise<{
+    valid: boolean
+    errors: string[]
+  }> {
+    const errors: string[] = []
+
+    // Fetch block and logs
+    const block = await provider.getBlock(blockNum)
+    const logs = await provider.getLogs({
+      fromBlock: blockNum,
+      toBlock: blockNum
+    })
+
+    // Parse block bloom
+    const blockBloom = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    // Rebuild bloom from logs
+    const rebuiltBloom = BloomFilter.create(2048, 3)
+    for (const log of logs) {
+      // Add address
+      rebuiltBloom.add(Address.from(log.address))
+
+      // Add topics
+      for (const topic of log.topics) {
+        rebuiltBloom.add(Hex.toBytes(topic))
+      }
+    }
+
+    // Compare blooms
+    if (blockBloom.toHex() !== rebuiltBloom.toHex()) {
+      errors.push("Bloom filter mismatch")
+
+      // Check each log item
+      for (const log of logs) {
+        const addr = Address.from(log.address)
+        if (!blockBloom.contains(addr)) {
+          errors.push(`Missing address: ${log.address}`)
+        }
+
+        for (const topic of log.topics) {
+          const topicBytes = Hex.toBytes(topic)
+          if (!blockBloom.contains(topicBytes)) {
+            errors.push(`Missing topic: ${topic}`)
+          }
+        }
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    }
+  }
+
+  async validateRange(
+    startBlock: number,
+    endBlock: number
+  ): Promise<Map<number, string[]>> {
+    const results = new Map<number, string[]>()
+
+    for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+      const { valid, errors } = await this.validateBlock(blockNum)
+      if (!valid) {
+        results.set(blockNum, errors)
+      }
+    }
+
+    return results
+  }
+}
+```
+
+### False Positive Rate Measurement
+
+Measure actual false positive rate:
+
+```typescript
+async function measureFalsePositiveRate(
+  startBlock: number,
+  endBlock: number,
+  address: string
+): Promise<number> {
+  const addr = Address.from(address)
+  let bloomPositives = 0
+  let actualPositives = 0
+  let falsePositives = 0
+
+  for (let blockNum = startBlock; blockNum <= endBlock; blockNum++) {
+    const block = await provider.getBlock(blockNum)
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+    if (filter.contains(addr)) {
+      bloomPositives++
+
+      // Verify with actual logs
+      const logs = await provider.getLogs({
+        fromBlock: blockNum,
+        toBlock: blockNum,
+        address: address
+      })
+
+      if (logs.length > 0) {
+        actualPositives++
+      } else {
+        falsePositives++
+      }
+    }
+  }
+
+  console.log(`Bloom positives: ${bloomPositives}`)
+  console.log(`Actual positives: ${actualPositives}`)
+  console.log(`False positives: ${falsePositives}`)
+
+  return bloomPositives > 0 ? falsePositives / bloomPositives : 0
+}
+
+// Usage
+const fpRate = await measureFalsePositiveRate(12345000, 12346000, "0x...")
+console.log(`False positive rate: ${(fpRate * 100).toFixed(2)}%`)
+```
+
+## Related
+
+- [Log Filtering](/primitives/bloomfilter/log-filtering) - Ethereum-specific patterns
+- [Operations](/primitives/bloomfilter/operations) - Merging and adding
+- [Queries](/primitives/bloomfilter/queries) - Membership testing
+- [Algorithm](/primitives/bloomfilter/algorithm) - Understanding performance
+- [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) - Tree-shakeable API
