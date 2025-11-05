@@ -63,6 +63,9 @@
 		"build:dist": "tsup",
 		"build:types": "tsup --dts-only && tsc --emitDeclarationOnly --declaration",
 		"clean": "rm -rf node_modules && rm -rf dist && rm -rf types && rm -rf zig-out && rm -rf zig-cache",
+		"docs:dev": "cd docs && astro dev",
+		"docs:build": "cd docs && astro check && astro build",
+		"docs:preview": "cd docs && astro preview",
 		"format": "biome format . --write",
 		"format:check": "biome format .",
 		"generate:docs": "bun run typedoc",
@@ -78,6 +81,8 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
+		"@astrojs/mdx": "^4.3.9",
+		"@astrojs/starlight": "^0.36.2",
 		"@biomejs/biome": "^1.9.4",
 		"@ethereumjs/rlp": "^10.0.0",
 		"@ethersproject/rlp": "^5.8.0",
@@ -92,6 +97,7 @@
 		"@types/bun": "latest",
 		"@types/node": "^22.10.2",
 		"@vitest/coverage-v8": "^4.0.3",
+		"astro": "^5.15.3",
 		"bindings": "^1.5.0",
 		"ethers": "^6.13.4",
 		"glob": "^11.0.0",
