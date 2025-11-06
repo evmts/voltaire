@@ -31,7 +31,7 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 - **LLM-Optimized** - API and documentation built and tested to perform well with LLMs
 - **High-performance** - Opt-in [WASM](https://webassembly.org/) implementations for performance-critical operations
 - **Type-safe** - [Branded types](./src/content/docs/primitives/branded-types.mdx) provided for opt-in typesafety
-- **Zig support** - All functionality offered both in TypeScript and [Zig](https://ziglang.org/). More languages will be added in future.
+- **Multi-language** - Currently supports TypeScript and [Zig](https://ziglang.org/). Additional languages planned (see Language Support Wishlist below).
 
 ## Installation
 
@@ -426,6 +426,22 @@ Benchmark results available in [BENCHMARKING.md](./BENCHMARKING.md) and each pri
 
 - **[Alloy](https://github.com/alloy-rs/alloy)** - High-performance Rust library (Zig FFI integration available)
 - **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited cryptographic library for pure JS implementations
+
+---
+
+## Language Support Wishlist
+
+Voltaire currently supports TypeScript/JavaScript and Zig. We plan to add idiomatic, type-safe wrappers for additional languages:
+
+- **[Go](https://go.dev/)** - Native Go bindings via cgo
+- **[Python](https://www.python.org/)** - Python bindings via ctypes/cffi
+- **[Rust](https://www.rust-lang.org/)** - Rust bindings via FFI
+- **[Swift](https://swift.org/)** - Swift bindings for iOS/macOS development
+- **[Kotlin](https://kotlinlang.org/)** - Kotlin bindings for Android/JVM development
+
+**Note:** These languages can already use Voltaire today via the C-FFI interface (see `src/c_api.zig` and generated `src/primitives.h` header), but we aim to provide ergonomic, type-safe, idiomatic wrappers for each language.
+
+Contributions welcome!
 
 ---
 
