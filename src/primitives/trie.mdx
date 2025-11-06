@@ -1,0 +1,271 @@
+---
+title: Merkle Patricia Trie
+description: Ethereum's state storage data structure with cryptographic verification
+---
+
+# Merkle Patricia Trie
+
+Modified Merkle Patricia Trie implementation as specified in the Ethereum Yellow Paper for cryptographically secure key-value storage.
+
+## Overview
+
+The Merkle Patricia Trie module provides:
+- **Patricia Trie**: Path compression for efficient sparse storage
+- **Merkle Tree**: Cryptographic hashing for integrity verification
+- **Proof Generation**: Create and verify Merkle proofs
+- **State Management**: Efficient updates with structural sharing
+
+**Source**: `src/primitives/trie.zig`
+
+## Node Types
+
+The trie uses four node types:
+
+1. **Empty**: Null node representing empty trie
+2. **Leaf**: Terminal node storing a key-value pair
+3. **Extension**: Path compression node for shared prefixes
+4. **Branch**: Node with up to 16 children (one per nibble) plus optional value
+
+## Key Types
+
+### TrieMask
+
+```zig
+pub const TrieMask = struct {
+    mask: u16,
+
+    pub fn init() TrieMask
+    pub fn set(self: *TrieMask, index: u4) void
+    pub fn unset(self: *TrieMask, index: u4) void
+    pub fn is_set(self: TrieMask, index: u4) bool
+    pub fn bit_count(self: TrieMask) u5
+};
+```
+
+16-bit bitmap for tracking which of 16 possible nibble positions have children. Enables O(1) membership tests and compact storage.
+
+### TrieError
+
+```zig
+pub const TrieError = error{
+    InvalidNode,
+    InvalidKey,
+    InvalidProof,
+    InvalidPath,
+    NonExistentNode,
+    EmptyInput,
+    OutOfMemory,
+    CorruptedTrie,
+};
+```
+
+## Key Functions
+
+### init
+
+```zig
+const primitives = @import("primitives");
+
+pub fn init(allocator: Allocator) Trie
+```
+
+Initialize an empty trie.
+
+### deinit
+
+```zig
+pub fn deinit(self: *Trie) void
+```
+
+Free all trie resources.
+
+### put
+
+```zig
+pub fn put(self: *Trie, key: []const u8, value: []const u8) !void
+```
+
+Insert or update a key-value pair.
+
+**Parameters:**
+- `key`: Lookup key (any byte sequence)
+- `value`: Value to store
+
+**Errors:** `OutOfMemory`, `InvalidKey`
+
+### get
+
+```zig
+pub fn get(self: *const Trie, key: []const u8) !?[]const u8
+```
+
+Retrieve value for given key. Returns `null` if not found.
+
+### delete
+
+```zig
+pub fn delete(self: *Trie, key: []const u8) !void
+```
+
+Remove key-value pair from trie.
+
+### root_hash
+
+```zig
+pub fn root_hash(self: *const Trie) [32]u8
+```
+
+Compute Keccak256 hash of trie root for state verification.
+
+### prove
+
+```zig
+pub fn prove(self: *const Trie, key: []const u8) !Proof
+```
+
+Generate Merkle proof for given key.
+
+### verify
+
+```zig
+pub fn verify(root: [32]u8, key: []const u8, value: ?[]const u8, proof: Proof) !bool
+```
+
+Verify Merkle proof against root hash.
+
+## Examples
+
+### Basic Operations
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Trie = primitives.Trie;
+
+pub fn example() !void {
+    var trie = Trie.init(std.heap.page_allocator);
+    defer trie.deinit();
+
+    // Insert key-value pairs
+    try trie.put(&[_]u8{0x12, 0x34}, "value1");
+    try trie.put(&[_]u8{0x12, 0x56}, "value2");
+    try trie.put(&[_]u8{0xab, 0xcd}, "value3");
+
+    // Retrieve values
+    const value1 = try trie.get(&[_]u8{0x12, 0x34});
+    // value1 = "value1"
+
+    // Delete entry
+    try trie.delete(&[_]u8{0xab, 0xcd});
+
+    // Get root hash for state commitment
+    const root = trie.root_hash();
+}
+```
+
+### Merkle Proofs
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+const Trie = primitives.Trie;
+
+pub fn proofExample() !void {
+    var trie = Trie.init(std.heap.page_allocator);
+    defer trie.deinit();
+
+    // Build trie
+    try trie.put("account1", "data1");
+    try trie.put("account2", "data2");
+    try trie.put("account3", "data3");
+
+    // Generate proof for account2
+    const proof = try trie.prove("account2");
+    defer proof.deinit();
+
+    // Get root hash
+    const root = trie.root_hash();
+
+    // Verify proof (can be done by third party with just root)
+    const valid = try Trie.verify(root, "account2", "data2", proof);
+    // valid = true
+}
+```
+
+### State Commitment
+
+```zig
+const std = @import("std");
+const primitives = @import("primitives");
+
+pub fn stateCommitment() !void {
+    var state_trie = primitives.Trie.init(std.heap.page_allocator);
+    defer state_trie.deinit();
+
+    // Store account states
+    try state_trie.put(account1_address, account1_state);
+    try state_trie.put(account2_address, account2_state);
+
+    // Compute state root (used in block headers)
+    const state_root = state_trie.root_hash();
+
+    // State root cryptographically commits to all account data
+    // Can prove any account state with Merkle proof
+}
+```
+
+## Performance
+
+**Native (ReleaseFast)**:
+- Insert: ~1-2 μs per key
+- Lookup: ~500-800 ns per key
+- Delete: ~1-2 μs per key
+- Root hash: ~10-50 μs (depends on size)
+
+**WASM (ReleaseFast)**:
+- Insert: ~3-5 μs per key
+- Lookup: ~1-2 μs per key
+- Delete: ~3-5 μs per key
+
+Performance depends heavily on trie size and key distribution. Path compression significantly improves sparse tries.
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=trie
+```
+
+Test coverage includes:
+- Node type operations (leaf, extension, branch)
+- Path compression
+- Merkle proof generation and verification
+- Hash computation
+- Edge cases (empty trie, single node, deep paths)
+- Structural sharing
+
+## Implementation Notes
+
+- Uses RLP encoding for node serialization
+- Keccak256 hashing for node digests
+- Nibble-based (4-bit) path encoding
+- Structural sharing for efficiency
+- No garbage collection (explicit deallocation)
+
+## Security Considerations
+
+- Cryptographically secure hashing (Keccak256)
+- Proof verification prevents state manipulation
+- Constant-time path traversal
+- Memory-safe bounds checking
+
+## Related
+
+- [RLP](/zig/primitives/rlp/) - Node encoding format
+- [Keccak256](/zig/crypto/keccak/) - Hash function
+- [State](/zig/primitives/state/) - Account state structure
+
+## References
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix D (Modified Merkle Patricia Trie)
+- [Patricia Trie](https://en.wikipedia.org/wiki/Radix_tree) - Original data structure
+- [EIP-161](https://eips.ethereum.org/EIPS/eip-161) - State trie clearing
