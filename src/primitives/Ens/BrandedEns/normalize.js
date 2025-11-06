@@ -1,4 +1,4 @@
-import { normalize as ensNormalize } from "@adraffy/ens-normalize";
+import { ens_normalize } from "@adraffy/ens-normalize";
 import { DisallowedCharacterError } from "./errors.js";
 
 /**
@@ -8,7 +8,7 @@ import { DisallowedCharacterError } from "./errors.js";
  */
 export function normalize(name) {
 	try {
-		const normalized = ensNormalize(name);
+		const normalized = ens_normalize(name);
 		return /** @type {import('./BrandedEns.js').BrandedEns} */ (normalized);
 	} catch (err) {
 		throw new DisallowedCharacterError();

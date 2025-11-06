@@ -1,4 +1,4 @@
-import { beautify as ensBeautify } from "@adraffy/ens-normalize";
+import { ens_beautify } from "@adraffy/ens-normalize";
 import { DisallowedCharacterError } from "./errors.js";
 
 /**
@@ -8,7 +8,7 @@ import { DisallowedCharacterError } from "./errors.js";
  */
 export function beautify(name) {
 	try {
-		const beautified = ensBeautify(name);
+		const beautified = ens_beautify(name);
 		return /** @type {import('./BrandedEns.js').BrandedEns} */ (beautified);
 	} catch (err) {
 		throw new DisallowedCharacterError();

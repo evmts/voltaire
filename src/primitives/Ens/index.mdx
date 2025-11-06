@@ -1,0 +1,204 @@
+---
+title: "Ens"
+---
+
+# Ens
+
+Ethereum Name Service (ENS) name normalization per ENSIP-15 standard.
+
+## Overview
+
+ENS provides human-readable names for Ethereum addresses. ENSIP-15 normalization ensures consistent canonical representation, preventing homograph attacks and ensuring name uniqueness.
+
+## Type
+
+```typescript
+type BrandedEns = string & { readonly __tag: "Ens" }
+```
+
+Branded string type for normalized ENS names.
+
+## Namespace Methods
+
+### Normalization
+
+#### Ens.normalize(name)
+```typescript
+normalize(name: string | BrandedEns): BrandedEns
+```
+
+Normalize ENS name to canonical lowercase form per ENSIP-15.
+
+**Parameters:**
+- `name`: ENS name to normalize (e.g., "Nick.ETH", "vitalik.eth")
+
+**Returns:** Normalized ENS name (lowercase, canonical form)
+
+**Throws:** `DisallowedCharacterError` if name contains invalid characters
+
+**Example:**
+```typescript
+import { Ens } from "@tevm/voltaire";
+
+const normalized = Ens.normalize("Nick.ETH");
+// Returns: "nick.eth"
+
+const preserved = Ens.normalize("vitalik.eth");
+// Returns: "vitalik.eth"
+```
+
+#### Ens.beautify(name)
+```typescript
+beautify(name: string | BrandedEns): BrandedEns
+```
+
+Beautify ENS name (normalize but preserve emoji presentation).
+
+**Parameters:**
+- `name`: ENS name to beautify
+
+**Returns:** Normalized name with preserved emoji presentation
+
+**Example:**
+```typescript
+const beautified = Ens.beautify("💩.eth");
+// Returns: normalized form with emoji preserved
+```
+
+### Type Guards
+
+#### Ens.is(value)
+```typescript
+is(value: unknown): value is BrandedEns
+```
+
+Check if value is a branded ENS name.
+
+**Example:**
+```typescript
+if (Ens.is(value)) {
+  // value is BrandedEns
+}
+```
+
+### Conversion
+
+#### Ens.from(name)
+```typescript
+from(name: string): BrandedEns
+```
+
+Create branded ENS name without validation.
+
+#### Ens.toString(name)
+```typescript
+toString(name: BrandedEns): string
+```
+
+Convert branded ENS name to string.
+
+## Error Types
+
+### EnsError
+Base class for ENS normalization errors.
+
+### DisallowedCharacterError
+Thrown when name contains prohibited characters.
+
+### InvalidLabelExtensionError
+Double-dash at positions 2-3 (e.g., "ab--c.eth").
+
+### IllegalMixtureError
+Incompatible script combinations.
+
+### WholeConfusableError
+Name resembles different script (homograph attack).
+
+### EmptyLabelError
+Zero-length label segment (e.g., "..eth").
+
+### InvalidUtf8Error
+Malformed UTF-8 encoding.
+
+## Zig API
+
+```zig
+const primitives = @import("primitives");
+
+// Normalize ENS name
+const normalized = try primitives.Ens.normalize(allocator, "Nick.ETH");
+defer allocator.free(normalized);
+// Returns: "nick.eth"
+
+// Beautify (preserve emoji)
+const beautified = try primitives.Ens.beautify(allocator, "💩.eth");
+defer allocator.free(beautified);
+```
+
+## ENSIP-15 Compliance
+
+Voltaire implements full ENSIP-15 specification:
+
+- **Unicode normalization** - NFC normalization with confusable detection
+- **Script validation** - Prevents mixed-script attacks
+- **Emoji handling** - Proper emoji presentation sequence support
+- **Label validation** - Empty label and extension checks
+- **Zero-width characters** - Proper handling of ZWJ/ZWNJ
+
+## Security Considerations
+
+1. **Homograph attacks** - Normalization prevents visually similar names from different scripts
+2. **Confusables** - Detects whole-name confusables (e.g., "scope" vs "ѕсоре")
+3. **Mixed scripts** - Prevents mixing incompatible scripts in single name
+4. **Visual ambiguity** - Ensures visually distinct names have distinct normalized forms
+
+## References
+
+- [ENSIP-15: ENS Name Normalization](https://docs.ens.domains/ensip/15)
+- [ENS Documentation](https://docs.ens.domains/)
+- [Unicode Security Considerations](https://www.unicode.org/reports/tr39/)
+- [z-ens-normalize](https://github.com/evmts/z-ens-normalize) - Underlying Zig implementation
+
+## Examples
+
+### Basic Normalization
+
+```typescript
+import { Ens } from "@tevm/voltaire";
+
+// Uppercase to lowercase
+const name1 = Ens.normalize("VITALIK.eth");
+// "vitalik.eth"
+
+// Mixed case
+const name2 = Ens.normalize("Nick.ETH");
+// "nick.eth"
+
+// Already normalized
+const name3 = Ens.normalize("vitalik.eth");
+// "vitalik.eth"
+```
+
+### Error Handling
+
+```typescript
+import { Ens, DisallowedCharacterError } from "@tevm/voltaire";
+
+try {
+  const name = Ens.normalize("invalid\x00.eth");
+} catch (err) {
+  if (err instanceof DisallowedCharacterError) {
+    console.error("Name contains disallowed characters");
+  }
+}
+```
+
+### With Address Resolution
+
+```typescript
+import { Ens, Address } from "@tevm/voltaire";
+
+// Normalize before resolution
+const normalizedName = Ens.normalize("Nick.ETH");
+// Use normalizedName for address lookup via ENS registry
+```

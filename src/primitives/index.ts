@@ -63,9 +63,11 @@ export * as Hardfork from "./Hardfork/index.js";
 export * from "./EventLog/index.js";
 export * as BrandedEventLog from "./EventLog/BrandedEventLog/index.js";
 
-// Sign-in with Ethereum
+// Standards
 export { Siwe } from "./Siwe/index.js";
 export * as BrandedSiwe from "./Siwe/BrandedSiwe/index.js";
+export * as Ens from "./Ens/index.js";
+export * as BrandedEns from "./Ens/BrandedEns/index.js";
 
 // Data structures
 export * as BinaryTree from "./BinaryTree/index.js";
