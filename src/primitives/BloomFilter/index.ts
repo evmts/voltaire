@@ -38,9 +38,17 @@ BloomFilter.merge = (a, b) => {
 	Object.setPrototypeOf(result, BloomFilter.prototype);
 	return result;
 };
+BloomFilter.combine = (...filters) => {
+	const result = BrandedBloomFilter.combine(...filters);
+	Object.setPrototypeOf(result, BloomFilter.prototype);
+	return result;
+};
 BloomFilter.toHex = BrandedBloomFilter.toHex;
 BloomFilter.isEmpty = BrandedBloomFilter.isEmpty;
 BloomFilter.hash = BrandedBloomFilter.hash;
+BloomFilter.density = BrandedBloomFilter.density;
+BloomFilter.expectedFalsePositiveRate =
+	BrandedBloomFilter.expectedFalsePositiveRate;
 
 // Set up BloomFilter.prototype to inherit from Uint8Array.prototype
 Object.setPrototypeOf(BloomFilter.prototype, Uint8Array.prototype);
