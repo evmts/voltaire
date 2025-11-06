@@ -17,22 +17,29 @@ import { fromBigInt } from "./fromBigInt.js";
 import { fromBytes } from "./fromBytes.js";
 import { fromHex } from "./fromHex.js";
 import { fromNumber } from "./fromNumber.js";
+import { gcd } from "./gcd.js";
 import { greaterThan } from "./greaterThan.js";
 import { greaterThanOrEqual } from "./greaterThanOrEqual.js";
+import { isPowerOf2 } from "./isPowerOf2.js";
 import { isValid } from "./isValid.js";
 import { isZero } from "./isZero.js";
+import { lcm } from "./lcm.js";
 import { leadingZeros } from "./leadingZeros.js";
 import { lessThan } from "./lessThan.js";
 import { lessThanOrEqual } from "./lessThanOrEqual.js";
+import { max } from "./max.js";
 import { maximum } from "./maximum.js";
+import { min } from "./min.js";
 import { minimum } from "./minimum.js";
 import { minus } from "./minus.js";
 import { modulo } from "./modulo.js";
 import { notEquals } from "./notEquals.js";
 import { plus } from "./plus.js";
 import { popCount } from "./popCount.js";
+import { product } from "./product.js";
 import { shiftLeft } from "./shiftLeft.js";
 import { shiftRight } from "./shiftRight.js";
+import { sum } from "./sum.js";
 import { times } from "./times.js";
 import { toAbiEncoded } from "./toAbiEncoded.js";
 import { toBigInt } from "./toBigInt.js";
@@ -84,6 +91,13 @@ export {
 	bitLength,
 	leadingZeros,
 	popCount,
+	sum,
+	product,
+	min,
+	max,
+	gcd,
+	lcm,
+	isPowerOf2,
 };
 
 // Namespace export
@@ -127,6 +141,13 @@ export const BrandedUint = {
 	bitLength,
 	leadingZeros,
 	popCount,
+	sum,
+	product,
+	min,
+	max,
+	gcd,
+	lcm,
+	isPowerOf2,
 	MAX,
 	MIN,
 	ZERO,
