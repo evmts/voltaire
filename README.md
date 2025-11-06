@@ -238,20 +238,121 @@ const result = execute(address, input, gasLimit, "cancun");
 
 ### Primitive Types
 
-| Type        | Size     | Description              | Key Methods                                    |
-| ----------- | -------- | ------------------------ | ---------------------------------------------- |
-| Address     | 20 bytes | Ethereum address         | from, toChecksummed, calculateCreate2Address   |
-| Hash        | 32 bytes | 32-byte hash             | from, toHex, equals                            |
-| Hex         | Variable | Hex encoding             | fromBytes, toBytes, concat, slice              |
-| Uint        | 32 bytes | 256-bit unsigned int     | from, plus, minus, times, dividedBy            |
-| Signature   | 64 bytes | ECDSA signature          | from, toCompact, verify, normalize             |
-| PrivateKey  | 32 bytes | Private key              | from, toPublicKey, toAddress, sign             |
-| PublicKey   | 64 bytes | Public key               | from, fromPrivateKey, toAddress, verify        |
-| Nonce       | Variable | Transaction nonce        | from, toNumber, toBigInt, increment            |
-| ChainId     | 4 bytes  | Network identifier       | from, toNumber, equals, isMainnet              |
-| RLP         | Variable | RLP encoding             | encode, decode                                 |
-| Transaction | Variable | Ethereum transactions    | serialize, deserialize, hash, from             |
-| ABI         | Variable | ABI encoding             | Function.encode, Event.decode                  |
+| Type        | Size     | Description              | Key Methods                                    | Subtypes |
+| ----------- | -------- | ------------------------ | ---------------------------------------------- | -------- |
+| Address     | 20 bytes | Ethereum address         | from, toChecksummed, calculateCreate2Address   | Checksummed, Uppercase, Lowercase |
+| Hash        | 32 bytes | 32-byte hash             | from, toHex, equals                            | - |
+| Hex         | Variable | Hex encoding             | fromBytes, toBytes, concat, slice              | Sized\<N\>, Bytes\<N\> |
+| Uint        | 32 bytes | 256-bit unsigned int     | from, plus, minus, times, dividedBy            | Ether, Wei, Gwei |
+| Signature   | 64 bytes | ECDSA signature          | from, toCompact, verify, normalize             | - |
+| PrivateKey  | 32 bytes | Private key              | from, toPublicKey, toAddress, sign             | - |
+| PublicKey   | 64 bytes | Public key               | from, fromPrivateKey, toAddress, verify        | - |
+| Nonce       | Variable | Transaction nonce        | from, toNumber, toBigInt, increment            | - |
+| ChainId     | 4 bytes  | Network identifier       | from, toNumber, equals, isMainnet              | - |
+| RLP         | Variable | RLP encoding             | encode, decode                                 | - |
+| Transaction | Variable | Ethereum transactions    | serialize, deserialize, hash, from             | Legacy, EIP2930, EIP1559, EIP4844, EIP7702 |
+| ABI         | Variable | ABI encoding             | Function.encode, Event.decode                  | Function, Event, Error, Constructor |
+| Blob        | 131072 bytes | EIP-4844 blob data    | from, toHex, toVersionedHash                   | Commitment, Proof, VersionedHash |
+| Bytecode    | Variable | Contract bytecode        | from, toHex, getDeployedBytecode               | - |
+| BloomFilter | 256 bytes | Log bloom filter        | from, add, contains                            | - |
+
+### Address Subtypes
+
+| Subtype      | Description                           | Constructor Method      |
+| ------------ | ------------------------------------- | ----------------------- |
+| Checksummed  | EIP-55 checksummed hex address        | Address.toChecksummed() |
+| Uppercase    | Uppercase hex address (non-checksummed) | Address.toUppercase() |
+| Lowercase    | Lowercase hex address                 | Address.toLowercase()   |
+
+### Hex Subtypes (Sized Types)
+
+| Subtype    | Size     | Common Use Case           |
+| ---------- | -------- | ------------------------- |
+| Hex.Bytes\<4\>  | 4 bytes  | Function selectors        |
+| Hex.Bytes\<8\>  | 8 bytes  | Uint64 values             |
+| Hex.Bytes\<20\> | 20 bytes | Addresses                 |
+| Hex.Bytes\<32\> | 32 bytes | Hashes, Uint256 values    |
+| Hex.Bytes\<N\>  | N bytes  | Custom sized hex strings  |
+
+### Denomination Types (Uint Subtypes)
+
+| Type       | Unit     | Wei Equivalent                    |
+| ---------- | -------- | --------------------------------- |
+| Ether      | ETH      | 1 ether = 10^18 wei               |
+| Gwei       | gwei     | 1 gwei = 10^9 wei                 |
+| Wei        | wei      | Base unit (1 wei)                 |
+
+### Gas Types (Uint Subtypes)
+
+| Type       | Description                           | Common Range           |
+| ---------- | ------------------------------------- | ---------------------- |
+| GasPrice   | Gas price in wei per gas unit         | 1-1000 gwei typical    |
+| GasLimit   | Maximum gas allowed for transaction   | 21000-30M gas          |
+| Nonce      | Transaction sequence number           | 0-2^64                 |
+
+### Transaction Types
+
+| Type              | EIP      | Description                                  |
+| ----------------- | -------- | -------------------------------------------- |
+| TransactionLegacy | -        | Legacy transaction (pre-EIP-2718)            |
+| TransactionEIP2930 | [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) | Access list transaction                      |
+| TransactionEIP1559 | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) | Fee market transaction with base/priority fee |
+| TransactionEIP4844 | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) | Blob transaction (shard blob transactions)    |
+| TransactionEIP7702 | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) | Set code transaction (account abstraction)    |
+
+### ABI Types
+
+| Type        | Description                           | Key Methods               |
+| ----------- | ------------------------------------- | ------------------------- |
+| Function    | Function signature and encoding       | encode, decode, selector  |
+| Event       | Event signature and log parsing       | decode, getTopic          |
+| Error       | Custom error encoding                 | encode, decode, selector  |
+| Constructor | Constructor signature and encoding    | encode                    |
+
+### Blob Types (EIP-4844)
+
+| Type           | Size      | Description                          |
+| -------------- | --------- | ------------------------------------ |
+| Blob           | 131072 bytes | Raw blob data                     |
+| Commitment     | 48 bytes  | KZG commitment to blob               |
+| Proof          | 48 bytes  | KZG proof for blob                   |
+| VersionedHash  | 32 bytes  | Versioned hash of blob commitment    |
+
+### State Types
+
+| Type           | Description                                    | Key Methods               |
+| -------------- | ---------------------------------------------- | ------------------------- |
+| State          | Account state with balance, nonce, code, storage | get, set, commit       |
+| StorageKey     | Storage slot identifier (address + slot)       | from, toHex               |
+| EventLog       | Transaction event log entry                    | decode, matches           |
+| AccessList     | EIP-2930 access list for state access          | from, add, contains       |
+| Authorization  | EIP-7702 code delegation authorization         | from, sign, verify        |
+
+### Other Primitive Types
+
+| Type           | Description                                    | Key Methods               |
+| -------------- | ---------------------------------------------- | ------------------------- |
+| Hardfork       | Network upgrade identifier                     | from, isEnabled           |
+| ChainId        | Network chain identifier                       | from, toNumber, equals    |
+| Opcode         | EVM opcode byte                                | from, getName, getGasCost |
+| Base64         | Base64 encoded data                            | encode, decode            |
+| BinaryTree     | Binary tree structure for Merkle trees         | from, getRoot, getProof   |
+
+### Cryptographic Types
+
+| Type           | Size      | Description                          | Algorithm    |
+| -------------- | --------- | ------------------------------------ | ------------ |
+| PrivateKey     | 32 bytes  | Secp256k1 private key                | Secp256k1    |
+| PublicKey      | 64 bytes  | Secp256k1 public key (uncompressed)  | Secp256k1    |
+| Signature      | 64 bytes  | ECDSA signature (r, s, v)            | Secp256k1    |
+| ExtendedKey    | Variable  | BIP-32 hierarchical deterministic key | BIP-32/44    |
+| Mnemonic       | Variable  | BIP-39 mnemonic phrase               | BIP-39       |
+| Seed           | 64 bytes  | BIP-39 seed derived from mnemonic    | BIP-39       |
+| P256PrivateKey | 32 bytes  | NIST P-256 private key               | P-256        |
+| P256PublicKey  | 64 bytes  | NIST P-256 public key                | P-256        |
+| P256Signature  | Variable  | NIST P-256 ECDSA signature           | P-256        |
+| G1Point        | 96 bytes  | BN254/BLS12-381 G1 point             | zkSNARK/BLS  |
+| G2Point        | 192 bytes | BN254/BLS12-381 G2 point             | zkSNARK/BLS  |
 
 ### Crypto Functions
 
@@ -260,19 +361,30 @@ const result = execute(address, input, gasLimit, "cancun");
 | Keccak256.hash    | Uint8Array              | 32-byte Hash   | General hashing, contract addresses |
 | Secp256k1.sign    | Hash, PrivateKey        | Signature      | Sign transactions/messages          |
 | Secp256k1.recover | Signature, Hash         | PublicKey      | Recover signer address              |
+| Secp256k1.generatePrivateKey | -            | PrivateKey     | Generate new private key            |
 | Ed25519.sign      | Message, SecretKey      | Signature      | EdDSA signatures                    |
+| Ed25519.verify    | Signature, Message, PubKey | boolean     | Verify EdDSA signatures             |
 | X25519.scalarmult | SecretKey, PublicKey    | SharedSecret   | ECDH key exchange                   |
 | P256.sign         | Hash, PrivateKey        | Signature      | NIST P-256 signatures               |
+| P256.verify       | Signature, Hash, PubKey | boolean        | Verify P-256 signatures             |
 | P256.ecdh         | PrivateKey, PublicKey   | SharedSecret   | P-256 ECDH                          |
 | EIP712.hash       | Domain, Types, Message  | Hash           | Typed data signing                  |
 | SHA256.hash       | Uint8Array              | 32-byte hash   | Bitcoin compatibility               |
 | RIPEMD160.hash    | Uint8Array              | 20-byte hash   | Bitcoin addresses                   |
 | Blake2.hash       | Uint8Array, size?       | 1-64 byte hash | Zcash compatibility                 |
+| BN254.add         | G1Point, G1Point        | G1Point        | BN254 elliptic curve addition       |
+| BN254.mul         | G1Point, scalar         | G1Point        | BN254 scalar multiplication         |
 | BN254.pairing     | Point pairs             | boolean        | zkSNARK verification                |
+| KZG.blobToCommitment | Blob                 | Commitment     | Create KZG commitment               |
+| KZG.computeProof  | Blob, Commitment        | Proof          | Generate KZG proof                  |
 | KZG.verify        | Blob, Commitment, Proof | boolean        | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) blob verification          |
-| Bip39.generate    | strength                | Mnemonic       | [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) mnemonic generation          |
-| HDWallet.derive   | Key, Path               | ExtendedKey    | [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)/[BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) key derivation        |
+| Bip39.generateMnemonic | strength (128-256) | Mnemonic       | [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) mnemonic generation          |
+| Bip39.mnemonicToSeed | Mnemonic, password? | Seed            | Derive seed from mnemonic           |
+| HDWallet.fromSeed | Seed                    | ExtendedKey    | Create master key from seed         |
+| HDWallet.derive   | ExtendedKey, Path       | ExtendedKey    | [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)/[BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) key derivation        |
+| HDWallet.deriveEthereum | ExtendedKey, account, index | ExtendedKey | Derive Ethereum account (m/44'/60'/0'/0/n) |
 | AesGcm.encrypt    | Data, Key, Nonce        | Ciphertext     | [AES-GCM](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf) authenticated encryption            |
+| AesGcm.decrypt    | Ciphertext, Key, Nonce  | Data           | AES-GCM authenticated decryption    |
 
 ---
 
