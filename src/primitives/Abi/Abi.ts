@@ -21,7 +21,7 @@ export type {
 	ParametersToPrimitiveTypes,
 	ParametersToObject,
 } from "./Parameter.js";
-export type { Fallback, Receive } from "./Item.js";
+export type { Fallback, Receive } from "./Item/index.js";
 
 // Re-export all implementations
 export * from "./Errors.js";
@@ -40,7 +40,7 @@ export * from "./getFunctionBySelector.js";
 export { encode, decode, decodeData, parseLogs } from "./BrandedAbi/index.js";
 
 // Re-export sub-namespaces
-export * as Item from "./Item.js";
+export * as Item from "./Item/index.js";
 export * as Parameter from "./parameter/index.js";
 export * as Function from "./function/index.js";
 export * as Event from "./event/index.js";
@@ -49,7 +49,7 @@ export * as Constructor from "./constructor/index.js";
 export * as Wasm from "./wasm/index.js";
 export * as BrandedAbi from "./BrandedAbi/index.js";
 
-import type { Fallback, Receive } from "./Item.js";
+import type { Fallback, Receive } from "./Item/index.js";
 import type { BrandedConstructor as Constructor } from "./constructor/index.js";
 import type { BrandedError } from "./error/index.js";
 import type { Event } from "./event/index.js";

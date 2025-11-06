@@ -1,3 +1,5 @@
-export * from "./BrandedConstructor.js";
+export * from "./BrandedConstructor/BrandedConstructor.js";
 export * from "./Constructor.js";
-export type { BrandedConstructor } from "./BrandedConstructor.js";
+export * from "./ConstructorType.js";
+export type { BrandedConstructor } from "./BrandedConstructor/BrandedConstructor.js";
+export type { ConstructorType } from "./ConstructorType.js";

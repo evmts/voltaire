@@ -1,32 +1,16 @@
 // @ts-nocheck
-export * from "./BrandedEvent.js";
-
-import { decodeLog } from "./decodeLog.js";
-import { encodeTopics } from "./encodeTopics.js";
-import { getSelector } from "./getSelector.js";
-import { getSignature } from "./getSignature.js";
-
-// Export individual functions
-export { getSignature, getSelector, encodeTopics, decodeLog };
+import * as BrandedEvent from "./BrandedEvent/index.ts";
 
 /**
- * @typedef {import('./BrandedEvent.js').Event} Event
- * @typedef {import('./EventConstructor.js').EventConstructor} EventConstructor
+ * Factory function for creating Event instances
+ * Note: Event is a plain object, not a class instance
+ * This namespace provides convenient methods for working with events
  */
 
-/**
- * Event utility namespace
- *
- * @type {EventConstructor}
- */
+// Static utility methods
 export const Event = {
-	getSignature,
-	getSelector,
-	encodeTopics,
-	decodeLog,
+	getSignature: BrandedEvent.getSignature,
+	getSelector: BrandedEvent.getSelector,
+	encodeTopics: BrandedEvent.encodeTopics,
+	decodeLog: BrandedEvent.decodeLog,
 };
-
-Event.getSignature = getSignature;
-Event.getSelector = getSelector;
-Event.encodeTopics = encodeTopics;
-Event.decodeLog = decodeLog;

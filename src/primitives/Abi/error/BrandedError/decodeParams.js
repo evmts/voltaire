@@ -1,5 +1,5 @@
-import { decodeParameters } from "../Encoding.js";
-import { AbiDecodingError, AbiInvalidSelectorError } from "../Errors.js";
+import { decodeParameters } from "../../Encoding.js";
+import { AbiDecodingError, AbiInvalidSelectorError } from "../../Errors.js";
 import { getSelector } from "./getSelector.js";
 
 /**

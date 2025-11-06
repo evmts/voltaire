@@ -1,9 +1,9 @@
-import { AbiDecodingError } from "../Errors.js";
+import { AbiDecodingError } from "../../Errors.js";
 
 /**
  * Decode single parameter (branded method - not implemented)
  *
- * @this {import('../Parameter.js').Parameter}
+ * @this {import('./BrandedParameter.js').BrandedParameter}
  * @param {Uint8Array} _data - Encoded data
  * @returns {unknown} Decoded value
  * @throws {AbiDecodingError} Always throws - not implemented
