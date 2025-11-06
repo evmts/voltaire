@@ -462,8 +462,6 @@ Voltaire has minimal runtime dependencies:
 ### Zig Dependencies
 
 - **[z-ens-normalize](https://github.com/evmts/z-ens-normalize)** - Zig port of ENSIP-15 ENS name normalization
-- **[zbench](https://github.com/hendriknielaender/zBench)** - Performance benchmarking framework
-- **[clap](https://github.com/Hejsil/zig-clap)** - Command-line argument parsing
 - **[Zig std.crypto](https://ziglang.org/documentation/0.15.1/std/#std.crypto)** - Zig standard library cryptography (native/WASM builds only)
 
 ### Native/C Dependencies
