@@ -12,6 +12,9 @@ import { toEther } from "./toEther.js";
 import { toGwei } from "./toGwei.js";
 import { toU256 } from "./toU256.js";
 
+// Export individual functions (public API)
+export { from, fromEther, fromGwei, toEther, toGwei, toU256 };
+
 // Export internal functions (tree-shakeable)
 export {
 	from as _from,

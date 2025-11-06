@@ -7,6 +7,7 @@ import { bitwiseAnd } from "./bitwiseAnd.js";
 import { bitwiseNot } from "./bitwiseNot.js";
 import { bitwiseOr } from "./bitwiseOr.js";
 import { bitwiseXor } from "./bitwiseXor.js";
+import { clone } from "./clone.js";
 import { MAX, MIN, ONE, SIZE, ZERO } from "./constants.js";
 import { dividedBy } from "./dividedBy.js";
 import { equals } from "./equals.js";
@@ -58,6 +59,7 @@ export {
 	toBytes,
 	toAbiEncoded,
 	toString,
+	clone,
 	plus,
 	minus,
 	times,
@@ -100,6 +102,7 @@ export const BrandedUint = {
 	toBytes,
 	toAbiEncoded,
 	toString,
+	clone,
 	plus,
 	minus,
 	times,

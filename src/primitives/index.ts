@@ -28,6 +28,7 @@ export * as BrandedHex from "./Hex/BrandedHex/index.js";
 
 // Numeric types
 export * as Uint from "./Uint/index.js";
+export * as Denomination from "./Denomination/index.js";
 
 // Encoding
 export { Rlp } from "./Rlp/index.js";

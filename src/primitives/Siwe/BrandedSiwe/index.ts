@@ -10,6 +10,18 @@ import { validate } from "./validate.js";
 import { verify } from "./verify.js";
 import { verifyMessage } from "./verifyMessage.js";
 
+// Export individual functions (public API)
+export {
+	create,
+	format,
+	generateNonce,
+	getMessageHash,
+	parse,
+	validate,
+	verify,
+	verifyMessage,
+};
+
 // Export internal functions (tree-shakeable)
 export {
 	create as _create,

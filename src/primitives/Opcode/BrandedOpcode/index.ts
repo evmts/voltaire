@@ -25,6 +25,29 @@ import { pushBytes } from "./pushBytes.js";
 import { pushOpcode } from "./pushOpcode.js";
 import { swapPosition } from "./swapPosition.js";
 
+// Export individual functions (public API)
+export {
+	disassemble,
+	dupPosition,
+	format,
+	info,
+	isDup,
+	isJump,
+	isLog,
+	isPush,
+	isSwap,
+	isTerminating,
+	isValid,
+	isValidJumpDest,
+	jumpDests,
+	logTopics,
+	name,
+	parse,
+	pushBytes,
+	pushOpcode,
+	swapPosition,
+};
+
 // Export internal functions (tree-shakeable)
 export {
 	disassemble as _disassemble,

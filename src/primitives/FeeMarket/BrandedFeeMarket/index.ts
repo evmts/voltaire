@@ -16,6 +16,26 @@ import { validateState } from "./validateState.js";
 import { validateTxFeeParams } from "./validateTxFeeParams.js";
 import { weiToGwei } from "./weiToGwei.js";
 
+// Export individual functions (public API)
+export {
+	calculateBaseFee,
+	calculateBlobBaseFee,
+	calculateBlobTxFee,
+	calculateExcessBlobGas,
+	calculateTxFee,
+	canIncludeTx,
+	getBlobBaseFee,
+	getGasTarget,
+	gweiToWei,
+	isAboveBlobGasTarget,
+	isAboveGasTarget,
+	nextState,
+	projectBaseFees,
+	validateState,
+	validateTxFeeParams,
+	weiToGwei,
+};
+
 // Export internal functions (tree-shakeable)
 export {
 	calculateBaseFee as _calculateBaseFee,
