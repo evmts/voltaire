@@ -1,0 +1,190 @@
+---
+title: Denomination
+description: Ethereum denomination conversions (Wei, Gwei, Ether)
+---
+
+## Overview
+
+The Denomination module provides type-safe conversions between Ethereum's three primary denominations: Wei (smallest unit), Gwei (gigawei), and Ether. Prevents precision loss and overflow with wrapping/checked arithmetic.
+
+## Key Functions
+
+### Wei Operations
+
+#### `Wei.from_u256`
+```zig
+pub fn from_u256(v: U256) Wei
+```
+Creates Wei from U256 value.
+
+#### `Wei.to_gwei`
+```zig
+pub fn to_gwei(self: Wei) Gwei
+```
+Converts Wei to Gwei (divides by 1e9).
+
+#### `Wei.to_ether`
+```zig
+pub fn to_ether(self: Wei) Ether
+```
+Converts Wei to Ether (divides by 1e18).
+
+### Gwei Operations
+
+#### `Gwei.from_u256`
+```zig
+pub fn from_u256(v: U256) Gwei
+```
+Creates Gwei from U256 value.
+
+#### `Gwei.to_wei`
+```zig
+pub fn to_wei(self: Gwei) Wei
+```
+Converts Gwei to Wei (multiplies by 1e9, wrapping).
+
+#### `Gwei.to_ether`
+```zig
+pub fn to_ether(self: Gwei) Ether
+```
+Converts Gwei to Ether (divides by 1e9).
+
+### Ether Operations
+
+#### `Ether.from_u256`
+```zig
+pub fn from_u256(v: U256) Ether
+```
+Creates Ether from U256 value.
+
+#### `Ether.to_wei`
+```zig
+pub fn to_wei(self: Ether) Wei
+```
+Converts Ether to Wei (multiplies by 1e18, wrapping).
+
+#### `Ether.to_gwei`
+```zig
+pub fn to_gwei(self: Ether) Gwei
+```
+Converts Ether to Gwei (multiplies by 1e9).
+
+## Types
+
+### Denomination Structures
+
+```zig
+pub const Wei = struct {
+    value: U256,
+};
+
+pub const Gwei = struct {
+    value: U256,
+};
+
+pub const Ether = struct {
+    value: U256,
+};
+```
+
+### Conversion Constants
+
+```zig
+pub const WEI_PER_GWEI: U256 = U256.from_u64(1_000_000_000); // 1e9
+pub const WEI_PER_ETHER: U256 = /* 1e18 */;
+pub const GWEI_PER_ETHER: U256 = U256.from_u64(1_000_000_000); // 1e9
+```
+
+## Examples
+
+### Converting Wei to other denominations
+```zig
+const U256 = Uint.Uint(256, 4);
+
+// 1 Gwei in Wei
+const wei = Wei.from_u256(U256.from_u64(1_000_000_000));
+const gwei = wei.to_gwei();
+try testing.expect(gwei.value.eq(U256.from_u64(1)));
+
+// 1 Ether in Wei
+const wei_limbs: [4]u64 = .{ 0xde0b6b3a7640000, 0, 0, 0 }; // 1e18
+const wei_ether = Wei.from_u256(U256.from_limbs(wei_limbs));
+const ether = wei_ether.to_ether();
+try testing.expect(ether.value.eq(U256.from_u64(1)));
+```
+
+### Converting Gwei to other denominations
+```zig
+// Gas price in Gwei
+const gas_price_gwei = Gwei.from_u256(U256.from_u64(50)); // 50 Gwei
+
+// Convert to Wei for calculations
+const gas_price_wei = gas_price_gwei.to_wei();
+// Result: 50,000,000,000 Wei
+
+// Convert to Ether for display
+const gas_price_ether = gas_price_gwei.to_ether();
+// Result: 0.00000005 Ether (integer division, truncates)
+```
+
+### Converting Ether to smaller units
+```zig
+// Account balance in Ether
+const balance_ether = Ether.from_u256(U256.from_u64(10)); // 10 ETH
+
+// Convert to Wei for precise arithmetic
+const balance_wei = balance_ether.to_wei();
+// Result: 10,000,000,000,000,000,000 Wei
+
+// Convert to Gwei
+const balance_gwei = balance_ether.to_gwei();
+// Result: 10,000,000,000 Gwei
+```
+
+### Round-trip conversions
+```zig
+// Wei -> Gwei -> Wei
+const original_wei = Wei.from_u256(U256.from_u64(5_000_000_000));
+const gwei = original_wei.to_gwei();
+const back_to_wei = gwei.to_wei();
+try testing.expect(back_to_wei.value.eq(U256.from_u64(5_000_000_000)));
+
+// Note: Precision loss possible if not evenly divisible
+const odd_wei = Wei.from_u256(U256.from_u64(1_500_000_000)); // 1.5 Gwei
+const gwei_truncated = odd_wei.to_gwei(); // 1 Gwei (truncates .5)
+const recovered_wei = gwei_truncated.to_wei(); // 1,000,000,000 Wei (lost 500M)
+```
+
+## Performance
+
+- Conversion to larger unit (division): ~XXX ns
+- Conversion to smaller unit (multiplication): ~XXX ns
+- U256 creation: ~XXX ns
+- All operations use U256 backend (wrapping arithmetic)
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=Denomination
+```
+
+Test coverage:
+- Wei ↔ Gwei conversions
+- Wei ↔ Ether conversions
+- Gwei ↔ Ether conversions
+- Round-trip conversions (lossless when evenly divisible)
+- Edge cases (zero values, max values)
+- Precision truncation behavior
+
+## Related
+
+- [Uint](/primitives/uint) - U256 backing type
+- [FeeMarket](/primitives/feemarket) - Base fee in Wei/Gwei
+- [Transaction](/primitives/transaction) - Values and gas prices
+
+## References
+
+- Ethereum Yellow Paper - Appendix B (Units)
+- 1 Ether = 1e9 Gwei = 1e18 Wei
+- Gwei commonly used for gas prices (human-readable)
+- Wei used for internal calculations (no precision loss)

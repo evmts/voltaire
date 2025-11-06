@@ -1,0 +1,166 @@
+---
+title: BloomFilter
+description: Probabilistic set membership testing for Ethereum logs
+---
+
+## Overview
+
+The BloomFilter module implements a space-efficient probabilistic data structure for testing set membership. Used in Ethereum block headers to enable fast log filtering without scanning all transactions. False positives possible, false negatives impossible.
+
+## Key Functions
+
+### `init`
+```zig
+pub fn init(allocator: std.mem.Allocator, m: usize, k: usize) !BloomFilter
+```
+Creates bloom filter with m bits and k hash functions.
+
+### `deinit`
+```zig
+pub fn deinit(self: *BloomFilter, allocator: std.mem.Allocator) void
+```
+Frees bloom filter memory.
+
+### `add`
+```zig
+pub fn add(self: *BloomFilter, item: []const u8) void
+```
+Adds item to bloom filter (sets k bits).
+
+### `contains`
+```zig
+pub fn contains(self: *const BloomFilter, item: []const u8) bool
+```
+Tests if item might be in set (checks k bits).
+
+## Types
+
+### BloomFilter Structure
+
+```zig
+pub const BloomFilter = struct {
+    bits: []u8,
+    k: usize,    // Number of hash functions
+    m: usize,    // Number of bits
+};
+```
+
+### Ethereum Block Header Bloom
+
+```zig
+// Standard Ethereum bloom filter: 2048 bits (256 bytes), 3 hash functions
+pub const ETHEREUM_BLOOM_BITS = 2048;
+pub const ETHEREUM_BLOOM_HASH_COUNT = 3;
+```
+
+## Examples
+
+### Creating and using bloom filter
+```zig
+const allocator = std.heap.page_allocator;
+
+// Create bloom filter: 1000 bits, 3 hash functions
+var bf = try BloomFilter.init(allocator, 1000, 3);
+defer bf.deinit(allocator);
+
+// Add items
+bf.add("foo");
+bf.add("bar");
+bf.add("baz");
+
+// Test membership
+try testing.expect(bf.contains("foo"));    // true
+try testing.expect(bf.contains("bar"));    // true
+try testing.expect(!bf.contains("qux"));   // false (probably)
+```
+
+### Ethereum log filtering
+```zig
+// Block header contains bloom filter of all log topics and addresses
+var block_bloom = try BloomFilter.init(allocator, ETHEREUM_BLOOM_BITS, ETHEREUM_BLOOM_HASH_COUNT);
+defer block_bloom.deinit(allocator);
+
+// When creating block, add all log topics/addresses
+for (receipts) |receipt| {
+    for (receipt.logs) |log| {
+        // Add contract address
+        block_bloom.add(&log.address);
+
+        // Add all topics
+        for (log.topics.items) |topic| {
+            block_bloom.add(&topic);
+        }
+    }
+}
+
+// Later, quickly filter blocks without scanning all logs
+const filter_topic = keccak256("Transfer(address,address,uint256)");
+if (block_bloom.contains(&filter_topic)) {
+    // Might contain Transfer events, scan logs
+} else {
+    // Definitely no Transfer events, skip block
+}
+```
+
+### False positive rate
+```zig
+// False positive probability: (1 - e^(-kn/m))^k
+// where:
+//   k = number of hash functions
+//   n = number of items inserted
+//   m = number of bits
+
+// Example: 1000 bits, 3 hashes, 100 items
+// FP rate ≈ 0.0117 (1.17%)
+
+// Optimal k for given m and n: k = (m/n) * ln(2)
+```
+
+### No false negatives
+```zig
+// Bloom filters NEVER produce false negatives
+for (items) |item| {
+    bf.add(item);
+}
+
+// All added items guaranteed to test positive
+for (items) |item| {
+    try testing.expect(bf.contains(item));
+}
+```
+
+## Performance
+
+- Add item: ~XXX ns (k hash computations + k bit sets)
+- Contains check: ~XXX ns (k hash computations + k bit tests)
+- Memory: m bits = m/8 bytes
+- Ethereum block bloom: 256 bytes (2048 bits)
+- No false negatives, ~1-2% false positives (typical Ethereum config)
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=BloomFilter
+```
+
+Test coverage:
+- Basic add/contains operations
+- Multiple items
+- False positive behavior
+- No false negatives guarantee
+- Different m/k parameters
+- Empty bloom filter
+- Hash function distribution
+
+## Related
+
+- [EventLog](/primitives/eventlog) - Logs indexed by bloom filters
+- Block headers contain bloom of all receipt logs
+- Enables efficient log queries without full blockchain scan
+
+## References
+
+- Ethereum Yellow Paper - Section 4.3.1 (Logs Bloom Filter)
+- [Bloom Filters Explained](https://en.wikipedia.org/wiki/Bloom_filter)
+- Ethereum uses 256-byte bloom (2048 bits, 3 hash functions)
+- Trade-off: space efficiency vs. false positive rate
