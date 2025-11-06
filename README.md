@@ -110,20 +110,20 @@ const sum = Uint.plus.call(a, b);
 
 | Primitive | Description | Key Features |
 |-----------|-------------|--------------|
-| **[Address](./src/content/docs/primitives/address/index.mdx)** | 20-byte Ethereum address | EIP-55 checksums, CREATE/CREATE2 calculation, validation |
+| **[Address](./src/content/docs/primitives/address/index.mdx)** | 20-byte Ethereum address | [EIP-55](https://eips.ethereum.org/EIPS/eip-55) checksums, [CREATE/CREATE2](https://eips.ethereum.org/EIPS/eip-1014) calculation, validation |
 | **[Hash](./src/content/docs/primitives/hash/index.mdx)** | 32-byte hash type | Constant-time operations, random generation, formatting |
 | **[Hex](./src/content/docs/primitives/hex/index.mdx)** | Hexadecimal encoding | Sized types, manipulation, conversion, validation |
 | **[Uint](./src/content/docs/primitives/uint/index.mdx)** | 256-bit unsigned integer | Wrapping arithmetic, bitwise operations, comparisons |
-| **[Transaction](./src/content/docs/primitives/transaction/index.mdx)** | All transaction types | Legacy, EIP-1559, EIP-4844, EIP-7702, serialization |
-| **[RLP](./src/content/docs/primitives/rlp/index.mdx)** | Recursive Length Prefix | Encoding/decoding for Ethereum data structures |
-| **[ABI](./src/content/docs/primitives/abi/index.mdx)** | Contract interface encoding | Functions, events, errors, constructors |
-| **[Signature](./src/primitives/Signature/)** | ECDSA signatures | Secp256k1, P-256, Ed25519, canonical normalization |
+| **[Transaction](./src/content/docs/primitives/transaction/index.mdx)** | All transaction types | [Legacy](https://ethereum.org/en/developers/docs/transactions/), [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559), [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844), [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702), serialization |
+| **[RLP](./src/content/docs/primitives/rlp/index.mdx)** | Recursive Length Prefix | Encoding/decoding for [Ethereum data structures](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/) |
+| **[ABI](./src/content/docs/primitives/abi/index.mdx)** | Contract interface encoding | Functions, events, errors, constructors ([ABI spec](https://docs.soliditylang.org/en/latest/abi-spec.html)) |
+| **[Signature](./src/primitives/Signature/)** | ECDSA signatures | [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1), [P-256](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf), [Ed25519](https://ed25519.cr.yp.to/), canonical normalization |
 | **[PrivateKey](./src/primitives/PrivateKey/)** | 32-byte private key | Key derivation, signing, address generation |
 | **[PublicKey](./src/primitives/PublicKey/)** | 64-byte public key | Uncompressed format, verification, address derivation |
 | **[Nonce](./src/primitives/Nonce/)** | Transaction nonce | Increment, conversion, transaction ordering |
-| **[ChainId](./src/primitives/ChainId/)** | Network identifier | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.) |
+| **[ChainId](./src/content/docs/primitives/chain/index.mdx)** | Network identifier | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.) |
 
-**Advanced Primitives:** [AccessList](./src/content/docs/primitives/accesslist/index.mdx), [Authorization](./src/content/docs/primitives/authorization/index.mdx), [Blob](./src/content/docs/primitives/blob/index.mdx), [Bytecode](./src/content/docs/primitives/bytecode/index.mdx), [EventLog](./src/content/docs/primitives/eventlog/index.mdx), [FeeMarket](./src/content/docs/primitives/feemarket/index.mdx), [GasConstants](./src/content/docs/primitives/gasconstants/index.mdx), [Hardfork](./src/content/docs/primitives/hardfork/index.mdx), [Opcode](./src/content/docs/primitives/opcode/index.mdx), [SIWE](./src/content/docs/primitives/siwe/index.mdx), [State](./src/content/docs/primitives/state/index.mdx), [Base64](./src/content/docs/primitives/base64/index.mdx), [BinaryTree](./src/content/docs/primitives/binarytree/index.mdx), [BloomFilter](./src/content/docs/primitives/bloomfilter/index.mdx), [Chain](./src/content/docs/primitives/chain/index.mdx), [Denomination](./src/content/docs/primitives/denomination/index.mdx)
+**Advanced Primitives:** [AccessList](./src/primitives/AccessList/index.mdx) ([EIP-2930](https://eips.ethereum.org/EIPS/eip-2930)), [Authorization](./src/primitives/Authorization/index.mdx) ([EIP-7702](https://eips.ethereum.org/EIPS/eip-7702)), [Blob](./src/primitives/Blob/index.mdx) ([EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)), [Bytecode](./src/content/docs/primitives/bytecode/index.mdx), [EventLog](./src/primitives/EventLog/index.mdx), [FeeMarket](./src/primitives/FeeMarket/index.mdx) ([EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)), [GasConstants](./src/primitives/GasConstants/index.mdx) ([Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)), [Hardfork](./src/primitives/Hardfork/index.mdx), [Opcode](./src/primitives/Opcode/index.mdx) ([EVM Codes](https://www.evm.codes/)), [SIWE](./src/primitives/Siwe/index.mdx) ([EIP-4361](https://eips.ethereum.org/EIPS/eip-4361)), [State](./src/primitives/State/index.mdx), [Base64](./src/content/docs/primitives/base64/index.mdx) ([RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648)), [BinaryTree](./src/content/docs/primitives/binarytree/index.mdx) ([Merkle Trees](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)), [BloomFilter](./src/content/docs/primitives/bloomfilter/index.mdx), [Chain](./src/content/docs/primitives/chain/index.mdx), [Denomination](./src/content/docs/primitives/denomination/index.mdx)
 
 **Quick Example:**
 
@@ -151,15 +151,15 @@ const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));
 
 | Algorithm | Purpose | Key Operations |
 |-----------|---------|----------------|
-| **[Keccak256](./src/content/docs/crypto/keccak256/index.mdx)** | Primary Ethereum hash function | Address derivation, function selectors, event topics |
-| **[Secp256k1](./src/content/docs/crypto/secp256k1/index.mdx)** | ECDSA transaction signing | Sign, verify, recover public key, address derivation |
-| **[EIP-712](./src/content/docs/crypto/eip712/index.mdx)** | Typed structured data signing | Domain separation, type hashing, signature verification |
-| **[BN254](./src/content/docs/crypto/bn254/index.mdx)** | zkSNARK verification (alt_bn128) | G1/G2 point operations, pairing checks for zero-knowledge proofs |
-| **[KZG](./src/content/docs/crypto/kzg/index.mdx)** | EIP-4844 blob commitments | Polynomial commitments, trusted setup, proof generation/verification |
-| **[BIP-39](./src/content/docs/crypto/bip39/index.mdx)** | Mnemonic phrases | 12/24-word mnemonics, seed derivation (PBKDF2) |
-| **[HDWallet](./src/content/docs/crypto/hdwallet/index.mdx)** | Hierarchical deterministic wallets | BIP-32 key derivation, BIP-44 multi-account paths |
+| **[Keccak256](./src/content/docs/crypto/keccak256/index.mdx)** | Primary Ethereum hash function ([FIPS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)) | Address derivation, function selectors, event topics |
+| **[Secp256k1](./src/content/docs/crypto/secp256k1/index.mdx)** | ECDSA transaction signing ([SEC 2](https://www.secg.org/sec2-v2.pdf)) | Sign, verify, recover public key, address derivation |
+| **[EIP-712](./src/content/docs/crypto/eip712/index.mdx)** | Typed structured data signing ([EIP-712](https://eips.ethereum.org/EIPS/eip-712)) | Domain separation, type hashing, signature verification |
+| **BN254** | zkSNARK verification ([alt_bn128](https://eips.ethereum.org/EIPS/eip-196)) | G1/G2 point operations, pairing checks for zero-knowledge proofs |
+| **KZG** | EIP-4844 blob commitments ([EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)) | Polynomial commitments, trusted setup, proof generation/verification |
+| **[BIP-39](./src/content/docs/crypto/bip39/index.mdx)** | Mnemonic phrases ([BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)) | 12/24-word mnemonics, seed derivation (PBKDF2) |
+| **[HDWallet](./src/content/docs/crypto/hdwallet/index.mdx)** | Hierarchical deterministic wallets ([BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki), [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)) | Key derivation, multi-account paths |
 
-**Additional Algorithms:** [SHA256](./src/content/docs/crypto/sha256/index.mdx), [RIPEMD160](./src/content/docs/crypto/ripemd160/index.mdx), [Blake2](./src/content/docs/crypto/blake2/index.mdx), [Ed25519](./src/content/docs/crypto/ed25519/index.mdx), [X25519](./src/content/docs/crypto/x25519/index.mdx), [P256](./src/content/docs/crypto/p256/index.mdx), [AES-GCM](./src/content/docs/crypto/aes-gcm/index.mdx)
+**Additional Algorithms:** [SHA256](./src/content/docs/crypto/sha256/index.mdx) ([FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)), [RIPEMD160](./src/content/docs/crypto/ripemd160/index.mdx) ([RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)), [Blake2](./src/content/docs/crypto/blake2/index.mdx) ([RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693)), [Ed25519](./src/content/docs/crypto/ed25519/index.mdx) ([RFC 8032](https://datatracker.ietf.org/doc/html/rfc8032)), [X25519](./src/content/docs/crypto/x25519/index.mdx) ([RFC 7748](https://datatracker.ietf.org/doc/html/rfc7748)), [P256](./src/content/docs/crypto/p256/index.mdx) ([FIPS 186-5](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf)), [AES-GCM](./src/content/docs/crypto/aesgcm/index.mdx) ([NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf))
 
 **Quick Example:**
 
@@ -182,7 +182,7 @@ const account = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
 
 ### Precompiles
 
-All 19 EVM precompiled contracts (addresses 0x01-0x13): ecrecover, sha256, ripemd160, identity, modexp, BN254 add/mul/pairing, blake2f, KZG point evaluation (EIP-4844), BLS12-381 operations (EIP-2537, Prague+).
+All 19 EVM precompiled contracts (addresses [0x01-0x13](https://www.evm.codes/precompiled)): [ecrecover](https://eips.ethereum.org/EIPS/eip-196), sha256, ripemd160, identity, [modexp](https://eips.ethereum.org/EIPS/eip-198), [BN254 add/mul/pairing](https://eips.ethereum.org/EIPS/eip-196) ([EIP-197](https://eips.ethereum.org/EIPS/eip-197)), [blake2f](https://eips.ethereum.org/EIPS/eip-152), [KZG point evaluation](https://eips.ethereum.org/EIPS/eip-4844), [BLS12-381 operations](https://eips.ethereum.org/EIPS/eip-2537) (Prague+).
 
 **Usage:**
 
@@ -193,7 +193,7 @@ const isPrecompile = isPrecompile(address, "cancun");
 const result = execute(address, input, gasLimit, "cancun");
 ```
 
-📚 **[Full precompile documentation](./src/content/docs/precompiles/)**
+📚 **[Full precompile documentation](./src/content/docs/precompiles/)** | **[EVM.codes Precompiles](https://www.evm.codes/precompiled)**
 
 ---
 
@@ -232,17 +232,17 @@ const result = execute(address, input, gasLimit, "cancun");
 | RIPEMD160.hash    | Uint8Array              | 20-byte hash   | Bitcoin addresses                   |
 | Blake2.hash       | Uint8Array, size?       | 1-64 byte hash | Zcash compatibility                 |
 | BN254.pairing     | Point pairs             | boolean        | zkSNARK verification                |
-| KZG.verify        | Blob, Commitment, Proof | boolean        | EIP-4844 blob verification          |
-| Bip39.generate    | strength                | Mnemonic       | Mnemonic phrase generation          |
-| HDWallet.derive   | Key, Path               | ExtendedKey    | BIP-32/BIP-44 key derivation        |
-| AesGcm.encrypt    | Data, Key, Nonce        | Ciphertext     | Authenticated encryption            |
+| KZG.verify        | Blob, Commitment, Proof | boolean        | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) blob verification          |
+| Bip39.generate    | strength                | Mnemonic       | [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) mnemonic generation          |
+| HDWallet.derive   | Key, Path               | ExtendedKey    | [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)/[BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) key derivation        |
+| AesGcm.encrypt    | Data, Key, Nonce        | Ciphertext     | [AES-GCM](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf) authenticated encryption            |
 
 
 ## Architecture
 
 ### Data-First Pattern
 
-All primitives follow a consistent data-first pattern:
+All primitives follow a consistent [data-first pattern](./src/content/docs/primitives/branded-types.mdx) for optimal tree-shaking and zero-overhead abstraction:
 
 ```typescript
 // Data types are branded primitives (Uint8Array, bigint, string)
@@ -275,12 +275,12 @@ const checksum = Address.toChecksummed(addr);
 
 All implementations optimized for production use:
 
-- **Native/WASM**: Optional native bindings via Zig for 2-10x speedup
-- **Audited crypto**: @noble/curves, c-kzg-4844 for security
+- **Native/WASM**: Optional native bindings via [Zig](https://ziglang.org/) for 2-10x speedup
+- **Audited crypto**: [@noble/curves](https://github.com/paulmillr/noble-curves), [c-kzg-4844](https://github.com/ethereum/c-kzg-4844), [blst](https://github.com/supranational/blst) for security
 - **Zero dependencies**: Core TypeScript has zero runtime deps
 - **Minimal bundle**: Tree-shakeable, only pay for what you use
 
-Benchmark results available in each primitive's bench.ts file.
+Benchmark results available in [BENCHMARKING.md](./BENCHMARKING.md) and each primitive's bench.ts file.
 
 ---
 
