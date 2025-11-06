@@ -82,7 +82,9 @@ describe("of", () => {
 				0,
 				0,
 			);
-			expect(Address.isZero(addr)).toBe(true);
+			expect(
+				Address.isZero(addr as import("./BrandedAddress.js").BrandedAddress),
+			).toBe(true);
 		});
 
 		it("creates address with all 0xff bytes", () => {
@@ -191,7 +193,9 @@ describe("of", () => {
 				0x51,
 				0xe3,
 			);
-			const hex = Address.toHex(addr);
+			const hex = Address.toHex(
+				addr as import("./BrandedAddress.js").BrandedAddress,
+			);
 			expect(Address.isValid(hex)).toBe(true);
 		});
 	});
@@ -377,7 +381,12 @@ describe("of", () => {
 				0x51,
 				0xe3,
 			);
-			expect(Address.equals(addr1, addr2)).toBe(true);
+			expect(
+				Address.equals(
+					addr1 as import("./BrandedAddress.js").BrandedAddress,
+					addr2 as import("./BrandedAddress.js").BrandedAddress,
+				),
+			).toBe(true);
 		});
 	});
 
@@ -432,7 +441,9 @@ describe("of", () => {
 				0x51,
 				0xe3,
 			);
-			const hex = Address.toHex(addr);
+			const hex = Address.toHex(
+				addr as import("./BrandedAddress.js").BrandedAddress,
+			);
 			expect(hex).toBe("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
 		});
 
@@ -459,9 +470,17 @@ describe("of", () => {
 				19,
 				20,
 			);
-			expect(Address.isZero(addr)).toBe(false);
-			expect(Address.toHex(addr)).toMatch(/^0x[0-9a-f]{40}$/);
-			expect(Address.toChecksummed(addr)).toMatch(/^0x[0-9a-fA-F]{40}$/);
+			expect(
+				Address.isZero(addr as import("./BrandedAddress.js").BrandedAddress),
+			).toBe(false);
+			expect(
+				Address.toHex(addr as import("./BrandedAddress.js").BrandedAddress),
+			).toMatch(/^0x[0-9a-f]{40}$/);
+			expect(
+				Address.toChecksummed(
+					addr as import("./BrandedAddress.js").BrandedAddress,
+				),
+			).toMatch(/^0x[0-9a-fA-F]{40}$/);
 		});
 	});
 

@@ -50,8 +50,6 @@ describe("ChecksumAddress", () => {
 				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
 			);
 			const checksummed = ChecksumAddress.from(addr);
-			// Type assertion to verify brand
-			const _branded: ChecksumAddress.Checksummed = checksummed;
 			expect(checksummed).toBe("0x742d35Cc6634c0532925a3b844bc9e7595F251E3");
 		});
 	});

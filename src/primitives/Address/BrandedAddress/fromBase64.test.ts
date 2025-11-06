@@ -52,8 +52,6 @@ describe("fromBase64", () => {
 
 	describe("invalid length", () => {
 		it("throws when decoded length is not 20 bytes", () => {
-			// 19 bytes encoded
-			const short = "AAAAAAAAAAAAAAAAAAAAAA==";
 			// This is actually 16 bytes, need longer string for 19 bytes
 			const b64_19 = "AAAAAAAAAAAAAAAAAAAAAAA=";
 			expect(() => fromBase64(b64_19)).toThrow(

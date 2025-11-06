@@ -75,7 +75,7 @@ describe("Uint8Array integration", () => {
 				const addr = Address.fromHex(
 					"0x0000000000000000000000000000000000000000",
 				);
-				const mapped = Array.from(addr).map((b, i) => i);
+				const mapped = Array.from(addr).map((_b, i) => i);
 				expect(mapped[0]).toBe(0);
 				expect(mapped[19]).toBe(19);
 			});
@@ -156,8 +156,8 @@ describe("Uint8Array integration", () => {
 				);
 				const entries = Array.from(addr.entries());
 				expect(entries.length).toBe(20);
-				expect(entries[0][0]).toBe(0);
-				expect(entries[0][1]).toBe(0x74);
+				expect(entries[0]?.[0]).toBe(0);
+				expect(entries[0]?.[1]).toBe(0x74);
 			});
 		});
 
@@ -439,7 +439,7 @@ describe("Uint8Array integration", () => {
 				);
 				addr.sort();
 				for (let i = 1; i < addr.length; i++) {
-					expect(addr[i]).toBeGreaterThanOrEqual(addr[i - 1]);
+					expect(addr[i]).toBeGreaterThanOrEqual(addr[i - 1]!);
 				}
 			});
 
@@ -449,7 +449,7 @@ describe("Uint8Array integration", () => {
 				);
 				addr.sort((a, b) => b - a);
 				for (let i = 1; i < addr.length; i++) {
-					expect(addr[i]).toBeLessThanOrEqual(addr[i - 1]);
+					expect(addr[i]).toBeLessThanOrEqual(addr[i - 1]!);
 				}
 			});
 		});
@@ -486,7 +486,7 @@ describe("Uint8Array integration", () => {
 				);
 				const sorted = addr.toSorted();
 				for (let i = 1; i < sorted.length; i++) {
-					expect(sorted[i]).toBeGreaterThanOrEqual(sorted[i - 1]);
+					expect(sorted[i]).toBeGreaterThanOrEqual(sorted[i - 1]!);
 				}
 				expect(addr[0]).toBe(0x0f);
 			});

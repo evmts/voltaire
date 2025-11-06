@@ -30,7 +30,7 @@ describe("toBytes", () => {
 
 	it("works as instance method", () => {
 		const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
-		const bytes = addr.toBytes();
+		const bytes = Address.toBytes(addr);
 
 		expect(bytes).toBeInstanceOf(Uint8Array);
 		expect(bytes.length).toBe(20);
