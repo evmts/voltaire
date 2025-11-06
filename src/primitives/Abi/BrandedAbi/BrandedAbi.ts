@@ -1,4 +1,4 @@
-import type { BrandedConstructor as Constructor } from "../constructor/BrandedConstructor.js";
+import type { BrandedConstructor as Constructor } from "../constructor/BrandedConstructor/BrandedConstructor.js";
 import type { BrandedError } from "../error/BrandedError.js";
 import type { Event } from "../event/BrandedEvent.js";
 import type { Function } from "../function/BrandedFunction.js";

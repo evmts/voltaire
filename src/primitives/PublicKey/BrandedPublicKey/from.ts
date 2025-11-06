@@ -20,7 +20,9 @@ export function from(hex: string): BrandedPublicKey {
 		throw new Error("Invalid hex string");
 	}
 	if (hexStr.length !== 128) {
-		throw new Error(`Public key must be 64 bytes (128 hex chars), got ${hexStr.length}`);
+		throw new Error(
+			`Public key must be 64 bytes (128 hex chars), got ${hexStr.length}`,
+		);
 	}
 	const bytes = new Uint8Array(64);
 	for (let i = 0; i < 64; i++) {

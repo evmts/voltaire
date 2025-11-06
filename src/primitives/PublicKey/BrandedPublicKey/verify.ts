@@ -26,5 +26,9 @@ export function verify(
 	fullKey[0] = 0x04;
 	fullKey.set(this, 1);
 
-	return Secp256k1.verify(signature as unknown as Secp256k1.BrandedSignature, hash, fullKey);
+	return Secp256k1.verify(
+		signature as unknown as Secp256k1.BrandedSignature,
+		hash,
+		fullKey,
+	);
 }

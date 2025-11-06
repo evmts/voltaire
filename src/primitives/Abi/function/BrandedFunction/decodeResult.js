@@ -1,4 +1,4 @@
-import { decodeParameters } from "../Encoding.js";
+import { decodeParameters } from "../../Encoding.js";
 
 /**
  * Decode function return values

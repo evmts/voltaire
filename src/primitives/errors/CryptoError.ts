@@ -29,7 +29,10 @@ export class InvalidSignatureError extends CryptoError {
 		super(
 			message,
 			options?.context !== undefined
-				? { code: options.code || "INVALID_SIGNATURE", context: options.context }
+				? {
+						code: options.code || "INVALID_SIGNATURE",
+						context: options.context,
+					}
 				: { code: options?.code || "INVALID_SIGNATURE" },
 		);
 		this.name = "InvalidSignatureError";

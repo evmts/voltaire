@@ -1,4 +1,4 @@
-import { encodeParameters } from "../Encoding.js";
+import { encodeParameters } from "../../Encoding.js";
 
 /**
  * Encode function return values

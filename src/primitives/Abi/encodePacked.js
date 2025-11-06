@@ -86,7 +86,10 @@ function encodePackedValue(type, value) {
 	if (type.startsWith("bytes")) {
 		const size = Number.parseInt(type.slice(5));
 		if (size >= 1 && size <= 32) {
-			const bytes = typeof value === "string" ? Hex.toBytes(value) : /** @type {Uint8Array} */ (value);
+			const bytes =
+				typeof value === "string"
+					? Hex.toBytes(value)
+					: /** @type {Uint8Array} */ (value);
 			if (bytes.length !== size) {
 				throw new AbiEncodingError(
 					`Invalid ${type} length: expected ${size}, got ${bytes.length}`,
@@ -100,7 +103,8 @@ function encodePackedValue(type, value) {
 	if (type.startsWith("uint")) {
 		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
 		const bytes = bits / 8;
-		const bigintValue = typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
+		const bigintValue =
+			typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
 
 		// Convert to bytes (big-endian)
 		const result = new Uint8Array(bytes);
@@ -116,7 +120,8 @@ function encodePackedValue(type, value) {
 	if (type.startsWith("int")) {
 		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
 		const bytes = bits / 8;
-		const bigintValue = typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
+		const bigintValue =
+			typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
 
 		// Convert to two's complement if negative
 		const unsigned =

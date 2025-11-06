@@ -26,8 +26,15 @@ import { ECDSA_SIZE, ED25519_SIZE } from "./constants.js";
  */
 export function from(value) {
 	// If it's already a BrandedSignature, return it
-	if (value && typeof value === "object" && "__tag" in value && value.__tag === "Signature") {
-		return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (value);
+	if (
+		value &&
+		typeof value === "object" &&
+		"__tag" in value &&
+		value.__tag === "Signature"
+	) {
+		return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (
+			value
+		);
 	}
 
 	// Handle Uint8Array (compact format)

@@ -1,6 +1,6 @@
 import type { BrandedItem as Item } from "../../Item/index.js";
 import type { Parameter } from "../../Parameter.js";
-import type { StateMutability } from "../statemutability.js";
+import type { StateMutability } from "./statemutability.js";
 
 /**
  * Function ABI item type

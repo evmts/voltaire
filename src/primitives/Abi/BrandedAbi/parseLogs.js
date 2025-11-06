@@ -20,8 +20,9 @@ export function parseLogs(logs) {
 		.map((log) => {
 			const dataBytes =
 				typeof log.data === "string" ? Hex.toBytes(log.data) : log.data;
-			const topicBytes = log.topics.map((/** @type {Uint8Array | string} */ t) =>
-				typeof t === "string" ? Hex.toBytes(t) : t,
+			const topicBytes = log.topics.map(
+				(/** @type {Uint8Array | string} */ t) =>
+					typeof t === "string" ? Hex.toBytes(t) : t,
 			);
 
 			if (topicBytes.length === 0) {
@@ -34,19 +35,20 @@ export function parseLogs(logs) {
 			}
 
 			// Find event by selector (topic0 for non-anonymous events)
-			const event = /** @type {import('../event/BrandedEvent.js').Event<string, readonly import('../Parameter.js').Parameter[]> | undefined} */ (
-				this.find((item) => {
-					if (item.type !== "event") return false;
-					if (item.anonymous) return false;
+			const event =
+				/** @type {import('../event/BrandedEvent.js').Event<string, readonly import('../Parameter.js').Parameter[]> | undefined} */ (
+					this.find((item) => {
+						if (item.type !== "event") return false;
+						if (item.anonymous) return false;
 
-					const eventSelector = Event.getSelector(item);
-					// Compare bytes
-					for (let i = 0; i < 32; i++) {
-						if (topic0[i] !== eventSelector[i]) return false;
-					}
-					return true;
-				})
-			);
+						const eventSelector = Event.getSelector(item);
+						// Compare bytes
+						for (let i = 0; i < 32; i++) {
+							if (topic0[i] !== eventSelector[i]) return false;
+						}
+						return true;
+					})
+				);
 
 			if (!event) {
 				return null; // Skip unknown events

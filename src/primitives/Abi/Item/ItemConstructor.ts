@@ -1,5 +1,5 @@
 import type { BrandedItem } from "./BrandedItem/BrandedItem.js";
-import type { BrandedConstructor } from "../constructor/BrandedConstructor.js";
+import type { BrandedConstructor } from "../constructor/BrandedConstructor/BrandedConstructor.js";
 import type { BrandedError } from "../error/BrandedError.js";
 import type { Event } from "../event/BrandedEvent.js";
 import type { Function } from "../function/BrandedFunction.js";

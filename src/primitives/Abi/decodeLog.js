@@ -74,7 +74,11 @@ export function decodeLog(abi, log) {
 		);
 	}
 
-	const params = Event.decodeLog(item, dataBytes, /** @type {any} */ (topicBytes));
+	const params = Event.decodeLog(
+		item,
+		dataBytes,
+		/** @type {any} */ (topicBytes),
+	);
 
 	return {
 		event: item.name,

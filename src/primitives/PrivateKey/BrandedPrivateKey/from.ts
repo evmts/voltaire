@@ -20,7 +20,9 @@ export function from(hex: string): BrandedPrivateKey {
 		throw new Error("Invalid hex string");
 	}
 	if (hexStr.length !== 64) {
-		throw new Error(`Private key must be 32 bytes (64 hex chars), got ${hexStr.length}`);
+		throw new Error(
+			`Private key must be 32 bytes (64 hex chars), got ${hexStr.length}`,
+		);
 	}
 	const bytes = new Uint8Array(32);
 	for (let i = 0; i < 32; i++) {
