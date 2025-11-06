@@ -1,0 +1,490 @@
+---
+title: WASM Acceleration
+description: High-performance WebAssembly-compiled Zig implementations
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+# WASM Acceleration
+
+Voltaire provides optional WASM-accelerated implementations for performance-critical operations, compiled from Zig source code.
+
+## Overview
+
+WASM (WebAssembly) implementations are **purely opt-in** replacements for JavaScript implementations, providing:
+
+- **2-3x faster** cryptographic operations (keccak256, secp256k1)
+- **Minimal bundle impact** - Only included when imported
+- **Identical APIs** - Drop-in replacements for JS versions
+- **Tree-shakeable** - Import only methods you use
+
+All WASM modules are compiled from Zig source using two optimization modes.
+
+## Build Modes
+
+### ReleaseSmall (Production)
+
+Size-optimized for production bundles:
+
+```bash
+zig build build-ts-wasm  # Builds primitives.wasm (ReleaseSmall)
+```
+
+**Optimizations:**
+- Minimal code size
+- Dead code elimination
+- Aggressive inlining
+- ~2-4 KB gzipped per module
+
+**Use when:**
+- Deploying to production
+- Bundle size matters
+- Network bandwidth limited
+
+### ReleaseFast (Benchmarking)
+
+Performance-optimized for maximum speed:
+
+```bash
+zig build build-ts-wasm-fast  # Builds primitives-fast.wasm
+```
+
+**Optimizations:**
+- Maximum runtime speed
+- SIMD instructions
+- Loop unrolling
+- ~5-8 KB gzipped per module
+
+**Use when:**
+- Running benchmarks
+- Performance testing
+- CPU-bound workloads
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Direct Import">
+
+```typescript
+// Import WASM implementation
+import { Address } from '@tevm/voltaire/Address.wasm';
+
+// API identical to JS version
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+addr.toChecksummed(); // WASM-accelerated
+```
+
+</TabItem>
+<TabItem label="Crypto Modules">
+
+```typescript
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+
+// Init once
+await Keccak256Wasm.init();
+
+// 2-3x faster than pure JS
+const hash = Keccak256Wasm.hash(data);
+```
+
+</TabItem>
+<TabItem label="Override Methods">
+
+```typescript
+import { Address } from '@tevm/voltaire';
+import * as WasmAddress from '@tevm/voltaire/Address.wasm';
+
+// Override specific methods
+Address.fromHex = WasmAddress.fromHex;
+Address.toChecksummed = WasmAddress.toChecksummed;
+
+// Now uses WASM
+const addr = Address.fromHex("0x...");
+```
+
+</TabItem>
+</Tabs>
+
+## WASM-Accelerated Primitives
+
+### Address
+
+WASM methods for Address primitive:
+
+```typescript
+import {
+  fromHex,
+  toChecksummed,
+  calculateCreateAddress
+} from '@tevm/voltaire/Address.wasm';
+```
+
+**Accelerated operations:**
+- `fromHex()` - Hex parsing with validation
+- `toChecksummed()` - EIP-55 checksumming (keccak256)
+- `calculateCreateAddress()` - CREATE address (RLP + keccak256)
+- `calculateCreate2Address()` - CREATE2 address (keccak256)
+- `isValidChecksum()` - Checksum verification
+
+[View Address WASM docs →](/primitives/address/wasm/)
+
+### Hash
+
+```typescript
+import { fromHex, equals } from '@tevm/voltaire/Hash.wasm';
+```
+
+**Accelerated operations:**
+- `fromHex()` - Hex parsing
+- `equals()` - Constant-time comparison
+
+[View Hash WASM docs →](/primitives/hash/wasm/)
+
+### Uint
+
+```typescript
+import { fromHex, toHex, plus, times } from '@tevm/voltaire/Uint.wasm';
+```
+
+**Accelerated operations:**
+- `fromHex()` / `toHex()` - Format conversion
+- Arithmetic: `plus()`, `minus()`, `times()`, `dividedBy()`
+- Bitwise: `and()`, `or()`, `xor()`, `shiftLeft()`, `shiftRight()`
+
+[View Uint WASM docs →](/primitives/uint/wasm/)
+
+### Hex
+
+```typescript
+import { fromBytes, toBytes, fromNumber } from '@tevm/voltaire/Hex.wasm';
+```
+
+**Accelerated operations:**
+- `fromBytes()` - Bytes to hex
+- `toBytes()` - Hex to bytes
+- `fromNumber()` - Number to hex
+
+[View Hex WASM docs →](/primitives/hex/wasm/)
+
+### Other Primitives
+
+Additional WASM-accelerated primitives:
+
+- **Bytecode** - [View docs →](/primitives/bytecode/wasm/)
+- **BinaryTree** - [View docs →](/primitives/binarytree/wasm/)
+- **Denomination** - [View docs →](/primitives/denomination/wasm/)
+
+## Cryptographic Modules
+
+### Keccak256
+
+```typescript
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+
+await Keccak256Wasm.init();
+
+// Single hash
+const hash = Keccak256Wasm.hash(data);
+
+// Multiple hashes (reuse instance)
+const hash1 = Keccak256Wasm.hash(data1);
+const hash2 = Keccak256Wasm.hash(data2);
+```
+
+**Performance:** 2-3x faster than pure JS implementation.
+
+### Individual Crypto Modules
+
+Tree-shakeable crypto modules compiled separately:
+
+```bash
+zig build crypto-wasm  # Builds individual wasm/*.wasm files
+```
+
+**Available modules:**
+- `wasm/keccak256.wasm`
+- `wasm/secp256k1.wasm`
+- `wasm/sha256.wasm`
+- `wasm/ripemd160.wasm`
+- `wasm/blake2.wasm`
+
+**Benefits:**
+- Smaller bundles (only include crypto you use)
+- Independent versioning
+- Parallel loading
+
+## Override Patterns
+
+### Static Method Override
+
+Replace static methods by reassignment:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+import * as WasmAddress from '@tevm/voltaire/Address.wasm';
+
+// Override static methods
+Address.fromHex = WasmAddress.fromHex;
+Address.toChecksummed = WasmAddress.toChecksummed;
+Address.equals = WasmAddress.equals;
+
+// Now uses WASM
+const addr = Address.fromHex("0x...");
+```
+
+### Instance Method Override
+
+Instance methods require `Function.prototype.call.bind`:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+import * as WasmAddress from '@tevm/voltaire/Address.wasm';
+
+// Correct - binds 'this' context
+Address.prototype.toHex = Function.prototype.call.bind(WasmAddress.toHex);
+Address.prototype.toChecksummed = Function.prototype.call.bind(WasmAddress.toChecksummed);
+
+// Now instance methods use WASM
+const addr = new Address("0x...");
+addr.toChecksummed(); // WASM-accelerated
+```
+
+**Why `Function.prototype.call.bind`?**
+
+WASM functions expect data as first parameter:
+```typescript
+// WASM signature
+function toHex(address: BrandedAddress): string
+
+// Instance method signature
+class Address {
+  toHex(this: Address): string
+}
+
+// Function.prototype.call.bind converts:
+//   toHex(address) → address.toHex()
+```
+
+## Tree-Shaking
+
+Import only methods you need:
+
+```typescript
+// Only bundles fromHex and toChecksummed
+import { fromHex, toChecksummed } from '@tevm/voltaire/Address.wasm';
+
+const addr = fromHex("0x...");
+const checksum = toChecksummed(addr);
+```
+
+**Bundle impact:**
+
+| Import | JS Bundle | WASM Bundle | Total |
+|--------|-----------|-------------|-------|
+| Full `Address.wasm` | ~1 KB | ~4 KB | ~5 KB |
+| `fromHex` + `toChecksummed` | ~500 B | ~2 KB | ~2.5 KB |
+| Pure JS (no WASM) | ~18 KB | 0 KB | ~18 KB |
+
+WASM loader only included when importing WASM methods.
+
+## Performance Characteristics
+
+### When WASM Wins
+
+WASM provides significant speedup for:
+
+- **Cryptographic operations** - keccak256, secp256k1 (2-3x faster)
+- **Bulk operations** - Processing arrays of addresses/hashes
+- **Heavy computation** - RLP encoding, ABI encoding
+- **Bitwise operations** - Uint256 arithmetic
+
+### When JS is Sufficient
+
+Pure JS is often faster for:
+
+- **Single operations** - WASM initialization overhead
+- **Simple conversions** - Byte array copying
+- **Type checking** - `instanceof`, type guards
+- **Small payloads** - Message overhead to WASM
+
+<Aside type="tip" title="Benchmark Your Use Case">
+WASM performance depends on workload. Use `bun run bench` to measure your specific scenario.
+</Aside>
+
+## WASM Architecture
+
+### Target
+
+```bash
+wasm32-wasi
+```
+
+WASM modules target `wasm32-wasi` (32-bit WASM with WASI system interface). Requires `libc` for C library dependencies.
+
+### Dependencies
+
+WASM builds include:
+
+- **Zig standard library** - Core data structures, allocators
+- **C libraries** - blst (BLS12-381), c-kzg-4844 (stubbed in WASM)
+- **Rust crypto** - Portable feature (`tiny-keccak` for WASM, `keccak-asm` for native)
+
+### Build Output
+
+```
+wasm/
+├── primitives.wasm          # ReleaseSmall (production)
+├── primitives-fast.wasm     # ReleaseFast (benchmarking)
+└── crypto/
+    ├── keccak256.wasm       # Individual modules
+    ├── secp256k1.wasm
+    ├── sha256.wasm
+    └── ...
+```
+
+### Memory Management
+
+WASM modules use linear memory:
+
+- **Stack allocation** - Small, fixed-size data
+- **Heap allocation** - Dynamic data (uses Zig allocator)
+- **Memory growth** - Automatic via WASI
+
+JavaScript passes data via:
+- **SharedArrayBuffer** - Zero-copy for large data
+- **Memory views** - Direct access to WASM memory
+
+## Limitations
+
+### KZG Not Supported
+
+KZG commitments (EIP-4844) are **stubbed in WASM** due to c-kzg-4844 native dependency:
+
+```typescript
+// Works in Node.js (native)
+import { KZG } from '@tevm/voltaire/crypto/kzg';
+const commitment = KZG.blobToKzgCommitment(blob);
+
+// Not available in WASM
+import { KZGWasm } from '@tevm/voltaire/crypto/kzg.wasm';
+// KZGWasm.blobToKzgCommitment - Not implemented
+```
+
+**Workaround:** Use JavaScript KZG libraries or server-side computation.
+
+### Browser Compatibility
+
+WASM requires:
+- **Modern browsers** - Chrome 57+, Firefox 52+, Safari 11+
+- **WASM support** - `WebAssembly` global available
+- **Async initialization** - Some modules require `await init()`
+
+Check support:
+```typescript
+if (typeof WebAssembly !== 'undefined') {
+  // WASM supported
+} else {
+  // Fallback to pure JS
+}
+```
+
+## Commands
+
+```bash
+# Build WASM modules
+zig build build-ts-wasm       # ReleaseSmall (production)
+zig build build-ts-wasm-fast  # ReleaseFast (benchmarking)
+zig build crypto-wasm         # Individual crypto modules
+
+# Test WASM
+bun run test:wasm             # WASM-specific tests
+
+# Benchmark
+bun run bench                 # Compare JS vs WASM performance
+```
+
+## Source Files
+
+WASM implementations compiled from Zig source:
+
+- **Primitives** - `src/primitives/{Name}/{name}.zig`
+- **Crypto** - `src/crypto/{name}.zig`
+- **Build config** - `build.zig` (WASM targets)
+- **Loader** - `src/wasm-loader/` (instantiation, memory, errors)
+
+## Examples
+
+### Address Checksumming
+
+```typescript
+import { toChecksummed } from '@tevm/voltaire/Address.wasm';
+import type { BrandedAddress } from '@tevm/voltaire/Address';
+
+const addresses: BrandedAddress[] = [
+  // ... thousands of addresses
+];
+
+// WASM-accelerated batch processing
+const checksummed = addresses.map(toChecksummed);
+```
+
+### Keccak256 Hashing
+
+```typescript
+import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+
+await Keccak256Wasm.init();
+
+// Process stream of data
+for (const chunk of dataStream) {
+  const hash = Keccak256Wasm.hash(chunk);
+  await processHash(hash);
+}
+```
+
+### Uint256 Arithmetic
+
+```typescript
+import { plus, times, toHex } from '@tevm/voltaire/Uint.wasm';
+
+// Calculate gas cost: gasPrice * gasUsed
+const gasPrice = fromHex("0x4a817c800"); // 20 gwei
+const gasUsed = fromHex("0x5208");        // 21000
+
+const cost = times(gasPrice, gasUsed);
+console.log(toHex(cost)); // Total cost in wei
+```
+
+## Related Documentation
+
+<CardGrid>
+  <Card title="Address WASM" icon="rocket">
+    WASM-accelerated Address operations.
+
+    [View →](/primitives/address/wasm/)
+  </Card>
+
+  <Card title="Hash WASM" icon="document">
+    WASM-accelerated Hash operations.
+
+    [View →](/primitives/hash/wasm/)
+  </Card>
+
+  <Card title="Uint WASM" icon="star">
+    WASM-accelerated Uint256 arithmetic.
+
+    [View →](/primitives/uint/wasm/)
+  </Card>
+
+  <Card title="Getting Started" icon="open-book">
+    Performance section discusses WASM.
+
+    [View →](/getting-started/#performance)
+  </Card>
+</CardGrid>
+
+## Specification References
+
+- [WebAssembly Core Specification](https://webassembly.github.io/spec/core/)
+- [WASI Preview 1](https://github.com/WebAssembly/WASI/blob/main/legacy/preview1/docs.md)
+- [Zig WASM Documentation](https://ziglang.org/documentation/0.15.1/#WebAssembly)

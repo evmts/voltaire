@@ -1,0 +1,368 @@
+---
+title: Overview
+description: Universal patterns and design philosophy of Voltaire
+---
+
+import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+# Overview
+
+Voltaire follows consistent patterns across all primitives, making the API predictable and easy to learn.
+
+## Design Philosophy
+
+### Simple Data Structures
+
+Built on native JavaScript primitives — `Uint8Array`, `bigint`, `string`. No complex wrapper objects at runtime.
+
+```typescript
+// Runtime: just a Uint8Array
+const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+typeof addr; // "object"
+addr instanceof Uint8Array; // true
+```
+
+**Benefits:**
+- Natural JSON serialization
+- Works with existing libraries
+- Zero overhead
+- Direct memory access
+
+### Close-to-Spec APIs
+
+Minimal abstraction over Ethereum primitives. Method names mirror Yellow Paper and EIPs.
+
+```typescript
+// EIP-55 checksumming
+Address.toChecksummed(addr);
+
+// EIP-1559 transaction fields
+const tx: Transaction.EIP1559 = {
+  type: 2,
+  maxFeePerGas: 30000000000n,
+  maxPriorityFeePerGas: 1000000000n,
+  // ...
+};
+```
+
+### Built for Humans and LLMs
+
+APIs designed for predictability:
+
+**Consistent Naming:**
+- `Type.from()` — Universal constructor
+- `Type.fromHex()` / `Type.toHex()` — Format conversions
+- `Type.equals()` — Comparisons
+- `Type.isValid()` — Validation
+
+**Documentation:**
+- Examples for every method
+- Links to EIP specs
+- Type signatures in MDX
+- Runnable code samples
+
+**Pattern Recognition:**
+Once you learn `Address.fromHex()`, you know `Hash.fromHex()`, `Uint.fromHex()` work the same way.
+
+## Dual API Pattern
+
+Every primitive has two APIs:
+
+<Tabs syncKey="api-style">
+<TabItem label="Class API">
+
+```typescript
+import { Address } from "@tevm/voltaire";
+
+const addr = new Address("0x...");
+addr.toHex();
+addr.toChecksummed();
+addr.equals(other);
+```
+
+**When to use:**
+- OOP patterns familiar
+- Method chaining preferred
+- Bundle size not critical
+- Prototyping
+
+</TabItem>
+<TabItem label="Branded Types">
+
+```typescript
+import { BrandedAddress } from "@tevm/voltaire/Address";
+
+const addr = BrandedAddress.fromHex("0x...");
+BrandedAddress.toHex(addr);
+BrandedAddress.toChecksummed(addr);
+BrandedAddress.equals(addr, other);
+```
+
+**When to use:**
+- Tree-shaking required
+- Zero overhead critical
+- Maximum performance
+- Library development
+
+</TabItem>
+</Tabs>
+
+**Mix and match:**
+```typescript
+import { Address } from "@tevm/voltaire";
+import { BrandedAddress } from "@tevm/voltaire/Address";
+
+const addr1 = new Address("0x...");
+const addr2 = BrandedAddress.fromHex("0x...");
+
+addr1.equals(addr2); // ✅ Works
+BrandedAddress.equals(addr1, addr2); // ✅ Works
+```
+
+## Method Naming Convention
+
+Universal naming patterns across all types:
+
+### Construction
+
+| Pattern | Purpose | Example |
+|---------|---------|---------|
+| `Type.from(value)` | Universal constructor (multiple formats) | `Address.from("0x...")` |
+| `Type.fromHex(hex)` | From hex string | `Hash.fromHex("0x...")` |
+| `Type.fromBytes(bytes)` | From byte array | `Uint.fromBytes(bytes)` |
+| `Type.fromNumber(n)` | From number/bigint | `Uint.fromNumber(42n)` |
+| `Type.zero()` | Zero value | `Address.zero()` |
+
+### Conversion
+
+| Pattern | Purpose | Example |
+|---------|---------|---------|
+| `Type.toHex(value)` | To hex string | `Address.toHex(addr)` |
+| `Type.toBytes(value)` | To byte array | `Uint.toBytes(u)` |
+| `Type.toNumber(value)` | To number/bigint | `Uint.toNumber(u)` |
+| `Type.toChecksummed(value)` | EIP-55 checksummed hex | `Address.toChecksummed(addr)` |
+
+### Validation
+
+| Pattern | Purpose | Example |
+|---------|---------|---------|
+| `Type.isValid(value)` | Check if value valid | `Address.isValid(addr)` |
+| `Type.is(value)` | Type guard | `Address.is(value)` |
+| `Type.isZero(value)` | Check if zero | `Hash.isZero(hash)` |
+
+### Comparison
+
+| Pattern | Purpose | Example |
+|---------|---------|---------|
+| `Type.equals(a, b)` | Equality check | `Address.equals(a, b)` |
+| `Type.compare(a, b)` | Comparison for sorting | `Uint.compare(a, b)` |
+| `Type.greaterThan(a, b)` | Greater than | `Uint.greaterThan(a, b)` |
+| `Type.lessThan(a, b)` | Less than | `Uint.lessThan(a, b)` |
+
+## Tree-Shaking First
+
+Import only what you need. Unused methods excluded from bundle.
+
+```typescript
+// Only bundles fromHex and toChecksummed
+import { fromHex, toChecksummed } from "@tevm/voltaire/BrandedAddress";
+
+const addr = fromHex("0x...");
+const checksum = toChecksummed(addr);
+```
+
+**Bundle impact:**
+
+| Import | Bundle Size |
+|--------|-------------|
+| `Address.fromHex()` only | ~500 bytes |
+| `+ toChecksummed()` | +15 KB (keccak256) |
+| `+ RLP encoding` | +2 KB |
+| Full `Address` class | ~18 KB |
+
+See [WASM](/wasm/) for performance optimization.
+
+## Branded Types
+
+Compile-time type safety with zero runtime overhead:
+
+```typescript
+type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
+type BrandedHash = Uint8Array & { readonly __brand: symbol };
+type BrandedUint = bigint & { readonly __brand: symbol };
+```
+
+**Prevents mistakes:**
+```typescript
+function sendEther(to: BrandedAddress, amount: BrandedUint) {
+  // TypeScript ensures correct types
+}
+
+const addr = Address.from("0x...");
+const hash = Keccak256.hash(data);
+const amount = Uint.from(100n);
+
+sendEther(addr, amount);  // ✅ OK
+sendEther(hash, amount);  // ❌ Type error (Hash not Address)
+sendEther(addr, 100n);    // ❌ Type error (bigint not BrandedUint)
+```
+
+**Runtime:**
+```javascript
+// Brands don't exist at runtime
+const addr = Address.from("0x...");
+addr instanceof Uint8Array; // true
+addr.__tag; // undefined (TypeScript only)
+```
+
+Learn more: [Branded Types](/primitives/branded-types/)
+
+## Multi-Language Support
+
+TypeScript and Zig implementations, same API:
+
+<Tabs>
+<TabItem label="TypeScript">
+
+```typescript
+import { Address } from "@tevm/voltaire";
+
+const addr = Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = addr.toChecksummed();
+```
+
+**WASM-accelerated:**
+```typescript
+import { Keccak256Wasm } from "@tevm/voltaire/crypto/keccak256.wasm";
+
+await Keccak256Wasm.init();
+const hash = Keccak256Wasm.hash(data);
+```
+
+</TabItem>
+<TabItem label="Zig">
+
+```zig
+const voltaire = @import("primitives");
+
+const addr = try voltaire.Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = try addr.toChecksummed(allocator);
+```
+
+**Native performance:**
+```zig
+const keccak = @import("crypto").Keccak256;
+
+var hash: [32]u8 = undefined;
+keccak.hash(data, &hash, .{});
+```
+
+</TabItem>
+</Tabs>
+
+## Error Handling
+
+<Tabs syncKey="api-style">
+<TabItem label="TypeScript">
+
+**Custom error classes:**
+```typescript
+import { InvalidAddressError } from "@tevm/voltaire/Address";
+
+try {
+  const addr = Address.fromHex("invalid");
+} catch (err) {
+  if (err instanceof InvalidAddressError) {
+    console.error("Invalid address format");
+  }
+}
+```
+
+**Validation before construction:**
+```typescript
+if (Address.isValid(input)) {
+  const addr = Address.from(input);
+}
+```
+
+</TabItem>
+<TabItem label="Zig">
+
+**Error unions:**
+```zig
+const addr = voltaire.Address.fromHex(hex_str) catch |err| {
+    switch (err) {
+        error.InvalidHexFormat => std.debug.print("Invalid hex\n", .{}),
+        error.InvalidLength => std.debug.print("Wrong length\n", .{}),
+        else => return err,
+    }
+};
+```
+
+</TabItem>
+</Tabs>
+
+## Performance Patterns
+
+### Constant-Time Operations
+
+Security-critical comparisons use constant-time algorithms:
+
+```typescript
+// Constant-time equality (safe)
+Hash.equals(hash1, hash2);
+
+// Early-return comparison (UNSAFE - timing leak)
+for (let i = 0; i < 32; i++) {
+  if (hash1[i] !== hash2[i]) return false; // ❌ Timing leak
+}
+```
+
+### Reuse Buffers
+
+```typescript
+// Allocate once
+const buffer = new Uint8Array(32);
+
+// Reuse for multiple operations
+Keccak256.hashInto(data1, buffer);
+Keccak256.hashInto(data2, buffer);
+```
+
+### WASM Acceleration
+
+Use WASM for compute-intensive operations:
+
+```typescript
+import { Keccak256Wasm } from "@tevm/voltaire/crypto/keccak256.wasm";
+
+// Init once
+await Keccak256Wasm.init();
+
+// 2-3x faster than pure JS
+const hash = Keccak256Wasm.hash(data);
+```
+
+See [WASM](/wasm/) for details.
+
+## Related Documentation
+
+<CardGrid>
+  <Card title="Getting Started" icon="rocket">
+    Installation, quick examples, core architecture.
+
+    [View →](/getting-started/)
+  </Card>
+
+  <Card title="Branded Types" icon="seti:config">
+    Deep dive into branded type pattern.
+
+    [View →](/primitives/branded-types/)
+  </Card>
+
+  <Card title="WASM Acceleration" icon="star">
+    High-performance WASM variants.
+
+    [View →](/wasm/)
+  </Card>
+</CardGrid>
