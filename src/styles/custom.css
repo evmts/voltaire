@@ -1,25 +1,117 @@
-/* Custom Voltaire styles */
+/* Voltaire - French Revolution inspired theme */
 
 :root {
-	--sl-color-accent-low: #1e1e2e;
-	--sl-color-accent: #fab387;
-	--sl-color-accent-high: #f9e2af;
-	--sl-color-white: #cdd6f4;
-	--sl-color-gray-1: #bac2de;
-	--sl-color-gray-2: #a6adc8;
-	--sl-color-gray-3: #9399b2;
-	--sl-color-gray-4: #7f849c;
-	--sl-color-gray-5: #6c7086;
-	--sl-color-gray-6: #585b70;
-	--sl-color-black: #11111b;
+	/* Liberty Blue - primary accent (links, highlights) */
+	--sl-color-accent-low: #dbeafe;
+	--sl-color-accent: #3b82f6;
+	--sl-color-accent-high: #1e3a8a;
+
+	/* Revolutionary Red - secondary accent */
+	--color-red-accent: #ef4444;
+	--color-red-low: #fee2e2;
+	--color-red-high: #991b1b;
+
+	/* Enlightenment Gold - tertiary accent */
+	--color-gold-accent: #f59e0b;
+	--color-gold-low: #fef3c7;
+	--color-gold-high: #ca8a04;
+
+	/* Neutral grays - modern stone palette */
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #f8fafc;
+	--sl-color-gray-2: #e2e8f0;
+	--sl-color-gray-3: #cbd5e1;
+	--sl-color-gray-4: #94a3b8;
+	--sl-color-gray-5: #64748b;
+	--sl-color-gray-6: #475569;
+	--sl-color-black: #1e293b;
+
+	/* Typography */
+	--sl-text-base: #1e293b;
+	--sl-text-muted: #64748b;
 }
 
-/* Code block styling */
+/* Dark mode - deeper revolutionary tones */
+:root[data-theme='dark'] {
+	--sl-color-accent-low: #1e3a8a;
+	--sl-color-accent: #60a5fa;
+	--sl-color-accent-high: #dbeafe;
+
+	--color-red-accent: #f87171;
+	--color-red-low: #991b1b;
+	--color-red-high: #fee2e2;
+
+	--color-gold-accent: #fbbf24;
+	--color-gold-low: #ca8a04;
+	--color-gold-high: #fef3c7;
+
+	--sl-color-white: #f8fafc;
+	--sl-color-gray-1: #334155;
+	--sl-color-gray-2: #475569;
+	--sl-color-gray-3: #64748b;
+	--sl-color-gray-4: #94a3b8;
+	--sl-color-gray-5: #cbd5e1;
+	--sl-color-gray-6: #e2e8f0;
+	--sl-color-black: #0f172a;
+
+	--sl-text-base: #f8fafc;
+	--sl-text-muted: #cbd5e1;
+}
+
+/* Modern code blocks with subtle borders */
 pre {
 	border-radius: 0.5rem;
+	border: 1px solid var(--sl-color-gray-3);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Tab styling for source code */
+:root[data-theme='dark'] pre {
+	border-color: var(--sl-color-gray-2);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced inline code */
+code {
+	background: var(--sl-color-gray-1);
+	border: 1px solid var(--sl-color-gray-3);
+	border-radius: 0.25rem;
+	padding: 0.125rem 0.375rem;
+	font-size: 0.9em;
+}
+
+/* Tab styling */
 .tabbed-content {
 	margin-top: 1rem;
+}
+
+/* Callout boxes with revolutionary accents */
+.starlight-aside--note {
+	border-color: var(--sl-color-accent);
+}
+
+.starlight-aside--tip {
+	border-color: var(--color-gold-accent);
+}
+
+.starlight-aside--caution {
+	border-color: var(--color-red-accent);
+}
+
+/* Navigation refinements */
+.sidebar-content {
+	border-right: 1px solid var(--sl-color-gray-3);
+}
+
+/* Clean, modern headings */
+h1, h2, h3, h4, h5, h6 {
+	color: var(--sl-text-base);
+	font-weight: 600;
+}
+
+/* Link hover effects */
+a:hover {
+	text-decoration: underline;
+	text-decoration-color: var(--sl-color-accent);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 2px;
 }
