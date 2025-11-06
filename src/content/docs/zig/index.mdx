@@ -1,0 +1,67 @@
+---
+title: Zig Documentation
+description: High-performance Ethereum primitives and cryptography implemented in Zig
+---
+
+# Voltaire Zig Implementation
+
+Voltaire provides high-performance Ethereum primitives and cryptography implemented in **Zig 0.15.1**, designed for:
+
+- **Native performance**: Native binaries via FFI (.dylib, .so)
+- **WebAssembly**: WASM modules with tree-shaking support
+- **Memory safety**: No allocator required for most operations
+- **Cross-platform**: Linux, macOS, Windows, WASM targets
+
+## Architecture
+
+Voltaire's Zig implementation is organized into three main modules:
+
+### Primitives (`@import("primitives")`)
+Core Ethereum data types and encoding:
+- **Types**: Address, Hash, Hex, Denomination (Wei, Gwei, Ether)
+- **Encoding**: ABI, Base64, RLP
+- **Transactions**: Transaction, AccessList, Authorization, Blob
+- **Standards**: Chain, Hardfork, Siwe, EventLog
+- **EVM**: Opcode, Bytecode, BloomFilter, State
+- **Utilities**: BinaryTree, GasConstants, FeeMarket
+
+### Cryptography (`@import("crypto")`)
+Production-grade cryptographic operations:
+- **Hashing**: Keccak256, SHA256, RIPEMD160, Blake2
+- **Signatures**: secp256k1, P256, Ed25519, X25519
+- **Key Management**: BIP39, HDWallet, EIP-712
+- **Advanced**: KZG commitments, BLS12-381, BN254, AES-GCM
+
+### Precompiles (`@import("precompiles")`)
+EVM precompile implementations (0x01-0x0a, 0x14):
+- Basic: ecrecover, sha256, ripemd160, identity, modexp
+- BN254: add, mul, pairing
+- BLS12-381: G1/G2 operations, pairing, map_to_curve
+- Modern: blake2f, point_evaluation
+
+## Performance
+
+Voltaire's Zig implementation is optimized for:
+- **Zero-copy operations**: Return memory to caller, minimize allocations
+- **Constant-time crypto**: Timing-attack resistant implementations
+- **WASM size**: ReleaseSmall builds for minimal bundle sizes
+- **Native speed**: ReleaseFast builds for maximum throughput
+
+## Build Modes
+
+Voltaire supports multiple build targets:
+
+```bash
+zig build build-ts-native     # Native FFI (.dylib/.so) - ReleaseFast
+zig build build-ts-wasm       # WASM - ReleaseSmall (size-optimized)
+zig build build-ts-wasm-fast  # WASM - ReleaseFast (perf-optimized)
+zig build crypto-wasm         # Individual crypto WASM modules
+```
+
+## Next Steps
+
+- [Getting Started](/zig/getting-started/) - Build, test, and development workflow
+- [Contributing](/zig/contributing/) - Code style, testing patterns, and guidelines
+- [Primitives](/zig/primitives/) - Core Ethereum types documentation
+- [Cryptography](/zig/crypto/) - Cryptographic operations documentation
+- [Precompiles](/zig/precompiles/) - EVM precompile implementations
