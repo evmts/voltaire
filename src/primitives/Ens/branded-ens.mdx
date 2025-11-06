@@ -1,0 +1,440 @@
+---
+title: "BrandedEns"
+description: Tree-shakeable functional API for ENS name operations
+---
+
+# BrandedEns
+
+Tree-shakeable functional API for Ethereum Name Service (ENS) operations with optimal bundle size.
+
+## Overview
+
+`BrandedEns` provides:
+- **Zero-overhead** ENS name operations
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods
+- **Bundle optimization** through selective imports
+- **Type-safe** ENS name handling
+- **UTS-46 normalization** compliant
+
+Primary benefit: Import only what you need, minimize bundle size.
+
+## Type Definition
+
+```typescript
+export type BrandedEns = string & {
+  readonly __tag: "Ens";
+};
+```
+
+`BrandedEns` represents a validated and normalized ENS name (e.g., "vitalik.eth", "alice.xyz").
+
+## ENS Names
+
+ENS (Ethereum Name Service) provides human-readable names for Ethereum addresses:
+- **Domain structure**: subdomain.domain.tld (e.g., "alice.vitalik.eth")
+- **Normalization**: UTS-46 Unicode normalization
+- **Case-insensitive**: "Alice.eth" and "alice.eth" are the same
+- **Special characters**: Emoji and international characters supported
+- **Namehash**: Hierarchical hash for on-chain lookups
+
+## Namespace API
+
+```typescript
+import * as BrandedEns from '@tevm/primitives/Ens/BrandedEns'
+
+// Normalize ENS name (UTS-46)
+const normalized = BrandedEns.normalize("Vítalik.eth")
+// Returns: "vitalik.eth"
+
+// Beautify for display
+const beautiful = BrandedEns.beautify("vitalik.eth")
+// Returns: "vitalik.eth" (with proper Unicode)
+
+// Calculate namehash
+const hash = BrandedEns.namehash("vitalik.eth")
+// Returns: BrandedHash for on-chain lookups
+
+// Validate ENS name
+const isValid = BrandedEns.isValid("vitalik.eth")
+
+// Extract labels
+const labels = BrandedEns.labels("alice.vitalik.eth")
+// Returns: ["alice", "vitalik", "eth"]
+```
+
+## Tree-Shaking Benefits
+
+### Minimal Bundle - Normalize Only
+
+```typescript
+import { normalize } from '@tevm/primitives/Ens/BrandedEns'
+
+const name = normalize("Vítalik.eth")
+```
+
+**Bundle:** Only normalization logic. No namehash or beautification.
+
+### Namehash Only
+
+```typescript
+import { namehash } from '@tevm/primitives/Ens/BrandedEns'
+
+const hash = namehash("vitalik.eth")
+```
+
+**Bundle:** Namehash calculation only. No normalization.
+
+### Validation Only
+
+```typescript
+import { isValid } from '@tevm/primitives/Ens/BrandedEns'
+
+if (isValid(name)) {
+  // Use name
+}
+```
+
+**Bundle:** Validation only. No normalization or hashing.
+
+## Data-First Pattern
+
+All functions follow data-first pattern:
+
+```typescript
+// Data is first parameter
+normalize(name)
+beautify(name)
+namehash(name)
+isValid(name)
+labels(name)
+```
+
+This enables functional composition:
+
+```typescript
+import { normalize, namehash } from '@tevm/primitives/Ens/BrandedEns'
+
+// Composition
+const hashName = (name) => namehash(normalize(name))
+
+// Array methods
+const names = ["Alice.eth", "Bob.eth", "Charlie.eth"]
+const normalized = names.map(normalize)
+const hashes = normalized.map(namehash)
+```
+
+## Type Safety
+
+Branded type prevents mixing with plain strings:
+
+```typescript
+function resolveEns(name: BrandedEns): Promise<BrandedAddress> { ... }
+
+const plainString = "vitalik.eth"
+resolveEns(plainString) // Type error!
+
+// Must normalize first
+const ensName = Ens.normalize(plainString)
+resolveEns(ensName) // OK
+```
+
+## Usage Examples
+
+### Normalizing ENS Names
+
+```typescript
+import { normalize } from '@tevm/primitives/Ens/BrandedEns'
+
+// ASCII name
+const name1 = normalize("vitalik.eth")
+// Returns: "vitalik.eth"
+
+// Unicode name
+const name2 = normalize("Vítalik.eth")
+// Returns: "vitalik.eth" (removes diacritics)
+
+// Emoji
+const name3 = normalize("🚀.eth")
+// Returns: "🚀.eth" (preserves emoji)
+
+// Mixed case
+const name4 = normalize("ALICE.eth")
+// Returns: "alice.eth" (lowercased)
+
+// Subdomain
+const name5 = normalize("alice.vitalik.eth")
+// Returns: "alice.vitalik.eth"
+```
+
+### Beautifying for Display
+
+```typescript
+import { beautify } from '@tevm/primitives/Ens/BrandedEns'
+
+// Beautify for UI display
+const display = beautify("vitalik.eth")
+// Returns: properly formatted Unicode string for display
+
+// Emoji preserved
+const emoji = beautify("🚀.eth")
+// Returns: "🚀.eth"
+```
+
+### Calculating Namehash
+
+```typescript
+import { namehash } from '@tevm/primitives/Ens/BrandedEns'
+
+// Top-level domain
+const ethHash = namehash("eth")
+// Returns: BrandedHash
+
+// Full domain
+const vitalikHash = namehash("vitalik.eth")
+// Returns: BrandedHash for on-chain lookup
+
+// Subdomain
+const aliceHash = namehash("alice.vitalik.eth")
+// Returns: BrandedHash
+
+// Empty (root)
+const rootHash = namehash("")
+// Returns: BrandedHash (all zeros)
+```
+
+### Validating ENS Names
+
+```typescript
+import { isValid } from '@tevm/primitives/Ens/BrandedEns'
+
+isValid("vitalik.eth")        // true
+isValid("alice.vitalik.eth")  // true
+isValid("🚀.eth")             // true
+isValid("")                   // true (root)
+isValid("invalid..eth")       // false (double dot)
+isValid(".eth")               // false (leading dot)
+isValid("eth.")               // false (trailing dot)
+```
+
+### Extracting Labels
+
+```typescript
+import { labels } from '@tevm/primitives/Ens/BrandedEns'
+
+// Single label
+labels("eth")
+// Returns: ["eth"]
+
+// Two labels
+labels("vitalik.eth")
+// Returns: ["vitalik", "eth"]
+
+// Subdomain
+labels("alice.vitalik.eth")
+// Returns: ["alice", "vitalik", "eth"]
+
+// Root
+labels("")
+// Returns: []
+```
+
+### Resolving ENS to Address
+
+```typescript
+import { normalize, namehash } from '@tevm/primitives/Ens/BrandedEns'
+
+async function resolveEns(
+  name: string,
+  provider: Provider
+): Promise<BrandedAddress> {
+  // Normalize name
+  const ensName = normalize(name)
+
+  // Calculate namehash
+  const hash = namehash(ensName)
+
+  // Lookup resolver
+  const resolver = await provider.getResolver(hash)
+
+  // Resolve address
+  const address = await resolver.addr(hash)
+
+  return address
+}
+
+const address = await resolveEns("vitalik.eth", provider)
+```
+
+### Reverse Resolution (Address to ENS)
+
+```typescript
+import { normalize } from '@tevm/primitives/Ens/BrandedEns'
+
+async function reverseResolve(
+  address: BrandedAddress,
+  provider: Provider
+): Promise<BrandedEns | null> {
+  // Construct reverse record name
+  const reverseNode = `${Address.toHex(address).slice(2)}.addr.reverse`
+
+  // Normalize
+  const ensName = normalize(reverseNode)
+
+  // Lookup name
+  const name = await provider.lookupAddress(address)
+
+  return name ? normalize(name) : null
+}
+
+const ensName = await reverseResolve(address, provider)
+```
+
+### ENS Subdomain Creation
+
+```typescript
+import { normalize, labels } from '@tevm/primitives/Ens/BrandedEns'
+
+function createSubdomain(
+  parent: BrandedEns,
+  subdomain: string
+): BrandedEns {
+  // Normalize both parts
+  const normalizedParent = normalize(parent)
+  const normalizedSub = normalize(subdomain)
+
+  // Combine
+  const full = `${normalizedSub}.${normalizedParent}`
+
+  // Normalize result
+  return normalize(full)
+}
+
+const subdomain = createSubdomain("vitalik.eth", "alice")
+// Returns: "alice.vitalik.eth"
+```
+
+## Benefits
+
+### Type Safety
+
+```typescript
+type BrandedEns = string & { readonly __tag: "Ens" };
+
+function resolveAddress(name: BrandedEns): Promise<BrandedAddress> { ... }
+
+const ensName = Ens.normalize("vitalik.eth")
+resolveAddress(ensName)    // OK
+
+const plain = "vitalik.eth"
+resolveAddress(plain)      // Type error
+```
+
+### Self-Documenting
+
+```typescript
+// Clear what's expected (normalized ENS name)
+function lookupName(name: BrandedEns): Promise<BrandedAddress> { ... }
+
+// vs unclear plain string
+function lookupName(name: string): Promise<BrandedAddress> { ... }
+```
+
+### Zero Runtime Cost
+
+```typescript
+const ensName: BrandedEns = Ens.normalize("vitalik.eth")
+// ensName is plain string at runtime
+console.log(ensName) // "vitalik.eth"
+console.log(ensName.__tag) // undefined (brand doesn't exist at runtime)
+```
+
+### UTS-46 Normalization
+
+Ensures ENS names are properly normalized according to UTS-46 spec:
+- **Case folding**: "ALICE.eth" → "alice.eth"
+- **Unicode normalization**: "Vítalik.eth" → "vitalik.eth"
+- **Emoji preservation**: "🚀.eth" → "🚀.eth"
+- **Invalid character detection**: Throws on invalid Unicode
+
+## Namehash Algorithm
+
+ENS uses a hierarchical hashing algorithm:
+
+```
+namehash('') = 0x0000000000000000000000000000000000000000000000000000000000000000
+namehash(label + '.' + domain) = keccak256(namehash(domain) + keccak256(label))
+```
+
+Example:
+```
+namehash('eth') = keccak256(0x00...00 + keccak256('eth'))
+namehash('vitalik.eth') = keccak256(namehash('eth') + keccak256('vitalik'))
+```
+
+## Patterns
+
+### Safe ENS Name Construction
+
+```typescript
+import { normalize, isValid } from '@tevm/primitives/Ens/BrandedEns'
+
+function safeNormalize(name: string): BrandedEns {
+  try {
+    const normalized = normalize(name)
+    if (!isValid(normalized)) {
+      throw new Error(`Invalid ENS name: ${name}`)
+    }
+    return normalized
+  } catch (error) {
+    throw new Error(`Failed to normalize ENS name: ${name}`)
+  }
+}
+```
+
+### ENS Name Validation
+
+```typescript
+function isValidEnsName(name: unknown): name is BrandedEns {
+  return typeof name === 'string' && isValid(name)
+}
+
+// Usage
+if (isValidEnsName(input)) {
+  // input is BrandedEns
+  const hash = namehash(input)
+}
+```
+
+### Label-Based Operations
+
+```typescript
+import { labels, normalize } from '@tevm/primitives/Ens/BrandedEns'
+
+// Get parent domain
+function getParent(name: BrandedEns): BrandedEns | null {
+  const parts = labels(name)
+  if (parts.length <= 1) return null
+  return normalize(parts.slice(1).join('.'))
+}
+
+// Get top-level domain
+function getTLD(name: BrandedEns): string {
+  const parts = labels(name)
+  return parts[parts.length - 1]
+}
+
+// Get subdomain
+function getSubdomain(name: BrandedEns): string | null {
+  const parts = labels(name)
+  return parts.length > 2 ? parts[0] : null
+}
+```
+
+## Related
+
+- [Ens](/primitives/ens) - Main ENS documentation
+- [Address](/primitives/address) - Address type resolved from ENS
+- [Hash](/primitives/hash) - Hash type for namehash
+- [Hex](/primitives/hex) - Hex encoding for addresses
+- [Branded Types](/primitives/branded-types) - Type-level branding pattern

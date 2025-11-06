@@ -1,0 +1,389 @@
+---
+title: "BrandedEventLog"
+description: Tree-shakeable functional API for event log operations
+---
+
+# BrandedEventLog
+
+Tree-shakeable functional API for Ethereum event log handling with optimal bundle size.
+
+## Overview
+
+`BrandedEventLog` provides:
+- **Zero-overhead** operations on event log objects
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods
+- **Bundle optimization** through selective imports
+- **Type-safe** event log handling
+
+Primary benefit: Import only what you need, minimize bundle size.
+
+## Type Definition
+
+```typescript
+export type BrandedEventLog<
+  TAddress extends BrandedAddress = BrandedAddress,
+  TTopics extends readonly BrandedHash[] = readonly BrandedHash[],
+> = {
+  /** Contract address that emitted the log */
+  address: TAddress;
+  /** Event topics (topic0 = event signature, topic1-3 = indexed parameters) */
+  topics: TTopics;
+  /** Event data (non-indexed parameters) */
+  data: Uint8Array;
+  /** Block number where log was emitted */
+  blockNumber?: bigint;
+  /** Transaction hash that generated the log */
+  transactionHash?: BrandedHash;
+  /** Transaction index in block */
+  transactionIndex?: number;
+  /** Block hash */
+  blockHash?: BrandedHash;
+  /** Log index in block */
+  logIndex?: number;
+  /** Log removed due to chain reorganization */
+  removed?: boolean;
+} & { readonly __tag: "EventLog" };
+```
+
+`BrandedEventLog` represents an Ethereum event log emitted by a smart contract during transaction execution.
+
+## Event Log Structure
+
+Event logs contain:
+- **address**: Contract that emitted the event
+- **topics**: Up to 4 indexed parameters (topic0 is event signature hash)
+- **data**: Non-indexed parameters (ABI-encoded)
+- **blockNumber**: Block where event occurred
+- **transactionHash**: Transaction that generated the log
+- **logIndex**: Position in block's log list
+
+## Namespace API
+
+```typescript
+import * as BrandedEventLog from '@tevm/primitives/EventLog/BrandedEventLog'
+
+// Create event log
+const log = BrandedEventLog.create({
+  address: contractAddress,
+  topics: [eventSignature, ...indexedParams],
+  data: eventData
+})
+
+// Validate log
+const isValid = BrandedEventLog.isValid(log)
+
+// Match event signature
+const matches = BrandedEventLog.matchesSignature(log, signature)
+
+// Extract topic
+const topic0 = BrandedEventLog.getEventSignature(log)
+```
+
+## Filter Type
+
+```typescript
+export type Filter<
+  TAddress extends BrandedAddress | BrandedAddress[] | undefined =
+    | BrandedAddress
+    | BrandedAddress[]
+    | undefined,
+  TTopics extends readonly (BrandedHash | BrandedHash[] | null)[] | undefined =
+    | readonly (BrandedHash | BrandedHash[] | null)[]
+    | undefined,
+> = {
+  /** Contract address(es) to filter by */
+  address?: TAddress;
+  /** Topic filters (null entries match any topic, arrays match any of the hashes) */
+  topics?: TTopics;
+  /** Starting block number */
+  fromBlock?: bigint;
+  /** Ending block number */
+  toBlock?: bigint;
+  /** Block hash to filter by (alternative to fromBlock/toBlock) */
+  blockHash?: BrandedHash;
+};
+```
+
+## Tree-Shaking Benefits
+
+### Minimal Bundle
+
+```typescript
+import { create, isValid } from '@tevm/primitives/EventLog/BrandedEventLog'
+
+const log = create({
+  address: contractAddress,
+  topics: [signature],
+  data: new Uint8Array()
+})
+
+if (isValid(log)) {
+  // Use log
+}
+```
+
+**Bundle:** Only create and isValid functions. No filtering or decoding logic.
+
+### Filtering Only
+
+```typescript
+import { matchesFilter } from '@tevm/primitives/EventLog/BrandedEventLog'
+
+const filtered = logs.filter(log => matchesFilter(log, filter))
+```
+
+**Bundle:** Filtering logic only. No creation or encoding code.
+
+### Signature Matching Only
+
+```typescript
+import { matchesSignature } from '@tevm/primitives/EventLog/BrandedEventLog'
+
+const transferLogs = logs.filter(log =>
+  matchesSignature(log, transferSignature)
+)
+```
+
+**Bundle:** Signature matching only. No other log operations.
+
+## Data-First Pattern
+
+All functions follow data-first pattern:
+
+```typescript
+// Data is first parameter
+create(logData)
+isValid(log)
+matchesSignature(log, signature)
+matchesFilter(log, filter)
+```
+
+This enables functional composition:
+
+```typescript
+import { create, matchesSignature } from '@tevm/primitives/EventLog/BrandedEventLog'
+
+// Composition
+const findTransfers = (logs) =>
+  logs.filter(log => matchesSignature(log, transferSignature))
+
+// Array methods
+const logs = logDataArray.map(create)
+const validLogs = logs.filter(isValid)
+```
+
+## Type Safety
+
+Branded type prevents mixing with plain objects:
+
+```typescript
+function processLog(log: BrandedEventLog) { ... }
+
+const plainObject = { address: addr, topics: [], data: new Uint8Array() }
+processLog(plainObject) // Type error!
+
+// Must use constructor
+const log = EventLog.create(plainObject)
+processLog(log) // OK
+```
+
+## Usage Examples
+
+### Creating Event Logs
+
+```typescript
+import * as BrandedEventLog from '@tevm/primitives/EventLog/BrandedEventLog'
+
+// Minimal log
+const log = BrandedEventLog.create({
+  address: contractAddress,
+  topics: [eventSignature],
+  data: new Uint8Array()
+})
+
+// Complete log
+const completeLog = BrandedEventLog.create({
+  address: contractAddress,
+  topics: [eventSignature, fromAddress, toAddress],
+  data: amountData,
+  blockNumber: 12345678n,
+  transactionHash: txHash,
+  transactionIndex: 5,
+  blockHash: blockHash,
+  logIndex: 10,
+  removed: false
+})
+```
+
+### Filtering Logs
+
+```typescript
+import { matchesFilter, matchesSignature } from '@tevm/primitives/EventLog/BrandedEventLog'
+
+// Filter by event signature
+const transferLogs = logs.filter(log =>
+  matchesSignature(log, transferEventSignature)
+)
+
+// Filter by address
+const contractLogs = logs.filter(log =>
+  Address.equals(log.address, targetContract)
+)
+
+// Filter by address and topics
+const filter = {
+  address: contractAddress,
+  topics: [transferSignature, fromAddress]
+}
+const filtered = logs.filter(log => matchesFilter(log, filter))
+```
+
+### Extracting Topics
+
+```typescript
+import { getEventSignature, getTopic } from '@tevm/primitives/EventLog/BrandedEventLog'
+
+// Get event signature (topic0)
+const signature = getEventSignature(log)
+
+// Get indexed parameter (topic1-3)
+const fromAddress = getTopic(log, 1)
+const toAddress = getTopic(log, 2)
+```
+
+### Working with Data
+
+```typescript
+import { getData } from '@tevm/primitives/EventLog/BrandedEventLog'
+
+// Extract non-indexed parameters
+const data = getData(log)
+
+// Decode using ABI
+const decoded = Abi.decodeEventData(eventAbi, data)
+```
+
+## Benefits
+
+### Type Safety
+
+```typescript
+type BrandedEventLog = {
+  address: BrandedAddress;
+  topics: readonly BrandedHash[];
+  data: Uint8Array;
+  // ... optional fields
+} & { readonly __tag: "EventLog" };
+
+function analyzeLog(log: BrandedEventLog) { ... }
+
+const log = EventLog.create(logData)
+analyzeLog(log)    // OK
+
+const plain = { address: addr, topics: [], data: new Uint8Array() }
+analyzeLog(plain)  // Type error
+```
+
+### Self-Documenting
+
+```typescript
+// Clear what's expected
+function processLogs(logs: BrandedEventLog[]): void { ... }
+
+// vs unclear plain objects
+function processLogs(logs: object[]): void { ... }
+```
+
+### Zero Runtime Cost
+
+```typescript
+const log: BrandedEventLog = EventLog.create(data)
+// log is plain object at runtime (no __tag property exists)
+console.log(log) // { address: ..., topics: [...], data: Uint8Array(...) }
+console.log(log.__tag) // undefined (brand doesn't exist at runtime)
+```
+
+## Generic Type Parameters
+
+```typescript
+// Specific address type
+type MyLog = BrandedEventLog<
+  ChecksumAddress,
+  readonly BrandedHash[]
+>
+
+// Specific topic count
+type TransferLog = BrandedEventLog<
+  BrandedAddress,
+  readonly [BrandedHash, BrandedHash, BrandedHash]
+>
+
+// Both still compatible with base type
+const logs: BrandedEventLog[] = [myLog, transferLog]
+```
+
+## Patterns
+
+### Type Guards
+
+```typescript
+function isEventLog(value: unknown): value is BrandedEventLog {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'address' in value &&
+    'topics' in value &&
+    'data' in value
+  )
+}
+
+// Usage
+if (isEventLog(unknownValue)) {
+  // unknownValue is BrandedEventLog
+  processLog(unknownValue)
+}
+```
+
+### Filtering by Signature
+
+```typescript
+function getLogsForEvent(
+  logs: BrandedEventLog[],
+  signature: BrandedHash
+): BrandedEventLog[] {
+  return logs.filter(log =>
+    log.topics.length > 0 &&
+    Hash.equals(log.topics[0], signature)
+  )
+}
+
+const transferLogs = getLogsForEvent(allLogs, transferSignature)
+```
+
+### Grouping by Address
+
+```typescript
+function groupByAddress(
+  logs: BrandedEventLog[]
+): Map<string, BrandedEventLog[]> {
+  const groups = new Map<string, BrandedEventLog[]>()
+
+  for (const log of logs) {
+    const key = Address.toHex(log.address)
+    const group = groups.get(key) || []
+    group.push(log)
+    groups.set(key, group)
+  }
+
+  return groups
+}
+```
+
+## Related
+
+- [EventLog](/primitives/eventlog) - Main EventLog documentation
+- [Address](/primitives/address) - Address type used in logs
+- [Hash](/primitives/hash) - Hash type used in topics
+- [Abi](/primitives/abi) - ABI encoding/decoding for event data
+- [Branded Types](/primitives/branded-types) - Type-level branding pattern

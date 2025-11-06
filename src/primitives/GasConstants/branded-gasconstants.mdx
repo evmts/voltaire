@@ -1,0 +1,405 @@
+---
+title: "BrandedGasConstants"
+description: Tree-shakeable functional API for EVM gas cost calculations
+---
+
+# BrandedGasConstants
+
+Tree-shakeable functional API for EVM gas cost calculations with optimal bundle size.
+
+## Overview
+
+`BrandedGasConstants` provides:
+- **Zero-overhead** gas cost calculations
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods
+- **Bundle optimization** through selective imports
+- **EIP-aware** gas cost calculations
+
+Primary benefit: Import only what you need, minimize bundle size.
+
+## Namespace API
+
+```typescript
+import * as BrandedGasConstants from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Calculate gas costs
+const keccakCost = BrandedGasConstants.calculateKeccak256Cost(dataSize)
+const sstoreCost = BrandedGasConstants.calculateSstoreCost(hardfork, currentValue, newValue)
+const logCost = BrandedGasConstants.calculateLogCost(dataSize, topicCount)
+const callCost = BrandedGasConstants.calculateCallCost(hardfork, isWarm)
+const memoryCost = BrandedGasConstants.calculateMemoryExpansionCost(newSize, currentSize)
+const createCost = BrandedGasConstants.calculateCreateCost(hardfork, codeSize)
+const intrinsicGas = BrandedGasConstants.calculateTxIntrinsicGas(hardfork, tx)
+
+// Check EIP support
+const hasEIP2929 = BrandedGasConstants.hasEIP2929(hardfork)
+const hasEIP3529 = BrandedGasConstants.hasEIP3529(hardfork)
+const hasEIP3860 = BrandedGasConstants.hasEIP3860(hardfork)
+const hasEIP1153 = BrandedGasConstants.hasEIP1153(hardfork)
+const hasEIP4844 = BrandedGasConstants.hasEIP4844(hardfork)
+
+// Get costs for specific hardforks
+const coldSloadCost = BrandedGasConstants.getColdSloadCost(hardfork)
+const coldAccountCost = BrandedGasConstants.getColdAccountAccessCost(hardfork)
+
+// Calculate refunds
+const sstoreRefund = BrandedGasConstants.getSstoreRefund(hardfork, currentValue, newValue)
+const selfdestructRefund = BrandedGasConstants.getSelfdestructRefund(hardfork)
+const maxRefund = BrandedGasConstants.calculateMaxRefund(gasUsed, hardfork)
+```
+
+## Sub-Namespace: Precompile
+
+```typescript
+import { Precompile } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Precompile gas costs
+const ecrecoverCost = Precompile.ecrecover()
+const sha256Cost = Precompile.sha256(dataSize)
+const ripemd160Cost = Precompile.ripemd160(dataSize)
+const identityCost = Precompile.identity(dataSize)
+const modexpCost = Precompile.modexp(baseLength, expLength, modLength)
+const bn256AddCost = Precompile.bn256Add()
+const bn256MulCost = Precompile.bn256Mul()
+const bn256PairingCost = Precompile.bn256Pairing(pairCount)
+const blake2fCost = Precompile.blake2f(rounds)
+const kzgCost = Precompile.kzgPointEvaluation()
+```
+
+## Tree-Shaking Benefits
+
+### Minimal Bundle - Keccak Only
+
+```typescript
+import { calculateKeccak256Cost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+const cost = calculateKeccak256Cost(dataLength)
+```
+
+**Bundle:** Only Keccak256 cost calculation. No SSTORE, LOG, CALL, etc.
+
+### SSTORE Only
+
+```typescript
+import { calculateSstoreCost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+const cost = calculateSstoreCost(hardfork, currentValue, newValue)
+```
+
+**Bundle:** SSTORE calculation only. No other gas cost calculations.
+
+### Transaction Intrinsic Gas Only
+
+```typescript
+import { calculateTxIntrinsicGas } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+const intrinsicGas = calculateTxIntrinsicGas(hardfork, tx)
+```
+
+**Bundle:** Transaction intrinsic gas only. No opcode gas costs.
+
+### Precompile Only
+
+```typescript
+import { Precompile } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+const ecrecoverCost = Precompile.ecrecover()
+const sha256Cost = Precompile.sha256(dataSize)
+```
+
+**Bundle:** Precompile costs only. No opcode costs.
+
+## Data-First Pattern
+
+All functions follow data-first pattern:
+
+```typescript
+// Data is first parameter
+calculateKeccak256Cost(dataSize)
+calculateSstoreCost(hardfork, currentValue, newValue)
+calculateLogCost(dataSize, topicCount)
+hasEIP2929(hardfork)
+```
+
+This enables functional composition:
+
+```typescript
+import { calculateKeccak256Cost, calculateSstoreCost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Composition
+const totalCost = (dataSize, hardfork, currentValue, newValue) =>
+  calculateKeccak256Cost(dataSize) +
+  calculateSstoreCost(hardfork, currentValue, newValue)
+
+// Array methods
+const dataSizes = [32, 64, 128, 256]
+const costs = dataSizes.map(calculateKeccak256Cost)
+```
+
+## Usage Examples
+
+### Keccak256 Gas Cost
+
+```typescript
+import { calculateKeccak256Cost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Cost for hashing 32 bytes
+const cost = calculateKeccak256Cost(32)
+// Returns: 30 + 6 * Math.ceil(32 / 32) = 36 gas
+```
+
+### SSTORE Gas Cost
+
+```typescript
+import { calculateSstoreCost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Setting new value (cold access, post-Berlin)
+const cost = calculateSstoreCost('berlin', 0n, 100n)
+// Returns: 22100 gas (20000 set + 2100 cold access)
+
+// Modifying existing value (warm access)
+const cost2 = calculateSstoreCost('berlin', 100n, 200n)
+// Returns: 100 gas (warm access)
+
+// Deleting value (triggers refund)
+const cost3 = calculateSstoreCost('berlin', 100n, 0n)
+// Returns: 100 gas (warm access) + refund
+```
+
+### LOG Gas Cost
+
+```typescript
+import { calculateLogCost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// LOG0 with 32 bytes
+const log0Cost = calculateLogCost(32, 0)
+// Returns: 375 + 8 * 32 = 631 gas
+
+// LOG3 with 64 bytes (3 indexed topics)
+const log3Cost = calculateLogCost(64, 3)
+// Returns: 375 + 375 * 3 + 8 * 64 = 1887 gas
+```
+
+### CALL Gas Cost
+
+```typescript
+import { calculateCallCost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Cold account access (post-Berlin)
+const coldCost = calculateCallCost('berlin', false)
+// Returns: 2600 gas
+
+// Warm account access (post-Berlin)
+const warmCost = calculateCallCost('berlin', true)
+// Returns: 100 gas
+
+// Pre-Berlin (no warm/cold distinction)
+const preBerlinCost = calculateCallCost('istanbul', false)
+// Returns: 700 gas
+```
+
+### Memory Expansion Cost
+
+```typescript
+import { calculateMemoryExpansionCost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Expanding from 0 to 32 bytes
+const cost = calculateMemoryExpansionCost(32, 0)
+// Returns: (32 * 32 / 512) = 2 gas
+
+// Expanding from 32 to 64 bytes
+const cost2 = calculateMemoryExpansionCost(64, 32)
+// Returns: additional cost for expansion
+```
+
+### CREATE Gas Cost
+
+```typescript
+import { calculateCreateCost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Pre-EIP-3860 (no initcode cost)
+const cost = calculateCreateCost('berlin', 1000)
+// Returns: 32000 gas (base CREATE cost)
+
+// Post-EIP-3860 (Shanghai+, includes initcode cost)
+const cost2 = calculateCreateCost('shanghai', 1000)
+// Returns: 32000 + 2 * Math.ceil(1000 / 32) = 32062 gas
+```
+
+### Transaction Intrinsic Gas
+
+```typescript
+import { calculateTxIntrinsicGas } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Legacy transaction with calldata
+const tx = {
+  data: new Uint8Array([0, 0, 0, 1, 2, 3]) // 3 zero bytes, 3 non-zero
+}
+const cost = calculateTxIntrinsicGas('london', tx)
+// Returns: 21000 + 4 * 3 + 16 * 3 = 21060 gas
+
+// Contract creation (no 'to' field)
+const createTx = {
+  to: undefined,
+  data: new Uint8Array(1000)
+}
+const createCost = calculateTxIntrinsicGas('london', createTx)
+// Returns: 53000 + data costs
+```
+
+### EIP Support Checks
+
+```typescript
+import { hasEIP2929, hasEIP3529, hasEIP3860 } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Check for warm/cold access costs
+if (hasEIP2929('berlin')) {
+  // Use Berlin+ gas costs
+  const cost = calculateCallCost('berlin', isWarm)
+}
+
+// Check for reduced refunds
+if (hasEIP3529('london')) {
+  // Max refund is gasUsed / 5
+}
+
+// Check for initcode cost
+if (hasEIP3860('shanghai')) {
+  // Include initcode cost in CREATE
+}
+```
+
+### Refund Calculations
+
+```typescript
+import { getSstoreRefund, calculateMaxRefund } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// SSTORE refund for clearing storage
+const refund = getSstoreRefund('london', 100n, 0n)
+// Returns: refund amount for clearing slot
+
+// Maximum refund (post-EIP-3529)
+const gasUsed = 100000n
+const maxRefund = calculateMaxRefund(gasUsed, 'london')
+// Returns: 100000 / 5 = 20000 gas (max refund is 1/5 of gas used)
+```
+
+### Precompile Costs
+
+```typescript
+import { Precompile } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// ECRECOVER (fixed cost)
+const ecrecoverCost = Precompile.ecrecover()
+// Returns: 3000 gas
+
+// SHA-256 (dynamic cost based on data size)
+const sha256Cost = Precompile.sha256(128)
+// Returns: 60 + 12 * Math.ceil(128 / 32) = 108 gas
+
+// BN256 pairing (cost per pair)
+const pairingCost = Precompile.bn256Pairing(2)
+// Returns: 34000 * 2 + 45000 = 113000 gas
+
+// BLAKE2F (cost per round)
+const blake2fCost = Precompile.blake2f(12)
+// Returns: 12 gas (1 gas per round)
+
+// KZG point evaluation (EIP-4844)
+const kzgCost = Precompile.kzgPointEvaluation()
+// Returns: 50000 gas
+```
+
+## Benefits
+
+### Tree-Shaking
+
+```typescript
+// Import only what you need
+import { calculateKeccak256Cost } from '@tevm/primitives/GasConstants/BrandedGasConstants'
+
+// Bundle includes only Keccak cost calculation
+const cost = calculateKeccak256Cost(dataSize)
+```
+
+### Self-Documenting
+
+```typescript
+// Clear what's being calculated
+const sstoreCost = calculateSstoreCost(hardfork, currentValue, newValue)
+
+// vs unclear manual calculation
+const sstoreCost = currentValue === 0n ? 20000 : 5000
+```
+
+### EIP-Aware
+
+```typescript
+// Automatically handles hardfork differences
+const cost = calculateCallCost('berlin', isWarm)  // Uses EIP-2929
+const cost2 = calculateCallCost('istanbul', false) // Uses pre-EIP-2929
+
+// Check EIP support
+if (hasEIP2929(hardfork)) {
+  // Use warm/cold distinction
+}
+```
+
+### Zero Runtime Cost
+
+Functions are pure calculations with no object instantiation overhead.
+
+## Constants
+
+Core gas constants are exported:
+
+```typescript
+import {
+  G_ZERO,
+  G_BASE,
+  G_VERYLOW,
+  G_LOW,
+  G_MID,
+  G_HIGH,
+  G_JUMPDEST,
+  G_SSET,
+  G_SRESET,
+  G_SELFDESTRUCT,
+  G_CREATE,
+  G_CALLVALUE,
+  G_NEWACCOUNT,
+  G_EXP,
+  G_EXPBYTE,
+  G_MEMORY,
+  G_LOG,
+  G_LOGDATA,
+  G_LOGTOPIC,
+  G_KECCAK256,
+  G_KECCAK256WORD,
+  G_COPY,
+  G_BLOCKHASH,
+  G_CODEDEPOSIT,
+  G_CALL,
+  G_CALLSTIPEND,
+  G_SLOAD,
+  G_TRANSACTION,
+  G_TXCREATE,
+  G_TXDATAZERO,
+  G_TXDATANONZERO,
+  G_ACCESSLISTADDRESS,
+  G_ACCESSLISTSTORAGE,
+  G_WARMSTORAGEREAD,
+  G_COLDSLOAD,
+  G_COLDACCOUNTACCESS,
+  G_INITCODEWORD
+} from '@tevm/primitives/GasConstants/BrandedGasConstants'
+```
+
+## Related
+
+- [GasConstants](/primitives/gasconstants) - Main GasConstants documentation
+- [Hardfork](/primitives/hardfork) - Hardfork type used in calculations
+- [Opcode](/primitives/opcode) - EVM opcodes that consume gas
+- [Transaction](/primitives/transaction) - Transaction intrinsic gas
+- [Branded Types](/primitives/branded-types) - Type-level branding pattern
