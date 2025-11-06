@@ -344,7 +344,7 @@ describe("AesGcm", () => {
 			const expectedHex =
 				"0388dace60b6a392f328c2b971b2fe78ab6e47d42cec13bdf53a67b21257bddf";
 			const actualHex = Array.from(ciphertext)
-				.map((b) => b.toString(16).padStart(2, "0"))
+				.map((b: number) => b.toString(16).padStart(2, "0"))
 				.join("");
 
 			expect(actualHex).toBe(expectedHex);
@@ -402,7 +402,7 @@ describe("AesGcm", () => {
 			// Expected tag: 530f8afbc74536b9a963b4f1c4cb738b
 			const expectedTag = "530f8afbc74536b9a963b4f1c4cb738b";
 			const actualTag = Array.from(ciphertext)
-				.map((b) => b.toString(16).padStart(2, "0"))
+				.map((b: number) => b.toString(16).padStart(2, "0"))
 				.join("");
 
 			expect(actualTag).toBe(expectedTag);
@@ -436,7 +436,7 @@ describe("AesGcm", () => {
 			const expectedHex =
 				"cea7403d4d606b6e074ec5d3baf39d18d0d1c8a799996bf0265b98b5d48ab919";
 			const actualHex = Array.from(ciphertext)
-				.map((b) => b.toString(16).padStart(2, "0"))
+				.map((b: number) => b.toString(16).padStart(2, "0"))
 				.join("");
 
 			expect(actualHex).toBe(expectedHex);

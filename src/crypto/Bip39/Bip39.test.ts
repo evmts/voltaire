@@ -141,13 +141,11 @@ describe("Bip39", () => {
 			expect(seed).toBeInstanceOf(Uint8Array);
 			expect(seed.length).toBe(64);
 
-			const expectedHex =
-				"a5a5c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8";
+			// Note: This is just testing that it handles Unicode without crashing
+			// The actual expected value would need to be verified against a reference implementation
 			const actualHex = [...seed]
 				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("");
-			// Note: This is just testing that it handles Unicode without crashing
-			// The actual expected value would need to be verified against a reference implementation
 			expect(actualHex.length).toBe(128);
 		});
 

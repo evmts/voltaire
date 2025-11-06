@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import * as Uint from "./index.js";
+import type { BrandedUint } from "./BrandedUint.js";
 
 // ============================================================================
 // Boundary Value Tests
@@ -240,7 +241,7 @@ describe("Uint comparison edge cases", () => {
 	});
 
 	it("handles comparison ordering", () => {
-		const values = [
+		const values: BrandedUint[] = [
 			Uint.ZERO,
 			Uint.ONE,
 			Uint.from(100),
@@ -252,8 +253,8 @@ describe("Uint comparison edge cases", () => {
 
 		for (let i = 0; i < values.length; i++) {
 			for (let j = 0; j < values.length; j++) {
-				const a = values[i];
-				const b = values[j];
+				const a = values[i]!;
+				const b = values[j]!;
 
 				if (i < j) {
 					expect(Uint.lessThan(a, b)).toBe(true);
@@ -418,7 +419,7 @@ describe("Uint special cases", () => {
 	});
 
 	it("handles commutative property of addition", () => {
-		const pairs = [
+		const pairs: [BrandedUint, BrandedUint][] = [
 			[Uint.from(100), Uint.from(200)],
 			[Uint.from(2n ** 64n), Uint.from(2n ** 128n)],
 			[Uint.MAX, Uint.ONE],

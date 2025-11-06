@@ -16,9 +16,9 @@ describe("Address batch operations", () => {
 
 			const sorted = Address.sortAddresses([addr3, addr1, addr2]);
 
-			expect(Address.equals(sorted[0], addr1)).toBe(true);
-			expect(Address.equals(sorted[1], addr2)).toBe(true);
-			expect(Address.equals(sorted[2], addr3)).toBe(true);
+			expect(Address.equals(sorted[0]!, addr1)).toBe(true);
+			expect(Address.equals(sorted[1]!, addr2)).toBe(true);
+			expect(Address.equals(sorted[2]!, addr3)).toBe(true);
 		});
 
 		it("returns new array", () => {
@@ -43,7 +43,7 @@ describe("Address batch operations", () => {
 			const sorted = Address.sortAddresses([addr]);
 
 			expect(sorted).toHaveLength(1);
-			expect(Address.equals(sorted[0], addr)).toBe(true);
+			expect(Address.equals(sorted[0]!, addr)).toBe(true);
 		});
 	});
 
@@ -62,8 +62,8 @@ describe("Address batch operations", () => {
 			const unique = Address.deduplicateAddresses([addr1, addr2, addr3]);
 
 			expect(unique).toHaveLength(2);
-			expect(Address.equals(unique[0], addr1)).toBe(true);
-			expect(Address.equals(unique[1], addr2)).toBe(true);
+			expect(Address.equals(unique[0]!, addr1)).toBe(true);
+			expect(Address.equals(unique[1]!, addr2)).toBe(true);
 		});
 
 		it("preserves first occurrence", () => {
@@ -120,7 +120,7 @@ describe("Address batch operations", () => {
 			const unique = Address.deduplicateAddresses([addr, addr, addr]);
 
 			expect(unique).toHaveLength(1);
-			expect(Address.equals(unique[0], addr)).toBe(true);
+			expect(Address.equals(unique[0]!, addr)).toBe(true);
 		});
 	});
 });

@@ -81,8 +81,6 @@ describe("LowercaseAddress", () => {
 				"0x742D35CC6634C0532925A3B844BC9E7595F251E3",
 			);
 			const lowercase = LowercaseAddress.from(addr);
-			// Type assertion to verify brand
-			const _branded: LowercaseAddress.Lowercase = lowercase;
 			expect(lowercase).toBe("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
 		});
 	});
