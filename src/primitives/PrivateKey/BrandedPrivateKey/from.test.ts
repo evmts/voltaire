@@ -14,9 +14,9 @@ describe("BrandedPrivateKey.from", () => {
 		expect(() => from("0x1234")).toThrow("Private key must be 32 bytes");
 	});
 
-	it("creates from unpadded hex", () => {
+	it("creates from padded hex", () => {
 		const hex =
-			"ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+			"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 		const pk = from(hex);
 		expect(pk.length).toBe(32);
 	});

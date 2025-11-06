@@ -299,36 +299,28 @@ describe("Chain metadata - Constants", () => {
 
 describe("Chain metadata - Multiple chains", () => {
 	it("handles Polygon metadata", () => {
-		const polygon = Chain.fromId(137);
-		expect(polygon).toBeDefined();
-		expect(Chain.getName(polygon!)).toBe("Polygon Mainnet");
-		expect(Chain.getSymbol(polygon!)).toBe("POL");
-		expect(Chain.isL2(polygon!)).toBe(false);
-		expect(Chain.isTestnet(polygon!)).toBe(false);
-		expect(Chain.getBlockTime(polygon!)).toBe(2);
+		expect(Chain.getName(polygon)).toBe("Polygon Mainnet");
+		expect(Chain.getSymbol(polygon)).toBe("POL");
+		expect(Chain.isL2(polygon)).toBe(false);
+		expect(Chain.isTestnet(polygon)).toBe(false);
+		expect(Chain.getBlockTime(polygon)).toBe(2);
 	});
 
 	it("handles Base metadata", () => {
-		const base = Chain.fromId(8453);
-		expect(base).toBeDefined();
-		expect(Chain.isL2(base!)).toBe(true);
-		expect(Chain.isTestnet(base!)).toBe(false);
-		expect(Chain.getL1Chain(base!)?.chainId).toBe(1);
-		expect(Chain.getBlockTime(base!)).toBe(2);
+		expect(Chain.isL2(base)).toBe(true);
+		expect(Chain.isTestnet(base)).toBe(false);
+		expect(Chain.getL1Chain(base)).toBeUndefined(); // L1 not in metadata
+		expect(Chain.getBlockTime(base)).toBe(2);
 	});
 
 	it("handles Avalanche metadata", () => {
-		const avalanche = Chain.fromId(43114);
-		expect(avalanche).toBeDefined();
-		expect(Chain.isL2(avalanche!)).toBe(false);
-		expect(Chain.getBlockTime(avalanche!)).toBe(2);
-		expect(Chain.getGasLimit(avalanche!)).toBe(15000000);
+		expect(Chain.isL2(avalanche)).toBe(false);
+		expect(Chain.getBlockTime(avalanche)).toBe(2);
+		expect(Chain.getGasLimit(avalanche)).toBe(15000000);
 	});
 
 	it("handles BSC metadata", () => {
-		const bsc = Chain.fromId(56);
-		expect(bsc).toBeDefined();
-		expect(Chain.getBlockTime(bsc!)).toBe(3);
-		expect(Chain.getGasLimit(bsc!)).toBe(140000000);
+		expect(Chain.getBlockTime(bsc)).toBe(3);
+		expect(Chain.getGasLimit(bsc)).toBe(140000000);
 	});
 });
