@@ -53,7 +53,6 @@ import type { Fallback, Receive } from "./Item/index.js";
 import type { BrandedConstructor as Constructor } from "./constructor/index.js";
 import type { BrandedError } from "./error/index.js";
 import type { Event } from "./event/index.js";
-// Main Abi type (array of ABI items)
 import type { Function } from "./function/index.js";
 
 /**
