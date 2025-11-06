@@ -25,7 +25,7 @@
 
 > ⚠️ **Alpha Release** - This library is under active development. APIs may change. Not recommended for production use yet.
 
-Voltaire is a modern [Ethereum](https://ethereum.org/) library for [TypeScript](https://www.typescriptlang.org/) and [Zig](https://ziglang.org/) similar to [ethers.js](https://docs.ethers.org/) and [viem](https://viem.sh).
+Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https://ziglang.org/), [TypeScript](https://www.typescriptlang.org/), and C-FFI support.
 
 - **Simple APIs** - The minimal close-to-spec APIs needed for [Ethereum development](https://ethereum.org/en/developers/)
 - **LLM-Optimized** - API and documentation built and tested to perform well with LLMs
@@ -293,11 +293,8 @@ Benchmark results available in [BENCHMARKING.md](./BENCHMARKING.md) and each pri
 
 ## Alternatives
 
-- **[Viem](https://viem.sh)** - Popular TypeScript Ethereum library with modular design ([GitHub](https://github.com/wevm/viem))
-- **[Ethers.js](https://docs.ethers.org/)** - Comprehensive Ethereum library ([GitHub](https://github.com/ethers-io/ethers.js))
 - **[Alloy](https://github.com/alloy-rs/alloy)** - High-performance Rust library (Zig FFI integration available)
 - **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited cryptographic library for pure JS implementations
-- **[Web3.js](https://web3js.org/)** - Original Ethereum JavaScript library ([GitHub](https://github.com/web3/web3.js))
 ---
 
 ## License

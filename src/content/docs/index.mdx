@@ -44,34 +44,12 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 ## Quick Example
 
-```tsx live
-import { useState } from 'react';
+```typescript
+import * as Address from "@tevm/voltaire/Address";
 
-export default function VoltaireDemo() {
-  const [address, setAddress] = useState('0xa0cf798816d4b9b9866b5330eea46a18382f251e');
-
-  return (
-    <div style={{ padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h3>Try it yourself</h3>
-      <input
-        type="text"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        style={{ width: '100%', padding: '0.5rem', marginBottom: '1rem' }}
-      />
-      <pre style={{ background: '#f5f5f5', padding: '1rem', borderRadius: '4px' }}>
-        <code>{`import { Address } from "@tevm/voltaire";
-
-const addr = new Address("${address}");
-const checksum = Address.toChecksumHex.call(addr);
-const isZero = Address.isZero.call(addr);`}</code>
-      </pre>
-      <p style={{ marginTop: '1rem' }}>
-        <strong>Note:</strong> Install @tevm/voltaire to run this code
-      </p>
-    </div>
-  );
-}
+const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = Address.toChecksumHex(addr);
+const isZero = Address.isZero(addr);
 ```
 
 ## Installation
