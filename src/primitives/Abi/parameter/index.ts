@@ -2,9 +2,8 @@
 export type { ParameterConstructor } from "./ParameterConstructor.js";
 export { Parameter } from "./Parameter.js";
 
-// Re-export BrandedParameter namespace and types
+// Re-export BrandedParameter types
 export type { BrandedParameter } from "./BrandedParameter/BrandedParameter.js";
-export * as BrandedParameter from "./BrandedParameter/index.js";
 
 // Re-export old Parameter types for compatibility
 export type {
@@ -12,3 +11,6 @@ export type {
 	ParametersToPrimitiveTypes,
 	ParametersToObject,
 } from "../Parameter.js";
+
+// Export methods from BrandedParameter
+export { encode, decode, from } from "./BrandedParameter/index.js";
