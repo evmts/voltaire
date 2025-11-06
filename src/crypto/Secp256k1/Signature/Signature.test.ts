@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { fromBytes, fromCompact, toBytes, toCompact } from "./index.js";
 import { sign } from "../sign.js";
 import { InvalidSignatureError } from "../errors.js";

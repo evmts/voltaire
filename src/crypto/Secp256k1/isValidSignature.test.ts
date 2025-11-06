@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { isValidSignature } from "./isValidSignature.js";
 import { sign } from "./sign.js";
 import { CURVE_ORDER } from "./constants.js";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2.js";
 import { sign } from "./sign.js";
 import { recoverPublicKey } from "./recoverPublicKey.js";
 import { derivePublicKey } from "./derivePublicKey.js";

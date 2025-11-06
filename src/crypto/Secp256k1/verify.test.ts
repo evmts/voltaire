@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { sha256 } from "@noble/hashes/sha256";
-import { secp256k1 } from "@noble/curves/secp256k1";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sign } from "./sign.js";
 import { verify } from "./verify.js";
 import { derivePublicKey } from "./derivePublicKey.js";
