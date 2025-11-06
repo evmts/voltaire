@@ -1,0 +1,223 @@
+---
+title: BN254 Pairing (0x08)
+description: BN254 elliptic curve pairing check precompile
+---
+
+# BN254 Pairing
+
+BN254 (alt_bn128) bilinear pairing check for zkSNARK verification.
+
+## Overview
+
+The BN254 Pairing precompile provides:
+- **Pairing Check**: Verify e(P₁,Q₁) * e(P₂,Q₂) * ... = 1
+- **zkSNARK Verification**: Core operation for Groth16 zkSNARKs
+- **Variable Gas**: Cost scales with number of point pairs
+- **Pure Zig**: Native implementation without C dependencies
+- **Address**: 0x0000000000000000000000000000000000000008
+- **Since**: Byzantium (EIP-197)
+
+**Source**: `src/precompiles/bn254_pairing.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: Multiple of 192 bytes (k pairs of points)
+- `gas_limit`: Maximum gas available
+
+**Input Format** (192k bytes for k pairs):
+Each pair (192 bytes):
+- Bytes 0-63: G1 point (x, y) ∈ E(F_p)
+- Bytes 64-191: G2 point (x, y) ∈ E(F_p²) (4 field elements)
+
+**Returns:** 32 bytes (1 if pairing holds, 0 otherwise)
+
+**Errors:** `OutOfGas`, `InvalidInput` (length not multiple of 192), `InvalidPairing`
+
+## Gas Costs
+
+**Formula:** `45000 + 34000 * k`
+
+Where k = number of point pairs
+
+- **Base Cost:** 45000 gas
+- **Per Pair:** 34000 gas
+
+**Examples:**
+- 0 pairs (empty input): 45000 gas (returns 1)
+- 1 pair: 79000 gas
+- 2 pairs: 113000 gas
+- 10 pairs: 385000 gas
+
+Updated from higher costs in Istanbul (EIP-1108).
+
+## Examples
+
+### zkSNARK Verification (2 pairs)
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn verifyZkSnark(
+    allocator: std.mem.Allocator,
+    proof_a: []const u8,  // G1 point (64 bytes)
+    proof_b: []const u8,  // G2 point (128 bytes)
+    proof_c: []const u8,  // G1 point (64 bytes)
+    vk_alpha_g1: []const u8,  // Verification key
+    vk_beta_g2: []const u8,
+    public_inputs: []const u8,
+) !bool {
+    // Build pairing check input (2 pairs = 384 bytes)
+    var input: [384]u8 = undefined;
+
+    // Pair 1: proof_a, proof_b
+    @memcpy(input[0..64], proof_a);
+    @memcpy(input[64..192], proof_b);
+
+    // Pair 2: combined public inputs, vk
+    // ... (compute accumulated public inputs) ...
+    @memcpy(input[192..256], proof_c);
+    @memcpy(input[256..384], vk_beta_g2);
+
+    const result = try precompiles.bn254_pairing.execute(
+        allocator,
+        &input,
+        200000, // Enough for 2 pairs
+    );
+    defer result.deinit(allocator);
+
+    // Check if pairing holds (last byte = 1)
+    return result.output[31] == 1;
+}
+```
+
+### Empty Input (Always True)
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+test "bn254_pairing empty" {
+    const allocator = std.testing.allocator;
+
+    // Empty pairing = product of nothing = 1
+    const result = try precompiles.bn254_pairing.execute(
+        allocator,
+        &[_]u8{},
+        45000,
+    );
+    defer result.deinit(allocator);
+
+    // Should return success (1)
+    try std.testing.expectEqual(32, result.output.len);
+    try std.testing.expectEqual(1, result.output[31]);
+}
+```
+
+### Invalid Length Detection
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+test "bn254_pairing invalid length" {
+    const allocator = std.testing.allocator;
+
+    // 191 bytes - not multiple of 192
+    const input = [_]u8{0} ** 191;
+
+    const result = precompiles.bn254_pairing.execute(
+        allocator,
+        &input,
+        100000,
+    );
+
+    try std.testing.expectError(error.InvalidInput, result);
+}
+```
+
+## Pairing Operation
+
+The pairing check verifies:
+
+```
+e(P₁, Q₁) · e(P₂, Q₂) · ... · e(Pₖ, Qₖ) = 1
+```
+
+Where:
+- Pᵢ ∈ G1 (curve over F_p)
+- Qᵢ ∈ G2 (curve over F_p²)
+- e: G1 × G2 → GT (pairing function)
+
+## Algorithm
+
+1. **Validate Input Length**: Must be multiple of 192 bytes
+2. **Parse Point Pairs**: Extract k pairs of (G1, G2) points
+3. **Validate Points**: Check all points on respective curves
+4. **Compute Miller Loop**: For each pair
+5. **Final Exponentiation**: Raise result to power
+6. **Check Result**: Return 1 if equal to identity, 0 otherwise
+
+## BN254 Pairing Groups
+
+**G1**: Points on E(F_p) where y² = x³ + 3
+
+**G2**: Points on E(F_p²) where y² = x³ + 3/(9+u)
+
+**GT**: Subgroup of F_p¹² of order r
+
+**Embedding Degree**: 12
+
+## Performance
+
+**Native (ReleaseFast):**
+- 1 pair: ~2-4 ms
+- 2 pairs: ~4-8 ms
+- 10 pairs: ~20-40 ms
+
+**WASM (ReleaseFast):**
+- ~3-5x slower than native
+
+Uses optimized Miller loop and final exponentiation.
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=bn254_pairing
+```
+
+Test coverage includes:
+- Empty input (returns 1)
+- Single pair verification
+- Multiple pairs
+- Invalid length rejection
+- Gas scaling with pair count
+- go-ethereum test vectors
+
+## Related
+
+- [BN254 Add](/zig/precompiles/bn254_add/) - Point addition (0x06)
+- [BN254 Mul](/zig/precompiles/bn254_mul/) - Scalar multiplication (0x07)
+- [BLS12-381 Pairing](/zig/precompiles/bls12_pairing/) - BLS pairing check (0x11)
+
+## References
+
+- [EIP-197](https://eips.ethereum.org/EIPS/eip-197) - Precompiled contracts for optimal ate pairing check on the elliptic curve alt_bn128
+- [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108) - Reduce alt_bn128 precompile gas costs
+- [Pairings for beginners](https://static1.squarespace.com/static/5fdbb09f31d71c1227082339/t/5ff394720493bd28278889c6/1609798774687/PairingsForBeginners.pdf) - Introduction to pairings
+- [Groth16](https://eprint.iacr.org/2016/260.pdf) - zkSNARK construction using pairings
+- [ZCash Sapling](https://z.cash/upgrade/sapling/) - Uses BN254 pairings

@@ -1,0 +1,174 @@
+---
+title: "0x08 BN254 Pairing"
+description: BN254 elliptic curve pairing check for zkSNARK verification
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000008`
+**Introduced:** Byzantium (EIP-197)
+**EIP:** [EIP-197](https://eips.ethereum.org/EIPS/eip-197), [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108)
+
+The BN254 Pairing precompile performs a pairing check on the BN254 (alt_bn128) curve. It verifies whether the product of pairings equals identity: `e(A1,B1) * e(A2,B2) * ... * e(Ak,Bk) = 1`. This is the core operation for Groth16 zkSNARK verification.
+
+Pairing is a bilinear map from G1 × G2 to GT that enables zero-knowledge proof systems, BLS signatures, and identity-based encryption.
+
+EIP-1108 (Istanbul) reduced gas costs dramatically: 99% for single pair, 98% for multiple pairs.
+
+## Gas Cost
+
+**Formula:** `45000 + 34000 * k` where k = number of point pairs
+
+**Examples:**
+- Empty input (k=0): 45,000 gas
+- 1 pair: 79,000 gas
+- 2 pairs: 113,000 gas
+- 4 pairs: 181,000 gas
+
+Pre-Istanbul: 100,000 + 80,000*k (much more expensive)
+
+## Input Format
+
+Input must be a multiple of 192 bytes. Each pair consists of:
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | G1 point (32-byte x, 32-byte y)
+64     | 128    | G2 point (four 32-byte values: x1, x2, y1, y2)
+```
+
+Each 192-byte chunk represents one (G1, G2) pair.
+- k pairs = 192 * k bytes
+- Empty input (0 bytes) is valid and returns success (empty product = 1)
+
+**G2 point encoding:** G2 points have coordinates in Fp2 = Fp[i]/(i²+1):
+- x = x1 + x2*i (offset 64: x1, offset 96: x2)
+- y = y1 + y2*i (offset 128: y1, offset 160: y2)
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | 1 if pairing check passes, 0 otherwise
+```
+
+Total output length: 32 bytes (single word)
+- Success: 0x0000...0001 (last byte = 1)
+- Failure: 0x0000...0000 (all zeros)
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Verify Groth16 zkSNARK proof
+// Need to check: e(A, B) * e(alpha, beta) * e(C, delta) * e(input, gamma) = 1
+// Rearranged: e(-A, B) * e(alpha, beta) * e(-C, delta) * e(input, gamma) = 1
+
+const numPairs = 4;
+const input = new Uint8Array(192 * numPairs);
+
+// Set G1 and G2 points from proof
+// ... (fill in actual proof values)
+
+const gasNeeded = 45000n + 34000n * BigInt(numPairs);
+
+const result = execute(
+  PrecompileAddress.BN254_PAIRING,
+  input,
+  gasNeeded,
+  Hardfork.CANCUN
+);
+
+if (result.success && result.output[31] === 1) {
+  console.log('Proof verified!');
+} else {
+  console.log('Proof invalid');
+}
+console.log('Gas used:', result.gasUsed);
+```
+
+## Error Conditions
+
+- Out of gas
+- Input length not multiple of 192
+- G1 point not on curve
+- G2 point not on curve
+- Coordinate >= field modulus
+- Invalid G2 point encoding
+
+Failures return error (not false). Only valid inputs that fail the pairing check return false (32 zero bytes).
+
+## Use Cases
+
+- **zkSNARK verification:** Groth16 is the most common zkSNARK, requires pairing check
+- **zk-Rollups:** Layer 2 validity proofs (zkSync, Polygon zkEVM, Scroll)
+- **Privacy protocols:** Tornado Cash, Aztec Protocol
+- **Identity systems:** Semaphore, anonymous credentials
+- **BLS signatures:** Aggregate signature verification (though BLS12-381 preferred now)
+
+## Implementation Details
+
+- **Zig:** Uses arkworks-rs via Rust FFI for optimal pairing performance
+- **TypeScript:** Wraps BN254 crypto module pairing implementation
+- **Integration:** Most complex of BN254 operations, uses Miller loop + final exponentiation
+- **Algorithm:** Optimal Ate pairing on BN254
+- **Optimization:** Multi-pairing optimization (Miller loop shared across pairs)
+
+## Pairing Bilinearity
+
+Key property: `e(aP, bQ) = e(P, Q)^(ab) = e(bP, aQ)`
+
+Used for proof verification:
+- Prover computes: commitment C = sP (secret s)
+- Verifier checks: e(C, Q) = e(P, sQ) using public sQ
+
+## Groth16 Verification
+
+Typical Groth16 proof has 3 G1 points (A, B, C) and verification requires 4 pairings:
+
+```
+e(-A, B) * e(alpha, beta) * e(-C, delta) * e(input, gamma) = 1
+```
+
+Where alpha, beta, delta, gamma are verification key elements.
+
+Gas cost: 45000 + 34000*4 = 181,000 gas
+
+## Gas Cost Comparison
+
+| Operation | Pre-Istanbul | Istanbul | Improvement |
+|-----------|-------------|----------|-------------|
+| 1 pair | 180,000 | 79,000 | 56% reduction |
+| 2 pairs | 260,000 | 113,000 | 57% reduction |
+| 4 pairs (Groth16) | 420,000 | 181,000 | 57% reduction |
+
+## Test Vectors
+
+```typescript
+// Empty input = empty product = success
+const input = new Uint8Array(0);
+// result.output[31] === 1
+
+// Single pair: e(G1, G2) = final exponentiation
+// Valid pairing of generators
+const input = new Uint8Array(192);
+// ... (set G1 and G2 generators)
+// result.output[31] === 1
+
+// Invalid pairing: e(G1, G2) * e(-G1, G2) should equal 1
+// This tests if implementation is correct
+```
+
+## Related
+
+- [Crypto: BN254](/crypto/bn254)
+- [Precompile: BN254 Add](/precompiles/bn254-add)
+- [Precompile: BN254 Mul](/precompiles/bn254-mul)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [EIP-197: Precompiled Contracts for Optimal Ate Pairing Check on alt_bn128](https://eips.ethereum.org/EIPS/eip-197)
+- [EIP-1108: Reduce alt_bn128 Gas Costs](https://eips.ethereum.org/EIPS/eip-1108)
+- [Groth16 Paper](https://eprint.iacr.org/2016/260.pdf)

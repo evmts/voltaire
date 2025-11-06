@@ -1,0 +1,209 @@
+---
+title: "0x09 Blake2f"
+description: Blake2b compression function for efficient hashing
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000009`
+**Introduced:** Istanbul (EIP-152)
+**EIP:** [EIP-152](https://eips.ethereum.org/EIPS/eip-152)
+
+The Blake2f precompile implements the Blake2b compression function F. It allows contracts to efficiently compute Blake2b hashes by exposing the core compression step. Blake2 is a fast cryptographic hash function used in Zcash, Monero, and other systems.
+
+Unlike other hash precompiles, Blake2f exposes the low-level compression function rather than the complete hash algorithm. This enables optimized implementations of Blake2b variants and Equihash verification.
+
+## Gas Cost
+
+**Formula:** `rounds` (1 gas per round)
+
+The number of rounds is specified in the input (first 4 bytes). Common values:
+- Blake2b standard: 12 rounds
+- Reduced round versions: 1-12 rounds
+- Maximum: 2^32 - 1 rounds (4,294,967,295 gas)
+
+**Examples:**
+- 0 rounds: 0 gas
+- 12 rounds: 12 gas
+- 1000 rounds: 1000 gas
+
+## Input Format
+
+**Exactly 213 bytes required:**
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 4      | rounds (big-endian u32)
+4      | 64     | h (state vector, 8x u64 little-endian)
+68     | 128    | m (message block, 16x u64 little-endian)
+196    | 16     | t (offset counters, 2x u64 little-endian)
+212    | 1      | f (final block flag, 0x00 or 0x01)
+```
+
+Total input length: **Exactly 213 bytes** (no padding, no truncation)
+
+All multi-byte integers except rounds are little-endian.
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | h (new state vector, 8x u64 little-endian)
+```
+
+Total output length: 64 bytes
+
+Output is the updated Blake2b state after applying the compression function.
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Blake2b compression with 12 rounds (standard)
+const input = new Uint8Array(213);
+
+// Set rounds (big-endian)
+const view = new DataView(input.buffer);
+view.setUint32(0, 12, false); // 12 rounds, big-endian
+
+// Set state vector h (little-endian u64s)
+// ... (initialize Blake2b IV)
+
+// Set message block m (little-endian u64s)
+// ... (your 128-byte message block)
+
+// Set offset counters t (little-endian u64s)
+view.setBigUint64(196, 128n, true); // t0 = 128 (processed bytes)
+view.setBigUint64(204, 0n, true);   // t1 = 0
+
+// Set final flag f
+input[212] = 0x00; // Not final block
+
+const result = execute(
+  PrecompileAddress.BLAKE2F,
+  input,
+  20n, // Need at least 12 gas for 12 rounds
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  console.log('New state:', result.output);
+  console.log('Gas used:', result.gasUsed); // 12
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Error Conditions
+
+- Input length ≠ 213 bytes (exact length required)
+- Out of gas (gasLimit < rounds)
+- Invalid final flag (not 0x00 or 0x01)
+
+## Use Cases
+
+- **Zcash verification:** Verify Zcash Equihash proofs on Ethereum
+- **Cross-chain bridges:** Validate Blake2b-based chains
+- **Efficient hashing:** Compute Blake2b hashes in smart contracts
+- **Equihash:** Verify Equihash PoW solutions
+- **Custom protocols:** Build Blake2 variants (e.g., personalized hashing)
+
+## Implementation Details
+
+- **Zig:** Uses Blake2 crypto module implementing RFC 7693
+- **TypeScript:** Wrapper around Blake2 compression function
+- **Integration:** Standalone Blake2b F function
+- **Algorithm:** Blake2b compression as specified in RFC 7693
+- **Rounds:** Configurable (standard Blake2b uses 12)
+
+## Blake2b Overview
+
+Blake2b is the 64-bit version of Blake2 (Blake2s is 32-bit). Key features:
+- Faster than MD5, SHA-1, SHA-2, SHA-3
+- Secure: no known cryptographic weaknesses
+- Used in: Zcash, Wireguard, IPFS, Argon2
+
+Standard Blake2b:
+- 12 rounds per block
+- 512-bit output (64 bytes)
+- Processes 128-byte blocks
+
+## Complete Blake2b Hashing
+
+To hash a message completely using Blake2f:
+
+1. Initialize state h with Blake2b IV
+2. Process each 128-byte block:
+   - Call Blake2f with current state
+   - Update offset counter t
+3. Final block: set f=0x01
+4. State h is the hash output
+
+```typescript
+// Simplified Blake2b using Blake2f precompile
+function blake2b(message: Uint8Array): Uint8Array {
+  let h = blake2bIV(); // Initial state
+  let t = 0n;
+
+  const blocks = Math.ceil(message.length / 128);
+  for (let i = 0; i < blocks; i++) {
+    const block = message.slice(i * 128, (i + 1) * 128);
+    const input = encodeBlake2fInput({
+      rounds: 12,
+      h: h,
+      m: padTo128(block),
+      t: [t + BigInt(block.length), 0n],
+      f: i === blocks - 1 ? 1 : 0
+    });
+
+    const result = executeBlake2f(input);
+    h = result.output;
+    t += BigInt(block.length);
+  }
+
+  return h; // 64-byte hash
+}
+```
+
+## Gas Cost Efficiency
+
+Blake2f is extremely gas-efficient:
+- 12 rounds = 12 gas
+- Processes 128 bytes per compression
+- ~0.09 gas/byte (cheaper than all other hash functions)
+
+Comparison (per 128 bytes):
+- Blake2f: ~12 gas
+- SHA256: ~108 gas (60 + 12*4)
+- Keccak256: ~66 gas (30 + 6*4)
+
+## Test Vectors
+
+```typescript
+// Test vector from RFC 7693 (example from spec)
+const rounds = 12;
+const h = [ // IV for Blake2b-512
+  0x6a09e667f3bcc908n, 0xbb67ae8584caa73bn,
+  0x3c6ef372fe94f82bn, 0xa54ff53a5f1d36f1n,
+  0x510e527fade682d1n, 0x9b05688c2b3e6c1fn,
+  0x1f83d9abfb41bd6bn, 0x5be0cd19137e2179n
+];
+// ... (complete test vector in RFC 7693 Appendix A)
+```
+
+## Byte Order Warning
+
+Blake2f uses **little-endian** for h, m, t (unlike most Ethereum precompiles).
+Only rounds is big-endian. This matches Blake2b specification but differs from Ethereum convention.
+
+## Related
+
+- [Crypto: Blake2](/crypto/blake2)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [EIP-152: Add BLAKE2 compression function F precompile](https://eips.ethereum.org/EIPS/eip-152)
+- [RFC 7693: The BLAKE2 Cryptographic Hash and MAC](https://tools.ietf.org/html/rfc7693)
+- [Zcash Protocol Specification](https://zips.z.cash/protocol/protocol.pdf)

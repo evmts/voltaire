@@ -1,0 +1,158 @@
+---
+title: "0x06 BN254 Add"
+description: BN254 elliptic curve point addition
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000006`
+**Introduced:** Byzantium (EIP-196)
+**EIP:** [EIP-196](https://eips.ethereum.org/EIPS/eip-196), [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108)
+
+The BN254 Add precompile performs elliptic curve point addition on the BN254 (alt_bn128) curve. It takes two G1 points and returns their sum. This is essential for zkSNARK verification and other zero-knowledge proof systems.
+
+EIP-196 introduced BN254 operations in Byzantium. EIP-1108 (Istanbul) reduced gas costs by 91% to enable practical zkSNARK verification.
+
+The BN254 curve is defined over a 254-bit prime field and is widely used in Zcash, Ethereum's zkSNARKs (Groth16), and other privacy protocols.
+
+## Gas Cost
+
+**Fixed:** `150` gas (reduced from 500 in Istanbul via EIP-1108)
+
+## Input Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | x1 (first point x-coordinate, big-endian)
+32     | 32     | y1 (first point y-coordinate, big-endian)
+64     | 32     | x2 (second point x-coordinate, big-endian)
+96     | 32     | y2 (second point y-coordinate, big-endian)
+```
+
+Total input length: 128 bytes (padded/truncated to this size)
+
+Points must satisfy the curve equation: `y^2 = x^3 + 3` over the BN254 field.
+Point at infinity is represented as (0, 0).
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | x (result point x-coordinate, big-endian)
+32     | 32     | y (result point y-coordinate, big-endian)
+```
+
+Total output length: 64 bytes
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Add two G1 points
+const x1 = new Uint8Array(32); // point 1 x-coordinate
+const y1 = new Uint8Array(32); // point 1 y-coordinate
+const x2 = new Uint8Array(32); // point 2 x-coordinate
+const y2 = new Uint8Array(32); // point 2 y-coordinate
+
+const input = new Uint8Array(128);
+input.set(x1, 0);
+input.set(y1, 32);
+input.set(x2, 64);
+input.set(y2, 96);
+
+const result = execute(
+  PrecompileAddress.BN254_ADD,
+  input,
+  1000n,
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  const resultX = result.output.slice(0, 32);
+  const resultY = result.output.slice(32, 64);
+  console.log('Result point:', { x: resultX, y: resultY });
+  console.log('Gas used:', result.gasUsed); // 150
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Error Conditions
+
+- Out of gas (gasLimit < 150)
+- Point not on curve (x, y don't satisfy `y^2 = x^3 + 3`)
+- Coordinate >= field modulus (`p = 0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47`)
+
+Invalid points cause the precompile to fail, returning error.
+
+## Use Cases
+
+- **zkSNARK verification:** Groth16 proof verification requires G1 point operations
+- **Rollup verification:** zk-Rollups use BN254 for proof aggregation
+- **Privacy protocols:** Zcash-style shielded transactions
+- **Zero-knowledge applications:** zkEVMs, private DeFi, anonymous voting
+- **Cryptographic commitments:** Pedersen commitments on BN254
+
+## Implementation Details
+
+- **Zig:** Pure Zig implementation using arkworks-rs for point arithmetic
+- **TypeScript:** Wraps BN254 crypto module (arkworks bindings)
+- **Integration:** Part of BN254 crypto suite (add, mul, pairing)
+- **Curve:** BN254 (alt_bn128) with embedding degree 12
+- **Field modulus:** `0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47`
+
+## BN254 Curve Parameters
+
+- **Curve equation:** y² = x³ + 3
+- **Field modulus (p):** 21888242871839275222246405745257275088696311157297823662689037894645226208583
+- **Group order (r):** 21888242871839275222246405745257275088548364400416034343698204186575808495617
+- **Generator G1:** (1, 2)
+- **Point at infinity:** (0, 0) by convention
+
+## Point Addition Rules
+
+- P + O = P (identity element)
+- P + P = 2P (point doubling)
+- P + (-P) = O (inverse)
+- General addition uses elliptic curve addition formula
+
+## Test Vectors
+
+```typescript
+// Generator point + Generator point = Doubled generator
+const G = { x: 1n, y: 2n };
+const result = bn254Add(G, G);
+// result = 2*G
+
+// Point + Identity = Point
+const P = { x: ..., y: ... };
+const O = { x: 0n, y: 0n };
+const result = bn254Add(P, O);
+// result = P
+
+// Point + Inverse = Identity
+const P = { x: ..., y: ... };
+const negP = { x: P.x, y: fieldMod - P.y };
+const result = bn254Add(P, negP);
+// result = O
+```
+
+## Gas Cost History
+
+| Hardfork | Gas Cost | Change |
+|----------|----------|--------|
+| Byzantium | 500 | Initial |
+| Istanbul (EIP-1108) | 150 | -70% |
+
+## Related
+
+- [Crypto: BN254](/crypto/bn254)
+- [Precompile: BN254 Mul](/precompiles/bn254-mul)
+- [Precompile: BN254 Pairing](/precompiles/bn254-pairing)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [EIP-196: Precompiled Contracts for Addition and Scalar Multiplication on alt_bn128](https://eips.ethereum.org/EIPS/eip-196)
+- [EIP-1108: Reduce alt_bn128 Gas Costs](https://eips.ethereum.org/EIPS/eip-1108)

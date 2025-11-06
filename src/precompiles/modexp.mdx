@@ -1,0 +1,240 @@
+---
+title: ModExp (0x05)
+description: Modular exponentiation for RSA and large number operations
+---
+
+# ModExp
+
+Arbitrary-precision modular exponentiation: (base^exponent) mod modulus.
+
+## Overview
+
+The ModExp precompile provides:
+- **Big Integer Math**: Arbitrary precision (no size limits)
+- **RSA Support**: Efficient for RSA signatures and encryption
+- **Variable Gas**: Cost scales with computation complexity
+- **Hardfork Variants**: Different gas formulas (Byzantium vs Berlin)
+- **Address**: 0x0000000000000000000000000000000000000005
+- **Since**: Byzantium (EIP-198), updated in Berlin (EIP-2565)
+
+**Source**: `src/precompiles/modexp.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+const Hardfork = @import("primitives").Hardfork;
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+    hardfork: Hardfork,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: Encoded lengths and values (≥96 bytes)
+- `gas_limit`: Maximum gas available
+- `hardfork`: Network hardfork (affects gas calculation)
+
+**Input Format:**
+- Bytes 0-31: `base_len` (length of base in bytes)
+- Bytes 32-63: `exp_len` (length of exponent in bytes)
+- Bytes 64-95: `mod_len` (length of modulus in bytes)
+- Bytes 96+: base, exponent, modulus (concatenated)
+
+**Returns:** `mod_len` bytes containing (base^exp) mod modulus
+
+**Errors:** `OutOfGas`, `OutOfMemory`, `InvalidInput` (if modulus is zero)
+
+## Gas Costs
+
+Gas cost depends on input sizes and hardfork:
+
+**Berlin+ (EIP-2565):**
+```
+max(200, floor((mult_complexity * iteration_count) / 3))
+```
+
+Where:
+- `mult_complexity = max(len(base), len(mod))^2`
+- `iteration_count` = based on exponent bit length
+
+**Byzantium (EIP-198):**
+```
+max(200, (mult_complexity * iteration_count) / 20)
+```
+
+**Examples:**
+- Small values (1-byte each): ~200 gas (minimum)
+- RSA-2048 (256 bytes): ~50,000-100,000 gas
+- RSA-4096 (512 bytes): ~400,000+ gas
+
+## Examples
+
+### Simple Modular Exponentiation
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+const Hardfork = @import("primitives").Hardfork;
+
+pub fn simpleModexp() !void {
+    const allocator = std.heap.page_allocator;
+
+    // Compute 2^3 mod 5 = 8 mod 5 = 3
+    var input: [99]u8 = [_]u8{0} ** 99;
+
+    // Lengths (1 byte each)
+    input[31] = 1; // base_len
+    input[63] = 1; // exp_len
+    input[95] = 1; // mod_len
+
+    // Values
+    input[96] = 2; // base = 2
+    input[97] = 3; // exp = 3
+    input[98] = 5; // mod = 5
+
+    const result = try precompiles.modexp.execute(
+        allocator,
+        &input,
+        1000000,
+        .Cancun,
+    );
+    defer result.deinit(allocator);
+
+    std.debug.print("2^3 mod 5 = {}\n", .{result.output[0]});
+    // Output: 3
+}
+```
+
+### RSA Verification
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+const Hardfork = @import("primitives").Hardfork;
+
+pub fn rsaVerify(
+    allocator: std.mem.Allocator,
+    base: []const u8,       // Message
+    exponent: []const u8,   // Public exponent (typically 65537)
+    modulus: []const u8,    // RSA modulus (n = p*q)
+) ![]u8 {
+    // Build input
+    const total_len = 96 + base.len + exponent.len + modulus.len;
+    var input = try allocator.alloc(u8, total_len);
+    defer allocator.free(input);
+
+    @memset(input, 0);
+
+    // Set lengths
+    std.mem.writeInt(u256, input[0..32], base.len, .big);
+    std.mem.writeInt(u256, input[32..64], exponent.len, .big);
+    std.mem.writeInt(u256, input[64..96], modulus.len, .big);
+
+    // Copy values
+    @memcpy(input[96..96 + base.len], base);
+    @memcpy(input[96 + base.len..96 + base.len + exponent.len], exponent);
+    @memcpy(input[96 + base.len + exponent.len..], modulus);
+
+    // Execute
+    const result = try precompiles.modexp.execute(
+        allocator,
+        input,
+        10000000, // High gas limit for RSA
+        .Cancun,
+    );
+    // Caller must free result.output
+
+    return result.output;
+}
+```
+
+### Zero Exponent
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+test "modexp x^0 = 1" {
+    const allocator = std.testing.allocator;
+
+    // Any base^0 mod m = 1 (if m > 1)
+    var input: [99]u8 = [_]u8{0} ** 99;
+
+    input[31] = 1; // base_len
+    input[63] = 1; // exp_len
+    input[95] = 1; // mod_len
+
+    input[96] = 5; // base = 5
+    input[97] = 0; // exp = 0
+    input[98] = 7; // mod = 7
+
+    const result = try precompiles.modexp.execute(
+        allocator,
+        &input,
+        1000000,
+        .Cancun,
+    );
+    defer result.deinit(allocator);
+
+    try std.testing.expectEqual(1, result.output[0]);
+}
+```
+
+## Algorithm
+
+ModExp uses efficient algorithms:
+1. **Montgomery Multiplication**: For large moduli
+2. **Binary Exponentiation**: O(log n) multiplications
+3. **Barrett Reduction**: Optimized modulo operations
+
+## Security
+
+- **DoS Protection**: Gas cost prevents abuse with huge inputs
+- **Constant Time**: Implementation attempts to be timing-attack resistant
+- **Zero Modulus**: Rejected with `InvalidInput` error
+
+## Performance
+
+**Native (ReleaseFast):**
+- Small (1-byte): ~5-10 μs
+- RSA-2048 (256-byte): ~500-1000 μs
+- RSA-4096 (512-byte): ~5-10 ms
+
+**WASM (ReleaseFast):**
+- ~2-5x slower than native
+
+Uses GMP-style big integer library for efficiency.
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=modexp
+```
+
+Test coverage includes:
+- Small value computations
+- RSA-sized inputs
+- Zero exponent (x^0 = 1)
+- Modulus equals 1 (result = 0)
+- Base larger than modulus
+- Gas cost verification
+- Hardfork variants
+
+## Related
+
+- [ECRecover](/zig/precompiles/ecrecover/) - Signature recovery (0x01)
+- [BN254 Pairing](/zig/precompiles/bn254_pairing/) - Pairing check (0x08)
+
+## References
+
+- [EIP-198](https://eips.ethereum.org/EIPS/eip-198) - Big integer modular exponentiation
+- [EIP-2565](https://eips.ethereum.org/EIPS/eip-2565) - ModExp gas cost update
+- [RFC 8017](https://tools.ietf.org/html/rfc8017) - RSA specification
+- [Test Vectors](https://github.com/ethereum/tests) - go-ethereum test suite

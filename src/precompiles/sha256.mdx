@@ -1,0 +1,165 @@
+---
+title: SHA256 (0x02)
+description: SHA-256 cryptographic hash function precompile
+---
+
+# SHA256
+
+SHA-256 cryptographic hash function for computing 256-bit hashes.
+
+## Overview
+
+The SHA256 precompile provides:
+- **Hash Computation**: Standard SHA-256 (NIST FIPS 180-4)
+- **Variable Length**: Accepts inputs of any size
+- **Optimized**: Hardware-accelerated when available
+- **Address**: 0x0000000000000000000000000000000000000002
+- **Since**: Frontier
+
+**Source**: `src/precompiles/sha256.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: Data to hash (any length)
+- `gas_limit`: Maximum gas available
+
+**Returns:** 32-byte SHA-256 hash
+
+**Errors:** `OutOfGas`, `OutOfMemory`
+
+## Gas Costs
+
+**Formula:** `60 + 12 * ceil(input_len / 32)`
+
+- **Base Cost:** 60 gas
+- **Per Word:** 12 gas per 32-byte word (rounded up)
+
+**Examples:**
+- Empty input (0 bytes): 60 gas
+- 32 bytes: 72 gas
+- 33 bytes: 84 gas (rounds up to 2 words)
+- 64 bytes: 84 gas
+- 1000 bytes: 444 gas
+
+## Examples
+
+### Hash Data
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn hashData() !void {
+    const allocator = std.heap.page_allocator;
+
+    const input = "Hello, Ethereum!";
+    const result = try precompiles.sha256.execute(
+        allocator,
+        input,
+        1000,
+    );
+    defer result.deinit(allocator);
+
+    std.debug.print("SHA-256: 0x{x}\n", .{result.output});
+}
+```
+
+### Hash with Gas Check
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn hashWithGasCheck(input: []const u8) ![]u8 {
+    const allocator = std.heap.page_allocator;
+
+    // Calculate required gas
+    const words = (input.len + 31) / 32;
+    const required_gas = 60 + 12 * words;
+
+    // Execute with exact gas
+    const result = try precompiles.sha256.execute(
+        allocator,
+        input,
+        required_gas,
+    );
+    // Caller must free result.output
+
+    return result.output;
+}
+```
+
+### Test Vector Verification
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+test "sha256 known vector" {
+    const allocator = std.testing.allocator;
+
+    // SHA256("abc")
+    const input = "abc";
+    const expected = [_]u8{
+        0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
+        0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+        0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
+        0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
+    };
+
+    const result = try precompiles.sha256.execute(
+        allocator,
+        input,
+        1000000,
+    );
+    defer result.deinit(allocator);
+
+    try std.testing.expectEqualSlices(u8, &expected, result.output);
+}
+```
+
+## Performance
+
+**Native (ReleaseFast)**: ~0.5-2 GB/s (depending on input size)
+**WASM (ReleaseFast)**: ~200-800 MB/s
+
+Uses hardware-accelerated SHA-256 instructions (SHA-NI) when available, falling back to optimized software implementation.
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=sha256
+```
+
+Test coverage includes:
+- Empty input
+- Known test vectors
+- Various input sizes
+- Gas calculation accuracy
+- Word boundary cases
+
+## Related
+
+- [Keccak](/zig/crypto/keccak/) - Keccak-256 hash
+- [RIPEMD160](/zig/precompiles/ripemd160/) - RIPEMD-160 hash (0x03)
+- [Blake2f](/zig/precompiles/blake2f/) - Blake2 compression (0x09)
+
+## References
+
+- [NIST FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf) - SHA-256 specification
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [Test Vectors](https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program) - NIST test vectors

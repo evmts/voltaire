@@ -1,0 +1,128 @@
+---
+title: "0x02 SHA256"
+description: SHA-256 cryptographic hash function
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000002`
+**Introduced:** Frontier
+
+The SHA256 precompile implements the SHA-256 cryptographic hash function, producing a 32-byte hash of arbitrary input data. SHA-256 is part of the SHA-2 family standardized by NIST and is widely used in Bitcoin and other systems.
+
+This precompile enables Ethereum contracts to verify Bitcoin SPV proofs, validate SHA-256 based signatures, and interact with systems that use SHA-256 hashing.
+
+## Gas Cost
+
+**Formula:** `60 + 12 * ceil(input_length / 32)`
+
+- Base cost: `60` gas
+- Per-word cost: `12` gas per 32-byte word
+- Partial words round up
+
+**Examples:**
+- 0 bytes: 60 gas
+- 32 bytes: 72 gas (60 + 12*1)
+- 33 bytes: 84 gas (60 + 12*2)
+- 64 bytes: 84 gas (60 + 12*2)
+
+## Input Format
+
+Accepts arbitrary-length byte array. No restrictions on input size.
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | SHA-256 hash of input
+```
+
+Total output length: 32 bytes (256 bits)
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Hash some data
+const input = new TextEncoder().encode("Hello, Ethereum!");
+
+// Calculate required gas
+const words = Math.ceil(input.length / 32);
+const gasNeeded = 60n + 12n * BigInt(words);
+
+// Execute precompile
+const result = execute(
+  PrecompileAddress.SHA256,
+  input,
+  gasNeeded,
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  console.log('SHA-256 hash:', result.output);
+  console.log('Gas used:', result.gasUsed);
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Error Conditions
+
+- Out of gas (insufficient for 60 + 12 * ceil(len/32))
+
+## Use Cases
+
+- **Bitcoin SPV proofs:** Verify Bitcoin block headers and transactions in Ethereum contracts
+- **Cross-chain bridges:** Validate proofs from SHA-256 based blockchains
+- **Legacy system integration:** Interface with systems using SHA-256 hashing
+- **Document verification:** Hash and verify document integrity
+- **Merkle trees:** Build SHA-256 based Merkle trees for data verification
+
+## Implementation Details
+
+- **Zig:** Uses hardware-accelerated SHA-256 implementation from crypto module
+- **TypeScript:** Wraps SHA256.hash from crypto module
+- **Integration:** Standalone, no dependencies on other primitives
+- **Performance:** Optimized for throughput with SIMD instructions where available
+
+## Known Test Vectors
+
+```typescript
+// Empty input
+SHA256("") =
+  e3b0c442 98fc1c14 9afbf4c8 996fb924
+  27ae41e4 649b934c a495991b 7852b855
+
+// "abc"
+SHA256("abc") =
+  ba7816bf 8f01cfea 41414 0de5dae2223
+  b00361a3 96177a9c b410ff61 f20015ad
+```
+
+## Bitcoin Integration
+
+Bitcoin uses double SHA-256 for block hashes. To verify Bitcoin blocks in Ethereum:
+
+```typescript
+// Bitcoin block hash = SHA256(SHA256(header))
+const firstHash = executeSHA256(blockHeader);
+const blockHash = executeSHA256(firstHash.output);
+```
+
+## Performance Considerations
+
+SHA-256 is more expensive than Keccak256 on Ethereum (60 vs 30 base gas). Use Keccak256 for Ethereum-native hashing when possible.
+
+Gas costs favor larger batches:
+- Per-byte cost: ~0.375 gas/byte
+- Prefer hashing larger inputs over multiple small ones
+
+## Related
+
+- [Crypto: SHA256](/crypto/sha256)
+- [Precompile: RIPEMD160](/precompiles/ripemd160)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [FIPS 180-4: SHA-2 Standard](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)

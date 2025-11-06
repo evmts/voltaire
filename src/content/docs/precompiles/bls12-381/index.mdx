@@ -1,0 +1,594 @@
+---
+title: "BLS12-381 Precompiles (EIP-2537)"
+description: Nine precompiles for BLS12-381 curve operations enabling efficient signature aggregation
+---
+
+## Overview
+
+**Addresses:** `0x0B` - `0x13`
+**Introduced:** Prague (planned)
+**EIP:** [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537)
+
+BLS12-381 is a pairing-friendly elliptic curve enabling efficient signature aggregation for Ethereum 2.0 consensus. These 9 precompiles provide gas-efficient operations on the BLS12-381 curve, supporting:
+
+- BLS signature aggregation for Ethereum 2.0 validators
+- Threshold signatures (t-of-n signing schemes)
+- Blind signatures and anonymous credentials
+- Verifiable random functions (VRFs)
+- Advanced cryptographic protocols requiring pairings
+
+## Curve Overview
+
+**BLS12-381** is a pairing-friendly elliptic curve with:
+- **Field modulus (p):** 381-bit prime
+- **Curve order (r):** 255-bit prime subgroup
+- **Embedding degree:** 12 (enables efficient pairings)
+- **Security level:** 128-bit (comparable to AES-128)
+
+The curve has two groups:
+- **G1:** Points over the base field Fp (128 bytes uncompressed)
+- **G2:** Points over the extension field Fp2 (256 bytes uncompressed)
+
+**Pairing:** A bilinear map `e: G1 × G2 → GT` that enables verification of complex cryptographic relationships.
+
+## Precompile Summary
+
+| Address | Name | Gas | Input Size | Output Size | Description |
+|---------|------|-----|------------|-------------|-------------|
+| 0x0B | G1_ADD | 500 | 256 | 128 | Add two G1 points |
+| 0x0C | G1_MUL | 12000 | 160 | 128 | Multiply G1 point by scalar |
+| 0x0D | G1_MSM | variable | 160k | 128 | Multi-scalar multiplication on G1 |
+| 0x0E | G2_ADD | 800 | 512 | 256 | Add two G2 points |
+| 0x0F | G2_MUL | 45000 | 288 | 256 | Multiply G2 point by scalar |
+| 0x10 | G2_MSM | variable | 288k | 256 | Multi-scalar multiplication on G2 |
+| 0x11 | PAIRING | 65000 + 43000k | 384k | 32 | Pairing check (k pairs) |
+| 0x12 | MAP_FP_TO_G1 | 5500 | 64 | 128 | Hash to G1 (map field element) |
+| 0x13 | MAP_FP2_TO_G2 | 75000 | 128 | 256 | Hash to G2 (map Fp2 element) |
+
+## Detailed Specifications
+
+### 0x0B: G1_ADD
+
+Add two points on the G1 curve.
+
+**Gas Cost:** 500
+
+**Input:** 256 bytes
+- Bytes 0-127: First G1 point (x₁, y₁)
+  - Bytes 0-63: x-coordinate (big-endian, 48-byte field element padded to 64)
+  - Bytes 64-127: y-coordinate (big-endian, 48-byte field element padded to 64)
+- Bytes 128-255: Second G1 point (x₂, y₂)
+
+**Output:** 128 bytes
+- G1 point representing P₁ + P₂
+
+**Operation:** Elliptic curve point addition on G1. Point at infinity encoded as (0, 0).
+
+**Errors:**
+- Invalid input length (not 256 bytes)
+- Points not on curve
+- Out of gas
+
+---
+
+### 0x0C: G1_MUL
+
+Multiply a G1 point by a scalar.
+
+**Gas Cost:** 12000
+
+**Input:** 160 bytes
+- Bytes 0-127: G1 point (x, y)
+  - Bytes 0-63: x-coordinate
+  - Bytes 64-127: y-coordinate
+- Bytes 128-159: Scalar (32 bytes, big-endian)
+
+**Output:** 128 bytes
+- G1 point representing scalar × P
+
+**Operation:** Scalar multiplication on G1. Scalar is reduced modulo curve order.
+
+**Errors:**
+- Invalid input length (not 160 bytes)
+- Point not on curve
+- Out of gas
+
+---
+
+### 0x0D: G1_MSM (Multi-Scalar Multiplication)
+
+Compute a linear combination of G1 points: s₁P₁ + s₂P₂ + ... + sₖPₖ
+
+**Gas Cost:** Variable with discount
+```
+gas = (12000 × k × discount) / 1000
+```
+
+where `k` = number of point-scalar pairs, and discount per tier:
+
+| Pairs (k) | Discount | Gas per pair | | Pairs (k) | Discount | Gas per pair |
+|-----------|----------|--------------|--|-----------|----------|--------------|
+| 1 | 1000 | 12000 | | 16 | 320 | 3840 |
+| 2 | 820 | 4920 | | 32 | 250 | 3000 |
+| 4 | 580 | 3480 | | 64 | 200 | 2400 |
+| 8 | 430 | 2580 | | 128+ | 174 | 2088 |
+
+**Input:** 160k bytes (k point-scalar pairs)
+- Each pair: 160 bytes
+  - Bytes 0-127: G1 point
+  - Bytes 128-159: Scalar (32 bytes)
+
+**Output:** 128 bytes
+- G1 point representing the sum
+
+**Operation:** Optimized batch scalar multiplication with Pippenger's algorithm. Discount reflects batch efficiency.
+
+**Errors:**
+- Invalid input length (not multiple of 160)
+- Empty input
+- Point not on curve
+- Out of gas
+
+---
+
+### 0x0E: G2_ADD
+
+Add two points on the G2 curve.
+
+**Gas Cost:** 800
+
+**Input:** 512 bytes
+- Bytes 0-255: First G2 point (x₁, y₁)
+  - Bytes 0-127: x-coordinate (Fp2 element: c0 || c1, each 64 bytes)
+  - Bytes 128-255: y-coordinate (Fp2 element: c0 || c1, each 64 bytes)
+- Bytes 256-511: Second G2 point (x₂, y₂)
+
+**Output:** 256 bytes
+- G2 point representing P₁ + P₂
+
+**Operation:** Elliptic curve point addition on G2. Point at infinity encoded as all zeros.
+
+**Errors:**
+- Invalid input length (not 512 bytes)
+- Points not on curve
+- Out of gas
+
+---
+
+### 0x0F: G2_MUL
+
+Multiply a G2 point by a scalar.
+
+**Gas Cost:** 45000
+
+**Input:** 288 bytes
+- Bytes 0-255: G2 point (x, y)
+  - Bytes 0-127: x-coordinate (Fp2)
+  - Bytes 128-255: y-coordinate (Fp2)
+- Bytes 256-287: Scalar (32 bytes, big-endian)
+
+**Output:** 256 bytes
+- G2 point representing scalar × P
+
+**Operation:** Scalar multiplication on G2. More expensive than G1 due to Fp2 arithmetic.
+
+**Errors:**
+- Invalid input length (not 288 bytes)
+- Point not on curve
+- Out of gas
+
+---
+
+### 0x10: G2_MSM (Multi-Scalar Multiplication)
+
+Compute a linear combination of G2 points: s₁P₁ + s₂P₂ + ... + sₖPₖ
+
+**Gas Cost:** Variable with discount
+```
+gas = (45000 × k × discount) / 1000
+```
+
+Uses same discount table as G1_MSM. Base cost is 45000 (G2_MUL cost).
+
+**Input:** 288k bytes (k point-scalar pairs)
+- Each pair: 288 bytes
+  - Bytes 0-255: G2 point
+  - Bytes 256-287: Scalar (32 bytes)
+
+**Output:** 256 bytes
+- G2 point representing the sum
+
+**Operation:** Optimized batch scalar multiplication on G2.
+
+**Errors:**
+- Invalid input length (not multiple of 288)
+- Empty input
+- Point not on curve
+- Out of gas
+
+---
+
+### 0x11: BLS12_PAIRING
+
+Verify a pairing equation: e(P₁, Q₁) × e(P₂, Q₂) × ... × e(Pₖ, Qₖ) = 1
+
+**Gas Cost:** 65000 + 43000k
+- Base: 65000
+- Per pair: 43000
+
+**Input:** 384k bytes (k pairs, k ≥ 0)
+- Each pair: 384 bytes
+  - Bytes 0-127: G1 point (128 bytes)
+  - Bytes 128-383: G2 point (256 bytes)
+- Empty input (k=0) is valid and returns success
+
+**Output:** 32 bytes
+- Byte 31: 1 if pairing check succeeds, 0 otherwise
+- Bytes 0-30: Zero padding
+
+**Operation:** Compute optimal Ate pairing for each (G1, G2) pair, multiply results, check if product equals 1.
+
+**Use Case:** BLS signature verification
+- Verify: e(pubkey, H(msg)) = e(G1_generator, signature)
+- Input: [G1_generator, signature, -pubkey, H(msg)]
+- Rearranged: e(G1, sig) × e(-pub, H) = 1
+
+**Errors:**
+- Invalid input length (not multiple of 384)
+- Points not on curve
+- Out of gas
+
+---
+
+### 0x12: BLS12_MAP_FP_TO_G1
+
+Map a field element to a G1 point (hash-to-curve).
+
+**Gas Cost:** 5500
+
+**Input:** 64 bytes
+- Field element in Fp (48-byte big-endian, padded to 64 bytes)
+
+**Output:** 128 bytes
+- G1 point
+
+**Operation:** Deterministic hash-to-curve mapping using simplified SWU (Shallue-van de Woestijne-Ulas) method. Maps arbitrary field elements to valid curve points.
+
+**Use Case:** Hash-to-curve for BLS signatures
+- H(message) → G1 point for signing
+
+**Errors:**
+- Invalid input length (not 64 bytes)
+- Field element ≥ field modulus
+- Out of gas
+
+---
+
+### 0x13: BLS12_MAP_FP2_TO_G2
+
+Map an Fp2 element to a G2 point (hash-to-curve).
+
+**Gas Cost:** 75000
+
+**Input:** 128 bytes
+- Fp2 element (c0 || c1, each 64 bytes)
+  - Bytes 0-63: c0 component (48-byte field element padded to 64)
+  - Bytes 64-127: c1 component (48-byte field element padded to 64)
+
+**Output:** 256 bytes
+- G2 point
+
+**Operation:** Deterministic hash-to-curve mapping for G2 using simplified SWU over Fp2.
+
+**Use Case:** Hash messages to G2 for signature schemes where public keys are in G1.
+
+**Errors:**
+- Invalid input length (not 128 bytes)
+- Field elements ≥ field modulus
+- Out of gas
+
+## Point Encoding
+
+### G1 Point (128 bytes)
+```
+[x-coordinate (64 bytes)][y-coordinate (64 bytes)]
+```
+- Each coordinate: 48-byte big-endian field element, left-padded with 16 zero bytes
+- Point at infinity: all zeros
+
+### G2 Point (256 bytes)
+```
+[x.c0 (64)][x.c1 (64)][y.c0 (64)][y.c1 (64)]
+```
+- Each Fp2 element: two 48-byte field elements (c0, c1), each padded to 64 bytes
+- Point at infinity: all zeros
+
+### Field Element (Fp)
+- 48-byte big-endian integer < field modulus p
+- Padded to 64 bytes with leading zeros
+- p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+
+## Usage Examples
+
+### TypeScript
+
+```typescript
+import { execute, PrecompileAddress, Hardfork } from '@tevm/voltaire/precompiles';
+
+// G1 Addition
+const p1 = new Uint8Array(128); // First G1 point
+const p2 = new Uint8Array(128); // Second G1 point
+const addInput = new Uint8Array(256);
+addInput.set(p1, 0);
+addInput.set(p2, 128);
+
+const result = execute(
+  PrecompileAddress.BLS12_G1_ADD,
+  addInput,
+  10000n,
+  Hardfork.PRAGUE
+);
+
+if (result.success) {
+  console.log('Sum:', result.output); // 128 bytes
+  console.log('Gas used:', result.gasUsed); // 500
+}
+
+// Multi-scalar multiplication (G1)
+const k = 4; // 4 point-scalar pairs
+const msmInput = new Uint8Array(160 * k);
+// Fill with points and scalars...
+
+const msmResult = execute(
+  PrecompileAddress.BLS12_G1_MSM,
+  msmInput,
+  50000n,
+  Hardfork.PRAGUE
+);
+// Gas used: (12000 × 4 × 580) / 1000 = 27840
+
+// BLS Signature Verification via Pairing
+// Verify: e(G1, sig) × e(-pubkey, H(msg)) = 1
+const G1_gen = new Uint8Array(128); // Generator point
+const signature = new Uint8Array(256); // G2 signature
+const negPubkey = new Uint8Array(128); // Negated public key (G1)
+const msgHash = new Uint8Array(256); // H(message) in G2
+
+const pairingInput = new Uint8Array(384 * 2);
+pairingInput.set(G1_gen, 0);
+pairingInput.set(signature, 128);
+pairingInput.set(negPubkey, 384);
+pairingInput.set(msgHash, 512);
+
+const pairingResult = execute(
+  PrecompileAddress.BLS12_PAIRING,
+  pairingInput,
+  200000n,
+  Hardfork.PRAGUE
+);
+
+const isValid = pairingResult.output[31] === 1;
+console.log('Signature valid:', isValid);
+```
+
+## Implementation Status
+
+### Zig: Complete
+
+All 9 precompiles fully implemented in `/Users/williamcory/primitives/src/precompiles/`:
+- `bls12_g1_add.zig`
+- `bls12_g1_mul.zig`
+- `bls12_g1_msm.zig`
+- `bls12_g2_add.zig`
+- `bls12_g2_mul.zig`
+- `bls12_g2_msm.zig`
+- `bls12_pairing.zig`
+- `bls12_map_fp_to_g1.zig`
+- `bls12_map_fp2_to_g2.zig`
+
+Delegates to `crypto.Crypto.bls12_381.*` functions which wrap the audited **blst** C library.
+
+### TypeScript: Stubs Only
+
+**Warning:** TypeScript implementations in `src/precompiles/precompiles.ts` are currently stubs that:
+- Return correctly sized zero-filled outputs
+- Calculate gas costs accurately
+- Provide type safety and interfaces
+
+**No actual cryptographic computation is performed.** For production use, call Zig/WASM implementations.
+
+### WASM: Available
+
+BLS12-381 operations available via compiled Zig implementation:
+```bash
+zig build build-ts-wasm  # ReleaseSmall (production)
+zig build build-ts-wasm-fast  # ReleaseFast (benchmarking)
+```
+
+## Use Cases
+
+### Ethereum 2.0 Consensus
+
+**BLS signature aggregation** enables efficient validator consensus:
+- Aggregate 1000s of validator signatures into single 96-byte signature
+- Single pairing check verifies all signatures
+- Massively reduces bandwidth and verification time
+
+### Threshold Signatures
+
+**t-of-n signing schemes:**
+- Distribute key shares to n parties
+- Any t parties can jointly sign
+- Applications: multisig wallets, distributed custody, governance
+
+### Blind Signatures
+
+**Anonymous credentials:**
+- Signer signs message without seeing content
+- User unblinds signature
+- Applications: anonymous voting, privacy-preserving authentication
+
+### Verifiable Random Functions (VRFs)
+
+**Provable randomness:**
+- Generate random value with cryptographic proof
+- Anyone can verify randomness is correct
+- Applications: lotteries, random leader election, proof-of-stake
+
+### SNARKs and zkSNARKs
+
+**Zero-knowledge proofs:**
+- Prove statement without revealing witness
+- Pairing-based SNARKs (like Groth16) require BN254 and BLS12-381
+- Applications: privacy, scalability (rollups)
+
+## Gas Optimization
+
+### MSM Discount Strategies
+
+Multi-scalar multiplication benefits from batch discounts:
+
+```typescript
+// Bad: Individual multiplications
+let sum = pointAtInfinity;
+for (const [point, scalar] of pairs) {
+  sum = execute(PrecompileAddress.BLS12_G1_MUL, ...); // 12000 gas each
+}
+// Total for 16 pairs: 16 × 12000 = 192000 gas
+
+// Good: Batch MSM
+const msmInput = concatenate(pairs); // 160 bytes × 16 = 2560 bytes
+const result = execute(PrecompileAddress.BLS12_G1_MSM, msmInput, ...);
+// Total: (12000 × 16 × 320) / 1000 = 61440 gas
+// Savings: 68% reduction
+```
+
+### Signature Aggregation
+
+Aggregate before verification:
+```typescript
+// Bad: Verify 10 signatures individually
+for (const sig of signatures) {
+  pairing(pubkey, msg, sig); // 108000 gas each
+}
+// Total: 1080000 gas
+
+// Good: Aggregate then verify once
+const aggSig = aggregateSignatures(signatures);
+pairing(aggPubkey, msg, aggSig); // 108000 gas
+// Savings: 90% reduction
+```
+
+## Security Considerations
+
+### Subgroup Checks
+
+All operations enforce subgroup membership:
+- Points must be in prime-order subgroup
+- Prevents small subgroup attacks
+- Performed automatically by blst library
+
+### Point Validation
+
+Input points are validated:
+- Must satisfy curve equation: y² = x³ + 4
+- Coordinates must be in field (< field modulus)
+- Invalid points return error (no result)
+
+### Side-Channel Resistance
+
+**blst** library provides:
+- Constant-time scalar multiplication
+- Protection against timing attacks
+- Hardware-optimized assembly for major platforms
+
+### Known Limitations
+
+**TypeScript stubs:** Do not use TS implementations for security-critical operations. Always use Zig/WASM for actual cryptography.
+
+**WASM:** BLS12-381 operations are available in WASM builds but inherit platform security constraints (no hardware acceleration).
+
+## Performance
+
+### Hardware Optimization
+
+**blst** library features:
+- Assembly implementations for x86_64, ARM64
+- AVX2/AVX512 optimizations when available
+- Fallback portable C implementation
+
+### Benchmarks
+
+Approximate gas costs and execution times (hardware-dependent):
+
+| Operation | Gas | Approx. Time | Throughput |
+|-----------|-----|--------------|------------|
+| G1_ADD | 500 | ~10 μs | 100K ops/s |
+| G1_MUL | 12000 | ~200 μs | 5K ops/s |
+| G1_MSM (16) | 61440 | ~1 ms | 16K points/s |
+| G2_ADD | 800 | ~20 μs | 50K ops/s |
+| G2_MUL | 45000 | ~800 μs | 1.2K ops/s |
+| PAIRING (2) | 151000 | ~5 ms | 400 pairs/s |
+
+## Implementation Details
+
+### Zig → blst C Library
+
+All precompiles delegate to `src/crypto/crypto.zig`:
+```zig
+pub const bls12_381 = struct {
+    pub fn g1Add(input: []const u8, output: []u8) !void;
+    pub fn g1Mul(input: []const u8, output: []u8) !void;
+    pub fn g1Msm(input: []const u8, output: []u8) !void;
+    pub fn g2Add(input: []const u8, output: []u8) !void;
+    pub fn g2Mul(input: []const u8, output: []u8) !void;
+    pub fn g2Msm(input: []const u8, output: []u8) !void;
+    pub fn pairingCheck(input: []const u8) !bool;
+    pub fn mapFpToG1(input: []const u8, output: []u8) !void;
+    pub fn mapFp2ToG2(input: []const u8, output: []u8) !void;
+};
+```
+
+These wrap **blst** (lib/blst/), a production-grade BLS12-381 library:
+- Audited by NCC Group and Trail of Bits
+- Used by Ethereum 2.0 clients (Prysm, Lighthouse)
+- Constant-time operations, side-channel resistant
+
+### Building
+
+```bash
+# Build all (includes blst)
+zig build
+
+# Test BLS12-381 precompiles
+zig build test -Dtest-filter=bls12
+
+# WASM builds
+zig build build-ts-wasm      # Production
+zig build build-ts-wasm-fast # Performance
+```
+
+## Related
+
+- [Crypto: BLS12-381](/crypto/bls12-381) - Underlying cryptographic primitives
+- [Precompiles: BN254](/precompiles/bn254) - Alternative pairing-friendly curve (cheaper, less secure)
+- [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) - Official specification
+- [blst library](https://github.com/supranational/blst) - C implementation
+- [BLS Signatures](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature) - IETF specification
+
+## References
+
+- **EIP-2537:** BLS12-381 curve operations
+  https://eips.ethereum.org/EIPS/eip-2537
+
+- **BLS12-381 Spec:**
+  https://hackmd.io/@benjaminion/bls12-381
+
+- **Hash-to-Curve:**
+  https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve
+
+- **blst Documentation:**
+  https://github.com/supranational/blst
+
+- **Ethereum 2.0 BLS:**
+  https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#bls-signatures

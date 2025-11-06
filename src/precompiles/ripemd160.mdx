@@ -1,0 +1,176 @@
+---
+title: RIPEMD160 (0x03)
+description: RIPEMD-160 cryptographic hash function precompile
+---
+
+# RIPEMD160
+
+RIPEMD-160 cryptographic hash function for computing 160-bit hashes.
+
+## Overview
+
+The RIPEMD160 precompile provides:
+- **Hash Computation**: Standard RIPEMD-160
+- **Variable Length**: Accepts inputs of any size
+- **Left-Padded Output**: 32-byte output (12 zero bytes + 20-byte hash)
+- **Address**: 0x0000000000000000000000000000000000000003
+- **Since**: Frontier
+
+**Source**: `src/precompiles/ripemd160.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: Data to hash (any length)
+- `gas_limit`: Maximum gas available
+
+**Returns:** 32-byte output (12 zero bytes + 20-byte RIPEMD-160 hash)
+
+**Errors:** `OutOfGas`, `OutOfMemory`
+
+## Gas Costs
+
+**Formula:** `600 + 120 * ceil(input_len / 32)`
+
+- **Base Cost:** 600 gas
+- **Per Word:** 120 gas per 32-byte word (rounded up)
+
+**Examples:**
+- Empty input (0 bytes): 600 gas
+- 32 bytes: 720 gas
+- 33 bytes: 840 gas (rounds up to 2 words)
+- 64 bytes: 840 gas
+- 1000 bytes: 4440 gas
+
+## Examples
+
+### Hash Data
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn hashData() !void {
+    const allocator = std.heap.page_allocator;
+
+    const input = "Hello, Ethereum!";
+    const result = try precompiles.ripemd160.execute(
+        allocator,
+        input,
+        10000,
+    );
+    defer result.deinit(allocator);
+
+    // Result is left-padded: 12 zero bytes + 20-byte hash
+    const hash = result.output[12..32];
+    std.debug.print("RIPEMD-160: 0x{x}\n", .{hash});
+}
+```
+
+### Extract Hash from Output
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn extractHash(input: []const u8) ![20]u8 {
+    const allocator = std.heap.page_allocator;
+
+    const result = try precompiles.ripemd160.execute(
+        allocator,
+        input,
+        10000,
+    );
+    defer result.deinit(allocator);
+
+    // Copy actual hash (last 20 bytes)
+    var hash: [20]u8 = undefined;
+    @memcpy(&hash, result.output[12..32]);
+    return hash;
+}
+```
+
+### Verify Left-Padding
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+test "ripemd160 padding" {
+    const allocator = std.testing.allocator;
+
+    const result = try precompiles.ripemd160.execute(
+        allocator,
+        "test",
+        10000,
+    );
+    defer result.deinit(allocator);
+
+    // Verify first 12 bytes are zero
+    for (result.output[0..12]) |byte| {
+        try std.testing.expectEqual(0, byte);
+    }
+
+    // Verify output is 32 bytes total
+    try std.testing.expectEqual(32, result.output.len);
+}
+```
+
+## Algorithm
+
+RIPEMD-160 is a 160-bit cryptographic hash function designed as a secure replacement for MD4/MD5. The precompile:
+
+1. Computes standard RIPEMD-160 hash (20 bytes)
+2. Left-pads with 12 zero bytes to make 32-byte output
+3. Returns padded result
+
+**Output Format:**
+```
+[00 00 00 00 00 00 00 00 00 00 00 00][hash_byte_0...hash_byte_19]
+|<--------- 12 zero bytes -------->||<------- 20-byte hash ------>|
+```
+
+## Performance
+
+**Native (ReleaseFast)**: ~300-500 MB/s
+**WASM (ReleaseFast)**: ~100-200 MB/s
+
+Pure software implementation (no hardware acceleration available).
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=ripemd160
+```
+
+Test coverage includes:
+- Empty input
+- Various input sizes
+- Gas calculation accuracy
+- Left-padding validation
+- Word boundary cases
+
+## Related
+
+- [SHA256](/zig/precompiles/sha256/) - SHA-256 hash (0x02)
+- [Keccak](/zig/crypto/keccak/) - Keccak-256 hash
+- [Identity](/zig/precompiles/identity/) - Identity function (0x04)
+
+## References
+
+- [RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html) - Original specification
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [Bitcoin Address](https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses) - Uses RIPEMD-160

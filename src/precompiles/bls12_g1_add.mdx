@@ -1,0 +1,107 @@
+---
+title: BLS12-381 G1 Add (0x0B)
+description: BLS12-381 G1 point addition precompile
+---
+
+# BLS12-381 G1 Add
+
+BLS12-381 G1 curve point addition for BLS signature verification and consensus.
+
+## Overview
+
+The BLS12-381 G1 Add precompile provides:
+- **G1 Point Addition**: Add two points on BLS12-381 G1 curve
+- **Consensus Support**: Used in Ethereum consensus layer (BeaconChain)
+- **Fixed Gas**: Constant cost
+- **C Library**: Uses blst for performance
+- **Address**: 0x000000000000000000000000000000000000000B
+- **Since**: Prague (EIP-2537)
+
+**Source**: `src/precompiles/bls12_g1_add.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: 256 bytes (two 128-byte G1 points)
+- `gas_limit`: Maximum gas available
+
+**Input Format** (256 bytes):
+- Bytes 0-127: G1 point 1 (x, y coordinates, 64 bytes each)
+- Bytes 128-255: G1 point 2 (x, y coordinates, 64 bytes each)
+
+**Returns:** 128 bytes (x, y coordinates of sum)
+
+**Errors:** `OutOfGas`, `InvalidInput`, `InvalidPoint`
+
+## Gas Costs
+
+**Fixed Cost:** 500 gas
+
+## Examples
+
+### Add Two G1 Points
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn addG1Points() !void {
+    const allocator = std.heap.page_allocator;
+
+    // Two G1 points (128 bytes each)
+    var input: [256]u8 = [_]u8{0} ** 256;
+
+    // ... (set valid G1 points) ...
+
+    const result = try precompiles.bls12_g1_add.execute(
+        allocator,
+        &input,
+        500,
+    );
+    defer result.deinit(allocator);
+
+    std.debug.print("Sum: {x}\n", .{result.output});
+}
+```
+
+## BLS12-381 G1 Curve
+
+**Equation:** y² = x³ + 4 (over F_p)
+
+**Field Size:** 381 bits
+
+**Point Format:** Uncompressed (x, y) = 128 bytes total
+
+## Performance
+
+**Native (ReleaseFast)**: ~20-40 μs
+**WASM (ReleaseFast)**: Not supported (uses C library)
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=bls12_g1_add
+```
+
+## Related
+
+- [BLS12-381 G1 Mul](/zig/precompiles/bls12_g1_mul/) - G1 scalar multiplication (0x0C)
+- [BLS12-381 Pairing](/zig/precompiles/bls12_pairing/) - Pairing check (0x11)
+
+## References
+
+- [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537) - Precompile for BLS12-381 curve operations
+- [BLS12-381](https://hackmd.io/@benjaminion/bls12-381) - Curve specification

@@ -1,0 +1,208 @@
+---
+title: BN254 Add (0x06)
+description: BN254 elliptic curve point addition precompile
+---
+
+# BN254 Add
+
+BN254 (alt_bn128) elliptic curve point addition for zkSNARK verification.
+
+## Overview
+
+The BN254 Add precompile provides:
+- **Point Addition**: Add two points on BN254 curve
+- **zkSNARK Support**: Used in zkSNARK verifiers
+- **Constant Gas**: Fixed cost regardless of input
+- **Pure Zig**: Native implementation without C dependencies
+- **Address**: 0x0000000000000000000000000000000000000006
+- **Since**: Byzantium (EIP-196)
+
+**Source**: `src/precompiles/bn254_add.zig`
+
+## Key Functions
+
+### execute
+
+```zig
+const precompiles = @import("precompiles");
+
+pub fn execute(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+    gas_limit: u64,
+) PrecompileError!PrecompileResult
+```
+
+**Parameters:**
+- `allocator`: Memory allocator for result
+- `input`: 128 bytes (two 64-byte points)
+- `gas_limit`: Maximum gas available
+
+**Input Format** (128 bytes):
+- Bytes 0-31: Point 1 x-coordinate (big-endian)
+- Bytes 32-63: Point 1 y-coordinate (big-endian)
+- Bytes 64-95: Point 2 x-coordinate (big-endian)
+- Bytes 96-127: Point 2 y-coordinate (big-endian)
+
+**Returns:** 64 bytes (x, y coordinates of sum)
+
+**Errors:** `OutOfGas`, `InvalidPoint` (if point not on curve)
+
+## Gas Costs
+
+**Fixed Cost:** 150 gas
+
+Constant gas regardless of whether points are infinity, same, or distinct.
+
+## Examples
+
+### Add Two Points
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn addPoints() !void {
+    const allocator = std.heap.page_allocator;
+
+    // Two points on BN254 curve
+    var input: [128]u8 = undefined;
+
+    // Point 1: G (generator)
+    const p1_x = "0x01"; // (simplified - actual is 32 bytes)
+    const p1_y = "0x02";
+
+    // Point 2: G (generator)
+    const p2_x = "0x01";
+    const p2_y = "0x02";
+
+    // ... (parse hex to bytes) ...
+
+    const result = try precompiles.bn254_add.execute(
+        allocator,
+        &input,
+        1000,
+    );
+    defer result.deinit(allocator);
+
+    // Result is P1 + P2 = 2G
+    std.debug.print("Sum: x={x}, y={x}\n", .{
+        result.output[0..32],
+        result.output[32..64],
+    });
+}
+```
+
+### Point at Infinity
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+test "bn254_add infinity" {
+    const allocator = std.testing.allocator;
+
+    // Adding infinity to infinity = infinity
+    const input = [_]u8{0} ** 128;
+
+    const result = try precompiles.bn254_add.execute(
+        allocator,
+        &input,
+        150,
+    );
+    defer result.deinit(allocator);
+
+    // Result should be point at infinity (all zeros)
+    for (result.output) |byte| {
+        try std.testing.expectEqual(0, byte);
+    }
+}
+```
+
+### Validate Point on Curve
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+test "bn254_add invalid point" {
+    const allocator = std.testing.allocator;
+
+    // Create point NOT on curve
+    var input: [128]u8 = [_]u8{0} ** 128;
+    input[31] = 1; // x = 1
+    input[63] = 2; // y = 2 (not on curve)
+
+    const result = precompiles.bn254_add.execute(
+        allocator,
+        &input,
+        150,
+    );
+
+    // Should fail with InvalidPoint
+    try std.testing.expectError(error.InvalidPoint, result);
+}
+```
+
+## BN254 Curve
+
+**Equation:** y² = x³ + 3 (over F_p)
+
+**Field Modulus (p):**
+```
+0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47
+```
+
+**Generator Point (G):**
+```
+x = 0x0000000000000000000000000000000000000000000000000000000000000001
+y = 0x0000000000000000000000000000000000000000000000000000000000000002
+```
+
+**Point at Infinity:** (0, 0) in Ethereum's encoding
+
+## Algorithm
+
+1. **Parse Points**: Extract (x₁, y₁) and (x₂, y₂)
+2. **Validate**: Check points lie on curve
+3. **Handle Special Cases**:
+   - If P₁ = ∞, return P₂
+   - If P₂ = ∞, return P₁
+   - If P₁ = P₂, use point doubling
+   - If P₁ = -P₂, return ∞
+4. **Add**: Compute P₃ = P₁ + P₂ using group law
+5. **Return**: Encode result
+
+## Performance
+
+**Native (ReleaseFast)**: ~15-30 μs
+**WASM (ReleaseFast)**: ~40-80 μs
+
+Pure Zig implementation optimized for constant-time execution.
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=bn254_add
+```
+
+Test coverage includes:
+- Point at infinity operations
+- Generator point addition
+- Point doubling (P + P)
+- Invalid point rejection
+- Coordinates at field modulus
+- go-ethereum test vectors
+
+## Related
+
+- [BN254 Mul](/zig/precompiles/bn254_mul/) - Scalar multiplication (0x07)
+- [BN254 Pairing](/zig/precompiles/bn254_pairing/) - Pairing check (0x08)
+- [BLS12-381 G1 Add](/zig/precompiles/bls12_g1_add/) - BLS curve addition (0x0B)
+
+## References
+
+- [EIP-196](https://eips.ethereum.org/EIPS/eip-196) - Precompiled contracts for addition and scalar multiplication on the elliptic curve alt_bn128
+- [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108) - Reduce alt_bn128 precompile gas costs
+- [BN Curves](https://eprint.iacr.org/2005/133.pdf) - Original Barreto-Naehrig paper
+- [ZCash Sapling](https://z.cash/upgrade/sapling/) - Uses BN254 for zkSNARKs

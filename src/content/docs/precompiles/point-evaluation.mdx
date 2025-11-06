@@ -1,0 +1,208 @@
+---
+title: "0x0A Point Evaluation"
+description: KZG point evaluation for EIP-4844 blob verification
+---
+
+## Overview
+
+**Address:** `0x000000000000000000000000000000000000000a`
+**Introduced:** Cancun (EIP-4844)
+**EIP:** [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)
+
+The Point Evaluation precompile verifies KZG (Kate-Zaverucha-Goldberg) proofs for EIP-4844 blob transactions. It checks that a KZG commitment opens to a claimed value at a specific point, enabling efficient data availability verification for Proto-Danksharding.
+
+This precompile is crucial for Ethereum's scaling roadmap, allowing rollups to post data as blobs (up to 128KB) with cryptographic proofs instead of expensive calldata.
+
+## Gas Cost
+
+**Fixed:** `50,000` gas
+
+Cost is constant regardless of input validity. This covers the expensive BLS12-381 pairing operation.
+
+## Input Format
+
+**Exactly 192 bytes required:**
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | versioned_hash (SHA-256(commitment) with version prefix)
+32     | 32     | z (evaluation point, BLS field element)
+64     | 32     | y (claimed evaluation value, BLS field element)
+96     | 48     | commitment (KZG commitment, BLS12-381 G1 point)
+144    | 48     | proof (KZG proof, BLS12-381 G1 point)
+```
+
+Total input length: **Exactly 192 bytes**
+
+**Versioned hash validation:**
+- Must equal `SHA256(commitment)` with first byte set to `0x01`
+- Version byte `0x01` indicates EIP-4844 blob commitment
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | FIELD_ELEMENTS_PER_BLOB (0x1000 = 4096)
+32     | 32     | BLS_MODULUS (BLS12-381 field modulus)
+```
+
+Total output length: 64 bytes
+
+**Success output values:**
+- Bytes 0-29: zero
+- Bytes 30-31: `0x1000` (4096 field elements per blob)
+- Bytes 32-63: BLS modulus `0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001`
+
+**Failure:** All zeros (64 zero bytes)
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Verify KZG proof for blob data
+const versionedHash = new Uint8Array(32); // From blob transaction
+const z = new Uint8Array(32);             // Random evaluation point
+const y = new Uint8Array(32);             // Claimed value at z
+const commitment = new Uint8Array(48);    // KZG commitment to blob
+const proof = new Uint8Array(48);         // KZG opening proof
+
+const input = new Uint8Array(192);
+input.set(versionedHash, 0);
+input.set(z, 32);
+input.set(y, 64);
+input.set(commitment, 96);
+input.set(proof, 144);
+
+const result = execute(
+  PrecompileAddress.POINT_EVALUATION,
+  input,
+  60000n,
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  // Check if proof is valid (non-zero output)
+  const valid = result.output[31] === 0x00 && result.output[30] === 0x10;
+  console.log('Proof valid:', valid);
+  console.log('Gas used:', result.gasUsed); // 50000
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Error Conditions
+
+- Input length ≠ 192 bytes
+- Out of gas (gasLimit < 50,000)
+- Versioned hash mismatch (doesn't match SHA256(commitment) with version byte)
+- Invalid KZG commitment (not valid BLS12-381 G1 point)
+- Invalid KZG proof (not valid BLS12-381 G1 point)
+- Invalid field elements (z or y >= BLS modulus)
+
+Invalid proofs that pass format validation return 64 zero bytes (not an error).
+
+## Use Cases
+
+- **Blob verification:** Validate EIP-4844 blob transaction data availability
+- **Rollup data availability:** Layer 2s verify blob data commitments
+- **Proto-Danksharding:** Core primitive for Ethereum's scaling roadmap
+- **Data availability sampling:** Future full Danksharding will use KZG extensively
+- **Stateless clients:** Verify data without downloading full blobs
+
+## Implementation Details
+
+- **Zig:** Uses c-kzg-4844 library with BLS12-381 pairing
+- **TypeScript:** Wraps KZG crypto module (c-kzg bindings)
+- **Integration:** Depends on KZG trusted setup (powers of tau ceremony)
+- **Curve:** BLS12-381 (embedding degree 12, 381-bit prime)
+- **Algorithm:** KZG polynomial commitment opening verification
+
+## KZG Commitments
+
+KZG (Kate-Zaverucha-Goldberg) commitments:
+- Polynomial commitments with constant-size proofs
+- Commitment: C = [p(τ)]₁ where p is polynomial, τ is trusted setup secret
+- Opening: Prove p(z) = y for specific point z
+- Verification: Single pairing check on BLS12-381
+
+## EIP-4844 Blob Structure
+
+Each blob:
+- Size: 128 KB (131,072 bytes)
+- Encoded as: 4096 field elements (32 bytes each)
+- Field: BLS12-381 scalar field (Fr)
+- Commitment: Single 48-byte G1 point
+- Proof: Single 48-byte G1 point per evaluation
+
+## Versioned Hash Format
+
+```
+versioned_hash[0] = 0x01  // Version (EIP-4844)
+versioned_hash[1:32] = SHA256(commitment)[1:32]
+```
+
+Version byte allows future commitment schemes:
+- `0x01`: EIP-4844 KZG commitments
+- `0x02`: Reserved for future schemes
+- `0x03+`: Reserved
+
+## Gas Cost Justification
+
+50,000 gas covers:
+- BLS12-381 pairing operation (~45,000 gas equivalent)
+- Field arithmetic and validation
+- SHA-256 hash for versioned hash check
+
+Cheaper than equivalent BLS precompiles due to single pairing.
+
+## KZG Trusted Setup
+
+Point evaluation requires KZG trusted setup (powers of tau):
+- Ceremony completed in 2023 with 140,000+ participants
+- Powers: [1]₁, [τ]₁, [τ²]₁, ..., [τ⁴⁰⁹⁵]₁
+- Security: Safe unless all participants colluded
+- Reusable across Ethereum and other systems
+
+## Test Vectors
+
+```typescript
+// Point at infinity (trivial valid proof)
+const commitment = new Uint8Array(48);
+commitment[0] = 0xc0; // Infinity flag
+
+const proof = new Uint8Array(48);
+proof[0] = 0xc0; // Infinity flag
+
+const z = new Uint8Array(32); // 0
+const y = new Uint8Array(32); // 0
+
+// Compute versioned hash
+const versionedHash = new Uint8Array(32);
+const hash = sha256(commitment);
+hash[0] = 0x01;
+versionedHash.set(hash);
+
+// Should return success (valid proof)
+```
+
+## Blob Transaction Flow
+
+1. Rollup submits blob transaction with commitment
+2. Beacon chain stores blob (144 GB ephemeral storage)
+3. Contract calls point evaluation to verify commitment
+4. Blob pruned after ~18 days
+5. Commitment remains on-chain permanently
+
+## Related
+
+- [Crypto: KZG](/crypto/kzg)
+- [Crypto: BLS12-381](/crypto/bls12-381)
+- [Primitives: Blob](/primitives/blob)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [KZG Ceremony](https://ceremony.ethereum.org/)
+- [Proto-Danksharding FAQ](https://notes.ethereum.org/@vbuterin/proto_danksharding_faq)
