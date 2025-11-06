@@ -126,7 +126,7 @@ describe("Keccak256.hashHex", () => {
 
 	describe("Ethereum address hashing", () => {
 		it("should hash Ethereum address", () => {
-			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb";
+			const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
 			const result = hashHex(address);
 			expect(result.length).toBe(32);
 		});
@@ -144,7 +144,7 @@ describe("Keccak256.hashHex", () => {
 
 	describe("determinism", () => {
 		it("should produce same hash for same hex", () => {
-			const hex = "0x123456789abcdef";
+			const hex = "0x123456789abcdef0";
 
 			const hash1 = hashHex(hex);
 			const hash2 = hashHex(hex);
@@ -224,7 +224,7 @@ describe("Keccak256.hashHex", () => {
 		it("should hash full transaction data", () => {
 			// Example function call data
 			const data =
-				"0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb0000000000000000000000000000000000000000000000000de0b6b3a7640000";
+				"0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb00000000000000000000000000000000000000000000000000de0b6b3a7640000";
 			const result = hashHex(data);
 			expect(result.length).toBe(32);
 		});
