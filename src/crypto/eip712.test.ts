@@ -191,7 +191,7 @@ describe("EIP712", () => {
 
 			expect(encoded.length).toBe(32);
 			// Address should be right-aligned
-			expect(encoded.slice(12)).toEqual(address);
+			expect(Array.from(encoded.slice(12))).toEqual(Array.from(address));
 		});
 
 		it("encodes bool true", () => {

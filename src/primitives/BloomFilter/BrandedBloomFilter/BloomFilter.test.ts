@@ -483,7 +483,7 @@ describe("BloomFilter - Serialization", () => {
 	describe("fromHex", () => {
 		it("creates filter from hex string", () => {
 			const hex = `0x${"00".repeat(256)}`;
-			const filter = BloomFilter.fromHex(hex, DEFAULT_HASH_COUNT);
+			const filter = BloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
 			expect(filter.length).toBe(256);
 			expect(filter.m).toBe(BITS);
 			expect(filter.k).toBe(DEFAULT_HASH_COUNT);
@@ -495,7 +495,7 @@ describe("BloomFilter - Serialization", () => {
 			BloomFilter.add(original, item);
 
 			const hex = BloomFilter.toHex(original);
-			const restored = BloomFilter.fromHex(hex, DEFAULT_HASH_COUNT);
+			const restored = BloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
 
 			expect(BloomFilter.contains(restored, item)).toBe(true);
 		});
@@ -507,14 +507,14 @@ describe("BloomFilter - Serialization", () => {
 			BloomFilter.add(original, new TextEncoder().encode("test3"));
 
 			const hex = BloomFilter.toHex(original);
-			const restored = BloomFilter.fromHex(hex, DEFAULT_HASH_COUNT);
+			const restored = BloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
 
 			expect(BloomFilter.toHex(restored)).toBe(hex);
 		});
 
 		it("handles uppercase hex", () => {
 			const hex = `0x${"FF".repeat(256)}`;
-			const filter = BloomFilter.fromHex(hex, DEFAULT_HASH_COUNT);
+			const filter = BloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
 			for (let i = 0; i < filter.length; i++) {
 				expect(filter[i]).toBe(0xff);
 			}
@@ -522,7 +522,7 @@ describe("BloomFilter - Serialization", () => {
 
 		it("handles hex without 0x prefix", () => {
 			const hex = "00".repeat(256);
-			const filter = BloomFilter.fromHex(hex, DEFAULT_HASH_COUNT);
+			const filter = BloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
 			expect(filter.length).toBe(256);
 		});
 	});

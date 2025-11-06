@@ -348,30 +348,28 @@ describe("Legacy", () => {
 		s: testSignature.s,
 	};
 
-	it("serialize throws not implemented", () => {
-		expect(() =>
-			Transaction.Legacy.serialize.call(legacyTx as BrandedTransactionLegacy),
-		).toThrow("Not implemented");
+	it("serialize works", () => {
+		const serialized = Transaction.Legacy.serialize.call(legacyTx as BrandedTransactionLegacy);
+		expect(serialized).toBeInstanceOf(Uint8Array);
+		expect(serialized.length).toBeGreaterThan(0);
 	});
 
-	it("hash throws not implemented", () => {
-		expect(() =>
-			Transaction.Legacy.hash.call(legacyTx as BrandedTransactionLegacy),
-		).toThrow("Not implemented");
+	it("hash works", () => {
+		const hash = Transaction.Legacy.hash.call(legacyTx as BrandedTransactionLegacy);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
 	});
 
-	it("getSigningHash throws not implemented", () => {
-		expect(() =>
-			Transaction.Legacy.getSigningHash.call(
-				legacyTx as BrandedTransactionLegacy,
-			),
-		).toThrow("Not implemented");
-	});
-
-	it("deserialize throws not implemented", () => {
-		expect(() => Transaction.Legacy.deserialize(new Uint8Array())).toThrow(
-			"Not implemented",
+	it("getSigningHash works", () => {
+		const signingHash = Transaction.Legacy.getSigningHash.call(
+			legacyTx as BrandedTransactionLegacy,
 		);
+		expect(signingHash).toBeInstanceOf(Uint8Array);
+		expect(signingHash.length).toBe(32);
+	});
+
+	it("deserialize throws for invalid input", () => {
+		expect(() => Transaction.Legacy.deserialize(new Uint8Array())).toThrow();
 	});
 
 	describe("getChainId", () => {
@@ -426,18 +424,17 @@ describe("Legacy", () => {
 		});
 	});
 
-	it("getSender throws not implemented", () => {
-		expect(() =>
-			Transaction.Legacy.getSender.call(legacyTx as BrandedTransactionLegacy),
-		).toThrow("Not implemented");
+	it("getSender works", () => {
+		const sender = Transaction.Legacy.getSender.call(legacyTx as BrandedTransactionLegacy);
+		expect(sender).toBeInstanceOf(Uint8Array);
+		expect(sender.length).toBe(20);
 	});
 
-	it("verifySignature throws not implemented", () => {
-		expect(() =>
-			Transaction.Legacy.verifySignature.call(
-				legacyTx as BrandedTransactionLegacy,
-			),
-		).toThrow("Not implemented");
+	it("verifySignature works", () => {
+		const isValid = Transaction.Legacy.verifySignature.call(
+			legacyTx as BrandedTransactionLegacy,
+		);
+		expect(typeof isValid).toBe("boolean");
 	});
 });
 
@@ -462,24 +459,24 @@ describe("EIP1559", () => {
 		s: testSignature.s,
 	};
 
-	it("serialize throws not implemented", () => {
-		expect(() =>
-			Transaction.EIP1559.serialize(eip1559Tx as BrandedTransactionEIP1559),
-		).toThrow("Not implemented");
+	it("serialize works", () => {
+		const serialized = Transaction.EIP1559.serialize(eip1559Tx as BrandedTransactionEIP1559);
+		expect(serialized).toBeInstanceOf(Uint8Array);
+		expect(serialized[0]).toBe(Transaction.Type.EIP1559);
 	});
 
-	it("hash throws not implemented", () => {
-		expect(() =>
-			Transaction.EIP1559.hash(eip1559Tx as BrandedTransactionEIP1559),
-		).toThrow("Not implemented");
+	it("hash works", () => {
+		const hash = Transaction.EIP1559.hash(eip1559Tx as BrandedTransactionEIP1559);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
 	});
 
-	it("getSigningHash throws not implemented", () => {
-		expect(() =>
-			Transaction.EIP1559.getSigningHash(
-				eip1559Tx as BrandedTransactionEIP1559,
-			),
-		).toThrow("Not implemented");
+	it("getSigningHash works", () => {
+		const signingHash = Transaction.EIP1559.getSigningHash(
+			eip1559Tx as BrandedTransactionEIP1559,
+		);
+		expect(signingHash).toBeInstanceOf(Uint8Array);
+		expect(signingHash.length).toBe(32);
 	});
 
 	describe("getEffectiveGasPrice", () => {
@@ -667,11 +664,13 @@ describe("Transaction.serialize", () => {
 		s: testSignature.s,
 	};
 
-	it("throws not implemented for legacy", () => {
-		expect(() => Transaction.serialize(legacyTx)).toThrow("Not implemented");
+	it("serializes legacy transaction", () => {
+		const serialized = Transaction.serialize(legacyTx);
+		expect(serialized).toBeInstanceOf(Uint8Array);
+		expect(serialized.length).toBeGreaterThan(0);
 	});
 
-	it("throws not implemented for EIP-1559", () => {
+	it("serializes EIP-1559 transaction", () => {
 		const tx: EIP1559 = {
 			type: Transaction.Type.EIP1559,
 			chainId: 1n,
@@ -687,12 +686,14 @@ describe("Transaction.serialize", () => {
 			r: testSignature.r,
 			s: testSignature.s,
 		};
-		expect(() => Transaction.serialize(tx)).toThrow("Not implemented");
+		const serialized = Transaction.serialize(tx);
+		expect(serialized).toBeInstanceOf(Uint8Array);
+		expect(serialized[0]).toBe(Transaction.Type.EIP1559);
 	});
 });
 
 describe("Transaction.hash", () => {
-	it("throws not implemented", () => {
+	it("computes hash", () => {
 		const tx: Legacy = {
 			type: Transaction.Type.Legacy,
 			nonce: 0n,
@@ -705,12 +706,14 @@ describe("Transaction.hash", () => {
 			r: testSignature.r,
 			s: testSignature.s,
 		};
-		expect(() => Transaction.hash(tx)).toThrow("Not implemented");
+		const hash = Transaction.hash(tx);
+		expect(hash).toBeInstanceOf(Uint8Array);
+		expect(hash.length).toBe(32);
 	});
 });
 
 describe("Transaction.getSigningHash", () => {
-	it("throws not implemented", () => {
+	it("computes signing hash", () => {
 		const tx: Legacy = {
 			type: Transaction.Type.Legacy,
 			nonce: 0n,
@@ -723,14 +726,16 @@ describe("Transaction.getSigningHash", () => {
 			r: testSignature.r,
 			s: testSignature.s,
 		};
-		expect(() => Transaction.getSigningHash(tx)).toThrow("Not implemented");
+		const signingHash = Transaction.getSigningHash(tx);
+		expect(signingHash).toBeInstanceOf(Uint8Array);
+		expect(signingHash.length).toBe(32);
 	});
 });
 
 describe("Transaction.deserialize", () => {
-	it("throws not implemented", () => {
+	it("throws for invalid data", () => {
 		const data = new Uint8Array([0x02, 0xc0]);
-		expect(() => Transaction.deserialize(data)).toThrow("Not implemented");
+		expect(() => Transaction.deserialize(data)).toThrow();
 	});
 });
 
