@@ -70,6 +70,7 @@ describe("G2 curve operations", () => {
 				x: Fp2.create(1n, 2n),
 				y: Fp2.create(3n, 4n),
 				z: Fp2.create(0n, 0n),
+				__tag: "G2Point",
 			};
 			expect(G2.isZero(point)).toBe(true);
 		});
@@ -125,6 +126,7 @@ describe("G2 curve operations", () => {
 				x: Fp2.mul(gen.x, Fp2.square(two)),
 				y: Fp2.mul(gen.y, Fp2.mul(Fp2.square(two), two)),
 				z: two,
+				__tag: "G2Point",
 			};
 			expect(G2.equal(gen, scaled)).toBe(true);
 		});
@@ -369,27 +371,21 @@ describe("G2 curve operations", () => {
 	describe("frobenius", () => {
 		test("frobenius on infinity", () => {
 			const inf = G2.infinity();
-			const result = G2.frobenius(inf, 1n);
+			const result = G2.frobenius(inf);
 			expect(G2.isZero(result)).toBe(true);
-		});
-
-		test("frobenius power 0 is identity", () => {
-			const gen = G2.generator();
-			const result = G2.frobenius(gen, 0n);
-			expect(G2.equal(result, gen)).toBe(true);
 		});
 
 		test("frobenius map produces valid point", () => {
 			const gen = G2.generator();
-			const result = G2.frobenius(gen, 1n);
+			const result = G2.frobenius(gen);
 			expect(G2.isOnCurve(result)).toBe(true);
 		});
 
 		test("frobenius repeated", () => {
 			const gen = G2.generator();
 			let point = gen;
-			for (let i = 1n; i <= 4n; i++) {
-				point = G2.frobenius(point, 1n);
+			for (let i = 1; i <= 4; i++) {
+				point = G2.frobenius(point);
 				expect(G2.isOnCurve(point)).toBe(true);
 			}
 		});
@@ -450,6 +446,7 @@ describe("G2 curve operations", () => {
 				x: Fp2.create(0n, 0n),
 				y: Fp2.create(0n, 0n),
 				z: Fp2.create(1n, 0n),
+				__tag: "G2Point",
 			};
 			G2.isOnCurve(point);
 		});

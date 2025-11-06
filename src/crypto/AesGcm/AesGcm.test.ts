@@ -310,7 +310,7 @@ describe("AesGcm", () => {
 			// Expected tag: 58e2fccefa7e3061367f1d57a4e7455a
 			const expectedTag = "58e2fccefa7e3061367f1d57a4e7455a";
 			const actualTag = Array.from(ciphertext)
-				.map((b) => b.toString(16).padStart(2, "0"))
+				.map((b: number) => b.toString(16).padStart(2, "0"))
 				.join("");
 
 			expect(actualTag).toBe(expectedTag);
@@ -385,17 +385,14 @@ describe("AesGcm", () => {
 			const keyHex =
 				"0000000000000000000000000000000000000000000000000000000000000000";
 			const nonceHex = "000000000000000000000000";
-			const plaintextHex = "";
-			const aadHex = "";
 
 			const key = await AesGcm.importKey(
 				new Uint8Array(
-					keyHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+					(keyHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 				),
-				256,
 			);
 			const nonce = new Uint8Array(
-				nonceHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(nonceHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const plaintext = new Uint8Array(0);
 			const aad = new Uint8Array(0);
@@ -416,19 +413,17 @@ describe("AesGcm", () => {
 				"0000000000000000000000000000000000000000000000000000000000000000";
 			const nonceHex = "000000000000000000000000";
 			const plaintextHex = "00000000000000000000000000000000";
-			const aadHex = "";
 
 			const key = await AesGcm.importKey(
 				new Uint8Array(
-					keyHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+					(keyHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 				),
-				256,
 			);
 			const nonce = new Uint8Array(
-				nonceHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(nonceHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const plaintext = new Uint8Array(
-				plaintextHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(plaintextHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const aad = new Uint8Array(0);
 
