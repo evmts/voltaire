@@ -326,7 +326,7 @@ Voltaire is optimized for performance:
 
 - **Zero overhead abstractions** — Branded types compile to primitives
 - **Tree-shaking** — Only bundle what you use
-- **WASM acceleration** — Optional WASM implementations for crypto
+- **WASM acceleration** — Optional Zig-compiled WASM for minimal bundle impact and maximum performance
 - **Native browser methods** — Uses native toHex/toBase64 when available
 - **Constant-time operations** — Security-critical comparisons are constant-time
 
@@ -338,9 +338,10 @@ Voltaire is optimized for performance:
 
 ## Design Principles
 
-1. **Simple, close-to-spec APIs** — Minimal abstraction over Ethereum primitives
-2. **LLM-optimized documentation** — Built and tested for AI coding assistants
-3. **Performance first** — Zero-overhead abstractions and optional WASM
-4. **Type safety** — Branded types prevent common mistakes
-5. **Tree-shakeable** — Pay only for what you use
-6. **Multi-language** — TypeScript and Zig implementations
+1. **Simple data structures** — Built on native JavaScript primitives (Uint8Array, bigint, string)
+2. **Close-to-spec APIs** — Minimal abstraction over Ethereum primitives
+3. **Built for humans and LLMs** — APIs and documentation designed for both developers and AI assistants
+4. **Performance first** — Zero-overhead abstractions and optional WASM
+5. **Type safety** — Branded types prevent common mistakes
+6. **Tree-shakeable** — Pay only for what you use
+7. **Multi-language** — TypeScript and Zig implementations
