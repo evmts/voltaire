@@ -49,6 +49,26 @@ export { getAccessList as getAccessList_internal } from "./getAccessList.js";
 export { getChainId as getChainId_internal } from "./getChainId.js";
 export { assertSigned as assertSigned_internal } from "./assertSigned.js";
 export { isSigned as isSigned_internal } from "./isSigned.js";
+export { getRecipient as getRecipient_internal } from "./getRecipient.js";
+export { isContractCreation as isContractCreation_internal } from "./isContractCreation.js";
+export { isContractCall as isContractCall_internal } from "./isContractCall.js";
+export { validateGasPrice as validateGasPrice_internal } from "./validateGasPrice.js";
+export { validateGasLimit as validateGasLimit_internal } from "./validateGasLimit.js";
+export { validateNonce as validateNonce_internal } from "./validateNonce.js";
+export { validateValue as validateValue_internal } from "./validateValue.js";
+export { validateChainId as validateChainId_internal } from "./validateChainId.js";
+export { withNonce as withNonce_internal } from "./withNonce.js";
+export { withGasLimit as withGasLimit_internal } from "./withGasLimit.js";
+export { withGasPrice as withGasPrice_internal } from "./withGasPrice.js";
+export { withData as withData_internal } from "./withData.js";
+export {
+	replaceWith as replaceWith_internal,
+	type ReplaceOptions,
+} from "./replaceWith.js";
+export { getBlobCount as getBlobCount_internal } from "./getBlobCount.js";
+export { getBlobVersionedHashes as getBlobVersionedHashes_internal } from "./getBlobVersionedHashes.js";
+export { getAuthorizationCount as getAuthorizationCount_internal } from "./getAuthorizationCount.js";
+export { getAuthorizations as getAuthorizations_internal } from "./getAuthorizations.js";
 
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
@@ -64,8 +84,35 @@ import { hash as _hash } from "./hash.js";
 import { isSigned as _isSigned } from "./isSigned.js";
 // Import internal methods for public wrappers
 import { serialize as _serialize } from "./serialize.js";
-import type { AccessList, Any } from "./types.js";
+import type {
+	AccessList,
+	Any,
+	AuthorizationList,
+	EIP4844,
+	EIP7702,
+	VersionedHash,
+} from "./types.js";
 import { verifySignature as _verifySignature } from "./verifySignature.js";
+import { getRecipient as _getRecipient } from "./getRecipient.js";
+import { isContractCreation as _isContractCreation } from "./isContractCreation.js";
+import { isContractCall as _isContractCall } from "./isContractCall.js";
+import { validateGasPrice as _validateGasPrice } from "./validateGasPrice.js";
+import { validateGasLimit as _validateGasLimit } from "./validateGasLimit.js";
+import { validateNonce as _validateNonce } from "./validateNonce.js";
+import { validateValue as _validateValue } from "./validateValue.js";
+import { validateChainId as _validateChainId } from "./validateChainId.js";
+import { withNonce as _withNonce } from "./withNonce.js";
+import { withGasLimit as _withGasLimit } from "./withGasLimit.js";
+import { withGasPrice as _withGasPrice } from "./withGasPrice.js";
+import { withData as _withData } from "./withData.js";
+import {
+	replaceWith as _replaceWith,
+	type ReplaceOptions,
+} from "./replaceWith.js";
+import { getBlobCount as _getBlobCount } from "./getBlobCount.js";
+import { getBlobVersionedHashes as _getBlobVersionedHashes } from "./getBlobVersionedHashes.js";
+import { getAuthorizationCount as _getAuthorizationCount } from "./getAuthorizationCount.js";
+import { getAuthorizations as _getAuthorizations } from "./getAuthorizations.js";
 
 // Main Transaction type (re-export Any as Transaction)
 export type Transaction = Any;
@@ -174,4 +221,125 @@ export function assertSigned(tx: Any): void {
  */
 export function isSigned(tx: Any): boolean {
 	return _isSigned.call(tx);
+}
+
+/**
+ * Get recipient address from transaction
+ */
+export function getRecipient(tx: Any): BrandedAddress | null {
+	return _getRecipient.call(tx);
+}
+
+/**
+ * Check if transaction is a contract creation
+ */
+export function isContractCreation(tx: Any): boolean {
+	return _isContractCreation.call(tx);
+}
+
+/**
+ * Check if transaction is a contract call
+ */
+export function isContractCall(tx: Any): boolean {
+	return _isContractCall.call(tx);
+}
+
+/**
+ * Validate gas price is reasonable
+ */
+export function validateGasPrice(tx: Any): void {
+	return _validateGasPrice.call(tx);
+}
+
+/**
+ * Validate gas limit is valid
+ */
+export function validateGasLimit(tx: Any): void {
+	return _validateGasLimit.call(tx);
+}
+
+/**
+ * Validate nonce format
+ */
+export function validateNonce(tx: Any): void {
+	return _validateNonce.call(tx);
+}
+
+/**
+ * Validate value is valid
+ */
+export function validateValue(tx: Any): void {
+	return _validateValue.call(tx);
+}
+
+/**
+ * Validate chain ID is present
+ */
+export function validateChainId(tx: Any): void {
+	if ("chainId" in tx) {
+		return _validateChainId.call(tx);
+	}
+}
+
+/**
+ * Return new transaction with updated nonce
+ */
+export function withNonce(tx: Any, nonce: bigint): Any {
+	return _withNonce.call(tx, nonce);
+}
+
+/**
+ * Return new transaction with updated gas limit
+ */
+export function withGasLimit(tx: Any, gasLimit: bigint): Any {
+	return _withGasLimit.call(tx, gasLimit);
+}
+
+/**
+ * Return new transaction with updated gas price
+ */
+export function withGasPrice(tx: Any, gasPrice: bigint): Any {
+	return _withGasPrice.call(tx, gasPrice);
+}
+
+/**
+ * Return new transaction with updated data
+ */
+export function withData(tx: Any, data: Uint8Array): Any {
+	return _withData.call(tx, data);
+}
+
+/**
+ * Return new transaction with fee bump for replacement
+ */
+export function replaceWith(tx: Any, options?: ReplaceOptions): Any {
+	return _replaceWith.call(tx, options);
+}
+
+/**
+ * Get blob count for EIP-4844 transaction
+ */
+export function getBlobCount(tx: EIP4844): number {
+	return _getBlobCount.call(tx);
+}
+
+/**
+ * Get blob versioned hashes for EIP-4844 transaction
+ */
+export function getBlobVersionedHashes(tx: EIP4844): readonly VersionedHash[] {
+	return _getBlobVersionedHashes.call(tx);
+}
+
+/**
+ * Get authorization count for EIP-7702 transaction
+ */
+export function getAuthorizationCount(tx: EIP7702): number {
+	return _getAuthorizationCount.call(tx);
+}
+
+/**
+ * Get authorization list for EIP-7702 transaction
+ */
+export function getAuthorizations(tx: EIP7702): AuthorizationList {
+	return _getAuthorizations.call(tx);
 }
