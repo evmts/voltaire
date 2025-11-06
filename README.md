@@ -119,6 +119,12 @@ const checksum = addr.toChecksummed();
 
 ## Complete API Reference
 
+> **Note:** Voltaire focuses on Ethereum primitives and cryptography. For additional functionality:
+> - **JSON-RPC/Provider**: [evmts/chappe](https://github.com/evmts/chappe) - Provider and JSON-RPC client library
+> - **EVM Execution**: [evmts/guillotine](https://github.com/evmts/guillotine) - EVM-related functionality
+> - **Solidity Compilation**: [evmts/compiler](https://github.com/evmts/compiler) - Solidity compilation support
+> - **Unified Library**: [evmts/tevm-monorepo](https://github.com/evmts/tevm-monorepo) - Complete Tevm ecosystem
+
 ### Core Primitives
 
 | Primitive | Description | Key Features |
