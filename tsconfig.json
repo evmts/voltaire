@@ -7,5 +7,19 @@
 		"types": ["bun-types"]
 	},
 	"include": ["src", "src/**/*.json"],
-	"exclude": ["node_modules"]
+	"exclude": [
+		"node_modules",
+		"src/content/docs/primitives/abi",
+		"src/content/docs/primitives/accesslist",
+		"src/content/docs/primitives/authorization",
+		"src/content/docs/primitives/blob",
+		"src/content/docs/primitives/eventlog",
+		"src/content/docs/primitives/feemarket",
+		"src/content/docs/primitives/gasconstants",
+		"src/content/docs/primitives/hardfork",
+		"src/content/docs/primitives/opcode",
+		"src/content/docs/primitives/rlp",
+		"src/content/docs/primitives/siwe",
+		"src/content/docs/primitives/state"
+	]
 }
