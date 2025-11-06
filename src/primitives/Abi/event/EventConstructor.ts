@@ -3,7 +3,7 @@ import type {
 	DecodeLogResult,
 	EncodeTopicsArgs,
 	Event,
-} from "./BrandedEvent.js";
+} from "./BrandedEvent/BrandedEvent.js";
 
 export interface EventConstructor {
 	getSignature<T extends Event>(event: T): string;

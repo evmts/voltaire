@@ -1,5 +1,5 @@
-import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
-import { encodeValue, isDynamicType } from "../Encoding.js";
+import { keccak256 } from "../../../Hash/BrandedHash/keccak256.js";
+import { encodeValue, isDynamicType } from "../../Encoding.js";
 import { getSelector } from "./getSelector.js";
 
 /**

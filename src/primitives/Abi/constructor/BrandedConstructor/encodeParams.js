@@ -1,10 +1,10 @@
-import { encodeParameters } from "../Encoding.js";
+import { encodeParameters } from "../../Encoding.js";
 
 /**
  * Encode constructor parameters
  *
  * @param {import('./BrandedConstructor.js').BrandedConstructor} constructor - Constructor definition
- * @param {import('../Parameter.js').ParametersToPrimitiveTypes<any>} args - Arguments to encode
+ * @param {import('../../Parameter.js').ParametersToPrimitiveTypes<any>} args - Arguments to encode
  * @returns {Uint8Array} Encoded parameters
  *
  * @example

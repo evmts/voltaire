@@ -1,6 +1,7 @@
 // @ts-nocheck
 export * from "./Function.js";
 export type { Function as BrandedFunction } from "./BrandedFunction/BrandedFunction.js";
+export type { Function } from "./BrandedFunction/BrandedFunction.js";
 export * from "./BrandedFunction/errors.js";
 export * from "./BrandedFunction/statemutability.js";
 
