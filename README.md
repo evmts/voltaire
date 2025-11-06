@@ -21,22 +21,6 @@
   </sup>
 </div>
 
-## Table of Contents
-
-- [Features](#features) - Why choose Voltaire
-- [Installation](#installation) - [npm](https://www.npmjs.com/package/@tevm/voltaire) & [Zig](https://ziglang.org/) setup
-- [Quick Start](#quick-start) - [Getting Started Guide](./src/content/docs/getting-started.mdx)
-- [Complete API Reference](#complete-api-reference) - Full API documentation
-  - [Core Primitives](#core-primitives) - Address, Hash, Uint, Transaction, etc.
-  - [Cryptography](#cryptography) - Keccak256, Secp256k1, BLS12-381, etc.
-  - [Precompiles](#precompiles) - [All 19 EVM precompiles](https://www.evm.codes/precompiled)
-- [Quick Reference Tables](#quick-reference-tables) - At-a-glance API reference
-- [Architecture](#architecture) - [Data-first pattern](./src/content/docs/primitives/branded-types.mdx) & design
-- [Performance](#performance) - [Benchmarks](./BENCHMARKING.md) & optimization
-- [Alternatives](#alternatives) - Viem, Ethers.js, Alloy
-- [License](#license) - MIT
-- [Links](#links) - Community & resources
-
 ## Features
 
 > ⚠️ **Alpha Release** - This library is under active development. APIs may change. Not recommended for production use yet.
@@ -142,34 +126,34 @@ const checksum = Address.toChecksummed(addr);
 
 | Primitive | Description | Key Features |
 |-----------|-------------|--------------|
-| **[Address](./src/content/docs/primitives/address/index.mdx)** | 20-byte Ethereum address | [EIP-55](https://eips.ethereum.org/EIPS/eip-55) checksums, [CREATE/CREATE2](https://eips.ethereum.org/EIPS/eip-1014) calculation, validation |
-| **[Hash](./src/content/docs/primitives/hash/index.mdx)** | 32-byte hash type | Constant-time operations, random generation, formatting |
-| **[Hex](./src/content/docs/primitives/hex/index.mdx)** | Hexadecimal encoding | Sized types, manipulation, conversion, validation |
-| **[Uint](./src/content/docs/primitives/uint/index.mdx)** | 256-bit unsigned integer | Wrapping arithmetic, bitwise operations, comparisons |
-| **[Transaction](./src/content/docs/primitives/transaction/index.mdx)** | All transaction types | [Legacy](https://ethereum.org/en/developers/docs/transactions/), [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559), [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844), [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702), serialization |
-| **[RLP](./src/content/docs/primitives/rlp/index.mdx)** | Recursive Length Prefix | Encoding/decoding for [Ethereum data structures](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/) |
 | **[ABI](./src/content/docs/primitives/abi/index.mdx)** | Contract interface encoding | Functions, events, errors, constructors ([ABI spec](https://docs.soliditylang.org/en/latest/abi-spec.html)) |
-| **[Signature](./src/primitives/Signature/)** | ECDSA signatures | [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1), [P-256](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf), [Ed25519](https://ed25519.cr.yp.to/), canonical normalization |
-| **[PrivateKey](./src/primitives/PrivateKey/)** | 32-byte private key | Key derivation, signing, address generation |
-| **[PublicKey](./src/primitives/PublicKey/)** | 64-byte public key | Uncompressed format, verification, address derivation |
-| **[Nonce](./src/primitives/Nonce/)** | Transaction nonce | Increment, conversion, transaction ordering |
-| **[ChainId](./src/content/docs/primitives/chain/index.mdx)** | Network identifier | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.) |
 | **[AccessList](./src/primitives/AccessList/index.mdx)** | EIP-2930 access list | [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) transaction access lists |
+| **[Address](./src/content/docs/primitives/address/index.mdx)** | 20-byte Ethereum address | [EIP-55](https://eips.ethereum.org/EIPS/eip-55) checksums, [CREATE/CREATE2](https://eips.ethereum.org/EIPS/eip-1014) calculation, validation |
 | **[Authorization](./src/primitives/Authorization/index.mdx)** | EIP-7702 authorization | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) account abstraction authorizations |
+| **[Base64](./src/content/docs/primitives/base64/index.mdx)** | Base64 encoding | [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) encoding/decoding |
+| **[BinaryTree](./src/content/docs/primitives/binarytree/index.mdx)** | Binary tree structures | [Merkle trees](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/) |
 | **[Blob](./src/primitives/Blob/index.mdx)** | EIP-4844 blob | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) blob transactions |
+| **[BloomFilter](./src/content/docs/primitives/bloomfilter/index.mdx)** | Bloom filter | Log bloom filters |
 | **[Bytecode](./src/content/docs/primitives/bytecode/index.mdx)** | Contract bytecode | EVM bytecode manipulation, deployment |
+| **[Chain](./src/content/docs/primitives/chain/index.mdx)** | Chain configuration | Network configuration, chain parameters |
+| **[ChainId](./src/content/docs/primitives/chain/index.mdx)** | Network identifier | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.) |
+| **[Denomination](./src/content/docs/primitives/denomination/index.mdx)** | Ether denominations | Wei, gwei, ether conversions |
 | **[EventLog](./src/primitives/EventLog/index.mdx)** | Transaction event log | Event parsing, filtering, decoding |
 | **[FeeMarket](./src/primitives/FeeMarket/index.mdx)** | Fee market calculations | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) base fee, priority fee |
 | **[GasConstants](./src/primitives/GasConstants/index.mdx)** | EVM gas costs | [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) gas constants |
 | **[Hardfork](./src/primitives/Hardfork/index.mdx)** | Network hardfork | Hardfork detection, feature flags |
+| **[Hash](./src/content/docs/primitives/hash/index.mdx)** | 32-byte hash type | Constant-time operations, random generation, formatting |
+| **[Hex](./src/content/docs/primitives/hex/index.mdx)** | Hexadecimal encoding | Sized types, manipulation, conversion, validation |
+| **[Nonce](./src/primitives/Nonce/)** | Transaction nonce | Increment, conversion, transaction ordering |
 | **[Opcode](./src/primitives/Opcode/index.mdx)** | EVM opcodes | [EVM.codes](https://www.evm.codes/) opcode reference |
+| **[PrivateKey](./src/primitives/PrivateKey/)** | 32-byte private key | Key derivation, signing, address generation |
+| **[PublicKey](./src/primitives/PublicKey/)** | 64-byte public key | Uncompressed format, verification, address derivation |
+| **[RLP](./src/content/docs/primitives/rlp/index.mdx)** | Recursive Length Prefix | Encoding/decoding for [Ethereum data structures](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/) |
+| **[Signature](./src/primitives/Signature/)** | ECDSA signatures | [Secp256k1](https://en.bitcoin.it/wiki/Secp256k1), [P-256](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf), [Ed25519](https://ed25519.cr.yp.to/), canonical normalization |
 | **[SIWE](./src/primitives/Siwe/index.mdx)** | Sign-In with Ethereum | [EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) authentication |
 | **[State](./src/primitives/State/index.mdx)** | State management | Account state, storage slots |
-| **[Base64](./src/content/docs/primitives/base64/index.mdx)** | Base64 encoding | [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) encoding/decoding |
-| **[BinaryTree](./src/content/docs/primitives/binarytree/index.mdx)** | Binary tree structures | [Merkle trees](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/) |
-| **[BloomFilter](./src/content/docs/primitives/bloomfilter/index.mdx)** | Bloom filter | Log bloom filters |
-| **[Chain](./src/content/docs/primitives/chain/index.mdx)** | Chain configuration | Network configuration, chain parameters |
-| **[Denomination](./src/content/docs/primitives/denomination/index.mdx)** | Ether denominations | Wei, gwei, ether conversions |
+| **[Transaction](./src/content/docs/primitives/transaction/index.mdx)** | All transaction types | [Legacy](https://ethereum.org/en/developers/docs/transactions/), [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559), [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844), [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702), serialization |
+| **[Uint](./src/content/docs/primitives/uint/index.mdx)** | 256-bit unsigned integer | Wrapping arithmetic, bitwise operations, comparisons |
 
 **Quick Example:**
 
