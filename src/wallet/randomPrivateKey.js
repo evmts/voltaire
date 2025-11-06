@@ -59,7 +59,7 @@ function multiplyBasePoint(k) {
 	// Double-and-add algorithm
 	for (let i = 0n; i < 256n; i++) {
 		if ((k >> i) & 1n) {
-			if (qx === null) {
+			if (qx === null || qy === null) {
 				qx = px;
 				qy = py;
 			} else {

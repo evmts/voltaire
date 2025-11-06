@@ -4,6 +4,10 @@ import * as BrandedHex from "./BrandedHex/index.js";
 // Re-export errors
 export * from "./BrandedHex/errors.js";
 
+// Re-export commonly used functions at module level for convenience
+export const fromBytes = BrandedHex.fromBytes;
+export const toBytes = BrandedHex.toBytes;
+
 /**
  * Factory function for creating Hex instances
  */
