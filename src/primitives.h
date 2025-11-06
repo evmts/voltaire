@@ -624,6 +624,63 @@ int x25519KeypairFromSeed(const uint8_t * seed_ptr, uint8_t * secret_ptr, uint8_
 // ============================================================================
 
 // ============================================================================
+// HD Wallet (BIP-39 / BIP-32) API - libwally-core bindings
+// ============================================================================
+
+/**
+ * Generate BIP-39 mnemonic from entropy
+ * entropy_len: 16 (128 bits) or 32 (256 bits)
+ * out_mnemonic: must be large enough (at least 256 bytes)
+ * Returns length of mnemonic string or negative error code
+ */
+int hdwallet_generate_mnemonic(const uint8_t * entropy, size_t entropy_len, uint8_t * out_mnemonic, size_t out_len);
+
+/**
+ * Convert BIP-39 mnemonic to seed (512 bits)
+ * passphrase: optional, pass NULL if not needed
+ */
+int hdwallet_mnemonic_to_seed(const char * mnemonic, ?[*:0]const u8 passphrase, uint8_t * out_seed);
+
+/**
+ * Validate BIP-39 mnemonic checksum
+ * Returns 1 if valid, 0 if invalid
+ */
+int hdwallet_validate_mnemonic(const char * mnemonic);
+
+/**
+ * Create HD root key from seed
+ * Returns opaque handle to HD key or 0 on error
+ */
+size_t hdwallet_from_seed(const uint8_t * seed, size_t seed_len);
+
+/**
+ * Derive child key from path
+ * path: array of u32 child indices (use 0x80000000 + index for hardened)
+ * Returns opaque handle to derived HD key or 0 on error
+ */
+size_t hdwallet_derive(size_t hdkey_handle, [*]const u32 path, size_t path_len);
+
+/**
+ * Get private key from HD key
+ */
+int hdwallet_get_private_key(size_t hdkey_handle, uint8_t * out_private_key);
+
+/**
+ * Get public key from HD key
+ */
+int hdwallet_get_public_key(size_t hdkey_handle, uint8_t * out_public_key);
+
+/**
+ * Get Ethereum address from HD key
+ */
+int hdwallet_get_address(size_t hdkey_handle, PrimitivesAddress * out_address);
+
+/**
+ * Free HD key
+ */
+int hdwallet_free(size_t hdkey_handle);
+
+// ============================================================================
 // WASM Memory Management
 // ============================================================================
 
