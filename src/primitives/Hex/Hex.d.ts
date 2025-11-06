@@ -19,9 +19,19 @@ export namespace Hex {
 	export function toString(hex: BrandedHex): string;
 	export function toBoolean(hex: BrandedHex): boolean;
 	export function size(hex: BrandedHex): number;
-	export function isSized<TSize extends number>(hex: BrandedHex, size: TSize): boolean;
-	export function assertSize<TSize extends number>(hex: BrandedHex, size: TSize): void;
-	export function slice(hex: BrandedHex, start?: number, end?: number): BrandedHex;
+	export function isSized<TSize extends number>(
+		hex: BrandedHex,
+		size: TSize,
+	): boolean;
+	export function assertSize<TSize extends number>(
+		hex: BrandedHex,
+		size: TSize,
+	): void;
+	export function slice(
+		hex: BrandedHex,
+		start?: number,
+		end?: number,
+	): BrandedHex;
 	export function pad(hex: BrandedHex, size: number): BrandedHex;
 	export function padRight(hex: BrandedHex, size: number): BrandedHex;
 	export function trim(hex: BrandedHex): BrandedHex;

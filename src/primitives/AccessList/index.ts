@@ -66,9 +66,12 @@ AccessList.withStorageKey = (accessList, address, key) => {
 
 AccessList.ADDRESS_COST = BrandedAccessList.ADDRESS_COST;
 AccessList.STORAGE_KEY_COST = BrandedAccessList.STORAGE_KEY_COST;
-AccessList.COLD_ACCOUNT_ACCESS_COST = BrandedAccessList.COLD_ACCOUNT_ACCESS_COST;
-AccessList.COLD_STORAGE_ACCESS_COST = BrandedAccessList.COLD_STORAGE_ACCESS_COST;
-AccessList.WARM_STORAGE_ACCESS_COST = BrandedAccessList.WARM_STORAGE_ACCESS_COST;
+AccessList.COLD_ACCOUNT_ACCESS_COST =
+	BrandedAccessList.COLD_ACCOUNT_ACCESS_COST;
+AccessList.COLD_STORAGE_ACCESS_COST =
+	BrandedAccessList.COLD_STORAGE_ACCESS_COST;
+AccessList.WARM_STORAGE_ACCESS_COST =
+	BrandedAccessList.WARM_STORAGE_ACCESS_COST;
 
 // Set up AccessList.prototype to inherit from Array.prototype
 Object.setPrototypeOf(AccessList.prototype, Array.prototype);

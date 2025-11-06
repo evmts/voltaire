@@ -39,14 +39,33 @@ type AddressPrototype = BrandedAddress & {
 	toUppercase(this: BrandedAddress): ReturnType<typeof toUppercase>;
 	toU256(this: BrandedAddress): ReturnType<typeof toU256>;
 	toShortHex(this: BrandedAddress): ReturnType<typeof toShortHex>;
-	compare(this: BrandedAddress, other: BrandedAddress): ReturnType<typeof compare>;
-	lessThan(this: BrandedAddress, other: BrandedAddress): ReturnType<typeof lessThan>;
-	greaterThan(this: BrandedAddress, other: BrandedAddress): ReturnType<typeof greaterThan>;
+	compare(
+		this: BrandedAddress,
+		other: BrandedAddress,
+	): ReturnType<typeof compare>;
+	lessThan(
+		this: BrandedAddress,
+		other: BrandedAddress,
+	): ReturnType<typeof lessThan>;
+	greaterThan(
+		this: BrandedAddress,
+		other: BrandedAddress,
+	): ReturnType<typeof greaterThan>;
 	isZero(this: BrandedAddress): ReturnType<typeof isZero>;
-	equals(this: BrandedAddress, other: BrandedAddress): ReturnType<typeof equals>;
+	equals(
+		this: BrandedAddress,
+		other: BrandedAddress,
+	): ReturnType<typeof equals>;
 	toAbiEncoded(this: BrandedAddress): ReturnType<typeof toAbiEncoded>;
-	calculateCreateAddress(this: BrandedAddress, nonce: Parameters<typeof calculateCreateAddress>[1]): ReturnType<typeof calculateCreateAddress>;
-	calculateCreate2Address(this: BrandedAddress, salt: Parameters<typeof calculateCreate2Address>[1], initCode: Parameters<typeof calculateCreate2Address>[2]): ReturnType<typeof calculateCreate2Address>;
+	calculateCreateAddress(
+		this: BrandedAddress,
+		nonce: Parameters<typeof calculateCreateAddress>[1],
+	): ReturnType<typeof calculateCreateAddress>;
+	calculateCreate2Address(
+		this: BrandedAddress,
+		salt: Parameters<typeof calculateCreate2Address>[1],
+		initCode: Parameters<typeof calculateCreate2Address>[2],
+	): ReturnType<typeof calculateCreate2Address>;
 };
 
 export interface AddressConstructor {

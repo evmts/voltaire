@@ -56,5 +56,7 @@ export function merge(filter1, filter2) {
 		enumerable: false,
 	});
 
-	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (result);
+	return /** @type {import('./BrandedBloomFilter.js').BrandedBloomFilter} */ (
+		result
+	);
 }

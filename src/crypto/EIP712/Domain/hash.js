@@ -46,9 +46,5 @@ export function hash(domain) {
 		EIP712Domain: domainFields,
 	};
 
-	return hashStruct(
-		"EIP712Domain",
-		/** @type {any} */ (domainValues),
-		types,
-	);
+	return hashStruct("EIP712Domain", /** @type {any} */ (domainValues), types);
 }

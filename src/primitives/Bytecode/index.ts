@@ -60,46 +60,46 @@ Bytecode.INVALID = BrandedBytecode.INVALID;
 Object.setPrototypeOf(Bytecode.prototype, Uint8Array.prototype);
 
 // Instance methods
-Bytecode.prototype.analyze = function() {
+Bytecode.prototype.analyze = function () {
 	return BrandedBytecode.analyze(this);
 };
-Bytecode.prototype.analyzeJumpDestinations = function() {
+Bytecode.prototype.analyzeJumpDestinations = function () {
 	return BrandedBytecode.analyzeJumpDestinations(this);
 };
-Bytecode.prototype.equals = function(other) {
+Bytecode.prototype.equals = function (other) {
 	return BrandedBytecode.equals(this, other);
 };
-Bytecode.prototype.extractRuntime = function() {
+Bytecode.prototype.extractRuntime = function () {
 	const result = BrandedBytecode.extractRuntime(this);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
 };
-Bytecode.prototype.formatInstructions = function() {
+Bytecode.prototype.formatInstructions = function () {
 	return BrandedBytecode.formatInstructions(this);
 };
-Bytecode.prototype.hash = function() {
+Bytecode.prototype.hash = function () {
 	return BrandedBytecode.hash(this);
 };
-Bytecode.prototype.hasMetadata = function() {
+Bytecode.prototype.hasMetadata = function () {
 	return BrandedBytecode.hasMetadata(this);
 };
-Bytecode.prototype.isValidJumpDest = function(offset) {
+Bytecode.prototype.isValidJumpDest = function (offset) {
 	return BrandedBytecode.isValidJumpDest(this, offset);
 };
-Bytecode.prototype.parseInstructions = function() {
+Bytecode.prototype.parseInstructions = function () {
 	return BrandedBytecode.parseInstructions(this);
 };
-Bytecode.prototype.size = function() {
+Bytecode.prototype.size = function () {
 	return BrandedBytecode.size(this);
 };
-Bytecode.prototype.stripMetadata = function() {
+Bytecode.prototype.stripMetadata = function () {
 	const result = BrandedBytecode.stripMetadata(this);
 	Object.setPrototypeOf(result, Bytecode.prototype);
 	return result;
 };
-Bytecode.prototype.toHex = function() {
+Bytecode.prototype.toHex = function () {
 	return BrandedBytecode.toHex(this);
 };
-Bytecode.prototype.validate = function() {
+Bytecode.prototype.validate = function () {
 	return BrandedBytecode.validate(this);
 };

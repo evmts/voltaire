@@ -2,7 +2,12 @@
 import * as BrandedBlob from "./BrandedBlob/index.js";
 
 // Re-export BrandedBlob type and constants
-export type { BrandedBlob, Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
+export type {
+	BrandedBlob,
+	Commitment,
+	Proof,
+	VersionedHash,
+} from "./BrandedBlob.js";
 export * from "./BrandedBlob/constants.js";
 
 /**

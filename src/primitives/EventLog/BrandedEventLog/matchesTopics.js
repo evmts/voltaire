@@ -37,7 +37,11 @@ export function matchesTopics(log, filterTopics) {
 		if (Array.isArray(filterTopic)) {
 			let anyMatch = false;
 			for (const possibleTopic of filterTopic) {
-				if (logTopic !== undefined && possibleTopic && hashEquals(logTopic, possibleTopic)) {
+				if (
+					logTopic !== undefined &&
+					possibleTopic &&
+					hashEquals(logTopic, possibleTopic)
+				) {
 					anyMatch = true;
 					break;
 				}
@@ -47,7 +51,11 @@ export function matchesTopics(log, filterTopics) {
 			}
 		} else {
 			// Single topic - must match exactly
-			if (logTopic !== undefined && filterTopic && !hashEquals(logTopic, filterTopic)) {
+			if (
+				logTopic !== undefined &&
+				filterTopic &&
+				!hashEquals(logTopic, filterTopic)
+			) {
 				return false;
 			}
 		}

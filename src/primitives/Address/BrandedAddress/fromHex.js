@@ -1,7 +1,7 @@
 import { HEX_SIZE, SIZE } from "./constants.js";
 import { InvalidHexFormatError, InvalidHexStringError } from "./errors.js";
 
-const HEX_REGEX = /^[0-9a-fA-F]{40}$/
+const HEX_REGEX = /^[0-9a-fA-F]{40}$/;
 
 /**
  * Parse hex string to Address (standard form)

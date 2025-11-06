@@ -133,7 +133,7 @@ pub fn fromAbiEncoded(bytes: []const u8) !Address {
 pub fn toShortHex(address: Address) [14]u8 {
     const hex = addressToHex(address);
     var result: [14]u8 = undefined;
-    @memcpy(result[0..8], hex[0..8]);   // "0x" + first 6 chars
+    @memcpy(result[0..8], hex[0..8]); // "0x" + first 6 chars
     result[8] = '.';
     result[9] = '.';
     result[10] = '.';

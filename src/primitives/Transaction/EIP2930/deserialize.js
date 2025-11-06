@@ -56,10 +56,14 @@ export function deserialize(data) {
 	).value;
 	const accessListField = fields[7];
 	if (!accessListField || accessListField.type !== "list") {
-		throw new Error("Invalid EIP-2930 transaction: expected list for accessList");
+		throw new Error(
+			"Invalid EIP-2930 transaction: expected list for accessList",
+		);
 	}
 	const accessList = decodeAccessList(
-		/** @type {import('../../Rlp/BrandedRlp/BrandedRlp.js').BrandedRlp[]} */ (accessListField.value),
+		/** @type {import('../../Rlp/BrandedRlp/BrandedRlp.js').BrandedRlp[]} */ (
+			accessListField.value
+		),
 	);
 	const yParityBytes = /** @type {{ type: "bytes"; value: Uint8Array }} */ (
 		fields[8]

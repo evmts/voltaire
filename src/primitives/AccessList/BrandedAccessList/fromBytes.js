@@ -47,7 +47,8 @@ export function fromBytes(bytes) {
 			storageKeys.push(keyData.value);
 		}
 
-		/** @type {any} */ const typedResult = result; typedResult.push({ address, storageKeys });
+		/** @type {any} */ const typedResult = result;
+		typedResult.push({ address, storageKeys });
 	}
 
 	return result;

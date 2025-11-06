@@ -49,7 +49,10 @@ export function parse(text) {
 			16,
 		);
 	}
-	const address = /** @type {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (addressBytes);
+	const address =
+		/** @type {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+			addressBytes
+		);
 	lineIndex++;
 
 	// Skip empty line

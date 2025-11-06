@@ -274,7 +274,7 @@ pub fn rootHash(self: *BinaryTree) [32]u8 {
 }
 
 test "BinaryTree - addressToKey" {
-    const addr = [_]u8{0xf3, 0x9f} ++ [_]u8{0} ** 18;
+    const addr = [_]u8{ 0xf3, 0x9f } ++ [_]u8{0} ** 18;
     const k = addressToKey(addr);
 
     try std.testing.expectEqual(@as(usize, 32), k.len);

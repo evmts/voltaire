@@ -4,7 +4,15 @@ export * from "./BrandedBytecode.js";
 
 import { analyze } from "./analyze.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
-import { INVALID, JUMPDEST, PUSH1, PUSH32, RETURN, REVERT, STOP } from "./constants.js";
+import {
+	INVALID,
+	JUMPDEST,
+	PUSH1,
+	PUSH32,
+	RETURN,
+	REVERT,
+	STOP,
+} from "./constants.js";
 import { equals } from "./equals.js";
 import { extractRuntime } from "./extractRuntime.js";
 import { formatInstruction } from "./formatInstruction.js";

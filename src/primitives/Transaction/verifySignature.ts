@@ -16,15 +16,25 @@ import { type Any, Type } from "./types.js";
 export function verifySignature(this: Any): boolean {
 	switch (this.type) {
 		case Type.Legacy:
-			return Legacy.verifySignature.call(this as unknown as BrandedTransactionLegacy);
+			return Legacy.verifySignature.call(
+				this as unknown as BrandedTransactionLegacy,
+			);
 		case Type.EIP2930:
-			return EIP2930.verifySignature(this as unknown as BrandedTransactionEIP2930);
+			return EIP2930.verifySignature(
+				this as unknown as BrandedTransactionEIP2930,
+			);
 		case Type.EIP1559:
-			return EIP1559.verifySignature(this as unknown as BrandedTransactionEIP1559);
+			return EIP1559.verifySignature(
+				this as unknown as BrandedTransactionEIP1559,
+			);
 		case Type.EIP4844:
-			return EIP4844.verifySignature(this as unknown as BrandedTransactionEIP4844);
+			return EIP4844.verifySignature(
+				this as unknown as BrandedTransactionEIP4844,
+			);
 		case Type.EIP7702:
-			return EIP7702.verifySignature(this as unknown as BrandedTransactionEIP7702);
+			return EIP7702.verifySignature(
+				this as unknown as BrandedTransactionEIP7702,
+			);
 		default:
 			throw new Error(`Unknown transaction type: ${(this as any).type}`);
 	}

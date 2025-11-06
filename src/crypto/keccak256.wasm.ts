@@ -128,13 +128,17 @@ export function selector(signature: string): string {
  * @param signature - Event signature string (e.g., "Transfer(address,address,uint256)")
  * @returns 32-byte event topic as BrandedHash
  */
-export function topic(signature: string): import("../primitives/Hash/BrandedHash/BrandedHash.js").BrandedHash {
+export function topic(
+	signature: string,
+): import("../primitives/Hash/BrandedHash/BrandedHash.js").BrandedHash {
 	if (!isInitialized) {
 		throw new Error("WASM not initialized. Call Keccak256Wasm.init() first.");
 	}
 	const bytes = new TextEncoder().encode(signature);
 	const hash = loader.keccak256(bytes);
-	return hash as import("../primitives/Hash/BrandedHash/BrandedHash.js").BrandedHash;
+	return hash as import(
+		"../primitives/Hash/BrandedHash/BrandedHash.js",
+	).BrandedHash;
 }
 
 /**

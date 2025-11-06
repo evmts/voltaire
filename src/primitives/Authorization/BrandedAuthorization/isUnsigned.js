@@ -8,9 +8,10 @@
  */
 export function isUnsigned(value) {
 	if (typeof value !== "object" || value === null) return false;
-	const auth = /** @type {Partial<{chainId: bigint, address: any, nonce: bigint}>} */ (
-		value
-	);
+	const auth =
+		/** @type {Partial<{chainId: bigint, address: any, nonce: bigint}>} */ (
+			value
+		);
 	return (
 		typeof auth.chainId === "bigint" &&
 		typeof auth.address === "object" &&

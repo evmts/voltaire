@@ -6,7 +6,13 @@ export * from "./BrandedAuthorization.js";
 
 // Import all functions
 import { calculateGasCost } from "./calculateGasCost.js";
-import { MAGIC_BYTE, PER_AUTH_BASE_COST, PER_EMPTY_ACCOUNT_COST, SECP256K1_HALF_N, SECP256K1_N } from "./constants.js";
+import {
+	MAGIC_BYTE,
+	PER_AUTH_BASE_COST,
+	PER_EMPTY_ACCOUNT_COST,
+	SECP256K1_HALF_N,
+	SECP256K1_N,
+} from "./constants.js";
 import { equals, equalsAuth } from "./equals.js";
 import { format } from "./format.js";
 import { getGasCost } from "./getGasCost.js";

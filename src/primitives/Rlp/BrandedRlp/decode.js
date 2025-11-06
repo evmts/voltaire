@@ -99,7 +99,12 @@ function decodeInternal(bytes, depth) {
 
 		// Check for non-canonical encoding
 		const nextByte = bytes[1];
-		if (length === 1 && bytes.length > 1 && nextByte !== undefined && nextByte < 0x80) {
+		if (
+			length === 1 &&
+			bytes.length > 1 &&
+			nextByte !== undefined &&
+			nextByte < 0x80
+		) {
 			throw new Error(
 				"NonCanonicalSize",
 				"Single byte < 0x80 should not be prefixed",

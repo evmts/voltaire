@@ -16,9 +16,10 @@
  */
 export function isItem(value) {
 	if (typeof value !== "object" || value === null) return false;
-	const auth = /** @type {Partial<import("./BrandedAuthorization.js").BrandedAuthorization>} */ (
-		value
-	);
+	const auth =
+		/** @type {Partial<import("./BrandedAuthorization.js").BrandedAuthorization>} */ (
+			value
+		);
 	return (
 		typeof auth.chainId === "bigint" &&
 		typeof auth.address === "object" &&
