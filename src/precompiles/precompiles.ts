@@ -12,6 +12,7 @@ import * as Gas from "../primitives/GasConstants/index.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
 import type { BrandedHardfork } from "../primitives/Hardfork/BrandedHardfork/BrandedHardfork.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
+import { bls12_381 } from "@noble/curves/bls12-381.js";
 
 export enum PrecompileAddress {
 	ECRECOVER = "0x0000000000000000000000000000000000000001",
@@ -59,6 +60,128 @@ function bigIntToFixedBytes(value: bigint, size: number): Uint8Array {
 		v >>= 8n;
 	}
 	return out;
+}
+
+// BLS12-381 Helper Functions
+
+/**
+ * Deserialize a G1 point from 128 bytes (EIP-2537 encoding)
+ * Format: [x (64 bytes) | y (64 bytes)]
+ * Point at infinity: all zeros
+ */
+function deserializeG1(bytes: Uint8Array): typeof bls12_381.G1.ProjectivePoint.BASE {
+	if (bytes.length !== 128) {
+		throw new Error("Invalid G1 point length");
+	}
+
+	// Check for point at infinity (all zeros)
+	const isZero = bytes.every((b) => b === 0);
+	if (isZero) {
+		return bls12_381.G1.ProjectivePoint.ZERO;
+	}
+
+	// Extract x and y coordinates (64 bytes each, big-endian)
+	const x = beBytesToBigInt(bytes.subarray(0, 64));
+	const y = beBytesToBigInt(bytes.subarray(64, 128));
+
+	// Construct point from affine coordinates
+	const point = bls12_381.G1.ProjectivePoint.fromAffine({ x, y });
+
+	// Validate point is on curve and in correct subgroup
+	point.assertValidity();
+
+	return point;
+}
+
+/**
+ * Serialize a G1 point to 128 bytes (EIP-2537 encoding)
+ */
+function serializeG1(point: typeof bls12_381.G1.ProjectivePoint.BASE): Uint8Array {
+	const result = new Uint8Array(128);
+
+	// Handle point at infinity
+	if (point.equals(bls12_381.G1.ProjectivePoint.ZERO)) {
+		return result; // All zeros
+	}
+
+	// Convert to affine coordinates
+	const affine = point.toAffine();
+
+	// Serialize x and y (64 bytes each, big-endian, left-padded)
+	const xBytes = bigIntToFixedBytes(affine.x, 64);
+	const yBytes = bigIntToFixedBytes(affine.y, 64);
+
+	result.set(xBytes, 0);
+	result.set(yBytes, 64);
+
+	return result;
+}
+
+/**
+ * Deserialize a G2 point from 256 bytes (EIP-2537 encoding)
+ * Format: [x.c0 (64) | x.c1 (64) | y.c0 (64) | y.c1 (64)]
+ * Point at infinity: all zeros
+ */
+function deserializeG2(bytes: Uint8Array): typeof bls12_381.G2.ProjectivePoint.BASE {
+	if (bytes.length !== 256) {
+		throw new Error("Invalid G2 point length");
+	}
+
+	// Check for point at infinity (all zeros)
+	const isZero = bytes.every((b) => b === 0);
+	if (isZero) {
+		return bls12_381.G2.ProjectivePoint.ZERO;
+	}
+
+	// Extract Fp2 coordinates (x = c0 + c1*u, y = c0 + c1*u)
+	const xc0 = beBytesToBigInt(bytes.subarray(0, 64));
+	const xc1 = beBytesToBigInt(bytes.subarray(64, 128));
+	const yc0 = beBytesToBigInt(bytes.subarray(128, 192));
+	const yc1 = beBytesToBigInt(bytes.subarray(192, 256));
+
+	// Construct Fp2 elements
+	const x = bls12_381.fields.Fp2.fromBigTuple([xc0, xc1]);
+	const y = bls12_381.fields.Fp2.fromBigTuple([yc0, yc1]);
+
+	// Construct point from affine coordinates
+	const point = bls12_381.G2.ProjectivePoint.fromAffine({ x, y });
+
+	// Validate point is on curve and in correct subgroup
+	point.assertValidity();
+
+	return point;
+}
+
+/**
+ * Serialize a G2 point to 256 bytes (EIP-2537 encoding)
+ */
+function serializeG2(point: typeof bls12_381.G2.ProjectivePoint.BASE): Uint8Array {
+	const result = new Uint8Array(256);
+
+	// Handle point at infinity
+	if (point.equals(bls12_381.G2.ProjectivePoint.ZERO)) {
+		return result; // All zeros
+	}
+
+	// Convert to affine coordinates
+	const affine = point.toAffine();
+
+	// Extract Fp2 components (c0, c1)
+	const xTuple = bls12_381.fields.Fp2.toTuple(affine.x);
+	const yTuple = bls12_381.fields.Fp2.toTuple(affine.y);
+
+	// Serialize each component (64 bytes, big-endian, left-padded)
+	const xc0Bytes = bigIntToFixedBytes(xTuple[0], 64);
+	const xc1Bytes = bigIntToFixedBytes(xTuple[1], 64);
+	const yc0Bytes = bigIntToFixedBytes(yTuple[0], 64);
+	const yc1Bytes = bigIntToFixedBytes(yTuple[1], 64);
+
+	result.set(xc0Bytes, 0);
+	result.set(xc1Bytes, 64);
+	result.set(yc0Bytes, 128);
+	result.set(yc1Bytes, 192);
+
+	return result;
 }
 
 /**
@@ -629,7 +752,7 @@ export function pointEvaluation(
  * BLS12_G1_ADD precompile (0x0b)
  */
 export function bls12G1Add(
-	_input: Uint8Array,
+	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 500n;
@@ -641,14 +764,44 @@ export function bls12G1Add(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(128), gasUsed: gas };
+
+	try {
+		// Validate input length
+		if (input.length !== 256) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		// Deserialize G1 points
+		const point1 = deserializeG1(input.subarray(0, 128));
+		const point2 = deserializeG1(input.subarray(128, 256));
+
+		// Add points
+		const result = point1.add(point2);
+
+		// Serialize result
+		const output = serializeG1(result);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
  * BLS12_G1_MUL precompile (0x0c)
  */
 export function bls12G1Mul(
-	_input: Uint8Array,
+	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 12000n;
@@ -660,7 +813,37 @@ export function bls12G1Mul(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(128), gasUsed: gas };
+
+	try {
+		// Validate input length
+		if (input.length !== 160) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		// Deserialize G1 point and scalar
+		const point = deserializeG1(input.subarray(0, 128));
+		const scalar = beBytesToBigInt(input.subarray(128, 160));
+
+		// Multiply point by scalar
+		const result = point.multiply(scalar);
+
+		// Serialize result
+		const output = serializeG1(result);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
@@ -680,14 +863,53 @@ export function bls12G1Msm(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(128), gasUsed: gas };
+
+	try {
+		// Validate input length is multiple of 160
+		if (input.length % 160 !== 0) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		const numPairs = Math.floor(input.length / 160);
+		const points: Array<typeof bls12_381.G1.ProjectivePoint.BASE> = [];
+		const scalars: bigint[] = [];
+
+		// Deserialize all point-scalar pairs
+		for (let i = 0; i < numPairs; i++) {
+			const offset = i * 160;
+			const point = deserializeG1(input.subarray(offset, offset + 128));
+			const scalar = beBytesToBigInt(input.subarray(offset + 128, offset + 160));
+			points.push(point);
+			scalars.push(scalar);
+		}
+
+		// Perform multi-scalar multiplication
+		const result = bls12_381.G1.ProjectivePoint.msm(points, scalars);
+
+		// Serialize result
+		const output = serializeG1(result);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
  * BLS12_G2_ADD precompile (0x0e)
  */
 export function bls12G2Add(
-	_input: Uint8Array,
+	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 800n;
@@ -699,14 +921,44 @@ export function bls12G2Add(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(256), gasUsed: gas };
+
+	try {
+		// Validate input length
+		if (input.length !== 512) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		// Deserialize G2 points
+		const point1 = deserializeG2(input.subarray(0, 256));
+		const point2 = deserializeG2(input.subarray(256, 512));
+
+		// Add points
+		const result = point1.add(point2);
+
+		// Serialize result
+		const output = serializeG2(result);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
  * BLS12_G2_MUL precompile (0x0f)
  */
 export function bls12G2Mul(
-	_input: Uint8Array,
+	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 45000n;
@@ -718,7 +970,37 @@ export function bls12G2Mul(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(256), gasUsed: gas };
+
+	try {
+		// Validate input length
+		if (input.length !== 288) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		// Deserialize G2 point and scalar
+		const point = deserializeG2(input.subarray(0, 256));
+		const scalar = beBytesToBigInt(input.subarray(256, 288));
+
+		// Multiply point by scalar
+		const result = point.multiply(scalar);
+
+		// Serialize result
+		const output = serializeG2(result);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
@@ -738,7 +1020,46 @@ export function bls12G2Msm(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(256), gasUsed: gas };
+
+	try {
+		// Validate input length is multiple of 288
+		if (input.length % 288 !== 0) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		const numPairs = Math.floor(input.length / 288);
+		const points: Array<typeof bls12_381.G2.ProjectivePoint.BASE> = [];
+		const scalars: bigint[] = [];
+
+		// Deserialize all point-scalar pairs
+		for (let i = 0; i < numPairs; i++) {
+			const offset = i * 288;
+			const point = deserializeG2(input.subarray(offset, offset + 256));
+			const scalar = beBytesToBigInt(input.subarray(offset + 256, offset + 288));
+			points.push(point);
+			scalars.push(scalar);
+		}
+
+		// Perform multi-scalar multiplication
+		const result = bls12_381.G2.ProjectivePoint.msm(points, scalars);
+
+		// Serialize result
+		const output = serializeG2(result);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
@@ -758,14 +1079,67 @@ export function bls12Pairing(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(32), gasUsed: gas };
+
+	try {
+		// Validate input length is multiple of 384
+		if (input.length % 384 !== 0) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		const numPairs = Math.floor(input.length / 384);
+		const g1Points: Array<typeof bls12_381.G1.ProjectivePoint.BASE> = [];
+		const g2Points: Array<typeof bls12_381.G2.ProjectivePoint.BASE> = [];
+
+		// Deserialize all G1-G2 pairs
+		for (let i = 0; i < numPairs; i++) {
+			const offset = i * 384;
+			const g1 = deserializeG1(input.subarray(offset, offset + 128));
+			const g2 = deserializeG2(input.subarray(offset + 128, offset + 384));
+			g1Points.push(g1);
+			g2Points.push(g2);
+		}
+
+		// Perform pairing check: e(G1[0], G2[0]) * e(G1[1], G2[1]) * ... == 1
+		// This verifies that the product of pairings equals identity
+		const result = bls12_381.pairing(g1Points[0], g2Points[0]);
+		let accumulated = result;
+
+		for (let i = 1; i < numPairs; i++) {
+			const pairing = bls12_381.pairing(g1Points[i], g2Points[i]);
+			accumulated = bls12_381.fields.Fp12.mul(accumulated, pairing);
+		}
+
+		// Check if result is identity (final exponentiation gives 1)
+		const isValid = bls12_381.fields.Fp12.eql(
+			bls12_381.fields.Fp12.finalExponentiate(accumulated),
+			bls12_381.fields.Fp12.ONE,
+		);
+
+		// Return 1 if valid, 0 if invalid (as uint256 big-endian)
+		const output = new Uint8Array(32);
+		output[31] = isValid ? 1 : 0;
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
  * BLS12_MAP_FP_TO_G1 precompile (0x12)
  */
 export function bls12MapFpToG1(
-	_input: Uint8Array,
+	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 5500n;
@@ -777,14 +1151,43 @@ export function bls12MapFpToG1(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(128), gasUsed: gas };
+
+	try {
+		// Validate input length
+		if (input.length !== 64) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		// Deserialize Fp element
+		const fpElement = beBytesToBigInt(input);
+
+		// Map Fp element to G1 point using hash-to-curve
+		const point = bls12_381.G1.hashToCurve(bigIntToFixedBytes(fpElement, 64));
+
+		// Serialize result
+		const output = serializeG1(point);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
 
 /**
  * BLS12_MAP_FP2_TO_G2 precompile (0x13)
  */
 export function bls12MapFp2ToG2(
-	_input: Uint8Array,
+	input: Uint8Array,
 	gasLimit: bigint,
 ): PrecompileResult {
 	const gas = 75000n;
@@ -796,5 +1199,31 @@ export function bls12MapFp2ToG2(
 			error: "Out of gas",
 		};
 	}
-	return { success: true, output: new Uint8Array(256), gasUsed: gas };
+
+	try {
+		// Validate input length
+		if (input.length !== 128) {
+			return {
+				success: false,
+				output: new Uint8Array(0),
+				gasUsed: gas,
+				error: "Invalid input length",
+			};
+		}
+
+		// Map Fp2 element to G2 point using hash-to-curve
+		const point = bls12_381.G2.hashToCurve(input);
+
+		// Serialize result
+		const output = serializeG2(point);
+
+		return { success: true, output, gasUsed: gas };
+	} catch (e) {
+		return {
+			success: false,
+			output: new Uint8Array(0),
+			gasUsed: gas,
+			error: String(e),
+		};
+	}
 }
