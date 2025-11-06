@@ -31,6 +31,9 @@ export function encodeConstructor(abi, args) {
 		throw new AbiItemNotFoundError("Constructor not found in ABI");
 	}
 
-	const encoded = Constructor.encodeParams(item, [...args]);
+	// Type assertion after guard
+	const ctor =
+		/** @type {import('./constructor/index.js').BrandedConstructor} */ (item);
+	const encoded = Constructor.encodeParams(ctor, [...args]);
 	return Hex.fromBytes(encoded);
 }

@@ -58,9 +58,10 @@ export function decodeLog(abi, log) {
 	// Find event by selector (topic0 for non-anonymous events)
 	const item = abi.find((item) => {
 		if (item.type !== "event") return false;
-		if (item.anonymous) return false; // Skip anonymous events for now
+		const evt = /** @type {import('./event/index.js').Event} */ (item);
+		if (evt.anonymous) return false; // Skip anonymous events for now
 
-		const eventSelector = Event.getSelector(item);
+		const eventSelector = Event.getSelector(evt);
 		// Compare bytes
 		for (let i = 0; i < 32; i++) {
 			if (topic0[i] !== eventSelector[i]) return false;
@@ -74,14 +75,16 @@ export function decodeLog(abi, log) {
 		);
 	}
 
+	// Type assertion after guard
+	const evt = /** @type {import('./event/index.js').Event} */ (item);
 	const params = Event.decodeLog(
-		item,
+		evt,
 		dataBytes,
 		/** @type {any} */ (topicBytes),
 	);
 
 	return {
-		event: item.name,
+		event: evt.name,
 		params,
 	};
 }

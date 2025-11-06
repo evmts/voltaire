@@ -3,6 +3,7 @@ import { Function } from "./Function.js";
 
 // Re-export BrandedFunction namespace and types
 export type { Function as BrandedFunction } from "./BrandedFunction/BrandedFunction.js";
+export type { Function } from "./BrandedFunction/BrandedFunction.js";
 export * from "./BrandedFunction/errors.js";
 export * from "./BrandedFunction/statemutability.js";
 import * as BrandedFunction from "./BrandedFunction/index.js";

@@ -6,10 +6,10 @@ import { getSelector } from "./getSelector.js";
  *
  * @template {string} TName
  * @template {import('./statemutability.js').StateMutability} TStateMutability
- * @template {readonly import('../../parameter/index.js').Parameter[]} TInputs
- * @template {readonly import('../../parameter/index.js').Parameter[]} TOutputs
+ * @template {readonly import('../../Parameter.js').Parameter[]} TInputs
+ * @template {readonly import('../../Parameter.js').Parameter[]} TOutputs
  * @param {import('./BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
- * @param {import('../../parameter/index.js').ParametersToPrimitiveTypes<TInputs>} args - Function arguments
+ * @param {import('../../Parameter.js').ParametersToPrimitiveTypes<TInputs>} args - Function arguments
  * @returns {Uint8Array} Encoded calldata (selector + params)
  *
  * @example

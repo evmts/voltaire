@@ -10,11 +10,11 @@ import { getSelector } from "./getSelector.js";
  *
  * @template {string} TName
  * @template {import('./statemutability.js').StateMutability} TStateMutability
- * @template {readonly import('../../parameter/index.js').Parameter[]} TInputs
- * @template {readonly import('../../parameter/index.js').Parameter[]} TOutputs
+ * @template {readonly import('../../Parameter.js').Parameter[]} TInputs
+ * @template {readonly import('../../Parameter.js').Parameter[]} TOutputs
  * @param {import('./BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
  * @param {Uint8Array} data - Encoded calldata
- * @returns {import('../../parameter/index.js').ParametersToPrimitiveTypes<TInputs>} Decoded arguments
+ * @returns {import('../../Parameter.js').ParametersToPrimitiveTypes<TInputs>} Decoded arguments
  * @throws {FunctionDecodingError} If data is too short
  * @throws {FunctionInvalidSelectorError} If selector doesn't match
  *

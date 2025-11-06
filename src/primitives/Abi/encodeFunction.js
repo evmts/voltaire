@@ -29,9 +29,11 @@ import * as Function from "./function/index.js";
  * ```
  */
 export function encodeFunction(abi, functionName, args) {
-	const item = abi.find(
-		(item) => item.type === "function" && item.name === functionName,
-	);
+	const item = abi.find((item) => {
+		if (item.type !== "function") return false;
+		const fn = /** @type {import('./function/index.js').Function} */ (item);
+		return fn.name === functionName;
+	});
 
 	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
@@ -39,6 +41,8 @@ export function encodeFunction(abi, functionName, args) {
 		);
 	}
 
-	const encoded = Function.encodeParams(item, args);
+	// Type assertion after guard
+	const fn = /** @type {import('./function/index.js').Function} */ (item);
+	const encoded = Function.encodeParams(fn, args);
 	return Hex.fromBytes(encoded);
 }
