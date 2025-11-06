@@ -1,0 +1,100 @@
+---
+title: Hex
+description: High-performance hexadecimal encoding and decoding for Ethereum data structures
+---
+
+## Overview
+
+The Hex module provides zero-allocation hexadecimal encoding and decoding operations optimized for Ethereum's 32-byte hashes, 20-byte addresses, and arbitrary-length byte arrays. Supports both lowercase and uppercase output with optional "0x" prefix handling.
+
+## Key Functions
+
+### `toHex`
+```zig
+pub fn toHex(allocator: Allocator, bytes: []const u8) ![]u8
+```
+Encodes bytes to lowercase hexadecimal string with "0x" prefix.
+
+### `toHexUppercase`
+```zig
+pub fn toHexUppercase(allocator: Allocator, bytes: []const u8) ![]u8
+```
+Encodes bytes to uppercase hexadecimal string with "0x" prefix.
+
+### `fromHex`
+```zig
+pub fn fromHex(allocator: Allocator, hex_str: []const u8) ![]u8
+```
+Decodes hexadecimal string (with or without "0x" prefix) to bytes.
+
+### `isValidHex`
+```zig
+pub fn isValidHex(hex_str: []const u8) bool
+```
+Validates hexadecimal string format without allocation.
+
+## Types
+
+- **HexError**: Error set for invalid hex strings
+  - `InvalidHexCharacter`: Non-hex character encountered
+  - `OddLength`: Hex string has odd number of digits
+
+## Examples
+
+### Encoding bytes to hex
+```zig
+const allocator = std.heap.page_allocator;
+const bytes = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
+const hex = try toHex(allocator, &bytes);
+defer allocator.free(hex);
+// Result: "0xdeadbeef"
+```
+
+### Decoding hex to bytes
+```zig
+const allocator = std.heap.page_allocator;
+const hex = "0x1234abcd";
+const bytes = try fromHex(allocator, hex);
+defer allocator.free(bytes);
+// Result: [0x12, 0x34, 0xab, 0xcd]
+```
+
+### Validating hex strings
+```zig
+const valid = isValidHex("0xdeadbeef");
+// Result: true
+
+const invalid = isValidHex("0xghij");
+// Result: false
+```
+
+## Performance
+
+- Encoding: ~XXX ns per 32-byte hash
+- Decoding: ~XXX ns per 32-byte hash
+- Validation: ~XXX ns per 32-byte hash
+- Zero-allocation validation path
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=Hex
+```
+
+Comprehensive test coverage includes:
+- Basic encoding/decoding
+- Prefix handling (with/without "0x")
+- Case sensitivity (lowercase/uppercase)
+- Error conditions (odd length, invalid characters)
+- Round-trip conversions
+- Edge cases (empty strings, single bytes, 32-byte hashes)
+
+## Related
+
+- [Address](/primitives/address) - Uses hex encoding for address display
+- [Hash](/primitives/hash) - Uses hex encoding for hash display
+- [Transaction](/primitives/transaction) - Hex encoding for transaction data
+
+## References
+
+- Ethereum Yellow Paper - Appendix B (Hex Encoding)

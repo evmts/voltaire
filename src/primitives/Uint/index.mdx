@@ -1,0 +1,216 @@
+---
+title: Uint
+description: Arbitrary-precision unsigned integer arithmetic for Ethereum
+---
+
+## Overview
+
+The Uint module provides generic unsigned integer types with arbitrary bit widths, optimized for Ethereum's U256 (256-bit) operations. Supports arithmetic, comparison, bitwise operations, and conversions with overflow checking and wrapping semantics.
+
+## Key Functions
+
+### Construction
+
+#### `from_limbs`
+```zig
+pub fn from_limbs(limbs_arr: [limbs]u64) Self
+```
+Creates Uint from array of 64-bit limbs (little-endian).
+
+#### `from_u64`
+```zig
+pub fn from_u64(value: u64) Self
+```
+Creates Uint from native 64-bit unsigned integer.
+
+#### `from_int`
+```zig
+pub fn from_int(comptime value: comptime_int) Self
+```
+Creates Uint from compile-time integer with validation.
+
+### Arithmetic
+
+#### `overflowing_add` / `checked_add` / `wrapping_add`
+```zig
+pub fn overflowing_add(self: Self, rhs: Self) struct { result: Self, overflow: bool }
+pub fn checked_add(self: Self, rhs: Self) ?Self
+pub fn wrapping_add(self: Self, rhs: Self) Self
+```
+Addition with overflow detection, checked (nullable), and wrapping semantics.
+
+#### `overflowing_sub` / `checked_sub` / `wrapping_sub`
+```zig
+pub fn overflowing_sub(self: Self, rhs: Self) struct { result: Self, overflow: bool }
+pub fn checked_sub(self: Self, rhs: Self) ?Self
+pub fn wrapping_sub(self: Self, rhs: Self) Self
+```
+Subtraction variants matching addition.
+
+#### `overflowing_mul` / `checked_mul` / `wrapping_mul`
+```zig
+pub fn overflowing_mul(self: Self, rhs: Self) struct { result: Self, overflow: bool }
+pub fn checked_mul(self: Self, rhs: Self) ?Self
+pub fn wrapping_mul(self: Self, rhs: Self) Self
+```
+Multiplication with overflow handling.
+
+#### `div_rem`
+```zig
+pub fn div_rem(self: Self, rhs: Self) DivRemResult
+```
+Combined division and modulo operation.
+
+### Comparison
+
+#### `eq` / `lt` / `gt` / `le` / `ge`
+```zig
+pub fn eq(self: Self, other: Self) bool
+pub fn lt(self: Self, other: Self) bool
+pub fn gt(self: Self, other: Self) bool
+pub fn le(self: Self, other: Self) bool
+pub fn ge(self: Self, other: Self) bool
+```
+Standard comparison operations.
+
+#### `cmp`
+```zig
+pub fn cmp(self: Self, other: Self) std.math.Order
+```
+Three-way comparison returning `.lt`, `.eq`, or `.gt`.
+
+#### `min` / `max`
+```zig
+pub fn min(self: Self, other: Self) Self
+pub fn max(self: Self, other: Self) Self
+```
+Minimum and maximum value selection.
+
+### Utilities
+
+#### `is_zero`
+```zig
+pub inline fn is_zero(self: Self) bool
+```
+Fast zero check without comparisons.
+
+#### `abs_diff`
+```zig
+pub fn abs_diff(self: Self, other: Self) Self
+```
+Absolute difference (unsigned distance).
+
+## Types
+
+### Generic Type Constructor
+
+```zig
+pub fn Uint(comptime bits: usize, comptime limbs: usize) type
+```
+
+Creates a Uint type with specified bit width and limb count.
+
+### Common Type Aliases
+
+- **U256**: `Uint(256, 4)` - Ethereum's primary integer type
+- **U160**: `Uint(160, 3)` - Used for addresses
+- **U128**: `Uint(128, 2)` - Half-word operations
+
+### Constants
+
+- `ZERO`: Zero value
+- `ONE`: Unity value
+- `MIN`: Minimum value (same as ZERO)
+- `MAX`: Maximum representable value
+
+### Result Types
+
+- **DivRemResult**: `struct { quotient: Self, remainder: Self }`
+
+## Examples
+
+### Creating U256 values
+```zig
+const U256 = Uint.Uint(256, 4);
+
+// From u64
+const a = U256.from_u64(42);
+
+// From compile-time constant
+const b = U256.from_int(1000000);
+
+// From limbs (little-endian)
+const c = U256.from_limbs(.{ 0xdeadbeef, 0, 0, 0 });
+```
+
+### Arithmetic operations
+```zig
+const a = U256.from_u64(100);
+const b = U256.from_u64(50);
+
+// Checked addition (returns null on overflow)
+if (a.checked_add(b)) |sum| {
+    // sum = 150
+}
+
+// Wrapping operations (silently overflow)
+const product = a.wrapping_mul(b); // 5000
+
+// Overflow detection
+const result = U256.MAX.overflowing_add(U256.ONE);
+// result.overflow == true
+```
+
+### Division and modulo
+```zig
+const dividend = U256.from_u64(100);
+const divisor = U256.from_u64(7);
+
+const result = dividend.div_rem(divisor);
+// result.quotient = 14
+// result.remainder = 2
+```
+
+### Comparisons
+```zig
+const a = U256.from_u64(100);
+const b = U256.from_u64(200);
+
+const is_less = a.lt(b); // true
+const is_equal = a.eq(b); // false
+const order = a.cmp(b); // .lt
+```
+
+## Performance
+
+- U256 addition: ~XXX ns
+- U256 multiplication: ~XXX ns
+- U256 division: ~XXX ns
+- Comparison: ~XXX ns
+- Optimized for 256-bit operations (native u256 backend when available)
+- Zero-allocation arithmetic
+
+## Testing
+
+```bash
+zig build test -Dtest-filter=Uint
+```
+
+Comprehensive test coverage includes:
+- Arithmetic overflow/underflow
+- Division edge cases (zero divisor, max values)
+- Round-trip conversions
+- Comparison ordering
+- Limb-level operations
+- Cross-boundary arithmetic (mixing bit widths)
+
+## Related
+
+- [Denomination](/primitives/denomination) - Uses U256 for Wei/Gwei/Ether
+- [Abi](/primitives/abi) - U256 encoding/decoding
+- [Hash](/primitives/hash) - 256-bit hash representation
+
+## References
+
+- Ethereum Yellow Paper - Appendix H (Virtual Machine Specification)
+- EIP-170 - Contract code size limit
