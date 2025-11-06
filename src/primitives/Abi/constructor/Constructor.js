@@ -6,7 +6,7 @@ import * as BrandedConstructor from "./BrandedConstructor/index.ts";
  * @param {Object} options
  * @param {'constructor'} options.type
  * @param {import('../function/statemutability.js').StateMutability} options.stateMutability
- * @param {readonly import('../Parameter.js').Parameter[]} options.inputs
+ * @param {readonly import('../../parameter/index.js').Parameter[]} options.inputs
  */
 export function Constructor({ type = "constructor", stateMutability, inputs }) {
 	const result = { type, stateMutability, inputs };

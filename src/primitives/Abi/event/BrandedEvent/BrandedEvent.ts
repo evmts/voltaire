@@ -1,4 +1,4 @@
-import type { Parameter, ParametersToObject } from "../Parameter.js";
+import type { Parameter, ParametersToObject } from "../../Parameter.js";
 
 export type Event<
 	TName extends string = string,

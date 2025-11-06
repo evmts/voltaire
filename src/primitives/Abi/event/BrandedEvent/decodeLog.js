@@ -1,4 +1,8 @@
-import { decodeParameters, decodeValue, isDynamicType } from "../../Encoding.js";
+import {
+	decodeParameters,
+	decodeValue,
+	isDynamicType,
+} from "../../Encoding.js";
 import { AbiDecodingError, AbiInvalidSelectorError } from "../../Errors.js";
 import { getSelector } from "./getSelector.js";
 
@@ -7,7 +11,7 @@ import { getSelector } from "./getSelector.js";
  *
  * @param {import('./BrandedEvent.js').Event} event - Event definition
  * @param {Uint8Array} data - Log data bytes
- * @param {readonly import('../../Hash/index.js').BrandedHash[]} topics - Log topics
+ * @param {readonly import('../../../Hash/index.js').BrandedHash[]} topics - Log topics
  * @returns {import('./BrandedEvent.js').DecodeLogResult<any>} Decoded event arguments
  * @throws {AbiDecodingError} If topics are missing or invalid
  * @throws {AbiInvalidSelectorError} If event selector doesn't match topic0

@@ -3,8 +3,8 @@
  *
  * @template {string} TName
  * @template {import('./statemutability.js').StateMutability} TStateMutability
- * @template {readonly import('../Parameter.js').Parameter[]} TInputs
- * @template {readonly import('../Parameter.js').Parameter[]} TOutputs
+ * @template {readonly import('../../parameter/index.js').Parameter[]} TInputs
+ * @template {readonly import('../../parameter/index.js').Parameter[]} TOutputs
  * @param {import('./BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
  * @returns {string} Function signature string
  *

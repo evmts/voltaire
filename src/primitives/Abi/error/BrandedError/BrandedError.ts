@@ -1,4 +1,4 @@
-import type { Parameter } from "../../Parameter.js";
+import type { AbiParameter as Parameter } from "../../parameter/index.js";
 
 export type BrandedError<
 	TName extends string = string,
@@ -9,10 +9,11 @@ export type BrandedError<
 	inputs: TInputs;
 };
 
-export type ExtractNames<TAbi extends readonly import("../../Item.js").Item[]> =
-	Extract<TAbi[number], { type: "error" }>["name"];
+export type ExtractNames<
+	TAbi extends readonly import("../../Item/index.js").BrandedItem[],
+> = Extract<TAbi[number], { type: "error" }>["name"];
 
 export type Get<
-	TAbi extends readonly import("../../Item.js").Item[],
+	TAbi extends readonly import("../../Item/index.js").BrandedItem[],
 	TName extends string,
 > = Extract<TAbi[number], { type: "error"; name: TName }>;
