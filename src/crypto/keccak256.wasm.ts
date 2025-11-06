@@ -136,9 +136,7 @@ export function topic(
 	}
 	const bytes = new TextEncoder().encode(signature);
 	const hash = loader.keccak256(bytes);
-	return hash as import(
-		"../primitives/Hash/BrandedHash/BrandedHash.js",
-	).BrandedHash;
+	return hash as BrandedHash;
 }
 
 /**
