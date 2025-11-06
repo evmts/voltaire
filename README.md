@@ -21,6 +21,23 @@
   </sup>
 </div>
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Complete API Reference](#complete-api-reference)
+  - [Core Primitives](#core-primitives)
+  - [Cryptography](#cryptography)
+  - [Precompiles](#precompiles)
+- [Quick Reference Tables](#quick-reference-tables)
+- [Architecture](#architecture)
+- [Performance](#performance)
+- [Testing](#testing)
+- [License](#license)
+- [Links](#links)
+- [Alternatives](#alternatives)
+
 ## Features
 
 Voltaire is a modern Ethereum library for TypeScript and Zig similar to [ethers.js](https://docs.ethers.org/v5/api/other/assembly/dialect/) and [viem](https://github.com/wevm/viem).
@@ -64,8 +81,8 @@ This library uses a **data-first architecture** with branded primitive types and
 import { Address, Hash, Uint, Keccak256 } from "@tevm/voltaire";
 
 // Address operations
-const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = Address.toChecksumHex.call(addr);
+const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = Address.toChecksummed(addr);
 const isZero = Address.isZero.call(addr);
 
 // Hash operations
@@ -150,11 +167,13 @@ const sum = Uint.plus.call(a, b);
 ```typescript
 import { Address } from "@tevm/voltaire";
 
-const addr = new Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const checksum = Address.toChecksummed(addr);
 const isValid = Address.isValid(checksum); // true
 const create2 = Address.calculateCreate2Address(deployer, salt, initCode);
 ```
+
+📚 **[Full Address Documentation](./src/content/docs/primitives/address/index.mdx)**
 
 ---
 
@@ -178,12 +197,6 @@ const create2 = Address.calculateCreate2Address(deployer, salt, initCode);
 - `Hash.toHex.call(hash)` — To hex string with 0x prefix
 - `Hash.toBytes.call(hash)` — To Uint8Array copy
 - `Hash.toString.call(hash)` — To string (alias for toHex)
-
-**Hashing:**
-
-- `Hash.keccak256(data)` — Hash bytes with Keccak-256
-- `Hash.keccak256String(str)` — Hash UTF-8 string
-- `Hash.keccak256Hex(hex)` — Hash hex string
 
 **Comparison:**
 
@@ -213,6 +226,8 @@ const hex = Hash.toHex.call(hash);
 const isZero = Hash.isZero.call(hash); // false
 const formatted = Hash.format.call(hash); // "0x1234...5678"
 ```
+
+📚 **[Full Hash Documentation](./src/content/docs/primitives/hash/index.mdx)**
 
 ---
 
@@ -281,6 +296,8 @@ const bytes = Hex.toBytes.call(hex);
 const padded = Hex.pad.call(hex, 4); // '0x00001234'
 const trimmed = Hex.trim.call("0x00001234"); // '0x1234'
 ```
+
+📚 **[Full Hex Documentation](./src/content/docs/primitives/hex/index.mdx)**
 
 ---
 
@@ -361,6 +378,8 @@ const sum = Uint.plus.call(a, b); // 355n
 const hex = Uint.toHex.call(sum); // "0x0000...0163"
 ```
 
+📚 **[Full Uint Documentation](./src/content/docs/primitives/uint/index.mdx)**
+
 ---
 
 #### RLP — Recursive Length Prefix encoding
@@ -402,6 +421,8 @@ const encoded = Rlp.encode.call(list);
 // Decode
 const decoded = Rlp.decode.call(encoded);
 ```
+
+📚 **[Full RLP Documentation](./src/content/docs/primitives/rlp/index.mdx)**
 
 ---
 
@@ -460,6 +481,8 @@ const hash = Transaction.hash(tx);
 const sender = Transaction.from(tx);
 ```
 
+📚 **[Full Transaction Documentation](./src/content/docs/primitives/transaction/index.mdx)**
+
 ---
 
 #### ABI — Application Binary Interface encoding/decoding
@@ -489,6 +512,136 @@ const sender = Transaction.from(tx);
 - `Abi.Error.decode(error, data)` — Decode error data
 
 Full abitype integration for type inference.
+
+📚 **[Full ABI Documentation](./src/content/docs/primitives/abi/index.mdx)**
+
+---
+
+#### Signature — ECDSA signature type
+
+**Type:** `Signature` (branded Uint8Array)
+
+**Constants:**
+
+- `Signature.ECDSA_SIZE` — 64 bytes (compact r||s)
+- `Signature.ECDSA_WITH_V_SIZE` — 65 bytes (r||s||v)
+- `Signature.ED25519_SIZE` — 64 bytes
+- `Signature.COMPONENT_SIZE` — 32 bytes (r or s)
+
+**Creation:**
+
+- `Signature.from(value)` — From bytes/hex/object
+- `Signature.fromSecp256k1(r, s, v)` — From secp256k1 components
+- `Signature.fromP256(r, s)` — From P-256 components
+- `Signature.fromEd25519(bytes)` — From Ed25519 signature
+- `Signature.fromCompact(bytes, v?)` — From compact 64-byte format
+- `Signature.fromDER(bytes)` — From DER encoding
+
+**Conversion:**
+
+- `Signature.toBytes(sig)` — To bytes
+- `Signature.toCompact(sig)` — To compact format (r||s)
+- `Signature.toDER(sig)` — To DER encoding
+
+**Properties:**
+
+- `Signature.getR(sig)` — Get r component
+- `Signature.getS(sig)` — Get s component
+- `Signature.getV(sig)` — Get recovery ID (if present)
+- `Signature.getAlgorithm(sig)` — Get signature algorithm
+
+**Utilities:**
+
+- `Signature.isCanonical(sig)` — Check if s value is canonical (low)
+- `Signature.normalize(sig)` — Normalize s value to low range
+- `Signature.verify(sig, hash, publicKey)` — Verify signature
+- `Signature.equals(sig1, sig2)` — Compare signatures
+
+---
+
+#### PrivateKey — Private key primitive
+
+**Type:** `PrivateKey` (branded 32-byte Uint8Array)
+
+**Creation:**
+
+- `PrivateKey.from(value)` — From hex/bytes
+
+**Conversion:**
+
+- `PrivateKey.toHex(key)` — To hex string
+- `PrivateKey.toPublicKey(key)` — Derive public key
+- `PrivateKey.toAddress(key)` — Derive address
+
+**Signing:**
+
+- `PrivateKey.sign(key, hash)` — Sign hash
+
+---
+
+#### PublicKey — Public key primitive
+
+**Type:** `PublicKey` (branded 64-byte uncompressed public key)
+
+**Creation:**
+
+- `PublicKey.from(value)` — From hex/bytes
+- `PublicKey.fromPrivateKey(privateKey)` — Derive from private key
+
+**Conversion:**
+
+- `PublicKey.toHex(key)` — To hex string
+- `PublicKey.toAddress(key)` — Derive address
+
+**Verification:**
+
+- `PublicKey.verify(key, hash, signature)` — Verify signature
+
+---
+
+#### Nonce — Transaction nonce primitive
+
+**Type:** `Nonce` (branded bigint)
+
+**Creation:**
+
+- `Nonce.from(value)` — From number/bigint/string
+
+**Conversion:**
+
+- `Nonce.toNumber(nonce)` — To number
+- `Nonce.toBigInt(nonce)` — To bigint
+
+**Utilities:**
+
+- `Nonce.increment(nonce)` — Increment by 1
+
+---
+
+#### ChainId — Network identifier
+
+**Type:** `ChainId` (branded number)
+
+**Constants:**
+
+- `ChainId.MAINNET` — 1
+- `ChainId.GOERLI` — 5
+- `ChainId.SEPOLIA` — 11155111
+- `ChainId.HOLESKY` — 17000
+- `ChainId.OPTIMISM` — 10
+- `ChainId.ARBITRUM` — 42161
+- `ChainId.BASE` — 8453
+- `ChainId.POLYGON` — 137
+
+**Creation:**
+
+- `ChainId.from(value)` — From number
+
+**Utilities:**
+
+- `ChainId.toNumber(chainId)` — To number
+- `ChainId.equals(a, b)` — Compare chain IDs
+- `ChainId.isMainnet(chainId)` — Check if mainnet
 
 ---
 
@@ -526,6 +679,8 @@ Full abitype integration for type inference.
 - `AccessList.addStorageKey.call(accessList, address, key)` — Add storage key to address
 - `AccessList.merge.call(list1, list2)` — Merge two access lists
 
+📚 **[Full AccessList Documentation](./src/content/docs/primitives/accesslist/index.mdx)**
+
 **Authorization** — EIP-7702 set code delegation
 
 **Type:** `Authorization.Data` — `{ chainId: bigint, address: Address, nonce: bigint, yParity: 0|1, r: Uint8Array, s: Uint8Array }`
@@ -551,6 +706,8 @@ Full abitype integration for type inference.
 
 - `Authorization.serialize.call(auth)` — Serialize to bytes
 - `Authorization.deserialize(bytes)` — Deserialize from bytes
+
+📚 **[Full Authorization Documentation](./src/content/docs/primitives/authorization/index.mdx)**
 
 **Blob** — EIP-4844 blob transaction utilities
 
@@ -594,6 +751,8 @@ Full abitype integration for type inference.
 - `BlobProof` — 48-byte KZG proof
 - `BlobVersionedHash` — 32-byte versioned hash (0x01 + commitment hash)
 
+📚 **[Full Blob Documentation](./src/content/docs/primitives/blob/index.mdx)**
+
 **Bytecode** — EVM bytecode analysis
 
 **Type:** `Bytecode` — Branded Uint8Array
@@ -624,6 +783,8 @@ Full abitype integration for type inference.
 - `Bytecode.isCreate2.call(bytecode)` — Check if contains CREATE2 deployment
 - `Bytecode.getCreate2Salt.call(bytecode)` — Extract CREATE2 salt if present
 
+📚 **[Full Bytecode Documentation](./src/content/docs/primitives/bytecode/index.mdx)**
+
 **EventLog** — Event log parsing and filtering
 
 **Type:** `EventLog.Data` — `{ address, topics, data, blockNumber?, transactionHash?, transactionIndex?, blockHash?, logIndex?, removed? }`
@@ -649,6 +810,8 @@ Full abitype integration for type inference.
 
 - `EventLog.isRemoved.call(log)` — Check if log was removed (reorg)
 - `EventLog.clone.call(log)` — Clone log object
+
+📚 **[Full EventLog Documentation](./src/content/docs/primitives/eventlog/index.mdx)**
 
 **FeeMarket** — Fee calculations (EIP-1559 & EIP-4844)
 
@@ -700,6 +863,8 @@ Full abitype integration for type inference.
 
 - `FeeMarket.weiToGwei(wei)` — Convert wei to gwei
 - `FeeMarket.gweiToWei(gwei)` — Convert gwei to wei
+
+📚 **[Full FeeMarket Documentation](./src/content/docs/primitives/feemarket/index.mdx)**
 
 **GasConstants** — EVM gas cost constants
 
@@ -818,10 +983,14 @@ Full abitype integration for type inference.
 - `Gas.hasEIP1153(hardfork)` — Transient storage
 - `Gas.hasEIP4844(hardfork)` — Blob transactions
 
+📚 **[Full GasConstants Documentation](./src/content/docs/primitives/gasconstants/index.mdx)**
+
 **Hardfork** — Network upgrade tracking
 
 - Hardfork ordering
 - Feature detection
+
+📚 **[Full Hardfork Documentation](./src/content/docs/primitives/hardfork/index.mdx)**
 
 **Opcode** — EVM opcode definitions and bytecode analysis
 
@@ -876,6 +1045,8 @@ const jumpDests = Opcode.findJumpDests(bytecode);
 const instructions = Opcode.parseBytecode(bytecode);
 ```
 
+📚 **[Full Opcode Documentation](./src/content/docs/primitives/opcode/index.mdx)**
+
 **SIWE** — EIP-4361 Sign-In with Ethereum
 
 **Type:** `Siwe.Message` — `{ domain, address, statement?, uri, version, chainId, nonce, issuedAt, expirationTime?, notBefore?, requestId?, resources? }`
@@ -919,6 +1090,8 @@ const signature = Siwe.sign.call(message, privateKey);
 const valid = Siwe.verify.call(message, signature, message.address);
 ```
 
+📚 **[Full SIWE Documentation](./src/content/docs/primitives/siwe/index.mdx)**
+
 **State** — State constants and storage keys
 
 **Constants:**
@@ -938,6 +1111,8 @@ const valid = Siwe.verify.call(message, signature, message.address);
 - `StorageKey.toString.call(key)` — Convert to string representation
 - `StorageKey.fromString(str)` — Parse from string
 - `StorageKey.hashCode.call(key)` — Compute hash code for maps/sets
+
+📚 **[Full State Documentation](./src/content/docs/primitives/state/index.mdx)**
 
 ---
 
@@ -1650,15 +1825,20 @@ Individual precompiles (0x01-0x13):
 
 ### Primitive Types
 
-| Type        | Size     | Description           | Key Methods                                     |
-| ----------- | -------- | --------------------- | ----------------------------------------------- |
-| Address     | 20 bytes | Ethereum address      | fromHex, toChecksumHex, calculateCreate2Address |
-| Hash        | 32 bytes | Keccak-256 hash       | keccak256, toHex, equals                        |
-| Hex         | Variable | Hex encoding          | fromBytes, toBytes, concat, slice               |
-| Uint        | 32 bytes | 256-bit unsigned int  | from, plus, minus, times, dividedBy             |
-| RLP         | Variable | RLP encoding          | encode, decode                                  |
-| Transaction | Variable | Ethereum transactions | serialize, deserialize, hash, from              |
-| ABI         | Variable | ABI encoding          | Function.encode, Event.decode                   |
+| Type        | Size     | Description              | Key Methods                                    |
+| ----------- | -------- | ------------------------ | ---------------------------------------------- |
+| Address     | 20 bytes | Ethereum address         | from, toChecksummed, calculateCreate2Address   |
+| Hash        | 32 bytes | 32-byte hash             | from, toHex, equals                            |
+| Hex         | Variable | Hex encoding             | fromBytes, toBytes, concat, slice              |
+| Uint        | 32 bytes | 256-bit unsigned int     | from, plus, minus, times, dividedBy            |
+| Signature   | 64 bytes | ECDSA signature          | from, toCompact, verify, normalize             |
+| PrivateKey  | 32 bytes | Private key              | from, toPublicKey, toAddress, sign             |
+| PublicKey   | 64 bytes | Public key               | from, fromPrivateKey, toAddress, verify        |
+| Nonce       | Variable | Transaction nonce        | from, toNumber, toBigInt, increment            |
+| ChainId     | 4 bytes  | Network identifier       | from, toNumber, equals, isMainnet              |
+| RLP         | Variable | RLP encoding             | encode, decode                                 |
+| Transaction | Variable | Ethereum transactions    | serialize, deserialize, hash, from             |
+| ABI         | Variable | ABI encoding             | Function.encode, Event.decode                  |
 
 ### Crypto Functions
 
@@ -1678,7 +1858,7 @@ Individual precompiles (0x01-0x13):
 | BN254.pairing     | Point pairs             | boolean        | zkSNARK verification                |
 | KZG.verify        | Blob, Commitment, Proof | boolean        | EIP-4844 blob verification          |
 | Bip39.generate    | strength                | Mnemonic       | Mnemonic phrase generation          |
-| HDWallet.derive   | Key, Path               | ExtendedKey    | HD wallet derivation                |
+| HDWallet.derive   | Key, Path               | ExtendedKey    | BIP-32/BIP-44 key derivation        |
 | AesGcm.encrypt    | Data, Key, Nonce        | Ciphertext     | Authenticated encryption            |
 
 ---
@@ -1691,15 +1871,15 @@ All primitives follow a consistent data-first pattern:
 
 ```typescript
 // Data types are branded primitives (Uint8Array, bigint, string)
-type Address = Uint8Array & { __tag: "Address" };
-type Hash = Uint8Array & { __brand: symbol };
-type Uint = bigint & { __brand: symbol };
+type Address = Uint8Array & { readonly __tag: "Address" };
+type Hash = Uint8Array & { readonly __brand: symbol };
+type Uint = bigint & { readonly __brand: symbol };
 type Hex = `0x${string}`;
 
 // Methods are namespaced and use .call() for instance methods
-const addr = Address.fromHex("0x...");
+const addr = Address("0x...");
 const hex = Address.toHex.call(addr);
-const checksum = Address.toChecksumHex.call(addr);
+const checksum = Address.toChecksummed(addr);
 
 // No classes, no instances, just branded primitives
 // Perfect for tree-shaking and serialization
@@ -1766,4 +1946,4 @@ MIT License - see [LICENSE](./LICENSE) for details
 
 - [Viem](https://viem.sh) - Popular TypeScript Ethereum library
 - [Ethers.js](https://docs.ethers.org/) - Comprehensive Ethereum library
-- [web3.js](https://web3js.org/) - Original Ethereum JavaScript library
+- [Alloy](https://github.com/alloy-rs/alloy) - High-performance Rust library (Zig FFI integration available)
