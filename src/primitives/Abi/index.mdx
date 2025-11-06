@@ -11,16 +11,70 @@ Complete Application Binary Interface (ABI) encoding and decoding with type safe
 
 ## Overview
 
-Type-safe ABI encoder/decoder supporting functions, events, errors, constructors, and all Solidity types. Provides both imperative and functional APIs with tree-shakeable exports.
+[Branded](/primitives/branded-types) array of ABI items (functions, events, errors, constructors). Zero-overhead design supports both tree-shakeable namespace methods and class instances, following the same pattern as [Address](/primitives/address).
 
 ## Quick Start
 
 <Tabs>
-<TabItem label="Function Encoding">
+<TabItem label="Class API">
 ```typescript
-import { Function } from '@tevm/primitives/Abi'
+import { Abi, Function, Event, AbiError } from '@tevm/voltaire'
 
-// Define function
+// Create ABI items using classes
+const transferFn = new Function({
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+})
+
+// Encode function call with instance methods
+const calldata = transferFn.encodeParams([
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+// Get function selector
+const selector = transferFn.getSelector()  // 4 bytes
+
+// Decode return value
+const result = transferFn.decodeResult(returnData)  // [true]
+
+// Create Event instance
+const transferEvent = new Event({
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+})
+
+// Decode event log
+const decoded = transferEvent.decodeLog(logData, logTopics)
+// { from: "0x...", to: "0x...", value: 1000n }
+
+// Create Error instance
+const insufficientBalance = new AbiError({
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+})
+
+// Encode error
+const errorData = insufficientBalance.encodeParams([100n, 1000n])
+```
+</TabItem>
+<TabItem label="Namespace API (Tree-shakeable)">
+```typescript
+import { Function, Event, AbiError } from '@tevm/voltaire'
+
+// Define function (plain object)
 const transferFn = {
   type: "function",
   name: "transfer",
@@ -32,24 +86,16 @@ const transferFn = {
   outputs: [{ type: "bool" }]
 }
 
-// Encode function call
+// Use namespace methods (tree-shakeable)
 const calldata = Function.encodeParams(transferFn, [
   "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
   1000n
 ])
 
-// Get function selector
 const selector = Function.getSelector(transferFn)  // 4 bytes
-
-// Decode return value
 const result = Function.decodeResult(transferFn, returnData)  // [true]
-```
-</TabItem>
-<TabItem label="Event Decoding">
-```typescript
-import { Event } from '@tevm/primitives/Abi'
 
-// Define event
+// Event namespace methods
 const transferEvent = {
   type: "event",
   name: "Transfer",
@@ -60,21 +106,12 @@ const transferEvent = {
   ]
 }
 
-// Decode event log
 const decoded = Event.decodeLog(transferEvent, logData, logTopics)
-// { from: "0x...", to: "0x...", value: 1000n }
-
-// Encode topics for filtering
 const topics = Event.encodeTopics(transferEvent, {
   from: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
 })
-```
-</TabItem>
-<TabItem label="Error Handling">
-```typescript
-import { Error } from '@tevm/primitives/Abi'
 
-// Define custom error
+// Error namespace methods
 const insufficientBalance = {
   type: "error",
   name: "InsufficientBalance",
@@ -84,33 +121,9 @@ const insufficientBalance = {
   ]
 }
 
-// Encode error
-const errorData = Error.encodeParams(insufficientBalance, [100n, 1000n])
+const errorData = AbiError.encodeParams(insufficientBalance, [100n, 1000n])
 
-// Decode error from revert data
-const decoded = Error.decodeParams(insufficientBalance, revertData.slice(4))
-// [100n, 1000n]
-```
-</TabItem>
-<TabItem label="Direct Encoding">
-```typescript
-import { encodeParameters, decodeParameters } from '@tevm/primitives/Abi'
-
-// Encode parameters directly
-const params = [
-  { type: "address" },
-  { type: "uint256" },
-  { type: "string" }
-]
-const encoded = encodeParameters(params, [
-  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
-  1000n,
-  "Hello"
-])
-
-// Decode parameters
-const decoded = decodeParameters(params, encoded)
-// ["0x742d35...", 1000n, "Hello"]
+// See BrandedAbi for complete functional API
 ```
 </TabItem>
 </Tabs>
@@ -418,7 +431,9 @@ import { encodeParameters, decodeParameters } from '@tevm/primitives/Abi'
 import * as BrandedAbi from '@tevm/primitives/Abi/BrandedAbi'
 ```
 
-See [BrandedAbi](/primitives/abi/branded-abi) for complete tree-shaking documentation.
+<Aside type="tip" title="Need maximum bundle size optimization?">
+For advanced users who need minimal bundle size and maximum tree-shaking benefits, see the [BrandedAbi functional API](/primitives/abi/branded-abi). The class API is recommended for most use cases.
+</Aside>
 
 ## Sub-Namespaces
 

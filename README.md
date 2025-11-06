@@ -404,6 +404,24 @@ Benchmark results available in [BENCHMARKING.md](./BENCHMARKING.md) and each pri
 
 - **[Alloy](https://github.com/alloy-rs/alloy)** - High-performance Rust library (Zig FFI integration available)
 - **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited cryptographic library for pure JS implementations
+
+---
+
+## Runtime Dependencies
+
+Voltaire has minimal runtime dependencies:
+
+- **[@scure/bip32](https://github.com/paulmillr/scure-bip32)** - BIP-32 hierarchical deterministic wallet key derivation
+- **[@scure/bip39](https://github.com/paulmillr/scure-bip39)** - BIP-39 mnemonic phrase generation and validation
+- **[@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains)** - Generated Ethereum chain configurations (mainnet, L2s, testnets)
+- **[abitype](https://github.com/wevm/abitype)** - ABI type system utilities and type guards
+- **[c-kzg](https://github.com/ethereum/c-kzg-4844)** - KZG polynomial commitments for EIP-4844 blob verification
+- **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited elliptic curve cryptography (secp256k1, ed25519, p256)
+- **[@noble/hashes](https://github.com/paulmillr/noble-hashes)** - Audited cryptographic hash functions (keccak256, sha256, blake3, ripemd160)
+- **[Zig std.crypto](https://ziglang.org/documentation/0.15.1/std/#std.crypto)** - Zig standard library cryptography (native/WASM builds only)
+
+All dependencies are actively maintained and security-audited where applicable.
+
 ---
 
 ## License
