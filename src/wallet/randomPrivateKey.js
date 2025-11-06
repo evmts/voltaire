@@ -24,7 +24,7 @@ export function randomPrivateKey() {
 	let privKeyBigInt = 0n;
 	for (let i = 0; i < 32; i++) {
 		const byte = privateKey[i];
-		if (byte === undefined) throw new Error('Invalid byte at index ' + i);
+		if (byte === undefined) throw new Error("Invalid byte at index " + i);
 		privKeyBigInt = (privKeyBigInt << 8n) | BigInt(byte);
 	}
 
@@ -70,7 +70,7 @@ function multiplyBasePoint(k) {
 	}
 
 	if (qx === null || qy === null) {
-		throw new Error('Point multiplication failed');
+		throw new Error("Point multiplication failed");
 	}
 
 	return { x: qx, y: qy };

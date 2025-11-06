@@ -13,10 +13,15 @@ export function min(...values) {
 	if (values.length === 0) {
 		throw new Error("min requires at least one value");
 	}
-	let result = values[0];
+	let result = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+		values[0]
+	);
 	for (let i = 1; i < values.length; i++) {
-		if (values[i] < result) {
-			result = values[i];
+		const val = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+			values[i]
+		);
+		if (val < result) {
+			result = val;
 		}
 	}
 	return result;
