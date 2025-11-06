@@ -32,7 +32,7 @@ export function sign(privateKey: string, hash: any) {
 export { _toHex, _toPublicKey, _toAddress, _sign };
 
 // Export as namespace (convenience)
-export const BrandedPrivateKey = {
+export const PrivateKey = {
 	from,
 	toHex,
 	toPublicKey,

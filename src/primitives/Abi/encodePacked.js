@@ -1,6 +1,5 @@
 import { Address } from "../Address/index.js";
 import * as Hex from "../Hex/index.js";
-import * as Uint from "../Uint/index.js";
 import { AbiEncodingError, AbiParameterMismatchError } from "./Errors.js";
 
 /**
@@ -62,7 +61,7 @@ function encodePackedValue(type, value) {
 	// Address - 20 bytes, no padding
 	if (type === "address") {
 		const addr = typeof value === "string" ? Address.fromHex(value) : value;
-		return addr;
+		return /** @type {Uint8Array} */ (addr);
 	}
 
 	// Bool - 1 byte
@@ -72,7 +71,7 @@ function encodePackedValue(type, value) {
 
 	// String - UTF-8 bytes, no length prefix
 	if (type === "string") {
-		return new TextEncoder().encode(value);
+		return new TextEncoder().encode(/** @type {string} */ (value));
 	}
 
 	// Bytes - raw bytes, no length prefix
@@ -80,14 +79,14 @@ function encodePackedValue(type, value) {
 		if (typeof value === "string") {
 			return Hex.toBytes(value);
 		}
-		return value;
+		return /** @type {Uint8Array} */ (value);
 	}
 
 	// Fixed bytes (bytes1-bytes32) - no padding
 	if (type.startsWith("bytes")) {
 		const size = Number.parseInt(type.slice(5));
 		if (size >= 1 && size <= 32) {
-			const bytes = typeof value === "string" ? Hex.toBytes(value) : value;
+			const bytes = typeof value === "string" ? Hex.toBytes(value) : /** @type {Uint8Array} */ (value);
 			if (bytes.length !== size) {
 				throw new AbiEncodingError(
 					`Invalid ${type} length: expected ${size}, got ${bytes.length}`,
@@ -101,7 +100,7 @@ function encodePackedValue(type, value) {
 	if (type.startsWith("uint")) {
 		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
 		const bytes = bits / 8;
-		const bigintValue = typeof value === "number" ? BigInt(value) : value;
+		const bigintValue = typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
 
 		// Convert to bytes (big-endian)
 		const result = new Uint8Array(bytes);
@@ -117,7 +116,7 @@ function encodePackedValue(type, value) {
 	if (type.startsWith("int")) {
 		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
 		const bytes = bits / 8;
-		const bigintValue = typeof value === "number" ? BigInt(value) : value;
+		const bigintValue = typeof value === "number" ? BigInt(value) : /** @type {bigint} */ (value);
 
 		// Convert to two's complement if negative
 		const unsigned =
@@ -136,7 +135,7 @@ function encodePackedValue(type, value) {
 	// Arrays - concatenate encoded elements
 	if (type.endsWith("[]")) {
 		const elementType = type.slice(0, -2);
-		const array = value;
+		const array = /** @type {unknown[]} */ (value);
 		const parts = [];
 		for (const item of array) {
 			parts.push(encodePackedValue(elementType, item));
@@ -156,7 +155,7 @@ function encodePackedValue(type, value) {
 	if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
 		const elementType = fixedArrayMatch[1];
 		const arraySize = Number.parseInt(fixedArrayMatch[2]);
-		const array = value;
+		const array = /** @type {unknown[]} */ (value);
 
 		if (array.length !== arraySize) {
 			throw new AbiEncodingError(

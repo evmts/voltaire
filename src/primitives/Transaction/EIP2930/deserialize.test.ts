@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionEIP2930 from "./index.js";
+import { TransactionEIP2930, serialize, deserialize } from "./index.js";
 import { Type } from "../types.js";
 
 describe("TransactionEIP2930.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {
-		const original = {
+		const original = TransactionEIP2930({
 			type: Type.EIP2930,
 			chainId: 1n,
 			nonce: 5n,
@@ -18,10 +18,10 @@ describe("TransactionEIP2930.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP2930.serialize(original);
-		const deserialized = TransactionEIP2930.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.type).toBe(original.type);
 		expect(deserialized.chainId).toBe(original.chainId);
@@ -39,7 +39,7 @@ describe("TransactionEIP2930.deserialize", () => {
 	});
 
 	it("round-trips transaction with access list", () => {
-		const original = {
+		const original = TransactionEIP2930({
 			type: Type.EIP2930,
 			chainId: 1n,
 			nonce: 0n,
@@ -57,10 +57,10 @@ describe("TransactionEIP2930.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP2930.serialize(original);
-		const deserialized = TransactionEIP2930.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.accessList.length).toBe(1);
 		expect(new Uint8Array(deserialized.accessList[0]!.address)).toEqual(
@@ -70,7 +70,7 @@ describe("TransactionEIP2930.deserialize", () => {
 	});
 
 	it("round-trips contract creation", () => {
-		const original = {
+		const original = TransactionEIP2930({
 			type: Type.EIP2930,
 			chainId: 1n,
 			nonce: 0n,
@@ -83,16 +83,16 @@ describe("TransactionEIP2930.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP2930.serialize(original);
-		const deserialized = TransactionEIP2930.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.to).toBe(null);
 	});
 
 	it("throws for invalid type prefix", () => {
 		const invalidData = new Uint8Array([0x02, 0xc0]); // Wrong type
-		expect(() => TransactionEIP2930.deserialize(invalidData)).toThrow();
+		expect(() => deserialize(invalidData)).toThrow();
 	});
 });

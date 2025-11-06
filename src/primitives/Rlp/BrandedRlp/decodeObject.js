@@ -5,17 +5,16 @@ import { toRaw } from "./toRaw.js";
  * Decodes RLP-encoded bytes to an object with known keys
  *
  * @param {Uint8Array} data - RLP-encoded data
- * @param {string[]} keys - Expected keys in order
  * @returns {Record<string, any>} Decoded object
  *
  * @example
  * ```javascript
  * const obj = { name: new Uint8Array([65, 66]), age: new Uint8Array([25]) };
  * const encoded = Rlp.encodeObject(obj);
- * const decoded = Rlp.decodeObject(encoded, ['name', 'age']);
+ * const decoded = Rlp.decodeObject(encoded);
  * ```
  */
-export function decodeObject(data, keys) {
+export function decodeObject(data) {
 	const decoded = decode(data);
 	const raw = toRaw(decoded.data);
 
@@ -23,6 +22,7 @@ export function decodeObject(data, keys) {
 		throw new Error("Expected array from decode");
 	}
 
+	/** @type {Record<string, any>} */
 	const result = {};
 	const decoder = new TextDecoder();
 

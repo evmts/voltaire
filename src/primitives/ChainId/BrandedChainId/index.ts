@@ -39,7 +39,7 @@ export function isMainnet(chainId: number): boolean {
 export { _toNumber, _equals, _isMainnet };
 
 // Export as namespace (convenience)
-export const BrandedChainId = {
+export const ChainId = {
 	from,
 	toNumber,
 	equals,

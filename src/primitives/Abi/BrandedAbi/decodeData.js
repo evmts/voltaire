@@ -24,7 +24,7 @@ export function decodeData(data) {
 	const selector = data.slice(0, 4);
 
 	// Find function by selector
-	const func = this.find((item) => {
+	const item = this.find((item) => {
 		if (item.type !== "function") return false;
 		const itemSelector = Function.getSelector(item);
 		// Compare bytes
@@ -34,16 +34,16 @@ export function decodeData(data) {
 		return true;
 	});
 
-	if (!func) {
+	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function with selector ${Hex.fromBytes(selector)} not found in ABI`,
 		);
 	}
 
-	const args = Function.decodeParams(func, data);
+	const args = Function.decodeParams(item, data);
 
 	return {
-		functionName: func.name,
+		functionName: item.name,
 		args,
 	};
 }

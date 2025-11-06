@@ -56,7 +56,7 @@ export function decodeLog(abi, log) {
 	}
 
 	// Find event by selector (topic0 for non-anonymous events)
-	const event = abi.find((item) => {
+	const item = abi.find((item) => {
 		if (item.type !== "event") return false;
 		if (item.anonymous) return false; // Skip anonymous events for now
 
@@ -68,16 +68,16 @@ export function decodeLog(abi, log) {
 		return true;
 	});
 
-	if (!event) {
+	if (!item || item.type !== "event") {
 		throw new AbiItemNotFoundError(
 			`Event with selector ${Hex.fromBytes(topic0)} not found in ABI`,
 		);
 	}
 
-	const params = Event.decodeLog(event, dataBytes, topicBytes);
+	const params = Event.decodeLog(item, dataBytes, /** @type {any} */ (topicBytes));
 
 	return {
-		event: event.name,
+		event: item.name,
 		params,
 	};
 }

@@ -170,8 +170,12 @@ describe("Ed25519", () => {
 			const keypair = Ed25519.keypairFromSeed(seed);
 			const message = new TextEncoder().encode("Hello, world!");
 
-			const signature = Ed25519.sign(message, keypair.secretKey);
-			// Corrupt signature
+			const sig = Ed25519.sign(message, keypair.secretKey);
+			expect(sig).toBeDefined();
+			if (!sig) throw new Error("No signature");
+			// Corrupt signature - copy to ensure immutability
+			const signature: Uint8Array = new Uint8Array(sig);
+			// @ts-expect-error - TypeScript doesn't understand type narrowing here
 			signature[0] ^= 1;
 
 			const valid = Ed25519.verify(signature, message, keypair.publicKey);

@@ -19,7 +19,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.type).toBe(original.type);
@@ -51,7 +51,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.to).toBe(null);
@@ -73,7 +73,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.v).toBe(37n);
@@ -94,7 +94,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.data.length).toBe(0);
@@ -115,7 +115,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.v).toBe(0n);
@@ -159,7 +159,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.data).toEqual(original.data);
@@ -181,7 +181,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(0xff),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.nonce).toBe(original.nonce);
@@ -208,7 +208,7 @@ describe("TransactionLegacy.deserialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionLegacy.serialize.call(original);
+		const serialized = TransactionLegacy.serialize.call(original as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 
 		expect(deserialized.v).toBe(v);

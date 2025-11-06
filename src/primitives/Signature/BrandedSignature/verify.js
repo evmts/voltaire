@@ -7,8 +7,8 @@ import { InvalidAlgorithmError } from "./errors.js";
  * Use this in conjunction with crypto library functions.
  *
  * @param {import('./BrandedSignature.js').BrandedSignature} signature - Signature to verify
- * @param {Uint8Array} message - Message that was signed
- * @param {Uint8Array} publicKey - Public key to verify against
+ * @param {Uint8Array} _message - Message that was signed
+ * @param {Uint8Array} _publicKey - Public key to verify against
  * @returns {boolean} True if signature is valid
  * @throws {InvalidAlgorithmError} If algorithm-specific verification is not available
  *
@@ -17,7 +17,7 @@ import { InvalidAlgorithmError } from "./errors.js";
  * const isValid = Signature.verify(sig, message, publicKey);
  * ```
  */
-export function verify(signature, message, publicKey) {
+export function verify(signature, _message, _publicKey) {
 	// This is a placeholder that should be implemented with actual crypto
 	// For now, throw an error indicating the feature needs crypto integration
 	throw new InvalidAlgorithmError(

@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionEIP7702 from "./index.js";
+import { serialize } from "./index.js";
 import { Type } from "../types.js";
 import type { BrandedTransactionEIP7702 } from "./BrandedTransactionEIP7702.js";
 
 describe("TransactionEIP7702.serialize", () => {
 	it("serializes basic EIP-7702 transaction", () => {
 		const tx: BrandedTransactionEIP7702 = {
+			__tag: "TransactionEIP7702",
 			type: Type.EIP7702,
 			chainId: 1n,
 			nonce: 0n,
@@ -23,7 +24,7 @@ describe("TransactionEIP7702.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP7702.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized).toBeInstanceOf(Uint8Array);
 		expect(serialized[0]).toBe(Type.EIP7702);
 		expect(serialized.length).toBeGreaterThan(1);
@@ -31,6 +32,7 @@ describe("TransactionEIP7702.serialize", () => {
 
 	it("serializes transaction with authorization list", () => {
 		const tx: BrandedTransactionEIP7702 = {
+			__tag: "TransactionEIP7702",
 			type: Type.EIP7702,
 			chainId: 1n,
 			nonce: 0n,
@@ -56,12 +58,13 @@ describe("TransactionEIP7702.serialize", () => {
 			s: new Uint8Array(32).fill(4),
 		};
 
-		const serialized = TransactionEIP7702.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP7702);
 	});
 
 	it("serializes transaction with multiple authorizations", () => {
 		const tx: BrandedTransactionEIP7702 = {
+			__tag: "TransactionEIP7702",
 			type: Type.EIP7702,
 			chainId: 1n,
 			nonce: 0n,
@@ -95,12 +98,13 @@ describe("TransactionEIP7702.serialize", () => {
 			s: new Uint8Array(32).fill(6),
 		};
 
-		const serialized = TransactionEIP7702.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP7702);
 	});
 
 	it("serializes contract call with authorization", () => {
 		const tx: BrandedTransactionEIP7702 = {
+			__tag: "TransactionEIP7702",
 			type: Type.EIP7702,
 			chainId: 1n,
 			nonce: 0n,
@@ -126,7 +130,7 @@ describe("TransactionEIP7702.serialize", () => {
 			s: new Uint8Array(32).fill(4),
 		};
 
-		const serialized = TransactionEIP7702.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP7702);
 	});
 });

@@ -1,14 +1,11 @@
 import * as Hex from "../../Hex/index.js";
-import { AbiItemNotFoundError } from "../Errors.js";
 import * as Event from "../event/index.js";
 
 /**
  * Parse event logs (branded ABI method)
  *
  * @this {import('./BrandedAbi.js').BrandedAbi}
- * @param {readonly Object[]} logs - Array of log objects
- * @param {Uint8Array | string} logs[].data - Log data
- * @param {readonly (Uint8Array | string)[]} logs[].topics - Log topics
+ * @param {readonly { data: Uint8Array | string, topics: readonly (Uint8Array | string)[] }[]} logs - Array of log objects
  * @returns {readonly { eventName: string, args: Record<string, unknown> }[]} Parsed event logs
  *
  * @example
@@ -23,7 +20,7 @@ export function parseLogs(logs) {
 		.map((log) => {
 			const dataBytes =
 				typeof log.data === "string" ? Hex.toBytes(log.data) : log.data;
-			const topicBytes = log.topics.map((t) =>
+			const topicBytes = log.topics.map((/** @type {Uint8Array | string} */ t) =>
 				typeof t === "string" ? Hex.toBytes(t) : t,
 			);
 
@@ -37,24 +34,33 @@ export function parseLogs(logs) {
 			}
 
 			// Find event by selector (topic0 for non-anonymous events)
-			const event = this.find((item) => {
-				if (item.type !== "event") return false;
-				if (item.anonymous) return false;
+			const event = /** @type {import('../event/BrandedEvent.js').Event<string, readonly import('../Parameter.js').Parameter[]> | undefined} */ (
+				this.find((item) => {
+					if (item.type !== "event") return false;
+					if (item.anonymous) return false;
 
-				const eventSelector = Event.getSelector(item);
-				// Compare bytes
-				for (let i = 0; i < 32; i++) {
-					if (topic0[i] !== eventSelector[i]) return false;
-				}
-				return true;
-			});
+					const eventSelector = Event.getSelector(item);
+					// Compare bytes
+					for (let i = 0; i < 32; i++) {
+						if (topic0[i] !== eventSelector[i]) return false;
+					}
+					return true;
+				})
+			);
 
 			if (!event) {
 				return null; // Skip unknown events
 			}
 
 			try {
-				const args = Event.decodeLog(event, dataBytes, topicBytes);
+				// Cast topicBytes to BrandedHash[] for Event.decodeLog
+				const args = Event.decodeLog(
+					event,
+					dataBytes,
+					/** @type {readonly import('../../Hash/index.js').BrandedHash[]} */ (
+						/** @type {unknown} */ (topicBytes)
+					),
+				);
 				return {
 					eventName: event.name,
 					args,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { HDWallet } from "./HDWallet/index.js";
-import type { BrandedExtendedKey } from "./HDWallet/index.js";
+import * as HDWallet from "./HDWallet/HDWallet.js";
+import type { BrandedExtendedKey } from "./HDWallet/BrandedExtendedKey.js";
 import * as Bip39 from "./Bip39/index.js";
 
 describe("HDWallet", () => {

@@ -26,7 +26,7 @@ export {
 };
 
 // Export as namespace (convenience)
-export const BrandedGwei = {
+export const Gwei = {
 	from,
 	fromEther,
 	fromWei,

@@ -30,7 +30,7 @@ export {
  * @type {TransactionEIP2930Constructor}
  */
 export function TransactionEIP2930(tx) {
-	return {
+	return /** @type {BrandedTransactionEIP2930} */ ({
 		__tag: "TransactionEIP2930",
 		type: Type.EIP2930,
 		chainId: tx.chainId,
@@ -44,7 +44,7 @@ export function TransactionEIP2930(tx) {
 		yParity: tx.yParity,
 		r: tx.r,
 		s: tx.s,
-	};
+	});
 }
 
 // Attach static methods

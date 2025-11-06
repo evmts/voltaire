@@ -3,7 +3,7 @@
  *
  * @param {import('./types.js').HDNode} node - Parent HD node
  * @param {number} index - Child index (will be made hardened)
- * @returns {import('./types.js').HDNode} Derived HD node
+ * @returns {Promise<import('./types.js').HDNode>} Derived HD node
  */
 export async function deriveHardened(node, index) {
 	const { derive } = await import("./derive.js");

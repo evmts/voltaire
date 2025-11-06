@@ -8,15 +8,16 @@ describe("BloomFilter batch operations", () => {
 			const f2 = BloomFilter.create(2048, 3);
 			const f3 = BloomFilter.create(2048, 3);
 
-			BloomFilter.add(f1, "test1");
-			BloomFilter.add(f2, "test2");
-			BloomFilter.add(f3, "test3");
+			const enc = new TextEncoder();
+			BloomFilter.add(f1, enc.encode("test1"));
+			BloomFilter.add(f2, enc.encode("test2"));
+			BloomFilter.add(f3, enc.encode("test3"));
 
 			const combined = BloomFilter.combine(f1, f2, f3);
 
-			expect(BloomFilter.contains(combined, "test1")).toBe(true);
-			expect(BloomFilter.contains(combined, "test2")).toBe(true);
-			expect(BloomFilter.contains(combined, "test3")).toBe(true);
+			expect(BloomFilter.contains(combined, enc.encode("test1"))).toBe(true);
+			expect(BloomFilter.contains(combined, enc.encode("test2"))).toBe(true);
+			expect(BloomFilter.contains(combined, enc.encode("test3"))).toBe(true);
 		});
 
 		it("throws for empty input", () => {
@@ -44,7 +45,8 @@ describe("BloomFilter batch operations", () => {
 
 		it("calculates density after adding items", () => {
 			const filter = BloomFilter.create(2048, 3);
-			BloomFilter.add(filter, "test");
+			const enc = new TextEncoder();
+			BloomFilter.add(filter, enc.encode("test"));
 			const d = BloomFilter.density(filter);
 			// With k=3, we expect approximately 3 bits set out of 2048
 			expect(d).toBeGreaterThan(0);
@@ -53,11 +55,12 @@ describe("BloomFilter batch operations", () => {
 
 		it("density increases with more items", () => {
 			const filter = BloomFilter.create(2048, 3);
-			BloomFilter.add(filter, "test1");
+			const enc = new TextEncoder();
+			BloomFilter.add(filter, enc.encode("test1"));
 			const d1 = BloomFilter.density(filter);
 
-			BloomFilter.add(filter, "test2");
-			BloomFilter.add(filter, "test3");
+			BloomFilter.add(filter, enc.encode("test2"));
+			BloomFilter.add(filter, enc.encode("test3"));
 			const d2 = BloomFilter.density(filter);
 
 			expect(d2).toBeGreaterThan(d1);

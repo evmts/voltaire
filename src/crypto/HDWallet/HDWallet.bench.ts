@@ -21,7 +21,6 @@ const xprv = HDWallet.toExtendedPrivateKey(rootKey);
 const xpub = HDWallet.toExtendedPublicKey(rootKey);
 
 // Pre-derived keys at various depths
-const depth1 = HDWallet.derivePath(rootKey, "m/44'");
 const depth3 = HDWallet.derivePath(rootKey, "m/44'/60'/0'");
 const depth5 = HDWallet.derivePath(rootKey, "m/44'/60'/0'/0/0");
 

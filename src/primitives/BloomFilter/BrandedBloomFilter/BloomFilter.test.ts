@@ -199,7 +199,7 @@ describe("BloomFilter - Basic Operations", () => {
 			BloomFilter.add(f1, item1);
 			BloomFilter.add(f2, item2);
 
-			const merged = BloomFilter.merge(f1, f2);
+			BloomFilter.merge(f1, f2);
 
 			expect(BloomFilter.contains(f1, item1)).toBe(true);
 			expect(BloomFilter.contains(f1, item2)).toBe(false);

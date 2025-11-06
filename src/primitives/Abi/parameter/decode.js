@@ -4,7 +4,7 @@ import { AbiDecodingError } from "../Errors.js";
  * Decode single parameter (branded method - not implemented)
  *
  * @this {import('../Parameter.js').Parameter}
- * @param {Uint8Array} data - Encoded data
+ * @param {Uint8Array} _data - Encoded data
  * @returns {unknown} Decoded value
  * @throws {AbiDecodingError} Always throws - not implemented
  *
@@ -14,7 +14,7 @@ import { AbiDecodingError } from "../Errors.js";
  * Abi.Parameter.decode.call(param, data); // throws AbiDecodingError
  * ```
  */
-export function decode(data) {
+export function decode(_data) {
 	throw new AbiDecodingError(
 		"Parameter.decode is not implemented. Use Abi.decodeParameters instead.",
 	);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { Hash } from "../../primitives/Hash/index.js";
 import { sign } from "./sign.js";
 import { verify } from "./verify.js";
 import { derivePublicKey } from "./derivePublicKey.js";
@@ -11,7 +12,7 @@ describe("Secp256k1.verify", () => {
 		it("should verify valid signature", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("hello world");
+			const message = Hash.from(sha256(new TextEncoder().encode("hello world")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -27,9 +28,9 @@ describe("Secp256k1.verify", () => {
 			}
 
 			const messages = [
-				sha256("message 1"),
-				sha256("message 2"),
-				sha256("message 3"),
+				Hash.from(sha256(new TextEncoder().encode("message 1"))),
+				Hash.from(sha256(new TextEncoder().encode("message 2"))),
+				Hash.from(sha256(new TextEncoder().encode("message 3"))),
 			];
 
 			const publicKey = derivePublicKey(privateKey);
@@ -44,7 +45,7 @@ describe("Secp256k1.verify", () => {
 		it("should verify signature with v=27", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test v=27");
+			const message = Hash.from(sha256(new TextEncoder().encode("test v=27")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -59,8 +60,8 @@ describe("Secp256k1.verify", () => {
 		it("should reject signature with wrong message", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message1 = sha256("original message");
-			const message2 = sha256("different message");
+			const message1 = Hash.from(sha256(new TextEncoder().encode("original message")));
+			const message2 = Hash.from(sha256(new TextEncoder().encode("different message")));
 
 			const signature = sign(message1, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -74,7 +75,7 @@ describe("Secp256k1.verify", () => {
 			privateKey1[31] = 1;
 			const privateKey2 = new Uint8Array(32);
 			privateKey2[31] = 2;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey1);
 			const wrongPublicKey = derivePublicKey(privateKey2);
@@ -86,18 +87,19 @@ describe("Secp256k1.verify", () => {
 		it("should reject signature with modified r", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
 
 			// Modify r
+			const modifiedR = new Uint8Array(signature.r);
+			modifiedR[0]! ^= 0x01;
 			const modifiedSig = {
-				r: new Uint8Array(signature.r),
+				r: modifiedR,
 				s: signature.s,
 				v: signature.v,
 			};
-			modifiedSig.r[0] ^= 0x01;
 
 			const valid = verify(modifiedSig, message, publicKey);
 			expect(valid).toBe(false);
@@ -106,18 +108,19 @@ describe("Secp256k1.verify", () => {
 		it("should reject signature with modified s", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
 
 			// Modify s
+			const modifiedS = new Uint8Array(signature.s);
+			modifiedS[0]! ^= 0x01;
 			const modifiedSig = {
 				r: signature.r,
-				s: new Uint8Array(signature.s),
+				s: modifiedS,
 				v: signature.v,
 			};
-			modifiedSig.s[0] ^= 0x01;
 
 			const valid = verify(modifiedSig, message, publicKey);
 			expect(valid).toBe(false);
@@ -128,7 +131,7 @@ describe("Secp256k1.verify", () => {
 		it("should throw InvalidSignatureError for r with wrong length", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
 			const malformedSig = {
@@ -145,7 +148,7 @@ describe("Secp256k1.verify", () => {
 		it("should throw InvalidSignatureError for s with wrong length", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
 			const malformedSig = {
@@ -162,7 +165,7 @@ describe("Secp256k1.verify", () => {
 		it("should return false for all-zero r", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
 			const invalidSig = {
@@ -178,7 +181,7 @@ describe("Secp256k1.verify", () => {
 		it("should return false for all-zero s", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
 			const invalidSig = {
@@ -194,7 +197,7 @@ describe("Secp256k1.verify", () => {
 		it("should return false for r >= n (curve order)", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
 			// r = n (curve order, invalid)
@@ -215,7 +218,7 @@ describe("Secp256k1.verify", () => {
 		it("should return false for s >= n (curve order)", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const publicKey = derivePublicKey(privateKey);
 
 			// s = n (curve order, invalid)
@@ -238,7 +241,7 @@ describe("Secp256k1.verify", () => {
 		it("should throw InvalidPublicKeyError for wrong length public key", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const signature = sign(message, privateKey);
 
 			const wrongLengthKey = new Uint8Array(63);
@@ -251,7 +254,7 @@ describe("Secp256k1.verify", () => {
 		it("should throw InvalidPublicKeyError for too long public key", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const signature = sign(message, privateKey);
 
 			const tooLongKey = new Uint8Array(65);
@@ -264,7 +267,7 @@ describe("Secp256k1.verify", () => {
 		it("should return false for invalid curve point", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 			const signature = sign(message, privateKey);
 
 			// All-zero public key (invalid point)
@@ -279,7 +282,7 @@ describe("Secp256k1.verify", () => {
 		it("should handle all-zero message hash", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = new Uint8Array(32);
+			const message = Hash.from(new Uint8Array(32));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -291,7 +294,7 @@ describe("Secp256k1.verify", () => {
 		it("should handle all-ones message hash", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = new Uint8Array(32).fill(0xff);
+			const message = Hash.from(new Uint8Array(32).fill(0xff));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -303,7 +306,7 @@ describe("Secp256k1.verify", () => {
 		it("should handle minimum valid private key", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -318,7 +321,7 @@ describe("Secp256k1.verify", () => {
 				0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
 				0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 			]);
-			const message = sha256("test");
+			const message = Hash.from(sha256(new TextEncoder().encode("test")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -334,7 +337,7 @@ describe("Secp256k1.verify", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 13) % 256;
 			}
-			const message = sha256("cross validation");
+			const message = Hash.from(sha256(new TextEncoder().encode("cross validation")));
 
 			// Create signature with @noble
 			const nobleSignature = secp256k1.sign(message, privateKey, {
@@ -358,7 +361,7 @@ describe("Secp256k1.verify", () => {
 		it("should not early-return on invalid signatures", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("timing test");
+			const message = Hash.from(sha256(new TextEncoder().encode("timing test")));
 			const publicKey = derivePublicKey(privateKey);
 
 			// Multiple invalid signatures should all return false
@@ -387,7 +390,7 @@ describe("Secp256k1.verify", () => {
 		it("should verify with both v values when appropriate", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("v parameter test");
+			const message = Hash.from(sha256(new TextEncoder().encode("v parameter test")));
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);

@@ -17,7 +17,7 @@
 // Re-export all types
 export type { AbiType } from "./Type.js";
 export type {
-	Parameter,
+	Parameter as AbiParameter,
 	ParametersToPrimitiveTypes,
 	ParametersToObject,
 } from "./Parameter.js";

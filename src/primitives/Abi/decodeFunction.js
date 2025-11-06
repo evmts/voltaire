@@ -35,7 +35,7 @@ export function decodeFunction(abi, data) {
 	const selector = bytes.slice(0, 4);
 
 	// Find function by selector
-	const func = abi.find((item) => {
+	const item = abi.find((item) => {
 		if (item.type !== "function") return false;
 		const itemSelector = Function.getSelector(item);
 		// Compare bytes
@@ -45,16 +45,16 @@ export function decodeFunction(abi, data) {
 		return true;
 	});
 
-	if (!func) {
+	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function with selector ${Hex.fromBytes(selector)} not found in ABI`,
 		);
 	}
 
-	const params = Function.decodeParams(func, bytes.slice(4));
+	const params = Function.decodeParams(item, bytes.slice(4));
 
 	return {
-		name: func.name,
+		name: item.name,
 		params,
 	};
 }

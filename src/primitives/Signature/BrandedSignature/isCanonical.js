@@ -44,8 +44,10 @@ export function isCanonical(signature) {
 
 	// Compare s with threshold
 	for (let i = 0; i < COMPONENT_SIZE; i++) {
-		if (s[i] < threshold[i]) return true;
-		if (s[i] > threshold[i]) return false;
+		const sByte = s[i] ?? 0;
+		const thresholdByte = threshold[i] ?? 0;
+		if (sByte < thresholdByte) return true;
+		if (sByte > thresholdByte) return false;
 	}
 
 	return true; // Equal to threshold is also canonical

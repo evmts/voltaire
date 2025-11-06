@@ -3,7 +3,7 @@
  *
  * @param {import('./types.js').HDNode} node - Parent HD node
  * @param {string | import('./types.js').HDPath} path - Derivation path (e.g. "m/44'/60'/0'/0/0" or array)
- * @returns {import('./types.js').HDNode} Derived HD node
+ * @returns {Promise<import('./types.js').HDNode>} Derived HD node
  */
 export async function derive(node, path) {
 	const { libwally } = await import("./ffi.js");
@@ -13,7 +13,10 @@ export async function derive(node, path) {
 	const pathBuf = Buffer.alloc(pathArray.length * 4);
 
 	for (let i = 0; i < pathArray.length; i++) {
-		pathBuf.writeUInt32LE(pathArray[i], i * 4);
+		const index = pathArray[i];
+		if (index !== undefined) {
+			pathBuf.writeUInt32LE(index, i * 4);
+		}
 	}
 
 	const handle = libwally.hdwallet_derive(

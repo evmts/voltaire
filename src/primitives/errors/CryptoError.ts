@@ -8,10 +8,12 @@ export class CryptoError extends PrimitiveError {
 		message: string,
 		options?: { code?: string; context?: Record<string, any> },
 	) {
-		super(message, {
-			code: options?.code || "CRYPTO_ERROR",
-			context: options?.context,
-		});
+		super(
+			message,
+			options?.context !== undefined
+				? { code: options.code || "CRYPTO_ERROR", context: options.context }
+				: { code: options?.code || "CRYPTO_ERROR" },
+		);
 		this.name = "CryptoError";
 	}
 }
@@ -24,10 +26,12 @@ export class InvalidSignatureError extends CryptoError {
 		message: string,
 		options?: { code?: string; context?: Record<string, any> },
 	) {
-		super(message, {
-			code: options?.code || "INVALID_SIGNATURE",
-			context: options?.context,
-		});
+		super(
+			message,
+			options?.context !== undefined
+				? { code: options.code || "INVALID_SIGNATURE", context: options.context }
+				: { code: options?.code || "INVALID_SIGNATURE" },
+		);
 		this.name = "InvalidSignatureError";
 	}
 }
@@ -40,10 +44,15 @@ export class InvalidPublicKeyError extends CryptoError {
 		message: string,
 		options?: { code?: string; context?: Record<string, any> },
 	) {
-		super(message, {
-			code: options?.code || "INVALID_PUBLIC_KEY",
-			context: options?.context,
-		});
+		super(
+			message,
+			options?.context !== undefined
+				? {
+						code: options.code || "INVALID_PUBLIC_KEY",
+						context: options.context,
+					}
+				: { code: options?.code || "INVALID_PUBLIC_KEY" },
+		);
 		this.name = "InvalidPublicKeyError";
 	}
 }
@@ -56,10 +65,15 @@ export class InvalidPrivateKeyError extends CryptoError {
 		message: string,
 		options?: { code?: string; context?: Record<string, any> },
 	) {
-		super(message, {
-			code: options?.code || "INVALID_PRIVATE_KEY",
-			context: options?.context,
-		});
+		super(
+			message,
+			options?.context !== undefined
+				? {
+						code: options.code || "INVALID_PRIVATE_KEY",
+						context: options.context,
+					}
+				: { code: options?.code || "INVALID_PRIVATE_KEY" },
+		);
 		this.name = "InvalidPrivateKeyError";
 	}
 }

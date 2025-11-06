@@ -1,14 +1,9 @@
 import { describe, it, expect } from "vitest";
-import {
-	execute,
-	PrecompileAddress,
-	ecrecover,
-	type PrecompileResult,
-} from "./precompiles.js";
+import { execute, PrecompileAddress, ecrecover } from "./precompiles.js";
 import { Secp256k1 } from "../crypto/Secp256k1/index.js";
 import { Keccak256 } from "../crypto/Keccak256/index.js";
 import { Address } from "../primitives/Address/index.js";
-import { Hardfork } from "../primitives/Hardfork/index.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 
 /**
  * Helper: Convert bigint to 32-byte big-endian Uint8Array

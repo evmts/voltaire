@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Hash } from "../../Hash/index.js";
-import * as TransactionEIP4844 from "./index.js";
+import { TransactionEIP4844, serialize, deserialize } from "./index.js";
 import { Type } from "../types.js";
 
 describe("TransactionEIP4844.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {
-		const original = {
+		const original = TransactionEIP4844({
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 5n,
@@ -26,10 +26,10 @@ describe("TransactionEIP4844.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP4844.serialize(original);
-		const deserialized = TransactionEIP4844.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.type).toBe(original.type);
 		expect(deserialized.chainId).toBe(original.chainId);
@@ -52,7 +52,7 @@ describe("TransactionEIP4844.deserialize", () => {
 	});
 
 	it("round-trips transaction with multiple blob hashes", () => {
-		const original = {
+		const original = TransactionEIP4844({
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -78,10 +78,10 @@ describe("TransactionEIP4844.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP4844.serialize(original);
-		const deserialized = TransactionEIP4844.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.blobVersionedHashes.length).toBe(3);
 		for (let i = 0; i < 3; i++) {
@@ -92,7 +92,7 @@ describe("TransactionEIP4844.deserialize", () => {
 	});
 
 	it("round-trips transaction with access list", () => {
-		const original = {
+		const original = TransactionEIP4844({
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -117,10 +117,10 @@ describe("TransactionEIP4844.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP4844.serialize(original);
-		const deserialized = TransactionEIP4844.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.accessList.length).toBe(1);
 		expect(new Uint8Array(deserialized.accessList[0]!.address)).toEqual(
@@ -135,7 +135,7 @@ describe("TransactionEIP4844.deserialize", () => {
 			),
 		);
 
-		const original = {
+		const original = TransactionEIP4844({
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -151,16 +151,16 @@ describe("TransactionEIP4844.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP4844.serialize(original);
-		const deserialized = TransactionEIP4844.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.blobVersionedHashes.length).toBe(6);
 	});
 
 	it("throws for invalid type prefix", () => {
 		const invalidData = new Uint8Array([0x02, 0xc0]); // Wrong type
-		expect(() => TransactionEIP4844.deserialize(invalidData)).toThrow();
+		expect(() => deserialize(invalidData)).toThrow();
 	});
 });

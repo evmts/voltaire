@@ -27,7 +27,7 @@ export function increment(nonce: number | bigint | string) {
 export { _toNumber, _toBigInt, _increment };
 
 // Export as namespace (convenience)
-export const BrandedNonce = {
+export const Nonce = {
 	from,
 	toNumber,
 	toBigInt,

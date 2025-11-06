@@ -350,7 +350,9 @@ describe("HDWallet", () => {
 
 			const publicKey = HDWallet.getPublicKey(root);
 			expect(publicKey).toBeInstanceOf(Uint8Array);
-			expect(publicKey.length).toBe(33);
+			if (publicKey) {
+				expect(publicKey.length).toBe(33);
+			}
 		});
 
 		it("public key starts with 0x02 or 0x03", async () => {
@@ -360,7 +362,13 @@ describe("HDWallet", () => {
 			const root = HDWallet.fromSeed(seed);
 
 			const publicKey = HDWallet.getPublicKey(root);
-			expect(publicKey[0] === 0x02 || publicKey[0] === 0x03).toBe(true);
+			expect(publicKey).toBeInstanceOf(Uint8Array);
+			if (publicKey) {
+				const firstByte = publicKey[0];
+				if (firstByte !== undefined) {
+					expect(firstByte === 0x02 || firstByte === 0x03).toBe(true);
+				}
+			}
 		});
 	});
 
@@ -373,7 +381,9 @@ describe("HDWallet", () => {
 
 			const chainCode = HDWallet.getChainCode(root);
 			expect(chainCode).toBeInstanceOf(Uint8Array);
-			expect(chainCode.length).toBe(32);
+			if (chainCode) {
+				expect(chainCode.length).toBe(32);
+			}
 		});
 
 		it("chain code differs between parent and child", async () => {

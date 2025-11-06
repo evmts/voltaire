@@ -5,3 +5,4 @@
  */
 
 export * from "./index.js";
+export { HDWallet } from "./HDWallet.js";

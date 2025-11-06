@@ -32,7 +32,7 @@ export {
  * @type {TransactionEIP7702Constructor}
  */
 export function TransactionEIP7702(tx) {
-	return {
+	return /** @type {BrandedTransactionEIP7702} */ ({
 		__tag: "TransactionEIP7702",
 		type: Type.EIP7702,
 		chainId: tx.chainId,
@@ -48,7 +48,7 @@ export function TransactionEIP7702(tx) {
 		yParity: tx.yParity,
 		r: tx.r,
 		s: tx.s,
-	};
+	});
 }
 
 // Initialize prototype

@@ -16,10 +16,15 @@ export class ValidationError extends PrimitiveError {
 			context?: Record<string, any>;
 		},
 	) {
-		super(message, {
-			code: options.code || "VALIDATION_ERROR",
-			context: options.context,
-		});
+		super(
+			message,
+			options.context !== undefined
+				? {
+						code: options.code || "VALIDATION_ERROR",
+						context: options.context,
+					}
+				: { code: options.code || "VALIDATION_ERROR" },
+		);
 		this.name = "ValidationError";
 		this.value = options.value;
 		this.expected = options.expected;

@@ -34,7 +34,7 @@ export {
  * @type {TransactionEIP4844Constructor}
  */
 export function TransactionEIP4844(tx) {
-	return {
+	return /** @type {BrandedTransactionEIP4844} */ ({
 		__tag: "TransactionEIP4844",
 		type: Type.EIP4844,
 		chainId: tx.chainId,
@@ -51,7 +51,7 @@ export function TransactionEIP4844(tx) {
 		yParity: tx.yParity,
 		r: tx.r,
 		s: tx.s,
-	};
+	});
 }
 
 TransactionEIP4844.deserialize = (bytes) =>

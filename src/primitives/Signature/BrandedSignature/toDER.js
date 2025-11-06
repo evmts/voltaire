@@ -31,7 +31,7 @@ export function toDER(signature) {
 		while (i < value.length && value[i] === 0) i++;
 
 		// If high bit is set, prepend 0x00 to indicate positive number
-		const needsPadding = value[i] >= 0x80;
+		const needsPadding = (value[i] ?? 0) >= 0x80;
 		const length = value.length - i + (needsPadding ? 1 : 0);
 
 		const result = new Uint8Array(2 + length);

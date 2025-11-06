@@ -3,7 +3,7 @@
  *
  * @param {string | string[]} mnemonic - Mnemonic words (array or space-separated string)
  * @param {string} [password] - Optional passphrase
- * @returns {Uint8Array} 512-bit seed
+ * @returns {Promise<Uint8Array>} 512-bit seed
  */
 export async function mnemonicToSeed(mnemonic, password) {
 	const { libwally } = await import("./ffi.js");

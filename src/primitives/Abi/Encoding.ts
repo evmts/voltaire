@@ -1,5 +1,6 @@
 import { Address } from "../Address/index.js";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import * as Hex from "../Hex/index.js";
 import * as Uint from "../Uint/index.js";
 import {
 	AbiDecodingError,
@@ -111,7 +112,12 @@ function encodeValue(
 	if (type.startsWith("bytes") && type.length > 5) {
 		const size = Number.parseInt(type.slice(5));
 		if (size >= 1 && size <= 32) {
-			const bytes = value as Uint8Array;
+			let bytes: Uint8Array;
+			if (typeof value === "string") {
+				bytes = Hex.toBytes(value as any);
+			} else {
+				bytes = value as Uint8Array;
+			}
 			if (bytes.length !== size) {
 				throw new AbiEncodingError(
 					`Invalid ${type} length: expected ${size}, got ${bytes.length}`,
@@ -217,9 +223,6 @@ function decodeValue(
 		if (value > max) {
 			throw new AbiDecodingError(`Value ${value} out of range for ${type}`);
 		}
-		if (bits < 64) {
-			return { value: Number(value), newOffset: offset + 32 };
-		}
 		return { value, newOffset: offset + 32 };
 	}
 
@@ -236,9 +239,6 @@ function decodeValue(
 			value = masked - (1n << BigInt(bits));
 		} else {
 			value = masked;
-		}
-		if (bits <= 32) {
-			return { value: Number(value), newOffset: offset + 32 };
 		}
 		return { value, newOffset: offset + 32 };
 	}

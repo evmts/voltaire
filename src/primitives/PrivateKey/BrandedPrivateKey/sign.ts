@@ -19,5 +19,5 @@ export function sign(
 	this: BrandedPrivateKey,
 	hash: BrandedHash,
 ): BrandedSignature {
-	return Secp256k1.sign(hash, this);
+	return Secp256k1.sign(hash, this) as unknown as BrandedSignature;
 }

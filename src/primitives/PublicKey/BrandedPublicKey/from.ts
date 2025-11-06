@@ -1,5 +1,6 @@
-import { Hex } from "../../Hex/index.js";
 import type { BrandedPublicKey } from "./BrandedPublicKey.js";
+
+const HEX_REGEX = /^[0-9a-fA-F]+$/;
 
 /**
  * Create PublicKey from hex string
@@ -14,10 +15,16 @@ import type { BrandedPublicKey } from "./BrandedPublicKey.js";
  * ```
  */
 export function from(hex: string): BrandedPublicKey {
-	const brandedHex = Hex(hex);
-	const bytes = Hex.toBytes(brandedHex);
-	if (bytes.length !== 64) {
-		throw new Error(`Public key must be 64 bytes, got ${bytes.length}`);
+	const hexStr = hex.startsWith("0x") ? hex.slice(2) : hex;
+	if (!HEX_REGEX.test(hexStr)) {
+		throw new Error("Invalid hex string");
+	}
+	if (hexStr.length !== 128) {
+		throw new Error(`Public key must be 64 bytes (128 hex chars), got ${hexStr.length}`);
+	}
+	const bytes = new Uint8Array(64);
+	for (let i = 0; i < 64; i++) {
+		bytes[i] = Number.parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
 	}
 	return bytes as BrandedPublicKey;
 }

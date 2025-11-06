@@ -8,10 +8,15 @@ export class TransactionError extends PrimitiveError {
 		message: string,
 		options?: { code?: string; context?: Record<string, any> },
 	) {
-		super(message, {
-			code: options?.code || "TRANSACTION_ERROR",
-			context: options?.context,
-		});
+		super(
+			message,
+			options?.context !== undefined
+				? {
+						code: options.code || "TRANSACTION_ERROR",
+						context: options.context,
+					}
+				: { code: options?.code || "TRANSACTION_ERROR" },
+		);
 		this.name = "TransactionError";
 	}
 }
@@ -24,10 +29,15 @@ export class InvalidTransactionTypeError extends TransactionError {
 		message: string,
 		options?: { code?: string; context?: Record<string, any> },
 	) {
-		super(message, {
-			code: options?.code || "INVALID_TRANSACTION_TYPE",
-			context: options?.context,
-		});
+		super(
+			message,
+			options?.context !== undefined
+				? {
+						code: options.code || "INVALID_TRANSACTION_TYPE",
+						context: options.context,
+					}
+				: { code: options?.code || "INVALID_TRANSACTION_TYPE" },
+		);
 		this.name = "InvalidTransactionTypeError";
 	}
 }
@@ -40,10 +50,12 @@ export class InvalidSignerError extends TransactionError {
 		message: string,
 		options?: { code?: string; context?: Record<string, any> },
 	) {
-		super(message, {
-			code: options?.code || "INVALID_SIGNER",
-			context: options?.context,
-		});
+		super(
+			message,
+			options?.context !== undefined
+				? { code: options.code || "INVALID_SIGNER", context: options.context }
+				: { code: options?.code || "INVALID_SIGNER" },
+		);
 		this.name = "InvalidSignerError";
 	}
 }

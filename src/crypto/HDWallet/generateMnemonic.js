@@ -2,7 +2,7 @@
  * Generate BIP-39 mnemonic from entropy
  *
  * @param {128 | 256} [strength=128] - Entropy strength in bits
- * @returns {string[]} Mnemonic words
+ * @returns {Promise<string[]>} Mnemonic words
  */
 export async function generateMnemonic(strength = 128) {
 	if (strength !== 128 && strength !== 256) {
@@ -17,7 +17,7 @@ export async function generateMnemonic(strength = 128) {
 	crypto.randomFillSync(entropy);
 
 	const outBuf = Buffer.alloc(256);
-	const result = libwallet.hdwallet_generate_mnemonic(
+	const result = libwally.hdwallet_generate_mnemonic(
 		entropy,
 		entropyLen,
 		outBuf,

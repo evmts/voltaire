@@ -155,7 +155,9 @@ describe("P256", () => {
 
 			const signature = P256.sign(messageHash, privateKey);
 			// Corrupt signature
-			signature.r[0] ^= 1;
+			if (signature.r[0] !== undefined) {
+				signature.r[0] ^= 1;
+			}
 
 			const valid = P256.verify(signature, messageHash, publicKey);
 
@@ -465,7 +467,7 @@ describe("P256", () => {
 			const publicKey = P256.derivePublicKey(privateKey);
 
 			// Create a "large" hash (though all hashes are 32 bytes)
-			const messageHash = new Uint8Array(32).fill(0xff);
+			const messageHash = new Uint8Array(32).fill(0xff) as any;
 
 			const signature = P256.sign(messageHash, privateKey);
 			const valid = P256.verify(signature, messageHash, publicKey);
@@ -476,7 +478,6 @@ describe("P256", () => {
 		it("signature malleability: high-s rejection", () => {
 			// P256 implementations should normalize s to low form to prevent malleability
 			const privateKey = new Uint8Array(32).fill(1);
-			const publicKey = P256.derivePublicKey(privateKey);
 			const messageHash = Hash.keccak256String("test");
 
 			const signature = P256.sign(messageHash, privateKey);
@@ -488,7 +489,7 @@ describe("P256", () => {
 			// Convert s to bigint
 			let sValue = 0n;
 			for (let i = 0; i < signature.s.length; i++) {
-				sValue = (sValue << 8n) | BigInt(signature.s[i]);
+				sValue = (sValue << 8n) | BigInt(signature.s[i] ?? 0);
 			}
 
 			// @noble/curves should produce low-s by default
@@ -592,8 +593,8 @@ describe("P256", () => {
 
 			// All signatures should be identical
 			for (let i = 1; i < signatures.length; i++) {
-				expect(signatures[i].r).toEqual(signatures[0].r);
-				expect(signatures[i].s).toEqual(signatures[0].s);
+				expect(signatures[i]?.r).toEqual(signatures[0]?.r);
+				expect(signatures[i]?.s).toEqual(signatures[0]?.s);
 			}
 		});
 

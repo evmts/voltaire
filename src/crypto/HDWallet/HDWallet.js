@@ -26,7 +26,6 @@
 
 export * from "./errors.js";
 export * from "./constants.js";
-export * from "./BrandedExtendedKey.js";
 
 import { canDeriveHardened } from "./canDeriveHardened.js";
 import { BIP44_PATH, CoinType, HARDENED_OFFSET } from "./constants.js";
@@ -70,6 +69,10 @@ export {
 
 /**
  * @typedef {import('./BrandedExtendedKey.js').BrandedExtendedKey} BrandedExtendedKey
+ */
+
+/**
+ * @typedef {import('./BrandedExtendedKey.js').BrandedExtendedKey} HDWallet
  */
 
 /**

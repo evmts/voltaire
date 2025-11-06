@@ -19,7 +19,7 @@ describe("TransactionLegacy.hash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const txHash = TransactionLegacy.hash.call(tx);
+		const txHash = TransactionLegacy.hash.call(tx as any);
 		expect(txHash).toBeInstanceOf(Uint8Array);
 		expect(txHash.length).toBe(32);
 	});
@@ -39,8 +39,8 @@ describe("TransactionLegacy.hash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const hash1 = TransactionLegacy.hash.call(tx);
-		const hash2 = TransactionLegacy.hash.call(tx);
+		const hash1 = TransactionLegacy.hash.call(tx as any);
+		const hash2 = TransactionLegacy.hash.call(tx as any);
 		expect(hash1).toEqual(hash2);
 	});
 
@@ -62,10 +62,10 @@ describe("TransactionLegacy.hash", () => {
 		const tx2 = {
 			...tx1,
 			nonce: 1n,
-		};
+		} as const;
 
-		const hash1 = TransactionLegacy.hash.call(tx1);
-		const hash2 = TransactionLegacy.hash.call(tx2);
+		const hash1 = TransactionLegacy.hash.call(tx1 as any);
+		const hash2 = TransactionLegacy.hash.call(tx2 as any);
 		expect(hash1).not.toEqual(hash2);
 	});
 
@@ -86,16 +86,16 @@ describe("TransactionLegacy.hash", () => {
 			v: 27n,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		} as const;
 		const tx2 = {
 			...base,
 			v: 27n,
 			r: new Uint8Array(32).fill(3),
 			s: new Uint8Array(32).fill(2),
-		};
+		} as const;
 
-		const hash1 = TransactionLegacy.hash.call(tx1);
-		const hash2 = TransactionLegacy.hash.call(tx2);
+		const hash1 = TransactionLegacy.hash.call(tx1 as any);
+		const hash2 = TransactionLegacy.hash.call(tx2 as any);
 		expect(hash1).not.toEqual(hash2);
 	});
 
@@ -113,11 +113,11 @@ describe("TransactionLegacy.hash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const tx1 = { ...base, v: 27n }; // pre-EIP-155
-		const tx2 = { ...base, v: 37n }; // EIP-155 chainId 1
+		const tx1 = { ...base, v: 27n } as const; // pre-EIP-155
+		const tx2 = { ...base, v: 37n } as const; // EIP-155 chainId 1
 
-		const hash1 = TransactionLegacy.hash.call(tx1);
-		const hash2 = TransactionLegacy.hash.call(tx2);
+		const hash1 = TransactionLegacy.hash.call(tx1 as any);
+		const hash2 = TransactionLegacy.hash.call(tx2 as any);
 		expect(hash1).not.toEqual(hash2);
 	});
 
@@ -136,7 +136,7 @@ describe("TransactionLegacy.hash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const txHash = TransactionLegacy.hash.call(tx);
+		const txHash = TransactionLegacy.hash.call(tx as any);
 		expect(txHash).toBeInstanceOf(Uint8Array);
 		expect(txHash.length).toBe(32);
 	});
@@ -156,8 +156,8 @@ describe("TransactionLegacy.hash", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const hash1 = TransactionLegacy.hash.call(tx);
-		const serialized = TransactionLegacy.serialize.call(tx);
+		const hash1 = TransactionLegacy.hash.call(tx as any);
+		const serialized = TransactionLegacy.serialize.call(tx as any);
 		const deserialized = TransactionLegacy.deserialize(serialized);
 		const hash2 = TransactionLegacy.hash.call(deserialized);
 

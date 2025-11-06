@@ -10,12 +10,21 @@ import * as Keccak256Wasm from "./keccak256.wasm.js";
 export { Hash };
 
 // Re-export keccak256 function
+/**
+ * @param {string | Uint8Array} data
+ * @returns {Promise<Uint8Array>}
+ */
 export async function keccak256(data) {
 	await Keccak256Wasm.init();
-	return Keccak256Wasm.hash(data);
+	const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+	return Keccak256Wasm.hash(bytes);
 }
 
 // Re-export eip191HashMessage if needed
+/**
+ * @param {string | Uint8Array} message
+ * @returns {Promise<Uint8Array>}
+ */
 export async function eip191HashMessage(message) {
 	await Keccak256Wasm.init();
 	// EIP-191 format: "\x19Ethereum Signed Message:\n" + len(message) + message

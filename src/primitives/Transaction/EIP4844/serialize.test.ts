@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Hash } from "../../Hash/index.js";
-import * as TransactionEIP4844 from "./index.js";
+import { serialize } from "./index.js";
 import { Type } from "../types.js";
 import type { BrandedTransactionEIP4844 } from "./BrandedTransactionEIP4844.js";
 
 describe("TransactionEIP4844.serialize", () => {
 	it("serializes basic EIP-4844 transaction", () => {
 		const tx: BrandedTransactionEIP4844 = {
+			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -29,7 +30,7 @@ describe("TransactionEIP4844.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP4844.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized).toBeInstanceOf(Uint8Array);
 		expect(serialized[0]).toBe(Type.EIP4844);
 		expect(serialized.length).toBeGreaterThan(1);
@@ -37,6 +38,7 @@ describe("TransactionEIP4844.serialize", () => {
 
 	it("serializes transaction with multiple blob hashes", () => {
 		const tx: BrandedTransactionEIP4844 = {
+			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -64,12 +66,13 @@ describe("TransactionEIP4844.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP4844.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP4844);
 	});
 
 	it("serializes transaction with access list", () => {
 		const tx: BrandedTransactionEIP4844 = {
+			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -82,7 +85,7 @@ describe("TransactionEIP4844.serialize", () => {
 			accessList: [
 				{
 					address: Address("0x0000000000000000000000000000000000000001"),
-					storageKeys: [new Uint8Array(32).fill(1)],
+					storageKeys: [Hash.from(new Uint8Array(32).fill(1))],
 				},
 			],
 			maxFeePerBlobGas: 2000000000n,
@@ -96,13 +99,14 @@ describe("TransactionEIP4844.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP4844.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP4844);
 	});
 
 	it("serializes transaction with max blob fee", () => {
 		const maxUint256 = 2n ** 256n - 1n;
 		const tx: BrandedTransactionEIP4844 = {
+			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -124,7 +128,7 @@ describe("TransactionEIP4844.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP4844.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP4844);
 	});
 
@@ -136,6 +140,7 @@ describe("TransactionEIP4844.serialize", () => {
 		);
 
 		const tx: BrandedTransactionEIP4844 = {
+			__tag: "TransactionEIP4844",
 			type: Type.EIP4844,
 			chainId: 1n,
 			nonce: 0n,
@@ -153,7 +158,7 @@ describe("TransactionEIP4844.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP4844.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP4844);
 	});
 });

@@ -4,10 +4,8 @@ import type { BrandedHash } from "./primitives/Hash/index.js";
 import * as Hardfork from "./primitives/Hardfork/index.js";
 import * as Rlp from "./primitives/Rlp/index.js";
 import * as Signature from "./primitives/Signature/index.js";
-import { Blake2 } from "./crypto/Blake2/index.js";
-import { BN254 } from "./crypto/bn254/BN254.js";
 import { EIP712 } from "./crypto/EIP712/index.js";
-import { HDWallet } from "./crypto/HDWallet/index.js";
+import * as HDWallet from "./crypto/HDWallet/HDWallet.js";
 import { Keccak256 } from "./crypto/Keccak256/index.js";
 import * as Kzg from "./crypto/KZG/index.js";
 import { Ripemd160 } from "./crypto/Ripemd160/index.js";
@@ -46,13 +44,6 @@ function beBytes32(n: bigint): Uint8Array {
 	return out;
 }
 
-function bytesToBigInt(bytes: Uint8Array): bigint {
-	let result = 0n;
-	for (let i = 0; i < bytes.length; i++) {
-		result = (result << 8n) | BigInt(bytes[i] ?? 0);
-	}
-	return result;
-}
 
 describe("Integration Tests: Cross-Module Workflows", () => {
 	describe("Transaction Signing & Recovery", () => {
@@ -100,11 +91,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			// Sign with chain ID encoded
 			const sig = Secp256k1.sign(messageHash, privateKey);
 
-			// Calculate EIP-155 v value (v = 35 + chainId * 2 + (v - 27))
-			const chainId = 1n; // Mainnet
-			const eip155V = 35n + chainId * 2n + BigInt(sig.v - 27);
-
-			// Recover with original v
+			// Recover with original v (EIP-155 handling not shown in this test)
 			const input = new Uint8Array(128);
 			input.set(messageHash, 0);
 			input.set(beBytes32(BigInt(sig.v)), 32);

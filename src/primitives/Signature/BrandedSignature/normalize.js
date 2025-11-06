@@ -1,4 +1,3 @@
-import { NonCanonicalSignatureError } from "./errors.js";
 import { fromSecp256k1 } from "./fromSecp256k1.js";
 import { fromP256 } from "./fromP256.js";
 import { isCanonical } from "./isCanonical.js";
@@ -51,7 +50,7 @@ export function normalize(signature) {
 	let borrow = 0;
 
 	for (let i = COMPONENT_SIZE - 1; i >= 0; i--) {
-		const diff = curveOrder[i] - s[i] - borrow;
+		const diff = (curveOrder[i] ?? 0) - (s[i] ?? 0) - borrow;
 		sNormalized[i] = diff & 0xff;
 		borrow = diff < 0 ? 1 : 0;
 	}

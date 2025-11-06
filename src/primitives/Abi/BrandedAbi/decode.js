@@ -16,15 +16,15 @@ import * as Function from "../function/index.js";
  * ```
  */
 export function decode(functionName, data) {
-	const func = this.find(
+	const item = this.find(
 		(item) => item.type === "function" && item.name === functionName,
 	);
 
-	if (!func) {
+	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function "${functionName}" not found in ABI`,
 		);
 	}
 
-	return Function.decodeResult(func, data);
+	return Function.decodeResult(item, data);
 }

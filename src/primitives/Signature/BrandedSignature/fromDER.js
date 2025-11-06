@@ -28,29 +28,38 @@ export function fromDER(der, algorithm, v) {
 	let pos = 0;
 
 	// Check SEQUENCE tag
-	if (der[pos++] !== 0x30) {
+	const seqTag = der[pos++];
+	if (seqTag !== 0x30) {
 		throw new InvalidDERError("Expected SEQUENCE tag (0x30)");
 	}
 
 	// Get SEQUENCE length
 	const seqLength = der[pos++];
-	if (pos + seqLength !== der.length) {
+	if (seqLength === undefined || pos + seqLength !== der.length) {
 		throw new InvalidDERError("Invalid SEQUENCE length");
 	}
 
 	// Parse r
-	if (der[pos++] !== 0x02) {
+	const rTag = der[pos++];
+	if (rTag !== 0x02) {
 		throw new InvalidDERError("Expected INTEGER tag (0x02) for r");
 	}
 	const rLength = der[pos++];
+	if (rLength === undefined) {
+		throw new InvalidDERError("Missing r length");
+	}
 	const rBytes = der.slice(pos, pos + rLength);
 	pos += rLength;
 
 	// Parse s
-	if (der[pos++] !== 0x02) {
+	const sTag = der[pos++];
+	if (sTag !== 0x02) {
 		throw new InvalidDERError("Expected INTEGER tag (0x02) for s");
 	}
 	const sLength = der[pos++];
+	if (sLength === undefined) {
+		throw new InvalidDERError("Missing s length");
+	}
 	const sBytes = der.slice(pos, pos + sLength);
 	pos += sLength;
 

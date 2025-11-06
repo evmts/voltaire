@@ -3,7 +3,7 @@ import { fromSecp256k1 } from "./fromSecp256k1.js";
 import { fromP256 } from "./fromP256.js";
 import { fromEd25519 } from "./fromEd25519.js";
 import { fromCompact } from "./fromCompact.js";
-import { ECDSA_SIZE, ED25519_SIZE, COMPONENT_SIZE } from "./constants.js";
+import { ECDSA_SIZE, ED25519_SIZE } from "./constants.js";
 
 /**
  * Create Signature from various input types (universal constructor)
@@ -26,8 +26,8 @@ import { ECDSA_SIZE, ED25519_SIZE, COMPONENT_SIZE } from "./constants.js";
  */
 export function from(value) {
 	// If it's already a BrandedSignature, return it
-	if (value?.__tag === "Signature") {
-		return value;
+	if (value && typeof value === "object" && "__tag" in value && value.__tag === "Signature") {
+		return /** @type {import('./BrandedSignature.js').BrandedSignature} */ (value);
 	}
 
 	// Handle Uint8Array (compact format)

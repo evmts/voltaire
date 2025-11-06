@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionEIP2930 from "./index.js";
+import { Hash } from "../../Hash/index.js";
+import { serialize } from "./index.js";
 import { Type } from "../types.js";
 import type { BrandedTransactionEIP2930 } from "./BrandedTransactionEIP2930.js";
 
 describe("TransactionEIP2930.serialize", () => {
 	it("serializes basic EIP-2930 transaction", () => {
 		const tx: BrandedTransactionEIP2930 = {
+			__tag: "TransactionEIP2930",
 			type: Type.EIP2930,
 			chainId: 1n,
 			nonce: 0n,
@@ -21,7 +23,7 @@ describe("TransactionEIP2930.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP2930.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized).toBeInstanceOf(Uint8Array);
 		expect(serialized[0]).toBe(Type.EIP2930);
 		expect(serialized.length).toBeGreaterThan(1);
@@ -29,6 +31,7 @@ describe("TransactionEIP2930.serialize", () => {
 
 	it("serializes transaction with access list", () => {
 		const tx: BrandedTransactionEIP2930 = {
+			__tag: "TransactionEIP2930",
 			type: Type.EIP2930,
 			chainId: 1n,
 			nonce: 0n,
@@ -40,7 +43,7 @@ describe("TransactionEIP2930.serialize", () => {
 			accessList: [
 				{
 					address: Address("0x0000000000000000000000000000000000000001"),
-					storageKeys: [new Uint8Array(32).fill(1), new Uint8Array(32).fill(2)],
+					storageKeys: [Hash.from(new Uint8Array(32).fill(1)), Hash.from(new Uint8Array(32).fill(2))],
 				},
 			],
 			yParity: 0,
@@ -48,12 +51,13 @@ describe("TransactionEIP2930.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP2930.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP2930);
 	});
 
 	it("serializes contract creation", () => {
 		const tx: BrandedTransactionEIP2930 = {
+			__tag: "TransactionEIP2930",
 			type: Type.EIP2930,
 			chainId: 1n,
 			nonce: 0n,
@@ -68,7 +72,7 @@ describe("TransactionEIP2930.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP2930.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP2930);
 	});
 });

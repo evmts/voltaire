@@ -28,7 +28,7 @@ export function verify(publicKey: string, hash: any, signature: any): boolean {
 export { _toHex, _toAddress, _verify };
 
 // Export as namespace (convenience)
-export const BrandedPublicKey = {
+export const PublicKey = {
 	from,
 	fromPrivateKey,
 	toHex,

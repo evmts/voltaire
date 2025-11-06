@@ -2,7 +2,7 @@
  * Get Ethereum address from HD node
  *
  * @param {import('./types.js').HDNode} node - HD node
- * @returns {import('../../primitives/Address/BrandedAddress/BrandedAddress.js').BrandedAddress} Ethereum address
+ * @returns {Promise<import('../../primitives/Address/BrandedAddress/BrandedAddress.js').BrandedAddress>} Ethereum address
  */
 export async function getAddress(node) {
 	const { libwally } = await import("./ffi.js");
@@ -14,5 +14,7 @@ export async function getAddress(node) {
 		throw new Error("Failed to get address");
 	}
 
-	return new Uint8Array(address);
+	return /** @type {import('../../primitives/Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+		new Uint8Array(address)
+	);
 }

@@ -25,7 +25,10 @@ export const ParsedSignature = undefined;
  */
 export function secp256k1RecoverPubkey(messageHash, signature) {
 	const parsed = signatureParse(signature);
-	return Secp256k1Wasm.recoverPublicKey(parsed, messageHash);
+	// Cast to BrandedHash for type safety
+	/** @type {import("../primitives/Hash/index.js").BrandedHash} */
+	const hash = /** @type {any} */ (messageHash);
+	return Secp256k1Wasm.recoverPublicKey(parsed, hash);
 }
 
 /**
@@ -58,7 +61,10 @@ export function secp256k1PubkeyFromPrivate(privateKey) {
  */
 export function secp256k1ValidateSignature(signature, messageHash, publicKey) {
 	const parsed = signatureParse(signature);
-	return Secp256k1Wasm.verify(parsed, messageHash, publicKey);
+	// Cast to BrandedHash for type safety
+	/** @type {import("../primitives/Hash/index.js").BrandedHash} */
+	const hash = /** @type {any} */ (messageHash);
+	return Secp256k1Wasm.verify(parsed, hash, publicKey);
 }
 
 /**
@@ -111,6 +117,11 @@ export function signatureSerialize(signature) {
 }
 
 // Helper functions
+/**
+ * Convert 32-byte array to bigint
+ * @param {Uint8Array} bytes - 32-byte array
+ * @returns {bigint}
+ */
 function bytes32ToBigInt(bytes) {
 	let result = 0n;
 	for (let i = 0; i < 32; i++) {
@@ -119,6 +130,11 @@ function bytes32ToBigInt(bytes) {
 	return result;
 }
 
+/**
+ * Convert bigint to 32-byte array
+ * @param {bigint} value - Bigint value
+ * @returns {Uint8Array}
+ */
 function bigIntToBytes32(value) {
 	const bytes = new Uint8Array(32);
 	let v = value;

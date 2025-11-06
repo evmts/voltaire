@@ -23,7 +23,7 @@ export function toGwei(value: number | bigint | string): bigint {
 export { _toBigInt, _toGwei };
 
 // Export as namespace (convenience)
-export const BrandedGasPrice = {
+export const GasPrice = {
 	from,
 	fromGwei,
 	toBigInt,

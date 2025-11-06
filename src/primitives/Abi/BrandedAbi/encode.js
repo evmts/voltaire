@@ -1,4 +1,3 @@
-import * as Hex from "../../Hex/index.js";
 import { AbiItemNotFoundError } from "../Errors.js";
 import * as Function from "../function/index.js";
 
@@ -17,15 +16,15 @@ import * as Function from "../function/index.js";
  * ```
  */
 export function encode(functionName, args) {
-	const func = this.find(
+	const item = this.find(
 		(item) => item.type === "function" && item.name === functionName,
 	);
 
-	if (!func) {
+	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function "${functionName}" not found in ABI`,
 		);
 	}
 
-	return Function.encodeParams(func, args);
+	return Function.encodeParams(item, args);
 }

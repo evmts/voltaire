@@ -2,7 +2,7 @@
  * Validate BIP-39 mnemonic checksum
  *
  * @param {string | string[]} mnemonic - Mnemonic words (array or space-separated string)
- * @returns {boolean} True if valid
+ * @returns {Promise<boolean>} True if valid
  */
 export async function validateMnemonic(mnemonic) {
 	const { libwally } = await import("./ffi.js");

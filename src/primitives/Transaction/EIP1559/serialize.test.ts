@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionEIP1559 from "./index.js";
+import { Hash } from "../../Hash/index.js";
+import { serialize } from "./index.js";
 import { Type } from "../types.js";
 import type { BrandedTransactionEIP1559 } from "./BrandedTransactionEIP1559.js";
 
 describe("TransactionEIP1559.serialize", () => {
 	it("serializes basic EIP-1559 transaction", () => {
 		const tx: BrandedTransactionEIP1559 = {
+			__tag: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -22,7 +24,7 @@ describe("TransactionEIP1559.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP1559.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized).toBeInstanceOf(Uint8Array);
 		expect(serialized[0]).toBe(Type.EIP1559);
 		expect(serialized.length).toBeGreaterThan(1);
@@ -30,6 +32,7 @@ describe("TransactionEIP1559.serialize", () => {
 
 	it("serializes contract creation (to = null)", () => {
 		const tx: BrandedTransactionEIP1559 = {
+			__tag: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -45,12 +48,13 @@ describe("TransactionEIP1559.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP1559.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP1559);
 	});
 
 	it("serializes transaction with access list", () => {
 		const tx: BrandedTransactionEIP1559 = {
+			__tag: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -63,7 +67,7 @@ describe("TransactionEIP1559.serialize", () => {
 			accessList: [
 				{
 					address: Address("0x0000000000000000000000000000000000000001"),
-					storageKeys: [new Uint8Array(32).fill(1)],
+					storageKeys: [Hash.from(new Uint8Array(32).fill(1))],
 				},
 			],
 			yParity: 0,
@@ -71,12 +75,13 @@ describe("TransactionEIP1559.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP1559.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP1559);
 	});
 
 	it("serializes transaction with yParity = 1", () => {
 		const tx: BrandedTransactionEIP1559 = {
+			__tag: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -92,13 +97,14 @@ describe("TransactionEIP1559.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP1559.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP1559);
 	});
 
 	it("serializes transaction with large fees", () => {
 		const maxUint256 = 2n ** 256n - 1n;
 		const tx: BrandedTransactionEIP1559 = {
+			__tag: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -114,12 +120,13 @@ describe("TransactionEIP1559.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP1559.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP1559);
 	});
 
 	it("serializes transaction with large chain ID", () => {
 		const tx: BrandedTransactionEIP1559 = {
+			__tag: "TransactionEIP1559",
 			type: Type.EIP1559,
 			chainId: 999999n,
 			nonce: 0n,
@@ -135,7 +142,7 @@ describe("TransactionEIP1559.serialize", () => {
 			s: new Uint8Array(32).fill(2),
 		};
 
-		const serialized = TransactionEIP1559.serialize(tx);
+		const serialized = serialize(tx);
 		expect(serialized[0]).toBe(Type.EIP1559);
 	});
 });

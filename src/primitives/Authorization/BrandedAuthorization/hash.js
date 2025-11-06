@@ -19,6 +19,10 @@ import { MAGIC_BYTE } from "./constants.js";
  */
 export function hash(unsigned) {
 	// Helper to encode bigint compact (remove leading zeros)
+	/**
+	 * @param {bigint} value
+	 * @returns {Uint8Array}
+	 */
 	function encodeBigintCompact(value) {
 		if (value === 0n) return new Uint8Array(0);
 		let byteLength = 0;

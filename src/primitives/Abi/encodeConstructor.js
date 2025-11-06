@@ -25,12 +25,12 @@ import * as Constructor from "./constructor/index.js";
  * ```
  */
 export function encodeConstructor(abi, args) {
-	const constructor = abi.find((item) => item.type === "constructor");
+	const item = abi.find((item) => item.type === "constructor");
 
-	if (!constructor) {
+	if (!item || item.type !== "constructor") {
 		throw new AbiItemNotFoundError("Constructor not found in ABI");
 	}
 
-	const encoded = Constructor.encodeParams(constructor, args);
+	const encoded = Constructor.encodeParams(item, [...args]);
 	return Hex.fromBytes(encoded);
 }

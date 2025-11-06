@@ -12,5 +12,12 @@
  * ```
  */
 export function getRpcUrl(chain) {
-	return chain.rpc.length === 1 ? chain.rpc[0] : chain.rpc;
+	if (chain.rpc.length === 0) {
+		return [];
+	}
+	if (chain.rpc.length === 1) {
+		const url = chain.rpc[0];
+		return url ?? [];
+	}
+	return chain.rpc;
 }

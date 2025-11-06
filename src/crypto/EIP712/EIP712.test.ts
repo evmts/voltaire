@@ -7,18 +7,7 @@ import {
 	Eip712TypeNotFoundError,
 	Eip712InvalidMessageError,
 } from "./errors.js";
-import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { bytesToHex, hexToBytes, randomBytes } from "@noble/hashes/utils.js";
-import { keccak_256 } from "@noble/hashes/sha3.js";
-
-// Helper to compute Ethereum address from public key
-const getAddressFromPublicKey = (publicKey: Uint8Array): Uint8Array => {
-	// Public key should be uncompressed (65 bytes with 0x04 prefix)
-	// Remove the 0x04 prefix for hashing
-	const pubKeyForHash = publicKey[0] === 0x04 ? publicKey.slice(1) : publicKey;
-	const hash = keccak_256(pubKeyForHash);
-	return hash.slice(-20); // Last 20 bytes
-};
+import { hexToBytes, randomBytes } from "@noble/hashes/utils.js";
 
 describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 	describe("Domain Separator", () => {
@@ -435,7 +424,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 					name: "MyToken",
 					version: "1",
 					chainId: 1n,
-					verifyingContract: new Uint8Array(20).fill(0xcc),
+					verifyingContract: new Uint8Array(20).fill(0xcc) as any,
 				},
 				types: {
 					Permit: [
@@ -448,8 +437,8 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				},
 				primaryType: "Permit",
 				message: {
-					owner: new Uint8Array(20).fill(0xaa),
-					spender: new Uint8Array(20).fill(0xbb),
+					owner: new Uint8Array(20).fill(0xaa) as any,
+					spender: new Uint8Array(20).fill(0xbb) as any,
 					value: 1000000000000000000n, // 1 token
 					nonce: 0n,
 					deadline: 1700000000n,
@@ -467,7 +456,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 					name: "Ether Mail",
 					version: "1",
 					chainId: 1n,
-					verifyingContract: new Uint8Array(20).fill(0xdd),
+					verifyingContract: new Uint8Array(20).fill(0xdd) as any,
 				},
 				types: {
 					Person: [
@@ -652,8 +641,6 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 		});
 
 		it("should handle domain separation correctly", () => {
-			const privateKey = randomBytes(32);
-
 			const typedData1: TypedData = {
 				domain: { name: "Domain1" },
 				types: { Message: [{ name: "text", type: "string" }] },
@@ -726,7 +713,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 					name: "MetaTransaction",
 					version: "1",
 					chainId: 137n, // Polygon
-					verifyingContract: new Uint8Array(20).fill(0xcc),
+					verifyingContract: new Uint8Array(20).fill(0xcc) as any,
 				},
 				types: {
 					MetaTransaction: [
@@ -738,7 +725,7 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				primaryType: "MetaTransaction",
 				message: {
 					nonce: 0n,
-					from: new Uint8Array(20).fill(0xaa),
+					from: new Uint8Array(20).fill(0xaa) as any,
 					functionSignature: hexToBytes("a9059cbb"), // transfer(address,uint256)
 				},
 			};

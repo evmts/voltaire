@@ -35,7 +35,7 @@ export function getFunctionBySelector(abi, selector) {
 		);
 	}
 
-	const func = abi.find((item) => {
+	const item = abi.find((item) => {
 		if (item.type !== "function") return false;
 
 		const itemSelector = Function.getSelector(item);
@@ -46,11 +46,11 @@ export function getFunctionBySelector(abi, selector) {
 		return true;
 	});
 
-	if (!func) {
+	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function with selector ${Hex.fromBytes(selectorBytes)} not found in ABI`,
 		);
 	}
 
-	return func;
+	return item;
 }

@@ -29,16 +29,16 @@ import * as Function from "./function/index.js";
  * ```
  */
 export function encodeFunction(abi, functionName, args) {
-	const func = abi.find(
+	const item = abi.find(
 		(item) => item.type === "function" && item.name === functionName,
 	);
 
-	if (!func) {
+	if (!item || item.type !== "function") {
 		throw new AbiItemNotFoundError(
 			`Function "${functionName}" not found in ABI`,
 		);
 	}
 
-	const encoded = Function.encodeParams(func, args);
+	const encoded = Function.encodeParams(item, args);
 	return Hex.fromBytes(encoded);
 }

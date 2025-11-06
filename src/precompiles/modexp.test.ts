@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { modexp, execute, PrecompileAddress } from "./precompiles.js";
 import * as Hardfork from "../primitives/Hardfork/index.js";
-import type { BrandedHardfork } from "../primitives/Hardfork/BrandedHardfork/BrandedHardfork.js";
 
 /**
  * Helper to convert bigint to big-endian bytes with padding
@@ -106,12 +105,6 @@ function hexToBytes(hex: string): Uint8Array {
 		bytes[i / 2] = Number.parseInt(clean.slice(i, i + 2), 16);
 	}
 	return bytes;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
 }
 
 describe("Precompile: ModExp (0x05)", () => {

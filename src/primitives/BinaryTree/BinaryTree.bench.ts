@@ -225,18 +225,22 @@ bench("BinaryTree.hashInternal", () => {
 
 const stemForHash = new Uint8Array(31);
 stemForHash.fill(0xaa);
+const stemNode = {
+	type: "stem" as const,
+	stem: stemForHash,
+	values: new Array(256).fill(null),
+};
 
 bench("BinaryTree.hashStem", () => {
-	BinaryTree.hashStem(stemForHash);
+	BinaryTree.hashStem(stemNode);
 });
 
-const leafKey = new Uint8Array(32);
-leafKey[31] = 5;
 const leafValue = new Uint8Array(32);
 leafValue[31] = 0x42;
+const leafNode = { type: "leaf" as const, value: leafValue };
 
 bench("BinaryTree.hashLeaf", () => {
-	BinaryTree.hashLeaf(leafKey, leafValue);
+	BinaryTree.hashLeaf(leafNode);
 });
 
 await run();

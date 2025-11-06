@@ -25,7 +25,7 @@ export function toNumber(value: number | bigint | string): number {
 export { _toBigInt, _toNumber };
 
 // Export as namespace (convenience)
-export const BrandedGasLimit = {
+export const GasLimit = {
 	from,
 	toBigInt,
 	toNumber,

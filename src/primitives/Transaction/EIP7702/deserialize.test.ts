@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionEIP7702 from "./index.js";
+import { TransactionEIP7702, serialize, deserialize } from "./index.js";
 import { Type } from "../types.js";
 
 describe("TransactionEIP7702.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {
-		const original = {
+		const original = TransactionEIP7702({
 			type: Type.EIP7702,
 			chainId: 1n,
 			nonce: 5n,
@@ -20,10 +20,10 @@ describe("TransactionEIP7702.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP7702.serialize(original);
-		const deserialized = TransactionEIP7702.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.type).toBe(original.type);
 		expect(deserialized.chainId).toBe(original.chainId);
@@ -45,7 +45,7 @@ describe("TransactionEIP7702.deserialize", () => {
 	});
 
 	it("round-trips transaction with authorization list", () => {
-		const original = {
+		const original = TransactionEIP7702({
 			type: Type.EIP7702,
 			chainId: 1n,
 			nonce: 0n,
@@ -69,10 +69,10 @@ describe("TransactionEIP7702.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(3),
 			s: new Uint8Array(32).fill(4),
-		};
+		});
 
-		const serialized = TransactionEIP7702.serialize(original);
-		const deserialized = TransactionEIP7702.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.authorizationList.length).toBe(1);
 		expect(deserialized.authorizationList[0]!.chainId).toBe(1n);
@@ -84,7 +84,7 @@ describe("TransactionEIP7702.deserialize", () => {
 	});
 
 	it("round-trips transaction with multiple authorizations", () => {
-		const original = {
+		const original = TransactionEIP7702({
 			type: Type.EIP7702,
 			chainId: 1n,
 			nonce: 0n,
@@ -116,10 +116,10 @@ describe("TransactionEIP7702.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(5),
 			s: new Uint8Array(32).fill(6),
-		};
+		});
 
-		const serialized = TransactionEIP7702.serialize(original);
-		const deserialized = TransactionEIP7702.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.authorizationList.length).toBe(2);
 		expect(deserialized.authorizationList[1]!.nonce).toBe(1n);
@@ -128,6 +128,6 @@ describe("TransactionEIP7702.deserialize", () => {
 
 	it("throws for invalid type prefix", () => {
 		const invalidData = new Uint8Array([0x03, 0xc0]); // Wrong type
-		expect(() => TransactionEIP7702.deserialize(invalidData)).toThrow();
+		expect(() => deserialize(invalidData)).toThrow();
 	});
 });

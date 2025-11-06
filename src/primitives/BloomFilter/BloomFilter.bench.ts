@@ -174,7 +174,7 @@ bench("BloomFilter.toHex - 2048 bits", () => {
 });
 
 bench("BloomFilter.fromHex - 2048 bits", () => {
-	BloomFilter.fromHex(hexString, 3);
+	BloomFilter.fromHex(hexString, BITS, DEFAULT_HASH_COUNT);
 });
 
 await run();

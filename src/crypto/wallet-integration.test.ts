@@ -459,7 +459,7 @@ describe("Wallet Integration Tests", () => {
 			const publicKey = HDWallet.getPublicKey(account);
 
 			expect(privateKey?.length).toBe(32);
-			expect(publicKey.length).toBe(33);
+			expect(publicKey?.length).toBe(33);
 
 			// Verify deterministic derivation
 			const seed2 = await Bip39.mnemonicToSeed(mnemonic, "TREZOR");

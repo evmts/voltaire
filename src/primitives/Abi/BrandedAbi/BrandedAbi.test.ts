@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import type { BrandedAbi, Item } from "./BrandedAbi.js";
 import * as BrandedAbiNS from "./index.js";
 

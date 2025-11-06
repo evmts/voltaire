@@ -9,7 +9,7 @@ describe("Secp256k1.isValidSignature", () => {
 		it("should return true for valid signature", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = sha256("test");
+			const message = sha256(new TextEncoder().encode("test")) as any;
 
 			const signature = sign(message, privateKey);
 
@@ -20,7 +20,7 @@ describe("Secp256k1.isValidSignature", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
 
-			const messages = [sha256("msg1"), sha256("msg2"), sha256("msg3")];
+			const messages = [sha256(new TextEncoder().encode("msg1")) as any, sha256(new TextEncoder().encode("msg2")) as any, sha256(new TextEncoder().encode("msg3")) as any];
 
 			for (const message of messages) {
 				const signature = sign(message, privateKey);
@@ -33,7 +33,7 @@ describe("Secp256k1.isValidSignature", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}
-			const message = sha256("low-s test");
+			const message = sha256(new TextEncoder().encode("low-s test")) as any;
 
 			const signature = sign(message, privateKey);
 
@@ -379,7 +379,7 @@ describe("Secp256k1.isValidSignature", () => {
 
 			const sigs = [];
 			for (let i = 0; i < 10; i++) {
-				const message = sha256(`message ${i}`);
+				const message = sha256(new TextEncoder().encode(`message ${i}`)) as any;
 				sigs.push(sign(message, privateKey));
 			}
 

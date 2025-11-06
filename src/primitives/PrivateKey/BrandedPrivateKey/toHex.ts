@@ -1,4 +1,3 @@
-import { Hex } from "../../Hex/index.js";
 import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 
 /**
@@ -13,6 +12,5 @@ import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
  * ```
  */
 export function toHex(this: BrandedPrivateKey): string {
-	const brandedHex = Hex.fromBytes(this);
-	return Hex.toString(brandedHex);
+	return `0x${Array.from(this, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }

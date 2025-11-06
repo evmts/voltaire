@@ -16,7 +16,7 @@ import { toU256 } from "./toU256.js";
 export { from, fromWei, fromGwei, toWei, toGwei, toU256 };
 
 // Export as namespace (convenience)
-export const BrandedEther = {
+export const Ether = {
 	from,
 	fromWei,
 	fromGwei,

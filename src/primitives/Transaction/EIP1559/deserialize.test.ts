@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionEIP1559 from "./index.js";
+import { TransactionEIP1559, serialize, deserialize } from "./index.js";
 import { Type } from "../types.js";
 
 describe("TransactionEIP1559.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {
-		const original = {
+		const original = TransactionEIP1559({
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 5n,
@@ -19,10 +19,10 @@ describe("TransactionEIP1559.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP1559.serialize(original);
-		const deserialized = TransactionEIP1559.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.type).toBe(original.type);
 		expect(deserialized.chainId).toBe(original.chainId);
@@ -43,7 +43,7 @@ describe("TransactionEIP1559.deserialize", () => {
 	});
 
 	it("round-trips contract creation", () => {
-		const original = {
+		const original = TransactionEIP1559({
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -57,17 +57,17 @@ describe("TransactionEIP1559.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP1559.serialize(original);
-		const deserialized = TransactionEIP1559.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.to).toBe(null);
 		expect(deserialized.data).toEqual(original.data);
 	});
 
 	it("round-trips transaction with access list", () => {
-		const original = {
+		const original = TransactionEIP1559({
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -86,10 +86,10 @@ describe("TransactionEIP1559.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP1559.serialize(original);
-		const deserialized = TransactionEIP1559.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.accessList.length).toBe(1);
 		expect(new Uint8Array(deserialized.accessList[0]!.address)).toEqual(
@@ -99,7 +99,7 @@ describe("TransactionEIP1559.deserialize", () => {
 	});
 
 	it("round-trips transaction with yParity = 1", () => {
-		const original = {
+		const original = TransactionEIP1559({
 			type: Type.EIP1559,
 			chainId: 1n,
 			nonce: 0n,
@@ -113,21 +113,21 @@ describe("TransactionEIP1559.deserialize", () => {
 			yParity: 1,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP1559.serialize(original);
-		const deserialized = TransactionEIP1559.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.yParity).toBe(1);
 	});
 
 	it("throws for invalid type prefix", () => {
 		const invalidData = new Uint8Array([0x01, 0xc0]); // Wrong type
-		expect(() => TransactionEIP1559.deserialize(invalidData)).toThrow();
+		expect(() => deserialize(invalidData)).toThrow();
 	});
 
 	it("round-trips transaction with large chain ID", () => {
-		const original = {
+		const original = TransactionEIP1559({
 			type: Type.EIP1559,
 			chainId: 999999n,
 			nonce: 0n,
@@ -141,10 +141,10 @@ describe("TransactionEIP1559.deserialize", () => {
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
-		};
+		});
 
-		const serialized = TransactionEIP1559.serialize(original);
-		const deserialized = TransactionEIP1559.deserialize(serialized);
+		const serialized = serialize(original);
+		const deserialized = deserialize(serialized);
 
 		expect(deserialized.chainId).toBe(999999n);
 	});

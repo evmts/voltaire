@@ -240,7 +240,9 @@ describe("AesGcm", () => {
 
 			// Modify ciphertext
 			const modified = new Uint8Array(ciphertext);
-			modified[0] ^= 1;
+			if (modified[0] !== undefined) {
+				modified[0] ^= 1;
+			}
 
 			await expect(AesGcm.decrypt(modified, key, nonce)).rejects.toThrow();
 		});
@@ -254,7 +256,10 @@ describe("AesGcm", () => {
 
 			// Modify tag (last 16 bytes)
 			const modified = new Uint8Array(ciphertext);
-			modified[modified.length - 1] ^= 1;
+			const lastIdx = modified.length - 1;
+			if (modified[lastIdx] !== undefined) {
+				modified[lastIdx] ^= 1;
+			}
 
 			await expect(AesGcm.decrypt(modified, key, nonce)).rejects.toThrow();
 		});
@@ -499,10 +504,16 @@ describe("AesGcm", () => {
 
 			// Modify different positions in tag
 			const modified1 = new Uint8Array(ciphertext);
-			modified1[modified1.length - 1] ^= 1;
+			const lastIdx = modified1.length - 1;
+			if (modified1[lastIdx] !== undefined) {
+				modified1[lastIdx] ^= 1;
+			}
 
 			const modified2 = new Uint8Array(ciphertext);
-			modified2[modified2.length - 16] ^= 1; // First byte of tag
+			const tagStartIdx = modified2.length - 16;
+			if (modified2[tagStartIdx] !== undefined) {
+				modified2[tagStartIdx] ^= 1; // First byte of tag
+			}
 
 			// Both should fail
 			await expect(AesGcm.decrypt(modified1, key, nonce)).rejects.toThrow();
