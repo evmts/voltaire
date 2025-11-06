@@ -208,18 +208,18 @@ Voltaire follows consistent naming patterns across all types:
 import { Address } from "@tevm/voltaire";
 
 // Create from hex
-const addr = Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 
 // EIP-55 checksumming
-const checksummed = Address.toChecksummed(addr);
+const checksummed = addr.toChecksummed();
 console.log(checksummed); // "0xA0Cf798816D4b9b9866b5330EEa46A18382f251e"
 
-// Validate checksum
-Address.isValidChecksum(checksummed); // true
+// Check if zero
+const isZero = addr.isZero(); // false
 
 // Calculate contract addresses
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
-const contractAddr = Address.calculateCreateAddress(deployer, 0n);
+const deployer = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+const contractAddr = deployer.calculateCreateAddress(0n);
 ```
 
 ### Working with Hashes

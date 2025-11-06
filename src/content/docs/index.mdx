@@ -45,11 +45,11 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 ## Quick Example
 
 ```typescript
-import * as Address from "@tevm/voltaire/Address";
+import { Address } from "@tevm/voltaire";
 
 const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = Address.toChecksummed(addr);
-const isZero = Address.isZero(addr);
+const checksum = addr.toChecksummed();
+const isZero = addr.isZero();
 ```
 
 ## Installation
