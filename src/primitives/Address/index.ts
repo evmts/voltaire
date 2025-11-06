@@ -65,6 +65,8 @@ Address.fromPublicKey = (x, y) => {
 };
 Address.fromPublicKey.prototype = Address.prototype;
 
+export const fromPublicKey = Address.fromPublicKey;
+
 Address.fromPrivateKey = (value) => {
 	const result = BrandedAddress.fromPrivateKey(value);
 	Object.setPrototypeOf(result, Address.prototype);

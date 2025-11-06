@@ -73,6 +73,7 @@ export {
 	greaterThan,
 	sortAddresses,
 	deduplicateAddresses,
+	SIZE,
 };
 
 // Namespace export
