@@ -3,7 +3,7 @@
  */
 
 export type HDNode = {
-  readonly handle: number;
+	readonly handle: number;
 };
 
 export type HDPath = readonly number[];

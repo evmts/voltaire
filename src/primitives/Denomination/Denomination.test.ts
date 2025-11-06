@@ -144,7 +144,8 @@ describe("Denomination Integration Tests", () => {
 			const backToWei = BrandedEther.toWei(ether);
 
 			// Due to truncation, we lose the fractional part
-			const expectedWei = (large / 1_000_000_000_000_000_000n) * 1_000_000_000_000_000_000n;
+			const expectedWei =
+				(large / 1_000_000_000_000_000_000n) * 1_000_000_000_000_000_000n;
 			expect(backToWei).toBe(expectedWei);
 		});
 	});
