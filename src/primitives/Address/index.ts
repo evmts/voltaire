@@ -115,6 +115,20 @@ Address.compare = BrandedAddress.compare;
 Address.lessThan = BrandedAddress.lessThan;
 Address.greaterThan = BrandedAddress.greaterThan;
 
+Address.sortAddresses = (addresses) => {
+	return BrandedAddress.sortAddresses(addresses).map((addr) => {
+		Object.setPrototypeOf(addr, Address.prototype);
+		return addr;
+	});
+};
+
+Address.deduplicateAddresses = (addresses) => {
+	return BrandedAddress.deduplicateAddresses(addresses).map((addr) => {
+		Object.setPrototypeOf(addr, Address.prototype);
+		return addr;
+	});
+};
+
 Address.clone = (address) => {
 	const result = BrandedAddress.clone(address);
 	Object.setPrototypeOf(result, Address.prototype);

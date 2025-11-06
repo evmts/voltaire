@@ -14,6 +14,7 @@ import { calculateCreateAddress } from "./calculateCreateAddress.js";
 import { clone } from "./clone.js";
 import { compare } from "./compare.js";
 import { SIZE } from "./constants.js";
+import { deduplicateAddresses } from "./deduplicateAddresses.js";
 import { equals } from "./equals.js";
 import { from } from "./from.js";
 import { fromAbiEncoded } from "./fromAbiEncoded.js";
@@ -29,6 +30,7 @@ import { isValid } from "./isValid.js";
 import { isValidChecksum } from "./isValidChecksum.js";
 import { isZero } from "./isZero.js";
 import { lessThan } from "./lessThan.js";
+import { sortAddresses } from "./sortAddresses.js";
 import { toAbiEncoded } from "./toAbiEncoded.js";
 import { toBytes } from "./toBytes.js";
 import { toChecksummed } from "./toChecksummed.js";
@@ -69,6 +71,8 @@ export {
 	compare,
 	lessThan,
 	greaterThan,
+	sortAddresses,
+	deduplicateAddresses,
 };
 
 // Namespace export
@@ -101,6 +105,8 @@ export const BrandedAddress = {
 	compare,
 	lessThan,
 	greaterThan,
+	sortAddresses,
+	deduplicateAddresses,
 	SIZE,
 	Checksummed,
 	Lowercase,
