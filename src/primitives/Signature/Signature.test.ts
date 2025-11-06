@@ -199,7 +199,13 @@ describe("Signature", () => {
 		it("should normalize non-canonical signature", () => {
 			const r = new Uint8Array(32).fill(0);
 			r[31] = 1;
-			const s = new Uint8Array(32).fill(0xff);
+			// High s value (non-canonical but valid): 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1
+			// This is just above n/2 for secp256k1
+			const s = new Uint8Array([
+				0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0xff, 0xff, 0xff, 0xff, 0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+				0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa2,
+			]);
 			const sig = Signature.fromSecp256k1(r, s, 27);
 			const normalized = Signature.normalize(sig);
 			expect(Signature.isCanonical(normalized)).toBe(true);
