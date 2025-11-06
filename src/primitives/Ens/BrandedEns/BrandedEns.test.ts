@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import * as Ens from "./index.js";
-import { DisallowedCharacterError } from "./errors.js";
 
 describe("Ens", () => {
 	describe("normalize", () => {
