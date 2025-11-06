@@ -20,7 +20,7 @@ export {
 	gte,
 	lt,
 	gt,
-	eq,
+	equals,
 	lte,
 	hasEIP1559,
 	supportsEIP1559,
@@ -67,7 +67,7 @@ Hardfork.max = BrandedHardfork.max;
 Hardfork.gte = BrandedHardfork.gte;
 Hardfork.lt = BrandedHardfork.lt;
 Hardfork.gt = BrandedHardfork.gt;
-Hardfork.eq = BrandedHardfork.eq;
+Hardfork.equals = BrandedHardfork.equals;
 Hardfork.lte = BrandedHardfork.lte;
 Hardfork.hasEIP1559 = BrandedHardfork.hasEIP1559;
 Hardfork.supportsEIP1559 = BrandedHardfork.supportsEIP1559;
@@ -114,8 +114,8 @@ Hardfork.prototype.lt = function (other) {
 Hardfork.prototype.gt = function (other) {
 	return BrandedHardfork.gt(this, other);
 };
-Hardfork.prototype.eq = function (other) {
-	return BrandedHardfork.eq(this, other);
+Hardfork.prototype.equals = function (other) {
+	return BrandedHardfork.equals(this, other);
 };
 Hardfork.prototype.lte = function (other) {
 	return BrandedHardfork.lte(this, other);

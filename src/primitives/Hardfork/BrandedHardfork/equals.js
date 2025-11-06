@@ -9,11 +9,11 @@ import { isEqual } from "./isEqual.js";
  *
  * @example
  * ```typescript
- * import { CANCUN, eq } from './hardfork.js';
+ * import { CANCUN, equals } from './hardfork.js';
  *
- * eq.call(CANCUN, CANCUN); // true
+ * equals.call(CANCUN, CANCUN); // true
  * ```
  */
-export function eq(other) {
+export function equals(other) {
 	return isEqual(this, other);
 }

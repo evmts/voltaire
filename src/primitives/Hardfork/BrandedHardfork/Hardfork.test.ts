@@ -265,15 +265,15 @@ describe("Hardfork.gt (convenience form)", () => {
 	});
 });
 
-describe("Hardfork.eq (convenience form)", () => {
+describe("Hardfork.equals (convenience form)", () => {
 	it("returns true when this == other", () => {
 		const fork = Hardfork.CANCUN;
-		expect(Hardfork.eq.call(fork, Hardfork.CANCUN)).toBe(true);
+		expect(Hardfork.equals.call(fork, Hardfork.CANCUN)).toBe(true);
 	});
 
 	it("returns false when this != other", () => {
 		const fork = Hardfork.CANCUN;
-		expect(Hardfork.eq.call(fork, Hardfork.SHANGHAI)).toBe(false);
+		expect(Hardfork.equals.call(fork, Hardfork.SHANGHAI)).toBe(false);
 	});
 });
 

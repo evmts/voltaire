@@ -5,7 +5,7 @@ export * from "./BrandedHardfork.js";
 import { allIds } from "./allIds.js";
 import { allNames } from "./allNames.js";
 import { compare } from "./compare.js";
-import { eq } from "./eq.js";
+import { equals } from "./equals.js";
 import { fromString } from "./fromString.js";
 import { gt } from "./gt.js";
 import { gte } from "./gte.js";
@@ -46,7 +46,7 @@ export {
 	gte,
 	lt,
 	gt,
-	eq,
+	equals,
 	lte,
 	hasEIP1559,
 	supportsEIP1559,
@@ -78,7 +78,7 @@ export const BrandedHardfork = {
 	gte,
 	lt,
 	gt,
-	eq,
+	equals,
 	lte,
 	hasEIP1559,
 	supportsEIP1559,

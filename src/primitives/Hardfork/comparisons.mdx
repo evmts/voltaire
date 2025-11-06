@@ -295,13 +295,13 @@ BERLIN.lt(BERLIN);  // false
 
 ---
 
-### eq (===)
+### equals (===)
 
 Equality check.
 
 ```typescript
-Hardfork.eq(a: BrandedHardfork, b: BrandedHardfork): boolean
-a.eq(b: BrandedHardfork): boolean
+Hardfork.equals(a: BrandedHardfork, b: BrandedHardfork): boolean
+a.equals(b: BrandedHardfork): boolean
 ```
 
 Equivalent to `isEqual`.
@@ -310,8 +310,8 @@ Equivalent to `isEqual`.
 ```typescript
 import { MERGE, fromString } from '@tevm/voltaire';
 
-MERGE.eq(fromString("paris"));  // true (alias)
-MERGE.eq(fromString("london")); // false
+MERGE.equals(fromString("paris"));  // true (alias)
+MERGE.equals(fromString("london")); // false
 ```
 
 ---
