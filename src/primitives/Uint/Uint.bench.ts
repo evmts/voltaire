@@ -482,6 +482,7 @@ console.log(
 
 const v1 = Uint.from(100);
 const v2 = Uint.from(200);
+const v3 = Uint.from(300);
 
 console.log("--- Comparison Operations ---");
 results.push(benchmark("equals", () => Uint.equals(v1, v1)));
@@ -531,30 +532,32 @@ console.log(
 );
 
 console.log("\n--- Mathematical Operations ---");
-const a = Uint.from(48n);
-const b = Uint.from(18n);
+const a2 = Uint.from(48n);
+const b2 = Uint.from(18n);
 const c = Uint.from(100n);
 const d = Uint.from(150n);
 
-results.push(benchmark("gcd - small values", () => Uint.gcd(a, b)));
+results.push(benchmark("gcd - small values", () => Uint.gcd(a2, b2)));
 results.push(
 	benchmark("gcd - medium values", () => Uint.gcd(smallValue, mediumValue)),
 );
 results.push(
 	benchmark("gcd - large values", () => Uint.gcd(mediumValue, largeValue)),
 );
-results.push(benchmark("lcm - small values", () => Uint.lcm(a, b)));
+results.push(benchmark("lcm - small values", () => Uint.lcm(a2, b2)));
 results.push(
 	benchmark("lcm - medium values", () => Uint.lcm(smallValue, mediumValue)),
 );
-results.push(benchmark("sum - 2 values", () => Uint.sum(a, b)));
+results.push(benchmark("sum - 2 values", () => Uint.sum(a2, b2)));
 results.push(
-	benchmark("sum - 5 values", () => Uint.sum(a, b, c, d, smallValue)),
+	benchmark("sum - 5 values", () => Uint.sum(a2, b2, c, d, smallValue)),
 );
 results.push(
-	benchmark("sum - 10 values", () => Uint.sum(a, b, c, d, a, b, c, d, a, b)),
+	benchmark("sum - 10 values", () =>
+		Uint.sum(a2, b2, c, d, a2, b2, c, d, a2, b2),
+	),
 );
-results.push(benchmark("product - 2 values", () => Uint.product(a, b)));
+results.push(benchmark("product - 2 values", () => Uint.product(a2, b2)));
 results.push(
 	benchmark("product - 5 values", () =>
 		Uint.product(
