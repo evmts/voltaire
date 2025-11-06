@@ -10,16 +10,16 @@ import { validate } from "./validate.js";
 import { verify } from "./verify.js";
 import { verifyMessage } from "./verifyMessage.js";
 
-// Export individual functions
+// Export internal functions (tree-shakeable)
 export {
-	create,
-	format,
-	generateNonce,
-	getMessageHash,
-	parse,
-	validate,
-	verify,
-	verifyMessage,
+	create as _create,
+	format as _format,
+	generateNonce as _generateNonce,
+	getMessageHash as _getMessageHash,
+	parse as _parse,
+	validate as _validate,
+	verify as _verify,
+	verifyMessage as _verifyMessage,
 };
 
 // Namespace export

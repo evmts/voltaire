@@ -3,6 +3,7 @@ export * from "./errors.js";
 export * from "./BrandedHex.js";
 
 import { assertSize } from "./assertSize.js";
+import { clone } from "./clone.js";
 import { concat } from "./concat.js";
 import { equals } from "./equals.js";
 import { from } from "./from.js";
@@ -42,6 +43,7 @@ export {
 	toString,
 	toBoolean,
 	assertSize,
+	clone,
 	concat,
 	equals,
 	isHex,
@@ -71,6 +73,7 @@ export const BrandedHex = {
 	toString,
 	toBoolean,
 	assertSize,
+	clone,
 	concat,
 	equals,
 	isHex,

@@ -12,8 +12,15 @@ import { toEther } from "./toEther.js";
 import { toWei } from "./toWei.js";
 import { toU256 } from "./toU256.js";
 
-// Export individually (tree-shakeable)
-export { from, fromEther, fromWei, toEther, toWei, toU256 };
+// Export internal functions (tree-shakeable)
+export {
+	from as _from,
+	fromEther as _fromEther,
+	fromWei as _fromWei,
+	toEther as _toEther,
+	toWei as _toWei,
+	toU256 as _toU256,
+};
 
 // Export as namespace (convenience)
 export const BrandedGwei = {
