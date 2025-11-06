@@ -92,9 +92,7 @@ describe("Bip39", () => {
 
 			const expectedHex =
 				"5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4";
-			const actualHex = Array.from(seed)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+			const actualHex = Array.from(seed, (b) => b.toString(16).padStart(2, "0")).join();
 			expect(actualHex).toBe(expectedHex);
 		});
 
@@ -108,9 +106,7 @@ describe("Bip39", () => {
 
 			const expectedHex =
 				"c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04";
-			const actualHex = Array.from(seed)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+			const actualHex = Array.from(seed, (b) => b.toString(16).padStart(2, "0")).join();
 			expect(actualHex).toBe(expectedHex);
 		});
 
@@ -124,9 +120,7 @@ describe("Bip39", () => {
 			// Actual derived seed from @scure/bip39 (verified correct implementation)
 			const expectedHex =
 				"878386efb78845b3355bd15ea4d39ef97d179cb712b77d5c12b6be415fffeffe5f377ba02bf3f8544ab800b955e51fbff09828f682052a20faa6addbbddfb096";
-			const actualHex = Array.from(seed)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+			const actualHex = Array.from(seed, (b) => b.toString(16).padStart(2, "0")).join();
 			expect(actualHex).toBe(expectedHex);
 		});
 
@@ -143,9 +137,7 @@ describe("Bip39", () => {
 
 			const expectedHex =
 				"a5a5c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8";
-			const actualHex = Array.from(seed)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+			const actualHex = Array.from(seed, (b) => b.toString(16).padStart(2, "0")).join();
 			// Note: This is just testing that it handles Unicode without crashing
 			// The actual expected value would need to be verified against a reference implementation
 			expect(actualHex.length).toBe(128);
@@ -161,9 +153,7 @@ describe("Bip39", () => {
 			// Actual derived seed from @scure/bip39 (verified correct implementation)
 			const expectedHex =
 				"77d6be9708c8218738934f84bbbb78a2e048ca007746cb764f0673e4b1812d176bbb173e1a291f31cf633f1d0bad7d3cf071c30e98cd0688b5bcce65ecaceb36";
-			const actualHex = Array.from(seed)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+			const actualHex = Array.from(seed, (b) => b.toString(16).padStart(2, "0")).join();
 			expect(actualHex).toBe(expectedHex);
 		});
 
@@ -204,9 +194,7 @@ describe("Bip39", () => {
 
 			const expectedHex =
 				"5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4";
-			const actualHex = Array.from(seed)
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+			const actualHex = Array.from(seed, (b) => b.toString(16).padStart(2, "0")).join();
 			expect(actualHex).toBe(expectedHex);
 		});
 

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import * as Fp2 from "./index.js";
 import { FP_MOD } from "../constants.js";
-import type { Fp2Element } from "../Fp2.js";
 
 describe("Fp2 extension field arithmetic", () => {
 	describe("create", () => {
@@ -313,27 +312,21 @@ describe("Fp2 extension field arithmetic", () => {
 	describe("frobeniusMap", () => {
 		test("frobenius on zero", () => {
 			const zero = Fp2.create(0n, 0n);
-			const result = Fp2.frobeniusMap(zero, 1n);
+			const result = Fp2.frobeniusMap(zero);
 			expect(Fp2.equal(result, zero)).toBe(true);
 		});
 
-		test("frobenius map power 0 is identity", () => {
+		test("frobenius map equals conjugate", () => {
 			const elem = Fp2.create(123n, 456n);
-			const result = Fp2.frobeniusMap(elem, 0n);
-			expect(Fp2.equal(result, elem)).toBe(true);
-		});
-
-		test("frobenius map power 1", () => {
-			const elem = Fp2.create(123n, 456n);
-			const result = Fp2.frobeniusMap(elem, 1n);
+			const result = Fp2.frobeniusMap(elem);
 			// Should equal conjugate for Fp2
 			const conj = Fp2.conjugate(elem);
 			expect(Fp2.equal(result, conj)).toBe(true);
 		});
 
-		test("frobenius map power 2 is identity on Fp2", () => {
+		test("double frobenius is identity on Fp2", () => {
 			const elem = Fp2.create(123n, 456n);
-			const result = Fp2.frobeniusMap(elem, 2n);
+			const result = Fp2.frobeniusMap(Fp2.frobeniusMap(elem));
 			expect(Fp2.equal(result, elem)).toBe(true);
 		});
 	});

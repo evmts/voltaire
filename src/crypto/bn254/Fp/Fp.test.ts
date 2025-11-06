@@ -263,18 +263,25 @@ describe("Fp field arithmetic", () => {
 
 	describe("sqrt", () => {
 		test("sqrt of zero is zero", () => {
-			expect(Fp.sqrt(0n)).toBe(0n);
+			const result = Fp.sqrt(0n);
+			expect(result).not.toBeNull();
+			expect(result).toBe(0n);
 		});
 
 		test("sqrt of one is one", () => {
-			expect(Fp.sqrt(1n)).toBe(1n);
+			const result = Fp.sqrt(1n);
+			expect(result).not.toBeNull();
+			expect(result).toBe(1n);
 		});
 
 		test("sqrt of perfect square", () => {
 			const values = [1n, 4n, 9n, 16n, 25n];
 			for (const value of values) {
 				const sqrt = Fp.sqrt(value);
-				expect(Fp.mul(sqrt, sqrt)).toBe(value);
+				expect(sqrt).not.toBeNull();
+				if (sqrt !== null) {
+					expect(Fp.mul(sqrt, sqrt)).toBe(value);
+				}
 			}
 		});
 
@@ -282,8 +289,11 @@ describe("Fp field arithmetic", () => {
 			const value = 12345n;
 			const square = Fp.mul(value, value);
 			const sqrt = Fp.sqrt(square);
-			// sqrt could be value or -value (FP_MOD - value)
-			expect(sqrt === value || sqrt === FP_MOD - value).toBe(true);
+			expect(sqrt).not.toBeNull();
+			if (sqrt !== null) {
+				// sqrt could be value or -value (FP_MOD - value)
+				expect(sqrt === value || sqrt === FP_MOD - value).toBe(true);
+			}
 		});
 	});
 

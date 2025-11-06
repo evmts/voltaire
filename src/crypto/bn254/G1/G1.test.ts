@@ -59,7 +59,7 @@ describe("G1 curve operations", () => {
 		});
 
 		test("point with z=0 is zero", () => {
-			const point: BrandedG1Point = { x: 1n, y: 2n, z: 0n };
+			const point: BrandedG1Point = { x: 1n, y: 2n, z: 0n, __tag: "G1Point" };
 			expect(G1.isZero(point)).toBe(true);
 		});
 	});
@@ -122,6 +122,7 @@ describe("G1 curve operations", () => {
 				x: Fp.mul(gen.x, 4n),
 				y: Fp.mul(gen.y, 8n),
 				z: 2n,
+				__tag: "G1Point",
 			};
 			expect(G1.equal(gen, scaled)).toBe(true);
 		});
@@ -380,6 +381,7 @@ describe("G1 curve operations", () => {
 				x: Fp.mul(gen.x, 4n),
 				y: Fp.mul(gen.y, 8n),
 				z: 2n,
+				__tag: "G1Point",
 			};
 			const affine1 = G1.toAffine(gen);
 			const affine2 = G1.toAffine(scaled);
@@ -454,13 +456,14 @@ describe("G1 curve operations", () => {
 				x: FP_MOD - 1n,
 				y: FP_MOD - 1n,
 				z: 1n,
+				__tag: "G1Point",
 			};
 			// May or may not be on curve, but shouldn't crash
 			G1.isOnCurve(point);
 		});
 
 		test("handles zero coordinates", () => {
-			const point: BrandedG1Point = { x: 0n, y: 0n, z: 1n };
+			const point: BrandedG1Point = { x: 0n, y: 0n, z: 1n, __tag: "G1Point" };
 			G1.isOnCurve(point);
 		});
 

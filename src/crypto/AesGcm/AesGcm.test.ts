@@ -31,7 +31,7 @@ describe("AesGcm", () => {
 			const keyData = new Uint8Array(16);
 			crypto.getRandomValues(keyData);
 
-			const key = await AesGcm.importKey(keyData, 128);
+			const key = await AesGcm.importKey(keyData);
 			const exported = await AesGcm.exportKey(key);
 
 			expect(exported).toEqual(keyData);
@@ -41,7 +41,7 @@ describe("AesGcm", () => {
 			const keyData = new Uint8Array(32);
 			crypto.getRandomValues(keyData);
 
-			const key = await AesGcm.importKey(keyData, 256);
+			const key = await AesGcm.importKey(keyData);
 			const exported = await AesGcm.exportKey(key);
 
 			expect(exported).toEqual(keyData);
@@ -49,7 +49,7 @@ describe("AesGcm", () => {
 
 		it("imports all-zero key", async () => {
 			const keyData = new Uint8Array(16).fill(0);
-			const key = await AesGcm.importKey(keyData, 128);
+			const key = await AesGcm.importKey(keyData);
 			const exported = await AesGcm.exportKey(key);
 
 			expect(exported).toEqual(keyData);
@@ -57,7 +57,7 @@ describe("AesGcm", () => {
 
 		it("imports all-ones key", async () => {
 			const keyData = new Uint8Array(32).fill(0xff);
-			const key = await AesGcm.importKey(keyData, 256);
+			const key = await AesGcm.importKey(keyData);
 			const exported = await AesGcm.exportKey(key);
 
 			expect(exported).toEqual(keyData);
@@ -293,17 +293,14 @@ describe("AesGcm", () => {
 		it("NIST vector: AES-128-GCM Test Case 1", async () => {
 			const keyHex = "00000000000000000000000000000000";
 			const nonceHex = "000000000000000000000000";
-			const plaintextHex = "";
-			const aadHex = "";
 
 			const key = await AesGcm.importKey(
 				new Uint8Array(
-					keyHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+					(keyHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 				),
-				128,
 			);
 			const nonce = new Uint8Array(
-				nonceHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(nonceHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const plaintext = new Uint8Array(0);
 			const aad = new Uint8Array(0);
@@ -324,19 +321,17 @@ describe("AesGcm", () => {
 			const keyHex = "00000000000000000000000000000000";
 			const nonceHex = "000000000000000000000000";
 			const plaintextHex = "00000000000000000000000000000000";
-			const aadHex = "";
 
 			const key = await AesGcm.importKey(
 				new Uint8Array(
-					keyHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+					(keyHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 				),
-				128,
 			);
 			const nonce = new Uint8Array(
-				nonceHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(nonceHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const plaintext = new Uint8Array(
-				plaintextHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(plaintextHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const aad = new Uint8Array(0);
 
@@ -365,18 +360,17 @@ describe("AesGcm", () => {
 
 			const key = await AesGcm.importKey(
 				new Uint8Array(
-					keyHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+					(keyHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 				),
-				128,
 			);
 			const nonce = new Uint8Array(
-				nonceHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(nonceHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const plaintext = new Uint8Array(
-				plaintextHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(plaintextHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 			const aad = new Uint8Array(
-				aadHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				(aadHex.match(/.{2}/g) || []).map((byte) => parseInt(byte, 16)),
 			);
 
 			const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
