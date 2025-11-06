@@ -6,7 +6,7 @@
  * @param {TAbi} abi - The ABI array
  * @param {TName} name - The item name
  * @param {TType} [type] - Optional type filter
- * @returns {Extract<TAbi[number], { name: TName }> | undefined}
+ * @returns {any}
  */
 export function getItem(abi, name, type) {
 	return abi.find(

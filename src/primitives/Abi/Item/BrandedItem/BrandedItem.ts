@@ -2,7 +2,7 @@ import type { BrandedConstructor } from "../../constructor/BrandedConstructor/Br
 import type { BrandedError } from "../../error/BrandedError/BrandedError.js";
 import type { Event } from "../../event/BrandedEvent/BrandedEvent.js";
 import type { Function } from "../../function/BrandedFunction/BrandedFunction.js";
-import type { StateMutability } from "../../function/statemutability.js";
+import type { StateMutability } from "../../function/BrandedFunction/statemutability.js";
 
 export type Fallback<
 	TStateMutability extends StateMutability = StateMutability,

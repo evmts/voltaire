@@ -1,5 +1,5 @@
-import { decodeParameters, decodeValue, isDynamicType } from "../Encoding.js";
-import { AbiDecodingError, AbiInvalidSelectorError } from "../Errors.js";
+import { decodeParameters, decodeValue, isDynamicType } from "../../Encoding.js";
+import { AbiDecodingError, AbiInvalidSelectorError } from "../../Errors.js";
 import { getSelector } from "./getSelector.js";
 
 /**
