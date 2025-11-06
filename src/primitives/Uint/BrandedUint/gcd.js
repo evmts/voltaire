@@ -17,7 +17,7 @@ export function gcd(a, b) {
 	let y = b;
 	while (y !== ZERO) {
 		const temp = y;
-		y = x % y;
+		y = /** @type {import('./BrandedUint.ts').BrandedUint} */ (x % y);
 		x = temp;
 	}
 	return x;

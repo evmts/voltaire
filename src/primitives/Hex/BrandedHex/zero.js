@@ -4,7 +4,7 @@ import { fromBytes } from "./fromBytes.js";
  * Create zero-filled hex of specific size
  *
  * @param {number} size - Size in bytes
- * @returns {string} Zero-filled hex string
+ * @returns {import('./BrandedHex.js').BrandedHex} Zero-filled hex string
  *
  * @example
  * ```typescript

@@ -15,7 +15,9 @@ import { ZERO } from "./constants.js";
 export function sum(...values) {
 	let result = ZERO;
 	for (const value of values) {
-		result = (result + value) & MAX;
+		result = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+			(result + value) & MAX
+		);
 	}
 	return result;
 }

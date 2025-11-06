@@ -18,5 +18,7 @@ export function lcm(a, b) {
 	if (a === ZERO || b === ZERO) {
 		return ZERO;
 	}
-	return ((a * b) / gcd(a, b)) & MAX;
+	return /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+		((a * b) / gcd(a, b)) & MAX
+	);
 }

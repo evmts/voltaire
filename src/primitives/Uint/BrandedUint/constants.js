@@ -10,24 +10,26 @@ export const SIZE = 32;
 
 /**
  * Maximum Uint256 value: 2^256 - 1
- * @type {bigint}
+ * @type {import('./BrandedUint.ts').BrandedUint}
  */
-export const MAX = (1n << 256n) - 1n;
+export const MAX = /** @type {import('./BrandedUint.ts').BrandedUint} */ (
+	(1n << 256n) - 1n
+);
 
 /**
  * Minimum Uint256 value: 0
- * @type {bigint}
+ * @type {import('./BrandedUint.ts').BrandedUint}
  */
-export const MIN = 0n;
+export const MIN = /** @type {import('./BrandedUint.ts').BrandedUint} */ (0n);
 
 /**
  * Zero value
- * @type {bigint}
+ * @type {import('./BrandedUint.ts').BrandedUint}
  */
-export const ZERO = 0n;
+export const ZERO = /** @type {import('./BrandedUint.ts').BrandedUint} */ (0n);
 
 /**
  * One value
- * @type {bigint}
+ * @type {import('./BrandedUint.ts').BrandedUint}
  */
-export const ONE = 1n;
+export const ONE = /** @type {import('./BrandedUint.ts').BrandedUint} */ (1n);
