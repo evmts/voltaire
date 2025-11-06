@@ -171,7 +171,7 @@ return Keccak256.hash(fullMessage);
 EIP-191 defines three types of signed data. SIWE uses personal sign format:
 
 ```
-0x19 <1 byte version>
+0x19 less than 1 byte version>
 "Ethereum Signed Message:\n" <message length>
 <message>
 ```
@@ -254,7 +254,7 @@ const wrongLength = messageBytes.length.toString(16); // "91" - No!
 - **Formatting:** O(n) where n = message size
 - **Encoding:** O(n) UTF-8 encoding
 - **Hashing:** O(n) Keccak-256 hash
-- **Total:** Linear in message size, typically <1ms
+- **Total:** Linear in message size, typically less than 1ms
 
 ### See Also
 

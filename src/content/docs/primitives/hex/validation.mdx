@@ -112,7 +112,7 @@ Assert hex has specific size, throws if mismatch. Returns sized hex for type nar
 const hex = Hex("0x1234")
 
 // Success - returns same hex with size type
-const sized = Hex.assertSize(hex, 2)  // Sized<2>
+const sized = Hex.assertSize(hex, 2)  // Sizedless than 2>
 
 // Failure - throws
 Hex.assertSize(hex, 4)  // throws InvalidLengthError
@@ -120,7 +120,7 @@ Hex.assertSize(hex, 4)  // throws InvalidLengthError
 // Usage in functions
 function processHash(hex: BrandedHex) {
   Hex.assertSize(hex, 32)  // Ensure 32 bytes
-  // TypeScript now knows hex is Sized<32>
+  // TypeScript now knows hex is Sizedless than 32>
   return Hex.toBytes(hex)
 }
 ```
@@ -193,15 +193,15 @@ function handleValue(value: unknown) {
 ### Type-Safe Size Validation
 
 ```typescript
-type Hash = Sized<32>
-type Address = Sized<20>
+type Hash = Sizedless than 32>
+type Address = Sizedless than 20>
 
 function createHash(hex: BrandedHex): Hash {
-  return Hex.assertSize(hex, 32)  // Returns Sized<32>
+  return Hex.assertSize(hex, 32)  // Returns Sizedless than 32>
 }
 
 function createAddress(hex: BrandedHex): Address {
-  return Hex.assertSize(hex, 20)  // Returns Sized<20>
+  return Hex.assertSize(hex, 20)  // Returns Sizedless than 20>
 }
 ```
 
@@ -215,7 +215,7 @@ import { isHex, validate, isSized, assertSize } from '@tevm/voltaire/BrandedHex'
 isHex("0x1234")           // boolean
 validate("0x1234")        // BrandedHex
 isSized(hex, 32)          // boolean
-assertSize(hex, 32)       // Sized<32>
+assertSize(hex, 32)       // Sizedless than 32>
 ```
 
 See [BrandedHex](/primitives/hex/branded-hex) for details on tree-shakeable API.

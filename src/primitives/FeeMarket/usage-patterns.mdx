@@ -195,9 +195,9 @@ const totalChange = ((Number(lastFee - firstFee) / Number(firstFee)) * 100).toFi
 console.log(`\nOverall trend: ${totalChange}% over ${projection.length} blocks`);
 
 // Make decision
-if (lastFee > firstFee * 11n / 10n) { // >10% increase
+if (lastFee > firstFee * 11n / 10n) { // greater than 10% increase
   console.log('⚠️  Fees rising rapidly - submit transaction soon');
-} else if (lastFee < firstFee * 9n / 10n) { // >10% decrease
+} else if (lastFee < firstFee * 9n / 10n) { // greater than 10% decrease
   console.log('💡 Fees falling - consider waiting');
 } else {
   console.log('✓ Fees relatively stable');

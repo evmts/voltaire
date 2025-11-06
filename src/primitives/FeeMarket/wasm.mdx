@@ -22,7 +22,7 @@ These operations are:
 - Too lightweight for WASM overhead to provide benefit
 - Pure calculations with no I/O or complex state
 
-**WASM call overhead (~1-2μs) exceeds calculation time (`<1μs`)**
+**WASM call overhead (~1-2μs) exceeds calculation time (`less than 1μs`)**
 
 ## Performance Characteristics
 
@@ -46,7 +46,7 @@ WASM overhead:
 ## When WASM Would Help
 
 WASM beneficial for:
-- Heavy computation (>10μs per operation)
+- Heavy computation (greater than 10μs per operation)
 - Cryptographic operations (hashing, signatures, elliptic curve)
 - Large data processing (RLP encoding, ABI encoding)
 - Batch operations (processing thousands of items)

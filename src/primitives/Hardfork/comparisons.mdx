@@ -59,11 +59,11 @@ if (!Hardfork.isAtLeast(fork, LONDON)) {
 }
 ```
 
----
+***
 
 ### isBefore
 
-Check if current hardfork is before target version (<).
+Check if current hardfork is before target version (less than).
 
 **Standard Form:**
 ```typescript
@@ -94,7 +94,7 @@ if (Hardfork.isBefore(fork, LONDON)) {
 }
 ```
 
----
+***
 
 ### isAfter
 
@@ -129,7 +129,7 @@ if (Hardfork.isAfter(fork, CANCUN)) {
 }
 ```
 
----
+***
 
 ### isEqual
 
@@ -164,7 +164,7 @@ const fork2 = Hardfork.fromString("paris");
 console.log(Hardfork.isEqual(fork1, fork2));  // true (same hardfork)
 ```
 
----
+***
 
 ### compare
 
@@ -204,13 +204,13 @@ forks.sort(Hardfork.compare);
 // [BERLIN, LONDON, SHANGHAI, CANCUN]
 ```
 
----
+***
 
 ## Operator-Style Methods
 
 Convenience methods mimicking comparison operators.
 
-### gte (>=)
+### gte (greater than or equal)
 
 Greater than or equal.
 
@@ -229,9 +229,9 @@ CANCUN.gte(LONDON);  // true
 LONDON.gte(CANCUN);  // false
 ```
 
----
+***
 
-### lte (<=)
+### lte (less than or equal)
 
 Less than or equal.
 
@@ -249,9 +249,9 @@ CANCUN.lte(LONDON);  // false
 LONDON.lte(LONDON);  // true
 ```
 
----
+***
 
-### gt (>)
+### gt (greater than)
 
 Greater than (strictly).
 
@@ -271,9 +271,9 @@ LONDON.gt(CANCUN);  // false
 CANCUN.gt(CANCUN);  // false
 ```
 
----
+***
 
-### lt (<)
+### lt (less than)
 
 Less than (strictly).
 
@@ -293,9 +293,9 @@ LONDON.lt(BERLIN);  // false
 BERLIN.lt(BERLIN);  // false
 ```
 
----
+***
 
-### equals (===)
+### equals (strict equality)
 
 Equality check.
 
@@ -314,7 +314,7 @@ MERGE.equals(fromString("paris"));  // true (alias)
 MERGE.equals(fromString("london")); // false
 ```
 
----
+***
 
 ## Min/Max Operations
 
@@ -343,7 +343,7 @@ const minSupported = Hardfork.min(supported);
 console.log(`Minimum version: ${Hardfork.toString(minSupported)}`);
 ```
 
----
+***
 
 ### max
 
@@ -368,7 +368,7 @@ const maxSupported = Hardfork.max(supported);
 console.log(`Latest version: ${Hardfork.toString(maxSupported)}`);
 ```
 
----
+***
 
 ## Implementation Details
 
@@ -402,7 +402,7 @@ function isAtLeast(current, target) {
 - **Implementation**: Simple array index comparison
 - **Speed**: ~10-20ns per operation
 
----
+***
 
 ## Common Patterns
 
@@ -466,7 +466,7 @@ function isCompatible(clientFork: BrandedHardfork, networkFork: BrandedHardfork)
 const compatible = isCompatible(PRAGUE, CANCUN);  // true
 ```
 
----
+***
 
 ## Best Practices
 
@@ -526,7 +526,7 @@ if (Hardfork.gte(currentFork, requiredFork)) {
 }
 ```
 
----
+***
 
 ## Related
 

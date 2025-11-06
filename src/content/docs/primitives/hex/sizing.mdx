@@ -43,19 +43,19 @@ Runtime check with type guard:
 const hex: BrandedHex = Hex("0x1234")
 
 if (Hex.isSized(hex, 2)) {
-  // TypeScript narrows to Sized<2>
-  hex  // Type: Sized<2>
+  // TypeScript narrows to Sizedless than 2>
+  hex  // Type: Sizedless than 2>
 }
 
 // Common sizes
 const maybeHash: BrandedHex = Hex.random(32)
 if (Hex.isSized(maybeHash, 32)) {
-  maybeHash  // Type: Sized<32> (Hash)
+  maybeHash  // Type: Sizedless than 32> (Hash)
 }
 
 const maybeAddr: BrandedHex = Hex.random(20)
 if (Hex.isSized(maybeAddr, 20)) {
-  maybeAddr  // Type: Sized<20> (Address)
+  maybeAddr  // Type: Sizedless than 20> (Address)
 }
 ```
 
@@ -76,7 +76,7 @@ const hex: BrandedHex = Hex("0x1234")
 
 // Returns same hex with narrowed type
 const sized = Hex.assertSize(hex, 2)
-sized  // Type: Sized<2>
+sized  // Type: Sizedless than 2>
 
 // Throws if wrong size
 try {
@@ -104,38 +104,38 @@ Defined in: [primitives/Hex/BrandedHex/assertSize.js:18-25](https://github.com/e
 ```typescript
 // Create with specific size
 const hash = Hex.fromBigInt(0n, 32)  // BrandedHex
-Hex.assertSize(hash, 32)             // Sized<32>
+Hex.assertSize(hash, 32)             // Sizedless than 32>
 
 const addr = Hex.fromNumber(0, 20)   // BrandedHex
-Hex.assertSize(addr, 20)             // Sized<20>
+Hex.assertSize(addr, 20)             // Sizedless than 20>
 
 // Pad to size
 const value = Hex("0x1234")
 const padded = Hex.pad(value, 32)    // BrandedHex
-Hex.assertSize(padded, 32)           // Sized<32>
+Hex.assertSize(padded, 32)           // Sizedless than 32>
 ```
 
 ### From Random/Zero
 
 ```typescript
 const randomHash = Hex.random(32)
-Hex.assertSize(randomHash, 32)  // Sized<32>
+Hex.assertSize(randomHash, 32)  // Sizedless than 32>
 
 const zeroAddr = Hex.zero(20)
-Hex.assertSize(zeroAddr, 20)    // Sized<20>
+Hex.assertSize(zeroAddr, 20)    // Sizedless than 20>
 ```
 
 ## Common Ethereum Sizes
 
 ```typescript
 // Type aliases for common sizes
-type Hash = Sized<32>
-type Address = Sized<20>
-type Selector = Sized<4>
-type U256 = Sized<32>
-type U128 = Sized<16>
-type U64 = Sized<8>
-type Byte = Sized<1>
+type Hash = Sizedless than 32>
+type Address = Sizedless than 20>
+type Selector = Sizedless than 4>
+type U256 = Sizedless than 32>
+type U128 = Sizedless than 16>
+type U64 = Sizedless than 8>
+type Byte = Sizedless than 1>
 
 // Create and assert
 function createHash(value: bigint): Hash {
@@ -158,12 +158,12 @@ function createSelector(sig: string): Selector {
 ### Accept Specific Size
 
 ```typescript
-function processHash(hash: Sized<32>): Uint8Array {
+function processHash(hash: Sizedless than 32>): Uint8Array {
   // TypeScript knows hash is 32 bytes
   return Hex.toBytes(hash)
 }
 
-function processAddress(addr: Sized<20>): string {
+function processAddress(addr: Sizedless than 20>): string {
   // TypeScript knows addr is 20 bytes
   return Hex.toString(addr)
 }
@@ -173,7 +173,7 @@ const hash = Hex.assertSize(Hex.random(32), 32)
 processHash(hash)  // ✓ compiles
 
 const wrong = Hex.random(16)
-processHash(wrong)  // ✗ compile error: Type 'BrandedHex' not assignable to 'Sized<32>'
+processHash(wrong)  // ✗ compile error: Type 'BrandedHex' not assignable to 'Sizedless than 32>'
 ```
 
 ### Generic Size
@@ -186,9 +186,9 @@ function toFixedBytes<N extends number>(
   return Hex.assertSize(Hex.fromBigInt(value, size), size)
 }
 
-const hash = toFixedBytes(255n, 32)    // Sized<32>
-const addr = toFixedBytes(0n, 20)      // Sized<20>
-const selector = toFixedBytes(0n, 4)   // Sized<4>
+const hash = toFixedBytes(255n, 32)    // Sizedless than 32>
+const addr = toFixedBytes(0n, 20)      // Sizedless than 20>
+const selector = toFixedBytes(0n, 4)   // Sizedless than 4>
 ```
 
 ## Size Validation Patterns
@@ -200,7 +200,7 @@ function createHash(hex: BrandedHex): Hash {
   if (!Hex.isSized(hex, 32)) {
     throw new Error("Expected 32-byte hash")
   }
-  return hex  // TypeScript knows it's Sized<32>
+  return hex  // TypeScript knows it's Sizedless than 32>
 }
 
 // Alternative with assertSize
@@ -213,9 +213,9 @@ function createHash2(hex: BrandedHex): Hash {
 
 ```typescript
 type EthValue =
-  | { type: "hash"; value: Sized<32> }
-  | { type: "address"; value: Sized<20> }
-  | { type: "selector"; value: Sized<4> }
+  | { type: "hash"; value: Sizedless than 32> }
+  | { type: "address"; value: Sizedless than 20> }
+  | { type: "selector"; value: Sizedless than 4> }
 
 function classify(hex: BrandedHex): EthValue {
   const size = Hex.size(hex)
@@ -240,7 +240,7 @@ function classify(hex: BrandedHex): EthValue {
 
 ```typescript
 // Array of hashes
-const hashes: Sized<32>[] = [
+const hashes: Sizedless than 32>[] = [
   Hex.assertSize(Hex.random(32), 32),
   Hex.assertSize(Hex.random(32), 32),
   Hex.assertSize(Hex.random(32), 32)
@@ -251,7 +251,7 @@ const bytes = hashes.map(hash => Hex.toBytes(hash))
 bytes  // Uint8Array[] where each is 32 bytes
 
 // Filter addresses
-const addrs: Sized<20>[] = [...]
+const addrs: Sizedless than 20>[] = [...]
 const nonZero = addrs.filter(addr =>
   !Hex.equals(addr, Hex.assertSize(Hex.zero(20), 20))
 )
@@ -284,11 +284,11 @@ getTypeSize(hash, 32)   // 32 (compile-time)
 
 ```typescript
 // Size information lost at runtime
-const sized: Sized<32> = Hex.assertSize(Hex.random(32), 32)
+const sized: Sizedless than 32> = Hex.assertSize(Hex.random(32), 32)
 const unsized: BrandedHex = sized  // Valid - upcasting
 
 // Must re-assert to recover size type
-Hex.assertSize(unsized, 32)  // Sized<32> again
+Hex.assertSize(unsized, 32)  // Sizedless than 32> again
 ```
 
 ### Dynamic Sizes
@@ -300,8 +300,8 @@ function create(size: number): Sized<???> {  // ✗ Cannot use 'size' as type pa
 }
 
 // Solution: Return BrandedHex or use overloads
-function create(size: 32): Sized<32>
-function create(size: 20): Sized<20>
+function create(size: 32): Sizedless than 32>
+function create(size: 20): Sizedless than 20>
 function create(size: number): BrandedHex
 function create(size: number): BrandedHex {
   return Hex.random(size)
@@ -317,10 +317,10 @@ import type { BrandedHex, Sized } from '@tevm/voltaire/BrandedHex'
 const hex: BrandedHex = /* ... */
 
 if (isSized(hex, 32)) {
-  hex  // Sized<32>
+  hex  // Sizedless than 32>
 }
 
-const hash: Sized<32> = assertSize(hex, 32)
+const hash: Sizedless than 32> = assertSize(hex, 32)
 const byteSize: number = size(hex)
 ```
 

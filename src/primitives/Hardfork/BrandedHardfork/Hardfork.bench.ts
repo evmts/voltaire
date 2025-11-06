@@ -158,7 +158,9 @@ results.push(
 	benchmark("gt.call", () => gt.call(testForks.recent, testForks.middle)),
 );
 results.push(
-	benchmark("equals.call", () => equals.call(testForks.recent, testForks.recent)),
+	benchmark("equals.call", () =>
+		equals.call(testForks.recent, testForks.recent),
+	),
 );
 results.push(
 	benchmark("lte.call", () => lte.call(testForks.middle, testForks.recent)),

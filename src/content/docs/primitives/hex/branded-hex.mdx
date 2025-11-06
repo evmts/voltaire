@@ -126,7 +126,7 @@ import {
 isHex("0x1234")          // boolean (type guard)
 validate("0x1234")       // BrandedHex (throws if invalid)
 isSized(hex, 32)         // boolean
-assertSize(hex, 32)      // Sized<32> (throws if wrong size)
+assertSize(hex, 32)      // Sizedless than 32> (throws if wrong size)
 ```
 
 See [Validation](/primitives/hex/validation) for details.
@@ -267,7 +267,7 @@ const hex = Hex("0x1234")
 
 ### Use Hex Namespace When:
 - **Ergonomics** over bundle size
-- **Using many methods** (>5 functions)
+- **Using many methods** (greater than 5 functions)
 - **Traditional API** expected
 - **Bundle size not critical**
 - **Quick prototyping**

@@ -19,10 +19,10 @@ GasConstants provides:
 
 These operations are:
 - **Primarily constant lookups** - Zero computation
-- **Simple arithmetic on bigints** - <100ns per operation
+- **Simple arithmetic on bigints** - Less than 100ns per operation
 - **Already optimal in TypeScript** - No room for improvement
 
-**WASM overhead (~1-2μs per call) far exceeds calculation time.**
+**WASM overhead (approximately 1-2μs per call) far exceeds calculation time.**
 
 ## Performance Comparison
 
@@ -65,7 +65,7 @@ const keccak = GasConstants.calculateKeccak256Cost(64n);
 const memory = GasConstants.calculateMemoryExpansionCost(0n, 1024n);
 ```
 
-Even the most complex calculation (memory expansion with quadratic formula) completes in <200ns. WASM call overhead alone is 1000-2000ns.
+Even the most complex calculation (memory expansion with quadratic formula) completes in less than 200ns. WASM call overhead alone is 1000-2000ns.
 
 ## When WASM Makes Sense
 
@@ -74,7 +74,7 @@ WASM is beneficial for:
 1. **Complex state machine execution** - EVM interpreter/executor
 2. **Cryptographic operations** - Keccak-256, secp256k1, BLS
 3. **Large batch operations** - Processing thousands of transactions
-4. **Heavy computation** - Operations taking >10μs each
+4. **Heavy computation** - Operations taking greater than 10μs each
 
 GasConstants provides **building blocks** for these systems, not the systems themselves.
 
@@ -217,7 +217,7 @@ for (const slot of slots) {
   cost += sload;
 }
 
-// Still fine: property access is ~5ns
+// Still fine: property access is approximately 5ns
 for (const slot of slots) {
   cost += GasConstants.Sload;
 }

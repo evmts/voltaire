@@ -30,7 +30,7 @@ These operations are:
 - Already optimal in TypeScript
 - Pure O(1) lookups and numeric comparisons
 - No heavy computation or data processing
-- Execution time <100ns per operation
+- Execution time less than 100ns per operation
 
 **WASM overhead (~1-2μs per call) would make operations 10-100x SLOWER.**
 
@@ -54,7 +54,7 @@ Pure TypeScript implementation benchmarks:
 ## When to Use WASM
 
 WASM is beneficial for:
-- **Heavy computation** (>10μs)
+- **Heavy computation** (greater than 10μs)
 - **Cryptographic operations** (hashing, signatures)
 - **Large data processing** (RLP encoding, ABI encoding)
 - **Batch operations** (processing many items)
@@ -213,7 +213,7 @@ Hardfork is a **hot path** primitive:
 - Needed for every smart contract call
 
 **Performance requirements:**
-- Must be <100ns per call
+- Must be less than 100ns per call
 - No allocations
 - Minimal branching
 - Cache-friendly
@@ -251,8 +251,8 @@ Hardfork Benchmarks:
 ```
 
 **Interpretation:**
-- All operations <100ns
-- WASM overhead >1000ns
+- All operations less than 100ns
+- WASM overhead greater than 1000ns
 - WASM would be 10-100x slower
 
 ## Alternative Optimizations
@@ -327,7 +327,7 @@ These primitives DO benefit from WASM:
 - Signature operations (~10x speedup)
 - Public key recovery (~10x speedup)
 
-**Pattern:** Heavy computation (>10μs) benefits from WASM. Simple lookups do not.
+**Pattern:** Heavy computation (greater than 10μs) benefits from WASM. Simple lookups do not.
 
 ## Best Practices
 
@@ -366,7 +366,7 @@ const result = Hardfork.fromString("cancun");
 ### When Would WASM Be Added?
 
 WASM might be considered if:
-1. Hardfork operations become >10μs per call
+1. Hardfork operations become greater than 10μs per call
 2. Batch operations on 1000+ hardforks become common
 3. Heavy computation is added (unlikely for enum operations)
 

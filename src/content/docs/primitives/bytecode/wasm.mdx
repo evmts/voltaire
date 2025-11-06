@@ -127,14 +127,14 @@ Defined in: [primitives/Bytecode/Bytecode.wasm.ts:64](https://github.com/evmts/p
 ## When to Use WASM
 
 ### Use WASM Implementation When:
-- **Large bytecode** (>10KB) analysis
+- **Large bytecode** (greater than 10KB) analysis
 - **Repeated analysis** of same bytecode
 - **Performance critical** paths
 - **Batch processing** many contracts
 - **Real-time analysis** needed
 
 ### Use JavaScript Implementation When:
-- **Small bytecode** (`<1KB`)
+- **Small bytecode** (`less than 1KB`)
 - **One-off analysis**
 - **Tree-shaking** critical (WASM adds bundle size)
 - **Compatibility** concerns

@@ -73,7 +73,7 @@ const bytes2 = hexToBytes("1234")   // Also accepts without 0x
 
 **Returns:** `Uint8Array` - Raw bytes
 
-**Performance:** ~2-3x faster than JavaScript for large hex strings (>1KB)
+**Performance:** ~2-3x faster than JavaScript for large hex strings (greater than 1KB)
 
 ### bytesToHex(data)
 
@@ -90,7 +90,7 @@ const hex = bytesToHex(new Uint8Array([0x12, 0x34]))  // "0x1234"
 
 **Returns:** `string` - Hex string with `0x` prefix
 
-**Performance:** ~2-3x faster than JavaScript for large arrays (>1KB)
+**Performance:** ~2-3x faster than JavaScript for large arrays (greater than 1KB)
 
 ## WASM Loading
 
@@ -126,14 +126,14 @@ const hex = Hex.fromBytes(bytes)  // Uses WASM immediately
 ### When WASM is Faster
 
 WASM provides significant speedup for:
-- **Large hex strings** (>1KB): 2-3x faster
+- **Large hex strings** (greater than 1KB): 2-3x faster
 - **Repeated conversions**: Amortizes initialization
 - **High-throughput**: Processing many values
 
 ### When JavaScript is Faster
 
 JavaScript may be faster for:
-- **Small strings** (`<100 bytes`): WASM overhead dominates
+- **Small strings** (`less than 100 bytes`): WASM overhead dominates
 - **One-off conversions**: Initialization cost not amortized
 - **Cold starts**: Initial WASM load adds latency
 
@@ -316,7 +316,7 @@ import '@tevm/voltaire/Hex/Hex.wasm'
 ### When to Use WASM
 
 - Processing large transaction data
-- Batch conversions (>100 values)
+- Batch conversions (greater than 100 values)
 - High-throughput applications
 - Performance-critical paths
 
