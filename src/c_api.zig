@@ -2109,6 +2109,279 @@ export fn x25519KeypairFromSeed(
 // Use the TypeScript implementation in src/crypto/p256.ts instead
 
 // ============================================================================
+// HD Wallet (BIP-39 / BIP-32) API - libwally-core bindings
+// ============================================================================
+
+// External libwally-core declarations
+extern fn bip39_mnemonic_from_bytes(
+    w: ?*const anyopaque,
+    bytes: [*]const u8,
+    bytes_len: usize,
+    output: *[*:0]u8,
+) c_int;
+
+extern fn bip39_mnemonic_to_seed512(
+    mnemonic: [*:0]const u8,
+    passphrase: ?[*:0]const u8,
+    bytes_out: [*]u8,
+    len: usize,
+) c_int;
+
+extern fn bip39_mnemonic_validate(
+    w: ?*const anyopaque,
+    mnemonic: [*:0]const u8,
+) c_int;
+
+extern fn bip32_key_from_seed_alloc(
+    bytes: [*]const u8,
+    bytes_len: usize,
+    version: u32,
+    flags: u32,
+    output: *?*anyopaque,
+) c_int;
+
+extern fn bip32_key_from_parent_path_alloc(
+    hdkey: *const anyopaque,
+    child_path: [*]const u32,
+    child_path_len: usize,
+    flags: u32,
+    output: *?*anyopaque,
+) c_int;
+
+extern fn bip32_key_free(hdkey: *const anyopaque) c_int;
+
+extern fn wally_free_string(str: [*:0]const u8) void;
+
+// BIP32 constants
+const BIP32_VER_MAIN_PRIVATE: u32 = 0x0488ADE4;
+const BIP32_FLAG_KEY_PRIVATE: u32 = 0x0;
+const BIP39_SEED_LEN_512: usize = 64;
+
+// HD Key structure matching libwally ext_key
+const ExtKey = extern struct {
+    chain_code: [32]u8,
+    parent160: [20]u8,
+    depth: u8,
+    pad1: [10]u8,
+    priv_key: [33]u8,
+    child_num: u32,
+    hash160: [20]u8,
+    version: u32,
+    pad2: [3]u8,
+    pub_key: [33]u8,
+};
+
+/// Generate BIP-39 mnemonic from entropy
+/// entropy_len: 16 (128 bits) or 32 (256 bits)
+/// out_mnemonic: must be large enough (at least 256 bytes)
+/// Returns length of mnemonic string or negative error code
+export fn hdwallet_generate_mnemonic(
+    entropy: [*]const u8,
+    entropy_len: usize,
+    out_mnemonic: [*]u8,
+    out_len: usize,
+) c_int {
+    if (entropy_len != 16 and entropy_len != 32) {
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    var mnemonic_ptr: [*:0]u8 = undefined;
+    const result = bip39_mnemonic_from_bytes(null, entropy, entropy_len, &mnemonic_ptr);
+
+    if (result != 0) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    const mnemonic_cstr = std.mem.span(mnemonic_ptr);
+    if (mnemonic_cstr.len >= out_len) {
+        wally_free_string(mnemonic_ptr);
+        return PRIMITIVES_ERROR_INVALID_LENGTH;
+    }
+
+    @memcpy(out_mnemonic[0..mnemonic_cstr.len], mnemonic_cstr);
+    out_mnemonic[mnemonic_cstr.len] = 0; // null terminator
+
+    wally_free_string(mnemonic_ptr);
+    return @intCast(mnemonic_cstr.len);
+}
+
+/// Convert BIP-39 mnemonic to seed (512 bits)
+/// passphrase: optional, pass NULL if not needed
+export fn hdwallet_mnemonic_to_seed(
+    mnemonic: [*:0]const u8,
+    passphrase: ?[*:0]const u8,
+    out_seed: *[64]u8,
+) c_int {
+    const result = bip39_mnemonic_to_seed512(mnemonic, passphrase, out_seed, BIP39_SEED_LEN_512);
+
+    if (result != 0) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Validate BIP-39 mnemonic checksum
+/// Returns 1 if valid, 0 if invalid
+export fn hdwallet_validate_mnemonic(
+    mnemonic: [*:0]const u8,
+) c_int {
+    const result = bip39_mnemonic_validate(null, mnemonic);
+    return if (result == 0) 1 else 0;
+}
+
+/// Create HD root key from seed
+/// Returns opaque handle to HD key or 0 on error
+export fn hdwallet_from_seed(
+    seed: [*]const u8,
+    seed_len: usize,
+) usize {
+    if (seed_len != BIP39_SEED_LEN_512) {
+        return 0;
+    }
+
+    var hdkey: ?*anyopaque = null;
+    const result = bip32_key_from_seed_alloc(
+        seed,
+        seed_len,
+        BIP32_VER_MAIN_PRIVATE,
+        0,
+        &hdkey,
+    );
+
+    if (result != 0 or hdkey == null) {
+        return 0;
+    }
+
+    return @intFromPtr(hdkey);
+}
+
+/// Derive child key from path
+/// path: array of u32 child indices (use 0x80000000 + index for hardened)
+/// Returns opaque handle to derived HD key or 0 on error
+export fn hdwallet_derive(
+    hdkey_handle: usize,
+    path: [*]const u32,
+    path_len: usize,
+) usize {
+    if (hdkey_handle == 0) {
+        return 0;
+    }
+
+    const hdkey = @as(*const anyopaque, @ptrFromInt(hdkey_handle));
+    var child_key: ?*anyopaque = null;
+
+    const result = bip32_key_from_parent_path_alloc(
+        hdkey,
+        path,
+        path_len,
+        BIP32_FLAG_KEY_PRIVATE,
+        &child_key,
+    );
+
+    if (result != 0 or child_key == null) {
+        return 0;
+    }
+
+    return @intFromPtr(child_key);
+}
+
+/// Get private key from HD key
+export fn hdwallet_get_private_key(
+    hdkey_handle: usize,
+    out_private_key: *[32]u8,
+) c_int {
+    if (hdkey_handle == 0) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    const hdkey = @as(*const ExtKey, @ptrFromInt(hdkey_handle));
+
+    // Private key is stored with prefix byte 0, skip it
+    @memcpy(out_private_key, hdkey.priv_key[1..33]);
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Get public key from HD key
+export fn hdwallet_get_public_key(
+    hdkey_handle: usize,
+    out_public_key: *[33]u8,
+) c_int {
+    if (hdkey_handle == 0) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    const hdkey = @as(*const ExtKey, @ptrFromInt(hdkey_handle));
+    @memcpy(out_public_key, &hdkey.pub_key);
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Get Ethereum address from HD key
+export fn hdwallet_get_address(
+    hdkey_handle: usize,
+    out_address: *PrimitivesAddress,
+) c_int {
+    if (hdkey_handle == 0) {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    }
+
+    const hdkey = @as(*const ExtKey, @ptrFromInt(hdkey_handle));
+
+    // Public key is compressed (33 bytes), decompress to get x,y (skip prefix byte)
+    const x = std.mem.readInt(u256, hdkey.pub_key[1..33], .big);
+
+    // Reconstruct full public key y coordinate from x
+    // For now, use secp256k1 point decompression
+    const prefix = hdkey.pub_key[0];
+    const is_odd = prefix == 0x03;
+
+    // Calculate y^2 = x^3 + 7 (secp256k1 curve equation)
+    const p = crypto.secp256k1.SECP256K1_P;
+    const x3 = crypto.secp256k1.unauditedMulmod(
+        crypto.secp256k1.unauditedMulmod(x, x, p),
+        x,
+        p,
+    );
+    const y_squared = crypto.secp256k1.unauditedAddmod(x3, 7, p);
+
+    // Compute square root
+    const y = crypto.secp256k1.unauditedSqrt(y_squared, p) orelse {
+        return PRIMITIVES_ERROR_INVALID_INPUT;
+    };
+
+    // Select correct y based on parity
+    const y_final = if ((y & 1) == @intFromBool(is_odd)) y else p - y;
+
+    // Hash public key (x || y) with keccak256
+    var pub_key_bytes: [64]u8 = undefined;
+    std.mem.writeInt(u256, pub_key_bytes[0..32], x, .big);
+    std.mem.writeInt(u256, pub_key_bytes[32..64], y_final, .big);
+
+    const hash = crypto.HashUtils.keccak256(&pub_key_bytes);
+
+    // Address is last 20 bytes of hash
+    @memcpy(&out_address.bytes, hash[12..32]);
+
+    return PRIMITIVES_SUCCESS;
+}
+
+/// Free HD key
+export fn hdwallet_free(
+    hdkey_handle: usize,
+) c_int {
+    if (hdkey_handle == 0) {
+        return PRIMITIVES_SUCCESS;
+    }
+
+    const hdkey = @as(*const anyopaque, @ptrFromInt(hdkey_handle));
+    _ = bip32_key_free(hdkey);
+
+    return PRIMITIVES_SUCCESS;
+}
+
+// ============================================================================
 // WASM Memory Management
 // ============================================================================
 
