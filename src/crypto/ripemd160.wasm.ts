@@ -92,10 +92,26 @@ async function loadWasm(): Promise<void> {
 		wasi_snapshot_preview1: wasi,
 	};
 
-	// Load WASM file
-	const wasmPath = new URL("../../wasm/ripemd160.wasm", import.meta.url);
-	const response = await fetch(wasmPath);
-	const buffer = await response.arrayBuffer();
+	// Load WASM file (support both Node.js and browser)
+	let buffer: ArrayBuffer;
+	if (typeof process !== "undefined" && process.versions?.node) {
+		// Node.js/Bun environment
+		const fs = await import("node:fs/promises");
+		const path = await import("node:path");
+		const url = await import("node:url");
+		const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+		const wasmPath = path.resolve(__dirname, "../../wasm/ripemd160.wasm");
+		const fileBuffer = await fs.readFile(wasmPath);
+		buffer = fileBuffer.buffer.slice(
+			fileBuffer.byteOffset,
+			fileBuffer.byteOffset + fileBuffer.byteLength,
+		);
+	} else {
+		// Browser environment
+		const wasmPath = new URL("../../wasm/ripemd160.wasm", import.meta.url);
+		const response = await fetch(wasmPath);
+		buffer = await response.arrayBuffer();
+	}
 	const wasmModule = await WebAssembly.instantiate(buffer, importObject);
 
 	wasmInstance = wasmModule.instance;
