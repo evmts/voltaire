@@ -1,4 +1,4 @@
-import * as Hex from "../../Hex/index.js";
+import { Hex } from "../../Hex/index.js";
 import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 
 /**
@@ -14,7 +14,8 @@ import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
  * ```
  */
 export function from(hex: string): BrandedPrivateKey {
-	const bytes = Hex.toBytes(hex);
+	const brandedHex = Hex(hex);
+	const bytes = Hex.toBytes(brandedHex);
 	if (bytes.length !== 32) {
 		throw new Error(`Private key must be 32 bytes, got ${bytes.length}`);
 	}

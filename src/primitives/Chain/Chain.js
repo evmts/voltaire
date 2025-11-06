@@ -73,6 +73,5 @@ Chain.supportsHardfork = supportsHardfork;
 Chain.getBlockTime = getBlockTime;
 Chain.getGasLimit = getGasLimit;
 
-// Export metadata types
+// Export metadata constants
 export { CHAIN_METADATA, DEFAULT_METADATA } from "./metadata.js";
-export type { Hardfork, ChainMetadata } from "./metadata.js";
