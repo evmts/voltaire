@@ -1,4 +1,5 @@
 import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
+import { from as fromAddress } from "./from.js";
 import { fromHex } from "./fromHex.js";
 import { isValid as isValidAddress } from "./isValid.js";
 import { toHex } from "./toHex.js";
@@ -10,17 +11,17 @@ import { toHex } from "./toHex.js";
 /**
  * Create checksummed address from Address
  *
- * @param {import('./BrandedAddress.js').BrandedAddress} addr - Address to checksum
+ * @param {number | bigint | string | Uint8Array} value - Number, bigint, hex string, or Uint8Array
  * @returns {Checksummed} Checksummed address hex string
  *
  * @example
  * ```typescript
- * const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
- * const checksummed = ChecksumAddress.from(addr);
+ * const checksummed = ChecksumAddress.from("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
  * // "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"
  * ```
  */
-export function from(addr) {
+export function from(value) {
+	const addr = fromAddress(value);
 	const lower = toHex(addr).slice(2);
 	const hashBytes = keccak256(new TextEncoder().encode(lower));
 	const hashHex = Array.from(hashBytes, (b) =>
