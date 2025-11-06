@@ -1,6 +1,5 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
-import liveCode from "astro-live-code";
 import react from "@astrojs/react";
 
 // https://astro.build/config
@@ -9,10 +8,12 @@ export default defineConfig({
 		ssr: {
 			noExternal: ["react", "react-dom"],
 		},
+		optimizeDeps: {
+			include: ["react", "react-dom"],
+		},
 	},
 	integrations: [
 		react(),
-		liveCode(),
 		starlight({
 			title: "Voltaire",
 			description:
