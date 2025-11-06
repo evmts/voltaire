@@ -1,4 +1,4 @@
-import { Keccak256 } from "../../crypto/Keccak256/index.js";
+import * as Keccak256 from "../../../crypto/Keccak256/index.js";
 import { format } from "./format.js";
 
 /**
