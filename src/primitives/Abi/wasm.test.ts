@@ -22,7 +22,7 @@ import * as wasmAbi from "./wasm/wasm.js";
 
 beforeAll(async () => {
 	// Load WASM module before tests
-	const wasmPath = new URL("../wasm-loader/primitives.wasm", import.meta.url);
+	const wasmPath = new URL("../../../wasm/primitives.wasm", import.meta.url);
 	await loader.loadWasm(wasmPath);
 });
 
@@ -183,7 +183,6 @@ describe("WASM Parameter Encoding", () => {
 // ============================================================================
 
 describe("WASM Encoding - Basic Types", () => {
-	// These tests are ready to run once C implementation is complete
 	for (const vector of encodeVectors) {
 		it(vector.name, () => {
 			// Convert test vector format to param/value format
@@ -214,7 +213,7 @@ describe("WASM Round-Trip Tests", () => {
 	}
 });
 
-describe.skip("WASM Function Data Tests (Future)", () => {
+describe("WASM Function Data Tests (Future)", () => {
 	for (const vector of functionDataVectors) {
 		if (vector.expectedCalldata) {
 			it(vector.name, () => {
@@ -241,7 +240,7 @@ describe.skip("WASM Function Data Tests (Future)", () => {
 // Error Handling Tests (Future)
 // ============================================================================
 
-describe.skip("WASM Error Handling (Future)", () => {
+describe("WASM Error Handling (Future)", () => {
 	it("throws on invalid type", () => {
 		expect(() => {
 			wasmAbi.encodeParametersWasm([{ type: "invalid_type" as any }], [42n]);
@@ -394,7 +393,7 @@ describe("WASM Integration Tests", () => {
 	});
 });
 
-describe.skip("WASM Integration Tests (Advanced - Future)", () => {
+describe("WASM Integration Tests (Advanced - Future)", () => {
 	it("encodes and decodes ERC20 transfer", () => {
 		const transferSig = "transfer(address,uint256)";
 		const params = [{ type: "address" }, { type: "uint256" }] as any;
