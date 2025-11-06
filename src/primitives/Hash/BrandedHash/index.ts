@@ -4,6 +4,7 @@ export * from "./BrandedHash.js";
 
 import { assert } from "./assert.js";
 import { clone } from "./clone.js";
+import { concat } from "./concat.js";
 import { SIZE, ZERO } from "./constants.js";
 import { equals } from "./equals.js";
 import { format } from "./format.js";
@@ -16,6 +17,7 @@ import { isZero } from "./isZero.js";
 import { keccak256 } from "./keccak256.js";
 import { keccak256Hex } from "./keccak256Hex.js";
 import { keccak256String } from "./keccak256String.js";
+import { merkleRoot } from "./merkleRoot.js";
 import { random } from "./random.js";
 import { slice } from "./slice.js";
 import { toBytes } from "./toBytes.js";
@@ -42,6 +44,8 @@ export {
 	clone,
 	slice,
 	format,
+	concat,
+	merkleRoot,
 };
 
 // Namespace export
@@ -64,6 +68,8 @@ export const BrandedHash = {
 	clone,
 	slice,
 	format,
+	concat,
+	merkleRoot,
 	SIZE,
 	ZERO,
 };

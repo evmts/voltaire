@@ -79,6 +79,16 @@ Hash.slice = (value, start, end) => {
 	return result;
 };
 Hash.format = BrandedHash.format;
+Hash.concat = (...hashes) => {
+	const result = BrandedHash.concat(...hashes);
+	Object.setPrototypeOf(result, Hash.prototype);
+	return result;
+};
+Hash.merkleRoot = (hashes) => {
+	const result = BrandedHash.merkleRoot(hashes);
+	Object.setPrototypeOf(result, Hash.prototype);
+	return result;
+};
 
 Hash.ZERO = BrandedHash.ZERO;
 Hash.SIZE = BrandedHash.SIZE;
