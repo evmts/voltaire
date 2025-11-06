@@ -1,9 +1,8 @@
 import type { AbiType } from "../Type.js";
 import type { BrandedParameter } from "./BrandedParameter/BrandedParameter.js";
-import { decode } from "./BrandedParameter/decode.js";
-import { encode } from "./BrandedParameter/encode.js";
-// @ts-expect-error - Used in typeof expression
-import { from } from "./BrandedParameter/from.js";
+import type { decode } from "./BrandedParameter/decode.js";
+import type { encode } from "./BrandedParameter/encode.js";
+import type { from } from "./BrandedParameter/from.js";
 
 type ParameterPrototype<
 	TType extends AbiType = AbiType,
