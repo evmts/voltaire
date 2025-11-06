@@ -39,6 +39,8 @@
 
 ## Features
 
+> ⚠️ **Alpha Release** - This library is under active development. APIs may change. Not recommended for production use yet.
+
 Voltaire is a modern [Ethereum](https://ethereum.org/) library for [TypeScript](https://www.typescriptlang.org/) and [Zig](https://ziglang.org/) similar to [ethers.js](https://docs.ethers.org/) and [viem](https://viem.sh).
 
 - **Simple APIs** - The minimal close-to-spec APIs needed for [Ethereum development](https://ethereum.org/en/developers/)
@@ -101,12 +103,38 @@ const b = Uint.from(0x200);
 const sum = Uint.plus.call(a, b);
 ```
 
+## Architecture
+
+### Data-First Pattern
+
+All primitives follow a consistent [data-first pattern](./src/content/docs/primitives/branded-types.mdx) for optimal tree-shaking and zero-overhead abstraction:
+
+```typescript
+// Data types are branded primitives (Uint8Array, bigint, string)
+type Address = Uint8Array & { readonly __tag: "Address" };
+type Hash = Uint8Array & { readonly __brand: symbol };
+type Uint = bigint & { readonly __brand: symbol };
+type Hex = `0x${string}`;
+
+// Methods are namespaced and use .call() for instance methods
+const addr = Address("0x...");
+const hex = Address.toHex.call(addr);
+const checksum = Address.toChecksummed(addr);
+
+// No classes, no instances, just branded primitives
+// Perfect for tree-shaking and serialization
+```
+
 ### Benefits
 
-- **Tree-shaking**: Only methods you use are included in your bundle
-- **Zero overhead**: No class instances, just primitives with type safety
-- **Interop**: Easy to serialize, works seamlessly with other libraries
-- **Performance**: Direct function calls, no prototype chain lookup
+1. **Tree-shaking**: Only methods you use are bundled
+2. **Zero overhead**: No class instances, just primitives
+3. **Serialization**: Primitives serialize naturally to JSON
+4. **Interop**: Works seamlessly with other libraries
+5. **Type safety**: TypeScript brands ensure type correctness
+6. **Performance**: Direct function calls, no prototype chain
+
+---
 
 ## Complete API Reference
 
@@ -253,38 +281,6 @@ const result = execute(address, input, gasLimit, "cancun");
 | HDWallet.derive   | Key, Path               | ExtendedKey    | [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)/[BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) key derivation        |
 | AesGcm.encrypt    | Data, Key, Nonce        | Ciphertext     | [AES-GCM](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf) authenticated encryption            |
 
-
-## Architecture
-
-### Data-First Pattern
-
-All primitives follow a consistent [data-first pattern](./src/content/docs/primitives/branded-types.mdx) for optimal tree-shaking and zero-overhead abstraction:
-
-```typescript
-// Data types are branded primitives (Uint8Array, bigint, string)
-type Address = Uint8Array & { readonly __tag: "Address" };
-type Hash = Uint8Array & { readonly __brand: symbol };
-type Uint = bigint & { readonly __brand: symbol };
-type Hex = `0x${string}`;
-
-// Methods are namespaced and use .call() for instance methods
-const addr = Address("0x...");
-const hex = Address.toHex.call(addr);
-const checksum = Address.toChecksummed(addr);
-
-// No classes, no instances, just branded primitives
-// Perfect for tree-shaking and serialization
-```
-
-### Benefits
-
-1. **Tree-shaking**: Only methods you use are bundled
-2. **Zero overhead**: No class instances, just primitives
-3. **Serialization**: Primitives serialize naturally to JSON
-4. **Interop**: Works seamlessly with other libraries
-5. **Type safety**: TypeScript brands ensure type correctness
-6. **Performance**: Direct function calls, no prototype chain
-
 ---
 
 ## Performance
@@ -293,7 +289,6 @@ All implementations optimized for production use:
 
 - **Native/WASM**: Optional native bindings via [Zig](https://ziglang.org/) for 2-10x speedup
 - **Audited crypto**: [@noble/curves](https://github.com/paulmillr/noble-curves), [c-kzg-4844](https://github.com/ethereum/c-kzg-4844), [blst](https://github.com/supranational/blst) for security
-- **Zero dependencies**: Core TypeScript has zero runtime deps
 - **Minimal bundle**: Tree-shakeable, only pay for what you use
 
 Benchmark results available in [BENCHMARKING.md](./BENCHMARKING.md) and each primitive's bench.ts file.
