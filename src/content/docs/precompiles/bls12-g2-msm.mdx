@@ -1,0 +1,337 @@
+---
+title: "0x10 BLS12-381 G2 MSM"
+description: BLS12-381 G2 multi-scalar multiplication
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000010`
+**Introduced:** Prague (EIP-2537)
+**EIP:** [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537)
+
+The BLS12-381 G2 MSM (multi-scalar multiplication) precompile efficiently computes the sum of multiple scalar multiplications on G2 points: `scalar1*point1 + scalar2*point2 + ... + scalarN*pointN`. This operation is critical for batch signature verification, proof aggregation, and efficient cryptographic protocols over extension fields.
+
+MSM provides significant gas savings through bulk discounts when performing multiple scalar multiplications.
+
+## Gas Cost
+
+**Formula:** `(BASE_GAS * k * discount(k)) / 1000`
+
+Where:
+- **BASE_GAS:** 45,000
+- **k:** Number of point-scalar pairs
+- **discount(k):** Discount multiplier based on batch size
+
+## Discount Table
+
+| Pairs (k) | Discount | Example Gas |
+|-----------|----------|-------------|
+| 1         | 1000     | 45,000      |
+| 2         | 820      | 73,800      |
+| 4         | 580      | 104,400     |
+| 8         | 430      | 154,800     |
+| 16        | 320      | 230,400     |
+| 32        | 250      | 360,000     |
+| 64        | 200      | 576,000     |
+| 128       | 174      | 1,003,200   |
+
+Discount improves with batch size, making MSM much more efficient than individual multiplications.
+
+## G2 vs G1 MSM
+
+**G2 MSM characteristics:**
+- **G1 base gas:** 12,000
+- **G2 base gas:** 45,000 (3.75x more expensive)
+- **Reason:** Fp2 extension field arithmetic complexity
+- **Discount schedule:** Same for both G1 and G2
+- **Point size:** G2 uses 256 bytes vs G1's 128 bytes
+- **Input size:** 288 bytes per pair (256 point + 32 scalar) vs G1's 160 bytes
+
+## Input Format
+
+```
+Offset      | Length | Description
+------------|--------|-------------
+0           | 64     | x.c0 (point1 x-coordinate c0, big-endian)
+64          | 64     | x.c1 (point1 x-coordinate c1, big-endian)
+128         | 64     | y.c0 (point1 y-coordinate c0, big-endian)
+192         | 64     | y.c1 (point1 y-coordinate c1, big-endian)
+256         | 32     | scalar1 (multiplier, big-endian)
+288         | 64     | x.c0 (point2 x-coordinate c0, big-endian)
+352         | 64     | x.c1 (point2 x-coordinate c1, big-endian)
+416         | 64     | y.c0 (point2 y-coordinate c0, big-endian)
+480         | 64     | y.c1 (point2 y-coordinate c1, big-endian)
+544         | 32     | scalar2 (multiplier, big-endian)
+...         | ...    | (repeating pattern)
+```
+
+Total input length: `288 * k` bytes (must be exact multiple of 288)
+
+Each G2 point is 256 bytes (4 x 64-byte Fp2 components), followed by 32-byte scalar.
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | x.c0 (result point x-coordinate c0, big-endian)
+64     | 64     | x.c1 (result point x-coordinate c1, big-endian)
+128    | 64     | y.c0 (result point y-coordinate c0, big-endian)
+192    | 64     | y.c1 (result point y-coordinate c1, big-endian)
+```
+
+Total output length: 256 bytes (single G2 point)
+
+## Usage Example
+
+### TypeScript
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Compute MSM: s1*P1 + s2*P2 + s3*P3
+const numPairs = 3;
+const input = new Uint8Array(288 * numPairs);
+
+// First pair
+const point1 = new Uint8Array(256); // G2 point
+const scalar1 = new Uint8Array(32); // Scalar
+scalar1[31] = 2;
+input.set(point1, 0);
+input.set(scalar1, 256);
+
+// Second pair
+const point2 = new Uint8Array(256);
+const scalar2 = new Uint8Array(32);
+scalar2[31] = 3;
+input.set(point2, 288);
+input.set(scalar2, 544);
+
+// Third pair
+const point3 = new Uint8Array(256);
+const scalar3 = new Uint8Array(32);
+scalar3[31] = 5;
+input.set(point3, 576);
+input.set(scalar3, 832);
+
+const result = execute(
+  PrecompileAddress.BLS12_G2_MSM,
+  input,
+  150000n,
+  Hardfork.PRAGUE
+);
+
+if (result.success) {
+  console.log('Result G2 point:', result.output); // 256 bytes
+  console.log('Gas used:', result.gasUsed);
+
+  // Gas savings vs individual muls:
+  // MSM: ~78,300 (3 pairs with discount 580)
+  // Individual: 135,000 (3 * 45,000)
+  // Savings: ~42% reduction
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+### Zig
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Create input: 4 point-scalar pairs (288 * 4 = 1152 bytes)
+    const num_pairs = 4;
+    var input = try allocator.alloc(u8, 288 * num_pairs);
+    defer allocator.free(input);
+
+    // ... populate points and scalars
+
+    // Execute G2 MSM
+    const result = try precompiles.bls12_g2_msm.execute(
+        allocator,
+        input,
+        200000
+    );
+    defer result.deinit(allocator);
+
+    // With 4 pairs and discount 580:
+    // Gas = (45000 * 4 * 580) / 1000 = 104,400
+    std.debug.print("Gas used: {}\n", .{result.gas_used});
+    std.debug.print("Output length: {}\n", .{result.output.len}); // 256
+}
+```
+
+## Error Conditions
+
+- **Out of gas:** gasLimit < calculated gas cost
+- **Invalid input length:** input.len % 288 != 0 or input.len == 0
+- **Empty input:** Must have at least one pair
+- **Point not on curve:** Any point doesn't satisfy G2 curve equation
+- **Invalid field element:** Coordinate component >= field modulus
+- **Subgroup check failure:** Points not in correct subgroup
+
+## Use Cases
+
+- **Batch signature verification:** Verify multiple BLS signatures efficiently
+- **Proof aggregation:** Combine multiple zero-knowledge proofs
+- **Multi-signature schemes:** Aggregate signatures from multiple parties
+- **Threshold cryptography:** Combine signature shares with coefficients
+- **Ethereum 2.0 consensus:** Batch verify validator signatures
+- **Cross-chain bridges:** Aggregate attestations efficiently
+
+## Implementation Details
+
+- **Zig:** Uses BLST library with optimized MSM algorithms
+- **TypeScript:** Leverages @noble/curves bls12-381 batch operations
+- **Algorithm:** Pippenger's algorithm for optimal batch multiplication
+- **Optimization:** Exploits shared computation across multiplications
+- **Security:** Constant-time execution within discount tiers
+
+## Gas Savings Analysis
+
+Comparing MSM vs individual multiplications:
+
+```typescript
+// 8 individual G2 muls
+const individualGas = 8 * 45000; // 360,000 gas
+
+// MSM with 8 pairs (discount 430)
+const msmGas = (45000 * 8 * 430) / 1000; // 154,800 gas
+
+// Savings: 205,200 gas (57% reduction)
+```
+
+Larger batches yield greater savings:
+- **2 pairs:** 18% savings
+- **4 pairs:** 42% savings
+- **8 pairs:** 57% savings
+- **16 pairs:** 68% savings
+- **64 pairs:** 80% savings
+
+## Extension Field Complexity
+
+G2 MSM operates over Fp2:
+- **Each point operation** requires Fp2 arithmetic
+- **Fp2 multiplication:** ~4x cost of Fp multiplication
+- **Pippenger's algorithm:** Amortizes point operations
+- **Trade-off:** More memory for precomputed tables, fewer point operations
+
+This explains why base gas is 3.75x higher than G1 MSM.
+
+## Performance Considerations
+
+- **Batch threshold:** MSM becomes beneficial at 2+ pairs
+- **Memory usage:** Precomputation tables scale with input size
+- **Optimal batch size:** 16-64 pairs balances cost and memory
+- **Point at infinity:** Zero scalars handled efficiently
+- **Input validation:** All points validated before computation
+
+## Practical Example: Signature Aggregation
+
+```typescript
+// Verify 10 BLS signatures on different messages
+// Each verification needs: e(sig_i, H(m_i)) * e(pk_i, -G2)
+
+// Instead of 10 individual operations:
+// Cost: 10 * 45,000 = 450,000 gas
+
+// Use MSM to aggregate signature components:
+// 1. MSM over 10 signatures with random coefficients
+// 2. MSM over 10 public keys with same coefficients
+// Cost with discount 430: ~193,500 gas
+// Savings: 256,500 gas (57% reduction)
+```
+
+## Discount Calculation Details
+
+The discount schedule follows EIP-2537:
+
+```zig
+pub fn msmDiscount(k: usize) u64 {
+    return if (k >= 128) 174
+    else if (k >= 64) 200
+    else if (k >= 32) 250
+    else if (k >= 16) 320
+    else if (k >= 8) 430
+    else if (k >= 4) 580
+    else if (k >= 2) 820
+    else 1000; // No discount for single pair
+}
+```
+
+Discount improves in tiers, incentivizing larger batches.
+
+## Test Vectors
+
+```typescript
+// Empty input (invalid)
+const result = bls12G2Msm([]);
+// Error: Invalid input length
+
+// Single pair (no discount)
+const result = bls12G2Msm([{point: P1, scalar: s1}]);
+// Gas: 45,000
+
+// Two pairs (18% discount)
+const result = bls12G2Msm([
+  {point: P1, scalar: s1},
+  {point: P2, scalar: s2}
+]);
+// Gas: (45,000 * 2 * 820) / 1000 = 73,800
+
+// Result: s1*P1 + s2*P2
+```
+
+## Special Cases
+
+- **All zero scalars:** Returns point at infinity
+- **Single non-zero scalar:** Equivalent to G2 mul (but more expensive)
+- **Point at infinity in input:** Contributes identity to sum
+- **Duplicate points:** Handled correctly, scalars are summed
+- **Mixed identity and non-identity:** Only non-identity points contribute
+
+## Security Considerations
+
+- **Subgroup validation:** All points checked for correct subgroup membership
+- **Scalar overflow:** Scalars automatically reduced modulo curve order
+- **Side-channel resistance:** Implementation uses constant-time algorithms
+- **Memory bounds:** Input size limited by gas and block limits
+
+## Gas Cost Justification
+
+The 45,000 base gas reflects:
+1. **Extension field operations:** Fp2 arithmetic overhead
+2. **Pippenger's algorithm:** Precomputation and bucket operations
+3. **Point validation:** Subgroup checks for all inputs
+4. **Security overhead:** Constant-time guarantees
+
+Discounts recognize that marginal cost per point decreases with batch size due to shared precomputation.
+
+## When to Use MSM
+
+✅ **Use MSM when:**
+- Processing 2+ point-scalar pairs
+- Batch verifying signatures
+- Aggregating proofs or attestations
+- Gas optimization is critical
+
+❌ **Avoid MSM when:**
+- Single scalar multiplication (use G2 mul directly)
+- Points/scalars not known upfront
+- Input preparation cost exceeds savings
+
+## Related
+
+- [Precompile: BLS12-381 G2 Add](/precompiles/bls12-g2-add)
+- [Precompile: BLS12-381 G2 Mul](/precompiles/bls12-g2-mul)
+- [Precompile: BLS12-381 G1 MSM](/precompiles/bls12-g1-msm)
+- [Precompile: BLS12-381 Pairing](/precompiles/bls12-pairing)
+- [Crypto: BLS12-381](/crypto/bls12-381)
+- [EIP-2537: Precompile for BLS12-381 curve operations](https://eips.ethereum.org/EIPS/eip-2537)

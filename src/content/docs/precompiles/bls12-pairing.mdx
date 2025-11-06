@@ -1,0 +1,287 @@
+---
+title: "0x11 BLS12-381 Pairing"
+description: BLS12-381 elliptic curve pairing check for signature verification and advanced cryptography
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000011`
+**Introduced:** Prague (EIP-2537)
+**EIP:** [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537)
+
+The BLS12-381 Pairing precompile performs a pairing check on the BLS12-381 curve. It verifies whether the product of pairings equals identity: `e(G1_1, G2_1) * e(G1_2, G2_2) * ... * e(G1_k, G2_k) = 1`. This operation is fundamental for BLS signature verification, zkSNARK systems, and advanced cryptographic protocols.
+
+BLS12-381 offers 128-bit security (vs BN254's ~100 bits), making it the preferred curve for modern applications. It's used by Ethereum 2.0 for validator signatures.
+
+## Pairing-Based Cryptography
+
+A pairing is a bilinear map `e: G1 × G2 → GT` with these properties:
+
+- **Bilinearity:** `e(aP, bQ) = e(P, Q)^(ab) = e(bP, aQ)`
+- **Non-degeneracy:** `e(G1, G2) ≠ 1` for generators G1, G2
+- **Computability:** Can be efficiently calculated
+
+This enables:
+- **Signature aggregation:** Combine multiple signatures into one
+- **Zero-knowledge proofs:** Efficient proof verification
+- **Identity-based encryption:** Encrypt to public identity
+
+## Gas Cost
+
+**Formula:** `65000 + 43000 * k` where k = number of point pairs
+
+**Examples:**
+- Empty input (k=0): 65,000 gas
+- 1 pair: 108,000 gas
+- 2 pairs: 151,000 gas
+- 5 pairs: 280,000 gas
+
+Note: Higher base cost than BN254 due to larger field size and higher security level.
+
+## Input Format
+
+Input must be a multiple of 384 bytes. Each pair consists of:
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 128    | G1 point (64-byte x, 64-byte y in Fp)
+128    | 256    | G2 point (four 64-byte values: x.c0, x.c1, y.c0, y.c1 in Fp2)
+```
+
+Each 384-byte chunk represents one (G1, G2) pair.
+- k pairs = 384 * k bytes
+- Empty input (0 bytes) is valid and returns success (empty product = 1)
+
+**Field encoding:**
+- **G1:** Points on E(Fp) where Fp has 381-bit prime modulus
+- **G2:** Points on E'(Fp2) where Fp2 = Fp[u]/(u²+1)
+- All coordinates are big-endian, left-padded to 64 bytes
+- Point at infinity: all zeros (128 bytes for G1, 256 bytes for G2)
+
+**BLS12-381 field modulus p:**
+```
+0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+```
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | 1 if pairing check passes, 0 otherwise
+```
+
+Total output length: 32 bytes (single word)
+- Success: `0x0000...0001` (last byte = 1)
+- Failure: `0x0000...0000` (all zeros)
+
+## Usage Examples
+
+### TypeScript
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Verify BLS signature: e(pubkey, H(msg)) = e(G1, signature)
+// Rearranged: e(pubkey, H(msg)) * e(-G1, signature) = 1
+
+const numPairs = 2;
+const input = new Uint8Array(384 * numPairs);
+
+// Pair 1: (pubkey, H(msg))
+// G1 point: pubkey (128 bytes)
+input.set(pubkeyG1Point, 0);
+// G2 point: H(msg) (256 bytes)
+input.set(hashToG2Point, 128);
+
+// Pair 2: (-G1_generator, signature)
+// G1 point: negated generator (128 bytes)
+input.set(negatedG1Generator, 384);
+// G2 point: signature (256 bytes)
+input.set(signatureG2Point, 512);
+
+const gasNeeded = 65000n + 43000n * 2n;
+
+const result = execute(
+  PrecompileAddress.BLS12_PAIRING,
+  input,
+  gasNeeded,
+  Hardfork.PRAGUE
+);
+
+if (result.success && result.output[31] === 1) {
+  console.log('BLS signature verified!');
+} else {
+  console.log('Signature invalid');
+}
+console.log('Gas used:', result.gasUsed);
+```
+
+### Zig
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn verifyBLSSignature(
+    allocator: std.mem.Allocator,
+    pubkey: []const u8,    // 128 bytes G1
+    message_hash: []const u8,  // 256 bytes G2
+    signature: []const u8, // 256 bytes G2
+) !bool {
+    // Create input: pubkey || H(msg) || -G1 || sig
+    var input = try allocator.alloc(u8, 768); // 2 pairs
+    defer allocator.free(input);
+
+    // Pair 1: (pubkey, H(msg))
+    @memcpy(input[0..128], pubkey);
+    @memcpy(input[128..384], message_hash);
+
+    // Pair 2: (-G1, signature)
+    @memcpy(input[384..512], &negated_g1_generator);
+    @memcpy(input[512..768], signature);
+
+    const gas_limit = 65000 + 43000 * 2;
+    const result = try precompiles.bls12_pairing.execute(
+        allocator,
+        input,
+        gas_limit,
+    );
+    defer allocator.free(result.output);
+
+    // Check if pairing succeeded
+    return result.output[31] == 1;
+}
+```
+
+## Error Conditions
+
+- **Out of gas:** Gas limit less than required
+- **Invalid input length:** Not multiple of 384 bytes
+- **Invalid G1 point:** Point not on curve or not in correct subgroup
+- **Invalid G2 point:** Point not on curve or not in correct subgroup
+- **Field element overflow:** Coordinate >= field modulus p
+- **Invalid Fp2 encoding:** G2 point coordinates not in Fp2
+
+Failures return error (not false). Only valid inputs that fail the pairing check return false (32 zero bytes).
+
+## Use Cases
+
+### BLS Signature Verification
+
+BLS signatures use pairing to verify:
+```
+e(PK, H(m)) = e(G1, sig)
+```
+
+Rearranged for single pairing check:
+```
+e(PK, H(m)) * e(-G1, sig) = 1
+```
+
+### BLS Signature Aggregation
+
+Multiple signatures can be aggregated:
+```
+sig_agg = sig1 + sig2 + ... + sigN
+```
+
+Verify with multi-pairing:
+```
+e(PK1, H(m1)) * e(PK2, H(m2)) * ... * e(PKN, H(mN)) * e(-G1, sig_agg) = 1
+```
+
+Gas cost scales linearly: `65000 + 43000 * (N+1)`
+
+### zkSNARK Verification
+
+Pairing enables efficient verification of zero-knowledge proofs:
+- Groth16 requires multiple pairings
+- PLONK uses KZG commitments (pairing-based)
+- BLS12-381's higher security suitable for long-term proofs
+
+### Validator Signatures (Ethereum 2.0)
+
+Ethereum 2.0 uses BLS12-381 for:
+- Block proposal signatures
+- Attestation signatures
+- Aggregate signatures (efficient verification)
+
+## Implementation Details
+
+- **Zig:** Uses blst library via C FFI for production-grade performance
+- **TypeScript:** Uses @noble/curves BLS12-381 implementation
+- **Algorithm:** Optimal Ate pairing with final exponentiation
+- **Optimization:** Miller loop computed simultaneously for all pairs
+- **Security:** 128-bit security level, suitable for long-term use
+
+## Pairing Properties
+
+### Bilinearity
+
+```
+e(a*P, b*Q) = e(P, Q)^(a*b)
+e(P1 + P2, Q) = e(P1, Q) * e(P2, Q)
+e(P, Q1 + Q2) = e(P, Q1) * e(P, Q2)
+```
+
+### Multi-Pairing Optimization
+
+Computing k pairings together is more efficient than k separate calls:
+- Shared Miller loop computation
+- Single final exponentiation
+- ~40% gas savings vs individual calls
+
+### Empty Pairing
+
+Empty input (0 pairs) returns success because empty product equals 1 (identity element).
+
+## Comparison: BLS12-381 vs BN254
+
+| Property | BLS12-381 | BN254 |
+|----------|-----------|-------|
+| Security | 128-bit | ~100-bit |
+| Field size | 381 bits | 254 bits |
+| G1 encoding | 128 bytes | 64 bytes |
+| G2 encoding | 256 bytes | 128 bytes |
+| Base gas | 65,000 | 45,000 |
+| Per-pair gas | 43,000 | 34,000 |
+| Use case | Modern (ETH2) | Legacy (zkSNARKs) |
+
+BLS12-381 is preferred for new applications due to higher security margin.
+
+## Test Vectors
+
+### Empty Pairing
+```typescript
+const input = new Uint8Array(0);
+// Expected: output[31] === 1 (empty product = 1)
+```
+
+### Single Pair (Generators)
+```typescript
+// e(G1, G2) should not equal 1 (non-degeneracy)
+const input = new Uint8Array(384);
+// Set G1 generator at [0..128]
+// Set G2 generator at [128..384]
+// Expected: output[31] === 0
+```
+
+### Identity Check
+```typescript
+// e(P, Q) * e(-P, Q) = e(0, Q) = 1
+// Two pairs: (P, Q) and (-P, Q)
+const input = new Uint8Array(768);
+// Expected: output[31] === 1
+```
+
+## Related
+
+- [Precompile: BLS12-381 Map Fp to G1](/precompiles/bls12-map-fp-to-g1)
+- [Precompile: BLS12-381 Map Fp2 to G2](/precompiles/bls12-map-fp2-to-g2)
+- [Precompile: BLS12-381 G1 Add](/precompiles/bls12-g1-add)
+- [Precompile: BLS12-381 G2 Add](/precompiles/bls12-g2-add)
+- [EIP-2537: Precompiles for BLS12-381 Curve Operations](https://eips.ethereum.org/EIPS/eip-2537)
+- [BLS Signatures Spec](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature)
