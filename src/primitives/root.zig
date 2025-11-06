@@ -37,8 +37,8 @@
 //!
 //! ### Ethereum Standards
 //! - **EventLog**: Contract event log structures
-//! - **ENS**: Ethereum Name Service utilities
-//! - **SIWE**: Sign-In with Ethereum message handling
+//! - **Ens**: Ethereum Name Service normalization (ENSIP-15)
+//! - **Siwe**: Sign-In with Ethereum message handling
 //! - **EIP712**: Typed data signing standard
 //!
 //! ### Protocol
@@ -147,6 +147,7 @@ pub const logs = @import("EventLog/logs.zig");
 
 // Standards
 pub const Siwe = @import("Siwe/siwe.zig");
+pub const Ens = @import("Ens/ens.zig");
 
 // Protocol
 pub const Hardfork = @import("Hardfork/hardfork.zig").Hardfork;
