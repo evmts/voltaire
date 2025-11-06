@@ -1,0 +1,353 @@
+---
+title: "Signature"
+---
+
+# Signature
+
+Unified cryptographic signature primitive supporting multiple algorithms (secp256k1, P-256, Ed25519).
+
+## Overview
+
+Signature provides algorithm-agnostic signature handling with automatic metadata tracking. Supports ECDSA (secp256k1, P-256) and EdDSA (Ed25519) with format conversions (compact, DER).
+
+## Factory
+
+```typescript
+Signature.from(value: SignatureInput): BrandedSignature
+```
+
+Universal constructor accepting various input formats.
+
+**Parameters:**
+- Uint8Array (64 bytes): Compact ECDSA (defaults to secp256k1)
+- `{ r, s, v?, algorithm? }`: ECDSA components
+- `{ signature, algorithm: 'ed25519' }`: Ed25519 signature
+- BrandedSignature: Returns as-is
+
+**Returns:** BrandedSignature with algorithm metadata
+
+## Algorithm-Specific Constructors
+
+### [Signature.fromSecp256k1(r, s, v?)](./constructors.mdx#fromsecp256k1)
+```typescript
+fromSecp256k1(r: Uint8Array, s: Uint8Array, v?: number): BrandedSignature
+```
+Create secp256k1 ECDSA signature from components.
+
+**Parameters:**
+- `r`: r component (32 bytes)
+- `s`: s component (32 bytes)
+- `v`: Optional recovery ID (27 or 28 for Ethereum)
+
+### [Signature.fromP256(r, s)](./constructors.mdx#fromp256)
+```typescript
+fromP256(r: Uint8Array, s: Uint8Array): BrandedSignature
+```
+Create P-256 (NIST P-256) ECDSA signature.
+
+### [Signature.fromEd25519(signature)](./constructors.mdx#fromed25519)
+```typescript
+fromEd25519(signature: Uint8Array): BrandedSignature
+```
+Create Ed25519 signature (64 bytes).
+
+### [Signature.fromCompact(bytes, algorithm)](./constructors.mdx#fromcompact)
+```typescript
+fromCompact(bytes: Uint8Array, algorithm: SignatureAlgorithm): BrandedSignature
+```
+Create from compact encoding (r + s, 64 bytes).
+
+### [Signature.fromDER(der, algorithm, v?)](./constructors.mdx#fromder)
+```typescript
+fromDER(der: Uint8Array, algorithm: 'secp256k1' | 'p256', v?: number): BrandedSignature
+```
+Create from DER-encoded ECDSA signature.
+
+## Conversions
+
+### [Signature.toBytes(signature)](./conversions.mdx#tobytes)
+```typescript
+toBytes(signature: BrandedSignature): Uint8Array
+```
+Get raw signature bytes (strips metadata).
+
+### [Signature.toCompact(signature)](./conversions.mdx#tocompact)
+```typescript
+toCompact(signature: BrandedSignature): Uint8Array
+```
+Convert to compact format (r + s, 64 bytes).
+
+### [Signature.toDER(signature)](./conversions.mdx#toder)
+```typescript
+toDER(signature: BrandedSignature): Uint8Array
+```
+Convert ECDSA signature to DER encoding.
+
+**Throws:** InvalidAlgorithmError if not ECDSA
+
+## Utilities
+
+### Component Extraction
+
+#### [Signature.getAlgorithm(signature)](./utilities.mdx#getalgorithm)
+```typescript
+getAlgorithm(signature: BrandedSignature): SignatureAlgorithm
+```
+Get signature algorithm.
+
+#### [Signature.getR(signature)](./utilities.mdx#getr)
+```typescript
+getR(signature: BrandedSignature): Uint8Array
+```
+Extract r component (ECDSA only, 32 bytes).
+
+#### [Signature.getS(signature)](./utilities.mdx#gets)
+```typescript
+getS(signature: BrandedSignature): Uint8Array
+```
+Extract s component (ECDSA only, 32 bytes).
+
+#### [Signature.getV(signature)](./utilities.mdx#getv)
+```typescript
+getV(signature: BrandedSignature): number | undefined
+```
+Get recovery ID (secp256k1 only).
+
+### Canonicalization
+
+#### [Signature.isCanonical(signature)](./validation.mdx#iscanonical)
+```typescript
+isCanonical(signature: BrandedSignature): boolean
+```
+Check if ECDSA signature has canonical s-value (s ≤ n/2).
+
+**Returns:** Always true for Ed25519
+
+#### [Signature.normalize(signature)](./validation.mdx#normalize)
+```typescript
+normalize(signature: BrandedSignature): BrandedSignature
+```
+Normalize ECDSA signature to canonical form (s = n - s if s > n/2).
+
+### Comparison
+
+#### [Signature.equals(a, b)](./utilities.mdx#equals)
+```typescript
+equals(a: BrandedSignature, b: BrandedSignature): boolean
+```
+Compare signatures for equality.
+
+#### [Signature.is(value)](./utilities.mdx#is)
+```typescript
+is(value: unknown): value is BrandedSignature
+```
+Type guard for BrandedSignature.
+
+## Verification (Placeholder)
+
+### [Signature.verify(signature, message, publicKey)](./utilities.mdx#verify)
+```typescript
+verify(signature: BrandedSignature, message: Uint8Array, publicKey: Uint8Array): boolean
+```
+Verify signature against message and public key.
+
+**Note:** Currently placeholder. Use crypto module functions for actual verification.
+
+**Throws:** InvalidAlgorithmError (requires crypto integration)
+
+## Types
+
+```typescript
+type SignatureAlgorithm = "secp256k1" | "p256" | "ed25519";
+
+type BrandedSignature = Uint8Array & {
+  readonly __tag: "Signature";
+  readonly algorithm: SignatureAlgorithm;
+  readonly v?: number; // Recovery ID for secp256k1 (27 or 28)
+};
+```
+
+## Constants
+
+```typescript
+ECDSA_SIZE = 64;           // r + s
+ECDSA_WITH_V_SIZE = 65;    // r + s + v
+ED25519_SIZE = 64;         // Ed25519 signature
+COMPONENT_SIZE = 32;       // r or s component
+RECOVERY_ID_MIN = 27;      // Ethereum v value
+RECOVERY_ID_MAX = 28;      // Ethereum v value
+```
+
+## Errors
+
+- `SignatureError` - Base error class
+- `InvalidSignatureLengthError` - Invalid byte length
+- `InvalidSignatureFormatError` - Unsupported format
+- `InvalidAlgorithmError` - Invalid or unsupported algorithm
+- `NonCanonicalSignatureError` - Signature not canonical
+- `InvalidDERError` - DER encoding/decoding error
+
+## Structure
+
+### ECDSA (secp256k1, P-256)
+```
+Bytes: [r (32 bytes)][s (32 bytes)]
+Metadata: algorithm, v (optional for secp256k1)
+```
+
+### Ed25519
+```
+Bytes: [signature (64 bytes)]
+Metadata: algorithm = 'ed25519'
+```
+
+### Recovery ID (v)
+- **27**: First recovery attempt (Ethereum standard)
+- **28**: Second recovery attempt
+- Only applies to secp256k1
+- Not stored in signature bytes (metadata only)
+
+## Quick Start
+
+```typescript
+import { Signature, Hex } from '@tevm/voltaire';
+
+// Create secp256k1 signature
+const sig = Signature.fromSecp256k1(rBytes, sBytes, 27);
+
+// Universal constructor
+const sig2 = Signature.from({ r: rBytes, s: sBytes, v: 27 });
+
+// Check algorithm
+console.log(Signature.getAlgorithm(sig)); // "secp256k1"
+
+// Normalize to canonical form
+const canonical = Signature.normalize(sig);
+console.log(Signature.isCanonical(canonical)); // true
+
+// Convert to DER
+const der = Signature.toDER(sig);
+
+// Parse from DER
+const parsed = Signature.fromDER(der, 'secp256k1', 27);
+
+// Compare signatures
+console.log(Signature.equals(sig, parsed)); // true
+```
+
+## Common Patterns
+
+### Ethereum Transaction Signature
+
+```typescript
+// From transaction signature (r, s, v)
+const sig = Signature.fromSecp256k1(
+  Hex.toBytes(transaction.r),
+  Hex.toBytes(transaction.s),
+  transaction.v
+);
+
+// Ensure canonical (BIP-62)
+const canonical = Signature.normalize(sig);
+
+// Extract recovery ID
+const v = Signature.getV(canonical);
+console.log(v); // 27 or 28
+```
+
+### Multi-Algorithm Support
+
+```typescript
+function createSignature(
+  algorithm: SignatureAlgorithm,
+  data: Uint8Array
+): BrandedSignature {
+  switch (algorithm) {
+    case 'secp256k1':
+      // Extract r, s, v from secp256k1 signature
+      return Signature.fromSecp256k1(r, s, v);
+    case 'p256':
+      return Signature.fromP256(r, s);
+    case 'ed25519':
+      return Signature.fromEd25519(data);
+  }
+}
+
+// Algorithm preserved in metadata
+const sig = createSignature('secp256k1', sigBytes);
+console.log(sig.algorithm); // "secp256k1"
+```
+
+### DER Encoding/Decoding
+
+```typescript
+// Convert to DER for transmission
+const sig = Signature.fromSecp256k1(r, s, 27);
+const der = Signature.toDER(sig);
+
+// Parse DER back to signature
+const parsed = Signature.fromDER(der, 'secp256k1', 27);
+
+// Signatures are equal
+console.log(Signature.equals(sig, parsed)); // true
+```
+
+### Signature Validation
+
+```typescript
+// Check if signature is canonical
+if (!Signature.isCanonical(sig)) {
+  sig = Signature.normalize(sig);
+}
+
+// Verify structure
+if (sig.length !== ECDSA_SIZE) {
+  throw new Error('Invalid signature length');
+}
+
+// Check algorithm
+if (Signature.getAlgorithm(sig) !== 'secp256k1') {
+  throw new Error('Expected secp256k1 signature');
+}
+```
+
+## Malleability Prevention
+
+ECDSA signatures have inherent malleability: both (r, s) and (r, -s mod n) are valid for the same message. Bitcoin BIP-62 and Ethereum require canonical form (s ≤ n/2).
+
+```typescript
+// Enforce canonical form
+function ensureCanonical(sig: BrandedSignature): BrandedSignature {
+  if (!Signature.isCanonical(sig)) {
+    return Signature.normalize(sig);
+  }
+  return sig;
+}
+
+// Example
+const sig = Signature.fromSecp256k1(r, sHigh, 27);
+console.log(Signature.isCanonical(sig)); // false (s > n/2)
+
+const canonical = Signature.normalize(sig);
+console.log(Signature.isCanonical(canonical)); // true (s ≤ n/2)
+console.log(Signature.getV(canonical)); // 28 (v flipped)
+```
+
+## Implementation
+
+- Branded Uint8Array with metadata
+- Algorithm tracked in non-enumerable property
+- Recovery ID (v) stored separately
+- Zero-copy conversions where possible
+- Constant-time comparisons for security
+
+## References
+
+- [Constructors](./constructors.mdx)
+- [Conversions](./conversions.mdx)
+- [Validation](./validation.mdx)
+- [Utilities](./utilities.mdx)
+- [Usage Patterns](./usage-patterns.mdx)
+- [WASM](./wasm.mdx)
+- [BIP-62: Dealing with Malleability](https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki)
+- [SEC 1: Elliptic Curve Cryptography](https://www.secg.org/sec1-v2.pdf)
