@@ -52,13 +52,7 @@
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
 	"types": "types/index.d.ts",
-	"files": [
-		"dist",
-		"src",
-		"!src/**/*.spec.ts",
-		"!src/**/*.test.ts",
-		"types"
-	],
+	"files": ["dist", "src", "!src/**/*.spec.ts", "!src/**/*.test.ts", "types"],
 	"scripts": {
 		"all": "bun i && bun run build && bun lint && bun format && bun test:run",
 		"bench": "bun run scripts/run-benchmarks.ts",

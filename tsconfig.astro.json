@@ -1,25 +1,25 @@
 {
-  "extends": "astro/tsconfigs/strict",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
-  },
-  "include": [
-    "src/content/**/*.mdx",
-    "src/content/**/*.md",
-    "src/env.d.ts",
-    "astro.config.mjs"
-  ],
-  "exclude": [
-    "src/primitives/**/*.ts",
-    "src/primitives/**/*.js",
-    "src/crypto/**/*.ts",
-    "src/crypto/**/*.js",
-    "src/wallet/**/*.ts",
-    "src/wallet/**/*.js",
-    "src/typescript/**/*.ts",
-    "src/typescript/**/*.js",
-    "dist",
-    "node_modules"
-  ]
+	"extends": "astro/tsconfigs/strict",
+	"compilerOptions": {
+		"jsx": "react-jsx",
+		"jsxImportSource": "react"
+	},
+	"include": [
+		"src/content/**/*.mdx",
+		"src/content/**/*.md",
+		"src/env.d.ts",
+		"astro.config.mjs"
+	],
+	"exclude": [
+		"src/primitives/**/*.ts",
+		"src/primitives/**/*.js",
+		"src/crypto/**/*.ts",
+		"src/crypto/**/*.js",
+		"src/wallet/**/*.ts",
+		"src/wallet/**/*.js",
+		"src/typescript/**/*.ts",
+		"src/typescript/**/*.js",
+		"dist",
+		"node_modules"
+	]
 }
