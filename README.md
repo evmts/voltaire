@@ -90,17 +90,17 @@ import { Address, Hash, Uint, Keccak256 } from "@tevm/voltaire";
 // Address operations
 const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
 const checksum = Address.toChecksummed(addr);
-const isZero = Address.isZero.call(addr);
+const isZero = Address.isZero(addr);
 
 // Hash operations
 const data = new Uint8Array([1, 2, 3]);
 const hash = Keccak256.hash(data);
-const hashHex = Hash.toHex.call(hash);
+const hashHex = Hash.toHex(hash);
 
 // Uint arithmetic
 const a = Uint.from(0x100);
 const b = Uint.from(0x200);
-const sum = Uint.plus.call(a, b);
+const sum = Uint.plus(a, b);
 ```
 
 ## Architecture
@@ -116,9 +116,9 @@ type Hash = Uint8Array & { readonly __brand: symbol };
 type Uint = bigint & { readonly __brand: symbol };
 type Hex = `0x${string}`;
 
-// Methods are namespaced and use .call() for instance methods
+// Methods are namespaced functions
 const addr = Address("0x...");
-const hex = Address.toHex.call(addr);
+const hex = Address.toHex(addr);
 const checksum = Address.toChecksummed(addr);
 
 // No classes, no instances, just branded primitives
@@ -140,8 +140,6 @@ const checksum = Address.toChecksummed(addr);
 
 ### Core Primitives
 
-**Essential Types:**
-
 | Primitive | Description | Key Features |
 |-----------|-------------|--------------|
 | **[Address](./src/content/docs/primitives/address/index.mdx)** | 20-byte Ethereum address | [EIP-55](https://eips.ethereum.org/EIPS/eip-55) checksums, [CREATE/CREATE2](https://eips.ethereum.org/EIPS/eip-1014) calculation, validation |
@@ -156,8 +154,22 @@ const checksum = Address.toChecksummed(addr);
 | **[PublicKey](./src/primitives/PublicKey/)** | 64-byte public key | Uncompressed format, verification, address derivation |
 | **[Nonce](./src/primitives/Nonce/)** | Transaction nonce | Increment, conversion, transaction ordering |
 | **[ChainId](./src/content/docs/primitives/chain/index.mdx)** | Network identifier | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.) |
-
-**Advanced Primitives:** [AccessList](./src/primitives/AccessList/index.mdx) ([EIP-2930](https://eips.ethereum.org/EIPS/eip-2930)), [Authorization](./src/primitives/Authorization/index.mdx) ([EIP-7702](https://eips.ethereum.org/EIPS/eip-7702)), [Blob](./src/primitives/Blob/index.mdx) ([EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)), [Bytecode](./src/content/docs/primitives/bytecode/index.mdx), [EventLog](./src/primitives/EventLog/index.mdx), [FeeMarket](./src/primitives/FeeMarket/index.mdx) ([EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)), [GasConstants](./src/primitives/GasConstants/index.mdx) ([Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)), [Hardfork](./src/primitives/Hardfork/index.mdx), [Opcode](./src/primitives/Opcode/index.mdx) ([EVM Codes](https://www.evm.codes/)), [SIWE](./src/primitives/Siwe/index.mdx) ([EIP-4361](https://eips.ethereum.org/EIPS/eip-4361)), [State](./src/primitives/State/index.mdx), [Base64](./src/content/docs/primitives/base64/index.mdx) ([RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648)), [BinaryTree](./src/content/docs/primitives/binarytree/index.mdx) ([Merkle Trees](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)), [BloomFilter](./src/content/docs/primitives/bloomfilter/index.mdx), [Chain](./src/content/docs/primitives/chain/index.mdx), [Denomination](./src/content/docs/primitives/denomination/index.mdx)
+| **[AccessList](./src/primitives/AccessList/index.mdx)** | EIP-2930 access list | [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) transaction access lists |
+| **[Authorization](./src/primitives/Authorization/index.mdx)** | EIP-7702 authorization | [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) account abstraction authorizations |
+| **[Blob](./src/primitives/Blob/index.mdx)** | EIP-4844 blob | [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) blob transactions |
+| **[Bytecode](./src/content/docs/primitives/bytecode/index.mdx)** | Contract bytecode | EVM bytecode manipulation, deployment |
+| **[EventLog](./src/primitives/EventLog/index.mdx)** | Transaction event log | Event parsing, filtering, decoding |
+| **[FeeMarket](./src/primitives/FeeMarket/index.mdx)** | Fee market calculations | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) base fee, priority fee |
+| **[GasConstants](./src/primitives/GasConstants/index.mdx)** | EVM gas costs | [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) gas constants |
+| **[Hardfork](./src/primitives/Hardfork/index.mdx)** | Network hardfork | Hardfork detection, feature flags |
+| **[Opcode](./src/primitives/Opcode/index.mdx)** | EVM opcodes | [EVM.codes](https://www.evm.codes/) opcode reference |
+| **[SIWE](./src/primitives/Siwe/index.mdx)** | Sign-In with Ethereum | [EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) authentication |
+| **[State](./src/primitives/State/index.mdx)** | State management | Account state, storage slots |
+| **[Base64](./src/content/docs/primitives/base64/index.mdx)** | Base64 encoding | [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) encoding/decoding |
+| **[BinaryTree](./src/content/docs/primitives/binarytree/index.mdx)** | Binary tree structures | [Merkle trees](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/) |
+| **[BloomFilter](./src/content/docs/primitives/bloomfilter/index.mdx)** | Bloom filter | Log bloom filters |
+| **[Chain](./src/content/docs/primitives/chain/index.mdx)** | Chain configuration | Network configuration, chain parameters |
+| **[Denomination](./src/content/docs/primitives/denomination/index.mdx)** | Ether denominations | Wei, gwei, ether conversions |
 
 **Quick Example:**
 
@@ -171,7 +183,7 @@ const checksum = Address.toChecksummed(addr);
 // Uint arithmetic
 const a = Uint.from(0x100);
 const b = Uint.from(0x200);
-const sum = Uint.plus.call(a, b);
+const sum = Uint.plus(a, b);
 
 // Hashing
 const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));

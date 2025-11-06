@@ -123,19 +123,19 @@ Data-first branded Uint8Arrays with tree-shakable namespace methods:
 // Type def (BrandedAddress.ts)
 export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
 
-// Internal method with this: param (toHex.js - NOTE .js extension!)
-export function toHex(this: BrandedAddress): Hex { ... }
+// Internal method (toHex.js - NOTE .js extension!)
+export function toHex(data: BrandedAddress): Hex { ... }
 
 // Index: dual export (index.ts)
 export { toHex as _toHex } from "./toHex.js";   // Internal API
 export function toHex(value: AddrInput): Hex {  // Public wrapper
-  return _toHex.call(from(value));
+  return _toHex(from(value));
 }
 
 // Usage
 import * as Address from './primitives/Address/index.js';
 Address.toHex("0x123...")      // Public (wrapper auto-converts)
-Address._toHex.call(addr)      // Advanced (internal, no conversion)
+Address._toHex(addr)           // Advanced (internal, no conversion)
 ```
 
 **File organization**:
@@ -152,7 +152,7 @@ Address/
 **Key patterns**:
 - `.js` extension for implementation (NOT .ts)
 - JSDoc types in .js files
-- `this:` parameter for internal methods
+- Internal methods take data as first param
 - Wrapper functions for public API
 - Dual exports: `_internal` + wrapper
 - Namespace export: `export * as Address`
