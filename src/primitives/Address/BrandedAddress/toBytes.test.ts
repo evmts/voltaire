@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import * as Address from "../index.js";
+import { Address } from "../index.js";
+import { toBytes } from "./toBytes.js";
 
-describe("Address.toBytes", () => {
-	it("should convert Address to Uint8Array", () => {
-		const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
-		const bytes = Address.toBytes(addr);
+describe("toBytes", () => {
+	it("converts Address to Uint8Array", () => {
+		const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+		const bytes = toBytes(addr);
 
 		expect(bytes).toBeInstanceOf(Uint8Array);
 		expect(bytes.length).toBe(20);
@@ -12,24 +13,32 @@ describe("Address.toBytes", () => {
 		expect(bytes[19]).toBe(0xe3);
 	});
 
-	it("should create a new Uint8Array", () => {
-		const addr = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
-		const bytes = Address.toBytes(addr);
+	it("creates a new Uint8Array", () => {
+		const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+		const bytes = toBytes(addr);
 
 		expect(bytes).not.toBe(addr);
 	});
 
-	it("should work as instance method", () => {
-		const addr = Address.Address("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+	it("works with namespace method", () => {
+		const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
+		const bytes = Address.toBytes(addr);
+
+		expect(bytes).toBeInstanceOf(Uint8Array);
+		expect(bytes.length).toBe(20);
+	});
+
+	it("works as instance method", () => {
+		const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3");
 		const bytes = addr.toBytes();
 
 		expect(bytes).toBeInstanceOf(Uint8Array);
 		expect(bytes.length).toBe(20);
 	});
 
-	it("should work with zero address", () => {
-		const addr = Address.zero();
-		const bytes = Address.toBytes(addr);
+	it("works with zero address", () => {
+		const addr = Address.fromHex("0x0000000000000000000000000000000000000000");
+		const bytes = toBytes(addr);
 
 		expect(bytes).toBeInstanceOf(Uint8Array);
 		expect(bytes.every((b) => b === 0)).toBe(true);

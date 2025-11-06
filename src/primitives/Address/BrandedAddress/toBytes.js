@@ -1,7 +1,7 @@
 /**
  * Convert Address to Uint8Array
  *
- * @this {import('./BrandedAddress.js').BrandedAddress}
+ * @param {import('./BrandedAddress.js').BrandedAddress} address - Address to convert
  * @returns {Uint8Array} Underlying Uint8Array
  *
  * @example
@@ -11,6 +11,6 @@
  * console.log(bytes); // Uint8Array(20) [...]
  * ```
  */
-export function toBytes() {
-	return new Uint8Array(this);
+export function toBytes(address) {
+	return new Uint8Array(address);
 }

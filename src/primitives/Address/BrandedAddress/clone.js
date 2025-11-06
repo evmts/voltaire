@@ -3,7 +3,7 @@ import { from } from "./from.js";
 /**
  * Create a deep copy of an Address
  *
- * @this {import('./BrandedAddress.js').BrandedAddress}
+ * @param {import('./BrandedAddress.js').BrandedAddress} address - Address to clone
  * @returns {import('./BrandedAddress.js').BrandedAddress} Deep copy
  *
  * @example
@@ -14,6 +14,6 @@ import { from } from "./from.js";
  * console.log(addr1 === addr2); // false
  * ```
  */
-export function clone() {
-	return from(new Uint8Array(this));
+export function clone(address) {
+	return from(new Uint8Array(address));
 }

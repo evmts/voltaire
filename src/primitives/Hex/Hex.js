@@ -50,6 +50,7 @@ Hex.padRight = BrandedHex.padRight;
 Hex.trim = BrandedHex.trim;
 Hex.equals = BrandedHex.equals;
 Hex.xor = BrandedHex.xor;
+Hex.clone = BrandedHex.clone;
 
 // Instance methods (Hex is a string, so no prototype chain like Address)
 Hex.prototype.toBytes = Function.prototype.call.bind(BrandedHex.toBytes);
@@ -67,3 +68,4 @@ Hex.prototype.padRight = Function.prototype.call.bind(BrandedHex.padRight);
 Hex.prototype.trim = Function.prototype.call.bind(BrandedHex.trim);
 Hex.prototype.equals = Function.prototype.call.bind(BrandedHex.equals);
 Hex.prototype.xor = Function.prototype.call.bind(BrandedHex.xor);
+Hex.prototype.clone = Function.prototype.call.bind(BrandedHex.clone);
