@@ -106,8 +106,6 @@ filterLogs(logs: readonly BrandedEventLog[], filter: Filter): BrandedEventLog[]
 ```
 Filters array of logs by filter criteria.
 
-**Aliases:** `EventLog.filter(logs, filter)`
-
 ## Static Utilities
 
 ### [EventLog.isRemoved(log)](./BrandedEventLog/isRemoved.js.md)

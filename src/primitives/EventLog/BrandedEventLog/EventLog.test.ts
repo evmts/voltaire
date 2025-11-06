@@ -37,7 +37,6 @@ const EventLog = {
 	clone,
 	copy,
 	filterLogs,
-	filter: filterLogs,
 	sortLogs,
 	sort: sortLogs,
 };

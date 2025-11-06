@@ -109,10 +109,6 @@ EventLog.filterLogs = function (logs, filter) {
 	if (filter === undefined) return filterLogs(this, logs);
 	return filterLogs(logs, filter);
 };
-EventLog.filter = function (logs, filter) {
-	if (filter === undefined) return filterLogs(this, logs);
-	return filterLogs(logs, filter);
-};
 EventLog.sortLogs = function (logs) {
 	return sortLogs(logs ?? this);
 };

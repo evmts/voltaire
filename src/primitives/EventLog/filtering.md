@@ -171,8 +171,6 @@ filterLogs(logs: readonly BrandedEventLog[], filter: Filter): BrandedEventLog[]
 
 **Returns:** New array containing only logs matching filter
 
-**Aliases:** `EventLog.filter(logs, filter)`
-
 **Example:**
 ```javascript
 const allLogs = [log1, log2, log3, log4, log5];
@@ -185,7 +183,7 @@ const transfersToUser = EventLog.filterLogs(allLogs, {
 });
 
 // Multiple contracts
-const filtered = EventLog.filter(allLogs, {
+const filtered = EventLog.filterLogs(allLogs, {
   address: [usdc, dai, weth],
   topics: [TRANSFER_SIG],
 });
