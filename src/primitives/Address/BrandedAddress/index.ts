@@ -11,6 +11,7 @@ export { Uppercase };
 
 import { calculateCreate2Address } from "./calculateCreate2Address.js";
 import { calculateCreateAddress } from "./calculateCreateAddress.js";
+import { clone } from "./clone.js";
 import { compare } from "./compare.js";
 import { SIZE } from "./constants.js";
 import { equals } from "./equals.js";
@@ -29,6 +30,7 @@ import { isValidChecksum } from "./isValidChecksum.js";
 import { isZero } from "./isZero.js";
 import { lessThan } from "./lessThan.js";
 import { toAbiEncoded } from "./toAbiEncoded.js";
+import { toBytes } from "./toBytes.js";
 import { toChecksummed } from "./toChecksummed.js";
 import { toHex } from "./toHex.js";
 import { toLowercase } from "./toLowercase.js";
@@ -48,6 +50,7 @@ export {
 	fromPrivateKey,
 	fromAbiEncoded,
 	toHex,
+	toBytes,
 	toChecksummed,
 	toLowercase,
 	toUppercase,
@@ -60,6 +63,7 @@ export {
 	isValidChecksum,
 	is,
 	zero,
+	clone,
 	calculateCreateAddress,
 	calculateCreate2Address,
 	compare,
@@ -78,6 +82,7 @@ export const BrandedAddress = {
 	fromPrivateKey,
 	fromAbiEncoded,
 	toHex,
+	toBytes,
 	toChecksummed,
 	toLowercase,
 	toUppercase,
@@ -90,6 +95,7 @@ export const BrandedAddress = {
 	isValidChecksum,
 	is,
 	zero,
+	clone,
 	calculateCreateAddress,
 	calculateCreate2Address,
 	compare,

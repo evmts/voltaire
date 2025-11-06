@@ -81,6 +81,7 @@ Address.fromAbiEncoded.prototype = Address.prototype;
 
 // Static utility methods (don't return Address instances)
 Address.toHex = BrandedAddress.toHex;
+Address.toBytes = BrandedAddress.toBytes;
 Address.toChecksummed = BrandedAddress.toChecksummed;
 Address.toLowercase = BrandedAddress.toLowercase;
 Address.toUppercase = BrandedAddress.toUppercase;
@@ -113,6 +114,12 @@ Address.of = (...items) => {
 Address.compare = BrandedAddress.compare;
 Address.lessThan = BrandedAddress.lessThan;
 Address.greaterThan = BrandedAddress.greaterThan;
+
+Address.clone = (address) => {
+	const result = BrandedAddress.clone(address);
+	Object.setPrototypeOf(result, Address.prototype);
+	return result;
+};
 
 Address.calculateCreateAddress = (address, nonce) => {
 	const result = BrandedAddress.calculateCreateAddress(address, nonce);
@@ -176,6 +183,14 @@ Address.prototype.isZero = function () {
 };
 Address.prototype.equals = function (other) {
 	return BrandedAddress.equals(this, other);
+};
+Address.prototype.toBytes = function () {
+	return BrandedAddress.toBytes(this);
+};
+Address.prototype.clone = function () {
+	const result = BrandedAddress.clone(this);
+	Object.setPrototypeOf(result, Address.prototype);
+	return result;
 };
 Address.prototype.calculateCreateAddress = function (nonce) {
 	const result = BrandedAddress.calculateCreateAddress(this, nonce);
