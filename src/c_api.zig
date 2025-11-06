@@ -2113,44 +2113,83 @@ export fn x25519KeypairFromSeed(
 // ============================================================================
 
 // External libwally-core declarations
-extern fn bip39_mnemonic_from_bytes(
-    w: ?*const anyopaque,
-    bytes: [*]const u8,
-    bytes_len: usize,
-    output: *[*:0]u8,
-) c_int;
+// Stub libwally functions for WASM (libwally not available in WASM)
+const is_wasm_target = builtin.target.cpu.arch == .wasm32 or builtin.target.cpu.arch == .wasm64;
 
-extern fn bip39_mnemonic_to_seed512(
-    mnemonic: [*:0]const u8,
-    passphrase: ?[*:0]const u8,
-    bytes_out: [*]u8,
-    len: usize,
-) c_int;
+const bip39_mnemonic_from_bytes = if (is_wasm_target)
+    struct {
+        fn stub(_: ?*const anyopaque, _: [*]const u8, _: usize, _: *[*:0]u8) c_int {
+            return -1;
+        }
+    }.stub
+else
+    struct {
+        extern fn real(w: ?*const anyopaque, bytes: [*]const u8, bytes_len: usize, output: *[*:0]u8) c_int;
+    }.real;
 
-extern fn bip39_mnemonic_validate(
-    w: ?*const anyopaque,
-    mnemonic: [*:0]const u8,
-) c_int;
+const bip39_mnemonic_to_seed512 = if (is_wasm_target)
+    struct {
+        fn stub(_: [*:0]const u8, _: ?[*:0]const u8, _: [*]u8, _: usize) c_int {
+            return -1;
+        }
+    }.stub
+else
+    struct {
+        extern fn real(mnemonic: [*:0]const u8, passphrase: ?[*:0]const u8, bytes_out: [*]u8, len: usize) c_int;
+    }.real;
 
-extern fn bip32_key_from_seed_alloc(
-    bytes: [*]const u8,
-    bytes_len: usize,
-    version: u32,
-    flags: u32,
-    output: *?*anyopaque,
-) c_int;
+const bip39_mnemonic_validate = if (is_wasm_target)
+    struct {
+        fn stub(_: ?*const anyopaque, _: [*:0]const u8) c_int {
+            return -1;
+        }
+    }.stub
+else
+    struct {
+        extern fn real(w: ?*const anyopaque, mnemonic: [*:0]const u8) c_int;
+    }.real;
 
-extern fn bip32_key_from_parent_path_alloc(
-    hdkey: *const anyopaque,
-    child_path: [*]const u32,
-    child_path_len: usize,
-    flags: u32,
-    output: *?*anyopaque,
-) c_int;
+const bip32_key_from_seed_alloc = if (is_wasm_target)
+    struct {
+        fn stub(_: [*]const u8, _: usize, _: u32, _: u32, _: *?*anyopaque) c_int {
+            return -1;
+        }
+    }.stub
+else
+    struct {
+        extern fn real(bytes: [*]const u8, bytes_len: usize, version: u32, flags: u32, output: *?*anyopaque) c_int;
+    }.real;
 
-extern fn bip32_key_free(hdkey: *const anyopaque) c_int;
+const bip32_key_from_parent_path_alloc = if (is_wasm_target)
+    struct {
+        fn stub(_: *const anyopaque, _: [*]const u32, _: usize, _: u32, _: *?*anyopaque) c_int {
+            return -1;
+        }
+    }.stub
+else
+    struct {
+        extern fn real(hdkey: *const anyopaque, child_path: [*]const u32, child_path_len: usize, flags: u32, output: *?*anyopaque) c_int;
+    }.real;
 
-extern fn wally_free_string(str: [*:0]const u8) void;
+const bip32_key_free = if (is_wasm_target)
+    struct {
+        fn stub(_: *const anyopaque) c_int {
+            return -1;
+        }
+    }.stub
+else
+    struct {
+        extern fn real(hdkey: *const anyopaque) c_int;
+    }.real;
+
+const wally_free_string = if (is_wasm_target)
+    struct {
+        fn stub(_: [*:0]const u8) void {}
+    }.stub
+else
+    struct {
+        extern fn real(str: [*:0]const u8) void;
+    }.real;
 
 // BIP32 constants
 const BIP32_VER_MAIN_PRIVATE: u32 = 0x0488ADE4;

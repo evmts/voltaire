@@ -84,7 +84,8 @@ export interface WasmExports {
 		dataLen: number,
 		outPtr: number,
 	) => number;
-	blake2Hash: (
+	// Individual crypto WASM modules
+	blake2Hash?: (
 		inputPtr: number,
 		inputLen: number,
 		outputPtr: number,

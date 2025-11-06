@@ -170,7 +170,21 @@ export async function loadWasm(
 	};
 
 	const importObject = {
-		env: {},
+		env: {
+			// BIP-39 / libwally-core stubs (not implemented in WASM)
+			bip39_mnemonic_from_bytes: (): number => 0,
+			bip39_mnemonic_to_seed: (): number => 0,
+			bip39_mnemonic_to_seed512: (): number => 0,
+			bip39_mnemonic_validate: (): number => 0,
+			bip39_validate_mnemonic: (): number => 0,
+			bip32_key_from_seed_alloc: (): number => 0,
+			bip32_key_from_parent_path_alloc: (): number => 0,
+			bip32_key_free: (): void => {},
+			wally_free_string: (): void => {},
+			// HD Wallet stubs (not implemented in WASM)
+			hdwallet_derive_child: (): number => 0,
+			hdwallet_derive_path: (): number => 0,
+		},
 		wasi_snapshot_preview1: wasi,
 	};
 
@@ -179,8 +193,22 @@ export async function loadWasm(
 		wasmModule = await WebAssembly.instantiate(wasmPath, importObject);
 		wasmInstance = wasmModule.instance;
 	} else {
-		const response = await fetch(wasmPath);
-		const buffer = await response.arrayBuffer();
+		let buffer: ArrayBuffer;
+
+		// Handle file:// URLs in Node/Bun environment
+		if (wasmPath instanceof URL && wasmPath.protocol === "file:") {
+			// Use dynamic import to avoid bundler issues
+			const fs = await import("node:fs/promises");
+			const fileBuffer = await fs.readFile(wasmPath);
+			buffer = fileBuffer.buffer.slice(
+				fileBuffer.byteOffset,
+				fileBuffer.byteOffset + fileBuffer.byteLength,
+			);
+		} else {
+			const response = await fetch(wasmPath);
+			buffer = await response.arrayBuffer();
+		}
+
 		wasmModule = await WebAssembly.instantiate(buffer, importObject);
 		wasmInstance = wasmModule.instance;
 	}
@@ -732,12 +760,12 @@ export function blake2Hash(data: Uint8Array, outputLength: number): Uint8Array {
 		const outPtr = malloc(outputLength);
 
 		writeBytes(data, dataPtr);
-		const result = exports.blake2Hash(
-			dataPtr,
-			data.length,
-			outPtr,
-			outputLength,
-		);
+
+		// Use crypto-specific blake2Hash if available, otherwise primitives_blake2b (64-byte only)
+		const result = exports.blake2Hash
+			? exports.blake2Hash(dataPtr, data.length, outPtr, outputLength)
+			: exports.primitives_blake2b(dataPtr, data.length, outPtr);
+
 		checkResult(result);
 		return readBytes(outPtr, outputLength);
 	} finally {
