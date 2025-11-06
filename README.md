@@ -33,10 +33,9 @@
 - [Quick Reference Tables](#quick-reference-tables)
 - [Architecture](#architecture)
 - [Performance](#performance)
-- [Testing](#testing)
+- [Alternatives](#alternatives)
 - [License](#license)
 - [Links](#links)
-- [Alternatives](#alternatives)
 
 ## Features
 
@@ -285,23 +284,11 @@ Benchmark results available in each primitive's bench.ts file.
 
 ---
 
-## Testing
+## Alternatives
 
-Comprehensive test coverage:
-
-- 300+ tests for Address
-- Cross-validation against viem, ethers.js
-- EIP compliance test vectors
-- Fuzzing for edge cases
-
-Run tests:
-
-```bash
-bun test                    # All tests
-bun test address            # Specific primitive
-zig build test             # Zig implementation
-```
-
+- [Viem](https://viem.sh) - Popular TypeScript Ethereum library
+- [Ethers.js](https://docs.ethers.org/) - Comprehensive Ethereum library
+- [Alloy](https://github.com/alloy-rs/alloy) - High-performance Rust library (Zig FFI integration available)
 ---
 
 ## License
@@ -316,10 +303,3 @@ MIT License - see [LICENSE](./LICENSE) for details
 - [Telegram](https://t.me/+ANThR9bHDLAwMjUx)
 - [Twitter](https://twitter.com/tevmtools)
 
----
-
-## Alternatives
-
-- [Viem](https://viem.sh) - Popular TypeScript Ethereum library
-- [Ethers.js](https://docs.ethers.org/) - Comprehensive Ethereum library
-- [Alloy](https://github.com/alloy-rs/alloy) - High-performance Rust library (Zig FFI integration available)
