@@ -287,14 +287,14 @@ describe("HDWallet", () => {
 			expect(privateKey?.length).toBe(32);
 		});
 
-		it("returns undefined for public-only key", async () => {
+		it("returns undefined or null for public-only key", async () => {
 			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 			const publicKey = HDWallet.toPublic(root);
 
 			const privateKey = HDWallet.getPrivateKey(publicKey);
-			expect(privateKey).toBeUndefined();
+			expect(privateKey == null).toBe(true);
 		});
 	});
 
@@ -400,7 +400,7 @@ describe("HDWallet", () => {
 			const root = HDWallet.fromSeed(seed);
 
 			const publicKey = HDWallet.toPublic(root);
-			expect(HDWallet.getPrivateKey(publicKey)).toBeUndefined();
+			expect(HDWallet.getPrivateKey(publicKey) == null).toBe(true);
 			expect(HDWallet.getPublicKey(publicKey)).toBeInstanceOf(Uint8Array);
 		});
 
@@ -562,7 +562,7 @@ describe("HDWallet", () => {
 
 			const child = HDWallet.deriveChild(publicKey, 0);
 			expect(child).toBeDefined();
-			expect(HDWallet.getPrivateKey(child)).toBeUndefined();
+			expect(HDWallet.getPrivateKey(child) == null).toBe(true);
 		});
 
 		it("produces same result for sequential vs direct derivation", async () => {

@@ -13,7 +13,7 @@ import { Blake2Wasm } from "./Blake2.wasm.js";
 // Load WASM module before tests
 beforeAll(async () => {
 	await loader.loadWasm(
-		new URL("../../zig-out/lib/primitives.wasm", import.meta.url),
+		new URL("../../../wasm/crypto/blake2.wasm", import.meta.url),
 	);
 });
 

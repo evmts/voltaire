@@ -391,12 +391,7 @@ describe("G1 curve operations", () => {
 
 	describe("fromAffine", () => {
 		test("converts affine generator to projective", () => {
-			const affine: BrandedG1Point = {
-				x: G1_GENERATOR_X,
-				y: G1_GENERATOR_Y,
-				z: 1n,
-			};
-			const proj = G1.fromAffine(affine);
+			const proj = G1.fromAffine(G1_GENERATOR_X, G1_GENERATOR_Y);
 			expect(proj.x).toBe(G1_GENERATOR_X);
 			expect(proj.y).toBe(G1_GENERATOR_Y);
 			expect(proj.z).toBe(1n);
@@ -405,7 +400,7 @@ describe("G1 curve operations", () => {
 		test("roundtrip: fromAffine(toAffine(p)) = p", () => {
 			const gen = G1.generator();
 			const affine = G1.toAffine(gen);
-			const proj = G1.fromAffine(affine);
+			const proj = G1.fromAffine(affine.x, affine.y);
 			expect(G1.equal(proj, gen)).toBe(true);
 		});
 	});

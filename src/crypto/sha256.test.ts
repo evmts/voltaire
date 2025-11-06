@@ -11,15 +11,9 @@
  * - Cross-validation between Noble and WASM implementations
  */
 
-import { beforeAll, describe, expect, test } from "vitest";
-import * as loader from "../wasm-loader/loader.js";
+import { describe, expect, test } from "vitest";
 import { SHA256 } from "./SHA256/index.js";
 import { Sha256Wasm } from "./sha256.wasm.js";
-
-// Load WASM module before running tests
-beforeAll(async () => {
-	await loader.loadWasm(new URL("../../wasm/primitives.wasm", import.meta.url));
-});
 
 // Test both Noble and WASM implementations
 describe.each([
