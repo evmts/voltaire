@@ -1,4 +1,4 @@
-import * as Hex from "../../Hex/index.js";
+import { Hex } from "../../Hex/index.js";
 import type { BrandedPublicKey } from "./BrandedPublicKey.js";
 
 /**
@@ -14,7 +14,8 @@ import type { BrandedPublicKey } from "./BrandedPublicKey.js";
  * ```
  */
 export function from(hex: string): BrandedPublicKey {
-	const bytes = Hex.toBytes(hex);
+	const brandedHex = Hex(hex);
+	const bytes = Hex.toBytes(brandedHex);
 	if (bytes.length !== 64) {
 		throw new Error(`Public key must be 64 bytes, got ${bytes.length}`);
 	}

@@ -1,4 +1,4 @@
-import * as Hex from "../../Hex/index.js";
+import { Hex } from "../../Hex/index.js";
 import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 
 /**
@@ -13,5 +13,6 @@ import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
  * ```
  */
 export function toHex(this: BrandedPrivateKey): string {
-	return Hex.fromBytes(this);
+	const brandedHex = Hex.fromBytes(this);
+	return Hex.toString(brandedHex);
 }
