@@ -66,7 +66,7 @@ See [build.zig.zon](./build.zig.zon) for dependency configuration.
 This library uses a **data-first architecture** with branded primitive types and namespaced methods:
 
 ```typescript
-import { Address, Hash, Uint, Keccak256 } from "@tevm/voltaire";
+import { Address, Hash, Uint, Keccak256, Ens } from "@tevm/voltaire";
 
 // Address operations
 const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
@@ -82,6 +82,10 @@ const hashHex = hash.toHex();
 const a = Uint.from(0x100);
 const b = Uint.from(0x200);
 const sum = a.plus(b);
+
+// ENS normalization
+const ensName = Ens.normalize("Nick.ETH");
+// Returns: "nick.eth"
 ```
 
 ## Architecture
@@ -141,6 +145,7 @@ const checksum = addr.toChecksummed();
 | **[Chain](./src/content/docs/primitives/chain/index.mdx)** | Chain configuration | Network configuration, chain parameters |
 | **[ChainId](./src/content/docs/primitives/chain/index.mdx)** | Network identifier | Mainnet, testnets, L2s (Optimism, Arbitrum, Base, etc.) |
 | **[Denomination](./src/content/docs/primitives/denomination/index.mdx)** | Ether denominations | Wei, gwei, ether conversions |
+| **[Ens](./src/primitives/Ens/index.mdx)** | ENS name normalization | [ENSIP-15](https://docs.ens.domains/ensip/15) normalization, beautification, validation |
 | **[EventLog](./src/primitives/EventLog/index.mdx)** | Transaction event log | Event parsing, filtering, decoding |
 | **[FeeMarket](./src/primitives/FeeMarket/index.mdx)** | Fee market calculations | [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) base fee, priority fee |
 | **[GasConstants](./src/primitives/GasConstants/index.mdx)** | EVM gas costs | [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) gas constants |
@@ -193,6 +198,17 @@ const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));
 | **[HDWallet](./src/content/docs/crypto/hdwallet/index.mdx)** | Hierarchical deterministic wallets ([BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki), [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)) | Key derivation, multi-account paths |
 
 **Additional Algorithms:** [SHA256](./src/content/docs/crypto/sha256/index.mdx) ([FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)), [RIPEMD160](./src/content/docs/crypto/ripemd160/index.mdx) ([RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)), [Blake2](./src/content/docs/crypto/blake2/index.mdx) ([RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693)), [Ed25519](./src/content/docs/crypto/ed25519/index.mdx) ([RFC 8032](https://datatracker.ietf.org/doc/html/rfc8032)), [X25519](./src/content/docs/crypto/x25519/index.mdx) ([RFC 7748](https://datatracker.ietf.org/doc/html/rfc7748)), [P256](./src/content/docs/crypto/p256/index.mdx) ([FIPS 186-5](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf)), [AES-GCM](./src/content/docs/crypto/aesgcm/index.mdx) ([NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf))
+
+**Security Notice:**
+
+> ⚠️ **Cryptography Implementation Status**
+>
+> Voltaire provides multiple implementation options for cryptographic operations:
+>
+> - **Audited (Recommended)**: [@noble/curves](https://github.com/paulmillr/noble-curves), [@noble/hashes](https://github.com/paulmillr/noble-hashes), [arkworks](https://github.com/arkworks-rs), [blst](https://github.com/supranational/blst), [c-kzg](https://github.com/ethereum/c-kzg-4844), [libwally-core](https://github.com/ElementsProject/libwally-core) - Security-audited implementations used by default
+> - **Unaudited (Use at own risk)**: Zig-native implementations - Experimental, performance-optimized versions available for testing. **Not recommended for production use with real funds.**
+>
+> The library defaults to audited implementations. Zig implementations can be enabled via build flags for development/testing purposes.
 
 **Quick Example:**
 
@@ -422,6 +438,9 @@ Voltaire has minimal runtime dependencies:
 - **[@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains)** - Generated Ethereum chain configurations (mainnet, L2s, testnets)
 - **[abitype](https://github.com/wevm/abitype)** - ABI type system utilities and type guards
 - **[c-kzg](https://github.com/ethereum/c-kzg-4844)** - KZG polynomial commitments for EIP-4844 blob verification
+- **[libwally-core](https://github.com/ElementsProject/libwally-core)** - Wallet utilities including BIP-32/39/44 implementations
+- **[blst](https://github.com/supranational/blst)** - BLS12-381 signature library for Ethereum consensus layer
+- **[arkworks](https://github.com/arkworks-rs)** - Rust zkSNARK libraries (ark-bn254, ark-bls12-381, ark-ec, ark-ff) for BN254 operations
 - **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited elliptic curve cryptography (secp256k1, ed25519, p256)
 - **[@noble/hashes](https://github.com/paulmillr/noble-hashes)** - Audited cryptographic hash functions (keccak256, sha256, blake3, ripemd160)
 - **[Zig std.crypto](https://ziglang.org/documentation/0.15.1/std/#std.crypto)** - Zig standard library cryptography (native/WASM builds only)
