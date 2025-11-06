@@ -41,9 +41,7 @@ describe("Hash", () => {
 		});
 
 		it("throws on invalid hex length", () => {
-			expect(() => fromHex("0x1234")).toThrow(
-				"Hash hex must be 64 characters",
-			);
+			expect(() => fromHex("0x1234")).toThrow("Hash hex must be 64 characters");
 		});
 
 		it("throws on invalid hex characters", () => {

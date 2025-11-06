@@ -362,7 +362,9 @@ describe("Legacy", () => {
 
 	it("getSigningHash throws not implemented", () => {
 		expect(() =>
-			Transaction.Legacy.getSigningHash.call(legacyTx as BrandedTransactionLegacy),
+			Transaction.Legacy.getSigningHash.call(
+				legacyTx as BrandedTransactionLegacy,
+			),
 		).toThrow("Not implemented");
 	});
 
@@ -389,9 +391,7 @@ describe("Legacy", () => {
 				v: 41n, // chainId = (41 - 35) / 2 = 3
 			};
 			expect(
-				Transaction.Legacy.getChainId.call(
-					tx as BrandedTransactionLegacy,
-				),
+				Transaction.Legacy.getChainId.call(tx as BrandedTransactionLegacy),
 			).toBe(3n);
 		});
 
@@ -401,9 +401,7 @@ describe("Legacy", () => {
 				v: 27n,
 			};
 			expect(
-				Transaction.Legacy.getChainId.call(
-					tx as BrandedTransactionLegacy,
-				),
+				Transaction.Legacy.getChainId.call(tx as BrandedTransactionLegacy),
 			).toBeNull();
 		});
 
@@ -413,9 +411,7 @@ describe("Legacy", () => {
 				v: 28n,
 			};
 			expect(
-				Transaction.Legacy.getChainId.call(
-					tx as BrandedTransactionLegacy,
-				),
+				Transaction.Legacy.getChainId.call(tx as BrandedTransactionLegacy),
 			).toBeNull();
 		});
 
@@ -425,18 +421,14 @@ describe("Legacy", () => {
 				v: 999999999999n, // Large chain ID
 			};
 			expect(
-				Transaction.Legacy.getChainId.call(
-					tx as BrandedTransactionLegacy,
-				),
+				Transaction.Legacy.getChainId.call(tx as BrandedTransactionLegacy),
 			).toBe(499999999982n);
 		});
 	});
 
 	it("getSender throws not implemented", () => {
 		expect(() =>
-			Transaction.Legacy.getSender.call(
-				legacyTx as BrandedTransactionLegacy,
-			),
+			Transaction.Legacy.getSender.call(legacyTx as BrandedTransactionLegacy),
 		).toThrow("Not implemented");
 	});
 
@@ -484,7 +476,9 @@ describe("EIP1559", () => {
 
 	it("getSigningHash throws not implemented", () => {
 		expect(() =>
-			Transaction.EIP1559.getSigningHash(eip1559Tx as BrandedTransactionEIP1559),
+			Transaction.EIP1559.getSigningHash(
+				eip1559Tx as BrandedTransactionEIP1559,
+			),
 		).toThrow("Not implemented");
 	});
 
