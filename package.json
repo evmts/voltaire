@@ -47,6 +47,36 @@
 				"types": "./types/primitives/Address/index.d.ts",
 				"default": "./src/primitives/Address/index.js"
 			}
+		},
+		"./Wei": {
+			"import": {
+				"types": "./types/primitives/Denomination/Wei.d.ts",
+				"default": "./src/primitives/Denomination/Wei.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Denomination/Wei.d.ts",
+				"default": "./src/primitives/Denomination/Wei.ts"
+			}
+		},
+		"./Gwei": {
+			"import": {
+				"types": "./types/primitives/Denomination/Gwei.d.ts",
+				"default": "./src/primitives/Denomination/Gwei.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Denomination/Gwei.d.ts",
+				"default": "./src/primitives/Denomination/Gwei.ts"
+			}
+		},
+		"./Ether": {
+			"import": {
+				"types": "./types/primitives/Denomination/Ether.d.ts",
+				"default": "./src/primitives/Denomination/Ether.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Denomination/Ether.d.ts",
+				"default": "./src/primitives/Denomination/Ether.ts"
+			}
 		}
 	},
 	"main": "dist/index.cjs",
