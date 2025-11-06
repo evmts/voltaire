@@ -29,34 +29,31 @@ Voltaire is a modern [Ethereum](https://ethereum.org/) library with [Zig](https:
 
 - **Simple APIs** - The minimal close-to-spec APIs needed for [Ethereum development](https://ethereum.org/en/developers/)
 - **LLM-Optimized** - API and documentation built and tested to perform well with LLMs
-- **High-performance** - High-performance [WASM](https://webassembly.org/) implementations provided
+- **High-performance** - Opt-in [WASM](https://webassembly.org/) implementations for performance-critical operations
 - **Type-safe** - [Branded types](./src/content/docs/primitives/branded-types.mdx) provided for opt-in typesafety
 - **Zig support** - All functionality offered both in TypeScript and [Zig](https://ziglang.org/). More languages will be added in future.
-- **Feature rich** - Voltaire supports advanced Compilation and [EVM](https://ethereum.org/en/developers/docs/evm/) execution to TypeScript applications.
 
 ## Installation
 
+### TypeScript / JavaScript
+
 ```bash
 npm install @tevm/voltaire
+# or
+bun add @tevm/voltaire
+# or
+pnpm install @tevm/voltaire
 ```
 
 [![npm version](https://img.shields.io/npm/v/@tevm/voltaire.svg)](https://www.npmjs.com/package/@tevm/voltaire)
 
-```bash
-bun add @tevm/voltaire  # https://bun.sh/
-```
-
-```bash
-pnpm install @tevm/voltaire  # https://pnpm.io/
-```
-
-Or use the [Zig](https://ziglang.org/) API ([Zig docs](https://ziglang.org/documentation/0.15.1/)):
+### Zig
 
 ```bash
 # Install specific version (recommended)
 zig fetch --save https://github.com/evmts/voltaire/archive/refs/tags/v0.1.0.tar.gz
 
-# Install latest from main branch
+# Or install latest from main branch
 zig fetch --save git+https://github.com/evmts/voltaire
 ```
 
@@ -72,19 +69,19 @@ This library uses a **data-first architecture** with branded primitive types and
 import { Address, Hash, Uint, Keccak256 } from "@tevm/voltaire";
 
 // Address operations
-const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = Address.toChecksummed(addr);
-const isZero = Address.isZero(addr);
+const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = addr.toChecksummed();
+const isZero = addr.isZero();
 
 // Hash operations
 const data = new Uint8Array([1, 2, 3]);
 const hash = Keccak256.hash(data);
-const hashHex = Hash.toHex(hash);
+const hashHex = hash.toHex();
 
 // Uint arithmetic
 const a = Uint.from(0x100);
 const b = Uint.from(0x200);
-const sum = Uint.plus(a, b);
+const sum = a.plus(b);
 ```
 
 ## Architecture
@@ -100,10 +97,10 @@ type Hash = Uint8Array & { readonly __brand: symbol };
 type Uint = bigint & { readonly __brand: symbol };
 type Hex = `0x${string}`;
 
-// Methods are namespaced functions
-const addr = Address("0x...");
-const hex = Address.toHex(addr);
-const checksum = Address.toChecksummed(addr);
+// Methods are available as instance methods
+const addr = Address.from("0x...");
+const hex = addr.toHex();
+const checksum = addr.toChecksummed();
 
 // No classes, no instances, just branded primitives
 // Perfect for tree-shaking and serialization
@@ -161,13 +158,13 @@ const checksum = Address.toChecksummed(addr);
 import { Address, Uint, Keccak256 } from "@tevm/voltaire";
 
 // Address operations
-const addr = Address("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = Address.toChecksummed(addr);
+const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+const checksum = addr.toChecksummed();
 
 // Uint arithmetic
 const a = Uint.from(0x100);
 const b = Uint.from(0x200);
-const sum = Uint.plus(a, b);
+const sum = a.plus(b);
 
 // Hashing
 const hash = Keccak256.hash(new Uint8Array([1, 2, 3]));
