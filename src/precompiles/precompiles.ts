@@ -124,12 +124,10 @@ export function isPrecompile(
 		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_MAP_FP_TO_G1.toLowerCase()) {
-		// TODO: Add PRAGUE hardfork support
-		return Hardfork.isAtLeast(hardfork, Hardfork.CANCUN);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 	if (normalized === PrecompileAddress.BLS12_MAP_FP2_TO_G2.toLowerCase()) {
-		// TODO: Add PRAGUE hardfork support
-		return Hardfork.isAtLeast(hardfork, Hardfork.CANCUN);
+		return Hardfork.isAtLeast(hardfork, Hardfork.PRAGUE);
 	}
 
 	return false;
