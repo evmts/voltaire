@@ -7,7 +7,7 @@
 import { Address as AddressClass } from "../primitives/Address/index.js";
 
 // Keccak-256 hashing
-import { Hash as BrandedHashClass, keccak256 as keccak256Fn, eip191HashMessage as eip191HashMessageFn } from "../crypto/keccak.wasm.js";
+import { Hash as HashClass, keccak256 as keccak256Fn, eip191HashMessage as eip191HashMessageFn } from "../crypto/keccak.wasm.js";
 
 // Bytecode operations
 import {
@@ -71,7 +71,7 @@ import { generatePrivateKey as generatePrivateKeyFn, compressPublicKey as compre
 
 // Re-export all with original names
 export { AddressClass as Address };
-export { BrandedHashClass as Hash, keccak256Fn as keccak256, eip191HashMessageFn as eip191HashMessage };
+export { HashClass as Hash, keccak256Fn as keccak256, eip191HashMessageFn as eip191HashMessage };
 export { type JumpDestination, analyzeJumpDestinationsFn as analyzeJumpDestinations, isBytecodeBoundaryFn as isBytecodeBoundary, isValidJumpDestFn as isValidJumpDest, validateBytecodeFn as validateBytecode };
 export { sha256Fn as sha256, ripemd160Fn as ripemd160, blake2bFn as blake2b, solidityKeccak256Fn as solidityKeccak256, soliditySha256Fn as soliditySha256 };
 export { hexToBytesFn as hexToBytes, bytesToHexFn as bytesToHex };
@@ -84,7 +84,7 @@ export { generatePrivateKeyFn as generatePrivateKey, compressPublicKeyFn as comp
 // Re-export everything as default
 export default {
 	Address: AddressClass,
-	Hash: BrandedHashClass,
+	Hash: HashClass,
 	keccak256: keccak256Fn,
 	eip191HashMessage: eip191HashMessageFn,
 	analyzeJumpDestinations: analyzeJumpDestinationsFn,

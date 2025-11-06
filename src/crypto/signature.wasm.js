@@ -7,11 +7,15 @@ import * as loader from "../wasm-loader/loader.js";
 import { Secp256k1Wasm } from "./secp256k1.wasm.js";
 
 /**
+ * ParsedSignature type
  * @typedef {Object} ParsedSignature
  * @property {Uint8Array} r - R component (32 bytes)
  * @property {Uint8Array} s - S component (32 bytes)
  * @property {number} v - Recovery ID (0, 1, 27, or 28)
  */
+
+// Export ParsedSignature as a value for ES module compatibility
+export const ParsedSignature = undefined;
 
 /**
  * Recover public key from signature
@@ -105,9 +109,6 @@ export function signatureParse(signature) {
 export function signatureSerialize(signature) {
 	return Secp256k1Wasm.Signature.toBytes(signature);
 }
-
-// Export type for TypeScript
-export { ParsedSignature };
 
 // Helper functions
 function bytes32ToBigInt(bytes) {

@@ -3,11 +3,11 @@
  * Re-exports from keccak256.wasm.ts and provides Hash class
  */
 
-import { BrandedHash } from "../primitives/Hash/index.js";
+import { Hash } from "../primitives/Hash/index.js";
 import * as Keccak256Wasm from "./keccak256.wasm.js";
 
 // Re-export Hash type
-export { BrandedHash as Hash };
+export { Hash };
 
 // Re-export keccak256 function
 export async function keccak256(data) {
