@@ -29,7 +29,7 @@ Voltaire is a modern Ethereum library for TypeScript and Zig similar to [ethers.
 - **LLM-Optimized** - API and documentation built and tested to perform well with both LLMs
 - **High-performance** - High-performance wasm implementations provided
 - **Type-safe** - Branded types provided for opt-in typesafety
-- **Zig support** - All functionality offered both in TypeScript and [Zig](./docs/ZIG_API.md). More languages will be added in future.
+- **Zig support** - All functionality offered both in TypeScript and Zig. More languages will be added in future.
 - **Feature rich** - Voltaire supports advanced Compilation and EVM execution to TypeScript applications.
 
 ## Installation
@@ -46,7 +46,7 @@ bun add @tevm/voltaire
 pnpm install @tevm/voltaire
 ```
 
-Or use the [zig api](./docs/ZIG_API.md)
+Or use the Zig API:
 
 ```bash
 # Install specific version (recommended)
@@ -94,56 +94,56 @@ const sum = Uint.plus.call(a, b);
 
 **Type:** `Address` (branded `Uint8Array` with 20 bytes)
 
-**Reference:** [Address.js](./src/primitives/Address/Address.js.md) | [BrandedAddress](./src/primitives/Address/BrandedAddress/index.ts.md)
+**Reference:** [Full Address Documentation](./src/content/docs/primitives/address/index.mdx)
 
 **Constants:**
 
-- `Address.SIZE` — Address size (20 bytes) - [docs](./src/primitives/Address/BrandedAddress/constants.js.md)
+- `Address.SIZE` — Address size (20 bytes)
 
 **Creation:**
 
-- `new Address(value)` — Universal constructor (hex/bytes/number/bigint) - [docs](./src/primitives/Address/BrandedAddress/from.js.md)
+- `new Address(value)` — Universal constructor (hex/bytes/number/bigint)
 - `Address.from(value)` — Alias for constructor
-- `Address.fromHex(hex)` — From hex string (with or without 0x) - [docs](./src/primitives/Address/BrandedAddress/fromHex.js.md)
-- `Address.fromBytes(bytes)` — From 20-byte Uint8Array - [docs](./src/primitives/Address/BrandedAddress/fromBytes.js.md)
-- `Address.fromNumber(n)` — From number (left-padded to 20 bytes) - [docs](./src/primitives/Address/BrandedAddress/fromNumber.js.md)
-- `Address.fromPublicKey(x, y)` — From 64-byte secp256k1 public key - [docs](./src/primitives/Address/BrandedAddress/fromPublicKey.js.md)
-- `Address.fromAbiEncoded(bytes)` — From 32-byte ABI encoding - [docs](./src/primitives/Address/BrandedAddress/fromAbiEncoded.js.md)
-- `Address.fromBase64(b64)` — From base64 string - [docs](./src/primitives/Address/BrandedAddress/fromBase64.js.md)
-- `Address.zero()` — Zero address (0x0000...0000) - [docs](./src/primitives/Address/BrandedAddress/zero.js.md)
+- `Address.fromHex(hex)` — From hex string (with or without 0x)
+- `Address.fromBytes(bytes)` — From 20-byte Uint8Array
+- `Address.fromNumber(n)` — From number (left-padded to 20 bytes)
+- `Address.fromPublicKey(x, y)` — From 64-byte secp256k1 public key
+- `Address.fromAbiEncoded(bytes)` — From 32-byte ABI encoding
+- `Address.fromBase64(b64)` — From base64 string
+- `Address.zero()` — Zero address (0x0000...0000)
 
 **Conversion:**
 
-- `Address.toHex(address)` — To lowercase hex string - [docs](./src/primitives/Address/BrandedAddress/toHex.js.md)
-- `Address.toChecksummed(address)` — To EIP-55 checksummed hex - [docs](./src/primitives/Address/BrandedAddress/toChecksummed.js.md)
-- `Address.toLowercase(address)` — To lowercase hex - [docs](./src/primitives/Address/BrandedAddress/toLowercase.js.md)
-- `Address.toUppercase(address)` — To uppercase hex - [docs](./src/primitives/Address/BrandedAddress/toUppercase.js.md)
-- `Address.toU256(address)` — To 256-bit unsigned integer (bigint) - [docs](./src/primitives/Address/BrandedAddress/toU256.js.md)
-- `Address.toAbiEncoded(address)` — To 32-byte ABI encoding - [docs](./src/primitives/Address/BrandedAddress/toAbiEncoded.js.md)
+- `Address.toHex(address)` — To lowercase hex string
+- `Address.toChecksummed(address)` — To EIP-55 checksummed hex
+- `Address.toLowercase(address)` — To lowercase hex
+- `Address.toUppercase(address)` — To uppercase hex
+- `Address.toU256(address)` — To 256-bit unsigned integer (bigint)
+- `Address.toAbiEncoded(address)` — To 32-byte ABI encoding
 
 **Validation:**
 
-- `Address.isValid(value)` — Check if valid address format - [docs](./src/primitives/Address/BrandedAddress/isValid.js.md)
-- `Address.isValidChecksum(address)` — Validate EIP-55 checksum - [docs](./src/primitives/Address/BrandedAddress/isValidChecksum.js.md)
-- `Address.isZero(address)` — Check if zero address - [docs](./src/primitives/Address/BrandedAddress/isZero.js.md)
-- `Address.is(value)` — Type guard for Address type - [docs](./src/primitives/Address/BrandedAddress/is.js.md)
+- `Address.isValid(value)` — Check if valid address format
+- `Address.isValidChecksum(address)` — Validate EIP-55 checksum
+- `Address.isZero(address)` — Check if zero address
+- `Address.is(value)` — Type guard for Address type
 
 **Comparison:**
 
-- `Address.equals(a, b)` — Compare two addresses - [docs](./src/primitives/Address/BrandedAddress/equals.js.md)
-- `Address.compare(a, b)` — Compare for sorting (-1, 0, 1) - [docs](./src/primitives/Address/BrandedAddress/compare.js.md)
-- `Address.lessThan(a, b)` — Check if a < b - [docs](./src/primitives/Address/BrandedAddress/lessThan.js.md)
-- `Address.greaterThan(a, b)` — Check if a > b - [docs](./src/primitives/Address/BrandedAddress/greaterThan.js.md)
+- `Address.equals(a, b)` — Compare two addresses
+- `Address.compare(a, b)` — Compare for sorting (-1, 0, 1)
+- `Address.lessThan(a, b)` — Check if a < b
+- `Address.greaterThan(a, b)` — Check if a > b
 
 **Contract Addresses:**
 
-- `Address.calculateCreateAddress(from, nonce)` — Predict CREATE address - [docs](./src/primitives/Address/BrandedAddress/calculateCreateAddress.js.md)
-- `Address.calculateCreate2Address(from, salt, initCode)` — Predict CREATE2 address - [docs](./src/primitives/Address/BrandedAddress/calculateCreate2Address.js.md)
+- `Address.calculateCreateAddress(from, nonce)` — Predict CREATE address
+- `Address.calculateCreate2Address(from, salt, initCode)` — Predict CREATE2 address
 
 **Formatting:**
 
-- `Address.toShortHex(address, prefix?, suffix?)` — Short format (0x1234...5678) - [docs](./src/primitives/Address/BrandedAddress/toShortHex.js.md)
-- `Address.format(address)` — EIP-55 checksummed (alias for toChecksummed) - [docs](./src/primitives/Address/BrandedAddress/format.js.md)
+- `Address.toShortHex(address, prefix?, suffix?)` — Short format (0x1234...5678)
+- `Address.format(address)` — EIP-55 checksummed (alias for toChecksummed)
 
 **Examples:**
 
@@ -1759,7 +1759,6 @@ MIT License - see [LICENSE](./LICENSE) for details
 - [GitHub Issues](https://github.com/evmts/voltaire/issues)
 - [Telegram](https://t.me/+ANThR9bHDLAwMjUx)
 - [Twitter](https://twitter.com/tevmtools)
-- [Complete Zig API](./docs/ZIG_API.md)
 
 ---
 
