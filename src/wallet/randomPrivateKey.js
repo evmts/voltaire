@@ -23,7 +23,9 @@ export function randomPrivateKey() {
 	// Convert to bigint for secp256k1 operations
 	let privKeyBigInt = 0n;
 	for (let i = 0; i < 32; i++) {
-		privKeyBigInt = (privKeyBigInt << 8n) | BigInt(privateKey[i]);
+		const byte = privateKey[i];
+		if (byte === undefined) throw new Error('Invalid byte at index ' + i);
+		privKeyBigInt = (privKeyBigInt << 8n) | BigInt(byte);
 	}
 
 	// Derive public key from private key using secp256k1
@@ -65,6 +67,10 @@ function multiplyBasePoint(k) {
 			}
 		}
 		[px, py] = pointDouble(px, py);
+	}
+
+	if (qx === null || qy === null) {
+		throw new Error('Point multiplication failed');
 	}
 
 	return { x: qx, y: qy };

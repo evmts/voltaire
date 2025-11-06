@@ -3,7 +3,7 @@ import { chainById as tevmChainById } from "@tevm/chains";
 /**
  * Record mapping chain IDs to chain objects
  *
- * @type {Record<number, import('./ChainType.js').Chain>}
+ * @type {Record<number, import('../ChainType.js').Chain>}
  *
  * @example
  * ```typescript

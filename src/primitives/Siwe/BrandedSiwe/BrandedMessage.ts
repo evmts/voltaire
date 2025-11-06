@@ -1,4 +1,4 @@
-import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 
 /**
  * Sign-In with Ethereum Message (EIP-4361)

@@ -50,7 +50,7 @@ export function parse(text) {
 		);
 	}
 	const address =
-		/** @type {import('../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
+		/** @type {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
 			addressBytes
 		);
 	lineIndex++;

@@ -193,7 +193,7 @@ export const EcPairingPerPairByzantium = 80000n;
  * Calculate ECPAIRING precompile cost
  *
  * @param {bigint} pairCount - Number of point pairs
- * @param {import('./types.js').Hardfork} hardfork - EVM hardfork
+ * @param {import('../types.js').Hardfork} hardfork - EVM hardfork
  * @returns {bigint} Gas cost
  *
  * @example
@@ -221,7 +221,7 @@ export function calculateEcPairingCost(pairCount, hardfork) {
 /**
  * Get ECADD cost for hardfork
  *
- * @param {import('./types.js').Hardfork} hardfork - EVM hardfork
+ * @param {import('../types.js').Hardfork} hardfork - EVM hardfork
  * @returns {bigint} Gas cost
  */
 export function getEcAddCost(hardfork) {
@@ -238,7 +238,7 @@ export function getEcAddCost(hardfork) {
 /**
  * Get ECMUL cost for hardfork
  *
- * @param {import('./types.js').Hardfork} hardfork - EVM hardfork
+ * @param {import('../types.js').Hardfork} hardfork - EVM hardfork
  * @returns {bigint} Gas cost
  */
 export function getEcMulCost(hardfork) {
@@ -255,7 +255,7 @@ export function getEcMulCost(hardfork) {
 /**
  * Calculate ECPAIRING precompile cost (convenience form with this:)
  *
- * @this {{ pairCount: bigint; hardfork: import('./types.js').Hardfork }}
+ * @this {{ pairCount: bigint; hardfork: import('../types.js').Hardfork }}
  * @returns {bigint}
  */
 export function ecPairingCost() {

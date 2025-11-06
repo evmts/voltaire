@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @typedef {import('node:ffi-napi').Library} Library
  */
