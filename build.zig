@@ -1078,7 +1078,7 @@ fn addCryptoWasmBuilds(
         .{ .name = "keccak256", .source = "src/crypto/keccak256_c.zig", .description = "Keccak-256 hashing", .needs_crypto = false },
         .{ .name = "blake2", .source = "src/crypto/blake2_c.zig", .description = "BLAKE2b hashing", .needs_crypto = false },
         .{ .name = "address", .source = "src/primitives/Address/address_c.zig", .description = "Address operations", .needs_crypto = false },
-        .{ .name = "ripemd160", .source = "src/crypto/ripemd160_c.zig", .description = "RIPEMD-160 hashing", .needs_crypto = true },
+        .{ .name = "ripemd160", .source = "src/crypto/ripemd160_c.zig", .description = "RIPEMD-160 hashing", .needs_crypto = false },
         .{ .name = "secp256k1", .source = "src/crypto/secp256k1_c.zig", .description = "secp256k1 ECDSA operations", .needs_crypto = true },
         .{ .name = "bn254", .source = "src/crypto/bn254_c.zig", .description = "BN254 elliptic curve operations", .needs_crypto = true },
     };
