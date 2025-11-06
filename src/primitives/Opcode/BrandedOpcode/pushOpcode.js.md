@@ -1,3 +1,7 @@
+---
+title: "pushOpcode.js"
+---
+
 # pushOpcode.js
 
 Get PUSH opcode for given byte count.

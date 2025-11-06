@@ -1,3 +1,7 @@
+---
+title: "isPush.js"
+---
+
 # isPush.js
 
 Check if opcode is PUSH instruction (PUSH0-PUSH32).

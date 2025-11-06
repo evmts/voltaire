@@ -70,7 +70,7 @@ Legacy transactions use direct RLP encoding without a type prefix:
 
 ```typescript
 // First byte is RLP list marker (0xc0-0xff)
-if (firstByte >= 0xc0) {
+if (`firstByte >= 0`xc0) {
   return Type.Legacy
 }
 ```

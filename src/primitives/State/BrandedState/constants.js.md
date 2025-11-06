@@ -1,3 +1,7 @@
+---
+title: "State Constants"
+---
+
 # State Constants
 
 ## EMPTY_CODE_HASH

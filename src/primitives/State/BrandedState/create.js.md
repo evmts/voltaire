@@ -1,3 +1,7 @@
+---
+title: "create.js"
+---
+
 # create.js
 
 Create a new StorageKey from address and slot.

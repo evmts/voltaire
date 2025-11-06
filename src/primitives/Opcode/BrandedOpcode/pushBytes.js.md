@@ -1,3 +1,7 @@
+---
+title: "pushBytes.js"
+---
+
 # pushBytes.js
 
 Get number of bytes pushed by PUSH instruction.

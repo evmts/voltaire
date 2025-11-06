@@ -1,3 +1,7 @@
+---
+title: "isJump.js"
+---
+
 # isJump.js
 
 Check if opcode is jump instruction (JUMP or JUMPI).

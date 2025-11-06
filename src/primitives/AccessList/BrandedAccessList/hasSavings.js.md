@@ -1,3 +1,7 @@
+---
+title: "hasSavings.js"
+---
+
 # hasSavings.js
 
 Check if access list provides net gas savings.

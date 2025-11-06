@@ -197,7 +197,7 @@ function hasSufficientBalance(
   // Total needed = value + gas
   const required = Uint.plus(valueU256, gasCostU256)
 
-  return balanceU256 >= required
+  return balanceU`256 >= required`
 }
 
 // Example usage
@@ -254,14 +254,14 @@ import * as Wei from '@tevm/voltaire/Wei'
 function formatBalance(wei: Wei.Type): string {
   const weiU256 = Wei.toU256(wei)
 
-  // If >= 0.01 ETH, show in ETH
-  if (weiU256 >= 10_000_000_000_000_000n) {
+  // `If >= 0`.01 ETH, show in ETH
+  if (`weiU256 >= 10`_000_000_000_000_000n) {
     const ether = Wei.toEther(wei)
     return `${ether} ETH`
   }
 
-  // If >= 0.00001 Gwei, show in Gwei
-  if (weiU256 >= 10_000n) {
+  // `If >= 0`.00001 Gwei, show in Gwei
+  if (`weiU256 >= 10`_000n) {
     const gwei = Wei.toGwei(wei)
     return `${gwei} Gwei`
   }
@@ -482,8 +482,8 @@ function isWithinRange(
   const minWei = Ether.toWei(min)
   const maxWei = Ether.toWei(max)
 
-  return valueU256 >= Wei.toU256(minWei) &&
-         valueU256 <= Wei.toU256(maxWei)
+  return valueU`256 >= Wei`.toU256(minWei) &&
+         valueU`256 <= Wei`.toU256(maxWei)
 }
 
 // Example usage

@@ -225,7 +225,7 @@ const prices = [
 const minPrice = prices.reduce((min, price) => {
   const minU256 = Gwei.toU256(min)
   const priceU256 = Gwei.toU256(price)
-  return minU256 <= priceU256 ? min : price
+  return minU`256 <= priceU256` ? min : price
 })
 
 console.log(`Cheapest: ${minPrice} Gwei`)

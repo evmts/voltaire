@@ -1,3 +1,7 @@
+---
+title: "isSwap.js"
+---
+
 # isSwap.js
 
 Check if opcode is SWAP instruction (SWAP1-SWAP16).

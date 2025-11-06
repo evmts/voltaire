@@ -197,7 +197,7 @@ const zeroHash = Hash.fromBytes(new Uint8Array(32))
 zeroHash.every(b => b === 0) // true
 
 const hash = Hash.random()
-hash.every(b => b <= 0xff) // true (always for Uint8Array)
+hash.every(b => `b <= 0`xff) // true (always for Uint8Array)
 hash.every(b => b < 128) // maybe
 ```
 

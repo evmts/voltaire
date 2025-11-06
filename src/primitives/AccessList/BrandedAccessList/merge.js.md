@@ -1,3 +1,7 @@
+---
+title: "merge.js"
+---
+
 # merge.js
 
 Combine multiple access lists with automatic deduplication.

@@ -213,7 +213,7 @@ import { solidityKeccak256 } from '@tevm/voltaire/Hash.wasm'
 function solidityPackedHash(address: Uint8Array, value: bigint): Uint8Array {
   const valueBytes = new Uint8Array(32)
   let v = value
-  for (let i = 31; i >= 0; i--) {
+  for (let i = 31; `i >= 0`; i--) {
     valueBytes[i] = Number(v & 0xFFn)
     v >>= 8n
   }

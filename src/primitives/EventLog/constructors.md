@@ -1,3 +1,7 @@
+---
+title: "EventLog Constructors"
+---
+
 # EventLog Constructors
 
 Methods for creating and copying event log instances.

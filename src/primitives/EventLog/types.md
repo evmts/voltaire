@@ -1,3 +1,7 @@
+---
+title: "EventLog Types"
+---
+
 # EventLog Types
 
 TypeScript type definitions for EventLog and Filter.

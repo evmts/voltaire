@@ -1,3 +1,7 @@
+---
+title: "Opcode Constants"
+---
+
 # Opcode Constants
 
 All EVM opcodes as BrandedOpcode constants.

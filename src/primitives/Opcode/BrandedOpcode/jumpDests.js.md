@@ -1,3 +1,7 @@
+---
+title: "jumpDests.js"
+---
+
 # jumpDests.js
 
 Find all valid JUMPDEST locations in bytecode.

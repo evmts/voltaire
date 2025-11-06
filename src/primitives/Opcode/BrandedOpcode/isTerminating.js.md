@@ -1,3 +1,7 @@
+---
+title: "isTerminating.js"
+---
+
 # isTerminating.js
 
 Check if opcode terminates execution.

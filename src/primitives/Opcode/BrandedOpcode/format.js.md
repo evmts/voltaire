@@ -1,3 +1,7 @@
+---
+title: "format.js"
+---
+
 # format.js
 
 Format instruction to human-readable string.

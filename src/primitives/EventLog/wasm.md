@@ -1,3 +1,7 @@
+---
+title: "EventLog WASM Implementation"
+---
+
 # EventLog WASM Implementation
 
 WebAssembly-accelerated event log filtering functions.

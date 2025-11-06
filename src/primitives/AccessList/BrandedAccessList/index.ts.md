@@ -1,3 +1,7 @@
+---
+title: "BrandedAccessList Module"
+---
+
 # BrandedAccessList Module
 
 ## Exports

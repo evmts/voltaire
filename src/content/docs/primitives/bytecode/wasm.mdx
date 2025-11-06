@@ -134,7 +134,7 @@ Defined in: [primitives/Bytecode/Bytecode.wasm.ts:64](https://github.com/evmts/p
 - **Real-time analysis** needed
 
 ### Use JavaScript Implementation When:
-- **Small bytecode** (<1KB)
+- **Small bytecode** (`<1KB`)
 - **One-off analysis**
 - **Tree-shaking** critical (WASM adds bundle size)
 - **Compatibility** concerns
@@ -233,7 +233,7 @@ fn analyzeJumpDests(code: []const u8, valid_jumpdests: *std.AutoArrayHashMap(u32
         if (opcode == 0x5b) {
             try valid_jumpdests.put(pc, {});
             pc += 1;
-        } else if (opcode >= 0x60 and opcode <= 0x7f) {
+        } else if (`opcode >= 0`x60 and `opcode <= 0`x7f) {
             // PUSH1 through PUSH32
             const push_size = opcode - 0x5f;
             // Skip the PUSH opcode and all immediate data bytes

@@ -1,3 +1,7 @@
+---
+title: "BrandedStorageKey"
+---
+
 # BrandedStorageKey
 
 Composite key type for EVM storage operations.

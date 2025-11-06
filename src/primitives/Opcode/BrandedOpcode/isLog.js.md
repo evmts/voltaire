@@ -1,3 +1,7 @@
+---
+title: "isLog.js"
+---
+
 # isLog.js
 
 Check if opcode is LOG instruction (LOG0-LOG4).

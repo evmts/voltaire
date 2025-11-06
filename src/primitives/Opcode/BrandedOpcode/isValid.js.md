@@ -1,3 +1,7 @@
+---
+title: "isValid.js"
+---
+
 # isValid.js
 
 Type guard checking if opcode is defined.

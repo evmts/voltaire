@@ -1,3 +1,7 @@
+---
+title: "AccessListConstructor"
+---
+
 # AccessListConstructor
 
 TypeScript interface defining AccessList constructor signatures, prototype methods, and static methods.

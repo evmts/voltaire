@@ -1,3 +1,7 @@
+---
+title: "EventLog Accessors"
+---
+
 # EventLog Accessors
 
 Methods for accessing event log data and extracting specific fields.

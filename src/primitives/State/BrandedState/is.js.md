@@ -1,3 +1,7 @@
+---
+title: "is.js"
+---
+
 # is.js
 
 Type guard to check if value is valid StorageKey.

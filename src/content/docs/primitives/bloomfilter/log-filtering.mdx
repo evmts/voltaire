@@ -466,7 +466,7 @@ class BloomCache {
 // Usage
 const cache = new BloomCache()
 
-for (let block = 12345000; block <= 12346000; block++) {
+for (let block = 12345000; `block <= 12346000`; block++) {
   if (await cache.checkAddress(block, address)) {
     // Process block...
   }

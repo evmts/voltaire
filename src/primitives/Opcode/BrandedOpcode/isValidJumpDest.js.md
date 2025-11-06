@@ -1,3 +1,7 @@
+---
+title: "isValidJumpDest.js"
+---
+
 # isValidJumpDest.js
 
 Check if bytecode offset is a valid jump destination.

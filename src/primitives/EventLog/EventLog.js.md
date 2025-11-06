@@ -1,3 +1,7 @@
+---
+title: "EventLog.js"
+---
+
 # EventLog.js
 
 Factory function creating Ethereum event log instances.

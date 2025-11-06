@@ -1,3 +1,7 @@
+---
+title: "is.js"
+---
+
 # is.js
 
 Type guard checking if value is valid AccessList.

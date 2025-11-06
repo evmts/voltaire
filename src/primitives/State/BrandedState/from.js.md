@@ -1,3 +1,7 @@
+---
+title: "from.js"
+---
+
 # from.js
 
 Universal constructor for StorageKey from StorageKeyLike input.

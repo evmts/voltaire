@@ -1,3 +1,7 @@
+---
+title: "isEmpty.js"
+---
+
 # isEmpty.js
 
 Check if access list is empty.

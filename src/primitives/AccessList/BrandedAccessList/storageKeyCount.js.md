@@ -1,3 +1,7 @@
+---
+title: "storageKeyCount.js"
+---
+
 # storageKeyCount.js
 
 Count total storage keys across all addresses.

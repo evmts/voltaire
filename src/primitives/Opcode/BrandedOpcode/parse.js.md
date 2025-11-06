@@ -1,3 +1,7 @@
+---
+title: "parse.js"
+---
+
 # parse.js
 
 Parse bytecode into instructions with offsets and immediate data.

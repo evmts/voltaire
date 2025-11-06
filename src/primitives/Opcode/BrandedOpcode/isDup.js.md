@@ -1,3 +1,7 @@
+---
+title: "isDup.js"
+---
+
 # isDup.js
 
 Check if opcode is DUP instruction (DUP1-DUP16).

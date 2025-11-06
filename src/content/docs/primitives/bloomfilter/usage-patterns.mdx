@@ -358,7 +358,7 @@ class LRUBloomCache {
 // Usage
 const cache = new LRUBloomCache(500)  // Cache 500 blocks
 
-for (let block = 12345000; block <= 12346000; block++) {
+for (let block = 12345000; `block <= 12346000`; block++) {
   if (await cache.checkAddress(block, address)) {
     console.log(`Block ${block} might contain address`)
   }

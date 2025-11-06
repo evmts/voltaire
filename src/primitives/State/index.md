@@ -1,3 +1,7 @@
+---
+title: "State"
+---
+
 # State
 
 Ethereum state primitives - storage keys and well-known constants for EVM state management.

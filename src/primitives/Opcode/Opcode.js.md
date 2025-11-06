@@ -1,3 +1,7 @@
+---
+title: "Opcode.js"
+---
+
 # Opcode.js
 
 EVM opcode namespace providing constants, metadata, and bytecode analysis utilities.

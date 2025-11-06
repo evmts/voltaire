@@ -1,3 +1,7 @@
+---
+title: "disassemble.js"
+---
+
 # disassemble.js
 
 Disassemble bytecode to human-readable strings.
@@ -27,7 +31,8 @@ const asm = Opcode.disassemble(bytecode);
 //   "0x0004: ADD"
 // ]
 
-console.log(asm.join('\n'));
+console.log(asm.join('
+'));
 // 0x0000: PUSH1 0x01
 // 0x0002: PUSH1 0x02
 // 0x0004: ADD

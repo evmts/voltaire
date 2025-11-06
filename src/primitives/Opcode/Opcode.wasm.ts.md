@@ -1,3 +1,7 @@
+---
+title: "Opcode.wasm.ts"
+---
+
 # Opcode.wasm.ts
 
 WASM-accelerated opcode operations.

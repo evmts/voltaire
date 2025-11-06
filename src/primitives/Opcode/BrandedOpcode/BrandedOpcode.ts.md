@@ -1,3 +1,7 @@
+---
+title: "BrandedOpcode"
+---
+
 # BrandedOpcode
 
 Branded type: `number & { __tag: "Opcode" }`

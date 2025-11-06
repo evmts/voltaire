@@ -1,3 +1,7 @@
+---
+title: "logTopics.js"
+---
+
 # logTopics.js
 
 Get topic count for LOG instruction.

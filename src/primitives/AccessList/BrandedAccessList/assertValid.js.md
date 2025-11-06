@@ -1,3 +1,7 @@
+---
+title: "assertValid.js"
+---
+
 # assertValid.js
 
 Validate AccessList structure with detailed error messages.

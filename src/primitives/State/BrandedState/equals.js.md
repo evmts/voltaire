@@ -1,3 +1,7 @@
+---
+title: "equals.js"
+---
+
 # equals.js
 
 Check equality between two storage keys.

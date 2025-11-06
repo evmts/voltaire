@@ -1,3 +1,7 @@
+---
+title: "EventLog Filtering"
+---
+
 # EventLog Filtering
 
 Methods for filtering event logs by address, topics, and complete filter criteria.

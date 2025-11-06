@@ -1,3 +1,7 @@
+---
+title: "AccessList.js"
+---
+
 # AccessList.js
 
 Factory function creating EIP-2930 access list instances for gas-optimized transactions.

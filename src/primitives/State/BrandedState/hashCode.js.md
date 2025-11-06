@@ -1,3 +1,7 @@
+---
+title: "hashCode.js"
+---
+
 # hashCode.js
 
 Compute hash code for storage key for use in hash-based collections.

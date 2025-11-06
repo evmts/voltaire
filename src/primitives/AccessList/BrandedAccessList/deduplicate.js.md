@@ -1,3 +1,7 @@
+---
+title: "deduplicate.js"
+---
+
 # deduplicate.js
 
 Remove duplicate addresses and storage keys.

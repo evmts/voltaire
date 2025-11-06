@@ -1,3 +1,7 @@
+---
+title: "EventLog Utilities"
+---
+
 # EventLog Utilities
 
 Utility methods for working with event logs.

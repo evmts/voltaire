@@ -1,3 +1,7 @@
+---
+title: "info.js"
+---
+
 # info.js
 
 Get opcode metadata including gas cost and stack requirements.

@@ -1,3 +1,7 @@
+---
+title: "dupPosition.js"
+---
+
 # dupPosition.js
 
 Get stack position for DUP instruction.
