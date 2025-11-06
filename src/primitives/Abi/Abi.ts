@@ -27,6 +27,15 @@ export type { Fallback, Receive } from "./Item.js";
 export * from "./Errors.js";
 export * from "./Encoding.js";
 
+// High-level ABI functions
+export * from "./encodeFunction.js";
+export * from "./decodeFunction.js";
+export * from "./encodeConstructor.js";
+export * from "./encodePacked.js";
+export * from "./decodeLog.js";
+export * from "./getSelector.js";
+export * from "./getFunctionBySelector.js";
+
 // Re-export sub-namespaces
 export * as Item from "./Item.js";
 export * as Function from "./function/index.js";

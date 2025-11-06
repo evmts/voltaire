@@ -1,0 +1,182 @@
+import { Address } from "../Address/index.js";
+import * as Hex from "../Hex/index.js";
+import * as Uint from "../Uint/index.js";
+import { AbiEncodingError, AbiParameterMismatchError } from "./Errors.js";
+
+/**
+ * ABI encodePacked - compact encoding without padding
+ * Used for hash computations where standard ABI encoding would waste space
+ *
+ * @param {readonly string[]} types - Array of type strings
+ * @param {readonly unknown[]} values - Array of values to encode
+ * @returns {import('../Hex/index.js').Hex} Encoded data (hex string)
+ *
+ * @example
+ * ```typescript
+ * // Standard use case: creating signature hashes
+ * const encoded = Abi.encodePacked(
+ *   ["address", "uint256"],
+ *   ["0x742d35cc6634c0532925a3b844bc9e7595f251e3", 100n]
+ * );
+ * // No padding - address is 20 bytes, uint256 is 32 bytes (but only uses needed bytes)
+ * ```
+ */
+export function encodePacked(types, values) {
+	if (types.length !== values.length) {
+		throw new AbiParameterMismatchError(
+			`Type/value count mismatch: ${types.length} types, ${values.length} values`,
+		);
+	}
+
+	const parts = [];
+
+	for (let i = 0; i < types.length; i++) {
+		const type = types[i];
+		const value = values[i];
+
+		if (!type) continue;
+
+		parts.push(encodePackedValue(type, value));
+	}
+
+	// Concatenate all parts
+	const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+	const result = new Uint8Array(totalLength);
+	let offset = 0;
+	for (const part of parts) {
+		result.set(part, offset);
+		offset += part.length;
+	}
+
+	return Hex.fromBytes(result);
+}
+
+/**
+ * Encode a single value in packed format
+ *
+ * @param {string} type - Solidity type
+ * @param {unknown} value - Value to encode
+ * @returns {Uint8Array} Encoded bytes (no padding)
+ */
+function encodePackedValue(type, value) {
+	// Address - 20 bytes, no padding
+	if (type === "address") {
+		const addr = typeof value === "string" ? Address.fromHex(value) : value;
+		return addr;
+	}
+
+	// Bool - 1 byte
+	if (type === "bool") {
+		return new Uint8Array([value ? 1 : 0]);
+	}
+
+	// String - UTF-8 bytes, no length prefix
+	if (type === "string") {
+		return new TextEncoder().encode(value);
+	}
+
+	// Bytes - raw bytes, no length prefix
+	if (type === "bytes") {
+		if (typeof value === "string") {
+			return Hex.toBytes(value);
+		}
+		return value;
+	}
+
+	// Fixed bytes (bytes1-bytes32) - no padding
+	if (type.startsWith("bytes")) {
+		const size = Number.parseInt(type.slice(5));
+		if (size >= 1 && size <= 32) {
+			const bytes = typeof value === "string" ? Hex.toBytes(value) : value;
+			if (bytes.length !== size) {
+				throw new AbiEncodingError(
+					`Invalid ${type} length: expected ${size}, got ${bytes.length}`,
+				);
+			}
+			return bytes;
+		}
+	}
+
+	// Uint - minimal bytes needed
+	if (type.startsWith("uint")) {
+		const bits = type === "uint" ? 256 : Number.parseInt(type.slice(4));
+		const bytes = bits / 8;
+		const bigintValue = typeof value === "number" ? BigInt(value) : value;
+
+		// Convert to bytes (big-endian)
+		const result = new Uint8Array(bytes);
+		let v = bigintValue;
+		for (let i = bytes - 1; i >= 0; i--) {
+			result[i] = Number(v & 0xffn);
+			v >>= 8n;
+		}
+		return result;
+	}
+
+	// Int - minimal bytes needed (two's complement)
+	if (type.startsWith("int")) {
+		const bits = type === "int" ? 256 : Number.parseInt(type.slice(3));
+		const bytes = bits / 8;
+		const bigintValue = typeof value === "number" ? BigInt(value) : value;
+
+		// Convert to two's complement if negative
+		const unsigned =
+			bigintValue < 0n ? (1n << BigInt(bits)) + bigintValue : bigintValue;
+
+		// Convert to bytes (big-endian)
+		const result = new Uint8Array(bytes);
+		let v = unsigned;
+		for (let i = bytes - 1; i >= 0; i--) {
+			result[i] = Number(v & 0xffn);
+			v >>= 8n;
+		}
+		return result;
+	}
+
+	// Arrays - concatenate encoded elements
+	if (type.endsWith("[]")) {
+		const elementType = type.slice(0, -2);
+		const array = value;
+		const parts = [];
+		for (const item of array) {
+			parts.push(encodePackedValue(elementType, item));
+		}
+		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+		const result = new Uint8Array(totalLength);
+		let offset = 0;
+		for (const part of parts) {
+			result.set(part, offset);
+			offset += part.length;
+		}
+		return result;
+	}
+
+	// Fixed arrays
+	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
+	if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
+		const elementType = fixedArrayMatch[1];
+		const arraySize = Number.parseInt(fixedArrayMatch[2]);
+		const array = value;
+
+		if (array.length !== arraySize) {
+			throw new AbiEncodingError(
+				`Array length mismatch: expected ${arraySize}, got ${array.length}`,
+			);
+		}
+
+		const parts = [];
+		for (const item of array) {
+			parts.push(encodePackedValue(elementType, item));
+		}
+		const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+		const result = new Uint8Array(totalLength);
+		let offset = 0;
+		for (const part of parts) {
+			result.set(part, offset);
+			offset += part.length;
+		}
+		return result;
+	}
+
+	throw new AbiEncodingError(`Unsupported packed type: ${type}`);
+}
