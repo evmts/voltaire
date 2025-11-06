@@ -539,11 +539,11 @@ const net2 = netGas(gasUsed2, refunds2);
 | Function | Input | Output | Use Case |
 |----------|-------|--------|----------|
 | `calculateKeccak256Cost` | size | bigint | KECCAK256 operation |
-| `calculateSstoreCost` | isWarm, currentValue, newValue | { cost, refund } | SSTORE with refund tracking |
+| `calculateSstoreCost` | isWarm, currentValue, newValue | `{ cost, refund }` | SSTORE with refund tracking |
 | `calculateLogCost` | topicCount, dataSize | bigint | LOG0-LOG4 operations |
-| `calculateCallCost` | isWarm, hasValue, isNewAccount, availableGas | { base, dynamic, stipend, forwarded, total } | CALL family operations |
-| `calculateMemoryExpansionCost` | oldSize, newSize | { oldCost, newCost, expansionCost, words } | Memory operations |
-| `calculateCreateCost` | initcodeSize, deployedSize | { base, dynamic, total } | CREATE/CREATE2 |
+| `calculateCallCost` | isWarm, hasValue, isNewAccount, availableGas | `{ base, dynamic, stipend, forwarded, total }` | CALL family operations |
+| `calculateMemoryExpansionCost` | oldSize, newSize | `{ oldCost, newCost, expansionCost, words }` | Memory operations |
+| `calculateCreateCost` | initcodeSize, deployedSize | `{ base, dynamic, total }` | CREATE/CREATE2 |
 | `calculateTxIntrinsicGas` | data, isCreate | bigint | Transaction base cost |
 | `calculateCopyCost` | size | bigint | Copy operations |
 | `calculateMaxRefund` | gasUsed | bigint | Refund cap (EIP-3529) |
