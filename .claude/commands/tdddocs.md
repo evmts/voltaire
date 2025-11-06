@@ -1,4 +1,7 @@
-  Ultimate TDD Implementation Prompt for Parallel Primitive Development
+  TDD Primitive Implementation Guide
+
+  **Purpose**: Test-Driven Development workflow for implementing Ethereum primitives (TypeScript + Zig)
+  **Note**: For documentation updates, use `/docs` command instead
 
   ## PROGRESS UPDATE (Session 2025-11-05)
 
