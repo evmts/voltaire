@@ -79,7 +79,11 @@ const validAuth: BrandedAuthorization = {
 	s: 0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210n,
 };
 
-const validUnsigned: {chainId: bigint, address: BrandedAddress, nonce: bigint} = {
+const validUnsigned: {
+	chainId: bigint;
+	address: BrandedAddress;
+	nonce: bigint;
+} = {
 	chainId: 1n,
 	address: addr1,
 	nonce: 0n,

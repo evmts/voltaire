@@ -420,9 +420,7 @@ results.push(
 	benchmark("encode address", () => {
 		encodeParams(
 			[{ type: "address" }],
-			[
-				"0x0000000000000000000000000000000000000000",
-			],
+			["0x0000000000000000000000000000000000000000"],
 		);
 	}),
 );
@@ -452,11 +450,7 @@ results.push(
 	benchmark("encode (uint256, address, bool)", () => {
 		encodeParams(
 			[{ type: "uint256" }, { type: "address" }, { type: "bool" }],
-			[
-				123n,
-				"0x0000000000000000000000000000000000000000",
-				true,
-			],
+			[123n, "0x0000000000000000000000000000000000000000", true],
 		);
 	}),
 );
@@ -483,10 +477,7 @@ console.log("\n--- Function Encoding ---");
 const zeroAddr = Address.fromHex("0x0000000000000000000000000000000000000000");
 results.push(
 	benchmark("Function.encodeParams - transfer", () => {
-		Abi.Function.encodeParams(transferFunc, [
-			zeroAddr,
-			100n,
-		]);
+		Abi.Function.encodeParams(transferFunc, [zeroAddr, 100n]);
 	}),
 );
 results.push(
@@ -566,10 +557,7 @@ const encodedBool = encodeParams([{ type: "bool" }], [true]);
 const encodedString = encodeParams([{ type: "string" }], ["Hello World"]);
 const encodedMixed = encodeParams(
 	[{ type: "uint256" }, { type: "address" }],
-	[
-		123n,
-		"0x0000000000000000000000000000000000000000",
-	],
+	[123n, "0x0000000000000000000000000000000000000000"],
 );
 
 console.log("--- Basic Type Decoding ---");
@@ -754,20 +742,14 @@ results.push(
 results.push(
 	benchmark("round-trip (uint256, address)", () => {
 		const params = [{ type: "uint256" }, { type: "address" }];
-		const values = [
-			123n,
-			zeroAddr,
-		];
+		const values = [123n, zeroAddr];
 		const encoded = encodeParams(params, values as any);
 		decodeParams(params, encoded);
 	}),
 );
 results.push(
 	benchmark("round-trip Function call", () => {
-		const encoded = Abi.Function.encodeParams(transferFunc, [
-			zeroAddr,
-			100n,
-		]);
+		const encoded = Abi.Function.encodeParams(transferFunc, [zeroAddr, 100n]);
 		Abi.Function.decodeParams(transferFunc, encoded);
 	}),
 );

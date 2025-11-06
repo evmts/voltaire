@@ -17,7 +17,11 @@ import { calculateGas } from "./BrandedBlob/calculateGas.js";
 import { estimateBlobCount } from "./BrandedBlob/estimateBlobCount.js";
 import { splitData } from "./BrandedBlob/splitData.js";
 import { joinData } from "./BrandedBlob/joinData.js";
-import { SIZE, COMMITMENT_VERSION_KZG, MAX_PER_TRANSACTION } from "./BrandedBlob/constants.js";
+import {
+	SIZE,
+	COMMITMENT_VERSION_KZG,
+	MAX_PER_TRANSACTION,
+} from "./BrandedBlob/constants.js";
 import type { Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
 
 // Benchmark runner
@@ -110,12 +114,8 @@ results.push(
 results.push(
 	benchmark("fromData - medium (10 KB)", () => fromData(mediumData)),
 );
-results.push(
-	benchmark("fromData - large (100 KB)", () => fromData(largeData)),
-);
-results.push(
-	benchmark("fromData - max (128 KB)", () => fromData(maxData)),
-);
+results.push(benchmark("fromData - large (100 KB)", () => fromData(largeData)));
+results.push(benchmark("fromData - max (128 KB)", () => fromData(maxData)));
 
 console.log(
 	results
@@ -141,15 +141,9 @@ console.log(
 );
 
 console.log("--- Data Decoding (toData) ---");
-results.push(
-	benchmark("toData - small (13 bytes)", () => toData(smallBlob)),
-);
-results.push(
-	benchmark("toData - medium (10 KB)", () => toData(mediumBlob)),
-);
-results.push(
-	benchmark("toData - large (100 KB)", () => toData(largeBlob)),
-);
+results.push(benchmark("toData - small (13 bytes)", () => toData(smallBlob)));
+results.push(benchmark("toData - medium (10 KB)", () => toData(mediumBlob)));
+results.push(benchmark("toData - large (100 KB)", () => toData(largeBlob)));
 results.push(benchmark("toData - max (128 KB)", () => toData(maxBlob)));
 
 console.log(
@@ -185,25 +179,27 @@ validHash[0] = COMMITMENT_VERSION_KZG;
 
 console.log("--- Type Guards ---");
 results.push(benchmark("isValid - valid", () => isValid(validBlob)));
+results.push(benchmark("isValid - invalid", () => isValid(invalidBlob)));
 results.push(
-	benchmark("isValid - invalid", () => isValid(invalidBlob)),
-);
-results.push(
-	benchmark("Commitment.isValid - valid", () =>
-		validCommitment.byteLength === 48,
+	benchmark(
+		"Commitment.isValid - valid",
+		() => validCommitment.byteLength === 48,
 	),
 );
 results.push(
-	benchmark("Commitment.isValid - invalid", () =>
-		invalidCommitment.byteLength === 48,
+	benchmark(
+		"Commitment.isValid - invalid",
+		() => invalidCommitment.byteLength === 48,
 	),
 );
 results.push(
 	benchmark("Proof.isValid - valid", () => validProof.byteLength === 48),
 );
 results.push(
-	benchmark("VersionedHash.isValid - valid", () =>
-		validHash.byteLength === 32 && validHash[0] === COMMITMENT_VERSION_KZG,
+	benchmark(
+		"VersionedHash.isValid - valid",
+		() =>
+			validHash.byteLength === 32 && validHash[0] === COMMITMENT_VERSION_KZG,
 	),
 );
 
@@ -221,19 +217,9 @@ console.log("\n--- Version Checks ---");
 const versionedHash = new Uint8Array(32) as VersionedHash;
 versionedHash[0] = COMMITMENT_VERSION_KZG;
 
-results.push(
-	benchmark("isValidVersion", () => isValidVersion(versionedHash)),
-);
-results.push(
-	benchmark("VersionedHash.getVersion", () =>
-		versionedHash[0],
-	),
-);
-results.push(
-	benchmark("VersionedHash.version", () =>
-		versionedHash[0],
-	),
-);
+results.push(benchmark("isValidVersion", () => isValidVersion(versionedHash)));
+results.push(benchmark("VersionedHash.getVersion", () => versionedHash[0]));
+results.push(benchmark("VersionedHash.version", () => versionedHash[0]));
 
 console.log(
 	results
@@ -262,9 +248,7 @@ console.log("--- Gas Calculations ---");
 results.push(benchmark("calculateGas - 1 blob", () => calculateGas(1)));
 results.push(benchmark("calculateGas - 3 blobs", () => calculateGas(3)));
 results.push(
-	benchmark("calculateGas - 6 blobs", () =>
-		calculateGas(MAX_PER_TRANSACTION),
-	),
+	benchmark("calculateGas - 6 blobs", () => calculateGas(MAX_PER_TRANSACTION)),
 );
 
 console.log(
@@ -337,15 +321,9 @@ const split1 = splitData(multiBlob1);
 const split3 = splitData(multiBlob3);
 const split6 = splitData(multiBlob6);
 
-results.push(
-	benchmark("joinData - 2 blobs (200 KB)", () => joinData(split1)),
-);
-results.push(
-	benchmark("joinData - 3 blobs (350 KB)", () => joinData(split3)),
-);
-results.push(
-	benchmark("joinData - 6 blobs (750 KB)", () => joinData(split6)),
-);
+results.push(benchmark("joinData - 2 blobs (200 KB)", () => joinData(split1)));
+results.push(benchmark("joinData - 3 blobs (350 KB)", () => joinData(split3)));
+results.push(benchmark("joinData - 6 blobs (750 KB)", () => joinData(split6)));
 
 console.log(
 	results
@@ -471,11 +449,7 @@ console.log("\n--- KZG Verification ---");
 results.push(
 	benchmark("verify", () => {
 		try {
-			verify(
-				smallBlob,
-				validCommitment as Commitment,
-				validProof as Proof,
-			);
+			verify(smallBlob, validCommitment as Commitment, validProof as Proof);
 		} catch {
 			// Expected - not implemented
 		}
@@ -491,11 +465,7 @@ results.push(
 					validCommitment as Commitment,
 					validCommitment as Commitment,
 				],
-				[
-					validProof as Proof,
-					validProof as Proof,
-					validProof as Proof,
-				],
+				[validProof as Proof, validProof as Proof, validProof as Proof],
 			);
 		} catch {
 			// Expected - not implemented

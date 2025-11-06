@@ -152,9 +152,7 @@ results.push(
 	benchmark("isSized - correct size (4)", () => isSized(smallHex, 4)),
 );
 results.push(benchmark("isSized - wrong size", () => isSized(smallHex, 8)));
-results.push(
-	benchmark("isSized - large (256)", () => isSized(largeHex, 256)),
-);
+results.push(benchmark("isSized - large (256)", () => isSized(largeHex, 256)));
 
 console.log(
 	results
@@ -270,15 +268,11 @@ console.log(
 );
 
 console.log("\n--- To Bytes ---");
-results.push(
-	benchmark("toBytes - small (4 bytes)", () => toBytes(smallHex)),
-);
+results.push(benchmark("toBytes - small (4 bytes)", () => toBytes(smallHex)));
 results.push(
 	benchmark("toBytes - medium (32 bytes)", () => toBytes(mediumHex)),
 );
-results.push(
-	benchmark("toBytes - large (256 bytes)", () => toBytes(largeHex)),
-);
+results.push(benchmark("toBytes - large (256 bytes)", () => toBytes(largeHex)));
 
 console.log(
 	results
@@ -433,9 +427,7 @@ console.log(
 
 console.log("\n--- To String ---");
 results.push(benchmark("toString - short", () => toString(hexFromString)));
-results.push(
-	benchmark("toString - long", () => toString(hexFromLongString)),
-);
+results.push(benchmark("toString - long", () => toString(hexFromLongString)));
 
 console.log(
 	results
@@ -476,14 +468,10 @@ console.log(
 
 console.log("\n--- To Boolean ---");
 results.push(
-	benchmark("toBoolean - true (0x01)", () =>
-		toBoolean("0x01" as BrandedHex),
-	),
+	benchmark("toBoolean - true (0x01)", () => toBoolean("0x01" as BrandedHex)),
 );
 results.push(
-	benchmark("toBoolean - false (0x00)", () =>
-		toBoolean("0x00" as BrandedHex),
-	),
+	benchmark("toBoolean - false (0x00)", () => toBoolean("0x00" as BrandedHex)),
 );
 results.push(
 	benchmark("toBoolean - true (non-zero)", () =>
@@ -543,13 +531,9 @@ console.log(
 );
 
 console.log("--- Concatenation ---");
+results.push(benchmark("concat - two small", () => concat(smallHex, smallHex)));
 results.push(
-	benchmark("concat - two small", () => concat(smallHex, smallHex)),
-);
-results.push(
-	benchmark("concat - three small", () =>
-		concat(smallHex, smallHex, smallHex),
-	),
+	benchmark("concat - three small", () => concat(smallHex, smallHex, smallHex)),
 );
 results.push(
 	benchmark("concat - two medium", () => concat(mediumHex, mediumHex)),
@@ -584,9 +568,7 @@ console.log(
 );
 
 console.log("--- Slicing ---");
-results.push(
-	benchmark("slice - small (start only)", () => slice(smallHex, 1)),
-);
+results.push(benchmark("slice - small (start only)", () => slice(smallHex, 1)));
 results.push(
 	benchmark("slice - small (start + end)", () => slice(smallHex, 1, 3)),
 );
@@ -619,9 +601,7 @@ console.log(
 console.log("--- Left Padding ---");
 results.push(benchmark("pad - small to medium", () => pad(smallHex, 32)));
 results.push(benchmark("pad - small to large", () => pad(smallHex, 256)));
-results.push(
-	benchmark("pad - no-op (already sized)", () => pad(smallHex, 4)),
-);
+results.push(benchmark("pad - no-op (already sized)", () => pad(smallHex, 4)));
 
 console.log(
 	results
@@ -641,9 +621,7 @@ results.push(
 	benchmark("padRight - small to large", () => padRight(smallHex, 256)),
 );
 results.push(
-	benchmark("padRight - no-op (already sized)", () =>
-		padRight(smallHex, 4),
-	),
+	benchmark("padRight - no-op (already sized)", () => padRight(smallHex, 4)),
 );
 
 console.log(
@@ -751,9 +729,7 @@ results.push(
 	benchmark("xor - medium (32 bytes)", () => xor(xorMediumA, xorMediumB)),
 );
 results.push(
-	benchmark("xor - large (256 bytes)", () =>
-		xor(largeHex, random(256)),
-	),
+	benchmark("xor - large (256 bytes)", () => xor(largeHex, random(256))),
 );
 results.push(
 	benchmark("xor - length mismatch", () => {

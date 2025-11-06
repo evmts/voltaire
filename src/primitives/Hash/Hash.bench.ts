@@ -119,9 +119,7 @@ console.log(
 const results: BenchmarkResult[] = [];
 
 console.log("--- fromHex ---");
-results.push(
-	benchmark("fromHex - with 0x prefix", () => fromHex(validHex)),
-);
+results.push(benchmark("fromHex - with 0x prefix", () => fromHex(validHex)));
 results.push(
 	benchmark("fromHex - without prefix", () => fromHex(validHexNoPrefix)),
 );
@@ -256,12 +254,8 @@ console.log(
 
 console.log("--- equals ---");
 results.push(benchmark("equals - same value", () => equals(hash1, hash2)));
-results.push(
-	benchmark("equals - different value", () => equals(hash1, hash3)),
-);
-results.push(
-	benchmark("equals - zero hash", () => equals(zeroHash, ZERO)),
-);
+results.push(benchmark("equals - different value", () => equals(hash1, hash3)));
+results.push(benchmark("equals - zero hash", () => equals(zeroHash, ZERO)));
 
 console.log(
 	results
@@ -302,9 +296,7 @@ console.log(
 
 console.log("--- isHash ---");
 results.push(benchmark("isHash - valid", () => isHash(hash1)));
-results.push(
-	benchmark("isHash - invalid (string)", () => isHash(validHex)),
-);
+results.push(benchmark("isHash - invalid (string)", () => isHash(validHex)));
 results.push(
 	benchmark("isHash - invalid (wrong length)", () => isHash(invalidBytes)),
 );
@@ -330,14 +322,10 @@ results.push(
 	),
 );
 results.push(
-	benchmark("isValidHex - invalid length", () =>
-		isValidHex(invalidHexShort),
-	),
+	benchmark("isValidHex - invalid length", () => isValidHex(invalidHexShort)),
 );
 results.push(
-	benchmark("isValidHex - invalid chars", () =>
-		isValidHex(invalidHexBadChars),
-	),
+	benchmark("isValidHex - invalid chars", () => isValidHex(invalidHexBadChars)),
 );
 
 console.log(
@@ -386,18 +374,14 @@ console.log(
 );
 
 console.log("--- keccak256 - different data sizes ---");
-results.push(
-	benchmark("keccak256 - empty data", () => keccak256(emptyData)),
-);
+results.push(benchmark("keccak256 - empty data", () => keccak256(emptyData)));
 results.push(
 	benchmark("keccak256 - small (32 bytes)", () => keccak256(smallData)),
 );
 results.push(
 	benchmark("keccak256 - medium (1KB)", () => keccak256(mediumData)),
 );
-results.push(
-	benchmark("keccak256 - large (10KB)", () => keccak256(largeData)),
-);
+results.push(benchmark("keccak256 - large (10KB)", () => keccak256(largeData)));
 
 console.log(
 	results
@@ -410,16 +394,12 @@ console.log(
 );
 
 console.log("\n--- keccak256String ---");
-results.push(
-	benchmark("keccak256String - empty", () => keccak256String("")),
-);
+results.push(benchmark("keccak256String - empty", () => keccak256String("")));
 results.push(
 	benchmark("keccak256String - short", () => keccak256String("hello")),
 );
 results.push(
-	benchmark("keccak256String - long", () =>
-		keccak256String("a".repeat(1000)),
-	),
+	benchmark("keccak256String - long", () => keccak256String("a".repeat(1000))),
 );
 
 console.log(
@@ -433,12 +413,8 @@ console.log(
 );
 
 console.log("\n--- keccak256Hex ---");
-results.push(
-	benchmark("keccak256Hex - short", () => keccak256Hex("0x1234")),
-);
-results.push(
-	benchmark("keccak256Hex - hash", () => keccak256Hex(validHex)),
-);
+results.push(benchmark("keccak256Hex - short", () => keccak256Hex("0x1234")));
+results.push(benchmark("keccak256Hex - hash", () => keccak256Hex(validHex)));
 results.push(
 	benchmark("keccak256Hex - invalid", () => {
 		try {
@@ -500,9 +476,7 @@ console.log(
 
 console.log("\n--- slice ---");
 results.push(benchmark("slice - first 4 bytes", () => slice(hash1, 0, 4)));
-results.push(
-	benchmark("slice - last 4 bytes", () => slice(hash1, 28, 32)),
-);
+results.push(benchmark("slice - last 4 bytes", () => slice(hash1, 28, 32)));
 results.push(benchmark("slice - middle", () => slice(hash1, 10, 20)));
 
 console.log(
@@ -517,9 +491,7 @@ console.log(
 
 console.log("\n--- format ---");
 results.push(benchmark("format - default", () => format(hash1)));
-results.push(
-	benchmark("format - custom lengths", () => format(hash1, 10, 8)),
-);
+results.push(benchmark("format - custom lengths", () => format(hash1, 10, 8)));
 
 console.log(
 	results

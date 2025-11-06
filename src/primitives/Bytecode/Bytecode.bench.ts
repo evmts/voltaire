@@ -107,7 +107,9 @@ const largeCode = generateBytecode(10000) as BrandedBytecode;
 const hugeCode = generateBytecode(50000) as BrandedBytecode;
 
 // Simple patterns
-const simplePush = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01]) as BrandedBytecode;
+const simplePush = new Uint8Array([
+	0x60, 0x01, 0x60, 0x02, 0x01,
+]) as BrandedBytecode;
 const pushWithJumpdest = new Uint8Array([
 	0x60,
 	0x5b,
@@ -175,19 +177,13 @@ console.log(
 
 console.log("\n--- isValidJumpDest ---");
 results.push(
-	benchmark("isValidJumpDest - small", () =>
-		isValidJumpDest(smallCode, 10),
-	),
+	benchmark("isValidJumpDest - small", () => isValidJumpDest(smallCode, 10)),
 );
 results.push(
-	benchmark("isValidJumpDest - medium", () =>
-		isValidJumpDest(mediumCode, 500),
-	),
+	benchmark("isValidJumpDest - medium", () => isValidJumpDest(mediumCode, 500)),
 );
 results.push(
-	benchmark("isValidJumpDest - large", () =>
-		isValidJumpDest(largeCode, 5000),
-	),
+	benchmark("isValidJumpDest - large", () => isValidJumpDest(largeCode, 5000)),
 );
 
 console.log(
@@ -214,18 +210,10 @@ console.log(
 );
 
 console.log("--- validate - varying sizes ---");
-results.push(
-	benchmark("validate - small (100b)", () => validate(smallCode)),
-);
-results.push(
-	benchmark("validate - medium (1kb)", () => validate(mediumCode)),
-);
-results.push(
-	benchmark("validate - large (10kb)", () => validate(largeCode)),
-);
-results.push(
-	benchmark("validate - huge (50kb)", () => validate(hugeCode)),
-);
+results.push(benchmark("validate - small (100b)", () => validate(smallCode)));
+results.push(benchmark("validate - medium (1kb)", () => validate(mediumCode)));
+results.push(benchmark("validate - large (10kb)", () => validate(largeCode)));
+results.push(benchmark("validate - huge (50kb)", () => validate(hugeCode)));
 
 console.log(
 	results
@@ -339,18 +327,10 @@ console.log(
 );
 
 console.log("--- analyze - full bytecode analysis ---");
-results.push(
-	benchmark("analyze - small (100b)", () => analyze(smallCode)),
-);
-results.push(
-	benchmark("analyze - medium (1kb)", () => analyze(mediumCode)),
-);
-results.push(
-	benchmark("analyze - large (10kb)", () => analyze(largeCode)),
-);
-results.push(
-	benchmark("analyze - huge (50kb)", () => analyze(hugeCode)),
-);
+results.push(benchmark("analyze - small (100b)", () => analyze(smallCode)));
+results.push(benchmark("analyze - medium (1kb)", () => analyze(mediumCode)));
+results.push(benchmark("analyze - large (10kb)", () => analyze(largeCode)));
+results.push(benchmark("analyze - huge (50kb)", () => analyze(hugeCode)));
 
 console.log(
 	results
@@ -376,15 +356,9 @@ console.log(
 );
 
 console.log("--- toHex - varying sizes ---");
-results.push(
-	benchmark("toHex - small (100b)", () => toHex(smallCode)),
-);
-results.push(
-	benchmark("toHex - medium (1kb)", () => toHex(mediumCode)),
-);
-results.push(
-	benchmark("toHex - large (10kb)", () => toHex(largeCode)),
-);
+results.push(benchmark("toHex - small (100b)", () => toHex(smallCode)));
+results.push(benchmark("toHex - medium (1kb)", () => toHex(mediumCode)));
+results.push(benchmark("toHex - large (10kb)", () => toHex(largeCode)));
 
 console.log(
 	results
@@ -401,15 +375,9 @@ const mediumHex = toHex(mediumCode);
 const largeHex = toHex(largeCode);
 
 console.log("\n--- fromHex - varying sizes ---");
-results.push(
-	benchmark("fromHex - small (100b)", () => fromHex(smallHex)),
-);
-results.push(
-	benchmark("fromHex - medium (1kb)", () => fromHex(mediumHex)),
-);
-results.push(
-	benchmark("fromHex - large (10kb)", () => fromHex(largeHex)),
-);
+results.push(benchmark("fromHex - small (100b)", () => fromHex(smallHex)));
+results.push(benchmark("fromHex - medium (1kb)", () => fromHex(mediumHex)));
+results.push(benchmark("fromHex - large (10kb)", () => fromHex(largeHex)));
 
 console.log(
 	results
@@ -423,14 +391,10 @@ console.log(
 
 console.log("\n--- hex round-trip ---");
 results.push(
-	benchmark("hex round-trip - small", () =>
-		fromHex(toHex(smallCode)),
-	),
+	benchmark("hex round-trip - small", () => fromHex(toHex(smallCode))),
 );
 results.push(
-	benchmark("hex round-trip - medium", () =>
-		fromHex(toHex(mediumCode)),
-	),
+	benchmark("hex round-trip - medium", () => fromHex(toHex(mediumCode))),
 );
 
 console.log(
@@ -498,14 +462,10 @@ console.log(
 
 console.log("--- hasMetadata ---");
 results.push(
-	benchmark("hasMetadata - without metadata", () =>
-		hasMetadata(mediumCode),
-	),
+	benchmark("hasMetadata - without metadata", () => hasMetadata(mediumCode)),
 );
 results.push(
-	benchmark("hasMetadata - with metadata", () =>
-		hasMetadata(codeWithMetadata),
-	),
+	benchmark("hasMetadata - with metadata", () => hasMetadata(codeWithMetadata)),
 );
 
 console.log(
@@ -559,19 +519,13 @@ const largeCode2 = new Uint8Array(largeCode) as BrandedBytecode;
 
 console.log("--- equals - varying sizes ---");
 results.push(
-	benchmark("equals - small (100b)", () =>
-		equals(smallCode, smallCode2),
-	),
+	benchmark("equals - small (100b)", () => equals(smallCode, smallCode2)),
 );
 results.push(
-	benchmark("equals - medium (1kb)", () =>
-		equals(mediumCode, mediumCode2),
-	),
+	benchmark("equals - medium (1kb)", () => equals(mediumCode, mediumCode2)),
 );
 results.push(
-	benchmark("equals - large (10kb)", () =>
-		equals(largeCode, largeCode2),
-	),
+	benchmark("equals - large (10kb)", () => equals(largeCode, largeCode2)),
 );
 
 console.log(
@@ -629,14 +583,10 @@ console.log("--- size and extraction ---");
 results.push(benchmark("size - small", () => size(smallCode)));
 results.push(benchmark("size - large", () => size(largeCode)));
 results.push(
-	benchmark("extractRuntime - small", () =>
-		extractRuntime(smallCode, 10),
-	),
+	benchmark("extractRuntime - small", () => extractRuntime(smallCode, 10)),
 );
 results.push(
-	benchmark("extractRuntime - large", () =>
-		extractRuntime(largeCode, 100),
-	),
+	benchmark("extractRuntime - large", () => extractRuntime(largeCode, 100)),
 );
 
 console.log(
