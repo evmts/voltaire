@@ -222,9 +222,19 @@ Self-contained, fix failures immediately, evidence-based debug. **No output = pa
 
 ### Astro Starlight Site
 
-- Location: `src/content/docs/`
-- Format: MDX (Markdown + JSX)
-- Structure: `primitives/`, `crypto/`, `getting-started.mdx`
+- **Location**: `src/content/docs/`
+- **Format**: MDX (Markdown + JSX) or MD
+- **Structure**: Hybrid (centralized + colocated)
+  - Centralized: `src/content/docs/primitives/{address,uint,hash,hex,transaction,bytecode,chain,denomination,base64,binarytree,bloomfilter}/` (11 primitives)
+  - Colocated: `src/primitives/{Abi,AccessList,Authorization,Blob,EventLog,FeeMarket,GasConstants,Hardfork,Opcode,Rlp,Siwe,State}/*.mdx` (12 primitives, symlinked to `src/content/docs/primitives/`)
+  - Overview: `src/content/docs/getting-started.mdx`, crypto docs
+
+### Colocated Documentation Pattern
+
+Primitives with colocated docs use symlinks for Starlight integration:
+- Source: `src/primitives/{PascalCase}/index.mdx`
+- Symlink: `src/content/docs/primitives/{lowercase} → ../../../primitives/{PascalCase}`
+- New primitives: Create docs in `src/primitives/{Name}/` and symlink to `src/content/docs/primitives/{name}`
 
 ### Commands
 
