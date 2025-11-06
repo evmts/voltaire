@@ -1,12 +1,8 @@
 import type { BrandedError } from "./BrandedError/BrandedError.js";
 import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
-// @ts-expect-error - Used in typeof expression
 import { getSelector } from "./BrandedError/getSelector.js";
-// @ts-expect-error - Used in typeof expression
 import { getSignature } from "./BrandedError/getSignature.js";
-// @ts-expect-error - Used in typeof expression
 import { encodeParams } from "./BrandedError/encodeParams.js";
-// @ts-expect-error - Used in typeof expression
 import { decodeParams } from "./BrandedError/decodeParams.js";
 
 type AbiErrorPrototype<
