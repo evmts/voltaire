@@ -36,8 +36,12 @@ export * from "./decodeLog.js";
 export * from "./getSelector.js";
 export * from "./getFunctionBySelector.js";
 
+// Branded ABI methods (with this: parameter)
+export { encode, decode, decodeData, parseLogs } from "./BrandedAbi/index.js";
+
 // Re-export sub-namespaces
 export * as Item from "./Item.js";
+export * as Parameter from "./parameter/index.js";
 export * as Function from "./function/index.js";
 export * as Event from "./event/index.js";
 export * as Error from "./error/index.js";

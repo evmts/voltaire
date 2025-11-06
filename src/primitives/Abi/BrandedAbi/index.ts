@@ -7,12 +7,16 @@ export * as Event from "../event/index.js";
 export * as Error from "../error/index.js";
 export * as Constructor from "../constructor/index.js";
 
+import { decode } from "./decode.js";
+import { decodeData } from "./decodeData.js";
+import { encode } from "./encode.js";
 import { format } from "./format.js";
 import { formatWithArgs } from "./formatWithArgs.js";
 import { getItem } from "./getItem.js";
+import { parseLogs } from "./parseLogs.js";
 
 // Export individual functions
-export { format, formatWithArgs, getItem };
+export { decode, decodeData, encode, format, formatWithArgs, getItem, parseLogs };
 
 /**
  * @typedef {import('./BrandedAbi.js').BrandedAbi} BrandedAbi
@@ -42,5 +46,9 @@ export const BrandedAbi = {
 	format,
 	formatWithArgs,
 	getItem,
+	encode,
+	decode,
+	decodeData,
+	parseLogs,
 	// Sub-namespaces are imported above
 };
