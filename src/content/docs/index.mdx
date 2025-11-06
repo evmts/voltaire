@@ -48,7 +48,7 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 import * as Address from "@tevm/voltaire/Address";
 
 const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-const checksum = Address.toChecksumHex(addr);
+const checksum = Address.toChecksummed(addr);
 const isZero = Address.isZero(addr);
 ```
 

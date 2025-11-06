@@ -19,6 +19,7 @@ Transaction module provides type-safe encoding, decoding, signing, and hashing f
 <TabItem label="Basic Usage">
 ```typescript
 import * as Transaction from '@tevm/voltaire/Transaction'
+import * as Address from '@tevm/voltaire/Address'
 
 // Create a transaction
 const tx: Transaction.EIP1559 = {
@@ -76,7 +77,7 @@ const legacy: Transaction.Legacy = {
 }
 
 // Get chain ID from legacy v value
-const chainId = Transaction.Legacy.getChainId.call(legacy)
+const chainId = Transaction.getChainId(legacy)
 
 // EIP-1559 transaction
 const eip1559: Transaction.EIP1559 = { /* ... */ }

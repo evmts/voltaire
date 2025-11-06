@@ -389,6 +389,24 @@ const allValidLogs = EventLog.sortLogs([
 ])
 ```
 
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific methods
+import { filterLogs, matchesFilter, getTopic0 } from '@tevm/primitives/EventLog'
+
+// Or import entire namespace
+import * as EventLog from '@tevm/primitives/EventLog'
+
+// Selective imports minimize bundle size
+const transfers = filterLogs(allLogs, { topics: [transferSig] })
+const signature = getTopic0(log)
+```
+
+Each function is independently exported, allowing bundlers to eliminate unused filtering, sorting, and comparison utilities when not needed.
+
 ## Topic Structure
 
 Ethereum event logs use up to 4 topics:

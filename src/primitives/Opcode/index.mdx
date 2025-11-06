@@ -16,9 +16,9 @@ Opcode provides comprehensive utilities for working with EVM opcodes (0x00-0xFF)
 ## Quick Start
 
 <Tabs>
-<TabItem label="Basic Usage">
+<TabItem label="Namespace API (Tree-shakeable)">
 ```typescript
-import * as Opcode from '@tevm/primitives/Opcode'
+import * as Opcode from '@tevm/voltaire/Opcode'
 
 // Check opcode validity
 const valid = Opcode.isValid(0x60)  // true (PUSH1)
@@ -35,11 +35,60 @@ Opcode.isPush(0x60)   // true
 Opcode.isDup(0x80)    // true (DUP1)
 Opcode.isSwap(0x90)   // true (SWAP1)
 Opcode.isLog(0xa0)    // true (LOG0)
+
+// Parse bytecode
+const instructions = Opcode.parse(bytecode)
+const assembly = Opcode.disassemble(bytecode)
+
+// Jump analysis
+const jumpDests = Opcode.jumpDests(bytecode)
+const isValidJump = Opcode.isValidJumpDest(bytecode, 0x0042)
+```
+</TabItem>
+<TabItem label="Functional API">
+```typescript
+import {
+  isValid,
+  name,
+  info,
+  isPush,
+  isDup,
+  isSwap,
+  isLog,
+  parse,
+  disassemble,
+  jumpDests,
+  isValidJumpDest
+} from '@tevm/voltaire/Opcode'
+
+// Check opcode validity
+const valid = isValid(0x60)  // true (PUSH1)
+
+// Get opcode name
+const opName = name(0x60)  // "PUSH1"
+
+// Get opcode info
+const opInfo = info(0x60)
+// { gasCost: 3, stackInputs: 0, stackOutputs: 1, name: "PUSH1" }
+
+// Categorization
+isPush(0x60)   // true
+isDup(0x80)    // true (DUP1)
+isSwap(0x90)   // true (SWAP1)
+isLog(0xa0)    // true (LOG0)
+
+// Parse bytecode
+const instructions = parse(bytecode)
+const assembly = disassemble(bytecode)
+
+// Jump analysis
+const dests = jumpDests(bytecode)
+const isValidJump = isValidJumpDest(bytecode, 0x0042)
 ```
 </TabItem>
 <TabItem label="Bytecode Parsing">
 ```typescript
-import * as Opcode from '@tevm/primitives/Opcode'
+import * as Opcode from '@tevm/voltaire/Opcode'
 
 const bytecode = new Uint8Array([
   0x60, 0x80,           // PUSH1 0x80
@@ -64,7 +113,7 @@ const instructions = Opcode.parse(bytecode)
 </TabItem>
 <TabItem label="Disassembly">
 ```typescript
-import * as Opcode from '@tevm/primitives/Opcode'
+import * as Opcode from '@tevm/voltaire/Opcode'
 
 const bytecode = new Uint8Array([
   0x60, 0x80,           // PUSH1 0x80
@@ -87,24 +136,6 @@ const formatted = Opcode.format({
   immediate: new Uint8Array([0x80])
 })
 // "0000: PUSH1 0x80"
-```
-</TabItem>
-<TabItem label="Jump Analysis">
-```typescript
-import * as Opcode from '@tevm/primitives/Opcode'
-
-const bytecode = contractBytecode
-
-// Find all valid JUMPDEST positions
-const jumpDests = Opcode.jumpDests(bytecode)
-// Set([0x0042, 0x0089, 0x00b3, ...])
-
-// Check if offset is valid jump destination
-const isValid = Opcode.isValidJumpDest(bytecode, 0x0042)  // true
-
-// Check for jump opcodes
-Opcode.isJump(0x56)  // true (JUMP)
-Opcode.isJump(0x57)  // true (JUMPI)
 ```
 </TabItem>
 </Tabs>
@@ -486,6 +517,24 @@ for (const inst of executedInstructions) {
 const allOffsets = Opcode.parse(bytecode).map(i => i.offset)
 const uncovered = allOffsets.filter(o => !coverage.has(o))
 ```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific operations
+import { parse, disassemble, isPush, isValid } from '@tevm/primitives/Opcode'
+
+// Or import entire namespace
+import * as Opcode from '@tevm/primitives/Opcode'
+
+// Selective imports for bytecode analysis
+const instructions = parse(bytecode)
+const assembly = disassemble(bytecode)
+```
+
+Each parser, categorization check, and disassembly function is independently exported. Import only the bytecode analysis utilities you need (e.g., just `parse` without `disassemble` or jump analysis).
 
 ## Opcode Categories
 

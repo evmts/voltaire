@@ -2,6 +2,8 @@
 title: "AccessList"
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 # AccessList
 
 EIP-2930 access list primitive for gas-optimized Ethereum transactions.
@@ -24,6 +26,8 @@ Access lists (EIP-2930) allow transactions to pre-declare addresses and storage 
 
 ## Quick Start
 
+<Tabs>
+<TabItem label="Class API">
 ```typescript
 import { AccessList, Address, Hash } from '@tevm/voltaire';
 
@@ -40,7 +44,41 @@ list = list.withStorageKey(token, balanceSlot);
 if (list.hasSavings()) {
   transaction.accessList = list;
 }
+
+// Instance methods
+list.gasCost()                  // Total cost
+list.hasSavings()               // Cost < savings?
+list.includesAddress(token)     // Has address?
+list.isEmpty()                  // Is empty?
 ```
+</TabItem>
+<TabItem label="Namespace API (Tree-shakeable)">
+```typescript
+import * as AccessList from '@tevm/voltaire/AccessList';
+import { Address, Hash } from '@tevm/voltaire';
+
+// Create addresses and keys
+const token = Address.fromHex('0x...');
+const balanceSlot = Hash.fromHex('0x...');
+
+// Build access list with functional API
+let list = AccessList.create();
+list = AccessList.withAddress(list, token);
+list = AccessList.withStorageKey(list, token, balanceSlot);
+
+// Check if beneficial
+if (AccessList.hasSavings(list)) {
+  transaction.accessList = list;
+}
+
+// Functional API
+AccessList.gasCost(list)                      // Total cost
+AccessList.hasSavings(list)                   // Cost < savings?
+AccessList.includesAddress(list, token)       // Has address?
+AccessList.isEmpty(list)                      // Is empty?
+```
+</TabItem>
+</Tabs>
 
 ## Structure
 

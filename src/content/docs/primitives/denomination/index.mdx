@@ -62,8 +62,8 @@ console.log(`Cost: ${txCostEther} ETH`)
 import * as Ether from '@tevm/voltaire/Ether'
 import * as Wei from '@tevm/voltaire/Wei'
 
-// User inputs value in Ether
-const valueEther = Ether.from(0.5)  // 0.5 ETH
+// User inputs value in Ether (500_000_000_000_000_000n Wei = 0.5 ETH)
+const valueEther = Ether.from(500_000_000_000_000_000n)  // 0.5 ETH
 
 // Transaction requires Wei
 const valueWei = Ether.toWei(valueEther)  // 500_000_000_000_000_000n Wei

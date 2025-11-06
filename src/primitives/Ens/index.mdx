@@ -2,6 +2,8 @@
 title: "Ens"
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 # Ens
 
 Ethereum Name Service (ENS) name normalization per ENSIP-15 standard.
@@ -9,6 +11,59 @@ Ethereum Name Service (ENS) name normalization per ENSIP-15 standard.
 ## Overview
 
 ENS provides human-readable names for Ethereum addresses. ENSIP-15 normalization ensures consistent canonical representation, preventing homograph attacks and ensuring name uniqueness.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Namespace API (Tree-shakeable)">
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+// Normalize ENS name
+const normalized = Ens.normalize("Nick.ETH");
+// Returns: "nick.eth"
+
+// Beautify (preserve emoji)
+const beautified = Ens.beautify("💩.eth");
+
+// Type guard
+if (Ens.is(value)) {
+  // value is BrandedEns
+}
+
+// Convert to/from string
+const branded = Ens.from("vitalik.eth");
+const plain = Ens.toString(branded);
+```
+</TabItem>
+<TabItem label="Functional API">
+```typescript
+import {
+  normalize,
+  beautify,
+  is,
+  from,
+  toString
+} from '@tevm/voltaire/Ens';
+
+// Normalize ENS name
+const normalized = normalize("Nick.ETH");
+// Returns: "nick.eth"
+
+// Beautify (preserve emoji)
+const beautified = beautify("💩.eth");
+
+// Type guard
+if (is(value)) {
+  // value is BrandedEns
+}
+
+// Convert to/from string
+const branded = from("vitalik.eth");
+const plain = toString(branded);
+```
+</TabItem>
+</Tabs>
 
 ## Type
 
@@ -18,7 +73,7 @@ type BrandedEns = string & { readonly __tag: "Ens" }
 
 Branded string type for normalized ENS names.
 
-## Namespace Methods
+## API Reference
 
 ### Normalization
 
@@ -134,6 +189,24 @@ defer allocator.free(normalized);
 const beautified = try primitives.Ens.beautify(allocator, "💩.eth");
 defer allocator.free(beautified);
 ```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific methods
+import { normalize, beautify } from '@tevm/voltaire/Ens'
+
+// Or import entire namespace
+import { Ens } from '@tevm/voltaire'
+
+// Selective imports minimize bundle size
+const normalized = normalize("Nick.ETH")
+// beautify() not included in bundle if unused
+```
+
+Each normalization method is independently exported. Import only `normalize` if you don't need `beautify` or type guards, reducing bundle size by excluding unused Unicode handling logic.
 
 ## ENSIP-15 Compliance
 

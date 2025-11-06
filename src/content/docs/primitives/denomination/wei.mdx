@@ -14,11 +14,12 @@ Wei is the atomic unit of Ether. All Ethereum values are ultimately represented 
 ## Type Definition
 
 ```typescript
-import * as Uint from '@tevm/voltaire/Uint'
+import * as Wei from '@tevm/voltaire/Wei'
 
-const weiSymbol = Symbol("Wei")
+// Wei.Type is branded Uint256 preventing unit mixing
+const wei: Wei.Type = Wei.from(1_000_000_000n)
 
-export type Type = Uint.Type & { __brand: typeof weiSymbol }
+// Internal: Wei.Type = Uint.Type & { __brand: typeof weiSymbol }
 ```
 
 ## Construction

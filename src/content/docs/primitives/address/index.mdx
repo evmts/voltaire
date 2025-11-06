@@ -83,7 +83,7 @@ class Address extends Uint8Array {
   toLowercase(): Lowercase
   toUppercase(): Uppercase
   toU256(): BrandedU256
-  toAbiEncoded(): Bytesless than 32>
+  toAbiEncoded(): Uint8Array
   toShortHex(prefixLength?: number, suffixLength?: number): string
 
   // Comparisons (→ /primitives/address/comparisons)
@@ -205,7 +205,7 @@ Source: [constants.js](https://github.com/evmts/primitives/blob/main/src/primiti
 </CardGrid>
 
 <Aside type="tip" title="Why Uint8Array over hex strings?">
-Uint8Array eliminates casing bugs (checksummed vs lowercase). Conversions happen at boundaries; internal representation stays byte-based. See [Bytes](/primitives/bytes) for byte utilities.
+Uint8Array eliminates casing bugs (checksummed vs lowercase). Conversions happen at boundaries; internal representation stays byte-based. See [Hex](/primitives/hex) for conversion utilities.
 </Aside>
 
 ## Related Types
@@ -217,10 +217,10 @@ Uint8Array eliminates casing bugs (checksummed vs lowercase). Conversions happen
     [View Hex →](/primitives/hex)
   </Card>
 
-  <Card title="Bytes" icon="document">
-    Byte array operations and fixed-size types (used in [constructors](/primitives/address/constructors)).
+  <Card title="Uint" icon="document">
+    Unsigned integer types and operations (used in [constructors](/primitives/address/constructors)).
 
-    [View Bytes →](/primitives/bytes)
+    [View Uint →](/primitives/uint)
   </Card>
 
   <Card title="Branded Types" icon="open-book">

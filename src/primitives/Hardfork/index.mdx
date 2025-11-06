@@ -170,6 +170,26 @@ console.log(`${upgradePath.length} hardforks to upgrade through`);
 - **[branded-hardfork.mdx](./branded-hardfork.mdx)** - Branded type pattern
 - **[wasm.mdx](./wasm.mdx)** - WASM implementation status
 
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific features
+import { hasEIP4844, isAtLeast, fromString } from '@tevm/voltaire/Hardfork'
+
+// Or import constants only
+import { CANCUN, LONDON, BERLIN } from '@tevm/voltaire/Hardfork'
+
+// Selective imports reduce bundle size
+const fork = fromString(userInput)
+if (hasEIP4844(fork)) {
+  // Blob logic
+}
+```
+
+Each comparison method, feature detector, and utility is independently exported. Import only the hardfork detection logic your application needs.
+
 ## Performance
 
 All operations are O(1):

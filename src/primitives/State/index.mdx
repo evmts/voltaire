@@ -344,6 +344,24 @@ export const EIP1967_ADMIN_SLOT =
   0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103n
 ```
 
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific methods
+import { StorageKey, toString, fromString } from '@tevm/primitives/State'
+
+// Or import entire namespace
+import * as State from '@tevm/primitives/State'
+
+// Selective imports for state tracking
+const key = StorageKey(address, slot)
+const keyStr = toString(key)
+```
+
+Each StorageKey method is independently exported, allowing bundlers to eliminate unused serialization, comparison, or hashing utilities.
+
 ## Storage Layout
 
 Solidity storage layout rules:

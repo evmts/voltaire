@@ -2,6 +2,8 @@
 title: "Authorization"
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 # Authorization
 
 EIP-7702 authorization implementation enabling EOA code delegation.
@@ -20,8 +22,10 @@ Authorizations (EIP-7702) allow Externally Owned Accounts (EOAs) to temporarily 
 
 ## Quick Start
 
+<Tabs>
+<TabItem label="Namespace API (Tree-shakeable)">
 ```typescript
-import { Authorization } from '@tevm/voltaire';
+import * as Authorization from '@tevm/voltaire/Authorization';
 
 // Create unsigned authorization
 const unsigned = {
@@ -45,6 +49,40 @@ console.log(`Gas required: ${gas}`);
 const authority = Authorization.verify.call(auth);
 console.log(`Signed by: ${authority}`);
 ```
+</TabItem>
+<TabItem label="Functional API">
+```typescript
+import {
+  sign,
+  validate,
+  getGasCost,
+  verify
+} from '@tevm/voltaire/Authorization';
+
+// Create unsigned authorization
+const unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+// Sign it
+const privateKey = new Uint8Array(32);
+const auth = sign.call(unsigned, privateKey);
+
+// Validate
+validate.call(auth);
+
+// Calculate gas cost
+const gas = getGasCost.call(auth, true);
+console.log(`Gas required: ${gas}`);
+
+// Verify signer
+const authority = verify.call(auth);
+console.log(`Signed by: ${authority}`);
+```
+</TabItem>
+</Tabs>
 
 ## Core Types
 
@@ -369,6 +407,24 @@ if (requiredGas > maxGas) {
   throw new Error('Gas limit exceeded');
 }
 ```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific methods
+import { sign, verify, validate } from '@tevm/primitives/Authorization'
+
+// Or import entire namespace
+import * as Authorization from '@tevm/primitives/Authorization'
+
+// Selective imports reduce bundle size
+const auth = sign.call(unsigned, privateKey)
+const valid = validate.call(auth)
+```
+
+Each function is independently exported, allowing bundlers to eliminate unused code. This is especially beneficial when only using a subset of Authorization functionality (e.g., only validation without signing).
 
 ## Performance
 

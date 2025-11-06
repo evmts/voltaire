@@ -2,6 +2,8 @@
 title: "GasConstants"
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 # GasConstants
 
 EVM gas cost constants and calculation utilities following the Ethereum Yellow Paper and various EIPs.
@@ -19,8 +21,10 @@ GasConstants provides comprehensive gas cost definitions and calculations for EV
 
 ## Quick Start
 
+<Tabs>
+<TabItem label="Namespace API (Tree-shakeable)">
 ```typescript
-import * as GasConstants from './GasConstants/index.js';
+import * as GasConstants from '@tevm/voltaire/GasConstants';
 
 // Direct constants
 GasConstants.QuickStep      // 2n
@@ -44,6 +48,47 @@ GasConstants.Precompile.EcRecover;                          // 3000n
 GasConstants.Precompile.calculateSha256Cost(64n);           // 84n
 GasConstants.Precompile.getEcAddCost('istanbul');           // 150n
 ```
+</TabItem>
+<TabItem label="Functional API">
+```typescript
+import {
+  QuickStep,
+  FastestStep,
+  Sload,
+  ColdSload,
+  calculateKeccak256Cost,
+  calculateMemoryExpansionCost,
+  calculateSstoreCost,
+  calculateCallCost,
+  hasEIP2929,
+  getColdSloadCost,
+  Precompile
+} from '@tevm/voltaire/GasConstants';
+
+// Direct constants
+QuickStep      // 2n
+FastestStep    // 3n
+Sload          // 100n
+ColdSload      // 2100n
+
+// Calculations
+const keccakCost = calculateKeccak256Cost(64n);
+const memExpansion = calculateMemoryExpansionCost(0n, 128n);
+const sstoreResult = calculateSstoreCost(false, 0n, 100n);
+const callResult = calculateCallCost(true, false, false, 100000n);
+
+// Hardfork utilities
+hasEIP2929('berlin');              // true
+getColdSloadCost('istanbul');      // 100n
+getColdSloadCost('berlin');        // 2100n
+
+// Precompiles
+Precompile.EcRecover;                    // 3000n
+Precompile.calculateSha256Cost(64n);     // 84n
+Precompile.getEcAddCost('istanbul');     // 150n
+```
+</TabItem>
+</Tabs>
 
 ## Documentation Structure
 
