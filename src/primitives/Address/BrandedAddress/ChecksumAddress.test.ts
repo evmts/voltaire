@@ -5,27 +5,35 @@ import * as ChecksumAddress from "./ChecksumAddress.js";
 describe("ChecksumAddress", () => {
 	describe("from", () => {
 		it("returns checksummed string", () => {
-			const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+			const addr = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
 			const checksummed = ChecksumAddress.from(addr);
 			expect(checksummed).toBe("0x742d35Cc6634c0532925a3b844bc9e7595F251E3");
 		});
 
 		it("handles all lowercase input", () => {
-			const addr = Address.fromHex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
+			const addr = Address.fromHex(
+				"0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+			);
 			const checksummed = ChecksumAddress.from(addr);
 			expect(typeof checksummed).toBe("string");
 			expect(checksummed).toMatch(/^0x[0-9a-fA-F]{40}$/);
 		});
 
 		it("handles all uppercase input", () => {
-			const addr = Address.fromHex("0xABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCD");
+			const addr = Address.fromHex(
+				"0xABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCD",
+			);
 			const checksummed = ChecksumAddress.from(addr);
 			expect(typeof checksummed).toBe("string");
 			expect(checksummed).toMatch(/^0x[0-9a-fA-F]{40}$/);
 		});
 
 		it("returns same result for same address", () => {
-			const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+			const addr = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
 			const checksummed1 = ChecksumAddress.from(addr);
 			const checksummed2 = ChecksumAddress.from(addr);
 			expect(checksummed1).toBe(checksummed2);
@@ -38,7 +46,9 @@ describe("ChecksumAddress", () => {
 		});
 
 		it("type brands as checksummed", () => {
-			const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+			const addr = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
 			const checksummed = ChecksumAddress.from(addr);
 			// Type assertion to verify brand
 			const _branded: ChecksumAddress.Checksummed = checksummed;
@@ -98,7 +108,9 @@ describe("ChecksumAddress", () => {
 
 	describe("roundtrip", () => {
 		it("from then isValid returns true", () => {
-			const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+			const addr = Address.fromHex(
+				"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+			);
 			const checksummed = ChecksumAddress.from(addr);
 			expect(ChecksumAddress.isValid(checksummed)).toBe(true);
 		});

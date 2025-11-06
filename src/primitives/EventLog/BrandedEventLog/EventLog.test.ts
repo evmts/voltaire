@@ -3,7 +3,22 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { create, getTopic0, getIndexedTopics, getSignature, getIndexed, matchesTopics, matchesAddress, matchesFilter, isRemoved, wasRemoved, clone, copy, filterLogs, sortLogs } from "./index.js";
+import {
+	create,
+	getTopic0,
+	getIndexedTopics,
+	getSignature,
+	getIndexed,
+	matchesTopics,
+	matchesAddress,
+	matchesFilter,
+	isRemoved,
+	wasRemoved,
+	clone,
+	copy,
+	filterLogs,
+	sortLogs,
+} from "./index.js";
 
 const EventLog = {
 	create,
@@ -317,10 +332,8 @@ describe("EventLog.matchesAddress", () => {
 	});
 
 	it("matches byte-wise for addresses", () => {
-		const addrA =
-			"0x0000000000000000000000000000000000000001" as any;
-		const addrB =
-			"0x0000000000000000000000000000000000000001" as any;
+		const addrA = "0x0000000000000000000000000000000000000001" as any;
+		const addrB = "0x0000000000000000000000000000000000000001" as any;
 
 		const log = EventLog.create({
 			address: addrA,

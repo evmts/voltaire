@@ -196,7 +196,11 @@ describe("Authorization.isItem", () => {
 
 describe("Authorization.isUnsigned", () => {
 	it("returns true for valid unsigned", () => {
-		const unsigned: {chainId: bigint, address: BrandedAddress, nonce: bigint} = {
+		const unsigned: {
+			chainId: bigint;
+			address: BrandedAddress;
+			nonce: bigint;
+		} = {
 			chainId: 1n,
 			address: addr1,
 			nonce: 0n,
@@ -401,7 +405,11 @@ describe("Authorization constants", () => {
 
 describe("Authorization.hash", () => {
 	it("returns a hash for unsigned authorization", () => {
-		const unsigned: {chainId: bigint, address: BrandedAddress, nonce: bigint} = {
+		const unsigned: {
+			chainId: bigint;
+			address: BrandedAddress;
+			nonce: bigint;
+		} = {
 			chainId: 1n,
 			address: addr1,
 			nonce: 0n,
@@ -418,7 +426,11 @@ describe("Authorization.hash", () => {
 
 describe("Authorization.sign", () => {
 	it("creates a signed authorization from unsigned", () => {
-		const unsigned: {chainId: bigint, address: BrandedAddress, nonce: bigint} = {
+		const unsigned: {
+			chainId: bigint;
+			address: BrandedAddress;
+			nonce: bigint;
+		} = {
 			chainId: 1n,
 			address: addr1,
 			nonce: 0n,
@@ -602,7 +614,11 @@ describe("Authorization.format", () => {
 	});
 
 	it("formats unsigned authorization", () => {
-		const unsigned: {chainId: bigint, address: BrandedAddress, nonce: bigint} = {
+		const unsigned: {
+			chainId: bigint;
+			address: BrandedAddress;
+			nonce: bigint;
+		} = {
 			chainId: 1n,
 			address: addr1,
 			nonce: 0n,

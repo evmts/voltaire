@@ -9,7 +9,15 @@ import { fromHex } from "./fromHex.js";
 import { getPushSize } from "./getPushSize.js";
 import { hash } from "./hash.js";
 import { hasMetadata } from "./hasMetadata.js";
-import { INVALID, JUMPDEST, PUSH1, PUSH32, RETURN, REVERT, STOP } from "./constants.js";
+import {
+	INVALID,
+	JUMPDEST,
+	PUSH1,
+	PUSH32,
+	RETURN,
+	REVERT,
+	STOP,
+} from "./constants.js";
 import { isPush } from "./isPush.js";
 import { isTerminator } from "./isTerminator.js";
 import { isValidJumpDest } from "./isValidJumpDest.js";
@@ -245,14 +253,16 @@ describe("Bytecode.validate", () => {
 	});
 
 	it("validates bytecode with multiple instructions", () => {
-		const code = bc(new Uint8Array([
-			0x60,
-			0x00, // PUSH1 0x00
-			0x60,
-			0x01, // PUSH1 0x01
-			0x01, // ADD
-			0x5b, // JUMPDEST
-		]));
+		const code = bc(
+			new Uint8Array([
+				0x60,
+				0x00, // PUSH1 0x00
+				0x60,
+				0x01, // PUSH1 0x01
+				0x01, // ADD
+				0x5b, // JUMPDEST
+			]),
+		);
 		expect(Bytecode.validate(code)).toBe(true);
 	});
 
@@ -629,14 +639,9 @@ describe("Bytecode.stripMetadata", () => {
 		// Need 51 bytes of metadata data + 2 bytes length marker
 		const metadataBytes = 0x33;
 		const metadata = new Array(metadataBytes).fill(0xaa); // metadataBytes worth of data
-		const code = bc(new Uint8Array([
-			0x60,
-			0x01,
-			0x5b,
-			...metadata,
-			0x00,
-			metadataBytes,
-		]));
+		const code = bc(
+			new Uint8Array([0x60, 0x01, 0x5b, ...metadata, 0x00, metadataBytes]),
+		);
 		const stripped = Bytecode.stripMetadata(code);
 		expect(stripped).toEqual(new Uint8Array([0x60, 0x01, 0x5b]));
 	});
@@ -651,7 +656,9 @@ describe("Bytecode.stripMetadata", () => {
 		// metadataLength = 0x28 (40) + 2 = 42 bytes
 		const metadataBytes = 0x28;
 		const metadata = new Array(metadataBytes).fill(0xbb);
-		const code = bc(new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]));
+		const code = bc(
+			new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]),
+		);
 		const stripped = Bytecode.stripMetadata(code);
 		expect(stripped).toEqual(new Uint8Array([0x60, 0x01]));
 	});
@@ -659,7 +666,9 @@ describe("Bytecode.stripMetadata", () => {
 	it("works with direct call", () => {
 		const metadataBytes = 0x33;
 		const metadata = new Array(metadataBytes).fill(0xaa);
-		const code = bc(new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]));
+		const code = bc(
+			new Uint8Array([0x60, 0x01, ...metadata, 0x00, metadataBytes]),
+		);
 		const stripped = Bytecode.stripMetadata(code);
 		expect(stripped).toEqual(new Uint8Array([0x60, 0x01]));
 	});
@@ -689,25 +698,27 @@ describe("Bytecode edge cases", () => {
 
 	it("handles real constructor bytecode pattern", () => {
 		// Simplified constructor that returns runtime code
-		const constructor = bc(new Uint8Array([
-			0x60,
-			0x80, // PUSH1 0x80
-			0x60,
-			0x40, // PUSH1 0x40
-			0x52, // MSTORE
-			0x60,
-			0x04, // PUSH1 0x04 (runtime code size)
-			0x60,
-			0x0c, // PUSH1 0x0c (runtime offset)
-			0x60,
-			0x00, // PUSH1 0x00
-			0x39, // CODECOPY
-			0x60,
-			0x04, // PUSH1 0x04
-			0x60,
-			0x00, // PUSH1 0x00
-			0xf3, // RETURN
-		]));
+		const constructor = bc(
+			new Uint8Array([
+				0x60,
+				0x80, // PUSH1 0x80
+				0x60,
+				0x40, // PUSH1 0x40
+				0x52, // MSTORE
+				0x60,
+				0x04, // PUSH1 0x04 (runtime code size)
+				0x60,
+				0x0c, // PUSH1 0x0c (runtime offset)
+				0x60,
+				0x00, // PUSH1 0x00
+				0x39, // CODECOPY
+				0x60,
+				0x04, // PUSH1 0x04
+				0x60,
+				0x00, // PUSH1 0x00
+				0xf3, // RETURN
+			]),
+		);
 
 		const analysis = Bytecode.analyze(constructor);
 		expect(analysis.valid).toBe(true);
@@ -715,17 +726,19 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("analyzes bytecode with sequential PUSHes", () => {
-		const code = bc(new Uint8Array([
-			0x60,
-			0x00, // PUSH1 0x00
-			0x61,
-			0x01,
-			0x00, // PUSH2 0x0100
-			0x62,
-			0x01,
-			0x00,
-			0x00, // PUSH3 0x010000
-		]));
+		const code = bc(
+			new Uint8Array([
+				0x60,
+				0x00, // PUSH1 0x00
+				0x61,
+				0x01,
+				0x00, // PUSH2 0x0100
+				0x62,
+				0x01,
+				0x00,
+				0x00, // PUSH3 0x010000
+			]),
+		);
 
 		const instructions = Bytecode.parseInstructions(code);
 		expect(instructions).toHaveLength(3);
@@ -735,15 +748,17 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("handles JUMPDEST detection in complex bytecode", () => {
-		const code = bc(new Uint8Array([
-			0x60,
-			0x5b, // PUSH1 0x5b (fake JUMPDEST in data)
-			0x56, // JUMP
-			0x5b, // JUMPDEST (real)
-			0x60,
-			0x00, // PUSH1 0x00
-			0x5b, // JUMPDEST (real)
-		]));
+		const code = bc(
+			new Uint8Array([
+				0x60,
+				0x5b, // PUSH1 0x5b (fake JUMPDEST in data)
+				0x56, // JUMP
+				0x5b, // JUMPDEST (real)
+				0x60,
+				0x00, // PUSH1 0x00
+				0x5b, // JUMPDEST (real)
+			]),
+		);
 
 		const jumpdests = Bytecode.analyzeJumpDestinations(code);
 		expect(jumpdests.has(1)).toBe(false); // In PUSH data
@@ -764,17 +779,19 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("round-trips complex bytecode through hex", () => {
-		const original = bc(new Uint8Array([
-			0x60,
-			0x80,
-			0x60,
-			0x40,
-			0x52,
-			0x5b,
-			0x00,
-			0x7f,
-			...new Array(32).fill(0xff),
-		]));
+		const original = bc(
+			new Uint8Array([
+				0x60,
+				0x80,
+				0x60,
+				0x40,
+				0x52,
+				0x5b,
+				0x00,
+				0x7f,
+				...new Array(32).fill(0xff),
+			]),
+		);
 
 		const hex = Bytecode.toHex(original);
 		const parsed = Bytecode.fromHex(hex);
@@ -782,13 +799,15 @@ describe("Bytecode edge cases", () => {
 	});
 
 	it("disassembles realistic bytecode snippet", () => {
-		const code = bc(new Uint8Array([
-			0x60,
-			0x00, // PUSH1 0x00
-			0x35, // CALLDATALOAD
-			0x5b, // JUMPDEST
-			0x00, // STOP
-		]));
+		const code = bc(
+			new Uint8Array([
+				0x60,
+				0x00, // PUSH1 0x00
+				0x35, // CALLDATALOAD
+				0x5b, // JUMPDEST
+				0x00, // STOP
+			]),
+		);
 
 		const disassembly = Bytecode.formatInstructions(code);
 		expect(disassembly).toEqual([

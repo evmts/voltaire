@@ -205,7 +205,10 @@ describe("Rlp.encode", () => {
 	});
 
 	it("encodes bytes Data", () => {
-		const input: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const input: BrandedRlp = {
+			type: "bytes",
+			value: new Uint8Array([1, 2, 3]),
+		};
 		const result = Rlp.encode(input);
 		expect(result).toEqual(new Uint8Array([0x83, 1, 2, 3]));
 	});
@@ -554,7 +557,10 @@ describe("Rlp.Data namespace", () => {
 	});
 
 	it("encode encodes Data", () => {
-		const data: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const data: BrandedRlp = {
+			type: "bytes",
+			value: new Uint8Array([1, 2, 3]),
+		};
 		const encoded = Data.encodeData(data);
 		expect(encoded).toEqual(new Uint8Array([0x83, 1, 2, 3]));
 	});
@@ -720,7 +726,10 @@ describe("Rlp.equals", () => {
 
 describe("Rlp.toJSON and fromJSON", () => {
 	it("converts bytes Data to JSON and back", () => {
-		const data: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
+		const data: BrandedRlp = {
+			type: "bytes",
+			value: new Uint8Array([1, 2, 3]),
+		};
 		const json = Rlp.toJSON(data);
 		expect(json).toEqual({ type: "bytes", value: [1, 2, 3] });
 		const restored = Rlp.fromJSON(json);

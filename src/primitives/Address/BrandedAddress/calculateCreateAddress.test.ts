@@ -159,7 +159,9 @@ describe("calculateCreateAddress", () => {
 	});
 
 	it("works with Address namespace method", () => {
-		const sender = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		const sender = Address.fromHex(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
 		const contractAddr = Address.calculateCreateAddress(sender, 0n);
 		expect(contractAddr).toBeInstanceOf(Uint8Array);
 		expect(contractAddr.length).toBe(20);

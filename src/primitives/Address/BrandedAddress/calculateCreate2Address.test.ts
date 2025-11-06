@@ -210,7 +210,9 @@ describe("calculateCreate2Address", () => {
 	});
 
 	it("works with Address namespace method", () => {
-		const sender = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f251e3");
+		const sender = Address.fromHex(
+			"0x742d35cc6634c0532925a3b844bc9e7595f251e3",
+		);
 		const salt = new Uint8Array(32);
 		const initCode = new Uint8Array(0);
 		const contractAddr = Address.calculateCreate2Address(

@@ -177,18 +177,14 @@ describe("AccessList.gasCost", () => {
 
 	it("calculates cost for single address with one key", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
-		expect(gasCost(list)).toBe(
-			ADDRESS_COST + STORAGE_KEY_COST,
-		);
+		expect(gasCost(list)).toBe(ADDRESS_COST + STORAGE_KEY_COST);
 	});
 
 	it("calculates cost for single address with multiple keys", () => {
 		const list: AccessListType = [
 			{ address: addr1, storageKeys: [key1, key2, key3] },
 		];
-		expect(gasCost(list)).toBe(
-			ADDRESS_COST + STORAGE_KEY_COST * 3n,
-		);
+		expect(gasCost(list)).toBe(ADDRESS_COST + STORAGE_KEY_COST * 3n);
 	});
 
 	it("calculates cost for multiple addresses", () => {
@@ -196,9 +192,7 @@ describe("AccessList.gasCost", () => {
 			{ address: addr1, storageKeys: [key1] },
 			{ address: addr2, storageKeys: [key2, key3] },
 		];
-		expect(gasCost(list)).toBe(
-			ADDRESS_COST * 2n + STORAGE_KEY_COST * 3n,
-		);
+		expect(gasCost(list)).toBe(ADDRESS_COST * 2n + STORAGE_KEY_COST * 3n);
 	});
 
 	it("verifies EIP-2930 gas cost constants", () => {
@@ -216,8 +210,7 @@ describe("AccessList.gasSavings", () => {
 
 	it("calculates savings for single address with no keys", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [] }];
-		const expected =
-			COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
+		const expected = COLD_ACCOUNT_ACCESS_COST - ADDRESS_COST;
 		expect(gasSavings(list)).toBe(expected);
 	});
 
@@ -530,30 +523,22 @@ describe("AccessList.assertValid", () => {
 
 	it("throws for invalid item", () => {
 		const list = [{ address: "invalid", storageKeys: [] }] as any;
-		expect(() => assertValid(list)).toThrow(
-			"Invalid access list item",
-		);
+		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});
 
 	it("throws for invalid address length", () => {
 		const list = [{ address: new Uint8Array(19), storageKeys: [] }] as any;
-		expect(() => assertValid(list)).toThrow(
-			"Invalid access list item",
-		);
+		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});
 
 	it("throws for non-Uint8Array address", () => {
 		const list = [{ address: [1, 2, 3], storageKeys: [] }] as any;
-		expect(() => assertValid(list)).toThrow(
-			"Invalid access list item",
-		);
+		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});
 
 	it("throws for invalid storage key length", () => {
 		const list = [{ address: addr1, storageKeys: [new Uint8Array(31)] }] as any;
-		expect(() => assertValid(list)).toThrow(
-			"Invalid access list item",
-		);
+		expect(() => assertValid(list)).toThrow("Invalid access list item");
 	});
 });
 

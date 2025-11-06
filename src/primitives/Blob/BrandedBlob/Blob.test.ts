@@ -21,7 +21,12 @@ import { toProof } from "./toProof.js";
 import { toVersionedHash } from "./toVersionedHash.js";
 import { verify } from "./verify.js";
 import { verifyBatch } from "./verifyBatch.js";
-import type { BrandedBlob, Commitment, Proof, VersionedHash } from "../BrandedBlob.js";
+import type {
+	BrandedBlob,
+	Commitment,
+	Proof,
+	VersionedHash,
+} from "../BrandedBlob.js";
 
 // ============================================================================
 // Type Guard Tests
@@ -93,13 +98,17 @@ describe("Blob.VersionedHash.isValid", () => {
 	it("rejects incorrect size", () => {
 		const hash = new Uint8Array(64);
 		hash[0] = COMMITMENT_VERSION_KZG;
-		expect(hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG).toBe(false);
+		expect(hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG).toBe(
+			false,
+		);
 	});
 
 	it("rejects incorrect version", () => {
 		const hash = new Uint8Array(32);
 		hash[0] = 0x00; // Wrong version
-		expect(hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG).toBe(false);
+		expect(hash.length === 32 && hash[0] === COMMITMENT_VERSION_KZG).toBe(
+			false,
+		);
 	});
 
 	it("type guards correctly", () => {
@@ -256,17 +265,13 @@ describe("toProof", () => {
 	it("validates blob size", () => {
 		const invalid = new Uint8Array(100) as BrandedBlob;
 		const commitment = new Uint8Array(48) as Commitment;
-		expect(() => toProof(invalid, commitment)).toThrow(
-			"Invalid blob size",
-		);
+		expect(() => toProof(invalid, commitment)).toThrow("Invalid blob size");
 	});
 
 	it("validates commitment size", () => {
 		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const invalid = new Uint8Array(32) as Commitment;
-		expect(() => toProof(blob, invalid)).toThrow(
-			"Invalid commitment size",
-		);
+		expect(() => toProof(blob, invalid)).toThrow("Invalid commitment size");
 	});
 });
 
@@ -275,9 +280,7 @@ describe("verify", () => {
 		const blob = fromData(new Uint8Array([1, 2, 3]));
 		const commitment = new Uint8Array(48) as Commitment;
 		const proof = new Uint8Array(48) as Proof;
-		expect(() => verify(blob, commitment, proof)).toThrow(
-			"Not implemented",
-		);
+		expect(() => verify(blob, commitment, proof)).toThrow("Not implemented");
 	});
 
 	it("validates blob size", () => {
@@ -380,9 +383,7 @@ describe("toVersionedHash", () => {
 
 	it("validates commitment size", () => {
 		const invalid = new Uint8Array(32) as Commitment;
-		expect(() => toVersionedHash(invalid)).toThrow(
-			"Invalid commitment size",
-		);
+		expect(() => toVersionedHash(invalid)).toThrow("Invalid commitment size");
 	});
 
 	it("convenience form - Commitment.toVersionedHash", () => {
@@ -418,15 +419,13 @@ describe("Blob.VersionedHash.getVersion", () => {
 	it("returns version byte", () => {
 		const hash = new Uint8Array(32) as VersionedHash;
 		hash[0] = COMMITMENT_VERSION_KZG;
-		expect((hash[0] ?? 0)).toBe(
-			COMMITMENT_VERSION_KZG,
-		);
+		expect(hash[0] ?? 0).toBe(COMMITMENT_VERSION_KZG);
 	});
 
 	it("convenience form - version", () => {
 		const hash = new Uint8Array(32) as VersionedHash;
 		hash[0] = COMMITMENT_VERSION_KZG;
-		expect((hash[0] ?? 0)).toBe(COMMITMENT_VERSION_KZG);
+		expect(hash[0] ?? 0).toBe(COMMITMENT_VERSION_KZG);
 	});
 });
 
@@ -483,9 +482,9 @@ describe("estimateBlobCount", () => {
 	it("estimates correctly for exact boundaries", () => {
 		const maxDataPerBlob = SIZE - 8;
 		expect(estimateBlobCount(maxDataPerBlob)).toBe(1);
-		expect(
-			estimateBlobCount(maxDataPerBlob * MAX_PER_TRANSACTION),
-		).toBe(MAX_PER_TRANSACTION);
+		expect(estimateBlobCount(maxDataPerBlob * MAX_PER_TRANSACTION)).toBe(
+			MAX_PER_TRANSACTION,
+		);
 	});
 });
 
@@ -516,9 +515,7 @@ describe("splitData", () => {
 
 	it("throws when exceeding max blobs", () => {
 		const maxDataPerBlob = SIZE - 8;
-		const tooMuch = new Uint8Array(
-			maxDataPerBlob * (MAX_PER_TRANSACTION + 1),
-		);
+		const tooMuch = new Uint8Array(maxDataPerBlob * (MAX_PER_TRANSACTION + 1));
 
 		expect(() => splitData(tooMuch)).toThrow("Data too large");
 	});
@@ -599,9 +596,7 @@ describe("joinData", () => {
 describe("Blob Constants", () => {
 	it("SIZE is correct", () => {
 		expect(SIZE).toBe(131072);
-		expect(SIZE).toBe(
-			FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT,
-		);
+		expect(SIZE).toBe(FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT);
 	});
 
 	it("FIELD_ELEMENTS_PER_BLOB is correct", () => {

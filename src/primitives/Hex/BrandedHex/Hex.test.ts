@@ -108,9 +108,7 @@ describe("Hex", () => {
 
 		it("throws on odd length", () => {
 			expect(() => toBytes("0x1" as BrandedHex)).toThrow(OddLengthHexError);
-			expect(() => toBytes("0x123" as BrandedHex)).toThrow(
-				OddLengthHexError,
-			);
+			expect(() => toBytes("0x123" as BrandedHex)).toThrow(OddLengthHexError);
 		});
 
 		it("throws on invalid character", () => {

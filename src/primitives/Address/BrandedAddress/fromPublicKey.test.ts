@@ -53,18 +53,24 @@ describe("fromPublicKey", () => {
 
 	describe("deterministic output", () => {
 		it("produces same address for same coordinates", () => {
-			const x = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
-			const y = 0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
+			const x =
+				0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+			const y =
+				0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
 			const addr1 = fromPublicKey(x, y);
 			const addr2 = fromPublicKey(x, y);
 			expect(Address.equals(addr1, addr2)).toBe(true);
 		});
 
 		it("produces different addresses for different coordinates", () => {
-			const x1 = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
-			const y1 = 0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
-			const x2 = 0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
-			const y2 = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+			const x1 =
+				0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+			const y1 =
+				0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
+			const x2 =
+				0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
+			const y2 =
+				0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
 			const addr1 = fromPublicKey(x1, y1);
 			const addr2 = fromPublicKey(x2, y2);
 			expect(Address.equals(addr1, addr2)).toBe(false);
@@ -72,8 +78,10 @@ describe("fromPublicKey", () => {
 	});
 
 	it("works with Address namespace method", () => {
-		const x = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
-		const y = 0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
+		const x =
+			0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+		const y =
+			0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321n;
 		const addr = Address.fromPublicKey(x, y);
 		expect(addr).toBeInstanceOf(Uint8Array);
 		expect(addr.length).toBe(20);
