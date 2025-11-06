@@ -449,19 +449,36 @@ Contributions welcome!
 
 Voltaire has minimal runtime dependencies:
 
+### TypeScript/JavaScript Dependencies
+
 - **[@scure/bip32](https://github.com/paulmillr/scure-bip32)** - BIP-32 hierarchical deterministic wallet key derivation
 - **[@scure/bip39](https://github.com/paulmillr/scure-bip39)** - BIP-39 mnemonic phrase generation and validation
 - **[@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains)** - Generated Ethereum chain configurations (mainnet, L2s, testnets)
 - **[abitype](https://github.com/wevm/abitype)** - ABI type system utilities and type guards
+- **[@adraffy/ens-normalize](https://github.com/adraffy/ens-normalize.js)** - ENSIP-15 compliant ENS name normalization and beautification
+- **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited elliptic curve cryptography (secp256k1, ed25519, p256)
+- **[@noble/hashes](https://github.com/paulmillr/noble-hashes)** - Audited cryptographic hash functions (keccak256, sha256, blake3, ripemd160)
+
+### Zig Dependencies
+
+- **[z-ens-normalize](https://github.com/evmts/z-ens-normalize)** - Zig port of ENSIP-15 ENS name normalization
+- **[zbench](https://github.com/hendriknielaender/zBench)** - Performance benchmarking framework
+- **[clap](https://github.com/Hejsil/zig-clap)** - Command-line argument parsing
+- **[Zig std.crypto](https://ziglang.org/documentation/0.15.1/std/#std.crypto)** - Zig standard library cryptography (native/WASM builds only)
+
+### Native/C Dependencies
+
 - **[c-kzg](https://github.com/ethereum/c-kzg-4844)** - KZG polynomial commitments for EIP-4844 blob verification
 - **[libwally-core](https://github.com/ElementsProject/libwally-core)** - Wallet utilities including BIP-32/39/44 implementations
 - **[blst](https://github.com/supranational/blst)** - BLS12-381 signature library for Ethereum consensus layer
-- **[arkworks](https://github.com/arkworks-rs)** - Rust zkSNARK libraries (ark-bn254, ark-bls12-381, ark-ec, ark-ff) for BN254 operations
-- **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited elliptic curve cryptography (secp256k1, ed25519, p256)
-- **[@noble/hashes](https://github.com/paulmillr/noble-hashes)** - Audited cryptographic hash functions (keccak256, sha256, blake3, ripemd160)
-- **[Zig std.crypto](https://ziglang.org/documentation/0.15.1/std/#std.crypto)** - Zig standard library cryptography (native/WASM builds only)
 
-All dependencies are actively maintained and security-audited where applicable.
+### Rust Dependencies
+
+- **[arkworks](https://github.com/arkworks-rs)** - Rust zkSNARK libraries (ark-bn254, ark-bls12-381, ark-ec, ark-ff) for BN254 operations
+- **[keccak-asm](https://github.com/RustCrypto/hashes)** - Assembly-optimized Keccak implementation (native builds)
+- **[tiny-keccak](https://github.com/debris/tiny-keccak)** - Pure Rust Keccak implementation (WASM builds)
+
+All dependencies are actively maintained and security-audited where applicable. See [External Dependencies](./src/content/docs/external-dependencies.mdx) for detailed information.
 
 ---
 

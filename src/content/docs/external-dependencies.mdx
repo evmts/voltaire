@@ -1,0 +1,326 @@
+---
+title: External Dependencies
+description: Complete reference of Voltaire's external dependencies across languages
+---
+
+# External Dependencies
+
+Voltaire is a multi-language library that carefully selects dependencies based on security, performance, and maintainability. This page provides detailed information about all external dependencies organized by language and purpose.
+
+## Dependency Philosophy
+
+Voltaire follows these principles when selecting dependencies:
+
+- **Security First**: Prefer audited, well-established libraries for cryptographic operations
+- **Minimal Surface**: Keep the dependency tree small and manageable
+- **Multi-Language**: Support TypeScript, Zig, Rust, and C for optimal performance
+- **Active Maintenance**: Only depend on actively maintained projects
+- **License Compatibility**: All dependencies use MIT or compatible open-source licenses
+
+## TypeScript/JavaScript Dependencies
+
+### Core Primitives
+
+#### [@adraffy/ens-normalize](https://github.com/adraffy/ens-normalize.js)
+- **Purpose**: ENSIP-15 compliant ENS name normalization and beautification
+- **Used By**: ENS primitive
+- **License**: MIT
+- **Why**: Reference implementation by ENS specification author
+- **Key Features**:
+  - Full ENSIP-15 Unicode normalization
+  - Emoji support
+  - Disallowed character detection
+  - Beautification for display purposes
+
+#### [abitype](https://github.com/wevm/abitype)
+- **Purpose**: ABI type system utilities and type guards
+- **Used By**: ABI primitive
+- **License**: MIT
+- **Why**: Industry-standard TypeScript ABI type definitions
+- **Key Features**:
+  - Comprehensive ABI type definitions
+  - Runtime type guards
+  - Type inference utilities
+
+#### [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains)
+- **Purpose**: Generated Ethereum chain configurations
+- **Used By**: Chain primitive
+- **License**: MIT
+- **Why**: Comprehensive chain database with L2s and testnets
+- **Key Features**:
+  - Mainnet, testnets (Sepolia, Holesky, etc.)
+  - L2s (Optimism, Arbitrum, Base, etc.)
+  - Auto-generated from authoritative sources
+
+### Cryptography
+
+#### [@noble/curves](https://github.com/paulmillr/noble-curves)
+- **Purpose**: Audited elliptic curve cryptography
+- **Used By**: Secp256k1, Ed25519, P256 primitives
+- **License**: MIT
+- **Audit Status**: ✅ Security audited
+- **Why**: Most secure pure JavaScript elliptic curve library
+- **Key Features**:
+  - Secp256k1 (Ethereum transaction signing)
+  - Ed25519 (EdDSA signatures)
+  - P-256/P-384 (NIST curves)
+  - Constant-time operations
+  - Side-channel attack resistant
+
+#### [@noble/hashes](https://github.com/paulmillr/noble-hashes)
+- **Purpose**: Audited cryptographic hash functions
+- **Used By**: Keccak256, SHA256, Blake2, RIPEMD160
+- **License**: MIT
+- **Audit Status**: ✅ Security audited
+- **Why**: Most secure pure JavaScript hash library
+- **Key Features**:
+  - Keccak256 (Ethereum's primary hash)
+  - SHA256, SHA512
+  - Blake2b, Blake2s, Blake3
+  - RIPEMD160
+  - HMAC support
+
+#### [@scure/bip32](https://github.com/paulmillr/scure-bip32)
+- **Purpose**: BIP-32 hierarchical deterministic wallet key derivation
+- **Used By**: HDWallet crypto primitive
+- **License**: MIT
+- **Audit Status**: ✅ Security audited
+- **Why**: Secure, audited HD wallet implementation
+- **Key Features**:
+  - BIP-32 key derivation
+  - Hardened and non-hardened derivation
+  - Public key derivation
+  - Extended key serialization
+
+#### [@scure/bip39](https://github.com/paulmillr/scure-bip39)
+- **Purpose**: BIP-39 mnemonic phrase generation and validation
+- **Used By**: Bip39 crypto primitive
+- **License**: MIT
+- **Audit Status**: ✅ Security audited
+- **Why**: Secure, audited mnemonic implementation
+- **Key Features**:
+  - 12/15/18/21/24 word mnemonics
+  - PBKDF2 seed derivation
+  - Multiple language wordlists
+  - Entropy validation
+
+## Zig Dependencies
+
+### Core Utilities
+
+#### [z-ens-normalize](https://github.com/evmts/z-ens-normalize)
+- **Purpose**: Zig port of ENSIP-15 ENS name normalization
+- **Used By**: ENS primitive (Zig implementation)
+- **License**: MIT
+- **Why**: Native Zig implementation for performance and WASM compatibility
+- **Key Features**:
+  - Full ENSIP-15 compliance
+  - Zero JavaScript dependencies in WASM builds
+  - Optimized for performance
+  - Identical behavior to @adraffy/ens-normalize
+
+#### [zbench](https://github.com/hendriknielaender/zBench)
+- **Purpose**: Performance benchmarking framework
+- **Used By**: Build system (benchmarks)
+- **License**: MIT
+- **Why**: Native Zig benchmarking with statistical analysis
+- **Key Features**:
+  - Microsecond precision timing
+  - Statistical analysis (mean, median, std dev)
+  - Comparison benchmarks
+  - Formatted output
+
+#### [clap](https://github.com/Hejsil/zig-clap)
+- **Purpose**: Command-line argument parsing
+- **Used By**: Build system (CLI tools)
+- **License**: MIT
+- **Why**: Idiomatic Zig CLI parsing
+- **Key Features**:
+  - Compile-time argument definitions
+  - Type-safe parsing
+  - Help text generation
+  - Short and long options
+
+#### [Zig std.crypto](https://ziglang.org/documentation/0.15.1/std/#std.crypto)
+- **Purpose**: Zig standard library cryptography
+- **Used By**: Native/WASM builds (optional)
+- **License**: MIT
+- **Audit Status**: ⚠️ Not independently audited
+- **Why**: Zero external dependencies for basic crypto operations
+- **Key Features**:
+  - AES-GCM
+  - ChaCha20-Poly1305
+  - X25519 (Curve25519)
+  - Ed25519
+  - Blake2, Blake3
+  - SHA2, SHA3
+
+**Note**: Zig crypto implementations are experimental. Production use should prefer audited implementations (Noble, libwally-core, etc.).
+
+## Native/C Dependencies
+
+### Cryptography
+
+#### [c-kzg](https://github.com/ethereum/c-kzg-4844)
+- **Purpose**: KZG polynomial commitments for EIP-4844 blob verification
+- **Used By**: KZG crypto primitive, Blob primitive
+- **License**: Apache-2.0
+- **Audit Status**: ✅ Security audited
+- **Why**: Official Ethereum Foundation implementation
+- **Key Features**:
+  - KZG commitments and proofs
+  - Trusted setup loading
+  - Point evaluation precompile (0x0A)
+  - Optimized C implementation
+- **Build**: Compiled as part of Zig build process
+
+#### [libwally-core](https://github.com/ElementsProject/libwally-core)
+- **Purpose**: Wallet utilities including BIP-32/39/44 implementations
+- **Used By**: HDWallet, Bip39 (alternative implementation)
+- **License**: MIT
+- **Audit Status**: ✅ Security audited
+- **Why**: Battle-tested wallet library used by major projects
+- **Key Features**:
+  - BIP-32 HD key derivation
+  - BIP-39 mnemonics
+  - BIP-44 account structure
+  - PSBT (Partially Signed Bitcoin Transactions)
+  - Address generation
+- **Build**: Git submodule in `lib/libwally-core`
+
+#### [blst](https://github.com/supranational/blst)
+- **Purpose**: BLS12-381 signature library for Ethereum consensus layer
+- **Used By**: BLS12-381 crypto primitive, precompiles 0x0B-0x13
+- **License**: Apache-2.0
+- **Audit Status**: ✅ Security audited
+- **Why**: Fastest, most secure BLS12-381 implementation
+- **Key Features**:
+  - BLS signature verification
+  - G1/G2 point operations
+  - Pairing operations
+  - Optimized assembly for x86-64 and ARM
+  - Constant-time operations
+- **Build**: Compiled as part of Zig build process
+
+## Rust Dependencies
+
+### Cryptography
+
+#### [arkworks](https://github.com/arkworks-rs)
+- **Purpose**: zkSNARK libraries for BN254 operations
+- **Used By**: BN254 crypto primitive, precompiles 0x06-0x08
+- **License**: MIT/Apache-2.0
+- **Audit Status**: ✅ Security audited
+- **Packages Used**:
+  - `ark-bn254` - BN254 (alt_bn128) curve
+  - `ark-bls12-381` - BLS12-381 curve
+  - `ark-ec` - Elliptic curve traits and operations
+  - `ark-ff` - Finite field arithmetic
+- **Why**: Industry-standard zkSNARK library
+- **Key Features**:
+  - BN254 G1/G2 point operations
+  - Pairing operations
+  - Optimized field arithmetic
+  - Generic elliptic curve framework
+- **Build**: Compiled to `libcrypto_wrappers.a` via Cargo
+
+#### [keccak-asm](https://github.com/RustCrypto/hashes)
+- **Purpose**: Assembly-optimized Keccak implementation
+- **Used By**: Keccak256 (native builds)
+- **License**: MIT/Apache-2.0
+- **Why**: Fastest Keccak implementation available
+- **Key Features**:
+  - Hand-optimized assembly for x86-64
+  - 2-3x faster than pure Rust
+  - Constant-time operations
+- **Build**: Enabled by default with `asm` feature flag
+
+#### [tiny-keccak](https://github.com/debris/tiny-keccak)
+- **Purpose**: Pure Rust Keccak implementation
+- **Used By**: Keccak256 (WASM builds)
+- **License**: MIT
+- **Why**: Portable, no assembly dependencies for WASM
+- **Key Features**:
+  - Pure Rust (WASM compatible)
+  - Small binary size
+  - Keccak-224/256/384/512
+- **Build**: Enabled with `portable` feature flag for WASM
+
+## Dependency Management
+
+### Build System
+
+Dependencies are managed through multiple systems:
+
+- **TypeScript**: `package.json` (npm/bun/pnpm)
+- **Zig**: `build.zig.zon` (Zig package manager)
+- **Rust**: `Cargo.toml` (Cargo)
+- **C/Native**: Git submodules in `lib/`
+
+### Installation
+
+```bash
+# Install all dependencies
+bun install                        # Node dependencies
+zig build                          # Zig deps + build C/Rust libs
+git submodule update --init        # Git submodules
+```
+
+### Updating Dependencies
+
+```bash
+# Update Node dependencies
+bun update
+
+# Update Zig dependencies (edit build.zig.zon, then:)
+zig build
+
+# Update Rust dependencies
+cargo update
+
+# Update Git submodules
+git submodule update --remote
+```
+
+## Security Considerations
+
+### Audited vs Unaudited
+
+| Dependency | Audit Status | Notes |
+|------------|--------------|-------|
+| @noble/curves | ✅ Audited | Trail of Bits, Cure53 |
+| @noble/hashes | ✅ Audited | Trail of Bits |
+| @scure/bip32 | ✅ Audited | Trail of Bits |
+| @scure/bip39 | ✅ Audited | Trail of Bits |
+| c-kzg | ✅ Audited | Multiple audits (EF) |
+| libwally-core | ✅ Audited | Blockstream |
+| blst | ✅ Audited | Multiple audits (EF) |
+| arkworks | ✅ Audited | Trail of Bits |
+| Zig std.crypto | ⚠️ Not audited | Experimental |
+
+### Recommendations
+
+- **Production**: Use audited implementations (default)
+- **Testing**: Zig implementations available via build flags
+- **WASM**: Uses portable pure Rust/Zig implementations
+
+## License Compatibility
+
+All dependencies use MIT or compatible licenses:
+
+- **MIT**: @noble/*, @scure/*, libwally-core, abitype, z-ens-normalize, zbench, clap, Zig stdlib
+- **Apache-2.0**: c-kzg, blst
+- **MIT/Apache-2.0**: arkworks, keccak-asm, tiny-keccak
+
+## Version Requirements
+
+- **Node.js**: ≥ 18.0.0
+- **Zig**: ≥ 0.15.1
+- **Rust**: ≥ 1.70.0 (via Cargo.toml)
+
+## Further Reading
+
+- [Getting Started Guide](./getting-started.mdx) - Installation and setup
+- [Architecture Documentation](./primitives/branded-types.mdx) - Core patterns
+- [Security Notice](../README.md#security-notice) - Cryptography implementation status
+- [Build Commands](../README.md#build) - Complete build reference
