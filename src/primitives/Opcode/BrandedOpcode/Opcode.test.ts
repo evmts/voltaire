@@ -700,3 +700,257 @@ describe("Opcode gas estimation", () => {
 		expect(info?.gasCost).toBe(100); // Base cost
 	});
 });
+
+// ============================================================================
+// Gas Cost Analysis Tests
+// ============================================================================
+
+describe("Opcode.getGasCost", () => {
+	it("returns gas cost for valid opcodes", () => {
+		expect(Opcode.getGasCost(Opcode.ADD)).toBe(3);
+		expect(Opcode.getGasCost(Opcode.MUL)).toBe(5);
+		expect(Opcode.getGasCost(Opcode.SSTORE)).toBe(100);
+		expect(Opcode.getGasCost(Opcode.STOP)).toBe(0);
+	});
+
+	it("returns undefined for invalid opcodes", () => {
+		expect(Opcode.getGasCost(0x0c as any)).toBeUndefined();
+	});
+});
+
+// ============================================================================
+// Stack Effect Analysis Tests
+// ============================================================================
+
+describe("Opcode.getStackEffect", () => {
+	it("returns stack effect for arithmetic opcodes", () => {
+		const effect = Opcode.getStackEffect(Opcode.ADD);
+		expect(effect).toEqual({ pop: 2, push: 1 });
+	});
+
+	it("returns stack effect for PUSH opcodes", () => {
+		const effect = Opcode.getStackEffect(Opcode.PUSH1);
+		expect(effect).toEqual({ pop: 0, push: 1 });
+	});
+
+	it("returns stack effect for DUP opcodes", () => {
+		const effect = Opcode.getStackEffect(Opcode.DUP1);
+		expect(effect).toEqual({ pop: 1, push: 2 });
+	});
+
+	it("returns undefined for invalid opcodes", () => {
+		expect(Opcode.getStackEffect(0x0c as any)).toBeUndefined();
+	});
+});
+
+describe("Opcode.getStackInput", () => {
+	it("returns input count for opcodes", () => {
+		expect(Opcode.getStackInput(Opcode.ADD)).toBe(2);
+		expect(Opcode.getStackInput(Opcode.PUSH1)).toBe(0);
+		expect(Opcode.getStackInput(Opcode.CALL)).toBe(7);
+	});
+
+	it("returns undefined for invalid opcodes", () => {
+		expect(Opcode.getStackInput(0x0c as any)).toBeUndefined();
+	});
+});
+
+describe("Opcode.getStackOutput", () => {
+	it("returns output count for opcodes", () => {
+		expect(Opcode.getStackOutput(Opcode.ADD)).toBe(1);
+		expect(Opcode.getStackOutput(Opcode.PUSH1)).toBe(1);
+		expect(Opcode.getStackOutput(Opcode.STOP)).toBe(0);
+	});
+
+	it("returns undefined for invalid opcodes", () => {
+		expect(Opcode.getStackOutput(0x0c as any)).toBeUndefined();
+	});
+});
+
+// ============================================================================
+// Bytecode Analysis Tests
+// ============================================================================
+
+describe("Opcode.isJumpDestination", () => {
+	it("identifies JUMPDEST", () => {
+		expect(Opcode.isJumpDestination(Opcode.JUMPDEST)).toBe(true);
+	});
+
+	it("rejects non-JUMPDEST opcodes", () => {
+		expect(Opcode.isJumpDestination(Opcode.JUMP)).toBe(false);
+		expect(Opcode.isJumpDestination(Opcode.JUMPI)).toBe(false);
+		expect(Opcode.isJumpDestination(Opcode.ADD)).toBe(false);
+	});
+});
+
+describe("Opcode.getPushSize", () => {
+	it("returns 0 for PUSH0", () => {
+		expect(Opcode.getPushSize(Opcode.PUSH0)).toBe(0);
+	});
+
+	it("returns correct size for PUSH1-PUSH32", () => {
+		expect(Opcode.getPushSize(Opcode.PUSH1)).toBe(1);
+		expect(Opcode.getPushSize(Opcode.PUSH2)).toBe(2);
+		expect(Opcode.getPushSize(Opcode.PUSH16)).toBe(16);
+		expect(Opcode.getPushSize(Opcode.PUSH32)).toBe(32);
+	});
+
+	it("returns 0 for non-PUSH opcodes", () => {
+		expect(Opcode.getPushSize(Opcode.ADD)).toBe(0);
+		expect(Opcode.getPushSize(Opcode.DUP1)).toBe(0);
+	});
+});
+
+describe("Opcode.isTerminator", () => {
+	it("identifies terminating opcodes", () => {
+		expect(Opcode.isTerminator(Opcode.STOP)).toBe(true);
+		expect(Opcode.isTerminator(Opcode.RETURN)).toBe(true);
+		expect(Opcode.isTerminator(Opcode.REVERT)).toBe(true);
+		expect(Opcode.isTerminator(Opcode.INVALID)).toBe(true);
+		expect(Opcode.isTerminator(Opcode.SELFDESTRUCT)).toBe(true);
+	});
+
+	it("rejects non-terminating opcodes", () => {
+		expect(Opcode.isTerminator(Opcode.ADD)).toBe(false);
+		expect(Opcode.isTerminator(Opcode.JUMP)).toBe(false);
+	});
+});
+
+// ============================================================================
+// Metadata Tests
+// ============================================================================
+
+describe("Opcode.getName", () => {
+	it("returns correct names", () => {
+		expect(Opcode.getName(Opcode.ADD)).toBe("ADD");
+		expect(Opcode.getName(Opcode.PUSH1)).toBe("PUSH1");
+		expect(Opcode.getName(Opcode.SELFDESTRUCT)).toBe("SELFDESTRUCT");
+	});
+
+	it("returns UNKNOWN for invalid opcodes", () => {
+		expect(Opcode.getName(0x0c as any)).toBe("UNKNOWN");
+	});
+});
+
+describe("Opcode.getCategory", () => {
+	it("categorizes arithmetic opcodes", () => {
+		expect(Opcode.getCategory(Opcode.ADD)).toBe("arithmetic");
+		expect(Opcode.getCategory(Opcode.MUL)).toBe("arithmetic");
+		expect(Opcode.getCategory(Opcode.EXP)).toBe("arithmetic");
+	});
+
+	it("categorizes control flow opcodes", () => {
+		expect(Opcode.getCategory(Opcode.STOP)).toBe("control");
+		expect(Opcode.getCategory(Opcode.JUMP)).toBe("control");
+		expect(Opcode.getCategory(Opcode.JUMPDEST)).toBe("control");
+	});
+
+	it("categorizes stack opcodes", () => {
+		expect(Opcode.getCategory(Opcode.PUSH1)).toBe("stack");
+		expect(Opcode.getCategory(Opcode.DUP1)).toBe("stack");
+		expect(Opcode.getCategory(Opcode.SWAP1)).toBe("stack");
+		expect(Opcode.getCategory(Opcode.POP)).toBe("stack");
+	});
+
+	it("categorizes storage opcodes", () => {
+		expect(Opcode.getCategory(Opcode.SLOAD)).toBe("storage");
+		expect(Opcode.getCategory(Opcode.SSTORE)).toBe("storage");
+		expect(Opcode.getCategory(Opcode.TLOAD)).toBe("storage");
+		expect(Opcode.getCategory(Opcode.TSTORE)).toBe("storage");
+	});
+
+	it("categorizes memory opcodes", () => {
+		expect(Opcode.getCategory(Opcode.MLOAD)).toBe("memory");
+		expect(Opcode.getCategory(Opcode.MSTORE)).toBe("memory");
+		expect(Opcode.getCategory(Opcode.MCOPY)).toBe("memory");
+	});
+
+	it("categorizes logic opcodes", () => {
+		expect(Opcode.getCategory(Opcode.LT)).toBe("logic");
+		expect(Opcode.getCategory(Opcode.AND)).toBe("logic");
+		expect(Opcode.getCategory(Opcode.XOR)).toBe("logic");
+	});
+
+	it("categorizes crypto opcodes", () => {
+		expect(Opcode.getCategory(Opcode.KECCAK256)).toBe("crypto");
+	});
+
+	it("categorizes environment opcodes", () => {
+		expect(Opcode.getCategory(Opcode.ADDRESS)).toBe("environment");
+		expect(Opcode.getCategory(Opcode.CALLER)).toBe("environment");
+	});
+
+	it("categorizes block opcodes", () => {
+		expect(Opcode.getCategory(Opcode.BLOCKHASH)).toBe("block");
+		expect(Opcode.getCategory(Opcode.TIMESTAMP)).toBe("block");
+	});
+
+	it("categorizes log opcodes", () => {
+		expect(Opcode.getCategory(Opcode.LOG0)).toBe("log");
+		expect(Opcode.getCategory(Opcode.LOG4)).toBe("log");
+	});
+
+	it("categorizes system opcodes", () => {
+		expect(Opcode.getCategory(Opcode.CALL)).toBe("system");
+		expect(Opcode.getCategory(Opcode.CREATE)).toBe("system");
+		expect(Opcode.getCategory(Opcode.REVERT)).toBe("system");
+	});
+});
+
+describe("Opcode.isValidOpcode", () => {
+	it("validates defined opcodes", () => {
+		expect(Opcode.isValidOpcode(0x01)).toBe(true);
+		expect(Opcode.isValidOpcode(0x60)).toBe(true);
+		expect(Opcode.isValidOpcode(0xff)).toBe(true);
+	});
+
+	it("rejects undefined opcodes", () => {
+		expect(Opcode.isValidOpcode(0x0c)).toBe(false);
+		expect(Opcode.isValidOpcode(0x21)).toBe(false);
+	});
+});
+
+describe("Opcode.getDescription", () => {
+	it("returns descriptions for opcodes", () => {
+		expect(Opcode.getDescription(Opcode.ADD)).toBe("Addition operation");
+		expect(Opcode.getDescription(Opcode.STOP)).toBe("Halt execution");
+		expect(Opcode.getDescription(Opcode.KECCAK256)).toBe(
+			"Compute Keccak-256 hash",
+		);
+	});
+
+	it("generates descriptions for PUSH opcodes", () => {
+		expect(Opcode.getDescription(Opcode.PUSH0)).toBe("Place 0 on stack");
+		expect(Opcode.getDescription(Opcode.PUSH1)).toBe(
+			"Place 1-byte item on stack",
+		);
+		expect(Opcode.getDescription(Opcode.PUSH32)).toBe(
+			"Place 32-byte item on stack",
+		);
+	});
+
+	it("generates descriptions for DUP opcodes", () => {
+		expect(Opcode.getDescription(Opcode.DUP1)).toBe(
+			"Duplicate 1st stack item",
+		);
+		expect(Opcode.getDescription(Opcode.DUP2)).toBe(
+			"Duplicate 2nd stack item",
+		);
+		expect(Opcode.getDescription(Opcode.DUP3)).toBe(
+			"Duplicate 3rd stack item",
+		);
+	});
+
+	it("generates descriptions for SWAP opcodes", () => {
+		expect(Opcode.getDescription(Opcode.SWAP1)).toBe(
+			"Exchange 1st and 2nd stack items",
+		);
+		expect(Opcode.getDescription(Opcode.SWAP2)).toBe(
+			"Exchange 1st and 3rd stack items",
+		);
+	});
+
+	it("returns unknown for invalid opcodes", () => {
+		expect(Opcode.getDescription(0x0c as any)).toBe("Unknown opcode");
+	});
+});
