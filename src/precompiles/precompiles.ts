@@ -69,7 +69,9 @@ function bigIntToFixedBytes(value: bigint, size: number): Uint8Array {
  * Format: [x (64 bytes) | y (64 bytes)]
  * Point at infinity: all zeros
  */
-function deserializeG1(bytes: Uint8Array): typeof bls12_381.G1.ProjectivePoint.BASE {
+function deserializeG1(
+	bytes: Uint8Array,
+): ReturnType<typeof bls12_381.G1.Point.fromAffine> {
 	if (bytes.length !== 128) {
 		throw new Error("Invalid G1 point length");
 	}
@@ -77,7 +79,7 @@ function deserializeG1(bytes: Uint8Array): typeof bls12_381.G1.ProjectivePoint.B
 	// Check for point at infinity (all zeros)
 	const isZero = bytes.every((b) => b === 0);
 	if (isZero) {
-		return bls12_381.G1.ProjectivePoint.ZERO;
+		return bls12_381.G1.Point.ZERO;
 	}
 
 	// Extract x and y coordinates (64 bytes each, big-endian)
@@ -85,7 +87,7 @@ function deserializeG1(bytes: Uint8Array): typeof bls12_381.G1.ProjectivePoint.B
 	const y = beBytesToBigInt(bytes.subarray(64, 128));
 
 	// Construct point from affine coordinates
-	const point = bls12_381.G1.ProjectivePoint.fromAffine({ x, y });
+	const point = bls12_381.G1.Point.fromAffine({ x, y });
 
 	// Validate point is on curve and in correct subgroup
 	point.assertValidity();
@@ -96,11 +98,13 @@ function deserializeG1(bytes: Uint8Array): typeof bls12_381.G1.ProjectivePoint.B
 /**
  * Serialize a G1 point to 128 bytes (EIP-2537 encoding)
  */
-function serializeG1(point: typeof bls12_381.G1.ProjectivePoint.BASE): Uint8Array {
+function serializeG1(
+	point: ReturnType<typeof bls12_381.G1.Point.fromAffine>,
+): Uint8Array {
 	const result = new Uint8Array(128);
 
 	// Handle point at infinity
-	if (point.equals(bls12_381.G1.ProjectivePoint.ZERO)) {
+	if (point.equals(bls12_381.G1.Point.ZERO)) {
 		return result; // All zeros
 	}
 
@@ -122,7 +126,9 @@ function serializeG1(point: typeof bls12_381.G1.ProjectivePoint.BASE): Uint8Arra
  * Format: [x.c0 (64) | x.c1 (64) | y.c0 (64) | y.c1 (64)]
  * Point at infinity: all zeros
  */
-function deserializeG2(bytes: Uint8Array): typeof bls12_381.G2.ProjectivePoint.BASE {
+function deserializeG2(
+	bytes: Uint8Array,
+): ReturnType<typeof bls12_381.G2.Point.fromAffine> {
 	if (bytes.length !== 256) {
 		throw new Error("Invalid G2 point length");
 	}
@@ -130,7 +136,7 @@ function deserializeG2(bytes: Uint8Array): typeof bls12_381.G2.ProjectivePoint.B
 	// Check for point at infinity (all zeros)
 	const isZero = bytes.every((b) => b === 0);
 	if (isZero) {
-		return bls12_381.G2.ProjectivePoint.ZERO;
+		return bls12_381.G2.Point.ZERO;
 	}
 
 	// Extract Fp2 coordinates (x = c0 + c1*u, y = c0 + c1*u)
@@ -140,11 +146,11 @@ function deserializeG2(bytes: Uint8Array): typeof bls12_381.G2.ProjectivePoint.B
 	const yc1 = beBytesToBigInt(bytes.subarray(192, 256));
 
 	// Construct Fp2 elements
-	const x = bls12_381.fields.Fp2.fromBigTuple([xc0, xc1]);
-	const y = bls12_381.fields.Fp2.fromBigTuple([yc0, yc1]);
+	const x = bls12_381.fields.Fp2.create({ c0: xc0, c1: xc1 });
+	const y = bls12_381.fields.Fp2.create({ c0: yc0, c1: yc1 });
 
 	// Construct point from affine coordinates
-	const point = bls12_381.G2.ProjectivePoint.fromAffine({ x, y });
+	const point = bls12_381.G2.Point.fromAffine({ x, y });
 
 	// Validate point is on curve and in correct subgroup
 	point.assertValidity();
@@ -155,11 +161,13 @@ function deserializeG2(bytes: Uint8Array): typeof bls12_381.G2.ProjectivePoint.B
 /**
  * Serialize a G2 point to 256 bytes (EIP-2537 encoding)
  */
-function serializeG2(point: typeof bls12_381.G2.ProjectivePoint.BASE): Uint8Array {
+function serializeG2(
+	point: ReturnType<typeof bls12_381.G2.Point.fromAffine>,
+): Uint8Array {
 	const result = new Uint8Array(256);
 
 	// Handle point at infinity
-	if (point.equals(bls12_381.G2.ProjectivePoint.ZERO)) {
+	if (point.equals(bls12_381.G2.Point.ZERO)) {
 		return result; // All zeros
 	}
 
@@ -167,14 +175,14 @@ function serializeG2(point: typeof bls12_381.G2.ProjectivePoint.BASE): Uint8Arra
 	const affine = point.toAffine();
 
 	// Extract Fp2 components (c0, c1)
-	const xTuple = bls12_381.fields.Fp2.toTuple(affine.x);
-	const yTuple = bls12_381.fields.Fp2.toTuple(affine.y);
+	const x = affine.x as { c0: bigint; c1: bigint };
+	const y = affine.y as { c0: bigint; c1: bigint };
 
 	// Serialize each component (64 bytes, big-endian, left-padded)
-	const xc0Bytes = bigIntToFixedBytes(xTuple[0], 64);
-	const xc1Bytes = bigIntToFixedBytes(xTuple[1], 64);
-	const yc0Bytes = bigIntToFixedBytes(yTuple[0], 64);
-	const yc1Bytes = bigIntToFixedBytes(yTuple[1], 64);
+	const xc0Bytes = bigIntToFixedBytes(x.c0, 64);
+	const xc1Bytes = bigIntToFixedBytes(x.c1, 64);
+	const yc0Bytes = bigIntToFixedBytes(y.c0, 64);
+	const yc1Bytes = bigIntToFixedBytes(y.c1, 64);
 
 	result.set(xc0Bytes, 0);
 	result.set(xc1Bytes, 64);
@@ -876,20 +884,17 @@ export function bls12G1Msm(
 		}
 
 		const numPairs = Math.floor(input.length / 160);
-		const points: Array<typeof bls12_381.G1.ProjectivePoint.BASE> = [];
-		const scalars: bigint[] = [];
 
-		// Deserialize all point-scalar pairs
+		// Perform multi-scalar multiplication manually
+		let result = bls12_381.G1.Point.ZERO;
 		for (let i = 0; i < numPairs; i++) {
 			const offset = i * 160;
 			const point = deserializeG1(input.subarray(offset, offset + 128));
-			const scalar = beBytesToBigInt(input.subarray(offset + 128, offset + 160));
-			points.push(point);
-			scalars.push(scalar);
+			const scalar = beBytesToBigInt(
+				input.subarray(offset + 128, offset + 160),
+			);
+			result = result.add(point.multiply(scalar));
 		}
-
-		// Perform multi-scalar multiplication
-		const result = bls12_381.G1.ProjectivePoint.msm(points, scalars);
 
 		// Serialize result
 		const output = serializeG1(result);
@@ -1033,20 +1038,17 @@ export function bls12G2Msm(
 		}
 
 		const numPairs = Math.floor(input.length / 288);
-		const points: Array<typeof bls12_381.G2.ProjectivePoint.BASE> = [];
-		const scalars: bigint[] = [];
 
-		// Deserialize all point-scalar pairs
+		// Perform multi-scalar multiplication manually
+		let result = bls12_381.G2.Point.ZERO;
 		for (let i = 0; i < numPairs; i++) {
 			const offset = i * 288;
 			const point = deserializeG2(input.subarray(offset, offset + 256));
-			const scalar = beBytesToBigInt(input.subarray(offset + 256, offset + 288));
-			points.push(point);
-			scalars.push(scalar);
+			const scalar = beBytesToBigInt(
+				input.subarray(offset + 256, offset + 288),
+			);
+			result = result.add(point.multiply(scalar));
 		}
-
-		// Perform multi-scalar multiplication
-		const result = bls12_381.G2.ProjectivePoint.msm(points, scalars);
 
 		// Serialize result
 		const output = serializeG2(result);
@@ -1092,31 +1094,32 @@ export function bls12Pairing(
 		}
 
 		const numPairs = Math.floor(input.length / 384);
-		const g1Points: Array<typeof bls12_381.G1.ProjectivePoint.BASE> = [];
-		const g2Points: Array<typeof bls12_381.G2.ProjectivePoint.BASE> = [];
+
+		// Handle empty input
+		if (numPairs === 0) {
+			const output = new Uint8Array(32);
+			output[31] = 1; // Empty pairing is valid
+			return { success: true, output, gasUsed: gas };
+		}
 
 		// Deserialize all G1-G2 pairs
+		const pairs: Array<{
+			g1: ReturnType<typeof bls12_381.G1.Point.fromAffine>;
+			g2: ReturnType<typeof bls12_381.G2.Point.fromAffine>;
+		}> = [];
 		for (let i = 0; i < numPairs; i++) {
 			const offset = i * 384;
 			const g1 = deserializeG1(input.subarray(offset, offset + 128));
 			const g2 = deserializeG2(input.subarray(offset + 128, offset + 384));
-			g1Points.push(g1);
-			g2Points.push(g2);
+			pairs.push({ g1, g2 });
 		}
 
-		// Perform pairing check: e(G1[0], G2[0]) * e(G1[1], G2[1]) * ... == 1
-		// This verifies that the product of pairings equals identity
-		const result = bls12_381.pairing(g1Points[0], g2Points[0]);
-		let accumulated = result;
-
-		for (let i = 1; i < numPairs; i++) {
-			const pairing = bls12_381.pairing(g1Points[i], g2Points[i]);
-			accumulated = bls12_381.fields.Fp12.mul(accumulated, pairing);
-		}
-
-		// Check if result is identity (final exponentiation gives 1)
+		// Perform pairing check using pairingBatch
+		// This efficiently computes e(G1[0], G2[0]) * e(G1[1], G2[1]) * ... == 1
+		const result = bls12_381.pairingBatch(pairs);
+		const finalResult = bls12_381.fields.Fp12.finalExponentiate(result);
 		const isValid = bls12_381.fields.Fp12.eql(
-			bls12_381.fields.Fp12.finalExponentiate(accumulated),
+			finalResult,
 			bls12_381.fields.Fp12.ONE,
 		);
 
