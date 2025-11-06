@@ -76,3 +76,6 @@ export * as BrandedBloomFilter from "./BloomFilter/BrandedBloomFilter/index.js";
 // Utilities
 export * as Base64 from "./Base64/index.js";
 export * as BrandedBase64 from "./Base64/BrandedBase64/index.js";
+
+// Errors
+export * from "./errors/index.js";
