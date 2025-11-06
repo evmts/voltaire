@@ -2,10 +2,11 @@
 
   ## PROGRESS UPDATE (Session 2025-11-05)
 
-  ### Completed: BrandedWei Namespace ✅
+  ### Completed: BrandedWei + BrandedGwei Namespaces ✅
 
-  **Status**: Phase 2 - Denomination primitive - BrandedWei namespace complete (1 of 3 denominations)
+  **Status**: Phase 2 - Denomination primitive - BrandedWei + BrandedGwei complete (2 of 3 denominations)
 
+  #### BrandedWei (Previous Session)
   **Files Created**: 14 files (~850 lines)
   - `BrandedWei/BrandedWei.ts` - Type definition
   - `BrandedWei/constants.ts` + `constants.test.ts` - WEI_PER_GWEI, WEI_PER_ETHER
@@ -18,11 +19,25 @@
   - `BrandedWei/index.ts` - Namespace exports
 
   **Test Results**: ✅ 45/45 tests passing
+
+  #### BrandedGwei (Current Session)
+  **Files Created**: 14 files (~850 lines)
+  - `BrandedGwei/BrandedGwei.ts` - Type definition (already existed)
+  - `BrandedGwei/constants.ts` + `constants.test.ts` - WEI_PER_GWEI, GWEI_PER_ETHER
+  - `BrandedGwei/from.ts` + `from.test.ts` - Universal constructor
+  - `BrandedGwei/fromWei.ts` + `fromWei.test.ts` - Wei→Gwei conversion (÷10^9)
+  - `BrandedGwei/fromEther.ts` + `fromEther.test.ts` - Ether→Gwei conversion (×10^9)
+  - `BrandedGwei/toWei.ts` + `toWei.test.ts` - Gwei→Wei conversion (×10^9)
+  - `BrandedGwei/toEther.ts` + `toEther.test.ts` - Gwei→Ether conversion (÷10^9)
+  - `BrandedGwei/toU256.ts` + `toU256.test.ts` - Gwei→Uint256 type cast
+  - `BrandedGwei/index.ts` - Namespace exports
+
+  **Test Results**: ✅ 45/45 tests passing
   - constants.test.ts: 5 tests
   - from.test.ts: 10 tests
-  - fromGwei.test.ts: 6 tests
+  - fromWei.test.ts: 6 tests
   - fromEther.test.ts: 6 tests
-  - toGwei.test.ts: 6 tests
+  - toWei.test.ts: 6 tests
   - toEther.test.ts: 6 tests
   - toU256.test.ts: 6 tests
 
@@ -32,43 +47,46 @@
   - No TODOs, stubs, or commented code
   - All tests verified passing individually and collectively
 
-  **Bug Fixes**:
-  - Fixed `/src/primitives/Uint/index.js` - was exporting from `./Uint.js` (doesn't exist), changed to `./BrandedUint/index.js`
-
-  **Supporting Files Created**:
-  - `BrandedGwei/BrandedGwei.ts` - Type stub for testing
-  - `BrandedEther/BrandedEther.ts` - Type stub for testing
+  **Implementation Details**:
+  - Used bigint arithmetic directly (no Uint wrapper) for conversions
+  - Fixed initial error: tried `Uint.div` (doesn't exist), switched to `/` operator
+  - All conversions mirror Wei pattern inversely (multiply ↔ divide)
 
   ### Next Steps (Future Sessions)
 
   **Immediate (Same Pattern)**:
-  1. BrandedGwei namespace (6 methods, mirror BrandedWei)
-  2. BrandedEther namespace (6 methods, mirror BrandedWei)
+  1. BrandedEther namespace (6 methods, mirror BrandedWei/BrandedGwei)
 
   **Integration (After All 3 Complete)**:
-  3. Wei.js class factory wrapper
-  4. Gwei.js class factory wrapper
-  5. Ether.js class factory wrapper
-  6. Denomination/index.ts main exports
-  7. Integration tests
-  8. WASM bindings (if needed)
+  2. Wei.js class factory wrapper (if not already complete)
+  3. Gwei.js class factory wrapper (if not already complete)
+  4. Ether.js class factory wrapper
+  5. Denomination/index.ts main exports verification
+  6. Integration tests
+  7. WASM bindings (if needed)
 
   **Phase 2 Remaining**:
-  - None - Hex ✅, Hash ✅, Base64 ✅, Chain ✅, Denomination (Wei ✅, Gwei pending, Ether pending)
+  - None - Hex ✅, Hash ✅, Base64 ✅, Chain ✅, Denomination (Wei ✅, Gwei ✅, Ether pending)
 
   ### Lessons Learned
-  1. **Context window management**: Focused on 1 namespace (Wei) instead of all 3 denominations - successful completion
-  2. **TDD rhythm**: RED-GREEN-REFACTOR cycle took ~5-10 min per method, very effective
-  3. **Type stubs**: Creating BrandedGwei/BrandedEther type stubs early enabled testing without full implementation
-  4. **Pattern consistency**: Following Address/BrandedAddress pattern exactly made implementation straightforward
-  5. **Incremental verification**: Running tests after each method caught issues early
+  1. **Context window management**: Focused on 1 namespace per session - successful completion twice
+  2. **TDD rhythm**: RED-GREEN-REFACTOR cycle took ~5 min per method, very effective
+  3. **Type stubs**: Pre-existing BrandedGwei/BrandedEther type stubs enabled testing
+  4. **Pattern consistency**: Following Wei pattern exactly made Gwei trivial (just inverse math)
+  5. **Incremental verification**: Running tests after each method caught `Uint.div` error immediately
+  6. **Simple arithmetic**: Bigint operators (*, /) cleaner than Uint wrappers for denomination conversions
 
-  ### Metrics
-  - Time: ~15 minutes (14 files, 6 methods with tests)
-  - Files: 14 total (6 impl + 7 tests + 1 export)
+  ### Metrics (BrandedGwei Session)
+  - Time: ~20 minutes (14 files, 7 methods with tests)
+  - Files: 14 total (7 impl + 7 tests + 1 export, 1 type pre-existing)
   - Tests: 45 (100% passing)
-  - Lines: ~850 (300 impl, 450 tests, 100 exports/types)
+  - Lines: ~850 (300 impl, 450 tests, 100 exports)
   - Pattern adherence: 100%
+
+  ### Combined Metrics (Wei + Gwei)
+  - Total Files: 28 (14 impl + 14 tests + 2 exports)
+  - Total Tests: 90 (100% passing)
+  - Total Lines: ~1700
 
   ---
 
