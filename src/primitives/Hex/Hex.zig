@@ -839,3 +839,113 @@ test "pad function (alias for padLeft)" {
     try testing.expectEqual(@as(u8, 0x12), padded[3]);
     try testing.expectEqual(@as(u8, 0x34), padded[4]);
 }
+
+test "hex validation edge cases" {
+    try testing.expect(isHex("0x0"));
+    try testing.expect(!isHex("0x"));
+    try testing.expect(isHex("0xFfFfFf"));
+    try testing.expect(!isHex("0x12 34"));
+    try testing.expect(!isHex("x1234"));
+}
+
+test "hexToBytes with maximum values" {
+    const allocator = testing.allocator;
+
+    const max_byte = try hexToBytes(allocator, "0xff");
+    defer allocator.free(max_byte);
+    try testing.expectEqual(@as(u8, 0xff), max_byte[0]);
+
+    const max_u16 = try hexToBytes(allocator, "0xffff");
+    defer allocator.free(max_u16);
+    try testing.expectEqual(@as(u8, 0xff), max_u16[0]);
+    try testing.expectEqual(@as(u8, 0xff), max_u16[1]);
+}
+
+test "bytesToHex with zero bytes" {
+    const allocator = testing.allocator;
+
+    const all_zeros = [_]u8{ 0x00, 0x00, 0x00 };
+    const hex = try bytesToHex(allocator, &all_zeros);
+    defer allocator.free(hex);
+    try testing.expectEqualStrings("0x000000", hex);
+}
+
+test "hexToBytesFixed with exact size" {
+    const hex_4 = "0x12345678";
+    const bytes_4 = try hexToBytesFixed(4, hex_4);
+    try testing.expectEqual(@as(u8, 0x12), bytes_4[0]);
+    try testing.expectEqual(@as(u8, 0x34), bytes_4[1]);
+    try testing.expectEqual(@as(u8, 0x56), bytes_4[2]);
+    try testing.expectEqual(@as(u8, 0x78), bytes_4[3]);
+}
+
+test "hexToU256 with various values" {
+    try testing.expectEqual(@as(u256, 0), try hexToU256("0x0"));
+    try testing.expectEqual(@as(u256, 1), try hexToU256("0x1"));
+    try testing.expectEqual(@as(u256, 255), try hexToU256("0xff"));
+    try testing.expectEqual(@as(u256, 256), try hexToU256("0x100"));
+}
+
+test "u256ToHex round-trip with powers of 2" {
+    const allocator = testing.allocator;
+
+    const values = [_]u256{ 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
+    for (values) |val| {
+        const hex = try u256ToHex(allocator, val);
+        defer allocator.free(hex);
+        const result = try hexToU256(hex);
+        try testing.expectEqual(val, result);
+    }
+}
+
+test "slice edge cases with empty inputs" {
+    const empty = [_]u8{};
+    const empty_slice = slice(&empty, 0, 0);
+    try testing.expectEqual(@as(usize, 0), empty_slice.len);
+
+    const empty_slice2 = slice(&empty, 5, 10);
+    try testing.expectEqual(@as(usize, 0), empty_slice2.len);
+}
+
+test "concat with single array" {
+    const allocator = testing.allocator;
+
+    const bytes = [_]u8{ 0x12, 0x34 };
+    const arrays = [_][]const u8{&bytes};
+    const result = try concat(allocator, &arrays);
+    defer allocator.free(result);
+
+    try testing.expectEqualSlices(u8, &bytes, result);
+}
+
+test "padLeft with zero target length" {
+    const allocator = testing.allocator;
+
+    const bytes = [_]u8{ 0x12, 0x34 };
+    const result = try padLeft(allocator, &bytes, 0);
+    defer allocator.free(result);
+
+    try testing.expectEqualSlices(u8, &bytes, result);
+}
+
+test "padRight with zero target length" {
+    const allocator = testing.allocator;
+
+    const bytes = [_]u8{ 0x12, 0x34 };
+    const result = try padRight(allocator, &bytes, 0);
+    defer allocator.free(result);
+
+    try testing.expectEqualSlices(u8, &bytes, result);
+}
+
+test "trimLeftZeros with all zeros" {
+    const all_zeros = [_]u8{ 0x00, 0x00, 0x00 };
+    const trimmed = trimLeftZeros(&all_zeros);
+    try testing.expectEqual(@as(usize, 0), trimmed.len);
+}
+
+test "trimRightZeros with all zeros" {
+    const all_zeros = [_]u8{ 0x00, 0x00, 0x00 };
+    const trimmed = trimRightZeros(&all_zeros);
+    try testing.expectEqual(@as(usize, 0), trimmed.len);
+}
