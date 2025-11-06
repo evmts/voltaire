@@ -17,10 +17,14 @@ const filteredSidebar = Astro.props.sidebar.filter((item) => {
 
 	if (isZigPath) {
 		// Show only Zig items (those starting with /zig or labeled with "Zig")
-		return itemHref.startsWith("/zig") || itemLabel.toLowerCase().includes("zig");
+		return (
+			itemHref.startsWith("/zig") || itemLabel.toLowerCase().includes("zig")
+		);
 	} else {
 		// Show only TypeScript items (those NOT starting with /zig and NOT labeled with "Zig")
-		return !itemHref.startsWith("/zig") && !itemLabel.toLowerCase().includes("zig");
+		return (
+			!itemHref.startsWith("/zig") && !itemLabel.toLowerCase().includes("zig")
+		);
 	}
 });
 
