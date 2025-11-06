@@ -1,19 +1,9 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
-import react from "@astrojs/react";
 
 // https://astro.build/config
 export default defineConfig({
-	vite: {
-		ssr: {
-			noExternal: ["react", "react-dom"],
-		},
-		optimizeDeps: {
-			include: ["react", "react-dom"],
-		},
-	},
 	integrations: [
-		react(),
 		starlight({
 			title: "Voltaire",
 			description:
