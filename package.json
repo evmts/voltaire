@@ -38,44 +38,354 @@
 				"default": "./dist/index.cjs"
 			}
 		},
+		"./Abi": {
+			"import": {
+				"types": "./types/primitives/Abi/index.d.ts",
+				"default": "./src/primitives/Abi/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Abi/index.d.ts",
+				"default": "./src/primitives/Abi/index.ts"
+			}
+		},
+		"./AccessList": {
+			"import": {
+				"types": "./types/primitives/AccessList/index.d.ts",
+				"default": "./src/primitives/AccessList/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/AccessList/index.d.ts",
+				"default": "./src/primitives/AccessList/index.ts"
+			}
+		},
 		"./Address": {
 			"import": {
 				"types": "./types/primitives/Address/index.d.ts",
-				"default": "./src/primitives/Address/index.js"
+				"default": "./src/primitives/Address/index.ts"
 			},
 			"require": {
 				"types": "./types/primitives/Address/index.d.ts",
-				"default": "./src/primitives/Address/index.js"
+				"default": "./src/primitives/Address/index.ts"
 			}
 		},
-		"./Wei": {
+		"./Authorization": {
 			"import": {
-				"types": "./types/primitives/Denomination/Wei.d.ts",
-				"default": "./src/primitives/Denomination/Wei.ts"
+				"types": "./types/primitives/Authorization/index.d.ts",
+				"default": "./src/primitives/Authorization/index.ts"
 			},
 			"require": {
-				"types": "./types/primitives/Denomination/Wei.d.ts",
-				"default": "./src/primitives/Denomination/Wei.ts"
+				"types": "./types/primitives/Authorization/index.d.ts",
+				"default": "./src/primitives/Authorization/index.ts"
 			}
 		},
-		"./Gwei": {
+		"./Base64": {
 			"import": {
-				"types": "./types/primitives/Denomination/Gwei.d.ts",
-				"default": "./src/primitives/Denomination/Gwei.ts"
+				"types": "./types/primitives/Base64/index.d.ts",
+				"default": "./src/primitives/Base64/index.js"
 			},
 			"require": {
-				"types": "./types/primitives/Denomination/Gwei.d.ts",
-				"default": "./src/primitives/Denomination/Gwei.ts"
+				"types": "./types/primitives/Base64/index.d.ts",
+				"default": "./src/primitives/Base64/index.js"
 			}
 		},
-		"./Ether": {
+		"./BinaryTree": {
 			"import": {
-				"types": "./types/primitives/Denomination/Ether.d.ts",
-				"default": "./src/primitives/Denomination/Ether.ts"
+				"types": "./types/primitives/BinaryTree/index.d.ts",
+				"default": "./src/primitives/BinaryTree/index.js"
 			},
 			"require": {
-				"types": "./types/primitives/Denomination/Ether.d.ts",
-				"default": "./src/primitives/Denomination/Ether.ts"
+				"types": "./types/primitives/BinaryTree/index.d.ts",
+				"default": "./src/primitives/BinaryTree/index.js"
+			}
+		},
+		"./Blob": {
+			"import": {
+				"types": "./types/primitives/Blob/index.d.ts",
+				"default": "./src/primitives/Blob/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Blob/index.d.ts",
+				"default": "./src/primitives/Blob/index.ts"
+			}
+		},
+		"./BloomFilter": {
+			"import": {
+				"types": "./types/primitives/BloomFilter/index.d.ts",
+				"default": "./src/primitives/BloomFilter/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/BloomFilter/index.d.ts",
+				"default": "./src/primitives/BloomFilter/index.ts"
+			}
+		},
+		"./Bytecode": {
+			"import": {
+				"types": "./types/primitives/Bytecode/index.d.ts",
+				"default": "./src/primitives/Bytecode/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Bytecode/index.d.ts",
+				"default": "./src/primitives/Bytecode/index.ts"
+			}
+		},
+		"./Chain": {
+			"import": {
+				"types": "./types/primitives/Chain/index.d.ts",
+				"default": "./src/primitives/Chain/index.js"
+			},
+			"require": {
+				"types": "./types/primitives/Chain/index.d.ts",
+				"default": "./src/primitives/Chain/index.js"
+			}
+		},
+		"./Denomination": {
+			"import": {
+				"types": "./types/primitives/Denomination/index.d.ts",
+				"default": "./src/primitives/Denomination/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Denomination/index.d.ts",
+				"default": "./src/primitives/Denomination/index.ts"
+			}
+		},
+		"./EventLog": {
+			"import": {
+				"types": "./types/primitives/EventLog/index.d.ts",
+				"default": "./src/primitives/EventLog/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/EventLog/index.d.ts",
+				"default": "./src/primitives/EventLog/index.ts"
+			}
+		},
+		"./FeeMarket": {
+			"import": {
+				"types": "./types/primitives/FeeMarket/index.d.ts",
+				"default": "./src/primitives/FeeMarket/index.js"
+			},
+			"require": {
+				"types": "./types/primitives/FeeMarket/index.d.ts",
+				"default": "./src/primitives/FeeMarket/index.js"
+			}
+		},
+		"./GasConstants": {
+			"import": {
+				"types": "./types/primitives/GasConstants/index.d.ts",
+				"default": "./src/primitives/GasConstants/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/GasConstants/index.d.ts",
+				"default": "./src/primitives/GasConstants/index.ts"
+			}
+		},
+		"./Hardfork": {
+			"import": {
+				"types": "./types/primitives/Hardfork/index.d.ts",
+				"default": "./src/primitives/Hardfork/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Hardfork/index.d.ts",
+				"default": "./src/primitives/Hardfork/index.ts"
+			}
+		},
+		"./Hash": {
+			"import": {
+				"types": "./types/primitives/Hash/index.d.ts",
+				"default": "./src/primitives/Hash/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Hash/index.d.ts",
+				"default": "./src/primitives/Hash/index.ts"
+			}
+		},
+		"./Hex": {
+			"import": {
+				"types": "./types/primitives/Hex/index.d.ts",
+				"default": "./src/primitives/Hex/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Hex/index.d.ts",
+				"default": "./src/primitives/Hex/index.ts"
+			}
+		},
+		"./Opcode": {
+			"import": {
+				"types": "./types/primitives/Opcode/index.d.ts",
+				"default": "./src/primitives/Opcode/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Opcode/index.d.ts",
+				"default": "./src/primitives/Opcode/index.ts"
+			}
+		},
+		"./Rlp": {
+			"import": {
+				"types": "./types/primitives/Rlp/index.d.ts",
+				"default": "./src/primitives/Rlp/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Rlp/index.d.ts",
+				"default": "./src/primitives/Rlp/index.ts"
+			}
+		},
+		"./Signature": {
+			"import": {
+				"types": "./types/primitives/Signature/index.d.ts",
+				"default": "./src/primitives/Signature/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Signature/index.d.ts",
+				"default": "./src/primitives/Signature/index.ts"
+			}
+		},
+		"./Siwe": {
+			"import": {
+				"types": "./types/primitives/Siwe/index.d.ts",
+				"default": "./src/primitives/Siwe/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Siwe/index.d.ts",
+				"default": "./src/primitives/Siwe/index.ts"
+			}
+		},
+		"./State": {
+			"import": {
+				"types": "./types/primitives/State/index.d.ts",
+				"default": "./src/primitives/State/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/State/index.d.ts",
+				"default": "./src/primitives/State/index.ts"
+			}
+		},
+		"./Transaction": {
+			"import": {
+				"types": "./types/primitives/Transaction/index.d.ts",
+				"default": "./src/primitives/Transaction/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Transaction/index.d.ts",
+				"default": "./src/primitives/Transaction/index.ts"
+			}
+		},
+		"./Uint": {
+			"import": {
+				"types": "./types/primitives/Uint/index.d.ts",
+				"default": "./src/primitives/Uint/index.ts"
+			},
+			"require": {
+				"types": "./types/primitives/Uint/index.d.ts",
+				"default": "./src/primitives/Uint/index.ts"
+			}
+		},
+		"./Bip39": {
+			"import": {
+				"types": "./types/crypto/Bip39/index.d.ts",
+				"default": "./src/crypto/Bip39/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/Bip39/index.d.ts",
+				"default": "./src/crypto/Bip39/index.js"
+			}
+		},
+		"./Blake2": {
+			"import": {
+				"types": "./types/crypto/Blake2/index.d.ts",
+				"default": "./src/crypto/Blake2/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/Blake2/index.d.ts",
+				"default": "./src/crypto/Blake2/index.js"
+			}
+		},
+		"./Ed25519": {
+			"import": {
+				"types": "./types/crypto/Ed25519/index.d.ts",
+				"default": "./src/crypto/Ed25519/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/Ed25519/index.d.ts",
+				"default": "./src/crypto/Ed25519/index.js"
+			}
+		},
+		"./EIP712": {
+			"import": {
+				"types": "./types/crypto/EIP712/index.d.ts",
+				"default": "./src/crypto/EIP712/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/EIP712/index.d.ts",
+				"default": "./src/crypto/EIP712/index.js"
+			}
+		},
+		"./HDWallet": {
+			"import": {
+				"types": "./types/crypto/HDWallet/index.d.ts",
+				"default": "./src/crypto/HDWallet/index.ts"
+			},
+			"require": {
+				"types": "./types/crypto/HDWallet/index.d.ts",
+				"default": "./src/crypto/HDWallet/index.ts"
+			}
+		},
+		"./Keccak256": {
+			"import": {
+				"types": "./types/crypto/Keccak256/index.d.ts",
+				"default": "./src/crypto/Keccak256/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/Keccak256/index.d.ts",
+				"default": "./src/crypto/Keccak256/index.js"
+			}
+		},
+		"./KZG": {
+			"import": {
+				"types": "./types/crypto/KZG/index.d.ts",
+				"default": "./src/crypto/KZG/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/KZG/index.d.ts",
+				"default": "./src/crypto/KZG/index.js"
+			}
+		},
+		"./P256": {
+			"import": {
+				"types": "./types/crypto/P256/index.d.ts",
+				"default": "./src/crypto/P256/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/P256/index.d.ts",
+				"default": "./src/crypto/P256/index.js"
+			}
+		},
+		"./Ripemd160": {
+			"import": {
+				"types": "./types/crypto/Ripemd160/index.d.ts",
+				"default": "./src/crypto/Ripemd160/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/Ripemd160/index.d.ts",
+				"default": "./src/crypto/Ripemd160/index.js"
+			}
+		},
+		"./Secp256k1": {
+			"import": {
+				"types": "./types/crypto/Secp256k1/index.d.ts",
+				"default": "./src/crypto/Secp256k1/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/Secp256k1/index.d.ts",
+				"default": "./src/crypto/Secp256k1/index.js"
+			}
+		},
+		"./SHA256": {
+			"import": {
+				"types": "./types/crypto/SHA256/index.d.ts",
+				"default": "./src/crypto/SHA256/index.js"
+			},
+			"require": {
+				"types": "./types/crypto/SHA256/index.d.ts",
+				"default": "./src/crypto/SHA256/index.js"
 			}
 		}
 	},
