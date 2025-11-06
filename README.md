@@ -23,30 +23,30 @@
 
 ## Table of Contents
 
-- [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Complete API Reference](#complete-api-reference)
-  - [Core Primitives](#core-primitives)
-  - [Cryptography](#cryptography)
-  - [Precompiles](#precompiles)
-- [Quick Reference Tables](#quick-reference-tables)
-- [Architecture](#architecture)
-- [Performance](#performance)
-- [Alternatives](#alternatives)
-- [License](#license)
-- [Links](#links)
+- [Features](#features) - Why choose Voltaire
+- [Installation](#installation) - [npm](https://www.npmjs.com/package/@tevm/voltaire) & [Zig](https://ziglang.org/) setup
+- [Quick Start](#quick-start) - [Getting Started Guide](./src/content/docs/getting-started.mdx)
+- [Complete API Reference](#complete-api-reference) - Full API documentation
+  - [Core Primitives](#core-primitives) - Address, Hash, Uint, Transaction, etc.
+  - [Cryptography](#cryptography) - Keccak256, Secp256k1, BLS12-381, etc.
+  - [Precompiles](#precompiles) - [All 19 EVM precompiles](https://www.evm.codes/precompiled)
+- [Quick Reference Tables](#quick-reference-tables) - At-a-glance API reference
+- [Architecture](#architecture) - [Data-first pattern](./src/content/docs/primitives/branded-types.mdx) & design
+- [Performance](#performance) - [Benchmarks](./BENCHMARKING.md) & optimization
+- [Alternatives](#alternatives) - Viem, Ethers.js, Alloy
+- [License](#license) - MIT
+- [Links](#links) - Community & resources
 
 ## Features
 
-Voltaire is a modern Ethereum library for TypeScript and Zig similar to [ethers.js](https://docs.ethers.org/v5/api/other/assembly/dialect/) and [viem](https://github.com/wevm/viem).
+Voltaire is a modern [Ethereum](https://ethereum.org/) library for [TypeScript](https://www.typescriptlang.org/) and [Zig](https://ziglang.org/) similar to [ethers.js](https://docs.ethers.org/) and [viem](https://viem.sh).
 
-- **Simple apis** - The minimal close-to-spec apis needed for Ethereum development
-- **LLM-Optimized** - API and documentation built and tested to perform well with both LLMs
-- **High-performance** - High-performance wasm implementations provided
-- **Type-safe** - Branded types provided for opt-in typesafety
-- **Zig support** - All functionality offered both in TypeScript and Zig. More languages will be added in future.
-- **Feature rich** - Voltaire supports advanced Compilation and EVM execution to TypeScript applications.
+- **Simple APIs** - The minimal close-to-spec APIs needed for [Ethereum development](https://ethereum.org/en/developers/)
+- **LLM-Optimized** - API and documentation built and tested to perform well with LLMs
+- **High-performance** - High-performance [WASM](https://webassembly.org/) implementations provided
+- **Type-safe** - [Branded types](./src/content/docs/primitives/branded-types.mdx) provided for opt-in typesafety
+- **Zig support** - All functionality offered both in TypeScript and [Zig](https://ziglang.org/). More languages will be added in future.
+- **Feature rich** - Voltaire supports advanced Compilation and [EVM](https://ethereum.org/en/developers/docs/evm/) execution to TypeScript applications.
 
 ## Installation
 
@@ -54,15 +54,17 @@ Voltaire is a modern Ethereum library for TypeScript and Zig similar to [ethers.
 npm install @tevm/voltaire
 ```
 
+[![npm version](https://img.shields.io/npm/v/@tevm/voltaire.svg)](https://www.npmjs.com/package/@tevm/voltaire)
+
 ```bash
-bun add @tevm/voltaire
+bun add @tevm/voltaire  # https://bun.sh/
 ```
 
 ```bash
-pnpm install @tevm/voltaire
+pnpm install @tevm/voltaire  # https://pnpm.io/
 ```
 
-Or use the Zig API:
+Or use the [Zig](https://ziglang.org/) API ([Zig docs](https://ziglang.org/documentation/0.15.1/)):
 
 ```bash
 # Install specific version (recommended)
@@ -72,7 +74,11 @@ zig fetch --save https://github.com/evmts/voltaire/archive/refs/tags/v0.1.0.tar.
 zig fetch --save git+https://github.com/evmts/voltaire
 ```
 
+See [build.zig.zon](./build.zig.zon) for dependency configuration.
+
 ## Quick Start
+
+📚 **See [Getting Started Guide](./src/content/docs/getting-started.mdx) for detailed tutorials**
 
 This library uses a **data-first architecture** with branded primitive types and namespaced methods:
 
@@ -182,7 +188,17 @@ const account = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
 
 ### Precompiles
 
-All 19 EVM precompiled contracts (addresses [0x01-0x13](https://www.evm.codes/precompiled)): [ecrecover](https://eips.ethereum.org/EIPS/eip-196), sha256, ripemd160, identity, [modexp](https://eips.ethereum.org/EIPS/eip-198), [BN254 add/mul/pairing](https://eips.ethereum.org/EIPS/eip-196) ([EIP-197](https://eips.ethereum.org/EIPS/eip-197)), [blake2f](https://eips.ethereum.org/EIPS/eip-152), [KZG point evaluation](https://eips.ethereum.org/EIPS/eip-4844), [BLS12-381 operations](https://eips.ethereum.org/EIPS/eip-2537) (Prague+).
+All 19 EVM precompiled contracts (addresses [0x01-0x13](https://www.evm.codes/precompiled)):
+
+- **[ecrecover](https://eips.ethereum.org/EIPS/eip-196)** (0x01) - ECDSA public key recovery
+- **sha256** (0x02) - SHA-256 hash function
+- **ripemd160** (0x03) - RIPEMD-160 hash function
+- **identity** (0x04) - Identity function (datacopy)
+- **[modexp](https://eips.ethereum.org/EIPS/eip-198)** (0x05) - Modular exponentiation
+- **[BN254 add/mul/pairing](https://eips.ethereum.org/EIPS/eip-196)** (0x06-0x08, [EIP-197](https://eips.ethereum.org/EIPS/eip-197)) - zkSNARK verification
+- **[blake2f](https://eips.ethereum.org/EIPS/eip-152)** (0x09) - Blake2 compression function
+- **[KZG point evaluation](https://eips.ethereum.org/EIPS/eip-4844)** (0x0A) - EIP-4844 blob verification
+- **[BLS12-381 operations](https://eips.ethereum.org/EIPS/eip-2537)** (0x0B-0x13) - BLS signature verification (Prague+)
 
 **Usage:**
 
@@ -193,7 +209,7 @@ const isPrecompile = isPrecompile(address, "cancun");
 const result = execute(address, input, gasLimit, "cancun");
 ```
 
-📚 **[Full precompile documentation](./src/content/docs/precompiles/)** | **[EVM.codes Precompiles](https://www.evm.codes/precompiled)**
+📚 **[Full precompile documentation](./src/content/docs/precompiles/)** | **[EVM.codes Precompiles](https://www.evm.codes/precompiled)** | **[Ethereum Precompile Spec](https://ethereum.github.io/execution-specs/autoapi/ethereum/frontier/vm/precompiled_contracts/index.html)**
 
 ---
 
@@ -301,7 +317,18 @@ MIT License - see [LICENSE](./LICENSE) for details
 
 ## Links
 
-- [GitHub Issues](https://github.com/evmts/voltaire/issues)
-- [Telegram](https://t.me/+ANThR9bHDLAwMjUx)
-- [Twitter](https://twitter.com/tevmtools)
+### Community
+- [GitHub Repository](https://github.com/evmts/voltaire) - Source code and contributions
+- [GitHub Issues](https://github.com/evmts/voltaire/issues) - Bug reports and feature requests
+- [NPM Package](https://www.npmjs.com/package/@tevm/voltaire) - Package registry
+- [Telegram](https://t.me/+ANThR9bHDLAwMjUx) - Community chat
+- [Twitter](https://twitter.com/tevmtools) - Updates and announcements
+
+### Resources
+- [Ethereum Developer Documentation](https://ethereum.org/en/developers/docs/)
+- [EIP Repository](https://eips.ethereum.org/) - Ethereum Improvement Proposals
+- [EVM.codes](https://www.evm.codes/) - Opcode reference
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Technical specification
+- [Solidity Documentation](https://docs.soliditylang.org/) - Smart contract language
+- [Zig Documentation](https://ziglang.org/documentation/0.15.1/) - Zig language reference
 
