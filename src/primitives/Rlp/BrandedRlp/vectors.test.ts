@@ -136,20 +136,22 @@ describe("RLP Ethereum Test Vectors", () => {
 	});
 
 	describe("List boundary values", () => {
-		it("handles 55-byte list payload", () => {
-			// Each item [0x01, 0x02] encodes as: 0x01 (single byte < 0x80) + 0x02
-			// Total per item: 2 bytes
-			// 27 items * 2 bytes = 54 bytes (< 55, uses short form)
-			const items = Array.from({ length: 27 }, () => new Uint8Array([0x01, 0x02]));
+		it("handles short list form (< 56 bytes payload)", () => {
+			// Each single byte < 0x80 encodes as itself: 1 byte
+			// 55 items * 1 byte = 55 bytes (uses short form)
+			const items = Array.from({ length: 55 }, () => new Uint8Array([0x01]));
 			const encoded = Rlp.encodeList(items);
 			expect(encoded[0]).toBeLessThanOrEqual(0xf7);
+			expect(encoded[0]).toBe(0xc0 + 55);
 		});
 
-		it("handles 56-byte list payload", () => {
-			// 28 items * 2 bytes = 56 bytes (>= 56, uses long form)
-			const items = Array.from({ length: 28 }, () => new Uint8Array([0x01, 0x02]));
+		it("handles long list form (>= 56 bytes payload)", () => {
+			// 56 items * 1 byte = 56 bytes (uses long form)
+			const items = Array.from({ length: 56 }, () => new Uint8Array([0x01]));
 			const encoded = Rlp.encodeList(items);
 			expect(encoded[0]).toBeGreaterThanOrEqual(0xf8);
+			expect(encoded[0]).toBe(0xf8);
+			expect(encoded[1]).toBe(56);
 		});
 	});
 

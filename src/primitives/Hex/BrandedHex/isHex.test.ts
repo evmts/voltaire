@@ -11,8 +11,8 @@ describe("isHex", () => {
 		expect(isHex("0xdeadbeef")).toBe(true);
 	});
 
-	it("returns true for empty hex", () => {
-		expect(isHex("0x")).toBe(true);
+	it("returns false for empty hex (requires at least one digit)", () => {
+		expect(isHex("0x")).toBe(false);
 	});
 
 	it("returns true for mixed case", () => {

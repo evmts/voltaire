@@ -68,7 +68,7 @@ describe("toString", () => {
 			InvalidCharacterError,
 		);
 		expect(() => toString("0x6865 6c6c6f" as BrandedHex)).toThrow(
-			InvalidCharacterError,
+			OddLengthError,
 		);
 	});
 

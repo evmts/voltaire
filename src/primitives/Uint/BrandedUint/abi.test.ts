@@ -66,8 +66,11 @@ describe("Uint.toAbiEncoded", () => {
 		const value = Uint.from(2n ** 128n);
 		const encoded = Uint.toAbiEncoded(value);
 		expect(encoded.length).toBe(32);
-		expect(encoded[16]).toBe(0x01);
-		for (let i = 17; i < 32; i++) {
+		expect(encoded[15]).toBe(0x01);
+		for (let i = 0; i < 15; i++) {
+			expect(encoded[i]).toBe(0x00);
+		}
+		for (let i = 16; i < 32; i++) {
 			expect(encoded[i]).toBe(0x00);
 		}
 	});
@@ -142,7 +145,7 @@ describe("Uint.fromAbiEncoded", () => {
 
 	it("decodes large value correctly", () => {
 		const bytes = new Uint8Array(32);
-		bytes[16] = 0x01;
+		bytes[15] = 0x01;
 		const value = Uint.fromAbiEncoded(bytes);
 		expect(value).toBe(2n ** 128n);
 	});
