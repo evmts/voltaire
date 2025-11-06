@@ -266,7 +266,7 @@ describe("Address", () => {
 	});
 
 	// ==========================================================================
-	// Conversion Operations - toChecksumHex
+	// Conversion Operations - toChecksummed
 	// ==========================================================================
 
 	describe("toChecksummed", () => {
