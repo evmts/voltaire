@@ -45,6 +45,13 @@ pub fn build(b: *std.Build) void {
     crypto_mod.addImport("c_kzg", c_kzg_mod);
     crypto_mod.addIncludePath(b.path("lib")); // For keccak_wrapper.h
 
+    // z-ens-normalize module
+    const z_ens_normalize_dep = b.dependency("z_ens_normalize", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const z_ens_normalize_mod = z_ens_normalize_dep.module("z_ens_normalize");
+
     // Primitives module - export for external packages (includes Hardfork)
     const primitives_mod = b.addModule("primitives", .{
         .root_source_file = b.path("src/primitives/root.zig"),
@@ -52,6 +59,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     primitives_mod.addImport("crypto", crypto_mod);
+    primitives_mod.addImport("z_ens_normalize", z_ens_normalize_mod);
 
     // Now add primitives to crypto (circular dependency resolved by Zig's lazy evaluation)
     crypto_mod.addImport("primitives", primitives_mod);

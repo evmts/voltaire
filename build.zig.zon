@@ -48,6 +48,10 @@
             .url = "https://github.com/Hejsil/zig-clap/archive/refs/heads/master.tar.gz",
             .hash = "clap-0.11.0-oBajB-TnAQC7yPLnZRT5WzHZ_4Ly4dX2OILskli74b9H",
         },
+        .z_ens_normalize = .{
+            .url = "git+https://github.com/evmts/z-ens-normalize#9fb3ed8f11114d45ed11992221966ad5915701e1",
+            .hash = "z_ens_normalize-0.0.0-Iv6nMI2_AgCrLtEnZZnoeP87kZtP-36iIWzj3cD3v-vd",
+        },
     },
 
     // Specifies the set of files and directories that are included in this package.
