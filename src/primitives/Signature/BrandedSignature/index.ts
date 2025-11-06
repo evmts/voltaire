@@ -4,46 +4,48 @@ export type {
 	SignatureAlgorithm,
 } from "./BrandedSignature.js";
 
-// Error exports
+// Export errors and constants
+export * from "./errors.js";
+export * from "./constants.js";
+
+// Import all functions
+import { equals } from "./equals.js";
+import { from } from "./from.js";
+import { fromCompact } from "./fromCompact.js";
+import { fromDER } from "./fromDER.js";
+import { fromEd25519 } from "./fromEd25519.js";
+import { fromP256 } from "./fromP256.js";
+import { fromSecp256k1 } from "./fromSecp256k1.js";
+import { getAlgorithm } from "./getAlgorithm.js";
+import { getR } from "./getR.js";
+import { getS } from "./getS.js";
+import { getV } from "./getV.js";
+import { is } from "./is.js";
+import { isCanonical } from "./isCanonical.js";
+import { normalize } from "./normalize.js";
+import { toBytes } from "./toBytes.js";
+import { toCompact } from "./toCompact.js";
+import { toDER } from "./toDER.js";
+import { verify } from "./verify.js";
+
+// Export individual functions
 export {
-	SignatureError,
-	InvalidSignatureLengthError,
-	InvalidSignatureFormatError,
-	InvalidAlgorithmError,
-	NonCanonicalSignatureError,
-	InvalidDERError,
-} from "./errors.js";
-
-// Constant exports
-export {
-	ECDSA_SIZE,
-	ECDSA_WITH_V_SIZE,
-	ED25519_SIZE,
-	COMPONENT_SIZE,
-	RECOVERY_ID_MIN,
-	RECOVERY_ID_MAX,
-} from "./constants.js";
-
-// Constructor functions
-export { from } from "./from.js";
-export { fromSecp256k1 } from "./fromSecp256k1.js";
-export { fromP256 } from "./fromP256.js";
-export { fromEd25519 } from "./fromEd25519.js";
-export { fromCompact } from "./fromCompact.js";
-export { fromDER } from "./fromDER.js";
-
-// Conversion functions
-export { toBytes } from "./toBytes.js";
-export { toCompact } from "./toCompact.js";
-export { toDER } from "./toDER.js";
-
-// Utility functions
-export { getAlgorithm } from "./getAlgorithm.js";
-export { getR } from "./getR.js";
-export { getS } from "./getS.js";
-export { getV } from "./getV.js";
-export { isCanonical } from "./isCanonical.js";
-export { normalize } from "./normalize.js";
-export { verify } from "./verify.js";
-export { is } from "./is.js";
-export { equals } from "./equals.js";
+	from,
+	fromSecp256k1,
+	fromP256,
+	fromEd25519,
+	fromCompact,
+	fromDER,
+	toBytes,
+	toCompact,
+	toDER,
+	getAlgorithm,
+	getR,
+	getS,
+	getV,
+	isCanonical,
+	normalize,
+	verify,
+	is,
+	equals,
+};
