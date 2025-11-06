@@ -44,7 +44,6 @@ function beBytes32(n: bigint): Uint8Array {
 	return out;
 }
 
-
 describe("Integration Tests: Cross-Module Workflows", () => {
 	describe("Transaction Signing & Recovery", () => {
 		it("should sign message and recover signer address using ecRecover precompile", () => {

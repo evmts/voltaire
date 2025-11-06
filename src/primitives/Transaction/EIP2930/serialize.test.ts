@@ -43,7 +43,10 @@ describe("TransactionEIP2930.serialize", () => {
 			accessList: [
 				{
 					address: Address("0x0000000000000000000000000000000000000001"),
-					storageKeys: [Hash.from(new Uint8Array(32).fill(1)), Hash.from(new Uint8Array(32).fill(2))],
+					storageKeys: [
+						Hash.from(new Uint8Array(32).fill(1)),
+						Hash.from(new Uint8Array(32).fill(2)),
+					],
 				},
 			],
 			yParity: 0,

@@ -292,7 +292,9 @@ describe("Secp256k1.Signature methods", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}
-			const message = sha256(new TextEncoder().encode("conversion test")) as any;
+			const message = sha256(
+				new TextEncoder().encode("conversion test"),
+			) as any;
 
 			const original = sign(message, privateKey);
 

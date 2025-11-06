@@ -20,7 +20,11 @@ describe("Secp256k1.isValidSignature", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
 
-			const messages = [sha256(new TextEncoder().encode("msg1")) as any, sha256(new TextEncoder().encode("msg2")) as any, sha256(new TextEncoder().encode("msg3")) as any];
+			const messages = [
+				sha256(new TextEncoder().encode("msg1")) as any,
+				sha256(new TextEncoder().encode("msg2")) as any,
+				sha256(new TextEncoder().encode("msg3")) as any,
+			];
 
 			for (const message of messages) {
 				const signature = sign(message, privateKey);

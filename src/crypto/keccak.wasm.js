@@ -16,7 +16,8 @@ export { Hash };
  */
 export async function keccak256(data) {
 	await Keccak256Wasm.init();
-	const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
+	const bytes =
+		typeof data === "string" ? new TextEncoder().encode(data) : data;
 	return Keccak256Wasm.hash(bytes);
 }
 

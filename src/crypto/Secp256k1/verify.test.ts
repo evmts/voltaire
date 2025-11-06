@@ -12,7 +12,9 @@ describe("Secp256k1.verify", () => {
 		it("should verify valid signature", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = Hash.from(sha256(new TextEncoder().encode("hello world")));
+			const message = Hash.from(
+				sha256(new TextEncoder().encode("hello world")),
+			);
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -60,8 +62,12 @@ describe("Secp256k1.verify", () => {
 		it("should reject signature with wrong message", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message1 = Hash.from(sha256(new TextEncoder().encode("original message")));
-			const message2 = Hash.from(sha256(new TextEncoder().encode("different message")));
+			const message1 = Hash.from(
+				sha256(new TextEncoder().encode("original message")),
+			);
+			const message2 = Hash.from(
+				sha256(new TextEncoder().encode("different message")),
+			);
 
 			const signature = sign(message1, privateKey);
 			const publicKey = derivePublicKey(privateKey);
@@ -337,7 +343,9 @@ describe("Secp256k1.verify", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 13) % 256;
 			}
-			const message = Hash.from(sha256(new TextEncoder().encode("cross validation")));
+			const message = Hash.from(
+				sha256(new TextEncoder().encode("cross validation")),
+			);
 
 			// Create signature with @noble
 			const nobleSignature = secp256k1.sign(message, privateKey, {
@@ -361,7 +369,9 @@ describe("Secp256k1.verify", () => {
 		it("should not early-return on invalid signatures", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = Hash.from(sha256(new TextEncoder().encode("timing test")));
+			const message = Hash.from(
+				sha256(new TextEncoder().encode("timing test")),
+			);
 			const publicKey = derivePublicKey(privateKey);
 
 			// Multiple invalid signatures should all return false
@@ -390,7 +400,9 @@ describe("Secp256k1.verify", () => {
 		it("should verify with both v values when appropriate", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
-			const message = Hash.from(sha256(new TextEncoder().encode("v parameter test")));
+			const message = Hash.from(
+				sha256(new TextEncoder().encode("v parameter test")),
+			);
 
 			const signature = sign(message, privateKey);
 			const publicKey = derivePublicKey(privateKey);

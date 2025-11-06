@@ -12,7 +12,9 @@ describe("Secp256k1.sign", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1; // Private key = 1
 
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("hello world")));
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("hello world")),
+			);
 
 			const sig1 = sign(message, privateKey);
 			const sig2 = sign(message, privateKey);
@@ -27,8 +29,12 @@ describe("Secp256k1.sign", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 1;
 
-			const message1 = Hash.fromBytes(sha256(new TextEncoder().encode("hello")));
-			const message2 = Hash.fromBytes(sha256(new TextEncoder().encode("world")));
+			const message1 = Hash.fromBytes(
+				sha256(new TextEncoder().encode("hello")),
+			);
+			const message2 = Hash.fromBytes(
+				sha256(new TextEncoder().encode("world")),
+			);
 
 			const sig1 = sign(message1, privateKey);
 			const sig2 = sign(message2, privateKey);
@@ -43,7 +49,9 @@ describe("Secp256k1.sign", () => {
 			const privateKey2 = new Uint8Array(32);
 			privateKey2[31] = 2;
 
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("hello world")));
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("hello world")),
+			);
 
 			const sig1 = sign(message, privateKey1);
 			const sig2 = sign(message, privateKey2);
@@ -180,7 +188,9 @@ describe("Secp256k1.sign", () => {
 		it("should compute correct recovery bit for public key recovery", () => {
 			const privateKey = new Uint8Array(32);
 			privateKey[31] = 42;
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("test recovery")));
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("test recovery")),
+			);
 
 			const sig = sign(message, privateKey);
 
@@ -203,7 +213,9 @@ describe("Secp256k1.sign", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = i + 1;
 			}
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("cross validation test")));
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("cross validation test")),
+			);
 
 			const sig = sign(message, privateKey);
 
@@ -221,7 +233,9 @@ describe("Secp256k1.sign", () => {
 			// Test vector 1
 			const pk1 = new Uint8Array(32);
 			pk1[31] = 1;
-			const msg1 = Hash.fromBytes(sha256(new TextEncoder().encode("Satoshi Nakamoto")));
+			const msg1 = Hash.fromBytes(
+				sha256(new TextEncoder().encode("Satoshi Nakamoto")),
+			);
 			const sig1 = sign(msg1, pk1);
 			expect(sig1.r.length).toBe(32);
 			expect(sig1.s.length).toBe(32);
@@ -268,7 +282,9 @@ describe("Secp256k1.sign", () => {
 			for (let i = 0; i < 32; i++) {
 				privateKey[i] = (i * 7) % 256;
 			}
-			const message = Hash.fromBytes(sha256(new TextEncoder().encode("low-s test")));
+			const message = Hash.fromBytes(
+				sha256(new TextEncoder().encode("low-s test")),
+			);
 
 			const sig = sign(message, privateKey);
 
