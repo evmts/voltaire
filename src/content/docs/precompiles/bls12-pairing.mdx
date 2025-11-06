@@ -28,13 +28,13 @@ This enables:
 
 ## Gas Cost
 
-**Formula:** `65000 + 43000 * k` where k = number of point pairs
+**Formula:** `115000 + 23000 * k` where k = number of point pairs
 
 **Examples:**
-- Empty input (k=0): 65,000 gas
-- 1 pair: 108,000 gas
-- 2 pairs: 151,000 gas
-- 5 pairs: 280,000 gas
+- Empty input (k=0): 115,000 gas
+- 1 pair: 138,000 gas
+- 2 pairs: 161,000 gas
+- 5 pairs: 230,000 gas
 
 Note: Higher base cost than BN254 due to larger field size and higher security level.
 
@@ -102,7 +102,7 @@ input.set(negatedG1Generator, 384);
 // G2 point: signature (256 bytes)
 input.set(signatureG2Point, 512);
 
-const gasNeeded = 65000n + 43000n * 2n;
+const gasNeeded = 115000n + 23000n * 2n;
 
 const result = execute(
   PrecompileAddress.BLS12_PAIRING,
@@ -143,7 +143,7 @@ pub fn verifyBLSSignature(
     @memcpy(input[384..512], &negated_g1_generator);
     @memcpy(input[512..768], signature);
 
-    const gas_limit = 65000 + 43000 * 2;
+    const gas_limit = 115000 + 23000 * 2;
     const result = try precompiles.bls12_pairing.execute(
         allocator,
         input,
@@ -193,7 +193,7 @@ Verify with multi-pairing:
 e(PK1, H(m1)) * e(PK2, H(m2)) * ... * e(PKN, H(mN)) * e(-G1, sig_agg) = 1
 ```
 
-Gas cost scales linearly: `65000 + 43000 * (N+1)`
+Gas cost scales linearly: `115000 + 23000 * (N+1)`
 
 ### zkSNARK Verification
 
@@ -246,8 +246,8 @@ Empty input (0 pairs) returns success because empty product equals 1 (identity e
 | Field size | 381 bits | 254 bits |
 | G1 encoding | 128 bytes | 64 bytes |
 | G2 encoding | 256 bytes | 128 bytes |
-| Base gas | 65,000 | 45,000 |
-| Per-pair gas | 43,000 | 34,000 |
+| Base gas | 115,000 | 45,000 |
+| Per-pair gas | 23,000 | 34,000 |
 | Use case | Modern (ETH2) | Legacy (zkSNARKs) |
 
 BLS12-381 is preferred for new applications due to higher security margin.
