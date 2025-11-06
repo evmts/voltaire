@@ -1,0 +1,187 @@
+---
+title: Crypto
+description: Core cryptographic operations for Ethereum, including ECDSA signing, signature verification, and address recovery
+---
+
+## Overview
+
+The crypto module provides core cryptographic operations for Ethereum, built on secp256k1 elliptic curve cryptography. It handles private/public key operations, ECDSA signing, signature verification, and address recovery.
+
+**Status:** UNAUDITED - Use at your own risk in production environments.
+
+## Key Functions
+
+### `unaudited_signHash`
+
+Signs a 32-byte hash with a private key to produce an ECDSA signature.
+
+```zig
+pub fn unaudited_signHash(hash: *const [32]u8, private_key: *const PrivateKey) !Signature
+```
+
+**Parameters:**
+- `hash` - 32-byte message hash to sign
+- `private_key` - Private key for signing
+
+**Returns:** ECDSA signature with recovery ID
+
+### `unaudited_recoverAddress`
+
+Recovers an Ethereum address from a message hash and signature.
+
+```zig
+pub fn unaudited_recoverAddress(hash: *const [32]u8, signature: *const Signature) !Address
+```
+
+**Parameters:**
+- `hash` - Original 32-byte message hash
+- `signature` - ECDSA signature with recovery ID
+
+**Returns:** 20-byte Ethereum address
+
+### `unaudited_verifySignature`
+
+Verifies an ECDSA signature against a hash and public key.
+
+```zig
+pub fn unaudited_verifySignature(
+    hash: *const [32]u8,
+    signature: *const Signature,
+    public_key: *const PublicKey,
+) !bool
+```
+
+**Parameters:**
+- `hash` - 32-byte message hash
+- `signature` - ECDSA signature to verify
+- `public_key` - Public key to verify against
+
+**Returns:** `true` if signature is valid, `false` otherwise
+
+## Types
+
+### `PrivateKey`
+
+```zig
+pub const PrivateKey = [32]u8;
+```
+
+32-byte secp256k1 private key.
+
+### `PublicKey`
+
+```zig
+pub const PublicKey = [64]u8;
+```
+
+64-byte uncompressed secp256k1 public key (x and y coordinates).
+
+### `Signature`
+
+```zig
+pub const Signature = struct {
+    r: [32]u8,
+    s: [32]u8,
+    v: u8,
+};
+```
+
+ECDSA signature with recovery ID (v).
+
+### `Address`
+
+```zig
+pub const Address = [20]u8;
+```
+
+20-byte Ethereum address derived from public key hash.
+
+## Examples
+
+### Sign and Verify a Message
+
+```zig
+const crypto = @import("crypto");
+const std = @import("std");
+
+// Message to sign
+const message = "Hello, Ethereum!";
+const hash = crypto.keccak256(message);
+
+// Private key (example - never hardcode in production)
+const private_key: crypto.PrivateKey = [_]u8{1} ** 32;
+
+// Sign the hash
+const signature = try crypto.unaudited_signHash(&hash, &private_key);
+
+// Recover address from signature
+const recovered_address = try crypto.unaudited_recoverAddress(&hash, &signature);
+
+// Derive public key and verify
+const public_key = try crypto.publicKeyFromPrivate(&private_key);
+const is_valid = try crypto.unaudited_verifySignature(&hash, &signature, &public_key);
+
+std.debug.assert(is_valid);
+```
+
+### Address Recovery
+
+```zig
+// Recover signer address from transaction signature
+const tx_hash: [32]u8 = ...; // Transaction hash
+const tx_signature: crypto.Signature = ...; // Transaction signature
+
+const signer_address = try crypto.unaudited_recoverAddress(&tx_hash, &tx_signature);
+
+std.debug.print("Signer: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&signer_address)});
+```
+
+## Performance
+
+Performance characteristics for crypto operations:
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| `unaudited_signHash` | TBD | Uses secp256k1 implementation |
+| `unaudited_recoverAddress` | TBD | Includes point recovery and hashing |
+| `unaudited_verifySignature` | TBD | Public key verification |
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run crypto tests:
+
+```bash
+zig build test -Dtest-filter=crypto
+```
+
+Tests cover:
+- Signature generation and verification
+- Address recovery from signatures
+- Public key derivation
+- Edge cases (invalid signatures, malformed keys)
+- Cross-validation with known test vectors
+
+## Security Considerations
+
+- **UNAUDITED**: This code has not undergone a formal security audit
+- **Constant-time operations**: Critical for preventing timing side-channel attacks
+- **Key management**: Never expose private keys in logs or error messages
+- **Signature malleability**: High-s values should be normalized
+- **Recovery ID validation**: Ensure v values are valid (27/28 or 0/1)
+- **Hash validation**: Always verify hash length is exactly 32 bytes
+- **Test vectors**: Validate against official Ethereum test suites
+
+## Related
+
+- [Keccak](/zig/crypto/keccak) - Hash function for message signing
+- [secp256k1](/zig/crypto/secp256k1) - Elliptic curve implementation
+- [EIP-712](/zig/crypto/eip712) - Typed data signing
+
+## References
+
+- [secp256k1 Curve](https://www.secg.org/sec2-v2.pdf) - SEC 2 specification
+- [ECDSA](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm) - Digital signature algorithm
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix F (Signing Transactions)
+- [EIP-155](https://eips.ethereum.org/EIPS/eip-155) - Simple replay attack protection

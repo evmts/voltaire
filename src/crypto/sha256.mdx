@@ -1,0 +1,150 @@
+---
+title: SHA-256
+description: Hardware-accelerated SHA-256 hash function implementation
+---
+
+## Overview
+
+The sha256 module provides a hardware-accelerated implementation of the SHA-256 cryptographic hash function. It leverages CPU intrinsics (SHA-NI on x86, similar on ARM) for optimal performance on modern processors.
+
+SHA-256 is widely used in Bitcoin, TLS, and general-purpose cryptographic applications.
+
+## Key Functions
+
+### `sha256`
+
+Compute SHA-256 hash of input data.
+
+```zig
+pub fn sha256(data: []const u8) [32]u8
+```
+
+**Parameters:**
+- `data` - Input data to hash
+
+**Returns:** 32-byte SHA-256 digest
+
+### `sha256Allocating`
+
+Compute SHA-256 with allocated result.
+
+```zig
+pub fn sha256Allocating(allocator: std.mem.Allocator, data: []const u8) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `data` - Input data to hash
+
+**Returns:** Allocated 32-byte digest (caller must free)
+
+## Examples
+
+### Basic Hashing
+
+```zig
+const sha256_mod = @import("crypto").sha256;
+const std = @import("std");
+
+const data = "Hello, SHA-256!";
+const hash = sha256_mod.sha256(data);
+
+std.debug.print("SHA-256: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+```
+
+### Double SHA-256 (Bitcoin)
+
+```zig
+// Bitcoin uses double SHA-256 for block hashes
+const data = "block data";
+const hash1 = sha256_mod.sha256(data);
+const hash2 = sha256_mod.sha256(&hash1);
+
+std.debug.print("Double SHA-256: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash2)});
+```
+
+### Hash Comparison
+
+```zig
+const input1 = "same data";
+const input2 = "same data";
+const input3 = "different data";
+
+const hash1 = sha256_mod.sha256(input1);
+const hash2 = sha256_mod.sha256(input2);
+const hash3 = sha256_mod.sha256(input3);
+
+std.debug.assert(std.mem.eql(u8, &hash1, &hash2)); // Same
+std.debug.assert(!std.mem.eql(u8, &hash1, &hash3)); // Different
+```
+
+### File Hashing
+
+```zig
+const file = try std.fs.cwd().openFile("data.bin", .{});
+defer file.close();
+
+const file_data = try file.readToEndAlloc(allocator, 1024 * 1024 * 100);
+defer allocator.free(file_data);
+
+const hash = sha256_mod.sha256(file_data);
+std.debug.print("File hash: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+```
+
+## Performance
+
+SHA-256 performance with hardware acceleration:
+
+| Input Size | Time | Throughput | Notes |
+|------------|------|------------|-------|
+| 32 bytes | TBD | TBD | Single block |
+| 1 KB | TBD | TBD | Multiple blocks |
+| 1 MB | TBD | TBD | Large data |
+
+**Hardware acceleration:**
+- **x86-64**: SHA Extensions (SHA-NI) when available
+- **ARM**: ARMv8 Crypto Extensions
+- **Fallback**: Software implementation when hardware unavailable
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run SHA-256 tests:
+
+```bash
+zig build test -Dtest-filter=sha256
+```
+
+Tests validate:
+- NIST test vectors
+- Empty input (known hash)
+- Single-block inputs
+- Multi-block inputs
+- Large inputs
+- Hardware vs software consistency
+
+## Security Considerations
+
+- **NIST standard**: FIPS 180-4 approved hash function
+- **Collision resistance**: No known practical attacks
+- **Preimage resistance**: Computationally infeasible to reverse
+- **Second preimage resistance**: Resistant to finding collisions
+- **Length extension**: Vulnerable to length-extension attacks (use HMAC for MACs)
+- **Hardware acceleration**: Constant-time implementation reduces timing attacks
+- **Bitcoin compatibility**: Uses same algorithm as Bitcoin
+- **Truncation**: Truncating output reduces security proportionally
+
+## Related
+
+- [Hash](/zig/crypto/hash) - Unified hash interface
+- [Hash Algorithms](/zig/crypto/hash_algorithms) - Algorithm enum
+- [Keccak](/zig/crypto/keccak) - Alternative hash function
+- [Blake2](/zig/crypto/blake2) - Faster alternative
+
+## References
+
+- [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf) - SHA-2 family specification
+- [RFC 6234](https://www.rfc-editor.org/rfc/rfc6234) - US Secure Hash Algorithms
+- [Intel SHA Extensions](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sha-extensions.html) - Hardware acceleration
+- [Bitcoin Block Hashing](https://en.bitcoin.it/wiki/Block_hashing_algorithm) - Double SHA-256

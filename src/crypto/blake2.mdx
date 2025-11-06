@@ -1,0 +1,175 @@
+---
+title: Blake2
+description: Fast cryptographic hash function optimized for speed and security
+---
+
+## Overview
+
+The blake2 module provides Blake2b implementations, a modern cryptographic hash function that is faster than SHA-2 while providing equal or better security. Blake2 is optimized for 64-bit platforms and offers both 256-bit and 512-bit output variants.
+
+Blake2 is used in various blockchain projects and is an excellent general-purpose hash function for modern applications.
+
+## Key Functions
+
+### `blake2b256`
+
+Compute Blake2b-256 hash (32-byte output).
+
+```zig
+pub fn blake2b256(data: []const u8) [32]u8
+```
+
+**Parameters:**
+- `data` - Input data to hash
+
+**Returns:** 32-byte Blake2b-256 digest
+
+### `blake2b512`
+
+Compute Blake2b-512 hash (64-byte output).
+
+```zig
+pub fn blake2b512(data: []const u8) [64]u8
+```
+
+**Parameters:**
+- `data` - Input data to hash
+
+**Returns:** 64-byte Blake2b-512 digest
+
+### `blake2bAllocating`
+
+Compute Blake2b hash with allocated result.
+
+```zig
+pub fn blake2bAllocating(
+    allocator: std.mem.Allocator,
+    data: []const u8,
+    output_len: usize,
+) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `data` - Input data to hash
+- `output_len` - Desired output length (1-64 bytes)
+
+**Returns:** Allocated digest of specified length
+
+## Examples
+
+### Basic Hashing
+
+```zig
+const blake2 = @import("crypto").blake2;
+const std = @import("std);
+
+const data = "Hello, Blake2!";
+
+// 256-bit output
+const hash256 = blake2.blake2b256(data);
+std.debug.print("Blake2b-256: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash256)});
+
+// 512-bit output
+const hash512 = blake2.blake2b512(data);
+std.debug.print("Blake2b-512: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash512)});
+```
+
+### Custom Output Length
+
+```zig
+const allocator = std.heap.page_allocator;
+
+// Variable length output (1-64 bytes)
+const hash48 = try blake2.blake2bAllocating(allocator, data, 48);
+defer allocator.free(hash48);
+
+std.debug.print("Blake2b-48: 0x{x}\n", .{std.fmt.fmtSliceHexLower(hash48)});
+```
+
+### Keyed Hashing (MAC)
+
+```zig
+// Blake2 supports keyed hashing for MAC operations
+const key = "secret key";
+const message = "authenticated message";
+
+// Concatenate key and message (simplified example)
+const input = try std.mem.concat(allocator, u8, &[_][]const u8{ key, message });
+defer allocator.free(input);
+
+const mac = blake2.blake2b256(input);
+```
+
+### Incremental Hashing
+
+```zig
+// Hash large data in chunks
+var hasher = std.crypto.hash.blake2.Blake2b256.init(.{});
+
+for (data_chunks) |chunk| {
+    hasher.update(chunk);
+}
+
+const hash = hasher.final();
+```
+
+## Performance
+
+Blake2b performance characteristics:
+
+| Variant | Output Size | Time (32B) | Time (1KB) | Time (1MB) |
+|---------|-------------|------------|------------|------------|
+| Blake2b-256 | 32 bytes | TBD | TBD | TBD |
+| Blake2b-512 | 64 bytes | TBD | TBD | TBD |
+
+**Performance notes:**
+- Faster than SHA-2 and SHA-3 in software
+- Optimized for 64-bit platforms
+- No hardware acceleration required
+- Single-pass algorithm
+- Efficient for small and large inputs
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run Blake2 tests:
+
+```bash
+zig build test -Dtest-filter=blake2
+```
+
+Tests validate:
+- Official Blake2 test vectors
+- Both 256-bit and 512-bit variants
+- Custom output lengths
+- Empty input handling
+- Large input handling
+- Keyed hashing
+
+## Security Considerations
+
+- **Modern design**: Published 2012, extensively analyzed
+- **Collision resistance**: Full security strength of output size
+- **Preimage resistance**: No known attacks
+- **No length extension**: Resistant to length-extension attacks
+- **Keyed mode**: Built-in support for MAC operations
+- **Side-channel resistance**: Constant-time implementation
+- **NIST consideration**: Considered for SHA-3 competition
+- **Production use**: Used in Zcash, Argon2, many other projects
+- **Variable output**: Can produce 1-64 byte outputs securely
+
+## Related
+
+- [Hash](/zig/crypto/hash) - Unified hash interface
+- [Hash Algorithms](/zig/crypto/hash_algorithms) - Algorithm enum
+- [SHA256](/zig/crypto/sha256) - SHA-2 alternative
+- [Keccak](/zig/crypto/keccak) - Ethereum hash function
+
+## References
+
+- [RFC 7693](https://www.rfc-editor.org/rfc/rfc7693) - BLAKE2 specification
+- [Blake2 Website](https://www.blake2.net/) - Official documentation
+- [Blake2 Paper](https://www.blake2.net/blake2.pdf) - Original research paper
+- [NIST SHA-3](https://csrc.nist.gov/projects/hash-functions/sha-3-project) - SHA-3 competition (Blake2 predecessor)

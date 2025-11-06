@@ -1,0 +1,626 @@
+---
+title: HD Wallet (BIP-32/BIP-44)
+description: Hierarchical Deterministic wallet key derivation
+---
+
+## Overview
+
+HD (Hierarchical Deterministic) Wallets enable deriving unlimited key pairs from a single seed using standardized derivation paths. This implementation follows BIP-32 (key derivation) and BIP-44 (multi-account hierarchy) standards.
+
+Key features:
+- **Single seed, infinite keys**: Derive unlimited addresses from one mnemonic
+- **Hierarchical structure**: Organized tree of keys (accounts, addresses)
+- **Deterministic**: Same seed + path always produces same key
+- **Privacy**: Each transaction can use a unique address
+- **Backup**: Single mnemonic backs up entire wallet
+
+## Quick Start
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+
+// 1. Generate or restore mnemonic
+const mnemonic = Bip39.generateMnemonic(256);
+
+// 2. Derive seed from mnemonic
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+
+// 3. Create root HD key
+const root = HDWallet.fromSeed(seed);
+
+// 4. Derive Ethereum accounts (BIP-44)
+const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
+const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
+
+// 5. Get keys
+const privateKey = HDWallet.getPrivateKey(eth0);
+const publicKey = HDWallet.getPublicKey(eth0);
+const chainCode = HDWallet.getChainCode(eth0);
+
+// 6. Export extended keys
+const xprv = HDWallet.toExtendedPrivateKey(root); // xprv...
+const xpub = HDWallet.toExtendedPublicKey(root);  // xpub...
+```
+
+## API Reference
+
+### Factory Methods
+
+#### `fromSeed(seed: Uint8Array): ExtendedKey`
+
+Creates root HD key from BIP-39 seed (16-64 bytes, typically 64).
+
+```typescript
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+const root = HDWallet.fromSeed(seed);
+```
+
+#### `fromExtendedKey(xprv: string): ExtendedKey`
+
+Imports HD key from extended private key string (xprv...).
+
+```typescript
+const xprv = 'xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi';
+const key = HDWallet.fromExtendedKey(xprv);
+```
+
+#### `fromPublicExtendedKey(xpub: string): ExtendedKey`
+
+Imports HD key from extended public key string (xpub...). Cannot derive hardened children.
+
+```typescript
+const xpub = 'xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8';
+const pubKey = HDWallet.fromPublicExtendedKey(xpub);
+// Can only derive non-hardened children
+```
+
+### Derivation Methods
+
+#### `derivePath(key: ExtendedKey, path: string): ExtendedKey`
+
+Derives child key by full BIP-32 path.
+
+```typescript
+// Standard paths
+const eth0 = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");    // Ethereum account 0, address 0
+const eth1 = HDWallet.derivePath(root, "m/44'/60'/0'/0/1");    // Ethereum account 0, address 1
+const btc0 = HDWallet.derivePath(root, "m/44'/0'/0'/0/0");     // Bitcoin account 0, address 0
+
+// Custom paths
+const custom = HDWallet.derivePath(root, "m/0'/1/2'/3");       // Mixed hardened/normal
+
+// Hardened notation alternatives
+const hardened1 = HDWallet.derivePath(root, "m/44'/60'/0'");   // Single quote
+const hardened2 = HDWallet.derivePath(root, "m/44h/60h/0h");   // 'h' suffix (equivalent)
+```
+
+#### `deriveChild(key: ExtendedKey, index: number): ExtendedKey`
+
+Derives single child by index (0-2³¹-1 normal, ≥2³¹ hardened).
+
+```typescript
+// Normal derivation
+const child0 = HDWallet.deriveChild(root, 0);
+const child1 = HDWallet.deriveChild(root, 1);
+
+// Hardened derivation (index >= HARDENED_OFFSET)
+const hardened0 = HDWallet.deriveChild(root, HDWallet.HARDENED_OFFSET);
+const hardened1 = HDWallet.deriveChild(root, HDWallet.HARDENED_OFFSET + 1);
+```
+
+#### `deriveEthereum(key: ExtendedKey, account: number, index: number): ExtendedKey`
+
+Derives Ethereum address using BIP-44 path: `m/44'/60'/{account}'/0/{index}`.
+
+```typescript
+// First 5 addresses of account 0
+const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
+const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
+const eth2 = HDWallet.deriveEthereum(root, 0, 2); // m/44'/60'/0'/0/2
+const eth3 = HDWallet.deriveEthereum(root, 0, 3); // m/44'/60'/0'/0/3
+const eth4 = HDWallet.deriveEthereum(root, 0, 4); // m/44'/60'/0'/0/4
+
+// Second account
+const eth2_0 = HDWallet.deriveEthereum(root, 1, 0); // m/44'/60'/1'/0/0
+```
+
+#### `deriveBitcoin(key: ExtendedKey, account: number, index: number): ExtendedKey`
+
+Derives Bitcoin address using BIP-44 path: `m/44'/0'/{account}'/0/{index}`.
+
+```typescript
+const btc0 = HDWallet.deriveBitcoin(root, 0, 0); // m/44'/0'/0'/0/0
+const btc1 = HDWallet.deriveBitcoin(root, 0, 1); // m/44'/0'/0'/0/1
+```
+
+### Serialization Methods
+
+#### `toExtendedPrivateKey(key: ExtendedKey): string`
+
+Exports extended private key (xprv...).
+
+```typescript
+const xprv = HDWallet.toExtendedPrivateKey(root);
+// "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"
+
+// Can be stored and later restored
+const restored = HDWallet.fromExtendedKey(xprv);
+```
+
+#### `toExtendedPublicKey(key: ExtendedKey): string`
+
+Exports extended public key (xpub...).
+
+```typescript
+const xpub = HDWallet.toExtendedPublicKey(root);
+// "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+
+// Public key can be shared for watch-only wallets
+const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
+```
+
+### Property Getters
+
+#### `getPrivateKey(key: ExtendedKey): Uint8Array | null`
+
+Returns 32-byte private key (null for public-only keys).
+
+```typescript
+const privateKey = HDWallet.getPrivateKey(eth0);
+// Uint8Array(32) or null
+```
+
+#### `getPublicKey(key: ExtendedKey): Uint8Array | null`
+
+Returns 33-byte compressed public key.
+
+```typescript
+const publicKey = HDWallet.getPublicKey(eth0);
+// Uint8Array(33) - compressed secp256k1 public key
+```
+
+#### `getChainCode(key: ExtendedKey): Uint8Array | null`
+
+Returns 32-byte chain code (used for child derivation).
+
+```typescript
+const chainCode = HDWallet.getChainCode(eth0);
+// Uint8Array(32)
+```
+
+#### `canDeriveHardened(key: ExtendedKey): boolean`
+
+Checks if key can derive hardened children (requires private key).
+
+```typescript
+const root = HDWallet.fromSeed(seed);
+console.log(HDWallet.canDeriveHardened(root)); // true
+
+const xpub = HDWallet.toExtendedPublicKey(root);
+const pubOnly = HDWallet.fromPublicExtendedKey(xpub);
+console.log(HDWallet.canDeriveHardened(pubOnly)); // false
+```
+
+#### `toPublic(key: ExtendedKey): ExtendedKey`
+
+Converts to public-only key (removes private key).
+
+```typescript
+const root = HDWallet.fromSeed(seed);
+const pubOnly = HDWallet.toPublic(root);
+
+console.log(HDWallet.getPrivateKey(root));   // Uint8Array(32)
+console.log(HDWallet.getPrivateKey(pubOnly)); // null
+console.log(HDWallet.getPublicKey(pubOnly));  // Uint8Array(33)
+```
+
+### Path Utilities
+
+#### `isValidPath(path: string): boolean`
+
+Validates BIP-32 path format.
+
+```typescript
+HDWallet.isValidPath("m/44'/60'/0'/0/0");  // true
+HDWallet.isValidPath("m/0");                // true
+HDWallet.isValidPath("44'/60'/0'");         // false (missing 'm')
+HDWallet.isValidPath("invalid");            // false
+```
+
+#### `isHardenedPath(path: string): boolean`
+
+Checks if path contains hardened derivation.
+
+```typescript
+HDWallet.isHardenedPath("m/44'/60'/0'");    // true
+HDWallet.isHardenedPath("m/44h/60h/0h");    // true (h notation)
+HDWallet.isHardenedPath("m/44/60/0");       // false
+```
+
+#### `parseIndex(indexStr: string): number`
+
+Parses index string to number (handles hardened notation).
+
+```typescript
+HDWallet.parseIndex("0");       // 0
+HDWallet.parseIndex("44");      // 44
+HDWallet.parseIndex("0'");      // 2147483648 (HARDENED_OFFSET)
+HDWallet.parseIndex("0h");      // 2147483648 (h notation)
+HDWallet.parseIndex("1'");      // 2147483649 (HARDENED_OFFSET + 1)
+```
+
+### Constants
+
+```typescript
+// Hardened offset (2^31)
+HDWallet.HARDENED_OFFSET  // 0x80000000 = 2147483648
+
+// Coin types (BIP-44)
+HDWallet.CoinType.BTC          // 0
+HDWallet.CoinType.BTC_TESTNET  // 1
+HDWallet.CoinType.ETH          // 60
+HDWallet.CoinType.ETC          // 61
+
+// Path templates
+HDWallet.BIP44_PATH.ETH(account, index)  // m/44'/60'/account'/0/index
+HDWallet.BIP44_PATH.BTC(account, index)  // m/44'/0'/account'/0/index
+```
+
+## Derivation Paths (BIP-32)
+
+### BIP-32 Path Format
+
+```
+m / purpose' / coin_type' / account' / change / address_index
+```
+
+- **`m`**: Master key (root)
+- **`purpose'`**: Standard (44' for BIP-44, 49' for SegWit, 84' for Native SegWit)
+- **`coin_type'`**: Cryptocurrency (0' for Bitcoin, 60' for Ethereum)
+- **`account'`**: Account index (0', 1', 2'...)
+- **`change`**: External (0) or internal/change (1) addresses
+- **`address_index`**: Address within account (0, 1, 2...)
+
+**Hardened vs Normal:**
+- **Hardened** (`'` or `h` suffix): Requires private key, more secure
+- **Normal** (no suffix): Can be derived from public key
+
+### BIP-44 Standard
+
+BIP-44 defines multi-account hierarchy for HD wallets:
+
+**Ethereum (coin type 60):**
+```
+m/44'/60'/0'/0/0    First address, first account
+m/44'/60'/0'/0/1    Second address, first account
+m/44'/60'/0'/0/2    Third address, first account
+m/44'/60'/1'/0/0    First address, second account
+```
+
+**Bitcoin (coin type 0):**
+```
+m/44'/0'/0'/0/0     First receive address, first account
+m/44'/0'/0'/1/0     First change address, first account
+m/44'/0'/0'/0/1     Second receive address, first account
+```
+
+**Other coins:**
+- Litecoin: `m/44'/2'/...`
+- Dogecoin: `m/44'/3'/...`
+- Ethereum Classic: `m/44'/61'/...`
+
+### Hardened Derivation
+
+Hardened derivation (index ≥ 2³¹) provides additional security:
+
+```typescript
+// Hardened (secure, requires private key)
+const hardened = HDWallet.derivePath(root, "m/44'/60'/0'");
+
+// Normal (can be derived from public key)
+const normal = HDWallet.derivePath(root, "m/44/60/0");
+```
+
+**Why use hardened?**
+- **Security**: Leaked child private key + parent public key cannot derive other children
+- **Standard**: BIP-44 requires hardening for purpose, coin_type, and account levels
+- **Privacy**: Better separation between accounts
+
+**When to use normal?**
+- Address generation in watch-only wallets (xpub)
+- Server-side address generation without private keys
+- Final address_index level (BIP-44 standard)
+
+### Notation
+
+Two equivalent notations for hardened derivation:
+
+```typescript
+// Single quote notation (standard)
+HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
+
+// 'h' suffix notation (alternative)
+HDWallet.derivePath(root, "m/44h/60h/0h/0/0");
+
+// Both produce identical keys
+```
+
+## Extended Keys (xprv/xpub)
+
+Extended keys encode key + chain code + metadata:
+
+### Extended Private Key (xprv)
+
+Contains private key - can derive all children (hardened + normal).
+
+```typescript
+const xprv = HDWallet.toExtendedPrivateKey(root);
+// "xprv9s21ZrQH143K..."
+
+// Format: version (4) + depth (1) + parent_fingerprint (4) +
+//         child_number (4) + chain_code (32) + key (33) + checksum (4)
+// Total: 82 bytes → Base58 encoded
+```
+
+**Security:**
+- Treat like private key - full wallet access
+- Derive any child key (hardened or normal)
+- Never share or transmit unencrypted
+
+### Extended Public Key (xpub)
+
+Contains public key - can only derive normal children.
+
+```typescript
+const xpub = HDWallet.toExtendedPublicKey(root);
+// "xpub661MyMwAqRbcF..."
+
+// Same format as xprv, but contains public key instead
+```
+
+**Use cases:**
+- Watch-only wallets (view balances without spending)
+- Server-side address generation
+- Auditing/accounting systems
+- Sharing with accountants/auditors
+
+**Limitations:**
+- Cannot derive hardened children
+- Cannot sign transactions
+- Cannot export private keys
+
+### Watch-Only Wallets
+
+```typescript
+// 1. Export xpub from secure device
+const root = HDWallet.fromSeed(seed);
+const xpub = HDWallet.toExtendedPublicKey(root);
+
+// 2. Import xpub on watch-only system
+const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
+
+// 3. Generate addresses (normal derivation only)
+const addr0 = HDWallet.deriveChild(watchOnly, 0);
+const addr1 = HDWallet.deriveChild(watchOnly, 1);
+
+// Can view addresses but cannot spend
+console.log(HDWallet.getPublicKey(addr0));    // Works
+console.log(HDWallet.getPrivateKey(addr0));   // null
+```
+
+## Complete Workflow
+
+### Generate New Wallet
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+import { Address } from '@tevm/voltaire/primitives/address';
+import { secp256k1 } from '@tevm/voltaire/crypto/secp256k1';
+
+// 1. Generate mnemonic (user backs this up!)
+const mnemonic = Bip39.generateMnemonic(256);
+console.log('Backup this mnemonic:', mnemonic);
+
+// 2. Derive seed
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+
+// 3. Create root key
+const root = HDWallet.fromSeed(seed);
+
+// 4. Derive first Ethereum address
+const eth0 = HDWallet.deriveEthereum(root, 0, 0);
+
+// 5. Get keys
+const privateKey = HDWallet.getPrivateKey(eth0);
+const publicKey = HDWallet.getPublicKey(eth0);
+
+// 6. Derive Ethereum address from public key
+const pubKeyUncompressed = secp256k1.getPublicKey(privateKey, false);
+const address = Address.fromPublicKey(pubKeyUncompressed.slice(1)); // Remove 0x04 prefix
+
+console.log('Address:', Address.toHex(address));
+```
+
+### Restore Existing Wallet
+
+```typescript
+// 1. User provides backed-up mnemonic
+const restoredMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+
+// 2. Validate mnemonic
+if (!Bip39.validateMnemonic(restoredMnemonic)) {
+  throw new Error('Invalid mnemonic');
+}
+
+// 3. Derive seed (with same passphrase if used)
+const seed = await Bip39.mnemonicToSeed(restoredMnemonic, 'optional passphrase');
+
+// 4. Recreate wallet
+const root = HDWallet.fromSeed(seed);
+
+// 5. Derive same addresses
+const eth0 = HDWallet.deriveEthereum(root, 0, 0); // Same as original
+```
+
+### Multi-Account Wallet
+
+```typescript
+// Account-based structure (like MetaMask)
+class MultiAccountWallet {
+  constructor(root) {
+    this.root = root;
+  }
+
+  getAccount(accountIndex, addressIndex = 0) {
+    return HDWallet.deriveEthereum(this.root, accountIndex, addressIndex);
+  }
+
+  getAccountAddresses(accountIndex, count = 5) {
+    return Array.from({ length: count }, (_, i) =>
+      this.getAccount(accountIndex, i)
+    );
+  }
+}
+
+const wallet = new MultiAccountWallet(root);
+
+// Get first 5 addresses of account 0
+const account0Addresses = wallet.getAccountAddresses(0, 5);
+
+// Get first address of account 1
+const account1 = wallet.getAccount(1, 0);
+```
+
+## Security
+
+### Best Practices
+
+**1. Secure seed storage**
+```typescript
+// Never log or transmit seed/private keys
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+// ❌ console.log(seed);
+// ❌ fetch('/api', { body: seed });
+
+// Only derive public data for transmission
+const root = HDWallet.fromSeed(seed);
+const xpub = HDWallet.toExtendedPublicKey(root);
+// ✅ Can share xpub (read-only access)
+```
+
+**2. Validate inputs**
+```typescript
+// Always validate user-provided paths
+function deriveSafely(root, path) {
+  if (!HDWallet.isValidPath(path)) {
+    throw new Error('Invalid derivation path');
+  }
+  return HDWallet.derivePath(root, path);
+}
+```
+
+**3. Use hardened derivation for sensitive levels**
+```typescript
+// Standard BIP-44: purpose', coin_type', account' are hardened
+const secure = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
+//                                          ^^^  ^^^  ^^^ Hardened
+
+// Less secure (but BIP-44 compliant for address level)
+const addressLevel = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
+//                                                           ^ Not hardened (standard)
+```
+
+**4. Clear sensitive memory**
+```typescript
+// For high-security applications, clear keys after use
+function clearKey(key) {
+  const privateKey = HDWallet.getPrivateKey(key);
+  if (privateKey) {
+    privateKey.fill(0); // Zero out memory
+  }
+}
+```
+
+**5. Implement key rotation**
+```typescript
+// Use different accounts for different purposes
+const tradingAccount = HDWallet.deriveEthereum(root, 0, 0);  // Hot wallet
+const savingsAccount = HDWallet.deriveEthereum(root, 1, 0);  // Cold storage
+const defiAccount = HDWallet.deriveEthereum(root, 2, 0);     // DeFi interactions
+```
+
+### Common Vulnerabilities
+
+**xpub Leakage + Child Private Key**
+
+If attacker obtains:
+1. Parent xpub (extended public key)
+2. Any child private key (non-hardened)
+
+They can derive all sibling private keys!
+
+**Protection:** Use hardened derivation at sensitive levels.
+
+```typescript
+// Vulnerable (if xpub + child key leaked)
+const vulnerable = HDWallet.derivePath(root, "m/44/60/0/0/0");
+//                                           ^^  ^^ Non-hardened
+
+// Secure (hardened derivation protects)
+const secure = HDWallet.derivePath(root, "m/44'/60'/0'/0/0");
+//                                        ^^^  ^^^ Hardened
+```
+
+**Weak Seed Generation**
+
+```typescript
+// ❌ NEVER use weak randomness
+const weakSeed = new Uint8Array(64);
+for (let i = 0; i < 64; i++) {
+  weakSeed[i] = Math.floor(Math.random() * 256); // Predictable!
+}
+
+// ✅ Use cryptographically secure generation
+const mnemonic = Bip39.generateMnemonic(256); // Uses crypto.getRandomValues()
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+```
+
+## Implementation Notes
+
+- Uses `@scure/bip32` by Paul Miller (audited library)
+- HMAC-SHA512 for key derivation (BIP-32 standard)
+- secp256k1 elliptic curve (Bitcoin/Ethereum)
+- Constant-time operations where possible
+- Supports compressed public keys (33 bytes)
+- Base58Check encoding for extended keys
+
+## Test Vectors (BIP-32)
+
+```typescript
+// From BIP-32 specification
+const testSeed = new Uint8Array([
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+  0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+]);
+
+const root = HDWallet.fromSeed(testSeed);
+const xprv = HDWallet.toExtendedPrivateKey(root);
+
+// Expected:
+// xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi
+
+const child = HDWallet.derivePath(root, "m/0'");
+const childXprv = HDWallet.toExtendedPrivateKey(child);
+
+// Expected:
+// xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7
+```
+
+## References
+
+- [BIP-32 Specification](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+- [BIP-44 Specification](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)
+- [SLIP-44 Coin Types](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+- [@scure/bip32 Library](https://github.com/paulmillr/scure-bip32)

@@ -1,0 +1,316 @@
+---
+title: RIPEMD160
+description: 160-bit hash function used in Bitcoin address derivation
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# RIPEMD160
+
+Legacy 160-bit hash function for Bitcoin address derivation
+
+## Overview
+
+RIPEMD160 (RACE Integrity Primitives Evaluation Message Digest 160-bit) is a cryptographic hash function that produces a 20-byte (160-bit) digest from arbitrary-length input data. Developed in 1996 as an alternative to MD5 and SHA-1, RIPEMD160 is part of the RIPEMD family designed by the COSIC research group.
+
+While largely superseded by SHA-256 and SHA-3 for general cryptography, RIPEMD160 remains important in blockchain technology:
+- **Bitcoin addresses**: Combined with SHA256 for address generation (Base58Check encoding)
+- **Address derivation**: Creates shorter address representations (20 bytes vs 32 bytes)
+- **Legacy compatibility**: Maintained for Bitcoin protocol compatibility
+
+The shorter 160-bit output (compared to 256-bit SHA256) provides compact addresses while maintaining sufficient security for address collision resistance (~80-bit security level).
+
+<Aside type="caution" title="Legacy Function">
+RIPEMD160 is primarily maintained for Bitcoin compatibility. For new applications requiring 160-bit hashes, consider Blake2b with 20-byte output, which offers better performance and security margins.
+</Aside>
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Basic Hashing">
+```typescript
+import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
+
+// Hash bytes
+const data = new Uint8Array([1, 2, 3, 4, 5]);
+const hash = Ripemd160.hash(data);
+// Uint8Array(20) [...]
+
+// Hash string (UTF-8 encoded)
+const stringHash = Ripemd160.hashString('hello');
+// Uint8Array(20) [...]
+
+// Hash also accepts strings directly
+const directHash = Ripemd160.hash('hello');
+// Uint8Array(20) [same as stringHash]
+```
+</TabItem>
+
+<TabItem label="Bitcoin Address">
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
+
+// Bitcoin P2PKH address derivation (simplified)
+const publicKey = new Uint8Array(65); // Uncompressed SECP256K1 public key
+
+// Step 1: SHA256 hash of public key
+const sha256Hash = SHA256.hash(publicKey);
+
+// Step 2: RIPEMD160 hash of SHA256 result
+const pubKeyHash = Ripemd160.hash(sha256Hash);
+// Uint8Array(20) [public key hash]
+
+// Step 3: Add version byte and checksum, then Base58 encode
+// (Base58Check encoding not shown)
+```
+</TabItem>
+</Tabs>
+
+## API Reference
+
+### `Ripemd160.hash(data: Uint8Array | string): Uint8Array`
+
+Compute RIPEMD160 hash (20 bytes).
+
+Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hashing.
+
+**Parameters:**
+- `data`: Input data to hash (Uint8Array or string)
+
+**Returns:** 20-byte hash (Uint8Array)
+
+**Example:**
+```typescript
+// Hash bytes
+const hash1 = Ripemd160.hash(new Uint8Array([1, 2, 3]));
+console.log(hash1.length); // 20
+
+// Hash string
+const hash2 = Ripemd160.hash('hello');
+console.log(hash2.length); // 20
+```
+
+---
+
+### `Ripemd160.hashString(str: string): Uint8Array`
+
+Hash UTF-8 string with RIPEMD160.
+
+Convenience method that explicitly documents string input. Functionally equivalent to `Ripemd160.hash(str)`.
+
+**Parameters:**
+- `str`: String to hash
+
+**Returns:** 20-byte hash (Uint8Array)
+
+**Example:**
+```typescript
+const hash = Ripemd160.hashString('message digest');
+// Uint8Array(20) [...]
+```
+
+## Constants
+
+```typescript
+Ripemd160.SIZE  // 20 - Output size in bytes (160 bits)
+```
+
+## Test Vectors
+
+Official RIPEMD160 test vectors:
+
+```typescript
+// Empty string
+Ripemd160.hashString("")
+// Uint8Array(20) [
+//   0x9c, 0x11, 0x85, 0xa5, 0xc5, 0xe9, 0xfc, 0x54,
+//   0x61, 0x28, 0x08, 0x97, 0x7e, 0xe8, 0xf5, 0x48,
+//   0xb2, 0x25, 0x8d, 0x31
+// ]
+
+// "a"
+Ripemd160.hashString("a")
+// Uint8Array(20) [
+//   0x0b, 0xdc, 0x9d, 0x2d, 0x25, 0x6b, 0x3e, 0xe9,
+//   0xda, 0xae, 0x34, 0x7b, 0xe6, 0xf4, 0xdc, 0x83,
+//   0x5a, 0x46, 0x7f, 0xfe
+// ]
+
+// "abc"
+Ripemd160.hashString("abc")
+// Uint8Array(20) [
+//   0x8e, 0xb2, 0x08, 0xf7, 0xe0, 0x5d, 0x98, 0x7a,
+//   0x9b, 0x04, 0x4a, 0x8e, 0x98, 0xc6, 0xb0, 0x87,
+//   0xf1, 0x5a, 0x0b, 0xfc
+// ]
+
+// "message digest"
+Ripemd160.hashString("message digest")
+// Uint8Array(20) [
+//   0x5d, 0x06, 0x89, 0xef, 0x49, 0xd2, 0xfa, 0xe5,
+//   0x72, 0xb8, 0x81, 0xb1, 0x23, 0xa8, 0x5f, 0xfa,
+//   0x21, 0x59, 0x5f, 0x36
+// ]
+
+// "abcdefghijklmnopqrstuvwxyz"
+Ripemd160.hashString("abcdefghijklmnopqrstuvwxyz")
+// Uint8Array(20) [
+//   0xf7, 0x1c, 0x27, 0x10, 0x9c, 0x69, 0x2c, 0x1b,
+//   0x56, 0xbb, 0xdc, 0xeb, 0x5b, 0x9d, 0x28, 0x65,
+//   0xb3, 0x70, 0x8d, 0xbc
+// ]
+
+// "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+Ripemd160.hashString("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
+// Uint8Array(20) [
+//   0x12, 0xa0, 0x53, 0x38, 0x4a, 0x9c, 0x0c, 0x88,
+//   0xe4, 0x05, 0xa0, 0x6c, 0x27, 0xdc, 0xf4, 0x9a,
+//   0xda, 0x62, 0xeb, 0x2b
+// ]
+
+// "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+Ripemd160.hashString("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+// Uint8Array(20) [
+//   0xb0, 0xe2, 0x0b, 0x6e, 0x31, 0x16, 0x64, 0x02,
+//   0x86, 0xed, 0x3a, 0x87, 0xa5, 0x71, 0x30, 0x79,
+//   0xb2, 0x1f, 0x51, 0x89
+// ]
+
+// Eight repetitions of "1234567890"
+Ripemd160.hashString("12345678901234567890123456789012345678901234567890123456789012345678901234567890")
+// Uint8Array(20) [
+//   0x9b, 0x75, 0x2e, 0x45, 0x57, 0x3d, 0x4b, 0x39,
+//   0xf4, 0xdb, 0xd3, 0x32, 0x3c, 0xab, 0x82, 0xbf,
+//   0x63, 0x32, 0x6b, 0xfb
+// ]
+```
+
+## Security Considerations
+
+### Collision Resistance
+RIPEMD160 provides ~80-bit security against collision attacks due to its 160-bit output size. This is considered adequate for Bitcoin addresses where collision resistance prevents address conflicts.
+
+### Preimage Resistance
+Finding a specific input that produces a given RIPEMD160 hash requires ~2^160 operations, which remains computationally infeasible.
+
+### Birthday Paradox
+The 160-bit output means collisions become probable after ~2^80 random inputs (birthday bound). This is acceptable for address generation where inputs are not randomly chosen, but insufficient for applications requiring strong collision resistance.
+
+### Bitcoin Context
+In Bitcoin, RIPEMD160 is never used alone for security-critical operations:
+- Always combined with SHA256 (double hashing)
+- Address collisions require breaking both SHA256 and RIPEMD160
+- Compact 20-byte addresses reduce blockchain storage
+
+### Known Vulnerabilities
+- No practical collision or preimage attacks exist as of 2025
+- RIPEMD128 (128-bit variant) has theoretical weaknesses, but RIPEMD160 remains secure
+- Primarily replaced by SHA-256/SHA-3 for new applications due to larger security margin
+
+<Aside type="caution" title="Not for General Use">
+RIPEMD160's 160-bit output provides only 80-bit collision security. For new applications, use SHA256 (256-bit) or Blake2b which offer stronger security margins and better performance.
+</Aside>
+
+## Performance
+
+### Implementation
+- **TypeScript**: Uses @noble/hashes pure TypeScript implementation from legacy.js
+- **Zig/Native**: Custom RIPEMD160 implementation following Bitcoin Core reference
+  - **WARNING**: Zig implementation is UNAUDITED custom crypto code
+  - Uses constant-time operations to resist timing attacks
+  - Pure software implementation (no hardware acceleration available)
+- **WASM**: Available via ripemd160.wasm.ts for browser environments
+
+### Benchmarks
+Typical performance (varies by platform):
+- Native (Zig): ~150-250 MB/s
+- WASM: ~80-150 MB/s
+- Pure JS: ~50-100 MB/s
+
+Note: RIPEMD160 is slower than SHA256 or Blake2b on modern hardware, which have hardware acceleration support.
+
+## Implementation Details
+
+### TypeScript Implementation
+Uses @noble/hashes legacy module:
+```typescript
+import { ripemd160 } from "@noble/hashes/legacy.js";
+
+export function hash(data: Uint8Array | string): Uint8Array {
+  if (typeof data === "string") {
+    const encoder = new TextEncoder();
+    return ripemd160(encoder.encode(data));
+  }
+  return ripemd160(data);
+}
+```
+
+### Zig Implementation
+Custom implementation in `src/crypto/ripemd160.zig`:
+- Follows Bitcoin Core RIPEMD160 reference implementation
+- Uses standard RIPEMD160 initial values and operations
+- **UNAUDITED**: Custom cryptographic code without security audit
+- Constant-time operations for side-channel resistance
+- Supports streaming/incremental hashing
+
+<Aside type="caution" title="Unaudited Crypto Warning">
+The Zig RIPEMD160 implementation is custom cryptographic code that has NOT been professionally audited. It follows the Bitcoin Core reference but may contain implementation bugs. Use in production at your own risk.
+</Aside>
+
+### WASM
+Available via `ripemd160.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
+
+```typescript
+import { Ripemd160Wasm } from '@tevm/voltaire/crypto/ripemd160.wasm';
+await Ripemd160Wasm.load();
+const hash = Ripemd160Wasm.hash(data);
+```
+
+## Use Cases
+
+### Bitcoin P2PKH Address
+Pay-to-PubKey-Hash (most common Bitcoin address):
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
+
+function createPubKeyHash(publicKey: Uint8Array): Uint8Array {
+  // Bitcoin uses SHA256 followed by RIPEMD160
+  const sha256Hash = SHA256.hash(publicKey);
+  const pubKeyHash = Ripemd160.hash(sha256Hash);
+  return pubKeyHash; // 20 bytes
+}
+
+// Then add version byte (0x00 for mainnet) and checksum for Base58Check
+```
+
+### Bitcoin P2SH Address
+Pay-to-Script-Hash addresses:
+```typescript
+function createScriptHash(redeemScript: Uint8Array): Uint8Array {
+  const sha256Hash = SHA256.hash(redeemScript);
+  const scriptHash = Ripemd160.hash(sha256Hash);
+  return scriptHash; // 20 bytes
+}
+// Version byte 0x05 for P2SH mainnet addresses
+```
+
+### Why Bitcoin Uses Both SHA256 and RIPEMD160
+1. **Redundancy**: If one algorithm is broken, the other provides backup security
+2. **Compact addresses**: RIPEMD160's 20-byte output reduces address size
+3. **Historical**: Design decision made in 2009 when both were considered secure
+4. **No single point of failure**: Requires breaking both algorithms for address collision
+
+### Not Recommended For
+- **New cryptocurrencies**: Use SHA256, Keccak256, or Blake2b instead
+- **General hashing**: SHA256 provides better security margins
+- **Password hashing**: Use proper password hash functions (Argon2, bcrypt, scrypt)
+- **File integrity**: SHA256 is more widely supported and faster on modern hardware
+
+## Related
+
+- [SHA256](/crypto/sha256) - Used with RIPEMD160 in Bitcoin addresses
+- [Keccak256](/crypto/keccak256) - Ethereum's hash function
+- [Blake2](/crypto/blake2) - Modern high-performance alternative
+- [Address Primitive](/primitives/address) - Ethereum 20-byte addresses

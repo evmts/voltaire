@@ -1,0 +1,305 @@
+---
+title: AES-GCM
+description: AES-GCM authenticated encryption with support for AES-128 and AES-256
+---
+
+## Overview
+
+The aes_gcm module provides authenticated encryption using AES-GCM (Galois/Counter Mode), which combines AES encryption with authentication to ensure both confidentiality and integrity. It supports both AES-128 and AES-256 variants.
+
+AES-GCM is widely used in TLS, IPsec, and other secure communication protocols. This implementation wraps Zig's standard library AES-GCM.
+
+## Key Constants
+
+```zig
+pub const AES128_KEY_SIZE = 16; // 128-bit key
+pub const AES256_KEY_SIZE = 32; // 256-bit key
+pub const NONCE_SIZE = 12;      // 96-bit nonce
+pub const TAG_SIZE = 16;        // 128-bit authentication tag
+```
+
+## Key Functions
+
+### `encrypt128`
+
+Encrypt data with AES-128-GCM.
+
+```zig
+pub fn encrypt128(
+    allocator: std.mem.Allocator,
+    plaintext: []const u8,
+    key: []const u8,
+    nonce: []const u8,
+    additional_data: []const u8,
+) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `plaintext` - Data to encrypt
+- `key` - 16-byte encryption key
+- `nonce` - 12-byte nonce (must be unique per key)
+- `additional_data` - Additional authenticated data (can be empty)
+
+**Returns:** Ciphertext + 16-byte authentication tag (caller must free)
+
+**Errors:**
+- `error.InvalidKeyLength` - Key is not 16 bytes
+- `error.InvalidNonceLength` - Nonce is not 12 bytes
+
+### `decrypt128`
+
+Decrypt data with AES-128-GCM.
+
+```zig
+pub fn decrypt128(
+    allocator: std.mem.Allocator,
+    ciphertext_with_tag: []const u8,
+    key: []const u8,
+    nonce: []const u8,
+    additional_data: []const u8,
+) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `ciphertext_with_tag` - Ciphertext + 16-byte tag
+- `key` - 16-byte decryption key
+- `nonce` - 12-byte nonce (same as encryption)
+- `additional_data` - Additional authenticated data (must match encryption)
+
+**Returns:** Decrypted plaintext (caller must free)
+
+**Errors:**
+- `error.InvalidKeyLength` - Key is not 16 bytes
+- `error.InvalidNonceLength` - Nonce is not 12 bytes
+- `error.InvalidCiphertextLength` - Ciphertext shorter than tag
+- `error.AuthenticationFailed` - Tag verification failed (tampering detected)
+
+### `encrypt256`
+
+Encrypt data with AES-256-GCM.
+
+```zig
+pub fn encrypt256(
+    allocator: std.mem.Allocator,
+    plaintext: []const u8,
+    key: []const u8,
+    nonce: []const u8,
+    additional_data: []const u8,
+) ![]u8
+```
+
+**Parameters:** Same as `encrypt128`, but `key` must be 32 bytes
+
+**Returns:** Ciphertext + 16-byte authentication tag
+
+### `decrypt256`
+
+Decrypt data with AES-256-GCM.
+
+```zig
+pub fn decrypt256(
+    allocator: std.mem.Allocator,
+    ciphertext_with_tag: []const u8,
+    key: []const u8,
+    nonce: []const u8,
+    additional_data: []const u8,
+) ![]u8
+```
+
+**Parameters:** Same as `decrypt128`, but `key` must be 32 bytes
+
+**Returns:** Decrypted plaintext
+
+## Examples
+
+### Basic Encryption/Decryption (AES-128)
+
+```zig
+const aes_gcm = @import("crypto").aes_gcm;
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+
+// Generate random key and nonce
+var key: [aes_gcm.AES128_KEY_SIZE]u8 = undefined;
+var nonce: [aes_gcm.NONCE_SIZE]u8 = undefined;
+std.crypto.random.bytes(&key);
+std.crypto.random.bytes(&nonce);
+
+// Encrypt
+const plaintext = "Secret message!";
+const ciphertext = try aes_gcm.encrypt128(
+    allocator,
+    plaintext,
+    &key,
+    &nonce,
+    "", // no additional data
+);
+defer allocator.free(ciphertext);
+
+std.debug.print("Ciphertext: 0x{x}\n", .{std.fmt.fmtSliceHexLower(ciphertext)});
+
+// Decrypt
+const decrypted = try aes_gcm.decrypt128(
+    allocator,
+    ciphertext,
+    &key,
+    &nonce,
+    "",
+);
+defer allocator.free(decrypted);
+
+std.debug.assert(std.mem.eql(u8, plaintext, decrypted));
+std.debug.print("Decrypted: {s}\n", .{decrypted});
+```
+
+### Authenticated Encryption with Additional Data
+
+```zig
+// Encrypt message with associated metadata
+const message = "Transfer $100 to Alice";
+const metadata = "user_id=123,timestamp=1735689600";
+
+const ciphertext = try aes_gcm.encrypt128(
+    allocator,
+    message,
+    &key,
+    &nonce,
+    metadata,
+);
+defer allocator.free(ciphertext);
+
+// Decrypt with same metadata
+const decrypted = try aes_gcm.decrypt128(
+    allocator,
+    ciphertext,
+    &key,
+    &nonce,
+    metadata, // Must match encryption
+);
+defer allocator.free(decrypted);
+
+// If metadata is modified, authentication fails
+const wrong_metadata = "user_id=999,timestamp=1735689600";
+const result = aes_gcm.decrypt128(allocator, ciphertext, &key, &nonce, wrong_metadata);
+// result will be error.AuthenticationFailed
+```
+
+### AES-256-GCM (Higher Security)
+
+```zig
+// Use 256-bit key for higher security
+var key256: [aes_gcm.AES256_KEY_SIZE]u8 = undefined;
+std.crypto.random.bytes(&key256);
+
+const ciphertext = try aes_gcm.encrypt256(
+    allocator,
+    "Top secret data",
+    &key256,
+    &nonce,
+    "",
+);
+defer allocator.free(ciphertext);
+
+const decrypted = try aes_gcm.decrypt256(
+    allocator,
+    ciphertext,
+    &key256,
+    &nonce,
+    "",
+);
+defer allocator.free(decrypted);
+```
+
+### Secure File Encryption
+
+```zig
+// Read file
+const file = try std.fs.cwd().openFile("document.txt", .{});
+defer file.close();
+
+const file_data = try file.readToEndAlloc(allocator, 1024 * 1024 * 10);
+defer allocator.free(file_data);
+
+// Generate unique nonce for this encryption
+var nonce: [aes_gcm.NONCE_SIZE]u8 = undefined;
+std.crypto.random.bytes(&nonce);
+
+// Encrypt file
+const encrypted = try aes_gcm.encrypt256(
+    allocator,
+    file_data,
+    &encryption_key,
+    &nonce,
+    "filename=document.txt",
+);
+defer allocator.free(encrypted);
+
+// Write encrypted file (nonce + ciphertext)
+const out_file = try std.fs.cwd().createFile("document.txt.enc", .{});
+defer out_file.close();
+try out_file.writeAll(&nonce);
+try out_file.writeAll(encrypted);
+```
+
+## Performance
+
+AES-GCM performance characteristics:
+
+| Variant | Key Size | Throughput | Notes |
+|---------|----------|------------|-------|
+| AES-128-GCM | 16 bytes | TBD | Hardware-accelerated |
+| AES-256-GCM | 32 bytes | TBD | Slightly slower than AES-128 |
+
+**Hardware acceleration:**
+- Uses AES-NI instructions on x86-64
+- NEON instructions on ARM
+- Constant-time implementation
+- Very fast on modern CPUs
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run AES-GCM tests:
+
+```bash
+zig build test -Dtest-filter=aes_gcm
+```
+
+Tests validate:
+- Encryption/decryption round-trip
+- AES-128 and AES-256 variants
+- Authentication tag verification
+- Additional data authentication
+- Wrong key detection
+- Tampered ciphertext detection
+- Known test vectors
+
+## Security Considerations
+
+- **Nonce uniqueness**: NEVER reuse nonces with the same key (catastrophic failure)
+- **Nonce generation**: Use cryptographically secure random for each encryption
+- **Authentication**: Always verify tag before processing plaintext
+- **Key management**: Store keys securely, never log or expose them
+- **AES-128 vs AES-256**: AES-128 provides 128-bit security (sufficient for most uses)
+- **Side-channel resistance**: Hardware-accelerated implementation is constant-time
+- **Tag truncation**: Never truncate the 16-byte authentication tag
+- **Additional data**: Binds ciphertext to context (e.g., user ID, message type)
+- **Tampering detection**: Any modification causes authentication failure
+- **Forward secrecy**: Requires ephemeral keys (not built-in)
+
+## Related
+
+- [X25519](/zig/crypto/x25519) - Key exchange for deriving encryption keys
+- [Hash](/zig/crypto/hash) - Key derivation functions
+- [Crypto](/zig/crypto/crypto) - Asymmetric encryption alternatives
+
+## References
+
+- [NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf) - GCM specification
+- [RFC 5116](https://www.rfc-editor.org/rfc/rfc5116) - Authenticated Encryption and Associated Data
+- [AES-GCM Security](https://crypto.stackexchange.com/questions/26790/how-bad-it-is-using-the-same-iv-twice-with-aes-gcm) - Nonce reuse dangers
+- [TLS 1.3](https://www.rfc-editor.org/rfc/rfc8446) - Uses AES-GCM as primary cipher

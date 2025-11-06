@@ -1,0 +1,276 @@
+---
+title: EIP-712
+description: Typed structured data hashing and signing for Ethereum
+---
+
+## Overview
+
+The eip712 module implements EIP-712 typed structured data hashing and signing. EIP-712 provides a standard way to hash and sign typed data, improving security and user experience by allowing wallets to display human-readable information about what users are signing.
+
+This is the standard used for signing messages in dApps, permits, meta-transactions, and other off-chain signatures.
+
+**Status:** UNAUDITED - Use at your own risk in production environments.
+
+## Key Types
+
+### `Eip712Domain`
+
+Domain separator to prevent signature replay across different contexts.
+
+```zig
+pub const Eip712Domain = struct {
+    name: ?[]const u8 = null,
+    version: ?[]const u8 = null,
+    chainId: ?u256 = null,
+    verifyingContract: ?[20]u8 = null,
+    salt: ?[32]u8 = null,
+};
+```
+
+### `TypeDefinitions`
+
+Mapping of type names to their field definitions.
+
+```zig
+pub const TypeDefinitions = std.StringHashMap([]const TypeField);
+
+pub const TypeField = struct {
+    name: []const u8,
+    type: []const u8,
+};
+```
+
+### `MessageValue`
+
+Tagged union representing typed data values.
+
+```zig
+pub const MessageValue = union(enum) {
+    string: []const u8,
+    bytes: []const u8,
+    uint256: u256,
+    int256: i256,
+    address: [20]u8,
+    bool_value: bool,
+    bytes32: [32]u8,
+    array: []const MessageValue,
+    struct_value: std.StringHashMap(MessageValue),
+};
+```
+
+### `TypedData`
+
+Complete typed data structure for EIP-712 signing.
+
+```zig
+pub const TypedData = struct {
+    types: TypeDefinitions,
+    primaryType: []const u8,
+    domain: Eip712Domain,
+    message: std.StringHashMap(MessageValue),
+};
+```
+
+## Key Functions
+
+### `unaudited_hashTypedData`
+
+Hash typed data according to EIP-712 specification.
+
+```zig
+pub fn unaudited_hashTypedData(
+    allocator: std.mem.Allocator,
+    typed_data: *const TypedData,
+) ![32]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator
+- `typed_data` - Typed data to hash
+
+**Returns:** 32-byte EIP-712 hash
+
+### `unaudited_signTypedData`
+
+Sign typed data with a private key.
+
+```zig
+pub fn unaudited_signTypedData(
+    allocator: std.mem.Allocator,
+    typed_data: *const TypedData,
+    private_key: *const [32]u8,
+) !Signature
+```
+
+**Parameters:**
+- `allocator` - Memory allocator
+- `typed_data` - Typed data to sign
+- `private_key` - Private key for signing
+
+**Returns:** ECDSA signature
+
+### `unaudited_verifyTypedData`
+
+Verify an EIP-712 signature.
+
+```zig
+pub fn unaudited_verifyTypedData(
+    allocator: std.mem.Allocator,
+    typed_data: *const TypedData,
+    signature: *const Signature,
+    signer_address: *const [20]u8,
+) !bool
+```
+
+**Parameters:**
+- `allocator` - Memory allocator
+- `typed_data` - Original typed data
+- `signature` - Signature to verify
+- `signer_address` - Expected signer address
+
+**Returns:** `true` if signature is valid, `false` otherwise
+
+## Examples
+
+### Sign EIP-712 Permit
+
+```zig
+const eip712 = @import("crypto").eip712;
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+
+// Define domain
+const domain = eip712.Eip712Domain{
+    .name = "MyToken",
+    .version = "1",
+    .chainId = 1,
+    .verifyingContract = contract_address,
+};
+
+// Define types
+var types = std.StringHashMap([]const eip712.TypeField).init(allocator);
+defer types.deinit();
+
+const permit_fields = [_]eip712.TypeField{
+    .{ .name = "owner", .type = "address" },
+    .{ .name = "spender", .type = "address" },
+    .{ .name = "value", .type = "uint256" },
+    .{ .name = "nonce", .type = "uint256" },
+    .{ .name = "deadline", .type = "uint256" },
+};
+try types.put("Permit", &permit_fields);
+
+// Define message
+var message = std.StringHashMap(eip712.MessageValue).init(allocator);
+defer message.deinit();
+
+try message.put("owner", .{ .address = owner_address });
+try message.put("spender", .{ .address = spender_address });
+try message.put("value", .{ .uint256 = 1000000 });
+try message.put("nonce", .{ .uint256 = 0 });
+try message.put("deadline", .{ .uint256 = 1735689600 });
+
+// Create typed data
+const typed_data = eip712.TypedData{
+    .types = types,
+    .primaryType = "Permit",
+    .domain = domain,
+    .message = message,
+};
+
+// Sign
+const signature = try eip712.unaudited_signTypedData(
+    allocator,
+    &typed_data,
+    &private_key,
+);
+
+std.debug.print("Signature: r=0x{x}, s=0x{x}, v={}\n", .{
+    std.fmt.fmtSliceHexLower(&signature.r),
+    std.fmt.fmtSliceHexLower(&signature.s),
+    signature.v,
+});
+```
+
+### Verify EIP-712 Signature
+
+```zig
+// Verify received signature
+const is_valid = try eip712.unaudited_verifyTypedData(
+    allocator,
+    &typed_data,
+    &signature,
+    &expected_signer,
+);
+
+if (is_valid) {
+    std.debug.print("Signature valid!\n", .{});
+} else {
+    std.debug.print("Invalid signature!\n", .{});
+}
+```
+
+### Hash Typed Data
+
+```zig
+// Compute EIP-712 hash without signing
+const hash = try eip712.unaudited_hashTypedData(allocator, &typed_data);
+
+std.debug.print("EIP-712 hash: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+```
+
+## Performance
+
+EIP-712 operation performance:
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| `unaudited_hashTypedData` | TBD | Includes encoding and Keccak hashing |
+| `unaudited_signTypedData` | TBD | Hash + ECDSA signature |
+| `unaudited_verifyTypedData` | TBD | Hash + signature verification |
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run EIP-712 tests:
+
+```bash
+zig build test -Dtest-filter=eip712
+```
+
+Tests validate:
+- Domain separator hashing
+- Type encoding
+- Message encoding
+- Full typed data hashing
+- Signature generation
+- Signature verification
+- Known test vectors from EIP-712
+
+## Security Considerations
+
+- **UNAUDITED**: This code has not undergone a formal security audit
+- **Domain separator**: Always include to prevent replay attacks
+- **chainId**: Prevents cross-chain replay
+- **verifyingContract**: Binds signature to specific contract
+- **Type encoding**: Must exactly match EIP-712 specification
+- **Hash collision**: Different types can't produce same hash
+- **Message validation**: Validate all message fields before signing
+- **Display to user**: Wallets must show human-readable data
+- **Malicious data**: Carefully validate nested structures
+- **Version consistency**: Use consistent EIP-712 encoding
+
+## Related
+
+- [Crypto](/zig/crypto/crypto) - ECDSA signing primitives
+- [Keccak](/zig/crypto/keccak) - Hash function used in EIP-712
+- [Transaction](/zig/primitives/transaction) - Transaction signing
+
+## References
+
+- [EIP-712](https://eips.ethereum.org/EIPS/eip-712) - Typed structured data hashing and signing
+- [EIP-712 Examples](https://github.com/ethereum/EIPs/blob/master/assets/eip-712/Example.sol) - Solidity examples
+- [MetaMask EIP-712](https://docs.metamask.io/wallet/how-to/sign-data/#use-eth_signtypeddata_v4) - Wallet integration
+- [Permit2](https://github.com/Uniswap/permit2) - Advanced permit system using EIP-712

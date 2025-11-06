@@ -1,0 +1,148 @@
+---
+title: Keccak
+description: Assembly-optimized Keccak-256 hash function implementation for Ethereum
+---
+
+## Overview
+
+The keccak module provides an assembly-optimized implementation of the Keccak-256 hash function, which is the primary hashing algorithm used throughout Ethereum. This implementation leverages platform-specific assembly optimizations for maximum performance.
+
+**Note:** This is Keccak-256, not NIST SHA-3. While SHA-3 is based on Keccak, they differ in padding schemes.
+
+## Key Functions
+
+### `keccak256`
+
+Compute Keccak-256 hash of input data.
+
+```zig
+pub fn keccak256(data: []const u8) [32]u8
+```
+
+**Parameters:**
+- `data` - Input data to hash
+
+**Returns:** 32-byte Keccak-256 digest
+
+### `keccak256Allocating`
+
+Compute Keccak-256 with allocated result.
+
+```zig
+pub fn keccak256Allocating(allocator: std.mem.Allocator, data: []const u8) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `data` - Input data to hash
+
+**Returns:** Allocated 32-byte digest (caller must free)
+
+## Examples
+
+### Basic Hashing
+
+```zig
+const keccak = @import("crypto").keccak;
+const std = @import("std");
+
+const data = "Hello, Ethereum!";
+const hash = keccak.keccak256(data);
+
+std.debug.print("Hash: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+```
+
+### Hash Multiple Inputs
+
+```zig
+const inputs = [_][]const u8{
+    "input1",
+    "input2",
+    "input3",
+};
+
+for (inputs) |input| {
+    const hash = keccak.keccak256(input);
+    std.debug.print("keccak256({s}): 0x{x}\n", .{
+        input,
+        std.fmt.fmtSliceHexLower(&hash),
+    });
+}
+```
+
+### Ethereum Address Generation
+
+```zig
+// Generate Ethereum address from public key
+const public_key: [64]u8 = ...; // Uncompressed secp256k1 public key
+const hash = keccak.keccak256(&public_key);
+
+// Take last 20 bytes as address
+const address: [20]u8 = hash[12..].*;
+
+std.debug.print("Address: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&address)});
+```
+
+### Event Signature Hashing
+
+```zig
+// Compute event signature hash
+const event_sig = "Transfer(address,address,uint256)";
+const hash = keccak.keccak256(event_sig);
+
+std.debug.print("Event signature: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+```
+
+## Performance
+
+Keccak-256 performance characteristics:
+
+| Input Size | Time | Throughput |
+|------------|------|------------|
+| 32 bytes | TBD | TBD |
+| 1 KB | TBD | TBD |
+| 1 MB | TBD | TBD |
+
+**Optimizations:**
+- Assembly implementation for x86_64
+- SIMD instructions where available
+- Optimized for common Ethereum use cases (addresses, signatures)
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run Keccak tests:
+
+```bash
+zig build test -Dtest-filter=keccak
+```
+
+Tests validate:
+- Known test vectors from Ethereum
+- Empty input handling
+- Large input handling
+- Consistency across multiple calls
+- Cross-validation with reference implementations
+
+## Security Considerations
+
+- **Keccak vs SHA-3**: Uses original Keccak padding, not NIST SHA-3
+- **Collision resistance**: 256-bit output provides strong security
+- **Preimage resistance**: Computationally infeasible to reverse
+- **Side-channel resistance**: Assembly implementation may leak timing
+- **Use in Ethereum**: Standard for addresses, signatures, state roots
+- **No secrets in input**: Keccak is not suitable for MAC operations
+
+## Related
+
+- [Crypto](/zig/crypto/crypto) - Uses Keccak for signing
+- [Hash](/zig/crypto/hash) - Unified hash interface
+- [Hash Algorithms](/zig/crypto/hash_algorithms) - Algorithm enum
+
+## References
+
+- [Keccak Team](https://keccak.team/keccak.html) - Official specifications
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix B (Recursive Length Prefix)
+- [SHA-3 Standard](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf) - FIPS 202 (differs from Keccak-256)
+- [Keccak-256 vs SHA-3](https://ethereum.stackexchange.com/questions/550/which-cryptographic-hash-function-does-ethereum-use) - Key differences

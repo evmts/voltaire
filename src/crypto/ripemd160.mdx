@@ -1,0 +1,157 @@
+---
+title: RIPEMD-160
+description: RIPEMD-160 hash function implementation for Bitcoin compatibility
+---
+
+## Overview
+
+The ripemd160 module provides an implementation of the RIPEMD-160 cryptographic hash function, which produces a 20-byte (160-bit) digest. RIPEMD-160 is primarily used in Bitcoin for address generation and is maintained for compatibility with Bitcoin-based systems.
+
+While still considered secure, RIPEMD-160 is less commonly used in modern applications compared to SHA-256 or Blake2.
+
+## Key Functions
+
+### `ripemd160`
+
+Compute RIPEMD-160 hash of input data.
+
+```zig
+pub fn ripemd160(data: []const u8) [20]u8
+```
+
+**Parameters:**
+- `data` - Input data to hash
+
+**Returns:** 20-byte RIPEMD-160 digest
+
+### `ripemd160Allocating`
+
+Compute RIPEMD-160 with allocated result.
+
+```zig
+pub fn ripemd160Allocating(allocator: std.mem.Allocator, data: []const u8) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `data` - Input data to hash
+
+**Returns:** Allocated 20-byte digest (caller must free)
+
+## Examples
+
+### Basic Hashing
+
+```zig
+const ripemd160_mod = @import("crypto").ripemd160;
+const std = @import("std");
+
+const data = "Hello, RIPEMD-160!";
+const hash = ripemd160_mod.ripemd160(data);
+
+std.debug.print("RIPEMD-160: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&hash)});
+```
+
+### Bitcoin Address Generation
+
+```zig
+const sha256_mod = @import("crypto").sha256;
+
+// Bitcoin P2PKH address generation
+const public_key: [33]u8 = ...; // Compressed secp256k1 public key
+
+// Step 1: SHA-256 of public key
+const sha_hash = sha256_mod.sha256(&public_key);
+
+// Step 2: RIPEMD-160 of SHA-256 hash
+const ripemd_hash = ripemd160_mod.ripemd160(&sha_hash);
+
+// Step 3: Add version byte (0x00 for mainnet)
+var versioned: [21]u8 = undefined;
+versioned[0] = 0x00;
+@memcpy(versioned[1..], &ripemd_hash);
+
+// Step 4: Double SHA-256 for checksum
+const checksum_hash1 = sha256_mod.sha256(&versioned);
+const checksum_hash2 = sha256_mod.sha256(&checksum_hash1);
+
+// Step 5: Append first 4 bytes of checksum
+var address_bytes: [25]u8 = undefined;
+@memcpy(address_bytes[0..21], &versioned);
+@memcpy(address_bytes[21..], checksum_hash2[0..4]);
+
+// Step 6: Base58 encode (not shown)
+// final_address = base58_encode(address_bytes)
+```
+
+### Hash Comparison
+
+```zig
+const input1 = "test";
+const input2 = "test";
+const input3 = "TEST";
+
+const hash1 = ripemd160_mod.ripemd160(input1);
+const hash2 = ripemd160_mod.ripemd160(input2);
+const hash3 = ripemd160_mod.ripemd160(input3);
+
+std.debug.assert(std.mem.eql(u8, &hash1, &hash2)); // Same
+std.debug.assert(!std.mem.eql(u8, &hash1, &hash3)); // Different
+```
+
+## Performance
+
+RIPEMD-160 performance characteristics:
+
+| Input Size | Time | Throughput | Notes |
+|------------|------|------------|-------|
+| 32 bytes | TBD | TBD | Single block |
+| 1 KB | TBD | TBD | Multiple blocks |
+| 1 MB | TBD | TBD | Large data |
+
+**Performance notes:**
+- Pure software implementation
+- No hardware acceleration
+- Moderate speed compared to modern algorithms
+- Primarily used for Bitcoin compatibility
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run RIPEMD-160 tests:
+
+```bash
+zig build test -Dtest-filter=ripemd160
+```
+
+Tests validate:
+- Known test vectors
+- Bitcoin test vectors
+- Empty input handling
+- Large input handling
+- Cross-validation with reference implementations
+
+## Security Considerations
+
+- **Digest length**: 160 bits is shorter than modern standards (256 bits)
+- **Collision resistance**: Theoretically ~2^80 operations (birthday attack)
+- **Preimage resistance**: Still considered secure for preimage attacks
+- **Bitcoin usage**: Widely used in Bitcoin, extensively tested
+- **Not recommended for new designs**: Prefer SHA-256 or Blake2
+- **Legacy support**: Maintain for Bitcoin compatibility
+- **No known practical attacks**: Still secure for intended use
+- **Shorter output**: Less collision resistance than 256-bit hashes
+
+## Related
+
+- [Hash](/zig/crypto/hash) - Unified hash interface
+- [Hash Algorithms](/zig/crypto/hash_algorithms) - Algorithm enum
+- [SHA256](/zig/crypto/sha256) - Used with RIPEMD-160 in Bitcoin
+- [Keccak](/zig/crypto/keccak) - Ethereum alternative
+
+## References
+
+- [RIPEMD-160](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html) - Original specification
+- [Bitcoin Address](https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses) - Bitcoin address generation
+- [ISO/IEC 10118-3:2004](https://www.iso.org/standard/39876.html) - ISO standard including RIPEMD-160

@@ -1,0 +1,201 @@
+---
+title: BN254
+description: BN254 elliptic curve pairing operations for zkSNARKs and EVM precompiles
+---
+
+## Overview
+
+The bn254 module provides BN254 (also known as alt-bn128) elliptic curve pairing operations, which are essential for zkSNARKs and implemented as Ethereum precompiles. These operations enable efficient zero-knowledge proof verification on the EVM.
+
+BN254 is a pairing-friendly elliptic curve that supports bilinear pairings, enabling advanced cryptographic protocols.
+
+**Status:** UNAUDITED - Use at your own risk in production environments.
+
+## Key Functions
+
+### `bn254Add`
+
+Add two points on the BN254 curve (G1 group).
+
+```zig
+pub fn bn254Add(
+    allocator: std.mem.Allocator,
+    x1: []const u8,
+    y1: []const u8,
+    x2: []const u8,
+    y2: []const u8,
+) !struct { x: []u8, y: []u8 }
+```
+
+**Parameters:**
+- `allocator` - Memory allocator
+- `x1`, `y1` - Coordinates of first point
+- `x2`, `y2` - Coordinates of second point
+
+**Returns:** Sum point coordinates (x, y)
+
+**Precompile:** Address 0x06
+
+### `bn254Mul`
+
+Scalar multiplication on the BN254 curve (G1 group).
+
+```zig
+pub fn bn254Mul(
+    allocator: std.mem.Allocator,
+    x: []const u8,
+    y: []const u8,
+    scalar: []const u8,
+) !struct { x: []u8, y: []u8 }
+```
+
+**Parameters:**
+- `allocator` - Memory allocator
+- `x`, `y` - Point coordinates
+- `scalar` - Scalar multiplier
+
+**Returns:** Result point coordinates (x, y)
+
+**Precompile:** Address 0x07
+
+### `bn254Pairing`
+
+Perform bilinear pairing check for zkSNARK verification.
+
+```zig
+pub fn bn254Pairing(
+    allocator: std.mem.Allocator,
+    input: []const u8,
+) !bool
+```
+
+**Parameters:**
+- `allocator` - Memory allocator
+- `input` - Encoded pairs of G1 and G2 points
+
+**Returns:** `true` if pairing equation holds, `false` otherwise
+
+**Precompile:** Address 0x08
+
+## Examples
+
+### Point Addition
+
+```zig
+const bn254 = @import("crypto").bn254;
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+
+// Generator point G1
+const g1_x = "1";
+const g1_y = "2";
+
+// Add G1 + G1 = 2*G1
+const result = try bn254.bn254Add(
+    allocator,
+    g1_x,
+    g1_y,
+    g1_x,
+    g1_y,
+);
+defer allocator.free(result.x);
+defer allocator.free(result.y);
+
+std.debug.print("2*G1 = ({s}, {s})\n", .{ result.x, result.y });
+```
+
+### Scalar Multiplication
+
+```zig
+// Compute k*G where k is a scalar
+const scalar = "5";
+const g1_x = "1";
+const g1_y = "2";
+
+const result = try bn254.bn254Mul(
+    allocator,
+    g1_x,
+    g1_y,
+    scalar,
+);
+defer allocator.free(result.x);
+defer allocator.free(result.y);
+
+std.debug.print("{}*G1 = ({s}, {s})\n", .{ scalar, result.x, result.y });
+```
+
+### Pairing Check (zkSNARK Verification)
+
+```zig
+// Verify zkSNARK proof using pairing
+// Input format: pairs of (G1 point, G2 point)
+const proof_data: []const u8 = ...; // Encoded proof
+
+const is_valid = try bn254.bn254Pairing(allocator, proof_data);
+
+if (is_valid) {
+    std.debug.print("Proof verified!\n", .{});
+} else {
+    std.debug.print("Proof invalid!\n", .{});
+}
+```
+
+## Performance
+
+BN254 operation performance:
+
+| Operation | Gas Cost | Time | Notes |
+|-----------|----------|------|-------|
+| `bn254Add` | 150 gas | TBD | G1 point addition |
+| `bn254Mul` | 6000 gas | TBD | G1 scalar multiplication |
+| `bn254Pairing` | 34000 + 34000*n gas | TBD | n = number of pairs |
+
+**Notes:**
+- Implemented as EVM precompiles (0x06, 0x07, 0x08)
+- Critical for zkSNARK verification
+- Used by Zcash, zkSync, and other protocols
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run BN254 tests:
+
+```bash
+zig build test -Dtest-filter=bn254
+```
+
+Tests validate:
+- Point addition correctness
+- Scalar multiplication
+- Pairing equation verification
+- Identity element handling
+- Invalid point rejection
+- EVM precompile compatibility
+
+## Security Considerations
+
+- **UNAUDITED**: This code has not undergone a formal security audit
+- **Point validation**: Always validate points are on the curve
+- **Subgroup membership**: Verify points are in correct subgroups
+- **Pairing security**: Based on hardness of discrete log on BN254
+- **Known vulnerabilities**: BN254 has reduced security margin (~100 bits)
+- **Preferred alternative**: BLS12-381 for new designs (128-bit security)
+- **zkSNARK safety**: Proper proof system design is critical
+- **Side-channel resistance**: Implementation may leak timing information
+- **EVM compatibility**: Must match precompile behavior exactly
+
+## Related
+
+- [EIP-712](/zig/crypto/eip712) - Typed data signing
+- [Keccak](/zig/crypto/keccak) - Used in zkSNARK hashing
+- [Precompiles](/zig/precompiles) - EVM precompile implementations
+
+## References
+
+- [EIP-196](https://eips.ethereum.org/EIPS/eip-196) - Precompile for addition and scalar multiplication
+- [EIP-197](https://eips.ethereum.org/EIPS/eip-197) - Precompile for optimal ate pairing check
+- [BN Curves](https://eprint.iacr.org/2005/133.pdf) - Original Barreto-Naehrig paper
+- [zkSNARKs](https://z.cash/technology/zksnarks/) - Zero-knowledge proof systems
+- [alt-bn128](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-196.md) - Curve parameters

@@ -1,0 +1,224 @@
+---
+title: X25519
+description: X25519 Elliptic Curve Diffie-Hellman key exchange implementation
+---
+
+## Overview
+
+The x25519 module provides X25519 Elliptic Curve Diffie-Hellman (ECDH) key exchange operations. X25519 is a modern, high-performance elliptic curve designed by Daniel J. Bernstein, offering 128-bit security with fast constant-time operations.
+
+This implementation wraps Zig's standard library X25519, which is suitable for secure key exchange in modern applications.
+
+## Key Constants
+
+```zig
+pub const SECRET_KEY_SIZE = 32;  // 32 bytes
+pub const PUBLIC_KEY_SIZE = 32;  // 32 bytes
+pub const SHARED_SECRET_SIZE = 32; // 32 bytes
+```
+
+## Key Functions
+
+### `publicKeyFromSecret`
+
+Generate a public key from a secret key.
+
+```zig
+pub fn publicKeyFromSecret(
+    allocator: std.mem.Allocator,
+    secret_key: []const u8,
+) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `secret_key` - 32-byte secret key
+
+**Returns:** 32-byte public key (caller must free)
+
+**Errors:**
+- `error.InvalidSecretKeyLength` - Secret key is not 32 bytes
+
+### `scalarmult`
+
+Perform X25519 key exchange (scalar multiplication).
+
+```zig
+pub fn scalarmult(
+    allocator: std.mem.Allocator,
+    secret_key: []const u8,
+    public_key: []const u8,
+) ![]u8
+```
+
+**Parameters:**
+- `allocator` - Memory allocator for result
+- `secret_key` - Your 32-byte secret key
+- `public_key` - Their 32-byte public key
+
+**Returns:** 32-byte shared secret (caller must free)
+
+**Errors:**
+- `error.InvalidSecretKeyLength` - Secret key is not 32 bytes
+- `error.InvalidPublicKeyLength` - Public key is not 32 bytes
+
+### `keypairFromSeed`
+
+Generate a keypair from a seed (secret key).
+
+```zig
+pub fn keypairFromSeed(seed: []const u8) !struct {
+    secret_key: [SECRET_KEY_SIZE]u8,
+    public_key: [PUBLIC_KEY_SIZE]u8,
+}
+```
+
+**Parameters:**
+- `seed` - 32-byte seed (becomes the secret key)
+
+**Returns:** Keypair with secret and public keys
+
+**Errors:**
+- `error.InvalidSeedLength` - Seed is not 32 bytes
+
+## Examples
+
+### Generate Keypair
+
+```zig
+const x25519 = @import("crypto").x25519;
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+
+// Generate random seed (secret key)
+var seed: [x25519.SECRET_KEY_SIZE]u8 = undefined;
+std.crypto.random.bytes(&seed);
+
+// Generate keypair
+const keypair = try x25519.keypairFromSeed(&seed);
+
+std.debug.print("Secret: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&keypair.secret_key)});
+std.debug.print("Public: 0x{x}\n", .{std.fmt.fmtSliceHexLower(&keypair.public_key)});
+```
+
+### Diffie-Hellman Key Exchange
+
+```zig
+// Alice generates her keypair
+var alice_secret: [32]u8 = undefined;
+std.crypto.random.bytes(&alice_secret);
+
+const alice_public = try x25519.publicKeyFromSecret(allocator, &alice_secret);
+defer allocator.free(alice_public);
+
+// Bob generates his keypair
+var bob_secret: [32]u8 = undefined;
+std.crypto.random.bytes(&bob_secret);
+
+const bob_public = try x25519.publicKeyFromSecret(allocator, &bob_secret);
+defer allocator.free(bob_public);
+
+// Alice computes shared secret using Bob's public key
+const alice_shared = try x25519.scalarmult(allocator, &alice_secret, bob_public);
+defer allocator.free(alice_shared);
+
+// Bob computes shared secret using Alice's public key
+const bob_shared = try x25519.scalarmult(allocator, &bob_secret, alice_public);
+defer allocator.free(bob_shared);
+
+// Both should compute the same shared secret
+std.debug.assert(std.mem.eql(u8, alice_shared, bob_shared));
+
+std.debug.print("Shared secret: 0x{x}\n", .{std.fmt.fmtSliceHexLower(alice_shared)});
+```
+
+### Secure Message Encryption
+
+```zig
+// Use X25519 to establish shared secret, then encrypt with AES-GCM
+const aes_gcm = @import("crypto").aes_gcm;
+
+// Establish shared secret via X25519
+const shared_secret = try x25519.scalarmult(
+    allocator,
+    &your_secret,
+    their_public,
+);
+defer allocator.free(shared_secret);
+
+// Derive encryption key from shared secret (use KDF in production)
+const encryption_key = shared_secret[0..16].*; // Use first 16 bytes
+
+// Encrypt message
+var nonce: [12]u8 = undefined;
+std.crypto.random.bytes(&nonce);
+
+const ciphertext = try aes_gcm.encrypt128(
+    allocator,
+    "Secret message",
+    &encryption_key,
+    &nonce,
+    "", // no additional data
+);
+defer allocator.free(ciphertext);
+```
+
+## Performance
+
+X25519 performance characteristics:
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| `publicKeyFromSecret` | TBD | Single scalar multiplication |
+| `scalarmult` | TBD | ECDH operation |
+| `keypairFromSeed` | TBD | Includes public key generation |
+
+**Performance notes:**
+- Constant-time implementation
+- Optimized for modern CPUs
+- Much faster than traditional DH with large primes
+- Suitable for high-frequency key exchanges
+
+*Benchmarks pending - see `zig build bench`*
+
+## Testing
+
+Run X25519 tests:
+
+```bash
+zig build test -Dtest-filter=x25519
+```
+
+Tests validate:
+- Public key generation
+- Key exchange consistency (Alice and Bob compute same secret)
+- Keypair generation from seed
+- Known test vectors
+- Error handling for invalid key lengths
+
+## Security Considerations
+
+- **Constant-time**: Implementation resistant to timing attacks
+- **Small subgroup attacks**: X25519 is designed to resist these
+- **Key validation**: Public keys are automatically validated
+- **Random keys**: Always use cryptographically secure random for secrets
+- **Key reuse**: Don't reuse ephemeral keys across sessions
+- **Forward secrecy**: Use ephemeral keys for each session
+- **KDF required**: Derive session keys from shared secret (don't use raw)
+- **Authentication**: X25519 provides confidentiality, not authentication
+- **Combine with signatures**: Use Ed25519 for authentication
+- **Clamping**: Secret keys are automatically clamped per spec
+
+## Related
+
+- [AES-GCM](/zig/crypto/aes_gcm) - Symmetric encryption after key exchange
+- [Crypto](/zig/crypto/crypto) - ECDSA signatures for authentication
+- [Hash](/zig/crypto/hash) - Key derivation functions
+
+## References
+
+- [Curve25519](https://cr.yp.to/ecdh.html) - Original Curve25519 paper
+- [RFC 7748](https://www.rfc-editor.org/rfc/rfc7748) - X25519 and X448 specification
+- [Ed25519](https://ed25519.cr.yp.to/) - Related signature scheme
+- [Signal Protocol](https://signal.org/docs/) - Uses X25519 for key agreement
