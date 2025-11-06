@@ -451,6 +451,25 @@ pub fn unauditedInvmod(a: u256, m: u256) ?u256 {
     return @as(u256, @intCast(old_s));
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+/// Compute modular square root using Tonelli-Shanks algorithm
+/// For secp256k1 prime p, p ≡ 3 (mod 4), so we can use simplified formula: sqrt(a) = a^((p+1)/4) mod p
+/// WARNING: Not constant time, potential timing attack vulnerabilities
+pub fn unauditedSqrt(a: u256, p: u256) ?u256 {
+    if (a == 0) return 0;
+
+    // For secp256k1 prime: p = 2^256 - 2^32 - 977
+    // p ≡ 3 (mod 4), so we can use: y = a^((p+1)/4) mod p
+    const exp = (p + 1) / 4;
+    const y = unauditedPowmod(a, exp, p);
+
+    // Verify that y^2 ≡ a (mod p)
+    const y_squared = unauditedMulmod(y, y, p);
+    if (y_squared != a) return null;
+
+    return y;
+}
+
 // ============================================================================
 // Tests from signature_test.zig
 // ============================================================================
