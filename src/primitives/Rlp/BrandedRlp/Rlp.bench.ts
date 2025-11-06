@@ -158,15 +158,11 @@ console.log(
 
 console.log("--- List Encoding ---");
 results.push(benchmark("encode empty list", () => encode(emptyList)));
-results.push(
-	benchmark("encode short list (2 items)", () => encode(shortList)),
-);
+results.push(benchmark("encode short list (2 items)", () => encode(shortList)));
 results.push(
 	benchmark("encode medium list (10 items)", () => encode(mediumList)),
 );
-results.push(
-	benchmark("encode long list (100 items)", () => encode(longList)),
-);
+results.push(benchmark("encode long list (100 items)", () => encode(longList)));
 results.push(
 	benchmark("encode nested list (3 levels)", () => encode(nestedList)),
 );
@@ -204,19 +200,13 @@ results.push(
 	benchmark("decode single byte (< 0x80)", () => decode(encodedSingleByte)),
 );
 results.push(
-	benchmark("decode short bytes (5 bytes)", () =>
-		decode(encodedShortBytes),
-	),
+	benchmark("decode short bytes (5 bytes)", () => decode(encodedShortBytes)),
 );
 results.push(
-	benchmark("decode medium bytes (32 bytes)", () =>
-		decode(encodedMediumBytes),
-	),
+	benchmark("decode medium bytes (32 bytes)", () => decode(encodedMediumBytes)),
 );
 results.push(
-	benchmark("decode long bytes (200 bytes)", () =>
-		decode(encodedLongBytes),
-	),
+	benchmark("decode long bytes (200 bytes)", () => decode(encodedLongBytes)),
 );
 results.push(
 	benchmark("decode very long bytes (10KB)", () =>
@@ -248,24 +238,18 @@ console.log(
 );
 
 console.log("--- List Decoding ---");
-results.push(
-	benchmark("decode empty list", () => decode(encodedEmptyList)),
-);
+results.push(benchmark("decode empty list", () => decode(encodedEmptyList)));
 results.push(
 	benchmark("decode short list (2 items)", () => decode(encodedShortList)),
 );
 results.push(
-	benchmark("decode medium list (10 items)", () =>
-		decode(encodedMediumList),
-	),
+	benchmark("decode medium list (10 items)", () => decode(encodedMediumList)),
 );
 results.push(
 	benchmark("decode long list (100 items)", () => decode(encodedLongList)),
 );
 results.push(
-	benchmark("decode nested list (3 levels)", () =>
-		decode(encodedNestedList),
-	),
+	benchmark("decode nested list (3 levels)", () => decode(encodedNestedList)),
 );
 results.push(
 	benchmark("decode deeply nested list (4+ levels)", () =>
@@ -359,14 +343,10 @@ console.log(
 
 console.log("--- Utility Functions ---");
 results.push(
-	benchmark("getEncodedLength - bytes", () =>
-		getEncodedLength(mediumBytes),
-	),
+	benchmark("getEncodedLength - bytes", () => getEncodedLength(mediumBytes)),
 );
 results.push(
-	benchmark("getEncodedLength - list", () =>
-		getEncodedLength(mediumList),
-	),
+	benchmark("getEncodedLength - list", () => getEncodedLength(mediumList)),
 );
 
 const flattenData: BrandedRlp = {
@@ -383,16 +363,12 @@ const flattenData: BrandedRlp = {
 	],
 };
 
-results.push(
-	benchmark("flatten nested list", () => flatten(flattenData)),
-);
+results.push(benchmark("flatten nested list", () => flatten(flattenData)));
 
 const data1: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
 const data2: BrandedRlp = { type: "bytes", value: new Uint8Array([1, 2, 3]) };
 
-results.push(
-	benchmark("equals - bytes Data", () => equals(data1, data2)),
-);
+results.push(benchmark("equals - bytes Data", () => equals(data1, data2)));
 
 const listData1: BrandedRlp = {
 	type: "list",
@@ -443,9 +419,7 @@ console.log(
 );
 
 console.log("--- Data Operations ---");
-results.push(
-	benchmark("Data.fromBytes", () => Data.fromBytes(mediumBytes)),
-);
+results.push(benchmark("Data.fromBytes", () => Data.fromBytes(mediumBytes)));
 results.push(
 	benchmark("Data.fromList", () =>
 		Data.fromList([
@@ -454,9 +428,7 @@ results.push(
 		]),
 	),
 );
-results.push(
-	benchmark("Data.encodeData", () => Data.encodeData(data1)),
-);
+results.push(benchmark("Data.encodeData", () => Data.encodeData(data1)));
 results.push(benchmark("Data.toBytes", () => Data.toBytes(data1)));
 results.push(benchmark("Data.toList", () => Data.toList(listData1)));
 
@@ -525,9 +497,7 @@ const data = new Uint8Array([]);
 
 const simpleTx = [nonce, gasPrice, gasLimit, to, value, data];
 
-results.push(
-	benchmark("encode simple transaction", () => encode(simpleTx)),
-);
+results.push(benchmark("encode simple transaction", () => encode(simpleTx)));
 
 const encodedSimpleTx = encode(simpleTx);
 results.push(

@@ -182,23 +182,15 @@ console.log(
 );
 
 console.log("--- Topic Access ---");
+results.push(benchmark("EventLog.getTopic0", () => getTopic0(testLog)));
 results.push(
-	benchmark("EventLog.getTopic0", () => getTopic0(testLog)),
+	benchmark("EventLog.getSignature (this:)", () => getSignature(testLog)),
 );
 results.push(
-	benchmark("EventLog.getSignature (this:)", () =>
-		getSignature(testLog),
-	),
+	benchmark("EventLog.getIndexedTopics", () => getIndexedTopics(testLog)),
 );
 results.push(
-	benchmark("EventLog.getIndexedTopics", () =>
-		getIndexedTopics(testLog),
-	),
-);
-results.push(
-	benchmark("EventLog.getIndexed (this:)", () =>
-		getIndexed(testLog),
-	),
+	benchmark("EventLog.getIndexed (this:)", () => getIndexed(testLog)),
 );
 
 console.log(
@@ -485,11 +477,7 @@ console.log(
 
 console.log("--- Log Sorting ---");
 results.push(
-	benchmark(
-		"sortLogs - 10 logs",
-		() => sortLogs(largeLogs.slice(0, 10)),
-		2000,
-	),
+	benchmark("sortLogs - 10 logs", () => sortLogs(largeLogs.slice(0, 10)), 2000),
 );
 results.push(
 	benchmark(
@@ -498,9 +486,7 @@ results.push(
 		1000,
 	),
 );
-results.push(
-	benchmark("sortLogs - 1000 logs", () => sortLogs(largeLogs), 500),
-);
+results.push(benchmark("sortLogs - 1000 logs", () => sortLogs(largeLogs), 500));
 results.push(
 	benchmark(
 		"sort (this:) - 100 logs",
@@ -540,16 +526,10 @@ const removedLog = create({
 });
 
 console.log("--- Removal Checks ---");
+results.push(benchmark("isRemoved - removed log", () => isRemoved(removedLog)));
+results.push(benchmark("isRemoved - active log", () => isRemoved(testLog)));
 results.push(
-	benchmark("isRemoved - removed log", () => isRemoved(removedLog)),
-);
-results.push(
-	benchmark("isRemoved - active log", () => isRemoved(testLog)),
-);
-results.push(
-	benchmark("wasRemoved (this:) - removed", () =>
-		wasRemoved(removedLog),
-	),
+	benchmark("wasRemoved (this:) - removed", () => wasRemoved(removedLog)),
 );
 
 console.log(
@@ -588,9 +568,7 @@ results.push(
 	),
 );
 results.push(benchmark("clone - full log", () => clone(testLog)));
-results.push(
-	benchmark("copy (this:) - full log", () => copy(testLog)),
-);
+results.push(benchmark("copy (this:) - full log", () => copy(testLog)));
 
 console.log(
 	results

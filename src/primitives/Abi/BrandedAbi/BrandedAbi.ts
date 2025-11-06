@@ -11,11 +11,16 @@ import type { Fallback, Receive } from "../Item.js";
  *
  * @template TItems - The specific ABI items in this ABI
  */
-export type BrandedAbi<
-	TItems extends readonly Item[] = readonly Item[],
-> = TItems;
+export type BrandedAbi<TItems extends readonly Item[] = readonly Item[]> =
+	TItems;
 
 /**
  * Single ABI item (function, event, error, constructor, fallback, or receive)
  */
-export type Item = Function | Event | BrandedError | Constructor | Fallback | Receive;
+export type Item =
+	| Function
+	| Event
+	| BrandedError
+	| Constructor
+	| Fallback
+	| Receive;

@@ -424,7 +424,10 @@ console.log("--- Map Operations ---");
 // Pre-populate map for get benchmarks
 const testMap = new Map<string, bigint>();
 for (let i = 0; i < 100; i++) {
-	const key: BrandedStorageKey = { address: createAddress(i % 20), slot: BigInt(i) };
+	const key: BrandedStorageKey = {
+		address: createAddress(i % 20),
+		slot: BigInt(i),
+	};
 	testMap.set(StorageKey.toString(key), BigInt(i * 100));
 }
 

@@ -122,29 +122,19 @@ const results: BenchmarkResult[] = [];
 
 console.log("--- Basic Comparisons ---");
 results.push(
-	benchmark("isAtLeast", () =>
-		isAtLeast(testForks.recent, testForks.middle),
-	),
+	benchmark("isAtLeast", () => isAtLeast(testForks.recent, testForks.middle)),
 );
 results.push(
-	benchmark("isBefore", () =>
-		isBefore(testForks.middle, testForks.recent),
-	),
+	benchmark("isBefore", () => isBefore(testForks.middle, testForks.recent)),
 );
 results.push(
-	benchmark("isAfter", () =>
-		isAfter(testForks.recent, testForks.middle),
-	),
+	benchmark("isAfter", () => isAfter(testForks.recent, testForks.middle)),
 );
 results.push(
-	benchmark("isEqual", () =>
-		isEqual(testForks.recent, testForks.recent),
-	),
+	benchmark("isEqual", () => isEqual(testForks.recent, testForks.recent)),
 );
 results.push(
-	benchmark("compare", () =>
-		compare(testForks.middle, testForks.recent),
-	),
+	benchmark("compare", () => compare(testForks.middle, testForks.recent)),
 );
 
 console.log(
@@ -159,29 +149,19 @@ console.log(
 
 console.log("\n--- Convenience Forms ---");
 results.push(
-	benchmark("gte.call", () =>
-		gte.call(testForks.recent, testForks.middle),
-	),
+	benchmark("gte.call", () => gte.call(testForks.recent, testForks.middle)),
 );
 results.push(
-	benchmark("lt.call", () =>
-		lt.call(testForks.middle, testForks.recent),
-	),
+	benchmark("lt.call", () => lt.call(testForks.middle, testForks.recent)),
 );
 results.push(
-	benchmark("gt.call", () =>
-		gt.call(testForks.recent, testForks.middle),
-	),
+	benchmark("gt.call", () => gt.call(testForks.recent, testForks.middle)),
 );
 results.push(
-	benchmark("eq.call", () =>
-		eq.call(testForks.recent, testForks.recent),
-	),
+	benchmark("eq.call", () => eq.call(testForks.recent, testForks.recent)),
 );
 results.push(
-	benchmark("lte.call", () =>
-		lte.call(testForks.middle, testForks.recent),
-	),
+	benchmark("lte.call", () => lte.call(testForks.middle, testForks.recent)),
 );
 
 console.log(
@@ -236,17 +216,11 @@ results.push(
 		stringIdx++;
 	}),
 );
+results.push(benchmark("fromString - alias", () => fromString("paris")));
 results.push(
-	benchmark("fromString - alias", () => fromString("paris")),
+	benchmark("fromString - with operator", () => fromString(">=cancun")),
 );
-results.push(
-	benchmark("fromString - with operator", () =>
-		fromString(">=cancun"),
-	),
-);
-results.push(
-	benchmark("fromString - invalid", () => fromString("unknown")),
-);
+results.push(benchmark("fromString - invalid", () => fromString("unknown")));
 
 console.log(
 	results
@@ -272,12 +246,8 @@ console.log(
 );
 
 console.log("\n--- Validation ---");
-results.push(
-	benchmark("isValidName - valid", () => isValidName("cancun")),
-);
-results.push(
-	benchmark("isValidName - invalid", () => isValidName("unknown")),
-);
+results.push(benchmark("isValidName - valid", () => isValidName("cancun")));
+results.push(benchmark("isValidName - invalid", () => isValidName("unknown")));
 
 console.log(
 	results
@@ -303,21 +273,11 @@ console.log(
 );
 
 console.log("--- Standard Form ---");
-results.push(
-	benchmark("hasEIP1559", () => hasEIP1559(testForks.recent)),
-);
-results.push(
-	benchmark("hasEIP3855", () => hasEIP3855(testForks.recent)),
-);
-results.push(
-	benchmark("hasEIP4844", () => hasEIP4844(testForks.recent)),
-);
-results.push(
-	benchmark("hasEIP1153", () => hasEIP1153(testForks.recent)),
-);
-results.push(
-	benchmark("isPostMerge", () => isPostMerge(testForks.recent)),
-);
+results.push(benchmark("hasEIP1559", () => hasEIP1559(testForks.recent)));
+results.push(benchmark("hasEIP3855", () => hasEIP3855(testForks.recent)));
+results.push(benchmark("hasEIP4844", () => hasEIP4844(testForks.recent)));
+results.push(benchmark("hasEIP1153", () => hasEIP1153(testForks.recent)));
+results.push(benchmark("isPostMerge", () => isPostMerge(testForks.recent)));
 
 console.log(
 	results
@@ -336,23 +296,17 @@ results.push(
 	),
 );
 results.push(
-	benchmark("supportsPUSH0.call", () =>
-		supportsPUSH0.call(testForks.recent),
-	),
+	benchmark("supportsPUSH0.call", () => supportsPUSH0.call(testForks.recent)),
 );
 results.push(
-	benchmark("supportsBlobs.call", () =>
-		supportsBlobs.call(testForks.recent),
-	),
+	benchmark("supportsBlobs.call", () => supportsBlobs.call(testForks.recent)),
 );
 results.push(
 	benchmark("supportsTransientStorage.call", () =>
 		supportsTransientStorage.call(testForks.recent),
 	),
 );
-results.push(
-	benchmark("isPoS.call", () => isPoS.call(testForks.recent)),
-);
+results.push(benchmark("isPoS.call", () => isPoS.call(testForks.recent)));
 
 console.log(
 	results
@@ -392,26 +346,10 @@ console.log(
 );
 
 console.log("\n--- Range Generation ---");
-results.push(
-	benchmark("range - short", () =>
-		range(BERLIN, LONDON),
-	),
-);
-results.push(
-	benchmark("range - medium", () =>
-		range(BERLIN, SHANGHAI),
-	),
-);
-results.push(
-	benchmark("range - long", () =>
-		range(FRONTIER, PRAGUE),
-	),
-);
-results.push(
-	benchmark("range - descending", () =>
-		range(SHANGHAI, BERLIN),
-	),
-);
+results.push(benchmark("range - short", () => range(BERLIN, LONDON)));
+results.push(benchmark("range - medium", () => range(BERLIN, SHANGHAI)));
+results.push(benchmark("range - long", () => range(FRONTIER, PRAGUE)));
+results.push(benchmark("range - descending", () => range(SHANGHAI, BERLIN)));
 
 console.log(
 	results

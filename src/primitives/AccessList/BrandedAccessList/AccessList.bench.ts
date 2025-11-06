@@ -152,15 +152,9 @@ console.log(
 const results: BenchmarkResult[] = [];
 
 console.log("--- Gas Cost Calculations ---");
-results.push(
-	benchmark("gasCost - small list", () => gasCost(smallList)),
-);
-results.push(
-	benchmark("gasCost - medium list", () => gasCost(mediumList)),
-);
-results.push(
-	benchmark("gasCost - large list", () => gasCost(largeList)),
-);
+results.push(benchmark("gasCost - small list", () => gasCost(smallList)));
+results.push(benchmark("gasCost - medium list", () => gasCost(mediumList)));
+results.push(benchmark("gasCost - large list", () => gasCost(largeList)));
 
 console.log(
 	results
@@ -173,17 +167,11 @@ console.log(
 );
 
 console.log("\n--- Gas Savings Calculations ---");
+results.push(benchmark("gasSavings - small list", () => gasSavings(smallList)));
 results.push(
-	benchmark("gasSavings - small list", () => gasSavings(smallList)),
+	benchmark("gasSavings - medium list", () => gasSavings(mediumList)),
 );
-results.push(
-	benchmark("gasSavings - medium list", () =>
-		gasSavings(mediumList),
-	),
-);
-results.push(
-	benchmark("gasSavings - large list", () => gasSavings(largeList)),
-);
+results.push(benchmark("gasSavings - large list", () => gasSavings(largeList)));
 
 console.log(
 	results
@@ -196,13 +184,9 @@ console.log(
 );
 
 console.log("\n--- Has Savings Check ---");
+results.push(benchmark("hasSavings - small list", () => hasSavings(smallList)));
 results.push(
-	benchmark("hasSavings - small list", () => hasSavings(smallList)),
-);
-results.push(
-	benchmark("hasSavings - medium list", () =>
-		hasSavings(mediumList),
-	),
+	benchmark("hasSavings - medium list", () => hasSavings(mediumList)),
 );
 
 console.log(
@@ -278,13 +262,9 @@ console.log(
 );
 
 console.log("\n--- Keys Retrieval ---");
+results.push(benchmark("keysFor - found", () => keysFor(smallList, addr1)));
 results.push(
-	benchmark("keysFor - found", () => keysFor(smallList, addr1)),
-);
-results.push(
-	benchmark("keysFor - not found", () =>
-		keysFor(smallList, createAddress(99)),
-	),
+	benchmark("keysFor - not found", () => keysFor(smallList, createAddress(99))),
 );
 
 console.log(
@@ -312,19 +292,13 @@ console.log(
 
 console.log("--- Deduplication ---");
 results.push(
-	benchmark("deduplicate - no duplicates", () =>
-		deduplicate(smallList),
-	),
+	benchmark("deduplicate - no duplicates", () => deduplicate(smallList)),
 );
 results.push(
-	benchmark("deduplicate - with duplicates", () =>
-		deduplicate(duplicateList),
-	),
+	benchmark("deduplicate - with duplicates", () => deduplicate(duplicateList)),
 );
 results.push(
-	benchmark("deduplicate - large list", () =>
-		deduplicate(largeList),
-	),
+	benchmark("deduplicate - large list", () => deduplicate(largeList)),
 );
 
 console.log(
@@ -388,9 +362,7 @@ console.log(
 
 console.log("\n--- Merging ---");
 results.push(
-	benchmark("merge - two small lists", () =>
-		merge(smallList, smallList),
-	),
+	benchmark("merge - two small lists", () => merge(smallList, smallList)),
 );
 results.push(
 	benchmark("merge - three lists", () =>
@@ -398,9 +370,7 @@ results.push(
 	),
 );
 results.push(
-	benchmark("merge - large lists", () =>
-		merge(largeList, largeList),
-	),
+	benchmark("merge - large lists", () => merge(largeList, largeList)),
 );
 
 console.log(
@@ -428,19 +398,13 @@ console.log(
 
 console.log("--- Validation ---");
 results.push(
-	benchmark("assertValid - small list", () =>
-		assertValid(smallList),
-	),
+	benchmark("assertValid - small list", () => assertValid(smallList)),
 );
 results.push(
-	benchmark("assertValid - medium list", () =>
-		assertValid(mediumList),
-	),
+	benchmark("assertValid - medium list", () => assertValid(mediumList)),
 );
 results.push(
-	benchmark("assertValid - large list", () =>
-		assertValid(largeList),
-	),
+	benchmark("assertValid - large list", () => assertValid(largeList)),
 );
 
 console.log(
@@ -472,9 +436,7 @@ results.push(
 		isItem({ address: addr1, storageKeys: [key1] }),
 	),
 );
-results.push(
-	benchmark("isItem - invalid", () => isItem({ invalid: true })),
-);
+results.push(benchmark("isItem - invalid", () => isItem({ invalid: true })));
 results.push(benchmark("is - valid", () => is(smallList)));
 results.push(benchmark("is - invalid", () => is({ invalid: true })));
 
@@ -503,24 +465,16 @@ console.log(
 
 console.log("--- Counting Operations ---");
 results.push(
-	benchmark("addressCount - small list", () =>
-		addressCount(smallList),
-	),
+	benchmark("addressCount - small list", () => addressCount(smallList)),
 );
 results.push(
-	benchmark("storageKeyCount - small list", () =>
-		storageKeyCount(smallList),
-	),
+	benchmark("storageKeyCount - small list", () => storageKeyCount(smallList)),
 );
 results.push(
-	benchmark("addressCount - large list", () =>
-		addressCount(largeList),
-	),
+	benchmark("addressCount - large list", () => addressCount(largeList)),
 );
 results.push(
-	benchmark("storageKeyCount - large list", () =>
-		storageKeyCount(largeList),
-	),
+	benchmark("storageKeyCount - large list", () => storageKeyCount(largeList)),
 );
 
 console.log(
@@ -535,9 +489,7 @@ console.log(
 
 console.log("\n--- Other Utilities ---");
 results.push(benchmark("isEmpty - empty", () => isEmpty([])));
-results.push(
-	benchmark("isEmpty - non-empty", () => isEmpty(smallList)),
-);
+results.push(benchmark("isEmpty - non-empty", () => isEmpty(smallList)));
 results.push(benchmark("create", () => create()));
 
 console.log(
