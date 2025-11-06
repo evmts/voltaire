@@ -23,5 +23,6 @@ export { Blake2 } from "./Blake2/index.js";
 export { Ed25519 } from "./Ed25519/index.js";
 export { AesGcm } from "./AesGcm/AesGcm.js";
 export { Bip39 } from "./Bip39/index.js";
+export { HDWallet } from "./HDWallet/index.js";
 export { P256 } from "./P256/index.js";
 export { X25519 } from "./X25519/X25519.js";
