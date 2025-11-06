@@ -461,6 +461,7 @@
 		"ref-napi": "^3.0.3"
 	},
 	"dependencies": {
+		"@adraffy/ens-normalize": "^1.11.1",
 		"@scure/bip32": "^2.0.1",
 		"@scure/bip39": "^2.0.1",
 		"@tevm/chains": "^0.0.1",
