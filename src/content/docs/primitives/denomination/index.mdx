@@ -137,6 +137,27 @@ All conversions use integer arithmetic - fractional values truncate (round down)
 | **Gwei** | 10^9 | 1 | 10^-9 | Gas prices, transaction fees |
 | **Ether** | 10^18 | 10^9 | 1 | User-facing values, balances |
 
+## API Variants
+
+Two APIs for different use cases:
+
+### Namespace API (Flexible)
+Accepts any input, auto-converts:
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+Wei.toGwei("1000000000")  // Auto-converts string → Wei → Gwei
+```
+
+### Branded API (Type-safe)
+Requires branded types, compile-time safety:
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+const wei = BrandedWei.from(1000000000n)
+BrandedWei.toGwei(wei)  // Must pass BrandedWei
+```
+
+**Choose namespace for convenience, branded for type safety.**
+
 ## API Documentation
 
 <CardGrid>
@@ -156,6 +177,24 @@ All conversions use integer arithmetic - fractional values truncate (round down)
     User-facing denomination, 1 quintillion Wei.
 
     [View Ether →](/primitives/denomination/ether)
+  </Card>
+
+  <Card title="BrandedWei" icon="seti:config">
+    Type-safe Wei with BrandedUint data representation.
+
+    [View BrandedWei →](/primitives/denomination/branded-wei)
+  </Card>
+
+  <Card title="BrandedGwei" icon="seti:config">
+    Type-safe Gwei with BrandedUint data representation.
+
+    [View BrandedGwei →](/primitives/denomination/branded-gwei)
+  </Card>
+
+  <Card title="BrandedEther" icon="seti:config">
+    Type-safe Ether with BrandedUint data representation.
+
+    [View BrandedEther →](/primitives/denomination/branded-ether)
   </Card>
 
   <Card title="Conversions" icon="random">
