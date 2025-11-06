@@ -5,7 +5,8 @@ import * as HDWallet from "./HDWallet.js";
 describe("HDWallet", () => {
 	describe("fromSeed", () => {
 		it("creates root key from 64-byte seed", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -41,7 +42,8 @@ describe("HDWallet", () => {
 		});
 
 		it("produces deterministic keys from same seed", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 
 			const root1 = HDWallet.fromSeed(seed);
@@ -56,17 +58,22 @@ describe("HDWallet", () => {
 		// BIP-32 Test Vector 1
 		it("derives correct master key from BIP-32 test vector 1", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
-			const seed = new Uint8Array(seedHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+			const seed = new Uint8Array(
+				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+			);
 			const root = HDWallet.fromSeed(seed);
 
 			const xprv = HDWallet.toExtendedPrivateKey(root);
-			expect(xprv).toBe("xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi");
+			expect(xprv).toBe(
+				"xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
+			);
 		});
 	});
 
 	describe("derivePath", () => {
 		it("derives Ethereum account (m/44'/60'/0'/0/0)", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -77,7 +84,8 @@ describe("HDWallet", () => {
 		});
 
 		it("derives Bitcoin account (m/44'/0'/0'/0/0)", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -86,7 +94,8 @@ describe("HDWallet", () => {
 		});
 
 		it("derives path with only hardened indices", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -95,7 +104,8 @@ describe("HDWallet", () => {
 		});
 
 		it("derives path with only normal indices", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -104,7 +114,8 @@ describe("HDWallet", () => {
 		});
 
 		it("derives path with mixed hardened and normal indices", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -113,7 +124,8 @@ describe("HDWallet", () => {
 		});
 
 		it("throws error for invalid path format", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -121,7 +133,8 @@ describe("HDWallet", () => {
 		});
 
 		it("throws error for path without 'm' prefix", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -131,58 +144,79 @@ describe("HDWallet", () => {
 		// BIP-32 Test Vector 1 - Derivation paths
 		it("derives m/0' correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
-			const seed = new Uint8Array(seedHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+			const seed = new Uint8Array(
+				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+			);
 			const root = HDWallet.fromSeed(seed);
 
 			const child = HDWallet.derivePath(root, "m/0'");
 			const xprv = HDWallet.toExtendedPrivateKey(child);
-			expect(xprv).toBe("xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7");
+			expect(xprv).toBe(
+				"xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7",
+			);
 		});
 
 		it("derives m/0'/1 correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
-			const seed = new Uint8Array(seedHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+			const seed = new Uint8Array(
+				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+			);
 			const root = HDWallet.fromSeed(seed);
 
 			const child = HDWallet.derivePath(root, "m/0'/1");
 			const xprv = HDWallet.toExtendedPrivateKey(child);
-			expect(xprv).toBe("xprv9wTYmMFdV23N2TdNG573QoEsfRrWKQgWeibmLntzniatZvR9BmLnvSxqu53Kw1UmYPxLgboyZQaXwTCg8MSY3H2EU4pWcQDnRnrVA1xe8fs");
+			expect(xprv).toBe(
+				"xprv9wTYmMFdV23N2TdNG573QoEsfRrWKQgWeibmLntzniatZvR9BmLnvSxqu53Kw1UmYPxLgboyZQaXwTCg8MSY3H2EU4pWcQDnRnrVA1xe8fs",
+			);
 		});
 
 		it("derives m/0'/1/2' correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
-			const seed = new Uint8Array(seedHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+			const seed = new Uint8Array(
+				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+			);
 			const root = HDWallet.fromSeed(seed);
 
 			const child = HDWallet.derivePath(root, "m/0'/1/2'");
 			const xprv = HDWallet.toExtendedPrivateKey(child);
-			expect(xprv).toBe("xprv9z4pot5VBttmtdRTWfWQmoH1taj2axGVzFqSb8C9xaxKymcFzXBDptWmT7FwuEzG3ryjH4ktypQSAewRiNMjANTtpgP4mLTj34bhnZX7UiM");
+			expect(xprv).toBe(
+				"xprv9z4pot5VBttmtdRTWfWQmoH1taj2axGVzFqSb8C9xaxKymcFzXBDptWmT7FwuEzG3ryjH4ktypQSAewRiNMjANTtpgP4mLTj34bhnZX7UiM",
+			);
 		});
 
 		it("derives m/0'/1/2'/2 correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
-			const seed = new Uint8Array(seedHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+			const seed = new Uint8Array(
+				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+			);
 			const root = HDWallet.fromSeed(seed);
 
 			const child = HDWallet.derivePath(root, "m/0'/1/2'/2");
 			const xprv = HDWallet.toExtendedPrivateKey(child);
-			expect(xprv).toBe("xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334");
+			expect(xprv).toBe(
+				"xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334",
+			);
 		});
 
 		it("derives m/0'/1/2'/2/1000000000 correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
-			const seed = new Uint8Array(seedHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+			const seed = new Uint8Array(
+				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+			);
 			const root = HDWallet.fromSeed(seed);
 
 			const child = HDWallet.derivePath(root, "m/0'/1/2'/2/1000000000");
 			const xprv = HDWallet.toExtendedPrivateKey(child);
-			expect(xprv).toBe("xprvA41z7zogVVwxVSgdKUHDy1SKmdb533PjDz7J6N6mV6uS3ze1ai8FHa8kmHScGpWmj4WggLyQjgPie1rFSruoUihUZREPSL39UNdE3BBDu76");
+			expect(xprv).toBe(
+				"xprvA41z7zogVVwxVSgdKUHDy1SKmdb533PjDz7J6N6mV6uS3ze1ai8FHa8kmHScGpWmj4WggLyQjgPie1rFSruoUihUZREPSL39UNdE3BBDu76",
+			);
 		});
 	});
 
 	describe("deriveChild", () => {
 		it("derives normal (non-hardened) child", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -191,7 +225,8 @@ describe("HDWallet", () => {
 		});
 
 		it("derives hardened child", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -200,21 +235,23 @@ describe("HDWallet", () => {
 		});
 
 		it("derives child at maximum normal index (2^31 - 1)", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
-			const maxNormalIndex = 0x7FFFFFFF;
+			const maxNormalIndex = 0x7fffffff;
 			const child = HDWallet.deriveChild(root, maxNormalIndex);
 			expect(child).toBeDefined();
 		});
 
 		it("derives child at maximum hardened index (2^32 - 1)", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
-			const maxHardenedIndex = 0xFFFFFFFF;
+			const maxHardenedIndex = 0xffffffff;
 			const child = HDWallet.deriveChild(root, maxHardenedIndex);
 			expect(child).toBeDefined();
 		});
@@ -222,7 +259,8 @@ describe("HDWallet", () => {
 
 	describe("deriveEthereum", () => {
 		it("derives Ethereum account 0", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -232,7 +270,8 @@ describe("HDWallet", () => {
 		});
 
 		it("derives multiple Ethereum accounts", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -252,7 +291,8 @@ describe("HDWallet", () => {
 
 	describe("deriveBitcoin", () => {
 		it("derives Bitcoin account 0", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -262,7 +302,8 @@ describe("HDWallet", () => {
 		});
 
 		it("derives multiple Bitcoin accounts", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -278,7 +319,8 @@ describe("HDWallet", () => {
 
 	describe("getPrivateKey", () => {
 		it("returns 32-byte private key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -288,7 +330,8 @@ describe("HDWallet", () => {
 		});
 
 		it("returns undefined or null for public-only key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 			const publicKey = HDWallet.toPublic(root);
@@ -300,7 +343,8 @@ describe("HDWallet", () => {
 
 	describe("getPublicKey", () => {
 		it("returns 33-byte compressed public key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -310,7 +354,8 @@ describe("HDWallet", () => {
 		});
 
 		it("public key starts with 0x02 or 0x03", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -321,7 +366,8 @@ describe("HDWallet", () => {
 
 	describe("getChainCode", () => {
 		it("returns 32-byte chain code", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -331,7 +377,8 @@ describe("HDWallet", () => {
 		});
 
 		it("chain code differs between parent and child", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 			const child = HDWallet.deriveChild(root, 0);
@@ -345,7 +392,8 @@ describe("HDWallet", () => {
 
 	describe("toExtendedPrivateKey", () => {
 		it("serializes to xprv format", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -354,7 +402,8 @@ describe("HDWallet", () => {
 		});
 
 		it("produces valid extended key that can be imported", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -370,7 +419,8 @@ describe("HDWallet", () => {
 
 	describe("toExtendedPublicKey", () => {
 		it("serializes to xpub format", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -379,7 +429,8 @@ describe("HDWallet", () => {
 		});
 
 		it("produces valid extended key that can be imported", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -395,7 +446,8 @@ describe("HDWallet", () => {
 
 	describe("toPublic", () => {
 		it("converts to public-only key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -405,7 +457,8 @@ describe("HDWallet", () => {
 		});
 
 		it("preserves public key data", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -419,7 +472,8 @@ describe("HDWallet", () => {
 
 	describe("canDeriveHardened", () => {
 		it("returns true for key with private key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -427,7 +481,8 @@ describe("HDWallet", () => {
 		});
 
 		it("returns false for public-only key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 			const publicKey = HDWallet.toPublic(root);
@@ -499,13 +554,14 @@ describe("HDWallet", () => {
 
 		it("parses large index", () => {
 			const maxNormal = "2147483647"; // 2^31 - 1
-			expect(HDWallet.parseIndex(maxNormal)).toBe(0x7FFFFFFF);
+			expect(HDWallet.parseIndex(maxNormal)).toBe(0x7fffffff);
 		});
 	});
 
 	describe("edge cases and security", () => {
 		it("handles maximum derivation depth", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -518,7 +574,8 @@ describe("HDWallet", () => {
 		});
 
 		it("produces different keys for different derivation paths", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -532,7 +589,8 @@ describe("HDWallet", () => {
 		});
 
 		it("hardened and non-hardened indices produce different keys", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -546,7 +604,8 @@ describe("HDWallet", () => {
 		});
 
 		it("cannot derive hardened child from public key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 			const publicKey = HDWallet.toPublic(root);
@@ -555,7 +614,8 @@ describe("HDWallet", () => {
 		});
 
 		it("can derive normal child from public key", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 			const publicKey = HDWallet.toPublic(root);
@@ -566,7 +626,8 @@ describe("HDWallet", () => {
 		});
 
 		it("produces same result for sequential vs direct derivation", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 

@@ -11,7 +11,11 @@ export {
 } from "./ValidationError.js";
 
 // Serialization errors
-export { SerializationError, EncodingError, DecodingError } from "./SerializationError.js";
+export {
+	SerializationError,
+	EncodingError,
+	DecodingError,
+} from "./SerializationError.js";
 
 // Crypto errors
 export {

@@ -596,11 +596,7 @@ describe("Abi.Event - complex events", () => {
 		};
 
 		const orderId = 123n;
-		const order = [
-			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
-			1000n,
-			500n,
-		];
+		const order = ["0x742d35Cc6634C0532925a3b844Bc9e7595f251e3", 1000n, 500n];
 
 		const topics = Abi.Event.encodeTopics(event, { orderId });
 		const data = Abi.encodeParameters(

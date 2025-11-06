@@ -636,18 +636,10 @@ describe("Abi.Function round-trip encoding/decoding", () => {
 			name: "getData",
 			stateMutability: "view",
 			inputs: [],
-			outputs: [
-				{ type: "uint256" },
-				{ type: "address" },
-				{ type: "bool" },
-			],
+			outputs: [{ type: "uint256" }, { type: "address" }, { type: "bool" }],
 		};
 
-		const original = [
-			42n,
-			"0x742d35Cc6634C0532925a3b844Bc9e7595f251e3",
-			true,
-		];
+		const original = [42n, "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3", true];
 
 		const encoded = Abi.Function.encodeResult(func, original);
 		const decoded = Abi.Function.decodeResult(func, encoded);

@@ -89,7 +89,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32),
 			};
 
-			expect(() => Transaction.assertSigned(tx)).toThrow("Transaction is not signed");
+			expect(() => Transaction.assertSigned(tx)).toThrow(
+				"Transaction is not signed",
+			);
 		});
 	});
 
@@ -125,7 +127,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateGasLimit(tx)).toThrow("Gas limit must be positive");
+			expect(() => Transaction.validateGasLimit(tx)).toThrow(
+				"Gas limit must be positive",
+			);
 		});
 
 		it("validateGasLimit rejects excessive gas limit", () => {
@@ -142,7 +146,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateGasLimit(tx)).toThrow("Gas limit exceeds maximum");
+			expect(() => Transaction.validateGasLimit(tx)).toThrow(
+				"Gas limit exceeds maximum",
+			);
 		});
 
 		it("validateGasPrice accepts valid gas price", () => {
@@ -176,7 +182,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateGasPrice(tx)).toThrow("Gas price cannot be negative");
+			expect(() => Transaction.validateGasPrice(tx)).toThrow(
+				"Gas price cannot be negative",
+			);
 		});
 	});
 
@@ -240,7 +248,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateGasPrice(tx)).toThrow("Max priority fee per gas cannot be negative");
+			expect(() => Transaction.validateGasPrice(tx)).toThrow(
+				"Max priority fee per gas cannot be negative",
+			);
 		});
 
 		it("rejects negative max fee", () => {
@@ -260,7 +270,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateGasPrice(tx)).toThrow("Max fee per gas cannot be negative");
+			expect(() => Transaction.validateGasPrice(tx)).toThrow(
+				"Max fee per gas cannot be negative",
+			);
 		});
 	});
 
@@ -313,7 +325,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateValue(tx)).toThrow("Value cannot be negative");
+			expect(() => Transaction.validateValue(tx)).toThrow(
+				"Value cannot be negative",
+			);
 		});
 	});
 
@@ -366,7 +380,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateNonce(tx)).toThrow("Nonce cannot be negative");
+			expect(() => Transaction.validateNonce(tx)).toThrow(
+				"Nonce cannot be negative",
+			);
 		});
 	});
 
@@ -408,7 +424,9 @@ describe("Transaction Security Tests", () => {
 				s: new Uint8Array(32).fill(2),
 			};
 
-			expect(() => Transaction.validateChainId(tx)).toThrow("Chain ID must be specified");
+			expect(() => Transaction.validateChainId(tx)).toThrow(
+				"Chain ID must be specified",
+			);
 		});
 	});
 
@@ -427,7 +445,9 @@ describe("Transaction Security Tests", () => {
 				accessList: [],
 				maxFeePerBlobGas: 2000000000n,
 				blobVersionedHashes: [
-					Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001"),
+					Hash.from(
+						"0x0100000000000000000000000000000000000000000000000000000000000001",
+					),
 				],
 				yParity: 0,
 				r: new Uint8Array(32).fill(1),
@@ -452,9 +472,15 @@ describe("Transaction Security Tests", () => {
 				accessList: [],
 				maxFeePerBlobGas: 2000000000n,
 				blobVersionedHashes: [
-					Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001"),
-					Hash.from("0x0100000000000000000000000000000000000000000000000000000000000002"),
-					Hash.from("0x0100000000000000000000000000000000000000000000000000000000000003"),
+					Hash.from(
+						"0x0100000000000000000000000000000000000000000000000000000000000001",
+					),
+					Hash.from(
+						"0x0100000000000000000000000000000000000000000000000000000000000002",
+					),
+					Hash.from(
+						"0x0100000000000000000000000000000000000000000000000000000000000003",
+					),
 				],
 				yParity: 0,
 				r: new Uint8Array(32).fill(1),

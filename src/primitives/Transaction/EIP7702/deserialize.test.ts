@@ -28,10 +28,14 @@ describe("TransactionEIP7702.deserialize", () => {
 		expect(deserialized.type).toBe(original.type);
 		expect(deserialized.chainId).toBe(original.chainId);
 		expect(deserialized.nonce).toBe(original.nonce);
-		expect(deserialized.maxPriorityFeePerGas).toBe(original.maxPriorityFeePerGas);
+		expect(deserialized.maxPriorityFeePerGas).toBe(
+			original.maxPriorityFeePerGas,
+		);
 		expect(deserialized.maxFeePerGas).toBe(original.maxFeePerGas);
 		expect(deserialized.gasLimit).toBe(original.gasLimit);
-		expect(new Uint8Array(deserialized.to!)).toEqual(new Uint8Array(original.to!));
+		expect(new Uint8Array(deserialized.to!)).toEqual(
+			new Uint8Array(original.to!),
+		);
 		expect(deserialized.value).toBe(original.value);
 		expect(deserialized.data).toEqual(original.data);
 		expect(deserialized.authorizationList.length).toBe(0);

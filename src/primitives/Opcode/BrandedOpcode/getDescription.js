@@ -98,16 +98,28 @@ const DESCRIPTIONS = new Map([
 	// 0xf0s: System Operations
 	[constants.CREATE, "Create a new account with associated code"],
 	[constants.CALL, "Message-call into an account"],
-	[constants.CALLCODE, "Message-call into this account with alternative account's code"],
+	[
+		constants.CALLCODE,
+		"Message-call into this account with alternative account's code",
+	],
 	[constants.RETURN, "Halt execution returning output data"],
-	[constants.DELEGATECALL, "Message-call into this account with alternative account's code but persisting sender and value"],
-	[constants.CREATE2, "Create a new account with associated code at a predictable address"],
+	[
+		constants.DELEGATECALL,
+		"Message-call into this account with alternative account's code but persisting sender and value",
+	],
+	[
+		constants.CREATE2,
+		"Create a new account with associated code at a predictable address",
+	],
 	[constants.AUTH, "Authorize account for AUTHCALL"],
 	[constants.AUTHCALL, "Message-call with authorization"],
 	[constants.STATICCALL, "Static message-call into an account"],
 	[constants.REVERT, "Halt execution reverting state changes"],
 	[constants.INVALID, "Designated invalid instruction"],
-	[constants.SELFDESTRUCT, "Halt execution and register account for later deletion"],
+	[
+		constants.SELFDESTRUCT,
+		"Halt execution and register account for later deletion",
+	],
 ]);
 
 /**

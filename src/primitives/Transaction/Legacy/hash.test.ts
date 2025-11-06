@@ -81,8 +81,18 @@ describe("TransactionLegacy.hash", () => {
 			data: new Uint8Array(),
 		};
 
-		const tx1 = { ...base, v: 27n, r: new Uint8Array(32).fill(1), s: new Uint8Array(32).fill(2) };
-		const tx2 = { ...base, v: 27n, r: new Uint8Array(32).fill(3), s: new Uint8Array(32).fill(2) };
+		const tx1 = {
+			...base,
+			v: 27n,
+			r: new Uint8Array(32).fill(1),
+			s: new Uint8Array(32).fill(2),
+		};
+		const tx2 = {
+			...base,
+			v: 27n,
+			r: new Uint8Array(32).fill(3),
+			s: new Uint8Array(32).fill(2),
+		};
 
 		const hash1 = TransactionLegacy.hash.call(tx1);
 		const hash2 = TransactionLegacy.hash.call(tx2);

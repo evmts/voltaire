@@ -26,7 +26,9 @@ describe("TransactionLegacy.deserialize", () => {
 		expect(deserialized.nonce).toBe(original.nonce);
 		expect(deserialized.gasPrice).toBe(original.gasPrice);
 		expect(deserialized.gasLimit).toBe(original.gasLimit);
-		expect(new Uint8Array(deserialized.to!)).toEqual(new Uint8Array(original.to!));
+		expect(new Uint8Array(deserialized.to!)).toEqual(
+			new Uint8Array(original.to!),
+		);
 		expect(deserialized.value).toBe(original.value);
 		expect(deserialized.data).toEqual(original.data);
 		expect(deserialized.v).toBe(original.v);
@@ -129,7 +131,9 @@ describe("TransactionLegacy.deserialize", () => {
 	});
 
 	it("throws for wrong field count (too few)", () => {
-		const rlp = new Uint8Array([0xc8, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]); // 8 fields instead of 9
+		const rlp = new Uint8Array([
+			0xc8, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+		]); // 8 fields instead of 9
 		expect(() => TransactionLegacy.deserialize(rlp)).toThrow(
 			"Invalid legacy transaction: expected 9 fields",
 		);

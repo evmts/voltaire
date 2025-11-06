@@ -80,7 +80,9 @@ describe("Precompile: ecRecover (0x01)", () => {
 
 			// Last 20 bytes should match expected address
 			const recoveredAddress = result.output.slice(12);
-			expect(Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress))).toBe(true);
+			expect(
+				Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress)),
+			).toBe(true);
 		});
 
 		it("should recover address with v=27", () => {
@@ -171,7 +173,9 @@ describe("Precompile: ecRecover (0x01)", () => {
 			const addr2 = result2.output.slice(12);
 
 			expect(Buffer.from(addr1).equals(Buffer.from(addr2))).toBe(true);
-			expect(Buffer.from(addr1).equals(Buffer.from(expectedAddress))).toBe(true);
+			expect(Buffer.from(addr1).equals(Buffer.from(expectedAddress))).toBe(
+				true,
+			);
 		});
 	});
 

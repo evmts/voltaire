@@ -31,7 +31,8 @@ describe("Wallet Integration Tests", () => {
 		});
 
 		it("derives same keys from same mnemonic (deterministic)", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
 			// First derivation
 			const seed1 = await Bip39.mnemonicToSeed(mnemonic);
@@ -49,7 +50,8 @@ describe("Wallet Integration Tests", () => {
 		});
 
 		it("passphrase creates different wallet", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
 			const seed1 = await Bip39.mnemonicToSeed(mnemonic, "");
 			const seed2 = await Bip39.mnemonicToSeed(mnemonic, "password");
@@ -64,7 +66,8 @@ describe("Wallet Integration Tests", () => {
 		});
 
 		it("derives multiple account types from same seed", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -82,7 +85,8 @@ describe("Wallet Integration Tests", () => {
 		});
 
 		it("derives keys at different BIP-44 levels", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -126,14 +130,27 @@ describe("Wallet Integration Tests", () => {
 			const salt = new Uint8Array(16);
 			crypto.getRandomValues(salt);
 			const iterations = 100000;
-			const encryptionKey = await AesGcm.deriveKey(password, salt, iterations, 256);
+			const encryptionKey = await AesGcm.deriveKey(
+				password,
+				salt,
+				iterations,
+				256,
+			);
 
 			// Encrypt private key
 			const nonce = AesGcm.generateNonce();
-			const encryptedKey = await AesGcm.encrypt(privateKey!, encryptionKey, nonce);
+			const encryptedKey = await AesGcm.encrypt(
+				privateKey!,
+				encryptionKey,
+				nonce,
+			);
 
 			// Decrypt private key
-			const decryptedKey = await AesGcm.decrypt(encryptedKey, encryptionKey, nonce);
+			const decryptedKey = await AesGcm.decrypt(
+				encryptedKey,
+				encryptionKey,
+				nonce,
+			);
 
 			expect(decryptedKey).toEqual(privateKey);
 		});
@@ -177,7 +194,12 @@ describe("Wallet Integration Tests", () => {
 			const salt = new Uint8Array(16);
 			crypto.getRandomValues(salt);
 			const iterations = 100000;
-			const encryptionKey = await AesGcm.deriveKey(password, salt, iterations, 256);
+			const encryptionKey = await AesGcm.deriveKey(
+				password,
+				salt,
+				iterations,
+				256,
+			);
 
 			// Encrypt both keys (with different nonces)
 			const nonce0 = AesGcm.generateNonce();
@@ -187,8 +209,16 @@ describe("Wallet Integration Tests", () => {
 			const encrypted1 = await AesGcm.encrypt(key1!, encryptionKey, nonce1);
 
 			// Decrypt
-			const decrypted0 = await AesGcm.decrypt(encrypted0, encryptionKey, nonce0);
-			const decrypted1 = await AesGcm.decrypt(encrypted1, encryptionKey, nonce1);
+			const decrypted0 = await AesGcm.decrypt(
+				encrypted0,
+				encryptionKey,
+				nonce0,
+			);
+			const decrypted1 = await AesGcm.decrypt(
+				encrypted1,
+				encryptionKey,
+				nonce1,
+			);
 
 			expect(decrypted0).toEqual(key0);
 			expect(decrypted1).toEqual(key1);
@@ -250,8 +280,12 @@ describe("Wallet Integration Tests", () => {
 			const original0 = HDWallet.deriveChild(account, 0);
 			const original1 = HDWallet.deriveChild(account, 1);
 
-			expect(HDWallet.getPublicKey(child0)).toEqual(HDWallet.getPublicKey(original0));
-			expect(HDWallet.getPublicKey(child1)).toEqual(HDWallet.getPublicKey(original1));
+			expect(HDWallet.getPublicKey(child0)).toEqual(
+				HDWallet.getPublicKey(original0),
+			);
+			expect(HDWallet.getPublicKey(child1)).toEqual(
+				HDWallet.getPublicKey(original1),
+			);
 		});
 
 		it("cannot derive hardened child from public key", async () => {
@@ -285,7 +319,11 @@ describe("Wallet Integration Tests", () => {
 			const nonce = AesGcm.generateNonce();
 
 			const mnemonicBytes = new TextEncoder().encode(mnemonic);
-			const encryptedMnemonic = await AesGcm.encrypt(mnemonicBytes, backupKey, nonce);
+			const encryptedMnemonic = await AesGcm.encrypt(
+				mnemonicBytes,
+				backupKey,
+				nonce,
+			);
 
 			// Simulate storage and retrieval
 			const backup = {
@@ -295,8 +333,17 @@ describe("Wallet Integration Tests", () => {
 			};
 
 			// Restore: decrypt mnemonic
-			const restoreKey = await AesGcm.deriveKey(password, backup.salt, iterations, 256);
-			const decryptedBytes = await AesGcm.decrypt(backup.encryptedMnemonic, restoreKey, backup.nonce);
+			const restoreKey = await AesGcm.deriveKey(
+				password,
+				backup.salt,
+				iterations,
+				256,
+			);
+			const decryptedBytes = await AesGcm.decrypt(
+				backup.encryptedMnemonic,
+				restoreKey,
+				backup.nonce,
+			);
 			const restoredMnemonic = new TextDecoder().decode(decryptedBytes);
 
 			// Verify restoration
@@ -332,7 +379,8 @@ describe("Wallet Integration Tests", () => {
 
 	describe("BIP-44 multi-account hierarchy", () => {
 		it("derives accounts for multiple cryptocurrencies", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -360,7 +408,8 @@ describe("Wallet Integration Tests", () => {
 		});
 
 		it("derives multiple accounts per cryptocurrency", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 			const root = HDWallet.fromSeed(seed);
 
@@ -372,7 +421,7 @@ describe("Wallet Integration Tests", () => {
 			}
 
 			// All should be unique
-			const uniqueKeys = new Set(accounts.map(k => k?.join(",")));
+			const uniqueKeys = new Set(accounts.map((k) => k?.join(",")));
 			expect(uniqueKeys.size).toBe(5);
 		});
 	});
@@ -400,7 +449,8 @@ describe("Wallet Integration Tests", () => {
 
 	describe("Cross-validation with known vectors", () => {
 		it("derives known Ethereum address from test vector", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic, "TREZOR");
 			const root = HDWallet.fromSeed(seed);
 
@@ -422,13 +472,17 @@ describe("Wallet Integration Tests", () => {
 
 		it("matches BIP-32 test vector for master key", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
-			const seed = new Uint8Array(seedHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+			const seed = new Uint8Array(
+				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+			);
 			const root = HDWallet.fromSeed(seed);
 
 			const xprv = HDWallet.toExtendedPrivateKey(root);
 
 			// Expected from BIP-32 test vectors
-			expect(xprv).toBe("xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi");
+			expect(xprv).toBe(
+				"xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
+			);
 		});
 	});
 });

@@ -54,10 +54,7 @@ describe("Abi.encodeParameters - uint types", () => {
 
 	it("encodes uint128", () => {
 		const value = 0x123456789abcdef0123456789abcdef0n;
-		const encoded = Abi.encodeParameters(
-			[{ type: "uint128" }],
-			[value] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "uint128" }], [value] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[16]).toBe(0x12);
 		expect(encoded[31]).toBe(0xf0);
@@ -141,20 +138,18 @@ describe("Abi.encodeParameters - int types", () => {
 	});
 
 	it("encodes int32 positive", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "int32" }],
-			[123456789n] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "int32" }], [
+			123456789n,
+		] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded[28]).toBe(0x07);
 		expect(encoded[31]).toBe(0x15);
 	});
 
 	it("encodes int32 negative", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "int32" }],
-			[-123456789n] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "int32" }], [
+			-123456789n,
+		] as any);
 		expect(encoded.length).toBe(32);
 		expect(encoded.slice(0, 28).every((b) => b === 0xff)).toBe(true);
 	});
@@ -193,10 +188,9 @@ describe("Abi.encodeParameters - int types", () => {
 	});
 
 	it("encodes int256 negative", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "int256" }],
-			[-12345n] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "int256" }], [
+			-12345n,
+		] as any);
 		expect(encoded.length).toBe(32);
 		// Two's complement
 		expect(encoded.slice(0, 30).every((b) => b === 0xff)).toBe(true);

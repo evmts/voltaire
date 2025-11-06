@@ -257,7 +257,9 @@ describe("Keccak256.contractAddress", () => {
 			}
 
 			// All deployed contracts should have unique addresses
-			const uniqueAddresses = new Set(deployedContracts.map((a) => a.join(",")));
+			const uniqueAddresses = new Set(
+				deployedContracts.map((a) => a.join(",")),
+			);
 			expect(uniqueAddresses.size).toBe(deployedContracts.length);
 		});
 	});

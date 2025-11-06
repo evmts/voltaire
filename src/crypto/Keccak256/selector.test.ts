@@ -201,9 +201,7 @@ describe("Keccak256.selector", () => {
 			const selectors = signatures.map((sig) => selector(sig));
 
 			// Check all are unique
-			const uniqueSelectors = new Set(
-				selectors.map((s) => s.join(",")),
-			);
+			const uniqueSelectors = new Set(selectors.map((s) => s.join(",")));
 
 			expect(uniqueSelectors.size).toBe(signatures.length);
 		});
@@ -256,18 +254,14 @@ describe("Keccak256.selector", () => {
 		});
 
 		it("should handle complex nested types", () => {
-			const result = selector(
-				"complex((uint256,address)[],bytes32,bool)",
-			);
+			const result = selector("complex((uint256,address)[],bytes32,bool)");
 			expect(result.length).toBe(4);
 		});
 	});
 
 	describe("real-world examples", () => {
 		it("should compute Uniswap swap selector", () => {
-			const result = selector(
-				"swap(uint256,uint256,address,bytes)",
-			);
+			const result = selector("swap(uint256,uint256,address,bytes)");
 			expect(result.length).toBe(4);
 		});
 

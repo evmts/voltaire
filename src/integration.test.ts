@@ -87,9 +87,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(32);
 			const recoveredAddress = result.output.slice(12);
-			expect(Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress))).toBe(
-				true,
-			);
+			expect(
+				Buffer.from(recoveredAddress).equals(Buffer.from(expectedAddress)),
+			).toBe(true);
 		});
 
 		it("should handle EIP-155 transaction signature with chain ID", () => {
@@ -151,7 +151,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const publicKey = Secp256k1.derivePublicKey(privateKey);
 			const expectedAddress = Keccak256.hash(publicKey).slice(-20);
 			expect(
-				Buffer.from(result.output.slice(12)).equals(Buffer.from(expectedAddress)),
+				Buffer.from(result.output.slice(12)).equals(
+					Buffer.from(expectedAddress),
+				),
 			).toBe(true);
 		});
 
@@ -237,7 +239,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const publicKey = Secp256k1.derivePublicKey(privateKey);
 			const expectedAddress = Keccak256.hash(publicKey).slice(-20);
 			expect(
-				Buffer.from(result.output.slice(12)).equals(Buffer.from(expectedAddress)),
+				Buffer.from(result.output.slice(12)).equals(
+					Buffer.from(expectedAddress),
+				),
 			).toBe(true);
 		});
 
@@ -446,7 +450,9 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			// 5. Verify with Address.fromPrivateKey
 			const directAddress = Address.fromPrivateKey(privateKey);
 
-			expect(Buffer.from(address).equals(Buffer.from(directAddress))).toBe(true);
+			expect(Buffer.from(address).equals(Buffer.from(directAddress))).toBe(
+				true,
+			);
 		});
 
 		it("should derive address from public key coordinates", () => {
@@ -711,12 +717,7 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			new DataView(input.buffer).setUint32(0, 12, false);
 
 			const istanbul = Hardfork.ISTANBUL;
-			const result = execute(
-				PrecompileAddress.BLAKE2F,
-				input,
-				1000n,
-				istanbul,
-			);
+			const result = execute(PrecompileAddress.BLAKE2F, input, 1000n, istanbul);
 
 			expect(result.success).toBe(true);
 			expect(result.output.length).toBe(64);
@@ -781,7 +782,11 @@ describe("Integration Tests: Cross-Module Workflows", () => {
 			const cryptoSig = Secp256k1.sign(messageHash, privateKey);
 
 			// Create signature primitive
-			const sig = Signature.fromSecp256k1(cryptoSig.r, cryptoSig.s, cryptoSig.v);
+			const sig = Signature.fromSecp256k1(
+				cryptoSig.r,
+				cryptoSig.s,
+				cryptoSig.v,
+			);
 
 			// Verify structure
 			expect(sig.length).toBe(64);

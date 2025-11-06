@@ -396,9 +396,9 @@ describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 				// missing age
 			};
 
-			expect(() =>
-				EIP712.hashStruct("Person", incompleteData, types),
-			).toThrow(Eip712InvalidMessageError);
+			expect(() => EIP712.hashStruct("Person", incompleteData, types)).toThrow(
+				Eip712InvalidMessageError,
+			);
 		});
 	});
 

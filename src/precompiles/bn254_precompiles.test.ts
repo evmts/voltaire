@@ -9,12 +9,16 @@ import {
 import * as Hardfork from "../primitives/Hardfork/index.js";
 import * as G1 from "../crypto/bn254/G1/index.js";
 import * as G2 from "../crypto/bn254/G2/index.js";
-import { serializeG1, serializeG2, deserializeG2 } from "../crypto/bn254/BN254.js";
+import {
+	serializeG1,
+	serializeG2,
+	deserializeG2,
+} from "../crypto/bn254/BN254.js";
 import {
 	G1_GENERATOR_X,
 	G1_GENERATOR_Y,
 	FP_MOD,
-	FR_MOD
+	FR_MOD,
 } from "../crypto/bn254/constants.js";
 
 describe("BN254 precompiles", () => {
@@ -66,7 +70,12 @@ describe("BN254 precompiles", () => {
 			expect(result.output.length).toBe(64);
 
 			// Result should equal generator
-			const xResult = BigInt("0x" + Array.from(result.output.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(''));
+			const xResult = BigInt(
+				"0x" +
+					Array.from(result.output.slice(0, 32))
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join(""),
+			);
 			expect(xResult).toBe(G1_GENERATOR_X);
 		});
 

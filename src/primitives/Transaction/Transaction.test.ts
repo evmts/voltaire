@@ -349,13 +349,17 @@ describe("Legacy", () => {
 	};
 
 	it("serialize works", () => {
-		const serialized = Transaction.Legacy.serialize.call(legacyTx as BrandedTransactionLegacy);
+		const serialized = Transaction.Legacy.serialize.call(
+			legacyTx as BrandedTransactionLegacy,
+		);
 		expect(serialized).toBeInstanceOf(Uint8Array);
 		expect(serialized.length).toBeGreaterThan(0);
 	});
 
 	it("hash works", () => {
-		const hash = Transaction.Legacy.hash.call(legacyTx as BrandedTransactionLegacy);
+		const hash = Transaction.Legacy.hash.call(
+			legacyTx as BrandedTransactionLegacy,
+		);
 		expect(hash).toBeInstanceOf(Uint8Array);
 		expect(hash.length).toBe(32);
 	});
@@ -425,7 +429,9 @@ describe("Legacy", () => {
 	});
 
 	it("getSender works", () => {
-		const sender = Transaction.Legacy.getSender.call(legacyTx as BrandedTransactionLegacy);
+		const sender = Transaction.Legacy.getSender.call(
+			legacyTx as BrandedTransactionLegacy,
+		);
 		expect(sender).toBeInstanceOf(Uint8Array);
 		expect(sender.length).toBe(20);
 	});
@@ -460,13 +466,17 @@ describe("EIP1559", () => {
 	};
 
 	it("serialize works", () => {
-		const serialized = Transaction.EIP1559.serialize(eip1559Tx as BrandedTransactionEIP1559);
+		const serialized = Transaction.EIP1559.serialize(
+			eip1559Tx as BrandedTransactionEIP1559,
+		);
 		expect(serialized).toBeInstanceOf(Uint8Array);
 		expect(serialized[0]).toBe(Transaction.Type.EIP1559);
 	});
 
 	it("hash works", () => {
-		const hash = Transaction.EIP1559.hash(eip1559Tx as BrandedTransactionEIP1559);
+		const hash = Transaction.EIP1559.hash(
+			eip1559Tx as BrandedTransactionEIP1559,
+		);
 		expect(hash).toBeInstanceOf(Uint8Array);
 		expect(hash.length).toBe(32);
 	});

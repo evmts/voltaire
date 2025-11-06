@@ -4,15 +4,15 @@
  * @param {import('./types.js').HDNode} node - HD node
  * @returns {import('../../primitives/Address/BrandedAddress.js').BrandedAddress} Ethereum address
  */
-export function getAddress(node) {
-  const { libwally } = await import("./ffi.js");
+export async function getAddress(node) {
+	const { libwally } = await import("./ffi.js");
 
-  const address = Buffer.alloc(20);
-  const result = libwally.hdwallet_get_address(node.handle, address);
+	const address = Buffer.alloc(20);
+	const result = libwally.hdwallet_get_address(node.handle, address);
 
-  if (result !== 0) {
-    throw new Error("Failed to get address");
-  }
+	if (result !== 0) {
+		throw new Error("Failed to get address");
+	}
 
-  return new Uint8Array(address);
+	return new Uint8Array(address);
 }

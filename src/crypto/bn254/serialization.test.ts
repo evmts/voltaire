@@ -48,12 +48,22 @@ describe("G1 serialization", () => {
 
 			// Extract x coordinate (first 32 bytes)
 			const xBytes = bytes.slice(0, 32);
-			const x = BigInt("0x" + Array.from(xBytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+			const x = BigInt(
+				"0x" +
+					Array.from(xBytes)
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join(""),
+			);
 			expect(x).toBe(G1_GENERATOR_X);
 
 			// Extract y coordinate (last 32 bytes)
 			const yBytes = bytes.slice(32, 64);
-			const y = BigInt("0x" + Array.from(yBytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+			const y = BigInt(
+				"0x" +
+					Array.from(yBytes)
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join(""),
+			);
 			expect(y).toBe(G1_GENERATOR_Y);
 		});
 	});
@@ -208,19 +218,39 @@ describe("G2 serialization", () => {
 
 			// Format: x.c0 || x.c1 || y.c0 || y.c1 (32 bytes each)
 			const xc0Bytes = bytes.slice(0, 32);
-			const xc0 = BigInt("0x" + Array.from(xc0Bytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+			const xc0 = BigInt(
+				"0x" +
+					Array.from(xc0Bytes)
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join(""),
+			);
 			expect(xc0).toBe(G2_GENERATOR_X_C0);
 
 			const xc1Bytes = bytes.slice(32, 64);
-			const xc1 = BigInt("0x" + Array.from(xc1Bytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+			const xc1 = BigInt(
+				"0x" +
+					Array.from(xc1Bytes)
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join(""),
+			);
 			expect(xc1).toBe(G2_GENERATOR_X_C1);
 
 			const yc0Bytes = bytes.slice(64, 96);
-			const yc0 = BigInt("0x" + Array.from(yc0Bytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+			const yc0 = BigInt(
+				"0x" +
+					Array.from(yc0Bytes)
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join(""),
+			);
 			expect(yc0).toBe(G2_GENERATOR_Y_C0);
 
 			const yc1Bytes = bytes.slice(96, 128);
-			const yc1 = BigInt("0x" + Array.from(yc1Bytes).map(b => b.toString(16).padStart(2, '0')).join(''));
+			const yc1 = BigInt(
+				"0x" +
+					Array.from(yc1Bytes)
+						.map((b) => b.toString(16).padStart(2, "0"))
+						.join(""),
+			);
 			expect(yc1).toBe(G2_GENERATOR_Y_C1);
 		});
 	});

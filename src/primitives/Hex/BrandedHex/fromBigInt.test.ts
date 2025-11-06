@@ -43,14 +43,7 @@ describe("fromBigInt", () => {
 	});
 
 	it("round-trip conversions", () => {
-		const values = [
-			0n,
-			1n,
-			255n,
-			0x1234n,
-			0xffffffffn,
-			0xffffffffffffffffn,
-		];
+		const values = [0n, 1n, 255n, 0x1234n, 0xffffffffn, 0xffffffffffffffffn];
 		values.forEach((val) => {
 			const hex = fromBigInt(val);
 			expect(toBigInt(hex)).toBe(val);

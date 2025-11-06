@@ -18,7 +18,11 @@ describe("TransactionEIP4844.deserialize", () => {
 			data: new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]),
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
-			blobVersionedHashes: [Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001")],
+			blobVersionedHashes: [
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
@@ -30,10 +34,14 @@ describe("TransactionEIP4844.deserialize", () => {
 		expect(deserialized.type).toBe(original.type);
 		expect(deserialized.chainId).toBe(original.chainId);
 		expect(deserialized.nonce).toBe(original.nonce);
-		expect(deserialized.maxPriorityFeePerGas).toBe(original.maxPriorityFeePerGas);
+		expect(deserialized.maxPriorityFeePerGas).toBe(
+			original.maxPriorityFeePerGas,
+		);
 		expect(deserialized.maxFeePerGas).toBe(original.maxFeePerGas);
 		expect(deserialized.gasLimit).toBe(original.gasLimit);
-		expect(new Uint8Array(deserialized.to!)).toEqual(new Uint8Array(original.to!));
+		expect(new Uint8Array(deserialized.to!)).toEqual(
+			new Uint8Array(original.to!),
+		);
 		expect(deserialized.value).toBe(original.value);
 		expect(deserialized.data).toEqual(original.data);
 		expect(deserialized.maxFeePerBlobGas).toBe(original.maxFeePerBlobGas);
@@ -57,9 +65,15 @@ describe("TransactionEIP4844.deserialize", () => {
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001"),
-				Hash.from("0x0100000000000000000000000000000000000000000000000000000000000002"),
-				Hash.from("0x0100000000000000000000000000000000000000000000000000000000000003"),
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000002",
+				),
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000003",
+				),
 			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
@@ -95,7 +109,11 @@ describe("TransactionEIP4844.deserialize", () => {
 				},
 			],
 			maxFeePerBlobGas: 2000000000n,
-			blobVersionedHashes: [Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001")],
+			blobVersionedHashes: [
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
@@ -112,7 +130,9 @@ describe("TransactionEIP4844.deserialize", () => {
 
 	it("round-trips transaction with 6 blobs", () => {
 		const blobHashes = Array.from({ length: 6 }, (_, i) =>
-			Hash.from(`0x010000000000000000000000000000000000000000000000000000000000000${i}`),
+			Hash.from(
+				`0x010000000000000000000000000000000000000000000000000000000000000${i}`,
+			),
 		);
 
 		const original = {

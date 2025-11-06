@@ -16,7 +16,15 @@ import { getItem } from "./getItem.js";
 import { parseLogs } from "./parseLogs.js";
 
 // Export individual functions
-export { decode, decodeData, encode, format, formatWithArgs, getItem, parseLogs };
+export {
+	decode,
+	decodeData,
+	encode,
+	format,
+	formatWithArgs,
+	getItem,
+	parseLogs,
+};
 
 /**
  * @typedef {import('./BrandedAbi.js').BrandedAbi} BrandedAbi

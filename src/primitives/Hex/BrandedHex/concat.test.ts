@@ -56,8 +56,9 @@ describe("concat", () => {
 	});
 
 	it("concatenates many hex strings", () => {
-		const hexes = Array.from({ length: 100 }, (_, i) =>
-			`0x${i.toString(16).padStart(2, "0")}`,
+		const hexes = Array.from(
+			{ length: 100 },
+			(_, i) => `0x${i.toString(16).padStart(2, "0")}`,
 		) as BrandedHex[];
 		const result = concat(...hexes);
 		expect(result.length).toBe(2 + 100 * 2);

@@ -3,8 +3,7 @@ import { from } from "./from.js";
 
 describe("BrandedPublicKey.from", () => {
 	it("creates public key from 64 byte hex", () => {
-		const hex =
-			"0x" + "04".repeat(64); // 64 bytes
+		const hex = "0x" + "04".repeat(64); // 64 bytes
 		const pk = from(hex);
 		expect(pk).toBeInstanceOf(Uint8Array);
 		expect(pk.length).toBe(64);

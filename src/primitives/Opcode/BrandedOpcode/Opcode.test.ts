@@ -930,15 +930,9 @@ describe("Opcode.getDescription", () => {
 	});
 
 	it("generates descriptions for DUP opcodes", () => {
-		expect(Opcode.getDescription(Opcode.DUP1)).toBe(
-			"Duplicate 1st stack item",
-		);
-		expect(Opcode.getDescription(Opcode.DUP2)).toBe(
-			"Duplicate 2nd stack item",
-		);
-		expect(Opcode.getDescription(Opcode.DUP3)).toBe(
-			"Duplicate 3rd stack item",
-		);
+		expect(Opcode.getDescription(Opcode.DUP1)).toBe("Duplicate 1st stack item");
+		expect(Opcode.getDescription(Opcode.DUP2)).toBe("Duplicate 2nd stack item");
+		expect(Opcode.getDescription(Opcode.DUP3)).toBe("Duplicate 3rd stack item");
 	});
 
 	it("generates descriptions for SWAP opcodes", () => {

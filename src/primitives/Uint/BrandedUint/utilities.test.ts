@@ -184,8 +184,8 @@ describe("Uint.isPowerOf2", () => {
 	});
 
 	it("returns false for large non-powers of 2", () => {
-		expect(Uint.isPowerOf2(Uint.from((2n ** 32n) + 1n))).toBe(false);
-		expect(Uint.isPowerOf2(Uint.from((2n ** 64n) - 1n))).toBe(false);
+		expect(Uint.isPowerOf2(Uint.from(2n ** 32n + 1n))).toBe(false);
+		expect(Uint.isPowerOf2(Uint.from(2n ** 64n - 1n))).toBe(false);
 	});
 
 	it("returns false for MAX (all bits set)", () => {
@@ -218,28 +218,17 @@ describe("Uint.product", () => {
 	});
 
 	it("returns ZERO when any value is ZERO", () => {
-		const result = Uint.product(
-			Uint.from(10),
-			Uint.ZERO,
-			Uint.from(5),
-		);
+		const result = Uint.product(Uint.from(10), Uint.ZERO, Uint.from(5));
 		expect(result).toBe(0n);
 	});
 
 	it("multiplies with ONE correctly", () => {
-		const result = Uint.product(
-			Uint.from(42),
-			Uint.ONE,
-			Uint.from(2),
-		);
+		const result = Uint.product(Uint.from(42), Uint.ONE, Uint.from(2));
 		expect(result).toBe(84n);
 	});
 
 	it("wraps on overflow", () => {
-		const result = Uint.product(
-			Uint.MAX,
-			Uint.from(2),
-		);
+		const result = Uint.product(Uint.MAX, Uint.from(2));
 		// MAX * 2 wraps
 		expect(result).toBe((Uint.MAX as bigint) - 1n);
 	});
@@ -285,27 +274,17 @@ describe("Uint.sum", () => {
 	});
 
 	it("sums with ZERO correctly", () => {
-		const result = Uint.sum(
-			Uint.from(10),
-			Uint.ZERO,
-			Uint.from(20),
-		);
+		const result = Uint.sum(Uint.from(10), Uint.ZERO, Uint.from(20));
 		expect(result).toBe(30n);
 	});
 
 	it("wraps on overflow", () => {
-		const result = Uint.sum(
-			Uint.MAX,
-			Uint.ONE,
-		);
+		const result = Uint.sum(Uint.MAX, Uint.ONE);
 		expect(result).toBe(0n);
 	});
 
 	it("wraps on large overflow", () => {
-		const result = Uint.sum(
-			Uint.MAX,
-			Uint.from(10),
-		);
+		const result = Uint.sum(Uint.MAX, Uint.from(10));
 		expect(result).toBe(9n);
 	});
 
@@ -329,11 +308,7 @@ describe("Uint.sum", () => {
 	});
 
 	it("sums mixed sizes", () => {
-		const result = Uint.sum(
-			Uint.from(1),
-			Uint.from(2n ** 64n),
-			Uint.from(100),
-		);
+		const result = Uint.sum(Uint.from(1), Uint.from(2n ** 64n), Uint.from(100));
 		expect(result).toBe(2n ** 64n + 101n);
 	});
 });

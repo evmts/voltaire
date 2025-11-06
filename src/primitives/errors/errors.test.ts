@@ -217,9 +217,12 @@ describe("TransactionError", () => {
 
 describe("InvalidTransactionTypeError", () => {
 	it("creates transaction type error", () => {
-		const err = new InvalidTransactionTypeError("Unsupported transaction type", {
-			context: { type: 99 },
-		});
+		const err = new InvalidTransactionTypeError(
+			"Unsupported transaction type",
+			{
+				context: { type: 99 },
+			},
+		);
 		expect(err).toBeInstanceOf(TransactionError);
 		expect(err).toBeInstanceOf(InvalidTransactionTypeError);
 		expect(err.name).toBe("InvalidTransactionTypeError");
@@ -254,7 +257,10 @@ describe("Error hierarchy", () => {
 	});
 
 	it("differentiates between error types", () => {
-		const validationErr = new ValidationError("test", { value: 1, expected: "2" });
+		const validationErr = new ValidationError("test", {
+			value: 1,
+			expected: "2",
+		});
 		const cryptoErr = new CryptoError("test");
 
 		expect(validationErr instanceof ValidationError).toBe(true);
@@ -309,10 +315,10 @@ describe("Usage examples", () => {
 		};
 
 		expect(
-			handleError(new InvalidFormatError("test", { value: 1, expected: "2" }))
+			handleError(new InvalidFormatError("test", { value: 1, expected: "2" })),
 		).toBe("FORMAT");
 		expect(
-			handleError(new InvalidLengthError("test", { value: 1, expected: "2" }))
+			handleError(new InvalidLengthError("test", { value: 1, expected: "2" })),
 		).toBe("LENGTH");
 		expect(handleError(new CryptoError("test"))).toBe("CRYPTO");
 		expect(handleError(new Error("test"))).toBe("UNKNOWN");

@@ -5,7 +5,10 @@ export class PrimitiveError extends Error {
 	code: string;
 	context?: Record<string, any>;
 
-	constructor(message: string, options?: { code?: string; context?: Record<string, any> }) {
+	constructor(
+		message: string,
+		options?: { code?: string; context?: Record<string, any> },
+	) {
 		super(message);
 		this.name = "PrimitiveError";
 		this.code = options?.code || "PRIMITIVE_ERROR";

@@ -1,4 +1,4 @@
-import { Address } from "../primitives/Address/index.ts";
+import { Address } from "../primitives/Address/index.js";
 
 /**
  * Generate a cryptographically secure random Ethereum wallet
@@ -72,6 +72,11 @@ function multiplyBasePoint(k) {
 
 /**
  * Add two points on secp256k1 curve
+ * @param {bigint} x1
+ * @param {bigint} y1
+ * @param {bigint} x2
+ * @param {bigint} y2
+ * @returns {[bigint, bigint]}
  */
 function pointAdd(x1, y1, x2, y2) {
 	if (x1 === x2 && y1 === y2) {
@@ -87,6 +92,9 @@ function pointAdd(x1, y1, x2, y2) {
 
 /**
  * Double a point on secp256k1 curve
+ * @param {bigint} x
+ * @param {bigint} y
+ * @returns {[bigint, bigint]}
  */
 function pointDouble(x, y) {
 	const lam = mod(3n * x * x * modInv(2n * y, P), P);
@@ -98,6 +106,9 @@ function pointDouble(x, y) {
 
 /**
  * Modular multiplicative inverse
+ * @param {bigint} a
+ * @param {bigint} m
+ * @returns {bigint}
  */
 function modInv(a, m) {
 	a = mod(a, m);
@@ -119,6 +130,9 @@ function modInv(a, m) {
 
 /**
  * Modulo operation that always returns positive
+ * @param {bigint} a
+ * @param {bigint} b
+ * @returns {bigint}
  */
 function mod(a, b) {
 	const result = a % b;

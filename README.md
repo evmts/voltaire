@@ -286,9 +286,11 @@ Benchmark results available in [BENCHMARKING.md](./BENCHMARKING.md) and each pri
 
 ## Alternatives
 
-- [Viem](https://viem.sh) - Popular TypeScript Ethereum library
-- [Ethers.js](https://docs.ethers.org/) - Comprehensive Ethereum library
-- [Alloy](https://github.com/alloy-rs/alloy) - High-performance Rust library (Zig FFI integration available)
+- **[Viem](https://viem.sh)** - Popular TypeScript Ethereum library with modular design ([GitHub](https://github.com/wevm/viem))
+- **[Ethers.js](https://docs.ethers.org/)** - Comprehensive Ethereum library ([GitHub](https://github.com/ethers-io/ethers.js))
+- **[Alloy](https://github.com/alloy-rs/alloy)** - High-performance Rust library (Zig FFI integration available)
+- **[@noble/curves](https://github.com/paulmillr/noble-curves)** - Audited cryptographic library for pure JS implementations
+- **[Web3.js](https://web3js.org/)** - Original Ethereum JavaScript library ([GitHub](https://github.com/web3/web3.js))
 ---
 
 ## License

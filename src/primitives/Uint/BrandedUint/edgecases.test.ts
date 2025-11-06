@@ -318,7 +318,10 @@ describe("Uint utility edge cases", () => {
 			expect(Uint.popCount(value)).toBe(1);
 		}
 
-		const alternating = Uint.from(0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan);
+		const alternating =
+			Uint.from(
+				0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan,
+			);
 		expect(Uint.popCount(alternating)).toBe(128);
 	});
 
@@ -362,9 +365,9 @@ describe("Uint conversion edge cases", () => {
 	});
 
 	it("handles toNumber bounds checking", () => {
-		expect(() => Uint.toNumber(Uint.from(BigInt(Number.MAX_SAFE_INTEGER) + 1n))).toThrow(
-			"exceeds MAX_SAFE_INTEGER",
-		);
+		expect(() =>
+			Uint.toNumber(Uint.from(BigInt(Number.MAX_SAFE_INTEGER) + 1n)),
+		).toThrow("exceeds MAX_SAFE_INTEGER");
 
 		const safe = Uint.toNumber(Uint.from(Number.MAX_SAFE_INTEGER));
 		expect(safe).toBe(Number.MAX_SAFE_INTEGER);

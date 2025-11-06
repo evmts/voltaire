@@ -11,7 +11,8 @@ import * as Bip39 from "../Bip39/index.js";
 // Test Data
 // =============================================================================
 
-const testMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+const testMnemonic =
+	"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 const testSeed = Bip39.mnemonicToSeedSync(testMnemonic);
 const rootKey = HDWallet.fromSeed(testSeed);
 
@@ -278,7 +279,7 @@ bench("deriveChild - max non-hardened index", () => {
 });
 
 bench("deriveChild - max hardened index", () => {
-	HDWallet.deriveChild(rootKey, 0xFFFFFFFF);
+	HDWallet.deriveChild(rootKey, 0xffffffff);
 });
 
 bench("fromSeed - invalid length (error)", () => {

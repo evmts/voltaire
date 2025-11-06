@@ -232,9 +232,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 			const blob = KZG.generateRandomBlob();
 
 			expect(() => KZG.computeKzgProof(blob, null as any)).toThrow(KzgError);
-			expect(() => KZG.computeKzgProof(blob, "0x42" as any)).toThrow(
-				KzgError,
-			);
+			expect(() => KZG.computeKzgProof(blob, "0x42" as any)).toThrow(KzgError);
 		});
 	});
 

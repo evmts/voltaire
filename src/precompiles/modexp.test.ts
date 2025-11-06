@@ -52,11 +52,7 @@ function writeUint256(buf: Uint8Array, offset: number, value: bigint): void {
 /**
  * Helper to create modexp input
  */
-function createModExpInput(
-	base: bigint,
-	exp: bigint,
-	mod: bigint,
-): Uint8Array {
+function createModExpInput(base: bigint, exp: bigint, mod: bigint): Uint8Array {
 	const baseBytes = bigintToBytes(base);
 	const expBytes = bigintToBytes(exp);
 	const modBytes = bigintToBytes(mod);
@@ -403,12 +399,8 @@ describe("Precompile: ModExp (0x05)", () => {
 			const byzantium = Hardfork.BYZANTIUM;
 			const homestead = Hardfork.HOMESTEAD;
 
-			expect(
-				Hardfork.isAtLeast(byzantium, Hardfork.BYZANTIUM),
-			).toBe(true);
-			expect(
-				Hardfork.isAtLeast(homestead, Hardfork.BYZANTIUM),
-			).toBe(false);
+			expect(Hardfork.isAtLeast(byzantium, Hardfork.BYZANTIUM)).toBe(true);
+			expect(Hardfork.isAtLeast(homestead, Hardfork.BYZANTIUM)).toBe(false);
 		});
 
 		it("should execute with Byzantium hardfork", () => {

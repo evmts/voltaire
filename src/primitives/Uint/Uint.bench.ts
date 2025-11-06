@@ -509,8 +509,16 @@ results.push(benchmark("minimum", () => Uint.minimum(v1, v2)));
 results.push(benchmark("maximum", () => Uint.maximum(v1, v2)));
 results.push(benchmark("min - 3 values", () => Uint.min(v1, v2, v3)));
 results.push(benchmark("max - 3 values", () => Uint.max(v1, v2, v3)));
-results.push(benchmark("min - 10 values", () => Uint.min(v1, v2, v3, v1, v2, v3, v1, v2, v3, v1)));
-results.push(benchmark("max - 10 values", () => Uint.max(v1, v2, v3, v1, v2, v3, v1, v2, v3, v1)));
+results.push(
+	benchmark("min - 10 values", () =>
+		Uint.min(v1, v2, v3, v1, v2, v3, v1, v2, v3, v1),
+	),
+);
+results.push(
+	benchmark("max - 10 values", () =>
+		Uint.max(v1, v2, v3, v1, v2, v3, v1, v2, v3, v1),
+	),
+);
 
 console.log(
 	results
@@ -529,15 +537,35 @@ const c = Uint.from(100n);
 const d = Uint.from(150n);
 
 results.push(benchmark("gcd - small values", () => Uint.gcd(a, b)));
-results.push(benchmark("gcd - medium values", () => Uint.gcd(smallValue, mediumValue)));
-results.push(benchmark("gcd - large values", () => Uint.gcd(mediumValue, largeValue)));
+results.push(
+	benchmark("gcd - medium values", () => Uint.gcd(smallValue, mediumValue)),
+);
+results.push(
+	benchmark("gcd - large values", () => Uint.gcd(mediumValue, largeValue)),
+);
 results.push(benchmark("lcm - small values", () => Uint.lcm(a, b)));
-results.push(benchmark("lcm - medium values", () => Uint.lcm(smallValue, mediumValue)));
+results.push(
+	benchmark("lcm - medium values", () => Uint.lcm(smallValue, mediumValue)),
+);
 results.push(benchmark("sum - 2 values", () => Uint.sum(a, b)));
-results.push(benchmark("sum - 5 values", () => Uint.sum(a, b, c, d, smallValue)));
-results.push(benchmark("sum - 10 values", () => Uint.sum(a, b, c, d, a, b, c, d, a, b)));
+results.push(
+	benchmark("sum - 5 values", () => Uint.sum(a, b, c, d, smallValue)),
+);
+results.push(
+	benchmark("sum - 10 values", () => Uint.sum(a, b, c, d, a, b, c, d, a, b)),
+);
 results.push(benchmark("product - 2 values", () => Uint.product(a, b)));
-results.push(benchmark("product - 5 values", () => Uint.product(Uint.from(2n), Uint.from(3n), Uint.from(4n), Uint.from(5n), Uint.from(6n))));
+results.push(
+	benchmark("product - 5 values", () =>
+		Uint.product(
+			Uint.from(2n),
+			Uint.from(3n),
+			Uint.from(4n),
+			Uint.from(5n),
+			Uint.from(6n),
+		),
+	),
+);
 
 console.log(
 	results

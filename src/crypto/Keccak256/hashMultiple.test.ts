@@ -127,10 +127,7 @@ describe("Keccak256.hashMultiple", () => {
 
 	describe("determinism", () => {
 		it("should produce same hash for same chunks", () => {
-			const chunks = [
-				new Uint8Array([1, 2]),
-				new Uint8Array([3, 4]),
-			];
+			const chunks = [new Uint8Array([1, 2]), new Uint8Array([3, 4])];
 
 			const hash1 = hashMultiple(chunks);
 			const hash2 = hashMultiple(chunks);
@@ -139,15 +136,9 @@ describe("Keccak256.hashMultiple", () => {
 		});
 
 		it("should produce different hashes for different chunk orders", () => {
-			const chunks1 = [
-				new Uint8Array([1, 2]),
-				new Uint8Array([3, 4]),
-			];
+			const chunks1 = [new Uint8Array([1, 2]), new Uint8Array([3, 4])];
 
-			const chunks2 = [
-				new Uint8Array([3, 4]),
-				new Uint8Array([1, 2]),
-			];
+			const chunks2 = [new Uint8Array([3, 4]), new Uint8Array([1, 2])];
 
 			const hash1 = hashMultiple(chunks1);
 			const hash2 = hashMultiple(chunks2);
@@ -157,15 +148,9 @@ describe("Keccak256.hashMultiple", () => {
 
 		it("should produce different hashes for different chunk boundaries", () => {
 			// Same total bytes, different boundaries
-			const chunks1 = [
-				new Uint8Array([1]),
-				new Uint8Array([2, 3]),
-			];
+			const chunks1 = [new Uint8Array([1]), new Uint8Array([2, 3])];
 
-			const chunks2 = [
-				new Uint8Array([1, 2]),
-				new Uint8Array([3]),
-			];
+			const chunks2 = [new Uint8Array([1, 2]), new Uint8Array([3])];
 
 			const hash1 = hashMultiple(chunks1);
 			const hash2 = hashMultiple(chunks2);
@@ -177,11 +162,7 @@ describe("Keccak256.hashMultiple", () => {
 
 	describe("empty chunks", () => {
 		it("should handle all empty chunks", () => {
-			const chunks = [
-				new Uint8Array(0),
-				new Uint8Array(0),
-				new Uint8Array(0),
-			];
+			const chunks = [new Uint8Array(0), new Uint8Array(0), new Uint8Array(0)];
 
 			const result = hashMultiple(chunks);
 
@@ -219,7 +200,9 @@ describe("Keccak256.hashMultiple", () => {
 
 			const result = hashMultiple([selector, address, amount]);
 
-			const combined = new Uint8Array(selector.length + address.length + amount.length);
+			const combined = new Uint8Array(
+				selector.length + address.length + amount.length,
+			);
 			combined.set(selector, 0);
 			combined.set(address, selector.length);
 			combined.set(amount, selector.length + address.length);
@@ -229,7 +212,9 @@ describe("Keccak256.hashMultiple", () => {
 		});
 
 		it("should hash message prefix and content separately", () => {
-			const prefix = new TextEncoder().encode("\x19Ethereum Signed Message:\n32");
+			const prefix = new TextEncoder().encode(
+				"\x19Ethereum Signed Message:\n32",
+			);
 			const messageHash = hash(new TextEncoder().encode("Hello"));
 
 			const result = hashMultiple([prefix, messageHash]);
@@ -326,11 +311,7 @@ describe("Keccak256.hashMultiple", () => {
 
 			const result = hashMultiple([chunk1, chunk2, chunk3]);
 
-			const combined = new Uint8Array([
-				...chunk1,
-				...chunk2,
-				...chunk3,
-			]);
+			const combined = new Uint8Array([...chunk1, ...chunk2, ...chunk3]);
 			const expected = hash(combined);
 
 			expect(result).toEqual(expected);

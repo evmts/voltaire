@@ -186,9 +186,7 @@ describe("Keccak256.topic", () => {
 			const topics = events.map((event) => topic(event));
 
 			// Check all are unique
-			const uniqueTopics = new Set(
-				topics.map((t) => t.join(",")),
-			);
+			const uniqueTopics = new Set(topics.map((t) => t.join(",")));
 
 			expect(uniqueTopics.size).toBe(events.length);
 		});
@@ -208,16 +206,12 @@ describe("Keccak256.topic", () => {
 		});
 
 		it("should compute Aave Deposit event topic", () => {
-			const result = topic(
-				"Deposit(address,address,uint256,uint16)",
-			);
+			const result = topic("Deposit(address,address,uint256,uint16)");
 			expect(result.length).toBe(32);
 		});
 
 		it("should compute ENS NameRegistered event topic", () => {
-			const result = topic(
-				"NameRegistered(uint256,address,uint256)",
-			);
+			const result = topic("NameRegistered(uint256,address,uint256)");
 			expect(result.length).toBe(32);
 		});
 	});

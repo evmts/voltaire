@@ -57,9 +57,9 @@ describe("toNumber", () => {
 		expect(() => toNumber("0xffffffffffffffff" as BrandedHex)).toThrow(
 			RangeError,
 		);
-		expect(() =>
-			toNumber("0x10000000000000000" as BrandedHex),
-		).toThrow(RangeError);
+		expect(() => toNumber("0x10000000000000000" as BrandedHex)).toThrow(
+			RangeError,
+		);
 	});
 
 	it("converts powers of 2", () => {

@@ -72,10 +72,7 @@ export const CHAIN_METADATA: Record<number, ChainMetadata> = {
 			shanghai: 17_034_870,
 			cancun: 19_426_587,
 		},
-		websocketUrls: [
-			"wss://ethereum-rpc.publicnode.com",
-			"wss://eth.drpc.org",
-		],
+		websocketUrls: ["wss://ethereum-rpc.publicnode.com", "wss://eth.drpc.org"],
 	},
 
 	// Sepolia Testnet

@@ -204,10 +204,7 @@ describe("RLP Utility Functions", () => {
 
 	describe("decodeBatch", () => {
 		it("decodes multiple items", () => {
-			const items = [
-				[new Uint8Array([1, 2])],
-				[new Uint8Array([3, 4])],
-			];
+			const items = [[new Uint8Array([1, 2])], [new Uint8Array([3, 4])]];
 			const encoded = Rlp.encodeBatch(items);
 			const decoded = Rlp.decodeBatch(encoded);
 			expect(decoded).toEqual(items);

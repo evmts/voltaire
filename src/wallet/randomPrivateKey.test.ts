@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { randomPrivateKey } from "./randomPrivateKey.js";
-import { Address } from "../primitives/Address/index.ts";
+import { Address } from "../primitives/Address/index.js";
 
 describe("randomPrivateKey", () => {
 	it("should generate valid Ethereum address", () => {

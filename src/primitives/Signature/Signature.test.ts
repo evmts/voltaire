@@ -166,9 +166,14 @@ describe("Signature", () => {
 		it("should create from DER", () => {
 			// Minimal DER: SEQUENCE { INTEGER r, INTEGER s }
 			const der = new Uint8Array([
-				0x30, 0x06, // SEQUENCE, length 6
-				0x02, 0x01, 0x42, // INTEGER r = 0x42
-				0x02, 0x01, 0x84, // INTEGER s = 0x84
+				0x30,
+				0x06, // SEQUENCE, length 6
+				0x02,
+				0x01,
+				0x42, // INTEGER r = 0x42
+				0x02,
+				0x01,
+				0x84, // INTEGER s = 0x84
 			]);
 			const sig = Signature.fromDER(der, "secp256k1", 27);
 			expect(sig.algorithm).toBe("secp256k1");
@@ -316,9 +321,17 @@ describe("Signature", () => {
 	describe("DER encoding edge cases", () => {
 		it("should handle DER with leading zeros in r", () => {
 			const der = new Uint8Array([
-				0x30, 0x09, // SEQUENCE, length 9
-				0x02, 0x03, 0x00, 0x00, 0x42, // INTEGER r with leading zeros
-				0x02, 0x02, 0x00, 0x84, // INTEGER s with padding
+				0x30,
+				0x09, // SEQUENCE, length 9
+				0x02,
+				0x03,
+				0x00,
+				0x00,
+				0x42, // INTEGER r with leading zeros
+				0x02,
+				0x02,
+				0x00,
+				0x84, // INTEGER s with padding
 			]);
 			const sig = Signature.fromDER(der, "secp256k1", 27);
 			expect(sig.algorithm).toBe("secp256k1");
@@ -328,9 +341,16 @@ describe("Signature", () => {
 
 		it("should handle DER with high bit set requiring padding", () => {
 			const der = new Uint8Array([
-				0x30, 0x08, // SEQUENCE, length 8
-				0x02, 0x02, 0x00, 0x81, // INTEGER r = 0x81 (needs 0x00 padding)
-				0x02, 0x02, 0x00, 0xff, // INTEGER s = 0xff (needs 0x00 padding)
+				0x30,
+				0x08, // SEQUENCE, length 8
+				0x02,
+				0x02,
+				0x00,
+				0x81, // INTEGER r = 0x81 (needs 0x00 padding)
+				0x02,
+				0x02,
+				0x00,
+				0xff, // INTEGER s = 0xff (needs 0x00 padding)
 			]);
 			const sig = Signature.fromDER(der, "p256");
 			expect(sig.algorithm).toBe("p256");
@@ -350,28 +370,36 @@ describe("Signature", () => {
 		});
 
 		it("should throw on invalid SEQUENCE tag", () => {
-			const der = new Uint8Array([0x31, 0x06, 0x02, 0x01, 0x42, 0x02, 0x01, 0x84]);
+			const der = new Uint8Array([
+				0x31, 0x06, 0x02, 0x01, 0x42, 0x02, 0x01, 0x84,
+			]);
 			expect(() => Signature.fromDER(der, "secp256k1")).toThrow(
 				Signature.InvalidDERError,
 			);
 		});
 
 		it("should throw on invalid INTEGER tag for r", () => {
-			const der = new Uint8Array([0x30, 0x06, 0x03, 0x01, 0x42, 0x02, 0x01, 0x84]);
+			const der = new Uint8Array([
+				0x30, 0x06, 0x03, 0x01, 0x42, 0x02, 0x01, 0x84,
+			]);
 			expect(() => Signature.fromDER(der, "secp256k1")).toThrow(
 				Signature.InvalidDERError,
 			);
 		});
 
 		it("should throw on invalid INTEGER tag for s", () => {
-			const der = new Uint8Array([0x30, 0x06, 0x02, 0x01, 0x42, 0x03, 0x01, 0x84]);
+			const der = new Uint8Array([
+				0x30, 0x06, 0x02, 0x01, 0x42, 0x03, 0x01, 0x84,
+			]);
 			expect(() => Signature.fromDER(der, "secp256k1")).toThrow(
 				Signature.InvalidDERError,
 			);
 		});
 
 		it("should throw on invalid SEQUENCE length", () => {
-			const der = new Uint8Array([0x30, 0x10, 0x02, 0x01, 0x42, 0x02, 0x01, 0x84]);
+			const der = new Uint8Array([
+				0x30, 0x10, 0x02, 0x01, 0x42, 0x02, 0x01, 0x84,
+			]);
 			expect(() => Signature.fromDER(der, "secp256k1")).toThrow(
 				Signature.InvalidDERError,
 			);
@@ -394,7 +422,9 @@ describe("Signature", () => {
 		});
 
 		it("should throw when trying to parse DER as Ed25519", () => {
-			const der = new Uint8Array([0x30, 0x06, 0x02, 0x01, 0x42, 0x02, 0x01, 0x84]);
+			const der = new Uint8Array([
+				0x30, 0x06, 0x02, 0x01, 0x42, 0x02, 0x01, 0x84,
+			]);
 			expect(() => Signature.fromDER(der, "ed25519")).toThrow(
 				Signature.InvalidDERError,
 			);

@@ -12,9 +12,6 @@ import type { BrandedChainId } from "./BrandedChainId.js";
  * const same = ChainId._equals.call(chainId1, chainId2);
  * ```
  */
-export function equals(
-	this: BrandedChainId,
-	other: BrandedChainId,
-): boolean {
+export function equals(this: BrandedChainId, other: BrandedChainId): boolean {
 	return this === other;
 }

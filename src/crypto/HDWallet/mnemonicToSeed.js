@@ -5,22 +5,22 @@
  * @param {string} [password] - Optional passphrase
  * @returns {Uint8Array} 512-bit seed
  */
-export function mnemonicToSeed(mnemonic, password) {
-  const { libwally } = await import("./ffi.js");
+export async function mnemonicToSeed(mnemonic, password) {
+	const { libwally } = await import("./ffi.js");
 
-  const mnemonicStr =
-    typeof mnemonic === "string" ? mnemonic : mnemonic.join(" ");
-  const seed = Buffer.alloc(64);
+	const mnemonicStr =
+		typeof mnemonic === "string" ? mnemonic : mnemonic.join(" ");
+	const seed = Buffer.alloc(64);
 
-  const result = libwally.hdwallet_mnemonic_to_seed(
-    mnemonicStr,
-    password ?? null,
-    seed,
-  );
+	const result = libwally.hdwallet_mnemonic_to_seed(
+		mnemonicStr,
+		password ?? null,
+		seed,
+	);
 
-  if (result !== 0) {
-    throw new Error("Failed to convert mnemonic to seed");
-  }
+	if (result !== 0) {
+		throw new Error("Failed to convert mnemonic to seed");
+	}
 
-  return new Uint8Array(seed);
+	return new Uint8Array(seed);
 }

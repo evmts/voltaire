@@ -53,9 +53,7 @@ describe("Secp256k1.derivePublicKey", () => {
 		it("should throw InvalidPrivateKeyError for zero private key", () => {
 			const privateKey = new Uint8Array(32); // All zeros
 
-			expect(() => derivePublicKey(privateKey)).toThrow(
-				InvalidPrivateKeyError,
-			);
+			expect(() => derivePublicKey(privateKey)).toThrow(InvalidPrivateKeyError);
 		});
 
 		it("should throw InvalidPrivateKeyError for private key >= n", () => {
@@ -72,17 +70,13 @@ describe("Secp256k1.derivePublicKey", () => {
 		it("should throw InvalidPrivateKeyError for wrong length private key", () => {
 			const privateKey = new Uint8Array(31); // Too short
 
-			expect(() => derivePublicKey(privateKey)).toThrow(
-				InvalidPrivateKeyError,
-			);
+			expect(() => derivePublicKey(privateKey)).toThrow(InvalidPrivateKeyError);
 		});
 
 		it("should throw InvalidPrivateKeyError for too long private key", () => {
 			const privateKey = new Uint8Array(33); // Too long
 
-			expect(() => derivePublicKey(privateKey)).toThrow(
-				InvalidPrivateKeyError,
-			);
+			expect(() => derivePublicKey(privateKey)).toThrow(InvalidPrivateKeyError);
 		});
 	});
 

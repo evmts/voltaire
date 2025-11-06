@@ -67,8 +67,7 @@ describe("RLP Ethereum Test Vectors", () => {
 		});
 
 		it("encodes Lorem ipsum string", () => {
-			const text =
-				"Lorem ipsum dolor sit amet, consectetur adipisicing elit";
+			const text = "Lorem ipsum dolor sit amet, consectetur adipisicing elit";
 			const input = new TextEncoder().encode(text);
 			const encoded = Rlp.encodeBytes(input);
 			expect(encoded[0]).toBe(0xb8);
@@ -266,7 +265,9 @@ describe("RLP Ethereum Test Vectors", () => {
 			const gasPrice = new Uint8Array([0x04, 0xa8, 0x17, 0xc8, 0x00]);
 			const gasLimit = new Uint8Array([0x52, 0x08]);
 			const to = new Uint8Array(20).fill(0x11);
-			const value = new Uint8Array([0x0d, 0xe0, 0xb6, 0xb3, 0xa7, 0x64, 0x00, 0x00]);
+			const value = new Uint8Array([
+				0x0d, 0xe0, 0xb6, 0xb3, 0xa7, 0x64, 0x00, 0x00,
+			]);
 			const data = new Uint8Array([]);
 			const v = new Uint8Array([0x1b]);
 			const r = new Uint8Array(32).fill(0xaa);
@@ -310,7 +311,9 @@ describe("RLP Ethereum Test Vectors", () => {
 			const timestamp = new Uint8Array([0x5f, 0x5e, 0x10, 0x0]);
 			const extraData = new Uint8Array([]);
 			const mixHash = new Uint8Array(32).fill(0x11);
-			const nonce = new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42]);
+			const nonce = new Uint8Array([
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42,
+			]);
 
 			const header = [
 				parentHash,
@@ -408,7 +411,12 @@ describe("RLP Ethereum Test Vectors", () => {
 		});
 
 		it("rejects oversized length prefix", () => {
-			const invalid = new Uint8Array([0xb9, 0xff, 0xff, ...new Uint8Array(100)]);
+			const invalid = new Uint8Array([
+				0xb9,
+				0xff,
+				0xff,
+				...new Uint8Array(100),
+			]);
 			expect(() => Rlp.decode(invalid)).toThrow();
 		});
 

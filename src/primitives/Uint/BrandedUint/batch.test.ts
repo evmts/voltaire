@@ -21,11 +21,7 @@ describe("Uint batch operations", () => {
 
 	describe("product", () => {
 		it("multiplies multiple values", () => {
-			const result = Uint.product(
-				Uint.from(10n),
-				Uint.from(5n),
-				Uint.from(2n),
-			);
+			const result = Uint.product(Uint.from(10n), Uint.from(5n), Uint.from(2n));
 			expect(result).toBe(100n);
 		});
 
@@ -42,11 +38,7 @@ describe("Uint batch operations", () => {
 
 	describe("min", () => {
 		it("finds minimum of multiple values", () => {
-			const result = Uint.min(
-				Uint.from(100n),
-				Uint.from(50n),
-				Uint.from(75n),
-			);
+			const result = Uint.min(Uint.from(100n), Uint.from(50n), Uint.from(75n));
 			expect(result).toBe(50n);
 		});
 
@@ -62,11 +54,7 @@ describe("Uint batch operations", () => {
 
 	describe("max", () => {
 		it("finds maximum of multiple values", () => {
-			const result = Uint.max(
-				Uint.from(100n),
-				Uint.from(50n),
-				Uint.from(75n),
-			);
+			const result = Uint.max(Uint.from(100n), Uint.from(50n), Uint.from(75n));
 			expect(result).toBe(100n);
 		});
 

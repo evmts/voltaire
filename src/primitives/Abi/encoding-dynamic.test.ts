@@ -225,10 +225,7 @@ describe("Abi.encodeParameters - dynamic arrays", () => {
 
 describe("Abi.encodeParameters - fixed arrays", () => {
 	it("encodes uint256[2]", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "uint256[2]" }],
-			[[1n, 2n]],
-		);
+		const encoded = Abi.encodeParameters([{ type: "uint256[2]" }], [[1n, 2n]]);
 		// Fixed array is encoded inline: 2 * 32 = 64 bytes
 		expect(encoded.length).toBe(64);
 		expect(encoded[31]).toBe(1);
@@ -316,7 +313,14 @@ describe("Abi.encodeParameters - tuples", () => {
 					],
 				},
 			],
-			[[255n, "0x0000000000000000000000000000000000000001", true, "0x12345678"]],
+			[
+				[
+					255n,
+					"0x0000000000000000000000000000000000000001",
+					true,
+					"0x12345678",
+				],
+			],
 		);
 		expect(encoded.length).toBe(128);
 	});

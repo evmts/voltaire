@@ -208,10 +208,7 @@ describe("Abi.encodePacked - dynamic bytes", () => {
 	});
 
 	it("encodes multiple bytes concatenated", () => {
-		const result = Abi.encodePacked(
-			["bytes", "bytes"],
-			["0x1234", "0x5678"],
-		);
+		const result = Abi.encodePacked(["bytes", "bytes"], ["0x1234", "0x5678"]);
 		expect(result).toMatch(/0x12345678/i);
 	});
 });
@@ -288,7 +285,10 @@ describe("Abi.encodePacked - fixed arrays", () => {
 	});
 
 	it("encodes uint8[4]", () => {
-		const result = Abi.encodePacked(["uint8[4]"], [[0x12n, 0x34n, 0x56n, 0x78n]]);
+		const result = Abi.encodePacked(
+			["uint8[4]"],
+			[[0x12n, 0x34n, 0x56n, 0x78n]],
+		);
 		expect(result).toMatch(/0x12345678/i);
 	});
 
@@ -378,8 +378,7 @@ describe("Abi.encodePacked - real-world use cases", () => {
 		const deployer = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3" as Address;
 		const salt =
 			0x0000000000000000000000000000000000000000000000000000000000000001n;
-		const bytecodeHash =
-			"0x" + "aa".repeat(32); // keccak256 of bytecode
+		const bytecodeHash = "0x" + "aa".repeat(32); // keccak256 of bytecode
 		const result = Abi.encodePacked(
 			["uint8", "address", "uint256", "bytes32"],
 			[prefix, deployer, salt, bytecodeHash],
@@ -414,27 +413,25 @@ describe("Abi.encodePacked - error handling", () => {
 	});
 
 	it("throws on too many values", () => {
-		expect(() =>
-			Abi.encodePacked(["uint256"], [42n, 100n] as any),
-		).toThrow(AbiParameterMismatchError);
+		expect(() => Abi.encodePacked(["uint256"], [42n, 100n] as any)).toThrow(
+			AbiParameterMismatchError,
+		);
 	});
 
 	it("throws on invalid bytes length", () => {
-		expect(() =>
-			Abi.encodePacked(["bytes4"], ["0x12"]), // Too short
+		expect(
+			() => Abi.encodePacked(["bytes4"], ["0x12"]), // Too short
 		).toThrow();
 	});
 
 	it("throws on fixed array length mismatch", () => {
-		expect(() =>
-			Abi.encodePacked(["uint256[3]"], [[1n, 2n]]), // Only 2 elements
+		expect(
+			() => Abi.encodePacked(["uint256[3]"], [[1n, 2n]]), // Only 2 elements
 		).toThrow();
 	});
 
 	it("handles unsupported type gracefully", () => {
-		expect(() =>
-			Abi.encodePacked(["invalid_type" as any], [42n]),
-		).toThrow();
+		expect(() => Abi.encodePacked(["invalid_type" as any], [42n])).toThrow();
 	});
 });
 
@@ -458,25 +455,24 @@ describe("Abi.encodePacked - edge cases", () => {
 	});
 
 	it("encodes max uint values", () => {
-		const result = Abi.encodePacked(
-			["uint8", "uint16"],
-			[255n, 65535n],
-		);
+		const result = Abi.encodePacked(["uint8", "uint16"], [255n, 65535n]);
 		expect(result).toMatch(/0xffffff/i);
 	});
 
 	it("encodes all negative int values", () => {
-		const result = Abi.encodePacked(
-			["int8", "int16"],
-			[-1n, -1n],
-		);
+		const result = Abi.encodePacked(["int8", "int16"], [-1n, -1n]);
 		expect(result).toMatch(/0xffffff/i); // All 0xff
 	});
 
 	it("encodes nested arrays", () => {
 		const result = Abi.encodePacked(
 			["uint8[][]"],
-			[[[1n, 2n], [3n, 4n]]],
+			[
+				[
+					[1n, 2n],
+					[3n, 4n],
+				],
+			],
 		);
 		expect(result).toBeInstanceOf(String);
 	});
@@ -523,10 +519,9 @@ describe("Abi.encodePacked vs standard encoding", () => {
 		const value =
 			0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn;
 		const packed = Abi.encodePacked(["uint256"], [value]);
-		const standard = Abi.encodeParameters(
-			[{ type: "uint256" }],
-			[value] as any,
-		);
+		const standard = Abi.encodeParameters([{ type: "uint256" }], [
+			value,
+		] as any);
 
 		// Both should be 32 bytes
 		expect(packed.length).toBe(standard.length);

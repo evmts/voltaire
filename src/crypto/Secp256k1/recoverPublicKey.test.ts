@@ -350,7 +350,8 @@ describe("Secp256k1.recoverPublicKey", () => {
 				s = (s << 8n) | BigInt(signature.s[i] ?? 0);
 			}
 			const halfN =
-				0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n / 2n;
+				0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n /
+				2n;
 			expect(s <= halfN).toBe(true);
 
 			// Should recover correctly

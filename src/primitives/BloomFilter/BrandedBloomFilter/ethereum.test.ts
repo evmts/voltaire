@@ -286,12 +286,12 @@ describe("BloomFilter - Ethereum Specification", () => {
 			}
 
 			for (let i = 0; i < logCount; i++) {
-				expect(BloomFilter.contains(receiptBloom, addresses[i] as Uint8Array)).toBe(
-					true,
-				);
-				expect(BloomFilter.contains(receiptBloom, topics[i] as Uint8Array)).toBe(
-					true,
-				);
+				expect(
+					BloomFilter.contains(receiptBloom, addresses[i] as Uint8Array),
+				).toBe(true);
+				expect(
+					BloomFilter.contains(receiptBloom, topics[i] as Uint8Array),
+				).toBe(true);
 			}
 		});
 	});
@@ -310,15 +310,15 @@ describe("BloomFilter - Ethereum Specification", () => {
 			let blockBloom = BloomFilter.merge(receipt1, receipt2);
 			blockBloom = BloomFilter.merge(blockBloom, receipt3);
 
-			expect(BloomFilter.contains(blockBloom, new Uint8Array(20).fill(0x01))).toBe(
-				true,
-			);
-			expect(BloomFilter.contains(blockBloom, new Uint8Array(20).fill(0x02))).toBe(
-				true,
-			);
-			expect(BloomFilter.contains(blockBloom, new Uint8Array(20).fill(0x03))).toBe(
-				true,
-			);
+			expect(
+				BloomFilter.contains(blockBloom, new Uint8Array(20).fill(0x01)),
+			).toBe(true);
+			expect(
+				BloomFilter.contains(blockBloom, new Uint8Array(20).fill(0x02)),
+			).toBe(true);
+			expect(
+				BloomFilter.contains(blockBloom, new Uint8Array(20).fill(0x03)),
+			).toBe(true);
 		});
 
 		it("block bloom density increases with transactions", () => {

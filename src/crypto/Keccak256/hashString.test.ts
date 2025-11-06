@@ -241,7 +241,8 @@ describe("Keccak256.hashString", () => {
 		});
 
 		it("should hash EIP-712 domain separators", () => {
-			const domain = "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
+			const domain =
+				"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
 			const result = hashString(domain);
 			expect(result.length).toBe(32);
 		});

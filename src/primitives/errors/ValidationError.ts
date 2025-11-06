@@ -14,9 +14,12 @@ export class ValidationError extends PrimitiveError {
 			value: any;
 			expected: string;
 			context?: Record<string, any>;
-		}
+		},
 	) {
-		super(message, { code: options.code || "VALIDATION_ERROR", context: options.context });
+		super(message, {
+			code: options.code || "VALIDATION_ERROR",
+			context: options.context,
+		});
 		this.name = "ValidationError";
 		this.value = options.value;
 		this.expected = options.expected;
@@ -34,7 +37,7 @@ export class InvalidFormatError extends ValidationError {
 			value: any;
 			expected: string;
 			context?: Record<string, any>;
-		}
+		},
 	) {
 		super(message, { ...options, code: options.code || "INVALID_FORMAT" });
 		this.name = "InvalidFormatError";
@@ -52,7 +55,7 @@ export class InvalidLengthError extends ValidationError {
 			value: any;
 			expected: string;
 			context?: Record<string, any>;
-		}
+		},
 	) {
 		super(message, { ...options, code: options.code || "INVALID_LENGTH" });
 		this.name = "InvalidLengthError";
@@ -70,7 +73,7 @@ export class InvalidRangeError extends ValidationError {
 			value: any;
 			expected: string;
 			context?: Record<string, any>;
-		}
+		},
 	) {
 		super(message, { ...options, code: options.code || "INVALID_RANGE" });
 		this.name = "InvalidRangeError";
@@ -88,7 +91,7 @@ export class InvalidChecksumError extends ValidationError {
 			value: any;
 			expected: string;
 			context?: Record<string, any>;
-		}
+		},
 	) {
 		super(message, { ...options, code: options.code || "INVALID_CHECKSUM" });
 		this.name = "InvalidChecksumError";

@@ -233,8 +233,7 @@ describe("SHA256.hashHex", () => {
 	});
 
 	it("should hash 32-byte hex (typical Ethereum hash)", () => {
-		const hexHash =
-			"0x" + "a".repeat(64); // 32 bytes
+		const hexHash = "0x" + "a".repeat(64); // 32 bytes
 		const hash = SHA256.hashHex(hexHash);
 
 		expect(hash.length).toBe(32);

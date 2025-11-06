@@ -19,7 +19,11 @@ describe("TransactionEIP4844.serialize", () => {
 			data: new Uint8Array(),
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
-			blobVersionedHashes: [Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001")],
+			blobVersionedHashes: [
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
@@ -45,9 +49,15 @@ describe("TransactionEIP4844.serialize", () => {
 			accessList: [],
 			maxFeePerBlobGas: 2000000000n,
 			blobVersionedHashes: [
-				Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001"),
-				Hash.from("0x0100000000000000000000000000000000000000000000000000000000000002"),
-				Hash.from("0x0100000000000000000000000000000000000000000000000000000000000003"),
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000002",
+				),
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000003",
+				),
 			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
@@ -76,7 +86,11 @@ describe("TransactionEIP4844.serialize", () => {
 				},
 			],
 			maxFeePerBlobGas: 2000000000n,
-			blobVersionedHashes: [Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001")],
+			blobVersionedHashes: [
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
@@ -100,7 +114,11 @@ describe("TransactionEIP4844.serialize", () => {
 			data: new Uint8Array(),
 			accessList: [],
 			maxFeePerBlobGas: maxUint256,
-			blobVersionedHashes: [Hash.from("0x0100000000000000000000000000000000000000000000000000000000000001")],
+			blobVersionedHashes: [
+				Hash.from(
+					"0x0100000000000000000000000000000000000000000000000000000000000001",
+				),
+			],
 			yParity: 0,
 			r: new Uint8Array(32).fill(1),
 			s: new Uint8Array(32).fill(2),
@@ -112,7 +130,9 @@ describe("TransactionEIP4844.serialize", () => {
 
 	it("serializes transaction with 6 blobs (max per block)", () => {
 		const blobHashes = Array.from({ length: 6 }, (_, i) =>
-			Hash.from(`0x010000000000000000000000000000000000000000000000000000000000000${i}`),
+			Hash.from(
+				`0x010000000000000000000000000000000000000000000000000000000000000${i}`,
+			),
 		);
 
 		const tx: BrandedTransactionEIP4844 = {

@@ -38,10 +38,9 @@ describe("Abi.decodeParameters - uint types", () => {
 	});
 
 	it("decodes uint32", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "uint32" }],
-			[123456789n] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "uint32" }], [
+			123456789n,
+		] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint32" }], encoded);
 		expect(decoded).toEqual([123456789n]);
 	});
@@ -55,10 +54,7 @@ describe("Abi.decodeParameters - uint types", () => {
 
 	it("decodes uint128", () => {
 		const value = 0x123456789abcdef0123456789abcdef0n;
-		const encoded = Abi.encodeParameters(
-			[{ type: "uint128" }],
-			[value] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "uint128" }], [value] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint128" }], encoded);
 		expect(decoded).toEqual([value]);
 	});
@@ -129,19 +125,17 @@ describe("Abi.decodeParameters - int types", () => {
 	});
 
 	it("decodes int32 positive", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "int32" }],
-			[123456789n] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "int32" }], [
+			123456789n,
+		] as any);
 		const decoded = Abi.decodeParameters([{ type: "int32" }], encoded);
 		expect(decoded).toEqual([123456789n]);
 	});
 
 	it("decodes int32 negative", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "int32" }],
-			[-123456789n] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "int32" }], [
+			-123456789n,
+		] as any);
 		const decoded = Abi.decodeParameters([{ type: "int32" }], encoded);
 		expect(decoded).toEqual([-123456789n]);
 	});
@@ -159,10 +153,9 @@ describe("Abi.decodeParameters - int types", () => {
 	});
 
 	it("decodes int256 negative", () => {
-		const encoded = Abi.encodeParameters(
-			[{ type: "int256" }],
-			[-12345n] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "int256" }], [
+			-12345n,
+		] as any);
 		const decoded = Abi.decodeParameters([{ type: "int256" }], encoded);
 		expect(decoded).toEqual([-12345n]);
 	});
@@ -448,10 +441,9 @@ describe("Abi.decodeParameters - tuples", () => {
 describe("Abi round-trip encoding/decoding", () => {
 	it("round-trips uint256", () => {
 		const original = 123456789n;
-		const encoded = Abi.encodeParameters(
-			[{ type: "uint256" }],
-			[original] as any,
-		);
+		const encoded = Abi.encodeParameters([{ type: "uint256" }], [
+			original,
+		] as any);
 		const decoded = Abi.decodeParameters([{ type: "uint256" }], encoded);
 		expect(decoded).toEqual([original]);
 	});
@@ -543,10 +535,7 @@ describe("Abi.decodeParameters - error handling", () => {
 		const encoded = Abi.encodeParameters([{ type: "uint256" }], [42n] as any);
 		// Try to decode with wrong number of parameters
 		expect(() =>
-			Abi.decodeParameters(
-				[{ type: "uint256" }, { type: "uint256" }],
-				encoded,
-			),
+			Abi.decodeParameters([{ type: "uint256" }, { type: "uint256" }], encoded),
 		).toThrow();
 	});
 

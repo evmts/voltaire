@@ -78,9 +78,7 @@ describe("AccessList JSON-RPC format", () => {
 		const addr1 = createAddress(1);
 		const key1 = createStorageKey(10);
 
-		const validList: AccessListType = [
-			{ address: addr1, storageKeys: [key1] },
-		];
+		const validList: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 
 		expect(() => AccessList.assertValid(validList)).not.toThrow();
 	});
@@ -407,9 +405,7 @@ describe("AccessList transaction scenarios", () => {
 		const large: AccessListType = [
 			{
 				address: createAddress(1),
-				storageKeys: Array.from({ length: 15 }, (_, i) =>
-					createStorageKey(i),
-				),
+				storageKeys: Array.from({ length: 15 }, (_, i) => createStorageKey(i)),
 			},
 		];
 
@@ -505,20 +501,14 @@ describe("AccessList complex scenarios", () => {
 		let list: AccessListType = AccessList.create();
 
 		// Add contracts as they're discovered during simulation
-		const contracts = Array.from({ length: 5 }, (_, i) =>
-			createAddress(i + 1),
-		);
+		const contracts = Array.from({ length: 5 }, (_, i) => createAddress(i + 1));
 
 		for (const contract of contracts) {
 			list = AccessList.withAddress(list, contract);
 
 			// Add storage slots for each contract
 			for (let i = 0; i < 3; i++) {
-				list = AccessList.withStorageKey(
-					list,
-					contract,
-					createStorageKey(i),
-				);
+				list = AccessList.withStorageKey(list, contract, createStorageKey(i));
 			}
 		}
 
@@ -550,7 +540,11 @@ describe("AccessList complex scenarios", () => {
 
 		// Multiple transformations
 		const withAddr = AccessList.withAddress(original, createAddress(2));
-		const withKey = AccessList.withStorageKey(withAddr, createAddress(1), createStorageKey(2));
+		const withKey = AccessList.withStorageKey(
+			withAddr,
+			createAddress(1),
+			createStorageKey(2),
+		);
 		const deduped = AccessList.deduplicate(withKey);
 		const merged = AccessList.merge(deduped, original);
 

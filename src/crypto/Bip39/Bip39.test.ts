@@ -47,17 +47,20 @@ describe("Bip39", () => {
 
 	describe("validateMnemonic", () => {
 		it("validates correct 12-word mnemonic", () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			expect(Bip39.validateMnemonic(mnemonic)).toBe(true);
 		});
 
 		it("validates correct 24-word mnemonic", () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art";
 			expect(Bip39.validateMnemonic(mnemonic)).toBe(true);
 		});
 
 		it("rejects mnemonic with invalid checksum", () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
 			expect(Bip39.validateMnemonic(mnemonic)).toBe(false);
 		});
 
@@ -67,7 +70,8 @@ describe("Bip39", () => {
 		});
 
 		it("rejects mnemonic with invalid word", () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon notaword";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon notaword";
 			expect(Bip39.validateMnemonic(mnemonic)).toBe(false);
 		});
 
@@ -79,69 +83,93 @@ describe("Bip39", () => {
 	describe("mnemonicToSeed", () => {
 		// Official BIP-39 test vectors
 		it("derives seed from mnemonic without passphrase (vector 1)", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 
 			expect(seed).toBeInstanceOf(Uint8Array);
 			expect(seed.length).toBe(64);
 
-			const expectedHex = "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4";
-			const actualHex = Array.from(seed).map(b => b.toString(16).padStart(2, "0")).join("");
+			const expectedHex =
+				"5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4";
+			const actualHex = Array.from(seed)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
 			expect(actualHex).toBe(expectedHex);
 		});
 
 		it("derives seed from mnemonic with passphrase (vector 2)", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = await Bip39.mnemonicToSeed(mnemonic, "TREZOR");
 
 			expect(seed).toBeInstanceOf(Uint8Array);
 			expect(seed.length).toBe(64);
 
-			const expectedHex = "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04";
-			const actualHex = Array.from(seed).map(b => b.toString(16).padStart(2, "0")).join("");
+			const expectedHex =
+				"c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04";
+			const actualHex = Array.from(seed)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
 			expect(actualHex).toBe(expectedHex);
 		});
 
 		it("derives seed from 12-word mnemonic without passphrase (vector 3)", async () => {
-			const mnemonic = "legal winner thank year wave sausage worth useful legal winner thank yellow";
+			const mnemonic =
+				"legal winner thank year wave sausage worth useful legal winner thank yellow";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 
 			expect(seed.length).toBe(64);
 
 			// Actual derived seed from @scure/bip39 (verified correct implementation)
-			const expectedHex = "878386efb78845b3355bd15ea4d39ef97d179cb712b77d5c12b6be415fffeffe5f377ba02bf3f8544ab800b955e51fbff09828f682052a20faa6addbbddfb096";
-			const actualHex = Array.from(seed).map(b => b.toString(16).padStart(2, "0")).join("");
+			const expectedHex =
+				"878386efb78845b3355bd15ea4d39ef97d179cb712b77d5c12b6be415fffeffe5f377ba02bf3f8544ab800b955e51fbff09828f682052a20faa6addbbddfb096";
+			const actualHex = Array.from(seed)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
 			expect(actualHex).toBe(expectedHex);
 		});
 
 		it("derives seed from mnemonic with japanese characters in passphrase", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-			const seed = await Bip39.mnemonicToSeed(mnemonic, "㍍ガバヴァぱばぐゞちぢ十人十色");
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const seed = await Bip39.mnemonicToSeed(
+				mnemonic,
+				"㍍ガバヴァぱばぐゞちぢ十人十色",
+			);
 
 			expect(seed).toBeInstanceOf(Uint8Array);
 			expect(seed.length).toBe(64);
 
-			const expectedHex = "a5a5c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8";
-			const actualHex = Array.from(seed).map(b => b.toString(16).padStart(2, "0")).join("");
+			const expectedHex =
+				"a5a5c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8c8e8c2e8c7e8c2e8";
+			const actualHex = Array.from(seed)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
 			// Note: This is just testing that it handles Unicode without crashing
 			// The actual expected value would need to be verified against a reference implementation
 			expect(actualHex.length).toBe(128);
 		});
 
 		it("derives seed from 12-word mnemonic (vector 4)", async () => {
-			const mnemonic = "letter advice cage absurd amount doctor acoustic avoid letter advice cage above";
+			const mnemonic =
+				"letter advice cage absurd amount doctor acoustic avoid letter advice cage above";
 			const seed = await Bip39.mnemonicToSeed(mnemonic);
 
 			expect(seed.length).toBe(64);
 
 			// Actual derived seed from @scure/bip39 (verified correct implementation)
-			const expectedHex = "77d6be9708c8218738934f84bbbb78a2e048ca007746cb764f0673e4b1812d176bbb173e1a291f31cf633f1d0bad7d3cf071c30e98cd0688b5bcce65ecaceb36";
-			const actualHex = Array.from(seed).map(b => b.toString(16).padStart(2, "0")).join("");
+			const expectedHex =
+				"77d6be9708c8218738934f84bbbb78a2e048ca007746cb764f0673e4b1812d176bbb173e1a291f31cf633f1d0bad7d3cf071c30e98cd0688b5bcce65ecaceb36";
+			const actualHex = Array.from(seed)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
 			expect(actualHex).toBe(expectedHex);
 		});
 
 		it("derives seed from mnemonic with special characters in passphrase", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const passphrase = "!@#$%^&*()_+-=[]{}|;:',.<>?/~`";
 			const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
 
@@ -150,12 +178,14 @@ describe("Bip39", () => {
 		});
 
 		it("throws error for invalid mnemonic", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
 			await expect(Bip39.mnemonicToSeed(mnemonic)).rejects.toThrow();
 		});
 
 		it("derives different seeds for same mnemonic with different passphrases", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed1 = await Bip39.mnemonicToSeed(mnemonic, "");
 			const seed2 = await Bip39.mnemonicToSeed(mnemonic, "password");
 
@@ -165,19 +195,24 @@ describe("Bip39", () => {
 
 	describe("mnemonicToSeedSync", () => {
 		it("derives seed synchronously", () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed = Bip39.mnemonicToSeedSync(mnemonic);
 
 			expect(seed).toBeInstanceOf(Uint8Array);
 			expect(seed.length).toBe(64);
 
-			const expectedHex = "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4";
-			const actualHex = Array.from(seed).map(b => b.toString(16).padStart(2, "0")).join("");
+			const expectedHex =
+				"5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4";
+			const actualHex = Array.from(seed)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
 			expect(actualHex).toBe(expectedHex);
 		});
 
 		it("produces same result as async version", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const passphrase = "TREZOR";
 
 			const seedAsync = await Bip39.mnemonicToSeed(mnemonic, passphrase);
@@ -251,11 +286,13 @@ describe("Bip39", () => {
 		it("handles all-zero entropy", () => {
 			const entropy = new Uint8Array(16).fill(0);
 			const mnemonic = Bip39.entropyToMnemonic(entropy);
-			expect(mnemonic).toBe("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about");
+			expect(mnemonic).toBe(
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+			);
 		});
 
 		it("handles max entropy (all 0xFF)", () => {
-			const entropy = new Uint8Array(16).fill(0xFF);
+			const entropy = new Uint8Array(16).fill(0xff);
 			const mnemonic = Bip39.entropyToMnemonic(entropy);
 			expect(Bip39.validateMnemonic(mnemonic)).toBe(true);
 		});
@@ -278,28 +315,32 @@ describe("Bip39", () => {
 		});
 
 		it("validates mnemonic case-insensitively", () => {
-			const mnemonic = "ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABOUT";
+			const mnemonic =
+				"ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABOUT";
 			// Note: BIP-39 requires lowercase, but implementation may normalize
 			const normalized = mnemonic.toLowerCase();
 			expect(Bip39.validateMnemonic(normalized)).toBe(true);
 		});
 
 		it("rejects mnemonic with extra whitespace", () => {
-			const mnemonic = "abandon  abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon  abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			// Implementation should handle or reject extra spaces
 			const isValid = Bip39.validateMnemonic(mnemonic);
 			expect(typeof isValid).toBe("boolean");
 		});
 
 		it("seed derivation is deterministic", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed1 = await Bip39.mnemonicToSeed(mnemonic);
 			const seed2 = await Bip39.mnemonicToSeed(mnemonic);
 			expect(seed1).toEqual(seed2);
 		});
 
 		it("empty passphrase and no passphrase produce same result", async () => {
-			const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+			const mnemonic =
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 			const seed1 = await Bip39.mnemonicToSeed(mnemonic, "");
 			const seed2 = await Bip39.mnemonicToSeed(mnemonic);
 			expect(seed1).toEqual(seed2);

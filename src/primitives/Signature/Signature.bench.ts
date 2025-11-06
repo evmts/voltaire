@@ -21,10 +21,9 @@ const secp256k1_v = 27;
 
 // Non-canonical secp256k1 signature (s > n/2)
 const secp256k1_s_noncanonical = new Uint8Array([
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
-	0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
-	0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b, 0xbf, 0xd2,
+	0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
 ]);
 
 // P256 test data
@@ -49,18 +48,29 @@ for (let i = 0; i < 64; i++) {
 
 // DER format test data (72 bytes - typical max size)
 const derBytes = new Uint8Array([
-	0x30, 0x46, // SEQUENCE, length 70
-	0x02, 0x21, // INTEGER r, length 33
+	0x30,
+	0x46, // SEQUENCE, length 70
+	0x02,
+	0x21, // INTEGER r, length 33
 	0x00, // padding
 	...secp256k1_r,
-	0x02, 0x21, // INTEGER s, length 33
+	0x02,
+	0x21, // INTEGER s, length 33
 	0x00, // padding
 	...secp256k1_s,
 ]);
 
 // Pre-created signatures for conversion benchmarks
-const sig_secp256k1 = Signature.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
-const sig_secp256k1_nocanonical = Signature.fromSecp256k1(secp256k1_r, secp256k1_s_noncanonical, secp256k1_v);
+const sig_secp256k1 = Signature.fromSecp256k1(
+	secp256k1_r,
+	secp256k1_s,
+	secp256k1_v,
+);
+const sig_secp256k1_nocanonical = Signature.fromSecp256k1(
+	secp256k1_r,
+	secp256k1_s_noncanonical,
+	secp256k1_v,
+);
 const sig_p256 = Signature.fromP256(p256_r, p256_s);
 const sig_ed25519 = Signature.fromEd25519(ed25519_sig);
 
@@ -174,7 +184,12 @@ bench("Signature.from - Uint8Array", () => {
 });
 
 bench("Signature.from - object {r, s, v}", () => {
-	Signature.from({ r: secp256k1_r, s: secp256k1_s, v: secp256k1_v, algorithm: "secp256k1" });
+	Signature.from({
+		r: secp256k1_r,
+		s: secp256k1_s,
+		v: secp256k1_v,
+		algorithm: "secp256k1",
+	});
 });
 
 bench("Signature.from - Ed25519 object", () => {

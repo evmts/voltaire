@@ -70,6 +70,8 @@ describe("validate", () => {
 		expect(validate("0x0123456789")).toBe("0x0123456789");
 		expect(validate("0xabcdef")).toBe("0xabcdef");
 		expect(validate("0xABCDEF")).toBe("0xABCDEF");
-		expect(validate("0x0123456789abcdefABCDEF")).toBe("0x0123456789abcdefABCDEF");
+		expect(validate("0x0123456789abcdefABCDEF")).toBe(
+			"0x0123456789abcdefABCDEF",
+		);
 	});
 });
