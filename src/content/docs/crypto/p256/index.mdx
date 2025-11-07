@@ -418,40 +418,54 @@ This enables:
 - **Enterprise**: Hardware security modules (HSM) often default to P-256
 - **Government**: PIV smart cards for identity verification
 
-## P-256 vs Secp256k1
+## Comprehensive Comparison
+
+For detailed technical comparison including performance benchmarks, security analysis, and use case recommendations, see:
+
+**[Elliptic Curve Comparison: secp256k1 vs P-256](/crypto/comparison)**
+
+### Quick Comparison
 
 | Feature | P-256 | Secp256k1 |
 |---------|-------|-----------|
-| **Security Level** | 128-bit | 128-bit |
-| **Key Size** | 32 bytes | 32 bytes |
-| **Public Key** | 64 bytes | 64 bytes |
-| **Signature Size** | 64 bytes (r,s) | 65 bytes (r,s,v) |
-| **Standardization** | NIST, FIPS | SECG, Bitcoin |
-| **Ethereum Core** | No (L2 only) | Yes (required) |
-| **WebAuthn** | Yes (default) | No |
-| **iOS Secure Enclave** | Yes (only curve) | No |
-| **Hardware Support** | Excellent | Limited |
+| **Ethereum Core** | No (L2 only) | ✅ Required |
+| **WebAuthn** | ✅ Default | Not supported |
+| **iOS Secure Enclave** | ✅ Only curve | Not supported |
+| **Hardware Support** | ✅ Excellent | Limited |
 | **Performance** | Similar | Slightly faster |
-| **Trust Model** | NIST (transparent) | Community (verifiable) |
 
 **When to use P-256**:
-- WebAuthn / FIDO2 authentication
-- iOS Secure Enclave integration
-- Hardware wallet support (YubiKey, TPM)
-- Enterprise / government compliance (FIPS)
-- Account abstraction with passkeys
+- ✅ WebAuthn / FIDO2 authentication
+- ✅ iOS Secure Enclave integration
+- ✅ Hardware wallet support (YubiKey, TPM)
+- ✅ Enterprise / government compliance (FIPS)
+- ✅ Account abstraction with passkeys
 
 **When to use Secp256k1**:
-- Ethereum transaction signing (required)
-- Bitcoin compatibility
-- EVM precompile support (`ecRecover`)
-- Traditional EOA accounts
+- ✅ Ethereum transaction signing (required)
+- ✅ Bitcoin compatibility
+- ✅ EVM precompile support (`ecRecover`)
+- ✅ Traditional EOA accounts
+
+## Technical Deep Dive
+
+For implementation details, security considerations, and usage patterns similar to secp256k1:
+
+- **Signing** - ECDSA signing with RFC 6979 (deterministic nonces)
+- **Verification** - Signature verification algorithm
+- **Key Derivation** - Private → public key via elliptic curve multiplication
+- **ECDH** - Diffie-Hellman key exchange (unique to P-256)
+- **Test Vectors** - NIST CAVP test vectors
+- **Security** - Side-channel resistance, constant-time operations
+- **Performance** - Benchmarks vs secp256k1
+- **WebAuthn Integration** - Face ID, Touch ID, YubiKey
 
 ## Related
 
-- [Crypto: Secp256k1](/crypto/secp256k1) - Ethereum's ECDSA curve
+- **[Elliptic Curve Comparison](/crypto/comparison)** - Comprehensive secp256k1 vs P-256 comparison
+- [Crypto: Secp256k1](/crypto/secp256k1) - Ethereum's ECDSA curve (with full documentation)
 - [Crypto: Ed25519](/crypto/ed25519) - Edwards curve signatures
 - [Crypto: X25519](/crypto/x25519) - Curve25519 key exchange
 - [Primitives: Signature](/primitives/signature) - Generic signature type
 - [Primitives: Hash](/primitives/hash) - Message hashing (SHA-256 for WebAuthn)
-- RIP-7212: P-256 signature verification precompile
+- [RIP-7212](https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md) - P-256 precompile proposal

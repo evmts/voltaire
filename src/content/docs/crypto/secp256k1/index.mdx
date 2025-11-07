@@ -387,6 +387,26 @@ const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
 const signerAddress = Address.fromPublicKey(publicKey);
 ```
 
+## In-Depth Documentation
+
+Comprehensive technical documentation:
+
+- [Signing](/crypto/secp256k1/signing) - ECDSA signing with RFC 6979 deterministic nonces
+- [Verification](/crypto/secp256k1/verification) - Signature verification algorithm
+- [Key Derivation](/crypto/secp256k1/key-derivation) - Private → public key derivation
+- [Recovery](/crypto/secp256k1/recovery) - Public key recovery (ecRecover)
+- [Point Operations](/crypto/secp256k1/point-operations) - Elliptic curve arithmetic
+- [Test Vectors](/crypto/secp256k1/test-vectors) - Official test vectors (RFC 6979, IETF, Ethereum)
+- [Security](/crypto/secp256k1/security) - Side-channel attacks, malleability, best practices
+- [Performance](/crypto/secp256k1/performance) - Benchmarks and optimization techniques
+- [Usage Patterns](/crypto/secp256k1/usage-patterns) - Transaction signing, EIP-191, EIP-712
+
+## Comparison with Other Curves
+
+For comprehensive technical comparison with P-256 including performance, security, and use case analysis:
+
+**[Elliptic Curve Comparison: secp256k1 vs P-256](/crypto/comparison)**
+
 ## Related
 
 - [Primitives: Signature](/primitives/signature) - Generic signature type

@@ -426,9 +426,229 @@ For modern 64-bit systems, BLAKE2b is recommended.
 
 BLAKE2 remains the standard choice for most applications. BLAKE3 offers better performance on multi-core systems but has less deployment history.
 
+## Constants
+
+```typescript
+Blake2.MAX_OUTPUT_SIZE  // 64 - Maximum output size in bytes
+Blake2.MIN_OUTPUT_SIZE  // 1 - Minimum output size in bytes
+Blake2.BLOCK_SIZE       // 128 - Internal block size in bytes
+```
+
+## Test Vectors
+
+### RFC 7693 Official Test Vectors
+
+Empty input (64-byte output):
+```typescript
+Blake2.hash(new Uint8Array([]))
+// Uint8Array(64) [
+//   0x78, 0x6a, 0x02, 0xf7, 0x42, 0x01, 0x59, 0x03,
+//   0xc6, 0xc6, 0xfd, 0x85, 0x25, 0x52, 0xd2, 0x72,
+//   ...
+// ]
+```
+
+"abc" (64-byte output):
+```typescript
+Blake2.hash(new Uint8Array([0x61, 0x62, 0x63]))
+// Uint8Array(64) [
+//   0xba, 0x80, 0xa5, 0x3f, 0x98, 0x1c, 0x4d, 0x0d,
+//   ...
+// ]
+```
+
+See full test vectors in the implementation tests.
+
+## Security Considerations
+
+### Cryptographic Strength
+
+Blake2 provides strong cryptographic security:
+- **Collision resistance**: No known attacks
+- **Preimage resistance**: Computationally infeasible
+- **Second preimage resistance**: Secure
+- **No length extension**: Immune to length extension attacks
+
+### Security vs SHA-2 and SHA-3
+
+- At least as secure as SHA-3
+- Faster than both SHA-2 and SHA-3 in software
+- Modern design with conservative security margins
+
+<Aside type="tip" title="Modern Alternative">
+Blake2 represents state-of-the-art hash function design. It's secure, fast, and simple - often a better choice than SHA-256 for new applications where regulatory compliance isn't required.
+</Aside>
+
+## Performance
+
+### Speed Comparison
+
+Blake2b is significantly faster than MD5, SHA-1, SHA-2, and SHA-3:
+
+```
+Algorithm          Software Speed     with Hardware Accel
+---------          --------------     -------------------
+Blake2b            700 MB/s           700 MB/s
+SHA-256            500 MB/s           3200 MB/s (SHA-NI)
+SHA-3              150 MB/s           150 MB/s
+MD5                600 MB/s (broken)  -
+```
+
+**Key Insight:** Blake2 excels in software performance. SHA-256 is faster with hardware acceleration but slower in software.
+
+### When Blake2 Outperforms SHA-256
+
+- Embedded systems without SHA-NI
+- Server environments prioritizing software performance
+- Applications needing variable output length
+- Streaming data processing
+
+## Implementation Details
+
+### TypeScript Implementation
+Uses @noble/hashes pure TypeScript implementation:
+```typescript
+import { blake2b } from "@noble/hashes/blake2.js";
+
+export function hash(
+  data: Uint8Array | string,
+  outputLength: number = 64
+): Uint8Array {
+  const input = typeof data === "string"
+    ? new TextEncoder().encode(data)
+    : data;
+  return blake2b(input, { dkLen: outputLength });
+}
+```
+
+### Zig Implementation
+Custom Blake2b implementation in `src/crypto/blake2.zig`:
+- Follows RFC 7693 specification
+- Optimized for 64-bit platforms
+- **UNAUDITED**: Custom crypto code without security audit
+- Variable output length (1-64 bytes)
+
+<Aside type="caution" title="Unaudited Warning">
+The Zig Blake2b implementation is custom cryptographic code that has NOT been professionally audited. The @noble/hashes TypeScript implementation is well-tested and recommended for production use.
+</Aside>
+
+## Use Cases
+
+### Zcash
+
+Zcash uses Blake2 in its Equihash proof-of-work algorithm:
+```typescript
+// Simplified Zcash-style usage
+const header = new Uint8Array(140);
+const hash = Blake2.hash(header, 32);
+```
+
+### IPFS Content Addressing
+
+```typescript
+function contentHash(data: Uint8Array): Uint8Array {
+  return Blake2.hash(data, 32);
+}
+```
+
+### Fast File Checksums
+
+```typescript
+async function checksumFile(file: File): Promise<Uint8Array> {
+  const chunkSize = 1024 * 1024; // 1MB chunks
+  const chunks: Uint8Array[] = [];
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+    chunks.push(new Uint8Array(chunk));
+  }
+
+  const combined = new Uint8Array(file.size);
+  let position = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, position);
+    position += chunk.length;
+  }
+
+  return Blake2.hash(combined, 32);
+}
+```
+
+### Variable-Length Hashes
+
+```typescript
+// Different hash sizes for different purposes
+const addressHash = Blake2.hash(data, 20);    // 20 bytes
+const signatureHash = Blake2.hash(data, 32);  // 32 bytes
+const maxHash = Blake2.hash(data, 64);        // 64 bytes (max security)
+```
+
+## Comparison
+
+### Blake2 vs SHA-256
+
+**Blake2:**
+- ✅ 2-4x faster in software
+- ✅ Variable output length
+- ✅ Modern design (2012)
+- ❌ Not NIST standardized
+
+**SHA-256:**
+- ✅ NIST standardized
+- ✅ Hardware acceleration (SHA-NI)
+- ✅ Regulatory compliance
+- ❌ Slower in software
+- ❌ Fixed 32-byte output
+
+**When to use Blake2:**
+- Maximum software performance
+- Variable output length needed
+- No compliance requirements
+
+**When to use SHA-256:**
+- Regulatory compliance needed
+- Hardware acceleration available
+- Standard conformance required
+
+### Blake2 vs Keccak-256
+
+**Blake2:**
+- ✅ 3-4x faster than Keccak
+- ✅ Variable output length
+- ✅ Simpler design
+
+**Keccak-256:**
+- ✅ Ethereum compatibility
+- ✅ SHA-3 family
+- ❌ Slower
+
+### Blake2 vs SHA-3
+
+**Blake2:**
+- ✅ Significantly faster (4-5x)
+- ✅ Less memory usage
+- ✅ Variable output length
+
+**SHA-3:**
+- ✅ NIST standard
+- ✅ Different design paradigm (sponge)
+- ❌ Much slower
+
+## Further Reading
+
+Explore comprehensive Blake2 documentation:
+
+- **[API Reference](/crypto/blake2/api-reference)** - Complete function reference (TODO)
+- **[Test Vectors](/crypto/blake2/test-vectors)** - RFC 7693 test vectors (TODO)
+- **[Security](/crypto/blake2/security)** - Security analysis (TODO)
+- **[Performance](/crypto/blake2/performance)** - Detailed benchmarks (TODO)
+- **[Usage Patterns](/crypto/blake2/usage-patterns)** - Common patterns (TODO)
+- **[Comparison](/crypto/blake2/comparison)** - vs SHA-256, Keccak-256, SHA-3 (TODO)
+
 ## Related
 
 - [SHA256](/crypto/sha256) - Industry standard, hardware accelerated
 - [Keccak256](/crypto/keccak256) - Ethereum's hash function
 - [RIPEMD160](/crypto/ripemd160) - Legacy 160-bit hash
 - [Hash Primitive](/primitives/hash) - 32-byte hash type
+- [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693) - Blake2 specification

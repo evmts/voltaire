@@ -347,9 +347,9 @@ const encrypted = chacha20poly1305(key, nonce).encrypt(privateKey);
 
 **Recommendation: Either (based on size)**
 
-**Small files (<100 MB):** Either works well
+**Small files (&lt;100 MB):** Either works well
 
-**Large files (>100 MB):** AES-GCM (with AES-NI)
+**Large files (&gt;100 MB):** AES-GCM (with AES-NI)
 - Faster throughput with hardware
 - Better for bulk encryption
 
