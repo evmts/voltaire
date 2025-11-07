@@ -2,6 +2,8 @@
 title: "Signature"
 ---
 
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
 # Signature
 
 Unified cryptographic signature primitive supporting multiple algorithms (secp256k1, P-256, Ed25519).
@@ -10,21 +12,159 @@ Unified cryptographic signature primitive supporting multiple algorithms (secp25
 
 Signature provides algorithm-agnostic signature handling with automatic metadata tracking. Supports ECDSA (secp256k1, P-256) and EdDSA (Ed25519) with format conversions (compact, DER).
 
-## Factory
+**Key Features:**
+- Multi-algorithm support (secp256k1, P-256, Ed25519)
+- Format conversions (compact, DER, RSV)
+- Signature validation and canonicalization
+- Public key recovery (secp256k1 only)
+- Zero-copy operations where possible
+- WASM acceleration available
+
+## Documentation
+
+<CardGrid>
+  <LinkCard
+    title="Constructors"
+    description="Create signatures from components, DER, compact formats, or algorithm-specific constructors"
+    href="./constructors"
+  />
+  <LinkCard
+    title="Conversions"
+    description="Convert between signature formats: compact, DER, RSV, and raw bytes"
+    href="./conversions"
+  />
+  <LinkCard
+    title="Validation"
+    description="Validate signatures, check canonicality, and prevent malleability attacks"
+    href="./validation"
+  />
+  <LinkCard
+    title="Recovery"
+    description="Recover public keys and addresses from secp256k1 signatures using recovery ID"
+    href="./recovery"
+  />
+  <LinkCard
+    title="Utilities"
+    description="Extract components, compare signatures, and type guards"
+    href="./utilities"
+  />
+  <LinkCard
+    title="Formats"
+    description="Compare signature formats: compact (64B), DER (variable), RSV, and EIP-2098"
+    href="./formats"
+  />
+  <LinkCard
+    title="EIP-2098"
+    description="Compact 64-byte format with embedded recovery ID for gas savings"
+    href="./eip-2098"
+  />
+  <LinkCard
+    title="Usage Patterns"
+    description="Real-world examples: Ethereum transactions, EIP-712, personal_sign"
+    href="./usage-patterns"
+  />
+  <LinkCard
+    title="WASM"
+    description="WASM-accelerated signature operations for improved performance"
+    href="./wasm"
+  />
+  <LinkCard
+    title="Branded Type"
+    description="Type definition and metadata structure"
+    href="./branded-signature"
+  />
+</CardGrid>
+
+## Signature Format Comparison
+
+| Format | Size | Recovery | Use Case |
+|--------|------|----------|----------|
+| **Compact** | 64 bytes | ❌ No | Standard ECDSA storage |
+| **Compact+V** | 65 bytes | ✅ Yes | Ethereum transactions |
+| **DER** | ~70-72 bytes | ❌ No | Bitcoin, X.509 certificates |
+| **EIP-2098** | 64 bytes | ✅ Yes (embedded) | Gas-optimized Ethereum |
+
+See [Signature Formats](./formats.mdx) for detailed comparison.
+
+## Quick Start
 
 ```typescript
-Signature.from(value: SignatureInput): BrandedSignature
+import { Signature, Hex } from '@tevm/voltaire';
+
+// Create from transaction components
+const sig = Signature.fromSecp256k1(
+  Hex.toBytes('0x1234...'), // r (32 bytes)
+  Hex.toBytes('0x5678...'), // s (32 bytes)
+  27                         // v (recovery ID)
+);
+
+// Or use universal constructor
+const sig2 = Signature.from({
+  r: rBytes,
+  s: sBytes,
+  v: 27,
+  algorithm: 'secp256k1'
+});
+
+// Ensure canonical form (prevent malleability)
+const canonical = Signature.normalize(sig);
+console.log(Signature.isCanonical(canonical)); // true
+
+// Convert between formats
+const compact = Signature.toCompact(sig);    // 65 bytes (r + s + v)
+const der = Signature.toDER(sig);            // ~70 bytes (ASN.1 encoded)
+
+// Extract components
+const r = Signature.getR(sig);  // 32 bytes
+const s = Signature.getS(sig);  // 32 bytes
+const v = Signature.getV(sig);  // 27 or 28
 ```
 
-Universal constructor accepting various input formats.
+## Security Considerations
 
-**Parameters:**
-- Uint8Array (64 bytes): Compact ECDSA (defaults to secp256k1)
-- `{ r, s, v?, algorithm? }`: ECDSA components
-- `{ signature, algorithm: 'ed25519' }`: Ed25519 signature
-- BrandedSignature: Returns as-is
+### Signature Malleability
 
-**Returns:** BrandedSignature with algorithm metadata
+ECDSA signatures are malleable: both `(r, s)` and `(r, -s mod n)` are valid. Always normalize to prevent attacks:
+
+```typescript
+// Wrong: Accept any signature
+const address = Secp256k1.recoverAddress(sig, messageHash);
+
+// Right: Normalize first
+const canonical = Signature.normalize(sig);
+const address = Secp256k1.recoverAddress(canonical, messageHash);
+```
+
+**Standards:**
+- **Bitcoin BIP-62**: Requires canonical low-s signatures
+- **Ethereum**: Enforces low-s in consensus rules
+- **Best Practice**: Always normalize before verification or storage
+
+### Recovery ID Validation
+
+```typescript
+const v = Signature.getV(sig);
+
+// Validate recovery ID range
+if (v !== undefined && v !== 27 && v !== 28) {
+  // Handle EIP-155 chain-specific v values
+  const chainId = Math.floor((v - 35) / 2);
+  const yParity = (v - 35) % 2;
+  const standardV = 27 + yParity;
+  // Create new signature with standard v...
+}
+```
+
+### Replay Attack Prevention
+
+Ethereum uses EIP-155 to prevent cross-chain replay attacks:
+
+```typescript
+// EIP-155 v encoding: v = chainId * 2 + 35 + yParity
+const chainId = 1; // Mainnet
+const yParity = v === 27 ? 0 : 1;
+const eip155V = chainId * 2 + 35 + yParity; // 37 or 38
+```
 
 ## Algorithm-Specific Constructors
 
