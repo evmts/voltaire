@@ -1,0 +1,255 @@
+---
+title: KZG Commitments
+description: Polynomial commitments for EIP-4844 blob transactions, Proto-Danksharding, and data availability
+---
+
+# KZG Commitments
+
+Kate-Zaverucha-Goldberg (KZG) polynomial commitments enable Ethereum's EIP-4844 blob transactions, reducing L2 costs by 10-100x through efficient data availability.
+
+## Overview
+
+KZG commitments allow rollups to post large data blobs (128 KB) as tiny commitments (48 bytes) on-chain. Validators can verify data availability without storing full blobs, enabling Proto-Danksharding.
+
+### Why KZG for Ethereum?
+
+**Data Availability Crisis**: L2s need cheap data posting
+**Solution**: Blob transactions with KZG commitments
+**Impact**: Rollup costs reduced from ~$1-5 to ~$0.01-0.10 per transaction
+
+**Key Properties**:
+- **Succinct**: 48-byte commitment for 128 KB blob
+- **Binding**: Cannot change blob after commitment
+- **Verifiable**: Prove `p(z) = y` at any point
+- **Batch-friendly**: Verify multiple proofs efficiently
+
+## Mathematical Foundation
+
+### Polynomial Commitments
+
+Represent blob as polynomial:
+```
+p(x) = a₀ + a₁x + a₂x² + ... + a₄₀₉₅x⁴⁰⁹⁵
+```
+
+**Commitment**: `C = [p(τ)]₁` (G1 point on BLS12-381)
+
+**Evaluation Proof** for `p(z) = y`:
+```
+π = [(p(τ) - y)/(τ - z)]₁  (quotient polynomial in G1)
+```
+
+**Verification** (pairing check):
+```
+e(C - [y]₁, [1]₂) = e(π, [τ]₂ - [z]₂)
+```
+
+### Trusted Setup
+
+**τ (tau)**: Secret value from MPC ceremony
+- 140,000+ participants (Ethereum KZG ceremony 2023)
+- Safe if ANY participant destroyed their secret
+- Powers of τ precomputed in G1 and G2
+
+**Setup Size**: ~1 MB (4096 G1 points + 65 G2 points)
+
+## Quick Start
+
+```typescript
+import { kzg } from '@tevm/voltaire/crypto';
+
+// Load trusted setup (once)
+await kzg.loadTrustedSetup();
+
+// Create blob (128 KB)
+const blob = new Uint8Array(131072);
+// ... fill with rollup data
+
+// Generate commitment
+const commitment = await kzg.blobToKzgCommitment(blob);
+
+// Create proof for evaluation at z
+const z = randomFieldElement();
+const { proof, y } = await kzg.computeKzgProof(blob, z);
+
+// Verify proof
+const valid = await kzg.verifyKzgProof(commitment, z, y, proof);
+
+// Point evaluation precompile (EIP-4844)
+const precompileValid = await kzg.verifyBlobKzgProofBatch(
+  blobs, commitments, proofs
+);
+```
+
+## Documentation
+
+### Core Operations
+
+- [**Commitments**](./commitments) - Creating KZG commitments from blobs
+- [**Proofs**](./proofs) - Opening proofs and evaluation verification
+- [**Point Evaluation**](./point-evaluation) - EIP-4844 precompile 0x0a
+- [**Trusted Setup**](./trusted-setup) - Ceremony, verification, security
+
+### Integration
+
+- [**EIP-4844**](./eip-4844) - Blob transactions, gas pricing, lifecycle
+- [**Usage Patterns**](./usage-patterns) - L2 integration, data availability sampling
+- [**Test Vectors**](./test-vectors) - Official EIP-4844 test cases
+- [**Performance**](./performance) - Benchmarks, gas costs, optimizations
+
+## EIP-4844 Blob Transactions
+
+### Blob Format
+
+**Size**: 131,072 bytes (128 KB exactly)
+**Structure**: 4,096 field elements × 32 bytes
+**Constraint**: Each element < BLS12-381 scalar field modulus
+
+```typescript
+interface Blob {
+  length: 131072;  // Fixed size
+  elements: FieldElement[4096];  // BLS12-381 Fr elements
+}
+```
+
+### Transaction Type
+
+**Type 3 (Blob Transaction)**:
+```typescript
+interface BlobTransaction {
+  chainId: bigint;
+  nonce: bigint;
+  maxPriorityFeePerGas: bigint;
+  maxFeePerGas: bigint;
+  gasLimit: bigint;
+  to: Address;
+  value: bigint;
+  data: Uint8Array;
+  accessList: AccessList;
+  
+  maxFeePerBlobGas: bigint;  // New: blob gas pricing
+  blobVersionedHashes: Hash[];  // New: KZG commitment hashes
+  
+  blobs: Blob[];  // Sidecar (not in tx hash)
+  commitments: KZGCommitment[];  // Sidecar
+  proofs: KZGProof[];  // Sidecar
+}
+```
+
+### Blob Lifecycle
+
+1. **Submission**: Rollup creates blob transaction
+2. **Inclusion**: Block proposer includes in block
+3. **Verification**: Nodes verify KZG proofs
+4. **Availability**: Blobs available for 18 days
+5. **Pruning**: After 18 days, blobs deleted (commitments remain)
+
+## Point Evaluation Precompile
+
+**Address**: `0x0a` (precompile 0x0a)
+
+**Function**: Verify KZG proof for blob evaluation
+
+```typescript
+// Precompile input (192 bytes)
+interface PointEvaluationInput {
+  versionedHash: Bytes32;  // 32 bytes
+  z: Bytes32;              // 32 bytes (evaluation point)
+  y: Bytes32;              // 32 bytes (claimed value)
+  commitment: Bytes48;     // 48 bytes (KZG commitment)
+  proof: Bytes48;          // 48 bytes (KZG proof)
+}
+
+// Returns: 64 bytes (success)
+// Reverts if proof invalid
+```
+
+**Gas Cost**: 50,000 gas (fixed)
+
+**Use Case**: On-chain verification of blob data samples
+
+## Implementation
+
+**C-KZG-4844**: Official Ethereum implementation
+- Location: `lib/c-kzg-4844/`
+- Language: C (portable)
+- Audits: Sigma Prime (2023), zkSecurity (2025)
+
+**Zig Wrapper**: `src/crypto/c_kzg.zig`
+- Safe FFI bindings
+- Error handling
+- Memory management
+
+**WASM**: Not supported (C library requires native)
+
+## Gas Economics
+
+**Blob Gas**: Separate gas market from execution gas
+
+**Target**: 3 blobs per block (~384 KB)
+**Max**: 6 blobs per block (~768 KB)
+
+**Pricing**: EIP-1559 style (exponential)
+```
+baseFeePerBlobGas adjusts based on blob usage
+```
+
+**Cost Comparison**:
+- Calldata: ~16 gas/byte × 128KB = ~2M gas (~$100-500)
+- Blob: ~50K gas per blob (~$1-5)
+
+**Savings**: 100-200x reduction for L2s
+
+## Security
+
+**Trusted Setup Security**:
+- Safe if ≥1 participant honest
+- 140,000+ participants in ceremony
+- Publicly verifiable transcript
+
+**Commitment Binding**:
+- Computationally infeasible to find collision
+- Based on discrete log hardness in G1
+
+**Proof Soundness**:
+- Cannot forge proof for wrong value
+- Pairing check guarantees correctness
+
+## Use Cases
+
+**Optimistic Rollups**:
+- Post transaction data as blobs
+- Fraud proofs reference blob data
+
+**ZK Rollups**:
+- Post full transaction data
+- Validity proofs verify state transition
+
+**Data Availability Sampling**:
+- Light clients sample random points
+- Verify via KZG proofs
+- Ensure data availability without full download
+
+## Performance
+
+**Native (c-kzg-4844)**:
+- Blob to commitment: ~50 ms
+- Compute proof: ~50 ms
+- Verify proof: ~2 ms
+- Verify blob proof batch: ~2 ms per blob
+
+**Limits**:
+- Max 6 blobs per block
+- Verification time: ~12 ms per block (6 blobs)
+
+## Related
+
+- [BLS12-381](/crypto/bls12-381) - Underlying elliptic curve
+- [Precompiles: Point Evaluation](/precompiles/point-evaluation) - 0x0a implementation
+
+## References
+
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [KZG Ceremony](https://ceremony.ethereum.org/)
+- [c-kzg-4844 Library](https://github.com/ethereum/c-kzg-4844)
+- [Proto-Danksharding FAQ](https://notes.ethereum.org/@vbuterin/proto_danksharding_faq)
