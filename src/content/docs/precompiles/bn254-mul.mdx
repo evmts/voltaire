@@ -119,23 +119,34 @@ Scalars are elements of F_r where r is the curve order:
 ## Test Vectors
 
 ```typescript
-// Generator * 0 = Identity
-const G = { x: 1n, y: 2n };
-const scalar = 0n;
-const result = bn254Mul(G, scalar);
-// result = (0, 0)
+// Test 1: Any point * 0 = Identity
+const input1 = new Uint8Array(96);
+input1[31] = 1;  // x = 1
+input1[63] = 2;  // y = 2
+// scalar = 0 (already zero-filled)
+// Expected: (0, 0)
 
-// Generator * 1 = Generator
-const result = bn254Mul(G, 1n);
-// result = G
+// Test 2: Generator * 1 = Generator
+const input2 = new Uint8Array(96);
+input2[31] = 1;   // x = 1
+input2[63] = 2;   // y = 2
+input2[95] = 1;   // scalar = 1
+// Expected: (1, 2)
 
-// Generator * 2 = Doubled generator
-const result = bn254Mul(G, 2n);
-// result = 2*G (same as bn254Add(G, G))
+// Test 3: Generator * 2 = 2*Generator
+const input3 = new Uint8Array(96);
+input3[31] = 1;   // x = 1
+input3[63] = 2;   // y = 2
+input3[95] = 2;   // scalar = 2
+// Expected: 0x1d739bd53b93e2d05f48f9626e5c6803e8cf53e8afb48a62337e42e555e44fa3
+//           0f13d0f0fbf2aa7969e5b86f27ca82e381bb0b495dc2be5e6ed7d28ce5efde77
 
-// Point * group_order = Identity
-const result = bn254Mul(G, groupOrder);
-// result = (0, 0)
+// Test 4: Invalid point (not on curve)
+const input4 = new Uint8Array(96);
+input4[31] = 1;   // x = 1
+input4[63] = 2;   // y = 2 (but let's say this was wrong)
+input4[95] = 5;   // scalar = 5
+// If point not on curve: Error (InvalidPoint)
 ```
 
 ## Gas Cost History

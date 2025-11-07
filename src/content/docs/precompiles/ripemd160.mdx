@@ -119,6 +119,26 @@ Gas costs favor larger inputs:
 
 Use SHA-256 or Keccak256 for general-purpose hashing when RIPEMD-160 compatibility is not required.
 
+## Test Vectors
+
+```typescript
+// Test 1: Empty input
+const input1 = new Uint8Array(0);
+// Expected: 9c1185a5c5e9fc54612808977ee8f548b2258d31 (20 bytes, padded to 32)
+const expected1 = new Uint8Array(32);
+expected1.fill(0, 0, 12); // First 12 bytes are zeros
+// Actual hash bytes 12-31 would be set here
+
+// Test 2: Small input
+const input2 = new Uint8Array([1, 2, 3, 4, 5]);
+// Gas: 600 + 120 * ceil(5/32) = 600 + 120*1 = 720
+// Output: 32 bytes (12 zero padding + 20 hash bytes)
+
+// Test 3: Exact 32-byte boundary
+const input3 = new Uint8Array(32);
+// Gas: 600 + 120 * 1 = 720
+```
+
 ## Related
 
 - [Crypto: RIPEMD160](/crypto/ripemd160)

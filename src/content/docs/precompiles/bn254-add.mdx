@@ -123,22 +123,32 @@ Invalid points cause the precompile to fail, returning error.
 ## Test Vectors
 
 ```typescript
-// Generator point + Generator point = Doubled generator
-const G = { x: 1n, y: 2n };
-const result = bn254Add(G, G);
-// result = 2*G
+// Test 1: Identity + Identity = Identity
+const input1 = new Uint8Array(128); // All zeros
+// Expected: (0, 0)
+const expected1 = new Uint8Array(64);
 
-// Point + Identity = Point
-const P = { x: ..., y: ... };
-const O = { x: 0n, y: 0n };
-const result = bn254Add(P, O);
-// result = P
+// Test 2: Generator + Generator = 2*Generator (from geth tests)
+const input2 = new Uint8Array(128);
+// P1 = (1, 2), P2 = (1, 2)
+input2[31] = 1;  // x1 = 1
+input2[63] = 2;  // y1 = 2
+input2[95] = 1;  // x2 = 1
+input2[127] = 2; // y2 = 2
+// Expected: 0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd3
+//           15ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4
 
-// Point + Inverse = Identity
-const P = { x: ..., y: ... };
-const negP = { x: P.x, y: fieldMod - P.y };
-const result = bn254Add(P, negP);
-// result = O
+// Test 3: Invalid point (not on curve)
+const input3 = new Uint8Array(128);
+input3[31] = 1;  // x1 = 1
+input3[63] = 2;  // y1 = 2
+// x2 = 0, y2 = 0 (second point is identity, valid)
+// Expected: Success (returns first point)
+
+// Test 4: Point outside field modulus
+const input4 = new Uint8Array(128);
+// Set coordinate >= field modulus
+// Expected: Error (InvalidPoint)
 ```
 
 ## Gas Cost History

@@ -167,6 +167,50 @@ This made RSA verification practical for many use cases.
 - **Truncated input:** Missing bytes treated as zero
 - **Zero modulus:** Returns error (division by zero)
 
+## Test Vectors
+
+```typescript
+// Test 1: 2^3 mod 5 = 3
+const input1 = new Uint8Array(99);
+input1[31] = 1;  // base_len = 1
+input1[63] = 1;  // exp_len = 1
+input1[95] = 1;  // mod_len = 1
+input1[96] = 2;  // base = 2
+input1[97] = 3;  // exp = 3
+input1[98] = 5;  // mod = 5
+// Expected: 0x03
+
+// Test 2: 3^1 mod 5 = 3
+const input2 = new Uint8Array(99);
+input2[31] = 1;  // base_len = 1
+input2[63] = 1;  // exp_len = 1
+input2[95] = 1;  // mod_len = 1
+input2[96] = 3;  // base = 3
+input2[97] = 1;  // exp = 1
+input2[98] = 5;  // mod = 5
+// Expected: 0x03
+
+// Test 3: 5^0 mod 7 = 1 (zero exponent)
+const input3 = new Uint8Array(99);
+input3[31] = 1;  // base_len = 1
+input3[63] = 1;  // exp_len = 1
+input3[95] = 1;  // mod_len = 1
+input3[96] = 5;  // base = 5
+input3[97] = 0;  // exp = 0
+input3[98] = 7;  // mod = 7
+// Expected: 0x01
+
+// Test 4: Zero modulus error
+const input4 = new Uint8Array(99);
+input4[31] = 1;
+input4[63] = 1;
+input4[95] = 1;
+input4[96] = 2;
+input4[97] = 3;
+input4[98] = 0;  // mod = 0
+// Expected: Error (division by zero)
+```
+
 ## Related
 
 - [Crypto: ModExp](/crypto/modexp)

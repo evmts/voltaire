@@ -109,6 +109,34 @@ While it seems trivial, Identity serves several purposes:
 
 Identity has higher base cost but same per-word cost. Use MCOPY (if available) for memory-to-memory copies.
 
+## Test Vectors
+
+```typescript
+// Test 1: Empty input
+const input1 = new Uint8Array(0);
+const result1 = executeIdentity(input1);
+// Expected: empty array (0 bytes)
+// Gas: 15 + 3 * 0 = 15
+
+// Test 2: 5 bytes
+const input2 = new Uint8Array([1, 2, 3, 4, 5]);
+const result2 = executeIdentity(input2);
+// Expected: [1, 2, 3, 4, 5]
+// Gas: 15 + 3 * ceil(5/32) = 15 + 3*1 = 18
+
+// Test 3: Exact 32-byte boundary
+const input3 = new Uint8Array(32).fill(0xFF);
+const result3 = executeIdentity(input3);
+// Expected: 32 bytes of 0xFF
+// Gas: 15 + 3 * 1 = 18
+
+// Test 4: Partial word (33 bytes)
+const input4 = new Uint8Array(33);
+const result4 = executeIdentity(input4);
+// Expected: 33 bytes (unchanged)
+// Gas: 15 + 3 * ceil(33/32) = 15 + 3*2 = 21
+```
+
 ## Related
 
 - [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
