@@ -393,6 +393,40 @@ WASM performance depends on workload. Use `bun run bench` to measure your specif
 
 ## WASM Architecture
 
+### Compilation Pipeline
+
+```
+┌─────────────────────────────────────────────────┐
+│           Zig Source Code                       │
+│   src/primitives/*.zig, src/crypto/*.zig        │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│         Zig Compiler (0.15.1)                   │
+│   Target: wasm32-wasi                           │
+│   Modes: ReleaseSmall | ReleaseFast             │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│         WASM Binary Output                      │
+│   wasm/*.wasm (2-8 KB gzipped)                  │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│         JavaScript Wrapper                      │
+│   src/wasm-loader/ (instantiation, memory)      │
+└────────────────┬────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────┐
+│         TypeScript API                          │
+│   Identical API to pure JS versions             │
+└─────────────────────────────────────────────────┘
+```
+
 ### Target
 
 ```bash
@@ -413,12 +447,12 @@ WASM builds include:
 
 ```
 wasm/
-├── primitives.wasm          # ReleaseSmall (production)
-├── primitives-fast.wasm     # ReleaseFast (benchmarking)
+├── primitives.wasm          # ReleaseSmall (2-4 KB gzipped)
+├── primitives-fast.wasm     # ReleaseFast (5-8 KB gzipped)
 └── crypto/
-    ├── keccak256.wasm       # Individual modules
-    ├── secp256k1.wasm
-    ├── sha256.wasm
+    ├── keccak256.wasm       # 2.8 KB gzipped
+    ├── secp256k1.wasm       # 3.2 KB gzipped
+    ├── sha256.wasm          # 1.8 KB gzipped
     └── ...
 ```
 
@@ -433,6 +467,24 @@ WASM modules use linear memory:
 JavaScript passes data via:
 - **SharedArrayBuffer** - Zero-copy for large data
 - **Memory views** - Direct access to WASM memory
+
+**Memory layout:**
+
+```
+┌────────────────────────────────────┐
+│   WASM Linear Memory (pages)       │
+├────────────────────────────────────┤
+│  Stack (grows down)                │
+├────────────────────────────────────┤
+│  Heap (managed by Zig allocator)   │
+├────────────────────────────────────┤
+│  Data segment (constants)          │
+└────────────────────────────────────┘
+         ▲                 ▲
+         │                 │
+    JS reads         JS writes
+  (zero-copy)      (zero-copy)
+```
 
 ## Limitations
 
