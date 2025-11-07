@@ -511,12 +511,29 @@ WASM requires:
 - **WASM support** - `WebAssembly` global available
 - **Async initialization** - Some modules require `await init()`
 
+**Browser support matrix:**
+
+| Browser | Version | WASM Support | Notes |
+|---------|---------|--------------|-------|
+| Chrome | 57+ | Full | Best performance |
+| Firefox | 52+ | Full | Good performance |
+| Safari | 11+ | Full | iOS 11+ supported |
+| Edge | 16+ | Full | Chromium-based |
+| Node.js | 12+ | Full | Native WASM support |
+| Bun | All | Full | Optimized runtime |
+| Deno | All | Full | Built-in WASM |
+
 Check support:
 ```typescript
 if (typeof WebAssembly !== 'undefined') {
   // WASM supported
+  const { Keccak256Wasm } = await import('@tevm/voltaire/crypto/keccak256.wasm');
+  await Keccak256Wasm.init();
+  // Use WASM
 } else {
   // Fallback to pure JS
+  const { Keccak256 } = await import('@tevm/voltaire/Keccak256');
+  // Use JS
 }
 ```
 

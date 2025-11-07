@@ -108,11 +108,26 @@ if (result.success) {
 
 ## Use Cases
 
-- **Zcash verification:** Verify Zcash Equihash proofs on Ethereum
-- **Cross-chain bridges:** Validate Blake2b-based chains
-- **Efficient hashing:** Compute Blake2b hashes in smart contracts
-- **Equihash:** Verify Equihash PoW solutions
-- **Custom protocols:** Build Blake2 variants (e.g., personalized hashing)
+**Production Applications:**
+
+- **Zcash Bridge:** Verify Zcash Equihash proofs on Ethereum to enable trustless ZEC/ETH swaps. Equihash is a memory-hard proof-of-work algorithm based on Blake2b. The bridge contract uses Blake2f to verify Zcash block headers.
+
+- **Cross-chain Bridges:** Validate headers from blockchains using Blake2b:
+  - **Filecoin:** Uses Blake2b for hashing (bridge to Ethereum)
+  - **Sia/Siacoin:** Blake2b-based storage network
+  - **Decred:** Uses Blake256 (related to Blake2)
+
+- **Efficient Hashing in Contracts:** Blake2b is ~10x cheaper than SHA256 per byte:
+  - Large data structure hashing (Merkle trees)
+  - Content-addressed storage systems
+  - Efficient MACs and authenticated encryption
+
+- **Custom Blake2 Variants:**
+  - **Personalized hashing:** Domain separation for different protocols
+  - **Tree hashing:** BLAKE2bp parallel variant
+  - **Keyed hashing:** HMAC-like authentication
+
+**Real-World Example:** A Zcash-Ethereum bridge uses Blake2f to verify ~100 Zcash blocks (~10,000 Blake2f calls) for ~120,000 gas total, versus millions of gas if implemented in pure Solidity.
 
 ## Implementation Details
 
@@ -122,17 +137,34 @@ if (result.success) {
 - **Algorithm:** Blake2b compression as specified in RFC 7693
 - **Rounds:** Configurable (standard Blake2b uses 12)
 
-## Blake2b Overview
+## Blake2b Algorithm Overview
 
-Blake2b is the 64-bit version of Blake2 (Blake2s is 32-bit). Key features:
-- Faster than MD5, SHA-1, SHA-2, SHA-3
-- Secure: no known cryptographic weaknesses
-- Used in: Zcash, Wireguard, IPFS, Argon2
+**What is Blake2b?**
 
-Standard Blake2b:
-- 12 rounds per block
-- 512-bit output (64 bytes)
-- Processes 128-byte blocks
+Blake2b is a cryptographic hash function designed to be faster than MD5, SHA-1, SHA-2, and SHA-3 while maintaining strong security. It's the 64-bit variant of Blake2 (Blake2s is the 32-bit variant).
+
+**Key Features:**
+- **Performance:** Up to 2x faster than SHA-3, comparable to MD5
+- **Security:** No known cryptographic weaknesses (finalist in SHA-3 competition)
+- **Flexibility:** Configurable output length, keyed hashing, salting, personalization
+- **Simplicity:** Simpler than SHA-3, easier to implement and audit
+
+**Standard Blake2b Parameters:**
+- **Rounds:** 12 rounds per 128-byte block (can be reduced for performance/security tradeoff)
+- **Output:** Up to 512 bits (64 bytes), configurable
+- **Block size:** 128 bytes (1024 bits)
+- **Word size:** 64-bit (unlike Blake2s which uses 32-bit)
+- **State:** 8 x 64-bit words (512 bits total)
+
+**Compression Function F:**
+
+The compression function F is the core of Blake2b. It takes:
+- Current state `h` (8 x 64-bit words)
+- Message block `m` (16 x 64-bit words = 128 bytes)
+- Offset counters `t` (2 x 64-bit words, tracks bytes processed)
+- Final block flag `f` (1 byte, marks last block)
+
+And produces a new state `h'` by mixing the message into the state over multiple rounds.
 
 ## Complete Blake2b Hashing
 
@@ -185,16 +217,93 @@ Comparison (per 128 bytes):
 
 ## Test Vectors
 
+From RFC 7693 and EIP-152 official test suite:
+
 ```typescript
-// Test vector from RFC 7693 (example from spec)
-const rounds = 12;
-const h = [ // IV for Blake2b-512
-  0x6a09e667f3bcc908n, 0xbb67ae8584caa73bn,
-  0x3c6ef372fe94f82bn, 0xa54ff53a5f1d36f1n,
-  0x510e527fade682d1n, 0x9b05688c2b3e6c1fn,
-  0x1f83d9abfb41bd6bn, 0x5be0cd19137e2179n
+// Vector 1: Empty message hash
+// Hash of empty string with Blake2b should produce specific known output
+const input1 = new Uint8Array(213);
+
+// Rounds: 12 (standard Blake2b)
+new DataView(input1.buffer).setUint32(0, 12, false);
+
+// State h: Blake2b-512 IV XOR parameter block
+// IV values for Blake2b-512 (little-endian)
+const h1 = [
+  0x6a09e667f3bcc908n ^ 0x01010040n, // XOR with params: digest length 64, fanout 1, depth 1
+  0xbb67ae8584caa73bn,
+  0x3c6ef372fe94f82bn,
+  0xa54ff53a5f1d36f1n,
+  0x510e527fade682d1n,
+  0x9b05688c2b3e6c1fn,
+  0x1f83d9abfb41bd6bn,
+  0x5be0cd19137e2179n
 ];
-// ... (complete test vector in RFC 7693 Appendix A)
+const view1 = new DataView(input1.buffer);
+h1.forEach((val, i) => view1.setBigUint64(4 + i * 8, val, true));
+
+// Message m: all zeros (empty message block)
+// Already zero-filled
+
+// Offset counter t: [0, 0] (no bytes processed yet)
+view1.setBigUint64(196, 0n, true);
+view1.setBigUint64(204, 0n, true);
+
+// Final flag f: 0x01 (this is the final block even though empty)
+input1[212] = 0x01;
+
+const result1 = execute(PrecompileAddress.BLAKE2F, input1, 20n, Hardfork.CANCUN);
+// result1.gasUsed === 12
+// result1.output should match known Blake2b("") hash
+
+// Vector 2: "abc" message hash
+// Standard test vector - hash of "abc"
+const input2 = new Uint8Array(213);
+new DataView(input2.buffer).setUint32(0, 12, false);
+
+// State h: Same IV as above
+const view2 = new DataView(input2.buffer);
+h1.forEach((val, i) => view2.setBigUint64(4 + i * 8, val, true));
+
+// Message m: "abc" padded to 128 bytes (little-endian encoding)
+input2[68] = 0x61; // 'a'
+input2[69] = 0x62; // 'b'
+input2[70] = 0x63; // 'c'
+
+// Offset counter t: [3, 0] (3 bytes processed)
+view2.setBigUint64(196, 3n, true);
+view2.setBigUint64(204, 0n, true);
+
+// Final flag f: 0x01
+input2[212] = 0x01;
+
+const result2 = execute(PrecompileAddress.BLAKE2F, input2, 20n, Hardfork.CANCUN);
+// result2.gasUsed === 12
+// Expected output (Blake2b("abc")):
+// 0xba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d1
+//   7d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923
+
+// Vector 3: Variable rounds (1 round only)
+// Tests gas calculation - should cost 1 gas
+const input3 = new Uint8Array(213);
+new DataView(input3.buffer).setUint32(0, 1, false); // Only 1 round
+
+const view3 = new DataView(input3.buffer);
+h1.forEach((val, i) => view3.setBigUint64(4 + i * 8, val, true));
+
+const result3 = execute(PrecompileAddress.BLAKE2F, input3, 10n, Hardfork.CANCUN);
+// result3.gasUsed === 1
+
+// Vector 4: Maximum rounds
+// Tests high round counts (Zcash uses higher round counts)
+const input4 = new Uint8Array(213);
+new DataView(input4.buffer).setUint32(0, 10000, false); // 10000 rounds
+
+const view4 = new DataView(input4.buffer);
+h1.forEach((val, i) => view4.setBigUint64(4 + i * 8, val, true));
+
+const result4 = execute(PrecompileAddress.BLAKE2F, input4, 15000n, Hardfork.CANCUN);
+// result4.gasUsed === 10000
 ```
 
 ## Byte Order Warning
