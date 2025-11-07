@@ -577,6 +577,40 @@ Each parser, categorization check, and disassembly function is independently exp
 When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These bytes must be skipped during parsing - they are data, not opcodes. The `parse()` and `jumpDests()` functions handle this correctly.
 </Aside>
 
+## API Documentation
+
+<CardGrid>
+  <Card title="Constructors" icon="rocket">
+    Opcode constants, bytecode parsing, and jump destination analysis.
+
+    [View constructors →](/primitives/opcode/constructors)
+  </Card>
+
+  <Card title="Validation" icon="warning">
+    Opcode validation, category checks, and jump destination verification.
+
+    [View validation →](/primitives/opcode/validation)
+  </Card>
+
+  <Card title="Utilities" icon="puzzle">
+    Metadata, stack effects, gas costs, and disassembly utilities.
+
+    [View utilities →](/primitives/opcode/utilities)
+  </Card>
+
+  <Card title="Usage Patterns" icon="open-book">
+    Real-world bytecode analysis, gas estimation, and pattern detection.
+
+    [View usage patterns →](/primitives/opcode/usage-patterns)
+  </Card>
+
+  <Card title="WASM Implementation" icon="seti:config">
+    Performance analysis - why WASM is not implemented (pure TS is faster).
+
+    [View WASM →](/primitives/opcode/wasm)
+  </Card>
+</CardGrid>
+
 ## Related Types
 
 <CardGrid stagger>
