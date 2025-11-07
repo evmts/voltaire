@@ -3,35 +3,137 @@ title: Getting Started
 description: Learn the core patterns and architecture of Voltaire
 ---
 
-import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Code, Steps, Aside, Card, CardGrid } from '@astrojs/starlight/components';
 
 # Getting Started
 
-Voltaire is a modern Ethereum library built with performance, type safety, and tree-shaking as first-class priorities.
+Voltaire is a modern Ethereum library built with performance, type safety, and tree-shaking as first-class priorities. This guide will teach you the core concepts and patterns that make Voltaire different.
+
+## Prerequisites
+
+- **Node.js:** 18.x or higher (20.x recommended)
+- **Package Manager:** npm, bun, pnpm, or yarn
+- **Knowledge:** Familiarity with JavaScript/TypeScript and basic Ethereum concepts (addresses, transactions, signatures)
+
+<Aside type="tip">
+  New to Ethereum? Check out [ethereum.org/developers](https://ethereum.org/en/developers/) for fundamentals.
+</Aside>
 
 ## Installation
 
-```bash
-npm install @tevm/voltaire
-```
+<Tabs syncKey="pm">
+  <TabItem label="npm">
+    ```bash
+    npm install @tevm/voltaire
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add @tevm/voltaire
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add @tevm/voltaire
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add @tevm/voltaire
+    ```
+  </TabItem>
+</Tabs>
 
-```bash
-bun add @tevm/voltaire
-```
+## Quick Start (5 Minutes)
 
-```bash
-pnpm install @tevm/voltaire
-```
+Let's build a simple example that demonstrates Voltaire's core capabilities: hashing, signing, and address validation.
 
-### Zig Installation
+<Steps>
 
-```bash
-# Install specific version (recommended)
-zig fetch --save https://github.com/evmts/voltaire/archive/refs/tags/v0.1.0.tar.gz
+1. **Create a new file** `example.ts`:
 
-# Install latest from main branch
-zig fetch --save git+https://github.com/evmts/voltaire
-```
+   <Tabs syncKey="runtime">
+     <TabItem label="Node.js/Bun">
+       ```typescript
+       import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
+
+       // Hash a message
+       const message = "Welcome to Voltaire";
+       const messageHash = Keccak256.hash(message);
+       console.log("Message hash:", messageHash);
+
+       // Generate a keypair
+       const privateKey = Secp256k1.randomPrivateKey();
+       const publicKey = Secp256k1.getPublicKey(privateKey);
+
+       // Sign the hash
+       const signature = Secp256k1.sign(messageHash, privateKey);
+
+       // Recover the signer's address
+       const signerAddress = Secp256k1.recoverAddress(messageHash, signature);
+       console.log("Signer address:", Address.toChecksummed(signerAddress));
+
+       // Verify the signature
+       const isValid = Secp256k1.verify(messageHash, signature, publicKey);
+       console.log("Signature valid:", isValid);
+       ```
+     </TabItem>
+     <TabItem label="Browser (Vite)">
+       ```typescript
+       import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
+
+       // Hash a message
+       const message = "Welcome to Voltaire";
+       const messageHash = Keccak256.hash(message);
+       document.body.innerHTML += `<p>Hash: ${messageHash}</p>`;
+
+       // Generate a keypair
+       const privateKey = Secp256k1.randomPrivateKey();
+       const publicKey = Secp256k1.getPublicKey(privateKey);
+
+       // Sign and verify
+       const signature = Secp256k1.sign(messageHash, privateKey);
+       const signerAddress = Secp256k1.recoverAddress(messageHash, signature);
+
+       document.body.innerHTML += `
+         <p>Signer: ${Address.toChecksummed(signerAddress)}</p>
+         <p>Valid: ${Secp256k1.verify(messageHash, signature, publicKey)}</p>
+       `;
+       ```
+     </TabItem>
+   </Tabs>
+
+2. **Run the example:**
+
+   <Tabs syncKey="runtime">
+     <TabItem label="Node.js">
+       ```bash
+       node --loader tsx example.ts
+       ```
+     </TabItem>
+     <TabItem label="Bun">
+       ```bash
+       bun run example.ts
+       ```
+     </TabItem>
+     <TabItem label="Browser (Vite)">
+       ```bash
+       npm run dev
+       ```
+     </TabItem>
+   </Tabs>
+
+3. **See the output:**
+
+   ```
+   Message hash: Uint8Array(32) [...]
+   Signer address: 0xA0Cf798816D4b9b9866b5330EEa46A18382f251e
+   Signature valid: true
+   ```
+
+</Steps>
+
+Congratulations! You've just hashed data, signed a message, and recovered an Ethereum address using Voltaire.
 
 ## Core Architecture
 
@@ -330,11 +432,328 @@ Voltaire is optimized for performance:
 - **Native browser methods** — Uses native toHex/toBase64 when available
 - **Constant-time operations** — Security-critical comparisons are constant-time
 
+## First Real Task: Sign a Transaction (15 Minutes)
+
+Now let's build something practical: create and sign an EIP-1559 transaction.
+
+<Steps>
+
+1. **Create a transaction:**
+
+   ```typescript
+   import { Transaction, Address, Uint } from "@tevm/voltaire";
+
+   const tx = {
+     type: 2, // EIP-1559
+     chainId: 1n, // Ethereum mainnet
+     nonce: 0n,
+     maxFeePerGas: Uint.from("30 gwei"),
+     maxPriorityFeePerGas: Uint.from("1 gwei"),
+     gasLimit: 21_000n,
+     to: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+     value: Uint.from("1 ether"),
+     data: new Uint8Array(),
+   };
+   ```
+
+2. **Sign the transaction:**
+
+   ```typescript
+   import { Secp256k1 } from "@tevm/voltaire";
+
+   // Your private key (NEVER share or commit this!)
+   const privateKey = "0x...";
+
+   // Sign
+   const signedTx = Transaction.sign(tx, privateKey);
+   console.log("Signed transaction:", signedTx);
+   ```
+
+3. **Serialize for broadcasting:**
+
+   ```typescript
+   // Serialize to RLP-encoded bytes
+   const serialized = Transaction.serialize(signedTx);
+
+   // Convert to hex for RPC
+   const txHex = Hex.fromBytes(serialized);
+   console.log("Transaction hex:", txHex);
+
+   // You can now send this via eth_sendRawTransaction
+   ```
+
+4. **Verify the signature:**
+
+   ```typescript
+   // Recover the sender address
+   const sender = Transaction.recoverSender(signedTx);
+   console.log("Sender address:", Address.toChecksummed(sender));
+
+   // Calculate transaction hash
+   const txHash = Transaction.hash(signedTx);
+   console.log("Transaction hash:", Hash.toHex(txHash));
+   ```
+
+</Steps>
+
+<Aside type="caution">
+  **Never** use real private keys in test code. Always use test networks (Sepolia, Holesky) or local development chains.
+</Aside>
+
+## Troubleshooting
+
+### Common Issues
+
+<details>
+<summary>**Import errors: "Cannot find module"**</summary>
+
+Make sure you're using the correct import paths:
+
+```typescript
+// ✅ Correct
+import { Address } from "@tevm/voltaire";
+import { BrandedAddress } from "@tevm/voltaire/Address";
+
+// ❌ Wrong
+import { Address } from "@tevm/voltaire/primitives/Address";
+```
+
+Check your `tsconfig.json` has `"moduleResolution": "bundler"` or `"node16"`.
+
+</details>
+
+<details>
+<summary>**Type errors with branded types**</summary>
+
+If you get type errors like "Type 'Uint8Array' is not assignable to type 'BrandedAddress'", you need to construct the branded type properly:
+
+```typescript
+// ❌ Won't work
+const addr: BrandedAddress = new Uint8Array(20);
+
+// ✅ Correct
+const addr = Address.from("0x...");
+// or
+const addr = BrandedAddress.fromHex("0x...");
+```
+
+</details>
+
+<details>
+<summary>**WASM initialization errors**</summary>
+
+If using WASM modules, make sure to await initialization:
+
+```typescript
+import { Keccak256Wasm } from "@tevm/voltaire/crypto/keccak256.wasm";
+
+// Must initialize before use
+await Keccak256Wasm.init();
+
+// Now you can use it
+const hash = Keccak256Wasm.hash(data);
+```
+
+</details>
+
+<details>
+<summary>**Bundle size is too large**</summary>
+
+Use tree-shakeable imports to reduce bundle size:
+
+```typescript
+// ❌ Imports entire Address class (~18 KB)
+import { Address } from "@tevm/voltaire";
+
+// ✅ Only imports specific functions (~500 bytes)
+import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
+```
+
+</details>
+
+## Migration Guides
+
+### From ethers.js
+
+<Tabs>
+  <TabItem label="Addresses">
+    ```typescript
+    // ethers
+    import { getAddress } from "ethers";
+    const addr = getAddress("0xa0cf...");
+
+    // Voltaire
+    import { Address } from "@tevm/voltaire";
+    const addr = Address.from("0xa0cf...");
+    const checksum = addr.toChecksummed();
+    ```
+  </TabItem>
+
+  <TabItem label="Hashing">
+    ```typescript
+    // ethers
+    import { keccak256, toUtf8Bytes } from "ethers";
+    const hash = keccak256(toUtf8Bytes("hello"));
+
+    // Voltaire
+    import { Keccak256 } from "@tevm/voltaire";
+    const hash = Keccak256.hash("hello");
+    ```
+  </TabItem>
+
+  <TabItem label="Signing">
+    ```typescript
+    // ethers
+    import { Wallet } from "ethers";
+    const wallet = new Wallet(privateKey);
+    const sig = await wallet.signMessage("hello");
+
+    // Voltaire
+    import { Keccak256, Secp256k1 } from "@tevm/voltaire";
+    const hash = Keccak256.hash("hello");
+    const sig = Secp256k1.sign(hash, privateKey);
+    ```
+  </TabItem>
+
+  <TabItem label="Transactions">
+    ```typescript
+    // ethers
+    import { Wallet } from "ethers";
+    const wallet = new Wallet(privateKey);
+    const tx = await wallet.signTransaction({
+      to: "0x...",
+      value: parseEther("1.0"),
+      // ...
+    });
+
+    // Voltaire
+    import { Transaction } from "@tevm/voltaire";
+    const signed = Transaction.sign({
+      type: 2,
+      to: Address.from("0x..."),
+      value: Uint.from("1 ether"),
+      // ...
+    }, privateKey);
+    const serialized = Transaction.serialize(signed);
+    ```
+  </TabItem>
+</Tabs>
+
+### From viem
+
+<Tabs>
+  <TabItem label="Addresses">
+    ```typescript
+    // viem
+    import { getAddress } from "viem";
+    const addr = getAddress("0xa0cf...");
+
+    // Voltaire
+    import { Address } from "@tevm/voltaire";
+    const addr = Address.from("0xa0cf...");
+    ```
+  </TabItem>
+
+  <TabItem label="Hashing">
+    ```typescript
+    // viem
+    import { keccak256 } from "viem";
+    const hash = keccak256("0x...");
+
+    // Voltaire
+    import { Keccak256 } from "@tevm/voltaire";
+    const hash = Keccak256.hash("0x...");
+    ```
+  </TabItem>
+
+  <TabItem label="ABI Encoding">
+    ```typescript
+    // viem
+    import { encodeFunctionData } from "viem";
+    const data = encodeFunctionData({
+      abi: [...],
+      functionName: "transfer",
+      args: [address, amount],
+    });
+
+    // Voltaire
+    import { Abi } from "@tevm/voltaire";
+    const data = Abi.encodeFunction(
+      { name: "transfer", inputs: [...] },
+      [address, amount]
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+### From web3.js
+
+<Tabs>
+  <TabItem label="Addresses">
+    ```typescript
+    // web3.js
+    import { toChecksumAddress } from "web3-utils";
+    const addr = toChecksumAddress("0xa0cf...");
+
+    // Voltaire
+    import { Address } from "@tevm/voltaire";
+    const addr = Address.from("0xa0cf...");
+    const checksum = addr.toChecksummed();
+    ```
+  </TabItem>
+
+  <TabItem label="Hashing">
+    ```typescript
+    // web3.js
+    import { sha3 } from "web3-utils";
+    const hash = sha3("hello");
+
+    // Voltaire
+    import { Keccak256 } from "@tevm/voltaire";
+    const hash = Keccak256.hash("hello");
+    ```
+  </TabItem>
+</Tabs>
+
 ## Next Steps
 
-- Explore [Core Primitives](/primitives/address) — Address, Hash, Uint, RLP, ABI, Transactions
-- Learn about [Cryptography](/crypto/keccak256) — Keccak-256, secp256k1, EIP-712, BIP-39, HD Wallets
-- Read the [Zig API](https://github.com/evmts/voltaire/blob/main/docs/ZIG_API.md) — Native Zig implementations
+<CardGrid>
+  <Card title="Core Primitives" icon="puzzle">
+    Deep dive into Address, Hash, Uint, Transaction, RLP, ABI.
+
+    [Explore primitives →](/primitives/address/)
+  </Card>
+
+  <Card title="Cryptography" icon="star">
+    Learn Keccak-256, secp256k1, EIP-712, BIP-39, HD Wallets.
+
+    [View crypto docs →](/crypto/keccak256/)
+  </Card>
+
+  <Card title="Branded Types" icon="seti:config">
+    Understand the branded type pattern for type safety.
+
+    [Read guide →](/primitives/branded-types/)
+  </Card>
+
+  <Card title="WASM Acceleration" icon="rocket">
+    Optimize performance with Zig-compiled WASM modules.
+
+    [View benchmarks →](/wasm/)
+  </Card>
+
+  <Card title="API Overview" icon="document">
+    Learn universal patterns and design philosophy.
+
+    [Read overview →](/overview/)
+  </Card>
+
+  <Card title="Zig API" icon="setting">
+    Use Voltaire in native Zig applications.
+
+    [View Zig docs →](/zig/)
+  </Card>
+</CardGrid>
 
 ## Design Principles
 
