@@ -18,7 +18,7 @@ SHA256 is fundamental to blockchain technology and cryptography, used for:
 - **TLS/SSL**: Certificate signatures and secure communications
 - **Digital signatures**: Message digest for signing algorithms
 - **Merkle trees**: Constructing efficient authenticated data structures
-- **General hashing**: File integrity, password hashing (with proper KDF), data deduplication
+- **File integrity**: Checksums, content addressing, digital forensics
 
 Unlike Keccak256 (used in Ethereum), SHA256 follows NIST's finalized specification and is standardized across all implementations. The implementation uses @noble/hashes in TypeScript and hardware-accelerated instructions (SHA-NI, AVX2) in Zig for optimal performance.
 
@@ -376,9 +376,20 @@ async function hashFile(file: File): Promise<Uint8Array> {
 }
 ```
 
+## Further Reading
+
+Explore comprehensive SHA-256 documentation:
+
+- **[API Reference](/crypto/sha256/api-reference)** - Complete function reference with examples
+- **[Test Vectors](/crypto/sha256/test-vectors)** - NIST FIPS 180-4 official test vectors
+- **[Security](/crypto/sha256/security)** - Cryptographic properties and attack resistance
+- **[Performance](/crypto/sha256/performance)** - Benchmarks and optimization techniques
+- **[Usage Patterns](/crypto/sha256/usage-patterns)** - Common use cases and implementation patterns
+- **[Comparison](/crypto/sha256/comparison)** - Compare with Keccak256, Blake2, and other hash functions
+
 ## Related
 
 - [Keccak256](/crypto/keccak256) - Ethereum's hash function
+- [Blake2](/crypto/blake2) - High-performance alternative
 - [RIPEMD160](/crypto/ripemd160) - Used with SHA256 in Bitcoin addresses
-- [Blake2](/crypto/blake2) - Faster alternative to SHA256
 - [Hash Primitive](/primitives/hash) - 32-byte hash type
