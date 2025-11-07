@@ -230,9 +230,9 @@ console.log(`User waited: ${(performance.now() - startSign).toFixed(0)}ms`);
 ```
 
 **UX considerations:**
-- <100ms: Imperceptible
+- &lt;100ms: Imperceptible
 - 100-300ms: Slight delay, acceptable
-- >300ms: Noticeable lag, consider async
+- &gt;300ms: Noticeable lag, consider async
 
 Secp256k1 signing (~1ms) is well within acceptable range.
 
