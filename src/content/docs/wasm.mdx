@@ -3,7 +3,7 @@ title: WASM Acceleration
 description: High-performance WebAssembly-compiled Zig implementations
 ---
 
-import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Card, CardGrid, Aside, Steps } from '@astrojs/starlight/components';
 
 # WASM Acceleration
 
@@ -13,12 +13,31 @@ Voltaire provides optional WASM-accelerated implementations for performance-crit
 
 WASM (WebAssembly) implementations are **purely opt-in** replacements for JavaScript implementations, providing:
 
-- **2-3x faster** cryptographic operations (keccak256, secp256k1)
+- **2-12x faster** cryptographic operations (keccak256, secp256k1)
 - **Minimal bundle impact** - Only included when imported
 - **Identical APIs** - Drop-in replacements for JS versions
 - **Tree-shakeable** - Import only methods you use
 
 All WASM modules are compiled from Zig source using two optimization modes.
+
+## Performance at a Glance
+
+Real-world benchmarks on Apple M3 Max (3.5 GHz):
+
+| Operation | JS | WASM | Speedup | Use Case |
+|-----------|-----|------|---------|----------|
+| **Keccak256 (32B)** | 3.19 µs | 365 ns | **8.7x** | Hash operations |
+| **Keccak256 (1KB)** | 23.90 µs | 1.91 µs | **12.5x** | Large data hashing |
+| **Address checksum** | 3.19 µs | ~800 ns | **4x** | EIP-55 validation |
+| **CREATE address** | ~12 µs | ~3 µs | **4x** | Contract deployment |
+| **CREATE2 address** | ~15 µs | ~4 µs | **3.8x** | Deterministic deploy |
+
+<Aside type="tip">
+WASM provides the most benefit for:
+- Bulk operations (processing arrays of addresses/hashes)
+- Cryptographic primitives (keccak256, secp256k1)
+- Large payloads (>256 bytes)
+</Aside>
 
 ## Build Modes
 
@@ -62,6 +81,36 @@ zig build build-ts-wasm-fast  # Builds primitives-fast.wasm
 
 ## Quick Start
 
+<Steps>
+
+1. **Install Voltaire**
+
+   ```bash
+   bun add @tevm/voltaire
+   ```
+
+2. **Import WASM implementation**
+
+   ```typescript
+   import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+   ```
+
+3. **Initialize WASM module** (one-time setup)
+
+   ```typescript
+   await Keccak256Wasm.init();
+   ```
+
+4. **Use WASM-accelerated methods**
+
+   ```typescript
+   const hash = Keccak256Wasm.hash(data);  // 8-12x faster than JS
+   ```
+
+</Steps>
+
+### Usage Patterns
+
 <Tabs>
 <TabItem label="Direct Import">
 
@@ -74,18 +123,25 @@ const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 addr.toChecksummed(); // WASM-accelerated
 ```
 
+**Bundle impact:** +2-4 KB gzipped (WASM + loader)
+
 </TabItem>
 <TabItem label="Crypto Modules">
 
 ```typescript
 import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
 
-// Init once
+// Init once (async)
 await Keccak256Wasm.init();
 
-// 2-3x faster than pure JS
+// 8-12x faster than pure JS
 const hash = Keccak256Wasm.hash(data);
+
+// Reuse for multiple operations
+const hash2 = Keccak256Wasm.hash(data2);
 ```
+
+**Bundle impact:** +2.8 KB gzipped (keccak256.wasm only)
 
 </TabItem>
 <TabItem label="Override Methods">
@@ -100,7 +156,31 @@ Address.toChecksummed = WasmAddress.toChecksummed;
 
 // Now uses WASM
 const addr = Address.fromHex("0x...");
+addr.toChecksummed(); // WASM-accelerated
 ```
+
+**When to use:** Migrate existing code without changing imports
+
+</TabItem>
+<TabItem label="Conditional Loading">
+
+```typescript
+// Detect WASM support
+const hasWasm = typeof WebAssembly !== 'undefined';
+
+// Conditionally load WASM or JS
+const Keccak256 = hasWasm
+  ? (await import('@tevm/voltaire/crypto/keccak256.wasm')).Keccak256Wasm
+  : (await import('@tevm/voltaire/Keccak256')).Keccak256;
+
+// Initialize if WASM
+if (hasWasm) await Keccak256.init();
+
+// Use unified API
+const hash = Keccak256.hash(data);
+```
+
+**When to use:** Progressive enhancement, server-side rendering
 
 </TabItem>
 </Tabs>

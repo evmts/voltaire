@@ -1,0 +1,258 @@
+---
+title: "Precompiles Overview"
+description: Complete guide to Ethereum precompiled contracts
+---
+
+Precompiled contracts are special contracts at fixed addresses that execute optimized native code instead of EVM bytecode. They provide efficient implementations of cryptographic operations and other complex computations.
+
+## Complete Precompile List
+
+| Address | Name | Gas Cost | Hardfork | Description |
+|---------|------|----------|----------|-------------|
+| 0x01 | [ecRecover](/precompiles/ecrecover) | 3,000 | Frontier | ECDSA signature recovery |
+| 0x02 | [SHA256](/precompiles/sha256) | 60 + 12/word | Frontier | SHA-256 hash function |
+| 0x03 | [RIPEMD160](/precompiles/ripemd160) | 600 + 120/word | Frontier | RIPEMD-160 hash function |
+| 0x04 | [Identity](/precompiles/identity) | 15 + 3/word | Frontier | Identity function (copy) |
+| 0x05 | [ModExp](/precompiles/modexp) | Complex | Byzantium | Modular exponentiation |
+| 0x06 | [BN254 Add](/precompiles/bn254-add) | 150 | Byzantium | BN254 elliptic curve addition |
+| 0x07 | [BN254 Mul](/precompiles/bn254-mul) | 6,000 | Byzantium | BN254 scalar multiplication |
+| 0x08 | [BN254 Pairing](/precompiles/bn254-pairing) | 34,000 + 34,000/pair | Byzantium | BN254 pairing check |
+| 0x09 | [Blake2f](/precompiles/blake2f) | Variable | Istanbul | Blake2b compression function |
+| 0x0a | [Point Evaluation](/precompiles/point-evaluation) | 50,000 | Cancun | KZG point evaluation (EIP-4844) |
+| 0x0b-0x12 | BLS12-381 | Variable | Prague | BLS signature operations |
+
+## Quick Comparison
+
+### Hash Functions
+
+| Precompile | Output Size | Base Gas | Use Case |
+|------------|-------------|----------|----------|
+| Keccak256 (opcode) | 32 bytes | 30 | Ethereum-native hashing |
+| SHA256 | 32 bytes | 60 | Bitcoin compatibility, SPV proofs |
+| RIPEMD160 | 20 bytes | 600 | Bitcoin address generation |
+
+**Recommendation:** Use Keccak256 for Ethereum operations. Use SHA256/RIPEMD160 only for cross-chain compatibility.
+
+### Elliptic Curves
+
+| Curve | Precompiles | Use Case | Gas Cost |
+|-------|-------------|----------|----------|
+| secp256k1 | ecRecover | Transaction signing, Ethereum accounts | 3,000 |
+| BN254 (alt_bn128) | Add, Mul, Pairing | zkSNARKs, zero-knowledge proofs | 150 - 100,000+ |
+| BLS12-381 | 8 operations | BLS signatures, Eth2 consensus | Variable |
+
+**Recommendation:**
+- secp256k1 for account management and signatures
+- BN254 for zkSNARKs (Groth16, Plonk)
+- BLS12-381 for aggregatable signatures
+
+### Data Operations
+
+| Precompile | Operation | Gas | When to Use |
+|------------|-----------|-----|-------------|
+| Identity | Copy data | 15 + 3/word | Data copying, proxy contracts |
+| MCOPY (opcode) | Memory copy | 3 + 3/word | Memory-to-memory (post-Cancun) |
+| CALLDATACOPY (opcode) | Calldata copy | 3 + 3/word | Calldata-to-memory |
+
+**Recommendation:** Use MCOPY for memory operations if available, Identity for precompile-based copying.
+
+## Performance Characteristics
+
+### Gas Cost per Byte
+
+Approximate cost per byte for different operations:
+
+| Operation | Gas/Byte | Efficiency |
+|-----------|----------|------------|
+| Identity | ~0.09 | Most efficient |
+| SHA256 | ~0.38 | Good |
+| Keccak256 | ~0.19 | Very good |
+| RIPEMD160 | ~3.75 | Expensive |
+
+### Cost Trends by Hardfork
+
+#### Istanbul (EIP-1108): zkSNARK Cost Reduction
+
+| Operation | Pre-Istanbul | Istanbul | Reduction |
+|-----------|--------------|----------|-----------|
+| BN254 Add | 500 | 150 | -70% |
+| BN254 Mul | 40,000 | 6,000 | -85% |
+| BN254 Pairing | 80,000 base + 100,000/pair | 45,000 base + 34,000/pair | ~65% |
+
+#### Berlin (EIP-2565): ModExp Cost Reduction
+
+| Operation | Pre-Berlin | Berlin | Reduction |
+|-----------|------------|--------|-----------|
+| RSA-2048 ModExp | ~300,000 | ~50,000 | -83% |
+| RSA-4096 ModExp | ~1,200,000 | ~200,000 | -83% |
+
+These reductions made zkSNARK verification and RSA operations practical on Ethereum.
+
+## Common Use Cases
+
+### zkSNARK Verification (Groth16)
+
+**Precompiles needed:** BN254 Add (0x06), BN254 Mul (0x07), BN254 Pairing (0x08)
+
+```typescript
+// Typical Groth16 proof verification
+// 1. Compute linear combination of public inputs
+const publicSum = computePublicInputSum(); // Uses BN254 Add + Mul
+
+// 2. Pairing check: e(A, B) = e(alpha, beta) * e(public, gamma) * e(C, delta)
+const pairingInput = buildPairingInput(proof, publicSum);
+const isValid = executeBN254Pairing(pairingInput);
+```
+
+**Gas cost:** ~300,000-500,000 gas depending on number of public inputs
+
+### Bitcoin SPV (Simplified Payment Verification)
+
+**Precompiles needed:** SHA256 (0x02)
+
+```typescript
+// Verify Bitcoin block header
+const header = bitcoinBlockHeader; // 80 bytes
+const hash1 = executeSHA256(header);
+const blockHash = executeSHA256(hash1); // Double SHA256
+// Compare blockHash with expected value
+```
+
+**Gas cost:** ~150 gas (60 + 12*3 for 80 bytes, done twice)
+
+### Bitcoin Address Verification
+
+**Precompiles needed:** SHA256 (0x02), RIPEMD160 (0x03)
+
+```typescript
+// Generate P2PKH address from public key
+const sha256Hash = executeSHA256(publicKey);
+const addressHash = executeRIPEMD160(sha256Hash);
+// addressHash is the 20-byte address payload
+```
+
+**Gas cost:** ~800 gas (SHA256: ~70, RIPEMD160: ~720)
+
+### Transaction Signature Recovery
+
+**Precompiles needed:** ecRecover (0x01)
+
+```typescript
+// Recover signer address from signature
+const input = constructEcRecoverInput(hash, v, r, s);
+const signerAddress = executeEcRecover(input);
+```
+
+**Gas cost:** 3,000 gas (fixed)
+
+### RSA Signature Verification
+
+**Precompiles needed:** ModExp (0x05)
+
+```typescript
+// Verify RSA-2048 signature
+const input = constructModExpInput(
+  signature, // base
+  publicExponent, // exp (typically 65537)
+  modulus // RSA modulus
+);
+const result = executeModExp(input);
+// Compare result with expected hash
+```
+
+**Gas cost:** ~50,000 gas (post-Berlin)
+
+## When to Use Each Precompile
+
+### Use ecRecover when:
+- Verifying Ethereum transaction signatures
+- Implementing meta-transactions
+- Validating EIP-712 signed messages
+- Building multisig wallets
+
+### Use SHA256 when:
+- Verifying Bitcoin SPV proofs
+- Interfacing with Bitcoin-based systems
+- Required by external systems/protocols
+- Building cross-chain bridges
+
+### Use RIPEMD160 when:
+- Generating Bitcoin addresses
+- Verifying Bitcoin-style addresses
+- Required for Bitcoin compatibility
+
+### Use Identity when:
+- Efficiently copying data
+- Implementing proxy contracts
+- Testing precompile mechanisms
+- Measuring gas for data operations
+
+### Use ModExp when:
+- Verifying RSA signatures
+- Implementing zero-knowledge proofs (non-pairing based)
+- Cryptographic protocols requiring modular exponentiation
+- Number theory computations
+
+### Use BN254 operations when:
+- Verifying zkSNARKs (Groth16, Plonk)
+- Building zk-Rollups
+- Privacy protocols (Zcash-style)
+- Cryptographic commitments
+
+## Security Considerations
+
+### General
+- **Out of gas:** Always provide sufficient gas limit
+- **Input validation:** Precompiles validate inputs, but plan for errors
+- **Gas griefing:** Be aware of variable-cost precompiles (ModExp, BN254 Pairing)
+
+### Cryptographic
+- **ecRecover returns zero for invalid signatures** - never revert, always check result
+- **BN254 operations reject invalid points** - ensure inputs are on-curve
+- **ModExp with zero modulus fails** - validate modulus before calling
+
+### Gas Optimization
+- **Batch operations** when possible (multiple BN254 operations)
+- **Precompute constants** to reduce precompile calls
+- **Use cheaper alternatives** when exact compatibility not needed (Keccak256 vs SHA256)
+
+## Implementation Status
+
+### Voltaire Implementation
+
+All precompiles 0x01-0x0a are fully implemented:
+
+- **Zig:** Native implementations for maximum performance
+- **TypeScript:** Wrappers around crypto module
+- **WASM:** Supported for all except KZG operations
+- **Tests:** Comprehensive test vectors from official Ethereum tests
+
+### Testing
+
+```bash
+# Test all precompiles
+zig build test -Dtest-filter=precompiles
+
+# Test specific precompile
+zig build test -Dtest-filter=sha256
+zig build test -Dtest-filter=bn254
+
+# Benchmark precompiles
+zig build bench -Dbench-filter=precompiles
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E (Precompiled Contracts)
+- [EIP-196: BN254 Curve Operations](https://eips.ethereum.org/EIPS/eip-196)
+- [EIP-198: Modular Exponentiation](https://eips.ethereum.org/EIPS/eip-198)
+- [EIP-1108: Istanbul Gas Cost Reduction](https://eips.ethereum.org/EIPS/eip-1108)
+- [EIP-2565: Berlin ModExp Gas Cost](https://eips.ethereum.org/EIPS/eip-2565)
+- [EIP-4844: Proto-Danksharding](https://eips.ethereum.org/EIPS/eip-4844)
+- [Official Ethereum Tests](https://github.com/ethereum/tests)
+
+## See Also
+
+- [Crypto Module](/crypto) - Underlying implementations
+- [Primitives](/primitives) - Related Ethereum data types
+- [Hardforks](/primitives/hardfork) - Hardfork-specific behavior

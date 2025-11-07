@@ -9,9 +9,11 @@ description: Blake2b compression function for efficient hashing
 **Introduced:** Istanbul (EIP-152)
 **EIP:** [EIP-152](https://eips.ethereum.org/EIPS/eip-152)
 
-The Blake2f precompile implements the Blake2b compression function F. It allows contracts to efficiently compute Blake2b hashes by exposing the core compression step. Blake2 is a fast cryptographic hash function used in Zcash, Monero, and other systems.
+The Blake2f precompile implements the Blake2b compression function F, the core building block of the Blake2b cryptographic hash function. Unlike other hash precompiles that compute complete hashes, Blake2f exposes the low-level compression step, giving smart contracts fine-grained control over Blake2b hashing. This enables efficient verification of Zcash Equihash proofs and cross-chain bridges to Blake2-based blockchains.
 
-Unlike other hash precompiles, Blake2f exposes the low-level compression function rather than the complete hash algorithm. This enables optimized implementations of Blake2b variants and Equihash verification.
+Blake2 is a modern cryptographic hash function that's faster than MD5, SHA-1, SHA-2, and SHA-3 while maintaining strong security guarantees. It's widely used in Zcash, Monero, IPFS, and Wireguard. The "b" variant (Blake2b) operates on 64-bit words and produces up to 512-bit (64-byte) hashes.
+
+By exposing the compression function directly, this precompile allows contracts to implement custom Blake2b variants (different initialization vectors, personalization strings, or tree hashing) without requiring new precompiles for each variant.
 
 ## Gas Cost
 

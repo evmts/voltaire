@@ -104,11 +104,24 @@ Failures return error (not false). Only valid inputs that fail the pairing check
 
 ## Use Cases
 
-- **zkSNARK verification:** Groth16 is the most common zkSNARK, requires pairing check
-- **zk-Rollups:** Layer 2 validity proofs (zkSync, Polygon zkEVM, Scroll)
-- **Privacy protocols:** Tornado Cash, Aztec Protocol
-- **Identity systems:** Semaphore, anonymous credentials
-- **BLS signatures:** Aggregate signature verification (though BLS12-381 preferred now)
+**Production Applications:**
+
+- **Tornado Cash:** Privacy-preserving Ethereum transactions using Groth16 proofs. Each withdrawal verifies a pairing check proving knowledge of a deposit without revealing which one (181,000 gas).
+
+- **zk-Rollups:** Layer 2 scaling solutions verify validity proofs on L1:
+  - **zkSync Era:** Uses PLONK (different proof system, but same curve)
+  - **Polygon zkEVM:** Groth16 verification for batches of thousands of transactions
+  - **Scroll:** zkEVM using different proof systems but BN254 pairing primitives
+
+- **Semaphore:** Anonymous signaling and voting. Proves "I'm in this group" without revealing identity. Used by privacy protocols and DAO voting systems.
+
+- **Aztec Protocol:** Privacy-preserving smart contracts on Ethereum. Each private transaction includes zkSNARK proof verified via pairing.
+
+**Why Pairing Instead of Pure Software?**
+
+Computing a BN254 pairing in EVM bytecode would cost millions of gas. The precompile uses optimized native code (via arkworks-rs) and reduces cost by 99%+. Without this precompile, zkSNARKs on Ethereum would be economically infeasible.
+
+**BLS Signatures (Historical):** Early BLS signature schemes used BN254, but modern implementations prefer BLS12-381 (see precompiles 0x0a-0x0d) for better security margins.
 
 ## Implementation Details
 
