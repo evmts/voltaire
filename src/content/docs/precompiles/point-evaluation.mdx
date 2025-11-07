@@ -9,9 +9,11 @@ description: KZG point evaluation for EIP-4844 blob verification
 **Introduced:** Cancun (EIP-4844)
 **EIP:** [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)
 
-The Point Evaluation precompile verifies KZG (Kate-Zaverucha-Goldberg) proofs for EIP-4844 blob transactions. It checks that a KZG commitment opens to a claimed value at a specific point, enabling efficient data availability verification for Proto-Danksharding.
+The Point Evaluation precompile verifies KZG (Kate-Zaverucha-Goldberg) polynomial commitment proofs for EIP-4844 blob transactions. It proves that a blob (up to 128KB of data) committed to by a KZG commitment evaluates to a specific value at a random point, without revealing the full blob data. This enables Proto-Danksharding, the critical stepping stone to full Ethereum sharding.
 
-This precompile is crucial for Ethereum's scaling roadmap, allowing rollups to post data as blobs (up to 128KB) with cryptographic proofs instead of expensive calldata.
+EIP-4844 introduced "blobs" - large data attachments to transactions that are stored by consensus nodes but not by execution layer. Rollups can post transaction batches as blobs (~128KB each) for ~10x cheaper than calldata, while the KZG proof ensures data availability. This precompile is the cryptographic verification that makes blob trust guarantees possible.
+
+Without this precompile, rollups would remain economically constrained by expensive calldata (~16 gas/byte). With it, Ethereum scales to support global rollup activity at acceptable costs, making the "world computer" vision practical.
 
 ## Gas Cost
 
@@ -107,11 +109,36 @@ Invalid proofs that pass format validation return 64 zero bytes (not an error).
 
 ## Use Cases
 
-- **Blob verification:** Validate EIP-4844 blob transaction data availability
-- **Rollup data availability:** Layer 2s verify blob data commitments
-- **Proto-Danksharding:** Core primitive for Ethereum's scaling roadmap
-- **Data availability sampling:** Future full Danksharding will use KZG extensively
-- **Stateless clients:** Verify data without downloading full blobs
+**Production Applications (Post-Cancun):**
+
+- **Optimism (OP Stack):** Posts transaction batches as blobs instead of calldata. Reduces L1 data costs by ~90%. Each blob contains ~1000-2000 L2 transactions compressed. The Point Evaluation precompile verifies each blob's KZG proof to ensure data availability.
+
+- **Arbitrum One:** Migrated to blobs post-Cancun. Blob-based batches cost ~0.01 ETH vs ~0.10 ETH for calldata equivalents. Processes 40+ TPS on L2 while keeping L1 costs manageable.
+
+- **Base (Coinbase L2):** Uses blobs exclusively for data posting. Handles 10M+ transactions/day with blob-based data availability, keeping fees under $0.01 per transaction.
+
+- **zkSync Era:** Posts compressed transaction data and zk-proofs as blobs. Combines proof verification with blob data availability for maximum efficiency.
+
+- **Polygon zkEVM:** Blob-based batch submission. Each blob contains validity proofs + transaction data for an entire batch.
+
+- **Starknet:** Posts STARK proofs and transaction data as blobs. Cairo VM state transitions verified on L1 using blob data.
+
+**Why This Matters:**
+
+Before EIP-4844 (pre-Cancun), rollups paid ~16 gas/byte for calldata. A 128KB batch cost ~2M gas ≈ 0.05-0.2 ETH depending on gas prices.
+
+After EIP-4844 (post-Cancun), same data as blob costs ~50K gas (this precompile) + blob gas (separate fee market). Typical cost: 0.001-0.01 ETH for 128KB.
+
+**Result:** 10-20x cost reduction enables rollups to scale from ~10 TPS to 100+ TPS while maintaining decentralization and security.
+
+**Future: Full Danksharding**
+
+Proto-Danksharding (EIP-4844) is step 1. Future upgrades will add:
+- **Data availability sampling (DAS):** Clients verify data by sampling random chunks
+- **More blobs per block:** From 3-6 blobs to 64+ blobs (8MB+ per block)
+- **KZG multi-proofs:** This precompile will verify multiple evaluation points efficiently
+
+Target: 1MB/second sustainable data throughput (enough for global rollup adoption)
 
 ## Implementation Details
 
@@ -121,22 +148,84 @@ Invalid proofs that pass format validation return 64 zero bytes (not an error).
 - **Curve:** BLS12-381 (embedding degree 12, 381-bit prime)
 - **Algorithm:** KZG polynomial commitment opening verification
 
-## KZG Commitments
+## Mathematical Background: KZG Commitments Explained
 
-KZG (Kate-Zaverucha-Goldberg) commitments:
-- Polynomial commitments with constant-size proofs
-- Commitment: C = [p(τ)]₁ where p is polynomial, τ is trusted setup secret
-- Opening: Prove p(z) = y for specific point z
-- Verification: Single pairing check on BLS12-381
+**What is a Polynomial Commitment?**
 
-## EIP-4844 Blob Structure
+A polynomial commitment scheme lets you commit to a polynomial `p(x)` with a short commitment `C`, then later prove `p(z) = y` for any point `z` without revealing the polynomial. Think of it like a sealed envelope containing a graph - you can prove the graph passes through specific points without opening the envelope.
 
-Each blob:
-- Size: 128 KB (131,072 bytes)
-- Encoded as: 4096 field elements (32 bytes each)
-- Field: BLS12-381 scalar field (Fr)
-- Commitment: Single 48-byte G1 point
-- Proof: Single 48-byte G1 point per evaluation
+**KZG (Kate-Zaverucha-Goldberg) Scheme:**
+
+1. **Trusted Setup:** A multi-party ceremony generates powers of a secret `τ`:
+   - `[1]₁, [τ]₁, [τ²]₁, ..., [τ⁴⁰⁹⁵]₁` (in elliptic curve group G1)
+   - The secret `τ` is discarded - nobody knows it
+   - Ethereum's KZG ceremony had 140,000+ participants in 2023
+
+2. **Commitment:** To commit to polynomial `p(x) = a₀ + a₁x + a₂x² + ... + aₙxⁿ`:
+   - Compute `C = [p(τ)]₁ = a₀[1]₁ + a₁[τ]₁ + a₂[τ²]₁ + ... + aₙ[τⁿ]₁`
+   - This is a single 48-byte elliptic curve point (BLS12-381 G1)
+
+3. **Opening Proof:** To prove `p(z) = y`:
+   - Compute quotient polynomial: `q(x) = (p(x) - y) / (x - z)`
+   - Proof is `π = [q(τ)]₁` (another 48-byte point)
+
+4. **Verification (this precompile):** Check using pairing:
+   - `e(C - [y]₁, [1]₂) = e(π, [τ]₂ - [z]₂)`
+   - This is a single BLS12-381 pairing operation (~50,000 gas)
+   - If equation holds, proof is valid
+
+**Why This Works:**
+
+The pairing check verifies: `q(τ) * (τ - z) = p(τ) - y`
+
+This is only true if `q(x) * (x - z) = p(x) - y`, which means `p(z) = y`. Since nobody knows `τ`, you can't fake a proof without actually knowing `p(x)`.
+
+**Security:** Breaking KZG requires either:
+- Solving discrete log on BLS12-381 (~128-bit security)
+- All trusted setup participants colluding (impossibly unlikely with 140,000+ participants)
+
+**Why BLS12-381 Instead of BN254?**
+
+- **Higher security:** ~128-bit vs ~100-bit security
+- **Longer term:** BN254 security degrades over time, BLS12-381 more future-proof
+- **Standardization:** BLS12-381 is industry standard (Zcash, Filecoin, Ethereum 2.0)
+
+## EIP-4844 Blob Structure and Encoding
+
+**Blob Anatomy:**
+
+Each blob is 131,072 bytes (128 KB) of raw data, encoded as a polynomial for KZG commitment:
+
+- **Raw size:** 131,072 bytes (128 KB)
+- **Encoded as:** 4096 field elements × 32 bytes each = 131,072 bytes
+- **Field elements:** Values in BLS12-381 scalar field Fr (255-bit prime)
+- **Polynomial degree:** 4095 (degree n-1 for n points)
+- **Commitment:** Single 48-byte BLS12-381 G1 point
+- **Proof size:** 48 bytes per evaluation point
+
+**Encoding Process:**
+
+1. Split blob data into 4096 chunks of 32 bytes each
+2. Interpret each chunk as a field element in Fr (must be < BLS modulus)
+3. These 4096 values become coefficients of a degree-4095 polynomial
+4. Commitment is computed using KZG: `C = [p(τ)]₁`
+
+**Why 4096 Field Elements?**
+
+- **FFT-friendly:** 4096 = 2¹² allows efficient FFT operations
+- **Data availability sampling:** Future full Danksharding will sample random subsets
+- **Proof size:** Constant 48 bytes regardless of blob size
+- **Verification:** Single pairing check regardless of blob size
+
+**Field Element Constraints:**
+
+Each 32-byte chunk must be interpreted as an integer less than the BLS12-381 field modulus:
+```
+BLS_MODULUS = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+            ≈ 2^255 (slightly less)
+```
+
+Values ≥ modulus are invalid and cause blob rejection.
 
 ## Versioned Hash Format
 
