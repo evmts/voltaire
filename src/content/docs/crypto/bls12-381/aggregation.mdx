@@ -1,0 +1,201 @@
+---
+title: Signature Aggregation
+description: Advanced BLS signature and key aggregation strategies for Ethereum validators
+---
+
+# Signature Aggregation
+
+BLS signature aggregation is the killer feature enabling Ethereum's proof-of-stake consensus with thousands of validators.
+
+## Benefits
+
+- **Bandwidth**: n signatures → 1 signature (48 bytes vs 48n bytes)
+- **Verification**: 1 pairing check vs n checks
+- **Storage**: Constant size regardless of validator count
+- **Non-interactive**: No coordination required
+
+## Aggregation Strategies
+
+### Same Message Aggregation
+
+All validators sign identical message (beacon block):
+
+```typescript
+const blockRoot = computeBlockRoot(block);
+const signatures = validators.map(v => v.sign(blockRoot));
+const aggregated = await aggregateSignatures(signatures);
+// Size: 48 bytes regardless of validator count
+```
+
+**Verification**: Single pairing check after aggregating public keys
+
+### Different Message Aggregation
+
+Each validator signs different attestation:
+
+```typescript
+// Attest to different source/target checkpoints
+const attestations = validators.map((v, i) => ({
+  signature: v.sign(attestationData[i]),
+  data: attestationData[i]
+}));
+```
+
+**Verification**: Multi-pairing check (n+1 pairings)
+
+## Ethereum Use Cases
+
+### Sync Committee (512 validators)
+
+```typescript
+interface SyncAggregate {
+  syncCommitteeBits: BitVector[512];  // Participation flags
+  syncCommitteeSignature: Signature;  // Aggregated 48 bytes
+}
+
+async function aggregateSyncCommittee(
+  validators: Validator[],
+  blockRoot: Uint8Array
+): Promise<SyncAggregate> {
+  const signatures: Uint8Array[] = [];
+  const bits: boolean[] = [];
+
+  for (let i = 0; i < 512; i++) {
+    if (validators[i].isOnline()) {
+      signatures.push(await validators[i].sign(blockRoot));
+      bits[i] = true;
+    } else {
+      bits[i] = false;
+    }
+  }
+
+  return {
+    syncCommitteeBits: bits,
+    syncCommitteeSignature: await aggregateSignatures(signatures)
+  };
+}
+```
+
+**Result**: 512 signatures → 48 bytes + 64 byte bitfield
+
+### Attestation Aggregation
+
+```typescript
+// Aggregate attestations for same epoch/slot
+const aggregatedAttestation = {
+  aggregationBits: BitList[MAX_VALIDATORS],
+  data: AttestationData,
+  signature: AggregateSignature  // All attesting validators
+};
+```
+
+## Optimizations
+
+### Incremental Aggregation
+
+Add signatures one-by-one as they arrive:
+
+```typescript
+class SignatureAggregator {
+  private current: Uint8Array | null = null;
+
+  async add(signature: Uint8Array): Promise<void> {
+    if (this.current === null) {
+      this.current = signature;
+    } else {
+      const input = new Uint8Array(256);
+      input.set(this.current, 0);
+      input.set(signature, 128);
+
+      const output = new Uint8Array(128);
+      await bls12_381.g1Add(input, output);
+      this.current = output;
+    }
+  }
+
+  getAggregate(): Uint8Array | null {
+    return this.current;
+  }
+}
+```
+
+### Precomputed Public Key Aggregates
+
+Cache aggregated public keys for known validator sets:
+
+```typescript
+const syncCommitteePubkeyCache = new Map<number, Uint8Array>();
+
+async function getAggregatedPubkey(
+  epoch: number,
+  participants: boolean[]
+): Promise<Uint8Array> {
+  const cacheKey = hashParticipants(epoch, participants);
+
+  if (!syncCommitteePubkeyCache.has(cacheKey)) {
+    const pubkeys = getSyncCommittee(epoch)
+      .filter((_, i) => participants[i]);
+    const aggregated = await aggregateG2Points(pubkeys);
+    syncCommitteePubkeyCache.set(cacheKey, aggregated);
+  }
+
+  return syncCommitteePubkeyCache.get(cacheKey)!;
+}
+```
+
+## Security
+
+### Rogue Key Attacks
+
+**Prevention**: Proof-of-possession required at validator deposit
+
+```typescript
+// Validator must prove they know private key
+const pop = await generateProofOfPossession(privkey, pubkey);
+
+// Verified before allowing validator registration
+const isValid = await verifyProofOfPossession(pubkey, pop);
+```
+
+### Aggregate Verification
+
+```typescript
+async function verifyAggregateSignature(
+  signature: Uint8Array,
+  publicKeys: Uint8Array[],
+  messages: Uint8Array[]
+): Promise<boolean> {
+  // Check prevents rogue key attack
+  // All pubkeys must have valid proof-of-possession
+
+  if (publicKeys.length !== messages.length) {
+    throw new Error("Mismatched pubkeys and messages");
+  }
+
+  // Build multi-pairing check
+  return batchVerifySignatures(
+    [signature],
+    publicKeys,
+    messages
+  );
+}
+```
+
+## Performance
+
+**Aggregation** (100 signatures):
+- Time: ~1.5 ms (15 μs per addition)
+- Result: Single 48-byte signature
+
+**Verification**:
+- Individual: ~2ms × 100 = 200ms
+- Aggregated (same msg): ~2ms
+- Aggregated (diff msg): ~2ms + 23ms × 100 = ~2.3s
+
+**Savings**: 100x faster for same-message verification
+
+## Related
+
+- [BLS Signatures](./signatures)
+- [Usage Patterns](./usage-patterns)
+- [Performance](./performance)

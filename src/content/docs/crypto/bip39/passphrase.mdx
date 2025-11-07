@@ -1,0 +1,540 @@
+---
+title: BIP-39 Passphrase (25th Word)
+description: Optional passphrase for enhanced security and plausible deniability
+---
+
+## Overview
+
+BIP-39 supports an optional passphrase (sometimes called "25th word") that modifies seed derivation. This enables plausible deniability, two-factor security, and enhanced entropy.
+
+## How Passphrases Work
+
+### PBKDF2 Salt Modification
+
+Passphrase is appended to the PBKDF2 salt:
+
+```
+Without passphrase:
+salt = "mnemonic"
+
+With passphrase:
+salt = "mnemonic" + passphrase
+
+seed = PBKDF2(mnemonic, salt, 2048, SHA512, 64 bytes)
+```
+
+### Different Passphrases = Different Wallets
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+
+const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+
+// No passphrase
+const seed1 = await Bip39.mnemonicToSeed(mnemonic);
+
+// Empty string (equivalent to no passphrase)
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, '');
+
+// With passphrase
+const seed3 = await Bip39.mnemonicToSeed(mnemonic, 'secret');
+
+console.log(seed1.every((b, i) => b === seed2[i])); // true (same)
+console.log(seed1.some((b, i) => b !== seed3[i])); // true (different)
+```
+
+## Use Cases
+
+### 1. Plausible Deniability
+
+Create decoy wallets with different passphrases:
+
+```typescript
+const mnemonic = Bip39.generateMnemonic(256);
+
+// Decoy wallet (small amount, no passphrase)
+const decoySeed = await Bip39.mnemonicToSeed(mnemonic);
+const decoyWallet = HDWallet.fromSeed(decoySeed);
+
+// Real wallet (main funds, with passphrase)
+const realSeed = await Bip39.mnemonicToSeed(mnemonic, 'my real secret');
+const realWallet = HDWallet.fromSeed(realSeed);
+
+/**
+ * Under duress:
+ * - Provide mnemonic without passphrase
+ * - Reveals decoy wallet only
+ * - Real funds remain hidden
+ */
+```
+
+### 2. Two-Factor Security
+
+Separate storage of mnemonic and passphrase:
+
+```typescript
+/**
+ * Factor 1: Mnemonic (physical backup)
+ * - Written on paper
+ * - Stored in safe
+ * - Can be duplicated
+ *
+ * Factor 2: Passphrase (memorized)
+ * - Never written down
+ * - Only in your head
+ * - Cannot be stolen physically
+ */
+
+const mnemonic = Bip39.generateMnemonic(256);
+const memorizedPassphrase = 'correct horse battery staple ancient wisdom';
+
+// Attacker needs both to access funds
+const seed = await Bip39.mnemonicToSeed(mnemonic, memorizedPassphrase);
+```
+
+### 3. Enhanced Entropy
+
+Add entropy even if mnemonic is compromised:
+
+```typescript
+// Even if mnemonic generation was weak
+const potentiallyWeakMnemonic = Bip39.generateMnemonic(128); // 12 words
+
+// Strong passphrase adds significant entropy
+const strongPassphrase = 'my very long and complex passphrase with 128+ bits of entropy';
+
+const seed = await Bip39.mnemonicToSeed(potentiallyWeakMnemonic, strongPassphrase);
+// Combined security is much stronger
+```
+
+### 4. Inheritance/Time-Lock
+
+```typescript
+/**
+ * Split security:
+ * - Mnemonic: in will/safe deposit box
+ * - Passphrase: given to heirs separately
+ *
+ * Heirs need both to access funds
+ */
+
+const mnemonic = Bip39.generateMnemonic(256);
+const inheritancePassphrase = 'revealed-in-will';
+
+// Document in will: "Use passphrase: [inheritancePassphrase]"
+```
+
+## Passphrase Strength
+
+### Weak Passphrases
+
+```typescript
+// ❌ Too weak - easily guessed
+const weak = [
+  '',                    // No passphrase
+  '1234',               // Trivial
+  'password',           // Dictionary word
+  'myname',             // Personal info
+  'qwerty',             // Keyboard pattern
+];
+
+// Attacker can brute force these
+for (const p of weak) {
+  const seed = await Bip39.mnemonicToSeed(mnemonic, p);
+  // Try to find funds at derived addresses
+}
+```
+
+### Strong Passphrases
+
+```typescript
+// ✅ Strong - high entropy, memorable
+const strong = [
+  'correct horse battery staple ancient wisdom mountain river',  // Diceware (7+ words)
+  'My cat Mittens was born on July 4th 2015 at 3:47 PM',       // Personal sentence
+  'L3t$_M@k3-A_R@nd0m!P@$$phr@$3#2024',                        // Complex alphanumeric
+  'ILikeToEat🍕OnSundaysWhileWatching📺',                       // Unicode + emoji
+];
+
+// High entropy passphrases are effectively unbreakable
+```
+
+### Passphrase Entropy Calculator
+
+```typescript
+function estimateEntropyBits(passphrase: string): number {
+  const hasLower = /[a-z]/.test(passphrase);
+  const hasUpper = /[A-Z]/.test(passphrase);
+  const hasDigit = /\d/.test(passphrase);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(passphrase);
+
+  let charsetSize = 0;
+  if (hasLower) charsetSize += 26;
+  if (hasUpper) charsetSize += 26;
+  if (hasDigit) charsetSize += 10;
+  if (hasSpecial) charsetSize += 32; // Estimate
+
+  const entropyPerChar = Math.log2(charsetSize);
+  const totalEntropy = entropyPerChar * passphrase.length;
+
+  return totalEntropy;
+}
+
+console.log(estimateEntropyBits('password')); // ~38 bits (weak)
+console.log(estimateEntropyBits('correct horse battery staple')); // ~132 bits (strong)
+console.log(estimateEntropyBits('L3t$_M@k3-A_R@nd0m!#2024')); // ~156 bits (very strong)
+```
+
+## Passphrase Management
+
+### Memorization
+
+```typescript
+/**
+ * Diceware method (recommended):
+ * - Roll dice to select words
+ * - 7+ words = 90+ bits entropy
+ * - Memorable phrase
+ */
+
+const dicewarePassphrase = 'correct horse battery staple ancient wisdom mountain';
+
+// Practice recovery before funding:
+async function testRecovery() {
+  const recoveredSeed = await Bip39.mnemonicToSeed(mnemonic, dicewarePassphrase);
+  const recoveredWallet = HDWallet.fromSeed(recoveredSeed);
+  const address = getFirstAddress(recoveredWallet);
+
+  console.log('Recovered:', address);
+  // Verify matches original
+}
+```
+
+### Storage (If Must Write)
+
+```typescript
+/**
+ * If passphrase must be written:
+ * - NEVER store with mnemonic
+ * - Encrypt differently
+ * - Use different physical location
+ * - Consider split storage
+ */
+
+// ❌ NEVER
+const backup = {
+  mnemonic: '...',
+  passphrase: '...'
+}; // Single file = single point of failure
+
+// ✅ BETTER
+// Mnemonic: Safe deposit box A
+// Passphrase: Safe deposit box B (different bank)
+```
+
+### Hint System
+
+```typescript
+interface PassphraseHints {
+  // NEVER include actual passphrase
+  hints: string[];
+
+  // Can include structure
+  structure: {
+    words: number;
+    type: 'diceware' | 'sentence' | 'random';
+  };
+
+  // Recovery test
+  firstAddressChecksum?: string; // First 8 chars to verify
+}
+
+const hints: PassphraseHints = {
+  hints: [
+    'Favorite book title',
+    'Wedding anniversary year',
+    'Pet name',
+  ],
+  structure: {
+    words: 7,
+    type: 'diceware'
+  },
+  firstAddressChecksum: '0x1234abcd'
+};
+
+// User can reconstruct from hints
+// Hints alone are useless to attacker
+```
+
+## Testing Passphrases
+
+### Verification
+
+```typescript
+async function verifyPassphrase(
+  mnemonic: string,
+  passphrase: string,
+  expectedAddress: string
+): Promise<boolean> {
+  // Derive seed
+  const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+
+  // Derive first address
+  const root = HDWallet.fromSeed(seed);
+  const eth0 = HDWallet.deriveEthereum(root, 0, 0);
+  const actualAddress = deriveAddress(eth0);
+
+  // Compare
+  return actualAddress.toLowerCase() === expectedAddress.toLowerCase();
+}
+
+// Test before using in production
+const correct = await verifyPassphrase(
+  mnemonic,
+  'my passphrase',
+  '0x1234...'
+);
+
+if (!correct) {
+  console.error('Wrong passphrase!');
+}
+```
+
+### Typo Detection
+
+```typescript
+/**
+ * Passphrases are case-sensitive and exact:
+ */
+
+const original = 'correct horse battery staple';
+
+const typos = [
+  'correct horse battery staples',  // Added 's'
+  'correct horse battery',          // Missing word
+  'Correct horse battery staple',   // Capital 'C'
+  'correct  horse battery staple',  // Extra space
+];
+
+// Each produces completely different wallet
+for (const typo of typos) {
+  const seed1 = await Bip39.mnemonicToSeed(mnemonic, original);
+  const seed2 = await Bip39.mnemonicToSeed(mnemonic, typo);
+
+  console.log('Different:', seed1.some((b, i) => b !== seed2[i])); // true
+}
+
+// NO ERROR OR WARNING - all valid passphrases!
+```
+
+## Edge Cases
+
+### Empty String
+
+```typescript
+// Empty string and no passphrase are equivalent
+const seed1 = await Bip39.mnemonicToSeed(mnemonic);
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, '');
+
+console.log(seed1.every((b, i) => b === seed2[i])); // true
+```
+
+### Whitespace
+
+```typescript
+// Leading/trailing whitespace matters
+const pass1 = 'password';
+const pass2 = ' password';
+const pass3 = 'password ';
+
+const seed1 = await Bip39.mnemonicToSeed(mnemonic, pass1);
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, pass2);
+const seed3 = await Bip39.mnemonicToSeed(mnemonic, pass3);
+
+// All different!
+console.log(seed1.some((b, i) => b !== seed2[i])); // true
+console.log(seed1.some((b, i) => b !== seed3[i])); // true
+```
+
+### Unicode Characters
+
+```typescript
+// Full Unicode support via NFKD normalization
+const unicodePassphrases = [
+  'café',                    // Accented characters
+  'パスワード',              // Japanese
+  'пароль',                  // Cyrillic
+  '🔑🔐🗝️',                  // Emoji
+];
+
+// All valid, normalized to NFKD before hashing
+for (const p of unicodePassphrases) {
+  const seed = await Bip39.mnemonicToSeed(mnemonic, p);
+  console.log('Seed length:', seed.length); // 64
+}
+```
+
+### Unicode Normalization
+
+```typescript
+// Different Unicode representations normalized
+const form1 = 'café'; // U+00E9 (composed é)
+const form2 = 'café'; // U+0065 + U+0301 (e + combining accent)
+
+const seed1 = await Bip39.mnemonicToSeed(mnemonic, form1);
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, form2);
+
+// NFKD normalization ensures same seed
+console.log(seed1.every((b, i) => b === seed2[i])); // true
+```
+
+## Security Considerations
+
+### Forgetting Passphrase
+
+```typescript
+/**
+ * CRITICAL WARNING:
+ * - Forgotten passphrase = permanent loss
+ * - No recovery mechanism exists
+ * - No customer support can help
+ * - Funds are unrecoverable
+ */
+
+// Before using passphrase in production:
+async function passphraseRecoveryTest() {
+  const mnemonic = Bip39.generateMnemonic(256);
+  const passphrase = 'my secret passphrase';
+
+  // 1. Generate wallet
+  const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+  const originalAddress = deriveFirstAddress(seed);
+
+  // 2. User writes mnemonic only (not passphrase)
+  console.log('Mnemonic backup:', mnemonic);
+
+  // 3. Later, user tries to recover without passphrase
+  const seedWithoutPass = await Bip39.mnemonicToSeed(mnemonic);
+  const recoveredAddress = deriveFirstAddress(seedWithoutPass);
+
+  // 4. DIFFERENT ADDRESS - funds lost!
+  console.log('Original:', originalAddress);
+  console.log('Recovered:', recoveredAddress);
+  console.log('Match:', originalAddress === recoveredAddress); // false
+}
+```
+
+### Brute Force Resistance
+
+```typescript
+// Passphrase strength vs attack time
+const passphraseStrengths = [
+  { passphrase: '1234', bits: 13 },
+  { passphrase: 'password', bits: 38 },
+  { passphrase: 'correct horse battery staple', bits: 132 },
+  { passphrase: 'L3t$_M@k3-A_R@nd0m!P@$$phr@$3#2024', bits: 156 },
+];
+
+for (const { passphrase, bits } of passphraseStrengths) {
+  const combinations = Math.pow(2, bits);
+  const secondsAt1B = combinations / 1e9; // 1 billion attempts/second
+  const years = secondsAt1B / (365.25 * 24 * 3600);
+
+  console.log(`Passphrase: "${passphrase}"`);
+  console.log(`  Bits: ${bits}`);
+  console.log(`  Crack time: ${years.toExponential(2)} years`);
+}
+
+// 1234: 8.2e-05 years (instantly)
+// password: 8.7 years (weak)
+// diceware: 1.7e23 years (strong)
+// complex: 1.4e30 years (overkill but good)
+```
+
+## Best Practices
+
+**1. Choose Strong Passphrases**
+
+```typescript
+// ✅ Use diceware (7+ words)
+const diceware = 'correct horse battery staple ancient wisdom mountain';
+
+// ✅ Use memorable sentence
+const sentence = 'My first cat was named Mittens and born in 2015';
+
+// ✅ Use password manager generated
+const manager = 'X7$mK9#pL2@nQ5!wR8^vT3&';
+```
+
+**2. Test Recovery Before Funding**
+
+```typescript
+async function fullRecoveryTest() {
+  // 1. Generate
+  const mnemonic = Bip39.generateMnemonic(256);
+  const passphrase = 'test passphrase';
+
+  // 2. Derive address
+  const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+  const original = deriveFirstAddress(seed);
+
+  // 3. Write mnemonic and passphrase separately
+  console.log('Write mnemonic:', mnemonic);
+  console.log('Write passphrase (separately):', passphrase);
+
+  // 4. Simulate recovery
+  const writtenMnemonic = prompt('Enter mnemonic:');
+  const writtenPassphrase = prompt('Enter passphrase:');
+
+  // 5. Verify
+  const recovered = await Bip39.mnemonicToSeed(writtenMnemonic, writtenPassphrase);
+  const recoveredAddress = deriveFirstAddress(recovered);
+
+  if (original !== recoveredAddress) {
+    throw new Error('Recovery failed! Check backup.');
+  }
+
+  console.log('✅ Recovery successful');
+}
+```
+
+**3. Document Passphrase Usage**
+
+```typescript
+interface WalletDocumentation {
+  // Safe to document
+  hasPassphrase: boolean;
+
+  // Safe to document (helps recovery)
+  passphraseType: 'none' | 'memorized' | 'written-separately';
+
+  // NEVER document actual passphrase
+  hints?: string[];
+}
+
+const docs: WalletDocumentation = {
+  hasPassphrase: true,
+  passphraseType: 'memorized',
+  hints: ['Favorite book + wedding year']
+};
+```
+
+**4. Never Reuse Passphrases**
+
+```typescript
+// ❌ Reusing passphrase across wallets
+const passphrase = 'shared secret';
+const wallet1 = await Bip39.mnemonicToSeed(mnemonic1, passphrase);
+const wallet2 = await Bip39.mnemonicToSeed(mnemonic2, passphrase);
+
+// ✅ Unique passphrase per wallet
+const wallet1Pass = 'unique secret for wallet 1';
+const wallet2Pass = 'unique secret for wallet 2';
+```
+
+## References
+
+- [BIP-39 Specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
+- [Diceware Wordlist](https://www.eff.org/dice)
+- [Unicode NFKD Normalization](https://unicode.org/reports/tr15/)
+- [PBKDF2 (RFC 2898)](https://tools.ietf.org/html/rfc2898)

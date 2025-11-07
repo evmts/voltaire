@@ -1,0 +1,309 @@
+---
+title: Quick Start
+description: Get running with Voltaire in under 3 minutes
+---
+
+import { Tabs, TabItem, Steps, Aside } from '@astrojs/starlight/components';
+
+# Quick Start
+
+Get Voltaire working in your project in under 3 minutes. This guide shows you the absolute minimum to hash data, sign messages, and work with Ethereum addresses.
+
+## Install
+
+<Tabs syncKey="pm">
+  <TabItem label="npm">
+    ```bash
+    npm install @tevm/voltaire
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add @tevm/voltaire
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add @tevm/voltaire
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add @tevm/voltaire
+    ```
+  </TabItem>
+</Tabs>
+
+## Copy-Paste Example
+
+Create a file `example.ts` and run it:
+
+<Tabs syncKey="runtime">
+  <TabItem label="Node.js">
+    ```typescript
+    import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
+
+    // 1. Hash a message
+    const message = "Hello Ethereum";
+    const hash = Keccak256.hash(message);
+    console.log("Hash:", hash);
+
+    // 2. Generate keypair
+    const privateKey = Secp256k1.randomPrivateKey();
+    const publicKey = Secp256k1.getPublicKey(privateKey);
+
+    // 3. Sign the hash
+    const signature = Secp256k1.sign(hash, privateKey);
+    console.log("Signature:", signature);
+
+    // 4. Recover signer address
+    const signer = Secp256k1.recoverAddress(hash, signature);
+    console.log("Signer:", Address.toChecksummed(signer));
+
+    // 5. Verify signature
+    const isValid = Secp256k1.verify(hash, signature, publicKey);
+    console.log("Valid:", isValid); // true
+    ```
+
+    **Run it:**
+    ```bash
+    node --loader tsx example.ts
+    ```
+  </TabItem>
+
+  <TabItem label="Bun">
+    ```typescript
+    import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
+
+    // 1. Hash a message
+    const message = "Hello Ethereum";
+    const hash = Keccak256.hash(message);
+    console.log("Hash:", hash);
+
+    // 2. Generate keypair
+    const privateKey = Secp256k1.randomPrivateKey();
+    const publicKey = Secp256k1.getPublicKey(privateKey);
+
+    // 3. Sign the hash
+    const signature = Secp256k1.sign(hash, privateKey);
+    console.log("Signature:", signature);
+
+    // 4. Recover signer address
+    const signer = Secp256k1.recoverAddress(hash, signature);
+    console.log("Signer:", Address.toChecksummed(signer));
+
+    // 5. Verify signature
+    const isValid = Secp256k1.verify(hash, signature, publicKey);
+    console.log("Valid:", isValid); // true
+    ```
+
+    **Run it:**
+    ```bash
+    bun run example.ts
+    ```
+  </TabItem>
+
+  <TabItem label="Browser (Vite)">
+    ```typescript
+    import { Keccak256, Secp256k1, Address } from "@tevm/voltaire";
+
+    // Hash, sign, and verify
+    const message = "Hello Ethereum";
+    const hash = Keccak256.hash(message);
+
+    const privateKey = Secp256k1.randomPrivateKey();
+    const signature = Secp256k1.sign(hash, privateKey);
+    const signer = Secp256k1.recoverAddress(hash, signature);
+
+    // Display results
+    document.body.innerHTML = `
+      <h1>Voltaire Quick Start</h1>
+      <p><strong>Message:</strong> ${message}</p>
+      <p><strong>Hash:</strong> ${hash}</p>
+      <p><strong>Signer:</strong> ${Address.toChecksummed(signer)}</p>
+      <p><strong>Valid:</strong> ${Secp256k1.verify(hash, signature, Secp256k1.getPublicKey(privateKey))}</p>
+    `;
+    ```
+
+    **Run it:**
+    ```bash
+    npm run dev
+    ```
+  </TabItem>
+</Tabs>
+
+## What Just Happened?
+
+You just:
+
+1. **Hashed data** using Keccak-256 (Ethereum's hash function)
+2. **Generated a keypair** for signing
+3. **Signed a message** with secp256k1 (Ethereum's signature algorithm)
+4. **Recovered the signer** from the signature
+5. **Verified the signature** against the public key
+
+All with zero configuration and type-safe APIs.
+
+## Core Operations
+
+### Working with Addresses
+
+```typescript
+import { Address } from "@tevm/voltaire";
+
+// Create from hex
+const addr = Address.from("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+
+// Get checksummed format (EIP-55)
+console.log(addr.toChecksummed());
+// "0xA0Cf798816D4b9b9866b5330EEa46A18382f251e"
+
+// Validate addresses
+Address.isValid("0x123"); // false (too short)
+Address.isValid("0xa0cf798816d4b9b9866b5330eea46a18382f251e"); // true
+```
+
+### Hashing Data
+
+```typescript
+import { Keccak256 } from "@tevm/voltaire";
+
+// Hash strings
+const hash1 = Keccak256.hash("Hello");
+
+// Hash bytes
+const hash2 = Keccak256.hash(new Uint8Array([1, 2, 3]));
+
+// Hash hex strings
+const hash3 = Keccak256.hash("0xdeadbeef");
+```
+
+### Signing & Verification
+
+```typescript
+import { Secp256k1, Keccak256 } from "@tevm/voltaire";
+
+// Your private key (NEVER commit real keys!)
+const privateKey = "0x...";
+
+// Sign a hash
+const hash = Keccak256.hash("Sign this message");
+const signature = Secp256k1.sign(hash, privateKey);
+
+// Verify with public key
+const publicKey = Secp256k1.getPublicKey(privateKey);
+const isValid = Secp256k1.verify(hash, signature, publicKey);
+
+// Or recover the signer's address
+const signer = Secp256k1.recoverAddress(hash, signature);
+```
+
+### Transactions
+
+```typescript
+import { Transaction, Address } from "@tevm/voltaire";
+
+// Create an EIP-1559 transaction
+const tx = {
+  type: 2,
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 30_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+  value: 1_000_000_000_000_000_000n, // 1 ETH
+  data: new Uint8Array(),
+};
+
+// Sign it
+const signed = Transaction.sign(tx, privateKey);
+
+// Serialize for broadcasting
+const serialized = Transaction.serialize(signed);
+
+// Recover sender
+const sender = Transaction.recoverSender(signed);
+```
+
+## Performance Tip
+
+For production apps with heavy crypto operations, use WASM for 2-3x speedup:
+
+```typescript
+import { Keccak256Wasm } from "@tevm/voltaire/crypto/keccak256.wasm";
+
+// Initialize once (at app startup)
+await Keccak256Wasm.init();
+
+// Use just like the regular API
+const hash = Keccak256Wasm.hash(data); // 3x faster
+```
+
+<Aside type="tip">
+  WASM modules are **optional**. The pure JavaScript API works perfectly fine for most applications.
+</Aside>
+
+## Bundle Size Tip
+
+Voltaire is tree-shakeable. Import only what you need:
+
+```typescript
+// ❌ Large bundle (includes everything)
+import { Address } from "@tevm/voltaire";
+
+// ✅ Small bundle (only specific functions)
+import { fromHex, toChecksummed } from "@tevm/voltaire/Address";
+```
+
+## Next Steps
+
+Ready to go deeper? Check out:
+
+- **[Getting Started](/getting-started/)** — Full guide with core concepts and patterns
+- **[Core Primitives](/primitives/address/)** — Address, Hash, Uint, Transaction, RLP, ABI
+- **[Cryptography](/crypto/keccak256/)** — Keccak-256, secp256k1, BLS, HD Wallets
+- **[WASM Performance](/wasm/)** — Speed up crypto with Zig-compiled modules
+
+## Stuck?
+
+Common issues:
+
+<details>
+<summary>**Import errors**</summary>
+
+Make sure you're using correct paths:
+
+```typescript
+// ✅ Correct
+import { Address } from "@tevm/voltaire";
+
+// ❌ Wrong
+import { Address } from "@tevm/voltaire/primitives/Address";
+```
+
+</details>
+
+<details>
+<summary>**Type errors with branded types**</summary>
+
+Always use constructors, never raw types:
+
+```typescript
+// ❌ Won't work
+const addr: BrandedAddress = new Uint8Array(20);
+
+// ✅ Correct
+const addr = Address.from("0x...");
+```
+
+</details>
+
+<details>
+<summary>**Still stuck?**</summary>
+
+- Read the [full getting started guide](/getting-started/)
+- Check [GitHub issues](https://github.com/evmts/voltaire/issues)
+- Ask on [Twitter/X](https://twitter.com/tevmtools)
+
+</details>

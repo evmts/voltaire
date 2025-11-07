@@ -1,0 +1,478 @@
+---
+title: Seed Derivation
+description: Convert BIP-39 mnemonics to cryptographic seeds using PBKDF2
+---
+
+## Overview
+
+BIP-39 seed derivation converts human-readable mnemonics into 64-byte binary seeds using PBKDF2-HMAC-SHA512. This seed serves as the root for HD wallet key derivation.
+
+## Basic Usage
+
+### Async Derivation
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+
+const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+
+// Without passphrase
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+console.log(seed); // Uint8Array(64)
+
+// With passphrase
+const seedWithPass = await Bip39.mnemonicToSeed(mnemonic, 'my secret passphrase');
+console.log(seedWithPass); // Uint8Array(64) - different from above
+```
+
+### Sync Derivation
+
+```typescript
+// Synchronous version (blocks execution)
+const seed = Bip39.mnemonicToSeedSync(mnemonic);
+console.log(seed); // Uint8Array(64)
+
+// With passphrase
+const seedWithPass = Bip39.mnemonicToSeedSync(mnemonic, 'passphrase');
+```
+
+## PBKDF2 Algorithm
+
+### Parameters
+
+BIP-39 uses PBKDF2-HMAC-SHA512 with specific parameters:
+
+```
+Algorithm: PBKDF2
+PRF:       HMAC-SHA512
+Password:  mnemonic (NFKD normalized)
+Salt:      "mnemonic" + passphrase (NFKD normalized)
+Iterations: 2048
+Output:    64 bytes (512 bits)
+```
+
+### Step-by-Step Process
+
+**1. Normalize Mnemonic (NFKD)**
+
+```typescript
+// Unicode normalization form KD (Compatibility Decomposition)
+const normalized = mnemonic.normalize('NFKD');
+```
+
+**2. Construct Salt**
+
+```typescript
+const salt = 'mnemonic' + (passphrase || '').normalize('NFKD');
+```
+
+**3. Apply PBKDF2**
+
+```typescript
+// Pseudocode
+seed = PBKDF2(
+  password: normalized_mnemonic,
+  salt: salt,
+  iterations: 2048,
+  hash: SHA512,
+  keyLength: 64
+)
+```
+
+**4. Return 64-byte Seed**
+
+```typescript
+console.log(seed.length); // 64
+```
+
+## Passphrase Support
+
+### Why Passphrases?
+
+Passphrases add an additional security layer:
+
+**1. Plausible Deniability**
+
+```typescript
+const mnemonic = Bip39.generateMnemonic(256);
+
+// Decoy wallet (small amount)
+const decoySeed = await Bip39.mnemonicToSeed(mnemonic, '');
+
+// Real wallet (main funds)
+const realSeed = await Bip39.mnemonicToSeed(mnemonic, 'my real passphrase');
+
+// Different seeds, same mnemonic
+console.log(decoySeed.some((byte, i) => byte !== realSeed[i])); // true
+```
+
+**2. Two-Factor Security**
+
+```typescript
+// Factor 1: Mnemonic (backed up on paper)
+const mnemonic = 'abandon abandon abandon...';
+
+// Factor 2: Passphrase (memorized)
+const passphrase = 'never written down';
+
+// Attacker needs both
+const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+```
+
+**3. Enhanced Entropy**
+
+```typescript
+// Even with weak mnemonic, passphrase adds entropy
+const weakMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+const strongPassphrase = 'correct horse battery staple';
+
+const seed = await Bip39.mnemonicToSeed(weakMnemonic, strongPassphrase);
+```
+
+### Passphrase vs No Passphrase
+
+```typescript
+const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+
+// No passphrase (empty string is default)
+const seed1 = await Bip39.mnemonicToSeed(mnemonic);
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, '');
+
+// Both are equivalent
+console.log(seed1.every((byte, i) => byte === seed2[i])); // true
+
+// With passphrase produces different seed
+const seed3 = await Bip39.mnemonicToSeed(mnemonic, 'passphrase');
+console.log(seed1.some((byte, i) => byte !== seed3[i])); // true (different)
+```
+
+### Passphrase Best Practices
+
+**1. Never forget passphrase**
+
+```typescript
+// ❌ Forgetting passphrase = permanent loss
+const mnemonic = Bip39.generateMnemonic(256);
+const passphrase = 'my secret';
+const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+
+// Later...cannot recover without exact passphrase
+const wrongPassphrase = 'my secre'; // Typo!
+const wrongSeed = await Bip39.mnemonicToSeed(mnemonic, wrongPassphrase);
+// Completely different wallet - funds unrecoverable
+```
+
+**2. Use strong passphrases**
+
+```typescript
+// ❌ Weak
+const weak = '1234';
+
+// ✅ Strong
+const strong = 'correct horse battery staple ancient wisdom mountain';
+```
+
+**3. Store separately**
+
+```typescript
+// Mnemonic: in fireproof safe
+const mnemonic = Bip39.generateMnemonic(256);
+
+// Passphrase: memorized or separate secure location
+const passphrase = 'never stored with mnemonic';
+
+// Combine only when needed
+const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+```
+
+## Unicode Normalization (NFKD)
+
+### Why NFKD?
+
+Different Unicode representations of same string must produce same seed:
+
+```typescript
+// é can be represented two ways:
+// 1. Single character: U+00E9 (é)
+// 2. Combining: e (U+0065) + ́ (U+0301)
+
+const form1 = 'café'; // Composed
+const form2 = 'café'; // Decomposed (e + combining accent)
+
+// Without normalization: different seeds
+// With NFKD: same seed
+const seed1 = await Bip39.mnemonicToSeed('test mnemonic', form1);
+const seed2 = await Bip39.mnemonicToSeed('test mnemonic', form2);
+
+console.log(seed1.every((byte, i) => byte === seed2[i])); // true (with NFKD)
+```
+
+### Normalization Example
+
+```typescript
+// Japanese characters in passphrase
+const passphrase = 'パスワード';
+
+// NFKD normalization ensures consistency
+const normalized = passphrase.normalize('NFKD');
+
+const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+// Internally normalizes to NFKD
+```
+
+## Performance Considerations
+
+### Why 2048 Iterations?
+
+PBKDF2 iterations balance security vs performance:
+
+**Security:**
+- 2048 iterations slow down brute-force attacks
+- Each guess takes ~50-100ms
+- Testing 1 million passphrases takes ~14 hours
+
+**Performance:**
+- Fast enough for user experience (<100ms)
+- Not too slow for legitimate use
+
+```typescript
+console.time('seed derivation');
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+console.timeEnd('seed derivation');
+// Typically: 50-100ms
+```
+
+### Async vs Sync
+
+**Async (recommended):**
+
+```typescript
+// Non-blocking, allows UI updates
+async function deriveWallet() {
+  console.log('Deriving seed...');
+  const seed = await Bip39.mnemonicToSeed(mnemonic);
+  console.log('Seed derived!');
+  return seed;
+}
+```
+
+**Sync (use with caution):**
+
+```typescript
+// Blocks execution, may freeze UI
+function deriveWalletSync() {
+  console.log('Deriving seed...');
+  const seed = Bip39.mnemonicToSeedSync(mnemonic);
+  // UI frozen for ~100ms
+  console.log('Seed derived!');
+  return seed;
+}
+```
+
+## Security Properties
+
+### Deterministic
+
+Same input always produces same output:
+
+```typescript
+const mnemonic = Bip39.generateMnemonic(256);
+const passphrase = 'test';
+
+const seed1 = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+
+console.log(seed1.every((byte, i) => byte === seed2[i])); // true
+```
+
+### One-Way Function
+
+Cannot reverse seed to mnemonic:
+
+```typescript
+const mnemonic = Bip39.generateMnemonic(256);
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+
+// ❌ Impossible to recover mnemonic from seed
+// PBKDF2 is one-way cryptographic function
+```
+
+### Passphrase as Salt
+
+Passphrase modifies the salt, creating different seed:
+
+```typescript
+const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+
+// Different passphrases = different seeds
+const passphrases = ['', 'a', 'b', 'password', 'another'];
+
+const seeds = await Promise.all(
+  passphrases.map(p => Bip39.mnemonicToSeed(mnemonic, p))
+);
+
+// All seeds different
+for (let i = 0; i < seeds.length; i++) {
+  for (let j = i + 1; j < seeds.length; j++) {
+    const different = seeds[i].some((byte, k) => byte !== seeds[j][k]);
+    console.assert(different, `Seeds ${i} and ${j} should be different`);
+  }
+}
+```
+
+## Test Vectors
+
+### BIP-39 Official Test Vectors
+
+```typescript
+const testVectors = [
+  {
+    mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+    passphrase: '',
+    seed: '5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4'
+  },
+  {
+    mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+    passphrase: 'TREZOR',
+    seed: 'c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04'
+  },
+  {
+    mnemonic: 'legal winner thank year wave sausage worth useful legal winner thank yellow',
+    passphrase: '',
+    seed: '878386efb78845b3355bd15ea4d39ef97d179cb712b77d5c12b6be415fffeffe5f377ba02bf3f8544ab800b955e51fbff09828f682052a20faa6addbbddfb096'
+  }
+];
+
+// Verify implementation
+for (const { mnemonic, passphrase, seed: expectedHex } of testVectors) {
+  const actualSeed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+  const actualHex = Array.from(actualSeed)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  console.assert(actualHex === expectedHex, 'Seed derivation mismatch');
+}
+```
+
+## Advanced Usage
+
+### Parallel Derivation
+
+```typescript
+// Derive multiple seeds in parallel
+const mnemonics = [
+  Bip39.generateMnemonic(256),
+  Bip39.generateMnemonic(256),
+  Bip39.generateMnemonic(256),
+];
+
+const seeds = await Promise.all(
+  mnemonics.map(m => Bip39.mnemonicToSeed(m))
+);
+
+console.log(seeds.length); // 3
+```
+
+### Progress Indication
+
+```typescript
+// For large batch operations
+async function deriveWithProgress(mnemonics: string[]) {
+  const seeds = [];
+
+  for (let i = 0; i < mnemonics.length; i++) {
+    const seed = await Bip39.mnemonicToSeed(mnemonics[i]);
+    seeds.push(seed);
+
+    const progress = ((i + 1) / mnemonics.length) * 100;
+    console.log(`Progress: ${progress.toFixed(1)}%`);
+  }
+
+  return seeds;
+}
+```
+
+### Caching Seeds
+
+```typescript
+// Cache seeds for performance (careful with security)
+class SeedCache {
+  private cache = new Map<string, Uint8Array>();
+
+  async getSeed(mnemonic: string, passphrase = ''): Promise<Uint8Array> {
+    const key = `${mnemonic}:${passphrase}`;
+
+    if (!this.cache.has(key)) {
+      const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+      this.cache.set(key, seed);
+    }
+
+    return this.cache.get(key)!;
+  }
+
+  clear() {
+    // Zero out seeds before clearing
+    for (const seed of this.cache.values()) {
+      seed.fill(0);
+    }
+    this.cache.clear();
+  }
+}
+```
+
+## Common Errors
+
+### Invalid Mnemonic
+
+```typescript
+try {
+  const seed = await Bip39.mnemonicToSeed('invalid mnemonic phrase');
+} catch (error) {
+  console.error('Seed derivation failed:', error);
+  // Validation error
+}
+```
+
+### Passphrase Typos
+
+```typescript
+// Original
+const seed1 = await Bip39.mnemonicToSeed(mnemonic, 'password');
+
+// Typo (completely different seed!)
+const seed2 = await Bip39.mnemonicToSeed(mnemonic, 'pasword');
+
+// No warning - both are valid but different
+console.log(seed1.some((byte, i) => byte !== seed2[i])); // true
+```
+
+## Integration with HD Wallets
+
+### Full Workflow
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+
+// 1. Generate mnemonic
+const mnemonic = Bip39.generateMnemonic(256);
+
+// 2. Derive seed
+const seed = await Bip39.mnemonicToSeed(mnemonic, 'optional passphrase');
+
+// 3. Create HD wallet
+const root = HDWallet.fromSeed(seed);
+
+// 4. Derive accounts
+const eth0 = HDWallet.deriveEthereum(root, 0, 0);
+const privateKey = HDWallet.getPrivateKey(eth0);
+
+console.log(privateKey); // Uint8Array(32)
+```
+
+## References
+
+- [BIP-39 Specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
+- [PBKDF2 (RFC 2898)](https://tools.ietf.org/html/rfc2898)
+- [Unicode NFKD](https://unicode.org/reports/tr15/)
+- [@scure/bip39 Implementation](https://github.com/paulmillr/scure-bip39)

@@ -1,0 +1,456 @@
+---
+title: SHA256 Security
+description: Security properties, attack resistance, and cryptographic guarantees of SHA-256
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# SHA256 Security
+
+Comprehensive security analysis of SHA-256 cryptographic hash function.
+
+## Security Properties
+
+### Collision Resistance
+
+**Security Level:** 128 bits
+
+SHA-256 provides strong collision resistance, making it computationally infeasible to find two different inputs that produce the same hash output.
+
+**Attack Complexity:**
+- Generic birthday attack: ~2^128 operations
+- Best known attack: No practical collision attack exists
+
+**Practical Security:**
+```typescript
+// Finding a collision requires approximately 2^128 hash computations
+// At 1 trillion hashes/second: ~10^19 years
+// Current age of universe: ~1.4 × 10^10 years
+// Collision attack is not practically feasible
+```
+
+<Aside type="note" title="Birthday Paradox">
+The birthday paradox reduces collision attack complexity from 2^256 to 2^128. This is why SHA-256's collision resistance is 128 bits despite 256-bit output.
+</Aside>
+
+---
+
+### Preimage Resistance
+
+**Security Level:** 256 bits
+
+Given a hash output `h`, it is computationally infeasible to find any input `m` such that `SHA256(m) = h`.
+
+**Attack Complexity:**
+- Brute force: ~2^256 operations
+- Best known attack: No preimage attack better than brute force
+
+**Example:**
+```typescript
+// Given this hash, can you find the input?
+const targetHash = new Uint8Array([
+  0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
+  0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+  0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
+  0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad
+]);
+
+// Brute force would require trying ~2^256 possible inputs
+// At 1 trillion hashes/second: ~10^58 years
+// Answer: "abc" (but only because we told you!)
+```
+
+---
+
+### Second Preimage Resistance
+
+**Security Level:** 256 bits
+
+Given an input `m1` and its hash `h = SHA256(m1)`, it is computationally infeasible to find a different input `m2` such that `SHA256(m2) = h`.
+
+**Attack Complexity:**
+- Brute force: ~2^256 operations
+- Best known attack: No practical second preimage attack
+
+**Importance:**
+- Prevents attackers from substituting malicious data with the same hash
+- Critical for digital signatures and certificates
+- Essential for blockchain integrity
+
+---
+
+## Attack Resistance
+
+### No Practical Attacks
+
+As of 2025, SHA-256 has withstood extensive cryptanalysis with no practical attacks:
+
+**Timeline:**
+- **2001**: SHA-256 published by NIST
+- **2004-2009**: Theoretical attacks on reduced-round SHA-256 (not full algorithm)
+- **2011**: Best attack reaches 52 of 64 rounds (still not practical)
+- **2025**: Full 64-round SHA-256 remains secure
+
+**Reduced-Round Attacks:**
+```
+Rounds    Attack Type       Complexity    Practical?
+------    -----------       ----------    ----------
+31/64     Collision         2^65.5        No
+38/64     Collision         2^114         No
+52/64     Preimage          2^255.5       No
+64/64     None              2^256         No (full algorithm)
+```
+
+<Aside type="tip" title="Security Margin">
+SHA-256 uses 64 rounds. The best attack only works on 52 rounds, providing a healthy 23% security margin. This demonstrates conservative design.
+</Aside>
+
+---
+
+### Length Extension Attacks
+
+**Vulnerability:** SHA-256 is vulnerable to length extension attacks.
+
+**What It Means:**
+Given `H(message)` and `len(message)`, an attacker can compute `H(message || padding || extension)` without knowing the original message.
+
+**Example Vulnerable Code:**
+```typescript
+// INSECURE: Don't use hash alone for authentication
+function insecureAuth(message: Uint8Array, secret: Uint8Array): Uint8Array {
+  const combined = new Uint8Array([...secret, ...message]);
+  return SHA256.hash(combined); // Vulnerable to length extension!
+}
+```
+
+**Mitigation - Use HMAC:**
+```typescript
+// SECURE: Use HMAC-SHA256 instead
+function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
+  const blockSize = 64;
+
+  // Key derivation
+  let derivedKey = key.length > blockSize
+    ? SHA256.hash(key)
+    : key;
+
+  const paddedKey = new Uint8Array(blockSize);
+  paddedKey.set(derivedKey);
+
+  // HMAC computation
+  const opad = new Uint8Array(blockSize).fill(0x5c);
+  const ipad = new Uint8Array(blockSize).fill(0x36);
+
+  for (let i = 0; i < blockSize; i++) {
+    opad[i] ^= paddedKey[i];
+    ipad[i] ^= paddedKey[i];
+  }
+
+  const innerHash = SHA256.hash(new Uint8Array([...ipad, ...message]));
+  return SHA256.hash(new Uint8Array([...opad, ...innerHash]));
+}
+
+// Now secure against length extension
+const mac = hmacSha256(secret, message);
+```
+
+**Alternative - Double Hashing:**
+```typescript
+// Also resistant to length extension
+function secureHash(message: Uint8Array, secret: Uint8Array): Uint8Array {
+  const firstHash = SHA256.hash(new Uint8Array([...secret, ...message]));
+  return SHA256.hash(firstHash); // Double hashing prevents extension
+}
+```
+
+---
+
+## Cryptographic Guarantees
+
+### Determinism
+
+SHA-256 is deterministic: same input always produces same output.
+
+```typescript
+const input = new Uint8Array([1, 2, 3]);
+const hash1 = SHA256.hash(input);
+const hash2 = SHA256.hash(input);
+const hash3 = SHA256.hash(input);
+
+// All hashes are identical
+console.log(hash1.every((byte, i) => byte === hash2[i])); // true
+console.log(hash1.every((byte, i) => byte === hash3[i])); // true
+```
+
+---
+
+### Avalanche Effect
+
+Small change in input causes large change in output (approximately 50% of bits flip).
+
+```typescript
+const input1 = new Uint8Array([1, 2, 3, 4, 5]);
+const input2 = new Uint8Array([1, 2, 3, 4, 6]); // Changed last byte
+
+const hash1 = SHA256.hash(input1);
+const hash2 = SHA256.hash(input2);
+
+// Count differing bits
+let differingBits = 0;
+for (let i = 0; i < 32; i++) {
+  const xor = hash1[i] ^ hash2[i];
+  differingBits += xor.toString(2).split('1').length - 1;
+}
+
+console.log(differingBits); // Typically ~128 bits (50% of 256)
+```
+
+---
+
+### Uniformity
+
+Hash outputs are uniformly distributed across the output space.
+
+```typescript
+// Each byte value (0-255) should appear with equal probability
+const hashes = Array.from({ length: 10000 }, (_, i) =>
+  SHA256.hash(new Uint8Array([i >> 8, i & 0xFF]))
+);
+
+const byteFrequency = new Array(256).fill(0);
+hashes.forEach(hash => {
+  hash.forEach(byte => byteFrequency[byte]++);
+});
+
+// Each byte value appears roughly 10000 * 32 / 256 = 1250 times
+const avgFrequency = byteFrequency.reduce((a, b) => a + b) / 256;
+console.log(avgFrequency); // ~1250
+```
+
+---
+
+## NIST Standardization
+
+### FIPS 180-4 Standard
+
+SHA-256 is part of the SHA-2 family standardized by NIST in FIPS 180-4.
+
+**Status:**
+- **Published:** 2001 (SHA-2 family)
+- **Updated:** 2012, 2015 (FIPS 180-4)
+- **Approval:** NIST FIPS approved
+- **Security Level:** Approved for US government use
+
+**Compliance:**
+```typescript
+// SHA-256 meets requirements for:
+// - FIPS 180-4 (Secure Hash Standard)
+// - NIST SP 800-107 (Hash Function Security)
+// - NIST SP 800-57 (Key Management)
+```
+
+---
+
+### Cryptographic Strength Assessment
+
+NIST categorizes SHA-256 security strength:
+
+| Property                    | Security Strength |
+|-----------------------------|-------------------|
+| Collision Resistance        | 128 bits          |
+| Preimage Resistance         | 256 bits          |
+| Second Preimage Resistance  | 256 bits          |
+
+**Equivalent Symmetric Key Strength:**
+- 128-bit collision resistance ≈ AES-128
+- 256-bit preimage resistance ≈ AES-256
+
+---
+
+## Use Case Security
+
+### ✅ Secure Use Cases
+
+**Digital Signatures:**
+```typescript
+// SHA-256 is secure for signature message digests
+const message = new Uint8Array([/* transaction data */]);
+const digest = SHA256.hash(message);
+const signature = sign(digest, privateKey); // Secure
+```
+
+**Certificate Fingerprints:**
+```typescript
+// Certificate SHA-256 fingerprint
+const certBytes = new Uint8Array([/* DER-encoded cert */]);
+const fingerprint = SHA256.hash(certBytes); // Secure
+```
+
+**Blockchain/Merkle Trees:**
+```typescript
+// Bitcoin-style Merkle tree
+function merkleParent(left: Uint8Array, right: Uint8Array): Uint8Array {
+  const combined = new Uint8Array(64);
+  combined.set(left, 0);
+  combined.set(right, 32);
+  return SHA256.hash(SHA256.hash(combined)); // Double SHA-256, secure
+}
+```
+
+**File Integrity:**
+```typescript
+// File checksum verification
+const fileHash = SHA256.hash(fileData);
+// Compare with known-good hash - secure for integrity
+```
+
+---
+
+### ⚠️ Insecure Use Cases
+
+**Password Hashing:**
+```typescript
+// INSECURE: SHA-256 is too fast for passwords
+const passwordHash = SHA256.hash(new TextEncoder().encode(password));
+// Vulnerable to brute force (billions of hashes/second)
+
+// SECURE: Use proper password hash
+import { scrypt } from 'crypto';
+scrypt(password, salt, 32, { N: 2**16, r: 8, p: 1 }, callback);
+```
+
+**Message Authentication (without HMAC):**
+```typescript
+// INSECURE: Vulnerable to length extension
+const mac = SHA256.hash(new Uint8Array([...secret, ...message]));
+
+// SECURE: Use HMAC-SHA256
+const mac = hmacSha256(secret, message);
+```
+
+**Generating Random Keys:**
+```typescript
+// INSECURE: Hashing predictable input
+const badKey = SHA256.hash(new TextEncoder().encode(Date.now().toString()));
+
+// SECURE: Use cryptographically secure random generator
+const goodKey = crypto.getRandomValues(new Uint8Array(32));
+```
+
+---
+
+## Side-Channel Resistance
+
+### Timing Attacks
+
+SHA-256 implementations should use constant-time operations to resist timing attacks.
+
+**Vulnerable Code:**
+```typescript
+// INSECURE: Early return leaks timing information
+function insecureCompare(hash1: Uint8Array, hash2: Uint8Array): boolean {
+  for (let i = 0; i < hash1.length; i++) {
+    if (hash1[i] !== hash2[i]) return false; // Timing leak!
+  }
+  return true;
+}
+```
+
+**Secure Code:**
+```typescript
+// SECURE: Constant-time comparison
+function secureCompare(hash1: Uint8Array, hash2: Uint8Array): boolean {
+  if (hash1.length !== hash2.length) return false;
+
+  let result = 0;
+  for (let i = 0; i < hash1.length; i++) {
+    result |= hash1[i] ^ hash2[i];
+  }
+  return result === 0; // No early return
+}
+```
+
+---
+
+### Power Analysis
+
+Hardware implementations must protect against:
+- **Simple Power Analysis (SPA):** Observing power consumption
+- **Differential Power Analysis (DPA):** Statistical analysis of power traces
+
+**Mitigation:**
+- Use dedicated hardware SHA-256 accelerators
+- Implement masking and hiding techniques
+- Add random delays (where appropriate)
+
+---
+
+## Quantum Resistance
+
+### Post-Quantum Security
+
+**Collision Resistance:**
+- Classical: 2^128 operations
+- Quantum (Grover's algorithm): 2^85 operations
+- **Status:** Still secure against quantum computers
+
+**Preimage Resistance:**
+- Classical: 2^256 operations
+- Quantum (Grover's algorithm): 2^128 operations
+- **Status:** Still secure against quantum computers
+
+<Aside type="note" title="Future-Proof">
+SHA-256 maintains adequate security even against quantum computers. Grover's algorithm provides quadratic speedup, but 2^128 operations remain infeasible.
+</Aside>
+
+---
+
+## Recommendations
+
+### General Guidance
+
+✅ **Do:**
+- Use SHA-256 for digital signatures
+- Use SHA-256 for file integrity
+- Use SHA-256 for certificates
+- Use SHA-256 for blockchain
+- Use HMAC-SHA256 for MACs
+- Use constant-time comparisons
+
+❌ **Don't:**
+- Use SHA-256 for password hashing (use Argon2/scrypt/bcrypt)
+- Use SHA-256 alone for authentication (use HMAC)
+- Generate keys by hashing predictable data
+- Compare hashes with non-constant-time operations
+- Truncate SHA-256 output below 128 bits
+
+---
+
+### Migration from SHA-1
+
+If upgrading from SHA-1:
+
+```typescript
+// OLD (SHA-1, DEPRECATED)
+import { sha1 } from 'crypto';
+const oldHash = sha1(data);
+
+// NEW (SHA-256, SECURE)
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+const newHash = SHA256.hash(data);
+```
+
+**Why migrate:**
+- SHA-1 collision attacks are practical (2017: Google demonstrated collision)
+- SHA-256 has no known practical attacks
+- Regulatory compliance (NIST deprecated SHA-1 in 2011)
+
+---
+
+## See Also
+
+- [SHA256 API Reference](/crypto/sha256/api-reference) - Complete API
+- [Test Vectors](/crypto/sha256/test-vectors) - NIST test vectors
+- [Performance](/crypto/sha256/performance) - Benchmarks
+- [NIST FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf) - Official specification
+- [NIST SP 800-107](https://csrc.nist.gov/publications/detail/sp/800-107/rev-1/final) - Hash function security

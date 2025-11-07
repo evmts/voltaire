@@ -1,0 +1,431 @@
+---
+title: BLS Signatures
+description: BLS signature scheme, aggregation, and batch verification on BLS12-381
+---
+
+# BLS Signatures
+
+BLS (Boneh-Lynn-Shacham) signatures are short signatures with efficient aggregation properties, enabling thousands of validator signatures to be compressed into a single 96-byte signature. This is the foundation of Ethereum 2.0's consensus mechanism.
+
+## Overview
+
+BLS signatures leverage the bilinear pairing property of BLS12-381 to enable:
+
+- **Short Signatures**: 48 bytes (G1) or 96 bytes (G2)
+- **Aggregation**: Combine n signatures into one without coordination
+- **Batch Verification**: Verify multiple signatures in a single pairing check
+- **Deterministic**: Same message + key always produces same signature
+
+## Signature Schemes
+
+Two standard schemes exist, differing in signature/pubkey group placement:
+
+### Minimal-Signature-Size (Ethereum Standard)
+
+- **Signatures**: G1 points (48 bytes compressed, 96 bytes uncompressed)
+- **Public Keys**: G2 points (96 bytes compressed, 192 bytes uncompressed)
+- **Advantage**: Smaller signatures (critical for blockchain bandwidth)
+- **Use Case**: Ethereum 2.0 validators
+
+### Minimal-Pubkey-Size (Alternative)
+
+- **Signatures**: G2 points (96 bytes compressed)
+- **Public Keys**: G1 points (48 bytes compressed)
+- **Advantage**: Smaller public keys
+- **Use Case**: Identity systems with many keys
+
+**Ethereum uses minimal-signature-size scheme.**
+
+## Basic Operations
+
+### Key Generation
+
+```typescript
+import { randomBytes } from 'crypto';
+
+// Generate private key (32 bytes)
+const privateKey = randomBytes(32);
+
+// Derive public key: pubkey = privkey * G2
+const g2Generator = new Uint8Array(256); // G2 generator
+const scalar = privateKey;
+const input = new Uint8Array([...g2Generator, ...scalar]);
+const publicKey = new Uint8Array(256);
+
+await bls12_381.g2Mul(input, publicKey);
+```
+
+**Security**: Private key must be 32 random bytes from cryptographic RNG
+
+### Signing
+
+```typescript
+// 1. Hash message to G1 point
+const messageHash = hashToG1(message);
+
+// 2. Multiply by private key: sig = privkey * H(msg)
+const input = new Uint8Array([...messageHash, ...privateKey]);
+const signature = new Uint8Array(128);
+
+await bls12_381.g1Mul(input, signature);
+```
+
+### Verification
+
+BLS verification uses pairing check:
+```
+e(signature, G2) = e(H(message), publicKey)
+```
+
+Rearranged for single pairing check:
+```
+e(signature, G2) * e(-H(message), publicKey) = 1
+```
+
+```typescript
+async function verifyBLSSignature(
+  signature: Uint8Array,   // G1 point (128 bytes)
+  publicKey: Uint8Array,   // G2 point (256 bytes)
+  message: Uint8Array      // Raw message
+): Promise<boolean> {
+  // Hash message to G1
+  const messagePoint = await hashToG1(message);
+
+  // Negate message point
+  const negatedMessage = negateG1Point(messagePoint);
+
+  // G2 generator
+  const g2Gen = G2_GENERATOR;
+
+  // Pairing check: e(sig, G2) * e(-H(msg), pubkey) = 1
+  const pairingInput = new Uint8Array(768);
+  pairingInput.set(signature, 0);
+  pairingInput.set(g2Gen, 128);
+  pairingInput.set(negatedMessage, 384);
+  pairingInput.set(publicKey, 512);
+
+  const output = new Uint8Array(32);
+  await bls12_381.pairing(pairingInput, output);
+
+  return output[31] === 0x01;
+}
+
+function negateG1Point(point: Uint8Array): Uint8Array {
+  const negated = new Uint8Array(point);
+  // Negate y-coordinate: y' = p - y
+  const y = negated.slice(64, 128);
+  const p = FP_MODULUS;
+  const negY = (p - bytesToBigInt(y)) % p;
+  negated.set(bigIntToBytes(negY, 64), 64);
+  return negated;
+}
+```
+
+## Hash-to-Curve
+
+Converting messages to G1 points is critical for security:
+
+```typescript
+import { sha256 } from '@tevm/voltaire/crypto';
+
+async function hashToG1(message: Uint8Array): Promise<Uint8Array> {
+  // 1. Hash message with domain separation
+  const dst = new TextEncoder().encode("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_");
+  const hash1 = sha256(new Uint8Array([...dst, ...message, 0x00]));
+  const hash2 = sha256(new Uint8Array([...dst, ...message, 0x01]));
+
+  // 2. Map field elements to G1 points
+  const fp1 = hash1; // First 64 bytes (padded Fp element)
+  const fp2 = hash2;
+
+  const point1 = new Uint8Array(128);
+  const point2 = new Uint8Array(128);
+
+  await bls12_381.mapFpToG1(fp1, point1);
+  await bls12_381.mapFpToG1(fp2, point2);
+
+  // 3. Add points (ensures uniform distribution)
+  const input = new Uint8Array([...point1, ...point2]);
+  const result = new Uint8Array(128);
+  await bls12_381.g1Add(input, result);
+
+  return result;
+}
+```
+
+**RFC 9380**: Standard hash-to-curve specification
+- **Domain Separation Tag (DST)**: Prevents cross-protocol attacks
+- **Expand-Message-XMD**: SHA-256 based expansion
+- **SSWU Map**: Simplified SWU mapping to curve
+
+## Signature Aggregation
+
+### Non-Interactive Aggregation
+
+Multiple signatures can be combined without coordination:
+
+```typescript
+async function aggregateSignatures(
+  signatures: Uint8Array[]  // Array of G1 signatures
+): Promise<Uint8Array> {
+  if (signatures.length === 0) {
+    throw new Error("No signatures to aggregate");
+  }
+
+  let aggregated = signatures[0];
+
+  for (let i = 1; i < signatures.length; i++) {
+    const input = new Uint8Array(256);
+    input.set(aggregated, 0);
+    input.set(signatures[i], 128);
+
+    const output = new Uint8Array(128);
+    await bls12_381.g1Add(input, output);
+    aggregated = output;
+  }
+
+  return aggregated;
+}
+```
+
+**Properties**:
+- Order-independent (addition is commutative)
+- Size constant (always 48 bytes compressed)
+- No interaction required between signers
+
+### Aggregate Verification (Same Message)
+
+When all signatures are on the same message:
+
+```typescript
+async function verifyAggregateSignature(
+  aggregatedSignature: Uint8Array,
+  publicKeys: Uint8Array[],
+  message: Uint8Array
+): Promise<boolean> {
+  // Aggregate public keys
+  const aggregatedPubKey = await aggregateG2Points(publicKeys);
+
+  // Verify using standard BLS verification
+  return verifyBLSSignature(aggregatedSignature, aggregatedPubKey, message);
+}
+
+async function aggregateG2Points(points: Uint8Array[]): Promise<Uint8Array> {
+  let aggregated = points[0];
+
+  for (let i = 1; i < points.length; i++) {
+    const input = new Uint8Array(512);
+    input.set(aggregated, 0);
+    input.set(points[i], 256);
+
+    const output = new Uint8Array(256);
+    await bls12_381.g2Add(input, output);
+    aggregated = output;
+  }
+
+  return aggregated;
+}
+```
+
+**Ethereum Sync Committees**: 512 validators sign same block root
+
+### Batch Verification (Different Messages)
+
+When signatures are on different messages:
+
+```typescript
+async function batchVerifySignatures(
+  signatures: Uint8Array[],
+  publicKeys: Uint8Array[],
+  messages: Uint8Array[]
+): Promise<boolean> {
+  const n = signatures.length;
+
+  // Build multi-pairing check:
+  // e(sig1, G2) * e(sig2, G2) * ... = e(H(m1), pk1) * e(H(m2), pk2) * ...
+  // Equivalent: e(sig1 + sig2 + ..., G2) = e(H(m1), pk1) * e(H(m2), pk2) * ...
+
+  // Aggregate signatures
+  const aggSig = await aggregateSignatures(signatures);
+
+  // Build pairing input: pairs of (H(msg_i), pubkey_i)
+  const pairingInput = new Uint8Array(384 * (n + 1));
+
+  // First pair: (aggregated signature, G2 generator)
+  pairingInput.set(aggSig, 0);
+  pairingInput.set(G2_GENERATOR, 128);
+
+  // Remaining pairs: (-H(msg_i), pubkey_i)
+  for (let i = 0; i < n; i++) {
+    const msgPoint = await hashToG1(messages[i]);
+    const negMsgPoint = negateG1Point(msgPoint);
+
+    const offset = 384 * (i + 1);
+    pairingInput.set(negMsgPoint, offset);
+    pairingInput.set(publicKeys[i], offset + 128);
+  }
+
+  const output = new Uint8Array(32);
+  await bls12_381.pairing(pairingInput, output);
+
+  return output[31] === 0x01;
+}
+```
+
+**Cost**: Single pairing check vs n individual verifications
+- Individual: ~2ms per signature × n
+- Batch: ~2ms + ~23ms per pair (much faster for large n)
+
+## Security Considerations
+
+### Rogue Key Attacks
+
+**Problem**: Attacker chooses pubkey_attack = pubkey_target - pubkey_honest
+- Aggregated pubkey = pubkey_honest + pubkey_attack = pubkey_target
+- Attacker can forge signatures for target's key
+
+**Mitigation - Proof of Possession**:
+
+```typescript
+// Each validator proves they know the private key
+async function generateProofOfPossession(
+  privateKey: Uint8Array,
+  publicKey: Uint8Array
+): Promise<Uint8Array> {
+  // Sign the public key itself
+  const message = publicKey;
+  const messagePoint = await hashToG1(message);
+
+  const input = new Uint8Array([...messagePoint, ...privateKey]);
+  const pop = new Uint8Array(128);
+  await bls12_381.g1Mul(input, pop);
+
+  return pop;
+}
+
+async function verifyProofOfPossession(
+  publicKey: Uint8Array,
+  pop: Uint8Array
+): Promise<boolean> {
+  return verifyBLSSignature(pop, publicKey, publicKey);
+}
+```
+
+**Ethereum Approach**: All validators submit proof-of-possession during deposit
+
+### Domain Separation
+
+Different signature types must use different DSTs:
+
+```typescript
+const DST_BEACON_BLOCK = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_BEACON_BLOCK_";
+const DST_ATTESTATION = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_ATTESTATION_";
+const DST_SYNC_COMMITTEE = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_SYNC_COMMITTEE_";
+```
+
+Prevents cross-domain signature reuse attacks.
+
+### Point Validation
+
+Always validate deserialized points:
+
+```typescript
+// BLST library performs automatic validation:
+// - Point is on curve
+// - Point is in correct subgroup
+// - Coordinates are in field
+
+try {
+  await bls12_381.g1Add(input, output);
+} catch (error) {
+  // Invalid point detected
+  console.error("Point validation failed");
+}
+```
+
+## Ethereum 2.0 Usage
+
+### Validator Signatures
+
+```typescript
+interface BeaconBlockHeader {
+  slot: bigint;
+  proposerIndex: bigint;
+  parentRoot: Uint8Array;
+  stateRoot: Uint8Array;
+  bodyRoot: Uint8Array;
+}
+
+async function signBeaconBlock(
+  block: BeaconBlockHeader,
+  privateKey: Uint8Array,
+  domain: Uint8Array
+): Promise<Uint8Array> {
+  // 1. Compute signing root
+  const blockRoot = hashTreeRoot(block);
+  const signingRoot = computeSigningRoot(blockRoot, domain);
+
+  // 2. Hash to G1
+  const messagePoint = await hashToG1(signingRoot);
+
+  // 3. Sign
+  const input = new Uint8Array([...messagePoint, ...privateKey]);
+  const signature = new Uint8Array(128);
+  await bls12_381.g1Mul(input, signature);
+
+  return signature;
+}
+```
+
+### Sync Committee Aggregation
+
+```typescript
+async function aggregateSyncCommitteeSignatures(
+  signatures: Uint8Array[],   // 512 validator signatures
+  participants: boolean[]      // Which validators participated
+): Promise<Uint8Array> {
+  const participatingSignatures = signatures.filter((_, i) => participants[i]);
+  return aggregateSignatures(participatingSignatures);
+}
+
+async function verifySyncCommitteeAggregate(
+  aggregatedSignature: Uint8Array,
+  publicKeys: Uint8Array[],
+  participants: boolean[],
+  blockRoot: Uint8Array
+): Promise<boolean> {
+  const participatingPubKeys = publicKeys.filter((_, i) => participants[i]);
+  return verifyAggregateSignature(aggregatedSignature, participatingPubKeys, blockRoot);
+}
+```
+
+## Performance
+
+**Native (BLST)**:
+- Key generation: ~80 μs
+- Signing: ~100 μs
+- Verification: ~2 ms
+- Aggregation (100 sigs): ~1.5 ms
+- Aggregate verification: ~2 ms (vs 200ms individual)
+
+**Optimization Tips**:
+- Batch verify when possible
+- Precompute hash-to-curve for known messages
+- Use compressed point formats for storage
+- Cache public key aggregations
+
+## Test Vectors
+
+See [BLS Test Vectors](./test-vectors) for official test cases.
+
+## Related
+
+- [Aggregation Strategies](./aggregation) - Advanced aggregation patterns
+- [Pairing Operations](./pairing) - Bilinear pairing details
+- [Security Best Practices](./security) - Comprehensive security guide
+
+## References
+
+- [BLS Signatures Spec (Ethereum)](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#bls-signatures)
+- [RFC 9380: Hash to Curve](https://datatracker.ietf.org/doc/rfc9380/)
+- [Proof of Possession Schemes](https://crypto.stanford.edu/~dabo/pubs/papers/BLSmultisig.html)

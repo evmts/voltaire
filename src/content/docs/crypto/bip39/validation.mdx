@@ -1,0 +1,508 @@
+---
+title: Mnemonic Validation
+description: Validate BIP-39 mnemonic phrases with checksum verification
+---
+
+## Overview
+
+BIP-39 validation ensures mnemonic phrases are correctly formatted, use valid words, and have valid checksums. This prevents typos and ensures wallet recovery success.
+
+## Validation Methods
+
+### Boolean Validation
+
+Returns true/false without throwing:
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+
+const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+
+const isValid = Bip39.validateMnemonic(mnemonic);
+console.log(isValid); // true
+```
+
+### Assertion Validation
+
+Throws error with detailed message:
+
+```typescript
+try {
+  Bip39.assertValidMnemonic(userInput);
+  // Proceed with valid mnemonic
+} catch (error) {
+  console.error('Validation failed:', error.message);
+}
+```
+
+## Validation Checks
+
+### 1. Word Count
+
+Mnemonic must have 12, 15, 18, 21, or 24 words:
+
+```typescript
+// ✅ Valid word counts
+Bip39.validateMnemonic('abandon '.repeat(11) + 'about'); // 12 words
+Bip39.validateMnemonic('abandon '.repeat(14) + 'about'); // 15 words
+Bip39.validateMnemonic('abandon '.repeat(17) + 'zoo');   // 18 words
+Bip39.validateMnemonic('abandon '.repeat(20) + 'zoo');   // 21 words
+Bip39.validateMnemonic('abandon '.repeat(23) + 'art');   // 24 words
+
+// ❌ Invalid word counts
+Bip39.validateMnemonic('abandon abandon abandon'); // 3 words - false
+Bip39.validateMnemonic('abandon '.repeat(13));      // 13 words - false
+```
+
+### 2. Wordlist Membership
+
+Each word must exist in BIP-39 English wordlist:
+
+```typescript
+// ✅ Valid - all words in wordlist
+const valid = 'abandon ability able about above absent absorb abstract absurd abuse access accident';
+Bip39.validateMnemonic(valid); // true (if checksum valid)
+
+// ❌ Invalid - "notaword" not in wordlist
+const invalid = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon notaword';
+Bip39.validateMnemonic(invalid); // false
+```
+
+### 3. Checksum Validation
+
+Last word contains embedded checksum:
+
+```typescript
+// ✅ Valid checksum
+const validMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+Bip39.validateMnemonic(validMnemonic); // true
+
+// ❌ Invalid checksum - changed last word
+const invalidChecksum = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon';
+Bip39.validateMnemonic(invalidChecksum); // false
+```
+
+## Checksum Algorithm
+
+### How Checksum Works
+
+**12-word mnemonic (128-bit entropy):**
+
+1. **Entropy**: 128 bits
+2. **SHA256 hash**: Take first 4 bits
+3. **Append**: 128 + 4 = 132 bits total
+4. **Split**: 132 / 11 = 12 words (11 bits each)
+5. **Last word**: Contains final 4 checksum bits
+
+```
+Entropy:  [128 bits]
+Checksum: [4 bits] = SHA256(entropy)[0:4]
+Total:    [132 bits] → 12 words
+```
+
+**24-word mnemonic (256-bit entropy):**
+
+```
+Entropy:  [256 bits]
+Checksum: [8 bits] = SHA256(entropy)[0:8]
+Total:    [264 bits] → 24 words
+```
+
+### Checksum Calculation
+
+```typescript
+import { sha256 } from '@tevm/voltaire/crypto/sha256';
+
+// Example: Calculate checksum for 128-bit entropy
+const entropy = new Uint8Array(16).fill(0);
+
+// 1. Hash entropy
+const hash = sha256.hash(entropy);
+
+// 2. Take first 4 bits (for 128-bit entropy)
+const checksumBits = hash[0] >> 4; // First 4 bits
+
+// 3. Append to entropy
+// Total = 128 bits (entropy) + 4 bits (checksum) = 132 bits
+```
+
+## Validation Error Cases
+
+### Wrong Word Count
+
+```typescript
+const cases = [
+  'abandon',                      // 1 word
+  'abandon abandon abandon',      // 3 words
+  'abandon '.repeat(11),          // 11 words
+  'abandon '.repeat(13),          // 13 words
+];
+
+cases.forEach(mnemonic => {
+  console.log(Bip39.validateMnemonic(mnemonic)); // All false
+});
+```
+
+### Invalid Words
+
+```typescript
+// Typo in word
+const typo = 'abadon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+Bip39.validateMnemonic(typo); // false - "abadon" vs "abandon"
+
+// Word not in wordlist
+const notInList = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon bitcoin';
+Bip39.validateMnemonic(notInList); // false - "bitcoin" not in wordlist
+
+// Number instead of word
+const hasNumber = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon 123';
+Bip39.validateMnemonic(hasNumber); // false
+```
+
+### Checksum Failures
+
+```typescript
+// Valid structure but wrong checksum
+const wrongChecksum = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon';
+Bip39.validateMnemonic(wrongChecksum); // false
+
+// Correct words, wrong order (changes checksum)
+const wrongOrder = 'about abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon';
+Bip39.validateMnemonic(wrongOrder); // false
+```
+
+### Whitespace Issues
+
+```typescript
+// Extra spaces
+const extraSpaces = 'abandon  abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+Bip39.validateMnemonic(extraSpaces); // May fail depending on implementation
+
+// Leading/trailing whitespace
+const whitespace = '  abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about  ';
+Bip39.validateMnemonic(whitespace.trim()); // Trim before validation
+```
+
+## Case Sensitivity
+
+BIP-39 wordlist is lowercase:
+
+```typescript
+// Lowercase (correct)
+const lowercase = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+Bip39.validateMnemonic(lowercase); // true
+
+// Uppercase
+const uppercase = 'ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABANDON ABOUT';
+Bip39.validateMnemonic(uppercase.toLowerCase()); // Normalize first
+```
+
+## User Input Validation
+
+### Sanitize and Validate
+
+```typescript
+function validateUserMnemonic(userInput: string): boolean {
+  // 1. Normalize whitespace
+  const normalized = userInput
+    .trim()                           // Remove leading/trailing
+    .toLowerCase()                    // Normalize case
+    .replace(/\s+/g, ' ');           // Collapse multiple spaces
+
+  // 2. Validate
+  return Bip39.validateMnemonic(normalized);
+}
+
+// Test cases
+validateUserMnemonic('  ABANDON abandon  ABANDON  '); // true (after normalization)
+```
+
+### Error Messages
+
+```typescript
+function validateWithErrorMessage(mnemonic: string): { valid: boolean; error?: string } {
+  const words = mnemonic.trim().split(/\s+/);
+
+  // Check word count
+  if (![12, 15, 18, 21, 24].includes(words.length)) {
+    return {
+      valid: false,
+      error: `Invalid word count: ${words.length}. Must be 12, 15, 18, 21, or 24 words.`
+    };
+  }
+
+  // Check wordlist membership
+  const invalidWords = words.filter(word => !isInWordlist(word));
+  if (invalidWords.length > 0) {
+    return {
+      valid: false,
+      error: `Invalid words: ${invalidWords.join(', ')}`
+    };
+  }
+
+  // Check checksum
+  if (!Bip39.validateMnemonic(mnemonic)) {
+    return {
+      valid: false,
+      error: 'Invalid checksum. Please check for typos.'
+    };
+  }
+
+  return { valid: true };
+}
+```
+
+## Recovery Validation
+
+### Verifying Written Backup
+
+```typescript
+async function verifyBackup(written: string, original: string): Promise<boolean> {
+  // 1. Normalize both
+  const normalizedinput = written.trim().toLowerCase();
+  const normalizedOriginal = original.trim().toLowerCase();
+
+  // 2. Compare directly
+  if (normalizedinput === normalizedOriginal) {
+    console.log('✅ Backup matches exactly');
+    return true;
+  }
+
+  // 3. Validate each independently
+  const writtenValid = Bip39.validateMnemonic(normalizedinput);
+  const originalValid = Bip39.validateMnemonic(normalizedOriginal);
+
+  if (!writtenValid) {
+    console.error('❌ Written backup is invalid');
+    return false;
+  }
+
+  if (!originalValid) {
+    console.error('❌ Original is invalid');
+    return false;
+  }
+
+  // 4. Compare seeds (both valid but different)
+  const seed1 = await Bip39.mnemonicToSeed(normalizedinput);
+  const seed2 = await Bip39.mnemonicToSeed(normalizedOriginal);
+
+  const seedsMatch = seed1.every((byte, i) => byte === seed2[i]);
+
+  if (!seedsMatch) {
+    console.error('❌ Different mnemonics (different seeds)');
+    return false;
+  }
+
+  return true;
+}
+```
+
+## Implementation Details
+
+### Constant-Time Validation
+
+Checksum validation uses constant-time comparison to prevent timing attacks:
+
+```typescript
+// Simplified example (actual implementation in @scure/bip39)
+function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+
+  return result === 0;
+}
+```
+
+### Wordlist Validation
+
+The BIP-39 English wordlist has specific properties:
+
+- 2048 words (2^11, fits in 11 bits)
+- All lowercase
+- 3-8 characters each
+- First 4 letters unique
+- No similar-looking words
+
+```typescript
+// Example wordlist check
+const WORDLIST_SIZE = 2048;
+const MIN_WORD_LENGTH = 3;
+const MAX_WORD_LENGTH = 8;
+
+function isValidWordlistWord(word: string): boolean {
+  return (
+    word.length >= MIN_WORD_LENGTH &&
+    word.length <= MAX_WORD_LENGTH &&
+    /^[a-z]+$/.test(word) &&
+    WORDLIST.includes(word)
+  );
+}
+```
+
+## Security Implications
+
+### Why Validation Matters
+
+**1. Prevent Loss of Funds**
+
+Invalid mnemonics cannot recover wallets:
+
+```typescript
+// User typo
+const typo = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abot';
+// "abot" instead of "about"
+
+if (!Bip39.validateMnemonic(typo)) {
+  console.error('Cannot recover wallet - invalid mnemonic');
+}
+```
+
+**2. Detect Transmission Errors**
+
+Checksum catches single-word changes:
+
+```typescript
+const original = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
+const transmitted = 'legal winner thank year wave sausage worth useful legal winner thank follow';
+// Changed "yellow" to "follow"
+
+Bip39.validateMnemonic(transmitted); // false - checksum invalid
+```
+
+**3. Prevent Social Engineering**
+
+Validate before importing:
+
+```typescript
+async function importWallet(mnemonic: string) {
+  // Validate before deriving keys
+  if (!Bip39.validateMnemonic(mnemonic)) {
+    throw new Error('Invalid mnemonic. Do not proceed.');
+  }
+
+  const seed = await Bip39.mnemonicToSeed(mnemonic);
+  // Continue with valid seed...
+}
+```
+
+## Testing
+
+### Test Vectors
+
+BIP-39 official test vectors:
+
+```typescript
+const testVectors = [
+  {
+    mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+    valid: true
+  },
+  {
+    mnemonic: 'legal winner thank year wave sausage worth useful legal winner thank yellow',
+    valid: true
+  },
+  {
+    mnemonic: 'letter advice cage absurd amount doctor acoustic avoid letter advice cage above',
+    valid: true
+  },
+  {
+    mnemonic: 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon',
+    valid: false // Invalid checksum
+  }
+];
+
+testVectors.forEach(({ mnemonic, valid }) => {
+  const result = Bip39.validateMnemonic(mnemonic);
+  console.assert(result === valid, `Expected ${valid}, got ${result}`);
+});
+```
+
+### Fuzzing
+
+```typescript
+// Generate random invalid mnemonics for testing
+function generateInvalidMnemonic(): string {
+  const wordCount = 12;
+  const words = [];
+
+  for (let i = 0; i < wordCount; i++) {
+    // Use valid words but ensure invalid checksum
+    words.push('abandon');
+  }
+
+  return words.join(' '); // Invalid checksum
+}
+
+// Test 1000 random invalid mnemonics
+for (let i = 0; i < 1000; i++) {
+  const invalid = generateInvalidMnemonic();
+  console.assert(Bip39.validateMnemonic(invalid) === false);
+}
+```
+
+## Best Practices
+
+**1. Always validate user input**
+
+```typescript
+function handleUserMnemonic(input: string) {
+  const normalized = input.trim().toLowerCase();
+
+  if (!Bip39.validateMnemonic(normalized)) {
+    throw new Error('Invalid mnemonic. Please check for typos.');
+  }
+
+  return normalized;
+}
+```
+
+**2. Validate immediately after generation**
+
+```typescript
+const mnemonic = Bip39.generateMnemonic(256);
+
+// Sanity check
+if (!Bip39.validateMnemonic(mnemonic)) {
+  throw new Error('Generated invalid mnemonic - RNG issue?');
+}
+```
+
+**3. Verify backup before clearing original**
+
+```typescript
+async function secureBackupFlow() {
+  // 1. Generate
+  const mnemonic = Bip39.generateMnemonic(256);
+
+  // 2. Display to user
+  console.log('Write this down:', mnemonic);
+
+  // 3. User writes it down
+  // 4. User enters written version
+  const writtenVersion = prompt('Enter mnemonic to verify:');
+
+  // 5. Validate
+  if (writtenVersion !== mnemonic) {
+    console.error('Backup does not match. Try again.');
+    return;
+  }
+
+  if (!Bip39.validateMnemonic(writtenVersion)) {
+    console.error('Invalid mnemonic. Try again.');
+    return;
+  }
+
+  // 6. Now safe to proceed
+  console.log('✅ Backup verified');
+}
+```
+
+## References
+
+- [BIP-39 Specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
+- [@scure/bip39 Validation](https://github.com/paulmillr/scure-bip39)
+- [BIP-39 Wordlist](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt)

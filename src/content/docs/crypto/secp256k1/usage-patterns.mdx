@@ -1,0 +1,494 @@
+---
+title: Usage Patterns
+description: Common secp256k1 patterns for Ethereum transactions, personal messages, and typed data
+---
+
+# Secp256k1 Usage Patterns
+
+Real-world usage patterns for transaction signing, message authentication, and address derivation.
+
+## Transaction Signing
+
+### Legacy Transactions (Pre-EIP-1559)
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Transaction from '@tevm/voltaire/primitives/Transaction';
+import * as Rlp from '@tevm/voltaire/primitives/Rlp';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Create unsigned transaction
+const tx = {
+  nonce: 5n,
+  gasPrice: 20000000000n, // 20 Gwei
+  gasLimit: 21000n,
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+  value: 1000000000000000000n, // 1 ETH
+  data: new Uint8Array(),
+};
+
+// RLP encode for hashing (exclude signature)
+const rlpEncoded = Rlp.encode([
+  tx.nonce,
+  tx.gasPrice,
+  tx.gasLimit,
+  tx.to,
+  tx.value,
+  tx.data,
+]);
+
+// Hash transaction
+const txHash = Hash.keccak256(rlpEncoded);
+
+// Sign with private key
+const privateKey = ...; // Your 32-byte key
+const signature = Secp256k1.sign(txHash, privateKey);
+
+// Add EIP-155 replay protection (chainId = 1 for mainnet)
+const chainId = 1n;
+const v = BigInt(signature.v - 27) + chainId * 2n + 35n;
+
+// Signed transaction
+const signedTx = {
+  ...tx,
+  v: Number(v), // 37 or 38 for mainnet
+  r: signature.r,
+  s: signature.s,
+};
+```
+
+### EIP-1559 Transactions
+
+```typescript
+// EIP-1559 with dynamic fees
+const tx1559 = {
+  chainId: 1n,
+  nonce: 5n,
+  maxPriorityFeePerGas: 2000000000n, // 2 Gwei tip
+  maxFeePerGas: 30000000000n, // 30 Gwei max
+  gasLimit: 21000n,
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+  accessList: [], // EIP-2930 access list
+};
+
+// RLP encode (type 0x02 for EIP-1559)
+const rlpEncoded = Rlp.encode([
+  0x02, // Transaction type
+  tx1559.chainId,
+  tx1559.nonce,
+  tx1559.maxPriorityFeePerGas,
+  tx1559.maxFeePerGas,
+  tx1559.gasLimit,
+  tx1559.to,
+  tx1559.value,
+  tx1559.data,
+  tx1559.accessList,
+]);
+
+const txHash = Hash.keccak256(rlpEncoded);
+const signature = Secp256k1.sign(txHash, privateKey);
+
+const signedTx = {
+  ...tx1559,
+  v: signature.v - 27, // 0 or 1 for EIP-1559
+  r: signature.r,
+  s: signature.s,
+};
+```
+
+### Verify Transaction Signature
+
+```typescript
+// Extract sender address from signed transaction
+function getTransactionSender(signedTx: SignedTransaction): string {
+  // Reconstruct signing hash
+  const rlpEncoded = Rlp.encode([ /* ... */ ]);
+  const txHash = Hash.keccak256(rlpEncoded);
+
+  // Extract signature
+  const signature = {
+    r: signedTx.r,
+    s: signedTx.s,
+    v: signedTx.v,
+  };
+
+  // Recover public key
+  const publicKey = Secp256k1.recoverPublicKey(signature, txHash);
+
+  // Derive sender address
+  const addressHash = Hash.keccak256(publicKey);
+  return Address.toHex(addressHash.slice(12));
+}
+```
+
+## Personal Message Signing (EIP-191)
+
+### Sign Message
+
+```typescript
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+
+function personalSign(message: string, privateKey: Uint8Array): {
+  r: Uint8Array;
+  s: Uint8Array;
+  v: number;
+} {
+  // EIP-191: Prefix message to prevent transaction signing
+  const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
+  const prefixedMessage = new TextEncoder().encode(prefix + message);
+
+  // Hash prefixed message
+  const messageHash = Hash.keccak256(prefixedMessage);
+
+  // Sign
+  return Secp256k1.sign(messageHash, privateKey);
+}
+
+// Usage
+const message = "I agree to the terms of service";
+const signature = personalSign(message, privateKey);
+```
+
+### Verify Personal Sign
+
+```typescript
+function personalVerify(
+  message: string,
+  signature: { r: Uint8Array; s: Uint8Array; v: number },
+  expectedAddress: string
+): boolean {
+  // Reconstruct hash
+  const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
+  const prefixedMessage = new TextEncoder().encode(prefix + message);
+  const messageHash = Hash.keccak256(prefixedMessage);
+
+  // Recover signer
+  const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+  const addressHash = Hash.keccak256(publicKey);
+  const signerAddress = Address.toHex(addressHash.slice(12));
+
+  // Compare addresses
+  return signerAddress.toLowerCase() === expectedAddress.toLowerCase();
+}
+```
+
+## Typed Data Signing (EIP-712)
+
+### Sign Typed Data
+
+```typescript
+import * as EIP712 from '@tevm/voltaire/crypto/EIP712';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+
+// Define domain
+const domain = {
+  name: 'MyDApp',
+  version: '1',
+  chainId: 1,
+  verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
+};
+
+// Define types
+const types = {
+  Mail: [
+    { name: 'from', type: 'Person' },
+    { name: 'to', type: 'Person' },
+    { name: 'contents', type: 'string' },
+  ],
+  Person: [
+    { name: 'name', type: 'string' },
+    { name: 'wallet', type: 'address' },
+  ],
+};
+
+// Message to sign
+const message = {
+  from: {
+    name: 'Alice',
+    wallet: '0xAliceAddress',
+  },
+  to: {
+    name: 'Bob',
+    wallet: '0xBobAddress',
+  },
+  contents: 'Hello Bob!',
+};
+
+// Hash typed data (EIP-712)
+const typedDataHash = EIP712.hashTypedData(domain, types, message);
+
+// Sign
+const signature = Secp256k1.sign(typedDataHash, privateKey);
+```
+
+### Verify EIP-712 Signature
+
+```typescript
+function verifyTypedData(
+  domain: EIP712.Domain,
+  types: EIP712.Types,
+  message: any,
+  signature: { r: Uint8Array; s: Uint8Array; v: number },
+  expectedSigner: string
+): boolean {
+  // Hash typed data
+  const typedDataHash = EIP712.hashTypedData(domain, types, message);
+
+  // Recover signer
+  const publicKey = Secp256k1.recoverPublicKey(signature, typedDataHash);
+  const addressHash = Hash.keccak256(publicKey);
+  const signerAddress = Address.toHex(addressHash.slice(12));
+
+  return signerAddress.toLowerCase() === expectedSigner.toLowerCase();
+}
+```
+
+## Address Derivation
+
+### From Private Key
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+
+function deriveAddress(privateKey: Uint8Array): string {
+  // 1. Derive public key (64 bytes, no prefix)
+  const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+  // 2. Hash public key with Keccak256
+  const hash = Hash.keccak256(publicKey);
+
+  // 3. Take last 20 bytes as address
+  const addressBytes = hash.slice(12);
+
+  // 4. Format as hex string
+  return Address.toHex(Address.from(addressBytes));
+}
+
+// Usage
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+const address = deriveAddress(privateKey);
+console.log(address); // 0x...
+```
+
+### From Mnemonic (BIP39/BIP44)
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/Bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/HDWallet';
+
+// Generate or restore mnemonic
+const mnemonic = Bip39.generateMnemonic(256); // 24 words
+
+// Derive seed
+const seed = Bip39.mnemonicToSeed(mnemonic);
+
+// Create master key
+const masterKey = HDWallet.fromSeed(seed);
+
+// Derive Ethereum accounts (BIP44: m/44'/60'/0'/0/index)
+function deriveEthereumAccount(masterKey: ExtendedKey, index: number): string {
+  const path = `m/44'/60'/0'/0/${index}`;
+  const accountKey = HDWallet.derivePath(masterKey, path);
+  const privateKey = HDWallet.getPrivateKey(accountKey);
+
+  return deriveAddress(privateKey);
+}
+
+// First 5 accounts
+for (let i = 0; i < 5; i++) {
+  const address = deriveEthereumAccount(masterKey, i);
+  console.log(`Account ${i}: ${address}`);
+}
+```
+
+## Smart Contract Interaction
+
+### Permit (EIP-2612)
+
+```typescript
+// ERC-20 Permit signature (gasless approval)
+const permitTypes = {
+  Permit: [
+    { name: 'owner', type: 'address' },
+    { name: 'spender', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ],
+};
+
+const permitMessage = {
+  owner: ownerAddress,
+  spender: spenderAddress,
+  value: amountToApprove,
+  nonce: currentNonce,
+  deadline: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+};
+
+const permitHash = EIP712.hashTypedData(tokenDomain, permitTypes, permitMessage);
+const signature = Secp256k1.sign(permitHash, privateKey);
+
+// Call permit() on contract
+await token.permit(
+  permitMessage.owner,
+  permitMessage.spender,
+  permitMessage.value,
+  permitMessage.deadline,
+  signature.v,
+  signature.r,
+  signature.s
+);
+```
+
+### Meta-Transactions (EIP-2771)
+
+```typescript
+// Gasless transaction via relayer
+const forwarderTypes = {
+  ForwardRequest: [
+    { name: 'from', type: 'address' },
+    { name: 'to', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'gas', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'data', type: 'bytes' },
+  ],
+};
+
+const request = {
+  from: userAddress,
+  to: targetContract,
+  value: 0,
+  gas: 100000,
+  nonce: userNonce,
+  data: encodedFunctionCall,
+};
+
+const requestHash = EIP712.hashTypedData(forwarderDomain, forwarderTypes, request);
+const signature = Secp256k1.sign(requestHash, privateKey);
+
+// Send to relayer (user pays no gas)
+await relayer.execute(request, signature);
+```
+
+## Signature Verification Patterns
+
+### On-Chain (Solidity)
+
+```solidity
+contract SignatureVerifier {
+  function verifySignature(
+    bytes32 messageHash,
+    uint8 v,
+    bytes32 r,
+    bytes32 s,
+    address expectedSigner
+  ) public pure returns (bool) {
+    // Recover signer
+    address signer = ecrecover(messageHash, v, r, s);
+
+    // Check for invalid signature (returns 0x0)
+    if (signer == address(0)) return false;
+
+    // Verify matches expected
+    return signer == expectedSigner;
+  }
+
+  function verifyPersonalSign(
+    string memory message,
+    uint8 v,
+    bytes32 r,
+    bytes32 s,
+    address expectedSigner
+  ) public pure returns (bool) {
+    // Reconstruct EIP-191 hash
+    bytes memory prefix = "\x19Ethereum Signed Message:\n";
+    bytes32 messageHash = keccak256(abi.encodePacked(
+      prefix,
+      bytes(message).length,
+      message
+    ));
+
+    return verifySignature(messageHash, v, r, s, expectedSigner);
+  }
+}
+```
+
+### Off-Chain (TypeScript)
+
+```typescript
+// Batch verify multiple signatures (parallelizable)
+async function batchVerify(
+  signatures: Array<{
+    signature: { r: Uint8Array; s: Uint8Array; v: number };
+    messageHash: Uint8Array;
+    publicKey: Uint8Array;
+  }>
+): Promise<boolean[]> {
+  // Verify in parallel with Promise.all
+  return Promise.all(
+    signatures.map(async ({ signature, messageHash, publicKey }) => {
+      return Secp256k1.verify(signature, messageHash, publicKey);
+    })
+  );
+}
+```
+
+## Testing Patterns
+
+### Deterministic Test Keys
+
+```typescript
+// Never use in production - test keys only
+function generateTestKey(seed: number): Uint8Array {
+  const privateKey = new Uint8Array(32);
+  const seedBytes = new Uint8Array(new BigUint64Array([BigInt(seed)]).buffer);
+  const hash = Hash.keccak256(seedBytes);
+  privateKey.set(hash);
+  return privateKey;
+}
+
+// Test suite
+describe('Transaction signing', () => {
+  const testKey = generateTestKey(12345);
+  const testAddress = deriveAddress(testKey);
+
+  it('signs transaction', () => {
+    const tx = { /* ... */ };
+    const signature = signTransaction(tx, testKey);
+    expect(getTransactionSender(tx, signature)).toBe(testAddress);
+  });
+});
+```
+
+### Mock Signatures
+
+```typescript
+// Generate valid signatures for testing
+function createMockSignature(
+  message: string,
+  privateKey: Uint8Array
+): { signature: Signature; signer: string } {
+  const messageHash = Hash.keccak256String(message);
+  const signature = Secp256k1.sign(messageHash, privateKey);
+  const publicKey = Secp256k1.derivePublicKey(privateKey);
+  const signer = Address.fromPublicKey(publicKey);
+
+  return { signature, signer: Address.toHex(signer) };
+}
+```
+
+## Related
+
+- [Signing](/crypto/secp256k1/signing) - ECDSA signing algorithm
+- [Verification](/crypto/secp256k1/verification) - Signature verification
+- [Recovery](/crypto/secp256k1/recovery) - Public key recovery
+- [EIP-712](/crypto/eip712) - Typed structured data hashing
+- [Transaction](/primitives/transaction) - Ethereum transactions
+- [Address](/primitives/address) - Ethereum addresses

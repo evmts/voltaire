@@ -1,0 +1,541 @@
+---
+title: AES-GCM Encryption
+description: Detailed guide to AES-GCM encryption operations
+---
+
+## Overview
+
+AES-GCM encryption combines the AES block cipher in Counter mode (CTR) with Galois mode authentication (GMAC) to provide authenticated encryption. This single operation ensures both **confidentiality** (data secrecy) and **integrity** (tamper detection).
+
+## Encryption Operation
+
+### Basic Encryption
+
+```typescript
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+
+// Generate key and nonce
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+
+// Encrypt data
+const plaintext = new TextEncoder().encode('Secret message');
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+// Output format: [encrypted_data][16-byte_authentication_tag]
+console.log('Ciphertext length:', ciphertext.length); // plaintext.length + 16
+```
+
+### How It Works
+
+AES-GCM encryption involves three main steps:
+
+1. **Counter Mode Encryption (CTR)**
+   - Generates keystream by encrypting counter blocks
+   - XORs keystream with plaintext to produce ciphertext
+   - Counter starts from nonce and increments
+
+2. **Authentication Tag Generation (GMAC)**
+   - Processes ciphertext and AAD through GHASH
+   - Produces 128-bit authentication tag
+   - Tag ensures data hasn't been tampered with
+
+3. **Output**
+   - Ciphertext (same length as plaintext)
+   - Authentication tag (16 bytes)
+   - Combined output: `ciphertext || tag`
+
+### Parameters
+
+#### Key (Required)
+
+The AES encryption key determines cipher strength:
+
+```typescript
+// AES-128 (16 bytes = 128 bits)
+const key128 = await AesGcm.generateKey(128);
+
+// AES-256 (32 bytes = 256 bits) - RECOMMENDED
+const key256 = await AesGcm.generateKey(256);
+```
+
+**Key strength:**
+- AES-128: ~2¹²⁸ operations to break (quantum: ~2⁶⁴)
+- AES-256: ~2²⁵⁶ operations to break (quantum: ~2¹²⁸)
+
+**Recommendation:** Use AES-256 for sensitive data and long-term security.
+
+#### Nonce/IV (Required)
+
+The nonce (number used once) or IV (initialization vector) must be unique for each encryption with the same key:
+
+```typescript
+// Generate random nonce (12 bytes = 96 bits)
+const nonce = AesGcm.generateNonce();
+console.log(nonce.length); // 12
+```
+
+**CRITICAL: Nonce reuse catastrophically breaks security!**
+
+```typescript
+// DANGEROUS - Never do this
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+
+const ct1 = await AesGcm.encrypt(msg1, key, nonce); // OK
+const ct2 = await AesGcm.encrypt(msg2, key, nonce); // SECURITY FAILURE!
+
+// Attacker can XOR ciphertexts to reveal plaintext relationship:
+// ct1 XOR ct2 = (msg1 XOR keystream) XOR (msg2 XOR keystream)
+//              = msg1 XOR msg2
+```
+
+**Why 12 bytes (96 bits)?**
+- Standard size for GCM (NIST SP 800-38D)
+- Efficiently processed (no padding needed)
+- Large enough for random generation (2⁹⁶ possible values)
+- Small collision probability until ~2⁴⁸ encryptions
+
+#### Plaintext (Required)
+
+Data to encrypt can be any length:
+
+```typescript
+// Empty plaintext (valid)
+const empty = new Uint8Array(0);
+const ct1 = await AesGcm.encrypt(empty, key, nonce);
+console.log(ct1.length); // 16 (just the tag)
+
+// Small plaintext
+const small = new TextEncoder().encode('Hi');
+const ct2 = await AesGcm.encrypt(small, key, nonce2);
+console.log(ct2.length); // 2 + 16 = 18
+
+// Large plaintext (10 MB)
+const large = new Uint8Array(10 * 1024 * 1024);
+crypto.getRandomValues(large);
+const ct3 = await AesGcm.encrypt(large, key, nonce3);
+console.log(ct3.length); // 10485760 + 16
+```
+
+**Maximum plaintext length:** 2³⁹ - 256 bits (~68 GB) per NIST SP 800-38D
+
+#### Additional Authenticated Data (Optional)
+
+AAD is authenticated but not encrypted - useful for metadata:
+
+```typescript
+// Encrypt payment with metadata
+const payment = new TextEncoder().encode('Transfer $100 to Alice');
+const metadata = new TextEncoder().encode(JSON.stringify({
+  timestamp: Date.now(),
+  transactionId: 'tx-12345',
+  version: '1.0'
+}));
+
+const ciphertext = await AesGcm.encrypt(payment, key, nonce, metadata);
+
+// Metadata is:
+// ✓ Authenticated (tampering detected during decryption)
+// ✗ Not encrypted (readable in plaintext)
+// ✓ Must match during decryption
+```
+
+**Use cases for AAD:**
+- Protocol headers
+- Database row IDs
+- Version numbers
+- Timestamps
+- User IDs
+- Packet sequence numbers
+
+## Output Format
+
+The encryption output combines ciphertext and authentication tag:
+
+```
+┌─────────────────┬──────────────────┐
+│   Ciphertext    │  Auth Tag (16B)  │
+└─────────────────┴──────────────────┘
+ Same as plaintext    128 bits (fixed)
+```
+
+```typescript
+const plaintext = new TextEncoder().encode('Hello'); // 5 bytes
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+console.log(ciphertext.length); // 21 bytes (5 + 16)
+
+// Extract components (for illustration - don't do this manually)
+const encryptedData = ciphertext.slice(0, plaintext.length);
+const authTag = ciphertext.slice(plaintext.length);
+
+console.log(encryptedData.length); // 5
+console.log(authTag.length);       // 16
+```
+
+## Storage Format
+
+Store nonce with ciphertext (nonce is not secret, but must be available for decryption):
+
+```typescript
+// Encrypt
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const plaintext = new TextEncoder().encode('Secret data');
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+// Common storage format: nonce || ciphertext
+const stored = new Uint8Array(nonce.length + ciphertext.length);
+stored.set(nonce, 0);                    // Bytes 0-11: nonce
+stored.set(ciphertext, nonce.length);    // Bytes 12+: ciphertext + tag
+
+// Later: extract and decrypt
+const extractedNonce = stored.slice(0, AesGcm.NONCE_SIZE);
+const extractedCiphertext = stored.slice(AesGcm.NONCE_SIZE);
+const decrypted = await AesGcm.decrypt(extractedCiphertext, key, extractedNonce);
+```
+
+**Alternative: Store separately**
+
+```typescript
+// Store as JSON (less efficient, more readable)
+const encrypted = {
+  nonce: Array.from(nonce),
+  ciphertext: Array.from(ciphertext),
+  algorithm: 'AES-256-GCM',
+  timestamp: Date.now()
+};
+
+localStorage.setItem('data', JSON.stringify(encrypted));
+
+// Later: parse and decrypt
+const stored = JSON.parse(localStorage.getItem('data'));
+const decrypted = await AesGcm.decrypt(
+  new Uint8Array(stored.ciphertext),
+  key,
+  new Uint8Array(stored.nonce)
+);
+```
+
+## Nonce Generation Strategies
+
+### Random Nonces (Default)
+
+Generate random nonce for each encryption:
+
+```typescript
+const nonce = AesGcm.generateNonce();
+```
+
+**Pros:**
+- Simple
+- No state to track
+- Works for distributed systems
+
+**Cons:**
+- Collision probability after ~2⁴⁸ encryptions (birthday paradox)
+- Not suitable for high-volume scenarios
+
+**Safe for:** Up to ~2³² encryptions per key (~4 billion)
+
+### Counter-Based Nonces
+
+Increment counter for each encryption:
+
+```typescript
+class NonceCounter {
+  constructor() {
+    this.counter = 0n;
+  }
+
+  next() {
+    const nonce = new Uint8Array(12);
+    const view = new DataView(nonce.buffer);
+
+    // Store counter in first 8 bytes (big-endian)
+    view.setBigUint64(0, this.counter, false);
+
+    // Last 4 bytes can be random or zeros
+    this.counter++;
+
+    if (this.counter >= (1n << 64n)) {
+      throw new Error('Counter exhausted - rotate key');
+    }
+
+    return nonce;
+  }
+}
+
+const counter = new NonceCounter();
+const nonce1 = counter.next(); // 0
+const nonce2 = counter.next(); // 1
+const nonce3 = counter.next(); // 2
+```
+
+**Pros:**
+- No collisions (guaranteed unique)
+- Suitable for high-volume scenarios
+- Can encrypt up to 2⁶⁴ messages per key
+
+**Cons:**
+- Must maintain state
+- Complex in distributed systems
+- Counter must never reset with same key
+
+### Hybrid Approach
+
+Combine random and counter:
+
+```typescript
+class HybridNonceGenerator {
+  constructor() {
+    // Generate random prefix once
+    this.prefix = crypto.getRandomValues(new Uint8Array(4));
+    this.counter = 0n;
+  }
+
+  next() {
+    const nonce = new Uint8Array(12);
+
+    // First 4 bytes: random prefix (unique per instance)
+    nonce.set(this.prefix, 0);
+
+    // Last 8 bytes: counter
+    const view = new DataView(nonce.buffer, 4);
+    view.setBigUint64(0, this.counter, false);
+
+    this.counter++;
+    return nonce;
+  }
+}
+```
+
+**Pros:**
+- Works in distributed systems (different random prefixes)
+- No collisions within single instance
+- High throughput
+
+**Cons:**
+- Requires coordination to avoid prefix collisions
+
+## Advanced Usage
+
+### Streaming Large Files
+
+For files too large to fit in memory:
+
+```typescript
+async function encryptFileStream(fileStream, key) {
+  const nonce = AesGcm.generateNonce();
+
+  // Read file in chunks
+  const chunks = [];
+  for await (const chunk of fileStream) {
+    chunks.push(chunk);
+  }
+
+  // Combine chunks
+  const plaintext = new Uint8Array(
+    chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+  );
+  let offset = 0;
+  for (const chunk of chunks) {
+    plaintext.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  // Encrypt entire file
+  const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+  return { nonce, ciphertext };
+}
+```
+
+**Note:** AES-GCM requires entire plaintext for authentication. For true streaming encryption, use chunked encryption with separate tags per chunk.
+
+### Parallel Encryption
+
+Encrypt multiple messages in parallel:
+
+```typescript
+async function encryptBatch(messages, key) {
+  const encrypted = await Promise.all(
+    messages.map(async (message) => {
+      const nonce = AesGcm.generateNonce();
+      const plaintext = new TextEncoder().encode(message);
+      const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+      return { nonce, ciphertext };
+    })
+  );
+
+  return encrypted;
+}
+
+// Usage
+const messages = ['Message 1', 'Message 2', 'Message 3'];
+const key = await AesGcm.generateKey(256);
+const encrypted = await encryptBatch(messages, key);
+```
+
+## Security Considerations
+
+### Critical Requirements
+
+1. **Unique nonces:** Never reuse nonce with same key
+2. **Random nonces:** Use cryptographically secure random (crypto.getRandomValues)
+3. **Key strength:** Use 256-bit keys for sensitive data
+4. **Key rotation:** Rotate keys before 2³² encryptions
+
+### Common Mistakes
+
+```typescript
+// WRONG: Reusing nonce
+const nonce = AesGcm.generateNonce();
+await AesGcm.encrypt(msg1, key, nonce);
+await AesGcm.encrypt(msg2, key, nonce); // BREAKS SECURITY!
+
+// WRONG: Predictable nonce
+const badNonce = new Uint8Array(12);
+for (let i = 0; i < 12; i++) {
+  badNonce[i] = i; // Predictable!
+}
+
+// WRONG: Math.random() for nonce
+const terribleNonce = new Uint8Array(12);
+for (let i = 0; i < 12; i++) {
+  terribleNonce[i] = Math.floor(Math.random() * 256); // Not cryptographic!
+}
+
+// CORRECT: Use generateNonce()
+const goodNonce = AesGcm.generateNonce();
+```
+
+## Performance
+
+### Hardware Acceleration
+
+Modern CPUs with AES-NI instructions:
+- **AES-128-GCM:** ~3-5 GB/s
+- **AES-256-GCM:** ~2-4 GB/s
+
+Without hardware acceleration:
+- **Software-only:** ~50-200 MB/s
+
+### Benchmarks
+
+```typescript
+// Measure encryption speed
+const key = await AesGcm.generateKey(256);
+const plaintext = new Uint8Array(1024 * 1024); // 1 MB
+crypto.getRandomValues(plaintext);
+
+const iterations = 100;
+const start = performance.now();
+
+for (let i = 0; i < iterations; i++) {
+  const nonce = AesGcm.generateNonce();
+  await AesGcm.encrypt(plaintext, key, nonce);
+}
+
+const end = performance.now();
+const totalMB = (plaintext.length * iterations) / (1024 * 1024);
+const seconds = (end - start) / 1000;
+const throughput = totalMB / seconds;
+
+console.log(`Throughput: ${throughput.toFixed(2)} MB/s`);
+```
+
+## Examples
+
+### Wallet Encryption
+
+```typescript
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+
+async function encryptWallet(privateKey, password) {
+  // Derive key from password
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await AesGcm.deriveKey(password, salt, 600000, 256);
+
+  // Encrypt private key
+  const nonce = AesGcm.generateNonce();
+  const ciphertext = await AesGcm.encrypt(privateKey, key, nonce);
+
+  // Return encrypted wallet
+  return {
+    salt: Array.from(salt),
+    nonce: Array.from(nonce),
+    ciphertext: Array.from(ciphertext),
+    algorithm: 'AES-256-GCM',
+    pbkdf2Iterations: 600000
+  };
+}
+
+async function decryptWallet(encryptedWallet, password) {
+  // Derive same key from password
+  const salt = new Uint8Array(encryptedWallet.salt);
+  const key = await AesGcm.deriveKey(
+    password,
+    salt,
+    encryptedWallet.pbkdf2Iterations,
+    256
+  );
+
+  // Decrypt private key
+  const nonce = new Uint8Array(encryptedWallet.nonce);
+  const ciphertext = new Uint8Array(encryptedWallet.ciphertext);
+
+  return await AesGcm.decrypt(ciphertext, key, nonce);
+}
+```
+
+### Encrypted Database
+
+```typescript
+class EncryptedField {
+  constructor(key) {
+    this.key = key;
+    this.nonceCounter = new NonceCounter();
+  }
+
+  async encrypt(value) {
+    const plaintext = new TextEncoder().encode(JSON.stringify(value));
+    const nonce = this.nonceCounter.next();
+    const ciphertext = await AesGcm.encrypt(plaintext, this.key, nonce);
+
+    return {
+      nonce: Array.from(nonce),
+      ciphertext: Array.from(ciphertext)
+    };
+  }
+
+  async decrypt(encrypted) {
+    const nonce = new Uint8Array(encrypted.nonce);
+    const ciphertext = new Uint8Array(encrypted.ciphertext);
+    const plaintext = await AesGcm.decrypt(ciphertext, this.key, nonce);
+
+    return JSON.parse(new TextDecoder().decode(plaintext));
+  }
+}
+
+// Usage
+const key = await AesGcm.generateKey(256);
+const field = new EncryptedField(key);
+
+// Encrypt sensitive data
+const encrypted = await field.encrypt({ ssn: '123-45-6789' });
+await db.insert({ id: 1, data: encrypted });
+
+// Decrypt
+const row = await db.select({ id: 1 });
+const decrypted = await field.decrypt(row.data);
+console.log(decrypted.ssn); // '123-45-6789'
+```
+
+## References
+
+- [NIST SP 800-38D - GCM Specification](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf)
+- [RFC 5116 - AEAD Algorithms](https://www.rfc-editor.org/rfc/rfc5116.html)
+- [Web Crypto API - AES-GCM](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/encrypt#aes-gcm)
