@@ -1,0 +1,459 @@
+---
+title: "Signature Formats"
+---
+
+# Signature Formats
+
+Comprehensive comparison of signature encoding formats: compact, DER, and RSV.
+
+## Format Overview
+
+| Format | Size | Components | Use Case |
+|--------|------|------------|----------|
+| **Compact** | 64 bytes | r ‖ s | Space-efficient, standard ECDSA |
+| **Compact+V** | 65 bytes | r ‖ s ‖ v | Ethereum transactions (with recovery) |
+| **DER** | Variable (~70-72 bytes) | ASN.1 encoded | Bitcoin, X.509, legacy systems |
+| **RSV Object** | N/A (object) | { r, s, v } | API structures, JSON |
+| **EIP-2098** | 64 bytes | r ‖ (s + yParity) | Compact with recovery (see [EIP-2098](./eip-2098.mdx)) |
+
+## Compact Format
+
+### Structure
+
+```
+Standard (64 bytes):
+[0-31]   r component (32 bytes, big-endian)
+[32-63]  s component (32 bytes, big-endian)
+
+With Recovery ID (65 bytes):
+[0-31]   r component (32 bytes)
+[32-63]  s component (32 bytes)
+[64]     v recovery ID (1 byte: 27 or 28)
+```
+
+### Usage
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+
+// Create from compact (64 bytes)
+const compact64 = new Uint8Array(64);
+compact64.set(rBytes, 0);
+compact64.set(sBytes, 32);
+const sig1 = Signature.fromCompact(compact64, 'secp256k1');
+
+// Create from compact with v (65 bytes)
+const compact65 = new Uint8Array(65);
+compact65.set(rBytes, 0);
+compact65.set(sBytes, 32);
+compact65[64] = 27;
+const sig2 = Signature.fromCompact(compact65, 'secp256k1');
+
+// Convert to compact
+const output = Signature.toCompact(sig2);
+console.log(output.length); // 65 (includes v if present)
+```
+
+### Advantages
+- ✅ Fixed size (predictable memory)
+- ✅ Simple structure
+- ✅ Efficient for storage and transmission
+- ✅ Standard ECDSA format
+
+### Disadvantages
+- ❌ No self-describing (need external algorithm info)
+- ❌ No built-in validation
+- ❌ Recovery ID optional (separate byte)
+
+### Use Cases
+- Ethereum transactions
+- Blockchain signatures
+- High-performance applications
+- Fixed-size storage requirements
+
+## DER Format
+
+### Structure
+
+```
+SEQUENCE {
+  INTEGER r
+  INTEGER s
+}
+
+Example (hex):
+30 45                -- SEQUENCE tag + length (69 bytes)
+   02 21             -- INTEGER tag + length (33 bytes)
+      00 ab cd ef... -- r value (padded if high bit set)
+   02 20             -- INTEGER tag + length (32 bytes)
+      12 34 56...    -- s value
+```
+
+### Encoding Rules
+
+**Tags:**
+- `0x30` - SEQUENCE tag
+- `0x02` - INTEGER tag
+
+**Length Encoding:**
+- Short form: `0x00-0x7F` (length fits in 1 byte)
+- Long form: `0x80 + n` followed by n-byte length
+
+**Integer Padding:**
+- Leading `0x00` added if high bit set (to indicate positive number)
+- Leading zeros stripped (minimal encoding)
+
+### Usage
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+
+// Create from DER
+const derBytes = Hex.toBytes('0x3045...');
+const sig = Signature.fromDER(derBytes, 'secp256k1', 27);
+
+// Convert to DER
+const der = Signature.toDER(sig);
+
+// DER structure validation
+function parseDER(der: Uint8Array) {
+  let pos = 0;
+
+  // Parse SEQUENCE
+  if (der[pos++] !== 0x30) throw new Error('Expected SEQUENCE');
+  const seqLen = der[pos++];
+
+  // Parse r
+  if (der[pos++] !== 0x02) throw new Error('Expected INTEGER');
+  const rLen = der[pos++];
+  const r = der.slice(pos, pos + rLen);
+  pos += rLen;
+
+  // Parse s
+  if (der[pos++] !== 0x02) throw new Error('Expected INTEGER');
+  const sLen = der[pos++];
+  const s = der.slice(pos, pos + sLen);
+
+  return { r, s };
+}
+```
+
+### Advantages
+- ✅ Self-describing format
+- ✅ Standard ASN.1 encoding
+- ✅ Widely supported (Bitcoin, TLS, X.509)
+- ✅ Built-in structure validation
+
+### Disadvantages
+- ❌ Variable size (70-72 bytes typical)
+- ❌ Parsing overhead
+- ❌ More complex than compact
+- ❌ Larger than necessary
+
+### Use Cases
+- Bitcoin transactions (legacy)
+- X.509 certificates
+- TLS connections
+- Legacy cryptographic systems
+
+## RSV Object Format
+
+### Structure
+
+```typescript
+interface RSVSignature {
+  r: Uint8Array;  // 32 bytes
+  s: Uint8Array;  // 32 bytes
+  v?: number;     // Recovery ID (27 or 28)
+}
+```
+
+### Usage
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+
+// Create from RSV object
+const sig = Signature.from({
+  r: rBytes,
+  s: sBytes,
+  v: 27,
+  algorithm: 'secp256k1'
+});
+
+// Extract components
+const r = Signature.getR(sig);
+const s = Signature.getS(sig);
+const v = Signature.getV(sig);
+
+// Reconstruct object
+const rsv = {
+  r: Signature.getR(sig),
+  s: Signature.getS(sig),
+  v: Signature.getV(sig)
+};
+```
+
+### Advantages
+- ✅ Human-readable structure
+- ✅ Type-safe (with TypeScript)
+- ✅ Easy to work with in code
+- ✅ JSON serializable
+
+### Disadvantages
+- ❌ Not a binary format
+- ❌ Overhead for serialization
+- ❌ No standard wire format
+- ❌ Requires conversion for transmission
+
+### Use Cases
+- API responses (JSON)
+- Internal data structures
+- Testing and debugging
+- Configuration files
+
+## Format Comparison
+
+### Size Comparison
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Compact (without v)
+const compact64 = Signature.toCompact(
+  Signature.fromSecp256k1(r, s)
+);
+console.log(compact64.length); // 64 bytes
+
+// Compact (with v)
+const compact65 = Signature.toCompact(sig);
+console.log(compact65.length); // 65 bytes
+
+// DER (variable)
+const der = Signature.toDER(sig);
+console.log(der.length); // 70-72 bytes (typical)
+
+// RSV object (not directly comparable - in-memory structure)
+const rsv = {
+  r: Signature.getR(sig),  // 32 bytes
+  s: Signature.getS(sig),  // 32 bytes
+  v: Signature.getV(sig)   // number
+};
+```
+
+### Conversion Matrix
+
+| From → To | Compact | DER | RSV |
+|-----------|---------|-----|-----|
+| **Compact** | Identity | `toDER()` | `getR/S/V()` |
+| **DER** | `fromDER()` → `toCompact()` | Identity | `fromDER()` → `getR/S/V()` |
+| **RSV** | `from()` → `toCompact()` | `from()` → `toDER()` | Identity |
+
+### Performance Comparison
+
+```typescript
+// Benchmark (approximate times)
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Compact: Fastest (zero-copy)
+console.time('compact');
+const compact = Signature.toCompact(sig);
+console.timeEnd('compact'); // ~0.001ms
+
+// DER: Slower (encoding overhead)
+console.time('der');
+const der = Signature.toDER(sig);
+console.timeEnd('der'); // ~0.01-0.05ms
+
+// RSV: Fast (direct access)
+console.time('rsv');
+const rsv = {
+  r: Signature.getR(sig),
+  s: Signature.getS(sig),
+  v: Signature.getV(sig)
+};
+console.timeEnd('rsv'); // ~0.001ms
+```
+
+## Format Selection Guide
+
+### Choose Compact When:
+- ✅ Building Ethereum transactions
+- ✅ Storage space is critical
+- ✅ Fixed-size buffers required
+- ✅ High-performance needs
+
+### Choose DER When:
+- ✅ Bitcoin transaction signing
+- ✅ Interop with legacy systems
+- ✅ X.509 certificate operations
+- ✅ Standards compliance required
+
+### Choose RSV When:
+- ✅ Building APIs (JSON responses)
+- ✅ Internal data structures
+- ✅ Testing and debugging
+- ✅ Human-readable output needed
+
+## Real-World Examples
+
+### Ethereum Transaction
+
+```typescript
+// Ethereum uses compact with v
+const tx = {
+  // ...transaction fields
+  r: '0x1234...', // 32 bytes (hex)
+  s: '0x5678...', // 32 bytes (hex)
+  v: 27          // Recovery ID
+};
+
+// Convert to signature
+const sig = Signature.from({
+  r: Hex.toBytes(tx.r),
+  s: Hex.toBytes(tx.s),
+  v: tx.v,
+  algorithm: 'secp256k1'
+});
+
+// Serialize as compact+v (65 bytes)
+const serialized = Signature.toCompact(sig);
+```
+
+### Bitcoin Transaction
+
+```typescript
+// Bitcoin uses DER encoding
+const bitcoinSig = derBytes; // From transaction scriptSig
+
+// Parse DER signature
+const sig = Signature.fromDER(bitcoinSig, 'secp256k1');
+
+// Convert to compact for processing
+const compact = Signature.toCompact(sig);
+```
+
+### JSON API Response
+
+```typescript
+// API returns RSV object
+const apiResponse = {
+  signature: {
+    r: '0x1234...',
+    s: '0x5678...',
+    v: 27
+  }
+};
+
+// Parse to signature
+const sig = Signature.from({
+  r: Hex.toBytes(apiResponse.signature.r),
+  s: Hex.toBytes(apiResponse.signature.s),
+  v: apiResponse.signature.v,
+  algorithm: 'secp256k1'
+});
+```
+
+## Format Validation
+
+### Compact Validation
+
+```typescript
+function validateCompact(bytes: Uint8Array): boolean {
+  // Check length
+  if (bytes.length !== 64 && bytes.length !== 65) {
+    return false;
+  }
+
+  // Check r and s are not zero
+  const r = bytes.slice(0, 32);
+  const s = bytes.slice(32, 64);
+
+  if (r.every(b => b === 0) || s.every(b => b === 0)) {
+    return false;
+  }
+
+  // Check v if present
+  if (bytes.length === 65) {
+    const v = bytes[64];
+    if (v !== 27 && v !== 28) {
+      return false; // Could also accept EIP-155 values
+    }
+  }
+
+  return true;
+}
+```
+
+### DER Validation
+
+```typescript
+function validateDER(der: Uint8Array): boolean {
+  try {
+    let pos = 0;
+
+    // SEQUENCE tag
+    if (der[pos++] !== 0x30) return false;
+
+    // SEQUENCE length
+    const seqLen = der[pos++];
+    if (pos + seqLen !== der.length) return false;
+
+    // r INTEGER
+    if (der[pos++] !== 0x02) return false;
+    const rLen = der[pos++];
+    pos += rLen;
+
+    // s INTEGER
+    if (der[pos++] !== 0x02) return false;
+    const sLen = der[pos++];
+    pos += sLen;
+
+    // Must consume all bytes
+    return pos === der.length;
+  } catch {
+    return false;
+  }
+}
+```
+
+## Interoperability
+
+### Format Conversion Utilities
+
+```typescript
+// Compact → DER
+function compactToDER(compact: Uint8Array): Uint8Array {
+  const sig = Signature.fromCompact(compact, 'secp256k1');
+  return Signature.toDER(sig);
+}
+
+// DER → Compact
+function derToCompact(der: Uint8Array, v?: number): Uint8Array {
+  const sig = Signature.fromDER(der, 'secp256k1', v);
+  return Signature.toCompact(sig);
+}
+
+// RSV → Compact
+function rsvToCompact(rsv: { r: Uint8Array; s: Uint8Array; v?: number }): Uint8Array {
+  const sig = Signature.fromSecp256k1(rsv.r, rsv.s, rsv.v);
+  return Signature.toCompact(sig);
+}
+
+// Compact → RSV
+function compactToRSV(compact: Uint8Array): { r: Uint8Array; s: Uint8Array; v?: number } {
+  const sig = Signature.fromCompact(compact, 'secp256k1');
+  return {
+    r: Signature.getR(sig),
+    s: Signature.getS(sig),
+    v: Signature.getV(sig)
+  };
+}
+```
+
+## See Also
+
+- [Signature Constructors](./constructors.mdx) - Creating signatures from different formats
+- [Signature Conversions](./conversions.mdx) - Converting between formats
+- [EIP-2098](./eip-2098.mdx) - Compact signature format with embedded recovery
+- [DER Encoding](https://en.wikipedia.org/wiki/X.690#DER_encoding) - ASN.1 Distinguished Encoding Rules

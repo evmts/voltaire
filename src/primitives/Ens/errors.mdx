@@ -1,0 +1,460 @@
+---
+title: Errors
+description: ENS error types and handling patterns
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# ENS Errors
+
+ENS normalization throws specific error types for different validation failures, enabling precise error handling and user feedback.
+
+## Error Hierarchy
+
+```typescript
+EnsError (base class)
+├── DisallowedCharacterError
+├── InvalidLabelExtensionError
+├── IllegalMixtureError
+├── WholeConfusableError
+├── EmptyLabelError
+└── InvalidUtf8Error
+```
+
+## Error Types
+
+### EnsError
+
+Base class for all ENS-related errors.
+
+```typescript
+class EnsError extends Error {
+  constructor(message: string)
+}
+```
+
+All ENS errors inherit from `EnsError`, allowing catch-all handling:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import { EnsError } from '@tevm/voltaire/Ens';
+
+try {
+  const name = Ens.normalize(userInput);
+} catch (err) {
+  if (err instanceof EnsError) {
+    // Handle any ENS validation error
+    console.error('ENS validation failed:', err.message);
+  }
+}
+```
+
+### DisallowedCharacterError
+
+Thrown when name contains prohibited characters.
+
+**Common Causes:**
+- Control characters (`\x00-\x1F`)
+- Invalid Unicode sequences
+- Prohibited special characters
+- Excessive zero-width characters
+
+```typescript
+import { DisallowedCharacterError } from '@tevm/voltaire/Ens';
+
+try {
+  Ens.normalize('my_name.eth')    // underscore not allowed
+} catch (err) {
+  if (err instanceof DisallowedCharacterError) {
+    // "Disallowed character: prohibited ENS character"
+  }
+}
+
+// Other examples that throw DisallowedCharacterError:
+Ens.normalize('my name.eth')      // space
+Ens.normalize('my@name.eth')      // @
+Ens.normalize('my\x00name.eth')   // null byte
+Ens.normalize('my#name.eth')      // #
+```
+
+### InvalidLabelExtensionError
+
+Thrown when label has double-hyphen at positions 2-3 (reserved for punycode).
+
+```typescript
+import { InvalidLabelExtensionError } from '@tevm/voltaire/Ens';
+
+try {
+  Ens.normalize('ab--cd.eth')
+} catch (err) {
+  if (err instanceof InvalidLabelExtensionError) {
+    // "Invalid label extension: double-dash at positions 2-3"
+  }
+}
+
+// Valid: hyphens at other positions
+Ens.normalize('a-b.eth')      // ✓
+Ens.normalize('x--y.eth')     // ✓ (positions 1-2)
+Ens.normalize('abc-def.eth')  // ✓
+```
+
+<Aside type="note">
+The `--` restriction at positions 2-3 is from DNS punycode encoding (xn--), which ENSIP-15 explicitly forbids to prevent confusion.
+</Aside>
+
+### IllegalMixtureError
+
+Thrown when name mixes incompatible scripts.
+
+```typescript
+import { IllegalMixtureError } from '@tevm/voltaire/Ens';
+
+try {
+  Ens.normalize('helloпривет.eth')  // Latin + Cyrillic
+} catch (err) {
+  if (err instanceof IllegalMixtureError) {
+    // "Illegal mixture: incompatible script combinations"
+  }
+}
+
+// Other examples:
+Ens.normalize('hello你好.eth')     // Latin + Han
+Ens.normalize('café日本.eth')     // Latin + Han
+Ens.normalize('тест.eth')         // ✓ Pure Cyrillic OK
+```
+
+**Allowed Combinations:**
+- Any script + Common (numbers, punctuation)
+- Any script + Emoji
+- Han + Hiragana + Katakana (Japanese)
+- Latin + Common
+
+### WholeConfusableError
+
+Thrown when name visually resembles different script (homograph attack).
+
+```typescript
+import { WholeConfusableError } from '@tevm/voltaire/Ens';
+
+try {
+  // "scope" using Cyrillic lookalikes: ѕсоре
+  Ens.normalize('ѕсоре.eth')
+} catch (err) {
+  if (err instanceof WholeConfusableError) {
+    // "Whole confusable: name resembles different script"
+  }
+}
+
+// Other confusables:
+Ens.normalize('аpple.eth')   // а is Cyrillic
+Ens.normalize('gοοgle.eth')  // ο is Greek omicron
+Ens.normalize('micrοsoft.eth')
+```
+
+**Common Confusable Pairs:**
+
+| Intended | Lookalike | Script |
+|----------|-----------|--------|
+| `a` (Latin) | `а` (Cyrillic) | Cyrillic |
+| `c` (Latin) | `с` (Cyrillic) | Cyrillic |
+| `e` (Latin) | `е` (Cyrillic) | Cyrillic |
+| `o` (Latin) | `о` (Cyrillic) | Cyrillic |
+| `p` (Latin) | `р` (Cyrillic) | Cyrillic |
+| `o` (Latin) | `ο` (Greek) | Greek |
+
+### EmptyLabelError
+
+Thrown when name contains zero-length label segment.
+
+```typescript
+import { EmptyLabelError } from '@tevm/voltaire/Ens';
+
+try {
+  Ens.normalize('..eth')
+} catch (err) {
+  if (err instanceof EmptyLabelError) {
+    // "Empty label: zero-length label segment"
+  }
+}
+
+// Other examples:
+Ens.normalize('.eth')        // leading dot
+Ens.normalize('name..eth')   // consecutive dots
+Ens.normalize('name.')       // trailing dot
+```
+
+### InvalidUtf8Error
+
+Thrown when name contains malformed UTF-8 encoding.
+
+```typescript
+import { InvalidUtf8Error } from '@tevm/voltaire/Ens';
+
+try {
+  // Malformed UTF-8 byte sequence
+  const invalid = new TextDecoder().decode(
+    new Uint8Array([0xFF, 0xFE])
+  );
+  Ens.normalize(invalid);
+} catch (err) {
+  if (err instanceof InvalidUtf8Error) {
+    // "Invalid UTF-8: malformed UTF-8 encoding"
+  }
+}
+```
+
+<Aside type="note">
+`InvalidUtf8Error` rarely occurs in normal usage since JavaScript strings are valid UTF-16. Most common when reading binary data.
+</Aside>
+
+## Error Handling Patterns
+
+### Specific Error Types
+
+Handle each error type differently:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import {
+  DisallowedCharacterError,
+  EmptyLabelError,
+  InvalidLabelExtensionError,
+  IllegalMixtureError,
+  WholeConfusableError,
+} from '@tevm/voltaire/Ens';
+
+function normalizeWithFeedback(name: string): {
+  success: boolean;
+  normalized?: string;
+  error?: string;
+} {
+  try {
+    const normalized = Ens.normalize(name);
+    return { success: true, normalized };
+  } catch (err) {
+    if (err instanceof DisallowedCharacterError) {
+      return {
+        success: false,
+        error: 'Name contains invalid characters. Use only letters, numbers, and hyphens.'
+      };
+    }
+
+    if (err instanceof EmptyLabelError) {
+      return {
+        success: false,
+        error: 'Name cannot have empty segments (consecutive dots).'
+      };
+    }
+
+    if (err instanceof InvalidLabelExtensionError) {
+      return {
+        success: false,
+        error: 'Label cannot have -- at positions 2-3 (reserved for punycode).'
+      };
+    }
+
+    if (err instanceof IllegalMixtureError) {
+      return {
+        success: false,
+        error: 'Name mixes incompatible scripts (e.g., Latin and Cyrillic).'
+      };
+    }
+
+    if (err instanceof WholeConfusableError) {
+      return {
+        success: false,
+        error: 'Name looks like a different script (homograph attack detected).'
+      };
+    }
+
+    return {
+      success: false,
+      error: 'Invalid ENS name.'
+    };
+  }
+}
+```
+
+### Catch-All Error Handling
+
+Handle all ENS errors uniformly:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import { EnsError } from '@tevm/voltaire/Ens';
+
+function safeNormalize(name: string): string | null {
+  try {
+    return Ens.normalize(name);
+  } catch (err) {
+    if (err instanceof EnsError) {
+      console.warn('ENS validation failed:', err.message);
+      return null;
+    }
+    throw err; // Re-throw non-ENS errors
+  }
+}
+```
+
+### User Feedback
+
+Provide helpful error messages:
+
+```typescript
+function getUserFriendlyError(err: Error): string {
+  if (err instanceof DisallowedCharacterError) {
+    return 'Invalid characters detected. ENS names can only contain:\n' +
+           '• Letters (a-z)\n' +
+           '• Numbers (0-9)\n' +
+           '• Hyphens (-)\n' +
+           '• Emoji';
+  }
+
+  if (err instanceof EmptyLabelError) {
+    return 'Name segments cannot be empty. Check for consecutive dots (..).';
+  }
+
+  if (err instanceof InvalidLabelExtensionError) {
+    return 'Labels cannot have double-hyphen (--) at positions 2-3.';
+  }
+
+  if (err instanceof IllegalMixtureError) {
+    return 'Cannot mix different alphabets (e.g., English and Russian letters).';
+  }
+
+  if (err instanceof WholeConfusableError) {
+    return 'Name contains lookalike characters from different alphabets. ' +
+           'This prevents phishing attacks.';
+  }
+
+  if (err instanceof InvalidUtf8Error) {
+    return 'Name contains invalid text encoding.';
+  }
+
+  return 'Invalid ENS name.';
+}
+```
+
+### React Component Example
+
+```typescript
+import { useState } from 'react';
+import * as Ens from '@tevm/voltaire/Ens';
+import { EnsError } from '@tevm/voltaire/Ens';
+
+function EnsInput() {
+  const [input, setInput] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const validateInput = (value: string) => {
+    setInput(value);
+
+    if (!value) {
+      setError(null);
+      return;
+    }
+
+    try {
+      Ens.normalize(value);
+      setError(null);
+    } catch (err) {
+      if (err instanceof EnsError) {
+        setError(getUserFriendlyError(err));
+      }
+    }
+  };
+
+  return (
+    <div>
+      <input
+        value={input}
+        onChange={(e) => validateInput(e.target.value)}
+        placeholder="vitalik.eth"
+        className={error ? 'error' : ''}
+      />
+      {error && <p className="error-message">{error}</p>}
+    </div>
+  );
+}
+```
+
+### Retry Logic
+
+Attempt normalization with fallbacks:
+
+```typescript
+async function registerWithRetry(name: string) {
+  // Try user input
+  try {
+    const normalized = Ens.normalize(name);
+    return await register(normalized);
+  } catch (err) {
+    if (!(err instanceof EnsError)) throw err;
+
+    // Try lowercase fallback
+    try {
+      const lowercased = Ens.normalize(name.toLowerCase());
+      console.log(`Using lowercase: ${lowercased}`);
+      return await register(lowercased);
+    } catch {
+      // Give up
+      throw new Error(`Cannot normalize ENS name: ${err.message}`);
+    }
+  }
+}
+```
+
+## Zig Error Handling
+
+```zig
+const primitives = @import("primitives");
+const std = @import("std");
+
+const allocator = std.heap.page_allocator;
+
+const result = primitives.Ens.normalize(allocator, "invalid..eth") catch |err| {
+    switch (err) {
+        error.DisallowedCharacter => {
+            std.debug.print("Disallowed character\n", .{});
+        },
+        error.EmptyLabel => {
+            std.debug.print("Empty label\n", .{});
+        },
+        error.InvalidLabelExtension => {
+            std.debug.print("Invalid label extension\n", .{});
+        },
+        error.IllegalMixture => {
+            std.debug.print("Illegal script mixture\n", .{});
+        },
+        error.WholeConfusable => {
+            std.debug.print("Whole confusable\n", .{});
+        },
+        error.InvalidUtf8 => {
+            std.debug.print("Invalid UTF-8\n", .{});
+        },
+        error.OutOfMemory => return err,
+        else => return err,
+    }
+    return;
+};
+defer allocator.free(result);
+```
+
+## Best Practices
+
+1. **Specific Handling**: Catch specific error types for better UX
+2. **User Feedback**: Provide actionable error messages
+3. **Early Validation**: Validate input before expensive operations
+4. **Graceful Degradation**: Have fallback strategies for validation failures
+5. **Logging**: Log validation failures for debugging and analytics
+
+## References
+
+- [ENSIP-15: Name Normalization](https://docs.ens.domains/ensip/15) - Validation spec
+- [Unicode Security](https://www.unicode.org/reports/tr39/) - Confusables guide
+
+## See Also
+
+- [Validation](/primitives/ens/validation) - Validation rules
+- [Security](/primitives/ens/security) - Security considerations
+- [Normalization](/primitives/ens/normalization) - Normalization process

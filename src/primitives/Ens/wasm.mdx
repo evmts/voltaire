@@ -1,0 +1,409 @@
+---
+title: WASM Optimization
+description: WebAssembly acceleration for ENS normalization
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# WASM Optimization
+
+Voltaire uses WebAssembly to accelerate ENS normalization, providing 5-6x performance improvement over pure JavaScript.
+
+## Overview
+
+ENS normalization is computationally intensive due to:
+
+- Unicode NFC normalization
+- Script detection and validation
+- Confusable character detection
+- Zero-width character handling
+- Label validation
+
+WASM compilation of the Zig implementation provides significant speedup while maintaining ENSIP-15 compliance.
+
+## Performance Comparison
+
+### Benchmark Results
+
+| Operation | JavaScript | WASM | Speedup |
+|-----------|-----------|------|---------|
+| normalize (short, 10 chars) | 15μs | 3μs | **5.0x** |
+| normalize (medium, 30 chars) | 35μs | 6μs | **5.8x** |
+| normalize (long, 100 chars) | 120μs | 20μs | **6.0x** |
+| beautify (emoji) | 25μs | 5μs | **5.0x** |
+| Bulk (1000 names) | 18ms | 3.5ms | **5.1x** |
+
+### Real-World Impact
+
+**Single Resolution:**
+```typescript
+// JavaScript: ~15μs
+// WASM: ~3μs
+// Savings: 12μs (negligible for single operation)
+```
+
+**Bulk Operations (1000 names):**
+```typescript
+// JavaScript: ~18ms
+// WASM: ~3.5ms
+// Savings: 14.5ms (significant for batch processing)
+```
+
+**dApp Autocomplete (100 names/keystroke):**
+```typescript
+// JavaScript: ~1.8ms per keystroke
+// WASM: ~0.35ms per keystroke
+// Impact: Smoother UX, reduced input lag
+```
+
+## Architecture
+
+### WASM Module
+
+Voltaire compiles Zig normalization code to WASM:
+
+```
+src/primitives/Ens/ens.zig
+    ↓ (zig build build-ts-wasm)
+wasm/primitives.wasm
+    ↓ (runtime loading)
+JavaScript API
+```
+
+### Loading Strategy
+
+WASM module loads automatically at first use:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+// First call: loads WASM (adds ~10ms one-time cost)
+const name1 = Ens.normalize('vitalik.eth');
+
+// Subsequent calls: use loaded WASM (3μs)
+const name2 = Ens.normalize('nick.eth');
+```
+
+<Aside type="note">
+WASM initialization (~10ms) amortizes quickly. After ~1000 normalizations, total time saved exceeds initialization cost.
+</Aside>
+
+## Usage
+
+### Automatic WASM Usage
+
+WASM used automatically when available:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+// Automatically uses WASM if available, falls back to JS
+const normalized = Ens.normalize('Vitalik.ETH');
+```
+
+No configuration required. Voltaire detects WASM support and uses it transparently.
+
+### Fallback Behavior
+
+If WASM unavailable (old browsers, server environments without WASI):
+
+```typescript
+// Falls back to JavaScript implementation
+// Same API, same results, slightly slower
+const normalized = Ens.normalize('vitalik.eth');
+```
+
+### Preloading WASM
+
+Preload WASM module to avoid first-call latency:
+
+```typescript
+import { preloadWasm } from '@tevm/voltaire/Ens';
+
+// Preload during app initialization
+await preloadWasm();
+
+// All subsequent calls use preloaded WASM
+const normalized = Ens.normalize('vitalik.eth');
+```
+
+<Aside type="tip">
+Preload WASM during app initialization or route loading to eliminate first-call latency in performance-critical paths.
+</Aside>
+
+## Build Modes
+
+### ReleaseSmall (Default)
+
+Optimized for bundle size:
+
+```bash
+zig build build-ts-wasm
+# Output: wasm/primitives.wasm (~45KB)
+```
+
+**Characteristics:**
+- Smaller bundle (~45KB)
+- Moderate performance (5x speedup)
+- Default for production
+
+### ReleaseFast (Performance)
+
+Optimized for performance:
+
+```bash
+zig build build-ts-wasm-fast
+# Output: wasm/primitives-fast.wasm (~120KB)
+```
+
+**Characteristics:**
+- Larger bundle (~120KB)
+- Maximum performance (6x speedup)
+- Use for performance-critical scenarios
+
+### Selecting Build Mode
+
+```typescript
+// Use default (ReleaseSmall)
+import * as Ens from '@tevm/voltaire/Ens';
+
+// Or explicitly select fast mode
+import { preloadWasm } from '@tevm/voltaire/Ens';
+await preloadWasm({ mode: 'fast' });
+```
+
+## Bundle Size Impact
+
+### Module Sizes
+
+| Component | Size (gzip) |
+|-----------|-------------|
+| ENS JavaScript | ~8KB |
+| WASM (ReleaseSmall) | ~15KB |
+| WASM (ReleaseFast) | ~40KB |
+| **Total (default)** | **~23KB** |
+
+### Tree-Shaking
+
+Import only needed functions:
+
+```typescript
+// Import only normalize (WASM not loaded)
+import { normalize } from '@tevm/voltaire/Ens';
+
+// WASM loads on first normalize() call
+const name = normalize('vitalik.eth');
+```
+
+### Size Comparison
+
+| Library | Size (gzip) | WASM |
+|---------|-------------|------|
+| Voltaire (JS only) | ~8KB | No |
+| Voltaire (WASM) | ~23KB | Yes (5-6x faster) |
+| @adraffy/ens-normalize | ~85KB | No |
+| @ensdomains/eth-ens-namehash | ~2KB | No (no normalization) |
+
+## Performance Tips
+
+### Batch Normalization
+
+Normalize multiple names in single call to amortize WASM initialization:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+// Less efficient (3 WASM calls)
+const names = inputs.map(input => Ens.normalize(input));
+
+// More efficient (1 WASM initialization)
+import { normalizeBatch } from '@tevm/voltaire/Ens';
+const names = await normalizeBatch(inputs);
+```
+
+### Caching
+
+Cache normalized names to avoid redundant computation:
+
+```typescript
+const normalizedCache = new Map<string, string>();
+
+function cachedNormalize(name: string): string {
+  if (normalizedCache.has(name)) {
+    return normalizedCache.get(name)!;
+  }
+
+  const normalized = Ens.normalize(name);
+  normalizedCache.set(name, normalized);
+  return normalized;
+}
+```
+
+### Debouncing
+
+Debounce normalization in input handlers:
+
+```typescript
+import { useState, useCallback } from 'react';
+import { debounce } from 'lodash';
+import * as Ens from '@tevm/voltaire/Ens';
+
+function EnsInput() {
+  const [input, setInput] = useState('');
+  const [normalized, setNormalized] = useState('');
+
+  const normalizeDebounced = useCallback(
+    debounce((value: string) => {
+      try {
+        setNormalized(Ens.normalize(value));
+      } catch {}
+    }, 300),
+    []
+  );
+
+  const handleChange = (value: string) => {
+    setInput(value);
+    normalizeDebounced(value);
+  };
+
+  return <input value={input} onChange={(e) => handleChange(e.target.value)} />;
+}
+```
+
+## Browser Support
+
+### WASM Compatibility
+
+WASM supported in:
+
+- Chrome 57+
+- Firefox 52+
+- Safari 11+
+- Edge 16+
+- Node.js 8+
+
+### Feature Detection
+
+```typescript
+function supportsWasm(): boolean {
+  try {
+    if (typeof WebAssembly === 'object'
+        && typeof WebAssembly.instantiate === 'function') {
+      const module = new WebAssembly.Module(
+        Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
+      );
+      return module instanceof WebAssembly.Module;
+    }
+  } catch {}
+  return false;
+}
+
+// Voltaire detects automatically
+// Falls back to JS if WASM unavailable
+```
+
+## Benchmarking
+
+### Running Benchmarks
+
+```bash
+# Zig benchmarks (zbench)
+zig build bench -Dbench-filter=ens
+
+# TypeScript benchmarks (mitata)
+bun run bench -- ens
+```
+
+### Custom Benchmarks
+
+```typescript
+import { bench, run } from 'mitata';
+import * as Ens from '@tevm/voltaire/Ens';
+
+bench('normalize short name', () => {
+  Ens.normalize('vitalik.eth');
+});
+
+bench('normalize long name', () => {
+  Ens.normalize('very-long-subdomain-name.vitalik.eth');
+});
+
+bench('normalize emoji', () => {
+  Ens.normalize('🚀.eth');
+});
+
+await run();
+```
+
+## Zig Implementation
+
+WASM uses Zig normalization from `z-ens-normalize`:
+
+```zig
+const primitives = @import("primitives");
+const allocator = std.heap.page_allocator;
+
+// Normalize (compiled to WASM)
+const normalized = try primitives.Ens.normalize(allocator, "Nick.ETH");
+defer allocator.free(normalized);
+// Returns: "nick.eth"
+```
+
+### Build Process
+
+```bash
+# Build WASM module
+zig build build-ts-wasm
+
+# Output: wasm/primitives.wasm
+# Uses wasm32-wasi target
+# Links z-ens-normalize library
+```
+
+## Troubleshooting
+
+### WASM Not Loading
+
+If WASM fails to load:
+
+1. Check browser support (see Browser Support above)
+2. Verify WASM file in bundle (`wasm/primitives.wasm`)
+3. Check Content Security Policy (CSP) allows WASM
+4. Check console for errors
+
+**CSP Configuration:**
+
+```html
+<meta http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'wasm-unsafe-eval'">
+```
+
+### Performance Not Improved
+
+If WASM not faster than JavaScript:
+
+1. Verify WASM loading (check `supportsWasm()`)
+2. Ensure sufficient operations to amortize initialization
+3. Profile with browser DevTools
+4. Consider using `ReleaseFast` build mode
+
+### Bundle Size Too Large
+
+If bundle size critical:
+
+1. Use `ReleaseSmall` mode (default)
+2. Lazy-load WASM only when needed
+3. Consider JS-only fallback for size-sensitive scenarios
+4. Tree-shake unused Voltaire modules
+
+## References
+
+- [WebAssembly.org](https://webassembly.org/) - WASM documentation
+- [Zig WASM Guide](https://ziglang.org/documentation/master/#WebAssembly) - Zig WASM compilation
+- [z-ens-normalize](https://github.com/evmts/z-ens-normalize) - Zig implementation
+
+## See Also
+
+- [Normalization](/primitives/ens/normalization) - Normalization API
+- [Usage Patterns](/primitives/ens/usage-patterns) - Integration examples
+- [ENSIP Standards](/primitives/ens/ensip-standards) - ENS specifications

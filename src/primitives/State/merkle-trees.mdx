@@ -1,0 +1,341 @@
+---
+title: State Merkle Trees
+description: Merkle Patricia Trie for EVM state root calculation
+---
+
+# Merkle Trees
+
+Understanding and implementing Merkle Patricia Tries for EVM state roots.
+
+## Overview
+
+Ethereum uses a Modified Merkle Patricia Trie to compute state roots. Each contract's storage is stored in its own trie, and the root hash of that trie represents the contract's storage state.
+
+## Storage Trie Structure
+
+```typescript
+import * as State from '@tevm/primitives/State'
+import * as Hash from '@tevm/primitives/Hash'
+import * as Hex from '@tevm/primitives/Hex'
+import * as Rlp from '@tevm/primitives/Rlp'
+
+/**
+ * Storage trie key calculation:
+ * - Key: keccak256(slot) where slot is 32-byte big-endian
+ * - Value: RLP(value) where value is 32-byte big-endian (with leading zeros stripped)
+ */
+
+function computeStorageKey(slot: bigint): Uint8Array {
+  // Convert slot to 32-byte big-endian
+  const slotBytes = Hex.padLeft(Hex.fromBigInt(slot), 32)
+
+  // Hash with keccak256
+  return Hash.keccak256(slotBytes)
+}
+
+function encodeStorageValue(value: bigint): Uint8Array {
+  if (value === 0n) {
+    // Zero values are represented as empty bytes
+    return new Uint8Array(0)
+  }
+
+  // Convert to bytes and strip leading zeros
+  const valueBytes = Hex.fromBigInt(value)
+
+  // RLP encode
+  return Rlp.encode(valueBytes)
+}
+```
+
+## Building Storage Trie
+
+```typescript
+import { Trie } from '@ethereumjs/trie'
+
+class StorageTrie {
+  private trie: Trie
+
+  constructor() {
+    this.trie = new Trie()
+  }
+
+  async set(slot: bigint, value: bigint): Promise<void> {
+    const key = computeStorageKey(slot)
+    const encodedValue = encodeStorageValue(value)
+
+    if (value === 0n) {
+      // Delete zero values from trie
+      await this.trie.del(key)
+    } else {
+      await this.trie.put(key, encodedValue)
+    }
+  }
+
+  async get(slot: bigint): Promise<bigint | null> {
+    const key = computeStorageKey(slot)
+    const value = await this.trie.get(key)
+
+    if (!value || value.length === 0) {
+      return 0n
+    }
+
+    const decoded = Rlp.decode(value)
+    return Hex.toBigInt(decoded as Uint8Array)
+  }
+
+  async root(): Promise<Uint8Array> {
+    return this.trie.root()
+  }
+
+  async createProof(slot: bigint): Promise<Uint8Array[]> {
+    const key = computeStorageKey(slot)
+    const proof = await this.trie.createProof(key)
+    return proof.map(p => p as Uint8Array)
+  }
+
+  async verifyProof(
+    root: Uint8Array,
+    slot: bigint,
+    proof: Uint8Array[]
+  ): Promise<bigint | null> {
+    const key = computeStorageKey(slot)
+    const value = await Trie.verifyProof(root, key, proof)
+
+    if (!value || value.length === 0) {
+      return 0n
+    }
+
+    const decoded = Rlp.decode(value)
+    return Hex.toBigInt(decoded as Uint8Array)
+  }
+}
+```
+
+## Complete Storage Root Calculation
+
+```typescript
+// Build storage root for contract at specific block
+async function buildStorageRoot(
+  storage: Map<string, bigint>,
+  contractAddress: BrandedAddress
+): Promise<Uint8Array> {
+  const trie = new StorageTrie()
+  const addrHex = Address.toHex(contractAddress).toLowerCase()
+
+  // Add all storage slots for this contract
+  for (const [keyStr, value] of storage) {
+    const key = State.StorageKey.fromString(keyStr)
+
+    // Only include slots for this contract
+    if (Address.toHex(key.address).toLowerCase() === addrHex) {
+      await trie.set(key.slot, value)
+    }
+  }
+
+  return trie.root()
+}
+
+// Verify storage root matches expected
+async function verifyStorageRoot(
+  storage: Map<string, bigint>,
+  contractAddress: BrandedAddress,
+  expectedRoot: Uint8Array
+): Promise<boolean> {
+  const actualRoot = await buildStorageRoot(storage, contractAddress)
+  return Hash.equals(actualRoot, expectedRoot)
+}
+```
+
+## Incremental Updates
+
+```typescript
+// Efficiently update storage root incrementally
+class IncrementalStorageTrie {
+  private trie: Trie
+  private pendingUpdates = new Map<bigint, bigint>()
+
+  constructor(private contractAddress: BrandedAddress) {
+    this.trie = new Trie()
+  }
+
+  // Queue update without computing root
+  queueUpdate(slot: bigint, value: bigint): void {
+    this.pendingUpdates.set(slot, value)
+  }
+
+  // Apply all pending updates and compute new root
+  async flush(): Promise<Uint8Array> {
+    for (const [slot, value] of this.pendingUpdates) {
+      const key = computeStorageKey(slot)
+      const encodedValue = encodeStorageValue(value)
+
+      if (value === 0n) {
+        await this.trie.del(key)
+      } else {
+        await this.trie.put(key, encodedValue)
+      }
+    }
+
+    this.pendingUpdates.clear()
+    return this.trie.root()
+  }
+
+  async root(): Promise<Uint8Array> {
+    if (this.pendingUpdates.size > 0) {
+      return this.flush()
+    }
+    return this.trie.root()
+  }
+
+  hasPendingUpdates(): boolean {
+    return this.pendingUpdates.size > 0
+  }
+}
+```
+
+## Storage Proofs
+
+Storage proofs allow verifying a specific storage value without downloading the entire state:
+
+```typescript
+// Generate storage proof for slot
+async function generateStorageProof(
+  storage: Map<string, bigint>,
+  contractAddress: BrandedAddress,
+  slot: bigint
+): Promise<{
+  root: Uint8Array
+  proof: Uint8Array[]
+  value: bigint
+}> {
+  const trie = new StorageTrie()
+  const addrHex = Address.toHex(contractAddress).toLowerCase()
+
+  // Build trie with all contract storage
+  for (const [keyStr, value] of storage) {
+    const key = State.StorageKey.fromString(keyStr)
+    if (Address.toHex(key.address).toLowerCase() === addrHex) {
+      await trie.set(key.slot, value)
+    }
+  }
+
+  const root = await trie.root()
+  const proof = await trie.createProof(slot)
+  const value = await trie.get(slot) ?? 0n
+
+  return { root, proof, value }
+}
+
+// Verify storage proof
+async function verifyStorageProof(
+  root: Uint8Array,
+  slot: bigint,
+  expectedValue: bigint,
+  proof: Uint8Array[]
+): Promise<boolean> {
+  const trie = new StorageTrie()
+  const value = await trie.verifyProof(root, slot, proof)
+
+  return value === expectedValue
+}
+```
+
+## Multi-Slot Proofs
+
+Prove multiple storage slots efficiently:
+
+```typescript
+async function generateMultiSlotProof(
+  storage: Map<string, bigint>,
+  contractAddress: BrandedAddress,
+  slots: bigint[]
+): Promise<{
+  root: Uint8Array
+  proofs: Map<bigint, Uint8Array[]>
+  values: Map<bigint, bigint>
+}> {
+  const trie = new StorageTrie()
+  const addrHex = Address.toHex(contractAddress).toLowerCase()
+
+  // Build trie
+  for (const [keyStr, value] of storage) {
+    const key = State.StorageKey.fromString(keyStr)
+    if (Address.toHex(key.address).toLowerCase() === addrHex) {
+      await trie.set(key.slot, value)
+    }
+  }
+
+  const root = await trie.root()
+  const proofs = new Map<bigint, Uint8Array[]>()
+  const values = new Map<bigint, bigint>()
+
+  // Generate proof for each slot
+  for (const slot of slots) {
+    const proof = await trie.createProof(slot)
+    const value = await trie.get(slot) ?? 0n
+
+    proofs.set(slot, proof)
+    values.set(slot, value)
+  }
+
+  return { root, proofs, values }
+}
+```
+
+## State Root Updates
+
+Track state root changes across transactions:
+
+```typescript
+class StateRootTracker {
+  private roots = new Map<bigint, Uint8Array>()  // blockNumber -> stateRoot
+  private contractTries = new Map<string, StorageTrie>()
+
+  async updateContractStorage(
+    contractAddress: BrandedAddress,
+    updates: Map<bigint, bigint>
+  ): Promise<Uint8Array> {
+    const addrHex = Address.toHex(contractAddress)
+    let trie = this.contractTries.get(addrHex)
+
+    if (!trie) {
+      trie = new StorageTrie()
+      this.contractTries.set(addrHex, trie)
+    }
+
+    // Apply updates
+    for (const [slot, value] of updates) {
+      await trie.set(slot, value)
+    }
+
+    return trie.root()
+  }
+
+  async getContractRoot(contractAddress: BrandedAddress): Promise<Uint8Array> {
+    const addrHex = Address.toHex(contractAddress)
+    const trie = this.contractTries.get(addrHex)
+
+    if (!trie) {
+      // Empty trie root (keccak256 of empty RLP)
+      return Hash.keccak256(Rlp.encode([]))
+    }
+
+    return trie.root()
+  }
+
+  saveBlockRoot(blockNumber: bigint, root: Uint8Array): void {
+    this.roots.set(blockNumber, root)
+  }
+
+  getBlockRoot(blockNumber: bigint): Uint8Array | null {
+    return this.roots.get(blockNumber) ?? null
+  }
+}
+```
+
+## Related
+
+- [Constructors](/primitives/state/constructors) - Create storage keys
+- [Usage Patterns](/primitives/state/usage-patterns) - State management
+- [Hash Primitive](/primitives/hash) - Keccak256 hashing
+- [Rlp Primitive](/primitives/rlp) - RLP encoding

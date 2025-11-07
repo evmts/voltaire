@@ -1,0 +1,440 @@
+---
+title: Security
+description: ENS security considerations - homograph attacks, confusables, and script mixing
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# ENS Security
+
+ENSIP-15 normalization prevents several classes of attacks targeting human-readable names. Understanding these threats is critical for secure dApp integration.
+
+## Threat Model
+
+### Attack Vectors
+
+1. **Homograph attacks**: Visually similar names using different characters
+2. **Mixed script attacks**: Combining incompatible alphabets
+3. **Confusable characters**: Lookalike characters from different scripts
+4. **Zero-width attacks**: Invisible characters altering appearance
+5. **Normalization bypass**: Exploiting inconsistent normalization
+
+## Homograph Attacks
+
+### What They Are
+
+Homograph attacks use lookalike characters from different scripts to create deceptive names:
+
+```
+Legitimate: vitalik.eth (Latin script)
+Malicious:  vіtalik.eth (Cyrillic 'і' looks like Latin 'i')
+```
+
+To users, these appear identical, but resolve to different addresses.
+
+### Real-World Examples
+
+**PayPal Phishing:**
+```
+Legitimate: paypal.eth
+Malicious:  pаypal.eth (Cyrillic 'а' instead of Latin 'a')
+```
+
+**Common Confusables:**
+
+| Legitimate | Malicious | Lookalike Character |
+|------------|-----------|---------------------|
+| `apple.eth` | `аpple.eth` | Cyrillic `а` |
+| `google.eth` | `gοοgle.eth` | Greek omicron `ο` |
+| `microsoft.eth` | `micrοsoft.eth` | Greek `ο` |
+| `coinbase.eth` | `соinbase.eth` | Cyrillic `с`, `о` |
+| `uniswap.eth` | `unіswap.eth` | Cyrillic `і` |
+
+### ENSIP-15 Protection
+
+ENSIP-15 prevents homographs via **whole confusable detection**:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import { WholeConfusableError } from '@tevm/voltaire/Ens';
+
+// Legitimate name (all Latin)
+const legitimate = Ens.normalize('vitalik.eth');  // ✓
+
+// Homograph attack (mixed with Cyrillic)
+try {
+  const malicious = Ens.normalize('vіtalik.eth');  // Cyrillic 'і'
+} catch (err) {
+  // WholeConfusableError: name resembles different script
+}
+```
+
+**How it Works:**
+
+1. Analyze entire name as single script
+2. Check if it could be confused with another script
+3. Reject if confusable across scripts
+4. Allow only if all characters from same script
+
+<Aside type="caution">
+Always normalize ENS names before resolution. Skipping normalization enables homograph attacks.
+</Aside>
+
+## Mixed Script Attacks
+
+### Incompatible Combinations
+
+Mixing incompatible scripts creates deceptive names:
+
+```typescript
+import { IllegalMixtureError } from '@tevm/voltaire/Ens';
+
+// Latin + Cyrillic
+try {
+  Ens.normalize('helloпривет.eth');  // ✗
+} catch (err) {
+  // IllegalMixtureError
+}
+
+// Latin + Han (Chinese)
+try {
+  Ens.normalize('hello你好.eth');  // ✗
+} catch (err) {
+  // IllegalMixtureError
+}
+
+// Latin + Arabic
+try {
+  Ens.normalize('helloمرحبا.eth');  // ✗
+} catch (err) {
+  // IllegalMixtureError
+}
+```
+
+### Allowed Combinations
+
+**Safe combinations:**
+
+```typescript
+// Single script (always allowed)
+Ens.normalize('hello.eth')      // ✓ Latin
+Ens.normalize('привет.eth')     // ✓ Cyrillic
+Ens.normalize('你好.eth')       // ✓ Han
+
+// Script + Common (numbers, punctuation)
+Ens.normalize('hello123.eth')   // ✓ Latin + Common
+Ens.normalize('привет123.eth')  // ✓ Cyrillic + Common
+
+// Script + Emoji
+Ens.normalize('hello🚀.eth')    // ✓ Latin + Emoji
+Ens.normalize('привет🚀.eth')   // ✓ Cyrillic + Emoji
+
+// CJK (Chinese, Japanese, Korean) combinations
+Ens.normalize('你好ひらがな.eth')  // ✓ Han + Hiragana (Japanese)
+```
+
+## Confusable Characters
+
+### Character-Level Confusables
+
+Individual characters that look similar across scripts:
+
+| Latin | Lookalike | Script | Unicode |
+|-------|-----------|--------|---------|
+| `a` | `а` | Cyrillic | U+0430 |
+| `c` | `с` | Cyrillic | U+0441 |
+| `e` | `е` | Cyrillic | U+0435 |
+| `i` | `і` | Cyrillic | U+0456 |
+| `o` | `о` | Cyrillic | U+043E |
+| `p` | `р` | Cyrillic | U+0440 |
+| `x` | `х` | Cyrillic | U+0445 |
+| `y` | `у` | Cyrillic | U+0443 |
+| `o` | `ο` | Greek | U+03BF |
+| `a` | `α` | Greek | U+03B1 |
+
+### Detection Strategy
+
+```typescript
+function detectConfusables(name: string): string[] {
+  const confusables: string[] = [];
+
+  // Check each character
+  for (const char of name) {
+    const code = char.charCodeAt(0);
+
+    // Cyrillic confusables (U+0400-U+04FF)
+    if (code >= 0x0400 && code <= 0x04FF) {
+      confusables.push(`Cyrillic ${char} (U+${code.toString(16)})`);
+    }
+
+    // Greek confusables (U+0370-U+03FF)
+    if (code >= 0x0370 && code <= 0x03FF) {
+      confusables.push(`Greek ${char} (U+${code.toString(16)})`);
+    }
+  }
+
+  return confusables;
+}
+
+// Usage
+detectConfusables('vіtalik.eth');
+// ['Cyrillic і (U+456)']
+
+detectConfusables('gοοgle.eth');
+// ['Greek ο (U+3bf)', 'Greek ο (U+3bf)']
+```
+
+## Zero-Width Attacks
+
+### Invisible Characters
+
+Zero-width characters are invisible but affect string comparison:
+
+- **ZWJ** (U+200D): Zero-Width Joiner
+- **ZWNJ** (U+200C): Zero-Width Non-Joiner
+- **ZWSP** (U+200B): Zero-Width Space
+
+### Attack Example
+
+```typescript
+// Visible: "vitalik.eth"
+const normal = "vitalik.eth";
+
+// Invisible ZWJ inserted: "vita‍lik.eth"
+const zeroWidth = "vita\u200Dlik.eth";
+
+// Different strings, appear identical
+normal !== zeroWidth  // true, but look the same!
+```
+
+### ENSIP-15 Protection
+
+```typescript
+import { DisallowedCharacterError } from '@tevm/voltaire/Ens';
+
+// Valid ZWJ usage (emoji sequences)
+Ens.normalize('👨‍👩‍👧.eth')  // ✓ Family emoji
+
+// Invalid ZWJ in text
+try {
+  Ens.normalize('vita\u200Dlik.eth')  // ✗
+} catch (err) {
+  // DisallowedCharacterError
+}
+
+// ZWSP always invalid
+try {
+  Ens.normalize('vita\u200Blik.eth')  // ✗
+} catch (err) {
+  // DisallowedCharacterError
+}
+```
+
+## Normalization Bypass
+
+### Inconsistent Normalization
+
+Different normalization implementations can produce different results:
+
+```typescript
+// Correct implementation
+const correct = Ens.normalize("Nick.ETH");
+// "nick.eth"
+
+// Naive implementation (vulnerable)
+const naive = "Nick.ETH".toLowerCase();
+// "nick.eth" (appears correct)
+
+// But with Unicode:
+const naive2 = "café.ETH".toLowerCase();
+// May not handle combining characters correctly
+```
+
+### Defense: Use Standard Implementation
+
+```typescript
+// ✓ CORRECT - Use ENSIP-15 compliant normalization
+import * as Ens from '@tevm/voltaire/Ens';
+const normalized = Ens.normalize(userInput);
+
+// ✗ WRONG - Custom normalization
+const naive = userInput.toLowerCase();  // Vulnerable!
+
+// ✗ WRONG - Skipping normalization
+const dangerous = userInput;  // Extremely vulnerable!
+```
+
+<Aside type="danger">
+Never implement custom ENS normalization. Use ENSIP-15 compliant libraries to avoid bypass attacks.
+</Aside>
+
+## Best Practices
+
+### 1. Always Normalize
+
+Normalize all user input before any ENS operations:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+async function resolveEnsName(userInput: string) {
+  // ✓ CORRECT
+  const normalized = Ens.normalize(userInput);
+  return await registry.resolve(namehash(normalized));
+
+  // ✗ WRONG
+  return await registry.resolve(namehash(userInput));
+}
+```
+
+### 2. Display Normalized Form
+
+Show users the normalized form for verification:
+
+```typescript
+function EnsDisplay({ userInput }: { userInput: string }) {
+  const normalized = Ens.normalize(userInput);
+
+  return (
+    <div>
+      <p>You entered: {userInput}</p>
+      {userInput !== normalized && (
+        <p className="warning">
+          Normalized to: {normalized}
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+### 3. Validate Before Storage
+
+Store only normalized names:
+
+```typescript
+async function saveEnsName(userInput: string) {
+  // Normalize and validate
+  const normalized = Ens.normalize(userInput);
+
+  // Store normalized form
+  await db.insert({ name: normalized });
+
+  // ✗ NEVER store non-normalized
+  await db.insert({ name: userInput });  // Vulnerable!
+}
+```
+
+### 4. Compare Normalized Forms
+
+Always compare normalized forms:
+
+```typescript
+function isSameName(name1: string, name2: string): boolean {
+  // ✓ CORRECT
+  try {
+    return Ens.normalize(name1) === Ens.normalize(name2);
+  } catch {
+    return false;
+  }
+
+  // ✗ WRONG
+  return name1.toLowerCase() === name2.toLowerCase();
+}
+```
+
+### 5. Handle Errors Securely
+
+Treat validation errors as security events:
+
+```typescript
+import { WholeConfusableError, IllegalMixtureError } from '@tevm/voltaire/Ens';
+
+async function registerName(name: string) {
+  try {
+    const normalized = Ens.normalize(name);
+    return await register(normalized);
+  } catch (err) {
+    if (err instanceof WholeConfusableError) {
+      // Log security event
+      await logSecurityEvent({
+        type: 'homograph_attempt',
+        name,
+        timestamp: Date.now(),
+      });
+      throw new Error('Name appears to be a phishing attempt');
+    }
+
+    if (err instanceof IllegalMixtureError) {
+      await logSecurityEvent({
+        type: 'mixed_script_attempt',
+        name,
+        timestamp: Date.now(),
+      });
+      throw new Error('Name mixes incompatible scripts');
+    }
+
+    throw err;
+  }
+}
+```
+
+## Security Checklist
+
+- [ ] Always use ENSIP-15 compliant normalization
+- [ ] Normalize before any ENS operation (resolution, registration, comparison)
+- [ ] Display normalized form to users for verification
+- [ ] Store only normalized names in databases
+- [ ] Never implement custom normalization logic
+- [ ] Handle normalization errors as security events
+- [ ] Educate users about homograph attacks
+- [ ] Compare names using normalized forms only
+- [ ] Log suspicious validation failures
+- [ ] Test with confusable characters in security tests
+
+## Testing for Vulnerabilities
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import { describe, test, expect } from 'vitest';
+
+describe('ENS Security', () => {
+  test('rejects homograph attacks', () => {
+    // Cyrillic 'а' instead of Latin 'a'
+    expect(() => Ens.normalize('vіtalik.eth')).toThrow();
+    expect(() => Ens.normalize('pаypal.eth')).toThrow();
+  });
+
+  test('rejects mixed scripts', () => {
+    expect(() => Ens.normalize('hello你好.eth')).toThrow();
+    expect(() => Ens.normalize('testпривет.eth')).toThrow();
+  });
+
+  test('rejects zero-width attacks', () => {
+    expect(() => Ens.normalize('vita\u200Blik.eth')).toThrow();
+    expect(() => Ens.normalize('vita\u200Dlik.eth')).toThrow();
+  });
+
+  test('ensures normalization consistency', () => {
+    const inputs = ['VITALIK.ETH', 'Vitalik.eth', 'vitalik.eth'];
+    const normalized = inputs.map(i => Ens.normalize(i));
+
+    // All should normalize to same value
+    expect(new Set(normalized).size).toBe(1);
+  });
+});
+```
+
+## References
+
+- [ENSIP-15: Name Normalization](https://docs.ens.domains/ensip/15) - Security spec
+- [Unicode Security (TR39)](https://www.unicode.org/reports/tr39/) - Confusables guide
+- [Homograph Attack](https://en.wikipedia.org/wiki/IDN_homograph_attack) - Wikipedia
+- [ENS Security Best Practices](https://docs.ens.domains/dapp-developer-guide/resolving-names) - Official guide
+
+## See Also
+
+- [Validation](/primitives/ens/validation) - Validation rules
+- [Errors](/primitives/ens/errors) - Error handling
+- [Normalization](/primitives/ens/normalization) - Normalization process
+- [ENSIP Standards](/primitives/ens/ensip-standards) - ENS specifications

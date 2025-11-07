@@ -1,0 +1,459 @@
+---
+title: State Conversions
+description: Serializing and deserializing StorageKey for maps and databases
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Conversions
+
+Methods for converting StorageKey to and from string representations for use in maps, databases, and APIs.
+
+## String Serialization
+
+### `StorageKey.toString(key)`
+
+Convert StorageKey to string format for map keys.
+
+```typescript
+import * as State from '@tevm/primitives/State'
+import * as Address from '@tevm/primitives/Address'
+
+const key = State.StorageKey(
+  Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  42n
+)
+
+const str = State.StorageKey.toString(key)
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e:42"
+
+// Use as map keys
+const storage = new Map<string, bigint>()
+storage.set(State.StorageKey.toString(key), 1000n)
+```
+
+**Parameters:**
+- `key: BrandedStorageKey` - Storage key to serialize
+
+**Returns:** `string` - Format: `"address:slot"`
+
+**Format details:**
+- Address: lowercase hex with 0x prefix
+- Slot: decimal number (not hex)
+- Separator: colon `:`
+
+**Static form:**
+```typescript
+import { toString } from '@tevm/primitives/State'
+const str = toString(key)
+```
+
+Source: [toString.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/toString.js)
+
+### `StorageKey.fromString(str)`
+
+Parse StorageKey from string representation.
+
+```typescript
+const str = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e:42"
+const key = State.StorageKey.fromString(str)
+
+// Result
+// {
+//   address: BrandedAddress(0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e),
+//   slot: 42n
+// }
+
+// Round-trip conversion
+const original = State.StorageKey(contractAddr, 100n)
+const serialized = State.StorageKey.toString(original)
+const deserialized = State.StorageKey.fromString(serialized)
+
+State.StorageKey.equals(original, deserialized)  // true
+```
+
+**Parameters:**
+- `str: string` - String in format `"address:slot"`
+
+**Returns:** `BrandedStorageKey`
+
+**Static form:**
+```typescript
+import { fromString } from '@tevm/primitives/State'
+const key = fromString("0x742d35cc...e3e:42")
+```
+
+Source: [fromString.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/fromString.js)
+
+## Hash Code
+
+### `StorageKey.hashCode(key)`
+
+Generate numeric hash for hash-based data structures.
+
+```typescript
+const key = State.StorageKey(contractAddr, 42n)
+const hash = State.StorageKey.hashCode(key)
+
+// Use for bucketing in hash maps
+const bucketIndex = hash % numBuckets
+
+// Use for bloom filters
+const bloomIndex = hash % bloomSize
+```
+
+**Parameters:**
+- `key: BrandedStorageKey` - Storage key to hash
+
+**Returns:** `number` - Deterministic hash code
+
+**Properties:**
+- Deterministic: same key always produces same hash
+- Fast: simple XOR-based calculation
+- Not cryptographic: for data structures only
+
+**Static form:**
+```typescript
+import { hashCode } from '@tevm/primitives/State'
+const hash = hashCode(key)
+```
+
+Source: [hashCode.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/hashCode.js)
+
+## Usage Patterns
+
+### Map-Based Storage
+
+<Aside type="tip" title="Why String Keys?">
+JavaScript objects/maps use reference equality for object keys. StorageKey instances with the same address/slot are different objects, so they won't match. Use `toString()` to create consistent string keys.
+</Aside>
+
+```typescript
+// Storage state tracking with Map
+class StateManager {
+  private storage = new Map<string, bigint>()
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const keyStr = State.StorageKey.toString(key)
+    this.storage.set(keyStr, value)
+  }
+
+  get(key: BrandedStorageKey): bigint {
+    const keyStr = State.StorageKey.toString(key)
+    return this.storage.get(keyStr) ?? 0n
+  }
+
+  has(key: BrandedStorageKey): boolean {
+    const keyStr = State.StorageKey.toString(key)
+    return this.storage.has(keyStr)
+  }
+
+  delete(key: BrandedStorageKey): boolean {
+    const keyStr = State.StorageKey.toString(key)
+    return this.storage.delete(keyStr)
+  }
+
+  keys(): BrandedStorageKey[] {
+    return Array.from(this.storage.keys()).map(State.StorageKey.fromString)
+  }
+
+  entries(): Array<[BrandedStorageKey, bigint]> {
+    return Array.from(this.storage.entries()).map(([keyStr, value]) => [
+      State.StorageKey.fromString(keyStr),
+      value
+    ])
+  }
+}
+
+// Usage
+const state = new StateManager()
+const key = State.StorageKey(contractAddr, 0n)
+state.set(key, 100n)
+const value = state.get(key)  // 100n
+```
+
+### Database Serialization
+
+```typescript
+import type { Database } from 'better-sqlite3'
+
+class StorageDB {
+  constructor(private db: Database) {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS storage (
+        key TEXT PRIMARY KEY,
+        value BLOB NOT NULL
+      )
+    `)
+  }
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const keyStr = State.StorageKey.toString(key)
+    const valueBytes = Hex.padLeft(Hex.fromBigInt(value), 32)
+
+    this.db.prepare('INSERT OR REPLACE INTO storage (key, value) VALUES (?, ?)')
+      .run(keyStr, valueBytes)
+  }
+
+  get(key: BrandedStorageKey): bigint | null {
+    const keyStr = State.StorageKey.toString(key)
+
+    const row = this.db.prepare('SELECT value FROM storage WHERE key = ?')
+      .get(keyStr) as { value: Buffer } | undefined
+
+    return row ? Hex.toBigInt(new Uint8Array(row.value)) : null
+  }
+
+  getAll(): Map<BrandedStorageKey, bigint> {
+    const rows = this.db.prepare('SELECT key, value FROM storage').all() as Array<{
+      key: string
+      value: Buffer
+    }>
+
+    const storage = new Map<string, bigint>()
+    for (const row of rows) {
+      const key = State.StorageKey.fromString(row.key)
+      const value = Hex.toBigInt(new Uint8Array(row.value))
+      storage.set(row.key, value)
+    }
+
+    return storage
+  }
+
+  delete(key: BrandedStorageKey): void {
+    const keyStr = State.StorageKey.toString(key)
+    this.db.prepare('DELETE FROM storage WHERE key = ?').run(keyStr)
+  }
+}
+```
+
+### JSON Serialization
+
+```typescript
+// Serialize storage state to JSON
+function serializeStorage(
+  storage: Map<string, bigint>
+): string {
+  const entries = Array.from(storage.entries()).map(([keyStr, value]) => {
+    const key = State.StorageKey.fromString(keyStr)
+    return {
+      address: Address.toHex(key.address),
+      slot: key.slot.toString(),
+      value: value.toString()
+    }
+  })
+
+  return JSON.stringify(entries, null, 2)
+}
+
+// Deserialize from JSON
+function deserializeStorage(json: string): Map<string, bigint> {
+  const entries = JSON.parse(json) as Array<{
+    address: string
+    slot: string
+    value: string
+  }>
+
+  const storage = new Map<string, bigint>()
+
+  for (const entry of entries) {
+    const key = State.StorageKey(
+      Address.from(entry.address),
+      BigInt(entry.slot)
+    )
+    const keyStr = State.StorageKey.toString(key)
+    storage.set(keyStr, BigInt(entry.value))
+  }
+
+  return storage
+}
+
+// Usage
+const storage = new Map<string, bigint>()
+storage.set(State.StorageKey.toString(key1), 100n)
+storage.set(State.StorageKey.toString(key2), 200n)
+
+const json = serializeStorage(storage)
+const restored = deserializeStorage(json)
+```
+
+### Hash-Based Indexing
+
+```typescript
+// Custom hash map implementation using hashCode
+class StorageHashMap {
+  private buckets: Array<Array<[BrandedStorageKey, bigint]>>
+  private size = 0
+
+  constructor(capacity = 1024) {
+    this.buckets = Array.from({ length: capacity }, () => [])
+  }
+
+  private getBucket(key: BrandedStorageKey): Array<[BrandedStorageKey, bigint]> {
+    const hash = State.StorageKey.hashCode(key)
+    const index = Math.abs(hash) % this.buckets.length
+    return this.buckets[index]
+  }
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const bucket = this.getBucket(key)
+
+    // Update if exists
+    for (let i = 0; i < bucket.length; i++) {
+      if (State.StorageKey.equals(bucket[i][0], key)) {
+        bucket[i][1] = value
+        return
+      }
+    }
+
+    // Add new entry
+    bucket.push([key, value])
+    this.size++
+  }
+
+  get(key: BrandedStorageKey): bigint | undefined {
+    const bucket = this.getBucket(key)
+
+    for (const [k, v] of bucket) {
+      if (State.StorageKey.equals(k, key)) {
+        return v
+      }
+    }
+
+    return undefined
+  }
+
+  has(key: BrandedStorageKey): boolean {
+    return this.get(key) !== undefined
+  }
+
+  getSize(): number {
+    return this.size
+  }
+
+  getLoadFactor(): number {
+    return this.size / this.buckets.length
+  }
+}
+```
+
+### Bloom Filter for Storage Access
+
+```typescript
+// Bloom filter to track accessed storage slots
+class StorageBloomFilter {
+  private bits: Uint8Array
+  private hashCount = 3
+
+  constructor(size = 1024) {
+    this.bits = new Uint8Array(Math.ceil(size / 8))
+  }
+
+  add(key: BrandedStorageKey): void {
+    const hash = State.StorageKey.hashCode(key)
+
+    for (let i = 0; i < this.hashCount; i++) {
+      const bitIndex = Math.abs(hash * (i + 1)) % (this.bits.length * 8)
+      const byteIndex = Math.floor(bitIndex / 8)
+      const bitOffset = bitIndex % 8
+      this.bits[byteIndex] |= (1 << bitOffset)
+    }
+  }
+
+  mightContain(key: BrandedStorageKey): boolean {
+    const hash = State.StorageKey.hashCode(key)
+
+    for (let i = 0; i < this.hashCount; i++) {
+      const bitIndex = Math.abs(hash * (i + 1)) % (this.bits.length * 8)
+      const byteIndex = Math.floor(bitIndex / 8)
+      const bitOffset = bitIndex % 8
+
+      if ((this.bits[byteIndex] & (1 << bitOffset)) === 0) {
+        return false
+      }
+    }
+
+    return true
+  }
+}
+
+// Usage for gas estimation (EIP-2929)
+const accessedSlots = new StorageBloomFilter(2048)
+const coldAccessCost = 2100n
+const warmAccessCost = 100n
+
+function getSloadCost(key: BrandedStorageKey): bigint {
+  const wasAccessed = accessedSlots.mightContain(key)
+  accessedSlots.add(key)
+
+  return wasAccessed ? warmAccessCost : coldAccessCost
+}
+```
+
+### Cache Key Generation
+
+```typescript
+// Generate cache keys for different storage contexts
+class StorageCacheKey {
+  static forSlot(
+    blockNumber: bigint,
+    key: BrandedStorageKey
+  ): string {
+    const keyStr = State.StorageKey.toString(key)
+    return `storage:${blockNumber}:${keyStr}`
+  }
+
+  static forContract(
+    blockNumber: bigint,
+    address: BrandedAddress
+  ): string {
+    return `contract:${blockNumber}:${Address.toHex(address)}`
+  }
+
+  static parse(cacheKey: string): {
+    blockNumber: bigint
+    storageKey: BrandedStorageKey
+  } | null {
+    const match = cacheKey.match(/^storage:(\d+):(.+)$/)
+    if (!match) return null
+
+    return {
+      blockNumber: BigInt(match[1]),
+      storageKey: State.StorageKey.fromString(match[2])
+    }
+  }
+}
+
+// Usage with Redis/cache
+const cacheKey = StorageCacheKey.forSlot(
+  12345678n,
+  State.StorageKey(contractAddr, 0n)
+)
+// "storage:12345678:0x742d35cc...e3e:0"
+
+await cache.set(cacheKey, value, { ttl: 3600 })
+```
+
+## Tree-Shakeable Usage
+
+All conversion methods available as tree-shakeable imports:
+
+```typescript
+import {
+  toString,
+  fromString,
+  hashCode
+} from '@tevm/primitives/State'
+
+const str = toString(key)
+const key2 = fromString(str)
+const hash = hashCode(key)
+```
+
+See [BrandedState](/primitives/state/branded-state) for details on tree-shakeable API.
+
+## Related
+
+- [Constructors](/primitives/state/constructors) - Create keys from address and slot
+- [Validation](/primitives/state/validation) - Type guards and equality checking
+- [Usage Patterns](/primitives/state/usage-patterns) - State management examples

@@ -1,0 +1,373 @@
+---
+title: State Utilities
+description: Working with storage keys, values, and state management
+---
+
+# Utilities
+
+Helper functions and patterns for working with EVM storage state.
+
+## Storage Value Operations
+
+### Reading and Writing
+
+```typescript
+import * as State from '@tevm/primitives/State'
+import * as Hex from '@tevm/primitives/Hex'
+
+// Simple storage manager
+class SimpleStorage {
+  private data = new Map<string, bigint>()
+
+  get(key: BrandedStorageKey): bigint {
+    const keyStr = State.StorageKey.toString(key)
+    return this.data.get(keyStr) ?? 0n  // Default to zero
+  }
+
+  set(key: BrandedStorageKey, value: bigint): void {
+    const keyStr = State.StorageKey.toString(key)
+
+    if (value === 0n) {
+      this.data.delete(keyStr)  // Clear zero values
+    } else {
+      this.data.set(keyStr, value)
+    }
+  }
+
+  delete(key: BrandedStorageKey): boolean {
+    const keyStr = State.StorageKey.toString(key)
+    return this.data.delete(keyStr)
+  }
+
+  has(key: BrandedStorageKey): boolean {
+    const keyStr = State.StorageKey.toString(key)
+    return this.data.has(keyStr)
+  }
+
+  size(): number {
+    return this.data.size
+  }
+
+  clear(): void {
+    this.data.clear()
+  }
+}
+```
+
+### Batch Operations
+
+```typescript
+// Batch read multiple slots
+function batchGet(
+  storage: Map<string, bigint>,
+  keys: BrandedStorageKey[]
+): Map<BrandedStorageKey, bigint> {
+  const result = new Map<BrandedStorageKey, bigint>()
+
+  for (const key of keys) {
+    const keyStr = State.StorageKey.toString(key)
+    const value = storage.get(keyStr) ?? 0n
+    result.set(key, value)
+  }
+
+  return result
+}
+
+// Batch write multiple slots
+function batchSet(
+  storage: Map<string, bigint>,
+  updates: Map<BrandedStorageKey, bigint>
+): void {
+  for (const [key, value] of updates) {
+    const keyStr = State.StorageKey.toString(key)
+    storage.set(keyStr, value)
+  }
+}
+
+// Batch delete slots
+function batchDelete(
+  storage: Map<string, bigint>,
+  keys: BrandedStorageKey[]
+): number {
+  let deleted = 0
+
+  for (const key of keys) {
+    const keyStr = State.StorageKey.toString(key)
+    if (storage.delete(keyStr)) {
+      deleted++
+    }
+  }
+
+  return deleted
+}
+```
+
+## Iteration
+
+### Enumerate Keys and Values
+
+```typescript
+// Get all keys
+function getAllKeys(storage: Map<string, bigint>): BrandedStorageKey[] {
+  return Array.from(storage.keys()).map(State.StorageKey.fromString)
+}
+
+// Get all values
+function getAllValues(storage: Map<string, bigint>): bigint[] {
+  return Array.from(storage.values())
+}
+
+// Get all entries
+function getAllEntries(
+  storage: Map<string, bigint>
+): Array<[BrandedStorageKey, bigint]> {
+  return Array.from(storage.entries()).map(([keyStr, value]) => [
+    State.StorageKey.fromString(keyStr),
+    value
+  ])
+}
+
+// Filter entries
+function filterEntries(
+  storage: Map<string, bigint>,
+  predicate: (key: BrandedStorageKey, value: bigint) => boolean
+): Map<BrandedStorageKey, bigint> {
+  const filtered = new Map<BrandedStorageKey, bigint>()
+
+  for (const [keyStr, value] of storage) {
+    const key = State.StorageKey.fromString(keyStr)
+    if (predicate(key, value)) {
+      filtered.set(key, value)
+    }
+  }
+
+  return filtered
+}
+```
+
+### Contract State Extraction
+
+```typescript
+// Get all storage for specific contract
+function getContractStorage(
+  storage: Map<string, bigint>,
+  address: BrandedAddress
+): Map<bigint, bigint> {
+  const contractStorage = new Map<bigint, bigint>()
+  const addrHex = Address.toHex(address).toLowerCase()
+
+  for (const [keyStr, value] of storage) {
+    const key = State.StorageKey.fromString(keyStr)
+    const keyAddrHex = Address.toHex(key.address).toLowerCase()
+
+    if (keyAddrHex === addrHex) {
+      contractStorage.set(key.slot, value)
+    }
+  }
+
+  return contractStorage
+}
+
+// Get specific slots for contract
+function getContractSlots(
+  storage: Map<string, bigint>,
+  address: BrandedAddress,
+  slots: bigint[]
+): Map<bigint, bigint> {
+  const values = new Map<bigint, bigint>()
+
+  for (const slot of slots) {
+    const key = State.StorageKey(address, slot)
+    const keyStr = State.StorageKey.toString(key)
+    const value = storage.get(keyStr) ?? 0n
+    values.set(slot, value)
+  }
+
+  return values
+}
+```
+
+## State Snapshots
+
+### Save and Restore
+
+```typescript
+// Snapshot state at point in time
+class StorageSnapshot {
+  private snapshots = new Map<number, Map<string, bigint>>()
+  private nextId = 0
+
+  snapshot(storage: Map<string, bigint>): number {
+    const id = this.nextId++
+    const copy = new Map(storage)
+    this.snapshots.set(id, copy)
+    return id
+  }
+
+  restore(storage: Map<string, bigint>, id: number): boolean {
+    const snapshot = this.snapshots.get(id)
+    if (!snapshot) return false
+
+    storage.clear()
+    for (const [key, value] of snapshot) {
+      storage.set(key, value)
+    }
+
+    return true
+  }
+
+  delete(id: number): boolean {
+    return this.snapshots.delete(id)
+  }
+
+  clear(): void {
+    this.snapshots.clear()
+  }
+}
+
+// Usage
+const snapshots = new StorageSnapshot()
+const storage = new Map<string, bigint>()
+
+// Make changes
+storage.set(keyStr1, 100n)
+storage.set(keyStr2, 200n)
+
+// Save snapshot
+const id = snapshots.snapshot(storage)
+
+// More changes
+storage.set(keyStr1, 150n)
+storage.delete(keyStr2)
+
+// Restore to snapshot
+snapshots.restore(storage, id)
+// storage now has keyStr1=100n, keyStr2=200n
+```
+
+### Copy and Clone
+
+```typescript
+// Deep copy storage
+function cloneStorage(storage: Map<string, bigint>): Map<string, bigint> {
+  return new Map(storage)
+}
+
+// Merge two storage states
+function mergeStorage(
+  base: Map<string, bigint>,
+  updates: Map<string, bigint>
+): Map<string, bigint> {
+  const merged = new Map(base)
+
+  for (const [key, value] of updates) {
+    merged.set(key, value)
+  }
+
+  return merged
+}
+
+// Create diff between states
+function diffStorage(
+  before: Map<string, bigint>,
+  after: Map<string, bigint>
+): Map<string, { before: bigint; after: bigint }> {
+  const diff = new Map<string, { before: bigint; after: bigint }>()
+
+  // Check all keys in after
+  for (const [key, afterValue] of after) {
+    const beforeValue = before.get(key) ?? 0n
+
+    if (beforeValue !== afterValue) {
+      diff.set(key, { before: beforeValue, after: afterValue })
+    }
+  }
+
+  // Check deleted keys
+  for (const [key, beforeValue] of before) {
+    if (!after.has(key) && beforeValue !== 0n) {
+      diff.set(key, { before: beforeValue, after: 0n })
+    }
+  }
+
+  return diff
+}
+```
+
+## Statistics
+
+### Storage Metrics
+
+```typescript
+// Calculate storage statistics
+function getStorageStats(storage: Map<string, bigint>): {
+  totalSlots: number
+  uniqueAddresses: number
+  nonZeroValues: number
+  totalBytes: number
+  avgSlotsPerAddress: number
+} {
+  const addresses = new Set<string>()
+  let nonZeroValues = 0
+
+  for (const [keyStr, value] of storage) {
+    const key = State.StorageKey.fromString(keyStr)
+    addresses.add(Address.toHex(key.address))
+
+    if (value !== 0n) {
+      nonZeroValues++
+    }
+  }
+
+  return {
+    totalSlots: storage.size,
+    uniqueAddresses: addresses.size,
+    nonZeroValues,
+    totalBytes: storage.size * 32,  // 32 bytes per slot
+    avgSlotsPerAddress: storage.size / addresses.size
+  }
+}
+
+// Find hot slots (most frequently accessed)
+class HotSlotTracker {
+  private accessCounts = new Map<string, number>()
+
+  recordAccess(key: BrandedStorageKey): void {
+    const keyStr = State.StorageKey.toString(key)
+    const count = this.accessCounts.get(keyStr) ?? 0
+    this.accessCounts.set(keyStr, count + 1)
+  }
+
+  getHotSlots(n: number): Array<{ key: BrandedStorageKey; count: number }> {
+    const entries = Array.from(this.accessCounts.entries())
+      .map(([keyStr, count]) => ({
+        key: State.StorageKey.fromString(keyStr),
+        count
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    return entries.slice(0, n)
+  }
+}
+```
+
+## Tree-Shakeable Usage
+
+Import only what you need:
+
+```typescript
+import { StorageKey, toString, fromString } from '@tevm/primitives/State'
+
+const storage = new Map<string, bigint>()
+const key = StorageKey(addr, 0n)
+
+storage.set(toString(key), 100n)
+const value = storage.get(toString(key))
+```
+
+## Related
+
+- [Constructors](/primitives/state/constructors) - Create storage keys
+- [Conversions](/primitives/state/conversions) - String serialization
+- [Usage Patterns](/primitives/state/usage-patterns) - Complete examples
+- [Merkle Trees](/primitives/state/merkle-trees) - State root calculation

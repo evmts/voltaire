@@ -1,0 +1,635 @@
+---
+title: Usage Patterns
+description: Real-world ENS integration patterns for dApps
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+# ENS Usage Patterns
+
+Real-world integration patterns for ENS in dApps, wallets, and services.
+
+## dApp Integration
+
+### Name Resolution
+
+Resolve ENS names to Ethereum addresses:
+
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+import * as Keccak from '@tevm/voltaire/crypto/Keccak';
+
+// ENS Registry (mainnet: 0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e)
+const REGISTRY_ADDRESS = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
+
+function namehash(name: string): Hash.Hash {
+  const labels = name.split('.').reverse();
+  let node = new Uint8Array(32);
+
+  for (const label of labels) {
+    const labelHash = Keccak.keccak256(new TextEncoder().encode(label));
+    const combined = new Uint8Array(64);
+    combined.set(node, 0);
+    combined.set(labelHash, 32);
+    node = Keccak.keccak256(combined);
+  }
+
+  return Hash.from(node);
+}
+
+async function resolveEnsName(
+  name: string,
+  provider: any
+): Promise<Address.Address | null> {
+  try {
+    // 1. Normalize name (ENSIP-15)
+    const normalized = Ens.normalize(name);
+
+    // 2. Compute namehash (ENSIP-1)
+    const node = namehash(normalized);
+
+    // 3. Get resolver from registry
+    const registry = getContract(REGISTRY_ADDRESS, registryAbi, provider);
+    const resolverAddress = await registry.resolver(node);
+
+    if (resolverAddress === Address.ZERO) {
+      return null; // No resolver set
+    }
+
+    // 4. Query address from resolver
+    const resolver = getContract(resolverAddress, resolverAbi, provider);
+    const address = await resolver.addr(node);
+
+    return Address.from(address);
+  } catch (err) {
+    console.error('ENS resolution failed:', err);
+    return null;
+  }
+}
+
+// Usage
+const address = await resolveEnsName('vitalik.eth', provider);
+if (address) {
+  console.log('Resolved:', Address.toHex(address));
+}
+```
+
+### Reverse Resolution
+
+Resolve addresses back to ENS names:
+
+```typescript
+async function reverseResolve(
+  address: Address.Address,
+  provider: any
+): Promise<string | null> {
+  try {
+    // 1. Compute reverse node: <address>.addr.reverse
+    const addrHex = Address.toHex(address).slice(2).toLowerCase();
+    const reverseName = `${addrHex}.addr.reverse`;
+    const normalized = Ens.normalize(reverseName);
+    const node = namehash(normalized);
+
+    // 2. Get resolver
+    const registry = getContract(REGISTRY_ADDRESS, registryAbi, provider);
+    const resolverAddress = await registry.resolver(node);
+
+    if (resolverAddress === Address.ZERO) {
+      return null;
+    }
+
+    // 3. Query name
+    const resolver = getContract(resolverAddress, resolverAbi, provider);
+    const name = await resolver.name(node);
+
+    // 4. Verify forward resolution matches
+    const forwardAddress = await resolveEnsName(name, provider);
+    if (!Address.equals(forwardAddress, address)) {
+      return null; // Forward resolution doesn't match
+    }
+
+    return name;
+  } catch (err) {
+    console.error('Reverse resolution failed:', err);
+    return null;
+  }
+}
+
+// Usage
+const name = await reverseResolve(
+  Address.from('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'),
+  provider
+);
+// "vitalik.eth"
+```
+
+### Input Validation
+
+Validate user input in real-time:
+
+```typescript
+import { useState, useEffect } from 'react';
+import * as Ens from '@tevm/voltaire/Ens';
+import { EnsError } from '@tevm/voltaire/Ens';
+
+function EnsInput({ onResolve }: { onResolve: (address: string) => void }) {
+  const [input, setInput] = useState('');
+  const [normalized, setNormalized] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState<string | null>(null);
+
+  // Normalize on input change
+  useEffect(() => {
+    if (!input) {
+      setNormalized(null);
+      setError(null);
+      setResolved(null);
+      return;
+    }
+
+    try {
+      const norm = Ens.normalize(input);
+      setNormalized(norm);
+      setError(null);
+
+      // Resolve in background
+      setResolving(true);
+      resolveEnsName(norm, provider).then((addr) => {
+        if (addr) {
+          const hex = Address.toHex(addr);
+          setResolved(hex);
+          onResolve(hex);
+        } else {
+          setResolved(null);
+        }
+        setResolving(false);
+      });
+    } catch (err) {
+      if (err instanceof EnsError) {
+        setError(err.message);
+        setNormalized(null);
+        setResolved(null);
+      }
+    }
+  }, [input]);
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="vitalik.eth"
+        className={error ? 'error' : normalized ? 'valid' : ''}
+      />
+
+      {error && <p className="error">{error}</p>}
+
+      {normalized && input !== normalized && (
+        <p className="info">Normalized: {normalized}</p>
+      )}
+
+      {resolving && <p className="info">Resolving...</p>}
+
+      {resolved && (
+        <p className="success">
+          Resolves to: {resolved.slice(0, 10)}...{resolved.slice(-8)}
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+## Wallet Integration
+
+### Send Transaction
+
+Support ENS names in send flows:
+
+```typescript
+async function sendTransaction(
+  to: string,  // ENS name or address
+  value: bigint,
+  provider: any,
+  signer: any
+) {
+  let toAddress: Address.Address;
+
+  // Check if input is ENS name
+  if (to.includes('.')) {
+    try {
+      const normalized = Ens.normalize(to);
+      const resolved = await resolveEnsName(normalized, provider);
+
+      if (!resolved) {
+        throw new Error(`ENS name not found: ${to}`);
+      }
+
+      toAddress = resolved;
+      console.log(`Resolved ${to} to ${Address.toHex(toAddress)}`);
+    } catch (err) {
+      throw new Error(`Invalid ENS name: ${err.message}`);
+    }
+  } else {
+    toAddress = Address.from(to);
+  }
+
+  // Send transaction
+  const tx = await signer.sendTransaction({
+    to: Address.toHex(toAddress),
+    value,
+  });
+
+  return tx.hash;
+}
+
+// Usage
+await sendTransaction('vitalik.eth', 1000000000000000000n, provider, signer);
+```
+
+### Display Names
+
+Show ENS names instead of addresses:
+
+```typescript
+import { useState, useEffect } from 'react';
+import * as Address from '@tevm/voltaire/Address';
+
+function AddressDisplay({ address }: { address: string }) {
+  const [ensName, setEnsName] = useState<string | null>(null);
+
+  useEffect(() => {
+    reverseResolve(Address.from(address), provider).then(setEnsName);
+  }, [address]);
+
+  return (
+    <div>
+      {ensName ? (
+        <span className="ens-name">{ensName}</span>
+      ) : (
+        <span className="address">
+          {address.slice(0, 6)}...{address.slice(-4)}
+        </span>
+      )}
+    </div>
+  );
+}
+```
+
+### Avatar Support
+
+Resolve ENS avatar images:
+
+```typescript
+async function resolveEnsAvatar(
+  name: string,
+  provider: any
+): Promise<string | null> {
+  try {
+    const normalized = Ens.normalize(name);
+    const node = namehash(normalized);
+
+    const registry = getContract(REGISTRY_ADDRESS, registryAbi, provider);
+    const resolverAddress = await registry.resolver(node);
+
+    if (resolverAddress === Address.ZERO) {
+      return null;
+    }
+
+    const resolver = getContract(resolverAddress, resolverAbi, provider);
+    const avatar = await resolver.text(node, 'avatar');
+
+    return avatar || null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Usage in React
+function EnsAvatar({ name }: { name: string }) {
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    resolveEnsAvatar(name, provider).then(setAvatar);
+  }, [name]);
+
+  return avatar ? (
+    <img src={avatar} alt={name} className="ens-avatar" />
+  ) : (
+    <div className="default-avatar">{name[0].toUpperCase()}</div>
+  );
+}
+```
+
+## Service Integration
+
+### Subdomain Service
+
+Issue subdomains under service name:
+
+```typescript
+async function issueSubdomain(
+  parentName: string,
+  label: string,
+  owner: Address.Address,
+  signer: any
+) {
+  // Validate label
+  const labelNormalized = Ens.normalize(label);
+
+  // Validate full name
+  const fullName = `${labelNormalized}.${parentName}`;
+  const fullNormalized = Ens.normalize(fullName);
+
+  // Compute parent node
+  const parentNode = namehash(parentName);
+
+  // Compute labelhash
+  const labelHash = Keccak.keccak256(
+    new TextEncoder().encode(labelNormalized)
+  );
+
+  // Set subdomain owner
+  const registry = getContract(REGISTRY_ADDRESS, registryAbi, signer);
+  const tx = await registry.setSubnodeOwner(
+    parentNode,
+    labelHash,
+    Address.toHex(owner)
+  );
+
+  await tx.wait();
+
+  return fullNormalized;
+}
+
+// Usage
+const subdomain = await issueSubdomain(
+  'service.eth',
+  'alice',
+  aliceAddress,
+  signer
+);
+// "alice.service.eth"
+```
+
+### Name Registration
+
+Registration flow with availability check:
+
+```typescript
+async function registerName(
+  name: string,
+  duration: bigint,  // seconds
+  owner: Address.Address,
+  provider: any,
+  signer: any
+) {
+  // 1. Validate and normalize
+  const normalized = Ens.normalize(name);
+
+  // Only allow .eth registrations
+  if (!normalized.endsWith('.eth')) {
+    throw new Error('Only .eth names can be registered');
+  }
+
+  // Extract label (before .eth)
+  const label = normalized.slice(0, -4);
+
+  // 2. Check availability
+  const available = await checkAvailability(label, provider);
+  if (!available) {
+    throw new Error('Name not available');
+  }
+
+  // 3. Compute commitment
+  const commitment = await makeCommitment(label, owner, signer);
+
+  // 4. Commit
+  const registrar = getContract(REGISTRAR_ADDRESS, registrarAbi, signer);
+  const commitTx = await registrar.commit(commitment);
+  await commitTx.wait();
+
+  // 5. Wait minimum commitment age (60 seconds on mainnet)
+  await new Promise(resolve => setTimeout(resolve, 60000));
+
+  // 6. Register
+  const price = await registrar.rentPrice(label, duration);
+  const registerTx = await registrar.register(
+    label,
+    Address.toHex(owner),
+    duration,
+    { value: price }
+  );
+
+  await registerTx.wait();
+
+  return normalized;
+}
+```
+
+### Bulk Resolution
+
+Resolve multiple names efficiently:
+
+```typescript
+async function bulkResolve(
+  names: string[],
+  provider: any
+): Promise<Map<string, Address.Address | null>> {
+  const results = new Map<string, Address.Address | null>();
+
+  // Normalize all names first
+  const normalized = names.map(name => {
+    try {
+      return Ens.normalize(name);
+    } catch {
+      return null;
+    }
+  });
+
+  // Batch resolve
+  const promises = normalized.map(async (name, i) => {
+    if (!name) {
+      results.set(names[i], null);
+      return;
+    }
+
+    const address = await resolveEnsName(name, provider);
+    results.set(names[i], address);
+  });
+
+  await Promise.all(promises);
+
+  return results;
+}
+
+// Usage
+const names = ['vitalik.eth', 'nick.eth', 'brantly.eth'];
+const addresses = await bulkResolve(names, provider);
+
+for (const [name, address] of addresses) {
+  console.log(name, '->', address ? Address.toHex(address) : 'not found');
+}
+```
+
+## Search & Discovery
+
+### Name Search
+
+Search with normalization:
+
+```typescript
+function searchEnsNames(
+  query: string,
+  names: string[]
+): string[] {
+  try {
+    const normalizedQuery = Ens.normalize(query);
+
+    return names.filter(name => {
+      try {
+        const normalized = Ens.normalize(name);
+        return normalized.includes(normalizedQuery);
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    // Invalid query
+    return [];
+  }
+}
+
+// Usage
+const allNames = ['vitalik.eth', 'nick.eth', 'alice.eth', 'bob.eth'];
+const results = searchEnsNames('vita', allNames);
+// ['vitalik.eth']
+```
+
+### Autocomplete
+
+Suggest names as user types:
+
+```typescript
+function autocompleteEns(
+  input: string,
+  names: string[]
+): Array<{ name: string; normalized: string }> {
+  if (!input) return [];
+
+  try {
+    const normalizedInput = Ens.normalize(input);
+
+    const suggestions = names
+      .map(name => {
+        try {
+          const normalized = Ens.normalize(name);
+          if (normalized.startsWith(normalizedInput)) {
+            return { name, normalized };
+          }
+        } catch {}
+        return null;
+      })
+      .filter((s): s is { name: string; normalized: string } => s !== null)
+      .slice(0, 10); // Limit to 10 suggestions
+
+    return suggestions;
+  } catch {
+    return [];
+  }
+}
+```
+
+## Best Practices
+
+### Always Normalize
+
+```typescript
+// ✓ CORRECT
+const normalized = Ens.normalize(userInput);
+const address = await resolveEnsName(normalized, provider);
+
+// ✗ WRONG
+const address = await resolveEnsName(userInput, provider);
+```
+
+### Cache Resolutions
+
+```typescript
+const resolutionCache = new Map<string, Address.Address>();
+
+async function cachedResolve(
+  name: string,
+  provider: any
+): Promise<Address.Address | null> {
+  const normalized = Ens.normalize(name);
+
+  if (resolutionCache.has(normalized)) {
+    return resolutionCache.get(normalized)!;
+  }
+
+  const address = await resolveEnsName(normalized, provider);
+  if (address) {
+    resolutionCache.set(normalized, address);
+  }
+
+  return address;
+}
+```
+
+### Handle Errors Gracefully
+
+```typescript
+async function safeResolve(
+  name: string,
+  provider: any
+): Promise<Address.Address | null> {
+  try {
+    const normalized = Ens.normalize(name);
+    return await resolveEnsName(normalized, provider);
+  } catch (err) {
+    console.warn('ENS resolution failed:', err);
+    return null;
+  }
+}
+```
+
+### Verify Reverse Resolution
+
+```typescript
+async function secureResolve(
+  name: string,
+  provider: any
+): Promise<Address.Address | null> {
+  const address = await resolveEnsName(name, provider);
+  if (!address) return null;
+
+  // Verify reverse resolution
+  const reverseName = await reverseResolve(address, provider);
+  const normalizedInput = Ens.normalize(name);
+
+  if (reverseName !== normalizedInput) {
+    console.warn('Reverse resolution mismatch');
+    // Decide: accept forward-only, or reject
+  }
+
+  return address;
+}
+```
+
+## References
+
+- [ENS dApp Developer Guide](https://docs.ens.domains/dapp-developer-guide) - Official integration guide
+- [ENS Public Resolver](https://docs.ens.domains/contract-api-reference/publicresolver) - Resolver reference
+- [wagmi ENS Hooks](https://wagmi.sh/react/hooks/useEnsName) - React hooks for ENS
+
+## See Also
+
+- [Normalization](/primitives/ens/normalization) - Name normalization
+- [Encoding](/primitives/ens/encoding) - Namehash and encoding
+- [Security](/primitives/ens/security) - Security best practices
+- [Errors](/primitives/ens/errors) - Error handling

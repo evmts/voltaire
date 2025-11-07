@@ -1,0 +1,426 @@
+---
+title: State Validation
+description: Type guards and equality checking for StorageKey
+---
+
+# Validation
+
+Methods for type checking and comparing StorageKey instances.
+
+## Type Guards
+
+### `StorageKey.is(value)`
+
+Check if value is a valid StorageKey.
+
+```typescript
+import * as State from '@tevm/primitives/State'
+import * as Address from '@tevm/primitives/Address'
+
+const key = State.StorageKey(contractAddr, 42n)
+
+// Type guard
+if (State.StorageKey.is(key)) {
+  // TypeScript knows key is BrandedStorageKey
+  console.log(key.slot)
+}
+
+// Check plain objects
+const obj = { address: contractAddr, slot: 42n }
+State.StorageKey.is(obj)  // true
+
+// Invalid objects
+State.StorageKey.is({ address: contractAddr })  // false (missing slot)
+State.StorageKey.is({ slot: 42n })  // false (missing address)
+State.StorageKey.is(null)  // false
+State.StorageKey.is(undefined)  // false
+State.StorageKey.is("string")  // false
+```
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:** `boolean` - true if value has address and slot properties
+
+**Type predicate:** Narrows type to `BrandedStorageKey`
+
+**Static form:**
+```typescript
+import { is } from '@tevm/primitives/State'
+if (is(value)) {
+  // value is BrandedStorageKey
+}
+```
+
+Source: [is.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/is.js)
+
+## Equality
+
+### `StorageKey.equals(a, b)`
+
+Check if two StorageKeys are equal.
+
+```typescript
+const key1 = State.StorageKey(addr1, 42n)
+const key2 = State.StorageKey(addr1, 42n)
+const key3 = State.StorageKey(addr2, 42n)
+const key4 = State.StorageKey(addr1, 100n)
+
+// Same address and slot
+State.StorageKey.equals(key1, key2)  // true
+
+// Different address
+State.StorageKey.equals(key1, key3)  // false
+
+// Different slot
+State.StorageKey.equals(key1, key4)  // false
+
+// Self-comparison
+State.StorageKey.equals(key1, key1)  // true
+```
+
+**Parameters:**
+- `a: BrandedStorageKey` - First key
+- `b: BrandedStorageKey` - Second key
+
+**Returns:** `boolean` - true if both address and slot match
+
+**Comparison:**
+- Address: byte-wise equality (case-insensitive)
+- Slot: bigint equality
+
+**Static form:**
+```typescript
+import { equals } from '@tevm/primitives/State'
+const same = equals(key1, key2)
+```
+
+Source: [equals.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/equals.js)
+
+## Usage Patterns
+
+### Input Validation
+
+```typescript
+function processStorageKey(value: unknown): BrandedStorageKey {
+  if (!State.StorageKey.is(value)) {
+    throw new Error('Invalid storage key')
+  }
+
+  return value
+}
+
+// With custom validation
+function validateStorageKey(value: unknown): asserts value is BrandedStorageKey {
+  if (!State.StorageKey.is(value)) {
+    throw new TypeError('Expected StorageKey with address and slot')
+  }
+
+  // Additional validation
+  if (value.slot < 0n) {
+    throw new RangeError('Storage slot cannot be negative')
+  }
+
+  if (value.slot >= 2n ** 256n) {
+    throw new RangeError('Storage slot exceeds maximum (2^256 - 1)')
+  }
+}
+
+// Usage
+try {
+  validateStorageKey(userInput)
+  // userInput is now BrandedStorageKey
+} catch (error) {
+  console.error('Validation failed:', error.message)
+}
+```
+
+### Deduplication
+
+```typescript
+// Remove duplicate keys from array
+function deduplicateKeys(keys: BrandedStorageKey[]): BrandedStorageKey[] {
+  const seen = new Map<string, BrandedStorageKey>()
+
+  for (const key of keys) {
+    const keyStr = State.StorageKey.toString(key)
+    if (!seen.has(keyStr)) {
+      seen.set(keyStr, key)
+    }
+  }
+
+  return Array.from(seen.values())
+}
+
+// Or using equals directly
+function deduplicateKeysCompare(keys: BrandedStorageKey[]): BrandedStorageKey[] {
+  const unique: BrandedStorageKey[] = []
+
+  for (const key of keys) {
+    const exists = unique.some(k => State.StorageKey.equals(k, key))
+    if (!exists) {
+      unique.push(key)
+    }
+  }
+
+  return unique
+}
+
+// Usage
+const keys = [
+  State.StorageKey(addr1, 0n),
+  State.StorageKey(addr1, 0n),  // duplicate
+  State.StorageKey(addr1, 1n),
+  State.StorageKey(addr2, 0n),
+  State.StorageKey(addr1, 1n),  // duplicate
+]
+
+const unique = deduplicateKeys(keys)  // 3 unique keys
+```
+
+### Set Operations
+
+```typescript
+// Check if key exists in set
+function hasKey(
+  keys: BrandedStorageKey[],
+  target: BrandedStorageKey
+): boolean {
+  return keys.some(key => State.StorageKey.equals(key, target))
+}
+
+// Find key index
+function findKeyIndex(
+  keys: BrandedStorageKey[],
+  target: BrandedStorageKey
+): number {
+  return keys.findIndex(key => State.StorageKey.equals(key, target))
+}
+
+// Filter by address
+function filterByAddress(
+  keys: BrandedStorageKey[],
+  address: BrandedAddress
+): BrandedStorageKey[] {
+  return keys.filter(key => Address.equals(key.address, address))
+}
+
+// Filter by slot range
+function filterBySlotRange(
+  keys: BrandedStorageKey[],
+  minSlot: bigint,
+  maxSlot: bigint
+): BrandedStorageKey[] {
+  return keys.filter(key =>
+    key.slot >= minSlot && key.slot <= maxSlot
+  )
+}
+```
+
+### Sorting
+
+```typescript
+// Sort by address then slot
+function sortKeys(keys: BrandedStorageKey[]): BrandedStorageKey[] {
+  return keys.slice().sort((a, b) => {
+    // Compare addresses first
+    const addrA = Address.toHex(a.address).toLowerCase()
+    const addrB = Address.toHex(b.address).toLowerCase()
+
+    if (addrA !== addrB) {
+      return addrA < addrB ? -1 : 1
+    }
+
+    // Then compare slots
+    if (a.slot < b.slot) return -1
+    if (a.slot > b.slot) return 1
+    return 0
+  })
+}
+
+// Sort by slot only
+function sortBySlot(keys: BrandedStorageKey[]): BrandedStorageKey[] {
+  return keys.slice().sort((a, b) => {
+    if (a.slot < b.slot) return -1
+    if (a.slot > b.slot) return 1
+    return 0
+  })
+}
+
+// Group by address
+function groupByAddress(
+  keys: BrandedStorageKey[]
+): Map<string, BrandedStorageKey[]> {
+  const groups = new Map<string, BrandedStorageKey[]>()
+
+  for (const key of keys) {
+    const addrHex = Address.toHex(key.address)
+    const group = groups.get(addrHex) ?? []
+    group.push(key)
+    groups.set(addrHex, group)
+  }
+
+  return groups
+}
+```
+
+### Access Set Tracking
+
+```typescript
+// Track accessed storage keys with validation
+class AccessSet {
+  private accessed = new Map<string, BrandedStorageKey>()
+
+  add(key: unknown): boolean {
+    // Validate input
+    if (!State.StorageKey.is(key)) {
+      throw new TypeError('Invalid storage key')
+    }
+
+    const keyStr = State.StorageKey.toString(key)
+
+    if (this.accessed.has(keyStr)) {
+      return false  // Already accessed
+    }
+
+    this.accessed.set(keyStr, key)
+    return true  // First access
+  }
+
+  has(key: unknown): boolean {
+    if (!State.StorageKey.is(key)) {
+      return false
+    }
+
+    const keyStr = State.StorageKey.toString(key)
+    return this.accessed.has(keyStr)
+  }
+
+  getKeys(): BrandedStorageKey[] {
+    return Array.from(this.accessed.values())
+  }
+
+  clear(): void {
+    this.accessed.clear()
+  }
+
+  size(): number {
+    return this.accessed.size
+  }
+}
+
+// Usage
+const accessSet = new AccessSet()
+const key = State.StorageKey(contractAddr, 0n)
+
+const isFirstAccess = accessSet.add(key)  // true
+const isSecondAccess = accessSet.add(key)  // false (warm)
+```
+
+### Diff Calculation
+
+```typescript
+// Calculate storage changes between two states
+function calculateStorageDiff(
+  before: Map<string, bigint>,
+  after: Map<string, bigint>
+): {
+  added: BrandedStorageKey[]
+  modified: BrandedStorageKey[]
+  deleted: BrandedStorageKey[]
+} {
+  const added: BrandedStorageKey[] = []
+  const modified: BrandedStorageKey[] = []
+  const deleted: BrandedStorageKey[] = []
+
+  // Find added and modified
+  for (const [keyStr, afterValue] of after) {
+    const key = State.StorageKey.fromString(keyStr)
+
+    if (!before.has(keyStr)) {
+      added.push(key)
+    } else {
+      const beforeValue = before.get(keyStr)!
+      if (beforeValue !== afterValue) {
+        modified.push(key)
+      }
+    }
+  }
+
+  // Find deleted
+  for (const keyStr of before.keys()) {
+    if (!after.has(keyStr)) {
+      const key = State.StorageKey.fromString(keyStr)
+      deleted.push(key)
+    }
+  }
+
+  return { added, modified, deleted }
+}
+```
+
+### Merkle Proof Verification
+
+```typescript
+// Verify storage key is in merkle proof
+function verifyStorageProof(
+  key: unknown,
+  proof: unknown[],
+  root: Uint8Array
+): boolean {
+  // Validate key
+  if (!State.StorageKey.is(key)) {
+    throw new TypeError('Invalid storage key')
+  }
+
+  // Compute storage key hash
+  const keyBytes = new Uint8Array(52)  // 20 + 32 bytes
+  keyBytes.set(key.address, 0)
+  keyBytes.set(Hex.padLeft(Hex.fromBigInt(key.slot), 32), 20)
+
+  const keyHash = Hash.keccak256(keyBytes)
+
+  // Verify proof (simplified)
+  let currentHash = keyHash
+
+  for (const proofElement of proof) {
+    if (!(proofElement instanceof Uint8Array)) {
+      throw new TypeError('Invalid proof element')
+    }
+
+    const combined = new Uint8Array(64)
+    combined.set(currentHash, 0)
+    combined.set(proofElement, 32)
+
+    currentHash = Hash.keccak256(combined)
+  }
+
+  // Check root matches
+  return Hash.equals(currentHash, root)
+}
+```
+
+## Tree-Shakeable Usage
+
+All validation methods available as tree-shakeable imports:
+
+```typescript
+import {
+  is,
+  equals
+} from '@tevm/primitives/State'
+
+if (is(value)) {
+  // value is BrandedStorageKey
+}
+
+const same = equals(key1, key2)
+```
+
+See [BrandedState](/primitives/state/branded-state) for details on tree-shakeable API.
+
+## Related
+
+- [Constructors](/primitives/state/constructors) - Create valid StorageKey instances
+- [Conversions](/primitives/state/conversions) - Serialize for comparison
+- [Utilities](/primitives/state/utilities) - Working with keys and values

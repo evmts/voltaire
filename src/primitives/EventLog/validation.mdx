@@ -1,0 +1,368 @@
+---
+title: EventLog Validation
+description: Validating event logs and filtering criteria
+---
+
+# Validation
+
+Methods for validating event logs and checking filter matches.
+
+## Filter Matching
+
+### `EventLog.matchesFilter(log, filter)`
+
+Check if event log matches complete filter criteria (address, topics, block range).
+
+```typescript
+import * as EventLog from '@tevm/primitives/EventLog'
+
+const log = EventLog.create({
+  address: tokenAddress,
+  topics: [transferSignature, fromAddress, toAddress],
+  data: amountData,
+  blockNumber: 12345678n
+})
+
+const filter = {
+  address: tokenAddress,
+  topics: [transferSignature, null, toAddress], // null = any value
+  fromBlock: 12000000n,
+  toBlock: 13000000n
+}
+
+const matches = EventLog.matchesFilter(log, filter)  // true
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+- `filter: Filter` - Filter criteria
+
+**Filter fields:**
+- `address?: BrandedAddress | BrandedAddress[]` - Contract address(es) to match
+- `topics?: (BrandedHash | BrandedHash[] | null)[]` - Topic filters (null = match any)
+- `fromBlock?: bigint` - Minimum block number
+- `toBlock?: bigint` - Maximum block number
+- `blockHash?: BrandedHash` - Specific block hash
+
+**Returns:** `boolean` - True if log matches all filter criteria
+
+**Example with multiple addresses:**
+```typescript
+const matches = EventLog.matchesFilter(log, {
+  address: [usdcAddress, daiAddress, usdtAddress], // Match any of these
+  topics: [transferSignature]
+})
+```
+
+Defined in: [primitives/EventLog/BrandedEventLog/matchesFilter.js:30](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/matchesFilter.js)
+
+### `EventLog.matchesAddress(log, filterAddress)`
+
+Check if log address matches filter address(es).
+
+```typescript
+// Single address
+const matches = EventLog.matchesAddress(log, tokenAddress)
+
+// Multiple addresses (OR logic)
+const matches = EventLog.matchesAddress(log, [
+  usdcAddress,
+  daiAddress,
+  usdtAddress
+])
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+- `filterAddress: BrandedAddress | BrandedAddress[]` - Address or array of addresses
+
+**Returns:** `boolean` - True if log address matches any filter address
+
+**Behavior:**
+- Single address: Exact match required
+- Array of addresses: Matches if log address equals ANY address in array (OR logic)
+- Empty array: Matches all logs
+
+Defined in: [primitives/EventLog/BrandedEventLog/matchesAddress.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/matchesAddress.js)
+
+### `EventLog.matchesTopics(log, filterTopics)`
+
+Check if log topics match filter pattern with wildcards.
+
+```typescript
+const log = EventLog.create({
+  address: tokenAddress,
+  topics: [transferSig, aliceHash, bobHash],
+  data: amountData
+})
+
+// Match specific topics
+EventLog.matchesTopics(log, [transferSig, aliceHash, bobHash])  // true
+
+// Wildcard matching (null = match any)
+EventLog.matchesTopics(log, [transferSig, null, bobHash])       // true
+EventLog.matchesTopics(log, [transferSig, aliceHash, null])     // true
+EventLog.matchesTopics(log, [transferSig, null, null])          // true
+
+// Array of possible values (OR logic)
+EventLog.matchesTopics(log, [
+  transferSig,
+  [aliceHash, charlieHash, daveHash], // Match any of these
+  bobHash
+])  // true (alice matches)
+
+// No match examples
+EventLog.matchesTopics(log, [transferSig, bobHash, aliceHash])  // false (swapped)
+EventLog.matchesTopics(log, [approvalSig, aliceHash, bobHash])  // false (wrong event)
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+- `filterTopics: readonly (BrandedHash | BrandedHash[] | null)[]` - Topic filter array
+
+**Filter entries:**
+- `BrandedHash` - Exact match required
+- `BrandedHash[]` - Match ANY of the hashes (OR logic)
+- `null` - Match any value (wildcard)
+
+**Returns:** `boolean` - True if all topics match filter pattern
+
+**Topic positions:**
+- `filterTopics[0]` - Event signature (topic0)
+- `filterTopics[1]` - First indexed parameter (topic1)
+- `filterTopics[2]` - Second indexed parameter (topic2)
+- `filterTopics[3]` - Third indexed parameter (topic3)
+
+Defined in: [primitives/EventLog/BrandedEventLog/matchesTopics.js:23](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/matchesTopics.js)
+
+## Log Status
+
+### `EventLog.isRemoved(log)`
+
+Check if log was removed due to chain reorganization.
+
+```typescript
+const log = EventLog.create({
+  address: tokenAddress,
+  topics: [transferSig],
+  data: amountData,
+  removed: true
+})
+
+if (EventLog.isRemoved(log)) {
+  console.log("Log invalidated by chain reorg")
+}
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+
+**Returns:** `boolean` - True if log has `removed: true`
+
+Defined in: [primitives/EventLog/BrandedEventLog/isRemoved.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/isRemoved.js)
+
+### `EventLog.wasRemoved(log)`
+
+Alias for `EventLog.isRemoved()`.
+
+```typescript
+const wasRemoved = EventLog.wasRemoved(log)
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+
+**Returns:** `boolean` - True if log has `removed: true`
+
+Defined in: [primitives/EventLog/BrandedEventLog/wasRemoved.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/wasRemoved.js)
+
+## Validation Patterns
+
+### Validate ERC-20 Transfer
+
+```typescript
+const transferSig = Hash.from(
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+)
+
+function isValidTransferLog(log: BrandedEventLog): boolean {
+  // Must have Transfer signature as topic0
+  if (!EventLog.matchesTopics(log, [transferSig])) {
+    return false
+  }
+
+  // Must have exactly 3 topics (signature + from + to)
+  if (log.topics.length !== 3) {
+    return false
+  }
+
+  // Must have 32 bytes of data (uint256 amount)
+  if (log.data.length !== 32) {
+    return false
+  }
+
+  // Must not be removed
+  if (EventLog.isRemoved(log)) {
+    return false
+  }
+
+  return true
+}
+```
+
+### Filter Logs by Multiple Criteria
+
+```typescript
+function findUserTransfers(
+  logs: BrandedEventLog[],
+  userAddress: BrandedAddress,
+  tokenAddress: BrandedAddress
+): BrandedEventLog[] {
+  const userHash = Hash.from("0x000000000000000000000000" + userAddress.slice(2))
+
+  return logs.filter(log => {
+    // Must be from token contract
+    if (!EventLog.matchesAddress(log, tokenAddress)) {
+      return false
+    }
+
+    // Must be Transfer event to or from user
+    if (!EventLog.matchesTopics(log, [
+      transferSig,
+      [userHash, null],  // from user OR any
+      [userHash, null]   // to user OR any
+    ])) {
+      return false
+    }
+
+    // Exclude removed logs
+    if (EventLog.isRemoved(log)) {
+      return false
+    }
+
+    return true
+  })
+}
+```
+
+### Validate Block Range
+
+```typescript
+function logsInRange(
+  logs: BrandedEventLog[],
+  fromBlock: bigint,
+  toBlock: bigint
+): BrandedEventLog[] {
+  return logs.filter(log => {
+    if (log.blockNumber === undefined) {
+      return false  // No block number
+    }
+
+    return EventLog.matchesFilter(log, {
+      fromBlock,
+      toBlock
+    })
+  })
+}
+```
+
+### Check Event Signature
+
+```typescript
+function isEventType(
+  log: BrandedEventLog,
+  eventSignature: BrandedHash
+): boolean {
+  const topic0 = EventLog.getTopic0(log)
+  if (!topic0) {
+    return false  // No topics
+  }
+
+  return EventLog.matchesTopics(log, [eventSignature])
+}
+```
+
+## Topic Matching Examples
+
+### Exact Match
+
+All topics must match exactly:
+
+```typescript
+EventLog.matchesTopics(log, [topic0, topic1, topic2])
+```
+
+### Wildcard Matching
+
+Use `null` for positions that can be any value:
+
+```typescript
+// Match any Transfer to specific address
+EventLog.matchesTopics(log, [
+  transferSig,
+  null,      // from any address
+  toAddress  // to specific address
+])
+
+// Match any Transfer from specific address
+EventLog.matchesTopics(log, [
+  transferSig,
+  fromAddress,  // from specific address
+  null          // to any address
+])
+```
+
+### OR Logic
+
+Use arrays for positions that can match multiple values:
+
+```typescript
+// Match Transfer from Alice OR Bob to Charlie
+EventLog.matchesTopics(log, [
+  transferSig,
+  [aliceHash, bobHash],  // from Alice OR Bob
+  charlieHash            // to Charlie
+])
+
+// Match Transfer to any of multiple addresses
+EventLog.matchesTopics(log, [
+  transferSig,
+  null,
+  [addr1Hash, addr2Hash, addr3Hash]  // to any of these
+])
+```
+
+### Combined Wildcards and OR
+
+```typescript
+// Complex filter: Transfer from Alice OR Bob to anyone
+EventLog.matchesTopics(log, [
+  transferSig,
+  [aliceHash, bobHash],  // from Alice OR Bob
+  null                   // to anyone
+])
+```
+
+## Tree-Shakeable Usage
+
+Import only validation functions needed:
+
+```typescript
+import {
+  matchesFilter,
+  matchesAddress,
+  matchesTopics,
+  isRemoved
+} from '@tevm/primitives/EventLog'
+
+const matches = matchesFilter(log, filter)
+const validAddress = matchesAddress(log, tokenAddress)
+const validTopics = matchesTopics(log, [transferSig, null, toAddr])
+const removed = isRemoved(log)
+```
+
+## See Also
+
+- [Constructors](/primitives/eventlog/constructors) - Creating event logs
+- [Utilities](/primitives/eventlog/utilities) - Filtering and sorting logs
+- [Usage Patterns](/primitives/eventlog/usage-patterns) - Real-world examples

@@ -1,0 +1,421 @@
+---
+title: EventLog Utilities
+description: Utility functions for extracting topics, filtering, and sorting event logs
+---
+
+# Utilities
+
+Utility functions for working with event logs - extracting topics, filtering arrays, sorting, and cloning.
+
+## Topic Extraction
+
+### `EventLog.getTopic0(log)`
+
+Extract event signature (first topic). Returns undefined if log has no topics.
+
+```typescript
+import * as EventLog from '@tevm/primitives/EventLog'
+
+const log = EventLog.create({
+  address: tokenAddress,
+  topics: [transferSignature, fromAddress, toAddress],
+  data: amountData
+})
+
+const signature = EventLog.getTopic0(log)
+// Hash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log
+
+**Returns:** `BrandedHash | undefined` - Event signature or undefined if no topics
+
+**Use cases:**
+- Determine event type
+- Compare against known event signatures
+- Route logs to appropriate handlers
+
+Defined in: [primitives/EventLog/BrandedEventLog/getTopic0.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getTopic0.js)
+
+### `EventLog.getSignature(log)`
+
+Alias for `getTopic0()`.
+
+```typescript
+const signature = EventLog.getSignature(log)
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log
+
+**Returns:** `BrandedHash | undefined` - Event signature
+
+Defined in: [primitives/EventLog/BrandedEventLog/getSignature.js:22](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getSignature.js)
+
+### `EventLog.getIndexedTopics(log)`
+
+Extract indexed parameters (topics 1-3), excluding event signature.
+
+```typescript
+const log = EventLog.create({
+  address: tokenAddress,
+  topics: [
+    transferSignature,
+    Hash.from("0x000...alice"),
+    Hash.from("0x000...bob")
+  ],
+  data: amountData
+})
+
+const indexed = EventLog.getIndexedTopics(log)
+// [Hash("0x000...alice"), Hash("0x000...bob")]
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log
+
+**Returns:** `readonly BrandedHash[]` - Indexed parameters (empty array if only signature or no topics)
+
+**Use cases:**
+- Extract indexed event parameters
+- Decode indexed addresses, IDs, or other values
+- Process indexed data separately from non-indexed data
+
+Defined in: [primitives/EventLog/BrandedEventLog/getIndexedTopics.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexedTopics.js)
+
+### `EventLog.getIndexed(log)`
+
+Alias for `getIndexedTopics()`.
+
+```typescript
+const indexed = EventLog.getIndexed(log)
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log
+
+**Returns:** `readonly BrandedHash[]` - Indexed parameters
+
+Defined in: [primitives/EventLog/BrandedEventLog/getIndexed.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexed.js)
+
+## Filtering
+
+### `EventLog.filterLogs(logs, filter)`
+
+Filter array of event logs by criteria.
+
+```typescript
+import * as EventLog from '@tevm/primitives/EventLog'
+
+const allLogs = [log1, log2, log3, log4, log5]
+
+// Filter by address
+const tokenLogs = EventLog.filterLogs(allLogs, {
+  address: tokenAddress
+})
+
+// Filter by topics
+const transfers = EventLog.filterLogs(allLogs, {
+  topics: [transferSignature]
+})
+
+// Filter by address and topics
+const userTransfers = EventLog.filterLogs(allLogs, {
+  address: tokenAddress,
+  topics: [transferSignature, null, userAddressHash]
+})
+
+// Filter by block range
+const recentLogs = EventLog.filterLogs(allLogs, {
+  fromBlock: 12000000n,
+  toBlock: 13000000n
+})
+
+// Combined filters
+const filtered = EventLog.filterLogs(allLogs, {
+  address: [usdcAddress, daiAddress],  // Multiple addresses
+  topics: [transferSignature, null, userAddressHash],
+  fromBlock: 12000000n,
+  toBlock: 13000000n
+})
+```
+
+**Parameters:**
+- `logs: readonly BrandedEventLog[]` - Array of event logs
+- `filter: Filter` - Filter criteria
+
+**Filter fields:**
+- `address?: BrandedAddress | BrandedAddress[]` - Match specific address(es)
+- `topics?: (BrandedHash | BrandedHash[] | null)[]` - Topic pattern (null = wildcard, array = OR)
+- `fromBlock?: bigint` - Minimum block number
+- `toBlock?: bigint` - Maximum block number
+- `blockHash?: BrandedHash` - Specific block hash
+
+**Returns:** `BrandedEventLog[]` - Filtered array
+
+Defined in: [primitives/EventLog/BrandedEventLog/filterLogs.js:25](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/filterLogs.js)
+
+## Sorting
+
+### `EventLog.sortLogs(logs)`
+
+Sort logs by block number, transaction index, and log index (all ascending).
+
+```typescript
+const unsortedLogs = [log5, log2, log8, log1, log3]
+
+const sorted = EventLog.sortLogs(unsortedLogs)
+// Sorted by:
+// 1. blockNumber (ascending)
+// 2. transactionIndex (ascending, within same block)
+// 3. logIndex (ascending, within same transaction)
+```
+
+**Parameters:**
+- `logs: readonly BrandedEventLog[]` - Array of event logs
+
+**Returns:** `BrandedEventLog[]` - New sorted array (original not modified)
+
+**Sort order:**
+1. Primary: `blockNumber` (ascending)
+2. Secondary: `transactionIndex` (ascending)
+3. Tertiary: `logIndex` (ascending)
+
+**Handling undefined values:**
+- Logs without `blockNumber` sorted to end
+- Within same block, logs without `transactionIndex` sorted to end
+- Within same transaction, logs without `logIndex` sorted to end
+
+Defined in: [primitives/EventLog/BrandedEventLog/sortLogs.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/sortLogs.js)
+
+### `EventLog.sort(logs)`
+
+Alias for `sortLogs()`.
+
+```typescript
+const sorted = EventLog.sort(unsortedLogs)
+```
+
+**Parameters:**
+- `logs: readonly BrandedEventLog[]` - Array of event logs
+
+**Returns:** `BrandedEventLog[]` - Sorted array
+
+## Copying
+
+### `EventLog.clone(log)`
+
+Create deep copy of event log.
+
+```typescript
+const original = EventLog.create({
+  address: tokenAddress,
+  topics: [transferSignature, fromAddress, toAddress],
+  data: amountData,
+  blockNumber: 12345678n
+})
+
+const copy = EventLog.clone(original)
+
+// Modifications to copy don't affect original
+copy.removed = true
+console.log(original.removed)  // false
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to clone
+
+**Returns:** `BrandedEventLog` - Deep copy
+
+Defined in: [primitives/EventLog/BrandedEventLog/clone.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/clone.js)
+
+### `EventLog.copy(log)`
+
+Alias for `clone()`.
+
+```typescript
+const copy = EventLog.copy(log)
+```
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to copy
+
+**Returns:** `BrandedEventLog` - Deep copy
+
+Defined in: [primitives/EventLog/BrandedEventLog/copy.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/copy.js)
+
+## Utility Patterns
+
+### Extract Transfer Participants
+
+```typescript
+function getTransferParticipants(log: BrandedEventLog) {
+  const [fromHash, toHash] = EventLog.getIndexedTopics(log)
+
+  // Convert 32-byte hashes back to 20-byte addresses
+  const from = Address.fromBytes(fromHash.slice(12))
+  const to = Address.fromBytes(toHash.slice(12))
+
+  return { from, to }
+}
+```
+
+### Filter and Sort in Pipeline
+
+```typescript
+function getRecentUserTransfers(
+  allLogs: BrandedEventLog[],
+  userAddress: BrandedAddress,
+  fromBlock: bigint
+): BrandedEventLog[] {
+  const userHash = Hash.from("0x000000000000000000000000" + userAddress.slice(2))
+
+  // Filter
+  const filtered = EventLog.filterLogs(allLogs, {
+    topics: [transferSignature, null, userHash],
+    fromBlock
+  })
+
+  // Remove reorg logs
+  const valid = filtered.filter(log => !EventLog.isRemoved(log))
+
+  // Sort chronologically
+  return EventLog.sortLogs(valid)
+}
+```
+
+### Group by Event Type
+
+```typescript
+function groupByEventType(logs: BrandedEventLog[]): Map<string, BrandedEventLog[]> {
+  const groups = new Map<string, BrandedEventLog[]>()
+
+  for (const log of logs) {
+    const signature = EventLog.getTopic0(log)
+    if (!signature) continue
+
+    const key = Hex.fromBytes(signature)
+    const group = groups.get(key) ?? []
+    group.push(log)
+    groups.set(key, group)
+  }
+
+  return groups
+}
+```
+
+### Find Logs by Signature
+
+```typescript
+function findEventsBySignature(
+  logs: BrandedEventLog[],
+  signature: BrandedHash
+): BrandedEventLog[] {
+  return EventLog.filterLogs(logs, {
+    topics: [signature]
+  })
+}
+```
+
+### Merge and Deduplicate Logs
+
+```typescript
+function mergeLogs(
+  logs1: BrandedEventLog[],
+  logs2: BrandedEventLog[]
+): BrandedEventLog[] {
+  const seen = new Set<string>()
+  const merged: BrandedEventLog[] = []
+
+  for (const log of [...logs1, ...logs2]) {
+    // Create unique key
+    const key = `${log.blockNumber}-${log.transactionIndex}-${log.logIndex}`
+
+    if (!seen.has(key)) {
+      seen.add(key)
+      merged.push(log)
+    }
+  }
+
+  return EventLog.sortLogs(merged)
+}
+```
+
+### Filter Multiple Event Types
+
+```typescript
+function findMultipleEventTypes(
+  logs: BrandedEventLog[],
+  signatures: BrandedHash[]
+): BrandedEventLog[] {
+  return logs.filter(log => {
+    const topic0 = EventLog.getTopic0(log)
+    if (!topic0) return false
+
+    return signatures.some(sig =>
+      Hash.equals(topic0, sig)
+    )
+  })
+}
+```
+
+## Performance Optimization
+
+### Batch Filter Operations
+
+```typescript
+// Inefficient: Multiple passes
+const step1 = EventLog.filterLogs(allLogs, { address: tokenAddress })
+const step2 = EventLog.filterLogs(step1, { topics: [transferSig] })
+const step3 = step2.filter(log => !EventLog.isRemoved(log))
+
+// Efficient: Single pass
+const result = EventLog.filterLogs(allLogs, {
+  address: tokenAddress,
+  topics: [transferSig]
+}).filter(log => !EventLog.isRemoved(log))
+```
+
+### Early Exit on Topic Mismatch
+
+```typescript
+// Check signature first (fastest)
+function isRelevantLog(log: BrandedEventLog): boolean {
+  const topic0 = EventLog.getTopic0(log)
+  if (!topic0) return false
+
+  // Only check address if signature matches
+  if (Hash.equals(topic0, transferSig)) {
+    return EventLog.matchesAddress(log, tokenAddress)
+  }
+
+  return false
+}
+```
+
+## Tree-Shakeable Usage
+
+Import only utilities needed:
+
+```typescript
+import {
+  getTopic0,
+  getIndexedTopics,
+  filterLogs,
+  sortLogs,
+  clone
+} from '@tevm/primitives/EventLog'
+
+const signature = getTopic0(log)
+const indexed = getIndexedTopics(log)
+const filtered = filterLogs(allLogs, filter)
+const sorted = sortLogs(filtered)
+const copy = clone(log)
+```
+
+## See Also
+
+- [Constructors](/primitives/eventlog/constructors) - Creating event logs
+- [Validation](/primitives/eventlog/validation) - Matching and validation
+- [Usage Patterns](/primitives/eventlog/usage-patterns) - Real-world examples
