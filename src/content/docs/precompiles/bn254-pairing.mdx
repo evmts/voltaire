@@ -9,11 +9,11 @@ description: BN254 elliptic curve pairing check for zkSNARK verification
 **Introduced:** Byzantium (EIP-197)
 **EIP:** [EIP-197](https://eips.ethereum.org/EIPS/eip-197), [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108)
 
-The BN254 Pairing precompile performs a pairing check on the BN254 (alt_bn128) curve. It verifies whether the product of pairings equals identity: `e(A1,B1) * e(A2,B2) * ... * e(Ak,Bk) = 1`. This is the core operation for Groth16 zkSNARK verification.
+The BN254 Pairing precompile performs a pairing check on the BN254 (alt_bn128) elliptic curve. It verifies whether a product of pairings equals the identity element: `e(A1,B1) * e(A2,B2) * ... * e(Ak,Bk) = 1`. This is the fundamental cryptographic operation for Groth16 zkSNARK verification, enabling zero-knowledge proofs on Ethereum.
 
-Pairing is a bilinear map from G1 × G2 to GT that enables zero-knowledge proof systems, BLS signatures, and identity-based encryption.
+A pairing is a special bilinear map that takes two elliptic curve points (one from group G1, one from group G2) and produces a value in a third group GT. The bilinear property means `e(aP, bQ) = e(P, Q)^(ab)`, which is what makes zero-knowledge proofs mathematically possible. Think of it as a one-way function that lets you verify relationships between encrypted values without decrypting them.
 
-EIP-1108 (Istanbul) reduced gas costs dramatically: 99% for single pair, 98% for multiple pairs.
+EIP-1108 (Istanbul hardfork) reduced gas costs by 56-57%, making zkSNARK verification practical for production applications like Tornado Cash and zk-rollups.
 
 ## Gas Cost
 
