@@ -258,40 +258,144 @@ Point evaluation requires KZG trusted setup (powers of tau):
 
 ## Test Vectors
 
+From EIP-4844 official test suite:
+
 ```typescript
-// Point at infinity (trivial valid proof)
-const commitment = new Uint8Array(48);
-commitment[0] = 0xc0; // Infinity flag
+// Vector 1: Point at infinity (trivial valid proof)
+// This is the simplest valid KZG proof - empty polynomial
+const input1 = new Uint8Array(192);
 
-const proof = new Uint8Array(48);
-proof[0] = 0xc0; // Infinity flag
+// Commitment: point at infinity (0xc0... in BLS12-381 compressed format)
+input1[96] = 0xc0; // Infinity flag for commitment
 
-const z = new Uint8Array(32); // 0
-const y = new Uint8Array(32); // 0
+// Proof: point at infinity
+input1[144] = 0xc0; // Infinity flag for proof
+
+// z and y are zero (default)
+
+// Compute versioned hash: SHA256(commitment) with version byte 0x01
+const commitmentBytes = input1.slice(96, 144);
+const hash1 = sha256(commitmentBytes);
+hash1[0] = 0x01; // Version byte
+input1.set(hash1, 0); // Set versioned_hash
+
+const result1 = execute(PrecompileAddress.POINT_EVALUATION, input1, 60000n, Hardfork.CANCUN);
+// result1.success === true
+// result1.gasUsed === 50000
+// result1.output[30] === 0x10, result1.output[31] === 0x00 // FIELD_ELEMENTS_PER_BLOB = 4096
+
+// Vector 2: Valid proof with non-zero values
+// From EIP-4844 verify_kzg_proof_case_correct_proof_1_0
+const commitment2 = hexToBytes('a572cbea904d67468808c8eb50a9450c9721db309128012543902d0ac358a62ae28f75bb8f1c7c42c39a8c5529bf0f4e');
+const z2 = hexToBytes('0000000000000000000000000000000000000000000000000000000000000000');
+const y2 = hexToBytes('0000000000000000000000000000000000000000000000000000000000000002');
+const proof2 = hexToBytes('c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000');
+
+const input2 = new Uint8Array(192);
+input2.set(z2, 32);
+input2.set(y2, 64);
+input2.set(commitment2, 96);
+input2.set(proof2, 144);
 
 // Compute versioned hash
-const versionedHash = new Uint8Array(32);
-const hash = sha256(commitment);
-hash[0] = 0x01;
-versionedHash.set(hash);
+const hash2 = sha256(commitment2);
+hash2[0] = 0x01;
+input2.set(hash2, 0);
 
-// Should return success (valid proof)
+const result2 = execute(PrecompileAddress.POINT_EVALUATION, input2, 60000n, Hardfork.CANCUN);
+// result2.success === true
+// result2.output[30] === 0x10, result2.output[31] === 0x00 // Valid proof
+
+// Vector 3: Invalid proof (wrong proof for commitment)
+// From EIP-4844 verify_kzg_proof_case_incorrect_proof_0_0
+const commitment3 = hexToBytes('c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000');
+const z3 = hexToBytes('0000000000000000000000000000000000000000000000000000000000000000');
+const y3 = hexToBytes('0000000000000000000000000000000000000000000000000000000000000000');
+const proof3 = hexToBytes('97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb');
+
+const input3 = new Uint8Array(192);
+input3.set(z3, 32);
+input3.set(y3, 64);
+input3.set(commitment3, 96);
+input3.set(proof3, 144);
+
+const hash3 = sha256(commitment3);
+hash3[0] = 0x01;
+input3.set(hash3, 0);
+
+const result3 = execute(PrecompileAddress.POINT_EVALUATION, input3, 60000n, Hardfork.CANCUN);
+// result3.success === true
+// result3.output === all zeros (proof verification failed, but no error)
+
+// Vector 4: Versioned hash mismatch
+const input4 = new Uint8Array(192);
+input4[96] = 0xc0; // Valid commitment
+input4[144] = 0xc0; // Valid proof
+input4[0] = 0xFF; // Wrong versioned hash (should be SHA256(commitment) with 0x01)
+
+const result4 = execute(PrecompileAddress.POINT_EVALUATION, input4, 60000n, Hardfork.CANCUN);
+// result4.success === false
+// result4.error === 'InvalidInput' (versioned hash doesn't match commitment)
 ```
 
-## Blob Transaction Flow
+## Complete Blob Transaction Flow
 
-1. Rollup submits blob transaction with commitment
-2. Beacon chain stores blob (144 GB ephemeral storage)
-3. Contract calls point evaluation to verify commitment
-4. Blob pruned after ~18 days
-5. Commitment remains on-chain permanently
+**Step-by-step from rollup to verification:**
+
+1. **Rollup Sequencer:** Batches 1000+ L2 transactions, compresses to ~100KB
+
+2. **Blob Preparation:**
+   - Encodes data as 4096 BLS field elements (polynomial coefficients)
+   - Computes KZG commitment: `C = [p(τ)]₁` using trusted setup
+   - Generates versioned hash: `SHA256(C)` with version byte `0x01`
+
+3. **Transaction Submission:**
+   - Submits Type-3 blob transaction to Ethereum
+   - Transaction includes: versioned_hash in `blob_versioned_hashes` field
+   - Actual blob data sent separately to consensus layer (not in block)
+
+4. **Consensus Layer Storage:**
+   - Beacon chain stores full blob (~128KB) in blob sidecar
+   - Blob stored for minimum 4096 epochs (~18 days)
+   - After 18 days, blob is pruned (only commitment remains on chain)
+
+5. **Verification on L1 (this precompile):**
+   - L1 contract receives blob transaction
+   - Calls POINT_EVALUATION precompile with (versioned_hash, z, y, commitment, proof)
+   - Precompile verifies: commitment matches hash AND KZG proof is valid
+   - If valid, rollup contract accepts the batch
+
+6. **Long-term Storage:**
+   - KZG commitment (48 bytes) remains on-chain forever
+   - Full blob (128KB) pruned after ~18 days
+   - Archive nodes may retain blobs longer (optional)
+   - Anyone who needs historical blob data must have downloaded it during 18-day window
+
+**Data Availability Guarantee:**
+
+The KZG proof guarantees that:
+- Data existed and was available for 18 days minimum
+- The commitment is a binding commitment to specific data
+- Cannot be changed retroactively (commitment is on-chain forever)
+- Enough time for anyone to challenge invalid state transitions
+
+**Separate Blob Gas Market:**
+
+Blob gas is independent from regular gas:
+- Target: 3 blobs per block (384 KB)
+- Max: 6 blobs per block (768 KB)
+- Price adjusts via EIP-1559 style mechanism
+- Typical blob gas price: 1-10 wei (vs 10-50 gwei for regular gas)
+- 1000x+ cheaper than calldata per byte
 
 ## Related
 
-- [Crypto: KZG](/crypto/kzg)
-- [Crypto: BLS12-381](/crypto/bls12-381)
-- [Primitives: Blob](/primitives/blob)
+- [Crypto: KZG](/crypto/kzg) - KZG polynomial commitment implementation
+- [Crypto: BLS12-381](/crypto/bls12-381) - BLS12-381 elliptic curve operations
+- [Primitives: Blob](/primitives/blob) - Blob data type and utilities
+- [Primitives: FeeMarket (EIP-4844)](/primitives/feemarket/eip4844) - Blob gas pricing
 - [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
-- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
-- [KZG Ceremony](https://ceremony.ethereum.org/)
-- [Proto-Danksharding FAQ](https://notes.ethereum.org/@vbuterin/proto_danksharding_faq)
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844) - Complete specification
+- [KZG Ceremony](https://ceremony.ethereum.org/) - Trusted setup details
+- [Proto-Danksharding FAQ](https://notes.ethereum.org/@vbuterin/proto_danksharding_faq) - High-level overview
+- [c-kzg-4844 Library](https://github.com/ethereum/c-kzg-4844) - Reference implementation

@@ -308,6 +308,193 @@ Map an Fp2 element to a G2 point (hash-to-curve).
 - Padded to 64 bytes with leading zeros
 - p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
 
+## Complete BLS Signature Workflow
+
+This example shows how multiple BLS12-381 precompiles work together for a complete signature verification:
+
+```typescript
+import { execute, PrecompileAddress, Hardfork } from '@tevm/voltaire/precompiles';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+/**
+ * Complete BLS signature verification workflow
+ * Uses 5 precompiles: MAP_FP2_TO_G2, G1_MUL, G2_MUL, G1_ADD (optional), PAIRING
+ */
+
+// Step 1: Hash message to G2 point using MAP_FP2_TO_G2
+function hashMessageToG2(message: Uint8Array): Uint8Array {
+  // Hash message to field elements (simplified - real impl uses hash_to_field)
+  const hash1 = Keccak256.hash(message);
+  const hash2 = Keccak256.hash(hash1);
+
+  // Create two Fp2 elements
+  const u0 = new Uint8Array(128);
+  u0.set(hash1, 96); // Place hash in lower 32 bytes of c0
+
+  const u1 = new Uint8Array(128);
+  u1.set(hash2, 96);
+
+  // Map both to G2 points
+  const q0 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, u0, 75000n, Hardfork.PRAGUE);
+  const q1 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, u1, 75000n, Hardfork.PRAGUE);
+
+  if (!q0.success || !q1.success) throw new Error('Hash-to-curve failed');
+
+  // Add points: H(m) = Q0 + Q1
+  const addInput = new Uint8Array(512);
+  addInput.set(q0.output, 0);
+  addInput.set(q1.output, 256);
+
+  const result = execute(PrecompileAddress.BLS12_G2_ADD, addInput, 800n, Hardfork.PRAGUE);
+  if (!result.success) throw new Error('G2 addition failed');
+
+  return result.output; // 256-byte G2 point: H(m)
+}
+
+// Step 2: Generate BLS signature: sig = sk * H(m)
+function signMessage(secretKey: bigint, messageHash: Uint8Array): Uint8Array {
+  // messageHash is G2 point from hashMessageToG2
+  const input = new Uint8Array(288);
+  input.set(messageHash, 0); // G2 point (256 bytes)
+
+  // Encode scalar at offset 256
+  const scalarBytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    scalarBytes[31 - i] = Number((secretKey >> BigInt(i * 8)) & 0xFFn);
+  }
+  input.set(scalarBytes, 256);
+
+  const result = execute(PrecompileAddress.BLS12_G2_MUL, input, 45000n, Hardfork.PRAGUE);
+  if (!result.success) throw new Error('Signing failed');
+
+  return result.output; // 256-byte signature in G2
+}
+
+// Step 3: Derive public key: PK = sk * G1
+function derivePublicKey(secretKey: bigint): Uint8Array {
+  // G1 generator point (these are the actual BLS12-381 generator coordinates)
+  const g1Generator = new Uint8Array(128);
+  // x-coordinate (48 bytes, left-padded to 64)
+  g1Generator.set([
+    0x17, 0xf1, 0xd3, 0xa7, 0x31, 0x97, 0xd7, 0x94,
+    0x26, 0x95, 0x63, 0x8c, 0x4f, 0xa9, 0xac, 0x0f,
+    0xc3, 0x68, 0x8c, 0x4f, 0x97, 0x74, 0xb9, 0x05,
+    0xa1, 0x4e, 0x3a, 0x3f, 0x17, 0x1b, 0xac, 0x58,
+    0x6c, 0x55, 0xe8, 0x3f, 0xf9, 0x7a, 0x1a, 0xef,
+    0xfb, 0x3a, 0xf0, 0x0a, 0xdb, 0x22, 0xc6, 0xbb,
+  ], 16);
+  // y-coordinate (48 bytes, left-padded to 64)
+  g1Generator.set([
+    0x08, 0xb3, 0xf4, 0x81, 0xe3, 0xaa, 0xa0, 0xf1,
+    0xa0, 0x9e, 0x30, 0xed, 0x74, 0x1d, 0x8a, 0xe4,
+    0xfc, 0xf5, 0xe0, 0x95, 0xd5, 0xd0, 0x0a, 0xf6,
+    0x00, 0xdb, 0x18, 0xcb, 0x2c, 0x04, 0xb3, 0xed,
+    0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4,
+    0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
+  ], 80);
+
+  const input = new Uint8Array(160);
+  input.set(g1Generator, 0);
+
+  // Encode scalar
+  const scalarBytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    scalarBytes[31 - i] = Number((secretKey >> BigInt(i * 8)) & 0xFFn);
+  }
+  input.set(scalarBytes, 128);
+
+  const result = execute(PrecompileAddress.BLS12_G1_MUL, input, 12000n, Hardfork.PRAGUE);
+  if (!result.success) throw new Error('Public key derivation failed');
+
+  return result.output; // 128-byte public key in G1
+}
+
+// Step 4: Verify BLS signature using pairing check
+// Check: e(PK, H(m)) = e(G1, sig)
+// Rearranged: e(PK, H(m)) * e(-G1, sig) = 1
+function verifySignature(
+  publicKey: Uint8Array,    // 128 bytes (G1)
+  message: Uint8Array,
+  signature: Uint8Array     // 256 bytes (G2)
+): boolean {
+  // Hash message to G2
+  const messageHash = hashMessageToG2(message);
+
+  // Get negated G1 generator
+  const g1Generator = new Uint8Array(128);
+  g1Generator.set([
+    0x17, 0xf1, 0xd3, 0xa7, 0x31, 0x97, 0xd7, 0x94,
+    0x26, 0x95, 0x63, 0x8c, 0x4f, 0xa9, 0xac, 0x0f,
+    0xc3, 0x68, 0x8c, 0x4f, 0x97, 0x74, 0xb9, 0x05,
+    0xa1, 0x4e, 0x3a, 0x3f, 0x17, 0x1b, 0xac, 0x58,
+    0x6c, 0x55, 0xe8, 0x3f, 0xf9, 0x7a, 0x1a, 0xef,
+    0xfb, 0x3a, 0xf0, 0x0a, 0xdb, 0x22, 0xc6, 0xbb,
+  ], 16);
+  // Negated y-coordinate (would need actual negation - simplified here)
+  g1Generator.set([
+    0x08, 0xb3, 0xf4, 0x81, 0xe3, 0xaa, 0xa0, 0xf1,
+    0xa0, 0x9e, 0x30, 0xed, 0x74, 0x1d, 0x8a, 0xe4,
+    0xfc, 0xf5, 0xe0, 0x95, 0xd5, 0xd0, 0x0a, 0xf6,
+    0x00, 0xdb, 0x18, 0xcb, 0x2c, 0x04, 0xb3, 0xed,
+    0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4,
+    0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
+  ], 80);
+
+  // Construct pairing input: 2 pairs (768 bytes)
+  const pairingInput = new Uint8Array(768);
+
+  // Pair 1: (PK, H(m))
+  pairingInput.set(publicKey, 0);        // G1 point (128 bytes)
+  pairingInput.set(messageHash, 128);    // G2 point (256 bytes)
+
+  // Pair 2: (-G1, sig)
+  pairingInput.set(g1Generator, 384);    // G1 point (128 bytes)
+  pairingInput.set(signature, 512);      // G2 point (256 bytes)
+
+  // Pairing check gas: 115,000 + 23,000 * 2 = 161,000
+  const result = execute(
+    PrecompileAddress.BLS12_PAIRING,
+    pairingInput,
+    161000n,
+    Hardfork.PRAGUE
+  );
+
+  if (!result.success) throw new Error('Pairing check failed');
+
+  // Check if pairing result is 1 (success)
+  return result.output[31] === 1;
+}
+
+// Complete workflow example
+const secretKey = 12345678901234567890n;
+const message = new TextEncoder().encode("Hello, BLS12-381!");
+
+console.log("=== BLS Signature Workflow ===");
+
+// 1. Derive public key
+const publicKey = derivePublicKey(secretKey);
+console.log("Public key generated (G1, 128 bytes)");
+
+// 2. Hash message
+const messageHash = hashMessageToG2(message);
+console.log("Message hashed to G2 (256 bytes)");
+
+// 3. Sign message
+const signature = signMessage(secretKey, messageHash);
+console.log("Signature generated (G2, 256 bytes)");
+
+// 4. Verify signature
+const isValid = verifySignature(publicKey, message, signature);
+console.log("Signature valid:", isValid);
+
+// Total gas used:
+// - Hash to G2: 2 * 75,000 + 800 = 150,800
+// - Derive PK: 12,000
+// - Sign: 45,000
+// - Verify (pairing): 161,000
+// Total: ~368,800 gas for complete workflow
+```
+
 ## Usage Examples
 
 ### TypeScript

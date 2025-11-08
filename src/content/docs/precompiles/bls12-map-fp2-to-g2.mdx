@@ -36,9 +36,9 @@ Each component c0, c1 is an element of the base field Fp.
 
 ## Gas Cost
 
-**Fixed cost:** `23,800` gas per EIP-2537 specification (constant, independent of input)
+**Fixed cost:** `75,000` gas (current implementation)
 
-**Note:** Current implementation uses 75,000 gas (pre-repricing value). This will be updated to match the official EIP-2537 spec of 23,800 gas.
+**Note:** The EIP-2537 specification proposes 23,800 gas for this operation. The current implementation uses 75,000 gas which may represent a pre-repricing value or conservative estimate. Consult the latest EIP-2537 status for the finalized gas cost. Code uses 75,000 in `/Users/williamcory/voltaire/src/precompiles/precompiles.ts` line 1196.
 
 Higher than G1 mapping (5,500 gas) due to:
 - Larger field (Fp2 vs Fp)
@@ -114,14 +114,14 @@ function hashToG2Point(message: Uint8Array): Uint8Array {
   const q0Result = execute(
     PrecompileAddress.BLS12_MAP_FP2_TO_G2,
     u0,
-    23800n, // EIP-2537 spec gas cost
+    75000n, // Current implementation gas cost
     Hardfork.PRAGUE
   );
 
   const q1Result = execute(
     PrecompileAddress.BLS12_MAP_FP2_TO_G2,
     u1,
-    23800n, // EIP-2537 spec gas cost
+    75000n, // Current implementation gas cost
     Hardfork.PRAGUE
   );
 
@@ -180,14 +180,14 @@ pub fn hashToG2(
     const q0_result = try precompiles.bls12_map_fp2_to_g2.execute(
         allocator,
         &u0,
-        23800, // EIP-2537 spec gas cost
+        75000, // Current implementation gas cost
     );
     defer allocator.free(q0_result.output);
 
     const q1_result = try precompiles.bls12_map_fp2_to_g2.execute(
         allocator,
         &u1,
-        23800, // EIP-2537 spec gas cost
+        75000, // Current implementation gas cost
     );
     defer allocator.free(q1_result.output);
 
@@ -218,7 +218,7 @@ test "hash to G2" {
 
 ## Error Conditions
 
-- **Out of gas:** Gas limit less than 23,800 (EIP-2537 spec)
+- **Out of gas:** Gas limit less than 75,000 (current implementation)
 - **Invalid input length:** Input not exactly 128 bytes
 - **Field element overflow:** c0 >= p or c1 >= p
 - **Invalid Fp2 encoding:** Malformed extension field element
@@ -400,7 +400,7 @@ After mapping, ensure point is in correct subgroup:
 | Operation | Gas | Notes |
 |-----------|-----|-------|
 | Map Fp to G1 | 5,500 | Base field |
-| Map Fp2 to G2 | 23,800 | Extension field (4.3x) |
+| Map Fp2 to G2 | 75,000 | Extension field (13.6x) |
 | G1 Add | 500 | Point addition |
 | G2 Add | 800 | Point addition |
 | G1 Mul | 12,000 | Scalar multiplication |
@@ -411,12 +411,12 @@ G2 operations consistently ~3-13x more expensive than G1.
 ### Complete Hash-to-G2 Cost
 
 ```
-2 × MAP_FP2_TO_G2: 2 × 23,800 = 47,600
-1 × G2_ADD:        1 × 800    =    800
-Total:                        = 48,400 gas
+2 × MAP_FP2_TO_G2: 2 × 75,000 = 150,000
+1 × G2_ADD:        1 × 800    =     800
+Total:                        = 150,800 gas
 ```
 
-Plus external hash_to_field computation.
+Plus external hash_to_field computation. Note: If EIP-2537 repricing occurs (23,800 per map), total would be ~48,400 gas.
 
 ## Test Vectors
 
@@ -426,7 +426,7 @@ const input = new Uint8Array(128); // All zeros (0 + 0*u)
 const result = execute(
   PrecompileAddress.BLS12_MAP_FP2_TO_G2,
   input,
-  23800n,
+  75000n,
   Hardfork.PRAGUE
 );
 // Should succeed with valid G2 point
@@ -442,7 +442,7 @@ input[63] = 1; // c0 = 1, c1 = 0
 const result = execute(
   PrecompileAddress.BLS12_MAP_FP2_TO_G2,
   input,
-  23800n,
+  75000n,
   Hardfork.PRAGUE
 );
 console.log('Success:', result.success);
@@ -459,7 +459,7 @@ input[127] = 3;  // c1 = 3
 const result = execute(
   PrecompileAddress.BLS12_MAP_FP2_TO_G2,
   input,
-  23800n,
+  75000n,
   Hardfork.PRAGUE
 );
 // Should produce different point than previous examples
@@ -471,8 +471,8 @@ const input = new Uint8Array(128);
 input[63] = 42;
 input[127] = 137;
 
-const result1 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, input, 23800n, Hardfork.PRAGUE);
-const result2 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, input, 23800n, Hardfork.PRAGUE);
+const result1 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, input, 75000n, Hardfork.PRAGUE);
+const result2 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, input, 75000n, Hardfork.PRAGUE);
 
 // Same input must produce identical output
 console.assert(result1.output.every((b, i) => b === result2.output[i]));

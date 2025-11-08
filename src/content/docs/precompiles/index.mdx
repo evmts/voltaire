@@ -176,7 +176,7 @@ Least used:
 
 ### TypeScript
 
-\`\`\`typescript
+```typescript
 import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
@@ -194,11 +194,11 @@ if (result.success) {
 } else {
   console.error('Error:', result.error);
 }
-\`\`\`
+```
 
 ### Zig
 
-\`\`\`zig
+```zig
 const std = @import("std");
 const precompiles = @import("precompiles");
 
@@ -219,16 +219,16 @@ pub fn main() !void {
         std.debug.print("Output: {any}\n", .{result.output});
     }
 }
-\`\`\`
+```
 
 ### WASM
 
 All precompiles available via WASM:
 
-\`\`\`bash
+```bash
 zig build build-ts-wasm       # ReleaseSmall (production)
 zig build build-ts-wasm-fast  # ReleaseFast (benchmarks)
-\`\`\`
+```
 
 Import and use like TypeScript implementation.
 
@@ -268,7 +268,7 @@ Dynamic gas prevents abuse:
 
 ## Hardfork Availability
 
-\`\`\`typescript
+```typescript
 import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
 
 // Check precompile availability
@@ -279,7 +279,7 @@ const precompiles = {
   [Hardfork.CANCUN]: [0x0A],
   [Hardfork.PRAGUE]: [0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13],
 };
-\`\`\`
+```
 
 Always check hardfork before calling newer precompiles.
 
@@ -287,19 +287,19 @@ Always check hardfork before calling newer precompiles.
 
 ### Zig Tests
 
-\`\`\`bash
+```bash
 zig build test -Dtest-filter=precompiles
 zig build test -Dtest-filter=bls12
 zig build test -Dtest-filter=bn254
-\`\`\`
+```
 
 ### TypeScript Tests
 
-\`\`\`bash
+```bash
 bun run test -- precompiles
 bun run test -- bls12
 bun run test:coverage
-\`\`\`
+```
 
 ### Test Vectors
 
@@ -311,7 +311,7 @@ All precompiles tested against:
 
 ## Benchmarks
 
-\`\`\`bash
+```bash
 # Zig benchmarks (zbench)
 zig build bench -Dbench-filter=precompiles
 
@@ -320,13 +320,13 @@ bun run bench
 
 # Generate comparison report
 bun run scripts/run-benchmarks.ts
-\`\`\`
+```
 
 See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for detailed results.
 
 ## Building
 
-\`\`\`bash
+```bash
 # Full build (all precompiles)
 zig build
 
@@ -340,7 +340,7 @@ zig build test -Dtest-filter=bls12_g1_msm
 
 # WASM builds
 zig build build-ts-wasm
-\`\`\`
+```
 
 ## Implementation Status
 
