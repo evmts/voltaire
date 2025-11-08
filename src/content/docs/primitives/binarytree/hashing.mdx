@@ -96,7 +96,7 @@ const hash = rootHash(tree)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHash.js:16-18](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHash.js#L16-L18)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHash.js:16-18](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHash.js#L16-L18)
 
 ### `BinaryTree.rootHashHex(tree)`
 
@@ -156,7 +156,7 @@ const hex = rootHashHex(tree)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js:16-23](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js#L16-L23)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js:16-23](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js#L16-L23)
 
 ## Node Hashing
 
@@ -208,7 +208,7 @@ const leafHash = BinaryTree.hashNode(leafNode)
 - `stem` → Calls `hashStem(node)`
 - `leaf` → Calls `hashLeaf(node)`
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashNode.js:18-29](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashNode.js#L18-L29)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashNode.js:18-29](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashNode.js#L18-L29)
 
 ## Type-Specific Hashing
 
@@ -281,7 +281,7 @@ const hash = hashInternal(left, right)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashInternal.js:19-25](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashInternal.js#L19-L25)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashInternal.js:19-25](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashInternal.js#L19-L25)
 
 ### `BinaryTree.hashStem(node)`
 
@@ -361,7 +361,7 @@ const hash = hashStem(stemNode)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashStem.js:18-28](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashStem.js#L18-L28)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashStem.js:18-28](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashStem.js#L18-L28)
 
 ### `BinaryTree.hashLeaf(node)`
 
@@ -423,7 +423,7 @@ const hash = hashLeaf(leafNode)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js:17-19](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js#L17-L19)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js:17-19](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js#L17-L19)
 
 ## Hash Properties
 
@@ -519,6 +519,46 @@ const stateRoot2 = BinaryTree.rootHashHex(tree2)
 console.log(stateRoot !== stateRoot2) // true
 ```
 
+## Merkle Tree Visualization
+
+```
+              Root Hash
+           (BLAKE3(L|R))
+              /        \
+          H_left      H_right
+          /    \      /    \
+       H_a   H_b   H_c   H_d
+       |     |     |     |
+      [A]   [B]   [C]   [D]
+
+Merkle Proof for [A]:
+  Path: Root → H_left → [A]
+  Siblings: [H_b, H_right, ...]
+  Verification: hash(hash([A], H_b), H_right) == Root Hash
+```
+
+### Hash Computation Flow
+
+```
+Leaf value [A] (32 bytes)
+        ↓
+BLAKE3([A]) = H_a (32 bytes)
+        ↓
+hash H_a with sibling H_b
+        ↓
+BLAKE3(H_a || H_b) = parent (32 bytes)
+        ↓
+... repeat up tree ...
+        ↓
+BLAKE3(H_left || H_right) = Root Hash (32 bytes)
+```
+
+**Key Properties:**
+1. Deterministic: Same input always produces same hash
+2. One-way: Can't reverse hash to find preimage
+3. Collision-resistant: Extremely unlikely two different inputs hash same
+4. Avalanche: 1-bit change in input changes ~50% of output bits
+
 ## Merkle Proofs
 
 Root hash enables Merkle proof verification (proofs not yet implemented):
@@ -526,9 +566,11 @@ Root hash enables Merkle proof verification (proofs not yet implemented):
 ```typescript
 // Future: Generate proof for key
 // const proof = BinaryTree.generateProof(tree, key)
+// Returns path from leaf to root with sibling hashes
 
 // Future: Verify proof against root hash
 // const valid = BinaryTree.verifyProof(rootHash, key, value, proof)
+// Recomputes hashes along path, verifies matches root
 ```
 
 ## Performance Considerations

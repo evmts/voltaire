@@ -3,9 +3,32 @@ title: Hex Conversions
 description: Converting Hex to different formats
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 # Conversions
 
 Methods for converting Hex instances to various output formats.
+
+## Conversion Flow Diagram
+
+```
+                BrandedHex (hex string "0x...")
+                         ↓
+    ┌────────────────────┼────────────────────┐
+    ↓                    ↓                    ↓
+ toBytes()           toBigInt()            toNumber()
+[0x12, 0x34]        5286n                 4660
+(raw bytes)         (bigint)              (number, max 2^53-1)
+
+    ↓                    ↓                    ↓
+toBoolean()          toString()            size()
+true (non-zero)      "hello"               2 (bytes)
+                     (UTF-8)
+
+Hex Encoding Example:
+"0x68656c6c6f" ↔ UTF-8 ↔ "hello"
+ └─ "h" ─ "e" ─ "l" ─ "l" ─ "o"
+```
 
 ## Byte Conversions
 
@@ -31,7 +54,7 @@ Hex.toBytes(empty)  // Uint8Array([])
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/toBytes.js:24-36](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toBytes.js#L24-L36)
+Defined in: [primitives/Hex/BrandedHex/toBytes.js:24-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBytes.js#L24-L36)
 
 ## Numeric Conversions
 
@@ -58,7 +81,8 @@ Hex.toNumber(zero)  // 0
 **Throws:**
 - `RangeError` - If hex value exceeds `MAX_SAFE_INTEGER`
 
-Defined in: [primitives/Hex/BrandedHex/toNumber.js:15-21](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toNumber.js#L15-L21)
+Defined in: [primitives/Hex/BrandedHex/toNumber.js:15-21](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toNumber.js#L15-L21)
+Tests: [toNumber.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toNumber.test.ts)
 
 **Safety:** For large Ethereum values (addresses, hashes, U256), use `toBigInt()` instead.
 
@@ -82,7 +106,8 @@ Hex.toBigInt(zero)  // 0n
 
 **Returns:** `bigint`
 
-Defined in: [primitives/Hex/BrandedHex/toBigInt.js:14-16](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toBigInt.js#L14-L16)
+Defined in: [primitives/Hex/BrandedHex/toBigInt.js:14-16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBigInt.js#L14-L16)
+Tests: [toBigInt.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBigInt.test.ts)
 
 ## String Conversions
 
@@ -111,7 +136,8 @@ Hex.toString(empty)  // ""
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/toString.js:21-34](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toString.js#L21-L34)
+Defined in: [primitives/Hex/BrandedHex/toString.js:21-34](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toString.js#L21-L34)
+Tests: [toString.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toString.test.ts)
 
 **Note:** Uses `TextDecoder` for UTF-8 decoding. Invalid UTF-8 sequences may produce replacement characters.
 
@@ -145,7 +171,110 @@ Hex.toBoolean(hex4)  // true
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/toBoolean.js:21-33](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/toBoolean.js#L21-L33)
+Defined in: [primitives/Hex/BrandedHex/toBoolean.js:21-33](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBoolean.js#L21-L33)
+Tests: [toBoolean.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/toBoolean.test.ts)
+
+## Conversion Reference Table
+
+| From | To | Method | Output Example | Use Case | Notes |
+|------|----|----|--------|----------|-------|
+| `BrandedHex` | Bytes | `toBytes()` | `[0x12, 0x34]` | Binary operations, transmission | Raw byte array |
+| `BrandedHex` | BigInt | `toBigInt()` | `4660n` | Math operations, comparison | Arbitrary precision |
+| `BrandedHex` | Number | `toNumber()` | `4660` | JavaScript interop | Max 2^53-1, throws if larger |
+| `BrandedHex` | String | `toString()` | `"hello"` | Text data, UTF-8 decoding | Interprets bytes as UTF-8 |
+| `BrandedHex` | Boolean | `toBoolean()` | `true` | Conditional logic | True if any byte non-zero |
+| `BrandedHex` | Size | `size()` | `2` | Byte count, validation | Number of bytes |
+
+## Conversion Examples
+
+<Tabs>
+<TabItem label="Number Conversion">
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+const hex = Hex("0x1234")  // 4660 in decimal
+
+// To numeric types
+const bigint = Hex.toBigInt(hex)    // 4660n
+const num = Hex.toNumber(hex)       // 4660
+
+// To bytes
+const bytes = Hex.toBytes(hex)      // [0x12, 0x34]
+
+// Size
+const size = Hex.size(hex)          // 2 bytes
+
+// Display
+console.log(`Value: ${bigint}`)     // "Value: 4660"
+console.log(`Hex: ${hex}`)          // "Hex: 0x1234"
+```
+</TabItem>
+<TabItem label="String (UTF-8) Conversion">
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Text to hex
+const hex1 = Hex.fromString("hello")
+console.log(hex1)  // "0x68656c6c6f"
+
+// Hex to text
+const text = Hex.toString(hex1)
+console.log(text)  // "hello"
+
+// Emoji support
+const hex2 = Hex.fromString("🔥")
+console.log(hex2)  // "0xf09f94a5"
+const text2 = Hex.toString(hex2)
+console.log(text2)  // "🔥"
+
+// Round-trip
+const original = "Ethereum"
+const hex3 = Hex.fromString(original)
+const restored = Hex.toString(hex3)
+console.log(original === restored)  // true
+```
+</TabItem>
+<TabItem label="Boolean Conversion">
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Zero = false
+const zero = Hex("0x00")
+Hex.toBoolean(zero)  // false
+
+// Non-zero = true
+const one = Hex("0x01")
+Hex.toBoolean(one)   // true
+
+const ff = Hex("0xff")
+Hex.toBoolean(ff)    // true
+
+// Any non-zero byte makes it true
+const mixed = Hex("0x000100")
+Hex.toBoolean(mixed) // true (has one non-zero byte)
+```
+</TabItem>
+<TabItem label="Address Conversion">
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Ethereum address is 20 bytes = 40 hex chars (+ "0x")
+const addr = Hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Convert to bytes
+const bytes = Hex.toBytes(addr)
+console.log(bytes.length)  // 20
+
+// Check size
+const size = Hex.size(addr)
+console.log(size)  // 20 bytes
+
+// Convert to bigint (caution: large number)
+const bigint = Hex.toBigInt(addr)
+console.log(bigint)  // 646...(large number)
+```
+</TabItem>
+</Tabs>
 
 ## Tree-Shakeable Usage
 

@@ -27,7 +27,8 @@ const hash2 = new Hash(new Uint8Array(32))
 - `Error` - Invalid hex format or wrong length
 - `Error` - Invalid bytes length
 
-Defined in: [primitives/Hash/Hash.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.js#L14)
+Defined in: [primitives/Hash/Hash.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/Hash.js#L14)
+Tests: [Hash.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/Hash.test.ts)
 
 ## Static Constructors
 
@@ -48,7 +49,7 @@ const hash2 = Hash.from(new Uint8Array(32))
 **Throws:**
 - `Error` - Invalid hex format or wrong length
 
-Defined in: [primitives/Hash/BrandedHash/from.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/from.js#L16)
+Defined in: [primitives/Hash/BrandedHash/from.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/from.js#L16)
 
 ### `Hash.fromHex(hex)`
 
@@ -73,7 +74,7 @@ const hash3 = Hash.fromHex("0x1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF12
 - `Error` - Missing hex characters or wrong length (must be 64 chars)
 - `Error` - Invalid hex characters
 
-Defined in: [primitives/Hash/BrandedHash/fromHex.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/fromHex.js#L16)
+Defined in: [primitives/Hash/BrandedHash/fromHex.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/fromHex.js#L16)
 
 ### `Hash.fromBytes(bytes)`
 
@@ -96,7 +97,7 @@ const hash2 = Hash.fromBytes(randomBytes)
 **Throws:**
 - `Error` - If bytes length ≠ 32
 
-Defined in: [primitives/Hash/BrandedHash/fromBytes.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/fromBytes.js#L15)
+Defined in: [primitives/Hash/BrandedHash/fromBytes.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/fromBytes.js#L15)
 
 ## Hashing Constructors
 
@@ -120,7 +121,7 @@ const fileHash = Hash.keccak256(new Uint8Array(file))
 
 **Returns:** `Hash` - 32-byte Keccak-256 hash
 
-Defined in: [primitives/Hash/BrandedHash/keccak256.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256.js#L14)
+Defined in: [primitives/Hash/BrandedHash/keccak256.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256.js#L14)
 
 **Note:** Uses `@noble/hashes` for Keccak-256. When using tree-shakeable imports, this includes the keccak256 implementation in bundle.
 
@@ -142,7 +143,7 @@ console.log(selector.slice(0, 4)) // First 4 bytes = function selector
 
 **Returns:** `Hash` - 32-byte Keccak-256 hash
 
-Defined in: [primitives/Hash/BrandedHash/keccak256String.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256String.js#L14)
+Defined in: [primitives/Hash/BrandedHash/keccak256String.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256String.js#L14)
 
 **Implementation:** Encodes string as UTF-8 bytes then computes Keccak-256.
 
@@ -167,7 +168,7 @@ const hash3 = Hash.keccak256Hex(abiEncoded)
 **Throws:**
 - `Error` - If hex string has odd length
 
-Defined in: [primitives/Hash/BrandedHash/keccak256Hex.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256Hex.js#L15)
+Defined in: [primitives/Hash/BrandedHash/keccak256Hex.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256Hex.js#L15)
 
 **Implementation:** Decodes hex to bytes then computes Keccak-256.
 
@@ -189,7 +190,7 @@ const hashes = Array.from({ length: 10 }, () => Hash.random())
 **Throws:**
 - `Error` - If `crypto.getRandomValues` not available
 
-Defined in: [primitives/Hash/BrandedHash/random.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/random.js#L14)
+Defined in: [primitives/Hash/BrandedHash/random.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/random.js#L14)
 
 **Note:** Uses Web Crypto API's `crypto.getRandomValues()`. Available in browsers and Node.js 15+.
 

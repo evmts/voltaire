@@ -3,9 +3,42 @@ title: Uint Conversions
 description: Converting Uint256 to different formats
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 # Conversions
 
 Methods for converting Uint256 instances to various output formats.
+
+## Conversion Flow Diagram
+
+```
+                    BrandedUint (256-bit unsigned int)
+                            ↓
+    ┌───────────────────────┼───────────────────────┐
+    ↓                       ↓                       ↓
+ toHex()               toBigInt()              toNumber()
+"0x00...64"           100n (arbitrary       100 (max safe
+(padded hex)          precision)            integer 2^53-1)
+
+    ↓                       ↓                       ↓
+toBytes()             toString(10)          toString(16)
+[0,0,...,100]         "100"                 "64"
+(32-byte Array)       (decimal string)      (hex string)
+
+    ↓                       ↓                       ↓
+toAbiEncoded()        toString(2)           toString(radix)
+[0,0,...,100]         "1100100"             any base 2-36
+(ABI encoding)        (binary string)
+```
+
+**Conversion Decision Tree:**
+- Need **padded hex** (32-byte display)? → `toHex()`
+- Need **compact hex** (minimal digits)? → `toHex(false)`
+- Need **exact precision** (large values)? → `toBigInt()`
+- Need **JavaScript number** (safe range only)? → `toNumber()`
+- Need **raw bytes** (storage/transmission)? → `toBytes()`
+- Need **string representation**? → `toString()` with radix
+- Need **ABI encoding**? → `toAbiEncoded()`
 
 ## Hex Conversions
 
@@ -39,7 +72,7 @@ Uint.toHex(value)        // Padded
 Uint.toHex(value, false) // Unpadded
 ```
 
-Source: [toHex.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toHex.ts#L18)
+Source: [toHex.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toHex.ts#L18)
 
 ## Numeric Conversions
 
@@ -71,7 +104,7 @@ Uint.toBigInt(value) // bigint
 
 **Note:** Returns unwrapped bigint. Use `from` to convert back to BrandedUint.
 
-Source: [toBigInt.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toBigInt.ts)
+Source: [toBigInt.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toBigInt.ts)
 
 ### `instance.toNumber()`
 
@@ -106,7 +139,7 @@ Uint.toNumber(value) // number
 
 **Note:** Most Uint256 values are too large for safe number conversion. Use `toBigInt()` instead.
 
-Source: [toNumber.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toNumber.ts)
+Source: [toNumber.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toNumber.ts)
 
 ### `instance.toString(radix?)`
 
@@ -147,7 +180,7 @@ Uint.toString(value, 16) // "ff"
 
 **Note:** For hex with `0x` prefix, use `toHex()` instead.
 
-Source: [toString.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toString.ts)
+Source: [toString.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toString.ts)
 
 ## Byte Conversions
 
@@ -187,7 +220,7 @@ largeBytes[31]         // 0
 Uint.toBytes(value) // Uint8Array(32)
 ```
 
-Source: [toBytes.ts:16](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toBytes.ts#L16)
+Source: [toBytes.ts:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toBytes.ts#L16)
 
 ### `instance.toAbiEncoded()`
 
@@ -212,7 +245,7 @@ Uint.toAbiEncoded(value)
 
 **Note:** ABI encoding for uint256 is always 32 bytes, big-endian. This is identical to `toBytes()`.
 
-Source: [toAbiEncoded.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toAbiEncoded.ts)
+Source: [toAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toAbiEncoded.ts)
 
 ## Conversion Patterns
 
@@ -276,6 +309,20 @@ const dbValue = value.toHex()  // Padded hex
 const binary = value.toBytes()  // 32 bytes
 ```
 
+## Conversion Reference Table
+
+| From | To | Method | Output Example | Use Case | Notes |
+|------|----|----|--------|----------|-------|
+| `Uint256` | Hex (padded) | `toHex()` | `"0x00...00ff"` | Storage, ABI | Always 64 hex chars |
+| `Uint256` | Hex (compact) | `toHex(false)` | `"0xff"` | Display, logging | Minimal representation |
+| `Uint256` | BigInt | `toBigInt()` | `255n` | Math operations | Arbitrary precision |
+| `Uint256` | Number | `toNumber()` | `255` | Display, math | Max 2^53-1, throws if larger |
+| `Uint256` | Bytes | `toBytes()` | `[0,...,255]` | Transmission, storage | Always 32 bytes, big-endian |
+| `Uint256` | ABI Bytes | `toAbiEncoded()` | `[0,...,255]` | Contract encoding | Same as toBytes() |
+| `Uint256` | String (base N) | `toString(radix)` | `"255"` (base 10) | Display, formatting | Supports radix 2-36 |
+| `Uint256` | Binary String | `toString(2)` | `"11111111"` | Bit analysis | No prefix |
+| `Uint256` | Hex String | `toString(16)` | `"ff"` | Display | No "0x" prefix |
+
 ## Round-Trip Conversions
 
 ```typescript
@@ -300,6 +347,76 @@ const bigint = original.toBigInt()
 const restored4 = Uint.fromBigInt(bigint)
 original.equals(restored4)  // true
 ```
+
+## Conversion Examples Table
+
+<Tabs>
+<TabItem label="Value: 255 (0xFF)">
+```typescript
+const value = Uint.from(255n)
+
+// Hex formats
+value.toHex()        // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+value.toHex(false)   // "0xff"
+
+// Numeric formats
+value.toBigInt()     // 255n
+value.toNumber()     // 255
+
+// Byte formats
+value.toBytes()      // Uint8Array(32) [0, ..., 0, 255]
+value.toAbiEncoded() // Uint8Array(32) [0, ..., 0, 255]
+
+// String formats
+value.toString()     // "255"
+value.toString(2)    // "11111111"
+value.toString(16)   // "ff"
+```
+</TabItem>
+<TabItem label="Value: 65536 (0x10000)">
+```typescript
+const value = Uint.from(65536n)
+
+// Hex formats
+value.toHex()        // "0x0000000000000000000000000000000000000000000000000000000000010000"
+value.toHex(false)   // "0x10000"
+
+// Numeric formats
+value.toBigInt()     // 65536n
+value.toNumber()     // 65536
+
+// Byte formats
+value.toBytes()      // Uint8Array(32) [0, ..., 1, 0]
+value.toAbiEncoded() // Uint8Array(32) [0, ..., 1, 0]
+
+// String formats
+value.toString()     // "65536"
+value.toString(2)    // "10000000000000000"
+value.toString(16)   // "10000"
+```
+</TabItem>
+<TabItem label="Value: MAX (2^256-1)">
+```typescript
+const value = Uint.MAX
+
+// Hex formats
+value.toHex()        // "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+value.toHex(false)   // "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+
+// Numeric formats
+value.toBigInt()     // 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+value.toNumber()     // ERROR: exceeds MAX_SAFE_INTEGER
+
+// Byte formats
+value.toBytes()      // Uint8Array(32) [255, 255, ..., 255]
+value.toAbiEncoded() // Uint8Array(32) [255, 255, ..., 255]
+
+// String formats
+value.toString()     // "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+value.toString(16)   // "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+```
+</TabItem>
+</Tabs>
 
 ## Tree-Shakeable Usage
 

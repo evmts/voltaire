@@ -51,7 +51,7 @@ const encoded = Base64.encode(data)
 console.log(encoded.length === encodedSize) // true
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/calcEncodedSize.js:7](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/calcEncodedSize.js)
+Defined in: [primitives/Base64/BrandedBase64/calcEncodedSize.js:7](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/calcEncodedSize.js)
 
 **Algorithm:**
 - Every 3 bytes encode to 4 base64 characters
@@ -99,7 +99,7 @@ console.log(decoded.length <= maxSize) // true
 console.log(decoded.length) // 13 (actual size)
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/calcDecodedSize.js:7](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/calcDecodedSize.js)
+Defined in: [primitives/Base64/BrandedBase64/calcDecodedSize.js:7](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/calcDecodedSize.js)
 
 **Algorithm:**
 - Every 4 base64 characters decode to 3 bytes

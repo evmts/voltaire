@@ -26,7 +26,7 @@ code.length  // 6
 
 **Returns:** `number` - Size in bytes
 
-Defined in: [primitives/Bytecode/BrandedBytecode/size.js:13](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/size.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/size.js:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/size.js)
 
 ## Equality
 
@@ -52,7 +52,7 @@ Bytecode.equals(code1, Bytecode.fromHex("0x600100"))  // false
 
 **Returns:** `boolean` - `true` if identical
 
-Defined in: [primitives/Bytecode/BrandedBytecode/equals.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/equals.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/equals.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/equals.js)
 
 **Algorithm:** O(n) comparison with early exit on length mismatch.
 
@@ -76,7 +76,7 @@ console.log(Bytecode.toHex(codeHash))
 
 **Returns:** `BrandedHash` - 32-byte keccak256 hash
 
-Defined in: [primitives/Bytecode/BrandedBytecode/hash.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/hash.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/hash.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/hash.js)
 
 **Use cases:**
 - Computing CODEHASH for contracts
@@ -107,7 +107,7 @@ console.log(`Runtime: ${Bytecode.size(runtime)} bytes`)
 
 **Returns:** `BrandedBytecode` - Runtime bytecode from offset to end
 
-Defined in: [primitives/Bytecode/BrandedBytecode/extractRuntime.js:17](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/extractRuntime.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/extractRuntime.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/extractRuntime.js)
 
 **Note:** Determining correct offset requires analyzing constructor execution. This is simplified extraction assuming known offset.
 

@@ -75,7 +75,7 @@ const legacySerialized = Transaction.serialize(legacy)
 //             RLP list (no type prefix)
 ```
 
-Source: [serialize.ts:11-26](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/serialize.ts#L11-L26)
+Source: [serialize.ts:11-26](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/serialize.ts#L11-L26)
 
 ## deserialize
 
@@ -120,7 +120,7 @@ const legacyTx = deserialize(legacyData)
 console.log('Gas price:', legacyTx.gasPrice)
 ```
 
-Source: [deserialize.ts:12-28](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/deserialize.ts#L12-L28)
+Source: [deserialize.ts:12-28](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/deserialize.ts#L12-L28)
 
 ## Serialization Format
 
@@ -232,7 +232,7 @@ const bytes = EIP4844.serialize(eip4844Tx)
 
 Similar methods exist for EIP2930 and EIP7702.
 
-Source: [serialize.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/serialize.ts)
+Source: [serialize.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/serialize.ts)
 
 ## Round-Trip Serialization
 

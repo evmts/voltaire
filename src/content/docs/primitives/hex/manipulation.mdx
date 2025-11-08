@@ -40,7 +40,8 @@ const many = Hex.concat(
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/concat.js:20-35](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/concat.js#L20-L35)
+Defined in: [primitives/Hex/BrandedHex/concat.js:20-35](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/concat.js#L20-L35)
+Tests: [concat.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/concat.test.ts)
 
 ## Slicing
 
@@ -73,7 +74,8 @@ Hex.slice(hex, 3)       // "0x" (past end)
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/slice.js:24-36](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/slice.js#L24-L36)
+Defined in: [primitives/Hex/BrandedHex/slice.js:24-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/slice.js#L24-L36)
+Tests: [slice.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/slice.test.ts)
 
 **Note:** Operates on byte boundaries, not character indices. One byte = two hex characters.
 
@@ -106,7 +108,8 @@ Hex.pad(hex, 1)   // "0x1234"
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/pad.js:23-38](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/pad.js#L23-L38)
+Defined in: [primitives/Hex/BrandedHex/pad.js:23-38](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/pad.js#L23-L38)
+Tests: [pad.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/pad.test.ts)
 
 **Use cases:**
 - U256 values (32 bytes)
@@ -139,7 +142,7 @@ Hex.padRight(hex, 1)   // "0x1234"
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/padRight.js:23-38](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/padRight.js#L23-L38)
+Defined in: [primitives/Hex/BrandedHex/padRight.js:23-38](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/padRight.js#L23-L38)
 
 **Use cases:**
 - ABI string/bytes encoding
@@ -176,7 +179,8 @@ Hex.trim(hex4)  // "0x1234"
 - `OddLengthError` - Odd number of hex digits
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/trim.js:22-36](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/trim.js#L22-L36)
+Defined in: [primitives/Hex/BrandedHex/trim.js:22-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/trim.js#L22-L36)
+Tests: [trim.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/trim.test.ts)
 
 **Use cases:**
 - Compacting storage values
@@ -217,7 +221,8 @@ Hex.xor(c, c)  // "0x0000"
 - `InvalidCharacterError` - Invalid hex characters
 - `InvalidLengthError` - If lengths don't match
 
-Defined in: [primitives/Hex/BrandedHex/xor.js:25-58](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/xor.js#L25-L58)
+Defined in: [primitives/Hex/BrandedHex/xor.js:25-58](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/xor.js#L25-L58)
+Tests: [xor.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/xor.test.ts)
 
 **Properties:**
 - Commutative: `xor(a, b) === xor(b, a)`

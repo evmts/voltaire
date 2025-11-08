@@ -3,6 +3,8 @@ title: Hash Functions
 description: Keccak-256 hashing methods for bytes, strings, and hex data
 ---
 
+import { Tabs, TabItem, Aside, Steps, Badge } from '@astrojs/starlight/components';
+
 # Hashing
 
 Keccak-256 cryptographic hashing methods for computing 32-byte hash digests.
@@ -16,9 +18,29 @@ Hash provides three Keccak-256 methods for different input types:
 
 All methods return 32-byte Hash instances using [@noble/hashes](https://github.com/paulmillr/noble-hashes) for Keccak-256 implementation.
 
+### Keccak-256 Properties
+
+```
+Input:   Any data (0 bytes to unlimited)
+         ↓
+   Keccak-256 (SHA-3)
+         ↓
+Output:  32 bytes (256 bits)
+
+Examples:
+- Same input → Always same hash (deterministic)
+- Change 1 byte → Completely different hash (avalanche effect)
+- Different length inputs → Same hash size (always 32 bytes)
+- Cryptographically secure (collision-resistant, pre-image resistant)
+```
+
+<Aside type="note">
+**Avalanche effect:** Changing even one bit in input produces completely different hash. This is why Keccak-256 is perfect for detecting any data change.
+</Aside>
+
 ## Methods
 
-### `Hash.keccak256(data)`
+### `Hash.keccak256(data)` <Badge text="Bytes" variant="default" />
 
 Computes Keccak-256 hash of byte data.
 
@@ -40,11 +62,11 @@ const hash2 = Hash.keccak256(hash1) // Hash of hash
 
 **Returns:** `Hash` - 32-byte Keccak-256 hash
 
-Defined in: [primitives/Hash/BrandedHash/keccak256.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256.js#L14)
+Defined in: [primitives/Hash/BrandedHash/keccak256.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256.js#L14)
 
 **Note:** Uses [@noble/hashes/sha3](https://github.com/paulmillr/noble-hashes#sha3-keccak) for Keccak-256. When using tree-shakeable imports, this includes the keccak256 implementation in bundle (~2-3KB gzipped).
 
-### `Hash.keccak256String(str)`
+### `Hash.keccak256String(str)` <Badge text="String" variant="default" />
 
 Computes Keccak-256 hash of UTF-8 encoded string.
 
@@ -69,7 +91,7 @@ console.log(Array.from(functionSelector).map(b => b.toString(16).padStart(2, '0'
 
 **Returns:** `Hash` - 32-byte Keccak-256 hash
 
-Defined in: [primitives/Hash/BrandedHash/keccak256String.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256String.js#L14)
+Defined in: [primitives/Hash/BrandedHash/keccak256String.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256String.js#L14)
 
 **Implementation:** Encodes string as UTF-8 bytes using `TextEncoder`, then computes Keccak-256.
 
@@ -78,7 +100,7 @@ const encoder = new TextEncoder();
 return keccak256(encoder.encode(str));
 ```
 
-### `Hash.keccak256Hex(hex)`
+### `Hash.keccak256Hex(hex)` <Badge text="Hex" variant="default" />
 
 Computes Keccak-256 hash of hex-encoded data.
 
@@ -104,7 +126,7 @@ const hash4 = Hash.keccak256(bytes)
 **Throws:**
 - `Error` - If hex string has odd length
 
-Defined in: [primitives/Hash/BrandedHash/keccak256Hex.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/keccak256Hex.js#L15)
+Defined in: [primitives/Hash/BrandedHash/keccak256Hex.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/keccak256Hex.js#L15)
 
 **Implementation:** Decodes hex to bytes then computes Keccak-256.
 
@@ -296,6 +318,15 @@ import { fromHex, keccak256String } from '@tevm/voltaire/BrandedHash'
 ```
 
 See [BrandedHash](/primitives/hash/branded-hash) for details on tree-shakeable API.
+
+## See Also
+
+- [Hash Comparisons](/primitives/hash/comparisons) - Comparing computed hashes
+- [Hash Conversions](/primitives/hash/conversions) - Converting hashes to different formats
+- [Hash Utilities](/primitives/hash/utilities) - Cloning, slicing, and formatting hashes
+- [Keccak-256 Crypto](/crypto/keccak256) - Low-level Keccak-256 implementation
+- [Transaction](/primitives/transaction) - Using hashes for transaction identification
+- [Signature](/primitives/signature) - Hash-based signature verification
 
 ## Related
 

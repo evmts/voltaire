@@ -13,6 +13,38 @@ EVM bytecode type with analysis, validation, and disassembly capabilities
 
 [Branded](/primitives/branded-types) `Uint8Array` representing EVM bytecode. Provides methods for analyzing jump destinations, parsing instructions, validating structure, and formatting as disassembly.
 
+## Bytecode Structure
+
+EVM bytecode consists of opcodes interspersed with PUSH data:
+
+```
+Offset  Byte    Meaning
+──────────────────────────────────────────────
+0x0000  0x60    PUSH1 opcode
+0x0001  0x01    ← Data pushed by PUSH1
+0x0002  0x60    PUSH1 opcode
+0x0003  0x02    ← Data pushed by PUSH1
+0x0004  0x01    ADD opcode
+0x0005  0x5b    JUMPDEST marker
+0x0006  0x00    STOP opcode
+```
+
+**Key concepts:**
+- **Opcode**: Single byte (0x00-0xFF) representing an operation
+- **PUSH data**: 1-32 bytes following PUSH1-PUSH32 opcodes (not executable)
+- **JUMPDEST (0x5b)**: Markers for valid jump targets
+- **Metadata**: Solidity compiler appends ~50-100 bytes at EOF
+
+**Analysis challenge**: Must skip PUSH data to avoid treating data as opcodes:
+```typescript
+// Wrong approach (treats PUSH data as opcodes)
+const instructions = bytecode.map(byte => byte)  // Includes PUSH1 data!
+
+// Correct approach (skips PUSH data)
+const analysis = Bytecode.analyze(code)  // Returns valid instructions
+const jumpdests = Bytecode.analyzeJumpDestinations(code)  // Finds JUMPDEST markers
+```
+
 ## Quick Start
 
 <Tabs>
@@ -81,7 +113,7 @@ export type BrandedBytecode = Uint8Array & {
 
 [Branded type](/primitives/branded-types) wrapping `Uint8Array`. Used for all bytecode operations.
 
-Source: [BrandedBytecode/BrandedBytecode.ts:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L8)
+Source: [BrandedBytecode/BrandedBytecode.ts:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L8)
 </TabItem>
 <TabItem label="Opcode">
 ```typescript
@@ -90,7 +122,7 @@ export type Opcode = number
 
 Single byte EVM instruction (0x00-0xFF).
 
-Source: [BrandedBytecode/BrandedBytecode.ts:13](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L13)
+Source: [BrandedBytecode/BrandedBytecode.ts:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L13)
 </TabItem>
 <TabItem label="Instruction">
 ```typescript
@@ -103,7 +135,7 @@ export type Instruction = {
 
 Parsed bytecode instruction with position and optional PUSH data.
 
-Source: [BrandedBytecode/BrandedBytecode.ts:28-35](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L28-L35)
+Source: [BrandedBytecode/BrandedBytecode.ts:28-35](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L28-L35)
 </TabItem>
 <TabItem label="Analysis">
 ```typescript
@@ -116,7 +148,7 @@ export type Analysis = {
 
 Complete bytecode analysis result with jump destinations, instructions, and validity.
 
-Source: [BrandedBytecode/BrandedBytecode.ts:40-47](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L40-L47)
+Source: [BrandedBytecode/BrandedBytecode.ts:40-47](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/BrandedBytecode.ts#L40-L47)
 </TabItem>
 </Tabs>
 
@@ -151,7 +183,7 @@ if (opcode === Bytecode.JUMPDEST) {
 - `REVERT = 0xfd` - Reverts state changes
 - `INVALID = 0xfe` - Invalid opcode
 
-Source: [constants.js](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/constants.js)
+Source: [constants.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/constants.js)
 
 ## API Documentation
 
@@ -210,6 +242,71 @@ Source: [constants.js](https://github.com/evmts/primitives/blob/main/src/primiti
     [View WASM →](/primitives/bytecode/wasm)
   </Card>
 </CardGrid>
+
+## Opcode Quick Reference
+
+Essential opcodes for bytecode analysis:
+
+<Tabs>
+<TabItem label="Control Flow">
+| Opcode | Hex | Stack | Description |
+|--------|-----|-------|-------------|
+| STOP | 0x00 | - | Halt execution |
+| JUMP | 0x56 | (dst) → | Jump to position (must be JUMPDEST) |
+| JUMPI | 0x57 | (dst, cond) → | Conditional jump |
+| JUMPDEST | 0x5b | - | Valid jump target marker |
+| REVERT | 0xfd | (off, len) → | Revert state, return data |
+| RETURN | 0xf3 | (off, len) → | Return data, halt |
+</TabItem>
+
+<TabItem label="Stack Operations">
+| Opcode | Hex | Stack | Description |
+|--------|-----|-------|-------------|
+| PUSH1-PUSH32 | 0x60-0x7f | - → (value) | Push 1-32 bytes |
+| POP | 0x50 | (a) → | Discard top item |
+| DUP1-DUP16 | 0x80-0x8f | (n) → (n, n) | Duplicate item |
+| SWAP1-SWAP16 | 0x90-0x9f | (a, b) → (b, a) | Swap items |
+</TabItem>
+
+<TabItem label="Arithmetic">
+| Opcode | Hex | Stack | Description |
+|--------|-----|-------|-------------|
+| ADD | 0x01 | (a, b) → (a+b) | Addition |
+| MUL | 0x02 | (a, b) → (a*b) | Multiplication |
+| SUB | 0x03 | (a, b) → (a-b) | Subtraction |
+| DIV | 0x04 | (a, b) → (a/b) | Division |
+| ADDMOD | 0x08 | (a, b, N) → ((a+b) mod N) | Modular add |
+| MULMOD | 0x09 | (a, b, N) → ((a*b) mod N) | Modular mul |
+</TabItem>
+
+<TabItem label="Storage & Memory">
+| Opcode | Hex | Stack | Description |
+|--------|-----|-------|-------------|
+| SLOAD | 0x54 | (key) → (value) | Load storage |
+| SSTORE | 0x55 | (key, value) → | Store to storage |
+| MLOAD | 0x51 | (offset) → (value) | Load from memory |
+| MSTORE | 0x52 | (offset, value) → | Store to memory |
+| MSTORE8 | 0x53 | (offset, value) → | Store 1 byte |
+</TabItem>
+
+<TabItem label="Call & Create">
+| Opcode | Hex | Stack | Description |
+|--------|-----|-------|-------------|
+| CALL | 0xf1 | (gas, addr, val, in, inLen, out, outLen) → | Call contract |
+| DELEGATECALL | 0xf4 | (gas, addr, in, inLen, out, outLen) → | Call with sender context |
+| STATICCALL | 0xfa | (gas, addr, in, inLen, out, outLen) → | Read-only call |
+| CREATE | 0xf0 | (val, in, len) → (addr) | Deploy contract |
+| CREATE2 | 0xf5 | (val, in, len, salt) → (addr) | Deterministic deploy |
+</TabItem>
+</Tabs>
+
+<Aside type="tip" title="Finding PUSH instructions">
+Bytes 0x60-0x7f represent PUSH1-PUSH32. Following bytes are data, not opcodes:
+- 0x60 = PUSH1 (1 data byte follows)
+- 0x7f = PUSH32 (32 data bytes follow)
+
+Use `analyze()` to handle this automatically.
+</Aside>
 
 <Aside type="tip" title="Why analyze jump destinations?">
 EVM requires JUMP/JUMPI to target valid JUMPDEST opcodes. Analysis must skip PUSH data to avoid treating data bytes as opcodes. Use `analyzeJumpDestinations` to find all valid jump targets.

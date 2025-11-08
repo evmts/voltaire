@@ -74,7 +74,7 @@ class Chain {
 }
 ```
 
-Source: [Chain.js:14-36](https://github.com/evmts/primitives/blob/main/src/primitives/Chain/Chain.js#L14-L36)
+Source: [Chain.js:14-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js#L14-L36)
 </TabItem>
 <TabItem label="type Chain">
 ```typescript
@@ -108,7 +108,7 @@ export interface Explorer {
 
 Chain configuration object extending from [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains). Provides complete chain metadata including network name, chain ID, RPC endpoints, native currency details, and block explorer URLs.
 
-Source: [ChainType.ts:1](https://github.com/evmts/primitives/blob/main/src/primitives/Chain/ChainType.ts#L1)
+Source: [ChainType.ts:1](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/ChainType.ts#L1)
 </TabItem>
 </Tabs>
 
@@ -171,6 +171,12 @@ See [@tevm/chains documentation](https://github.com/evmts/tevm-monorepo/tree/mai
 
     [View BrandedChain →](/primitives/chain/branded-chain)
   </Card>
+
+  <Card title="Network Comparison" icon="open-book">
+    Compare gas fees, costs, and characteristics across mainnet, L2s, and testnets.
+
+    [View Network Comparison →](/primitives/chain/network-comparison)
+  </Card>
 </CardGrid>
 
 <Aside type="tip" title="Chain objects are plain JavaScript objects">
@@ -190,5 +196,29 @@ Chain is a lightweight wrapper around plain JavaScript objects from @tevm/chains
     Zero-overhead type branding pattern used throughout primitives.
 
     [View Branded Types →](/primitives/branded-types)
+  </Card>
+
+  <Card title="Denomination" icon="seti:text">
+    Wei, Gwei, and Ether types with currency conversions.
+
+    [View Denomination →](/primitives/denomination)
+  </Card>
+
+  <Card title="FeeMarket" icon="seti:text">
+    EIP-1559 gas pricing with base and priority fees.
+
+    [View FeeMarket →](/primitives/feemarket)
+  </Card>
+
+  <Card title="Hardfork" icon="rocket">
+    Ethereum network upgrades and protocol versions.
+
+    [View Hardfork →](/primitives/hardfork)
+  </Card>
+
+  <Card title="Transaction" icon="document">
+    Transaction creation and signing across networks.
+
+    [View Transaction →](/primitives/transaction)
   </Card>
 </CardGrid>

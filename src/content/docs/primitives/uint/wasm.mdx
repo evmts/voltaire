@@ -45,7 +45,7 @@ const bytes3 = u256FromHex("ff")
 **Throws:**
 - If hex contains invalid characters
 
-Source: [Uint256.wasm.ts:13](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/Uint256.wasm.ts#L13)
+Source: [Uint256.wasm.ts:13](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L13)
 
 #### `u256ToHex(value)`
 
@@ -72,7 +72,7 @@ u256ToHex(wrong)  // Error: must be 32 bytes
 **Throws:**
 - If value is not exactly 32 bytes
 
-Source: [Uint256.wasm.ts:22](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/Uint256.wasm.ts#L22)
+Source: [Uint256.wasm.ts:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L22)
 
 #### `u256FromBigInt(value)`
 
@@ -101,7 +101,7 @@ u256FromBigInt(2n ** 256n)   // Error: exceeds maximum
 - If value is negative
 - If value exceeds 2^256 - 1
 
-Source: [Uint256.wasm.ts:34](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/Uint256.wasm.ts#L34)
+Source: [Uint256.wasm.ts:34](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L34)
 
 #### `u256ToBigInt(value)`
 
@@ -128,7 +128,7 @@ u256ToBigInt(wrong)  // Error: must be 32 bytes
 **Throws:**
 - If value is not exactly 32 bytes
 
-Source: [Uint256.wasm.ts:52](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/Uint256.wasm.ts#L52)
+Source: [Uint256.wasm.ts:52](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts#L52)
 
 ## Usage Patterns
 
@@ -215,7 +215,7 @@ The current WASM implementation focuses on byte conversions. Future expansions m
 - **Comparison operations** - Memory-efficient comparisons
 - **Utility functions** - bitLength, popCount, etc. in native code
 
-Track progress in [Zig implementation](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/Uint.zig).
+Track progress in [Zig implementation](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint.zig).
 
 ## Bundle Size
 
@@ -237,9 +237,9 @@ WASM module adds ~2-4KB gzipped for loader + primitive-specific code. Use when p
 
 ## Files
 
-- **[Uint256.wasm.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/Uint256.wasm.ts)** - TypeScript exports with WASM bindings
-- **[Uint.zig](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/Uint.zig)** - Zig source implementation
-- **[loader.js](https://github.com/evmts/primitives/blob/main/src/wasm-loader/loader.js)** - Shared WASM loader
+- **[Uint256.wasm.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint256.wasm.ts)** - TypeScript exports with WASM bindings
+- **[Uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/Uint.zig)** - Zig source implementation
+- **[loader.js](https://github.com/evmts/voltaire/blob/main/src/wasm-loader/loader.js)** - Shared WASM loader
 
 ## Tree-Shakeable Usage
 

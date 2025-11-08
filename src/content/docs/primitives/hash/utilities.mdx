@@ -29,7 +29,7 @@ const commitment = Hash.keccak256(new Uint8Array([...data, ...salt]))
 **Throws:**
 - `Error` - If `crypto.getRandomValues` not available
 
-Defined in: [primitives/Hash/BrandedHash/random.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/random.js#L14)
+Defined in: [primitives/Hash/BrandedHash/random.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/random.js#L14)
 
 **Implementation:** Uses `crypto.getRandomValues()` from Web Crypto API. Available in browsers and Node.js 15+.
 
@@ -61,7 +61,7 @@ console.log(hash[0] !== copy[0]) // true
 Hash.clone(hash) // Hash
 ```
 
-Defined in: [primitives/Hash/BrandedHash/clone.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/clone.js#L14)
+Defined in: [primitives/Hash/BrandedHash/clone.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/clone.js#L14)
 
 **Implementation:** Creates new Uint8Array copy.
 
@@ -101,7 +101,7 @@ const middle = hash.slice(8, 24)
 Hash.slice(hash, 0, 4) // Uint8Array
 ```
 
-Defined in: [primitives/Hash/BrandedHash/slice.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/slice.js#L16)
+Defined in: [primitives/Hash/BrandedHash/slice.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/slice.js#L16)
 
 **Note:** Returns `Uint8Array`, not `Hash`. Use `Hash.fromBytes()` to convert back if needed.
 
@@ -132,7 +132,7 @@ const displayHash = hash.format() // "0x1c8aff...eac8"
 Hash.format(hash, 8, 6) // "0x1c8aff95...6deac8"
 ```
 
-Defined in: [primitives/Hash/BrandedHash/format.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/format.js#L16)
+Defined in: [primitives/Hash/BrandedHash/format.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/format.js#L16)
 
 **Implementation:** Converts to hex and adds ellipsis.
 

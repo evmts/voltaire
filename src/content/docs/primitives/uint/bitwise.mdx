@@ -3,9 +3,57 @@ title: Uint Bitwise Operations
 description: Bitwise operations on Uint256
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 # Bitwise Operations
 
 Bitwise operations for manipulating individual bits in Uint256 values.
+
+## Bitwise Operations Reference
+
+```
+Truth Tables (per bit)
+
+AND (∧)                 OR (∨)                  XOR (⊕)
+0 & 0 = 0             0 | 0 = 0             0 ⊕ 0 = 0
+0 & 1 = 0             0 | 1 = 1             0 ⊕ 1 = 1
+1 & 0 = 0             1 | 0 = 1             1 ⊕ 0 = 1
+1 & 1 = 1             1 | 1 = 1             1 ⊕ 1 = 0
+
+NOT (¬)
+¬0 = 1 (in context, becomes MAX-value)
+¬1 = 0
+```
+
+## Bitwise Visualization
+
+```
+Example: a = 0b11110000, b = 0b10101010
+
+AND (∩ intersection):
+  a: 11110000
+  b: 10101010
+  ─────────────
+ a&b: 10100000  ← bits present in BOTH
+
+OR (∪ union):
+  a: 11110000
+  b: 10101010
+  ─────────────
+ a|b: 11111010  ← bits present in EITHER
+
+XOR (symmetric difference):
+  a: 11110000
+  b: 10101010
+  ─────────────
+ a⊕b: 01011010  ← bits different
+
+NOT (complement):
+  a: 11110000 (0xf0)
+  ─────────────
+  ¬a: 00001111 (0x0f) in 8-bit context
+      OR for Uint256: all 256 bits flipped
+```
 
 ## Bitwise AND
 
@@ -47,7 +95,7 @@ a.bitwiseAnd(b).equals(b.bitwiseAnd(a))  // true
 Uint.bitwiseAnd(a, b)  // a & b
 ```
 
-Source: [bitwiseAnd.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/bitwiseAnd.ts#L18)
+Source: [bitwiseAnd.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseAnd.ts#L18)
 
 ## Bitwise OR
 
@@ -90,7 +138,7 @@ a.bitwiseOr(b).equals(b.bitwiseOr(a))  // true
 Uint.bitwiseOr(a, b)  // a | b
 ```
 
-Source: [bitwiseOr.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/bitwiseOr.ts#L18)
+Source: [bitwiseOr.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseOr.ts#L18)
 
 ## Bitwise XOR
 
@@ -135,7 +183,7 @@ a.bitwiseXor(b).equals(b.bitwiseXor(a))  // true
 Uint.bitwiseXor(a, b)  // a ^ b
 ```
 
-Source: [bitwiseXor.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/bitwiseXor.ts#L18)
+Source: [bitwiseXor.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseXor.ts#L18)
 
 ## Bitwise NOT
 
@@ -171,7 +219,7 @@ Uint.bitwiseNot(a)  // ~a
 
 **Note:** Result is masked to 256 bits. Native bigint `~` would produce negative result.
 
-Source: [bitwiseNot.ts:17](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/bitwiseNot.ts#L17)
+Source: [bitwiseNot.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseNot.ts#L17)
 
 ## Left Shift
 
@@ -219,7 +267,7 @@ a.shiftLeft(0)  // a (no shift)
 Uint.shiftLeft(a, 8)  // a << 8
 ```
 
-Source: [shiftLeft.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/shiftLeft.ts#L19)
+Source: [shiftLeft.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftLeft.ts#L19)
 
 ## Right Shift
 
@@ -265,7 +313,7 @@ a.shiftRight(256)  // ZERO (all bits shifted out)
 Uint.shiftRight(a, 8)  // a >> 8
 ```
 
-Source: [shiftRight.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/shiftRight.ts#L18)
+Source: [shiftRight.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftRight.ts#L18)
 
 ## Usage Patterns
 
@@ -384,6 +432,97 @@ hasPermission(perms, EXECUTE)  // false
 perms = perms.bitwiseAnd(WRITE.bitwiseNot())
 // perms = 0b001 (only read remains)
 ```
+
+## Interactive Examples
+
+<Tabs>
+<TabItem label="Basic Operations">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(0b11110000n)  // 240
+const b = Uint.from(0b10101010n)  // 170
+
+// Bitwise AND
+const and = a.bitwiseAnd(b)
+console.log(and.toString(2))  // "10100000" (160)
+
+// Bitwise OR
+const or = a.bitwiseOr(b)
+console.log(or.toString(2))   // "11111010" (250)
+
+// Bitwise XOR
+const xor = a.bitwiseXor(b)
+console.log(xor.toString(2))  // "1011010" (90)
+
+// Bitwise NOT
+const not = a.bitwiseNot()
+console.log(not.toString(16)) // "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0f"
+```
+</TabItem>
+<TabItem label="Bit Shifting">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const value = Uint.from(10n)  // 0b1010
+
+// Left shift (multiply by 2^n)
+console.log(value.shiftLeft(1).toString())  // "20" (10 * 2)
+console.log(value.shiftLeft(2).toString())  // "40" (10 * 4)
+console.log(value.shiftLeft(8).toString())  // "2560" (10 * 256)
+
+// Right shift (divide by 2^n)
+console.log(value.shiftRight(1).toString()) // "5" (10 / 2)
+console.log(value.shiftRight(2).toString()) // "2" (10 / 4, floor)
+
+// Overflow on shift left
+const large = Uint.from(2n ** 255n)
+console.log(large.shiftLeft(1).isZero())    // true (shifted out)
+
+// Underflow on shift right
+console.log(Uint.ONE.shiftRight(1).isZero()) // true (shifted to zero)
+```
+</TabItem>
+<TabItem label="Bit Manipulation">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const value = Uint.from(0b10100000n)
+
+// Check if bit 7 is set
+const bit7Set = !value.bitwiseAnd(Uint.from(0b10000000n)).isZero()
+console.log(bit7Set)  // true
+
+// Set bit 3
+const setBit3 = value.bitwiseOr(Uint.from(0b00001000n))
+console.log(setBit3.toString(2))  // "10101000"
+
+// Clear bit 7
+const clearBit7 = value.bitwiseAnd(Uint.from(0b01111111n))
+console.log(clearBit7.toString(2))  // "00100000"
+
+// Toggle bit 5
+const toggleBit5 = value.bitwiseXor(Uint.from(0b00100000n))
+console.log(toggleBit5.toString(2))  // "10000000"
+
+// Extract lower 4 bits
+const mask = Uint.from(0x0fn)
+const lower4 = value.bitwiseAnd(mask)
+console.log(lower4.toString())  // "0"
+```
+</TabItem>
+</Tabs>
+
+## Bitwise Operations Reference Table
+
+| Operation | Method | Truth Table | Use Case |
+|-----------|--------|-------------|----------|
+| **AND** | `bitwiseAnd(b)` | `1&1=1, else 0` | Masking, flag checking |
+| **OR** | `bitwiseOr(b)` | `0\|0=0, else 1` | Combining flags, setting bits |
+| **XOR** | `bitwiseXor(b)` | `same=0, diff=1` | Toggle bits, comparison |
+| **NOT** | `bitwiseNot()` | `¬0=1, ¬1=0` | Bit inversion, complement |
+| **Left Shift** | `shiftLeft(n)` | `x << n` | Multiply by 2^n, set bits |
+| **Right Shift** | `shiftRight(n)` | `x >> n` | Divide by 2^n (floor), clear bits |
 
 ## Boolean Algebra Properties
 

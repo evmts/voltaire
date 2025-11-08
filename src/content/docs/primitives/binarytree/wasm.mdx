@@ -13,7 +13,7 @@ WebAssembly-accelerated implementations of BinaryTree methods, compiled from Zig
 
 WASM implementations provide performance-critical operations using compiled Zig code targeting WebAssembly. These are **purely opt-in** replacements for the JavaScript implementations with identical APIs.
 
-All WASM methods are compiled from [binary_tree.zig](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/binary_tree.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
+All WASM methods are compiled from [binary_tree.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
 
 <Aside type="note" title="Current Status">
 WASM implementation for BinaryTree is in development. The Zig source exists but WASM bindings are not yet exported. This documentation describes the intended architecture following the Address WASM pattern.
@@ -186,7 +186,7 @@ pub fn get(self: *BinaryTree, k: [32]u8) ?[32]u8 {
 }
 ```
 
-Full source: [binary_tree.zig](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/binary_tree.zig)
+Full source: [binary_tree.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/binary_tree.zig)
 
 ## Files
 

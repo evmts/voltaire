@@ -46,7 +46,7 @@ const ether5 = Ether.from(2)        // Number input
 
 **Note:** Uses `Uint.from` internally for conversion.
 
-Defined in: [primitives/Denomination/Ether.ts:10](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Conversions From Other Units
 
@@ -73,7 +73,7 @@ const ether2 = Ether.fromWei(wei2)  // 0n (truncates)
 
 **Formula:** `ether = wei / 1_000_000_000_000_000_000` (integer division)
 
-Defined in: [primitives/Denomination/Ether.ts:14](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
 
 ### `Ether.fromGwei(gwei)`
 
@@ -98,7 +98,7 @@ const ether2 = Ether.fromGwei(gwei2)  // 0n (truncates)
 
 **Formula:** `ether = gwei / 1_000_000_000` (integer division)
 
-Defined in: [primitives/Denomination/Ether.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Conversions To Other Units
 
@@ -123,7 +123,7 @@ const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n Wei
 
 **Formula:** `wei = ether * 1_000_000_000_000_000_000`
 
-Defined in: [primitives/Denomination/Ether.ts:24](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
 
 ### `Ether.toGwei(ether)`
 
@@ -143,7 +143,7 @@ const gwei = Ether.toGwei(ether)  // 1_000_000_000n Gwei
 
 **Formula:** `gwei = ether * 1_000_000_000`
 
-Defined in: [primitives/Denomination/Ether.ts:29](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:29](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Conversions To Base Type
 
@@ -169,7 +169,7 @@ const doubled = Uint.times(u256, Uint.from(2n))
 
 **Note:** Removes type safety. Use for arithmetic operations requiring `Uint.Type`.
 
-Defined in: [primitives/Denomination/Ether.ts:34](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Ether.ts)
+Defined in: [primitives/Denomination/Ether.ts:34](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
 
 ## Usage Examples
 

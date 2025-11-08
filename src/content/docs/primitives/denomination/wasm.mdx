@@ -13,7 +13,7 @@ WebAssembly-accelerated implementations of denomination conversions, compiled fr
 
 WASM implementations provide performance-critical denomination operations using compiled Zig code targeting WebAssembly. These are **purely opt-in** replacements for the JavaScript implementations with identical APIs.
 
-All WASM methods are compiled from [denomination.zig](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/denomination.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
+All WASM methods are compiled from [denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
 
 ## Quick Start
 
@@ -110,7 +110,8 @@ pub const WEI_PER_ETHER: U256 = blk: {
 pub const GWEI_PER_ETHER: U256 = U256.from_u64(1_000_000_000)
 ```
 
-Defined in: [primitives/Denomination/denomination.zig](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/denomination.zig)
+Defined in: [primitives/Denomination/denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig)
+Tests: [denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig)
 
 ## API Reference
 
@@ -269,7 +270,7 @@ Conversions that divide are compute-bound:
 ## Files
 
 - **denomination.zig** - Zig source implementation
-  - Location: [src/primitives/Denomination/denomination.zig](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/denomination.zig)
+  - Location: [src/primitives/Denomination/denomination.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/denomination.zig)
   - Defines `Wei`, `Gwei`, `Ether` structs
   - Implements all conversion methods
   - Includes test suite

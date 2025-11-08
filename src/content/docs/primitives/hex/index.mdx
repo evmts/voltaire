@@ -13,6 +13,43 @@ Hex string type for Ethereum development with validation, conversion, and manipu
 
 [Branded](/primitives/branded-types) string type representing hex-encoded data with `0x` prefix. Zero-overhead design supports both tree-shakeable namespace methods and functional API.
 
+## Hex Encoding Visualization
+
+Hex strings represent binary data in human-readable form:
+
+```
+Binary Data                 Hex Representation
+┌─────────────────────────┐ ┌──────────────────────┐
+│ Byte 0: 11111111       │→ 0xFF
+│ Byte 1: 00010010       │→ 0x12
+│ Byte 2: 10100101       │→ 0xA5
+│ Byte 3: 01100011       │→ 0x63
+└─────────────────────────┘ └──────────────────────┘
+        (Binary)              (Hex, two digits per byte)
+
+Full Hex String: "0xffa5a563"
+                 ││ ││││ ││││
+Prefix ──────────┘└ Each pair = 1 byte (8 bits)
+
+Digit Mapping:
+┌────┬────┬────┬────┬────┬────┬────┬────┐
+│ 0  │ 1  │ 2  │ 3  │ 4  │ 5  │ 6  │ 7  │
+├────┼────┼────┼────┼────┼────┼────┼────┤
+│0000│0001│0010│0011│0100│0101│0110│0111│
+├────┼────┼────┼────┼────┼────┼────┼────┤
+│ 8  │ 9  │ A  │ B  │ C  │ D  │ E  │ F  │
+├────┼────┼────┼────┼────┼────┼────┼────┤
+│1000│1001│1010│1011│1100│1101│1110│1111│
+└────┴────┴────┴────┴────┴────┴────┴────┘
+```
+
+**Key Points:**
+- Each hex digit represents 4 bits (0000-1111)
+- Two hex digits = 1 byte (8 bits)
+- Always has "0x" prefix for clarity
+- Case-insensitive: "0xFF" == "0xff"
+- Empty: "0x" (zero bytes)
+
 ## Quick Start
 
 <Tabs>
@@ -111,7 +148,7 @@ namespace Hex {
 }
 ```
 
-Source: [Hex.js:1-70](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/Hex.js#L1-L70)
+Source: [Hex.js:1-70](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/Hex.js#L1-L70)
 </TabItem>
 <TabItem label="type BrandedHex">
 ```typescript
@@ -129,7 +166,7 @@ export type Bytes<N extends number> = Sized<N>
 
 [Branded type](/primitives/branded-types) wrapping hex string with `0x` prefix. Runtime validated for format. `Sized<N>` adds compile-time size tracking.
 
-Source: [BrandedHex.js:1-19](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js#L1-L19)
+Source: [BrandedHex.js:1-19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js#L1-L19)
 </TabItem>
 </Tabs>
 

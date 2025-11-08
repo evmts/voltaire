@@ -47,9 +47,9 @@ interface JumpDestination {
 }
 ```
 
-Defined in: [primitives/Bytecode/Bytecode.wasm.ts:23](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
+Defined in: [primitives/Bytecode/Bytecode.wasm.ts:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
 
-**WASM source:** [primitives/Bytecode/bytecode.zig](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/bytecode.zig)
+**WASM source:** [primitives/Bytecode/bytecode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig)
 
 ### `isBytecodeBoundary(code, position)`
 
@@ -71,7 +71,7 @@ isBytecodeBoundary(code, 2)  // true  - STOP opcode
 
 **Returns:** `boolean` - `true` if position is instruction boundary
 
-Defined in: [primitives/Bytecode/Bytecode.wasm.ts:39](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
+Defined in: [primitives/Bytecode/Bytecode.wasm.ts:39](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
 
 ### `isValidJumpDest(code, position)`
 
@@ -95,7 +95,7 @@ isValidJumpDest(code, 3)  // true  - Actual JUMPDEST
 
 **Returns:** `boolean` - `true` if position is valid JUMPDEST
 
-Defined in: [primitives/Bytecode/Bytecode.wasm.ts:53](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
+Defined in: [primitives/Bytecode/Bytecode.wasm.ts:53](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
 
 ### `validateBytecode(code)`
 
@@ -122,7 +122,7 @@ try {
 
 **Throws:** `Error` - If bytecode has incomplete PUSH instructions
 
-Defined in: [primitives/Bytecode/Bytecode.wasm.ts:64](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
+Defined in: [primitives/Bytecode/Bytecode.wasm.ts:64](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/Bytecode.wasm.ts)
 
 ## When to Use WASM
 
@@ -246,7 +246,7 @@ fn analyzeJumpDests(code: []const u8, valid_jumpdests: *std.AutoArrayHashMap(u32
 }
 ```
 
-Full implementation: [primitives/Bytecode/bytecode.zig](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/bytecode.zig)
+Full implementation: [primitives/Bytecode/bytecode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig)
 
 ## Bundle Size Impact
 
@@ -317,4 +317,4 @@ try {
 - [Bytecode](/primitives/bytecode/) - Main Bytecode documentation
 - [Analysis](/primitives/bytecode/analysis) - JavaScript analysis implementation
 - [BrandedBytecode](/primitives/bytecode/branded-bytecode) - Tree-shakeable API
-- [Zig Source](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/bytecode.zig) - WASM implementation source
+- [Zig Source](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig) - WASM implementation source

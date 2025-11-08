@@ -105,7 +105,7 @@ class Hash extends Uint8Array {
 }
 ```
 
-Source: [Hash.js:14-118](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/Hash.js#L14-L118)
+Source: [Hash.js:14-118](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/Hash.js#L14-L118)
 </TabItem>
 <TabItem label="type BrandedHash">
 ```typescript
@@ -116,7 +116,7 @@ export type BrandedHash = Uint8Array & {
 
 [Branded type](/primitives/branded-types) wrapping `Uint8Array`, runtime validated to 32 bytes. Used as underlying type for Hash class and tree-shakeable functions.
 
-Source: [BrandedHash.ts:1-3](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/BrandedHash.ts#L1-L3)
+Source: [BrandedHash.ts:1-3](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/BrandedHash.ts#L1-L3)
 </TabItem>
 </Tabs>
 
@@ -142,7 +142,7 @@ const isZero = Hash.equals(hash, Hash.ZERO)  // check zero hash
 - `Hash.SIZE = 32` - Hash size in bytes (256 bits)
 - `Hash.ZERO` - Zero hash (32 zero bytes)
 
-Source: [constants.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/constants.js)
+Source: [constants.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/constants.js)
 
 ## API Documentation
 
@@ -227,3 +227,12 @@ Uint8Array provides efficient byte operations and eliminates encoding overhead. 
     [View Branded Types →](/primitives/branded-types)
   </Card>
 </CardGrid>
+
+## See Also
+
+- [Address](/primitives/address) - 20-byte Ethereum addresses derived using similar hashing
+- [Transaction](/primitives/transaction) - Transactions identified by their hash
+- [Keccak-256](/crypto/keccak256) - Low-level hashing cryptography
+- [Signature](/primitives/signature) - Hash-based digital signatures
+- [Merkle Proof](/primitives/merkle-proof) - Using hashes to verify tree structures
+- [Bloom Filter](/primitives/bloomfilter) - Efficient hash-based membership testing

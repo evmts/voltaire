@@ -30,7 +30,7 @@ if (Hash.isValidHex(input)) {
 
 **Returns:** `boolean`
 
-Defined in: [primitives/Hash/BrandedHash/isValidHex.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/isValidHex.js#L16)
+Defined in: [primitives/Hash/BrandedHash/isValidHex.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isValidHex.js#L16)
 
 **Validation rules:**
 - With `0x`: exactly 66 characters (0x + 64 hex chars)
@@ -65,7 +65,7 @@ processHash("0x...")                        // ✗ invalid (string)
 
 **Returns:** `value is BrandedHash` (type predicate)
 
-Defined in: [primitives/Hash/BrandedHash/isHash.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/isHash.js#L16)
+Defined in: [primitives/Hash/BrandedHash/isHash.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isHash.js#L16)
 
 **Checks:**
 - `value instanceof Uint8Array`
@@ -101,7 +101,7 @@ try {
 **Throws:**
 - `Error` - If value is not a Hash
 
-Defined in: [primitives/Hash/BrandedHash/assert.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/assert.js#L16)
+Defined in: [primitives/Hash/BrandedHash/assert.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/assert.js#L16)
 
 **TypeScript support:** Uses `asserts value is BrandedHash` return type for type narrowing.
 

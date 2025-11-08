@@ -1,0 +1,320 @@
+---
+title: Denomination Scale Visualization
+description: Visual guide to Wei, Gwei, and Ether relationships and conversions
+---
+
+import { Tabs, TabItem, Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+# Denomination Scale Visualization
+
+Understanding the relationships between Wei, Gwei, and Ether with visual guides and scale comparisons.
+
+## The Denomination Scale
+
+```
+1 Ether (ETH)
+     |
+     | = 10^9 Gwei
+     |
+     v
+1,000,000,000 Gwei
+     |
+     | = 10^9 Wei per Gwei
+     |
+     v
+1,000,000,000,000,000,000 Wei
+```
+
+### Linear Scale (Powers of 10)
+
+<Tabs>
+<TabItem label="Wei to Ether">
+```
+Wei:                           Gwei:                    Ether:
+1                              0.000000001              0.000000000000000001
+10                             0.00000001               0.00000000000000001
+100                            0.0000001                0.0000000000000001
+1,000                          0.001                    0.000000000001
+10,000                         0.00001                  0.00000000001
+100,000                        0.0001                   0.0000000001
+1,000,000                      0.01                     0.000000001
+10,000,000                     0.1                      0.00000001
+100,000,000                    1                        0.000000001
+1,000,000,000                  10                       0.0000001
+10,000,000,000                 100                      0.000001
+100,000,000,000                1,000                    0.00001
+1,000,000,000,000              10,000                   0.0001
+10,000,000,000,000             100,000                  0.001
+100,000,000,000,000            1,000,000                0.01
+1,000,000,000,000,000          10,000,000               0.1
+10,000,000,000,000,000         100,000,000              1
+100,000,000,000,000,000        1,000,000,000            10
+1,000,000,000,000,000,000      10,000,000,000           100
+```
+</TabItem>
+
+<TabItem label="Code Scale">
+```typescript
+// Wei to Ether scale (log10)
+const scales = [
+  { wei: 1n, gwei: 0.000000001, ether: 0.000000000000000001, name: 'Single Wei' },
+  { wei: 1_000_000_000n, gwei: 1, ether: 0.000000001, name: '1 Gwei' },
+  { wei: 1_000_000_000_000_000_000n, gwei: 1_000_000_000, ether: 1, name: '1 Ether' },
+  { wei: 21_000_000_000_000_000n, gwei: 21_000_000, ether: 0.021, name: 'Transfer' },
+  { wei: 1_000_000_000_000_000_000_000n, gwei: 1_000_000_000_000, ether: 1_000, name: '1000 Ether' }
+]
+
+scales.forEach(scale => {
+  console.log(`${scale.name}: ${scale.wei} Wei = ${scale.gwei} Gwei = ${scale.ether} ETH`)
+})
+```
+</TabItem>
+</Tabs>
+
+## Real-World Comparison
+
+### Daily Transactions
+
+| Type | Wei | Gwei | Ether | Real Value |
+|------|-----|------|-------|-----------|
+| **Dust (spam blocker)** | 1,000 | 0.000001 | 0.000000001 | ~$0.000002 |
+| **Minimum gas (1 gwei)** | 1,000,000,000 | 1 | 0.000000001 | ~$0.000002 |
+| **Min transaction (21k gas @ 1 gwei)** | 21,000,000,000 | 0.021 | 0.000000021 | ~$0.00004 |
+| **Cheap transfer (20 gwei)** | 420,000,000,000,000 | 420,000 | 0.00042 | ~$0.84 |
+| **Normal transfer (50 gwei)** | 1,050,000,000,000,000 | 1,050,000 | 0.00105 | ~$2.10 |
+| **Fast transfer (200 gwei)** | 4,200,000,000,000,000 | 4,200,000 | 0.0042 | ~$8.40 |
+| **Expensive swap (100k gas @ 200 gwei)** | 20,000,000,000,000,000 | 20,000,000 | 0.02 | ~$40 |
+
+*Assuming ETH = $2,000*
+
+## Conversion Flow Diagrams
+
+### Direct Conversions (Reversible)
+
+```
+┌─────────┐         ×10^9         ┌──────────┐         ×10^9         ┌────────┐
+│  1 Wei  │ ─────────────────────> │  1 Gwei  │ ─────────────────────> │ 1 Ether│
+└─────────┘                        └──────────┘                        └────────┘
+     ^                                   ^                                  ^
+     │                                   │                                  │
+     │         ÷10^9                     │         ÷10^9                    │
+     └───────────────────────────────────┴──────────────────────────────────┘
+```
+
+All direct conversions are **reversible without data loss**:
+- 1 Wei → toGwei → Wei = 1 Wei ✓
+- 1 Gwei → toWei → Gwei = 1 Gwei ✓
+- 1 Ether → toWei → Ether = 1 Ether ✓
+
+### Fractional Conversions (Data Loss)
+
+```
+┌──────────────────┐
+│ 1.5 Gwei in Wei  │  (1,500,000,000 Wei)
+│ = 1.5 × 10^9 Wei │
+└──────────────────┘
+         │
+         │ toGwei (÷10^9)
+         v
+┌──────────────────┐
+│ = 1 Gwei         │  (truncates .5)
+│ (data loss!)     │
+└──────────────────┘
+         │
+         │ toWei (×10^9)
+         v
+┌──────────────────┐
+│ = 1,000,000,000  │  (lost 500,000,000 Wei)
+│ (NOT 1.5 Gwei)   │
+└──────────────────┘
+```
+
+**Safe pattern: Always work in smallest unit (Wei) when possible**
+
+## Magnitude Comparison
+
+### How Small is Wei?
+
+```
+1 Ether = 1,000,000,000,000,000,000 Wei
+
+Like currency: 1 Dollar = 100 Cents = 10,000 Mills
+
+Wei is 18 decimal places smaller than Ether:
+Ether.0000000000000000 = Wei
+
+Range: 0 to 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,935
+(2^256 - 1 Wei = ~1.16e77)
+```
+
+### Scientific Notation
+
+```typescript
+// Understanding big numbers
+
+// 1 Ether
+const oneEther = 1_000_000_000_000_000_000n  // 1e18 in decimal
+// = 10^18 Wei
+
+// 1000 Ether
+const thousandEther = 1_000_000_000_000_000_000_000n  // 1e21
+// = 10^21 Wei
+
+// 1 Million Ether
+const millionEther = 1_000_000_000_000_000_000_000_000n  // 1e24
+// = 10^24 Wei
+
+// Useful conversions
+const wei = 1_500_000_000_000_000_000n       // 1.5 Ether in Wei
+const exponent = 18  // Decimal places for Ether
+const ether = Number(wei) / Math.pow(10, exponent)  // 1.5
+
+console.log(ether)  // 1.5
+```
+
+## Gas Price Scale
+
+Understanding how gas prices affect transaction costs:
+
+```
+Gas Price Levels (typical mainnet):
+
+Urgent:     200 Gwei ──────────────────┐
+                                       │
+Fast:       100 Gwei ─────────────┐   │
+                                   │   │
+Standard:    50 Gwei ──────────┐  │   │
+                                │  │   │
+Safe:        20 Gwei ────────┐ │  │   │
+                              │ │  │   │
+Slow:        10 Gwei ──────┐ │ │  │   │
+                            │ │ │  │   │
+                            v v v  v   v
+Transfer (21k gas):
+Slow:    210,000 Gwei     = 0.00021 ETH
+Safe:    420,000 Gwei     = 0.00042 ETH
+Standard: 1,050,000 Gwei  = 0.00105 ETH
+Fast:    2,100,000 Gwei   = 0.0021 ETH
+Urgent:  4,200,000 Gwei   = 0.0042 ETH
+```
+
+<Tabs>
+<TabItem label="Cost Impact">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+function showCostScale(gasUsed: bigint) {
+  const prices = [10, 20, 50, 100, 200]
+
+  console.log(`Gas amounts: ${gasUsed}`)
+  console.log('─'.repeat(50))
+
+  prices.forEach(gwei => {
+    const gasPriceWei = Gwei.toWei(Gwei.from(BigInt(gwei)))
+    const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+    const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+    const costEther = Number(costWei) / 1e18
+
+    console.log(`${gwei.toString().padStart(3)} Gwei: ${costGwei} Gwei = ${costEther.toFixed(6)} ETH`)
+  })
+}
+
+// Show scale for transfer (21,000 gas)
+showCostScale(21_000n)
+
+console.log()
+
+// Show scale for complex interaction (200,000 gas)
+showCostScale(200_000n)
+```
+</TabItem>
+
+<TabItem label="Visual Graph">
+```
+Transfer (21,000 gas) - Cost in Ether:
+
+0.0042 ETH │     ■
+           │     ■
+0.0035 ETH │     ■
+           │     ■
+0.0028 ETH │     ■
+           │     ■
+0.0021 ETH │     ■
+           │     ■
+0.0014 ETH │   ■ ■
+           │   ■ ■
+0.0007 ETH │   ■ ■
+           │   ■ ■
+0      ETH │ ■ ■ ■
+           └─────────────────
+             10 20 50 100 200 Gwei
+                 Gas Price
+```
+</TabItem>
+</Tabs>
+
+## Practical Size Comparisons
+
+### What fits in different units?
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// How much in Wei?
+const weiCapacity = Uint.from(2n ** 256n - 1n)  // Max Uint256
+// = 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,935 Wei
+// = 115,792,089,237 Billion Billion Ether
+// Enough for everyone on Earth to have 14+ Ether
+
+// Practical limits
+const dappBudget = Ether.from(1_000_000n)          // 1M Ether (huge budget)
+const dappBudgetWei = Ether.toWei(dappBudget)      // 1e24 Wei
+
+const liquidEthereum = 120_000_000n                // All ETH ever (approx)
+const liquidWei = Ether.toWei(Ether.from(liquidEthereum))  // All Wei in existence
+```
+
+## Conversion Reference Table
+
+```
+From     To       Formula              Example
+─────────────────────────────────────────────────────────────
+Wei   → Gwei     ÷ 10^9               1e9 Wei → 1 Gwei
+Wei   → Ether    ÷ 10^18              1e18 Wei → 1 Ether
+Gwei  → Wei      × 10^9               1 Gwei → 1e9 Wei
+Gwei  → Ether    ÷ 10^9               1e9 Gwei → 1 Ether
+Ether → Wei      × 10^18              1 Ether → 1e18 Wei
+Ether → Gwei     × 10^9               1 Ether → 1e9 Gwei
+```
+
+## Calculator: Power of 10 Growth
+
+How values grow with each power of 10:
+
+```typescript
+const base = 1_000_000_000_000_000_000n  // 1 Ether in Wei
+
+// Each step multiplies by 10^9
+const wei = base                    // 10^18 (1 Ether)
+const megaWei = base * 1_000n       // 10^21
+const gigaWei = base * 1_000_000n   // 10^24
+const teraWei = base * 1_000_000_000n  // 10^27
+
+console.log('Growth scale (base = 1 Ether):')
+console.log('1x:', wei)           // 1 Ether
+console.log('1K×:', megaWei)      // 1,000 Ether
+console.log('1M×:', gigaWei)      // 1,000,000 Ether
+console.log('1B×:', teraWei)      // 1,000,000,000 Ether
+```
+
+## Related
+
+- [Denomination](/primitives/denomination) - Type definitions
+- [Conversions](/primitives/denomination/conversions) - Conversion functions
+- [Gas Calculator](/primitives/denomination/gas-calculator) - Real-world costs
+- [Usage Patterns](/primitives/denomination/usage-patterns) - Common patterns

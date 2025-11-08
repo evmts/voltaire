@@ -3,7 +3,7 @@ title: Uint Arithmetic
 description: Arithmetic operations with automatic wrapping
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 # Arithmetic
 
@@ -12,6 +12,33 @@ Mathematical operations on Uint256 with automatic wrapping on overflow/underflow
 <Aside type="tip" title="Wrapping Behavior">
 All arithmetic operations wrap on overflow (mod 2^256), matching Solidity and EVM behavior. There are no checked arithmetic operations - wrapping is always automatic.
 </Aside>
+
+## Uint256 Representation
+
+Uint256 is a 256-bit unsigned integer stored as 32 bytes in big-endian format:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Uint256 Value Range: 0 to 2^256 - 1                   │
+├─────────────────────────────────────────────────────────┤
+│ Byte Layout (32 bytes, big-endian)                     │
+│ [Byte 0] [Byte 1] ... [Byte 30] [Byte 31]            │
+│  (MSB)                                    (LSB)        │
+│                                                         │
+│ Max Value: 0xffffffffffffffffffffffffffffffffffffffff   │
+│            = 115792089237316195423570985008687907...    │
+│            = 2^256 - 1                                  │
+│                                                         │
+│ Min Value: 0x0000000000000000000000000000000000000000   │
+│            = 0                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key Facts:**
+- 256 bits = 32 bytes = 64 hex digits (+ "0x" prefix)
+- Big-endian: most significant byte first
+- Range: [0, 2^256 - 1] = [0, 115792089237316195423570985008687907853269984665640564039457584007913129639935]
+- EVM word size: 256 bits
 
 ## Addition
 
@@ -50,7 +77,7 @@ a.plus(b).equals(b.plus(a))  // true
 Uint.plus(a, b)  // a + b
 ```
 
-Source: [plus.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/plus.ts#L19)
+Source: [plus.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/plus.ts#L19)
 
 ## Subtraction
 
@@ -90,7 +117,7 @@ a.minus(a)          // ZERO
 Uint.minus(a, b)  // a - b
 ```
 
-Source: [minus.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/minus.ts#L19)
+Source: [minus.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/minus.ts#L19)
 
 ## Multiplication
 
@@ -132,7 +159,7 @@ a.times(b.plus(c)).equals(a.times(b).plus(a.times(c)))  // true
 Uint.times(a, b)  // a * b
 ```
 
-Source: [times.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/times.ts#L19)
+Source: [times.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/times.ts#L19)
 
 ## Division
 
@@ -177,7 +204,7 @@ Uint.MAX.dividedBy(Uint.from(2n))  // 2^255 - 1 (half of MAX)
 Uint.dividedBy(a, b)  // a / b
 ```
 
-Source: [dividedBy.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/dividedBy.ts#L19)
+Source: [dividedBy.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/dividedBy.ts#L19)
 
 ## Modulo
 
@@ -225,7 +252,7 @@ quotient.times(b).plus(remainder).equals(a)  // true
 Uint.modulo(a, b)  // a % b
 ```
 
-Source: [modulo.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/modulo.ts)
+Source: [modulo.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/modulo.ts)
 
 ## Exponentiation
 
@@ -275,11 +302,52 @@ Uint.from(2n).toPower(Uint.from(10n))  // 1024
 Uint.toPower(base, exp)  // base ^ exp
 ```
 
-Source: [toPower.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/toPower.ts#L19)
+Source: [toPower.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toPower.ts#L19)
 
-## Overflow Examples
+## Overflow/Underflow Behavior
 
-### Addition Overflow
+### Overflow Visualization
+
+Addition overflow occurs when result exceeds MAX (2^256 - 1):
+
+```
+Addition Overflow (wraps around)
+┌──────────────────────────────────┐
+│ a = 2^256 - 5                    │
+│ b = 10                           │
+│ a + b = (2^256 - 5) + 10         │
+│       = 2^256 + 5                │
+│       = 5 (wraps, mod 2^256)     │
+└──────────────────────────────────┘
+
+Value Line:
+0 ─────────────────────────────────── MAX (2^256-1)
+                                        ↓ +10
+                                      (overflow)
+                                        ↓
+                                    wraps to 5
+```
+
+### Underflow Visualization
+
+Subtraction underflow occurs when result goes below MIN (0):
+
+```
+Subtraction Underflow (wraps around)
+┌──────────────────────────────────┐
+│ a = 0                            │
+│ b = 1                            │
+│ a - b = 0 - 1 = -1               │
+│       = MAX (wraps, mod 2^256)   │
+└──────────────────────────────────┘
+
+Value Line:
+0 ─────────────────────────────────── MAX (2^256-1)
+↓ -1 (underflow)
+(wraps to MAX)
+```
+
+### Overflow Examples
 
 ```typescript
 // Near MAX
@@ -380,6 +448,111 @@ if (sum.lessThan(a)) {
 const product = sum.times(c)
 const final = product.minus(d)
 ```
+
+## Arithmetic Operations Reference Table
+
+| Operation | Method | Input | Output | Example | Behavior |
+|-----------|--------|-------|--------|---------|----------|
+| **Addition** | `plus(b)` | `BrandedUint` | `BrandedUint` | `100 + 50 = 150` | Wraps on overflow |
+| **Subtraction** | `minus(b)` | `BrandedUint` | `BrandedUint` | `100 - 50 = 50` | Wraps on underflow |
+| **Multiplication** | `times(b)` | `BrandedUint` | `BrandedUint` | `10 * 5 = 50` | Wraps on overflow |
+| **Division** | `dividedBy(b)` | `BrandedUint` | `BrandedUint` | `100 / 10 = 10` | Floor division, throws if b=0 |
+| **Modulo** | `modulo(b)` | `BrandedUint` | `BrandedUint` | `17 % 5 = 2` | Remainder, throws if b=0 |
+| **Exponentiation** | `toPower(exp)` | `BrandedUint` | `BrandedUint` | `2^8 = 256` | Wraps on overflow |
+
+**Wrapping Rules:**
+- **Addition**: (a + b) mod 2^256
+- **Subtraction**: (a - b + 2^256) mod 2^256
+- **Multiplication**: (a * b) mod 2^256
+- **Division**: Floor division (no remainder)
+- **Modulo**: Remainder of floor division
+- **Exponentiation**: (base ^ exp) mod 2^256
+
+## Interactive Examples
+
+<Tabs>
+<TabItem label="Basic Operations">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Addition
+const sum = Uint.from(100n).plus(Uint.from(50n))
+console.log(sum.toString())  // "150"
+
+// Subtraction
+const diff = Uint.from(100n).minus(Uint.from(30n))
+console.log(diff.toString())  // "70"
+
+// Multiplication
+const product = Uint.from(12n).times(Uint.from(5n))
+console.log(product.toString())  // "60"
+
+// Division
+const quotient = Uint.from(100n).dividedBy(Uint.from(10n))
+console.log(quotient.toString())  // "10"
+
+// Modulo
+const remainder = Uint.from(17n).modulo(Uint.from(5n))
+console.log(remainder.toString())  // "2"
+```
+</TabItem>
+<TabItem label="Boundary Cases">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Maximum + 1 wraps to 0
+const overflow = Uint.MAX.plus(Uint.ONE)
+console.log(overflow.equals(Uint.ZERO))  // true
+
+// Zero - 1 wraps to MAX
+const underflow = Uint.ZERO.minus(Uint.ONE)
+console.log(underflow.equals(Uint.MAX))  // true
+
+// Large multiplication wraps
+const a = Uint.from(2n ** 200n)
+const b = Uint.from(2n ** 200n)
+const huge = a.times(b)  // (2^400) mod 2^256
+console.log(huge.lessThan(a))  // true (wrapped smaller)
+
+// Division by zero throws
+try {
+  Uint.from(100n).dividedBy(Uint.ZERO)
+} catch (e) {
+  console.log("Error: Division by zero")
+}
+```
+</TabItem>
+<TabItem label="Multi-Step Operations">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+// Complex expression: (a + b) * c - d
+const a = Uint.from(10n)
+const b = Uint.from(20n)
+const c = Uint.from(5n)
+const d = Uint.from(25n)
+
+const result = a
+  .plus(b)          // 30
+  .times(c)         // 150
+  .minus(d)         // 125
+
+console.log(result.toString())  // "125"
+
+// Detect overflow in addition
+function checkAdd(x: BrandedUint, y: BrandedUint): BrandedUint {
+  const sum = x.plus(y)
+  if (sum.lessThan(x)) {
+    console.log("Overflow detected!")
+  }
+  return sum
+}
+
+const overflow = checkAdd(Uint.MAX, Uint.from(5n))
+// Logs: "Overflow detected!"
+```
+</TabItem>
+</Tabs>
 
 ## Tree-Shakeable Usage
 

@@ -28,7 +28,8 @@ addr2.toHex() // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e" (lowercase)
 Address.toHex(addr) // "0x..."
 ```
 
-Defined in: [primitives/Address/BrandedAddress/toHex.js:6](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/toHex.js)
+Defined in: [primitives/Address/BrandedAddress/toHex.js:6](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toHex.js)
+Tests: [toHex.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toHex.test.ts)
 
 ### `instance.toChecksummed()`
 
@@ -46,7 +47,8 @@ addr.toChecksummed() // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e" (mixed case
 Address.toChecksummed(addr) // "0x742d35Cc..."
 ```
 
-Defined in: [primitives/Address/BrandedAddress/toChecksummed.js:10](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.js)
+Defined in: [primitives/Address/BrandedAddress/toChecksummed.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.js)
+Tests: [toChecksummed.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toChecksummed.test.ts)
 
 **Note:** Uses keccak256 internally. When using tree-shakeable imports, including this method adds keccak256 to bundle.
 
@@ -101,7 +103,8 @@ addr.toShortHex(8, 6)  // "0x742d35Cc...f51e3e"
 Address.toShortHex(addr, 8, 6)
 ```
 
-Defined in: [primitives/Address/BrandedAddress/toShortHex.js:12](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/toShortHex.js)
+Defined in: [primitives/Address/BrandedAddress/toShortHex.js:12](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toShortHex.js)
+Tests: [toShortHex.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toShortHex.test.ts)
 
 ## Numeric Conversions
 
@@ -124,7 +127,8 @@ addr2.toU256() // 69n
 Address.toU256(addr) // 69n
 ```
 
-Defined in: [primitives/Address/BrandedAddress/toU256.js:6](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/toU256.js)
+Defined in: [primitives/Address/BrandedAddress/toU256.js:6](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toU256.js)
+Tests: [toU256.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toU256.test.ts)
 
 ## ABI Encoding
 
@@ -145,7 +149,8 @@ const encoded = addr.toAbiEncoded()
 Address.toAbiEncoded(addr) // Uint8Array(32)
 ```
 
-Defined in: [primitives/Address/BrandedAddress/toAbiEncoded.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/toAbiEncoded.js)
+Defined in: [primitives/Address/BrandedAddress/toAbiEncoded.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toAbiEncoded.js)
+Tests: [toAbiEncoded.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/toAbiEncoded.test.ts)
 
 ## Base64
 

@@ -27,7 +27,7 @@ const hex2 = Hex(new Uint8Array([0x12, 0x34]))
 - `InvalidFormatError` - Invalid hex string format
 - `InvalidCharacterError` - Invalid hex characters
 
-Defined in: [primitives/Hex/Hex.js:10-12](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/Hex.js#L10-L12)
+Defined in: [primitives/Hex/Hex.js:10-12](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/Hex.js#L10-L12)
 
 ## Static Constructors
 
@@ -45,7 +45,8 @@ const hex2 = Hex.from(new Uint8Array([0x12, 0x34]))
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/from.js:15-20](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/from.js#L15-L20)
+Defined in: [primitives/Hex/BrandedHex/from.js:15-20](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/from.js#L15-L20)
+Tests: [from.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/from.test.ts)
 
 ### `Hex.fromBytes(bytes)`
 
@@ -64,7 +65,7 @@ const empty = Hex.fromBytes(new Uint8Array())
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/fromBytes.js:12-20](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromBytes.js#L12-L20)
+Defined in: [primitives/Hex/BrandedHex/fromBytes.js:12-20](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBytes.js#L12-L20)
 
 ### `Hex.fromNumber(value, size?)`
 
@@ -83,7 +84,8 @@ Hex.fromNumber(0)        // "0x0"
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/fromNumber.js:15-21](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromNumber.js#L15-L21)
+Defined in: [primitives/Hex/BrandedHex/fromNumber.js:15-21](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromNumber.js#L15-L21)
+Tests: [fromNumber.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromNumber.test.ts)
 
 ### `Hex.fromBigInt(value, size?)`
 
@@ -105,7 +107,8 @@ Hex.fromBigInt(maxU256, 32) // "0xffffffffffffffffffffffffffffffffffffffffffffff
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/fromBigInt.js:14-20](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromBigInt.js#L14-L20)
+Defined in: [primitives/Hex/BrandedHex/fromBigInt.js:14-20](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBigInt.js#L14-L20)
+Tests: [fromBigInt.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBigInt.test.ts)
 
 ### `Hex.fromString(value)`
 
@@ -123,7 +126,8 @@ Hex.fromString("テスト")      // UTF-8 encoded Japanese
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/fromString.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromString.js)
+Defined in: [primitives/Hex/BrandedHex/fromString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromString.js)
+Tests: [fromString.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromString.test.ts)
 
 **Note:** Uses `TextEncoder` for UTF-8 encoding. Emoji and multibyte characters are properly encoded.
 
@@ -141,7 +145,8 @@ Hex.fromBoolean(false)  // "0x00"
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/fromBoolean.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/fromBoolean.js)
+Defined in: [primitives/Hex/BrandedHex/fromBoolean.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBoolean.js)
+Tests: [fromBoolean.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/fromBoolean.test.ts)
 
 ## Factory Methods
 
@@ -162,7 +167,8 @@ Hex.random(0)   // "0x" (empty)
 
 **Security:** Uses `crypto.getRandomValues()` for cryptographic randomness.
 
-Defined in: [primitives/Hex/BrandedHex/random.js:14-18](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/random.js#L14-L18)
+Defined in: [primitives/Hex/BrandedHex/random.js:14-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.js#L14-L18)
+Tests: [random.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.test.ts)
 
 ### `Hex.zero(size)`
 
@@ -179,7 +185,8 @@ Hex.zero(0)   // "0x"
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/zero.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/zero.js)
+Defined in: [primitives/Hex/BrandedHex/zero.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.js)
+Tests: [zero.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.test.ts)
 
 ## Tree-Shakeable Usage
 

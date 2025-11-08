@@ -107,7 +107,7 @@ class Address extends Uint8Array {
 }
 ```
 
-Source: [Address.js:15-246](https://github.com/evmts/primitives/blob/main/src/primitives/Address/Address.js#L15-L246)
+Source: [Address.js:15-246](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/Address.js#L15-L246)
 </TabItem>
 <TabItem label="type BrandedAddress">
 ```typescript
@@ -118,7 +118,7 @@ export type BrandedAddress = Uint8Array & {
 
 [Branded type](/primitives/branded-types) wrapping `Uint8Array`, runtime validated to 20 bytes. Used as underlying type for Address class and tree-shakeable functions.
 
-Source: [BrandedAddress.js:5-7](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.js#L5-L7)
+Source: [BrandedAddress.js:5-7](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.js#L5-L7)
 </TabItem>
 </Tabs>
 
@@ -144,7 +144,7 @@ const isValidLength = hex.length === Address.HEX_SIZE  // validate "0x" + 40 cha
 - `Address.SIZE = 20` - Address size in bytes
 - `Address.HEX_SIZE = 42` - Hex string length with "0x" prefix (2 + 40 characters)
 
-Source: [constants.js](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/constants.js)
+Source: [constants.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/constants.js)
 
 ## API Documentation
 

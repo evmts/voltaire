@@ -95,7 +95,7 @@ class BloomFilter extends Uint8Array {
 }
 ```
 
-Source: [BloomFilter/index.ts:12-66](https://github.com/evmts/primitives/blob/main/src/primitives/BloomFilter/index.ts#L12-L66)
+Source: [BloomFilter/index.ts:12-66](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/index.ts#L12-L66)
 </TabItem>
 <TabItem label="type BrandedBloomFilter">
 ```typescript
@@ -108,7 +108,7 @@ export type BrandedBloomFilter = Uint8Array & {
 
 [Branded type](/primitives/branded-types) wrapping `Uint8Array` with bloom filter parameters. Used as underlying type for BloomFilter class and tree-shakeable functions.
 
-Source: [BrandedBloomFilter/BrandedBloomFilter.ts:1-6](https://github.com/evmts/primitives/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/BrandedBloomFilter.ts#L1-L6)
+Source: [BrandedBloomFilter/BrandedBloomFilter.ts:1-6](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/BrandedBloomFilter.ts#L1-L6)
 </TabItem>
 </Tabs>
 
@@ -134,7 +134,7 @@ const buffer = new Uint8Array(SIZE)  // 256-byte buffer
 - `BITS = 2048` - Number of bits in Ethereum bloom filter (256 * 8)
 - `DEFAULT_HASH_COUNT = 3` - Standard number of hash functions for Ethereum
 
-Source: [BrandedBloomFilter/constants.js](https://github.com/evmts/primitives/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/constants.js)
+Source: [BrandedBloomFilter/constants.js](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/constants.js)
 
 ## API Documentation
 

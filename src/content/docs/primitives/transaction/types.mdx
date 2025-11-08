@@ -19,7 +19,7 @@ enum Type {
 }
 ```
 
-Source: [types.ts:7-13](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L7-L13)
+Source: [types.ts:7-13](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L7-L13)
 
 ## Type Definitions
 
@@ -48,7 +48,7 @@ type Legacy = {
 - Pre-EIP-155 transactions use v = 27 or v = 28
 - No access list support
 
-Source: [types.ts:59-72](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L59-L72)
+Source: [types.ts:59-72](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L59-L72)
 
 ### EIP-2930 Transaction (Type 1)
 
@@ -77,7 +77,7 @@ type EIP2930 = {
 - Includes `accessList` for pre-declaring account/storage access
 - Still uses fixed `gasPrice`
 
-Source: [types.ts:74-90](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L74-L90)
+Source: [types.ts:74-90](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L74-L90)
 
 ### EIP-1559 Transaction (Type 2)
 
@@ -107,7 +107,7 @@ type EIP1559 = {
 - Includes access list support
 - Most common transaction type on modern Ethereum
 
-Source: [types.ts:92-109](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L92-L109)
+Source: [types.ts:92-109](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L92-L109)
 
 ### EIP-4844 Transaction (Type 3)
 
@@ -141,7 +141,7 @@ type EIP4844 = {
 - Maximum 6 blobs per transaction
 - Blob data stored separately from transaction
 
-Source: [types.ts:111-130](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L111-L130)
+Source: [types.ts:111-130](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L111-L130)
 
 ### EIP-7702 Transaction (Type 4)
 
@@ -172,7 +172,7 @@ type EIP7702 = {
 - Allows EOAs to execute contract logic temporarily
 - Delegation is valid only for the transaction duration
 
-Source: [types.ts:132-150](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L132-L150)
+Source: [types.ts:132-150](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L132-L150)
 
 ## Supporting Types
 
@@ -203,7 +203,7 @@ const accessList: AccessList = [
 ]
 ```
 
-Source: [types.ts:18-26](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L18-L26)
+Source: [types.ts:18-26](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L18-L26)
 
 ### Authorization
 
@@ -234,7 +234,7 @@ const authorization: Authorization = {
 }
 ```
 
-Source: [types.ts:29-43](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L29-L43)
+Source: [types.ts:29-43](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L29-L43)
 
 ### VersionedHash
 
@@ -246,7 +246,7 @@ type VersionedHash = BrandedHash  // 32-byte hash
 
 First byte indicates version (currently 0x01 for SHA-256).
 
-Source: [types.ts:48](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L48)
+Source: [types.ts:48](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L48)
 
 ### Any Transaction
 
@@ -258,7 +258,7 @@ type Any = Legacy | EIP2930 | EIP1559 | EIP4844 | EIP7702
 
 Used in functions that accept any transaction type.
 
-Source: [types.ts:155](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts#L155)
+Source: [types.ts:155](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L155)
 
 ## Type Guards
 
@@ -315,7 +315,7 @@ function isEIP7702(tx: Any): tx is EIP7702 {
 }
 ```
 
-Source: [typeGuards.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/typeGuards.ts)
+Source: [typeGuards.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/typeGuards.ts)
 
 ## Type Comparison
 

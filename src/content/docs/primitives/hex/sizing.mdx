@@ -31,7 +31,7 @@ export type Bytes<N extends number> = Sized<N>
 
 `Sized<N>` is a `BrandedHex` with additional compile-time size parameter `N`.
 
-Defined in: [primitives/Hex/BrandedHex/BrandedHex.js:7-11](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js#L7-L11)
+Defined in: [primitives/Hex/BrandedHex/BrandedHex.js:7-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/BrandedHex.js#L7-L11)
 
 ## Type-Safe Size Checking
 
@@ -65,7 +65,8 @@ if (Hex.isSized(maybeAddr, 20)) {
 
 **Returns:** `hex is Sized<TSize>` (type predicate)
 
-Defined in: [primitives/Hex/BrandedHex/isSized.js:15-17](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L15-L17)
+Defined in: [primitives/Hex/BrandedHex/isSized.js:15-17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L15-L17)
+Tests: [isSized.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.test.ts)
 
 ### `Hex.assertSize(hex, size)`
 
@@ -95,7 +96,8 @@ try {
 **Throws:**
 - `InvalidLengthError` - If size doesn't match
 
-Defined in: [primitives/Hex/BrandedHex/assertSize.js:18-25](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L18-L25)
+Defined in: [primitives/Hex/BrandedHex/assertSize.js:18-25](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L18-L25)
+Tests: [assertSize.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.test.ts)
 
 ## Creating Sized Values
 

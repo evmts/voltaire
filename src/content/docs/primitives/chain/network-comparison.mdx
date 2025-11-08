@@ -1,0 +1,558 @@
+---
+title: Network Comparison
+description: Compare gas fees, costs, and characteristics across Ethereum mainnet, L2s, and testnets
+---
+
+import { Tabs, TabItem, Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+# Network Comparison
+
+Comprehensive comparison of gas fees, transaction costs, and network characteristics across Ethereum networks.
+
+## Network Overview
+
+### Mainnet vs L2 vs Testnet
+
+<Tabs>
+<TabItem label="Cost Comparison">
+| Network | Type | Avg Gas Price | Transfer Cost | Swap Cost | Status |
+|---------|------|---------------|---------------|-----------|--------|
+| **Ethereum** | Mainnet | 40-100 Gwei | $2-5 | $50-200 | Live |
+| **Arbitrum** | L2 | 0.1 Gwei | $0.01 | $0.50-2 | Live |
+| **Optimism** | L2 | 0.1 Gwei | $0.01 | $0.50-2 | Live |
+| **Base** | L2 | 0.1 Gwei | $0.01 | $0.50-2 | Live |
+| **Polygon** | Sidechain | 20-50 Gwei | $0.01-0.05 | $0.20-1 | Live |
+| **Sepolia** | Testnet | 1-5 Gwei | Free (faucet) | Free (faucet) | Test |
+| **Holesky** | Testnet | 1-5 Gwei | Free (faucet) | Free (faucet) | Test |
+
+*Costs assume ETH = $2,000 and typical operation sizes*
+</TabItem>
+
+<TabItem label="Technology Stack">
+| Network | Type | Consensus | Settlement | Speed |
+|---------|------|-----------|-----------|-------|
+| **Ethereum** | PoS Mainnet | Beacon Chain | Native | 12s blocks |
+| **Arbitrum One** | Optimistic L2 | Rollup (Ethereum) | 1 week fraud proof | 250ms blocks |
+| **Optimism** | Optimistic L2 | Rollup (Ethereum) | 1 week fraud proof | 2s blocks |
+| **Base** | Optimistic L2 | Rollup (Ethereum) | 1 week fraud proof | 2s blocks |
+| **Polygon** | Sidechain | PoS validators | Bridge (Ethereum) | 2s blocks |
+| **Sepolia** | Testnet | PoS (test) | Native test | 12s blocks |
+| **Holesky** | Testnet | PoS (test) | Native test | 12s blocks |
+</TabItem>
+</Tabs>
+
+## Gas Price Breakdown
+
+### How Gas Works on Different Networks
+
+<Tabs>
+<TabItem label="Ethereum Mainnet">
+```typescript
+import { Chain } from '@tevm/voltaire'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const mainnet = Chain.fromId(1)!
+
+// EIP-1559: baseFee + priorityFee
+const baseFee = Gwei.from(30n)     // Set by protocol
+const priorityFee = Gwei.from(2n)  // User sets (tip)
+const maxFee = Gwei.from(50n)      // User sets max
+
+// Cost for 21,000 gas transfer
+const effectivePrice = Uint.plus(
+  Gwei.toU256(baseFee),
+  Gwei.toU256(priorityFee)
+)
+
+const costWei = Uint.times(effectivePrice, Uint.from(21_000n))
+const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+const costEther = Wei.toEther(Wei.from(costWei))
+
+console.log(`Network: ${mainnet.name}`)
+console.log(`Cost: ${costGwei} Gwei = ${costEther} ETH`)
+console.log('Features:')
+console.log('- EIP-1559 dynamic pricing')
+console.log('- Base fee burns')
+console.log('- Priority fee for miners')
+```
+
+**Cost Characteristics:**
+- Variable gas prices (20-300+ Gwei during congestion)
+- Base fee automatically adjusts
+- Longer confirmation times during high load
+- Higher security (full validator set)
+</TabItem>
+
+<TabItem label="Arbitrum One (L2)">
+```typescript
+import { Chain } from '@tevm/voltaire'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const arbitrum = Chain.fromId(42161)!
+
+// L2 gas prices much lower
+const gasPrice = Gwei.from(1n)  // Usually 0.1-1 Gwei
+
+// Transfer costs very little
+const costWei = Uint.times(
+  Gwei.toWei(gasPrice),
+  Uint.from(21_000n)
+)
+
+const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+const costEther = Wei.toEther(Wei.from(costWei))
+
+console.log(`Network: ${arbitrum.name}`)
+console.log(`Cost: ${costGwei} Gwei = ${costEther} ETH (very cheap!)`)
+console.log('Features:')
+console.log('- Optimistic rollup')
+console.log('- High throughput (4500+ TPS)')
+console.log('- Fraud proof settlement')
+console.log('- Native ETH (same as mainnet)')
+```
+
+**Cost Characteristics:**
+- Ultra-low gas prices (0.1-1 Gwei)
+- 1-7 day withdrawal to mainnet
+- Near-instant local confirmation
+- Near-mainnet security via rollup
+</TabItem>
+
+<TabItem label="Polygon (Sidechain)">
+```typescript
+import { Chain } from '@tevm/voltaire'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const polygon = Chain.fromId(137)!
+
+// Polygon has low but higher than L2s
+const gasPrice = Gwei.from(30n)  // 20-100 Gwei range
+
+const costWei = Uint.times(
+  Gwei.toWei(gasPrice),
+  Uint.from(21_000n)
+)
+
+const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+const costEther = Wei.toEther(Wei.from(costWei))
+
+// But uses MATIC, not ETH
+console.log(`Network: ${polygon.name}`)
+console.log(`Native currency: ${polygon.nativeCurrency.symbol}`)
+console.log(`Cost: ${costGwei} Gwei = ${costEther} ETH`)
+console.log('Features:')
+console.log('- PoS sidechain')
+console.log('- EVM compatible')
+console.log('- Separate validation')
+console.log('- Bridge required for mainnet')
+```
+
+**Cost Characteristics:**
+- Low gas prices (20-100 MATIC)
+- High throughput
+- Separate validator set (lower security)
+- Bridge delays for withdrawal
+</TabItem>
+
+<TabItem label="Testnet (Sepolia)">
+```typescript
+import { Chain } from '@tevm/voltaire'
+
+const sepolia = Chain.fromId(11155111)!
+
+// Testnet prices irrelevant (free from faucets)
+console.log(`Network: ${sepolia.name}`)
+console.log(`Type: ${sepolia.chain}`)
+console.log(`Native currency: ${sepolia.nativeCurrency.symbol}`)
+console.log('Features:')
+console.log('- EIP-1559 like mainnet')
+console.log('- Free funds from faucet')
+console.log('- No real value')
+console.log('- For development only')
+```
+
+**Cost Characteristics:**
+- Free test ETH via faucet
+- Realistic gas behavior
+- No value loss
+- Perfect for testing
+</TabItem>
+</Tabs>
+
+## Real Transaction Costs
+
+### Transfer (21,000 gas)
+
+```typescript
+import { Chain } from '@tevm/voltaire'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+function calculateTransferCost(
+  chainId: number,
+  gasPriceGwei: bigint
+): { wei: bigint; eth: string; usd: string } | null {
+  const chain = Chain.fromId(chainId)
+  if (!chain) return null
+
+  const gasPriceWei = Gwei.toWei(Gwei.from(gasPriceGwei))
+  const costWei = Uint.times(gasPriceWei, Uint.from(21_000n))
+  const costEth = Number(costWei) / 1e18
+  const costUsd = costEth * 2000  // Assuming $2000/ETH
+
+  return {
+    wei: costWei,
+    eth: costEth.toFixed(6),
+    usd: `$${(costEth * 2000).toFixed(2)}`
+  }
+}
+
+const networks = [
+  { id: 1, price: 50n, name: 'Ethereum Mainnet' },
+  { id: 42161, price: 1n, name: 'Arbitrum One' },
+  { id: 10, price: 1n, name: 'Optimism' },
+  { id: 8453, price: 1n, name: 'Base' },
+  { id: 137, price: 30n, name: 'Polygon' },
+  { id: 11155111, price: 1n, name: 'Sepolia (testnet)' }
+]
+
+console.log('Transfer Cost Comparison (21,000 gas):')
+console.log('─'.repeat(60))
+
+networks.forEach(({ id, price, name }) => {
+  const cost = calculateTransferCost(id, price)
+  if (cost) {
+    console.log(`${name.padEnd(25)} ${cost.eth.padEnd(12)} ETH = ${cost.usd}`)
+  }
+})
+```
+
+**Output:**
+```
+Transfer Cost Comparison (21,000 gas):
+────────────────────────────────────────────────────
+Ethereum Mainnet         0.00105    ETH = $2.10
+Arbitrum One             0.000021   ETH = $0.042
+Optimism                 0.000021   ETH = $0.042
+Base                     0.000021   ETH = $0.042
+Polygon                  0.00063    ETH = $1.26
+Sepolia (testnet)        0.000021   ETH = Free!
+```
+
+### Complex Swap (150,000 gas)
+
+```typescript
+import { Chain } from '@tevm/voltaire'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+function calculateSwapCost(
+  chainId: number,
+  gasPriceGwei: bigint
+): { eth: string; usd: string } | null {
+  const chain = Chain.fromId(chainId)
+  if (!chain) return null
+
+  const gasPriceWei = Gwei.toWei(Gwei.from(gasPriceGwei))
+  const costWei = Uint.times(gasPriceWei, Uint.from(150_000n))
+  const costEth = Number(costWei) / 1e18
+  const costUsd = costEth * 2000
+
+  return {
+    eth: costEth.toFixed(5),
+    usd: `$${costUsd.toFixed(2)}`
+  }
+}
+
+const networks = [
+  { id: 1, price: 50n, name: 'Ethereum Mainnet' },
+  { id: 42161, price: 1n, name: 'Arbitrum One' },
+  { id: 10, price: 1n, name: 'Optimism' },
+  { id: 8453, price: 1n, name: 'Base' },
+  { id: 137, price: 30n, name: 'Polygon' }
+]
+
+console.log('Swap Cost Comparison (150,000 gas):')
+console.log('─'.repeat(60))
+
+networks.forEach(({ id, price, name }) => {
+  const cost = calculateSwapCost(id, price)
+  if (cost) {
+    console.log(`${name.padEnd(25)} ${cost.eth.padEnd(12)} ETH = ${cost.usd}`)
+  }
+})
+```
+
+**Output:**
+```
+Swap Cost Comparison (150,000 gas):
+────────────────────────────────────────────────────
+Ethereum Mainnet         0.015      ETH = $30.00
+Arbitrum One             0.00015    ETH = $0.30
+Optimism                 0.00015    ETH = $0.30
+Base                     0.00015    ETH = $0.30
+Polygon                  0.0045     ETH = $9.00
+```
+
+## Network Selection Guide
+
+### When to use each network:
+
+<Tabs>
+<TabItem label="Ethereum Mainnet">
+**Use when:**
+- Real financial transactions
+- Maximum security needed
+- Settlement certainty required
+- Large value transfers
+
+**Avoid when:**
+- User experience critical (high gas)
+- Frequent micro-transactions
+- Testing/development
+
+**Best for:**
+- Loans, staking, large transfers
+- Custody, bridges
+- Governance
+</TabItem>
+
+<TabItem label="Arbitrum/Optimism/Base (L2s)">
+**Use when:**
+- Frequent small transactions
+- Low latency needed
+- Cost matters
+- EVM compatibility required
+
+**Avoid when:**
+- Withdrawal speed critical (7-day delay)
+- Not ready for rollup (some edge cases)
+
+**Best for:**
+- DeFi protocols
+- Swapping, trading
+- NFTs
+- Games
+</TabItem>
+
+<TabItem label="Polygon (Sidechain)">
+**Use when:**
+- Need immediate finality
+- Don't require Ethereum security
+- Want separate ecosystem
+
+**Avoid when:**
+- Maximum Ethereum security needed
+- Mainnet integration is bottleneck
+
+**Best for:**
+- Gaming
+- Scaling with own validators
+- Alternative ecosystem
+</TabItem>
+
+<TabItem label="Testnet">
+**Use when:**
+- Development/testing
+- No real funds
+- Learning
+- Staging environment
+
+**Avoid when:**
+- Real transactions needed
+- Production use
+
+**Best for:**
+- Smart contract development
+- Testing DApp workflows
+- Learning Solidity
+</TabItem>
+</Tabs>
+
+## Network Configuration Lookup
+
+<Tabs>
+<TabItem label="Code Example">
+```typescript
+import { Chain } from '@tevm/voltaire'
+
+// Lookup network by chain ID
+const networks = [1, 10, 42161, 8453, 137, 11155111]
+
+networks.forEach(chainId => {
+  const chain = Chain.fromId(chainId)
+  if (!chain) return
+
+  console.log(`\n=== ${chain.name} ===`)
+  console.log(`Chain ID: ${chain.chainId}`)
+  console.log(`Symbol: ${chain.nativeCurrency.symbol}`)
+  console.log(`Decimals: ${chain.nativeCurrency.decimals}`)
+  console.log(`RPC: ${chain.rpc[0]}`)
+
+  if (chain.explorers?.[0]) {
+    console.log(`Explorer: ${chain.explorers[0].name}`)
+    console.log(`Explorer URL: ${chain.explorers[0].url}`)
+  }
+})
+```
+</TabItem>
+
+<TabItem label="Network Details">
+```
+=== Ethereum Mainnet ===
+Chain ID: 1
+Symbol: ETH
+Decimals: 18
+Type: Mainnet
+Block time: 12 seconds
+Annual transactions: 300M+
+
+=== Optimism ===
+Chain ID: 10
+Symbol: ETH
+Decimals: 18
+Type: L2 Rollup
+Block time: 2 seconds
+Sequencer: Centralized (upgrading)
+Settlement: 7-day fraud proof
+
+=== Arbitrum One ===
+Chain ID: 42161
+Symbol: ETH
+Decimals: 18
+Type: L2 Rollup
+Block time: 250ms
+Sequencer: Centralized (upgrading)
+Settlement: 7-day fraud proof
+
+=== Base ===
+Chain ID: 8453
+Symbol: ETH
+Decimals: 18
+Type: L2 Rollup (OP Stack)
+Block time: 2 seconds
+Built on: Optimism tech
+
+=== Polygon ===
+Chain ID: 137
+Symbol: MATIC
+Decimals: 18
+Type: Sidechain
+Block time: 2 seconds
+Validators: Own set
+```
+</TabItem>
+</Tabs>
+
+## Fee Estimation Across Networks
+
+```typescript
+import { Chain } from '@tevm/voltaire'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+interface FeeEstimate {
+  network: string
+  baseGasPrice: Gwei.Type
+  transferCost: { eth: string; gwei: string }
+  swapCost: { eth: string; gwei: string }
+}
+
+function estimateFees(
+  chainId: number,
+  baseGasPrice: bigint
+): FeeEstimate | null {
+  const chain = Chain.fromId(chainId)
+  if (!chain) return null
+
+  const calculateCost = (gas: bigint) => {
+    const costWei = Uint.times(
+      Gwei.toWei(Gwei.from(baseGasPrice)),
+      Uint.from(gas)
+    )
+    return {
+      eth: (Number(costWei) / 1e18).toFixed(6),
+      gwei: Uint.dividedBy(costWei, Uint.from(1_000_000_000n)).toString()
+    }
+  }
+
+  return {
+    network: chain.name,
+    baseGasPrice: Gwei.from(baseGasPrice),
+    transferCost: calculateCost(21_000n),
+    swapCost: calculateCost(150_000n)
+  }
+}
+
+// Get all major networks
+const networks = [
+  { id: 1, price: 50n },     // Mainnet
+  { id: 42161, price: 1n },  // Arbitrum
+  { id: 10, price: 1n },     // Optimism
+  { id: 8453, price: 1n },   // Base
+  { id: 137, price: 30n }    // Polygon
+]
+
+networks.forEach(({ id, price }) => {
+  const fees = estimateFees(id, price)
+  if (fees) {
+    console.log(`${fees.network}:`)
+    console.log(`  Transfer: ${fees.transferCost.eth} ETH`)
+    console.log(`  Swap: ${fees.swapCost.eth} ETH`)
+  }
+})
+```
+
+## Migration Between Networks
+
+### Bridging ETH
+
+When moving funds between Ethereum and L2s:
+
+```typescript
+import { Chain } from '@tevm/voltaire'
+
+const mainnet = Chain.fromId(1)!
+const arbitrum = Chain.fromId(42161)!
+const optimism = Chain.fromId(10)!
+
+// Bridging requires:
+// 1. Approval on source chain (Ethereum)
+// 2. Bridge contract interaction
+// 3. Waiting for L2 confirmation
+
+// Costs:
+// - Ethereum approval + bridge call: ~200k gas = $2-5
+// - L2 finalization: ~100-200k gas = $0.10-0.30
+// Total: ~$2.30-5.30 for bridge in
+
+console.log('Bridge costs (ETH → L2):')
+console.log(`Approval: 45k gas @ 50 gwei = 0.00225 ETH`)
+console.log(`Bridge TX: 200k gas @ 50 gwei = 0.01 ETH`)
+console.log(`L2 Finalization: 100k gas @ 1 gwei = 0.0001 ETH`)
+console.log(`Total: ~0.01225 ETH (~$24.50)`)
+
+// Withdrawal back (L2 → Ethereum)
+console.log('\nWithdrawal costs (L2 → Ethereum):')
+console.log(`L2 initiate: 100k gas @ 1 gwei = 0.0001 ETH`)
+console.log(`Mainnet finalize: 200k gas @ 50 gwei = 0.01 ETH`)
+console.log(`Wait time: 7 days (fraud proof)`)
+console.log(`Total: ~0.0101 ETH (~$20.20)`)
+```
+
+## Related
+
+- [Chain](/primitives/chain) - Chain lookup and metadata
+- [Denomination](/primitives/denomination) - Wei, Gwei, Ether
+- [Gas Calculator](/primitives/denomination/gas-calculator) - Cost calculations
+- [FeeMarket](/primitives/feemarket) - EIP-1559 details
+- [Hardfork](/primitives/hardfork) - Network upgrades

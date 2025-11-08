@@ -178,6 +178,108 @@ Ethereum supports five transaction types, each with different capabilities:
   </Card>
 </CardGrid>
 
+## EIP Evolution Timeline
+
+The transaction layer has evolved to support new capabilities with each hard fork:
+
+```
+2015 ── Legacy (0x00)
+        └─ Fixed gasPrice
+        └─ Simple nonce + v/r/s
+        └─ 2 MB blocks
+
+        │
+        ├─ Replay protection (EIP-155)
+        │  └─ Chain ID in v value
+
+2020 ── EIP-2718 (Typed Transactions)
+        │  └─ Extensible envelope
+        │  └─ Future-proof structure
+
+        ├─ EIP-2930 (0x01) - Berlin
+        │  └─ Access lists (gas savings)
+        │  └─ yParity format (0 or 1)
+
+2021 ── EIP-1559 (0x02) - London
+        │  └─ Base fee + priority fee
+        │  └─ Automatic fee market
+        │  └─ ETH burn mechanism
+
+2024 ── EIP-4844 (0x03) - Dencun
+        │  └─ Blob transactions
+        │  └─ 128 KB blobs (6 max)
+        │  └─ Separate blob gas pricing
+        │  └─ L2 data availability
+
+        ├─ EIP-7702 (0x04) - Pectra
+        │  └─ EOA delegation
+        │  └─ Account abstraction lite
+        │  └─ Authorization list
+```
+
+**Key milestones:**
+- **Legacy**: Foundation - simple send/call operations
+- **EIP-155**: Security - replay protection across chains
+- **EIP-2930**: Optimization - explicit state access declaration
+- **EIP-1559**: Economics - transparent fee market
+- **EIP-4844**: Scalability - L2 data availability at scale
+- **EIP-7702**: Abstraction - EOAs execute smart contract logic
+
+## Feature Comparison
+
+| Aspect | Legacy | EIP-2930 | EIP-1559 | EIP-4844 | EIP-7702 |
+|--------|--------|----------|----------|----------|----------|
+| **Type byte** | 0x00 | 0x01 | 0x02 | 0x03 | 0x04 |
+| **Hard fork** | Genesis | Berlin | London | Dencun | Pectra |
+| **Gas pricing** | Fixed gasPrice | Fixed gasPrice | maxFee + priority | maxFee + priority | maxFee + priority |
+| **Chain ID** | In v value | Explicit | Explicit | Explicit | Explicit |
+| **Access lists** | ✗ | ✓ | ✓ | ✓ | ✓ |
+| **Blob data** | ✗ | ✗ | ✗ | ✓ (6 max) | ✗ |
+| **Authorization** | ✗ | ✗ | ✗ | ✗ | ✓ (delegation) |
+| **Contract creation** | ✓ | ✓ | ✓ | ✗ | ✓ |
+| **Signature format** | v/r/s (bigint) | yParity/r/s | yParity/r/s | yParity/r/s | yParity/r/s |
+
+## Transaction Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 1. CONSTRUCT                                            │
+│    Set nonce, gasLimit, to, value, data, type, fees   │
+├─────────────────────────────────────────────────────────┤
+│ 2. HASH (Signing Hash)                                  │
+│    keccak256(encoded fields) - what gets signed        │
+├─────────────────────────────────────────────────────────┤
+│ 3. SIGN                                                 │
+│    secp256k1(signingHash) → r, s, yParity             │
+├─────────────────────────────────────────────────────────┤
+│ 4. SERIALIZE                                            │
+│    RLP encode [type, fields...] → bytes                │
+├─────────────────────────────────────────────────────────┤
+│ 5. BROADCAST                                            │
+│    Send to mempool / JSON-RPC endpoint                 │
+├─────────────────────────────────────────────────────────┤
+│ 6. MINE                                                 │
+│    Included in block, executed, state changed          │
+├─────────────────────────────────────────────────────────┤
+│ 7. VERIFY                                               │
+│    getSender() recovers signer from signature          │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Operations at each stage:**
+
+1. **Construct**: Validate field values, ensure type-specific constraints
+2. **Hash**: Compute signing hash (excludes signature fields)
+3. **Sign**: Produce signature using sender's private key
+4. **Serialize**: Encode to bytes for transmission
+5. **Broadcast**: Send to network (JSON-RPC `eth_sendRawTransaction`)
+6. **Mine**: Miner includes in block, state transitions execute
+7. **Verify**: Validate signature and recover sender for audit trail
+
+<Aside type="tip">
+The signing hash is computed **before** serialization. This ensures the signature proves the transaction's immutability - any change to the transaction data invalidates the signature.
+</Aside>
+
 ## Type Definitions
 
 ```typescript
@@ -278,7 +380,67 @@ type EIP7702 = {
 type Any = Legacy | EIP2930 | EIP1559 | EIP4844 | EIP7702
 ```
 
-Source: [types.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Transaction/types.ts)
+Source: [types.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts)
+
+## Gas Fee Mechanisms
+
+How fees work across transaction types:
+
+<Tabs>
+<TabItem label="Legacy (Type 0)">
+```
+Effective Gas Price = gasPrice
+Total Gas Cost = gasLimit * gasPrice + value
+```
+- **Fixed price**: No market adaptation
+- **Risk**: Overpay in low-fee periods, underpay in high-fee periods
+</TabItem>
+
+<TabItem label="EIP-2930/1559/4844 (Types 1-3)">
+```
+Base Fee = Set by protocol (burns to Ethereum)
+Priority Fee = User tip to miner
+maxFeePerGas = Maximum willing to pay per gas
+
+Effective Gas Price = min(
+  baseFee + priorityFeePerGas,
+  maxFeePerGas
+)
+Total Gas Cost = gasLimit * effectiveGasPrice + value
+```
+- **Market driven**: Fee adapts to block fullness
+- **Refunds**: If actual < max, difference refunded
+- **Example**: Base fee 20 gwei, you offer 25 gwei max + 2 gwei tip
+  - If block full: pay 20 + 2 = 22 gwei/gas
+  - If block empty: pay 20 + 2 = 22 gwei/gas (no overpayment)
+</TabItem>
+
+<TabItem label="EIP-4844 (Type 3) - Blobs">
+```
+Gas Fee = gasLimit * effectiveGasPrice (same as EIP-1559)
+Blob Fee = blobCount * maxFeePerBlobGas * BlobGasPerBlob
+
+Total Cost = Gas Cost + Blob Cost + value
+```
+- **Separate pricing**: Blob gas independent from execution gas
+- **Blob gas per blob**: 131,072 bytes per blob
+- **Maximum blobs**: 6 blobs per transaction
+- **Blob pricing**: Adapts like base fee, burns to chain
+</TabItem>
+
+<TabItem label="EIP-7702 (Type 4) - Authorization">
+```
+Gas Cost = gasLimit * effectiveGasPrice + value
+
+Authorization costs:
+- Each authorization: ~200 gas + secp256k1 verify
+- Scales with authorizationList.length
+```
+- **Same fee structure**: EIP-1559 fees apply
+- **Additional gas**: Authorizations increase intrinsic gas
+- **Delegation overhead**: EOA proof of delegation
+</TabItem>
+</Tabs>
 
 ## API Documentation
 
@@ -359,29 +521,71 @@ Import only what you need. Each transaction type's methods are independently tre
 
 ## Related Types
 
+### Core Dependencies
+
 <CardGrid stagger>
   <Card title="Address" icon="seti:config">
-    20-byte Ethereum addresses (used in `to` field).
+    20-byte Ethereum addresses. Used in `to` field and sender recovery.
 
     [View Address →](/primitives/address)
   </Card>
 
   <Card title="Hash" icon="document">
-    32-byte hash values (used for transaction hashes).
+    32-byte hash values. Compute signing/transaction hashes via keccak256.
 
     [View Hash →](/primitives/hash)
   </Card>
 
   <Card title="Hex" icon="seti:text">
-    Hex string utilities for encoding/decoding.
+    Hex string utilities for encoding/decoding transaction data.
 
     [View Hex →](/primitives/hex)
   </Card>
 
   <Card title="RLP" icon="list-format">
-    Recursive Length Prefix encoding (used for serialization).
+    Recursive Length Prefix encoding. Core serialization format for all transactions.
 
     [View RLP →](/primitives/rlp)
+  </Card>
+</CardGrid>
+
+### Type-Specific References
+
+<CardGrid stagger>
+  <Card title="AccessList" icon="open-book">
+    Pre-declared account/storage access for gas optimization (EIP-2930+).
+
+    [View AccessList →](/primitives/access-list)
+  </Card>
+
+  <Card title="Blob" icon="rocket">
+    Blob data for L2 data availability (EIP-4844). 128 KB chunks.
+
+    [View Blob →](/primitives/blob)
+  </Card>
+
+  <Card title="Authorization" icon="puzzle">
+    EOA delegation authorization list for EIP-7702 account abstraction.
+
+    [View Authorization →](/primitives/authorization)
+  </Card>
+
+  <Card title="FeeMarket" icon="star">
+    Base fee and priority fee calculations. Context for EIP-1559+ transactions.
+
+    [View FeeMarket →](/primitives/fee-market)
+  </Card>
+
+  <Card title="GasConstants" icon="setting">
+    Gas intrinsic costs, opcode pricing. Essential for gas estimation.
+
+    [View GasConstants →](/primitives/gas-constants)
+  </Card>
+
+  <Card title="Signature" icon="pen">
+    ECDSA signature utilities (r, s, yParity). Used in signing and recovery.
+
+    [View Signature →](/crypto/secp256k1)
   </Card>
 </CardGrid>
 

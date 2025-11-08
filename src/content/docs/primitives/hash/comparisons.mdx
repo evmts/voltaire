@@ -3,13 +3,15 @@ title: Hash Comparisons
 description: Comparing Hash instances for equality
 ---
 
+import { Tabs, TabItem, Aside, Steps, Badge } from '@astrojs/starlight/components';
+
 # Comparisons
 
 Methods for comparing Hash instances for equality and zero checks.
 
 ## Equality
 
-### `instance.equals(other)`
+### `instance.equals(other)` <Badge text="Constant-Time" variant="success" />
 
 Constant-time equality comparison to prevent timing attacks.
 
@@ -36,7 +38,7 @@ hash1.equals(hexHash) // true
 Hash.equals(hash1, hash2) // boolean
 ```
 
-Defined in: [primitives/Hash/BrandedHash/equals.js:18](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/equals.js#L18)
+Defined in: [primitives/Hash/BrandedHash/equals.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/equals.js#L18)
 
 **Implementation:** Uses constant-time comparison (bitwise OR) to prevent timing attacks. All bytes are always compared, regardless of early differences.
 
@@ -49,7 +51,7 @@ for (let i = 0; i < hash.length; i++) {
 return result === 0;
 ```
 
-### `instance.isZero()`
+### `instance.isZero()` <Badge text="Constant-Time" variant="success" />
 
 Checks if all bytes are zero using constant-time comparison.
 
@@ -74,7 +76,7 @@ Hash.equals(zeroHash, Hash.ZERO) // true
 Hash.isZero(hash) // boolean
 ```
 
-Defined in: [primitives/Hash/BrandedHash/isZero.js:16](https://github.com/evmts/primitives/blob/main/src/primitives/Hash/BrandedHash/isZero.js#L16)
+Defined in: [primitives/Hash/BrandedHash/isZero.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isZero.js#L16)
 
 **Implementation:** Uses constant-time comparison against `Hash.ZERO` constant.
 
@@ -199,6 +201,20 @@ function setCached(data: Uint8Array, value: any): void {
 }
 ```
 
+## Comparison Methods
+
+<details>
+<summary>Quick reference for when to use each method</summary>
+
+| Use Case | Method | Example |
+|----------|--------|---------|
+| Check if hash matches expected value | `equals()` | Verify transaction hash |
+| Check if hash is all zeros | `isZero()` | Detect pending/not found |
+| Find matching hash in array | `equals()` in filter | Find event topic |
+| Deduplicate hashes | `equals()` in unique | Remove duplicate logs |
+
+</details>
+
 ## Security Notes
 
 ### Constant-Time Comparison
@@ -248,3 +264,12 @@ const matchesTarget = hashes.some(hash => equals(hash, target))
 **Tree-shaking benefit:** Pure comparison functions with no dependencies. Very small bundle impact.
 
 See [BrandedHash](/primitives/hash/branded-hash) for details on tree-shakeable API.
+
+## See Also
+
+- [Hash Hashing](/primitives/hash/hashing) - Computing hashes with Keccak-256
+- [Hash Conversions](/primitives/hash/conversions) - Converting hash formats
+- [Hash Utilities](/primitives/hash/utilities) - Slicing, cloning, and formatting hashes
+- [Address Validation](/primitives/address/validation) - Similar constant-time comparison for addresses
+- [Signature](/primitives/signature) - Hash-based signature creation and verification
+- [Timing Attacks](https://en.wikipedia.org/wiki/Timing_attack) - Security context for constant-time operations

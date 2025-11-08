@@ -37,7 +37,7 @@ const b64Hash = Base64.encode(hash)
 console.log(b64Hash.length) // 44 characters (32 * 4/3 rounded up)
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/encode.js:17](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/encode.js)
+Defined in: [primitives/Base64/BrandedBase64/encode.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/encode.js)
 
 ### `Base64.encodeString(str)`
 
@@ -73,7 +73,7 @@ const decoded = Base64.decodeToString(encoded)
 const obj = JSON.parse(decoded)
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/encodeString.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/encodeString.js)
+Defined in: [primitives/Base64/BrandedBase64/encodeString.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/encodeString.js)
 
 ## URL-Safe Base64 Encoding
 
@@ -114,7 +114,7 @@ const token = Base64.encodeUrlSafe(tokenBytes)
 const apiUrl = `https://api.example.com/auth?token=${token}`
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/encodeUrlSafe.js:19](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/encodeUrlSafe.js)
+Defined in: [primitives/Base64/BrandedBase64/encodeUrlSafe.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/encodeUrlSafe.js)
 
 ### `Base64.encodeStringUrlSafe(str)`
 
@@ -145,7 +145,7 @@ const encodedState = Base64.encodeStringUrlSafe(state)
 const oauthUrl = `https://oauth.example.com/authorize?state=${encodedState}`
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/encodeStringUrlSafe.js:9](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/encodeStringUrlSafe.js)
+Defined in: [primitives/Base64/BrandedBase64/encodeStringUrlSafe.js:9](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/encodeStringUrlSafe.js)
 
 ## Usage Patterns
 
@@ -250,19 +250,42 @@ Standard base64 encoding process:
 2. **Convert to base64:** Each 3-byte group becomes 4 base64 characters
 3. **Padding:** If final group has fewer than 3 bytes, pad with `=`
 
-```typescript
-// Example: "Hello" → "SGVsbG8="
-// H    e    l    l    o
-// 72   101  108  108  111  (decimal)
-// 01001000 01100101 01101100 01101100 01101111 (binary)
-// 010010 000110 010101 101100 011011 000110 1111xx (6-bit groups)
-// S      G      V      s      b      G      8      = (base64)
+### Visual: 3 Bytes → 4 Characters
+
 ```
+Input bytes:     [01001000] [01100101] [01101100]
+                  H (72)     e (101)    l (108)
+
+6-bit groups:    [010010] [000110] [010101] [101100]
+                   18       6        21       44
+
+Base64 chars:     S         G        V        s
+                 (A-Z: 0-25, a-z: 26-51, 0-9: 52-61, +/: 62-63)
+```
+
+### Complete Example: "Hello" → "SGVsbG8="
+
+```
+Input:    H      e      l      l      o
+Hex:      48     65     6c     6c     6f
+Binary:   01001000 01100101 01101100 01101100 01101111
+                  ↓ 6-bit groups
+6-bits:   010010 | 000110 | 010101 | 101100 | 011011 | 000110 | 1111xx
+Index:    18     | 6      | 21     | 44     | 27     | 6      | 60
+Base64:   S      | G      | V      | s      | b      | G      | 8      | = (padding)
+Output:   S G V s b G 8 =
+```
+
+**Padding Rules:**
+- Input length % 3 == 0: No padding (`SGVs`)
+- Input length % 3 == 1: Add `==` (`SGVsbG8=`)
+- Input length % 3 == 2: Add `=` (`SGVsbGk=`)
 
 URL-safe encoding applies character substitutions after standard encoding:
 ```typescript
 // Standard: SGVs+G8/bG8=
 // URL-safe: SGVs-G8_bG8  (no padding)
+// Changes: + → -, / → _, = removed
 ```
 
 ## Related

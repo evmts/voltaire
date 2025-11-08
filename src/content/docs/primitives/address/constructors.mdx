@@ -30,7 +30,8 @@ const addr4 = new Address(42)
 - `InvalidHexStringError` - Invalid hex characters
 - `InvalidValueError` - Negative number/bigint
 
-Defined in: [primitives/Address/Address.js:12](https://github.com/evmts/primitives/blob/main/src/primitives/Address/Address.js)
+Defined in: [primitives/Address/Address.js:12](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/Address.js)
+Tests: [Address.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/Address.test.ts)
 
 ## Static Constructors
 
@@ -68,7 +69,8 @@ const addr3 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
 - `InvalidHexFormatError` - Missing `0x` prefix or wrong length
 - `InvalidHexStringError` - Invalid hex characters
 
-Defined in: [primitives/Address/BrandedAddress/fromHex.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromHex.js)
+Defined in: [primitives/Address/BrandedAddress/fromHex.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromHex.js)
+Tests: [fromHex.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromHex.test.ts)
 
 ### `Address.fromBytes(bytes)`
 
@@ -87,7 +89,8 @@ const addr = Address.fromBytes(bytes)
 **Throws:**
 - `Error` - If bytes length ≠ 20
 
-Defined in: [primitives/Address/BrandedAddress/fromBytes.js:6](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromBytes.js)
+Defined in: [primitives/Address/BrandedAddress/fromBytes.js:6](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromBytes.js)
+Tests: [fromBytes.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromBytes.test.ts)
 
 ### `Address.fromNumber(value)`
 
@@ -107,7 +110,8 @@ const addr3 = Address.fromNumber(42)
 **Throws:**
 - `InvalidValueError` - If value is negative
 
-Defined in: [primitives/Address/BrandedAddress/fromNumber.js:10](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromNumber.js)
+Defined in: [primitives/Address/BrandedAddress/fromNumber.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromNumber.js)
+Tests: [fromNumber.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromNumber.test.ts)
 
 ### `Address.fromPublicKey(x, y)`
 
@@ -128,7 +132,8 @@ const addr = Address.fromPublicKey(x, y)
 
 **Returns:** `Address`
 
-Defined in: [primitives/Address/BrandedAddress/fromPublicKey.js:12](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js)
+Defined in: [primitives/Address/BrandedAddress/fromPublicKey.js:12](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.js)
+Tests: [fromPublicKey.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPublicKey.test.ts)
 
 **Note:** Uses keccak256 internally. When using tree-shakeable imports, this method will include keccak256 in bundle.
 
@@ -156,7 +161,8 @@ const addr2 = Address.fromPrivateKey(pk)
 **Throws:**
 - `InvalidPrivateKeyError` - If private key is not 32 bytes or invalid
 
-Defined in: [primitives/Address/BrandedAddress/fromPrivateKey.js](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromPrivateKey.js)
+Defined in: [primitives/Address/BrandedAddress/fromPrivateKey.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPrivateKey.js)
+Tests: [fromPrivateKey.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromPrivateKey.test.ts)
 
 **Note:** Uses secp256k1 curve operations and keccak256 internally. When using tree-shakeable imports, this method will include both secp256k1 and keccak256 in bundle.
 
@@ -177,7 +183,8 @@ const addr = Address.fromAbiEncoded(abiEncoded)
 **Throws:**
 - `Error` - If bytes length ≠ 32
 
-Defined in: [primitives/Address/BrandedAddress/fromAbiEncoded.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromAbiEncoded.js)
+Defined in: [primitives/Address/BrandedAddress/fromAbiEncoded.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromAbiEncoded.js)
+Tests: [fromAbiEncoded.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromAbiEncoded.test.ts)
 
 ### `Address.fromBase64(b64)`
 
@@ -195,7 +202,8 @@ const addr = Address.fromBase64("dC01zGY0wFMpJaO4RLyedZX1Hj4=")
 **Throws:**
 - `Error` - If decoded length ≠ 20
 
-Defined in: [primitives/Address/BrandedAddress/fromBase64.js:6](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/fromBase64.js)
+Defined in: [primitives/Address/BrandedAddress/fromBase64.js:6](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromBase64.js)
+Tests: [fromBase64.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/fromBase64.test.ts)
 
 ## Factory Methods
 
@@ -222,7 +230,8 @@ const addr2 = Address.of(
 **Throws:**
 - `Error` - If total bytes ≠ 20
 
-Defined in: [primitives/Address/Address.js](https://github.com/evmts/primitives/blob/main/src/primitives/Address/Address.js)
+Defined in: [primitives/Address/Address.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/Address.js)
+Tests: [Address.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/Address.test.ts)
 
 ### `Address.zero()`
 
@@ -235,7 +244,8 @@ console.log(zeroAddr.isZero()) // true
 
 **Returns:** `Address`
 
-Defined in: [primitives/Address/BrandedAddress/zero.js:4](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/zero.js)
+Defined in: [primitives/Address/BrandedAddress/zero.js:4](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/zero.js)
+Tests: [zero.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/zero.test.ts)
 
 ## Tree-Shakeable Usage
 

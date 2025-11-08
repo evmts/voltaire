@@ -46,7 +46,7 @@ const gwei5 = Gwei.from(42)     // Number input
 
 **Note:** Uses `Uint.from` internally for conversion.
 
-Defined in: [primitives/Denomination/Gwei.ts:10](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Gwei.ts)
+Defined in: [primitives/Denomination/Gwei.ts:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Gwei.ts)
 
 ## Conversions From Other Units
 
@@ -73,7 +73,7 @@ const gwei2 = Gwei.fromWei(wei2)  // 50n (truncates)
 
 **Formula:** `gwei = wei / 1_000_000_000` (integer division)
 
-Defined in: [primitives/Denomination/Gwei.ts:14](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Gwei.ts)
+Defined in: [primitives/Denomination/Gwei.ts:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Gwei.ts)
 
 ### `Gwei.fromEther(ether)`
 
@@ -94,7 +94,7 @@ const gwei = Gwei.fromEther(ether)  // 1_000_000_000n Gwei
 
 **Formula:** `gwei = ether * 1_000_000_000`
 
-Defined in: [primitives/Denomination/Gwei.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Gwei.ts)
+Defined in: [primitives/Denomination/Gwei.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Gwei.ts)
 
 ## Conversions To Other Units
 
@@ -116,7 +116,7 @@ const wei = Gwei.toWei(gwei)  // 50_000_000_000n Wei
 
 **Formula:** `wei = gwei * 1_000_000_000`
 
-Defined in: [primitives/Denomination/Gwei.ts:24](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Gwei.ts)
+Defined in: [primitives/Denomination/Gwei.ts:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Gwei.ts)
 
 ### `Gwei.toEther(gwei)`
 
@@ -140,7 +140,7 @@ const ether2 = Gwei.toEther(gwei2)  // 0n (truncates)
 
 **Formula:** `ether = gwei / 1_000_000_000` (integer division)
 
-Defined in: [primitives/Denomination/Gwei.ts:29](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Gwei.ts)
+Defined in: [primitives/Denomination/Gwei.ts:29](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Gwei.ts)
 
 ## Conversions To Base Type
 
@@ -166,7 +166,7 @@ const doubled = Uint.times(u256, Uint.from(2n))
 
 **Note:** Removes type safety. Use for arithmetic operations requiring `Uint.Type`.
 
-Defined in: [primitives/Denomination/Gwei.ts:34](https://github.com/evmts/primitives/blob/main/src/primitives/Denomination/Gwei.ts)
+Defined in: [primitives/Denomination/Gwei.ts:34](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Gwei.ts)
 
 ## Usage Examples
 

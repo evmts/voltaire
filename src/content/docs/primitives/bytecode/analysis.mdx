@@ -38,7 +38,7 @@ analysis.instructions.forEach(inst => {
 - `jumpDestinations: ReadonlySet<number>` - Valid JUMPDEST positions
 - `instructions: readonly Instruction[]` - All parsed instructions
 
-Defined in: [primitives/Bytecode/BrandedBytecode/analyze.js:22](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/analyze.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js)
 
 ## Jump Destination Analysis
 
@@ -60,7 +60,7 @@ jumpdests.has(2)  // true  - Actual JUMPDEST at position 2
 
 **Returns:** `Set<number>` - Set of valid JUMPDEST positions
 
-Defined in: [primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js:22](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js)
 
 **Why this matters:** EVM JUMP/JUMPI must target valid JUMPDEST opcodes. Bytes inside PUSH data that happen to equal 0x5b (JUMPDEST) are NOT valid jump targets.
 
@@ -83,7 +83,7 @@ Bytecode.isValidJumpDest(code, 3)  // true  - JUMPDEST at end
 
 **Returns:** `boolean` - `true` if position is valid JUMPDEST
 
-Defined in: [primitives/Bytecode/BrandedBytecode/isValidJumpDest.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/isValidJumpDest.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/isValidJumpDest.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/isValidJumpDest.js)
 
 ## Instruction Parsing
 
@@ -124,7 +124,7 @@ type Instruction = {
 }
 ```
 
-Defined in: [primitives/Bytecode/BrandedBytecode/parseInstructions.js:21](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/parseInstructions.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/parseInstructions.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/parseInstructions.js)
 
 ## Opcode Utilities
 
@@ -144,7 +144,7 @@ Bytecode.isPush(0x00)  // false - STOP
 
 **Returns:** `boolean` - `true` if PUSH1-PUSH32
 
-Defined in: [primitives/Bytecode/BrandedBytecode/isPush.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/isPush.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/isPush.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/isPush.js)
 
 ### `Bytecode.getPushSize(opcode)`
 
@@ -162,7 +162,7 @@ Bytecode.getPushSize(0x00)  // 0  - Not a PUSH
 
 **Returns:** `number` - Data bytes (1-32 for PUSH, 0 otherwise)
 
-Defined in: [primitives/Bytecode/BrandedBytecode/getPushSize.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/getPushSize.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/getPushSize.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/getPushSize.js)
 
 ### `Bytecode.isTerminator(opcode)`
 
@@ -181,7 +181,7 @@ Bytecode.isTerminator(0x5b)  // false - JUMPDEST
 
 **Returns:** `boolean` - `true` if STOP, RETURN, REVERT, or INVALID
 
-Defined in: [primitives/Bytecode/BrandedBytecode/isTerminator.js:8](https://github.com/evmts/primitives/blob/main/src/primitives/Bytecode/BrandedBytecode/isTerminator.js)
+Defined in: [primitives/Bytecode/BrandedBytecode/isTerminator.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/isTerminator.js)
 
 ## Common Analysis Patterns
 

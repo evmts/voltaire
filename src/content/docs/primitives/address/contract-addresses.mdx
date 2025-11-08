@@ -3,6 +3,8 @@ title: Contract Address Calculation
 description: CREATE and CREATE2 address derivation
 ---
 
+import { Tabs, TabItem, Aside, Steps, Badge } from '@astrojs/starlight/components';
+
 # Contract Address Calculation
 
 Methods for calculating contract addresses from deployer address and deployment parameters.
@@ -51,7 +53,8 @@ contract1.equals(contract2) // false
 Address.calculateCreateAddress(deployerAddr, nonce)
 ```
 
-Defined in: [primitives/Address/BrandedAddress/calculateCreateAddress.js:20](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js)
+Defined in: [primitives/Address/BrandedAddress/calculateCreateAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.js)
+Tests: [calculateCreateAddress.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreateAddress.test.ts)
 
 **Note:** Uses keccak256 and RLP encoding internally. When using tree-shakeable imports, including this method adds both keccak256 and RLP to bundle.
 
@@ -117,7 +120,8 @@ const contractAddr2 = deployerAddr.calculateCreate2Address(salt2, initCode)
 Address.calculateCreate2Address(deployerAddr, salt, initCode)
 ```
 
-Defined in: [primitives/Address/BrandedAddress/calculateCreate2Address.js:24](https://github.com/evmts/primitives/blob/main/src/primitives/Address/BrandedAddress/calculateCreate2Address.js)
+Defined in: [primitives/Address/BrandedAddress/calculateCreate2Address.js:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreate2Address.js)
+Tests: [calculateCreate2Address.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/calculateCreate2Address.test.ts)
 
 **Note:** Uses keccak256 internally (twice - once for initCode, once for final address). When using tree-shakeable imports, including this method adds keccak256 to bundle.
 
@@ -225,16 +229,66 @@ console.log(`Found: ${address.toChecksummed()}`)
 console.log(`Salt: ${salt}`)
 ```
 
-## CREATE vs CREATE2
+## CREATE vs CREATE2 <Badge text="EIP-1014" variant="success" />
+
+### Address Derivation Flowchart
+
+```
+CREATE:
+  deployer address + nonce
+           ↓
+    RLP-encode
+           ↓
+   keccak256 hash
+           ↓
+  take last 20 bytes
+           ↓
+    contract address
+
+CREATE2:
+  deployer address + salt + keccak256(initCode)
+                    ↓
+              0xff prefix
+                    ↓
+          combine all bytes
+                    ↓
+          keccak256 hash
+                    ↓
+         take last 20 bytes
+                    ↓
+         contract address
+```
+
+### Comparison Table
 
 | Feature | CREATE | CREATE2 |
 |---------|--------|---------|
-| **Determinism** | Nonce-based | Salt-based |
-| **Dependencies** | Keccak256, RLP | Keccak256 only |
+| **Determinism** | Nonce-based (sequential) | Salt-based (arbitrary) |
+| **Dependencies** | Keccak256, RLP encoder | Keccak256 only |
 | **Parameters** | `(address, nonce)` | `(address, salt, initCode)` |
-| **Use case** | Sequential deployment | Deterministic deployment |
-| **Predictability** | Requires tracking nonce | Fully deterministic |
-| **Redeployment** | Different address | Same address possible |
+| **Use case** | Regular deployments | Deterministic/counterfactual deployments |
+| **Predictability** | Requires tracking nonce | Fully deterministic always |
+| **Redeployment** | Different address each time | Same address if inputs identical |
+| **EIP** | Core | [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) |
+
+### When to Use
+
+<Tabs>
+<TabItem label="CREATE">
+When deploying contracts in sequence:
+- Each deployment increments sender's nonce
+- Natural if deploying multiple contracts
+- Simple, no salt management needed
+- Example: Factory contracts deploying pools
+</TabItem>
+<TabItem label="CREATE2">
+When you need deterministic addresses:
+- Predict address before deployment
+- Redeploy to exact same address (rare)
+- Cross-chain deployment consistency
+- Example: Bridges, counterfactual accounts, proxy factories
+</TabItem>
+</Tabs>
 
 ## Tree-Shakeable Usage
 
@@ -253,3 +307,12 @@ const create2Addr = calculateCreate2Address(deployer, salt, initCode)
 **Tree-shaking consideration:** Both methods include keccak256 in bundle. CREATE also includes RLP encoder.
 
 See [BrandedAddress](/primitives/address/branded-address) for details on tree-shakeable API.
+
+## See Also
+
+- [Address Conversions](/primitives/address/conversions) - Convert addresses to various formats
+- [Address Validation](/primitives/address/validation) - Validate addresses and checksums
+- [Transaction](/primitives/transaction) - Complete transaction information including nonce
+- [RLP Encoding](/primitives/rlp) - RLP encoding used in CREATE calculations
+- [EIP-1014: CREATE2](https://eips.ethereum.org/EIPS/eip-1014) - CREATE2 opcode specification
+- [Keccak-256](/crypto/keccak256) - Hashing algorithm used in address derivation

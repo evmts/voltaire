@@ -31,7 +31,8 @@ Hex.size(hash)  // 32 (bytes)
 
 **Calculation:** `(hex.length - 2) / 2`
 
-Defined in: [primitives/Hex/BrandedHex/size.js:14-16](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/size.js#L14-L16)
+Defined in: [primitives/Hex/BrandedHex/size.js:14-16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/size.js#L14-L16)
+Tests: [size.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/size.test.ts)
 
 **Note:** Two hex characters = one byte. Excludes `0x` prefix from count.
 
@@ -60,7 +61,8 @@ Hex.equals(Hex("0xAbCd"), Hex("0xaBcD"))  // true
 
 **Returns:** `boolean`
 
-Defined in: [primitives/Hex/BrandedHex/equals.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/equals.js)
+Defined in: [primitives/Hex/BrandedHex/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/equals.js)
+Tests: [equals.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/equals.test.ts)
 
 **Implementation:** Uses case-insensitive string comparison via `toLowerCase()`.
 
@@ -97,7 +99,8 @@ const empty = Hex.random(0)  // "0x"
 - Session IDs
 - Testing
 
-Defined in: [primitives/Hex/BrandedHex/random.js:14-18](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/random.js#L14-L18)
+Defined in: [primitives/Hex/BrandedHex/random.js:14-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.js#L14-L18)
+Tests: [random.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.test.ts)
 
 **Note:** Not suitable for deterministic or seeded randomness. Use a PRNG if reproducibility needed.
 
@@ -128,7 +131,8 @@ const empty = Hex.zero(0)  // "0x"
 
 **Returns:** `BrandedHex`
 
-Defined in: [primitives/Hex/BrandedHex/zero.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/zero.js)
+Defined in: [primitives/Hex/BrandedHex/zero.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.js)
+Tests: [zero.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.test.ts)
 
 **Use cases:**
 - Default values

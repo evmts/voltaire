@@ -93,7 +93,7 @@ export type LeafNode = Extract<Node, { type: "leaf" }>
 export type EmptyNode = Extract<Node, { type: "empty" }>
 ```
 
-Source: [BrandedBinaryTree.ts:7-43](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts#L7-L43)
+Source: [BrandedBinaryTree.ts:7-43](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts#L7-L43)
 </TabItem>
 <TabItem label="AccountData">
 ```typescript
@@ -107,9 +107,43 @@ export interface AccountData {
 
 Account basic data layout stored at index 0 in stem node. Total 28 bytes defining Ethereum account state.
 
-Source: [BrandedBinaryTree.ts:37-42](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts#L37-L42)
+Source: [BrandedBinaryTree.ts:37-42](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/BrandedBinaryTree.ts#L37-L42)
 </TabItem>
 </Tabs>
+
+## Tree Structure Visualization
+
+```
+                    Root (Internal Node)
+                    /                  \
+              Internal                 Internal
+              /      \                /      \
+            Stem     Stem           Stem     Empty
+           (vals)   (vals)         (vals)
+```
+
+Each **Internal Node** branches left (bit 0) or right (bit 1) based on stem bits.
+**Stem Nodes** at leaves store 256 possible values (some null).
+**Empty Nodes** represent unused branches (hash = all zeros).
+
+### Example: Three Accounts
+
+```
+addr1 = 0x00..01  →  key1 stem=[00..01... + 31 bytes]
+addr2 = 0xFF..02  →  key2 stem=[FF..02... + 31 bytes]
+addr3 = 0x00..03  →  key3 stem=[00..03... + 31 bytes]
+
+                           Root (Internal)
+                             bit 0
+                          /          \
+               bit 1=0 (left)       bit 1=1 (right)
+                 /                      \
+           Internal (bit 7)           Stem[FF..02]
+            /          \                  |
+       Stem[00..01]  Stem[00..03]      val[0], val[1]...
+           |            |
+        val[0]...    val[0]...
+```
 
 ## Node Types
 
@@ -223,6 +257,20 @@ const { stem, idx } = BinaryTree.splitKey(key)
 // idx is 0-255
 ```
 
+### Visual: Key Structure
+
+```
+32-byte key layout:
+┌─────────────────────────────────────────┬────┐
+│          31-byte Stem                   │ Idx│
+│  (tree navigation path)                 │ (0-│
+│                                         │255)│
+├──┬──┬──┬──┬───────────┬──┬──┬──┐        │    │
+│B0│B1│B2│..│Byte 15... │..|B29│B30│      │B31 │
+└──┴──┴──┴──┴───────────┴──┴──┴──┘        └────┘
+ 248 bits for tree navigation   selects value in stem node
+```
+
 ### Ethereum Address Mapping
 
 Ethereum addresses (20 bytes) convert to 32-byte keys by prepending 12 zero bytes:
@@ -288,6 +336,12 @@ Implementation follows [EIP-7864](https://eips.ethereum.org/EIPS/eip-7864) Binar
 ## Related Types
 
 <CardGrid stagger>
+  <Card title="Hash" icon="random">
+    BLAKE3 hashing for node commitments (used by BinaryTree).
+
+    [View Crypto →](/crypto)
+  </Card>
+
   <Card title="Bytes" icon="document">
     Byte array operations for key and value manipulation.
 
@@ -300,9 +354,21 @@ Implementation follows [EIP-7864](https://eips.ethereum.org/EIPS/eip-7864) Binar
     [View Hex →](/primitives/hex)
   </Card>
 
+  <Card title="State (Merkle Patricia Trie)" icon="list-format">
+    Ethereum state representation using tree structures.
+
+    [View State →](/primitives/state)
+  </Card>
+
   <Card title="Branded Types" icon="open-book">
     Zero-overhead type branding pattern used throughout primitives.
 
     [View Branded Types →](/primitives/branded-types)
   </Card>
 </CardGrid>
+
+## See Also
+
+- **Merkle Proofs**: Upcoming proof generation and verification for tree validation
+- **Verkle Trees**: Future evolution of binary trees with smaller proofs
+- **Ethereum Execution Layer**: Uses similar tree structures for account and storage commitments

@@ -106,7 +106,7 @@ const key = addressToKey(address)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/addressToKey.js:17-22](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/addressToKey.js#L17-L22)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/addressToKey.js:17-22](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/addressToKey.js#L17-L22)
 
 ## Split Key
 
@@ -212,7 +212,7 @@ const { stem, idx } = splitKey(key)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/splitKey.js:19-25](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/splitKey.js#L19-L25)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/splitKey.js:19-25](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/splitKey.js#L19-L25)
 
 ## Stem Bit Extraction
 
@@ -323,7 +323,7 @@ const bit = getStemBit(stem, position)
 </TabItem>
 </Tabs>
 
-Defined in: [primitives/BinaryTree/BrandedBinaryTree/getStemBit.js:16-23](https://github.com/evmts/primitives/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/getStemBit.js#L16-L23)
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/getStemBit.js:16-23](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/getStemBit.js#L16-L23)
 
 ## Key Patterns
 
@@ -406,6 +406,36 @@ const path = traversePath(stem, 5)
 console.log(path)
 // ['right', 'left', 'right', 'right', 'left']
 ```
+
+### Visual: Bit Navigation Through Tree
+
+```
+Stem byte 0: 10110000 (0xB0)
+Bit positions: 0 1 2 3 4 5 6 7
+Bit values:    1 0 1 1 0 0 0 0
+
+Tree navigation (depth = position):
+                    Root
+            bit[0]=1 ↙ (right)
+
+            bit[1]=0 ↙ (left)
+
+            bit[2]=1 ↙ (right)
+
+            bit[3]=1 ↙ (right)
+
+            bit[4]=0 ↙ (left)
+
+                  Stem Node
+                  (at depth 5)
+
+Path taken: right → left → right → right → left → STEM[addr]
+```
+
+Each bit in the 31-byte stem determines one level of tree depth:
+- 31 bytes × 8 bits = 248 total bits = 248 tree levels possible
+- Stem defines complete path to leaf (stem node)
+- Subindex selects one of 256 values in that stem
 
 ## Bit Indexing
 

@@ -45,7 +45,7 @@ new Uint(3.14)         // Error: must be integer
 - If number is not an integer
 - If string is not valid decimal or hex format
 
-Source: [UintConstructor.ts:69](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/UintConstructor.ts#L69)
+Source: [UintConstructor.ts:69](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/UintConstructor.ts#L69)
 
 ## Static Constructors
 
@@ -75,7 +75,7 @@ import { from } from '@tevm/voltaire/BrandedUint'
 const value = from(100n)
 ```
 
-Source: [from.ts:18](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/from.ts#L18)
+Source: [from.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/from.ts#L18)
 
 ### `Uint.tryFrom(value)`
 
@@ -108,7 +108,7 @@ import { tryFrom } from '@tevm/voltaire/BrandedUint'
 const value = tryFrom("100")
 ```
 
-Source: [tryFrom.ts:17](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/tryFrom.ts#L17)
+Source: [tryFrom.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/tryFrom.ts#L17)
 
 ### `Uint.fromHex(hex)`
 
@@ -145,7 +145,7 @@ import { fromHex } from '@tevm/voltaire/BrandedUint'
 const value = fromHex("0xff")
 ```
 
-Source: [fromHex.ts:17](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/fromHex.ts#L17)
+Source: [fromHex.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromHex.ts#L17)
 
 ### `Uint.fromBigInt(value)`
 
@@ -176,7 +176,7 @@ import { fromBigInt } from '@tevm/voltaire/BrandedUint'
 const value = fromBigInt(100n)
 ```
 
-Source: [fromBigInt.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/fromBigInt.ts)
+Source: [fromBigInt.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromBigInt.ts)
 
 ### `Uint.fromNumber(value)`
 
@@ -211,7 +211,7 @@ import { fromNumber } from '@tevm/voltaire/BrandedUint'
 const value = fromNumber(100)
 ```
 
-Source: [fromNumber.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/fromNumber.ts)
+Source: [fromNumber.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromNumber.ts)
 
 ### `Uint.fromBytes(bytes)`
 
@@ -248,7 +248,7 @@ import { fromBytes } from '@tevm/voltaire/BrandedUint'
 const value = fromBytes(new Uint8Array([0xff]))
 ```
 
-Source: [fromBytes.ts:16](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/fromBytes.ts#L16)
+Source: [fromBytes.ts:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromBytes.ts#L16)
 
 ### `Uint.fromAbiEncoded(bytes)`
 
@@ -282,7 +282,7 @@ import { fromAbiEncoded } from '@tevm/voltaire/BrandedUint'
 const value = fromAbiEncoded(bytes32)
 ```
 
-Source: [fromAbiEncoded.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Uint/BrandedUint/fromAbiEncoded.ts)
+Source: [fromAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromAbiEncoded.ts)
 
 ## Usage Patterns
 

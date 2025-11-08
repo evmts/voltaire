@@ -100,7 +100,7 @@ export type Base64String = string
 export type Base64UrlString = string
 ```
 
-Source: [types.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/types.ts)
+Source: [types.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/types.ts)
 
 ## Namespace API
 
@@ -128,7 +128,7 @@ export const Base64 = {
 }
 ```
 
-Source: [Base64.js](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/Base64.js)
+Source: [Base64.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/Base64.js)
 
 ## API Documentation
 
@@ -260,6 +260,28 @@ Implements [RFC 4648](https://tools.ietf.org/html/rfc4648):
 This implementation uses browser/Node.js Web APIs (`btoa`/`atob`) for encoding/decoding. For Deno, Bun, and modern Node.js, these APIs are available globally.
 </Aside>
 
+## Encoding Comparison
+
+Base64 vs Hex size for 256 bytes of data:
+
+```
+Data: 256 bytes
+
+Hex encoding:
+  Size: 256 × 2 = 512 characters
+  Format: 0x + pairs of hex digits
+
+Base64 encoding:
+  Size: ceil(256 / 3) × 4 = 344 characters
+  Format: 4-character groups with optional padding
+
+Savings: 512 - 344 = 168 characters (33% smaller)
+```
+
+**When to use:**
+- **Base64**: Smaller output, URLs, JSON compatibility
+- **Hex**: Human-readable, debugging, contract ABIs
+
 ## Related Types
 
 <CardGrid stagger>
@@ -267,6 +289,12 @@ This implementation uses browser/Node.js Web APIs (`btoa`/`atob`) for encoding/d
     Hex string utilities for binary data encoding.
 
     [View Hex →](/primitives/hex)
+  </Card>
+
+  <Card title="Hash (Blake2/Keccak)" icon="random">
+    Cryptographic hash functions for data integrity.
+
+    [View Crypto →](/crypto)
   </Card>
 
   <Card title="Bytes" icon="document">

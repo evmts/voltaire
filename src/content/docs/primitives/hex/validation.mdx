@@ -33,7 +33,8 @@ Hex.validate("0xGGGG")  // throws InvalidCharacterError
 - `InvalidFormatError` - Missing `0x` prefix
 - `InvalidCharacterError` - Contains invalid hex characters
 
-Defined in: [primitives/Hex/BrandedHex/validate.js:17-24](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/validate.js#L17-L24)
+Defined in: [primitives/Hex/BrandedHex/validate.js:17-24](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/validate.js#L17-L24)
+Tests: [validate.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/validate.test.ts)
 
 **Validation rules:**
 - Must start with `0x` prefix
@@ -71,7 +72,8 @@ Hex.isHex(123)                   // false
 
 **Returns:** `value is BrandedHex` (type predicate)
 
-Defined in: [primitives/Hex/BrandedHex/isHex.js](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/isHex.js)
+Defined in: [primitives/Hex/BrandedHex/isHex.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isHex.js)
+Tests: [isHex.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isHex.test.ts)
 
 **Checks:**
 - `typeof value === "string"`
@@ -100,7 +102,8 @@ Hex.isSized(hash, 32)  // true (32 bytes)
 
 **Returns:** `boolean`
 
-Defined in: [primitives/Hex/BrandedHex/isSized.js:15-17](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L15-L17)
+Defined in: [primitives/Hex/BrandedHex/isSized.js:15-17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L15-L17)
+Tests: [isSized.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.test.ts)
 
 **Calculation:** `(hex.length - 2) / 2 === size`
 
@@ -134,7 +137,8 @@ function processHash(hex: BrandedHex) {
 **Throws:**
 - `InvalidLengthError` - If size doesn't match
 
-Defined in: [primitives/Hex/BrandedHex/assertSize.js:18-25](https://github.com/evmts/primitives/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L18-L25)
+Defined in: [primitives/Hex/BrandedHex/assertSize.js:18-25](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L18-L25)
+Tests: [assertSize.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.test.ts)
 
 ## Usage Patterns
 

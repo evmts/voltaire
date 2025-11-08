@@ -46,7 +46,7 @@ try {
 }
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/decode.js:14](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decode.js)
+Defined in: [primitives/Base64/BrandedBase64/decode.js:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/decode.js)
 
 ### `Base64.decodeToString(encoded)`
 
@@ -85,7 +85,7 @@ const message = Base64.decodeToString(messageB64)
 console.log(message) // "Thanks for decoding!"
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/decodeToString.js:15](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decodeToString.js)
+Defined in: [primitives/Base64/BrandedBase64/decodeToString.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/decodeToString.js)
 
 ## URL-Safe Base64 Decoding
 
@@ -134,7 +134,7 @@ if (id) {
 }
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/decodeUrlSafe.js:10](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decodeUrlSafe.js)
+Defined in: [primitives/Base64/BrandedBase64/decodeUrlSafe.js:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/decodeUrlSafe.js)
 
 ### `Base64.decodeUrlSafeToString(encoded)`
 
@@ -177,7 +177,7 @@ if (errorParam) {
 }
 ```
 
-Defined in: [primitives/Base64/BrandedBase64/decodeUrlSafeToString.js:9](https://github.com/evmts/primitives/blob/main/src/primitives/Base64/BrandedBase64/decodeUrlSafeToString.js)
+Defined in: [primitives/Base64/BrandedBase64/decodeUrlSafeToString.js:9](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/decodeUrlSafeToString.js)
 
 ## Usage Patterns
 
@@ -358,18 +358,45 @@ Standard base64 decoding process:
 3. **Convert from base64:** Each 4 base64 characters become 3 bytes
 4. **Return bytes:** Construct `Uint8Array` from decoded data
 
-```typescript
-// Example: "SGVsbG8=" → "Hello"
-// S      G      V      s      b      G      8      = (base64)
-// 010010 000110 010101 101100 011011 000110 1111xx (6-bit groups)
-// 01001000 01100101 01101100 01101100 01101111 (8-bit bytes)
-// 72   101  108  108  111  (decimal)
-// H    e    l    l    o
+### Visual: 4 Characters → 3 Bytes
+
 ```
+Base64 chars:     S      G      V      s
+                  (index: 18, 6, 21, 44)
+
+6-bit values:    [010010] [000110] [010101] [101100]
+
+Combined binary:  01001000 01100101 01101100
+                  ↓ regrouped to 8-bits
+
+Output bytes:    [01001000] [01100101] [01101100]
+                  H (72)     e (101)    l (108)
+```
+
+### Complete Example: "SGVsbG8=" → "Hello"
+
+```
+Input:    S      G      V      s      b      G      8      =
+Index:    18     6      21     44     27     6      60     (padding)
+6-bits:   010010 | 000110 | 010101 | 101100 | 011011 | 000110 | 1111xx
+                  ↓ regroup to 8-bits
+8-bits:   01001000 01100101 01101100 01101100 01101111
+Decimal:  72      101      108      108      111
+Chars:    H       e        l        l        o
+```
+
+**Padding Detection:**
+- `==` (2 padding): Lost 2 bits, actual length -2 bytes
+- `=` (1 padding): Lost 1 bit, actual length -1 byte
+- No padding: Complete 3-byte group
+
+**Length Formula:**
+- Output length = `floor(input.length * 3 / 4) - padding_count`
 
 URL-safe decoding performs character substitutions before standard decoding:
 ```typescript
-// URL-safe: SGVs-G8_bG8  (restore padding)
+// URL-safe: SGVs-G8_bG8  (no padding, restore before decode)
+// Process:  SGVs+G8/bG8= (substitute - → +, _ → /, add =)
 // Standard: SGVs+G8/bG8= (decode normally)
 ```
 

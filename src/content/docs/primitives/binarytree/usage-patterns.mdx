@@ -13,6 +13,40 @@ Common patterns and best practices for implementing Ethereum state with Binary S
 
 Binary State Tree provides unified structure for Ethereum state including accounts, storage, and code. This guide covers practical implementation patterns for state management, account operations, and tree maintenance.
 
+## Merkle Tree Building Example
+
+Visualizing how accounts create a Merkle tree structure:
+
+```
+Accounts added to tree:
+  1. Alice: 0x1234...
+  2. Bob: 0x5678...
+  3. Carol: 0x9abc...
+
+Tree growth:
+
+Step 1 (Alice):
+  Root: Stem[Alice]
+
+Step 2 (Alice + Bob):
+  If stems differ at bit N:
+       Root (Internal, bit N)
+       /              \
+  Stem[Alice]    Stem[Bob]
+
+Step 3 (Alice + Bob + Carol):
+  If Carol differs from Alice at different bit:
+             Root (Internal, bit M)
+            /                    \
+       Internal (bit N)      Stem[Carol]
+        /          \
+   Stem[Alice]  Stem[Bob]
+
+Root hash = BLAKE3(hash(left) || hash(right))
+  ↓ Changes for every insertion
+  ↓ Provides state commitment for validation
+```
+
 ## Account Management
 
 ### Account Data Structure
