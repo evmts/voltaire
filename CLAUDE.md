@@ -342,6 +342,11 @@ Zig: https://ziglang.org/documentation/0.15.1/ | Yellow Paper | EIPs
 
 Propose→wait. Blocked: stop, explain, wait.
 
+## Git Safety
+
+❌ `git reset --hard` - NEVER use. Destructive, loses work.
+✅ `git revert` - Use for reverting commits safely.
+
 ## GitHub
 
 "_Note: Claude AI assistant, not @roninjin10 or @fucory_" (all issue/API ops)
