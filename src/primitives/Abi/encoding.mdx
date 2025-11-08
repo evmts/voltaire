@@ -3,7 +3,7 @@ title: ABI Encoding
 description: Low-level ABI encoding algorithms and implementation
 ---
 
-import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components';
 
 # ABI Encoding
 
@@ -12,6 +12,54 @@ Low-level ABI encoding implementation following the Ethereum ABI specification.
 ## Overview
 
 The ABI encoding module provides low-level functions for encoding Solidity types according to the [Solidity ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html). These functions are used internally by Function, Event, Error, and Constructor encoders.
+
+## ABI Encoding Visualization
+
+Function calls are encoded with a function selector (4 bytes) followed by ABI-encoded parameters:
+
+```
+Function: transfer(address to, uint256 amount)
+          ↓
+          ├─ Signature: "transfer(address,uint256)"
+          ├─ Selector: keccak256(sig)[0:4] = 0xa9059cbb
+          │
+          └─ Parameters:
+             ├─ to: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+             └─ amount: 1000n
+
+Calldata Layout:
+┌──────────────────────────────────────────────┐
+│ Selector (4 bytes):  a9 05 9c bb             │
+├──────────────────────────────────────────────┤
+│ Param 0 (32 bytes):  00...00 742d35cc6...   │  (address, left-padded)
+├──────────────────────────────────────────────┤
+│ Param 1 (32 bytes):  00...00 00 00 03 e8     │  (uint256 = 1000, left-padded)
+└──────────────────────────────────────────────┘
+Total: 68 bytes (4 + 32 + 32)
+```
+
+### Encoding Process Flow
+
+<Steps>
+
+1. **Compute Function Selector**
+   - Hash function signature: `keccak256("transfer(address,uint256)")`
+   - Take first 4 bytes: `0xa9059cbb`
+
+2. **Classify Parameter Types**
+   - `address` → Static type (32-byte padding)
+   - `uint256` → Static type (32-byte padding)
+   - No dynamic types, so only HEAD section needed
+
+3. **Encode Parameters**
+   - Static parameters are encoded inline in order
+   - Each parameter padded to 32 bytes
+   - Dynamic types would reference offsets in TAIL section
+
+4. **Combine Selector + Encoded Params**
+   - Output: `0xa9059cbb` + encoded_param0 + encoded_param1
+
+</Steps>
 
 ## Core Functions
 
@@ -49,7 +97,7 @@ const encoded = encodeParameters(params, [
 ])
 ```
 
-Source: [Encoding.ts:305-354](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L305-L354)
+Source: [Encoding.ts:305-354](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L305-L354)
 
 ### encodeValue
 
@@ -81,7 +129,7 @@ const result = encodeValue("string", "Hello")
 // isDynamic: true, encoded: length + padded data
 ```
 
-Source: [Encoding.ts:60-166](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L60-L166)
+Source: [Encoding.ts:60-166](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L60-L166)
 
 ## Type-Specific Encoding
 
@@ -103,7 +151,7 @@ const encoded16 = encodeUint(1000, 16) // uint16
 - Values validated against type range
 - Out of range throws `AbiEncodingError`
 
-Source: [Encoding.ts:11-24](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L11-L24)
+Source: [Encoding.ts:11-24](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L11-L24)
 
 ### Signed Integers
 
@@ -124,7 +172,7 @@ const encodedNeg = encodeInt(-1n, 256)
 - Range validation: -(2^(bits-1)) to 2^(bits-1)-1
 - Encoded as 32 bytes (left-padded)
 
-Source: [Encoding.ts:26-37](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L26-L37)
+Source: [Encoding.ts:26-37](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L26-L37)
 
 ### Address
 
@@ -135,7 +183,7 @@ const encoded = Address.toAbiEncoded(addr)
 // 32 bytes: 12 zeros + 20 address bytes
 ```
 
-Source: [Encoding.ts:93-103](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L93-L103)
+Source: [Encoding.ts:93-103](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L93-L103)
 
 ### Boolean
 
@@ -148,7 +196,7 @@ const { encoded: falseEncoded } = encodeValue("bool", false)
 // 32 bytes: all zeros
 ```
 
-Source: [Encoding.ts:105-109](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L105-L109)
+Source: [Encoding.ts:105-109](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L105-L109)
 
 ### Fixed-Size Bytes
 
@@ -159,7 +207,7 @@ const { encoded } = encodeValue("bytes4", bytes4)
 // 32 bytes: 4 data bytes + 28 zeros
 ```
 
-Source: [Encoding.ts:111-124](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L111-L124)
+Source: [Encoding.ts:111-124](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L111-L124)
 
 ### Dynamic Bytes
 
@@ -170,7 +218,7 @@ const { encoded } = encodeValue("bytes", data)
 // [length: 5][data: 1,2,3,4,5 + 27 padding bytes]
 ```
 
-Source: [Encoding.ts:126-134](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L126-L134)
+Source: [Encoding.ts:126-134](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L126-L134)
 
 ### String
 
@@ -180,7 +228,7 @@ const { encoded } = encodeValue("string", "Hello")
 // [length: 5][UTF-8 bytes + padding]
 ```
 
-Source: [Encoding.ts:136-145](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L136-L145)
+Source: [Encoding.ts:136-145](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L136-L145)
 
 ### Dynamic Arrays
 
@@ -191,7 +239,7 @@ const encoded = encodeParameters(params, [[1n, 2n, 3n]])
 // [length: 3][elem1: 32 bytes][elem2: 32 bytes][elem3: 32 bytes]
 ```
 
-Source: [Encoding.ts:64-79](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L64-L79)
+Source: [Encoding.ts:64-79](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L64-L79)
 
 ### Fixed Arrays
 
@@ -202,7 +250,84 @@ const encoded = encodeParameters(params, [[1n, 2n, 3n]])
 // [elem1: 32 bytes][elem2: 32 bytes][elem3: 32 bytes]
 ```
 
-Source: [Encoding.ts:147-163](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L147-L163)
+Source: [Encoding.ts:147-163](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L147-L163)
+
+## Type Encoding Flowchart
+
+```
+ABI Type
+│
+├─ Static (fixed size, inline)
+│  │
+│  ├─ uint<N>, int<N>
+│  │  └─ Action: Convert to bigint, left-pad to 32 bytes
+│  │
+│  ├─ address
+│  │  └─ Action: 20 bytes + 12 zero padding = 32 bytes
+│  │
+│  ├─ bool
+│  │  └─ Action: true→1, false→0, left-pad to 32 bytes
+│  │
+│  ├─ bytes<N> (1-32 bytes)
+│  │  └─ Action: Right-pad to 32 bytes with zeros
+│  │
+│  └─ type[N] (fixed-size array of static types)
+│     └─ Action: Encode each element (no length prefix)
+│
+└─ Dynamic (variable size, offset pointer)
+   │
+   ├─ bytes
+   │  └─ Action: [length: 32 bytes][data: padded to 32-byte multiple]
+   │
+   ├─ string
+   │  └─ Action: [length: 32 bytes][UTF-8 bytes: padded to 32-byte multiple]
+   │
+   ├─ type[] (dynamic array)
+   │  └─ Action: [length: 32 bytes][encoded elements...]
+   │
+   └─ tuple with dynamic fields
+      └─ Action: Treated as dynamic, uses offset pointers
+```
+
+## Padding Diagram: Left-Pad Numbers
+
+Left-padding is used for all numeric types (uints, ints, addresses, bools):
+
+```
+uint256 value = 1000n
+         ↓
+0x00000000000000000000000000000000000000000000000000000000000003e8
+
+Breakdown:
+┌─────────────────────────────────────────────────────┐
+│ 28 bytes of zeros (left-padding)                    │
+├─────────────────────────────────────────────────────┤
+│ 4 bytes: 0x000003e8 (1000 in hex)                   │
+└─────────────────────────────────────────────────────┘
+Total: 32 bytes
+```
+
+**Rule:** All static types → exactly 32 bytes by padding with zeros on the left
+
+## Padding Diagram: Right-Pad Bytes
+
+Right-padding is used for fixed-size bytes (bytes1 to bytes32) and dynamic content:
+
+```
+bytes4 value = [0xa9, 0x05, 0x9c, 0xbb]
+         ↓
+0xa9059cbb00000000000000000000000000000000000000000000000000000000
+
+Breakdown:
+┌─────────────────────────────────────────────────────┐
+│ 4 bytes: 0xa9 0x05 0x9c 0xbb (actual data)         │
+├─────────────────────────────────────────────────────┤
+│ 28 bytes of zeros (right-padding)                   │
+└─────────────────────────────────────────────────────┘
+Total: 32 bytes
+```
+
+**Rule:** `bytes<N>` and dynamic content → padded with zeros on the right to 32-byte multiple
 
 ## Encoding Algorithm
 
@@ -232,7 +357,7 @@ isDynamicType("uint256[]")  // true
 isDynamicType("bytes32")    // false
 ```
 
-Source: [Encoding.ts:47-58](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L47-L58)
+Source: [Encoding.ts:47-58](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L47-L58)
 
 ### Head-Tail Encoding
 
@@ -269,7 +394,7 @@ const encoded = encodeParameters(params, [
 //   [128-159]: "Hello" + padding
 ```
 
-Source: [Encoding.ts:315-351](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L315-L351)
+Source: [Encoding.ts:315-351](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L315-L351)
 
 ## Utility Functions
 
@@ -285,7 +410,125 @@ const padded = padRight(data)
 // 32 bytes: [1, 2, 3, 0, 0, ..., 0]
 ```
 
-Source: [Encoding.ts:39-45](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L39-L45)
+Source: [Encoding.ts:39-45](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L39-L45)
+
+## Real-World Examples
+
+### ERC-20 Transfer Encoding
+
+ERC-20's `transfer(address to, uint256 amount)` is the most common contract call:
+
+<Tabs>
+<TabItem label="Step-by-Step">
+
+Function signature: `transfer(address,uint256)`
+
+**Step 1:** Compute function selector
+```typescript
+const sig = "transfer(address,uint256)"
+const hash = keccak256(sig)
+const selector = hash.slice(0, 4)  // 0xa9059cbb
+```
+
+**Step 2:** Classify parameters
+- `address` → Static type (will be inline)
+- `uint256` → Static type (will be inline)
+- No dynamic types, no TAIL section needed
+
+**Step 3:** Encode address (left-pad to 32 bytes)
+```
+Input:  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+Output: 0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e
+        └─ 12 zero bytes + 20 address bytes
+```
+
+**Step 4:** Encode uint256 (left-pad to 32 bytes)
+```
+Input:  1000n
+Output: 0x00000000000000000000000000000000000000000000000000000000000003e8
+        └─ 28 zero bytes + 0x03e8 (1000 in hex)
+```
+
+**Step 5:** Combine calldata
+```
+0xa9059cbb
+  000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e
+  00000000000000000000000000000000000000000000000000000000000003e8
+```
+
+</TabItem>
+<TabItem label="Code Example">
+
+```typescript
+import { encodeParameters } from '@tevm/primitives/Abi'
+
+const params = [
+  { type: "address", name: "to" },
+  { type: "uint256", name: "amount" }
+]
+
+const encoded = encodeParameters(params, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+])
+
+// Result (68 bytes):
+// 0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e00000000000000000000000000000000000000000000000000000000000003e8
+
+// Breakdown:
+// a9059cbb = function selector (4 bytes)
+// 000...e3e = address param (32 bytes)
+// 000...3e8 = uint256 param (32 bytes)
+```
+
+</TabItem>
+</Tabs>
+
+### Uniswap swapExactTokensForTokens Encoding
+
+Uniswap's swap function with arrays and address array:
+
+```typescript
+const swapFn = {
+  type: "function",
+  name: "swapExactTokensForTokens",
+  inputs: [
+    { type: "uint256", name: "amountIn" },
+    { type: "uint256", name: "amountOutMin" },
+    { type: "address[]", name: "path" },
+    { type: "address", name: "to" },
+    { type: "uint256", name: "deadline" }
+  ]
+}
+
+// Parameters:
+// amountIn: 1000000000000000000n (1 token with 18 decimals)
+// amountOutMin: 900000000000000000n (0.9 token minimum)
+// path: ["0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"]
+// to: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+// deadline: 1000000000n
+
+const encoded = encodeParameters(swapFn.inputs, [
+  1000000000000000000n,
+  900000000000000000n,
+  ["0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"],
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000000000n
+])
+
+// Calldata layout:
+// HEAD section (160 bytes = 5 params × 32 bytes):
+//   [0-31]:   amountIn (static)
+//   [32-63]:  amountOutMin (static)
+//   [64-95]:  offset to path array in TAIL (160)
+//   [96-127]: to address (static)
+//   [128-159]: deadline (static)
+//
+// TAIL section:
+//   [160-191]: array length = 2
+//   [192-223]: path[0] encoded as address (32 bytes)
+//   [224-255]: path[1] encoded as address (32 bytes)
+```
 
 ## Complex Examples
 

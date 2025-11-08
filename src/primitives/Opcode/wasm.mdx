@@ -32,7 +32,7 @@ These are all:
 - Already optimal in modern JavaScript engines
 - Pure O(1) or O(n) operations
 - Limited by memory access, not computation
-- Execution time <200ns per operation
+- Execution time &lt;200ns per operation
 
 ### WASM Overhead Analysis
 
@@ -68,7 +68,7 @@ if (isWasmOpcodeAvailable()) {
 
 **Returns:** `false` - Always false, WASM not implemented
 
-Defined in: [primitives/Opcode/Opcode.wasm.ts:83](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/Opcode.wasm.ts)
+Defined in: [primitives/Opcode/Opcode.wasm.ts:83](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/Opcode.wasm.ts)
 
 ### `getOpcodeImplementationStatus()`
 
@@ -88,13 +88,13 @@ console.log(status)
 //     wasmOverhead: "1-2μs per WASM call",
 //     verdict: "TypeScript 10-100x faster for lookups; comparable for large bytecode parsing but not worth complexity"
 //   },
-//   notes: "Bytecode parsing of very large contracts (>10KB) might benefit from WASM, but this is rare and the 2-3x speedup doesn't justify the implementation complexity."
+//   notes: "Bytecode parsing of very large contracts (&gt;10KB) might benefit from WASM, but this is rare and the 2-3x speedup doesn't justify the implementation complexity."
 // }
 ```
 
 **Returns:** Status object with availability and recommendations
 
-Defined in: [primitives/Opcode/Opcode.wasm.ts:101](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/Opcode.wasm.ts)
+Defined in: [primitives/Opcode/Opcode.wasm.ts:101](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/Opcode.wasm.ts)
 
 ## Performance Benchmarks
 
@@ -138,13 +138,13 @@ WASM:       450μs (but +2μs call overhead = 452μs total)
 Speedup:    WASM 33% faster (but rare use case)
 ```
 
-**Analysis:** Even for large bytecode, WASM provides minimal benefit. Most contracts are <5KB where TypeScript is faster.
+**Analysis:** Even for large bytecode, WASM provides minimal benefit. Most contracts are &lt;5KB where TypeScript is faster.
 
 ## When WASM Would Help
 
 WASM is beneficial for operations that:
 
-1. **Heavy computation** (>10μs per call)
+1. **Heavy computation** (&gt;10μs per call)
 2. **Batch processing** (amortize call overhead)
 3. **Cryptographic operations** (hashing, signatures)
 4. **Large data transformations** (RLP encoding, ABI encoding)
@@ -235,7 +235,7 @@ function countPushesOptimized(bytecode: Uint8Array): number {
 
 ## Bytecode Parsing Edge Cases
 
-For **very large contracts** (>10KB runtime code):
+For **very large contracts** (&gt;10KB runtime code):
 
 ```typescript
 // TypeScript: ~680μs for 10KB
@@ -284,7 +284,7 @@ Pure TypeScript implementation is optimal for all opcode operations:
 
 ❌ **Don't use WASM for:**
 - Opcode operations (10-100x slower)
-- Small bytecode parsing (<1KB)
+- Small bytecode parsing (&lt;1KB)
 - Individual opcode checks
 
 <Aside type="tip" title="Optimization Strategy">

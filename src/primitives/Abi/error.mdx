@@ -30,7 +30,7 @@ export type BrandedError<
 }
 ```
 
-Source: [BrandedError.ts:3-10](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/BrandedError.ts#L3-L10)
+Source: [BrandedError.ts:3-10](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError.ts#L3-L10)
 
 ## Quick Start
 
@@ -108,7 +108,7 @@ const signature2 = Error.getSignature(unauthorized)
 - Only types matter for selector computation
 - Format: `ErrorName(type1,type2,...)`
 
-Source: [getSignature.js:15-18](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/getSignature.js#L15-L18)
+Source: [getSignature.js:15-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/getSignature.js#L15-L18)
 
 ### getSelector
 
@@ -145,7 +145,7 @@ const selector = Error.getSelector(insufficientBalance)
 
 **Note:** Error selectors are 4 bytes, like function selectors.
 
-Source: [getSelector.js:18-22](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/getSelector.js#L18-L22)
+Source: [getSelector.js:18-22](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/getSelector.js#L18-L22)
 
 ### encodeParams
 
@@ -189,7 +189,7 @@ const errorData = Error.encodeParams(insufficientBalance, [100n, 1000n])
 [selector (4 bytes)][parameter encoding]
 ```
 
-Source: [encodeParams.js:19-26](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/encodeParams.js#L19-L26)
+Source: [encodeParams.js:19-26](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/encodeParams.js#L19-L26)
 
 ### decodeParams
 
@@ -248,7 +248,7 @@ try {
 3. Compare selector with expected selector
 4. Decode remaining bytes as parameters
 
-Source: [decodeParams.js:22-36](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/decodeParams.js#L22-L36)
+Source: [decodeParams.js:22-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/decodeParams.js#L22-L36)
 
 ## Complete Workflow
 
@@ -550,7 +550,7 @@ type InsufficientBalanceError = Get<typeof abi, "InsufficientBalance">
 // BrandedError<"InsufficientBalance", [...inputs]>
 ```
 
-Source: [BrandedError.ts:12-18](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/BrandedError.ts#L12-L18)
+Source: [BrandedError.ts:12-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError.ts#L12-L18)
 
 ## Comparison: Errors vs Revert Strings
 

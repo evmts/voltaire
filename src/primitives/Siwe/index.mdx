@@ -1,6 +1,9 @@
 ---
 title: "Siwe"
+description: Sign-In with Ethereum (EIP-4361) implementation for decentralized authentication
 ---
+
+import { Tabs, TabItem, Card, CardGrid, Aside, Steps } from '@astrojs/starlight/components';
 
 # Siwe
 
@@ -9,6 +12,74 @@ Sign-In with Ethereum (EIP-4361) implementation for decentralized authentication
 ## Overview
 
 SIWE provides standardized Ethereum account authentication. Creates structured messages users sign with private keys, proving address ownership without key exposure.
+
+## Authentication Flow
+
+```
+┌──────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   Frontend   │      │   Wallet    │      │   Backend   │      │   Database  │
+└──────────────┘      └─────────────┘      └─────────────┘      └─────────────┘
+      │                     │                     │                     │
+      │  1. Request Nonce   │                     │                     │
+      ├────────────────────────────────────────>  │                     │
+      │                     │                     │                     │
+      │                     │             Generate nonce │              │
+      │                     │             Store for 5min │──────────>  │
+      │  2. Get nonce       │                     │                     │
+      │  <────────────────────────────────────────┤                     │
+      │                     │                     │                     │
+      │ 3. Create message   │                     │                     │
+      │    with nonce       │                     │                     │
+      ├────────────────────>│                     │                     │
+      │                     │                     │                     │
+      │  4. Sign message    │                     │                     │
+      │  <────────────────┤ │                     │                     │
+      │                     │ signature           │                     │
+      │  5. Verify message  │                     │                     │
+      ├────────────────────────────────────────>  │                     │
+      │                     │                     │                     │
+      │                     │             Check nonce │                │
+      │                     │             Verify sig   │──────────>   │
+      │                     │             Check valid  │  <──────────┤
+      │                     │             Create token │              │
+      │  6. Session token   │                     │                     │
+      │  <────────────────────────────────────────┤                     │
+      │                     │                     │                     │
+      └──────────────┘      └─────────────┘      └─────────────┘      └─────────────┘
+```
+
+## Message Structure
+
+A SIWE message is a human-readable text format combining user intent with cryptographic proof:
+
+```
+example.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e
+
+Sign in to Example App
+
+URI: https://example.com/login
+Version: 1
+Chain ID: 1
+Nonce: testnonce123
+Issued At: 2024-11-06T12:00:00.000Z
+Expiration Time: 2024-11-06T13:00:00.000Z
+Not Before: 2024-11-06T11:00:00.000Z
+
+Resources:
+- https://example.com/api/user
+- https://example.com/api/profile
+```
+
+Key components:
+- **Domain** (RFC 4501): Where the message is being signed for
+- **Address**: Which account is signing
+- **URI**: What resource is being accessed
+- **Statement**: Human-readable context
+- **Chain ID**: Which blockchain
+- **Nonce**: One-time value, prevents replay attacks
+- **Timestamps**: Validity window
+- **Resources**: Optional list of what's being granted access to
 
 ## Factory
 
@@ -244,6 +315,79 @@ if (!result.valid) {
   requestReauth();
 }
 ```
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Constructors" icon="rocket">
+    Creating SIWE messages from parameters or text.
+
+    [View constructors →](/primitives/siwe/constructors)
+  </Card>
+
+  <Card title="Parsing" icon="open-book">
+    Parse EIP-4361 formatted strings to message objects.
+
+    [View parsing →](/primitives/siwe/parsing)
+  </Card>
+
+  <Card title="Validation" icon="warning">
+    Validate message structure and timestamps.
+
+    [View validation →](/primitives/siwe/validation)
+  </Card>
+
+  <Card title="Signing & Verification" icon="puzzle">
+    Create hashes and verify signatures with addresses.
+
+    [View signing →](/primitives/siwe/signing)
+  </Card>
+
+  <Card title="Utilities" icon="document">
+    Nonce generation and helper functions.
+
+    [View utilities →](/primitives/siwe/utilities)
+  </Card>
+
+  <Card title="Usage Patterns" icon="seti:markdown">
+    Real-world authentication and session patterns.
+
+    [View patterns →](/primitives/siwe/usage-patterns)
+  </Card>
+</CardGrid>
+
+## Quick Reference: Security Checklist
+
+<Card title="Always Verify">
+- Domain matches request origin
+- Nonce is fresh and single-use
+- Signature is valid
+- Message not expired
+- Address matches session
+- HTTPS in production
+</Card>
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Address" icon="document">
+    20-byte Ethereum addresses used in messages.
+
+    [View Address →](/primitives/address)
+  </Card>
+
+  <Card title="Signature" icon="rocket">
+    65-byte signatures (r + s + v) for verification.
+
+    [View Signature →](/primitives/signature)
+  </Card>
+
+  <Card title="Hash" icon="seti:text">
+    32-byte hashes from message signing.
+
+    [View Hash →](/primitives/hash)
+  </Card>
+</CardGrid>
 
 ## References
 

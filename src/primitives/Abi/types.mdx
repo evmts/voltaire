@@ -57,7 +57,7 @@ const erc20Abi: Abi = [
 ]
 ```
 
-Source: [Abi.ts:49-51](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Abi.ts#L49-L51)
+Source: [Abi.ts:49-51](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Abi.ts#L49-L51)
 
 ### AbiType
 
@@ -104,7 +104,7 @@ export type AbiType =
 - **Arrays**: Dynamic (`type[]`) or fixed-size (`type[n]`)
 - **Tuples**: Complex structured types
 
-Source: [Type.ts:1-107](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Type.ts#L1-L107)
+Source: [Type.ts:1-107](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Type.ts#L1-L107)
 
 ### Parameter
 
@@ -169,7 +169,7 @@ const bytes32ArrayParam: Parameter = {
 }
 ```
 
-Source: [Parameter.ts:9-19](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Parameter.ts#L9-L19)
+Source: [Parameter.ts:9-19](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Parameter.ts#L9-L19)
 
 ## Item Types
 
@@ -215,7 +215,7 @@ const transferFn: Function = {
 }
 ```
 
-Source: [BrandedFunction.ts:13-24](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L13-L24)
+Source: [BrandedFunction.ts:13-24](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L13-L24)
 
 ### Event
 
@@ -262,7 +262,7 @@ const anonymousEvent: Event = {
 }
 ```
 
-Source: [BrandedEvent.ts:3-11](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/BrandedEvent.ts#L3-L11)
+Source: [BrandedEvent.ts:3-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/BrandedEvent.ts#L3-L11)
 
 ### BrandedError
 
@@ -302,7 +302,7 @@ const unauthorizedError: BrandedError = {
 }
 ```
 
-Source: [BrandedError.ts:3-10](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/error/BrandedError.ts#L3-L10)
+Source: [BrandedError.ts:3-10](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/error/BrandedError.ts#L3-L10)
 
 ### BrandedConstructor
 
@@ -344,7 +344,7 @@ const payableConstructor: BrandedConstructor = {
 }
 ```
 
-Source: [BrandedConstructor.ts:4-11](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/constructor/BrandedConstructor.ts#L4-L11)
+Source: [BrandedConstructor.ts:4-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/constructor/BrandedConstructor.ts#L4-L11)
 
 ### Fallback
 
@@ -372,7 +372,7 @@ const payableFallback: Fallback = {
 }
 ```
 
-Source: [Item.ts:7-12](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L7-L12)
+Source: [Item.ts:7-12](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Item.ts#L7-L12)
 
 ### Receive
 
@@ -393,7 +393,7 @@ const receive: Receive = {
 }
 ```
 
-Source: [Item.ts:14-17](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L14-L17)
+Source: [Item.ts:14-17](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Item.ts#L14-L17)
 
 ### Item
 
@@ -403,7 +403,7 @@ Union of all ABI item types.
 export type Item = Function | Event | BrandedError | Constructor | Fallback | Receive
 ```
 
-Source: [Item.ts:19](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Item.ts#L19)
+Source: [Item.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Item.ts#L19)
 
 ## Type Utilities
 
@@ -440,7 +440,7 @@ const values: Values = [
 ]
 ```
 
-Source: [Parameter.ts:21-29](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Parameter.ts#L21-L29)
+Source: [Parameter.ts:21-29](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Parameter.ts#L21-L29)
 
 ### ParametersToObject
 
@@ -473,7 +473,7 @@ const decoded: EventData = {
 }
 ```
 
-Source: [Parameter.ts:31-41](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Parameter.ts#L31-L41)
+Source: [Parameter.ts:31-41](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Parameter.ts#L31-L41)
 
 ## State Mutability
 
@@ -519,7 +519,7 @@ const payableFunction: Function = {
 }
 ```
 
-Source: [statemutability.ts](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/statemutability.ts)
+Source: [statemutability.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/statemutability.ts)
 
 ## Type Mapping
 

@@ -34,7 +34,7 @@ export type Function<
 }
 ```
 
-Source: [BrandedFunction.ts:13-24](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L13-L24)
+Source: [BrandedFunction.ts:13-24](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L13-L24)
 
 ## Quick Start
 
@@ -111,7 +111,7 @@ const signature2 = Function.getSignature(balanceOfFn)
 - Only types matter for selector computation
 - Format: `functionName(type1,type2,...)`
 
-Source: [getSignature.js:27-30](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/getSignature.js#L27-L30)
+Source: [getSignature.js:27-30](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/getSignature.js#L27-L30)
 
 ### getSelector
 
@@ -151,7 +151,7 @@ const selector = Function.getSelector(transferFn)
 2. Hash with keccak256: `keccak256("transfer(address,uint256)")`
 3. Take first 4 bytes: `0xa9059cbb`
 
-Source: [getSelector.js:30-34](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/getSelector.js#L30-L34)
+Source: [getSelector.js:30-34](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/getSelector.js#L30-L34)
 
 ### encodeParams
 
@@ -198,7 +198,7 @@ const calldata = Function.encodeParams(transferFn, [
 [selector (4 bytes)][parameter encoding]
 ```
 
-Source: [encodeParams.js:33-40](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/encodeParams.js#L33-L40)
+Source: [encodeParams.js:33-40](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/encodeParams.js#L33-L40)
 
 ### decodeParams
 
@@ -253,7 +253,7 @@ try {
 3. Compare selector with expected selector
 4. Decode remaining bytes as parameters
 
-Source: [decodeParams.js:37-51](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/decodeParams.js#L37-L51)
+Source: [decodeParams.js:37-51](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/decodeParams.js#L37-L51)
 
 ### encodeResult
 
@@ -309,7 +309,7 @@ const returnData2 = Function.encodeResult(multiReturnFn, [
 - Only contains ABI-encoded return values
 - Used for encoding contract return values
 
-Source: [encodeResult.js:26-28](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/encodeResult.js#L26-L28)
+Source: [encodeResult.js:26-28](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/encodeResult.js#L26-L28)
 
 ### decodeResult
 
@@ -367,7 +367,7 @@ const [name, balance, active] = Function.decodeResult(
 - Returns array of values matching outputs
 - Supports multiple return values
 
-Source: [decodeResult.js:27-29](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/decodeResult.js#L27-L29)
+Source: [decodeResult.js:27-29](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/decodeResult.js#L27-L29)
 
 ## Complete Workflow
 
@@ -543,7 +543,7 @@ try {
 }
 ```
 
-Source: [errors.js](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/errors.js)
+Source: [errors.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/errors.js)
 
 ## Type Utilities
 
@@ -561,7 +561,7 @@ type TransferFn = Get<typeof abi, "transfer">
 // Function<"transfer", "nonpayable", [...inputs], [...outputs]>
 ```
 
-Source: [BrandedFunction.ts:26-40](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L26-L40)
+Source: [BrandedFunction.ts:26-40](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/function/BrandedFunction.ts#L26-L40)
 
 ## Advanced Examples
 

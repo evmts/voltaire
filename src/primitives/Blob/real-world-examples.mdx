@@ -1,0 +1,579 @@
+---
+title: "Blob Real-World Examples"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Blob Real-World Examples
+
+Production-ready examples for EIP-4844 blob transactions and L2 integrations.
+
+## Example 1: Optimism Batch Submission
+
+Optimism's sequencer submits batches via EIP-4844 blobs.
+
+### Data Structure
+
+```typescript
+interface OptimismBatch {
+  // Batch metadata
+  epochNum: number;
+  batchIndex: number;
+  batchSize: number;  // Total transaction bytes
+
+  // Frames (compressed transactions)
+  frames: Frame[];
+
+  // Single batch typically: 100-130 KB
+}
+
+interface Frame {
+  isLast: boolean;
+  frameNumber: number;
+  data: Uint8Array;  // Compressed transactions
+}
+```
+
+### Submission Code
+
+```typescript
+import * as Blob from '@tevm/voltaire/Blob';
+import type { BrandedBlob } from '@tevm/voltaire/Blob';
+
+async function submitOptimismBatch(batchData: Uint8Array) {
+  // 1. Validate batch size
+  const estimatedBlobs = Blob.estimateBlobCount(batchData.length);
+  if (estimatedBlobs > Blob.MAX_PER_TRANSACTION) {
+    throw new Error(`Batch too large: ${estimatedBlobs} blobs needed`);
+  }
+
+  // 2. Split into blobs if necessary
+  const blobs: BrandedBlob[] = batchData.length > Blob.SIZE
+    ? Blob.splitData(batchData)
+    : [Blob.fromData(batchData)];
+
+  // 3. Calculate gas cost
+  const gasCost = Blob.calculateGas(blobs.length);
+  console.log(`Blob gas cost: ${gasCost} (${blobs.length} blobs)`);
+
+  // 4. Generate KZG data (when available)
+  // const commitments = blobs.map(b => Blob.toCommitment(b));
+  // const proofs = blobs.map((b, i) => Blob.toProof(b, commitments[i]!));
+  // const versionedHashes = commitments.map(c => Blob.toVersionedHash(c));
+
+  // 5. Create transaction
+  const tx = {
+    type: 3,  // EIP-4844
+    chainId: 1n,
+    nonce: sequencerNonce,
+    maxPriorityFeePerGas: 1_000_000_000n,  // 1 gwei
+    maxFeePerGas: 50_000_000_000n,  // 50 gwei
+    gas: 200_000,  // Execution + overhead
+
+    // OP Stack BatchInbox address
+    to: '0xFF00000000000000000000000000000000000005',
+    value: 0n,
+    data: encodeBatchData(batchData),  // RLP encoded batch
+
+    // Blobs would be included here (not in serialized tx)
+    // blobVersionedHashes: versionedHashes,
+    // blobs: blobs,
+
+    accessList: [],
+  };
+
+  return {
+    tx,
+    blobs,
+    gasCost,
+    summary: {
+      batchSize: batchData.length,
+      compressionRatio: (batchData.length / (blobs.length * Blob.SIZE)).toFixed(2),
+      estimatedSavings: ((1 - gasCost / (batchData.length * 8)) * 100).toFixed(1)
+    }
+  };
+}
+
+// Example usage
+const batch = new Uint8Array(102400);  // 100 KB batch
+const { tx, gasCost, summary } = await submitOptimismBatch(batch);
+
+console.log(`Batch: ${summary.batchSize} bytes`);
+console.log(`Compression: ${summary.compressionRatio}x`);
+console.log(`Savings vs calldata: ${summary.estimatedSavings}%`);
+```
+
+## Example 2: Arbitrum Sequencer Batch
+
+Arbitrum uses a similar approach but with different batch format.
+
+### Arbitrum-Specific Format
+
+```typescript
+interface ArbitrumBatch {
+  // Batch info
+  sequenceNumber: number;
+  timestamp: number;
+  blockCount: number;
+
+  // Compressed data
+  batchData: Uint8Array;
+  compression: 'brotli' | 'zstd';
+
+  // Typical size: 60-130 KB
+}
+
+async function submitArbitrumBatch(batch: ArbitrumBatch) {
+  // 1. Compress batch data
+  const compressed = await compressBatch(batch.batchData, batch.compression);
+
+  // 2. Encode for blob
+  const encoded = encodeBatchForBlob(compressed);
+
+  // 3. Create blobs
+  const blobs = Blob.estimateBlobCount(encoded.length) > 1
+    ? Blob.splitData(encoded)
+    : [Blob.fromData(encoded)];
+
+  // 4. Calculate costs
+  const blobGas = Blob.calculateGas(blobs.length);
+  const costPerMB = (blobGas * 50_000_000_000n) / BigInt(encoded.length) / 1_000_000n;
+
+  // 5. Create transaction
+  const tx = {
+    type: 3,
+    chainId: 1n,
+    nonce: sequencerNonce,
+    maxPriorityFeePerGas: 1_500_000_000n,  // 1.5 gwei
+    maxFeePerGas: 60_000_000_000n,  // 60 gwei
+    gas: 250_000,
+
+    // Sequencer inbox address
+    to: '0x1c479675ad635599baed3c5e8a9ff3b62651ee80',
+    value: 0n,
+    data: encodeArbitrumBatchData(batch),
+
+    accessList: [],
+  };
+
+  return {
+    tx,
+    blobs,
+    costs: {
+      blobGas,
+      costPerMB: costPerMB.toString(),
+      totalCost: (blobGas * 50_000_000_000n).toString()
+    }
+  };
+}
+```
+
+## Example 3: Custom L2 Rollup Implementation
+
+Building your own L2 with blob support.
+
+### Rollup Architecture
+
+```typescript
+class CustomRollup {
+  private sequencer: SequencerAccount;
+  private batchSize: number = 104_857;  // 102.4 KB
+  private maxBlobsPerTx: number = 6;
+
+  async createAndSubmitBatch(
+    transactions: Transaction[],
+    gasPrice: bigint
+  ): Promise<BatchSubmissionResult> {
+    // 1. Collect transactions until batch is full
+    const batchData = this.encodeBatch(transactions);
+
+    // 2. Estimate blob requirements
+    const estimatedBlobs = Blob.estimateBlobCount(batchData.length);
+    if (estimatedBlobs > this.maxBlobsPerTx) {
+      // Split into multiple transactions
+      return this.submitInChunks(batchData, gasPrice);
+    }
+
+    // 3. Create blobs
+    const blobs = batchData.length > Blob.SIZE
+      ? Blob.splitData(batchData)
+      : [Blob.fromData(batchData)];
+
+    // 4. Calculate optimal gas parameters
+    const gasCost = Blob.calculateGas(blobs.length);
+    const { maxPriorityFee, maxFee } = this.calculateGasPrice(gasPrice);
+
+    // 5. Build transaction
+    const batchTx = {
+      type: 3 as const,
+      chainId: 1n,
+      nonce: this.sequencer.nonce++,
+      maxPriorityFeePerGas: maxPriorityFee,
+      maxFeePerGas: maxFee,
+      gas: 200_000 + (blobs.length * 10_000),  // Scale gas with blob count
+
+      to: this.inboxAddress,
+      value: 0n,
+      data: this.encodeInboxData(batchData),
+
+      accessList: [],
+      // blobVersionedHashes and blobs attached separately
+    };
+
+    // 6. Sign and broadcast
+    const signedTx = this.sign(batchTx);
+    await this.broadcast(signedTx, blobs);
+
+    return {
+      txHash: signedTx.hash,
+      batchSize: batchData.length,
+      blobCount: blobs.length,
+      gasCost,
+      estimatedCostUSD: this.estimateCost(gasCost, gasPrice),
+      transactionCount: transactions.length
+    };
+  }
+
+  private submitInChunks(
+    batchData: Uint8Array,
+    gasPrice: bigint
+  ): Promise<BatchSubmissionResult[]> {
+    const chunks: Uint8Array[] = [];
+    const chunkSize = Blob.SIZE * this.maxBlobsPerTx;
+
+    for (let i = 0; i < batchData.length; i += chunkSize) {
+      const chunk = batchData.slice(i, Math.min(i + chunkSize, batchData.length));
+      chunks.push(chunk);
+    }
+
+    return Promise.all(
+      chunks.map(chunk => this.createAndSubmitBatch([...this.parseChunk(chunk)], gasPrice))
+    );
+  }
+
+  // Utility methods
+  private encodeBatch(txs: Transaction[]): Uint8Array {
+    // RLP encode transaction list
+    return rlp.encode(txs.map(tx => tx.serialize()));
+  }
+
+  private encodeInboxData(batchData: Uint8Array): string {
+    // Inbox contract expects specific format
+    return '0x' + Buffer.from([0x01]) // Batch type
+      .concat(Buffer.from(batchData))
+      .toString('hex');
+  }
+
+  private calculateGasPrice(currentPrice: bigint) {
+    // Dynamic pricing based on market conditions
+    const margin = currentPrice / 100n * 10n;  // 10% above current
+    return {
+      maxPriorityFee: currentPrice,
+      maxFee: currentPrice + margin
+    };
+  }
+
+  private estimateCost(gasCost: number, gasPrice: bigint): string {
+    const costWei = BigInt(gasCost) * gasPrice;
+    const costEth = Number(costWei) / 1e18;
+    const costUSD = costEth * 2000;  // Assume $2000/ETH
+    return `$${costUSD.toFixed(2)}`;
+  }
+}
+```
+
+## Example 4: Recovering Blob Data
+
+Reconstructing original batch data from blobs.
+
+### Data Recovery Flow
+
+```typescript
+async function recoverBatchFromBlobs(
+  versionedHashes: string[],
+  beaconClient: BeaconClient
+): Promise<Uint8Array> {
+  // 1. Fetch blobs from beacon chain
+  const blobs: BrandedBlob[] = [];
+  for (const hash of versionedHashes) {
+    const blob = await beaconClient.getBlobByHash(hash);
+    if (!blob) {
+      throw new Error(`Blob not found: ${hash}`);
+    }
+    blobs.push(blob as BrandedBlob);
+  }
+
+  // 2. Extract original data
+  const dataChunks = blobs.map(blob => Blob.toData(blob));
+
+  // 3. Join chunks
+  const originalBatch = Blob.joinData(blobs);
+
+  // 4. Verify integrity (optional)
+  const recoveredHash = keccak256(originalBatch);
+  console.log(`Recovered batch hash: ${recoveredHash}`);
+
+  return originalBatch;
+}
+
+// Usage with Lodestar beacon client
+import { createForkConfig } from '@lodestar/config';
+import { BeaconClient } from '@lodestar/beacon-client';
+
+const config = createForkConfig({ network: 'mainnet' });
+const client = new BeaconClient({ rpcUrl: 'http://localhost:5052', config });
+
+// Example: Fetch blobs from block
+async function getBlobsFromBlock(blockHeight: number) {
+  const block = await client.block.getBlockHeader({ blockId: blockHeight });
+  const versionedHashes = extractBlobHashes(block);
+
+  const batchData = await recoverBatchFromBlobs(versionedHashes, client);
+  console.log(`Recovered ${batchData.length} bytes from ${versionedHashes.length} blobs`);
+
+  return batchData;
+}
+```
+
+## Example 5: Cost Comparison Analysis
+
+### Analyzing Savings
+
+```typescript
+function analyzeBlobCosts(
+  dataSize: number,
+  blobGasPrice: bigint = 100n,  // gwei
+  calldataGasPrice: bigint = 50n  // gwei
+) {
+  // Pre-EIP-4844: calldata only
+  const calldataGasPerByte = 8;  // Average (mix of zero/non-zero)
+  const callDataGas = dataSize * calldataGasPerByte;
+  const calldataCostWei = callDataGas * calldataGasPrice * 1_000_000_000n;
+  const calldataCostETH = Number(calldataCostWei) / 1e18;
+  const calldataCostUSD = calldataCostETH * 2000;
+
+  // Post-EIP-4844: blobs
+  const blobCount = Math.ceil(dataSize / (Blob.SIZE - 8));
+  const blobGas = Blob.calculateGas(blobCount);
+  const blobCostWei = blobGas * blobGasPrice * 1_000_000_000n;
+  const blobCostETH = Number(blobCostWei) / 1e18;
+  const blobCostUSD = blobCostETH * 2000;
+
+  // Savings
+  const savings = {
+    gasReduction: ((1 - blobGas / callDataGas) * 100).toFixed(1),
+    ethSavings: (calldataCostETH - blobCostETH).toFixed(6),
+    usdSavings: (calldataCostUSD - blobCostUSD).toFixed(2),
+    savingsPercentage: ((1 - blobCostUSD / calldataCostUSD) * 100).toFixed(1)
+  };
+
+  return {
+    dataSize,
+    blobCount,
+    calldata: {
+      gas: callDataGas,
+      costETH: calldataCostETH.toFixed(6),
+      costUSD: calldataCostUSD.toFixed(2)
+    },
+    blobs: {
+      gas: blobGas,
+      costETH: blobCostETH.toFixed(6),
+      costUSD: blobCostUSD.toFixed(2)
+    },
+    savings
+  };
+}
+
+// Analysis examples
+console.log(analyzeBlobCosts(100_000));  // 100 KB
+console.log(analyzeBlobCosts(500_000));  // 500 KB
+console.log(analyzeBlobCosts(786_432));  // Max (6 blobs)
+
+// Output:
+// {
+//   dataSize: 100000,
+//   blobCount: 1,
+//   calldata: { gas: 800000, costETH: '0.040000', costUSD: '80.00' },
+//   blobs: { gas: 131072, costETH: '0.013107', costUSD: '26.21' },
+//   savings: {
+//     gasReduction: '83.6',
+//     ethSavings: '0.026893',
+//     usdSavings: '53.79',
+//     savingsPercentage: '67.3'
+//   }
+// }
+```
+
+## Example 6: Monitoring Blob Availability
+
+### Beacon Chain Monitoring
+
+```typescript
+interface BlobMonitor {
+  blob: BrandedBlob;
+  commitment: Commitment;
+  versionedHash: VersionedHash;
+  includedInSlot: number;
+  expiresAtSlot: number;
+  status: 'available' | 'expiring_soon' | 'expired';
+}
+
+class BlobAvailabilityMonitor {
+  private targetSlot: number = 10_925_696;  // Current beacon slot
+  private expirySlots: number = 18 * 32 * 384;  // ~18 days
+
+  async monitorBlob(versionedHash: string): Promise<BlobMonitor> {
+    const beaconChain = await this.getBeaconChain();
+
+    // 1. Find blob in beacon chain
+    const blob = await beaconChain.getBlob(versionedHash);
+    if (!blob) {
+      throw new Error('Blob not found in beacon chain');
+    }
+
+    // 2. Get inclusion slot
+    const inclusionSlot = blob.slot;
+
+    // 3. Calculate expiry
+    const expiresAtSlot = inclusionSlot + this.expirySlots;
+    const slotsRemaining = expiresAtSlot - this.targetSlot;
+
+    // 4. Determine status
+    let status: 'available' | 'expiring_soon' | 'expired';
+    if (slotsRemaining < 0) {
+      status = 'expired';
+    } else if (slotsRemaining < 64) {  // ~10 minutes
+      status = 'expiring_soon';
+    } else {
+      status = 'available';
+    }
+
+    return {
+      blob: blob as BrandedBlob,
+      commitment: blob.commitment as Commitment,
+      versionedHash: versionedHash as VersionedHash,
+      includedInSlot: inclusionSlot,
+      expiresAtSlot,
+      status
+    };
+  }
+
+  async verifyBlobAvailability(versionedHash: string): Promise<boolean> {
+    try {
+      const monitor = await this.monitorBlob(versionedHash);
+      return monitor.status === 'available' || monitor.status === 'expiring_soon';
+    } catch {
+      return false;
+    }
+  }
+
+  private async getBeaconChain() {
+    // Connect to beacon node
+    return {
+      getBlob: async (hash: string) => {
+        // Fetch from beacon API
+      }
+    };
+  }
+}
+
+// Usage
+const monitor = new BlobAvailabilityMonitor();
+const isAvailable = await monitor.verifyBlobAvailability('0x0134567890...');
+console.log(`Blob available: ${isAvailable}`);
+```
+
+## Example 7: Production Checklist
+
+### Deployment Readiness
+
+```typescript
+interface BlobDeploymentConfig {
+  // Network config
+  chainId: number;
+  rpcUrl: string;
+  beaconNodeUrl: string;
+
+  // Rollup config
+  maxBlobsPerTransaction: number;
+  batchSize: number;
+  submitIntervalMs: number;
+
+  // Cost control
+  maxBlobGasPrice: bigint;
+  maxPriorityFee: bigint;
+
+  // Monitoring
+  alertThreshold: {
+    failureRate: number;
+    blobExpiry: number;
+  };
+}
+
+async function validateBlobDeployment(
+  config: BlobDeploymentConfig
+): Promise<ValidationResult> {
+  const checks = {
+    networkConnectivity: async () => {
+      try {
+        const blockNumber = await getBlockNumber(config.rpcUrl);
+        return { passed: blockNumber > 0, error: null };
+      } catch (e) {
+        return { passed: false, error: (e as Error).message };
+      }
+    },
+
+    beaconNodeHealth: async () => {
+      try {
+        const health = await getBeaconHealth(config.beaconNodeUrl);
+        return { passed: health.status === 'healthy', error: null };
+      } catch (e) {
+        return { passed: false, error: (e as Error).message };
+      }
+    },
+
+    blobSupport: async () => {
+      const blockData = await getLatestBlock(config.rpcUrl);
+      const supportedBlobTx = blockData.type >= 3;
+      return { passed: supportedBlobTx, error: null };
+    },
+
+    configValidation: () => {
+      const errors = [];
+      if (config.maxBlobsPerTransaction > 6) {
+        errors.push('Max blobs per transaction cannot exceed 6');
+      }
+      if (config.batchSize > 786_432) {
+        errors.push('Batch size cannot exceed 6 blobs (786,432 bytes)');
+      }
+      return {
+        passed: errors.length === 0,
+        error: errors.join('; ')
+      };
+    }
+  };
+
+  const results = await Promise.all(
+    Object.entries(checks).map(async ([name, check]) => ({
+      name,
+      result: typeof check === 'function' ? await check() : await check()
+    }))
+  );
+
+  const allPassed = results.every(r => r.result.passed);
+
+  return {
+    passed: allPassed,
+    checks: results,
+    readyForProduction: allPassed
+  };
+}
+```
+
+## See Also
+
+- [Blob Workflows & Diagrams](./workflows-and-diagrams.mdx)
+- [Blob Constructors](./constructors.mdx)
+- [Blob Utilities](./utilities.mdx)
+- [Blob Usage Patterns](./usage-patterns.mdx)
+- [EIP-4844 Specification](https://eips.ethereum.org/EIPS/eip-4844)

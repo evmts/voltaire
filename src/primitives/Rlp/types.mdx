@@ -33,7 +33,7 @@ export type BrandedRlp =
 - `type: "bytes" | "list"` - Discriminant field
 - `value: Uint8Array | BrandedRlp[]` - Data payload
 
-Source: [BrandedRlp.ts:4-6](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/BrandedRlp.ts#L4-L6)
+Source: [BrandedRlp.ts:4-6](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/BrandedRlp.ts#L4-L6)
 
 ### BytesData Variant
 
@@ -152,7 +152,7 @@ function isData(value: unknown): value is BrandedRlp
 **Returns:**
 - `boolean` - True if value is RLP data (bytes or list)
 
-Source: [isData.js:7-15](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/isData.js#L7-L15)
+Source: [isData.js:7-15](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/isData.js#L7-L15)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
@@ -223,7 +223,7 @@ function isBytesData(value: unknown): boolean
 **Returns:**
 - `boolean` - True if value is bytes data
 
-Source: [isBytesData.js:9-11](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/isBytesData.js#L9-L11)
+Source: [isBytesData.js:9-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/isBytesData.js#L9-L11)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
@@ -291,7 +291,7 @@ function isListData(value: unknown): boolean
 **Returns:**
 - `boolean` - True if value is list data
 
-Source: [isListData.js:9-11](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/isListData.js#L9-L11)
+Source: [isListData.js:9-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/isListData.js#L9-L11)
 </TabItem>
 <TabItem label="Usage">
 ```typescript

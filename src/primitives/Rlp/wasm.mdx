@@ -51,7 +51,7 @@ function encodeBytes(data: Uint8Array): Uint8Array
 **Returns:**
 - `Uint8Array` - RLP-encoded bytes
 
-Source: [Rlp.wasm.ts:13-16](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L13-L16)
+Source: [Rlp.wasm.ts:13-16](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L13-L16)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
@@ -131,7 +131,7 @@ function encodeUint(value: Uint8Array): Uint8Array
 **Throws:**
 - `Error` - If value is not 32 bytes
 
-Source: [Rlp.wasm.ts:23-28](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L23-L28)
+Source: [Rlp.wasm.ts:23-28](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L23-L28)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
@@ -175,7 +175,7 @@ function encodeUintFromBigInt(value: bigint): Uint8Array
 **Returns:**
 - `Uint8Array` - RLP-encoded bytes
 
-Source: [Rlp.wasm.ts:36-44](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L36-L44)
+Source: [Rlp.wasm.ts:36-44](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L36-L44)
 </TabItem>
 <TabItem label="Usage">
 ```typescript
@@ -230,7 +230,7 @@ const restored = RlpWasm.fromHex(hex)
 // restored equals encoded
 ```
 
-Source: [Rlp.wasm.ts:51-54](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L51-L54)
+Source: [Rlp.wasm.ts:51-54](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L51-L54)
 </TabItem>
 <TabItem label="fromHex">
 ```typescript
@@ -256,7 +256,7 @@ const encoded = RlpWasm.fromHex(hex)
 // Now can decode with Rlp.decode()
 ```
 
-Source: [Rlp.wasm.ts:61-63](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L61-L63)
+Source: [Rlp.wasm.ts:61-63](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/Rlp.wasm.ts#L61-L63)
 </TabItem>
 </Tabs>
 
@@ -287,7 +287,7 @@ pub fn encodeUint(allocator: Allocator, value: [32]u8) ![]u8 {
 }
 ```
 
-Source: [Rlp.zig:1-1489](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/Rlp.zig)
+Source: [Rlp.zig:1-1489](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/Rlp.zig)
 
 ### Benefits
 

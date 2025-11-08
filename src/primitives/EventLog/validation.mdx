@@ -54,7 +54,7 @@ const matches = EventLog.matchesFilter(log, {
 })
 ```
 
-Defined in: [primitives/EventLog/BrandedEventLog/matchesFilter.js:30](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/matchesFilter.js)
+Defined in: [primitives/EventLog/BrandedEventLog/matchesFilter.js:30](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesFilter.js)
 
 ### `EventLog.matchesAddress(log, filterAddress)`
 
@@ -83,7 +83,7 @@ const matches = EventLog.matchesAddress(log, [
 - Array of addresses: Matches if log address equals ANY address in array (OR logic)
 - Empty array: Matches all logs
 
-Defined in: [primitives/EventLog/BrandedEventLog/matchesAddress.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/matchesAddress.js)
+Defined in: [primitives/EventLog/BrandedEventLog/matchesAddress.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesAddress.js)
 
 ### `EventLog.matchesTopics(log, filterTopics)`
 
@@ -133,7 +133,7 @@ EventLog.matchesTopics(log, [approvalSig, aliceHash, bobHash])  // false (wrong 
 - `filterTopics[2]` - Second indexed parameter (topic2)
 - `filterTopics[3]` - Third indexed parameter (topic3)
 
-Defined in: [primitives/EventLog/BrandedEventLog/matchesTopics.js:23](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/matchesTopics.js)
+Defined in: [primitives/EventLog/BrandedEventLog/matchesTopics.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/matchesTopics.js)
 
 ## Log Status
 
@@ -159,7 +159,7 @@ if (EventLog.isRemoved(log)) {
 
 **Returns:** `boolean` - True if log has `removed: true`
 
-Defined in: [primitives/EventLog/BrandedEventLog/isRemoved.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/isRemoved.js)
+Defined in: [primitives/EventLog/BrandedEventLog/isRemoved.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/isRemoved.js)
 
 ### `EventLog.wasRemoved(log)`
 
@@ -174,7 +174,7 @@ const wasRemoved = EventLog.wasRemoved(log)
 
 **Returns:** `boolean` - True if log has `removed: true`
 
-Defined in: [primitives/EventLog/BrandedEventLog/wasRemoved.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/wasRemoved.js)
+Defined in: [primitives/EventLog/BrandedEventLog/wasRemoved.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/wasRemoved.js)
 
 ## Validation Patterns
 

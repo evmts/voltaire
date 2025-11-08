@@ -1,0 +1,604 @@
+---
+title: Interactive Guide
+description: Complete SIWE implementation examples with React components and backend
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside, Steps } from '@astrojs/starlight/components';
+
+# Interactive Guide
+
+Complete implementations for SIWE authentication in modern dApps.
+
+## Step-by-Step Implementation
+
+<Steps>
+
+1. **Backend: Generate Nonce Endpoint**
+
+   ```typescript
+   // POST /auth/nonce
+   import { Siwe } from '@tevm/voltaire';
+
+   app.post('/auth/nonce', async (req, res) => {
+     try {
+       const nonce = Siwe.generateNonce();
+
+       // Store nonce with 5-minute expiry
+       await redis.set(
+         `nonce:${nonce}`,
+         JSON.stringify({
+           createdAt: Date.now(),
+           expiresAt: Date.now() + 300000,
+         }),
+         'EX',
+         300
+       );
+
+       res.json({ nonce });
+     } catch (err) {
+       res.status(500).json({ error: 'Failed to generate nonce' });
+     }
+   });
+   ```
+
+2. **Frontend: Connect Wallet**
+
+   ```typescript
+   // Step 1: Request accounts from wallet
+   async function connectWallet() {
+     try {
+       const [address] = await window.ethereum.request({
+         method: 'eth_requestAccounts'
+       });
+       return address;
+     } catch (err) {
+       throw new Error('User rejected account connection');
+     }
+   }
+   ```
+
+3. **Frontend: Request Nonce**
+
+   ```typescript
+   // Step 2: Get nonce from backend
+   async function getNonce() {
+     const response = await fetch('/auth/nonce', {
+       method: 'POST'
+     });
+     const { nonce } = await response.json();
+     return nonce;
+   }
+   ```
+
+4. **Frontend: Create and Sign Message**
+
+   ```typescript
+   import * as Siwe from '@tevm/primitives/Siwe';
+   import * as Address from '@tevm/primitives/Address';
+
+   async function signMessage(address: string, nonce: string) {
+     // Get chain ID
+     const chainIdHex = await window.ethereum.request({
+       method: 'eth_chainId'
+     });
+     const chainId = parseInt(chainIdHex, 16);
+
+     // Create SIWE message
+     const message = Siwe.create({
+       domain: window.location.host,
+       address: Address.fromHex(address),
+       uri: window.location.origin,
+       chainId,
+       statement: 'Sign in to Example App',
+       nonce,
+     });
+
+     // Format to string
+     const messageText = Siwe.format(message);
+
+     // Request signature from wallet
+     const signature = await window.ethereum.request({
+       method: 'personal_sign',
+       params: [messageText, address]
+     });
+
+     return { message: messageText, signature };
+   }
+   ```
+
+5. **Backend: Verify Signature and Create Session**
+
+   ```typescript
+   // POST /auth/verify
+   app.post('/auth/verify', async (req, res) => {
+     try {
+       const { message: messageText, signature: signatureHex } = req.body;
+
+       // Parse message
+       const message = Siwe.parse(messageText);
+
+       // 1. Verify domain
+       if (message.domain !== req.hostname) {
+         return res.status(400).json({ error: 'Domain mismatch' });
+       }
+
+       // 2. Verify nonce exists and hasn't expired
+       const nonceData = await redis.get(`nonce:${message.nonce}`);
+       if (!nonceData) {
+         return res.status(400).json({ error: 'Invalid or expired nonce' });
+       }
+
+       // 3. Verify message structure and timestamps
+       const validationResult = Siwe.validate(message);
+       if (!validationResult.valid) {
+         return res.status(400).json({
+           error: validationResult.error.message
+         });
+       }
+
+       // 4. Verify signature
+       const signature = new Uint8Array(
+         signatureHex.slice(2).match(/.{1,2}/g)
+           ?.map(byte => parseInt(byte, 16)) ?? []
+       );
+
+       const verifyResult = Siwe.verifyMessage(message, signature);
+       if (!verifyResult.valid) {
+         return res.status(401).json({ error: 'Invalid signature' });
+       }
+
+       // 5. Consume nonce (single-use)
+       await redis.del(`nonce:${message.nonce}`);
+
+       // 6. Create session
+       const sessionToken = crypto.randomUUID();
+       await redis.set(
+         `session:${sessionToken}`,
+         JSON.stringify({
+           address: message.address,
+           chainId: message.chainId,
+           createdAt: Date.now(),
+           expiresAt: Date.now() + 86400000, // 24 hours
+         }),
+         'EX',
+         86400
+       );
+
+       res.json({
+         token: sessionToken,
+         address: message.address,
+         expiresIn: 86400
+       });
+     } catch (err) {
+       res.status(400).json({ error: 'Authentication failed' });
+     }
+   });
+   ```
+
+6. **Frontend: React Authentication Hook**
+
+   ```typescript
+   import { useState } from 'react';
+
+   export function useAuth() {
+     const [isAuthenticated, setIsAuthenticated] = useState(false);
+     const [address, setAddress] = useState<string | null>(null);
+     const [error, setError] = useState<string | null>(null);
+     const [loading, setLoading] = useState(false);
+
+     const authenticate = async () => {
+       setLoading(true);
+       setError(null);
+
+       try {
+         // 1. Connect wallet
+         const userAddress = await connectWallet();
+
+         // 2. Get nonce
+         const nonce = await getNonce();
+
+         // 3. Sign message
+         const { message, signature } = await signMessage(userAddress, nonce);
+
+         // 4. Verify on backend
+         const response = await fetch('/auth/verify', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ message, signature })
+         });
+
+         if (!response.ok) {
+           throw new Error('Authentication failed');
+         }
+
+         const { token } = await response.json();
+
+         // 5. Store session
+         localStorage.setItem('authToken', token);
+         localStorage.setItem('userAddress', userAddress);
+
+         setAddress(userAddress);
+         setIsAuthenticated(true);
+       } catch (err) {
+         setError((err as Error).message);
+         setIsAuthenticated(false);
+       } finally {
+         setLoading(false);
+       }
+     };
+
+     const logout = () => {
+       localStorage.removeItem('authToken');
+       localStorage.removeItem('userAddress');
+       setAddress(null);
+       setIsAuthenticated(false);
+     };
+
+     return {
+       isAuthenticated,
+       address,
+       error,
+       loading,
+       authenticate,
+       logout
+     };
+   }
+   ```
+
+7. **Frontend: Login Component**
+
+   ```tsx
+   import React from 'react';
+   import { useAuth } from './useAuth';
+
+   export function LoginButton() {
+     const { isAuthenticated, address, loading, error, authenticate, logout } = useAuth();
+
+     if (isAuthenticated) {
+       return (
+         <div className="auth-card">
+           <p className="connected">
+             Connected: {address?.slice(0, 6)}...{address?.slice(-4)}
+           </p>
+           <button onClick={logout} disabled={loading}>
+             Logout
+           </button>
+         </div>
+       );
+     }
+
+     return (
+       <div className="auth-card">
+         <button onClick={authenticate} disabled={loading}>
+           {loading ? 'Signing...' : 'Sign In with Ethereum'}
+         </button>
+         {error && <p className="error">{error}</p>}
+       </div>
+     );
+   }
+   ```
+
+</Steps>
+
+## Message Builder Example
+
+Create SIWE messages with various configurations:
+
+<Tabs>
+<TabItem label="Basic Auth">
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com/login",
+  chainId: 1,
+});
+```
+</TabItem>
+<TabItem label="With Statement">
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  statement: "Welcome to Example App!\n\nBy signing, you agree to our Terms.",
+});
+```
+</TabItem>
+<TabItem label="Session with Expiry">
+```typescript
+const now = new Date();
+const oneHourLater = new Date(now.getTime() + 3600000);
+
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  expirationTime: oneHourLater.toISOString(),
+});
+```
+</TabItem>
+<TabItem label="Resource Authorization">
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com/admin",
+  chainId: 1,
+  statement: "Grant admin access",
+  resources: [
+    "https://example.com/api/admin/users",
+    "https://example.com/api/admin/settings",
+    "https://example.com/api/admin/logs",
+  ],
+});
+```
+</TabItem>
+<TabItem label="Multi-Chain">
+```typescript
+const chains = [1, 137, 42161]; // Ethereum, Polygon, Arbitrum
+
+const messages = chains.map(chainId =>
+  Siwe.create({
+    domain: "example.com",
+    address: userAddress,
+    uri: "https://example.com",
+    chainId,
+  })
+);
+```
+</TabItem>
+</Tabs>
+
+## Validation Patterns
+
+Ensure messages are valid before processing:
+
+```typescript
+// Validate on backend
+const result = Siwe.validate(message);
+
+if (!result.valid) {
+  switch (result.error.type) {
+    case 'expired':
+      return res.status(401).json({ error: 'Message expired' });
+
+    case 'not_yet_valid':
+      return res.status(400).json({ error: 'Message not yet valid' });
+
+    case 'invalid_domain':
+      return res.status(400).json({ error: 'Domain mismatch' });
+
+    case 'signature_mismatch':
+      return res.status(401).json({ error: 'Invalid signature' });
+
+    default:
+      return res.status(400).json({ error: 'Invalid message' });
+  }
+}
+
+// Signature verification
+const verifyResult = Siwe.verifyMessage(message, signature);
+
+if (!verifyResult.valid) {
+  console.error('Verification failed:', verifyResult.error.type);
+  return res.status(401).json({ error: 'Authentication failed' });
+}
+```
+
+## Advanced Patterns
+
+### Session Middleware
+
+```typescript
+// Express middleware for protected routes
+async function authMiddleware(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token' });
+  }
+
+  const sessionData = await redis.get(`session:${token}`);
+
+  if (!sessionData) {
+    return res.status(401).json({ error: 'Invalid or expired session' });
+  }
+
+  const session = JSON.parse(sessionData);
+
+  // Check expiry
+  if (session.expiresAt < Date.now()) {
+    await redis.del(`session:${token}`);
+    return res.status(401).json({ error: 'Session expired' });
+  }
+
+  // Extend session on use
+  session.expiresAt = Date.now() + 86400000;
+  await redis.set(
+    `session:${token}`,
+    JSON.stringify(session),
+    'EX',
+    86400
+  );
+
+  req.user = { address: session.address, chainId: session.chainId };
+  next();
+}
+
+// Apply to protected routes
+app.get('/api/user/profile', authMiddleware, (req, res) => {
+  res.json({ address: req.user.address });
+});
+```
+
+### Rate Limiting on Nonce Generation
+
+```typescript
+const nonceRateLimiter = new Map<string, number[]>();
+const MAX_NONCES_PER_MINUTE = 10;
+
+function checkRateLimit(clientIp: string): boolean {
+  const now = Date.now();
+  const requests = nonceRateLimiter.get(clientIp) || [];
+
+  // Keep only requests from last minute
+  const recent = requests.filter(time => now - time < 60000);
+
+  if (recent.length >= MAX_NONCES_PER_MINUTE) {
+    return false;
+  }
+
+  recent.push(now);
+  nonceRateLimiter.set(clientIp, recent);
+  return true;
+}
+
+app.post('/auth/nonce', (req, res) => {
+  if (!checkRateLimit(req.ip)) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const nonce = Siwe.generateNonce();
+  // ... store nonce
+});
+```
+
+### Multi-Account Support
+
+```typescript
+// Store multiple account sessions
+async function createMultiAccountSession(addresses: string[]) {
+  const sessionToken = crypto.randomUUID();
+
+  await redis.set(
+    `session:${sessionToken}`,
+    JSON.stringify({
+      addresses,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 86400000,
+    }),
+    'EX',
+    86400
+  );
+
+  return sessionToken;
+}
+
+// Switch active account
+app.post('/api/account/switch', authMiddleware, async (req, res) => {
+  const { newAddress } = req.body;
+  const token = req.headers.authorization?.replace('Bearer ', '');
+
+  const sessionData = await redis.get(`session:${token}`);
+  const session = JSON.parse(sessionData);
+
+  if (!session.addresses.includes(newAddress)) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+
+  session.activeAddress = newAddress;
+  await redis.set(`session:${token}`, JSON.stringify(session), 'EX', 86400);
+
+  res.json({ success: true });
+});
+```
+
+## Security Checklist
+
+<Card title="Critical Security Requirements">
+
+- [ ] Always validate signature server-side
+- [ ] Check domain matches request origin
+- [ ] Verify nonce is fresh and single-use
+- [ ] Check message timestamp (issued/expiration)
+- [ ] Enforce HTTPS in production
+- [ ] Use cryptographically random nonces
+- [ ] Store nonces only server-side
+- [ ] Rate-limit nonce generation
+- [ ] Clean up expired nonces regularly
+- [ ] Log authentication attempts
+- [ ] Handle clock skew (allow ±30 seconds)
+- [ ] Validate address format before processing
+- [ ] Never log signatures or private keys
+
+</Card>
+
+## Error Handling
+
+```typescript
+// Comprehensive error handling
+const authErrorCodes = {
+  INVALID_NONCE: { status: 400, message: 'Invalid or expired nonce' },
+  DOMAIN_MISMATCH: { status: 400, message: 'Domain mismatch' },
+  SIGNATURE_INVALID: { status: 401, message: 'Invalid signature' },
+  MESSAGE_EXPIRED: { status: 401, message: 'Message expired' },
+  SESSION_EXPIRED: { status: 401, message: 'Session expired' },
+  RATE_LIMITED: { status: 429, message: 'Too many requests' },
+  INTERNAL_ERROR: { status: 500, message: 'Authentication failed' },
+};
+
+function handleAuthError(error: any) {
+  if (error.type === 'expired') {
+    return authErrorCodes.MESSAGE_EXPIRED;
+  }
+  if (error.type === 'invalid_domain') {
+    return authErrorCodes.DOMAIN_MISMATCH;
+  }
+  if (error.type === 'signature_mismatch') {
+    return authErrorCodes.SIGNATURE_INVALID;
+  }
+
+  return authErrorCodes.INTERNAL_ERROR;
+}
+```
+
+## Testing
+
+```typescript
+// Test helper
+function createTestMessage(overrides?: Partial<BrandedMessage>) {
+  return Siwe.create({
+    domain: "test.example.com",
+    address: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+    uri: "https://test.example.com",
+    chainId: 1,
+    nonce: "testnonce123",
+    ...overrides,
+  });
+}
+
+// Test authentication flow
+describe('SIWE Authentication', () => {
+  it('should create and verify message', () => {
+    const message = createTestMessage();
+    const text = Siwe.format(message);
+
+    // This would normally be signed by wallet in production
+    const parsed = Siwe.parse(text);
+
+    expect(parsed.domain).toBe("test.example.com");
+    expect(parsed.nonce).toBe("testnonce123");
+  });
+
+  it('should reject expired message', () => {
+    const message = createTestMessage({
+      expirationTime: new Date(Date.now() - 1000).toISOString(),
+    });
+
+    const result = Siwe.validate(message);
+    expect(result.valid).toBe(false);
+  });
+});
+```
+
+## Related Documentation
+
+- [Message Format](/primitives/siwe/message-format) - EIP-4361 specification
+- [Constructors](/primitives/siwe/constructors) - Creating messages
+- [Parsing](/primitives/siwe/parsing) - Parse and format
+- [Validation](/primitives/siwe/validation) - Validate structure
+- [Verification](/primitives/siwe/verification) - Verify signatures
+- [Usage Patterns](/primitives/siwe/usage-patterns) - Production patterns

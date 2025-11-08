@@ -228,6 +228,27 @@ const isValid = Blob.verifyBatch(blobs, commitments, proofs);
 const versionedHashes = commitments.map(c => Blob.toVersionedHash(c));
 ```
 
+## Visual Guides & Examples
+
+### [Workflows & Diagrams](./workflows-and-diagrams.mdx)
+
+Comprehensive visual explanations:
+- **EIP-4844 L2 Rollup Workflow** - L2 batch → blob → beacon chain → DA
+- **KZG Commitment Lifecycle** - Polynomial interpretation → trusted setup → commitment
+- **Blob Cost Comparison** - Pre vs post-EIP-4844 pricing
+- **Rollup Batch Size Optimizer** - Packing strategies for maximum efficiency
+- **Data Availability Beacon Chain** - Persistence timeline & sampling process
+
+### [Real-World Examples](./real-world-examples.mdx)
+
+Production-ready implementations:
+- **Optimism Batch Submission** - Sequencer batch creation and submission
+- **Arbitrum Batch Format** - Arbitrum-specific batch structure
+- **Custom L2 Rollup** - Building your own rollup with blob support
+- **Recovering Blob Data** - Reconstructing original data from beacon chain
+- **Cost Comparison Analysis** - Detailed savings calculations
+- **Production Checklist** - Deployment validation steps
+
 ## Implementation
 
 - Namespace pattern (tree-shakable)

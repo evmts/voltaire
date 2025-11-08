@@ -3,7 +3,7 @@ title: RLP Encoding
 description: Encode bytes, lists, and nested structures using RLP format
 ---
 
-import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components';
 
 # RLP Encoding
 
@@ -17,6 +17,60 @@ RLP encoding converts arbitrary nested data structures into a compact byte repre
 - **Nested** - Lists containing other lists
 
 All encoding operations are deterministic and canonical, ensuring the same input always produces identical output.
+
+## RLP Encoding Tree Diagram
+
+RLP encodes nested structures hierarchically:
+
+```
+Input Data Structure:
+┌─────────────────────────────┐
+│ List                         │
+│ ├─ Bytes: [0x7f]           │
+│ ├─ Bytes: [0x01, 0x02]     │
+│ └─ List                      │
+│    ├─ Bytes: [0x03]        │
+│    └─ Bytes: [0x04, 0x05]  │
+└─────────────────────────────┘
+         ↓
+    RLP Encoding
+         ↓
+Output RLP Bytes:
+┌──────────────────────────────────────────┐
+│ 0xc6               (list prefix + length) │
+│   0x7f             (single byte [0x7f])  │
+│   0x82 0x01 0x02   (bytes: length + data)│
+│   0xc4             (nested list prefix)  │
+│     0x03           (single byte [0x03])  │
+│     0x82 0x04 0x05 (bytes: length + data)│
+└──────────────────────────────────────────┘
+```
+
+## RLP Encoding Algorithm
+
+<Steps>
+
+1. **Determine Data Type**
+   - Is input a single byte < 0x80? Encode as-is
+   - Is input bytes? Encode with length prefix
+   - Is input array? Encode each element recursively
+
+2. **Encode Bytes**
+   - If length = 1 and byte < 0x80: no prefix
+   - If length ≤ 55: prefix = 0x80 + length
+   - If length > 55: prefix = 0xb7 + (length of length) + length
+
+3. **Encode Lists**
+   - Recursively encode each element
+   - Concatenate all encoded elements
+   - Calculate total payload length
+   - If length ≤ 55: prefix = 0xc0 + length
+   - If length > 55: prefix = 0xf7 + (length of length) + length
+
+4. **Return RLP Bytes**
+   - Prefix + (length if needed) + data
+
+</Steps>
 
 ## encode
 
@@ -42,7 +96,7 @@ type Encodable =
 **Throws:**
 - `Error('UnexpectedInput')` - Invalid encodable data type
 
-Source: [encode.js:38-59](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/encode.js#L38-L59)
+Source: [encode.js:38-59](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encode.js#L38-L59)
 </TabItem>
 <TabItem label="Class API">
 ```typescript
@@ -137,7 +191,7 @@ function encodeBytes(bytes: Uint8Array): Uint8Array
 **Returns:**
 - `Uint8Array` - RLP-encoded bytes
 
-Source: [encodeBytes.js:32-53](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/encodeBytes.js#L32-L53)
+Source: [encodeBytes.js:32-53](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeBytes.js#L32-L53)
 </TabItem>
 <TabItem label="Class API">
 ```typescript
@@ -272,7 +326,7 @@ type Encodable =
 **Returns:**
 - `Uint8Array` - RLP-encoded list
 
-Source: [encodeList.js:33-63](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/encodeList.js#L33-L63)
+Source: [encodeList.js:33-63](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encodeList.js#L33-L63)
 </TabItem>
 <TabItem label="Class API">
 ```typescript

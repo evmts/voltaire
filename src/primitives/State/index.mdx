@@ -114,7 +114,7 @@ export type BrandedStorageKey = {
 }
 ```
 
-Source: [BrandedStorageKey.ts](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/BrandedStorageKey.ts)
+Source: [BrandedStorageKey.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/BrandedStorageKey.ts)
 
 ## EVM Storage Model
 
@@ -141,11 +141,17 @@ contract Example {
 
 **Dynamic arrays**: Length at baseSlot, elements at `keccak256(baseSlot) + index`
 
-**Packed storage**: Variables <32 bytes packed into same slot (right to left)
+**Packed storage**: Variables &lt;32 bytes packed into same slot (right to left)
 
 ## API Documentation
 
 <CardGrid stagger>
+  <Card title="Storage Examples" icon="open-book">
+    Practical examples of Solidity storage layouts, slot calculations, and patterns.
+
+    [View storage examples →](/primitives/state/storage-examples)
+  </Card>
+
   <Card title="Constructors" icon="rocket">
     Create StorageKey from addresses and slot numbers. Supports factory function, static methods, and string parsing.
 
@@ -209,7 +215,7 @@ const key = State.StorageKey(contractAddress, 42n)
 const key2 = State.StorageKey.create(contractAddress, 42n)
 ```
 
-Source: [create.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/create.js)
+Source: [create.js](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/create.js)
 
 ### from()
 
@@ -226,7 +232,7 @@ const key = State.StorageKey.from({
 const key2 = State.StorageKey.from(key)
 ```
 
-Source: [from.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/from.js)
+Source: [from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/from.js)
 
 ### is()
 
@@ -239,7 +245,7 @@ State.StorageKey.is({ address: addr })  // false (missing slot)
 State.StorageKey.is(null)  // false
 ```
 
-Source: [is.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/is.js)
+Source: [is.js](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/is.js)
 
 ### equals()
 
@@ -254,7 +260,7 @@ State.StorageKey.equals(key1, key2)  // true (same address & slot)
 State.StorageKey.equals(key1, key3)  // false (different address)
 ```
 
-Source: [equals.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/equals.js)
+Source: [equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/equals.js)
 
 ### toString()
 
@@ -268,7 +274,7 @@ const str = State.StorageKey.toString(key)
 
 Format: `{address}:{slot}` where address is lowercase hex with 0x prefix, slot is decimal.
 
-Source: [toString.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/toString.js)
+Source: [toString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/toString.js)
 
 ### fromString()
 
@@ -280,7 +286,7 @@ const key = State.StorageKey.fromString(str)
 // { address: BrandedAddress(...), slot: 42n }
 ```
 
-Source: [fromString.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/fromString.js)
+Source: [fromString.js](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/fromString.js)
 
 ### hashCode()
 
@@ -294,7 +300,7 @@ const hash = State.StorageKey.hashCode(key)
 const bucket = hash % buckets.length
 ```
 
-Source: [hashCode.js](https://github.com/evmts/primitives/blob/main/src/primitives/State/BrandedState/hashCode.js)
+Source: [hashCode.js](https://github.com/evmts/voltaire/blob/main/src/primitives/State/BrandedState/hashCode.js)
 
 ## Common Patterns
 
@@ -521,6 +527,288 @@ contract StorageExample {
   </Card>
 </CardGrid>
 
+## State Trie Visualization
+
+### Merkle Patricia Trie Structure
+
+The EVM state is organized in a Merkle Patricia Trie (sparse Merkle tree) where:
+
+```
+               State Root Hash
+                     |
+         __________ | __________
+        /           |            \
+    Account A    Account B     Account C
+    (Address)    (Address)     (Address)
+        |
+        ├─ Storage Trie Root
+        |        |
+        |    ____|____
+        |   /    |    \
+        |  Slot 0  Slot 1  Slot 42
+        |   |       |        |
+        |  Value  Value    Value
+```
+
+**Key Points:**
+- Accounts indexed by: keccak256(address)
+- Storage slots indexed by: keccak256(slot number)
+- Each node is a hash of its children
+- Changes to any slot affect the entire state root
+
+### Account State Components
+
+```typescript
+type Account = {
+  nonce: bigint                    // Transaction count
+  balance: bigint                  // ETH balance
+  storageRoot: Hash                // Merkle Patricia Trie root
+  codeHash: Hash                   // keccak256(code)
+}
+```
+
+### Storage Layout Examples
+
+**Example 1: Simple State Variables**
+```solidity
+contract Simple {
+  uint256 public a;     // slot 0
+  address public owner; // slot 1
+  bool public active;   // slot 2
+}
+```
+
+Storage layout:
+```
+Account: 0x742d35Cc...
+├─ Storage Root Hash
+   ├─ slot[0] → value for 'a'
+   ├─ slot[1] → value for 'owner'
+   └─ slot[2] → value for 'active'
+```
+
+**Example 2: Mapping Storage**
+```solidity
+contract Mapping {
+  mapping(address => uint256) public balances;  // base slot 0
+}
+```
+
+Storage calculation:
+```
+balances[0x1234...] stored at:
+  keccak256(
+    abi.encode(0x1234..., 0)  // key concatenated with slot
+  )
+  = 0xabcd...  (some hash)
+
+Account: 0x9876...
+├─ Storage Root Hash
+   ├─ slot[0xabcd...] → balance amount
+   ├─ slot[0xef01...] → another balance
+   └─ slot[0x2345...] → another balance
+```
+
+**Example 3: Dynamic Arrays**
+```solidity
+contract Arrays {
+  uint256[] public items;  // base slot 0
+}
+```
+
+Storage layout:
+```
+items.length stored at: slot[0]
+items[0] stored at:     slot[keccak256(0)]
+items[1] stored at:     slot[keccak256(0)] + 1
+items[2] stored at:     slot[keccak256(0)] + 2
+...
+```
+
+### Solidity Storage Packing
+
+```solidity
+// Inefficient (3 slots)
+contract Inefficient {
+  uint256 a;  // 32 bytes - slot 0
+  uint8 b;    // 1 byte   - slot 1 (wastes 31 bytes!)
+  uint256 c;  // 32 bytes - slot 2
+}
+
+// Efficient (2 slots)
+contract Efficient {
+  uint256 a;  // 32 bytes - slot 0
+  uint256 c;  // 32 bytes - slot 1
+  uint8 b;    // 1 byte   - slot 1 (packed with c)
+}
+```
+
+## Gas Costs for Storage Operations
+
+| Operation | Condition | Gas | Notes |
+|-----------|-----------|-----|-------|
+| SLOAD | First access (cold) | 2100 | EIP-2929 |
+| SLOAD | Already accessed (warm) | 100 | Access list |
+| SSTORE | Zero → nonzero | 20000 | Write to empty slot |
+| SSTORE | Nonzero → different nonzero | 5000 | Modify existing |
+| SSTORE | Nonzero → zero | 5000 - refund | Delete (refund up to 15000) |
+| SSTORE | Nonzero → same value | 100 | Warm access, no change |
+
+**EIP-2929 Access List:**
+- First touch of (address, slot) pair: cold (expensive)
+- Subsequent touches in same transaction: warm (cheap)
+- Access lists can be pre-declared to optimize gas
+
+## Storage Slot Calculator
+
+### For Mappings
+
+```typescript
+// Solidity: mapping(address => uint256) balances
+// Declaration at storage slot: 0
+
+// Get slot for balances[userAddr]:
+const baseSlot = 0n
+const key = userAddr  // BrandedAddress
+
+// Slot = keccak256(abi.encode(key, baseSlot))
+// In TypeScript:
+const keyBytes = Address.toBytes(key)
+const slotBytes = Hex.fromBigInt(baseSlot, 32)
+const combined = new Uint8Array([...keyBytes, ...slotBytes])
+const slotHash = Keccak.hash(combined)
+const slotNumber = Hex.toBigInt(slotHash)
+```
+
+### For Nested Mappings
+
+```typescript
+// Solidity: mapping(address => mapping(address => uint256)) nested
+// Declaration at slot: 0
+
+// Get slot for nested[addr1][addr2]:
+const slot1 = keccak256(abi.encode(addr1, 0n))
+const slot2 = keccak256(abi.encode(addr2, slot1))
+```
+
+### For Arrays
+
+```typescript
+// Solidity: uint256[] items
+// Declaration at slot: 0
+
+// Array length at slot[0]
+// Element 0 at: keccak256(0n) + 0
+// Element 1 at: keccak256(0n) + 1
+// Element i at: keccak256(baseSlot) + i
+```
+
+## State Root Calculation
+
+```typescript
+// Build storage trie for account
+function buildStorageTrie(storage: Map<string, bigint>): Hash {
+  const trie = new Map<Hash, Uint8Array>()
+
+  for (const [keyStr, value] of storage) {
+    const key = State.StorageKey.fromString(keyStr)
+    const slotHash = Keccak.hash(Hex.fromBigInt(key.slot, 32))
+    const valueEncoded = Rlp.encode(Hex.fromBigInt(value, 32))
+    trie.set(slotHash, valueEncoded)
+  }
+
+  // Compute Merkle root
+  return computeMerkleRoot(trie)
+}
+
+// Build account trie for state
+function buildAccountTrie(
+  accounts: Map<Address, Account>
+): Hash {
+  const trie = new Map<Hash, Uint8Array>()
+
+  for (const [addr, account] of accounts) {
+    const addrHash = Keccak.hash(Address.toBytes(addr))
+    const accountEncoded = Rlp.encode([
+      account.nonce,
+      account.balance,
+      account.storageRoot,
+      account.codeHash
+    ])
+    trie.set(addrHash, accountEncoded)
+  }
+
+  // Compute Merkle root
+  return computeMerkleRoot(trie)
+}
+```
+
+## State Proof Verification
+
+**Merkle Proof Structure:**
+```
+// To prove slot[X] = value in storage:
+proof = [
+  sibling1,  // Hash of sibling node at depth 1
+  sibling2,  // Hash of sibling node at depth 2
+  ...
+  storageRoot  // Final root to verify against
+]
+
+// Reconstruct tree:
+hash0 = leaf(X, value)
+hash1 = parent(hash0, sibling1)
+hash2 = parent(hash1, sibling2)
+...
+assert(hashN == stateRoot)  // Proof verified
+```
+
+**RLP Encoding:**
+```
+AccountData = RLP([
+  nonce,
+  balance,
+  storageRoot,
+  codeHash
+])
+
+StorageValue = RLP(uint256Value)
+```
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Address" icon="document">
+    20-byte contract addresses used in storage keys.
+
+    [View Address →](/primitives/address)
+  </Card>
+
+  <Card title="Hash" icon="seti:text">
+    Keccak256 hashing for storage slot calculations.
+
+    [View Hash →](/primitives/hash)
+  </Card>
+
+  <Card title="Rlp" icon="puzzle">
+    RLP encoding for state trie values.
+
+    [View Rlp →](/primitives/rlp)
+  </Card>
+
+  <Card title="Transaction" icon="rocket">
+    Transactions that modify contract storage.
+
+    [View Transaction →](/primitives/transaction)
+  </Card>
+
+  <Card title="GasConstants" icon="seti:config">
+    Storage operation gas costs (SLOAD, SSTORE).
+
+    [View GasConstants →](/primitives/gas-constants)
+  </Card>
+</CardGrid>
+
 ## Specification References
 
 - [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 4.1: World State
@@ -528,3 +816,4 @@ contract StorageExample {
 - [EIP-1967](https://eips.ethereum.org/EIPS/eip-1967) - Proxy storage slots
 - [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) - Access lists for storage (warm/cold)
 - [Merkle Patricia Trie](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/) - State storage structure
+- [Merkle Proofs](https://ethereum.org/en/developers/tutorials/merkle-proofs-for-offline-data-integrity/) - State proof verification

@@ -162,7 +162,7 @@ class Rlp {
 }
 ```
 
-Source: [RlpConstructor.ts:24-40](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/RlpConstructor.ts#L24-L40)
+Source: [RlpConstructor.ts:24-40](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/RlpConstructor.ts#L24-L40)
 </TabItem>
 <TabItem label="type BrandedRlp">
 ```typescript
@@ -183,7 +183,7 @@ export type BrandedRlp =
 { type: "list", value: BrandedRlp[] }
 ```
 
-Source: [BrandedRlp.ts:4-6](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/BrandedRlp.ts#L4-L6)
+Source: [BrandedRlp.ts:4-6](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/BrandedRlp.ts#L4-L6)
 </TabItem>
 <TabItem label="type Encodable">
 ```typescript
@@ -195,7 +195,7 @@ export type Encodable =
 
 Input type for encoding methods. Accepts raw bytes, RLP data structures, or nested arrays.
 
-Source: [encode.js:7](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/encode.js#L7)
+Source: [encode.js:7](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/encode.js#L7)
 </TabItem>
 <TabItem label="type Decoded">
 ```typescript
@@ -207,7 +207,7 @@ export type Decoded = {
 
 Return type for decode operations. Contains decoded RLP data and any remaining bytes (for stream decoding).
 
-Source: [decode.js:6-9](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/decode.js#L6-L9)
+Source: [decode.js:6-9](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/decode.js#L6-L9)
 </TabItem>
 </Tabs>
 
@@ -375,7 +375,7 @@ try {
 - `RecursionDepthExceeded` - Nested too deeply (max 32)
 - `UnexpectedInput` - Invalid data format
 
-Source: [errors.js](https://github.com/evmts/primitives/blob/main/src/primitives/Rlp/BrandedRlp/errors.js)
+Source: [errors.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/errors.js)
 
 ## Related Types
 

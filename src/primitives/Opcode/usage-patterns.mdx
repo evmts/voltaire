@@ -412,7 +412,7 @@ function extractMetadata(bytecode: Uint8Array): {
   metadataHash?: string
   codeSize: number
 } {
-  // Solidity adds metadata at end: 0xa1 0x65 'b' 'z' 'z' 'r' '0' 0x58 0x20 <32 bytes> 0x00 0x29
+  // Solidity adds metadata at end: 0xa1 0x65 'b' 'z' 'z' 'r' '0' 0x58 0x20 &lt;32 bytes> 0x00 0x29
   const codeSize = bytecode.length
 
   // Check for metadata marker
@@ -447,7 +447,7 @@ function extractMetadata(bytecode: Uint8Array): {
 ```
 
 <Aside type="tip" title="Bytecode Analysis Performance">
-For large contracts (>10KB), consider parsing once and caching the instruction array. Reparsing on every analysis is wasteful.
+For large contracts (&gt;10KB), consider parsing once and caching the instruction array. Reparsing on every analysis is wasteful.
 </Aside>
 
 ## Control Flow Analysis

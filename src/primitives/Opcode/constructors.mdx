@@ -28,7 +28,7 @@ const invalid = Opcode(0xFE)  // INVALID
 
 **Note:** This is a zero-cost type branding function. No validation is performed. Use `isValid()` to check if byte is a valid opcode.
 
-Defined in: [primitives/Opcode/Opcode.js:85](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/Opcode.js)
+Defined in: [primitives/Opcode/Opcode.js:85](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/Opcode.js)
 
 ## Opcode Constants
 
@@ -159,7 +159,7 @@ Opcode.INVALID     // 0xFE
 Opcode.SELFDESTRUCT // 0xFF
 ```
 
-Defined in: [primitives/Opcode/BrandedOpcode/constants.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/constants.js)
+Defined in: [primitives/Opcode/BrandedOpcode/constants.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/constants.js)
 
 ## Bytecode Parsing
 
@@ -213,7 +213,7 @@ type Instruction = {
 - Handles incomplete PUSH data at end of bytecode
 - Returns instruction with offset, opcode, and optional immediate data
 
-Defined in: [primitives/Opcode/BrandedOpcode/parse.js:21](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/parse.js)
+Defined in: [primitives/Opcode/BrandedOpcode/parse.js:21](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/parse.js)
 
 ### `Opcode.pushOpcode(byteCount)`
 
@@ -235,7 +235,7 @@ const push32 = Opcode.pushOpcode(32) // 0x7F (PUSH32)
 **Throws:**
 - Error if byteCount < 1 or > 32
 
-Defined in: [primitives/Opcode/BrandedOpcode/pushOpcode.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/pushOpcode.js)
+Defined in: [primitives/Opcode/BrandedOpcode/pushOpcode.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/pushOpcode.js)
 
 ## Jump Destination Analysis
 
@@ -270,7 +270,7 @@ const dests = Opcode.jumpDests(bytecode)
 - Only includes JUMPDEST opcodes (0x5B) not inside PUSH data
 - Returns empty set if no valid JUMPDESTs found
 
-Defined in: [primitives/Opcode/BrandedOpcode/jumpDests.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/jumpDests.js)
+Defined in: [primitives/Opcode/BrandedOpcode/jumpDests.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/jumpDests.js)
 
 ## Common Patterns
 

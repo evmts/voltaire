@@ -1,0 +1,667 @@
+---
+title: "Authorization Workflows & Diagrams"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Authorization Workflows & Diagrams
+
+Visual guides for EIP-7702 code delegation, account abstraction flows, and real-world use cases.
+
+## EIP-7702 Account Delegation Flow
+
+### High-Level Architecture
+
+```
+EOA (0xAlice)
+├── Original State
+│   ├── Balance: 1 ETH
+│   ├── Nonce: 5
+│   ├── Code: (none)
+│   └── Storage: (empty)
+│
+├── Creates Authorization
+│   ├── chainId: 1
+│   ├── address: 0xSponsor (relayer contract)
+│   ├── nonce: 5
+│   └── Signs with private key
+│
+├── Transaction Execution
+│   ├── Authorization processed
+│   ├── Code: → 0xSponsor
+│   ├── Transaction executes
+│   └── Code reverts after
+│
+└── Final State
+    ├── Balance: same (relayer paid gas)
+    ├── Nonce: 6 (incremented)
+    ├── Code: (none again)
+    └── Storage: unchanged
+```
+
+## Authorization Lifecycle
+
+### Phase 1: Creation & Signing
+
+```
+Step 1: Create Unsigned Authorization
+├── chainId: 1n
+├── address: 0xDelegateContract
+├── nonce: currentNonce
+
+Step 2: Hash It
+├── RLP encode: [chainId, address, nonce]
+├── Prepend magic: 0x05
+├── Keccak256 hash
+│   └── signingHash = keccak256(0x05 || rlp(...))
+
+Step 3: Sign Hash
+├── Use ECDSA with private key
+├── Signature: (r, s, yParity)
+└── Authority = recover address from signature
+```
+
+**Code:**
+```typescript
+const unsigned = {
+  chainId: 1n,
+  address: delegateAddress,
+  nonce: 5n
+};
+
+// Signing hash
+const hash = Authorization.hash.call(unsigned);
+
+// Sign it
+const auth = Authorization.sign.call(unsigned, privateKey);
+// auth now has: r, s, yParity
+```
+
+### Phase 2: Transaction Construction
+
+```
+Step 1: Create Type-4 Transaction
+├── Standard fields (like type-3)
+├── authorization_list: [auth1, auth2, ...]
+└── Each authorization fully signed
+
+Step 2: Include in Transaction
+├── authorizationList: Authorization[]
+├── From account: May be different EOA
+└── Execution: Uses delegated contract code
+
+Step 3: Sign Transaction
+├── Sign with sender's key (not authorization signer)
+├── Transaction signature: (r, s, yParity)
+└── Separate from authorization signatures
+```
+
+### Phase 3: Mempool & Inclusion
+
+```
+Step 1: Broadcast
+├── Send transaction to L1 mempool
+├── Include authorizations
+└── Standard propagation
+
+Step 2: Validation
+├── Verify authorization signatures
+├── Check nonces match account state
+├── Validate chain ID matches
+└── Check delegated contract exists
+
+Step 3: Block Inclusion
+├── Proposer includes in block
+├── Included at specific index
+└── Ready for execution
+```
+
+### Phase 4: Execution
+
+```
+Step 1: Pre-Processing
+├── For each authorization:
+│   ├── Recover authority (signer)
+│   ├── Verify nonce matches
+│   ├── Increment authority nonce
+│   └── Set authority code → delegated contract
+
+Step 2: Transaction Execution
+├── Calldata passed to delegated contract
+├── Runs in EOA's context
+├── Has access to EOA's balance
+├── Can call other contracts
+├── Cannot access delegated contract's storage
+
+Step 3: Delegation Reset
+├── After transaction completes
+├── All code delegations cleared
+├── EOAs return to normal state
+├── Nonces remain incremented
+```
+
+## Authorization Processing Order
+
+```
+Block containing Auth TX
+│
+├── Load transaction
+├── Validate against state
+│
+├── For i = 0 to authList.length-1:
+│   │
+│   ├── authority = recover(auth[i].signature)
+│   ├── Check: auth[i].nonce == state[authority].nonce
+│   │
+│   ├── If invalid:
+│   │   └── Transaction REVERTS (entire tx fails)
+│   │
+│   └── If valid:
+│       ├── Increment state[authority].nonce++
+│       ├── Set code: state[authority].code := auth[i].address
+│       │
+│       ├── Now: authority account "is" delegated contract
+│       │
+│       └── Continue to next auth
+│
+└── Execute transaction with all delegations active
+    ├── authority1 = delegatedContract1
+    ├── authority2 = delegatedContract2
+    └── ... (all delegations active during tx)
+```
+
+## Delegation State Machine
+
+```
+EOA Account Lifecycle
+
+┌─────────────────────────────────────────────┐
+│  Normal State                               │
+│  ├── Code: (none/0x)                        │
+│  ├── Balance: 1 ETH                         │
+│  ├── Nonce: 5                               │
+│  └── Storage: {key: value}                  │
+└────────────┬────────────────────────────────┘
+             │
+             │ Authorization included in TX
+             │ (Before execution)
+             ▼
+┌─────────────────────────────────────────────┐
+│  Delegation State (Active)                  │
+│  ├── Code: → DelegateContract (active)      │
+│  ├── Balance: 1 ETH (accessible)            │
+│  ├── Nonce: 5 → 6 (incremented)             │
+│  └── Storage: {key: value} (separate)       │
+│                                             │
+│  DelegateContract runs with EOA context     │
+└────────────┬────────────────────────────────┘
+             │
+             │ Transaction execution completes
+             │ (After execution)
+             ▼
+┌─────────────────────────────────────────────┐
+│  Post-Delegation State                      │
+│  ├── Code: (none/0x) (reverted)             │
+│  ├── Balance: 0.5 ETH (may change)          │
+│  ├── Nonce: 6 (persists)                    │
+│  └── Storage: {key: value} (unchanged)      │
+└─────────────────────────────────────────────┘
+```
+
+## Sponsored Transaction Flow
+
+```
+User (0xAlice)                Relayer (0xBob)
+       │                             │
+       │ 1. Sign Authorization      │
+       │    [1, SponsorContract, 5] │
+       ├──────────────────────────► │
+       │                             │
+       │        2. Build TX          │
+       │        (Bob is sender)      │
+       │        (Auth in list)       │
+       │                             │
+       │        3. Sign TX           │
+       │        (Bob signs)          │
+       │        (Alice signs auth)   │
+       │                             │
+       │        4. Broadcast & Execute
+       │        ─────────────────────┼───────────► L1
+       │                             │
+       │        5. SponsorContract sees Alice
+       │           and executes her intended action
+       │
+       │ 6. Result callback (if desired)
+       │◄─────────────────────────────
+       │
+       └─ Bob paid gas (from his balance)
+          Alice paid 0 gas
+```
+
+### Execution Details
+
+```
+State Before TX:
+├── Alice: nonce=5, balance=1 ETH
+└── Bob: nonce=10, balance=2 ETH
+
+Authorization Processing:
+├── Recover Alice from auth signature
+├── Check: Alice.nonce (5) matches auth.nonce (5) ✓
+├── Increment: Alice.nonce = 6
+├── Delegate: Alice.code = SponsorContract
+
+TX Execution:
+├── From: Bob (sender)
+├── To: Alice (in delegated mode)
+├── Alice executes as SponsorContract
+├── SponsorContract checks:
+│   ├── Is caller (Alice) approved?
+│   ├── Is gas price reasonable?
+│   └── Can process this action?
+└── If valid: Execute action, send callback
+
+State After TX:
+├── Alice: nonce=6, balance=1.05 ETH (maybe got refunded)
+├── Bob: nonce=11, balance=1.95 ETH (paid gas)
+└── Both code delegations cleared
+```
+
+## Batch Operations Example
+
+### Multi-Action Transaction
+
+```
+User wants to:
+1. Approve DAI token
+2. Approve USDC token
+3. Swap on UniswapV3
+4. Transfer result to address
+
+Traditional approach: 4 separate transactions (4 signatures needed)
+EIP-7702 approach: 1 transaction with delegation (1 signature needed)
+```
+
+**Flow:**
+
+```typescript
+// User creates single authorization
+const auth = Authorization.sign.call({
+  chainId: 1n,
+  address: batchExecutorContract,  // Smart contract that does all 4
+  nonce: userNonce
+}, userPrivateKey);
+
+// Relayer or user includes in transaction
+const tx = {
+  from: userEOA,  // or relayer EOA
+  to: userEOA,    // user's EOA (now delegated)
+  data: batchExecutorContract.interface.encodeFunctionData(
+    'executeBatch',
+    [
+      { target: DAI, data: approveCall },
+      { target: USDC, data: approveCall },
+      { target: UniswapV3Router, data: swapCall },
+      { target: recipient, data: transferCall }
+    ]
+  ),
+  authorizationList: [auth]
+};
+
+// Execution:
+// 1. Recover user from auth
+// 2. Set user.code → batchExecutorContract
+// 3. Execute tx (calls batchExecutorContract)
+// 4. All 4 operations run atomically
+// 5. user.code reverted after
+```
+
+## Social Recovery Flow
+
+### Recovery Module Architecture
+
+```
+Recovery Setup:
+├── Guardians: [0xGuardian1, 0xGuardian2, 0xGuardian3]
+├── Threshold: 2 of 3 guardians required
+└── RecoveryModule: Smart contract managing recovery
+
+Account Compromise:
+├── Old key exposed
+├── Attacker controls account
+└── User cannot transact
+
+Recovery Process:
+├── User (offline) contacts guardians
+├── Each guardian verifies user identity
+├── Guardian 1 signs recovery authorization
+├── Guardian 2 signs recovery authorization
+│   (Now have 2/3 threshold)
+├── Relayer creates recovery transaction:
+│   ├── Authorization 1: Guardian 1 → RecoveryModule
+│   ├── Authorization 2: Guardian 2 → RecoveryModule
+│   ├── RecoveryModule executes:
+│   │   ├── Verify 2/3 guardians signed
+│   │   ├── Update account's key
+│   │   └── Invalidate old key
+│   └── User regains control
+```
+
+**Code Example:**
+
+```typescript
+// Each guardian signs independently
+const guardian1Auth = Authorization.sign.call({
+  chainId: 1n,
+  address: recoveryModuleAddress,
+  nonce: guardian1CurrentNonce
+}, guardian1PrivateKey);
+
+const guardian2Auth = Authorization.sign.call({
+  chainId: 1n,
+  address: recoveryModuleAddress,
+  nonce: guardian2CurrentNonce
+}, guardian2PrivateKey);
+
+// Relayer combines in one transaction
+const recoveryTx = {
+  from: anyRelayer,
+  to: userEOA,
+  data: recoveryModule.interface.encodeFunctionData('recover', [
+    userNewPublicKey,
+    userEOA
+  ]),
+  authorizationList: [guardian1Auth, guardian2Auth]
+};
+
+// Execution:
+// RecoveryModule sees 2 authorized guardians
+// Verifies quorum (2/3)
+// Updates user's allowed key
+```
+
+## Multi-Account Authorization
+
+### Using Same Relayer for Multiple Users
+
+```
+Transaction with Multiple Authorizations
+
+┌─────────────────────────────────────────────┐
+│ TX Structure                                 │
+├──────────────────────────────────────────────┤
+│ From: 0xRelayer                             │
+│ To: (varies per auth)                       │
+│ Data: Batch operation calldata              │
+│ AuthorizationList: [                        │
+│   {                                         │
+│     chainId: 1,                            │
+│     address: 0xSponsorV1,                   │
+│     nonce: aliceNonce,                      │
+│     r, s, yParity  ← Alice's signature      │
+│   },                                        │
+│   {                                         │
+│     chainId: 1,                             │
+│     address: 0xSponsorV1,                   │
+│     nonce: bobNonce,                        │
+│     r, s, yParity  ← Bob's signature        │
+│   },                                        │
+│   {                                         │
+│     chainId: 1,                             │
+│     address: 0xSponsorV1,                   │
+│     nonce: charlieNonce,                    │
+│     r, s, yParity  ← Charlie's signature    │
+│   }                                         │
+│ ]                                           │
+└─────────────────────────────────────────────┘
+
+Processing:
+├── For each auth:
+│   ├── Recover signer (Alice, Bob, Charlie)
+│   ├── Verify nonce matches account
+│   ├── Increment nonce
+│   └── Set code → SponsorV1
+│
+└── TX Execution:
+    └── SponsorV1 handles all 3 users' transactions
+
+Gas Cost:
+├── Base TX: 21,000 gas
+├── Auth 1: 12,500 gas
+├── Auth 2: 12,500 gas
+├── Auth 3: 12,500 gas
+├── Execution: ~50,000 gas
+└── Total: ~108,500 gas (split among 3 users)
+```
+
+## Gas Cost Breakdown
+
+### Authorization Gas Components
+
+```
+Per Authorization Base Cost: 12,500 gas
+
+Additional for Empty Accounts: +25,000 gas
+
+Example 1: Single authorization, existing account
+├── Base: 12,500
+└── Total: 12,500 gas
+
+Example 2: Single authorization, empty account
+├── Base: 12,500
+├── Empty account: +25,000
+└── Total: 37,500 gas
+
+Example 3: Multiple authorizations
+├── Auth 1 (empty): 12,500 + 25,000 = 37,500
+├── Auth 2 (existing): 12,500
+├── Auth 3 (empty): 12,500 + 25,000 = 37,500
+└── Total: 87,500 gas (before execution)
+```
+
+### Total Transaction Cost
+
+```typescript
+// Calculate total gas for authorization processing
+function estimateAuthTxCost(authCount: number, emptyCount: number) {
+  const baseTx = 21_000n;  // Standard TX
+  const perAuth = 12_500n;
+  const perEmptyAccount = 25_000n;
+
+  const authGas = (BigInt(authCount) * perAuth) +
+                  (BigInt(emptyCount) * perEmptyAccount);
+
+  // Add execution gas estimate
+  const executionGas = 50_000n;  // Varies by operation
+
+  return baseTx + authGas + executionGas;
+}
+
+// Examples:
+estimateAuthTxCost(1, 0);  // 83,500 gas
+estimateAuthTxCost(1, 1);  // 108,500 gas
+estimateAuthTxCost(3, 1);  // 121,500 gas
+```
+
+## Comparison: Traditional vs EIP-7702
+
+### Sponsored Transaction Comparison
+
+| Aspect | Traditional | EIP-7702 |
+|--------|-----------|----------|
+| User signature | 1 | 1 (authorization) |
+| Relayer signature | 1 (transaction) | 1 (transaction) |
+| Total signatures | 2 | 2 |
+| Transactions | Multiple | 1 |
+| Gas overhead | Per-transaction | Flat per auth |
+| Atomicity | No | Yes |
+| Code execution | EOA logic | Custom contract |
+
+### Batch Operations
+
+**Traditional Approach (4 operations):**
+```
+User TX 1 (Approve token 1)   → 21k + 40k = 61k gas
+User TX 2 (Approve token 2)   → 21k + 40k = 61k gas
+User TX 3 (Swap)              → 21k + 100k = 121k gas
+User TX 4 (Transfer)          → 21k + 30k = 51k gas
+────────────────────────────────────────────────────
+Total:                         294k gas + 4 signatures
+```
+
+**EIP-7702 Approach (1 operation):**
+```
+User authorization             → 12,500 gas
+TX execution (all 4 ops)       → 21k + 210k = 231k gas
+────────────────────────────────────────────────────
+Total:                         243,500 gas + 1 signature
+(17% gas savings + single signature)
+```
+
+## Real-World Examples
+
+### Example 1: Optimism Relayer Integration
+
+```typescript
+// Optimism user sends transaction via relayer
+
+const userAuth = Authorization.sign.call({
+  chainId: 10,  // Optimism
+  address: optimismSponsorContract,
+  nonce: userNonce
+}, userPrivateKey);
+
+const tx = {
+  type: 4,  // EIP-7702 on Optimism
+  from: relayerEOA,
+  to: userEOA,
+  gasPrice: relayerSelectedPrice,
+  authorizationList: [userAuth],
+  // User's operation encoded in 'data'
+  data: operationCalldata
+};
+
+// Result: User sends transaction "for free"
+// Relayer absorbs gas cost
+// Single signature instead of 2
+```
+
+### Example 2: Uniswap Permit-like Approval
+
+```typescript
+// User delegates to approval router
+
+const auth = Authorization.sign.call({
+  chainId: 1,
+  address: approvalRouter,
+  nonce: userNonce
+}, userPrivateKey);
+
+const tx = {
+  from: relayer,
+  to: userEOA,
+  authorizationList: [auth],
+  data: approvalRouter.interface.encodeFunctionData('approveAndSwap', [
+    tokenInAddress,
+    tokenOutAddress,
+    amountIn,
+    minAmountOut,
+    recipient
+  ])
+};
+
+// Result: Approve + swap in single transaction
+// No separate approval transaction
+```
+
+### Example 3: Smart Wallet Features
+
+```typescript
+// EOA gets smart wallet features via delegation
+
+const auth = Authorization.sign.call({
+  chainId: 1,
+  address: smartWalletImplementation,
+  nonce: userNonce
+}, userPrivateKey);
+
+const tx = {
+  from: userEOA,  // User is relayer too
+  to: userEOA,    // Delegated to smart wallet
+  authorizationList: [auth],
+  data: smartWallet.interface.encodeFunctionData('executeBatch', [
+    // Complex batch operations
+    [op1, op2, op3, ...]
+  ])
+};
+
+// EOA now has smart wallet capabilities
+// No need to migrate to contract wallet
+```
+
+## Security Checklist
+
+### For Users
+
+- [ ] Verify delegation contract before signing
+- [ ] Check chain ID matches intended network
+- [ ] Confirm nonce is correct
+- [ ] Review authorization scope (address and nonce)
+- [ ] Never reuse same nonce with different auth
+- [ ] Verify relayer trustworthiness
+
+### For Relayers
+
+- [ ] Validate authorization signatures
+- [ ] Check nonces haven't been used
+- [ ] Verify chain IDs match
+- [ ] Set reasonable gas price limits
+- [ ] Monitor for failed transactions
+- [ ] Handle out-of-gas gracefully
+
+### For Contract Developers
+
+- [ ] Validate msg.sender is expected user
+- [ ] Implement rate limiting if needed
+- [ ] Verify all operation parameters
+- [ ] Handle partial failures gracefully
+- [ ] Log all significant actions
+- [ ] Test with multiple authorizations
+
+## Implementation Timeline
+
+### Pre-EIP-7702
+
+```
+Prototype phase (current)
+├── Basic auth signing/verification
+├── Test vectors
+└── Documentation
+```
+
+### EIP-7702 Rollout
+
+```
+Phase 1: Testnet (Sepolia, Goerli)
+├── Type-4 transactions enabled
+├── Full auth processing
+└── Consumer testing
+
+Phase 2: Mainnet Activation
+├── Scheduled hard fork
+├── Authorization processing live
+├── Production relay networks
+
+Phase 3: Widespread Adoption
+├── Wallet integration
+├── Relay network maturity
+└── Smart contract standards
+```
+
+## See Also
+
+- [EIP-7702 Specification](./eip7702.mdx)
+- [Authorization Signing](./signing.mdx)
+- [Gas Calculations](./gas-calculations.mdx)
+- [Authorization Processing](./processing.mdx)
+- [Usage Patterns](./usage-patterns.mdx)

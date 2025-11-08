@@ -15,12 +15,12 @@ EventLog provides WASM acceleration for filtering operations, offering **10-100x
 
 <Aside type="tip" title="When to Use WASM">
 WASM provides significant benefits for:
-- Filtering >1000 logs
+- Filtering &gt;1000 logs
 - Real-time event streams
 - Batch processing
 - Production indexers
 
-For small datasets (<100 logs), pure TypeScript is faster due to WASM call overhead.
+For small datasets (&lt;100 logs), pure TypeScript is faster due to WASM call overhead.
 </Aside>
 
 ## Status Check
@@ -88,7 +88,7 @@ const matches = matchesAddressWasm(
 
 **Performance:** ~50-100ns per call (WASM) vs ~200-500ns (TypeScript)
 
-Defined in: [primitives/EventLog/EventLog.wasm.ts:31](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
+Defined in: [primitives/EventLog/EventLog.wasm.ts:31](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
 
 ### `matchesTopicWasm(logTopic, filterTopic)`
 
@@ -111,7 +111,7 @@ const matches = matchesTopicWasm(
 
 **Performance:** ~30-50ns per call (WASM) vs ~100-200ns (TypeScript)
 
-Defined in: [primitives/EventLog/EventLog.wasm.ts:53](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
+Defined in: [primitives/EventLog/EventLog.wasm.ts:53](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
 
 ### `matchesTopicsWasm(logTopics, filterTopics)`
 
@@ -134,7 +134,7 @@ const matches = matchesTopicsWasm(
 
 **Performance:** ~100-200ns per call (WASM) vs ~500-1000ns (TypeScript)
 
-Defined in: [primitives/EventLog/EventLog.wasm.ts:77](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
+Defined in: [primitives/EventLog/EventLog.wasm.ts:77](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
 
 ### `filterByAddressWasm(logs, filterAddresses)`
 
@@ -152,9 +152,9 @@ const filtered = filterByAddressWasm(allLogs, [usdcAddress, daiAddress])
 
 **Returns:** `T[]` - Filtered logs
 
-**Performance:** ~10-50x faster than TypeScript for >1000 logs
+**Performance:** ~10-50x faster than TypeScript for &gt;1000 logs
 
-Defined in: [primitives/EventLog/EventLog.wasm.ts:98](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
+Defined in: [primitives/EventLog/EventLog.wasm.ts:98](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
 
 ### `filterByTopicsWasm(logs, filterTopics)`
 
@@ -176,9 +176,9 @@ const filtered = filterByTopicsWasm(allLogs, [
 
 **Returns:** `T[]` - Filtered logs
 
-**Performance:** ~20-100x faster than TypeScript for >1000 logs
+**Performance:** ~20-100x faster than TypeScript for &gt;1000 logs
 
-Defined in: [primitives/EventLog/EventLog.wasm.ts:124](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
+Defined in: [primitives/EventLog/EventLog.wasm.ts:124](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
 
 ### `filterLogsWasm(logs, filterAddresses, filterTopics)`
 
@@ -201,9 +201,9 @@ const transfersToUser = filterLogsWasm(
 
 **Returns:** `T[]` - Filtered logs
 
-**Performance:** ~50-150x faster than TypeScript for >1000 logs
+**Performance:** ~50-150x faster than TypeScript for &gt;1000 logs
 
-Defined in: [primitives/EventLog/EventLog.wasm.ts:147](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
+Defined in: [primitives/EventLog/EventLog.wasm.ts:147](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/EventLog.wasm.ts)
 
 ## Usage Patterns
 
@@ -290,7 +290,7 @@ class AdaptiveEventFilter {
 
 ### Breakeven Points
 
-| Operation | Small (<100) | Medium (100-1000) | Large (>1000) |
+| Operation | Small (&lt;100) | Medium (100-1000) | Large (&gt;1000) |
 |-----------|--------------|-------------------|---------------|
 | `matchesAddress` | TypeScript faster | TypeScript faster | WASM 2-5x faster |
 | `matchesTopics` | TypeScript faster | WASM ~equal | WASM 5-20x faster |
@@ -299,13 +299,13 @@ class AdaptiveEventFilter {
 ### Optimization Guidelines
 
 **Use WASM when:**
-- Filtering >1000 logs
+- Filtering &gt;1000 logs
 - Processing real-time streams
 - Building production indexers
 - Performance is critical
 
 **Use TypeScript when:**
-- Filtering <100 logs
+- Filtering &lt;100 logs
 - One-time queries
 - Complex filter logic
 - WASM not available

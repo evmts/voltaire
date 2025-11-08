@@ -93,20 +93,41 @@ type Item = {
 
 ## Gas Economics (EIP-2930)
 
-**Costs:**
-- Address: 2,400 gas
+**Costs to Include in Transaction:**
+- Address: 2,400 gas each
 - Storage key: 1,900 gas each
 
-**Savings:**
-- Cold account access: 2,600 → 2,400 gas (200 saved)
+**Savings per Access (vs cold access):**
+- Cold account access: 2,600 → 2,400 gas (200 saved per address)
 - Cold storage access: 2,100 → 1,900 gas (200 saved per key)
 
-**Formula:**
+**Break-Even Analysis:**
+
+For access list to be beneficial, potential savings must exceed cost:
+
 ```
-Cost = (addresses × 2400) + (keys × 1900)
-Savings = (addresses × 200) + (keys × 200)
-Net = Savings - Cost
+Net Savings = (addresses × 200) + (keys × 200) - Cost
+Cost = (addresses × 2,400) + (keys × 1,900)
+
+Example: 2 addresses with 3 total storage keys
+Cost: (2 × 2,400) + (3 × 1,900) = 10,700 gas
+Savings: (2 × 200) + (3 × 200) = 1,000 gas
+Net: -9,700 gas (NOT beneficial unless accessed 5+ times)
 ```
+
+**Visual Gas Comparison:**
+
+| Scenario | Address Cost | Keys Cost | Address Savings | Keys Savings | Net Gain? |
+|----------|-------------|----------|-----------------|--------------|-----------|
+| 1 addr, 1 key | 2,400 | 1,900 | 200 | 200 | ❌ -3,900 |
+| 1 addr, 3 keys | 2,400 | 5,700 | 200 | 600 | ❌ -6,900 |
+| 2 addr, 2 keys | 4,800 | 3,800 | 400 | 400 | ❌ -7,600 |
+| 3 addr, 4 keys | 7,200 | 7,600 | 600 | 800 | ❌ -13,200 |
+
+**Key Insight:** Access lists rarely break even for single-access scenarios. They're most valuable for:
+- Repeated accesses within same transaction loop
+- Strategic warm-up before expensive operations
+- Batch operations accessing same slots
 
 ## Core API
 
@@ -174,32 +195,49 @@ AccessList.toBytes(list)                // To RLP bytes
 - [WASM](./wasm.mdx) - WebAssembly bindings
 - [Usage Patterns](./usage-patterns.mdx) - Common patterns
 
-## Example: DeFi Swap
+## Example: DeFi Swap with Analysis
 
 ```typescript
 // Setup
-const router = Address.fromHex('0x...');
-const token0 = Address.fromHex('0x...');
-const token1 = Address.fromHex('0x...');
-const balanceSlot = calculateSlot(myAddress, 0);
-const allowanceSlot = calculateSlot(myAddress, 1);
+const router = Address.fromHex('0xE592427A0AEce92De3Edee1F18E0157C05861564');
+const token0 = Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
+const token1 = Address.fromHex('0xA0b86991d4C137282C01B19e27F0f0751D85f469e');
+const balanceSlot = 0n; // ERC20 balance mapping
+const allowanceSlot = 1n; // ERC20 allowance mapping
 
 // Build access list
 let list = AccessList.create();
-list = list.withAddress(router);
-list = list.withStorageKey(token0, balanceSlot);
-list = list.withStorageKey(token0, allowanceSlot);
-list = list.withStorageKey(token1, balanceSlot);
+list = list.withAddress(router);                    // Router address
+list = list.withStorageKey(token0, balanceSlot);    // Token 0 balance
+list = list.withStorageKey(token0, allowanceSlot);  // Token 0 allowance
+list = list.withStorageKey(token1, balanceSlot);    // Token 1 balance
 
-// Analyze
-const cost = list.gasCost();        // (3 × 2400) + (3 × 1900) = 12,900
-const savings = list.gasSavings();  // (3 × 200) + (3 × 200) = 1,200
-const net = savings - cost;         // -11,700 (not beneficial)
+// Analyze cost vs benefit
+const cost = list.gasCost();
+const savings = list.gasSavings();
+const net = savings - cost;
 
-// Only use if beneficial
+console.log('Access List Analysis:');
+console.log(`  Cost to include: ${cost} gas`);       // (3 × 2400) + (3 × 1900) = 12,900
+console.log(`  Potential savings: ${savings} gas`);  // (3 × 200) + (3 × 200) = 1,200
+console.log(`  Net impact: ${net} gas`);             // -11,700 (loses gas)
+
+// Only include if beneficial
 if (list.hasSavings()) {
   tx.accessList = list;
+  console.log('✓ Access list included - saves gas');
+} else {
+  tx.accessList = [];
+  console.log('✗ Access list omitted - costs gas');
 }
+
+// For repeated swaps in a batch, recalculate with multi-access savings
+// Each additional swap saves ~2,300 gas (warm read cost)
+const batchSize = 5;
+const multiAccessSavings = savings + (2300n * BigInt(batchSize - 1));
+console.log(`\nFor ${batchSize}-swap batch:`);
+console.log(`  Total savings: ${multiAccessSavings} gas`);
+console.log(`  Net: ${multiAccessSavings - cost} gas - ${multiAccessSavings > cost ? '✓ beneficial' : '✗ not beneficial'}`);
 ```
 
 ## Performance
@@ -235,8 +273,58 @@ if (list.hasSavings()) {
 - [EIP-2929: Gas Cost Increases](https://eips.ethereum.org/EIPS/eip-2929)
 - [EIP-1559: Fee Market](https://eips.ethereum.org/EIPS/eip-1559)
 
+## Gas Optimization Checklist
+
+When optimizing transaction gas costs with access lists:
+
+- [ ] **Is the transaction accessing multiple storage slots?**
+  - Access lists only save gas with repeated accesses
+  - Single-shot accesses almost always lose gas
+
+- [ ] **Will the same slots be accessed multiple times?**
+  - Count intended accesses per slot
+  - Each additional access saves ~2,000 gas
+  - Break-even typically requires 5+ accesses
+
+- [ ] **Have you deduplicated the access list?**
+  - Always call `deduplicate()` before analysis
+  - Duplicates waste gas (paid twice for same slot)
+  - `withAddress`/`withStorageKey` don't prevent duplicates
+
+- [ ] **Are you only including addresses/keys actually accessed?**
+  - Every unnecessary entry costs 2,400/1,900 gas
+  - No savings for warm accounts/slots already warm from prior access
+  - Verify with contract execution trace
+
+- [ ] **Is this a supported transaction type?**
+  - Type 0 (Legacy): ❌ No access list support
+  - Type 1 (EIP-2930): ✓ Access lists supported
+  - Type 2 (EIP-1559): ✓ Access lists supported
+  - Type 3 (EIP-4844 Blob): ✓ Access lists supported
+
+- [ ] **Have you compared with/without access list?**
+  - Use `estimateGas()` with and without list
+  - Actual gas usage trumps theoretical calculations
+  - Some accesses may already be warm from prior calls
+
+## Real-World Optimal Use Cases
+
+**Access lists save gas when:**
+1. Batch operations (10+ transactions with same contract)
+2. Flashloan liquidations (multiple reads before writes)
+3. MEV-related transactions (sandwich trades with repeated accesses)
+4. Contract upgrades (many repeated storage reads)
+
+**Access lists waste gas when:**
+1. Simple transfers or single-slot operations
+2. Already-warm storage (previous operations in same block)
+3. External calls that warm accounts automatically
+4. Transactions with few storage accesses
+
 ## See Also
 
 - [Address](../Address/index.mdx) - Ethereum addresses
 - [Hash](../Hash/index.mdx) - 32-byte hashes
 - [RLP](../Rlp/index.mdx) - RLP encoding
+- [GasConstants](../../GasConstants/) - Cold/warm access costs
+- [State](../../State/) - Warm/cold slot tracking

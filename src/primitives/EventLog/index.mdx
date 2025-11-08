@@ -3,7 +3,7 @@ title: EventLog
 description: EVM event log representation with filtering and matching utilities
 ---
 
-import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Card, CardGrid, Aside, Steps } from '@astrojs/starlight/components';
 
 # EventLog
 
@@ -12,6 +12,47 @@ EVM event log representation with comprehensive filtering, matching, and sorting
 ## Overview
 
 EventLog provides a complete API for working with Ethereum event logs emitted by smart contracts. Supports log creation, filtering by topics and addresses, handling chain reorganizations, and sorting logs by block/transaction position.
+
+## Event Log Structure
+
+Event logs have up to 4 indexed topics plus non-indexed data:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Event Log Structure                                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  address: 0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e           │
+│  (20-byte contract address that emitted the log)                │
+│                                                                  │
+│  ┌──────────────────────── TOPICS ──────────────────────────┐   │
+│  │                                                           │   │
+│  │  topic0 (required):  0xddf252ad... (event signature)     │   │
+│  │                      keccak256("Transfer(address,address,uint256)") │
+│  │                                                           │   │
+│  │  topic1 (indexed):   0x000...f39f (from address)         │   │
+│  │  topic2 (indexed):   0x000...7099 (to address)           │   │
+│  │  topic3 (indexed):   [optional 3rd indexed param]        │   │
+│  │                                                           │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  data: 0x00...03e8 (non-indexed parameters, abi-encoded)        │
+│        └─ Contains: amount = 1000 (uint256)                    │
+│                                                                  │
+│  Position metadata:                                              │
+│  ├─ blockNumber: 12345678                                      │
+│  ├─ blockHash: 0xabc...                                         │
+│  ├─ transactionHash: 0x123...                                   │
+│  ├─ transactionIndex: 42                                        │
+│  ├─ logIndex: 7                                                 │
+│  └─ removed: false (true if chain reorg)                        │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+<Aside type="tip" title="Topic Encoding">
+Indexed parameters are encoded as 32-byte hashes (keccak256 for dynamic types). Address parameters are padded to 32 bytes: `0x000...{20-byte address}`.
+</Aside>
 
 ## Quick Start
 
@@ -101,6 +142,56 @@ const sorted2 = EventLog.sort(unsortedLogs)
 </TabItem>
 </Tabs>
 
+## Topic Calculation & Bloom Filters
+
+### Event Signature (topic0)
+
+To find events, you need the event signature hash:
+
+```typescript
+// Solidity event declaration
+event Transfer(address indexed from, address indexed to, uint256 value);
+
+// Event signature calculation
+const sig = keccak256("Transfer(address,address,uint256)");
+// Result: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+
+// Use in EventLog to filter
+const logs = EventLog.filterLogs(allLogs, {
+  topics: [sig]  // Match all Transfer events
+})
+```
+
+<Aside type="note" title="Event Signature Naming">
+Use the Solidity signature string exactly as declared: include parameter types (not names), separate with commas, no spaces.
+</Aside>
+
+### Bloom Filter Optimization
+
+Ethereum blocks include a log bloom filter for fast event lookup:
+
+```
+┌────────────────────────────────────────────────────────┐
+│ Block Bloom Filter (2048 bits for event indexing)      │
+├────────────────────────────────────────────────────────┤
+│                                                         │
+│ Contract addresses and topics are hashed into the      │
+│ filter using 3 hash functions per value                │
+│                                                         │
+│  Hash(address, 0) → bit 512                            │
+│  Hash(address, 1) → bit 1024                           │
+│  Hash(address, 2) → bit 1536                           │
+│         ↓                                               │
+│  1 = address mentioned in block ✓                      │
+│                                                         │
+│  Can query: "Any Transfer events from block X?"        │
+│  Response: "Probably" (bloom) → fetch logs to confirm  │
+│                                                         │
+└────────────────────────────────────────────────────────┘
+```
+
+This allows light clients to quickly determine if a block *might* contain events matching a filter, reducing RPC calls.
+
 ## Type Definition
 
 ```typescript
@@ -129,7 +220,7 @@ export type BrandedEventLog<
 } & { readonly __tag: "EventLog" }
 ```
 
-Source: [BrandedEventLog.ts:7-29](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/BrandedEventLog.ts#L7-L29)
+Source: [BrandedEventLog.ts:7-29](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/BrandedEventLog.ts#L7-L29)
 
 ## Filter Type
 
@@ -156,7 +247,7 @@ export type Filter<
 }
 ```
 
-Source: [BrandedEventLog.ts:34-53](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/BrandedEventLog.ts#L34-L53)
+Source: [BrandedEventLog.ts:34-53](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/BrandedEventLog.ts#L34-L53)
 
 ## Core Methods
 
@@ -424,6 +515,19 @@ Maps to:
 - topic2: to address (indexed)
 - data: abi.encode(value) (non-indexed)
 
+## Standard Event Signatures
+
+Common ERC standard events and their topic0 hashes:
+
+| Event | Signature | topic0 |
+|-------|-----------|--------|
+| Transfer (ERC-20/721) | `Transfer(address indexed from, address indexed to, uint256 value/tokenId)` | `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` |
+| Approval (ERC-20/721) | `Approval(address indexed owner, address indexed spender, uint256 value/tokenId)` | `0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925` |
+| ApprovalForAll (ERC-721) | `ApprovalForAll(address indexed owner, address indexed operator, bool approved)` | `0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31` |
+| TransferSingle (ERC-1155) | `TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)` | `0xc3d58168c5ae7397731d063d5bbf3d657706970af1a1347f45eba0eb68571231` |
+| TransferBatch (ERC-1155) | `TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)` | `0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595a9738d51b54614b51` |
+| Swap (Uniswap V2) | `Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)` | `0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822` |
+
 ## API Documentation
 
 <CardGrid>
@@ -449,6 +553,12 @@ Maps to:
     Real-world examples: ERC-20 transfers, NFTs, Uniswap swaps, indexing.
 
     [View usage patterns →](/primitives/eventlog/usage-patterns)
+  </Card>
+
+  <Card title="Interactive Guide" icon="laptop">
+    Step-by-step event indexing setup, log filtering, and integration patterns.
+
+    [View interactive guide →](/primitives/eventlog/interactive-guide)
   </Card>
 
   <Card title="WASM Implementation" icon="rocket">

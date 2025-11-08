@@ -1,0 +1,449 @@
+---
+title: "Blob Workflows & Diagrams"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Blob Workflows & Diagrams
+
+Visual guides for EIP-4844 blob transactions, KZG commitments, and data availability flows.
+
+## EIP-4844 L2 Rollup Workflow
+
+### High-Level Architecture
+
+```
+Layer 2 Rollup
+├── Transaction Pool
+│   └── Batches user transactions
+│
+└── Batch Creation
+    ├── 1. Accumulate transactions
+    ├── 2. Create blob from batch data
+    ├── 3. Generate KZG commitment
+    ├── 4. Generate KZG proof
+    ├── 5. Create versioned hash
+    └── 6. Submit as EIP-4844 transaction
+        │
+        ├── Blob Data (128 KB per blob)
+        ├── Commitment (48 bytes)
+        ├── Proof (48 bytes)
+        └── VersionedHash (32 bytes)
+             │
+             └── Ethereum Mainnet
+                 ├── Block Inclusion
+                 ├── Blob Storage (~18 days)
+                 └── Data Availability Sampling
+                     ├── Random validators sample cells
+                     ├── Verify KZG proofs
+                     └── Confirm availability
+```
+
+### Step-by-Step Timeline
+
+**Phase 1: Data Preparation (L2)**
+```
+T+0s:   L2 accumulates transactions (e.g., Optimism batch)
+T+10s:  Encode batch data (e.g., 50KB)
+T+15s:  Generate blob: Blob.fromData(batchData)
+T+20s:  Generate commitment: Blob.toCommitment(blob)
+T+21s:  Generate proof: Blob.toProof(blob, commitment)
+T+22s:  Create versioned hash: Blob.toVersionedHash(commitment)
+```
+
+**Phase 2: Transaction Submission (L1)**
+```
+T+30s:  Create type-3 transaction with:
+        - Blob payload
+        - commitment
+        - proof
+        - versionedHash
+T+31s:  Sign transaction
+T+32s:  Broadcast to L1 mempool
+```
+
+**Phase 3: Block Inclusion**
+```
+T+12s:  Included in block by proposer
+T+13s:  Blobs stored in beacon chain for ~18 days
+T+14s:  Block propagates to network
+```
+
+**Phase 4: Data Availability Sampling**
+```
+T+30-432000s:  Random subnets sample blob cells
+               Verify KZG point-evaluation proofs
+               Confirm data is available
+               Remove after ~18 days
+```
+
+## KZG Commitment Lifecycle
+
+### Commitment Generation
+
+```
+Blob Data (131,072 bytes)
+│
+├── Interpret as field elements (4096 × 32 bytes)
+│   └── [a₀, a₁, a₂, ..., a₄₀₉₅]
+│
+└── Polynomial Commitments
+    ├── P(x) = a₀ + a₁·x + a₂·x² + ... + a₄₀₉₅·x⁴⁰⁹⁵
+    │   └── Points on BLS12-381 curve
+    │
+    ├── Trusted Setup (performed once)
+    │   ├── Secret: τ (tau)
+    │   ├── G1 points: [G, τ·G, τ²·G, ..., τ⁴⁰⁹⁵·G]
+    │   └── G2 points: [H, τ·H, τ²·H, ...]
+    │
+    └── KZG Commitment
+        ├── C = a₀·G + a₁·(τ·G) + ... + a₄₀₉₅·(τ⁴⁰⁹⁵·G)
+        ├── 48 bytes (BLS12-381 G1 compressed)
+        └── Commitment uniquely identifies polynomial
+```
+
+### Proof Generation & Verification
+
+**Proof for Point Evaluation:**
+```
+Query: "Prove P(z) = y"
+
+Proof:
+├── Compute quotient: Q(x) = (P(x) - y) / (x - z)
+├── Compute proof: π = Q(τ)·G on BLS12-381
+├── Result: 48-byte G1 point
+│
+└── Verification:
+    ├── e(C - y·G, H) = e(π, τ·H - z·H)
+    ├── Uses pairing checks (expensive)
+    └── Returns: boolean
+```
+
+## Blob to Versioned Hash
+
+```
+KZG Commitment (48 bytes)
+│
+├── 0x01 (BLS12-381 KZG version)
+├── 0x02 (reserved for future)
+└── 0x03+ (future versions)
+     │
+     └── Version Byte Selection
+         │
+         └── Commitment Hash
+             ├── SHA-256(commitment) = 32 bytes
+             ├── Take bytes [1:31] (31 bytes)
+             │
+             └── Concatenate
+                 │
+                 ├── [0x01] || [bytes 1-31 of SHA256]
+                 └── Versioned Hash (32 bytes)
+                     └── Used in transaction to reference blob
+```
+
+**Example Calculation:**
+```
+Commitment:  0xa1b2c3d4...e8f9 (48 bytes)
+SHA256:      0x1234567890abcdef... (32 bytes)
+Versioned:   0x01 || 34567890abcdef... = 0x0134567890abcdef... (32 bytes)
+```
+
+## Blob Cost Comparison
+
+### Pre vs Post EIP-4844
+
+```
+Data Size: 128 KB
+
+Pre-EIP-4844 (Calldata):
+├── Gas per byte: 16 (non-zero) or 4 (zero)
+├── Average: 8 gas/byte
+├── Total: 128 KB × 8 = 1,048,576 gas
+├── At 100 gwei: ~$10,485.76
+└── Cost: EXPENSIVE
+
+Post-EIP-4844 (Blobs):
+├── Blob gas target: 393,216 (3 blobs)
+├── 1 blob gas: 131,072
+├── Total: 131,072 gas
+├── At 100 gwei: ~$1,310.72
+└── Cost: ~8x CHEAPER
+
+Savings:
+├── Data size: 128 KB
+├── Old cost: $10,485.76
+├── New cost: $1,310.72
+├── Savings: ~$9,175.04 (87.5% reduction)
+```
+
+### Gas Calculator
+
+<Tabs>
+<TabItem label="Single Blob">
+```
+1 blob = 131,072 blob gas
+
+Base cost: 131,072
+At 100 gwei/gas: ~$13.11
+
+Variation with blob price:
+- Low (1 gwei):     $0.13
+- Medium (50 gwei): $6.55
+- High (200 gwei):  $26.21
+```
+</TabItem>
+<TabItem label="Multiple Blobs">
+```
+Calculate for N blobs:
+
+Base formula: N × 131,072 blob gas
+
+Examples:
+- 2 blobs: 262,144 gas  (~$26.21 @ 100 gwei)
+- 3 blobs: 393,216 gas  (~$39.32 @ 100 gwei)
+- 4 blobs: 524,288 gas  (~$52.43 @ 100 gwei)
+- 5 blobs: 655,360 gas  (~$65.54 @ 100 gwei)
+- 6 blobs: 786,432 gas  (~$78.64 @ 100 gwei)
+```
+</TabItem>
+<TabItem label="Data Sizes">
+```
+Data ↔ Blob Count Mapping
+
+Data Size        Blobs Needed    Gas Cost @ 50 gwei
+─────────────────────────────────────────────────
+50 KB            1              $3.28
+100 KB           1              $3.28
+150 KB           2              $6.55
+200 KB           2              $6.55
+250 KB           2              $6.55
+300 KB           3              $9.83
+400 KB           4              $13.11
+500 KB           4              $13.11
+600 KB           5              $16.39
+```
+</TabItem>
+</Tabs>
+
+## Rollup Batch Size Optimizer
+
+### Data Packing Strategies
+
+**Strategy 1: Maximize Data per Blob**
+```
+Available space per blob: 131,064 bytes (131,072 - 8 length prefix)
+
+Packing:
+├── L2 Block 1:    ~43 KB
+├── L2 Block 2:    ~43 KB
+├── L2 Block 3:    ~43 KB
+└── Total:         ~129 KB → 1 blob
+
+Cost: 131,072 gas
+Density: ~98%
+```
+
+**Strategy 2: Multiple Short Batches**
+```
+Split into multiple transactions:
+
+Transaction 1:
+├── Blocks 1-10:   ~65 KB → 1 blob
+
+Transaction 2:
+├── Blocks 11-20:  ~65 KB → 1 blob
+
+Total: 2 blobs, more frequent finality
+Cost: 262,144 gas (2x higher)
+```
+
+**Strategy 3: Hybrid Approach**
+```
+Group by time and data:
+
+Batch timing: Every 10 seconds or 100 KB
+
+├── If time limit hit:
+│   └── Submit current batch (may be <131 KB)
+│
+├── If data limit hit:
+│   └── Submit full batch (may be early)
+│
+└── Optimize for throughput + finality
+```
+
+### Calculation Example
+
+```typescript
+// Estimate blobs needed for data
+const dataSize = 500_000;  // 500 KB
+const blobCapacity = 131_064;  // 131,072 - 8 for length prefix
+const blobsNeeded = Math.ceil(dataSize / blobCapacity);
+// blobsNeeded = 4
+
+// Calculate gas
+const gasPerBlob = 131_072;
+const totalGas = blobsNeeded * gasPerBlob;  // 524,288
+
+// Cost at different prices
+const gasPrice = 50n;  // gwei
+const cost = totalGas * gasPrice;  // 26,214,400 wei = ~$0.026
+```
+
+## Data Availability Beacon Chain
+
+### Blob Persistence Timeline
+
+```
+Block N (beacon chain)
+├── Blobs included
+├── DA sampling begins
+│
+├── Days 1-7: Hot data
+│   ├── Full blobs stored
+│   ├── Rapid access
+│   └── DA sampling active
+│
+├── Days 8-14: Warm data
+│   ├── Data retrievable
+│   ├── Slower access
+│   └── Continued sampling
+│
+├── Days 15-18: Cool data
+│   ├── About to expire
+│   ├── Archive-only access
+│   └── Final sampling window
+│
+└── After Day 18: Data expired
+    ├── Blobs pruned
+    ├── Only commitment remains
+    └── Data only in L2 state
+```
+
+### Sampling Process
+
+```
+Blob Cell Structure:
+├── 128 cells per blob
+├── 32 bytes per cell
+├── Total: 4,096 bytes per blob
+│
+Random Sampling:
+├── Each validator assigned cells
+├── Randomly per slot
+├── Proof required: KZG point-evaluation
+│
+Verification:
+├── Recover point: P(z) = evaluation
+├── Verify proof against commitment
+├── Confirm: (polynomial(z) = evaluation)
+└── Result: Boolean
+```
+
+## Real-World L2 Examples
+
+### Optimism Blob Transaction
+
+```typescript
+// Optimism batch submitted via blob transaction
+
+{
+  type: 3,  // EIP-4844
+  chainId: 1,
+  nonce: 42,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  maxFeePerGas: 50_000_000_000n,
+  gas: 180_000,  // Execution + overhead
+  to: '0xNaN...',  // Data commitment contract
+  value: 0n,
+  data: '0x...',  // Transaction data
+  accessList: [],
+
+  // EIP-4844 specific
+  blobVersionedHashes: [
+    '0x0134567890abcdef...',  // Blob 1
+    '0x01fedcba9876543...',   // Blob 2
+  ],
+
+  // Blobs themselves (not in tx encoding)
+  blobs: [
+    /* 131,072 bytes of OP Stack batch data */,
+    /* 131,072 bytes more */,
+  ]
+}
+```
+
+### Arbitrum Blob Submission
+
+```typescript
+// Arbitrum sequencer batch
+
+{
+  // Standard type-3 transaction fields
+
+  // Batch contents (up to 6 blobs)
+  blobVersionedHashes: [
+    '0x01...',  // Blob hash
+  ],
+
+  // Contains:
+  // - Compressed L2 state deltas
+  // - Message hashes
+  // - Transaction proofs
+  // - Finality markers
+}
+```
+
+## Cost Calculator (Interactive)
+
+### Creating Blob Transaction
+
+- [ ] Accumulate L2 transaction data
+- [ ] Estimate blob count: `Blob.estimateBlobCount(dataSize)`
+- [ ] Check ≤ 6 blobs (max per transaction)
+- [ ] Encode data: `Blob.fromData(data)`
+- [ ] Generate commitment: `Blob.toCommitment(blob)`
+- [ ] Generate proof: `Blob.toProof(blob, commitment)`
+- [ ] Create versioned hash: `Blob.toVersionedHash(commitment)`
+- [ ] Build type-3 transaction
+- [ ] Include blob versioned hashes
+- [ ] Sign transaction
+- [ ] Broadcast to L1 network
+
+### Post-Submission
+
+- [ ] Monitor block inclusion
+- [ ] Verify blob in beacon chain
+- [ ] Track DA sampling progress
+- [ ] Archive data after ~18 days
+- [ ] Maintain commitment reference
+
+## Performance Considerations
+
+### Blob Size Constraints
+
+| Aspect | Value | Note |
+|--------|-------|------|
+| Blob size | 131,072 bytes | Fixed |
+| Per-transaction max | 6 blobs | 786,432 bytes |
+| Field elements | 4,096 | 32 bytes each |
+| Commitment | 48 bytes | BLS12-381 G1 |
+| Proof | 48 bytes | Point evaluation proof |
+| Versioned hash | 32 bytes | Uniquely identifies blob |
+
+### Gas Characteristics
+
+| Operation | Gas | Notes |
+|-----------|-----|-------|
+| 1 blob | 131,072 | Blob gas (unique from execution gas) |
+| 3 blobs | 393,216 | Target per block |
+| 6 blobs | 786,432 | Maximum per transaction |
+| Calldata (128 KB) | ~1,048,576 | ~8x more expensive |
+
+## See Also
+
+- [EIP-4844 Specification](https://eips.ethereum.org/EIPS/eip-4844)
+- [Proto-Danksharding Details](https://www.eip4844.com/)
+- [KZG Commitments](./commitment.mdx)
+- [Blob Construction](./constructors.mdx)
+- [Blob Utilities](./utilities.mdx)

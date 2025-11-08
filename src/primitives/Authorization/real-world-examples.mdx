@@ -1,0 +1,763 @@
+---
+title: "Authorization Real-World Examples"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Authorization Real-World Examples
+
+Production-ready examples for EIP-7702 implementations, relay networks, and smart account patterns.
+
+## Example 1: Relay Network Integration
+
+### Gas-Sponsoring Relay Service
+
+A simple relay service that sponsors user transactions.
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+import type { Authorization as AuthorizationType } from '@tevm/voltaire/Authorization';
+import { Address, Hash, Hex } from '@tevm/primitives';
+
+interface RelayRequest {
+  authorization: AuthorizationType.Item;
+  txData: Hex;
+  targetContract: Address;
+}
+
+interface RelayResponse {
+  txHash: Hash;
+  gasCost: bigint;
+  costInUSD: number;
+  status: 'pending' | 'confirmed' | 'failed';
+}
+
+class GasSponsoringRelay {
+  private relayerPrivateKey: Uint8Array;
+  private gasPrice: bigint = 50_000_000_000n;  // 50 gwei
+  private maxCostPerTx: bigint = 5_000_000_000_000_000n;  // 0.005 ETH
+
+  constructor(relayerKey: Uint8Array) {
+    this.relayerPrivateKey = relayerKey;
+  }
+
+  async relayTransaction(request: RelayRequest): Promise<RelayResponse> {
+    // 1. Validate authorization
+    try {
+      Authorization.validate.call(request.authorization);
+    } catch (e) {
+      throw new Error(`Invalid authorization: ${(e as Error).message}`);
+    }
+
+    // 2. Recover authority (the user)
+    const authority = Authorization.verify.call(request.authorization);
+    console.log(`Relaying transaction for ${authority}`);
+
+    // 3. Check nonce consistency
+    const currentNonce = await this.getAccountNonce(authority);
+    if (request.authorization.nonce !== BigInt(currentNonce)) {
+      throw new Error(
+        `Nonce mismatch: expected ${currentNonce}, got ${request.authorization.nonce}`
+      );
+    }
+
+    // 4. Estimate gas cost
+    const gasCost = Authorization.getGasCost.call(
+      request.authorization,
+      await this.isAccountEmpty(authority)
+    );
+    const totalGas = 21_000n + BigInt(gasCost) + 100_000n;  // est execution
+    const totalCost = totalGas * this.gasPrice;
+
+    if (totalCost > this.maxCostPerTx) {
+      throw new Error(`Transaction cost too high: ${totalCost} wei`);
+    }
+
+    // 5. Create transaction
+    const relayerNonce = await this.getAccountNonce(this.relayerAddress);
+    const tx = {
+      type: 4 as const,
+      chainId: 1n,
+      nonce: relayerNonce,
+      maxPriorityFeePerGas: 1_000_000_000n,
+      maxFeePerGas: this.gasPrice,
+      gas: Number(totalGas),
+      to: request.targetContract,
+      value: 0n,
+      data: request.txData,
+      accessList: [],
+      authorizationList: [request.authorization],
+      // Signature would be added here
+    };
+
+    // 6. Sign and broadcast
+    const signedTx = this.signTransaction(tx);
+    const txHash = await this.broadcastTransaction(signedTx);
+
+    // 7. Monitor confirmation
+    const receipt = await this.waitForConfirmation(txHash);
+
+    return {
+      txHash: txHash as Hash,
+      gasCost: receipt.gasUsed * this.gasPrice,
+      costInUSD: Number(receipt.gasUsed * this.gasPrice) / 1e18 * 2000,
+      status: receipt.status === 1 ? 'confirmed' : 'failed'
+    };
+  }
+
+  // Helper methods
+  private async getAccountNonce(address: Address): Promise<number> {
+    // Call eth_getTransactionCount
+    return 0;
+  }
+
+  private async isAccountEmpty(address: Address): Promise<boolean> {
+    // Check if account has no code and only zero balance
+    return false;
+  }
+
+  private signTransaction(tx: any) {
+    // Sign with relayer key
+    return tx;
+  }
+
+  private async broadcastTransaction(tx: any): Promise<string> {
+    // Broadcast via JSON-RPC
+    return '0x';
+  }
+
+  private async waitForConfirmation(txHash: string) {
+    // Poll for receipt
+    return { gasUsed: 100_000n, status: 1 };
+  }
+
+  private get relayerAddress(): Address {
+    // Derive from private key
+    return '0x' as Address;
+  }
+}
+
+// Usage example
+const relay = new GasSponsoringRelay(relayerPrivateKey);
+
+// User creates and signs authorization offline
+const userAuth = Authorization.sign.call({
+  chainId: 1n,
+  address: targetContractAddress,
+  nonce: userCurrentNonce
+}, userPrivateKey);
+
+// User sends to relay service
+const result = await relay.relayTransaction({
+  authorization: userAuth,
+  txData: encodedFunctionCall,
+  targetContract: targetContractAddress
+});
+
+console.log(`Transaction: ${result.txHash}`);
+console.log(`Cost: $${result.costInUSD.toFixed(2)}`);
+```
+
+## Example 2: Batch Operation Contract
+
+### Smart Contract for Batch Execution
+
+Contract that executes multiple operations under delegation.
+
+```typescript
+// Solidity contract equivalent
+
+interface IBatchExecutor {
+  struct Operation {
+    address target;
+    uint256 value;
+    bytes data;
+  }
+
+  function executeBatch(Operation[] calldata ops) external;
+}
+
+// Usage from TypeScript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+async function executeBatchOperations(
+  userEOA: Address,
+  batchExecutorAddress: Address,
+  operations: Array<{
+    target: Address;
+    value: bigint;
+    data: Hex;
+  }>
+) {
+  // 1. Create authorization delegating to batch executor
+  const auth = Authorization.sign.call({
+    chainId: 1n,
+    address: batchExecutorAddress,
+    nonce: userNonce
+  }, userPrivateKey);
+
+  // 2. Encode batch operations
+  const encodedOps = encodeOperations(operations);
+  const calldata = encodeBatchExecutorCall(encodedOps);
+
+  // 3. Create transaction
+  const tx = {
+    type: 4 as const,
+    chainId: 1n,
+    nonce: senderNonce,
+    maxPriorityFeePerGas: 1_000_000_000n,
+    maxFeePerGas: 50_000_000_000n,
+    gas: 500_000,  // Batch operations may use more gas
+
+    to: userEOA,  // Target is user's EOA (delegated)
+    value: 0n,
+    data: calldata,
+    accessList: [],
+    authorizationList: [auth]
+  };
+
+  // 4. Sign and submit
+  const signedTx = signTransaction(tx, senderPrivateKey);
+  return broadcastTransaction(signedTx);
+}
+
+// Example: Multi-token swap and transfer
+async function multiSwapAndTransfer(
+  userEOA: Address,
+  swaps: Array<{ tokenIn: Address; tokenOut: Address; amount: bigint }>,
+  recipient: Address
+) {
+  const operations = [
+    // Approve inputs
+    ...swaps.map(swap => ({
+      target: swap.tokenIn,
+      value: 0n,
+      data: encodeApprove(routerAddress, swap.amount)
+    })),
+
+    // Execute swaps
+    ...swaps.map(swap => ({
+      target: uniswapRouterAddress,
+      value: 0n,
+      data: encodeSwap(swap.tokenIn, swap.tokenOut, swap.amount, recipient)
+    }))
+  ];
+
+  return executeBatchOperations(userEOA, batchExecutorAddress, operations);
+}
+```
+
+## Example 3: Social Recovery Implementation
+
+### Guardian-Based Account Recovery
+
+Recover account using guardian signatures.
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+interface RecoveryConfig {
+  guardians: Address[];
+  threshold: number;  // e.g., 2 of 3
+  recoveryModuleAddress: Address;
+  userEOA: Address;
+}
+
+class SocialRecoveryManager {
+  private config: RecoveryConfig;
+  private guardianPrivateKeys: Map<Address, Uint8Array> = new Map();
+
+  constructor(config: RecoveryConfig) {
+    this.config = config;
+  }
+
+  async initiateRecovery(
+    newPublicKey: Uint8Array,
+    guardianSignatures: Map<Address, Uint8Array>
+  ) {
+    // 1. Verify quorum
+    if (guardianSignatures.size < this.config.threshold) {
+      throw new Error(
+        `Need ${this.config.threshold} guardians, got ${guardianSignatures.size}`
+      );
+    }
+
+    // 2. Create authorizations for each guardian
+    const guardianAuths: Authorization.Item[] = [];
+    let nonce = 0;
+
+    for (const [guardian, signature] of guardianSignatures) {
+      // Guardian signs a recovery authorization
+      const unsignedAuth = {
+        chainId: 1n,
+        address: this.config.recoveryModuleAddress,
+        nonce: BigInt(nonce++)
+      };
+
+      // In real scenario, guardians would sign via their own process
+      const auth = Authorization.sign.call(unsignedAuth, signature);
+      guardianAuths.push(auth);
+    }
+
+    // 3. Create recovery transaction
+    const tx = {
+      type: 4 as const,
+      chainId: 1n,
+      nonce: 0n,
+      maxPriorityFeePerGas: 2_000_000_000n,
+      maxFeePerGas: 70_000_000_000n,
+      gas: 300_000,
+
+      // Transaction targets user's EOA
+      to: this.config.userEOA,
+      value: 0n,
+
+      // Recovery module executes recovery logic
+      data: encodeRecoveryCall(
+        this.config.recoveryModuleAddress,
+        newPublicKey,
+        this.config.userEOA
+      ),
+
+      accessList: [],
+      authorizationList: guardianAuths
+    };
+
+    // 4. Broadcast recovery transaction
+    return broadcastTransaction(tx);
+  }
+
+  async verifyGuardianSignature(
+    guardian: Address,
+    message: Uint8Array,
+    signature: Uint8Array
+  ): Promise<boolean> {
+    // Verify guardian's signature on recovery message
+    const recovered = recoverAddress(message, signature);
+    return recovered.toLowerCase() === guardian.toLowerCase();
+  }
+}
+
+// Recovery flow
+async function recoverAccount(
+  userEOA: Address,
+  guardianKeys: Uint8Array[],
+  newKey: Uint8Array
+) {
+  const config: RecoveryConfig = {
+    guardians: deriveAddressesFromKeys(guardianKeys),
+    threshold: 2,  // 2 of 3 guardians required
+    recoveryModuleAddress: RECOVERY_MODULE,
+    userEOA
+  };
+
+  const manager = new SocialRecoveryManager(config);
+
+  // Guardians sign recovery
+  const guardianSigs = new Map(
+    guardianKeys.slice(0, 2).map(key => [
+      deriveAddress(key),
+      key
+    ])
+  );
+
+  const recoveryTx = await manager.initiateRecovery(newKey, guardianSigs);
+  console.log(`Recovery initiated: ${recoveryTx}`);
+
+  // Monitor recovery completion
+  const receipt = await waitForReceipt(recoveryTx);
+  if (receipt.status === 1) {
+    console.log('Account recovered successfully');
+  }
+}
+```
+
+## Example 4: Smart Account Using Delegation
+
+### EOA-as-Smart-Account Pattern
+
+Use delegation to give EOA smart account features.
+
+```typescript
+interface SmartAccountConfig {
+  owner: Address;
+  validators: Address[];
+  implementation: Address;  // Delegated contract
+  chainId: bigint;
+}
+
+class SmartAccount {
+  private config: SmartAccountConfig;
+  private nonce: bigint = 0n;
+
+  constructor(config: SmartAccountConfig) {
+    this.config = config;
+  }
+
+  async executeOperation(
+    target: Address,
+    value: bigint,
+    data: Hex,
+    relayer?: Address
+  ) {
+    // 1. Create authorization
+    const auth = Authorization.sign.call({
+      chainId: this.config.chainId,
+      address: this.config.implementation,
+      nonce: this.nonce
+    }, this.ownerKey);
+
+    // 2. Increment nonce for replay protection
+    this.nonce++;
+
+    // 3. Encode operation for smart account
+    const operationData = encodeSmartAccountOp({
+      target,
+      value,
+      data,
+      validators: this.config.validators
+    });
+
+    // 4. Create transaction
+    const tx = {
+      type: 4 as const,
+      chainId: this.config.chainId,
+      nonce: relayerNonce,
+      maxPriorityFeePerGas: 1_000_000_000n,
+      maxFeePerGas: 50_000_000_000n,
+      gas: 200_000,
+
+      to: this.config.owner,
+      value: 0n,
+      data: operationData,
+      accessList: [],
+      authorizationList: [auth]
+    };
+
+    // 5. Send via relayer if provided
+    if (relayer) {
+      tx.from = relayer;
+      tx.nonce = relayerNonce;
+    } else {
+      tx.from = this.config.owner;
+      tx.nonce = ownerNonce;
+    }
+
+    return broadcastTransaction(tx);
+  }
+
+  async batchExecute(operations: Array<{
+    target: Address;
+    value: bigint;
+    data: Hex;
+  }>) {
+    // All operations in single transaction via delegation
+    const auth = Authorization.sign.call({
+      chainId: this.config.chainId,
+      address: this.config.implementation,
+      nonce: this.nonce
+    }, this.ownerKey);
+
+    this.nonce++;
+
+    const batchData = encodeBatchOps(operations);
+
+    const tx = {
+      type: 4 as const,
+      chainId: this.config.chainId,
+      nonce: relayerNonce,
+      maxPriorityFeePerGas: 1_500_000_000n,
+      maxFeePerGas: 60_000_000_000n,
+      gas: 500_000,  // Batch may use more gas
+
+      to: this.config.owner,
+      value: 0n,
+      data: batchData,
+      accessList: [],
+      authorizationList: [auth]
+    };
+
+    return broadcastTransaction(tx);
+  }
+
+  // Getters
+  get ownerAddress(): Address {
+    return this.config.owner;
+  }
+
+  private get ownerKey(): Uint8Array {
+    // Get owner's private key (from secure storage)
+    return new Uint8Array(32);
+  }
+}
+
+// Usage
+const smartAccount = new SmartAccount({
+  owner: userEOA,
+  validators: [validator1, validator2],
+  implementation: smartWalletImplementation,
+  chainId: 1n
+});
+
+// Single operation
+await smartAccount.executeOperation(
+  tokenAddress,
+  0n,
+  encodeTransfer(recipient, amount)
+);
+
+// Batch operations
+await smartAccount.batchExecute([
+  { target: tokenA, value: 0n, data: encodeApprove(router, amountA) },
+  { target: tokenB, value: 0n, data: encodeApprove(router, amountB) },
+  { target: router, value: 0n, data: encodeSwap(tokenA, tokenB, amountA) }
+]);
+```
+
+## Example 5: Gasless Transaction Service
+
+### End-to-End Gasless UX
+
+Complete gasless transaction flow.
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+interface GaslessRequest {
+  userAddress: Address;
+  targetContract: Address;
+  functionCall: Hex;
+  maxGasPrice: bigint;
+}
+
+class GaslessService {
+  private relayerKey: Uint8Array;
+  private relayerAddress: Address;
+  private maxSlippage: bigint = 10n;  // 10% max fee increase
+
+  constructor(relayerKey: Uint8Array) {
+    this.relayerKey = relayerKey;
+    this.relayerAddress = deriveAddress(relayerKey);
+  }
+
+  async submitGaslessRequest(request: GaslessRequest): Promise<Hash> {
+    // 1. Get current gas price
+    const currentGasPrice = await getGasPrice();
+    const acceptableGasPrice = request.maxGasPrice;
+
+    // Ensure gas price hasn't spiked
+    if (currentGasPrice > acceptableGasPrice) {
+      throw new Error(
+        `Gas price ${currentGasPrice} exceeds max ${acceptableGasPrice}`
+      );
+    }
+
+    // 2. User signs authorization (from their wallet)
+    const userNonce = await getAccountNonce(request.userAddress);
+    const auth = Authorization.sign.call({
+      chainId: 1n,
+      address: request.targetContract,
+      nonce: BigInt(userNonce)
+    }, userPrivateKey);  // User provides via wallet UI
+
+    // 3. Validate authorization
+    Authorization.validate.call(auth);
+    const recoveredUser = Authorization.verify.call(auth);
+    if (recoveredUser !== request.userAddress) {
+      throw new Error('Authorization not from user');
+    }
+
+    // 4. Calculate gas cost
+    const isEmpty = await isAccountEmpty(request.userAddress);
+    const authGas = Authorization.getGasCost.call(auth, isEmpty);
+    const executionGas = 100_000n;  // Estimate
+    const totalGas = 21_000n + authGas + executionGas;
+    const totalCost = totalGas * currentGasPrice;
+
+    // 5. Check relay profitability
+    const relayerRevenue = totalCost / 10n;  // 10% of gas saved
+    if (relayerRevenue < 0n) {
+      throw new Error('Transaction unprofitable for relayer');
+    }
+
+    // 6. Create transaction
+    const tx = {
+      type: 4 as const,
+      chainId: 1n,
+      nonce: await getAccountNonce(this.relayerAddress),
+      maxPriorityFeePerGas: 1_000_000_000n,
+      maxFeePerGas: currentGasPrice,
+      gas: Number(totalGas),
+
+      to: request.targetContract,
+      value: 0n,
+      data: request.functionCall,
+      accessList: [],
+      authorizationList: [auth]
+    };
+
+    // 7. Sign with relayer key
+    const signedTx = signTransaction(tx, this.relayerKey);
+
+    // 8. Broadcast
+    const txHash = await broadcastTransaction(signedTx);
+
+    // 9. Monitor and notify user
+    const receipt = await waitForConfirmation(txHash);
+    const gasUsed = receipt.gasUsed * currentGasPrice;
+
+    // Notify user of actual gas paid
+    await notifyUser(request.userAddress, {
+      txHash,
+      gasUsed,
+      status: receipt.status === 1 ? 'success' : 'failed'
+    });
+
+    return txHash;
+  }
+}
+
+// Frontend integration
+async function submitGaslessTransaction(
+  userEOA: Address,
+  targetContract: Address,
+  functionCall: Hex
+) {
+  // Get max gas price user is willing to pay
+  const maxGasPrice = await getMaxAcceptableGasPrice();
+
+  // Create request
+  const request: GaslessRequest = {
+    userAddress: userEOA,
+    targetContract,
+    functionCall,
+    maxGasPrice
+  };
+
+  // Get user to sign authorization
+  const userAuth = await userWallet.signAuthorization({
+    chainId: 1n,
+    address: targetContract,
+    nonce: userCurrentNonce
+  });
+
+  // Submit to gasless service
+  const service = new GaslessService(relayerPrivateKey);
+  const txHash = await service.submitGaslessRequest(request);
+
+  // Show confirmation to user
+  showTxConfirmation(txHash);
+}
+```
+
+## Example 6: Production Deployment Checklist
+
+### Validation & Testing
+
+```typescript
+interface DeploymentConfig {
+  relayerAddress: Address;
+  maxTxCost: bigint;
+  supportedChains: number[];
+  whitelistedContracts: Address[];
+  rateLimitPerUser: number;
+}
+
+async function validateGaslessDeployment(
+  config: DeploymentConfig
+): Promise<ValidationReport> {
+  const checks = {
+    relayerFunded: async () => {
+      const balance = await getBalance(config.relayerAddress);
+      return {
+        passed: balance > 100n * 10n ** 18n,  // 100 ETH
+        message: `Relayer balance: ${balance / 10n ** 18n} ETH`
+      };
+    },
+
+    authSignatureVerification: () => {
+      // Test authorization signing/verification
+      const testAuth = Authorization.sign.call({
+        chainId: 1n,
+        address: '0x' as Address,
+        nonce: 0n
+      }, testPrivateKey);
+
+      try {
+        Authorization.validate.call(testAuth);
+        return { passed: true, message: 'Auth validation works' };
+      } catch (e) {
+        return { passed: false, message: (e as Error).message };
+      }
+    },
+
+    contractWhitelist: async () => {
+      // Verify all whitelisted contracts exist
+      const missing = [];
+      for (const addr of config.whitelistedContracts) {
+        const code = await getCode(addr);
+        if (code === '0x') {
+          missing.push(addr);
+        }
+      }
+      return {
+        passed: missing.length === 0,
+        message: `${config.whitelistedContracts.length} contracts verified`
+      };
+    },
+
+    networkConnectivity: async () => {
+      try {
+        const blockNumber = await getBlockNumber();
+        return {
+          passed: blockNumber > 0,
+          message: `Connected at block ${blockNumber}`
+        };
+      } catch (e) {
+        return { passed: false, message: (e as Error).message };
+      }
+    },
+
+    eip7702Support: async () => {
+      // Check that type-4 transactions are supported
+      const latestBlock = await getLatestBlock();
+      const hasType4Tx = latestBlock.transactions.some(tx => tx.type === 4);
+      return {
+        passed: hasType4Tx || latestBlock.number > FORK_BLOCK,
+        message: hasType4Tx ? 'Type-4 transactions detected' : 'Type-4 not yet active'
+      };
+    }
+  };
+
+  const results = await Promise.all(
+    Object.entries(checks).map(async ([name, check]) => ({
+      name,
+      result: await check()
+    }))
+  );
+
+  return {
+    allChecksPassed: results.every(r => r.result.passed),
+    checks: results,
+    readyForProduction: results.every(r => r.result.passed)
+  };
+}
+
+// Run validation before deployment
+const validation = await validateGaslessDeployment(config);
+if (!validation.readyForProduction) {
+  console.error('Deployment failed checks:');
+  validation.checks
+    .filter(c => !c.result.passed)
+    .forEach(c => console.error(`  - ${c.name}: ${c.result.message}`));
+  process.exit(1);
+}
+```
+
+## See Also
+
+- [Authorization Workflows & Diagrams](./workflows-and-diagrams.mdx)
+- [Authorization Signing](./signing.mdx)
+- [Gas Calculations](./gas-calculations.mdx)
+- [Authorization Validation](./validation.mdx)
+- [EIP-7702 Specification](./eip7702.mdx)

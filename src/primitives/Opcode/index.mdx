@@ -175,7 +175,7 @@ export type Info = {
 }
 ```
 
-Source: [BrandedOpcode.ts:1-31](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/BrandedOpcode.ts#L1-L31)
+Source: [BrandedOpcode.ts:1-31](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/BrandedOpcode.ts#L1-L31)
 
 ## Core Methods
 
@@ -580,6 +580,12 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 ## API Documentation
 
 <CardGrid>
+  <Card title="Reference Guide" icon="open-book">
+    Complete opcode reference with execution traces, stack diagrams, and examples.
+
+    [View reference guide →](/primitives/opcode/reference-guide)
+  </Card>
+
   <Card title="Constructors" icon="rocket">
     Opcode constants, bytecode parsing, and jump destination analysis.
 
@@ -598,7 +604,7 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
     [View utilities →](/primitives/opcode/utilities)
   </Card>
 
-  <Card title="Usage Patterns" icon="open-book">
+  <Card title="Usage Patterns" icon="document">
     Real-world bytecode analysis, gas estimation, and pattern detection.
 
     [View usage patterns →](/primitives/opcode/usage-patterns)
@@ -639,6 +645,213 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
   </Card>
 </CardGrid>
 
+## Opcode Reference Tables
+
+### Complete Opcode Listing
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Tabs>
+<TabItem label="Arithmetic">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x01 | ADD | 3 | 2 | 1 | a + b |
+| 0x02 | MUL | 5 | 2 | 1 | a * b |
+| 0x03 | SUB | 3 | 2 | 1 | a - b |
+| 0x04 | DIV | 5 | 2 | 1 | a / b (0 if b=0) |
+| 0x05 | SDIV | 5 | 2 | 1 | Signed division |
+| 0x06 | MOD | 5 | 2 | 1 | a % b (0 if b=0) |
+| 0x07 | SMOD | 5 | 2 | 1 | Signed modulo |
+| 0x08 | ADDMOD | 8 | 3 | 1 | (a + b) % N |
+| 0x09 | MULMOD | 8 | 3 | 1 | (a * b) % N |
+| 0x0A | EXP | 10* | 2 | 1 | a ** b (dynamic gas) |
+| 0x0B | SIGNEXTEND | 5 | 2 | 1 | Sign extend byte |
+
+</TabItem>
+
+<TabItem label="Comparison & Bitwise">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x10 | LT | 3 | 2 | 1 | Less than |
+| 0x11 | GT | 3 | 2 | 1 | Greater than |
+| 0x12 | SLT | 3 | 2 | 1 | Signed less than |
+| 0x13 | SGT | 3 | 2 | 1 | Signed greater than |
+| 0x14 | EQ | 3 | 2 | 1 | Equal |
+| 0x15 | ISZERO | 3 | 1 | 1 | Returns 1 if zero |
+| 0x16 | AND | 3 | 2 | 1 | Bitwise AND |
+| 0x17 | OR | 3 | 2 | 1 | Bitwise OR |
+| 0x18 | XOR | 3 | 2 | 1 | Bitwise XOR |
+| 0x19 | NOT | 3 | 1 | 1 | Bitwise NOT |
+| 0x1A | BYTE | 3 | 2 | 1 | Get byte at index |
+| 0x1B | SHL | 3 | 2 | 1 | Shift left (EIP-145) |
+| 0x1C | SHR | 3 | 2 | 1 | Shift right (EIP-145) |
+| 0x1D | SAR | 3 | 2 | 1 | Arithmetic shift (EIP-145) |
+
+</TabItem>
+
+<TabItem label="Cryptographic">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x20 | KECCAK256 | 30* | 2 | 1 | Keccak-256 hash |
+
+</TabItem>
+
+<TabItem label="Environmental">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x30 | ADDRESS | 2 | 0 | 1 | Current contract address |
+| 0x31 | BALANCE | 100* | 1 | 1 | Account balance (warm/cold) |
+| 0x32 | ORIGIN | 2 | 0 | 1 | tx.origin |
+| 0x33 | CALLER | 2 | 0 | 1 | msg.sender |
+| 0x34 | CALLVALUE | 2 | 0 | 1 | msg.value |
+| 0x35 | CALLDATALOAD | 3 | 1 | 1 | Load calldata |
+| 0x36 | CALLDATASIZE | 2 | 0 | 1 | Calldata length |
+| 0x37 | CALLDATACOPY | 3* | 3 | 0 | Copy calldata to memory |
+| 0x38 | CODESIZE | 2 | 0 | 1 | Code size |
+| 0x39 | CODECOPY | 3* | 3 | 0 | Copy code to memory |
+| 0x3A | GASPRICE | 2 | 0 | 1 | Gas price |
+| 0x3B | EXTCODESIZE | 100* | 1 | 1 | External code size |
+| 0x3C | EXTCODECOPY | 100* | 4 | 0 | Copy external code |
+| 0x3D | RETURNDATASIZE | 2 | 0 | 1 | Returndata size (EIP-211) |
+| 0x3E | RETURNDATACOPY | 3* | 3 | 0 | Copy returndata |
+| 0x3F | EXTCODEHASH | 100* | 1 | 1 | Code hash (EIP-1052) |
+
+</TabItem>
+
+<TabItem label="Block Info">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x40 | BLOCKHASH | 20 | 1 | 1 | Block hash (last 256) |
+| 0x41 | COINBASE | 2 | 0 | 1 | Block miner |
+| 0x42 | TIMESTAMP | 2 | 0 | 1 | Block timestamp |
+| 0x43 | NUMBER | 2 | 0 | 1 | Block number |
+| 0x44 | DIFFICULTY | 2 | 0 | 1 | Block difficulty |
+| 0x45 | GASLIMIT | 2 | 0 | 1 | Block gas limit |
+| 0x46 | CHAINID | 2 | 0 | 1 | Chain ID (EIP-1344) |
+| 0x48 | BASEFEE | 2 | 0 | 1 | Base fee (EIP-3198) |
+
+</TabItem>
+
+<TabItem label="Stack & Memory">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x50 | POP | 2 | 1 | 0 | Remove top |
+| 0x51 | MLOAD | 3 | 1 | 1 | Load from memory |
+| 0x52 | MSTORE | 3 | 2 | 0 | Store to memory |
+| 0x53 | MSTORE8 | 3 | 2 | 0 | Store byte to memory |
+| 0x54 | SLOAD | 100* | 1 | 1 | Load from storage (warm/cold) |
+| 0x55 | SSTORE | 100* | 2 | 0 | Store to storage (dynamic) |
+| 0x56 | JUMP | 8 | 1 | 0 | Jump to offset |
+| 0x57 | JUMPI | 10 | 2 | 0 | Conditional jump |
+| 0x58 | PC | 2 | 0 | 1 | Program counter |
+| 0x59 | MSIZE | 2 | 0 | 1 | Memory size |
+| 0x5A | GAS | 2 | 0 | 1 | Remaining gas |
+| 0x5B | JUMPDEST | 1 | 0 | 0 | Jump destination |
+
+</TabItem>
+
+<TabItem label="Push & Dup">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x60-0x7F | PUSH1-32 | 3 | 0 | 1 | Push 1-32 bytes |
+| 0x80-0x8F | DUP1-16 | 3 | 1+ | 2+ | Duplicate stack item |
+
+</TabItem>
+
+<TabItem label="Swap & Log">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x90-0x9F | SWAP1-16 | 3 | 2+ | 2+ | Exchange stack items |
+| 0xA0-0xA4 | LOG0-4 | 375+* | 2-6 | 0 | Emit event |
+
+</TabItem>
+
+<TabItem label="System">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0xF0 | CREATE | 32000* | 3 | 1 | Create contract |
+| 0xF1 | CALL | 100* | 7 | 1 | Call contract (warm/cold) |
+| 0xF2 | CALLCODE | 100* | 7 | 1 | Call code at address |
+| 0xF3 | RETURN | 0 | 2 | 0 | Return from execution |
+| 0xF4 | DELEGATECALL | 100* | 6 | 1 | Delegated call |
+| 0xF5 | CREATE2 | 32000* | 4 | 1 | Create at deterministic addr |
+| 0xFA | STATICCALL | 100* | 6 | 1 | Static call (EIP-214) |
+| 0xFD | REVERT | 0 | 2 | 0 | Revert with data |
+| 0xFE | INVALID | - | - | - | Invalid opcode |
+| 0xFF | SELFDESTRUCT | 5000* | 1 | 0 | Destroy contract |
+
+</TabItem>
+</Tabs>
+
+**Legend:**
+- Gas: Base gas cost (dynamic marked with *)
+- EIP: Ethereum Improvement Proposal adding the opcode
+- Warm/Cold: Access list (EIP-2929) affects gas
+
+### Stack Effect Diagrams
+
+Common stack patterns:
+
+**Binary Operations (ADD, MUL, SUB, etc)**
+```
+Before: [..., a, b]
+After:  [..., result]
+```
+
+**DUP (Duplicate)**
+```
+Before: [..., x₁₆, ..., x₁]
+After:  [..., x₁₆, ..., x₁, ..., x₁]  // DUP[i] duplicates item at depth i
+```
+
+**SWAP (Exchange)**
+```
+Before: [..., a, b]
+After:  [..., b, a]  // SWAP1 exchanges top 2
+```
+
+**Memory Operations**
+```
+Before: [..., offset, value]
+MSTORE: Store value at memory[offset:offset+32]
+After:  [...]
+
+Before: [..., offset]
+MLOAD:  Load value from memory[offset:offset+32]
+After:  [..., value]
+```
+
+**Storage Operations**
+```
+Before: [..., slot]
+SLOAD:  Load value from storage[slot]
+After:  [..., value]
+
+Before: [..., slot, value]
+SSTORE: Store value to storage[slot]
+After:  [...]
+```
+
+### Gas Cost Variations
+
+| Operation | Base | Dynamic | Reason |
+|-----------|------|---------|--------|
+| SLOAD | 100 | Warm: 100, Cold: 2100 | Access list tracking (EIP-2929) |
+| SSTORE | 100 | 0-2900 | Storage write patterns, refunds |
+| CALL | 100 | 100-2600 | Warm/cold + contract creation |
+| KECCAK256 | 30 | +6/word | Input size |
+| EXP | 10 | +50/byte | Exponent size |
+| LOG | 375 | +375/topic | Topics emitted |
+
 ## Specification References
 
 - [EVM Opcodes](https://www.evm.codes/) - Interactive opcode reference
@@ -646,3 +859,4 @@ When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These byt
 - [Solidity Assembly](https://docs.soliditylang.org/en/latest/assembly.html) - Inline assembly documentation
 - [EIP-3198](https://eips.ethereum.org/EIPS/eip-3198) - BASEFEE opcode
 - [EIP-3855](https://eips.ethereum.org/EIPS/eip-3855) - PUSH0 instruction
+- [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) - Access lists (warm/cold gas)

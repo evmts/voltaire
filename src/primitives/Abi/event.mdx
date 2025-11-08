@@ -31,7 +31,7 @@ export type Event<
 }
 ```
 
-Source: [BrandedEvent.ts:3-11](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/BrandedEvent.ts#L3-L11)
+Source: [BrandedEvent.ts:3-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/BrandedEvent.ts#L3-L11)
 
 ## Quick Start
 
@@ -109,7 +109,7 @@ const signature2 = Event.getSignature(approvalEvent)
 - Only types matter for signature computation
 - Format: `EventName(type1,type2,...)`
 
-Source: [getSignature.js:13-16](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/getSignature.js#L13-L16)
+Source: [getSignature.js:13-16](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/getSignature.js#L13-L16)
 
 ### getSelector
 
@@ -149,7 +149,7 @@ const selector = Event.getSelector(transferEvent)
 
 **Note:** Event selectors are 32 bytes (full hash), unlike function selectors which are 4 bytes.
 
-Source: [getSelector.js:16-19](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/getSelector.js#L16-L19)
+Source: [getSelector.js:16-19](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/getSelector.js#L16-L19)
 
 ### encodeTopics
 
@@ -223,7 +223,7 @@ const topics = Event.encodeTopics(dataEvent, {
 // Topics contain hashes of the values, not the raw values
 ```
 
-Source: [encodeTopics.js:19-47](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/encodeTopics.js#L19-L47)
+Source: [encodeTopics.js:19-47](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/encodeTopics.js#L19-L47)
 
 ### decodeLog
 
@@ -296,7 +296,7 @@ const decoded = Event.decodeLog(dataEvent, logData, logTopics)
 // { data: Uint8Array (32-byte hash, not original data) }
 ```
 
-Source: [decodeLog.js:22-88](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/decodeLog.js#L22-L88)
+Source: [decodeLog.js:22-88](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/decodeLog.js#L22-L88)
 
 ## Event Topics
 
@@ -635,7 +635,7 @@ type TransferData = DecodeLogResult<typeof transferEvent.inputs>
 // { from: BrandedAddress, to: BrandedAddress, value: bigint }
 ```
 
-Source: [BrandedEvent.ts:13-18](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/event/BrandedEvent.ts#L13-L18)
+Source: [BrandedEvent.ts:13-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/event/BrandedEvent.ts#L13-L18)
 
 ## Related
 

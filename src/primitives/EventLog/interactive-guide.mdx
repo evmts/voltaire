@@ -1,0 +1,346 @@
+---
+title: Interactive Guide
+description: Interactive examples for event filtering and topic calculation
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside, Steps } from '@astrojs/starlight/components';
+
+# Interactive Guide
+
+Hands-on examples for working with event logs and filters.
+
+## Event Indexing Setup
+
+Setting up a production event indexing system:
+
+<Steps>
+
+1. **Set Block Range**
+   ```typescript
+   // Start from deployment block or last processed block
+   const fromBlock = 12345678n
+   const toBlock = await provider.getBlockNumber()
+   ```
+
+2. **Define Event Filters**
+   ```typescript
+   // Filter by contract and event type
+   const transferFilter = {
+     address: tokenAddress,
+     topics: [TRANSFER_SIG]
+   }
+   ```
+
+3. **Fetch Logs in Chunks**
+   ```typescript
+   // Prevent timeout: fetch in chunks of 1000 blocks
+   const chunkSize = 1000n
+   const allLogs: BrandedEventLog[] = []
+
+   for (let block = fromBlock; block <= toBlock; block += chunkSize) {
+     const logs = await provider.getLogs({
+       ...transferFilter,
+       fromBlock: block,
+       toBlock: Math.min(block + chunkSize - 1n, toBlock)
+     })
+     allLogs.push(...logs)
+   }
+   ```
+
+4. **Sort and Index**
+   ```typescript
+   const sorted = EventLog.sortLogs(allLogs)
+   const indexed = new EventIndex()
+   indexed.index(sorted)
+   ```
+
+5. **Implement Sync Loop**
+   ```typescript
+   // Poll for new events every block
+   let lastBlock = toBlock
+
+   setInterval(async () => {
+     const current = await provider.getBlockNumber()
+     if (current > lastBlock) {
+       const newLogs = await provider.getLogs({
+         ...transferFilter,
+         fromBlock: lastBlock + 1n,
+         toBlock: current
+       })
+       indexed.index(newLogs)
+       lastBlock = current
+     }
+   }, 12000) // ~12s per block
+   ```
+
+6. **Handle Reorganizations**
+   ```typescript
+   // When reorg detected, refetch affected block range
+   const reorgLogs = await provider.getLogs({
+     ...transferFilter,
+     fromBlock: reorgStartBlock,
+     toBlock: reorgEndBlock
+   })
+
+   // Merge removed logs with new ones
+   const merged = EventLog.sortLogs([
+     ...allLogs.filter(log => !log.removed),
+     ...reorgLogs
+   ])
+   ```
+
+</Steps>
+
+## Log Filter Builder
+
+Construct complex filters with topic matching:
+
+<Tabs>
+<TabItem label="Single Topic Filter">
+```typescript
+// Match all Transfer events
+const filter = {
+  address: tokenAddress,
+  topics: [TRANSFER_SIG]  // topic0 only
+}
+
+// Matches:
+// - Transfer(from=X, to=Y, value=Z) ✓
+// - Transfer(from=A, to=B, value=C) ✓
+```
+</TabItem>
+<TabItem label="Multi-Topic Filter">
+```typescript
+// Match transfers FROM specific address
+const filter = {
+  address: tokenAddress,
+  topics: [
+    TRANSFER_SIG,           // topic0: must be Transfer
+    specificAddressHash,    // topic1: from must match
+    null                    // topic2: to can be anything
+  ]
+}
+
+// Matches:
+// - Transfer(from=specificAddress, to=Y, value=Z) ✓
+// - Transfer(from=specificAddress, to=A, value=C) ✓
+// - Transfer(from=otherAddress, to=Y, value=Z) ✗
+```
+</TabItem>
+<TabItem label="OR Logic with Arrays">
+```typescript
+// Match transfers from ANY of multiple addresses
+const filter = {
+  address: tokenAddress,
+  topics: [
+    TRANSFER_SIG,
+    [addr1Hash, addr2Hash, addr3Hash],  // topic1: from any
+    null
+  ]
+}
+
+// Matches:
+// - Transfer(from=addr1, to=Y, value=Z) ✓
+// - Transfer(from=addr2, to=A, value=C) ✓
+// - Transfer(from=otherAddress, to=Y, value=Z) ✗
+```
+</TabItem>
+<TabItem label="Full Complex Filter">
+```typescript
+// Match swaps between specific tokens
+const filter = {
+  address: [pair1, pair2, pair3],  // Multiple contracts
+  topics: [
+    SWAP_SIG,
+    [senderAddr, senderAddr2],     // topic1: sender is one of
+    null,                           // topic2: ignore
+  ],
+  fromBlock: 18000000n,
+  toBlock: 18100000n
+}
+
+// This will match swaps:
+// - From specific senders ✓
+// - To any recipient ✓
+// - In any of 3 contracts ✓
+// - Within block range ✓
+```
+</TabItem>
+</Tabs>
+
+## Address Encoding in Topics
+
+How addresses are encoded when indexed:
+
+```typescript
+// Solidity
+event Transfer(address indexed from, address indexed to, uint256 value)
+
+// When 'from' = 0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e
+// topic1 (topic2) gets padded to 32 bytes:
+// 0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e
+
+// To compare in filter:
+const from = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const padded = Hash.from("0x000000000000000000000000" + from.slice(2))
+
+const filter = {
+  topics: [TRANSFER_SIG, padded, null]
+}
+```
+
+<Aside type="tip" title="Address Padding">
+Use Hash utilities to convert addresses to padded topic form. The 20-byte address is left-padded with zeros to create a 32-byte hash.
+</Aside>
+
+## Common Patterns
+
+### Track All Transfers of a Token
+
+```typescript
+import * as EventLog from '@tevm/primitives/EventLog'
+import * as Hash from '@tevm/primitives/Hash'
+import * as Address from '@tevm/primitives/Address'
+
+async function getAllTransfers(
+  provider: Provider,
+  tokenAddress: BrandedAddress,
+  fromBlock: bigint,
+  toBlock: bigint
+) {
+  const TRANSFER_SIG = Hash.from(
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+  )
+
+  const logs = await provider.getLogs({
+    address: tokenAddress,
+    topics: [TRANSFER_SIG],
+    fromBlock,
+    toBlock
+  })
+
+  return EventLog.sortLogs(logs)
+}
+```
+
+### Monitor Account Activity
+
+```typescript
+// Get all transfers TO/FROM an account
+async function getAccountActivity(
+  provider: Provider,
+  account: BrandedAddress,
+  fromBlock: bigint
+) {
+  const TRANSFER_SIG = Hash.from(
+    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+  )
+
+  const accountHash = Hash.from(
+    "0x000000000000000000000000" + account.slice(2)
+  )
+
+  // Transfers FROM account
+  const sent = await provider.getLogs({
+    topics: [TRANSFER_SIG, accountHash, null],
+    fromBlock
+  })
+
+  // Transfers TO account
+  const received = await provider.getLogs({
+    topics: [TRANSFER_SIG, null, accountHash],
+    fromBlock
+  })
+
+  return EventLog.sortLogs([...sent, ...received])
+}
+```
+
+### Build Real-time Event Stream
+
+```typescript
+class EventMonitor {
+  private lastBlock: bigint
+  private handlers = new Map<string, (logs: BrandedEventLog[]) => void>()
+
+  constructor(private provider: Provider) {
+    this.lastBlock = 0n
+  }
+
+  on(
+    eventSig: BrandedHash,
+    address: BrandedAddress | BrandedAddress[],
+    handler: (logs: BrandedEventLog[]) => void
+  ) {
+    const key = `${eventSig}-${
+      Array.isArray(address)
+        ? address.map(a => a.slice(0, 8)).join(',')
+        : address.slice(0, 8)
+    }`
+    this.handlers.set(key, handler)
+  }
+
+  async pollNewEvents() {
+    const current = await this.provider.getBlockNumber()
+
+    if (current > this.lastBlock) {
+      const logs = await this.provider.getLogs({
+        fromBlock: this.lastBlock + 1n,
+        toBlock: current
+      })
+
+      for (const [, handler] of this.handlers) {
+        handler(logs)
+      }
+
+      this.lastBlock = current
+    }
+  }
+
+  start() {
+    setInterval(() => this.pollNewEvents(), 12000)
+  }
+}
+```
+
+## Decoding Event Data
+
+After filtering logs, decode the data section:
+
+```typescript
+import * as Abi from '@tevm/primitives/Abi'
+
+// For Transfer(address from, address to, uint256 value)
+const [value] = Abi.decodeParameters(
+  [{ type: 'uint256' }],
+  log.data
+)
+
+// For complex events with multiple params
+const [amount0, amount1, amount0Out, amount1Out] = Abi.decodeParameters(
+  [
+    { type: 'uint256' },
+    { type: 'uint256' },
+    { type: 'uint256' },
+    { type: 'uint256' }
+  ],
+  log.data
+)
+```
+
+## Performance Tips
+
+<Card title="Optimization Strategy">
+1. **Filter by address first** (fastest) - narrows down contracts
+2. **Then filter by topic0** (event signature) - filters event type
+3. **Then filter by topic1/2/3** (indexed params) - filters specific instances
+4. **Block range last** (slowest) - only when truly necessary
+</Card>
+
+## Related Topics
+
+- [Constructors](/primitives/eventlog/constructors) - Creating logs
+- [Validation](/primitives/eventlog/validation) - Matching logs
+- [Usage Patterns](/primitives/eventlog/usage-patterns) - Real-world examples
+- [Hash](/primitives/hash) - Creating topic hashes
+- [Address](/primitives/address) - Working with contract addresses

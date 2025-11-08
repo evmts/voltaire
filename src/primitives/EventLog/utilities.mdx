@@ -36,7 +36,7 @@ const signature = EventLog.getTopic0(log)
 - Compare against known event signatures
 - Route logs to appropriate handlers
 
-Defined in: [primitives/EventLog/BrandedEventLog/getTopic0.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getTopic0.js)
+Defined in: [primitives/EventLog/BrandedEventLog/getTopic0.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getTopic0.js)
 
 ### `EventLog.getSignature(log)`
 
@@ -51,7 +51,7 @@ const signature = EventLog.getSignature(log)
 
 **Returns:** `BrandedHash | undefined` - Event signature
 
-Defined in: [primitives/EventLog/BrandedEventLog/getSignature.js:22](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getSignature.js)
+Defined in: [primitives/EventLog/BrandedEventLog/getSignature.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getSignature.js)
 
 ### `EventLog.getIndexedTopics(log)`
 
@@ -82,7 +82,7 @@ const indexed = EventLog.getIndexedTopics(log)
 - Decode indexed addresses, IDs, or other values
 - Process indexed data separately from non-indexed data
 
-Defined in: [primitives/EventLog/BrandedEventLog/getIndexedTopics.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexedTopics.js)
+Defined in: [primitives/EventLog/BrandedEventLog/getIndexedTopics.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexedTopics.js)
 
 ### `EventLog.getIndexed(log)`
 
@@ -97,7 +97,7 @@ const indexed = EventLog.getIndexed(log)
 
 **Returns:** `readonly BrandedHash[]` - Indexed parameters
 
-Defined in: [primitives/EventLog/BrandedEventLog/getIndexed.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexed.js)
+Defined in: [primitives/EventLog/BrandedEventLog/getIndexed.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/getIndexed.js)
 
 ## Filtering
 
@@ -154,7 +154,7 @@ const filtered = EventLog.filterLogs(allLogs, {
 
 **Returns:** `BrandedEventLog[]` - Filtered array
 
-Defined in: [primitives/EventLog/BrandedEventLog/filterLogs.js:25](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/filterLogs.js)
+Defined in: [primitives/EventLog/BrandedEventLog/filterLogs.js:25](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/filterLogs.js)
 
 ## Sorting
 
@@ -187,7 +187,7 @@ const sorted = EventLog.sortLogs(unsortedLogs)
 - Within same block, logs without `transactionIndex` sorted to end
 - Within same transaction, logs without `logIndex` sorted to end
 
-Defined in: [primitives/EventLog/BrandedEventLog/sortLogs.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/sortLogs.js)
+Defined in: [primitives/EventLog/BrandedEventLog/sortLogs.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/sortLogs.js)
 
 ### `EventLog.sort(logs)`
 
@@ -228,7 +228,7 @@ console.log(original.removed)  // false
 
 **Returns:** `BrandedEventLog` - Deep copy
 
-Defined in: [primitives/EventLog/BrandedEventLog/clone.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/clone.js)
+Defined in: [primitives/EventLog/BrandedEventLog/clone.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/clone.js)
 
 ### `EventLog.copy(log)`
 
@@ -243,7 +243,7 @@ const copy = EventLog.copy(log)
 
 **Returns:** `BrandedEventLog` - Deep copy
 
-Defined in: [primitives/EventLog/BrandedEventLog/copy.js](https://github.com/evmts/primitives/blob/main/src/primitives/EventLog/BrandedEventLog/copy.js)
+Defined in: [primitives/EventLog/BrandedEventLog/copy.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/copy.js)
 
 ## Utility Patterns
 

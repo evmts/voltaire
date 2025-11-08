@@ -6,6 +6,52 @@ title: "FeeMarket Usage Patterns"
 
 Common patterns for working with fee market calculations.
 
+## Interactive Fee Calculator
+
+Quick reference for common scenarios:
+
+**Standard Transfer (21,000 gas):**
+```
+Current base fee: 50 gwei
+Suggested priority: 2 gwei
+Effective price: 52 gwei
+Total cost: 1,092,000 gwei = 0.001092 ETH
+```
+
+**Contract Interaction (150,000 gas):**
+```
+Current base fee: 50 gwei
+Suggested priority: 2 gwei
+Effective price: 52 gwei
+Total cost: 7,800,000 gwei = 0.0078 ETH
+```
+
+**Blob Transaction (3 blobs + 100,000 execution gas):**
+```
+Base gas execution: 52 gwei × 100,000 = 5,200,000 gwei
+Blob gas (3 × 131,072): 393,216 gas × 10 wei = 3,932,160 gwei
+Total cost: ~0.0092 ETH
+```
+
+## Fee Calculation Decision Tree
+
+```
+Is your transaction time-sensitive?
+├─ NO: Wait for lower fees
+│  └─ Use slow strategy: current base + 0.1 gwei tip
+│
+└─ YES: Set fees now
+   ├─ Can wait 1-2 blocks?
+   │  └─ Standard: projected base (5 blocks) + 1 gwei tip
+   │
+   └─ Need in next block?
+      ├─ Competitive (MEV/liquidation)?
+      │  └─ Fast: projected × 1.5 + 2-3 gwei tip
+      │
+      └─ Emergency (tx stuck)?
+         └─ Urgent: projected × 2-3 + 5+ gwei tip (RBF)
+```
+
 ## Estimating Next Base Fee
 
 Calculate what the next block's base fee will be:
@@ -432,10 +478,93 @@ console.log('Suggested fees:', {
 });
 ```
 
+## Common Fee Mistakes
+
+**Mistake 1: Setting maxFeePerGas too low**
+```typescript
+// ❌ WRONG: Bases on current fee, not future
+maxFeePerGas: currentBaseFee + 1_000_000_000n // May not be included
+
+// ✓ CORRECT: Project ahead, add buffer
+const projected = FeeMarket.projectBaseFees(state, 5, avgGas, 0n);
+maxFeePerGas: projected[4] + 1_000_000_000n // Safe for 5 blocks
+```
+
+**Mistake 2: Ignoring maxPriorityFeePerGas cap**
+```typescript
+// ❌ WRONG: User thinks they'll pay full tip
+maxFeePerGas: 1_500_000_000n // 1.5 gwei
+maxPriorityFeePerGas: 2_000_000_000n // 2 gwei (CAPPED!)
+baseFee: 1_000_000_000n // 1 gwei
+
+// Actual: effectiveGasPrice = min(1.5, 1.0 + 2.0) = 1.5 gwei
+// Tip paid: 1.5 - 1.0 = 0.5 gwei (not 2 gwei!)
+
+// ✓ CORRECT: Ensure maxFeePerGas > baseFee + desired tip
+maxFeePerGas: 2_500_000_000n // 2.5 gwei
+maxPriorityFeePerGas: 1_500_000_000n // 1.5 gwei
+baseFee: 1_000_000_000n // 1 gwei
+// Effective: min(2.5, 1.0 + 1.5) = 2.5 gwei
+// Tip paid: 2.5 - 1.0 = 1.5 gwei ✓
+```
+
+**Mistake 3: Not converting between units**
+```typescript
+// ❌ WRONG: User provides 2 (thinking gwei)
+maxFeePerGas: 2n // 2 wei! Way too low
+
+// ✓ CORRECT: Convert from gwei
+maxFeePerGas: FeeMarket.gweiToWei(2) // 2_000_000_000n
+```
+
+**Mistake 4: Blocking on high fees**
+```typescript
+// ❌ WRONG: Wait for fees to drop below arbitrary threshold
+while (currentBaseFee > 50_000_000_000n) {
+  await sleep(12000); // May wait forever if fees stay high
+}
+
+// ✓ CORRECT: Set deadline-based strategy
+const deadline = Date.now() + 300_000; // 5 minute deadline
+while (Date.now() < deadline) {
+  if (shouldSubmitNow()) break;
+  await sleep(12000);
+}
+```
+
+**Mistake 5: Not accounting for blob gas in projections**
+```typescript
+// ❌ WRONG: Only project execution gas
+const projection = FeeMarket.projectBaseFees(state, 5, avgGasUsed, 0n);
+// Ignores blob activity - may underestimate fees
+
+// ✓ CORRECT: Include expected blob gas
+const avgBlobGasUsed = recentStates
+  .map(s => s.blobGasUsed)
+  .reduce((a, b) => a + b) / recentStates.length;
+
+const projection = FeeMarket.projectBaseFees(
+  state, 5, avgGasUsed, avgBlobGasUsed
+);
+```
+
+## Fee Optimization Checklist
+
+Before submitting a transaction:
+
+- [ ] **Validated fee parameters** - `validateTxFeeParams()` returns no errors
+- [ ] **Confirmed inclusion** - `canIncludeTx()` returns true
+- [ ] **Reasonable maxFeePerGas** - Includes buffer for 5+ blocks ahead
+- [ ] **Reasonable priority tip** - Matches network average for urgency
+- [ ] **Unit conversion correct** - Using gwei/wei consistently
+- [ ] **Blob fees accounted for** - If blob transaction, included in calculation
+- [ ] **Tested with actual gas** - Compared with `estimateGas()`
+- [ ] **Emergency plan ready** - Know RBF strategy if fee spikes
+
 ## References
 
-- [calculations.mdx](./calculations.mdx)
-- [eip1559.mdx](./eip1559.mdx)
-- [eip4844.mdx](./eip4844.mdx)
-- [utilities.mdx](./utilities.mdx)
-- [types.mdx](./types.mdx)
+- [calculations.mdx](./calculations.mdx) - Fee calculation details
+- [eip1559.mdx](./eip1559.mdx) - EIP-1559 mechanics
+- [eip4844.mdx](./eip4844.mdx) - EIP-4844 blob fees
+- [utilities.mdx](./utilities.mdx) - Validation functions
+- [types.mdx](./types.mdx) - Type definitions

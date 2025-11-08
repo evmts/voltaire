@@ -46,7 +46,7 @@ const decoded = decodeParameters(params, encodedData)
 // ["0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", 1000n, "Hello"]
 ```
 
-Source: [Encoding.ts:356-370](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L356-L370)
+Source: [Encoding.ts:356-370](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L356-L370)
 
 ### decodeValue
 
@@ -75,7 +75,7 @@ const { value, newOffset } = decodeValue("uint256", data, 0)
 // value: 1000n, newOffset: 32
 ```
 
-Source: [Encoding.ts:176-303](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L176-L303)
+Source: [Encoding.ts:176-303](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L176-L303)
 
 ## Type-Specific Decoding
 
@@ -102,7 +102,7 @@ const { value: uint256 } = decodeValue("uint256", data, 0)
 - Validate against type range
 - Return number for small types, bigint for large
 
-Source: [Encoding.ts:213-224](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L213-L224)
+Source: [Encoding.ts:213-224](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L213-L224)
 
 ### Signed Integers
 
@@ -124,7 +124,7 @@ const { value: negative } = decodeValue("int256", negativeData, 0)
 - Mask to type bit width
 - Check sign bit and convert to negative if needed
 
-Source: [Encoding.ts:226-244](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L226-L244)
+Source: [Encoding.ts:226-244](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L226-L244)
 
 ### Address
 
@@ -134,7 +134,7 @@ const { value: address } = decodeValue("address", data, 0)
 // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
 ```
 
-Source: [Encoding.ts:246-254](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L246-L254)
+Source: [Encoding.ts:246-254](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L246-L254)
 
 ### Boolean
 
@@ -144,7 +144,7 @@ const { value: bool } = decodeValue("bool", data, 0)
 // true or false
 ```
 
-Source: [Encoding.ts:256-268](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L256-L268)
+Source: [Encoding.ts:256-268](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L256-L268)
 
 ### Fixed-Size Bytes
 
@@ -154,7 +154,7 @@ const { value: bytes4 } = decodeValue("bytes4", data, 0)
 // Uint8Array(4)
 ```
 
-Source: [Encoding.ts:270-279](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L270-L279)
+Source: [Encoding.ts:270-279](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L270-L279)
 
 ### Dynamic Bytes
 
@@ -170,7 +170,7 @@ const { value: bytes } = decodeValue("bytes", data, 0)
 3. Read data bytes
 4. Return Uint8Array
 
-Source: [Encoding.ts:281-289](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L281-L289)
+Source: [Encoding.ts:281-289](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L281-L289)
 
 ### String
 
@@ -180,7 +180,7 @@ const { value: str } = decodeValue("string", data, 0)
 // "Hello"
 ```
 
-Source: [Encoding.ts:291-300](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L291-L300)
+Source: [Encoding.ts:291-300](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L291-L300)
 
 ### Dynamic Arrays
 
@@ -191,7 +191,7 @@ const [array] = decodeParameters(params, data)
 // [1n, 2n, 3n]
 ```
 
-Source: [Encoding.ts:181-192](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L181-L192)
+Source: [Encoding.ts:181-192](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L181-L192)
 
 ### Fixed Arrays
 
@@ -202,7 +202,7 @@ const [array] = decodeParameters(params, data)
 // [1n, 2n, 3n]
 ```
 
-Source: [Encoding.ts:194-211](https://github.com/evmts/primitives/blob/main/src/primitives/Abi/Encoding.ts#L194-L211)
+Source: [Encoding.ts:194-211](https://github.com/evmts/voltaire/blob/main/src/primitives/Abi/Encoding.ts#L194-L211)
 
 ## Decoding Algorithm
 

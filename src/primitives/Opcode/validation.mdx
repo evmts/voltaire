@@ -38,7 +38,7 @@ Opcode.isValid(0x4B)  // false (undefined, after BLOBBASEFEE)
 - Filter out undefined opcodes during disassembly
 - Detect malformed or invalid bytecode
 
-Defined in: [primitives/Opcode/BrandedOpcode/isValid.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isValid.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isValid.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isValid.js)
 
 ### `Opcode.isValidOpcode(opcode)`
 
@@ -86,7 +86,7 @@ Opcode.isValidJumpDest(bytecode, 99) // false (out of bounds)
 - Byte at offset must be JUMPDEST (0x5B)
 - Offset must not be inside PUSH immediate data
 
-Defined in: [primitives/Opcode/BrandedOpcode/isValidJumpDest.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isValidJumpDest.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isValidJumpDest.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isValidJumpDest.js)
 
 ### `Opcode.isJumpDestination(opcode)`
 
@@ -102,7 +102,7 @@ Opcode.isJumpDestination(0x56)  // false (JUMP, not JUMPDEST)
 
 **Returns:** `boolean` - True if JUMPDEST
 
-Defined in: [primitives/Opcode/BrandedOpcode/isJumpDestination.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isJumpDestination.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isJumpDestination.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isJumpDestination.js)
 
 ## Category Checks
 
@@ -125,7 +125,7 @@ Opcode.isPush(0x80)  // false (DUP1)
 
 **Returns:** `boolean` - True if PUSH0-PUSH32 (0x5F-0x7F)
 
-Defined in: [primitives/Opcode/BrandedOpcode/isPush.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isPush.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isPush.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isPush.js)
 
 ### `Opcode.isDup(opcode)`
 
@@ -143,7 +143,7 @@ Opcode.isDup(0x90)  // false (SWAP1)
 
 **Returns:** `boolean` - True if DUP1-DUP16 (0x80-0x8F)
 
-Defined in: [primitives/Opcode/BrandedOpcode/isDup.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isDup.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isDup.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isDup.js)
 
 ### `Opcode.isSwap(opcode)`
 
@@ -161,7 +161,7 @@ Opcode.isSwap(0xA0)  // false (LOG0)
 
 **Returns:** `boolean` - True if SWAP1-SWAP16 (0x90-0x9F)
 
-Defined in: [primitives/Opcode/BrandedOpcode/isSwap.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isSwap.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isSwap.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isSwap.js)
 
 ### `Opcode.isLog(opcode)`
 
@@ -179,7 +179,7 @@ Opcode.isLog(0x9F)  // false (SWAP16)
 
 **Returns:** `boolean` - True if LOG0-LOG4 (0xA0-0xA4)
 
-Defined in: [primitives/Opcode/BrandedOpcode/isLog.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isLog.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isLog.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isLog.js)
 
 ### `Opcode.isJump(opcode)`
 
@@ -197,7 +197,7 @@ Opcode.isJump(0x00)  // false (STOP)
 
 **Returns:** `boolean` - True if JUMP (0x56) or JUMPI (0x57)
 
-Defined in: [primitives/Opcode/BrandedOpcode/isJump.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isJump.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isJump.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isJump.js)
 
 ### `Opcode.isTerminating(opcode)`
 
@@ -224,7 +224,7 @@ Opcode.isTerminating(0x01)  // false (ADD)
 - `INVALID` (0xFE) - Invalid opcode trap
 - `SELFDESTRUCT` (0xFF) - Destroys contract
 
-Defined in: [primitives/Opcode/BrandedOpcode/isTerminating.js](https://github.com/evmts/primitives/blob/main/src/primitives/Opcode/BrandedOpcode/isTerminating.js)
+Defined in: [primitives/Opcode/BrandedOpcode/isTerminating.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/isTerminating.js)
 
 ### `Opcode.isTerminator(opcode)`
 
