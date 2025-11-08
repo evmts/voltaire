@@ -34,6 +34,10 @@ export default defineConfig({
 					label: "Cryptography",
 					autogenerate: { directory: "crypto" },
 				},
+				{
+					label: "Precompiles",
+					autogenerate: { directory: "precompiles" },
+				},
 				// Zig docs
 				{
 					label: "Zig Overview",
