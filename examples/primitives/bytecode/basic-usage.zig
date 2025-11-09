@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Jump destination analysis
 /// - Checking valid JUMPDEST positions
 /// - Reading opcodes and immediate values
-
 const Bytecode = primitives.bytecode.Bytecode;
 const Opcode = primitives.opcode.Opcode;
 

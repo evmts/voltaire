@@ -5,7 +5,6 @@
 /// - Preventing transaction signature reuse
 /// - Recovering signer from personal_sign signature
 /// - Wallet authentication pattern
-
 const std = @import("std");
 const crypto = @import("crypto");
 const primitives = @import("primitives");

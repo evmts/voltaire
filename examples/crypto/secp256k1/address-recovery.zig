@@ -5,7 +5,6 @@
 /// - Deriving Ethereum address from public key
 /// - Verifying recovered address matches signer
 /// - Critical role of recovery ID (v value)
-
 const std = @import("std");
 const crypto = @import("crypto");
 const primitives = @import("primitives");

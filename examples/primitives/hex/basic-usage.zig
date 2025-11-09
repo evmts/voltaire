@@ -74,9 +74,9 @@ fn demonstrateValidation() !void {
 
     // Invalid hex strings
     const invalid_cases = [_][]const u8{
-        "1234",      // Missing 0x prefix
-        "0xGHI",     // Invalid characters
-        "0x 123",    // Contains space
+        "1234", // Missing 0x prefix
+        "0xGHI", // Invalid characters
+        "0x 123", // Contains space
     };
 
     for (invalid_cases) |hex| {

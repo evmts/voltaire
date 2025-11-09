@@ -6,7 +6,6 @@
 /// - Transaction hash computation
 /// - Sender recovery from transaction signature
 /// - Transaction verification
-
 const std = @import("std");
 const crypto = @import("crypto");
 const primitives = @import("primitives");

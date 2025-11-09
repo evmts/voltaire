@@ -58,18 +58,19 @@ pub fn main() !void {
     // Simulate a redeem script (2-of-3 multisig)
     const redeem_script = [_]u8{
         0x52, // OP_2
-        0x21, 0x03,
+        0x21,
+        0x03,
     } ++ [_]u8{0xAA} ** 32 ++ // Pubkey 1
         [_]u8{
-        0x21, 0x03,
-    } ++ [_]u8{0xBB} ** 32 ++ // Pubkey 2
+            0x21, 0x03,
+        } ++ [_]u8{0xBB} ** 32 ++ // Pubkey 2
         [_]u8{
-        0x21, 0x03,
-    } ++ [_]u8{0xCC} ** 32 ++ // Pubkey 3
+            0x21, 0x03,
+        } ++ [_]u8{0xCC} ** 32 ++ // Pubkey 3
         [_]u8{
-        0x53, // OP_3
-        0xAE, // OP_CHECKMULTISIG
-    };
+            0x53, // OP_3
+            0xAE, // OP_CHECKMULTISIG
+        };
 
     std.debug.print("Redeem script (2-of-3 multisig):\n", .{});
     std.debug.print("Script bytes: {d}\n", .{redeem_script.len});

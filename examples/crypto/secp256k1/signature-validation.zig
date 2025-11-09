@@ -6,7 +6,6 @@
 /// - Invalid signature detection
 /// - Edge case handling
 /// - Security best practices
-
 const std = @import("std");
 const crypto = @import("crypto");
 const primitives = @import("primitives");

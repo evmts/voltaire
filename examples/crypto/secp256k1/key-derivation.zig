@@ -6,7 +6,6 @@
 /// - Ethereum address derivation from public key
 /// - Key validation
 /// - One-way nature of derivation
-
 const std = @import("std");
 const crypto = @import("crypto");
 const primitives = @import("primitives");

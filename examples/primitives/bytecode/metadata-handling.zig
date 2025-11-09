@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Detecting potential metadata regions
 /// - Comparing bytecode for equivalence
 /// - Working with bytecode sections
-
 const Bytecode = primitives.bytecode.Bytecode;
 
 pub fn main() !void {

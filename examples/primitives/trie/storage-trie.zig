@@ -36,7 +36,7 @@ pub fn main() !void {
 
     // Storage slot 0: owner address
     const slot0 = [_]u8{0} ** 32;
-    const owner_addr = [_]u8{0x12, 0x34} ++ [_]u8{0} ** 18;
+    const owner_addr = [_]u8{ 0x12, 0x34 } ++ [_]u8{0} ** 18;
     try storage_trie.put(&slot0, &owner_addr);
     std.debug.print("Slot 0 (owner): 0x{x:0>40}\n", .{std.fmt.fmtSliceHexLower(&owner_addr)});
 
@@ -60,7 +60,7 @@ pub fn main() !void {
     });
 
     // Another balance: different address
-    const addr2 = [_]u8{0xAB, 0xCD} ++ [_]u8{0} ** 18;
+    const addr2 = [_]u8{ 0xAB, 0xCD } ++ [_]u8{0} ** 18;
     const balance_slot2 = try computeStorageKey(allocator, 2, &addr2);
     const balance2: u256 = 300_000_000_000_000_000_000_000;
     const balance2_bytes = std.mem.toBytes(balance2);
@@ -72,7 +72,7 @@ pub fn main() !void {
 
     // Storage slot 3: allowances mapping (nested mapping)
     // allowances[owner_addr][spender_addr] = 100k tokens
-    const spender_addr = [_]u8{0x56, 0x78} ++ [_]u8{0} ** 18;
+    const spender_addr = [_]u8{ 0x56, 0x78 } ++ [_]u8{0} ** 18;
 
     // First compute inner mapping key
     const inner_key = try computeStorageKey(allocator, 3, &owner_addr);

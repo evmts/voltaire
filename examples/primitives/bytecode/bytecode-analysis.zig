@@ -9,7 +9,6 @@ const primitives = @import("primitives");
 /// - Counting different instruction types
 /// - Finding jump destinations
 /// - Analyzing bytecode structure
-
 const Bytecode = primitives.bytecode.Bytecode;
 const Opcode = primitives.opcode.Opcode;
 

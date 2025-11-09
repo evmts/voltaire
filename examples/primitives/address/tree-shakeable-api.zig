@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Selective imports via module system
 /// - Data-first functional patterns
 /// - Comparison with Zig's natural idioms
-
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

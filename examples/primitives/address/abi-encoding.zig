@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Understanding 32-byte ABI encoding (left-padded)
 /// - Working with contract call data
 /// - Extracting addresses from logs and return data
-
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

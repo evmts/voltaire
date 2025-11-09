@@ -5,7 +5,6 @@
 /// - Deriving public key from private key
 /// - Verifying signature with public key
 /// - RFC 6979 deterministic signatures
-
 const std = @import("std");
 const crypto = @import("crypto");
 const primitives = @import("primitives");

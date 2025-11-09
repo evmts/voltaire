@@ -8,7 +8,6 @@ const primitives = @import("primitives");
 /// - Display formatting for UIs
 /// - Cloning and slicing hashes
 /// - Working with hash as byte array
-
 const Hash = primitives.hash.Hash;
 
 pub fn main() !void {

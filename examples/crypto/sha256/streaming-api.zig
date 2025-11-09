@@ -112,8 +112,8 @@ pub fn main() !void {
 
     // Demonstrate block size alignment
     const block_aligned_chunks = [_]usize{
-        SHA256.block_size,       // 64 bytes
-        SHA256.block_size * 16,  // 1 KB
+        SHA256.block_size, // 64 bytes
+        SHA256.block_size * 16, // 1 KB
         SHA256.block_size * 256, // 16 KB
         SHA256.block_size * 1024, // 64 KB
     };

@@ -120,7 +120,7 @@ pub fn main() !void {
         .gas_limit = 50_000,
         .to = dai_contract,
         .value = 0,
-        .data = &[_]u8{0xa9, 0x05, 0x9c, 0xbb}, // transfer() selector
+        .data = &[_]u8{ 0xa9, 0x05, 0x9c, 0xbb }, // transfer() selector
         .access_list = &access_list,
         .v = 0,
         .r = [_]u8{0} ** 32,
