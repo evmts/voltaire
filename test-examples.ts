@@ -92,7 +92,6 @@ async function runExample(file: string): Promise<TestResult> {
  * Main test runner
  */
 async function main() {
-
 	const examplesDir = join(process.cwd(), "examples");
 	const files = findTypeScriptFiles(examplesDir).sort();
 
@@ -117,7 +116,6 @@ async function main() {
 
 	// Show failures
 	if (failed > 0) {
-
 		const failures = results.filter((r) => !r.success);
 		for (const failure of failures) {
 			const relPath = relative(examplesDir, failure.file);

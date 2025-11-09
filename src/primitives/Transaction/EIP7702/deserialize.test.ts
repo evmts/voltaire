@@ -76,8 +76,14 @@ describe("TransactionEIP7702.deserialize", () => {
 
 		expect(deserialized.authorizationList.length).toBe(1);
 		expect(deserialized.authorizationList[0]?.chainId).toBe(1n);
-		expect(new Uint8Array(deserialized.authorizationList[0]?.address ?? new Uint8Array())).toEqual(
-			new Uint8Array(original.authorizationList[0]?.address ?? new Uint8Array()),
+		expect(
+			new Uint8Array(
+				deserialized.authorizationList[0]?.address ?? new Uint8Array(),
+			),
+		).toEqual(
+			new Uint8Array(
+				original.authorizationList[0]?.address ?? new Uint8Array(),
+			),
 		);
 		expect(deserialized.authorizationList[0]?.nonce).toBe(0n);
 		expect(deserialized.authorizationList[0]?.yParity).toBe(0);
