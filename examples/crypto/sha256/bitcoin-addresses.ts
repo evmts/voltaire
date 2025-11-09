@@ -8,10 +8,8 @@
  * - Double SHA-256 for checksum
  */
 
-import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
 import { Ripemd160 } from "../../../src/crypto/ripemd160/Ripemd160.js";
-
-console.log("=== Bitcoin P2PKH Address Derivation ===\n");
+import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
 
 // Helper: Double SHA-256 (used in Bitcoin)
 function doubleSha256(data: Uint8Array): Uint8Array {
@@ -55,63 +53,19 @@ function base58Encode(bytes: Uint8Array): string {
 
 // Bitcoin P2PKH address derivation
 function publicKeyToAddress(publicKey: Uint8Array): string {
-	console.log("Step 1: SHA-256 hash of public key");
 	const sha256Hash = SHA256.hash(publicKey);
-	console.log(
-		"  Public key (first 16 bytes):",
-		Array.from(publicKey.slice(0, 16))
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join(" "),
-	);
-	console.log("  SHA-256:", SHA256.toHex(sha256Hash));
-	console.log();
-
-	console.log("Step 2: RIPEMD-160 hash of SHA-256 hash");
 	const ripemd160Hash = Ripemd160.hash(sha256Hash);
-	console.log(
-		"  RIPEMD-160:",
-		Array.from(ripemd160Hash)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join(""),
-	);
-	console.log();
-
-	console.log("Step 3: Add version byte (0x00 for mainnet)");
 	const versionedPayload = new Uint8Array(21);
 	versionedPayload[0] = 0x00; // Mainnet P2PKH
 	versionedPayload.set(ripemd160Hash, 1);
-	console.log(
-		"  Versioned payload:",
-		Array.from(versionedPayload)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join(""),
-	);
-	console.log();
-
-	console.log("Step 4: Double SHA-256 for checksum");
 	const checksum = doubleSha256(versionedPayload);
-	console.log(
-		"  Checksum (first 4 bytes):",
-		Array.from(checksum.slice(0, 4))
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join(""),
-	);
-	console.log();
-
-	console.log("Step 5: Append checksum and Base58 encode");
 	const addressBytes = new Uint8Array(25);
 	addressBytes.set(versionedPayload, 0);
 	addressBytes.set(checksum.slice(0, 4), 21);
 	const address = base58Encode(addressBytes);
-	console.log("  Address:", address);
-	console.log();
 
 	return address;
 }
-
-// Example 1: Bitcoin genesis block public key
-console.log("Example 1: Bitcoin Genesis Block Coinbase");
-console.log("-".repeat(70));
 
 // This is the public key from Bitcoin's genesis block coinbase
 // Satoshi's famous: "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
@@ -124,13 +78,6 @@ const genesisPublicKey = new Uint8Array([
 ]);
 
 const address1 = publicKeyToAddress(genesisPublicKey);
-console.log("Final address:", address1);
-console.log("Expected: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
-console.log();
-
-// Example 2: Another well-known address
-console.log("\nExample 2: Another Public Key");
-console.log("-".repeat(70));
 
 // Random example compressed public key (33 bytes, starts with 02 or 03)
 const compressedPubKey = new Uint8Array([
@@ -140,39 +87,10 @@ const compressedPubKey = new Uint8Array([
 ]);
 
 const address2 = publicKeyToAddress(compressedPubKey);
-console.log("Final address:", address2);
-console.log();
-
-// Example 3: Verify checksum validation
-console.log("Example 3: Checksum Validation");
-console.log("-".repeat(70));
-console.log("Bitcoin uses double SHA-256 for checksums to detect errors");
-console.log();
 
 const testData = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04]);
 const checksum1 = doubleSha256(testData);
-console.log(
-	"Data:",
-	Array.from(testData)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join(" "),
-);
-console.log("Double SHA-256 checksum:", SHA256.toHex(checksum1));
 
 // Change one bit
 const testData2 = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x05]); // Last byte changed
 const checksum2 = doubleSha256(testData2);
-console.log(
-	"\nData (modified):",
-	Array.from(testData2)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join(" "),
-);
-console.log("Double SHA-256 checksum:", SHA256.toHex(checksum2));
-console.log(
-	"Checksums match:",
-	SHA256.toHex(checksum1) === SHA256.toHex(checksum2),
-);
-console.log();
-
-console.log("=== Bitcoin Address Derivation Complete ===");

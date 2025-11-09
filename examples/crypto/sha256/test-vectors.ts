@@ -10,8 +10,6 @@
 
 import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
 
-console.log("=== SHA256 NIST Test Vectors ===\n");
-
 interface TestVector {
 	name: string;
 	input: string;
@@ -52,51 +50,29 @@ const testVectors: TestVector[] = [
 	},
 ];
 
-console.log("Running NIST FIPS 180-4 test vectors...\n");
-
 let passed = 0;
 let failed = 0;
 
 for (const vector of testVectors) {
-	console.log(`Test: ${vector.name}`);
-	console.log("-".repeat(70));
-
 	const hash = SHA256.hashString(vector.input);
 	const result = SHA256.toHex(hash);
 
 	const isMatch = result === vector.expected;
 
 	if (vector.input.length <= 50) {
-		console.log("Input:   ", `"${vector.input}"`);
 	} else {
-		console.log(
-			"Input:   ",
-			`"${vector.input.slice(0, 47)}..." (${vector.input.length} bytes)`,
-		);
 	}
-	console.log("Expected:", vector.expected);
-	console.log("Got:     ", result);
-	console.log("Status:  ", isMatch ? "✓ PASS" : "✗ FAIL");
 
 	if (isMatch) {
 		passed++;
 	} else {
 		failed++;
 	}
-
-	console.log();
 }
-
-// Special test: One million 'a' characters
-console.log('Test: One million "a" characters');
-console.log("-".repeat(70));
 
 const largeInput = "a".repeat(1000000);
 const largeExpected =
 	"0xcdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0";
-
-console.log('Input:    1,000,000 × "a"');
-console.log("Expected:", largeExpected);
 
 const start = performance.now();
 const largeHash = SHA256.hashString(largeInput);
@@ -105,21 +81,11 @@ const elapsed = performance.now() - start;
 const largeResult = SHA256.toHex(largeHash);
 const isLargeMatch = largeResult === largeExpected;
 
-console.log("Got:     ", largeResult);
-console.log("Time:    ", elapsed.toFixed(2), "ms");
-console.log("Status:  ", isLargeMatch ? "✓ PASS" : "✗ FAIL");
-
 if (isLargeMatch) {
 	passed++;
 } else {
 	failed++;
 }
-
-console.log();
-
-// Test with streaming API (should produce same result)
-console.log("Test: Streaming API validation");
-console.log("-".repeat(70));
 
 const hasher = SHA256.create();
 const chunkSize = 10000;
@@ -129,25 +95,11 @@ for (let i = 0; i < 100; i++) {
 const streamingHash = hasher.digest();
 const streamingResult = SHA256.toHex(streamingHash);
 
-console.log('Input:    1,000,000 × "a" (streamed in 10KB chunks)');
-console.log("Expected:", largeExpected);
-console.log("Got:     ", streamingResult);
-console.log(
-	"Status:  ",
-	streamingResult === largeExpected ? "✓ PASS" : "✗ FAIL",
-);
-
 if (streamingResult === largeExpected) {
 	passed++;
 } else {
 	failed++;
 }
-
-console.log();
-
-// Edge case tests
-console.log("Edge Case Tests");
-console.log("-".repeat(70));
 
 const edgeCases = [
 	{
@@ -174,11 +126,7 @@ for (const test of edgeCases) {
 	const hash = SHA256.hash(test.input);
 	const result = SHA256.toHex(hash);
 	const isMatch = result === test.expected;
-
-	console.log(`${test.name}:`, isMatch ? "✓ PASS" : "✗ FAIL");
 	if (!isMatch) {
-		console.log("  Expected:", test.expected);
-		console.log("  Got:     ", result);
 	}
 
 	if (isMatch) {
@@ -187,12 +135,6 @@ for (const test of edgeCases) {
 		failed++;
 	}
 }
-
-console.log();
-
-// Unicode tests
-console.log("Unicode Tests");
-console.log("-".repeat(70));
 
 const unicodeTests = [
 	{
@@ -214,15 +156,6 @@ for (const test of unicodeTests) {
 	const bytesHash = SHA256.hash(test.bytes);
 	const isMatch = SHA256.toHex(stringHash) === SHA256.toHex(bytesHash);
 
-	console.log(`${test.name}:`, isMatch ? "✓ PASS" : "✗ FAIL");
-	console.log(
-		"  UTF-8 bytes:",
-		Array.from(test.bytes)
-			.map((b) => "0x" + b.toString(16).padStart(2, "0"))
-			.join(" "),
-	);
-	console.log("  Hash:       ", SHA256.toHex(stringHash).slice(0, 40) + "...");
-
 	if (isMatch) {
 		passed++;
 	} else {
@@ -230,21 +163,6 @@ for (const test of unicodeTests) {
 	}
 }
 
-console.log();
-
-// Summary
-console.log("=".repeat(70));
-console.log("Test Summary");
-console.log("=".repeat(70));
-console.log("Total tests: ", passed + failed);
-console.log("Passed:      ", passed, "✓");
-console.log("Failed:      ", failed, failed > 0 ? "✗" : "");
-
 if (failed === 0) {
-	console.log("\n🎉 All tests passed! Implementation is correct.");
 } else {
-	console.log("\n⚠️  Some tests failed. Check implementation.");
 }
-
-console.log();
-console.log("=== Test Vectors Complete ===");

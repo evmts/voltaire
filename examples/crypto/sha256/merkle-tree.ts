@@ -10,8 +10,6 @@
 
 import { SHA256 } from "../../../src/crypto/sha256/SHA256.js";
 
-console.log("=== SHA256 Merkle Tree ===\n");
-
 // Helper: Double SHA-256 (Bitcoin style)
 function doubleSha256(data: Uint8Array): Uint8Array {
 	return SHA256.hash(SHA256.hash(data));
@@ -104,76 +102,31 @@ function verifyMerkleProof(
 	return SHA256.toHex(hash) === SHA256.toHex(root);
 }
 
-// Example 1: Build simple Merkle tree
-console.log("1. Building Merkle Tree");
-console.log("-".repeat(70));
-
 const leaves = [
 	new TextEncoder().encode("Transaction 1"),
 	new TextEncoder().encode("Transaction 2"),
 	new TextEncoder().encode("Transaction 3"),
 	new TextEncoder().encode("Transaction 4"),
 ];
-
-console.log("Building tree from", leaves.length, "leaves:\n");
-leaves.forEach((leaf, i) => {
-	console.log(`  Leaf ${i}: "${new TextDecoder().decode(leaf)}"`);
-});
-console.log();
+leaves.forEach((leaf, i) => {});
 
 const tree = buildMerkleTree(leaves);
 const root = getMerkleRoot(tree);
-
-console.log("Tree structure:");
 for (let level = tree.length - 1; level >= 0; level--) {
 	const indent = " ".repeat(level * 2);
-	console.log(
-		`Level ${tree.length - 1 - level}:${indent}`,
-		tree[level].length,
-		"nodes",
-	);
 }
-console.log();
-console.log("Merkle Root:", SHA256.toHex(root));
-console.log();
-
-// Example 2: Merkle proof generation and verification
-console.log("2. Merkle Proof Generation and Verification");
-console.log("-".repeat(70));
 
 const leafIndex = 2; // Prove "Transaction 3"
 const leaf = leaves[leafIndex];
 
-console.log(
-	`Generating proof for leaf ${leafIndex}: "${new TextDecoder().decode(leaf)}"\n`,
-);
-
 const proof = generateMerkleProof(tree, leafIndex);
-
-console.log("Proof path:");
-proof.forEach((step, i) => {
-	console.log(
-		`  Step ${i + 1}: ${step.position.padEnd(5)} 0x${SHA256.toHex(step.hash).slice(2, 18)}...`,
-	);
-});
-console.log();
+proof.forEach((step, i) => {});
 
 const isValid = verifyMerkleProof(leaf, proof, root);
-console.log("Proof verification:", isValid ? "✓ VALID" : "✗ INVALID");
-console.log();
 
 // Tamper with leaf
 const tamperedLeaf = new TextEncoder().encode("Transaction 3 (modified)");
 const tamperedValid = verifyMerkleProof(tamperedLeaf, proof, root);
-console.log(
-	"Tampered leaf verification:",
-	tamperedValid ? "✓ VALID" : "✗ INVALID",
-);
-console.log();
-
-// Example 3: Odd number of leaves
-console.log("3. Merkle Tree with Odd Number of Leaves");
-console.log("-".repeat(70));
 
 const oddLeaves = [
 	new TextEncoder().encode("TX 1"),
@@ -183,22 +136,10 @@ const oddLeaves = [
 	new TextEncoder().encode("TX 5"),
 ];
 
-console.log("Building tree from", oddLeaves.length, "leaves (odd number)");
-console.log("Last node will be duplicated at each level\n");
-
 const oddTree = buildMerkleTree(oddLeaves);
 const oddRoot = getMerkleRoot(oddTree);
 
-for (let level = 0; level < oddTree.length; level++) {
-	console.log(`Level ${level}:`, oddTree[level].length, "nodes");
-}
-console.log();
-console.log("Merkle Root:", SHA256.toHex(oddRoot));
-console.log();
-
-// Example 4: Large tree (simulated Bitcoin block)
-console.log("4. Large Merkle Tree (Simulated Bitcoin Block)");
-console.log("-".repeat(70));
+for (let level = 0; level < oddTree.length; level++) {}
 
 const txCount = 1000;
 const largeTxs: Uint8Array[] = [];
@@ -208,43 +149,16 @@ for (let i = 0; i < txCount; i++) {
 	largeTxs.push(tx);
 }
 
-console.log(`Building Merkle tree for ${txCount} transactions...\n`);
-
 const start = performance.now();
 const largeTree = buildMerkleTree(largeTxs);
 const largeRoot = getMerkleRoot(largeTree);
 const elapsed = performance.now() - start;
 
-console.log("Tree levels:", largeTree.length);
-console.log("Merkle root:", SHA256.toHex(largeRoot));
-console.log("Build time:", elapsed.toFixed(2), "ms");
-console.log();
-
 // Proof size scales logarithmically
 const proofIndex = 500;
 const largeProof = generateMerkleProof(largeTree, proofIndex);
-console.log(
-	"Proof size for transaction",
-	proofIndex,
-	":",
-	largeProof.length,
-	"hashes",
-);
-console.log(
-	"Proof size scales O(log n) - for 1000 txs, only",
-	largeProof.length,
-	"hashes needed!",
-);
-console.log();
-
-// Example 5: Merkle tree efficiency comparison
-console.log("5. Efficiency Analysis");
-console.log("-".repeat(70));
 
 const sizes = [10, 100, 1000, 10000];
-
-console.log("Transaction Count | Tree Levels | Proof Size | Space Savings");
-console.log("-".repeat(70));
 
 for (const size of sizes) {
 	const txs = Array.from({ length: size }, (_, i) =>
@@ -256,16 +170,7 @@ for (const size of sizes) {
 	const withoutMerkle = size * 32; // All hashes
 	const withMerkle = p.length * 32; // Only proof hashes
 	const savings = ((1 - withMerkle / withoutMerkle) * 100).toFixed(1);
-
-	console.log(
-		`${size.toString().padStart(17)} | ${t.length.toString().padStart(11)} | ${p.length.toString().padStart(10)} | ${savings.padStart(13)}%`,
-	);
 }
-console.log();
-
-// Example 6: Merkle tree visualization (small tree)
-console.log("6. Merkle Tree Visualization");
-console.log("-".repeat(70));
 
 const smallLeaves = [
 	new TextEncoder().encode("A"),
@@ -276,23 +181,6 @@ const smallLeaves = [
 
 const smallTree = buildMerkleTree(smallLeaves);
 
-console.log("Tree structure:\n");
-console.log("                Root");
-console.log("                 |");
-console.log("         +-------+-------+");
-console.log("         |               |");
-console.log("       Hash1           Hash2");
-console.log("       /   \\           /   \\");
-console.log("      /     \\         /     \\");
-console.log("     A       B       C       D");
-console.log();
-
 for (let level = smallTree.length - 1; level >= 0; level--) {
-	console.log(`Level ${smallTree.length - 1 - level}:`);
-	smallTree[level].forEach((hash, i) => {
-		console.log(`  Node ${i}: 0x${SHA256.toHex(hash).slice(2, 18)}...`);
-	});
-	console.log();
+	smallTree[level].forEach((hash, i) => {});
 }
-
-console.log("=== Merkle Tree Complete ===");
