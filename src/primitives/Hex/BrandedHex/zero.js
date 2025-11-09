@@ -12,5 +12,7 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function zero(size) {
-	return fromBytes(new Uint8Array(size));
+	return /** @type {import('./BrandedHex.js').BrandedHex} */ (
+		fromBytes(new Uint8Array(size))
+	);
 }

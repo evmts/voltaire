@@ -17,6 +17,8 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function slice(hex, start, end) {
-	const bytes = OxHex.toBytes(hex);
-	return fromBytes(bytes.slice(start, end));
+	const bytes = OxHex.toBytes(/** @type {`0x${string}`} */ (hex));
+	return /** @type {import('./BrandedHex.js').BrandedHex} */ (
+		fromBytes(bytes.slice(start, end))
+	);
 }

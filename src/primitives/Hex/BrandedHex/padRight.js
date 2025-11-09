@@ -16,9 +16,15 @@ import { fromBytes } from "./fromBytes.js";
  * ```
  */
 export function padRight(hex, targetSize) {
-	const bytes = OxHex.toBytes(hex);
-	if (bytes.length >= targetSize) return fromBytes(bytes);
+	const bytes = OxHex.toBytes(/** @type {`0x${string}`} */ (hex));
+	if (bytes.length >= targetSize) {
+		return /** @type {import('./BrandedHex.js').BrandedHex} */ (
+			fromBytes(bytes)
+		);
+	}
 	const padded = new Uint8Array(targetSize);
 	padded.set(bytes, 0);
-	return fromBytes(padded);
+	return /** @type {import('./BrandedHex.js').BrandedHex} */ (
+		fromBytes(padded)
+	);
 }
