@@ -1,17 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { KZG } from "./KZG.js";
-import {
-	KzgError,
-	KzgNotInitializedError,
-	KzgInvalidBlobError,
-} from "./errors.js";
 import {
 	BYTES_PER_BLOB,
 	BYTES_PER_COMMITMENT,
-	BYTES_PER_PROOF,
 	BYTES_PER_FIELD_ELEMENT,
+	BYTES_PER_PROOF,
 	FIELD_ELEMENTS_PER_BLOB,
 } from "./constants.js";
+import {
+	KzgError,
+	KzgInvalidBlobError,
+	KzgNotInitializedError,
+} from "./errors.js";
 
 describe("KZG - EIP-4844 Blob Commitments", () => {
 	beforeAll(() => {
@@ -165,7 +165,7 @@ describe("KZG - EIP-4844 Blob Commitments", () => {
 	});
 
 	// Helper to create valid field element
-	const createValidFieldElement = (fill: number = 0): Uint8Array => {
+	const createValidFieldElement = (fill = 0): Uint8Array => {
 		const z = new Uint8Array(32);
 		z[0] = 0; // Ensure < BLS12-381 modulus
 		for (let i = 1; i < 32; i++) {

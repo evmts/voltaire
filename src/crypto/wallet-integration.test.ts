@@ -473,7 +473,7 @@ describe("Wallet Integration Tests", () => {
 		it("matches BIP-32 test vector for master key", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
 			const seed = new Uint8Array(
-				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				seedHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 			const root = HDWallet.fromSeed(seed);
 

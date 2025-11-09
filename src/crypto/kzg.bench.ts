@@ -9,11 +9,7 @@ const Kzg = KZG;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Initialize trusted setup once before all benchmarks
-console.log("Loading trusted setup...");
 Kzg.loadTrustedSetup();
-console.log("Trusted setup loaded\n");
 
 // Pre-generate test data
 const testBlobs = [
@@ -41,12 +37,6 @@ function benchmarkWithResults(name: string, fn: () => void) {
 	});
 }
 
-// ============================================================================
-// Blob to Commitment Benchmarks
-// ============================================================================
-
-console.log("Benchmarking blobToKzgCommitment...");
-
 benchmarkWithResults("blobToKzgCommitment", () => {
 	const blob = testBlobs[0];
 	if (blob) Kzg.blobToKzgCommitment(blob);
@@ -58,12 +48,6 @@ benchmarkWithResults("blobToKzgCommitment (5 blobs)", () => {
 	}
 });
 
-// ============================================================================
-// Compute Proof Benchmarks
-// ============================================================================
-
-console.log("Benchmarking computeKzgProof...");
-
 benchmarkWithResults("computeKzgProof", () => {
 	const blob = testBlobs[0];
 	if (blob) Kzg.computeKzgProof(blob, testZ);
@@ -74,12 +58,6 @@ benchmarkWithResults("computeKzgProof (5 blobs)", () => {
 		Kzg.computeKzgProof(blob, testZ);
 	}
 });
-
-// ============================================================================
-// Verify Proof Benchmarks
-// ============================================================================
-
-console.log("Benchmarking verifyKzgProof...");
 
 benchmarkWithResults("verifyKzgProof", () => {
 	const commitment = testCommitments[0];
@@ -99,12 +77,6 @@ benchmarkWithResults("verifyKzgProof (5 proofs)", () => {
 	}
 });
 
-// ============================================================================
-// Verify Blob Proof Benchmarks
-// ============================================================================
-
-console.log("Benchmarking verifyBlobKzgProof...");
-
 benchmarkWithResults("verifyBlobKzgProof", () => {
 	const blob = testBlobs[0];
 	const commitment = testCommitments[0];
@@ -113,12 +85,6 @@ benchmarkWithResults("verifyBlobKzgProof", () => {
 		Kzg.verifyBlobKzgProof(blob, commitment, proof.proof);
 	}
 });
-
-// ============================================================================
-// Batch Verification Benchmarks
-// ============================================================================
-
-console.log("Benchmarking verifyBlobKzgProofBatch...");
 
 const batchBlobs2 = testBlobs.slice(0, 2);
 const batchCommitments2 = testCommitments.slice(0, 2);
@@ -136,12 +102,6 @@ benchmarkWithResults("verifyBlobKzgProofBatch (5 blobs)", () => {
 	Kzg.verifyBlobKzgProofBatch(batchBlobs5, batchCommitments5, batchProofs5);
 });
 
-// ============================================================================
-// Full Workflow Benchmarks
-// ============================================================================
-
-console.log("Benchmarking full workflow...");
-
 benchmarkWithResults("full workflow (commit + prove + verify)", () => {
 	const blob = testBlobs[0];
 	if (blob) {
@@ -150,12 +110,6 @@ benchmarkWithResults("full workflow (commit + prove + verify)", () => {
 		Kzg.verifyKzgProof(commitment, testZ, y, proof);
 	}
 });
-
-// ============================================================================
-// Utility Benchmarks
-// ============================================================================
-
-console.log("Benchmarking utilities...");
 
 benchmarkWithResults("createEmptyBlob", () => {
 	Kzg.createEmptyBlob();
@@ -169,12 +123,6 @@ benchmarkWithResults("validateBlob", () => {
 	const blob = testBlobs[0];
 	if (blob) Kzg.validateBlob(blob);
 });
-
-// ============================================================================
-// Run Benchmarks
-// ============================================================================
-
-console.log("\nRunning benchmarks...\n");
 
 // Run mitata benchmarks and capture results
 await run({
@@ -274,12 +222,6 @@ const output = {
 };
 
 writeFileSync(outputPath, JSON.stringify(output, null, 2));
-
-console.log(`\n✓ Benchmark results exported to ${outputPath}`);
-console.log("\n=== Summary ===");
-console.log(`Total benchmarks: ${output.summary.totalBenchmarks}`);
-console.log(`Fastest: ${output.summary.fastestOperation}`);
-console.log(`Slowest: ${output.summary.slowestOperation}`);
 
 // Cleanup
 Kzg.freeTrustedSetup();

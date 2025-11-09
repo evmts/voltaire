@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { describe, expect, it } from "vitest";
+import { CURVE_ORDER } from "./constants.js";
 import { isValidSignature } from "./isValidSignature.js";
 import { sign } from "./sign.js";
-import { CURVE_ORDER } from "./constants.js";
 
 describe("Secp256k1.isValidSignature", () => {
 	describe("valid signatures", () => {

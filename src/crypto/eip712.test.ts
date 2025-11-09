@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { Address } from "../primitives/Address/index.js";
-import { type BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
+import type { BrandedHash } from "../primitives/Hash/BrandedHash/BrandedHash.js";
 import { equals } from "../primitives/Hash/BrandedHash/equals.js";
 import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
 import { isZero } from "../primitives/Hash/BrandedHash/isZero.js";

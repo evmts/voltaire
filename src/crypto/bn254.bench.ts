@@ -15,8 +15,8 @@
 
 // import { Bn254Wasm } from "./bn254.wasm.js";
 // import { Bn254Ark } from "./bn254.ark.js";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import { bench, describe } from "vitest";
 import {
 	BN254 as Bn254,

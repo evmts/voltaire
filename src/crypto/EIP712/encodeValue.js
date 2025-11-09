@@ -98,7 +98,7 @@ export function encodeValue(type, value, types) {
 	// bytesN type (fixed)
 	if (type.startsWith("bytes")) {
 		const match = type.match(/^bytes(\d+)$/);
-		if (match && match[1]) {
+		if (match?.[1]) {
 			const size = Number.parseInt(match[1], 10);
 			const bytes = /** @type {Uint8Array} */ (value);
 			if (bytes.length !== size) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { hashMultiple } from "./hashMultiple.js";
 import { hash } from "./hash.js";
+import { hashMultiple } from "./hashMultiple.js";
 
 describe("Keccak256.hashMultiple", () => {
 	describe("basic functionality", () => {

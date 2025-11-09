@@ -18,8 +18,8 @@ export function deserializeG1(bytes) {
 		throw new Bn254Error("Invalid G1 point serialization");
 	}
 
-	const x = BigInt("0x" + bytesToHex(bytes.slice(0, 32)));
-	const y = BigInt("0x" + bytesToHex(bytes.slice(32, 64)));
+	const x = BigInt(`0x${bytesToHex(bytes.slice(0, 32))}`);
+	const y = BigInt(`0x${bytesToHex(bytes.slice(32, 64))}`);
 
 	if (x === 0n && y === 0n) {
 		return G1.infinity();

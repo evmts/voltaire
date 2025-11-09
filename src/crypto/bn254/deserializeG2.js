@@ -19,10 +19,10 @@ export function deserializeG2(bytes) {
 		throw new Bn254Error("Invalid G2 point serialization");
 	}
 
-	const xc0 = BigInt("0x" + bytesToHex(bytes.slice(0, 32)));
-	const xc1 = BigInt("0x" + bytesToHex(bytes.slice(32, 64)));
-	const yc0 = BigInt("0x" + bytesToHex(bytes.slice(64, 96)));
-	const yc1 = BigInt("0x" + bytesToHex(bytes.slice(96, 128)));
+	const xc0 = BigInt(`0x${bytesToHex(bytes.slice(0, 32))}`);
+	const xc1 = BigInt(`0x${bytesToHex(bytes.slice(32, 64))}`);
+	const yc0 = BigInt(`0x${bytesToHex(bytes.slice(64, 96))}`);
+	const yc1 = BigInt(`0x${bytesToHex(bytes.slice(96, 128))}`);
 
 	if (xc0 === 0n && xc1 === 0n && yc0 === 0n && yc1 === 0n) {
 		return G2.infinity();

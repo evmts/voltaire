@@ -8,7 +8,7 @@ export function parsePath(path) {
 	const HARDENED = 0x80000000;
 
 	// Remove leading m/ or M/
-	let normalized = path.replace(/^[mM]\//, "");
+	const normalized = path.replace(/^[mM]\//, "");
 
 	const parts = normalized.split("/");
 	const result = [];

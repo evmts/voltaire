@@ -1,14 +1,14 @@
 import { describe, expect, test } from "vitest";
-import * as G1 from "./index.js";
+import type { BrandedG1Point } from "../BrandedG1Point.js";
 import * as Fp from "../Fp/index.js";
 import {
+	B_G1,
 	FP_MOD,
 	FR_MOD,
 	G1_GENERATOR_X,
 	G1_GENERATOR_Y,
-	B_G1,
 } from "../constants.js";
-import type { BrandedG1Point } from "../BrandedG1Point.js";
+import * as G1 from "./index.js";
 
 describe("G1 curve operations", () => {
 	describe("generator", () => {

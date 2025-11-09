@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519.js";
+import { describe, expect, it } from "vitest";
 import { Ed25519 } from "./Ed25519.js";
 
 describe("Ed25519", () => {

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { keccak_256 } from "@noble/hashes/sha3.js";
+import { describe, expect, it } from "vitest";
 import { hash } from "./hash.js";
 
 describe("Keccak256.hash", () => {

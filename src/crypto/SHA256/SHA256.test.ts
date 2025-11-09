@@ -9,8 +9,8 @@
  * - Cross-validation against @noble/hashes
  */
 
-import { describe, expect, it } from "vitest";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { describe, expect, it } from "vitest";
 import * as SHA256 from "./SHA256.js";
 
 describe("SHA256.hash", () => {
@@ -233,7 +233,7 @@ describe("SHA256.hashHex", () => {
 	});
 
 	it("should hash 32-byte hex (typical Ethereum hash)", () => {
-		const hexHash = "0x" + "a".repeat(64); // 32 bytes
+		const hexHash = `0x${"a".repeat(64)}`; // 32 bytes
 		const hash = SHA256.hashHex(hexHash);
 
 		expect(hash.length).toBe(32);

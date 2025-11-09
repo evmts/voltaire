@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isValidPrivateKey } from "./isValidPrivateKey.js";
 import { CURVE_ORDER } from "./constants.js";
+import { isValidPrivateKey } from "./isValidPrivateKey.js";
 
 describe("Secp256k1.isValidPrivateKey", () => {
 	describe("valid private keys", () => {

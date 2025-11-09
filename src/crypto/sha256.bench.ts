@@ -236,17 +236,7 @@ const output = {
 
 const outputPath = new URL("./sha256-results.json", import.meta.url).pathname;
 writeFileSync(outputPath, JSON.stringify(output, null, 2));
-
-console.log(`\nResults exported to: ${outputPath}`);
-console.log(`\nSummary:`);
-console.log(`  Total benchmarks: ${output.summary.total_benchmarks}`);
 if (output.summary.fastest) {
-	console.log(
-		`  Fastest: ${output.summary.fastest.name} (${output.summary.fastest.ops_per_sec.toFixed(0)} ops/sec)`,
-	);
 }
 if (output.summary.slowest) {
-	console.log(
-		`  Slowest: ${output.summary.slowest.name} (${output.summary.slowest.ops_per_sec.toFixed(0)} ops/sec)`,
-	);
 }

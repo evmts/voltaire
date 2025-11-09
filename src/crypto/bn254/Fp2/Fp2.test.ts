@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import * as Fp2 from "./index.js";
 import { FP_MOD } from "../constants.js";
+import * as Fp2 from "./index.js";
 
 describe("Fp2 extension field arithmetic", () => {
 	describe("create", () => {

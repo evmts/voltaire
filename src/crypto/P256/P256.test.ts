@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { p256 } from "@noble/curves/nist.js";
-import { P256 } from "./P256.js";
+import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
+import { P256 } from "./P256.js";
 
 describe("P256", () => {
 	describe("derivePublicKey", () => {

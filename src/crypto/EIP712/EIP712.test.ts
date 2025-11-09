@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { EIP712 } from "./EIP712.js";
-import type { TypedData, Domain, TypeDefinitions } from "./BrandedEIP712.js";
-import {
-	Eip712Error,
-	Eip712EncodingError,
-	Eip712TypeNotFoundError,
-	Eip712InvalidMessageError,
-} from "./errors.js";
 import { hexToBytes, randomBytes } from "@noble/hashes/utils.js";
+import { describe, expect, it } from "vitest";
+import type { Domain, TypeDefinitions, TypedData } from "./BrandedEIP712.js";
+import { EIP712 } from "./EIP712.js";
+import {
+	Eip712EncodingError,
+	Eip712Error,
+	Eip712InvalidMessageError,
+	Eip712TypeNotFoundError,
+} from "./errors.js";
 
 describe("EIP-712 - Typed Structured Data Hashing and Signing", () => {
 	describe("Domain Separator", () => {

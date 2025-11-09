@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import * as Pairing from "./index.js";
 import * as G1 from "../G1/index.js";
 import * as G2 from "../G2/index.js";
+import * as Pairing from "./index.js";
 
 describe("Pairing operations", () => {
 	describe("pair", () => {

@@ -192,6 +192,3 @@ writeFileSync(
 	"src/crypto/secp256k1-bench-results.json",
 	JSON.stringify(benchResults, null, 2),
 );
-
-console.log("\nBenchmark comparison complete!");
-console.log("Results written to src/crypto/secp256k1-bench-results.json");

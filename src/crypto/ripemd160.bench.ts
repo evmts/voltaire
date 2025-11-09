@@ -5,9 +5,9 @@
  * at different input sizes. Compares Noble vs WASM implementations.
  */
 
-import { writeFileSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { bench, describe } from "vitest";
 import { Ripemd160 } from "./Ripemd160/index.js";
 import { Ripemd160Wasm } from "./ripemd160.wasm.js";
@@ -155,17 +155,12 @@ describe("Ripemd160Wasm Performance (Zig)", () => {
 
 // Manual benchmark runner for detailed results
 function runBenchmarks() {
-	console.log("Running RIPEMD160 benchmarks...\n");
-
 	const testCases = [
 		{ name: "hash_32_bytes", size: 32 },
 		{ name: "hash_1_KB", size: 1024 },
 		{ name: "hash_64_KB", size: 64 * 1024 },
 		{ name: "hash_1_MB", size: 1024 * 1024 },
 	];
-
-	// Benchmark Noble implementation
-	console.log("=== Noble (JavaScript) ===\n");
 	for (const { name, size } of testCases) {
 		const data = new Uint8Array(size).fill(42);
 		const iterations = size > 10000 ? 1000 : 10000;
@@ -181,17 +176,7 @@ function runBenchmarks() {
 		const opsPerSec = Math.round(1000 / avgTime);
 
 		results[`noble_${name}`] = { opsPerSec, avgTime };
-
-		console.log(`${name}:`);
-		console.log(`  Iterations: ${iterations}`);
-		console.log(`  Total time: ${totalTime.toFixed(2)}ms`);
-		console.log(`  Avg time: ${avgTime.toFixed(4)}ms`);
-		console.log(`  Ops/sec: ${opsPerSec.toLocaleString()}`);
-		console.log();
 	}
-
-	// Benchmark WASM implementation
-	console.log("=== WASM (Zig) ===\n");
 	for (const { name, size } of testCases) {
 		const data = new Uint8Array(size).fill(42);
 		const iterations = size > 10000 ? 1000 : 10000;
@@ -207,13 +192,6 @@ function runBenchmarks() {
 		const opsPerSec = Math.round(1000 / avgTime);
 
 		results[`wasm_${name}`] = { opsPerSec, avgTime };
-
-		console.log(`${name}:`);
-		console.log(`  Iterations: ${iterations}`);
-		console.log(`  Total time: ${totalTime.toFixed(2)}ms`);
-		console.log(`  Avg time: ${avgTime.toFixed(4)}ms`);
-		console.log(`  Ops/sec: ${opsPerSec.toLocaleString()}`);
-		console.log();
 	}
 
 	// String benchmark - Noble
@@ -231,15 +209,7 @@ function runBenchmarks() {
 		const avgTime = totalTime / iterations;
 		const opsPerSec = Math.round(1000 / avgTime);
 
-		results["noble_hashString"] = { opsPerSec, avgTime };
-
-		console.log("=== String Hashing (Noble) ===\n");
-		console.log("hashString:");
-		console.log(`  Iterations: ${iterations}`);
-		console.log(`  Total time: ${totalTime.toFixed(2)}ms`);
-		console.log(`  Avg time: ${avgTime.toFixed(4)}ms`);
-		console.log(`  Ops/sec: ${opsPerSec.toLocaleString()}`);
-		console.log();
+		results.noble_hashString = { opsPerSec, avgTime };
 	}
 
 	// String benchmark - WASM
@@ -257,19 +227,8 @@ function runBenchmarks() {
 		const avgTime = totalTime / iterations;
 		const opsPerSec = Math.round(1000 / avgTime);
 
-		results["wasm_hashString"] = { opsPerSec, avgTime };
-
-		console.log("=== String Hashing (WASM) ===\n");
-		console.log("hashString:");
-		console.log(`  Iterations: ${iterations}`);
-		console.log(`  Total time: ${totalTime.toFixed(2)}ms`);
-		console.log(`  Avg time: ${avgTime.toFixed(4)}ms`);
-		console.log(`  Ops/sec: ${opsPerSec.toLocaleString()}`);
-		console.log();
+		results.wasm_hashString = { opsPerSec, avgTime };
 	}
-
-	// Performance comparison
-	console.log("=== Performance Comparison ===\n");
 	for (const { name } of testCases) {
 		const nobleKey = `noble_${name}`;
 		const wasmKey = `wasm_${name}`;
@@ -279,19 +238,12 @@ function runBenchmarks() {
 			const wasmOps = results[wasmKey].opsPerSec;
 			const ratio = (wasmOps / nobleOps).toFixed(2);
 			const faster = wasmOps > nobleOps ? "WASM" : "Noble";
-
-			console.log(`${name}:`);
-			console.log(`  Noble: ${nobleOps.toLocaleString()} ops/sec`);
-			console.log(`  WASM:  ${wasmOps.toLocaleString()} ops/sec`);
-			console.log(`  Ratio: ${ratio}x (${faster} is faster)`);
-			console.log();
 		}
 	}
 
 	// Save results
 	const outputPath = join(__dirname, "ripemd160-results.json");
 	writeFileSync(outputPath, JSON.stringify(results, null, 2));
-	console.log(`Results saved to ${outputPath}`);
 }
 
 // Run if executed directly

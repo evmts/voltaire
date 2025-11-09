@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { hashHex } from "./hashHex.js";
 import { hash } from "./hash.js";
+import { hashHex } from "./hashHex.js";
 
 describe("Keccak256.hashHex", () => {
 	describe("basic functionality", () => {
@@ -106,19 +106,19 @@ describe("Keccak256.hashHex", () => {
 		});
 
 		it("should hash 64-character hex (32 bytes)", () => {
-			const hex = "0x" + "ab".repeat(32);
+			const hex = `0x${"ab".repeat(32)}`;
 			const result = hashHex(hex);
 			expect(result.length).toBe(32);
 		});
 
 		it("should hash 128-character hex (64 bytes)", () => {
-			const hex = "0x" + "cd".repeat(64);
+			const hex = `0x${"cd".repeat(64)}`;
 			const result = hashHex(hex);
 			expect(result.length).toBe(32);
 		});
 
 		it("should hash long hex string", () => {
-			const hex = "0x" + "12".repeat(500);
+			const hex = `0x${"12".repeat(500)}`;
 			const result = hashHex(hex);
 			expect(result.length).toBe(32);
 		});
@@ -162,7 +162,7 @@ describe("Keccak256.hashHex", () => {
 
 	describe("edge cases", () => {
 		it("should hash all-zero bytes", () => {
-			const hex = "0x" + "00".repeat(32);
+			const hex = `0x${"00".repeat(32)}`;
 			const result = hashHex(hex);
 
 			const expected = hash(new Uint8Array(32));
@@ -170,7 +170,7 @@ describe("Keccak256.hashHex", () => {
 		});
 
 		it("should hash all-ff bytes", () => {
-			const hex = "0x" + "ff".repeat(32);
+			const hex = `0x${"ff".repeat(32)}`;
 			const result = hashHex(hex);
 
 			const expected = hash(new Uint8Array(32).fill(0xff));
@@ -232,7 +232,7 @@ describe("Keccak256.hashHex", () => {
 
 	describe("CREATE2 salt hashing", () => {
 		it("should hash 32-byte salt", () => {
-			const salt = "0x" + "42".repeat(32);
+			const salt = `0x${"42".repeat(32)}`;
 			const result = hashHex(salt);
 			expect(result.length).toBe(32);
 		});
@@ -257,7 +257,7 @@ describe("Keccak256.hashHex", () => {
 		});
 
 		it("should handle alternating pattern", () => {
-			const hex = "0x" + "a5".repeat(50);
+			const hex = `0x${"a5".repeat(50)}`;
 			const result = hashHex(hex);
 			expect(result.length).toBe(32);
 		});

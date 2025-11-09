@@ -59,7 +59,7 @@ describe("HDWallet", () => {
 		it("derives correct master key from BIP-32 test vector 1", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
 			const seed = new Uint8Array(
-				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				seedHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 			const root = HDWallet.fromSeed(seed);
 
@@ -145,7 +145,7 @@ describe("HDWallet", () => {
 		it("derives m/0' correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
 			const seed = new Uint8Array(
-				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				seedHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 			const root = HDWallet.fromSeed(seed);
 
@@ -159,7 +159,7 @@ describe("HDWallet", () => {
 		it("derives m/0'/1 correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
 			const seed = new Uint8Array(
-				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				seedHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 			const root = HDWallet.fromSeed(seed);
 
@@ -173,7 +173,7 @@ describe("HDWallet", () => {
 		it("derives m/0'/1/2' correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
 			const seed = new Uint8Array(
-				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				seedHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 			const root = HDWallet.fromSeed(seed);
 
@@ -187,7 +187,7 @@ describe("HDWallet", () => {
 		it("derives m/0'/1/2'/2 correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
 			const seed = new Uint8Array(
-				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				seedHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 			const root = HDWallet.fromSeed(seed);
 
@@ -201,7 +201,7 @@ describe("HDWallet", () => {
 		it("derives m/0'/1/2'/2/1000000000 correctly (BIP-32 vector 1)", async () => {
 			const seedHex = "000102030405060708090a0b0c0d0e0f";
 			const seed = new Uint8Array(
-				seedHex.match(/.{2}/g)!.map((byte) => parseInt(byte, 16)),
+				seedHex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 			const root = HDWallet.fromSeed(seed);
 

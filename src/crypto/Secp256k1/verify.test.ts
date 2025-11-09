@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { sha256 } from "@noble/hashes/sha2.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
-import { sign } from "./sign.js";
-import { verify } from "./verify.js";
 import { derivePublicKey } from "./derivePublicKey.js";
 import { InvalidPublicKeyError, InvalidSignatureError } from "./errors.js";
+import { sign } from "./sign.js";
+import { verify } from "./verify.js";
 
 describe("Secp256k1.verify", () => {
 	describe("valid signatures", () => {

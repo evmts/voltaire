@@ -30,18 +30,6 @@ const mediumHex =
 const functionSig = "transfer(address,uint256)";
 const eventSig = "Transfer(address,address,uint256)";
 
-console.log("=".repeat(80));
-console.log("JS vs WASM vs ethers vs viem Keccak256 Implementation Benchmark");
-console.log("=".repeat(80));
-console.log("");
-
-// =============================================================================
-// 1. hash - Empty data
-// =============================================================================
-
-console.log("1. hash - Empty data");
-console.log("-".repeat(80));
-
 bench("hash - empty - JS", () => {
 	Keccak256.hash(emptyData);
 });
@@ -59,14 +47,6 @@ bench("hash - empty - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 2. hash - 32 bytes
-// =============================================================================
-
-console.log("2. hash - 32 bytes");
-console.log("-".repeat(80));
 
 bench("hash - 32B - JS", () => {
 	Keccak256.hash(data32B);
@@ -85,14 +65,6 @@ bench("hash - 32B - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 3. hash - 256 bytes
-// =============================================================================
-
-console.log("3. hash - 256 bytes");
-console.log("-".repeat(80));
 
 bench("hash - 256B - JS", () => {
 	Keccak256.hash(data256B);
@@ -111,14 +83,6 @@ bench("hash - 256B - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 4. hash - 1 KB
-// =============================================================================
-
-console.log("4. hash - 1 KB");
-console.log("-".repeat(80));
 
 bench("hash - 1KB - JS", () => {
 	Keccak256.hash(data1KB);
@@ -137,14 +101,6 @@ bench("hash - 1KB - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 5. hash - 4 KB
-// =============================================================================
-
-console.log("5. hash - 4 KB");
-console.log("-".repeat(80));
 
 bench("hash - 4KB - JS", () => {
 	Keccak256.hash(data4KB);
@@ -163,14 +119,6 @@ bench("hash - 4KB - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 6. hashString - Short string
-// =============================================================================
-
-console.log("6. hashString - Short string");
-console.log("-".repeat(80));
 
 bench("hashString - short - JS", () => {
 	Keccak256.hashString(shortString);
@@ -189,14 +137,6 @@ bench("hashString - short - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 7. hashString - Medium string
-// =============================================================================
-
-console.log("7. hashString - Medium string");
-console.log("-".repeat(80));
 
 bench("hashString - medium - JS", () => {
 	Keccak256.hashString(mediumString);
@@ -215,14 +155,6 @@ bench("hashString - medium - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 8. hashString - Long string
-// =============================================================================
-
-console.log("8. hashString - Long string (1000 chars)");
-console.log("-".repeat(80));
 
 bench("hashString - long - JS", () => {
 	Keccak256.hashString(longString);
@@ -241,14 +173,6 @@ bench("hashString - long - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 9. hashHex - Short hex
-// =============================================================================
-
-console.log("9. hashHex - Short hex");
-console.log("-".repeat(80));
 
 bench("hashHex - short - JS", () => {
 	Keccak256.hashHex(shortHex);
@@ -267,14 +191,6 @@ bench("hashHex - short - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 10. hashHex - Medium hex (32 bytes)
-// =============================================================================
-
-console.log("10. hashHex - Medium hex (32 bytes)");
-console.log("-".repeat(80));
 
 bench("hashHex - medium - JS", () => {
 	Keccak256.hashHex(mediumHex);
@@ -293,14 +209,6 @@ bench("hashHex - medium - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 11. selector - Function signature
-// =============================================================================
-
-console.log("11. selector - Function signature");
-console.log("-".repeat(80));
 
 bench("selector - JS", () => {
 	Keccak256.selector(functionSig);
@@ -319,14 +227,6 @@ bench("selector - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 12. topic - Event signature
-// =============================================================================
-
-console.log("12. topic - Event signature");
-console.log("-".repeat(80));
 
 bench("topic - JS", () => {
 	Keccak256.topic(eventSig);
@@ -345,8 +245,3 @@ bench("topic - viem", () => {
 });
 
 await run();
-console.log("");
-
-console.log("=".repeat(80));
-console.log("Benchmark Complete - JS vs WASM vs ethers vs viem Keccak256");
-console.log("=".repeat(80));

@@ -4,8 +4,8 @@
  */
 
 import { bench, run } from "mitata";
-import { HDWallet } from "./index.js";
 import * as Bip39 from "../Bip39/index.js";
+import { HDWallet } from "./index.js";
 
 // =============================================================================
 // Test Data
@@ -24,18 +24,6 @@ const xpub = HDWallet.toExtendedPublicKey(rootKey);
 const depth3 = HDWallet.derivePath(rootKey, "m/44'/60'/0'");
 const depth5 = HDWallet.derivePath(rootKey, "m/44'/60'/0'/0/0");
 
-console.log("=".repeat(80));
-console.log("HDWallet (BIP-32/BIP-44) Benchmark");
-console.log("=".repeat(80));
-console.log("");
-
-// =============================================================================
-// 1. Seed → Root Key
-// =============================================================================
-
-console.log("1. fromSeed - Create root key from seed");
-console.log("-".repeat(80));
-
 bench("fromSeed - 16 bytes", () => {
 	HDWallet.fromSeed(testSeed.slice(0, 16));
 });
@@ -49,14 +37,6 @@ bench("fromSeed - 64 bytes", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 2. Extended Key Parsing
-// =============================================================================
-
-console.log("2. Extended Key Parsing");
-console.log("-".repeat(80));
 
 bench("fromExtendedKey - xprv", () => {
 	HDWallet.fromExtendedKey(xprv);
@@ -67,14 +47,6 @@ bench("fromPublicExtendedKey - xpub", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 3. Key Derivation by Depth
-// =============================================================================
-
-console.log("3. derivePath - Key derivation by depth");
-console.log("-".repeat(80));
 
 bench("derivePath - depth 1 (m/44')", () => {
 	HDWallet.derivePath(rootKey, "m/44'");
@@ -93,14 +65,6 @@ bench("derivePath - depth 10", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 4. Hardened vs Non-hardened
-// =============================================================================
-
-console.log("4. Hardened vs Non-hardened Derivation");
-console.log("-".repeat(80));
 
 bench("deriveChild - non-hardened (0)", () => {
 	HDWallet.deriveChild(rootKey, 0);
@@ -119,14 +83,6 @@ bench("derivePath - mixed (m/44'/60'/0'/0/0)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 5. BIP-44 Ethereum Derivation
-// =============================================================================
-
-console.log("5. BIP-44 Ethereum Derivation");
-console.log("-".repeat(80));
 
 bench("deriveEthereum - account 0, index 0", () => {
 	HDWallet.deriveEthereum(rootKey, 0, 0);
@@ -141,14 +97,6 @@ bench("deriveEthereum - account 5, index 10", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 6. Key Extraction
-// =============================================================================
-
-console.log("6. Key Extraction");
-console.log("-".repeat(80));
 
 bench("getPrivateKey", () => {
 	HDWallet.getPrivateKey(depth5);
@@ -163,14 +111,6 @@ bench("getChainCode", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 7. Serialization
-// =============================================================================
-
-console.log("7. Serialization to Extended Keys");
-console.log("-".repeat(80));
 
 bench("toExtendedPrivateKey", () => {
 	HDWallet.toExtendedPrivateKey(depth5);
@@ -185,14 +125,6 @@ bench("toPublic - convert to public key only", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 8. Path Utilities
-// =============================================================================
-
-console.log("8. Path Utilities");
-console.log("-".repeat(80));
 
 bench("isValidPath - valid", () => {
 	HDWallet.isValidPath("m/44'/60'/0'/0/0");
@@ -219,14 +151,6 @@ bench("parseIndex - non-hardened", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 9. Batch Derivation - Multiple Addresses
-// =============================================================================
-
-console.log("9. Batch Derivation - Generate 100 Ethereum addresses");
-console.log("-".repeat(80));
 
 bench("Derive 100 addresses (account 0, indices 0-99)", () => {
 	for (let i = 0; i < 100; i++) {
@@ -241,14 +165,6 @@ bench("Derive 10 addresses from pre-derived account", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 10. Full Workflow - Mnemonic → Addresses
-// =============================================================================
-
-console.log("10. Full Workflow - Mnemonic → Ethereum Addresses");
-console.log("-".repeat(80));
 
 bench("Full: mnemonic → seed → root → derive address", () => {
 	const seed = Bip39.mnemonicToSeedSync(testMnemonic);
@@ -264,14 +180,6 @@ bench("Full: seed → root → derive 5 addresses", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 11. Edge Cases
-// =============================================================================
-
-console.log("11. Edge Cases");
-console.log("-".repeat(80));
 
 bench("deriveChild - max non-hardened index", () => {
 	HDWallet.deriveChild(rootKey, HDWallet.HARDENED_OFFSET - 1);
@@ -298,8 +206,3 @@ bench("derivePath - invalid path (error)", () => {
 });
 
 await run();
-console.log("");
-
-console.log("=".repeat(80));
-console.log("Benchmark Complete - HDWallet Operations");
-console.log("=".repeat(80));

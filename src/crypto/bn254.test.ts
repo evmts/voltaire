@@ -528,7 +528,7 @@ describe("Edge cases", () => {
 
 	it("should handle very large scalars", () => {
 		const gen = Bn254.G1.generator();
-		const large = BigInt("0x" + "f".repeat(64));
+		const large = BigInt(`0x${"f".repeat(64)}`);
 		const result = Bn254.G1.mul(gen, large);
 		expect(Bn254.G1.isOnCurve(result)).toBe(true);
 	});

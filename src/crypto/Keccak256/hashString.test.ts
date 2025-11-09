@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { keccak_256 } from "@noble/hashes/sha3.js";
-import { hashString } from "./hashString.js";
+import { describe, expect, it } from "vitest";
 import { hash } from "./hash.js";
+import { hashString } from "./hashString.js";
 
 describe("Keccak256.hashString", () => {
 	describe("basic functionality", () => {

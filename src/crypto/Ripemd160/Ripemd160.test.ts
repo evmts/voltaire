@@ -8,9 +8,9 @@
  * - Cross-validation against @noble/hashes
  */
 
-import { describe, expect, it } from "vitest";
 import { ripemd160 } from "@noble/hashes/legacy.js";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { describe, expect, it } from "vitest";
 import * as Ripemd160 from "./Ripemd160.js";
 
 describe("Ripemd160.hash", () => {

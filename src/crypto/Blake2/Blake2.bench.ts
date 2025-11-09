@@ -220,8 +220,6 @@ group("BLAKE2b - Noble vs WASM Comparison (1 KB input)", () => {
 
 // Run benchmarks and save results
 (async () => {
-	console.log("Running BLAKE2b benchmarks...\n");
-
 	await run({
 		// units: false,
 		// silent: false,
@@ -229,18 +227,6 @@ group("BLAKE2b - Noble vs WASM Comparison (1 KB input)", () => {
 		colors: true,
 		// percentiles: true,
 	});
-
-	console.log("\n📊 Benchmark Summary:");
-	console.log("=====================");
-	console.log("BLAKE2b implementations:");
-	console.log("- Noble: @noble/hashes (JavaScript)");
-	console.log("- WASM: Zig implementation (WebAssembly)");
-	console.log(`Timestamp: ${results.timestamp}`);
-	console.log("\nPerformance characteristics:");
-	console.log("- Fast hashing for all input sizes");
-	console.log("- Linear scaling with input size");
-	console.log("- Minimal overhead for variable output lengths");
-	console.log("- WASM offers native-speed performance");
 
 	// Save results to JSON file
 	const outputPath = join(import.meta.dirname, "blake2-results.json");
@@ -258,7 +244,6 @@ group("BLAKE2b - Noble vs WASM Comparison (1 KB input)", () => {
 				2,
 			),
 		);
-		console.log(`\n✅ Results saved to: ${outputPath}`);
 	} catch (error) {
 		console.error(`\n❌ Failed to save results: ${error}`);
 	}

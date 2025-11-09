@@ -348,5 +348,3 @@ writeFileSync(
 	new URL("./eip712-results.json", import.meta.url),
 	JSON.stringify(output, null, 2),
 );
-
-console.log("\n✓ Benchmark results exported to eip712-results.json");

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import * as Fr from "./index.js";
 import { FR_MOD } from "../constants.js";
+import * as Fr from "./index.js";
 
 describe("Fr scalar field arithmetic", () => {
 	describe("mod", () => {

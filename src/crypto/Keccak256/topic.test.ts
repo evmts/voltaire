@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { topic } from "./topic.js";
 import { hashString } from "./hashString.js";
+import { topic } from "./topic.js";
 
 describe("Keccak256.topic", () => {
 	describe("basic functionality", () => {

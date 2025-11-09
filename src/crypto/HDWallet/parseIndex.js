@@ -19,7 +19,7 @@ export function parseIndex(indexStr) {
 	const hardened = indexStr.endsWith("'") || indexStr.endsWith("h");
 	const index = Number.parseInt(indexStr.replace(/['h]$/, ""), 10);
 
-	if (isNaN(index) || index < 0) {
+	if (Number.isNaN(index) || index < 0) {
 		throw new InvalidPathError(`Invalid index: ${indexStr}`);
 	}
 

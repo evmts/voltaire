@@ -4,8 +4,8 @@
  */
 
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { Address } from "../../primitives/Address/index.js";
 import * as BrandedAddress from "../../primitives/Address/BrandedAddress/index.js";
+import { Address } from "../../primitives/Address/index.js";
 import * as primitives from "../../wasm-loader/loader.js";
 import { Keccak256Wasm } from "../keccak256.wasm.js";
 
@@ -62,7 +62,7 @@ export class PrivateKeySignerImpl implements Signer {
 				throw new Error("Private key must be 32 bytes (64 hex characters)");
 			}
 			privateKeyBytes = new Uint8Array(
-				hex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16)),
+				hex.match(/.{1,2}/g)?.map((byte) => Number.parseInt(byte, 16)),
 			);
 		} else {
 			privateKeyBytes = new Uint8Array(options.privateKey);
@@ -80,7 +80,7 @@ export class PrivateKeySignerImpl implements Signer {
 		const msgBytes =
 			typeof message === "string" ? new TextEncoder().encode(message) : message;
 		const prefix = new TextEncoder().encode(
-			"\x19Ethereum Signed Message:\n" + msgBytes.length,
+			`\x19Ethereum Signed Message:\n${msgBytes.length}`,
 		);
 		const combined = new Uint8Array(prefix.length + msgBytes.length);
 		combined.set(prefix);

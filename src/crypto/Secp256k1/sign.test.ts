@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { sign } from "./sign.js";
-import { InvalidPrivateKeyError } from "./errors.js";
+import { describe, expect, it } from "vitest";
 import { Hash } from "../../primitives/Hash/index.js";
+import { InvalidPrivateKeyError } from "./errors.js";
+import { sign } from "./sign.js";
 
 describe("Secp256k1.sign", () => {
 	describe("RFC 6979 deterministic signing", () => {

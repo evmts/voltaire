@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { selector } from "./selector.js";
 import { hashString } from "./hashString.js";
+import { selector } from "./selector.js";
 
 describe("Keccak256.selector", () => {
 	describe("basic functionality", () => {
