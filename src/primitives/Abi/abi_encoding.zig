@@ -976,16 +976,334 @@ pub fn encodePacked(allocator: std.mem.Allocator, values: []const AbiValue) ![]u
                 std.mem.writeInt(u32, &bytes, val, .big);
                 try result.appendSlice(&bytes);
             },
+            .uint64 => |val| {
+                var bytes: [8]u8 = undefined;
+                std.mem.writeInt(u64, &bytes, val, .big);
+                try result.appendSlice(&bytes);
+            },
+            .uint128 => |val| {
+                var bytes: [16]u8 = undefined;
+                std.mem.writeInt(u128, &bytes, val, .big);
+                try result.appendSlice(&bytes);
+            },
+            .uint256 => |val| {
+                var bytes: [32]u8 = undefined;
+                std.mem.writeInt(u256, &bytes, val, .big);
+                try result.appendSlice(&bytes);
+            },
+            .int8 => |val| {
+                const unsigned: u8 = @bitCast(val);
+                try result.append(unsigned);
+            },
+            .int16 => |val| {
+                var bytes: [2]u8 = undefined;
+                const unsigned: u16 = @bitCast(val);
+                std.mem.writeInt(u16, &bytes, unsigned, .big);
+                try result.appendSlice(&bytes);
+            },
+            .int32 => |val| {
+                var bytes: [4]u8 = undefined;
+                const unsigned: u32 = @bitCast(val);
+                std.mem.writeInt(u32, &bytes, unsigned, .big);
+                try result.appendSlice(&bytes);
+            },
+            .int64 => |val| {
+                var bytes: [8]u8 = undefined;
+                const unsigned: u64 = @bitCast(val);
+                std.mem.writeInt(u64, &bytes, unsigned, .big);
+                try result.appendSlice(&bytes);
+            },
+            .int128 => |val| {
+                var bytes: [16]u8 = undefined;
+                const unsigned: u128 = @bitCast(val);
+                std.mem.writeInt(u128, &bytes, unsigned, .big);
+                try result.appendSlice(&bytes);
+            },
+            .int256 => |val| {
+                var bytes: [32]u8 = undefined;
+                const unsigned: u256 = @bitCast(val);
+                std.mem.writeInt(u256, &bytes, unsigned, .big);
+                try result.appendSlice(&bytes);
+            },
+            .address => |val| {
+                try result.appendSlice(&val.bytes);
+            },
+            .bool => |val| {
+                try result.append(if (val) 1 else 0);
+            },
+            .bytes1 => |val| {
+                try result.appendSlice(&val);
+            },
+            .bytes2 => |val| {
+                try result.appendSlice(&val);
+            },
+            .bytes3 => |val| {
+                try result.appendSlice(&val);
+            },
+            .bytes4 => |val| {
+                try result.appendSlice(&val);
+            },
+            .bytes8 => |val| {
+                try result.appendSlice(&val);
+            },
+            .bytes16 => |val| {
+                try result.appendSlice(&val);
+            },
+            .bytes32 => |val| {
+                try result.appendSlice(&val);
+            },
+            .bytes => |val| {
+                try result.appendSlice(val);
+            },
             .string => |val| {
                 try result.appendSlice(val);
             },
-            else => {
-                // For other types, skip or handle as needed
+            .@"uint256[]" => |val| {
+                for (val) |item| {
+                    var bytes: [32]u8 = undefined;
+                    std.mem.writeInt(u256, &bytes, item, .big);
+                    try result.appendSlice(&bytes);
+                }
+            },
+            .@"bytes32[]" => |val| {
+                for (val) |item| {
+                    try result.appendSlice(&item);
+                }
+            },
+            .@"address[]" => |val| {
+                for (val) |item| {
+                    try result.appendSlice(&item.bytes);
+                }
+            },
+            .@"string[]" => |val| {
+                for (val) |item| {
+                    try result.appendSlice(item);
+                }
             },
         }
     }
 
     return result.toOwnedSlice();
+}
+
+// ============================================================================
+// encodePacked Tests
+// ============================================================================
+
+test "encodePacked - uint8" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .uint8 = 42 }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 1), encoded.len);
+    try std.testing.expectEqual(@as(u8, 42), encoded[0]);
+}
+
+test "encodePacked - uint16" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .uint16 = 0x1234 }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 2), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x12), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x34), encoded[1]);
+}
+
+test "encodePacked - uint32" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .uint32 = 0xDEADBEEF }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 4), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0xDE), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0xAD), encoded[1]);
+    try std.testing.expectEqual(@as(u8, 0xBE), encoded[2]);
+    try std.testing.expectEqual(@as(u8, 0xEF), encoded[3]);
+}
+
+test "encodePacked - uint64" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .uint64 = 42 }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 8), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[1]);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[2]);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[3]);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[4]);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[5]);
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[6]);
+    try std.testing.expectEqual(@as(u8, 0x2A), encoded[7]);
+}
+
+test "encodePacked - uint128" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .uint128 = 0x123456789ABCDEF }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 16), encoded.len);
+    // Check last 8 bytes contain the value
+    try std.testing.expectEqual(@as(u8, 0xEF), encoded[15]);
+    try std.testing.expectEqual(@as(u8, 0xCD), encoded[14]);
+    try std.testing.expectEqual(@as(u8, 0xAB), encoded[13]);
+}
+
+test "encodePacked - uint256" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .uint256 = 0xDEADBEEF }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 32), encoded.len);
+    // Check last 4 bytes contain the value
+    try std.testing.expectEqual(@as(u8, 0xDE), encoded[28]);
+    try std.testing.expectEqual(@as(u8, 0xAD), encoded[29]);
+    try std.testing.expectEqual(@as(u8, 0xBE), encoded[30]);
+    try std.testing.expectEqual(@as(u8, 0xEF), encoded[31]);
+}
+
+test "encodePacked - address" {
+    const allocator = std.testing.allocator;
+    const addr_bytes = [_]u8{0xAA} ** 20;
+    const addr = address.Address{ .bytes = addr_bytes };
+    const values = [_]AbiValue{AbiValue{ .address = addr }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 20), encoded.len);
+    for (encoded) |b| {
+        try std.testing.expectEqual(@as(u8, 0xAA), b);
+    }
+}
+
+test "encodePacked - bool true" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .bool = true }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 1), encoded.len);
+    try std.testing.expectEqual(@as(u8, 1), encoded[0]);
+}
+
+test "encodePacked - bool false" {
+    const allocator = std.testing.allocator;
+    const values = [_]AbiValue{AbiValue{ .bool = false }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 1), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0), encoded[0]);
+}
+
+test "encodePacked - bytes32" {
+    const allocator = std.testing.allocator;
+    const hash_bytes = [_]u8{0xFF} ** 32;
+    const values = [_]AbiValue{AbiValue{ .bytes32 = hash_bytes }};
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 32), encoded.len);
+    for (encoded) |b| {
+        try std.testing.expectEqual(@as(u8, 0xFF), b);
+    }
+}
+
+test "encodePacked - issue #28 exact scenario" {
+    const allocator = std.testing.allocator;
+
+    const alice = [_]u8{0xAA} ** 20;
+    const bob = [_]u8{0xBB} ** 20;
+    const zero_addr = [_]u8{0x00} ** 20;
+
+    const values = [_]AbiValue{
+        addressValue(address.Address{ .bytes = alice }),
+        addressValue(address.Address{ .bytes = bob }),
+        AbiValue{ .uint64 = 42 },
+        addressValue(address.Address{ .bytes = zero_addr }),
+        AbiValue{ .uint32 = 86400 },
+    };
+
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    // Expected: 20 + 20 + 8 + 20 + 4 = 72 bytes
+    try std.testing.expectEqual(@as(usize, 72), encoded.len);
+
+    // Verify alice (first 20 bytes)
+    for (encoded[0..20]) |b| {
+        try std.testing.expectEqual(@as(u8, 0xAA), b);
+    }
+
+    // Verify bob (next 20 bytes)
+    for (encoded[20..40]) |b| {
+        try std.testing.expectEqual(@as(u8, 0xBB), b);
+    }
+
+    // Verify uint64 = 42 (next 8 bytes)
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[40]);
+    try std.testing.expectEqual(@as(u8, 0x2A), encoded[47]); // Last byte = 42
+
+    // Verify zero address (next 20 bytes)
+    for (encoded[48..68]) |b| {
+        try std.testing.expectEqual(@as(u8, 0x00), b);
+    }
+
+    // Verify uint32 = 86400 (0x15180) (last 4 bytes)
+    try std.testing.expectEqual(@as(u8, 0x00), encoded[68]);
+    try std.testing.expectEqual(@as(u8, 0x01), encoded[69]);
+    try std.testing.expectEqual(@as(u8, 0x51), encoded[70]);
+    try std.testing.expectEqual(@as(u8, 0x80), encoded[71]);
+}
+
+test "encodePacked - multiple addresses" {
+    const allocator = std.testing.allocator;
+
+    const addr1 = [_]u8{0x11} ** 20;
+    const addr2 = [_]u8{0x22} ** 20;
+
+    const values = [_]AbiValue{
+        addressValue(address.Address{ .bytes = addr1 }),
+        addressValue(address.Address{ .bytes = addr2 }),
+    };
+
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 40), encoded.len);
+
+    for (encoded[0..20]) |b| {
+        try std.testing.expectEqual(@as(u8, 0x11), b);
+    }
+    for (encoded[20..40]) |b| {
+        try std.testing.expectEqual(@as(u8, 0x22), b);
+    }
+}
+
+test "encodePacked - mixed types" {
+    const allocator = std.testing.allocator;
+
+    const values = [_]AbiValue{
+        AbiValue{ .uint8 = 0xFF },
+        AbiValue{ .uint16 = 0x1234 },
+        AbiValue{ .uint32 = 0xDEADBEEF },
+    };
+
+    const encoded = try encodePacked(allocator, &values);
+    defer allocator.free(encoded);
+
+    // 1 + 2 + 4 = 7 bytes
+    try std.testing.expectEqual(@as(usize, 7), encoded.len);
+    try std.testing.expectEqual(@as(u8, 0xFF), encoded[0]);
+    try std.testing.expectEqual(@as(u8, 0x12), encoded[1]);
+    try std.testing.expectEqual(@as(u8, 0x34), encoded[2]);
+    try std.testing.expectEqual(@as(u8, 0xDE), encoded[3]);
 }
 
 // Gas estimation for call data using std.mem.count for efficiency
