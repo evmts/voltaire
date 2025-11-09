@@ -10,6 +10,7 @@
 	"exclude": [
 		"node_modules",
 		"node_modules/**/*",
+		".astro/**/*",
 		"src/content.config.ts",
 		"src/content/docs/primitives/abi",
 		"src/content/docs/primitives/accesslist",
@@ -23,6 +24,9 @@
 		"src/content/docs/primitives/opcode",
 		"src/content/docs/primitives/rlp",
 		"src/content/docs/primitives/siwe",
-		"src/content/docs/primitives/state"
+		"src/content/docs/primitives/state",
+		"astro.config.mjs",
+		"src/components/**/*",
+		"src/env.d.ts"
 	]
 }
