@@ -7,6 +7,7 @@ import { copy } from "./copy.js";
 import { create } from "./create.js";
 import { filterLogs } from "./filterLogs.js";
 import { from } from "./from.js";
+import { fromRpc } from "./fromRpc.js";
 import { getIndexed } from "./getIndexed.js";
 import { getIndexedTopics } from "./getIndexedTopics.js";
 import { getSignature } from "./getSignature.js";
@@ -16,6 +17,7 @@ import { matchesAddress } from "./matchesAddress.js";
 import { matchesFilter } from "./matchesFilter.js";
 import { matchesTopics } from "./matchesTopics.js";
 import { sortLogs } from "./sortLogs.js";
+import { toRpc } from "./toRpc.js";
 import { wasRemoved } from "./wasRemoved.js";
 
 // Export individual functions
@@ -25,6 +27,7 @@ export {
 	create,
 	filterLogs,
 	from,
+	fromRpc,
 	getIndexed,
 	getIndexedTopics,
 	getSignature,
@@ -34,6 +37,7 @@ export {
 	matchesFilter,
 	matchesTopics,
 	sortLogs,
+	toRpc,
 	wasRemoved,
 };
 
@@ -53,6 +57,8 @@ export function EventLog(params) {
 
 EventLog.from = (params) => from(params);
 EventLog.create = (params) => create(params);
+EventLog.fromRpc = (rpcLog) => fromRpc(rpcLog);
+EventLog.toRpc = (log) => toRpc(log);
 
 // Static methods - support both regular calls and .call(this) pattern
 EventLog.getTopic0 = function (log) {

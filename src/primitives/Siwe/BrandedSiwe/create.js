@@ -1,4 +1,5 @@
-import { generateNonce } from "./generateNonce.js";
+import * as OxSiwe from "ox/Siwe";
+import * as Address from "../../Address/BrandedAddress/index.js";
 
 /**
  * Create a new SIWE message with default values
@@ -33,14 +34,39 @@ import { generateNonce } from "./generateNonce.js";
  * ```
  */
 export function create(params) {
+	// Convert address to hex for ox
+	const addressHex = Address.toHex(params.address);
+
+	// Build ox message (with Date objects for timestamps)
+	/** @type {import('ox/Siwe').Message} */
+	const oxMessage = {
+		domain: params.domain,
+		address: addressHex,
+		uri: params.uri,
+		version: "1",
+		chainId: params.chainId,
+		nonce: params.nonce || OxSiwe.generateNonce(),
+		...(params.issuedAt
+			? { issuedAt: new Date(params.issuedAt) }
+			: { issuedAt: new Date() }),
+		...(params.statement ? { statement: params.statement } : {}),
+		...(params.expirationTime
+			? { expirationTime: new Date(params.expirationTime) }
+			: {}),
+		...(params.notBefore ? { notBefore: new Date(params.notBefore) } : {}),
+		...(params.requestId ? { requestId: params.requestId } : {}),
+		...(params.resources ? { resources: params.resources } : {}),
+	};
+
+	// Convert back to Voltaire format (ISO strings)
 	return {
 		domain: params.domain,
 		address: params.address,
 		uri: params.uri,
 		version: "1",
 		chainId: params.chainId,
-		nonce: params.nonce || generateNonce(),
-		issuedAt: params.issuedAt || new Date().toISOString(),
+		nonce: oxMessage.nonce,
+		issuedAt: oxMessage.issuedAt?.toISOString() || new Date().toISOString(),
 		...(params.statement ? { statement: params.statement } : {}),
 		...(params.expirationTime ? { expirationTime: params.expirationTime } : {}),
 		...(params.notBefore ? { notBefore: params.notBefore } : {}),

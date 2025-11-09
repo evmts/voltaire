@@ -1,3 +1,6 @@
+import * as OxSiwe from "ox/Siwe";
+import * as Address from "../../Address/BrandedAddress/index.js";
+
 /**
  * Parse a SIWE message from a formatted string
  *
@@ -22,148 +25,126 @@
  * ```
  */
 export function parse(text) {
-	const lines = text.split("\n");
-	let lineIndex = 0;
+	try {
+		// Validate domain header format before ox parsing
+		const lines = text.split("\n");
+		if (
+			!lines[0] ||
+			!lines[0].match(/^.+ wants you to sign in with your Ethereum account:$/)
+		) {
+			throw new Error("missing domain header");
+		}
 
-	// Parse header
-	const headerMatch = lines[lineIndex]?.match(
-		/^(.+) wants you to sign in with your Ethereum account:$/,
-	);
-	if (!headerMatch || !headerMatch[1]) {
-		throw new Error("Invalid SIWE message: missing domain header");
-	}
-	const domain = headerMatch[1];
-	lineIndex++;
-
-	// Parse address (hex string)
-	const addressHex = lines[lineIndex]?.trim();
-	if (!addressHex || !/^0x[0-9a-fA-F]{40}$/i.test(addressHex)) {
-		throw new Error("Invalid SIWE message: missing or invalid address");
-	}
-
-	// Convert hex string to Uint8Array (Address type)
-	const addressBytes = new Uint8Array(20);
-	for (let i = 0; i < 20; i++) {
-		addressBytes[i] = Number.parseInt(
-			addressHex.slice(2 + i * 2, 4 + i * 2),
-			16,
+		// Normalize address to lowercase to avoid checksum validation issues
+		// ox validates checksums strictly, but SIWE spec allows mixed case
+		const normalizedText = text.replace(
+			/0x[0-9a-fA-F]{40}/,
+			(match) => match.toLowerCase(),
 		);
-	}
-	const address =
-		/** @type {import('../../Address/BrandedAddress/BrandedAddress.js').BrandedAddress} */ (
-			addressBytes
-		);
-	lineIndex++;
 
-	// Skip empty line
-	if (lines[lineIndex]?.trim() === "") {
-		lineIndex++;
-	}
+		// Extract multiline statement manually (ox doesn't support this)
+		let statement;
+		const statementLines = [];
+		let lineIdx = 2; // Start after domain and address lines
 
-	// Parse optional statement (lines until next empty line or field)
-	let statement;
-	const statementLines = [];
-	while (
-		lineIndex < lines.length &&
-		lines[lineIndex]?.trim() !== "" &&
-		!lines[lineIndex]?.includes(":")
-	) {
-		const line = lines[lineIndex];
-		if (line) {
-			statementLines.push(line);
-		}
-		lineIndex++;
-	}
-	if (statementLines.length > 0) {
-		statement = statementLines.join("\n");
-	}
-
-	// Skip empty line before fields
-	if (lines[lineIndex]?.trim() === "") {
-		lineIndex++;
-	}
-
-	// Parse required and optional fields
-	/** @type {Record<string, string>} */
-	const fields = {};
-	/** @type {string[]} */
-	const resources = [];
-	let inResources = false;
-
-	while (lineIndex < lines.length) {
-		const line = lines[lineIndex];
-
-		if (line === "Resources:") {
-			inResources = true;
-			lineIndex++;
-			continue;
+		// Skip empty line after address
+		if (lines[lineIdx]?.trim() === "") {
+			lineIdx++;
 		}
 
-		if (inResources) {
-			const resourceMatch = line?.match(/^-\s*(.+)$/);
-			if (resourceMatch) {
-				const resource = resourceMatch[1];
-				if (resource) {
-					resources.push(resource);
-				}
-			}
-			lineIndex++;
-			continue;
+		// Collect statement lines until empty line or field with colon
+		while (
+			lineIdx < lines.length &&
+			lines[lineIdx]?.trim() !== "" &&
+			!lines[lineIdx]?.includes(":")
+		) {
+			statementLines.push(lines[lineIdx]);
+			lineIdx++;
+		}
+		if (statementLines.length > 0) {
+			statement = statementLines.join("\n");
 		}
 
-		const fieldMatch = line?.match(/^([^:]+):\s*(.+)$/);
-		if (fieldMatch) {
-			const key = fieldMatch[1];
-			const value = fieldMatch[2];
-			if (key && value) {
-				fields[key] = value;
+		// Use ox to parse the message
+		const oxMessage = OxSiwe.parseMessage(normalizedText);
+
+		// Convert address from hex to BrandedAddress
+		const address = Address.from(oxMessage.address);
+
+		// Extract original timestamp strings from text to preserve format
+		const issuedAtMatch = text.match(/Issued At:\s*(.+)/);
+		const expirationTimeMatch = text.match(/Expiration Time:\s*(.+)/);
+		const notBeforeMatch = text.match(/Not Before:\s*(.+)/);
+
+		// Validate required fields are actually present in the text
+		if (!text.includes("URI:")) {
+			throw new Error("missing required fields");
+		}
+		if (!text.includes("Version:")) {
+			throw new Error("missing required fields");
+		}
+		if (!text.includes("Chain ID:")) {
+			throw new Error("missing required fields");
+		}
+		if (!text.includes("Nonce:")) {
+			throw new Error("missing required fields");
+		}
+		if (!text.includes("Issued At:")) {
+			throw new Error("missing required fields");
+		}
+
+		// Validate chain ID is a number
+		const chainIdMatch = text.match(/Chain ID:\s*(.+)/);
+		if (chainIdMatch?.[1]) {
+			const chainIdValue = chainIdMatch[1].trim();
+			if (!/^\d+$/.test(chainIdValue)) {
+				throw new Error("Chain ID must be a number");
 			}
 		}
-		lineIndex++;
+
+		// Convert Date objects to ISO strings, preserving original format when possible
+		/** @type {import('./BrandedMessage.js').BrandedMessage} */
+		const message = {
+			domain: oxMessage.domain || "",
+			address,
+			uri: oxMessage.uri || "",
+			version: oxMessage.version || "1",
+			chainId: oxMessage.chainId || 1,
+			nonce: oxMessage.nonce || "",
+			issuedAt: issuedAtMatch?.[1] || oxMessage.issuedAt?.toISOString() || "",
+			// Use manually extracted multiline statement if available, otherwise use ox's
+			...(statement ? { statement } : oxMessage.statement ? { statement: oxMessage.statement } : {}),
+			...(oxMessage.expirationTime
+				? {
+						expirationTime:
+							expirationTimeMatch?.[1] ||
+							oxMessage.expirationTime.toISOString(),
+					}
+				: {}),
+			...(oxMessage.notBefore
+				? {
+						notBefore:
+							notBeforeMatch?.[1] || oxMessage.notBefore.toISOString(),
+					}
+				: {}),
+			...(oxMessage.requestId ? { requestId: oxMessage.requestId } : {}),
+			...(oxMessage.resources ? { resources: oxMessage.resources } : {}),
+		};
+
+		return message;
+	} catch (error) {
+		// Map error messages to expected Voltaire format
+		const errMsg = error instanceof Error ? error.message : String(error);
+
+		// Map ox error messages to Voltaire-expected messages
+		if (errMsg.includes("Unsupported address value type")) {
+			throw new Error("Invalid SIWE message: missing or invalid address");
+		}
+		if (errMsg.includes("Invalid message field") && errMsg.includes("domain")) {
+			throw new Error("Invalid SIWE message: missing domain header");
+		}
+
+		// Re-throw with clearer message
+		throw new Error(`Invalid SIWE message: ${errMsg}`);
 	}
-
-	// Extract and validate required fields
-	const uri = fields["URI"];
-	const version = fields["Version"];
-	const chainIdStr = fields["Chain ID"];
-	const nonce = fields["Nonce"];
-	const issuedAt = fields["Issued At"];
-
-	if (!uri || !version || !chainIdStr || !nonce || !issuedAt) {
-		throw new Error(
-			"Invalid SIWE message: missing required fields (URI, Version, Chain ID, Nonce, Issued At)",
-		);
-	}
-
-	// After the check above, we know these are non-null strings
-	const validatedUri = uri;
-	const validatedVersion = version;
-	const validatedNonce = nonce;
-	const validatedIssuedAt = issuedAt;
-
-	const chainId = Number.parseInt(chainIdStr, 10);
-	if (isNaN(chainId)) {
-		throw new Error("Invalid SIWE message: Chain ID must be a number");
-	}
-
-	// Build message with proper optional property handling
-	/** @type {import('./BrandedMessage.js').BrandedMessage} */
-	const message = {
-		domain,
-		address,
-		uri: validatedUri,
-		version: validatedVersion,
-		chainId,
-		nonce: validatedNonce,
-		issuedAt: validatedIssuedAt,
-		...(statement ? { statement } : {}),
-		...(fields["Expiration Time"]
-			? { expirationTime: fields["Expiration Time"] }
-			: {}),
-		...(fields["Not Before"] ? { notBefore: fields["Not Before"] } : {}),
-		...(fields["Request ID"] ? { requestId: fields["Request ID"] } : {}),
-		...(resources.length > 0 ? { resources } : {}),
-	};
-
-	return message;
 }

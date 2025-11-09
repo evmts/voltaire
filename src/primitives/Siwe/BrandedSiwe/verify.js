@@ -1,5 +1,5 @@
 import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import * as Address from "../../Address/index.js";
+import * as Address from "../../Address/BrandedAddress/index.js";
 import { getMessageHash } from "./getMessageHash.js";
 import { validate } from "./validate.js";
 

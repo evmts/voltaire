@@ -17,7 +17,7 @@ import { hashStruct } from "./hashStruct.js";
  */
 export function hashTypedData(typedData) {
 	// Hash domain separator
-	const domainHash = hashDomain(typedData.domain);
+	const domainSeparator = hashDomain(typedData.domain);
 
 	// Hash message struct
 	const messageHash = hashStruct(
@@ -26,14 +26,14 @@ export function hashTypedData(typedData) {
 		typedData.types,
 	);
 
-	// EIP-712 prefix + domain + message
-	const prefix = new Uint8Array([0x19, 0x01]);
-	const combined = new Uint8Array(2 + 32 + 32);
-	combined.set(prefix, 0);
-	combined.set(domainHash, 2);
-	combined.set(messageHash, 34);
+	// Concatenate: 0x19 0x01 ‖ domainSeparator ‖ messageHash
+	const data = new Uint8Array(2 + 32 + 32);
+	data[0] = 0x19;
+	data[1] = 0x01;
+	data.set(domainSeparator, 2);
+	data.set(messageHash, 34);
 
 	return /** @type {import('../../primitives/Hash/index.js').BrandedHash} */ (
-		keccak_256(combined)
+		keccak_256(data)
 	);
 }

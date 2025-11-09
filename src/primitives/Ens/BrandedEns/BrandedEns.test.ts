@@ -71,4 +71,35 @@ describe("Ens", () => {
 			expect(result).toBe("vitalik.eth");
 		});
 	});
+
+	describe("namehash", () => {
+		it("should compute namehash for domain", () => {
+			const result = Ens.namehash("vitalik.eth");
+			expect(result).toBe("0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835");
+		});
+
+		it("should compute namehash for subdomain", () => {
+			const result = Ens.namehash("sub.vitalik.eth");
+			expect(result).toHaveLength(66); // 0x + 64 hex chars
+			expect(result).toMatch(/^0x[0-9a-f]{64}$/);
+		});
+
+		it("should compute namehash for empty name", () => {
+			const result = Ens.namehash("");
+			expect(result).toBe("0x0000000000000000000000000000000000000000000000000000000000000000");
+		});
+	});
+
+	describe("labelhash", () => {
+		it("should compute labelhash for label", () => {
+			const result = Ens.labelhash("vitalik");
+			expect(result).toBe("0xaf2caa1c2ca1d027f1ac823b529d0a67cd144264b2789fa2ea4d63a67c7103cc");
+		});
+
+		it("should compute labelhash for different label", () => {
+			const result = Ens.labelhash("eth");
+			expect(result).toHaveLength(66); // 0x + 64 hex chars
+			expect(result).toMatch(/^0x[0-9a-f]{64}$/);
+		});
+	});
 });

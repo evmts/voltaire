@@ -15,6 +15,19 @@
  * ```
  */
 export function validate(message, options) {
+	// Run legacy validation first for detailed error messages
+	// (ox validation is too permissive for our use case)
+	return validateLegacy(message, options);
+}
+
+// Legacy validation for detailed error messages
+/**
+ * @param {import('./BrandedMessage.js').BrandedMessage} message
+ * @param {Object} [options]
+ * @param {Date} [options.now]
+ * @returns {import('./BrandedMessage.js').ValidationResult}
+ */
+function validateLegacy(message, options) {
 	// Domain validation
 	if (!message.domain || message.domain.length === 0) {
 		return {
