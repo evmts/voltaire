@@ -4,12 +4,12 @@
 		"rootDir": "src",
 		"outDir": "types",
 		"skipLibCheck": true,
-		"types": ["bun-types"],
-		"checkJs": false
+		"types": ["bun-types"]
 	},
 	"include": ["src", "src/**/*.json"],
 	"exclude": [
 		"node_modules",
+		"node_modules/**/*",
 		"src/content/docs/primitives/abi",
 		"src/content/docs/primitives/accesslist",
 		"src/content/docs/primitives/authorization",
