@@ -148,6 +148,16 @@
 				"default": "./dist/primitives/Denomination/index.cjs"
 			}
 		},
+		"./Ens": {
+			"import": {
+				"types": "./types/primitives/Ens/index.d.ts",
+				"default": "./dist/primitives/Ens/index.js"
+			},
+			"require": {
+				"types": "./types/primitives/Ens/index.d.ts",
+				"default": "./dist/primitives/Ens/index.cjs"
+			}
+		},
 		"./EventLog": {
 			"import": {
 				"types": "./types/primitives/EventLog/index.d.ts",
@@ -156,6 +166,16 @@
 			"require": {
 				"types": "./types/primitives/EventLog/index.d.ts",
 				"default": "./dist/primitives/EventLog/index.cjs"
+			}
+		},
+		"./errors": {
+			"import": {
+				"types": "./types/primitives/errors/index.d.ts",
+				"default": "./dist/primitives/errors/index.js"
+			},
+			"require": {
+				"types": "./types/primitives/errors/index.d.ts",
+				"default": "./dist/primitives/errors/index.cjs"
 			}
 		},
 		"./FeeMarket": {
