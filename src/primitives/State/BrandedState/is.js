@@ -14,11 +14,11 @@
  */
 export function is(value) {
 	if (typeof value !== "object" || value === null) return false;
-	/** @type {Record<string, any>} */
-	const obj = value;
 	return (
-		obj.address instanceof Uint8Array &&
-		obj.address.length === 20 &&
-		typeof obj.slot === "bigint"
+		"address" in value &&
+		value["address"] instanceof Uint8Array &&
+		value["address"].length === 20 &&
+		"slot" in value &&
+		typeof value["slot"] === "bigint"
 	);
 }

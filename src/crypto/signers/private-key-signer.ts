@@ -62,7 +62,7 @@ export class PrivateKeySignerImpl implements Signer {
 				throw new Error("Private key must be 32 bytes (64 hex characters)");
 			}
 			privateKeyBytes = new Uint8Array(
-				hex.match(/.{1,2}/g)?.map((byte) => Number.parseInt(byte, 16)),
+				hex.match(/.{1,2}/g)?.map((byte) => Number.parseInt(byte, 16)) ?? [],
 			);
 		} else {
 			privateKeyBytes = new Uint8Array(options.privateKey);

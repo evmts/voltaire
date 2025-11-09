@@ -30,7 +30,8 @@ export function fromPrivateKey(privateKey) {
 	try {
 		pubkey = derivePublicKey(privateKey);
 	} catch (error) {
-		throw new InvalidValueError(`Invalid private key: ${error.message}`);
+		const message = error instanceof Error ? error.message : String(error);
+		throw new InvalidValueError(`Invalid private key: ${message}`);
 	}
 
 	// Extract x and y coordinates (32 bytes each, big-endian)
@@ -38,8 +39,8 @@ export function fromPrivateKey(privateKey) {
 	let y = 0n;
 
 	for (let i = 0; i < 32; i++) {
-		x = (x << 8n) | BigInt(pubkey[i]);
-		y = (y << 8n) | BigInt(pubkey[i + 32]);
+		x = (x << 8n) | BigInt(pubkey[i] ?? 0);
+		y = (y << 8n) | BigInt(pubkey[i + 32] ?? 0);
 	}
 
 	// Call fromPublicKey to derive address

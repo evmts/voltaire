@@ -1,7 +1,7 @@
 /**
  * Concatenate multiple hashes
  *
- * @param {...import('./BrandedHash.ts').BrandedHash[]} hashes - Hashes to concatenate
+ * @param {...import('./BrandedHash.ts').BrandedHash} hashes - Hashes to concatenate
  * @returns {Uint8Array} Concatenated bytes
  *
  * @example

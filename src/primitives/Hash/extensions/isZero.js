@@ -1,5 +1,3 @@
-import { ZERO } from "./constants.js";
-
 /**
  * Check if hash is zero (all bytes are 0)
  *
