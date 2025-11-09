@@ -70,9 +70,7 @@ export function AccessList(value) {
 }
 
 AccessList.from = (value) => from(value);
-AccessList.from.prototype = AccessList.prototype;
 AccessList.fromBytes = (value) => fromBytes(value);
-AccessList.fromBytes.prototype = AccessList.prototype;
 
 AccessList.is = is;
 AccessList.isItem = isItem;

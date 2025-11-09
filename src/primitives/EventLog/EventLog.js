@@ -52,9 +52,7 @@ export function EventLog(params) {
 }
 
 EventLog.from = (params) => from(params);
-EventLog.from.prototype = EventLog.prototype;
 EventLog.create = (params) => create(params);
-EventLog.create.prototype = EventLog.prototype;
 
 // Static methods - support both regular calls and .call(this) pattern
 EventLog.getTopic0 = function (log) {

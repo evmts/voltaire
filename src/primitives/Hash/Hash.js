@@ -23,21 +23,18 @@ Hash.from = (value) => {
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
-Hash.from.prototype = Hash.prototype;
 
 Hash.fromBytes = (value) => {
 	const result = BrandedHash.fromBytes(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
-Hash.fromBytes.prototype = Hash.prototype;
 
 Hash.fromHex = (value) => {
 	const result = BrandedHash.fromHex(value);
 	Object.setPrototypeOf(result, Hash.prototype);
 	return result;
 };
-Hash.fromHex.prototype = Hash.prototype;
 
 // Static utility methods
 Hash.isHash = BrandedHash.isHash;

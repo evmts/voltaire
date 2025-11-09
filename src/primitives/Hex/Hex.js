@@ -17,22 +17,16 @@ export function Hex(value) {
 
 // Static constructors
 Hex.from = (value) => BrandedHex.from(value);
-Hex.from.prototype = Hex.prototype;
 
 Hex.fromBytes = (value) => BrandedHex.fromBytes(value);
-Hex.fromBytes.prototype = Hex.prototype;
 
 Hex.fromNumber = (value, size) => BrandedHex.fromNumber(value, size);
-Hex.fromNumber.prototype = Hex.prototype;
 
 Hex.fromBigInt = (value, size) => BrandedHex.fromBigInt(value, size);
-Hex.fromBigInt.prototype = Hex.prototype;
 
 Hex.fromString = (value) => BrandedHex.fromString(value);
-Hex.fromString.prototype = Hex.prototype;
 
 Hex.fromBoolean = (value) => BrandedHex.fromBoolean(value);
-Hex.fromBoolean.prototype = Hex.prototype;
 
 // Static utility methods
 Hex.isHex = BrandedHex.isHex;

@@ -19,7 +19,6 @@ Abi.from = (items) => {
 	Object.setPrototypeOf(result, Abi.prototype);
 	return result;
 };
-Abi.from.prototype = Abi.prototype;
 
 // Static utility methods
 Abi.getItem = BrandedAbi.getItem;

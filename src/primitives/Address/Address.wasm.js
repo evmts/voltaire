@@ -531,25 +531,18 @@ export function Address(value) {
 
 // Static factory methods
 Address.from = (value) => from(value);
-Address.from.prototype = Address.prototype;
 
 Address.fromBase64 = (value) => Uint8Array.fromBase64(value);
-Address.fromBase64.prototype = Address.prototype;
 
 Address.fromHex = (value) => fromHex(value);
-Address.fromHex.prototype = Address.prototype;
 
 Address.fromBytes = (value) => fromBytes(value);
-Address.fromBytes.prototype = Address.prototype;
 
 Address.fromNumber = (value) => fromNumber(value);
-Address.fromNumber.prototype = Address.prototype;
 
 Address.fromPublicKey = (x, y) => fromPublicKey(x, y);
-Address.fromPublicKey.prototype = Address.prototype;
 
 Address.fromAbiEncoded = (value) => fromAbiEncoded(value);
-Address.fromAbiEncoded.prototype = Address.prototype;
 
 // Static utility methods
 Address.toHex = toHex;

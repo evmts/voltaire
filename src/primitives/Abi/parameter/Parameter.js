@@ -12,7 +12,6 @@ export function Parameter(param) {
 Parameter.from = (param) => {
 	return BrandedParameter.from(param);
 };
-Parameter.from.prototype = Parameter.prototype;
 
 // Static methods (these throw - not implemented, use Abi.encodeParameters/decodeParameters)
 Parameter.encode = BrandedParameter.encode;

@@ -100,17 +100,11 @@ export function Uint(value) {
 }
 
 Uint.from = (value) => from(value);
-Uint.from.prototype = Uint.prototype;
 Uint.fromHex = (value) => fromHex(value);
-Uint.fromHex.prototype = Uint.prototype;
 Uint.fromBigInt = (value) => fromBigInt(value);
-Uint.fromBigInt.prototype = Uint.prototype;
 Uint.fromNumber = (value) => fromNumber(value);
-Uint.fromNumber.prototype = Uint.prototype;
 Uint.fromBytes = (value) => fromBytes(value);
-Uint.fromBytes.prototype = Uint.prototype;
 Uint.fromAbiEncoded = (value) => fromAbiEncoded(value);
-Uint.fromAbiEncoded.prototype = Uint.prototype;
 
 Uint.tryFrom = tryFrom;
 Uint.isValid = isValid;

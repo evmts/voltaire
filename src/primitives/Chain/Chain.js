@@ -37,14 +37,12 @@ Chain.from = (chain) => {
 	Object.setPrototypeOf(result, Chain.prototype);
 	return result;
 };
-Chain.from.prototype = Chain.prototype;
 
 Chain.fromId = (id) => {
 	const result = BrandedChain.fromId(id);
 	if (result) Object.setPrototypeOf(result, Chain.prototype);
 	return result;
 };
-Chain.fromId.prototype = Chain.prototype;
 
 // Static utility property (doesn't return Chain instances)
 Chain.byId = BrandedChain.byId;
