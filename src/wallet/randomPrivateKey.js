@@ -24,7 +24,7 @@ export function randomPrivateKey() {
 	let privKeyBigInt = 0n;
 	for (let i = 0; i < 32; i++) {
 		const byte = privateKey[i];
-		if (byte === undefined) throw new Error("Invalid byte at index " + i);
+		if (byte === undefined) throw new Error(`Invalid byte at index ${i}`);
 		privKeyBigInt = (privKeyBigInt << 8n) | BigInt(byte);
 	}
 
