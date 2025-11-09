@@ -1,4 +1,4 @@
-import { decode } from "./decode.js";
+import * as OxBase64 from "ox/Base64";
 
 /**
  * Decode URL-safe base64 string to bytes
@@ -8,11 +8,5 @@ import { decode } from "./decode.js";
  * @throws {Error} If input is invalid
  */
 export function decodeUrlSafe(encoded) {
-	let standard = encoded.replace(/-/g, "+").replace(/_/g, "/");
-
-	const pad = encoded.length % 4;
-	if (pad === 2) standard += "==";
-	else if (pad === 3) standard += "=";
-
-	return decode(standard);
+	return OxBase64.toBytes(encoded);
 }

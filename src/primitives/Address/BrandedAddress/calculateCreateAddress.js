@@ -1,6 +1,35 @@
-import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
-import { encode } from "../../Rlp/BrandedRlp/encode.js";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { encode as rlpEncode } from "../../Rlp/BrandedRlp/encode.js";
 import { InvalidValueError } from "./errors.js";
+
+/**
+ * Encode bigint as minimal RLP bytes (no leading zeros)
+ * @param {bigint} num
+ * @returns {Uint8Array}
+ */
+function encodeNonce(num) {
+	if (num === 0n) {
+		return new Uint8Array(0);
+	}
+
+	// Count bytes needed
+	let n = num;
+	let byteCount = 0;
+	while (n > 0n) {
+		byteCount++;
+		n >>= 8n;
+	}
+
+	// Encode big-endian
+	const bytes = new Uint8Array(byteCount);
+	n = num;
+	for (let i = byteCount - 1; i >= 0; i--) {
+		bytes[i] = Number(n & 0xffn);
+		n >>= 8n;
+	}
+
+	return bytes;
+}
 
 /**
  * Calculate CREATE contract address
@@ -22,22 +51,13 @@ export function calculateCreateAddress(address, nonce) {
 		throw new InvalidValueError("Nonce cannot be negative");
 	}
 
-	let nonceBytes;
-	if (nonce === 0n) {
-		nonceBytes = new Uint8Array(0);
-	} else {
-		const hex = nonce.toString(16);
-		const hexPadded = hex.length % 2 === 0 ? hex : `0${hex}`;
-		const byteLength = hexPadded.length / 2;
-		nonceBytes = new Uint8Array(byteLength);
-		for (let i = 0; i < byteLength; i++) {
-			nonceBytes[i] = Number.parseInt(hexPadded.slice(i * 2, i * 2 + 2), 16);
-		}
-	}
+	// RLP encode [address, nonce]
+	const nonceBytes = encodeNonce(nonce);
+	const encoded = rlpEncode([address, nonceBytes]);
 
-	const encoded = encode([address, nonceBytes]);
+	// Hash and take last 20 bytes
 	const hash = keccak256(encoded);
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
-		hash.slice(12, 32)
+		hash.slice(12)
 	);
 }

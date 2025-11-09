@@ -1,10 +1,5 @@
-import {
-	InvalidCharacterError,
-	InvalidFormatError,
-	OddLengthError,
-} from "./errors.js";
+import * as OxHex from "ox/Hex";
 import { fromBytes } from "./fromBytes.js";
-import { hexCharToValue } from "./utils.js";
 
 /**
  * Concatenate multiple hex strings
@@ -18,18 +13,6 @@ import { hexCharToValue } from "./utils.js";
  * ```
  */
 export function concat(...hexes) {
-	const allBytes = hexes.flatMap((h) => {
-		if (!h.startsWith("0x")) throw new InvalidFormatError();
-		const hexDigits = h.slice(2);
-		if (hexDigits.length % 2 !== 0) throw new OddLengthError();
-		const bytes = new Uint8Array(hexDigits.length / 2);
-		for (let i = 0; i < hexDigits.length; i += 2) {
-			const high = hexCharToValue(hexDigits[i]);
-			const low = hexCharToValue(hexDigits[i + 1]);
-			if (high === null || low === null) throw new InvalidCharacterError();
-			bytes[i / 2] = high * 16 + low;
-		}
-		return Array.from(bytes);
-	});
+	const allBytes = hexes.flatMap((h) => Array.from(OxHex.toBytes(h)));
 	return fromBytes(new Uint8Array(allBytes));
 }

@@ -1,1 +1,1 @@
-export { toBigInt } from 'ox/Hex';
+export { toBigInt } from "ox/Hex";

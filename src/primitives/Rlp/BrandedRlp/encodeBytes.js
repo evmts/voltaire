@@ -1,4 +1,4 @@
-import { encodeLengthValue } from "./utils.js";
+import * as OxRlp from "ox/Rlp";
 
 /**
  * Encodes a byte array according to RLP string rules
@@ -30,24 +30,5 @@ import { encodeLengthValue } from "./utils.js";
  * - > 55 bytes: [0xb7 + length_of_length, ...length_bytes, ...bytes]
  */
 export function encodeBytes(bytes) {
-	// Single byte < 0x80: encoded as itself
-	if (bytes.length === 1 && (bytes[0] ?? 0) < 0x80) {
-		return bytes;
-	}
-
-	// Short string (0-55 bytes)
-	if (bytes.length < 56) {
-		const result = new Uint8Array(1 + bytes.length);
-		result[0] = 0x80 + bytes.length;
-		result.set(bytes, 1);
-		return result;
-	}
-
-	// Long string (56+ bytes)
-	const lengthBytes = encodeLengthValue(bytes.length);
-	const result = new Uint8Array(1 + lengthBytes.length + bytes.length);
-	result[0] = 0xb7 + lengthBytes.length;
-	result.set(lengthBytes, 1);
-	result.set(bytes, 1 + lengthBytes.length);
-	return result;
+	return OxRlp.from(bytes, { as: "Bytes" });
 }

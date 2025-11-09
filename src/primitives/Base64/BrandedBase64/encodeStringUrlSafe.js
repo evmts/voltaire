@@ -1,4 +1,4 @@
-import { encodeUrlSafe } from "./encodeUrlSafe.js";
+import * as OxBase64 from "ox/Base64";
 
 /**
  * Encode string to URL-safe base64
@@ -7,6 +7,5 @@ import { encodeUrlSafe } from "./encodeUrlSafe.js";
  * @returns {string} URL-safe base64 string
  */
 export function encodeStringUrlSafe(str) {
-	const encoder = new TextEncoder();
-	return encodeUrlSafe(encoder.encode(str));
+	return OxBase64.fromString(str, { url: true }).replace(/=/g, "");
 }

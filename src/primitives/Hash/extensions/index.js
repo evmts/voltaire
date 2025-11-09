@@ -22,4 +22,3 @@ export { isHash } from "./isHash.js";
 export { isValidHex } from "./isValidHex.js";
 
 export { ZERO, SIZE } from "./constants.js";
-export type { BrandedHash } from "./BrandedHash.ts";

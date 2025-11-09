@@ -1,6 +1,6 @@
+import * as OxAddress from "ox/Address";
 import { InvalidValueError } from "./errors.js";
 import { fromBytes } from "./fromBytes.js";
-import { fromHex } from "./fromHex.js";
 import { fromNumber } from "./fromNumber.js";
 
 /**
@@ -25,7 +25,14 @@ export function from(value) {
 		return fromNumber(value);
 	}
 	if (typeof value === "string") {
-		return fromHex(value);
+		// Use ox for hex string parsing (delegates to ox)
+		const hexResult = OxAddress.from(value);
+		// Convert back to bytes
+		const bytes = new Uint8Array(20);
+		for (let i = 0; i < 20; i++) {
+			bytes[i] = Number.parseInt(hexResult.slice(2 + i * 2, 2 + i * 2 + 2), 16);
+		}
+		return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (bytes);
 	}
 	if (value instanceof Uint8Array) {
 		return fromBytes(value);

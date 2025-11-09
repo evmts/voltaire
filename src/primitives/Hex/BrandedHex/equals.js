@@ -1,1 +1,1 @@
-export { isEqual as equals } from 'ox/Hex';
+export { isEqual as equals } from "ox/Hex";

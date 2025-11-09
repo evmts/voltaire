@@ -1,5 +1,4 @@
-import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
-import { SIZE } from "./constants.js";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import { InvalidValueError } from "./errors.js";
 
 /**
@@ -24,33 +23,40 @@ import { InvalidValueError } from "./errors.js";
  * ```
  */
 export function calculateCreate2Address(address, salt, initCode) {
-	// Normalize salt to Uint8Array(32)
+	// Convert salt to bytes
 	let saltBytes;
 	if (typeof salt === "bigint") {
 		if (salt < 0n) {
 			throw new InvalidValueError("Salt cannot be negative");
 		}
 		saltBytes = new Uint8Array(32);
+		let s = salt;
 		for (let i = 31; i >= 0; i--) {
-			saltBytes[i] = Number(salt & 0xffn);
-			salt = salt >> 8n;
+			saltBytes[i] = Number(s & 0xffn);
+			s >>= 8n;
 		}
-	} else {
-		saltBytes = salt;
-		if (saltBytes.length !== 32) {
+	} else if (salt instanceof Uint8Array) {
+		if (salt.length !== 32) {
 			throw new Error("Salt must be 32 bytes");
 		}
+		saltBytes = salt;
+	} else {
+		throw new Error("Salt must be bigint or Uint8Array");
 	}
 
+	// Hash init code
 	const initCodeHash = keccak256(initCode);
-	const data = new Uint8Array(1 + SIZE + 32 + 32);
+
+	// Concatenate: 0xff ++ address ++ salt ++ initCodeHash
+	const data = new Uint8Array(1 + 20 + 32 + 32);
 	data[0] = 0xff;
 	data.set(address, 1);
-	data.set(saltBytes, 1 + SIZE);
-	data.set(initCodeHash, 1 + SIZE + 32);
+	data.set(saltBytes, 21);
+	data.set(initCodeHash, 53);
 
+	// Hash and take last 20 bytes
 	const hash = keccak256(data);
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
-		hash.slice(12, 32)
+		hash.slice(12)
 	);
 }

@@ -1,1 +1,1 @@
-export { fromBytes } from 'ox/Hex';
+export { fromBytes } from "ox/Hex";

@@ -1,4 +1,4 @@
-import { decodeUrlSafe } from "./decodeUrlSafe.js";
+import * as OxBase64 from "ox/Base64";
 
 /**
  * Decode URL-safe base64 to UTF-8 string
@@ -7,6 +7,5 @@ import { decodeUrlSafe } from "./decodeUrlSafe.js";
  * @returns {string} Decoded string
  */
 export function decodeUrlSafeToString(encoded) {
-	const decoder = new TextDecoder();
-	return decoder.decode(decodeUrlSafe(encoded));
+	return OxBase64.toString(encoded);
 }

@@ -1,1 +1,1 @@
-export { random } from 'ox/Hex';
+export { random } from "ox/Hex";

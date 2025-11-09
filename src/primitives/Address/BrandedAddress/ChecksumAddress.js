@@ -1,4 +1,4 @@
-import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 import { from as fromAddress } from "./from.js";
 import { fromHex } from "./fromHex.js";
 import { isValid as isValidAddress } from "./isValid.js";
@@ -9,7 +9,7 @@ import { toHex } from "./toHex.js";
  */
 
 /**
- * Create checksummed address from Address
+ * Create checksummed address from Address (EIP-55)
  *
  * @param {number | bigint | string | Uint8Array} value - Number, bigint, hex string, or Uint8Array
  * @returns {Checksummed} Checksummed address hex string
@@ -22,22 +22,29 @@ import { toHex } from "./toHex.js";
  */
 export function from(value) {
 	const addr = fromAddress(value);
-	const lower = toHex(addr).slice(2);
-	const hashBytes = keccak256(new TextEncoder().encode(lower));
-	const hashHex = Array.from(hashBytes, (b) =>
-		b.toString(16).padStart(2, "0"),
-	).join("");
-	let result = "0x";
-	for (let i = 0; i < 40; i++) {
-		const ch = lower[i];
-		if (ch !== undefined && ch >= "a" && ch <= "f") {
-			const hv = Number.parseInt(hashHex[i] ?? "0", 16);
-			result += hv >= 8 ? ch.toUpperCase() : ch;
-		} else {
-			result += ch ?? "";
-		}
+	const hex = toHex(addr);
+
+	// Remove 0x prefix for hashing
+	const addrLower = hex.slice(2).toLowerCase();
+
+	// Hash the lowercase address
+	const hash = keccak256(new TextEncoder().encode(addrLower));
+
+	// Apply checksum: uppercase if hash nibble >= 8
+	let checksummed = "0x";
+	for (let i = 0; i < addrLower.length; i++) {
+		const char = addrLower[i];
+		if (char === undefined) break;
+
+		const hashByte = hash[Math.floor(i / 2)];
+		if (hashByte === undefined) break;
+
+		const hashNibble = i % 2 === 0 ? hashByte >> 4 : hashByte & 0x0f;
+
+		checksummed += hashNibble >= 8 ? char.toUpperCase() : char;
 	}
-	return /** @type {Checksummed} */ (result);
+
+	return /** @type {Checksummed} */ (checksummed);
 }
 
 /**

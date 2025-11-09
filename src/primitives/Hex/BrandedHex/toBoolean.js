@@ -1,9 +1,4 @@
-import {
-	InvalidCharacterError,
-	InvalidFormatError,
-	OddLengthError,
-} from "./errors.js";
-import { hexCharToValue } from "./utils.js";
+import * as OxHex from "ox/Hex";
 
 /**
  * Convert hex to boolean
@@ -19,15 +14,6 @@ import { hexCharToValue } from "./utils.js";
  * ```
  */
 export function toBoolean(hex) {
-	if (!hex.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = hex.slice(2);
-	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
-	const bytes = new Uint8Array(hexDigits.length / 2);
-	for (let i = 0; i < hexDigits.length; i += 2) {
-		const high = hexCharToValue(hexDigits[i]);
-		const low = hexCharToValue(hexDigits[i + 1]);
-		if (high === null || low === null) throw new InvalidCharacterError();
-		bytes[i / 2] = high * 16 + low;
-	}
+	const bytes = OxHex.toBytes(hex);
 	return bytes.some((b) => b !== 0);
 }

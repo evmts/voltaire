@@ -1,1 +1,1 @@
-export { fromString } from 'ox/Hex';
+export { fromString } from "ox/Hex";

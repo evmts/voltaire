@@ -1,3 +1,6 @@
+import * as OxAddress from "ox/Address";
+import { toHex } from "./toHex.js";
+
 /**
  * Check if two addresses are equal
  *
@@ -13,9 +16,5 @@
  * ```
  */
 export function equals(address, other) {
-	if (address.length !== other.length) return false;
-	for (let i = 0; i < address.length; i++) {
-		if (address[i] !== other[i]) return false;
-	}
-	return true;
+	return OxAddress.isEqual(toHex(address), toHex(other));
 }

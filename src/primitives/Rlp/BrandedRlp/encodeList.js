@@ -1,5 +1,4 @@
-import { encode } from "./encode.js";
-import { encodeLengthValue } from "./utils.js";
+import * as OxRlp from "ox/Rlp";
 
 /**
  * Encodes a list of RLP-encodable items
@@ -31,33 +30,5 @@ import { encodeLengthValue } from "./utils.js";
  * - If total >= 56: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
  */
 export function encodeList(items) {
-	// Encode each item
-	const encodedItems = items.map((item) => encode(item));
-
-	// Calculate total length
-	const totalLength = encodedItems.reduce((sum, item) => sum + item.length, 0);
-
-	// Short list (total payload < 56 bytes)
-	if (totalLength < 56) {
-		const result = new Uint8Array(1 + totalLength);
-		result[0] = 0xc0 + totalLength;
-		let offset = 1;
-		for (const item of encodedItems) {
-			result.set(item, offset);
-			offset += item.length;
-		}
-		return result;
-	}
-
-	// Long list (total payload >= 56 bytes)
-	const lengthBytes = encodeLengthValue(totalLength);
-	const result = new Uint8Array(1 + lengthBytes.length + totalLength);
-	result[0] = 0xf7 + lengthBytes.length;
-	result.set(lengthBytes, 1);
-	let offset = 1 + lengthBytes.length;
-	for (const item of encodedItems) {
-		result.set(item, offset);
-		offset += item.length;
-	}
-	return result;
+	return OxRlp.from(items, { as: "Bytes" });
 }

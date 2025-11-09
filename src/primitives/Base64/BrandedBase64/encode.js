@@ -1,3 +1,5 @@
+import * as OxBase64 from "ox/Base64";
+
 /**
  * Encode bytes to standard base64 string
  *
@@ -15,9 +17,5 @@
  * ```
  */
 export function encode(data) {
-	let binary = "";
-	for (let i = 0; i < data.length; i++) {
-		binary += String.fromCharCode(data[i] ?? 0);
-	}
-	return btoa(binary);
+	return OxBase64.fromBytes(data);
 }

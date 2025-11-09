@@ -1,6 +1,6 @@
+import * as OxRlp from "ox/Rlp";
 import { MAX_DEPTH } from "./constants.js";
 import { Error } from "./errors.js";
-import { decodeLengthValue } from "./utils.js";
 
 /**
  * @typedef {{
@@ -8,6 +8,168 @@ import { decodeLengthValue } from "./utils.js";
  *   remainder: Uint8Array;
  * }} Decoded
  */
+
+/**
+ * Calculate the total length of an RLP-encoded item and validate canonical encoding
+ * @internal
+ * @param {Uint8Array} bytes
+ * @returns {number}
+ */
+function getRlpItemLength(bytes) {
+	if (bytes.length === 0) {
+		throw new Error("InputTooShort", "Cannot decode empty input");
+	}
+
+	const prefix = bytes[0];
+	if (prefix === undefined) {
+		throw new Error("InputTooShort", "Cannot decode empty input");
+	}
+
+	// Single byte [0x00, 0x7f]
+	if (prefix <= 0x7f) {
+		return 1;
+	}
+
+	// Short string [0x80, 0xb7]
+	if (prefix <= 0xb7) {
+		const length = prefix - 0x80;
+
+		// Check for non-canonical encoding: single byte < 0x80 should not be prefixed
+		if (length === 1 && bytes.length > 1) {
+			const nextByte = bytes[1];
+			if (nextByte !== undefined && nextByte < 0x80) {
+				throw new Error(
+					"NonCanonicalSize",
+					"Single byte < 0x80 should not be prefixed",
+				);
+			}
+		}
+
+		if (bytes.length < 1 + length) {
+			throw new Error(
+				"InputTooShort",
+				`Expected ${1 + length} bytes, got ${bytes.length}`,
+			);
+		}
+		return 1 + length;
+	}
+
+	// Long string [0xb8, 0xbf]
+	if (prefix <= 0xbf) {
+		const lengthOfLength = prefix - 0xb7;
+		if (bytes.length < 1 + lengthOfLength) {
+			throw new Error(
+				"InputTooShort",
+				`Expected ${1 + lengthOfLength} bytes for length, got ${bytes.length}`,
+			);
+		}
+
+		// Check for leading zeros
+		if (bytes[1] === 0) {
+			throw new Error("LeadingZeros", "Length encoding has leading zeros");
+		}
+
+		let length = 0;
+		for (let i = 0; i < lengthOfLength; i++) {
+			const byte = bytes[1 + i];
+			if (byte === undefined) {
+				throw new Error("InputTooShort", "Unexpected end of input");
+			}
+			length = length * 256 + byte;
+		}
+
+		// Check for non-canonical encoding: < 56 bytes should use short form
+		if (length < 56) {
+			throw new Error(
+				"NonCanonicalSize",
+				"String < 56 bytes should use short form",
+			);
+		}
+
+		if (bytes.length < 1 + lengthOfLength + length) {
+			throw new Error(
+				"InputTooShort",
+				`Expected ${1 + lengthOfLength + length} bytes, got ${bytes.length}`,
+			);
+		}
+		return 1 + lengthOfLength + length;
+	}
+
+	// Short list [0xc0, 0xf7]
+	if (prefix <= 0xf7) {
+		const length = prefix - 0xc0;
+		if (bytes.length < 1 + length) {
+			throw new Error(
+				"InputTooShort",
+				`Expected ${1 + length} bytes, got ${bytes.length}`,
+			);
+		}
+		return 1 + length;
+	}
+
+	// Long list [0xf8, 0xff]
+	const lengthOfLength = prefix - 0xf7;
+	if (bytes.length < 1 + lengthOfLength) {
+		throw new Error(
+			"InputTooShort",
+			`Expected ${1 + lengthOfLength} bytes for length, got ${bytes.length}`,
+		);
+	}
+
+	// Check for leading zeros
+	if (bytes[1] === 0) {
+		throw new Error("LeadingZeros", "Length encoding has leading zeros");
+	}
+
+	let length = 0;
+	for (let i = 0; i < lengthOfLength; i++) {
+		const byte = bytes[1 + i];
+		if (byte === undefined) {
+			throw new Error("InputTooShort", "Unexpected end of input");
+		}
+		length = length * 256 + byte;
+	}
+
+	// Check for non-canonical encoding: < 56 bytes should use short form
+	if (length < 56) {
+		throw new Error(
+			"NonCanonicalSize",
+			"List < 56 bytes should use short form",
+		);
+	}
+
+	if (bytes.length < 1 + lengthOfLength + length) {
+		throw new Error(
+			"InputTooShort",
+			`Expected ${1 + lengthOfLength + length} bytes, got ${bytes.length}`,
+		);
+	}
+	return 1 + lengthOfLength + length;
+}
+
+/**
+ * Convert ox/Rlp decoded value to Data structure with depth tracking
+ * @internal
+ * @param {Uint8Array | any[]} value
+ * @param {number} depth
+ * @returns {import('./BrandedRlp.js').BrandedRlp}
+ */
+function toData(value, depth = 0) {
+	// Check recursion depth
+	if (depth >= MAX_DEPTH) {
+		throw new Error(
+			"RecursionDepthExceeded",
+			`Maximum recursion depth ${MAX_DEPTH} exceeded`,
+		);
+	}
+
+	if (value instanceof Uint8Array) {
+		return { type: "bytes", value };
+	} else if (Array.isArray(value)) {
+		return { type: "list", value: value.map((item) => toData(item, depth + 1)) };
+	}
+	throw new Error("UnexpectedInput", "Invalid decoded value type");
+}
 
 /**
  * Decodes RLP-encoded bytes
@@ -38,236 +200,39 @@ export function decode(bytes, stream = false) {
 		throw new Error("InputTooShort", "Cannot decode empty input");
 	}
 
-	const decoded = decodeInternal(bytes, 0);
+	try {
+		// Calculate item length to determine remainder
+		const itemLength = getRlpItemLength(bytes);
+		const item = bytes.slice(0, itemLength);
+		const remainder = bytes.slice(itemLength);
 
-	if (!stream && decoded.remainder.length > 0) {
-		throw new Error(
-			"InvalidRemainder",
-			`Extra data after decoded value: ${decoded.remainder.length} bytes`,
-		);
-	}
-
-	return decoded;
-}
-
-/**
- * Internal decode implementation with depth tracking
- * @internal
- *
- * @param {Uint8Array} bytes
- * @param {number} depth
- * @returns {Decoded}
- */
-function decodeInternal(bytes, depth) {
-	// Check recursion depth
-	if (depth >= MAX_DEPTH) {
-		throw new Error(
-			"RecursionDepthExceeded",
-			`Maximum recursion depth ${MAX_DEPTH} exceeded`,
-		);
-	}
-
-	// Check for empty input
-	if (bytes.length === 0) {
-		throw new Error("InputTooShort", "Unexpected end of input");
-	}
-
-	const prefix = bytes[0];
-	if (prefix === undefined) {
-		throw new Error("InputTooShort", "Unexpected end of input");
-	}
-
-	// Single byte [0x00, 0x7f]
-	if (prefix <= 0x7f) {
-		return {
-			data: { type: "bytes", value: Uint8Array.of(prefix) },
-			remainder: bytes.slice(1),
-		};
-	}
-
-	// Short string [0x80, 0xb7]
-	if (prefix <= 0xb7) {
-		const length = prefix - 0x80;
-
-		// Empty string
-		if (length === 0) {
-			return {
-				data: { type: "bytes", value: new Uint8Array(0) },
-				remainder: bytes.slice(1),
-			};
-		}
-
-		// Check for non-canonical encoding
-		const nextByte = bytes[1];
-		if (
-			length === 1 &&
-			bytes.length > 1 &&
-			nextByte !== undefined &&
-			nextByte < 0x80
-		) {
+		if (!stream && remainder.length > 0) {
 			throw new Error(
-				"NonCanonicalSize",
-				"Single byte < 0x80 should not be prefixed",
+				"InvalidRemainder",
+				`Extra data after decoded value: ${remainder.length} bytes`,
 			);
 		}
 
-		// Check sufficient data
-		if (bytes.length < 1 + length) {
-			throw new Error(
-				"InputTooShort",
-				`Expected ${1 + length} bytes, got ${bytes.length}`,
-			);
-		}
+		// Decode using ox/Rlp
+		const value = OxRlp.toBytes(item);
 
 		return {
-			data: { type: "bytes", value: bytes.slice(1, 1 + length) },
-			remainder: bytes.slice(1 + length),
+			data: toData(value),
+			remainder,
 		};
+	} catch (err) {
+		// Map ox/Rlp errors to Voltaire error format
+		if (err instanceof globalThis.Error && !(err instanceof Error)) {
+			const msg = err.message;
+			if (msg.includes("empty") || msg.includes("too short")) {
+				throw new Error("InputTooShort", msg);
+			}
+			if (msg.includes("canonical") || msg.includes("invalid")) {
+				throw new Error("NonCanonicalSize", msg);
+			}
+			// Re-throw as generic error
+			throw new Error("UnexpectedInput", msg);
+		}
+		throw err;
 	}
-
-	// Long string [0xb8, 0xbf]
-	if (prefix <= 0xbf) {
-		const lengthOfLength = prefix - 0xb7;
-
-		// Check for leading zeros
-		if (bytes.length < 2 || bytes[1] === 0) {
-			throw new Error("LeadingZeros", "Length encoding has leading zeros");
-		}
-
-		// Decode length
-		if (bytes.length < 1 + lengthOfLength) {
-			throw new Error(
-				"InputTooShort",
-				`Expected ${1 + lengthOfLength} bytes for length, got ${bytes.length}`,
-			);
-		}
-
-		const length = decodeLengthValue(bytes.slice(1, 1 + lengthOfLength));
-
-		// Check for non-canonical encoding
-		if (length < 56) {
-			throw new Error(
-				"NonCanonicalSize",
-				"String < 56 bytes should use short form",
-			);
-		}
-
-		// Check sufficient data
-		if (bytes.length < 1 + lengthOfLength + length) {
-			throw new Error(
-				"InputTooShort",
-				`Expected ${1 + lengthOfLength + length} bytes, got ${bytes.length}`,
-			);
-		}
-
-		return {
-			data: {
-				type: "bytes",
-				value: bytes.slice(1 + lengthOfLength, 1 + lengthOfLength + length),
-			},
-			remainder: bytes.slice(1 + lengthOfLength + length),
-		};
-	}
-
-	// Short list [0xc0, 0xf7]
-	if (prefix <= 0xf7) {
-		const length = prefix - 0xc0;
-
-		// Empty list
-		if (length === 0) {
-			return {
-				data: { type: "list", value: [] },
-				remainder: bytes.slice(1),
-			};
-		}
-
-		// Check sufficient data
-		if (bytes.length < 1 + length) {
-			throw new Error(
-				"InputTooShort",
-				`Expected ${1 + length} bytes, got ${bytes.length}`,
-			);
-		}
-
-		// Decode list items
-		const items = [];
-		let offset = 1;
-		const end = 1 + length;
-
-		while (offset < end) {
-			const itemDecoded = decodeInternal(bytes.slice(offset), depth + 1);
-			items.push(itemDecoded.data);
-			offset += bytes.slice(offset).length - itemDecoded.remainder.length;
-		}
-
-		if (offset !== end) {
-			throw new Error("InvalidLength", "List payload length mismatch");
-		}
-
-		return {
-			data: { type: "list", value: items },
-			remainder: bytes.slice(end),
-		};
-	}
-
-	// Long list [0xf8, 0xff]
-	if (prefix <= 0xff) {
-		const lengthOfLength = prefix - 0xf7;
-
-		// Check for leading zeros
-		if (bytes.length < 2 || bytes[1] === 0) {
-			throw new Error("LeadingZeros", "Length encoding has leading zeros");
-		}
-
-		// Decode length
-		if (bytes.length < 1 + lengthOfLength) {
-			throw new Error(
-				"InputTooShort",
-				`Expected ${1 + lengthOfLength} bytes for length, got ${bytes.length}`,
-			);
-		}
-
-		const length = decodeLengthValue(bytes.slice(1, 1 + lengthOfLength));
-
-		// Check for non-canonical encoding
-		if (length < 56) {
-			throw new Error(
-				"NonCanonicalSize",
-				"List < 56 bytes should use short form",
-			);
-		}
-
-		// Check sufficient data
-		if (bytes.length < 1 + lengthOfLength + length) {
-			throw new Error(
-				"InputTooShort",
-				`Expected ${1 + lengthOfLength + length} bytes, got ${bytes.length}`,
-			);
-		}
-
-		// Decode list items
-		const items = [];
-		let offset = 1 + lengthOfLength;
-		const end = 1 + lengthOfLength + length;
-
-		while (offset < end) {
-			const itemDecoded = decodeInternal(bytes.slice(offset), depth + 1);
-			items.push(itemDecoded.data);
-			offset += bytes.slice(offset).length - itemDecoded.remainder.length;
-		}
-
-		if (offset !== end) {
-			throw new Error("InvalidLength", "List payload length mismatch");
-		}
-
-		return {
-			data: { type: "list", value: items },
-			remainder: bytes.slice(end),
-		};
-	}
-
-	throw new Error(
-		"UnexpectedInput",
-		`Invalid RLP prefix: 0x${prefix.toString(16)}`,
-	);
 }

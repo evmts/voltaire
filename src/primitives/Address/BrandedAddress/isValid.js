@@ -1,4 +1,4 @@
-import { HEX_SIZE } from "./constants.js";
+import * as OxAddress from "ox/Address";
 
 /**
  * Check if string is valid address format (standard form)
@@ -14,8 +14,7 @@ import { HEX_SIZE } from "./constants.js";
  * ```
  */
 export function isValid(str) {
-	if (!str.startsWith("0x")) {
-		return str.length === 40 && /^[0-9a-fA-F]{40}$/.test(str);
-	}
-	return str.length === HEX_SIZE && /^0x[0-9a-fA-F]{40}$/.test(str);
+	// Normalize to 0x format for ox validation
+	const normalized = str.startsWith("0x") ? str : `0x${str}`;
+	return OxAddress.validate(normalized, { strict: false });
 }

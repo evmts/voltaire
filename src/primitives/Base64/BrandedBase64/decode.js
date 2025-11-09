@@ -1,3 +1,5 @@
+import * as OxBase64 from "ox/Base64";
+
 /**
  * Decode standard base64 string to bytes
  *
@@ -12,13 +14,16 @@
  * ```
  */
 export function decode(encoded) {
-	try {
-		const binary = atob(encoded);
-		const bytes = new Uint8Array(binary.length);
-		for (let i = 0; i < binary.length; i++) {
-			bytes[i] = binary.charCodeAt(i);
+	// Validate before decoding
+	if (encoded.length > 0) {
+		const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+		if (!base64Regex.test(encoded) || encoded.length % 4 !== 0) {
+			throw new Error("Invalid base64");
 		}
-		return bytes;
+	}
+
+	try {
+		return OxBase64.toBytes(encoded);
 	} catch (error) {
 		throw new Error(`Invalid base64: ${error}`);
 	}

@@ -1,10 +1,5 @@
-import {
-	InvalidCharacterError,
-	InvalidFormatError,
-	OddLengthError,
-} from "./errors.js";
+import * as OxHex from "ox/Hex";
 import { fromBytes } from "./fromBytes.js";
-import { hexCharToValue } from "./utils.js";
 
 /**
  * Pad hex to right (suffix with zeros)
@@ -21,16 +16,7 @@ import { hexCharToValue } from "./utils.js";
  * ```
  */
 export function padRight(hex, targetSize) {
-	if (!hex.startsWith("0x")) throw new InvalidFormatError();
-	const hexDigits = hex.slice(2);
-	if (hexDigits.length % 2 !== 0) throw new OddLengthError();
-	const bytes = new Uint8Array(hexDigits.length / 2);
-	for (let i = 0; i < hexDigits.length; i += 2) {
-		const high = hexCharToValue(hexDigits[i]);
-		const low = hexCharToValue(hexDigits[i + 1]);
-		if (high === null || low === null) throw new InvalidCharacterError();
-		bytes[i / 2] = high * 16 + low;
-	}
+	const bytes = OxHex.toBytes(hex);
 	if (bytes.length >= targetSize) return fromBytes(bytes);
 	const padded = new Uint8Array(targetSize);
 	padded.set(bytes, 0);

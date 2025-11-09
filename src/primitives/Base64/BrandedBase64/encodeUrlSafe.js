@@ -1,4 +1,4 @@
-import { encode } from "./encode.js";
+import * as OxBase64 from "ox/Base64";
 
 /**
  * Encode bytes to URL-safe base64 string
@@ -17,5 +17,5 @@ import { encode } from "./encode.js";
  * ```
  */
 export function encodeUrlSafe(data) {
-	return encode(data).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+	return OxBase64.fromBytes(data, { url: true });
 }

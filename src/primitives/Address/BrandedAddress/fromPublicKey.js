@@ -1,4 +1,4 @@
-import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
+import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
 
 /**
  * Create Address from secp256k1 public key (standard form)
@@ -13,13 +13,22 @@ import { keccak256 } from "../../Hash/BrandedHash/keccak256.js";
  * ```
  */
 export function fromPublicKey(x, y) {
+	// Encode public key as 64 bytes (uncompressed, no prefix)
 	const pubkey = new Uint8Array(64);
-	for (let i = 31; i >= 0; i--) {
+
+	// Encode x coordinate (32 bytes, big-endian)
+	for (let i = 0; i < 32; i++) {
 		pubkey[31 - i] = Number((x >> BigInt(i * 8)) & 0xffn);
+	}
+
+	// Encode y coordinate (32 bytes, big-endian)
+	for (let i = 0; i < 32; i++) {
 		pubkey[63 - i] = Number((y >> BigInt(i * 8)) & 0xffn);
 	}
+
+	// Hash and take last 20 bytes
 	const hash = keccak256(pubkey);
 	return /** @type {import('./BrandedAddress.js').BrandedAddress} */ (
-		hash.slice(12, 32)
+		hash.slice(12)
 	);
 }
