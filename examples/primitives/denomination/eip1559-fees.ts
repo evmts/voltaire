@@ -8,16 +8,10 @@
  * - Transaction fee budgeting
  */
 
-import * as Wei from "../../../src/primitives/Denomination/Wei.js";
-import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
 import * as Ether from "../../../src/primitives/Denomination/Ether.js";
+import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
+import * as Wei from "../../../src/primitives/Denomination/Wei.js";
 import * as Uint from "../../../src/primitives/Uint/index.js";
-
-console.log("\n=== EIP-1559 Fee Calculations ===\n");
-
-// Example 1: Basic EIP-1559 fee structure
-console.log("1. EIP-1559 Fee Structure\n");
-console.log("   -----------------------");
 
 interface EIP1559Params {
 	baseFeePerGas: Gwei.Type;
@@ -63,23 +57,6 @@ const params: EIP1559Params = {
 
 const costs = calculateEIP1559Cost(params);
 
-console.log(`   Base Fee: ${params.baseFeePerGas} Gwei`);
-console.log(`   Priority Fee: ${params.maxPriorityFeePerGas} Gwei`);
-console.log(`   Max Fee: ${params.maxFeePerGas} Gwei`);
-console.log(`   Gas Limit: ${params.gasLimit}`);
-console.log("");
-console.log(`   Min Cost (base only): ${Wei.toGwei(costs.minCost)} Gwei`);
-console.log(
-	`   Estimated (base + priority): ${Wei.toGwei(costs.estimatedCost)} Gwei`,
-);
-console.log(`   Max Cost (worst case): ${Wei.toGwei(costs.maxCost)} Gwei`);
-
-console.log("");
-
-// Example 2: Calculate effective gas price
-console.log("2. Effective Gas Price\n");
-console.log("   --------------------");
-
 function calculateEffectiveGasPrice(
 	baseFee: Gwei.Type,
 	maxFeePerGas: Gwei.Type,
@@ -110,18 +87,7 @@ for (const scenario of scenarios) {
 		Gwei.from(scenario.max),
 		Gwei.from(scenario.priority),
 	);
-	console.log(`   ${scenario.name}:`);
-	console.log(
-		`     Base: ${scenario.base} Gwei, Priority: ${scenario.priority} Gwei, Max: ${scenario.max} Gwei`,
-	);
-	console.log(`     Effective: ${effective} Gwei`);
 }
-
-console.log("");
-
-// Example 3: Fee budgeting
-console.log("3. Transaction Fee Budgeting\n");
-console.log("   --------------------------");
 
 function canAffordTransaction(
 	balance: Wei.Type,
@@ -154,18 +120,6 @@ const gasLimit = 21_000n;
 
 const result = canAffordTransaction(balance, transferValue, maxFee, gasLimit);
 
-console.log(`   Balance: ${Number(Wei.toU256(balance)) / 1e18} ETH`);
-console.log(`   Transfer: ${Number(Wei.toU256(transferValue)) / 1e18} ETH`);
-console.log(`   Max Gas Fee: ${maxFee} Gwei × ${gasLimit} gas`);
-console.log(`   Can afford: ${result.canAfford ? "✓" : "✗"}`);
-console.log(`   Remaining: ${Number(Wei.toU256(result.remaining)) / 1e18} ETH`);
-
-console.log("");
-
-// Example 4: Miner tip percentage
-console.log("4. Miner Tip Analysis\n");
-console.log("   -------------------");
-
 function analyzeTip(
 	baseFee: Gwei.Type,
 	priorityFee: Gwei.Type,
@@ -197,20 +151,7 @@ for (const scenario of tipScenarios) {
 		Gwei.from(scenario.priority),
 		21_000n,
 	);
-
-	console.log(
-		`   Base: ${scenario.base} Gwei, Priority: ${scenario.priority} Gwei`,
-	);
-	console.log(`     Base Fee Paid: ${Wei.toGwei(analysis.baseFeePaid)} Gwei`);
-	console.log(`     Tip Paid: ${Wei.toGwei(analysis.tipPaid)} Gwei`);
-	console.log(`     Tip %: ${analysis.tipPercentage.toFixed(2)}%`);
 }
-
-console.log("");
-
-// Example 5: Fee savings calculation
-console.log("5. Fee Savings (Legacy vs EIP-1559)\n");
-console.log("   ----------------------------------");
 
 function compareLegacyVsEIP1559(
 	baseFee: Gwei.Type,
@@ -237,10 +178,3 @@ const comparison = compareLegacyVsEIP1559(
 	Gwei.from(50n), // Legacy gas price
 	21_000n,
 );
-
-console.log(`   Legacy (50 Gwei): ${Wei.toGwei(comparison.legacy)} Gwei total`);
-console.log(`   EIP-1559 (30+2): ${Wei.toGwei(comparison.eip1559)} Gwei total`);
-console.log(`   Savings: ${Wei.toGwei(comparison.savings)} Gwei`);
-console.log(`   Savings: ${Number(Wei.toU256(comparison.savings)) / 1e18} ETH`);
-
-console.log("\n=== Example Complete ===\n");

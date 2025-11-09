@@ -10,37 +10,14 @@
 
 import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
 
-console.log("\n=== Bytecode Validation Example ===\n");
-
-// ============================================================
-// Basic Validation
-// ============================================================
-
-console.log("--- Basic Validation ---\n");
-
 // Valid bytecode - all PUSH instructions complete
 const validCode = Bytecode.fromHex("0x60016002015b00");
-console.log(`Valid code: ${Bytecode.toHex(validCode)}`);
-console.log(`  Validation: ${Bytecode.validate(validCode)}`);
-console.log();
 
 // Invalid - PUSH1 without data
 const invalidPush1 = Bytecode.fromHex("0x60");
-console.log(`Incomplete PUSH1: ${Bytecode.toHex(invalidPush1)}`);
-console.log(`  Validation: ${Bytecode.validate(invalidPush1)}`);
-console.log();
 
 // Invalid - PUSH2 with only 1 byte
 const invalidPush2 = Bytecode.fromHex("0x6101");
-console.log(`Incomplete PUSH2: ${Bytecode.toHex(invalidPush2)}`);
-console.log(`  Validation: ${Bytecode.validate(invalidPush2)}`);
-console.log();
-
-// ============================================================
-// PUSH Instruction Validation
-// ============================================================
-
-console.log("--- PUSH Instruction Validation ---\n");
 
 // Test all PUSH sizes
 const pushTests = [
@@ -58,9 +35,6 @@ for (const test of pushTests) {
 		validBytes[i] = 0xff;
 	}
 	const valid = Bytecode.from(validBytes);
-	console.log(
-		`${test.name} valid (${test.size} bytes): ${Bytecode.validate(valid)}`,
-	);
 
 	// Invalid - incomplete PUSH (missing 1 byte)
 	const invalidBytes = new Uint8Array(test.size); // Missing 1 byte
@@ -69,17 +43,7 @@ for (const test of pushTests) {
 		invalidBytes[i] = 0xff;
 	}
 	const invalid = Bytecode.from(invalidBytes);
-	console.log(
-		`${test.name} incomplete (${test.size - 1} bytes): ${Bytecode.validate(invalid)}`,
-	);
-	console.log();
 }
-
-// ============================================================
-// Truncated Bytecode Detection
-// ============================================================
-
-console.log("--- Truncated Bytecode Detection ---\n");
 
 // Bytecode that ends mid-instruction
 const truncatedExamples = [
@@ -109,19 +73,7 @@ for (const example of truncatedExamples) {
 	const code = Bytecode.fromHex(example.hex);
 	const valid = Bytecode.validate(code);
 	const status = valid ? "✓" : "✗";
-
-	console.log(`${example.name}:`);
-	console.log(`  Hex: ${example.hex}`);
-	console.log(`  Expected: ${example.valid}`);
-	console.log(`  Actual: ${valid} ${status}`);
-	console.log();
 }
-
-// ============================================================
-// Safe Parsing Pattern
-// ============================================================
-
-console.log("--- Safe Parsing Pattern ---\n");
 
 function safeParse(hex: string): typeof Bytecode.prototype {
 	try {
@@ -151,20 +103,10 @@ const testCases = [
 for (const test of testCases) {
 	try {
 		const code = safeParse(test.hex);
-		console.log(`✓ Parsed: ${Bytecode.toHex(code)}`);
 	} catch (err) {
 		const expected = test.shouldPass ? "unexpected" : "expected";
-		console.log(`✗ Failed (${expected}): ${test.hex}`);
-		console.log(`  Error: ${err instanceof Error ? err.message : "Unknown"}`);
 	}
-	console.log();
 }
-
-// ============================================================
-// Validation Before Analysis
-// ============================================================
-
-console.log("--- Validation Before Analysis ---\n");
 
 function analyzeWithValidation(code: typeof Bytecode.prototype) {
 	if (!Bytecode.validate(code)) {
@@ -177,29 +119,14 @@ function analyzeWithValidation(code: typeof Bytecode.prototype) {
 try {
 	const validAnalysis = Bytecode.fromHex("0x60016002015b00");
 	const analysis = analyzeWithValidation(validAnalysis);
-	console.log("✓ Valid bytecode analyzed successfully");
-	console.log(`  Instructions: ${analysis.instructions.length}`);
-	console.log(`  Jump destinations: ${analysis.jumpDestinations.size}`);
 } catch (err) {
 	console.error(`Error: ${err instanceof Error ? err.message : "Unknown"}`);
 }
-console.log();
 
 try {
 	const invalidAnalysis = Bytecode.fromHex("0x60");
 	const analysis = analyzeWithValidation(invalidAnalysis);
-	console.log(`Should not reach here: ${analysis.valid}`);
-} catch (err) {
-	console.log("✓ Invalid bytecode rejected");
-	console.log(`  Error: ${err instanceof Error ? err.message : "Unknown"}`);
-}
-console.log();
-
-// ============================================================
-// Edge Cases
-// ============================================================
-
-console.log("--- Edge Cases ---\n");
+} catch (err) {}
 
 const edgeCases = [
 	{
@@ -242,21 +169,7 @@ for (const test of edgeCases) {
 	const valid = Bytecode.validate(test.code);
 	const match = valid === test.expectedValid;
 	const status = match ? "✓" : "✗";
-
-	console.log(`${test.name}: ${status}`);
-	console.log(`  Size: ${Bytecode.size(test.code)} bytes`);
-	console.log(`  Expected: ${test.expectedValid}`);
-	console.log(`  Actual: ${valid}`);
-	console.log();
 }
-
-// ============================================================
-// Validation vs Analysis
-// ============================================================
-
-console.log("--- Validation vs Analysis ---\n");
-
-console.log("Note: validate() checks structure, not semantics\n");
 
 const semanticTests = [
 	{
@@ -288,20 +201,7 @@ const semanticTests = [
 for (const test of semanticTests) {
 	const valid = Bytecode.validate(test.code);
 	const analysis = Bytecode.analyze(test.code);
-
-	console.log(`${test.name}:`);
-	console.log(`  Hex: ${Bytecode.toHex(test.code)}`);
-	console.log(`  Structure valid: ${valid}`);
-	console.log(`  Analysis valid: ${analysis.valid}`);
-	console.log(`  Note: ${test.note}`);
-	console.log();
 }
-
-// ============================================================
-// Batch Validation
-// ============================================================
-
-console.log("--- Batch Validation ---\n");
 
 const bytecodes = [
 	"0x60016002015b00",
@@ -314,22 +214,13 @@ const bytecodes = [
 
 let validCount = 0;
 let invalidCount = 0;
-
-console.log("Validating bytecode batch:");
 for (const hex of bytecodes) {
 	const code = Bytecode.fromHex(hex);
 	const valid = Bytecode.validate(code);
 
 	if (valid) {
 		validCount++;
-		console.log(`  ✓ ${hex.substring(0, 20)}${hex.length > 20 ? "..." : ""}`);
 	} else {
 		invalidCount++;
-		console.log(`  ✗ ${hex} (invalid)`);
 	}
 }
-
-console.log(`\nResults: ${validCount} valid, ${invalidCount} invalid`);
-console.log();
-
-console.log("=== Example Complete ===\n");

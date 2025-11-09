@@ -8,16 +8,10 @@
  * - Working with multiple denominations safely
  */
 
-import * as Wei from "../../../src/primitives/Denomination/Wei.js";
-import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
 import * as Ether from "../../../src/primitives/Denomination/Ether.js";
+import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
+import * as Wei from "../../../src/primitives/Denomination/Wei.js";
 import * as Uint from "../../../src/primitives/Uint/index.js";
-
-console.log("\n=== Arithmetic Operations with Denominations ===\n");
-
-// Example 1: Adding values in Wei
-console.log("1. Adding Wei Values\n");
-console.log("   ------------------");
 
 function addWei(...amounts: Wei.Type[]): Wei.Type {
 	let total = 0n;
@@ -32,17 +26,6 @@ const wallet2 = Wei.from(500_000_000_000_000_000n); // 0.5 ETH
 const wallet3 = Wei.from(250_000_000_000_000_000n); // 0.25 ETH
 
 const total = addWei(wallet1, wallet2, wallet3);
-
-console.log(`   Wallet 1: ${Number(Wei.toU256(wallet1)) / 1e18} ETH`);
-console.log(`   Wallet 2: ${Number(Wei.toU256(wallet2)) / 1e18} ETH`);
-console.log(`   Wallet 3: ${Number(Wei.toU256(wallet3)) / 1e18} ETH`);
-console.log(`   Total: ${Number(Wei.toU256(total)) / 1e18} ETH`);
-
-console.log("");
-
-// Example 2: Subtracting gas costs from balance
-console.log("2. Deducting Gas Costs\n");
-console.log("   -------------------");
 
 function deductGasCost(
 	balance: Wei.Type,
@@ -71,19 +54,6 @@ const gasCost = Wei.from(Uint.times(Gwei.toWei(gasPrice), Uint.from(gasUsed)));
 
 const result = deductGasCost(balance, gasCost);
 
-console.log(`   Balance: ${Number(Wei.toU256(balance)) / 1e18} ETH`);
-console.log(`   Gas cost: ${Number(Wei.toU256(gasCost)) / 1e18} ETH`);
-console.log(`   Sufficient: ${result.sufficient ? "✓" : "✗"}`);
-console.log(
-	`   New balance: ${Number(Wei.toU256(result.newBalance)) / 1e18} ETH`,
-);
-
-console.log("");
-
-// Example 3: Calculating percentages
-console.log("3. Percentage Calculations\n");
-console.log("   ------------------------");
-
 function calculatePercentage(
 	amount: Wei.Type,
 	percentage: bigint, // Basis points (100 = 1%)
@@ -105,18 +75,9 @@ const percentages = [
 	{ pct: 1000n, name: "10%" },
 	{ pct: 5000n, name: "50%" },
 ];
-
-console.log(`   Amount: ${Number(Wei.toU256(amount)) / 1e18} ETH`);
 for (const { pct, name } of percentages) {
 	const fee = calculatePercentage(amount, pct);
-	console.log(`   ${name}: ${Number(Wei.toU256(fee)) / 1e18} ETH`);
 }
-
-console.log("");
-
-// Example 4: Splitting values
-console.log("4. Splitting Values Equally\n");
-console.log("   -------------------------");
 
 function splitEqually(total: Wei.Type, parts: number): Wei.Type[] {
 	const totalU256 = Wei.toU256(total);
@@ -143,22 +104,10 @@ function splitEqually(total: Wei.Type, parts: number): Wei.Type[] {
 const totalAmount = Wei.from(1_000_000_000_000_000_000n); // 1 ETH
 const splitParts = 3;
 const shares = splitEqually(totalAmount, splitParts);
-
-console.log(`   Total: ${Number(Wei.toU256(totalAmount)) / 1e18} ETH`);
-console.log(`   Split into ${splitParts} parts:`);
-shares.forEach((share, i) => {
-	console.log(`     Part ${i + 1}: ${Number(Wei.toU256(share)) / 1e18} ETH`);
-});
+shares.forEach((share, i) => {});
 
 // Verify total
 const verifyTotal = addWei(...shares);
-console.log(`   Verify sum: ${Number(Wei.toU256(verifyTotal)) / 1e18} ETH`);
-
-console.log("");
-
-// Example 5: Weighted distribution
-console.log("5. Weighted Distribution\n");
-console.log("   ----------------------");
 
 function distributeWeighted(total: Wei.Type, weights: bigint[]): Wei.Type[] {
 	const totalU256 = Wei.toU256(total);
@@ -185,22 +134,10 @@ const totalPool = Wei.from(10_000_000_000_000_000_000n); // 10 ETH
 const weights = [50n, 30n, 20n]; // 50%, 30%, 20%
 
 const distribution = distributeWeighted(totalPool, weights);
-
-console.log(`   Total pool: ${Number(Wei.toU256(totalPool)) / 1e18} ETH`);
-console.log("   Distribution:");
 distribution.forEach((share, i) => {
 	const percentage =
 		(Number(weights[i]) / Number(weights.reduce((a, b) => a + b))) * 100;
-	console.log(
-		`     Share ${i + 1} (${percentage}%): ${Number(Wei.toU256(share)) / 1e18} ETH`,
-	);
 });
-
-console.log("");
-
-// Example 6: Safe denomination mixing
-console.log("6. Safe Denomination Mixing\n");
-console.log("   -------------------------");
 
 function combineAmounts(
 	ethAmount: Ether.Type,
@@ -222,19 +159,6 @@ const gweiPart = Gwei.from(500n); // 500 Gwei
 const weiPart = Wei.from(123_456_789n); // Some Wei
 
 const combined = combineAmounts(ethPart, gweiPart, weiPart);
-
-console.log("   Combining different denominations:");
-console.log(`     ${ethPart} Ether`);
-console.log(`     ${gweiPart} Gwei`);
-console.log(`     ${weiPart} Wei`);
-console.log(`   Total: ${combined} Wei`);
-console.log(`   Total: ${Number(Wei.toU256(combined)) / 1e18} ETH`);
-
-console.log("");
-
-// Example 7: Running balance with transactions
-console.log("7. Running Balance Tracker\n");
-console.log("   ------------------------");
 
 interface Transaction {
 	type: "credit" | "debit";
@@ -290,17 +214,8 @@ const transactions: Transaction[] = [
 ];
 
 const balanceHistory = processTransactions(initialBalance, transactions);
-
-console.log(
-	`   Initial balance: ${Number(Wei.toU256(balanceHistory[0])) / 1e18} ETH`,
-);
 transactions.forEach((tx, i) => {
 	const sign = tx.type === "credit" ? "+" : "-";
 	const amount = Number(Wei.toU256(tx.amount)) / 1e18;
 	const newBalance = Number(Wei.toU256(balanceHistory[i + 1])) / 1e18;
-	console.log(
-		`   ${sign}${amount} ETH (${tx.description}) → ${newBalance} ETH`,
-	);
 });
-
-console.log("\n=== Example Complete ===\n");

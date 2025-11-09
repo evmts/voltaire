@@ -71,8 +71,6 @@ function formatHash(hash: Uint8Array): string {
 		.join("")}`;
 }
 
-console.log("=== State Root Computation ===\n");
-
 // Create state trie
 const stateTrie = new Trie();
 
@@ -88,10 +86,6 @@ const account1: AccountState = {
 const encoded1 = encodeAccountState(account1);
 stateTrie.put(addr1, encoded1);
 
-console.log(`Account 1: ${formatAddress(addr1)}`);
-console.log(`  Nonce: ${account1.nonce}`);
-console.log(`  Balance: ${account1.balance} wei (1 ETH)`);
-
 // Account 2: Contract with storage
 const addr2 = new Uint8Array([0xab, ...new Array(19).fill(0)]);
 const account2: AccountState = {
@@ -103,10 +97,6 @@ const account2: AccountState = {
 
 const encoded2 = encodeAccountState(account2);
 stateTrie.put(addr2, encoded2);
-
-console.log(`\nAccount 2: ${formatAddress(addr2)}`);
-console.log(`  Nonce: ${account2.nonce}`);
-console.log(`  Balance: ${account2.balance} wei (0.5 ETH)`);
 
 // Account 3: Another EOA
 const addr3 = new Uint8Array([0x34, ...new Array(19).fill(0)]);
@@ -120,18 +110,8 @@ const account3: AccountState = {
 const encoded3 = encodeAccountState(account3);
 stateTrie.put(addr3, encoded3);
 
-console.log(`\nAccount 3: ${formatAddress(addr3)}`);
-console.log(`  Nonce: ${account3.nonce}`);
-console.log(`  Balance: ${account3.balance} wei (2.5 ETH)`);
-
 // Compute state root
 const stateRoot = stateTrie.rootHash();
-console.log("\n=== State Root ===");
-console.log(`Root Hash: ${stateRoot ? formatHash(stateRoot) : "null"}`);
-
-// Demonstrate that state root changes with state
-console.log("\n=== State Mutation ===");
-console.log("Updating Account 1 nonce to 6...");
 
 const account1Updated: AccountState = {
 	...account1,
@@ -142,10 +122,6 @@ const encoded1Updated = encodeAccountState(account1Updated);
 stateTrie.put(addr1, encoded1Updated);
 
 const newStateRoot = stateTrie.rootHash();
-console.log(
-	`New Root Hash: ${newStateRoot ? formatHash(newStateRoot) : "null"}`,
-);
-console.log("\n✓ Root hash changed (state is cryptographically committed)");
 
 /**
  * Usage Pattern:

@@ -10,12 +10,6 @@
 
 import * as Uint from "../../../src/primitives/Uint/index.js";
 
-console.log("\n=== Uint Utility Functions Example ===\n");
-
-// 1. Bit analysis
-console.log("1. Bit Analysis");
-console.log("   -----------");
-
 const values = [
 	Uint.ZERO,
 	Uint.ONE,
@@ -30,16 +24,7 @@ for (const val of values) {
 	const bitLen = val.bitLength();
 	const leadingZeros = val.leadingZeros();
 	const popCount = val.popCount();
-
-	console.log(`   Value: ${hex}`);
-	console.log(`   - Bit length: ${bitLen} bits`);
-	console.log(`   - Leading zeros: ${leadingZeros} bits`);
-	console.log(`   - Population count: ${popCount} set bits\n`);
 }
-
-// 2. Power of 2 detection
-console.log("2. Power of 2 Detection");
-console.log("   -------------------");
 
 function isPowerOfTwo(val: typeof Uint.prototype): boolean {
 	// Power of 2 has exactly one bit set
@@ -51,29 +36,11 @@ const testValues = [1n, 2n, 3n, 4n, 7n, 8n, 15n, 16n, 127n, 128n, 256n];
 for (const num of testValues) {
 	const val = Uint.from(num);
 	const isPow2 = isPowerOfTwo(val);
-	console.log(`   ${num} is power of 2? ${isPow2}`);
 }
-console.log();
-
-// 3. Min/max operations
-console.log("3. Min/Max Operations");
-console.log("   -----------------");
 
 const a = Uint.from(100n);
 const b = Uint.from(200n);
 const c = Uint.from(50n);
-
-console.log(
-	`   a = ${a.toString()}, b = ${b.toString()}, c = ${c.toString()}\n`,
-);
-console.log(`   min(a, b) = ${a.minimum(b).toString()}`);
-console.log(`   max(a, b) = ${a.maximum(b).toString()}`);
-console.log(`   min(a, c) = ${a.minimum(c).toString()}`);
-console.log(`   max(a, c) = ${a.maximum(c).toString()}\n`);
-
-// 4. Finding min/max in array
-console.log("4. Array Min/Max");
-console.log("   ------------");
 
 const numbers = [
 	Uint.from(150n),
@@ -83,17 +50,8 @@ const numbers = [
 	Uint.from(256n),
 ];
 
-console.log(`   Array: [${numbers.map((n) => n.toString()).join(", ")}]\n`);
-
 const min = numbers.reduce((acc, val) => acc.minimum(val));
 const max = numbers.reduce((acc, val) => acc.maximum(val));
-
-console.log(`   Minimum: ${min.toString()}`);
-console.log(`   Maximum: ${max.toString()}\n`);
-
-// 5. Sorting
-console.log("5. Sorting Array");
-console.log("   ------------");
 
 const unsorted = [
 	Uint.from(42n),
@@ -103,19 +61,11 @@ const unsorted = [
 	Uint.from(1n),
 ];
 
-console.log(`   Unsorted: [${unsorted.map((n) => n.toString()).join(", ")}]`);
-
 const sorted = [...unsorted].sort((x, y) => {
 	if (x.lessThan(y)) return -1;
 	if (x.greaterThan(y)) return 1;
 	return 0;
 });
-
-console.log(`   Sorted:   [${sorted.map((n) => n.toString()).join(", ")}]\n`);
-
-// 6. Clamping values
-console.log("6. Clamping Values");
-console.log("   --------------");
 
 function clamp(
 	val: typeof Uint.prototype,
@@ -135,17 +85,9 @@ const testClamp = [
 	Uint.from(200n),
 ];
 
-console.log(`   Range: [${min_val.toString()}, ${max_val.toString()}]\n`);
-
 for (const val of testClamp) {
 	const clamped = clamp(val, min_val, max_val);
-	console.log(`   clamp(${val.toString()}) = ${clamped.toString()}`);
 }
-console.log();
-
-// 7. Hamming distance
-console.log("7. Hamming Distance");
-console.log("   ---------------");
 
 function hammingDistance(
 	x: typeof Uint.prototype,
@@ -158,18 +100,6 @@ function hammingDistance(
 const val1 = Uint.from(0b1010n);
 const val2 = Uint.from(0b1100n);
 const val3 = Uint.from(0b0000n);
-
-console.log(`   ${val1.toString()} (0b${val1.toString(2)})`);
-console.log(`   ${val2.toString()} (0b${val2.toString(2)})`);
-console.log(`   Hamming distance: ${hammingDistance(val1, val2)} bits\n`);
-
-console.log(`   ${val1.toString()} (0b${val1.toString(2)})`);
-console.log(`   ${val3.toString()} (0b${val3.toString(2)})`);
-console.log(`   Hamming distance: ${hammingDistance(val1, val3)} bits\n`);
-
-// 8. Bit width requirements
-console.log("8. Bit Width Requirements");
-console.log("   ---------------------");
 
 function getRequiredType(val: typeof Uint.prototype): string {
 	const bits = val.bitLength();
@@ -194,15 +124,7 @@ const widthTests = [
 for (const val of widthTests) {
 	const type = getRequiredType(val);
 	const bits = val.bitLength();
-	console.log(
-		`   ${val.toString().slice(0, 30)}... requires ${type} (${bits} bits)`,
-	);
 }
-console.log();
-
-// 9. Finding median
-console.log("9. Finding Median");
-console.log("   -------------");
 
 function findMedian(
 	vals: (typeof Uint.prototype)[],
@@ -233,14 +155,7 @@ const medianTest = [
 	Uint.from(9n),
 	Uint.from(7n),
 ];
-
-console.log(`   Values: [${medianTest.map((n) => n.toString()).join(", ")}]`);
 const median = findMedian(medianTest);
-console.log(`   Median: ${median ? median.toString() : "undefined"}\n`);
-
-// 10. Bit density analysis
-console.log("10. Bit Density Analysis");
-console.log("    -------------------");
 
 function bitDensity(val: typeof Uint.prototype): number {
 	const total = val.bitLength();
@@ -259,15 +174,7 @@ const densityTests = [
 for (const val of densityTests) {
 	const density = bitDensity(val);
 	const percentage = (density * 100).toFixed(1);
-	console.log(
-		`   0b${val.toString(2)}: ${percentage}% bits set (${val.popCount()}/${val.bitLength()})`,
-	);
 }
-console.log();
-
-// 11. Parity check
-console.log("11. Parity Check");
-console.log("    -----------");
 
 function isEvenParity(val: typeof Uint.prototype): boolean {
 	return val.popCount() % 2 === 0;
@@ -286,10 +193,4 @@ const parityTests = [
 for (const val of parityTests) {
 	const even = isEvenParity(val);
 	const odd = isOddParity(val);
-	console.log(
-		`   0b${val.toString(2)}: ${val.popCount()} bits set, even parity? ${even}, odd parity? ${odd}`,
-	);
 }
-console.log();
-
-console.log("=== Example Complete ===\n");

@@ -11,12 +11,6 @@
 import { Chain } from "../../../src/primitives/Chain/Chain.js";
 import type { Chain as ChainType } from "../../../src/primitives/Chain/ChainType.js";
 
-console.log("\n=== RPC Endpoint Management Example ===\n");
-
-// RPC endpoint selection
-console.log("1. RPC Endpoint Selection");
-console.log("   ----------------------");
-
 function getPrimaryRpc(chainId: number): string | null {
 	const chain = Chain.fromId(chainId);
 	if (!chain || chain.rpc.length === 0) {
@@ -31,14 +25,8 @@ function getAllRpcEndpoints(chainId: number): string[] {
 }
 
 const quaiRpc = getPrimaryRpc(9);
-console.log(`   Quai primary RPC: ${quaiRpc ?? "None available"}`);
 
 const allQuaiRpcs = getAllRpcEndpoints(9);
-console.log(`   Quai total RPCs: ${allQuaiRpcs.length}\n`);
-
-// RPC fallback implementation
-console.log("2. RPC Fallback Strategy");
-console.log("   ---------------------");
 
 interface RpcResult<T> {
 	success: boolean;
@@ -49,10 +37,7 @@ interface RpcResult<T> {
 }
 
 // Simulated RPC call
-async function mockRpcCall<T>(
-	url: string,
-	shouldFail: boolean = false,
-): Promise<T> {
+async function mockRpcCall<T>(url: string, shouldFail = false): Promise<T> {
 	// Simulate network delay
 	await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -82,12 +67,7 @@ async function rpcCallWithFallback<T>(
 		const url = endpoints[i];
 
 		try {
-			console.log(
-				`   Attempting RPC ${i + 1}/${endpoints.length}: ${url.substring(0, 40)}...`,
-			);
 			const data = await rpcCall(url);
-
-			console.log(`   ✓ Success on attempt ${i + 1}\n`);
 			return {
 				success: true,
 				data,
@@ -95,10 +75,6 @@ async function rpcCallWithFallback<T>(
 				attemptNumber: i + 1,
 			};
 		} catch (error) {
-			console.log(
-				`   ✗ Failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-			);
-
 			if (i === endpoints.length - 1) {
 				return {
 					success: false,
@@ -120,11 +96,6 @@ async function rpcCallWithFallback<T>(
 
 // Simulate successful call
 const result = await rpcCallWithFallback(9, (url) => mockRpcCall(url, false));
-console.log(`   Final result: ${result.success ? "Success" : "Failed"}\n`);
-
-// RPC health tracking
-console.log("3. RPC Health Tracking");
-console.log("   -------------------");
 
 interface RpcHealth {
 	url: string;
@@ -169,20 +140,13 @@ class RpcHealthTracker {
 	async checkChain(chainId: number): Promise<void> {
 		const endpoints = getAllRpcEndpoints(chainId);
 
-		console.log(`   Checking ${endpoints.length} endpoints...\n`);
-
 		for (const url of endpoints.slice(0, 3)) {
 			// Limit to first 3
 			const healthy = await this.checkEndpoint(url);
 			const status = this.health.get(url);
-
-			console.log(`   ${url.substring(0, 40)}...`);
-			console.log(`     Status: ${healthy ? "✓ Healthy" : "✗ Unhealthy"}`);
 			if (status?.latency) {
-				console.log(`     Latency: ${status.latency}ms`);
 			}
 			if (status?.errorCount) {
-				console.log(`     Errors: ${status.errorCount}`);
 			}
 		}
 	}
@@ -195,12 +159,6 @@ class RpcHealthTracker {
 
 const tracker = new RpcHealthTracker();
 await tracker.checkChain(9);
-
-console.log();
-
-// Load balancing
-console.log("4. Load Balancing");
-console.log("   --------------");
 
 class RpcLoadBalancer {
 	private currentIndex: Map<number, number> = new Map();
@@ -225,8 +183,6 @@ class RpcLoadBalancer {
 		if (!url) {
 			throw new Error("No RPC endpoints available");
 		}
-
-		console.log(`   Using endpoint: ${url.substring(0, 40)}...`);
 		return rpcCall(url);
 	}
 }
@@ -237,16 +193,8 @@ const balancer = new RpcLoadBalancer();
 for (let i = 0; i < 3; i++) {
 	try {
 		await balancer.makeBalancedCall(9, (url) => mockRpcCall(url));
-	} catch (error) {
-		console.log(`   Error: ${error}`);
-	}
+	} catch (error) {}
 }
-
-console.log();
-
-// Custom RPC configuration
-console.log("5. Custom RPC Configuration");
-console.log("   ------------------------");
 
 interface ChainRpcConfig {
 	chainId: number;
@@ -275,17 +223,9 @@ const customConfig: ChainRpcConfig = {
 };
 
 const configuredRpcs = getRpcEndpoints(customConfig);
-console.log("   Configured RPC order (custom first):\n");
 configuredRpcs.slice(0, 4).forEach((url, i) => {
 	const type = i < customConfig.customRpcs.length ? "(custom)" : "(default)";
-	console.log(`   ${i + 1}. ${type} ${url.substring(0, 50)}...`);
 });
-
-console.log();
-
-// RPC endpoint validator
-console.log("6. RPC Endpoint Validation");
-console.log("   -----------------------");
 
 function isValidRpcUrl(url: string): boolean {
 	try {
@@ -318,14 +258,6 @@ function validateChainRpcs(chainId: number): {
 }
 
 const quaiValidation = validateChainRpcs(9);
-console.log(`   Quai RPC validation:`);
-console.log(`     Total: ${quaiValidation.total}`);
-console.log(`     Valid: ${quaiValidation.valid}`);
-console.log(`     Invalid: ${quaiValidation.invalid.length}\n`);
-
-// RPC configuration manager
-console.log("7. RPC Configuration Manager");
-console.log("   -------------------------");
 
 class RpcConfigManager {
 	private overrides: Map<number, string[]> = new Map();
@@ -355,22 +287,10 @@ class RpcConfigManager {
 }
 
 const manager = new RpcConfigManager();
-
-console.log("   Before override:");
 const defaultRpcs = manager.getRpcs(1);
-console.log(`     Ethereum: ${defaultRpcs.length} endpoints\n`);
 
 manager.setOverride(1, ["https://custom-rpc-1.example.com"]);
-
-console.log("   After override:");
 const overrideRpcs = manager.getRpcs(1);
-console.log(`     Ethereum: ${overrideRpcs.length} endpoint`);
-console.log(`     URL: ${overrideRpcs[0]}\n`);
 
 manager.clearOverride(1);
-
-console.log("   After clear:");
 const clearedRpcs = manager.getRpcs(1);
-console.log(`     Ethereum: ${clearedRpcs.length} endpoints (restored)\n`);
-
-console.log("=== Example Complete ===\n");

@@ -12,18 +12,10 @@
 import { Address } from "../../../src/primitives/Address/index.js";
 import { Bytes } from "../../../src/primitives/Bytes/index.js";
 
-console.log("=== CREATE2 Contract Deployment ===\n");
-
-// 1. Basic CREATE2 address calculation
-console.log("1. Basic CREATE2 Address Calculation\n");
-
 const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-console.log(`Deployer (factory): ${deployer.toChecksummed()}`);
 
 // Contract initialization code (bytecode)
 const initCode = Bytes.fromHex("0x608060405234801561001057600080fd5b50");
-console.log(`Init code: ${Bytes.toHex(initCode)}`);
-console.log();
 
 // Calculate with different salts
 const salt1 = 0n;
@@ -34,35 +26,13 @@ const contract1 = deployer.calculateCreate2Address(salt1, initCode);
 const contract2 = deployer.calculateCreate2Address(salt2, initCode);
 const contract3 = deployer.calculateCreate2Address(salt3, initCode);
 
-console.log(`Salt ${salt1}: ${contract1.toChecksummed()}`);
-console.log(`Salt ${salt2}: ${contract2.toChecksummed()}`);
-console.log(`Salt 0xcafebabe: ${contract3.toChecksummed()}`);
-console.log();
-
-// 2. Deterministic deployment
-console.log("2. Deterministic Deployment\n");
-
 // Same inputs always produce same address
 const addr1 = deployer.calculateCreate2Address(42n, initCode);
 const addr2 = deployer.calculateCreate2Address(42n, initCode);
 
-console.log("Same salt, same init code:");
-console.log(`First call:  ${addr1.toChecksummed()}`);
-console.log(`Second call: ${addr2.toChecksummed()}`);
-console.log(`Are equal: ${addr1.equals(addr2)}`);
-console.log();
-
 // Different init code = different address
 const initCode2 = Bytes.fromHex("0x608060405234801561001057600080fd5b51");
 const differentAddr = deployer.calculateCreate2Address(42n, initCode2);
-console.log("Same salt, different init code:");
-console.log(`Original: ${addr1.toChecksummed()}`);
-console.log(`Modified: ${differentAddr.toChecksummed()}`);
-console.log(`Are equal: ${addr1.equals(differentAddr)}`);
-console.log();
-
-// 3. CREATE2 Factory pattern
-console.log("3. CREATE2 Factory Pattern\n");
 
 class Create2Factory {
 	private factoryAddr: Address;
@@ -107,15 +77,7 @@ const factory = new Create2Factory(deployer);
 // Batch prediction
 const salts = [0n, 1n, 2n, 3n, 4n];
 const predicted = factory.batchPredict(salts, initCode);
-
-console.log("Batch address prediction:");
-predicted.forEach((addr, salt) => {
-	console.log(`  Salt ${salt}: ${addr.toChecksummed()}`);
-});
-console.log();
-
-// 4. Vanity address mining
-console.log("4. Vanity Address Mining\n");
+predicted.forEach((addr, salt) => {});
 
 function mineVanityAddress(
 	factory: Address,
@@ -142,23 +104,12 @@ function mineVanityAddress(
 
 	return null;
 }
-
-// Find address starting with 0x0000
-console.log("Mining for address starting with 0x0000...");
 const prefix = new Uint8Array([0x00, 0x00]);
 const result = mineVanityAddress(deployer, initCode, prefix);
 
 if (result) {
-	console.log(`✓ Found!`);
-	console.log(`  Address: ${result.address.toChecksummed()}`);
-	console.log(`  Salt: ${result.salt}`);
 } else {
-	console.log("✗ Not found in search space");
 }
-console.log();
-
-// 5. Cross-chain deployment
-console.log("5. Cross-Chain Deployment Consistency\n");
 
 // Same factory + salt + init code = same address on all chains
 const chainDeployers = new Map([
@@ -169,66 +120,29 @@ const chainDeployers = new Map([
 
 const crossChainSalt = 12345n;
 const crossChainInit = Bytes.fromHex("0x608060405234801561001057600080fd5b50");
-
-console.log("Same address across chains:");
 chainDeployers.forEach((factoryAddr, chain) => {
 	const addr = factoryAddr.calculateCreate2Address(
 		crossChainSalt,
 		crossChainInit,
 	);
-	console.log(`  ${chain}: ${addr.toChecksummed()}`);
 });
-console.log();
-
-// 6. Salt types
-console.log("6. Salt Types\n");
 
 // Salt as bigint
 const saltBigInt = 42n;
 const addrFromBigInt = deployer.calculateCreate2Address(saltBigInt, initCode);
-console.log(`Salt as bigint (42n): ${addrFromBigInt.toChecksummed()}`);
 
 // Salt as Uint8Array (must be 32 bytes)
 const saltBytes = new Uint8Array(32);
 saltBytes[31] = 42; // Last byte = 42
 const addrFromBytes = deployer.calculateCreate2Address(saltBytes, initCode);
-console.log(`Salt as bytes [32]: ${addrFromBytes.toChecksummed()}`);
-
-// Should be equal (42n = 0x000...02a)
-console.log(`Are equal: ${addrFromBigInt.equals(addrFromBytes)}`);
-console.log();
-
-// 7. Understanding CREATE2 formula
-console.log("7. Understanding CREATE2 Formula\n");
-
-console.log(
-	"CREATE2 address = keccak256(0xff ++ factory ++ salt ++ keccak256(initCode))[12:32]",
-);
-console.log();
-console.log("Key points:");
-console.log("- Address depends on factory, salt, and init code hash");
-console.log("- Fully deterministic (no nonce)");
-console.log("- Same inputs always produce same address");
-console.log("- Useful for counterfactual contracts");
-console.log("- Enables cross-chain address consistency");
-console.log();
-
-// 8. Error handling
-console.log("8. Error Handling\n");
 
 // Wrong salt size (Uint8Array)
 try {
 	const wrongSalt = new Uint8Array(16); // Must be 32 bytes
 	deployer.calculateCreate2Address(wrongSalt, initCode);
-	console.log("ERROR: Should have thrown!");
-} catch (e) {
-	console.log(`✓ Wrong salt size rejected: ${(e as Error).message}`);
-}
+} catch (e) {}
 
 // Negative salt (bigint)
 try {
 	deployer.calculateCreate2Address(-1n, initCode);
-	console.log("ERROR: Should have thrown!");
-} catch (e) {
-	console.log(`✓ Negative salt rejected: ${(e as Error).message}`);
-}
+} catch (e) {}

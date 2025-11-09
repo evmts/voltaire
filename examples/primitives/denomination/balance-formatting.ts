@@ -8,18 +8,12 @@
  * - Compact and full precision formatting
  */
 
-import * as Wei from "../../../src/primitives/Denomination/Wei.js";
-import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
 import * as Ether from "../../../src/primitives/Denomination/Ether.js";
+import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
+import * as Wei from "../../../src/primitives/Denomination/Wei.js";
 import * as Uint from "../../../src/primitives/Uint/index.js";
 
-console.log("\n=== Balance Formatting and Display ===\n");
-
-// Example 1: Format Wei as Ether with decimals
-console.log("1. Formatting Wei as Ether\n");
-console.log("   ------------------------");
-
-function formatWeiAsEther(wei: Wei.Type, decimals: number = 18): string {
+function formatWeiAsEther(wei: Wei.Type, decimals = 18): string {
 	const weiU256 = Wei.toU256(wei);
 	const weiPerEther = Uint.from(1_000_000_000_000_000_000n);
 
@@ -45,17 +39,7 @@ const balances = [
 ];
 
 for (const balance of balances) {
-	console.log(`   ${Wei.toU256(balance)} Wei:`);
-	console.log(`     Full (18): ${formatWeiAsEther(balance, 18)} ETH`);
-	console.log(`     Standard (6): ${formatWeiAsEther(balance, 6)} ETH`);
-	console.log(`     Compact (2): ${formatWeiAsEther(balance, 2)} ETH`);
 }
-
-console.log("");
-
-// Example 2: Smart unit selection
-console.log("2. Smart Unit Selection\n");
-console.log("   ---------------------");
 
 function formatBalance(wei: Wei.Type): string {
 	const weiU256 = Wei.toU256(wei);
@@ -85,14 +69,7 @@ const amounts = [
 ];
 
 for (const amount of amounts) {
-	console.log(`   ${Wei.toU256(amount)} Wei → ${formatBalance(amount)}`);
 }
-
-console.log("");
-
-// Example 3: Compact display (significant digits only)
-console.log("3. Compact Display\n");
-console.log("   ----------------");
 
 function formatCompact(wei: Wei.Type): string {
 	const weiU256 = Wei.toU256(wei);
@@ -113,14 +90,7 @@ function formatCompact(wei: Wei.Type): string {
 }
 
 for (const amount of balances) {
-	console.log(`   ${formatCompact(amount)}`);
 }
-
-console.log("");
-
-// Example 4: Parse user input (string to Wei)
-console.log("4. Parse User Input\n");
-console.log("   -----------------");
 
 function parseEtherInput(input: string): Wei.Type {
 	const [whole, fractional = "0"] = input.split(".");
@@ -140,40 +110,14 @@ const userInputs = ["1", "1.5", "0.001", "10.123456789123456789"];
 
 for (const input of userInputs) {
 	const wei = parseEtherInput(input);
-	console.log(`   "${input}" ETH → ${Wei.toU256(wei)} Wei`);
-	console.log(`   Formatted back: ${formatWeiAsEther(wei, 18)} ETH`);
 }
-
-console.log("");
-
-// Example 5: Balance comparison with formatting
-console.log("5. Balance Comparison\n");
-console.log("   -------------------");
 
 const walletA = Wei.from(1_234_567_890_123_456_789n);
 const walletB = Wei.from(987_654_321_098_765_432n);
-
-console.log(`   Wallet A: ${formatWeiAsEther(walletA, 6)} ETH`);
-console.log(`   Wallet B: ${formatWeiAsEther(walletB, 6)} ETH`);
-console.log(
-	`   Difference: ${formatWeiAsEther(Wei.from(Wei.toU256(walletA) - Wei.toU256(walletB)), 6)} ETH`,
-);
-console.log(
-	`   Total: ${formatWeiAsEther(Wei.from(Wei.toU256(walletA) + Wei.toU256(walletB)), 6)} ETH`,
-);
-
-console.log("");
-
-// Example 6: Percentage display
-console.log("6. Percentage of Balance\n");
-console.log("   ----------------------");
 
 const totalBalance = Wei.from(10_000_000_000_000_000_000n); // 10 ETH
 const percentages = [100, 50, 25, 10, 1];
 
 for (const pct of percentages) {
 	const amount = Wei.from((Wei.toU256(totalBalance) * BigInt(pct)) / 100n);
-	console.log(`   ${pct}%: ${formatWeiAsEther(amount, 4)} ETH`);
 }
-
-console.log("\n=== Example Complete ===\n");

@@ -74,9 +74,6 @@ function bigintToBytes(value: bigint): Uint8Array {
 	return bytes;
 }
 
-console.log("=== Contract Storage Trie ===\n");
-console.log("Simulating ERC20 token contract storage:\n");
-
 // Create storage trie for a contract
 const storageTrie = new Trie();
 
@@ -84,7 +81,6 @@ const storageTrie = new Trie();
 const slot0 = new Uint8Array(32);
 const ownerAddr = new Uint8Array([0x12, 0x34, ...new Array(18).fill(0)]);
 storageTrie.put(slot0, ownerAddr);
-console.log(`Slot 0 (owner): ${formatAddress(ownerAddr)}`);
 
 // Storage slot 1: total supply
 const slot1 = new Uint8Array(32);
@@ -92,7 +88,6 @@ slot1[31] = 1;
 const totalSupply = 1_000_000_000_000_000_000_000_000n; // 1M tokens (18 decimals)
 const supplyBytes = bigintToBytes(totalSupply);
 storageTrie.put(slot1, supplyBytes);
-console.log(`Slot 1 (totalSupply): ${totalSupply} (1M tokens)`);
 
 // Storage slot 2: balances mapping
 // balances[owner_addr] = 500k tokens
@@ -100,10 +95,6 @@ const balanceSlot = computeStorageKey(2n, ownerAddr);
 const ownerBalance = 500_000_000_000_000_000_000_000n;
 const balanceBytes = bigintToBytes(ownerBalance);
 storageTrie.put(balanceSlot, balanceBytes);
-console.log("\nSlot 2 mapping (balances):");
-console.log(
-	`  balances[${formatAddress(ownerAddr)}] = ${ownerBalance} (500k tokens)`,
-);
 
 // Another balance: different address
 const addr2 = new Uint8Array([0xab, 0xcd, ...new Array(18).fill(0)]);
@@ -111,7 +102,6 @@ const balanceSlot2 = computeStorageKey(2n, addr2);
 const balance2 = 300_000_000_000_000_000_000_000n;
 const balance2Bytes = bigintToBytes(balance2);
 storageTrie.put(balanceSlot2, balance2Bytes);
-console.log(`  balances[${formatAddress(addr2)}] = ${balance2} (300k tokens)`);
 
 // Storage slot 3: allowances mapping (nested mapping)
 // allowances[owner_addr][spender_addr] = 100k tokens
@@ -128,23 +118,10 @@ const allowanceSlot = computeStorageKey(innerKeyBigInt, spenderAddr);
 const allowance = 100_000_000_000_000_000_000_000n;
 const allowanceBytes = bigintToBytes(allowance);
 storageTrie.put(allowanceSlot, allowanceBytes);
-console.log("\nSlot 3 nested mapping (allowances):");
-console.log(
-	`  allowances[${formatAddress(ownerAddr)}][${formatAddress(spenderAddr)}] = ${allowance} (100k tokens)`,
-);
 
 // Compute storage root
 const storageRoot = storageTrie.rootHash();
-console.log("\n=== Storage Root ===");
-console.log(`Root Hash: ${storageRoot ? formatHash(storageRoot) : "null"}`);
-console.log("\nThis storage root would be stored in the account's state.");
-
-// Verify retrieval
-console.log("\n=== Verification ===");
 const retrievedOwner = storageTrie.get(slot0);
-console.log(
-	`✓ Retrieved owner: ${retrievedOwner ? formatAddress(retrievedOwner) : "null"}`,
-);
 
 const retrievedSupply = storageTrie.get(slot1);
 if (retrievedSupply) {
@@ -156,10 +133,7 @@ if (retrievedSupply) {
 		const part = view.getBigUint64(offset, false);
 		supplyVal |= part << BigInt(i * 64);
 	}
-	console.log(`✓ Retrieved total supply: ${supplyVal}`);
 }
-
-console.log("\n✓ Storage trie built successfully");
 
 /**
  * Storage Layout:

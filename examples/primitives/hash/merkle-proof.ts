@@ -11,14 +11,6 @@
 
 import { Hash } from "../../../src/primitives/Hash/index.js";
 
-console.log("=== Merkle Proof Example ===\n");
-
-// ============================================================
-// 1. Merkle Tree Basics
-// ============================================================
-
-console.log("1. Merkle Tree Basics\n");
-
 // Hash pair of nodes together
 function hashPair(left: Hash, right: Hash): Hash {
 	// Concatenate and hash (left || right)
@@ -34,31 +26,12 @@ const leaf2 = Hash.keccak256String("Bob: 200 tokens");
 const leaf3 = Hash.keccak256String("Charlie: 150 tokens");
 const leaf4 = Hash.keccak256String("Dave: 75 tokens");
 
-console.log("Leaves:");
-console.log(`  1. Alice:   ${leaf1.format()}`);
-console.log(`  2. Bob:     ${leaf2.format()}`);
-console.log(`  3. Charlie: ${leaf3.format()}`);
-console.log(`  4. Dave:    ${leaf4.format()}`);
-
 // Level 1: Hash pairs
 const node12 = hashPair(leaf1, leaf2);
 const node34 = hashPair(leaf3, leaf4);
 
-console.log("\nLevel 1:");
-console.log(`  1-2: ${node12.format()}`);
-console.log(`  3-4: ${node34.format()}`);
-
 // Root: Hash the two level 1 nodes
 const root = hashPair(node12, node34);
-
-console.log("\nRoot:");
-console.log(`  ${root.format()}\n`);
-
-// ============================================================
-// 2. Building Complete Merkle Tree
-// ============================================================
-
-console.log("2. Building Complete Merkle Tree\n");
 
 class MerkleTree {
 	private leaves: Hash[];
@@ -137,35 +110,13 @@ class MerkleTree {
 const leaves = [leaf1, leaf2, leaf3, leaf4];
 const tree = new MerkleTree(leaves);
 
-console.log(`Tree depth: ${tree.getDepth()}`);
-console.log(`Root: ${tree.getRoot().format()}\n`);
-
-// ============================================================
-// 3. Generating Proofs
-// ============================================================
-
-console.log("3. Generating Merkle Proofs\n");
-
 // Generate proof for Alice (index 0)
 const aliceProof = tree.getProof(0);
-console.log("Proof for Alice (leaf 0):");
-aliceProof.forEach((hash, i) => {
-	console.log(`  ${i + 1}. ${hash.format()}`);
-});
+aliceProof.forEach((hash, i) => {});
 
 // Generate proof for Charlie (index 2)
 const charlieProof = tree.getProof(2);
-console.log("\nProof for Charlie (leaf 2):");
-charlieProof.forEach((hash, i) => {
-	console.log(`  ${i + 1}. ${hash.format()}`);
-});
-console.log();
-
-// ============================================================
-// 4. Verifying Proofs
-// ============================================================
-
-console.log("4. Verifying Merkle Proofs\n");
+charlieProof.forEach((hash, i) => {});
 
 function verifyProof(
 	leaf: Hash,
@@ -196,21 +147,12 @@ function verifyProof(
 
 // Verify Alice's proof
 const aliceValid = verifyProof(leaf1, aliceProof, tree.getRoot(), 0);
-console.log(`Alice proof valid: ${aliceValid}`);
 
 // Verify Charlie's proof
 const charlieValid = verifyProof(leaf3, charlieProof, tree.getRoot(), 2);
-console.log(`Charlie proof valid: ${charlieValid}`);
 
 // Try invalid proof (wrong leaf)
 const invalidProof = verifyProof(leaf1, charlieProof, tree.getRoot(), 2);
-console.log(`Invalid proof (wrong leaf): ${invalidProof}\n`);
-
-// ============================================================
-// 5. Airdrop Eligibility Example
-// ============================================================
-
-console.log("5. Airdrop Eligibility (Real-World Use Case)\n");
 
 interface AirdropEntry {
 	address: string;
@@ -234,9 +176,6 @@ const airdropList: AirdropEntry[] = [
 const airdropLeaves = airdropList.map(createAirdropLeaf);
 const airdropTree = new MerkleTree(airdropLeaves);
 
-console.log(`Airdrop Merkle root: ${airdropTree.getRoot().toHex()}`);
-console.log("(This would be stored on-chain)\n");
-
 // User claims their airdrop
 function claimAirdrop(address: string, amount: bigint, proof: Hash[]): boolean {
 	const entry: AirdropEntry = { address, amount };
@@ -258,20 +197,9 @@ const user0Amount = 1000n;
 const user0Proof = airdropTree.getProof(0);
 
 const claimValid = claimAirdrop(user0Address, user0Amount, user0Proof);
-console.log(`User 0 claim (${user0Address}):`);
-console.log(`  Amount: ${user0Amount} tokens`);
-console.log(`  Proof length: ${user0Proof.length} hashes`);
-console.log(`  Valid: ${claimValid}\n`);
 
 // Try invalid claim (wrong amount)
 const invalidClaim = claimAirdrop(user0Address, 9999n, user0Proof);
-console.log(`Invalid claim (wrong amount): ${invalidClaim}\n`);
-
-// ============================================================
-// 6. Transaction Inclusion Proof
-// ============================================================
-
-console.log("6. Transaction Inclusion Proof\n");
 
 // Simulate block with transactions
 const txHashes = [
@@ -288,25 +216,9 @@ const txHashes = [
 const txTree = new MerkleTree(txHashes);
 const txRoot = txTree.getRoot();
 
-console.log(`Block with ${txHashes.length} transactions`);
-console.log(`Transactions root: ${txRoot.format()}`);
-
 // Prove transaction 2 is in the block
 const tx2Index = 2;
 const tx2Proof = txTree.getProof(tx2Index);
-
-console.log(`\nProof for transaction ${tx2Index + 1}:`);
-console.log(`  Transaction: ${txHashes[tx2Index].format()}`);
-console.log(`  Proof length: ${tx2Proof.length} hashes`);
-console.log(
-	`  Valid: ${verifyProof(txHashes[tx2Index], tx2Proof, txRoot, tx2Index)}\n`,
-);
-
-// ============================================================
-// 7. Proof Size Efficiency
-// ============================================================
-
-console.log("7. Proof Size Efficiency\n");
 
 function demonstrateProofSize(numLeaves: number) {
 	// Create dummy leaves
@@ -319,13 +231,7 @@ function demonstrateProofSize(numLeaves: number) {
 
 	const proofSize = proof.length * 32; // Each hash is 32 bytes
 	const treeDepth = dummyTree.getDepth();
-
-	console.log(
-		`  ${numLeaves.toString().padStart(6)} leaves → depth: ${treeDepth}, proof: ${proof.length} hashes (${proofSize} bytes)`,
-	);
 }
-
-console.log("Proof sizes for different tree sizes:");
 demonstrateProofSize(4);
 demonstrateProofSize(8);
 demonstrateProofSize(16);
@@ -336,14 +242,6 @@ demonstrateProofSize(256);
 demonstrateProofSize(1024);
 demonstrateProofSize(10000);
 
-console.log("\nNote: Proof size grows logarithmically (O(log n))\n");
-
-// ============================================================
-// 8. Updating Merkle Root
-// ============================================================
-
-console.log("8. Updating Merkle Root (Adding Leaves)\n");
-
 const initialLeaves = [
 	Hash.keccak256String("data1"),
 	Hash.keccak256String("data2"),
@@ -352,7 +250,6 @@ const initialLeaves = [
 ];
 
 const tree1 = new MerkleTree(initialLeaves);
-console.log(`Initial root (4 leaves): ${tree1.getRoot().format()}`);
 
 // Add new leaves
 const newLeaves = [
@@ -362,24 +259,3 @@ const newLeaves = [
 ];
 
 const tree2 = new MerkleTree(newLeaves);
-console.log(`New root (6 leaves):     ${tree2.getRoot().format()}`);
-console.log(`Roots equal: ${tree1.getRoot().equals(tree2.getRoot())}\n`);
-
-// ============================================================
-// 9. Sparse Merkle Tree Note
-// ============================================================
-
-console.log("9. Sparse Merkle Trees\n");
-
-console.log("Standard Merkle trees (shown above):");
-console.log("  ✓ Efficient for proving membership");
-console.log("  ✓ Small proof size (O(log n))");
-console.log("  ✗ Cannot prove non-membership\n");
-
-console.log("Sparse Merkle trees (advanced):");
-console.log("  ✓ Can prove membership AND non-membership");
-console.log("  ✓ Fixed depth (e.g., 256 for Ethereum addresses)");
-console.log("  ✓ Used in state trees, account storage");
-console.log("  - More complex implementation\n");
-
-console.log("=== Example Complete ===\n");

@@ -11,26 +11,9 @@
 
 import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
 
-console.log("\n=== Bytecode Analysis Example ===\n");
-
-// ============================================================
-// Complete Analysis
-// ============================================================
-
-console.log("--- Complete Analysis ---\n");
-
 const code = Bytecode.fromHex("0x60016002015b60ff5b00");
-console.log(`Bytecode: ${Bytecode.toHex(code)}`);
 
 const analysis = Bytecode.analyze(code);
-
-console.log(`Valid: ${analysis.valid}`);
-console.log(`Instruction count: ${analysis.instructions.length}`);
-console.log(`Jump destinations: ${analysis.jumpDestinations.size}`);
-console.log();
-
-// Print each instruction
-console.log("Instructions:");
 analysis.instructions.forEach((inst) => {
 	const hex = `0x${inst.opcode.toString(16).padStart(2, "0")}`;
 	let line = `  ${inst.position}: ${hex}`;
@@ -41,61 +24,17 @@ analysis.instructions.forEach((inst) => {
 			.join("");
 		line += ` (PUSH data: 0x${data})`;
 	}
-
-	console.log(line);
 });
-console.log();
-
-// Print jump destinations
-console.log("Valid JUMPDEST positions:");
-analysis.jumpDestinations.forEach((pos) => {
-	console.log(`  Position ${pos}`);
-});
-console.log();
-
-// ============================================================
-// Jump Destination Analysis
-// ============================================================
-
-console.log("--- Jump Destination Analysis ---\n");
+analysis.jumpDestinations.forEach((pos) => {});
 
 // Bytecode with JUMPDEST that could be confused with PUSH data
 const trickCode = Bytecode.fromHex("0x605b5b");
-console.log(`Tricky bytecode: ${Bytecode.toHex(trickCode)}`);
 
 const jumpdests = Bytecode.analyzeJumpDestinations(trickCode);
 
-console.log("Analysis:");
-console.log(
-	`  Position 0: 0x60 (PUSH1 opcode) - ${jumpdests.has(0) ? "JUMPDEST" : "not JUMPDEST"}`,
-);
-console.log(
-	`  Position 1: 0x5b (PUSH1 data) - ${jumpdests.has(1) ? "JUMPDEST" : "not JUMPDEST"}`,
-);
-console.log(
-	`  Position 2: 0x5b (actual JUMPDEST) - ${jumpdests.has(2) ? "JUMPDEST" : "not JUMPDEST"}`,
-);
-console.log();
-
-// Check specific positions
-console.log("Using isValidJumpDest:");
-console.log(`  isValidJumpDest(0): ${Bytecode.isValidJumpDest(trickCode, 0)}`);
-console.log(`  isValidJumpDest(1): ${Bytecode.isValidJumpDest(trickCode, 1)}`);
-console.log(`  isValidJumpDest(2): ${Bytecode.isValidJumpDest(trickCode, 2)}`);
-console.log();
-
-// ============================================================
-// Instruction Parsing
-// ============================================================
-
-console.log("--- Instruction Parsing ---\n");
-
 const complexCode = Bytecode.fromHex("0x608060405234801561001057600080fd5b50");
-console.log(`Complex bytecode: ${Bytecode.toHex(complexCode)}`);
 
 const instructions = Bytecode.parseInstructions(complexCode);
-
-console.log(`\nParsed ${instructions.length} instructions:\n`);
 instructions.slice(0, 10).forEach((inst) => {
 	const hex = `0x${inst.opcode.toString(16).padStart(2, "0")}`;
 	let line = `  [${inst.position.toString().padStart(2)}] ${hex}`;
@@ -107,20 +46,10 @@ instructions.slice(0, 10).forEach((inst) => {
 			.join("");
 		line += ` PUSH${size} 0x${data}`;
 	}
-
-	console.log(line);
 });
 
 if (instructions.length > 10) {
-	console.log(`  ... and ${instructions.length - 10} more`);
 }
-console.log();
-
-// ============================================================
-// Opcode Utilities
-// ============================================================
-
-console.log("--- Opcode Utilities ---\n");
 
 const opcodes = [
 	{ value: 0x60, name: "PUSH1" },
@@ -132,25 +61,11 @@ const opcodes = [
 	{ value: 0xfd, name: "REVERT" },
 	{ value: 0xfe, name: "INVALID" },
 ];
-
-console.log("Opcode classifications:");
 opcodes.forEach(({ value, name }) => {
 	const isPush = Bytecode.isPush(value);
 	const pushSize = Bytecode.getPushSize(value);
 	const isTerminator = Bytecode.isTerminator(value);
-
-	console.log(`  ${name} (0x${value.toString(16).padStart(2, "0")}):`);
-	console.log(`    isPush: ${isPush}`);
-	console.log(`    pushSize: ${pushSize}`);
-	console.log(`    isTerminator: ${isTerminator}`);
 });
-console.log();
-
-// ============================================================
-// Extracting PUSH Values
-// ============================================================
-
-console.log("--- Extracting PUSH Values ---\n");
 
 function extractPushValues(code: typeof Bytecode.prototype): bigint[] {
 	const instructions = Bytecode.parseInstructions(code);
@@ -170,20 +85,9 @@ function extractPushValues(code: typeof Bytecode.prototype): bigint[] {
 }
 
 const pushCode = Bytecode.fromHex("0x60ff61123463abcdef");
-console.log(`Bytecode: ${Bytecode.toHex(pushCode)}`);
 
 const pushValues = extractPushValues(pushCode);
-console.log("\nExtracted PUSH values:");
-pushValues.forEach((value, i) => {
-	console.log(`  PUSH ${i + 1}: ${value} (0x${value.toString(16)})`);
-});
-console.log();
-
-// ============================================================
-// Finding Terminators
-// ============================================================
-
-console.log("--- Finding Terminators ---\n");
+pushValues.forEach((value, i) => {});
 
 function findTerminators(code: typeof Bytecode.prototype): number[] {
 	const instructions = Bytecode.parseInstructions(code);
@@ -199,10 +103,8 @@ function findTerminators(code: typeof Bytecode.prototype): number[] {
 }
 
 const terminatorCode = Bytecode.fromHex("0x600160020100600360040200f3");
-console.log(`Code: ${Bytecode.toHex(terminatorCode)}`);
 
 const terminators = findTerminators(terminatorCode);
-console.log(`\nTerminator positions: ${terminators.join(", ")}`);
 
 terminators.forEach((pos) => {
 	const instructions = Bytecode.parseInstructions(terminatorCode);
@@ -214,16 +116,8 @@ terminators.forEach((pos) => {
 				: inst.opcode === 0xf3
 					? "RETURN"
 					: "REVERT";
-		console.log(`  Position ${pos}: ${name} (0x${inst.opcode.toString(16)})`);
 	}
 });
-console.log();
-
-// ============================================================
-// Counting Instruction Types
-// ============================================================
-
-console.log("--- Counting Instruction Types ---\n");
 
 function analyzeInstructionTypes(code: typeof Bytecode.prototype) {
 	const analysis = Bytecode.analyze(code);
@@ -255,22 +149,7 @@ const statsCode = Bytecode.fromHex(
 	"0x608060405234801561001057600080fd5b5060043610610041",
 );
 
-console.log(`Bytecode: ${Bytecode.toHex(statsCode).substring(0, 40)}...`);
-
 const stats = analyzeInstructionTypes(statsCode);
-console.log("\nInstruction type breakdown:");
-console.log(`  Total instructions: ${stats.total}`);
-console.log(`  PUSH instructions: ${stats.push}`);
-console.log(`  Terminators: ${stats.terminators}`);
-console.log(`  JUMPDESTs: ${stats.jumpdests}`);
-console.log(`  Other: ${stats.other}`);
-console.log();
-
-// ============================================================
-// Finding PUSH Instructions
-// ============================================================
-
-console.log("--- Finding PUSH Instructions ---\n");
 
 function findPushInstructions(code: typeof Bytecode.prototype) {
 	const instructions = Bytecode.parseInstructions(code);
@@ -278,10 +157,8 @@ function findPushInstructions(code: typeof Bytecode.prototype) {
 }
 
 const pushFindCode = Bytecode.fromHex("0x600160025b60ff5b00");
-console.log(`Code: ${Bytecode.toHex(pushFindCode)}`);
 
 const pushes = findPushInstructions(pushFindCode);
-console.log(`\nFound ${pushes.length} PUSH instructions:`);
 
 pushes.forEach((inst) => {
 	const size = Bytecode.getPushSize(inst.opcode);
@@ -290,15 +167,7 @@ pushes.forEach((inst) => {
 				.map((b) => b.toString(16).padStart(2, "0"))
 				.join("")
 		: "";
-	console.log(`  Position ${inst.position}: PUSH${size} 0x${data}`);
 });
-console.log();
-
-// ============================================================
-// Analyzing Contract Structure
-// ============================================================
-
-console.log("--- Analyzing Contract Structure ---\n");
 
 function analyzeContract(code: typeof Bytecode.prototype) {
 	const analysis = Bytecode.analyze(code);
@@ -322,15 +191,3 @@ const contractCode = Bytecode.fromHex(
 );
 
 const contractInfo = analyzeContract(contractCode);
-
-console.log("Contract analysis:");
-console.log(`  Valid: ${contractInfo.valid}`);
-console.log(`  Size: ${contractInfo.size} bytes`);
-console.log(`  Instructions: ${contractInfo.instructionCount}`);
-console.log(`  Jump destinations: ${contractInfo.jumpDestCount}`);
-console.log(`  Has metadata: ${contractInfo.hasMetadata}`);
-console.log(`  PUSH instructions: ${contractInfo.pushCount}`);
-console.log(`  Terminators: ${contractInfo.terminatorCount}`);
-console.log();
-
-console.log("=== Example Complete ===\n");

@@ -10,8 +10,6 @@
 
 import { Chain } from "../../../src/primitives/Chain/Chain.js";
 
-console.log("\n=== Gas Cost Comparison Example ===\n");
-
 // Gas price estimates (in Gwei)
 const GAS_PRICES: Record<number, bigint> = {
 	1: 50n, // Ethereum mainnet
@@ -31,16 +29,13 @@ const GAS_COSTS = {
 	complexContract: 300_000n, // Complex contract interaction
 };
 
-console.log("1. Transfer Cost Comparison (21,000 gas)");
-console.log("   --------------------------------------");
-
 function calculateCost(chainId: number, gasAmount: bigint): bigint {
 	const gasPriceGwei = GAS_PRICES[chainId] ?? 1n;
 	const gasPriceWei = gasPriceGwei * 1_000_000_000n; // Gwei to Wei
 	return gasPriceWei * gasAmount;
 }
 
-function formatCost(weiAmount: bigint, ethPrice: number = 2000): string {
+function formatCost(weiAmount: bigint, ethPrice = 2000): string {
 	const ethAmount = Number(weiAmount) / 1e18;
 	const usdAmount = ethAmount * ethPrice;
 	return `${ethAmount.toFixed(6)} ETH ($${usdAmount.toFixed(2)})`;
@@ -53,15 +48,7 @@ transferChains.forEach((id) => {
 
 	const cost = calculateCost(id, GAS_COSTS.transfer);
 	const formatted = formatCost(cost);
-
-	console.log(`   ${chain.name.padEnd(25)} ${formatted}`);
 });
-
-console.log();
-
-// ERC20 transfer comparison
-console.log("2. ERC20 Transfer Cost (65,000 gas)");
-console.log("   ---------------------------------");
 
 transferChains.forEach((id) => {
 	const chain = Chain.fromId(id);
@@ -69,15 +56,7 @@ transferChains.forEach((id) => {
 
 	const cost = calculateCost(id, GAS_COSTS.erc20Transfer);
 	const formatted = formatCost(cost);
-
-	console.log(`   ${chain.name.padEnd(25)} ${formatted}`);
 });
-
-console.log();
-
-// Swap cost comparison
-console.log("3. DEX Swap Cost (150,000 gas)");
-console.log("   ----------------------------");
 
 transferChains.forEach((id) => {
 	const chain = Chain.fromId(id);
@@ -85,15 +64,7 @@ transferChains.forEach((id) => {
 
 	const cost = calculateCost(id, GAS_COSTS.swap);
 	const formatted = formatCost(cost);
-
-	console.log(`   ${chain.name.padEnd(25)} ${formatted}`);
 });
-
-console.log();
-
-// Multi-operation cost analysis
-console.log("4. Multi-Operation Cost Analysis");
-console.log("   -----------------------------");
 
 interface CostBreakdown {
 	chainId: number;
@@ -135,27 +106,11 @@ function analyzeCosts(chainId: number): CostBreakdown | null {
 
 const mainnetAnalysis = analyzeCosts(1);
 if (mainnetAnalysis) {
-	console.log(`   ${mainnetAnalysis.chainName}:`);
-	console.log(`     Transfer:   ${mainnetAnalysis.operations.transfer}`);
-	console.log(`     ERC20:      ${mainnetAnalysis.operations.erc20}`);
-	console.log(`     Swap:       ${mainnetAnalysis.operations.swap}`);
-	console.log(`     NFT Mint:   ${mainnetAnalysis.operations.nftMint}`);
-	console.log(`     Total:      ${mainnetAnalysis.total}\n`);
 }
 
 const arbitrumAnalysis = analyzeCosts(42161);
 if (arbitrumAnalysis) {
-	console.log(`   ${arbitrumAnalysis.chainName}:`);
-	console.log(`     Transfer:   ${arbitrumAnalysis.operations.transfer}`);
-	console.log(`     ERC20:      ${arbitrumAnalysis.operations.erc20}`);
-	console.log(`     Swap:       ${arbitrumAnalysis.operations.swap}`);
-	console.log(`     NFT Mint:   ${arbitrumAnalysis.operations.nftMint}`);
-	console.log(`     Total:      ${arbitrumAnalysis.total}\n`);
 }
-
-// Cost-based network recommendation
-console.log("5. Network Recommendation Engine");
-console.log("   -----------------------------");
 
 interface NetworkRecommendation {
 	chainId: number;
@@ -206,16 +161,7 @@ function recommendNetwork(
 }
 
 const swapRecs = recommendNetwork("swap", 5.0);
-console.log("   Recommended for swap (budget: $5):\n");
-swapRecs.forEach((rec, i) => {
-	console.log(`   ${i + 1}. ${rec.name}`);
-	console.log(`      Cost: ${rec.estimatedCost}`);
-	console.log(`      Reason: ${rec.reason}\n`);
-});
-
-// Savings calculator
-console.log("6. L2 Savings Calculator");
-console.log("   ---------------------");
+swapRecs.forEach((rec, i) => {});
 
 function calculateSavings(
 	l1ChainId: number,
@@ -242,20 +188,11 @@ const operations: Array<[string, bigint]> = [
 	["Swap", GAS_COSTS.swap],
 	["NFT Mint", GAS_COSTS.nftMint],
 ];
-
-console.log("   Ethereum vs Arbitrum:\n");
 operations.forEach(([name, gas]) => {
 	const savings = calculateSavings(1, 42161, gas);
 	if (savings) {
-		console.log(`   ${name}:`);
-		console.log(`     Savings: ${savings.savings}`);
-		console.log(`     Percentage: ${savings.percentage.toFixed(1)}% cheaper\n`);
 	}
 });
-
-// Monthly cost projection
-console.log("7. Monthly Cost Projection");
-console.log("   -----------------------");
 
 interface MonthlyUsage {
 	transfers: number;
@@ -287,16 +224,9 @@ const heavyUsage: MonthlyUsage = {
 	swaps: 10,
 	nftMints: 5,
 };
-
-console.log(
-	"   Heavy user (30 transfers, 20 ERC20, 10 swaps, 5 NFTs/month):\n",
-);
 [1, 10, 42161].forEach((id) => {
 	const chain = Chain.fromId(id);
 	const cost = projectMonthlyCost(id, heavyUsage);
 	if (chain && cost) {
-		console.log(`   ${chain.name.padEnd(25)} ${cost}`);
 	}
 });
-
-console.log("\n=== Example Complete ===\n");

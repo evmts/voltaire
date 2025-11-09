@@ -8,9 +8,9 @@
  * - EIP-155 chain ID encoding
  */
 
-import * as Transaction from "../../../src/primitives/Transaction/index.js";
 import * as Address from "../../../src/primitives/Address/index.js";
 import * as Hex from "../../../src/primitives/Hex/index.js";
+import * as Transaction from "../../../src/primitives/Transaction/index.js";
 
 // Example 1: Simple ETH transfer
 const transfer: Transaction.Legacy = {
@@ -30,22 +30,6 @@ const transfer: Transaction.Legacy = {
 	),
 };
 
-console.log("Legacy Transfer Transaction:");
-console.log("  Type:", transfer.type, "(Legacy)");
-console.log("  Nonce:", transfer.nonce);
-console.log("  Gas Price:", transfer.gasPrice / 1_000_000_000n, "gwei");
-console.log("  Gas Limit:", transfer.gasLimit);
-console.log("  To:", Address.toHex(transfer.to));
-console.log("  Value:", transfer.value / 1_000_000_000_000_000_000n, "ETH");
-console.log("  Data:", Hex.fromBytes(transfer.data));
-console.log(
-	"  Chain ID:",
-	Transaction.Legacy.getChainId.call(transfer),
-	"(from v value)",
-);
-console.log("  v:", transfer.v);
-console.log();
-
 // Example 2: Contract call with data
 const contractCall: Transaction.Legacy = {
 	type: Transaction.Type.Legacy,
@@ -61,20 +45,9 @@ const contractCall: Transaction.Legacy = {
 			"0000000000000000000000000000000000000000000000000de0b6b3a7640000", // amount (1 DAI)
 	),
 	v: 37n,
-	r: Hex.toBytes("0x" + "00".repeat(32)),
-	s: Hex.toBytes("0x" + "00".repeat(32)),
+	r: Hex.toBytes(`0x${"00".repeat(32)}`),
+	s: Hex.toBytes(`0x${"00".repeat(32)}`),
 };
-
-console.log("Contract Call Transaction:");
-console.log("  Contract:", Address.toHex(contractCall.to));
-console.log("  Function: transfer(address,uint256)");
-console.log("  Data Length:", contractCall.data.length, "bytes");
-console.log(
-	"  Gas Limit:",
-	contractCall.gasLimit,
-	"(higher for contract calls)",
-);
-console.log();
 
 // Example 3: Contract deployment (to = null)
 const bytecode = Hex.toBytes(
@@ -90,22 +63,9 @@ const deployment: Transaction.Legacy = {
 	value: 0n,
 	data: bytecode,
 	v: 37n,
-	r: Hex.toBytes("0x" + "00".repeat(32)),
-	s: Hex.toBytes("0x" + "00".repeat(32)),
+	r: Hex.toBytes(`0x${"00".repeat(32)}`),
+	s: Hex.toBytes(`0x${"00".repeat(32)}`),
 };
-
-console.log("Contract Deployment Transaction:");
-console.log(
-	"  To:",
-	deployment.to === null ? "null (contract creation)" : "address",
-);
-console.log("  Bytecode Length:", deployment.data.length, "bytes");
-console.log("  Gas Limit:", deployment.gasLimit, "(high for deployment)");
-console.log(
-	"  Is Contract Creation:",
-	Transaction.isContractCreation(deployment),
-);
-console.log();
 
 // Example 4: Different chain IDs (EIP-155)
 function createChainIdExample(chainId: bigint, chainName: string) {
@@ -121,8 +81,8 @@ function createChainIdExample(chainId: bigint, chainName: string) {
 		value: 1_000_000_000_000_000_000n,
 		data: new Uint8Array(),
 		v,
-		r: Hex.toBytes("0x" + "00".repeat(32)),
-		s: Hex.toBytes("0x" + "00".repeat(32)),
+		r: Hex.toBytes(`0x${"00".repeat(32)}`),
+		s: Hex.toBytes(`0x${"00".repeat(32)}`),
 	};
 
 	return {
@@ -132,8 +92,6 @@ function createChainIdExample(chainId: bigint, chainName: string) {
 		recoveredChainId: Transaction.Legacy.getChainId.call(tx),
 	};
 }
-
-console.log("EIP-155 Chain ID Examples:");
 const chains = [
 	createChainIdExample(1n, "Ethereum Mainnet"),
 	createChainIdExample(5n, "Goerli"),
@@ -142,12 +100,7 @@ const chains = [
 ];
 
 for (const chain of chains) {
-	console.log(`  ${chain.chainName}:`);
-	console.log(`    Chain ID: ${chain.chainId}`);
-	console.log(`    v value: ${chain.v}`);
-	console.log(`    Recovered: ${chain.recoveredChainId}`);
 }
-console.log();
 
 // Example 5: Pre-EIP-155 transaction (no chain ID)
 const preEIP155: Transaction.Legacy = {
@@ -159,15 +112,6 @@ const preEIP155: Transaction.Legacy = {
 	value: 1_000_000_000_000_000_000n,
 	data: new Uint8Array(),
 	v: 27n, // Pre-EIP-155: just 27 or 28
-	r: Hex.toBytes("0x" + "00".repeat(32)),
-	s: Hex.toBytes("0x" + "00".repeat(32)),
+	r: Hex.toBytes(`0x${"00".repeat(32)}`),
+	s: Hex.toBytes(`0x${"00".repeat(32)}`),
 };
-
-console.log("Pre-EIP-155 Transaction (old format):");
-console.log("  v:", preEIP155.v, "(27 or 28 only, no chain ID)");
-console.log(
-	"  Chain ID:",
-	Transaction.Legacy.getChainId.call(preEIP155),
-	"(null = pre-EIP-155)",
-);
-console.log("  Warning: No replay protection!");

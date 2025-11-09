@@ -10,45 +10,18 @@
 
 import { Chain } from "../../../src/primitives/Chain/Chain.js";
 
-console.log("\n=== Network Metadata Example ===\n");
-
-// Display comprehensive chain information
-console.log("1. Complete Chain Information");
-console.log("   --------------------------");
-
 const quai = Chain.fromId(9);
 if (quai) {
-	console.log(`   Name: ${quai.name}`);
-	console.log(`   Chain ID: ${quai.chainId}`);
-	console.log(`   Network ID: ${quai.networkId ?? "N/A"}`);
-	console.log(`   Short Name: ${quai.shortName}`);
-	console.log(`   Chain: ${quai.chain}`);
-	console.log("\n   Native Currency:");
-	console.log(`     Name: ${quai.nativeCurrency.name}`);
-	console.log(`     Symbol: ${quai.nativeCurrency.symbol}`);
-	console.log(`     Decimals: ${quai.nativeCurrency.decimals}`);
-	console.log(`\n   RPC Endpoints: ${quai.rpc.length} available`);
-	quai.rpc.forEach((rpc, i) => {
-		console.log(`     [${i}] ${rpc}`);
-	});
+	quai.rpc.forEach((rpc, i) => {});
 	if (quai.explorers && quai.explorers.length > 0) {
-		console.log(`\n   Block Explorers:`);
 		quai.explorers.forEach((explorer) => {
-			console.log(`     ${explorer.name}: ${explorer.url}`);
 			if (explorer.standard) {
-				console.log(`       Standard: ${explorer.standard}`);
 			}
 		});
 	}
 	if (quai.infoURL) {
-		console.log(`\n   Info URL: ${quai.infoURL}`);
 	}
-	console.log();
 }
-
-// RPC endpoint management
-console.log("2. RPC Connection Helper");
-console.log("   ---------------------");
 
 function getRpcWithFallback(chainId: number): string | null {
 	const chain = Chain.fromId(chainId);
@@ -65,14 +38,8 @@ function getAllRpcEndpoints(chainId: number): string[] {
 }
 
 const flareRpc = getRpcWithFallback(14);
-console.log(`   Flare primary RPC: ${flareRpc ?? "None"}`);
 
 const allFlareRpcs = getAllRpcEndpoints(14);
-console.log(`   Flare has ${allFlareRpcs.length} RPC endpoints\n`);
-
-// Explorer link generation
-console.log("3. Explorer Link Generator");
-console.log("   -----------------------");
 
 type LinkType = "tx" | "address" | "block";
 
@@ -100,14 +67,6 @@ const quaiTxLink = generateExplorerLink(9, "tx", txHash);
 const quaiAddressLink = generateExplorerLink(9, "address", address);
 const quaiBlockLink = generateExplorerLink(9, "block", blockNumber);
 
-console.log(`   Transaction: ${quaiTxLink ?? "No explorer"}`);
-console.log(`   Address: ${quaiAddressLink ?? "No explorer"}`);
-console.log(`   Block: ${quaiBlockLink ?? "No explorer"}\n`);
-
-// Currency formatting helper
-console.log("4. Native Currency Formatting");
-console.log("   --------------------------");
-
 function formatNativeAmount(chainId: number, weiAmount: bigint): string | null {
 	const chain = Chain.fromId(chainId);
 	if (!chain) return null;
@@ -127,13 +86,6 @@ const amount2 = 5000000000000000000n; // 5 in wei
 
 const quaiFormatted = formatNativeAmount(9, amount1);
 const flareFormatted = formatNativeAmount(14, amount2);
-
-console.log(`   Quai: ${quaiFormatted ?? "N/A"}`);
-console.log(`   Flare: ${flareFormatted ?? "N/A"}\n`);
-
-// Multi-network comparison
-console.log("5. Multi-Network Summary");
-console.log("   ---------------------");
 
 interface ChainSummary {
 	id: number;
@@ -161,12 +113,4 @@ const summaries = chainIds
 	.map(summarizeChain)
 	.filter((s): s is ChainSummary => s !== null);
 
-summaries.forEach((summary) => {
-	console.log(`   ${summary.name}:`);
-	console.log(`     ID: ${summary.id}`);
-	console.log(`     Symbol: ${summary.symbol}`);
-	console.log(`     RPC endpoints: ${summary.rpcCount}`);
-	console.log(`     Has explorer: ${summary.hasExplorer ? "Yes" : "No"}`);
-});
-
-console.log("\n=== Example Complete ===\n");
+summaries.forEach((summary) => {});

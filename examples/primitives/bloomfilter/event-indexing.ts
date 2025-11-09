@@ -1,11 +1,9 @@
 // Real-world example: Event indexing system using bloom filters
 import {
-	BloomFilter,
 	BITS,
+	BloomFilter,
 	DEFAULT_HASH_COUNT,
 } from "../../../src/primitives/BloomFilter/index.js";
-
-console.log("Event Indexing System with Bloom Filters\n");
 
 // Simulate event types
 type EventType = "Transfer" | "Approval" | "Swap" | "Mint" | "Burn" | "Sync";
@@ -96,35 +94,17 @@ const events: Event[] = [
 	{ type: "Swap", address: "SushiSwap", blockNumber: 1008, txHash: "0x09" },
 	{ type: "Transfer", address: "USDT", blockNumber: 1009, txHash: "0x0a" },
 ];
-
-// Build index
-console.log("Building event index...");
 const index = new EventIndex();
 
 for (const event of events) {
 	index.addEvent(event);
 }
-
-console.log(`Indexed ${events.length} events\n`);
-
-// Query the index
-console.log("Query 1: Find Transfer events for USDC");
 if (index.mightContainAddress("Transfer", "USDC")) {
-	console.log("  ✓ USDC might have Transfer events");
-	console.log("  Action: Scan Transfer events for USDC");
 } else {
-	console.log("  ✗ USDC definitely has no Transfer events");
 }
-
-console.log("\nQuery 2: Find Swap events for USDC");
 if (index.mightContainAddress("Swap", "USDC")) {
-	console.log("  ✓ USDC might have Swap events (likely false positive)");
-	console.log("  Action: Scan Swap events for USDC");
 } else {
-	console.log("  ✗ USDC definitely has no Swap events");
 }
-
-console.log("\nQuery 3: Find all event types for UniswapV2");
 const eventTypes: EventType[] = [
 	"Transfer",
 	"Approval",
@@ -133,52 +113,22 @@ const eventTypes: EventType[] = [
 	"Burn",
 	"Sync",
 ];
-console.log("  UniswapV2 might appear in:");
 for (const type of eventTypes) {
 	if (index.mightContainAddress(type, "UniswapV2")) {
-		console.log(`    - ${type} events`);
 	}
 }
-
-console.log("\nQuery 4: Find Transfer events for addresses");
 const addresses = ["USDC", "DAI", "WETH", "LINK"];
-console.log("  Addresses with Transfer events:");
 for (const addr of addresses) {
 	if (index.mightContainAddress("Transfer", addr)) {
-		console.log(`    - ${addr} ✓`);
 	}
 }
-
-// Show filter statistics
-console.log("\nFilter statistics:");
 for (const type of eventTypes) {
 	const stats = index.getFilterStats(type);
 	if (stats.bits > 0) {
-		console.log(
-			`  ${type}: ${stats.density.toFixed(2)}% density (${stats.bits} bits, ${stats.k} hash functions)`,
-		);
 	}
 }
-
-// Export for storage
-console.log("\nExporting filters for persistent storage...");
 const exported = index.exportFilters();
-console.log(`Exported ${exported.size} filters`);
-console.log("Sample (Transfer filter):");
 const transferHex = exported.get("Transfer")!;
-console.log(`  ${transferHex.slice(0, 40)}...${transferHex.slice(-40)}`);
-
-// Demonstrate efficiency
-console.log("\nEfficiency analysis:");
 const totalEvents = events.length;
 const transferEvents = events.filter((e) => e.type === "Transfer").length;
 const swapEvents = events.filter((e) => e.type === "Swap").length;
-
-console.log(`  Total events indexed: ${totalEvents}`);
-console.log(`  Transfer events: ${transferEvents}`);
-console.log(`  Swap events: ${swapEvents}`);
-console.log("\nBloom filter benefits:");
-console.log("  - Constant O(1) lookup time per event type");
-console.log("  - Fixed memory: 256 bytes per event type");
-console.log("  - Quick rejection of non-matching addresses");
-console.log("  - Enable efficient multi-criteria filtering");

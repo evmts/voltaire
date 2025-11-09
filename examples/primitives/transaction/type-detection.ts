@@ -8,15 +8,9 @@
  * - Handling all transaction types in a type-safe way
  */
 
-import * as Transaction from "../../../src/primitives/Transaction/index.js";
 import * as Address from "../../../src/primitives/Address/index.js";
 import * as Hex from "../../../src/primitives/Hex/index.js";
-
-console.log("=== Transaction Type Detection ===\n");
-
-// Example 1: Type guards for runtime type checking
-console.log("1. Using Type Guards:");
-console.log("-".repeat(50));
+import * as Transaction from "../../../src/primitives/Transaction/index.js";
 
 const legacyTx: Transaction.Legacy = {
 	type: Transaction.Type.Legacy,
@@ -27,8 +21,8 @@ const legacyTx: Transaction.Legacy = {
 	value: 1_000_000_000_000_000_000n,
 	data: new Uint8Array(),
 	v: 37n,
-	r: Hex.toBytes("0x" + "00".repeat(32)),
-	s: Hex.toBytes("0x" + "00".repeat(32)),
+	r: Hex.toBytes(`0x${"00".repeat(32)}`),
+	s: Hex.toBytes(`0x${"00".repeat(32)}`),
 };
 
 const eip1559Tx: Transaction.EIP1559 = {
@@ -43,32 +37,28 @@ const eip1559Tx: Transaction.EIP1559 = {
 	data: new Uint8Array(),
 	accessList: [],
 	yParity: 0,
-	r: Hex.toBytes("0x" + "00".repeat(32)),
-	s: Hex.toBytes("0x" + "00".repeat(32)),
+	r: Hex.toBytes(`0x${"00".repeat(32)}`),
+	s: Hex.toBytes(`0x${"00".repeat(32)}`),
 };
 
 function describeTransaction(tx: Transaction.Any): string {
 	if (Transaction.isLegacy(tx)) {
 		return `Legacy tx: gasPrice=${tx.gasPrice / 1_000_000_000n} gwei, v=${tx.v}`;
-	} else if (Transaction.isEIP2930(tx)) {
+	}
+	if (Transaction.isEIP2930(tx)) {
 		return `EIP-2930 tx: gasPrice=${tx.gasPrice / 1_000_000_000n} gwei, accessList=${tx.accessList.length} items`;
-	} else if (Transaction.isEIP1559(tx)) {
+	}
+	if (Transaction.isEIP1559(tx)) {
 		return `EIP-1559 tx: maxFee=${tx.maxFeePerGas / 1_000_000_000n} gwei, priority=${tx.maxPriorityFeePerGas / 1_000_000_000n} gwei`;
-	} else if (Transaction.isEIP4844(tx)) {
+	}
+	if (Transaction.isEIP4844(tx)) {
 		return `EIP-4844 tx: blobs=${tx.blobVersionedHashes.length}, maxBlobFee=${tx.maxFeePerBlobGas / 1_000_000_000n} gwei`;
-	} else if (Transaction.isEIP7702(tx)) {
+	}
+	if (Transaction.isEIP7702(tx)) {
 		return `EIP-7702 tx: authorizations=${tx.authorizationList.length}`;
 	}
 	return "Unknown transaction type";
 }
-
-console.log(describeTransaction(legacyTx));
-console.log(describeTransaction(eip1559Tx));
-console.log();
-
-// Example 2: Switch-based type narrowing
-console.log("2. Switch-Based Type Narrowing:");
-console.log("-".repeat(50));
 
 function getTransactionTypeName(tx: Transaction.Any): string {
 	switch (tx.type) {
@@ -90,24 +80,15 @@ function getTransactionTypeName(tx: Transaction.Any): string {
 const transactions: Transaction.Any[] = [legacyTx, eip1559Tx];
 
 for (const tx of transactions) {
-	console.log(`Type: ${getTransactionTypeName(tx)}`);
-	console.log(`  Type byte: 0x${tx.type.toString(16).padStart(2, "0")}`);
-	console.log(`  Nonce: ${tx.nonce}`);
 }
-console.log();
-
-// Example 3: Type-specific operations
-console.log("3. Type-Specific Operations:");
-console.log("-".repeat(50));
 
 function getChainId(tx: Transaction.Any): bigint | null {
 	if (Transaction.isLegacy(tx)) {
 		// Legacy uses v value to encode chain ID
 		return Transaction.Legacy.getChainId.call(tx);
-	} else {
-		// All typed transactions have explicit chainId
-		return tx.chainId;
 	}
+	// All typed transactions have explicit chainId
+	return tx.chainId;
 }
 
 function hasAccessList(tx: Transaction.Any): boolean {
@@ -122,22 +103,6 @@ function isContractCreation(tx: Transaction.Any): boolean {
 	return tx.to === null;
 }
 
-console.log("Legacy Transaction:");
-console.log("  Chain ID:", getChainId(legacyTx));
-console.log("  Has Access List:", hasAccessList(legacyTx));
-console.log("  Contract Creation:", isContractCreation(legacyTx));
-console.log();
-
-console.log("EIP-1559 Transaction:");
-console.log("  Chain ID:", getChainId(eip1559Tx));
-console.log("  Has Access List:", hasAccessList(eip1559Tx));
-console.log("  Contract Creation:", isContractCreation(eip1559Tx));
-console.log();
-
-// Example 4: Detecting from type byte
-console.log("4. Detecting Transaction Type from Bytes:");
-console.log("-".repeat(50));
-
 // Type byte detection rules:
 // - If first byte < 0x7f: typed transaction (byte = type)
 // - If first byte >= 0xc0: Legacy transaction (RLP list)
@@ -149,17 +114,9 @@ const typeBytes = [
 	{ byte: 0x03, name: "EIP-4844", type: "Type 3" },
 	{ byte: 0x04, name: "EIP-7702", type: "Type 4" },
 ];
-
-console.log("Transaction Type Detection Rules:\n");
 for (const { byte, name, type } of typeBytes) {
 	const hexByte = `0x${byte.toString(16).padStart(2, "0")}`;
-	console.log(`  ${hexByte} → ${name} (${type})`);
 }
-console.log();
-
-// Example 5: Type enumeration
-console.log("5. Transaction Type Enumeration:");
-console.log("-".repeat(50));
 
 const typeMapping = [
 	{
@@ -193,16 +150,8 @@ const typeMapping = [
 		introduced: "Pectra (TBD)",
 	},
 ];
-
-console.log("Type  Hex   Name       Hard Fork\n");
 for (const { enum: typeEnum, hex, name, introduced } of typeMapping) {
-	console.log(`${typeEnum}     ${hex}   ${name.padEnd(10)} ${introduced}`);
 }
-console.log();
-
-// Example 6: Feature detection
-console.log("6. Feature Detection by Transaction Type:");
-console.log("-".repeat(50));
 
 interface TransactionFeatures {
 	accessList: boolean;
@@ -238,14 +187,11 @@ const allTypes: Transaction.Any[] = [
 		data: new Uint8Array(),
 		accessList: [],
 		yParity: 0,
-		r: Hex.toBytes("0x" + "00".repeat(32)),
-		s: Hex.toBytes("0x" + "00".repeat(32)),
+		r: Hex.toBytes(`0x${"00".repeat(32)}`),
+		s: Hex.toBytes(`0x${"00".repeat(32)}`),
 	} as Transaction.EIP2930,
 	eip1559Tx,
 ];
-
-console.log("Feature         Legacy  EIP-2930  EIP-1559  EIP-4844  EIP-7702");
-console.log("-".repeat(60));
 
 const featureNames: (keyof TransactionFeatures)[] = [
 	"accessList",
@@ -260,31 +206,7 @@ for (const featureName of featureNames) {
 		getFeatures(tx)[featureName] ? "✓" : "✗",
 	);
 	const line = `${featureName.padEnd(15)} ${values.join("       ")}`;
-	console.log(line);
 }
-console.log();
-
-// Example 7: Type compatibility matrix
-console.log("7. Transaction Type Compatibility:");
-console.log("-".repeat(50));
-
-console.log("Network Support:");
-console.log("  Pre-Berlin:  Legacy only");
-console.log("  Berlin:      Legacy, EIP-2930");
-console.log("  London:      Legacy, EIP-2930, EIP-1559");
-console.log("  Dencun:      Legacy, EIP-2930, EIP-1559, EIP-4844");
-console.log("  Pectra:      All types (including EIP-7702)");
-console.log();
-
-console.log("Gas Pricing:");
-console.log("  Legacy:      Fixed gasPrice");
-console.log("  EIP-2930:    Fixed gasPrice + access lists");
-console.log("  EIP-1559+:   Dynamic (baseFee + priorityFee)");
-console.log();
-
-// Example 8: Polymorphic transaction handling
-console.log("8. Polymorphic Transaction Handling:");
-console.log("-".repeat(50));
 
 function formatTransaction(tx: Transaction.Any): string {
 	const typeName = getTransactionTypeName(tx);
@@ -327,6 +249,3 @@ function formatTransaction(tx: Transaction.Any): string {
 
 	return details;
 }
-
-console.log(formatTransaction(legacyTx));
-console.log(formatTransaction(eip1559Tx));

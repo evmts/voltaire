@@ -1,11 +1,9 @@
 // Demonstrate efficient batch operations with bloom filters
 import {
-	BloomFilter,
 	BITS,
+	BloomFilter,
 	DEFAULT_HASH_COUNT,
 } from "../../../src/primitives/BloomFilter/index.js";
-
-console.log("Bloom Filter Batch Operations\n");
 
 // Batch add multiple items
 function batchAdd(filter: typeof BloomFilter.prototype, items: string[]): void {
@@ -24,9 +22,6 @@ function batchContains(
 	return items.map((item) => filter.contains(encoder.encode(item)));
 }
 
-// Example 1: Building event index
-console.log("Example 1: Building event index for block");
-
 const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 
 const events = [
@@ -36,11 +31,7 @@ const events = [
 	"Mint(address,uint256,uint256)",
 	"Burn(address,uint256,uint256,address)",
 ];
-
-console.log(`Adding ${events.length} event signatures...`);
 batchAdd(filter, events);
-
-console.log("\nChecking which events might be present:");
 const queries = [
 	"Transfer(address,address,uint256)",
 	"Approval(address,address,uint256)",
@@ -49,14 +40,7 @@ const queries = [
 ];
 
 const results = batchContains(filter, queries);
-for (let i = 0; i < queries.length; i++) {
-	console.log(
-		`  ${queries[i]}: ${results[i] ? "✓ might exist" : "✗ definitely not present"}`,
-	);
-}
-
-// Example 2: Multi-address watchlist
-console.log("\nExample 2: Multi-address watchlist");
+for (let i = 0; i < queries.length; i++) {}
 
 const watchlistFilter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 
@@ -72,49 +56,24 @@ const addresses = [
 	"address9",
 	"address10",
 ];
-
-console.log(`Adding ${addresses.length} addresses to watchlist...`);
 batchAdd(watchlistFilter, addresses);
-
-console.log("\nChecking if addresses are watched:");
 const testAddresses = ["address1", "address5", "address99", "address10"];
 const watchResults = batchContains(watchlistFilter, testAddresses);
 
-for (let i = 0; i < testAddresses.length; i++) {
-	console.log(
-		`  ${testAddresses[i]}: ${watchResults[i] ? "watched ✓" : "not watched ✗"}`,
-	);
-}
-
-// Example 3: Deduplication check
-console.log("\nExample 3: Deduplication with bloom filter");
+for (let i = 0; i < testAddresses.length; i++) {}
 
 const seenFilter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 const items = ["tx1", "tx2", "tx1", "tx3", "tx2", "tx4", "tx1"];
 const uniqueItems: string[] = [];
 const encoder = new TextEncoder();
-
-console.log("Processing items with deduplication:");
 for (const item of items) {
 	const itemBytes = encoder.encode(item);
 	if (!seenFilter.contains(itemBytes)) {
-		// Might be new (could be false positive)
-		console.log(`  ${item}: first occurrence (or false positive)`);
 		seenFilter.add(itemBytes);
 		uniqueItems.push(item);
 	} else {
-		// Definitely seen before
-		console.log(`  ${item}: duplicate (skipped)`);
 	}
 }
-
-console.log(`\nUnique items collected: ${uniqueItems.join(", ")}`);
-console.log(
-	"Note: bloom filter may have false positives, verify duplicates if needed",
-);
-
-// Example 4: Performance comparison
-console.log("\nExample 4: Performance comparison - batch vs individual");
 
 const batchFilter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 const testItems = Array.from({ length: 1000 }, (_, i) => `item-${i}`);
@@ -124,15 +83,10 @@ const batchStart = performance.now();
 batchAdd(batchFilter, testItems);
 const batchTime = performance.now() - batchStart;
 
-console.log(`Batch add 1000 items: ${batchTime.toFixed(2)}ms`);
-
 // Measure batch check
 const checkStart = performance.now();
 const checkResults = batchContains(batchFilter, testItems.slice(0, 100));
 const checkTime = performance.now() - checkStart;
-
-console.log(`Batch check 100 items: ${checkTime.toFixed(2)}ms`);
-console.log(`All items found: ${checkResults.every((r) => r)}`);
 
 // Show filter density
 const totalBits = batchFilter.m;
@@ -144,4 +98,3 @@ for (let i = 0; i < batchFilter.length; i++) {
 	}
 }
 const density = ((setBits / totalBits) * 100).toFixed(2);
-console.log(`\nFilter density: ${density}% (${setBits}/${totalBits} bits set)`);

@@ -10,12 +10,6 @@
 
 import { Chain } from "../../../src/primitives/Chain/Chain.js";
 
-console.log("\n=== Network Detection Example ===\n");
-
-// Network type detection
-console.log("1. Network Classification");
-console.log("   ----------------------");
-
 type NetworkType = "mainnet" | "testnet" | "devnet" | "unknown";
 
 function detectNetworkType(chainId: number): NetworkType {
@@ -63,15 +57,8 @@ testChains.forEach((id) => {
 	const chain = Chain.fromId(id);
 	const type = detectNetworkType(id);
 	if (chain) {
-		console.log(`   ${chain.name.padEnd(25)} → ${type}`);
 	}
 });
-
-console.log();
-
-// L1 vs L2 detection
-console.log("2. Layer Detection");
-console.log("   ---------------");
 
 type ChainLayer = "L1" | "L2" | "Sidechain" | "Unknown";
 
@@ -127,15 +114,8 @@ layerTestChains.forEach((id) => {
 	const chain = Chain.fromId(id);
 	const layer = detectLayer(id);
 	if (chain) {
-		console.log(`   ${chain.name.padEnd(25)} → ${layer}`);
 	}
 });
-
-console.log();
-
-// Settlement layer detection
-console.log("3. Settlement Layer");
-console.log("   ----------------");
 
 function getSettlementLayer(chainId: number): string {
 	const layer = detectLayer(chainId);
@@ -161,15 +141,8 @@ layerTestChains.forEach((id) => {
 	const chain = Chain.fromId(id);
 	const settlement = getSettlementLayer(id);
 	if (chain) {
-		console.log(`   ${chain.name.padEnd(25)} → ${settlement}`);
 	}
 });
-
-console.log();
-
-// Network characteristics
-console.log("4. Network Characteristics");
-console.log("   -----------------------");
 
 interface NetworkCharacteristics {
 	chainId: number;
@@ -203,20 +176,8 @@ const analyzeChains = [1, 11155111, 10, 42161, 137];
 analyzeChains.forEach((id) => {
 	const analysis = analyzeNetwork(id);
 	if (analysis) {
-		console.log(`   ${analysis.name}:`);
-		console.log(`     Type: ${analysis.type}`);
-		console.log(`     Layer: ${analysis.layer}`);
-		console.log(`     Symbol: ${analysis.symbol}`);
-		console.log(`     Has faucet: ${analysis.hasTestFaucet ? "Yes" : "No"}`);
-		console.log(`     Real value: ${analysis.hasValue ? "Yes" : "No"}`);
 	}
 });
-
-console.log();
-
-// Chain family detection
-console.log("5. Chain Family Detection");
-console.log("   ----------------------");
 
 type ChainFamily = "Ethereum" | "Optimism" | "Arbitrum" | "Other";
 
@@ -251,15 +212,8 @@ familyChains.forEach((id) => {
 	const chain = Chain.fromId(id);
 	const family = detectChainFamily(id);
 	if (chain) {
-		console.log(`   ${chain.name.padEnd(25)} → ${family}`);
 	}
 });
-
-console.log();
-
-// User-facing network selector
-console.log("6. Network Selector Helper");
-console.log("   -----------------------");
 
 interface NetworkOption {
 	chainId: number;
@@ -287,10 +241,4 @@ function getNetworkOptions(): NetworkOption[] {
 }
 
 const options = getNetworkOptions();
-console.log("   Available networks for user:\n");
-options.forEach((opt) => {
-	console.log(`   [${opt.chainId}] ${opt.label}`);
-	console.log(`       ${opt.description}\n`);
-});
-
-console.log("=== Example Complete ===\n");
+options.forEach((opt) => {});

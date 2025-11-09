@@ -8,16 +8,10 @@
  * - Budget planning and cost analysis
  */
 
-import * as Wei from "../../../src/primitives/Denomination/Wei.js";
-import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
 import * as Ether from "../../../src/primitives/Denomination/Ether.js";
+import * as Gwei from "../../../src/primitives/Denomination/Gwei.js";
+import * as Wei from "../../../src/primitives/Denomination/Wei.js";
 import * as Uint from "../../../src/primitives/Uint/index.js";
-
-console.log("\n=== USD Price Conversions ===\n");
-
-// Example 1: Wei to USD conversion
-console.log("1. Converting Wei to USD\n");
-console.log("   ----------------------");
 
 function weiToUSD(wei: Wei.Type, ethPriceUsd: number): number {
 	const weiU256 = Wei.toU256(wei);
@@ -39,19 +33,10 @@ const balances = [
 	Wei.from(100_000_000_000_000_000n), // 0.1 ETH
 	Wei.from(1_000_000_000_000_000n), // 0.001 ETH
 ];
-
-console.log(`   ETH Price: $${ethPrice}`);
 for (const balance of balances) {
 	const usd = weiToUSD(balance, ethPrice);
 	const eth = Number(Wei.toU256(balance)) / 1e18;
-	console.log(`   ${eth.toFixed(6)} ETH = $${usd.toFixed(2)} USD`);
 }
-
-console.log("");
-
-// Example 2: Gas cost in USD
-console.log("2. Gas Cost in USD\n");
-console.log("   ----------------");
 
 function gasCostUSD(
 	gasPriceGwei: Gwei.Type,
@@ -78,18 +63,10 @@ const gasPrices = [
 ];
 
 for (const op of operations) {
-	console.log(`   ${op.name} (${op.gas} gas):`);
 	for (const price of gasPrices) {
 		const cost = gasCostUSD(Gwei.from(price.gwei), op.gas, ethPrice);
-		console.log(`     ${price.name} (${price.gwei} Gwei): $${cost.toFixed(2)}`);
 	}
 }
-
-console.log("");
-
-// Example 3: Price sensitivity analysis
-console.log("3. Price Sensitivity Analysis\n");
-console.log("   ---------------------------");
 
 function costAtDifferentPrices(
 	wei: Wei.Type,
@@ -106,19 +83,10 @@ function costAtDifferentPrices(
 
 const txCost = Wei.from(1_050_000_000_000_000n); // 0.00105 ETH (21k @ 50 Gwei)
 const ethPriceRange = [1000, 1500, 2000, 2500, 3000, 4000, 5000];
-
-console.log("   Transaction cost (0.00105 ETH) at different ETH prices:");
 const costs = costAtDifferentPrices(txCost, ethPriceRange);
 
 for (const [ethPrice, usdCost] of costs) {
-	console.log(`     ETH = $${ethPrice}: $${usdCost.toFixed(2)}`);
 }
-
-console.log("");
-
-// Example 4: Monthly gas budget
-console.log("4. Monthly Gas Budget Analysis\n");
-console.log("   ----------------------------");
 
 interface MonthlyUsage {
 	transfers: number;
@@ -159,27 +127,6 @@ const monthlyCost = calculateMonthlyGasCost(
 	avgGasPrice,
 	ethPrice,
 );
-
-console.log(`   ETH Price: $${ethPrice}`);
-console.log(`   Avg Gas Price: ${avgGasPrice} Gwei`);
-console.log("");
-console.log("   Monthly Activity:");
-console.log(
-	`     ${monthlyUsage.transfers} transfers: $${monthlyCost.breakdown.transfers.toFixed(2)}`,
-);
-console.log(
-	`     ${monthlyUsage.tokenTransfers} token transfers: $${monthlyCost.breakdown.tokenTransfers.toFixed(2)}`,
-);
-console.log(
-	`     ${monthlyUsage.swaps} swaps: $${monthlyCost.breakdown.swaps.toFixed(2)}`,
-);
-console.log(`   Total Monthly Cost: $${monthlyCost.total.toFixed(2)}`);
-
-console.log("");
-
-// Example 5: ROI calculation
-console.log("5. Transaction ROI Analysis\n");
-console.log("   -------------------------");
 
 function calculateROI(
 	gasCostWei: Wei.Type,
@@ -222,32 +169,10 @@ for (const scenario of scenarios) {
 	);
 
 	const analysis = calculateROI(gasCost, scenario.profit, ethPrice);
-
-	console.log(`   ${scenario.name}:`);
-	console.log(`     Gas cost: $${analysis.gasCostUsd.toFixed(2)}`);
-	console.log(`     Expected profit: $${analysis.profitUsd.toFixed(2)}`);
-	console.log(`     Net profit: $${analysis.netProfitUsd.toFixed(2)}`);
-	console.log(`     ROI: ${analysis.roi.toFixed(1)}%`);
-	console.log(`     Worth it: ${analysis.netProfitUsd > 0 ? "✓" : "✗"}`);
 }
-
-console.log("");
-
-// Example 6: Cost comparison matrix
-console.log("6. Gas Cost Matrix (USD)\n");
-console.log("   ---------------------");
-
-console.log("   Gas Price | 21k Transfer | 65k Token | 150k Swap");
-console.log("   ----------|--------------|-----------|----------");
 
 for (const price of gasPrices) {
 	const transfer = gasCostUSD(Gwei.from(price.gwei), 21_000n, ethPrice);
 	const token = gasCostUSD(Gwei.from(price.gwei), 65_000n, ethPrice);
 	const swap = gasCostUSD(Gwei.from(price.gwei), 150_000n, ethPrice);
-
-	console.log(
-		`   ${price.gwei.toString().padEnd(9)} | $${transfer.toFixed(2).padEnd(12)} | $${token.toFixed(2).padEnd(9)} | $${swap.toFixed(2)}`,
-	);
 }
-
-console.log("\n=== Example Complete ===\n");

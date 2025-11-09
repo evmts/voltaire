@@ -11,14 +11,6 @@
 
 import { Hash } from "../../../src/primitives/Hash/index.js";
 
-console.log("=== Hash Validation Example ===\n");
-
-// ============================================================
-// 1. Hex String Validation
-// ============================================================
-
-console.log("1. Hex String Validation\n");
-
 const testCases = [
 	{
 		input: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
@@ -50,24 +42,12 @@ const testCases = [
 	{ input: "", expected: false, reason: "Empty string" },
 	{ input: "0x", expected: false, reason: "Only prefix" },
 ];
-
-console.log("Test cases:");
 testCases.forEach(({ input, expected, reason }) => {
 	const isValid = Hash.isValidHex(input);
 	const status = isValid === expected ? "✓" : "✗";
 	const displayInput =
 		input.length > 20 ? `${input.slice(0, 10)}...${input.slice(-6)}` : input;
-	console.log(
-		`  ${status} ${displayInput.padEnd(20)} → ${isValid} (${reason})`,
-	);
 });
-console.log();
-
-// ============================================================
-// 2. Safe Parsing Patterns
-// ============================================================
-
-console.log("2. Safe Parsing Patterns\n");
 
 // Pattern 1: Return null on invalid
 function parseHashOrNull(input: string): Hash | null {
@@ -117,58 +97,25 @@ function parseHashResult(input: string): ParseResult {
 const validInput =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const invalidInput = "0x1234";
-
-console.log("Pattern 1 (null on error):");
 const result1 = parseHashOrNull(validInput);
-console.log(`  Valid:   ${result1 ? result1.format() : "null"}`);
 const result2 = parseHashOrNull(invalidInput);
-console.log(`  Invalid: ${result2 ? result2.format() : "null"}`);
-
-console.log("\nPattern 2 (throw on error):");
 try {
 	const result3 = parseHashOrThrow(validInput);
-	console.log(`  Valid:   ${result3.format()}`);
 } catch (error) {
-	console.log(
-		`  Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-	);
 }
 
 try {
 	const result4 = parseHashOrThrow(invalidInput);
-	console.log(`  Invalid: ${result4.format()}`);
 } catch (error) {
-	console.log(
-		`  Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-	);
 }
-
-console.log("\nPattern 3 (result object):");
 const result5 = parseHashResult(validInput);
-console.log(
-	`  Valid:   ${result5.success ? result5.hash!.format() : result5.error}`,
-);
 const result6 = parseHashResult(invalidInput);
-console.log(
-	`  Invalid: ${result6.success ? result6.hash!.format() : result6.error}`,
-);
-console.log();
-
-// ============================================================
-// 3. Type Guards
-// ============================================================
-
-console.log("3. Type Guards\n");
 
 function processUnknownValue(value: unknown, label: string) {
 	if (Hash.isHash(value)) {
-		console.log(`  ${label}: Hash (${Hash.format(value)})`);
 	} else if (typeof value === "string") {
-		console.log(`  ${label}: String ("${value}")`);
 	} else if (value instanceof Uint8Array) {
-		console.log(`  ${label}: Uint8Array (length: ${value.length})`);
 	} else {
-		console.log(`  ${label}: ${typeof value}`);
 	}
 }
 
@@ -178,20 +125,11 @@ const bytes20 = new Uint8Array(20);
 const hexString =
 	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const number = 123;
-
-console.log("Type guard tests:");
 processUnknownValue(hash, "Hash instance");
 processUnknownValue(bytes32, "32 bytes");
 processUnknownValue(bytes20, "20 bytes");
 processUnknownValue(hexString, "Hex string");
 processUnknownValue(number, "Number");
-console.log();
-
-// ============================================================
-// 4. Filtering Valid Hashes
-// ============================================================
-
-console.log("4. Filtering Collections\n");
 
 const mixedValues: unknown[] = [
 	Hash.random(),
@@ -204,19 +142,8 @@ const mixedValues: unknown[] = [
 ];
 
 const validHashes = mixedValues.filter(Hash.isHash);
-console.log(`Mixed values: ${mixedValues.length}`);
-console.log(`Valid hashes: ${validHashes.length}`);
-console.log("Filtered hashes:");
 validHashes.forEach((hash, i) => {
-	console.log(`  ${i + 1}. ${Hash.format(hash)}`);
 });
-console.log();
-
-// ============================================================
-// 5. Assertion-Based Validation
-// ============================================================
-
-console.log("5. Assertion-Based Validation\n");
 
 function processHash(value: unknown): string {
 	// Assert will throw if not a hash
@@ -229,30 +156,14 @@ function processHash(value: unknown): string {
 try {
 	const validHash = Hash.random();
 	const result = processHash(validHash);
-	console.log(`  Valid hash processed: ${result.slice(0, 10)}...`);
 } catch (error) {
-	console.log(
-		`  Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-	);
 }
 
 try {
 	const invalidValue = "not a hash";
 	const result = processHash(invalidValue);
-	console.log(`  Invalid processed: ${result}`);
 } catch (error) {
-	console.log(
-		`  Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-	);
 }
-
-console.log();
-
-// ============================================================
-// 6. Form Input Validation
-// ============================================================
-
-console.log("6. Form Input Validation\n");
 
 interface ValidationError {
 	field: string;
@@ -302,27 +213,16 @@ const formInputs = [
 	"0x1234", // Too short
 	"0xGGGG567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", // Invalid chars
 ];
-
-console.log("Form validation:");
 formInputs.forEach((input) => {
 	const errors = validateHashInput(input);
 	const display =
 		input.length > 20 ? `${input.slice(0, 10)}...` : input || "(empty)";
 
 	if (errors.length === 0) {
-		console.log(`  ✓ ${display}`);
 	} else {
-		console.log(`  ✗ ${display}`);
-		errors.forEach((err) => console.log(`    - ${err.message}`));
+		errors.forEach((err) => );
 	}
 });
-console.log();
-
-// ============================================================
-// 7. API Parameter Validation
-// ============================================================
-
-console.log("7. API Parameter Validation\n");
 
 interface GetLogsParams {
 	fromBlock: number;
@@ -360,11 +260,7 @@ try {
 		],
 	};
 	validateGetLogsParams(validParams);
-	console.log("  ✓ Valid params accepted");
 } catch (error) {
-	console.log(
-		`  ✗ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-	);
 }
 
 // Invalid params
@@ -375,19 +271,8 @@ try {
 		topics: ["0x1234"], // Too short
 	};
 	validateGetLogsParams(invalidParams);
-	console.log("  ✓ Invalid params accepted");
 } catch (error) {
-	console.log(
-		`  ✗ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-	);
 }
-console.log();
-
-// ============================================================
-// 8. Zero Hash Validation
-// ============================================================
-
-console.log("8. Zero Hash Validation\n");
 
 const hashes = [
 	Hash.fromBytes(new Uint8Array(32)), // Zero
@@ -395,20 +280,10 @@ const hashes = [
 	Hash.ZERO, // Zero constant
 	Hash.random(), // Non-zero
 ];
-
-console.log("Zero hash checks:");
 hashes.forEach((hash, i) => {
 	const isZero = hash.isZero();
 	const status = isZero ? "ZERO" : "NON-ZERO";
-	console.log(`  ${i + 1}. ${hash.format()} → ${status}`);
 });
-console.log();
-
-// ============================================================
-// 9. Batch Validation
-// ============================================================
-
-console.log("9. Batch Validation\n");
 
 function validateHashBatch(inputs: string[]): {
 	valid: Hash[];
@@ -441,14 +316,6 @@ const batchInputs = [
 ];
 
 const batchResult = validateHashBatch(batchInputs);
-console.log(`Total inputs: ${batchInputs.length}`);
-console.log(`Valid: ${batchResult.valid.length}`);
-console.log(`Invalid: ${batchResult.invalid.length}`);
-console.log("\nInvalid inputs:");
 batchResult.invalid.forEach((input) => {
 	const display = input.length > 20 ? `${input.slice(0, 10)}...` : input;
-	console.log(`  - ${display}`);
 });
-console.log();
-
-console.log("=== Example Complete ===\n");

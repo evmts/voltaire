@@ -8,13 +8,10 @@
  * - Comparing with and without access lists
  */
 
-import * as Transaction from "../../../src/primitives/Transaction/index.js";
 import * as Address from "../../../src/primitives/Address/index.js";
-import * as Hex from "../../../src/primitives/Hex/index.js";
 import * as Hash from "../../../src/primitives/Hash/index.js";
-
-// Example 1: Basic EIP-2930 transaction without access list
-console.log("=== EIP-2930 Access List Transactions ===\n");
+import * as Hex from "../../../src/primitives/Hex/index.js";
+import * as Transaction from "../../../src/primitives/Transaction/index.js";
 
 const basic: Transaction.EIP2930 = {
 	type: Transaction.Type.EIP2930,
@@ -34,14 +31,6 @@ const basic: Transaction.EIP2930 = {
 		"0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
 	),
 };
-
-console.log("1. Basic EIP-2930 Transaction (no access list):");
-console.log("  Type:", basic.type, "(EIP2930)");
-console.log("  Chain ID:", basic.chainId);
-console.log("  Gas Price:", basic.gasPrice / 1_000_000_000n, "gwei");
-console.log("  yParity:", basic.yParity, "(0 or 1, not v)");
-console.log("  Access List:", basic.accessList.length, "entries");
-console.log();
 
 // Example 2: EIP-2930 with access list for contract interaction
 const tokenContract = Address.from(
@@ -72,7 +61,7 @@ function calculateMapSlot(address: Uint8Array, slot: bigint): Uint8Array {
 
 	// In real usage, you'd hash this with keccak256
 	// For now, return a placeholder hash
-	return Hash.from("0x" + "00".repeat(31) + "01");
+	return Hash.from(`0x${"00".repeat(31)}01`);
 }
 
 const senderBalanceSlot = calculateMapSlot(senderAddress, 0n);
@@ -99,27 +88,9 @@ const withAccessList: Transaction.EIP2930 = {
 		},
 	],
 	yParity: 0,
-	r: Hex.toBytes("0x" + "00".repeat(32)),
-	s: Hex.toBytes("0x" + "00".repeat(32)),
+	r: Hex.toBytes(`0x${"00".repeat(32)}`),
+	s: Hex.toBytes(`0x${"00".repeat(32)}`),
 };
-
-console.log("2. EIP-2930 with Access List (ERC20 transfer):");
-console.log("  Contract:", Address.toHex(withAccessList.to!));
-console.log("  Function: transfer(address,uint256)");
-console.log("  Access List Entries:", withAccessList.accessList.length);
-console.log("  Accessing:");
-console.log("    - Contract:", Address.toHex(tokenContract));
-console.log(
-	"    - Storage Keys:",
-	withAccessList.accessList[0].storageKeys.length,
-);
-console.log("      • sender balance slot");
-console.log("      • recipient balance slot");
-console.log();
-
-// Example 3: Gas savings calculation
-console.log("3. Access List Gas Cost Analysis:");
-console.log("-".repeat(50));
 
 // Gas costs (Berlin hard fork)
 const COLD_ACCOUNT_ACCESS = 2600n;
@@ -148,27 +119,6 @@ const withAccessListCost =
 const totalWithout = withoutAccessListCost;
 const totalWith = accessListCost + withAccessListCost;
 const savings = totalWithout - totalWith;
-
-console.log("Without access list:");
-console.log(`  Cold account access:  ${COLD_ACCOUNT_ACCESS} gas`);
-console.log(`  Cold SLOAD (×2):      ${COLD_SLOAD * 2n} gas`);
-console.log(`  Total:                ${totalWithout} gas`);
-console.log();
-console.log("With access list:");
-console.log(`  Access list cost:     ${accessListCost} gas`);
-console.log(`    - Address entry:    ${ACCESS_LIST_ADDRESS_COST} gas`);
-console.log(
-	`    - Storage keys (×2): ${ACCESS_LIST_STORAGE_KEY_COST * 2n} gas`,
-);
-console.log(`  Warm access cost:     ${withAccessListCost} gas`);
-console.log(`    - Warm account:     ${WARM_ACCOUNT_ACCESS} gas`);
-console.log(`    - Warm SLOAD (×2):  ${WARM_SLOAD * 2n} gas`);
-console.log(`  Total:                ${totalWith} gas`);
-console.log();
-console.log(
-	`Gas savings:            ${savings} gas (${((Number(savings) / Number(totalWithout)) * 100).toFixed(1)}%)`,
-);
-console.log();
 
 // Example 4: Complex access list with multiple contracts
 const uniswapRouter = Address.from(
@@ -200,60 +150,14 @@ const complexAccessList: Transaction.EIP2930 = {
 		},
 	],
 	yParity: 1,
-	r: Hex.toBytes("0x" + "00".repeat(32)),
-	s: Hex.toBytes("0x" + "00".repeat(32)),
+	r: Hex.toBytes(`0x${"00".repeat(32)}`),
+	s: Hex.toBytes(`0x${"00".repeat(32)}`),
 };
-
-console.log("4. Complex Multi-Contract Access List:");
-console.log("  Transaction: Uniswap token swap");
-console.log("  Access List:");
 for (let i = 0; i < complexAccessList.accessList.length; i++) {
 	const entry = complexAccessList.accessList[i];
-	console.log(`    [${i}] ${Address.toHex(entry.address)}`);
-	console.log(`        Storage keys: ${entry.storageKeys.length}`);
 }
-console.log();
-
-// Example 5: When to use access lists
-console.log("5. Access List Best Practices:");
-console.log("-".repeat(50));
-console.log("✓ Use access lists when:");
-console.log("  • Accessing same storage multiple times");
-console.log("  • Complex contract interactions");
-console.log("  • Gas savings > access list overhead");
-console.log();
-console.log("✗ Avoid access lists when:");
-console.log("  • Simple ETH transfers");
-console.log("  • Single storage read");
-console.log("  • Small transactions");
-console.log();
-
-// Example 6: EIP-2930 vs Legacy
-console.log("6. EIP-2930 vs Legacy Comparison:");
-console.log("-".repeat(50));
-console.log("Feature                  Legacy    EIP-2930");
-console.log("Type byte                None      0x01");
-console.log("Chain ID                 In v      Explicit");
-console.log("Signature format         v/r/s     yParity/r/s");
-console.log("Gas pricing              Fixed     Fixed");
-console.log("Access list support      No        Yes");
-console.log("Gas optimization         No        Yes");
-console.log();
-
-// Example 7: Converting yParity to v (and vice versa)
-console.log("7. yParity vs v Conversion:");
-console.log("-".repeat(50));
 const chainId = 1n;
 const yParity = 0;
 
 // Legacy v = chainId * 2 + 35 + yParity
 const legacyV = chainId * 2n + 35n + BigInt(yParity);
-
-console.log(`Chain ID: ${chainId}`);
-console.log(`yParity (EIP-2930): ${yParity}`);
-console.log(`v (Legacy): ${legacyV}`);
-console.log();
-console.log("Conversion formulas:");
-console.log("  EIP-2930 → Legacy: v = chainId * 2 + 35 + yParity");
-console.log("  Legacy → EIP-2930: yParity = v % 2");
-console.log();
