@@ -14,6 +14,8 @@ Every line correct. No stubs/commented tests.
 
 LLMS ARE NEVER TO COMMENT OUT OR DISABLE TESTS
 
+Never make time or work estimates of how long work will take it is not useful context
+
 ### Workflow
 
 - Run from repo root (never `cd` unless user requests it)
@@ -139,6 +141,7 @@ Address._toHex(addr)           // Advanced (internal, no conversion)
 ```
 
 **File organization**:
+
 ```
 Address/
 ├── BrandedAddress.ts    # Type definition
@@ -150,6 +153,7 @@ Address/
 ```
 
 **Key patterns**:
+
 - `.js` extension for implementation (NOT .ts)
 - JSDoc types in .js files
 - Internal methods take data as first param
@@ -232,6 +236,7 @@ Self-contained, fix failures immediately, evidence-based debug. **No output = pa
 ### Colocated Documentation Pattern
 
 Primitives with colocated docs use symlinks for Starlight integration:
+
 - Source: `src/primitives/{PascalCase}/index.mdx`
 - Symlink: `src/content/docs/primitives/{lowercase} → ../../../primitives/{PascalCase}`
 - New primitives: Create docs in `src/primitives/{Name}/` and symlink to `src/content/docs/primitives/{name}`
