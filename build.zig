@@ -467,7 +467,9 @@ pub fn build(b: *std.Build) void {
         c_api_lib.linkLibrary(c_kzg_lib);
         c_api_lib.linkLibrary(blst_lib);
         c_api_lib.addObjectFile(rust_crypto_lib_path);
+        c_api_lib.addObjectFile(b.path("lib/libwally-core/zig-out/lib/libwallycore.a"));
         c_api_lib.addIncludePath(b.path("lib")); // For Rust FFI headers
+        c_api_lib.addIncludePath(b.path("lib/libwally-core/include")); // For libwally headers
         c_api_lib.step.dependOn(cargo_build_step);
         c_api_lib.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_lib.linkLibC();
@@ -489,7 +491,9 @@ pub fn build(b: *std.Build) void {
         c_api_shared.linkLibrary(c_kzg_lib);
         c_api_shared.linkLibrary(blst_lib);
         c_api_shared.addObjectFile(rust_crypto_lib_path);
+        c_api_shared.addObjectFile(b.path("lib/libwally-core/zig-out/lib/libwallycore.a"));
         c_api_shared.addIncludePath(b.path("lib")); // For Rust FFI headers
+        c_api_shared.addIncludePath(b.path("lib/libwally-core/include")); // For libwally headers
         c_api_shared.step.dependOn(cargo_build_step);
         c_api_shared.step.dependOn(&run_generate_header.step); // Auto-generate header
         c_api_shared.linkLibC();
