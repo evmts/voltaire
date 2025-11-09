@@ -1,6 +1,6 @@
-var u = null,
-	c = null,
-	a = 0;
+let u = null;
+let c = null;
+let a = 0;
 async function y() {
 	if (u) return;
 	const t = await fetch(
@@ -18,11 +18,11 @@ function m(t) {
 }
 async function b(t) {
 	await y();
-	const r = u.exports,
-		e = new TextEncoder().encode(t),
-		s = m(e.length),
-		n = m(20),
-		o = new Uint8Array(r.memory.buffer);
+	const r = u.exports;
+	const e = new TextEncoder().encode(t);
+	const s = m(e.length);
+	const n = m(20);
+	const o = new Uint8Array(r.memory.buffer);
 	if ((o.set(e, s), r.addressFromHex(s, e.length, n) !== 0))
 		throw ((a = 0), new Error("Invalid hex format"));
 	const d = new Uint8Array(20);
@@ -30,43 +30,43 @@ async function b(t) {
 }
 async function l(t) {
 	await y();
-	const r = u.exports,
-		e = m(20),
-		s = m(42),
-		n = new Uint8Array(r.memory.buffer);
+	const r = u.exports;
+	const e = m(20);
+	const s = m(42);
+	const n = new Uint8Array(r.memory.buffer);
 	n.set(t, e), r.addressToHex(e, s);
-	const o = n.subarray(s, s + 42),
-		i = new TextDecoder().decode(o);
+	const o = n.subarray(s, s + 42);
+	const i = new TextDecoder().decode(o);
 	return (a = 0), i;
 }
 async function w(t) {
 	await y();
-	const r = u.exports,
-		e = new TextEncoder().encode(t),
-		s = m(e.length);
+	const r = u.exports;
+	const e = new TextEncoder().encode(t);
+	const s = m(e.length);
 	new Uint8Array(r.memory.buffer).set(e, s);
 	const o = r.addressIsValid(s, e.length);
 	return (a = 0), o === 1;
 }
 async function x(t, r) {
 	await y();
-	const e = u.exports,
-		s = m(20),
-		n = m(20),
-		o = new Uint8Array(e.memory.buffer);
+	const e = u.exports;
+	const s = m(20);
+	const n = m(20);
+	const o = new Uint8Array(e.memory.buffer);
 	o.set(t, s), o.set(r, n);
 	const i = e.addressEquals(s, n);
 	return (a = 0), i === 1;
 }
 async function f(t) {
 	await y();
-	const r = u.exports,
-		e = m(20);
+	const r = u.exports;
+	const e = m(20);
 	new Uint8Array(r.memory.buffer).set(t, e);
 	const n = r.addressIsZero(e);
 	return (a = 0), n === 1;
 }
-var p = new Uint8Array(20);
+const p = new Uint8Array(20);
 export {
 	p as ZERO,
 	x as equals,

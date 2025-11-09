@@ -7,8 +7,8 @@ function a(t) {
 	return r(n);
 }
 function c(t) {
-	const n = t.startsWith("0x") ? t.slice(2) : t,
-		i = new Uint8Array(n.length / 2);
+	const n = t.startsWith("0x") ? t.slice(2) : t;
+	const i = new Uint8Array(n.length / 2);
 	for (let e = 0; e < n.length; e += 2)
 		i[e / 2] = Number.parseInt(n.slice(e, e + 2), 16);
 	return r(i);

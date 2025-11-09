@@ -1,13 +1,13 @@
-var s = class extends Error {
-		constructor() {
-			super("Invalid hex format");
-		}
-	},
-	o = class extends Error {
-		constructor() {
-			super("Invalid hex string");
-		}
-	};
+const s = class extends Error {
+	constructor() {
+		super("Invalid hex format");
+	}
+};
+const o = class extends Error {
+	constructor() {
+		super("Invalid hex string");
+	}
+};
 function a(t) {
 	if (!t.startsWith("0x") || t.length !== 42) throw new s();
 	const r = t.slice(2);
@@ -40,7 +40,7 @@ function c(t) {
 	for (let r = 0; r < 20; r++) if (t[r] !== 0) return !1;
 	return !0;
 }
-var E = new Uint8Array(20);
+const E = new Uint8Array(20);
 export {
 	E as ZERO,
 	l as equals,

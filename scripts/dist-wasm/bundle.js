@@ -1,6 +1,6 @@
-var i = null,
-	o = null,
-	s = 0;
+let i = null;
+let o = null;
+let s = 0;
 async function l() {
 	if (i) return;
 	const e = await fetch(
@@ -18,10 +18,10 @@ function c(e) {
 }
 async function u(e) {
 	await l();
-	const t = i.exports,
-		r = c(e.length),
-		n = c(32),
-		a = new Uint8Array(t.memory.buffer);
+	const t = i.exports;
+	const r = c(e.length);
+	const n = c(32);
+	const a = new Uint8Array(t.memory.buffer);
 	a.set(e, r), t.keccak256Hash(r, e.length, n);
 	const m = new Uint8Array(32);
 	return m.set(a.subarray(n, n + 32)), (s = 0), m;
@@ -31,8 +31,8 @@ async function y(e) {
 	return u(t);
 }
 async function b(e) {
-	const t = e.startsWith("0x") ? e.slice(2) : e,
-		r = new Uint8Array(t.length / 2);
+	const t = e.startsWith("0x") ? e.slice(2) : e;
+	const r = new Uint8Array(t.length / 2);
 	for (let n = 0; n < t.length; n += 2)
 		r[n / 2] = Number.parseInt(t.slice(n, n + 2), 16);
 	return u(r);
