@@ -47,7 +47,7 @@ describe("toString", () => {
 
 	it("round-trip with fromString", () => {
 		const original = "Hello, World! 123";
-		const hex = fromString(original);
+		const hex = fromString(original) as BrandedHex;
 		const decoded = toString(hex);
 		expect(decoded).toBe(original);
 	});
@@ -74,13 +74,13 @@ describe("toString", () => {
 
 	it("handles long strings", () => {
 		const original = "a".repeat(1000);
-		const hex = fromString(original);
+		const hex = fromString(original) as BrandedHex;
 		const decoded = toString(hex);
 		expect(decoded).toBe(original);
 	});
 
 	it("handles UTF-8 encoded characters", () => {
-		const hex = fromString("🚀");
+		const hex = fromString("🚀") as BrandedHex;
 		const decoded = toString(hex);
 		expect(decoded).toBe("🚀");
 	});

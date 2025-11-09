@@ -210,8 +210,8 @@ results.push(
 results.push(benchmark("toBigInt - medium", () => toBigInt(mediumHex)));
 results.push(benchmark("toBigInt - large", () => toBigInt(largeHex)));
 
-const hexFromString = fromString(testString);
-const hexFromLongString = fromString(longString);
+const hexFromString = fromString(testString) as BrandedHex;
+const hexFromLongString = fromString(longString) as BrandedHex;
 results.push(benchmark("fromString - short", () => fromString(testString)));
 results.push(benchmark("fromString - long", () => fromString(longString)));
 results.push(benchmark("toString - short", () => toString(hexFromString)));
@@ -287,7 +287,7 @@ results.push(benchmark("equals - large", () => equals(largeHex, largeHex)));
 const xorA: BrandedHex = "0x12345678" as BrandedHex;
 const xorB: BrandedHex = "0xabcdef01" as BrandedHex;
 const xorMediumA = mediumHex;
-const xorMediumB = random(32);
+const xorMediumB = random(32) as BrandedHex;
 results.push(benchmark("xor - small (4 bytes)", () => xor(xorA, xorB)));
 results.push(
 	benchmark("xor - medium (32 bytes)", () => xor(xorMediumA, xorMediumB)),

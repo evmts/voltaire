@@ -457,7 +457,7 @@ describe("Hex", () => {
 	describe("round-trip conversions", () => {
 		it("maintains data integrity", () => {
 			const original = new Uint8Array([0x12, 0x34, 0xab, 0xcd]);
-			const hex = fromBytes(original);
+			const hex = fromBytes(original) as BrandedHex;
 			const result = toBytes(hex);
 			expect(Array.from(result)).toEqual(Array.from(original));
 		});

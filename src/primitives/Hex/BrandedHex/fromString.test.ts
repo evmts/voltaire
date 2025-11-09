@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { BrandedHex } from "./BrandedHex.js";
 import { fromString } from "./fromString.js";
 import { toBytes } from "./toBytes.js";
 
@@ -24,7 +25,7 @@ describe("fromString", () => {
 	});
 
 	it("converts Unicode characters", () => {
-		const hex = fromString("🚀");
+		const hex = fromString("🚀") as BrandedHex;
 		const bytes = toBytes(hex);
 		expect(bytes.length).toBeGreaterThan(1);
 	});
@@ -37,7 +38,7 @@ describe("fromString", () => {
 
 	it("round-trip conversion", () => {
 		const original = "Hello, World! 123";
-		const hex = fromString(original);
+		const hex = fromString(original) as BrandedHex;
 		const bytes = toBytes(hex);
 		const decoded = new TextDecoder().decode(bytes);
 		expect(decoded).toBe(original);
