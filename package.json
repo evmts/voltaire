@@ -419,6 +419,8 @@
 		"test:run": "vitest run",
 		"test:native": "DYLD_LIBRARY_PATH=zig-out/lib vitest run src/typescript/native",
 		"test:wasm": "vitest run src/wasm",
+		"test:examples": "bun run test-examples.ts",
+		"test:examples:zig": "zig run examples/test-examples.zig",
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
