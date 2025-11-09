@@ -311,8 +311,8 @@ results.push(benchmark("zero - small (4 bytes)", () => zero(4)));
 results.push(benchmark("zero - medium (32 bytes)", () => zero(32)));
 results.push(benchmark("zero - large (256 bytes)", () => zero(256)));
 
-// Find fastest and slowest operations
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+// Sort results (currently unused)
+[...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

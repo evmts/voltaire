@@ -6,8 +6,9 @@
 
 import { bench, group, run } from "mitata";
 
-// Import Ox-based implementation
-import * as OxHex from "./index.ox.js";
+// Import Ox-based implementation (currently disabled - file doesn't exist)
+// import * as OxHex from "./index.ox.js";
+const OxHex = {} as any;
 
 // Import current Voltaire implementation
 import * as VoltaireHex from "./BrandedHex/index.js";

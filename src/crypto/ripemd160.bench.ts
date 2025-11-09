@@ -209,7 +209,7 @@ function runBenchmarks() {
 		const avgTime = totalTime / iterations;
 		const opsPerSec = Math.round(1000 / avgTime);
 
-		results.noble_hashString = { opsPerSec, avgTime };
+		results["noble_hashString"] = { opsPerSec, avgTime };
 	}
 
 	// String benchmark - WASM
@@ -227,19 +227,9 @@ function runBenchmarks() {
 		const avgTime = totalTime / iterations;
 		const opsPerSec = Math.round(1000 / avgTime);
 
-		results.wasm_hashString = { opsPerSec, avgTime };
+		results["wasm_hashString"] = { opsPerSec, avgTime };
 	}
-	for (const { name } of testCases) {
-		const nobleKey = `noble_${name}`;
-		const wasmKey = `wasm_${name}`;
-
-		if (results[nobleKey] && results[wasmKey]) {
-			const nobleOps = results[nobleKey].opsPerSec;
-			const wasmOps = results[wasmKey].opsPerSec;
-			const ratio = (wasmOps / nobleOps).toFixed(2);
-			const faster = wasmOps > nobleOps ? "WASM" : "Noble";
-		}
-	}
+	// Comparison logic removed (variables were unused)
 
 	// Save results
 	const outputPath = join(__dirname, "ripemd160-results.json");

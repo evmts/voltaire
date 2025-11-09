@@ -266,8 +266,8 @@ results.push(
 );
 results.push(benchmark("popCount - large", () => Uint.popCount(largeValue)));
 
-// Find fastest and slowest
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+// Sort results (currently unused)
+[...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {

@@ -210,8 +210,8 @@ results.push(benchmark("slice - middle", () => slice(hash1, 10, 20)));
 results.push(benchmark("format - default", () => format(hash1)));
 results.push(benchmark("format - custom lengths", () => format(hash1, 10, 8)));
 
-// Find fastest and slowest operations
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
+// Sort results (currently unused)
+[...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
 const categories = {
 	Creation: results.filter((r) => r.name.includes("from")),
 	Conversion: results.filter(
@@ -239,10 +239,10 @@ const categories = {
 	),
 };
 
-for (const [category, categoryResults] of Object.entries(categories)) {
+for (const [, categoryResults] of Object.entries(categories)) {
 	if (categoryResults.length > 0) {
-		const avgOps =
-			categoryResults.reduce((sum, r) => sum + r.opsPerSec, 0) /
+		// Average ops/sec calculation (currently unused)
+		categoryResults.reduce((sum, r) => sum + r.opsPerSec, 0) /
 			categoryResults.length;
 	}
 }
