@@ -1,26 +1,8 @@
 import {
-	execute,
 	PrecompileAddress,
+	execute,
 } from "../../../src/precompiles/precompiles.js";
 import { Hardfork } from "../../../src/primitives/Hardfork/index.js";
-
-/**
- * BN254 Pairing - Groth16 zkSNARK Verification
- *
- * Demonstrates Groth16 proof verification using BN254 pairing precompile (0x08).
- *
- * Groth16 is the most widely used zkSNARK system:
- * - Used by Tornado Cash, Zcash, Filecoin
- * - Smallest proof size (3 G1 points)
- * - Fastest verification (4 pairings)
- *
- * Verification equation: e(A,B) * e(α,β) * e(L,γ) * e(C,δ) = 1
- * Rearranged: e(-A,B) * e(α,β) * e(-L,γ) * e(C,δ) = 1
- *
- * Gas cost: 45,000 + (4 × 34,000) = 181,000 gas
- */
-
-console.log("=== BN254 Pairing - Groth16 zkSNARK Verification ===\n");
 
 /**
  * Convert bigint to 32-byte big-endian
@@ -97,10 +79,6 @@ function serializeG2(
 	return bytes;
 }
 
-// Example 1: Simple pairing check
-console.log("1. Basic Pairing Check");
-console.log("-".repeat(50));
-
 // Verify: e(G1, G2) * e(-G1, G2) = 1
 // This should return true (identity)
 
@@ -131,10 +109,6 @@ pair1Input.set(
 	256,
 );
 
-console.log("Checking: e(G1, G2) × e(-G1, G2) = 1");
-console.log(`Input: 384 bytes (2 pairs)`);
-console.log(`Format: [G1, G2, -G1, G2]\n`);
-
 const pair1Result = execute(
 	PrecompileAddress.BN254_PAIRING,
 	pair1Input,
@@ -144,38 +118,8 @@ const pair1Result = execute(
 
 if (pair1Result.success) {
 	const isValid = pair1Result.output[31] === 1;
-	console.log(`✓ Pairing executed`);
-	console.log(`Gas used: ${pair1Result.gasUsed} (45k + 2×34k = 113k)`);
-	console.log(`Result: ${isValid ? "VALID (1)" : "INVALID (0)"}`);
-	console.log(`Expected: VALID\n`);
 } else {
-	console.log(`✗ Failed: ${pair1Result.error}\n`);
 }
-
-// Example 2: Groth16 proof structure
-console.log("2. Groth16 Proof Structure");
-console.log("-".repeat(50));
-
-console.log("Groth16 proof components:");
-console.log("  Proof π = (A, B, C):");
-console.log("    A ∈ G1  (64 bytes)");
-console.log("    B ∈ G2  (128 bytes)");
-console.log("    C ∈ G1  (64 bytes)");
-console.log("  Total proof size: 256 bytes\n");
-
-console.log("Verification key (VK):");
-console.log("  α ∈ G1, β ∈ G2 (trusted setup)");
-console.log("  γ ∈ G2, δ ∈ G2 (trusted setup)");
-console.log("  IC[] ∈ G1  (per public input)\n");
-
-console.log("Verification equation:");
-console.log("  e(A, B) × e(α, β) × e(L, γ) × e(C, δ) = 1\n");
-
-console.log("Where L = IC[0] + Σ(input[i] × IC[i+1])\n");
-
-// Example 3: Simulated Groth16 verification
-console.log("3. Simulated Groth16 Verification");
-console.log("-".repeat(50));
 
 // Simulated proof (in reality, these come from prover)
 const proof = {
@@ -211,21 +155,10 @@ const vk = {
 // Public input (what we're proving about)
 const publicInput = [42n];
 
-console.log("Proof components:");
-console.log(`  A: (${proof.A.x}, ${proof.A.y})`);
-console.log(
-	`  B: ((${proof.B.x1}, ${proof.B.x2}), (${proof.B.y1}, ${proof.B.y2}))`,
-);
-console.log(`  C: (${proof.C.x}, ${proof.C.y})`);
-console.log(`\nPublic input: [${publicInput}]`);
-
 // In real verification, we'd compute L using ECADD and ECMUL
 // L = IC[0] + publicInput[0] × IC[1] + ...
 // For demonstration, we use IC[0]
 const L = vk.IC[0];
-
-console.log(`\nComputing L = IC[0] + Σ(input[i] × IC[i+1])...`);
-console.log(`(Simplified: using IC[0] directly)\n`);
 
 // Build pairing input: 4 pairs (768 bytes)
 const grothInput = new Uint8Array(768);
@@ -257,12 +190,6 @@ grothInput.set(
 	640,
 );
 
-console.log("Pairing input: 4 pairs (768 bytes)");
-console.log("  Pair 1: e(-A, B)");
-console.log("  Pair 2: e(α, β)");
-console.log("  Pair 3: e(-L, γ)");
-console.log("  Pair 4: e(C, δ)\n");
-
 const grothResult = execute(
 	PrecompileAddress.BN254_PAIRING,
 	grothInput,
@@ -272,66 +199,10 @@ const grothResult = execute(
 
 if (grothResult.success) {
 	const isValid = grothResult.output[31] === 1;
-	console.log(`✓ Pairing executed`);
-	console.log(`Gas used: ${grothResult.gasUsed}`);
-	console.log(`Expected: 45,000 + (4 × 34,000) = 181,000 gas`);
-	console.log(`Result: ${isValid ? "VALID" : "INVALID"}`);
-	console.log("(Note: Invalid because proof is simulated)\n");
 } else {
-	console.log(`✗ Failed: ${grothResult.error}\n`);
 }
 
-// Example 4: Real-world use cases
-console.log("4. Real-World Groth16 Applications");
-console.log("-".repeat(50));
-
-console.log("Tornado Cash (Privacy):");
-console.log('  - Proves: "I deposited to this contract"');
-console.log("  - Without revealing: which deposit");
-console.log("  - Circuit: ~2,000 constraints (Merkle tree)");
-console.log("  - Gas: ~181,000 (verification only)\n");
-
-console.log("zkSync (Rollup):");
-console.log('  - Proves: "1000 transactions are valid"');
-console.log("  - Without revealing: transaction details");
-console.log("  - Circuit: ~100,000 constraints");
-console.log("  - Gas: ~181,000 (same verification cost!)\n");
-
-console.log("Zcash (Shielded Transactions):");
-console.log('  - Proves: "I own this coin + no double-spend"');
-console.log("  - Without revealing: amounts or recipients");
-console.log("  - Circuit: ~20,000 constraints");
-console.log("  - Verified off-chain (Zcash nodes)\n");
-
-// Example 5: Gas cost analysis
-console.log("5. Gas Cost Analysis");
-console.log("-".repeat(50));
-
-console.log("Pre-Istanbul (EIP-196/197):");
-console.log("  Base: 100,000 gas");
-console.log("  Per pair: 80,000 gas");
-console.log("  4 pairs: 100k + 4×80k = 420,000 gas\n");
-
-console.log("Post-Istanbul (EIP-1108):");
-console.log("  Base: 45,000 gas");
-console.log("  Per pair: 34,000 gas");
-console.log("  4 pairs: 45k + 4×34k = 181,000 gas\n");
-
-console.log("Improvement: 57% reduction (239,000 gas saved)");
-console.log("This made privacy protocols economically viable!\n");
-
-console.log("Cost breakdown:");
-console.log("  Proof generation: Off-chain (free)");
-console.log("  Proof verification: 181,000 gas (~$3-30 @ 20 gwei)");
-console.log("  Proof + contract logic: ~250,000-500,000 gas\n");
-
-// Example 6: Empty pairing (edge case)
-console.log("6. Empty Pairing (Edge Case)");
-console.log("-".repeat(50));
-
 const emptyInput = new Uint8Array(0);
-
-console.log("Empty input (0 pairs) = empty product = 1\n");
 
 const emptyResult = execute(
 	PrecompileAddress.BN254_PAIRING,
@@ -342,17 +213,4 @@ const emptyResult = execute(
 
 if (emptyResult.success) {
 	const isValid = emptyResult.output[31] === 1;
-	console.log(`✓ Success`);
-	console.log(`Gas used: ${emptyResult.gasUsed} (base cost: 45,000)`);
-	console.log(`Result: ${isValid ? "VALID (1)" : "INVALID (0)"}`);
-	console.log(`Expected: VALID\n`);
 }
-
-console.log("=== Complete ===\n");
-console.log("Summary:");
-console.log("- Groth16 verification: 181,000 gas (4 pairings)");
-console.log("- Smallest proof system (256 bytes)");
-console.log("- Fastest verification (constant time)");
-console.log("- Powers Tornado Cash, zkSync, Zcash");
-console.log("- EIP-1108 made zkSNARKs economically viable");
-console.log("- Critical for privacy and scaling");
