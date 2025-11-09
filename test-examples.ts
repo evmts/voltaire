@@ -123,8 +123,9 @@ async function main() {
 			const relPath = relative(examplesDir, failure.file);
 			if (failure.error) {
 				const errorLines = failure.error.split("\n").slice(0, 5);
-				errorLines.forEach((line) => );
+				errorLines.forEach((line) => console.error(`    ${line}`));
 				if (failure.error.split("\n").length > 5) {
+					console.error("    ...");
 				}
 			}
 		}
