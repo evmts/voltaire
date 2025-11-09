@@ -48,8 +48,8 @@ const Gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n;
  */
 function multiplyBasePoint(k) {
 	// Ensure k is in valid range [1, N-1]
-	k = mod(k, N);
-	if (k === 0n) k = 1n;
+	let scalar = mod(k, N);
+	if (scalar === 0n) scalar = 1n;
 
 	let px = Gx;
 	let py = Gy;
@@ -58,7 +58,7 @@ function multiplyBasePoint(k) {
 
 	// Double-and-add algorithm
 	for (let i = 0n; i < 256n; i++) {
-		if ((k >> i) & 1n) {
+		if ((scalar >> i) & 1n) {
 			if (qx === null || qy === null) {
 				qx = px;
 				qy = py;
@@ -117,9 +117,9 @@ function pointDouble(x, y) {
  * @returns {bigint}
  */
 function modInv(a, m) {
-	a = mod(a, m);
+	const normalizedA = mod(a, m);
 	let [t, newT] = [0n, 1n];
-	let [r, newR] = [m, a];
+	let [r, newR] = [m, normalizedA];
 
 	while (newR !== 0n) {
 		const quotient = r / newR;
