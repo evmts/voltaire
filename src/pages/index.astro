@@ -1,0 +1,433 @@
+---
+const title = "Voltaire";
+const description =
+	"Simple, high-performance types and utilities for the Ethereum platform";
+---
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-has-hero data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} - {description}</title>
+  <meta name="description" content={description}>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <nav class="nav">
+        <a href="/" class="logo">
+          <span class="logo-text">Voltaire</span>
+        </a>
+        <div class="nav-links">
+          <a href="/getting-started/">Get Started</a>
+          <a href="/primitives/address/">Primitives</a>
+          <a href="/crypto/keccak256/">Crypto</a>
+          <a href="https://github.com/evmts/voltaire" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="main">
+      <section class="hero">
+        <h1 class="hero-title">
+          <span class="hero-title-line">Simple Ethereum</span>
+          <span class="hero-title-line gradient-text">Primitives</span>
+        </h1>
+        <p class="hero-subtitle">
+          High-performance, type-safe primitives and cryptography for building on Ethereum
+        </p>
+        <div class="hero-actions">
+          <a href="/why-voltaire/" class="btn btn-primary">
+            Why Voltaire?
+          </a>
+          <a href="/getting-started/" class="btn btn-secondary">
+            Get Started
+          </a>
+          <a href="https://github.com/evmts/voltaire" class="btn btn-secondary" target="_blank" rel="noopener">
+            View on GitHub
+          </a>
+        </div>
+      </section>
+
+      <section class="features">
+        <div class="container">
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h3>Type-Safe</h3>
+              <p>Branded types prevent mixing incompatible values. Zero runtime overhead.</p>
+            </div>
+
+            <div class="feature-card">
+              <h3>High-Performance</h3>
+              <p>Native Zig implementations via WASM. 2-3x faster than pure JavaScript.</p>
+            </div>
+
+            <div class="feature-card">
+              <h3>Tree-Shakeable</h3>
+              <p>Import only what you need. Unused code automatically excluded from bundles.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="code-examples">
+        <div class="container">
+          <h2 class="section-title">Try It Out</h2>
+          <p class="section-subtitle">Interactive examples coming soon</p>
+
+          <div class="stackblitz-placeholder">
+            <div class="placeholder-content">
+              <h3>Interactive Code Examples</h3>
+              <p>StackBlitz integration coming soon</p>
+              <div class="code-preview">
+                <pre><code>{`import { Address, Keccak256, Secp256k1 } from "@tevm/voltaire";
+
+// Hash a message
+const messageHash = Keccak256.hash("Hello Ethereum");
+
+// Sign with private key
+const signature = Secp256k1.sign(messageHash, privateKey);
+
+// Recover signer address
+const signer = Secp256k1.recoverAddress(messageHash, signature);
+
+console.log(Address.toChecksummed(signer));
+// "0xA0Cf798816D4b9b9866b5330EEa46A18382f251e"`}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta">
+        <div class="container">
+          <h2 class="cta-title">Ready to build?</h2>
+          <p class="cta-subtitle">Install Voltaire and start building on Ethereum</p>
+          <div class="cta-actions">
+            <a href="/getting-started/" class="btn btn-primary btn-large">
+              Get Started
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>MIT License • Built with <a href="https://astro.build" target="_blank">Astro</a> and <a href="https://starlight.astro.build" target="_blank">Starlight</a></p>
+      </div>
+    </footer>
+  </div>
+
+  <style>
+    :root {
+      --gradient-start: #42d392;
+      --gradient-end: #647eff;
+      --bg-dark: #1a1a1a;
+      --bg-darker: #0d0d0d;
+      --text-light: #e0e0e0;
+      --text-muted: #999;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-darker);
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      background: rgba(13, 13, 13, 0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    .nav {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      text-decoration: none;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gradient-start);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .nav-links a {
+      color: var(--text-light);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--gradient-start);
+    }
+
+    .main {
+      flex: 1;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 8rem 2rem 6rem;
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-title-line {
+      display: block;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.2rem, 3vw, 1.5rem);
+      color: var(--text-muted);
+      max-width: 800px;
+      margin: 0 auto 3rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(66, 211, 146, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-light);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--gradient-start);
+    }
+
+    .btn-large {
+      padding: 1rem 3rem;
+      font-size: 1.1rem;
+    }
+
+    .features {
+      padding: 4rem 0;
+      background: var(--bg-dark);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: all 0.3s;
+      text-align: center;
+    }
+
+    .feature-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--gradient-start);
+      transform: translateY(-4px);
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--gradient-start);
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .code-examples {
+      padding: 6rem 0;
+    }
+
+    .section-title {
+      font-size: 2.5rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+      font-size: 1.2rem;
+    }
+
+    .stackblitz-placeholder {
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 3rem;
+      text-align: center;
+    }
+
+    .placeholder-content h3 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+      color: var(--gradient-start);
+    }
+
+    .placeholder-content p {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .code-preview {
+      background: #0d0d0d;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: left;
+      overflow-x: auto;
+    }
+
+    .code-preview pre {
+      margin: 0;
+    }
+
+    .code-preview code {
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.9rem;
+      color: #e0e0e0;
+      line-height: 1.8;
+    }
+
+    .cta {
+      padding: 6rem 0;
+      background: var(--bg-dark);
+      text-align: center;
+    }
+
+    .cta-title {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .cta-subtitle {
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      margin-bottom: 2rem;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+    }
+
+    .footer {
+      padding: 2rem 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--gradient-start);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        gap: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .hero {
+        padding: 4rem 1rem 3rem;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</body>
+</html>
