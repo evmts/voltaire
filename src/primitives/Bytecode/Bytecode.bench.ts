@@ -278,9 +278,6 @@ results.push(
 	benchmark("extractRuntime - large", () => extractRuntime(largeCode, 100)),
 );
 
-// Find fastest and slowest
-const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-
 // Scaling analysis
 const smallAnalysis = results.find((r) => r.name === "analyze - small (100b)");
 const mediumAnalysis = results.find((r) => r.name === "analyze - medium (1kb)");

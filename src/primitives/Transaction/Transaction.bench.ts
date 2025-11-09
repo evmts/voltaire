@@ -411,7 +411,7 @@ results.push(benchmark("Access data", () => legacyTx.data));
 results.push(benchmark("Access signature (r)", () => legacyTx.r));
 
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sorted.slice(0, 5).forEach((r, i) => {});
+sorted.slice(0, 5).forEach((_r, _i) => {});
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
