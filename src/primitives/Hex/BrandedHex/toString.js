@@ -1,4 +1,3 @@
-import * as OxHex from "ox/Hex";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
