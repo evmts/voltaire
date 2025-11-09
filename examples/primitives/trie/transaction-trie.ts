@@ -13,11 +13,11 @@ class Trie {
 	private data = new Map<string, Uint8Array>();
 
 	put(key: Uint8Array, value: Uint8Array): void {
-		this.data.set(Buffer.from(key).toString('hex'), value);
+		this.data.set(Buffer.from(key).toString("hex"), value);
 	}
 
 	get(key: Uint8Array): Uint8Array | null {
-		return this.data.get(Buffer.from(key).toString('hex')) || null;
+		return this.data.get(Buffer.from(key).toString("hex")) || null;
 	}
 
 	rootHash(): Uint8Array | null {
@@ -79,14 +79,18 @@ function encodeIndex(index: number): Uint8Array {
 }
 
 function formatAddress(addr: Uint8Array): string {
-	return `0x${Array.from(addr).map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(addr)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 function formatHash(hash: Uint8Array): string {
-	return `0x${Array.from(hash).map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(hash)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
-console.log('=== Transaction Trie (Block Transactions) ===\n');
+console.log("=== Transaction Trie (Block Transactions) ===\n");
 
 // Create transaction trie
 const txTrie = new Trie();
@@ -103,7 +107,7 @@ const encoded0 = encodeTransaction(tx0);
 const key0 = encodeIndex(0);
 txTrie.put(key0, encoded0);
 
-console.log('Transaction 0:');
+console.log("Transaction 0:");
 console.log(`  From:  ${formatAddress(tx0.from)}`);
 console.log(`  To:    ${formatAddress(tx0.to)}`);
 console.log(`  Value: ${tx0.value} wei (1 ETH)`);
@@ -122,7 +126,7 @@ const encoded1 = encodeTransaction(tx1);
 const key1 = encodeIndex(1);
 txTrie.put(key1, encoded1);
 
-console.log('\nTransaction 1:');
+console.log("\nTransaction 1:");
 console.log(`  From:  ${formatAddress(tx1.from)}`);
 console.log(`  To:    ${formatAddress(tx1.to)}`);
 console.log(`  Value: ${tx1.value} wei (contract call)`);
@@ -141,7 +145,7 @@ const encoded2 = encodeTransaction(tx2);
 const key2 = encodeIndex(2);
 txTrie.put(key2, encoded2);
 
-console.log('\nTransaction 2:');
+console.log("\nTransaction 2:");
 console.log(`  From:  ${formatAddress(tx2.from)}`);
 console.log(`  To:    ${formatAddress(tx2.to)}`);
 console.log(`  Value: ${tx2.value} wei (0.5 ETH)`);
@@ -150,18 +154,18 @@ console.log(`  Gas:   ${tx2.gasLimit}`);
 
 // Compute transaction root
 const txRoot = txTrie.rootHash();
-console.log('\n=== Transaction Root ===');
-console.log(`Root Hash: ${txRoot ? formatHash(txRoot) : 'null'}`);
-console.log('\nThis transaction root would be stored in the block header.');
+console.log("\n=== Transaction Root ===");
+console.log(`Root Hash: ${txRoot ? formatHash(txRoot) : "null"}`);
+console.log("\nThis transaction root would be stored in the block header.");
 
 // Verify transactions can be retrieved by index
-console.log('\n=== Verification ===');
+console.log("\n=== Verification ===");
 const key1Verify = encodeIndex(1);
 const retrieved = txTrie.get(key1Verify);
-console.log('✓ Successfully retrieved transaction at index 1');
+console.log("✓ Successfully retrieved transaction at index 1");
 console.log(`  Encoded length: ${retrieved?.length || 0} bytes`);
 
-console.log('\n✓ Transaction trie built successfully');
+console.log("\n✓ Transaction trie built successfully");
 
 /**
  * Transaction Trie Structure:

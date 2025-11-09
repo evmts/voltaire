@@ -13,11 +13,11 @@ class Trie {
 	private data = new Map<string, Uint8Array>();
 
 	put(key: Uint8Array, value: Uint8Array): void {
-		this.data.set(Buffer.from(key).toString('hex'), value);
+		this.data.set(Buffer.from(key).toString("hex"), value);
 	}
 
 	get(key: Uint8Array): Uint8Array | null {
-		return this.data.get(Buffer.from(key).toString('hex')) || null;
+		return this.data.get(Buffer.from(key).toString("hex")) || null;
 	}
 
 	rootHash(): Uint8Array | null {
@@ -49,11 +49,15 @@ function computeStorageKey(slot: bigint, key: Uint8Array): Uint8Array {
 }
 
 function formatAddress(addr: Uint8Array): string {
-	return `0x${Array.from(addr).map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(addr)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 function formatHash(hash: Uint8Array): string {
-	return `0x${Array.from(hash).map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(hash)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 function bigintToBytes(value: bigint): Uint8Array {
@@ -70,8 +74,8 @@ function bigintToBytes(value: bigint): Uint8Array {
 	return bytes;
 }
 
-console.log('=== Contract Storage Trie ===\n');
-console.log('Simulating ERC20 token contract storage:\n');
+console.log("=== Contract Storage Trie ===\n");
+console.log("Simulating ERC20 token contract storage:\n");
 
 // Create storage trie for a contract
 const storageTrie = new Trie();
@@ -96,8 +100,10 @@ const balanceSlot = computeStorageKey(2n, ownerAddr);
 const ownerBalance = 500_000_000_000_000_000_000_000n;
 const balanceBytes = bigintToBytes(ownerBalance);
 storageTrie.put(balanceSlot, balanceBytes);
-console.log('\nSlot 2 mapping (balances):');
-console.log(`  balances[${formatAddress(ownerAddr)}] = ${ownerBalance} (500k tokens)`);
+console.log("\nSlot 2 mapping (balances):");
+console.log(
+	`  balances[${formatAddress(ownerAddr)}] = ${ownerBalance} (500k tokens)`,
+);
 
 // Another balance: different address
 const addr2 = new Uint8Array([0xab, 0xcd, ...new Array(18).fill(0)]);
@@ -114,24 +120,31 @@ const spenderAddr = new Uint8Array([0x56, 0x78, ...new Array(18).fill(0)]);
 // First compute inner mapping key
 const innerKey = computeStorageKey(3n, ownerAddr);
 // Then compute outer mapping key
-const innerKeyBigInt = Array.from(innerKey).reduce((acc, byte, i) => acc | (BigInt(byte) << BigInt((31 - i) * 8)), 0n);
+const innerKeyBigInt = Array.from(innerKey).reduce(
+	(acc, byte, i) => acc | (BigInt(byte) << BigInt((31 - i) * 8)),
+	0n,
+);
 const allowanceSlot = computeStorageKey(innerKeyBigInt, spenderAddr);
 const allowance = 100_000_000_000_000_000_000_000n;
 const allowanceBytes = bigintToBytes(allowance);
 storageTrie.put(allowanceSlot, allowanceBytes);
-console.log('\nSlot 3 nested mapping (allowances):');
-console.log(`  allowances[${formatAddress(ownerAddr)}][${formatAddress(spenderAddr)}] = ${allowance} (100k tokens)`);
+console.log("\nSlot 3 nested mapping (allowances):");
+console.log(
+	`  allowances[${formatAddress(ownerAddr)}][${formatAddress(spenderAddr)}] = ${allowance} (100k tokens)`,
+);
 
 // Compute storage root
 const storageRoot = storageTrie.rootHash();
-console.log('\n=== Storage Root ===');
-console.log(`Root Hash: ${storageRoot ? formatHash(storageRoot) : 'null'}`);
-console.log('\nThis storage root would be stored in the account\'s state.');
+console.log("\n=== Storage Root ===");
+console.log(`Root Hash: ${storageRoot ? formatHash(storageRoot) : "null"}`);
+console.log("\nThis storage root would be stored in the account's state.");
 
 // Verify retrieval
-console.log('\n=== Verification ===');
+console.log("\n=== Verification ===");
 const retrievedOwner = storageTrie.get(slot0);
-console.log(`✓ Retrieved owner: ${retrievedOwner ? formatAddress(retrievedOwner) : 'null'}`);
+console.log(
+	`✓ Retrieved owner: ${retrievedOwner ? formatAddress(retrievedOwner) : "null"}`,
+);
 
 const retrievedSupply = storageTrie.get(slot1);
 if (retrievedSupply) {
@@ -146,7 +159,7 @@ if (retrievedSupply) {
 	console.log(`✓ Retrieved total supply: ${supplyVal}`);
 }
 
-console.log('\n✓ Storage trie built successfully');
+console.log("\n✓ Storage trie built successfully");
 
 /**
  * Storage Layout:

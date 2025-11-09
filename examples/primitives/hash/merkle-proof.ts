@@ -9,23 +9,23 @@
  * - Real-world use cases (airdrop eligibility, transaction inclusion)
  */
 
-import { Hash } from '../../../src/primitives/Hash/index.js';
+import { Hash } from "../../../src/primitives/Hash/index.js";
 
-console.log('=== Merkle Proof Example ===\n');
+console.log("=== Merkle Proof Example ===\n");
 
 // ============================================================
 // 1. Merkle Tree Basics
 // ============================================================
 
-console.log('1. Merkle Tree Basics\n');
+console.log("1. Merkle Tree Basics\n");
 
 // Hash pair of nodes together
 function hashPair(left: Hash, right: Hash): Hash {
-  // Concatenate and hash (left || right)
-  const combined = new Uint8Array(64);
-  combined.set(left, 0);
-  combined.set(right, 32);
-  return Hash.keccak256(combined);
+	// Concatenate and hash (left || right)
+	const combined = new Uint8Array(64);
+	combined.set(left, 0);
+	combined.set(right, 32);
+	return Hash.keccak256(combined);
 }
 
 // Simple example with 4 leaves
@@ -58,79 +58,79 @@ console.log(`  ${root.format()}\n`);
 // 2. Building Complete Merkle Tree
 // ============================================================
 
-console.log('2. Building Complete Merkle Tree\n');
+console.log("2. Building Complete Merkle Tree\n");
 
 class MerkleTree {
-  private leaves: Hash[];
-  private layers: Hash[][];
+	private leaves: Hash[];
+	private layers: Hash[][];
 
-  constructor(leaves: Hash[]) {
-    if (leaves.length === 0) {
-      throw new Error("Cannot create tree from empty leaves");
-    }
-    this.leaves = [...leaves];
-    this.layers = this.buildTree(leaves);
-  }
+	constructor(leaves: Hash[]) {
+		if (leaves.length === 0) {
+			throw new Error("Cannot create tree from empty leaves");
+		}
+		this.leaves = [...leaves];
+		this.layers = this.buildTree(leaves);
+	}
 
-  private buildTree(leaves: Hash[]): Hash[][] {
-    const layers: Hash[][] = [leaves];
-    let currentLevel = leaves;
+	private buildTree(leaves: Hash[]): Hash[][] {
+		const layers: Hash[][] = [leaves];
+		let currentLevel = leaves;
 
-    while (currentLevel.length > 1) {
-      const nextLevel: Hash[] = [];
+		while (currentLevel.length > 1) {
+			const nextLevel: Hash[] = [];
 
-      for (let i = 0; i < currentLevel.length; i += 2) {
-        if (i + 1 < currentLevel.length) {
-          // Hash pair
-          nextLevel.push(hashPair(currentLevel[i], currentLevel[i + 1]));
-        } else {
-          // Odd number - promote last node
-          nextLevel.push(currentLevel[i]);
-        }
-      }
+			for (let i = 0; i < currentLevel.length; i += 2) {
+				if (i + 1 < currentLevel.length) {
+					// Hash pair
+					nextLevel.push(hashPair(currentLevel[i], currentLevel[i + 1]));
+				} else {
+					// Odd number - promote last node
+					nextLevel.push(currentLevel[i]);
+				}
+			}
 
-      layers.push(nextLevel);
-      currentLevel = nextLevel;
-    }
+			layers.push(nextLevel);
+			currentLevel = nextLevel;
+		}
 
-    return layers;
-  }
+		return layers;
+	}
 
-  getRoot(): Hash {
-    return this.layers[this.layers.length - 1][0];
-  }
+	getRoot(): Hash {
+		return this.layers[this.layers.length - 1][0];
+	}
 
-  getProof(leafIndex: number): Hash[] {
-    if (leafIndex < 0 || leafIndex >= this.leaves.length) {
-      throw new Error("Invalid leaf index");
-    }
+	getProof(leafIndex: number): Hash[] {
+		if (leafIndex < 0 || leafIndex >= this.leaves.length) {
+			throw new Error("Invalid leaf index");
+		}
 
-    const proof: Hash[] = [];
-    let index = leafIndex;
+		const proof: Hash[] = [];
+		let index = leafIndex;
 
-    // Go up the tree, collecting sibling hashes
-    for (let level = 0; level < this.layers.length - 1; level++) {
-      const currentLayer = this.layers[level];
-      const isLeftNode = index % 2 === 0;
-      const siblingIndex = isLeftNode ? index + 1 : index - 1;
+		// Go up the tree, collecting sibling hashes
+		for (let level = 0; level < this.layers.length - 1; level++) {
+			const currentLayer = this.layers[level];
+			const isLeftNode = index % 2 === 0;
+			const siblingIndex = isLeftNode ? index + 1 : index - 1;
 
-      if (siblingIndex < currentLayer.length) {
-        proof.push(currentLayer[siblingIndex]);
-      }
+			if (siblingIndex < currentLayer.length) {
+				proof.push(currentLayer[siblingIndex]);
+			}
 
-      index = Math.floor(index / 2);
-    }
+			index = Math.floor(index / 2);
+		}
 
-    return proof;
-  }
+		return proof;
+	}
 
-  getDepth(): number {
-    return this.layers.length - 1;
-  }
+	getDepth(): number {
+		return this.layers.length - 1;
+	}
 
-  getLeaves(): Hash[] {
-    return [...this.leaves];
-  }
+	getLeaves(): Hash[] {
+		return [...this.leaves];
+	}
 }
 
 // Build tree
@@ -144,20 +144,20 @@ console.log(`Root: ${tree.getRoot().format()}\n`);
 // 3. Generating Proofs
 // ============================================================
 
-console.log('3. Generating Merkle Proofs\n');
+console.log("3. Generating Merkle Proofs\n");
 
 // Generate proof for Alice (index 0)
 const aliceProof = tree.getProof(0);
 console.log("Proof for Alice (leaf 0):");
 aliceProof.forEach((hash, i) => {
-  console.log(`  ${i + 1}. ${hash.format()}`);
+	console.log(`  ${i + 1}. ${hash.format()}`);
 });
 
 // Generate proof for Charlie (index 2)
 const charlieProof = tree.getProof(2);
 console.log("\nProof for Charlie (leaf 2):");
 charlieProof.forEach((hash, i) => {
-  console.log(`  ${i + 1}. ${hash.format()}`);
+	console.log(`  ${i + 1}. ${hash.format()}`);
 });
 console.log();
 
@@ -165,28 +165,33 @@ console.log();
 // 4. Verifying Proofs
 // ============================================================
 
-console.log('4. Verifying Merkle Proofs\n');
+console.log("4. Verifying Merkle Proofs\n");
 
-function verifyProof(leaf: Hash, proof: Hash[], root: Hash, leafIndex: number): boolean {
-  let computedHash = leaf;
-  let index = leafIndex;
+function verifyProof(
+	leaf: Hash,
+	proof: Hash[],
+	root: Hash,
+	leafIndex: number,
+): boolean {
+	let computedHash = leaf;
+	let index = leafIndex;
 
-  for (const proofElement of proof) {
-    // Determine if current node is left or right
-    const isLeftNode = index % 2 === 0;
+	for (const proofElement of proof) {
+		// Determine if current node is left or right
+		const isLeftNode = index % 2 === 0;
 
-    if (isLeftNode) {
-      // Current is left, proof element is right
-      computedHash = hashPair(computedHash, proofElement);
-    } else {
-      // Current is right, proof element is left
-      computedHash = hashPair(proofElement, computedHash);
-    }
+		if (isLeftNode) {
+			// Current is left, proof element is right
+			computedHash = hashPair(computedHash, proofElement);
+		} else {
+			// Current is right, proof element is left
+			computedHash = hashPair(proofElement, computedHash);
+		}
 
-    index = Math.floor(index / 2);
-  }
+		index = Math.floor(index / 2);
+	}
 
-  return computedHash.equals(root);
+	return computedHash.equals(root);
 }
 
 // Verify Alice's proof
@@ -205,24 +210,24 @@ console.log(`Invalid proof (wrong leaf): ${invalidProof}\n`);
 // 5. Airdrop Eligibility Example
 // ============================================================
 
-console.log('5. Airdrop Eligibility (Real-World Use Case)\n');
+console.log("5. Airdrop Eligibility (Real-World Use Case)\n");
 
 interface AirdropEntry {
-  address: string;
-  amount: bigint;
+	address: string;
+	amount: bigint;
 }
 
 function createAirdropLeaf(entry: AirdropEntry): Hash {
-  // Hash address + amount together (simplified)
-  const data = `${entry.address}:${entry.amount}`;
-  return Hash.keccak256String(data);
+	// Hash address + amount together (simplified)
+	const data = `${entry.address}:${entry.amount}`;
+	return Hash.keccak256String(data);
 }
 
 const airdropList: AirdropEntry[] = [
-  { address: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", amount: 1000n },
-  { address: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", amount: 2000n },
-  { address: "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2", amount: 1500n },
-  { address: "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db", amount: 750n },
+	{ address: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", amount: 1000n },
+	{ address: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", amount: 2000n },
+	{ address: "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2", amount: 1500n },
+	{ address: "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db", amount: 750n },
 ];
 
 // Create leaves from airdrop entries
@@ -234,17 +239,17 @@ console.log("(This would be stored on-chain)\n");
 
 // User claims their airdrop
 function claimAirdrop(address: string, amount: bigint, proof: Hash[]): boolean {
-  const entry: AirdropEntry = { address, amount };
-  const leaf = createAirdropLeaf(entry);
+	const entry: AirdropEntry = { address, amount };
+	const leaf = createAirdropLeaf(entry);
 
-  // Find index in original list (in production, user would provide this)
-  const index = airdropList.findIndex(
-    (e) => e.address === address && e.amount === amount
-  );
+	// Find index in original list (in production, user would provide this)
+	const index = airdropList.findIndex(
+		(e) => e.address === address && e.amount === amount,
+	);
 
-  if (index === -1) return false;
+	if (index === -1) return false;
 
-  return verifyProof(leaf, proof, airdropTree.getRoot(), index);
+	return verifyProof(leaf, proof, airdropTree.getRoot(), index);
 }
 
 // User 0 claims their airdrop
@@ -266,18 +271,18 @@ console.log(`Invalid claim (wrong amount): ${invalidClaim}\n`);
 // 6. Transaction Inclusion Proof
 // ============================================================
 
-console.log('6. Transaction Inclusion Proof\n');
+console.log("6. Transaction Inclusion Proof\n");
 
 // Simulate block with transactions
 const txHashes = [
-  Hash.keccak256String("tx1: Alice sends 1 ETH to Bob"),
-  Hash.keccak256String("tx2: Bob sends 2 ETH to Charlie"),
-  Hash.keccak256String("tx3: Charlie sends 0.5 ETH to Dave"),
-  Hash.keccak256String("tx4: Dave sends 0.1 ETH to Alice"),
-  Hash.keccak256String("tx5: Alice approves token"),
-  Hash.keccak256String("tx6: Bob swaps tokens"),
-  Hash.keccak256String("tx7: Charlie stakes tokens"),
-  Hash.keccak256String("tx8: Dave claims rewards"),
+	Hash.keccak256String("tx1: Alice sends 1 ETH to Bob"),
+	Hash.keccak256String("tx2: Bob sends 2 ETH to Charlie"),
+	Hash.keccak256String("tx3: Charlie sends 0.5 ETH to Dave"),
+	Hash.keccak256String("tx4: Dave sends 0.1 ETH to Alice"),
+	Hash.keccak256String("tx5: Alice approves token"),
+	Hash.keccak256String("tx6: Bob swaps tokens"),
+	Hash.keccak256String("tx7: Charlie stakes tokens"),
+	Hash.keccak256String("tx8: Dave claims rewards"),
 ];
 
 const txTree = new MerkleTree(txHashes);
@@ -293,27 +298,31 @@ const tx2Proof = txTree.getProof(tx2Index);
 console.log(`\nProof for transaction ${tx2Index + 1}:`);
 console.log(`  Transaction: ${txHashes[tx2Index].format()}`);
 console.log(`  Proof length: ${tx2Proof.length} hashes`);
-console.log(`  Valid: ${verifyProof(txHashes[tx2Index], tx2Proof, txRoot, tx2Index)}\n`);
+console.log(
+	`  Valid: ${verifyProof(txHashes[tx2Index], tx2Proof, txRoot, tx2Index)}\n`,
+);
 
 // ============================================================
 // 7. Proof Size Efficiency
 // ============================================================
 
-console.log('7. Proof Size Efficiency\n');
+console.log("7. Proof Size Efficiency\n");
 
 function demonstrateProofSize(numLeaves: number) {
-  // Create dummy leaves
-  const dummyLeaves = Array.from({ length: numLeaves }, (_, i) =>
-    Hash.keccak256String(`leaf ${i}`)
-  );
+	// Create dummy leaves
+	const dummyLeaves = Array.from({ length: numLeaves }, (_, i) =>
+		Hash.keccak256String(`leaf ${i}`),
+	);
 
-  const dummyTree = new MerkleTree(dummyLeaves);
-  const proof = dummyTree.getProof(0);
+	const dummyTree = new MerkleTree(dummyLeaves);
+	const proof = dummyTree.getProof(0);
 
-  const proofSize = proof.length * 32; // Each hash is 32 bytes
-  const treeDepth = dummyTree.getDepth();
+	const proofSize = proof.length * 32; // Each hash is 32 bytes
+	const treeDepth = dummyTree.getDepth();
 
-  console.log(`  ${numLeaves.toString().padStart(6)} leaves → depth: ${treeDepth}, proof: ${proof.length} hashes (${proofSize} bytes)`);
+	console.log(
+		`  ${numLeaves.toString().padStart(6)} leaves → depth: ${treeDepth}, proof: ${proof.length} hashes (${proofSize} bytes)`,
+	);
 }
 
 console.log("Proof sizes for different tree sizes:");
@@ -333,13 +342,13 @@ console.log("\nNote: Proof size grows logarithmically (O(log n))\n");
 // 8. Updating Merkle Root
 // ============================================================
 
-console.log('8. Updating Merkle Root (Adding Leaves)\n');
+console.log("8. Updating Merkle Root (Adding Leaves)\n");
 
 const initialLeaves = [
-  Hash.keccak256String("data1"),
-  Hash.keccak256String("data2"),
-  Hash.keccak256String("data3"),
-  Hash.keccak256String("data4"),
+	Hash.keccak256String("data1"),
+	Hash.keccak256String("data2"),
+	Hash.keccak256String("data3"),
+	Hash.keccak256String("data4"),
 ];
 
 const tree1 = new MerkleTree(initialLeaves);
@@ -347,9 +356,9 @@ console.log(`Initial root (4 leaves): ${tree1.getRoot().format()}`);
 
 // Add new leaves
 const newLeaves = [
-  ...initialLeaves,
-  Hash.keccak256String("data5"),
-  Hash.keccak256String("data6"),
+	...initialLeaves,
+	Hash.keccak256String("data5"),
+	Hash.keccak256String("data6"),
 ];
 
 const tree2 = new MerkleTree(newLeaves);
@@ -360,7 +369,7 @@ console.log(`Roots equal: ${tree1.getRoot().equals(tree2.getRoot())}\n`);
 // 9. Sparse Merkle Tree Note
 // ============================================================
 
-console.log('9. Sparse Merkle Trees\n');
+console.log("9. Sparse Merkle Trees\n");
 
 console.log("Standard Merkle trees (shown above):");
 console.log("  ✓ Efficient for proving membership");
@@ -373,4 +382,4 @@ console.log("  ✓ Fixed depth (e.g., 256 for Ethereum addresses)");
 console.log("  ✓ Used in state trees, account storage");
 console.log("  - More complex implementation\n");
 
-console.log('=== Example Complete ===\n');
+console.log("=== Example Complete ===\n");

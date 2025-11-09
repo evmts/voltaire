@@ -1,4 +1,4 @@
-import { BN254 } from '../../../src/crypto/bn254/BN254.js';
+import { BN254 } from "../../../src/crypto/bn254/BN254.js";
 
 /**
  * BN254 Pairing Check
@@ -11,23 +11,23 @@ import { BN254 } from '../../../src/crypto/bn254/BN254.js';
  * - Understanding e(P, Q) notation
  */
 
-console.log('=== BN254 Pairing Check ===\n');
+console.log("=== BN254 Pairing Check ===\n");
 
 // 1. Single Pairing
-console.log('1. Single Pairing Computation');
-console.log('-'.repeat(40));
+console.log("1. Single Pairing Computation");
+console.log("-".repeat(40));
 
 const g1Gen = BN254.G1.generator();
 const g2Gen = BN254.G2.generator();
 
 // Compute e(G1, G2) - the pairing of generators
 const result1 = BN254.Pairing.pair(g1Gen, g2Gen);
-console.log('Computed e(G1, G2)');
-console.log('Pairing result is in Fp12 extension field\n');
+console.log("Computed e(G1, G2)");
+console.log("Pairing result is in Fp12 extension field\n");
 
 // 2. Bilinearity Property: e(a*P, b*Q) = e(P, Q)^(a*b)
-console.log('2. Bilinearity Property');
-console.log('-'.repeat(40));
+console.log("2. Bilinearity Property");
+console.log("-".repeat(40));
 
 const a = 5n;
 const b = 7n;
@@ -43,11 +43,11 @@ const rightSide = BN254.Pairing.pair(abG1, g2Gen);
 
 const bilinearityHolds = BN254.Pairing.pairingResultEqual(leftSide, rightSide);
 console.log(`e(${a}×G1, ${b}×G2) = e(${a * b}×G1, G2): ${bilinearityHolds}`);
-console.log('This property is fundamental to zkSNARKs!\n');
+console.log("This property is fundamental to zkSNARKs!\n");
 
 // 3. Pairing Check - Core zkSNARK Operation
-console.log('3. Pairing Check (zkSNARK Core)');
-console.log('-'.repeat(40));
+console.log("3. Pairing Check (zkSNARK Core)");
+console.log("-".repeat(40));
 
 // Pairing check verifies: e(P1, Q1) * e(P2, Q2) * ... = 1
 // Or equivalently: e(P1, Q1) = e(-P2, Q2)
@@ -60,15 +60,15 @@ const sG2 = BN254.G2.mul(g2Gen, s);
 // Verify e(s*G1, G2) = e(G1, s*G2)
 // This checks that both points encode the same scalar
 const check1 = BN254.Pairing.pairingCheck([
-    [sG1, g2Gen],
-    [BN254.G1.negate(g1Gen), sG2],
+	[sG1, g2Gen],
+	[BN254.G1.negate(g1Gen), sG2],
 ]);
 console.log(`e(s×G1, G2) = e(G1, s×G2): ${check1}`);
-console.log('Verifies consistent encoding of secret s\n');
+console.log("Verifies consistent encoding of secret s\n");
 
 // 4. Multi-Pairing (Multiple Terms)
-console.log('4. Multi-Pairing Check');
-console.log('-'.repeat(40));
+console.log("4. Multi-Pairing Check");
+console.log("-".repeat(40));
 
 // Verify e(2×G1, G2) * e(3×G1, G2) = e(5×G1, G2)
 // Using negation: e(2×G1, G2) * e(3×G1, G2) * e(-5×G1, G2) = 1
@@ -79,16 +79,18 @@ const fiveG1 = BN254.G1.mul(g1Gen, 5n);
 const negFiveG1 = BN254.G1.negate(fiveG1);
 
 const multiPairingCheck = BN254.Pairing.pairingCheck([
-    [twoG1, g2Gen],
-    [threeG1, g2Gen],
-    [negFiveG1, g2Gen],
+	[twoG1, g2Gen],
+	[threeG1, g2Gen],
+	[negFiveG1, g2Gen],
 ]);
-console.log('e(2×G1, G2) × e(3×G1, G2) × e(-5×G1, G2) = 1: ' + multiPairingCheck);
-console.log('Demonstrates pairing multiplicative property\n');
+console.log(
+	"e(2×G1, G2) × e(3×G1, G2) × e(-5×G1, G2) = 1: " + multiPairingCheck,
+);
+console.log("Demonstrates pairing multiplicative property\n");
 
 // 5. Pairing Product Equation (zkSNARK Pattern)
-console.log('5. Pairing Product Equation');
-console.log('-'.repeat(40));
+console.log("5. Pairing Product Equation");
+console.log("-".repeat(40));
 
 // Classic pattern: Verify e(A, B) = e(C, D)
 // Rearrange to: e(A, B) * e(-C, D) = 1
@@ -103,27 +105,29 @@ const C = BN254.G1.mul(g1Gen, alpha * beta);
 const D = g2Gen;
 
 const productCheck = BN254.Pairing.pairingCheck([
-    [A, B],
-    [BN254.G1.negate(C), D],
+	[A, B],
+	[BN254.G1.negate(C), D],
 ]);
-console.log(`Verify e(${alpha}×G1, ${beta}×G2) = e(${alpha * beta}×G1, G2): ${productCheck}`);
-console.log('Pattern used in Groth16 verification\n');
+console.log(
+	`Verify e(${alpha}×G1, ${beta}×G2) = e(${alpha * beta}×G1, G2): ${productCheck}`,
+);
+console.log("Pattern used in Groth16 verification\n");
 
 // 6. Invalid Pairing Check (Should Fail)
-console.log('6. Invalid Pairing Check');
-console.log('-'.repeat(40));
+console.log("6. Invalid Pairing Check");
+console.log("-".repeat(40));
 
 // Try to verify e(3×G1, G2) = e(5×G1, G2) - this should fail!
 const invalidCheck = BN254.Pairing.pairingCheck([
-    [threeG1, g2Gen],
-    [BN254.G1.negate(fiveG1), g2Gen],
+	[threeG1, g2Gen],
+	[BN254.G1.negate(fiveG1), g2Gen],
 ]);
-console.log('e(3×G1, G2) = e(5×G1, G2): ' + invalidCheck);
-console.log('Correctly rejected invalid equation\n');
+console.log("e(3×G1, G2) = e(5×G1, G2): " + invalidCheck);
+console.log("Correctly rejected invalid equation\n");
 
 // 7. Multi-Pairing with Different G2 Points
-console.log('7. Complex Multi-Pairing');
-console.log('-'.repeat(40));
+console.log("7. Complex Multi-Pairing");
+console.log("-".repeat(40));
 
 const x = 11n;
 const y = 13n;
@@ -135,8 +139,8 @@ const zG2 = BN254.G2.mul(g2Gen, z);
 
 // Verify e(x×G1, y×G2) = e((x*y)×G1, G2)
 const complexCheck1 = BN254.Pairing.pairingCheck([
-    [xG1, yG2],
-    [BN254.G1.negate(BN254.G1.mul(g1Gen, x * y)), g2Gen],
+	[xG1, yG2],
+	[BN254.G1.negate(BN254.G1.mul(g1Gen, x * y)), g2Gen],
 ]);
 console.log(`e(${x}×G1, ${y}×G2) = e(${x * y}×G1, G2): ${complexCheck1}`);
 
@@ -145,30 +149,32 @@ const yzSum = y + z;
 const yzG2 = BN254.G2.mul(g2Gen, yzSum);
 
 const complexCheck2 = BN254.Pairing.pairingCheck([
-    [xG1, yG2],
-    [xG1, zG2],
-    [BN254.G1.negate(xG1), yzG2],
+	[xG1, yG2],
+	[xG1, zG2],
+	[BN254.G1.negate(xG1), yzG2],
 ]);
-console.log(`e(${x}×G1, ${y}×G2) × e(${x}×G1, ${z}×G2) = e(${x}×G1, ${yzSum}×G2): ${complexCheck2}\n`);
+console.log(
+	`e(${x}×G1, ${y}×G2) × e(${x}×G1, ${z}×G2) = e(${x}×G1, ${yzSum}×G2): ${complexCheck2}\n`,
+);
 
 // 8. Pairing Self-Check (Tautology)
-console.log('8. Pairing Tautology');
-console.log('-'.repeat(40));
+console.log("8. Pairing Tautology");
+console.log("-".repeat(40));
 
 // e(P, Q) * e(-P, Q) = 1 always holds
 const P = BN254.G1.mul(g1Gen, 42n);
 const Q = BN254.G2.mul(g2Gen, 99n);
 
 const tautologyCheck = BN254.Pairing.pairingCheck([
-    [P, Q],
-    [BN254.G1.negate(P), Q],
+	[P, Q],
+	[BN254.G1.negate(P), Q],
 ]);
-console.log('e(P, Q) × e(-P, Q) = 1: ' + tautologyCheck);
-console.log('Self-canceling pairing always succeeds\n');
+console.log("e(P, Q) × e(-P, Q) = 1: " + tautologyCheck);
+console.log("Self-canceling pairing always succeeds\n");
 
-console.log('=== Complete ===');
-console.log('\nKey Insights:');
-console.log('- Pairing maps G1 × G2 → GT (target group Fp12)');
-console.log('- Bilinearity: e(a×P, b×Q) = e(P, Q)^(ab)');
-console.log('- zkSNARKs encode equations as pairing checks');
-console.log('- Product of pairings = 1 verifies relationships');
+console.log("=== Complete ===");
+console.log("\nKey Insights:");
+console.log("- Pairing maps G1 × G2 → GT (target group Fp12)");
+console.log("- Bilinearity: e(a×P, b×Q) = e(P, Q)^(ab)");
+console.log("- zkSNARKs encode equations as pairing checks");
+console.log("- Product of pairings = 1 verifies relationships");

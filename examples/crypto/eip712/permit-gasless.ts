@@ -163,9 +163,9 @@ console.log('  1. User signs permit off-chain → no gas');
 console.log('  2. Relayer/Spender calls permit() + action → pays gas');
 console.log('  Total: 1 transaction, relayer pays gas');
 
-console.log('\n✓ Better UX: users don't need ETH for gas');
-console.log('✓ Fewer transactions: approval + action in one tx');
-console.log('✓ Meta-transactions: relayers can pay gas\n');
+console.log("\n✓ Better UX: users don't need ETH for gas");
+console.log("✓ Fewer transactions: approval + action in one tx");
+console.log("✓ Meta-transactions: relayers can pay gas\n");
 
 // 7. Different permit amounts
 console.log('7. Different Permit Amounts');

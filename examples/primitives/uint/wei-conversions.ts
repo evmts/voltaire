@@ -8,9 +8,9 @@
  * - Transaction cost calculations
  */
 
-import * as Uint from '../../../src/primitives/Uint/index.js';
+import * as Uint from "../../../src/primitives/Uint/index.js";
 
-console.log('\n=== Wei and Ether Conversions Example ===\n');
+console.log("\n=== Wei and Ether Conversions Example ===\n");
 
 // Constants for Ethereum denominations
 const WEI_PER_GWEI = Uint.from(10n ** 9n); // 1 gwei = 10^9 wei
@@ -37,8 +37,8 @@ function etherToWei(ether: number): typeof Uint.prototype {
 }
 
 // 1. Basic conversions
-console.log('1. Basic Denomination Conversions');
-console.log('   ------------------------------');
+console.log("1. Basic Denomination Conversions");
+console.log("   ------------------------------");
 
 const oneEtherInWei = WEI_PER_ETHER;
 const oneGweiInWei = WEI_PER_GWEI;
@@ -48,9 +48,9 @@ console.log(`   1 Gwei  = ${oneGweiInWei.toString()} wei\n`);
 
 // Convert various amounts
 const amounts = [
-	{ wei: Uint.from(1000000000n), desc: '1 gwei' },
-	{ wei: Uint.from(1000000000000000000n), desc: '1 ether' },
-	{ wei: Uint.from(250000000000000000n), desc: '0.25 ether' },
+	{ wei: Uint.from(1000000000n), desc: "1 gwei" },
+	{ wei: Uint.from(1000000000000000000n), desc: "1 ether" },
+	{ wei: Uint.from(250000000000000000n), desc: "0.25 ether" },
 ];
 
 for (const { wei, desc } of amounts) {
@@ -61,8 +61,8 @@ for (const { wei, desc } of amounts) {
 }
 
 // 2. Gas price calculations
-console.log('2. Gas Price Calculations');
-console.log('   ---------------------');
+console.log("2. Gas Price Calculations");
+console.log("   ---------------------");
 
 const gasPriceGwei = Uint.from(50n); // 50 gwei
 const gasPriceWei = gweiToWei(gasPriceGwei);
@@ -75,26 +75,31 @@ const simpleTransferGas = Uint.from(21000n);
 const erc20TransferGas = Uint.from(65000n);
 const uniswapSwapGas = Uint.from(150000n);
 
-function calculateGasCost(gasUsed: typeof Uint.prototype, gasPrice: typeof Uint.prototype): typeof Uint.prototype {
+function calculateGasCost(
+	gasUsed: typeof Uint.prototype,
+	gasPrice: typeof Uint.prototype,
+): typeof Uint.prototype {
 	return gasUsed.times(gasPrice);
 }
 
 const transfers = [
-	{ type: 'Simple transfer', gas: simpleTransferGas },
-	{ type: 'ERC20 transfer', gas: erc20TransferGas },
-	{ type: 'Uniswap swap', gas: uniswapSwapGas },
+	{ type: "Simple transfer", gas: simpleTransferGas },
+	{ type: "ERC20 transfer", gas: erc20TransferGas },
+	{ type: "Uniswap swap", gas: uniswapSwapGas },
 ];
 
 for (const { type, gas } of transfers) {
 	const cost = calculateGasCost(gas, gasPriceWei);
 	console.log(`   ${type}:`);
 	console.log(`   - Gas used: ${gas.toString()}`);
-	console.log(`   - Cost: ${weiToEther(cost)} ETH (${weiToGwei(cost).toString()} gwei)\n`);
+	console.log(
+		`   - Cost: ${weiToEther(cost)} ETH (${weiToGwei(cost).toString()} gwei)\n`,
+	);
 }
 
 // 3. EIP-1559 transaction costs
-console.log('3. EIP-1559 Transaction Costs');
-console.log('   -------------------------');
+console.log("3. EIP-1559 Transaction Costs");
+console.log("   -------------------------");
 
 const baseFeeGwei = Uint.from(30n);
 const priorityFeeGwei = Uint.from(2n);
@@ -122,12 +127,15 @@ console.log(`   - Gas used: ${txGas.toString()}`);
 console.log(`   - Total cost: ${weiToEther(txCost)} ETH\n`);
 
 // 4. Wallet balance calculations
-console.log('4. Wallet Balance Calculations');
-console.log('   --------------------------');
+console.log("4. Wallet Balance Calculations");
+console.log("   --------------------------");
 
 const balance = etherToWei(5.5); // 5.5 ETH
 const txValue = etherToWei(1.0); // 1 ETH
-const txGasCost = calculateGasCost(Uint.from(21000n), gweiToWei(Uint.from(50n)));
+const txGasCost = calculateGasCost(
+	Uint.from(21000n),
+	gweiToWei(Uint.from(50n)),
+);
 
 console.log(`   Current balance: ${weiToEther(balance)} ETH`);
 console.log(`   Transaction amount: ${weiToEther(txValue)} ETH`);
@@ -144,16 +152,20 @@ const hasSufficientBalance = balance.greaterThanOrEqual(totalCost);
 console.log(`   Sufficient balance? ${hasSufficientBalance}\n`);
 
 // 5. Staking rewards calculation
-console.log('5. Staking Rewards Calculation');
-console.log('   --------------------------');
+console.log("5. Staking Rewards Calculation");
+console.log("   --------------------------");
 
 const stakedAmount = etherToWei(32); // 32 ETH (validator)
 const annualRewardRate = 0.04; // 4% APR
 const daysStaked = 365;
 
 // Calculate rewards: staked * rate * (days / 365)
-const rewardMultiplier = Math.floor(annualRewardRate * (daysStaked / 365) * 1e18);
-const rewards = stakedAmount.times(Uint.from(BigInt(rewardMultiplier))).dividedBy(WEI_PER_ETHER);
+const rewardMultiplier = Math.floor(
+	annualRewardRate * (daysStaked / 365) * 1e18,
+);
+const rewards = stakedAmount
+	.times(Uint.from(BigInt(rewardMultiplier)))
+	.dividedBy(WEI_PER_ETHER);
 
 console.log(`   Staked amount: ${weiToEther(stakedAmount)} ETH`);
 console.log(`   Annual rate: ${(annualRewardRate * 100).toFixed(2)}%`);
@@ -164,8 +176,8 @@ const totalStaked = stakedAmount.plus(rewards);
 console.log(`   Total after rewards: ${weiToEther(totalStaked)} ETH\n`);
 
 // 6. Gas fee comparison
-console.log('6. Gas Fee Comparison');
-console.log('   -----------------');
+console.log("6. Gas Fee Comparison");
+console.log("   -----------------");
 
 const gasPrices = [20n, 50n, 100n, 200n]; // gwei
 const gasAmount = Uint.from(100000n);
@@ -178,12 +190,14 @@ for (const priceGwei of gasPrices) {
 
 	console.log(`   @ ${priceGwei} gwei:`);
 	console.log(`   - Cost: ${weiToEther(cost)} ETH`);
-	console.log(`   - USD (@ $2000/ETH): $${(Number(weiToEther(cost)) * 2000).toFixed(2)}\n`);
+	console.log(
+		`   - USD (@ $2000/ETH): $${(Number(weiToEther(cost)) * 2000).toFixed(2)}\n`,
+	);
 }
 
 // 7. Unit testing helpers
-console.log('7. Precise Wei Amounts');
-console.log('   ------------------');
+console.log("7. Precise Wei Amounts");
+console.log("   ------------------");
 
 // Often need exact wei amounts for testing
 const exactAmounts = [
@@ -200,4 +214,4 @@ for (const amount of exactAmounts) {
 	console.log(`   - Ether: ${weiToEther(amount)}\n`);
 }
 
-console.log('=== Example Complete ===\n');
+console.log("=== Example Complete ===\n");

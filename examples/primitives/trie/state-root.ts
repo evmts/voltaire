@@ -13,11 +13,11 @@ class Trie {
 	private data = new Map<string, Uint8Array>();
 
 	put(key: Uint8Array, value: Uint8Array): void {
-		this.data.set(Buffer.from(key).toString('hex'), value);
+		this.data.set(Buffer.from(key).toString("hex"), value);
 	}
 
 	get(key: Uint8Array): Uint8Array | null {
-		return this.data.get(Buffer.from(key).toString('hex')) || null;
+		return this.data.get(Buffer.from(key).toString("hex")) || null;
 	}
 
 	rootHash(): Uint8Array | null {
@@ -60,14 +60,18 @@ function encodeAccountState(state: AccountState): Uint8Array {
 }
 
 function formatAddress(addr: Uint8Array): string {
-	return `0x${Array.from(addr).map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(addr)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 function formatHash(hash: Uint8Array): string {
-	return `0x${Array.from(hash).map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+	return `0x${Array.from(hash)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
-console.log('=== State Root Computation ===\n');
+console.log("=== State Root Computation ===\n");
 
 // Create state trie
 const stateTrie = new Trie();
@@ -122,12 +126,12 @@ console.log(`  Balance: ${account3.balance} wei (2.5 ETH)`);
 
 // Compute state root
 const stateRoot = stateTrie.rootHash();
-console.log('\n=== State Root ===');
-console.log(`Root Hash: ${stateRoot ? formatHash(stateRoot) : 'null'}`);
+console.log("\n=== State Root ===");
+console.log(`Root Hash: ${stateRoot ? formatHash(stateRoot) : "null"}`);
 
 // Demonstrate that state root changes with state
-console.log('\n=== State Mutation ===');
-console.log('Updating Account 1 nonce to 6...');
+console.log("\n=== State Mutation ===");
+console.log("Updating Account 1 nonce to 6...");
 
 const account1Updated: AccountState = {
 	...account1,
@@ -138,8 +142,10 @@ const encoded1Updated = encodeAccountState(account1Updated);
 stateTrie.put(addr1, encoded1Updated);
 
 const newStateRoot = stateTrie.rootHash();
-console.log(`New Root Hash: ${newStateRoot ? formatHash(newStateRoot) : 'null'}`);
-console.log('\n✓ Root hash changed (state is cryptographically committed)');
+console.log(
+	`New Root Hash: ${newStateRoot ? formatHash(newStateRoot) : "null"}`,
+);
+console.log("\n✓ Root hash changed (state is cryptographically committed)");
 
 /**
  * Usage Pattern:

@@ -7,12 +7,12 @@
  * - Validation and type checking
  */
 
-import { Address } from '../../../src/primitives/Address/index.js';
+import { Address } from "../../../src/primitives/Address/index.js";
 
-console.log('=== Basic Address Usage ===\n');
+console.log("=== Basic Address Usage ===\n");
 
 // 1. Creating addresses from different inputs
-console.log('1. Creating Addresses\n');
+console.log("1. Creating Addresses\n");
 
 // From hex string (most common)
 const addr1 = new Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
@@ -33,7 +33,7 @@ const zeroAddr = Address.zero();
 console.log(`Zero address: ${zeroAddr.toHex()}\n`);
 
 // 2. Format conversions
-console.log('2. Format Conversions\n');
+console.log("2. Format Conversions\n");
 
 const addr = new Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 
@@ -45,7 +45,7 @@ console.log(`Short:       ${addr.toShortHex()}`); // For UI display
 console.log(`Short (8,6): ${addr.toShortHex(8, 6)}\n`);
 
 // 3. Validation
-console.log('3. Validation\n');
+console.log("3. Validation\n");
 
 const validAddr = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
 const invalidAddr = "0x742d35Cc"; // Too short
@@ -53,19 +53,23 @@ const wrongChecksum = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"; // All lower
 
 console.log(`Valid format (${validAddr}): ${Address.isValid(validAddr)}`);
 console.log(`Invalid format (${invalidAddr}): ${Address.isValid(invalidAddr)}`);
-console.log(`Valid checksum (checksummed): ${Address.isValidChecksum(validAddr)}`);
-console.log(`Valid checksum (lowercase): ${Address.isValidChecksum(wrongChecksum)}`); // true - all same case
+console.log(
+	`Valid checksum (checksummed): ${Address.isValidChecksum(validAddr)}`,
+);
+console.log(
+	`Valid checksum (lowercase): ${Address.isValidChecksum(wrongChecksum)}`,
+); // true - all same case
 console.log();
 
 // 4. Type guards
-console.log('4. Type Guards\n');
+console.log("4. Type Guards\n");
 
 function processValue(value: unknown) {
-  if (Address.is(value)) {
-    console.log(`✓ Valid Address: ${Address.toHex(value)}`);
-  } else {
-    console.log(`✗ Not an Address: ${typeof value}`);
-  }
+	if (Address.is(value)) {
+		console.log(`✓ Valid Address: ${Address.toHex(value)}`);
+	} else {
+		console.log(`✗ Not an Address: ${typeof value}`);
+	}
 }
 
 processValue(addr);
@@ -75,7 +79,7 @@ processValue(new Uint8Array(32)); // Wrong length
 console.log();
 
 // 5. Comparisons
-console.log('5. Basic Comparisons\n');
+console.log("5. Basic Comparisons\n");
 
 const addrA = new Address(100n);
 const addrB = new Address(100n);

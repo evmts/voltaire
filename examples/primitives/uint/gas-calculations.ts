@@ -8,9 +8,9 @@
  * - Gas optimization patterns
  */
 
-import * as Uint from '../../../src/primitives/Uint/index.js';
+import * as Uint from "../../../src/primitives/Uint/index.js";
 
-console.log('\n=== EVM Gas Calculations Example ===\n');
+console.log("\n=== EVM Gas Calculations Example ===\n");
 
 // Gas constants
 const TX_BASE_COST = Uint.from(21000n); // Base transaction cost
@@ -22,8 +22,8 @@ const BASE_FEE_MAX_CHANGE = Uint.from(8n); // EIP-1559 max base fee change
 const ELASTICITY_MULTIPLIER = Uint.from(2n); // EIP-1559 elasticity
 
 // 1. Intrinsic gas calculation
-console.log('1. Intrinsic Gas Calculation');
-console.log('   ------------------------');
+console.log("1. Intrinsic Gas Calculation");
+console.log("   ------------------------");
 
 function calculateIntrinsicGas(data: Uint8Array): typeof Uint.prototype {
 	let gas = TX_BASE_COST;
@@ -48,13 +48,17 @@ console.log(`   Empty transaction: ${emptyGas.toString()} gas\n`);
 const zeroData = new Uint8Array(100); // All zeros
 const zeroGas = calculateIntrinsicGas(zeroData);
 console.log(`   100 zero bytes: ${zeroGas.toString()} gas`);
-console.log(`   (${TX_BASE_COST.toString()} base + ${TX_DATA_ZERO_COST.toString()} * 100)\n`);
+console.log(
+	`   (${TX_BASE_COST.toString()} base + ${TX_DATA_ZERO_COST.toString()} * 100)\n`,
+);
 
 // Data with non-zeros
 const nonZeroData = new Uint8Array(100).fill(1);
 const nonZeroGas = calculateIntrinsicGas(nonZeroData);
 console.log(`   100 non-zero bytes: ${nonZeroGas.toString()} gas`);
-console.log(`   (${TX_BASE_COST.toString()} base + ${TX_DATA_NONZERO_COST.toString()} * 100)\n`);
+console.log(
+	`   (${TX_BASE_COST.toString()} base + ${TX_DATA_NONZERO_COST.toString()} * 100)\n`,
+);
 
 // Mixed data (simulating ERC20 transfer calldata)
 const erc20Transfer = new Uint8Array(68); // 4 byte selector + 32 bytes address + 32 bytes amount
@@ -68,10 +72,13 @@ const erc20Gas = calculateIntrinsicGas(erc20Transfer);
 console.log(`   ERC20 transfer: ${erc20Gas.toString()} gas\n`);
 
 // 2. Memory expansion costs
-console.log('2. Memory Expansion Costs');
-console.log('   ---------------------');
+console.log("2. Memory Expansion Costs");
+console.log("   ---------------------");
 
-function calculateMemoryCost(newSize: typeof Uint.prototype, oldSize: typeof Uint.prototype): typeof Uint.prototype {
+function calculateMemoryCost(
+	newSize: typeof Uint.prototype,
+	oldSize: typeof Uint.prototype,
+): typeof Uint.prototype {
 	// Memory cost = linear + quadratic
 	// cost(size) = (size / 32) * 3 + (size / 32)^2 / 512
 
@@ -94,10 +101,10 @@ function calculateMemoryCost(newSize: typeof Uint.prototype, oldSize: typeof Uin
 }
 
 const expansions = [
-	{ from: 0n, to: 32n, desc: '0 → 32 bytes (1 word)' },
-	{ from: 32n, to: 64n, desc: '32 → 64 bytes (2 words)' },
-	{ from: 0n, to: 1024n, desc: '0 → 1024 bytes (32 words)' },
-	{ from: 1024n, to: 10000n, desc: '1024 → 10000 bytes (significant)' },
+	{ from: 0n, to: 32n, desc: "0 → 32 bytes (1 word)" },
+	{ from: 32n, to: 64n, desc: "32 → 64 bytes (2 words)" },
+	{ from: 0n, to: 1024n, desc: "0 → 1024 bytes (32 words)" },
+	{ from: 1024n, to: 10000n, desc: "1024 → 10000 bytes (significant)" },
 ];
 
 for (const { from, to, desc } of expansions) {
@@ -107,8 +114,8 @@ for (const { from, to, desc } of expansions) {
 console.log();
 
 // 3. EIP-1559 base fee calculation
-console.log('3. EIP-1559 Base Fee Calculation');
-console.log('   ----------------------------');
+console.log("3. EIP-1559 Base Fee Calculation");
+console.log("   ----------------------------");
 
 function calculateNextBaseFee(
 	currentBaseFee: typeof Uint.prototype,
@@ -122,12 +129,18 @@ function calculateNextBaseFee(
 	if (gasUsed.greaterThan(gasTarget)) {
 		// Block is above target - increase base fee
 		const delta = gasUsed.minus(gasTarget);
-		const increase = currentBaseFee.times(delta).dividedBy(gasTarget).dividedBy(BASE_FEE_MAX_CHANGE);
+		const increase = currentBaseFee
+			.times(delta)
+			.dividedBy(gasTarget)
+			.dividedBy(BASE_FEE_MAX_CHANGE);
 		return currentBaseFee.plus(increase).maximum(Uint.ONE);
 	} else {
 		// Block is below target - decrease base fee
 		const delta = gasTarget.minus(gasUsed);
-		const decrease = currentBaseFee.times(delta).dividedBy(gasTarget).dividedBy(BASE_FEE_MAX_CHANGE);
+		const decrease = currentBaseFee
+			.times(delta)
+			.dividedBy(gasTarget)
+			.dividedBy(BASE_FEE_MAX_CHANGE);
 		return currentBaseFee.minus(decrease);
 	}
 }
@@ -141,26 +154,32 @@ console.log(`   Gas limit: ${gasLimit.toString()}`);
 console.log(`   Gas target: ${gasTarget.toString()}\n`);
 
 const scenarios = [
-	{ used: gasTarget, desc: 'At target (no change)' },
-	{ used: Uint.from(29000000n), desc: 'High usage (~97%)' },
-	{ used: Uint.from(1000000n), desc: 'Low usage (~3%)' },
+	{ used: gasTarget, desc: "At target (no change)" },
+	{ used: Uint.from(29000000n), desc: "High usage (~97%)" },
+	{ used: Uint.from(1000000n), desc: "Low usage (~3%)" },
 ];
 
 for (const { used, desc } of scenarios) {
 	const nextFee = calculateNextBaseFee(baseFee, used, gasTarget);
-	const percentUsed = (Number(used.toBigInt()) / Number(gasLimit.toBigInt())) * 100;
-	const change = nextFee.greaterThan(baseFee) ? nextFee.minus(baseFee) : baseFee.minus(nextFee);
-	const changePercent = Number(change.times(Uint.from(10000n)).dividedBy(baseFee).toBigInt()) / 100;
+	const percentUsed =
+		(Number(used.toBigInt()) / Number(gasLimit.toBigInt())) * 100;
+	const change = nextFee.greaterThan(baseFee)
+		? nextFee.minus(baseFee)
+		: baseFee.minus(nextFee);
+	const changePercent =
+		Number(change.times(Uint.from(10000n)).dividedBy(baseFee).toBigInt()) / 100;
 
 	console.log(`   ${desc}:`);
 	console.log(`   - Gas used: ${used.toString()} (${percentUsed.toFixed(1)}%)`);
 	console.log(`   - Next base fee: ${nextFee.toString()} wei`);
-	console.log(`   - Change: ${nextFee.greaterThan(baseFee) ? '+' : '-'}${changePercent.toFixed(2)}%\n`);
+	console.log(
+		`   - Change: ${nextFee.greaterThan(baseFee) ? "+" : "-"}${changePercent.toFixed(2)}%\n`,
+	);
 }
 
 // 4. Gas optimization patterns
-console.log('4. Gas Optimization Analysis');
-console.log('   ------------------------');
+console.log("4. Gas Optimization Analysis");
+console.log("   ------------------------");
 
 // Storage operations
 const SLOAD_COST = Uint.from(2100n); // Cold SLOAD
@@ -180,11 +199,13 @@ const memoryReads = Uint.from(3n).times(numReads); // ~3 gas per memory read
 console.log(`   ${numReads.toString()} reads comparison:`);
 console.log(`   - From storage: ${storageReads.toString()} gas`);
 console.log(`   - From memory: ${memoryReads.toString()} gas`);
-console.log(`   - Savings: ${storageReads.minus(memoryReads).toString()} gas\n`);
+console.log(
+	`   - Savings: ${storageReads.minus(memoryReads).toString()} gas\n`,
+);
 
 // 5. Transaction cost estimation
-console.log('5. Complete Transaction Cost');
-console.log('   -----------------------');
+console.log("5. Complete Transaction Cost");
+console.log("   -----------------------");
 
 const txGasPrice = Uint.from(50000000000n); // 50 gwei
 const txGasUsed = Uint.from(100000n);
@@ -205,15 +226,17 @@ console.log(`   Gas cost: ${weiToEther(gasCost)} ETH`);
 console.log(`   Total cost: ${weiToEther(totalCost)} ETH\n`);
 
 // 6. Batch transaction savings
-console.log('6. Batch Transaction Savings');
-console.log('   ------------------------');
+console.log("6. Batch Transaction Savings");
+console.log("   ------------------------");
 
 const singleTxCost = TX_BASE_COST;
 const numTransfers = Uint.from(10n);
 const separateCost = singleTxCost.times(numTransfers);
 
 // Batch transfer saves base cost for each additional transfer
-const batchCost = TX_BASE_COST.plus(Uint.from(25000n).times(numTransfers.minus(Uint.ONE)));
+const batchCost = TX_BASE_COST.plus(
+	Uint.from(25000n).times(numTransfers.minus(Uint.ONE)),
+);
 
 console.log(`   ${numTransfers.toString()} separate transfers:`);
 console.log(`   - Cost: ${separateCost.toString()} gas\n`);
@@ -221,6 +244,8 @@ console.log(`   - Cost: ${separateCost.toString()} gas\n`);
 console.log(`   ${numTransfers.toString()} batched transfers:`);
 console.log(`   - Cost: ${batchCost.toString()} gas`);
 console.log(`   - Savings: ${separateCost.minus(batchCost).toString()} gas`);
-console.log(`   - Percentage: ${Number(separateCost.minus(batchCost).times(Uint.from(100n)).dividedBy(separateCost).toBigInt())}%\n`);
+console.log(
+	`   - Percentage: ${Number(separateCost.minus(batchCost).times(Uint.from(100n)).dividedBy(separateCost).toBigInt())}%\n`,
+);
 
-console.log('=== Example Complete ===\n');
+console.log("=== Example Complete ===\n");

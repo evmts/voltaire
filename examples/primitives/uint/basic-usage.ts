@@ -8,13 +8,13 @@
  * - Constants usage
  */
 
-import * as Uint from '../../../src/primitives/Uint/index.js';
+import * as Uint from "../../../src/primitives/Uint/index.js";
 
-console.log('\n=== Uint Basic Usage Example ===\n');
+console.log("\n=== Uint Basic Usage Example ===\n");
 
 // 1. Creating Uint values
-console.log('1. Creating Uint Values');
-console.log('   --------------------');
+console.log("1. Creating Uint Values");
+console.log("   --------------------");
 
 // From bigint
 const fromBigInt = Uint.from(100n);
@@ -25,16 +25,16 @@ const fromNumber = Uint.from(255);
 console.log(`   From number 255: ${fromNumber.toString()}`);
 
 // From hex string
-const fromHex = Uint.fromHex('0xff');
+const fromHex = Uint.fromHex("0xff");
 console.log(`   From hex "0xff": ${fromHex.toString()}`);
 
 // From decimal string
-const fromString = Uint.from('12345');
+const fromString = Uint.from("12345");
 console.log(`   From string "12345": ${fromString.toString()}\n`);
 
 // 2. Conversions
-console.log('2. Format Conversions');
-console.log('   -----------------');
+console.log("2. Format Conversions");
+console.log("   -----------------");
 
 const value = Uint.from(255n);
 
@@ -50,16 +50,16 @@ console.log(`   Decimal: ${value.toString(10)}`);
 console.log(`   Hexadecimal: 0x${value.toString(16)}\n`);
 
 // 3. Working with bytes
-console.log('3. Byte Representation');
-console.log('   ------------------');
+console.log("3. Byte Representation");
+console.log("   ------------------");
 
 const byteValue = Uint.from(256n);
 const bytes = byteValue.toBytes();
 
 console.log(`   Value: ${byteValue.toString()}`);
 console.log(`   As bytes (32-byte array, big-endian):`);
-console.log(`   - Bytes [0-3]: [${bytes.slice(0, 4).join(', ')}]`);
-console.log(`   - Bytes [28-31]: [${bytes.slice(28, 32).join(', ')}]`);
+console.log(`   - Bytes [0-3]: [${bytes.slice(0, 4).join(", ")}]`);
+console.log(`   - Bytes [28-31]: [${bytes.slice(28, 32).join(", ")}]`);
 console.log(`   - Total length: ${bytes.length} bytes\n`);
 
 // Round-trip conversion
@@ -67,8 +67,8 @@ const fromBytes = Uint.fromBytes(bytes);
 console.log(`   Round-trip: ${byteValue.equals(fromBytes)}\n`);
 
 // 4. Comparisons
-console.log('4. Comparisons');
-console.log('   -----------');
+console.log("4. Comparisons");
+console.log("   -----------");
 
 const a = Uint.from(100n);
 const b = Uint.from(200n);
@@ -82,12 +82,14 @@ console.log(`   b.greaterThan(a): ${b.greaterThan(a)}`);
 console.log(`   a.lessThanOrEqual(c): ${a.lessThanOrEqual(c)}\n`);
 
 // 5. Constants
-console.log('5. Using Constants');
-console.log('   --------------');
+console.log("5. Using Constants");
+console.log("   --------------");
 
 console.log(`   Uint.ZERO: ${Uint.ZERO.toString()}`);
 console.log(`   Uint.ONE: ${Uint.ONE.toString()}`);
-console.log(`   Uint.MAX: ${Uint.MAX.toString().slice(0, 50)}... (${Uint.MAX.toString().length} digits)`);
+console.log(
+	`   Uint.MAX: ${Uint.MAX.toString().slice(0, 50)}... (${Uint.MAX.toString().length} digits)`,
+);
 console.log(`   Uint.SIZE: ${Uint.SIZE} bytes\n`);
 
 // Check if value is zero
@@ -97,22 +99,26 @@ console.log(`   ${zero.toString()}.isZero(): ${zero.isZero()}`);
 console.log(`   ${nonZero.toString()}.isZero(): ${nonZero.isZero()}\n`);
 
 // 6. Safe parsing with tryFrom
-console.log('6. Safe Parsing');
-console.log('   -----------');
+console.log("6. Safe Parsing");
+console.log("   -----------");
 
-const validInputs = ['100', '0xff', '42'];
-const invalidInputs = ['-1', '1.5', 'invalid'];
+const validInputs = ["100", "0xff", "42"];
+const invalidInputs = ["-1", "1.5", "invalid"];
 
-console.log('   Valid inputs:');
+console.log("   Valid inputs:");
 for (const input of validInputs) {
 	const result = Uint.tryFrom(input);
-	console.log(`   - tryFrom("${input}"): ${result ? result.toString() : 'undefined'}`);
+	console.log(
+		`   - tryFrom("${input}"): ${result ? result.toString() : "undefined"}`,
+	);
 }
 
-console.log('\n   Invalid inputs:');
+console.log("\n   Invalid inputs:");
 for (const input of invalidInputs) {
 	const result = Uint.tryFrom(input);
-	console.log(`   - tryFrom("${input}"): ${result ? result.toString() : 'undefined'}`);
+	console.log(
+		`   - tryFrom("${input}"): ${result ? result.toString() : "undefined"}`,
+	);
 }
 
-console.log('\n=== Example Complete ===\n');
+console.log("\n=== Example Complete ===\n");

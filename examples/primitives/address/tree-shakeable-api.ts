@@ -134,7 +134,9 @@ console.log(`Address B: ${toHex(addrB)}`);
 console.log();
 
 console.log(`equals(A, B): ${equals(addrA, addrB)}`);
-console.log(`compare(A, B): ${compare(addrA, addrB)} (${compare(addrA, addrB) === -1 ? "A < B" : "invalid"})`);
+console.log(
+	`compare(A, B): ${compare(addrA, addrB)} (${compare(addrA, addrB) === -1 ? "A < B" : "invalid"})`,
+);
 console.log(`lessThan(A, B): ${lessThan(addrA, addrB)}`);
 console.log(`greaterThan(A, B): ${greaterThan(addrA, addrB)}`);
 console.log();

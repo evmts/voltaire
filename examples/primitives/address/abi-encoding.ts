@@ -30,7 +30,9 @@ console.log();
 
 // Show padding structure
 console.log("Structure breakdown:");
-console.log(`  First 12 bytes (padding): ${Hex.fromBytes(encoded.subarray(0, 12))}`);
+console.log(
+	`  First 12 bytes (padding): ${Hex.fromBytes(encoded.subarray(0, 12))}`,
+);
 console.log(
 	`  Last 20 bytes (address):  ${Hex.fromBytes(encoded.subarray(12, 32))}`,
 );
@@ -61,9 +63,7 @@ console.log("3. Multiple Addresses in Calldata\n");
 // Example: transfer(address to, uint256 amount)
 // Function selector: 0xa9059cbb (first 4 bytes of keccak256("transfer(address,uint256)"))
 const functionSelector = "0xa9059cbb";
-const toAddress = Address.fromHex(
-	"0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
-);
+const toAddress = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
 const amount = 1000n;
 
 // Build calldata manually
@@ -92,7 +92,9 @@ calldata.set(encodedTo, selectorBytes.length);
 calldata.set(amountBytes, selectorBytes.length + encodedTo.length);
 
 console.log(`Calldata: ${Hex.fromBytes(calldata)}`);
-console.log(`  Bytes 0-3:   ${Hex.fromBytes(calldata.subarray(0, 4))} (selector)`);
+console.log(
+	`  Bytes 0-3:   ${Hex.fromBytes(calldata.subarray(0, 4))} (selector)`,
+);
 console.log(
 	`  Bytes 4-35:  ${Hex.fromBytes(calldata.subarray(4, 36))} (address)`,
 );

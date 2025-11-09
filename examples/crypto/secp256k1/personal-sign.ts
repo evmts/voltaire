@@ -8,20 +8,20 @@
  * - Wallet authentication pattern
  */
 
-import * as Secp256k1 from '../../../src/crypto/Secp256k1/index.js';
-import { keccak256 } from '../../../src/primitives/Hash/BrandedHash/keccak256.js';
+import * as Secp256k1 from "../../../src/crypto/Secp256k1/index.js";
+import { keccak256 } from "../../../src/primitives/Hash/BrandedHash/keccak256.js";
 
 // Helper: Derive Ethereum address from public key
 function deriveAddress(publicKey: Uint8Array): string {
 	const hash = keccak256(publicKey);
 	const addressBytes = hash.slice(12);
-	return '0x' + Buffer.from(addressBytes).toString('hex');
+	return "0x" + Buffer.from(addressBytes).toString("hex");
 }
 
 // EIP-191: Personal message signing
 function personalSign(
 	message: string,
-	privateKey: Uint8Array
+	privateKey: Uint8Array,
 ): { r: Uint8Array; s: Uint8Array; v: number } {
 	// Add EIP-191 prefix to prevent transaction signing
 	const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
@@ -38,7 +38,7 @@ function personalSign(
 function personalVerify(
 	message: string,
 	signature: { r: Uint8Array; s: Uint8Array; v: number },
-	expectedAddress: string
+	expectedAddress: string,
 ): boolean {
 	// Reconstruct the EIP-191 hash
 	const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
@@ -53,7 +53,7 @@ function personalVerify(
 	return signerAddress.toLowerCase() === expectedAddress.toLowerCase();
 }
 
-console.log('=== EIP-191 Personal Message Signing ===\n');
+console.log("=== EIP-191 Personal Message Signing ===\n");
 
 // Generate keypair
 const privateKey = new Uint8Array(32);
@@ -61,29 +61,38 @@ crypto.getRandomValues(privateKey);
 const publicKey = Secp256k1.derivePublicKey(privateKey);
 const signerAddress = deriveAddress(publicKey);
 
-console.log('Signer address:', signerAddress);
+console.log("Signer address:", signerAddress);
 
 // Sign a personal message
-const message = 'I agree to the terms of service';
-console.log('\nMessage:', message);
+const message = "I agree to the terms of service";
+console.log("\nMessage:", message);
 
 const signature = personalSign(message, privateKey);
-console.log('\nSignature:');
-console.log('  r:', Buffer.from(signature.r).toString('hex').slice(0, 16) + '...');
-console.log('  s:', Buffer.from(signature.s).toString('hex').slice(0, 16) + '...');
-console.log('  v:', signature.v);
+console.log("\nSignature:");
+console.log(
+	"  r:",
+	Buffer.from(signature.r).toString("hex").slice(0, 16) + "...",
+);
+console.log(
+	"  s:",
+	Buffer.from(signature.s).toString("hex").slice(0, 16) + "...",
+);
+console.log("  v:", signature.v);
 
 // Verify signature
 const isValid = personalVerify(message, signature, signerAddress);
-console.log('\nSignature verification:', isValid ? '✓ Valid' : '✗ Invalid');
+console.log("\nSignature verification:", isValid ? "✓ Valid" : "✗ Invalid");
 
 // Test with wrong address
-const wrongAddress = '0x0000000000000000000000000000000000000000';
+const wrongAddress = "0x0000000000000000000000000000000000000000";
 const invalidVerification = personalVerify(message, signature, wrongAddress);
-console.log('Wrong address verification:', invalidVerification ? '✓ Valid' : '✗ Invalid (expected)');
+console.log(
+	"Wrong address verification:",
+	invalidVerification ? "✓ Valid" : "✗ Invalid (expected)",
+);
 
 // Demonstrate prefix importance
-console.log('\n=== EIP-191 Prefix Importance ===\n');
+console.log("\n=== EIP-191 Prefix Importance ===\n");
 
 // Without prefix (vulnerable to transaction replay)
 const unprefixedBytes = new TextEncoder().encode(message);
@@ -97,17 +106,20 @@ const signaturesMatch =
 	unprefixedSig.r.every((byte, i) => byte === prefixedSig.r[i]) &&
 	unprefixedSig.s.every((byte, i) => byte === prefixedSig.s[i]);
 
-console.log('Signatures differ (prefix protection):', !signaturesMatch ? '✓ Yes' : '✗ No');
+console.log(
+	"Signatures differ (prefix protection):",
+	!signaturesMatch ? "✓ Yes" : "✗ No",
+);
 
 // Wallet authentication example
-console.log('\n=== Wallet Authentication Example ===\n');
+console.log("\n=== Wallet Authentication Example ===\n");
 
 const nonce = Math.floor(Math.random() * 1000000);
 const authMessage = `Sign this message to authenticate.\nNonce: ${nonce}`;
-console.log('Challenge:', authMessage);
+console.log("Challenge:", authMessage);
 
 const authSignature = personalSign(authMessage, privateKey);
 const authenticated = personalVerify(authMessage, authSignature, signerAddress);
 
-console.log('Authentication:', authenticated ? '✓ Success' : '✗ Failed');
-console.log('Authenticated as:', signerAddress);
+console.log("Authentication:", authenticated ? "✓ Success" : "✗ Failed");
+console.log("Authenticated as:", signerAddress);

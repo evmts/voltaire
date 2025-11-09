@@ -8,22 +8,26 @@
  * - Basic comparisons
  */
 
-import { Hash } from '../../../src/primitives/Hash/index.js';
+import { Hash } from "../../../src/primitives/Hash/index.js";
 
-console.log('=== Basic Hash Usage ===\n');
+console.log("=== Basic Hash Usage ===\n");
 
 // ============================================================
 // 1. Creating Hashes
 // ============================================================
 
-console.log('1. Creating Hashes\n');
+console.log("1. Creating Hashes\n");
 
 // From hex string (most common)
-const hash1 = new Hash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+const hash1 = new Hash(
+	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+);
 console.log(`From hex: ${hash1.format()}`);
 
 // From hex using static method
-const hash2 = Hash.fromHex("0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890");
+const hash2 = Hash.fromHex(
+	"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+);
 console.log(`From fromHex(): ${hash2.format()}`);
 
 // From bytes
@@ -42,9 +46,11 @@ console.log(`Random hash: ${randomHash.format()}\n`);
 // 2. Format Conversions
 // ============================================================
 
-console.log('2. Format Conversions\n');
+console.log("2. Format Conversions\n");
 
-const hash = Hash.fromHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8");
+const hash = Hash.fromHex(
+	"0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+);
 
 // Convert to hex string
 console.log(`toHex():     ${hash.toHex()}`);
@@ -64,11 +70,13 @@ console.log(`format(8,6): ${hash.format(8, 6)}\n`); // Custom: 8 prefix + 6 suff
 // 3. Validation
 // ============================================================
 
-console.log('3. Validation\n');
+console.log("3. Validation\n");
 
 // Valid hex strings
-const validHex1 = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-const validHex2 = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"; // No 0x prefix
+const validHex1 =
+	"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const validHex2 =
+	"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"; // No 0x prefix
 const invalidHex = "0x1234"; // Too short
 
 console.log(`Valid (with 0x):    ${Hash.isValidHex(validHex1)}`);
@@ -77,19 +85,21 @@ console.log(`Invalid (too short): ${Hash.isValidHex(invalidHex)}`);
 
 // Safe parsing with validation
 function parseHash(input: string): Hash | null {
-  if (!Hash.isValidHex(input)) {
-    console.log(`  ✗ Invalid format: ${input}`);
-    return null;
-  }
-  try {
-    return Hash.fromHex(input);
-  } catch (error) {
-    console.log(`  ✗ Parse error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    return null;
-  }
+	if (!Hash.isValidHex(input)) {
+		console.log(`  ✗ Invalid format: ${input}`);
+		return null;
+	}
+	try {
+		return Hash.fromHex(input);
+	} catch (error) {
+		console.log(
+			`  ✗ Parse error: ${error instanceof Error ? error.message : "Unknown error"}`,
+		);
+		return null;
+	}
 }
 
-console.log('\nSafe parsing:');
+console.log("\nSafe parsing:");
 parseHash(validHex1);
 parseHash(invalidHex);
 console.log();
@@ -98,14 +108,14 @@ console.log();
 // 4. Type Guards
 // ============================================================
 
-console.log('4. Type Guards\n');
+console.log("4. Type Guards\n");
 
 function processValue(value: unknown) {
-  if (Hash.isHash(value)) {
-    console.log(`  ✓ Valid Hash: ${Hash.format(value)}`);
-  } else {
-    console.log(`  ✗ Not a Hash: ${typeof value}`);
-  }
+	if (Hash.isHash(value)) {
+		console.log(`  ✓ Valid Hash: ${Hash.format(value)}`);
+	} else {
+		console.log(`  ✗ Not a Hash: ${typeof value}`);
+	}
 }
 
 processValue(hash);
@@ -118,7 +128,7 @@ console.log();
 // 5. Basic Comparisons
 // ============================================================
 
-console.log('5. Basic Comparisons\n');
+console.log("5. Basic Comparisons\n");
 
 // Create test hashes
 const hashA = Hash.keccak256String("hello");
@@ -146,19 +156,19 @@ console.log(`\nEquals ZERO constant: ${zeroHash.equals(Hash.ZERO)}\n`);
 // 6. Working with Hash as Uint8Array
 // ============================================================
 
-console.log('6. Hash as Uint8Array\n');
+console.log("6. Hash as Uint8Array\n");
 
 const hash4 = Hash.keccak256String("example");
 
 // Direct byte access (Hash extends Uint8Array)
 console.log(`Length:      ${hash4.length} bytes`);
-console.log(`First byte:  0x${hash4[0].toString(16).padStart(2, '0')}`);
-console.log(`Last byte:   0x${hash4[31].toString(16).padStart(2, '0')}`);
+console.log(`First byte:  0x${hash4[0].toString(16).padStart(2, "0")}`);
+console.log(`Last byte:   0x${hash4[31].toString(16).padStart(2, "0")}`);
 
 // Iterate over bytes
-console.log('\nFirst 8 bytes:');
+console.log("\nFirst 8 bytes:");
 for (let i = 0; i < 8; i++) {
-  console.log(`  [${i}]: 0x${hash4[i].toString(16).padStart(2, '0')}`);
+	console.log(`  [${i}]: 0x${hash4[i].toString(16).padStart(2, "0")}`);
 }
 console.log();
 
@@ -166,7 +176,7 @@ console.log();
 // 7. Cloning and Slicing
 // ============================================================
 
-console.log('7. Cloning and Slicing\n');
+console.log("7. Cloning and Slicing\n");
 
 const original = Hash.keccak256String("data");
 
@@ -184,13 +194,17 @@ console.log(`Equal:    ${original.equals(cloned)}`); // false
 // Slicing (get portion of hash)
 const functionSignature = Hash.keccak256String("transfer(address,uint256)");
 const selector = Uint8Array.prototype.slice.call(functionSignature, 0, 4);
-console.log(`\nFunction selector: 0x${Array.from(selector).map(b => b.toString(16).padStart(2, '0')).join('')}\n`);
+console.log(
+	`\nFunction selector: 0x${Array.from(selector)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}\n`,
+);
 
 // ============================================================
 // 8. Constants
 // ============================================================
 
-console.log('8. Hash Constants\n');
+console.log("8. Hash Constants\n");
 
 console.log(`Hash.SIZE:  ${Hash.SIZE} bytes`);
 console.log(`Hash.ZERO:  ${Hash.format(Hash.ZERO)}`);
@@ -203,4 +217,4 @@ console.log(`\nBuffer size: ${buffer.length} (matches Hash.SIZE)`);
 const testHash = Hash.fromBytes(new Uint8Array(32));
 console.log(`Is zero: ${Hash.equals(testHash, Hash.ZERO)}\n`);
 
-console.log('=== Example Complete ===\n');
+console.log("=== Example Complete ===\n");

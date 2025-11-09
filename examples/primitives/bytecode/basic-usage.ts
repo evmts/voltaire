@@ -50,7 +50,7 @@ console.log(`Size: ${Bytecode.size(simpleContract)} bytes`);
 
 // More complex bytecode with multiple opcodes
 const complexCode = Bytecode.fromHex(
-  "0x608060405234801561001057600080fd5b50600436106100415760003560e01c8063",
+	"0x608060405234801561001057600080fd5b50600436106100415760003560e01c8063",
 );
 console.log(`Complex code: ${Bytecode.toHex(complexCode).substring(0, 40)}...`);
 console.log(`Size: ${Bytecode.size(complexCode)} bytes`);
@@ -76,7 +76,7 @@ console.log(`Incomplete PUSH2: ${Bytecode.validate(invalidCode2)}`);
 
 // Valid PUSH32 (32 data bytes)
 const validPush32 = Bytecode.fromHex(
-  "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00",
+	"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00",
 );
 console.log(`Valid PUSH32: ${Bytecode.validate(validPush32)}`);
 
@@ -129,33 +129,37 @@ console.log();
 console.log("--- Safe Parsing Pattern ---\n");
 
 function safeParse(hex: string): typeof Bytecode.prototype {
-  try {
-    const code = Bytecode.fromHex(hex);
+	try {
+		const code = Bytecode.fromHex(hex);
 
-    if (!Bytecode.validate(code)) {
-      throw new Error("Invalid bytecode structure");
-    }
+		if (!Bytecode.validate(code)) {
+			throw new Error("Invalid bytecode structure");
+		}
 
-    return code;
-  } catch (err) {
-    throw new Error(
-      `Failed to parse bytecode: ${err instanceof Error ? err.message : "Unknown error"}`,
-    );
-  }
+		return code;
+	} catch (err) {
+		throw new Error(
+			`Failed to parse bytecode: ${err instanceof Error ? err.message : "Unknown error"}`,
+		);
+	}
 }
 
 try {
-  const valid = safeParse("0x60016002015b00");
-  console.log(`Valid parse: ${Bytecode.toHex(valid)}`);
+	const valid = safeParse("0x60016002015b00");
+	console.log(`Valid parse: ${Bytecode.toHex(valid)}`);
 } catch (err) {
-  console.error(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+	console.error(
+		`Error: ${err instanceof Error ? err.message : "Unknown error"}`,
+	);
 }
 
 try {
-  const invalid = safeParse("0x60"); // Incomplete PUSH1
-  console.log(`Should not reach here: ${Bytecode.toHex(invalid)}`);
+	const invalid = safeParse("0x60"); // Incomplete PUSH1
+	console.log(`Should not reach here: ${Bytecode.toHex(invalid)}`);
 } catch (err) {
-  console.error(`Caught invalid: ${err instanceof Error ? err.message : "Unknown error"}`);
+	console.error(
+		`Caught invalid: ${err instanceof Error ? err.message : "Unknown error"}`,
+	);
 }
 console.log();
 
@@ -167,15 +171,15 @@ console.log("--- Bytecode Construction ---\n");
 
 // Build simple bytecode programmatically
 function buildSimpleBytecode(): Uint8Array {
-  return new Uint8Array([
-    0x60,
-    0x01, // PUSH1 0x01
-    0x60,
-    0x02, // PUSH1 0x02
-    0x01, // ADD
-    0x5b, // JUMPDEST
-    0x00, // STOP
-  ]);
+	return new Uint8Array([
+		0x60,
+		0x01, // PUSH1 0x01
+		0x60,
+		0x02, // PUSH1 0x02
+		0x01, // ADD
+		0x5b, // JUMPDEST
+		0x00, // STOP
+	]);
 }
 
 const constructed = Bytecode.from(buildSimpleBytecode());
@@ -206,16 +210,16 @@ console.log();
 console.log("--- Type Guards ---\n");
 
 function processBytecode(value: unknown): void {
-  if (value instanceof Uint8Array) {
-    const code = Bytecode.from(value);
-    console.log(`  Size: ${Bytecode.size(code)} bytes`);
-    console.log(`  Valid: ${Bytecode.validate(code)}`);
-  } else if (typeof value === "string") {
-    const code = Bytecode.fromHex(value);
-    console.log(`  Hex: ${Bytecode.toHex(code)}`);
-  } else {
-    console.log(`  Unknown type: ${typeof value}`);
-  }
+	if (value instanceof Uint8Array) {
+		const code = Bytecode.from(value);
+		console.log(`  Size: ${Bytecode.size(code)} bytes`);
+		console.log(`  Valid: ${Bytecode.validate(code)}`);
+	} else if (typeof value === "string") {
+		const code = Bytecode.fromHex(value);
+		console.log(`  Hex: ${Bytecode.toHex(code)}`);
+	} else {
+		console.log(`  Unknown type: ${typeof value}`);
+	}
 }
 
 console.log("Processing hex string:");
