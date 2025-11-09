@@ -1,16 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { Address } from "./primitives/Address/index.js";
-import type { BrandedHash } from "./primitives/Hash/index.js";
-import * as Hardfork from "./primitives/Hardfork/index.js";
-import * as Rlp from "./primitives/Rlp/index.js";
-import * as Signature from "./primitives/Signature/index.js";
+import { describe, expect, it } from "vitest";
 import { EIP712 } from "./crypto/EIP712/index.js";
 import * as HDWallet from "./crypto/HDWallet/HDWallet.js";
-import { Keccak256 } from "./crypto/Keccak256/index.js";
 import * as Kzg from "./crypto/KZG/index.js";
+import { Keccak256 } from "./crypto/Keccak256/index.js";
 import { Ripemd160 } from "./crypto/Ripemd160/index.js";
-import { Secp256k1 } from "./crypto/Secp256k1/index.js";
 import { SHA256 } from "./crypto/SHA256/index.js";
+import { Secp256k1 } from "./crypto/Secp256k1/index.js";
 import {
 	PrecompileAddress,
 	blake2f,
@@ -25,6 +20,11 @@ import {
 	ripemd160,
 	sha256,
 } from "./precompiles/precompiles.js";
+import { Address } from "./primitives/Address/index.js";
+import * as Hardfork from "./primitives/Hardfork/index.js";
+import type { BrandedHash } from "./primitives/Hash/index.js";
+import * as Rlp from "./primitives/Rlp/index.js";
+import * as Signature from "./primitives/Signature/index.js";
 
 /**
  * Integration Tests: Cross-Module Workflows

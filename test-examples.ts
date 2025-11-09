@@ -7,9 +7,9 @@
  * reporting successes and failures.
  */
 
-import { readdirSync, statSync } from "fs";
-import { join, relative } from "path";
-import { spawn } from "child_process";
+import { spawn } from "node:child_process";
+import { readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 
 interface TestResult {
 	file: string;
@@ -92,13 +92,9 @@ async function runExample(file: string): Promise<TestResult> {
  * Main test runner
  */
 async function main() {
-	console.log("🔍 Discovering TypeScript examples...\n");
 
 	const examplesDir = join(process.cwd(), "examples");
 	const files = findTypeScriptFiles(examplesDir).sort();
-
-	console.log(`Found ${files.length} TypeScript examples\n`);
-	console.log("🧪 Running examples...\n");
 
 	const results: TestResult[] = [];
 	let passed = 0;
@@ -113,38 +109,24 @@ async function main() {
 		results.push(result);
 
 		if (result.success) {
-			console.log(`✅ (${result.duration}ms)`);
 			passed++;
 		} else {
-			console.log(`❌ (${result.duration}ms)`);
 			failed++;
 		}
 	}
 
-	// Summary
-	console.log("\n" + "=".repeat(80));
-	console.log("📊 Test Summary\n");
-	console.log(`  Total:  ${files.length}`);
-	console.log(`  Passed: ${passed} ✅`);
-	console.log(`  Failed: ${failed} ❌`);
-	console.log("=".repeat(80));
-
 	// Show failures
 	if (failed > 0) {
-		console.log("\n❌ Failed Examples:\n");
 
 		const failures = results.filter((r) => !r.success);
 		for (const failure of failures) {
 			const relPath = relative(examplesDir, failure.file);
-			console.log(`  ${relPath}`);
 			if (failure.error) {
 				const errorLines = failure.error.split("\n").slice(0, 5);
-				errorLines.forEach((line) => console.log(`    ${line}`));
+				errorLines.forEach((line) => );
 				if (failure.error.split("\n").length > 5) {
-					console.log(`    ... (truncated)`);
 				}
 			}
-			console.log();
 		}
 	}
 
