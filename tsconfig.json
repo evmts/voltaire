@@ -6,10 +6,11 @@
 		"skipLibCheck": true,
 		"types": ["bun-types"]
 	},
-	"include": ["src", "src/**/*.json"],
+	"include": ["src/**/*.ts", "src/**/*.js", "src/**/*.json"],
 	"exclude": [
 		"node_modules",
 		"node_modules/**/*",
+		"src/content.config.ts",
 		"src/content/docs/primitives/abi",
 		"src/content/docs/primitives/accesslist",
 		"src/content/docs/primitives/authorization",
