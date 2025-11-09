@@ -101,13 +101,11 @@ const result1 = parseHashOrNull(validInput);
 const result2 = parseHashOrNull(invalidInput);
 try {
 	const result3 = parseHashOrThrow(validInput);
-} catch (error) {
-}
+} catch (error) {}
 
 try {
 	const result4 = parseHashOrThrow(invalidInput);
-} catch (error) {
-}
+} catch (error) {}
 const result5 = parseHashResult(validInput);
 const result6 = parseHashResult(invalidInput);
 
@@ -142,8 +140,7 @@ const mixedValues: unknown[] = [
 ];
 
 const validHashes = mixedValues.filter(Hash.isHash);
-validHashes.forEach((hash, i) => {
-});
+validHashes.forEach((hash, i) => {});
 
 function processHash(value: unknown): string {
 	// Assert will throw if not a hash
@@ -156,14 +153,12 @@ function processHash(value: unknown): string {
 try {
 	const validHash = Hash.random();
 	const result = processHash(validHash);
-} catch (error) {
-}
+} catch (error) {}
 
 try {
 	const invalidValue = "not a hash";
 	const result = processHash(invalidValue);
-} catch (error) {
-}
+} catch (error) {}
 
 interface ValidationError {
 	field: string;
@@ -220,7 +215,9 @@ formInputs.forEach((input) => {
 
 	if (errors.length === 0) {
 	} else {
-		errors.forEach((err) => );
+		errors.forEach((err) => {
+			console.error(`    ${err.message}`);
+		});
 	}
 });
 
@@ -260,8 +257,7 @@ try {
 		],
 	};
 	validateGetLogsParams(validParams);
-} catch (error) {
-}
+} catch (error) {}
 
 // Invalid params
 try {
@@ -271,8 +267,7 @@ try {
 		topics: ["0x1234"], // Too short
 	};
 	validateGetLogsParams(invalidParams);
-} catch (error) {
-}
+} catch (error) {}
 
 const hashes = [
 	Hash.fromBytes(new Uint8Array(32)), // Zero

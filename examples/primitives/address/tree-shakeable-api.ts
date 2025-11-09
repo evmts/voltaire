@@ -42,13 +42,11 @@ const nonZero = addresses.filter((addr) => !isZero(addr));
 // Find addresses less than threshold
 const threshold = fromNumber(80n);
 const belowThreshold = addresses.filter((addr) => lessThan(addr, threshold));
-belowThreshold.forEach((addr) => {
-});
+belowThreshold.forEach((addr) => {});
 
 // Find addresses greater than threshold
 const aboveThreshold = addresses.filter((addr) => greaterThan(addr, threshold));
-aboveThreshold.forEach((addr) => {
-});
+aboveThreshold.forEach((addr) => {});
 
 function processUnknown(value: unknown): string {
 	if (is(value)) {
@@ -71,15 +69,15 @@ const unsorted = [
 	fromNumber(200n),
 	fromNumber(50n),
 ];
-unsorted.forEach((addr) => );
+unsorted.forEach((addr) => {});
 
 // Sort using compare function
 const sorted = [...unsorted].sort(compare);
-sorted.forEach((addr) => );
+sorted.forEach((addr) => {});
 
 // Sort descending
 const descending = [...unsorted].sort((a, b) => compare(b, a));
-descending.forEach((addr) => );
+descending.forEach((addr) => {});
 
 const rawAddresses = [
 	"0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
@@ -98,5 +96,4 @@ const processed = rawAddresses
 	.filter((addr, i, arr) => arr.findIndex((a) => equals(a, addr)) === i)
 	// Sort
 	.sort(compare);
-processed.forEach((addr) => {
-});
+processed.forEach((addr) => {});

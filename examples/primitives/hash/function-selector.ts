@@ -17,11 +17,9 @@ function getFunctionSelector(signature: string): Uint8Array {
 }
 
 function selectorToHex(selector: Uint8Array): string {
-	return (
-		`0x${Array.from(selector)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("")}`
-	);
+	return `0x${Array.from(selector)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 }
 
 // ERC-20 Functions
@@ -162,8 +160,7 @@ registry.register("totalSupply()");
 registry.register("name()");
 registry.register("symbol()");
 registry.register("decimals()");
-registry.all().forEach((func) => {
-});
+registry.all().forEach((func) => {});
 
 // Lookup by selector
 const lookedUp = registry.lookup("0xa9059cbb");
@@ -194,7 +191,7 @@ function checkCollision(signatures: string[]): void {
 	if (collisions.length === 0) {
 	} else {
 		collisions.forEach(([selector, sigs]) => {
-			sigs.forEach((sig) => );
+			sigs.forEach((sig) => {});
 		});
 	}
 }
