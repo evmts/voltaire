@@ -20,6 +20,7 @@ import {
 	assert,
 	isHash,
 	isValidHex,
+	merkleRoot,
 	ZERO,
 	SIZE,
 } from "./index.ox.js";
