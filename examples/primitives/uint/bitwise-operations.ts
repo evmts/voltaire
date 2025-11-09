@@ -8,7 +8,7 @@
  * - Flags and masking
  */
 
-import { Uint } from '../../../src/primitives/Uint/index.js';
+import * as Uint from '../../../src/primitives/Uint/index.js';
 
 console.log('\n=== Uint Bitwise Operations Example ===\n');
 
