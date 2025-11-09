@@ -178,6 +178,32 @@ zig build && ./zig-out/bin/example-bytecode-deployment
 
 ---
 
+### 7. Opcode Reference (`opcode-reference.ts`)
+
+**Demonstrates:**
+- Common EVM opcode constants
+- Opcode classification utilities (isPush, getPushSize, isTerminator)
+- All PUSH opcodes (PUSH1-PUSH32)
+- Control flow opcode analysis
+- Opcode frequency analysis in real bytecode
+- Building bytecode programmatically using constants
+- Opcode quick reference by category
+
+**Key concepts:**
+- PUSH opcodes are 0x60-0x7f (PUSH1-PUSH32)
+- getPushSize returns data bytes for PUSH instructions
+- isTerminator identifies STOP, RETURN, REVERT, INVALID
+- All byte values 0x00-0xFF are structurally valid
+- Opcodes organized by category (arithmetic, stack, memory, storage, etc.)
+
+**Run:**
+```bash
+# TypeScript
+bun run examples/primitives/bytecode/opcode-reference.ts
+```
+
+---
+
 ## Example Coverage
 
 | Feature | Examples |
@@ -193,6 +219,8 @@ zig build && ./zig-out/bin/example-bytecode-deployment
 | **Formatting** | disassembly |
 | **Utilities** | basic-usage, validation |
 | **Contract analysis** | contract-deployment |
+| **Opcode utilities** | opcode-reference |
+| **Opcode constants** | opcode-reference, basic-usage |
 
 ## Key Concepts
 
