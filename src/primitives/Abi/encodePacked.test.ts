@@ -152,10 +152,7 @@ describe("encodePacked - bool type", () => {
 	});
 
 	it("encodes multiple bools", () => {
-		const result = encodePacked(
-			["bool", "bool", "bool"],
-			[true, false, true],
-		);
+		const result = encodePacked(["bool", "bool", "bool"], [true, false, true]);
 		expect(result).toMatch(/0x010001/i);
 	});
 });
@@ -286,10 +283,7 @@ describe("encodePacked - fixed arrays", () => {
 	});
 
 	it("encodes uint8[4]", () => {
-		const result = encodePacked(
-			["uint8[4]"],
-			[[0x12n, 0x34n, 0x56n, 0x78n]],
-		);
+		const result = encodePacked(["uint8[4]"], [[0x12n, 0x34n, 0x56n, 0x78n]]);
 		expect(result).toMatch(/0x12345678/i);
 	});
 
