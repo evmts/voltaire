@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { modexp, execute, PrecompileAddress } from "./precompiles.js";
+import { describe, expect, it } from "vitest";
 import * as Hardfork from "../primitives/Hardfork/index.js";
+import { PrecompileAddress, execute, modexp } from "./precompiles.js";
 
 /**
  * Helper to convert bigint to big-endian bytes with padding

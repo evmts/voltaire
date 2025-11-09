@@ -1,16 +1,16 @@
 import { describe, expect, test } from "vitest";
+import { serializeG1, serializeG2 } from "../crypto/bn254/BN254.js";
+import * as G1 from "../crypto/bn254/G1/index.js";
+import * as G2 from "../crypto/bn254/G2/index.js";
+import { FP_MOD, FR_MOD, G1_GENERATOR_X } from "../crypto/bn254/constants.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 import {
-	execute,
 	PrecompileAddress,
 	bn254Add,
 	bn254Mul,
 	bn254Pairing,
+	execute,
 } from "./precompiles.js";
-import * as Hardfork from "../primitives/Hardfork/index.js";
-import * as G1 from "../crypto/bn254/G1/index.js";
-import * as G2 from "../crypto/bn254/G2/index.js";
-import { serializeG1, serializeG2 } from "../crypto/bn254/BN254.js";
-import { G1_GENERATOR_X, FP_MOD, FR_MOD } from "../crypto/bn254/constants.js";
 
 describe("BN254 precompiles", () => {
 	describe("bn254Add (0x06)", () => {
@@ -62,10 +62,9 @@ describe("BN254 precompiles", () => {
 
 			// Result should equal generator
 			const xResult = BigInt(
-				"0x" +
-					Array.from(result.output.slice(0, 32))
-						.map((b) => b.toString(16).padStart(2, "0"))
-						.join(""),
+				`0x${Array.from(result.output.slice(0, 32))
+					.map((b) => b.toString(16).padStart(2, "0"))
+					.join("")}`,
 			);
 			expect(xResult).toBe(G1_GENERATOR_X);
 		});

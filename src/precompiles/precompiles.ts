@@ -2,17 +2,17 @@
  * EVM Precompile implementations
  */
 
+import { bls12_381 } from "@noble/curves/bls12-381.js";
+import * as Kzg from "../crypto/KZG/index.js";
 import { Keccak256 } from "../crypto/Keccak256/index.js";
 import { Ripemd160 } from "../crypto/Ripemd160/index.js";
 import { SHA256 } from "../crypto/SHA256/index.js";
 import { Secp256k1 } from "../crypto/Secp256k1/index.js";
 import { BN254 as Bn254 } from "../crypto/bn254/BN254.js";
-import * as Kzg from "../crypto/KZG/index.js";
 import * as Gas from "../primitives/GasConstants/index.js";
-import * as Hardfork from "../primitives/Hardfork/index.js";
 import type { BrandedHardfork } from "../primitives/Hardfork/BrandedHardfork/BrandedHardfork.js";
+import * as Hardfork from "../primitives/Hardfork/index.js";
 import type { BrandedHash } from "../primitives/Hash/index.js";
-import { bls12_381 } from "@noble/curves/bls12-381.js";
 
 export enum PrecompileAddress {
 	ECRECOVER = "0x0000000000000000000000000000000000000001",
