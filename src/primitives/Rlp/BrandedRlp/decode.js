@@ -221,7 +221,7 @@ export function decode(bytes, stream = false) {
 		const value = OxRlp.toBytes(item);
 
 		return {
-			data: toData(value),
+			data: toData(/** @type {any} */ (value)),
 			remainder,
 		};
 	} catch (err) {

@@ -67,6 +67,11 @@ export function parse(text) {
 		// Use ox to parse the message
 		const oxMessage = OxSiwe.parseMessage(normalizedText);
 
+		// Validate address field is present
+		if (!oxMessage.address) {
+			throw new Error("missing address in SIWE message");
+		}
+
 		// Convert address from hex to BrandedAddress
 		const address = Address.from(oxMessage.address);
 

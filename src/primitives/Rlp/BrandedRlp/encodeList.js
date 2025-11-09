@@ -30,5 +30,5 @@ import * as OxRlp from "ox/Rlp";
  * - If total >= 56: [0xf7 + length_of_length, ...length_bytes, ...encoded_items]
  */
 export function encodeList(items) {
-	return OxRlp.from(items, { as: "Bytes" });
+	return OxRlp.from(/** @type {any} */ (items), { as: "Bytes" });
 }
