@@ -35,7 +35,7 @@ function alloc(size: number): number {
 export async function hash(data: Uint8Array): Promise<Uint8Array> {
 	await init();
 
-	const exports = wasmInstance!.exports as {
+	const exports = wasmInstance?.exports as {
 		keccak256Hash: (
 			inputPtr: number,
 			inputLen: number,

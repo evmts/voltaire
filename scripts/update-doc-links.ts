@@ -5,8 +5,8 @@
  * 2. Test file links alongside source code links
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from "fs";
-import { join, relative, dirname, basename } from "path";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, relative } from "node:path";
 
 const REPO_URL = "https://github.com/evmts/voltaire";
 const OLD_REPO_URL = "https://github.com/evmts/primitives";
@@ -58,10 +58,12 @@ function inferTestPath(sourcePath: string): string | null {
 	if (sourcePath.endsWith(".js")) {
 		const testPath = sourcePath.replace(/\.js$/, ".test.ts");
 		return testPath;
-	} else if (sourcePath.endsWith(".ts")) {
+	}
+	if (sourcePath.endsWith(".ts")) {
 		const testPath = sourcePath.replace(/\.ts$/, ".test.ts");
 		return testPath;
-	} else if (sourcePath.endsWith(".zig")) {
+	}
+	if (sourcePath.endsWith(".zig")) {
 		// Zig tests are inline, link to the same file
 		return sourcePath;
 	}
@@ -116,7 +118,7 @@ function updateMdxFile(filePath: string): LinkUpdate[] {
 
 			// Check if next line already has a test link
 			const nextLine = lines[i + 1];
-			const hasTestLink = nextLine && nextLine.match(/^\s*Tests?: \[/);
+			const hasTestLink = nextLine?.match(/^\s*Tests?: \[/);
 
 			if (!hasTestLink) {
 				// Try to add test link
@@ -161,9 +163,7 @@ function updateMdxFile(filePath: string): LinkUpdate[] {
 }
 
 function main() {
-	console.log("🔍 Finding MDX files in", DOCS_DIR);
 	const mdxFiles = findMdxFiles(DOCS_DIR);
-	console.log(`📄 Found ${mdxFiles.length} documentation files`);
 
 	const allUpdates: LinkUpdate[] = [];
 	let filesUpdated = 0;
@@ -188,26 +188,16 @@ function main() {
 		}
 	}
 
-	console.log("\n✅ Updates complete!");
-	console.log(`📝 Files updated: ${filesUpdated}`);
-	console.log(`🔗 URLs updated: ${urlsUpdated}`);
-	console.log(`🧪 Test links added: ${testsAdded}`);
-
 	if (allUpdates.length > 0) {
-		console.log("\n📋 Sample updates:");
 		for (const update of allUpdates.slice(0, 10)) {
 			const relPath = relative(process.cwd(), update.file);
-			console.log(`  ${relPath}`);
 			if (update.testUrl) {
-				console.log(`    + Added test link: ${basename(update.testUrl)}`);
 			}
 			if (update.oldUrl !== update.newUrl) {
-				console.log(`    ✓ Updated repo URL`);
 			}
 		}
 
 		if (allUpdates.length > 10) {
-			console.log(`  ... and ${allUpdates.length - 10} more`);
 		}
 	}
 }

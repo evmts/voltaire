@@ -41,7 +41,8 @@ export function isValid(hex: string): boolean {
 	if (hex.length === 42) {
 		if (!hex.startsWith("0x")) return false;
 		return /^0x[0-9a-fA-F]{40}$/.test(hex);
-	} else if (hex.length === 40) {
+	}
+	if (hex.length === 40) {
 		return /^[0-9a-fA-F]{40}$/.test(hex);
 	}
 	return false;

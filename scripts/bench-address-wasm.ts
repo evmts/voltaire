@@ -34,7 +34,7 @@ function alloc(size: number): number {
 export async function fromHex(hex: string): Promise<Uint8Array> {
 	await init();
 
-	const exports = wasmInstance!.exports as {
+	const exports = wasmInstance?.exports as {
 		addressFromHex: (
 			hexPtr: number,
 			hexLen: number,
@@ -66,7 +66,7 @@ export async function fromHex(hex: string): Promise<Uint8Array> {
 export async function toHex(address: Uint8Array): Promise<string> {
 	await init();
 
-	const exports = wasmInstance!.exports as {
+	const exports = wasmInstance?.exports as {
 		addressToHex: (addrPtr: number, outputPtr: number) => void;
 		memory: WebAssembly.Memory;
 	};
@@ -89,7 +89,7 @@ export async function toHex(address: Uint8Array): Promise<string> {
 export async function isValid(hex: string): Promise<boolean> {
 	await init();
 
-	const exports = wasmInstance!.exports as {
+	const exports = wasmInstance?.exports as {
 		addressIsValid: (hexPtr: number, hexLen: number) => number;
 		memory: WebAssembly.Memory;
 	};
@@ -112,7 +112,7 @@ export async function equals(
 ): Promise<boolean> {
 	await init();
 
-	const exports = wasmInstance!.exports as {
+	const exports = wasmInstance?.exports as {
 		addressEquals: (addr1Ptr: number, addr2Ptr: number) => number;
 		memory: WebAssembly.Memory;
 	};
@@ -133,7 +133,7 @@ export async function equals(
 export async function isZero(address: Uint8Array): Promise<boolean> {
 	await init();
 
-	const exports = wasmInstance!.exports as {
+	const exports = wasmInstance?.exports as {
 		addressIsZero: (addrPtr: number) => number;
 		memory: WebAssembly.Memory;
 	};
