@@ -100,8 +100,8 @@ console.log(`Size: ${Bytecode.size(code)} bytes`);
 
 // Hash (keccak256)
 const hash = Bytecode.hash(code);
-console.log(`Hash: ${hash.toHex()}`);
-console.log(`Hash (short): ${hash.format()}`);
+console.log(`Hash: ${Hash.toHex(hash)}`);
+console.log(`Hash (short): ${Hash.format(hash)}`);
 console.log();
 
 // ============================================================
