@@ -13,6 +13,7 @@
 		"src/content/docs/primitives/accesslist",
 		"src/content/docs/primitives/authorization",
 		"src/content/docs/primitives/blob",
+		"src/content/docs/primitives/ens",
 		"src/content/docs/primitives/eventlog",
 		"src/content/docs/primitives/feemarket",
 		"src/content/docs/primitives/gasconstants",
