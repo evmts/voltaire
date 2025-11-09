@@ -11,6 +11,7 @@ import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
  */
 export function namehash(name) {
 	// Start with root hash (32 zero bytes)
+	/** @type {Uint8Array} */
 	let hash = new Uint8Array(32);
 
 	// Empty string returns root hash
@@ -32,9 +33,9 @@ export function namehash(name) {
 
 		// Concatenate parent hash and label hash, then hash again
 		const combined = new Uint8Array(64);
-		combined.set(hash, 0);
-		combined.set(labelHash, 32);
-		hash = keccak256(combined);
+		combined.set(new Uint8Array(hash), 0);
+		combined.set(new Uint8Array(labelHash), 32);
+		hash = new Uint8Array(keccak256(combined));
 	}
 
 	return /** @type {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} */ (
