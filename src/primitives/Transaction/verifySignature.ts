@@ -1,12 +1,12 @@
 import type { BrandedTransactionEIP1559 } from "./EIP1559/BrandedTransactionEIP1559.js";
-import type { BrandedTransactionEIP2930 } from "./EIP2930/BrandedTransactionEIP2930.js";
-import type { BrandedTransactionEIP4844 } from "./EIP4844/BrandedTransactionEIP4844.js";
-import type { BrandedTransactionEIP7702 } from "./EIP7702/BrandedTransactionEIP7702.js";
-import type { BrandedTransactionLegacy } from "./Legacy/BrandedTransactionLegacy.js";
 import * as EIP1559 from "./EIP1559/verifySignature.js";
+import type { BrandedTransactionEIP2930 } from "./EIP2930/BrandedTransactionEIP2930.js";
 import * as EIP2930 from "./EIP2930/verifySignature.js";
+import type { BrandedTransactionEIP4844 } from "./EIP4844/BrandedTransactionEIP4844.js";
 import * as EIP4844 from "./EIP4844/verifySignature.js";
+import type { BrandedTransactionEIP7702 } from "./EIP7702/BrandedTransactionEIP7702.js";
 import * as EIP7702 from "./EIP7702/verifySignature.js";
+import type { BrandedTransactionLegacy } from "./Legacy/BrandedTransactionLegacy.js";
 import * as Legacy from "./Legacy/verifySignature.js";
 import { type Any, Type } from "./types.js";
 

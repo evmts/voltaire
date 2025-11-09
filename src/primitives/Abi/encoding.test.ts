@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Abi from "./index.js";
 import type { Address } from "../Address/index.js";
+import * as Abi from "./index.js";
 
 // ============================================================================
 // Static Type Encoding Tests
@@ -314,7 +314,7 @@ describe("Abi.encodeParameters - fixed bytes types", () => {
 	});
 
 	it("encodes bytes16", () => {
-		const value = "0x" + "12".repeat(16);
+		const value = `0x${"12".repeat(16)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes16" }], [value]);
 		expect(encoded.length).toBe(32);
 		expect(encoded.slice(0, 16).every((b) => b === 0x12)).toBe(true);
@@ -322,14 +322,14 @@ describe("Abi.encodeParameters - fixed bytes types", () => {
 	});
 
 	it("encodes bytes32", () => {
-		const value = "0x" + "ff".repeat(32);
+		const value = `0x${"ff".repeat(32)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes32" }], [value]);
 		expect(encoded.length).toBe(32);
 		expect(encoded.every((b) => b === 0xff)).toBe(true);
 	});
 
 	it("encodes bytes32 with zeros", () => {
-		const value = "0x" + "00".repeat(32);
+		const value = `0x${"00".repeat(32)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes32" }], [value]);
 		expect(encoded.length).toBe(32);
 		expect(encoded.every((b) => b === 0)).toBe(true);

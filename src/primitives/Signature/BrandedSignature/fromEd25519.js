@@ -1,5 +1,5 @@
-import { InvalidSignatureLengthError } from "./errors.js";
 import { ED25519_SIZE } from "./constants.js";
+import { InvalidSignatureLengthError } from "./errors.js";
 
 /**
  * Create Signature from Ed25519 signature

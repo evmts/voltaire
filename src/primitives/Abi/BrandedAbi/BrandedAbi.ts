@@ -1,8 +1,8 @@
+import type { Fallback, Receive } from "../Item/index.js";
 import type { BrandedConstructor as Constructor } from "../constructor/BrandedConstructor/BrandedConstructor.js";
 import type { BrandedError } from "../error/BrandedError/BrandedError.js";
 import type { Event } from "../event/BrandedEvent/BrandedEvent.js";
 import type { Function } from "../function/BrandedFunction.js";
-import type { Fallback, Receive } from "../Item/index.js";
 
 /**
  * BrandedAbi - Array of ABI items

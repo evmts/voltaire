@@ -8,7 +8,7 @@
 export function toHexPolyfill(this: Uint8Array): string {
 	let hex = "0x";
 	for (let i = 0; i < this.length; i++) {
-		hex += this[i]!.toString(16).padStart(2, "0");
+		hex += this[i]?.toString(16).padStart(2, "0");
 	}
 	return hex;
 }
@@ -29,7 +29,7 @@ export function setFromHexPolyfill(this: Uint8Array, hex: string): void {
 
 	for (let i = 0; i < str.length; i += 2) {
 		const byte = Number.parseInt(str.slice(i, i + 2), 16);
-		if (isNaN(byte)) {
+		if (Number.isNaN(byte)) {
 			throw new Error("Invalid hex character");
 		}
 		this[i / 2] = byte;

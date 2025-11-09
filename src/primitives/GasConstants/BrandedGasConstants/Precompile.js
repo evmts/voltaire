@@ -213,9 +213,8 @@ export function calculateEcPairingCost(pairCount, hardfork) {
 
 	if (isIstanbulOrLater) {
 		return EcPairingBaseIstanbul + pairCount * EcPairingPerPairIstanbul;
-	} else {
-		return EcPairingBaseByzantium + pairCount * EcPairingPerPairByzantium;
 	}
+	return EcPairingBaseByzantium + pairCount * EcPairingPerPairByzantium;
 }
 
 /**

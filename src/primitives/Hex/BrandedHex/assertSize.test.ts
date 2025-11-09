@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { BrandedHex } from "./BrandedHex.js";
 import { assertSize } from "./assertSize.js";
 import { InvalidLengthError } from "./errors.js";
-import type { BrandedHex } from "./BrandedHex.js";
 
 describe("assertSize", () => {
 	it("returns hex when size matches", () => {
@@ -33,14 +33,14 @@ describe("assertSize", () => {
 	});
 
 	it("validates address size (20 bytes)", () => {
-		const address = ("0x" + "00".repeat(20)) as BrandedHex;
+		const address = `0x${"00".repeat(20)}` as BrandedHex;
 		expect(assertSize(address, 20)).toBe(address);
 		expect(() => assertSize(address, 19)).toThrow(InvalidLengthError);
 		expect(() => assertSize(address, 21)).toThrow(InvalidLengthError);
 	});
 
 	it("validates hash size (32 bytes)", () => {
-		const hash = ("0x" + "00".repeat(32)) as BrandedHex;
+		const hash = `0x${"00".repeat(32)}` as BrandedHex;
 		expect(assertSize(hash, 32)).toBe(hash);
 		expect(() => assertSize(hash, 31)).toThrow(InvalidLengthError);
 		expect(() => assertSize(hash, 33)).toThrow(InvalidLengthError);
@@ -52,7 +52,7 @@ describe("assertSize", () => {
 	});
 
 	it("validates large sizes", () => {
-		const large = ("0x" + "00".repeat(100)) as BrandedHex;
+		const large = `0x${"00".repeat(100)}` as BrandedHex;
 		expect(assertSize(large, 100)).toBe(large);
 		expect(() => assertSize(large, 99)).toThrow(InvalidLengthError);
 		expect(() => assertSize(large, 101)).toThrow(InvalidLengthError);

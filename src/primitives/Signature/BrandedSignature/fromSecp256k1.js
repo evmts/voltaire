@@ -1,5 +1,5 @@
+import { COMPONENT_SIZE, ECDSA_SIZE } from "./constants.js";
 import { InvalidSignatureLengthError } from "./errors.js";
-import { ECDSA_SIZE, COMPONENT_SIZE } from "./constants.js";
 
 /**
  * Create Signature from secp256k1 ECDSA signature

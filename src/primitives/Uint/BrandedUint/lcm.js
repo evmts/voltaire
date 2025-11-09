@@ -1,6 +1,6 @@
-import { gcd } from "./gcd.js";
 import { ZERO } from "./constants.js";
 import { MAX } from "./constants.js";
+import { gcd } from "./gcd.js";
 
 /**
  * Calculate least common multiple

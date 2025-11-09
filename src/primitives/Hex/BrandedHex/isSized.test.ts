@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isSized } from "./isSized.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { isSized } from "./isSized.js";
 
 describe("isSized", () => {
 	it("returns true for correct size", () => {
@@ -19,20 +19,20 @@ describe("isSized", () => {
 	});
 
 	it("handles large sizes", () => {
-		const hex = ("0x" + "00".repeat(32)) as BrandedHex;
+		const hex = `0x${"00".repeat(32)}` as BrandedHex;
 		expect(isSized(hex, 32)).toBe(true);
 		expect(isSized(hex, 31)).toBe(false);
 		expect(isSized(hex, 33)).toBe(false);
 	});
 
 	it("handles address size (20 bytes)", () => {
-		const address = ("0x" + "00".repeat(20)) as BrandedHex;
+		const address = `0x${"00".repeat(20)}` as BrandedHex;
 		expect(isSized(address, 20)).toBe(true);
 		expect(isSized(address, 19)).toBe(false);
 	});
 
 	it("handles hash size (32 bytes)", () => {
-		const hash = ("0x" + "00".repeat(32)) as BrandedHex;
+		const hash = `0x${"00".repeat(32)}` as BrandedHex;
 		expect(isSized(hash, 32)).toBe(true);
 		expect(isSized(hash, 31)).toBe(false);
 	});

@@ -80,21 +80,7 @@ const keyLarge: BrandedStorageKey = {
 const str1 = StorageKey.toString(key1);
 const str2 = StorageKey.toString(key2);
 
-// ============================================================================
-// Constant Access Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("STATE CONSTANTS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Constant Access ---");
 results.push(
 	benchmark("Access EMPTY_CODE_HASH", () => {
 		void EMPTY_CODE_HASH;
@@ -115,31 +101,6 @@ results.push(
 		void (EMPTY_CODE_HASH !== EMPTY_TRIE_ROOT);
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// StorageKey Creation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("STORAGE KEY CREATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Key Creation ---");
 results.push(
 	benchmark("StorageKey.create - simple", () => {
 		void StorageKey.create(addr1, 0n);
@@ -163,31 +124,6 @@ results.push(
 		void ({ address: addr1, slot: 42n } as BrandedStorageKey);
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// StorageKey Type Guard Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("STORAGE KEY TYPE GUARD BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Type Checking ---");
 results.push(
 	benchmark("StorageKey.is - valid key", () => {
 		void StorageKey.is(key1);
@@ -208,31 +144,6 @@ results.push(
 		void StorageKey.is({ address: addr1 });
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// StorageKey Equality Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("STORAGE KEY EQUALITY BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Equality Checks ---");
 results.push(
 	benchmark("StorageKey.equals - same keys", () => {
 		void StorageKey.equals(key1, key1);
@@ -260,31 +171,6 @@ results.push(
 		void StorageKey.equals(key1, key2);
 	}),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// StorageKey String Conversion Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("STORAGE KEY STRING CONVERSION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- String Conversion ---");
 results.push(
 	benchmark("StorageKey.toString - zero slot", () => {
 		void StorageKey.toString(key1);
@@ -305,18 +191,6 @@ results.push(
 		void StorageKey.toString(key2);
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- String Parsing ---");
 results.push(
 	benchmark("StorageKey.fromString - valid", () => {
 		void StorageKey.fromString(str1);
@@ -332,49 +206,12 @@ results.push(
 		void StorageKey.fromString("invalid");
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Round-trip Conversion ---");
 results.push(
 	benchmark("Round-trip: toString + fromString", () => {
 		const str = StorageKey.toString(key2);
 		void StorageKey.fromString(str);
 	}),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// StorageKey Hash Code Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("STORAGE KEY HASH CODE BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Hash Code Generation ---");
 results.push(
 	benchmark("StorageKey.hashCode - zero slot", () => {
 		void StorageKey.hashCode(key1);
@@ -395,31 +232,6 @@ results.push(
 		void StorageKey.hashCode(key2);
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Map Operations Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("MAP OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Map Operations ---");
 
 // Pre-populate map for get benchmarks
 const testMap = new Map<string, bigint>();
@@ -461,31 +273,6 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Batch Operations Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("BATCH OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Batch Operations ---");
-
 results.push(
 	benchmark("Create 10 StorageKeys", () => {
 		for (let i = 0; i < 10; i++) {
@@ -525,31 +312,6 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Edge Case Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("EDGE CASE BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Edge Cases ---");
-
 results.push(
 	benchmark("Zero address and slot", () => {
 		const key: BrandedStorageKey = { address: zeroAddr, slot: 0n };
@@ -583,47 +345,12 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("BENCHMARK SUMMARY");
-console.log(
-	"================================================================================\n",
-);
-
-console.log(`Total benchmarks run: ${results.length}`);
-console.log(
-	`Total iterations: ${results.reduce((sum, r) => sum + r.iterations, 0)}`,
-);
-
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(
-	`\nFastest: ${sorted[0]!.name} (${sorted[0]!.opsPerSec.toFixed(0)} ops/sec)`,
-);
-console.log(
-	`Slowest: ${sorted[sorted.length - 1]!.name} (${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec)`,
-);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/state-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`\nResults saved to: ${resultsFile}\n`);
 }

@@ -21,5 +21,5 @@ export function expectedFalsePositiveRate(filter, itemCount) {
 	// (1 - e^(-k*n/m))^k
 	const exponent = (-k * n) / m;
 	const base = 1 - Math.exp(exponent);
-	return Math.pow(base, k);
+	return base ** k;
 }

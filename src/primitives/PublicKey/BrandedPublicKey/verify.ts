@@ -1,7 +1,7 @@
 import * as Secp256k1 from "../../../crypto/Secp256k1/index.js";
-import type { BrandedPublicKey } from "./BrandedPublicKey.js";
 import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
 import type { BrandedSignature } from "../../Signature/BrandedSignature/BrandedSignature.js";
+import type { BrandedPublicKey } from "./BrandedPublicKey.js";
 
 /**
  * Verify signature against public key

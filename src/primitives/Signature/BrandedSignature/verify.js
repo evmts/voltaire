@@ -21,7 +21,6 @@ export function verify(signature, _message, _publicKey) {
 	// This is a placeholder that should be implemented with actual crypto
 	// For now, throw an error indicating the feature needs crypto integration
 	throw new InvalidAlgorithmError(
-		`Signature verification for ${signature.algorithm} requires integration with crypto primitives. ` +
-			"Use crypto-specific verification functions instead.",
+		`Signature verification for ${signature.algorithm} requires integration with crypto primitives. Use crypto-specific verification functions instead.`,
 	);
 }

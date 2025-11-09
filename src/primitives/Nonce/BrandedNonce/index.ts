@@ -3,9 +3,9 @@ export type { BrandedNonce } from "./BrandedNonce.js";
 
 // Import all functions
 import { from } from "./from.js";
-import { toNumber as _toNumber } from "./toNumber.js";
-import { toBigInt as _toBigInt } from "./toBigInt.js";
 import { increment as _increment } from "./increment.js";
+import { toBigInt as _toBigInt } from "./toBigInt.js";
+import { toNumber as _toNumber } from "./toNumber.js";
 
 // Export constructors
 export { from };

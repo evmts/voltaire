@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { BrandedBytecode, Instruction } from "./BrandedBytecode.js";
 import { analyze } from "./analyze.js";
 import { analyzeJumpDestinations } from "./analyzeJumpDestinations.js";
-import { equals } from "./equals.js";
-import { extractRuntime } from "./extractRuntime.js";
-import { formatInstruction } from "./formatInstruction.js";
-import { formatInstructions } from "./formatInstructions.js";
-import { fromHex } from "./fromHex.js";
-import { getPushSize } from "./getPushSize.js";
-import { hash } from "./hash.js";
-import { hasMetadata } from "./hasMetadata.js";
 import {
 	INVALID,
 	JUMPDEST,
@@ -18,6 +11,14 @@ import {
 	REVERT,
 	STOP,
 } from "./constants.js";
+import { equals } from "./equals.js";
+import { extractRuntime } from "./extractRuntime.js";
+import { formatInstruction } from "./formatInstruction.js";
+import { formatInstructions } from "./formatInstructions.js";
+import { fromHex } from "./fromHex.js";
+import { getPushSize } from "./getPushSize.js";
+import { hasMetadata } from "./hasMetadata.js";
+import { hash } from "./hash.js";
 import { isPush } from "./isPush.js";
 import { isTerminator } from "./isTerminator.js";
 import { isValidJumpDest } from "./isValidJumpDest.js";
@@ -26,7 +27,6 @@ import { size } from "./size.js";
 import { stripMetadata } from "./stripMetadata.js";
 import { toHex } from "./toHex.js";
 import { validate } from "./validate.js";
-import type { BrandedBytecode, Instruction } from "./BrandedBytecode.js";
 
 // Helper to brand Uint8Array as BrandedBytecode for tests
 const bc = (arr: Uint8Array): BrandedBytecode => arr as BrandedBytecode;

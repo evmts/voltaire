@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { slice } from "./slice.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { slice } from "./slice.js";
 
 describe("slice", () => {
 	it("slices from start to end", () => {
@@ -67,7 +67,7 @@ describe("slice", () => {
 	});
 
 	it("slices large hex strings", () => {
-		const large = ("0x" + "ab".repeat(100)) as BrandedHex;
+		const large = `0x${"ab".repeat(100)}` as BrandedHex;
 		expect(slice(large, 0, 10).length).toBe(2 + 10 * 2);
 		expect(slice(large, 50, 60).length).toBe(2 + 10 * 2);
 		expect(slice(large, 90, 100).length).toBe(2 + 10 * 2);

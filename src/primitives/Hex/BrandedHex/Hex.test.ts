@@ -1,33 +1,33 @@
 import { describe, expect, it } from "vitest";
-import {
-	isHex,
-	validate,
-	fromBytes,
-	toBytes,
-	concat,
-	slice,
-	size,
-	pad,
-	trim,
-	fromNumber,
-	toNumber,
-	fromBigInt,
-	toBigInt,
-	fromBoolean,
-	toBoolean,
-	padRight,
-	equals,
-	xor,
-	random,
-	zero,
-} from "./index.js";
+import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError as InvalidHexCharacterError,
 	InvalidFormatError as InvalidHexFormatError,
 	InvalidLengthError as InvalidHexLengthError,
 	OddLengthError as OddLengthHexError,
 } from "./errors.js";
-import type { BrandedHex } from "./BrandedHex.js";
+import {
+	concat,
+	equals,
+	fromBigInt,
+	fromBoolean,
+	fromBytes,
+	fromNumber,
+	isHex,
+	pad,
+	padRight,
+	random,
+	size,
+	slice,
+	toBigInt,
+	toBoolean,
+	toBytes,
+	toNumber,
+	trim,
+	validate,
+	xor,
+	zero,
+} from "./index.js";
 
 describe("Hex", () => {
 	describe("isHex", () => {

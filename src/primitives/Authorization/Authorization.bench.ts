@@ -135,21 +135,7 @@ for (let i = 0; i < 100; i++) {
 	});
 }
 
-// ============================================================================
-// Type Guard Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION TYPE GUARD BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Type Guards ---");
 results.push(
 	benchmark("isItem - valid", () => Authorization.isItem(validAuth)),
 );
@@ -172,35 +158,10 @@ results.push(
 	),
 );
 
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Validation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION VALIDATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const invalidChainAuth = { ...validAuth, chainId: 0n };
 const invalidAddressAuth = { ...validAuth, address: createAddress(0) };
 const invalidYParityAuth = { ...validAuth, yParity: 2 };
 const invalidRAuth = { ...validAuth, r: 0n };
-
-console.log("--- Validation Operations ---");
 results.push(
 	benchmark("validate - valid", () => Authorization.validate.call(validAuth)),
 );
@@ -240,31 +201,6 @@ results.push(
 		}
 	}),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Gas Calculation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION GAS CALCULATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Gas Calculations ---");
 results.push(
 	benchmark("calculateGasCost - empty list", () =>
 		Authorization.calculateGasCost.call([], 0),
@@ -285,18 +221,6 @@ results.push(
 		Authorization.calculateGasCost.call(largeList, 50),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Per-Authorization Gas Cost ---");
 results.push(
 	benchmark("getGasCost - not empty", () =>
 		Authorization.getGasCost.call(validAuth, false),
@@ -307,31 +231,6 @@ results.push(
 		Authorization.getGasCost.call(validAuth, true),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Hashing Benchmarks (Not Implemented)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION HASHING BENCHMARKS (Not Implemented)");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Hashing Operations ---");
 results.push(
 	benchmark("hash", () => {
 		try {
@@ -342,32 +241,7 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Signing Benchmarks (Not Implemented)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION SIGNING BENCHMARKS (Not Implemented)");
-console.log(
-	"================================================================================\n",
-);
-
 const privateKey = new Uint8Array(32);
-
-console.log("--- Signing Operations ---");
 results.push(
 	benchmark("sign", () => {
 		try {
@@ -377,31 +251,6 @@ results.push(
 		}
 	}),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Verification Benchmarks (Not Implemented)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION VERIFICATION BENCHMARKS (Not Implemented)");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Verification Operations ---");
 results.push(
 	benchmark("verify", () => {
 		try {
@@ -411,31 +260,6 @@ results.push(
 		}
 	}),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Processing Benchmarks (Not Implemented)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION PROCESSING BENCHMARKS (Not Implemented)");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Processing Operations ---");
 results.push(
 	benchmark("process", () => {
 		try {
@@ -457,31 +281,6 @@ results.push(
 		}
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Utility Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("AUTHORIZATION UTILITY BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Formatting Operations ---");
 results.push(
 	benchmark("format - signed", () => Authorization.format.call(validAuth)),
 );
@@ -490,18 +289,6 @@ results.push(
 		Authorization.format.call(validUnsigned),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Comparison Operations ---");
 const auth2 = { ...validAuth };
 const auth3 = { ...validAuth, nonce: 1n };
 results.push(
@@ -513,51 +300,12 @@ results.push(
 	),
 );
 
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("Benchmarks complete!");
-console.log(
-	"================================================================================",
-);
-console.log(`\nTotal benchmarks run: ${results.length}`);
-
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(
-	`\nFastest: ${sorted[0]!.name} - ${sorted[0]!.opsPerSec.toFixed(0)} ops/sec`,
-);
-console.log(
-	`Slowest: ${sorted[sorted.length - 1]!.name} - ${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec`,
-);
-
-console.log(
-	"\nNote: BrandedHash, sign, verify, and process operations throw 'Not implemented'",
-);
-console.log("These benchmarks measure error handling overhead.");
-console.log(
-	"Real performance metrics will be available after implementation.\n",
-);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/authorization-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

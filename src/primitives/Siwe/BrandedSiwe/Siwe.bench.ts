@@ -101,21 +101,7 @@ const messageWithAllFields: BrandedMessage = {
 const formattedBasic = Siwe.format(basicMessage);
 const formattedComplex = Siwe.format(messageWithAllFields);
 
-// ============================================================================
-// Message Creation Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("SIWE MESSAGE CREATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Message Creation ---");
 results.push(
 	benchmark("Siwe.create - minimal fields", () =>
 		Siwe.create({
@@ -169,31 +155,6 @@ results.push(
 		}),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Nonce Generation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("NONCE GENERATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Nonce Generation ---");
 results.push(
 	benchmark("generateNonce - default length (11)", () => Siwe.generateNonce()),
 );
@@ -207,31 +168,6 @@ results.push(
 results.push(
 	benchmark("generateNonce - 32 chars", () => Siwe.generateNonce(32)),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Message Formatting Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("MESSAGE FORMATTING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Standard Form ---");
 results.push(
 	benchmark("Message.format - basic", () => Siwe.format(basicMessage)),
 );
@@ -247,48 +183,11 @@ results.push(
 		Siwe.format(messageWithAllFields),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Public Wrapper ---");
 results.push(benchmark("format - basic", () => Siwe.format(basicMessage)));
 
 results.push(
 	benchmark("format - all fields", () => Siwe.format(messageWithAllFields)),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Message Parsing Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("MESSAGE PARSING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Parsing ---");
 results.push(
 	benchmark("parse - basic message", () => Siwe.parse(formattedBasic)),
 );
@@ -314,31 +213,6 @@ results.push(
 		Siwe.parse(formattedWithMultilineStatement),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Validation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("VALIDATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Standard Form ---");
 results.push(
 	benchmark("Message.validate - basic", () => Siwe.validate(basicMessage)),
 );
@@ -367,18 +241,6 @@ results.push(
 		Siwe.validate(expiredMessage, { now });
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Public Wrapper ---");
 results.push(benchmark("validate - basic", () => Siwe.validate(basicMessage)));
 
 results.push(
@@ -387,31 +249,6 @@ results.push(
 		Siwe.validate(messageWithAllFields, { now });
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Round-trip Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ROUND-TRIP BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Format + Parse ---");
 results.push(
 	benchmark("roundtrip - basic message", () => {
 		const formatted = Siwe.format(basicMessage);
@@ -425,18 +262,6 @@ results.push(
 		Siwe.parse(formatted);
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Format + Parse + Validate ---");
 results.push(
 	benchmark("full cycle - basic", () => {
 		const formatted = Siwe.format(basicMessage);
@@ -452,31 +277,6 @@ results.push(
 		Siwe.validate(parsed);
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Signature Operations (Not Implemented)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("SIGNATURE OPERATIONS (Not Implemented)");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Signature Verification ---");
 results.push(
 	benchmark("Message.getMessageHash", () => {
 		try {
@@ -506,31 +306,6 @@ results.push(
 		}
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Address Formatting Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ADDRESS FORMATTING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Address to Hex Conversion (in format) ---");
 const addresses = [
 	createTestAddress(0),
 	createTestAddress(42),
@@ -547,32 +322,6 @@ for (const addr of addresses) {
 		),
 	);
 }
-
-console.log(
-	results
-		.slice(-addresses.length)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Performance Characteristics
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("PERFORMANCE CHARACTERISTICS");
-console.log(
-	"================================================================================\n",
-);
-
-// Measure impact of statement length
-console.log("--- Statement Length Impact ---");
 const statementLengths = [0, 10, 100, 1000];
 for (const len of statementLengths) {
 	const statement = "a".repeat(len);
@@ -581,19 +330,6 @@ for (const len of statementLengths) {
 		benchmark(`format - statement length ${len}`, () => Siwe.format(msg)),
 	);
 }
-
-console.log(
-	results
-		.slice(-statementLengths.length)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// Measure impact of resources count
-console.log("\n--- Resources Count Impact ---");
 const resourceCounts = [0, 1, 5, 10];
 for (const count of resourceCounts) {
 	const resources = Array(count)
@@ -605,50 +341,12 @@ for (const count of resourceCounts) {
 	);
 }
 
-console.log(
-	results
-		.slice(-resourceCounts.length)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("Benchmarks complete!");
-console.log(
-	"================================================================================",
-);
-console.log(`\nTotal benchmarks run: ${results.length}`);
-
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(`\nFastest operation: ${sorted[0]?.name}`);
-console.log(
-	`  ${sorted[0]?.opsPerSec.toFixed(0)} ops/sec (${sorted[0]?.avgTimeMs.toFixed(4)} ms/op)`,
-);
-console.log(`\nSlowest operation: ${sorted[sorted.length - 1]?.name}`);
-console.log(
-	`  ${sorted[sorted.length - 1]?.opsPerSec.toFixed(0)} ops/sec (${sorted[sorted.length - 1]?.avgTimeMs.toFixed(4)} ms/op)`,
-);
-
-console.log("\nNote: Signature operations throw 'Not implemented'");
-console.log(
-	"Real performance metrics will be available after implementation.\n",
-);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/siwe-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

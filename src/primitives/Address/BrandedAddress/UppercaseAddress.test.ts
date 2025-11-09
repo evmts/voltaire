@@ -97,7 +97,7 @@ describe("UppercaseAddress", () => {
 			for (const hex of addresses) {
 				const addr = Address.fromHex(hex);
 				const uppercase = UppercaseAddress.from(addr);
-				expect(uppercase).toBe("0x" + hex.slice(2).toUpperCase());
+				expect(uppercase).toBe(`0x${hex.slice(2).toUpperCase()}`);
 				expect(uppercase).toMatch(/^0x[0-9A-F]{40}$/);
 			}
 		});

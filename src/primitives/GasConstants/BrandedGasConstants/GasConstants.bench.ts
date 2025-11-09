@@ -60,21 +60,7 @@ for (let i = 0; i < 100; i++) {
 	testCalldata[i] = i % 2 === 0 ? 0 : i;
 }
 
-// ============================================================================
-// Hashing Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("GAS HASHING OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- KECCAK256 ---");
 results.push(
 	benchmark("calculateKeccak256Cost - 32 bytes", () =>
 		Gas.calculateKeccak256Cost(32n),
@@ -90,31 +76,6 @@ results.push(
 		Gas.keccak256Cost.call(64n),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Storage Operations Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS STORAGE OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- SSTORE ---");
 results.push(
 	benchmark("calculateSstoreCost - warm no-op", () =>
 		Gas.calculateSstoreCost(true, 100n, 100n),
@@ -135,31 +96,6 @@ results.push(
 		Gas.sstoreCost.call({ isWarm: true, currentValue: 0n, newValue: 100n }),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Logging Operations Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS LOGGING OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- LOG ---");
 results.push(
 	benchmark("calculateLogCost - LOG0 no data", () =>
 		Gas.calculateLogCost(0n, 0n),
@@ -180,31 +116,6 @@ results.push(
 		Gas.logCost.call({ topicCount: 2n, dataSize: 64n }),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Call Operations Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS CALL OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- CALL ---");
 results.push(
 	benchmark("calculateCallCost - warm no value", () =>
 		Gas.calculateCallCost(true, false, false, 100000n),
@@ -230,31 +141,6 @@ results.push(
 		}),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Memory Expansion Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS MEMORY EXPANSION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- MEMORY ---");
 results.push(
 	benchmark("calculateMemoryExpansionCost - 0 to 64", () =>
 		Gas.calculateMemoryExpansionCost(0n, 64n),
@@ -275,31 +161,6 @@ results.push(
 		Gas.memoryExpansionCost.call({ oldSize: 0n, newSize: 1024n }),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Contract Creation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS CONTRACT CREATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- CREATE ---");
 results.push(
 	benchmark("calculateCreateCost - minimal", () =>
 		Gas.calculateCreateCost(0n, 0n),
@@ -320,31 +181,6 @@ results.push(
 		Gas.createCost.call({ initcodeSize: 5000n, deployedSize: 2000n }),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Transaction Cost Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS TRANSACTION COST BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- TRANSACTION ---");
 results.push(
 	benchmark("calculateTxIntrinsicGas - empty", () =>
 		Gas.calculateTxIntrinsicGas(new Uint8Array(0), false),
@@ -365,18 +201,6 @@ results.push(
 		Gas.txIntrinsicGas.call({ data: testCalldata, isCreate: false }),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- COPY & REFUND ---");
 results.push(
 	benchmark("calculateCopyCost - 64 bytes", () => Gas.calculateCopyCost(64n)),
 );
@@ -396,31 +220,6 @@ results.push(
 results.push(
 	benchmark("maxRefund (this:) - typical", () => Gas.maxRefund.call(100000n)),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Precompile Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS PRECOMPILE BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- HASH PRECOMPILES ---");
 results.push(
 	benchmark("Precompile.calculateSha256Cost - 64 bytes", () =>
 		Gas.Precompile.calculateSha256Cost(64n),
@@ -436,18 +235,6 @@ results.push(
 		Gas.Precompile.calculateIdentityCost(64n),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- MODEXP PRECOMPILE ---");
 results.push(
 	benchmark("Precompile.calculateModExpCost - small", () =>
 		Gas.Precompile.calculateModExpCost(32n, 32n, 32n, 65537n),
@@ -463,18 +250,6 @@ results.push(
 		Gas.Precompile.calculateModExpCost(512n, 512n, 512n, 65537n),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- BN254 PRECOMPILES ---");
 results.push(
 	benchmark("Precompile.calculateEcPairingCost - 1 pair Istanbul", () =>
 		Gas.Precompile.calculateEcPairingCost(1n, "istanbul"),
@@ -505,31 +280,6 @@ results.push(
 		Gas.Precompile.getEcMulCost("istanbul"),
 	),
 );
-
-console.log(
-	results
-		.slice(-6)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Hardfork Utility Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS HARDFORK UTILITIES BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- HARDFORK DETECTION ---");
 results.push(benchmark("hasEIP2929 - Berlin", () => Gas.hasEIP2929("berlin")));
 results.push(benchmark("hasEIP3529 - London", () => Gas.hasEIP3529("london")));
 results.push(
@@ -537,18 +287,6 @@ results.push(
 );
 results.push(benchmark("hasEIP1153 - Cancun", () => Gas.hasEIP1153("cancun")));
 results.push(benchmark("hasEIP4844 - Cancun", () => Gas.hasEIP4844("cancun")));
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- HARDFORK-SPECIFIC COSTS ---");
 results.push(
 	benchmark("getColdSloadCost - Berlin", () => Gas.getColdSloadCost("berlin")),
 );
@@ -565,31 +303,6 @@ results.push(
 		Gas.getSelfdestructRefund("london"),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Complex Scenarios Benchmark
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("GAS COMPLEX SCENARIOS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- REALISTIC OPERATIONS ---");
 results.push(
 	benchmark("Full transaction cost calculation", () => {
 		const intrinsic = Gas.calculateTxIntrinsicGas(testCalldata, false);
@@ -616,57 +329,20 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("SUMMARY");
-console.log(
-	"================================================================================\n",
-);
-
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-
-console.log("Top 5 Fastest Operations:");
 sorted
 	.slice(0, 5)
-	.forEach((r, i) =>
-		console.log(`  ${i + 1}. ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec`),
+	.forEach((r, i) =>,
 	);
-
-console.log("\nTop 5 Slowest Operations:");
 sorted
 	.slice(-5)
 	.reverse()
-	.forEach((r, i) =>
-		console.log(
-			`  ${i + 1}. ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		),
+	.forEach((r, i) =>,
 	);
-
-console.log(`\nTotal benchmarks run: ${results.length}`);
-console.log(
-	`Average operations per second: ${(results.reduce((sum, r) => sum + r.opsPerSec, 0) / results.length).toFixed(0)}`,
-);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/gas-constants-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`\nResults saved to: ${resultsFile}\n`);
 }

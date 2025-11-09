@@ -15,9 +15,8 @@ import { isData } from "./isData.js";
 function dataToEncodable(data) {
 	if (data.type === "bytes") {
 		return data.value;
-	} else {
-		return data.value.map((item) => dataToEncodable(item));
 	}
+	return data.value.map((item) => dataToEncodable(item));
 }
 
 /**

@@ -321,11 +321,6 @@ describe("WASM vs Pure TS Performance", () => {
 		}
 		const wasmTime = performance.now() - wasmStart;
 
-		console.log(`TS: ${tsTime.toFixed(2)}ms, WASM: ${wasmTime.toFixed(2)}ms`);
-		console.log(
-			`WASM is ${(tsTime / wasmTime).toFixed(2)}x faster (${tsTime > wasmTime ? "faster" : "slower"})`,
-		);
-
 		// Just log the results, don't assert
 		expect(wasmTime).toBeGreaterThan(0);
 		expect(tsTime).toBeGreaterThan(0);
@@ -355,8 +350,6 @@ describe("WASM vs Pure TS Performance", () => {
 			// Expected - not implemented yet
 		}
 		const wasmTime = performance.now() - wasmStart;
-
-		console.log(`WASM decode attempt: ${wasmTime}ms`);
 	});
 });
 

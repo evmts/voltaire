@@ -1,9 +1,9 @@
 import type { BrandedAddress } from "./BrandedAddress/BrandedAddress.js";
-import { calculateCreate2Address } from "./BrandedAddress/calculateCreate2Address.js";
-import { calculateCreateAddress } from "./BrandedAddress/calculateCreateAddress.js";
-import { compare } from "./BrandedAddress/compare.js";
-import { SIZE } from "./BrandedAddress/constants.js";
-import { equals } from "./BrandedAddress/equals.js";
+import type { calculateCreate2Address } from "./BrandedAddress/calculateCreate2Address.js";
+import type { calculateCreateAddress } from "./BrandedAddress/calculateCreateAddress.js";
+import type { compare } from "./BrandedAddress/compare.js";
+import type { SIZE } from "./BrandedAddress/constants.js";
+import type { equals } from "./BrandedAddress/equals.js";
 // @ts-expect-error - Used in typeof expression
 import { from } from "./BrandedAddress/from.js";
 // @ts-expect-error - Used in typeof expression
@@ -14,20 +14,20 @@ import { fromHex } from "./BrandedAddress/fromHex.js";
 import { fromNumber } from "./BrandedAddress/fromNumber.js";
 // @ts-expect-error - Used in typeof expression
 import { fromPublicKey } from "./BrandedAddress/fromPublicKey.js";
-import { greaterThan } from "./BrandedAddress/greaterThan.js";
-import { is } from "./BrandedAddress/is.js";
-import { isValid } from "./BrandedAddress/isValid.js";
-import { isValidChecksum } from "./BrandedAddress/isValidChecksum.js";
-import { isZero } from "./BrandedAddress/isZero.js";
-import { lessThan } from "./BrandedAddress/lessThan.js";
-import { toAbiEncoded } from "./BrandedAddress/toAbiEncoded.js";
-import { toChecksummed } from "./BrandedAddress/toChecksummed.js";
-import { toHex } from "./BrandedAddress/toHex.js";
-import { toLowercase } from "./BrandedAddress/toLowercase.js";
-import { toShortHex } from "./BrandedAddress/toShortHex.js";
-import { toU256 } from "./BrandedAddress/toU256.js";
-import { toUppercase } from "./BrandedAddress/toUppercase.js";
-import { zero } from "./BrandedAddress/zero.js";
+import type { greaterThan } from "./BrandedAddress/greaterThan.js";
+import type { is } from "./BrandedAddress/is.js";
+import type { isValid } from "./BrandedAddress/isValid.js";
+import type { isValidChecksum } from "./BrandedAddress/isValidChecksum.js";
+import type { isZero } from "./BrandedAddress/isZero.js";
+import type { lessThan } from "./BrandedAddress/lessThan.js";
+import type { toAbiEncoded } from "./BrandedAddress/toAbiEncoded.js";
+import type { toChecksummed } from "./BrandedAddress/toChecksummed.js";
+import type { toHex } from "./BrandedAddress/toHex.js";
+import type { toLowercase } from "./BrandedAddress/toLowercase.js";
+import type { toShortHex } from "./BrandedAddress/toShortHex.js";
+import type { toU256 } from "./BrandedAddress/toU256.js";
+import type { toUppercase } from "./BrandedAddress/toUppercase.js";
+import type { zero } from "./BrandedAddress/zero.js";
 
 type AddressPrototype = BrandedAddress & {
 	toBase64: typeof Uint8Array.prototype.toBase64;

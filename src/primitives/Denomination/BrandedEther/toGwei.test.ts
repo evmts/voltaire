@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { GWEI_PER_ETHER } from "./constants.js";
 import { from } from "./from.js";
 import { toGwei } from "./toGwei.js";
-import { GWEI_PER_ETHER } from "./constants.js";
 
 describe("toGwei", () => {
 	it("converts 1 Ether to Gwei", () => {

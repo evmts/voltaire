@@ -108,14 +108,14 @@ describe("Opcode parse edge cases", () => {
 
 		const instructions = Opcode.parse(bytecode);
 		expect(instructions).toHaveLength(4);
-		expect(instructions[0]!.opcode).toBe(Opcode.PUSH0);
-		expect(instructions[0]!.immediate).toBeUndefined();
-		expect(instructions[1]!.opcode).toBe(Opcode.PUSH1);
-		expect(instructions[1]!.immediate).toEqual(new Uint8Array([0x01]));
-		expect(instructions[2]!.opcode).toBe(Opcode.PUSH2);
-		expect(instructions[2]!.immediate).toEqual(new Uint8Array([0x00, 0x02]));
-		expect(instructions[3]!.opcode).toBe(Opcode.PUSH32);
-		expect(instructions[3]!.immediate).toHaveLength(32);
+		expect(instructions[0]?.opcode).toBe(Opcode.PUSH0);
+		expect(instructions[0]?.immediate).toBeUndefined();
+		expect(instructions[1]?.opcode).toBe(Opcode.PUSH1);
+		expect(instructions[1]?.immediate).toEqual(new Uint8Array([0x01]));
+		expect(instructions[2]?.opcode).toBe(Opcode.PUSH2);
+		expect(instructions[2]?.immediate).toEqual(new Uint8Array([0x00, 0x02]));
+		expect(instructions[3]?.opcode).toBe(Opcode.PUSH32);
+		expect(instructions[3]?.immediate).toHaveLength(32);
 	});
 
 	it("handles partially truncated PUSH data", () => {
@@ -123,9 +123,9 @@ describe("Opcode parse edge cases", () => {
 		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(1);
-		expect(instructions[0]!.opcode).toBe(Opcode.PUSH32);
-		expect(instructions[0]!.immediate).toHaveLength(2);
-		expect(instructions[0]!.immediate).toEqual(new Uint8Array([0x01, 0x02]));
+		expect(instructions[0]?.opcode).toBe(Opcode.PUSH32);
+		expect(instructions[0]?.immediate).toHaveLength(2);
+		expect(instructions[0]?.immediate).toEqual(new Uint8Array([0x01, 0x02]));
 	});
 
 	it("parses bytecode with multiple JUMPDEST", () => {

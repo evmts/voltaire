@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { xor } from "./xor.js";
-import { InvalidLengthError } from "./errors.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { InvalidLengthError } from "./errors.js";
+import { xor } from "./xor.js";
 
 describe("xor", () => {
 	it("performs XOR on same-length hex strings", () => {
@@ -82,8 +82,8 @@ describe("xor", () => {
 	});
 
 	it("performs XOR on large hex strings", () => {
-		const hex1 = ("0x" + "ff".repeat(100)) as BrandedHex;
-		const hex2 = ("0x" + "00".repeat(100)) as BrandedHex;
+		const hex1 = `0x${"ff".repeat(100)}` as BrandedHex;
+		const hex2 = `0x${"00".repeat(100)}` as BrandedHex;
 		const result = xor(hex1, hex2);
 		expect(result).toBe(hex1);
 	});

@@ -6,6 +6,10 @@
 
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
+import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/BrandedTransactionEIP1559.js";
+import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
+import type { BrandedTransactionEIP7702 } from "../Transaction/EIP7702/BrandedTransactionEIP7702.js";
+import type { BrandedTransactionLegacy } from "../Transaction/Legacy/BrandedTransactionLegacy.js";
 import * as Transaction from "../Transaction/index.js";
 import type {
 	EIP1559,
@@ -14,10 +18,6 @@ import type {
 	EIP7702,
 	Legacy,
 } from "../Transaction/types.js";
-import type { BrandedTransactionLegacy } from "../Transaction/Legacy/BrandedTransactionLegacy.js";
-import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/BrandedTransactionEIP1559.js";
-import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
-import type { BrandedTransactionEIP7702 } from "../Transaction/EIP7702/BrandedTransactionEIP7702.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -187,21 +187,7 @@ const eip7702Tx: EIP7702 = {
 const typedTxData = new Uint8Array([0x02, 0xc0]);
 const legacyTxData = new Uint8Array([0xc0]);
 
-// ============================================================================
-// Type Guard Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("TRANSACTION TYPE GUARD BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Type Guards ---");
 results.push(
 	benchmark("Transaction.isLegacy", () => Transaction.isLegacy(legacyTx)),
 );
@@ -217,31 +203,6 @@ results.push(
 results.push(
 	benchmark("Transaction.isEIP7702", () => Transaction.isEIP7702(eip7702Tx)),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Type Detection Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("TRANSACTION TYPE DETECTION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Type Detection ---");
 results.push(
 	benchmark("Transaction.detectType - typed tx", () =>
 		Transaction.detectType(typedTxData),
@@ -252,31 +213,6 @@ results.push(
 		Transaction.detectType(legacyTxData),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Legacy Transaction Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("LEGACY TRANSACTION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Legacy Chain ID ---");
 results.push(
 	benchmark("Legacy.getChainId - EIP-155", () =>
 		Transaction.Legacy.getChainId.call(eip155Tx as BrandedTransactionLegacy),
@@ -287,18 +223,6 @@ results.push(
 		Transaction.Legacy.getChainId.call(legacyTx as BrandedTransactionLegacy),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Legacy Serialization (Not Implemented) ---");
 results.push(
 	benchmark("Legacy.serialize", () => {
 		try {
@@ -322,31 +246,6 @@ results.push(
 		} catch {}
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// EIP-1559 Transaction Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("EIP-1559 TRANSACTION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- EIP-1559 Gas Calculation ---");
 const baseFee = 10000000000n;
 results.push(
 	benchmark("EIP1559.getEffectiveGasPrice", () =>
@@ -356,18 +255,6 @@ results.push(
 		),
 	),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- EIP-1559 Serialization (Not Implemented) ---");
 results.push(
 	benchmark("EIP1559.serialize", () => {
 		try {
@@ -391,31 +278,6 @@ results.push(
 		} catch {}
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// EIP-4844 Transaction Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("EIP-4844 TRANSACTION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- EIP-4844 Gas Calculation ---");
 const blobBaseFee = 1n;
 results.push(
 	benchmark("EIP4844.getBlobGasCost", () =>
@@ -433,18 +295,6 @@ results.push(
 		),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- EIP-4844 Serialization (Not Implemented) ---");
 results.push(
 	benchmark("EIP4844.serialize", () => {
 		try {
@@ -452,31 +302,6 @@ results.push(
 		} catch {}
 	}),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// EIP-7702 Transaction Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("EIP-7702 TRANSACTION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- EIP-7702 Gas Calculation ---");
 results.push(
 	benchmark("EIP7702.getEffectiveGasPrice", () =>
 		Transaction.EIP7702.getEffectiveGasPrice(
@@ -485,31 +310,6 @@ results.push(
 		),
 	),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Transaction-Level Operations
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("TRANSACTION-LEVEL OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Universal Operations ---");
 results.push(
 	benchmark("Transaction.format - legacy", () => Transaction.format(legacyTx)),
 );
@@ -544,31 +344,6 @@ results.push(
 results.push(
 	benchmark("Transaction.isSigned", () => Transaction.isSigned(legacyTx)),
 );
-
-console.log(
-	results
-		.slice(-8)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Transaction Creation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("TRANSACTION CREATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Transaction Object Creation ---");
 results.push(
 	benchmark("Create Legacy Transaction", () => {
 		const tx: Legacy = {
@@ -628,31 +403,6 @@ results.push(
 		return tx;
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Field Access Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("FIELD ACCESS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Field Access Performance ---");
 results.push(benchmark("Access nonce", () => legacyTx.nonce));
 results.push(benchmark("Access gasPrice", () => legacyTx.gasPrice));
 results.push(benchmark("Access to address", () => legacyTx.to));
@@ -660,48 +410,12 @@ results.push(benchmark("Access value", () => legacyTx.value));
 results.push(benchmark("Access data", () => legacyTx.data));
 results.push(benchmark("Access signature (r)", () => legacyTx.r));
 
-console.log(
-	results
-		.slice(-6)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("Benchmarks complete!");
-console.log(
-	"================================================================================",
-);
-console.log(`\nTotal benchmarks run: ${results.length}`);
-console.log("\nFastest operations:");
-
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sorted.slice(0, 5).forEach((r, i) => {
-	console.log(`  ${i + 1}. ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec`);
-});
-
-console.log(
-	"\nNote: Most serialization/hashing operations throw 'Not implemented'",
-);
-console.log("These benchmarks measure error handling overhead.");
-console.log(
-	"Real performance metrics will be available after implementation.\n",
-);
+sorted.slice(0, 5).forEach((r, i) => {});
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/transaction-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

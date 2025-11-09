@@ -1,4 +1,4 @@
-import type { EIP1559, EIP4844, EIP7702, Legacy, EIP2930 } from "./types.js";
+import type { EIP1559, EIP2930, EIP4844, EIP7702, Legacy } from "./types.js";
 
 /**
  * Validate gas price is reasonable

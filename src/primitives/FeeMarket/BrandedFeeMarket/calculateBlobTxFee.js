@@ -1,6 +1,6 @@
-import { calculateTxFee } from "./calculateTxFee.js";
 // @ts-nocheck
 import * as Eip4844 from "../eip4844Constants.js";
+import { calculateTxFee } from "./calculateTxFee.js";
 
 /**
  * Calculate blob transaction fee (standard form)

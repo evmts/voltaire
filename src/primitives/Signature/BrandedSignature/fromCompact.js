@@ -1,13 +1,13 @@
-import { InvalidSignatureLengthError } from "./errors.js";
-import { fromSecp256k1 } from "./fromSecp256k1.js";
-import { fromP256 } from "./fromP256.js";
-import { fromEd25519 } from "./fromEd25519.js";
 import {
+	COMPONENT_SIZE,
 	ECDSA_SIZE,
 	ECDSA_WITH_V_SIZE,
 	ED25519_SIZE,
-	COMPONENT_SIZE,
 } from "./constants.js";
+import { InvalidSignatureLengthError } from "./errors.js";
+import { fromEd25519 } from "./fromEd25519.js";
+import { fromP256 } from "./fromP256.js";
+import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 /**
  * Create Signature from compact format

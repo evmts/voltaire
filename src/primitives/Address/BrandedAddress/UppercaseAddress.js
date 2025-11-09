@@ -19,5 +19,5 @@ import { toHex } from "./toHex.js";
  */
 export function from(addr) {
 	const hex = toHex(addr);
-	return /** @type {Uppercase} */ ("0x" + hex.slice(2).toUpperCase());
+	return /** @type {Uppercase} */ (`0x${hex.slice(2).toUpperCase()}`);
 }

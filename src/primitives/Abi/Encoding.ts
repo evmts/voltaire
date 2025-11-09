@@ -1,5 +1,5 @@
-import { Address } from "../Address/index.js";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
+import { Address } from "../Address/index.js";
 import * as Hex from "../Hex/index.js";
 import * as Uint from "../Uint/index.js";
 import {
@@ -50,7 +50,7 @@ function isDynamicType(type: Parameter["type"]): boolean {
 	if (type.endsWith("[]")) return true;
 	if (type.includes("[") && type.endsWith("]")) {
 		const match = type.match(/^(.+)\[(\d+)\]$/);
-		if (match && match[1]) {
+		if (match?.[1]) {
 			const elementType = match[1] as Parameter["type"];
 			return isDynamicType(elementType);
 		}
@@ -151,7 +151,7 @@ function encodeValue(
 	}
 
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-	if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
+	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
 		const elementType = fixedArrayMatch[1] as Parameter["type"];
 		const arraySize = Number.parseInt(fixedArrayMatch[2]);
 		const array = value as unknown[];
@@ -198,7 +198,7 @@ function decodeValue(
 	}
 
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-	if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
+	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
 		const elementType = fixedArrayMatch[1] as Parameter["type"];
 		const arraySize = Number.parseInt(fixedArrayMatch[2]);
 
@@ -210,10 +210,9 @@ function decodeValue(
 				data.slice(dataOffset),
 			);
 			return { value, newOffset: offset + 32 };
-		} else {
-			const value = decodeParameters(elementParams as any, data.slice(offset));
-			return { value, newOffset: offset + arraySize * 32 };
 		}
+		const value = decodeParameters(elementParams as any, data.slice(offset));
+		return { value, newOffset: offset + arraySize * 32 };
 	}
 
 	if (type.startsWith("uint")) {

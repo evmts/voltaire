@@ -1,7 +1,7 @@
-import { fromSecp256k1 } from "./fromSecp256k1.js";
-import { fromP256 } from "./fromP256.js";
-import { isCanonical } from "./isCanonical.js";
 import { COMPONENT_SIZE } from "./constants.js";
+import { fromP256 } from "./fromP256.js";
+import { fromSecp256k1 } from "./fromSecp256k1.js";
+import { isCanonical } from "./isCanonical.js";
 
 /**
  * Normalize ECDSA signature to canonical form (s = n - s if s > n/2)

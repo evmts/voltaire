@@ -1,7 +1,7 @@
-import type { BrandedEventLog } from "./BrandedEventLog/index.js";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
-import type { BrandedHex } from "../Hex/BrandedHex/BrandedHex.js";
 import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
+import type { BrandedHex } from "../Hex/BrandedHex/BrandedHex.js";
+import type { BrandedEventLog } from "./BrandedEventLog/index.js";
 
 export interface EventLogParams {
 	address: BrandedAddress;

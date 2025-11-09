@@ -1,8 +1,8 @@
 import type { BrandedAbi, Item } from "./BrandedAbi/BrandedAbi.js";
-import type * as AbiFunction from "./function/index.js";
-import type * as AbiEvent from "./event/index.js";
-import type * as AbiError from "./error/index.js";
 import type * as AbiConstructor from "./constructor/index.js";
+import type * as AbiError from "./error/index.js";
+import type * as AbiEvent from "./event/index.js";
+import type * as AbiFunction from "./function/index.js";
 
 /**
  * Abi class interface

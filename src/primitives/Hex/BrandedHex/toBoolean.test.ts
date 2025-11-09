@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { toBoolean } from "./toBoolean.js";
-import { fromBoolean } from "./fromBoolean.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { fromBoolean } from "./fromBoolean.js";
+import { toBoolean } from "./toBoolean.js";
 
 describe("toBoolean", () => {
 	it("converts 0x01 to true", () => {

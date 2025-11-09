@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { toString } from "./toString.js";
-import { fromString } from "./fromString.js";
 import type { BrandedHex } from "./BrandedHex.js";
 import {
 	InvalidCharacterError,
 	InvalidFormatError,
 	OddLengthError,
 } from "./errors.js";
+import { fromString } from "./fromString.js";
+import { toString } from "./toString.js";
 
 describe("toString", () => {
 	it("converts empty hex", () => {

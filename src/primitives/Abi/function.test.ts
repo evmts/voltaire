@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import type { Address } from "../Address/index.js";
 import * as Abi from "./index.js";
 import type { Function as AbiFunction } from "./types.js";
-import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // Function Signature Tests

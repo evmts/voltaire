@@ -34,7 +34,7 @@ export function merge(filter1, filter2) {
 		const byte2 = filter2[i];
 		if (byte1 === undefined || byte2 === undefined) {
 			throw new InvalidBloomFilterParameterError(
-				"Invalid bloom filter data at index " + i,
+				`Invalid bloom filter data at index ${i}`,
 			);
 		}
 		result[i] = byte1 | byte2;

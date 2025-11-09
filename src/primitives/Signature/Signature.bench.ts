@@ -81,18 +81,6 @@ const signatures_batch = Array.from({ length: 100 }, (_, i) => {
 	return Signature.fromSecp256k1(r, s, 27);
 });
 
-console.log("=".repeat(80));
-console.log("Signature Implementation Benchmark");
-console.log("=".repeat(80));
-console.log("");
-
-// =============================================================================
-// 1. Signature.fromSecp256k1 - Create from secp256k1 components
-// =============================================================================
-
-console.log("1. Signature.fromSecp256k1 - Create from secp256k1 components");
-console.log("-".repeat(80));
-
 bench("Signature.fromSecp256k1 - with v", () => {
 	Signature.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
 });
@@ -102,42 +90,18 @@ bench("Signature.fromSecp256k1 - without v", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 2. Signature.fromP256 - Create from P256 components
-// =============================================================================
-
-console.log("2. Signature.fromP256 - Create from P256 components");
-console.log("-".repeat(80));
 
 bench("Signature.fromP256", () => {
 	Signature.fromP256(p256_r, p256_s);
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 3. Signature.fromEd25519 - Create from Ed25519 signature
-// =============================================================================
-
-console.log("3. Signature.fromEd25519 - Create from Ed25519 signature");
-console.log("-".repeat(80));
 
 bench("Signature.fromEd25519", () => {
 	Signature.fromEd25519(ed25519_sig);
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 4. Signature.fromCompact - Create from compact format
-// =============================================================================
-
-console.log("4. Signature.fromCompact - Create from compact format");
-console.log("-".repeat(80));
 
 bench("Signature.fromCompact - secp256k1", () => {
 	Signature.fromCompact(compactBytes, "secp256k1");
@@ -152,14 +116,6 @@ bench("Signature.fromCompact - ed25519", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 5. Signature.fromDER - Parse DER format
-// =============================================================================
-
-console.log("5. Signature.fromDER - Parse DER format");
-console.log("-".repeat(80));
 
 bench("Signature.fromDER - secp256k1", () => {
 	Signature.fromDER(derBytes, "secp256k1");
@@ -170,14 +126,6 @@ bench("Signature.fromDER - p256", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 6. Signature.from - Universal constructor
-// =============================================================================
-
-console.log("6. Signature.from - Universal constructor");
-console.log("-".repeat(80));
 
 bench("Signature.from - Uint8Array", () => {
 	Signature.from(compactBytes);
@@ -201,14 +149,6 @@ bench("Signature.from - existing signature", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 7. signature.toBytes - Convert to bytes
-// =============================================================================
-
-console.log("7. signature.toBytes - Convert to bytes");
-console.log("-".repeat(80));
 
 bench("signature.toBytes - secp256k1", () => {
 	Signature.toBytes(sig_secp256k1);
@@ -223,14 +163,6 @@ bench("signature.toBytes - ed25519", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 8. signature.toCompact - Convert to compact format
-// =============================================================================
-
-console.log("8. signature.toCompact - Convert to compact format");
-console.log("-".repeat(80));
 
 bench("signature.toCompact - secp256k1", () => {
 	Signature.toCompact(sig_secp256k1);
@@ -245,14 +177,6 @@ bench("signature.toCompact - ed25519", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 9. signature.toDER - Convert to DER format
-// =============================================================================
-
-console.log("9. signature.toDER - Convert to DER format");
-console.log("-".repeat(80));
 
 bench("signature.toDER - secp256k1", () => {
 	Signature.toDER(sig_secp256k1);
@@ -263,14 +187,6 @@ bench("signature.toDER - p256", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 10. Signature.getAlgorithm - Get signature algorithm
-// =============================================================================
-
-console.log("10. Signature.getAlgorithm - Get signature algorithm");
-console.log("-".repeat(80));
 
 bench("Signature.getAlgorithm - secp256k1", () => {
 	Signature.getAlgorithm(sig_secp256k1);
@@ -285,14 +201,6 @@ bench("Signature.getAlgorithm - ed25519", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 11. Signature.getR/getS/getV - Get signature components
-// =============================================================================
-
-console.log("11. Signature.getR/getS/getV - Get signature components");
-console.log("-".repeat(80));
 
 bench("Signature.getR - secp256k1", () => {
 	Signature.getR(sig_secp256k1);
@@ -307,14 +215,6 @@ bench("Signature.getV - secp256k1", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 12. Signature.isCanonical - Check if signature is canonical
-// =============================================================================
-
-console.log("12. Signature.isCanonical - Check if signature is canonical");
-console.log("-".repeat(80));
 
 bench("Signature.isCanonical - canonical", () => {
 	Signature.isCanonical(sig_secp256k1);
@@ -329,14 +229,6 @@ bench("Signature.isCanonical - ed25519 (always canonical)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 13. Signature.normalize - Normalize to canonical form
-// =============================================================================
-
-console.log("13. Signature.normalize - Normalize to canonical form");
-console.log("-".repeat(80));
 
 bench("Signature.normalize - already canonical", () => {
 	Signature.normalize(sig_secp256k1);
@@ -355,14 +247,6 @@ bench("Signature.normalize - ed25519 (no-op)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 14. Signature.equals - Compare signatures
-// =============================================================================
-
-console.log("14. Signature.equals - Compare signatures");
-console.log("-".repeat(80));
 
 bench("Signature.equals - same signature", () => {
 	Signature.equals(sig_secp256k1, sig_secp256k1);
@@ -377,14 +261,6 @@ bench("Signature.equals - different algorithms", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 15. Signature.is - Type guard
-// =============================================================================
-
-console.log("15. Signature.is - Type guard");
-console.log("-".repeat(80));
 
 bench("Signature.is - valid signature", () => {
 	Signature.is(sig_secp256k1);
@@ -399,14 +275,6 @@ bench("Signature.is - invalid (null)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 16. Edge Cases - Invalid inputs
-// =============================================================================
-
-console.log("16. Edge Cases - Invalid inputs");
-console.log("-".repeat(80));
 
 bench("fromSecp256k1 - invalid r length (error)", () => {
 	try {
@@ -441,14 +309,6 @@ bench("fromDER - invalid format (error)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 17. Batch Operations - Process multiple signatures
-// =============================================================================
-
-console.log("17. Batch Operations - Process multiple signatures");
-console.log("-".repeat(80));
 
 bench("Batch - normalize 10 signatures", () => {
 	for (let i = 0; i < 10; i++) {
@@ -475,14 +335,6 @@ bench("Batch - toDER 100 signatures", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 18. Algorithm-specific operations
-// =============================================================================
-
-console.log("18. Algorithm-specific operations");
-console.log("-".repeat(80));
 
 bench("secp256k1 - full roundtrip (create → normalize → toDER)", () => {
 	const sig = Signature.fromSecp256k1(secp256k1_r, secp256k1_s, secp256k1_v);
@@ -502,8 +354,3 @@ bench("ed25519 - full roundtrip (create → toCompact)", () => {
 });
 
 await run();
-console.log("");
-
-console.log("=".repeat(80));
-console.log("Benchmark Complete - Signature Operations");
-console.log("=".repeat(80));

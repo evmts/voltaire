@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
 import { Hash } from "../../Hash/index.js";
-import { serialize } from "./index.js";
 import { Type } from "../types.js";
 import type { BrandedTransactionEIP1559 } from "./BrandedTransactionEIP1559.js";
+import { serialize } from "./index.js";
 
 describe("TransactionEIP1559.serialize", () => {
 	it("serializes basic EIP-1559 transaction", () => {

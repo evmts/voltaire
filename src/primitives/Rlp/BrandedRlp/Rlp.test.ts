@@ -4,22 +4,22 @@
 
 import { describe, expect, it } from "vitest";
 import type { BrandedRlp } from "./BrandedRlp.js";
+import * as Data from "./Data.js";
+import { MAX_DEPTH } from "./constants.js";
+import { decode } from "./decode.js";
 import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
 import { encodeBytes } from "./encodeBytes.js";
 import { encodeList } from "./encodeList.js";
-import { decode } from "./decode.js";
-import { isData } from "./isData.js";
-import { isBytesData } from "./isBytesData.js";
-import { isListData } from "./isListData.js";
-import { getEncodedLength } from "./getEncodedLength.js";
-import { flatten } from "./flatten.js";
 import { equals } from "./equals.js";
-import { toJSON } from "./toJSON.js";
-import { fromJSON } from "./fromJSON.js";
 import { Error as RlpError } from "./errors.js";
-import { MAX_DEPTH } from "./constants.js";
-import * as Data from "./Data.js";
+import { flatten } from "./flatten.js";
+import { fromJSON } from "./fromJSON.js";
+import { getEncodedLength } from "./getEncodedLength.js";
+import { isBytesData } from "./isBytesData.js";
+import { isData } from "./isData.js";
+import { isListData } from "./isListData.js";
+import { toJSON } from "./toJSON.js";
 
 // Create Rlp namespace for compatibility with tests
 const Rlp = {

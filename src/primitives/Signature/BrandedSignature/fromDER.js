@@ -1,7 +1,7 @@
-import { InvalidDERError } from "./errors.js";
-import { fromSecp256k1 } from "./fromSecp256k1.js";
-import { fromP256 } from "./fromP256.js";
 import { COMPONENT_SIZE } from "./constants.js";
+import { InvalidDERError } from "./errors.js";
+import { fromP256 } from "./fromP256.js";
+import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 /**
  * Create Signature from DER-encoded ECDSA signature

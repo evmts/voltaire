@@ -1,6 +1,6 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 import type { BrandedPublicKey } from "../../PublicKey/BrandedPublicKey/BrandedPublicKey.js";
+import type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 
 /**
  * Derive public key from private key

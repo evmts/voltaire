@@ -1,9 +1,9 @@
-import { InvalidSignatureFormatError } from "./errors.js";
-import { fromSecp256k1 } from "./fromSecp256k1.js";
-import { fromP256 } from "./fromP256.js";
-import { fromEd25519 } from "./fromEd25519.js";
-import { fromCompact } from "./fromCompact.js";
 import { ECDSA_SIZE, ED25519_SIZE } from "./constants.js";
+import { InvalidSignatureFormatError } from "./errors.js";
+import { fromCompact } from "./fromCompact.js";
+import { fromEd25519 } from "./fromEd25519.js";
+import { fromP256 } from "./fromP256.js";
+import { fromSecp256k1 } from "./fromSecp256k1.js";
 
 /**
  * Create Signature from various input types (universal constructor)

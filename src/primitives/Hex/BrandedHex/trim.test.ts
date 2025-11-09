@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { trim } from "./trim.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { trim } from "./trim.js";
 
 describe("trim", () => {
 	it("removes leading zeros", () => {
@@ -46,7 +46,7 @@ describe("trim", () => {
 	});
 
 	it("trims many leading zeros", () => {
-		const hex = ("0x" + "00".repeat(50) + "1234") as BrandedHex;
+		const hex = `0x${"00".repeat(50)}1234` as BrandedHex;
 		expect(trim(hex)).toBe("0x1234");
 	});
 

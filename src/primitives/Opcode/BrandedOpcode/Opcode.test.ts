@@ -308,17 +308,17 @@ describe("Opcode.parse", () => {
 		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(3);
-		expect(instructions[0]!.opcode).toBe(Opcode.PUSH1);
-		expect(instructions[0]!.offset).toBe(0);
-		expect(instructions[0]!.immediate).toEqual(new Uint8Array([0x01]));
+		expect(instructions[0]?.opcode).toBe(Opcode.PUSH1);
+		expect(instructions[0]?.offset).toBe(0);
+		expect(instructions[0]?.immediate).toEqual(new Uint8Array([0x01]));
 
-		expect(instructions[1]!.opcode).toBe(Opcode.PUSH1);
-		expect(instructions[1]!.offset).toBe(2);
-		expect(instructions[1]!.immediate).toEqual(new Uint8Array([0x02]));
+		expect(instructions[1]?.opcode).toBe(Opcode.PUSH1);
+		expect(instructions[1]?.offset).toBe(2);
+		expect(instructions[1]?.immediate).toEqual(new Uint8Array([0x02]));
 
-		expect(instructions[2]!.opcode).toBe(Opcode.ADD);
-		expect(instructions[2]!.offset).toBe(4);
-		expect(instructions[2]!.immediate).toBeUndefined();
+		expect(instructions[2]?.opcode).toBe(Opcode.ADD);
+		expect(instructions[2]?.offset).toBe(4);
+		expect(instructions[2]?.immediate).toBeUndefined();
 	});
 
 	it("parses PUSH0", () => {
@@ -326,8 +326,8 @@ describe("Opcode.parse", () => {
 		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(2);
-		expect(instructions[0]!.opcode).toBe(Opcode.PUSH0);
-		expect(instructions[0]!.immediate).toBeUndefined();
+		expect(instructions[0]?.opcode).toBe(Opcode.PUSH0);
+		expect(instructions[0]?.immediate).toBeUndefined();
 	});
 
 	it("parses PUSH32", () => {
@@ -335,8 +335,8 @@ describe("Opcode.parse", () => {
 		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(1);
-		expect(instructions[0]!.opcode).toBe(Opcode.PUSH32);
-		expect(instructions[0]!.immediate).toHaveLength(32);
+		expect(instructions[0]?.opcode).toBe(Opcode.PUSH32);
+		expect(instructions[0]?.immediate).toHaveLength(32);
 	});
 
 	it("handles truncated PUSH data", () => {
@@ -344,8 +344,8 @@ describe("Opcode.parse", () => {
 		const instructions = Opcode.parse(bytecode);
 
 		expect(instructions).toHaveLength(1);
-		expect(instructions[0]!.opcode).toBe(Opcode.PUSH1);
-		expect(instructions[0]!.immediate).toHaveLength(0);
+		expect(instructions[0]?.opcode).toBe(Opcode.PUSH1);
+		expect(instructions[0]?.immediate).toHaveLength(0);
 	});
 
 	it("parses empty bytecode", () => {

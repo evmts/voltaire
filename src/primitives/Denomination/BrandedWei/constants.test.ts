@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WEI_PER_GWEI, WEI_PER_ETHER } from "./constants.js";
+import { WEI_PER_ETHER, WEI_PER_GWEI } from "./constants.js";
 
 describe("constants", () => {
 	describe("WEI_PER_GWEI", () => {

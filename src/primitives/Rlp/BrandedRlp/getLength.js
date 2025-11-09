@@ -1,5 +1,5 @@
-import { decodeLengthValue } from "./utils.js";
 import { Error } from "./errors.js";
+import { decodeLengthValue } from "./utils.js";
 
 /**
  * Gets the total length of an RLP item (prefix + payload)

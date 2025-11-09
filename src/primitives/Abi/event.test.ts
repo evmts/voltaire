@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import type { Address } from "../Address/index.js";
 import * as Abi from "./index.js";
 import type { Event as AbiEvent } from "./types.js";
-import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // Event Signature and Selector Tests
@@ -250,7 +250,7 @@ describe("Abi.Event.encodeTopics", () => {
 			inputs: [{ type: "bytes32", name: "hash", indexed: true }],
 		};
 
-		const hash = "0x" + "ab".repeat(32);
+		const hash = `0x${"ab".repeat(32)}`;
 		const topics = Abi.Event.encodeTopics(event, { hash });
 
 		expect(topics.length).toBe(2);
@@ -466,7 +466,7 @@ describe("Abi.Event.decodeLog", () => {
 			],
 		};
 
-		const hash = "0x" + "ab".repeat(32);
+		const hash = `0x${"ab".repeat(32)}`;
 		const user = "0x0000000000000000000000000000000000000001" as Address;
 
 		const topics = Abi.Event.encodeTopics(event, { hash });

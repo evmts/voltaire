@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
-	PrimitiveError,
-	ValidationError,
+	CryptoError,
+	DecodingError,
+	EncodingError,
+	InvalidChecksumError,
 	InvalidFormatError,
 	InvalidLengthError,
-	InvalidRangeError,
-	InvalidChecksumError,
-	SerializationError,
-	EncodingError,
-	DecodingError,
-	CryptoError,
-	InvalidSignatureError,
-	InvalidPublicKeyError,
 	InvalidPrivateKeyError,
-	TransactionError,
-	InvalidTransactionTypeError,
+	InvalidPublicKeyError,
+	InvalidRangeError,
+	InvalidSignatureError,
 	InvalidSignerError,
+	InvalidTransactionTypeError,
+	PrimitiveError,
+	SerializationError,
+	TransactionError,
+	ValidationError,
 } from "./index.js";
 
 describe("PrimitiveError", () => {
@@ -295,7 +295,7 @@ describe("Usage examples", () => {
 				expect(e.code).toBe("INVALID_ADDRESS");
 				expect(e.value).toBe("0x123");
 				expect(e.expected).toBe("0x-prefixed 20 bytes");
-				expect(e.context?.["length"]).toBe(3);
+				expect(e.context?.length).toBe(3);
 			}
 		}
 	});

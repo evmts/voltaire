@@ -32,9 +32,8 @@ export function getEncodedLength(data) {
 	if (isData(data)) {
 		if (data.type === "bytes") {
 			return getEncodedLength(data.value);
-		} else {
-			return getEncodedLength(data.value);
 		}
+		return getEncodedLength(data.value);
 	}
 
 	// Handle array (list)

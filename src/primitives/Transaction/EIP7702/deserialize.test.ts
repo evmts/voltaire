@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import { TransactionEIP7702, serialize, deserialize } from "./index.js";
 import { Type } from "../types.js";
+import { TransactionEIP7702, deserialize, serialize } from "./index.js";
 
 describe("TransactionEIP7702.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {
@@ -75,12 +75,12 @@ describe("TransactionEIP7702.deserialize", () => {
 		const deserialized = deserialize(serialized);
 
 		expect(deserialized.authorizationList.length).toBe(1);
-		expect(deserialized.authorizationList[0]!.chainId).toBe(1n);
-		expect(new Uint8Array(deserialized.authorizationList[0]!.address)).toEqual(
-			new Uint8Array(original.authorizationList[0]!.address),
+		expect(deserialized.authorizationList[0]?.chainId).toBe(1n);
+		expect(new Uint8Array(deserialized.authorizationList[0]?.address)).toEqual(
+			new Uint8Array(original.authorizationList[0]?.address),
 		);
-		expect(deserialized.authorizationList[0]!.nonce).toBe(0n);
-		expect(deserialized.authorizationList[0]!.yParity).toBe(0);
+		expect(deserialized.authorizationList[0]?.nonce).toBe(0n);
+		expect(deserialized.authorizationList[0]?.yParity).toBe(0);
 	});
 
 	it("round-trips transaction with multiple authorizations", () => {
@@ -122,8 +122,8 @@ describe("TransactionEIP7702.deserialize", () => {
 		const deserialized = deserialize(serialized);
 
 		expect(deserialized.authorizationList.length).toBe(2);
-		expect(deserialized.authorizationList[1]!.nonce).toBe(1n);
-		expect(deserialized.authorizationList[1]!.yParity).toBe(1);
+		expect(deserialized.authorizationList[1]?.nonce).toBe(1n);
+		expect(deserialized.authorizationList[1]?.yParity).toBe(1);
 	});
 
 	it("throws for invalid type prefix", () => {

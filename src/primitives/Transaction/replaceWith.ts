@@ -1,10 +1,10 @@
 import type {
 	Any,
-	Legacy,
-	EIP2930,
 	EIP1559,
+	EIP2930,
 	EIP4844,
 	EIP7702,
+	Legacy,
 } from "./types.js";
 
 /**

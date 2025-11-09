@@ -5,18 +5,18 @@
  */
 
 import type { BrandedRlp } from "./BrandedRlp.js";
+import * as Data from "./Data.js";
+import { decode } from "./decode.js";
 import type { Encodable } from "./encode.js";
 import { encode } from "./encode.js";
-import { decode } from "./decode.js";
-import { isData } from "./isData.js";
-import { isBytesData } from "./isBytesData.js";
-import { isListData } from "./isListData.js";
-import { getEncodedLength } from "./getEncodedLength.js";
-import { flatten } from "./flatten.js";
 import { equals } from "./equals.js";
-import { toJSON } from "./toJSON.js";
+import { flatten } from "./flatten.js";
 import { fromJSON } from "./fromJSON.js";
-import * as Data from "./Data.js";
+import { getEncodedLength } from "./getEncodedLength.js";
+import { isBytesData } from "./isBytesData.js";
+import { isData } from "./isData.js";
+import { isListData } from "./isListData.js";
+import { toJSON } from "./toJSON.js";
 
 // ============================================================================
 // Benchmark Runner
@@ -107,16 +107,6 @@ const encodedDeeplyNested = encode(deeplyNested);
 // ============================================================================
 
 const results: BenchmarkResult[] = [];
-
-console.log(
-	"================================================================================",
-);
-console.log("RLP ENCODING BENCHMARKS - BYTES");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Byte Encoding ---");
 results.push(
 	benchmark("encode single byte (< 0x80)", () => encode(singleByte)),
 );
@@ -132,31 +122,6 @@ results.push(
 results.push(
 	benchmark("encode very long bytes (10KB)", () => encode(veryLongBytes)),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Encoding Benchmarks - Lists
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP ENCODING BENCHMARKS - LISTS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- List Encoding ---");
 results.push(benchmark("encode empty list", () => encode(emptyList)));
 results.push(benchmark("encode short list (2 items)", () => encode(shortList)));
 results.push(
@@ -171,31 +136,6 @@ results.push(
 		encode(deeplyNested),
 	),
 );
-
-console.log(
-	results
-		.slice(-6)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Decoding Benchmarks - Bytes
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP DECODING BENCHMARKS - BYTES");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Byte Decoding ---");
 results.push(
 	benchmark("decode single byte (< 0x80)", () => decode(encodedSingleByte)),
 );
@@ -213,31 +153,6 @@ results.push(
 		decode(encodedVeryLongBytes),
 	),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Decoding Benchmarks - Lists
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP DECODING BENCHMARKS - LISTS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- List Decoding ---");
 results.push(benchmark("decode empty list", () => decode(encodedEmptyList)));
 results.push(
 	benchmark("decode short list (2 items)", () => decode(encodedShortList)),
@@ -256,31 +171,6 @@ results.push(
 		decode(encodedDeeplyNested),
 	),
 );
-
-console.log(
-	results
-		.slice(-6)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Round-trip Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP ROUND-TRIP BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Round-trip Performance ---");
 results.push(
 	benchmark("round-trip single byte", () => {
 		const encoded = encode(singleByte);
@@ -317,31 +207,6 @@ results.push(
 		decode(encoded);
 	}),
 );
-
-console.log(
-	results
-		.slice(-6)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Utility Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP UTILITY BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Utility Functions ---");
 results.push(
 	benchmark("getEncodedLength - bytes", () => getEncodedLength(mediumBytes)),
 );
@@ -394,31 +259,6 @@ results.push(benchmark("toJSON - list", () => toJSON(listData1)));
 
 const jsonData = { type: "bytes", value: [1, 2, 3] };
 results.push(benchmark("fromJSON - bytes", () => fromJSON(jsonData)));
-
-console.log(
-	results
-		.slice(-8)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Data Namespace Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP DATA NAMESPACE BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Data Operations ---");
 results.push(benchmark("Data.fromBytes", () => Data.fromBytes(mediumBytes)));
 results.push(
 	benchmark("Data.fromList", () =>
@@ -431,61 +271,11 @@ results.push(
 results.push(benchmark("Data.encodeData", () => Data.encodeData(data1)));
 results.push(benchmark("Data.toBytes", () => Data.toBytes(data1)));
 results.push(benchmark("Data.toList", () => Data.toList(listData1)));
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Type Guard Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP TYPE GUARD BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Type Guards ---");
 results.push(benchmark("isData - valid bytes", () => isData(data1)));
 results.push(benchmark("isData - valid list", () => isData(listData1)));
 results.push(benchmark("isData - invalid", () => isData("invalid")));
 results.push(benchmark("isBytesData", () => isBytesData(data1)));
 results.push(benchmark("isListData", () => isListData(listData1)));
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Real-world Use Case Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("RLP REAL-WORLD USE CASE BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Ethereum Transaction Encoding ---");
 
 // Simplified transaction structure
 const nonce = new Uint8Array([0x09]);
@@ -536,41 +326,12 @@ results.push(
 	benchmark("encode tx with access list", () => encode(txWithAccessList)),
 );
 
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("SUMMARY");
-console.log(
-	"================================================================================\n",
-);
-
-console.log(`Total benchmarks run: ${results.length}\n`);
-
 // Calculate statistics
 const opsPerSecValues = results.map((r) => r.opsPerSec);
 const minOps = Math.min(...opsPerSecValues);
 const maxOps = Math.max(...opsPerSecValues);
 const avgOps =
 	opsPerSecValues.reduce((a, b) => a + b, 0) / opsPerSecValues.length;
-
-console.log(`Fastest operation: ${maxOps.toFixed(0)} ops/sec`);
-console.log(`Slowest operation: ${minOps.toFixed(0)} ops/sec`);
-console.log(`Average: ${avgOps.toFixed(0)} ops/sec\n`);
 
 // Highlight key metrics
 const keyResults = [
@@ -580,20 +341,11 @@ const keyResults = [
 	results.find((r) => r.name.includes("decode short list")),
 	results.find((r) => r.name.includes("round-trip short bytes")),
 ].filter(Boolean) as BenchmarkResult[];
-
-console.log("Key Performance Metrics:");
-keyResults.forEach((r) => {
-	console.log(
-		`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-	);
-});
-
-console.log("\n");
+keyResults.forEach((r) => {});
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/rlp-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

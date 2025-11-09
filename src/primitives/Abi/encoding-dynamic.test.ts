@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Abi from "./index.js";
 import type { Address } from "../Address/index.js";
+import * as Abi from "./index.js";
 
 // ============================================================================
 // Dynamic Bytes Type
@@ -45,7 +45,7 @@ describe("Abi.encodeParameters - dynamic bytes", () => {
 	});
 
 	it("encodes bytes exactly 32 bytes", () => {
-		const data = "0x" + "12".repeat(32);
+		const data = `0x${"12".repeat(32)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], [data]);
 		// Offset (32) + Length (32) + Data (32) = 96 bytes
 		expect(encoded.length).toBe(96);
@@ -54,7 +54,7 @@ describe("Abi.encodeParameters - dynamic bytes", () => {
 	});
 
 	it("encodes bytes longer than 32 bytes", () => {
-		const data = "0x" + "ff".repeat(64);
+		const data = `0x${"ff".repeat(64)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], [data]);
 		// Offset (32) + Length (32) + Data (64) = 128 bytes
 		expect(encoded.length).toBe(128);

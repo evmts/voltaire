@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { pad } from "./pad.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { pad } from "./pad.js";
 
 describe("pad", () => {
 	it("pads hex to target size on left (converts to lowercase)", () => {

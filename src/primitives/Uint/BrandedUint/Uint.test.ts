@@ -107,7 +107,7 @@ describe("Uint.fromHex", () => {
 	});
 
 	it("throws on value exceeding MAX", () => {
-		const hex = "0x" + "f".repeat(65); // Too large
+		const hex = `0x${"f".repeat(65)}`; // Too large
 		expect(() => Uint.fromHex(hex)).toThrow("exceeds maximum");
 	});
 });
@@ -221,7 +221,7 @@ describe("Uint.toHex", () => {
 	it("converts to padded hex by default", () => {
 		const value = Uint.from(255);
 		const hex = Uint.toHex(value);
-		expect(hex).toBe("0x" + "0".repeat(62) + "ff");
+		expect(hex).toBe(`0x${"0".repeat(62)}ff`);
 		expect(hex.length).toBe(66); // 0x + 64 chars
 	});
 
@@ -240,7 +240,7 @@ describe("Uint.toHex", () => {
 	it("converts MAX correctly", () => {
 		const value = Uint.MAX;
 		const hex = Uint.toHex(value, false);
-		expect(hex).toBe("0x" + "f".repeat(64));
+		expect(hex).toBe(`0x${"f".repeat(64)}`);
 	});
 });
 

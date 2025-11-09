@@ -1,5 +1,5 @@
-import { keccak256 } from "./keccak256.js";
 import { ZERO } from "./constants.js";
+import { keccak256 } from "./keccak256.js";
 
 /**
  * Calculate Merkle root of hash array

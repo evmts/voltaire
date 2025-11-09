@@ -13,11 +13,11 @@ export {
 	POLYGON,
 } from "./constants.js";
 
+import { equals as _equals } from "./equals.js";
 // Import all functions
 import { from } from "./from.js";
-import { toNumber as _toNumber } from "./toNumber.js";
-import { equals as _equals } from "./equals.js";
 import { isMainnet as _isMainnet } from "./isMainnet.js";
+import { toNumber as _toNumber } from "./toNumber.js";
 
 // Export constructors
 export { from };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionLegacy from "./index.js";
 import { Type } from "../types.js";
+import * as TransactionLegacy from "./index.js";
 
 describe("TransactionLegacy.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {

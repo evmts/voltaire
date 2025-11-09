@@ -1,4 +1,11 @@
 import { describe, expect, it } from "vitest";
+import type {
+	BrandedBlob,
+	Commitment,
+	Proof,
+	VersionedHash,
+} from "../BrandedBlob.js";
+import { calculateGas } from "./calculateGas.js";
 import {
 	BYTES_PER_FIELD_ELEMENT,
 	COMMITMENT_VERSION_KZG,
@@ -8,7 +15,6 @@ import {
 	SIZE,
 	TARGET_GAS_PER_BLOCK,
 } from "./constants.js";
-import { calculateGas } from "./calculateGas.js";
 import { estimateBlobCount } from "./estimateBlobCount.js";
 import { fromData } from "./fromData.js";
 import { isValid } from "./isValid.js";
@@ -21,12 +27,6 @@ import { toProof } from "./toProof.js";
 import { toVersionedHash } from "./toVersionedHash.js";
 import { verify } from "./verify.js";
 import { verifyBatch } from "./verifyBatch.js";
-import type {
-	BrandedBlob,
-	Commitment,
-	Proof,
-	VersionedHash,
-} from "../BrandedBlob.js";
 
 // ============================================================================
 // Type Guard Tests

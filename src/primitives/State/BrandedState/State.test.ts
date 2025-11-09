@@ -328,8 +328,8 @@ describe("StorageKey.fromString", () => {
 		const str = StorageKey.toString(key);
 		const parsed = StorageKey.fromString(str);
 		expect(parsed).toBeDefined();
-		expect(parsed!.slot).toBe(key.slot);
-		expect(Array.from(parsed!.address)).toEqual(Array.from(key.address));
+		expect(parsed?.slot).toBe(key.slot);
+		expect(Array.from(parsed?.address)).toEqual(Array.from(key.address));
 	});
 
 	it("handles zero slot", () => {
@@ -337,7 +337,7 @@ describe("StorageKey.fromString", () => {
 		const str = StorageKey.toString(key);
 		const parsed = StorageKey.fromString(str);
 		expect(parsed).toBeDefined();
-		expect(parsed!.slot).toBe(0n);
+		expect(parsed?.slot).toBe(0n);
 	});
 
 	it("handles large slot values", () => {
@@ -347,7 +347,7 @@ describe("StorageKey.fromString", () => {
 		const str = StorageKey.toString(key);
 		const parsed = StorageKey.fromString(str);
 		expect(parsed).toBeDefined();
-		expect(parsed!.slot).toBe(largeSlot);
+		expect(parsed?.slot).toBe(largeSlot);
 	});
 
 	it("returns undefined for invalid string", () => {
@@ -536,7 +536,7 @@ describe("StorageKey edge cases", () => {
 			const str = StorageKey.toString(key);
 			const parsed = StorageKey.fromString(str);
 			expect(parsed).toBeDefined();
-			expect(parsed!.slot).toBe(slot);
+			expect(parsed?.slot).toBe(slot);
 		}
 	});
 
@@ -566,7 +566,7 @@ describe("StorageKey edge cases", () => {
 		const str = StorageKey.toString(key);
 		const parsed = StorageKey.fromString(str);
 		expect(parsed).toBeDefined();
-		expect(Array.from(parsed!.address)).toEqual(Array.from(patternAddr));
+		expect(Array.from(parsed?.address)).toEqual(Array.from(patternAddr));
 	});
 });
 

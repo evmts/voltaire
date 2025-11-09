@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { WEI_PER_ETHER } from "./constants.js";
 import { from } from "./from.js";
 import { toWei } from "./toWei.js";
-import { WEI_PER_ETHER } from "./constants.js";
 
 describe("toWei", () => {
 	it("converts 1 Ether to Wei", () => {

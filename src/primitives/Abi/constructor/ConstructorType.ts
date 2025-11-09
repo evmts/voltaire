@@ -1,6 +1,6 @@
-import type { BrandedConstructor } from "./BrandedConstructor/BrandedConstructor.js";
 import type { Parameter } from "../Parameter.js";
 import type { StateMutability } from "../function/BrandedFunction/statemutability.js";
+import type { BrandedConstructor } from "./BrandedConstructor/BrandedConstructor.js";
 
 /**
  * Type definition for Constructor class instances

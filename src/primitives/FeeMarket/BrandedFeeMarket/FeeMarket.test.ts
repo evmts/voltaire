@@ -3,11 +3,11 @@
  */
 
 import { describe, expect, it } from "vitest";
+import * as FeeMarket from "../FeeMarket.js";
 import {
 	getFeeMarketImplementationStatus,
 	isWasmFeeMarketAvailable,
 } from "../FeeMarket.wasm.js";
-import * as FeeMarket from "../FeeMarket.js";
 
 // ============================================================================
 // Constants Tests

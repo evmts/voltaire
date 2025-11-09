@@ -9,8 +9,8 @@ import { from } from "./from.js";
 import { fromEther } from "./fromEther.js";
 import { fromWei } from "./fromWei.js";
 import { toEther } from "./toEther.js";
-import { toWei } from "./toWei.js";
 import { toU256 } from "./toU256.js";
+import { toWei } from "./toWei.js";
 
 // Export individual functions (public API)
 export { from, fromEther, fromWei, toEther, toWei, toU256 };

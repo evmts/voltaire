@@ -1,31 +1,11 @@
 import { bench, run } from "mitata";
 import * as BinaryTree from "./BrandedBinaryTree/index.js";
 
-console.log("=".repeat(80));
-console.log("BinaryTree Benchmark");
-console.log("=".repeat(80));
-console.log("");
-
-// =============================================================================
-// 1. BinaryTree.init - Create empty tree
-// =============================================================================
-
-console.log("1. BinaryTree.init - Create empty tree");
-console.log("-".repeat(80));
-
 bench("BinaryTree.init", () => {
 	BinaryTree.init();
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 2. BinaryTree.insert - Insert single values
-// =============================================================================
-
-console.log("2. BinaryTree.insert - Insert single values");
-console.log("-".repeat(80));
 
 const tree = BinaryTree.init();
 const key = new Uint8Array(32);
@@ -38,14 +18,6 @@ bench("BinaryTree.insert - single value", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 3. BinaryTree.get - Retrieve values
-// =============================================================================
-
-console.log("3. BinaryTree.get - Retrieve values");
-console.log("-".repeat(80));
 
 let treeWithItems = BinaryTree.init();
 const storedKey = new Uint8Array(32);
@@ -66,14 +38,6 @@ bench("BinaryTree.get - non-existent key", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 4. BinaryTree.rootHash - Compute root hash
-// =============================================================================
-
-console.log("4. BinaryTree.rootHash - Compute root hash");
-console.log("-".repeat(80));
 
 const emptyTree = BinaryTree.init();
 let tree4Items = BinaryTree.init();
@@ -121,14 +85,6 @@ bench("BinaryTree.rootHash - 256 items", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 5. BinaryTree.rootHashHex - Compute root hash as hex
-// =============================================================================
-
-console.log("5. BinaryTree.rootHashHex - Compute root hash as hex");
-console.log("-".repeat(80));
 
 bench("BinaryTree.rootHashHex - empty tree", () => {
 	BinaryTree.rootHashHex(emptyTree);
@@ -147,14 +103,6 @@ bench("BinaryTree.rootHashHex - 256 items", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 6. BinaryTree.addressToKey - Convert address to key
-// =============================================================================
-
-console.log("6. BinaryTree.addressToKey - Convert address to key");
-console.log("-".repeat(80));
 
 const address = new Uint8Array(20);
 for (let i = 0; i < 20; i++) {
@@ -166,14 +114,6 @@ bench("BinaryTree.addressToKey", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 7. BinaryTree.splitKey - Split key into stem and index
-// =============================================================================
-
-console.log("7. BinaryTree.splitKey - Split key into stem and index");
-console.log("-".repeat(80));
 
 const fullKey = new Uint8Array(32);
 fullKey.fill(0xaa);
@@ -184,14 +124,6 @@ bench("BinaryTree.splitKey", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 8. BinaryTree.getStemBit - Get bit from stem
-// =============================================================================
-
-console.log("8. BinaryTree.getStemBit - Get bit from stem");
-console.log("-".repeat(80));
 
 const stem = new Uint8Array(31);
 stem[0] = 0b10101010;
@@ -205,14 +137,6 @@ bench("BinaryTree.getStemBit - position 128", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 9. BinaryTree hashing operations
-// =============================================================================
-
-console.log("9. BinaryTree hashing operations");
-console.log("-".repeat(80));
 
 const left = new Uint8Array(32);
 left[0] = 0x01;
@@ -244,14 +168,6 @@ bench("BinaryTree.hashLeaf", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 10. Batch operations - Build tree with 100 leaves
-// =============================================================================
-
-console.log("10. Batch operations - Build tree with 100 leaves");
-console.log("-".repeat(80));
 
 bench("BinaryTree - build with 100 leaves", () => {
 	let t = BinaryTree.init();
@@ -267,14 +183,6 @@ bench("BinaryTree - build with 100 leaves", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 11. Batch operations - Build tree with 1000 leaves
-// =============================================================================
-
-console.log("11. Batch operations - Build tree with 1000 leaves");
-console.log("-".repeat(80));
 
 bench("BinaryTree - build with 1000 leaves", () => {
 	let t = BinaryTree.init();
@@ -292,14 +200,6 @@ bench("BinaryTree - build with 1000 leaves", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 12. Sequential inserts with different key patterns
-// =============================================================================
-
-console.log("12. Sequential inserts with different key patterns");
-console.log("-".repeat(80));
 
 bench("BinaryTree - sequential keys (last byte)", () => {
 	let t = BinaryTree.init();
@@ -324,14 +224,6 @@ bench("BinaryTree - sequential keys (first byte)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 13. Address-based tree operations
-// =============================================================================
-
-console.log("13. Address-based tree operations");
-console.log("-".repeat(80));
 
 bench("BinaryTree - insert via address key", () => {
 	let t = BinaryTree.init();
@@ -344,8 +236,3 @@ bench("BinaryTree - insert via address key", () => {
 });
 
 await run();
-console.log("");
-
-console.log("=".repeat(80));
-console.log("BinaryTree Benchmarks Complete");
-console.log("=".repeat(80));

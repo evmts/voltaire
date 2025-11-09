@@ -1,5 +1,5 @@
-import * as OxHex from "ox/Hex";
 import type { Hex } from "ox";
+import * as OxHex from "ox/Hex";
 
 /**
  * Check if hex value has a specific size

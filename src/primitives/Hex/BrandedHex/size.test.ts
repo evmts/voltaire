@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { size } from "./size.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { size } from "./size.js";
 
 describe("size", () => {
 	it("returns 0 for empty hex", () => {
@@ -20,17 +20,17 @@ describe("size", () => {
 	});
 
 	it("returns correct size for addresses (20 bytes)", () => {
-		const address = ("0x" + "00".repeat(20)) as BrandedHex;
+		const address = `0x${"00".repeat(20)}` as BrandedHex;
 		expect(size(address)).toBe(20);
 	});
 
 	it("returns correct size for hashes (32 bytes)", () => {
-		const hash = ("0x" + "00".repeat(32)) as BrandedHex;
+		const hash = `0x${"00".repeat(32)}` as BrandedHex;
 		expect(size(hash)).toBe(32);
 	});
 
 	it("handles large hex strings", () => {
-		const large = ("0x" + "00".repeat(1000)) as BrandedHex;
+		const large = `0x${"00".repeat(1000)}` as BrandedHex;
 		expect(size(large)).toBe(1000);
 	});
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { equals } from "./equals.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { equals } from "./equals.js";
 
 describe("equals", () => {
 	it("compares equal hex strings", () => {
@@ -45,10 +45,10 @@ describe("equals", () => {
 	});
 
 	it("compares large hex strings", () => {
-		const hex1 = ("0x" + "ab".repeat(100)) as BrandedHex;
-		const hex2 = ("0x" + "ab".repeat(100)) as BrandedHex;
-		const hex3 = ("0x" + "AB".repeat(100)) as BrandedHex;
-		const hex4 = ("0x" + "cd".repeat(100)) as BrandedHex;
+		const hex1 = `0x${"ab".repeat(100)}` as BrandedHex;
+		const hex2 = `0x${"ab".repeat(100)}` as BrandedHex;
+		const hex3 = `0x${"AB".repeat(100)}` as BrandedHex;
+		const hex4 = `0x${"cd".repeat(100)}` as BrandedHex;
 		expect(equals(hex1, hex2)).toBe(true);
 		expect(equals(hex1, hex3)).toBe(true);
 		expect(equals(hex1, hex4)).toBe(false);

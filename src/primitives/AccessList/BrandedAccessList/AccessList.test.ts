@@ -5,35 +5,35 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
-import { isItem } from "./isItem.js";
-import { is } from "./is.js";
-import { gasCost } from "./gasCost.js";
-import { gasSavings } from "./gasSavings.js";
-import { hasSavings } from "./hasSavings.js";
-import { includesAddress } from "./includesAddress.js";
-import { includesStorageKey } from "./includesStorageKey.js";
-import { keysFor } from "./keysFor.js";
-import { deduplicate } from "./deduplicate.js";
-import { withAddress } from "./withAddress.js";
-import { withStorageKey } from "./withStorageKey.js";
-import { merge } from "./merge.js";
-import { assertValid } from "./assertValid.js";
-import { toBytes } from "./toBytes.js";
+import type {
+	BrandedAccessList as AccessListType,
+	Item,
+} from "../BrandedAccessList.js";
 import { addressCount } from "./addressCount.js";
-import { storageKeyCount } from "./storageKeyCount.js";
-import { isEmpty } from "./isEmpty.js";
-import { create } from "./create.js";
-import { fromBytes } from "./fromBytes.js";
+import { assertValid } from "./assertValid.js";
 import {
 	ADDRESS_COST,
 	COLD_ACCOUNT_ACCESS_COST,
 	COLD_STORAGE_ACCESS_COST,
 	STORAGE_KEY_COST,
 } from "./constants.js";
-import type {
-	BrandedAccessList as AccessListType,
-	Item,
-} from "../BrandedAccessList.js";
+import { create } from "./create.js";
+import { deduplicate } from "./deduplicate.js";
+import { fromBytes } from "./fromBytes.js";
+import { gasCost } from "./gasCost.js";
+import { gasSavings } from "./gasSavings.js";
+import { hasSavings } from "./hasSavings.js";
+import { includesAddress } from "./includesAddress.js";
+import { includesStorageKey } from "./includesStorageKey.js";
+import { is } from "./is.js";
+import { isEmpty } from "./isEmpty.js";
+import { isItem } from "./isItem.js";
+import { keysFor } from "./keysFor.js";
+import { merge } from "./merge.js";
+import { storageKeyCount } from "./storageKeyCount.js";
+import { toBytes } from "./toBytes.js";
+import { withAddress } from "./withAddress.js";
+import { withStorageKey } from "./withStorageKey.js";
 
 // ============================================================================
 // Test Data
@@ -363,8 +363,8 @@ describe("AccessList.deduplicate", () => {
 		];
 		const result = deduplicate(list);
 		expect(result.length).toBe(1);
-		expect(result[0]!.address).toBe(addr1);
-		expect(result[0]!.storageKeys.length).toBe(2);
+		expect(result[0]?.address).toBe(addr1);
+		expect(result[0]?.storageKeys.length).toBe(2);
 	});
 
 	it("removes duplicate storage keys", () => {
@@ -374,7 +374,7 @@ describe("AccessList.deduplicate", () => {
 		];
 		const result = deduplicate(list);
 		expect(result.length).toBe(1);
-		expect(result[0]!.storageKeys.length).toBe(3);
+		expect(result[0]?.storageKeys.length).toBe(3);
 	});
 
 	it("handles complex deduplication", () => {
@@ -399,8 +399,8 @@ describe("AccessList.withAddress", () => {
 		const list: AccessListType = [];
 		const result = withAddress(list, addr1);
 		expect(result.length).toBe(1);
-		expect(result[0]!.address).toBe(addr1);
-		expect(result[0]!.storageKeys.length).toBe(0);
+		expect(result[0]?.address).toBe(addr1);
+		expect(result[0]?.storageKeys.length).toBe(0);
 	});
 
 	it("adds new address to existing list", () => {
@@ -428,23 +428,23 @@ describe("AccessList.withStorageKey", () => {
 		const list: AccessListType = [];
 		const result = withStorageKey(list, addr1, key1);
 		expect(result.length).toBe(1);
-		expect(result[0]!.address).toBe(addr1);
-		expect(result[0]!.storageKeys.length).toBe(1);
-		expect(result[0]!.storageKeys[0]).toBe(key1);
+		expect(result[0]?.address).toBe(addr1);
+		expect(result[0]?.storageKeys.length).toBe(1);
+		expect(result[0]?.storageKeys[0]).toBe(key1);
 	});
 
 	it("adds key to existing address", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const result = withStorageKey(list, addr1, key2);
 		expect(result.length).toBe(1);
-		expect(result[0]!.storageKeys.length).toBe(2);
+		expect(result[0]?.storageKeys.length).toBe(2);
 	});
 
 	it("does not add duplicate key", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const result = withStorageKey(list, addr1, key1);
 		expect(result.length).toBe(1);
-		expect(result[0]!.storageKeys.length).toBe(1);
+		expect(result[0]?.storageKeys.length).toBe(1);
 	});
 
 	it("adds address with key when address does not exist", () => {
@@ -456,8 +456,8 @@ describe("AccessList.withStorageKey", () => {
 	it("does not modify original list", () => {
 		const list: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const result = withStorageKey(list, addr1, key2);
-		expect(list[0]!.storageKeys.length).toBe(1);
-		expect(result[0]!.storageKeys.length).toBe(2);
+		expect(list[0]?.storageKeys.length).toBe(1);
+		expect(result[0]?.storageKeys.length).toBe(2);
 	});
 });
 
@@ -485,7 +485,7 @@ describe("AccessList.merge", () => {
 		const list2: AccessListType = [{ address: addr1, storageKeys: [key2] }];
 		const result = merge(list1, list2);
 		expect(result.length).toBe(1);
-		expect(result[0]!.storageKeys.length).toBe(2);
+		expect(result[0]?.storageKeys.length).toBe(2);
 	});
 
 	it("merges multiple lists", () => {
@@ -576,8 +576,8 @@ describe("AccessList.fromBytes", () => {
 		const encoded = toBytes(list);
 		const decoded = fromBytes(encoded);
 		expect(decoded.length).toBe(2);
-		expect(decoded[0]!.address).toEqual(addr1);
-		expect(decoded[0]!.storageKeys.length).toBe(2);
+		expect(decoded[0]?.address).toEqual(addr1);
+		expect(decoded[0]?.storageKeys.length).toBe(2);
 	});
 });
 
@@ -685,8 +685,8 @@ describe("AccessList edge cases", () => {
 		const original: AccessListType = [{ address: addr1, storageKeys: [key1] }];
 		const modified = withStorageKey(original, addr1, key2);
 
-		expect(original[0]!.storageKeys.length).toBe(1);
-		expect(modified[0]!.storageKeys.length).toBe(2);
+		expect(original[0]?.storageKeys.length).toBe(1);
+		expect(modified[0]?.storageKeys.length).toBe(2);
 	});
 
 	it("handles identical addresses correctly", () => {
@@ -698,7 +698,7 @@ describe("AccessList edge cases", () => {
 
 		const deduped = deduplicate(list);
 		expect(deduped.length).toBe(1);
-		expect(deduped[0]!.storageKeys.length).toBe(2);
+		expect(deduped[0]?.storageKeys.length).toBe(2);
 	});
 
 	it("handles identical storage keys correctly", () => {
@@ -708,6 +708,6 @@ describe("AccessList edge cases", () => {
 		];
 
 		const result = withStorageKey(list, addr1, sameKey);
-		expect(result[0]!.storageKeys.length).toBe(2);
+		expect(result[0]?.storageKeys.length).toBe(2);
 	});
 });

@@ -1,20 +1,8 @@
 import { bench, run } from "mitata";
-import * as BloomFilter from "./BrandedBloomFilter/index.js";
 import { BITS, DEFAULT_HASH_COUNT } from "./BrandedBloomFilter/constants.js";
+import * as BloomFilter from "./BrandedBloomFilter/index.js";
 
 const encoder = new TextEncoder();
-
-console.log("=".repeat(80));
-console.log("BloomFilter Benchmark");
-console.log("=".repeat(80));
-console.log("");
-
-// =============================================================================
-// 1. BloomFilter.create - Create filters of various sizes
-// =============================================================================
-
-console.log("1. BloomFilter.create - Create filters of various sizes");
-console.log("-".repeat(80));
 
 bench("BloomFilter.create - 256 bits (32B)", () => {
 	BloomFilter.create(256, 3);
@@ -29,14 +17,6 @@ bench("BloomFilter.create - 16384 bits (2KB)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 2. BloomFilter.add - Add items to filter
-// =============================================================================
-
-console.log("2. BloomFilter.add - Add items to filter");
-console.log("-".repeat(80));
 
 const filter256 = BloomFilter.create(256, 3);
 const filter2048 = BloomFilter.create(2048, 3);
@@ -67,14 +47,6 @@ bench("BloomFilter.add - topic (32B)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 3. BloomFilter.contains - Check if item exists
-// =============================================================================
-
-console.log("3. BloomFilter.contains - Check if item exists");
-console.log("-".repeat(80));
 
 const filterWithItems = BloomFilter.create(2048, 3);
 BloomFilter.add(filterWithItems, testItem);
@@ -100,14 +72,6 @@ bench("BloomFilter.contains - topic exists", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 4. BloomFilter.merge - Merge two filters
-// =============================================================================
-
-console.log("4. BloomFilter.merge - Merge two filters");
-console.log("-".repeat(80));
 
 const filter1 = BloomFilter.create(2048, 3);
 const filter2 = BloomFilter.create(2048, 3);
@@ -128,14 +92,6 @@ bench("BloomFilter.merge - 16384 bits", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 5. BloomFilter.isEmpty - Check if filter is empty
-// =============================================================================
-
-console.log("5. BloomFilter.isEmpty - Check if filter is empty");
-console.log("-".repeat(80));
 
 const emptyFilter = BloomFilter.create(2048, 3);
 const fullFilter = BloomFilter.create(2048, 3);
@@ -156,14 +112,6 @@ bench("BloomFilter.isEmpty - filter with items", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 6. BloomFilter.toHex / fromHex - Serialization
-// =============================================================================
-
-console.log("6. BloomFilter.toHex / fromHex - Serialization");
-console.log("-".repeat(80));
 
 const filterToSerialize = BloomFilter.create(2048, 3);
 BloomFilter.add(filterToSerialize, testItem);
@@ -178,14 +126,6 @@ bench("BloomFilter.fromHex - 2048 bits", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 7. BloomFilter.density - Calculate density
-// =============================================================================
-
-console.log("7. BloomFilter.density - Calculate density");
-console.log("-".repeat(80));
 
 bench("BloomFilter.density - empty filter", () => {
 	BloomFilter.density(emptyFilter);
@@ -200,14 +140,6 @@ bench("BloomFilter.density - full filter", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 8. BloomFilter.expectedFalsePositiveRate - Calculate FPR
-// =============================================================================
-
-console.log("8. BloomFilter.expectedFalsePositiveRate - Calculate FPR");
-console.log("-".repeat(80));
 
 bench("BloomFilter.expectedFalsePositiveRate - 50 items", () => {
 	BloomFilter.expectedFalsePositiveRate(filterWithItems, 50);
@@ -218,14 +150,6 @@ bench("BloomFilter.expectedFalsePositiveRate - 200 items", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 9. Batch operations - Add multiple items
-// =============================================================================
-
-console.log("9. Batch operations - Add 100 items");
-console.log("-".repeat(80));
 
 bench("BloomFilter.add - 100 items", () => {
 	const f = BloomFilter.create(2048, 3);
@@ -235,14 +159,6 @@ bench("BloomFilter.add - 100 items", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 10. Batch operations - Check 1000 items
-// =============================================================================
-
-console.log("10. Batch operations - Check 1000 items");
-console.log("-".repeat(80));
 
 const filterFor1000 = BloomFilter.create(2048, 3);
 for (let i = 0; i < 100; i++) {
@@ -256,14 +172,6 @@ bench("BloomFilter.contains - 1000 checks", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 11. Edge cases - Empty filter operations
-// =============================================================================
-
-console.log("11. Edge cases - Empty filter operations");
-console.log("-".repeat(80));
 
 const emptyCheck = BloomFilter.create(2048, 3);
 
@@ -280,14 +188,6 @@ bench("Empty filter - density", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 12. Edge cases - Full filter operations
-// =============================================================================
-
-console.log("12. Edge cases - Full filter operations");
-console.log("-".repeat(80));
 
 bench("Full filter - contains check", () => {
 	BloomFilter.contains(fullFilter, testItem);
@@ -302,8 +202,3 @@ bench("Full filter - density", () => {
 });
 
 await run();
-console.log("");
-
-console.log("=".repeat(80));
-console.log("BloomFilter Benchmarks Complete");
-console.log("=".repeat(80));

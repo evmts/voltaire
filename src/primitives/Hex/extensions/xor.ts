@@ -1,5 +1,5 @@
-import * as OxHex from "ox/Hex";
 import type { Hex } from "ox";
+import * as OxHex from "ox/Hex";
 
 /**
  * XOR two hex values (bitwise exclusive OR)

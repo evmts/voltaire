@@ -4,25 +4,25 @@
  * Measures performance of blob encoding, validation, and utility functions
  */
 
+import type { Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
+import { calculateGas } from "./BrandedBlob/calculateGas.js";
+import {
+	COMMITMENT_VERSION_KZG,
+	MAX_PER_TRANSACTION,
+	SIZE,
+} from "./BrandedBlob/constants.js";
+import { estimateBlobCount } from "./BrandedBlob/estimateBlobCount.js";
 import { fromData } from "./BrandedBlob/fromData.js";
 import { isValid } from "./BrandedBlob/isValid.js";
-import { toData } from "./BrandedBlob/toData.js";
+import { isValidVersion } from "./BrandedBlob/isValidVersion.js";
+import { joinData } from "./BrandedBlob/joinData.js";
+import { splitData } from "./BrandedBlob/splitData.js";
 import { toCommitment } from "./BrandedBlob/toCommitment.js";
+import { toData } from "./BrandedBlob/toData.js";
 import { toProof } from "./BrandedBlob/toProof.js";
 import { toVersionedHash } from "./BrandedBlob/toVersionedHash.js";
 import { verify } from "./BrandedBlob/verify.js";
 import { verifyBatch } from "./BrandedBlob/verifyBatch.js";
-import { isValidVersion } from "./BrandedBlob/isValidVersion.js";
-import { calculateGas } from "./BrandedBlob/calculateGas.js";
-import { estimateBlobCount } from "./BrandedBlob/estimateBlobCount.js";
-import { splitData } from "./BrandedBlob/splitData.js";
-import { joinData } from "./BrandedBlob/joinData.js";
-import {
-	SIZE,
-	COMMITMENT_VERSION_KZG,
-	MAX_PER_TRANSACTION,
-} from "./BrandedBlob/constants.js";
-import type { Commitment, Proof, VersionedHash } from "./BrandedBlob.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -93,21 +93,7 @@ const multiBlob1 = new Uint8Array(200000).fill(0x12);
 const multiBlob3 = new Uint8Array(350000).fill(0x34);
 const multiBlob6 = new Uint8Array(750000).fill(0x56);
 
-// ============================================================================
-// Data Encoding Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("BLOB ENCODING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Data Encoding (fromData) ---");
 results.push(
 	benchmark("fromData - small (13 bytes)", () => fromData(smallData)),
 );
@@ -116,58 +102,10 @@ results.push(
 );
 results.push(benchmark("fromData - large (100 KB)", () => fromData(largeData)));
 results.push(benchmark("fromData - max (128 KB)", () => fromData(maxData)));
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Data Decoding Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("BLOB DECODING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Data Decoding (toData) ---");
 results.push(benchmark("toData - small (13 bytes)", () => toData(smallBlob)));
 results.push(benchmark("toData - medium (10 KB)", () => toData(mediumBlob)));
 results.push(benchmark("toData - large (100 KB)", () => toData(largeBlob)));
 results.push(benchmark("toData - max (128 KB)", () => toData(maxBlob)));
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Validation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("VALIDATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
 
 const validBlob = new Uint8Array(SIZE);
 const invalidBlob = new Uint8Array(100);
@@ -176,8 +114,6 @@ const invalidCommitment = new Uint8Array(32);
 const validProof = new Uint8Array(48);
 const validHash = new Uint8Array(32);
 validHash[0] = COMMITMENT_VERSION_KZG;
-
-console.log("--- Type Guards ---");
 results.push(benchmark("isValid - valid", () => isValid(validBlob)));
 results.push(benchmark("isValid - invalid", () => isValid(invalidBlob)));
 results.push(
@@ -202,66 +138,17 @@ results.push(
 			validHash.byteLength === 32 && validHash[0] === COMMITMENT_VERSION_KZG,
 	),
 );
-
-console.log(
-	results
-		.slice(-6)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Version Checks ---");
 const versionedHash = new Uint8Array(32) as VersionedHash;
 versionedHash[0] = COMMITMENT_VERSION_KZG;
 
 results.push(benchmark("isValidVersion", () => isValidVersion(versionedHash)));
 results.push(benchmark("VersionedHash.getVersion", () => versionedHash[0]));
 results.push(benchmark("VersionedHash.version", () => versionedHash[0]));
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Utility Function Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("UTILITY FUNCTION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Gas Calculations ---");
 results.push(benchmark("calculateGas - 1 blob", () => calculateGas(1)));
 results.push(benchmark("calculateGas - 3 blobs", () => calculateGas(3)));
 results.push(
 	benchmark("calculateGas - 6 blobs", () => calculateGas(MAX_PER_TRANSACTION)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Blob Estimation ---");
 results.push(
 	benchmark("estimateBlobCount - small", () => estimateBlobCount(1000)),
 );
@@ -271,31 +158,6 @@ results.push(
 results.push(
 	benchmark("estimateBlobCount - large", () => estimateBlobCount(500000)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Splitting/Joining Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("SPLITTING/JOINING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Data Splitting ---");
 results.push(
 	benchmark("splitData - 2 blobs (200 KB)", () => splitData(multiBlob1)),
 );
@@ -305,18 +167,6 @@ results.push(
 results.push(
 	benchmark("splitData - 6 blobs (750 KB)", () => splitData(multiBlob6)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Data Joining ---");
 const split1 = splitData(multiBlob1);
 const split3 = splitData(multiBlob3);
 const split6 = splitData(multiBlob6);
@@ -324,31 +174,6 @@ const split6 = splitData(multiBlob6);
 results.push(benchmark("joinData - 2 blobs (200 KB)", () => joinData(split1)));
 results.push(benchmark("joinData - 3 blobs (350 KB)", () => joinData(split3)));
 results.push(benchmark("joinData - 6 blobs (750 KB)", () => joinData(split6)));
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Roundtrip Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ROUNDTRIP BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Encode + Decode Cycles ---");
 results.push(
 	benchmark("encode + decode - small", () => {
 		const blob = fromData(smallData);
@@ -367,18 +192,6 @@ results.push(
 		toData(blob);
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Split + Join Cycles ---");
 results.push(
 	benchmark("split + join - 2 blobs", () => {
 		const blobs = splitData(multiBlob1);
@@ -391,31 +204,6 @@ results.push(
 		joinData(blobs);
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// KZG Operations (Not Implemented)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("KZG OPERATIONS BENCHMARKS (Not Implemented)");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- KZG Commitment/Proof Generation ---");
 results.push(
 	benchmark("toCommitment", () => {
 		try {
@@ -434,18 +222,6 @@ results.push(
 		}
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- KZG Verification ---");
 results.push(
 	benchmark("verify", () => {
 		try {
@@ -472,18 +248,6 @@ results.push(
 		}
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Versioned Hash ---");
 results.push(
 	benchmark("toVersionedHash", () => {
 		try {
@@ -494,41 +258,9 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op) [throws NotImplemented]`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("Benchmarks complete!");
-console.log(
-	"================================================================================",
-);
-console.log(`\nTotal benchmarks run: ${results.length}`);
-console.log(
-	"\nNote: KZG operations (commitment, proof, verification) throw 'Not implemented'",
-);
-console.log("These benchmarks measure error handling overhead.");
-console.log(
-	"Real performance metrics will be available after KZG implementation.\n",
-);
-
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/blob-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

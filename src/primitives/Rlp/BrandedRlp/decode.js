@@ -165,8 +165,12 @@ function toData(value, depth = 0) {
 
 	if (value instanceof Uint8Array) {
 		return { type: "bytes", value };
-	} else if (Array.isArray(value)) {
-		return { type: "list", value: value.map((item) => toData(item, depth + 1)) };
+	}
+	if (Array.isArray(value)) {
+		return {
+			type: "list",
+			value: value.map((item) => toData(item, depth + 1)),
+		};
 	}
 	throw new Error("UnexpectedInput", "Invalid decoded value type");
 }

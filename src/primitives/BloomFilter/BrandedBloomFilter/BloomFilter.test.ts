@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { BITS, DEFAULT_HASH_COUNT, SIZE } from "./constants.js";
 import * as BloomFilter from "./index.js";
-import { BITS, SIZE, DEFAULT_HASH_COUNT } from "./constants.js";
 
 describe("BloomFilter - Basic Operations", () => {
 	describe("create", () => {

@@ -32,7 +32,7 @@ export function fromString(str) {
 			address[i] = Number.parseInt(addrHex.slice(i * 2, i * 2 + 2), 16);
 		}
 
-		const slot = BigInt("0x" + slotHex);
+		const slot = BigInt(`0x${slotHex}`);
 
 		return {
 			address:

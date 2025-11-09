@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { random } from "./random.js";
 import { isHex } from "./isHex.js";
+import { random } from "./random.js";
 import { size } from "./size.js";
 
 describe("random", () => {

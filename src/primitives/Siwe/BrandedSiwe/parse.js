@@ -37,9 +37,8 @@ export function parse(text) {
 
 		// Normalize address to lowercase to avoid checksum validation issues
 		// ox validates checksums strictly, but SIWE spec allows mixed case
-		const normalizedText = text.replace(
-			/0x[0-9a-fA-F]{40}/,
-			(match) => match.toLowerCase(),
+		const normalizedText = text.replace(/0x[0-9a-fA-F]{40}/, (match) =>
+			match.toLowerCase(),
 		);
 
 		// Extract multiline statement manually (ox doesn't support this)
@@ -113,7 +112,11 @@ export function parse(text) {
 			nonce: oxMessage.nonce || "",
 			issuedAt: issuedAtMatch?.[1] || oxMessage.issuedAt?.toISOString() || "",
 			// Use manually extracted multiline statement if available, otherwise use ox's
-			...(statement ? { statement } : oxMessage.statement ? { statement: oxMessage.statement } : {}),
+			...(statement
+				? { statement }
+				: oxMessage.statement
+					? { statement: oxMessage.statement }
+					: {}),
 			...(oxMessage.expirationTime
 				? {
 						expirationTime:
@@ -123,8 +126,7 @@ export function parse(text) {
 				: {}),
 			...(oxMessage.notBefore
 				? {
-						notBefore:
-							notBeforeMatch?.[1] || oxMessage.notBefore.toISOString(),
+						notBefore: notBeforeMatch?.[1] || oxMessage.notBefore.toISOString(),
 					}
 				: {}),
 			...(oxMessage.requestId ? { requestId: oxMessage.requestId } : {}),

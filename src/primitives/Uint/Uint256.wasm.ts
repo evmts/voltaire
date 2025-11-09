@@ -40,7 +40,7 @@ export function u256FromBigInt(value: bigint): Uint8Array {
 	}
 
 	// Convert bigint to hex and pad to 64 chars (32 bytes)
-	const hex = "0x" + value.toString(16).padStart(64, "0");
+	const hex = `0x${value.toString(16).padStart(64, "0")}`;
 	return u256FromHex(hex);
 }
 

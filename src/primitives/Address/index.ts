@@ -1,3 +1,4 @@
+import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 // @ts-nocheck
 import * as BrandedAddress from "./BrandedAddress/index.js";
 import {
@@ -6,7 +7,6 @@ import {
 	toBase64Polyfill,
 	toHexPolyfill,
 } from "./BrandedAddress/polyfills.js";
-import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 
 // Re-export BrandedAddress type and errors
 export type { BrandedAddress } from "./BrandedAddress/index.js";

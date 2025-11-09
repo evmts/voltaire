@@ -28,11 +28,9 @@ export function format(message) {
 	);
 
 	// Convert address bytes to hex string for display
-	const addressHex =
-		"0x" +
-		Array.from(message.address)
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+	const addressHex = `0x${Array.from(message.address)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")}`;
 	lines.push(addressHex);
 	lines.push("");
 

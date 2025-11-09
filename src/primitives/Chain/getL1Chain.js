@@ -1,5 +1,5 @@
-import { CHAIN_METADATA } from "./metadata.js";
 import { fromId } from "./BrandedChain/fromId.js";
+import { CHAIN_METADATA } from "./metadata.js";
 
 /**
  * Get the parent L1 chain for an L2

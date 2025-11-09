@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validate } from "./validate.js";
 import { InvalidCharacterError, InvalidFormatError } from "./errors.js";
+import { validate } from "./validate.js";
 
 describe("validate", () => {
 	it("validates correct hex strings", () => {
@@ -22,7 +22,7 @@ describe("validate", () => {
 	});
 
 	it("validates long hex strings", () => {
-		const long = "0x" + "ab".repeat(1000);
+		const long = `0x${"ab".repeat(1000)}`;
 		expect(validate(long)).toBe(long);
 	});
 
@@ -57,12 +57,12 @@ describe("validate", () => {
 	});
 
 	it("validates addresses", () => {
-		const address = "0x" + "00".repeat(20);
+		const address = `0x${"00".repeat(20)}`;
 		expect(validate(address)).toBe(address);
 	});
 
 	it("validates hashes", () => {
-		const hash = "0x" + "00".repeat(32);
+		const hash = `0x${"00".repeat(32)}`;
 		expect(validate(hash)).toBe(hash);
 	});
 

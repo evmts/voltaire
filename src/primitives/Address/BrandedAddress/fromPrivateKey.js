@@ -1,8 +1,8 @@
+import { PRIVATE_KEY_SIZE } from "../../../crypto/Secp256k1/constants.js";
 // @ts-nocheck
 import { derivePublicKey } from "../../../crypto/Secp256k1/derivePublicKey.js";
-import { PRIVATE_KEY_SIZE } from "../../../crypto/Secp256k1/constants.js";
-import { fromPublicKey } from "./fromPublicKey.js";
 import { InvalidAddressLengthError, InvalidValueError } from "./errors.js";
+import { fromPublicKey } from "./fromPublicKey.js";
 
 /**
  * Create Address from secp256k1 private key

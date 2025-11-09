@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { toNumber } from "./toNumber.js";
-import { fromNumber } from "./fromNumber.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { fromNumber } from "./fromNumber.js";
+import { toNumber } from "./toNumber.js";
 
 describe("toNumber", () => {
 	it("converts zero", () => {

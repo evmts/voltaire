@@ -75,13 +75,24 @@ import type { BrandedHash } from "../Hash/index.js";
 import { assertSigned as _assertSigned } from "./assertSigned.js";
 import { format as _format } from "./format.js";
 import { getAccessList as _getAccessList } from "./getAccessList.js";
+import { getAuthorizationCount as _getAuthorizationCount } from "./getAuthorizationCount.js";
+import { getAuthorizations as _getAuthorizations } from "./getAuthorizations.js";
+import { getBlobCount as _getBlobCount } from "./getBlobCount.js";
+import { getBlobVersionedHashes as _getBlobVersionedHashes } from "./getBlobVersionedHashes.js";
 import { getChainId as _getChainId } from "./getChainId.js";
 import { getGasPrice as _getGasPrice } from "./getGasPrice.js";
+import { getRecipient as _getRecipient } from "./getRecipient.js";
 import { getSender as _getSender } from "./getSender.js";
 import { getSigningHash as _getSigningHash } from "./getSigningHash.js";
 import { hasAccessList as _hasAccessList } from "./hasAccessList.js";
 import { hash as _hash } from "./hash.js";
+import { isContractCall as _isContractCall } from "./isContractCall.js";
+import { isContractCreation as _isContractCreation } from "./isContractCreation.js";
 import { isSigned as _isSigned } from "./isSigned.js";
+import {
+	type ReplaceOptions,
+	replaceWith as _replaceWith,
+} from "./replaceWith.js";
 // Import internal methods for public wrappers
 import { serialize as _serialize } from "./serialize.js";
 import type {
@@ -92,27 +103,16 @@ import type {
 	EIP7702,
 	VersionedHash,
 } from "./types.js";
-import { verifySignature as _verifySignature } from "./verifySignature.js";
-import { getRecipient as _getRecipient } from "./getRecipient.js";
-import { isContractCreation as _isContractCreation } from "./isContractCreation.js";
-import { isContractCall as _isContractCall } from "./isContractCall.js";
-import { validateGasPrice as _validateGasPrice } from "./validateGasPrice.js";
+import { validateChainId as _validateChainId } from "./validateChainId.js";
 import { validateGasLimit as _validateGasLimit } from "./validateGasLimit.js";
+import { validateGasPrice as _validateGasPrice } from "./validateGasPrice.js";
 import { validateNonce as _validateNonce } from "./validateNonce.js";
 import { validateValue as _validateValue } from "./validateValue.js";
-import { validateChainId as _validateChainId } from "./validateChainId.js";
-import { withNonce as _withNonce } from "./withNonce.js";
+import { verifySignature as _verifySignature } from "./verifySignature.js";
+import { withData as _withData } from "./withData.js";
 import { withGasLimit as _withGasLimit } from "./withGasLimit.js";
 import { withGasPrice as _withGasPrice } from "./withGasPrice.js";
-import { withData as _withData } from "./withData.js";
-import {
-	replaceWith as _replaceWith,
-	type ReplaceOptions,
-} from "./replaceWith.js";
-import { getBlobCount as _getBlobCount } from "./getBlobCount.js";
-import { getBlobVersionedHashes as _getBlobVersionedHashes } from "./getBlobVersionedHashes.js";
-import { getAuthorizationCount as _getAuthorizationCount } from "./getAuthorizationCount.js";
-import { getAuthorizations as _getAuthorizations } from "./getAuthorizations.js";
+import { withNonce as _withNonce } from "./withNonce.js";
 
 // Main Transaction type (re-export Any as Transaction)
 export type Transaction = Any;

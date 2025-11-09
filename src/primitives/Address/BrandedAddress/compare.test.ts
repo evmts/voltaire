@@ -57,9 +57,9 @@ describe("compare", () => {
 			Address.fromHex("0x0000000000000000000000000000000000000002"),
 		];
 		addresses.sort(compare);
-		expect(addresses[0]![19]).toBe(1);
-		expect(addresses[1]![19]).toBe(2);
-		expect(addresses[2]![19]).toBe(3);
+		expect(addresses[0]?.[19]).toBe(1);
+		expect(addresses[1]?.[19]).toBe(2);
+		expect(addresses[2]?.[19]).toBe(3);
 	});
 
 	it("works with Address namespace method", () => {

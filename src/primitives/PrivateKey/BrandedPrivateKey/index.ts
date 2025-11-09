@@ -3,10 +3,10 @@ export type { BrandedPrivateKey } from "./BrandedPrivateKey.js";
 
 // Import all functions
 import { from } from "./from.js";
+import { sign as _sign } from "./sign.js";
+import { toAddress as _toAddress } from "./toAddress.js";
 import { toHex as _toHex } from "./toHex.js";
 import { toPublicKey as _toPublicKey } from "./toPublicKey.js";
-import { toAddress as _toAddress } from "./toAddress.js";
-import { sign as _sign } from "./sign.js";
 
 // Export constructors (no wrapper needed)
 export { from };

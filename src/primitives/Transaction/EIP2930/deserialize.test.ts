@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import { TransactionEIP2930, serialize, deserialize } from "./index.js";
 import { Type } from "../types.js";
+import { TransactionEIP2930, deserialize, serialize } from "./index.js";
 
 describe("TransactionEIP2930.deserialize", () => {
 	it("round-trips serialize and deserialize", () => {
@@ -63,10 +63,10 @@ describe("TransactionEIP2930.deserialize", () => {
 		const deserialized = deserialize(serialized);
 
 		expect(deserialized.accessList.length).toBe(1);
-		expect(new Uint8Array(deserialized.accessList[0]!.address)).toEqual(
-			new Uint8Array(original.accessList[0]!.address),
+		expect(new Uint8Array(deserialized.accessList[0]?.address)).toEqual(
+			new Uint8Array(original.accessList[0]?.address),
 		);
-		expect(deserialized.accessList[0]!.storageKeys.length).toBe(2);
+		expect(deserialized.accessList[0]?.storageKeys.length).toBe(2);
 	});
 
 	it("round-trips contract creation", () => {

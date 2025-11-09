@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Uint from "./index.js";
 import type { BrandedUint } from "./BrandedUint.js";
+import * as Uint from "./index.js";
 
 // ============================================================================
 // Boundary Value Tests
@@ -348,7 +348,7 @@ describe("Uint conversion edge cases", () => {
 			{ hex: "0x01", value: 1n },
 			{ hex: "0xff", value: 255n },
 			{ hex: "0xFF", value: 255n },
-			{ hex: "0x" + "f".repeat(64), value: Uint.MAX },
+			{ hex: `0x${"f".repeat(64)}`, value: Uint.MAX },
 		];
 
 		for (const tc of testCases) {
@@ -359,7 +359,7 @@ describe("Uint conversion edge cases", () => {
 	it("handles toHex padding correctly", () => {
 		const padded = Uint.toHex(Uint.from(255), true);
 		expect(padded.length).toBe(66);
-		expect(padded).toBe("0x" + "0".repeat(62) + "ff");
+		expect(padded).toBe(`0x${"0".repeat(62)}ff`);
 
 		const unpadded = Uint.toHex(Uint.from(255), false);
 		expect(unpadded).toBe("0xff");

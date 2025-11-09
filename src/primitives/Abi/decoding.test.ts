@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, it } from "vitest";
-import * as Abi from "./index.js";
-import { AbiDecodingError } from "./Errors.js";
 import type { Address } from "../Address/index.js";
+import { AbiDecodingError } from "./Errors.js";
+import * as Abi from "./index.js";
 
 // ============================================================================
 // Static Type Decoding Tests
@@ -265,7 +265,7 @@ describe("Abi.decodeParameters - fixed bytes types", () => {
 	});
 
 	it("decodes bytes32", () => {
-		const value = "0x" + "ff".repeat(32);
+		const value = `0x${"ff".repeat(32)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes32" }], [value]);
 		const decoded = Abi.decodeParameters([{ type: "bytes32" }], encoded);
 		expect(String(decoded[0]).toLowerCase()).toBe(value.toLowerCase());
@@ -304,7 +304,7 @@ describe("Abi.decodeParameters - dynamic bytes", () => {
 	});
 
 	it("decodes long bytes", () => {
-		const value = "0x" + "ab".repeat(100);
+		const value = `0x${"ab".repeat(100)}`;
 		const encoded = Abi.encodeParameters([{ type: "bytes" }], [value]);
 		const decoded = Abi.decodeParameters([{ type: "bytes" }], encoded);
 		expect(String(decoded[0]).toLowerCase()).toBe(value.toLowerCase());

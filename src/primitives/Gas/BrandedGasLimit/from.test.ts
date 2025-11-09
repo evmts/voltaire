@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { from } from "./from.js";
 import { SIMPLE_TRANSFER } from "./constants.js";
+import { from } from "./from.js";
 
 describe("BrandedGasLimit.from", () => {
 	it("creates gas limit from number", () => {

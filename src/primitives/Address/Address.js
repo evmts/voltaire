@@ -1,3 +1,4 @@
+import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 // @ts-nocheck
 import * as BrandedAddress from "./BrandedAddress/index.ts";
 import {
@@ -6,7 +7,6 @@ import {
 	toBase64Polyfill,
 	toHexPolyfill,
 } from "./BrandedAddress/polyfills.js";
-import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 
 /**
  * Factory function for creating Address instances

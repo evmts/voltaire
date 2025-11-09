@@ -21,7 +21,7 @@ describe("clone", () => {
 	});
 
 	it("clones long hex values", () => {
-		const hex1 = from("0x" + "ab".repeat(100));
+		const hex1 = from(`0x${"ab".repeat(100)}`);
 		const hex2 = clone(hex1);
 
 		expect(equals(hex1, hex2)).toBe(true);

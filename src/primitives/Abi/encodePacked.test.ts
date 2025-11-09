@@ -4,10 +4,10 @@
  */
 
 import { describe, expect, it } from "vitest";
+import type { Address } from "../Address/index.js";
+import { AbiParameterMismatchError } from "./Errors.js";
 import { encodePacked } from "./encodePacked.js";
 import * as Abi from "./index.js";
-import { AbiParameterMismatchError } from "./Errors.js";
-import type { Address } from "../Address/index.js";
 
 // ============================================================================
 // Basic Type Tests
@@ -174,7 +174,7 @@ describe("encodePacked - fixed bytes types", () => {
 	});
 
 	it("encodes bytes32", () => {
-		const value = "0x" + "ff".repeat(32);
+		const value = `0x${"ff".repeat(32)}`;
 		const result = encodePacked(["bytes32"], [value]);
 		expect(result).toMatch(/0xf{64}/i);
 	});
@@ -200,7 +200,7 @@ describe("encodePacked - dynamic bytes", () => {
 	});
 
 	it("encodes long bytes without padding", () => {
-		const data = "0x" + "ab".repeat(50);
+		const data = `0x${"ab".repeat(50)}`;
 		const result = encodePacked(["bytes"], [data]);
 		expect(result.toLowerCase()).toBe(data.toLowerCase());
 	});
@@ -373,7 +373,7 @@ describe("encodePacked - real-world use cases", () => {
 		const deployer = "0x742d35Cc6634C0532925a3b844Bc9e7595f251e3" as Address;
 		const salt =
 			0x0000000000000000000000000000000000000000000000000000000000000001n;
-		const bytecodeHash = "0x" + "aa".repeat(32); // keccak256 of bytecode
+		const bytecodeHash = `0x${"aa".repeat(32)}`; // keccak256 of bytecode
 		const result = encodePacked(
 			["uint8", "address", "uint256", "bytes32"],
 			[prefix, deployer, salt, bytecodeHash],

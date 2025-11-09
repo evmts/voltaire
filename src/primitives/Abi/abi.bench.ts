@@ -4,10 +4,10 @@
  * Measures performance of ABI operations
  */
 
+import { Address } from "../Address/index.js";
 import type { Item } from "./Item.js";
 import type { BrandedError } from "./error/BrandedError.js";
 import * as Abi from "./index.js";
-import { Address } from "../Address/index.js";
 
 // Helper to work around strict type checking in benchmarks
 const encodeParams = Abi.encodeParameters as any;
@@ -129,23 +129,7 @@ const insufficientBalanceError = {
 	],
 } as const satisfies BrandedError;
 
-// const testData = new Uint8Array(32);
-
-// ============================================================================
-// Signature Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("ABI SIGNATURE GENERATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Function Signatures ---");
 results.push(
 	benchmark("Function.getSignature - simple", () =>
 		Abi.Function.getSignature(transferFunc),
@@ -156,63 +140,14 @@ results.push(
 		Abi.Function.getSignature(complexFunc),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Event Signatures ---");
 results.push(
 	benchmark("Event.getSignature", () => Abi.Event.getSignature(transferEvent)),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Error Signatures ---");
 results.push(
 	benchmark("Error.getSignature", () =>
 		Abi.Error.getSignature(insufficientBalanceError),
 	),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Selector Benchmarks (IMPLEMENTED)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ABI SELECTOR GENERATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Function Selectors ---");
 results.push(
 	benchmark("Function.getSelector - transfer", () =>
 		Abi.Function.getSelector(transferFunc),
@@ -223,65 +158,16 @@ results.push(
 		Abi.Function.getSelector(balanceOfFunc),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Event Selectors ---");
 results.push(
 	benchmark("Event.getSelector - Transfer", () =>
 		Abi.Event.getSelector(transferEvent),
 	),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Error Selectors ---");
 results.push(
 	benchmark("Error.getSelector - InsufficientBalance", () =>
 		Abi.Error.getSelector(insufficientBalanceError),
 	),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Utility Selector Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("UTILITY SELECTOR BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Utility Selector Functions ---");
 results.push(
 	benchmark("Abi.getFunctionSelector", () => {
 		const func = {
@@ -318,31 +204,6 @@ results.push(
 		return Abi.Error.getSelector(error);
 	}),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Formatting Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("FORMATTING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Format ABI Items ---");
 results.push(
 	benchmark("formatAbiItem - function", () => Abi.Item.format(transferFunc)),
 );
@@ -357,18 +218,6 @@ results.push(
 results.push(
 	benchmark("formatAbiItem - complex", () => Abi.Item.format(complexFunc)),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Format ABI Items With Args ---");
 results.push(
 	benchmark("formatAbiItemWithArgs - function", () =>
 		Abi.Item.formatWithArgs(transferFunc, [
@@ -386,31 +235,6 @@ results.push(
 		]),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Encoding Benchmarks (IMPLEMENTED)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ABI ENCODING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Basic Type Encoding ---");
 results.push(
 	benchmark("encode uint256", () => {
 		encodeParams([{ type: "uint256" }], [42n]);
@@ -434,18 +258,6 @@ results.push(
 		encodeParams([{ type: "string" }], ["Hello World"]);
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Mixed Type Encoding ---");
 results.push(
 	benchmark("encode (uint256, address, bool)", () => {
 		encodeParams(
@@ -462,18 +274,6 @@ results.push(
 		);
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Function Encoding ---");
 const zeroAddr = Address.fromHex("0x0000000000000000000000000000000000000000");
 results.push(
 	benchmark("Function.encodeParams - transfer", () => {
@@ -485,18 +285,6 @@ results.push(
 		Abi.Function.encodeResult(transferFunc, [true] as [boolean]);
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Event Encoding ---");
 results.push(
 	benchmark("Event.encodeTopics", () => {
 		Abi.Event.encodeTopics(transferEvent, {
@@ -504,18 +292,6 @@ results.push(
 		});
 	}),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Error Encoding ---");
 results.push(
 	benchmark("Error.encodeParams", () => {
 		Abi.Error.encodeParams(insufficientBalanceError, [100n, 200n] as [
@@ -523,29 +299,6 @@ results.push(
 			bigint,
 		]);
 	}),
-);
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Decoding Benchmarks (IMPLEMENTED)
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ABI DECODING BENCHMARKS");
-console.log(
-	"================================================================================\n",
 );
 
 const encodedUint256 = encodeParams([{ type: "uint256" }], [42n]);
@@ -559,8 +312,6 @@ const encodedMixed = encodeParams(
 	[{ type: "uint256" }, { type: "address" }],
 	[123n, "0x0000000000000000000000000000000000000000"],
 );
-
-console.log("--- Basic Type Decoding ---");
 results.push(
 	benchmark("decode uint256", () => {
 		decodeParams([{ type: "uint256" }], encodedUint256);
@@ -581,35 +332,11 @@ results.push(
 		decodeParams([{ type: "string" }], encodedString);
 	}),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Mixed Type Decoding ---");
 results.push(
 	benchmark("decode (uint256, address)", () => {
 		decodeParams([{ type: "uint256" }, { type: "address" }], encodedMixed);
 	}),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Function Decoding ---");
 const encodedTransferCall = Abi.Function.encodeParams(transferFunc, [
 	zeroAddr,
 	100n,
@@ -628,18 +355,6 @@ results.push(
 		Abi.Function.decodeResult(transferFunc, encodedBoolResult);
 	}),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Event Decoding ---");
 const encodedEventData = encodeParams([{ type: "uint256" }], [1000n]);
 const eventTopics = Abi.Event.encodeTopics(transferEvent, {
 	from: "0x0000000000000000000000000000000000000000",
@@ -651,18 +366,6 @@ results.push(
 		Abi.Event.decodeLog(transferEvent, encodedEventData, eventTopics as any);
 	}),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Error Decoding ---");
 const encodedError = Abi.Error.encodeParams(insufficientBalanceError, [
 	100n,
 	200n,
@@ -674,16 +377,6 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
 // ============================================================================
 // ABI-Level Operations
 // ============================================================================
@@ -692,47 +385,11 @@ const testAbi = [
 	transferFunc,
 	balanceOfFunc,
 ] as const satisfies readonly Item[];
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ABI-LEVEL OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- ABI Lookup Operations ---");
 results.push(
 	benchmark("Abi.getItem", () =>
 		Abi.Item.getItem(testAbi, "transfer", "function"),
 	),
 );
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Round-Trip Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ROUND-TRIP BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Encode + Decode Round-Trip ---");
 results.push(
 	benchmark("round-trip uint256", () => {
 		const encoded = encodeParams([{ type: "uint256" }], [42n]);
@@ -754,51 +411,13 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("BENCHMARK SUMMARY");
-console.log(
-	"================================================================================",
-);
-console.log(`\nTotal benchmarks run: ${results.length}`);
-
 // Calculate statistics
 const allOpsPerSec = results.map((r) => r.opsPerSec);
 const avgOps = allOpsPerSec.reduce((a, b) => a + b, 0) / allOpsPerSec.length;
 const maxOps = Math.max(...allOpsPerSec);
 const minOps = Math.min(...allOpsPerSec);
-
-console.log(`\nPerformance Statistics:`);
-console.log(`  Average: ${avgOps.toFixed(0)} ops/sec`);
-console.log(
-	`  Max: ${maxOps.toFixed(0)} ops/sec (${results.find((r) => r.opsPerSec === maxOps)?.name})`,
-);
-console.log(
-	`  Min: ${minOps.toFixed(0)} ops/sec (${results.find((r) => r.opsPerSec === minOps)?.name})`,
-);
-
-// Top 5 fastest operations
-console.log(`\nTop 5 Fastest Operations:`);
 const sortedResults = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-sortedResults.slice(0, 5).forEach((r, i) => {
-	console.log(`  ${i + 1}. ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec`);
-});
+sortedResults.slice(0, 5).forEach((r, i) => {});
 
 // Encoding vs Decoding comparison
 const encodingOps = results
@@ -812,20 +431,11 @@ if (encodingOps.length > 0 && decodingOps.length > 0) {
 		encodingOps.reduce((a, b) => a + b, 0) / encodingOps.length;
 	const avgDecoding =
 		decodingOps.reduce((a, b) => a + b, 0) / decodingOps.length;
-	console.log(`\nEncoding vs Decoding:`);
-	console.log(`  Avg Encoding: ${avgEncoding.toFixed(0)} ops/sec`);
-	console.log(`  Avg Decoding: ${avgDecoding.toFixed(0)} ops/sec`);
-	console.log(
-		`  Ratio: ${(avgEncoding / avgDecoding).toFixed(2)}x (encoding ${avgEncoding > avgDecoding ? "faster" : "slower"})`,
-	);
 }
-
-console.log("\n");
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/abi-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

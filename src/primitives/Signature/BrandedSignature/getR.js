@@ -1,5 +1,5 @@
-import { InvalidAlgorithmError } from "./errors.js";
 import { COMPONENT_SIZE } from "./constants.js";
+import { InvalidAlgorithmError } from "./errors.js";
 
 /**
  * Get r component from ECDSA signature

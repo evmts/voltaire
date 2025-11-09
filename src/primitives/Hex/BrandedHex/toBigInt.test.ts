@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { toBigInt } from "./toBigInt.js";
-import { fromBigInt } from "./fromBigInt.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { fromBigInt } from "./fromBigInt.js";
+import { toBigInt } from "./toBigInt.js";
 
 describe("toBigInt", () => {
 	it("converts zero", () => {

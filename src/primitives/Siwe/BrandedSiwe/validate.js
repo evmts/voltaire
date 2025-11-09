@@ -97,7 +97,7 @@ function validateLegacy(message, options) {
 
 	try {
 		const issuedAt = new Date(message.issuedAt);
-		if (isNaN(issuedAt.getTime())) {
+		if (Number.isNaN(issuedAt.getTime())) {
 			return {
 				valid: false,
 				error: {
@@ -109,7 +109,7 @@ function validateLegacy(message, options) {
 
 		if (message.expirationTime) {
 			const expirationTime = new Date(message.expirationTime);
-			if (isNaN(expirationTime.getTime())) {
+			if (Number.isNaN(expirationTime.getTime())) {
 				return {
 					valid: false,
 					error: {
@@ -128,7 +128,7 @@ function validateLegacy(message, options) {
 
 		if (message.notBefore) {
 			const notBefore = new Date(message.notBefore);
-			if (isNaN(notBefore.getTime())) {
+			if (Number.isNaN(notBefore.getTime())) {
 				return {
 					valid: false,
 					error: {

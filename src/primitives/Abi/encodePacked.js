@@ -157,7 +157,7 @@ function encodePackedValue(type, value) {
 
 	// Fixed arrays
 	const fixedArrayMatch = type.match(/^(.+)\[(\d+)\]$/);
-	if (fixedArrayMatch && fixedArrayMatch[1] && fixedArrayMatch[2]) {
+	if (fixedArrayMatch?.[1] && fixedArrayMatch[2]) {
 		const elementType = fixedArrayMatch[1];
 		const arraySize = Number.parseInt(fixedArrayMatch[2]);
 		const array = /** @type {unknown[]} */ (value);

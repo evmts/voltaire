@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { BITS, DEFAULT_HASH_COUNT, SIZE } from "./constants.js";
 import * as BloomFilter from "./index.js";
-import { BITS, SIZE, DEFAULT_HASH_COUNT } from "./constants.js";
 
 describe("BloomFilter - Ethereum Specification", () => {
 	describe("Ethereum bloom parameters", () => {
@@ -251,7 +251,7 @@ describe("BloomFilter - Ethereum Specification", () => {
 			BloomFilter.add(log2Bloom, new Uint8Array(20).fill(0x02));
 			BloomFilter.add(log2Bloom, new Uint8Array(32).fill(0x20));
 
-			let receiptBloom = BloomFilter.merge(log1Bloom, log2Bloom);
+			const receiptBloom = BloomFilter.merge(log1Bloom, log2Bloom);
 
 			expect(
 				BloomFilter.contains(receiptBloom, new Uint8Array(20).fill(0x01)),

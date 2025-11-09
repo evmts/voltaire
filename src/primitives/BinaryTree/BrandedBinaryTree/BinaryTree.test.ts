@@ -133,7 +133,7 @@ describe("BinaryTree", () => {
 
 			const retrieved = BinaryTree.get(tree, k);
 			expect(retrieved).not.toBeNull();
-			expect(retrieved![31]).toBe(0x99);
+			expect(retrieved?.[31]).toBe(0x99);
 		});
 
 		test("inserts multiple values", () => {
@@ -169,7 +169,7 @@ describe("BinaryTree", () => {
 			const h = BinaryTree.rootHashHex(tree);
 
 			expect(h).toMatch(/^0x[0-9a-f]{64}$/);
-			expect(h).toBe("0x" + "00".repeat(32));
+			expect(h).toBe(`0x${"00".repeat(32)}`);
 		});
 
 		test("returns different hash after insert", () => {

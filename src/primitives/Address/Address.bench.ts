@@ -66,18 +66,6 @@ const pubkeyX =
 const pubkeyY =
 	0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n;
 
-console.log("=".repeat(80));
-console.log("JS vs WASM vs ethers vs viem Address Implementation Benchmark");
-console.log("=".repeat(80));
-console.log("");
-
-// =============================================================================
-// 1. Address.fromHex - Parse hex string to Address
-// =============================================================================
-
-console.log("1. Address.fromHex - Parse hex string to Address");
-console.log("-".repeat(80));
-
 bench("Address.fromHex - JS", () => {
 	JsAddress.fromHex(testAddress);
 });
@@ -95,14 +83,6 @@ bench("Address.fromHex - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 2. Address.fromBytes - Create from byte array
-// =============================================================================
-
-console.log("2. Address.fromBytes - Create from byte array");
-console.log("-".repeat(80));
 
 bench("Address.fromBytes - JS", () => {
 	JsAddress.fromBytes(testBytes);
@@ -113,14 +93,6 @@ bench("Address.fromBytes - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 3. Address.fromNumber - Create from number/bigint
-// =============================================================================
-
-console.log("3. Address.fromNumber - Create from number/bigint");
-console.log("-".repeat(80));
 
 bench("Address.fromNumber - JS", () => {
 	JsAddress.fromNumber(testNumber);
@@ -131,14 +103,6 @@ bench("Address.fromNumber - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 4. Address.fromPublicKey - Derive from secp256k1 public key
-// =============================================================================
-
-console.log("4. Address.fromPublicKey - Derive from secp256k1 public key");
-console.log("-".repeat(80));
 
 bench("Address.fromPublicKey - JS", () => {
 	JsAddress.fromPublicKey(pubkeyX, pubkeyY);
@@ -149,14 +113,6 @@ bench("Address.fromPublicKey - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 5. address.toHex - Convert to lowercase hex string
-// =============================================================================
-
-console.log("5. address.toHex - Convert to lowercase hex string");
-console.log("-".repeat(80));
 
 bench("address.toHex - JS", () => {
 	JsAddress.toHex(jsAddr1);
@@ -167,14 +123,6 @@ bench("address.toHex - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 6. address.toChecksummed - EIP-55 checksum
-// =============================================================================
-
-console.log("6. address.toChecksummed - EIP-55 checksum");
-console.log("-".repeat(80));
 
 bench("address.toChecksummed - JS", () => {
 	JsAddress.toChecksummed(jsAddr1);
@@ -193,14 +141,6 @@ bench("address.toChecksummed - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 7. address.toLowercase - Lowercase hex
-// =============================================================================
-
-console.log("7. address.toLowercase - Lowercase hex");
-console.log("-".repeat(80));
 
 bench("address.toLowercase - JS", () => {
 	JsAddress.toLowercase(jsAddr1);
@@ -211,14 +151,6 @@ bench("address.toLowercase - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 8. address.toUppercase - Uppercase hex
-// =============================================================================
-
-console.log("8. address.toUppercase - Uppercase hex");
-console.log("-".repeat(80));
 
 bench("address.toUppercase - JS", () => {
 	JsAddress.toUppercase(jsAddr1);
@@ -229,14 +161,6 @@ bench("address.toUppercase - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 9. address.toU256 - Convert to Uint256
-// =============================================================================
-
-console.log("9. address.toU256 - Convert to Uint256");
-console.log("-".repeat(80));
 
 bench("address.toU256 - JS", () => {
 	JsAddress.toU256(jsAddr1);
@@ -247,14 +171,6 @@ bench("address.toU256 - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 10. address.toAbiEncoded - ABI encoding
-// =============================================================================
-
-console.log("10. address.toAbiEncoded - ABI encoding");
-console.log("-".repeat(80));
 
 bench("address.toAbiEncoded - JS", () => {
 	JsAddress.toAbiEncoded(jsAddr1);
@@ -265,14 +181,6 @@ bench("address.toAbiEncoded - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 11. address.toShortHex - Abbreviated hex
-// =============================================================================
-
-console.log("11. address.toShortHex - Abbreviated hex");
-console.log("-".repeat(80));
 
 bench("address.toShortHex - JS", () => {
 	JsAddress.toShortHex(jsAddr1);
@@ -283,14 +191,6 @@ bench("address.toShortHex - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 12. address.isZero - Check for zero address
-// =============================================================================
-
-console.log("12. address.isZero - Check for zero address");
-console.log("-".repeat(80));
 
 bench("address.isZero - JS (zero)", () => {
 	JsAddress.isZero(jsAddrZero);
@@ -309,14 +209,6 @@ bench("address.isZero - WASM (non-zero)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 13. address.equals - Compare addresses
-// =============================================================================
-
-console.log("13. address.equals - Compare addresses");
-console.log("-".repeat(80));
 
 bench("address.equals - JS (same)", () => {
 	JsAddress.equals(jsAddr1, jsAddr1);
@@ -351,14 +243,6 @@ bench("address.equals - viem (different)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 14. Address.isValid - Validate hex format
-// =============================================================================
-
-console.log("14. Address.isValid - Validate hex format");
-console.log("-".repeat(80));
 
 bench("Address.isValid - JS (valid)", () => {
 	JsAddress.isValid(testAddress);
@@ -393,14 +277,6 @@ bench("Address.isValid - viem (invalid)", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 15. Address.isValidChecksum - Validate EIP-55
-// =============================================================================
-
-console.log("15. Address.isValidChecksum - Validate EIP-55");
-console.log("-".repeat(80));
 
 bench("Address.isValidChecksum - JS", () => {
 	JsAddress.isValidChecksum(checksummedAddress);
@@ -423,14 +299,6 @@ bench("Address.isValidChecksum - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 16. Address.compare - Lexicographic comparison
-// =============================================================================
-
-console.log("16. Address.compare - Lexicographic comparison");
-console.log("-".repeat(80));
 
 bench("Address.compare - JS", () => {
 	JsAddress.compare(jsAddr1, jsAddr2);
@@ -441,14 +309,6 @@ bench("Address.compare - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 17. Address.lessThan - Less than comparison
-// =============================================================================
-
-console.log("17. Address.lessThan - Less than comparison");
-console.log("-".repeat(80));
 
 bench("Address.lessThan - JS", () => {
 	JsAddress.lessThan(jsAddr1, jsAddr2);
@@ -459,14 +319,6 @@ bench("Address.lessThan - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 18. Address.greaterThan - Greater than comparison
-// =============================================================================
-
-console.log("18. Address.greaterThan - Greater than comparison");
-console.log("-".repeat(80));
 
 bench("Address.greaterThan - JS", () => {
 	JsAddress.greaterThan(jsAddr1, jsAddr2);
@@ -477,14 +329,6 @@ bench("Address.greaterThan - WASM", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 19. Address.calculateCreateAddress - CREATE address
-// =============================================================================
-
-console.log("19. Address.calculateCreateAddress - CREATE address");
-console.log("-".repeat(80));
 
 bench("Address.calculateCreateAddress - JS", () => {
 	JsAddress.calculateCreateAddress(jsSender, nonce);
@@ -507,14 +351,6 @@ bench("Address.calculateCreateAddress - viem", () => {
 });
 
 await run();
-console.log("");
-
-// =============================================================================
-// 20. Address.calculateCreate2Address - CREATE2 address
-// =============================================================================
-
-console.log("20. Address.calculateCreate2Address - CREATE2 address");
-console.log("-".repeat(80));
 
 // Pre-compute initCodeHash for ethers (requires keccak256 hash)
 const initCodeHash = keccak256(initCode);
@@ -541,8 +377,3 @@ bench("Address.calculateCreate2Address - viem", () => {
 });
 
 await run();
-console.log("");
-
-console.log("=".repeat(80));
-console.log("Benchmark Complete - JS vs WASM vs ethers vs viem Address");
-console.log("=".repeat(80));

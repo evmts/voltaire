@@ -5,10 +5,10 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/index.js";
-import * as Transaction from "../Transaction/index.js";
-import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
 import type { BrandedTransactionEIP1559 } from "../Transaction/EIP1559/BrandedTransactionEIP1559.js";
+import type { BrandedTransactionEIP4844 } from "../Transaction/EIP4844/BrandedTransactionEIP4844.js";
 import type { BrandedTransactionLegacy } from "../Transaction/Legacy/BrandedTransactionLegacy.js";
+import * as Transaction from "../Transaction/index.js";
 import type {
 	Any,
 	Authorization,

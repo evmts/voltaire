@@ -400,7 +400,7 @@ describe("Hash Test Vectors", () => {
 
 		it("rejects wrong length", () => {
 			expect(Hash.isValidHex("0x1234")).toBe(false);
-			expect(Hash.isValidHex("0x" + "12".repeat(33))).toBe(false);
+			expect(Hash.isValidHex(`0x${"12".repeat(33)}`)).toBe(false);
 		});
 
 		it("rejects invalid characters", () => {

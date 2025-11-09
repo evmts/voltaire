@@ -62,17 +62,17 @@ describe("isHex", () => {
 	});
 
 	it("validates long hex strings", () => {
-		const long = "0x" + "ab".repeat(1000);
+		const long = `0x${"ab".repeat(1000)}`;
 		expect(isHex(long)).toBe(true);
 	});
 
 	it("validates addresses (20 bytes)", () => {
-		const address = "0x" + "00".repeat(20);
+		const address = `0x${"00".repeat(20)}`;
 		expect(isHex(address)).toBe(true);
 	});
 
 	it("validates hashes (32 bytes)", () => {
-		const hash = "0x" + "00".repeat(32);
+		const hash = `0x${"00".repeat(32)}`;
 		expect(isHex(hash)).toBe(true);
 	});
 

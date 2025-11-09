@@ -82,7 +82,7 @@ export function decodeLog(event, data, topics) {
 		const decoded = decodeParameters(nonIndexedParams, data);
 		for (let i = 0; i < nonIndexedParams.length; i++) {
 			const param = nonIndexedParams[i];
-			if (param && param.name) {
+			if (param?.name) {
 				result[param.name] = decoded[i];
 			}
 		}

@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
-import * as Authorization from "./index.js";
 import type { BrandedAuthorization } from "./BrandedAuthorization.js";
+import * as Authorization from "./index.js";
 
 // ============================================================================
 // Test Data Helpers

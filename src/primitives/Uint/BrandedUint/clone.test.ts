@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { clone } from "./clone.js";
+import { MAX, ZERO } from "./constants.js";
 import { equals } from "./equals.js";
 import { from } from "./from.js";
-import { MAX, ZERO } from "./constants.js";
 
 describe("clone", () => {
 	it("returns same value for bigint primitive", () => {

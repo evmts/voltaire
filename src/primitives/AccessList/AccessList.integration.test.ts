@@ -6,11 +6,11 @@
 import { describe, expect, it } from "vitest";
 import type { BrandedAddress } from "../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../Hash/BrandedHash/BrandedHash.js";
-import * as AccessList from "./BrandedAccessList/index.js";
 import type {
 	BrandedAccessList as AccessListType,
 	Item,
 } from "./BrandedAccessList.js";
+import * as AccessList from "./BrandedAccessList/index.js";
 
 // Helper to create test addresses
 function createAddress(byte: number): BrandedAddress {
@@ -110,10 +110,10 @@ describe("AccessList RLP encoding integration", () => {
 		const decoded = AccessList.fromBytes(encoded);
 
 		expect(decoded.length).toBe(1);
-		expect(decoded[0]!.address).toEqual(addr1);
-		expect(decoded[0]!.storageKeys.length).toBe(2);
-		expect(decoded[0]!.storageKeys[0]).toEqual(key1);
-		expect(decoded[0]!.storageKeys[1]).toEqual(key2);
+		expect(decoded[0]?.address).toEqual(addr1);
+		expect(decoded[0]?.storageKeys.length).toBe(2);
+		expect(decoded[0]?.storageKeys[0]).toEqual(key1);
+		expect(decoded[0]?.storageKeys[1]).toEqual(key2);
 	});
 
 	it("should roundtrip encode/decode multiple addresses", () => {
@@ -144,8 +144,8 @@ describe("AccessList RLP encoding integration", () => {
 		const decoded = AccessList.fromBytes(encoded);
 
 		expect(decoded.length).toBe(1);
-		expect(decoded[0]!.address).toEqual(addr1);
-		expect(decoded[0]!.storageKeys.length).toBe(0);
+		expect(decoded[0]?.address).toEqual(addr1);
+		expect(decoded[0]?.storageKeys.length).toBe(0);
 	});
 
 	it("should maintain order during encode/decode", () => {
@@ -162,9 +162,9 @@ describe("AccessList RLP encoding integration", () => {
 		const encoded = AccessList.toBytes(list);
 		const decoded = AccessList.fromBytes(encoded);
 
-		expect(decoded[0]!.address).toEqual(addr3);
-		expect(decoded[1]!.address).toEqual(addr1);
-		expect(decoded[2]!.address).toEqual(addr2);
+		expect(decoded[0]?.address).toEqual(addr3);
+		expect(decoded[1]?.address).toEqual(addr1);
+		expect(decoded[2]?.address).toEqual(addr2);
 	});
 
 	it("should handle RLP encoding with many storage keys", () => {
@@ -179,9 +179,9 @@ describe("AccessList RLP encoding integration", () => {
 		const encoded = AccessList.toBytes(list);
 		const decoded = AccessList.fromBytes(encoded);
 
-		expect(decoded[0]!.storageKeys.length).toBe(20);
+		expect(decoded[0]?.storageKeys.length).toBe(20);
 		for (let i = 0; i < 20; i++) {
-			expect(decoded[0]!.storageKeys[i]).toEqual(keys[i]);
+			expect(decoded[0]?.storageKeys[i]).toEqual(keys[i]);
 		}
 	});
 });

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Address } from "../../Address/index.js";
-import * as TransactionLegacy from "./index.js";
-import type { BrandedTransactionLegacy } from "./BrandedTransactionLegacy.js";
 import { Type } from "../types.js";
+import type { BrandedTransactionLegacy } from "./BrandedTransactionLegacy.js";
+import * as TransactionLegacy from "./index.js";
 
 describe("TransactionLegacy.serialize", () => {
 	it("serializes basic legacy transaction", () => {

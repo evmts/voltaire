@@ -130,20 +130,6 @@ const codeWithMetadata = new Uint8Array([
 ]) as BrandedBytecode;
 
 const results: BenchmarkResult[] = [];
-
-// ============================================================================
-// Jump Destination Analysis Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("BYTECODE JUMP DESTINATION ANALYSIS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- analyzeJumpDestinations - varying sizes ---");
 results.push(
 	benchmark("analyzeJumpDestinations - small (100b)", () =>
 		analyzeJumpDestinations(smallCode),
@@ -164,18 +150,6 @@ results.push(
 		analyzeJumpDestinations(hugeCode),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- isValidJumpDest ---");
 results.push(
 	benchmark("isValidJumpDest - small", () => isValidJumpDest(smallCode, 10)),
 );
@@ -185,47 +159,10 @@ results.push(
 results.push(
 	benchmark("isValidJumpDest - large", () => isValidJumpDest(largeCode, 5000)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Validation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("BYTECODE VALIDATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- validate - varying sizes ---");
 results.push(benchmark("validate - small (100b)", () => validate(smallCode)));
 results.push(benchmark("validate - medium (1kb)", () => validate(mediumCode)));
 results.push(benchmark("validate - large (10kb)", () => validate(largeCode)));
 results.push(benchmark("validate - huge (50kb)", () => validate(hugeCode)));
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- validate - edge cases ---");
 const invalidPush = new Uint8Array([0x60]) as BrandedBytecode; // Incomplete PUSH
 results.push(
 	benchmark("validate - invalid (incomplete PUSH)", () =>
@@ -235,31 +172,6 @@ results.push(
 results.push(
 	benchmark("validate - simple pattern", () => validate(simplePush)),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Instruction Parsing Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("INSTRUCTION PARSING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- parseInstructions - varying sizes ---");
 results.push(
 	benchmark("parseInstructions - small (100b)", () =>
 		parseInstructions(smallCode),
@@ -280,18 +192,6 @@ results.push(
 		parseInstructions(hugeCode),
 	),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- parseInstructions - patterns ---");
 results.push(
 	benchmark("parseInstructions - simple PUSH", () =>
 		parseInstructions(simplePush),
@@ -302,125 +202,26 @@ results.push(
 		parseInstructions(pushWithJumpdest),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Complete Analysis Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("COMPLETE ANALYSIS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- analyze - full bytecode analysis ---");
 results.push(benchmark("analyze - small (100b)", () => analyze(smallCode)));
 results.push(benchmark("analyze - medium (1kb)", () => analyze(mediumCode)));
 results.push(benchmark("analyze - large (10kb)", () => analyze(largeCode)));
 results.push(benchmark("analyze - huge (50kb)", () => analyze(hugeCode)));
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Hex Conversion Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("HEX CONVERSION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- toHex - varying sizes ---");
 results.push(benchmark("toHex - small (100b)", () => toHex(smallCode)));
 results.push(benchmark("toHex - medium (1kb)", () => toHex(mediumCode)));
 results.push(benchmark("toHex - large (10kb)", () => toHex(largeCode)));
 
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
 const smallHex = toHex(smallCode);
 const mediumHex = toHex(mediumCode);
 const largeHex = toHex(largeCode);
-
-console.log("\n--- fromHex - varying sizes ---");
 results.push(benchmark("fromHex - small (100b)", () => fromHex(smallHex)));
 results.push(benchmark("fromHex - medium (1kb)", () => fromHex(mediumHex)));
 results.push(benchmark("fromHex - large (10kb)", () => fromHex(largeHex)));
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- hex round-trip ---");
 results.push(
 	benchmark("hex round-trip - small", () => fromHex(toHex(smallCode))),
 );
 results.push(
 	benchmark("hex round-trip - medium", () => fromHex(toHex(mediumCode))),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Formatting Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("FORMATTING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- formatInstructions (disassembly) ---");
 results.push(
 	benchmark("formatInstructions - small (100b)", () =>
 		formatInstructions(smallCode),
@@ -436,49 +237,12 @@ results.push(
 		formatInstructions(largeCode),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Metadata Operations Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("METADATA OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- hasMetadata ---");
 results.push(
 	benchmark("hasMetadata - without metadata", () => hasMetadata(mediumCode)),
 );
 results.push(
 	benchmark("hasMetadata - with metadata", () => hasMetadata(codeWithMetadata)),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- stripMetadata ---");
 results.push(
 	benchmark("stripMetadata - without metadata", () =>
 		stripMetadata(mediumCode),
@@ -490,34 +254,9 @@ results.push(
 	),
 );
 
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Comparison Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("COMPARISON BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const smallCode2 = new Uint8Array(smallCode) as BrandedBytecode;
 const mediumCode2 = new Uint8Array(mediumCode) as BrandedBytecode;
 const largeCode2 = new Uint8Array(largeCode) as BrandedBytecode;
-
-console.log("--- equals - varying sizes ---");
 results.push(
 	benchmark("equals - small (100b)", () => equals(smallCode, smallCode2)),
 );
@@ -527,59 +266,9 @@ results.push(
 results.push(
 	benchmark("equals - large (10kb)", () => equals(largeCode, largeCode2)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Opcode Utility Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("OPCODE UTILITY BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- opcode utilities ---");
 results.push(benchmark("isPush", () => isPush(0x60)));
 results.push(benchmark("getPushSize", () => getPushSize(0x7f)));
 results.push(benchmark("isTerminator", () => isTerminator(0xf3)));
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Size Operations Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("SIZE OPERATIONS BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- size and extraction ---");
 results.push(benchmark("size - small", () => size(smallCode)));
 results.push(benchmark("size - large", () => size(largeCode)));
 results.push(
@@ -589,42 +278,8 @@ results.push(
 	benchmark("extractRuntime - large", () => extractRuntime(largeCode, 100)),
 );
 
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("BENCHMARK SUMMARY");
-console.log(
-	"================================================================================\n",
-);
-
-console.log(`Total benchmarks run: ${results.length}`);
-console.log(
-	`Total test iterations: ${results.reduce((sum, r) => sum + r.iterations, 0)}`,
-);
-
 // Find fastest and slowest
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(
-	`\nFastest: ${sorted[0]?.name} (${sorted[0]?.opsPerSec.toFixed(0)} ops/sec)`,
-);
-console.log(
-	`Slowest: ${sorted[sorted.length - 1]?.name} (${sorted[sorted.length - 1]?.opsPerSec.toFixed(0)} ops/sec)`,
-);
 
 // Scaling analysis
 const smallAnalysis = results.find((r) => r.name === "analyze - small (100b)");
@@ -632,22 +287,11 @@ const mediumAnalysis = results.find((r) => r.name === "analyze - medium (1kb)");
 const largeAnalysis = results.find((r) => r.name === "analyze - large (10kb)");
 
 if (smallAnalysis && mediumAnalysis && largeAnalysis) {
-	console.log("\n--- Analysis Scaling (size vs time) ---");
-	console.log(`100b:  ${smallAnalysis.avgTimeMs.toFixed(4)} ms (baseline)`);
-	console.log(
-		`1kb:   ${mediumAnalysis.avgTimeMs.toFixed(4)} ms (${(mediumAnalysis.avgTimeMs / smallAnalysis.avgTimeMs).toFixed(2)}x)`,
-	);
-	console.log(
-		`10kb:  ${largeAnalysis.avgTimeMs.toFixed(4)} ms (${(largeAnalysis.avgTimeMs / smallAnalysis.avgTimeMs).toFixed(2)}x)`,
-	);
 }
-
-console.log("\n");
 
 // Export results
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/bytecode-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

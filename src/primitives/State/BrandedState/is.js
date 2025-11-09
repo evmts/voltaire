@@ -17,8 +17,8 @@ export function is(value) {
 	/** @type {Record<string, any>} */
 	const obj = value;
 	return (
-		obj["address"] instanceof Uint8Array &&
-		obj["address"].length === 20 &&
-		typeof obj["slot"] === "bigint"
+		obj.address instanceof Uint8Array &&
+		obj.address.length === 20 &&
+		typeof obj.slot === "bigint"
 	);
 }

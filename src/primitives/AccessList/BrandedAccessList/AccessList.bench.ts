@@ -7,24 +7,24 @@
 import type { BrandedAddress } from "../../Address/BrandedAddress/BrandedAddress.js";
 import type { BrandedHash } from "../../Hash/BrandedHash/BrandedHash.js";
 import type { Item } from "../BrandedAccessList.js";
+import { addressCount } from "./addressCount.js";
+import { assertValid } from "./assertValid.js";
+import { create } from "./create.js";
+import { deduplicate } from "./deduplicate.js";
 import { from } from "./from.js";
 import { gasCost } from "./gasCost.js";
 import { gasSavings } from "./gasSavings.js";
 import { hasSavings } from "./hasSavings.js";
 import { includesAddress } from "./includesAddress.js";
 import { includesStorageKey } from "./includesStorageKey.js";
+import { is } from "./is.js";
+import { isEmpty } from "./isEmpty.js";
+import { isItem } from "./isItem.js";
 import { keysFor } from "./keysFor.js";
-import { deduplicate } from "./deduplicate.js";
+import { merge } from "./merge.js";
+import { storageKeyCount } from "./storageKeyCount.js";
 import { withAddress } from "./withAddress.js";
 import { withStorageKey } from "./withStorageKey.js";
-import { merge } from "./merge.js";
-import { assertValid } from "./assertValid.js";
-import { isItem } from "./isItem.js";
-import { is } from "./is.js";
-import { addressCount } from "./addressCount.js";
-import { storageKeyCount } from "./storageKeyCount.js";
-import { isEmpty } from "./isEmpty.js";
-import { create } from "./create.js";
 
 // Benchmark runner
 interface BenchmarkResult {
@@ -137,82 +137,19 @@ const duplicateListArray: Item[] = [
 ];
 const duplicateList = from(duplicateListArray);
 
-// ============================================================================
-// Gas Cost Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("ACCESSLIST GAS COST BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Gas Cost Calculations ---");
 results.push(benchmark("gasCost - small list", () => gasCost(smallList)));
 results.push(benchmark("gasCost - medium list", () => gasCost(mediumList)));
 results.push(benchmark("gasCost - large list", () => gasCost(largeList)));
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Gas Savings Calculations ---");
 results.push(benchmark("gasSavings - small list", () => gasSavings(smallList)));
 results.push(
 	benchmark("gasSavings - medium list", () => gasSavings(mediumList)),
 );
 results.push(benchmark("gasSavings - large list", () => gasSavings(largeList)));
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Has Savings Check ---");
 results.push(benchmark("hasSavings - small list", () => hasSavings(smallList)));
 results.push(
 	benchmark("hasSavings - medium list", () => hasSavings(mediumList)),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Query Operation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ACCESSLIST QUERY OPERATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Address Lookup ---");
 results.push(
 	benchmark("includesAddress - small list (found)", () =>
 		includesAddress(smallList, addr1),
@@ -220,7 +157,7 @@ results.push(
 );
 results.push(
 	benchmark("includesAddress - medium list (found)", () =>
-		includesAddress(mediumList, mediumList[5]!.address),
+		includesAddress(mediumList, mediumList[5]?.address),
 	),
 );
 results.push(
@@ -228,18 +165,6 @@ results.push(
 		includesAddress(largeList, createAddress(200)),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Storage Key Lookup ---");
 results.push(
 	benchmark("includesStorageKey - found", () =>
 		includesStorageKey(smallList, addr1, key1),
@@ -250,47 +175,10 @@ results.push(
 		includesStorageKey(smallList, addr1, createStorageKey(99)),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Keys Retrieval ---");
 results.push(benchmark("keysFor - found", () => keysFor(smallList, addr1)));
 results.push(
 	benchmark("keysFor - not found", () => keysFor(smallList, createAddress(99))),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Transformation Operation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ACCESSLIST TRANSFORMATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Deduplication ---");
 results.push(
 	benchmark("deduplicate - no duplicates", () => deduplicate(smallList)),
 );
@@ -300,18 +188,6 @@ results.push(
 results.push(
 	benchmark("deduplicate - large list", () => deduplicate(largeList)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Adding Addresses ---");
 results.push(
 	benchmark("withAddress - new address", () =>
 		withAddress(smallList, createAddress(99)),
@@ -322,18 +198,6 @@ results.push(
 		withAddress(smallList, addr1),
 	),
 );
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Adding Storage Keys ---");
 results.push(
 	benchmark("withStorageKey - new key to existing address", () =>
 		withStorageKey(smallList, addr1, createStorageKey(99)),
@@ -349,18 +213,6 @@ results.push(
 		withStorageKey(smallList, createAddress(99), key1),
 	),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Merging ---");
 results.push(
 	benchmark("merge - two small lists", () => merge(smallList, smallList)),
 );
@@ -372,31 +224,6 @@ results.push(
 results.push(
 	benchmark("merge - large lists", () => merge(largeList, largeList)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Validation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ACCESSLIST VALIDATION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Validation ---");
 results.push(
 	benchmark("assertValid - small list", () => assertValid(smallList)),
 );
@@ -406,31 +233,6 @@ results.push(
 results.push(
 	benchmark("assertValid - large list", () => assertValid(largeList)),
 );
-
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Type Guard Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ACCESSLIST TYPE GUARD BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Type Guards ---");
 results.push(
 	benchmark("isItem - valid", () =>
 		isItem({ address: addr1, storageKeys: [key1] }),
@@ -439,31 +241,6 @@ results.push(
 results.push(benchmark("isItem - invalid", () => isItem({ invalid: true })));
 results.push(benchmark("is - valid", () => is(smallList)));
 results.push(benchmark("is - invalid", () => is({ invalid: true })));
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Utility Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("ACCESSLIST UTILITY BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Counting Operations ---");
 results.push(
 	benchmark("addressCount - small list", () => addressCount(smallList)),
 );
@@ -476,59 +253,16 @@ results.push(
 results.push(
 	benchmark("storageKeyCount - large list", () => storageKeyCount(largeList)),
 );
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Other Utilities ---");
 results.push(benchmark("isEmpty - empty", () => isEmpty([])));
 results.push(benchmark("isEmpty - non-empty", () => isEmpty(smallList)));
 results.push(benchmark("create", () => create()));
 
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(4)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("Benchmarks complete!");
-console.log(
-	"================================================================================",
-);
-console.log(`\nTotal benchmarks run: ${results.length}`);
-
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-console.log(
-	`\nFastest: ${sorted[0]!.name} - ${sorted[0]!.opsPerSec.toFixed(0)} ops/sec`,
-);
-console.log(
-	`Slowest: ${sorted[sorted.length - 1]!.name} - ${sorted[sorted.length - 1]!.opsPerSec.toFixed(0)} ops/sec`,
-);
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/access-list-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`\nResults saved to: ${resultsFile}\n`);
 }

@@ -1,9 +1,9 @@
-import type { BrandedError } from "./BrandedError/BrandedError.js";
 import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
-import { getSelector } from "./BrandedError/getSelector.js";
-import { getSignature } from "./BrandedError/getSignature.js";
-import { encodeParams } from "./BrandedError/encodeParams.js";
-import { decodeParams } from "./BrandedError/decodeParams.js";
+import type { BrandedError } from "./BrandedError/BrandedError.js";
+import type { decodeParams } from "./BrandedError/decodeParams.js";
+import type { encodeParams } from "./BrandedError/encodeParams.js";
+import type { getSelector } from "./BrandedError/getSelector.js";
+import type { getSignature } from "./BrandedError/getSignature.js";
 
 type AbiErrorPrototype<
 	TName extends string = string,

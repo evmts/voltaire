@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { zero } from "./zero.js";
 import { size } from "./size.js";
-import { toNumber } from "./toNumber.js";
 import { toBigInt } from "./toBigInt.js";
 import { toBoolean } from "./toBoolean.js";
+import { toNumber } from "./toNumber.js";
+import { zero } from "./zero.js";
 
 describe("zero", () => {
 	it("creates zero-filled hex of specified size", () => {
@@ -53,7 +53,7 @@ describe("zero", () => {
 	it("creates very large zero hex", () => {
 		const hex = zero(1000);
 		expect(size(hex)).toBe(1000);
-		expect(hex).toBe("0x" + "00".repeat(1000));
+		expect(hex).toBe(`0x${"00".repeat(1000)}`);
 	});
 
 	it("uses lowercase hex characters", () => {

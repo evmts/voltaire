@@ -4,20 +4,20 @@
 
 import { describe, expect, it } from "vitest";
 import {
-	create,
-	getTopic0,
-	getIndexedTopics,
-	getSignature,
-	getIndexed,
-	matchesTopics,
-	matchesAddress,
-	matchesFilter,
-	isRemoved,
-	wasRemoved,
 	clone,
 	copy,
+	create,
 	filterLogs,
+	getIndexed,
+	getIndexedTopics,
+	getSignature,
+	getTopic0,
+	isRemoved,
+	matchesAddress,
+	matchesFilter,
+	matchesTopics,
 	sortLogs,
+	wasRemoved,
 } from "./index.js";
 
 const EventLog = {
@@ -563,16 +563,16 @@ describe("EventLog.filterLogs", () => {
 	it("filters by address", () => {
 		const filtered = EventLog.filterLogs(logs, { address: addr1 });
 		expect(filtered).toHaveLength(2);
-		expect(filtered[0]!.data).toEqual(new Uint8Array([1]));
-		expect(filtered[1]!.data).toEqual(new Uint8Array([3]));
+		expect(filtered[0]?.data).toEqual(new Uint8Array([1]));
+		expect(filtered[1]?.data).toEqual(new Uint8Array([3]));
 	});
 
 	it("filters by topics", () => {
 		const filtered = EventLog.filterLogs(logs, { topics: [topic0] });
 		expect(filtered).toHaveLength(3);
-		expect(filtered[0]!.data).toEqual(new Uint8Array([1]));
-		expect(filtered[1]!.data).toEqual(new Uint8Array([2]));
-		expect(filtered[2]!.data).toEqual(new Uint8Array([4]));
+		expect(filtered[0]?.data).toEqual(new Uint8Array([1]));
+		expect(filtered[1]?.data).toEqual(new Uint8Array([2]));
+		expect(filtered[2]?.data).toEqual(new Uint8Array([4]));
 	});
 
 	it("filters by address and topics", () => {
@@ -581,7 +581,7 @@ describe("EventLog.filterLogs", () => {
 			topics: [topic0],
 		});
 		expect(filtered).toHaveLength(1);
-		expect(filtered[0]!.data).toEqual(new Uint8Array([1]));
+		expect(filtered[0]?.data).toEqual(new Uint8Array([1]));
 	});
 
 	it("filters by block range", () => {
@@ -590,8 +590,8 @@ describe("EventLog.filterLogs", () => {
 			toBlock: 102n,
 		});
 		expect(filtered).toHaveLength(2);
-		expect(filtered[0]!.blockNumber).toBe(101n);
-		expect(filtered[1]!.blockNumber).toBe(102n);
+		expect(filtered[0]?.blockNumber).toBe(101n);
+		expect(filtered[1]?.blockNumber).toBe(102n);
 	});
 
 	it("returns empty array when no matches", () => {
@@ -622,7 +622,7 @@ describe("EventLog.filter", () => {
 
 		const filtered = EventLog.filterLogs(logs, { address: addr1 });
 		expect(filtered).toHaveLength(1);
-		expect(filtered[0]!.address).toBe(addr1);
+		expect(filtered[0]?.address).toBe(addr1);
 	});
 });
 
@@ -654,9 +654,9 @@ describe("EventLog.sortLogs", () => {
 		];
 
 		const sorted = EventLog.sortLogs(logs);
-		expect(sorted[0]!.blockNumber).toBe(100n);
-		expect(sorted[1]!.blockNumber).toBe(101n);
-		expect(sorted[2]!.blockNumber).toBe(103n);
+		expect(sorted[0]?.blockNumber).toBe(100n);
+		expect(sorted[1]?.blockNumber).toBe(101n);
+		expect(sorted[2]?.blockNumber).toBe(103n);
 	});
 
 	it("sorts by log index when block numbers are equal", () => {
@@ -685,9 +685,9 @@ describe("EventLog.sortLogs", () => {
 		];
 
 		const sorted = EventLog.sortLogs(logs);
-		expect(sorted[0]!.logIndex).toBe(2);
-		expect(sorted[1]!.logIndex).toBe(5);
-		expect(sorted[2]!.logIndex).toBe(10);
+		expect(sorted[0]?.logIndex).toBe(2);
+		expect(sorted[1]?.logIndex).toBe(5);
+		expect(sorted[2]?.logIndex).toBe(10);
 	});
 
 	it("treats undefined block numbers as 0", () => {
@@ -712,9 +712,9 @@ describe("EventLog.sortLogs", () => {
 		];
 
 		const sorted = EventLog.sortLogs(logs);
-		expect(sorted[0]!.blockNumber).toBeUndefined();
-		expect(sorted[1]!.blockNumber).toBe(50n);
-		expect(sorted[2]!.blockNumber).toBe(100n);
+		expect(sorted[0]?.blockNumber).toBeUndefined();
+		expect(sorted[1]?.blockNumber).toBe(50n);
+		expect(sorted[2]?.blockNumber).toBe(100n);
 	});
 
 	it("treats undefined log indexes as 0", () => {
@@ -742,9 +742,9 @@ describe("EventLog.sortLogs", () => {
 		];
 
 		const sorted = EventLog.sortLogs(logs);
-		expect(sorted[0]!.logIndex).toBeUndefined();
-		expect(sorted[1]!.logIndex).toBe(2);
-		expect(sorted[2]!.logIndex).toBe(5);
+		expect(sorted[0]?.logIndex).toBeUndefined();
+		expect(sorted[1]?.logIndex).toBe(2);
+		expect(sorted[2]?.logIndex).toBe(5);
 	});
 
 	it("does not mutate original array", () => {
@@ -764,8 +764,8 @@ describe("EventLog.sortLogs", () => {
 		];
 
 		const sorted = EventLog.sortLogs(logs);
-		expect(logs[0]!.blockNumber).toBe(103n);
-		expect(sorted[0]!.blockNumber).toBe(100n);
+		expect(logs[0]?.blockNumber).toBe(103n);
+		expect(sorted[0]?.blockNumber).toBe(100n);
 	});
 });
 
@@ -787,8 +787,8 @@ describe("EventLog.sort", () => {
 		];
 
 		const sorted = EventLog.sortLogs(logs);
-		expect(sorted[0]!.blockNumber).toBe(100n);
-		expect(sorted[1]!.blockNumber).toBe(103n);
+		expect(sorted[0]?.blockNumber).toBe(100n);
+		expect(sorted[1]?.blockNumber).toBe(103n);
 	});
 });
 

@@ -1,5 +1,5 @@
-import type { BrandedGasLimit } from "./BrandedGasLimit.js";
 import * as Uint from "../../Uint/index.js";
+import type { BrandedGasLimit } from "./BrandedGasLimit.js";
 
 // Common gas limits
 export const SIMPLE_TRANSFER = Uint.from(21000) as BrandedGasLimit;

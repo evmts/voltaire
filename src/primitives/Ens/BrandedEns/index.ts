@@ -2,12 +2,12 @@
 export * from "./errors.js";
 export * from "./BrandedEns.js";
 
-import { from } from "./from.js";
-import { normalize as _normalize } from "./normalize.js";
 import { beautify as _beautify } from "./beautify.js";
-import { namehash as _namehash } from "./namehash.js";
-import { labelhash as _labelhash } from "./labelhash.js";
+import { from } from "./from.js";
 import { is } from "./is.js";
+import { labelhash as _labelhash } from "./labelhash.js";
+import { namehash as _namehash } from "./namehash.js";
+import { normalize as _normalize } from "./normalize.js";
 import { toString } from "./toString.js";
 
 // Internal exports

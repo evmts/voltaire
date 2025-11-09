@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { concat } from "./concat.js";
 import type { BrandedHex } from "./BrandedHex.js";
+import { concat } from "./concat.js";
 
 describe("concat", () => {
 	it("concatenates two hex strings", () => {
@@ -66,8 +66,8 @@ describe("concat", () => {
 	});
 
 	it("concatenates large hex strings", () => {
-		const hex1 = ("0x" + "ab".repeat(100)) as BrandedHex;
-		const hex2 = ("0x" + "cd".repeat(100)) as BrandedHex;
+		const hex1 = `0x${"ab".repeat(100)}` as BrandedHex;
+		const hex2 = `0x${"cd".repeat(100)}` as BrandedHex;
 		const result = concat(hex1, hex2);
 		expect(result.length).toBe(2 + 200 * 2);
 	});

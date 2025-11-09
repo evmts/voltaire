@@ -4,17 +4,17 @@
  * Measures performance of hardfork comparison, parsing, and utility operations
  */
 
-import {
-	FRONTIER,
-	BERLIN,
-	CANCUN,
-	PRAGUE,
-	LONDON,
-	SHANGHAI,
-} from "./constants.js";
 import { allIds } from "./allIds.js";
 import { allNames } from "./allNames.js";
 import { compare } from "./compare.js";
+import {
+	BERLIN,
+	CANCUN,
+	FRONTIER,
+	LONDON,
+	PRAGUE,
+	SHANGHAI,
+} from "./constants.js";
 import { equals } from "./equals.js";
 import { fromString } from "./fromString.js";
 import { gt } from "./gt.js";
@@ -106,21 +106,7 @@ const testStrings = [
 	"constantinoplefix", // alias
 ];
 
-// ============================================================================
-// Comparison Operation Benchmarks
-// ============================================================================
-
-console.log(
-	"================================================================================",
-);
-console.log("HARDFORK COMPARISON BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
 const results: BenchmarkResult[] = [];
-
-console.log("--- Basic Comparisons ---");
 results.push(
 	benchmark("isAtLeast", () => isAtLeast(testForks.recent, testForks.middle)),
 );
@@ -136,18 +122,6 @@ results.push(
 results.push(
 	benchmark("compare", () => compare(testForks.middle, testForks.recent)),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Convenience Forms ---");
 results.push(
 	benchmark("gte.call", () => gte.call(testForks.recent, testForks.middle)),
 );
@@ -165,18 +139,6 @@ results.push(
 results.push(
 	benchmark("lte.call", () => lte.call(testForks.middle, testForks.recent)),
 );
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Array Operations ---");
 const testArray = [
 	testForks.recent,
 	testForks.early,
@@ -186,31 +148,6 @@ const testArray = [
 
 results.push(benchmark("min", () => min(testArray)));
 results.push(benchmark("max", () => max(testArray)));
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// String Parsing Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("HARDFORK STRING PARSING BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- String to ID ---");
 let stringIdx = 0;
 results.push(
 	benchmark("fromString", () => {
@@ -223,75 +160,14 @@ results.push(
 	benchmark("fromString - with operator", () => fromString(">=cancun")),
 );
 results.push(benchmark("fromString - invalid", () => fromString("unknown")));
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- ID to String ---");
 results.push(benchmark("toString", () => toString(testForks.recent)));
-
-console.log(
-	results
-		.slice(-1)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Validation ---");
 results.push(benchmark("isValidName - valid", () => isValidName("cancun")));
 results.push(benchmark("isValidName - invalid", () => isValidName("unknown")));
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Feature Detection Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("HARDFORK FEATURE DETECTION BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Standard Form ---");
 results.push(benchmark("hasEIP1559", () => hasEIP1559(testForks.recent)));
 results.push(benchmark("hasEIP3855", () => hasEIP3855(testForks.recent)));
 results.push(benchmark("hasEIP4844", () => hasEIP4844(testForks.recent)));
 results.push(benchmark("hasEIP1153", () => hasEIP1153(testForks.recent)));
 results.push(benchmark("isPostMerge", () => isPostMerge(testForks.recent)));
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Convenience Form ---");
 results.push(
 	benchmark("supportsEIP1559.call", () =>
 		supportsEIP1559.call(testForks.recent),
@@ -309,74 +185,12 @@ results.push(
 	),
 );
 results.push(benchmark("isPoS.call", () => isPoS.call(testForks.recent)));
-
-console.log(
-	results
-		.slice(-5)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Utility Operation Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("HARDFORK UTILITY BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Collection Operations ---");
 results.push(benchmark("allNames", () => allNames()));
 results.push(benchmark("allIds", () => allIds()));
-
-console.log(
-	results
-		.slice(-2)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-console.log("\n--- Range Generation ---");
 results.push(benchmark("range - short", () => range(BERLIN, LONDON)));
 results.push(benchmark("range - medium", () => range(BERLIN, SHANGHAI)));
 results.push(benchmark("range - long", () => range(FRONTIER, PRAGUE)));
 results.push(benchmark("range - descending", () => range(SHANGHAI, BERLIN)));
-
-console.log(
-	results
-		.slice(-4)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Real-world Scenario Benchmarks
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("HARDFORK REAL-WORLD SCENARIO BENCHMARKS");
-console.log(
-	"================================================================================\n",
-);
-
-console.log("--- Common Patterns ---");
 results.push(
 	benchmark("parse then check EIP-1559", () => {
 		const fork = fromString("cancun");
@@ -402,64 +216,12 @@ results.push(
 	}),
 );
 
-console.log(
-	results
-		.slice(-3)
-		.map(
-			(r) =>
-				`  ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec (${r.avgTimeMs.toFixed(6)} ms/op)`,
-		)
-		.join("\n"),
-);
-
-// ============================================================================
-// Summary
-// ============================================================================
-
-console.log("\n");
-console.log(
-	"================================================================================",
-);
-console.log("SUMMARY");
-console.log(
-	"================================================================================\n",
-);
-
-console.log(`Total benchmarks run: ${results.length}\n`);
-
 // Find fastest and slowest operations
 const sorted = [...results].sort((a, b) => b.opsPerSec - a.opsPerSec);
-
-console.log("Fastest operations:");
-console.log(
-	sorted
-		.slice(0, 5)
-		.map((r, i) => `  ${i + 1}. ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec`)
-		.join("\n"),
-);
-
-console.log("\nSlowest operations:");
-console.log(
-	sorted
-		.slice(-5)
-		.reverse()
-		.map((r, i) => `  ${i + 1}. ${r.name}: ${r.opsPerSec.toFixed(0)} ops/sec`)
-		.join("\n"),
-);
-
-console.log("\nPerformance insights:");
-console.log(
-	"  - Comparison operations are extremely fast (simple integer comparisons)",
-);
-console.log("  - String parsing has minor overhead from case normalization");
-console.log("  - Feature detection is as fast as basic comparisons");
-console.log("  - Range generation scales linearly with range size");
-console.log("  - Convenience forms have minimal overhead\n");
 
 // Export results for analysis
 if (typeof Bun !== "undefined") {
 	const resultsFile =
 		"/Users/williamcory/primitives/src/primitives/hardfork-bench-results.json";
 	await Bun.write(resultsFile, JSON.stringify(results, null, 2));
-	console.log(`Results saved to: ${resultsFile}\n`);
 }

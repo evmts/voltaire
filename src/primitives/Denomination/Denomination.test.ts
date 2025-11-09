@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Wei } from "./BrandedWei/index.js";
-import { Gwei } from "./BrandedGwei/index.js";
 import { Ether } from "./BrandedEther/index.js";
+import { Gwei } from "./BrandedGwei/index.js";
+import { Wei } from "./BrandedWei/index.js";
 
 describe("Denomination Integration Tests", () => {
 	describe("Round-trip conversions", () => {

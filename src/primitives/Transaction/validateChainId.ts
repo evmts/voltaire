@@ -1,4 +1,4 @@
-import type { EIP2930, EIP1559, EIP4844, EIP7702 } from "./types.js";
+import type { EIP1559, EIP2930, EIP4844, EIP7702 } from "./types.js";
 
 /**
  * Validate chain ID is present
