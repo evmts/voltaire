@@ -152,22 +152,22 @@ console.log("\n--- Slicing Hashes ---\n");
 const fullHash = Hash.keccak256String("transfer(address,uint256)");
 
 // Get function selector (first 4 bytes)
-const selector = fullHash.slice(0, 4);
+const selector = Uint8Array.prototype.slice.call(fullHash, 0, 4);
 console.log("Function selector:", "0x" + Array.from(selector).map(b => b.toString(16).padStart(2, '0')).join(''));
 
 // Get last 4 bytes
-const suffix = fullHash.slice(-4);
+const suffix = Uint8Array.prototype.slice.call(fullHash, -4);
 console.log("Last 4 bytes:", "0x" + Array.from(suffix).map(b => b.toString(16).padStart(2, '0')).join(''));
 
 // Get middle bytes
-const middle = fullHash.slice(8, 24);
+const middle = Uint8Array.prototype.slice.call(fullHash, 8, 24);
 console.log("Middle bytes (8-24):", `Uint8Array(${middle.length})`);
 
 // Slice ranges
 const ranges = [
-  { name: "First 8 bytes", slice: fullHash.slice(0, 8) },
-  { name: "Bytes 8-16", slice: fullHash.slice(8, 16) },
-  { name: "Last 8 bytes", slice: fullHash.slice(-8) },
+  { name: "First 8 bytes", slice: Uint8Array.prototype.slice.call(fullHash, 0, 8) },
+  { name: "Bytes 8-16", slice: Uint8Array.prototype.slice.call(fullHash, 8, 16) },
+  { name: "Last 8 bytes", slice: Uint8Array.prototype.slice.call(fullHash, -8) },
 ];
 
 console.log("\nSlice examples:");
@@ -249,7 +249,7 @@ const base64 = Buffer.from(dataHash).toString('base64');
 console.log("Base64:", base64);
 
 // Decimal bytes
-const decimalBytes = Array.from(dataHash.slice(0, 8));
+const decimalBytes = Array.from(Uint8Array.prototype.slice.call(dataHash, 0, 8));
 console.log("First 8 bytes (decimal):", decimalBytes);
 
 // ============================================================

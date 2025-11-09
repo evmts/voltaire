@@ -21,7 +21,7 @@ console.log("--- Computing Function Selectors ---\n");
 // Function selector = first 4 bytes of keccak256(signature)
 function getFunctionSelector(signature: string): Uint8Array {
   const hash = Hash.keccak256String(signature);
-  return hash.slice(0, 4);
+  return Uint8Array.prototype.slice.call(hash, 0, 4);
 }
 
 function selectorToHex(selector: Uint8Array): string {
