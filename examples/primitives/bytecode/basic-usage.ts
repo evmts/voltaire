@@ -9,6 +9,7 @@
  */
 
 import { Bytecode } from "../../../src/primitives/Bytecode/index.js";
+import { Hash } from "../../../src/primitives/Hash/index.js";
 
 console.log("\n=== Basic Bytecode Usage ===\n");
 
