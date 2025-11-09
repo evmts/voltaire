@@ -70,7 +70,7 @@ export namespace Eip712Wasm {
 				EIP712Domain: [],
 			};
 
-			const domainTypes = types["EIP712Domain"];
+			const domainTypes = types.EIP712Domain;
 			if (!domainTypes) throw new Error("EIP712Domain type missing");
 
 			const mutableDomain = domainTypes as TypeProperty[];

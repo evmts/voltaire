@@ -1,6 +1,6 @@
+import type { BrandedAddress as BrandedAddressType } from "./BrandedAddress/BrandedAddress.js";
 import { InvalidAddressLengthError } from "./BrandedAddress/errors.js";
 import * as BrandedAddress from "./BrandedAddress/index.js";
-import type { BrandedAddress as BrandedAddressType } from "./BrandedAddress/BrandedAddress.js";
 import {
 	setFromBase64Polyfill,
 	setFromHexPolyfill,
@@ -15,14 +15,18 @@ export * from "./BrandedAddress/constants.js";
 /**
  * Factory function for creating Address instances
  */
-export function Address(value: number | bigint | string | Uint8Array): BrandedAddressType {
+export function Address(
+	value: number | bigint | string | Uint8Array,
+): BrandedAddressType {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 }
 
 // Static constructors
-Address.from = (value: number | bigint | string | Uint8Array): BrandedAddressType => {
+Address.from = (
+	value: number | bigint | string | Uint8Array,
+): BrandedAddressType => {
 	const result = BrandedAddress.from(value);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
@@ -116,14 +120,18 @@ Address.compare = BrandedAddress.compare;
 Address.lessThan = BrandedAddress.lessThan;
 Address.greaterThan = BrandedAddress.greaterThan;
 
-Address.sortAddresses = (addresses: BrandedAddressType[]): BrandedAddressType[] => {
+Address.sortAddresses = (
+	addresses: BrandedAddressType[],
+): BrandedAddressType[] => {
 	return BrandedAddress.sortAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
 		return addr;
 	});
 };
 
-Address.deduplicateAddresses = (addresses: BrandedAddressType[]): BrandedAddressType[] => {
+Address.deduplicateAddresses = (
+	addresses: BrandedAddressType[],
+): BrandedAddressType[] => {
 	return BrandedAddress.deduplicateAddresses(addresses).map((addr) => {
 		Object.setPrototypeOf(addr, Address.prototype);
 		return addr;
@@ -136,13 +144,20 @@ Address.clone = (address: BrandedAddressType): BrandedAddressType => {
 	return result;
 };
 
-Address.calculateCreateAddress = (address: BrandedAddressType, nonce: bigint): BrandedAddressType => {
+Address.calculateCreateAddress = (
+	address: BrandedAddressType,
+	nonce: bigint,
+): BrandedAddressType => {
 	const result = BrandedAddress.calculateCreateAddress(address, nonce);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
 
-Address.calculateCreate2Address = (address: BrandedAddressType, salt: Uint8Array, initCode: Uint8Array): BrandedAddressType => {
+Address.calculateCreate2Address = (
+	address: BrandedAddressType,
+	salt: Uint8Array,
+	initCode: Uint8Array,
+): BrandedAddressType => {
 	const result = BrandedAddress.calculateCreate2Address(
 		address,
 		salt,
@@ -207,13 +222,25 @@ Address.prototype.clone = function (): BrandedAddressType {
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
-Address.prototype.calculateCreateAddress = function (nonce: bigint): BrandedAddressType {
-	const result = BrandedAddress.calculateCreateAddress(this as BrandedAddressType, nonce);
+Address.prototype.calculateCreateAddress = function (
+	nonce: bigint,
+): BrandedAddressType {
+	const result = BrandedAddress.calculateCreateAddress(
+		this as BrandedAddressType,
+		nonce,
+	);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };
-Address.prototype.calculateCreate2Address = function (salt: Uint8Array, initCode: Uint8Array): BrandedAddressType {
-	const result = BrandedAddress.calculateCreate2Address(this as BrandedAddressType, salt, initCode);
+Address.prototype.calculateCreate2Address = function (
+	salt: Uint8Array,
+	initCode: Uint8Array,
+): BrandedAddressType {
+	const result = BrandedAddress.calculateCreate2Address(
+		this as BrandedAddressType,
+		salt,
+		initCode,
+	);
 	Object.setPrototypeOf(result, Address.prototype);
 	return result;
 };

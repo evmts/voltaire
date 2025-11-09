@@ -16,9 +16,9 @@ export function is(value) {
 	if (typeof value !== "object" || value === null) return false;
 	return (
 		"address" in value &&
-		value["address"] instanceof Uint8Array &&
-		value["address"].length === 20 &&
+		value.address instanceof Uint8Array &&
+		value.address.length === 20 &&
 		"slot" in value &&
-		typeof value["slot"] === "bigint"
+		typeof value.slot === "bigint"
 	);
 }

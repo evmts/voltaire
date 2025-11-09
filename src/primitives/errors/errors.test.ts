@@ -295,7 +295,7 @@ describe("Usage examples", () => {
 				expect(e.code).toBe("INVALID_ADDRESS");
 				expect(e.value).toBe("0x123");
 				expect(e.expected).toBe("0x-prefixed 20 bytes");
-				expect(e.context?.["length"]).toBe(3);
+				expect(e.context?.length).toBe(3);
 			}
 		}
 	});
