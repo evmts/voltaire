@@ -127,6 +127,7 @@
         {
           "group": "BinaryTree",
           "pages": [
+            "primitives/binarytree/fundamentals",
             "primitives/binarytree/index",
             "primitives/binarytree/branded-binarytree",
             "primitives/binarytree/constructors",
@@ -207,6 +208,7 @@
           "group": "ENS",
           "pages": [
             "primitives/ens/index",
+            "primitives/ens/fundamentals",
             "primitives/ens/branded-ens",
             "primitives/ens/encoding",
             "primitives/ens/normalization",
@@ -265,6 +267,7 @@
           "group": "Hash",
           "pages": [
             "primitives/hash/index",
+            "primitives/hash/fundamentals",
             "primitives/hash/branded-hash",
             "primitives/hash/constructors",
             "primitives/hash/conversions",
@@ -280,6 +283,7 @@
           "group": "Hex",
           "pages": [
             "primitives/hex/index",
+            "primitives/hex/fundamentals",
             "primitives/hex/branded-hex",
             "primitives/hex/constructors",
             "primitives/hex/conversions",
@@ -294,6 +298,7 @@
           "group": "Opcode",
           "pages": [
             "primitives/opcode/index",
+            "primitives/opcode/fundamentals",
             "primitives/opcode/branded-opcode",
             "primitives/opcode/constructors",
             "primitives/opcode/reference-guide",
@@ -324,6 +329,7 @@
           "group": "Signature",
           "pages": [
             "primitives/signature/index",
+            "primitives/signature/fundamentals",
             "primitives/signature/branded-signature",
             "primitives/signature/constructors",
             "primitives/signature/conversions",
@@ -357,6 +363,7 @@
           "group": "State",
           "pages": [
             "primitives/state/index",
+            "primitives/state/fundamentals",
             "primitives/state/branded-state",
             "primitives/state/constructors",
             "primitives/state/conversions",
@@ -605,6 +612,12 @@
     "prompt": "Search Voltaire docs..."
   },
   "contextual": {
-    "options": ["copy", "claude", "chatgpt", "cursor", "mcp"]
+    "options": [
+      "copy",
+      "claude",
+      "chatgpt",
+      "cursor",
+      "mcp"
+    ]
   }
 }

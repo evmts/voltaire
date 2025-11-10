@@ -1,0 +1,352 @@
+---
+title: Fundamentals
+description: Learn ENS structure, normalization, and name resolution
+---
+
+ENS (Ethereum Name Service) is the decentralized naming system for Ethereum. This guide teaches ENS fundamentals using Voltaire.
+
+## What is ENS?
+
+ENS provides human-readable names for Ethereum addresses, content hashes, and other resources. Instead of `0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2`, use `vitalik.eth`.
+
+ENS operates on-chain via smart contracts - no centralized DNS servers. Names are NFTs (ERC-721) that can be owned, transferred, and renewed.
+
+## Why ENS Exists
+
+**Addresses are hostile to humans:**
+- 42 hex characters are error-prone
+- No way to verify correctness by inspection
+- Difficult to share verbally or remember
+
+**Names solve this:**
+- `alice.eth` → `0x1234...`
+- `token.uniswap.eth` → Contract address
+- `dao.eth` → IPFS content hash
+
+## Name Structure
+
+ENS names are hierarchical labels separated by dots, read right-to-left:
+
+```
+vitalik.eth
+└─┬──┘ └┬┘
+  │     └─ TLD (Top-Level Domain)
+  └─ Label (owned by user)
+
+wallet.vitalik.eth
+└──┬──┘ └─┬──┘ └┬┘
+   │      │     └─ TLD
+   │      └─ Parent label
+   └─ Subdomain
+```
+
+### Labels
+- Separated by `.` (U+002E FULL STOP)
+- Can contain letters, numbers, emoji, non-Latin scripts
+- Maximum 255 characters per label
+- Must be normalized before use (see below)
+
+### Hierarchy
+- `.eth` - Primary ENS TLD (controlled by ENS DAO)
+- `name.eth` - Second-level domain (what users register)
+- `subdomain.name.eth` - Unlimited subdomains (owner controls)
+
+## Normalization
+
+**Critical:** ENS names must be normalized to prevent homograph attacks and ensure canonical representation.
+
+<Tabs>
+<Tab title="Why Normalize">
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+// Different Unicode, same appearance
+const name1 = "аpple.eth";  // Cyrillic 'а' (U+0430)
+const name2 = "apple.eth";  // Latin 'a' (U+0061)
+
+// Without normalization - UNSAFE
+console.log(name1 === name2);  // false ❌
+
+// With normalization - SAFE
+console.log(Ens.normalize(name1)); // Error: mixed scripts
+console.log(Ens.normalize(name2)); // "apple.eth"
+```
+</Tab>
+<Tab title="ENSIP-15">
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+// Normalization rules (ENSIP-15):
+// 1. Lowercase (except emoji)
+// 2. Unicode NFC (canonical composition)
+// 3. UTS-46 processing
+// 4. Disallow mixed scripts (Latin + Cyrillic)
+// 5. Remove confusables
+
+const normalized = Ens.normalize("Nick.ETH");
+console.log(normalized); // "nick.eth"
+
+// Invalid names throw
+try {
+  Ens.normalize("nick․eth");  // U+2024 (one dot leader, not period)
+} catch (e) {
+  console.log("Invalid character");
+}
+```
+</Tab>
+</Tabs>
+
+### Normalization Process
+
+1. **Lowercase** - Convert ASCII uppercase to lowercase (`A-Z` → `a-z`)
+2. **Unicode NFC** - Normalize to composed form (`é` not `e` + `´`)
+3. **UTS-46 Processing** - Map/disallow characters per Unicode standard
+4. **Script Validation** - Reject mixed scripts (e.g., Latin + Cyrillic)
+5. **Confusable Detection** - Reject characters that look identical
+
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+// Case normalization
+Ens.normalize("ALICE.eth");        // "alice.eth"
+Ens.normalize("Alice.ETH");        // "alice.eth"
+
+// Unicode normalization
+Ens.normalize("café.eth");         // "café.eth" (NFC composed)
+
+// Emoji preservation
+Ens.normalize("💩.eth");           // "💩.eth" (emoji unchanged)
+
+// Script mixing (rejected)
+Ens.normalize("алісе.eth");        // Error: Cyrillic not allowed in .eth
+
+// Confusables (rejected)
+Ens.normalize("nic‍k.eth");        // Error: zero-width joiner
+```
+
+## Name Resolution
+
+ENS resolution is a multi-step process from human-readable name to on-chain data:
+
+### 1. Normalize Name
+
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+const input = "Vitalik.ETH";
+const normalized = Ens.normalize(input);
+// "vitalik.eth"
+```
+
+### 2. Compute Namehash
+
+Namehash converts names to deterministic 32-byte identifiers:
+
+```typescript
+import { Ens, Hash } from '@tevm/voltaire';
+
+const name = "vitalik.eth";
+const node = Ens.namehash(name);
+// Hash representing the name in ENS registry
+console.log(Hash.toHex(node));
+// "0xee6c4522aab0003e8d14cd40a6af439055fd2577951148c14b6cea9a53475835"
+```
+
+**Namehash Algorithm:**
+```
+namehash('') = 0x0000...0000
+namehash(label + '.' + domain) = keccak256(namehash(domain) + keccak256(label))
+
+Example: namehash('vitalik.eth')
+1. namehash('') = 0x00...00
+2. namehash('eth') = keccak256(0x00...00 + keccak256('eth'))
+3. namehash('vitalik.eth') = keccak256(namehash('eth') + keccak256('vitalik'))
+```
+
+### 3. Lookup Resolver
+
+Query ENS registry for resolver contract address:
+
+```typescript
+// Pseudo-code (requires web3 provider)
+const registry = new ENSRegistry(registryAddress);
+const resolverAddress = await registry.resolver(node);
+```
+
+### 4. Query Records
+
+Call resolver contract for specific data:
+
+```typescript
+// Pseudo-code
+const resolver = new Resolver(resolverAddress);
+const address = await resolver.addr(node);  // Ethereum address
+const contentHash = await resolver.contenthash(node);  // IPFS/IPNS
+const avatar = await resolver.text(node, "avatar");  // Avatar URL
+```
+
+## Complete Example
+
+```typescript
+import { Ens, Hash, Keccak256 } from '@tevm/voltaire';
+
+// Step 1: Normalize user input
+const userInput = "Alice.ETH";
+const normalized = Ens.normalize(userInput);
+console.log(normalized); // "alice.eth"
+
+// Step 2: Compute namehash for on-chain lookup
+const node = Ens.namehash(normalized);
+console.log(Hash.toHex(node));
+// "0x787192fc5378cc32aa956ddfdedbf26b24e8d78e40109add0eea2c1a012c3dec"
+
+// Step 3: Manual namehash verification
+// namehash('alice.eth') = keccak256(namehash('eth') + keccak256('alice'))
+const ethNode = Ens.namehash("eth");
+const aliceLabel = Keccak256.hash(new TextEncoder().encode("alice"));
+const computed = Keccak256.hash(new Uint8Array([...ethNode, ...aliceLabel]));
+console.log(Hash.toHex(computed) === Hash.toHex(node)); // true
+
+// This node is used to query ENS registry and resolver contracts
+```
+
+## Common Use Cases
+
+### Wallet Addresses
+
+Most common ENS usage - map names to Ethereum addresses:
+
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+const name = Ens.normalize("vitalik.eth");
+const node = Ens.namehash(name);
+
+// On-chain: resolver.addr(node) returns address
+// Result: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+```
+
+### Content Hashes
+
+Point names to IPFS content:
+
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+const name = Ens.normalize("vitalik.eth");
+const node = Ens.namehash(name);
+
+// On-chain: resolver.contenthash(node) returns IPFS/IPNS hash
+// Use case: Decentralized websites, DAOs, documentation
+```
+
+### Text Records
+
+Store arbitrary key-value data:
+
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+const name = Ens.normalize("vitalik.eth");
+const node = Ens.namehash(name);
+
+// Common text records:
+// - "avatar" → Profile picture URL
+// - "description" → Bio
+// - "url" → Website
+// - "com.twitter" → Twitter handle
+// - "com.github" → GitHub username
+```
+
+### Reverse Resolution
+
+Resolve addresses back to primary ENS name:
+
+```typescript
+import { Ens, Address } from '@tevm/voltaire';
+
+const addr = Address.from("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045");
+
+// Format: <address>.addr.reverse
+const reverseNode = Ens.namehash(
+  Address.toHex(addr).slice(2).toLowerCase() + ".addr.reverse"
+);
+
+// On-chain: resolver.name(reverseNode) returns "vitalik.eth"
+```
+
+## Security
+
+### Homograph Attacks
+
+**Problem:** Visually identical characters from different scripts
+
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+// These look identical but are different:
+const latin = "apple.eth";       // Latin 'a' (U+0061)
+const cyrillic = "аpple.eth";    // Cyrillic 'а' (U+0430)
+
+// Normalization prevents this:
+Ens.normalize(latin);    // "apple.eth" ✓
+Ens.normalize(cyrillic); // Error: mixed scripts ✓
+```
+
+### Confusable Characters
+
+**Problem:** Characters that look similar (I vs l vs 1)
+
+```typescript
+import { Ens } from '@tevm/voltaire';
+
+// Zero-width joiners, invisible characters
+const normal = "nick.eth";
+const sneaky = "nic‍k.eth";  // Contains U+200D (zero-width joiner)
+
+Ens.normalize(normal);  // "nick.eth" ✓
+Ens.normalize(sneaky);  // Error: invalid character ✓
+```
+
+### Best Practices
+
+1. **Always normalize before use**
+   ```typescript
+   const safe = Ens.normalize(userInput);
+   ```
+
+2. **Display normalized form to users**
+   ```typescript
+   // Show user what they're actually signing
+   console.log(`Resolving: ${Ens.normalize(input)}`);
+   ```
+
+3. **Validate on both client and server**
+   ```typescript
+   // Never trust client-side validation alone
+   if (!Ens.isValid(input)) {
+     throw new Error("Invalid ENS name");
+   }
+   ```
+
+4. **Use beautify for display, normalize for logic**
+   ```typescript
+   const display = Ens.beautify(input);    // "💩.eth" (preserves emoji)
+   const canonical = Ens.normalize(input); // "💩.eth" (validated)
+   ```
+
+## Resources
+
+- **[ENS Documentation](https://docs.ens.domains/)** - Official ENS docs
+- **[ENSIP-1](https://docs.ens.domains/ens-improvement-proposals/ensip-1-ens)** - ENS specification
+- **[ENSIP-10](https://docs.ens.domains/ens-improvement-proposals/ensip-10-wildcard-resolution)** - Wildcard resolution
+- **[ENSIP-15](https://docs.ens.domains/ens-improvement-proposals/ensip-15-ens-name-normalization)** - Name normalization standard
+- **[UTS-46](https://unicode.org/reports/tr46/)** - Unicode IDNA compatibility processing
+- **[ENS App](https://app.ens.domains/)** - Register and manage ENS names
+
+## Next Steps
+
+- [Overview](/primitives/ens) - Type definition and API reference
+- [normalize()](/primitives/ens/normalization) - Name normalization details
+- [Security](/primitives/ens/security) - Homograph attack prevention
+- [ENSIP Standards](/primitives/ens/ensip-standards) - ENS improvement proposals
