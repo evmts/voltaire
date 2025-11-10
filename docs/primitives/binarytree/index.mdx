@@ -7,6 +7,10 @@ description: Binary State Tree implementation for Ethereum state (EIP-7864)
 
 Binary State Tree implementation following EIP-7864 for unified Ethereum state representation.
 
+<Tip title="New to binary merkle trees?">
+Start with [Fundamentals](/primitives/binarytree/fundamentals) to learn tree construction, merkle proofs, SSZ, and EIP-7864 Binary State Trees.
+</Tip>
+
 ## Overview
 
 [Branded](/concepts/branded-types) binary tree data structure with four node types (Internal, Stem, Leaf, Empty). Designed for Ethereum state trees with 32-byte keys split into 31-byte stems and 1-byte subindices. Uses BLAKE3 hashing.
@@ -109,39 +113,9 @@ Source: [BrandedBinaryTree.ts:37-42](https://github.com/evmts/voltaire/blob/main
 </Tab>
 </Tabs>
 
-## Tree Structure Visualization
+## Tree Structure
 
-```
-                    Root (Internal Node)
-                    /                  \
-              Internal                 Internal
-              /      \                /      \
-            Stem     Stem           Stem     Empty
-           (vals)   (vals)         (vals)
-```
-
-Each **Internal Node** branches left (bit 0) or right (bit 1) based on stem bits.
-**Stem Nodes** at leaves store 256 possible values (some null).
-**Empty Nodes** represent unused branches (hash = all zeros).
-
-### Example: Three Accounts
-
-```
-addr1 = 0x00..01  →  key1 stem=[00..01... + 31 bytes]
-addr2 = 0xFF..02  →  key2 stem=[FF..02... + 31 bytes]
-addr3 = 0x00..03  →  key3 stem=[00..03... + 31 bytes]
-
-                           Root (Internal)
-                             bit 0
-                          /          \
-               bit 1=0 (left)       bit 1=1 (right)
-                 /                      \
-           Internal (bit 7)           Stem[FF..02]
-            /          \                  |
-       Stem[00..01]  Stem[00..03]      val[0], val[1]...
-           |            |
-        val[0]...    val[0]...
-```
+Internal nodes branch left/right based on stem bits. Stem nodes at leaves store up to 256 values. Empty nodes represent unused branches (hash = zero bytes).
 
 ## Node Types
 
@@ -234,100 +208,9 @@ Common patterns for EIP-7864 Binary State Tree implementation.
 
     [View usage patterns →](/primitives/binarytree/usage-patterns)
 
-<Tip title="What is Binary State Tree?">
-Binary State Tree (EIP-7864) is a unified tree structure for Ethereum state. It uses 32-byte keys split into 31-byte stems (tree path) and 1-byte subindices (value selector). Each stem can store up to 256 values, enabling efficient storage of account data, storage slots, and code.
-</Tip>
-
 ## Key Concepts
 
-### 32-Byte Keys
-
-Keys are 32 bytes split into:
-- **Stem** (31 bytes): Defines tree path through internal nodes
-- **Subindex** (1 byte): Selects one of 256 values in stem node
-
-```typescript
-const key = new Uint8Array(32)
-const { stem, idx } = BinaryTree.splitKey(key)
-// stem.length === 31
-// idx is 0-255
-```
-
-### Visual: Key Structure
-
-```
-32-byte key layout:
-┌─────────────────────────────────────────┬────┐
-│          31-byte Stem                   │ Idx│
-│  (tree navigation path)                 │ (0-│
-│                                         │255)│
-├──┬──┬──┬──┬───────────┬──┬──┬──┐        │    │
-│B0│B1│B2│..│Byte 15... │..|B29│B30│      │B31 │
-└──┴──┴──┴──┴───────────┴──┴──┴──┘        └────┘
- 248 bits for tree navigation   selects value in stem node
-```
-
-### Ethereum Address Mapping
-
-Ethereum addresses (20 bytes) convert to 32-byte keys by prepending 12 zero bytes:
-
-```typescript
-const address = new Uint8Array(20) // Ethereum address
-const key = BinaryTree.addressToKey(address)
-// key = [0,0,0,0,0,0,0,0,0,0,0,0, ...address bytes]
-```
-
-### Tree Traversal
-
-Internal nodes branch left or right based on stem bits:
-
-```typescript
-const stem = new Uint8Array(31)
-const bit = BinaryTree.getStemBit(stem, depth)
-// bit is 0 (left) or 1 (right)
-```
-
-Tree depth determines which bit position to check (0-247 bits across 31 bytes).
-
-### BLAKE3 Hashing
-
-All node hashing uses BLAKE3 (subject to change in final EIP-7864 spec):
-
-```typescript
-// Empty node hash
-const emptyHash = new Uint8Array(32) // All zeros
-
-// Internal node hash
-const parentHash = BinaryTree.hashInternal(leftHash, rightHash)
-
-// Stem node hash
-const stemHash = BinaryTree.hashStem(stemNode)
-```
-
-## Immutable Operations
-
-All tree operations are immutable, returning new tree instances:
-
-```typescript
-const tree1 = BinaryTree.init()
-
-// Insert returns new tree
-const tree2 = BinaryTree.insert(tree1, key1, value1)
-const tree3 = BinaryTree.insert(tree2, key2, value2)
-
-// Original unchanged
-console.log(tree1.root.type) // Still 'empty'
-```
-
-## EIP-7864 Compliance
-
-Implementation follows [EIP-7864](https://eips.ethereum.org/EIPS/eip-7864) Binary State Tree specification:
-
-- 32-byte keys (31-byte stem + 1-byte subindex)
-- Four node types (Empty, Internal, Stem, Leaf)
-- BLAKE3 hashing (current draft, TBD in final spec)
-- Efficient storage for account data at index 0
-- Support for 256 values per stem
+Keys are 32 bytes: 31-byte stem (tree path) + 1-byte subindex (value selector). Each stem stores up to 256 values. Addresses convert to keys by prepending 12 zero bytes. All operations are immutable. See [Fundamentals](/primitives/binarytree/fundamentals) for details.
 
 ## Related Types
 

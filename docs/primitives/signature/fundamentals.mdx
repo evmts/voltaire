@@ -1,0 +1,411 @@
+---
+title: Fundamentals
+description: Learn ECDSA signatures, secp256k1 curve, and cryptographic verification
+---
+
+ECDSA signatures provide cryptographic proof that a message was authorized by the holder of a specific private key. This guide teaches signature fundamentals using Voltaire.
+
+## What are ECDSA Signatures?
+
+ECDSA (Elliptic Curve Digital Signature Algorithm) is a cryptographic signature scheme that proves message authenticity without revealing the private key. Ethereum uses ECDSA for transaction authorization.
+
+**Key properties:**
+- **Unforgeable** - Only the private key holder can create valid signatures
+- **Non-repudiable** - Signer cannot deny creating a valid signature
+- **Verifiable** - Anyone can verify signature authenticity with the public key
+- **Non-transferable** - Signature cannot be reused for different messages
+
+## The secp256k1 Curve
+
+Ethereum (like Bitcoin) uses the secp256k1 elliptic curve. This curve is defined by:
+
+```
+y² = x³ + 7 (mod p)
+```
+
+Where `p` is a large prime number (2^256 - 2^32 - 977).
+
+**Parameters:**
+- **Private key** - 32-byte random number (1 to n-1)
+- **Public key** - 64-byte uncompressed point (x, y) on the curve
+- **Curve order (n)** - Maximum valid scalar value
+
+```typescript
+import { Secp256k1 } from '@tevm/voltaire/crypto';
+
+// Private key (32 bytes of entropy)
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+
+// Derive public key from private key
+const publicKey = Secp256k1.getPublicKey(privateKey);
+console.log(publicKey.length); // 64 bytes (uncompressed x, y coordinates)
+
+// Derive Ethereum address from public key
+const address = Secp256k1.publicKeyToAddress(publicKey);
+```
+
+## Signature Components
+
+An ECDSA signature consists of three components: `(r, s, v)`.
+
+### r and s (Signature Values)
+
+- **r** - X-coordinate of a random point on the curve (32 bytes)
+- **s** - Signature proof value (32 bytes)
+
+Both are derived during the signing process using the private key and message hash.
+
+### v (Recovery ID)
+
+- **v** - Recovery identifier (1 byte, typically 27 or 28)
+- Enables public key recovery without providing the full public key
+- Ethereum standard: 27 for even y-coordinate, 28 for odd y-coordinate
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+
+// Signature components
+const sig = Signature.fromSecp256k1(
+  rBytes,  // 32 bytes
+  sBytes,  // 32 bytes
+  27       // v value (recovery ID)
+);
+
+// Extract components
+const r = Signature.getR(sig);  // 32-byte r value
+const s = Signature.getS(sig);  // 32-byte s value
+const v = Signature.getV(sig);  // 27 or 28
+```
+
+## Signing Process
+
+Signing creates cryptographic proof that you authorized a message:
+
+```typescript
+import { Hash, Signature } from '@tevm/voltaire';
+import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+
+// 1. Prepare message (hash it first)
+const message = new TextEncoder().encode("Transfer 10 ETH");
+const messageHash = Hash.from(keccak256(message));
+
+// 2. Sign with private key
+const privateKey = new Uint8Array(32); // Your private key
+crypto.getRandomValues(privateKey); // For demo only - use secure key management
+
+const sig = Secp256k1.sign(messageHash, privateKey);
+
+console.log(Signature.getAlgorithm(sig)); // "secp256k1"
+console.log(Signature.getV(sig));         // 27 or 28
+```
+
+### Signing Algorithm Steps
+
+1. **Hash the message** - Use keccak256 to produce 32-byte digest
+2. **Generate random nonce (k)** - Cryptographically random per signature
+3. **Calculate curve point** - R = k × G (where G is generator point)
+4. **Extract r** - r = R.x mod n (x-coordinate of R)
+5. **Calculate s** - s = k⁻¹ × (hash + r × privateKey) mod n
+6. **Determine v** - Recovery ID based on R.y parity
+
+## Verification Process
+
+Verification proves a signature was created by the holder of a specific private key:
+
+```typescript
+import { Hash, Address, Signature } from '@tevm/voltaire';
+import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+
+// Message and signature (received from signer)
+const message = new TextEncoder().encode("Transfer 10 ETH");
+const messageHash = Hash.from(keccak256(message));
+const sig = Signature.fromSecp256k1(rBytes, sBytes, 27);
+
+// Expected signer address
+const expectedSigner = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+
+// Recover the actual signer address
+const recoveredAddress = Secp256k1.recoverAddress(sig, messageHash);
+
+// Verify signature authenticity
+if (Address.equals(recoveredAddress, expectedSigner)) {
+  console.log("Signature valid - authorized by expected signer");
+} else {
+  console.log("Signature invalid - unauthorized");
+}
+```
+
+### Verification Algorithm Steps
+
+1. **Recover public key** - Use (r, s, v) and message hash
+2. **Derive address** - Hash public key and take last 20 bytes
+3. **Compare addresses** - Check if recovered address matches expected signer
+
+## Complete Example: Sign and Verify
+
+Here's a complete workflow for signing a message and verifying the signature:
+
+```typescript
+import { Hash, Address, Signature } from '@tevm/voltaire';
+import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+
+// === SIGNING (Sender Side) ===
+
+// 1. Prepare private key (in practice, load from secure storage)
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey); // Demo only
+
+// 2. Derive public information
+const publicKey = Secp256k1.getPublicKey(privateKey);
+const senderAddress = Secp256k1.publicKeyToAddress(publicKey);
+
+// 3. Create message hash
+const message = new TextEncoder().encode("Approve 100 USDC transfer");
+const messageHash = Hash.from(keccak256(message));
+
+// 4. Sign the message
+const sig = Secp256k1.sign(messageHash, privateKey);
+
+console.log("Sender:", Address.toString(senderAddress));
+console.log("Signature r:", Signature.getR(sig));
+console.log("Signature s:", Signature.getS(sig));
+console.log("Signature v:", Signature.getV(sig));
+
+// === VERIFICATION (Receiver Side) ===
+
+// 5. Recover signer address from signature
+const recoveredAddress = Secp256k1.recoverAddress(sig, messageHash);
+
+// 6. Verify signature matches expected signer
+const isValid = Address.equals(recoveredAddress, senderAddress);
+
+console.log("Recovered:", Address.toString(recoveredAddress));
+console.log("Valid:", isValid); // true
+
+// 7. Alternative: Verify with public key directly
+const isValidWithPubKey = Secp256k1.verify(sig, messageHash, publicKey);
+console.log("Valid (with pubkey):", isValidWithPubKey); // true
+```
+
+## EIP-2098 Compact Signatures
+
+[EIP-2098](https://eips.ethereum.org/EIPS/eip-2098) defines a compact 64-byte signature format by embedding the recovery ID into the `s` value's highest bit.
+
+**Standard format:** 65 bytes (r: 32, s: 32, v: 1)
+**EIP-2098 format:** 64 bytes (r: 32, s with embedded v: 32)
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+
+// Standard 65-byte signature
+const standardSig = Signature.fromSecp256k1(rBytes, sBytes, 27);
+
+// Convert to compact 64-byte format (EIP-2098)
+const compactBytes = Signature.toCompact(standardSig); // 64 bytes
+console.log(compactBytes.length); // 64
+
+// Parse compact signature back
+const parsedSig = Signature.fromCompact(compactBytes, 'secp256k1');
+console.log(Signature.equals(standardSig, parsedSig)); // true
+
+// Gas savings: 64 bytes vs 65 bytes saves gas when passing signatures to contracts
+```
+
+### When to Use EIP-2098
+
+- **Smart contracts** - Save gas when passing signatures as calldata
+- **Storage** - Reduce on-chain storage costs by 1 byte per signature
+- **Batching** - Significant savings when processing many signatures
+
+See [EIP-2098](./eip-2098) for detailed usage patterns.
+
+## Signature Malleability
+
+ECDSA signatures are **malleable**: both `(r, s)` and `(r, -s mod n)` are mathematically valid signatures for the same message. This can enable replay attacks if not handled properly.
+
+### The High-s Problem
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+
+// Non-canonical signature (high-s)
+const sig = Signature.fromSecp256k1(rBytes, highSBytes, 27);
+
+// Check if canonical (s ≤ n/2)
+console.log(Signature.isCanonical(sig)); // false
+
+// Normalize to canonical form (flip s if s > n/2)
+const canonicalSig = Signature.normalize(sig);
+console.log(Signature.isCanonical(canonicalSig)); // true
+
+// Both signatures are cryptographically valid but produce different hashes
+console.log(Signature.equals(sig, canonicalSig)); // false (different s values)
+```
+
+### Why Malleability Matters
+
+**Without normalization:**
+```typescript
+// Attacker can flip signature s value
+const tx1 = { ...txData, signature: sig };
+const tx2 = { ...txData, signature: Signature.normalize(sig) };
+
+// Both transactions are valid but have different hashes
+// This enables replay attacks and transaction confusion
+```
+
+**With normalization:**
+```typescript
+// Always normalize before verification or storage
+const canonical = Signature.normalize(sig);
+
+// Now there's only one valid signature representation
+// Replay attacks and hash confusion are prevented
+```
+
+### Canonical Signatures
+
+**Standards:**
+- **Bitcoin (BIP-62)** - Requires canonical low-s signatures
+- **Ethereum** - Consensus rules enforce s ≤ secp256k1n/2
+- **Best practice** - Always normalize signatures before verification or storage
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+import { Secp256k1 } from '@tevm/voltaire/crypto';
+
+// Best practice: Normalize before any operation
+function verifySafely(sig, messageHash, expectedAddress) {
+  // Ensure canonical form
+  const canonical = Signature.normalize(sig);
+
+  // Recover and verify
+  const recovered = Secp256k1.recoverAddress(canonical, messageHash);
+  return Address.equals(recovered, expectedAddress);
+}
+```
+
+## Common Use Cases
+
+### Transaction Signing
+
+Every Ethereum transaction requires a signature:
+
+```typescript
+import { Hash, Signature } from '@tevm/voltaire';
+import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+
+// Transaction data
+const txData = {
+  nonce: 5,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+  value: 1000000000000000000n, // 1 ETH
+  data: "0x"
+};
+
+// Serialize and hash transaction
+const serialized = serializeTransaction(txData); // RLP encoding
+const txHash = Hash.from(keccak256(serialized));
+
+// Sign transaction hash
+const sig = Secp256k1.sign(txHash, privateKey);
+
+// Broadcast transaction with signature
+const signedTx = {
+  ...txData,
+  r: Signature.getR(sig),
+  s: Signature.getS(sig),
+  v: Signature.getV(sig)
+};
+```
+
+### Message Signing (personal_sign)
+
+Sign arbitrary messages for authentication:
+
+```typescript
+import { Hash, Hex } from '@tevm/voltaire';
+import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+
+// Ethereum signed message prefix
+function hashPersonalMessage(message) {
+  const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
+  const prefixBytes = new TextEncoder().encode(prefix);
+  const messageBytes = new TextEncoder().encode(message);
+
+  // Concatenate and hash
+  const combined = new Uint8Array(prefixBytes.length + messageBytes.length);
+  combined.set(prefixBytes, 0);
+  combined.set(messageBytes, prefixBytes.length);
+
+  return Hash.from(keccak256(combined));
+}
+
+// Sign a message
+const message = "Login to DApp at 2025-11-10T12:00:00Z";
+const messageHash = hashPersonalMessage(message);
+const sig = Secp256k1.sign(messageHash, privateKey);
+
+// Verify
+const signer = Secp256k1.recoverAddress(sig, messageHash);
+console.log("Signer:", Address.toString(signer));
+```
+
+### EIP-712 Typed Data Signing
+
+Structured data signing for better UX:
+
+```typescript
+import { Hash, Signature } from '@tevm/voltaire';
+import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+
+// EIP-712 domain and message
+const domain = {
+  name: "MyDApp",
+  version: "1",
+  chainId: 1,
+  verifyingContract: "0x..."
+};
+
+const types = {
+  Transfer: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ]
+};
+
+const message = {
+  from: "0x...",
+  to: "0x...",
+  amount: 100
+};
+
+// Hash typed data (EIP-712)
+const typedDataHash = hashTypedData(domain, types, message);
+const sig = Secp256k1.sign(typedDataHash, privateKey);
+
+// Verify on-chain or off-chain
+const signer = Secp256k1.recoverAddress(sig, typedDataHash);
+```
+
+## Resources
+
+- **[EIP-2098: Compact Signature Representation](https://eips.ethereum.org/EIPS/eip-2098)** - 64-byte compact format
+- **[EIP-155: Simple Replay Attack Protection](https://eips.ethereum.org/EIPS/eip-155)** - Chain ID in signatures
+- **[EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191)** - Message signing prefix
+- **[EIP-712: Typed Structured Data Hashing](https://eips.ethereum.org/EIPS/eip-712)** - Structured data signatures
+- **[BIP-62: Dealing with Malleability](https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki)** - Bitcoin signature canonicalization
+- **[SEC 1: Elliptic Curve Cryptography](https://www.secg.org/sec1-v2.pdf)** - ECDSA specification
+
+## Next Steps
+
+- [Overview](./index) - Type definition and API reference
+- [Constructors](./constructors) - Create signatures from various formats
+- [Validation](./validation) - Canonicalization and malleability prevention
+- [Recovery](./recovery) - Recover public keys and addresses
+- [EIP-2098](./eip-2098) - Compact signature format
+- [Secp256k1](/crypto/secp256k1) - Signing and verification functions

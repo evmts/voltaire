@@ -1,0 +1,348 @@
+---
+title: Fundamentals
+description: Learn binary merkle trees, Ethereum SSZ, and EIP-7864 Binary State Trees
+---
+
+Binary merkle trees are cryptographic data structures that organize data as a tree of hashes, enabling efficient verification of data integrity with compact proofs. Ethereum uses them extensively in the consensus layer (SSZ) and the proposed Binary State Tree (EIP-7864).
+
+## What Are Binary Merkle Trees?
+
+A binary merkle tree stores data in **leaf nodes** and hashes pairs of nodes upward to create a single **root hash** that commits to all data.
+
+```
+         Root Hash (commitment to all data)
+              /            \
+        Hash(L+R)       Hash(L+R)
+         /    \          /    \
+      Leaf0  Leaf1    Leaf2  Leaf3
+      (data) (data)   (data) (data)
+```
+
+**Key properties**:
+- **Commitment**: Root hash changes if ANY leaf changes
+- **Compact proofs**: Verify leaf membership with O(log n) hashes
+- **Efficient updates**: Only recompute path from leaf to root
+
+## Why Ethereum Uses Binary Trees
+
+### Consensus Layer (Beacon Chain)
+
+The beacon chain uses **Simple Serialize (SSZ)** with binary merkle trees for all consensus data:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+// SSZ uses generalized merkle trees
+// Example: BeaconBlock structure is merkleized
+const blockRoot = computeBeaconBlockRoot(beaconBlock);
+// Validators sign this root hash
+```
+
+**Benefits for consensus**:
+- **Light clients**: Verify headers without downloading full blocks
+- **Cross-chain proofs**: Prove execution data to other chains
+- **Committee votes**: Validators vote on root hashes efficiently
+
+### Execution Layer (EIP-7864)
+
+EIP-7864 proposes **Binary State Tree** to replace the Patricia Merkle Tree for Ethereum state:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire';
+
+const tree = BinaryTree.init();
+
+// Store account at address
+const address = new Uint8Array(20);
+const accountKey = BinaryTree.addressToKey(address);
+const accountData = encodeAccountData({ balance: 100n, nonce: 1n });
+
+const tree2 = BinaryTree.insert(tree, accountKey, accountData);
+const rootHash = BinaryTree.rootHash(tree2);
+```
+
+**Advantages over Patricia trees**:
+- **Smaller proofs**: ~3KB vs ~10KB for witness data
+- **Verkle-ready**: Binary structure prepares for future verkle tree upgrade
+- **Simpler**: Less complex than hexary Patricia trees
+
+## Tree Construction
+
+### Leaf Hashing
+
+Leaves store raw data values. Each leaf is hashed:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire';
+
+const leafData = new Uint8Array([0x42, 0x43, 0x44]);
+const leafHash = Keccak256.hash(leafData);
+// Use BLAKE3 for EIP-7864 Binary State Tree
+```
+
+### Pairwise Parent Hashing
+
+Internal nodes hash their two children:
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire';
+
+// Hash left and right child hashes together
+function hashParent(left: Uint8Array, right: Uint8Array): Uint8Array {
+  const combined = new Uint8Array(64);
+  combined.set(left, 0);
+  combined.set(right, 32);
+  return Keccak256.hash(combined);
+}
+
+const parentHash = hashParent(leftChildHash, rightChildHash);
+```
+
+### Complete Tree Construction
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire';
+
+// Build tree from 4 data values
+const leaves = [
+  new Uint8Array([0x01]),
+  new Uint8Array([0x02]),
+  new Uint8Array([0x03]),
+  new Uint8Array([0x04])
+];
+
+// Hash leaves
+const leafHashes = leaves.map(leaf => Keccak256.hash(leaf));
+
+// Build tree bottom-up
+function buildTree(hashes: Uint8Array[]): Uint8Array {
+  if (hashes.length === 1) return hashes[0];
+
+  const nextLevel: Uint8Array[] = [];
+  for (let i = 0; i < hashes.length; i += 2) {
+    const left = hashes[i];
+    const right = hashes[i + 1];
+    const combined = new Uint8Array(64);
+    combined.set(left, 0);
+    combined.set(right, 32);
+    nextLevel.push(Keccak256.hash(combined));
+  }
+
+  return buildTree(nextLevel);
+}
+
+const rootHash = buildTree(leafHashes);
+console.log(`Root: 0x${[...rootHash].map(b => b.toString(16).padStart(2, '0')).join('')}`);
+```
+
+## Merkle Proofs
+
+A merkle proof proves a leaf exists in the tree using O(log n) sibling hashes.
+
+### Proof Structure
+
+```
+         Root
+         /   \
+       A      B
+      / \    / \
+    L0  L1 L2  L3
+
+Prove L1 exists:
+- Proof: [L0, B]  (sibling hashes)
+- Path: [0, 1]    (left=0, right=1)
+
+Verification:
+1. Hash(L1) = leaf hash
+2. Hash(L0 + Hash(L1)) = A
+3. Hash(A + B) = Root ✓
+```
+
+### Generate Proof
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire';
+
+function generateProof(
+  leaves: Uint8Array[],
+  index: number
+): { proof: Uint8Array[], path: number[] } {
+  const proof: Uint8Array[] = [];
+  const path: number[] = [];
+
+  let level = leaves.map(leaf => Keccak256.hash(leaf));
+  let currentIndex = index;
+
+  while (level.length > 1) {
+    const siblingIndex = currentIndex ^ 1; // XOR with 1 flips last bit
+    const isLeft = currentIndex % 2 === 0;
+
+    proof.push(level[siblingIndex]);
+    path.push(isLeft ? 0 : 1);
+
+    // Build next level
+    const nextLevel: Uint8Array[] = [];
+    for (let i = 0; i < level.length; i += 2) {
+      const combined = new Uint8Array(64);
+      combined.set(level[i], 0);
+      combined.set(level[i + 1], 32);
+      nextLevel.push(Keccak256.hash(combined));
+    }
+
+    level = nextLevel;
+    currentIndex = Math.floor(currentIndex / 2);
+  }
+
+  return { proof, path };
+}
+
+// Example: Generate proof for leaf at index 1
+const leaves = [
+  new Uint8Array([0x01]),
+  new Uint8Array([0x02]),
+  new Uint8Array([0x03]),
+  new Uint8Array([0x04])
+];
+
+const { proof, path } = generateProof(leaves, 1);
+console.log(`Proof size: ${proof.length} hashes`); // 2 hashes for 4 leaves
+```
+
+### Verify Proof
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire';
+
+function verifyProof(
+  leaf: Uint8Array,
+  index: number,
+  proof: Uint8Array[],
+  path: number[],
+  expectedRoot: Uint8Array
+): boolean {
+  let hash = Keccak256.hash(leaf);
+
+  for (let i = 0; i < proof.length; i++) {
+    const combined = new Uint8Array(64);
+    if (path[i] === 0) {
+      // Leaf is on left
+      combined.set(hash, 0);
+      combined.set(proof[i], 32);
+    } else {
+      // Leaf is on right
+      combined.set(proof[i], 0);
+      combined.set(hash, 32);
+    }
+    hash = Keccak256.hash(combined);
+  }
+
+  // Check if computed root matches expected root
+  return hash.every((byte, i) => byte === expectedRoot[i]);
+}
+
+// Verify the proof
+const leaf = new Uint8Array([0x02]);
+const isValid = verifyProof(leaf, 1, proof, path, rootHash);
+console.log(`Proof valid: ${isValid}`); // true
+```
+
+## Complete Example: Build, Prove, Verify
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire';
+
+// 1. Build tree from data
+const data = [
+  new Uint8Array([0x41]), // 'A'
+  new Uint8Array([0x42]), // 'B'
+  new Uint8Array([0x43]), // 'C'
+  new Uint8Array([0x44])  // 'D'
+];
+
+// Hash leaves
+const leafHashes = data.map(d => Keccak256.hash(d));
+
+// Build tree
+function buildMerkleRoot(hashes: Uint8Array[]): Uint8Array {
+  if (hashes.length === 1) return hashes[0];
+
+  const nextLevel: Uint8Array[] = [];
+  for (let i = 0; i < hashes.length; i += 2) {
+    const combined = new Uint8Array(64);
+    combined.set(hashes[i], 0);
+    combined.set(hashes[i + 1], 32);
+    nextLevel.push(Keccak256.hash(combined));
+  }
+  return buildMerkleRoot(nextLevel);
+}
+
+const root = buildMerkleRoot(leafHashes);
+
+// 2. Generate proof for 'B' at index 1
+const proofForB = generateProof(data, 1);
+console.log(`Proof for 'B': ${proofForB.proof.length} hashes`);
+
+// 3. Verify proof
+const isValidProof = verifyProof(
+  new Uint8Array([0x42]), // 'B'
+  1,
+  proofForB.proof,
+  proofForB.path,
+  root
+);
+console.log(`Proof verification: ${isValidProof ? 'PASS' : 'FAIL'}`);
+
+// 4. Try invalid proof (wrong leaf data)
+const isInvalidProof = verifyProof(
+  new Uint8Array([0x99]), // Wrong data
+  1,
+  proofForB.proof,
+  proofForB.path,
+  root
+);
+console.log(`Invalid proof: ${isInvalidProof ? 'FAIL' : 'correctly rejected'}`);
+```
+
+## Common Use Cases
+
+**SSZ (Simple Serialize)**: Beacon chain merkleizes all consensus data (validators, blocks) for light client verification and cross-chain proofs.
+
+**Deposit Contract**: Ethereum deposit contract uses binary merkle tree to prove ETH deposits to beacon chain efficiently.
+
+**Light Clients**: Verify transaction inclusion with merkle proofs without downloading full blocks - only need block root + proof.
+
+**Rollups (L2)**: Layer 2 posts state roots to L1, users generate merkle proofs for withdrawals.
+
+## Tree Balancing and Padding
+
+If leaf count is not a power of 2, trees need padding. SSZ uses precomputed zero hashes for missing nodes:
+
+```typescript
+// Precompute zero hashes for each depth
+function computeZeroHashes(depth: number): Uint8Array[] {
+  const zeros: Uint8Array[] = [new Uint8Array(32)];
+  for (let i = 1; i <= depth; i++) {
+    const combined = new Uint8Array(64);
+    combined.set(zeros[i - 1], 0);
+    combined.set(zeros[i - 1], 32);
+    zeros.push(Keccak256.hash(combined));
+  }
+  return zeros;
+}
+
+const zeroHashes = computeZeroHashes(32);
+```
+
+## Resources
+
+- **[SSZ Specification](https://github.com/ethereum/consensus-specs/blob/dev/ssz/simple-serialize.md)** - Simple Serialize merkleization
+- **[EIP-7864](https://eips.ethereum.org/EIPS/eip-7864)** - Binary State Tree proposal
+- **[Verkle Trees](https://vitalik.ca/general/2021/06/18/verkle.html)** - Future evolution of binary trees
+- **[Merkle Proofs Explained](https://blog.ethereum.org/2015/11/15/merkling-in-ethereum)** - Ethereum merkle tree background
+
+## Next Steps
+
+- [Overview](/primitives/binarytree) - BinaryTree API reference and types
+- [Operations](/primitives/binarytree/operations) - Insert, get, update operations
+- [Hashing](/primitives/binarytree/hashing) - BLAKE3 hashing and root computation
+- [Key Utilities](/primitives/binarytree/key-utilities) - Address to key conversion

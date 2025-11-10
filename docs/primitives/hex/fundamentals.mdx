@@ -1,0 +1,414 @@
+---
+title: Fundamentals
+description: Learn hexadecimal encoding for Ethereum data representation
+---
+
+Hexadecimal encoding is the standard format for representing binary data in Ethereum. This guide teaches hex fundamentals using Voltaire.
+
+## What is Hexadecimal?
+
+Hexadecimal (hex) is a base-16 number system using digits 0-9 and letters a-f. Each hex digit represents 4 bits, so two hex digits represent one byte (8 bits).
+
+```
+Decimal: 0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+Hex:     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+Binary:  0000 0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 1101 1110 1111
+```
+
+## Why Ethereum Uses Hex
+
+Hex provides the ideal balance for blockchain data:
+
+- **Compact** - More efficient than binary (half the characters)
+- **Human-readable** - More accessible than raw bytes
+- **Byte-aligned** - Two hex digits = exactly one byte
+- **Standard** - Universal format for addresses, hashes, transactions, bytecode
+
+## Hex Format
+
+Ethereum hex strings follow strict conventions:
+
+```typescript
+"0x" + pairs of hex digits (0-9, a-f)
+
+Examples:
+"0x1a"         // Valid: 2 digits = 1 byte
+"0xff00"       // Valid: 4 digits = 2 bytes
+"0x123"        // Invalid: odd length
+"0xGG"         // Invalid: G not a hex digit
+"123"          // Invalid: missing 0x prefix
+```
+
+**Rules**:
+- Must start with `0x` prefix
+- Must have even number of hex digits (pairs)
+- Case-insensitive for digits: `0xFF` = `0xff`
+- Empty hex: `0x` (zero bytes)
+
+## Encoding Visualization
+
+```
+Bytes → Hex Conversion
+┌─────────────────────────┐
+│ Byte 0: 11111111 (255) │ → 0xFF
+│ Byte 1: 00010010 (18)  │ → 0x12
+│ Byte 2: 10100101 (165) │ → 0xA5
+│ Byte 3: 01100011 (99)  │ → 0x63
+└─────────────────────────┘
+Full Hex String: "0xff12a563"
+                 ││ Each pair = 1 byte
+Prefix ──────────┘└─ Data starts here
+
+Decoding Example:
+0x48656c6c6f
+││││││││││││
+││││││││││└─ 6f = 111 = 'o'
+││││││││└─── 6c = 108 = 'l'
+││││││└───── 6c = 108 = 'l'
+││││└─────── 65 = 101 = 'e'
+││└───────── 48 = 72  = 'H'
+└└────────── 0x prefix
+Result: "Hello"
+```
+
+## Creating Hex Strings
+
+Voltaire provides multiple constructors for different data types:
+
+<Tabs>
+<Tab title="Class API">
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+// From hex string (validates format)
+const hex1 = Hex("0x1234");
+const hex2 = Hex.from("0xabcd");
+
+// From bytes
+const hex3 = Hex.fromBytes(new Uint8Array([0x12, 0x34]));
+console.log(hex3); // "0x1234"
+
+// From number
+const hex4 = Hex.fromNumber(255);
+console.log(hex4); // "0xff"
+
+// From bigint (with optional padding)
+const hex5 = Hex.fromBigInt(255n, 32);
+console.log(hex5); // "0x00...ff" (32 bytes)
+
+// From string (UTF-8 encoding)
+const hex6 = Hex.fromString("hello");
+console.log(hex6); // "0x68656c6c6f"
+
+// From boolean
+const hex7 = Hex.fromBoolean(true);
+console.log(hex7); // "0x01"
+```
+
+</Tab>
+<Tab title="Namespace API">
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex';
+
+// From hex string (validates format)
+const hex1 = Hex.from("0x1234");
+
+// From bytes
+const hex2 = Hex.fromBytes(new Uint8Array([0x12, 0x34]));
+console.log(hex2); // "0x1234"
+
+// From number
+const hex3 = Hex.fromNumber(255);
+console.log(hex3); // "0xff"
+
+// From bigint (with optional padding)
+const hex4 = Hex.fromBigInt(255n, 32);
+console.log(hex4); // "0x00...ff" (32 bytes)
+
+// From string (UTF-8 encoding)
+const hex5 = Hex.fromString("hello");
+console.log(hex5); // "0x68656c6c6f"
+
+// From boolean
+const hex6 = Hex.fromBoolean(true);
+console.log(hex6); // "0x01"
+```
+
+</Tab>
+</Tabs>
+
+## Converting from Hex
+
+Decode hex strings back to native JavaScript types:
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+const hex = Hex("0x68656c6c6f");
+
+// To bytes
+const bytes = Hex.toBytes(hex);
+console.log(bytes); // Uint8Array([104, 101, 108, 108, 111])
+
+// To string (UTF-8 decode)
+const str = Hex.toString(hex);
+console.log(str); // "hello"
+
+// To number (safe up to 2^53-1)
+const numHex = Hex("0xff");
+console.log(Hex.toNumber(numHex)); // 255
+
+// To bigint (safe for any size)
+const bigHex = Hex("0xffffffffffffffff");
+console.log(Hex.toBigInt(bigHex)); // 18446744073709551615n
+
+// To boolean
+const boolHex = Hex("0x01");
+console.log(Hex.toBoolean(boolHex)); // true
+```
+
+## Padding
+
+Ethereum often requires fixed-size data (addresses = 20 bytes, hashes = 32 bytes):
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+const small = Hex("0xff");
+
+// Left-pad with zeros (default for numbers)
+const padded = Hex.pad(small, 32);
+console.log(padded); // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+console.log(Hex.size(padded)); // 32 bytes
+
+// Right-pad with zeros (for strings/data)
+const rightPadded = Hex.padRight(small, 32);
+console.log(rightPadded); // "0xff00000000000000000000000000000000000000000000000000000000000000"
+
+// Trim leading zeros
+const trimmed = Hex.trim(padded);
+console.log(trimmed); // "0xff"
+```
+
+**Padding rules**:
+- Addresses: 20 bytes (40 hex digits)
+- Hashes: 32 bytes (64 hex digits)
+- ABI-encoded numbers: 32 bytes (left-padded)
+- ABI-encoded bytes: Right-padded to 32-byte boundaries
+
+## Manipulating Hex
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+const hex1 = Hex("0x1234");
+const hex2 = Hex("0x5678");
+
+// Concatenate
+const combined = Hex.concat(hex1, hex2);
+console.log(combined); // "0x12345678"
+
+// Slice (byte-based, not digit-based)
+const sliced = Hex.slice(combined, 1, 3);
+console.log(sliced); // "0x3456" (bytes 1-2)
+
+// Get size in bytes
+console.log(Hex.size(combined)); // 4 bytes
+
+// Compare equality
+console.log(Hex.equals(hex1, Hex("0x1234"))); // true
+
+// Generate random hex
+const random = Hex.random(32);
+console.log(Hex.size(random)); // 32 bytes
+
+// Create zero-filled hex
+const zeros = Hex.zero(8);
+console.log(zeros); // "0x0000000000000000"
+
+// XOR two hex strings (must be equal length)
+const a = Hex("0xff00");
+const b = Hex("0x00ff");
+const xored = Hex.xor(a, b);
+console.log(xored); // "0xffff"
+```
+
+## Complete Example: Transaction Data
+
+Encode complete transaction calldata using hex:
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+// ERC-20 transfer(address recipient, uint256 amount)
+
+// 1. Function selector (first 4 bytes of keccak256("transfer(address,uint256)"))
+const selector = Hex("0xa9059cbb");
+
+// 2. Recipient address (padded to 32 bytes)
+const recipient = Hex.pad(
+  Hex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+  32
+);
+
+// 3. Amount (1000 tokens with 18 decimals, padded to 32 bytes)
+const amount = Hex.fromBigInt(1000n * 10n ** 18n, 32);
+
+// 4. Concatenate all parts
+const calldata = Hex.concat(selector, recipient, amount);
+
+console.log(calldata);
+// "0xa9059cbb
+//   000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f0beb2
+//   00000000000000000000000000000000000000000000003635c9adc5dea00000"
+
+// Verify structure
+console.log(`Selector: ${Hex.slice(calldata, 0, 4)}`);
+console.log(`Recipient: ${Hex.slice(calldata, 4, 36)}`);
+console.log(`Amount: ${Hex.slice(calldata, 36, 68)}`);
+console.log(`Total size: ${Hex.size(calldata)} bytes`);
+```
+
+## Common Use Cases
+
+### Addresses
+
+20-byte Ethereum addresses are always hex-encoded:
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+const address = Hex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+
+// Validate size
+Hex.assertSize(address, 20); // Throws if not 20 bytes
+
+// Check format
+if (Hex.isHex(address) && Hex.isSized(address, 20)) {
+  console.log("Valid address");
+}
+```
+
+### Hashes
+
+32-byte keccak256 hashes (transaction hashes, block hashes, etc.):
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+const txHash = Hex("0x1234..."); // 32 bytes from RPC
+
+// Validate size
+Hex.assertSize(txHash, 32); // Throws if not 32 bytes
+
+// Compare hashes
+if (Hex.equals(txHash, expectedHash)) {
+  console.log("Transaction found");
+}
+```
+
+### Bytecode
+
+Smart contract bytecode uses hex encoding:
+
+```typescript
+import { Hex, Bytecode } from '@tevm/voltaire';
+
+const code = Hex("0x6080604052...");
+
+// Convert to bytecode for analysis
+const bytecode = Bytecode.fromHex(code);
+
+// Get size
+console.log(`Code size: ${Hex.size(code)} bytes`);
+```
+
+### Calldata
+
+Function calls encode parameters as hex:
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+// Encode function selector
+const functionSig = "balanceOf(address)";
+const selectorHex = Hex.fromString(functionSig).slice(0, 4);
+
+// Encode parameter
+const addressParam = Hex.pad(address, 32);
+
+// Combine
+const calldata = Hex.concat(selectorHex, addressParam);
+```
+
+## Case Sensitivity
+
+Hex is case-insensitive by default, but EIP-55 uses mixed case for checksummed addresses:
+
+```typescript
+import { Hex, Address } from '@tevm/voltaire';
+
+// These are equal (case-insensitive comparison)
+const hex1 = Hex("0xabcd");
+const hex2 = Hex("0xABCD");
+console.log(Hex.equals(hex1, hex2)); // true
+
+// Checksummed addresses (EIP-55) use mixed case for validation
+const addr = Address("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+//                      ^^  ^^    ^^    ^^  ^^^^      ^^ ^^^^^^  ^^
+//                      Capital letters for checksum validation
+
+// Always use lowercase for non-address hex
+const hash = Hex("0xabcdef123456"); // lowercase
+```
+
+**Guidelines**:
+- Regular hex: Use lowercase by convention
+- Addresses: Use EIP-55 checksummed format (mixed case)
+- Comparison: Always case-insensitive
+
+## Validation
+
+Validate hex format and size:
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+// Type guard (returns boolean)
+if (Hex.isHex("0x1234")) {
+  console.log("Valid hex format");
+}
+
+// Validate and throw
+try {
+  Hex.validate("0x1234"); // Throws if invalid
+  console.log("Valid");
+} catch (error) {
+  console.error(error.message);
+}
+
+// Size checks
+const hex = Hex("0x1234");
+console.log(Hex.isSized(hex, 2)); // true (2 bytes)
+console.log(Hex.isSized(hex, 4)); // false (not 4 bytes)
+
+// Assert size (throws if wrong)
+Hex.assertSize(hex, 2); // OK
+Hex.assertSize(hex, 4); // Throws error
+```
+
+## Resources
+
+- **[Hexadecimal on Wikipedia](https://en.wikipedia.org/wiki/Hexadecimal)** - Base-16 number system
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal specification
+- **[JSON-RPC Specification](https://ethereum.github.io/execution-apis/api-documentation/)** - Hex encoding in APIs
+- **[EIP-55](https://eips.ethereum.org/EIPS/eip-55)** - Mixed-case checksum address encoding
+
+## Next Steps
+
+- [Overview](/primitives/hex) - Type definition and complete API reference
+- [Address](/primitives/address) - 20-byte addresses using sized hex
+- [Hash](/primitives/hash) - 32-byte hash values
+- [Bytecode](/primitives/bytecode) - EVM bytecode representation

@@ -7,6 +7,10 @@ description: 32-byte Keccak-256 cryptographic hash primitives
 
 A Hash is a 32-byte cryptographic digest produced by the Keccak-256 algorithm. In Ethereum, hashes uniquely identify transactions, blocks, accounts, and data structures.
 
+<Tip title="New to Hashes?">
+Learn cryptographic hash fundamentals, Keccak-256 properties, and Merkle trees in the [Fundamentals Guide](/primitives/hash/fundamentals).
+</Tip>
+
 ## Overview
 
 Hash is represented as a [branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
@@ -14,14 +18,6 @@ Hash is represented as a [branded](/concepts/branded-types) [`Uint8Array`](https
 ```typescript
 export type BrandedHash = Uint8Array & { readonly __tag: "Hash" };
 ```
-
-Keccak-256 produces a fixed 32-byte output regardless of input size, making it ideal for content addressing, integrity verification, and Merkle tree construction. Voltaire provides comprehensive tools for hashing data, verifying integrity, and building cryptographic data structures.
-
-<Tip title="Understanding Keccak-256">
-Keccak-256 is Ethereum's primary hash function, distinct from SHA3-256 despite being the basis for the SHA-3 standard. It takes arbitrary-length input and produces a 256-bit (32-byte) output that appears random but is deterministic - the same input always produces the same hash.
-
-See [Keccak specification](https://keccak.team/keccak.html) for algorithm details.
-</Tip>
 
 ## Quick Start
 
@@ -84,63 +80,21 @@ if (Hash.isZero(hash)) {
 </Tab>
 </Tabs>
 
-## Example: Verifying Data Integrity
-
-Here's how to use hashes to verify that data hasn't been tampered with:
+## Example: Transaction Identifiers
 
 ```typescript
 import { Hash } from '@tevm/voltaire';
 
-// Original data and its hash
-const originalData = new Uint8Array([1, 2, 3, 4, 5]);
-const originalHash = Hash.keccak256(originalData);
-console.log(`Original: ${originalHash.toHex()}`);
+// Hash transaction data to create unique identifier
+const txData = new Uint8Array([/* RLP-encoded transaction */]);
+const txHash = Hash.keccak256(txData);
 
-// Later, verify received data
-const receivedData = new Uint8Array([1, 2, 3, 4, 5]);
-const receivedHash = Hash.keccak256(receivedData);
+console.log(`Transaction ID: ${txHash.toHex()}`);
 
-if (originalHash.equals(receivedHash)) {
-  console.log("✓ Data integrity verified");
-} else {
-  console.log("✗ Data has been modified");
-}
-
-// Detect tampering
-const tamperedData = new Uint8Array([1, 2, 3, 4, 6]);  // Changed last byte
-const tamperedHash = Hash.keccak256(tamperedData);
-console.log(originalHash.equals(tamperedHash));  // false
-```
-
-**Key concepts demonstrated**:
-- **Deterministic hashing** - Same input always produces same hash
-- **Collision resistance** - Different inputs produce different hashes
-- **One-way function** - Cannot derive original data from hash
-- **Fixed output size** - Always 32 bytes regardless of input size
-
-## Hash Properties
-
-Keccak-256 provides several critical properties for Ethereum:
-
-- **Deterministic** - Same input always produces identical output
-- **Fixed size** - Always 32 bytes (256 bits) regardless of input length
-- **Avalanche effect** - Small input changes completely alter output
-- **One-way** - Computationally infeasible to reverse
-- **Collision resistant** - Nearly impossible to find two inputs with same hash
-- **Fast computation** - Efficient to calculate, expensive to brute force
-
-**Common uses**:
-- **Transaction IDs** - Hash of transaction data
-- **Block identifiers** - Hash of block header
-- **Account addresses** - Last 20 bytes of public key hash
-- **Content addressing** - IPFS-style data references
-- **Merkle trees** - Efficient proof of set membership
-- **Signatures** - Hash message before signing
-
-**Zero hash**:
-The zero hash (32 zero bytes) represents an empty or uninitialized state:
-```typescript
-Hash.ZERO  // 0x0000000000000000000000000000000000000000000000000000000000000000
+// Verify transaction later
+const receivedTx = await provider.getTransaction(txHash.toHex());
+const verifyHash = Hash.keccak256(receivedTx);
+console.log(txHash.equals(verifyHash)); // true
 ```
 
 ## API Documentation
@@ -296,73 +250,6 @@ See [Hash.from](./from#hashlike-type) for details.
 </Tab>
 </Tabs>
 
-## Usage Patterns
-
-### Verifying Transaction Integrity
-
-```typescript
-// Compute transaction hash
-const txData = encodedTransaction;  // RLP-encoded transaction
-const txHash = Hash.keccak256(txData);
-console.log(`Transaction ID: ${txHash.toHex()}`);
-
-// Later, verify transaction
-const receivedTxData = await provider.getTransaction(txHash.toHex());
-const verifyHash = Hash.keccak256(receivedTxData);
-
-if (txHash.equals(verifyHash)) {
-  console.log("Transaction verified");
-}
-```
-
-### Building Merkle Trees
-
-```typescript
-// Hash leaf data
-const leaves = [
-  Hash.keccak256String("data1"),
-  Hash.keccak256String("data2"),
-  Hash.keccak256String("data3"),
-  Hash.keccak256String("data4"),
-];
-
-// Compute Merkle root
-const root = Hash.merkleRoot(leaves);
-console.log(`Merkle root: ${root.toHex()}`);
-
-// Verify membership proof
-function verifyProof(leaf: Hash, proof: Hash[], root: Hash): boolean {
-  let current = leaf;
-  for (const sibling of proof) {
-    // Hash pairs in sorted order
-    if (current.toHex() < sibling.toHex()) {
-      current = Hash.keccak256(Hash.concat(current, sibling));
-    } else {
-      current = Hash.keccak256(Hash.concat(sibling, current));
-    }
-  }
-  return current.equals(root);
-}
-```
-
-### Content Addressing
-
-```typescript
-// Store data by its hash
-const data = new Uint8Array([1, 2, 3, 4, 5]);
-const contentHash = Hash.keccak256(data);
-
-// Use hash as storage key
-storage.set(contentHash.toHex(), data);
-
-// Later, retrieve by hash
-const retrieved = storage.get(contentHash.toHex());
-const verifyHash = Hash.keccak256(retrieved);
-
-if (contentHash.equals(verifyHash)) {
-  console.log("Content verified");
-}
-```
 
 ## Tree-Shaking
 

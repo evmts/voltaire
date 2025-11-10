@@ -1,0 +1,478 @@
+---
+title: Fundamentals
+description: Learn EVM opcodes, stack machine architecture, and bytecode execution
+---
+
+EVM opcodes are the low-level machine instructions that smart contracts execute on the Ethereum Virtual Machine. This guide teaches opcode fundamentals using Voltaire.
+
+## What Are Opcodes?
+
+Opcodes are single-byte instructions (0x00-0xFF) that tell the EVM what to do. The EVM has ~140 unique opcodes organized by category:
+
+- **Arithmetic** - ADD, MUL, SUB, DIV, MOD
+- **Logic** - AND, OR, XOR, NOT, LT, GT, EQ
+- **Storage** - SLOAD, SSTORE (persistent contract storage)
+- **Memory** - MLOAD, MSTORE (temporary execution data)
+- **Control Flow** - JUMP, JUMPI, JUMPDEST (loops, conditionals)
+- **Calls** - CALL, DELEGATECALL, STATICCALL, CREATE
+- **System** - ADDRESS, CALLER, CALLVALUE, RETURN, REVERT
+
+## Stack Machine Architecture
+
+The EVM is a **stack machine** - all operations push/pop values to/from a runtime stack:
+
+```
+Stack (max 1024 items, 32 bytes each):
+┌──────────┐
+│  Item n  │ ← Top of stack
+├──────────┤
+│  Item 2  │
+├──────────┤
+│  Item 1  │
+└──────────┘
+```
+
+<Tabs>
+<Tab title="ADD Example">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// Bytecode: PUSH1 5, PUSH1 3, ADD
+const bytecode = new Uint8Array([0x60, 0x05, 0x60, 0x03, 0x01])
+
+const instructions = Opcode.parse(bytecode)
+// [
+//   { offset: 0, opcode: 0x60, immediate: Uint8Array([0x05]) }, // PUSH1 5
+//   { offset: 2, opcode: 0x60, immediate: Uint8Array([0x03]) }, // PUSH1 3
+//   { offset: 4, opcode: 0x01 }                                 // ADD
+// ]
+
+// Execution flow:
+// Stack: []
+// PUSH1 5 → Stack: [5]
+// PUSH1 3 → Stack: [3, 5]
+// ADD     → Stack: [8]  // Pops 3 and 5, pushes result
+```
+</Tab>
+<Tab title="Stack Visualization">
+```
+Initial: []
+
+After PUSH1 0x05:
+┌──────────┐
+│    5     │ ← Top
+└──────────┘
+
+After PUSH1 0x03:
+┌──────────┐
+│    3     │ ← Top
+├──────────┤
+│    5     │
+└──────────┘
+
+After ADD:
+┌──────────┐
+│    8     │ ← Top (5 + 3)
+└──────────┘
+```
+</Tab>
+</Tabs>
+
+Every opcode has **stack inputs** (items consumed) and **stack outputs** (items produced):
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const info = Opcode.info(0x01) // ADD
+console.log(info)
+// {
+//   gasCost: 3,
+//   stackInputs: 2,   // Pops 2 items
+//   stackOutputs: 1,  // Pushes 1 result
+//   name: "ADD"
+// }
+```
+
+## Opcode Categories
+
+### Arithmetic Operations
+
+Binary operations pop 2 values, push 1 result:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// ADD (0x01): a + b
+const addCode = new Uint8Array([0x60, 0x05, 0x60, 0x03, 0x01])
+// Stack: [] → [5] → [3,5] → [8]
+
+// MUL (0x02): a * b
+const mulCode = new Uint8Array([0x60, 0x05, 0x60, 0x03, 0x02])
+// Stack: [] → [5] → [3,5] → [15]
+
+// SUB (0x03): a - b
+const subCode = new Uint8Array([0x60, 0x05, 0x60, 0x03, 0x03])
+// Stack: [] → [5] → [3,5] → [2]  // Note: 5 - 3, not 3 - 5
+
+console.log(Opcode.disassemble(addCode))
+// ["0000: PUSH1 0x05", "0002: PUSH1 0x03", "0004: ADD"]
+```
+
+### Storage Operations
+
+SLOAD reads from persistent contract storage, SSTORE writes:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// SLOAD (0x54): Load from storage[slot]
+const sloadCode = new Uint8Array([
+  0x60, 0x00,  // PUSH1 0 (storage slot)
+  0x54         // SLOAD
+])
+// Stack: [] → [0] → [value]
+
+// SSTORE (0x55): Store value to storage[slot]
+const sstoreCode = new Uint8Array([
+  0x60, 0x42,  // PUSH1 0x42 (value)
+  0x60, 0x00,  // PUSH1 0 (storage slot)
+  0x55         // SSTORE
+])
+// Stack: [] → [0x42] → [0,0x42] → []
+
+console.log(Opcode.info(0x54))
+// { gasCost: 100, stackInputs: 1, stackOutputs: 1, name: "SLOAD" }
+
+console.log(Opcode.info(0x55))
+// { gasCost: 100, stackInputs: 2, stackOutputs: 0, name: "SSTORE" }
+```
+
+### Memory Operations
+
+MLOAD reads from temporary memory, MSTORE writes:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// MSTORE (0x52): Store value at memory[offset:offset+32]
+const mstoreCode = new Uint8Array([
+  0x60, 0x42,  // PUSH1 0x42 (value)
+  0x60, 0x00,  // PUSH1 0 (memory offset)
+  0x52         // MSTORE
+])
+// Stack: [] → [0x42] → [0,0x42] → []
+// Memory[0:32] = 0x42
+
+// MLOAD (0x51): Load value from memory[offset:offset+32]
+const mloadCode = new Uint8Array([
+  0x60, 0x00,  // PUSH1 0 (memory offset)
+  0x51         // MLOAD
+])
+// Stack: [] → [0] → [value]
+
+console.log(Opcode.disassemble(mstoreCode))
+// ["0000: PUSH1 0x42", "0002: PUSH1 0x00", "0004: MSTORE"]
+```
+
+### Control Flow
+
+JUMP and JUMPI control program flow. Jump targets must be JUMPDEST (0x5B):
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const code = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5 (jump target)
+  0x56,        // JUMP
+  0x00,        // STOP (skipped)
+  0x00,        // STOP (skipped)
+  0x5B,        // JUMPDEST (position 5)
+  0x60, 0x01,  // PUSH1 1
+])
+
+// Find valid jump destinations
+const jumpDests = Opcode.jumpDests(code)
+console.log(jumpDests) // Set([5])
+
+// Validate jump target
+console.log(Opcode.isValidJumpDest(code, 5))  // true (JUMPDEST at offset 5)
+console.log(Opcode.isValidJumpDest(code, 3))  // false (STOP, not JUMPDEST)
+
+// JUMPI (0x57): Conditional jump
+const jumpiCode = new Uint8Array([
+  0x60, 0x01,  // PUSH1 1 (condition: true)
+  0x60, 0x06,  // PUSH1 6 (jump target)
+  0x57,        // JUMPI (jumps if condition != 0)
+  0x00,        // STOP (skipped)
+  0x5B,        // JUMPDEST (position 6)
+])
+// Stack: [] → [1] → [6,1] → []
+// Jumps to position 6 because condition is 1 (true)
+```
+
+### External Calls
+
+CALL invokes other contracts:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// CALL (0xF1): Call another contract
+// Stack inputs: [gas, address, value, argsOffset, argsSize, retOffset, retSize]
+const callCode = new Uint8Array([
+  0x60, 0x00,  // PUSH1 0 (retSize)
+  0x60, 0x00,  // PUSH1 0 (retOffset)
+  0x60, 0x00,  // PUSH1 0 (argsSize)
+  0x60, 0x00,  // PUSH1 0 (argsOffset)
+  0x60, 0x00,  // PUSH1 0 (value in wei)
+  0x73,        // PUSH20 (address follows)
+  0x12, 0x34, 0x56, 0x78, 0x90,  // 20-byte address
+  0xAB, 0xCD, 0xEF, 0x12, 0x34,
+  0x56, 0x78, 0x90, 0xAB, 0xCD,
+  0xEF, 0x12, 0x34, 0x56, 0x78,
+  0x5B, 0x8D, 0x80,  // PUSH2 0x5B8D (gas limit)
+  0xF1         // CALL
+])
+
+console.log(Opcode.info(0xF1))
+// { gasCost: 100, stackInputs: 7, stackOutputs: 1, name: "CALL" }
+// Returns 1 on success, 0 on failure
+```
+
+## Gas Costs
+
+Every opcode has a base gas cost. Some have dynamic costs:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// Fixed gas costs
+console.log(Opcode.info(0x01)) // ADD: 3 gas
+console.log(Opcode.info(0x02)) // MUL: 5 gas
+console.log(Opcode.info(0x10)) // LT: 3 gas
+
+// Dynamic gas costs (base shown, runtime varies)
+console.log(Opcode.info(0x54)) // SLOAD: 100 gas (warm) or 2100 gas (cold)
+console.log(Opcode.info(0x55)) // SSTORE: 100-22000 gas (depends on storage state)
+console.log(Opcode.info(0xF1)) // CALL: 100+ gas (warm/cold + value transfer)
+console.log(Opcode.info(0x20)) // KECCAK256: 30 + 6*words gas
+```
+
+Gas costs changed across hardforks. EIP-2929 (Berlin) introduced warm/cold access costs for storage and contract calls.
+
+## PUSH Instructions
+
+PUSH1-PUSH32 (0x60-0x7F) embed immediate data in bytecode:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// PUSH1 (0x60): Push 1 byte
+console.log(Opcode.pushBytes(0x60)) // 1
+console.log(Opcode.pushOpcode(1))   // 0x60
+
+// PUSH32 (0x7F): Push 32 bytes
+console.log(Opcode.pushBytes(0x7F)) // 32
+console.log(Opcode.pushOpcode(32))  // 0x7F
+
+// Check if opcode is PUSH
+console.log(Opcode.isPush(0x60))    // true (PUSH1)
+console.log(Opcode.isPush(0x7F))    // true (PUSH32)
+console.log(Opcode.isPush(0x01))    // false (ADD)
+
+// Parse PUSH data
+const code = new Uint8Array([
+  0x60, 0x42,              // PUSH1 0x42
+  0x7F,                    // PUSH32 (32 bytes follow)
+  ...new Array(32).fill(0xFF)
+])
+
+const instructions = Opcode.parse(code)
+console.log(instructions[0].immediate)  // Uint8Array([0x42])
+console.log(instructions[1].immediate?.length)  // 32
+```
+
+<Warning>
+PUSH instruction data is NOT executable. Parsing must skip immediate bytes or you'll misinterpret data as opcodes.
+</Warning>
+
+## Stack Depth Limit
+
+The EVM stack has a **1024-item maximum**. Stack overflow causes execution to fail:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// Track stack depth through bytecode
+function analyzeStackDepth(bytecode: Uint8Array): number {
+  let depth = 0
+  let maxDepth = 0
+
+  for (const inst of Opcode.parse(bytecode)) {
+    const info = Opcode.info(inst.opcode)
+    depth -= info.stackInputs
+    depth += info.stackOutputs
+
+    if (depth < 0) {
+      throw new Error(`Stack underflow at offset ${inst.offset}`)
+    }
+    if (depth > 1024) {
+      throw new Error(`Stack overflow at offset ${inst.offset}`)
+    }
+
+    maxDepth = Math.max(maxDepth, depth)
+  }
+
+  return maxDepth
+}
+
+// Example: Safe code
+const safeCode = new Uint8Array([0x60, 0x01, 0x60, 0x02, 0x01])
+console.log(analyzeStackDepth(safeCode)) // 1
+```
+
+## Common Patterns
+
+### Function Dispatch
+
+Contracts check function selectors (first 4 bytes of calldata):
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const dispatchCode = new Uint8Array([
+  0x60, 0x00,  // PUSH1 0 (calldata offset)
+  0x35,        // CALLDATALOAD (load 32 bytes from calldata)
+  0x60, 0xE0,  // PUSH1 0xE0 (224 bits)
+  0x1C,        // SHR (shift right to get first 4 bytes)
+  // Stack now has function selector
+  0x80,        // DUP1 (duplicate selector)
+  0x63, 0xa9, 0x05, 0x9c, 0xbb,  // PUSH4 0xa9059cbb (transfer selector)
+  0x14,        // EQ (check if equal)
+  0x60, 0x20,  // PUSH1 0x20 (jump target for transfer)
+  0x57,        // JUMPI (jump if selector matches)
+])
+
+console.log(Opcode.disassemble(dispatchCode))
+// [
+//   "0000: PUSH1 0x00",
+//   "0002: CALLDATALOAD",
+//   "0003: PUSH1 0xe0",
+//   "0005: SHR",
+//   "0006: DUP1",
+//   "0007: PUSH4 0xa9059cbb",
+//   "000c: EQ",
+//   "000d: PUSH1 0x20",
+//   "000f: JUMPI"
+// ]
+```
+
+### Storage Access
+
+Reading and modifying storage:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// Increment storage slot 0
+const incrementCode = new Uint8Array([
+  0x60, 0x00,  // PUSH1 0 (slot)
+  0x54,        // SLOAD (load current value)
+  0x60, 0x01,  // PUSH1 1
+  0x01,        // ADD (increment)
+  0x60, 0x00,  // PUSH1 0 (slot)
+  0x55,        // SSTORE (store new value)
+])
+
+console.log(Opcode.disassemble(incrementCode))
+// [
+//   "0000: PUSH1 0x00",
+//   "0002: SLOAD",
+//   "0003: PUSH1 0x01",
+//   "0005: ADD",
+//   "0006: PUSH1 0x00",
+//   "0008: SSTORE"
+// ]
+```
+
+### Memory Layout
+
+Common memory usage pattern:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// Standard memory setup at contract start
+const memorySetupCode = new Uint8Array([
+  0x60, 0x80,  // PUSH1 0x80 (128 - free memory pointer start)
+  0x60, 0x40,  // PUSH1 0x40 (64 - free memory pointer location)
+  0x52,        // MSTORE (store 0x80 at memory[0x40])
+])
+
+console.log(Opcode.disassemble(memorySetupCode))
+// [
+//   "0000: PUSH1 0x80",
+//   "0002: PUSH1 0x40",
+//   "0004: MSTORE"
+// ]
+
+// Memory layout:
+// 0x00-0x1f: scratch space
+// 0x20-0x3f: scratch space
+// 0x40-0x5f: free memory pointer
+// 0x60-0x7f: zero slot
+// 0x80+: allocated memory
+```
+
+## Complete Example: Return Value
+
+Contract that returns the value 42:
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const code = new Uint8Array([
+  0x60, 0x2a,  // PUSH1 0x2a (42 in hex)
+  0x60, 0x00,  // PUSH1 0 (memory offset)
+  0x52,        // MSTORE (store 42 at memory[0])
+  0x60, 0x20,  // PUSH1 0x20 (32 bytes to return)
+  0x60, 0x00,  // PUSH1 0 (memory offset to return from)
+  0xf3,        // RETURN
+])
+
+console.log(Opcode.disassemble(code))
+// [
+//   "0000: PUSH1 0x2a",
+//   "0002: PUSH1 0x00",
+//   "0004: MSTORE",
+//   "0005: PUSH1 0x20",
+//   "0007: PUSH1 0x00",
+//   "0009: RETURN"
+// ]
+
+// Execution trace:
+// Stack: []
+// PUSH1 0x2a → Stack: [0x2a]
+// PUSH1 0x00 → Stack: [0x00, 0x2a]
+// MSTORE     → Stack: [], Memory[0:32] = 0x2a
+// PUSH1 0x20 → Stack: [0x20]
+// PUSH1 0x00 → Stack: [0x00, 0x20]
+// RETURN     → Returns memory[0:32] containing 42
+```
+
+## Resources
+
+- **[evm.codes](https://www.evm.codes/)** - Interactive opcode reference with gas costs and stack effects
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal EVM specification (Appendix H)
+- **[wolflo/evm-opcodes](https://github.com/wolflo/evm-opcodes)** - Comprehensive opcode gas costs
+- **[Solidity Yul](https://docs.soliditylang.org/en/latest/yul.html)** - Low-level EVM assembly language
+- **[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)** - Access lists (warm/cold gas costs)
+- **[EIP-3855](https://eips.ethereum.org/EIPS/eip-3855)** - PUSH0 instruction (Shanghai hardfork)
+
+## Next Steps
+
+- [Opcode Overview](/primitives/opcode) - Type definition and API reference
+- [Reference Guide](/primitives/opcode/reference-guide) - Complete opcode listing
+- [Constructors](/primitives/opcode/constructors) - Parsing and analysis functions
+- [Validation](/primitives/opcode/validation) - Category checks and jump validation
+- [Utilities](/primitives/opcode/utilities) - Metadata, disassembly, stack effects

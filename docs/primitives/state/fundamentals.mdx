@@ -1,0 +1,433 @@
+---
+title: Fundamentals
+description: Learn Ethereum state structure, Merkle Patricia Tries, and state verification
+---
+
+Ethereum state is a global key-value mapping of all accounts (EOAs and contracts) to their data (balance, nonce, code, storage). This guide teaches state fundamentals using Voltaire.
+
+## What is Ethereum State?
+
+Ethereum maintains a single, canonical **world state** - a mapping from 20-byte addresses to account data. This state changes with every transaction in every block.
+
+```typescript
+// Conceptually, state is:
+Map<Address, Account>
+
+// Where Account contains:
+{
+  balance: bigint,      // Account balance in wei
+  nonce: bigint,        // Transaction count (EOAs) or contract creation count (contracts)
+  storageRoot: Hash,    // Root of account's storage trie (contracts only)
+  codeHash: Hash        // Keccak256 of contract bytecode (contracts only)
+}
+```
+
+## Account State
+
+Two account types exist in Ethereum:
+
+<Tabs>
+<Tab title="Externally Owned Accounts (EOA)">
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Address from '@tevm/primitives/Address';
+import * as Hash from '@tevm/primitives/Hash';
+
+// EOA example (user wallet)
+const eoaAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const eoaAccount = {
+  balance: 1000000000000000000n,  // 1 ETH in wei
+  nonce: 42n,                      // Has sent 42 transactions
+  storageRoot: Hash.from("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),  // Empty storage
+  codeHash: Hash.from("0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")     // Empty code
+};
+```
+</Tab>
+<Tab title="Contract Accounts">
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Address from '@tevm/primitives/Address';
+import * as Hash from '@tevm/primitives/Hash';
+
+// Contract account (USDC on mainnet)
+const contractAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const contractAccount = {
+  balance: 0n,                     // Contract has no ETH
+  nonce: 1n,                       // Has created 1 contract (proxy pattern)
+  storageRoot: Hash.from("0x..."), // Root of storage trie with token balances, allowances
+  codeHash: Hash.from("0x...")     // Keccak256 hash of deployed bytecode
+};
+```
+</Tab>
+</Tabs>
+
+## Merkle Patricia Trie Structure
+
+Ethereum stores state in a **Merkle Patricia Trie** - a cryptographic data structure combining:
+
+- **Merkle Tree**: Any change to data changes the root hash
+- **Patricia Trie**: Space-efficient prefix tree for key-value lookups
+
+### How It Works
+
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Hash from '@tevm/primitives/Hash';
+
+// State trie structure:
+// Root
+//  ├─ Branch Node (0x0...)
+//  │   ├─ Extension Node (prefix: 0x07)
+//  │   │   └─ Leaf Node: Account(0x0742d35...)
+//  │   └─ Leaf Node: Account(0x0A0b869...)
+//  └─ Branch Node (0x1...)
+//      └─ Leaf Node: Account(0x1234567...)
+
+// Each node hashes its children, creating a merkle tree
+// The state root is the hash of the root node
+```
+
+### State Root
+
+The **state root** is a single 32-byte hash proving the entire world state:
+
+```typescript
+import * as Hash from '@tevm/primitives/Hash';
+
+// Every block header includes state root
+const blockStateRoot = Hash.from("0x123abc..."); // 32 bytes
+
+// Changing ANY account data changes the state root
+// This enables:
+// - Light client verification
+// - State proofs
+// - Fraud proofs for rollups
+```
+
+## Storage Tries
+
+Each contract account has its own **storage trie** mapping 256-bit slot numbers to 256-bit values:
+
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Address from '@tevm/primitives/Address';
+
+// USDC contract storage example
+const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+// Storage slot 0: total supply
+const slot0 = State.StorageKey(usdcAddress, 0n);
+
+// Storage slot for user balance (computed via Keccak256)
+// balanceOf[userAddress] = keccak256(abi.encode(userAddress, balanceSlot))
+const userAddress = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const balanceSlot = 1n; // Storage slot where balances mapping is defined
+// Actual slot = keccak256(userAddress + balanceSlot)
+const userBalanceKey = State.StorageKey(usdcAddress, BigInt("0x..." /* computed hash */));
+```
+
+### Storage Layout
+
+```typescript
+// Solidity storage layout example
+contract Token {
+  uint256 public totalSupply;              // Slot 0
+  mapping(address => uint256) public balances; // Slot 1 (base slot)
+
+  // balances[addr] stored at: keccak256(abi.encode(addr, 1))
+}
+```
+
+## Complete Examples
+
+### Query State
+
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Address from '@tevm/primitives/Address';
+
+// Create storage key for querying
+const contractAddr = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const slot = 0n; // Total supply slot
+
+const storageKey = State.StorageKey(contractAddr, slot);
+
+// Use as map key
+const stateDb = new Map<string, bigint>();
+const keyStr = State.StorageKey.toString(storageKey);
+// "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:0"
+
+stateDb.set(keyStr, 1000000000n); // 1 billion USDC (6 decimals)
+
+// Retrieve value
+const totalSupply = stateDb.get(keyStr);
+console.log(`Total Supply: ${totalSupply}`); // 1000000000
+```
+
+### Compute State Root
+
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Address from '@tevm/primitives/Address';
+import * as Hash from '@tevm/primitives/Hash';
+import { Keccak256 } from '@tevm/crypto';
+
+// Simple state root computation (conceptual)
+function computeStateRoot(accounts: Map<string, any>): Hash {
+  // 1. RLP encode each account with its address
+  const encodedAccounts = Array.from(accounts.entries()).map(([addr, account]) => {
+    return rlpEncode([addr, account.nonce, account.balance, account.storageRoot, account.codeHash]);
+  });
+
+  // 2. Build Merkle Patricia Trie from encoded accounts
+  const trie = buildMerklePatriciaTrie(encodedAccounts);
+
+  // 3. Hash the root node
+  const rootHash = Keccak256.hash(trie.root);
+
+  return Hash.from(rootHash);
+}
+
+// In practice, use client libraries (e.g., @ethereumjs/trie)
+```
+
+### Verify Merkle Proof
+
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Hash from '@tevm/primitives/Hash';
+import { Keccak256 } from '@tevm/crypto';
+
+// Merkle proof allows proving account data without full state
+function verifyAccountProof(
+  stateRoot: Hash,
+  accountAddress: string,
+  accountData: any,
+  proof: Uint8Array[]
+): boolean {
+  // 1. Start with account data hash
+  let currentHash = Keccak256.hash(rlpEncode(accountData));
+
+  // 2. Walk up the trie using proof nodes
+  for (const proofNode of proof) {
+    currentHash = Keccak256.hash(concat([proofNode, currentHash]));
+  }
+
+  // 3. Final hash should equal state root
+  return Hash.equals(Hash.from(currentHash), stateRoot);
+}
+
+// Example usage
+const proof = [
+  new Uint8Array([/* proof node 1 */]),
+  new Uint8Array([/* proof node 2 */]),
+  new Uint8Array([/* proof node 3 */])
+];
+
+const isValid = verifyAccountProof(
+  blockStateRoot,
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  eoaAccount,
+  proof
+);
+console.log(`Proof valid: ${isValid}`);
+```
+
+## State Transitions
+
+Every transaction modifies state. The EVM applies state transitions:
+
+```typescript
+// State transition example: ETH transfer
+const sender = Address.from("0xAlice...");
+const receiver = Address.from("0xBob...");
+const amount = 1000000000000000000n; // 1 ETH
+
+// Before transaction
+const stateBefore = {
+  [sender]: { balance: 2000000000000000000n, nonce: 5n, ... },
+  [receiver]: { balance: 500000000000000000n, nonce: 0n, ... }
+};
+
+// Apply transaction
+function applyTransaction(state, tx) {
+  // 1. Check sender balance >= amount + gas
+  // 2. Increment sender nonce
+  // 3. Deduct amount + gas from sender
+  // 4. Add amount to receiver
+  // 5. Create new contract if tx.to is null
+  // 6. Execute contract code if tx.to is contract
+  // 7. Refund unused gas
+  return newState;
+}
+
+// After transaction
+const stateAfter = {
+  [sender]: { balance: 999000000000000000n, nonce: 6n, ... },   // -1 ETH, -gas, +nonce
+  [receiver]: { balance: 1500000000000000000n, nonce: 0n, ... }  // +1 ETH
+};
+
+// State root changes
+const oldRoot = computeStateRoot(stateBefore);
+const newRoot = computeStateRoot(stateAfter);
+console.log(`Root changed: ${!Hash.equals(oldRoot, newRoot)}`); // true
+```
+
+### State Transition Validation
+
+```typescript
+import * as Hash from '@tevm/primitives/Hash';
+
+// Validate block state transition
+function validateBlockStateTransition(
+  prevStateRoot: Hash,
+  block: Block,
+  newStateRoot: Hash
+): boolean {
+  // 1. Start with previous state
+  let state = loadState(prevStateRoot);
+
+  // 2. Apply all transactions in order
+  for (const tx of block.transactions) {
+    state = applyTransaction(state, tx);
+  }
+
+  // 3. Compute new state root
+  const computedRoot = computeStateRoot(state);
+
+  // 4. Must match block's state root
+  return Hash.equals(computedRoot, newStateRoot);
+}
+```
+
+## Storage Key Operations
+
+Voltaire provides utilities for working with storage keys:
+
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Address from '@tevm/primitives/Address';
+
+const contract = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+
+// Create storage key
+const key1 = State.StorageKey(contract, 0n);
+const key2 = State.StorageKey(contract, 1n);
+
+// Compare keys
+console.log(State.StorageKey.equals(key1, key2)); // false
+
+// Serialize for map keys
+const map = new Map<string, bigint>();
+map.set(State.StorageKey.toString(key1), 100n);
+map.set(State.StorageKey.toString(key2), 200n);
+
+// Deserialize from string
+const keyStr = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48:42";
+const parsed = State.StorageKey.fromString(keyStr);
+console.log(parsed.address); // BrandedAddress
+console.log(parsed.slot);    // 42n
+
+// Type guard
+if (State.StorageKey.is(key1)) {
+  console.log("Valid storage key");
+}
+```
+
+## Common Use Cases
+
+### Light Clients
+
+Light clients verify state without downloading full blockchain:
+
+```typescript
+// Light client flow
+async function verifyBalance(
+  rpcUrl: string,
+  address: string,
+  blockNumber: bigint
+): Promise<boolean> {
+  // 1. Get block header (contains state root)
+  const header = await fetch(`${rpcUrl}/getBlockHeader/${blockNumber}`);
+  const stateRoot = Hash.from(header.stateRoot);
+
+  // 2. Request account proof from full node
+  const proof = await fetch(`${rpcUrl}/getProof/${address}/${blockNumber}`);
+
+  // 3. Verify proof against state root
+  return verifyAccountProof(stateRoot, address, proof.accountData, proof.proof);
+}
+```
+
+### State Proofs for Rollups
+
+Rollups use state proofs for fraud detection:
+
+```typescript
+// Optimistic rollup fraud proof
+function submitFraudProof(
+  l1StateRoot: Hash,
+  l2Batch: Batch,
+  invalidStateTransition: Transaction
+) {
+  // 1. Prove pre-state against L1 state root
+  const preStateProof = generateStateProof(l1StateRoot, invalidStateTransition.accounts);
+
+  // 2. Show that applying transaction gives different result than claimed
+  const claimedPostState = l2Batch.postStateRoot;
+  const actualPostState = applyTransaction(preStateProof.state, invalidStateTransition);
+
+  // 3. If roots differ, L2 batch is invalid
+  if (!Hash.equals(claimedPostState, computeStateRoot(actualPostState))) {
+    // Slash sequencer, revert batch
+  }
+}
+```
+
+### Storage Slot Analysis
+
+Analyze contract storage layout:
+
+```typescript
+import * as State from '@tevm/primitives/State';
+import * as Address from '@tevm/primitives/Address';
+
+// Enumerate all storage slots for a contract
+async function analyzeContractStorage(
+  contractAddress: Address,
+  provider: any
+): Promise<Map<bigint, bigint>> {
+  const storage = new Map<bigint, bigint>();
+
+  // Storage slots are 2^256 possible values, but contracts use sparse slots
+  // In practice, query known slots or iterate from 0
+  for (let slot = 0n; slot < 100n; slot++) {
+    const key = State.StorageKey(contractAddress, slot);
+    const value = await provider.getStorageAt(
+      Address.toHex(contractAddress),
+      slot
+    );
+
+    if (value !== 0n) {
+      storage.set(slot, value);
+    }
+  }
+
+  return storage;
+}
+```
+
+## Resources
+
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal state specification (Section 4.1, Appendix D)
+- **[ethereum.org State Docs](https://ethereum.org/en/developers/docs/accounts/)** - Account and state overview
+- **[Patricia Merkle Trie Spec](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)** - Trie structure details
+- **[@ethereumjs/trie](https://github.com/ethereumjs/ethereumjs-monorepo/tree/master/packages/trie)** - Production trie implementation
+- **[evm.codes](https://www.evm.codes/)** - SLOAD/SSTORE opcodes for state access
+
+## Next Steps
+
+- [Overview](/primitives/state) - Type definition and API reference
+- [Storage Keys](/primitives/state/constructors) - Creating storage keys
+- [Merkle Trees](/primitives/state/merkle-trees) - Trie operations
+- [Usage Patterns](/primitives/state/usage-patterns) - Real-world examples

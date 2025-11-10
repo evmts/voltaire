@@ -1,0 +1,561 @@
+---
+title: Fundamentals
+description: Learn cryptographic hashes, Keccak-256, and hash-based data structures in Ethereum
+---
+
+Cryptographic hashes are one-way deterministic functions that transform arbitrary data into fixed-size digests. This guide teaches hash fundamentals using Voltaire's Hash primitive.
+
+## What Are Cryptographic Hashes?
+
+A cryptographic hash function takes any input data and produces a fixed-size output (digest) with these properties:
+
+- **Deterministic** - Same input always produces the same output
+- **One-way** - Cannot reverse hash to get original input
+- **Collision-resistant** - Nearly impossible to find two different inputs producing the same hash
+- **Avalanche effect** - Small input changes completely alter the output
+- **Fixed size** - Output is always 32 bytes (256 bits) regardless of input size
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Same input always produces same hash (deterministic)
+const data = new Uint8Array([1, 2, 3]);
+const hash1 = Hash.keccak256(data);
+const hash2 = Hash.keccak256(data);
+console.log(hash1.equals(hash2)); // true
+
+// Small change completely alters output (avalanche effect)
+const data2 = new Uint8Array([1, 2, 4]); // Changed last byte
+const hash3 = Hash.keccak256(data2);
+console.log(hash1.equals(hash3)); // false
+
+// Different sizes produce same 32-byte output
+const small = Hash.keccak256(new Uint8Array([1]));
+const large = Hash.keccak256(new Uint8Array(1000).fill(1));
+console.log(`Small: ${small.length} bytes`); // 32 bytes
+console.log(`Large: ${large.length} bytes`); // 32 bytes
+```
+
+## Why Keccak-256?
+
+Ethereum uses **Keccak-256**, the original Keccak algorithm that was selected as the SHA-3 standard. Note that Keccak-256 differs from the final SHA3-256 specification (NIST modified padding after selection).
+
+**Why Keccak-256 specifically:**
+- **Security** - No known practical attacks, 128-bit security level
+- **Performance** - Fast on modern hardware, especially 64-bit systems
+- **Simplicity** - Clean design based on sponge construction
+- **Timing** - Ethereum adopted it before NIST's final SHA-3 modifications
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Keccak-256 is Ethereum's hash function
+const message = new TextEncoder().encode("hello");
+const hash = Hash.keccak256(message);
+console.log(hash.toHex());
+// 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+
+// Different from SHA3-256 due to NIST's padding changes
+```
+
+## Hash Properties in Practice
+
+### Deterministic Hashing
+
+Same input always produces identical output - critical for verification:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+const data = new Uint8Array([1, 2, 3, 4, 5]);
+const hash1 = Hash.keccak256(data);
+const hash2 = Hash.keccak256(data);
+
+console.log(hash1.equals(hash2)); // true
+console.log(hash1.toHex() === hash2.toHex()); // true
+
+// Use this for data integrity verification
+function verifyData(data: Uint8Array, expectedHash: string): boolean {
+  const actualHash = Hash.keccak256(data);
+  return actualHash.toHex() === expectedHash;
+}
+```
+
+### Collision Resistance
+
+Computationally infeasible to find two inputs with the same hash:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// These will produce different hashes
+const data1 = new Uint8Array([1, 2, 3]);
+const data2 = new Uint8Array([1, 2, 4]);
+
+const hash1 = Hash.keccak256(data1);
+const hash2 = Hash.keccak256(data2);
+
+console.log(hash1.equals(hash2)); // false
+
+// Collision resistance enables:
+// - Unique identifiers for transactions
+// - Tamper-evident data structures
+// - Secure digital signatures
+```
+
+### Avalanche Effect
+
+Tiny input changes produce completely different outputs:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Original data
+const original = new TextEncoder().encode("hello");
+const hash1 = Hash.keccak256(original);
+
+// Change single bit
+const modified = new TextEncoder().encode("hallo"); // e → a
+const hash2 = Hash.keccak256(modified);
+
+console.log(hash1.toHex());
+// 0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8
+console.log(hash2.toHex());
+// 0x15c2c5dba9e6bc0bd49bc8f0e51ee3dd77f2fc9e0c11ad5e41f5d0f8d8cf6fc0
+// Completely different despite single character change
+```
+
+## Hashing Different Data Types
+
+### Hash Byte Arrays
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+const data = new Uint8Array([1, 2, 3, 4, 5]);
+const hash = Hash.keccak256(data);
+console.log(hash.toHex());
+// 0x7d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923
+```
+
+### Hash Strings
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Convenience method for UTF-8 strings
+const hash = Hash.keccak256String("Hello, Ethereum!");
+console.log(hash.toHex());
+
+// Equivalent to manual encoding
+const encoder = new TextEncoder();
+const data = encoder.encode("Hello, Ethereum!");
+const hash2 = Hash.keccak256(data);
+console.log(hash.equals(hash2)); // true
+```
+
+### Hash Hex Data
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Hash hex-encoded data directly
+const hash = Hash.keccak256Hex("0x1234567890abcdef");
+
+// Equivalent to manual conversion
+import { Hex } from '@tevm/voltaire';
+const bytes = Hex.toBytes("0x1234567890abcdef");
+const hash2 = Hash.keccak256(bytes);
+console.log(hash.equals(hash2)); // true
+```
+
+### Hash Structured Data
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Hash serialized objects (e.g., JSON)
+const object = { address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2", value: 100 };
+const serialized = JSON.stringify(object);
+const hash = Hash.keccak256String(serialized);
+
+// Use for content-addressed storage
+const contentId = hash.toHex();
+console.log(`Content ID: ${contentId}`);
+```
+
+## Complete Example: Data Integrity Verification
+
+Verify that data hasn't been tampered with during transmission or storage:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Sender: Create data and compute hash
+const originalData = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+const expectedHash = Hash.keccak256(originalData);
+
+console.log(`Original hash: ${expectedHash.toHex()}`);
+console.log(`Data size: ${originalData.length} bytes`);
+
+// Send both data and hash...
+
+// Receiver: Verify data integrity
+function verifyIntegrity(
+  receivedData: Uint8Array,
+  expectedHash: Hash
+): boolean {
+  const actualHash = Hash.keccak256(receivedData);
+  return actualHash.equals(expectedHash);
+}
+
+// Test with correct data
+console.log(verifyIntegrity(originalData, expectedHash)); // true
+
+// Test with tampered data
+const tamperedData = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 9]); // Last byte changed
+console.log(verifyIntegrity(tamperedData, expectedHash)); // false
+
+// Even single bit flip detected
+const bitFlipped = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 0]); // 8 → 0
+console.log(verifyIntegrity(bitFlipped, expectedHash)); // false
+```
+
+**Key benefits:**
+- Detects any modification to data
+- Efficient - hash is only 32 bytes regardless of data size
+- Fast verification - single hash computation
+
+## Merkle Trees
+
+Merkle trees use hashes to efficiently prove data membership. Each leaf is a hash, and parent nodes hash their children together.
+
+### Building a Merkle Tree
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Leaf data
+const leaves = [
+  Hash.keccak256String("transaction1"),
+  Hash.keccak256String("transaction2"),
+  Hash.keccak256String("transaction3"),
+  Hash.keccak256String("transaction4"),
+];
+
+// Build tree bottom-up
+function buildMerkleTree(hashes: Hash[]): Hash {
+  if (hashes.length === 1) return hashes[0];
+
+  const nextLevel: Hash[] = [];
+  for (let i = 0; i < hashes.length; i += 2) {
+    if (i + 1 < hashes.length) {
+      // Hash pair together
+      const combined = new Uint8Array(64);
+      combined.set(hashes[i], 0);
+      combined.set(hashes[i + 1], 32);
+      nextLevel.push(Hash.keccak256(combined));
+    } else {
+      // Odd node - promote to next level
+      nextLevel.push(hashes[i]);
+    }
+  }
+
+  return buildMerkleTree(nextLevel);
+}
+
+const root = buildMerkleTree(leaves);
+console.log(`Merkle root: ${root.toHex()}`);
+```
+
+### Verifying Merkle Proofs
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Verify that a leaf exists in tree with given root
+function verifyMerkleProof(
+  leaf: Hash,
+  proof: Hash[],
+  root: Hash,
+  index: number
+): boolean {
+  let current = leaf;
+  let idx = index;
+
+  for (const sibling of proof) {
+    const combined = new Uint8Array(64);
+
+    // Hash in correct order based on position
+    if (idx % 2 === 0) {
+      // Left node
+      combined.set(current, 0);
+      combined.set(sibling, 32);
+    } else {
+      // Right node
+      combined.set(sibling, 0);
+      combined.set(current, 32);
+    }
+
+    current = Hash.keccak256(combined);
+    idx = Math.floor(idx / 2);
+  }
+
+  return current.equals(root);
+}
+
+// Example: Prove transaction2 is in tree
+const leaf = Hash.keccak256String("transaction2");
+const proof = [
+  Hash.keccak256String("transaction1"),  // Sibling at level 0
+  // ... additional proof nodes
+];
+const isValid = verifyMerkleProof(leaf, proof, root, 1);
+console.log(`Proof valid: ${isValid}`);
+```
+
+**Merkle tree benefits:**
+- **Efficient proofs** - O(log n) size for n leaves
+- **Tamper evident** - Changing any leaf changes root
+- **Selective disclosure** - Prove membership without revealing all data
+
+## Common Use Cases
+
+### Transaction Identifiers
+
+Ethereum transactions are identified by their hash:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Transaction data (simplified)
+const txData = new Uint8Array([
+  // nonce, gasPrice, gasLimit, to, value, data, v, r, s
+  // (RLP-encoded in practice)
+]);
+
+const txHash = Hash.keccak256(txData);
+console.log(`Transaction ID: ${txHash.toHex()}`);
+
+// This hash uniquely identifies the transaction on-chain
+```
+
+### Addresses from Public Keys
+
+Ethereum addresses are derived from public key hashes:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// 64-byte uncompressed public key (without 0x04 prefix)
+const publicKey = new Uint8Array(64); // ... actual key bytes
+
+// Hash and take last 20 bytes
+const hash = Hash.keccak256(publicKey);
+const address = hash.slice(12, 32); // Last 20 bytes
+
+console.log(`Address: 0x${Array.from(address).map(b => b.toString(16).padStart(2, '0')).join('')}`);
+```
+
+### Block Identifiers
+
+Blocks are identified by hashing their header:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Block header data (RLP-encoded)
+const blockHeader = new Uint8Array([
+  // parentHash, unclesHash, miner, stateRoot, txRoot, receiptsRoot,
+  // logsBloom, difficulty, number, gasLimit, gasUsed, timestamp,
+  // extraData, mixHash, nonce
+]);
+
+const blockHash = Hash.keccak256(blockHeader);
+console.log(`Block hash: ${blockHash.toHex()}`);
+```
+
+### Content Addressing
+
+Use hashes as immutable references to data:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Content-addressed storage
+const storage = new Map<string, Uint8Array>();
+
+function store(data: Uint8Array): string {
+  const hash = Hash.keccak256(data);
+  const key = hash.toHex();
+  storage.set(key, data);
+  return key;
+}
+
+function retrieve(key: string): Uint8Array | undefined {
+  return storage.get(key);
+}
+
+// Store and retrieve
+const data = new TextEncoder().encode("Hello, IPFS-style storage!");
+const contentId = store(data);
+console.log(`Stored with ID: ${contentId}`);
+
+const retrieved = retrieve(contentId);
+console.log(`Retrieved: ${new TextDecoder().decode(retrieved)}`);
+```
+
+### State Roots
+
+Merkle Patricia Tries use hashes for Ethereum state:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// State trie root uniquely identifies entire world state
+const accountData = [
+  { address: "0x123...", balance: 100n, nonce: 1 },
+  { address: "0x456...", balance: 200n, nonce: 2 },
+  // ... all accounts
+];
+
+// Each account is hashed and inserted into trie
+// Root hash represents entire state
+const stateRoot = Hash.keccak256(/* serialized trie */);
+console.log(`State root: ${stateRoot.toHex()}`);
+```
+
+## Hash Comparisons
+
+### Equality
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+const hash1 = Hash.keccak256String("data");
+const hash2 = Hash.keccak256String("data");
+const hash3 = Hash.keccak256String("different");
+
+// Compare hashes
+console.log(hash1.equals(hash2)); // true
+console.log(hash1.equals(hash3)); // false
+
+// Compare with hex string
+console.log(hash1.toHex() === "0x..."); // true
+
+// Constant-time comparison (prevents timing attacks)
+```
+
+### Zero Hash
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Check for empty/uninitialized hash
+const hash = Hash.keccak256(new Uint8Array(0));
+console.log(hash.isZero()); // false (empty input has non-zero hash)
+
+// Zero hash constant
+const zero = Hash.ZERO;
+console.log(zero.isZero()); // true
+console.log(zero.toHex());
+// 0x0000000000000000000000000000000000000000000000000000000000000000
+```
+
+## Performance Considerations
+
+### Hash Caching
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Cache expensive hash computations
+class CachedData {
+  private _hash?: Hash;
+
+  constructor(private data: Uint8Array) {}
+
+  getHash(): Hash {
+    if (!this._hash) {
+      this._hash = Hash.keccak256(this.data);
+    }
+    return this._hash;
+  }
+}
+
+const cached = new CachedData(new Uint8Array(10000));
+const hash1 = cached.getHash(); // Computed
+const hash2 = cached.getHash(); // Cached
+```
+
+### Batch Processing
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Process multiple hashes efficiently
+function hashBatch(items: Uint8Array[]): Hash[] {
+  return items.map(item => Hash.keccak256(item));
+}
+
+const items = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6]),
+  new Uint8Array([7, 8, 9]),
+];
+
+const hashes = hashBatch(items);
+console.log(`Hashed ${hashes.length} items`);
+```
+
+### Incremental Hashing
+
+For streaming data, consider accumulating in buffer:
+
+```typescript
+import { Hash } from '@tevm/voltaire';
+
+// Buffer data before hashing
+class HashBuilder {
+  private buffer: Uint8Array[] = [];
+
+  append(data: Uint8Array): void {
+    this.buffer.push(data);
+  }
+
+  finalize(): Hash {
+    const totalLength = this.buffer.reduce((sum, arr) => sum + arr.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+
+    for (const chunk of this.buffer) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return Hash.keccak256(combined);
+  }
+}
+
+const builder = new HashBuilder();
+builder.append(new Uint8Array([1, 2, 3]));
+builder.append(new Uint8Array([4, 5, 6]));
+const hash = builder.finalize();
+```
+
+## Resources
+
+- **[Keccak Team](https://keccak.team/keccak.html)** - Official Keccak specification and documentation
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal specification of Keccak-256 usage in Ethereum
+- **[NIST FIPS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)** - SHA-3 standard (Keccak basis)
+- **[Merkle Trees Explained](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)** - Ethereum's Merkle Patricia Trie
+- **[Cryptographic Hash Functions](https://en.wikipedia.org/wiki/Cryptographic_hash_function)** - General overview
+
+## Next Steps
+
+- [Overview](/primitives/hash) - Hash API reference and type definitions
+- [Hashing Methods](/primitives/hash/hashing) - keccak256, keccak256String, keccak256Hex
+- [Comparisons](/primitives/hash/comparisons) - equals, isZero
+- [Utilities](/primitives/hash/utilities) - random, concat, merkleRoot
+- [Address](/primitives/address) - Addresses derived from public key hashes
+- [Bytecode](/primitives/bytecode) - Contract bytecode verified with hashes
