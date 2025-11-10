@@ -53,11 +53,11 @@ import type { Fallback, Receive } from "./Item/index.js";
 import type { BrandedConstructor as Constructor } from "./constructor/index.js";
 import type { BrandedError } from "./error/index.js";
 import type { Event } from "./event/index.js";
-import type { Function as FunctionType } from "./function/index.js";
+import type { BrandedFunction } from "./function/index.js";
 
 /**
  * ABI type: Array of ABI items (functions, events, errors, constructor, fallback, receive)
  */
 export type Abi = ReadonlyArray<
-	FunctionType | Event | BrandedError | Constructor | Fallback | Receive
+	BrandedFunction | Event | BrandedError | Constructor | Fallback | Receive
 >;

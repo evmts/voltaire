@@ -31,7 +31,7 @@ import * as Function from "./function/index.js";
 export function encodeFunction(abi, functionName, args) {
 	const item = abi.find((item) => {
 		if (item.type !== "function") return false;
-		const fn = /** @type {import('./function/index.js').Function} */ (item);
+		const fn = /** @type {import('./function/index.js').BrandedFunction} */ (item);
 		return fn.name === functionName;
 	});
 
@@ -42,7 +42,7 @@ export function encodeFunction(abi, functionName, args) {
 	}
 
 	// Type assertion after guard
-	const fn = /** @type {import('./function/index.js').Function} */ (item);
+	const fn = /** @type {import('./function/index.js').BrandedFunction} */ (item);
 	const encoded = Function.encodeParams(fn, args);
 	return Hex.fromBytes(encoded);
 }

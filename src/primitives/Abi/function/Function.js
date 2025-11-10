@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as BrandedFunction from "./BrandedFunction/index.js";
 
 /**
@@ -11,8 +10,8 @@ import * as BrandedFunction from "./BrandedFunction/index.js";
  *
  * @template {string} TName
  * @template {import('./BrandedFunction/statemutability.js').StateMutability} TStateMutability
- * @template {readonly import('../../parameter/index.js').Parameter[]} TInputs
- * @template {readonly import('../../parameter/index.js').Parameter[]} TOutputs
+ * @template {readonly import('../parameter/index.js').BrandedParameter[]} TInputs
+ * @template {readonly import('../parameter/index.js').BrandedParameter[]} TOutputs
  * @param {import('./BrandedFunction/BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} fn - Function ABI item
  * @returns {import('./BrandedFunction/BrandedFunction.js').Function<TName, TStateMutability, TInputs, TOutputs>} Validated function item
  */

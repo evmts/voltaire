@@ -1,13 +1,11 @@
-// @ts-nocheck
 import { Function } from "./Function.js";
 
 // Re-export BrandedFunction namespace and types
 export type { Function as BrandedFunction } from "./BrandedFunction/BrandedFunction.js";
-export type { Function } from "./BrandedFunction/BrandedFunction.js";
 export * from "./BrandedFunction/errors.js";
 export * from "./BrandedFunction/statemutability.js";
-import * as BrandedFunction from "./BrandedFunction/index.js";
-export { BrandedFunction };
+import * as BrandedFunctionNs from "./BrandedFunction/index.js";
+export { BrandedFunctionNs as BrandedFunctionConstants };
 
 // Export Function methods directly for namespace usage (Abi.Function.*)
 export const getSelector = Function.getSelector;

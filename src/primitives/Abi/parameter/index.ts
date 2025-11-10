@@ -4,16 +4,7 @@ export { Parameter } from "./Parameter.js";
 
 // Re-export BrandedParameter types
 export type { BrandedParameter } from "./BrandedParameter/BrandedParameter.js";
-
-// Re-export Parameter type (for JSDoc use)
-export type { Parameter as ParameterType } from "../Parameter.js";
-
-// Re-export old Parameter types for compatibility
-export type {
-	Parameter as AbiParameter,
-	ParametersToPrimitiveTypes,
-	ParametersToObject,
-} from "../Parameter.js";
+export type { BrandedParameter as AbiParameter } from "./BrandedParameter/BrandedParameter.js";
 
 // Export methods from BrandedParameter
 export { encode, decode, from } from "./BrandedParameter/index.js";
