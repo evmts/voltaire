@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { Bip39 } from "./Bip39/index.js";
 
 describe("Bip39", () => {

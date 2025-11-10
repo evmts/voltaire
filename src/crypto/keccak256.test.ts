@@ -9,7 +9,7 @@
  * - Cross-validation between Noble and WASM implementations
  */
 
-import { beforeAll, describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "vitest";
 import { equals } from "../primitives/Hash/BrandedHash/equals.js";
 import { fromHex } from "../primitives/Hash/BrandedHash/fromHex.js";
 import { isHash } from "../primitives/Hash/BrandedHash/isHash.js";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { keccak256String } from "../primitives/Hash/BrandedHash/keccak256String.js";
 import { P256 } from "./P256/index.js";
 
