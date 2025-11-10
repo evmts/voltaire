@@ -1,0 +1,520 @@
+---
+title: Bytecode.analyzeStack
+description: Validate stack depth constraints and track effects throughout execution
+icon: layer-group
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `bytecode.analyzeStack(options?: StackAnalysisOptions): StackAnalysis`
+
+Validate stack depth constraints and track stack effects throughout bytecode execution.
+
+Returns comprehensive analysis identifying underflows, overflows, and block-level stack requirements.
+
+**Parameters:**
+- `options?: StackAnalysisOptions` - Analysis configuration
+
+**Returns:** `StackAnalysis` - Complete stack validation results
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x6001600201");
+const analysis = code.analyzeStack();
+
+if (!analysis.valid) {
+  console.error("Stack validation failed!");
+  analysis.issues.forEach(issue => {
+    console.error(`${issue.type} at PC ${issue.pc}: ${issue.message}`);
+  });
+} else {
+  console.log(`Valid! Max stack depth: ${analysis.maxDepth}`);
+}
+```
+
+**Defined in:** [BrandedBytecode/analyzeStack.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeStack.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `analyzeStack(code: BrandedBytecode, options?: StackAnalysisOptions): StackAnalysis`
+
+Validate stack depth constraints and track stack effects throughout bytecode execution.
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to analyze
+- `options?: StackAnalysisOptions` - Analysis configuration
+
+**Returns:** `StackAnalysis` - Complete stack validation results
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const code = Bytecode.fromHex("0x6001600201");
+const analysis = Bytecode.analyzeStack(code);
+
+console.log(`Max depth: ${analysis.maxDepth}`);
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { analyzeStack } from '@tevm/voltaire/BrandedBytecode';
+
+const analysis = analyzeStack(code);
+```
+
+**Defined in:** [BrandedBytecode/analyzeStack.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeStack.js)
+
+</Tab>
+</Tabs>
+
+## StackAnalysis Type
+
+```typescript
+interface StackAnalysis {
+  /** Whether bytecode passes stack validation */
+  valid: boolean
+
+  /** Peak stack depth reached during execution */
+  maxDepth: number
+
+  /** Stack validation issues found */
+  issues: StackIssue[]
+
+  /** Per-block stack requirements */
+  byBlock: BlockStackInfo[]
+
+  /** Execution paths analyzed */
+  pathsAnalyzed: number
+}
+```
+
+### StackIssue
+
+```typescript
+interface StackIssue {
+  /** Issue type */
+  type: 'underflow' | 'overflow' | 'unreachable' | 'inconsistent'
+
+  /** Program counter where issue occurs */
+  pc: number
+
+  /** Block containing the issue */
+  blockIndex: number
+
+  /** Expected stack depth */
+  expected: number
+
+  /** Actual stack depth */
+  actual: number
+
+  /** Human-readable message */
+  message: string
+
+  /** Instruction causing issue */
+  opcode?: string
+}
+```
+
+### BlockStackInfo
+
+```typescript
+interface BlockStackInfo {
+  /** Block number */
+  blockIndex: number
+
+  /** PC range */
+  startPc: number
+  endPc: number
+
+  /** Minimum stack items required to enter block */
+  minRequired: number
+
+  /** Maximum depth reached during block execution */
+  maxReached: number
+
+  /** Stack depth at block exit (normal path) */
+  exitDepth: number
+
+  /** Stack effect (net change) */
+  stackEffect: number
+}
+```
+
+## Options
+
+```typescript
+interface StackAnalysisOptions {
+  /** Initial stack depth (default: 0) */
+  initialDepth?: number
+
+  /** Maximum stack depth to allow (default: 1024, EVM limit) */
+  maxDepth?: number
+
+  /** Analyze all paths through control flow (default: true) */
+  analyzePaths?: boolean
+
+  /** Maximum paths to explore (default: 1000) */
+  maxPaths?: number
+
+  /** Fail fast on first issue (default: false) */
+  failFast?: boolean
+}
+```
+
+## Usage Patterns
+
+### Basic Validation
+
+```typescript
+const code = Bytecode.fromHex("0x6001600201");
+// PUSH1 1, PUSH1 2, ADD
+
+const analysis = code.analyzeStack();
+
+console.log(`Valid: ${analysis.valid}`);
+console.log(`Max depth: ${analysis.maxDepth}`);
+console.log(`Issues: ${analysis.issues.length}`);
+
+// Output:
+// Valid: true
+// Max depth: 2
+// Issues: 0
+```
+
+### Detect Underflows
+
+```typescript
+const code = Bytecode.fromHex("0x01");
+// ADD (requires 2 items, but stack is empty)
+
+const analysis = code.analyzeStack();
+
+if (!analysis.valid) {
+  analysis.issues.forEach(issue => {
+    if (issue.type === 'underflow') {
+      console.error(`Stack underflow at PC ${issue.pc}`);
+      console.error(`  Opcode: ${issue.opcode}`);
+      console.error(`  Expected: ${issue.expected} items`);
+      console.error(`  Actual: ${issue.actual} items`);
+    }
+  });
+}
+
+// Output:
+// Stack underflow at PC 0
+//   Opcode: ADD
+//   Expected: 2 items
+//   Actual: 0 items
+```
+
+### Detect Overflows
+
+```typescript
+// Push 1025 items (exceeds EVM's 1024 limit)
+let code = "0x";
+for (let i = 0; i < 1025; i++) {
+  code += "5f"; // PUSH0
+}
+
+const bytecode = Bytecode.fromHex(code);
+const analysis = bytecode.analyzeStack();
+
+if (!analysis.valid) {
+  const overflow = analysis.issues.find(i => i.type === 'overflow');
+  if (overflow) {
+    console.error(`Stack overflow at PC ${overflow.pc}`);
+    console.error(`  Max allowed: ${overflow.expected}`);
+    console.error(`  Actual: ${overflow.actual}`);
+  }
+}
+
+// Output:
+// Stack overflow at PC 1024
+//   Max allowed: 1024
+//   Actual: 1025
+```
+
+### Block-Level Requirements
+
+```typescript
+const code = Bytecode.fromHex("0x60016002015b80016003015b00");
+// Block 0: PUSH1 1, PUSH1 2, ADD
+// Block 1 (JUMPDEST): DUP1, ADD, PUSH1 3, ADD
+// Block 2 (JUMPDEST): STOP
+
+const analysis = code.analyzeStack();
+
+analysis.byBlock.forEach(block => {
+  console.log(`Block ${block.blockIndex} (PC ${block.startPc}-${block.endPc}):`);
+  console.log(`  Min required: ${block.minRequired} items`);
+  console.log(`  Max reached: ${block.maxReached} items`);
+  console.log(`  Exit depth: ${block.exitDepth} items`);
+  console.log(`  Effect: ${block.stackEffect >= 0 ? '+' : ''}${block.stackEffect}`);
+});
+
+// Output:
+// Block 0 (PC 0-5):
+//   Min required: 0 items
+//   Max reached: 2 items
+//   Exit depth: 1 items
+//   Effect: +1
+// Block 1 (PC 5-10):
+//   Min required: 1 items
+//   Max reached: 3 items
+//   Exit depth: 2 items
+//   Effect: +1
+// Block 2 (PC 10-11):
+//   Min required: 2 items
+//   Max reached: 2 items
+//   Exit depth: 2 items
+//   Effect: 0
+```
+
+### Path Analysis
+
+```typescript
+const code = Bytecode.fromHex("0x60016002600360045760065b5b00");
+// PUSH1 1, PUSH1 2, PUSH1 3, PUSH1 4, JUMPI, PUSH1 6, JUMPDEST, JUMPDEST, STOP
+
+const analysis = code.analyzeStack({
+  analyzePaths: true
+});
+
+console.log(`Paths analyzed: ${analysis.pathsAnalyzed}`);
+
+if (!analysis.valid) {
+  // Show issues on specific paths
+  analysis.issues.forEach(issue => {
+    console.error(`Issue on path through block ${issue.blockIndex}: ${issue.message}`);
+  });
+}
+```
+
+### Custom Initial Depth
+
+Useful for analyzing contract fragments:
+
+```typescript
+// Fragment assumes 3 items already on stack
+const fragment = Bytecode.fromHex("0x910190016300");
+// SWAP2, ADD, SWAP1, ADD, PUSH4 0, (expects 3 items initially)
+
+const analysis = fragment.analyzeStack({
+  initialDepth: 3
+});
+
+console.log(`Valid with 3 initial items: ${analysis.valid}`);
+```
+
+## Stack Effects
+
+Each opcode has a defined stack effect:
+
+### Stack Input/Output
+
+- **ADD**: 2 inputs, 1 output (effect: -1)
+- **PUSH1**: 0 inputs, 1 output (effect: +1)
+- **DUP1**: 1 input, 2 outputs (effect: +1)
+- **SWAP1**: 2 inputs, 2 outputs (effect: 0)
+- **POP**: 1 input, 0 outputs (effect: -1)
+
+<Tip>
+Stack effects come from [Opcode.getStackEffect()](/primitives/opcode/getStackEffect).
+</Tip>
+
+### Cumulative Tracking
+
+```typescript
+const code = Bytecode.fromHex("0x60016002016080016090");
+// PUSH1 1 (+1), PUSH1 2 (+1), ADD (-1), PUSH1 0x80 (+1), ADD (-1), PUSH1 0x90 (+1)
+// Net: +1+1-1+1-1+1 = +2
+
+const analysis = code.analyzeStack();
+console.log(`Final depth: ${analysis.maxDepth}`); // 2
+```
+
+## EVM Stack Limits
+
+### Depth Limit (1024)
+
+EVM enforces a maximum stack depth of 1024 items:
+
+```typescript
+const analysis = code.analyzeStack({
+  maxDepth: 1024 // EVM standard
+});
+
+if (!analysis.valid) {
+  const overflow = analysis.issues.find(i => i.type === 'overflow');
+  if (overflow) {
+    console.error(`Exceeds EVM stack limit at PC ${overflow.pc}`);
+  }
+}
+```
+
+### DUP/SWAP Limits
+
+- **DUP1-DUP16**: Requires 1-16 items on stack
+- **SWAP1-SWAP16**: Requires 2-17 items on stack
+
+```typescript
+const code = Bytecode.fromHex("0x8F");
+// DUP16 (requires 16 items on stack)
+
+const analysis = code.analyzeStack();
+if (!analysis.valid) {
+  console.error("Stack underflow: DUP16 needs 16 items");
+}
+```
+
+## Integration with Opcode Module
+
+Stack effects from [Opcode module](/primitives/opcode):
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode';
+
+const addEffect = Opcode.getStackEffect('ADD');
+// { input: 2, output: 1, effect: -1 }
+
+const push1Effect = Opcode.getStackEffect('PUSH1');
+// { input: 0, output: 1, effect: +1 }
+
+const dup1Effect = Opcode.getStackEffect('DUP1');
+// { input: 1, output: 2, effect: +1 }
+```
+
+## Common Issues
+
+### Underflow Patterns
+
+```typescript
+// Pattern 1: Using result of failed operation
+const code1 = Bytecode.fromHex("0x6001600002");
+// PUSH1 1, PUSH1 0, MUL (result: 0, but valid)
+// Pattern: OK
+
+// Pattern 2: Missing PUSH
+const code2 = Bytecode.fromHex("0x016002");
+// ADD (needs 2, has 0), PUSH1 2
+// Pattern: UNDERFLOW at PC 0
+
+// Pattern 3: Wrong jump entry
+const code3 = Bytecode.fromHex("0x60055660015b01");
+// PUSH1 5, JUMP to JUMPDEST (expects empty stack, but has 1 item)
+// PUSH1 1, JUMPDEST, ADD (needs 2, has 1)
+// Pattern: UNDERFLOW at ADD
+```
+
+### Inconsistent Paths
+
+```typescript
+const code = Bytecode.fromHex("0x6001600460065760025b01");
+// PUSH1 1, PUSH1 4, PUSH1 6, JUMPI
+// Path 1 (jump): Stack depth 1 at target
+// PUSH1 2: Stack depth 2
+// Path 2 (no jump): Stack depth 2
+// JUMPDEST, ADD: Inconsistent entry (1 vs 2)
+
+const analysis = code.analyzeStack();
+const inconsistent = analysis.issues.find(i => i.type === 'inconsistent');
+if (inconsistent) {
+  console.error(`Inconsistent stack at JUMPDEST ${inconsistent.pc}`);
+}
+```
+
+## Limitations
+
+<Warning title="Static Analysis Limitations">
+Stack analysis is based on static control flow and cannot account for:
+
+- **Dynamic jump targets** - Cannot determine all possible JUMPI destinations
+- **External calls** - Callee's stack effects unknown
+- **Recursive calls** - Unbounded stack growth
+- **Inline assembly** - Non-standard stack manipulation
+
+Results represent **possible** issues, not guaranteed runtime behavior.
+</Warning>
+
+### What's Validated
+
+✅ Stack underflows (popping from empty stack)
+✅ Stack overflows (exceeding 1024 limit)
+✅ Block entry requirements
+✅ DUP/SWAP validity
+✅ Path consistency (where determinable)
+
+### What's Not Validated
+
+❌ Dynamic jump target validity
+❌ External call effects
+❌ Loop iteration counts
+❌ Recursion depth
+
+## Error Handling
+
+```typescript
+try {
+  const analysis = code.analyzeStack();
+
+  if (!analysis.valid) {
+    console.error(`Found ${analysis.issues.length} stack issues:`);
+    analysis.issues.forEach((issue, i) => {
+      console.error(`${i + 1}. ${issue.message}`);
+    });
+  }
+} catch (error) {
+  console.error('Analysis failed:', error);
+}
+```
+
+## Optimization Hints
+
+Identify inefficient stack patterns:
+
+```typescript
+const analysis = code.analyzeStack();
+
+// Find blocks with high stack depth
+const deepBlocks = analysis.byBlock
+  .filter(b => b.maxReached > 10)
+  .sort((a, b) => b.maxReached - a.maxReached);
+
+console.log("Deep stack blocks (consider refactoring):");
+deepBlocks.forEach(block => {
+  console.log(`Block ${block.blockIndex}: depth ${block.maxReached}`);
+});
+
+// Find blocks with many DUPs
+const instructions = code.parseInstructions();
+const dupCounts = new Map<number, number>();
+
+instructions.forEach(inst => {
+  const blockIndex = findBlockIndex(inst.position);
+  if (inst.opcode >= 0x80 && inst.opcode <= 0x8F) { // DUP1-DUP16
+    dupCounts.set(blockIndex, (dupCounts.get(blockIndex) || 0) + 1);
+  }
+});
+
+console.log("\nBlocks with excessive DUPs (consider local variables):");
+Array.from(dupCounts.entries())
+  .filter(([_, count]) => count > 5)
+  .forEach(([block, count]) => {
+    console.log(`Block ${block}: ${count} DUPs`);
+  });
+```
+
+## See Also
+
+- [analyzeGas](/primitives/bytecode/analyze-gas) - Gas cost estimation
+- [analyzeBlocks](/primitives/bytecode/analyze-blocks) - Basic block analysis
+- [Opcode.getStackEffect](/primitives/opcode/getStackEffect) - Individual stack effects
+- [prettyPrint](/primitives/bytecode/pretty-print) - Disassembly with stack annotations

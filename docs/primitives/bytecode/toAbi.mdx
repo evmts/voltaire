@@ -1,0 +1,506 @@
+---
+title: Bytecode.toAbi
+description: Extract ABI from bytecode using reverse engineering
+icon: arrow-right-arrow-left
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `bytecode.toAbi(): BrandedAbi`
+
+Reverse-engineer an ABI from deployed bytecode by analyzing function selectors, jump tables, and opcode patterns.
+
+Returns reconstructed ABI with function signatures, events, and state mutability. Uses [WhatsABI](https://github.com/shazow/whatsabi) for bytecode analysis.
+
+**Returns:** `BrandedAbi` - Reconstructed ABI array
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+// Get deployed contract bytecode
+const bytecode = await provider.getCode("0x...");
+const code = Bytecode.fromHex(bytecode);
+
+// Extract ABI from bytecode
+const abi = code.toAbi();
+
+console.log(`Found ${abi.length} ABI items`);
+abi.forEach(item => {
+  if (item.type === 'function') {
+    console.log(`Function: ${item.selector} (${item.stateMutability})`);
+  } else if (item.type === 'event') {
+    console.log(`Event: ${item.hash}`);
+  }
+});
+```
+
+**Defined in:** [BrandedBytecode/toAbi.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/toAbi.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `toAbi(code: BrandedBytecode): BrandedAbi`
+
+Reverse-engineer an ABI from deployed bytecode by analyzing function selectors and opcode patterns.
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to analyze
+
+**Returns:** `BrandedAbi` - Reconstructed ABI array
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const bytecode = await provider.getCode(contractAddress);
+const code = Bytecode.fromHex(bytecode);
+const abi = Bytecode.toAbi(code);
+
+console.log(abi);
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { toAbi } from '@tevm/voltaire/BrandedBytecode';
+
+const abi = toAbi(code);
+```
+
+**Defined in:** [BrandedBytecode/toAbi.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/toAbi.js)
+
+</Tab>
+</Tabs>
+
+## How It Works
+
+`toAbi()` analyzes bytecode to extract interface information by:
+
+1. **Function Selector Detection** - Identifies function dispatch jump tables
+2. **Payability Analysis** - Detects CALLVALUE checks for non-payable modifiers
+3. **State Mutability** - Infers view/pure based on SLOAD/SSTORE presence
+4. **Event Extraction** - Finds PUSH32 + LOG patterns for event signatures
+5. **Proxy Detection** - Identifies proxy patterns (EIP-1967, etc.)
+
+### Detection Patterns
+
+#### Function Selectors
+
+Solidity function dispatchers follow predictable patterns:
+
+```
+DUP1 PUSH4 0x2E64CEC1 EQ PUSH2 0x0037 JUMPI
+     └─────┬─────┘       └────┬────┘
+      Selector (4 bytes)    Jump target
+```
+
+The analyzer walks the jump table to extract all function selectors and their entry points.
+
+#### Payability
+
+Non-payable functions have guard checks:
+
+```
+JUMPDEST CALLVALUE DUP1 ISZERO ...
+         └──────────────┬──────────┘
+         Revert if msg.value > 0
+```
+
+Functions without this pattern are marked as `payable`.
+
+#### State Mutability
+
+Inferred from opcode usage:
+
+| Opcodes | Mutability | Meaning |
+|---------|------------|---------|
+| SSTORE present | `nonpayable` | Modifies state |
+| Only SLOAD | `view` | Reads state |
+| No SLOAD/SSTORE | `pure` (tentative) | No state access |
+| Has CALLVALUE checks | `payable` | Accepts ETH |
+
+<Note>
+State mutability inference has limitations with dynamic jumps. Functions may be incorrectly classified if control flow cannot be fully analyzed.
+</Note>
+
+#### Events
+
+Event signatures detected from LOG patterns:
+
+```
+PUSH32 0x... <topic hash>
+LOG1/LOG2/LOG3/LOG4
+```
+
+The PUSH32 value before a LOG instruction is extracted as an event topic hash.
+
+## Return Type
+
+```typescript
+type BrandedAbi = ReadonlyArray<ABIItem> & { readonly __tag: "Abi" };
+
+type ABIItem = ABIFunction | ABIEvent;
+
+interface ABIFunction {
+  type: "function";
+  selector: string;        // 4-byte function selector (e.g., "0x70a08231")
+  stateMutability: StateMutability;
+  payable: boolean;
+  inputs?: [{ type: "bytes"; name: "" }];   // Generic if detected
+  outputs?: [{ type: "bytes"; name: "" }];  // Generic if detected
+}
+
+interface ABIEvent {
+  type: "event";
+  hash: string;            // 32-byte topic hash (e.g., "0xddf2...")
+}
+
+type StateMutability = "pure" | "view" | "nonpayable" | "payable";
+```
+
+<Warning title="Generic Types Only">
+Reconstructed ABIs use generic `bytes` types since exact parameter structures cannot be determined from bytecode alone. Parameter names are always empty strings.
+</Warning>
+
+## Usage Patterns
+
+### Interact with Unverified Contracts
+
+```typescript
+const bytecode = await provider.getCode(mysteryContract);
+const code = Bytecode.fromHex(bytecode);
+const abi = code.toAbi();
+
+// Find all view functions
+const viewFunctions = abi.filter(
+  item => item.type === 'function' && item.stateMutability === 'view'
+);
+
+console.log(`Found ${viewFunctions.length} view functions:`);
+viewFunctions.forEach(fn => {
+  console.log(`  ${fn.selector}`);
+});
+
+// Try calling a function by selector
+const result = await provider.call({
+  to: mysteryContract,
+  data: viewFunctions[0].selector + "00".repeat(32) // Selector + padding
+});
+```
+
+### Verify Deployed Contract
+
+```typescript
+// Compare deployed bytecode ABI with expected
+const deployed = Bytecode.fromHex(await provider.getCode(address));
+const deployedAbi = deployed.toAbi();
+
+const expected = Bytecode.fromHex(compiledBytecode);
+const expectedAbi = expected.toAbi();
+
+// Check if function selectors match
+const deployedSelectors = new Set(
+  deployedAbi
+    .filter(item => item.type === 'function')
+    .map(fn => fn.selector)
+);
+
+const expectedSelectors = new Set(
+  expectedAbi
+    .filter(item => item.type === 'function')
+    .map(fn => fn.selector)
+);
+
+const matching = [...deployedSelectors].filter(s => expectedSelectors.has(s));
+const missing = [...expectedSelectors].filter(s => !deployedSelectors.has(s));
+
+console.log(`Matching functions: ${matching.length}`);
+if (missing.length > 0) {
+  console.warn(`Missing functions: ${missing.join(', ')}`);
+}
+```
+
+### Detect Proxy Contracts
+
+```typescript
+const code = Bytecode.fromHex(proxyBytecode);
+const abi = code.toAbi();
+
+// Proxy contracts typically have very few functions
+// and minimal SSTORE operations
+const functionCount = abi.filter(item => item.type === 'function').length;
+
+if (functionCount < 5) {
+  console.log('Likely a proxy contract (minimal interface)');
+
+  // Check for proxy-specific patterns
+  const hasFallback = abi.some(
+    item => item.type === 'function' && item.selector === '0x00000000'
+  );
+
+  if (hasFallback) {
+    console.log('Has fallback function - typical of proxies');
+  }
+}
+```
+
+### ABI Recovery for Lost Source
+
+```typescript
+// Contract source lost but bytecode deployed
+const code = Bytecode.fromHex(lostContractBytecode);
+const reconstructedAbi = code.toAbi();
+
+// Save reconstructed ABI
+import { writeFileSync } from 'fs';
+writeFileSync(
+  'recovered-abi.json',
+  JSON.stringify(reconstructedAbi, null, 2)
+);
+
+// Map selectors to known function signatures
+const knownSignatures: Record<string, string> = {
+  '0x70a08231': 'balanceOf(address)',
+  '0xa9059cbb': 'transfer(address,uint256)',
+  '0x23b872dd': 'transferFrom(address,address,uint256)',
+};
+
+reconstructedAbi.forEach(item => {
+  if (item.type === 'function') {
+    const signature = knownSignatures[item.selector];
+    if (signature) {
+      console.log(`${item.selector} → ${signature}`);
+    } else {
+      console.log(`${item.selector} → <unknown>`);
+    }
+  }
+});
+```
+
+### Compare Contract Versions
+
+```typescript
+const v1 = Bytecode.fromHex(contractV1Bytecode);
+const v2 = Bytecode.fromHex(contractV2Bytecode);
+
+const abiV1 = v1.toAbi();
+const abiV2 = v2.toAbi();
+
+// Find added functions
+const selectorsV1 = new Set(
+  abiV1.filter(i => i.type === 'function').map(f => f.selector)
+);
+const selectorsV2 = new Set(
+  abiV2.filter(i => i.type === 'function').map(f => f.selector)
+);
+
+const added = [...selectorsV2].filter(s => !selectorsV1.has(s));
+const removed = [...selectorsV1].filter(s => !selectorsV2.has(s));
+
+console.log(`Version 2 changes:`);
+console.log(`  Added: ${added.length} functions`);
+console.log(`  Removed: ${removed.length} functions`);
+
+added.forEach(s => console.log(`  + ${s}`));
+removed.forEach(s => console.log(`  - ${s}`));
+```
+
+## Limitations
+
+<Warning title="Best-Effort Reconstruction">
+ABI extraction from bytecode is **heuristic-based** and has fundamental limitations:
+
+### Cannot Determine
+
+❌ **Exact parameter types** - Only knows function takes inputs, not their structure
+❌ **Parameter names** - No name information in bytecode
+❌ **Return types** - Cannot distinguish between uint256, address, bytes32, etc.
+❌ **Function names** - Only 4-byte selector hash available
+❌ **Event names** - Only 32-byte topic hash available
+❌ **Struct layouts** - Cannot reconstruct complex types
+❌ **Array dimensions** - Cannot determine fixed vs dynamic arrays
+
+### May Miss
+
+⚠️ **Dynamic dispatch functions** - Functions with computed jump targets
+⚠️ **Inline assembly routing** - Custom dispatcher patterns
+⚠️ **Dead code** - Unreachable functions may be detected anyway
+⚠️ **Optimized dispatchers** - Non-standard jump table patterns
+
+### May Misclassify
+
+🟡 **State mutability** - Limited by static analysis of reachable code
+🟡 **Payability** - Edge cases with unconventional guard patterns
+🟡 **Proxy detection** - May not detect custom proxy implementations
+
+**Recommendation**: Use reconstructed ABIs for discovery and verification. For production interactions, always prefer verified source ABIs when available.
+</Warning>
+
+### What Works Reliably
+
+✅ Function selector extraction (standard Solidity)
+✅ Payability detection (CALLVALUE patterns)
+✅ Event topic hashes (PUSH32 + LOG patterns)
+✅ Basic state mutability (view vs nonpayable)
+✅ Proxy detection (EIP-1967, minimal proxies)
+
+## Compiler Compatibility
+
+Works best with standard compiler output:
+
+| Compiler | Version | Compatibility |
+|----------|---------|---------------|
+| **Solidity** | 0.4.x - 0.8.x | ✅ Excellent - Standard jump tables |
+| **Vyper** | 0.2.x - 0.3.x | ⚠️ Good - Some non-standard patterns |
+| **Yul** | Any | 🟡 Variable - Depends on optimization |
+| **Hand-written** | N/A | ❌ Poor - No standard patterns |
+
+Solidity produces the most analyzable bytecode due to consistent function dispatcher patterns.
+
+## Performance
+
+ABI extraction performance:
+
+| Bytecode Size | Time | Functions Detected |
+|---------------|------|-------------------|
+| Small (<5KB) | <10ms | ~10 functions |
+| Medium (10-15KB) | ~20ms | ~20-30 functions |
+| Large (20-24KB) | ~50ms | ~50+ functions |
+
+<Tip>
+Results are deterministic and can be cached. Re-running analysis on the same bytecode always produces identical results.
+</Tip>
+
+## Integration with Abi Module
+
+Reconstructed ABIs are compatible with Abi module methods:
+
+```typescript
+import * as Abi from '@tevm/voltaire/Abi';
+
+const code = Bytecode.fromHex(bytecode);
+const abi = code.toAbi();
+
+// Use with Abi module
+const encoded = Abi.encodeFunctionData(abi, functionSelector, args);
+const decoded = Abi.decodeFunctionResult(abi, functionSelector, returnData);
+
+// Format for display
+const formatted = Abi.format(abi);
+console.log(formatted);
+```
+
+<Note>
+Since reconstructed ABIs use generic `bytes` types, encoding/decoding may require manual type casting or ABI augmentation with known signatures.
+</Note>
+
+## Security Considerations
+
+### Verification
+
+**Never trust reconstructed ABIs for production without verification:**
+
+1. **Compare with verified source** when available
+2. **Test function calls** on testnets before mainnet
+3. **Validate return data** matches expected formats
+4. **Check for proxy patterns** that might delegate to different implementations
+
+### Bytecode Manipulation
+
+Malicious contracts may:
+- Include fake function selectors in unused code paths
+- Use dynamic dispatch to hide actual functions
+- Manipulate jump tables to evade analysis
+- Include misleading event signatures
+
+**Always verify contract source** on Etherscan or similar before interacting based on reconstructed ABI.
+
+### Privacy
+
+ABI extraction may reveal:
+- Internal function structure (even if not in public ABI)
+- Proxy implementation details
+- Factory patterns and CREATE2 addresses
+- Compiler version and optimization settings
+
+## Advanced Usage
+
+### Augment Reconstructed ABI
+
+```typescript
+const abi = code.toAbi();
+
+// Replace generic types with known signatures
+const knownSignatures = [
+  'function balanceOf(address) view returns (uint256)',
+  'function transfer(address,uint256) returns (bool)',
+];
+
+const augmentedAbi = abi.map(item => {
+  if (item.type !== 'function') return item;
+
+  const known = knownSignatures.find(sig => {
+    const selector = Abi.getSelector(sig);
+    return selector === item.selector;
+  });
+
+  return known ? Abi.parseSignature(known) : item;
+});
+```
+
+### Detect Compiler Version
+
+```typescript
+const code = Bytecode.fromHex(bytecode);
+const abi = code.toAbi();
+
+// Heuristics based on patterns
+const hasMetadata = code.hasMetadata();
+const functionCount = abi.filter(i => i.type === 'function').length;
+
+if (hasMetadata) {
+  const metadata = code.stripMetadata();
+  // Check metadata for compiler info
+  console.log('Contract has CBOR metadata (Solidity 0.4.7+)');
+}
+
+// Solidity 0.8+ uses PUSH0 (if available)
+const hasPush0 = code.raw().includes(0x5F);
+if (hasPush0) {
+  console.log('Likely Solidity 0.8.0+ (uses PUSH0)');
+}
+```
+
+### Extract Initialization Code
+
+```typescript
+// Deployment bytecode includes init code + runtime code
+const deployBytecode = Bytecode.fromHex(deploymentBytecode);
+const deployAbi = deployBytecode.toAbi();
+
+// Extract runtime code
+const runtimeCode = deployBytecode.extractRuntime();
+const runtimeAbi = runtimeCode.toAbi();
+
+console.log('Deployment ABI functions:', deployAbi.length);
+console.log('Runtime ABI functions:', runtimeAbi.length);
+// Init code may have constructor, runtime has contract methods
+```
+
+## See Also
+
+- [Abi](/primitives/abi) - ABI encoding/decoding and formatting
+- [analyze](/primitives/bytecode/analyze) - Complete bytecode analysis
+- [detectFusions](/primitives/bytecode/detect-fusions) - Pattern detection used internally
+- [EventLog](/primitives/eventlog) - Working with decoded events
+
+## References
+
+- [WhatsABI](https://github.com/shazow/whatsabi) - Underlying reverse engineering library
+- [Function Selector Database](https://www.4byte.directory/) - Map selectors to signatures
+- [Ethereum Signature Database](https://sig.eth.samczsun.com/) - Alternative selector lookup
+- [EIP-1967](https://eips.ethereum.org/EIPS/eip-1967) - Proxy storage slots

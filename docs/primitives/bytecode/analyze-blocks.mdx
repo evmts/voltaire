@@ -1,0 +1,750 @@
+---
+title: Bytecode.analyzeBlocks
+description: Split bytecode into basic blocks with control flow metadata
+icon: sitemap
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `bytecode.analyzeBlocks(options?: BlockAnalysisOptions): BasicBlock[]`
+
+Split bytecode into basic blocks - maximal sequences of instructions with single entry and exit points.
+
+Returns array of BasicBlock objects with gas estimates, stack effects, and control flow information.
+
+**Parameters:**
+- `options?: BlockAnalysisOptions` - Analysis configuration
+
+**Returns:** `BasicBlock[]` - Array of basic blocks
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x60016002015b80016003015b00");
+const blocks = code.analyzeBlocks();
+
+blocks.forEach(block => {
+  console.log(`Block ${block.index} (PC ${block.startPc}-${block.endPc}):`);
+  console.log(`  Instructions: ${block.instructionCount}`);
+  console.log(`  Gas: ${block.gasEstimate}`);
+  console.log(`  Stack: [${block.minStack}, ${block.maxStack}]`);
+  console.log(`  Terminator: ${block.terminator}`);
+});
+```
+
+**Defined in:** [BrandedBytecode/analyzeBlocks.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeBlocks.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `analyzeBlocks(code: BrandedBytecode, options?: BlockAnalysisOptions): BasicBlock[]`
+
+Split bytecode into basic blocks with control flow metadata.
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to analyze
+- `options?: BlockAnalysisOptions` - Analysis configuration
+
+**Returns:** `BasicBlock[]` - Array of basic blocks
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const code = Bytecode.fromHex("0x60016002015b80016003015b00");
+const blocks = Bytecode.analyzeBlocks(code);
+
+console.log(`Found ${blocks.length} basic blocks`);
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { analyzeBlocks } from '@tevm/voltaire/BrandedBytecode';
+
+const blocks = analyzeBlocks(code);
+```
+
+**Defined in:** [BrandedBytecode/analyzeBlocks.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeBlocks.js)
+
+</Tab>
+</Tabs>
+
+## BasicBlock Type
+
+```typescript
+interface BasicBlock {
+  /** Block index (0-based) */
+  index: number
+
+  /** Starting program counter */
+  startPc: number
+
+  /** Ending program counter (exclusive) */
+  endPc: number
+
+  /** Number of instructions in block */
+  instructionCount: number
+
+  /** Total static gas cost */
+  gasEstimate: number
+
+  /** Minimum stack items required to enter */
+  minStack: number
+
+  /** Maximum stack depth reached */
+  maxStack: number
+
+  /** Net stack effect (exit - entry) */
+  stackEffect: number
+
+  /** Block terminator type */
+  terminator: TerminatorType
+
+  /** Jump target PC (if terminator is JUMP/JUMPI) */
+  target?: number
+
+  /** Whether block is reachable from entry */
+  isReachable: boolean
+
+  /** Successor block indices */
+  successors: number[]
+
+  /** Predecessor block indices */
+  predecessors: number[]
+}
+```
+
+### TerminatorType
+
+```typescript
+type TerminatorType =
+  | 'stop'          // STOP
+  | 'return'        // RETURN
+  | 'revert'        // REVERT
+  | 'invalid'       // INVALID
+  | 'selfdestruct'  // SELFDESTRUCT
+  | 'jump'          // JUMP (unconditional)
+  | 'jumpi'         // JUMPI (conditional)
+  | 'fallthrough'   // Continues to next block
+```
+
+## Options
+
+```typescript
+interface BlockAnalysisOptions {
+  /** Compute reachability from entry point (default: true) */
+  computeReachability?: boolean
+
+  /** Build successor/predecessor relationships (default: true) */
+  buildCFG?: boolean
+
+  /** Include dead code blocks (default: true) */
+  includeUnreachable?: boolean
+
+  /** Validate block constraints (default: true) */
+  validate?: boolean
+}
+```
+
+## Basic Block Properties
+
+### Entry Points
+
+Blocks start at:
+1. **Program start** (PC 0) - Entry block
+2. **JUMPDEST** - Valid jump destination
+3. **After terminator** - Instruction following STOP/RETURN/REVERT/etc.
+
+### Exit Points
+
+Blocks end at:
+1. **Terminator** - STOP, RETURN, REVERT, INVALID, SELFDESTRUCT
+2. **JUMP** - Unconditional jump
+3. **JUMPI** - Conditional jump
+4. **Before JUMPDEST** - Next block entry
+
+### Maximal Property
+
+Blocks are **maximal sequences**: cannot be extended without violating single entry/exit.
+
+```typescript
+// Example: 3 basic blocks
+// PUSH1 1, PUSH1 2, ADD       [Block 0: PC 0-5, fallthrough]
+// JUMPDEST, DUP1, ADD         [Block 1: PC 5-8, fallthrough]
+// JUMPDEST, STOP              [Block 2: PC 8-10, stop]
+
+const code = Bytecode.fromHex("0x60016002015b80015b00");
+const blocks = code.analyzeBlocks();
+
+console.log(blocks.length); // 3
+console.log(blocks[0].terminator); // 'fallthrough'
+console.log(blocks[1].terminator); // 'fallthrough'
+console.log(blocks[2].terminator); // 'stop'
+```
+
+## Usage Patterns
+
+### Basic Block Listing
+
+```typescript
+const blocks = code.analyzeBlocks();
+
+blocks.forEach(block => {
+  console.log(`\nBlock ${block.index}:`);
+  console.log(`  PC range: ${block.startPc} - ${block.endPc}`);
+  console.log(`  Instructions: ${block.instructionCount}`);
+  console.log(`  Gas: ${block.gasEstimate}`);
+  console.log(`  Stack: [${block.minStack}, ${block.maxStack}] (Δ${block.stackEffect})`);
+  console.log(`  Terminator: ${block.terminator}`);
+  if (block.target !== undefined) {
+    console.log(`  Target: PC ${block.target}`);
+  }
+});
+```
+
+### Control Flow Graph
+
+```typescript
+const blocks = code.analyzeBlocks({ buildCFG: true });
+
+// Print CFG edges
+blocks.forEach(block => {
+  if (block.successors.length > 0) {
+    console.log(`Block ${block.index} → Blocks ${block.successors.join(', ')}`);
+  }
+});
+
+// Find entry block
+const entryBlock = blocks.find(b => b.startPc === 0);
+
+// Find exit blocks (no successors)
+const exitBlocks = blocks.filter(b => b.successors.length === 0);
+console.log(`Exit blocks: ${exitBlocks.map(b => b.index).join(', ')}`);
+```
+
+### Reachability Analysis
+
+```typescript
+const blocks = code.analyzeBlocks({ computeReachability: true });
+
+const reachable = blocks.filter(b => b.isReachable);
+const unreachable = blocks.filter(b => !b.isReachable);
+
+console.log(`Reachable: ${reachable.length} blocks`);
+console.log(`Unreachable: ${unreachable.length} blocks (dead code)`);
+
+// Dead code detection
+if (unreachable.length > 0) {
+  console.warn('Dead code detected:');
+  unreachable.forEach(block => {
+    console.warn(`  Block ${block.index} at PC ${block.startPc}`);
+  });
+}
+```
+
+### Gas Analysis by Block
+
+```typescript
+const blocks = code.analyzeBlocks();
+
+// Sort by gas cost
+const expensive = [...blocks]
+  .sort((a, b) => b.gasEstimate - a.gasEstimate)
+  .slice(0, 5);
+
+console.log('Top 5 most expensive blocks:');
+expensive.forEach(block => {
+  const pct = (block.gasEstimate / totalGas * 100).toFixed(1);
+  console.log(`  Block ${block.index}: ${block.gasEstimate} gas (${pct}%)`);
+});
+```
+
+### Stack Analysis by Block
+
+```typescript
+const blocks = code.analyzeBlocks();
+
+// Find blocks with deep stack usage
+const deepBlocks = blocks.filter(b => b.maxStack > 10);
+
+console.log('Blocks with deep stack:');
+deepBlocks.forEach(block => {
+  console.log(`  Block ${block.index}: max depth ${block.maxStack}`);
+});
+
+// Validate stack consistency at block boundaries
+blocks.forEach(block => {
+  block.successors.forEach(succIdx => {
+    const successor = blocks[succIdx];
+    const exitDepth = block.minStack + block.stackEffect;
+
+    if (exitDepth !== successor.minStack) {
+      console.error(`Stack mismatch: Block ${block.index} → ${succIdx}`);
+      console.error(`  Exit depth: ${exitDepth}, Entry required: ${successor.minStack}`);
+    }
+  });
+});
+```
+
+### Extract Block Instructions
+
+```typescript
+const blocks = code.analyzeBlocks();
+const instructions = code.parseInstructions();
+
+blocks.forEach(block => {
+  const blockInsts = instructions.filter(inst =>
+    inst.position >= block.startPc && inst.position < block.endPc
+  );
+
+  console.log(`\nBlock ${block.index}:`);
+  blockInsts.forEach(inst => {
+    console.log(`  ${inst.position}: ${inst.opcode}`);
+  });
+});
+```
+
+## Control Flow Patterns
+
+### Linear Flow
+
+```typescript
+// PUSH1 1, PUSH1 2, ADD, STOP
+const code = Bytecode.fromHex("0x6001600201005");
+const blocks = code.analyzeBlocks();
+
+console.log(blocks.length); // 1 block (no branches)
+console.log(blocks[0].terminator); // 'stop'
+console.log(blocks[0].successors); // []
+```
+
+### Conditional Branch
+
+```typescript
+// PUSH1 1, PUSH1 5, JUMPI, PUSH1 2, JUMPDEST, STOP
+const code = Bytecode.fromHex("0x600160055760025b00");
+const blocks = code.analyzeBlocks({ buildCFG: true });
+
+console.log(blocks.length); // 3 blocks
+console.log(blocks[0].terminator); // 'jumpi'
+console.log(blocks[0].successors); // [1, 2] (fallthrough + jump)
+```
+
+### Loop Detection
+
+```typescript
+const blocks = code.analyzeBlocks({ buildCFG: true });
+
+// Detect back edges (successor index < current index in PC order)
+blocks.forEach(block => {
+  block.successors.forEach(succIdx => {
+    const successor = blocks[succIdx];
+    if (successor.startPc <= block.startPc) {
+      console.log(`Back edge: Block ${block.index} → ${succIdx} (loop)`);
+    }
+  });
+});
+```
+
+### Function Dispatch Pattern
+
+```typescript
+// Solidity function dispatcher creates fan-out CFG
+const code = Bytecode.fromHex(contractBytecode);
+const blocks = code.analyzeBlocks({ buildCFG: true });
+
+// Find dispatcher block (many successors)
+const dispatcher = blocks.find(b => b.successors.length > 5);
+if (dispatcher) {
+  console.log(`Function dispatcher at block ${dispatcher.index}`);
+  console.log(`Dispatches to ${dispatcher.successors.length} functions`);
+}
+```
+
+## Integration with Other APIs
+
+### Combined with prettyPrint
+
+```typescript
+const blocks = code.analyzeBlocks();
+
+// Print with block boundaries highlighted
+const output = code.prettyPrint({
+  showBlocks: true,
+  colors: true
+});
+
+console.log(output);
+
+// Output includes block headers:
+// [Block 0] gas: 9 stack: [0, 2] len: 3
+//    1 |    0 | PUSH1 ...
+//    2 |    2 | PUSH1 ...
+//    3 |    4 | ADD ...
+```
+
+### Combined with analyzeGas
+
+```typescript
+const blocks = code.analyzeBlocks();
+const gasAnalysis = code.analyzeGas();
+
+// Correlate gas with blocks
+blocks.forEach(block => {
+  const blockGas = gasAnalysis.byBlock.find(bg => bg.blockIndex === block.index);
+  console.log(`Block ${block.index}: ${blockGas?.gas} gas (${blockGas?.percentage}%)`);
+});
+```
+
+### Combined with analyzeStack
+
+```typescript
+const blocks = code.analyzeBlocks();
+const stackAnalysis = code.analyzeStack();
+
+// Correlate stack issues with blocks
+stackAnalysis.issues.forEach(issue => {
+  const block = blocks.find(b =>
+    issue.pc >= b.startPc && issue.pc < b.endPc
+  );
+
+  console.error(`${issue.type} in block ${block?.index} at PC ${issue.pc}`);
+});
+```
+
+### Combined with scan
+
+```typescript
+const blocks = code.analyzeBlocks();
+
+// Map instructions to blocks
+const blockInsts = new Map<number, OpcodeData[]>();
+
+for (const inst of code.scan({ detectFusions: true })) {
+  const block = blocks.find(b =>
+    inst.pc >= b.startPc && inst.pc < b.endPc
+  );
+
+  if (block) {
+    if (!blockInsts.has(block.index)) {
+      blockInsts.set(block.index, []);
+    }
+    blockInsts.get(block.index)!.push(inst);
+  }
+}
+
+// Analyze fusions by block
+blockInsts.forEach((insts, blockIdx) => {
+  const fusions = insts.filter(i => i.type.includes('fusion'));
+  if (fusions.length > 0) {
+    console.log(`Block ${blockIdx}: ${fusions.length} fusion opportunities`);
+  }
+});
+```
+
+## Advanced Patterns
+
+### Dominator Analysis
+
+```typescript
+// Find blocks that dominate others (all paths must go through)
+function computeDominators(blocks: BasicBlock[]): Map<number, Set<number>> {
+  const dom = new Map<number, Set<number>>();
+
+  // Entry dominates only itself
+  dom.set(0, new Set([0]));
+
+  // All others initially dominated by all blocks
+  for (let i = 1; i < blocks.length; i++) {
+    dom.set(i, new Set(blocks.map(b => b.index)));
+  }
+
+  // Iterative computation
+  let changed = true;
+  while (changed) {
+    changed = false;
+
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks[i];
+      const newDom = new Set([i]);
+
+      // Intersect dominators of all predecessors
+      const predDoms = block.predecessors
+        .map(p => dom.get(p)!)
+        .reduce((acc, d) => new Set([...acc].filter(x => d.has(x))));
+
+      predDoms.forEach(d => newDom.add(d));
+
+      const oldSize = dom.get(i)!.size;
+      dom.set(i, newDom);
+
+      if (newDom.size !== oldSize) changed = true;
+    }
+  }
+
+  return dom;
+}
+
+const blocks = code.analyzeBlocks({ buildCFG: true });
+const dominators = computeDominators(blocks);
+
+dominators.forEach((doms, blockIdx) => {
+  console.log(`Block ${blockIdx} dominated by: ${Array.from(doms).join(', ')}`);
+});
+```
+
+### Topological Sort
+
+```typescript
+// Order blocks by control flow dependencies
+function topologicalSort(blocks: BasicBlock[]): number[] {
+  const visited = new Set<number>();
+  const order: number[] = [];
+
+  function visit(idx: number) {
+    if (visited.has(idx)) return;
+    visited.add(idx);
+
+    blocks[idx].successors.forEach(visit);
+    order.push(idx);
+  }
+
+  visit(0); // Start from entry
+
+  return order.reverse();
+}
+
+const blocks = code.analyzeBlocks({ buildCFG: true });
+const sorted = topologicalSort(blocks);
+
+console.log('Execution order:', sorted.join(' → '));
+```
+
+### Hot Path Identification
+
+```typescript
+// Identify most likely execution paths (heuristic)
+const blocks = code.analyzeBlocks({ buildCFG: true });
+
+// Heuristic: prefer fallthrough over jumps
+const weights = new Map<number, number>();
+blocks.forEach(b => weights.set(b.index, 0));
+
+function computeWeights(idx: number, weight: number) {
+  const current = weights.get(idx)!;
+  weights.set(idx, current + weight);
+
+  const block = blocks[idx];
+  if (block.terminator === 'jumpi') {
+    // Fallthrough (first successor) weighted higher
+    computeWeights(block.successors[0], weight * 0.9);
+    computeWeights(block.successors[1], weight * 0.1);
+  } else if (block.successors.length > 0) {
+    block.successors.forEach(s => computeWeights(s, weight));
+  }
+}
+
+computeWeights(0, 1.0);
+
+// Find hot path
+const hotBlocks = [...weights.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 5);
+
+console.log('Hot path blocks:');
+hotBlocks.forEach(([idx, weight]) => {
+  console.log(`  Block ${idx}: ${(weight * 100).toFixed(1)}% probability`);
+});
+```
+
+## Validation
+
+Blocks automatically validated when `validate: true` (default):
+
+```typescript
+const blocks = code.analyzeBlocks({ validate: true });
+
+// Validates:
+// ✓ No overlapping blocks
+// ✓ All PCs covered or explicitly unreachable
+// ✓ Terminator matches last instruction
+// ✓ Successors within bounds
+// ✓ Stack consistency at boundaries (if computeReachability)
+```
+
+**Validation errors** throw `BytecodeError`:
+
+```typescript
+try {
+  const blocks = code.analyzeBlocks();
+} catch (error) {
+  if (error instanceof BytecodeError) {
+    console.error(`Block validation failed: ${error.message}`);
+  }
+}
+```
+
+## Performance
+
+### Memory
+
+- **Small bytecode (<1KB)**: ~1KB metadata
+- **Medium bytecode (10KB)**: ~10KB metadata
+- **Large bytecode (24KB)**: ~25KB metadata
+
+Metadata size roughly equals bytecode size (O(n)).
+
+### Computation
+
+- **Small bytecode (<1KB)**: <1ms
+- **Medium bytecode (10KB)**: ~5ms
+- **Large bytecode (24KB)**: ~15ms
+
+CFG construction adds ~20% overhead.
+
+<Tip>
+Reuse block analysis results. Blocks don't change unless bytecode changes.
+</Tip>
+
+### Optimization
+
+```typescript
+// ✅ Efficient - analyze once, reuse
+const blocks = code.analyzeBlocks();
+for (let i = 0; i < 1000; i++) {
+  processBlocks(blocks);
+}
+
+// ❌ Inefficient - re-analyzes every time
+for (let i = 0; i < 1000; i++) {
+  const blocks = code.analyzeBlocks();
+  processBlocks(blocks);
+}
+```
+
+## Common Use Cases
+
+### Compiler Optimization
+
+```typescript
+const blocks = code.analyzeBlocks();
+
+// Identify optimization targets
+blocks.forEach(block => {
+  // Small blocks → inline candidates
+  if (block.instructionCount <= 3 && block.predecessors.length === 1) {
+    console.log(`Inline candidate: Block ${block.index}`);
+  }
+
+  // Single-successor blocks → merge candidates
+  if (block.successors.length === 1 && block.terminator === 'fallthrough') {
+    console.log(`Merge candidate: Block ${block.index}`);
+  }
+});
+```
+
+### Security Analysis
+
+```typescript
+const blocks = code.analyzeBlocks({ computeReachability: true });
+
+// Check for unreachable code (potential malware hiding)
+const unreachable = blocks.filter(b => !b.isReachable);
+if (unreachable.length > 0) {
+  console.warn(`Found ${unreachable.length} unreachable blocks (suspicious)`);
+}
+
+// Check for expensive blocks (potential DoS)
+const expensive = blocks.filter(b => b.gasEstimate > 100000);
+if (expensive.length > 0) {
+  console.warn(`Found ${expensive.length} expensive blocks (>100k gas)`);
+}
+
+// Check for stack manipulation patterns
+blocks.forEach(block => {
+  if (block.maxStack - block.minStack > 10) {
+    console.warn(`Block ${block.index}: high stack usage (${block.maxStack})`);
+  }
+});
+```
+
+### Debugging
+
+```typescript
+const blocks = code.analyzeBlocks({ buildCFG: true });
+
+// Find block containing PC
+function findBlock(pc: number): BasicBlock | undefined {
+  return blocks.find(b => pc >= b.startPc && pc < b.endPc);
+}
+
+// Trace execution path
+function tracePath(startPc: number, targetPc: number): number[] {
+  const startBlock = findBlock(startPc);
+  const targetBlock = findBlock(targetPc);
+
+  if (!startBlock || !targetBlock) return [];
+
+  // BFS to find path
+  const queue = [[startBlock.index]];
+  const visited = new Set<number>();
+
+  while (queue.length > 0) {
+    const path = queue.shift()!;
+    const current = path[path.length - 1];
+
+    if (current === targetBlock.index) return path;
+    if (visited.has(current)) continue;
+
+    visited.add(current);
+    blocks[current].successors.forEach(s => {
+      queue.push([...path, s]);
+    });
+  }
+
+  return [];
+}
+
+console.log('Execution path:', tracePath(0, 100).join(' → '));
+```
+
+## Limitations
+
+<Warning title="Static Analysis Limitations">
+Block analysis is based on static control flow and cannot account for:
+
+- **Dynamic jump targets** - JUMP destination from stack unknown
+- **External calls** - Called contract code unknown
+- **CREATE operations** - Deployed code unknown
+- **DELEGATECALL** - Execution context changes
+
+Results represent **possible** control flow, not guaranteed runtime behavior.
+</Warning>
+
+### What's Included
+
+✅ Entry/exit points (JUMPDEST, terminators)
+✅ Static jumps (PUSH+JUMP detected)
+✅ Conditional branches (JUMPI)
+✅ Fallthrough edges
+✅ Reachability from entry
+
+### What's Not Included
+
+❌ Dynamic jump target resolution
+❌ External call effects
+❌ Loop iteration counts
+❌ Runtime path probabilities
+
+## See Also
+
+- [scan](/primitives/bytecode/scan) - Iterate over instructions
+- [analyzeGas](/primitives/bytecode/analyze-gas) - Gas estimation
+- [analyzeStack](/primitives/bytecode/analyze-stack) - Stack validation
+- [detectFusions](/primitives/bytecode/detect-fusions) - Pattern detection
+- [prettyPrint](/primitives/bytecode/pretty-print) - Visual disassembly

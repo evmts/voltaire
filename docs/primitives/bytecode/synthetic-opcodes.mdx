@@ -1,0 +1,688 @@
+---
+title: Synthetic Opcodes
+description: Extended opcode set representing fusion patterns as virtual instructions
+icon: puzzle-piece
+---
+
+**Synthetic opcodes** extend the EVM's 256-instruction set with virtual opcodes representing multi-instruction fusion patterns. They enable treating fused sequences as atomic operations for optimization, analysis, and intermediate representations.
+
+## Concept
+
+### Standard EVM Opcodes
+
+EVM defines 256 opcodes (0x00-0xFF):
+- 0x00: STOP
+- 0x01: ADD
+- ...
+- 0x60-0x7F: PUSH1-PUSH32
+- 0xFF: SELFDESTRUCT
+
+### Synthetic Opcodes
+
+Synthetic opcodes extend this with virtual instructions for fusions:
+- 0x100: PUSH_ADD (PUSH+ADD fusion)
+- 0x101: PUSH_MUL (PUSH+MUL fusion)
+- 0x102: PUSH_JUMP (PUSH+JUMP fusion)
+- ...
+- 0x11F: FUNCTION_DISPATCH (function selector pattern)
+
+<Note>
+Synthetic opcodes are **compile-time abstractions**, not runtime instructions. They represent sequences of real opcodes detected during bytecode analysis.
+</Note>
+
+## Why Synthetic Opcodes?
+
+### 1. Optimization
+
+Treat fusions as atomic operations:
+
+```typescript
+// Before (2 instructions):
+PUSH1 0x05    // 3 gas
+ADD           // 3 gas
+// Total: 6 gas
+
+// After optimization (synthetic opcode):
+ADDI 0x05     // 4 gas (hypothetical optimized version)
+// Total: 4 gas saved
+```
+
+### 2. Static Analysis
+
+Simplify control flow:
+
+```typescript
+// Before: Dynamic jump (target unknown)
+PUSH1 0x42
+JUMP
+
+// After: Static jump (target known!)
+JUMP_TO 0x42  // Synthetic opcode with immediate target
+```
+
+This enables:
+- Control flow graph construction without execution
+- Jump target validation at compile time
+- Dead code detection
+
+### 3. Intermediate Representation
+
+Build IR for:
+- Decompilers (Solidity source reconstruction)
+- Optimizers (peephole optimization passes)
+- Transpilers (EVM → other VMs)
+- Analyzers (security analysis, gas profiling)
+
+### 4. Semantic Clarity
+
+Reveal intent:
+
+```typescript
+// Low-level:
+PUSH4 0x70a08231
+EQ
+PUSH2 0x0042
+JUMPI
+
+// High-level (synthetic):
+DISPATCH_FUNCTION 0x70a08231, 0x0042
+// Clearly: "If selector == balanceOf, jump to implementation"
+```
+
+## Synthetic Opcode Reference
+
+### Arithmetic (0x100-0x103)
+
+| Code | Name | Pattern | Meaning |
+|------|------|---------|---------|
+| 0x100 | **PUSH_ADD** | PUSH value, ADD | Add immediate |
+| 0x101 | **PUSH_SUB** | PUSH value, SUB | Subtract immediate |
+| 0x102 | **PUSH_MUL** | PUSH value, MUL | Multiply immediate |
+| 0x103 | **PUSH_DIV** | PUSH value, DIV | Divide immediate |
+
+**Stack effect**: Same as base operation (e.g., PUSH_ADD: -1 input, +1 output = 0 net)
+
+**Gas**: Sum of constituent instructions (e.g., PUSH_ADD = 3 + 3 = 6 gas base)
+
+### Bitwise (0x104-0x106)
+
+| Code | Name | Pattern | Meaning |
+|------|------|---------|---------|
+| 0x104 | **PUSH_AND** | PUSH mask, AND | Bitwise AND with immediate |
+| 0x105 | **PUSH_OR** | PUSH mask, OR | Bitwise OR with immediate |
+| 0x106 | **PUSH_XOR** | PUSH mask, XOR | Bitwise XOR with immediate |
+
+### Memory (0x107-0x109)
+
+| Code | Name | Pattern | Meaning |
+|------|------|---------|---------|
+| 0x107 | **PUSH_MLOAD** | PUSH offset, MLOAD | Load from immediate address |
+| 0x108 | **PUSH_MSTORE** | PUSH offset, MSTORE | Store to immediate address |
+| 0x109 | **PUSH_MSTORE8** | PUSH offset, MSTORE8 | Store byte to immediate address |
+
+### Control Flow (0x10A-0x10C)
+
+| Code | Name | Pattern | Meaning |
+|------|------|---------|---------|
+| 0x10A | **PUSH_JUMP** | PUSH target, JUMP | **Static jump** to immediate PC |
+| 0x10B | **PUSH_JUMPI** | PUSH target, JUMPI | Conditional jump to immediate PC |
+| 0x10C | **ISZERO_JUMPI** | ISZERO, PUSH target, JUMPI | Inverted conditional jump |
+
+<Tip title="Control Flow Semantics">
+**PUSH_JUMP** and **PUSH_JUMPI** are critical for static analysis:
+- Jump target is **compile-time constant** (not runtime stack value)
+- Enables CFG construction without execution
+- Allows jump target validation at analysis time
+
+This distinguishes them from dynamic JUMP/JUMPI where target is computed at runtime.
+</Tip>
+
+### Stack Manipulation (0x10D-0x112)
+
+| Code | Name | Pattern | Meaning |
+|------|------|---------|---------|
+| 0x10D | **DUP2_MSTORE_PUSH** | DUP2, MSTORE, PUSH value | Memory write idiom |
+| 0x10E | **DUP3_ADD_MSTORE** | DUP3, ADD, MSTORE | Offset calc + store |
+| 0x10F | **SWAP1_DUP2_ADD** | SWAP1, DUP2, ADD | Stack rearrange + add |
+| 0x110 | **PUSH_DUP3_ADD** | PUSH value, DUP3, ADD | Immediate + dup + add |
+| 0x111 | **PUSH_ADD_DUP1** | PUSH value, ADD, DUP1 | Add immediate + duplicate |
+| 0x112 | **MLOAD_SWAP1_DUP2** | MLOAD, SWAP1, DUP2 | Load + rearrange |
+
+### Multi-Instruction (0x113-0x114)
+
+| Code | Name | Pattern | Meaning |
+|------|------|---------|---------|
+| 0x113 | **MULTI_PUSH** | PUSH, PUSH, PUSH (2-3x) | Batch push values |
+| 0x114 | **MULTI_POP** | POP, POP, POP (2-3x) | Batch pop values |
+
+### High-Level (0x115-0x117)
+
+| Code | Name | Pattern | Meaning |
+|------|------|---------|---------|
+| 0x115 | **FUNCTION_DISPATCH** | PUSH4 sel, EQ, PUSH tgt, JUMPI | Function selector match |
+| 0x116 | **CALLVALUE_CHECK** | CALLVALUE, DUP1, ISZERO | Non-payable modifier |
+| 0x117 | **PUSH0_REVERT** | PUSH0, PUSH0, REVERT | Empty revert |
+
+## Working with Synthetic Opcodes
+
+### Detection
+
+Fusion detection returns OpcodeData with synthetic type:
+
+```typescript
+for (const inst of code.scan({ detectFusions: true })) {
+  if (inst.type === 'push_add_fusion') {
+    // Synthetic opcode PUSH_ADD (0x100)
+    console.log(`Synthetic: PUSH_ADD ${inst.value} at PC ${inst.pc}`);
+  }
+}
+```
+
+### Type Mapping
+
+Map fusion types to synthetic opcode numbers:
+
+```typescript
+const SYNTHETIC_OPCODES = {
+  push_add_fusion: 0x100,
+  push_sub_fusion: 0x101,
+  push_mul_fusion: 0x102,
+  push_div_fusion: 0x103,
+  push_and_fusion: 0x104,
+  push_or_fusion: 0x105,
+  push_xor_fusion: 0x106,
+  push_mload_fusion: 0x107,
+  push_mstore_fusion: 0x108,
+  push_mstore8_fusion: 0x109,
+  push_jump_fusion: 0x10A,
+  push_jumpi_fusion: 0x10B,
+  iszero_jumpi: 0x10C,
+  dup2_mstore_push: 0x10D,
+  dup3_add_mstore: 0x10E,
+  swap1_dup2_add: 0x10F,
+  push_dup3_add: 0x110,
+  push_add_dup1: 0x111,
+  mload_swap1_dup2: 0x112,
+  multi_push: 0x113,
+  multi_pop: 0x114,
+  function_dispatch: 0x115,
+  callvalue_check: 0x116,
+  push0_revert: 0x117,
+} as const;
+
+function getSyntheticOpcode(inst: OpcodeData): number | null {
+  return SYNTHETIC_OPCODES[inst.type as keyof typeof SYNTHETIC_OPCODES] ?? null;
+}
+```
+
+### Opcode Names
+
+Map synthetic opcodes to mnemonics:
+
+```typescript
+const SYNTHETIC_NAMES: Record<number, string> = {
+  0x100: 'PUSH_ADD',
+  0x101: 'PUSH_SUB',
+  0x102: 'PUSH_MUL',
+  0x103: 'PUSH_DIV',
+  0x104: 'PUSH_AND',
+  0x105: 'PUSH_OR',
+  0x106: 'PUSH_XOR',
+  0x107: 'PUSH_MLOAD',
+  0x108: 'PUSH_MSTORE',
+  0x109: 'PUSH_MSTORE8',
+  0x10A: 'PUSH_JUMP',
+  0x10B: 'PUSH_JUMPI',
+  0x10C: 'ISZERO_JUMPI',
+  0x10D: 'DUP2_MSTORE_PUSH',
+  0x10E: 'DUP3_ADD_MSTORE',
+  0x10F: 'SWAP1_DUP2_ADD',
+  0x110: 'PUSH_DUP3_ADD',
+  0x111: 'PUSH_ADD_DUP1',
+  0x112: 'MLOAD_SWAP1_DUP2',
+  0x113: 'MULTI_PUSH',
+  0x114: 'MULTI_POP',
+  0x115: 'FUNCTION_DISPATCH',
+  0x116: 'CALLVALUE_CHECK',
+  0x117: 'PUSH0_REVERT',
+};
+
+function getOpcodeName(opcode: number): string {
+  if (opcode < 0x100) {
+    // Standard EVM opcode
+    return Opcode.getName(opcode);
+  } else {
+    // Synthetic opcode
+    return SYNTHETIC_NAMES[opcode] ?? 'UNKNOWN_SYNTHETIC';
+  }
+}
+```
+
+## Use Cases
+
+### 1. Intermediate Representation
+
+Build IR with synthetic opcodes:
+
+```typescript
+interface IRInstruction {
+  pc: number;
+  opcode: number; // 0x00-0xFF (EVM) or 0x100+ (synthetic)
+  name: string;
+  args: bigint[];
+  stackEffect: number;
+}
+
+function buildIR(code: BrandedBytecode): IRInstruction[] {
+  const ir: IRInstruction[] = [];
+
+  for (const inst of code.scan({ detectFusions: true })) {
+    const syntheticCode = getSyntheticOpcode(inst);
+
+    if (syntheticCode) {
+      // Fusion → Synthetic opcode
+      ir.push({
+        pc: inst.pc,
+        opcode: syntheticCode,
+        name: SYNTHETIC_NAMES[syntheticCode],
+        args: 'value' in inst ? [inst.value] : [],
+        stackEffect: computeStackEffect(syntheticCode, inst)
+      });
+    } else if (inst.type === 'regular') {
+      // Regular opcode
+      ir.push({
+        pc: inst.pc,
+        opcode: inst.opcode,
+        name: Opcode.getName(inst.opcode),
+        args: [],
+        stackEffect: Opcode.getStackEffect(inst.opcode).effect
+      });
+    } else if (inst.type === 'push') {
+      // PUSH instruction
+      ir.push({
+        pc: inst.pc,
+        opcode: inst.opcode,
+        name: `PUSH${inst.size}`,
+        args: [inst.value],
+        stackEffect: 1
+      });
+    }
+  }
+
+  return ir;
+}
+
+// Example output:
+const ir = buildIR(code);
+ir.forEach(inst => {
+  const argsStr = inst.args.length > 0 ? ` ${inst.args.join(', ')}` : '';
+  console.log(`${inst.pc.toString().padStart(4)}: ${inst.name}${argsStr}`);
+});
+
+// Output:
+//    0: PUSH_ADD 5         // Synthetic 0x100
+//    3: PUSH_MSTORE 0x40   // Synthetic 0x108
+//    8: PUSH_JUMP 0x10     // Synthetic 0x10A
+```
+
+### 2. Optimization Pass
+
+Optimize using synthetic opcodes:
+
+```typescript
+function optimizeArithmetic(ir: IRInstruction[]): IRInstruction[] {
+  return ir.map(inst => {
+    // PUSH_ADD 1 → INC (if INC existed)
+    if (inst.opcode === 0x100 && inst.args[0] === 1n) {
+      return { ...inst, opcode: 0x200, name: 'INC' };
+    }
+
+    // PUSH_MUL 2 → SHL 1 (multiply by 2 = shift left 1)
+    if (inst.opcode === 0x102 && inst.args[0] === 2n) {
+      return {
+        ...inst,
+        opcode: 0x1B, // SHL
+        name: 'SHL',
+        args: [1n] // Shift left by 1
+      };
+    }
+
+    return inst;
+  });
+}
+```
+
+### 3. Decompiler
+
+Map synthetic opcodes to high-level constructs:
+
+```typescript
+function decompileExpression(ir: IRInstruction[], startIdx: number): string {
+  const inst = ir[startIdx];
+
+  switch (inst.opcode) {
+    case 0x100: // PUSH_ADD
+      return `(+ ${decompileExpression(ir, startIdx - 1)} ${inst.args[0]})`;
+
+    case 0x102: // PUSH_MUL
+      return `(* ${decompileExpression(ir, startIdx - 1)} ${inst.args[0]})`;
+
+    case 0x107: // PUSH_MLOAD
+      return `memory[${inst.args[0]}]`;
+
+    case 0x115: // FUNCTION_DISPATCH
+      const selector = inst.args[0];
+      return `if (msg.sig == 0x${selector.toString(16)}) goto ${inst.args[1]}`;
+
+    default:
+      return inst.name;
+  }
+}
+```
+
+### 4. Control Flow Graph
+
+Build CFG using static jumps:
+
+```typescript
+interface CFGNode {
+  id: number;
+  instructions: IRInstruction[];
+  successors: number[];
+  predecessors: number[];
+}
+
+function buildCFG(ir: IRInstruction[]): Map<number, CFGNode> {
+  const cfg = new Map<number, CFGNode>();
+  let currentBlock = { id: 0, instructions: [], successors: [], predecessors: [] };
+
+  ir.forEach((inst, idx) => {
+    currentBlock.instructions.push(inst);
+
+    if (inst.opcode === 0x10A) {
+      // PUSH_JUMP - static jump
+      const target = Number(inst.args[0]);
+      currentBlock.successors.push(target);
+
+      cfg.set(currentBlock.id, currentBlock);
+      currentBlock = { id: inst.pc, instructions: [], successors: [], predecessors: [] };
+    } else if (inst.opcode === 0x10B) {
+      // PUSH_JUMPI - conditional jump
+      const target = Number(inst.args[0]);
+      const fallthrough = ir[idx + 1]?.pc ?? inst.pc + 1;
+
+      currentBlock.successors.push(target, fallthrough);
+
+      cfg.set(currentBlock.id, currentBlock);
+      currentBlock = { id: fallthrough, instructions: [], successors: [], predecessors: [] };
+    }
+  });
+
+  // Build predecessor edges
+  cfg.forEach((node, id) => {
+    node.successors.forEach(succId => {
+      const succ = cfg.get(succId);
+      if (succ) succ.predecessors.push(id);
+    });
+  });
+
+  return cfg;
+}
+```
+
+### 5. Gas Profiling
+
+Profile gas by synthetic opcode:
+
+```typescript
+const gasProfile = new Map<string, { count: number; totalGas: number }>();
+
+for (const inst of code.scan({ detectFusions: true })) {
+  const syntheticCode = getSyntheticOpcode(inst);
+  const name = syntheticCode
+    ? SYNTHETIC_NAMES[syntheticCode]
+    : Opcode.getName((inst as any).opcode);
+
+  const gas = computeGas(inst);
+  const entry = gasProfile.get(name) || { count: 0, totalGas: 0 };
+
+  entry.count++;
+  entry.totalGas += gas;
+
+  gasProfile.set(name, entry);
+}
+
+// Sort by total gas
+const sorted = Array.from(gasProfile.entries())
+  .sort((a, b) => b[1].totalGas - a[1].totalGas);
+
+console.log('Gas profile:');
+sorted.forEach(([name, { count, totalGas }]) => {
+  console.log(`  ${name}: ${count}x, ${totalGas} gas total`);
+});
+```
+
+## Integration with Opcode Module
+
+Synthetic opcodes extend the standard Opcode module:
+
+```typescript
+// Standard EVM opcodes (0x00-0xFF)
+import * as Opcode from '@tevm/voltaire/Opcode';
+
+console.log(Opcode.getName(0x01)); // "ADD"
+console.log(Opcode.getGasCost(0x01)); // 3
+
+// Synthetic opcodes (0x100+)
+console.log(SYNTHETIC_NAMES[0x100]); // "PUSH_ADD"
+
+// Unified interface
+function getOpcodeMnemonic(code: number): string {
+  return code < 0x100
+    ? Opcode.getName(code)
+    : SYNTHETIC_NAMES[code] ?? 'UNKNOWN';
+}
+```
+
+### Stack Effects
+
+Compute stack effects for synthetic opcodes:
+
+```typescript
+function getSyntheticStackEffect(opcode: number): { input: number; output: number; effect: number } {
+  switch (opcode) {
+    case 0x100: // PUSH_ADD
+    case 0x101: // PUSH_SUB
+    case 0x102: // PUSH_MUL
+    case 0x103: // PUSH_DIV
+      // Binary op with immediate: pop 1, push 1 (net 0)
+      return { input: 1, output: 1, effect: 0 };
+
+    case 0x104: // PUSH_AND
+    case 0x105: // PUSH_OR
+    case 0x106: // PUSH_XOR
+      // Binary bitwise with immediate
+      return { input: 1, output: 1, effect: 0 };
+
+    case 0x107: // PUSH_MLOAD
+      // Load from immediate address: push 1
+      return { input: 0, output: 1, effect: 1 };
+
+    case 0x108: // PUSH_MSTORE
+      // Store to immediate address: pop 1
+      return { input: 1, output: 0, effect: -1 };
+
+    case 0x10A: // PUSH_JUMP
+      // Jump to immediate: pop 0
+      return { input: 0, output: 0, effect: 0 };
+
+    case 0x10B: // PUSH_JUMPI
+      // Conditional jump: pop condition
+      return { input: 1, output: 0, effect: -1 };
+
+    case 0x115: // FUNCTION_DISPATCH
+      // Pop selector, condition
+      return { input: 2, output: 0, effect: -2 };
+
+    default:
+      return { input: 0, output: 0, effect: 0 };
+  }
+}
+```
+
+### Gas Costs
+
+Compute gas for synthetic opcodes:
+
+```typescript
+function getSyntheticGasCost(opcode: number, args: bigint[]): number {
+  switch (opcode) {
+    case 0x100: // PUSH_ADD
+    case 0x101: // PUSH_SUB
+    case 0x102: // PUSH_MUL
+    case 0x103: // PUSH_DIV
+      // PUSH(3) + operation(3) = 6 gas
+      return 6;
+
+    case 0x107: // PUSH_MLOAD
+      // PUSH(3) + MLOAD(3) = 6 gas (base, excluding memory expansion)
+      return 6;
+
+    case 0x108: // PUSH_MSTORE
+      // PUSH(3) + MSTORE(3) = 6 gas (base)
+      return 6;
+
+    case 0x10A: // PUSH_JUMP
+      // PUSH(3) + JUMP(8) = 11 gas
+      return 11;
+
+    case 0x10B: // PUSH_JUMPI
+      // PUSH(3) + JUMPI(10) = 13 gas
+      return 13;
+
+    case 0x115: // FUNCTION_DISPATCH
+      // PUSH4(3) + EQ(3) + PUSH(3) + JUMPI(10) = 19 gas
+      return 19;
+
+    default:
+      return 0;
+  }
+}
+```
+
+## Advanced Patterns
+
+### Custom Synthetic Opcodes
+
+Define project-specific synthetic opcodes:
+
+```typescript
+// Custom opcodes for specific patterns
+const CUSTOM_SYNTHETIC = {
+  KECCAK256_MLOAD: 0x200,    // Common hash pattern
+  SAFE_ADD: 0x201,           // Overflow-checked addition
+  ARRAY_ACCESS: 0x202,       // Array element load
+  STRUCT_FIELD: 0x203,       // Struct field access
+} as const;
+
+function detectCustomPatterns(code: BrandedBytecode): IRInstruction[] {
+  const ir: IRInstruction[] = [];
+  const iter = code.createIterator();
+
+  while (!iter.done) {
+    const inst = iter.next().value;
+
+    // Pattern: PUSH offset, MLOAD, KECCAK256
+    if (
+      inst.type === 'push' &&
+      iter.peek()?.opcode === 'MLOAD' &&
+      lookAhead(iter, 2)?.opcode === 'KECCAK256'
+    ) {
+      ir.push({
+        pc: inst.pc,
+        opcode: CUSTOM_SYNTHETIC.KECCAK256_MLOAD,
+        name: 'KECCAK256_MLOAD',
+        args: [inst.value],
+        stackEffect: 0
+      });
+
+      // Skip consumed instructions
+      iter.next(); // MLOAD
+      iter.next(); // KECCAK256
+      continue;
+    }
+
+    // ... other patterns
+  }
+
+  return ir;
+}
+```
+
+### Bytecode Transformation
+
+Transform bytecode using synthetic opcodes:
+
+```typescript
+function transformBytecode(code: BrandedBytecode): Uint8Array {
+  const output: number[] = [];
+
+  for (const inst of code.scan({ detectFusions: true })) {
+    const syntheticCode = getSyntheticOpcode(inst);
+
+    if (syntheticCode === 0x100) {
+      // PUSH_ADD → Optimized encoding
+      output.push(0x60, Number(inst.value & 0xFFn)); // PUSH1 value
+      output.push(0x01); // ADD
+      // (In real optimizer, might use different encoding)
+    } else if (inst.type === 'regular') {
+      output.push(inst.opcode);
+    } else if (inst.type === 'push') {
+      output.push(inst.opcode);
+      // Encode push data
+      const bytes = inst.value.toString(16).padStart(inst.size * 2, '0');
+      for (let i = 0; i < bytes.length; i += 2) {
+        output.push(parseInt(bytes.slice(i, i + 2), 16));
+      }
+    }
+  }
+
+  return new Uint8Array(output);
+}
+```
+
+## Limitations
+
+<Warning title="Synthetic Opcode Limitations">
+Synthetic opcodes are **analysis-time abstractions**, not runtime instructions:
+
+- **Cannot execute** directly on EVM (must expand to real opcodes)
+- **No standard encoding** in bytecode format
+- **Tool-specific** - different tools may define different synthetic opcodes
+- **May not survive round-trip** (bytecode → synthetic → bytecode may differ)
+
+Use synthetic opcodes for **analysis and optimization**, not as interchange format.
+</Warning>
+
+### What They Enable
+
+✅ Simplified intermediate representation
+✅ Pattern-based optimization
+✅ Static control flow analysis
+✅ High-level semantic extraction
+✅ Gas profiling by pattern
+
+### What They Don't Provide
+
+❌ Runtime execution semantics
+❌ Standard bytecode encoding
+❌ Cross-tool compatibility
+❌ Lossless round-trip transformation
+
+## See Also
+
+- [Detect Fusions](/primitives/bytecode/detect-fusions) - Pattern detection that produces synthetic opcodes
+- [Instruction Types](/primitives/bytecode/instruction-types) - OpcodeData union types
+- [Opcode Module](/primitives/opcode) - Standard EVM opcode reference
+- [scan](/primitives/bytecode/scan) - Iterator with fusion detection
+- [analyzeBlocks](/primitives/bytecode/analyze-blocks) - CFG construction using synthetic opcodes

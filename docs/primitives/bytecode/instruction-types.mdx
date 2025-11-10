@@ -1,0 +1,662 @@
+---
+title: Instruction Types
+description: Complete reference for OpcodeData union types returned by iterator
+icon: list-check
+---
+
+The Bytecode iterator returns instructions as a discriminated union (`OpcodeData`) representing different instruction categories and fusion patterns.
+
+## Base Instruction Type
+
+All instruction objects share common fields:
+
+```typescript
+interface BaseInstruction {
+  pc: number              // Program counter (byte offset)
+  type: InstructionType   // Discriminator for union
+}
+```
+
+## Instruction Categories
+
+### Regular Instructions
+
+Standard single-byte opcodes (ADD, MUL, SWAP1, etc.):
+
+```typescript
+interface RegularInstruction extends BaseInstruction {
+  type: 'regular'
+  opcode: number         // Raw opcode byte (0x00-0xFF)
+}
+```
+
+**Example:**
+
+```typescript
+{
+  type: 'regular',
+  pc: 4,
+  opcode: 0x01  // ADD
+}
+```
+
+### PUSH Instructions
+
+PUSH1 through PUSH32 with immediate data:
+
+```typescript
+interface PushInstruction extends BaseInstruction {
+  type: 'push'
+  opcode: number         // PUSH1 (0x60) through PUSH32 (0x7F)
+  value: bigint          // Pushed value
+  size: number           // Push size in bytes (1-32)
+}
+```
+
+**Example:**
+
+```typescript
+{
+  type: 'push',
+  pc: 0,
+  opcode: 0x60,         // PUSH1
+  value: 42n,
+  size: 1
+}
+```
+
+### JUMPDEST Instructions
+
+Valid jump destinations with block metadata:
+
+```typescript
+interface JumpdestInstruction extends BaseInstruction {
+  type: 'jumpdest'
+  pc: number
+  gas_cost: number      // Gas cost from here to next terminator
+  min_stack: number     // Min stack depth required for this block
+  max_stack: number     // Max stack depth reached in this block
+}
+```
+
+**Example:**
+
+```typescript
+{
+  type: 'jumpdest',
+  pc: 23,
+  gas_cost: 156,        // Total gas to execute block
+  min_stack: 2,         // Needs 2 items on stack minimum
+  max_stack: 5          // Block pushes up to 5 items total
+}
+```
+
+<Tip>
+JUMPDEST metadata enables efficient block-level gas estimation and stack validation without re-analyzing.
+</Tip>
+
+### JUMP Instructions
+
+Dynamic unconditional jump (target determined at runtime):
+
+```typescript
+interface JumpInstruction extends BaseInstruction {
+  type: 'jump'
+  pc: number
+}
+```
+
+**Example:**
+
+```typescript
+{
+  type: 'jump',
+  pc: 45
+}
+```
+
+<Note>
+`jump` type indicates dynamic JUMP (not fused with PUSH). Target validation occurs at runtime.
+</Note>
+
+### JUMPI Instructions
+
+Dynamic conditional jump (target and condition determined at runtime):
+
+```typescript
+interface JumpiInstruction extends BaseInstruction {
+  type: 'jumpi'
+  pc: number
+}
+```
+
+**Example:**
+
+```typescript
+{
+  type: 'jumpi',
+  pc: 67
+}
+```
+
+### PC Instructions
+
+PC opcode returning current program counter:
+
+```typescript
+interface PcInstruction extends BaseInstruction {
+  type: 'pc'
+  pc: number
+  value: number          // Value that PC will push (equals pc field)
+}
+```
+
+**Example:**
+
+```typescript
+{
+  type: 'pc',
+  pc: 100,
+  value: 100             // PC pushes its own position
+}
+```
+
+### STOP Instructions
+
+Halts execution:
+
+```typescript
+interface StopInstruction extends BaseInstruction {
+  type: 'stop'
+  pc: number
+}
+```
+
+### INVALID Instructions
+
+Invalid opcodes or undefined instruction bytes:
+
+```typescript
+interface InvalidInstruction extends BaseInstruction {
+  type: 'invalid'
+  pc: number
+}
+```
+
+---
+
+## Fusion Instructions
+
+Optimizable multi-instruction patterns detected during analysis.
+
+### Arithmetic Fusions
+
+#### PUSH + ADD
+
+```typescript
+interface PushAddFusion extends BaseInstruction {
+  type: 'push_add_fusion'
+  value: bigint          // PUSH value
+  pc: number            // Position of PUSH
+}
+```
+
+Represents: `PUSH value` + `ADD` → Add immediate value to stack top.
+
+#### PUSH + MUL
+
+```typescript
+interface PushMulFusion extends BaseInstruction {
+  type: 'push_mul_fusion'
+  value: bigint
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `MUL` → Multiply stack top by immediate.
+
+#### PUSH + SUB
+
+```typescript
+interface PushSubFusion extends BaseInstruction {
+  type: 'push_sub_fusion'
+  value: bigint
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `SUB` → Subtract immediate from stack top.
+
+#### PUSH + DIV
+
+```typescript
+interface PushDivFusion extends BaseInstruction {
+  type: 'push_div_fusion'
+  value: bigint
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `DIV` → Divide stack top by immediate.
+
+### Bitwise Fusions
+
+#### PUSH + AND
+
+```typescript
+interface PushAndFusion extends BaseInstruction {
+  type: 'push_and_fusion'
+  value: bigint
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `AND` → Bitwise AND with immediate.
+
+#### PUSH + OR
+
+```typescript
+interface PushOrFusion extends BaseInstruction {
+  type: 'push_or_fusion'
+  value: bigint
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `OR` → Bitwise OR with immediate.
+
+#### PUSH + XOR
+
+```typescript
+interface PushXorFusion extends BaseInstruction {
+  type: 'push_xor_fusion'
+  value: bigint
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `XOR` → Bitwise XOR with immediate.
+
+### Memory Fusions
+
+#### PUSH + MLOAD
+
+```typescript
+interface PushMloadFusion extends BaseInstruction {
+  type: 'push_mload_fusion'
+  value: bigint          // Memory offset
+  pc: number
+}
+```
+
+Represents: `PUSH offset` + `MLOAD` → Load from immediate memory address.
+
+#### PUSH + MSTORE
+
+```typescript
+interface PushMstoreFusion extends BaseInstruction {
+  type: 'push_mstore_fusion'
+  value: bigint          // Memory offset
+  pc: number
+}
+```
+
+Represents: `PUSH offset` + `MSTORE` → Store to immediate memory address.
+
+#### PUSH + MSTORE8
+
+```typescript
+interface PushMstore8Fusion extends BaseInstruction {
+  type: 'push_mstore8_fusion'
+  value: bigint          // Memory offset
+  pc: number
+}
+```
+
+Represents: `PUSH offset` + `MSTORE8` → Store byte to immediate memory address.
+
+### Control Flow Fusions
+
+#### PUSH + JUMP
+
+```typescript
+interface PushJumpFusion extends BaseInstruction {
+  type: 'push_jump_fusion'
+  value: bigint          // Jump target (can be validated at compile-time)
+  pc: number
+}
+```
+
+Represents: `PUSH target` + `JUMP` → **Static jump** to known destination.
+
+<Tip title="Compile-Time Validation">
+Static jumps can be validated during bytecode analysis. If `value` points to invalid JUMPDEST, bytecode is malformed.
+</Tip>
+
+#### PUSH + JUMPI
+
+```typescript
+interface PushJumpiFusion extends BaseInstruction {
+  type: 'push_jumpi_fusion'
+  value: bigint          // Jump target
+  pc: number
+}
+```
+
+Represents: `PUSH target` + `JUMPI` → Conditional jump to known destination (condition still runtime).
+
+#### ISZERO + PUSH + JUMPI
+
+```typescript
+interface IszeroJumpiFusion extends BaseInstruction {
+  type: 'iszero_jumpi'
+  target: bigint         // Jump destination
+  original_length: number // Size of original 3-instruction sequence
+  pc: number
+}
+```
+
+Represents: `ISZERO` + `PUSH target` + `JUMPI` → Inverted conditional jump pattern.
+
+**Common in Solidity:**
+```solidity
+if (!condition) { ... }
+```
+Compiles to: `ISZERO` + `PUSH <skip_offset>` + `JUMPI`
+
+### Advanced Stack Fusions
+
+#### DUP2 + MSTORE + PUSH
+
+```typescript
+interface Dup2MstorePushFusion extends BaseInstruction {
+  type: 'dup2_mstore_push'
+  push_value: bigint
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `DUP2` + `MSTORE` + `PUSH value` → Common memory write pattern.
+
+#### DUP3 + ADD + MSTORE
+
+```typescript
+interface Dup3AddMstoreFusion extends BaseInstruction {
+  type: 'dup3_add_mstore'
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `DUP3` + `ADD` + `MSTORE` → Offset calculation + store.
+
+#### SWAP1 + DUP2 + ADD
+
+```typescript
+interface Swap1Dup2AddFusion extends BaseInstruction {
+  type: 'swap1_dup2_add'
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `SWAP1` + `DUP2` + `ADD` → Stack manipulation + arithmetic.
+
+#### PUSH + DUP3 + ADD
+
+```typescript
+interface PushDup3AddFusion extends BaseInstruction {
+  type: 'push_dup3_add'
+  value: bigint
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `DUP3` + `ADD` → Immediate addition with stack duplication.
+
+#### PUSH + ADD + DUP1
+
+```typescript
+interface PushAddDup1Fusion extends BaseInstruction {
+  type: 'push_add_dup1'
+  value: bigint
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `PUSH value` + `ADD` + `DUP1` → Add immediate and duplicate result.
+
+#### MLOAD + SWAP1 + DUP2
+
+```typescript
+interface MloadSwap1Dup2Fusion extends BaseInstruction {
+  type: 'mload_swap1_dup2'
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `MLOAD` + `SWAP1` + `DUP2` → Memory load with stack rearrangement.
+
+### Multi-Instruction Fusions
+
+#### MULTI_PUSH
+
+```typescript
+interface MultiPushFusion extends BaseInstruction {
+  type: 'multi_push'
+  count: number          // Number of consecutive PUSHes (2-3)
+  values: [bigint, bigint, bigint] // Values (unused entries are 0)
+  original_length: number
+  pc: number
+}
+```
+
+Represents: Multiple consecutive PUSH instructions (2 or 3).
+
+**Example:**
+```
+PUSH1 0x01
+PUSH1 0x02
+PUSH1 0x03
+```
+→ `{ type: 'multi_push', count: 3, values: [1n, 2n, 3n] }`
+
+#### MULTI_POP
+
+```typescript
+interface MultiPopFusion extends BaseInstruction {
+  type: 'multi_pop'
+  count: number          // Number of consecutive POPs (2-3)
+  original_length: number
+  pc: number
+}
+```
+
+Represents: Multiple consecutive POP instructions (2 or 3).
+
+### Solidity-Specific Patterns
+
+#### FUNCTION_DISPATCH
+
+```typescript
+interface FunctionDispatchFusion extends BaseInstruction {
+  type: 'function_dispatch'
+  selector: number       // 4-byte function selector
+  target: bigint         // Jump destination for this function
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `PUSH4 selector` + `EQ` + `PUSH target` + `JUMPI` → Function selector matching.
+
+**Solidity pattern:**
+```solidity
+function myFunc() external { ... }
+```
+Generates function dispatch checking `msg.sig == 0x12345678`.
+
+<Tip>
+Detect all functions by collecting `function_dispatch` patterns. Extract function selectors for ABI reconstruction.
+</Tip>
+
+#### CALLVALUE_CHECK
+
+```typescript
+interface CallvalueCheckFusion extends BaseInstruction {
+  type: 'callvalue_check'
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `CALLVALUE` + `DUP1` + `ISZERO` → Check if ETH sent (non-payable modifier).
+
+**Solidity pattern:**
+```solidity
+function nonPayable() external { ... } // no `payable` modifier
+```
+Compiler inserts check: revert if `msg.value > 0`.
+
+#### PUSH0 + PUSH0 + REVERT
+
+```typescript
+interface Push0RevertFusion extends BaseInstruction {
+  type: 'push0_revert'
+  original_length: number
+  pc: number
+}
+```
+
+Represents: `PUSH0` + `PUSH0` + `REVERT` → Empty revert (no error message).
+
+**Solidity pattern:**
+```solidity
+revert();
+```
+Or failed `require()` with no message.
+
+---
+
+## Union Type Definition
+
+Complete TypeScript union:
+
+```typescript
+type OpcodeData =
+  | RegularInstruction
+  | PushInstruction
+  | JumpdestInstruction
+  | JumpInstruction
+  | JumpiInstruction
+  | PcInstruction
+  | StopInstruction
+  | InvalidInstruction
+  // Arithmetic fusions
+  | PushAddFusion
+  | PushMulFusion
+  | PushSubFusion
+  | PushDivFusion
+  // Bitwise fusions
+  | PushAndFusion
+  | PushOrFusion
+  | PushXorFusion
+  // Memory fusions
+  | PushMloadFusion
+  | PushMstoreFusion
+  | PushMstore8Fusion
+  // Control flow fusions
+  | PushJumpFusion
+  | PushJumpiFusion
+  | IszeroJumpiFusion
+  // Stack fusions
+  | Dup2MstorePushFusion
+  | Dup3AddMstoreFusion
+  | Swap1Dup2AddFusion
+  | PushDup3AddFusion
+  | PushAddDup1Fusion
+  | MloadSwap1Dup2Fusion
+  // Multi-instruction fusions
+  | MultiPushFusion
+  | MultiPopFusion
+  // Solidity patterns
+  | FunctionDispatchFusion
+  | CallvalueCheckFusion
+  | Push0RevertFusion
+```
+
+## Type Guards
+
+Use TypeScript discriminated union for type-safe handling:
+
+```typescript
+function analyzeInstruction(inst: OpcodeData) {
+  switch (inst.type) {
+    case 'push':
+      console.log(`PUSH ${inst.value}`);
+      break;
+
+    case 'jumpdest':
+      console.log(`JUMPDEST: gas=${inst.gas_cost}, stack=[${inst.min_stack}, ${inst.max_stack}]`);
+      break;
+
+    case 'push_jump_fusion':
+      console.log(`Static jump to ${inst.value}`);
+      break;
+
+    case 'function_dispatch':
+      console.log(`Function ${inst.selector.toString(16)}`);
+      break;
+
+    case 'regular':
+      console.log(`Opcode 0x${inst.opcode.toString(16)}`);
+      break;
+
+    default:
+      // TypeScript ensures exhaustiveness
+      const _exhaustive: never = inst;
+  }
+}
+```
+
+## Pattern Detection
+
+Detect specific patterns during iteration:
+
+```typescript
+// Find all static jumps
+const staticJumps: bigint[] = [];
+for (const inst of code.scan({ detectFusions: true })) {
+  if (inst.type === 'push_jump_fusion') {
+    staticJumps.push(inst.value);
+  }
+}
+
+// Extract function selectors
+const functions: Map<number, bigint> = new Map();
+for (const inst of code.scan({ detectFusions: true })) {
+  if (inst.type === 'function_dispatch') {
+    functions.set(inst.selector, inst.target);
+  }
+}
+
+// Detect non-payable functions
+let hasCallvalueCheck = false;
+for (const inst of code.scan({ detectFusions: true })) {
+  if (inst.type === 'callvalue_check') {
+    hasCallvalueCheck = true;
+    break;
+  }
+}
+```
+
+## See Also
+
+- [scan](/primitives/bytecode/scan) - Iterator returning OpcodeData
+- [createIterator](/primitives/bytecode/create-iterator) - Manual iteration
+- [Synthetic Opcodes](/primitives/bytecode/synthetic-opcodes) - Extended opcode reference
+- [Detect Fusions](/primitives/bytecode/detect-fusions) - Pattern detection details

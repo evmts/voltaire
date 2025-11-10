@@ -65,12 +65,21 @@ const disassembly = Bytecode.formatInstructions(code);
 - [`fromHex(hex)`](./fromHex) - Parse hex string (with or without 0x prefix)
 - [`fromUint8Array(bytes)`](./fromUint8Array) - Create from Uint8Array
 
+### Iteration
+
+- [`scan(bytecode, options?)`](./scan) - Iterator for lazy bytecode traversal with fusion detection
+- [`createIterator(bytecode)`](./create-iterator) - Manual iterator with peek/skip capabilities
+
 ### Analysis
 
 - [`analyze(bytecode)`](./analyze) - Complete analysis (validation + jump destinations + instructions)
+- [`analyzeBlocks(bytecode, options?)`](./analyze-blocks) - Split into basic blocks with control flow metadata
+- [`analyzeGas(bytecode, options?)`](./analyze-gas) - Estimate gas costs with instruction/block breakdown
+- [`analyzeStack(bytecode, options?)`](./analyze-stack) - Validate stack depth constraints and track effects
 - [`analyzeJumpDestinations(bytecode)`](./analyzeJumpDestinations) - Find all JUMPDEST positions
 - [`parseInstructions(bytecode)`](./parseInstructions) - Parse all instructions with PUSH data
 - [`isValidJumpDest(bytecode, offset)`](./isValidJumpDest) - Check if position is valid jump target
+- [`detectFusions(bytecode)`](./detect-fusions) - Identify multi-instruction optimization patterns
 
 ### Validation
 
@@ -84,10 +93,12 @@ const disassembly = Bytecode.formatInstructions(code);
 ### Formatting
 
 - [`formatInstructions(bytecode)`](./formatInstructions) - Disassemble to string array
+- [`prettyPrint(bytecode, options?)`](./pretty-print) - Annotated disassembly with colors and metadata
 
 ### Conversions
 
 - [`toHex(bytecode)`](./toHex) - Convert to hex string with 0x prefix
+- [`toAbi(bytecode)`](./toAbi) - Extract ABI from bytecode using reverse engineering
 
 ### Utilities
 
@@ -95,6 +106,11 @@ const disassembly = Bytecode.formatInstructions(code);
 - [`equals(a, b)`](./equals) - Compare bytecode equality
 - [`hash(bytecode)`](./hash) - Compute keccak256 hash
 - [`extractRuntime(bytecode)`](./extractRuntime) - Extract runtime code from deployment bytecode
+
+### Reference
+
+- [Instruction Types](./instruction-types) - Complete OpcodeData union reference (40+ types)
+- [Synthetic Opcodes](./synthetic-opcodes) - Extended opcode set for fusion patterns
 
 ## Types
 
@@ -204,7 +220,20 @@ const disassembly = formatInstructions(code);
 
 ## Related
 
+### Core Documentation
+
 - [Fundamentals](/primitives/bytecode/fundamentals) - Learn bytecode structure and parsing
+- [Instruction Types](/primitives/bytecode/instruction-types) - Complete OpcodeData union reference
+
+### Advanced Features
+
+- [Pretty Print](/primitives/bytecode/pretty-print) - Annotated disassembly with visualization
+- [Analyze Blocks](/primitives/bytecode/analyze-blocks) - Basic block analysis and CFG
+- [Detect Fusions](/primitives/bytecode/detect-fusions) - Multi-instruction pattern detection
+- [Synthetic Opcodes](/primitives/bytecode/synthetic-opcodes) - Extended opcode set
+
+### Related Primitives
+
 - [Opcode](/primitives/opcode) - EVM instruction definitions and gas costs
 - [Hash](/primitives/hash) - Keccak256 hashing for bytecode verification
 - [Hex](/primitives/hex) - Hex string encoding and decoding

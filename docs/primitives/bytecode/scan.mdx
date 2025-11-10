@@ -1,0 +1,327 @@
+---
+title: Bytecode.scan
+description: Iterate through bytecode instructions with a lazy, memory-efficient iterator
+icon: rotate
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `bytecode.scan(options?: ScanOptions): Generator<Instruction>`
+
+Iterate through bytecode instructions lazily, automatically handling PUSH data and fusion patterns.
+
+Returns generator yielding `Instruction` objects with detailed metadata about each operation.
+
+**Parameters:**
+- `options?: ScanOptions` - Configuration for iteration behavior
+
+**Returns:** `Generator<Instruction>` - Iterator yielding instruction objects
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x6001600201");
+// PUSH1 0x01, PUSH1 0x02, ADD
+
+for (const inst of code.scan()) {
+  console.log(`PC ${inst.pc}: ${inst.opcode}`);
+  if (inst.type === 'push') {
+    console.log(`  Value: ${inst.value}`);
+  }
+}
+// Output:
+// PC 0: PUSH1
+//   Value: 1n
+// PC 2: PUSH1
+//   Value: 2n
+// PC 4: ADD
+```
+
+**Defined in:** [BrandedBytecode/scan.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/scan.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `scan(code: BrandedBytecode, options?: ScanOptions): Generator<Instruction>`
+
+Iterate through bytecode instructions lazily, automatically handling PUSH data and fusion patterns.
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to iterate through
+- `options?: ScanOptions` - Configuration for iteration behavior
+
+**Returns:** `Generator<Instruction>` - Iterator yielding instruction objects
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const code = Bytecode.fromHex("0x6001600201");
+
+for (const inst of Bytecode.scan(code)) {
+  console.log(`PC ${inst.pc}: ${inst.opcode}`);
+}
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { scan } from '@tevm/voltaire/BrandedBytecode';
+
+const iterator = scan(code);
+for (const inst of iterator) {
+  // Process instruction
+}
+```
+
+**Defined in:** [BrandedBytecode/scan.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/scan.js)
+
+</Tab>
+</Tabs>
+
+## Instruction Object
+
+Each iteration yields an `Instruction` object matching the [OpcodeData union type](/primitives/bytecode/instruction-types):
+
+```typescript
+interface Instruction {
+  pc: number              // Program counter (byte offset)
+  type: InstructionType   // Instruction category
+  opcode: Opcode | SyntheticOpcode
+  size: number            // Instruction size in bytes
+
+  // Type-specific fields (present based on type)
+  value?: bigint          // For PUSH instructions
+  gas?: number            // Gas cost (if withGas option)
+  stackEffect?: {         // Stack effects (if withStack option)
+    input: number
+    output: number
+  }
+}
+```
+
+## Options
+
+```typescript
+interface ScanOptions {
+  /** Include gas cost for each instruction (default: false) */
+  withGas?: boolean
+
+  /** Include stack effect metadata (default: false) */
+  withStack?: boolean
+
+  /** Detect and yield fusion patterns (default: true) */
+  detectFusions?: boolean
+
+  /** Start iteration at specific PC (default: 0) */
+  startPc?: number
+
+  /** Stop iteration at specific PC (default: end) */
+  endPc?: number
+}
+```
+
+## Usage Patterns
+
+### Basic Iteration
+
+```typescript
+// Iterate through all instructions
+for (const inst of code.scan()) {
+  console.log(`${inst.pc}: ${inst.opcode}`);
+}
+```
+
+### With Gas Costs
+
+```typescript
+let totalGas = 0;
+
+for (const inst of code.scan({ withGas: true })) {
+  totalGas += inst.gas;
+  console.log(`${inst.opcode}: ${inst.gas} gas`);
+}
+
+console.log(`Total: ${totalGas} gas`);
+```
+
+### With Stack Tracking
+
+```typescript
+let stackDepth = 0;
+
+for (const inst of code.scan({ withStack: true })) {
+  stackDepth -= inst.stackEffect.input;
+  stackDepth += inst.stackEffect.output;
+  console.log(`${inst.opcode}: stack depth ${stackDepth}`);
+}
+```
+
+### Filter by Type
+
+```typescript
+// Find all JUMP instructions
+const jumps = [];
+for (const inst of code.scan()) {
+  if (inst.type === 'jump' || inst.type === 'jumpi') {
+    jumps.push(inst);
+  }
+}
+```
+
+### Detect PUSH Values
+
+```typescript
+// Extract all PUSH values
+const pushValues = [];
+for (const inst of code.scan()) {
+  if (inst.type === 'push') {
+    pushValues.push({ pc: inst.pc, value: inst.value });
+  }
+}
+```
+
+### Fusion Detection
+
+```typescript
+// Find all fusion opportunities
+for (const inst of code.scan({ detectFusions: true })) {
+  if (inst.type.endsWith('_fusion')) {
+    console.log(`Fusion at PC ${inst.pc}: ${inst.type}`);
+  }
+}
+```
+
+### Partial Iteration
+
+```typescript
+// Scan specific range
+for (const inst of code.scan({ startPc: 100, endPc: 200 })) {
+  // Only processes bytes 100-199
+}
+```
+
+### Early Exit
+
+```typescript
+// Stop at first JUMPDEST
+for (const inst of code.scan()) {
+  if (inst.type === 'jumpdest') {
+    console.log(`First JUMPDEST at PC ${inst.pc}`);
+    break;
+  }
+}
+```
+
+### Collect to Array
+
+```typescript
+// Materialize all instructions
+const instructions = Array.from(code.scan());
+
+// Or with options
+const withGas = Array.from(code.scan({ withGas: true }));
+```
+
+## Performance
+
+`scan()` uses lazy iteration for memory efficiency:
+
+- **Lazy evaluation** - Instructions computed on demand
+- **O(1) memory** - Only current instruction in memory
+- **Streaming** - Supports early exit without parsing entire bytecode
+- **Efficient PUSH handling** - Skips over immediate data bytes
+- **Bitmap lookups** - O(1) JUMPDEST validation
+
+For large bytecode (10KB+), use `scan()` instead of `parseInstructions()` which materializes the entire array.
+
+## PUSH Data Handling
+
+`scan()` correctly handles PUSH immediate data:
+
+```typescript
+const code = Bytecode.fromHex("0x60016002605b"); // PUSH1 1, PUSH1 2, PUSH1 0x5b
+
+for (const inst of code.scan()) {
+  console.log(inst);
+}
+// Output:
+// { pc: 0, type: 'push', opcode: 'PUSH1', value: 1n, size: 2 }
+// { pc: 2, type: 'push', opcode: 'PUSH1', value: 2n, size: 2 }
+// { pc: 4, type: 'push', opcode: 'PUSH1', value: 91n, size: 2 }
+// Note: 0x5b (JUMPDEST) in last PUSH is treated as data, not instruction
+```
+
+## Fusion Patterns
+
+When `detectFusions: true` (default), multi-instruction patterns are detected:
+
+```typescript
+const code = Bytecode.fromHex("0x60016001015b");
+// PUSH1 1, PUSH1 1, ADD, JUMPDEST
+
+for (const inst of code.scan({ detectFusions: true })) {
+  console.log(`${inst.pc}: ${inst.type}`);
+}
+// Output may include:
+// 0: push_add_fusion (if PUSH+ADD pattern detected)
+// Or:
+// 0: push
+// 2: push
+// 4: regular (ADD)
+// 5: jumpdest
+```
+
+See [Fusion Detection](/primitives/bytecode/detect-fusions) for all 20+ patterns.
+
+## Error Handling
+
+```typescript
+try {
+  for (const inst of code.scan()) {
+    // Process instruction
+  }
+} catch (error) {
+  if (error instanceof BytecodeError) {
+    console.error(`Invalid bytecode at PC ${error.pc}`);
+  }
+}
+```
+
+<Note>
+`scan()` validates bytecode structure during iteration. Malformed PUSH instructions (truncated data) will throw during iteration at the problematic position.
+</Note>
+
+## Comparison with parseInstructions
+
+**Use `scan()` when:**
+- Processing large bytecode (memory efficiency)
+- Need early exit capability
+- Streaming analysis
+- Real-time disassembly
+
+**Use `parseInstructions()` when:**
+- Need random access to instructions
+- Multiple passes over same data
+- Small bytecode (<1KB)
+- Caching full instruction list
+
+```typescript
+// Memory efficient (lazy)
+for (const inst of code.scan()) { /* process */ }
+
+// Materializes all instructions
+const instructions = code.parseInstructions();
+instructions.forEach(inst => { /* process */ });
+```
+
+## See Also
+
+- [createIterator](/primitives/bytecode/create-iterator) - Manual iterator control with peek/skip
+- [Instruction Types](/primitives/bytecode/instruction-types) - Complete OpcodeData union reference
+- [parseInstructions](/primitives/bytecode/parseInstructions) - Eager parsing to array
+- [Fusion Detection](/primitives/bytecode/detect-fusions) - Pattern detection details

@@ -1,0 +1,402 @@
+---
+title: Bytecode.analyzeGas
+description: Estimate gas costs with instruction-level and block-level breakdown
+icon: gas-pump
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `bytecode.analyzeGas(options?: GasAnalysisOptions): GasAnalysis`
+
+Comprehensive static gas analysis with instruction-level, block-level, and path-level breakdown.
+
+Returns detailed gas cost estimates for sequential execution and alternative code paths.
+
+**Parameters:**
+- `options?: GasAnalysisOptions` - Analysis configuration
+
+**Returns:** `GasAnalysis` - Complete gas cost breakdown
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x6001600201");
+const analysis = code.analyzeGas();
+
+console.log(`Total gas: ${analysis.total}`);
+console.log(`Instructions: ${analysis.byInstruction.length}`);
+analysis.expensive.forEach(inst => {
+  console.log(`Expensive: ${inst.opcode} (${inst.gas} gas) at PC ${inst.pc}`);
+});
+```
+
+**Defined in:** [BrandedBytecode/analyzeGas.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeGas.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `analyzeGas(code: BrandedBytecode, options?: GasAnalysisOptions): GasAnalysis`
+
+Comprehensive static gas analysis with instruction-level, block-level, and path-level breakdown.
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to analyze
+- `options?: GasAnalysisOptions` - Analysis configuration
+
+**Returns:** `GasAnalysis` - Complete gas cost breakdown
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const code = Bytecode.fromHex("0x6001600201");
+const analysis = Bytecode.analyzeGas(code);
+
+console.log(`Total: ${analysis.total} gas`);
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { analyzeGas } from '@tevm/voltaire/BrandedBytecode';
+
+const analysis = analyzeGas(code);
+```
+
+**Defined in:** [BrandedBytecode/analyzeGas.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeGas.js)
+
+</Tab>
+</Tabs>
+
+## GasAnalysis Type
+
+```typescript
+interface GasAnalysis {
+  /** Total gas for sequential execution */
+  total: bigint
+
+  /** Per-instruction gas breakdown */
+  byInstruction: InstructionGas[]
+
+  /** Per-block gas breakdown */
+  byBlock: BlockGas[]
+
+  /** Top 10 most expensive instructions */
+  expensive: ExpensiveInstruction[]
+
+  /** Alternative execution paths (if control flow analyzed) */
+  paths?: {
+    cheapest: ExecutionPath
+    mostExpensive: ExecutionPath
+    average: bigint
+  }
+}
+```
+
+### InstructionGas
+
+```typescript
+interface InstructionGas {
+  pc: number               // Program counter
+  opcode: string           // Instruction mnemonic
+  gas: number             // Base gas cost
+  cumulative: bigint       // Cumulative gas up to this point
+}
+```
+
+### BlockGas
+
+```typescript
+interface BlockGas {
+  blockIndex: number       // Block number
+  startPc: number          // First instruction PC
+  endPc: number           // Last instruction PC (exclusive)
+  gas: number             // Total block gas
+  percentage: number       // % of total gas
+}
+```
+
+### ExpensiveInstruction
+
+```typescript
+interface ExpensiveInstruction {
+  pc: number               // Program counter
+  opcode: string           // Instruction mnemonic
+  gas: number             // Gas cost
+  category: string         // "storage" | "memory" | "call" | etc.
+}
+```
+
+### ExecutionPath
+
+```typescript
+interface ExecutionPath {
+  blocks: number[]         // Block indices in path
+  gas: bigint              // Total gas for path
+  instructions: number     // Instruction count
+}
+```
+
+## Options
+
+```typescript
+interface GasAnalysisOptions {
+  /** Include control flow path analysis (default: false) */
+  analyzePaths?: boolean
+
+  /** Maximum paths to explore (default: 100) */
+  maxPaths?: number
+
+  /** Include dynamic gas estimates (CALL, SSTORE, etc.) (default: false) */
+  includeDynamic?: boolean
+
+  /** Context for dynamic gas (EIP-2929, etc.) */
+  context?: {
+    warmAddresses?: Set<string>
+    warmSlots?: Set<bigint>
+  }
+}
+```
+
+## Usage Patterns
+
+### Basic Gas Estimation
+
+```typescript
+const code = Bytecode.fromHex("0x600160020160805260206080f3");
+// PUSH1 1, PUSH1 2, ADD, PUSH1 0x80, MSTORE, PUSH1 0x20, PUSH1 0x80, RETURN
+
+const analysis = code.analyzeGas();
+
+console.log(`Total gas: ${analysis.total}`);
+// Output: Total gas: 27 (3+3+3+3+3+3+3+3+3)
+```
+
+### Instruction-Level Breakdown
+
+```typescript
+const analysis = code.analyzeGas();
+
+analysis.byInstruction.forEach(inst => {
+  console.log(`${inst.pc.toString().padStart(4)}: ${inst.opcode.padEnd(10)} ${inst.gas} gas (cumulative: ${inst.cumulative})`);
+});
+
+// Output:
+//    0: PUSH1      3 gas (cumulative: 3)
+//    2: PUSH1      3 gas (cumulative: 6)
+//    4: ADD        3 gas (cumulative: 9)
+//    5: PUSH1      3 gas (cumulative: 12)
+//    7: MSTORE     3 gas (cumulative: 15)
+//    ...
+```
+
+### Block-Level Analysis
+
+```typescript
+const analysis = code.analyzeGas();
+
+analysis.byBlock.forEach(block => {
+  console.log(`Block ${block.blockIndex}: ${block.gas} gas (${block.percentage.toFixed(1)}%)`);
+  console.log(`  PC ${block.startPc} - ${block.endPc}`);
+});
+
+// Output:
+// Block 0: 15 gas (55.6%)
+//   PC 0 - 9
+// Block 1: 12 gas (44.4%)
+//   PC 9 - 17
+```
+
+### Identify Expensive Operations
+
+```typescript
+const analysis = code.analyzeGas();
+
+console.log("Top 10 most expensive instructions:");
+analysis.expensive.forEach((inst, i) => {
+  console.log(`${i + 1}. ${inst.opcode} at PC ${inst.pc}: ${inst.gas} gas (${inst.category})`);
+});
+
+// Output:
+// 1. SSTORE at PC 45: 20000 gas (storage)
+// 2. CALL at PC 123: 700 gas (call)
+// 3. SLOAD at PC 12: 100 gas (storage)
+```
+
+### Path Analysis
+
+```typescript
+const analysis = code.analyzeGas({ analyzePaths: true });
+
+if (analysis.paths) {
+  console.log(`Cheapest path: ${analysis.paths.cheapest.gas} gas`);
+  console.log(`  Blocks: ${analysis.paths.cheapest.blocks.join(' → ')}`);
+
+  console.log(`Most expensive path: ${analysis.paths.mostExpensive.gas} gas`);
+  console.log(`  Blocks: ${analysis.paths.mostExpensive.blocks.join(' → ')}`);
+
+  console.log(`Average: ${analysis.paths.average} gas`);
+}
+
+// Output:
+// Cheapest path: 21347 gas
+//   Blocks: 0 → 1 → 5
+// Most expensive path: 45123 gas
+//   Blocks: 0 → 1 → 2 → 3 → 5
+// Average: 32456 gas
+```
+
+### Dynamic Gas Estimation
+
+```typescript
+const analysis = code.analyzeGas({
+  includeDynamic: true,
+  context: {
+    warmAddresses: new Set(['0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e']),
+    warmSlots: new Set([0n, 1n])
+  }
+});
+
+// SLOAD/SSTORE costs depend on warm/cold access (EIP-2929)
+// Warm: 100 gas, Cold: 2100 gas
+```
+
+## EIP-3860 Initcode Gas
+
+Calculate initcode gas (2 gas per 32-byte word):
+
+```typescript
+const deploymentCode = Bytecode.fromHex("0x608060405234801561001057600080fd5b...");
+
+const initcodeGas = Bytecode.calculateInitcodeGas(deploymentCode.size());
+console.log(`Initcode gas: ${initcodeGas}`);
+
+// For 500-byte deployment code:
+// 500 bytes ÷ 32 = 15.625 words → 16 words
+// 16 × 2 = 32 gas
+```
+
+<Tip title="EIP-3860">
+Post-Shanghai, initcode costs 2 gas per 32-byte word. Include this when deploying contracts.
+</Tip>
+
+## Gas Cost Categories
+
+Instructions grouped by gas cost category:
+
+### Base Cost (3 gas)
+- Stack: PUSH, DUP, SWAP, POP
+- Arithmetic: ADD, SUB, MUL
+- Comparison: LT, GT, EQ
+- Bitwise: AND, OR, XOR, NOT
+
+### Memory Expansion (3+ gas)
+- MLOAD, MSTORE, MSTORE8: 3 gas + expansion cost
+- Expansion: `3 * new_words + (new_words)² ÷ 512`
+
+### Storage (2100/20000 gas)
+- SLOAD: 100 gas (warm) / 2100 gas (cold)
+- SSTORE: 100/2900/20000 gas (depends on change)
+
+### Calls (700+ gas)
+- CALL, DELEGATECALL, STATICCALL: 700 base + value transfer + memory expansion
+- CREATE, CREATE2: 32000 gas + deployment gas
+
+### Hashing
+- KECCAK256: 30 gas + 6 gas per word
+- SHA256, RIPEMD160: 60 gas + 12 gas per word (precompiles)
+
+### Expensive Operations
+- EXP: 10 gas + 50 gas per byte of exponent
+- SELFDESTRUCT: 5000 gas + refund
+
+## Limitations
+
+<Warning title="Static Analysis Only">
+Gas estimation is based on static analysis and may not reflect actual execution costs:
+
+- **Dynamic jumps** - Multiple possible paths
+- **Loop gas** - Cannot determine iteration count
+- **External calls** - Called contract gas unknown
+- **Memory expansion** - Depends on runtime values
+- **Storage access** - Warm/cold status runtime-dependent
+
+Use `includeDynamic: true` with context for better estimates, but always test on-chain.
+</Warning>
+
+### What's Included
+
+✅ Base opcode costs (ADD, MUL, PUSH, etc.)
+✅ JUMPDEST costs (1 gas each)
+✅ Block-level aggregation
+✅ Sequential execution path
+✅ Multiple path exploration (with `analyzePaths`)
+
+### What's Estimated
+
+⚠️ Memory expansion (requires runtime sizes)
+⚠️ Storage access (warm/cold requires context)
+⚠️ Call stipend and value transfer
+⚠️ CREATE deployment gas
+
+### What's Not Included
+
+❌ Actual loop iteration counts
+❌ External contract execution costs
+❌ Precompile gas (except fixed-cost ones)
+❌ Gas refunds (SELFDESTRUCT, SSTORE)
+
+## Optimization Hints
+
+Identify gas optimization opportunities:
+
+```typescript
+const analysis = code.analyzeGas();
+
+// Find expensive blocks
+const expensiveBlocks = analysis.byBlock
+  .filter(block => block.gas > 10000)
+  .sort((a, b) => b.gas - a.gas);
+
+console.log("Expensive blocks to optimize:");
+expensiveBlocks.forEach(block => {
+  console.log(`Block ${block.blockIndex}: ${block.gas} gas (${block.percentage}%)`);
+});
+
+// Find repeated expensive operations
+const opcodeGas = new Map<string, number>();
+analysis.byInstruction.forEach(inst => {
+  opcodeGas.set(inst.opcode, (opcodeGas.get(inst.opcode) || 0) + inst.gas);
+});
+
+const sorted = Array.from(opcodeGas.entries())
+  .sort((a, b) => b[1] - a[1]);
+
+console.log("\nGas by opcode:");
+sorted.slice(0, 10).forEach(([opcode, gas]) => {
+  console.log(`${opcode}: ${gas} gas total`);
+});
+```
+
+## Integration with Opcode Module
+
+Gas costs come from [Opcode.getGasCost()](/primitives/opcode/getGasCost):
+
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode';
+
+const addCost = Opcode.getGasCost('ADD');       // 3
+const sloadCost = Opcode.getGasCost('SLOAD');   // 100 (warm)
+const callCost = Opcode.getGasCost('CALL');     // 700 (base)
+```
+
+## See Also
+
+- [analyzeStack](/primitives/bytecode/analyze-stack) - Stack depth validation
+- [analyzeBlocks](/primitives/bytecode/analyze-blocks) - Basic block analysis
+- [Opcode.getGasCost](/primitives/opcode/getGasCost) - Individual opcode costs
+- [prettyPrint](/primitives/bytecode/pretty-print) - Disassembly with gas annotations
