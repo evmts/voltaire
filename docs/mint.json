@@ -67,6 +67,7 @@
           "group": "AccessList",
           "pages": [
             "primitives/accesslist/index",
+            "primitives/accesslist/fundamentals",
             "primitives/accesslist/branded-accesslist",
             "primitives/accesslist/constructors",
             "primitives/accesslist/conversions",
@@ -82,6 +83,7 @@
           "group": "Address",
           "pages": [
             "primitives/address/index",
+            "primitives/address/fundamentals",
             "primitives/address/branded-address",
             "primitives/address/constructors",
             "primitives/address/conversions",
@@ -152,6 +154,7 @@
         {
           "group": "Bytecode",
           "pages": [
+            "primitives/bytecode/fundamentals",
             "primitives/bytecode/index",
             "primitives/bytecode/from",
             "primitives/bytecode/fromHex",
@@ -219,6 +222,7 @@
           "group": "FeeMarket",
           "pages": [
             "primitives/feemarket/index",
+            "primitives/feemarket/fundamentals",
             "primitives/feemarket/branded-feemarket",
             "primitives/feemarket/eip1559",
             "primitives/feemarket/eip4844",
