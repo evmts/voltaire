@@ -162,7 +162,6 @@
             "primitives/bytecode/index",
             "primitives/bytecode/fundamentals",
             "primitives/bytecode/scan",
-            "primitives/bytecode/create-iterator",
             "primitives/bytecode/instruction-types",
             "primitives/bytecode/from",
             "primitives/bytecode/fromHex",

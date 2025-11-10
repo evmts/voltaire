@@ -587,16 +587,18 @@ const CUSTOM_SYNTHETIC = {
 
 function detectCustomPatterns(code: BrandedBytecode): IRInstruction[] {
   const ir: IRInstruction[] = [];
-  const iter = code.createIterator();
 
-  while (!iter.done) {
-    const inst = iter.next().value;
+  // Collect instructions first for lookahead
+  const instructions = Array.from(code.scan({ detectFusions: true }));
+
+  for (let i = 0; i < instructions.length; i++) {
+    const inst = instructions[i];
 
     // Pattern: PUSH offset, MLOAD, KECCAK256
     if (
       inst.type === 'push' &&
-      iter.peek()?.opcode === 'MLOAD' &&
-      lookAhead(iter, 2)?.opcode === 'KECCAK256'
+      instructions[i + 1]?.opcode === 'MLOAD' &&
+      instructions[i + 2]?.opcode === 'KECCAK256'
     ) {
       ir.push({
         pc: inst.pc,
@@ -607,8 +609,7 @@ function detectCustomPatterns(code: BrandedBytecode): IRInstruction[] {
       });
 
       // Skip consumed instructions
-      iter.next(); // MLOAD
-      iter.next(); // KECCAK256
+      i += 2;
       continue;
     }
 

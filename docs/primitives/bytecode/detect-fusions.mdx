@@ -510,19 +510,23 @@ Implement custom pattern matching:
 ```typescript
 function detectCustomPattern(code: BrandedBytecode): CustomPattern[] {
   const patterns: CustomPattern[] = [];
-  const iter = code.createIterator();
 
-  while (!iter.done) {
-    const inst1 = iter.next().value;
-    const inst2 = iter.peek();
-    const inst3 = iter.peek(); // Would need lookahead buffer
+  // Collect instructions for lookahead
+  const instructions = Array.from(code.scan({ detectFusions: true }));
+
+  for (let i = 0; i < instructions.length; i++) {
+    const inst1 = instructions[i];
+    const inst2 = instructions[i + 1];
+    const inst3 = instructions[i + 2];
+    const inst4 = instructions[i + 3];
 
     // Custom pattern: PUSH1 0x40, MLOAD, PUSH1 0x20, ADD
     // (Common "get free memory pointer + 32" pattern)
     if (
       inst1.type === 'push' && inst1.value === 0x40n &&
       inst2?.opcode === 'MLOAD' &&
-      inst3?.type === 'push' && inst3.value === 0x20n
+      inst3?.type === 'push' && inst3.value === 0x20n &&
+      inst4?.opcode === 'ADD'
     ) {
       patterns.push({
         type: 'free_memory_alloc',
