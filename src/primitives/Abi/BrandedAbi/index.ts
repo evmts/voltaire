@@ -14,6 +14,10 @@ import { format } from "./format.js";
 import { formatWithArgs } from "./formatWithArgs.js";
 import { getItem } from "./getItem.js";
 import { parseLogs } from "./parseLogs.js";
+import * as FunctionNs from "../function/index.js";
+import * as EventNs from "../event/index.js";
+import * as ErrorNs from "../error/index.js";
+import * as ConstructorNs from "../constructor/index.js";
 
 import * as ConstructorNs from "../constructor/index.js";
 import * as ErrorNs from "../error/index.js";
