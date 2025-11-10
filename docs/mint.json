@@ -632,5 +632,8 @@
       "vscode",
       "mcp"
     ]
+  },
+  "assistant": {
+    "enabled": true
   }
 }
