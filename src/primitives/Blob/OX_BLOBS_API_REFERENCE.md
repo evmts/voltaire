@@ -1,3 +1,7 @@
+---
+title: "Ox Blobs API Reference"
+---
+
 # Ox Blobs API Reference
 
 ## Quick Reference: Voltaire Blob → Ox Blobs
