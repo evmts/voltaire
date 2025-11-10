@@ -91,15 +91,29 @@ export function verify(signature, messageHash, publicKey) {
 		// Create 64-byte compact signature (r || s)
 		const compactSig = concat(signature.r, signature.s);
 
-		// Add 0x04 prefix for uncompressed public key
+		// First verify the basic signature is valid
 		const prefixedPublicKey = new Uint8Array(PUBLIC_KEY_SIZE + 1);
 		prefixedPublicKey[0] = 0x04;
 		prefixedPublicKey.set(publicKey, 1);
 
-		// Verify using noble/curves with prehash:false (we already have the hash)
-		return secp256k1.verify(compactSig, messageHash, prefixedPublicKey, {
+		const isValid = secp256k1.verify(compactSig, messageHash, prefixedPublicKey, {
 			prehash: false,
 		});
+
+		if (!isValid) {
+			return false;
+		}
+
+		// Verify that the v parameter correctly recovers to this public key
+		// v=27 corresponds to recovery bit 0, v=28 corresponds to recovery bit 1
+		const recoveryBit = signature.v - 27;
+		const sig = secp256k1.Signature.fromBytes(compactSig);
+		const sigWithRecovery = sig.addRecoveryBit(recoveryBit);
+		const recovered = sigWithRecovery.recoverPublicKey(messageHash);
+		const recoveredBytes = recovered.toBytes(false);
+
+		// Compare with the provided public key (prefixed with 0x04)
+		return recoveredBytes.every((byte, idx) => byte === prefixedPublicKey[idx]);
 	} catch {
 		return false;
 	}
