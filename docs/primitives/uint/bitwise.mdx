@@ -1,0 +1,577 @@
+---
+title: Uint Bitwise Operations
+description: Bitwise operations on Uint256
+---
+
+# Bitwise Operations
+
+Bitwise operations for manipulating individual bits in Uint256 values.
+
+## Bitwise Operations Reference
+
+```
+Truth Tables (per bit)
+
+AND (∧)                 OR (∨)                  XOR (⊕)
+0 & 0 = 0             0 | 0 = 0             0 ⊕ 0 = 0
+0 & 1 = 0             0 | 1 = 1             0 ⊕ 1 = 1
+1 & 0 = 0             1 | 0 = 1             1 ⊕ 0 = 1
+1 & 1 = 1             1 | 1 = 1             1 ⊕ 1 = 0
+
+NOT (¬)
+¬0 = 1 (in context, becomes MAX-value)
+¬1 = 0
+```
+
+## Bitwise Visualization
+
+```
+Example: a = 0b11110000, b = 0b10101010
+
+AND (∩ intersection):
+  a: 11110000
+  b: 10101010
+  ─────────────
+ a&b: 10100000  ← bits present in BOTH
+
+OR (∪ union):
+  a: 11110000
+  b: 10101010
+  ─────────────
+ a|b: 11111010  ← bits present in EITHER
+
+XOR (symmetric difference):
+  a: 11110000
+  b: 10101010
+  ─────────────
+ a⊕b: 01011010  ← bits different
+
+NOT (complement):
+  a: 11110000 (0xf0)
+  ─────────────
+  ¬a: 00001111 (0x0f) in 8-bit context
+      OR for Uint256: all 256 bits flipped
+```
+
+## Bitwise AND
+
+### `instance.bitwiseAnd(other)`
+
+Bitwise AND operation on two Uint256 values.
+
+```typescript
+const a = Uint.from(0xffn)
+const b = Uint.from(0x0fn)
+
+a.bitwiseAnd(b)  // 0x0f (0b1111 & 0b00001111 = 0b00001111)
+
+// Masking bits
+const value = Uint.fromHex("0xabcdef")
+const mask = Uint.fromHex("0xff")
+value.bitwiseAnd(mask)  // 0xef (extract low byte)
+
+// Check if bit is set
+const flags = Uint.from(0b1010n)
+const bit2 = Uint.from(0b0010n)
+flags.bitwiseAnd(bit2).isZero()  // false (bit 1 is set)
+
+// Identity
+a.bitwiseAnd(Uint.MAX)   // a (all bits)
+a.bitwiseAnd(Uint.ZERO)  // ZERO (no bits)
+
+// Commutative
+a.bitwiseAnd(b).equals(b.bitwiseAnd(a))  // true
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to AND with
+
+**Returns:** `BrandedUint` - Bitwise AND result
+
+**Static form:**
+```typescript
+Uint.bitwiseAnd(a, b)  // a & b
+```
+
+Source: [bitwiseAnd.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseAnd.ts#L18)
+
+## Bitwise OR
+
+### `instance.bitwiseOr(other)`
+
+Bitwise OR operation on two Uint256 values.
+
+```typescript
+const a = Uint.from(0xf0n)
+const b = Uint.from(0x0fn)
+
+a.bitwiseOr(b)  // 0xff (0b11110000 | 0b00001111 = 0b11111111)
+
+// Combining flags
+const read = Uint.from(0b001n)
+const write = Uint.from(0b010n)
+const exec = Uint.from(0b100n)
+const perms = read.bitwiseOr(write).bitwiseOr(exec)  // 0b111
+
+// Set bit
+const value = Uint.from(0b1000n)
+const setBit1 = Uint.from(0b0010n)
+value.bitwiseOr(setBit1)  // 0b1010
+
+// Identity
+a.bitwiseOr(Uint.ZERO)  // a (no change)
+a.bitwiseOr(Uint.MAX)   // MAX (all bits set)
+
+// Commutative
+a.bitwiseOr(b).equals(b.bitwiseOr(a))  // true
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to OR with
+
+**Returns:** `BrandedUint` - Bitwise OR result
+
+**Static form:**
+```typescript
+Uint.bitwiseOr(a, b)  // a | b
+```
+
+Source: [bitwiseOr.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseOr.ts#L18)
+
+## Bitwise XOR
+
+### `instance.bitwiseXor(other)`
+
+Bitwise XOR (exclusive OR) operation on two Uint256 values.
+
+```typescript
+const a = Uint.from(0xffn)
+const b = Uint.from(0x0fn)
+
+a.bitwiseXor(b)  // 0xf0 (0b11111111 ^ 0b00001111 = 0b11110000)
+
+// Toggle bits
+const value = Uint.from(0b1010n)
+const toggle = Uint.from(0b0011n)
+value.bitwiseXor(toggle)  // 0b1001 (flip bits 0 and 1)
+
+// XOR swap (without temporary)
+let x = Uint.from(5n)
+let y = Uint.from(10n)
+x = x.bitwiseXor(y)
+y = x.bitwiseXor(y)  // Now y = 5
+x = x.bitwiseXor(y)  // Now x = 10
+
+// Identity
+a.bitwiseXor(Uint.ZERO)  // a (no change)
+a.bitwiseXor(a)          // ZERO (self-cancel)
+a.bitwiseXor(Uint.MAX)   // bitwiseNot(a) (invert all bits)
+
+// Commutative
+a.bitwiseXor(b).equals(b.bitwiseXor(a))  // true
+```
+
+**Parameters:**
+- `other: BrandedUint` - Value to XOR with
+
+**Returns:** `BrandedUint` - Bitwise XOR result
+
+**Static form:**
+```typescript
+Uint.bitwiseXor(a, b)  // a ^ b
+```
+
+Source: [bitwiseXor.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseXor.ts#L18)
+
+## Bitwise NOT
+
+### `instance.bitwiseNot()`
+
+Bitwise NOT (inversion) operation on Uint256 value.
+
+```typescript
+const a = Uint.from(0n)
+a.bitwiseNot()  // MAX (all bits set)
+
+const b = Uint.MAX
+b.bitwiseNot()  // ZERO (all bits cleared)
+
+// Flip specific bits pattern
+const pattern = Uint.from(0xf0n)
+pattern.bitwiseNot()  // 0xff...ff0f (inverts all 256 bits)
+
+// Double negation
+a.bitwiseNot().bitwiseNot().equals(a)  // true
+
+// One's complement
+const value = Uint.from(42n)
+value.bitwiseNot()  // MAX - 42 (one's complement)
+```
+
+**Returns:** `BrandedUint` - Bitwise NOT result (inverted bits)
+
+**Static form:**
+```typescript
+Uint.bitwiseNot(a)  // ~a
+```
+
+**Note:** Result is masked to 256 bits. Native bigint `~` would produce negative result.
+
+Source: [bitwiseNot.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/bitwiseNot.ts#L17)
+
+## Left Shift
+
+### `instance.shiftLeft(bits)`
+
+Shift bits left with wrapping.
+
+```typescript
+const a = Uint.ONE
+
+// Basic left shift
+a.shiftLeft(1)   // 2 (1 << 1)
+a.shiftLeft(2)   // 4 (1 << 2)
+a.shiftLeft(8)   // 256 (1 << 8)
+a.shiftLeft(255) // 2^255
+
+// Overflow wraps (keeps only lower 256 bits)
+a.shiftLeft(256)  // 0 (bit shifted out)
+a.shiftLeft(257)  // 0
+
+const large = Uint.from(2n ** 255n)
+large.shiftLeft(1)  // 0 (bit 255 shifts out, wraps)
+
+// Multiply by power of 2
+const value = Uint.from(10n)
+value.shiftLeft(1)  // 20 (multiply by 2)
+value.shiftLeft(2)  // 40 (multiply by 4)
+value.shiftLeft(3)  // 80 (multiply by 8)
+
+// Identity
+a.shiftLeft(0)  // a (no shift)
+```
+
+**Parameters:**
+- `bits: number` - Number of bits to shift left
+
+**Returns:** `BrandedUint` - Result with wrapping (keeps lower 256 bits)
+
+**Wrapping:** Bits shifted beyond position 255 are lost
+
+**Equivalent to:** Multiply by 2^bits (mod 2^256)
+
+**Static form:**
+```typescript
+Uint.shiftLeft(a, 8)  // a << 8
+```
+
+Source: [shiftLeft.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftLeft.ts#L19)
+
+## Right Shift
+
+### `instance.shiftRight(bits)`
+
+Shift bits right (logical shift, fills with zeros).
+
+```typescript
+const a = Uint.from(256n)
+
+// Basic right shift
+a.shiftRight(1)  // 128 (256 >> 1)
+a.shiftRight(2)  // 64 (256 >> 2)
+a.shiftRight(8)  // 1 (256 >> 8)
+a.shiftRight(9)  // 0 (all bits shifted out)
+
+// Divide by power of 2 (floor division)
+const value = Uint.from(100n)
+value.shiftRight(1)  // 50 (divide by 2)
+value.shiftRight(2)  // 25 (divide by 4)
+value.shiftRight(3)  // 12 (divide by 8, floor)
+
+// Extract high bits
+const large = Uint.MAX
+large.shiftRight(248)  // 0xff (extract top byte)
+
+// Identity
+a.shiftRight(0)    // a (no shift)
+a.shiftRight(256)  // ZERO (all bits shifted out)
+```
+
+**Parameters:**
+- `bits: number` - Number of bits to shift right
+
+**Returns:** `BrandedUint` - Shifted result (logical shift)
+
+**Shift type:** Logical shift (fills with zeros from left)
+
+**Equivalent to:** Divide by 2^bits (floor division)
+
+**Static form:**
+```typescript
+Uint.shiftRight(a, 8)  // a >> 8
+```
+
+Source: [shiftRight.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/shiftRight.ts#L18)
+
+## Usage Patterns
+
+### Bit Manipulation
+
+```typescript
+// Set bit at position
+function setBit(value: BrandedUint, position: number): BrandedUint {
+  const mask = Uint.ONE.shiftLeft(position)
+  return value.bitwiseOr(mask)
+}
+
+// Clear bit at position
+function clearBit(value: BrandedUint, position: number): BrandedUint {
+  const mask = Uint.ONE.shiftLeft(position)
+  return value.bitwiseAnd(mask.bitwiseNot())
+}
+
+// Toggle bit at position
+function toggleBit(value: BrandedUint, position: number): BrandedUint {
+  const mask = Uint.ONE.shiftLeft(position)
+  return value.bitwiseXor(mask)
+}
+
+// Test bit at position
+function testBit(value: BrandedUint, position: number): boolean {
+  const mask = Uint.ONE.shiftLeft(position)
+  return !value.bitwiseAnd(mask).isZero()
+}
+```
+
+### Bit Fields
+
+```typescript
+// Extract bit range (positions start...end)
+function extractBits(
+  value: BrandedUint,
+  start: number,
+  length: number
+): BrandedUint {
+  const mask = Uint.ONE
+    .shiftLeft(length)
+    .minus(Uint.ONE)  // Create mask of 'length' ones
+  return value.shiftRight(start).bitwiseAnd(mask)
+}
+
+// Example: extract bits 8-15 (byte 1)
+const value = Uint.fromHex("0xabcdef")
+const byte1 = extractBits(value, 8, 8)  // 0xcd
+```
+
+### Masking Operations
+
+```typescript
+// Extract bytes
+const value = Uint.fromHex("0x123456789abcdef")
+
+const lowByte = value.bitwiseAnd(Uint.fromHex("0xff"))      // 0xef
+const lowWord = value.bitwiseAnd(Uint.fromHex("0xffff"))    // 0xcdef
+const lowDword = value.bitwiseAnd(Uint.fromHex("0xffffffff"))  // 0x789abcdef
+
+// Clear high bits
+const clearHigh = value.bitwiseAnd(
+  Uint.MAX.shiftRight(128)  // Mask: lower 128 bits
+)
+```
+
+### Power of 2 Operations
+
+```typescript
+// Check if power of 2
+function isPowerOfTwo(value: BrandedUint): boolean {
+  if (value.isZero()) return false
+  // Power of 2 has only one bit set: n & (n-1) == 0
+  return value.bitwiseAnd(value.minus(Uint.ONE)).isZero()
+}
+
+// Round up to next power of 2
+function nextPowerOfTwo(value: BrandedUint): BrandedUint {
+  if (value.isZero()) return Uint.ONE
+  const bits = value.bitLength()
+  return Uint.ONE.shiftLeft(bits)
+}
+
+// Round down to previous power of 2
+function prevPowerOfTwo(value: BrandedUint): BrandedUint {
+  if (value.isZero()) return Uint.ZERO
+  const bits = value.bitLength() - 1
+  return Uint.ONE.shiftLeft(bits)
+}
+```
+
+### Flags and Permissions
+
+```typescript
+// Permission flags
+const READ = Uint.from(0b001n)
+const WRITE = Uint.from(0b010n)
+const EXECUTE = Uint.from(0b100n)
+
+// Set permissions
+let perms = Uint.ZERO
+perms = perms.bitwiseOr(READ)
+perms = perms.bitwiseOr(WRITE)
+// perms = 0b011 (read + write)
+
+// Check permission
+function hasPermission(perms: BrandedUint, flag: BrandedUint): boolean {
+  return !perms.bitwiseAnd(flag).isZero()
+}
+
+hasPermission(perms, READ)     // true
+hasPermission(perms, EXECUTE)  // false
+
+// Remove permission
+perms = perms.bitwiseAnd(WRITE.bitwiseNot())
+// perms = 0b001 (only read remains)
+```
+
+## Interactive Examples
+
+<Tabs>
+<TabItem label="Basic Operations">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(0b11110000n)  // 240
+const b = Uint.from(0b10101010n)  // 170
+
+// Bitwise AND
+const and = a.bitwiseAnd(b)
+console.log(and.toString(2))  // "10100000" (160)
+
+// Bitwise OR
+const or = a.bitwiseOr(b)
+console.log(or.toString(2))   // "11111010" (250)
+
+// Bitwise XOR
+const xor = a.bitwiseXor(b)
+console.log(xor.toString(2))  // "1011010" (90)
+
+// Bitwise NOT
+const not = a.bitwiseNot()
+console.log(not.toString(16)) // "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0f"
+```
+</TabItem>
+<TabItem label="Bit Shifting">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const value = Uint.from(10n)  // 0b1010
+
+// Left shift (multiply by 2^n)
+console.log(value.shiftLeft(1).toString())  // "20" (10 * 2)
+console.log(value.shiftLeft(2).toString())  // "40" (10 * 4)
+console.log(value.shiftLeft(8).toString())  // "2560" (10 * 256)
+
+// Right shift (divide by 2^n)
+console.log(value.shiftRight(1).toString()) // "5" (10 / 2)
+console.log(value.shiftRight(2).toString()) // "2" (10 / 4, floor)
+
+// Overflow on shift left
+const large = Uint.from(2n ** 255n)
+console.log(large.shiftLeft(1).isZero())    // true (shifted out)
+
+// Underflow on shift right
+console.log(Uint.ONE.shiftRight(1).isZero()) // true (shifted to zero)
+```
+</TabItem>
+<TabItem label="Bit Manipulation">
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const value = Uint.from(0b10100000n)
+
+// Check if bit 7 is set
+const bit7Set = !value.bitwiseAnd(Uint.from(0b10000000n)).isZero()
+console.log(bit7Set)  // true
+
+// Set bit 3
+const setBit3 = value.bitwiseOr(Uint.from(0b00001000n))
+console.log(setBit3.toString(2))  // "10101000"
+
+// Clear bit 7
+const clearBit7 = value.bitwiseAnd(Uint.from(0b01111111n))
+console.log(clearBit7.toString(2))  // "00100000"
+
+// Toggle bit 5
+const toggleBit5 = value.bitwiseXor(Uint.from(0b00100000n))
+console.log(toggleBit5.toString(2))  // "10000000"
+
+// Extract lower 4 bits
+const mask = Uint.from(0x0fn)
+const lower4 = value.bitwiseAnd(mask)
+console.log(lower4.toString())  // "0"
+```
+</TabItem>
+</Tabs>
+
+## Bitwise Operations Reference Table
+
+| Operation | Method | Truth Table | Use Case |
+|-----------|--------|-------------|----------|
+| **AND** | `bitwiseAnd(b)` | `1&1=1, else 0` | Masking, flag checking |
+| **OR** | `bitwiseOr(b)` | `0\|0=0, else 1` | Combining flags, setting bits |
+| **XOR** | `bitwiseXor(b)` | `same=0, diff=1` | Toggle bits, comparison |
+| **NOT** | `bitwiseNot()` | `¬0=1, ¬1=0` | Bit inversion, complement |
+| **Left Shift** | `shiftLeft(n)` | `x << n` | Multiply by 2^n, set bits |
+| **Right Shift** | `shiftRight(n)` | `x >> n` | Divide by 2^n (floor), clear bits |
+
+## Boolean Algebra Properties
+
+```typescript
+// Commutative
+a.bitwiseAnd(b).equals(b.bitwiseAnd(a))  // true
+a.bitwiseOr(b).equals(b.bitwiseOr(a))    // true
+a.bitwiseXor(b).equals(b.bitwiseXor(a))  // true
+
+// Associative
+a.bitwiseAnd(b.bitwiseAnd(c)).equals(a.bitwiseAnd(b).bitwiseAnd(c))  // true
+a.bitwiseOr(b.bitwiseOr(c)).equals(a.bitwiseOr(b).bitwiseOr(c))      // true
+
+// Distributive
+a.bitwiseAnd(b.bitwiseOr(c)).equals(
+  a.bitwiseAnd(b).bitwiseOr(a.bitwiseAnd(c))
+)  // true
+
+// De Morgan's laws
+a.bitwiseOr(b).bitwiseNot().equals(
+  a.bitwiseNot().bitwiseAnd(b.bitwiseNot())
+)  // true
+
+a.bitwiseAnd(b).bitwiseNot().equals(
+  a.bitwiseNot().bitwiseOr(b.bitwiseNot())
+)  // true
+```
+
+## Tree-Shakeable Usage
+
+All bitwise operations available as tree-shakeable imports:
+
+```typescript
+import {
+  bitwiseAnd,
+  bitwiseOr,
+  bitwiseXor,
+  bitwiseNot,
+  shiftLeft,
+  shiftRight
+} from '@tevm/voltaire/BrandedUint'
+
+const a = Uint.from(0xffn)
+const b = Uint.from(0x0fn)
+
+const and = bitwiseAnd(a, b)
+const or = bitwiseOr(a, b)
+const xor = bitwiseXor(a, b)
+const not = bitwiseNot(a)
+const left = shiftLeft(a, 8)
+const right = shiftRight(a, 4)
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

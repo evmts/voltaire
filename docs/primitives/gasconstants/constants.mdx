@@ -1,0 +1,507 @@
+---
+title: "Gas Constants"
+---
+
+# Gas Constants
+
+All EVM gas cost constants as direct bigint exports according to the Ethereum Yellow Paper and various EIPs.
+
+## Basic Opcode Costs
+
+### QuickStep
+```typescript
+const QuickStep: 2n
+```
+Very cheap operations (2 gas).
+
+**Opcodes:** ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, PC, MSIZE, GAS, CHAINID, SELFBALANCE
+
+### FastestStep
+```typescript
+const FastestStep: 3n
+```
+Simple arithmetic and logic (3 gas).
+
+**Opcodes:** ADD, SUB, NOT, LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, CALLDATALOAD, MLOAD, MSTORE, MSTORE8, PUSH, DUP, SWAP
+
+### FastStep
+```typescript
+const FastStep: 5n
+```
+Multiplication and division (5 gas).
+
+**Opcodes:** MUL, DIV, SDIV, MOD, SMOD
+
+### MidStep
+```typescript
+const MidStep: 8n
+```
+Advanced arithmetic (8 gas).
+
+**Opcodes:** ADDMOD, MULMOD, SIGNEXTEND
+
+### SlowStep
+```typescript
+const SlowStep: 10n
+```
+Moderate computation (10 gas).
+
+**Opcodes:** JUMPI
+
+### ExtStep
+```typescript
+const ExtStep: 20n
+```
+External account interaction (20 gas).
+
+**Opcodes:** BALANCE, EXTCODESIZE, BLOCKHASH
+
+## Hashing Operations
+
+### Keccak256Base
+```typescript
+const Keccak256Base: 30n
+```
+Base cost for KECCAK256 operation (30 gas).
+
+### Keccak256Word
+```typescript
+const Keccak256Word: 6n
+```
+Per-word cost for KECCAK256 (6 gas per 32 bytes).
+
+**Formula:** `cost = Keccak256Base + words * Keccak256Word`
+
+## Storage Operations
+
+Storage costs follow EIP-2929 (cold/warm access) and EIP-2200 (SSTORE gas metering).
+
+### Sload
+```typescript
+const Sload: 100n
+```
+SLOAD on warm slot (100 gas).
+
+### ColdSload
+```typescript
+const ColdSload: 2100n
+```
+Cold SLOAD cost (2100 gas) - EIP-2929 (Berlin+).
+
+### ColdAccountAccess
+```typescript
+const ColdAccountAccess: 2600n
+```
+Cold account access (2600 gas) - EIP-2929 (Berlin+).
+
+**Operations:** BALANCE, EXTCODESIZE, EXTCODECOPY, EXTCODEHASH, CALL family
+
+### WarmStorageRead
+```typescript
+const WarmStorageRead: 100n
+```
+Warm storage read (100 gas) - EIP-2929 (Berlin+).
+
+### SstoreSentry
+```typescript
+const SstoreSentry: 2300n
+```
+Minimum gas required to execute SSTORE (2300 gas).
+
+### SstoreSet
+```typescript
+const SstoreSet: 20000n
+```
+SSTORE zero to non-zero value (20000 gas).
+
+### SstoreReset
+```typescript
+const SstoreReset: 5000n
+```
+SSTORE modify existing non-zero value (5000 gas).
+
+### SstoreClear
+```typescript
+const SstoreClear: 5000n
+```
+SSTORE clear to zero value (5000 gas).
+
+### SstoreRefund
+```typescript
+const SstoreRefund: 4800n
+```
+Gas refund for clearing storage (4800 gas) - EIP-3529 (London+).
+
+**Note:** Pre-EIP-3529, refund was 15000 gas.
+
+## Control Flow
+
+### Jumpdest
+```typescript
+const Jumpdest: 1n
+```
+JUMPDEST marker cost (1 gas).
+
+## Logging Operations
+
+### LogBase
+```typescript
+const LogBase: 375n
+```
+Base cost for LOG operations (375 gas).
+
+### LogData
+```typescript
+const LogData: 8n
+```
+Per-byte cost for LOG data (8 gas).
+
+### LogTopic
+```typescript
+const LogTopic: 375n
+```
+Per-topic cost for LOG (375 gas).
+
+**Formula:** `cost = LogBase + topicCount * LogTopic + dataSize * LogData`
+
+**Operations:** LOG0 (0 topics), LOG1 (1 topic), LOG2 (2 topics), LOG3 (3 topics), LOG4 (4 topics)
+
+## Contract Creation and Calls
+
+### Create
+```typescript
+const Create: 32000n
+```
+Base CREATE cost (32000 gas).
+
+### Call
+```typescript
+const Call: 40n
+```
+Base CALL cost (40 gas).
+
+### CallStipend
+```typescript
+const CallStipend: 2300n
+```
+Gas stipend for value transfer (2300 gas).
+
+When a call transfers value, it receives an additional 2300 gas stipend that is not deducted from the caller's gas.
+
+### CallValueTransfer
+```typescript
+const CallValueTransfer: 9000n
+```
+Additional cost for value transfer (9000 gas).
+
+### CallNewAccount
+```typescript
+const CallNewAccount: 25000n
+```
+Additional cost for new account creation (25000 gas).
+
+Charged when calling to an address that doesn't exist yet and transferring value.
+
+### CallCode
+```typescript
+const CallCode: 700n
+```
+CALLCODE cost (700 gas) - EIP-150.
+
+### DelegateCall
+```typescript
+const DelegateCall: 700n
+```
+DELEGATECALL cost (700 gas) - EIP-150.
+
+### StaticCall
+```typescript
+const StaticCall: 700n
+```
+STATICCALL cost (700 gas) - EIP-214.
+
+### Selfdestruct
+```typescript
+const Selfdestruct: 5000n
+```
+SELFDESTRUCT base cost (5000 gas) - EIP-150.
+
+### SelfdestructRefund
+```typescript
+const SelfdestructRefund: 24000n
+```
+SELFDESTRUCT refund (24000 gas).
+
+**Note:** Removed in EIP-3529 (London+). Use `getSelfdestructRefund(hardfork)` for fork-specific value.
+
+### CallGasRetentionDivisor
+```typescript
+const CallGasRetentionDivisor: 64n
+```
+63/64 rule divisor for gas forwarding.
+
+EIP-150 limits gas forwarded to subcalls to 63/64 of available gas.
+
+**Formula:** `forwarded = availableGas - availableGas / 64`
+
+## Memory Expansion
+
+### Memory
+```typescript
+const Memory: 3n
+```
+Linear coefficient for memory expansion (3 gas per word).
+
+### QuadCoeffDiv
+```typescript
+const QuadCoeffDiv: 512n
+```
+Quadratic coefficient divisor for memory expansion (512).
+
+**Formula:** `cost = 3 * words + words² / 512`
+
+Memory costs grow quadratically to discourage excessive memory allocation.
+
+## Contract Deployment
+
+### CreateData
+```typescript
+const CreateData: 200n
+```
+Per-byte cost for deployed code (200 gas).
+
+### InitcodeWord
+```typescript
+const InitcodeWord: 2n
+```
+Per-word cost for initcode (2 gas) - EIP-3860 (Shanghai+).
+
+### MaxInitcodeSize
+```typescript
+const MaxInitcodeSize: 49152n
+```
+Maximum initcode size (49152 bytes = 48 KB) - EIP-3860 (Shanghai+).
+
+## Transaction Costs
+
+### Tx
+```typescript
+const Tx: 21000n
+```
+Base transaction cost (21000 gas).
+
+Every transaction has this intrinsic cost.
+
+### TxContractCreation
+```typescript
+const TxContractCreation: 53000n
+```
+Contract creation transaction base cost (53000 gas).
+
+### TxDataZero
+```typescript
+const TxDataZero: 4n
+```
+Per zero byte in transaction calldata (4 gas).
+
+### TxDataNonZero
+```typescript
+const TxDataNonZero: 16n
+```
+Per non-zero byte in transaction calldata (16 gas).
+
+### Copy
+```typescript
+const Copy: 3n
+```
+Per word for copy operations (3 gas).
+
+**Operations:** CALLDATACOPY, CODECOPY, RETURNDATACOPY, EXTCODECOPY
+
+### MaxRefundQuotient
+```typescript
+const MaxRefundQuotient: 5n
+```
+Maximum refund quotient (1/5) - EIP-3529 (London+).
+
+**Formula:** `maxRefund = gasUsed / 5`
+
+**Note:** Pre-EIP-3529 (Berlin and earlier), the quotient was 2 (maxRefund = gasUsed / 2).
+
+## Transient Storage (EIP-1153, Cancun+)
+
+### TLoad
+```typescript
+const TLoad: 100n
+```
+TLOAD cost (100 gas).
+
+Transient storage is cleared at the end of each transaction.
+
+### TStore
+```typescript
+const TStore: 100n
+```
+TSTORE cost (100 gas).
+
+Transient storage is cleared at the end of each transaction.
+
+## Blob Transactions (EIP-4844, Cancun+)
+
+### BlobHash
+```typescript
+const BlobHash: 3n
+```
+BLOBHASH opcode cost (3 gas).
+
+Returns versioned hash of the i-th blob associated with the current transaction.
+
+### BlobBaseFee
+```typescript
+const BlobBaseFee: 2n
+```
+BLOBBASEFEE opcode cost (2 gas).
+
+Returns the current blob base fee.
+
+## Constants by Category
+
+### Storage (EIP-2929, EIP-2200, EIP-3529)
+
+```typescript
+Sload              // 100n   - Warm SLOAD
+ColdSload          // 2100n  - Cold SLOAD
+ColdAccountAccess  // 2600n  - Cold account access
+WarmStorageRead    // 100n   - Warm storage read
+SstoreSentry       // 2300n  - Minimum for SSTORE
+SstoreSet          // 20000n - Zero to non-zero
+SstoreReset        // 5000n  - Modify non-zero
+SstoreClear        // 5000n  - Non-zero to zero
+SstoreRefund       // 4800n  - Clear refund (EIP-3529)
+```
+
+### Calls
+
+```typescript
+Call               // 40n    - Base CALL cost
+CallStipend        // 2300n  - Stipend for value transfer
+CallValueTransfer  // 9000n  - Additional for value transfer
+CallNewAccount     // 25000n - Additional for new account
+CallCode           // 700n   - CALLCODE cost
+DelegateCall       // 700n   - DELEGATECALL cost
+StaticCall         // 700n   - STATICCALL cost
+Selfdestruct       // 5000n  - SELFDESTRUCT cost
+SelfdestructRefund // 24000n - Refund (removed in EIP-3529)
+CallGasRetentionDivisor // 64n - 63/64 rule
+```
+
+### Transaction
+
+```typescript
+Tx                 // 21000n - Base transaction
+TxContractCreation // 53000n - Contract creation base
+TxDataZero         // 4n     - Per zero byte
+TxDataNonZero      // 16n    - Per non-zero byte
+Copy               // 3n     - Per word for copy ops
+MaxRefundQuotient  // 5n     - Max refund = gasUsed/5
+```
+
+### Contract Creation (EIP-3860)
+
+```typescript
+Create            // 32000n - Base CREATE cost
+CreateData        // 200n   - Per byte of deployed code
+InitcodeWord      // 2n     - Per word of initcode
+MaxInitcodeSize   // 49152n - Maximum initcode size
+```
+
+### Memory
+
+```typescript
+Memory           // 3n   - Linear coefficient
+QuadCoeffDiv     // 512n - Quadratic divisor
+```
+
+### Logging
+
+```typescript
+LogBase  // 375n - Base LOG cost
+LogData  // 8n   - Per byte of data
+LogTopic // 375n - Per topic
+```
+
+### Hashing
+
+```typescript
+Keccak256Base // 30n - Base KECCAK256 cost
+Keccak256Word // 6n  - Per word (32 bytes)
+```
+
+### Basic Opcodes
+
+```typescript
+QuickStep   // 2n  - ADDRESS, CALLER, etc.
+FastestStep // 3n  - ADD, SUB, MLOAD, MSTORE
+FastStep    // 5n  - MUL, DIV
+MidStep     // 8n  - ADDMOD, MULMOD
+SlowStep    // 10n - JUMPI
+ExtStep     // 20n - BALANCE, EXTCODESIZE
+Jumpdest    // 1n  - JUMPDEST marker
+```
+
+### Transient Storage (EIP-1153, Cancun+)
+
+```typescript
+TLoad  // 100n - TLOAD cost
+TStore // 100n - TSTORE cost
+```
+
+### Blob Transactions (EIP-4844, Cancun+)
+
+```typescript
+BlobHash    // 3n - BLOBHASH opcode
+BlobBaseFee // 2n - BLOBBASEFEE opcode
+```
+
+## Usage Example
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+// Basic opcode costs
+const addCost = GasConstants.FastestStep;  // 3n
+const mulCost = GasConstants.FastStep;     // 5n
+
+// Storage operations
+const warmSloadCost = GasConstants.Sload;        // 100n
+const coldSloadCost = GasConstants.ColdSload;    // 2100n
+const sstoreSetCost = GasConstants.SstoreSet;    // 20000n
+
+// Transaction costs
+const txBase = GasConstants.Tx;              // 21000n
+const createBase = GasConstants.TxContractCreation;  // 53000n
+
+// Call operations
+const callBase = GasConstants.Call;          // 40n
+const valueTransfer = GasConstants.CallValueTransfer;  // 9000n
+const stipend = GasConstants.CallStipend;    // 2300n
+
+// Memory
+const memoryLinear = GasConstants.Memory;    // 3n
+const memoryQuad = GasConstants.QuadCoeffDiv; // 512n
+
+// Hashing
+const keccakBase = GasConstants.Keccak256Base;  // 30n
+const keccakWord = GasConstants.Keccak256Word;  // 6n
+
+// Logging
+const logBase = GasConstants.LogBase;        // 375n
+const logTopic = GasConstants.LogTopic;      // 375n
+const logData = GasConstants.LogData;        // 8n
+```
+
+## See Also
+
+- [Calculation Functions](./calculation-functions.mdx) - Complex cost calculations
+- [Hardfork Utilities](./hardfork-utilities.mdx) - Fork-specific costs
+- [Precompiles](./precompiles.mdx) - Precompile gas costs

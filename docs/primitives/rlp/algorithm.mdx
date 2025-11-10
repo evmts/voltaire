@@ -1,0 +1,448 @@
+---
+title: RLP Algorithm
+description: Deep dive into RLP encoding algorithm and Ethereum specification
+---
+
+
+# RLP Algorithm
+
+Complete specification of RLP (Recursive Length Prefix) encoding algorithm as defined in the Ethereum Yellow Paper.
+
+## Overview
+
+RLP is a serialization method that encodes arbitrarily nested arrays of binary data. The encoding is deterministic, space-efficient, and simple to implement.
+
+**Design Goals:**
+- **Deterministic** - Same input always produces identical output
+- **Minimal** - No type information, only structure
+- **Efficient** - Minimal overhead for encoding
+- **Simple** - Straightforward rules, easy to implement
+
+## Specification
+
+RLP defines encoding for two data types:
+1. **String** - Byte sequences (including empty)
+2. **List** - Arrays of RLP-encodable items (including nested lists)
+
+### String Encoding
+
+Three cases based on byte length:
+
+#### 1. Single Byte [0x00, 0x7f]
+
+For a single byte with value in range [0x00, 0x7f], the byte encodes as itself.
+
+```
+Input:  [0x7f]
+Output: [0x7f]
+
+Input:  [0x00]
+Output: [0x00]
+
+Input:  [0x42]
+Output: [0x42]
+```
+
+**Rule:** `if length == 1 && byte < 0x80: output = byte`
+
+#### 2. Short String [0-55 bytes]
+
+For strings of 0-55 bytes, prepend `0x80 + length`.
+
+```
+Input:  []
+Output: [0x80]  // 0x80 + 0
+
+Input:  [1, 2, 3]
+Output: [0x83, 1, 2, 3]  // 0x80 + 3
+
+Input:  [0x80]
+Output: [0x81, 0x80]  // 0x80 + 1
+
+Input:  (55 bytes of 0x42)
+Output: [0xb7, 0x42, 0x42, ...]  // 0x80 + 55 = 0xb7
+```
+
+**Rule:** `if 0 <= length <= 55: output = [0x80 + length, ...bytes]`
+
+**Note:** Single byte >= 0x80 uses this encoding, not the single-byte rule.
+
+#### 3. Long String [56+ bytes]
+
+For strings of 56 or more bytes:
+1. Encode length as big-endian integer (minimal bytes)
+2. Prepend `0xb7 + length_of_length`
+3. Append actual bytes
+
+```
+Input:  (56 bytes of 0x42)
+Output: [0xb8, 0x38, 0x42, 0x42, ...]
+// 0xb8 = 0xb7 + 1 (length needs 1 byte)
+// 0x38 = 56 in decimal
+
+Input:  (256 bytes)
+Output: [0xb9, 0x01, 0x00, ...]
+// 0xb9 = 0xb7 + 2 (length needs 2 bytes)
+// [0x01, 0x00] = 256 in big-endian
+
+Input:  (65536 bytes)
+Output: [0xba, 0x01, 0x00, 0x00, ...]
+// 0xba = 0xb7 + 3 (length needs 3 bytes)
+// [0x01, 0x00, 0x00] = 65536 in big-endian
+```
+
+**Rule:** `if length >= 56: output = [0xb7 + len(BE(length)), BE(length), ...bytes]`
+
+Where `BE(length)` is big-endian encoding with no leading zeros.
+
+### List Encoding
+
+Two cases based on total payload length:
+
+#### 1. Short List [0-55 bytes total]
+
+For lists where total encoded payload < 56 bytes:
+1. RLP-encode each item
+2. Concatenate encoded items
+3. Prepend `0xc0 + total_length`
+
+```
+Input:  []
+Output: [0xc0]  // 0xc0 + 0
+
+Input:  [[]]
+Output: [0xc1, 0xc0]
+// Inner [] encodes as [0xc0] (1 byte)
+// Outer prepends 0xc0 + 1 = 0xc1
+
+Input:  [0x7f, 0x80]
+Output: [0xc3, 0x7f, 0x81, 0x80]
+// 0x7f encodes as [0x7f] (1 byte)
+// 0x80 encodes as [0x81, 0x80] (2 bytes)
+// Total: 3 bytes, so 0xc0 + 3 = 0xc3
+
+Input:  [[1], [2]]
+Output: [0xc4, 0xc2, 0x01, 0xc2, 0x02]
+// [1] encodes as [0xc2, 0x01] (2 bytes)
+// [2] encodes as [0xc2, 0x02] (2 bytes)
+// Total: 4 bytes, so 0xc0 + 4 = 0xc4
+```
+
+**Rule:** `if total_length < 56: output = [0xc0 + total_length, ...encoded_items]`
+
+#### 2. Long List [56+ bytes total]
+
+For lists where total encoded payload >= 56 bytes:
+1. RLP-encode each item
+2. Calculate total length
+3. Encode length as big-endian (minimal)
+4. Prepend `0xf7 + length_of_length`
+
+```
+Input:  (list of 30 items, each 2 bytes = 60 bytes total)
+Output: [0xf8, 0x3c, ...encoded_items]
+// 0xf8 = 0xf7 + 1 (length needs 1 byte)
+// 0x3c = 60 in decimal
+
+Input:  (list with 256 bytes total payload)
+Output: [0xf9, 0x01, 0x00, ...encoded_items]
+// 0xf9 = 0xf7 + 2 (length needs 2 bytes)
+// [0x01, 0x00] = 256 in big-endian
+```
+
+**Rule:** `if total_length >= 56: output = [0xf7 + len(BE(length)), BE(length), ...encoded_items]`
+
+## Canonical Encoding
+
+RLP enforces canonical encoding to ensure deterministic serialization:
+
+### Rule 1: Single Byte
+
+Single bytes < 0x80 must not have a length prefix.
+
+```
+Invalid: [0x81, 0x7f]  // 0x7f with prefix
+Valid:   [0x7f]        // 0x7f without prefix
+```
+
+### Rule 2: Minimal Length Encoding
+
+Lengths must use minimum number of bytes (no leading zeros).
+
+```
+Invalid: [0xb9, 0x00, 0x38, ...]  // Leading zero in length
+Valid:   [0xb8, 0x38, ...]        // Minimal encoding
+
+Invalid: [0xb9, 0x00, 0x05, 1, 2, 3, 4, 5]  // Should use short form
+Valid:   [0x85, 1, 2, 3, 4, 5]              // Short form
+```
+
+### Rule 3: Correct Form Selection
+
+Must use short form for lengths < 56.
+
+```
+Invalid: [0xb8, 0x03, 1, 2, 3]  // Using long form for 3 bytes
+Valid:   [0x83, 1, 2, 3]        // Using short form
+
+Invalid: [0xf8, 0x03, ...]  // Using long form for list < 56 bytes
+Valid:   [0xc3, ...]        // Using short form
+```
+
+## Prefix Byte Ranges
+
+Summary of all prefix byte meanings:
+
+| Range | Type | Meaning |
+|-------|------|---------|
+| `0x00-0x7f` | Single byte | Byte value itself |
+| `0x80-0xb7` | Short string | `length = prefix - 0x80` (0-55 bytes) |
+| `0xb8-0xbf` | Long string | `len_of_len = prefix - 0xb7` (56+ bytes) |
+| `0xc0-0xf7` | Short list | `length = prefix - 0xc0` (0-55 bytes total) |
+| `0xf8-0xff` | Long list | `len_of_len = prefix - 0xf7` (56+ bytes total) |
+
+## Length Encoding
+
+Big-endian encoding with no leading zeros:
+
+```typescript
+function encodeLength(length: number): Uint8Array {
+  // Calculate minimum bytes needed
+  const bytes = []
+  let remaining = length
+
+  while (remaining > 0) {
+    bytes.unshift(remaining & 0xff)
+    remaining >>= 8
+  }
+
+  return new Uint8Array(bytes)
+}
+
+// Examples:
+encodeLength(56)    // [0x38]
+encodeLength(256)   // [0x01, 0x00]
+encodeLength(65536) // [0x01, 0x00, 0x00]
+```
+
+## Decoding Algorithm
+
+Decoding reverses the encoding process:
+
+1. **Read prefix byte**
+2. **Determine type and length** based on prefix range
+3. **Extract data** according to type
+4. **Recursively decode** list items
+
+```typescript
+function decode(bytes: Uint8Array): { data: any, remainder: Uint8Array } {
+  const prefix = bytes[0]
+
+  // Single byte [0x00, 0x7f]
+  if (prefix <= 0x7f) {
+    return {
+      data: bytes.slice(0, 1),
+      remainder: bytes.slice(1)
+    }
+  }
+
+  // Short string [0x80, 0xb7]
+  if (prefix <= 0xb7) {
+    const length = prefix - 0x80
+    return {
+      data: bytes.slice(1, 1 + length),
+      remainder: bytes.slice(1 + length)
+    }
+  }
+
+  // Long string [0xb8, 0xbf]
+  if (prefix <= 0xbf) {
+    const lengthOfLength = prefix - 0xb7
+    const length = decodeLength(bytes.slice(1, 1 + lengthOfLength))
+    return {
+      data: bytes.slice(1 + lengthOfLength, 1 + lengthOfLength + length),
+      remainder: bytes.slice(1 + lengthOfLength + length)
+    }
+  }
+
+  // Short list [0xc0, 0xf7]
+  if (prefix <= 0xf7) {
+    const length = prefix - 0xc0
+    const items = decodeItems(bytes.slice(1, 1 + length))
+    return {
+      data: items,
+      remainder: bytes.slice(1 + length)
+    }
+  }
+
+  // Long list [0xf8, 0xff]
+  if (prefix <= 0xff) {
+    const lengthOfLength = prefix - 0xf7
+    const length = decodeLength(bytes.slice(1, 1 + lengthOfLength))
+    const items = decodeItems(bytes.slice(1 + lengthOfLength, 1 + lengthOfLength + length))
+    return {
+      data: items,
+      remainder: bytes.slice(1 + lengthOfLength + length)
+    }
+  }
+}
+```
+
+## Examples
+
+### Example 1: Simple String
+
+```
+Input:  "dog"
+Bytes:  [0x64, 0x6f, 0x67]  // ASCII values
+Length: 3 bytes
+
+Encoding:
+- Length 3 < 56, use short form
+- Prefix: 0x80 + 3 = 0x83
+- Output: [0x83, 0x64, 0x6f, 0x67]
+```
+
+### Example 2: Empty String
+
+```
+Input:  ""
+Bytes:  []
+Length: 0 bytes
+
+Encoding:
+- Length 0 < 56, use short form
+- Prefix: 0x80 + 0 = 0x80
+- Output: [0x80]
+```
+
+### Example 3: List of Strings
+
+```
+Input:  ["cat", "dog"]
+Items:  "cat" = [0x63, 0x61, 0x74]
+        "dog" = [0x64, 0x6f, 0x67]
+
+Encoding:
+- "cat": [0x83, 0x63, 0x61, 0x74] (4 bytes)
+- "dog": [0x83, 0x64, 0x6f, 0x67] (4 bytes)
+- Total payload: 8 bytes
+- Prefix: 0xc0 + 8 = 0xc8
+- Output: [0xc8, 0x83, 0x63, 0x61, 0x74, 0x83, 0x64, 0x6f, 0x67]
+```
+
+### Example 4: Empty List
+
+```
+Input:  []
+Items:  (none)
+Length: 0 bytes
+
+Encoding:
+- Total payload 0 < 56, use short form
+- Prefix: 0xc0 + 0 = 0xc0
+- Output: [0xc0]
+```
+
+### Example 5: Integer (as big-endian bytes)
+
+```
+Input:  15
+Bytes:  [0x0f]  // Big-endian with no leading zeros
+Length: 1 byte
+
+Encoding:
+- Single byte 0x0f < 0x80
+- Output: [0x0f]
+
+Input:  1024
+Bytes:  [0x04, 0x00]  // Big-endian
+Length: 2 bytes
+
+Encoding:
+- Length 2 < 56, use short form
+- Prefix: 0x80 + 2 = 0x82
+- Output: [0x82, 0x04, 0x00]
+```
+
+## Ethereum Yellow Paper Reference
+
+RLP is formally specified in Appendix B of the Ethereum Yellow Paper:
+
+**Definition:** RLP function `RLP: 𝕋 → 𝔹`
+
+Where:
+- `𝕋` is the set of all trees of byte sequences
+- `𝔹` is the set of byte sequences (RLP output)
+
+**Rules:**
+```
+RLP(x) = if |x| = 1 ∧ x[0] < 128: x
+         elif |x| < 56: (128 + |x|) · x
+         else: (183 + ||x||) · BE(|x|) · x
+
+         if x is byte sequence
+
+RLP(x) = if |s(x)| < 56: (192 + |s(x)|) · s(x)
+         else: (247 + ||s(x)||) · BE(|s(x)|) · s(x)
+
+         if x is list, where s(x) = RLP(x[0]) · RLP(x[1]) · ...
+```
+
+**Notation:**
+- `|x|` = length of x in bytes
+- `||x||` = number of bytes needed to encode |x|
+- `BE(n)` = big-endian encoding of n
+- `·` = concatenation
+
+<Aside type="note" title="Specification Source">
+Full specification: [Ethereum Yellow Paper, Appendix B](https://ethereum.github.io/yellowpaper/paper.pdf)
+</Aside>
+
+## Security Considerations
+
+### DOS Prevention
+
+**Recursion Depth Limit:** Maximum depth of 32 prevents stack overflow.
+
+**Length Validation:** All declared lengths must match actual data.
+
+**Canonical Enforcement:** Rejects non-minimal encodings to prevent malleability.
+
+### Malleability
+
+RLP canonical encoding prevents transaction malleability:
+
+```
+// These encode different bytes for same logical data:
+Valid:   [0x7f]         // Canonical
+Invalid: [0x81, 0x7f]   // Non-canonical (rejected)
+
+Valid:   [0x83, 1, 2, 3]  // Canonical short form
+Invalid: [0xb8, 0x03, 1, 2, 3]  // Non-canonical long form (rejected)
+```
+
+## Implementation Notes
+
+### Efficiency
+
+**Minimal Allocations:** Pre-calculate sizes to allocate once.
+
+**Buffer Reuse:** Reuse buffers for repeated encoding.
+
+**Stream Processing:** Decode incrementally for large data.
+
+### Correctness
+
+**Canonical Validation:** Enforce all canonical rules during decode.
+
+**Length Checks:** Validate sufficient data before reading.
+
+**Type Safety:** Use tagged unions for RLP data structures.
+
+## Related
+
+- [Encoding](/primitives/rlp/encoding) - Encoding implementation
+- [Decoding](/primitives/rlp/decoding) - Decoding implementation
+- [Types](/primitives/rlp/types) - Type system
+- [WASM](/primitives/rlp/wasm) - High-performance implementation

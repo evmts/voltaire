@@ -1,0 +1,407 @@
+---
+title: Base64 Utilities
+description: Utility functions for base64 size calculations
+---
+
+# Utilities
+
+Utility functions for calculating base64 encoding and decoding sizes.
+
+## Size Calculation Functions
+
+### `Base64.calcEncodedSize(dataLength)`
+
+Calculates size of base64-encoded output given input data length. Useful for pre-allocating buffers before encoding.
+
+**Formula:** `Math.ceil(dataLength / 3) * 4`
+
+```typescript
+// Calculate size for various input lengths
+const sizes = [
+  { input: 0,   output: Base64.calcEncodedSize(0) },    // 0
+  { input: 1,   output: Base64.calcEncodedSize(1) },    // 4
+  { input: 2,   output: Base64.calcEncodedSize(2) },    // 4
+  { input: 3,   output: Base64.calcEncodedSize(3) },    // 4
+  { input: 4,   output: Base64.calcEncodedSize(4) },    // 8
+  { input: 10,  output: Base64.calcEncodedSize(10) },   // 16
+  { input: 100, output: Base64.calcEncodedSize(100) },  // 136
+  { input: 1024, output: Base64.calcEncodedSize(1024) }, // 1368
+]
+
+sizes.forEach(({ input, output }) => {
+  console.log(`${input} bytes → ${output} chars`)
+})
+```
+
+**Parameters:**
+- `dataLength: number` - Length of data to encode in bytes
+
+**Returns:** `number` - Size of base64 output in characters
+
+**Example:**
+```typescript
+// Pre-allocate string builder capacity
+const dataSize = 1024
+const encodedSize = Base64.calcEncodedSize(dataSize)
+console.log(`Encoding ${dataSize} bytes needs ${encodedSize} characters`)
+
+// Verify calculation
+const data = new Uint8Array(dataSize)
+const encoded = Base64.encode(data)
+console.log(encoded.length === encodedSize) // true
+```
+
+Defined in: [primitives/Base64/BrandedBase64/calcEncodedSize.js:7](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/calcEncodedSize.js)
+
+**Algorithm:**
+- Every 3 bytes encode to 4 base64 characters
+- Partial groups padded to 4 characters
+- Result always multiple of 4
+
+### `Base64.calcDecodedSize(encodedLength)`
+
+Calculates maximum size of decoded output given base64 string length. Useful for pre-allocating buffers before decoding.
+
+**Formula:** `Math.floor((encodedLength * 3) / 4) - padding`
+
+```typescript
+// Calculate size for various encoded lengths
+const sizes = [
+  { input: 0,   output: Base64.calcDecodedSize(0) },    // 0
+  { input: 4,   output: Base64.calcDecodedSize(4) },    // 3
+  { input: 8,   output: Base64.calcDecodedSize(8) },    // 6
+  { input: 12,  output: Base64.calcDecodedSize(12) },   // 9
+  { input: 16,  output: Base64.calcDecodedSize(16) },   // 12
+  { input: 136, output: Base64.calcDecodedSize(136) },  // 102
+  { input: 1368, output: Base64.calcDecodedSize(1368) }, // 1026
+]
+
+sizes.forEach(({ input, output }) => {
+  console.log(`${input} chars → ${output} bytes max`)
+})
+```
+
+**Parameters:**
+- `encodedLength: number` - Length of base64 string in characters
+
+**Returns:** `number` - Maximum size of decoded output in bytes
+
+**Example:**
+```typescript
+// Pre-allocate buffer for decoding
+const encodedStr = "SGVsbG8sIHdvcmxkIQ==" // 20 chars
+const maxSize = Base64.calcDecodedSize(encodedStr.length)
+console.log(`Decoding ${encodedStr.length} chars needs max ${maxSize} bytes`)
+
+// Decode and verify
+const decoded = Base64.decode(encodedStr)
+console.log(decoded.length <= maxSize) // true
+console.log(decoded.length) // 13 (actual size)
+```
+
+Defined in: [primitives/Base64/BrandedBase64/calcDecodedSize.js:7](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/calcDecodedSize.js)
+
+**Algorithm:**
+- Every 4 base64 characters decode to 3 bytes
+- Returns maximum size (actual may be smaller due to padding)
+- For exact size, must decode and check
+
+## Usage Patterns
+
+### Pre-allocating Buffers
+
+```typescript
+// Encoding: pre-calculate string capacity
+function encodeWithPrealloc(data: Uint8Array): string {
+  const expectedSize = Base64.calcEncodedSize(data.length)
+  console.log(`Allocating ${expectedSize} characters for output`)
+
+  const encoded = Base64.encode(data)
+  console.log(`Actual size: ${encoded.length}`)
+  return encoded
+}
+
+// Decoding: pre-allocate buffer
+function decodeWithPrealloc(encoded: string): Uint8Array {
+  const maxSize = Base64.calcDecodedSize(encoded.length)
+  console.log(`Allocating max ${maxSize} bytes for output`)
+
+  const decoded = Base64.decode(encoded)
+  console.log(`Actual size: ${decoded.length}`)
+  return decoded
+}
+```
+
+### Memory Estimation
+
+```typescript
+// Estimate memory needed for encoding operation
+function estimateEncodingMemory(dataSize: number): {
+  input: number
+  output: number
+  total: number
+} {
+  const outputSize = Base64.calcEncodedSize(dataSize)
+
+  return {
+    input: dataSize,
+    output: outputSize * 2, // JavaScript strings are UTF-16
+    total: dataSize + (outputSize * 2)
+  }
+}
+
+// Usage
+const estimate = estimateEncodingMemory(1024 * 1024) // 1 MB
+console.log(`Encoding 1 MB needs ~${estimate.total / 1024 / 1024} MB total`)
+```
+
+### Batch Processing with Size Limits
+
+```typescript
+// Encode data in chunks based on size limits
+function encodeBatches(
+  data: Uint8Array,
+  maxEncodedSize: number
+): string[] {
+  const batches: string[] = []
+
+  // Calculate chunk size for target encoded size
+  const chunkSize = Math.floor((maxEncodedSize / 4) * 3)
+
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.slice(i, i + chunkSize)
+    const encoded = Base64.encode(chunk)
+
+    // Verify size constraint
+    console.assert(
+      encoded.length <= maxEncodedSize,
+      `Chunk exceeds size limit: ${encoded.length} > ${maxEncodedSize}`
+    )
+
+    batches.push(encoded)
+  }
+
+  return batches
+}
+
+// Usage
+const largeData = new Uint8Array(10000)
+const batches = encodeBatches(largeData, 1000) // Max 1000 chars per batch
+```
+
+### Validation with Size Checks
+
+```typescript
+// Validate base64 and check if size matches expected
+function validateBase64Size(
+  encoded: string,
+  expectedDataSize: number
+): boolean {
+  // Validate format
+  if (!Base64.isValid(encoded)) {
+    console.warn("Invalid base64 format")
+    return false
+  }
+
+  // Check if encoded size matches expected
+  const expectedEncodedSize = Base64.calcEncodedSize(expectedDataSize)
+  if (encoded.length !== expectedEncodedSize) {
+    console.warn(
+      `Size mismatch: expected ${expectedEncodedSize}, got ${encoded.length}`
+    )
+    return false
+  }
+
+  return true
+}
+
+// Usage
+const data = new Uint8Array(100)
+const encoded = Base64.encode(data)
+const valid = validateBase64Size(encoded, 100) // true
+```
+
+### Size Optimization
+
+```typescript
+// Compare base64 size vs hex size
+function compareEncodingSizes(dataLength: number): {
+  base64: number
+  hex: number
+  difference: number
+} {
+  const base64Size = Base64.calcEncodedSize(dataLength)
+  const hexSize = dataLength * 2 + 2 // "0x" prefix
+
+  return {
+    base64: base64Size,
+    hex: hexSize,
+    difference: hexSize - base64Size
+  }
+}
+
+// Usage
+const comparison = compareEncodingSizes(1024)
+console.log(`Base64: ${comparison.base64} chars`)
+console.log(`Hex: ${comparison.hex} chars`)
+console.log(`Base64 saves ${comparison.difference} chars`)
+```
+
+### Stream Processing
+
+```typescript
+// Calculate total size for stream of chunks
+function calculateStreamSize(chunkSizes: number[]): {
+  totalInput: number
+  totalOutput: number
+  chunks: Array<{ input: number; output: number }>
+} {
+  let totalInput = 0
+  let totalOutput = 0
+  const chunks = []
+
+  for (const size of chunkSizes) {
+    const encodedSize = Base64.calcEncodedSize(size)
+    totalInput += size
+    totalOutput += encodedSize
+    chunks.push({ input: size, output: encodedSize })
+  }
+
+  return { totalInput, totalOutput, chunks }
+}
+
+// Usage
+const chunkSizes = [100, 200, 150, 300]
+const streamSize = calculateStreamSize(chunkSizes)
+console.log(`Total input: ${streamSize.totalInput} bytes`)
+console.log(`Total output: ${streamSize.totalOutput} chars`)
+```
+
+## Size Calculation Reference
+
+### Encoding Size Examples
+
+| Input Bytes | Output Characters | Ratio |
+|-------------|------------------|-------|
+| 0 | 0 | - |
+| 1 | 4 | 4.00 |
+| 2 | 4 | 2.00 |
+| 3 | 4 | 1.33 |
+| 6 | 8 | 1.33 |
+| 10 | 16 | 1.60 |
+| 20 | 28 | 1.40 |
+| 100 | 136 | 1.36 |
+| 1024 | 1368 | 1.34 |
+
+Base64 encoding increases size by approximately 33% (4/3 ratio).
+
+### Decoding Size Examples
+
+| Input Characters | Max Output Bytes | Ratio |
+|-----------------|------------------|-------|
+| 0 | 0 | - |
+| 4 | 3 | 0.75 |
+| 8 | 6 | 0.75 |
+| 12 | 9 | 0.75 |
+| 16 | 12 | 0.75 |
+| 28 | 21 | 0.75 |
+| 136 | 102 | 0.75 |
+| 1368 | 1026 | 0.75 |
+
+Base64 decoding reduces size by 25% (3/4 ratio).
+
+## Mathematical Properties
+
+### Encoding Formula
+
+```typescript
+// Encoding size calculation
+function encodedSize(n: number): number {
+  return Math.ceil(n / 3) * 4
+}
+
+// Alternative: bit-based calculation
+function encodedSizeBits(n: number): number {
+  const bits = n * 8          // Total bits
+  const groups = Math.ceil(bits / 6)  // 6-bit groups
+  return Math.ceil(groups / 4) * 4    // Padded to multiple of 4
+}
+```
+
+### Decoding Formula
+
+```typescript
+// Decoding size calculation (maximum)
+function decodedSize(n: number): number {
+  const padding = n > 0 && n % 4 === 0 ? 2 : 0
+  return Math.floor((n * 3) / 4) - padding
+}
+
+// Exact size requires checking padding in actual string
+function exactDecodedSize(encoded: string): number {
+  let size = Math.floor((encoded.length * 3) / 4)
+
+  // Subtract padding
+  if (encoded.endsWith("==")) size -= 2
+  else if (encoded.endsWith("=")) size -= 1
+
+  return size
+}
+```
+
+### Size Relationships
+
+```typescript
+// Verify round-trip size relationships
+const originalSize = 100
+const encodedSize = Base64.calcEncodedSize(originalSize)
+const maxDecodedSize = Base64.calcDecodedSize(encodedSize)
+
+console.log(`Original: ${originalSize}`)
+console.log(`Encoded: ${encodedSize}`)
+console.log(`Max decoded: ${maxDecodedSize}`)
+console.log(`Max decoded >= original: ${maxDecodedSize >= originalSize}`)
+```
+
+## Tree-Shakeable Usage
+
+Size calculation utilities available as tree-shakeable imports:
+
+```typescript
+import { calcEncodedSize, calcDecodedSize } from '@tevm/voltaire/BrandedBase64'
+
+const encodedSize = calcEncodedSize(1024)
+const decodedSize = calcDecodedSize(1368)
+```
+
+**Tree-shaking benefit:** Import only the calculations you need. If you only calculate encoding size, decoding size calculation is excluded from bundle.
+
+See [BrandedBase64](/primitives/base64/branded-base64) for details on tree-shakeable API.
+
+## Performance
+
+Size calculations are pure mathematical operations with O(1) complexity:
+
+```typescript
+// Benchmark example
+const iterations = 1000000
+
+console.time("calcEncodedSize")
+for (let i = 0; i < iterations; i++) {
+  Base64.calcEncodedSize(1024)
+}
+console.timeEnd("calcEncodedSize") // ~10-20ms for 1M iterations
+
+console.time("calcDecodedSize")
+for (let i = 0; i < iterations; i++) {
+  Base64.calcDecodedSize(1368)
+}
+console.timeEnd("calcDecodedSize") // ~10-20ms for 1M iterations
+```
+
+## Related
+
+- [Encoding](/primitives/base64/encoding) - Encoding to base64 format
+- [Decoding](/primitives/base64/decoding) - Decoding base64 strings
+- [Validation](/primitives/base64/validation) - Validating base64 format
+- [BrandedBase64](/primitives/base64/branded-base64) - Tree-shakeable API

@@ -1,0 +1,573 @@
+---
+title: Wallet Integration (BIP39 + HD Wallets)
+description: Complete workflow from mnemonic generation to Ethereum address derivation
+---
+
+## Overview
+
+This guide demonstrates the complete wallet cryptography workflow: generating mnemonics (BIP-39), deriving seeds, creating HD wallets (BIP-32), and deriving Ethereum addresses (BIP-44).
+
+## Complete Workflow Diagram
+
+```
+1. Entropy Generation
+   └─> 256 bits random
+
+2. Mnemonic Generation (BIP-39)
+   └─> 24-word phrase
+
+3. Seed Derivation (BIP-39 PBKDF2)
+   └─> 64-byte seed
+
+4. Master Key Generation (BIP-32)
+   └─> Root HD key (m)
+
+5. Account Derivation (BIP-44)
+   └─> m/44'/60'/0'/0/0
+
+6. Address Derivation
+   └─> Ethereum address (0x...)
+```
+
+## Step-by-Step Implementation
+
+### Step 1: Generate Mnemonic
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+
+// Generate cryptographically secure mnemonic
+const mnemonic = Bip39.generateMnemonic(256); // 24 words
+console.log('Mnemonic (BACKUP THIS!):', mnemonic);
+
+// Validate immediately
+const isValid = Bip39.validateMnemonic(mnemonic);
+console.assert(isValid, 'Generated invalid mnemonic');
+
+// Example output:
+// "abandon ability able about above absent absorb abstract absurd abuse access accident
+//  account accuse achieve acid acoustic acquire across act action actor actress actual"
+```
+
+### Step 2: Derive Seed
+
+```typescript
+// Convert mnemonic to 64-byte seed
+// Optional: Add passphrase for enhanced security
+const passphrase = ''; // or 'your secret passphrase'
+const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+
+console.log('Seed length:', seed.length); // 64 bytes
+console.log('Seed (hex):', Array.from(seed).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+// Different passphrases = different seeds
+const seedWithPass = await Bip39.mnemonicToSeed(mnemonic, 'my secret');
+console.log('Seeds differ:', seed.some((b, i) => b !== seedWithPass[i])); // true
+```
+
+### Step 3: Create Root HD Wallet
+
+```typescript
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+
+// Create master key from seed
+const root = HDWallet.fromSeed(seed);
+
+// Master key properties
+const masterPrivateKey = HDWallet.getPrivateKey(root);
+const masterPublicKey = HDWallet.getPublicKey(root);
+const masterChainCode = HDWallet.getChainCode(root);
+
+console.log('Master private key:', masterPrivateKey); // Uint8Array(32)
+console.log('Master public key:', masterPublicKey);   // Uint8Array(33)
+console.log('Master chain code:', masterChainCode);   // Uint8Array(32)
+
+// Export master extended keys
+const xprv = HDWallet.toExtendedPrivateKey(root);
+const xpub = HDWallet.toExtendedPublicKey(root);
+
+console.log('xprv:', xprv); // "xprv9s21ZrQH143K..."
+console.log('xpub:', xpub); // "xpub661MyMwAqRbcF..."
+```
+
+### Step 4: Derive Ethereum Accounts
+
+```typescript
+// BIP-44 Ethereum path: m/44'/60'/0'/0/x
+
+// First account, first address
+const eth0 = HDWallet.deriveEthereum(root, 0, 0); // m/44'/60'/0'/0/0
+
+// First account, multiple addresses
+const eth1 = HDWallet.deriveEthereum(root, 0, 1); // m/44'/60'/0'/0/1
+const eth2 = HDWallet.deriveEthereum(root, 0, 2); // m/44'/60'/0'/0/2
+
+// Second account
+const eth_account2 = HDWallet.deriveEthereum(root, 1, 0); // m/44'/60'/1'/0/0
+
+// Get private keys
+const privateKey0 = HDWallet.getPrivateKey(eth0);
+const privateKey1 = HDWallet.getPrivateKey(eth1);
+
+console.log('Private key 0:', privateKey0); // Uint8Array(32)
+console.log('Private key 1:', privateKey1); // Uint8Array(32)
+```
+
+### Step 5: Derive Ethereum Addresses
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/secp256k1';
+import * as Keccak256 from '@tevm/voltaire/crypto/keccak256';
+import * as Address from '@tevm/voltaire/primitives/address';
+
+function deriveEthereumAddress(hdKey: ExtendedKey): string {
+  // 1. Get private key
+  const privateKey = HDWallet.getPrivateKey(hdKey)!;
+
+  // 2. Derive uncompressed public key (65 bytes)
+  const publicKey = Secp256k1.getPublicKey(privateKey, false); // false = uncompressed
+
+  // 3. Remove 0x04 prefix (first byte)
+  const publicKeyWithoutPrefix = publicKey.slice(1); // 64 bytes
+
+  // 4. Keccak256 hash
+  const hash = Keccak256.hash(publicKeyWithoutPrefix); // 32 bytes
+
+  // 5. Take last 20 bytes
+  const addressBytes = hash.slice(-20);
+
+  // 6. Convert to checksummed hex address
+  const address = Address.from(addressBytes);
+
+  return Address.toHex(address);
+}
+
+// Derive addresses
+const address0 = deriveEthereumAddress(eth0);
+const address1 = deriveEthereumAddress(eth1);
+const address2 = deriveEthereumAddress(eth2);
+
+console.log('Address 0:', address0); // "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
+console.log('Address 1:', address1); // "0x..."
+console.log('Address 2:', address2); // "0x..."
+```
+
+## Complete Example
+
+### Full Wallet Creation
+
+```typescript
+async function createWallet(): Promise<{
+  mnemonic: string;
+  addresses: string[];
+  xprv: string;
+  xpub: string;
+}> {
+  // 1. Generate mnemonic
+  const mnemonic = Bip39.generateMnemonic(256);
+
+  // 2. Derive seed
+  const seed = await Bip39.mnemonicToSeed(mnemonic);
+
+  // 3. Create root HD wallet
+  const root = HDWallet.fromSeed(seed);
+
+  // 4. Derive first 5 Ethereum addresses
+  const addresses = [];
+  for (let i = 0; i < 5; i++) {
+    const key = HDWallet.deriveEthereum(root, 0, i);
+    const address = deriveEthereumAddress(key);
+    addresses.push(address);
+  }
+
+  // 5. Export extended keys
+  const xprv = HDWallet.toExtendedPrivateKey(root);
+  const xpub = HDWallet.toExtendedPublicKey(root);
+
+  return { mnemonic, addresses, xprv, xpub };
+}
+
+// Usage
+const wallet = await createWallet();
+
+console.log('🔑 Mnemonic (BACKUP!):', wallet.mnemonic);
+console.log('📋 Addresses:', wallet.addresses);
+console.log('🔐 xprv:', wallet.xprv);
+console.log('👁️  xpub:', wallet.xpub);
+```
+
+### Wallet Recovery
+
+```typescript
+async function recoverWallet(
+  mnemonic: string,
+  passphrase = '',
+  addressCount = 5
+): Promise<string[]> {
+  // 1. Validate mnemonic
+  if (!Bip39.validateMnemonic(mnemonic)) {
+    throw new Error('Invalid mnemonic phrase');
+  }
+
+  // 2. Derive seed (with same passphrase!)
+  const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+
+  // 3. Create root
+  const root = HDWallet.fromSeed(seed);
+
+  // 4. Derive addresses
+  const addresses = [];
+  for (let i = 0; i < addressCount; i++) {
+    const key = HDWallet.deriveEthereum(root, 0, i);
+    const address = deriveEthereumAddress(key);
+    addresses.push(address);
+  }
+
+  return addresses;
+}
+
+// Test recovery
+const originalMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+const recoveredAddresses = await recoverWallet(originalMnemonic);
+
+console.log('✅ Recovered addresses:', recoveredAddresses);
+```
+
+## Multi-Account Wallet
+
+### Account Management
+
+```typescript
+class EthereumWallet {
+  private root: ExtendedKey;
+
+  constructor(mnemonic: string, passphrase = '') {
+    const seed = Bip39.mnemonicToSeedSync(mnemonic, passphrase);
+    this.root = HDWallet.fromSeed(seed);
+  }
+
+  // Get account by index
+  getAccount(accountIndex: number, addressIndex = 0): {
+    address: string;
+    privateKey: Uint8Array;
+    path: string;
+  } {
+    const key = HDWallet.deriveEthereum(this.root, accountIndex, addressIndex);
+    const address = deriveEthereumAddress(key);
+    const privateKey = HDWallet.getPrivateKey(key)!;
+    const path = `m/44'/60'/${accountIndex}'/0/${addressIndex}`;
+
+    return { address, privateKey, path };
+  }
+
+  // Get multiple addresses for account
+  getAddresses(accountIndex: number, count: number): string[] {
+    const addresses = [];
+    for (let i = 0; i < count; i++) {
+      const { address } = this.getAccount(accountIndex, i);
+      addresses.push(address);
+    }
+    return addresses;
+  }
+
+  // Export account xprv (specific account)
+  exportAccountXprv(accountIndex: number): string {
+    const accountKey = HDWallet.derivePath(
+      this.root,
+      `m/44'/60'/${accountIndex}'`
+    );
+    return HDWallet.toExtendedPrivateKey(accountKey);
+  }
+
+  // Export account xpub (watch-only)
+  exportAccountXpub(accountIndex: number): string {
+    const accountKey = HDWallet.derivePath(
+      this.root,
+      `m/44'/60'/${accountIndex}'`
+    );
+    return HDWallet.toExtendedPublicKey(accountKey);
+  }
+}
+
+// Usage
+const wallet = new EthereumWallet(mnemonic);
+
+// Get first account
+const account0 = wallet.getAccount(0, 0);
+console.log('Account 0:', account0);
+
+// Get 10 addresses for account 1
+const addresses = wallet.getAddresses(1, 10);
+console.log('Account 1 addresses:', addresses);
+
+// Export watch-only xpub
+const xpub = wallet.exportAccountXpub(0);
+console.log('Watch-only xpub:', xpub);
+```
+
+## Watch-Only Wallet (Server-Side)
+
+### Address Generation Without Private Keys
+
+```typescript
+class WatchOnlyWallet {
+  private accountKey: ExtendedKey;
+
+  constructor(xpub: string) {
+    // Import account-level xpub (m/44'/60'/0')
+    this.accountKey = HDWallet.fromPublicExtendedKey(xpub);
+  }
+
+  // Generate receiving address
+  generateAddress(index: number): string {
+    // Derive m/0/index from account level
+    const changeKey = HDWallet.deriveChild(this.accountKey, 0);
+    const addressKey = HDWallet.deriveChild(changeKey, index);
+
+    return deriveEthereumAddress(addressKey);
+  }
+
+  // Cannot sign transactions
+  canSign(): boolean {
+    return HDWallet.canDeriveHardened(this.accountKey);
+  }
+}
+
+// On secure device: Export xpub
+const secureWallet = new EthereumWallet(mnemonic);
+const accountXpub = secureWallet.exportAccountXpub(0);
+
+// On server: Create watch-only wallet
+const watchOnly = new WatchOnlyWallet(accountXpub);
+
+// Generate addresses without private keys
+const paymentAddress = watchOnly.generateAddress(0);
+console.log('Payment address:', paymentAddress);
+console.log('Can sign?', watchOnly.canSign()); // false
+```
+
+## Transaction Signing
+
+### Sign Ethereum Transaction
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/secp256k1';
+import * as Keccak256 from '@tevm/voltaire/crypto/keccak256';
+
+async function signTransaction(
+  privateKey: Uint8Array,
+  transaction: {
+    to: string;
+    value: bigint;
+    data: string;
+    nonce: number;
+    gasLimit: bigint;
+    gasPrice: bigint;
+  }
+): Promise<{ r: string; s: string; v: number }> {
+  // 1. RLP encode transaction
+  const rlpEncoded = rlpEncode(transaction);
+
+  // 2. Keccak256 hash
+  const hash = Keccak256.hash(rlpEncoded);
+
+  // 3. Sign with private key
+  const signature = Secp256k1.sign(hash, privateKey);
+
+  // 4. Extract r, s, v
+  return {
+    r: '0x' + signature.slice(0, 32).toString('hex'),
+    s: '0x' + signature.slice(32, 64).toString('hex'),
+    v: signature.recoveryId! + 27
+  };
+}
+
+// Usage
+const { privateKey } = wallet.getAccount(0, 0);
+
+const tx = {
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+  value: 1000000000000000000n, // 1 ETH in wei
+  data: '0x',
+  nonce: 0,
+  gasLimit: 21000n,
+  gasPrice: 20000000000n, // 20 gwei
+};
+
+const signature = await signTransaction(privateKey, tx);
+console.log('Signature:', signature);
+```
+
+## Security Best Practices
+
+### Secure Wallet Creation
+
+```typescript
+async function createSecureWallet(): Promise<void> {
+  // 1. Generate offline (air-gapped device preferred)
+  const mnemonic = Bip39.generateMnemonic(256);
+
+  // 2. Write mnemonic on paper (NEVER digital)
+  console.log('Write this down on paper:');
+  console.log(mnemonic);
+  console.log('');
+
+  // 3. Verify backup
+  const verification = prompt('Enter mnemonic to verify:');
+  if (verification !== mnemonic) {
+    throw new Error('Verification failed - backup incorrect');
+  }
+
+  // 4. Optional: Add passphrase for two-factor security
+  const passphrase = prompt('Optional passphrase (or leave empty):');
+
+  // 5. Derive seed
+  const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+
+  // 6. Create wallet
+  const root = HDWallet.fromSeed(seed);
+
+  // 7. Derive first address for verification
+  const firstAddress = deriveEthereumAddress(
+    HDWallet.deriveEthereum(root, 0, 0)
+  );
+
+  console.log('✅ Wallet created successfully');
+  console.log('First address:', firstAddress);
+  console.log('');
+  console.log('⚠️  Store mnemonic safely!');
+  console.log('⚠️  Never share mnemonic or passphrase!');
+
+  // 8. Clear sensitive data from memory
+  seed.fill(0);
+}
+```
+
+### Safe Recovery Process
+
+```typescript
+async function safeRecovery(): Promise<void> {
+  // 1. Validate mnemonic
+  const mnemonic = prompt('Enter 24-word mnemonic:');
+
+  if (!Bip39.validateMnemonic(mnemonic)) {
+    throw new Error('Invalid mnemonic - check for typos');
+  }
+
+  // 2. Get passphrase (if used)
+  const hasPassphrase = confirm('Did you use a passphrase?');
+  const passphrase = hasPassphrase ? prompt('Enter passphrase:') : '';
+
+  // 3. Derive seed
+  const seed = await Bip39.mnemonicToSeed(mnemonic, passphrase);
+
+  // 4. Create wallet
+  const root = HDWallet.fromSeed(seed);
+
+  // 5. Show first address for verification
+  const firstAddress = deriveEthereumAddress(
+    HDWallet.deriveEthereum(root, 0, 0)
+  );
+
+  console.log('Recovered wallet');
+  console.log('First address:', firstAddress);
+  console.log('');
+  console.log('Verify this matches your original wallet!');
+
+  // 6. Clear memory
+  seed.fill(0);
+}
+```
+
+## Common Integration Patterns
+
+### MetaMask-Compatible Wallet
+
+```typescript
+// MetaMask uses: m/44'/60'/0'/0/x
+class MetaMaskWallet {
+  private root: ExtendedKey;
+
+  constructor(mnemonic: string) {
+    const seed = Bip39.mnemonicToSeedSync(mnemonic);
+    this.root = HDWallet.fromSeed(seed);
+  }
+
+  getAddress(index: number): string {
+    const key = HDWallet.derivePath(this.root, `m/44'/60'/0'/0/${index}`);
+    return deriveEthereumAddress(key);
+  }
+
+  getPrivateKey(index: number): Uint8Array {
+    const key = HDWallet.derivePath(this.root, `m/44'/60'/0'/0/${index}`);
+    return HDWallet.getPrivateKey(key)!;
+  }
+}
+```
+
+### Ledger-Compatible Wallet
+
+```typescript
+// Ledger uses: m/44'/60'/x'/0/0 (account-based)
+class LedgerWallet {
+  private root: ExtendedKey;
+
+  constructor(mnemonic: string) {
+    const seed = Bip39.mnemonicToSeedSync(mnemonic);
+    this.root = HDWallet.fromSeed(seed);
+  }
+
+  getAccount(accountIndex: number): string {
+    const key = HDWallet.derivePath(
+      this.root,
+      `m/44'/60'/${accountIndex}'/0/0`
+    );
+    return deriveEthereumAddress(key);
+  }
+}
+```
+
+## Testing and Verification
+
+### Test Vectors
+
+```typescript
+// BIP-39 + BIP-32 + BIP-44 test
+async function testFullWorkflow() {
+  // Known test vector
+  const mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+  const seed = await Bip39.mnemonicToSeed(mnemonic);
+
+  // Expected seed (hex)
+  const expectedSeed = '5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4';
+
+  const actualSeed = Array.from(seed)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  console.assert(actualSeed === expectedSeed, 'Seed mismatch');
+
+  // Create wallet and verify first address
+  const root = HDWallet.fromSeed(seed);
+  const eth0 = HDWallet.deriveEthereum(root, 0, 0);
+  const address = deriveEthereumAddress(eth0);
+
+  // Known first Ethereum address for this mnemonic
+  const expectedAddress = '0x9858EfFD232B4033E47d90003D41EC34EcaEda94';
+
+  console.assert(
+    address.toLowerCase() === expectedAddress.toLowerCase(),
+    'Address mismatch'
+  );
+
+  console.log('✅ Full workflow test passed');
+}
+```
+
+## References
+
+- [BIP-39 Specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
+- [BIP-32 Specification](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+- [BIP-44 Specification](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
+- [MetaMask HD Wallet](https://github.com/MetaMask/eth-hd-keyring)

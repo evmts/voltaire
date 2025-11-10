@@ -1,0 +1,550 @@
+---
+title: "Precompiles"
+---
+
+# Precompiles
+
+Gas costs for EVM precompiled contracts (addresses 0x01-0x08).
+
+## Overview
+
+Precompiled contracts are native implementations of cryptographic operations and utilities. Each has its own gas cost formula.
+
+**Available Precompiles:**
+- 0x01: ECRECOVER - ECDSA signature recovery
+- 0x02: SHA256 - SHA-2 256-bit hash
+- 0x03: RIPEMD160 - RIPEMD-160 hash
+- 0x04: IDENTITY - Memory copy
+- 0x05: MODEXP - Modular exponentiation
+- 0x06: ECADD - BN254 elliptic curve addition
+- 0x07: ECMUL - BN254 elliptic curve multiplication
+- 0x08: ECPAIRING - BN254 pairing check
+
+All precompile utilities are namespaced under `Precompile`.
+
+## ECRECOVER (0x01)
+
+ECDSA public key recovery from signature.
+
+### Constant
+
+```typescript
+Precompile.EcRecover: 3000n
+```
+
+Fixed cost of 3000 gas.
+
+### Example
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+const cost = GasConstants.Precompile.EcRecover;  // 3000n
+```
+
+## SHA256 (0x02)
+
+SHA-2 256-bit cryptographic hash.
+
+### Constants
+
+```typescript
+Precompile.Sha256Base: 60n
+Precompile.Sha256Word: 12n
+```
+
+### calculateSha256Cost
+
+Calculate SHA256 precompile cost.
+
+#### Signature
+
+```typescript
+function calculateSha256Cost(dataSize: bigint): bigint
+```
+
+#### Formula
+
+```
+words = ceil(dataSize / 32)
+cost = Sha256Base + words * Sha256Word
+     = 60 + words * 12
+```
+
+#### Example
+
+```typescript
+const cost1 = Precompile.calculateSha256Cost(32n);   // 72n  (60 + 1*12)
+const cost2 = Precompile.calculateSha256Cost(64n);   // 84n  (60 + 2*12)
+const cost3 = Precompile.calculateSha256Cost(100n);  // 108n (60 + 4*12)
+```
+
+## RIPEMD160 (0x03)
+
+RIPEMD-160 cryptographic hash.
+
+### Constants
+
+```typescript
+Precompile.Ripemd160Base: 600n
+Precompile.Ripemd160Word: 120n
+```
+
+### calculateRipemd160Cost
+
+Calculate RIPEMD160 precompile cost.
+
+#### Signature
+
+```typescript
+function calculateRipemd160Cost(dataSize: bigint): bigint
+```
+
+#### Formula
+
+```
+words = ceil(dataSize / 32)
+cost = Ripemd160Base + words * Ripemd160Word
+     = 600 + words * 120
+```
+
+#### Example
+
+```typescript
+const cost1 = Precompile.calculateRipemd160Cost(32n);   // 720n  (600 + 1*120)
+const cost2 = Precompile.calculateRipemd160Cost(64n);   // 840n  (600 + 2*120)
+const cost3 = Precompile.calculateRipemd160Cost(100n);  // 1080n (600 + 4*120)
+```
+
+## IDENTITY (0x04)
+
+Memory copy operation (returns input unchanged).
+
+### Constants
+
+```typescript
+Precompile.IdentityBase: 15n
+Precompile.IdentityWord: 3n
+```
+
+### calculateIdentityCost
+
+Calculate IDENTITY precompile cost.
+
+#### Signature
+
+```typescript
+function calculateIdentityCost(dataSize: bigint): bigint
+```
+
+#### Formula
+
+```
+words = ceil(dataSize / 32)
+cost = IdentityBase + words * IdentityWord
+     = 15 + words * 3
+```
+
+#### Example
+
+```typescript
+const cost1 = Precompile.calculateIdentityCost(32n);   // 18n (15 + 1*3)
+const cost2 = Precompile.calculateIdentityCost(64n);   // 21n (15 + 2*3)
+const cost3 = Precompile.calculateIdentityCost(100n);  // 27n (15 + 4*3)
+```
+
+## MODEXP (0x05)
+
+Modular exponentiation (EIP-2565).
+
+### Constants
+
+```typescript
+Precompile.ModExpMin: 200n
+Precompile.ModExpQuadraticThreshold: 64n
+Precompile.ModExpLinearThreshold: 1024n
+```
+
+### calculateModExpCost
+
+Calculate MODEXP precompile cost.
+
+#### Signature
+
+```typescript
+function calculateModExpCost(
+  baseLength: bigint,
+  expLength: bigint,
+  modLength: bigint,
+  expHead: bigint
+): bigint
+```
+
+#### Parameters
+
+- `baseLength` - Length of base in bytes
+- `expLength` - Length of exponent in bytes
+- `modLength` - Length of modulus in bytes
+- `expHead` - First 32 bytes of exponent (for complexity calculation)
+
+#### Formula
+
+```
+maxLength = max(baseLength, modLength)
+
+// Adjusted exponent length
+If expLength <= 32:
+  adjExpLen = log2(expHead)
+Else:
+  adjExpLen = 8 * (expLength - 32) + log2(expHead)
+
+// Complexity based on maxLength
+If maxLength <= 64:
+  complexity = maxLength² / 4
+Else if maxLength <= 1024:
+  complexity = maxLength² / 16 + 96 * maxLength - 3072
+Else:
+  complexity = maxLength² / 64 + 480 * maxLength - 199680
+
+// Final cost
+cost = max(200, complexity * adjExpLen / 20)
+```
+
+#### Example
+
+```typescript
+// Small RSA (256-bit)
+const cost1 = Precompile.calculateModExpCost(32n, 32n, 32n, 65537n);
+// ~200n (minimum)
+
+// RSA-2048
+const cost2 = Precompile.calculateModExpCost(256n, 256n, 256n, 65537n);
+// ~13000n (varies by exponent)
+
+// Large modulus
+const cost3 = Precompile.calculateModExpCost(2048n, 256n, 2048n, 3n);
+// Very high (depends on complexity)
+```
+
+## BN254 Curve Operations
+
+BN254 (alt_bn128) elliptic curve operations for zkSNARK verification. Gas costs reduced in Istanbul (EIP-1108).
+
+### ECADD (0x06)
+
+BN254 elliptic curve point addition.
+
+#### Constants
+
+```typescript
+Precompile.EcAddIstanbul: 150n    // Istanbul onwards
+Precompile.EcAddByzantium: 500n   // Byzantium to Constantinople
+```
+
+#### getEcAddCost
+
+Get ECADD cost for hardfork.
+
+##### Signature
+
+```typescript
+function getEcAddCost(hardfork: Hardfork): bigint
+```
+
+##### Returns
+
+- Pre-Istanbul (homestead - constantinople): `500n`
+- Istanbul onwards (istanbul+): `150n`
+
+##### Example
+
+```typescript
+Precompile.getEcAddCost('byzantium');      // 500n
+Precompile.getEcAddCost('constantinople'); // 500n
+Precompile.getEcAddCost('istanbul');       // 150n
+Precompile.getEcAddCost('berlin');         // 150n
+Precompile.getEcAddCost('cancun');         // 150n
+```
+
+### ECMUL (0x07)
+
+BN254 elliptic curve scalar multiplication.
+
+#### Constants
+
+```typescript
+Precompile.EcMulIstanbul: 6000n    // Istanbul onwards
+Precompile.EcMulByzantium: 40000n  // Byzantium to Constantinople
+```
+
+#### getEcMulCost
+
+Get ECMUL cost for hardfork.
+
+##### Signature
+
+```typescript
+function getEcMulCost(hardfork: Hardfork): bigint
+```
+
+##### Returns
+
+- Pre-Istanbul (homestead - constantinople): `40000n`
+- Istanbul onwards (istanbul+): `6000n`
+
+##### Example
+
+```typescript
+Precompile.getEcMulCost('byzantium');      // 40000n
+Precompile.getEcMulCost('constantinople'); // 40000n
+Precompile.getEcMulCost('istanbul');       // 6000n
+Precompile.getEcMulCost('berlin');         // 6000n
+Precompile.getEcMulCost('cancun');         // 6000n
+```
+
+### ECPAIRING (0x08)
+
+BN254 elliptic curve pairing check (for zkSNARKs).
+
+#### Constants
+
+```typescript
+Precompile.EcPairingBaseIstanbul: 45000n        // Istanbul onwards
+Precompile.EcPairingPerPairIstanbul: 34000n
+Precompile.EcPairingBaseByzantium: 100000n      // Byzantium to Constantinople
+Precompile.EcPairingPerPairByzantium: 80000n
+```
+
+#### calculateEcPairingCost
+
+Calculate ECPAIRING precompile cost.
+
+##### Signature
+
+```typescript
+function calculateEcPairingCost(pairCount: bigint, hardfork: Hardfork): bigint
+```
+
+##### Parameters
+
+- `pairCount` - Number of point pairs to verify
+- `hardfork` - EVM hardfork
+
+##### Formula
+
+```
+Pre-Istanbul (byzantium, constantinople):
+  cost = 100000 + pairCount * 80000
+
+Istanbul onwards:
+  cost = 45000 + pairCount * 34000
+```
+
+##### Example
+
+```typescript
+// Byzantium: 2 pairs
+const cost1 = Precompile.calculateEcPairingCost(2n, 'byzantium');
+// 260000n  (100000 + 2*80000)
+
+// Istanbul: 2 pairs
+const cost2 = Precompile.calculateEcPairingCost(2n, 'istanbul');
+// 113000n  (45000 + 2*34000)
+
+// Cancun: 4 pairs
+const cost3 = Precompile.calculateEcPairingCost(4n, 'cancun');
+// 181000n  (45000 + 4*34000)
+```
+
+#### ecPairingCost (Convenience)
+
+Convenience form using `this`.
+
+##### Signature
+
+```typescript
+function ecPairingCost(this: {
+  pairCount: bigint;
+  hardfork: Hardfork;
+}): bigint
+```
+
+##### Example
+
+```typescript
+const cost = Precompile.ecPairingCost.call({
+  pairCount: 2n,
+  hardfork: 'istanbul'
+});
+// 113000n
+```
+
+## Cost Comparison Table
+
+### Hash Functions
+
+| Precompile | Operation | Base Cost | Per-Word Cost | Example (64 bytes) |
+|------------|-----------|-----------|---------------|-------------------|
+| SHA256 (0x02) | SHA-2 256 | 60 | 12 | 84 gas |
+| RIPEMD160 (0x03) | RIPEMD-160 | 600 | 120 | 840 gas |
+| IDENTITY (0x04) | Memory copy | 15 | 3 | 21 gas |
+
+### BN254 Curve (Istanbul+)
+
+| Precompile | Operation | Pre-Istanbul | Istanbul+ | Reduction |
+|------------|-----------|--------------|-----------|-----------|
+| ECADD (0x06) | Point addition | 500 gas | 150 gas | 70% |
+| ECMUL (0x07) | Scalar multiplication | 40000 gas | 6000 gas | 85% |
+| ECPAIRING (0x08) | Pairing check (1 pair) | 180000 gas | 79000 gas | 56% |
+
+### Other
+
+| Precompile | Operation | Cost |
+|------------|-----------|------|
+| ECRECOVER (0x01) | Signature recovery | 3000 gas (fixed) |
+| MODEXP (0x05) | Modular exponentiation | Minimum 200 gas (variable) |
+
+## Usage Patterns
+
+### Hash Verification
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+function estimateHashCost(algorithm: 'sha256' | 'ripemd160', dataSize: bigint): bigint {
+  switch (algorithm) {
+    case 'sha256':
+      return GasConstants.Precompile.calculateSha256Cost(dataSize);
+    case 'ripemd160':
+      return GasConstants.Precompile.calculateRipemd160Cost(dataSize);
+  }
+}
+
+estimateHashCost('sha256', 1024n);    // 444n
+estimateHashCost('ripemd160', 1024n); // 4440n
+```
+
+### zkSNARK Verification
+
+```typescript
+function estimateZkSnarkCost(
+  hardfork: Hardfork,
+  pairCount: number
+): bigint {
+  const ecAddCost = GasConstants.Precompile.getEcAddCost(hardfork);
+  const ecMulCost = GasConstants.Precompile.getEcMulCost(hardfork);
+  const pairingCost = GasConstants.Precompile.calculateEcPairingCost(
+    BigInt(pairCount),
+    hardfork
+  );
+
+  // Typical Groth16 verification:
+  // - 2 ECADD
+  // - 1 ECMUL
+  // - 1 ECPAIRING (with pairCount pairs)
+  return 2n * ecAddCost + ecMulCost + pairingCost;
+}
+
+// Istanbul (modern)
+estimateZkSnarkCost('istanbul', 2);
+// 119300n  (2*150 + 6000 + 113000)
+
+// Byzantium (old)
+estimateZkSnarkCost('byzantium', 2);
+// 300500n  (2*500 + 40000 + 260000)
+```
+
+### Signature Recovery
+
+```typescript
+function estimateMultisigCost(signatureCount: number): bigint {
+  // Each signature requires ECRECOVER
+  return BigInt(signatureCount) * GasConstants.Precompile.EcRecover;
+}
+
+estimateMultisigCost(3);  // 9000n (3 * 3000)
+```
+
+### Data Copy
+
+```typescript
+function estimateCopyCost(dataSize: bigint): bigint {
+  // Using IDENTITY precompile for efficient copy
+  return GasConstants.Precompile.calculateIdentityCost(dataSize);
+}
+
+estimateCopyCost(1024n);  // 111n (15 + 32*3)
+```
+
+## Hardfork Considerations
+
+When working with BN254 operations, always check the hardfork:
+
+```typescript
+function selectPrecompileCost(
+  operation: 'ecadd' | 'ecmul' | 'ecpairing',
+  hardfork: Hardfork,
+  pairCount?: bigint
+): bigint {
+  switch (operation) {
+    case 'ecadd':
+      return GasConstants.Precompile.getEcAddCost(hardfork);
+    case 'ecmul':
+      return GasConstants.Precompile.getEcMulCost(hardfork);
+    case 'ecpairing':
+      if (!pairCount) throw new Error('pairCount required');
+      return GasConstants.Precompile.calculateEcPairingCost(pairCount, hardfork);
+  }
+}
+
+// Compare across forks
+const forks: Hardfork[] = ['byzantium', 'istanbul', 'cancun'];
+forks.forEach(fork => {
+  console.log(`${fork} ECADD: ${selectPrecompileCost('ecadd', fork)}`);
+});
+// byzantium ECADD: 500
+// istanbul ECADD: 150
+// cancun ECADD: 150
+```
+
+## Summary
+
+All precompile functions are available under the `Precompile` namespace:
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+// Constants
+GasConstants.Precompile.EcRecover           // 3000n
+GasConstants.Precompile.Sha256Base          // 60n
+GasConstants.Precompile.Sha256Word          // 12n
+GasConstants.Precompile.Ripemd160Base       // 600n
+GasConstants.Precompile.Ripemd160Word       // 120n
+GasConstants.Precompile.IdentityBase        // 15n
+GasConstants.Precompile.IdentityWord        // 3n
+GasConstants.Precompile.ModExpMin           // 200n
+GasConstants.Precompile.EcAddIstanbul       // 150n
+GasConstants.Precompile.EcAddByzantium      // 500n
+GasConstants.Precompile.EcMulIstanbul       // 6000n
+GasConstants.Precompile.EcMulByzantium      // 40000n
+
+// Calculation functions
+GasConstants.Precompile.calculateSha256Cost(dataSize)
+GasConstants.Precompile.calculateRipemd160Cost(dataSize)
+GasConstants.Precompile.calculateIdentityCost(dataSize)
+GasConstants.Precompile.calculateModExpCost(baseLength, expLength, modLength, expHead)
+GasConstants.Precompile.calculateEcPairingCost(pairCount, hardfork)
+
+// Hardfork-specific getters
+GasConstants.Precompile.getEcAddCost(hardfork)
+GasConstants.Precompile.getEcMulCost(hardfork)
+
+// Convenience forms
+GasConstants.Precompile.ecPairingCost.call({ pairCount, hardfork })
+```
+
+## See Also
+
+- [Constants](./constants.mdx) - Base gas constants
+- [Hardfork Utilities](./hardfork-utilities.mdx) - EIP detection
+- [Calculation Functions](./calculation-functions.mdx) - Gas calculations

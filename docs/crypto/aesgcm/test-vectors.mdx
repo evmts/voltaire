@@ -1,0 +1,449 @@
+---
+title: AES-GCM Test Vectors
+description: NIST test vectors for AES-GCM verification
+---
+
+## Overview
+
+Test vectors from NIST SP 800-38D validate AES-GCM implementation correctness. These tests cover various scenarios including different key sizes, plaintext lengths, and AAD configurations.
+
+## NIST SP 800-38D Test Vectors
+
+### AES-128-GCM Test Case 1
+
+Empty plaintext, no AAD:
+
+```typescript
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+
+// Test Case 1: Empty plaintext, zero key/nonce
+const key = await AesGcm.importKey(new Uint8Array(16).fill(0)); // All zeros
+const nonce = new Uint8Array(12).fill(0); // All zeros
+const plaintext = new Uint8Array(0); // Empty
+const aad = new Uint8Array(0); // No AAD
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
+
+// Expected tag (hex): 58e2fccefa7e3061367f1d57a4e7455a
+const expectedTag = new Uint8Array([
+  0x58, 0xe2, 0xfc, 0xce, 0xfa, 0x7e, 0x30, 0x61,
+  0x36, 0x7f, 0x1d, 0x57, 0xa4, 0xe7, 0x45, 0x5a
+]);
+
+console.log('Ciphertext matches:', arrayEquals(ciphertext, expectedTag));
+```
+
+### AES-128-GCM Test Case 2
+
+16-byte plaintext, no AAD:
+
+```typescript
+// Test Case 2: 16-byte plaintext
+const key = await AesGcm.importKey(new Uint8Array(16).fill(0));
+const nonce = new Uint8Array(12).fill(0);
+const plaintext = new Uint8Array(16).fill(0);
+const aad = new Uint8Array(0);
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
+
+// Expected ciphertext + tag (hex):
+// 0388dace60b6a392f328c2b971b2fe78ab6e47d42cec13bdf53a67b21257bddf
+const expected = new Uint8Array([
+  // Ciphertext (16 bytes)
+  0x03, 0x88, 0xda, 0xce, 0x60, 0xb6, 0xa3, 0x92,
+  0xf3, 0x28, 0xc2, 0xb9, 0x71, 0xb2, 0xfe, 0x78,
+  // Tag (16 bytes)
+  0xab, 0x6e, 0x47, 0xd4, 0x2c, 0xec, 0x13, 0xbd,
+  0xf5, 0x3a, 0x67, 0xb2, 0x12, 0x57, 0xbd, 0xdf
+]);
+
+console.log('Match:', arrayEquals(ciphertext, expected));
+
+// Verify decryption
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce, aad);
+console.log('Decryption match:', arrayEquals(decrypted, plaintext));
+```
+
+### AES-128-GCM Test Case 3
+
+With AAD (from NIST vectors):
+
+```typescript
+// Test Case 3: 64-byte plaintext, 20-byte AAD
+const keyHex = 'feffe9928665731c6d6a8f9467308308';
+const nonceHex = 'cafebabefacedbaddecaf888';
+const plaintextHex =
+  'd9313225f88406e5a55909c5aff5269a' +
+  '86a7a9531534f7da2e4c303d8a318a72' +
+  '1c3c0c95956809532fcf0e2449a6b525' +
+  'b16aedf5aa0de657ba637b391aafd255';
+const aadHex = 'feedfacedeadbeeffeedfacedeadbeefabaddad2';
+
+const key = await AesGcm.importKey(hexToBytes(keyHex));
+const nonce = hexToBytes(nonceHex);
+const plaintext = hexToBytes(plaintextHex);
+const aad = hexToBytes(aadHex);
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
+
+// Expected ciphertext (hex):
+// 42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985
+// Expected tag (hex):
+// 4d5c2af327cd64a62cf35abd2ba6fab4
+const expectedCiphertextHex =
+  '42831ec2217774244b7221b784d0d49c' +
+  'e3aa212f2c02a4e035c17e2329aca12e' +
+  '21d514b25466931c7d8f6a5aac84aa05' +
+  '1ba30b396a0aac973d58e091473f5985';
+const expectedTagHex = '4d5c2af327cd64a62cf35abd2ba6fab4';
+
+const expected = hexToBytes(expectedCiphertextHex + expectedTagHex);
+console.log('Match:', arrayEquals(ciphertext, expected));
+
+// Verify decryption
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce, aad);
+console.log('Decryption match:', arrayEquals(decrypted, plaintext));
+```
+
+### AES-256-GCM Test Case 1
+
+Empty plaintext, 32-byte key:
+
+```typescript
+// Test Case 1: Empty plaintext, zero key/nonce (256-bit)
+const key = await AesGcm.importKey(new Uint8Array(32).fill(0)); // All zeros
+const nonce = new Uint8Array(12).fill(0);
+const plaintext = new Uint8Array(0);
+const aad = new Uint8Array(0);
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
+
+// Expected tag (hex): 530f8afbc74536b9a963b4f1c4cb738b
+const expectedTag = new Uint8Array([
+  0x53, 0x0f, 0x8a, 0xfb, 0xc7, 0x45, 0x36, 0xb9,
+  0xa9, 0x63, 0xb4, 0xf1, 0xc4, 0xcb, 0x73, 0x8b
+]);
+
+console.log('Tag matches:', arrayEquals(ciphertext, expectedTag));
+```
+
+### AES-256-GCM Test Case 2
+
+16-byte plaintext, 32-byte key:
+
+```typescript
+// Test Case 2: 16-byte plaintext (256-bit key)
+const key = await AesGcm.importKey(new Uint8Array(32).fill(0));
+const nonce = new Uint8Array(12).fill(0);
+const plaintext = new Uint8Array(16).fill(0);
+const aad = new Uint8Array(0);
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad);
+
+// Expected ciphertext + tag (hex):
+// cea7403d4d606b6e074ec5d3baf39d18d0d1c8a799996bf0265b98b5d48ab919
+const expected = new Uint8Array([
+  // Ciphertext (16 bytes)
+  0xce, 0xa7, 0x40, 0x3d, 0x4d, 0x60, 0x6b, 0x6e,
+  0x07, 0x4e, 0xc5, 0xd3, 0xba, 0xf3, 0x9d, 0x18,
+  // Tag (16 bytes)
+  0xd0, 0xd1, 0xc8, 0xa7, 0x99, 0x99, 0x6b, 0xf0,
+  0x26, 0x5b, 0x98, 0xb5, 0xd4, 0x8a, 0xb9, 0x19
+]);
+
+console.log('Match:', arrayEquals(ciphertext, expected));
+```
+
+## Edge Case Test Vectors
+
+### Maximum Length Nonce (96 bits)
+
+```typescript
+// 96-bit nonce (standard size)
+const key = await AesGcm.generateKey(256);
+const nonce = new Uint8Array(12);
+crypto.getRandomValues(nonce);
+
+const plaintext = new TextEncoder().encode('Test message');
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+
+console.log('Success:', arrayEquals(decrypted, plaintext));
+```
+
+### All-Ones Key and Nonce
+
+```typescript
+// All-ones key (256-bit)
+const key = await AesGcm.importKey(new Uint8Array(32).fill(0xFF));
+const nonce = new Uint8Array(12).fill(0xFF);
+const plaintext = new TextEncoder().encode('All ones test');
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+
+console.log('All-ones test:', arrayEquals(decrypted, plaintext));
+```
+
+### Large Plaintext
+
+```typescript
+// 1 MB plaintext
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const plaintext = new Uint8Array(1024 * 1024);
+crypto.getRandomValues(plaintext);
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+console.log('Ciphertext size:', ciphertext.length); // 1048576 + 16
+
+const decrypted = await AesGcm.decrypt(ciphertext, key, nonce);
+console.log('Large plaintext test:', arrayEquals(decrypted, plaintext));
+```
+
+## Negative Test Vectors
+
+### Wrong Key
+
+```typescript
+const key1 = await AesGcm.generateKey(256);
+const key2 = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const plaintext = new TextEncoder().encode('Test');
+
+const ciphertext = await AesGcm.encrypt(plaintext, key1, nonce);
+
+try {
+  await AesGcm.decrypt(ciphertext, key2, nonce);
+  console.log('FAIL: Should have thrown');
+} catch (error) {
+  console.log('PASS: Wrong key detected');
+}
+```
+
+### Wrong Nonce
+
+```typescript
+const key = await AesGcm.generateKey(256);
+const nonce1 = AesGcm.generateNonce();
+const nonce2 = AesGcm.generateNonce();
+const plaintext = new TextEncoder().encode('Test');
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce1);
+
+try {
+  await AesGcm.decrypt(ciphertext, key, nonce2);
+  console.log('FAIL: Should have thrown');
+} catch (error) {
+  console.log('PASS: Wrong nonce detected');
+}
+```
+
+### Modified Ciphertext
+
+```typescript
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const plaintext = new TextEncoder().encode('Important message');
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+// Tamper with ciphertext
+const tampered = new Uint8Array(ciphertext);
+tampered[0] ^= 1; // Flip one bit
+
+try {
+  await AesGcm.decrypt(tampered, key, nonce);
+  console.log('FAIL: Should have detected tampering');
+} catch (error) {
+  console.log('PASS: Tampering detected');
+}
+```
+
+### Modified Authentication Tag
+
+```typescript
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const plaintext = new TextEncoder().encode('Test');
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce);
+
+// Tamper with tag (last byte)
+const tampered = new Uint8Array(ciphertext);
+tampered[ciphertext.length - 1] ^= 1;
+
+try {
+  await AesGcm.decrypt(tampered, key, nonce);
+  console.log('FAIL: Should have detected tag modification');
+} catch (error) {
+  console.log('PASS: Tag modification detected');
+}
+```
+
+### Wrong AAD
+
+```typescript
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const plaintext = new TextEncoder().encode('Test');
+const aad1 = new TextEncoder().encode('metadata1');
+const aad2 = new TextEncoder().encode('metadata2');
+
+const ciphertext = await AesGcm.encrypt(plaintext, key, nonce, aad1);
+
+try {
+  await AesGcm.decrypt(ciphertext, key, nonce, aad2);
+  console.log('FAIL: Should have detected wrong AAD');
+} catch (error) {
+  console.log('PASS: Wrong AAD detected');
+}
+```
+
+### Invalid Nonce Length
+
+```typescript
+const key = await AesGcm.generateKey(256);
+const wrongNonce = new Uint8Array(16); // Should be 12
+const plaintext = new TextEncoder().encode('Test');
+
+try {
+  await AesGcm.encrypt(plaintext, key, wrongNonce);
+  console.log('FAIL: Should have rejected wrong nonce length');
+} catch (error) {
+  console.log('PASS: Invalid nonce length rejected');
+}
+```
+
+### Ciphertext Too Short
+
+```typescript
+const key = await AesGcm.generateKey(256);
+const nonce = AesGcm.generateNonce();
+const tooShort = new Uint8Array(15); // Less than 16-byte tag
+
+try {
+  await AesGcm.decrypt(tooShort, key, nonce);
+  console.log('FAIL: Should have rejected short ciphertext');
+} catch (error) {
+  console.log('PASS: Short ciphertext rejected');
+}
+```
+
+## Running All Tests
+
+```typescript
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+
+async function runAllTests() {
+  const tests = [
+    testAes128Empty,
+    testAes12816Byte,
+    testAes128WithAAD,
+    testAes256Empty,
+    testAes25616Byte,
+    testWrongKey,
+    testWrongNonce,
+    testModifiedCiphertext,
+    testModifiedTag,
+    testWrongAAD,
+    testInvalidNonceLength,
+    testCiphertextTooShort
+  ];
+
+  let passed = 0;
+  let failed = 0;
+
+  for (const test of tests) {
+    try {
+      await test();
+      passed++;
+      console.log(`✓ ${test.name}`);
+    } catch (error) {
+      failed++;
+      console.error(`✗ ${test.name}:`, error.message);
+    }
+  }
+
+  console.log(`\nResults: ${passed} passed, ${failed} failed`);
+}
+
+await runAllTests();
+```
+
+## Helper Functions
+
+```typescript
+// Convert hex string to Uint8Array
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+// Convert Uint8Array to hex string
+function bytesToHex(bytes) {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// Compare two Uint8Arrays
+function arrayEquals(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+// Display test result
+function displayResult(name, actual, expected) {
+  const match = arrayEquals(actual, expected);
+  console.log(`${name}: ${match ? 'PASS' : 'FAIL'}`);
+  if (!match) {
+    console.log('  Expected:', bytesToHex(expected));
+    console.log('  Actual:  ', bytesToHex(actual));
+  }
+  return match;
+}
+```
+
+## Zig Implementation Tests
+
+The Zig implementation includes comprehensive tests in `/Users/williamcory/voltaire/src/crypto/aes_gcm.zig`:
+
+```zig
+test "aes128-gcm NIST vector: all zeros" {
+    const allocator = std.testing.allocator;
+
+    const key = [_]u8{0} ** AES128_KEY_SIZE;
+    const nonce = [_]u8{0} ** NONCE_SIZE;
+    const plaintext = "";
+    const additional_data = "";
+
+    const ciphertext = try encrypt128(allocator, plaintext, &key, &nonce, additional_data);
+    defer allocator.free(ciphertext);
+
+    // Expected tag from NIST
+    const expected_tag = [_]u8{
+        0x58, 0xe2, 0xfc, 0xce, 0xfa, 0x7e, 0x30, 0x61,
+        0x36, 0x7f, 0x1d, 0x57, 0xa4, 0xe7, 0x45, 0x5a
+    };
+
+    try std.testing.expectEqualSlices(u8, &expected_tag, ciphertext);
+}
+```
+
+Run Zig tests:
+```bash
+zig build test -Dtest-filter=aes
+```
+
+## References
+
+- [NIST SP 800-38D Test Vectors](https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/CAVP-TESTING-BLOCK-CIPHER-MODES#GCMVS)
+- [GCM Specification](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf)
+- [Zig AES-GCM Tests](/Users/williamcory/voltaire/src/crypto/aes_gcm.zig)

@@ -1,0 +1,415 @@
+---
+title: Bytecode
+description: EVM bytecode analysis and manipulation
+---
+
+# Bytecode
+
+EVM bytecode is the low-level machine code that smart contracts compile to. Each byte is either an [opcode](/primitives/opcode) (instruction) or constant data.
+
+## Overview
+
+Bytecode is represented as a [branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
+
+```typescript
+export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
+```
+
+The EVM reads bytecode sequentially, executing each instruction. Voltaire provides comprehensive tools for analyzing bytecode structure, parsing instructions, validating jump destinations, and extracting metadata.
+
+<Accordion title="What is EVM Bytecode? (New to bytecode?)">
+
+**EVM bytecode is the low-level machine code that smart contracts compile to and execute on the Ethereum Virtual Machine.**
+
+When you write a smart contract in Solidity or Vyper, the compiler translates your high-level code into bytecode - a sequence of bytes that the EVM can understand and execute.
+
+### Structure
+
+Bytecode is a sequence of bytes where each byte (or sequence of bytes) represents either:
+- **An opcode** - An instruction telling the EVM what to do (like ADD, PUSH1, JUMP, etc.)
+- **Data** - Constant values embedded in the bytecode
+
+### Example
+
+```
+Bytecode: 0x6005600301
+
+Breakdown:
+0x60 = PUSH1 (opcode)
+0x05 = 5 (data pushed by PUSH1)
+0x60 = PUSH1 (opcode)
+0x03 = 3 (data pushed by PUSH1)
+0x01 = ADD (opcode)
+```
+
+This bytecode pushes 5 and 3 onto the stack, then adds them together.
+
+### The Challenge
+
+**PUSH1-PUSH32 opcodes (0x60-0x7f) are followed by 1-32 bytes of data that are NOT opcodes.** This is the main challenge when parsing bytecode:
+
+```
+❌ Naive parsing:
+0x60 0x5b → PUSH1, JUMPDEST (treats 0x5b as opcode)
+
+✅ Correct parsing:
+0x60 0x5b → PUSH1 with data=0x5b (0x5b is data, not opcode)
+```
+
+If you naively treat every byte as an opcode, you'll misinterpret data as instructions, leading to incorrect analysis and invalid jump destinations.
+
+### Resources
+
+- **[evm.codes](https://www.evm.codes/)** - Interactive EVM opcode reference with gas costs
+- **[wolflo/evm-opcodes](https://github.com/wolflo/evm-opcodes)** - Comprehensive opcode reference and low-level details
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal EVM specification (Appendix H)
+
+</Accordion>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Class API">
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+// Parse bytecode
+const code = Bytecode.fromHex("0x6001600201");
+
+// Analyze structure
+const analysis = code.analyze();
+console.log(analysis.valid);              // true
+console.log(analysis.jumpDestinations);   // Set of JUMPDEST positions
+console.log(analysis.instructions);       // Parsed instructions
+
+// Format for display
+const disassembly = code.formatInstructions();
+console.log(disassembly);
+// ["PUSH1 0x01", "PUSH1 0x02", "ADD"]
+```
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+// Parse bytecode
+const code = Bytecode.fromHex("0x6001600201");
+
+// Analyze structure
+const analysis = Bytecode.analyze(code);
+console.log(analysis.valid);              // true
+console.log(analysis.jumpDestinations);   // Set of JUMPDEST positions
+console.log(analysis.instructions);       // Parsed instructions
+
+// Format for display
+const disassembly = Bytecode.formatInstructions(code);
+console.log(disassembly);
+// ["PUSH1 0x01", "PUSH1 0x02", "ADD"]
+```
+
+</Tab>
+</Tabs>
+
+## Example: Adding Two Numbers
+
+Here's bytecode that adds 5 + 3 and returns the result:
+
+```
+Bytecode: 0x6005600301600052602060006000f3
+
+Disassembly:
+0x00: PUSH1 0x05    // Push 5 onto stack          → Stack: [5]
+0x02: PUSH1 0x03    // Push 3 onto stack          → Stack: [3, 5]
+0x04: ADD           // Add top two values         → Stack: [8]
+0x05: PUSH1 0x00    // Push memory offset 0       → Stack: [0, 8]
+0x07: MSTORE        // Store 8 at memory[0]       → Stack: []
+0x08: PUSH1 0x20    // Push 32 (return size)      → Stack: [32]
+0x0a: PUSH1 0x00    // Push 0 (memory offset)     → Stack: [0, 32]
+0x0c: RETURN        // Return 32 bytes from memory[0]
+```
+
+**Key concepts demonstrated**:
+- **PUSH instructions** - Embed constant data (0x60 = PUSH1, followed by 1 byte)
+- **Arithmetic operations** - Work on stack values (ADD pops two, pushes result)
+- **Memory operations** - Store intermediate results (MSTORE writes to memory)
+- **Control flow** - Terminate execution (RETURN halts and returns data)
+
+## EVM Instructions
+
+The EVM has ~140 single-byte [opcodes](/primitives/opcode) organized by category:
+
+- **Arithmetic & Logic** - ADD, MUL, SUB, DIV, AND, OR, XOR for computation
+- **Storage Operations** - SLOAD and SSTORE for persistent contract storage
+- **Memory Operations** - MLOAD, MSTORE for temporary execution data
+- **Control Flow** - JUMP and JUMPI redirect to JUMPDEST markers (loops, conditionals)
+- **Contract Calls** - CALL, DELEGATECALL, STATICCALL invoke other contracts
+- **System Operations** - CREATE deploys contracts, SELFDESTRUCT removes them
+
+**PUSH Instructions (Constants)**:
+PUSH1 through PUSH32 embed 1-32 bytes of immediate data:
+- Ethereum addresses (20 bytes, PUSH20)
+- Function selectors (4 bytes, PUSH4)
+- Storage slot keys (32 bytes, PUSH32)
+- Numeric constants
+
+**Jump Destinations**:
+JUMPDEST (0x5b) markers indicate valid jump targets. The EVM validates that JUMP/JUMPI only target JUMPDEST opcodes, preventing arbitrary code execution.
+
+**Metadata**:
+Compilers like Solidity append optional metadata (typically 50-100 bytes) at the end of deployed bytecode. This includes compiler version and IPFS hash of source code for verification.
+
+```typescript
+export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
+```
+
+## API Documentation
+
+### Constructors
+
+Create bytecode from hex strings, Uint8Array, or generic input.
+
+[View constructors →](./from)
+
+### Analysis
+
+Parse instructions, find jump destinations, and analyze structure.
+
+[View analysis →](./analyze)
+
+### Validation
+
+Validate bytecode structure and check jump destinations.
+
+[View validation →](./validate)
+
+### Metadata
+
+Detect and strip compiler metadata from deployed bytecode.
+
+[View metadata →](./hasMetadata)
+
+### Formatting
+
+Disassemble bytecode to human-readable instruction strings.
+
+[View formatting →](./formatInstructions)
+
+### Conversions
+
+Convert bytecode to hex strings and other formats.
+
+[View conversions →](./toHex)
+
+### Utilities
+
+Compare, hash, measure size, and extract runtime code.
+
+[View utilities →](./size)
+
+### All Methods
+
+<Tabs>
+<Tab title="Class API">
+
+**Constructors:**
+- `Bytecode.from(value)` - Universal constructor from any input
+- `Bytecode.fromHex(hex)` - Parse hex string (with or without 0x prefix)
+- `Bytecode.fromUint8Array(bytes)` - Create from Uint8Array
+
+**Analysis:**
+- `bytecode.analyze()` - Complete analysis (validation + jump dests + instructions)
+- `bytecode.analyzeJumpDestinations()` - Find all JUMPDEST positions
+- `bytecode.parseInstructions()` - Parse all instructions with PUSH data
+- `bytecode.isValidJumpDest(offset)` - Check if position is valid jump target
+
+**Validation:**
+- `bytecode.validate()` - Validate bytecode structure
+
+**Metadata:**
+- `bytecode.hasMetadata()` - Check for compiler metadata
+- `bytecode.stripMetadata()` - Remove metadata from bytecode
+
+**Formatting:**
+- `bytecode.formatInstructions()` - Disassemble to string array
+
+**Conversions:**
+- `bytecode.toHex()` - Convert to hex string with 0x prefix
+
+**Utilities:**
+- `bytecode.size()` - Get byte length
+- `bytecode.equals(other)` - Compare bytecode equality
+- `bytecode.hash()` - Compute keccak256 hash
+- `bytecode.extractRuntime()` - Extract runtime code from deployment bytecode
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+**Constructors:**
+- `from(value)` - Universal constructor from any input
+- `fromHex(hex)` - Parse hex string (with or without 0x prefix)
+- `fromUint8Array(bytes)` - Create from Uint8Array
+
+**Analysis:**
+- `analyze(bytecode)` - Complete analysis (validation + jump dests + instructions)
+- `analyzeJumpDestinations(bytecode)` - Find all JUMPDEST positions
+- `parseInstructions(bytecode)` - Parse all instructions with PUSH data
+- `isValidJumpDest(bytecode, offset)` - Check if position is valid jump target
+
+**Validation:**
+- `validate(bytecode)` - Validate bytecode structure
+
+**Metadata:**
+- `hasMetadata(bytecode)` - Check for compiler metadata
+- `stripMetadata(bytecode)` - Remove metadata from bytecode
+
+**Formatting:**
+- `formatInstructions(bytecode)` - Disassemble to string array
+
+**Conversions:**
+- `toHex(bytecode)` - Convert to hex string with 0x prefix
+
+**Utilities:**
+- `size(bytecode)` - Get byte length
+- `equals(a, b)` - Compare bytecode equality
+- `hash(bytecode)` - Compute keccak256 hash
+- `extractRuntime(bytecode)` - Extract runtime code from deployment bytecode
+
+</Tab>
+</Tabs>
+
+## Types
+
+<Tabs>
+<Tab title="BrandedBytecode">
+
+```typescript
+export type BrandedBytecode = Uint8Array & {
+  readonly __tag: "Bytecode";
+};
+```
+
+Main branded type. Runtime is `Uint8Array`, TypeScript enforces type safety.
+
+</Tab>
+<Tab title="BytecodeLike">
+
+```typescript
+type BytecodeLike =
+  | Uint8Array
+  | BrandedBytecode
+  | Bytecode
+  | Hex
+  | string;
+```
+
+Union type accepting any input that can be coerced to bytecode. Accepted by `Bytecode.from()`.
+
+See [Bytecode.from](./from#bytecodelike-type) for details.
+
+</Tab>
+<Tab title="Analysis Types">
+
+```typescript
+export type Opcode = number;
+
+export type Instruction = {
+  readonly opcode: Opcode;
+  readonly position: number;
+  readonly pushData?: Uint8Array;
+};
+
+export type Analysis = {
+  readonly valid: boolean;
+  readonly jumpDestinations: ReadonlySet<number>;
+  readonly instructions: readonly Instruction[];
+};
+```
+
+Types for bytecode analysis results.
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Analyzing Contract Bytecode
+
+```typescript
+// Fetch and analyze deployed contract bytecode
+const bytecode = await provider.getCode("0x...");
+const code = Bytecode.fromHex(bytecode);
+
+// Get complete analysis
+const analysis = code.analyze();
+console.log(`Valid: ${analysis.valid}`);
+console.log(`Jump destinations: ${analysis.jumpDestinations.size}`);
+console.log(`Instructions: ${analysis.instructions.length}`);
+
+// Check specific jump target
+const isValidTarget = code.isValidJumpDest(100);
+```
+
+### Comparing Bytecode
+
+```typescript
+// Compare deployed bytecode with expected
+const deployed = Bytecode.fromHex(await provider.getCode(address));
+const expected = Bytecode.fromHex(compiledBytecode);
+
+if (deployed.equals(expected)) {
+  console.log("Contract verified");
+} else {
+  console.log("Bytecode mismatch");
+  console.log(`Hash deployed: ${deployed.hash()}`);
+  console.log(`Hash expected: ${expected.hash()}`);
+}
+```
+
+### Extracting Runtime Code
+
+```typescript
+// Deployment bytecode includes initialization code
+const deploymentCode = Bytecode.fromHex("0x608060...");
+
+// Extract just the runtime portion
+const runtimeCode = deploymentCode.extractRuntime();
+
+// Strip compiler metadata for comparison
+const cleanCode = runtimeCode.stripMetadata();
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { fromHex, analyze, formatInstructions } from '@tevm/voltaire/BrandedBytecode';
+
+const code = fromHex("0x6001");
+const analysis = analyze(code);
+const disassembly = formatInstructions(code);
+
+// Only these 3 functions included in bundle
+// Unused functions (stripMetadata, hash, etc.) excluded
+```
+
+<Tip title="Bundle Impact">
+Importing from `@tevm/voltaire/BrandedBytecode` instead of `@tevm/voltaire` enables tree-shaking. For example, if you only need `fromHex` and `parseInstructions`, keccak256 hashing and metadata detection are excluded from your bundle.
+</Tip>
+
+## Related
+
+- [Opcode](/primitives/opcode) - EVM instruction definitions and gas costs
+- [Hash](/primitives/hash) - Keccak256 hashing for bytecode verification
+- [Hex](/primitives/hex) - Hex string encoding and decoding
+
+## Specification References
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal EVM specification
+- [EVM Opcodes](https://www.evm.codes/) - Interactive opcode reference
+- [wolflo/evm-opcodes](https://github.com/wolflo/evm-opcodes) - Gas costs and opcode details
+- [Solidity Metadata](https://docs.soliditylang.org/en/latest/metadata.html) - Contract metadata format

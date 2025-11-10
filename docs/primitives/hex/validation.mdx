@@ -1,0 +1,254 @@
+---
+title: Hex Validation
+description: Validating hex formats and types
+---
+
+# Validation
+
+Methods for validating hex strings and checking hex types.
+
+## String Validation
+
+### `Hex.validate(value)`
+
+Validates hex string format and throws on invalid input. Returns validated string.
+
+```typescript
+const hex1 = Hex.validate("0x1234")  // "0x1234"
+const hex2 = Hex.validate("0x")      // "0x" (empty valid)
+
+// Invalid format - missing 0x
+Hex.validate("1234")  // throws InvalidFormatError
+
+// Invalid characters
+Hex.validate("0xGGGG")  // throws InvalidCharacterError
+```
+
+**Parameters:**
+- `value: string` - String to validate as hex
+
+**Returns:** `string` - Validated hex string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `InvalidCharacterError` - Contains invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/validate.js:17-24](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/validate.js#L17-L24)
+Tests: [validate.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/validate.test.ts)
+
+**Validation rules:**
+- Must start with `0x` prefix
+- Only hex chars allowed: `0-9`, `a-f`, `A-F`
+- Any length permitted (including empty `0x`)
+
+## Type Guards
+
+### `Hex.isHex(value)`
+
+Type guard checking if value is a valid hex string with `0x` prefix.
+
+```typescript
+function processHex(value: unknown) {
+  if (Hex.isHex(value)) {
+    // TypeScript knows value is string here
+    const bytes = Hex.toBytes(value)
+    console.log(bytes)
+  } else {
+    console.error("Not hex")
+  }
+}
+
+Hex.isHex("0x1234")              // true
+Hex.isHex("0x")                  // true
+Hex.isHex("0xaBcDeF")            // true
+Hex.isHex("1234")                // false (missing 0x)
+Hex.isHex("0xGGGG")              // false (invalid chars)
+Hex.isHex(new Uint8Array())      // false
+Hex.isHex(123)                   // false
+```
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:** `value is BrandedHex` (type predicate)
+
+Defined in: [primitives/Hex/BrandedHex/isHex.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isHex.js)
+Tests: [isHex.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isHex.test.ts)
+
+**Checks:**
+- `typeof value === "string"`
+- `value.startsWith("0x")`
+- All characters after `0x` are valid hex
+
+## Size Validation
+
+### `Hex.isSized(hex, size)`
+
+Check if hex has specific byte size.
+
+```typescript
+const hex = Hex("0x1234")  // 2 bytes
+
+Hex.isSized(hex, 2)   // true
+Hex.isSized(hex, 4)   // false
+
+const hash = Hex("0x" + "ff".repeat(32))
+Hex.isSized(hash, 32)  // true (32 bytes)
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `size: number` - Expected size in bytes
+
+**Returns:** `boolean`
+
+Defined in: [primitives/Hex/BrandedHex/isSized.js:15-17](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.js#L15-L17)
+Tests: [isSized.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/isSized.test.ts)
+
+**Calculation:** `(hex.length - 2) / 2 === size`
+
+### `Hex.assertSize(hex, size)`
+
+Assert hex has specific size, throws if mismatch. Returns sized hex for type narrowing.
+
+```typescript
+const hex = Hex("0x1234")
+
+// Success - returns same hex with size type
+const sized = Hex.assertSize(hex, 2)  // Sizedless than 2>
+
+// Failure - throws
+Hex.assertSize(hex, 4)  // throws InvalidLengthError
+
+// Usage in functions
+function processHash(hex: BrandedHex) {
+  Hex.assertSize(hex, 32)  // Ensure 32 bytes
+  // TypeScript now knows hex is Sizedless than 32>
+  return Hex.toBytes(hex)
+}
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to check
+- `size: number` - Expected byte size
+
+**Returns:** `Sized<size>` - Sized hex string
+
+**Throws:**
+- `InvalidLengthError` - If size doesn't match
+
+Defined in: [primitives/Hex/BrandedHex/assertSize.js:18-25](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.js#L18-L25)
+Tests: [assertSize.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/assertSize.test.ts)
+
+## Usage Patterns
+
+### Safe Parsing
+
+```typescript
+function parseHex(input: string): BrandedHex | null {
+  if (!Hex.isHex(input)) {
+    return null
+  }
+  try {
+    return Hex.validate(input)
+  } catch {
+    return null
+  }
+}
+```
+
+### Size Checking
+
+```typescript
+function ensureAddress(hex: BrandedHex): void {
+  if (!Hex.isSized(hex, 20)) {
+    throw new Error("Expected 20-byte address")
+  }
+}
+
+function ensureHash(hex: BrandedHex): void {
+  Hex.assertSize(hex, 32)  // throws if not 32 bytes
+}
+```
+
+### Runtime Type Checking
+
+```typescript
+function handleValue(value: unknown) {
+  if (Hex.isHex(value)) {
+    // Handle as hex
+    const bytes = Hex.toBytes(value)
+    return bytes
+  }
+
+  if (typeof value === "string") {
+    // Try to parse as hex
+    try {
+      return Hex.toBytes(Hex.validate(value))
+    } catch {
+      throw new Error("Invalid hex string")
+    }
+  }
+
+  throw new Error("Invalid value type")
+}
+```
+
+### Type-Safe Size Validation
+
+```typescript
+type Hash = Sizedless than 32>
+type Address = Sizedless than 20>
+
+function createHash(hex: BrandedHex): Hash {
+  return Hex.assertSize(hex, 32)  // Returns Sizedless than 32>
+}
+
+function createAddress(hex: BrandedHex): Address {
+  return Hex.assertSize(hex, 20)  // Returns Sizedless than 20>
+}
+```
+
+## Tree-Shakeable Usage
+
+All validation methods available as tree-shakeable imports:
+
+```typescript
+import { isHex, validate, isSized, assertSize } from '@tevm/voltaire/BrandedHex'
+
+isHex("0x1234")           // boolean
+validate("0x1234")        // BrandedHex
+isSized(hex, 32)          // boolean
+assertSize(hex, 32)       // Sizedless than 32>
+```
+
+See [BrandedHex](/primitives/hex/branded-hex) for details on tree-shakeable API.
+
+## Validation Flow
+
+```typescript
+// 1. Check if value is hex string
+if (!Hex.isHex(value)) {
+  throw new Error("Not a hex string")
+}
+
+// 2. Validate format (optional, isHex already checks)
+const validated = Hex.validate(value)
+
+// 3. Check size if needed
+if (!Hex.isSized(validated, 32)) {
+  throw new Error("Expected 32 bytes")
+}
+
+// 4. Or assert size (throws automatically)
+const hash = Hex.assertSize(validated, 32)
+
+// Now safe to use
+const bytes = Hex.toBytes(hash)
+```
+
+## Related
+
+- [Sizing](/primitives/hex/sizing) - Size constraints and Sized type
+- [Constructors](/primitives/hex/constructors) - Creating validated Hex
+- [BrandedHex](/primitives/hex/branded-hex) - Tree-shakeable functional API

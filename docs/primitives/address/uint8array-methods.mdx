@@ -1,0 +1,106 @@
+---
+title: Uint8Array Methods
+description: Inherited methods from Uint8Array prototype
+---
+
+# Uint8Array Methods
+
+Address extends `Uint8Array`, inheriting all standard array methods. These methods provide powerful operations for byte manipulation, iteration, and transformation.
+
+## Overview
+
+Because Address is a `Uint8Array` subclass, you get full access to:
+- **Array-like operations** - `slice`, `map`, `filter`, `reduce`
+- **Byte manipulation** - `set`, `fill`, `copyWithin`
+- **Iteration** - `forEach`, `entries`, `keys`, `values`
+- **Search** - `find`, `findIndex`, `indexOf`, `includes`
+- **Comparison** - `every`, `some`
+- **Native hex/base64** - `toHex`, `toBase64`, `setFromHex`, `setFromBase64`
+
+## Key Methods
+
+### Array Operations
+
+```typescript
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Get first 4 bytes
+addr.slice(0, 4) // Uint8Array [0x74, 0x2d, 0x35, 0xcc]
+
+// Get last 4 bytes
+addr.slice(-4) // Uint8Array [0x5f, 0x51, 0xe3, 0xe]
+```
+
+### Iteration
+
+```typescript
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Iterate bytes
+for (const byte of addr) {
+  console.log(byte)
+}
+
+// With indices
+for (const [i, byte] of addr.entries()) {
+  console.log(`${i}: ${byte}`)
+}
+```
+
+### Search
+
+```typescript
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Find first non-zero byte
+const firstNonZero = addr.find(b => b !== 0) // 0x74
+
+// Check if byte exists
+addr.includes(0x74) // true
+addr.includes(0xff) // false
+```
+
+### Comparison
+
+```typescript
+const zeroAddr = Address.zero()
+zeroAddr.every(b => b === 0) // true (all bytes are zero)
+
+const addr = Address.fromHex("0x000000000000000000000000000000000000003e")
+addr.some(b => b !== 0) // true (has non-zero bytes)
+```
+
+## Properties
+
+### `length`
+
+Always 20 for valid addresses:
+
+```typescript
+const addr = new Address(69n)
+addr.length // 20
+```
+
+### `buffer`, `byteOffset`, `byteLength`
+
+Access underlying ArrayBuffer:
+
+```typescript
+const addr = new Address(69n)
+addr.buffer       // ArrayBuffer(20)
+addr.byteOffset   // 0
+addr.byteLength   // 20
+```
+
+## Notes
+
+- Methods returning arrays return `Uint8Array`, not `Address`
+- Mutating methods modify the original Address instance
+- `toReversed()`, `toSorted()`, `with()` create copies
+- Address overrides `toString()` for better display
+- Native `toHex()` is overridden - use `toChecksummed()` for EIP-55
+
+## Related
+
+- [Conversions](/primitives/address/conversions) - Address-specific conversion methods
+- [Comparisons](/primitives/address/comparisons) - Semantic comparison methods

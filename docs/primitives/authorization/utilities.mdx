@@ -1,0 +1,602 @@
+---
+title: "Utilities"
+description: "Utilities"
+---
+
+# Utilities
+
+Helper functions for authorization formatting and comparison.
+
+## format
+
+Format authorization to human-readable string.
+
+```typescript
+Authorization.format.call(
+  auth: Authorization.Item | Authorization.Unsigned
+): string
+```
+
+**Parameters:**
+- `auth`: Authorization (signed or unsigned) to format
+
+**Returns:** Human-readable string representation
+
+### Usage
+
+**Signed Authorization:**
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const auth: Authorization.Item = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 42n,
+  yParity: 0,
+  r: 0x123456789abcdef0n,
+  s: 0xfedcba9876543210n
+};
+
+console.log(Authorization.format.call(auth));
+// "Authorization(chain=1, to=0x742d...bEb2, nonce=42, r=0x123456789abcdef0, s=0xfedcba9876543210, v=0)"
+```
+
+**Unsigned Authorization:**
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+console.log(Authorization.format.call(unsigned));
+// "Authorization(chain=1, to=0x742d...bEb2, nonce=0)"
+```
+
+### Format Details
+
+**Signed format:**
+```
+Authorization(chain={chainId}, to={address}, nonce={nonce}, r={r}, s={s}, v={yParity})
+```
+
+**Unsigned format:**
+```
+Authorization(chain={chainId}, to={address}, nonce={nonce})
+```
+
+**Address formatting:** Shortened to `0x{first4}...{last4}`
+
+### Examples
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+const addr = Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2');
+
+// Unsigned
+const unsigned = { chainId: 1n, address: addr, nonce: 0n };
+Authorization.format.call(unsigned);
+// "Authorization(chain=1, to=0x742d...bEb2, nonce=0)"
+
+// Signed
+const auth = {
+  chainId: 1n,
+  address: addr,
+  nonce: 42n,
+  yParity: 0,
+  r: 0x123n,
+  s: 0x456n
+};
+Authorization.format.call(auth);
+// "Authorization(chain=1, to=0x742d...bEb2, nonce=42, r=0x123, s=0x456, v=0)"
+```
+
+### Use Cases
+
+**Logging:**
+```typescript
+console.log(`Processing: ${Authorization.format.call(auth)}`);
+```
+
+**Debugging:**
+```typescript
+const formatted = Authorization.format.call(auth);
+console.error(`Invalid authorization: ${formatted}`);
+```
+
+**Display:**
+```typescript
+function displayAuth(auth: Authorization.Item): void {
+  const formatted = Authorization.format.call(auth);
+  document.getElementById('auth-display').textContent = formatted;
+}
+```
+
+## equals
+
+Check if two authorizations are equal.
+
+```typescript
+Authorization.equals.call(
+  auth1: Authorization.Item,
+  auth2: Authorization.Item
+): boolean
+```
+
+**Parameters:**
+- `auth1`: First authorization
+- `auth2`: Second authorization
+
+**Returns:** `true` if all fields are equal, `false` otherwise
+
+**Comparison:** Compares all fields:
+- chainId
+- address (byte-by-byte)
+- nonce
+- yParity
+- r
+- s
+
+### Usage
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const auth1: Authorization.Item = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n,
+  yParity: 0,
+  r: 0x123n,
+  s: 0x456n
+};
+
+const auth2: Authorization.Item = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n,
+  yParity: 0,
+  r: 0x123n,
+  s: 0x456n
+};
+
+const auth3: Authorization.Item = {
+  ...auth1,
+  nonce: 1n  // Different nonce
+};
+
+console.log(Authorization.equals.call(auth1, auth2)); // true
+console.log(Authorization.equals.call(auth1, auth3)); // false
+```
+
+### Implementation Details
+
+**Address Comparison:**
+Byte-by-byte comparison:
+```typescript
+function addressEquals(a: Address, b: Address): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+```
+
+**Field Comparison:**
+```typescript
+function equals(auth1: Authorization.Item, auth2: Authorization.Item): boolean {
+  return (
+    auth1.chainId === auth2.chainId &&
+    addressEquals(auth1.address, auth2.address) &&
+    auth1.nonce === auth2.nonce &&
+    auth1.yParity === auth2.yParity &&
+    auth1.r === auth2.r &&
+    auth1.s === auth2.s
+  );
+}
+```
+
+### Examples
+
+**Exact match:**
+```typescript
+const auth1 = { chainId: 1n, address: addr, nonce: 0n, yParity: 0, r: 0x123n, s: 0x456n };
+const auth2 = { chainId: 1n, address: addr, nonce: 0n, yParity: 0, r: 0x123n, s: 0x456n };
+
+Authorization.equals.call(auth1, auth2); // true
+```
+
+**Different chainId:**
+```typescript
+const auth1 = { chainId: 1n, ... };
+const auth2 = { chainId: 137n, ... };
+
+Authorization.equals.call(auth1, auth2); // false
+```
+
+**Different address:**
+```typescript
+const auth1 = { address: addr1, ... };
+const auth2 = { address: addr2, ... };
+
+Authorization.equals.call(auth1, auth2); // false
+```
+
+**Different signature:**
+```typescript
+const auth1 = { ..., r: 0x123n, s: 0x456n };
+const auth2 = { ..., r: 0x789n, s: 0xabcn };
+
+Authorization.equals.call(auth1, auth2); // false
+```
+
+## Common Patterns
+
+### Deduplication
+
+Remove duplicate authorizations:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function deduplicateAuths(
+  authList: Authorization.Item[]
+): Authorization.Item[] {
+  const unique: Authorization.Item[] = [];
+
+  for (const auth of authList) {
+    // Check if already in unique list
+    const isDuplicate = unique.some(u =>
+      Authorization.equals.call(u, auth)
+    );
+
+    if (!isDuplicate) {
+      unique.push(auth);
+    }
+  }
+
+  return unique;
+}
+
+const deduplicated = deduplicateAuths([auth1, auth2, auth1, auth3]);
+// Returns [auth1, auth2, auth3]
+```
+
+### Authorization Set
+
+Track unique authorizations:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+class AuthorizationSet {
+  private auths: Authorization.Item[] = [];
+
+  add(auth: Authorization.Item): boolean {
+    if (this.has(auth)) {
+      return false;
+    }
+    this.auths.push(auth);
+    return true;
+  }
+
+  has(auth: Authorization.Item): boolean {
+    return this.auths.some(a =>
+      Authorization.equals.call(a, auth)
+    );
+  }
+
+  remove(auth: Authorization.Item): boolean {
+    const index = this.auths.findIndex(a =>
+      Authorization.equals.call(a, auth)
+    );
+
+    if (index === -1) return false;
+
+    this.auths.splice(index, 1);
+    return true;
+  }
+
+  toArray(): Authorization.Item[] {
+    return [...this.auths];
+  }
+
+  get size(): number {
+    return this.auths.length;
+  }
+}
+
+const set = new AuthorizationSet();
+set.add(auth1); // true
+set.add(auth1); // false (duplicate)
+set.has(auth1); // true
+```
+
+### Logging Helper
+
+Create logging helper:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+class AuthLogger {
+  log(auth: Authorization.Item | Authorization.Unsigned): void {
+    const formatted = Authorization.format.call(auth);
+    console.log(`[AUTH] ${formatted}`);
+  }
+
+  error(auth: Authorization.Item | Authorization.Unsigned, error: Error): void {
+    const formatted = Authorization.format.call(auth);
+    console.error(`[AUTH ERROR] ${formatted}: ${error.message}`);
+  }
+
+  debug(auth: Authorization.Item | Authorization.Unsigned, message: string): void {
+    const formatted = Authorization.format.call(auth);
+    console.debug(`[AUTH DEBUG] ${formatted} - ${message}`);
+  }
+}
+
+const logger = new AuthLogger();
+logger.log(auth);
+logger.debug(auth, 'Processing authorization');
+```
+
+### Comparison Helper
+
+Compare and report differences:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+interface AuthDifference {
+  field: string;
+  value1: any;
+  value2: any;
+}
+
+function compareAuths(
+  auth1: Authorization.Item,
+  auth2: Authorization.Item
+): AuthDifference[] {
+  const differences: AuthDifference[] = [];
+
+  if (auth1.chainId !== auth2.chainId) {
+    differences.push({
+      field: 'chainId',
+      value1: auth1.chainId,
+      value2: auth2.chainId
+    });
+  }
+
+  if (!addressEquals(auth1.address, auth2.address)) {
+    differences.push({
+      field: 'address',
+      value1: auth1.address,
+      value2: auth2.address
+    });
+  }
+
+  if (auth1.nonce !== auth2.nonce) {
+    differences.push({
+      field: 'nonce',
+      value1: auth1.nonce,
+      value2: auth2.nonce
+    });
+  }
+
+  if (auth1.yParity !== auth2.yParity) {
+    differences.push({
+      field: 'yParity',
+      value1: auth1.yParity,
+      value2: auth2.yParity
+    });
+  }
+
+  if (auth1.r !== auth2.r) {
+    differences.push({
+      field: 'r',
+      value1: auth1.r,
+      value2: auth2.r
+    });
+  }
+
+  if (auth1.s !== auth2.s) {
+    differences.push({
+      field: 's',
+      value1: auth1.s,
+      value2: auth2.s
+    });
+  }
+
+  return differences;
+}
+
+const diffs = compareAuths(auth1, auth2);
+if (diffs.length > 0) {
+  console.log('Differences found:');
+  diffs.forEach(d => {
+    console.log(`  ${d.field}: ${d.value1} vs ${d.value2}`);
+  });
+}
+```
+
+### Format for Display
+
+Create display-friendly format:
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+interface DisplayAuth {
+  chain: string;
+  delegateTo: string;
+  nonce: string;
+  signature?: string;
+}
+
+function formatForDisplay(auth: Authorization.Item): DisplayAuth {
+  return {
+    chain: getChainName(auth.chainId),
+    delegateTo: Address.toChecksummed(auth.address),
+    nonce: auth.nonce.toString(),
+    signature: `r:${auth.r.toString(16)}, s:${auth.s.toString(16)}, v:${auth.yParity}`
+  };
+}
+
+function getChainName(chainId: bigint): string {
+  switch (chainId) {
+    case 1n: return 'Ethereum Mainnet';
+    case 137n: return 'Polygon';
+    case 42161n: return 'Arbitrum';
+    default: return `Chain ${chainId}`;
+  }
+}
+
+const display = formatForDisplay(auth);
+console.log(`Chain: ${display.chain}`);
+console.log(`Delegate to: ${display.delegateTo}`);
+console.log(`Nonce: ${display.nonce}`);
+console.log(`Signature: ${display.signature}`);
+```
+
+### Batch Formatting
+
+Format multiple authorizations:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function formatAuthBatch(
+  authList: Authorization.Item[]
+): string {
+  const formatted = authList.map((auth, i) =>
+    `${i + 1}. ${Authorization.format.call(auth)}`
+  );
+
+  return formatted.join('\n');
+}
+
+console.log('Authorization List:');
+console.log(formatAuthBatch([auth1, auth2, auth3]));
+// 1. Authorization(chain=1, to=0x742d...bEb2, nonce=0, ...)
+// 2. Authorization(chain=1, to=0x1234...5678, nonce=1, ...)
+// 3. Authorization(chain=1, to=0x9abc...def0, nonce=2, ...)
+```
+
+### Find Duplicates
+
+Find all duplicates in list:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function findDuplicates(
+  authList: Authorization.Item[]
+): Array<{ auth: Authorization.Item; indices: number[] }> {
+  const duplicates = new Map<string, number[]>();
+
+  authList.forEach((auth, index) => {
+    const key = Authorization.format.call(auth);
+    const indices = duplicates.get(key) || [];
+    indices.push(index);
+    duplicates.set(key, indices);
+  });
+
+  const result: Array<{ auth: Authorization.Item; indices: number[] }> = [];
+
+  duplicates.forEach((indices, key) => {
+    if (indices.length > 1) {
+      result.push({
+        auth: authList[indices[0]],
+        indices
+      });
+    }
+  });
+
+  return result;
+}
+
+const dupes = findDuplicates(authList);
+dupes.forEach(d => {
+  console.log(`Duplicate at indices ${d.indices.join(', ')}:`);
+  console.log(`  ${Authorization.format.call(d.auth)}`);
+});
+```
+
+## Performance
+
+### format
+
+O(1) - Constant time string construction
+
+**Cost:**
+- Address shortening: O(40) = O(1)
+- String concatenation: O(1)
+- Number to hex conversion: O(log n) for bigint
+
+### equals
+
+O(1) - Constant time comparison
+
+**Cost:**
+- 5 bigint comparisons: O(1) each
+- 1 number comparison: O(1)
+- Address comparison: O(20) = O(1)
+
+**Total:** O(1)
+
+### Optimization Tips
+
+1. **Cache formatted strings** if formatting same auth repeatedly
+2. **Use equals for deduplication** instead of string comparison
+3. **Batch format** operations when possible
+
+## Testing
+
+### Test format
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const auth: Authorization.Item = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n,
+  yParity: 0,
+  r: 0x123n,
+  s: 0x456n
+};
+
+const formatted = Authorization.format.call(auth);
+expect(formatted).toContain('chain=1');
+expect(formatted).toContain('nonce=0');
+expect(formatted).toContain('r=0x123');
+expect(formatted).toContain('s=0x456');
+expect(formatted).toContain('v=0');
+```
+
+### Test equals
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+// Same authorizations
+const auth1 = { chainId: 1n, address: addr, nonce: 0n, yParity: 0, r: 0x123n, s: 0x456n };
+const auth2 = { chainId: 1n, address: addr, nonce: 0n, yParity: 0, r: 0x123n, s: 0x456n };
+
+expect(Authorization.equals.call(auth1, auth2)).toBe(true);
+
+// Different authorizations
+const auth3 = { ...auth1, nonce: 1n };
+expect(Authorization.equals.call(auth1, auth3)).toBe(false);
+```
+
+## See Also
+
+- [Constructors](./constructors) - Type guards
+- [Validation](./validation) - Structure validation
+- [Processing](./processing) - Authorization processing

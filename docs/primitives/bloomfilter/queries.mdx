@@ -1,0 +1,471 @@
+---
+title: BloomFilter Queries
+description: Testing membership and checking filter state
+---
+
+# Queries
+
+Methods for testing set membership and checking bloom filter state.
+
+## Membership Testing
+
+### `filter.contains(item)` / `BloomFilter.contains(filter, item)`
+
+Checks if an item might be in the set. Returns `false` if definitely not present, `true` if possibly present.
+
+<Tabs>
+<Tab title="Instance Method">
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+const filter = BloomFilter.create(2048, 3)
+
+// Add item
+const item = new TextEncoder().encode("Transfer")
+filter.add(item)
+
+// Check membership
+if (filter.contains(item)) {
+  console.log("Item might be present")  // true - definitely added
+}
+
+// Check non-member
+const other = new TextEncoder().encode("Approval")
+if (!filter.contains(other)) {
+  console.log("Item definitely not present")  // true - never added
+}
+```
+</Tab>
+<Tab title="Static Method">
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+const filter = BloomFilter.create(2048, 3)
+const item = new TextEncoder().encode("Transfer")
+
+filter.add(item)
+
+// Static method - data-first pattern
+const result = BloomFilter.contains(filter, item)  // true
+```
+</Tab>
+</Tabs>
+
+**Parameters:**
+- `filter: BrandedBloomFilter` - Bloom filter to query
+- `item: Uint8Array` - Item to check (arbitrary byte array)
+
+**Returns:** `boolean`
+- `false` - Item definitely not in set (no false negatives)
+- `true` - Item might be in set (false positives possible)
+
+**Algorithm:**
+1. Computes `k` hash values from `item` using different seeds
+2. For each hash value `h`:
+   - Calculates byte index: `idx = floor(h / 8)`
+   - Calculates bit position: `bit = h % 8`
+   - Checks bit: `(filter[idx] & (1 << bit)) !== 0`
+3. Returns `true` only if all `k` bits are set
+
+```typescript
+// Example with k=3
+const filter = BloomFilter.create(2048, 3)
+const item = new TextEncoder().encode("Transfer")
+
+// After add(item), 3 bits are set
+filter.add(item)
+
+// contains() checks all 3 bits:
+//   bit at hash(item, 0, 2048) is set? ✓
+//   bit at hash(item, 1, 2048) is set? ✓
+//   bit at hash(item, 2, 2048) is set? ✓
+// All set → returns true
+
+filter.contains(item)  // true
+```
+
+Defined in: [BrandedBloomFilter/contains.js:3-30](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/contains.js#L3-L30)
+
+### False Positives vs False Negatives
+
+<Tip title="No False Negatives">
+Bloom filters guarantee no false negatives:
+- If `contains()` returns `false`, item was **definitely not added**
+- If `contains()` returns `true`, item **might have been added** (or false positive)
+</Tip>
+
+```typescript
+const filter = BloomFilter.create(2048, 3)
+
+// Item never added
+const neverAdded = new TextEncoder().encode("nope")
+console.log(filter.contains(neverAdded))  // false - guaranteed
+
+// Item definitely added
+const added = new TextEncoder().encode("yes")
+filter.add(added)
+console.log(filter.contains(added))  // true - guaranteed
+
+// Item might collide (false positive)
+const mightCollide = new TextEncoder().encode("maybe")
+console.log(filter.contains(mightCollide))  // false or true (false positive)
+```
+
+### Checking Ethereum Logs
+
+```typescript
+import { BloomFilter, Address } from '@tevm/voltaire'
+
+// Load block bloom filter
+const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+
+// Check if block might contain address
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+if (blockFilter.contains(address)) {
+  // Block might contain logs from this address
+  // Fetch actual logs to confirm
+  const logs = await fetchLogs(block.number, address)
+}
+
+// Check if block might contain event topic
+const transferTopic = keccak256(
+  new TextEncoder().encode("Transfer(address,address,uint256)")
+)
+if (blockFilter.contains(transferTopic)) {
+  // Block might contain Transfer events
+  const logs = await fetchLogs(block.number, null, [transferTopic])
+}
+```
+
+## State Testing
+
+### `filter.isEmpty()` / `BloomFilter.isEmpty(filter)`
+
+Checks if bloom filter is empty (all bits are zero). Empty filter has never had items added.
+
+<Tabs>
+<Tab title="Instance Method">
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+const filter = BloomFilter.create(2048, 3)
+
+// Initially empty
+console.log(filter.isEmpty())  // true
+
+// After adding item
+filter.add(new TextEncoder().encode("item"))
+console.log(filter.isEmpty())  // false
+```
+</Tab>
+<Tab title="Static Method">
+```typescript
+import { BloomFilter } from '@tevm/voltaire'
+
+const filter = BloomFilter.create(2048, 3)
+
+// Static method - data-first pattern
+const empty = BloomFilter.isEmpty(filter)  // true
+```
+</Tab>
+</Tabs>
+
+**Parameters:**
+- `filter: BrandedBloomFilter` - Bloom filter to check
+
+**Returns:** `boolean`
+- `true` - Filter is empty (all bytes are zero)
+- `false` - Filter contains at least one set bit
+
+**Algorithm:**
+Iterates through all bytes checking if any are non-zero:
+
+```typescript
+// Pseudocode:
+for (let i = 0; i < filter.length; i++) {
+  if (filter[i] !== 0) return false
+}
+return true
+```
+
+**Performance:** O(m/8) where m is bit count - checks all bytes.
+
+Defined in: [BrandedBloomFilter/isEmpty.js:3-20](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/isEmpty.js#L3-L20)
+
+### Use Cases
+
+```typescript
+// Skip processing empty filters
+function processFilter(filter: BloomFilter) {
+  if (filter.isEmpty()) {
+    console.log("No items to process")
+    return
+  }
+
+  // Process filter...
+}
+
+// Check if block has any logs
+const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+if (blockFilter.isEmpty()) {
+  console.log("Block has no logs")
+  return []  // Skip log fetching
+}
+
+// Validate filter before merging
+function mergeIfNotEmpty(f1: BloomFilter, f2: BloomFilter): BloomFilter {
+  if (f1.isEmpty()) return f2
+  if (f2.isEmpty()) return f1
+  return f1.merge(f2)
+}
+```
+
+## Query Patterns
+
+### Filtering Block Ranges
+
+```typescript
+import { BloomFilter, Address } from '@tevm/voltaire'
+
+// Find blocks that might contain address
+async function findRelevantBlocks(
+  startBlock: number,
+  endBlock: number,
+  address: string
+): Promise<number[]> {
+  const addr = Address.from(address)
+  const relevantBlocks: number[] = []
+
+  for (let i = startBlock; i <= endBlock; i++) {
+    const block = await fetchBlock(i)
+
+    // Skip empty blocks
+    const filter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+    if (filter.isEmpty()) continue
+
+    // Check if block might contain address
+    if (filter.contains(addr)) {
+      relevantBlocks.push(i)
+    }
+  }
+
+  return relevantBlocks
+}
+```
+
+### Multi-Address Queries
+
+```typescript
+// Check if block contains any of multiple addresses
+function containsAny(
+  filter: BloomFilter,
+  addresses: Address[]
+): boolean {
+  return addresses.some(addr => filter.contains(addr))
+}
+
+// Check if block contains all addresses
+function containsAll(
+  filter: BloomFilter,
+  addresses: Address[]
+): boolean {
+  return addresses.every(addr => filter.contains(addr))
+}
+
+// Usage
+const blockFilter = BloomFilter.fromHex(block.logsBloom, 2048, 3)
+const watchlist = [
+  Address.from("0x..."),
+  Address.from("0x..."),
+  Address.from("0x...")
+]
+
+if (containsAny(blockFilter, watchlist)) {
+  // Block might contain logs from watched addresses
+}
+```
+
+### Multi-Topic Queries
+
+```typescript
+// Check for multiple event types
+function containsEvent(
+  filter: BloomFilter,
+  eventSignatures: string[]
+): boolean {
+  for (const sig of eventSignatures) {
+    const topic = keccak256(new TextEncoder().encode(sig))
+    if (filter.contains(topic)) return true
+  }
+  return false
+}
+
+// Usage
+const events = [
+  "Transfer(address,address,uint256)",
+  "Approval(address,address,uint256)",
+  "Swap(address,uint256,uint256,uint256,uint256,address)"
+]
+
+if (containsEvent(blockFilter, events)) {
+  // Block might contain one of these events
+}
+```
+
+### Combined Address and Topic Queries
+
+```typescript
+// Check if block contains address AND topic
+function containsBoth(
+  filter: BloomFilter,
+  address: Address,
+  topic: Uint8Array
+): boolean {
+  return filter.contains(address) && filter.contains(topic)
+}
+
+// Check if block contains address OR topic
+function containsEither(
+  filter: BloomFilter,
+  address: Address,
+  topic: Uint8Array
+): boolean {
+  return filter.contains(address) || filter.contains(topic)
+}
+
+// Usage: Find Transfer events from specific address
+const transferTopic = keccak256(
+  new TextEncoder().encode("Transfer(address,address,uint256)")
+)
+const targetAddress = Address.from("0x...")
+
+if (containsBoth(blockFilter, targetAddress, transferTopic)) {
+  // Block might contain Transfer events from this address
+  const logs = await fetchLogs(block, targetAddress, [transferTopic])
+}
+```
+
+## Performance Characteristics
+
+### Contains Performance
+
+```typescript
+// Time complexity: O(k)
+// Space complexity: O(1)
+
+const filter = BloomFilter.create(2048, 3)  // k=3
+
+// Each contains() performs:
+// - 3 hash computations
+// - 3 byte reads
+// - 3 bit checks
+
+filter.contains(item)  // ~O(3) operations
+```
+
+### isEmpty Performance
+
+```typescript
+// Time complexity: O(m/8)
+// Space complexity: O(1)
+
+const filter = BloomFilter.create(2048, 3)  // 256 bytes
+
+// isEmpty() checks all bytes:
+// - 256 byte reads
+// - 256 zero comparisons
+
+filter.isEmpty()  // ~O(256) operations
+```
+
+### Optimization Tips
+
+```typescript
+// Cache isEmpty result if checking repeatedly
+class OptimizedFilter {
+  private filter: BloomFilter
+  private cachedIsEmpty: boolean | null = null
+
+  constructor(filter: BloomFilter) {
+    this.filter = filter
+  }
+
+  contains(item: Uint8Array): boolean {
+    // Quick check: if empty, always false
+    if (this.isEmpty()) return false
+    return this.filter.contains(item)
+  }
+
+  isEmpty(): boolean {
+    if (this.cachedIsEmpty === null) {
+      this.cachedIsEmpty = this.filter.isEmpty()
+    }
+    return this.cachedIsEmpty
+  }
+
+  add(item: Uint8Array): void {
+    this.filter.add(item)
+    this.cachedIsEmpty = false  // Invalidate cache
+  }
+}
+```
+
+## Tree-Shakeable Usage
+
+```typescript
+import { contains, isEmpty } from '@tevm/voltaire/BrandedBloomFilter'
+import type { BrandedBloomFilter } from '@tevm/voltaire/BrandedBloomFilter'
+
+// Tree-shakeable queries
+const filter: BrandedBloomFilter = create(2048, 3)
+
+const hasItem = contains(filter, item)  // boolean
+const empty = isEmpty(filter)           // boolean
+
+// Functional composition
+const isNonEmptyAndContains = (f: BrandedBloomFilter, item: Uint8Array) =>
+  !isEmpty(f) && contains(f, item)
+```
+
+See [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) for complete functional API.
+
+## Understanding False Positive Rates
+
+False positive probability increases with:
+1. Number of items added (`n`)
+2. Smaller filter size (`m`)
+3. Fewer hash functions (`k`)
+
+```typescript
+// False positive probability ≈ (1 - e^(-kn/m))^k
+
+// Example: Standard Ethereum filter
+const filter = BloomFilter.create(2048, 3)  // m=2048, k=3
+
+// With 50 items added:
+// P(false positive) ≈ (1 - e^(-3*50/2048))^3 ≈ 0.045 (4.5%)
+
+// Practical implications:
+let falsePositives = 0
+const testItems = 1000
+
+for (let i = 0; i < testItems; i++) {
+  const item = new TextEncoder().encode(`item-${i}`)
+  if (filter.contains(item)) {
+    falsePositives++
+  }
+}
+
+console.log(`False positive rate: ${(falsePositives / testItems * 100).toFixed(1)}%`)
+// Expected: ~4-5%
+```
+
+See [Algorithm](/primitives/bloomfilter/algorithm) for detailed mathematical analysis.
+
+## Related
+
+- [Operations](/primitives/bloomfilter/operations) - Adding items and merging
+- [Algorithm](/primitives/bloomfilter/algorithm) - Understanding false positives
+- [Log Filtering](/primitives/bloomfilter/log-filtering) - Ethereum query patterns
+- [Usage Patterns](/primitives/bloomfilter/usage-patterns) - Advanced query strategies
+- [BrandedBloomFilter](/primitives/bloomfilter/branded-bloomfilter) - Tree-shakeable API

@@ -1,0 +1,56 @@
+---
+title: Bytecode.toHex
+description: Convert bytecode to hex string with 0x prefix
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.toHex(): Hex`
+
+Convert bytecode to hex string with `0x` prefix.
+
+**Returns:** `Hex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code = Bytecode.fromUint8Array(new Uint8Array([0x60, 0x01]))
+const hex = code.toHex()
+console.log(hex)  // "0x6001"
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/toHex.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/toHex.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `toHex(bytecode: BrandedBytecode): Hex`
+
+Convert bytecode to hex string with `0x` prefix.
+
+**Parameters:**
+- `bytecode: BrandedBytecode` - Bytecode to convert
+
+**Returns:** `Hex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code = Bytecode.fromUint8Array(new Uint8Array([0x60, 0x01]))
+const hex = Bytecode.toHex(code)
+console.log(hex)  // "0x6001"
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/toHex.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/toHex.js)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [fromHex](/primitives/bytecode/fromhex) - Parse hex string to bytecode

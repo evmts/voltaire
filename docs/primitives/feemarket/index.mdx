@@ -1,0 +1,266 @@
+---
+title: "FeeMarket"
+---
+
+# FeeMarket
+
+Type-safe Ethereum fee market calculations for EIP-1559 and EIP-4844.
+
+## Overview
+
+FeeMarket provides complete fee calculation and projection for Ethereum's two fee markets:
+
+- **EIP-1559**: Dynamic base fee adjusting based on block utilization (gas)
+- **EIP-4844**: Exponential blob fee pricing for data availability (blobs)
+
+### Fee Market Mechanics
+
+**EIP-1559 Base Fee Adjustment:**
+```
+Block utilization determines base fee direction:
+
+Under target (50% utilization): base fee decreases by 12.5%
+At target:                      base fee stays same
+Above target:                   base fee increases by 12.5%
+
+Example: 1 gwei base fee
+├─ 0% utilization → 0.875 gwei (12.5% decrease)
+├─ 50% utilization → 1.0 gwei (no change)
+└─ 100% utilization → 1.125 gwei (12.5% increase)
+```
+
+**EIP-4844 Blob Fee Adjustment:**
+```
+Blob target: 3 blobs/block (393,216 gas)
+Max per block: 6 blobs
+
+Under target: blob base fee decreases
+At target:    blob base fee stable
+Above target: blob base fee increases exponentially
+
+Min blob fee: 1 wei
+Max: Unbounded (but exponential, rarely exceeds gwei range)
+```
+
+## Quick Start
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// Calculate next base fee after current block
+const nextBaseFee = FeeMarket.calculateBaseFee(
+  15_000_000n, // current block gas used (50% of 30M limit)
+  30_000_000n, // current block gas limit
+  1_000_000_000n // current base fee (1 gwei)
+);
+// Result: 1_000_000_000n (no change at target)
+
+// Calculate blob base fee from excess blob gas
+const blobBaseFee = FeeMarket.calculateBlobBaseFee(
+  262_144n // excess blob gas (2 blobs above target)
+);
+
+// Calculate what you'll actually pay
+const txFee = FeeMarket.calculateTxFee({
+  maxFeePerGas: 2_000_000_000n,      // Your max (2 gwei)
+  maxPriorityFeePerGas: 1_000_000_000n, // Your tip (1 gwei)
+  baseFee: 1_000_000_000n            // Current base fee (1 gwei)
+});
+// txFee.effectiveGasPrice = 1_800_000_000n (min of max and base+tip)
+// You pay: 1_800_000_000n × gas_used
+```
+
+### Transaction Cost Breakdown
+
+```typescript
+// 21,000 gas transfer with above fees:
+const gasUsed = 21_000n;
+const totalCost = txFee.effectiveGasPrice * gasUsed;
+// = 1_800_000_000n × 21_000 = 37,800,000,000 wei = 0.0378 ETH
+```
+
+## Core Features
+
+### State Management
+- [State](./types.mdx#state) - Complete block fee market state
+- [nextState](./calculations.mdx#nextstate) - Calculate next block state
+- [validateState](./utilities.mdx#validatestate) - Validate state parameters
+
+### EIP-1559 (Base Fees)
+- [calculateBaseFee](./eip1559.mdx#calculatebasefee) - Next block base fee
+- [getGasTarget](./eip1559.mdx#getgastarget) - Block gas target
+- [isAboveGasTarget](./eip1559.mdx#isabovegastarget) - Check utilization
+
+### EIP-4844 (Blob Fees)
+- [calculateBlobBaseFee](./eip4844.mdx#calculateblobbasefee) - Blob base fee
+- [calculateExcessBlobGas](./eip4844.mdx#calculateexcessblobgas) - Excess blob gas
+- [getBlobBaseFee](./eip4844.mdx#getblobbasefee) - Current blob fee from state
+
+### Transaction Fees
+- [calculateTxFee](./calculations.mdx#calculatetxfee) - EIP-1559 transaction fee
+- [calculateBlobTxFee](./calculations.mdx#calculateblobtxfee) - Blob transaction fee
+- [canIncludeTx](./calculations.mdx#canincludetx) - Check if tx meets minimum fees
+
+### Projections
+- [projectBaseFees](./calculations.mdx#projectbasefees) - Project future base fees
+
+### Validation
+- [validateTxFeeParams](./utilities.mdx#validatetxfeeparams) - Validate tx parameters
+- [validateState](./utilities.mdx#validatestate) - Validate block state
+
+## Constants
+
+### EIP-1559
+```typescript
+FeeMarket.Eip1559.MIN_BASE_FEE                  // 7n wei
+FeeMarket.Eip1559.BASE_FEE_CHANGE_DENOMINATOR   // 8n (12.5%)
+FeeMarket.Eip1559.ELASTICITY_MULTIPLIER         // 2n (target = limit/2)
+```
+
+See [constants.mdx#eip1559](./constants.mdx#eip1559)
+
+### EIP-4844
+```typescript
+FeeMarket.Eip4844.MIN_BLOB_BASE_FEE              // 1n wei
+FeeMarket.Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION  // 3338477n
+FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK      // 393216n (3 blobs)
+FeeMarket.Eip4844.BLOB_GAS_PER_BLOB              // 131072n
+FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK            // 6n
+```
+
+See [constants.mdx#eip4844](./constants.mdx#eip4844)
+
+## Types
+
+### Core Types
+- [State](./types.mdx#state) - Block fee market state
+- [Eip1559State](./types.mdx#eip1559state) - EIP-1559 state subset
+- [Eip4844State](./types.mdx#eip4844state) - EIP-4844 state subset
+
+### Transaction Types
+- [TxFeeParams](./types.mdx#txfeeparams) - Transaction fee parameters
+- [BlobTxFeeParams](./types.mdx#blobtxfeeparams) - Blob transaction fee parameters
+- [TxFee](./types.mdx#txfee) - Transaction fee result
+- [BlobTxFee](./types.mdx#blobtxfee) - Blob transaction fee result
+
+## Usage Patterns
+
+See [usage-patterns.mdx](./usage-patterns.mdx) for common patterns:
+- Estimating next base fee
+- Checking transaction inclusion
+- Calculating transaction costs
+- Blob transaction fees
+- Fee projections
+- Monitoring utilization
+
+## BrandedFeeMarket
+
+See [branded-feemarket.mdx](./branded-feemarket.mdx) for tree-shakable namespace functions.
+
+## WASM Support
+
+Pure TypeScript implementation is optimal for FeeMarket. See [wasm.mdx](./wasm.mdx) for details.
+
+## Fee Strategy Guide
+
+### Setting Fees Based on Urgency
+
+| Urgency | Strategy | Base Fee Buffer | Priority Tip | Use Case |
+|---------|----------|-----------------|--------------|----------|
+| **Low** | Batch/delayed | Current + 0% | 0.1-0.5 gwei | Not time-sensitive, can wait hours |
+| **Standard** | Normal | Projected + 0.5 gwei | 1-2 gwei | Regular transactions, market rate |
+| **High** | Next block | Projected × 1.5 | 2-5 gwei | Time-critical (liquidation, MEV) |
+| **Urgent** | ASAP | Projected × 2-3 | 5+ gwei | Extreme urgency (emergency) |
+
+### How maxFeePerGas Works
+
+```typescript
+// User sets: maxFeePerGas = 2 gwei, maxPriorityFeePerGas = 1 gwei
+
+// Scenario 1: Base fee rises to 1.5 gwei
+// effectiveGasPrice = min(2.0, 1.5 + 1.0) = 2.0 gwei ✓ Included
+// tip paid = 2.0 - 1.5 = 0.5 gwei (reduced tip)
+
+// Scenario 2: Base fee rises to 1.8 gwei
+// effectiveGasPrice = min(2.0, 1.8 + 1.0) = 2.0 gwei ✓ Included
+// tip paid = 2.0 - 1.8 = 0.2 gwei (further reduced)
+
+// Scenario 3: Base fee rises to 2.1 gwei
+// effectiveGasPrice = min(2.0, 2.1 + 1.0) = 2.0 gwei ❌ REJECTED
+// Transaction never included (base fee alone > maxFee)
+```
+
+### EIP-4844 Blob Fee Dynamics
+
+```typescript
+// Blob fee increases exponentially with excess blob gas
+// Each blob costs 131,072 gas
+
+// At target (3 blobs):
+blobBaseFee = 1 wei
+
+// 4 blobs (1 above target):
+blobBaseFee = ~1.1 wei
+
+// 6 blobs (max, 3 above target):
+blobBaseFee = ~1.4 wei
+
+// Under heavy load (prolonged high usage):
+blobBaseFee = can spike to hundreds or thousands of wei per gas
+```
+
+**Example blob transaction cost:**
+```
+3 blobs × 131,072 gas/blob = 393,216 blob gas
+At 50 wei/blob gas: 393,216 × 50 = 19,660,800 wei (~0.02 ETH)
+```
+
+## Gas Optimization Tips
+
+1. **Monitor base fee trend** before submitting
+   - Use `projectBaseFees()` to predict next blocks
+   - Wait if fees trending downward
+   - Submit immediately if trending up
+
+2. **Set maxFeePerGas conservatively**
+   - Always include buffer for market spikes
+   - Formula: `projected_base_fee × 1.5 + 1_000_000_000n`
+
+3. **Adjust maxPriorityFeePerGas for urgency**
+   - Low urgency: 0.1-0.5 gwei
+   - Normal: 1-2 gwei
+   - High: 2-5 gwei
+   - Don't set too high (wastes money, doesn't help inclusion)
+
+4. **For blob transactions**
+   - Monitor blobGasUsed vs target
+   - When blobs above target, fees spike exponentially
+   - Best time: when blobs < target
+
+5. **Use RPC estimates as starting point**
+   - eth_gasPrice: current base fee
+   - eth_maxPriorityFeePerGas: network average tip
+   - Adjust up/down based on urgency
+
+## Performance
+
+- `calculateBaseFee`: ~4M ops/sec
+- `calculateBlobBaseFee`: ~100K ops/sec
+- `calculateTxFee`: ~20M ops/sec
+- `nextState`: ~2M ops/sec
+- `projectBaseFees`: ~1M ops/sec per block
+
+See `FeeMarket.bench.ts` for detailed benchmarks.
+
+## References
+
+- [EIP-1559: Fee market change for ETH 1.0 chain](https://eips.ethereum.org/EIPS/eip-1559)
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [Fee Estimation Guide](./usage-patterns.mdx) - Real-world patterns
+
+## Related
+
+- [Address](../Address/Address.js.md) - Ethereum addresses
+- [Transaction](../Transaction/) - Transaction types
+- [Uint256](../Uint256/) - 256-bit unsigned integers
+- [Hex](../Hex/) - Hex string utilities

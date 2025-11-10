@@ -1,0 +1,538 @@
+---
+title: "EIP-2098 Compact Signatures"
+---
+
+# EIP-2098: Compact Signature Representation
+
+Space-efficient signature format that embeds the recovery ID in the s component.
+
+## Overview
+
+[EIP-2098](https://eips.ethereum.org/EIPS/eip-2098) defines a compact 64-byte signature format that includes recovery information by utilizing the highest bit of the s component. This reduces signature size from 65 bytes to 64 bytes while preserving recovery capability.
+
+**Benefits:**
+- 🔹 64 bytes instead of 65 bytes (1.5% space savings)
+- 🔹 Preserves recovery functionality
+- 🔹 Compatible with existing ECDSA signatures
+- 🔹 Reduces gas costs in smart contracts
+
+## Format Structure
+
+### Standard (65 bytes)
+```
+[0-31]   r (32 bytes)
+[32-63]  s (32 bytes)
+[64]     v (1 byte: 27 or 28)
+```
+
+### EIP-2098 Compact (64 bytes)
+```
+[0-31]   r (32 bytes)
+[32-63]  s' (32 bytes with embedded yParity)
+
+where: s'[0] = s[0] | (yParity << 7)
+       yParity = v - 27 (either 0 or 1)
+```
+
+## Encoding
+
+### Compact Encoding Process
+
+```typescript
+import { Signature } from '@tevm/voltaire';
+
+function toEIP2098(sig: BrandedSignature): Uint8Array {
+  // Get components
+  const r = Signature.getR(sig);
+  const s = Signature.getS(sig);
+  const v = Signature.getV(sig);
+
+  if (v === undefined) {
+    throw new Error('Recovery ID required for EIP-2098');
+  }
+
+  // Calculate yParity (0 or 1)
+  const yParity = v === 27 ? 0 : 1;
+
+  // Create compact signature
+  const compact = new Uint8Array(64);
+  compact.set(r, 0);
+  compact.set(s, 32);
+
+  // Embed yParity in highest bit of s
+  compact[32] |= (yParity << 7);
+
+  return compact;
+}
+
+// Example
+const sig = Signature.fromSecp256k1(r, s, 27);
+const compact = toEIP2098(sig);
+console.log(compact.length); // 64 bytes
+```
+
+### Decoding Process
+
+```typescript
+function fromEIP2098(compact: Uint8Array): BrandedSignature {
+  if (compact.length !== 64) {
+    throw new Error('EIP-2098 signature must be 64 bytes');
+  }
+
+  // Extract r
+  const r = compact.slice(0, 32);
+
+  // Extract s and yParity
+  const sWithParity = compact.slice(32, 64);
+  const yParity = sWithParity[0] >> 7; // Extract high bit
+
+  // Clear high bit to get s
+  const s = new Uint8Array(sWithParity);
+  s[0] &= 0x7f; // Clear highest bit
+
+  // Calculate v
+  const v = 27 + yParity;
+
+  return Signature.fromSecp256k1(r, s, v);
+}
+
+// Example
+const compact = new Uint8Array(64); // From contract or API
+const sig = fromEIP2098(compact);
+console.log(Signature.getV(sig)); // 27 or 28
+```
+
+## Validation
+
+### Check if Signature is EIP-2098 Compact
+
+```typescript
+function isEIP2098(bytes: Uint8Array): boolean {
+  // Must be exactly 64 bytes
+  if (bytes.length !== 64) {
+    return false;
+  }
+
+  // Check if highest bit of s is set (indicates embedded yParity)
+  // Note: This is a heuristic - not definitive
+  const sFirstByte = bytes[32];
+  return (sFirstByte & 0x80) !== 0;
+}
+```
+
+### Canonical Form Requirement
+
+EIP-2098 signatures MUST be canonical (low-s form) because the high bit of s is used for yParity:
+
+```typescript
+function validateEIP2098(compact: Uint8Array): boolean {
+  const sig = fromEIP2098(compact);
+
+  // Must be canonical (s ≤ n/2)
+  if (!Signature.isCanonical(sig)) {
+    throw new Error('EIP-2098 requires canonical signatures');
+  }
+
+  return true;
+}
+```
+
+## Smart Contract Usage
+
+### Solidity Example
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract EIP2098Verifier {
+    /**
+     * @dev Verify EIP-2098 compact signature
+     * @param hash Message hash
+     * @param compactSig 64-byte compact signature (r + s with embedded yParity)
+     * @return signer Recovered address
+     */
+    function verifyCompact(
+        bytes32 hash,
+        bytes memory compactSig
+    ) public pure returns (address) {
+        require(compactSig.length == 64, "Invalid signature length");
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // Extract r (first 32 bytes)
+        assembly {
+            r := mload(add(compactSig, 32))
+        }
+
+        // Extract s and yParity (last 32 bytes)
+        bytes32 sWithParity;
+        assembly {
+            sWithParity := mload(add(compactSig, 64))
+        }
+
+        // Extract yParity from highest bit
+        v = uint8(sWithParity[0] >> 7) + 27;
+
+        // Clear highest bit to get s
+        s = bytes32(uint256(sWithParity) & 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+
+        // Recover signer
+        return ecrecover(hash, v, r, s);
+    }
+
+    /**
+     * @dev Convert standard signature to EIP-2098
+     * @param r Signature r component
+     * @param s Signature s component
+     * @param v Recovery ID (27 or 28)
+     * @return compact 64-byte compact signature
+     */
+    function toCompact(
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) public pure returns (bytes memory) {
+        require(v == 27 || v == 28, "Invalid v");
+
+        // Calculate yParity
+        uint8 yParity = v - 27;
+
+        // Embed yParity in highest bit of s
+        bytes32 sWithParity = bytes32(uint256(s) | (uint256(yParity) << 255));
+
+        // Concatenate r and s
+        return abi.encodePacked(r, sWithParity);
+    }
+}
+```
+
+### Gas Savings
+
+```solidity
+// Standard signature (65 bytes)
+function verifyStandard(
+    bytes32 hash,
+    bytes memory signature
+) public pure returns (address) {
+    require(signature.length == 65);
+
+    bytes32 r;
+    bytes32 s;
+    uint8 v;
+
+    assembly {
+        r := mload(add(signature, 32))
+        s := mload(add(signature, 64))
+        v := byte(0, mload(add(signature, 96)))
+    }
+
+    return ecrecover(hash, v, r, s);
+}
+// Calldata cost: 65 bytes * 16 gas/byte = 1,040 gas
+
+// EIP-2098 compact (64 bytes)
+function verifyCompact(
+    bytes32 hash,
+    bytes memory compactSig
+) public pure returns (address) {
+    // ... (as shown above)
+}
+// Calldata cost: 64 bytes * 16 gas/byte = 1,024 gas
+// Savings: 16 gas per signature
+```
+
+## Conversion Utilities
+
+### Bidirectional Conversion
+
+```typescript
+class EIP2098 {
+  /**
+   * Convert standard signature to EIP-2098 compact
+   */
+  static toCompact(sig: BrandedSignature): Uint8Array {
+    const r = Signature.getR(sig);
+    const s = Signature.getS(sig);
+    const v = Signature.getV(sig);
+
+    if (v === undefined) {
+      throw new Error('Recovery ID required');
+    }
+
+    // Ensure canonical (required for EIP-2098)
+    if (!Signature.isCanonical(sig)) {
+      sig = Signature.normalize(sig);
+    }
+
+    const yParity = v === 27 ? 0 : 1;
+    const compact = new Uint8Array(64);
+
+    compact.set(r, 0);
+    compact.set(s, 32);
+    compact[32] |= (yParity << 7);
+
+    return compact;
+  }
+
+  /**
+   * Convert EIP-2098 compact to standard signature
+   */
+  static fromCompact(compact: Uint8Array): BrandedSignature {
+    if (compact.length !== 64) {
+      throw new Error('EIP-2098 must be 64 bytes');
+    }
+
+    const r = compact.slice(0, 32);
+    const sWithParity = compact.slice(32, 64);
+
+    // Extract yParity and s
+    const yParity = sWithParity[0] >> 7;
+    const s = new Uint8Array(sWithParity);
+    s[0] &= 0x7f;
+
+    const v = 27 + yParity;
+
+    return Signature.fromSecp256k1(r, s, v);
+  }
+
+  /**
+   * Check if bytes are valid EIP-2098
+   */
+  static isValid(bytes: Uint8Array): boolean {
+    if (bytes.length !== 64) return false;
+
+    try {
+      const sig = this.fromCompact(bytes);
+      return Signature.isCanonical(sig);
+    } catch {
+      return false;
+    }
+  }
+}
+```
+
+## Real-World Examples
+
+### MetaMask Personal Sign
+
+```typescript
+// User signs message with MetaMask
+const message = 'Sign this message';
+const signature = await ethereum.request({
+  method: 'personal_sign',
+  params: [message, account]
+});
+
+// Parse signature (65 bytes: r + s + v)
+const sig = Signature.from(Hex.toBytes(signature));
+
+// Convert to EIP-2098 compact
+const compact = EIP2098.toCompact(sig);
+
+// Submit to contract (saves gas)
+await contract.verifyCompact(messageHash, compact);
+```
+
+### API Response
+
+```typescript
+// API returns compact signature
+const response = await fetch('/api/sign', {
+  method: 'POST',
+  body: JSON.stringify({ message })
+});
+
+const { compactSignature } = await response.json();
+
+// Parse EIP-2098 compact
+const compact = Hex.toBytes(compactSignature);
+const sig = EIP2098.fromCompact(compact);
+
+// Use standard signature API
+const signer = Secp256k1.recoverAddress(sig, messageHash);
+```
+
+### Batch Verification
+
+```typescript
+// Verify multiple EIP-2098 signatures efficiently
+async function verifyBatch(
+  messages: Uint8Array[],
+  compactSignatures: Uint8Array[]
+): Promise<Address[]> {
+  return Promise.all(
+    messages.map(async (msg, i) => {
+      const hash = keccak256(msg);
+      const sig = EIP2098.fromCompact(compactSignatures[i]);
+      return Secp256k1.recoverAddress(sig, hash);
+    })
+  );
+}
+
+// Example
+const signatures = [
+  Hex.toBytes('0x1234...'), // 64 bytes each
+  Hex.toBytes('0x5678...'),
+  Hex.toBytes('0x9abc...')
+];
+
+const signers = await verifyBatch(messages, signatures);
+```
+
+## Compatibility
+
+### EIP-155 Chain ID Encoding
+
+EIP-2098 uses yParity (0 or 1) instead of full v value. For EIP-155 signatures:
+
+```typescript
+function eip155ToCompact(
+  r: Uint8Array,
+  s: Uint8Array,
+  v: number, // EIP-155 encoded: chainId * 2 + 35 + yParity
+  chainId: number
+): Uint8Array {
+  // Extract yParity from EIP-155 v
+  const yParity = (v - 35 - chainId * 2) % 2;
+
+  // Create standard v
+  const standardV = 27 + yParity;
+
+  // Create signature
+  const sig = Signature.fromSecp256k1(r, s, standardV);
+
+  // Convert to EIP-2098
+  return EIP2098.toCompact(sig);
+}
+
+// Example: Mainnet (chainId = 1)
+const v = 37; // EIP-155 encoded (yParity = 0)
+const compact = eip155ToCompact(r, s, v, 1);
+```
+
+### Backwards Compatibility
+
+```typescript
+// Support both formats
+function parseSignature(bytes: Uint8Array): BrandedSignature {
+  if (bytes.length === 64) {
+    // Try EIP-2098 compact
+    return EIP2098.fromCompact(bytes);
+  } else if (bytes.length === 65) {
+    // Standard compact with v
+    return Signature.fromCompact(bytes, 'secp256k1');
+  } else {
+    throw new Error('Invalid signature length');
+  }
+}
+```
+
+## Security Considerations
+
+### Canonical Requirement
+
+```typescript
+// EIP-2098 requires canonical signatures
+const sig = Signature.fromSecp256k1(r, sHigh, 27);
+
+if (!Signature.isCanonical(sig)) {
+  // MUST normalize before converting to EIP-2098
+  sig = Signature.normalize(sig);
+}
+
+const compact = EIP2098.toCompact(sig);
+```
+
+**Why?** The highest bit of s is used for yParity. Non-canonical signatures have high s values that would conflict.
+
+### High Bit Validation
+
+```typescript
+// Validate s doesn't have high bit set naturally
+function validateSValue(s: Uint8Array): boolean {
+  // First byte should be < 0x80 for canonical signatures
+  return s[0] < 0x80;
+}
+
+const s = Signature.getS(sig);
+if (!validateSValue(s)) {
+  throw new Error('Signature not canonical - cannot use EIP-2098');
+}
+```
+
+### Malleability Protection
+
+```typescript
+// Always normalize before EIP-2098 encoding
+function safeToEIP2098(sig: BrandedSignature): Uint8Array {
+  // Normalize to prevent malleability
+  const canonical = Signature.normalize(sig);
+
+  // Verify canonical
+  if (!Signature.isCanonical(canonical)) {
+    throw new Error('Failed to normalize signature');
+  }
+
+  return EIP2098.toCompact(canonical);
+}
+```
+
+## Performance
+
+### Space Savings
+
+```typescript
+// Standard signature
+const standard = new Uint8Array(65); // r + s + v
+console.log(standard.length); // 65 bytes
+
+// EIP-2098 compact
+const compact = new Uint8Array(64); // r + s'
+console.log(compact.length); // 64 bytes
+
+// Savings
+console.log((1 - 64/65) * 100); // 1.54% space reduction
+```
+
+### Gas Savings (Ethereum)
+
+```typescript
+// Calldata gas cost
+const CALLDATA_BYTE_COST = 16; // Non-zero byte
+
+// Standard (65 bytes)
+const standardGas = 65 * CALLDATA_BYTE_COST; // 1,040 gas
+
+// EIP-2098 (64 bytes)
+const compactGas = 64 * CALLDATA_BYTE_COST; // 1,024 gas
+
+// Savings
+console.log(standardGas - compactGas); // 16 gas per signature
+```
+
+### Encoding Performance
+
+```typescript
+// Benchmark (approximate)
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// To EIP-2098
+console.time('toEIP2098');
+const compact = EIP2098.toCompact(sig);
+console.timeEnd('toEIP2098'); // ~0.001-0.002ms
+
+// From EIP-2098
+console.time('fromEIP2098');
+const decoded = EIP2098.fromCompact(compact);
+console.timeEnd('fromEIP2098'); // ~0.001-0.002ms
+```
+
+## See Also
+
+- [Signature Formats](./formats.mdx) - Format comparison
+- [Signature Validation](./validation.mdx) - Canonical signatures
+- [EIP-2098 Specification](https://eips.ethereum.org/EIPS/eip-2098)
+- [Signature Constructors](./constructors.mdx) - Creating signatures

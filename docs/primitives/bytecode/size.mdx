@@ -1,0 +1,50 @@
+---
+title: Bytecode.size
+description: Get bytecode size in bytes
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.size(): number`
+
+Get bytecode size in bytes.
+
+**Returns:** `number` - Size in bytes
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code = Bytecode.fromHex("0x6001")
+console.log(code.size())  // 2
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/size.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/size.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `size(bytecode: BrandedBytecode): number`
+
+Get bytecode size in bytes.
+
+**Parameters:**
+- `bytecode: BrandedBytecode` - Bytecode to measure
+
+**Returns:** `number` - Size in bytes
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code = Bytecode.fromHex("0x6001")
+console.log(size(code))  // 2
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/size.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/size.js)
+
+</Tab>
+</Tabs>

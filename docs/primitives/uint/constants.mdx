@@ -1,0 +1,423 @@
+---
+title: Uint Constants
+description: Uint256 constants and their usage
+---
+
+# Constants
+
+Predefined constants for common Uint256 values and bounds.
+
+## Boundary Constants
+
+### `Uint.MAX`
+
+Maximum Uint256 value: 2^256 - 1
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.MAX
+// 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+
+// All bits set
+Uint.MAX.toHex()
+// "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+
+// Use in validation
+if (value.greaterThan(Uint.MAX)) {
+  throw new Error("Value exceeds uint256 maximum")
+}
+
+// Overflow detection
+const sum = a.plus(b)
+if (sum.lessThan(a)) {
+  console.log("Addition overflowed")
+}
+
+// Bit mask (all 256 bits)
+const masked = value.bitwiseAnd(Uint.MAX)  // Identity operation
+```
+
+**Value:** `(2^256 - 1)` = `115792089237316195423570985008687907853269984665640564039457584007913129639935n`
+
+**Binary:** All 256 bits set to 1
+
+**Hex:** `0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff`
+
+**Type:** `BrandedUint`
+
+Source: [constants.ts:10-11](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/constants.ts#L10-L11)
+
+### `Uint.MIN`
+
+Minimum Uint256 value: 0
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.MIN  // 0n
+
+// Equivalent to
+Uint.ZERO  // 0n
+
+// Use in range validation
+if (value.lessThan(Uint.MIN)) {
+  throw new Error("Value below uint256 minimum")  // Never happens
+}
+
+// Range checking
+function inRange(value: BrandedUint): boolean {
+  return value.greaterThanOrEqual(Uint.MIN) &&
+         value.lessThanOrEqual(Uint.MAX)
+}
+```
+
+**Value:** `0`
+
+**Binary:** All 256 bits set to 0
+
+**Hex:** `0x0000000000000000000000000000000000000000000000000000000000000000`
+
+**Type:** `BrandedUint`
+
+**Note:** Identical to `Uint.ZERO`. Provided for symmetry with `MAX`.
+
+Source: [constants.ts:14-16](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/constants.ts#L14-L16)
+
+## Common Values
+
+### `Uint.ZERO`
+
+Zero value: 0
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.ZERO  // 0n
+
+// Identity operations
+value.plus(Uint.ZERO)      // value
+value.minus(Uint.ZERO)     // value
+value.times(Uint.ZERO)     // ZERO
+value.bitwiseOr(Uint.ZERO) // value
+value.bitwiseXor(Uint.ZERO) // value
+
+// Zero checks
+if (balance.equals(Uint.ZERO)) {
+  console.log("Empty balance")
+}
+
+// Better: use isZero()
+if (balance.isZero()) {
+  console.log("Empty balance")
+}
+
+// Default values
+const defaultAmount = Uint.ZERO
+
+// Guard against division by zero
+if (!divisor.isZero()) {
+  const quotient = dividend.dividedBy(divisor)
+}
+```
+
+**Value:** `0`
+
+**Type:** `BrandedUint`
+
+Source: [constants.ts:18-20](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/constants.ts#L18-L20)
+
+### `Uint.ONE`
+
+One value: 1
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.ONE  // 1n
+
+// Identity operations
+value.times(Uint.ONE)    // value
+value.dividedBy(Uint.ONE) // value
+value.toPower(Uint.ONE)  // value
+
+// Increment/decrement
+const incremented = value.plus(Uint.ONE)
+const decremented = value.minus(Uint.ONE)
+
+// Powers of 2
+const pow2_8 = Uint.ONE.shiftLeft(8)   // 256
+const pow2_10 = Uint.ONE.shiftLeft(10) // 1024
+
+// Bit manipulation
+const bit5 = Uint.ONE.shiftLeft(5)     // Set bit 5
+const mask = Uint.ONE.shiftLeft(8).minus(Uint.ONE)  // 0xff (8-bit mask)
+
+// Counters
+let counter = Uint.ZERO
+counter = counter.plus(Uint.ONE)  // Increment
+```
+
+**Value:** `1`
+
+**Type:** `BrandedUint`
+
+Source: [constants.ts:22-24](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/constants.ts#L22-L24)
+
+## Size Constant
+
+### `Uint.SIZE`
+
+Size in bytes: 32
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+Uint.SIZE  // 32
+
+// Allocate buffer
+const buffer = new Uint8Array(Uint.SIZE)  // 32-byte buffer
+
+// Validate byte array length
+if (bytes.length !== Uint.SIZE) {
+  throw new Error(`Expected ${Uint.SIZE} bytes, got ${bytes.length}`)
+}
+
+// ABI encoding size
+const encoded = value.toAbiEncoded()
+console.log(encoded.length === Uint.SIZE)  // true
+
+// Memory allocation
+const values = new Array(count)
+const totalBytes = count * Uint.SIZE
+
+// Bit count (for reference)
+const totalBits = Uint.SIZE * 8  // 256 bits
+```
+
+**Value:** `32`
+
+**Type:** `number`
+
+**Note:** Uint256 always uses 32 bytes (256 bits) for storage and encoding.
+
+Source: [constants.ts:4-6](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/constants.ts#L4-L6)
+
+## Usage Patterns
+
+### Range Validation
+
+```typescript
+// Validate value is within uint256 range
+function validateUint256(value: bigint): BrandedUint {
+  if (value < Uint.MIN) {
+    throw new Error(`Value ${value} below minimum ${Uint.MIN}`)
+  }
+
+  if (value > Uint.MAX) {
+    throw new Error(`Value ${value} exceeds maximum ${Uint.MAX}`)
+  }
+
+  return value as BrandedUint
+}
+
+// Or use built-in validation
+const result = Uint.tryFrom(value)
+if (result === undefined) {
+  throw new Error("Invalid uint256")
+}
+```
+
+### Default Values
+
+```typescript
+interface Transaction {
+  value: BrandedUint
+  nonce: BrandedUint
+  gasLimit: BrandedUint
+}
+
+// Default transaction
+const defaultTx: Transaction = {
+  value: Uint.ZERO,
+  nonce: Uint.ZERO,
+  gasLimit: Uint.from(21000n)
+}
+
+// Optional values with defaults
+function transfer(
+  amount: BrandedUint = Uint.ZERO,
+  gasPrice: BrandedUint = Uint.ONE
+) {
+  // ...
+}
+```
+
+### Bit Masks
+
+```typescript
+// Create bit masks using constants
+const mask8bit = Uint.from(0xffn)          // 8-bit mask
+const mask16bit = Uint.from(0xffffn)       // 16-bit mask
+const mask32bit = Uint.from(0xffffffffn)   // 32-bit mask
+
+// Or create dynamically
+function createMask(bits: number): BrandedUint {
+  return Uint.ONE.shiftLeft(bits).minus(Uint.ONE)
+}
+
+const mask8 = createMask(8)    // 0xff
+const mask16 = createMask(16)  // 0xffff
+const mask32 = createMask(32)  // 0xffffffff
+```
+
+### Overflow Detection
+
+```typescript
+// Check addition overflow
+function wouldOverflow(a: BrandedUint, b: BrandedUint): boolean {
+  return a.greaterThan(Uint.MAX.minus(b))
+}
+
+// Safe addition
+function safeAdd(a: BrandedUint, b: BrandedUint): BrandedUint | null {
+  if (wouldOverflow(a, b)) {
+    return null  // Would overflow
+  }
+  return a.plus(b)
+}
+
+// Detect overflow after operation
+const sum = a.plus(b)
+if (sum.lessThan(a)) {
+  console.log("Addition overflowed")
+}
+```
+
+### Powers of 2
+
+```typescript
+// Common powers of 2 using ONE
+const pow2_0 = Uint.ONE              // 1
+const pow2_8 = Uint.ONE.shiftLeft(8)  // 256
+const pow2_16 = Uint.ONE.shiftLeft(16) // 65536
+const pow2_32 = Uint.ONE.shiftLeft(32) // 4294967296
+const pow2_64 = Uint.ONE.shiftLeft(64) // 18446744073709551616
+const pow2_128 = Uint.ONE.shiftLeft(128) // 2^128
+const pow2_255 = Uint.ONE.shiftLeft(255) // 2^255 (largest power of 2 in uint256)
+
+// Half of MAX
+const halfMax = Uint.MAX.dividedBy(Uint.from(2n))
+// Or equivalently
+const halfMax2 = Uint.ONE.shiftLeft(255)  // 2^255
+```
+
+### Fixed-Point Arithmetic
+
+```typescript
+// Common scaling factors for fixed-point math
+const WAD = Uint.from(10n ** 18n)  // 18 decimals (like ether)
+const RAY = Uint.from(10n ** 27n)  // 27 decimals (high precision)
+
+function wadMul(a: BrandedUint, b: BrandedUint): BrandedUint {
+  return a.times(b).dividedBy(WAD)
+}
+
+function wadDiv(a: BrandedUint, b: BrandedUint): BrandedUint {
+  return a.times(WAD).dividedBy(b)
+}
+
+// Example: 2.5 * 1.5 = 3.75
+const a = Uint.from(25n * 10n ** 17n)  // 2.5 WAD
+const b = Uint.from(15n * 10n ** 17n)  // 1.5 WAD
+const result = wadMul(a, b)             // 3.75 WAD
+```
+
+### Array Initialization
+
+```typescript
+// Initialize array with zeros
+const zeros = Array(10).fill(Uint.ZERO)
+
+// Initialize array with ones
+const ones = Array(10).fill(Uint.ONE)
+
+// Initialize array with max values
+const maxValues = Array(10).fill(Uint.MAX)
+
+// Initialize array with sequence
+const sequence = Array.from(
+  { length: 10 },
+  (_, i) => Uint.from(BigInt(i))
+)
+// [0n, 1n, 2n, ..., 9n]
+```
+
+### Boundary Testing
+
+```typescript
+// Test edge cases in functions
+function testBoundaries(fn: (value: BrandedUint) => BrandedUint) {
+  // Test with zero
+  console.log("ZERO:", fn(Uint.ZERO))
+
+  // Test with one
+  console.log("ONE:", fn(Uint.ONE))
+
+  // Test with small value
+  console.log("Small:", fn(Uint.from(100n)))
+
+  // Test with large value
+  console.log("Large:", fn(Uint.MAX.dividedBy(Uint.from(2n))))
+
+  // Test with MAX
+  console.log("MAX:", fn(Uint.MAX))
+}
+```
+
+## Mathematical Constants
+
+```typescript
+// Derive common mathematical bounds
+const UINT8_MAX = Uint.from((2n ** 8n) - 1n)    // 255
+const UINT16_MAX = Uint.from((2n ** 16n) - 1n)  // 65535
+const UINT32_MAX = Uint.from((2n ** 32n) - 1n)  // 4294967295
+const UINT64_MAX = Uint.from((2n ** 64n) - 1n)  // 18446744073709551615
+const UINT128_MAX = Uint.from((2n ** 128n) - 1n) // 2^128 - 1
+const UINT256_MAX = Uint.MAX                     // 2^256 - 1
+
+// Common Ethereum values
+const GWEI = Uint.from(10n ** 9n)      // 1 gwei = 10^9 wei
+const ETHER = Uint.from(10n ** 18n)    // 1 ether = 10^18 wei
+
+// Gas limits
+const MIN_GAS = Uint.from(21000n)      // Minimum transaction gas
+const BLOCK_GAS_LIMIT = Uint.from(30_000_000n)  // Typical block gas limit
+```
+
+## Tree-Shakeable Usage
+
+All constants available as tree-shakeable imports:
+
+```typescript
+import {
+  MAX,
+  MIN,
+  ZERO,
+  ONE,
+  SIZE
+} from '@tevm/voltaire/BrandedUint'
+
+const maxValue = MAX     // 2^256 - 1
+const minValue = MIN     // 0
+const zero = ZERO        // 0
+const one = ONE          // 1
+const size = SIZE        // 32
+
+// Use in operations
+const sum = value.plus(ONE)
+const isZero = value.equals(ZERO)
+const isMax = value.equals(MAX)
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

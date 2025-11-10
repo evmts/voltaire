@@ -1,0 +1,378 @@
+---
+title: Ether
+description: User-facing Ethereum denomination (1 quintillion Wei)
+---
+
+# Ether
+
+Primary user-facing Ethereum denomination, equal to 1 quintillion (10^18) Wei.
+
+## Overview
+
+Ether (ETH) is the native cryptocurrency of Ethereum. `Ether.Type` is a [branded](/concepts/branded-types) `Uint256` preventing accidental unit mixing.
+
+**Common usage:** Account balances, transaction values, user-facing amounts.
+
+## Type Definition
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const etherSymbol = Symbol("Ether")
+
+export type Type = Uint.Type & { __brand: typeof etherSymbol }
+```
+
+## Construction
+
+### `Ether.from(value)`
+
+Create Ether from numeric value.
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+
+const ether1 = Ether.from(1n)       // 1 ETH
+const ether2 = Ether.from(10n)      // 10 ETH
+const ether3 = Ether.from(0n)       // 0 ETH
+const ether4 = Ether.from("5")      // String input
+const ether5 = Ether.from(2)        // Number input
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert to Ether
+
+**Returns:** `Ether.Type`
+
+**Note:** Uses `Uint.from` internally for conversion.
+
+Defined in: [primitives/Denomination/Ether.ts:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+
+## Conversions From Other Units
+
+### `Ether.fromWei(wei)`
+
+Convert Wei to Ether (divide by 10^18).
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from '@tevm/voltaire/Ether'
+
+const wei = Wei.from(1_000_000_000_000_000_000n)  // 1 quintillion Wei
+const ether = Ether.fromWei(wei)  // 1n Ether
+
+// Fractional values truncate
+const wei2 = Wei.from(500_000_000_000_000_000n)  // 0.5 ETH in Wei
+const ether2 = Ether.fromWei(wei2)  // 0n (truncates)
+```
+
+**Parameters:**
+- `wei: Wei.Type` - Wei value
+
+**Returns:** `Ether.Type`
+
+**Formula:** `ether = wei / 1_000_000_000_000_000_000` (integer division)
+
+Defined in: [primitives/Denomination/Ether.ts:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+
+### `Ether.fromGwei(gwei)`
+
+Convert Gwei to Ether (divide by 10^9).
+
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Ether from '@tevm/voltaire/Ether'
+
+const gwei = Gwei.from(1_000_000_000n)  // 1 billion Gwei
+const ether = Ether.fromGwei(gwei)  // 1n Ether
+
+// Fractional values truncate
+const gwei2 = Gwei.from(500_000_000n)  // 0.5 ETH in Gwei
+const ether2 = Ether.fromGwei(gwei2)  // 0n (truncates)
+```
+
+**Parameters:**
+- `gwei: Gwei.Type` - Gwei value
+
+**Returns:** `Ether.Type`
+
+**Formula:** `ether = gwei / 1_000_000_000` (integer division)
+
+Defined in: [primitives/Denomination/Ether.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+
+## Conversions To Other Units
+
+### `Ether.toWei(ether)`
+
+Convert Ether to Wei (multiply by 10^18).
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+
+const ether = Ether.from(1n)  // 1 ETH
+const wei = Ether.toWei(ether)  // 1_000_000_000_000_000_000n Wei
+
+const ether2 = Ether.from(5n)  // 5 ETH
+const wei2 = Ether.toWei(ether2)  // 5_000_000_000_000_000_000n Wei
+```
+
+**Parameters:**
+- `ether: Ether.Type` - Ether value
+
+**Returns:** `Wei.Type`
+
+**Formula:** `wei = ether * 1_000_000_000_000_000_000`
+
+Defined in: [primitives/Denomination/Ether.ts:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+
+### `Ether.toGwei(ether)`
+
+Convert Ether to Gwei (multiply by 10^9).
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+
+const ether = Ether.from(1n)  // 1 ETH
+const gwei = Ether.toGwei(ether)  // 1_000_000_000n Gwei
+```
+
+**Parameters:**
+- `ether: Ether.Type` - Ether value
+
+**Returns:** `Gwei.Type`
+
+**Formula:** `gwei = ether * 1_000_000_000`
+
+Defined in: [primitives/Denomination/Ether.ts:29](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+
+## Conversions To Base Type
+
+### `Ether.toU256(ether)`
+
+Convert Ether to raw Uint256 (removes branding).
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const ether = Ether.from(10n)
+const u256 = Ether.toU256(ether)  // Uint.Type (unbranded)
+
+// Can now use with Uint operations
+const doubled = Uint.times(u256, Uint.from(2n))
+```
+
+**Parameters:**
+- `ether: Ether.Type` - Ether value
+
+**Returns:** `Uint.Type`
+
+**Note:** Removes type safety. Use for arithmetic operations requiring `Uint.Type`.
+
+Defined in: [primitives/Denomination/Ether.ts:34](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Ether.ts)
+
+## Usage Examples
+
+### Account Balance
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from '@tevm/voltaire/Wei'
+
+// Get balance from RPC (returns Wei)
+const balanceWei = Wei.from(5_250_000_000_000_000_000n)
+
+// Convert to Ether for display
+const balanceEther = Wei.toEther(balanceWei)  // 5n Ether
+console.log(`Balance: ${balanceEther} ETH`)
+
+// Note: Fractional part truncated (should use Wei for display)
+```
+
+### Transaction Value
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+
+// User wants to send 2 ETH
+const valueEther = Ether.from(2n)
+
+// Transaction requires Wei
+const valueWei = Ether.toWei(valueEther)
+
+const tx = {
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  value: valueWei,  // 2_000_000_000_000_000_000n Wei
+}
+```
+
+### Balance Comparison
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const minimumEther = Ether.from(1n)  // Require at least 1 ETH
+const balanceWei = Wei.from(2_500_000_000_000_000_000n)  // 2.5 ETH in Wei
+
+// Convert to same unit for comparison
+const minimumWei = Ether.toWei(minimumEther)
+const minimumU256 = Wei.toU256(minimumWei)
+const balanceU256 = Wei.toU256(balanceWei)
+
+if (balanceU`256 >= minimumU256`) {
+  console.log("Sufficient balance")
+}
+```
+
+### Total Value Calculation
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// Multiple balances
+const balances = [
+  Ether.from(1n),
+  Ether.from(5n),
+  Ether.from(10n),
+]
+
+// Sum (convert to Uint for arithmetic)
+const total = balances.reduce((sum, balance) => {
+  const sumU256 = Ether.toU256(sum)
+  const balanceU256 = Ether.toU256(balance)
+  const newSum = Uint.plus(sumU256, balanceU256)
+  return Ether.from(newSum)
+}, Ether.from(0n))
+
+console.log(`Total: ${total} ETH`)  // 16 ETH
+```
+
+### Fractional Ether Display
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// Balance has fractional Ether
+const balanceWei = Wei.from(1_250_000_000_000_000_000n)  // 1.25 ETH
+
+const weiPerEther = Uint.from(1_000_000_000_000_000_000n)
+const balanceU256 = Wei.toU256(balanceWei)
+
+const wholePart = Uint.dividedBy(balanceU256, weiPerEther)  // 1n
+const fractionalPart = Uint.modulo(balanceU256, weiPerEther)  // 250000000000000000n
+
+// Format for display
+const etherStr = `${wholePart}.${fractionalPart.toString().padStart(18, '0')}`
+console.log(`Balance: ${etherStr} ETH`)  // "1.250000000000000000 ETH"
+```
+
+## Conversion Constants
+
+```typescript
+// Wei per Ether
+const WEI_PER_ETHER = 1_000_000_000_000_000_000n  // 10^18
+
+// Gwei per Ether
+const GWEI_PER_ETHER = 1_000_000_000n  // 10^9
+```
+
+## Common Ether Values
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+
+// Standard amounts
+const ZERO = Ether.from(0n)
+const ONE = Ether.from(1n)
+const TEN = Ether.from(10n)
+const HUNDRED = Ether.from(100n)
+
+// Minimum balances for contracts
+const MIN_ACCOUNT_BALANCE = Ether.from(1n)
+const MIN_STAKING = Ether.from(32n)  // Validator stake
+```
+
+## Type Safety
+
+Ether type prevents mixing with other denominations:
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+const balance = Ether.from(10n)
+const gasPrice = Gwei.from(50n)
+
+// ✗ Type error - cannot mix Ether and Gwei
+const total = balance + gasPrice
+
+// ✓ Correct - explicit conversion
+const gasPriceEther = Gwei.toEther(gasPrice)
+// (Though this makes little sense - Gwei should stay Gwei for gas)
+```
+
+## Precision Considerations
+
+Ether uses integer arithmetic. For fractional Ether:
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from '@tevm/voltaire/Wei'
+
+// ✗ Fractional Ether lost
+const ether = Ether.from(1n)  // Can only represent whole Ether
+const halfEther = Ether.from(0.5)  // ✗ Not possible
+
+// ✓ Use Wei for fractional values
+const halfEtherWei = Wei.from(500_000_000_000_000_000n)  // 0.5 ETH
+
+// Convert back to Ether when needed
+const ether = Wei.toEther(halfEtherWei)  // 0n (truncates)
+```
+
+**Recommendation:** Store all values in Wei, display in Ether.
+
+## Display Best Practices
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+// Store in Wei
+const balanceWei = Wei.from(1_234_567_890_123_456_789n)
+
+// Display formatted Ether
+function formatEther(wei: Wei.Type): string {
+  const weiStr = wei.toString()
+  const padded = weiStr.padStart(19, '0')  // Ensure 18 decimals + 1
+  const wholePart = padded.slice(0, -18) || '0'
+  const fractionalPart = padded.slice(-18)
+  return `${wholePart}.${fractionalPart} ETH`
+}
+
+console.log(formatEther(balanceWei))  // "1.234567890123456789 ETH"
+```
+
+## WASM Acceleration
+
+Ether conversions available in WebAssembly for performance:
+
+```typescript
+import * as EtherWasm from '@tevm/voltaire/Ether.wasm'
+
+const ether = EtherWasm.from(10n)
+const wei = EtherWasm.toWei(ether)
+```
+
+See [WASM](/primitives/denomination/wasm) for details.
+
+## Related
+
+- [Wei](/primitives/denomination/wei) - Smallest denomination
+- [Gwei](/primitives/denomination/gwei) - Gas price denomination
+- [Conversions](/primitives/denomination/conversions) - Converting between units
+- [Usage Patterns](/primitives/denomination/usage-patterns) - Common patterns
+- [Uint256](/primitives/uint) - Underlying numeric type

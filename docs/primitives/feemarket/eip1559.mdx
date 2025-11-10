@@ -1,0 +1,314 @@
+---
+title: "EIP-1559 Base Fee Calculations"
+---
+
+# EIP-1559 Base Fee Calculations
+
+Dynamic base fee mechanism adjusting based on block gas utilization.
+
+## Overview
+
+EIP-1559 introduced a dynamic base fee that:
+- Targets 50% full blocks (gasLimit / 2)
+- Increases up to 12.5% per block when above target
+- Decreases up to 12.5% per block when below target
+- Enforces minimum of 7 wei
+
+## calculateBaseFee
+
+```typescript
+calculateBaseFee(
+  parentGasUsed: bigint,
+  parentGasLimit: bigint,
+  parentBaseFee: bigint
+): bigint
+```
+
+Calculate next block's base fee using EIP-1559 formula.
+
+**Parameters:**
+- `parentGasUsed` - Gas used in parent block
+- `parentGasLimit` - Gas limit of parent block
+- `parentBaseFee` - Base fee of parent block (wei)
+
+**Returns:** Next block's base fee (wei)
+
+**Formula:**
+```
+gasTarget = gasLimit / ELASTICITY_MULTIPLIER (= gasLimit / 2)
+
+if gasUsed > gasTarget:
+  increase = (baseFee * (gasUsed - gasTarget)) / gasTarget / 8
+  newBaseFee = baseFee + max(increase, 1)
+
+if gasUsed < gasTarget:
+  decrease = (baseFee * (gasTarget - gasUsed)) / gasTarget / 8
+  newBaseFee = max(baseFee - max(decrease, 1), MIN_BASE_FEE)
+
+if gasUsed == gasTarget:
+  newBaseFee = baseFee
+
+Always: newBaseFee >= MIN_BASE_FEE (7 wei)
+```
+
+**Examples:**
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// At target (50% full): unchanged
+const baseFee1 = FeeMarket.calculateBaseFee(
+  15_000_000n,   // 50% of 30M
+  30_000_000n,
+  1_000_000_000n // 1 gwei
+);
+// baseFee1 === 1_000_000_000n
+
+// Full block: maximum increase (12.5%)
+const baseFee2 = FeeMarket.calculateBaseFee(
+  30_000_000n,   // 100% full
+  30_000_000n,
+  1_000_000_000n
+);
+// baseFee2 === 1_125_000_000n (12.5% increase)
+
+// Empty block: decrease
+const baseFee3 = FeeMarket.calculateBaseFee(
+  0n,            // Empty
+  30_000_000n,
+  1_000_000_000n
+);
+// baseFee3 === 1_000_000_000n (stays same for empty blocks)
+
+// Below target: decrease
+const baseFee4 = FeeMarket.calculateBaseFee(
+  7_500_000n,    // 25% full (half of target)
+  30_000_000n,
+  1_000_000_000n
+);
+// baseFee4 < 1_000_000_000n (decreased)
+```
+
+**Edge Cases:**
+
+```typescript
+// Minimum base fee enforced
+const minFee = FeeMarket.calculateBaseFee(0n, 30_000_000n, 10n);
+// minFee >= 7n (MIN_BASE_FEE)
+
+// Very high base fee
+const highFee = FeeMarket.calculateBaseFee(
+  30_000_000n,
+  30_000_000n,
+  100_000_000_000n // 100 gwei
+);
+// highFee === 112_500_000_000n (still 12.5% increase)
+```
+
+## getGasTarget
+
+```typescript
+getGasTarget(state: State): bigint
+```
+
+Get target gas usage for a block (50% of gas limit).
+
+**Parameters:**
+- `state` - Block state with gasLimit
+
+**Returns:** Target gas (gasLimit / 2)
+
+**Example:**
+```typescript
+const state: FeeMarket.State = {
+  gasUsed: 20_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 0n,
+  blobGasUsed: 0n
+};
+
+const target = FeeMarket.getGasTarget(state);
+// target === 15_000_000n (30M / 2)
+```
+
+**State method:**
+```typescript
+const target = FeeMarket.State.getGasTarget.call(state);
+// Same result
+```
+
+## isAboveGasTarget
+
+```typescript
+isAboveGasTarget(state: State): boolean
+```
+
+Check if block gas usage is above target (will increase base fee).
+
+**Parameters:**
+- `state` - Block state
+
+**Returns:** `true` if gasUsed > gasTarget
+
+**Example:**
+```typescript
+const state: FeeMarket.State = {
+  gasUsed: 20_000_000n,   // Above target
+  gasLimit: 30_000_000n,  // Target is 15M
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 0n,
+  blobGasUsed: 0n
+};
+
+const isAbove = FeeMarket.isAboveGasTarget(state);
+// isAbove === true (20M > 15M target)
+
+// Base fee will increase in next block
+const nextState = FeeMarket.nextState(state);
+// nextState.baseFee > state.baseFee
+```
+
+**State method:**
+```typescript
+const isAbove = FeeMarket.State.isAboveGasTarget.call(state);
+// Same result
+```
+
+## Constants
+
+See [constants.mdx#eip1559](./constants.mdx#eip1559):
+
+```typescript
+FeeMarket.Eip1559.MIN_BASE_FEE                  // 7n wei
+FeeMarket.Eip1559.BASE_FEE_CHANGE_DENOMINATOR   // 8n (12.5% = 1/8)
+FeeMarket.Eip1559.ELASTICITY_MULTIPLIER         // 2n (target = limit/2)
+```
+
+## Base Fee Dynamics
+
+### Increase Rate
+
+Block above target by X% → base fee increases by up to X/2 * 12.5%
+
+```typescript
+// 100% full (100% above target = 50% above target of 50%)
+const fee100 = FeeMarket.calculateBaseFee(30_000_000n, 30_000_000n, 1_000_000_000n);
+// Increases by 12.5% (maximum)
+
+// 75% full (50% above target)
+const fee75 = FeeMarket.calculateBaseFee(22_500_000n, 30_000_000n, 1_000_000_000n);
+// Increases by ~6.25%
+
+// 62.5% full (25% above target)
+const fee625 = FeeMarket.calculateBaseFee(18_750_000n, 30_000_000n, 1_000_000_000n);
+// Increases by ~3.125%
+```
+
+### Decrease Rate
+
+Block below target by X% → base fee decreases by up to X/2 * 12.5%
+
+```typescript
+// 0% full (maximum below target)
+const fee0 = FeeMarket.calculateBaseFee(0n, 30_000_000n, 1_000_000_000n);
+// Stays same for empty blocks
+
+// 25% full (50% below target)
+const fee25 = FeeMarket.calculateBaseFee(7_500_000n, 30_000_000n, 1_000_000_000n);
+// Decreases by ~6.25%
+
+// 37.5% full (25% below target)
+const fee375 = FeeMarket.calculateBaseFee(11_250_000n, 30_000_000n, 1_000_000_000n);
+// Decreases by ~3.125%
+```
+
+### Equilibrium
+
+Constant 50% utilization maintains stable base fee:
+
+```typescript
+let baseFee = 1_000_000_000n;
+const gasLimit = 30_000_000n;
+const gasUsed = 15_000_000n; // Exactly at target
+
+for (let i = 0; i < 100; i++) {
+  baseFee = FeeMarket.calculateBaseFee(gasUsed, gasLimit, baseFee);
+}
+// baseFee === 1_000_000_000n (unchanged)
+```
+
+## Projecting Base Fees
+
+See [calculateBaseFee projections](./calculations.mdx#projectbasefees):
+
+```typescript
+// Project 10 blocks with high utilization
+const state: FeeMarket.State = {
+  gasUsed: 0n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n, // 1 gwei
+  excessBlobGas: 0n,
+  blobGasUsed: 0n
+};
+
+const fees = FeeMarket.projectBaseFees(
+  state,
+  10,          // blocks
+  25_000_000n, // 83% full (above target)
+  0n           // no blobs
+);
+
+// fees[0] > 1 gwei (increasing)
+// fees[9] >> 1 gwei (compounded increase)
+```
+
+## Usage Patterns
+
+### Fee Estimation
+
+```typescript
+// Get current state
+const state = getCurrentBlockState();
+
+// Calculate next block's base fee
+const nextState = FeeMarket.nextState(state);
+console.log(`Next base fee: ${FeeMarket.weiToGwei(nextState.baseFee)} gwei`);
+
+// Check if fees are rising
+if (FeeMarket.State.isAboveGasTarget.call(state)) {
+  console.log('⬆ Fees rising - blocks above target');
+} else {
+  console.log('⬇ Fees falling - blocks below target');
+}
+```
+
+### Gas Target Monitoring
+
+```typescript
+const state: FeeMarket.State = { /* ... */ };
+
+const target = FeeMarket.getGasTarget(state);
+const utilization = Number(state.gasUsed * 100n / state.gasLimit);
+const targetPct = Number(state.gasUsed * 100n / target);
+
+console.log(`Gas: ${utilization.toFixed(1)}% of limit`);
+console.log(`Target: ${targetPct.toFixed(1)}% of target (50%)`);
+
+if (state.gasUsed > target) {
+  const abovePct = Number((state.gasUsed - target) * 100n / target);
+  console.log(`${abovePct.toFixed(1)}% above target → base fee rising`);
+}
+```
+
+## Implementation
+
+Location: `/src/primitives/FeeMarket/BrandedFeeMarket/calculateBaseFee.js`
+
+See [branded-feemarket.mdx](./branded-feemarket.mdx) for implementation details.
+
+## References
+
+- [EIP-1559 Specification](https://eips.ethereum.org/EIPS/eip-1559)
+- [constants.mdx](./constants.mdx)
+- [calculations.mdx](./calculations.mdx)

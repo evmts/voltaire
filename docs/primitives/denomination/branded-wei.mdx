@@ -1,0 +1,293 @@
+---
+title: BrandedWei
+description: Data-first branded Wei type with direct Uint8Array methods
+---
+
+# BrandedWei
+
+Data-first branded Wei type - `BrandedUint` representing Wei denomination with zero-overhead runtime.
+
+## Overview
+
+`BrandedWei` is a branded `BrandedUint` (Uint8Array-based) providing compile-time type safety for Wei values. Unlike the namespace API (`Wei.*`), BrandedWei uses direct data representation with minimal wrapping.
+
+## Type Definition
+
+```typescript
+import type { BrandedUint } from '@tevm/voltaire/BrandedUint'
+
+export type BrandedWei = BrandedUint & { readonly __brand: unique symbol }
+```
+
+Inherits all `BrandedUint` properties - 32-byte Uint8Array with bigint arithmetic.
+
+## BrandedWei vs Wei
+
+Two APIs for different use cases:
+
+**Wei (namespace)** - Flexible, accepts any input:
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+Wei.toGwei("1000000000")  // Converts string to Wei, then to Gwei
+Wei.from(1000000000n)     // Auto-converts any numeric input
+```
+
+**BrandedWei** - Type-safe, requires BrandedWei:
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+const wei = BrandedWei.from(1000000000n)  // Create BrandedWei
+BrandedWei.toGwei(wei)                    // Must pass BrandedWei type
+```
+
+Key differences:
+- **Wei namespace**: Auto-converts inputs, wrapper functions
+- **BrandedWei**: Enforces type at compile time, direct data operations
+- **Performance**: BrandedWei avoids wrapper overhead
+- **Use case**: Wei for convenience, BrandedWei for type safety
+
+## Construction
+
+### `BrandedWei.from(value)`
+
+Create BrandedWei from numeric input.
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+const wei1 = BrandedWei.from(1_000_000_000n)              // 1 Gwei in Wei
+const wei2 = BrandedWei.from(1_000_000_000_000_000_000n)  // 1 Ether in Wei
+const wei3 = BrandedWei.from("1000000000000000000")       // String input
+const wei4 = BrandedWei.from(42)                          // Number input
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedWei`
+
+### `BrandedWei.fromGwei(gwei)`
+
+Convert BrandedGwei to BrandedWei (multiply by 10^9).
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+const gwei = BrandedGwei.from(50n)
+const wei = BrandedWei.fromGwei(gwei)  // 50_000_000_000n Wei
+```
+
+**Parameters:**
+- `gwei: BrandedGwei` - Gwei amount
+
+**Returns:** `BrandedWei`
+
+**Formula:** `wei = gwei * 1_000_000_000`
+
+### `BrandedWei.fromEther(ether)`
+
+Convert BrandedEther to BrandedWei (multiply by 10^18).
+
+```typescript
+import * as BrandedEther from '@tevm/voltaire/BrandedEther'
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+const ether = BrandedEther.from(1n)
+const wei = BrandedWei.fromEther(ether)  // 1_000_000_000_000_000_000n Wei
+```
+
+**Parameters:**
+- `ether: BrandedEther` - Ether amount
+
+**Returns:** `BrandedWei`
+
+**Formula:** `wei = ether * 1_000_000_000_000_000_000`
+
+## Conversions To Other Units
+
+### `BrandedWei.toGwei(wei)`
+
+Convert BrandedWei to BrandedGwei (divide by 10^9).
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+const wei = BrandedWei.from(50_000_000_000n)
+const gwei = BrandedWei.toGwei(wei)  // BrandedGwei(50n)
+
+// Fractional values truncate
+const wei2 = BrandedWei.from(50_000_000_001n)
+const gwei2 = BrandedWei.toGwei(wei2)  // BrandedGwei(50n) - truncates
+```
+
+**Parameters:**
+- `wei: BrandedWei` - Wei amount
+
+**Returns:** `BrandedGwei`
+
+**Formula:** `gwei = wei / 1_000_000_000` (integer division)
+
+### `BrandedWei.toEther(wei)`
+
+Convert BrandedWei to BrandedEther (divide by 10^18).
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+const wei = BrandedWei.from(1_000_000_000_000_000_000n)
+const ether = BrandedWei.toEther(wei)  // BrandedEther(1n)
+
+// Fractional values truncate
+const wei2 = BrandedWei.from(500_000_000_000_000_000n)  // 0.5 ETH
+const ether2 = BrandedWei.toEther(wei2)  // BrandedEther(0n) - truncates
+```
+
+**Parameters:**
+- `wei: BrandedWei` - Wei amount
+
+**Returns:** `BrandedEther`
+
+**Formula:** `ether = wei / 1_000_000_000_000_000_000` (integer division)
+
+## Conversions To Base Type
+
+### `BrandedWei.toU256(wei)`
+
+Convert BrandedWei to raw BrandedUint (removes denomination branding).
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+
+const wei = BrandedWei.from(1_000_000_000n)
+const u256 = BrandedWei.toU256(wei)  // BrandedUint (no denomination)
+
+// Can use with BrandedUint operations
+const doubled = BrandedUint.times(u256, BrandedUint.from(2n))
+```
+
+**Parameters:**
+- `wei: BrandedWei` - Wei amount
+
+**Returns:** `BrandedUint`
+
+**Note:** Removes denomination type safety. Use for arithmetic requiring `BrandedUint`.
+
+## Constants
+
+```typescript
+import { WEI_PER_GWEI, WEI_PER_ETHER } from '@tevm/voltaire/BrandedWei'
+
+WEI_PER_GWEI   // 1_000_000_000n (10^9)
+WEI_PER_ETHER  // 1_000_000_000_000_000_000n (10^18)
+```
+
+## Usage Examples
+
+### Gas Cost Calculation
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+
+const gasPrice = BrandedGwei.from(50n)  // 50 Gwei
+const gasUsed = BrandedUint.from(21_000n)
+
+// Convert to Wei for calculation
+const gasPriceWei = BrandedGwei.toWei(gasPrice)
+const gasPriceU256 = BrandedWei.toU256(gasPriceWei)
+
+const totalCost = BrandedUint.times(gasPriceU256, gasUsed)
+const totalCostWei = BrandedWei.from(totalCost)
+
+console.log(`Cost: ${totalCostWei} Wei`)
+```
+
+### Transaction Value
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedEther from '@tevm/voltaire/BrandedEther'
+
+const valueEther = BrandedEther.from(1n)  // 1 ETH
+const valueWei = BrandedEther.toWei(valueEther)
+
+const tx = {
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  value: valueWei,  // Type-safe BrandedWei
+}
+```
+
+### Conversion Chain
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedEther from '@tevm/voltaire/BrandedEther'
+
+// Start with Ether
+const ether = BrandedEther.from(1n)
+
+// Convert to Wei
+const wei = BrandedEther.toWei(ether)  // 1_000_000_000_000_000_000n
+
+// Convert to Gwei
+const gwei = BrandedWei.toGwei(wei)  // 1_000_000_000n
+
+// Back to Ether
+const etherAgain = BrandedGwei.toEther(gwei)  // 1n
+```
+
+## Type Safety
+
+BrandedWei prevents mixing denominations at compile time:
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+const wei = BrandedWei.from(1_000_000_000n)
+const gwei = BrandedGwei.from(1n)
+
+// ✗ Type error - incompatible brands
+BrandedWei.toGwei(gwei)
+
+// ✓ Correct - explicit conversion
+const weiFromGwei = BrandedGwei.toWei(gwei)
+BrandedWei.toGwei(weiFromGwei)
+```
+
+## Performance
+
+BrandedWei uses direct Uint8Array representation:
+- Zero wrapper overhead
+- Direct bigint arithmetic
+- Optimal for hot paths
+- Same memory layout as BrandedUint
+
+For maximum performance in tight loops, prefer BrandedWei over Wei namespace.
+
+## When to Use
+
+**Use BrandedWei when:**
+- Type safety is critical
+- Working with existing BrandedUint infrastructure
+- Building type-safe APIs
+- Performance-sensitive code paths
+
+**Use Wei namespace when:**
+- Accepting flexible input formats
+- Building user-facing APIs
+- Convenience over strict types
+- Integration with existing code
+
+## Related
+
+- [Wei](/primitives/denomination/wei) - Namespace API with auto-conversion
+- [BrandedGwei](/primitives/denomination/branded-gwei) - Branded Gwei type
+- [BrandedEther](/primitives/denomination/branded-ether) - Branded Ether type
+- [BrandedUint](/primitives/uint/branded-uint) - Underlying branded Uint256 type
+- [Conversions](/primitives/denomination/conversions) - Converting between units

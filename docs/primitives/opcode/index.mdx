@@ -1,0 +1,859 @@
+---
+title: Opcode
+description: EVM opcode utilities for bytecode parsing, disassembly, and instruction analysis
+---
+
+
+# Opcode
+
+EVM opcode utilities for bytecode parsing, disassembly, and instruction analysis.
+
+## Overview
+
+Opcode provides comprehensive utilities for working with EVM opcodes (0x00-0xFF). Supports opcode validation, instruction parsing, bytecode disassembly, jump destination analysis, and opcode categorization (PUSH, DUP, SWAP, LOG, etc.).
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Namespace API (Tree-shakeable)">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+// Check opcode validity
+const valid = Opcode.isValid(0x60)  // true (PUSH1)
+
+// Get opcode name
+const name = Opcode.name(0x60)  // "PUSH1"
+
+// Get opcode info
+const info = Opcode.info(0x60)
+// { gasCost: 3, stackInputs: 0, stackOutputs: 1, name: "PUSH1" }
+
+// Categorization
+Opcode.isPush(0x60)   // true
+Opcode.isDup(0x80)    // true (DUP1)
+Opcode.isSwap(0x90)   // true (SWAP1)
+Opcode.isLog(0xa0)    // true (LOG0)
+
+// Parse bytecode
+const instructions = Opcode.parse(bytecode)
+const assembly = Opcode.disassemble(bytecode)
+
+// Jump analysis
+const jumpDests = Opcode.jumpDests(bytecode)
+const isValidJump = Opcode.isValidJumpDest(bytecode, 0x0042)
+```
+</TabItem>
+<TabItem label="Functional API">
+```typescript
+import {
+  isValid,
+  name,
+  info,
+  isPush,
+  isDup,
+  isSwap,
+  isLog,
+  parse,
+  disassemble,
+  jumpDests,
+  isValidJumpDest
+} from '@tevm/voltaire/Opcode'
+
+// Check opcode validity
+const valid = isValid(0x60)  // true (PUSH1)
+
+// Get opcode name
+const opName = name(0x60)  // "PUSH1"
+
+// Get opcode info
+const opInfo = info(0x60)
+// { gasCost: 3, stackInputs: 0, stackOutputs: 1, name: "PUSH1" }
+
+// Categorization
+isPush(0x60)   // true
+isDup(0x80)    // true (DUP1)
+isSwap(0x90)   // true (SWAP1)
+isLog(0xa0)    // true (LOG0)
+
+// Parse bytecode
+const instructions = parse(bytecode)
+const assembly = disassemble(bytecode)
+
+// Jump analysis
+const dests = jumpDests(bytecode)
+const isValidJump = isValidJumpDest(bytecode, 0x0042)
+```
+</TabItem>
+<TabItem label="Bytecode Parsing">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const bytecode = new Uint8Array([
+  0x60, 0x80,           // PUSH1 0x80
+  0x60, 0x40,           // PUSH1 0x40
+  0x52,                 // MSTORE
+  0x60, 0x04,           // PUSH1 0x04
+  0x36,                 // CALLDATASIZE
+  0x10,                 // LT
+])
+
+// Parse into instructions
+const instructions = Opcode.parse(bytecode)
+// [
+//   { offset: 0, opcode: 0x60, immediate: Uint8Array([0x80]) },
+//   { offset: 2, opcode: 0x60, immediate: Uint8Array([0x40]) },
+//   { offset: 4, opcode: 0x52 },
+//   { offset: 5, opcode: 0x60, immediate: Uint8Array([0x04]) },
+//   { offset: 7, opcode: 0x36 },
+//   { offset: 8, opcode: 0x10 },
+// ]
+```
+</TabItem>
+<TabItem label="Disassembly">
+```typescript
+import * as Opcode from '@tevm/voltaire/Opcode'
+
+const bytecode = new Uint8Array([
+  0x60, 0x80,           // PUSH1 0x80
+  0x60, 0x40,           // PUSH1 0x40
+  0x52,                 // MSTORE
+])
+
+// Disassemble to human-readable format
+const assembly = Opcode.disassemble(bytecode)
+// [
+//   "0000: PUSH1 0x80",
+//   "0002: PUSH1 0x40",
+//   "0004: MSTORE",
+// ]
+
+// Format single instruction
+const formatted = Opcode.format({
+  offset: 0,
+  opcode: 0x60,
+  immediate: new Uint8Array([0x80])
+})
+// "0000: PUSH1 0x80"
+```
+</TabItem>
+</Tabs>
+
+## Type Definition
+
+```typescript
+/**
+ * Branded type for EVM opcodes (number 0x00-0xFF)
+ */
+export type BrandedOpcode = number & { readonly __tag: "Opcode" }
+
+/**
+ * Instruction with opcode and optional immediate data
+ */
+export type Instruction = {
+  /** Program counter offset */
+  offset: number
+  /** The opcode */
+  opcode: BrandedOpcode
+  /** Immediate data for PUSH operations */
+  immediate?: Uint8Array
+}
+
+/**
+ * Opcode metadata structure
+ */
+export type Info = {
+  /** Base gas cost (may be dynamic at runtime) */
+  gasCost: number
+  /** Number of stack items consumed */
+  stackInputs: number
+  /** Number of stack items produced */
+  stackOutputs: number
+  /** Opcode name */
+  name: string
+}
+```
+
+Source: [BrandedOpcode.ts:1-31](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/BrandedOpcode.ts#L1-L31)
+
+## Core Methods
+
+### info()
+
+Get complete opcode metadata.
+
+```typescript
+const info = Opcode.info(0x01)  // ADD
+// {
+//   gasCost: 3,
+//   stackInputs: 2,
+//   stackOutputs: 1,
+//   name: "ADD"
+// }
+```
+
+### name()
+
+Get opcode mnemonic name.
+
+```typescript
+Opcode.name(0x00)  // "STOP"
+Opcode.name(0x01)  // "ADD"
+Opcode.name(0x60)  // "PUSH1"
+Opcode.name(0xFF)  // "SELFDESTRUCT"
+```
+
+### isValid()
+
+Check if byte is valid opcode.
+
+```typescript
+Opcode.isValid(0x60)  // true (PUSH1)
+Opcode.isValid(0x00)  // true (STOP)
+Opcode.isValid(0xFF)  // true (SELFDESTRUCT)
+Opcode.isValid(0x0C)  // false (undefined opcode)
+```
+
+### isPush()
+
+Check if opcode is PUSH1-PUSH32.
+
+```typescript
+Opcode.isPush(0x60)  // true (PUSH1)
+Opcode.isPush(0x7F)  // true (PUSH32)
+Opcode.isPush(0x01)  // false (ADD)
+```
+
+### pushBytes()
+
+Get number of immediate bytes for PUSH opcode.
+
+```typescript
+Opcode.pushBytes(0x60)  // 1 (PUSH1)
+Opcode.pushBytes(0x7F)  // 32 (PUSH32)
+Opcode.pushBytes(0x01)  // 0 (not a PUSH)
+```
+
+### pushOpcode()
+
+Get PUSH opcode for given byte count.
+
+```typescript
+Opcode.pushOpcode(1)   // 0x60 (PUSH1)
+Opcode.pushOpcode(32)  // 0x7F (PUSH32)
+```
+
+### isDup()
+
+Check if opcode is DUP1-DUP16.
+
+```typescript
+Opcode.isDup(0x80)  // true (DUP1)
+Opcode.isDup(0x8F)  // true (DUP16)
+Opcode.isDup(0x01)  // false
+```
+
+### dupPosition()
+
+Get stack position for DUP opcode (1-16).
+
+```typescript
+Opcode.dupPosition(0x80)  // 1 (DUP1)
+Opcode.dupPosition(0x8F)  // 16 (DUP16)
+```
+
+### isSwap()
+
+Check if opcode is SWAP1-SWAP16.
+
+```typescript
+Opcode.isSwap(0x90)  // true (SWAP1)
+Opcode.isSwap(0x9F)  // true (SWAP16)
+```
+
+### swapPosition()
+
+Get stack position for SWAP opcode (1-16).
+
+```typescript
+Opcode.swapPosition(0x90)  // 1 (SWAP1)
+Opcode.swapPosition(0x9F)  // 16 (SWAP16)
+```
+
+### isLog()
+
+Check if opcode is LOG0-LOG4.
+
+```typescript
+Opcode.isLog(0xA0)  // true (LOG0)
+Opcode.isLog(0xA4)  // true (LOG4)
+```
+
+### logTopics()
+
+Get number of topics for LOG opcode (0-4).
+
+```typescript
+Opcode.logTopics(0xA0)  // 0 (LOG0)
+Opcode.logTopics(0xA4)  // 4 (LOG4)
+```
+
+### isTerminating()
+
+Check if opcode terminates execution (STOP, RETURN, REVERT, INVALID, SELFDESTRUCT).
+
+```typescript
+Opcode.isTerminating(0x00)  // true (STOP)
+Opcode.isTerminating(0xF3)  // true (RETURN)
+Opcode.isTerminating(0xFD)  // true (REVERT)
+Opcode.isTerminating(0xFE)  // true (INVALID)
+Opcode.isTerminating(0xFF)  // true (SELFDESTRUCT)
+```
+
+### isJump()
+
+Check if opcode is JUMP or JUMPI.
+
+```typescript
+Opcode.isJump(0x56)  // true (JUMP)
+Opcode.isJump(0x57)  // true (JUMPI)
+```
+
+### parse()
+
+Parse bytecode into instructions.
+
+```typescript
+const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x52])
+
+const instructions = Opcode.parse(bytecode)
+// [
+//   { offset: 0, opcode: 0x60, immediate: Uint8Array([0x80]) },
+//   { offset: 2, opcode: 0x60, immediate: Uint8Array([0x40]) },
+//   { offset: 4, opcode: 0x52 }
+// ]
+```
+
+### format()
+
+Format instruction as human-readable string.
+
+```typescript
+const instruction = { offset: 0, opcode: 0x60, immediate: new Uint8Array([0x80]) }
+
+const formatted = Opcode.format(instruction)
+// "0000: PUSH1 0x80"
+```
+
+### disassemble()
+
+Disassemble bytecode into array of formatted strings.
+
+```typescript
+const bytecode = new Uint8Array([0x60, 0x80, 0x60, 0x40, 0x52])
+
+const lines = Opcode.disassemble(bytecode)
+// [
+//   "0000: PUSH1 0x80",
+//   "0002: PUSH1 0x40",
+//   "0004: MSTORE"
+// ]
+```
+
+### jumpDests()
+
+Find all valid JUMPDEST positions in bytecode.
+
+```typescript
+const bytecode = contractCode
+
+const dests = Opcode.jumpDests(bytecode)
+// Set([0x0042, 0x0089, 0x00b3, ...])
+```
+
+### isValidJumpDest()
+
+Check if offset is valid JUMPDEST in bytecode.
+
+```typescript
+const valid = Opcode.isValidJumpDest(bytecode, 0x0042)  // true if JUMPDEST at offset
+
+// Invalid if:
+// - Not JUMPDEST opcode (0x5B)
+// - Inside PUSH data
+// - Out of bounds
+```
+
+## Opcode Constants
+
+All EVM opcodes are exported as constants:
+
+```typescript
+import * as Opcode from '@tevm/primitives/Opcode'
+
+// Arithmetic
+Opcode.STOP         // 0x00
+Opcode.ADD          // 0x01
+Opcode.MUL          // 0x02
+Opcode.SUB          // 0x03
+Opcode.DIV          // 0x04
+Opcode.MOD          // 0x05
+
+// Stack operations
+Opcode.PUSH1        // 0x60
+Opcode.PUSH32       // 0x7F
+Opcode.DUP1         // 0x80
+Opcode.SWAP1        // 0x90
+
+// Memory/Storage
+Opcode.MLOAD        // 0x51
+Opcode.MSTORE       // 0x52
+Opcode.SLOAD        // 0x54
+Opcode.SSTORE       // 0x55
+
+// Flow control
+Opcode.JUMP         // 0x56
+Opcode.JUMPI        // 0x57
+Opcode.JUMPDEST     // 0x5B
+
+// Logs
+Opcode.LOG0         // 0xA0
+Opcode.LOG1         // 0xA1
+Opcode.LOG2         // 0xA2
+Opcode.LOG3         // 0xA3
+Opcode.LOG4         // 0xA4
+
+// System
+Opcode.CREATE       // 0xF0
+Opcode.CALL         // 0xF1
+Opcode.RETURN       // 0xF3
+Opcode.REVERT       // 0xFD
+Opcode.INVALID      // 0xFE
+Opcode.SELFDESTRUCT // 0xFF
+```
+
+## Use Cases
+
+### Bytecode Analysis
+
+```typescript
+import * as Opcode from '@tevm/primitives/Opcode'
+
+// Analyze bytecode structure
+const instructions = Opcode.parse(bytecode)
+
+let totalGas = 0
+for (const inst of instructions) {
+  const info = Opcode.info(inst.opcode)
+  totalGas += info.gasCost
+  console.log(`${Opcode.name(inst.opcode)}: ${info.gasCost} gas`)
+}
+```
+
+### Jump Validation
+
+```typescript
+// Build valid jump destination map
+const validDests = Opcode.jumpDests(bytecode)
+
+// During execution, validate jumps
+function executeJump(targetOffset: number) {
+  if (!validDests.has(targetOffset)) {
+    throw new Error("Invalid jump destination")
+  }
+  // Proceed with jump
+}
+```
+
+### Disassembler
+
+```typescript
+// Create human-readable disassembly
+function disassembleContract(bytecode: Uint8Array): string {
+  const lines = Opcode.disassemble(bytecode)
+  return lines.join('\n')
+}
+
+const output = disassembleContract(contractCode)
+// 0000: PUSH1 0x80
+// 0002: PUSH1 0x40
+// 0004: MSTORE
+// 0005: CALLVALUE
+// ...
+```
+
+### Stack Depth Analysis
+
+```typescript
+// Track stack depth through execution
+let stackDepth = 0
+
+for (const inst of Opcode.parse(bytecode)) {
+  const info = Opcode.info(inst.opcode)
+  stackDepth -= info.stackInputs
+  stackDepth += info.stackOutputs
+
+  if (stackDepth < 0) {
+    console.error(`Stack underflow at ${inst.offset}`)
+  }
+  if (stackDepth > 1024) {
+    console.error(`Stack overflow at ${inst.offset}`)
+  }
+}
+```
+
+### Code Coverage
+
+```typescript
+// Track which opcodes are executed
+const coverage = new Set<number>()
+
+for (const inst of executedInstructions) {
+  coverage.add(inst.offset)
+}
+
+// Find uncovered code
+const allOffsets = Opcode.parse(bytecode).map(i => i.offset)
+const uncovered = allOffsets.filter(o => !coverage.has(o))
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific operations
+import { parse, disassemble, isPush, isValid } from '@tevm/primitives/Opcode'
+
+// Or import entire namespace
+import * as Opcode from '@tevm/primitives/Opcode'
+
+// Selective imports for bytecode analysis
+const instructions = parse(bytecode)
+const assembly = disassemble(bytecode)
+```
+
+Each parser, categorization check, and disassembly function is independently exported. Import only the bytecode analysis utilities you need (e.g., just `parse` without `disassemble` or jump analysis).
+
+## Opcode Categories
+
+### Stack Operations
+- **PUSH1-PUSH32** (0x60-0x7F): Push 1-32 bytes onto stack
+- **DUP1-DUP16** (0x80-0x8F): Duplicate stack item at position 1-16
+- **SWAP1-SWAP16** (0x90-0x9F): Swap top stack item with item at position 1-16
+- **POP** (0x50): Remove top stack item
+
+### Arithmetic
+- **ADD, MUL, SUB, DIV, MOD** (0x01-0x05)
+- **ADDMOD, MULMOD** (0x08-0x09)
+- **EXP** (0x0A)
+- **SIGNEXTEND** (0x0B)
+
+### Comparison & Logic
+- **LT, GT, SLT, SGT, EQ** (0x10-0x14)
+- **ISZERO, AND, OR, XOR, NOT** (0x15-0x19)
+- **BYTE, SHL, SHR, SAR** (0x1A-0x1D)
+
+### Memory & Storage
+- **MLOAD, MSTORE, MSTORE8** (0x51-0x53)
+- **SLOAD, SSTORE** (0x54-0x55)
+- **MSIZE** (0x59)
+
+### Flow Control
+- **JUMP, JUMPI, JUMPDEST** (0x56-0x5B)
+- **PC** (0x58)
+- **STOP, RETURN, REVERT** (0x00, 0xF3, 0xFD)
+
+### Logging
+- **LOG0-LOG4** (0xA0-0xA4): Emit log with 0-4 topics
+
+### System Operations
+- **CREATE, CREATE2** (0xF0, 0xF5)
+- **CALL, CALLCODE, DELEGATECALL, STATICCALL** (0xF1-0xF4, 0xFA)
+- **SELFDESTRUCT** (0xFF)
+
+<Aside type="caution" title="PUSH Data Skipping">
+When parsing bytecode, PUSH instructions consume 1-32 immediate bytes. These bytes must be skipped during parsing - they are data, not opcodes. The `parse()` and `jumpDests()` functions handle this correctly.
+</Aside>
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Reference Guide" icon="open-book">
+    Complete opcode reference with execution traces, stack diagrams, and examples.
+
+    [View reference guide →](/primitives/opcode/reference-guide)
+  </Card>
+
+  <Card title="Constructors" icon="rocket">
+    Opcode constants, bytecode parsing, and jump destination analysis.
+
+    [View constructors →](/primitives/opcode/constructors)
+  </Card>
+
+  <Card title="Validation" icon="warning">
+    Opcode validation, category checks, and jump destination verification.
+
+    [View validation →](/primitives/opcode/validation)
+  </Card>
+
+  <Card title="Utilities" icon="puzzle">
+    Metadata, stack effects, gas costs, and disassembly utilities.
+
+    [View utilities →](/primitives/opcode/utilities)
+  </Card>
+
+  <Card title="Usage Patterns" icon="document">
+    Real-world bytecode analysis, gas estimation, and pattern detection.
+
+    [View usage patterns →](/primitives/opcode/usage-patterns)
+  </Card>
+
+  <Card title="WASM Implementation" icon="seti:config">
+    Performance analysis - why WASM is not implemented (pure TS is faster).
+
+    [View WASM →](/primitives/opcode/wasm)
+  </Card>
+</CardGrid>
+
+## Related Types
+
+<CardGrid stagger>
+  <Card title="Bytecode" icon="document">
+    Contract bytecode representation and manipulation.
+
+    [View Bytecode →](/primitives/bytecode)
+  </Card>
+
+  <Card title="Transaction" icon="rocket">
+    Transactions that deploy and execute bytecode.
+
+    [View Transaction →](/primitives/transaction)
+  </Card>
+
+  <Card title="State" icon="puzzle">
+    EVM state operations accessed by opcodes.
+
+    [View State →](/primitives/state)
+  </Card>
+
+  <Card title="GasConstants" icon="seti:config">
+    Gas costs for EVM operations.
+
+    [View GasConstants →](/primitives/gasconstants)
+  </Card>
+</CardGrid>
+
+## Opcode Reference Tables
+
+### Complete Opcode Listing
+
+<Tabs>
+<TabItem label="Arithmetic">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x01 | ADD | 3 | 2 | 1 | a + b |
+| 0x02 | MUL | 5 | 2 | 1 | a * b |
+| 0x03 | SUB | 3 | 2 | 1 | a - b |
+| 0x04 | DIV | 5 | 2 | 1 | a / b (0 if b=0) |
+| 0x05 | SDIV | 5 | 2 | 1 | Signed division |
+| 0x06 | MOD | 5 | 2 | 1 | a % b (0 if b=0) |
+| 0x07 | SMOD | 5 | 2 | 1 | Signed modulo |
+| 0x08 | ADDMOD | 8 | 3 | 1 | (a + b) % N |
+| 0x09 | MULMOD | 8 | 3 | 1 | (a * b) % N |
+| 0x0A | EXP | 10* | 2 | 1 | a ** b (dynamic gas) |
+| 0x0B | SIGNEXTEND | 5 | 2 | 1 | Sign extend byte |
+
+</TabItem>
+
+<TabItem label="Comparison & Bitwise">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x10 | LT | 3 | 2 | 1 | Less than |
+| 0x11 | GT | 3 | 2 | 1 | Greater than |
+| 0x12 | SLT | 3 | 2 | 1 | Signed less than |
+| 0x13 | SGT | 3 | 2 | 1 | Signed greater than |
+| 0x14 | EQ | 3 | 2 | 1 | Equal |
+| 0x15 | ISZERO | 3 | 1 | 1 | Returns 1 if zero |
+| 0x16 | AND | 3 | 2 | 1 | Bitwise AND |
+| 0x17 | OR | 3 | 2 | 1 | Bitwise OR |
+| 0x18 | XOR | 3 | 2 | 1 | Bitwise XOR |
+| 0x19 | NOT | 3 | 1 | 1 | Bitwise NOT |
+| 0x1A | BYTE | 3 | 2 | 1 | Get byte at index |
+| 0x1B | SHL | 3 | 2 | 1 | Shift left (EIP-145) |
+| 0x1C | SHR | 3 | 2 | 1 | Shift right (EIP-145) |
+| 0x1D | SAR | 3 | 2 | 1 | Arithmetic shift (EIP-145) |
+
+</TabItem>
+
+<TabItem label="Cryptographic">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x20 | KECCAK256 | 30* | 2 | 1 | Keccak-256 hash |
+
+</TabItem>
+
+<TabItem label="Environmental">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x30 | ADDRESS | 2 | 0 | 1 | Current contract address |
+| 0x31 | BALANCE | 100* | 1 | 1 | Account balance (warm/cold) |
+| 0x32 | ORIGIN | 2 | 0 | 1 | tx.origin |
+| 0x33 | CALLER | 2 | 0 | 1 | msg.sender |
+| 0x34 | CALLVALUE | 2 | 0 | 1 | msg.value |
+| 0x35 | CALLDATALOAD | 3 | 1 | 1 | Load calldata |
+| 0x36 | CALLDATASIZE | 2 | 0 | 1 | Calldata length |
+| 0x37 | CALLDATACOPY | 3* | 3 | 0 | Copy calldata to memory |
+| 0x38 | CODESIZE | 2 | 0 | 1 | Code size |
+| 0x39 | CODECOPY | 3* | 3 | 0 | Copy code to memory |
+| 0x3A | GASPRICE | 2 | 0 | 1 | Gas price |
+| 0x3B | EXTCODESIZE | 100* | 1 | 1 | External code size |
+| 0x3C | EXTCODECOPY | 100* | 4 | 0 | Copy external code |
+| 0x3D | RETURNDATASIZE | 2 | 0 | 1 | Returndata size (EIP-211) |
+| 0x3E | RETURNDATACOPY | 3* | 3 | 0 | Copy returndata |
+| 0x3F | EXTCODEHASH | 100* | 1 | 1 | Code hash (EIP-1052) |
+
+</TabItem>
+
+<TabItem label="Block Info">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x40 | BLOCKHASH | 20 | 1 | 1 | Block hash (last 256) |
+| 0x41 | COINBASE | 2 | 0 | 1 | Block miner |
+| 0x42 | TIMESTAMP | 2 | 0 | 1 | Block timestamp |
+| 0x43 | NUMBER | 2 | 0 | 1 | Block number |
+| 0x44 | DIFFICULTY | 2 | 0 | 1 | Block difficulty |
+| 0x45 | GASLIMIT | 2 | 0 | 1 | Block gas limit |
+| 0x46 | CHAINID | 2 | 0 | 1 | Chain ID (EIP-1344) |
+| 0x48 | BASEFEE | 2 | 0 | 1 | Base fee (EIP-3198) |
+
+</TabItem>
+
+<TabItem label="Stack & Memory">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x50 | POP | 2 | 1 | 0 | Remove top |
+| 0x51 | MLOAD | 3 | 1 | 1 | Load from memory |
+| 0x52 | MSTORE | 3 | 2 | 0 | Store to memory |
+| 0x53 | MSTORE8 | 3 | 2 | 0 | Store byte to memory |
+| 0x54 | SLOAD | 100* | 1 | 1 | Load from storage (warm/cold) |
+| 0x55 | SSTORE | 100* | 2 | 0 | Store to storage (dynamic) |
+| 0x56 | JUMP | 8 | 1 | 0 | Jump to offset |
+| 0x57 | JUMPI | 10 | 2 | 0 | Conditional jump |
+| 0x58 | PC | 2 | 0 | 1 | Program counter |
+| 0x59 | MSIZE | 2 | 0 | 1 | Memory size |
+| 0x5A | GAS | 2 | 0 | 1 | Remaining gas |
+| 0x5B | JUMPDEST | 1 | 0 | 0 | Jump destination |
+
+</TabItem>
+
+<TabItem label="Push & Dup">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x60-0x7F | PUSH1-32 | 3 | 0 | 1 | Push 1-32 bytes |
+| 0x80-0x8F | DUP1-16 | 3 | 1+ | 2+ | Duplicate stack item |
+
+</TabItem>
+
+<TabItem label="Swap & Log">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0x90-0x9F | SWAP1-16 | 3 | 2+ | 2+ | Exchange stack items |
+| 0xA0-0xA4 | LOG0-4 | 375+* | 2-6 | 0 | Emit event |
+
+</TabItem>
+
+<TabItem label="System">
+
+| Hex | Name | Gas | Stack In | Stack Out | Notes |
+|-----|------|-----|----------|-----------|-------|
+| 0xF0 | CREATE | 32000* | 3 | 1 | Create contract |
+| 0xF1 | CALL | 100* | 7 | 1 | Call contract (warm/cold) |
+| 0xF2 | CALLCODE | 100* | 7 | 1 | Call code at address |
+| 0xF3 | RETURN | 0 | 2 | 0 | Return from execution |
+| 0xF4 | DELEGATECALL | 100* | 6 | 1 | Delegated call |
+| 0xF5 | CREATE2 | 32000* | 4 | 1 | Create at deterministic addr |
+| 0xFA | STATICCALL | 100* | 6 | 1 | Static call (EIP-214) |
+| 0xFD | REVERT | 0 | 2 | 0 | Revert with data |
+| 0xFE | INVALID | - | - | - | Invalid opcode |
+| 0xFF | SELFDESTRUCT | 5000* | 1 | 0 | Destroy contract |
+
+</TabItem>
+</Tabs>
+
+**Legend:**
+- Gas: Base gas cost (dynamic marked with *)
+- EIP: Ethereum Improvement Proposal adding the opcode
+- Warm/Cold: Access list (EIP-2929) affects gas
+
+### Stack Effect Diagrams
+
+Common stack patterns:
+
+**Binary Operations (ADD, MUL, SUB, etc)**
+```
+Before: [..., a, b]
+After:  [..., result]
+```
+
+**DUP (Duplicate)**
+```
+Before: [..., x₁₆, ..., x₁]
+After:  [..., x₁₆, ..., x₁, ..., x₁]  // DUP[i] duplicates item at depth i
+```
+
+**SWAP (Exchange)**
+```
+Before: [..., a, b]
+After:  [..., b, a]  // SWAP1 exchanges top 2
+```
+
+**Memory Operations**
+```
+Before: [..., offset, value]
+MSTORE: Store value at memory[offset:offset+32]
+After:  [...]
+
+Before: [..., offset]
+MLOAD:  Load value from memory[offset:offset+32]
+After:  [..., value]
+```
+
+**Storage Operations**
+```
+Before: [..., slot]
+SLOAD:  Load value from storage[slot]
+After:  [..., value]
+
+Before: [..., slot, value]
+SSTORE: Store value to storage[slot]
+After:  [...]
+```
+
+### Gas Cost Variations
+
+| Operation | Base | Dynamic | Reason |
+|-----------|------|---------|--------|
+| SLOAD | 100 | Warm: 100, Cold: 2100 | Access list tracking (EIP-2929) |
+| SSTORE | 100 | 0-2900 | Storage write patterns, refunds |
+| CALL | 100 | 100-2600 | Warm/cold + contract creation |
+| KECCAK256 | 30 | +6/word | Input size |
+| EXP | 10 | +50/byte | Exponent size |
+| LOG | 375 | +375/topic | Topics emitted |
+
+## Specification References
+
+- [EVM Opcodes](https://www.evm.codes/) - Interactive opcode reference
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal EVM specification
+- [Solidity Assembly](https://docs.soliditylang.org/en/latest/assembly.html) - Inline assembly documentation
+- [EIP-3198](https://eips.ethereum.org/EIPS/eip-3198) - BASEFEE opcode
+- [EIP-3855](https://eips.ethereum.org/EIPS/eip-3855) - PUSH0 instruction
+- [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929) - Access lists (warm/cold gas)

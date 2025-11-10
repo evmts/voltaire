@@ -1,0 +1,410 @@
+---
+title: BrandedUint
+description: Tree-shakeable functional API for Uint256 operations
+---
+
+# BrandedUint
+
+Tree-shakeable functional API for Uint256 operations with optimal bundle size.
+
+## Overview
+
+`BrandedUint` is the functional layer underlying the `Uint` class. It provides:
+- **Zero-overhead** [branded type](/primitives/branded-types) wrapping `bigint`
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods taking uint as first parameter
+- **Bundle optimization** through selective imports
+
+Primary benefit: Import only the operations you need to minimize bundle size.
+
+## Type Definition
+
+```typescript
+export type BrandedUint = bigint & {
+  readonly __tag: "Uint256"
+}
+```
+
+Runtime-validated bigint constrained to `0 <= value <= 2^256-1`. [Brand](/primitives/branded-types) prevents accidental mixing with regular bigints.
+
+Source: [BrandedUint.ts:1-4](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/BrandedUint.ts#L1-L4)
+
+## Namespace API
+
+All functions exported as both individual exports and namespace:
+
+```typescript
+import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+
+// Namespace usage
+const value = BrandedUint.from(100n)
+const hex = BrandedUint.toHex(value)
+const sum = BrandedUint.plus(value, BrandedUint.from(50n))
+```
+
+## Tree-Shakeable Usage
+
+Import only what you need:
+
+```typescript
+import { from, toHex, plus, equals } from '@tevm/voltaire/BrandedUint'
+import type { BrandedUint } from '@tevm/voltaire/BrandedUint'
+
+const value: BrandedUint = from(100n)
+const hex = toHex(value)
+const sum = plus(value, from(50n))
+const isEqual = equals(value, sum)
+```
+
+**Bundle impact:** Only `from`, `toHex`, `plus`, and `equals` included. Unused operations like `toPower`, `bitwiseAnd`, etc. are excluded.
+
+## Available Functions
+
+All Uint functionality available as tree-shakeable functions:
+
+### Constructors
+
+```typescript
+import {
+  from,
+  fromHex,
+  fromBigInt,
+  fromNumber,
+  fromBytes,
+  fromAbiEncoded,
+  tryFrom
+} from '@tevm/voltaire/BrandedUint'
+
+const a = from(100n)              // From bigint/number/string
+const b = fromHex("0xff")         // From hex string
+const c = fromBigInt(100n)        // From bigint
+const d = fromNumber(100)         // From number
+const e = fromBytes(bytes)        // From byte array
+const f = fromAbiEncoded(bytes32) // From ABI-encoded bytes
+const g = tryFrom("invalid")      // Safe parsing (returns undefined)
+```
+
+See [Constructors](/primitives/uint/constructors) for details.
+
+### Conversions
+
+```typescript
+import {
+  toHex,
+  toBigInt,
+  toNumber,
+  toBytes,
+  toAbiEncoded,
+  toString
+} from '@tevm/voltaire/BrandedUint'
+
+const hex = toHex(value)              // Hex string (padded)
+const hex2 = toHex(value, false)      // Hex string (unpadded)
+const bigint = toBigInt(value)        // Native bigint
+const num = toNumber(value)           // Number (throws if too large)
+const bytes = toBytes(value)          // 32-byte array
+const encoded = toAbiEncoded(value)   // ABI encoding
+const str = toString(value, 16)       // String in any radix
+```
+
+See [Conversions](/primitives/uint/conversions) for details.
+
+### Arithmetic
+
+```typescript
+import {
+  plus,
+  minus,
+  times,
+  dividedBy,
+  modulo,
+  toPower
+} from '@tevm/voltaire/BrandedUint'
+
+const sum = plus(a, b)          // Addition with wrapping
+const diff = minus(a, b)        // Subtraction with wrapping
+const product = times(a, b)     // Multiplication with wrapping
+const quotient = dividedBy(a, b) // Division (throws on divide by zero)
+const remainder = modulo(a, b)   // Modulo
+const power = toPower(a, b)      // Exponentiation with wrapping
+```
+
+See [Arithmetic](/primitives/uint/arithmetic) for details.
+
+**Note:** All operations wrap on overflow (mod 2^256).
+
+### Bitwise
+
+```typescript
+import {
+  bitwiseAnd,
+  bitwiseOr,
+  bitwiseXor,
+  bitwiseNot,
+  shiftLeft,
+  shiftRight
+} from '@tevm/voltaire/BrandedUint'
+
+const and = bitwiseAnd(a, b)    // Bitwise AND
+const or = bitwiseOr(a, b)      // Bitwise OR
+const xor = bitwiseXor(a, b)    // Bitwise XOR
+const not = bitwiseNot(a)       // Bitwise NOT
+const left = shiftLeft(a, 8)    // Left shift with wrapping
+const right = shiftRight(a, 8)  // Right shift
+```
+
+See [Bitwise](/primitives/uint/bitwise) for details.
+
+### Comparisons
+
+```typescript
+import {
+  equals,
+  notEquals,
+  lessThan,
+  lessThanOrEqual,
+  greaterThan,
+  greaterThanOrEqual,
+  isZero
+} from '@tevm/voltaire/BrandedUint'
+
+equals(a, b)              // Equality
+notEquals(a, b)           // Inequality
+lessThan(a, b)            // Less than
+lessThanOrEqual(a, b)     // Less than or equal
+greaterThan(a, b)         // Greater than
+greaterThanOrEqual(a, b)  // Greater than or equal
+isZero(a)                 // Check if zero
+```
+
+See [Comparisons](/primitives/uint/comparisons) for details.
+
+### Validation
+
+```typescript
+import {
+  isValid,
+  tryFrom
+} from '@tevm/voltaire/BrandedUint'
+
+isValid(100n)        // Type guard: value is BrandedUint
+tryFrom("invalid")   // Safe parsing: BrandedUint | undefined
+```
+
+See [Validation](/primitives/uint/validation) for details.
+
+### Utilities
+
+```typescript
+import {
+  bitLength,
+  leadingZeros,
+  popCount,
+  minimum,
+  maximum
+} from '@tevm/voltaire/BrandedUint'
+
+bitLength(value)     // Number of bits (0-256)
+leadingZeros(value)  // Leading zero bits
+popCount(value)      // Number of 1 bits
+minimum(a, b)        // Smaller value
+maximum(a, b)        // Larger value
+```
+
+See [Utilities](/primitives/uint/utilities) for details.
+
+### Constants
+
+```typescript
+import { MAX, MIN, ZERO, ONE, SIZE } from '@tevm/voltaire/BrandedUint'
+
+MAX   // 2^256 - 1 (largest Uint256)
+MIN   // 0 (smallest Uint256)
+ZERO  // 0
+ONE   // 1
+SIZE  // 32 (bytes)
+```
+
+See [Constants](/primitives/uint/constants) for details.
+
+## Data-First Pattern
+
+All BrandedUint functions follow data-first pattern:
+
+```typescript
+// BrandedUint: uint is first parameter
+toHex(value)
+plus(a, b)
+equals(a, b)
+bitLength(value)
+
+// vs Uint class: uint is implicit (this)
+value.toHex()
+a.plus(b)
+a.equals(b)
+value.bitLength()
+```
+
+This enables functional composition and partial application:
+
+```typescript
+import { toHex, plus, equals, isZero } from '@tevm/voltaire/BrandedUint'
+
+// Function composition
+const formatUint = (value: BrandedUint) => toHex(value, false).toUpperCase()
+
+// Partial application
+const addTen = (value: BrandedUint) => plus(value, from(10n))
+
+// Array methods
+const values = [from(1n), from(2n), from(3n)]
+values.map(toHex)
+values.filter(value => !isZero(value))
+values.reduce((sum, val) => plus(sum, val), ZERO)
+```
+
+## Tree-Shaking Benefits
+
+Primary benefit: **Selective inclusion of operations**
+
+### Example 1: Minimal Bundle (Basic Operations)
+
+```typescript
+import { from, toHex, plus, equals } from '@tevm/voltaire/BrandedUint'
+
+const a = from(100n)
+const b = from(50n)
+const sum = plus(a, b)
+const hex = toHex(sum)
+const isEqual = equals(sum, from(150n))
+```
+
+**Bundle:** Only constructor, hex conversion, addition, and equality. No bitwise, no division, no utilities.
+
+### Example 2: Arithmetic Only
+
+```typescript
+import { from, plus, minus, times, dividedBy } from '@tevm/voltaire/BrandedUint'
+
+const a = from(100n)
+const b = from(10n)
+const result = times(plus(a, b), dividedBy(a, b))
+```
+
+**Bundle:** Constructors and arithmetic operations only. No conversions, no comparisons, no utilities.
+
+### Example 3: Comparisons Only
+
+```typescript
+import {
+  from,
+  equals,
+  lessThan,
+  greaterThan,
+  isZero
+} from '@tevm/voltaire/BrandedUint'
+
+const values = [from(3n), from(1n), from(2n)]
+values.sort((a, b) => lessThan(a, b) ? -1 : 1)
+values.filter(v => !isZero(v))
+```
+
+**Bundle:** Constructor and comparison operations only. No arithmetic, no bitwise, no utilities.
+
+### Example 4: Uint Class (Everything)
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const value = new Uint(100n)
+```
+
+**Bundle:** Includes all Uint methods on prototype. Larger bundle but more convenient API.
+
+## Comparison Table
+
+| Approach | Bundle Size | API Style | Use Case |
+|----------|-------------|-----------|----------|
+| **BrandedUint selective** | Minimal | Functional | Performance-critical, specific operations |
+| **BrandedUint namespace** | Medium | Functional | Functional style, moderate tree-shaking |
+| **Uint class** | Largest | OOP | Convenience, ergonomics, using many operations |
+
+## When to Use BrandedUint vs Uint
+
+### Use BrandedUint When:
+- **Bundle size critical** (mobile, embedded, edge functions)
+- **Using few operations** (e.g., only arithmetic)
+- **Functional style** preferred
+- **Tree-shaking** important
+- **Composing functions** heavily
+
+### Use Uint Class When:
+- **OOP style** preferred
+- **Ergonomics** over bundle size
+- **Using many methods** (no benefit from tree-shaking)
+- **Type safety** with prototype methods
+- **Traditional API** expected
+
+## Interoperability
+
+BrandedUint and Uint are fully compatible:
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+import { toHex, plus } from '@tevm/voltaire/BrandedUint'
+
+// Uint IS a BrandedUint
+const uint = new Uint(100n)
+const hex = toHex(uint)  // ✓ works
+
+// BrandedUint works with Uint static methods
+const branded: BrandedUint = from(100n)
+const sum = Uint.plus(branded, Uint.from(50n))  // ✓ works
+
+// Mix and match freely
+const a = Uint.from(10n)
+const b = from(20n)
+const result = plus(a, b)  // ✓ works
+```
+
+## Type Safety
+
+```typescript
+import type { BrandedUint } from '@tevm/voltaire/BrandedUint'
+
+// Type checking prevents mixing with regular bigint
+const bigintValue: bigint = 100n
+const uint: BrandedUint = bigintValue  // ✗ Type error
+
+// Must use constructor
+const uint: BrandedUint = from(100n)  // ✓ OK
+
+// Type guard for runtime checking
+function process(value: unknown) {
+  if (isValid(value)) {
+    // TypeScript knows value is BrandedUint
+    const hex = toHex(value)
+  }
+}
+```
+
+## Performance
+
+BrandedUint functions have identical performance to Uint class methods - both compile to the same operations. The only difference is:
+
+- **Tree-shakeable imports** reduce bundle size (smaller download, faster parse)
+- **Prototype methods** may have slightly faster dispatch (negligible in practice)
+
+Choose based on API preference and bundle size requirements, not performance.
+
+## Related
+
+- [Uint](/primitives/uint/) - Main Uint class documentation
+- [Constructors](/primitives/uint/constructors) - Creating uints
+- [Conversions](/primitives/uint/conversions) - Format conversions
+- [Arithmetic](/primitives/uint/arithmetic) - Math operations
+- [Bitwise](/primitives/uint/bitwise) - Bit operations
+- [Comparisons](/primitives/uint/comparisons) - Equality and ordering
+- [Validation](/primitives/uint/validation) - Input validation
+- [Utilities](/primitives/uint/utilities) - Utility methods
+- [Constants](/primitives/uint/constants) - MAX, MIN, ZERO, ONE, SIZE

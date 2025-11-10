@@ -1,0 +1,87 @@
+---
+title: WASM Implementation
+description: WebAssembly-accelerated Address methods compiled from Zig
+---
+
+# WASM Implementation
+
+WebAssembly-accelerated implementations of Address methods, compiled from Zig using ReleaseSmall mode.
+
+## Overview
+
+WASM implementations provide performance-critical operations using compiled Zig code targeting WebAssembly. These are **purely opt-in** replacements for the JavaScript implementations with identical APIs.
+
+All WASM methods are compiled from [address.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig) with `ReleaseSmall` optimization targeting minimal bundle size.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Direct Import">
+```typescript
+// Import WASM implementation instead of JS version
+import { Address } from '@tevm/voltaire/Address.wasm'
+
+// API is identical to JS version
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+addr.toChecksummed() // Uses WASM acceleration
+addr.equals(other)    // Uses WASM acceleration
+```
+</Tab>
+
+<Tab title="Override Static Methods">
+```typescript
+import { Address } from '@tevm/voltaire'
+import * as WasmAddress from '@tevm/voltaire/Address.wasm'
+
+// Override specific methods with WASM versions
+Address.fromHex = WasmAddress.fromHex
+Address.toChecksummed = WasmAddress.toChecksummed
+Address.equals = WasmAddress.equals
+
+// Now uses WASM implementations
+const addr = Address.fromHex("0x742d35Cc...")
+```
+</Tab>
+</Tabs>
+
+## Performance
+
+WASM implementations provide significant speedup for computationally intensive operations:
+
+- **Hex parsing** - Native byte manipulation vs JavaScript string operations
+- **Checksumming** - keccak256 hashing in compiled code
+- **Comparisons** - Memory-efficient byte-by-byte comparison
+- **Contract address calculation** - RLP encoding and hashing in Zig
+
+<Tip title="When to use WASM">
+Use WASM when processing large numbers of addresses (bulk validation, sorting, checksum verification). For single operations, JS overhead may outweigh WASM benefits.
+</Tip>
+
+## API Reference
+
+WASM implementations match the standard Address API. See main documentation:
+
+- [Constructors](/primitives/address/constructors) - `fromHex`, `fromBytes`, `fromNumber`, `fromPublicKey`, `fromAbiEncoded`
+- [Conversions](/primitives/address/conversions) - `toHex`, `toChecksummed`, `toLowercase`, `toUppercase`, `toU256`, `toAbiEncoded`, `toShortHex`
+- [Validation](/primitives/address/validation) - `isValid`, `isValidChecksum`, `is`
+- [Comparisons](/primitives/address/comparisons) - `equals`, `compare`, `lessThan`, `greaterThan`, `isZero`
+- [Contract Addresses](/primitives/address/contract-addresses) - `calculateCreateAddress`, `calculateCreate2Address`
+
+## Tree-Shakeable Usage
+
+Import only methods you need:
+
+```typescript
+import { fromHex, toChecksummed, equals } from '@tevm/voltaire/Address.wasm'
+import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+
+const addr = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const checksummed = toChecksummed(addr)
+const isEqual = equals(addr, addr2)
+```
+
+WASM loader only included if you import WASM methods. Using pure JS versions excludes WASM from bundle.
+
+<Note>
+WASM module compiled with ReleaseSmall (~2-4KB gzipped). Only included when importing from `Address.wasm.js` or `Address.wasm.ts`.
+</Note>

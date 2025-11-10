@@ -1,0 +1,69 @@
+---
+title: Bytecode.parseInstructions
+description: Parse bytecode into array of instructions with positions and PUSH data
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.parseInstructions(): Instruction[]`
+
+Parse bytecode into array of instructions with positions and PUSH data.
+
+**Returns:** `Instruction[]` - Array of `{ opcode, position, pushData? }`
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code = Bytecode.fromHex("0x60016002015b")
+const instructions = code.parseInstructions()
+
+// [
+//   { opcode: 0x60, position: 0, pushData: Uint8Array([0x01]) },
+//   { opcode: 0x60, position: 2, pushData: Uint8Array([0x02]) },
+//   { opcode: 0x01, position: 4 },
+//   { opcode: 0x5b, position: 5 }
+// ]
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/parseInstructions.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/parseInstructions.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `parseInstructions(bytecode: BrandedBytecode): Instruction[]`
+
+Parse bytecode into array of instructions with positions and PUSH data.
+
+**Parameters:**
+- `bytecode: BrandedBytecode` - Bytecode to parse
+
+**Returns:** `Instruction[]` - Array of `{ opcode, position, pushData? }`
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code = Bytecode.fromHex("0x60016002015b")
+const instructions = Bytecode.parseInstructions(code)
+
+// [
+//   { opcode: 0x60, position: 0, pushData: Uint8Array([0x01]) },
+//   { opcode: 0x60, position: 2, pushData: Uint8Array([0x02]) },
+//   { opcode: 0x01, position: 4 },
+//   { opcode: 0x5b, position: 5 }
+// ]
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/parseInstructions.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/parseInstructions.js)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [analyze](/primitives/bytecode/analyze) - Complete analysis including instructions
+- [formatInstructions](/primitives/bytecode/formatinstructions) - Format as human-readable strings

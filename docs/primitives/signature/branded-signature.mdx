@@ -1,0 +1,439 @@
+---
+title: "BrandedSignature"
+description: "Branded type pattern for type-safe ECDSA signature representation"
+---
+
+# BrandedSignature
+
+Branded Uint8Array type for cryptographic signatures with algorithm metadata.
+
+## Type Definition
+
+```typescript
+type SignatureAlgorithm = "secp256k1" | "p256" | "ed25519";
+
+type BrandedSignature = Uint8Array & {
+  readonly __tag: "Signature";
+  readonly algorithm: SignatureAlgorithm;
+  readonly v?: number; // Recovery ID for secp256k1 (27 or 28)
+};
+```
+
+## Properties
+
+### __tag
+
+```typescript
+readonly __tag: "Signature"
+```
+
+Type brand for runtime type checking.
+
+**Visibility:** Non-enumerable
+**Writable:** false
+**Configurable:** false
+
+### algorithm
+
+```typescript
+readonly algorithm: SignatureAlgorithm
+```
+
+Signature algorithm identifier.
+
+**Values:**
+- `"secp256k1"` - Bitcoin/Ethereum ECDSA
+- `"p256"` - NIST P-256 ECDSA
+- `"ed25519"` - EdDSA on Curve25519
+
+**Visibility:** Enumerable
+**Writable:** false
+**Configurable:** false
+
+### v
+
+```typescript
+readonly v?: number
+```
+
+Recovery ID for secp256k1 signatures (optional).
+
+**Values:**
+- `27` - First recovery attempt (standard Ethereum)
+- `28` - Second recovery attempt
+- `undefined` - Not secp256k1 or no recovery ID
+
+**Visibility:** Enumerable only if defined
+**Writable:** false
+**Configurable:** false
+
+## Byte Structure
+
+### ECDSA (secp256k1, p256)
+
+```
+Length: 64 bytes
+
+Layout:
+[0-31]   r component (32 bytes)
+[32-63]  s component (32 bytes)
+
+Metadata: algorithm, v (optional)
+```
+
+### Ed25519
+
+```
+Length: 64 bytes
+
+Layout:
+[0-63]  signature (64 bytes)
+
+Metadata: algorithm = 'ed25519'
+```
+
+## Metadata Storage
+
+Properties are defined using `Object.defineProperties()`:
+
+```typescript
+Object.defineProperties(bytes, {
+  __tag: {
+    value: "Signature",
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  },
+  algorithm: {
+    value: "secp256k1",
+    writable: false,
+    enumerable: true,
+    configurable: false,
+  },
+  v: {
+    value: 27,
+    writable: false,
+    enumerable: v !== undefined,
+    configurable: false,
+  },
+});
+```
+
+## Type Guards
+
+### is
+
+```typescript
+function is(value: unknown): value is BrandedSignature
+```
+
+Runtime type guard.
+
+```typescript
+if (Signature.is(value)) {
+  // value is BrandedSignature
+  console.log(value.algorithm);
+}
+```
+
+**Checks:**
+- Is Uint8Array
+- Has `__tag === "Signature"`
+- Has `algorithm` property
+
+### Algorithm-Specific Checks
+
+```typescript
+function isSecp256k1(sig: BrandedSignature): boolean {
+  return sig.algorithm === 'secp256k1';
+}
+
+function isP256(sig: BrandedSignature): boolean {
+  return sig.algorithm === 'p256';
+}
+
+function isEd25519(sig: BrandedSignature): boolean {
+  return sig.algorithm === 'ed25519';
+}
+
+function isECDSA(sig: BrandedSignature): boolean {
+  return sig.algorithm === 'secp256k1' || sig.algorithm === 'p256';
+}
+```
+
+## Examples
+
+### Creating Branded Signatures
+
+```typescript
+// secp256k1 with recovery ID
+const sig1 = Signature.fromSecp256k1(r, s, 27);
+console.log(sig1.algorithm); // "secp256k1"
+console.log(sig1.v); // 27
+console.log(sig1.__tag); // "Signature"
+
+// P-256 without recovery ID
+const sig2 = Signature.fromP256(r, s);
+console.log(sig2.algorithm); // "p256"
+console.log(sig2.v); // undefined
+
+// Ed25519
+const sig3 = Signature.fromEd25519(sigBytes);
+console.log(sig3.algorithm); // "ed25519"
+console.log(sig3.length); // 64
+```
+
+### Accessing Metadata
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Algorithm
+switch (sig.algorithm) {
+  case 'secp256k1':
+    console.log('Bitcoin/Ethereum signature');
+    break;
+  case 'p256':
+    console.log('NIST P-256 signature');
+    break;
+  case 'ed25519':
+    console.log('Ed25519 signature');
+    break;
+}
+
+// Recovery ID
+if (sig.v !== undefined) {
+  console.log(`Recovery ID: ${sig.v}`);
+}
+
+// Brand check
+console.log(sig.__tag); // "Signature"
+```
+
+### Preserving Metadata
+
+```typescript
+// Metadata preserved through operations
+const sig = Signature.fromSecp256k1(r, s, 27);
+const normalized = Signature.normalize(sig);
+
+console.log(normalized.algorithm); // "secp256k1"
+console.log(normalized.v); // 28 (flipped if normalized)
+
+// Metadata lost on byte operations
+const bytes = sig.slice(); // Plain Uint8Array
+console.log(bytes.algorithm); // undefined
+```
+
+### Type Safety
+
+```typescript
+function processSignature(sig: BrandedSignature) {
+  // Type-safe access to algorithm
+  if (sig.algorithm === 'secp256k1') {
+    // Can safely access v
+    const recoveryId = sig.v;
+    console.log(`Recovery ID: ${recoveryId}`);
+  }
+
+  // Algorithm determines valid operations
+  if (sig.algorithm === 'ed25519') {
+    // DER encoding not supported
+    // const der = Signature.toDER(sig); // Throws error
+  } else {
+    // ECDSA supports DER
+    const der = Signature.toDER(sig);
+  }
+}
+```
+
+## Comparison with Plain Uint8Array
+
+### BrandedSignature
+
+```typescript
+const branded = Signature.fromSecp256k1(r, s, 27);
+
+// Advantages:
+console.log(branded.algorithm); // "secp256k1" (known algorithm)
+console.log(branded.v); // 27 (known recovery ID)
+console.log(branded.length); // 64 (guaranteed size)
+
+// Type safety:
+function verify(sig: BrandedSignature) {
+  // Compiler knows sig has algorithm property
+}
+```
+
+### Plain Uint8Array
+
+```typescript
+const plain = new Uint8Array(64);
+
+// Disadvantages:
+console.log(plain.algorithm); // undefined (unknown algorithm)
+// Need external tracking of algorithm
+// Need external tracking of recovery ID
+// Need validation of length
+
+// No type safety:
+function verify(sig: Uint8Array) {
+  // Need to determine algorithm manually
+}
+```
+
+## Serialization
+
+### JSON
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Metadata lost in JSON
+const json = JSON.stringify(sig);
+// {"0":123,"1":45,...} (array of numbers)
+
+// Need custom serialization for metadata
+const serialized = JSON.stringify({
+  bytes: Array.from(sig),
+  algorithm: sig.algorithm,
+  v: sig.v,
+});
+
+// Deserialize
+const data = JSON.parse(serialized);
+const restored = Signature.fromSecp256k1(
+  new Uint8Array(data.bytes.slice(0, 32)),
+  new Uint8Array(data.bytes.slice(32, 64)),
+  data.v
+);
+```
+
+### Binary
+
+```typescript
+// Raw bytes lose metadata
+const sig = Signature.fromSecp256k1(r, s, 27);
+const bytes = sig; // Still BrandedSignature
+
+// Slice creates plain Uint8Array
+const plain = sig.slice();
+console.log(plain.algorithm); // undefined
+
+// Use toBytes to explicitly strip metadata
+const stripped = Signature.toBytes(sig);
+console.log(stripped.algorithm); // undefined
+```
+
+## Performance
+
+### Memory Overhead
+
+BrandedSignature has minimal overhead:
+- Base: 64 bytes (signature data)
+- Metadata: 3 property descriptors (~48 bytes)
+- Total: ~112 bytes
+
+### Runtime Cost
+
+- Property access: O(1) (native object properties)
+- Type checking: O(1) (simple property checks)
+- Creation: Minimal overhead vs plain Uint8Array
+
+### Optimization
+
+```typescript
+// Efficient: metadata stored in object properties
+const sig = Signature.fromSecp256k1(r, s, 27);
+console.log(sig.algorithm); // Fast property access
+
+// Inefficient: external metadata map
+const metadataMap = new Map();
+metadataMap.set(plainBytes, { algorithm: 'secp256k1', v: 27 });
+```
+
+## Immutability
+
+All properties are readonly:
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// These throw in strict mode:
+sig.algorithm = 'p256'; // Error
+sig.v = 28; // Error
+sig.__tag = 'Foo'; // Error
+
+// Bytes are mutable (Uint8Array behavior):
+sig[0] = 99; // Allowed (mutates signature bytes)
+
+// Use toBytes for immutability guarantee:
+const bytes = Signature.toBytes(sig);
+```
+
+## Compatibility
+
+### Uint8Array Methods
+
+BrandedSignature supports all Uint8Array methods:
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Array methods work
+sig.slice(0, 32); // Get r component (plain Uint8Array)
+sig.subarray(32, 64); // Get s component (plain Uint8Array)
+sig.forEach(byte => console.log(byte));
+
+// Note: slice/subarray return plain Uint8Array (lose metadata)
+const r = sig.slice(0, 32);
+console.log(r.algorithm); // undefined
+```
+
+### Type Narrowing
+
+```typescript
+function process(value: Uint8Array | BrandedSignature) {
+  if (Signature.is(value)) {
+    // value is BrandedSignature
+    console.log(value.algorithm);
+  } else {
+    // value is plain Uint8Array
+    // Need to determine algorithm externally
+  }
+}
+```
+
+## Design Rationale
+
+### Why Branded Types?
+
+1. **Type Safety:** Compile-time guarantees about signature format
+2. **Self-Describing:** Algorithm embedded in data
+3. **API Simplicity:** No need to pass algorithm separately
+4. **Runtime Validation:** Type guards enable safe operations
+
+### Why Not Classes?
+
+```typescript
+// Branded type (current):
+const sig: BrandedSignature = Signature.fromSecp256k1(r, s, 27);
+sig instanceof Uint8Array; // true
+sig.slice(0, 32); // Works
+
+// Class-based alternative:
+class SignatureClass {
+  constructor(bytes, algorithm, v) { ... }
+}
+const sig = new SignatureClass(bytes, 'secp256k1', 27);
+sig instanceof Uint8Array; // false
+sig.slice(0, 32); // Doesn't work
+```
+
+Branded types maintain Uint8Array compatibility while adding type safety.
+
+## See Also
+
+- [Constructors](./constructors.mdx) - Creating BrandedSignature instances
+- [Utilities](./utilities.mdx) - Type guards and helpers
+- [Signature Overview](./index.mdx) - Main documentation

@@ -1,0 +1,152 @@
+---
+title: "0x03 RIPEMD160"
+description: RIPEMD-160 cryptographic hash function
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000003`
+**Introduced:** Frontier
+
+The RIPEMD160 precompile implements the RIPEMD-160 cryptographic hash function, producing a 20-byte hash of arbitrary input data. RIPEMD-160 is used in Bitcoin for generating addresses from public keys.
+
+This precompile enables Ethereum contracts to verify Bitcoin addresses, validate Bitcoin-style address generation, and interact with systems using RIPEMD-160.
+
+## Gas Cost
+
+**Formula:** `600 + 120 * ceil(input_length / 32)`
+
+- Base cost: `600` gas
+- Per-word cost: `120` gas per 32-byte word
+- Partial words round up
+
+**Examples:**
+- 0 bytes: 600 gas
+- 32 bytes: 720 gas (600 + 120*1)
+- 33 bytes: 840 gas (600 + 120*2)
+- 64 bytes: 840 gas (600 + 120*2)
+
+## Input Format
+
+Accepts arbitrary-length byte array. No restrictions on input size.
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 12     | Zero padding (left-padded to 32 bytes)
+12     | 20     | RIPEMD-160 hash of input
+```
+
+Total output length: 32 bytes (20-byte hash + 12 bytes padding)
+
+The hash is right-aligned in a 32-byte word with 12 leading zero bytes.
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Hash some data
+const input = new TextEncoder().encode("Hello, Bitcoin!");
+
+// Calculate required gas
+const words = Math.ceil(input.length / 32);
+const gasNeeded = 600n + 120n * BigInt(words);
+
+// Execute precompile
+const result = execute(
+  PrecompileAddress.RIPEMD160,
+  input,
+  gasNeeded,
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  // Extract 20-byte hash from right side
+  const hash = result.output.slice(12, 32);
+  console.log('RIPEMD-160 hash:', hash);
+  console.log('Gas used:', result.gasUsed);
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Error Conditions
+
+- Out of gas (insufficient for 600 + 120 * ceil(len/32))
+
+## Use Cases
+
+- **Bitcoin address generation:** Generate Bitcoin P2PKH addresses from public keys
+- **Bitcoin integration:** Verify Bitcoin address ownership in Ethereum contracts
+- **Cross-chain bridges:** Validate Bitcoin-style addresses
+- **Legacy cryptography:** Interface with systems using RIPEMD-160
+
+## Implementation Details
+
+- **Zig:** Uses RIPEMD-160 implementation from crypto module, left-pads output to 32 bytes
+- **TypeScript:** Wraps Ripemd160.hash from crypto module, applies padding
+- **Integration:** Standalone, no dependencies on other primitives
+- **Output format:** Right-aligned 20-byte hash in 32-byte word
+
+## Bitcoin Address Generation
+
+Bitcoin P2PKH addresses use RIPEMD-160:
+
+```typescript
+// Bitcoin address generation:
+// 1. SHA-256 hash of public key
+const sha256Hash = executeSHA256(publicKey);
+
+// 2. RIPEMD-160 hash of SHA-256 hash
+const ripemd160Hash = executeRIPEMD160(sha256Hash.output);
+
+// 3. Add version byte (0x00 for mainnet)
+// 4. Double SHA-256 for checksum
+// 5. Base58 encode
+```
+
+## Performance Considerations
+
+RIPEMD-160 is the most expensive hash precompile (600 base gas vs 60 for SHA256, 30 for Keccak256). The high cost reflects its computational complexity and relatively rare usage.
+
+Gas costs favor larger inputs:
+- Per-byte cost: ~3.75 gas/byte
+- 10x more expensive than SHA-256 per byte
+
+Use SHA-256 or Keccak256 for general-purpose hashing when RIPEMD-160 compatibility is not required.
+
+## Test Vectors
+
+```typescript
+// Test 1: Empty input
+const input1 = new Uint8Array(0);
+// Expected: 9c1185a5c5e9fc54612808977ee8f548b2258d31 (20 bytes, padded to 32)
+const expected1 = new Uint8Array(32);
+expected1.fill(0, 0, 12); // First 12 bytes are zeros
+// Actual hash bytes 12-31 would be set here
+
+// Test 2: Small input
+const input2 = new Uint8Array([1, 2, 3, 4, 5]);
+// Gas: 600 + 120 * ceil(5/32) = 600 + 120*1 = 720
+// Output: 32 bytes (12 zero padding + 20 hash bytes)
+
+// Test 3: Exact 32-byte boundary
+const input3 = new Uint8Array(32);
+// Gas: 600 + 120 * 1 = 720
+```
+
+## References
+
+### Specifications
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E (Precompiled Contracts)
+- [Bitcoin Address Generation](https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses)
+- [RIPEMD-160 Specification](https://homes.esat.kuleuven.be/~bosselae/ripemd160.html)
+
+### Related
+- [Crypto: RIPEMD160](/crypto/ripemd160)
+- [Precompile: SHA256](/precompiles/sha256)
+- [Precompiles Overview](/precompiles)

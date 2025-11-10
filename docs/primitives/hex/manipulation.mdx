@@ -1,0 +1,318 @@
+---
+title: Hex Manipulation
+description: Manipulating hex strings with concat, slice, pad, trim, and XOR
+---
+
+# Manipulation
+
+Methods for manipulating hex strings: concatenation, slicing, padding, trimming, and XOR operations.
+
+## Concatenation
+
+### `Hex.concat(...hexes)`
+
+Concatenates multiple hex strings into one.
+
+```typescript
+const hex1 = Hex("0x12")
+const hex2 = Hex("0x34")
+const hex3 = Hex("0x56")
+
+Hex.concat(hex1, hex2)           // "0x1234"
+Hex.concat(hex1, hex2, hex3)     // "0x123456"
+
+// Works with any number of arguments
+const many = Hex.concat(
+  Hex("0x01"),
+  Hex("0x02"),
+  Hex("0x03"),
+  Hex("0x04")
+)  // "0x01020304"
+```
+
+**Parameters:**
+- `...hexes: BrandedHex[]` - Hex strings to concatenate
+
+**Returns:** `BrandedHex`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/concat.js:20-35](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/concat.js#L20-L35)
+Tests: [concat.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/concat.test.ts)
+
+## Slicing
+
+### `Hex.slice(hex, start?, end?)`
+
+Extracts portion of hex string by byte indices. Similar to `Array.prototype.slice()`.
+
+```typescript
+const hex = Hex("0x123456")
+
+Hex.slice(hex, 1)       // "0x3456" (from byte 1 to end)
+Hex.slice(hex, 1, 2)    // "0x34" (byte 1 only)
+Hex.slice(hex, 0, 2)    // "0x1234" (first 2 bytes)
+Hex.slice(hex, -1)      // "0x56" (last byte)
+
+// Empty slices
+Hex.slice(hex, 0, 0)    // "0x"
+Hex.slice(hex, 3)       // "0x" (past end)
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to slice
+- `start?: number` - Start byte index (default: 0)
+- `end?: number` - End byte index, exclusive (default: length)
+
+**Returns:** `BrandedHex`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/slice.js:24-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/slice.js#L24-L36)
+Tests: [slice.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/slice.test.ts)
+
+**Note:** Operates on byte boundaries, not character indices. One byte = two hex characters.
+
+## Padding
+
+### `Hex.pad(hex, size)`
+
+Left-pads hex with zeros to target byte size. Common for fixed-size values like U256.
+
+```typescript
+const hex = Hex("0x1234")
+
+Hex.pad(hex, 4)   // "0x00001234"
+Hex.pad(hex, 8)   // "0x0000000000001234"
+Hex.pad(hex, 32)  // "0x00000000000000000000000000000000000000000000000000000000001234"
+
+// Already at or exceeds target size - no change
+Hex.pad(hex, 2)   // "0x1234"
+Hex.pad(hex, 1)   // "0x1234"
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to pad
+- `size: number` - Target size in bytes
+
+**Returns:** `BrandedHex`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/pad.js:23-38](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/pad.js#L23-L38)
+Tests: [pad.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/pad.test.ts)
+
+**Use cases:**
+- U256 values (32 bytes)
+- Address padding to 32 bytes for ABI encoding
+- Fixed-size hash values
+
+### `Hex.padRight(hex, size)`
+
+Right-pads hex with zeros to target byte size. Used for string/bytes padding.
+
+```typescript
+const hex = Hex("0x1234")
+
+Hex.padRight(hex, 4)   // "0x12340000"
+Hex.padRight(hex, 8)   // "0x1234000000000000"
+
+// Already at or exceeds target size - no change
+Hex.padRight(hex, 2)   // "0x1234"
+Hex.padRight(hex, 1)   // "0x1234"
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to pad
+- `size: number` - Target size in bytes
+
+**Returns:** `BrandedHex`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/padRight.js:23-38](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/padRight.js#L23-L38)
+
+**Use cases:**
+- ABI string/bytes encoding
+- Memory layout with suffix padding
+
+## Trimming
+
+### `Hex.trim(hex)`
+
+Removes leading zero bytes from hex string.
+
+```typescript
+const hex1 = Hex("0x00001234")
+Hex.trim(hex1)  // "0x1234"
+
+const hex2 = Hex("0x0000000000000001")
+Hex.trim(hex2)  // "0x01"
+
+const hex3 = Hex("0x00000000")
+Hex.trim(hex3)  // "0x" (all zeros)
+
+// Already minimal - no change
+const hex4 = Hex("0x1234")
+Hex.trim(hex4)  // "0x1234"
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to trim
+
+**Returns:** `BrandedHex`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+Defined in: [primitives/Hex/BrandedHex/trim.js:22-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/trim.js#L22-L36)
+Tests: [trim.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/trim.test.ts)
+
+**Use cases:**
+- Compacting storage values
+- Minimal representation of numbers
+- Removing unnecessary padding
+
+## XOR Operation
+
+### `Hex.xor(a, b)`
+
+Bitwise XOR of two hex strings. Both must have same length.
+
+```typescript
+const hex1 = Hex("0x12")
+const hex2 = Hex("0x34")
+
+Hex.xor(hex1, hex2)  // "0x26" (0x12 ^ 0x34 = 0x26)
+
+// Longer values
+const a = Hex("0xff00")
+const b = Hex("0x00ff")
+Hex.xor(a, b)  // "0xffff"
+
+// XOR with self = zero
+const c = Hex("0x1234")
+Hex.xor(c, c)  // "0x0000"
+```
+
+**Parameters:**
+- `a: BrandedHex` - First hex string
+- `b: BrandedHex` - Second hex string (must be same length)
+
+**Returns:** `BrandedHex`
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+- `InvalidLengthError` - If lengths don't match
+
+Defined in: [primitives/Hex/BrandedHex/xor.js:25-58](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/xor.js#L25-L58)
+Tests: [xor.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/xor.test.ts)
+
+**Properties:**
+- Commutative: `xor(a, b) === xor(b, a)`
+- Self-inverse: `xor(xor(a, b), b) === a`
+- Identity with zero: `xor(a, zero) === a`
+
+## Tree-Shakeable Usage
+
+All manipulation methods available as tree-shakeable imports:
+
+```typescript
+import { concat, slice, pad, padRight, trim, xor } from '@tevm/voltaire/BrandedHex'
+
+const hex1 = concat(Hex("0x12"), Hex("0x34"))
+const hex2 = slice(hex1, 1)
+const hex3 = pad(hex2, 32)
+const hex4 = padRight(hex3, 64)
+const hex5 = trim(hex3)
+const hex6 = xor(hex1, Hex("0xff00"))
+```
+
+See [BrandedHex](/primitives/hex/branded-hex) for details on tree-shakeable API.
+
+## Usage Patterns
+
+### Address to U256 Conversion
+
+```typescript
+// Address is 20 bytes, U256 needs 32 bytes
+const address = Hex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const u256 = Hex.pad(address, 32)
+// "0x000000000000000000000000742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+### Extract Function Selector
+
+```typescript
+// First 4 bytes of function signature hash
+const funcSig = Hex("0xa9059cbb000000000000000000000000...")
+const selector = Hex.slice(funcSig, 0, 4)  // "0xa9059cbb"
+```
+
+### Build Transaction Data
+
+```typescript
+const selector = Hex("0xa9059cbb")  // transfer(address,uint256)
+const recipient = Hex.pad(Hex("0x742d35Cc..."), 32)
+const amount = Hex.fromBigInt(1000000n, 32)
+
+const data = Hex.concat(selector, recipient, amount)
+```
+
+### Compact Storage Values
+
+```typescript
+// Remove leading zeros before storage
+const value = Hex.fromBigInt(255n, 32)  // "0x000...0ff"
+const compact = Hex.trim(value)          // "0xff"
+// Store compact, pad on read if needed
+```
+
+### Mask Operations
+
+```typescript
+// Create mask for lower bits
+const value = Hex("0x12345678")
+const mask = Hex("0x0000ffff")
+const masked = Hex.xor(
+  Hex.xor(value, mask),
+  mask
+)  // Extract upper bits
+
+// Clear bits
+const clear = Hex.xor(value, value)  // "0x00000000"
+```
+
+## Byte Arithmetic Table
+
+| Operation | Input | Output | Notes |
+|-----------|-------|--------|-------|
+| `concat` | `["0x12", "0x34"]` | `"0x1234"` | Concatenate bytes |
+| `slice` | `("0x123456", 1, 2)` | `"0x34"` | Extract byte range |
+| `pad` | `("0x1234", 4)` | `"0x00001234"` | Left-pad zeros |
+| `padRight` | `("0x1234", 4)` | `"0x12340000"` | Right-pad zeros |
+| `trim` | `"0x00001234"` | `"0x1234"` | Remove leading zeros |
+| `xor` | `("0x12", "0x34")` | `"0x26"` | Bitwise XOR |
+
+## Related
+
+- [Constructors](/primitives/hex/constructors) - Creating Hex from various types
+- [Conversions](/primitives/hex/conversions) - Converting to other types
+- [Utilities](/primitives/hex/utilities) - Size, equality, random generation
+- [BrandedHex](/primitives/hex/branded-hex) - Tree-shakeable functional API

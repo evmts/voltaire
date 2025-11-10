@@ -1,0 +1,243 @@
+---
+title: "0x08 BN254 Pairing"
+description: BN254 elliptic curve pairing check for zkSNARK verification
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000008`
+**Introduced:** Byzantium (EIP-197)
+**EIP:** [EIP-197](https://eips.ethereum.org/EIPS/eip-197), [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108)
+
+The BN254 Pairing precompile performs a pairing check on the BN254 (alt_bn128) elliptic curve. It verifies whether a product of pairings equals the identity element: `e(A1,B1) * e(A2,B2) * ... * e(Ak,Bk) = 1`. This is the fundamental cryptographic operation for Groth16 zkSNARK verification, enabling zero-knowledge proofs on Ethereum.
+
+A pairing is a special bilinear map that takes two elliptic curve points (one from group G1, one from group G2) and produces a value in a third group GT. The bilinear property means `e(aP, bQ) = e(P, Q)^(ab)`, which is what makes zero-knowledge proofs mathematically possible. Think of it as a one-way function that lets you verify relationships between encrypted values without decrypting them.
+
+EIP-1108 (Istanbul hardfork) reduced gas costs by 56-57%, making zkSNARK verification practical for production applications like Tornado Cash and zk-rollups.
+
+## Gas Cost
+
+**Formula:** `45000 + 34000 * k` where k = number of point pairs
+
+**Examples:**
+- Empty input (k=0): 45,000 gas
+- 1 pair: 79,000 gas
+- 2 pairs: 113,000 gas
+- 4 pairs: 181,000 gas
+
+Pre-Istanbul: 100,000 + 80,000*k (much more expensive)
+
+## Input Format
+
+Input must be a multiple of 192 bytes. Each pair consists of:
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | G1 point (32-byte x, 32-byte y)
+64     | 128    | G2 point (four 32-byte values: x1, x2, y1, y2)
+```
+
+Each 192-byte chunk represents one (G1, G2) pair.
+- k pairs = 192 * k bytes
+- Empty input (0 bytes) is valid and returns success (empty product = 1)
+
+**G2 point encoding:** G2 points have coordinates in Fp2 = Fp[i]/(i²+1):
+- x = x1 + x2*i (offset 64: x1, offset 96: x2)
+- y = y1 + y2*i (offset 128: y1, offset 160: y2)
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | 1 if pairing check passes, 0 otherwise
+```
+
+Total output length: 32 bytes (single word)
+- Success: 0x0000...0001 (last byte = 1)
+- Failure: 0x0000...0000 (all zeros)
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Verify Groth16 zkSNARK proof
+// Need to check: e(A, B) * e(alpha, beta) * e(C, delta) * e(input, gamma) = 1
+// Rearranged: e(-A, B) * e(alpha, beta) * e(-C, delta) * e(input, gamma) = 1
+
+const numPairs = 4;
+const input = new Uint8Array(192 * numPairs);
+
+// Set G1 and G2 points from proof
+// ... (fill in actual proof values)
+
+const gasNeeded = 45000n + 34000n * BigInt(numPairs);
+
+const result = execute(
+  PrecompileAddress.BN254_PAIRING,
+  input,
+  gasNeeded,
+  Hardfork.CANCUN
+);
+
+if (result.success && result.output[31] === 1) {
+  console.log('Proof verified!');
+} else {
+  console.log('Proof invalid');
+}
+console.log('Gas used:', result.gasUsed);
+```
+
+## Error Conditions
+
+- Out of gas
+- Input length not multiple of 192
+- G1 point not on curve
+- G2 point not on curve
+- Coordinate >= field modulus
+- Invalid G2 point encoding
+
+Failures return error (not false). Only valid inputs that fail the pairing check return false (32 zero bytes).
+
+## Use Cases
+
+**Production Applications:**
+
+- **Tornado Cash:** Privacy-preserving Ethereum transactions using Groth16 proofs. Each withdrawal verifies a pairing check proving knowledge of a deposit without revealing which one (181,000 gas).
+
+- **zk-Rollups:** Layer 2 scaling solutions verify validity proofs on L1:
+  - **zkSync Era:** Uses PLONK (different proof system, but same curve)
+  - **Polygon zkEVM:** Groth16 verification for batches of thousands of transactions
+  - **Scroll:** zkEVM using different proof systems but BN254 pairing primitives
+
+- **Semaphore:** Anonymous signaling and voting. Proves "I'm in this group" without revealing identity. Used by privacy protocols and DAO voting systems.
+
+- **Aztec Protocol:** Privacy-preserving smart contracts on Ethereum. Each private transaction includes zkSNARK proof verified via pairing.
+
+**Why Pairing Instead of Pure Software?**
+
+Computing a BN254 pairing in EVM bytecode would cost millions of gas. The precompile uses optimized native code (via arkworks-rs) and reduces cost by 99%+. Without this precompile, zkSNARKs on Ethereum would be economically infeasible.
+
+**BLS Signatures (Historical):** Early BLS signature schemes used BN254, but modern implementations prefer BLS12-381 (see precompiles 0x0a-0x0d) for better security margins.
+
+## Implementation Details
+
+- **Zig:** Uses arkworks-rs via Rust FFI for optimal pairing performance
+- **TypeScript:** Wraps BN254 crypto module pairing implementation
+- **Integration:** Most complex of BN254 operations, uses Miller loop + final exponentiation
+- **Algorithm:** Optimal Ate pairing on BN254
+- **Optimization:** Multi-pairing optimization (Miller loop shared across pairs)
+
+## Mathematical Background
+
+**What is a Pairing?**
+
+A pairing is a bilinear map: `e: G1 × G2 → GT`
+
+Key properties:
+- **Bilinearity:** `e(aP, bQ) = e(P, Q)^(ab) = e(bP, aQ)` for all scalars a, b
+- **Non-degeneracy:** `e(G1_generator, G2_generator) ≠ 1`
+- **Computability:** Efficiently computable (using Miller loop + final exponentiation)
+
+**Why This Enables zkSNARKs:**
+
+The bilinear property lets verifiers check polynomial equations without knowing the polynomial coefficients:
+- Prover commits to polynomial: `C = p(τ) * G1` (where τ is trusted setup secret)
+- Verifier checks relationships: `e(C, G2) = e(proof, verifier_key)`
+- If equation holds, proof is valid - but verifier never learns τ or polynomial coefficients
+
+This is why a trusted setup is needed: someone generates τ and computes powers of τ, then deletes τ. As long as one person in the ceremony is honest, the system is secure.
+
+**BN254 Curve Details:**
+
+- **Prime field:** 254-bit prime `p = 21888242871839275222246405745257275088696311157297823662689037894645226208583`
+- **Embedding degree:** 12 (pairing uses degree-12 extension field)
+- **Security:** ~100-bit security level (approximately equivalent to 2048-bit RSA)
+- **Groups:** G1 over Fp, G2 over Fp2, GT in Fp12
+
+## Groth16 zkSNARK Verification
+
+Groth16 is the most widely used zkSNARK system. A typical proof consists of three G1 points (A, B, C), and verification checks:
+
+```
+e(A, B) * e(alpha, beta) * e(C, delta) * e(public_inputs, gamma) = 1
+```
+
+Rearranging for implementation (using negation to avoid inversions):
+
+```
+e(-A, B) * e(alpha, beta) * e(-C, delta) * e(public_inputs, gamma) = 1
+```
+
+**Verification key elements:**
+- `alpha, beta, delta, gamma`: Points from trusted setup
+- `public_inputs`: Derived from circuit public inputs and verification key
+
+**Gas cost for Groth16:** `45000 + 34000*4 = 181,000 gas`
+
+**Real-world example:** Tornado Cash uses Groth16 to prove "I know a secret that was deposited" without revealing which deposit. The circuit has ~2,000 constraints, proving knowledge of a Merkle path in the deposit tree.
+
+## Gas Cost Comparison
+
+| Operation | Pre-Istanbul | Istanbul | Improvement |
+|-----------|-------------|----------|-------------|
+| 1 pair | 180,000 | 79,000 | 56% reduction |
+| 2 pairs | 260,000 | 113,000 | 57% reduction |
+| 4 pairs (Groth16) | 420,000 | 181,000 | 57% reduction |
+
+## Test Vectors
+
+From official Ethereum test suite:
+
+```typescript
+// Vector 1: Empty input (identity check)
+// Empty product of pairings should equal 1 (success)
+const input1 = new Uint8Array(0);
+const result1 = execute(PrecompileAddress.BN254_PAIRING, input1, 50000n, Hardfork.CANCUN);
+// result1.output[31] === 1
+// result1.gasUsed === 45000
+
+// Vector 2: Valid pairing with generators
+// e(G1, G2) where G1 and G2 are curve generators
+const input2 = new Uint8Array(192);
+// G1 generator (x, y):
+input2.set(hexToBytes('0000000000000000000000000000000000000000000000000000000000000001'), 0);
+input2.set(hexToBytes('0000000000000000000000000000000000000000000000000000000000000002'), 32);
+// G2 generator (x1, x2, y1, y2):
+input2.set(hexToBytes('1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed'), 64);
+input2.set(hexToBytes('198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2'), 96);
+input2.set(hexToBytes('12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa'), 128);
+input2.set(hexToBytes('090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b'), 160);
+const result2 = execute(PrecompileAddress.BN254_PAIRING, input2, 100000n, Hardfork.CANCUN);
+// result2.output[31] === 1
+// result2.gasUsed === 79000
+
+// Vector 3: Invalid pairing (should return 0)
+// e(G1, G2) * e(G1, G2) = e(G1, G2)^2 ≠ 1
+const input3 = new Uint8Array(384);
+input3.set(input2, 0);   // First pair
+input3.set(input2, 192); // Second pair (duplicate)
+const result3 = execute(PrecompileAddress.BN254_PAIRING, input3, 150000n, Hardfork.CANCUN);
+// result3.output[31] === 0 (pairing check fails)
+// result3.gasUsed === 113000
+
+// Vector 4: Groth16-style verification (4 pairs)
+// This simulates a real zkSNARK proof verification
+const input4 = new Uint8Array(768);
+// ... (fill with actual proof verification pairs)
+const result4 = execute(PrecompileAddress.BN254_PAIRING, input4, 200000n, Hardfork.CANCUN);
+// result4.gasUsed === 181000
+```
+
+## Related
+
+- [Crypto: BN254](/crypto/bn254)
+- [Precompile: BN254 Add](/precompiles/bn254-add)
+- [Precompile: BN254 Mul](/precompiles/bn254-mul)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E
+- [EIP-197: Precompiled Contracts for Optimal Ate Pairing Check on alt_bn128](https://eips.ethereum.org/EIPS/eip-197)
+- [EIP-1108: Reduce alt_bn128 Gas Costs](https://eips.ethereum.org/EIPS/eip-1108)
+- [Groth16 Paper](https://eprint.iacr.org/2016/260.pdf)

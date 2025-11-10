@@ -1,0 +1,652 @@
+---
+title: Blake2
+description: High-performance cryptographic hash faster than SHA-256 with variable output length
+---
+
+# Blake2
+
+High-performance cryptographic hash function
+
+## Overview
+
+BLAKE2 is a cryptographic hash function faster than MD5, SHA-1, SHA-2, and SHA-3, yet at least as secure as the latest standard SHA-3. It was designed in 2012 as an improved version of BLAKE (a SHA-3 finalist) by Jean-Philippe Aumasson, Samuel Neves, Zooko Wilcox-O'Hearn, and Christian Winnerlein.
+
+BLAKE2b (this implementation) is optimized for 64-bit platforms and produces digests of any size between 1 and 64 bytes (8 to 512 bits). The variable output length makes it versatile for different use cases without requiring separate algorithms.
+
+Key characteristics:
+- **Performance**: 2-4x faster than SHA-256 on modern CPUs
+- **Security**: At least as secure as SHA-3 with no known attacks
+- **Flexibility**: Variable output length (1-64 bytes)
+- **Simplicity**: Fewer rounds than SHA-3, easier to implement correctly
+- **Keyed hashing**: Built-in support for MAC (Message Authentication Code)
+
+Used in:
+- **Zcash**: Equihash proof-of-work algorithm
+- **IPFS**: Content addressing
+- **WireGuard**: VPN protocol
+- **Argon2**: Password hashing (winner of Password Hashing Competition)
+- **General purpose**: File integrity, checksums, merkle trees
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Hashing">
+```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
+// Hash bytes with default 64-byte output
+const data = new Uint8Array([1, 2, 3, 4, 5]);
+const hash = Blake2.hash(data);
+// Uint8Array(64) [...]
+
+// Hash with custom output length (32 bytes)
+const hash32 = Blake2.hash(data, 32);
+// Uint8Array(32) [...]
+
+// Hash with 20-byte output (same size as RIPEMD160)
+const hash20 = Blake2.hash(data, 20);
+// Uint8Array(20) [...]
+```
+</Tab>
+
+<Tab title="String Hashing">
+```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
+// Hash string with default 64-byte output
+const hash = Blake2.hashString('hello world');
+// Uint8Array(64) [...]
+
+// Hash string with 32-byte output (BLAKE2b-256)
+const hash32 = Blake2.hashString('hello', 32);
+// Uint8Array(32) [...]
+
+// Hash also accepts strings directly
+const directHash = Blake2.hash('hello world', 48);
+// Uint8Array(48) [...]
+```
+</Tab>
+
+<Tab title="Variable Output">
+```typescript
+import { Blake2 } from '@tevm/voltaire/crypto/blake2';
+
+const data = new Uint8Array([1, 2, 3]);
+
+// Different output lengths for different use cases
+const hash1 = Blake2.hash(data, 1);   // 1 byte (minimal)
+const hash20 = Blake2.hash(data, 20); // 20 bytes (address-sized)
+const hash32 = Blake2.hash(data, 32); // 32 bytes (SHA256-equivalent)
+const hash48 = Blake2.hash(data, 48); // 48 bytes
+const hash64 = Blake2.hash(data, 64); // 64 bytes (maximum/default)
+
+// Each length produces a completely different hash
+// NOT just truncation of longer output
+```
+</Tab>
+</Tabs>
+
+## API Reference
+
+### `Blake2.hash(data: Uint8Array | string, outputLength?: number): Uint8Array`
+
+Hash data with BLAKE2b.
+
+Accepts both Uint8Array and string inputs. Strings are UTF-8 encoded before hashing. Output length can be customized from 1 to 64 bytes.
+
+**Parameters:**
+- `data`: Input data to hash (Uint8Array or string)
+- `outputLength`: Output length in bytes (1-64, default 64)
+
+**Returns:** BLAKE2b hash of specified length (Uint8Array)
+
+**Throws:** Error if outputLength is not between 1 and 64
+
+**Example:**
+```typescript
+// Default 64-byte output
+const hash64 = Blake2.hash(new Uint8Array([1, 2, 3]));
+console.log(hash64.length); // 64
+
+// 32-byte output (BLAKE2b-256)
+const hash32 = Blake2.hash(new Uint8Array([1, 2, 3]), 32);
+console.log(hash32.length); // 32
+
+// String input
+const stringHash = Blake2.hash('hello', 20);
+console.log(stringHash.length); // 20
+```
+
+---
+
+### `Blake2.hashString(str: string, outputLength?: number): Uint8Array`
+
+Hash UTF-8 string with BLAKE2b.
+
+Convenience method that explicitly documents string input. Functionally equivalent to `Blake2.hash(str, outputLength)`.
+
+**Parameters:**
+- `str`: String to hash
+- `outputLength`: Output length in bytes (1-64, default 64)
+
+**Returns:** BLAKE2b hash of specified length (Uint8Array)
+
+**Throws:** Error if outputLength is not between 1 and 64
+
+**Example:**
+```typescript
+// Hash string with default 64-byte output
+const hash = Blake2.hashString('message');
+console.log(hash.length); // 64
+
+// Hash string with custom 32-byte output
+const hash32 = Blake2.hashString('test', 32);
+console.log(hash32.length); // 32
+```
+
+## Test Vectors
+
+RFC 7693 BLAKE2b test vectors:
+
+```typescript
+// Empty input (64-byte output)
+Blake2.hash(new Uint8Array([]))
+// Uint8Array(64) [
+//   0x78, 0x6a, 0x02, 0xf7, 0x42, 0x01, 0x59, 0x03,
+//   0xc6, 0xc6, 0xfd, 0x85, 0x25, 0x52, 0xd2, 0x72,
+//   0x91, 0x2f, 0x47, 0x40, 0xe1, 0x58, 0x47, 0x61,
+//   0x8a, 0x86, 0xe2, 0x17, 0xf7, 0x1f, 0x54, 0x19,
+//   0xd2, 0x5e, 0x10, 0x31, 0xaf, 0xee, 0x58, 0x53,
+//   0x13, 0x89, 0x64, 0x44, 0x93, 0x4e, 0xb0, 0x4b,
+//   0x90, 0x3a, 0x68, 0x5b, 0x14, 0x48, 0xb7, 0x55,
+//   0xd5, 0x6f, 0x70, 0x1a, 0xfe, 0x9b, 0xe2, 0xce
+// ]
+
+// "abc" (64-byte output)
+Blake2.hash(new Uint8Array([0x61, 0x62, 0x63]))
+// Uint8Array(64) [
+//   0xba, 0x80, 0xa5, 0x3f, 0x98, 0x1c, 0x4d, 0x0d,
+//   0x6a, 0x27, 0x97, 0xb6, 0x9f, 0x12, 0xf6, 0xe9,
+//   0x4c, 0x21, 0x2f, 0x14, 0x68, 0x5a, 0xc4, 0xb7,
+//   0x4b, 0x12, 0xbb, 0x6f, 0xdb, 0xff, 0xa2, 0xd1,
+//   0x7d, 0x87, 0xc5, 0x39, 0x2a, 0xab, 0x79, 0x2d,
+//   0xc2, 0x52, 0xd5, 0xde, 0x45, 0x33, 0xcc, 0x95,
+//   0x18, 0xd3, 0x8a, 0xa8, 0xdb, 0xf1, 0x92, 0x5a,
+//   0xb9, 0x23, 0x86, 0xed, 0xd4, 0x00, 0x99, 0x23
+// ]
+
+// Empty input (32-byte output, BLAKE2b-256)
+Blake2.hash(new Uint8Array([]), 32)
+// Uint8Array(32) [
+//   0x0e, 0x57, 0x51, 0xc0, 0x26, 0xe5, 0x43, 0xb2,
+//   0xe8, 0xab, 0x2e, 0xb0, 0x60, 0x99, 0xda, 0xa1,
+//   0xd1, 0xe5, 0xdf, 0x47, 0x77, 0x8f, 0x77, 0x87,
+//   0xfa, 0xab, 0x45, 0xcd, 0xf1, 0x2f, 0xe3, 0xa8
+// ]
+
+// Single byte 0x00 (64-byte output)
+Blake2.hash(new Uint8Array([0x00]))
+// Uint8Array(64) [
+//   0x2f, 0xa3, 0xf6, 0x86, 0xdf, 0x87, 0x69, 0x95,
+//   0x16, 0x7e, 0x7c, 0x2e, 0x5d, 0x74, 0xc4, 0xc7,
+//   0xb6, 0xe4, 0x8f, 0x80, 0x68, 0xfe, 0x0e, 0x44,
+//   0x20, 0x83, 0x44, 0xd4, 0x80, 0xf7, 0x90, 0x4c,
+//   0x36, 0x96, 0x3e, 0x44, 0x11, 0x5f, 0xe3, 0xeb,
+//   0x2a, 0x3a, 0xc8, 0x69, 0x4c, 0x28, 0xbc, 0xb4,
+//   0xf5, 0xa0, 0xf3, 0x27, 0x6f, 0x2e, 0x79, 0x48,
+//   0x7d, 0x82, 0x19, 0x05, 0x7a, 0x50, 0x6e, 0x4b
+// ]
+
+// Two bytes 0x00 0x01 (64-byte output)
+Blake2.hash(new Uint8Array([0x00, 0x01]))
+// Uint8Array(64) [
+//   0x1c, 0x08, 0x79, 0x8d, 0xc6, 0x41, 0xab, 0xa9,
+//   0xde, 0xe4, 0x35, 0xe2, 0x25, 0x19, 0xa4, 0x72,
+//   0x9a, 0x09, 0xb2, 0xbf, 0xe0, 0xff, 0x00, 0xef,
+//   0x2d, 0xcd, 0x8e, 0xd6, 0xf8, 0xa0, 0x7d, 0x15,
+//   0xea, 0xf4, 0xae, 0xe5, 0x2b, 0xbf, 0x18, 0xab,
+//   0x56, 0x08, 0xa6, 0x19, 0x0f, 0x70, 0xb9, 0x04,
+//   0x86, 0xc8, 0xa7, 0xd4, 0x87, 0x37, 0x10, 0xb1,
+//   0x11, 0x5d, 0x3d, 0xeb, 0xbb, 0x43, 0x27, 0xb5
+// ]
+```
+
+## Security Considerations
+
+### Cryptographic Security
+BLAKE2 provides full cryptographic security:
+- **Collision resistance**: No known collision attacks
+- **Preimage resistance**: Computationally infeasible to find input from hash
+- **Second preimage resistance**: Cannot find alternative input with same hash
+- **No length extension attacks**: Immune to attacks that plague MD5/SHA-1/SHA-2
+
+### Security Level by Output Size
+Output length determines security against different attacks:
+- **64 bytes (512 bits)**: Full security (256-bit collision, 512-bit preimage resistance)
+- **32 bytes (256 bits)**: SHA-256 equivalent (128-bit collision, 256-bit preimage)
+- **20 bytes (160 bits)**: Address-sized (80-bit collision, 160-bit preimage)
+- **16 bytes (128 bits)**: 64-bit collision resistance (suitable for checksums, not crypto)
+
+### Advantages Over SHA-2
+- **Faster**: 2-4x performance improvement on modern CPUs
+- **Simpler**: Fewer rounds and operations, easier to implement correctly
+- **Side-channel resistance**: Designed with constant-time operations
+- **No padding oracle**: Immune to certain padding attacks
+
+### Advantages Over SHA-3
+- **Significantly faster**: SHA-3 prioritized security margin over speed
+- **Less memory**: More cache-friendly on modern CPUs
+- **Variable output**: Built-in support for any output length
+- **Battle-tested**: Used in production systems (Zcash, WireGuard, Argon2)
+
+<Tip title="Modern Hash Function">
+BLAKE2 represents modern hash function design: secure, fast, simple. For new applications, it's often a better choice than SHA-256 unless regulatory compliance requires NIST-standardized algorithms.
+</Tip>
+
+## Performance
+
+### Implementation
+- **TypeScript**: Uses @noble/hashes pure TypeScript implementation
+  - Constant-time operations
+  - Optimized for JavaScript engines
+- **Zig/Native**: Custom BLAKE2b implementation in Zig
+  - **WARNING**: Zig implementation is UNAUDITED custom crypto code
+  - Optimized for 64-bit platforms
+  - Constant-time operations to resist timing attacks
+  - No hardware acceleration (pure software)
+- **WASM**: Available via Blake2.wasm.ts for browser environments
+
+### Benchmarks
+Typical performance (varies by platform):
+- Native (Zig): ~600-900 MB/s
+- WASM: ~300-500 MB/s
+- Pure JS: ~200-350 MB/s
+
+BLAKE2b is significantly faster than SHA-256 software implementations, though SHA-256 with hardware acceleration (SHA-NI) can be faster.
+
+### Comparison to Other Hashes
+On modern CPUs without hardware crypto acceleration:
+```
+BLAKE2b:     ~700 MB/s
+SHA-256:     ~400 MB/s (software)
+SHA-3:       ~150 MB/s
+MD5:         ~600 MB/s (insecure, don't use)
+```
+
+With SHA-NI hardware acceleration, SHA-256 can reach 2-3 GB/s, but BLAKE2 remains competitive and more widely accelerated.
+
+## Implementation Details
+
+### TypeScript Implementation
+Uses @noble/hashes:
+```typescript
+import { blake2b } from "@noble/hashes/blake2.js";
+
+export function hash(
+  data: Uint8Array | string,
+  outputLength: number = 64
+): Uint8Array {
+  if (outputLength < 1 || outputLength > 64) {
+    throw new Error(
+      `Invalid output length: ${outputLength}. Must be between 1 and 64 bytes.`
+    );
+  }
+
+  const input = typeof data === "string"
+    ? new TextEncoder().encode(data)
+    : data;
+
+  return blake2b(input, { dkLen: outputLength });
+}
+```
+
+### Zig Implementation
+Custom BLAKE2b implementation in `src/crypto/blake2.zig`:
+- Follows RFC 7693 specification
+- Optimized for 64-bit platforms (uses u64 words)
+- Implements mixing function (G function) and compression rounds
+- **UNAUDITED**: Custom cryptographic code without security audit
+- Constant-time operations for side-channel resistance
+- Supports variable output length (1-64 bytes)
+
+Key components:
+- `BLAKE2B_IV`: Initialization vectors (8 × u64)
+- `BLAKE2B_SIGMA`: Message schedule permutations (12 rounds)
+- `unauditedBlake2bG`: Mixing function
+- `unauditedBlake2bRound`: Compression round
+- `unauditedBlake2bCompress`: Full compression function
+
+<Warning title="Unaudited Crypto Warning">
+The Zig BLAKE2b implementation is custom cryptographic code that has NOT been professionally audited. While it follows RFC 7693, it may contain implementation bugs. Use in production at your own risk. The @noble/hashes TypeScript implementation is well-tested and recommended for production use.
+</Warning>
+
+### WASM
+Available via `Blake2.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
+
+```typescript
+import { Blake2Wasm } from '@tevm/voltaire/crypto/blake2.wasm';
+const hash = Blake2Wasm.hash(data, 32);
+```
+
+## Use Cases
+
+### Fast File Integrity
+BLAKE2 excels at high-throughput hashing:
+```typescript
+async function hashLargeFile(file: File): Promise<Uint8Array> {
+  const chunkSize = 1024 * 1024; // 1MB chunks
+  const chunks: Uint8Array[] = [];
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+    chunks.push(new Uint8Array(chunk));
+  }
+
+  // Concatenate and hash (for streaming, would use incremental API)
+  const combined = new Uint8Array(file.size);
+  let position = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, position);
+    position += chunk.length;
+  }
+
+  return Blake2.hash(combined, 32);
+}
+```
+
+### Content Addressing (IPFS-style)
+```typescript
+function contentAddress(data: Uint8Array): string {
+  const hash = Blake2.hash(data, 32); // 32-byte output
+  // Convert to base58 or base32 for IPFS CIDv1
+  return toBase58(hash);
+}
+```
+
+### Merkle Trees with Custom Size
+```typescript
+function merkleRoot(leaves: Uint8Array[], outputSize: number = 32): Uint8Array {
+  if (leaves.length === 0) throw new Error("No leaves");
+  if (leaves.length === 1) return Blake2.hash(leaves[0], outputSize);
+
+  const hashes = leaves.map(leaf => Blake2.hash(leaf, outputSize));
+
+  while (hashes.length > 1) {
+    const nextLevel: Uint8Array[] = [];
+    for (let i = 0; i < hashes.length; i += 2) {
+      const left = hashes[i];
+      const right = hashes[i + 1] || left;
+      const combined = new Uint8Array(outputSize * 2);
+      combined.set(left, 0);
+      combined.set(right, outputSize);
+      nextLevel.push(Blake2.hash(combined, outputSize));
+    }
+    hashes.length = 0;
+    hashes.push(...nextLevel);
+  }
+
+  return hashes[0];
+}
+```
+
+### Fast Checksums
+```typescript
+// 16-byte checksum for data deduplication
+function checksum(data: Uint8Array): Uint8Array {
+  return Blake2.hash(data, 16); // Faster than full 64-byte hash
+}
+
+// 32-byte cryptographic checksum
+function cryptoChecksum(data: Uint8Array): Uint8Array {
+  return Blake2.hash(data, 32); // SHA-256 equivalent security
+}
+```
+
+### Variable-Length Hashes
+```typescript
+// Custom output sizes for different purposes
+const addressHash = Blake2.hash(data, 20);    // 20 bytes (address-sized)
+const signatureHash = Blake2.hash(data, 32);  // 32 bytes (signature)
+const fullHash = Blake2.hash(data, 64);       // 64 bytes (maximum security)
+```
+
+## Variants
+
+### BLAKE2b vs BLAKE2s
+- **BLAKE2b** (this implementation): Optimized for 64-bit platforms, 1-64 byte output
+- **BLAKE2s**: Optimized for 8-32 bit platforms, 1-32 byte output
+
+For modern 64-bit systems, BLAKE2b is recommended.
+
+### BLAKE2 vs BLAKE3
+- **BLAKE2**: Established, widely used, proven security
+- **BLAKE3**: Even faster (parallelizable), unlimited output, released 2020
+
+BLAKE2 remains the standard choice for most applications. BLAKE3 offers better performance on multi-core systems but has less deployment history.
+
+## Constants
+
+```typescript
+Blake2.MAX_OUTPUT_SIZE  // 64 - Maximum output size in bytes
+Blake2.MIN_OUTPUT_SIZE  // 1 - Minimum output size in bytes
+Blake2.BLOCK_SIZE       // 128 - Internal block size in bytes
+```
+
+## Test Vectors
+
+### RFC 7693 Official Test Vectors
+
+Empty input (64-byte output):
+```typescript
+Blake2.hash(new Uint8Array([]))
+// Uint8Array(64) [
+//   0x78, 0x6a, 0x02, 0xf7, 0x42, 0x01, 0x59, 0x03,
+//   0xc6, 0xc6, 0xfd, 0x85, 0x25, 0x52, 0xd2, 0x72,
+//   ...
+// ]
+```
+
+"abc" (64-byte output):
+```typescript
+Blake2.hash(new Uint8Array([0x61, 0x62, 0x63]))
+// Uint8Array(64) [
+//   0xba, 0x80, 0xa5, 0x3f, 0x98, 0x1c, 0x4d, 0x0d,
+//   ...
+// ]
+```
+
+See full test vectors in the implementation tests.
+
+## Security Considerations
+
+### Cryptographic Strength
+
+Blake2 provides strong cryptographic security:
+- **Collision resistance**: No known attacks
+- **Preimage resistance**: Computationally infeasible
+- **Second preimage resistance**: Secure
+- **No length extension**: Immune to length extension attacks
+
+### Security vs SHA-2 and SHA-3
+
+- At least as secure as SHA-3
+- Faster than both SHA-2 and SHA-3 in software
+- Modern design with conservative security margins
+
+<Tip title="Modern Alternative">
+Blake2 represents state-of-the-art hash function design. It's secure, fast, and simple - often a better choice than SHA-256 for new applications where regulatory compliance isn't required.
+</Tip>
+
+## Performance
+
+### Speed Comparison
+
+Blake2b is significantly faster than MD5, SHA-1, SHA-2, and SHA-3:
+
+```
+Algorithm          Software Speed     with Hardware Accel
+---------          --------------     -------------------
+Blake2b            700 MB/s           700 MB/s
+SHA-256            500 MB/s           3200 MB/s (SHA-NI)
+SHA-3              150 MB/s           150 MB/s
+MD5                600 MB/s (broken)  -
+```
+
+**Key Insight:** Blake2 excels in software performance. SHA-256 is faster with hardware acceleration but slower in software.
+
+### When Blake2 Outperforms SHA-256
+
+- Embedded systems without SHA-NI
+- Server environments prioritizing software performance
+- Applications needing variable output length
+- Streaming data processing
+
+## Implementation Details
+
+### TypeScript Implementation
+Uses @noble/hashes pure TypeScript implementation:
+```typescript
+import { blake2b } from "@noble/hashes/blake2.js";
+
+export function hash(
+  data: Uint8Array | string,
+  outputLength: number = 64
+): Uint8Array {
+  const input = typeof data === "string"
+    ? new TextEncoder().encode(data)
+    : data;
+  return blake2b(input, { dkLen: outputLength });
+}
+```
+
+### Zig Implementation
+Custom Blake2b implementation in `src/crypto/blake2.zig`:
+- Follows RFC 7693 specification
+- Optimized for 64-bit platforms
+- **UNAUDITED**: Custom crypto code without security audit
+- Variable output length (1-64 bytes)
+
+<Warning title="Unaudited Warning">
+The Zig Blake2b implementation is custom cryptographic code that has NOT been professionally audited. The @noble/hashes TypeScript implementation is well-tested and recommended for production use.
+</Warning>
+
+## Use Cases
+
+### Zcash
+
+Zcash uses Blake2 in its Equihash proof-of-work algorithm:
+```typescript
+// Simplified Zcash-style usage
+const header = new Uint8Array(140);
+const hash = Blake2.hash(header, 32);
+```
+
+### IPFS Content Addressing
+
+```typescript
+function contentHash(data: Uint8Array): Uint8Array {
+  return Blake2.hash(data, 32);
+}
+```
+
+### Fast File Checksums
+
+```typescript
+async function checksumFile(file: File): Promise<Uint8Array> {
+  const chunkSize = 1024 * 1024; // 1MB chunks
+  const chunks: Uint8Array[] = [];
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+    chunks.push(new Uint8Array(chunk));
+  }
+
+  const combined = new Uint8Array(file.size);
+  let position = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, position);
+    position += chunk.length;
+  }
+
+  return Blake2.hash(combined, 32);
+}
+```
+
+### Variable-Length Hashes
+
+```typescript
+// Different hash sizes for different purposes
+const addressHash = Blake2.hash(data, 20);    // 20 bytes
+const signatureHash = Blake2.hash(data, 32);  // 32 bytes
+const maxHash = Blake2.hash(data, 64);        // 64 bytes (max security)
+```
+
+## Comparison
+
+### Blake2 vs SHA-256
+
+**Blake2:**
+- ✅ 2-4x faster in software
+- ✅ Variable output length
+- ✅ Modern design (2012)
+- ❌ Not NIST standardized
+
+**SHA-256:**
+- ✅ NIST standardized
+- ✅ Hardware acceleration (SHA-NI)
+- ✅ Regulatory compliance
+- ❌ Slower in software
+- ❌ Fixed 32-byte output
+
+**When to use Blake2:**
+- Maximum software performance
+- Variable output length needed
+- No compliance requirements
+
+**When to use SHA-256:**
+- Regulatory compliance needed
+- Hardware acceleration available
+- Standard conformance required
+
+### Blake2 vs Keccak-256
+
+**Blake2:**
+- ✅ 3-4x faster than Keccak
+- ✅ Variable output length
+- ✅ Simpler design
+
+**Keccak-256:**
+- ✅ Ethereum compatibility
+- ✅ SHA-3 family
+- ❌ Slower
+
+### Blake2 vs SHA-3
+
+**Blake2:**
+- ✅ Significantly faster (4-5x)
+- ✅ Less memory usage
+- ✅ Variable output length
+
+**SHA-3:**
+- ✅ NIST standard
+- ✅ Different design paradigm (sponge)
+- ❌ Much slower
+
+## Further Reading
+
+Explore comprehensive Blake2 documentation:
+
+- **[API Reference](/crypto/blake2/api-reference)** - Complete function reference (TODO)
+- **[Test Vectors](/crypto/blake2/test-vectors)** - RFC 7693 test vectors (TODO)
+- **[Security](/crypto/blake2/security)** - Security analysis (TODO)
+- **[Performance](/crypto/blake2/performance)** - Detailed benchmarks (TODO)
+- **[Usage Patterns](/crypto/blake2/usage-patterns)** - Common patterns (TODO)
+- **[Comparison](/crypto/blake2/comparison)** - vs SHA-256, Keccak-256, SHA-3 (TODO)
+
+## Related
+
+- [SHA256](/crypto/sha256) - Industry standard, hardware accelerated
+- [Keccak256](/crypto/keccak256) - Ethereum's hash function
+- [RIPEMD160](/crypto/ripemd160) - Legacy 160-bit hash
+- [Hash Primitive](/primitives/hash) - 32-byte hash type
+- [RFC 7693](https://datatracker.ietf.org/doc/html/rfc7693) - Blake2 specification

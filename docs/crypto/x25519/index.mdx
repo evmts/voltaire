@@ -1,0 +1,523 @@
+---
+title: X25519
+description: Curve25519 Elliptic Curve Diffie-Hellman - modern, fast key exchange for secure communications
+---
+
+## Overview
+
+X25519 is an elliptic curve Diffie-Hellman (ECDH) key exchange protocol using Curve25519. It's designed specifically for key agreement - two parties can independently compute a shared secret without transmitting it over the network.
+
+**Curve**: Montgomery curve v² = u³ + 486662u² + u over prime field 2²⁵⁵ - 19
+
+**Key features**:
+- **Fast**: One of the fastest elliptic curve operations available
+- **Simple**: Single scalar multiplication, no complex point arithmetic
+- **Secure**: 128-bit security level with built-in protection against timing attacks
+- **Small keys**: 32-byte public and secret keys
+- **No signatures**: X25519 is for key exchange only (use Ed25519 for signatures)
+
+**Modern usage**: TLS 1.3, WireGuard, Signal Protocol, SSH, Tor, WhatsApp, iMessage, and nearly all modern encrypted communications.
+
+## Quick Start
+
+```typescript
+import * as X25519 from '@tevm/voltaire/crypto/X25519';
+
+// Generate two keypairs
+const aliceKeypair = X25519.generateKeypair();
+const bobKeypair = X25519.generateKeypair();
+
+// Both parties compute the same shared secret
+const aliceShared = X25519.scalarmult(aliceKeypair.secretKey, bobKeypair.publicKey);
+const bobShared = X25519.scalarmult(bobKeypair.secretKey, aliceKeypair.publicKey);
+
+// aliceShared === bobShared (same 32-byte shared secret)
+console.log(aliceShared.every((byte, i) => byte === bobShared[i])); // true
+```
+
+## API Reference
+
+### Key Generation
+
+#### `generateKeypair()`
+
+Generate a random X25519 keypair using cryptographically secure random number generator.
+
+**Parameters**: None
+
+**Returns**: `{ secretKey: Uint8Array, publicKey: Uint8Array }`
+- `secretKey` - 32-byte secret key
+- `publicKey` - 32-byte public key
+
+```typescript
+const { secretKey, publicKey } = X25519.generateKeypair();
+
+// Share publicKey with peer
+// Keep secretKey private
+```
+
+#### `keypairFromSeed(seed)`
+
+Generate deterministic X25519 keypair from a 32-byte seed.
+
+**Parameters**:
+- `seed` (`Uint8Array`) - 32-byte seed for deterministic generation
+
+**Returns**: `{ secretKey: Uint8Array, publicKey: Uint8Array }`
+
+**Throws**:
+- `InvalidSecretKeyError` - Seed wrong length
+- `X25519Error` - Keypair generation failed
+
+```typescript
+const seed = crypto.getRandomValues(new Uint8Array(32));
+const { secretKey, publicKey } = X25519.keypairFromSeed(seed);
+
+// Same seed always produces same keypair
+```
+
+#### `generateSecretKey()`
+
+Generate a random 32-byte secret key.
+
+**Parameters**: None
+
+**Returns**: `Uint8Array` - 32-byte secret key
+
+```typescript
+const secretKey = X25519.generateSecretKey();
+const publicKey = X25519.derivePublicKey(secretKey);
+```
+
+#### `derivePublicKey(secretKey)`
+
+Derive public key from secret key.
+
+**Parameters**:
+- `secretKey` (`Uint8Array`) - 32-byte secret key
+
+**Returns**: `Uint8Array` - 32-byte public key
+
+**Throws**:
+- `InvalidSecretKeyError` - Secret key invalid
+
+```typescript
+const publicKey = X25519.derivePublicKey(secretKey);
+```
+
+### Key Exchange
+
+#### `scalarmult(secretKey, publicKey)`
+
+Perform X25519 scalar multiplication to compute shared secret. This is the core ECDH operation.
+
+**Parameters**:
+- `secretKey` (`Uint8Array`) - Your 32-byte secret key
+- `publicKey` (`Uint8Array`) - Their 32-byte public key
+
+**Returns**: `Uint8Array` - 32-byte shared secret
+
+**Throws**:
+- `InvalidSecretKeyError` - Secret key invalid
+- `InvalidPublicKeyError` - Public key invalid
+- `X25519Error` - Scalar multiplication failed
+
+```typescript
+// Alice's side
+const aliceSecret = X25519.generateSecretKey();
+const alicePublic = X25519.derivePublicKey(aliceSecret);
+
+// Bob's side
+const bobSecret = X25519.generateSecretKey();
+const bobPublic = X25519.derivePublicKey(bobSecret);
+
+// Exchange public keys over insecure channel
+// Both compute shared secret
+const sharedAlice = X25519.scalarmult(aliceSecret, bobPublic);
+const sharedBob = X25519.scalarmult(bobSecret, alicePublic);
+
+// sharedAlice === sharedBob
+assert(sharedAlice.every((byte, i) => byte === sharedBob[i]));
+```
+
+### Validation
+
+#### `validateSecretKey(secretKey)`
+
+Check if a byte array is a valid X25519 secret key.
+
+**Parameters**:
+- `secretKey` (`Uint8Array`) - Candidate secret key
+
+**Returns**: `boolean` - `true` if valid (32 bytes)
+
+```typescript
+if (X25519.validateSecretKey(secretKey)) {
+  // Safe to use
+}
+```
+
+#### `validatePublicKey(publicKey)`
+
+Check if a byte array is a valid X25519 public key.
+
+**Parameters**:
+- `publicKey` (`Uint8Array`) - Candidate public key
+
+**Returns**: `boolean` - `true` if valid (32 bytes, valid curve point)
+
+```typescript
+if (X25519.validatePublicKey(publicKey)) {
+  // Valid curve point
+}
+```
+
+### Constants
+
+```typescript
+X25519.SECRET_KEY_SIZE      // 32 bytes
+X25519.PUBLIC_KEY_SIZE      // 32 bytes
+X25519.SHARED_SECRET_SIZE   // 32 bytes
+```
+
+## Security Considerations
+
+### Critical Warnings
+
+⚠️ **Shared secret derivation**: The raw X25519 output should **always** be used with a Key Derivation Function (KDF) like HKDF before using as a symmetric key. Never use the shared secret directly.
+
+```typescript
+// ❌ WRONG - using shared secret directly
+const sharedSecret = X25519.scalarmult(mySecret, theirPublic);
+const aesKey = sharedSecret; // DON'T DO THIS
+
+// ✅ CORRECT - derive key with HKDF
+import { hkdf } from '@noble/hashes/hkdf';
+import { sha256 } from '@noble/hashes/sha256';
+
+const sharedSecret = X25519.scalarmult(mySecret, theirPublic);
+const derivedKey = hkdf(sha256, sharedSecret, undefined, 'my-app-context', 32);
+const aesKey = derivedKey; // Safe to use
+```
+
+⚠️ **No authentication**: X25519 provides secrecy but not authentication. An attacker can perform a man-in-the-middle attack if you don't verify the peer's public key (e.g., via signatures or certificates).
+
+⚠️ **One-time use**: Shared secrets should be ephemeral. Generate new keypairs for each session (forward secrecy).
+
+⚠️ **Small subgroup attacks**: X25519 is designed to be resistant, but always validate public keys received from untrusted sources.
+
+⚠️ **Use cryptographically secure random**: Never use `Math.random()` for key generation. Use `crypto.getRandomValues()`.
+
+### TypeScript Implementation
+
+The TypeScript implementation uses **@noble/curves/ed25519** (x25519 export) by Paul Miller:
+- Security audited and production-ready
+- Constant-time operations to prevent timing attacks
+- Montgomery ladder for scalar multiplication
+- Built-in clamping and validation
+- ~15KB minified
+
+### Zig Implementation
+
+The Zig implementation uses **`std.crypto.dh.X25519`** from Zig standard library:
+- **Status**: Production-ready, part of Zig stdlib
+- **Features**: Constant-time, RFC 7748 compliant
+- **Audit**: Audited as part of Zig standard library
+- **Performance**: Optimized for all architectures
+
+Available through FFI and WASM interfaces.
+
+## Test Vectors
+
+### RFC 7748 Test Vectors
+
+```typescript
+// Test vector 1 from RFC 7748
+const aliceSecret = new Uint8Array([
+  0x77, 0x07, 0x6d, 0x0a, 0x73, 0x18, 0xa5, 0x7d,
+  0x3c, 0x16, 0xc1, 0x72, 0x51, 0xb2, 0x66, 0x45,
+  0xdf, 0x4c, 0x2f, 0x87, 0xeb, 0xc0, 0x99, 0x2a,
+  0xb1, 0x77, 0xfb, 0xa5, 0x1d, 0xb9, 0x2c, 0x2a,
+]);
+
+const bobPublic = new Uint8Array([
+  0xde, 0x9e, 0xdb, 0x7d, 0x7b, 0x7d, 0xc1, 0xb4,
+  0xd3, 0x5b, 0x61, 0xc2, 0xec, 0xe4, 0x35, 0x37,
+  0x3f, 0x83, 0x43, 0xc8, 0x5b, 0x78, 0x67, 0x4d,
+  0xad, 0xfc, 0x7e, 0x14, 0x6f, 0x88, 0x2b, 0x4f,
+]);
+
+const sharedSecret = X25519.scalarmult(aliceSecret, bobPublic);
+
+const expectedShared = new Uint8Array([
+  0x4a, 0x5d, 0x9d, 0x5b, 0xa4, 0xce, 0x2d, 0xe1,
+  0x72, 0x8e, 0x3b, 0xf4, 0x80, 0x35, 0x0f, 0x25,
+  0xe0, 0x7e, 0x21, 0xc9, 0x47, 0xd1, 0x9e, 0x33,
+  0x76, 0xf0, 0x9b, 0x3c, 0x1e, 0x16, 0x17, 0x42,
+]);
+
+assert(sharedSecret.every((byte, i) => byte === expectedShared[i]));
+```
+
+### Iteration Test (RFC 7748)
+
+```typescript
+// Test scalar multiplication by iterating 1,000 times
+let k = new Uint8Array([
+  0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]);
+
+let u = k.slice();
+
+for (let i = 0; i < 1000; i++) {
+  const result = X25519.scalarmult(k, u);
+  u = k;
+  k = result;
+}
+
+const expected = new Uint8Array([
+  0x68, 0x4c, 0xf5, 0x9b, 0xa8, 0x33, 0x09, 0x55,
+  0x28, 0x00, 0xef, 0x56, 0x6f, 0x2f, 0x4d, 0x3c,
+  0x1c, 0x38, 0x87, 0xc4, 0x93, 0x60, 0xe3, 0x87,
+  0x5f, 0x2e, 0xb9, 0x4d, 0x99, 0x53, 0x2c, 0x51,
+]);
+
+assert(k.every((byte, i) => byte === expected[i]));
+```
+
+### Deterministic Keypair Generation
+
+```typescript
+// Same seed always produces same keypair
+const seed = new Uint8Array(32);
+seed[0] = 0x42;
+
+const keypair1 = X25519.keypairFromSeed(seed);
+const keypair2 = X25519.keypairFromSeed(seed);
+
+assert(keypair1.secretKey.every((byte, i) => byte === keypair2.secretKey[i]));
+assert(keypair1.publicKey.every((byte, i) => byte === keypair2.publicKey[i]));
+```
+
+## Implementation Details
+
+### TypeScript
+
+**Library**: `@noble/curves/ed25519` (x25519 export) by Paul Miller
+- **Audit status**: Security audited, production-ready
+- **Standard**: RFC 7748 compliant
+- **Features**: Constant-time Montgomery ladder, automatic clamping
+- **Size**: ~15KB minified (tree-shakeable)
+- **Performance**: Fastest JavaScript X25519 implementation
+
+Key design:
+- Uses Montgomery curve representation internally
+- Automatic scalar clamping (bits 0, 1, 2, 255 cleared; bit 254 set)
+- Constant-time to prevent timing attacks
+- Validates all inputs
+
+### Zig
+
+**Implementation**: `std.crypto.dh.X25519` from Zig standard library
+- **Status**: Production-ready, audited
+- **Standard**: RFC 7748 compliant
+- **Features**: Constant-time, optimized for all architectures
+- **Integration**: Available via FFI and WASM
+
+Zig wrapper provides allocator-based API for memory management.
+
+### WASM
+
+X25519 operations available in WASM builds:
+- **ReleaseSmall**: Size-optimized
+- **ReleaseFast**: Performance-optimized
+
+```typescript
+import { X25519 } from '@tevm/voltaire/crypto/X25519';
+// Automatically uses WASM in supported environments
+```
+
+## Protocol Integration Examples
+
+### Signal Protocol (Double Ratchet)
+
+```typescript
+// Simplified Signal Protocol key exchange
+interface SignalSession {
+  rootKey: Uint8Array;
+  sendingChain: Uint8Array;
+  receivingChain: Uint8Array;
+}
+
+async function initializeSignalSession(
+  myIdentityKey: Uint8Array,
+  myEphemeralKey: Uint8Array,
+  theirIdentityKey: Uint8Array,
+  theirEphemeralKey: Uint8Array
+): Promise<SignalSession> {
+  // Perform 4 X25519 operations (X3DH)
+  const dh1 = X25519.scalarmult(myIdentityKey, theirEphemeralKey);
+  const dh2 = X25519.scalarmult(myEphemeralKey, theirIdentityKey);
+  const dh3 = X25519.scalarmult(myEphemeralKey, theirEphemeralKey);
+  const dh4 = X25519.scalarmult(myIdentityKey, theirIdentityKey);
+
+  // Derive root key from all DH operations
+  const sharedSecrets = new Uint8Array([...dh1, ...dh2, ...dh3, ...dh4]);
+  const rootKey = await hkdf(sha256, sharedSecrets, undefined, 'signal-root', 32);
+
+  return {
+    rootKey,
+    sendingChain: new Uint8Array(32),
+    receivingChain: new Uint8Array(32),
+  };
+}
+```
+
+### WireGuard VPN
+
+```typescript
+// Simplified WireGuard handshake (Noise_IK pattern)
+interface WireGuardPeer {
+  staticPrivate: Uint8Array;
+  staticPublic: Uint8Array;
+  ephemeralPrivate: Uint8Array;
+  ephemeralPublic: Uint8Array;
+}
+
+async function wireGuardHandshake(
+  initiator: WireGuardPeer,
+  responderStaticPublic: Uint8Array
+): Promise<{ sendKey: Uint8Array; receiveKey: Uint8Array }> {
+  // Initial handshake (Noise_IK pattern)
+  const es = X25519.scalarmult(initiator.ephemeralPrivate, responderStaticPublic);
+  const ss = X25519.scalarmult(initiator.staticPrivate, responderStaticPublic);
+
+  // Derive transport keys
+  const handshakeHash = sha256(new Uint8Array([...es, ...ss]));
+  const sendKey = await hkdf(sha256, handshakeHash, undefined, 'wireguard-send', 32);
+  const receiveKey = await hkdf(sha256, handshakeHash, undefined, 'wireguard-recv', 32);
+
+  return { sendKey, receiveKey };
+}
+```
+
+### TLS 1.3 Key Exchange
+
+```typescript
+// Simplified TLS 1.3 (EC)DHE handshake
+interface TLSHandshake {
+  clientPublic: Uint8Array;
+  serverPublic: Uint8Array;
+  sharedSecret: Uint8Array;
+}
+
+async function tlsKeyExchange(): Promise<TLSHandshake> {
+  // Client generates ephemeral keypair
+  const clientKeypair = X25519.generateKeypair();
+
+  // Server generates ephemeral keypair
+  const serverKeypair = X25519.generateKeypair();
+
+  // Both compute shared secret
+  const sharedSecret = X25519.scalarmult(
+    clientKeypair.secretKey,
+    serverKeypair.publicKey
+  );
+
+  // Derive TLS 1.3 traffic keys
+  const masterSecret = await hkdf(
+    sha256,
+    sharedSecret,
+    undefined,
+    'tls13-master-secret',
+    32
+  );
+
+  return {
+    clientPublic: clientKeypair.publicKey,
+    serverPublic: serverKeypair.publicKey,
+    sharedSecret: masterSecret,
+  };
+}
+```
+
+## Ethereum Context
+
+X25519 is **not used in Ethereum's core protocol**, but appears in Web3 applications:
+
+### Encrypted Communication
+
+- **Decentralized messaging**: Status, Matrix use X25519 for E2E encryption
+- **Wallet-to-wallet encryption**: Encrypted direct messages between addresses
+- **IPFS/Filecoin**: Encrypted file storage with X25519 key exchange
+
+### Layer 2 and Privacy
+
+- **State channels**: Encrypted off-chain communication
+- **Rollup operators**: Secure operator-to-operator communication
+- **Privacy protocols**: Aztec, Tornado Cash use X25519 for encrypted notes
+
+### Cross-chain Integration
+
+- **Cosmos IBC**: X25519 for encrypted cross-chain messages
+- **Polkadot parachains**: X25519 in XCM encrypted channels
+
+## X25519 vs Ed25519
+
+X25519 and Ed25519 are **related but different** - both use Curve25519 but for different purposes:
+
+| Feature | X25519 | Ed25519 |
+|---------|--------|---------|
+| **Purpose** | Key exchange (ECDH) | Digital signatures |
+| **Operation** | Scalar multiplication | Point multiplication + hash |
+| **Output** | Shared secret | Signature (r, s) |
+| **Security** | Confidentiality | Authentication |
+| **Public Key** | 32 bytes (u-coordinate) | 32 bytes (compressed point) |
+| **Use Case** | Establish encrypted channel | Verify identity/integrity |
+| **Example** | TLS handshake | SSH authentication |
+
+**Use both together**:
+```typescript
+// Ed25519 for authentication
+const identity = Ed25519.keypairFromSeed(seed);
+const signature = Ed25519.sign(message, identity.secretKey);
+
+// X25519 for encryption
+const ephemeral = X25519.generateKeypair();
+const sharedSecret = X25519.scalarmult(ephemeral.secretKey, peerPublic);
+```
+
+## X25519 vs P256 ECDH
+
+| Feature | X25519 | P256 ECDH |
+|---------|--------|-----------|
+| **Performance** | Faster (~2x) | Slower |
+| **Key Size** | 32 bytes | 32 bytes |
+| **Implementation** | Simpler | More complex |
+| **Security Assumptions** | Curve25519 | NIST P-256 |
+| **Standards** | RFC 7748 | NIST FIPS 186-4 |
+| **Modern Adoption** | Very High | High (enterprise) |
+| **Hardware Support** | Software-optimized | Hardware-accelerated |
+
+**When to use X25519**:
+- New protocols and applications
+- Maximum performance
+- Simple, secure-by-default design
+- Modern encrypted communications (Signal, WireGuard)
+
+**When to use P256 ECDH**:
+- Enterprise/government compliance (FIPS)
+- Hardware acceleration needed (TPM, Secure Enclave)
+- Legacy system compatibility
+- WebAuthn integration
+
+## Related
+
+- [Crypto: Ed25519](/crypto/ed25519) - Curve25519 signatures (companion to X25519)
+- [Crypto: Secp256k1](/crypto/secp256k1) - Ethereum's ECDSA curve
+- [Crypto: P256](/crypto/p256) - NIST P-256 ECDH alternative
+- [Primitives: Hash](/primitives/hash) - KDF and HKDF for key derivation
+- RFC 7748: Elliptic Curves for Security (X25519 specification)

@@ -1,0 +1,78 @@
+---
+title: Bytecode.fromUint8Array
+description: Create bytecode from Uint8Array with zero-cost conversion
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Bytecode.fromUint8Array(bytes: Uint8Array): Bytecode`
+
+Create bytecode from Uint8Array. Zero-cost conversion with no validation.
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw bytecode bytes
+
+**Returns:** `Bytecode` - Bytecode instance with prototype methods
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+// Build bytecode programmatically
+const bytes = new Uint8Array([
+  0x60, 0x80,  // PUSH1 0x80
+  0x60, 0x40,  // PUSH1 0x40
+  0x52,        // MSTORE
+])
+const code = Bytecode.fromUint8Array(bytes)
+
+// Validate structure if needed
+if (!code.validate()) {
+  throw new Error("Invalid bytecode")
+}
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/from.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `fromUint8Array(bytes: Uint8Array): BrandedBytecode`
+
+Create bytecode from Uint8Array. Zero-cost conversion with no validation.
+
+**Parameters:**
+- `bytes: Uint8Array` - Raw bytecode bytes
+
+**Returns:** `BrandedBytecode` - Branded Uint8Array
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+// Build bytecode programmatically
+const bytes = new Uint8Array([
+  0x60, 0x80,  // PUSH1 0x80
+  0x60, 0x40,  // PUSH1 0x40
+  0x52,        // MSTORE
+])
+const code = Bytecode.fromUint8Array(bytes)
+
+// Validate structure if needed
+if (!validate(code)) {
+  throw new Error("Invalid bytecode")
+}
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/from.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/from.js)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [from](/primitives/bytecode/from) - Universal constructor
+- [validate](/primitives/bytecode/validate) - Check structure validity

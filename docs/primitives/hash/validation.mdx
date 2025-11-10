@@ -1,0 +1,292 @@
+---
+title: Hash Validation
+description: Validating hash formats and types
+---
+
+# Validation
+
+Methods for validating hash strings and checking hash types.
+
+## String Validation
+
+### `Hash.isValidHex(str)`
+
+Check if string is valid hash hex format.
+
+```typescript
+Hash.isValidHex("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef") // true
+Hash.isValidHex("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")   // true (no 0x)
+Hash.isValidHex("0x1234")                                                              // false (too short)
+Hash.isValidHex("0xGGGG...")                                                           // false (invalid chars)
+
+// Use before parsing
+if (Hash.isValidHex(input)) {
+  const hash = Hash.fromHex(input)
+}
+```
+
+**Parameters:**
+- `str: string` - String to validate
+
+**Returns:** `boolean`
+
+Defined in: [primitives/Hash/BrandedHash/isValidHex.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isValidHex.js#L16)
+
+**Validation rules:**
+- With `0x`: exactly 66 characters (0x + 64 hex chars)
+- Without `0x`: exactly 64 hex characters
+- Only hex chars allowed: `0-9`, `a-f`, `A-F`
+
+## Type Guards
+
+### `Hash.isHash(value)`
+
+Type guard checking if value is a `BrandedHash` (32-byte Uint8Array).
+
+```typescript
+function processHash(value: unknown) {
+  if (Hash.isHash(value)) {
+    // TypeScript knows value is BrandedHash here
+    const hex = Hash.toHex(value)
+    console.log(hex)
+  } else {
+    console.error("Not a hash")
+  }
+}
+
+processHash(Hash.keccak256String("hello"))  // ✓ valid
+processHash(new Uint8Array(32))             // ✓ valid (32 bytes)
+processHash(new Uint8Array(20))             // ✗ invalid (wrong length)
+processHash("0x...")                        // ✗ invalid (string)
+```
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:** `value is BrandedHash` (type predicate)
+
+Defined in: [primitives/Hash/BrandedHash/isHash.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isHash.js#L16)
+
+**Checks:**
+- `value instanceof Uint8Array`
+- `value.length === 32`
+
+### `Hash.assert(value, message?)`
+
+Assert value is a Hash, throws if not.
+
+```typescript
+function requireHash(value: unknown): Hash {
+  Hash.assert(value)
+  return value as Hash // TypeScript knows value is Hash after assertion
+}
+
+// With custom error message
+Hash.assert(value, "Expected hash value")
+
+// Throws if not a hash
+try {
+  Hash.assert("not a hash")
+} catch (error) {
+  console.error(error.message) // "Value is not a Hash"
+}
+```
+
+**Parameters:**
+- `value: unknown` - Value to assert
+- `message?: string` - Optional error message
+
+**Returns:** `void` (asserts type)
+
+**Throws:**
+- `Error` - If value is not a Hash
+
+Defined in: [primitives/Hash/BrandedHash/assert.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/assert.js#L16)
+
+**TypeScript support:** Uses `asserts value is BrandedHash` return type for type narrowing.
+
+### `instance.isZero()`
+
+Check if hash is zero hash (all bytes are 0).
+
+```typescript
+const zeroHash = Hash.fromBytes(new Uint8Array(32))
+zeroHash.isZero() // true
+
+Hash.ZERO.isZero() // true
+
+const nonZero = Hash.keccak256String("hello")
+nonZero.isZero() // false
+```
+
+**Returns:** `boolean`
+
+**Static form:**
+```typescript
+Hash.isZero(hash) // boolean
+```
+
+See [Comparisons](/primitives/hash/comparisons#iszerо) for more details.
+
+## Usage Patterns
+
+### Safe Parsing
+
+```typescript
+function parseHash(input: string): Hash | null {
+  if (!Hash.isValidHex(input)) {
+    return null
+  }
+  try {
+    return Hash.fromHex(input)
+  } catch {
+    return null
+  }
+}
+
+// With error details
+function parseHashOrThrow(input: string): Hash {
+  if (!Hash.isValidHex(input)) {
+    throw new Error(`Invalid hash format: ${input}`)
+  }
+  return Hash.fromHex(input)
+}
+```
+
+### Runtime Type Checking
+
+```typescript
+function handleValue(value: unknown) {
+  if (Hash.isHash(value)) {
+    // Handle as hash
+    return Hash.toHex(value)
+  }
+
+  if (typeof value === "string" && Hash.isValidHex(value)) {
+    // Parse string to hash
+    return Hash.fromHex(value)
+  }
+
+  throw new Error("Invalid hash value")
+}
+```
+
+### Input Validation
+
+```typescript
+function validateTransactionHash(txHash: string): void {
+  if (!Hash.isValidHex(txHash)) {
+    throw new Error(
+      "Transaction hash must be a 32-byte hex string (64 hex characters)"
+    )
+  }
+}
+
+function processTransaction(txHash: string) {
+  validateTransactionHash(txHash)
+  const hash = Hash.fromHex(txHash)
+  // ... process transaction
+}
+```
+
+### API Parameter Validation
+
+```typescript
+interface GetLogsParams {
+  fromBlock: number
+  toBlock: number
+  topics: string[]
+}
+
+function validateGetLogsParams(params: GetLogsParams): void {
+  for (const topic of params.topics) {
+    if (topic !== null && !Hash.isValidHex(topic)) {
+      throw new Error(`Invalid topic hash: ${topic}`)
+    }
+  }
+}
+```
+
+### Type Guard in Filters
+
+```typescript
+function filterValidHashes(values: unknown[]): Hash[] {
+  return values.filter(Hash.isHash)
+}
+
+// With additional validation
+function filterNonZeroHashes(values: unknown[]): Hash[] {
+  return values
+    .filter(Hash.isHash)
+    .filter(hash => !hash.isZero())
+}
+```
+
+### Assertion-Based Validation
+
+```typescript
+function processHashData(data: unknown): string {
+  // Assert will throw if not a hash
+  Hash.assert(data, "Expected hash data")
+
+  // TypeScript knows data is BrandedHash after assertion
+  return Hash.toHex(data)
+}
+
+// In function parameters
+function computeNext(prevHash: unknown): Hash {
+  Hash.assert(prevHash)
+  return Hash.keccak256(prevHash)
+}
+```
+
+### Form Input Validation
+
+```typescript
+function validateHashInput(input: string): string[] {
+  const errors: string[] = []
+
+  if (!input) {
+    errors.push("Hash is required")
+    return errors
+  }
+
+  if (!input.startsWith("0x")) {
+    errors.push("Hash must start with 0x")
+  }
+
+  const normalized = input.slice(2)
+  if (normalized.length !== 64) {
+    errors.push(`Hash must be 64 hex characters, got ${normalized.length}`)
+  }
+
+  if (!/^[0-9a-fA-F]+$/.test(normalized)) {
+    errors.push("Hash contains invalid characters")
+  }
+
+  // Or use isValidHex
+  if (!Hash.isValidHex(input)) {
+    errors.push("Invalid hash format")
+  }
+
+  return errors
+}
+```
+
+## Tree-Shakeable Usage
+
+All validation methods available as tree-shakeable imports:
+
+```typescript
+import { isValidHex, isHash, assert, isZero } from '@tevm/voltaire/BrandedHash'
+
+isValidHex("0x1234567890abcdef...")  // boolean
+isHash(value)                         // type guard
+assert(value)                         // throws if invalid
+assert(value, "Custom error")         // throws with custom message
+isZero(hash)                          // boolean
+```
+
+**Tree-shaking benefit:** Pure validation functions with no dependencies. Minimal bundle impact.
+
+See [BrandedHash](/primitives/hash/branded-hash) for details on tree-shakeable API.

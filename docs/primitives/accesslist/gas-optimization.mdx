@@ -1,0 +1,444 @@
+---
+title: "Gas Optimization"
+description: "Gas Optimization"
+---
+
+# Gas Optimization
+
+Gas cost calculation and analysis for EIP-2930 access lists.
+
+## Gas Constants
+
+```typescript
+AccessList.ADDRESS_COST = 2400n                // Per address in list
+AccessList.STORAGE_KEY_COST = 1900n            // Per storage key in list
+AccessList.COLD_ACCOUNT_ACCESS_COST = 2600n    // Without access list
+AccessList.COLD_STORAGE_ACCESS_COST = 2100n    // Without access list
+AccessList.WARM_STORAGE_ACCESS_COST = 100n     // After warm-up
+```
+
+## AccessList.gasCost()
+
+Calculate total gas cost for including access list in transaction.
+
+```typescript
+AccessList.gasCost(list: BrandedAccessList): bigint
+```
+
+**Parameters:**
+- `list`: Access list to calculate cost for
+
+**Returns:** Total gas cost in wei
+
+**Formula:**
+```
+cost = (addresses × 2400) + (storageKeys × 1900)
+```
+
+**Example:**
+```typescript
+const list = AccessList.from([
+  { address: addr1, storageKeys: [key1, key2] },
+  { address: addr2, storageKeys: [key3] }
+]);
+
+const cost = list.gasCost();
+// (2 × 2400) + (3 × 1900) = 4800 + 5700 = 10,500 gas
+```
+
+**Notes:**
+- Upfront cost paid when transaction included
+- Does not account for actual usage
+- Duplicates counted separately (deduplicate first)
+
+## AccessList.gasSavings()
+
+Calculate potential gas savings from warm vs cold access.
+
+```typescript
+AccessList.gasSavings(list: BrandedAccessList): bigint
+```
+
+**Parameters:**
+- `list`: Access list to calculate savings for
+
+**Returns:** Maximum potential savings in wei
+
+**Formula:**
+```
+addressSavings = addresses × (COLD_ACCOUNT_ACCESS - ADDRESS_COST)
+                = addresses × (2600 - 2400) = addresses × 200
+
+keySavings = keys × (COLD_STORAGE_ACCESS - STORAGE_KEY_COST)
+           = keys × (2100 - 1900) = keys × 200
+
+totalSavings = addressSavings + keySavings
+```
+
+**Example:**
+```typescript
+const list = AccessList.from([
+  { address: addr1, storageKeys: [key1, key2] },
+  { address: addr2, storageKeys: [] }
+]);
+
+const savings = list.gasSavings();
+// (2 × 200) + (2 × 200) = 400 + 400 = 800 gas
+```
+
+**Important:**
+- Only realized if transaction actually accesses those slots
+- Assumes single access per slot
+- Multiple accesses to same slot increase savings
+
+## AccessList.hasSavings()
+
+Check if access list provides net gas savings.
+
+```typescript
+AccessList.hasSavings(list: BrandedAccessList): boolean
+```
+
+**Parameters:**
+- `list`: Access list to check
+
+**Returns:** `true` if savings > cost
+
+**Formula:**
+```
+hasSavings = gasSavings(list) > gasCost(list)
+```
+
+**Example:**
+```typescript
+const list = buildAccessList();
+
+if (list.hasSavings()) {
+  // Include in transaction
+  tx.accessList = list;
+} else {
+  // Skip access list
+  tx.accessList = [];
+}
+```
+
+**Notes:**
+- Simple benefit check
+- Does not account for usage patterns
+- Conservative estimate (single access)
+
+## Gas Economics
+
+### When Access Lists Save Gas
+
+Access lists are beneficial when:
+
+1. **Multiple storage reads**
+   ```typescript
+   // Reading 3+ storage slots from same contract
+   const list = AccessList.from([
+     { address: token, storageKeys: [slot1, slot2, slot3] }
+   ]);
+   // Cost: 2400 + (3 × 1900) = 8,100
+   // Savings: 200 + (3 × 200) = 800
+   // Net: -7,300 (not beneficial for single access)
+   // But: Each additional access to those slots saves 2000 gas
+   ```
+
+2. **Repeated accesses**
+   ```typescript
+   // Same slot accessed multiple times
+   // Access list cost: 2400 + 1900 = 4,300
+   // First access: Save 400
+   // Second access: Save 2,000 (warm → warm instead of cold → warm)
+   // Total: 2,400 saved on 2+ accesses
+   ```
+
+3. **Cross-contract interactions**
+   ```typescript
+   // Multiple contracts with storage reads
+   const list = AccessList.from([
+     { address: router, storageKeys: [] },
+     { address: factory, storageKeys: [pairSlot] },
+     { address: token0, storageKeys: [balanceSlot] },
+     { address: token1, storageKeys: [balanceSlot] }
+   ]);
+   ```
+
+### When Access Lists Cost Gas
+
+Access lists waste gas when:
+
+1. **Few storage accesses**
+   ```typescript
+   // Single storage read
+   const list = AccessList.from([
+     { address: token, storageKeys: [balanceSlot] }
+   ]);
+   // Cost: 2400 + 1900 = 4,300
+   // Savings: 200 + 200 = 400
+   // Net: -3,900 (loses gas)
+   ```
+
+2. **Already-warm slots**
+   ```typescript
+   // Accessing slots warmed earlier in transaction
+   // Access list provides no additional benefit
+   ```
+
+3. **Duplicate entries**
+   ```typescript
+   // Without deduplication
+   const list = AccessList.from([
+     { address: token, storageKeys: [key1] },
+     { address: token, storageKeys: [key1] }  // Duplicate
+   ]);
+   // Pays twice for same entry
+   ```
+
+## Patterns
+
+### Basic Analysis
+
+```typescript
+function analyzeAccessList(list: BrandedAccessList) {
+  const cost = list.gasCost();
+  const savings = list.gasSavings();
+  const net = savings - cost;
+
+  return {
+    cost,
+    savings,
+    net,
+    beneficial: net > 0n,
+    breakeven: savings === cost
+  };
+}
+
+const analysis = analyzeAccessList(list);
+console.log(`Net impact: ${analysis.net} gas`);
+```
+
+### Conditional Inclusion
+
+```typescript
+function optimizeTransaction(tx: Transaction): Transaction {
+  if (tx.accessList.isEmpty()) {
+    return tx;
+  }
+
+  const deduped = tx.accessList.deduplicate();
+
+  if (deduped.hasSavings()) {
+    return { ...tx, accessList: deduped };
+  }
+
+  // Remove unprofitable access list
+  return { ...tx, accessList: AccessList.create() };
+}
+```
+
+### Cost Comparison
+
+```typescript
+function compareAccessLists(
+  lists: BrandedAccessList[]
+): BrandedAccessList {
+  let best = lists[0];
+  let bestNet = best.gasSavings() - best.gasCost();
+
+  for (const list of lists.slice(1)) {
+    const net = list.gasSavings() - list.gasCost();
+    if (net > bestNet) {
+      best = list;
+      bestNet = net;
+    }
+  }
+
+  return best;
+}
+```
+
+### Break-even Calculation
+
+```typescript
+function calculateBreakeven(list: BrandedAccessList) {
+  const addresses = list.addressCount();
+  const keys = list.storageKeyCount();
+
+  // Savings per access
+  const savingsPerAccess = 200n * (BigInt(addresses) + BigInt(keys));
+
+  // Cost to include
+  const cost = list.gasCost();
+
+  // Accesses needed to break even
+  const accessesNeeded = cost / savingsPerAccess;
+
+  return {
+    cost,
+    savingsPerAccess,
+    accessesNeeded: Number(accessesNeeded),
+    beneficial: accessesNeeded <= 1n
+  };
+}
+```
+
+### Gas Budget
+
+```typescript
+function fitAccessListToBudget(
+  list: BrandedAccessList,
+  maxGas: bigint
+): BrandedAccessList {
+  const cost = list.gasCost();
+
+  if (cost <= maxGas) {
+    return list;
+  }
+
+  // Remove items until under budget
+  // Prioritize items with most keys
+  const sorted = [...list].sort(
+    (a, b) => b.storageKeys.length - a.storageKeys.length
+  );
+
+  let result = AccessList.create();
+  for (const item of sorted) {
+    const withItem = result.withAddress(item.address);
+    for (const key of item.storageKeys) {
+      const withKey = withItem.withStorageKey(item.address, key);
+      if (withKey.gasCost() <= maxGas) {
+        result = withKey;
+      }
+    }
+  }
+
+  return result;
+}
+```
+
+### Multi-access Savings
+
+```typescript
+function calculateMultiAccessSavings(
+  list: BrandedAccessList,
+  accessCount: number
+): bigint {
+  const cost = list.gasCost();
+
+  // First access saves 200/slot
+  const firstAccessSavings = list.gasSavings();
+
+  // Additional accesses save full warm cost (2000/slot)
+  const addresses = BigInt(list.addressCount());
+  const keys = BigInt(list.storageKeyCount());
+  const additionalSavings = (addresses * 2500n + keys * 2000n) * BigInt(accessCount - 1);
+
+  return firstAccessSavings + additionalSavings - cost;
+}
+```
+
+## Real-World Examples
+
+### Uniswap V2 Swap
+
+```typescript
+// Router, two tokens, pair contract
+const list = AccessList.from([
+  { address: router, storageKeys: [] },
+  { address: pair, storageKeys: [reserve0Slot, reserve1Slot] },
+  { address: token0, storageKeys: [balanceSlot] },
+  { address: token1, storageKeys: [balanceSlot] }
+]);
+
+// Cost: (4 × 2400) + (4 × 1900) = 17,200 gas
+// Savings: (4 × 200) + (4 × 200) = 1,600 gas
+// Net: -15,600 gas (not beneficial for single swap)
+```
+
+### NFT Minting
+
+```typescript
+// Contract + owner balance + token counter + new token data
+const list = AccessList.from([
+  { address: nft, storageKeys: [
+    ownerBalanceSlot,
+    tokenCounterSlot,
+    tokenDataSlot,
+    approvalSlot
+  ]}
+]);
+
+// Cost: 2400 + (4 × 1900) = 10,000 gas
+// Savings: 200 + (4 × 200) = 1,000 gas
+// Net: -9,000 gas (not beneficial)
+```
+
+### Batch Transfer
+
+```typescript
+// Transferring to 10 recipients
+const list = AccessList.from([
+  { address: token, storageKeys: [
+    senderBalanceSlot,
+    ...recipientBalanceSlots // 10 slots
+  ]}
+]);
+
+// Cost: 2400 + (11 × 1900) = 23,300 gas
+// Savings: 200 + (11 × 200) = 2,400 gas
+// Net: -20,900 gas (not beneficial even for batch)
+```
+
+## Best Practices
+
+1. **Always deduplicate first**
+   ```typescript
+   const deduped = list.deduplicate();
+   const cost = deduped.gasCost();
+   ```
+
+2. **Don't trust hasSavings blindly**
+   ```typescript
+   // Good: Consider access patterns
+   if (list.hasSavings() && willAccessMultipleTimes()) {
+     tx.accessList = list;
+   }
+
+   // Bad: May lose gas on single access
+   if (list.hasSavings()) {
+     tx.accessList = list;
+   }
+   ```
+
+3. **Account for repeated accesses**
+   ```typescript
+   // Loop accessing same slots multiple times
+   for (let i = 0; i < 10; i++) {
+     // Each iteration benefits from warm access
+     readStorage(token, balanceSlot);
+   }
+   ```
+
+4. **Test with real transactions**
+   ```typescript
+   // Simulate with and without access list
+   const withList = await estimateGas({ ...tx, accessList: list });
+   const without = await estimateGas({ ...tx, accessList: [] });
+   const beneficial = withList < without;
+   ```
+
+5. **Consider transaction type**
+   ```typescript
+   // Access lists only supported in type 1 (EIP-2930) and type 2 (EIP-1559)
+   if (tx.type >= 1 && list.hasSavings()) {
+     tx.accessList = list;
+   }
+   ```
+
+## See Also
+
+- [Queries](.queries) - Inspecting lists
+- [Manipulation](.manipulation) - Building lists
+- [Usage Patterns](.usage-patterns) - Common patterns

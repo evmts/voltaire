@@ -1,0 +1,491 @@
+---
+title: "Authorization"
+description: "Authorization"
+---
+
+
+# Authorization
+
+EIP-7702 authorization implementation enabling EOA code delegation.
+
+## Overview
+
+Authorizations (EIP-7702) allow Externally Owned Accounts (EOAs) to temporarily delegate code execution to smart contracts, enabling account abstraction features without migrating to contract wallets.
+
+**Key Features:**
+- Account abstraction for EOAs
+- Sponsored transactions (gas abstraction)
+- Batch operations
+- Social recovery
+- Custom validation logic
+- Temporary, per-transaction delegation
+
+## Quick Start
+
+<Tabs>
+<Tab title="Namespace API (Tree-shakeable)">
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+// Create unsigned authorization
+const unsigned = {
+  chainId: 1n,
+  address: contractAddress,  // Delegate to this contract
+  nonce: 0n
+};
+
+// Sign it
+const privateKey = new Uint8Array(32); // Your key
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+// Validate
+Authorization.validate.call(auth);
+
+// Calculate gas cost
+const gas = Authorization.getGasCost.call(auth, true); // true = empty account
+console.log(`Gas required: ${gas}`);
+
+// Verify signer
+const authority = Authorization.verify.call(auth);
+console.log(`Signed by: ${authority}`);
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import {
+  sign,
+  validate,
+  getGasCost,
+  verify
+} from '@tevm/voltaire/Authorization';
+
+// Create unsigned authorization
+const unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+// Sign it
+const privateKey = new Uint8Array(32);
+const auth = sign.call(unsigned, privateKey);
+
+// Validate
+validate.call(auth);
+
+// Calculate gas cost
+const gas = getGasCost.call(auth, true);
+console.log(`Gas required: ${gas}`);
+
+// Verify signer
+const authority = verify.call(auth);
+console.log(`Signed by: ${authority}`);
+```
+</Tab>
+</Tabs>
+
+## Core Types
+
+### Authorization.Item
+
+Complete signed authorization.
+
+```typescript
+type Item = {
+  chainId: bigint;      // Chain ID where valid
+  address: Address;     // Contract to delegate to
+  nonce: bigint;        // Account nonce
+  yParity: number;      // Signature Y parity (0 or 1)
+  r: bigint;            // Signature r value
+  s: bigint;            // Signature s value
+};
+```
+
+### Authorization.Unsigned
+
+Authorization before signing.
+
+```typescript
+type Unsigned = {
+  chainId: bigint;
+  address: Address;
+  nonce: bigint;
+};
+```
+
+### Authorization.DelegationDesignation
+
+Result of processing authorization.
+
+```typescript
+type DelegationDesignation = {
+  authority: Address;         // Signer (EOA granting permission)
+  delegatedAddress: Address;  // Contract receiving delegation
+};
+```
+
+## Set Code Delegation
+
+EIP-7702 allows EOA to set its code to point to contract's code:
+
+```
+EOA Account
+├── Balance: Original EOA balance
+├── Nonce: Original EOA nonce
+└── Code: → Points to delegated contract code
+```
+
+**Important:**
+- Delegation is **per-transaction** - resets after transaction
+- Original EOA retains ownership and keys
+- Delegated contract executes in EOA's context
+- EOA's storage remains separate
+
+## Workflow
+
+1. **Create Unsigned Authorization**
+   ```typescript
+   const unsigned = { chainId, address, nonce };
+   ```
+
+2. **Sign Authorization**
+   ```typescript
+   const auth = Authorization.sign.call(unsigned, privateKey);
+   ```
+
+3. **Include in Transaction**
+   - Authorization list included in EIP-7702 transaction
+   - Each authorization processed at transaction start
+
+4. **Execution**
+   - EOA code set to delegated contract
+   - Transaction executes with delegated logic
+   - Code delegation reverts after transaction
+
+## Visual Guides & Examples
+
+### [Workflows & Diagrams](./workflows-and-diagrams)
+
+Comprehensive visual explanations:
+- **EIP-7702 Account Delegation Flow** - EOA → delegate → execute → revert
+- **Authorization Lifecycle** - Creation, signing, processing, execution
+- **Sponsored Transaction Flow** - User signs auth, relayer pays gas
+- **Batch Operations** - Multiple actions in single transaction
+- **Social Recovery** - Guardian-based account recovery
+- **Gas Cost Breakdown** - Per-authorization and transaction costs
+- **Comparison Tables** - Traditional vs EIP-7702 approaches
+
+### [Real-World Examples](./real-world-examples)
+
+Production-ready implementations:
+- **Relay Network Integration** - Gas-sponsoring relay service
+- **Batch Operation Contract** - Multi-action execution
+- **Social Recovery Implementation** - Guardian-based recovery
+- **Smart Account Using Delegation** - EOA-as-smart-account pattern
+- **Gasless Transaction Service** - End-to-end gasless UX
+- **Production Deployment Checklist** - Validation & testing
+
+## API Overview
+
+### Type Guards
+- `isItem(value)` - Check if value is Authorization.Item
+- `isUnsigned(value)` - Check if value is Authorization.Unsigned
+
+### [Validation](./validation)
+- `validate.call(auth)` - Validate authorization structure
+
+### [Signing & Hashing](./signing)
+- `hash.call(unsigned)` - Calculate signing hash
+- `sign.call(unsigned, privateKey)` - Create signed authorization
+- `verify.call(auth)` - Recover authority address
+
+### [Gas Calculations](./gas-calculations)
+- `calculateGasCost.call(authList, emptyAccounts)` - Total gas cost
+- `getGasCost.call(auth, isEmpty)` - Single authorization cost
+
+### [Processing](./processing)
+- `process.call(auth)` - Process single authorization
+- `processAll.call(authList)` - Process authorization list
+
+### [Utilities](./utilities)
+- `format.call(auth)` - Format to string
+- `equals.call(auth1, auth2)` - Check equality
+
+### [WASM](./wasm)
+- `validateWasm(auth)` - WASM validation
+- `signingHashWasm(chainId, address, nonce)` - WASM signing hash
+- `authorityWasm(auth)` - WASM authority recovery
+- `gasCostWasm(authCount, emptyAccounts)` - WASM gas calculation
+
+## Constants
+
+### EIP-7702 Constants
+
+```typescript
+Authorization.MAGIC_BYTE = 0x05;                    // Signing hash prefix
+Authorization.PER_EMPTY_ACCOUNT_COST = 25000n;      // Gas for empty account
+Authorization.PER_AUTH_BASE_COST = 12500n;          // Base gas per authorization
+```
+
+### Signature Constants
+
+```typescript
+Authorization.SECP256K1_N = 0xfff...n;              // Curve order
+Authorization.SECP256K1_HALF_N = SECP256K1_N >> 1n; // N/2 for malleability check
+```
+
+## Use Cases
+
+### Sponsored Transactions
+
+Allow relayer to pay gas for user transactions:
+
+```typescript
+// User creates authorization delegating to sponsor contract
+const unsigned = {
+  chainId: 1n,
+  address: sponsorContractAddress,
+  nonce: await getAccountNonce(userEOA)
+};
+
+const auth = Authorization.sign.call(unsigned, userPrivateKey);
+
+// Relayer includes in transaction
+transaction.authorizationList = [auth];
+transaction.gasPrice = relayerGasPrice;
+```
+
+### Batch Operations
+
+Execute multiple operations in single transaction:
+
+```typescript
+// Delegate to batch executor contract
+const auth = Authorization.sign.call({
+  chainId: 1n,
+  address: batchExecutorAddress,
+  nonce: currentNonce
+}, privateKey);
+
+// Batch executor can:
+// - Approve multiple tokens
+// - Swap on multiple DEXes
+// - Transfer to multiple recipients
+```
+
+### Social Recovery
+
+Implement social recovery for EOAs:
+
+```typescript
+// Guardian creates authorization
+const guardianAuth = {
+  chainId: 1n,
+  address: recoveryModuleAddress,
+  nonce: guardianNonce
+};
+
+const auth = Authorization.sign.call(guardianAuth, guardianPrivateKey);
+
+// Recovery module can:
+// - Verify guardian consensus
+// - Execute recovery operations
+// - Transfer assets to new account
+```
+
+## Best Practices
+
+### 1. Always Validate
+
+```typescript
+// Good: Validate before processing
+try {
+  Authorization.validate.call(auth);
+  processAuthorization(auth);
+} catch (e) {
+  handleInvalidAuth(e);
+}
+```
+
+### 2. Check Nonce Consistency
+
+```typescript
+// Good: Verify nonce matches account state
+const currentNonce = await getAccountNonce(authority);
+if (auth.nonce !== currentNonce) {
+  throw new Error('Nonce mismatch');
+}
+```
+
+### 3. Estimate Gas Accurately
+
+```typescript
+// Good: Check if accounts are empty
+const isEmpty = await isAccountEmpty(auth.address);
+const gas = Authorization.getGasCost.call(auth, isEmpty);
+```
+
+### 4. Handle Failures Gracefully
+
+```typescript
+// Good: Process with error handling
+const results = authList.map(auth => {
+  try {
+    return { auth, result: Authorization.process.call(auth) };
+  } catch (e) {
+    return { auth, error: e };
+  }
+});
+```
+
+### 5. Use Type Guards
+
+```typescript
+// Good: Verify types before processing
+function handleAuth(data: unknown) {
+  if (Authorization.isItem(data)) {
+    Authorization.validate.call(data);
+    return processAuth(data);
+  }
+  throw new Error('Invalid authorization data');
+}
+```
+
+### 6. Prevent Signature Malleability
+
+```typescript
+// Validation ensures s <= N/2
+// Prevents second valid signature for same authorization
+Authorization.validate.call(auth);  // Throws if s > N/2
+```
+
+### 7. Chain-Specific Authorizations
+
+```typescript
+// Good: Explicit chain ID
+const auth = {
+  chainId: 1n,  // Mainnet only
+  address: contractAddress,
+  nonce: 0n
+};
+
+// Bad: Reusing cross-chain
+// Authorization signed for chain 1 invalid on chain 137
+```
+
+## Security Considerations
+
+### 1. Signature Verification
+
+Always verify signatures before executing delegated code:
+
+```typescript
+const authority = Authorization.verify.call(auth);
+// Verify authority is expected/authorized
+```
+
+### 2. Nonce Tracking
+
+Prevent replay attacks by tracking nonces:
+
+```typescript
+const usedNonces = new Set<string>();
+const key = `${authority}-${auth.nonce}`;
+
+if (usedNonces.has(key)) {
+  throw new Error('Nonce already used');
+}
+usedNonces.add(key);
+```
+
+### 3. Chain ID Validation
+
+Prevent cross-chain replay:
+
+```typescript
+if (auth.chainId !== expectedChainId) {
+  throw new Error('Wrong chain ID');
+}
+```
+
+### 4. Address Validation
+
+Ensure delegated address is trusted:
+
+```typescript
+const trustedContracts = new Set([...]);
+
+if (!trustedContracts.has(auth.address)) {
+  throw new Error('Untrusted delegation target');
+}
+```
+
+### 5. Gas Limits
+
+Set appropriate gas limits to prevent DoS:
+
+```typescript
+const maxGas = Authorization.calculateGasCost.call(authList, maxEmpty);
+if (requiredGas > maxGas) {
+  throw new Error('Gas limit exceeded');
+}
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific methods
+import { sign, verify, validate } from '@tevm/primitives/Authorization'
+
+// Or import entire namespace
+import * as Authorization from '@tevm/primitives/Authorization'
+
+// Selective imports reduce bundle size
+const auth = sign.call(unsigned, privateKey)
+const valid = validate.call(auth)
+```
+
+Each function is independently exported, allowing bundlers to eliminate unused code. This is especially beneficial when only using a subset of Authorization functionality (e.g., only validation without signing).
+
+## Performance
+
+### Operation Complexity
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| `isItem` | O(1) | Type checking |
+| `isUnsigned` | O(1) | Type checking |
+| `validate` | O(1) | Constant checks |
+| `hash` | O(1) | RLP + keccak256 |
+| `sign` | O(1) | secp256k1 signing |
+| `verify` | O(1) | Signature recovery |
+| `calculateGasCost` | O(n) | n = list length |
+| `processAll` | O(n) | n = list length |
+| `format` | O(1) | String formatting |
+| `equals` | O(1) | Field comparison |
+
+### Optimization Tips
+
+1. **Batch validations** - validate all before processing
+2. **Cache gas calculations** - if list doesn't change
+3. **Pre-compute hashes** - reuse signing hashes when possible
+4. **Limit list size** - large lists increase gas costs significantly
+
+## See Also
+
+- [EIP-7702 Specification](./eip7702)
+- [Validation](./validation)
+- [Signing & Verification](./signing)
+- [Gas Calculations](./gas-calculations)
+- [Processing](./processing)
+- [Utilities](./utilities)
+- [WASM](./wasm)
+- [Usage Patterns](./usage-patterns)
+
+## References
+
+- [EIP-7702: Set EOA Account Code](https://eips.ethereum.org/EIPS/eip-7702)
+- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
+- [EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191)

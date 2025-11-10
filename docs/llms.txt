@@ -1,0 +1,221 @@
+# Voltaire
+
+Ethereum primitives and cryptography library for TypeScript and Zig. Multi-language, tree-shakeable, WASM-accelerated.
+
+## Getting Started
+
+- [Home](/): Overview, installation, quick examples, and performance benchmarks
+- [Quick Start](/quick-start): Get running in 3 minutes with complete examples
+- [Getting Started](/getting-started): Installation, core patterns, architecture, and migration guides
+- [Overview](/overview): Comprehensive overview of Voltaire features and capabilities
+- [Why Voltaire](/why-voltaire): Comparison with other Ethereum libraries and design philosophy
+- [Architecture](/architecture): System architecture, module structure, and design decisions
+- [External Dependencies](/external-dependencies): C, Rust, and Zig dependencies used by Voltaire
+- [WASM](/wasm): WASM integration, performance characteristics, and usage patterns
+
+## Concepts
+
+- [Branded Types](/concepts/branded-types): Type-level tags for nominal typing in TypeScript with zero runtime overhead
+- [Data-First Architecture](/concepts/data-first): Data-first approach with dual API styles (Class and Namespace)
+
+## Core Primitives
+
+### Address
+- [Address Overview](/primitives/address): Ethereum addresses with EIP-55 checksumming
+- [Branded Address](/primitives/address/branded-address): Type-safe address primitives
+- [Constructors](/primitives/address/constructors): Create addresses from various formats
+- [Conversions](/primitives/address/conversions): Convert addresses between formats
+- [Validation](/primitives/address/validation): Validate address format and checksums
+- [Variants](/primitives/address/variants): Address variants and special cases
+- [Comparisons](/primitives/address/comparisons): Compare addresses for equality
+- [Contract Addresses](/primitives/address/contract-addresses): Calculate CREATE and CREATE2 addresses
+- [Uint8Array Methods](/primitives/address/uint8array-methods): Native Uint8Array operations
+- [WASM](/primitives/address/wasm): WASM-accelerated address operations
+
+### Base64
+- [Base64 Overview](/primitives/base64): Base64 encoding and decoding
+- [Branded Base64](/primitives/base64/branded-base64): Type-safe base64 primitives
+
+### BinaryTree
+- [BinaryTree Overview](/primitives/binarytree): Binary tree data structure
+- [Branded BinaryTree](/primitives/binarytree/branded-binarytree): Type-safe binary tree primitives
+
+### BloomFilter
+- [BloomFilter Overview](/primitives/bloomfilter): Probabilistic set membership testing
+- [Branded BloomFilter](/primitives/bloomfilter/branded-bloomfilter): Type-safe bloom filter primitives
+
+### Bytecode
+- [Bytecode Overview](/primitives/bytecode): EVM bytecode analysis and manipulation
+- [from](/primitives/bytecode/from): Universal bytecode constructor accepting multiple input formats
+- [fromHex](/primitives/bytecode/fromhex): Parse bytecode from hex strings
+- [fromUint8Array](/primitives/bytecode/fromuint8array): Create bytecode from Uint8Array
+- [toHex](/primitives/bytecode/tohex): Convert bytecode to hex string
+- [validate](/primitives/bytecode/validate): Validate bytecode structure and opcodes
+- [equals](/primitives/bytecode/equals): Compare bytecode equality
+- [analyze](/primitives/bytecode/analyze): Complete bytecode analysis (jump destinations, instructions, validity)
+- [analyzeJumpDestinations](/primitives/bytecode/analyzejumpdestinations): Find all valid JUMPDEST positions
+- [extractRuntime](/primitives/bytecode/extractruntime): Extract runtime bytecode from constructor bytecode
+- [formatInstruction](/primitives/bytecode/formatinstruction): Format single instruction for display
+- [formatInstructions](/primitives/bytecode/formatinstructions): Disassemble bytecode into human-readable format
+- [hasMetadata](/primitives/bytecode/hasmetadata): Detect compiler metadata presence
+- [hash](/primitives/bytecode/hash): Compute keccak256 hash of bytecode
+- [isValidJumpDest](/primitives/bytecode/isvalidjumpdest): Check if position is valid jump destination
+- [parseInstructions](/primitives/bytecode/parseinstructions): Parse bytecode into instruction array
+- [size](/primitives/bytecode/size): Get bytecode size in bytes
+- [stripMetadata](/primitives/bytecode/stripmetadata): Remove compiler metadata from bytecode
+
+### Chain
+- [Chain Overview](/primitives/chain): Chain ID definitions and utilities
+
+### Denomination
+- [Denomination Overview](/primitives/denomination): Ether denomination conversions
+- [Wei](/primitives/denomination/wei): Wei denomination utilities
+- [Gwei](/primitives/denomination/gwei): Gwei denomination utilities
+- [Ether](/primitives/denomination/ether): Ether denomination utilities
+
+### Hash
+- [Hash Overview](/primitives/hash): Cryptographic hash primitives
+- [Branded Hash](/primitives/hash/branded-hash): Type-safe hash primitives
+
+### Hex
+- [Hex Overview](/primitives/hex): Hexadecimal string encoding and decoding
+- [Branded Hex](/primitives/hex/branded-hex): Type-safe hex string primitives
+
+### Transaction
+- [Transaction Overview](/primitives/transaction): Transaction encoding, signing, and serialization (EIP-1559, EIP-2930, EIP-4844)
+
+### Uint
+- [Uint Overview](/primitives/uint): Unsigned integer primitives
+- [Branded Uint](/primitives/uint/branded-uint): Type-safe unsigned integer primitives
+
+### Other Primitives
+- [ABI](/primitives/abi): ABI encoding and decoding with abitype integration
+- [AccessList](/primitives/accesslist): EIP-2930 access list utilities
+- [Authorization](/primitives/authorization): EIP-7702 authorization list utilities
+- [Blob](/primitives/blob): EIP-4844 blob transactions
+- [ENS](/primitives/ens): Ethereum Name Service utilities
+- [EventLog](/primitives/eventlog): Event log parsing and filtering
+- [FeeMarket](/primitives/feemarket): EIP-1559 fee market utilities
+- [GasConstants](/primitives/gasconstants): EVM gas cost constants
+- [Hardfork](/primitives/hardfork): Hardfork definitions and utilities
+- [Opcode](/primitives/opcode): EVM opcode definitions and utilities
+- [RLP](/primitives/rlp): Recursive Length Prefix encoding and decoding
+- [Signature](/primitives/signature): ECDSA signature utilities
+- [SIWE](/primitives/siwe): Sign-In with Ethereum (EIP-4361)
+- [State](/primitives/state): State trie utilities
+- [Trie](/primitives/trie): Merkle Patricia Trie implementation
+
+## Cryptography
+
+### Hash Functions
+- [Keccak256](/crypto/keccak256): Keccak-256 hashing (Ethereum's primary hash function)
+- [SHA256](/crypto/sha256): SHA-256 hashing
+- [RIPEMD160](/crypto/ripemd160): RIPEMD-160 hashing
+- [Blake2](/crypto/blake2): Blake2 hashing
+
+### Elliptic Curves
+- [secp256k1](/crypto/secp256k1): Bitcoin/Ethereum elliptic curve
+  - [Signing](/crypto/secp256k1/signing): ECDSA signature generation
+  - [Verification](/crypto/secp256k1/verification): ECDSA signature verification
+  - [Recovery](/crypto/secp256k1/recovery): Public key and address recovery
+  - [Key Derivation](/crypto/secp256k1/key-derivation): Private/public key derivation
+  - [Point Operations](/crypto/secp256k1/point-operations): Elliptic curve point arithmetic
+  - [Performance](/crypto/secp256k1/performance): Performance benchmarks
+  - [Security](/crypto/secp256k1/security): Security considerations
+  - [Test Vectors](/crypto/secp256k1/test-vectors): Standard test vectors
+  - [Usage Patterns](/crypto/secp256k1/usage-patterns): Common usage patterns
+
+- [BLS12-381](/crypto/bls12-381): BLS signature curve for Ethereum 2.0
+  - [Signatures](/crypto/bls12-381/signatures): BLS signature generation and verification
+  - [Aggregation](/crypto/bls12-381/aggregation): Signature aggregation
+  - [G1 Operations](/crypto/bls12-381/g1-operations): G1 curve operations
+  - [G2 Operations](/crypto/bls12-381/g2-operations): G2 curve operations
+  - [Pairing](/crypto/bls12-381/pairing): Pairing operations
+  - [Precompiles](/crypto/bls12-381/precompiles): EVM precompile implementations
+  - [Performance](/crypto/bls12-381/performance): Performance benchmarks
+  - [Security](/crypto/bls12-381/security): Security considerations
+  - [Test Vectors](/crypto/bls12-381/test-vectors): Standard test vectors
+  - [Usage Patterns](/crypto/bls12-381/usage-patterns): Common usage patterns
+
+- [BN254](/crypto/bn254): Alt-BN128 curve for zkSNARKs
+  - [G1 Operations](/crypto/bn254/g1-operations): G1 curve operations
+  - [G2 Operations](/crypto/bn254/g2-operations): G2 curve operations
+  - [Pairing](/crypto/bn254/pairing): Pairing operations
+  - [Precompiles](/crypto/bn254/precompiles): EVM precompile implementations
+  - [ZK Usage](/crypto/bn254/zk-usage): Zero-knowledge proof usage
+  - [Performance](/crypto/bn254/performance): Performance benchmarks
+  - [Test Vectors](/crypto/bn254/test-vectors): Standard test vectors
+  - [Usage Patterns](/crypto/bn254/usage-patterns): Common usage patterns
+
+- [Ed25519](/crypto/ed25519): EdDSA signature scheme
+- [P256](/crypto/p256): NIST P-256 curve
+- [X25519](/crypto/x25519): Curve25519 key exchange
+
+### KZG Commitments
+- [KZG Overview](/crypto/kzg): KZG polynomial commitments for EIP-4844
+- [Commitments](/crypto/kzg/commitments): Creating KZG commitments
+- [Proofs](/crypto/kzg/proofs): Generating and verifying KZG proofs
+- [Point Evaluation](/crypto/kzg/point-evaluation): Point evaluation precompile
+- [EIP-4844](/crypto/kzg/eip-4844): EIP-4844 blob transaction integration
+- [Trusted Setup](/crypto/kzg/trusted-setup): Trusted setup ceremony
+- [Performance](/crypto/kzg/performance): Performance benchmarks
+- [Test Vectors](/crypto/kzg/test-vectors): Standard test vectors
+- [Usage Patterns](/crypto/kzg/usage-patterns): Common usage patterns
+
+### Wallet & Key Management
+- [BIP39](/crypto/bip39): Mnemonic phrase generation and validation
+  - [Generation](/crypto/bip39/generation): Mnemonic generation
+  - [Validation](/crypto/bip39/validation): Mnemonic validation
+  - [Seed Derivation](/crypto/bip39/seed-derivation): Seed derivation from mnemonic
+  - [Passphrase](/crypto/bip39/passphrase): Optional passphrase support
+  - [Wordlists](/crypto/bip39/wordlists): Multi-language wordlists
+  - [Security](/crypto/bip39/security): Security considerations
+
+- [HD Wallet](/crypto/hdwallet): Hierarchical Deterministic Wallets (BIP32/BIP44)
+  - [Child Derivation](/crypto/hdwallet/child-derivation): Child key derivation
+  - [Extended Keys](/crypto/hdwallet/extended-keys): Extended public/private keys
+  - [Derivation Paths](/crypto/hdwallet/derivation-paths): Standard derivation paths
+
+### Symmetric Encryption
+- [AES-GCM](/crypto/aesgcm): AES-256-GCM authenticated encryption
+  - [Encryption](/crypto/aesgcm/encryption): Encryption operations
+  - [Decryption](/crypto/aesgcm/decryption): Decryption operations
+  - [Security](/crypto/aesgcm/security): Security considerations
+  - [Test Vectors](/crypto/aesgcm/test-vectors): Standard test vectors
+
+- [ChaCha20-Poly1305](/crypto/chacha20poly1305): ChaCha20-Poly1305 authenticated encryption
+- [Symmetric Encryption Comparison](/crypto/symmetric-encryption-comparison): Compare AES-GCM vs ChaCha20-Poly1305
+
+### Utilities
+- [EIP-712](/crypto/eip712): Typed structured data hashing and signing
+- [Wallet Integration](/crypto/wallet-integration): Integration patterns for wallet applications
+- [Crypto Comparison](/crypto/comparison): Performance comparisons across crypto implementations
+
+## EVM Precompiles
+
+- [Precompiles Overview](/precompiles): EVM precompiled contract implementations
+- [ecrecover (0x01)](/precompiles/ecrecover): ECDSA public key recovery
+- [SHA-256 (0x02)](/precompiles/sha256): SHA-256 hash function
+- [RIPEMD-160 (0x03)](/precompiles/ripemd160): RIPEMD-160 hash function
+- [Identity (0x04)](/precompiles/identity): Data copy function
+- [ModExp (0x05)](/precompiles/modexp): Modular exponentiation
+- [BN254 Add (0x06)](/precompiles/bn254-add): BN254 elliptic curve addition
+- [BN254 Mul (0x07)](/precompiles/bn254-mul): BN254 elliptic curve multiplication
+- [BN254 Pairing (0x08)](/precompiles/bn254-pairing): BN254 pairing check
+- [Blake2f (0x09)](/precompiles/blake2f): Blake2 compression function
+- [Point Evaluation (0x0a)](/precompiles/point-evaluation): KZG point evaluation (EIP-4844)
+- [BLS12-381 G1 Add (0x0b)](/precompiles/bls12-g1-add): BLS12-381 G1 addition
+- [BLS12-381 G1 Mul (0x0c)](/precompiles/bls12-g1-mul): BLS12-381 G1 multiplication
+- [BLS12-381 G1 MSM (0x0d)](/precompiles/bls12-g1-msm): BLS12-381 G1 multi-scalar multiplication
+- [BLS12-381 G2 Add (0x0e)](/precompiles/bls12-g2-add): BLS12-381 G2 addition
+- [BLS12-381 G2 Mul (0x0f)](/precompiles/bls12-g2-mul): BLS12-381 G2 multiplication
+- [BLS12-381 G2 MSM (0x10)](/precompiles/bls12-g2-msm): BLS12-381 G2 multi-scalar multiplication
+- [BLS12-381 Pairing (0x11)](/precompiles/bls12-pairing): BLS12-381 pairing check
+- [BLS12-381 Map Fp to G1 (0x12)](/precompiles/bls12-map-fp-to-g1): BLS12-381 map field element to G1
+- [BLS12-381 Map Fp2 to G2 (0x13)](/precompiles/bls12-map-fp2-to-g2): BLS12-381 map field element to G2
+
+## Zig
+
+- [Zig Overview](/zig): Using Voltaire from Zig
+- [Zig Getting Started](/zig/getting-started): Installation and setup for Zig
+- [Zig Contributing](/zig/contributing): Contributing to Zig implementation

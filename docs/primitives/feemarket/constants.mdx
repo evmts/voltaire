@@ -1,0 +1,347 @@
+---
+title: "FeeMarket Constants"
+---
+
+# FeeMarket Constants
+
+Protocol constants for EIP-1559 and EIP-4844 fee markets.
+
+## EIP-1559
+
+Base fee mechanism constants.
+
+### MIN_BASE_FEE
+
+```typescript
+FeeMarket.Eip1559.MIN_BASE_FEE: bigint = 7n
+```
+
+Minimum base fee per gas (wei). Base fee cannot go below this value.
+
+**Usage:**
+```typescript
+const baseFee = FeeMarket.calculateBaseFee(0n, 30_000_000n, 5n);
+// baseFee >= FeeMarket.Eip1559.MIN_BASE_FEE
+// baseFee === 7n (enforced minimum)
+```
+
+**Rationale:** Prevents base fee from reaching zero, ensuring minimum transaction cost and spam prevention.
+
+### BASE_FEE_CHANGE_DENOMINATOR
+
+```typescript
+FeeMarket.Eip1559.BASE_FEE_CHANGE_DENOMINATOR: bigint = 8n
+```
+
+Denominator for maximum base fee change per block. Maximum change = 1/8 = 12.5%.
+
+**Usage:**
+```typescript
+// Maximum increase
+const maxIncrease = baseFee / FeeMarket.Eip1559.BASE_FEE_CHANGE_DENOMINATOR;
+// maxIncrease = baseFee * 12.5%
+
+// Example: 1 gwei base fee
+const baseFee = 1_000_000_000n;
+const maxChange = baseFee / 8n; // 125_000_000n (0.125 gwei)
+// Max next base fee: 1.125 gwei
+// Min next base fee: 0.875 gwei
+```
+
+**Rationale:** Limits volatility. Base fee adjusts gradually, giving users time to adapt.
+
+### ELASTICITY_MULTIPLIER
+
+```typescript
+FeeMarket.Eip1559.ELASTICITY_MULTIPLIER: bigint = 2n
+```
+
+Gas limit elasticity multiplier. Target gas = gasLimit / ELASTICITY_MULTIPLIER.
+
+**Usage:**
+```typescript
+const gasLimit = 30_000_000n;
+const gasTarget = gasLimit / FeeMarket.Eip1559.ELASTICITY_MULTIPLIER;
+// gasTarget === 15_000_000n (50% of limit)
+
+// Blocks aim for 50% utilization
+// Above 50%: base fee increases
+// Below 50%: base fee decreases
+```
+
+**Rationale:** Provides buffer for demand spikes while maintaining 50% target utilization.
+
+## EIP-4844
+
+Blob fee mechanism constants.
+
+### MIN_BLOB_BASE_FEE
+
+```typescript
+FeeMarket.Eip4844.MIN_BLOB_BASE_FEE: bigint = 1n
+```
+
+Minimum blob base fee per blob gas (wei).
+
+**Usage:**
+```typescript
+const blobFee = FeeMarket.calculateBlobBaseFee(0n);
+// blobFee === FeeMarket.Eip4844.MIN_BLOB_BASE_FEE
+// blobFee === 1n
+```
+
+**Rationale:** Prevents blob fees from reaching zero, ensuring minimum data availability cost.
+
+### BLOB_BASE_FEE_UPDATE_FRACTION
+
+```typescript
+FeeMarket.Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION: bigint = 3338477n
+```
+
+Denominator for blob base fee exponential update. Used in fake exponential calculation.
+
+**Usage:**
+```typescript
+// Used internally in calculateBlobBaseFee
+const blobFee = fakeExponential(
+  MIN_BLOB_BASE_FEE,
+  excessBlobGas,
+  BLOB_BASE_FEE_UPDATE_FRACTION
+);
+// ≈ MIN_BLOB_BASE_FEE * e^(excessBlobGas / UPDATE_FRACTION)
+```
+
+**Value:** Chosen to provide appropriate pricing curve for blob demand.
+
+**Growth rate:** Higher excess → exponentially higher fees.
+
+### TARGET_BLOB_GAS_PER_BLOCK
+
+```typescript
+FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK: bigint = 393216n
+```
+
+Target blob gas per block (3 blobs worth).
+
+**Calculation:**
+```typescript
+// 3 blobs * 131072 gas/blob
+const target = 3n * FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+// target === 393216n
+```
+
+**Usage:**
+```typescript
+// Check if above target
+const state: FeeMarket.State = { blobGasUsed: 524288n, /* ... */ };
+const isAbove = state.blobGasUsed > FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
+// isAbove === true (4 blobs > 3 blob target)
+
+// Calculate excess
+const excess = FeeMarket.calculateExcessBlobGas(0n, state.blobGasUsed);
+// excess === 524288n - 393216n = 131072n (1 blob excess)
+```
+
+**Rationale:** 3 blobs per block target balances data availability with network capacity.
+
+### BLOB_GAS_PER_BLOB
+
+```typescript
+FeeMarket.Eip4844.BLOB_GAS_PER_BLOB: bigint = 131072n
+```
+
+Gas per blob (2^17 = 128 KiB).
+
+**Calculation:**
+```typescript
+// 2^17
+const gasPerBlob = 131072n;
+// Corresponds to 128 KiB blob size
+```
+
+**Usage:**
+```typescript
+// Convert blob count to gas
+const blobCount = 3n;
+const blobGas = blobCount * FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+// blobGas === 393216n
+
+// Convert gas to blob count
+const blobGasUsed = 524288n;
+const blobs = blobGasUsed / FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+// blobs === 4n
+
+// Calculate blob fee
+const blobBaseFee = 5_000_000n; // 5 wei/gas
+const totalBlobFee = blobBaseFee * FeeMarket.Eip4844.BLOB_GAS_PER_BLOB * blobCount;
+// totalBlobFee === 1_966_080_000_000n
+```
+
+**Rationale:** 128 KiB per blob matches 4096 field elements × 32 bytes in BLS12-381.
+
+### MAX_BLOBS_PER_BLOCK
+
+```typescript
+FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK: bigint = 6n
+```
+
+Maximum blobs allowed per block.
+
+**Usage:**
+```typescript
+// Validate blob count
+function validateBlobTx(blobCount: bigint) {
+  if (blobCount < 1n || blobCount > FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK) {
+    throw new Error('Invalid blob count: must be 1-6');
+  }
+}
+
+// Maximum blob gas per transaction
+const maxBlobGas = FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK *
+                   FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+// maxBlobGas === 786432n
+```
+
+**Rationale:** Limits block size while allowing sufficient data availability. 6 blobs = 768 KiB.
+
+### MAX_BLOB_GAS_PER_BLOCK
+
+```typescript
+FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK: bigint = 786432n
+```
+
+Maximum blob gas per block (6 blobs worth).
+
+**Calculation:**
+```typescript
+// 6 blobs * 131072 gas/blob
+const max = FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK *
+            FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+// max === 786432n
+```
+
+**Usage:**
+```typescript
+// Validate block blob gas
+function validateBlockBlobGas(blobGasUsed: bigint) {
+  if (blobGasUsed > FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK) {
+    throw new Error('Block blob gas exceeds maximum');
+  }
+}
+
+// Maximum excess per block
+const maxExcessPerBlock = FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK -
+                          FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
+// maxExcessPerBlock === 393216n (3 blobs)
+```
+
+**Rationale:** 2x target provides elasticity for demand spikes (similar to gas limit elasticity).
+
+## Constant Relationships
+
+### EIP-1559 Relationships
+
+```typescript
+// Target is half of limit
+gasTarget = gasLimit / ELASTICITY_MULTIPLIER
+
+// Max change is 1/8 of current
+maxChange = baseFee / BASE_FEE_CHANGE_DENOMINATOR
+
+// Occurs when block is 100% full (2x target)
+maxIncrease = baseFee * (1 / 8) = baseFee * 0.125 = 12.5%
+```
+
+### EIP-4844 Relationships
+
+```typescript
+// Target is half of max (elasticity = 2)
+TARGET_BLOB_GAS = MAX_BLOB_GAS / 2
+
+// Target in blobs
+targetBlobs = TARGET_BLOB_GAS / BLOB_GAS_PER_BLOB = 3
+
+// Max in blobs
+maxBlobs = MAX_BLOB_GAS / BLOB_GAS_PER_BLOB = 6
+
+// Blob size
+blobSize = BLOB_GAS_PER_BLOB * 32 bytes/field element = 4 MiB
+// (Note: actual blob is 128 KiB, 32 bytes/field is for field elements)
+```
+
+## Usage Examples
+
+### Fee Boundaries
+
+```typescript
+// Minimum fees
+const minBaseFee = FeeMarket.Eip1559.MIN_BASE_FEE; // 7 wei
+const minBlobFee = FeeMarket.Eip4844.MIN_BLOB_BASE_FEE; // 1 wei
+
+// Maximum single-block change
+const baseFee = 1_000_000_000n;
+const maxIncrease = baseFee + (baseFee / 8n); // 1.125 gwei
+const maxDecrease = baseFee - (baseFee / 8n); // 0.875 gwei (if above min)
+```
+
+### Target Calculations
+
+```typescript
+// Gas targets
+const gasLimit = 30_000_000n;
+const gasTarget = gasLimit / FeeMarket.Eip1559.ELASTICITY_MULTIPLIER;
+// gasTarget === 15_000_000n
+
+// Blob targets
+const blobTarget = FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
+// blobTarget === 393216n (3 blobs)
+
+const blobMax = FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK;
+// blobMax === 786432n (6 blobs)
+```
+
+### Validation
+
+```typescript
+function validateFeeMarketState(state: FeeMarket.State) {
+  const errors: string[] = [];
+
+  // Base fee minimum
+  if (state.baseFee < FeeMarket.Eip1559.MIN_BASE_FEE) {
+    errors.push('Base fee below minimum');
+  }
+
+  // Gas usage
+  if (state.gasUsed > state.gasLimit) {
+    errors.push('Gas used exceeds limit');
+  }
+
+  // Blob gas maximum
+  if (state.blobGasUsed > FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK) {
+    errors.push('Blob gas exceeds maximum');
+  }
+
+  return errors;
+}
+```
+
+## Implementation
+
+Locations:
+- `eip1559Constants.js` - EIP-1559 constants
+- `eip4844Constants.js` - EIP-4844 constants
+
+Both re-exported from `FeeMarket.js`:
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+const minBase = FeeMarket.Eip1559.MIN_BASE_FEE;
+const targetBlobs = FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK;
+```
+
+## References
+
+- [EIP-1559 Specification](https://eips.ethereum.org/EIPS/eip-1559)
+- [EIP-4844 Specification](https://eips.ethereum.org/EIPS/eip-4844)
+- [eip1559.mdx](./eip1559.mdx)
+- [eip4844.mdx](./eip4844.mdx)

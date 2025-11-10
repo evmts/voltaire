@@ -1,0 +1,540 @@
+---
+title: Extended Keys (xprv/xpub)
+description: Extended private and public keys for HD wallet serialization
+---
+
+## Overview
+
+Extended keys (xprv/xpub) encode HD wallet keys with metadata for hierarchical derivation. They enable key backup, watch-only wallets, and secure key sharing.
+
+## Extended Key Format
+
+### Structure
+
+```
+Extended Key = Base58Check(
+  version(4) ||
+  depth(1) ||
+  parent_fingerprint(4) ||
+  child_number(4) ||
+  chain_code(32) ||
+  key(33)
+)
+Total: 78 bytes → Base58 encoded → ~111 characters
+```
+
+**Components:**
+- `version`: Network and key type (4 bytes)
+- `depth`: Derivation depth from master (1 byte)
+- `parent_fingerprint`: First 4 bytes of parent's pubkey hash (4 bytes)
+- `child_number`: Index of this child (4 bytes)
+- `chain_code`: 32 bytes for child derivation (32 bytes)
+- `key`: Private (0x00 + 32 bytes) or public (33 bytes compressed)
+
+### Version Bytes
+
+```typescript
+const versions = {
+  // Mainnet
+  xprv: 0x0488ADE4, // Extended private key
+  xpub: 0x0488B21E, // Extended public key
+
+  // Testnet
+  tprv: 0x04358394, // Testnet private
+  tpub: 0x043587CF, // Testnet public
+
+  // Alternative formats (BIP-49 SegWit, BIP-84 Native SegWit)
+  yprv: 0x049D7878, // SegWit private (BIP-49)
+  ypub: 0x049D7CB2, // SegWit public (BIP-49)
+  zprv: 0x04B2430C, // Native SegWit private (BIP-84)
+  zpub: 0x04B24746, // Native SegWit public (BIP-84)
+};
+```
+
+## Extended Private Keys (xprv)
+
+### Generation
+
+```typescript
+import * as Bip39 from '@tevm/voltaire/crypto/bip39';
+import * as HDWallet from '@tevm/voltaire/crypto/hdwallet';
+
+// From mnemonic
+const mnemonic = Bip39.generateMnemonic(256);
+const seed = await Bip39.mnemonicToSeed(mnemonic);
+const root = HDWallet.fromSeed(seed);
+
+// Export xprv
+const xprv = HDWallet.toExtendedPrivateKey(root);
+console.log(xprv);
+// "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"
+```
+
+### Import
+
+```typescript
+// Import from xprv string
+const xprv = 'xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi';
+const imported = HDWallet.fromExtendedKey(xprv);
+
+// Can derive children
+const child = HDWallet.deriveChild(imported, 0);
+const eth0 = HDWallet.deriveEthereum(imported, 0, 0);
+```
+
+### Capabilities
+
+```typescript
+const key = HDWallet.fromExtendedKey(xprv);
+
+// ✅ Can derive hardened children
+const hardened = HDWallet.deriveChild(key, HDWallet.HARDENED_OFFSET);
+
+// ✅ Can derive normal children
+const normal = HDWallet.deriveChild(key, 0);
+
+// ✅ Can access private key
+const privateKey = HDWallet.getPrivateKey(key);
+console.log(privateKey); // Uint8Array(32)
+
+// ✅ Can access public key
+const publicKey = HDWallet.getPublicKey(key);
+console.log(publicKey); // Uint8Array(33)
+
+// ✅ Can sign transactions
+// const signature = await signTransaction(privateKey, tx);
+```
+
+### Security
+
+**Critical warnings:**
+
+```typescript
+/**
+ * xprv = FULL WALLET ACCESS
+ * - Can spend all funds
+ * - Can derive all children (hardened + normal)
+ * - Must be kept secret
+ * - Never transmit unencrypted
+ * - Never share publicly
+ */
+
+// ❌ NEVER DO THIS
+console.log('My xprv:', xprv); // Logging exposes to logs
+await fetch('/api/backup', { body: xprv }); // Network transmission
+localStorage.setItem('key', xprv); // Unencrypted storage
+
+// ✅ ONLY IF ENCRYPTED
+const encrypted = await encryptKey(xprv, strongPassword);
+await secureStorage.save(encrypted);
+```
+
+## Extended Public Keys (xpub)
+
+### Generation
+
+```typescript
+// From xprv
+const xprv = HDWallet.toExtendedPrivateKey(root);
+const xpub = HDWallet.toExtendedPublicKey(root);
+
+console.log(xpub);
+// "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+```
+
+### Import
+
+```typescript
+// Import from xpub string
+const xpub = 'xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8';
+const imported = HDWallet.fromPublicExtendedKey(xpub);
+
+// Can derive normal children only
+const child = HDWallet.deriveChild(imported, 0);
+```
+
+### Capabilities
+
+```typescript
+const key = HDWallet.fromPublicExtendedKey(xpub);
+
+// ❌ Cannot derive hardened children
+try {
+  HDWallet.deriveChild(key, HDWallet.HARDENED_OFFSET);
+} catch (error) {
+  console.error('Cannot derive hardened from public key');
+}
+
+// ✅ Can derive normal children
+const normal = HDWallet.deriveChild(key, 0);
+
+// ❌ Cannot access private key
+const privateKey = HDWallet.getPrivateKey(key);
+console.log(privateKey); // null
+
+// ✅ Can access public key
+const publicKey = HDWallet.getPublicKey(key);
+console.log(publicKey); // Uint8Array(33)
+
+// ❌ Cannot sign transactions
+// Private key required for signing
+```
+
+### Use Cases
+
+**1. Watch-Only Wallets**
+
+```typescript
+// Server doesn't need private keys to monitor balances
+const xpub = getXpubFromSecureStorage();
+const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
+
+// Generate addresses for monitoring
+const addresses = [];
+for (let i = 0; i < 100; i++) {
+  const child = HDWallet.deriveChild(watchOnly, i);
+  const address = deriveAddress(child);
+  addresses.push(address);
+}
+
+// Monitor these addresses for transactions
+await monitorAddresses(addresses);
+```
+
+**2. Server-Side Address Generation**
+
+```typescript
+// Server generates receiving addresses without private keys
+async function generateReceivingAddress(userId: string): Promise<string> {
+  const xpub = await getXpubForUser(userId);
+  const nextIndex = await getNextAddressIndex(userId);
+
+  const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
+  const child = HDWallet.deriveChild(watchOnly, nextIndex);
+
+  const address = deriveAddress(child);
+
+  await saveAddressMapping(userId, nextIndex, address);
+
+  return address;
+}
+```
+
+**3. Auditing/Accounting**
+
+```typescript
+// Accountant can view all transactions without spending ability
+const xpub = 'xpub...'; // Provided by wallet owner
+
+const auditWallet = HDWallet.fromPublicExtendedKey(xpub);
+
+// Derive all addresses
+const allAddresses = [];
+for (let account = 0; account < 5; account++) {
+  for (let index = 0; index < 20; index++) {
+    // Note: Cannot use deriveEthereum with xpub (requires hardened account)
+    // Must import xpub at account level: m/44'/60'/0'
+    const child = HDWallet.deriveChild(auditWallet, index);
+    allAddresses.push(deriveAddress(child));
+  }
+}
+
+// Generate financial report
+const report = await generateTransactionReport(allAddresses);
+```
+
+**4. Sharing with Hardware Wallets**
+
+```typescript
+// Export xpub for integration with hardware wallet services
+const hwXpub = HDWallet.toExtendedPublicKey(root);
+
+// Hardware wallet can:
+// - Display balance
+// - Show transaction history
+// - Generate receiving addresses
+// But cannot spend without device confirmation
+```
+
+## Extended Key Hierarchies
+
+### Account-Level xpub
+
+```typescript
+// Derive to account level before exporting xpub
+const accountLevel = HDWallet.derivePath(root, "m/44'/60'/0'");
+const accountXpub = HDWallet.toExtendedPublicKey(accountLevel);
+
+// Now can derive normal children
+const watchOnly = HDWallet.fromPublicExtendedKey(accountXpub);
+const address0 = HDWallet.derivePath(watchOnly, "m/0/0");
+const address1 = HDWallet.derivePath(watchOnly, "m/0/1");
+```
+
+### Multi-Level Export
+
+```typescript
+// Different levels for different purposes
+const root = HDWallet.fromSeed(seed);
+
+// Master xpub (rarely used)
+const masterXpub = HDWallet.toExtendedPublicKey(root);
+
+// Coin-level xpub
+const ethLevel = HDWallet.derivePath(root, "m/44'/60'");
+const ethXpub = HDWallet.toExtendedPublicKey(ethLevel);
+
+// Account-level xpub (most common)
+const account0 = HDWallet.derivePath(root, "m/44'/60'/0'");
+const account0Xpub = HDWallet.toExtendedPublicKey(account0);
+```
+
+## Serialization Details
+
+### Base58Check Encoding
+
+```typescript
+// Extended key structure
+interface ExtendedKey {
+  version: number;      // 4 bytes
+  depth: number;        // 1 byte
+  fingerprint: Uint8Array; // 4 bytes
+  childNumber: number;  // 4 bytes
+  chainCode: Uint8Array;   // 32 bytes
+  key: Uint8Array;      // 33 bytes
+}
+
+// Total: 78 bytes before encoding
+```
+
+### Decoding Example
+
+```typescript
+function decodeExtendedKey(xkey: string): ExtendedKey {
+  // Base58Check decode
+  const decoded = base58Decode(xkey);
+
+  // Extract components
+  const version = readUInt32BE(decoded, 0);
+  const depth = decoded[4];
+  const fingerprint = decoded.slice(5, 9);
+  const childNumber = readUInt32BE(decoded, 9);
+  const chainCode = decoded.slice(13, 45);
+  const key = decoded.slice(45, 78);
+
+  return { version, depth, fingerprint, childNumber, chainCode, key };
+}
+
+// Example output
+const info = decodeExtendedKey(xprv);
+console.log({
+  version: info.version.toString(16), // 0488ade4
+  depth: info.depth,                   // 0 (master)
+  fingerprint: Array.from(info.fingerprint).map(b => b.toString(16)),
+  childNumber: info.childNumber,       // 0
+  chainCodeLength: info.chainCode.length, // 32
+  keyLength: info.key.length,          // 33
+});
+```
+
+## Conversion Between xprv and xpub
+
+### xprv → xpub (One-Way)
+
+```typescript
+// Can always derive xpub from xprv
+const xprv = HDWallet.toExtendedPrivateKey(root);
+const xpub = HDWallet.toExtendedPublicKey(root);
+
+// Verification
+const imported = HDWallet.fromExtendedKey(xprv);
+const derivedXpub = HDWallet.toExtendedPublicKey(imported);
+console.log(xpub === derivedXpub); // true
+```
+
+### xpub → xprv (Impossible)
+
+```typescript
+// Cannot derive private key from public key
+const xpub = HDWallet.toExtendedPublicKey(root);
+const imported = HDWallet.fromPublicExtendedKey(xpub);
+
+// ❌ No way to get private key
+const privateKey = HDWallet.getPrivateKey(imported);
+console.log(privateKey); // null
+
+// This is cryptographically impossible (secp256k1 ECDLP)
+```
+
+## Storage and Backup
+
+### Encrypted Storage
+
+```typescript
+import * as AesGcm from '@tevm/voltaire/crypto/aesgcm';
+
+async function storeExtendedKey(xprv: string, password: string) {
+  // Derive encryption key from password
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await deriveKeyFromPassword(password, salt);
+
+  // Encrypt xprv
+  const nonce = AesGcm.generateNonce();
+  const encrypted = await AesGcm.encrypt(
+    new TextEncoder().encode(xprv),
+    key,
+    nonce
+  );
+
+  // Store encrypted + metadata
+  await secureStorage.save({
+    encrypted,
+    nonce,
+    salt,
+    timestamp: Date.now()
+  });
+}
+
+async function loadExtendedKey(password: string): Promise<string> {
+  const { encrypted, nonce, salt } = await secureStorage.load();
+
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const decrypted = await AesGcm.decrypt(encrypted, key, nonce);
+
+  return new TextDecoder().decode(decrypted);
+}
+```
+
+### Physical Backup
+
+```typescript
+/**
+ * xprv backup strategies:
+ *
+ * 1. Paper backup:
+ *    - Write full xprv string
+ *    - Include checksum
+ *    - Store in fireproof safe
+ *
+ * 2. Metal backup:
+ *    - Engrave on metal plate
+ *    - Fireproof, waterproof
+ *
+ * 3. Split storage:
+ *    - Shamir Secret Sharing
+ *    - Split xprv into M-of-N shares
+ *
+ * NEVER:
+ *    - Store unencrypted digitally
+ *    - Photograph or screenshot
+ *    - Email or message
+ *    - Upload to cloud
+ */
+```
+
+## Security Implications
+
+### xpub Leak + Child Private Key
+
+If attacker obtains:
+1. Parent xpub
+2. Any non-hardened child private key
+
+They can compute all sibling private keys!
+
+**Protection: Use hardened derivation**
+
+```typescript
+// ❌ Vulnerable (non-hardened account)
+const vulnerable = "m/44/60/0/0/0";
+//                     ^^  ^^ Non-hardened
+
+// ✅ Secure (hardened account)
+const secure = "m/44'/60'/0'/0/0";
+//               ^^^ ^^^ ^^^ Hardened
+```
+
+### xpub Privacy
+
+xpub reveals all derived addresses:
+
+```typescript
+// xpub reveals:
+// - All normal child addresses
+// - Transaction history
+// - Balance across all addresses
+
+// Solution: Don't share master xpub
+// Share account-level xpub only for specific accounts
+const account0Xpub = HDWallet.toExtendedPublicKey(
+  HDWallet.derivePath(root, "m/44'/60'/0'")
+);
+```
+
+## Best Practices
+
+**1. Minimize xprv Exposure**
+
+```typescript
+// ✅ Store encrypted
+const encrypted = await encryptKey(xprv, password);
+
+// ✅ Use in memory only when needed
+const key = HDWallet.fromExtendedKey(xprv);
+// ... use key ...
+// Clear from memory
+
+// ❌ Never log or transmit
+console.log(xprv); // NO!
+await fetch('/api', { body: xprv }); // NO!
+```
+
+**2. Use xpub for Watch-Only**
+
+```typescript
+// ✅ Server uses xpub (read-only)
+const xpub = await getXpubFromConfig();
+const watchOnly = HDWallet.fromPublicExtendedKey(xpub);
+
+// Generate addresses without private keys
+const addresses = Array.from({ length: 10 }, (_, i) =>
+  deriveAddress(HDWallet.deriveChild(watchOnly, i))
+);
+```
+
+**3. Backup Both Mnemonic and Derivation Info**
+
+```typescript
+interface WalletBackup {
+  mnemonic: string;          // Never store unencrypted!
+  derivationPath: string;    // "m/44'/60'/0'/0/0"
+  firstAddress: string;      // For verification
+  createdAt: number;         // Timestamp
+}
+
+// Mnemonic can reconstruct xprv
+// Derivation path needed to find same addresses
+```
+
+**4. Verify Extended Keys**
+
+```typescript
+// After import, verify by deriving known address
+function verifyExtendedKey(xkey: string, expectedAddress: string): boolean {
+  const key = xkey.startsWith('xprv')
+    ? HDWallet.fromExtendedKey(xkey)
+    : HDWallet.fromPublicExtendedKey(xkey);
+
+  const child = HDWallet.deriveChild(key, 0);
+  const address = deriveAddress(child);
+
+  return address.toLowerCase() === expectedAddress.toLowerCase();
+}
+```
+
+## References
+
+- [BIP-32 Specification](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+- [Base58Check Encoding](https://en.bitcoin.it/wiki/Base58Check_encoding)
+- [@scure/bip32 Implementation](https://github.com/paulmillr/scure-bip32)

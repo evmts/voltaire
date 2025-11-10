@@ -1,0 +1,421 @@
+---
+title: Gas Cost Calculator
+description: Calculate transaction costs across denominations and convert to USD
+---
+
+# Gas Cost Calculator
+
+Calculate Ethereum transaction costs and convert between Wei, Gwei, Ether, and USD.
+
+## Quick Gas Cost Examples
+
+### Basic Transfer (21,000 gas)
+
+<Tabs>
+<Tab title="Low Gas Price (20 Gwei)">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const gasPrice = Gwei.from(20n)      // 20 Gwei
+const gasUsed = 21_000n              // Standard transfer
+
+// Calculate cost
+const gasPriceWei = Gwei.toWei(gasPrice)
+const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+const costEther = Wei.toEther(Wei.from(costWei))
+
+console.log(`Cost: ${costWei} Wei`)    // 420,000,000,000,000 Wei
+console.log(`Cost: ${Gwei.from(Uint.dividedBy(costWei, Uint.from(1_000_000_000n)))} Gwei`)  // 420,000 Gwei
+console.log(`Cost: ${costEther} ETH`)  // 0 ETH (truncates)
+```
+
+**Cost breakdown:**
+- Gas Price: 20 Gwei/gas
+- Gas Used: 21,000 gas
+- **Total: 420,000 Gwei = 0.00042 ETH**
+</Tab>
+
+<Tab title="Standard Gas Price (50 Gwei)">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const gasPrice = Gwei.from(50n)      // 50 Gwei
+const gasUsed = 21_000n              // Standard transfer
+
+const gasPriceWei = Gwei.toWei(gasPrice)
+const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+
+console.log(`Cost: ${costWei} Wei`)    // 1,050,000,000,000,000 Wei
+console.log(`Cost: 1,050,000 Gwei`)    // 1,050,000 Gwei
+console.log(`Cost: 0.00105 ETH`)       // ~0.00105 ETH
+```
+
+**Cost breakdown:**
+- Gas Price: 50 Gwei/gas
+- Gas Used: 21,000 gas
+- **Total: 1,050,000 Gwei = 0.00105 ETH**
+</Tab>
+
+<Tab title="High Gas Price (200 Gwei)">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const gasPrice = Gwei.from(200n)     // 200 Gwei (urgent)
+const gasUsed = 21_000n              // Standard transfer
+
+const gasPriceWei = Gwei.toWei(gasPrice)
+const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+
+console.log(`Cost: ${costWei} Wei`)    // 4,200,000,000,000,000 Wei
+console.log(`Cost: 4,200,000 Gwei`)    // 4,200,000 Gwei
+console.log(`Cost: 0.0042 ETH`)        // ~0.0042 ETH
+```
+
+**Cost breakdown:**
+- Gas Price: 200 Gwei/gas
+- Gas Used: 21,000 gas
+- **Total: 4,200,000 Gwei = 0.0042 ETH**
+</Tab>
+</Tabs>
+
+## Complex Contract Interactions
+
+### Token Transfer (ERC-20) - 65,000 gas
+
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+function calculateTokenTransferCost(gasPriceGwei: Gwei.Type): {
+  wei: bigint
+  gwei: string
+  ether: string
+} {
+  const gasUsed = 65_000n  // ERC-20 transfer
+
+  const gasPriceWei = Gwei.toWei(gasPriceGwei)
+  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+
+  // Convert to different units
+  const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+  const costEther = Wei.toEther(Wei.from(costWei))
+
+  return {
+    wei: costWei,
+    gwei: `${costGwei} Gwei`,
+    ether: `${costEther} ETH (${Number(costWei) / 1e18} exact)`
+  }
+}
+
+// Cost comparison
+const slow = calculateTokenTransferCost(Gwei.from(20n))
+const standard = calculateTokenTransferCost(Gwei.from(50n))
+const fast = calculateTokenTransferCost(Gwei.from(200n))
+
+console.log('Slow:', slow)        // 1,300,000 Gwei = 0.0013 ETH
+console.log('Standard:', standard) // 3,250,000 Gwei = 0.00325 ETH
+console.log('Fast:', fast)         // 13,000,000 Gwei = 0.013 ETH
+```
+
+### Uniswap Swap - 150,000 gas
+
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+function calculateSwapCost(gasPriceGwei: Gwei.Type): {
+  wei: bigint
+  gwei: string
+  ether: string
+} {
+  const gasUsed = 150_000n  // Complex DEX swap
+
+  const gasPriceWei = Gwei.toWei(gasPriceGwei)
+  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+
+  const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+  const costEther = Wei.toEther(Wei.from(costWei))
+
+  return {
+    wei: costWei,
+    gwei: `${costGwei} Gwei`,
+    ether: `${costEther} ETH (${Number(costWei) / 1e18} exact)`
+  }
+}
+
+// Cost comparison
+const slow = calculateSwapCost(Gwei.from(20n))
+const standard = calculateSwapCost(Gwei.from(50n))
+const fast = calculateSwapCost(Gwei.from(200n))
+
+console.log('Slow:', slow)        // 3,000,000 Gwei = 0.003 ETH
+console.log('Standard:', standard) // 7,500,000 Gwei = 0.0075 ETH
+console.log('Fast:', fast)         // 30,000,000 Gwei = 0.03 ETH
+```
+
+## EIP-1559 Gas Calculation
+
+With EIP-1559, gas fees include base fee + priority fee:
+
+<Tabs>
+<Tab title="Formula">
+```
+totalCost = (baseFee + priorityFee) × gasUsed
+
+Example with 50 Gwei base fee, 2 Gwei priority, 21,000 gas:
+totalCost = (50 + 2) Gwei × 21,000 = 52 Gwei × 21,000 = 1,092,000 Gwei
+```
+</Tab>
+
+<Tab title="Implementation">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+interface EIP1559Cost {
+  minCost: { wei: bigint; gwei: bigint; ether: number }
+  maxCost: { wei: bigint; gwei: bigint; ether: number }
+  estimatedCost: { wei: bigint; gwei: bigint; ether: number }
+}
+
+function calculateEIP1559(
+  baseFeePerGas: Gwei.Type,
+  maxPriorityFeePerGas: Gwei.Type,
+  maxFeePerGas: Gwei.Type,
+  gasLimit: bigint
+): EIP1559Cost {
+  // Minimum cost (base fee only)
+  const baseFeeWei = Gwei.toWei(baseFeePerGas)
+  const minCostWei = Uint.times(baseFeeWei, Uint.from(gasLimit))
+
+  // Maximum cost (max fee)
+  const maxFeeWei = Gwei.toWei(maxFeePerGas)
+  const maxCostWei = Uint.times(maxFeeWei, Uint.from(gasLimit))
+
+  // Estimated cost (base + priority)
+  const priorityFeeWei = Gwei.toWei(maxPriorityFeePerGas)
+  const effectiveFeeWei = Uint.plus(baseFeeWei, priorityFeeWei)
+  const estimatedCostWei = Uint.times(effectiveFeeWei, Uint.from(gasLimit))
+
+  return {
+    minCost: {
+      wei: minCostWei,
+      gwei: Uint.dividedBy(minCostWei, Uint.from(1_000_000_000n)),
+      ether: Number(minCostWei) / 1e18
+    },
+    maxCost: {
+      wei: maxCostWei,
+      gwei: Uint.dividedBy(maxCostWei, Uint.from(1_000_000_000n)),
+      ether: Number(maxCostWei) / 1e18
+    },
+    estimatedCost: {
+      wei: estimatedCostWei,
+      gwei: Uint.dividedBy(estimatedCostWei, Uint.from(1_000_000_000n)),
+      ether: Number(estimatedCostWei) / 1e18
+    }
+  }
+}
+
+// Example: Normal Ethereum conditions
+const cost = calculateEIP1559(
+  Gwei.from(30n),  // baseFee
+  Gwei.from(2n),   // priorityFee
+  Gwei.from(50n),  // maxFee
+  21_000n          // gasLimit
+)
+
+console.log('Min (base only):', cost.minCost)           // 630,000 Gwei
+console.log('Estimated (base + priority):', cost.estimatedCost)  // 672,000 Gwei
+console.log('Max (worst case):', cost.maxCost)          // 1,050,000 Gwei
+```
+</Tab>
+</Tabs>
+
+## USD Conversion
+
+Convert gas costs to USD for budget planning:
+
+<Tabs>
+<Tab title="Basic Conversion">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+function gasCostUSD(
+  gasPriceGwei: Gwei.Type,
+  gasUsed: bigint,
+  ethPriceUsd: number  // e.g., 2000.50
+): number {
+  const gasPriceWei = Gwei.toWei(gasPriceGwei)
+  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+
+  // Convert Wei to ETH (as decimal)
+  const costEth = Number(costWei) / 1e18
+
+  return costEth * ethPriceUsd
+}
+
+// Example: 50 Gwei gas price, 21,000 gas, ETH = $2,000
+const costUsd = gasCostUSD(
+  Gwei.from(50n),
+  21_000n,
+  2000
+)
+
+console.log(`Cost: $${costUsd.toFixed(2)} USD`)  // $2.10 USD
+```
+</Tab>
+
+<Tab title="Detailed Breakdown">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+interface TransactionCost {
+  wei: bigint
+  gwei: bigint
+  ether: string
+  usd: string
+}
+
+function analyzeCost(
+  gasPriceGwei: Gwei.Type,
+  gasUsed: bigint,
+  ethPriceUsd: number
+): TransactionCost {
+  const gasPriceWei = Gwei.toWei(gasPriceGwei)
+  const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+  const costGwei = Uint.dividedBy(costWei, Uint.from(1_000_000_000n))
+  const costEth = Number(costWei) / 1e18
+  const costUsd = costEth * ethPriceUsd
+
+  return {
+    wei: costWei,
+    gwei: costGwei,
+    ether: `${costEth.toFixed(6)} ETH`,
+    usd: `$${costUsd.toFixed(2)} USD`
+  }
+}
+
+// Compare costs across different conditions
+const scenarios = [
+  { price: 20, desc: 'Slow' },
+  { price: 50, desc: 'Standard' },
+  { price: 100, desc: 'Fast' },
+  { price: 200, desc: 'Urgent' }
+]
+
+const ethPrice = 2000  // $2000 per ETH
+
+console.log('Transfer costs (21,000 gas):')
+scenarios.forEach(({ price, desc }) => {
+  const cost = analyzeCost(Gwei.from(BigInt(price)), 21_000n, ethPrice)
+  console.log(`${desc}: ${cost.gwei} Gwei = ${cost.ether} = ${cost.usd}`)
+})
+```
+</Tab>
+
+<Tab title="Price Sensitivity">
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+function costMatrix(
+  gasPrices: bigint[],
+  ethPrices: number[],
+  gasUsed: bigint = 21_000n
+): Map<string, number> {
+  const costs = new Map<string, number>()
+
+  for (const gwei of gasPrices) {
+    for (const eth of ethPrices) {
+      const gasPriceWei = Gwei.toWei(Gwei.from(gwei))
+      const costWei = Uint.times(gasPriceWei, Uint.from(gasUsed))
+      const costUsd = (Number(costWei) / 1e18) * eth
+
+      costs.set(`${gwei}gwei_${eth}usd`, costUsd)
+    }
+  }
+
+  return costs
+}
+
+// Create matrix: gas prices vs ETH prices
+const gasPrices = [20n, 50n, 100n, 200n]
+const ethPrices = [1000, 2000, 3000, 5000]
+const costs = costMatrix(gasPrices, ethPrices)
+
+// Show cost ranges
+console.table(Array.from(costs.entries()).map(([key, value]) => ({
+  scenario: key,
+  cost: `$${value.toFixed(2)}`
+})))
+```
+</Tab>
+</Tabs>
+
+## Gas Estimation Tools
+
+### Safe Gas Estimates
+
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+// Get current gas recommendations
+function getGasRecommendation(baseFeeGwei: number): {
+  safe: Gwei.Type
+  standard: Gwei.Type
+  fast: Gwei.Type
+  instant: Gwei.Type
+} {
+  return {
+    safe: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 1.2))),
+    standard: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 1.5))),
+    fast: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 2))),
+    instant: Gwei.from(BigInt(Math.ceil(baseFeeGwei * 3)))
+  }
+}
+
+// Current base fee: 40 Gwei
+const recommendations = getGasRecommendation(40)
+
+console.log(`Safe: ${recommendations.safe} Gwei`)      // 48 Gwei
+console.log(`Standard: ${recommendations.standard} Gwei`) // 60 Gwei
+console.log(`Fast: ${recommendations.fast} Gwei`)      // 80 Gwei
+console.log(`Instant: ${recommendations.instant} Gwei`) // 120 Gwei
+```
+
+### Cost Comparison Across Networks
+
+See [Network Comparison](/primitives/chain/network-comparison) for gas costs across mainnet, L2s, and testnets.
+
+## Common Gas Amounts
+
+| Operation | Gas | Description |
+|-----------|-----|-------------|
+| **Transfer** | 21,000 | Simple ETH transfer |
+| **ERC-20 Transfer** | 60,000 | Token transfer |
+| **Uniswap V3 Swap** | 150,000-300,000 | DEX swap |
+| **NFT Mint** | 80,000-150,000 | NFT creation |
+| **Approve** | 45,000 | Token approval |
+| **Deploy Contract** | 500,000-2,000,000 | Contract deployment |
+
+## Related
+
+- [Denomination](/primitives/denomination) - Wei, Gwei, Ether types
+- [Usage Patterns](/primitives/denomination/usage-patterns) - Gas calculations
+- [Conversions](/primitives/denomination/conversions) - Unit conversions
+- [GasConstants](/primitives/gasconstants) - Standard gas amounts
+- [FeeMarket](/primitives/feemarket) - EIP-1559 details

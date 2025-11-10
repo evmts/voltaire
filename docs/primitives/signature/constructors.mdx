@@ -1,0 +1,515 @@
+---
+title: "Constructors"
+description: "Factory functions for creating Signature instances"
+---
+
+# Constructors
+
+Methods for creating BrandedSignature instances from various input formats.
+
+## from
+
+Universal constructor accepting multiple input types.
+
+### Signature
+
+```typescript
+function from(value: SignatureInput): BrandedSignature
+
+type SignatureInput =
+  | Uint8Array
+  | { r: Uint8Array; s: Uint8Array; v?: number; algorithm?: SignatureAlgorithm }
+  | { signature: Uint8Array; algorithm: 'ed25519' }
+  | BrandedSignature
+```
+
+### Parameters
+
+**Uint8Array (64 bytes):**
+- Compact ECDSA format (r + s)
+- Defaults to secp256k1 algorithm
+
+**Object with r, s:**
+- `r` - r component (32 bytes)
+- `s` - s component (32 bytes)
+- `v?` - Optional recovery ID (27 or 28)
+- `algorithm?` - Optional algorithm (defaults to 'secp256k1')
+
+**Object with signature:**
+- `signature` - Ed25519 signature (64 bytes)
+- `algorithm` - Must be 'ed25519'
+
+**BrandedSignature:**
+- Returns input as-is (identity function)
+
+### Returns
+
+BrandedSignature with appropriate algorithm metadata.
+
+### Throws
+
+- `InvalidSignatureFormatError` - Unsupported format or invalid length
+- `InvalidSignatureLengthError` - Invalid component lengths
+
+### Examples
+
+```typescript
+// From compact bytes (defaults to secp256k1)
+const sig1 = Signature.from(bytes64);
+
+// From ECDSA components
+const sig2 = Signature.from({
+  r: rBytes,
+  s: sBytes,
+  v: 27,
+  algorithm: 'secp256k1'
+});
+
+// From P-256 components
+const sig3 = Signature.from({
+  r: rBytes,
+  s: sBytes,
+  algorithm: 'p256'
+});
+
+// From Ed25519
+const sig4 = Signature.from({
+  signature: ed25519Bytes,
+  algorithm: 'ed25519'
+});
+
+// Idempotent
+const sig5 = Signature.from(sig1);
+console.log(sig5 === sig1); // true
+```
+
+## fromSecp256k1
+
+Create secp256k1 ECDSA signature from components.
+
+### Signature
+
+```typescript
+function fromSecp256k1(
+  r: Uint8Array,
+  s: Uint8Array,
+  v?: number
+): BrandedSignature
+```
+
+### Parameters
+
+- `r` - r component (32 bytes)
+- `s` - s component (32 bytes)
+- `v?` - Optional recovery ID (27 or 28 for Ethereum)
+
+### Returns
+
+BrandedSignature with:
+- `algorithm: "secp256k1"`
+- `v: number | undefined`
+- Length: 64 bytes (r + s)
+
+### Throws
+
+- `InvalidSignatureLengthError` - If r or s is not 32 bytes
+
+### Examples
+
+```typescript
+// Ethereum transaction signature
+const sig = Signature.fromSecp256k1(
+  Hex.toBytes("0x1234..."), // r (32 bytes)
+  Hex.toBytes("0x5678..."), // s (32 bytes)
+  27 // v
+);
+
+console.log(sig.algorithm); // "secp256k1"
+console.log(sig.v); // 27
+console.log(sig.length); // 64
+
+// Without recovery ID
+const sig2 = Signature.fromSecp256k1(r, s);
+console.log(sig2.v); // undefined
+
+// From transaction
+const txSig = Signature.fromSecp256k1(
+  transaction.r,
+  transaction.s,
+  transaction.v
+);
+```
+
+### Recovery ID Values
+
+**Standard Ethereum:**
+- `27` - First recovery attempt (y is even)
+- `28` - Second recovery attempt (y is odd)
+
+**EIP-155 (chain-specific):**
+- `v = chainId * 2 + 35` or `chainId * 2 + 36`
+- Use standard 27/28 for signature primitive
+- Chain ID handled at transaction level
+
+```typescript
+// EIP-155 transaction
+const eip155V = transaction.v; // e.g., 37 for chainId 1
+
+// Convert to standard recovery ID
+const standardV = eip155V < 35 ? eip155V : ((eip155V - 35) % 2) + 27;
+
+const sig = Signature.fromSecp256k1(r, s, standardV);
+```
+
+## fromP256
+
+Create P-256 (NIST P-256) ECDSA signature.
+
+### Signature
+
+```typescript
+function fromP256(
+  r: Uint8Array,
+  s: Uint8Array
+): BrandedSignature
+```
+
+### Parameters
+
+- `r` - r component (32 bytes)
+- `s` - s component (32 bytes)
+
+### Returns
+
+BrandedSignature with:
+- `algorithm: "p256"`
+- `v: undefined` (P-256 doesn't use recovery IDs)
+- Length: 64 bytes (r + s)
+
+### Throws
+
+- `InvalidSignatureLengthError` - If r or s is not 32 bytes
+
+### Examples
+
+```typescript
+// P-256 signature
+const sig = Signature.fromP256(rBytes, sBytes);
+
+console.log(sig.algorithm); // "p256"
+console.log(sig.v); // undefined
+console.log(sig.length); // 64
+
+// From WebCrypto ECDSA
+const cryptoSig = await crypto.subtle.sign(
+  { name: "ECDSA", hash: "SHA-256" },
+  privateKey,
+  message
+);
+const r = cryptoSig.slice(0, 32);
+const s = cryptoSig.slice(32, 64);
+const sig = Signature.fromP256(r, s);
+```
+
+### Use Cases
+
+- WebAuthn authentication
+- JWT signatures (ES256)
+- TLS certificates
+- FIDO2 security keys
+
+## fromEd25519
+
+Create Ed25519 signature.
+
+### Signature
+
+```typescript
+function fromEd25519(signature: Uint8Array): BrandedSignature
+```
+
+### Parameters
+
+- `signature` - Ed25519 signature (64 bytes)
+
+### Returns
+
+BrandedSignature with:
+- `algorithm: "ed25519"`
+- `v: undefined`
+- Length: 64 bytes
+
+### Throws
+
+- `InvalidSignatureLengthError` - If signature is not 64 bytes
+
+### Examples
+
+```typescript
+// Ed25519 signature
+const sig = Signature.fromEd25519(sigBytes);
+
+console.log(sig.algorithm); // "ed25519"
+console.log(sig.length); // 64
+
+// From @noble/ed25519
+import * as ed from '@noble/ed25519';
+
+const secretKey = ed.utils.randomPrivateKey();
+const publicKey = await ed.getPublicKey(secretKey);
+const message = new TextEncoder().encode("hello");
+const signature = await ed.sign(message, secretKey);
+
+const sig = Signature.fromEd25519(signature);
+```
+
+### Use Cases
+
+- Cryptocurrency transactions (Solana, Cardano, Polkadot)
+- SSH keys (ed25519)
+- Age encryption
+- Modern cryptographic protocols
+
+## fromCompact
+
+Create signature from compact encoding (r + s).
+
+### Signature
+
+```typescript
+function fromCompact(
+  bytes: Uint8Array,
+  algorithm: SignatureAlgorithm
+): BrandedSignature
+```
+
+### Parameters
+
+- `bytes` - Compact signature bytes (64 bytes)
+- `algorithm` - Signature algorithm
+
+### Returns
+
+BrandedSignature with specified algorithm.
+
+### Throws
+
+- `InvalidSignatureLengthError` - If bytes is not 64 bytes
+
+### Examples
+
+```typescript
+// Parse compact ECDSA
+const compact = Hex.toBytes("0x1234...5678"); // 64 bytes
+const sig = Signature.fromCompact(compact, 'secp256k1');
+
+// Ed25519 from compact
+const ed25519Compact = new Uint8Array(64);
+const sig2 = Signature.fromCompact(ed25519Compact, 'ed25519');
+
+// Algorithm determines interpretation
+const secp = Signature.fromCompact(bytes, 'secp256k1');
+console.log(Signature.getR(secp)); // First 32 bytes
+
+const ed = Signature.fromCompact(bytes, 'ed25519');
+console.log(Signature.getR(ed)); // Throws (Ed25519 has no r)
+```
+
+### Compact Format
+
+```
+ECDSA (secp256k1, p256):
+[0-31]   r component (32 bytes)
+[32-63]  s component (32 bytes)
+
+Ed25519:
+[0-63]   signature (64 bytes)
+```
+
+## fromDER
+
+Create signature from DER-encoded ECDSA signature.
+
+### Signature
+
+```typescript
+function fromDER(
+  der: Uint8Array,
+  algorithm: 'secp256k1' | 'p256',
+  v?: number
+): BrandedSignature
+```
+
+### Parameters
+
+- `der` - DER-encoded signature
+- `algorithm` - ECDSA algorithm ('secp256k1' or 'p256')
+- `v?` - Optional recovery ID (secp256k1 only)
+
+### Returns
+
+BrandedSignature with specified algorithm.
+
+### Throws
+
+- `InvalidDERError` - Invalid DER encoding
+- `InvalidAlgorithmError` - Algorithm not ECDSA
+
+### Examples
+
+```typescript
+// Parse DER signature
+const derBytes = Hex.toBytes("0x3045..."); // DER encoding
+const sig = Signature.fromDER(derBytes, 'secp256k1', 27);
+
+// From Bitcoin transaction
+const bitcoinSig = transaction.scriptSig; // DER + hashType
+const der = bitcoinSig.slice(0, -1); // Remove hashType byte
+const sig = Signature.fromDER(der, 'secp256k1');
+
+// P-256 DER
+const p256Der = certificate.signature;
+const sig = Signature.fromDER(p256Der, 'p256');
+```
+
+### DER Format
+
+```
+SEQUENCE {
+  INTEGER r
+  INTEGER s
+}
+
+Example:
+30 45       SEQUENCE, 69 bytes
+   02 21    INTEGER, 33 bytes (r)
+      00    Padding (if high bit set)
+      ... r value ...
+   02 20    INTEGER, 32 bytes (s)
+      ... s value ...
+```
+
+### Parsing Details
+
+- Leading zeros removed from r and s
+- Padding (0x00) added if high bit set (positive number)
+- Result padded to 32 bytes
+- Recovery ID (v) passed separately (not in DER)
+
+```typescript
+// DER encodes integers minimally
+const r = new Uint8Array([0x00, 0xff, 0x12, ...]); // 33 bytes
+const s = new Uint8Array([0x7f, 0x34, ...]); // 32 bytes
+
+// Parsed to 32-byte components
+const sig = Signature.fromDER(der, 'secp256k1');
+console.log(Signature.getR(sig).length); // 32
+console.log(Signature.getS(sig).length); // 32
+```
+
+## Comparison
+
+### When to Use Each Constructor
+
+**from():**
+- Universal, handles any format
+- Good for library APIs
+- Flexible input handling
+
+**fromSecp256k1():**
+- Explicit secp256k1 creation
+- Ethereum/Bitcoin signatures
+- When you have r, s, v components
+
+**fromP256():**
+- NIST P-256 signatures
+- WebAuthn, JWT, TLS
+- When algorithm is known
+
+**fromEd25519():**
+- Ed25519 signatures only
+- Modern crypto protocols
+- Type-safe Ed25519 handling
+
+**fromCompact():**
+- Parsing compact binary format
+- When algorithm known externally
+- Wire format deserialization
+
+**fromDER():**
+- Bitcoin transactions
+- X.509 certificates
+- Legacy ECDSA formats
+
+### Performance
+
+All constructors are O(1) with minimal overhead:
+
+```typescript
+// Fastest: direct component construction
+const sig1 = Signature.fromSecp256k1(r, s, 27);
+
+// Fast: minimal parsing
+const sig2 = Signature.fromCompact(bytes, 'secp256k1');
+
+// Slower: DER parsing overhead
+const sig3 = Signature.fromDER(der, 'secp256k1', 27);
+
+// Variable: depends on input type
+const sig4 = Signature.from(input);
+```
+
+## Error Handling
+
+```typescript
+try {
+  const sig = Signature.fromSecp256k1(r, s, 27);
+} catch (err) {
+  if (err instanceof InvalidSignatureLengthError) {
+    console.error('Invalid component length:', err.message);
+  }
+}
+
+try {
+  const sig = Signature.fromDER(der, 'secp256k1');
+} catch (err) {
+  if (err instanceof InvalidDERError) {
+    console.error('DER parsing failed:', err.message);
+  }
+}
+
+try {
+  const sig = Signature.from(unknownInput);
+} catch (err) {
+  if (err instanceof InvalidSignatureFormatError) {
+    console.error('Unsupported format:', err.message);
+  }
+}
+```
+
+## Type Safety
+
+```typescript
+// Type-safe construction
+const sig: BrandedSignature = Signature.fromSecp256k1(r, s, 27);
+
+// Algorithm inferred from constructor
+if (sig.algorithm === 'secp256k1') {
+  // TypeScript knows v might be defined
+  console.log(sig.v);
+}
+
+// Generic signature handling
+function createSignature<T extends SignatureAlgorithm>(
+  algorithm: T,
+  data: Uint8Array
+): BrandedSignature {
+  // Type-safe dispatch based on algorithm
+}
+```
+
+## See Also
+
+- [Conversions](./conversions.mdx) - Converting between formats
+- [BrandedSignature](./branded-signature.mdx) - Type definition
+- [Signature Overview](./index.mdx) - Main documentation

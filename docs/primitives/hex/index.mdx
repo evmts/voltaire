@@ -1,0 +1,420 @@
+---
+title: Hex
+description: Hexadecimal string encoding and manipulation for Ethereum data
+---
+
+# Hex
+
+Hexadecimal strings are the standard encoding format for Ethereum data. Every address, hash, signature, and transaction uses hex encoding with a `0x` prefix.
+
+## Overview
+
+Hex is represented as a [branded](/concepts/branded-types) string following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
+
+```typescript
+export type BrandedHex = `0x${string}` & { readonly __tag: "Hex" };
+```
+
+Hex strings encode binary data in human-readable form where each byte becomes two hexadecimal characters (0-9, a-f). Voltaire provides comprehensive utilities for constructing, validating, converting, and manipulating hex strings.
+
+<Tip title="Understanding Hex Encoding">
+Hex strings represent binary data using base-16 digits (0-9, a-f). Each hex digit represents 4 bits, so two hex characters = 1 byte. For example: `0xFF` = 255 in decimal = 11111111 in binary.
+
+The `0x` prefix is an Ethereum convention indicating hexadecimal format. Always include it for clarity and compatibility.
+</Tip>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Class API">
+
+```typescript
+import { Hex } from '@tevm/voltaire';
+
+// Create from various inputs
+const hex1 = Hex("0x1234");
+const hex2 = Hex.fromBytes(new Uint8Array([0x12, 0x34]));
+const hex3 = Hex.fromNumber(255);
+const hex4 = Hex.fromString("hello");
+
+// Validate
+Hex.isHex("0x1234");     // true
+Hex.validate("0x1234");  // Throws if invalid
+
+// Convert
+Hex.toBytes(hex1);       // Uint8Array([0x12, 0x34])
+Hex.toNumber(hex3);      // 255
+Hex.toString(hex4);      // "hello"
+
+// Manipulate
+Hex.concat(hex1, hex2);  // "0x12341234"
+Hex.slice(hex1, 1);      // "0x34"
+Hex.pad(hex1, 4);        // "0x00001234"
+```
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex';
+
+// Create from various inputs
+const hex1 = Hex.from("0x1234");
+const hex2 = Hex.fromBytes(new Uint8Array([0x12, 0x34]));
+const hex3 = Hex.fromNumber(255);
+const hex4 = Hex.fromString("hello");
+
+// Validate
+Hex.isHex("0x1234");     // true
+Hex.validate("0x1234");  // Throws if invalid
+
+// Convert
+Hex.toBytes(hex1);       // Uint8Array([0x12, 0x34])
+Hex.toNumber(hex3);      // 255
+Hex.toString(hex4);      // "hello"
+
+// Manipulate
+Hex.concat(hex1, hex2);  // "0x12341234"
+Hex.slice(hex1, 1);      // "0x34"
+Hex.pad(hex1, 4);        // "0x00001234"
+```
+
+</Tab>
+</Tabs>
+
+## Example: Encoding and Decoding Data
+
+Here's how to encode different data types as hex:
+
+```typescript
+// Numbers
+const num = Hex.fromNumber(42);
+console.log(num);                    // "0x2a"
+console.log(Hex.toNumber(num));      // 42
+
+// Strings
+const str = Hex.fromString("hello");
+console.log(str);                    // "0x68656c6c6f"
+console.log(Hex.toString(str));      // "hello"
+
+// BigInts (with size padding)
+const big = Hex.fromBigInt(255n, 32);
+console.log(big);                    // "0x00...ff" (32 bytes)
+console.log(Hex.toBigInt(big));      // 255n
+
+// Booleans
+const bool = Hex.fromBoolean(true);
+console.log(bool);                   // "0x01"
+console.log(Hex.toBoolean(bool));    // true
+```
+
+**Key concepts demonstrated**:
+- **Type conversion** - Convert between hex and native JavaScript types
+- **Size padding** - Pad hex strings to specific byte lengths
+- **Bidirectional** - Encode to hex and decode back to original type
+- **Type safety** - Branded types prevent mixing different hex types
+
+## Hex Encoding Visualization
+
+```
+Binary Data                 Hex Representation
+┌─────────────────────────┐ ┌──────────────────────┐
+│ Byte 0: 11111111       │→ 0xFF
+│ Byte 1: 00010010       │→ 0x12
+│ Byte 2: 10100101       │→ 0xA5
+│ Byte 3: 01100011       │→ 0x63
+└─────────────────────────┘ └──────────────────────┘
+        (Binary)              (Hex, two digits per byte)
+
+Full Hex String: "0xff12a563"
+                 ││ ││││ ││││
+Prefix ──────────┘└ Each pair = 1 byte (8 bits)
+
+Digit Mapping:
+┌────┬────┬────┬────┬────┬────┬────┬────┐
+│ 0  │ 1  │ 2  │ 3  │ 4  │ 5  │ 6  │ 7  │
+├────┼────┼────┼────┼────┼────┼────┼────┤
+│0000│0001│0010│0011│0100│0101│0110│0111│
+├────┼────┼────┼────┼────┼────┼────┼────┤
+│ 8  │ 9  │ a  │ b  │ c  │ d  │ e  │ f  │
+├────┼────┼────┼────┼────┼────┼────┼────┤
+│1000│1001│1010│1011│1100│1101│1110│1111│
+└────┴────┴────┴────┴────┴────┴────┴────┘
+```
+
+**Properties**:
+- Two hex digits per byte (each digit = 4 bits)
+- Case-insensitive: `0xFF` equals `0xff`
+- Always prefixed with `0x` in Ethereum
+- Empty hex string: `0x` (zero bytes)
+
+## API Documentation
+
+### Constructors
+
+Create hex strings from various input types.
+
+    [View constructors →](./from)
+
+### Conversions
+
+Convert hex to bytes, numbers, strings, booleans, and bigints.
+
+    [View conversions →](./toBytes)
+
+### Validation
+
+Validate hex format and enforce size constraints.
+
+    [View validation →](./validate)
+
+### Manipulation
+
+Concatenate, slice, pad, trim, and XOR hex strings.
+
+    [View manipulation →](./concat)
+
+### Utilities
+
+Generate random hex, check sizes, compare values, and create zeros.
+
+    [View utilities →](./size)
+
+### All Methods
+
+<Tabs>
+<Tab title="Class API">
+
+**Constructors:**
+- `Hex(value)` - Universal constructor from any input
+- `Hex.from(value)` - Alias for universal constructor
+- `Hex.fromBytes(bytes)` - Create from Uint8Array
+- `Hex.fromNumber(value, size?)` - Create from number with optional padding
+- `Hex.fromBigInt(value, size?)` - Create from bigint with optional padding
+- `Hex.fromString(value)` - Encode string as hex
+- `Hex.fromBoolean(value)` - Encode boolean as hex (0x01 or 0x00)
+
+**Conversions:**
+- `Hex.toBytes(hex)` - Convert to Uint8Array
+- `Hex.toNumber(hex)` - Convert to number (unsafe for values > 2^53-1)
+- `Hex.toBigInt(hex)` - Convert to bigint (safe for any size)
+- `Hex.toString(hex)` - Decode to UTF-8 string
+- `Hex.toBoolean(hex)` - Decode to boolean
+
+**Validation:**
+- `Hex.isHex(value)` - Type guard checking if value is valid hex
+- `Hex.validate(value)` - Validate and throw if invalid
+- `Hex.isSized(hex, size)` - Check if hex is exactly N bytes
+- `Hex.assertSize(hex, size)` - Assert hex size and throw if wrong
+
+**Manipulation:**
+- `Hex.concat(...hexes)` - Concatenate multiple hex strings
+- `Hex.slice(hex, start?, end?)` - Extract byte slice
+- `Hex.pad(hex, size)` - Left-pad with zeros to size
+- `Hex.padRight(hex, size)` - Right-pad with zeros to size
+- `Hex.trim(hex)` - Remove leading zero bytes
+- `Hex.xor(a, b)` - Bitwise XOR of two equal-length hex strings
+
+**Utilities:**
+- `Hex.size(hex)` - Get byte length
+- `Hex.equals(a, b)` - Compare hex equality
+- `Hex.random(size)` - Generate random hex of N bytes
+- `Hex.zero(size)` - Create zero-filled hex of N bytes
+- `Hex.clone(hex)` - Create copy of hex string
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+**Constructors:**
+- `from(value)` - Universal constructor from any input
+- `fromBytes(bytes)` - Create from Uint8Array
+- `fromNumber(value, size?)` - Create from number with optional padding
+- `fromBigInt(value, size?)` - Create from bigint with optional padding
+- `fromString(value)` - Encode string as hex
+- `fromBoolean(value)` - Encode boolean as hex (0x01 or 0x00)
+
+**Conversions:**
+- `toBytes(hex)` - Convert to Uint8Array
+- `toNumber(hex)` - Convert to number (unsafe for values > 2^53-1)
+- `toBigInt(hex)` - Convert to bigint (safe for any size)
+- `toString(hex)` - Decode to UTF-8 string
+- `toBoolean(hex)` - Decode to boolean
+
+**Validation:**
+- `isHex(value)` - Type guard checking if value is valid hex
+- `validate(value)` - Validate and throw if invalid
+- `isSized(hex, size)` - Check if hex is exactly N bytes
+- `assertSize(hex, size)` - Assert hex size and throw if wrong
+
+**Manipulation:**
+- `concat(...hexes)` - Concatenate multiple hex strings
+- `slice(hex, start?, end?)` - Extract byte slice
+- `pad(hex, size)` - Left-pad with zeros to size
+- `padRight(hex, size)` - Right-pad with zeros to size
+- `trim(hex)` - Remove leading zero bytes
+- `xor(a, b)` - Bitwise XOR of two equal-length hex strings
+
+**Utilities:**
+- `size(hex)` - Get byte length
+- `equals(a, b)` - Compare hex equality
+- `random(size)` - Generate random hex of N bytes
+- `zero(size)` - Create zero-filled hex of N bytes
+- `clone(hex)` - Create copy of hex string
+
+</Tab>
+</Tabs>
+
+## Types
+
+<Tabs>
+<Tab title="BrandedHex">
+
+```typescript
+export type BrandedHex = `0x${string}` & {
+  readonly __tag: "Hex";
+};
+```
+
+Main branded type. Runtime is a string, TypeScript enforces type safety.
+
+</Tab>
+<Tab title="Sized<N>">
+
+```typescript
+export type Sized<N extends number = number> = `0x${string}` & {
+  readonly __tag: "Hex";
+  readonly size: N;
+};
+
+// Alias for Sized
+export type Bytes<N extends number> = Sized<N>;
+```
+
+Sized hex type with compile-time byte length tracking. Used for addresses (20 bytes), hashes (32 bytes), and fixed-size data.
+
+Examples:
+- `Sized<20>` = 20-byte hex (addresses)
+- `Sized<32>` = 32-byte hex (hashes)
+- `Sized<4>` = 4-byte hex (function selectors)
+
+</Tab>
+<Tab title="HexLike">
+
+```typescript
+type HexLike =
+  | string
+  | Uint8Array
+  | BrandedHex
+  | Hex
+  | number
+  | bigint
+  | boolean;
+```
+
+Union type accepting any input that can be coerced to hex. Accepted by `Hex.from()`.
+
+See [Hex.from](./from#hexlike-type) for details.
+
+</Tab>
+</Tabs>
+
+## Usage Patterns
+
+### Working with API Data
+
+```typescript
+// Parse hex from API responses
+const txHash = Hex("0xabc123...");
+const blockHash = Hex.from(await provider.getBlockHash(123));
+
+// Validate before processing
+if (Hex.isHex(data)) {
+  const bytes = Hex.toBytes(data);
+  // Process bytes...
+}
+
+// Size validation for specific types
+Hex.assertSize(address, 20);  // Throws if not 20 bytes
+Hex.assertSize(hash, 32);     // Throws if not 32 bytes
+```
+
+### Encoding Transaction Data
+
+```typescript
+// Encode function parameters
+const selector = Hex.fromString("transfer").slice(0, 4);  // First 4 bytes
+const recipient = Hex.pad(Hex.fromString(address), 32);   // Pad to 32 bytes
+const amount = Hex.fromBigInt(1000000n, 32);              // Amount as 32 bytes
+
+// Concatenate into calldata
+const calldata = Hex.concat(selector, recipient, amount);
+```
+
+### Comparing and Hashing
+
+```typescript
+// Compare hex values
+if (Hex.equals(hash1, hash2)) {
+  console.log("Hashes match");
+}
+
+// Generate random data
+const nonce = Hex.random(32);
+const salt = Hex.random(16);
+
+// Create padded values
+const paddedValue = Hex.pad(Hex.fromNumber(42), 32);
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { fromBytes, toBytes, concat } from '@tevm/voltaire/BrandedHex';
+
+const hex = fromBytes(new Uint8Array([0x12, 0x34]));
+const bytes = toBytes(hex);
+const combined = concat(hex, fromBytes([0x56, 0x78]));
+
+// Only these 3 functions included in bundle
+// Unused functions (pad, trim, xor, etc.) excluded
+```
+
+<Tip title="Bundle Impact">
+Importing from `@tevm/voltaire/BrandedHex` instead of `@tevm/voltaire` enables tree-shaking. For example, if you only need `fromBytes` and `toBytes`, string manipulation and validation functions are excluded from your bundle.
+</Tip>
+
+## Related
+
+### Address
+
+20-byte Ethereum addresses built on sized hex.
+
+    [View →](/primitives/address)
+
+### Hash
+
+32-byte hash values using sized hex type.
+
+    [View →](/primitives/hash)
+
+### Uint
+
+Unsigned integer encoding and decoding.
+
+    [View →](/primitives/uint)
+
+### Bytecode
+
+EVM bytecode represented as hex strings.
+
+    [View →](/primitives/bytecode)
+
+## Specification References
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal specification
+- [JSON-RPC Specification](https://ethereum.github.io/execution-apis/api-documentation/) - Hex encoding in APIs
+- [EIP-55](https://eips.ethereum.org/EIPS/eip-55) - Mixed-case checksum address encoding
+- [Hexadecimal on Wikipedia](https://en.wikipedia.org/wiki/Hexadecimal) - Base-16 number system

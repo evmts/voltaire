@@ -1,0 +1,306 @@
+---
+title: "GasConstants"
+---
+
+# GasConstants
+
+EVM gas cost constants and calculation utilities following the Ethereum Yellow Paper and various EIPs.
+
+## Overview
+
+GasConstants provides comprehensive gas cost definitions and calculations for EVM operations. Unlike factory-based primitives, GasConstants is purely data-focused: constants and methods to calculate gas costs accurately across hardforks.
+
+**Key Features:**
+- Direct bigint constants for all EVM operations
+- Calculation functions for complex gas costs
+- Hardfork-aware utilities (EIP-2929, EIP-3529, EIP-3860, EIP-1153, EIP-4844)
+- Precompile gas costs
+- Zero allocations, pure calculations
+
+## Quick Start
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Direct constants
+GasConstants.QuickStep      // 2n
+GasConstants.FastestStep    // 3n
+GasConstants.Sload          // 100n
+GasConstants.ColdSload      // 2100n
+
+// Calculations
+const keccakCost = GasConstants.calculateKeccak256Cost(64n);  // 42n
+const memExpansion = GasConstants.calculateMemoryExpansionCost(0n, 128n);
+const sstoreResult = GasConstants.calculateSstoreCost(false, 0n, 100n);
+const callResult = GasConstants.calculateCallCost(true, false, false, 100000n);
+
+// Hardfork utilities
+GasConstants.hasEIP2929('berlin');              // true
+GasConstants.getColdSloadCost('istanbul');      // 100n (pre-EIP-2929)
+GasConstants.getColdSloadCost('berlin');        // 2100n (post-EIP-2929)
+
+// Precompiles
+GasConstants.Precompile.EcRecover;                          // 3000n
+GasConstants.Precompile.calculateSha256Cost(64n);           // 84n
+GasConstants.Precompile.getEcAddCost('istanbul');           // 150n
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import {
+  QuickStep,
+  FastestStep,
+  Sload,
+  ColdSload,
+  calculateKeccak256Cost,
+  calculateMemoryExpansionCost,
+  calculateSstoreCost,
+  calculateCallCost,
+  hasEIP2929,
+  getColdSloadCost,
+  Precompile
+} from '@tevm/voltaire/GasConstants';
+
+// Direct constants
+QuickStep      // 2n
+FastestStep    // 3n
+Sload          // 100n
+ColdSload      // 2100n
+
+// Calculations
+const keccakCost = calculateKeccak256Cost(64n);
+const memExpansion = calculateMemoryExpansionCost(0n, 128n);
+const sstoreResult = calculateSstoreCost(false, 0n, 100n);
+const callResult = calculateCallCost(true, false, false, 100000n);
+
+// Hardfork utilities
+hasEIP2929('berlin');              // true
+getColdSloadCost('istanbul');      // 100n
+getColdSloadCost('berlin');        // 2100n
+
+// Precompiles
+Precompile.EcRecover;                    // 3000n
+Precompile.calculateSha256Cost(64n);     // 84n
+Precompile.getEcAddCost('istanbul');     // 150n
+```
+</Tab>
+</Tabs>
+
+## Documentation Structure
+
+### [Constants](./constants.mdx)
+All gas constant definitions organized by category:
+- Basic opcodes (QuickStep, FastestStep, FastStep, etc.)
+- Storage operations (Sload, SstoreSet, SstoreRefund)
+- Memory expansion (Memory, QuadCoeffDiv)
+- Calls (Call, CallStipend, CallValueTransfer)
+- Transactions (Tx, TxDataZero, TxDataNonZero)
+- Contract creation (Create, CreateData, InitcodeWord)
+- Logging (LogBase, LogData, LogTopic)
+- Hashing (Keccak256Base, Keccak256Word)
+- Transient storage (TLoad, TStore)
+- Blob transactions (BlobHash, BlobBaseFee)
+
+### [Calculation Functions](./calculation-functions.mdx)
+Core calculation utilities with detailed parameters:
+- `calculateKeccak256Cost(size)` - KECCAK256 operation
+- `calculateSstoreCost(isWarm, currentValue, newValue)` - SSTORE with refunds
+- `calculateLogCost(topicCount, dataSize)` - LOG operations
+- `calculateCallCost(isWarm, hasValue, isNewAccount, availableGas)` - CALL family
+- `calculateMemoryExpansionCost(oldSize, newSize)` - Memory expansion
+- `calculateCreateCost(initcodeSize, deployedSize)` - CREATE/CREATE2
+- `calculateTxIntrinsicGas(data, isCreate)` - Transaction intrinsic gas
+- `calculateCopyCost(size)` - Copy operations
+- `calculateMaxRefund(gasUsed)` - Maximum refund (EIP-3529)
+
+### [Convenience Functions](./convenience-functions.mdx)
+Simplified call forms with implicit `this`:
+- `keccak256Cost.call(size)`
+- `sstoreCost.call({isWarm, currentValue, newValue})`
+- `logCost.call({topicCount, dataSize})`
+- `callCost.call({isWarm, hasValue, isNewAccount, availableGas})`
+- `memoryExpansionCost.call({oldSize, newSize})`
+- And more...
+
+### [Hardfork Utilities](./hardfork-utilities.mdx)
+EIP detection and fork-specific costs:
+- `hasEIP2929(hardfork)` - Cold/warm access costs (Berlin+)
+- `hasEIP3529(hardfork)` - Reduced refunds (London+)
+- `hasEIP3860(hardfork)` - Initcode size limit (Shanghai+)
+- `hasEIP1153(hardfork)` - Transient storage (Cancun+)
+- `hasEIP4844(hardfork)` - Blob transactions (Cancun+)
+- `getColdSloadCost(hardfork)` - Fork-specific SLOAD cost
+- `getColdAccountAccessCost(hardfork)` - Fork-specific account access
+- `getSstoreRefund(hardfork)` - Fork-specific refund amount
+- `getSelfdestructRefund(hardfork)` - Fork-specific selfdestruct refund
+
+### [Precompiles](./precompiles.mdx)
+Precompiled contract gas costs:
+- ECRECOVER (0x01) - Fixed 3000 gas
+- SHA256 (0x02) - Base + per-word
+- RIPEMD160 (0x03) - Base + per-word
+- IDENTITY (0x04) - Base + per-word
+- MODEXP (0x05) - Complexity-based (EIP-2565)
+- BN254 ECADD (0x06) - Hardfork-dependent
+- BN254 ECMUL (0x07) - Hardfork-dependent
+- BN254 ECPAIRING (0x08) - Hardfork-dependent
+
+### [Usage Patterns](./usage-patterns.mdx)
+Common patterns and examples:
+- Transaction cost estimation
+- Contract deployment cost
+- Memory management
+- Gas refund calculation
+- Storage optimization
+- Best practices
+
+### [WebAssembly](./wasm.mdx)
+WASM implementation details and performance characteristics.
+
+## Types
+
+```typescript
+type Hardfork =
+  | "homestead"
+  | "byzantium"
+  | "constantinople"
+  | "istanbul"
+  | "berlin"
+  | "london"
+  | "paris"
+  | "shanghai"
+  | "cancun";
+
+type Config = {
+  hardfork: Hardfork;
+};
+
+type CostResult = {
+  base: bigint;
+  dynamic: bigint;
+  total: bigint;
+};
+
+type MemoryExpansion = {
+  oldCost: bigint;
+  newCost: bigint;
+  expansionCost: bigint;
+  words: bigint;
+};
+
+type CallDetails = {
+  isWarm: boolean;
+  hasValue: boolean;
+  isNewAccount: boolean;
+  gas: bigint;
+};
+```
+
+## Architecture
+
+GasConstants follows data-first architecture:
+
+```typescript
+// Direct exports of constants
+export const QuickStep = 2n;
+export const Sload = 100n;
+
+// Calculation functions
+export function calculateKeccak256Cost(size: bigint): bigint {
+  const words = (size + 31n) / 32n;
+  return Keccak256Base + words * Keccak256Word;
+}
+
+// Convenience forms with this:
+export function keccak256Cost(this: bigint): bigint {
+  return calculateKeccak256Cost(this);
+}
+
+// Namespace for precompiles
+export const Precompile = {
+  EcRecover: 3000n,
+  calculateSha256Cost,
+  // ...
+};
+```
+
+## Design Principles
+
+1. **Zero allocations** - Pure calculations, no object creation
+2. **Hardfork-aware** - Explicit fork parameters for version-specific behavior
+3. **Unopinionated** - Methods operate on data, no state
+4. **Tree-shakable** - Individual exports for minimal bundle size
+5. **Type-safe** - Branded types for hardforks and configs
+
+## References
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
+- [EIP-2929: Gas cost increases for state access opcodes](https://eips.ethereum.org/EIPS/eip-2929)
+- [EIP-3529: Reduction in refunds](https://eips.ethereum.org/EIPS/eip-3529)
+- [EIP-3860: Limit and meter initcode](https://eips.ethereum.org/EIPS/eip-3860)
+- [EIP-1153: Transient storage opcodes](https://eips.ethereum.org/EIPS/eip-1153)
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [EIP-2565: ModExp Gas Cost](https://eips.ethereum.org/EIPS/eip-2565)
+- [EIP-1108: Reduce alt_bn128 precompile gas costs](https://eips.ethereum.org/EIPS/eip-1108)
+
+## Example
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+// Estimate contract deployment
+function estimateDeployment(
+  initcode: Uint8Array,
+  deployedCode: Uint8Array
+): bigint {
+  // Intrinsic gas for contract creation
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(initcode, true);
+
+  // CREATE operation cost
+  const create = GasConstants.calculateCreateCost(
+    BigInt(initcode.length),
+    BigInt(deployedCode.length)
+  );
+
+  // Memory expansion for initcode
+  const memory = GasConstants.calculateMemoryExpansionCost(
+    0n,
+    BigInt(initcode.length)
+  );
+
+  return intrinsic + create.total + memory.expansionCost;
+}
+
+// Estimate SSTORE with refund tracking
+function estimateSstore(
+  slots: Array<{ current: bigint; new: bigint }>,
+  coldAccess: boolean
+): { cost: bigint; refund: bigint } {
+  let totalCost = 0n;
+  let totalRefund = 0n;
+
+  for (const slot of slots) {
+    const result = GasConstants.calculateSstoreCost(
+      !coldAccess,
+      slot.current,
+      slot.new
+    );
+    totalCost += result.cost;
+    totalRefund += result.refund;
+  }
+
+  return { cost: totalCost, refund: totalRefund };
+}
+
+// Calculate actual gas after refunds
+function netGasUsed(
+  gasUsed: bigint,
+  refunds: bigint
+): bigint {
+  const maxRefund = GasConstants.calculateMaxRefund(gasUsed);
+  const actualRefund = refunds > maxRefund ? maxRefund : refunds;
+  return gasUsed - actualRefund;
+}
+```

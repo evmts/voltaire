@@ -1,0 +1,334 @@
+---
+title: BrandedGwei
+description: Data-first branded Gwei type with direct Uint8Array methods
+---
+
+# BrandedGwei
+
+Data-first branded Gwei type - `BrandedUint` representing Gwei denomination with zero-overhead runtime.
+
+## Overview
+
+`BrandedGwei` is a branded `BrandedUint` (Uint8Array-based) providing compile-time type safety for Gwei values. Unlike the namespace API (`Gwei.*`), BrandedGwei uses direct data representation with minimal wrapping.
+
+## Type Definition
+
+```typescript
+import type { BrandedUint } from '@tevm/voltaire/BrandedUint'
+
+export type BrandedGwei = BrandedUint & { readonly __brand: unique symbol }
+```
+
+Inherits all `BrandedUint` properties - 32-byte Uint8Array with bigint arithmetic.
+
+## BrandedGwei vs Gwei
+
+Two APIs for different use cases:
+
+**Gwei (namespace)** - Flexible, accepts any input:
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+Gwei.toWei("50")        // Converts string to Gwei, then to Wei
+Gwei.from(50n)          // Auto-converts any numeric input
+```
+
+**BrandedGwei** - Type-safe, requires BrandedGwei:
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+const gwei = BrandedGwei.from(50n)  // Create BrandedGwei
+BrandedGwei.toWei(gwei)             // Must pass BrandedGwei type
+```
+
+Key differences:
+- **Gwei namespace**: Auto-converts inputs, wrapper functions
+- **BrandedGwei**: Enforces type at compile time, direct data operations
+- **Performance**: BrandedGwei avoids wrapper overhead
+- **Use case**: Gwei for convenience, BrandedGwei for type safety
+
+## Construction
+
+### `BrandedGwei.from(value)`
+
+Create BrandedGwei from numeric input.
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+const gwei1 = BrandedGwei.from(50n)      // 50 Gwei gas price
+const gwei2 = BrandedGwei.from(21)       // 21 Gwei
+const gwei3 = BrandedGwei.from("100")    // String input
+const gwei4 = BrandedGwei.from("0x32")   // Hex input (50 Gwei)
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedGwei`
+
+### `BrandedGwei.fromWei(wei)`
+
+Convert BrandedWei to BrandedGwei (divide by 10^9).
+
+```typescript
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+const wei = BrandedWei.from(50_000_000_000n)
+const gwei = BrandedGwei.fromWei(wei)  // 50n Gwei
+
+// Fractional values truncate
+const wei2 = BrandedWei.from(50_000_000_001n)
+const gwei2 = BrandedGwei.fromWei(wei2)  // 50n (truncates)
+```
+
+**Parameters:**
+- `wei: BrandedWei` - Wei amount
+
+**Returns:** `BrandedGwei`
+
+**Formula:** `gwei = wei / 1_000_000_000` (integer division)
+
+### `BrandedGwei.fromEther(ether)`
+
+Convert BrandedEther to BrandedGwei (multiply by 10^9).
+
+```typescript
+import * as BrandedEther from '@tevm/voltaire/BrandedEther'
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+const ether = BrandedEther.from(1n)
+const gwei = BrandedGwei.fromEther(ether)  // 1_000_000_000n Gwei
+```
+
+**Parameters:**
+- `ether: BrandedEther` - Ether amount
+
+**Returns:** `BrandedGwei`
+
+**Formula:** `gwei = ether * 1_000_000_000`
+
+## Conversions To Other Units
+
+### `BrandedGwei.toWei(gwei)`
+
+Convert BrandedGwei to BrandedWei (multiply by 10^9).
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+const gwei = BrandedGwei.from(50n)
+const wei = BrandedGwei.toWei(gwei)  // BrandedWei(50_000_000_000n)
+
+const gwei2 = BrandedGwei.from(21n)
+const wei2 = BrandedGwei.toWei(gwei2)  // BrandedWei(21_000_000_000n)
+```
+
+**Parameters:**
+- `gwei: BrandedGwei` - Gwei amount
+
+**Returns:** `BrandedWei`
+
+**Formula:** `wei = gwei * 1_000_000_000`
+
+### `BrandedGwei.toEther(gwei)`
+
+Convert BrandedGwei to BrandedEther (divide by 10^9).
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+const gwei = BrandedGwei.from(1_000_000_000n)
+const ether = BrandedGwei.toEther(gwei)  // BrandedEther(1n)
+
+// Fractional values truncate
+const gwei2 = BrandedGwei.from(500_000_000n)  // 0.5 ETH
+const ether2 = BrandedGwei.toEther(gwei2)  // BrandedEther(0n) - truncates
+```
+
+**Parameters:**
+- `gwei: BrandedGwei` - Gwei amount
+
+**Returns:** `BrandedEther`
+
+**Formula:** `ether = gwei / 1_000_000_000` (integer division)
+
+## Conversions To Base Type
+
+### `BrandedGwei.toU256(gwei)`
+
+Convert BrandedGwei to raw BrandedUint (removes denomination branding).
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+
+const gwei = BrandedGwei.from(50n)
+const u256 = BrandedGwei.toU256(gwei)  // BrandedUint (no denomination)
+
+// Can use with BrandedUint operations
+const doubled = BrandedUint.times(u256, BrandedUint.from(2n))
+```
+
+**Parameters:**
+- `gwei: BrandedGwei` - Gwei amount
+
+**Returns:** `BrandedUint`
+
+**Note:** Removes denomination type safety. Use for arithmetic requiring `BrandedUint`.
+
+## Constants
+
+```typescript
+import { WEI_PER_GWEI, GWEI_PER_ETHER } from '@tevm/voltaire/BrandedGwei'
+
+WEI_PER_GWEI    // 1_000_000_000n (10^9)
+GWEI_PER_ETHER  // 1_000_000_000n (10^9)
+```
+
+## Usage Examples
+
+### Gas Price Calculation
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+
+// Gas price from RPC (often in Gwei)
+const gasPriceGwei = BrandedGwei.from(50n)
+
+// Convert to Wei for transaction
+const gasPriceWei = BrandedGwei.toWei(gasPriceGwei)
+
+// Calculate total cost
+const gasUsed = BrandedUint.from(21_000n)
+const gasPriceU256 = BrandedWei.toU256(gasPriceWei)
+
+const totalCost = BrandedUint.times(gasPriceU256, gasUsed)
+console.log(`Total: ${BrandedWei.from(totalCost)} Wei`)
+```
+
+### Priority Fee Calculation
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedUint from '@tevm/voltaire/BrandedUint'
+
+const baseFee = BrandedGwei.from(30n)
+const priorityFee = BrandedGwei.from(2n)
+
+// Convert to Uint256 for addition
+const baseU256 = BrandedGwei.toU256(baseFee)
+const priorityU256 = BrandedGwei.toU256(priorityFee)
+
+const maxFeeU256 = BrandedUint.plus(baseU256, priorityU256)
+const maxFeeGwei = BrandedGwei.from(maxFeeU256)  // 32n Gwei
+
+console.log(`Max fee: ${maxFeeGwei} Gwei`)
+```
+
+### Conversion Chain
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+import * as BrandedEther from '@tevm/voltaire/BrandedEther'
+
+// Start with Gwei (common for gas prices)
+const gwei = BrandedGwei.from(50n)
+
+// Convert to Wei (for calculations)
+const wei = BrandedGwei.toWei(gwei)  // 50_000_000_000n
+
+// Convert to Ether (for display, requires full Ether)
+const largeGwei = BrandedGwei.from(1_000_000_000n)  // 1 ETH
+const ether = BrandedGwei.toEther(largeGwei)  // 1n
+```
+
+### Display Gas Price
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+// RPC returns Wei
+const gasPriceWei = BrandedWei.from(50_000_000_000n)
+
+// Convert to Gwei for user display
+const gasPriceGwei = BrandedWei.toGwei(gasPriceWei)
+
+console.log(`Gas price: ${gasPriceGwei} Gwei`)  // "Gas price: 50 Gwei"
+```
+
+## Type Safety
+
+BrandedGwei prevents mixing denominations at compile time:
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+import * as BrandedWei from '@tevm/voltaire/BrandedWei'
+
+const gwei = BrandedGwei.from(50n)
+const wei = BrandedWei.from(50_000_000_000n)
+
+// ✗ Type error - incompatible brands
+BrandedGwei.toWei(wei)
+
+// ✗ Type error - cannot compare different denominations
+if (gwei === wei) { }
+
+// ✓ Correct - explicit conversion
+const gweiFromWei = BrandedWei.toGwei(wei)
+if (gwei === gweiFromWei) { }  // Type-safe comparison
+```
+
+## Performance
+
+BrandedGwei uses direct Uint8Array representation:
+- Zero wrapper overhead
+- Direct bigint arithmetic
+- Optimal for hot paths
+- Same memory layout as BrandedUint
+
+For gas price calculations in tight loops, prefer BrandedGwei over Gwei namespace.
+
+## Common Gwei Values
+
+```typescript
+import * as BrandedGwei from '@tevm/voltaire/BrandedGwei'
+
+// Gas price levels
+const LOW_GAS = BrandedGwei.from(10n)      // 10 Gwei - cheap
+const NORMAL_GAS = BrandedGwei.from(30n)   // 30 Gwei - normal
+const HIGH_GAS = BrandedGwei.from(100n)    // 100 Gwei - fast
+const URGENT_GAS = BrandedGwei.from(200n)  // 200 Gwei - urgent
+
+// Priority fees (EIP-1559)
+const LOW_PRIORITY = BrandedGwei.from(1n)   // 1 Gwei tip
+const MED_PRIORITY = BrandedGwei.from(2n)   // 2 Gwei tip
+const HIGH_PRIORITY = BrandedGwei.from(5n)  // 5 Gwei tip
+```
+
+## When to Use
+
+**Use BrandedGwei when:**
+- Type safety is critical
+- Working with existing BrandedUint infrastructure
+- Building type-safe APIs
+- Performance-sensitive gas calculations
+
+**Use Gwei namespace when:**
+- Accepting flexible input formats
+- Building user-facing APIs
+- Convenience over strict types
+- Integration with existing code
+
+## Related
+
+- [Gwei](/primitives/denomination/gwei) - Namespace API with auto-conversion
+- [BrandedWei](/primitives/denomination/branded-wei) - Branded Wei type
+- [BrandedEther](/primitives/denomination/branded-ether) - Branded Ether type
+- [BrandedUint](/primitives/uint/branded-uint) - Underlying branded Uint256 type
+- [Conversions](/primitives/denomination/conversions) - Converting between units

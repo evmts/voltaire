@@ -1,0 +1,618 @@
+---
+title: KZG Commitments
+description: Polynomial commitments for EIP-4844 blob transactions and Proto-Danksharding
+---
+
+# KZG Commitments
+
+Polynomial commitment scheme implementation for EIP-4844 blob transactions enabling Proto-Danksharding data availability.
+
+## Overview
+
+KZG (Kate-Zaverucha-Goldberg) commitments are cryptographic commitments to polynomials using BLS12-381 pairing-based cryptography. They enable Ethereum's Proto-Danksharding upgrade (EIP-4844), dramatically reducing Layer 2 transaction costs through efficient data availability sampling.
+
+**Ethereum Use Cases:**
+- **EIP-4844**: Blob-carrying transactions for rollup data
+- **Proto-Danksharding**: First step toward full Danksharding
+- **Data Availability Sampling**: Light client verification without full data download
+- **Layer 2 Scaling**: 10-100x cost reduction for rollups
+
+**Key Properties**:
+- **Succinct**: Constant-size commitments (48 bytes) for large data (128 KB)
+- **Binding**: Computationally infeasible to open to different polynomial
+- **Evaluation proofs**: Prove `p(z) = y` without revealing polynomial
+- **Batch verification**: Verify multiple proofs efficiently
+
+## Quick Start
+
+```typescript
+import * as KZG from '@tevm/voltaire/crypto/KZG';
+
+// 1. Load trusted setup (required once)
+await KZG.loadTrustedSetup(trustedSetupData);
+
+// 2. Create a blob (128 KB of data)
+const blob = KZG.createEmptyBlob();
+// ... fill blob with rollup transaction data
+
+// 3. Generate commitment
+const commitment = await KZG.blobToKzgCommitment(blob);
+
+// 4. Prove evaluation at point z
+const z = new Uint8Array(32); // Evaluation point
+const { proof, y } = await KZG.computeKzgProof(blob, z);
+
+// 5. Verify proof
+const isValid = await KZG.verifyKzgProof(commitment, z, y, proof);
+
+// 6. Verify blob against commitment (EIP-4844)
+const isValidBlob = await KZG.verifyBlobKzgProof(blob, commitment, proof);
+
+// 7. Cleanup
+await KZG.freeTrustedSetup();
+```
+
+## KZG Polynomial Commitments
+
+### What are Polynomial Commitments?
+
+**Polynomial commitment**: Cryptographic binding to polynomial `p(x)` enabling:
+1. **Commitment**: `C = Commit(p)` - Publish short commitment
+2. **Evaluation**: Prove `p(z) = y` for any `z` without revealing `p`
+3. **Verification**: Anyone can verify proof against commitment
+
+**KZG Construction**:
+- Represent data as polynomial coefficients: `p(x) = a_0 + a_1*x + ... + a_n*x^n`
+- Commitment: `C = [p(τ)]_1` where `τ` is trusted setup secret
+- Proof: `π = [(p(τ) - p(z))/(τ - z)]_1` (quotient polynomial)
+- Verify: Check pairing equation `e(C - [y]_1, [1]_2) = e(π, [τ]_2 - [z]_2)`
+
+**Why Useful?**:
+- Rollups post 128 KB blob commitments (48 bytes) to L1
+- Anyone can sample blob points and verify correctness
+- Validators don't store full blob data (pruned after 18 days)
+- Light clients verify availability without downloading data
+
+## API Reference
+
+### Initialization
+
+#### Load Trusted Setup
+
+```typescript
+import { loadTrustedSetup } from '@tevm/voltaire/crypto/KZG';
+
+// Load from embedded trusted setup
+await loadTrustedSetup();
+
+// Or from custom source
+const trustedSetupData = await fetch('trusted_setup.txt').then(r => r.text());
+await loadTrustedSetup(trustedSetupData);
+```
+
+**Trusted Setup**: Ceremony-generated parameters (τ powers) for secure KZG.
+- Ethereum used multi-party computation ceremony (10,000+ participants)
+- Setup file: ~1 MB, contains powers of secret `τ` in both G1 and G2
+- Must be loaded before any KZG operations
+
+**Format**:
+```
+<n_g1>
+<g1_point_0>
+<g1_point_1>
+...
+<n_g2>
+<g2_point_0>
+<g2_point_1>
+...
+```
+
+#### Check Initialization
+
+```typescript
+import { isInitialized } from '@tevm/voltaire/crypto/KZG';
+
+if (!isInitialized()) {
+  await loadTrustedSetup();
+}
+```
+
+#### Free Trusted Setup
+
+```typescript
+import { freeTrustedSetup } from '@tevm/voltaire/crypto/KZG';
+
+// Free memory when done
+await freeTrustedSetup();
+```
+
+### Blob Operations
+
+#### Create Empty Blob
+
+```typescript
+import { createEmptyBlob } from '@tevm/voltaire/crypto/KZG';
+
+const blob = createEmptyBlob(); // Uint8Array(131072) - all zeros
+```
+
+**Blob Format**:
+- Size: 131,072 bytes (128 KB)
+- Structure: 4096 field elements × 32 bytes each
+- Each field element: Must be < BLS12-381 scalar field modulus
+- Top byte: Must be 0 (ensures valid field element)
+
+#### Generate Random Blob
+
+```typescript
+import { generateRandomBlob } from '@tevm/voltaire/crypto/KZG';
+
+const blob = generateRandomBlob(); // Random valid blob for testing
+```
+
+**Use case**: Testing, benchmarking
+
+#### Validate Blob
+
+```typescript
+import { validateBlob } from '@tevm/voltaire/crypto/KZG';
+
+try {
+  validateBlob(blob);
+  console.log("Blob is valid");
+} catch (error) {
+  console.error("Invalid blob:", error);
+}
+```
+
+**Validation Checks**:
+- Length is exactly 131,072 bytes
+- Each 32-byte field element < BLS12-381 modulus
+- Top byte of each element is 0
+
+### Commitment Generation
+
+#### Blob to KZG Commitment
+
+```typescript
+import { blobToKzgCommitment } from '@tevm/voltaire/crypto/KZG';
+
+// Commit to blob (interprets blob as polynomial coefficients)
+const commitment = await blobToKzgCommitment(blob);
+// commitment: Uint8Array(48) - BLS12-381 G1 point (compressed)
+```
+
+**Computation**:
+1. Interpret blob as 4096 field element coefficients: `p(x) = a_0 + a_1*x + ... + a_4095*x^4095`
+2. Evaluate polynomial at secret point τ: `p(τ)`
+3. Return G1 point: `[p(τ)]_1`
+
+**Properties**:
+- Deterministic: Same blob always produces same commitment
+- Binding: Computationally infeasible to find different blob with same commitment
+- Succinct: 48 bytes regardless of blob size
+
+### Proof Generation
+
+#### Compute KZG Proof
+
+```typescript
+import { computeKzgProof } from '@tevm/voltaire/crypto/KZG';
+
+// Prove p(z) = y
+const z = new Uint8Array(32); // Evaluation point (field element)
+const { proof, y } = await computeKzgProof(blob, z);
+
+// proof: Uint8Array(48) - G1 point proving evaluation
+// y: Uint8Array(32) - Evaluation result p(z)
+```
+
+**Computation**:
+1. Evaluate polynomial: `y = p(z)`
+2. Compute quotient: `q(x) = (p(x) - y) / (x - z)`
+3. Return proof: `π = [q(τ)]_1`
+
+**Use case**: Data availability sampling - prove blob evaluation at random point
+
+### Proof Verification
+
+#### Verify KZG Proof
+
+```typescript
+import { verifyKzgProof } from '@tevm/voltaire/crypto/KZG';
+
+// Verify evaluation proof
+const isValid = await verifyKzgProof(
+  commitment,  // Uint8Array(48) - Commitment to blob
+  z,          // Uint8Array(32) - Evaluation point
+  y,          // Uint8Array(32) - Claimed evaluation
+  proof       // Uint8Array(48) - Proof of evaluation
+);
+
+console.log("Proof valid:", isValid);
+```
+
+**Verification Equation**:
+```
+e(commitment - [y]_1, [1]_2) = e(proof, [τ]_2 - [z]_2)
+```
+
+**Explanation**:
+- Left: `e([p(τ) - y]_1, [1]_2) = e([p(τ) - p(z)]_1, [1]_2)`
+- Right: `e([q(τ)]_1, [τ - z]_2) = e([(p(τ) - p(z))/(τ - z)]_1, [τ - z]_2)`
+- Equality holds iff `q(x) = (p(x) - y)/(x - z)` (quotient polynomial)
+
+#### Verify Blob KZG Proof
+
+```typescript
+import { verifyBlobKzgProof } from '@tevm/voltaire/crypto/KZG';
+
+// Verify blob against commitment (EIP-4844 verification)
+const isValid = await verifyBlobKzgProof(blob, commitment, proof);
+```
+
+**Use case**: Validators verify blob transaction data matches commitment
+
+**Computation**:
+1. Compute expected commitment from blob
+2. Verify commitment matches provided commitment
+3. Verify evaluation proof at challenge point
+
+#### Batch Verify Blob KZG Proofs
+
+```typescript
+import { verifyBlobKzgProofBatch } from '@tevm/voltaire/crypto/KZG';
+
+// Efficiently verify multiple blobs at once
+const blobs = [blob1, blob2, blob3];
+const commitments = [commit1, commit2, commit3];
+const proofs = [proof1, proof2, proof3];
+
+const allValid = await verifyBlobKzgProofBatch(blobs, commitments, proofs);
+```
+
+**Optimization**: Batch verification uses fewer pairing operations than individual checks.
+
+**Performance**:
+- Individual: n pairings (n blobs)
+- Batch: 2 pairings total (constant)
+- Speedup: ~n/2 for large n
+
+## EIP-4844 Integration
+
+### Blob Transaction Structure
+
+```typescript
+interface BlobTransaction {
+  // Standard transaction fields
+  to: Address;
+  value: bigint;
+  data: Uint8Array;
+  gasLimit: bigint;
+  maxFeePerGas: bigint;
+  maxPriorityFeePerGas: bigint;
+
+  // EIP-4844 fields
+  maxFeePerBlobGas: bigint;           // Max fee per blob gas unit
+  blobVersionedHashes: Uint8Array[];  // Commitments (versioned hash)
+
+  // Blob data (not included in transaction, sent separately)
+  blobs?: Uint8Array[];               // Actual blob data (optional)
+  commitments?: Uint8Array[];         // KZG commitments to blobs
+  proofs?: Uint8Array[];              // KZG proofs
+}
+```
+
+### Computing Versioned Hash
+
+```typescript
+import { keccak256 } from '@tevm/voltaire/crypto';
+
+function computeVersionedHash(commitment: Uint8Array): Uint8Array {
+  // SHA256 hash of commitment with version prefix
+  const hash = keccak256(commitment);
+  const versionedHash = new Uint8Array(32);
+  versionedHash[0] = 0x01; // Version byte
+  versionedHash.set(hash.slice(1), 1);
+  return versionedHash;
+}
+
+// Create versioned hash for transaction
+const commitment = await blobToKzgCommitment(blob);
+const versionedHash = computeVersionedHash(commitment);
+
+// Transaction includes versionedHash, not raw commitment
+transaction.blobVersionedHashes.push(versionedHash);
+```
+
+### Full Blob Transaction Flow
+
+```typescript
+// 1. Prepare rollup data
+const rollupData = compressRollupBatch(transactions); // Rollup-specific
+
+// 2. Create blob
+const blob = createEmptyBlob();
+blob.set(rollupData, 0); // Fill with rollup data
+
+// 3. Generate commitment
+const commitment = await blobToKzgCommitment(blob);
+
+// 4. Generate proof
+const challengePoint = keccak256(commitment); // Fiat-Shamir transform
+const { proof, y } = await computeKzgProof(blob, challengePoint);
+
+// 5. Verify locally
+const isValid = await verifyBlobKzgProof(blob, commitment, proof);
+if (!isValid) throw new Error("Invalid blob proof");
+
+// 6. Compute versioned hash
+const versionedHash = computeVersionedHash(commitment);
+
+// 7. Create transaction
+const blobTx = {
+  to: rollupContract,
+  data: batchCalldata,
+  maxFeePerBlobGas: 1000000n,
+  blobVersionedHashes: [versionedHash],
+  // ... other fields
+};
+
+// 8. Send transaction (node handles blob sidecar)
+await sendBlobTransaction(blobTx, {
+  blobs: [blob],
+  commitments: [commitment],
+  proofs: [proof]
+});
+```
+
+## Use Cases
+
+### Rollup Data Availability
+
+```typescript
+// L2 sequencer posts batch to L1
+async function postRollupBatch(batch: L2Transaction[]) {
+  // 1. Compress batch into blob
+  const blobData = compressBatch(batch);
+  const blob = createEmptyBlob();
+  blob.set(blobData, 0);
+
+  // 2. Generate commitment and proof
+  const commitment = await blobToKzgCommitment(blob);
+  const challengePoint = deriveChallenge(commitment);
+  const { proof, y } = await computeKzgProof(blob, challengePoint);
+
+  // 3. Post blob transaction
+  const tx = await createBlobTransaction({
+    to: l1RollupContract,
+    blobVersionedHashes: [computeVersionedHash(commitment)],
+    blobs: [blob],
+    commitments: [commitment],
+    proofs: [proof]
+  });
+
+  await sendTransaction(tx);
+}
+```
+
+### Data Availability Sampling
+
+```typescript
+// Light client samples blob availability
+async function sampleBlobAvailability(
+  versionedHash: Uint8Array,
+  numSamples: number
+): Promise<boolean> {
+  // 1. Request commitment from peer
+  const commitment = await fetchCommitment(versionedHash);
+
+  // 2. Sample random points
+  for (let i = 0; i < numSamples; i++) {
+    const randomPoint = generateRandomFieldElement();
+
+    // 3. Request evaluation proof
+    const { y, proof } = await fetchEvaluationProof(versionedHash, randomPoint);
+
+    // 4. Verify proof
+    const isValid = await verifyKzgProof(commitment, randomPoint, y, proof);
+    if (!isValid) return false;
+  }
+
+  return true; // High confidence blob is available
+}
+```
+
+## Implementation Details
+
+### C Library (c-kzg-4844 - Production)
+
+- **Library**: c-kzg-4844 (Ethereum official)
+- **Location**: `lib/c-kzg-4844/` (git submodule)
+- **Status**: Production-ready, specification-compliant
+- **Backend**: BLST library for BLS12-381 operations
+- **Features**:
+  - Trusted setup loading
+  - Polynomial commitment
+  - Evaluation proof generation/verification
+  - Batch verification
+  - Embedded trusted setup (mainnet)
+
+**Why c-kzg-4844?**
+- Official Ethereum implementation
+- Used in all consensus clients (Prysm, Lighthouse, Teku, Nimbus)
+- Battle-tested in production
+- Specification-compliant with EIP-4844
+
+### Zig FFI Wrapper
+
+- **Location**: `src/crypto/c_kzg.zig`
+- **Purpose**: Safe Zig bindings to c-kzg-4844
+- **Features**:
+  - Memory-safe wrappers
+  - Error handling
+  - Automatic cleanup
+
+```zig
+// Re-export types
+pub const KZGSettings = ckzg.KZGSettings;
+pub const Blob = ckzg.Blob;
+pub const KZGCommitment = ckzg.KZGCommitment;
+pub const KZGProof = ckzg.KZGProof;
+
+// Wrapper functions
+pub fn blobToKzgCommitment(blob: *const Blob) !KZGCommitment { ... }
+pub fn computeKZGProof(blob: *const Blob, z: *const Bytes32) !struct { proof: KZGProof, y: Bytes32 } { ... }
+pub fn verifyKZGProof(commitment: *const KZGCommitment, z: *const Bytes32, y: *const Bytes32, proof: *const KZGProof) !bool { ... }
+```
+
+### TypeScript API
+
+- **Location**: `src/crypto/KZG/` (`.js` files)
+- **Runtime**: FFI to native c-kzg-4844
+- **Platform**: Node.js, Bun (native)
+
+### WASM Limitations
+
+**KZG NOT SUPPORTED IN WASM**
+
+c-kzg-4844 requires:
+- BLST native library (BLS12-381 operations)
+- Large trusted setup data (~1 MB)
+- Native memory management
+
+**WASM builds**:
+- KZG functions stubbed (throw errors)
+- Use native builds for EIP-4844 functionality
+
+```typescript
+// WASM will fail
+try {
+  await blobToKzgCommitment(blob);
+} catch (error) {
+  console.error("KZG not available in WASM build");
+}
+```
+
+**Workaround**: Use native builds or server-side KZG for blob transactions.
+
+## Security Considerations
+
+**Trusted Setup Security**:
+- Use official Ethereum ceremony setup
+- Verify setup file hash before loading
+- Setup ceremony had 10,000+ participants (only 1 needs to be honest)
+
+**Blob Validation**:
+```typescript
+// Always validate blobs before commitment
+validateBlob(blob);
+
+// Validate commitments before verification
+if (commitment.length !== 48) {
+  throw new Error("Invalid commitment length");
+}
+```
+
+**Proof Verification**:
+```typescript
+// Always verify proofs before accepting data
+const isValid = await verifyBlobKzgProof(blob, commitment, proof);
+if (!isValid) {
+  throw new Error("Blob proof verification failed");
+}
+```
+
+**Field Element Validation**:
+- Each 32-byte field element must be < BLS12-381 modulus
+- Top byte must be 0
+- Handled automatically by validation functions
+
+**Replay Attacks**:
+- Versioned hashes include commitment binding
+- Challenge points derived from commitments (Fiat-Shamir)
+- Prevents proof reuse across different blobs
+
+## Performance
+
+**Native (c-kzg-4844 with BLST)**:
+- Blob to commitment: ~50ms
+- Compute proof: ~50ms
+- Verify proof: ~2ms
+- Verify blob proof: ~52ms (commitment + verification)
+- Batch verify (4 blobs): ~80ms (vs ~208ms individual)
+
+**Benchmarking**:
+```bash
+zig build bench                    # Native benchmarks
+bun run bench                      # Cross-library comparison
+```
+
+**Optimization Tips**:
+- Precompute commitments during block production
+- Use batch verification for multiple blobs
+- Cache trusted setup in memory (load once)
+- Validate blobs before expensive operations
+
+## Constants
+
+```typescript
+import {
+  BYTES_PER_BLOB,
+  BYTES_PER_COMMITMENT,
+  BYTES_PER_PROOF,
+  BYTES_PER_FIELD_ELEMENT,
+  FIELD_ELEMENTS_PER_BLOB
+} from '@tevm/voltaire/crypto/KZG';
+
+BYTES_PER_BLOB            // 131,072 (128 KB)
+BYTES_PER_COMMITMENT      // 48 (BLS12-381 G1 compressed)
+BYTES_PER_PROOF           // 48 (BLS12-381 G1 compressed)
+BYTES_PER_FIELD_ELEMENT   // 32
+FIELD_ELEMENTS_PER_BLOB   // 4,096
+```
+
+## EIP-4844 Economics
+
+**Blob Gas**:
+- Separate gas market from execution gas
+- Dynamic pricing (EIP-1559 style)
+- Target: 3 blobs per block (393 KB)
+- Max: 6 blobs per block (786 KB)
+
+**Cost Comparison** (approximate):
+- Calldata (pre-4844): ~16 gas/byte → ~$100 for 128 KB
+- Blob data (post-4844): ~1 gas/byte → ~$1-10 for 128 KB
+- **10-100x reduction** in L2 costs
+
+**Blob Gas Calculation**:
+```typescript
+const BLOB_BASE_FEE_UPDATE_FRACTION = 3338477n;
+const TARGET_BLOB_GAS_PER_BLOCK = 393216n; // 3 blobs
+
+function calculateBlobFee(excessBlobGas: bigint): bigint {
+  // EIP-4844 blob base fee calculation
+  const blobBaseFee = fakeExponential(
+    MIN_BLOB_BASE_FEE,
+    excessBlobGas,
+    BLOB_BASE_FEE_UPDATE_FRACTION
+  );
+
+  return blobBaseFee * FIELD_ELEMENTS_PER_BLOB;
+}
+```
+
+## Related
+
+- [Precompiles: Point Evaluation](/precompiles/point-evaluation) - EIP-4844 precompile (0x0a)
+- [Primitives: Blob](/primitives/blob) - Blob primitive wrapper
+- [BLS12-381](/crypto/bls12-381) - Underlying pairing curve
+- [Transaction: EIP-4844](/primitives/transaction/eip4844) - Blob transactions
+
+## References
+
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+- [KZG Polynomial Commitments (Kate et al. 2010)](https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf)
+- [c-kzg-4844 Library](https://github.com/ethereum/c-kzg-4844)
+- [Ethereum Trusted Setup Ceremony](https://ceremony.ethereum.org/)
+- [Proto-Danksharding FAQ](https://notes.ethereum.org/@vbuterin/proto_danksharding_faq)

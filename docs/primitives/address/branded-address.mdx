@@ -1,0 +1,334 @@
+---
+title: BrandedAddress
+description: Tree-shakeable functional API for Address operations
+---
+
+# BrandedAddress
+
+Tree-shakeable functional API for Address operations with optimal bundle size.
+
+## Overview
+
+`BrandedAddress` is the functional layer underlying the `Address` class. It provides:
+- **Zero-overhead** [branded type](/concepts/branded-types) wrapping `Uint8Array` (20 bytes)
+- **Tree-shakeable** individual function exports
+- **Data-first** unopinionated methods taking address as first parameter
+- **Bundle optimization** through selective imports
+
+Primary benefit: When using tree-shakeable imports and avoiding methods that use keccak256 or RLP, those implementations are excluded from bundle.
+
+## Type Definition
+
+```typescript
+export type BrandedAddress = Uint8Array & {
+  readonly __tag: "Address"
+}
+```
+
+Runtime-validated 20-byte `Uint8Array`. [Brand](/concepts/branded-types) prevents accidental mixing with other Uint8Arrays.
+
+Defined in: [primitives/Address/BrandedAddress/BrandedAddress.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/BrandedAddress.js)
+
+## Namespace API
+
+All functions exported as both individual exports and namespace:
+
+```typescript
+import * as BrandedAddress from '@tevm/voltaire/BrandedAddress'
+
+// Namespace usage
+const addr = BrandedAddress.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const hex = BrandedAddress.toHex(addr)
+```
+
+## Tree-Shakeable Usage
+
+Import only what you need:
+
+```typescript
+import { from, toHex, equals } from '@tevm/voltaire/BrandedAddress'
+import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+
+const addr: BrandedAddress = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const hex = toHex(addr)
+const isEqual = equals(addr, otherAddr)
+```
+
+**Bundle impact:** Only `from`, `toHex`, and `equals` included. Methods like `toChecksummed`, `calculateCreateAddress`, `calculateCreate2Address` excluded along with keccak256 and RLP dependencies.
+
+## Available Functions
+
+All Address functionality available as tree-shakeable functions:
+
+### Constructors
+
+```typescript
+import {
+  from,
+  fromHex,
+  fromBytes,
+  fromNumber,
+  fromPublicKey,
+  fromPrivateKey,
+  fromAbiEncoded,
+  fromBase64,
+  zero
+} from '@tevm/voltaire/BrandedAddress'
+
+const addr1 = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr3 = fromNumber(69n)
+const addr4 = fromPublicKey(x, y)
+const addr5 = fromPrivateKey(privateKeyBytes)
+const zeroAddr = zero()
+```
+
+See [Constructors](/primitives/address/constructors) for details.
+
+### Conversions
+
+```typescript
+import {
+  toHex,
+  toChecksummed,
+  toLowercase,
+  toUppercase,
+  toU256,
+  toAbiEncoded,
+  toShortHex
+} from '@tevm/voltaire/BrandedAddress'
+
+const hex = toHex(addr)                // "0x742d35cc..."
+const checksummed = toChecksummed(addr) // "0x742d35Cc..." (uses keccak256)
+const n = toU256(addr)                 // 69n
+const short = toShortHex(addr)         // "0x742d35...1e3e"
+```
+
+See [Conversions](/primitives/address/conversions) for details.
+
+**Tree-shaking note:** `toChecksummed` includes keccak256.
+
+### Comparisons
+
+```typescript
+import {
+  equals,
+  compare,
+  lessThan,
+  greaterThan,
+  isZero
+} from '@tevm/voltaire/BrandedAddress'
+
+equals(addr1, addr2)       // boolean
+compare(addr1, addr2)      // -1 | 0 | 1
+lessThan(addr1, addr2)     // boolean
+greaterThan(addr1, addr2)  // boolean
+isZero(addr)               // boolean
+```
+
+See [Comparisons](/primitives/address/comparisons) for details.
+
+### Validation
+
+```typescript
+import {
+  isValid,
+  isValidChecksum,
+  is
+} from '@tevm/voltaire/BrandedAddress'
+
+isValid("0x742d35Cc...")     // boolean
+isValidChecksum("0x742d35Cc...") // boolean (uses keccak256)
+is(value)                    // type guard
+```
+
+See [Validation](/primitives/address/validation) for details.
+
+**Tree-shaking note:** `isValidChecksum` includes keccak256.
+
+### Contract Addresses
+
+```typescript
+import {
+  calculateCreateAddress,
+  calculateCreate2Address
+} from '@tevm/voltaire/BrandedAddress'
+
+const createAddr = calculateCreateAddress(deployerAddr, nonce)
+// Uses keccak256 + RLP
+
+const create2Addr = calculateCreate2Address(deployerAddr, saltBigInt, initCode)
+// Uses keccak256
+// Salt accepts bigint | Uint8Array
+```
+
+See [Contract Addresses](/primitives/address/contract-addresses) for details.
+
+**Tree-shaking note:** Both include keccak256. `calculateCreateAddress` also includes RLP.
+
+### Variants
+
+```typescript
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import * as LowercaseAddress from '@tevm/voltaire/BrandedAddress/LowercaseAddress'
+import * as UppercaseAddress from '@tevm/voltaire/BrandedAddress/UppercaseAddress'
+
+const checksummed = ChecksumAddress.from(addr) // uses keccak256
+const lowercase = LowercaseAddress.from(addr)
+const uppercase = UppercaseAddress.from(addr)
+
+ChecksumAddress.isValid("0x742d35Cc...") // uses keccak256
+```
+
+See [Variants](/primitives/address/variants) for details.
+
+## Data-First Pattern
+
+All BrandedAddress functions follow data-first pattern:
+
+```typescript
+// BrandedAddress: address is first parameter
+toHex(addr)
+equals(addr1, addr2)
+calculateCreateAddress(deployerAddr, nonce)
+
+// vs Address class: address is implicit (this)
+addr.toHex()
+addr1.equals(addr2)
+deployerAddr.calculateCreateAddress(nonce)
+```
+
+This enables functional composition and partial application:
+
+```typescript
+import { toHex, equals, isZero } from '@tevm/voltaire/BrandedAddress'
+
+// Function composition
+const formatAddress = (addr: BrandedAddress) => toHex(addr).toUpperCase()
+
+// Partial application
+const isEqualToZero = (addr: BrandedAddress) => equals(addr, zero())
+
+// Array methods
+addresses.map(toHex)
+addresses.filter(addr => !isZero(addr))
+addresses.some(addr => equals(addr, target))
+```
+
+## Tree-Shaking Benefits
+
+Primary benefit: **Selective inclusion of crypto dependencies**
+
+### Example 1: Minimal Bundle (No Crypto)
+
+```typescript
+import { from, toHex, equals, toU256 } from '@tevm/voltaire/BrandedAddress'
+
+const addr = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const hex = toHex(addr)
+const n = toU256(addr)
+const isEqual = equals(addr, otherAddr)
+```
+
+**Bundle:** No keccak256, no RLP. Only basic conversions and comparisons.
+
+### Example 2: With Checksum (Keccak256 Only)
+
+```typescript
+import { from, toHex, toChecksummed } from '@tevm/voltaire/BrandedAddress'
+
+const addr = from("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+const checksummed = toChecksummed(addr)
+```
+
+**Bundle:** Includes keccak256 for checksumming. No RLP.
+
+### Example 3: With CREATE (Keccak256 + RLP)
+
+```typescript
+import { from, calculateCreateAddress } from '@tevm/voltaire/BrandedAddress'
+
+const deployer = from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const contractAddr = calculateCreateAddress(deployer, 0n)
+```
+
+**Bundle:** Includes both keccak256 and RLP encoder.
+
+### Example 4: Address Class (Everything)
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr = new Address("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+```
+
+**Bundle:** Includes all Address methods, keccak256, and RLP (due to prototype methods).
+
+## Dependency Table
+
+| Method/Function | Keccak256 | Secp256k1 | RLP | Notes |
+|-----------------|-----------|-----------|-----|-------|
+| `from`, `fromHex`, `fromBytes`, `fromNumber` | ✗ | ✗ | ✗ | Pure conversions |
+| `fromPublicKey` | ✓ | ✗ | ✗ | Derives address from pubkey |
+| `fromPrivateKey` | ✓ | ✓ | ✗ | Derives address from privkey |
+| `toHex`, `toU256`, `toLowercase`, `toUppercase` | ✗ | ✗ | ✗ | Pure conversions |
+| `toChecksummed` | ✓ | ✗ | ✗ | EIP-55 checksumming |
+| `isValidChecksum` | ✓ | ✗ | ✗ | EIP-55 validation |
+| `ChecksumAddress.from`, `ChecksumAddress.isValid` | ✓ | ✗ | ✗ | EIP-55 operations |
+| `equals`, `compare`, `lessThan`, `greaterThan` | ✗ | ✗ | ✗ | Byte comparisons |
+| `isZero`, `isValid`, `is` | ✗ | ✗ | ✗ | Basic validation |
+| `calculateCreateAddress` | ✓ | ✗ | ✓ | CREATE opcode |
+| `calculateCreate2Address` | ✓ | ✗ | ✗ | CREATE2 opcode |
+| **Address class** | ✓ | ✓ | ✓ | All methods on prototype |
+
+## When to Use BrandedAddress vs Address
+
+### Use BrandedAddress When:
+- **Bundle size critical** (mobile, embedded)
+- **Avoiding crypto** dependencies
+- **Functional style** preferred
+- **Selective imports** desired
+- **Composing functions** heavily
+
+### Use Address Class When:
+- **OOP style** preferred
+- **Ergonomics** over bundle size
+- **Using many methods** (crypto already in bundle)
+- **Type safety** with prototype methods
+- **Traditional API** expected
+
+## Interoperability
+
+BrandedAddress and Address are fully compatible:
+
+```typescript
+import { Address, BrandedAddress } from '@tevm/voltaire'
+import { toHex, equals } from '@tevm/voltaire/BrandedAddress'
+
+// Address IS a BrandedAddress
+const addr = new Address(69n)
+const hex = toHex(addr) // ✓ works
+
+// BrandedAddress works with Address static methods
+const branded: BrandedAddress = BrandedAddress.from("0x...")
+const checksummed = Address.toChecksummed(branded) // ✓ works
+```
+
+## Constants
+
+```typescript
+import { SIZE, HEX_SIZE } from '@tevm/voltaire/BrandedAddress'
+
+SIZE      // 20 (bytes)
+HEX_SIZE  // 42 (characters, including "0x")
+```
+
+## Related
+
+- [Address](/primitives/address/) - Main Address class documentation
+- [Constructors](/primitives/address/constructors) - Creating addresses
+- [Conversions](/primitives/address/conversions) - Format conversions
+- [Comparisons](/primitives/address/comparisons) - Equality and ordering
+- [Validation](/primitives/address/validation) - Input validation
+- [Contract Addresses](/primitives/address/contract-addresses) - CREATE/CREATE2
+- [Variants](/primitives/address/variants) - Checksummed/Lowercase/Uppercase

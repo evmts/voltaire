@@ -1,0 +1,57 @@
+---
+title: Bytecode.extractRuntime
+description: Extract runtime portion from creation bytecode
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.extractRuntime(): Bytecode`
+
+Extract runtime portion from creation bytecode.
+
+**Returns:** `Bytecode` - Runtime bytecode
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const creation = Bytecode.fromHex(creationBytecode)
+const runtime = creation.extractRuntime()
+
+console.log(`Creation: ${creation.size()} bytes`)
+console.log(`Runtime: ${runtime.size()} bytes`)
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/extractRuntime.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/extractRuntime.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `extractRuntime(bytecode: BrandedBytecode, offset: number): BrandedBytecode`
+
+Extract runtime portion from creation bytecode.
+
+**Parameters:**
+- `bytecode: BrandedBytecode` - Creation bytecode
+- `offset: number` - Offset where runtime code begins
+
+**Returns:** `BrandedBytecode` - Runtime bytecode
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const creation = Bytecode.fromHex(creationBytecode)
+const runtime = Bytecode.extractRuntime(creation, offset)
+
+console.log(`Creation: ${size(creation)} bytes`)
+console.log(`Runtime: ${size(runtime)} bytes`)
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/extractRuntime.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/extractRuntime.js)
+
+</Tab>
+</Tabs>

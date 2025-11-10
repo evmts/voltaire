@@ -1,0 +1,388 @@
+---
+title: EIP-7702 Transactions
+description: EOA delegation transactions (Type 4)
+---
+
+# EIP-7702 Transactions
+
+EOA delegation allowing externally-owned accounts to temporarily execute as smart contracts.
+
+## Overview
+
+EIP-7702 transactions (Type 4) enable EOAs to delegate their execution to contract code for the transaction duration. This allows wallet accounts to gain smart contract capabilities without permanent migration.
+
+## Type Definition
+
+```typescript
+type EIP7702 = {
+  type: Type.EIP7702      // 0x04
+  chainId: bigint
+  nonce: bigint
+  maxPriorityFeePerGas: bigint
+  maxFeePerGas: bigint
+  gasLimit: bigint
+  to: BrandedAddress | null
+  value: bigint
+  data: Uint8Array
+  accessList: AccessList
+  authorizationList: AuthorizationList  // Delegations
+  yParity: number
+  r: Uint8Array
+  s: Uint8Array
+}
+
+type Authorization = {
+  chainId: bigint
+  address: BrandedAddress      // Contract to delegate to
+  nonce: bigint                // EOA nonce at time of signing
+  yParity: number
+  r: Uint8Array
+  s: Uint8Array
+}
+
+type AuthorizationList = readonly Authorization[]
+```
+
+Source: [types.ts:132-150](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts#L132-L150)
+
+## Creating EIP-7702 Transactions
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction'
+
+// Single authorization
+const authorization: Transaction.Authorization = {
+  chainId: 1n,
+  address: walletContractAddress,  // Smart wallet contract
+  nonce: 0n,  // EOA nonce when signing
+  yParity: 0,
+  r: authSignatureR,
+  s: authSignatureS,
+}
+
+const tx: Transaction.EIP7702 = {
+  type: Transaction.Type.EIP7702,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1000000000n,
+  maxFeePerGas: 20000000000n,
+  gasLimit: 100000n,
+  to: targetAddress,
+  value: 0n,
+  data: encodedCall,
+  accessList: [],
+  authorizationList: [authorization],
+  yParity: 0,
+  r: txSignatureR,
+  s: txSignatureS,
+}
+
+// Multiple authorizations (batched)
+const multiAuth: Transaction.EIP7702 = {
+  type: Transaction.Type.EIP7702,
+  // ...
+  authorizationList: [
+    {
+      chainId: 1n,
+      address: wallet1Contract,
+      nonce: 5n,
+      yParity: 0,
+      r: auth1R,
+      s: auth1S,
+    },
+    {
+      chainId: 1n,
+      address: wallet2Contract,
+      nonce: 10n,
+      yParity: 1,
+      r: auth2R,
+      s: auth2S,
+    }
+  ],
+  // ...
+}
+```
+
+## Authorization Flow
+
+1. **EOA signs authorization** - Delegates execution to contract
+2. **Transaction submitted** - Contains authorization + transaction signature
+3. **EVM execution** - EOA temporarily becomes delegated contract
+4. **Transaction completes** - EOA reverts to normal account
+
+```typescript
+// Before transaction
+EOA.code = empty
+
+// During EIP-7702 transaction
+EOA.code = DELEGATECALL_PROXY(authorization.address)
+
+// After transaction
+EOA.code = empty (delegation expires)
+```
+
+## Authorization Signing
+
+Authorization must be signed by the EOA being delegated:
+
+```typescript
+// Authorization signing hash
+const authSigningHash = keccak256(
+  MAGIC || rlp([chainId, address, nonce])
+)
+
+// MAGIC = 0x05 (EIP-7702 authority type)
+
+// Sign with EOA private key
+const { r, s, yParity } = sign(authSigningHash, eoaPrivateKey)
+
+const authorization: Authorization = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: currentNonce,
+  yParity,
+  r,
+  s,
+}
+```
+
+## Use Cases
+
+### 1. Batched Transactions
+
+```typescript
+// Smart wallet contract with batch execution
+const authorization: Authorization = {
+  chainId: 1n,
+  address: batchWalletContract,  // Has executeBatch() function
+  nonce: 0n,
+  // ... signature
+}
+
+// EOA can now execute multiple calls in one transaction
+const tx: Transaction.EIP7702 = {
+  type: Transaction.Type.EIP7702,
+  to: null,  // Call own delegated code
+  data: encodeFunctionCall('executeBatch', [
+    { to: token1, data: transferCall1 },
+    { to: token2, data: transferCall2 },
+    { to: defi, data: swapCall }
+  ]),
+  authorizationList: [authorization],
+  // ...
+}
+```
+
+### 2. Social Recovery
+
+```typescript
+// Delegate to recovery contract
+const authorization: Authorization = {
+  chainId: 1n,
+  address: socialRecoveryContract,
+  nonce: 0n,
+  // ... signature
+}
+
+// Guardian can initiate recovery
+const recoveryTx: Transaction.EIP7702 = {
+  type: Transaction.Type.EIP7702,
+  to: null,
+  data: encodeFunctionCall('initiateRecovery', [newOwner]),
+  authorizationList: [authorization],
+  // ...
+}
+```
+
+### 3. Gas Abstraction
+
+```typescript
+// Delegate to gas abstraction contract
+const authorization: Authorization = {
+  chainId: 1n,
+  address: gaslessWalletContract,
+  nonce: 0n,
+  // ... signature
+}
+
+// Relayer pays gas, user pays in tokens
+const gaslessTx: Transaction.EIP7702 = {
+  type: Transaction.Type.EIP7702,
+  to: null,
+  data: encodeFunctionCall('executeWithTokenPayment', [
+    targetCall,
+    paymentToken,
+    paymentAmount
+  ]),
+  authorizationList: [authorization],
+  // ...
+}
+```
+
+### 4. Spending Limits
+
+```typescript
+// Delegate to spending limit contract
+const authorization: Authorization = {
+  chainId: 1n,
+  address: spendingLimitContract,  // Enforces daily limits
+  nonce: 0n,
+  // ... signature
+}
+
+const limitedTx: Transaction.EIP7702 = {
+  type: Transaction.Type.EIP7702,
+  to: merchantAddress,
+  value: 100000000000000000n,  // 0.1 ETH
+  authorizationList: [authorization],
+  // Contract checks against daily limit
+  // ...
+}
+```
+
+## Methods
+
+```typescript
+import { EIP7702 } from '@tevm/voltaire/Transaction'
+
+// Serialization
+const bytes = EIP7702.serialize(eip7702Tx)
+const decoded = EIP7702.deserialize(bytes)
+
+// Hashing
+const txHash = EIP7702.hash(eip7702Tx)
+const signingHash = EIP7702.getSigningHash(eip7702Tx)
+
+// Signing
+const sender = EIP7702.getSender(eip7702Tx)
+const isValid = EIP7702.verifySignature(eip7702Tx)
+
+// Gas price
+const effectivePrice = EIP7702.getEffectiveGasPrice(eip7702Tx, baseFee)
+```
+
+## Authorization Namespace
+
+```typescript
+import { Authorization } from '@tevm/voltaire/Transaction'
+
+// Verify authorization signature
+const isValid = Authorization.verifySignature(authorization)
+
+// Get authorizer (EOA that signed)
+const authorizer = Authorization.getAuthorizer(authorization)
+
+// Get signing hash
+const signingHash = Authorization.getSigningHash(authorization)
+```
+
+## RLP Encoding
+
+```
+0x04 || rlp([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, authorizationList, yParity, r, s])
+```
+
+**Authorization list encoding:**
+```
+authorizationList = [
+  [chainId, address, nonce, yParity, r, s],
+  [chainId, address, nonce, yParity, r, s],
+  ...
+]
+```
+
+## Security Considerations
+
+### 1. Nonce Checking
+
+Authorizations include nonce to prevent replay:
+
+```typescript
+const authorization: Authorization = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: currentNonce,  // Must match EOA nonce when executed
+  // ...
+}
+
+// If EOA nonce != authorization.nonce, authorization is rejected
+```
+
+### 2. Chain ID Binding
+
+Authorizations are chain-specific:
+
+```typescript
+// Mainnet authorization
+const mainnetAuth: Authorization = {
+  chainId: 1n,
+  // ...
+}
+
+// Cannot be replayed on other chains
+```
+
+### 3. Temporary Delegation
+
+Delegation is ONLY for transaction duration:
+
+```typescript
+// Before: EOA.code = empty
+// During EIP-7702 tx: EOA.code = proxy
+// After: EOA.code = empty (automatically reverted)
+
+// No permanent state change to EOA
+```
+
+### 4. Contract Safety
+
+Delegated contract must be trusted:
+
+```typescript
+// SAFE: Well-audited wallet contract
+const safeAuth: Authorization = {
+  address: auditedWalletContract,
+  // ...
+}
+
+// DANGEROUS: Unknown or malicious contract
+const dangerousAuth: Authorization = {
+  address: unknownContract,  // Could drain funds!
+  // ...
+}
+```
+
+## Limitations
+
+1. **Temporary** - Delegation lasts only for transaction
+2. **No permanent upgrade** - EOA remains EOA after transaction
+3. **Network support** - Requires Pectra hard fork
+4. **Contract dependency** - Requires deployed contract code
+
+## When to Use
+
+Use EIP-7702 for:
+- Temporary smart contract capabilities
+- Batched operations
+- Account abstraction features
+- Gas sponsorship
+- Social recovery
+
+**Use regular contracts** for:
+- Permanent smart accounts
+- Always-on contract features
+- Pre-Pectra networks
+
+## Comparison with Account Abstraction
+
+| Feature | EIP-7702 | ERC-4337 |
+|---------|----------|----------|
+| Account type | EOA (temporary) | Smart contract |
+| Deployment | No deployment | Requires deployment |
+| Duration | Per transaction | Permanent |
+| Backwards compat | Full EOA compat | New account type |
+| Cost | Lower (no deployment) | Higher (deployment) |
+
+## EIP Reference
+
+- [EIP-7702: Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702)

@@ -1,0 +1,474 @@
+---
+title: "Conversions"
+description: "Methods for converting signatures between different formats"
+---
+
+# Conversions
+
+Methods for converting signatures between different formats.
+
+## toBytes
+
+Get raw signature bytes (strips metadata).
+
+### Signature
+
+```typescript
+function toBytes(signature: BrandedSignature): Uint8Array
+```
+
+### Parameters
+
+- `signature` - BrandedSignature to convert
+
+### Returns
+
+Plain Uint8Array (64 bytes) without metadata.
+
+### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Extract raw bytes
+const bytes = Signature.toBytes(sig);
+
+console.log(bytes.length); // 64
+console.log(bytes.algorithm); // undefined (metadata stripped)
+console.log(bytes instanceof Uint8Array); // true
+
+// Identical to signature bytes
+console.log(bytes[0] === sig[0]); // true
+```
+
+### Use Cases
+
+```typescript
+// Serialize for transmission
+const sig = Signature.fromSecp256k1(r, s, 27);
+const bytes = Signature.toBytes(sig);
+await socket.send(bytes);
+
+// Store in database
+await db.signatures.insert({
+  bytes: Signature.toBytes(sig),
+  algorithm: sig.algorithm,
+  v: sig.v,
+});
+
+// Compare raw bytes
+const bytes1 = Signature.toBytes(sig1);
+const bytes2 = Signature.toBytes(sig2);
+const equal = bytes1.every((b, i) => b === bytes2[i]);
+```
+
+### Notes
+
+- Returns reference to same underlying buffer (zero-copy)
+- Metadata still accessible on original signature
+- Useful when algorithm tracked externally
+
+## toCompact
+
+Convert to compact format (r + s).
+
+### Signature
+
+```typescript
+function toCompact(signature: BrandedSignature): Uint8Array
+```
+
+### Parameters
+
+- `signature` - BrandedSignature to convert
+
+### Returns
+
+Uint8Array (64 bytes) in compact format:
+- ECDSA: r (32) + s (32)
+- Ed25519: signature (64)
+
+### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Convert to compact
+const compact = Signature.toCompact(sig);
+
+console.log(compact.length); // 64
+console.log(compact.slice(0, 32)); // r component
+console.log(compact.slice(32, 64)); // s component
+
+// Round-trip
+const parsed = Signature.fromCompact(compact, 'secp256k1');
+console.log(Signature.equals(sig, parsed)); // true (excluding v)
+```
+
+### Use Cases
+
+```typescript
+// Ethereum transaction encoding
+const txSig = Signature.fromSecp256k1(r, s, 27);
+const compact = Signature.toCompact(txSig);
+const encoded = RLP.encode([
+  nonce,
+  gasPrice,
+  gasLimit,
+  to,
+  value,
+  data,
+  ...compact, // r and s
+  txSig.v, // v separate
+]);
+
+// Compact storage
+const sigs = signatures.map(sig => ({
+  compact: Signature.toCompact(sig),
+  algorithm: sig.algorithm,
+}));
+
+// Wire protocol
+function sendSignature(sig: BrandedSignature) {
+  const compact = Signature.toCompact(sig);
+  const header = new Uint8Array([algorithmId]);
+  return concat(header, compact);
+}
+```
+
+### Format Details
+
+**ECDSA (secp256k1, p256):**
+```
+Bytes:     [r (32 bytes)][s (32 bytes)]
+Total:     64 bytes
+Metadata:  Lost (algorithm, v not included)
+```
+
+**Ed25519:**
+```
+Bytes:     [signature (64 bytes)]
+Total:     64 bytes
+Metadata:  Lost (algorithm not included)
+```
+
+**Recovery ID:**
+- Not included in compact format
+- Must be stored/transmitted separately
+- Required for secp256k1 address recovery
+
+```typescript
+// Store v separately
+const sig = Signature.fromSecp256k1(r, s, 27);
+const compact = Signature.toCompact(sig);
+
+const serialized = {
+  compact: Array.from(compact),
+  v: sig.v, // Store recovery ID separately
+};
+
+// Restore
+const data = JSON.parse(serialized);
+const restored = Signature.fromCompact(
+  new Uint8Array(data.compact),
+  'secp256k1'
+);
+// Note: v is lost, need to restore separately
+```
+
+## toDER
+
+Convert ECDSA signature to DER encoding.
+
+### Signature
+
+```typescript
+function toDER(signature: BrandedSignature): Uint8Array
+```
+
+### Parameters
+
+- `signature` - ECDSA BrandedSignature (secp256k1 or p256)
+
+### Returns
+
+DER-encoded SEQUENCE of r and s integers.
+
+### Throws
+
+- `InvalidAlgorithmError` - If signature is not ECDSA (Ed25519 not supported)
+
+### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Convert to DER
+const der = Signature.toDER(sig);
+
+console.log(der[0]); // 0x30 (SEQUENCE tag)
+console.log(der[1]); // Length
+console.log(der.length); // Variable (typically 70-72 bytes)
+
+// Round-trip
+const parsed = Signature.fromDER(der, 'secp256k1', 27);
+console.log(Signature.equals(sig, parsed)); // true
+```
+
+### DER Structure
+
+```
+SEQUENCE {
+  INTEGER r  (with minimal encoding)
+  INTEGER s  (with minimal encoding)
+}
+
+Example encoding:
+30 45          SEQUENCE, 69 bytes total
+   02 21       INTEGER, 33 bytes (r)
+      00       Padding byte (if r[0] >= 0x80)
+      ff 12... r value (32 bytes)
+   02 20       INTEGER, 32 bytes (s)
+      7f 34... s value (32 bytes)
+```
+
+### Encoding Rules
+
+**Minimal encoding:**
+- Leading zeros removed
+- Padding byte (0x00) added if high bit set (to indicate positive)
+
+```typescript
+// High bit set, needs padding
+const r1 = new Uint8Array([0xff, 0x12, 0x34, ...]); // 32 bytes
+const der1 = Signature.toDER(sig1);
+// r encoded as: 02 21 00 ff 12 34 ... (33 bytes: padding + r)
+
+// High bit not set, no padding
+const r2 = new Uint8Array([0x7f, 0x12, 0x34, ...]); // 32 bytes
+const der2 = Signature.toDER(sig2);
+// r encoded as: 02 20 7f 12 34 ... (32 bytes: no padding)
+```
+
+### Length Calculation
+
+DER length varies based on r and s values:
+
+```typescript
+// Minimum length (both r and s < 0x80)
+// 30 44 02 20 [r:32] 02 20 [s:32] = 70 bytes
+
+// Maximum length (both r and s >= 0x80)
+// 30 46 02 21 00 [r:32] 02 21 00 [s:32] = 72 bytes
+
+// Typical length
+const der = Signature.toDER(sig);
+console.log(der.length); // 70-72 bytes
+```
+
+### Use Cases
+
+```typescript
+// Bitcoin transaction
+const sig = Signature.fromSecp256k1(r, s);
+const der = Signature.toDER(sig);
+const hashType = new Uint8Array([0x01]); // SIGHASH_ALL
+const scriptSig = concat(der, hashType);
+
+// X.509 certificate signature
+const certSig = Signature.fromP256(r, s);
+const der = Signature.toDER(certSig);
+const cert = {
+  tbsCertificate: { ... },
+  signatureAlgorithm: 'ecdsa-with-SHA256',
+  signatureValue: der,
+};
+
+// JWT ES256 signature (P-256)
+const jwtSig = Signature.fromP256(r, s);
+const der = Signature.toDER(jwtSig);
+// Note: JWT actually uses compact format, not DER
+```
+
+### Ed25519 Not Supported
+
+```typescript
+const ed25519Sig = Signature.fromEd25519(sigBytes);
+
+try {
+  const der = Signature.toDER(ed25519Sig);
+} catch (err) {
+  console.error(err); // InvalidAlgorithmError
+  // Ed25519 uses raw format, not DER
+}
+```
+
+### Recovery ID Handling
+
+```typescript
+// DER doesn't include recovery ID
+const sig = Signature.fromSecp256k1(r, s, 27);
+const der = Signature.toDER(sig);
+
+// Round-trip: v must be provided
+const parsed = Signature.fromDER(der, 'secp256k1', 27);
+console.log(parsed.v); // 27 (from parameter, not DER)
+
+// Without v
+const parsed2 = Signature.fromDER(der, 'secp256k1');
+console.log(parsed2.v); // undefined
+```
+
+## Comparison
+
+### Format Characteristics
+
+| Format  | Size        | Metadata | Use Case                    |
+|---------|-------------|----------|-----------------------------|
+| toBytes | 64 bytes    | Stripped | Raw storage                 |
+| toCompact | 64 bytes  | Stripped | Compact serialization       |
+| toDER   | 70-72 bytes | Stripped | Bitcoin, certificates       |
+
+### Metadata Preservation
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+// Metadata preserved
+console.log(sig.algorithm); // "secp256k1"
+console.log(sig.v); // 27
+
+// Metadata lost in conversions
+const bytes = Signature.toBytes(sig);
+const compact = Signature.toCompact(sig);
+const der = Signature.toDER(sig);
+
+console.log(bytes.algorithm); // undefined
+console.log(compact.algorithm); // undefined
+console.log(der.algorithm); // undefined
+
+// Must track externally
+const serialized = {
+  format: 'compact',
+  algorithm: sig.algorithm,
+  v: sig.v,
+  bytes: compact,
+};
+```
+
+### Round-Trip Compatibility
+
+```typescript
+// Compact round-trip
+const sig1 = Signature.fromSecp256k1(r, s, 27);
+const compact1 = Signature.toCompact(sig1);
+const restored1 = Signature.fromCompact(compact1, 'secp256k1');
+// Note: v is lost
+
+// DER round-trip
+const sig2 = Signature.fromSecp256k1(r, s, 27);
+const der2 = Signature.toDER(sig2);
+const restored2 = Signature.fromDER(der2, 'secp256k1', 27);
+// v must be provided
+
+// Equality
+console.log(Signature.toBytes(sig1).every((b, i) =>
+  b === Signature.toBytes(restored1)[i]
+)); // true
+```
+
+### Performance
+
+```typescript
+// Fastest: zero-copy reference
+const bytes = Signature.toBytes(sig); // O(1)
+
+// Fast: single copy
+const compact = Signature.toCompact(sig); // O(n)
+
+// Slower: encoding overhead
+const der = Signature.toDER(sig); // O(n) + encoding
+```
+
+## Serialization Patterns
+
+### Full Serialization (with metadata)
+
+```typescript
+function serializeSignature(sig: BrandedSignature): object {
+  return {
+    bytes: Array.from(Signature.toBytes(sig)),
+    algorithm: sig.algorithm,
+    v: sig.v,
+  };
+}
+
+function deserializeSignature(data: any): BrandedSignature {
+  const bytes = new Uint8Array(data.bytes);
+  const r = bytes.slice(0, 32);
+  const s = bytes.slice(32, 64);
+
+  switch (data.algorithm) {
+    case 'secp256k1':
+      return Signature.fromSecp256k1(r, s, data.v);
+    case 'p256':
+      return Signature.fromP256(r, s);
+    case 'ed25519':
+      return Signature.fromEd25519(bytes);
+  }
+}
+```
+
+### Compact Serialization (algorithm known)
+
+```typescript
+// When algorithm is known context (e.g., Ethereum = secp256k1)
+function serializeEthereumSignature(sig: BrandedSignature): {
+  compact: Uint8Array;
+  v: number;
+} {
+  return {
+    compact: Signature.toCompact(sig),
+    v: sig.v!,
+  };
+}
+
+function deserializeEthereumSignature(data: {
+  compact: Uint8Array;
+  v: number;
+}): BrandedSignature {
+  return Signature.fromCompact(data.compact, 'secp256k1');
+  // Note: v could be added via fromSecp256k1 instead
+}
+```
+
+### Wire Format
+
+```typescript
+// Protocol with type byte + signature
+function encodeWireFormat(sig: BrandedSignature): Uint8Array {
+  const algorithmByte = {
+    'secp256k1': 0x01,
+    'p256': 0x02,
+    'ed25519': 0x03,
+  }[sig.algorithm];
+
+  const compact = Signature.toCompact(sig);
+  const result = new Uint8Array(1 + compact.length + (sig.v ? 1 : 0));
+
+  result[0] = algorithmByte;
+  result.set(compact, 1);
+  if (sig.v !== undefined) {
+    result[1 + compact.length] = sig.v;
+  }
+
+  return result;
+}
+```
+
+## See Also
+
+- [Constructors](./constructors.mdx) - Creating signatures
+- [Utilities](./utilities.mdx) - Helper functions
+- [BrandedSignature](./branded-signature.mdx) - Type definition
+- [Usage Patterns](./usage-patterns.mdx) - Common patterns

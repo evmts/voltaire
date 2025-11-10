@@ -1,0 +1,645 @@
+---
+title: "Usage Patterns"
+description: "Usage Patterns"
+---
+
+# Usage Patterns
+
+Common patterns and real-world examples for authorization operations.
+
+## Sponsored Transactions
+
+Allow relayer to pay gas for user transactions.
+
+### Basic Sponsored Transaction
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+// User creates authorization
+async function createSponsoredAuth(
+  userPrivateKey: Uint8Array,
+  sponsorContract: Address,
+  chainId: bigint
+): Promise<Authorization.Item> {
+  const userAddress = Address.fromPrivateKey(userPrivateKey);
+  const nonce = await getAccountNonce(userAddress);
+
+  const unsigned: Authorization.Unsigned = {
+    chainId,
+    address: sponsorContract,
+    nonce
+  };
+
+  return Authorization.sign.call(unsigned, userPrivateKey);
+}
+
+// Relayer submits transaction
+async function submitSponsoredTx(
+  auth: Authorization.Item,
+  userAction: CallData
+): Promise<TxHash> {
+  const tx = {
+    from: relayerAddress,
+    to: auth.address,  // Sponsor contract
+    data: userAction,
+    authorizationList: [auth],
+    gasPrice: await getGasPrice(),
+    gasLimit: 200000n
+  };
+
+  return sendTransaction(tx);
+}
+```
+
+### Multi-User Sponsored Batch
+
+Sponsor multiple users in one transaction:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+async function sponsorMultipleUsers(
+  userAuths: Array<{
+    auth: Authorization.Item;
+    action: CallData;
+  }>,
+  relayerPrivateKey: Uint8Array
+): Promise<TxHash> {
+  // Collect all authorizations
+  const authList = userAuths.map(u => u.auth);
+
+  // Validate all
+  for (const auth of authList) {
+    Authorization.validate.call(auth);
+  }
+
+  // Calculate gas
+  const emptyCount = await countEmptyAccounts(authList);
+  const authGas = Authorization.calculateGasCost.call(authList, emptyCount);
+
+  // Create batch transaction
+  const tx = {
+    from: Address.fromPrivateKey(relayerPrivateKey),
+    to: batchSponsorContract,
+    data: encodeBatchActions(userAuths.map(u => u.action)),
+    authorizationList: authList,
+    gasLimit: authGas + estimateExecutionGas(userAuths)
+  };
+
+  return sendTransaction(tx);
+}
+```
+
+## Batch Operations
+
+Execute multiple operations atomically.
+
+### Token Batch Operations
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+interface TokenOp {
+  type: 'approve' | 'transfer';
+  token: Address;
+  spender?: Address;
+  recipient?: Address;
+  amount: bigint;
+}
+
+async function executeBatchOps(
+  ops: TokenOp[],
+  privateKey: Uint8Array,
+  chainId: bigint
+): Promise<TxHash> {
+  const myAddress = Address.fromPrivateKey(privateKey);
+  const nonce = await getAccountNonce(myAddress);
+
+  // Create authorization delegating to batch executor
+  const auth = Authorization.sign.call({
+    chainId,
+    address: batchExecutorContract,
+    nonce
+  }, privateKey);
+
+  // Encode operations
+  const calldata = encodeBatchOps(ops);
+
+  // Execute
+  return sendTransaction({
+    from: myAddress,
+    to: batchExecutorContract,
+    data: calldata,
+    authorizationList: [auth]
+  });
+}
+
+// Usage
+await executeBatchOps([
+  { type: 'approve', token: dai, spender: uniswap, amount: 1000n },
+  { type: 'approve', token: usdc, spender: uniswap, amount: 1000n },
+  { type: 'transfer', token: dai, recipient: alice, amount: 100n }
+], privateKey, 1n);
+```
+
+### DEX Swap Batch
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+interface Swap {
+  dex: Address;
+  tokenIn: Address;
+  tokenOut: Address;
+  amountIn: bigint;
+  minAmountOut: bigint;
+}
+
+async function batchSwap(
+  swaps: Swap[],
+  privateKey: Uint8Array
+): Promise<TxHash> {
+  const myAddress = Address.fromPrivateKey(privateKey);
+  const nonce = await getAccountNonce(myAddress);
+
+  // Delegate to swap aggregator
+  const auth = Authorization.sign.call({
+    chainId: 1n,
+    address: swapAggregator,
+    nonce
+  }, privateKey);
+
+  // Execute batch swap
+  return sendTransaction({
+    from: myAddress,
+    to: swapAggregator,
+    data: encodeSwaps(swaps),
+    authorizationList: [auth]
+  });
+}
+
+// Swap on multiple DEXes atomically
+await batchSwap([
+  {
+    dex: uniswap,
+    tokenIn: dai,
+    tokenOut: usdc,
+    amountIn: 1000n,
+    minAmountOut: 990n
+  },
+  {
+    dex: sushiswap,
+    tokenIn: usdc,
+    tokenOut: weth,
+    amountIn: 990n,
+    minAmountOut: 0.5n
+  }
+], privateKey);
+```
+
+## Social Recovery
+
+Guardian-based account recovery.
+
+### Guardian Setup
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+interface Guardian {
+  address: Address;
+  privateKey: Uint8Array;
+}
+
+class RecoveryModule {
+  constructor(
+    private guardians: Guardian[],
+    private threshold: number,
+    private recoveryContract: Address
+  ) {}
+
+  async createRecoveryAuths(
+    chainId: bigint
+  ): Promise<Authorization.Item[]> {
+    const auths: Authorization.Item[] = [];
+
+    for (const guardian of this.guardians) {
+      const nonce = await getAccountNonce(guardian.address);
+
+      const auth = Authorization.sign.call({
+        chainId,
+        address: this.recoveryContract,
+        nonce
+      }, guardian.privateKey);
+
+      auths.push(auth);
+    }
+
+    return auths;
+  }
+
+  async executeRecovery(
+    oldOwner: Address,
+    newOwner: Address
+  ): Promise<TxHash> {
+    // Get guardian authorizations
+    const auths = await this.createRecoveryAuths(1n);
+
+    // Need at least threshold guardians
+    if (auths.length < this.threshold) {
+      throw new Error(`Need ${this.threshold} guardians`);
+    }
+
+    // Execute recovery
+    return sendTransaction({
+      to: this.recoveryContract,
+      data: encodeRecovery(oldOwner, newOwner),
+      authorizationList: auths
+    });
+  }
+}
+```
+
+### Time-Locked Recovery
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+class TimeLockRecovery {
+  async initiateRecovery(
+    guardianAuths: Authorization.Item[],
+    newOwner: Address
+  ): Promise<{ recoveryId: bigint }> {
+    // Validate guardian authorizations
+    for (const auth of guardianAuths) {
+      Authorization.validate.call(auth);
+    }
+
+    // Initiate time-locked recovery
+    const tx = await sendTransaction({
+      to: timeLockRecoveryContract,
+      data: encodeInitiateRecovery(newOwner),
+      authorizationList: guardianAuths
+    });
+
+    return { recoveryId: await getRecoveryId(tx) };
+  }
+
+  async executeRecovery(
+    recoveryId: bigint,
+    ownerAuth: Authorization.Item
+  ): Promise<TxHash> {
+    // After timelock expires, execute recovery
+    return sendTransaction({
+      to: timeLockRecoveryContract,
+      data: encodeExecuteRecovery(recoveryId),
+      authorizationList: [ownerAuth]
+    });
+  }
+
+  async cancelRecovery(
+    recoveryId: bigint,
+    ownerAuth: Authorization.Item
+  ): Promise<TxHash> {
+    // Owner can cancel during timelock
+    return sendTransaction({
+      to: timeLockRecoveryContract,
+      data: encodeCancelRecovery(recoveryId),
+      authorizationList: [ownerAuth]
+    });
+  }
+}
+```
+
+## Custom Validation Logic
+
+Implement custom transaction validation.
+
+### Spending Limits
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+async function transferWithLimit(
+  recipient: Address,
+  amount: bigint,
+  privateKey: Uint8Array
+): Promise<TxHash> {
+  const myAddress = Address.fromPrivateKey(privateKey);
+  const nonce = await getAccountNonce(myAddress);
+
+  // Delegate to spending limit contract
+  const auth = Authorization.sign.call({
+    chainId: 1n,
+    address: spendingLimitContract,
+    nonce
+  }, privateKey);
+
+  // Transfer enforces daily limit
+  return sendTransaction({
+    from: myAddress,
+    to: spendingLimitContract,
+    data: encodeTransfer(recipient, amount),
+    authorizationList: [auth]
+  });
+}
+
+// Spending limit contract validates:
+// - Amount <= daily limit
+// - Resets limit after 24 hours
+// - Rejects if limit exceeded
+```
+
+### Multi-Sig Validation
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+async function multiSigTransfer(
+  signers: Uint8Array[],
+  recipient: Address,
+  amount: bigint,
+  threshold: number
+): Promise<TxHash> {
+  if (signers.length < threshold) {
+    throw new Error(`Need ${threshold} signers`);
+  }
+
+  // Each signer creates authorization
+  const auths = await Promise.all(
+    signers.map(async (privateKey) => {
+      const address = Address.fromPrivateKey(privateKey);
+      const nonce = await getAccountNonce(address);
+
+      return Authorization.sign.call({
+        chainId: 1n,
+        address: multiSigContract,
+        nonce
+      }, privateKey);
+    })
+  );
+
+  // Multi-sig contract validates threshold
+  return sendTransaction({
+    to: multiSigContract,
+    data: encodeMultiSigTransfer(recipient, amount, threshold),
+    authorizationList: auths
+  });
+}
+```
+
+## Session Keys
+
+Temporary permission delegation.
+
+### Create Session Key
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+class SessionKeyManager {
+  async createSession(
+    masterKey: Uint8Array,
+    sessionDuration: number,
+    permissions: Permission[]
+  ): Promise<{ sessionKey: Uint8Array; auth: Authorization.Item }> {
+    // Generate temporary session key
+    const sessionKey = generateRandomKey();
+
+    // Deploy session contract with permissions
+    const sessionContract = await deploySessionContract({
+      masterAddress: Address.fromPrivateKey(masterKey),
+      sessionKey: Address.fromPrivateKey(sessionKey),
+      expiresAt: Date.now() + sessionDuration,
+      permissions
+    });
+
+    // Create authorization
+    const masterAddress = Address.fromPrivateKey(masterKey);
+    const nonce = await getAccountNonce(masterAddress);
+
+    const auth = Authorization.sign.call({
+      chainId: 1n,
+      address: sessionContract,
+      nonce
+    }, masterKey);
+
+    return { sessionKey, auth };
+  }
+
+  async useSession(
+    sessionKey: Uint8Array,
+    auth: Authorization.Item,
+    action: CallData
+  ): Promise<TxHash> {
+    // Sign action with session key
+    const sessionSig = signWithSessionKey(action, sessionKey);
+
+    // Execute with master authorization
+    return sendTransaction({
+      to: auth.address,
+      data: encodeSessionAction(action, sessionSig),
+      authorizationList: [auth]
+    });
+  }
+}
+```
+
+### Gaming Session Keys
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+// Create session for gaming
+const { sessionKey, auth } = await createSession(
+  masterPrivateKey,
+  3600000, // 1 hour
+  [
+    { contract: gameContract, method: 'makeMove', maxCalls: 100 },
+    { contract: gameContract, method: 'claim', maxCalls: 10 }
+  ]
+);
+
+// Use session key for rapid in-game actions
+async function makeGameMove(
+  move: number,
+  sessionKey: Uint8Array,
+  auth: Authorization.Item
+): Promise<TxHash> {
+  return useSession(
+    sessionKey,
+    auth,
+    encodeMove(move)
+  );
+}
+
+// Session expires after 1 hour or 100 moves
+```
+
+## Authorization Pools
+
+Manage authorization collections.
+
+### Authorization Pool
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+class AuthorizationPool {
+  private auths = new Map<string, Authorization.Item>();
+
+  add(auth: Authorization.Item): void {
+    // Validate before adding
+    Authorization.validate.call(auth);
+
+    const key = this.makeKey(auth);
+    this.auths.set(key, auth);
+  }
+
+  get(chainId: bigint, address: Address): Authorization.Item | undefined {
+    const key = `${chainId}-${Address.toHex(address)}`;
+    return this.auths.get(key);
+  }
+
+  remove(auth: Authorization.Item): boolean {
+    const key = this.makeKey(auth);
+    return this.auths.delete(key);
+  }
+
+  async processAll(): Promise<Authorization.DelegationDesignation[]> {
+    const authList = Array.from(this.auths.values());
+    return Authorization.processAll.call(authList);
+  }
+
+  async estimateGas(): Promise<bigint> {
+    const authList = Array.from(this.auths.values());
+    const emptyCount = await countEmptyAccounts(authList);
+    return Authorization.calculateGasCost.call(authList, emptyCount);
+  }
+
+  private makeKey(auth: Authorization.Item): string {
+    return `${auth.chainId}-${Address.toHex(auth.address)}-${auth.nonce}`;
+  }
+
+  clear(): void {
+    this.auths.clear();
+  }
+
+  get size(): number {
+    return this.auths.size;
+  }
+}
+
+// Usage
+const pool = new AuthorizationPool();
+pool.add(auth1);
+pool.add(auth2);
+pool.add(auth3);
+
+const gas = await pool.estimateGas();
+const delegations = await pool.processAll();
+```
+
+## Error Recovery
+
+Handle authorization failures gracefully.
+
+### Retry Logic
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+async function signWithRetry(
+  unsigned: Authorization.Unsigned,
+  privateKey: Uint8Array,
+  maxRetries: number = 3
+): Promise<Authorization.Item> {
+  let lastError: Error | undefined;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      // Update nonce
+      const address = Address.fromPrivateKey(privateKey);
+      unsigned.nonce = await getAccountNonce(address);
+
+      // Sign
+      const auth = Authorization.sign.call(unsigned, privateKey);
+
+      // Validate
+      Authorization.validate.call(auth);
+
+      return auth;
+    } catch (e) {
+      lastError = e as Error;
+      console.warn(`Sign attempt ${i + 1} failed: ${e}`);
+
+      // Wait before retry
+      await sleep(1000 * (i + 1));
+    }
+  }
+
+  throw new Error(`Sign failed after ${maxRetries} attempts: ${lastError}`);
+}
+```
+
+### Fallback Strategy
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+class AuthorizationStrategy {
+  async execute(
+    action: CallData,
+    privateKey: Uint8Array
+  ): Promise<TxHash> {
+    // Try primary contract
+    try {
+      return await this.executeWith(action, primaryContract, privateKey);
+    } catch (e) {
+      console.warn(`Primary failed: ${e}`);
+    }
+
+    // Try backup contract
+    try {
+      return await this.executeWith(action, backupContract, privateKey);
+    } catch (e) {
+      console.warn(`Backup failed: ${e}`);
+    }
+
+    // Direct execution (no delegation)
+    return sendTransaction({
+      from: Address.fromPrivateKey(privateKey),
+      data: action
+    });
+  }
+
+  private async executeWith(
+    action: CallData,
+    contract: Address,
+    privateKey: Uint8Array
+  ): Promise<TxHash> {
+    const address = Address.fromPrivateKey(privateKey);
+    const nonce = await getAccountNonce(address);
+
+    const auth = Authorization.sign.call({
+      chainId: 1n,
+      address: contract,
+      nonce
+    }, privateKey);
+
+    return sendTransaction({
+      to: contract,
+      data: action,
+      authorizationList: [auth]
+    });
+  }
+}
+```
+
+## See Also
+
+- [Signing](./signing) - Creating authorizations
+- [Processing](./processing) - Processing authorizations
+- [Gas Calculations](./gas-calculations) - Estimating costs
+- [EIP-7702](./eip7702) - Specification

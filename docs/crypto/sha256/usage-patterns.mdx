@@ -1,0 +1,147 @@
+---
+title: SHA256 Usage Patterns
+description: Common use cases and implementation patterns for SHA-256
+---
+
+# SHA256 Usage Patterns
+
+Common patterns and real-world examples for using SHA-256.
+
+## Bitcoin Address Derivation
+
+Bitcoin P2PKH addresses use SHA-256 + RIPEMD-160:
+
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+import { Ripemd160 } from '@tevm/voltaire/crypto/ripemd160';
+
+function publicKeyToAddress(publicKey: Uint8Array): Uint8Array {
+  // Step 1: SHA-256 hash of public key
+  const sha256Hash = SHA256.hash(publicKey);
+
+  // Step 2: RIPEMD-160 hash of SHA-256 hash
+  const ripemd160Hash = Ripemd160.hash(sha256Hash);
+
+  return ripemd160Hash; // 20-byte address payload
+}
+```
+
+## Double SHA-256 (Bitcoin)
+
+Bitcoin uses double SHA-256 for blocks and transactions:
+
+```typescript
+function doubleSha256(data: Uint8Array): Uint8Array {
+  return SHA256.hash(SHA256.hash(data));
+}
+
+// Bitcoin block hash
+const blockHeader = new Uint8Array(80);
+const blockHash = doubleSha256(blockHeader);
+```
+
+## Merkle Trees
+
+Build authenticated data structures:
+
+```typescript
+function merkleRoot(leaves: Uint8Array[]): Uint8Array {
+  if (leaves.length === 0) throw new Error('No leaves');
+  if (leaves.length === 1) return SHA256.hash(leaves[0]);
+
+  let level = leaves.map(leaf => SHA256.hash(leaf));
+
+  while (level.length > 1) {
+    const next: Uint8Array[] = [];
+    for (let i = 0; i < level.length; i += 2) {
+      const left = level[i];
+      const right = level[i + 1] || left;
+      const combined = new Uint8Array(64);
+      combined.set(left, 0);
+      combined.set(right, 32);
+      next.push(SHA256.hash(combined));
+    }
+    level = next;
+  }
+
+  return level[0];
+}
+```
+
+## HMAC-SHA256
+
+Message authentication:
+
+```typescript
+function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
+  const blockSize = 64;
+
+  let derivedKey = key.length > blockSize
+    ? SHA256.hash(key)
+    : key;
+
+  const paddedKey = new Uint8Array(blockSize);
+  paddedKey.set(derivedKey);
+
+  const opad = new Uint8Array(blockSize).fill(0x5c);
+  const ipad = new Uint8Array(blockSize).fill(0x36);
+
+  for (let i = 0; i < blockSize; i++) {
+    opad[i] ^= paddedKey[i];
+    ipad[i] ^= paddedKey[i];
+  }
+
+  const innerHash = SHA256.hash(new Uint8Array([...ipad, ...message]));
+  return SHA256.hash(new Uint8Array([...opad, ...innerHash]));
+}
+```
+
+## File Integrity Checking
+
+```typescript
+async function hashFile(file: File): Promise<string> {
+  const hasher = SHA256.create();
+  const chunkSize = 1024 * 1024;
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+    hasher.update(new Uint8Array(chunk));
+  }
+
+  const hash = hasher.digest();
+  return SHA256.toHex(hash);
+}
+```
+
+## Content Addressing
+
+```typescript
+function contentId(data: Uint8Array): string {
+  const hash = SHA256.hash(data);
+  return SHA256.toHex(hash);
+}
+
+// Usage in cache
+const cache = new Map<string, Uint8Array>();
+const id = contentId(data);
+cache.set(id, data);
+```
+
+## Certificate Fingerprints
+
+```typescript
+function certificateFingerprint(derCert: Uint8Array): string {
+  const hash = SHA256.hash(derCert);
+  // Format as colon-separated hex
+  return Array.from(hash)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join(':')
+    .toUpperCase();
+}
+```
+
+## See Also
+
+- [API Reference](/crypto/sha256/api-reference)
+- [Security](/crypto/sha256/security)
+- [Performance](/crypto/sha256/performance)

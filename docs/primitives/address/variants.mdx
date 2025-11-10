@@ -1,0 +1,176 @@
+---
+title: Address Variants
+description: Checksummed, Lowercase, and Uppercase branded address types
+---
+
+# Address Variants
+
+Branded hex string types representing different address formats with compile-time guarantees.
+
+## Overview
+
+Address variants provide type-safe hex strings with specific casing guarantees:
+- **Checksummed** - EIP-55 mixed-case format for display and verification
+- **Lowercase** - All lowercase hex for canonical storage
+- **Uppercase** - All uppercase hex for specific protocols
+
+Each variant is a [branded](/concepts/branded-types) hex string type (`string & { __tag, __variant, __casing }`), not a `Uint8Array`.
+
+## ChecksumAddress
+
+EIP-55 checksummed address format with mixed casing based on keccak256 hash.
+
+### `Address.Checksummed.from(addr)`
+
+Create checksummed hex string from Address.
+
+```typescript
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+
+// Get checksummed string
+const checksummed = Address.Checksummed.from(addr)
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e" (mixed case)
+
+// Type is branded Checksummed, not BrandedAddress
+typeof checksummed // "string"
+```
+
+**Parameters:**
+- `addr: BrandedAddress` - Address to checksum
+
+**Returns:** `Checksummed` - Branded checksummed hex string
+
+**Type:**
+```typescript
+type Checksummed = string & {
+  readonly __tag: 'Hex'
+  readonly __variant: 'Address'
+  readonly __checksummed: true
+}
+```
+
+Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:23](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js)
+
+**Note:** Uses keccak256 internally.
+
+### `Address.Checksummed.isValid(str)`
+
+Validate EIP-55 checksum of address string.
+
+```typescript
+// Valid checksummed
+Address.Checksummed.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") // true
+
+// Invalid checksum (wrong casing)
+Address.Checksummed.isValid("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") // false
+Address.Checksummed.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E") // false
+
+// All lowercase/uppercase passes (no mixed case = no checksum)
+Address.Checksummed.isValid("0x742d35cc6634c0532925a3b844bc9e7595f51e3e") // true
+Address.Checksummed.isValid("0x742D35CC6634C0532925A3B844BC9E7595F51E3E") // true
+```
+
+**Parameters:**
+- `str: string` - Address string to validate
+
+**Returns:** `boolean`
+
+Defined in: [primitives/Address/BrandedAddress/ChecksumAddress.js:55](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/ChecksumAddress.js)
+
+**EIP-55 Logic:**
+- If all letters same case (all lower or all upper), valid
+- If mixed case, each letter's case must match keccak256-based checksum
+
+## LowercaseAddress
+
+All lowercase hex format for canonical representation.
+
+### `Address.Lowercase.from(addr)`
+
+Create lowercase hex string from Address.
+
+```typescript
+const addr = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")
+
+const lowercase = Address.Lowercase.from(addr)
+// "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+```
+
+**Parameters:**
+- `addr: BrandedAddress` - Address to convert
+
+**Returns:** `Lowercase` - Branded lowercase hex string
+
+**Type:**
+```typescript
+type Lowercase = string & {
+  readonly __tag: 'Hex'
+  readonly __variant: 'Address'
+  readonly __lowercase: true
+}
+```
+
+Defined in: [primitives/Address/BrandedAddress/LowercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/LowercaseAddress.js)
+
+## UppercaseAddress
+
+All uppercase hex format.
+
+### `Address.Uppercase.from(addr)`
+
+Create uppercase hex string from Address.
+
+```typescript
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")
+
+const uppercase = Address.Uppercase.from(addr)
+// "0x742D35CC6634C0532925A3B844BC9E7595F51E3E"
+```
+
+**Parameters:**
+- `addr: BrandedAddress` - Address to convert
+
+**Returns:** `Uppercase` - Branded uppercase hex string
+
+**Type:**
+```typescript
+type Uppercase = string & {
+  readonly __tag: 'Hex'
+  readonly __variant: 'Address'
+  readonly __uppercase: true
+}
+```
+
+Defined in: [primitives/Address/BrandedAddress/UppercaseAddress.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/UppercaseAddress.js)
+
+## Variant Comparison
+
+| Variant | Casing | Use Case | Keccak256 Needed |
+|---------|--------|----------|------------------|
+| **Checksummed** | Mixed | Display, verification | Yes |
+| **Lowercase** | All lower | Canonical storage, comparison | No |
+| **Uppercase** | All upper | Specific protocols | No |
+
+## Tree-Shakeable Usage
+
+All variants available as tree-shakeable namespace imports:
+
+```typescript
+import * as ChecksumAddress from '@tevm/voltaire/BrandedAddress/ChecksumAddress'
+import * as LowercaseAddress from '@tevm/voltaire/BrandedAddress/LowercaseAddress'
+import * as UppercaseAddress from '@tevm/voltaire/BrandedAddress/UppercaseAddress'
+import type { BrandedAddress } from '@tevm/voltaire/BrandedAddress'
+
+const addr: BrandedAddress = /* ... */
+
+const checksummed = ChecksumAddress.from(addr)
+const lowercase = LowercaseAddress.from(addr)
+const uppercase = UppercaseAddress.from(addr)
+
+// Validation
+ChecksumAddress.isValid("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+```
+
+**Tree-shaking benefit:** When avoiding `ChecksumAddress`, keccak256 implementation is excluded from bundle. Lowercase and Uppercase variants have no crypto dependencies.
+
+See [BrandedAddress](/primitives/address/branded-address) for details on tree-shakeable API.

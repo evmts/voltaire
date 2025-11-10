@@ -1,0 +1,404 @@
+---
+title: "EIP-4844 Blob Fee Calculations"
+---
+
+# EIP-4844 Blob Fee Calculations
+
+Exponential blob base fee pricing for data availability.
+
+## Overview
+
+EIP-4844 introduced blob transactions with separate fee market:
+- Target: 3 blobs per block (393,216 gas)
+- Maximum: 6 blobs per block (786,432 gas)
+- Each blob: 131,072 gas (128 KiB)
+- Pricing: Exponential based on excess blob gas
+- Minimum: 1 wei per blob gas
+
+## calculateBlobBaseFee
+
+```typescript
+calculateBlobBaseFee(excessBlobGas: bigint): bigint
+```
+
+Calculate blob base fee using exponential formula.
+
+**Parameters:**
+- `excessBlobGas` - Accumulated excess blob gas from previous blocks
+
+**Returns:** Blob base fee (wei per blob gas)
+
+**Formula:**
+```
+blobBaseFee = fakeExponential(
+  MIN_BLOB_BASE_FEE,
+  excessBlobGas,
+  BLOB_BASE_FEE_UPDATE_FRACTION
+)
+
+≈ MIN_BLOB_BASE_FEE * e^(excessBlobGas / UPDATE_FRACTION)
+```
+
+Uses Taylor series approximation for exponential.
+
+**Examples:**
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// No excess: minimum fee
+const fee1 = FeeMarket.calculateBlobBaseFee(0n);
+// fee1 === 1n
+
+// At target excess (3 blobs worth)
+const fee2 = FeeMarket.calculateBlobBaseFee(393216n);
+// fee2 ≈ 1.125n (slightly above minimum)
+
+// High excess: exponentially higher
+const fee3 = FeeMarket.calculateBlobBaseFee(1_000_000n);
+// fee3 >> 1n (much higher)
+
+// Very high excess
+const fee4 = FeeMarket.calculateBlobBaseFee(10_000_000n);
+// fee4 >>> fee3 (exponential growth)
+```
+
+**Behavior:**
+
+```typescript
+// Fees grow exponentially with excess
+const excesses = [0n, 393216n, 786432n, 1179648n, 1572864n];
+const fees = excesses.map(e => FeeMarket.calculateBlobBaseFee(e));
+// fees[0] === 1n
+// fees[1] > fees[0]
+// fees[2] > fees[1] * ratio
+// fees[3] > fees[2] * ratio (ratio increasing)
+// Exponential curve
+```
+
+## calculateExcessBlobGas
+
+```typescript
+calculateExcessBlobGas(
+  parentExcessBlobGas: bigint,
+  parentBlobGasUsed: bigint
+): bigint
+```
+
+Calculate excess blob gas for next block.
+
+**Parameters:**
+- `parentExcessBlobGas` - Excess blob gas from parent
+- `parentBlobGasUsed` - Blob gas used in parent
+
+**Returns:** Next block's excess blob gas (>= 0)
+
+**Formula:**
+```
+excessBlobGas = max(0, parentExcess + parentUsed - TARGET_BLOB_GAS)
+
+TARGET_BLOB_GAS = 393,216 (3 blobs worth)
+```
+
+**Examples:**
+
+```typescript
+import * as FeeMarket from './FeeMarket.js';
+
+// Below target: no excess
+const excess1 = FeeMarket.calculateExcessBlobGas(
+  0n,       // no prior excess
+  131072n   // 1 blob used (below 3 blob target)
+);
+// excess1 === 0n
+
+// At target: excess stays same
+const excess2 = FeeMarket.calculateExcessBlobGas(
+  0n,       // no prior excess
+  393216n   // exactly at target (3 blobs)
+);
+// excess2 === 0n
+
+// Above target: accumulate excess
+const excess3 = FeeMarket.calculateExcessBlobGas(
+  0n,       // no prior excess
+  786432n   // 6 blobs (max, 3 above target)
+);
+// excess3 === 393216n (3 blobs worth of excess)
+
+// Excess compounds
+const excess4 = FeeMarket.calculateExcessBlobGas(
+  393216n,  // 3 blobs excess
+  786432n   // 6 blobs used
+);
+// excess4 === 786432n (3 + 3 blobs of excess)
+
+// Excess decays when below target
+const excess5 = FeeMarket.calculateExcessBlobGas(
+  393216n,  // 3 blobs excess
+  131072n   // 1 blob used (2 below target)
+);
+// excess5 === 131072n (reduced by 2 blobs)
+
+// Excess can go to zero
+const excess6 = FeeMarket.calculateExcessBlobGas(
+  262144n,  // 2 blobs excess
+  0n        // no blobs (3 below target)
+);
+// excess6 === 0n (can't go negative)
+```
+
+## getBlobBaseFee
+
+```typescript
+getBlobBaseFee(state: State): bigint
+```
+
+Get current blob base fee from state.
+
+**Parameters:**
+- `state` - Block state with excessBlobGas
+
+**Returns:** Current blob base fee (wei per blob gas)
+
+**Example:**
+```typescript
+const state: FeeMarket.State = {
+  gasUsed: 15_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 393216n, // 3 blobs excess
+  blobGasUsed: 262144n    // 2 blobs used
+};
+
+const blobFee = FeeMarket.getBlobBaseFee(state);
+// blobFee === calculateBlobBaseFee(393216n)
+```
+
+**State method:**
+```typescript
+const blobFee = FeeMarket.State.getBlobBaseFee.call(state);
+// Same result
+```
+
+## isAboveBlobGasTarget
+
+```typescript
+isAboveBlobGasTarget(state: State): boolean
+```
+
+Check if block blob gas usage is above target (will increase blob base fee).
+
+**Parameters:**
+- `state` - Block state
+
+**Returns:** `true` if blobGasUsed > TARGET_BLOB_GAS_PER_BLOCK
+
+**Example:**
+```typescript
+const state: FeeMarket.State = {
+  gasUsed: 15_000_000n,
+  gasLimit: 30_000_000n,
+  baseFee: 1_000_000_000n,
+  excessBlobGas: 0n,
+  blobGasUsed: 524288n // 4 blobs (above 3 blob target)
+};
+
+const isAbove = FeeMarket.isAboveBlobGasTarget(state);
+// isAbove === true (4 blobs > 3 blob target)
+
+// Blob fee will increase in next block
+const nextState = FeeMarket.nextState(state);
+// nextState.excessBlobGas > 0 (accumulated excess)
+```
+
+**State method:**
+```typescript
+const isAbove = FeeMarket.State.isAboveBlobGasTarget.call(state);
+// Same result
+```
+
+## Constants
+
+See [constants.mdx#eip4844](./constants.mdx#eip4844):
+
+```typescript
+FeeMarket.Eip4844.MIN_BLOB_BASE_FEE              // 1n wei
+FeeMarket.Eip4844.BLOB_BASE_FEE_UPDATE_FRACTION  // 3338477n
+FeeMarket.Eip4844.TARGET_BLOB_GAS_PER_BLOCK      // 393216n (3 blobs)
+FeeMarket.Eip4844.BLOB_GAS_PER_BLOB              // 131072n (128 KiB)
+FeeMarket.Eip4844.MAX_BLOBS_PER_BLOCK            // 6n
+FeeMarket.Eip4844.MAX_BLOB_GAS_PER_BLOCK         // 786432n (6 blobs)
+```
+
+## Blob Fee Dynamics
+
+### Fee Growth
+
+Exponential growth when blocks exceed target:
+
+```typescript
+// Simulate sustained high blob usage
+let excessBlobGas = 0n;
+const blobGasUsed = 524288n; // 4 blobs per block (above target)
+const fees: bigint[] = [];
+
+for (let i = 0; i < 10; i++) {
+  fees.push(FeeMarket.calculateBlobBaseFee(excessBlobGas));
+  excessBlobGas = FeeMarket.calculateExcessBlobGas(excessBlobGas, blobGasUsed);
+}
+
+// fees grow exponentially:
+// fees[0] ~= 1 wei
+// fees[5] > fees[0]
+// fees[9] >> fees[5] (exponential)
+```
+
+### Fee Decay
+
+Linear decay when blocks below target:
+
+```typescript
+// Start with high excess
+let excessBlobGas = 1_572_864n; // 12 blobs worth
+const blobGasUsed = 131072n;   // 1 blob per block (below target)
+const fees: bigint[] = [];
+
+for (let i = 0; i < 10; i++) {
+  fees.push(FeeMarket.calculateBlobBaseFee(excessBlobGas));
+  excessBlobGas = FeeMarket.calculateExcessBlobGas(excessBlobGas, blobGasUsed);
+  if (excessBlobGas === 0n) break;
+}
+
+// fees decay back toward minimum
+// excess reduces by (TARGET - used) per block
+```
+
+### Equilibrium
+
+Constant 3 blob usage maintains stable fees:
+
+```typescript
+let excessBlobGas = 0n;
+const blobGasUsed = 393216n; // Exactly at target (3 blobs)
+
+for (let i = 0; i < 100; i++) {
+  const fee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+  excessBlobGas = FeeMarket.calculateExcessBlobGas(excessBlobGas, blobGasUsed);
+}
+
+// excessBlobGas === 0n (stays at zero)
+// fee === 1n (minimum)
+```
+
+## Fake Exponential
+
+Internal helper implementing Taylor series approximation:
+
+```typescript
+fakeExponential(factor, numerator, denominator): bigint
+```
+
+Approximates: `factor * e^(numerator / denominator)`
+
+Uses Taylor series: `1 + x + x²/2! + x³/3! + ...`
+
+**Implementation:** See `BrandedFeeMarket/fakeExponential.js`
+
+**Properties:**
+- Converges quickly for normal excess values
+- Maximum 256 iterations
+- Pure bigint arithmetic (no floating point)
+
+## Usage Patterns
+
+### Blob Fee Estimation
+
+```typescript
+// Get current state
+const state = getCurrentBlockState();
+
+// Current blob fee
+const currentBlobFee = FeeMarket.State.getBlobBaseFee.call(state);
+console.log(`Blob fee: ${currentBlobFee} wei/gas`);
+
+// Next block's blob fee
+const nextState = FeeMarket.nextState(state);
+const nextBlobFee = FeeMarket.State.getBlobBaseFee.call(nextState);
+console.log(`Next blob fee: ${nextBlobFee} wei/gas`);
+
+// Check trend
+if (FeeMarket.State.isAboveBlobGasTarget.call(state)) {
+  console.log('⬆ Blob fees rising');
+} else {
+  console.log('⬇ Blob fees falling or stable');
+}
+```
+
+### Blob Count from Gas
+
+```typescript
+const blobGasUsed = 524288n; // From state or tx
+
+// Calculate blob count
+const blobCount = blobGasUsed / FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+// blobCount === 4n
+
+// Calculate total fee
+const blobBaseFee = FeeMarket.State.getBlobBaseFee.call(state);
+const totalBlobFee = blobBaseFee * blobGasUsed;
+```
+
+### Monitoring Blob Utilization
+
+```typescript
+const state: FeeMarket.State = { /* ... */ };
+
+const blobCount = state.blobGasUsed / FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+const targetBlobs = 3n; // TARGET_BLOB_GAS / BLOB_GAS_PER_BLOB
+const maxBlobs = 6n;
+
+console.log(`Blobs: ${blobCount}/${maxBlobs} (target: ${targetBlobs})`);
+
+if (blobCount > targetBlobs) {
+  const excess = blobCount - targetBlobs;
+  console.log(`${excess} blobs above target → fees rising`);
+}
+
+// Excess accumulation
+console.log(`Excess blob gas: ${state.excessBlobGas}`);
+const excessBlobs = state.excessBlobGas / FeeMarket.Eip4844.BLOB_GAS_PER_BLOB;
+console.log(`(~${excessBlobs} blobs worth)`);
+```
+
+## Blob Transaction Fees
+
+See [calculations.mdx#calculateBlobTxFee](./calculations.mdx#calculateblobtxfee):
+
+```typescript
+const blobFee = FeeMarket.calculateBlobTxFee({
+  maxFeePerGas: 2_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  baseFee: 1_000_000_000n,
+  maxFeePerBlobGas: 10_000_000n,
+  blobBaseFee: FeeMarket.State.getBlobBaseFee.call(state),
+  blobCount: 3n
+});
+
+console.log(`Blob fee: ${blobFee.totalBlobFee} wei`);
+```
+
+## Implementation
+
+Locations:
+- `BrandedFeeMarket/calculateBlobBaseFee.js`
+- `BrandedFeeMarket/calculateExcessBlobGas.js`
+- `BrandedFeeMarket/fakeExponential.js`
+
+See [branded-feemarket.mdx](./branded-feemarket.mdx) for implementation details.
+
+## References
+
+- [EIP-4844 Specification](https://eips.ethereum.org/EIPS/eip-4844)
+- [constants.mdx](./constants.mdx)
+- [calculations.mdx](./calculations.mdx)

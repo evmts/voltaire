@@ -1,0 +1,208 @@
+---
+title: "Signing"
+description: "EIP-191 message hash generation for SIWE messages"
+---
+
+# Signing
+
+EIP-191 message hash generation for SIWE messages.
+
+## getMessageHash
+
+Get EIP-191 personal sign message hash for signing.
+
+### Signature
+
+```typescript
+function getMessageHash(message: BrandedMessage): Uint8Array
+```
+
+### Parameters
+
+- `message` - BrandedMessage to hash
+
+### Returns
+
+32-byte Keccak-256 hash with EIP-191 prefix
+
+### EIP-191 Format
+
+```
+hash = keccak256(
+  "\x19Ethereum Signed Message:\n" +
+  length(messageText) +
+  messageText
+)
+```
+
+**Prefix:** `\x19Ethereum Signed Message:\n{length}`
+**Message:** EIP-4361 formatted message
+**Hash:** Keccak-256 of concatenated bytes
+
+### Example
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f251e3"),
+  uri: "https://example.com",
+  chainId: 1,
+});
+
+const hash = Siwe.getMessageHash(message);
+// Uint8Array(32) [...]
+// Returns 32-byte hash ready for signing
+```
+
+### Process
+
+1. **Format Message:** Convert message to EIP-4361 string
+   ```typescript
+   const messageText = Siwe.format(message);
+   ```
+
+2. **Encode to Bytes:** UTF-8 encode message text
+   ```typescript
+   const messageBytes = new TextEncoder().encode(messageText);
+   ```
+
+3. **Build Prefix:** Create EIP-191 prefix
+   ```typescript
+   const prefix = "\x19Ethereum Signed Message:\n" + messageBytes.length;
+   ```
+
+4. **Concatenate:** Combine prefix + message
+   ```typescript
+   const fullMessage = concat(prefix, messageBytes);
+   ```
+
+5. **Hash:** Keccak-256 hash
+   ```typescript
+   const hash = Keccak256.hash(fullMessage);
+   ```
+
+### Usage Patterns
+
+#### Client-Side Signing
+
+```typescript
+// Browser wallet signing
+const message = Siwe.create({ ... });
+const text = Siwe.format(message);
+
+// Wallet handles EIP-191 internally
+const signature = await ethereum.request({
+  method: 'personal_sign',
+  params: [text, address],
+});
+```
+
+<Warning>
+Wallets apply EIP-191 prefix automatically. Do not hash before sending to wallet.
+</Warning>
+
+#### Server-Side Verification
+
+```typescript
+// Get hash for signature verification
+const hash = Siwe.getMessageHash(message);
+
+// Recover public key from signature
+const publicKey = Secp256k1.recoverPublicKey(signature, hash);
+
+// Derive address and compare
+const recoveredAddress = Address.fromPublicKey(publicKey.x, publicKey.y);
+const valid = Address.equals(recoveredAddress, message.address);
+```
+
+#### Manual Signing (Testing)
+
+```typescript
+import { Secp256k1 } from '@tevm/voltaire';
+
+const message = Siwe.create({ ... });
+const hash = Siwe.getMessageHash(message);
+
+// Sign with private key
+const privateKey = new Uint8Array(32); // Your private key
+const signature = Secp256k1.sign(hash, privateKey);
+```
+
+### Instance Method
+
+```typescript
+const message = Siwe.create({ ... });
+const hash = message.getMessageHash();
+// Same as Siwe.getMessageHash(message)
+```
+
+### EIP-191 Specification
+
+EIP-191 defines three types of signed data. SIWE uses personal sign format:
+
+```
+0x19 <version byte>
+"Ethereum Signed Message:\n" <message length>
+<message>
+```
+
+**Version byte:** `0x19` (25 decimal)
+**Identifier:** `"Ethereum Signed Message:\n"`
+**Length:** ASCII decimal length of message
+**Message:** Raw message bytes (UTF-8 encoded)
+
+### Common Mistakes
+
+#### Don't Double-Hash
+
+```typescript
+// Wrong: Don't hash before wallet signing
+const hash = Siwe.getMessageHash(message);
+await wallet.signMessage(hash); // Wallet will hash again
+
+// Correct: Send formatted text to wallet
+const text = Siwe.format(message);
+await wallet.signMessage(text); // Wallet applies EIP-191
+```
+
+#### Use Correct Encoding
+
+```typescript
+// Correct: UTF-8 encoding
+const messageBytes = new TextEncoder().encode(messageText);
+
+// Wrong: Don't use hex or base64
+const wrongBytes = hexToBytes(messageText); // No!
+```
+
+#### Length as String
+
+```typescript
+// Correct: ASCII decimal length
+const length = messageBytes.length.toString(); // "145"
+
+// Wrong: Don't use hex length
+const wrongLength = messageBytes.length.toString(16); // "91" - No!
+```
+
+### Security Considerations
+
+- **Prefix prevents signature reuse:** EIP-191 prefix ensures message can't be interpreted as transaction
+- **Length prevents manipulation:** Including length prevents message truncation attacks
+- **UTF-8 encoding:** Ensures consistent byte representation across platforms
+- **Keccak-256:** Same hash function as Ethereum transactions
+- **Deterministic:** Same message always produces same hash
+
+### Performance
+
+- **Formatting:** O(n) where n = message size
+- **Encoding:** O(n) UTF-8 encoding
+- **Hashing:** O(n) Keccak-256 hash
+- **Total:** Linear in message size, typically less than 1ms
+
+### See Also
+
+- [EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191)
+- [Siwe.format](/primitives/siwe/parsing) - Message formatting
+- [Siwe.verify](/primitives/siwe/verification) - Signature verification
+- [Message Format](/primitives/siwe/message-format) - EIP-4361 specification

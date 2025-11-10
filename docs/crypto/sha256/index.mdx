@@ -1,0 +1,393 @@
+---
+title: SHA256
+description: Industry-standard SHA-256 hash function for Bitcoin and general cryptography
+---
+
+# SHA256
+
+Industry-standard SHA-256 cryptographic hash function
+
+## Overview
+
+SHA256 (Secure Hash Algorithm 256-bit) is one of the most widely used cryptographic hash functions, part of the SHA-2 family designed by the NSA and published by NIST in 2001. It produces a 32-byte (256-bit) digest from arbitrary-length input data.
+
+SHA256 is fundamental to blockchain technology and cryptography, used for:
+- **Bitcoin**: Block hashing, transaction IDs, address derivation (combined with RIPEMD160)
+- **TLS/SSL**: Certificate signatures and secure communications
+- **Digital signatures**: Message digest for signing algorithms
+- **Merkle trees**: Constructing efficient authenticated data structures
+- **File integrity**: Checksums, content addressing, digital forensics
+
+Unlike Keccak256 (used in Ethereum), SHA256 follows NIST's finalized specification and is standardized across all implementations. The implementation uses @noble/hashes in TypeScript and hardware-accelerated instructions (SHA-NI, AVX2) in Zig for optimal performance.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Basic Hashing">
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+// Hash bytes
+const data = new Uint8Array([1, 2, 3, 4, 5]);
+const hash = SHA256.hash(data);
+// Uint8Array(32) [...]
+
+// Hash string (UTF-8 encoded)
+const stringHash = SHA256.hashString('hello world');
+// Uint8Array(32) [...]
+
+// Hash hex string
+const hexHash = SHA256.hashHex('0xdeadbeef');
+// Uint8Array(32) [...]
+```
+</Tab>
+
+<Tab title="Incremental Hashing">
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+// Create incremental hasher for streaming data
+const hasher = SHA256.create();
+
+// Update with chunks as they arrive
+hasher.update(chunk1);
+hasher.update(chunk2);
+hasher.update(chunk3);
+
+// Finalize and get hash
+const hash = hasher.digest();
+// Uint8Array(32) [...]
+```
+</Tab>
+
+<Tab title="Convert to Hex">
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+const data = new Uint8Array([1, 2, 3]);
+const hash = SHA256.hash(data);
+
+// Convert to hex string
+const hexString = SHA256.toHex(hash);
+// "0x..." (hex representation)
+```
+</Tab>
+</Tabs>
+
+## API Reference
+
+### `SHA256.hash(data: Uint8Array): Uint8Array`
+
+Compute SHA256 hash of input data.
+
+**Parameters:**
+- `data`: Input data to hash (Uint8Array)
+
+**Returns:** 32-byte hash (Uint8Array)
+
+**Example:**
+```typescript
+const hash = SHA256.hash(new Uint8Array([1, 2, 3]));
+console.log(hash.length); // 32
+```
+
+---
+
+### `SHA256.hashString(str: string): Uint8Array`
+
+Hash UTF-8 string with SHA256.
+
+String is UTF-8 encoded before hashing using TextEncoder.
+
+**Parameters:**
+- `str`: String to hash
+
+**Returns:** 32-byte hash (Uint8Array)
+
+**Example:**
+```typescript
+const hash = SHA256.hashString('hello world');
+// Equivalent to: SHA256.hash(new TextEncoder().encode('hello world'))
+```
+
+---
+
+### `SHA256.hashHex(hex: string): Uint8Array`
+
+Hash hex-encoded string with SHA256.
+
+Hex string is decoded to bytes before hashing. Supports both "0x"-prefixed and unprefixed hex.
+
+**Parameters:**
+- `hex`: Hex string to hash
+
+**Returns:** 32-byte hash (Uint8Array)
+
+**Example:**
+```typescript
+const hash = SHA256.hashHex('0xdeadbeef');
+```
+
+---
+
+### `SHA256.create(): Hasher`
+
+Create incremental hasher for streaming data.
+
+Useful when data arrives in chunks or is too large to hold in memory at once. Returns a hasher instance with `update()` and `digest()` methods.
+
+**Returns:** Hasher instance with update and digest methods
+
+**Example:**
+```typescript
+const hasher = SHA256.create();
+hasher.update(new Uint8Array([1, 2, 3]));
+hasher.update(new Uint8Array([4, 5, 6]));
+const hash = hasher.digest(); // Uint8Array(32)
+```
+
+**Hasher Interface:**
+```typescript
+interface Hasher {
+  update(data: Uint8Array): void;
+  digest(): Uint8Array;
+}
+```
+
+---
+
+### `SHA256.toHex(hash: Uint8Array): string`
+
+Convert hash bytes to hex string.
+
+**Parameters:**
+- `hash`: Hash bytes to convert
+
+**Returns:** Hex string with "0x" prefix
+
+**Example:**
+```typescript
+const hash = SHA256.hash(new Uint8Array([1, 2, 3]));
+const hex = SHA256.toHex(hash);
+// "0x039058c6f2c0cb492c533b0a4d14ef77cc0f78ab..."
+```
+
+## Constants
+
+```typescript
+SHA256.OUTPUT_SIZE  // 32 - Output size in bytes (256 bits)
+SHA256.BLOCK_SIZE   // 64 - Internal block size in bytes (512 bits)
+```
+
+## Test Vectors
+
+NIST SHA256 test vectors for validation:
+
+```typescript
+// Empty string
+SHA256.hashString("")
+// Uint8Array(32) [
+//   0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14,
+//   0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24,
+//   0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c,
+//   0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55
+// ]
+
+// "abc"
+SHA256.hashString("abc")
+// Uint8Array(32) [
+//   0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
+//   0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
+//   0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
+//   0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad
+// ]
+
+// "hello world"
+SHA256.hashString("hello world")
+// Uint8Array(32) [
+//   0xb9, 0x4d, 0x27, 0xb9, 0x93, 0x4d, 0x3e, 0x08,
+//   0xa5, 0x2e, 0x52, 0xd7, 0xda, 0x7d, 0xab, 0xfa,
+//   0xc4, 0x84, 0xef, 0xe3, 0x7a, 0x53, 0x80, 0xee,
+//   0x90, 0x88, 0xf7, 0xac, 0xe2, 0xef, 0xcd, 0xe9
+// ]
+
+// 448-bit message
+SHA256.hashString("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
+// Uint8Array(32) [
+//   0x24, 0x8d, 0x6a, 0x61, 0xd2, 0x06, 0x38, 0xb8,
+//   0xe5, 0xc0, 0x26, 0x93, 0x0c, 0x3e, 0x60, 0x39,
+//   0xa3, 0x3c, 0xe4, 0x59, 0x64, 0xff, 0x21, 0x67,
+//   0xf6, 0xec, 0xed, 0xd4, 0x19, 0xdb, 0x06, 0xc1
+// ]
+
+// 896-bit message
+SHA256.hashString("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu")
+// Uint8Array(32) [
+//   0xcf, 0x5b, 0x16, 0xa7, 0x78, 0xaf, 0x83, 0x80,
+//   0x03, 0x6c, 0xe5, 0x9e, 0x7b, 0x04, 0x92, 0x37,
+//   0x0b, 0x24, 0x9b, 0x11, 0xe8, 0xf0, 0x7a, 0x51,
+//   0xaf, 0xac, 0x45, 0x03, 0x7a, 0xfe, 0xe9, 0xd1
+// ]
+```
+
+## Security Considerations
+
+### Collision Resistance
+SHA256 provides strong collision resistance with 128-bit security. Finding two inputs that produce the same hash is computationally infeasible with current technology.
+
+### Preimage Resistance
+Given a hash output, finding an input that produces that hash requires ~2^256 operations, making it practically impossible.
+
+### Second Preimage Resistance
+Given an input and its hash, finding a different input with the same hash requires ~2^256 operations.
+
+### NIST Standardization
+SHA256 is a NIST Federal Information Processing Standard (FIPS 180-4), providing regulatory compliance and widespread trust.
+
+### Known Attacks
+No practical collision or preimage attacks exist against SHA256 as of 2025. The algorithm remains secure for all standard cryptographic uses.
+
+<Tip title="Password Hashing">
+SHA256 alone is NOT suitable for password hashing. Use proper password hashing functions like Argon2, bcrypt, or scrypt which include salt and computational cost factors to resist brute-force attacks.
+</Tip>
+
+## Performance
+
+### Hardware Acceleration
+- **TypeScript**: Uses @noble/hashes (pure JS, constant-time)
+- **Zig/Native**: Automatic hardware acceleration using:
+  - **x86-64 SHA-NI**: Intel SHA extensions (10x faster than software)
+  - **AVX2**: Vectorized parallel hashing for multiple blocks
+  - **ARM SHA2**: ARM Cryptography Extensions
+  - **Software fallback**: Optimized implementation when hardware unavailable
+- **WASM**: Available via sha256.wasm.ts for browser environments
+
+### Benchmarks
+Typical performance (varies by platform):
+- Native with SHA-NI: ~2000-3000 MB/s
+- Native with AVX2: ~800-1200 MB/s
+- Native software: ~400-600 MB/s
+- WASM: ~200-400 MB/s
+- Pure JS: ~100-200 MB/s
+
+Hardware acceleration provides 5-20x speedup depending on available CPU features.
+
+### CPU Feature Detection
+Zig implementation automatically detects and uses available CPU features:
+```zig
+if (features.has_sha and builtin.target.cpu.arch == .x86_64) {
+    // Use SHA-NI extensions
+} else if (features.has_avx2) {
+    // Use AVX2 SIMD
+} else {
+    // Fallback to optimized software
+}
+```
+
+## Implementation Details
+
+### TypeScript Implementation
+Uses @noble/hashes pure TypeScript SHA256 implementation:
+```typescript
+import { sha256 } from "@noble/hashes/sha2.js";
+
+export function hash(data: Uint8Array): Uint8Array {
+  return sha256(data);
+}
+```
+
+### Zig Implementation
+Zig implementation provides hardware-accelerated hashing:
+- **SHA-NI**: Uses Intel/AMD SHA extensions for direct hardware acceleration
+- **AVX2**: Vectorized implementation processing multiple blocks in parallel
+- **Constant-time**: Software fallback uses constant-time operations to resist timing attacks
+- **Streaming**: Supports incremental hashing for large data
+
+Located in `src/crypto/sha256_accel.zig`.
+
+### WASM
+Available via `sha256.wasm.ts` for browser environments. Compiled from Zig with wasm32-wasi target.
+
+```typescript
+import { Sha256Wasm } from '@tevm/voltaire/crypto/sha256.wasm';
+const hash = Sha256Wasm.hash(data);
+```
+
+## Use Cases
+
+### Bitcoin Address Derivation
+Bitcoin addresses combine SHA256 and RIPEMD160:
+```typescript
+// Simplified Bitcoin P2PKH address derivation
+const publicKey = new Uint8Array(65); // Uncompressed public key
+const sha256Hash = SHA256.hash(publicKey);
+const ripemd160Hash = Ripemd160.hash(sha256Hash);
+// Then Base58Check encode with version byte
+```
+
+### Double SHA256
+Bitcoin uses double SHA256 for block and transaction hashing:
+```typescript
+function doubleSha256(data: Uint8Array): Uint8Array {
+  return SHA256.hash(SHA256.hash(data));
+}
+```
+
+### Merkle Trees
+Build authenticated data structures:
+```typescript
+function merkleRoot(leaves: Uint8Array[]): Uint8Array {
+  if (leaves.length === 0) throw new Error("No leaves");
+  if (leaves.length === 1) return leaves[0];
+
+  const hashes = leaves.map(leaf => SHA256.hash(leaf));
+  while (hashes.length > 1) {
+    const nextLevel: Uint8Array[] = [];
+    for (let i = 0; i < hashes.length; i += 2) {
+      const left = hashes[i];
+      const right = hashes[i + 1] || left; // Duplicate if odd
+      const combined = new Uint8Array(64);
+      combined.set(left, 0);
+      combined.set(right, 32);
+      nextLevel.push(SHA256.hash(combined));
+    }
+    hashes.length = 0;
+    hashes.push(...nextLevel);
+  }
+  return hashes[0];
+}
+```
+
+### Streaming Large Files
+Process data in chunks:
+```typescript
+async function hashFile(file: File): Promise<Uint8Array> {
+  const hasher = SHA256.create();
+  const chunkSize = 1024 * 1024; // 1MB chunks
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+    hasher.update(new Uint8Array(chunk));
+  }
+
+  return hasher.digest();
+}
+```
+
+## Further Reading
+
+Explore comprehensive SHA-256 documentation:
+
+- **[API Reference](/crypto/sha256/api-reference)** - Complete function reference with examples
+- **[Test Vectors](/crypto/sha256/test-vectors)** - NIST FIPS 180-4 official test vectors
+- **[Security](/crypto/sha256/security)** - Cryptographic properties and attack resistance
+- **[Performance](/crypto/sha256/performance)** - Benchmarks and optimization techniques
+- **[Usage Patterns](/crypto/sha256/usage-patterns)** - Common use cases and implementation patterns
+- **[Comparison](/crypto/sha256/comparison)** - Compare with Keccak256, Blake2, and other hash functions
+
+## Related
+
+- [Keccak256](/crypto/keccak256) - Ethereum's hash function
+- [Blake2](/crypto/blake2) - High-performance alternative
+- [RIPEMD160](/crypto/ripemd160) - Used with SHA256 in Bitcoin addresses
+- [Hash Primitive](/primitives/hash) - 32-byte hash type

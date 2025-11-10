@@ -1,0 +1,623 @@
+---
+title: BinaryTree Hashing
+description: BLAKE3 hashing for Binary State Tree nodes and root calculation
+---
+
+# Hashing
+
+BLAKE3-based hashing methods for Binary State Tree node commitments and root hash calculation.
+
+## Overview
+
+Binary State Tree uses BLAKE3 hashing (subject to change in final EIP-7864 specification). Each node type has specific hashing rules producing 32-byte commitment hashes.
+
+<Note title="Hash Algorithm">
+Current implementation uses BLAKE3 from [@noble/hashes](https://github.com/paulmillr/noble-hashes). Final EIP-7864 may specify different hash function.
+</Note>
+
+## Root Hash
+
+### `BinaryTree.rootHash(tree)`
+
+Compute 32-byte root hash of entire tree. Empty tree returns 32 zero bytes.
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Empty tree
+const emptyTree = BinaryTree.init()
+const emptyHash = BinaryTree.rootHash(emptyTree)
+console.log(emptyHash.every(b => b === 0)) // true (all zeros)
+
+// Tree with data
+let tree = BinaryTree.init()
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+value[0] = 0x42
+
+tree = BinaryTree.insert(tree, key, value)
+const hash = BinaryTree.rootHash(tree)
+console.log(hash.length) // 32
+console.log(hash.every(b => b === 0)) // false (non-zero hash)
+```
+
+**Parameters:**
+- `tree: BinaryTree` - Binary tree to hash
+
+**Returns:** `Uint8Array` - 32-byte root hash
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+
+// Insert values
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+tree = BinaryTree.insert(tree, key, value)
+
+// Calculate root hash
+const hash = BinaryTree.rootHash(tree)
+console.log(hash) // Uint8Array(32)
+```
+</Tab>
+<Tab title="Track State Changes">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+const hash1 = BinaryTree.rootHash(tree)
+
+// Insert value
+tree = BinaryTree.insert(tree, key1, value1)
+const hash2 = BinaryTree.rootHash(tree)
+
+// Insert another value
+tree = BinaryTree.insert(tree, key2, value2)
+const hash3 = BinaryTree.rootHash(tree)
+
+// Each insertion produces different root hash
+console.log(hash1.some((b, i) => b !== hash2[i])) // true
+console.log(hash2.some((b, i) => b !== hash3[i])) // true
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import { init, insert, rootHash } from '@tevm/voltaire/BrandedBinaryTree'
+
+let tree = init()
+tree = insert(tree, key, value)
+const hash = rootHash(tree)
+```
+</Tab>
+</Tabs>
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHash.js:16-18](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHash.js#L16-L18)
+
+### `BinaryTree.rootHashHex(tree)`
+
+Convert root hash to hex string with `0x` prefix.
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+tree = BinaryTree.insert(tree, key, value)
+
+const hex = BinaryTree.rootHashHex(tree)
+console.log(hex) // "0xabcdef1234..."
+console.log(hex.startsWith('0x')) // true
+console.log(hex.length) // 66 (0x + 64 hex chars)
+```
+
+**Parameters:**
+- `tree: BinaryTree` - Binary tree to hash
+
+**Returns:** `string` - Hex string with `0x` prefix (66 characters)
+
+<Tabs>
+<Tab title="Display Hash">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+tree = BinaryTree.insert(tree, key, value)
+
+// Human-readable hex format
+const hex = BinaryTree.rootHashHex(tree)
+console.log(`Root: ${hex}`)
+```
+</Tab>
+<Tab title="Compare Hashes">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const tree1 = BinaryTree.insert(emptyTree, key1, value1)
+const tree2 = BinaryTree.insert(emptyTree, key2, value2)
+
+const hex1 = BinaryTree.rootHashHex(tree1)
+const hex2 = BinaryTree.rootHashHex(tree2)
+
+console.log(hex1 === hex2) // false (different keys/values)
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import { rootHashHex } from '@tevm/voltaire/BrandedBinaryTree'
+
+const hex = rootHashHex(tree)
+```
+</Tab>
+</Tabs>
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js:16-23](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/rootHashHex.js#L16-L23)
+
+## Node Hashing
+
+### `BinaryTree.hashNode(node)`
+
+Hash any node type. Dispatches to type-specific hash function based on node type.
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Empty node
+const emptyNode = { type: 'empty' }
+const emptyHash = BinaryTree.hashNode(emptyNode)
+console.log(emptyHash.every(b => b === 0)) // true
+
+// Stem node
+const stemNode = {
+  type: 'stem',
+  stem: new Uint8Array(31),
+  values: new Array(256).fill(null)
+}
+const stemHash = BinaryTree.hashNode(stemNode)
+console.log(stemHash.length) // 32
+
+// Internal node
+const internalNode = {
+  type: 'internal',
+  left: new Uint8Array(32),
+  right: new Uint8Array(32)
+}
+const internalHash = BinaryTree.hashNode(internalNode)
+
+// Leaf node
+const leafNode = {
+  type: 'leaf',
+  value: new Uint8Array(32)
+}
+const leafHash = BinaryTree.hashNode(leafNode)
+```
+
+**Parameters:**
+- `node: Node` - Any node type (Empty, Internal, Stem, or Leaf)
+
+**Returns:** `Uint8Array` - 32-byte hash
+
+**Type Dispatch:**
+- `empty` → Returns 32 zero bytes
+- `internal` → Calls `hashInternal(left, right)`
+- `stem` → Calls `hashStem(node)`
+- `leaf` → Calls `hashLeaf(node)`
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashNode.js:18-29](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashNode.js#L18-L29)
+
+## Type-Specific Hashing
+
+### `BinaryTree.hashInternal(left, right)`
+
+Hash internal node from left and right child hashes. If both children are zero, returns zero hash.
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const left = new Uint8Array(32)
+left[0] = 0x01
+
+const right = new Uint8Array(32)
+right[0] = 0x02
+
+const hash = BinaryTree.hashInternal(left, right)
+console.log(hash.length) // 32
+
+// Both zero case
+const zeroLeft = new Uint8Array(32)
+const zeroRight = new Uint8Array(32)
+const zeroHash = BinaryTree.hashInternal(zeroLeft, zeroRight)
+console.log(zeroHash.every(b => b === 0)) // true
+```
+
+**Parameters:**
+- `left: Uint8Array` - Left child hash (32 bytes)
+- `right: Uint8Array` - Right child hash (32 bytes)
+
+**Returns:** `Uint8Array` - 32-byte hash
+
+**Algorithm:**
+```
+if left == 0x00...00 AND right == 0x00...00:
+  return 0x00...00
+else:
+  return BLAKE3(left || right)
+```
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const leftHash = new Uint8Array(32)
+const rightHash = new Uint8Array(32)
+
+const parentHash = BinaryTree.hashInternal(leftHash, rightHash)
+```
+</Tab>
+<Tab title="Build Tree Hash">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Hash leaf nodes
+const leaf1Hash = BinaryTree.hashLeaf({ type: 'leaf', value: value1 })
+const leaf2Hash = BinaryTree.hashLeaf({ type: 'leaf', value: value2 })
+
+// Combine into parent
+const parentHash = BinaryTree.hashInternal(leaf1Hash, leaf2Hash)
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import { hashInternal } from '@tevm/voltaire/BrandedBinaryTree'
+
+const hash = hashInternal(left, right)
+```
+</Tab>
+</Tabs>
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashInternal.js:19-25](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashInternal.js#L19-L25)
+
+### `BinaryTree.hashStem(node)`
+
+Hash stem node from 31-byte stem and 256 values. Concatenates stem with all values (null values become 32 zero bytes).
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const stem = new Uint8Array(31)
+const values = new Array(256).fill(null)
+values[0] = new Uint8Array(32)
+values[0][0] = 0x42
+
+const stemNode = { type: 'stem', stem, values }
+const hash = BinaryTree.hashStem(stemNode)
+console.log(hash.length) // 32
+```
+
+**Parameters:**
+- `node: StemNode` - Stem node with stem and 256 values
+
+**Returns:** `Uint8Array` - 32-byte hash
+
+**Algorithm:**
+```
+data = stem (31 bytes)
+for each value in values[0..255]:
+  if value is null:
+    data += 0x00...00 (32 zero bytes)
+  else:
+    data += value (32 bytes)
+return BLAKE3(data)
+```
+
+Total input: 31 + (32 × 256) = 8223 bytes
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const stemNode = {
+  type: 'stem',
+  stem: new Uint8Array(31),
+  values: new Array(256).fill(null)
+}
+
+// Set some values
+stemNode.values[0] = new Uint8Array(32)
+stemNode.values[5] = new Uint8Array(32)
+
+const hash = BinaryTree.hashStem(stemNode)
+```
+</Tab>
+<Tab title="Full Stem">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Create stem with all 256 values set
+const stem = new Uint8Array(31)
+const values = Array.from({ length: 256 }, (_, i) => {
+  const v = new Uint8Array(32)
+  v[0] = i
+  return v
+})
+
+const stemNode = { type: 'stem', stem, values }
+const hash = BinaryTree.hashStem(stemNode)
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import { hashStem } from '@tevm/voltaire/BrandedBinaryTree'
+
+const hash = hashStem(stemNode)
+```
+</Tab>
+</Tabs>
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashStem.js:18-28](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashStem.js#L18-L28)
+
+### `BinaryTree.hashLeaf(node)`
+
+Hash leaf node value directly with BLAKE3.
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const value = new Uint8Array(32)
+value[0] = 0x42
+
+const leafNode = { type: 'leaf', value }
+const hash = BinaryTree.hashLeaf(leafNode)
+console.log(hash.length) // 32
+```
+
+**Parameters:**
+- `node: LeafNode` - Leaf node with 32-byte value
+
+**Returns:** `Uint8Array` - 32-byte hash
+
+**Algorithm:**
+```
+return BLAKE3(value)
+```
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const leafNode = {
+  type: 'leaf',
+  value: new Uint8Array(32)
+}
+
+const hash = BinaryTree.hashLeaf(leafNode)
+```
+</Tab>
+<Tab title="Custom Value">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const value = new Uint8Array(32)
+// Set value bytes
+value[0] = 0xFF
+value[31] = 0xAA
+
+const leafNode = { type: 'leaf', value }
+const hash = BinaryTree.hashLeaf(leafNode)
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import { hashLeaf } from '@tevm/voltaire/BrandedBinaryTree'
+
+const hash = hashLeaf(leafNode)
+```
+</Tab>
+</Tabs>
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js:17-19](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/hashLeaf.js#L17-L19)
+
+## Hash Properties
+
+### Determinism
+
+Same input always produces same hash:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const tree1 = BinaryTree.init()
+const tree2 = BinaryTree.init()
+
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+
+const result1 = BinaryTree.insert(tree1, key, value)
+const result2 = BinaryTree.insert(tree2, key, value)
+
+const hash1 = BinaryTree.rootHash(result1)
+const hash2 = BinaryTree.rootHash(result2)
+
+// Hashes are identical
+console.log(hash1.every((b, i) => b === hash2[i])) // true
+```
+
+### Collision Resistance
+
+Different trees produce different hashes (with overwhelming probability):
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree1 = BinaryTree.init()
+let tree2 = BinaryTree.init()
+
+const key = new Uint8Array(32)
+const value1 = new Uint8Array(32)
+value1[0] = 0x01
+
+const value2 = new Uint8Array(32)
+value2[0] = 0x02
+
+tree1 = BinaryTree.insert(tree1, key, value1)
+tree2 = BinaryTree.insert(tree2, key, value2)
+
+const hash1 = BinaryTree.rootHash(tree1)
+const hash2 = BinaryTree.rootHash(tree2)
+
+// Hashes are different
+console.log(hash1.some((b, i) => b !== hash2[i])) // true
+```
+
+### Empty Hash Convention
+
+Empty nodes and zero hashes follow special rule:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Empty node hash is zero
+const emptyNode = { type: 'empty' }
+const emptyHash = BinaryTree.hashNode(emptyNode)
+console.log(emptyHash.every(b => b === 0)) // true
+
+// Internal node with two zero children is also zero
+const zeroLeft = new Uint8Array(32)
+const zeroRight = new Uint8Array(32)
+const internalHash = BinaryTree.hashInternal(zeroLeft, zeroRight)
+console.log(internalHash.every(b => b === 0)) // true
+```
+
+## State Commitment
+
+Root hash serves as cryptographic commitment to entire tree state:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Build tree
+let tree = BinaryTree.init()
+tree = BinaryTree.insert(tree, key1, value1)
+tree = BinaryTree.insert(tree, key2, value2)
+tree = BinaryTree.insert(tree, key3, value3)
+
+// Commit to state
+const stateRoot = BinaryTree.rootHashHex(tree)
+console.log(`State commitment: ${stateRoot}`)
+
+// Any modification produces different commitment
+const tree2 = BinaryTree.insert(tree, key4, value4)
+const stateRoot2 = BinaryTree.rootHashHex(tree2)
+console.log(stateRoot !== stateRoot2) // true
+```
+
+## Merkle Tree Visualization
+
+```
+              Root Hash
+           (BLAKE3(L|R))
+              /        \
+          H_left      H_right
+          /    \      /    \
+       H_a   H_b   H_c   H_d
+       |     |     |     |
+      [A]   [B]   [C]   [D]
+
+Merkle Proof for [A]:
+  Path: Root → H_left → [A]
+  Siblings: [H_b, H_right, ...]
+  Verification: hash(hash([A], H_b), H_right) == Root Hash
+```
+
+### Hash Computation Flow
+
+```
+Leaf value [A] (32 bytes)
+        ↓
+BLAKE3([A]) = H_a (32 bytes)
+        ↓
+hash H_a with sibling H_b
+        ↓
+BLAKE3(H_a || H_b) = parent (32 bytes)
+        ↓
+... repeat up tree ...
+        ↓
+BLAKE3(H_left || H_right) = Root Hash (32 bytes)
+```
+
+**Key Properties:**
+1. Deterministic: Same input always produces same hash
+2. One-way: Can't reverse hash to find preimage
+3. Collision-resistant: Extremely unlikely two different inputs hash same
+4. Avalanche: 1-bit change in input changes ~50% of output bits
+
+## Merkle Proofs
+
+Root hash enables Merkle proof verification (proofs not yet implemented):
+
+```typescript
+// Future: Generate proof for key
+// const proof = BinaryTree.generateProof(tree, key)
+// Returns path from leaf to root with sibling hashes
+
+// Future: Verify proof against root hash
+// const valid = BinaryTree.verifyProof(rootHash, key, value, proof)
+// Recomputes hashes along path, verifies matches root
+```
+
+## Performance Considerations
+
+### Hash Caching
+
+Internal nodes store child hashes, avoiding recomputation:
+
+```typescript
+// Internal nodes cache hashes
+const internalNode = {
+  type: 'internal',
+  left: hash1,   // Already computed
+  right: hash2   // Already computed
+}
+
+// Parent hash computed once from cached children
+const parentHash = BinaryTree.hashNode(internalNode)
+```
+
+### Incremental Updates
+
+Inserting single value only rehashes path from leaf to root:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+// Large tree with many values
+let tree = buildLargeTree()
+
+// Insert only rehashes affected path (O(log n) hashes)
+tree = BinaryTree.insert(tree, newKey, newValue)
+const newRoot = BinaryTree.rootHash(tree)
+```
+
+### BLAKE3 Performance
+
+BLAKE3 optimized for speed:
+- Parallel hashing (when possible)
+- Hardware acceleration (CPU extensions)
+- Efficient for both small and large inputs
+
+<Tip title="Hashing vs Operations">
+Hash computation typically faster than tree restructuring. Main performance impact comes from node allocation and tree traversal, not BLAKE3 calls.
+</Tip>
+
+## Related
+
+- [Operations](/primitives/binarytree/operations) - Insert and get using hashes
+- [Constructors](/primitives/binarytree/constructors) - Creating trees
+- [Key Utilities](/primitives/binarytree/key-utilities) - Key manipulation
+- [BrandedBinaryTree](/primitives/binarytree/branded-binarytree) - Tree-shakeable API

@@ -1,0 +1,62 @@
+---
+title: Bytecode.hash
+description: Compute keccak256 hash of bytecode
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.hash(): Hash`
+
+Compute keccak256 hash of bytecode.
+
+**Returns:** `Hash` - 32-byte keccak256 hash
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code = Bytecode.fromHex("0x6001")
+const hash = code.hash()
+
+console.log(hash)  // 32-byte Uint8Array
+```
+
+<Warning>
+This method includes keccak256 in your bundle. For tree-shakeable imports, only import `hash` if you need it.
+</Warning>
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/hash.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/hash.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `hash(bytecode: BrandedBytecode): Hash`
+
+Compute keccak256 hash of bytecode.
+
+**Parameters:**
+- `bytecode: BrandedBytecode` - Bytecode to hash
+
+**Returns:** `Hash` - 32-byte keccak256 hash
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code = Bytecode.fromHex("0x6001")
+const codeHash = Bytecode.hash(code)
+
+console.log(codeHash)  // 32-byte Uint8Array
+```
+
+<Warning>
+This method includes keccak256 in your bundle. Only import if needed.
+</Warning>
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/hash.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/hash.js)
+
+</Tab>
+</Tabs>

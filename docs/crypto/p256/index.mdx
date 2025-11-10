@@ -1,0 +1,471 @@
+---
+title: P256
+description: NIST P-256 (secp256r1) ECDSA signatures - WebAuthn, iOS Secure Enclave, and modern cryptography
+---
+
+## Overview
+
+P-256, also known as **secp256r1** or **prime256v1**, is a NIST-standardized elliptic curve widely used in modern security systems. It provides 128-bit security and is the default curve for many enterprise and government applications.
+
+**Curve**: Short Weierstrass y² = x³ - 3x + b (mod p)
+
+**Parameters**:
+- Prime field: `p = 2²⁵⁶ - 2²²⁴ + 2¹⁹² + 2⁹⁶ - 1`
+- Curve order: `n = FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551`
+- Also called: secp256r1, prime256v1, NIST P-256
+
+**Modern usage**:
+- **WebAuthn / FIDO2**: Passkey authentication (YubiKey, TouchID, Windows Hello)
+- **iOS Secure Enclave**: Hardware-backed cryptography on Apple devices
+- **TLS 1.3**: Default elliptic curve for HTTPS
+- **Smart card / PIV**: Government and enterprise PKI
+- **Android Keystore**: Hardware-backed keys on Android
+
+## Quick Start
+
+```typescript
+import * as P256 from '@tevm/voltaire/crypto/P256';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Sign a message hash
+const messageHash = Hash.keccak256String('Hello, P256!');
+const privateKey = new Uint8Array(32); // Your 32-byte private key
+const signature = P256.sign(messageHash, privateKey);
+
+// Verify signature
+const publicKey = P256.derivePublicKey(privateKey);
+const isValid = P256.verify(signature, messageHash, publicKey);
+
+// ECDH key exchange (Diffie-Hellman)
+const myPrivateKey = new Uint8Array(32);
+const theirPublicKey = P256.derivePublicKey(theirPrivateKey);
+const sharedSecret = P256.ecdh(myPrivateKey, theirPublicKey);
+```
+
+## API Reference
+
+### Signing
+
+#### `sign(messageHash, privateKey)`
+
+Sign a 32-byte message hash with a private key using deterministic ECDSA (RFC 6979).
+
+**Parameters**:
+- `messageHash` (`BrandedHash`) - 32-byte hash to sign
+- `privateKey` (`Uint8Array`) - 32-byte private key (0 < key < curve order)
+
+**Returns**: `BrandedP256Signature` with components:
+- `r` (`Uint8Array`) - 32-byte signature component
+- `s` (`Uint8Array`) - 32-byte signature component
+
+**Throws**:
+- `InvalidPrivateKeyError` - Private key invalid
+- `P256Error` - Signing failed
+
+```typescript
+const signature = P256.sign(messageHash, privateKey);
+console.log(signature.r.length); // 32
+console.log(signature.s.length); // 32
+```
+
+### Verification
+
+#### `verify(signature, messageHash, publicKey)`
+
+Verify an ECDSA signature against a message hash and public key.
+
+**Parameters**:
+- `signature` (`BrandedP256Signature`) - Signature with r, s components
+- `messageHash` (`BrandedHash`) - 32-byte message hash that was signed
+- `publicKey` (`Uint8Array`) - 64-byte uncompressed public key (x || y coordinates)
+
+**Returns**: `boolean` - `true` if signature is valid, `false` otherwise
+
+**Throws**:
+- `InvalidPublicKeyError` - Public key wrong length
+- `InvalidSignatureError` - Signature components wrong length
+
+```typescript
+const valid = P256.verify(signature, messageHash, publicKey);
+if (valid) {
+  console.log('WebAuthn signature verified!');
+}
+```
+
+### Key Exchange (ECDH)
+
+#### `ecdh(privateKey, publicKey)`
+
+Perform Elliptic Curve Diffie-Hellman key exchange. Computes a shared secret that both parties can derive independently.
+
+**Parameters**:
+- `privateKey` (`Uint8Array`) - Your 32-byte private key
+- `publicKey` (`Uint8Array`) - Their 64-byte uncompressed public key
+
+**Returns**: `Uint8Array` - 32-byte shared secret (x-coordinate of shared point)
+
+**Throws**:
+- `InvalidPrivateKeyError` - Private key invalid
+- `InvalidPublicKeyError` - Public key invalid
+- `P256Error` - ECDH operation failed
+
+```typescript
+// Alice's side
+const alicePrivate = crypto.getRandomValues(new Uint8Array(32));
+const alicePublic = P256.derivePublicKey(alicePrivate);
+
+// Bob's side
+const bobPrivate = crypto.getRandomValues(new Uint8Array(32));
+const bobPublic = P256.derivePublicKey(bobPrivate);
+
+// Both compute the same shared secret
+const sharedAlice = P256.ecdh(alicePrivate, bobPublic);
+const sharedBob = P256.ecdh(bobPrivate, alicePublic);
+
+assert(sharedAlice.every((byte, i) => byte === sharedBob[i]));
+// Use shared secret for symmetric encryption (e.g., AES)
+```
+
+### Key Management
+
+#### `derivePublicKey(privateKey)`
+
+Derive the public key from a private key using elliptic curve point multiplication.
+
+**Parameters**:
+- `privateKey` (`Uint8Array`) - 32-byte private key
+
+**Returns**: `Uint8Array` - 64-byte uncompressed public key
+
+**Throws**:
+- `InvalidPrivateKeyError` - Invalid private key
+
+```typescript
+const publicKey = P256.derivePublicKey(privateKey);
+console.log(publicKey.length); // 64 (x || y, no 0x04 prefix)
+```
+
+#### `validatePrivateKey(privateKey)`
+
+Check if a byte array is a valid P-256 private key.
+
+**Parameters**:
+- `privateKey` (`Uint8Array`) - Candidate private key
+
+**Returns**: `boolean` - `true` if valid (32 bytes, > 0, < curve order)
+
+```typescript
+if (P256.validatePrivateKey(privateKey)) {
+  // Safe to use
+}
+```
+
+#### `validatePublicKey(publicKey)`
+
+Check if a byte array is a valid P-256 public key.
+
+**Parameters**:
+- `publicKey` (`Uint8Array`) - Candidate public key
+
+**Returns**: `boolean` - `true` if valid (64 bytes, point on curve)
+
+```typescript
+if (P256.validatePublicKey(publicKey)) {
+  // Point is on the curve
+}
+```
+
+### Constants
+
+```typescript
+P256.CURVE_ORDER              // 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n
+P256.PRIVATE_KEY_SIZE         // 32 bytes
+P256.PUBLIC_KEY_SIZE          // 64 bytes (uncompressed, no prefix)
+P256.SIGNATURE_COMPONENT_SIZE // 32 bytes (for r and s)
+P256.SHARED_SECRET_SIZE       // 32 bytes (ECDH result)
+```
+
+## Security Considerations
+
+### Critical Warnings
+
+⚠️ **NIST curve considerations**: P-256 is a NIST-standardized curve. Some cryptographers prefer non-NIST curves (like Curve25519) due to transparency concerns about curve parameter selection. However, P-256 remains secure and widely used.
+
+⚠️ **Deterministic nonces**: Uses RFC 6979 deterministic signatures. Never implement custom nonce generation - nonce reuse leaks the private key.
+
+⚠️ **Validate all inputs**: Always validate private keys (0 < key < curve order) and public keys (valid curve point) before use.
+
+⚠️ **ECDH shared secret**: The raw ECDH output should be used with a Key Derivation Function (KDF) like HKDF before using as a symmetric key.
+
+⚠️ **Use cryptographically secure random**: Never use `Math.random()` for private key generation. Use `crypto.getRandomValues()`.
+
+### TypeScript Implementation
+
+The TypeScript implementation uses **@noble/curves** by Paul Miller:
+- Security audited and production-ready
+- Constant-time operations to prevent timing attacks
+- RFC 6979 deterministic signatures
+- Validates all curve points and scalars
+- ~20KB minified (tree-shakeable)
+
+### Zig Implementation
+
+Currently, P-256 is available only through the TypeScript/WASM interface. Native Zig implementation planned using `std.crypto.ecc` for future FFI support.
+
+## Test Vectors
+
+### NIST CAVP Test Vectors
+
+```typescript
+// NIST P-256 test vector (CAVP)
+const privateKey = new Uint8Array([
+  0xc9, 0xaf, 0xa9, 0xd8, 0x45, 0xba, 0x75, 0x16,
+  0x6b, 0x5c, 0x21, 0x57, 0x67, 0xb1, 0xd6, 0x93,
+  0x4e, 0x50, 0xc3, 0xdb, 0x36, 0xe8, 0x9b, 0x12,
+  0x7b, 0x8a, 0x62, 0x2b, 0x12, 0x0f, 0x67, 0x21,
+]);
+
+const publicKey = P256.derivePublicKey(privateKey);
+
+// Expected public key (x || y)
+const expectedX = new Uint8Array([
+  0x60, 0xfe, 0xd4, 0xba, 0x25, 0x5a, 0x9d, 0x31,
+  0xc9, 0x61, 0xeb, 0x74, 0xc6, 0x35, 0x6d, 0x68,
+  0xc0, 0x49, 0xb8, 0x92, 0x3b, 0x61, 0xfa, 0x6c,
+  0xe6, 0x69, 0x62, 0x2e, 0x60, 0xf2, 0x9f, 0xb6,
+]);
+
+assert(publicKey.slice(0, 32).every((byte, i) => byte === expectedX[i]));
+```
+
+### Deterministic Signatures (RFC 6979)
+
+```typescript
+const privateKey = new Uint8Array(32);
+privateKey[31] = 1;
+
+const messageHash = Hash.sha256(new TextEncoder().encode('test'));
+
+// Sign twice - should produce identical signatures
+const sig1 = P256.sign(messageHash, privateKey);
+const sig2 = P256.sign(messageHash, privateKey);
+
+// Same message + key = same signature (deterministic)
+assert(sig1.r.every((byte, i) => byte === sig2.r[i]));
+assert(sig1.s.every((byte, i) => byte === sig2.s[i]));
+```
+
+### ECDH Key Exchange
+
+```typescript
+// Alice generates keypair
+const aliceSeed = new Uint8Array(32);
+aliceSeed[0] = 0xaa;
+const alicePrivate = aliceSeed;
+const alicePublic = P256.derivePublicKey(alicePrivate);
+
+// Bob generates keypair
+const bobSeed = new Uint8Array(32);
+bobSeed[0] = 0xbb;
+const bobPrivate = bobSeed;
+const bobPublic = P256.derivePublicKey(bobPrivate);
+
+// Both compute shared secret
+const sharedAlice = P256.ecdh(alicePrivate, bobPublic);
+const sharedBob = P256.ecdh(bobPrivate, alicePublic);
+
+// Secrets match
+assert(sharedAlice.every((byte, i) => byte === sharedBob[i]));
+console.log('Shared secret established:', sharedAlice);
+```
+
+## Implementation Details
+
+### TypeScript
+
+**Library**: `@noble/curves/nist` by Paul Miller
+- **Audit status**: Security audited, production-ready
+- **Standard**: FIPS 186-4, SEC 2, RFC 6979 compliant
+- **Features**: Constant-time operations, point validation, deterministic signing
+- **Size**: ~20KB minified (tree-shakeable)
+- **Performance**: Optimized for modern JavaScript engines
+
+The TypeScript API wraps @noble/curves with consistent conventions:
+- 64-byte uncompressed public keys (x || y, no 0x04 prefix)
+- RFC 6979 deterministic signing (no nonce reuse risk)
+- ECDH returns x-coordinate only (standard practice)
+
+### Zig
+
+**Implementation**: Future support using `std.crypto.ecc.P256`
+- **Status**: Planned for FFI support
+- **Features**: Constant-time, FIPS-compliant
+
+Currently only available through TypeScript/WASM interface.
+
+### WASM
+
+P-256 operations available in WASM builds:
+- **ReleaseSmall**: Size-optimized
+- **ReleaseFast**: Performance-optimized
+
+```typescript
+import { P256 } from '@tevm/voltaire/crypto/P256';
+// Automatically uses WASM in supported environments
+```
+
+## WebAuthn Integration
+
+P-256 is the default curve for WebAuthn (FIDO2) authentication:
+
+```typescript
+import * as P256 from '@tevm/voltaire/crypto/P256';
+
+// WebAuthn registration creates P-256 keypair
+// Authenticator returns public key in COSE format
+
+// Convert COSE public key to raw format
+function coseToRaw(coseKey: ArrayBuffer): Uint8Array {
+  // Parse COSE_Key (CBOR encoding)
+  // Extract x (-2) and y (-3) coordinates
+  // Return x || y (64 bytes)
+}
+
+// Verify WebAuthn signature
+async function verifyWebAuthnSignature(
+  signature: { r: Uint8Array; s: Uint8Array },
+  authenticatorData: Uint8Array,
+  clientDataJSON: string,
+  publicKey: Uint8Array
+): Promise<boolean> {
+  // Hash client data
+  const clientDataHash = Hash.sha256(
+    new TextEncoder().encode(clientDataJSON)
+  );
+
+  // Concatenate authenticator data + client data hash
+  const signedData = new Uint8Array([
+    ...authenticatorData,
+    ...clientDataHash,
+  ]);
+
+  // Hash the signed data (WebAuthn uses SHA-256)
+  const messageHash = Hash.sha256(signedData);
+
+  // Verify signature
+  return P256.verify(signature, messageHash, publicKey);
+}
+```
+
+## iOS Secure Enclave
+
+P-256 is the only curve supported by Apple's Secure Enclave:
+
+```typescript
+// iOS Secure Enclave generates P-256 keypair
+// Private key never leaves hardware
+
+// Sign with Secure Enclave (via native bridge)
+async function signWithSecureEnclave(
+  message: string
+): Promise<{ r: Uint8Array; s: Uint8Array }> {
+  // Call native iOS API
+  // SecKeyCreateSignature with kSecAttrKeyTypeECSECPrimeRandom
+  // Returns DER-encoded signature (convert to r || s)
+}
+
+// Verify signature
+const signature = await signWithSecureEnclave('Hello, Secure Enclave!');
+const messageHash = Hash.sha256(new TextEncoder().encode(message));
+const isValid = P256.verify(signature, messageHash, publicKey);
+```
+
+## Ethereum Context
+
+P-256 is **not used in Ethereum's core protocol** (which uses secp256k1), but appears in:
+
+### Account Abstraction (EIP-7212)
+
+**RIP-7212**: Adds P-256 signature verification precompile at address `0x100`
+
+```solidity
+// Future EVM precompile for P-256 verification
+function verifyP256(
+  bytes32 messageHash,
+  bytes32 r,
+  bytes32 s,
+  bytes32 x,
+  bytes32 y
+) returns (bool);
+```
+
+This enables:
+- **WebAuthn wallets**: Use Face ID / Touch ID for transaction signing
+- **Hardware wallets**: YubiKey and other FIDO2 devices
+- **Passkey accounts**: Passwordless account abstraction
+- **Smart contract wallets**: Secure Enclave-backed accounts
+
+### Layer 2 and Rollups
+
+- **StarkNet**: Optional P-256 support for hardware wallets
+- **zkSync**: Account abstraction with WebAuthn
+- **Optimism/Arbitrum**: Precompile support in roadmap
+
+### Modern Web3 Use Cases
+
+- **Passkey wallets**: Turnkey, Privy, Dynamic use P-256 for WebAuthn
+- **Mobile wallets**: iOS Secure Enclave for key storage
+- **Enterprise**: Hardware security modules (HSM) often default to P-256
+- **Government**: PIV smart cards for identity verification
+
+## Comprehensive Comparison
+
+For detailed technical comparison including performance benchmarks, security analysis, and use case recommendations, see:
+
+**[Elliptic Curve Comparison: secp256k1 vs P-256](/crypto/comparison)**
+
+### Quick Comparison
+
+| Feature | P-256 | Secp256k1 |
+|---------|-------|-----------|
+| **Ethereum Core** | No (L2 only) | ✅ Required |
+| **WebAuthn** | ✅ Default | Not supported |
+| **iOS Secure Enclave** | ✅ Only curve | Not supported |
+| **Hardware Support** | ✅ Excellent | Limited |
+| **Performance** | Similar | Slightly faster |
+
+**When to use P-256**:
+- ✅ WebAuthn / FIDO2 authentication
+- ✅ iOS Secure Enclave integration
+- ✅ Hardware wallet support (YubiKey, TPM)
+- ✅ Enterprise / government compliance (FIPS)
+- ✅ Account abstraction with passkeys
+
+**When to use Secp256k1**:
+- ✅ Ethereum transaction signing (required)
+- ✅ Bitcoin compatibility
+- ✅ EVM precompile support (`ecRecover`)
+- ✅ Traditional EOA accounts
+
+## Technical Deep Dive
+
+For implementation details, security considerations, and usage patterns similar to secp256k1:
+
+- **Signing** - ECDSA signing with RFC 6979 (deterministic nonces)
+- **Verification** - Signature verification algorithm
+- **Key Derivation** - Private → public key via elliptic curve multiplication
+- **ECDH** - Diffie-Hellman key exchange (unique to P-256)
+- **Test Vectors** - NIST CAVP test vectors
+- **Security** - Side-channel resistance, constant-time operations
+- **Performance** - Benchmarks vs secp256k1
+- **WebAuthn Integration** - Face ID, Touch ID, YubiKey
+
+## Related
+
+- **[Elliptic Curve Comparison](/crypto/comparison)** - Comprehensive secp256k1 vs P-256 comparison
+- [Crypto: Secp256k1](/crypto/secp256k1) - Ethereum's ECDSA curve (with full documentation)
+- [Crypto: Ed25519](/crypto/ed25519) - Edwards curve signatures
+- [Crypto: X25519](/crypto/x25519) - Curve25519 key exchange
+- [Primitives: Signature](/primitives/signature) - Generic signature type
+- [Primitives: Hash](/primitives/hash) - Message hashing (SHA-256 for WebAuthn)
+- [RIP-7212](https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md) - P-256 precompile proposal

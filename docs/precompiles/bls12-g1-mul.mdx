@@ -1,0 +1,245 @@
+---
+title: "0x0C BLS12-381 G1 Mul"
+description: BLS12-381 G1 elliptic curve scalar multiplication
+---
+
+## Overview
+
+**Address:** `0x000000000000000000000000000000000000000c`
+**Introduced:** Prague (EIP-2537)
+**EIP:** [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537)
+
+The BLS12-381 G1 Mul precompile performs elliptic curve scalar multiplication on the BLS12-381 curve's G1 group. It takes a G1 point and a scalar, returning the point multiplied by that scalar (P * k). This operation is fundamental for BLS signature generation, key derivation, and cryptographic commitments.
+
+EIP-2537 introduces BLS12-381 curve operations to enable efficient BLS signatures, which are used in Ethereum 2.0 for validator consensus and signature aggregation. Scalar multiplication is one of the most common operations in elliptic curve cryptography.
+
+The BLS12-381 curve provides 128-bit security with efficient pairing operations, making it ideal for aggregatable signatures and zkSNARK applications.
+
+## Gas Cost
+
+**Fixed:** `12000` gas
+
+This reflects the computational complexity of scalar multiplication, which is significantly more expensive than point addition due to the repeated doubling-and-add algorithm.
+
+## Input Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | x (point x-coordinate, big-endian, left-padded)
+64     | 64     | y (point y-coordinate, big-endian, left-padded)
+128    | 32     | k (scalar, big-endian)
+```
+
+Total input length: 160 bytes (exactly)
+
+The point must satisfy the curve equation: `y^2 = x^3 + 4` over the BLS12-381 base field (Fp).
+Point at infinity is represented as all zeros (128 bytes).
+Scalar is a 256-bit value (reduced modulo group order if necessary).
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | x (result point x-coordinate, big-endian, left-padded)
+64     | 64     | y (result point y-coordinate, big-endian, left-padded)
+```
+
+Total output length: 128 bytes
+
+## TypeScript Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// BLS12-381 G1 generator point
+const g1_x = new Uint8Array(64);
+g1_x.set([
+  0x17, 0xf1, 0xd3, 0xa7, 0x31, 0x97, 0xd7, 0x94,
+  0x26, 0x95, 0x63, 0x8c, 0x4f, 0xa9, 0xac, 0x0f,
+  0xc3, 0x68, 0x8c, 0x4f, 0x97, 0x74, 0xb9, 0x05,
+  0xa1, 0x4e, 0x3a, 0x3f, 0x17, 0x1b, 0xac, 0x58,
+  0x6c, 0x55, 0xe8, 0x3f, 0xf9, 0x7a, 0x1a, 0xef,
+  0xfb, 0x3a, 0xf0, 0x0a, 0xdb, 0x22, 0xc6, 0xbb
+], 16); // left-padded
+
+const g1_y = new Uint8Array(64);
+g1_y.set([
+  0x08, 0xb3, 0xf4, 0x81, 0xe3, 0xaa, 0xa0, 0xf1,
+  0xa0, 0x9e, 0x30, 0xed, 0x74, 0x1d, 0x8a, 0xe4,
+  0xfc, 0xf5, 0xe0, 0x95, 0xd5, 0xd0, 0x0a, 0xf6,
+  0x00, 0xdb, 0x18, 0xcb, 0x2c, 0x04, 0xb3, 0xed,
+  0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4,
+  0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1
+], 16);
+
+// Scalar: multiply by 42
+const scalar = new Uint8Array(32);
+scalar[31] = 42;
+
+// Compute: 42 * G
+const input = new Uint8Array(160);
+input.set(g1_x, 0);
+input.set(g1_y, 64);
+input.set(scalar, 128);
+
+const result = execute(
+  PrecompileAddress.BLS12_G1_MUL,
+  input,
+  20000n,
+  Hardfork.PRAGUE
+);
+
+if (result.success) {
+  const resultX = result.output.slice(0, 64);
+  const resultY = result.output.slice(64, 128);
+  console.log('Result: 42*G');
+  console.log('Gas used:', result.gasUsed); // 12000
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Zig Example
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // BLS12-381 G1 generator (padded to 64 bytes)
+    const g1_x = [_]u8{
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x17, 0xf1, 0xd3, 0xa7, 0x31, 0x97, 0xd7, 0x94, 0x26, 0x95, 0x63, 0x8c, 0x4f, 0xa9, 0xac, 0x0f,
+        0xc3, 0x68, 0x8c, 0x4f, 0x97, 0x74, 0xb9, 0x05, 0xa1, 0x4e, 0x3a, 0x3f, 0x17, 0x1b, 0xac, 0x58,
+        0x6c, 0x55, 0xe8, 0x3f, 0xf9, 0x7a, 0x1a, 0xef, 0xfb, 0x3a, 0xf0, 0x0a, 0xdb, 0x22, 0xc6, 0xbb,
+    };
+    const g1_y = [_]u8{
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x08, 0xb3, 0xf4, 0x81, 0xe3, 0xaa, 0xa0, 0xf1, 0xa0, 0x9e, 0x30, 0xed, 0x74, 0x1d, 0x8a, 0xe4,
+        0xfc, 0xf5, 0xe0, 0x95, 0xd5, 0xd0, 0x0a, 0xf6, 0x00, 0xdb, 0x18, 0xcb, 0x2c, 0x04, 0xb3, 0xed,
+        0xd0, 0x3c, 0xc7, 0x44, 0xa2, 0x88, 0x8a, 0xe4, 0x0c, 0xaa, 0x23, 0x29, 0x46, 0xc5, 0xe7, 0xe1,
+    };
+
+    // Construct input: 5 * G
+    var input: [160]u8 = [_]u8{0} ** 160;
+    @memcpy(input[0..64], &g1_x);
+    @memcpy(input[64..128], &g1_y);
+    input[159] = 5; // scalar = 5
+
+    const result = try precompiles.bls12_g1_mul.execute(allocator, &input, 20000);
+    defer result.deinit(allocator);
+
+    std.debug.print("Result: 5*G\n", .{});
+    std.debug.print("Gas used: {}\n", .{result.gas_used});
+}
+```
+
+## Error Conditions
+
+- **Out of gas:** gasLimit < 12000
+- **Invalid input length:** input.len != 160
+- **Invalid point:** Point coordinates don't satisfy curve equation y² = x³ + 4
+- **Point not in subgroup:** Point not in correct subgroup (fails validation)
+- **Coordinate out of range:** x or y >= field modulus
+
+Invalid inputs cause precompile to return `error.InvalidPoint`.
+
+## Scalar Multiplication Properties
+
+- **P * 0 = O** (multiplication by zero gives point at infinity)
+- **P * 1 = P** (multiplication by one is identity)
+- **O * k = O** (infinity times any scalar is infinity)
+- **P * (a + b) = P * a + P * b** (distributive property)
+- **P * (-k) = -(P * k)** (negation of scalar negates point)
+
+## Use Cases
+
+- **BLS signature generation:** Computing signatures from secret keys
+- **Public key derivation:** Deriving public keys from private keys
+- **Threshold cryptography:** Secret sharing schemes
+- **Cryptographic commitments:** Pedersen commitments on BLS12-381
+- **Zero-knowledge proofs:** zkSNARK/zkSTARK operations
+- **Distributed key generation:** Multi-party computation protocols
+- **Verifiable random functions:** VRF implementations
+
+## Implementation Details
+
+- **Zig:** Uses blst library for secure scalar multiplication
+- **TypeScript:** Uses @noble/curves bls12-381 implementation
+- **Algorithm:** Windowed scalar multiplication (efficient for large scalars)
+- **Constant-time:** Implementation uses constant-time operations where possible
+- **Scalar range:** Full 256-bit range, reduced modulo group order internally
+
+## Performance Characteristics
+
+- **Time complexity:** O(log k) where k is scalar value
+- **Fixed gas cost:** Predictable cost regardless of scalar value
+- **Optimizations:** Uses precomputed tables and efficient field arithmetic
+- **Hardware acceleration:** blst library can use CPU-specific optimizations
+
+## BLS12-381 G1 Parameters
+
+- **Curve equation:** y² = x³ + 4
+- **Base field:** Fp (381-bit prime)
+- **Group order (r):** 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+- **Coordinate size:** 48 bytes (padded to 64 bytes in encoding)
+- **Generator G1:** (x, y) as defined in BLS12-381 spec
+- **Point at infinity:** All zeros (128 bytes)
+
+## Test Vectors
+
+```typescript
+// G * 0 = O (point at infinity)
+const result = g1Mul(G, 0n);
+// result = O (all zeros)
+
+// G * 1 = G (identity)
+const result = g1Mul(G, 1n);
+// result = G
+
+// G * 2 = 2G (doubling)
+const result = g1Mul(G, 2n);
+// result = G + G
+
+// O * k = O (infinity times any scalar)
+const result = g1Mul(O, 42n);
+// result = O
+
+// Large scalar
+const result = g1Mul(G, 2n ** 256n - 1n);
+// result = valid point (scalar reduced mod group order)
+```
+
+## Security Considerations
+
+- Point validation ensures input is on curve and in correct subgroup
+- Scalar can be any 256-bit value (automatically reduced)
+- Uses constant-time operations to prevent timing attacks
+- blst library is audited and battle-tested
+- Point at infinity handled correctly as identity element
+
+## Comparison with BN254 Mul
+
+| Feature | BLS12-381 G1 Mul | BN254 Mul |
+|---------|------------------|-----------|
+| Address | 0x0c | 0x07 |
+| Gas cost | 12000 | 6000 |
+| Security | 128-bit | ~100-bit |
+| Coordinate size | 48 bytes (64 padded) | 32 bytes |
+| Input size | 160 bytes | 96 bytes |
+| Use case | BLS signatures, ETH2 | zkSNARKs, privacy |
+
+## Related
+
+- [Precompile: BLS12-381 G1 Add](/precompiles/bls12-g1-add)
+- [Precompile: BLS12-381 G1 MSM](/precompiles/bls12-g1-msm)
+- [Precompile: BLS12-381 Pairing](/precompiles/bls12-pairing)
+- [EIP-2537: Precompiled Contracts for BLS12-381 Curve Operations](https://eips.ethereum.org/EIPS/eip-2537)
+- [BLS12-381 Specification](https://hackmd.io/@benjaminion/bls12-381)

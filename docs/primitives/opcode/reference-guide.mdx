@@ -1,0 +1,384 @@
+---
+title: Opcode Reference Guide
+description: Comprehensive opcode reference with execution traces and examples
+---
+
+
+# Opcode Reference Guide
+
+Complete reference for all EVM opcodes with execution traces, stack diagrams, and practical examples.
+
+## Quick Lookup by Category
+
+### Arithmetic Operations (0x01-0x0B)
+
+All arithmetic operations pop 2 values, perform operation, and push result.
+
+```typescript
+// ADD (0x01)
+import * as Opcode from '@tevm/primitives/Opcode'
+const info = Opcode.info(0x01)
+// { gasCost: 3, stackInputs: 2, stackOutputs: 1, name: "ADD" }
+
+// Stack trace: [a, b] → [a + b]
+// Example: 5 + 3 = 8
+```
+
+**Division by Zero:** DIV, SDIV, MOD, SMOD all return 0 if divisor is zero (no revert).
+
+```typescript
+// DIV behavior
+5 / 0 = 0   // No error, just returns 0
+-5 / 0 = 0  // SDIV also returns 0
+```
+
+**Modulo Operations:** Check divisor first.
+
+```typescript
+// Safe MOD pattern
+function safeMod(a: bigint, n: bigint): bigint {
+  return n === 0n ? 0n : a % n
+}
+```
+
+**ADDMOD/MULMOD:** Modular arithmetic with 3 operands.
+
+```typescript
+// ADDMOD: (a + b) % N
+// Stack: [a, b, N] → [(a + b) % N]
+
+// MULMOD: (a * b) % N
+// Stack: [a, b, N] → [(a * b) % N]
+
+// Both return 0 if N = 0
+```
+
+### Comparison Operations (0x10-0x14)
+
+All comparison operations pop 2 values and push 1 (true) or 0 (false).
+
+```typescript
+// LT (Less Than) - 0x10
+// Stack: [a, b] → [a < b ? 1 : 0]
+
+// Unsigned comparison
+const bytecode = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5
+  0x60, 0x03,  // PUSH1 3
+  0x10,        // LT
+])
+// Stack: [5, 3] → [3 < 5 ? 1 : 0] = [1]
+
+// SLT (Signed Less Than) - 0x12
+// Treats values as two's complement signed integers
+// -1 < 0 → true (unlike unsigned)
+```
+
+**Signed vs Unsigned:**
+```
+Unsigned: 0xFFFFFFFF = 4,294,967,295
+Signed:   0xFFFFFFFF = -1 (two's complement)
+
+GT:  4,294,967,295 > 5 → true
+SGT: -1 > 5 → false
+```
+
+### Bitwise Operations (0x16-0x1D)
+
+```typescript
+// AND, OR, XOR - standard bitwise
+// Stack effects: [a, b] → [a op b]
+
+// NOT (0x19)
+// Stack: [a] → [~a] (bitwise NOT, all bits flipped)
+
+// BYTE (0x1A) - Extract byte at index
+// Stack: [i, x] → [byte_i(x)]
+// i=0 gets most significant byte, i=31 gets least
+
+// Shift operations (EIP-145)
+// SHL (0x1B): [shift, value] → [value << shift]
+// SHR (0x1C): [shift, value] → [value >> shift]  (logical)
+// SAR (0x1D): [shift, value] → [value >>> shift] (arithmetic)
+```
+
+### Memory Operations (0x51-0x53)
+
+Memory is a byte array that grows dynamically. Access costs depend on highest offset touched.
+
+```typescript
+// MLOAD (0x51) - Load 32 bytes from memory
+// Stack: [offset] → [value]
+// Loads 32 bytes starting at offset
+// Uninitialized memory reads as 0
+
+// MSTORE (0x52) - Store 32 bytes to memory
+// Stack: [offset, value] → []
+// Stores value right-aligned (padding on left)
+
+// MSTORE8 (0x53) - Store 1 byte to memory
+// Stack: [offset, byte] → []
+// Stores only the lowest 8 bits
+
+// Memory growth cost: 3 gas per 32-byte word
+// Quadratic for large allocations
+```
+
+**Memory Layout Example:**
+```
+Memory address: 0x00  0x01  0x02  ...  0x1F
+                |------ 32 bytes ------|
+                  (one MLOAD/MSTORE)
+
+MLOAD(0x00)   → loads memory[0x00:0x20]
+MLOAD(0x01)   → loads memory[0x01:0x21]
+MLOAD(0x100)  → loads memory[0x100:0x120]
+```
+
+### Storage Operations (0x54-0x55)
+
+Storage is persistent per contract. Each slot holds 256 bits.
+
+```typescript
+// SLOAD (0x54) - Load from storage
+// Stack: [slot] → [value]
+// Gas: 2100 (cold, first access) or 100 (warm, accessed)
+
+// SSTORE (0x55) - Store to storage
+// Stack: [slot, value] → []
+// Gas: varies by state transition
+//   - 0 → nonzero: 20000
+//   - nonzero → different: 5000
+//   - nonzero → 0: 5000 (with ~15000 refund)
+//   - nonzero → same: 100 (warm)
+
+// Refunds: Up to 15000 per transaction, capped at 50% gas spent
+```
+
+**EIP-2929 Warm/Cold Access:**
+```typescript
+// First SLOAD(slot) in transaction: 2100 gas (COLD_SLOAD)
+// Subsequent SLOAD(slot) in same tx: 100 gas (WARM_SLOAD)
+
+// Similarly for CALL, SELFDESTRUCT operations
+// Access can be pre-declared in transaction access list
+```
+
+### Stack Operations (0x50, 0x60-0x7F, 0x80-0x8F, 0x90-0x9F)
+
+```typescript
+// POP (0x50) - Remove top stack item
+// Stack: [a] → []
+
+// PUSH1-PUSH32 (0x60-0x7F)
+// Stack: [] → [value]
+// Encoded: 1 byte opcode + 1-32 bytes immediate data
+const bytecode = new Uint8Array([
+  0x60, 0xFF,  // PUSH1 0xFF
+  0x61, 0x01, 0x02,  // PUSH2 0x0102
+])
+
+// DUP1-DUP16 (0x80-0x8F)
+// DUP[i] duplicates item at depth i
+// Stack (before DUP1): [bottom, ..., top]
+// Stack (after DUP1):  [bottom, ..., top, top]
+
+// Example trace:
+// [a, b, c] → DUP1 → [a, b, c, c]
+// [a, b, c] → DUP2 → [a, b, c, b]
+// [a, b, c] → DUP3 → [a, b, c, a]
+
+// SWAP1-SWAP16 (0x90-0x9F)
+// SWAP[i] exchanges top with item at depth i+1
+// Stack (before SWAP1): [bottom, ..., a, b]
+// Stack (after SWAP1):  [bottom, ..., b, a]
+```
+
+### Control Flow (0x56-0x5B)
+
+```typescript
+// JUMP (0x56) - Unconditional jump
+// Stack: [destination] → []
+// Destination must be JUMPDEST opcode
+
+// JUMPI (0x57) - Conditional jump
+// Stack: [destination, condition] → []
+// Jumps only if condition != 0
+
+// JUMPDEST (0x5B) - Jump target marker
+// Stack: [] → []
+// No-op, 1 gas, marks valid jump destination
+
+// Pattern: Conditional loop
+const bytecode = new Uint8Array([
+  0x60, 0x00,  // PUSH1 0   (counter = 0)
+  0x60, 0x0A,  // PUSH1 10  (max = 10)
+  // LOOP:
+  0x80,        // DUP1      (duplicate counter)
+  0x80,        // DUP1      (duplicate max)
+  0x11,        // GT        (counter > max?)
+  0x60, 0x0F,  // PUSH1 0x0F (end address)
+  0x57,        // JUMPI     (if counter > max, jump to end)
+  // ... loop body ...
+  0x60, 0x01,  // PUSH1 1
+  0x01,        // ADD       (counter++)
+  0x60, 0x05,  // PUSH1 5   (loop start)
+  0x56,        // JUMP
+  // END:
+  0x00,        // STOP
+])
+```
+
+### System Operations (0xF0-0xFF)
+
+```typescript
+// CREATE (0xF0) - Create new contract
+// Stack: [value, offset, size] → [address]
+// Creates contract from code at memory[offset:offset+size]
+
+// CALL (0xF1) - Call another contract
+// Stack: [gas, addr, value, in_offset, in_size, out_offset, out_size] → [success]
+// Returns: 1 if successful, 0 if reverted
+
+// RETURN (0xF3) - Return data
+// Stack: [offset, size] → []
+// Returns memory[offset:offset+size] as returndata
+
+// REVERT (0xFD) - Revert execution
+// Stack: [offset, size] → []
+// Reverts state, returns memory[offset:offset+size] as error data
+
+// SELFDESTRUCT (0xFF) - Destroy contract
+// Stack: [recipient] → []
+// Sends remaining balance to recipient, contract removed
+```
+
+## Execution Trace Example
+
+Complete trace of simple contract execution:
+
+```typescript
+// Contract: Add 5 + 3
+const bytecode = new Uint8Array([
+  0x60, 0x05,  // PUSH1 5
+  0x60, 0x03,  // PUSH1 3
+  0x01,        // ADD
+  0x60, 0x00,  // PUSH1 0
+  0x52,        // MSTORE
+  0x60, 0x20,  // PUSH1 32
+  0x60, 0x00,  // PUSH1 0
+  0xF3,        // RETURN
+])
+
+// Execution trace:
+// PC  Opcode      Stack Before      Gas    Stack After
+// 00  PUSH1 5     []               3      [5]
+// 02  PUSH1 3     [5]              3      [5, 3]
+// 04  ADD         [5, 3]           3      [8]
+// 05  PUSH1 0     [8]              3      [8, 0]
+// 07  MSTORE      [8, 0]           3      []              (mem[0:32] = 8)
+// 08  PUSH1 32    []               3      [32]
+// 0A  PUSH1 0     [32]             3      [32, 0]
+// 0C  RETURN      [32, 0]          0      (returns mem[0:32])
+//
+// Output: 0x0000000000000000000000000000000000000000000000000000000000000008
+```
+
+## Gas Estimation
+
+```typescript
+// Calculate gas for bytecode
+function estimateGas(bytecode: Uint8Array): number {
+  let totalGas = 0
+  let warmSlots = new Set<string>()
+
+  for (const instr of Opcode.parse(bytecode)) {
+    const info = Opcode.info(instr.opcode)
+    totalGas += info.gasCost
+
+    // Account for dynamic costs
+    if (Opcode.name(instr.opcode) === 'SLOAD') {
+      // Assume first access is cold
+      totalGas += 2000  // COLD_SLOAD = 2100 - BASE(100)
+    } else if (Opcode.name(instr.opcode) === 'KECCAK256') {
+      // Dynamic: 6 gas per word
+      const wordCount = Math.ceil(instr.immediate?.[0] ?? 0 / 32)
+      totalGas += 6 * wordCount
+    }
+  }
+
+  return totalGas
+}
+```
+
+## Common Patterns
+
+### Safe Arithmetic
+
+```solidity
+// Overflow-safe ADD in EVM assembly
+// a + b, reverts if overflow
+
+// Method: Check if a + b < a
+contract SafeAdd {
+  function add(uint a, uint b) public returns (uint) {
+    uint c = a + b;
+    require(c >= a, "overflow");
+    return c;
+  }
+}
+
+// EVM assembly equivalent:
+//   PUSH1 a
+//   PUSH1 b
+//   DUP1
+//   DUP3
+//   ADD
+//   DUP3
+//   LT
+//   ISZERO
+//   JUMPI end
+//   PUSH1 "overflow"
+//   REVERT
+```
+
+### Storage Slot Access
+
+```solidity
+// Get mapping value: balances[user]
+// balances at slot 0
+
+// EVM assembly:
+//   CALLDATALOAD 4    // Get user address from calldata
+//   PUSH1 0           // mapping slot
+//   SHA3              // Compute keccak256(user, 0)
+//   SLOAD             // Load value
+//   MSTORE 0          // Store in memory
+//   PUSH1 32
+//   PUSH1 0
+//   RETURN            // Return 32 bytes
+```
+
+### Delegatecall Pattern
+
+```solidity
+// Proxy pattern using DELEGATECALL
+contract Proxy {
+  address implementation;
+
+  fallback() external {
+    (bool ok, bytes memory data) = implementation.delegatecall(msg.data);
+    require(ok);
+  }
+}
+
+// Stack for DELEGATECALL:
+// [gas, implementation, 0, input_offset, input_size, output_offset, output_size]
+// Result: [success]
+```
+
+## Related Pages
+
+- [Main Opcode Reference](/primitives/opcode)
+- [GasConstants](/primitives/gasconstants) - Gas cost specifications
+- [Bytecode](/primitives/bytecode) - Contract bytecode representation

@@ -1,0 +1,127 @@
+---
+title: "Ens"
+description: "Ethereum Name Service (ENS) normalization, encoding, and validation"
+---
+
+# ENS (Ethereum Name Service)
+
+ENSIP-15 compliant ENS name normalization with WASM acceleration. Prevents homograph attacks, validates names, and ensures consistent canonical representation.
+
+## Overview
+
+Voltaire provides complete ENS support:
+
+- **Normalization** - ENSIP-15 compliant name normalization and beautification
+- **Validation** - Character set, script mixing, and confusable detection
+- **Security** - Homograph attack prevention and security best practices
+- **Performance** - 5-6x faster normalization via WebAssembly
+- **Standards** - Full ENSIP-1, 10, and 15 compliance
+
+## Quick Start
+
+<Tabs>
+<Tab title="Namespace API">
+```typescript
+import * as Ens from '@tevm/voltaire/Ens';
+
+// Normalize ENS name
+const normalized = Ens.normalize("Nick.ETH");
+// Returns: "nick.eth"
+
+// Beautify (preserve emoji)
+const beautified = Ens.beautify("💩.eth");
+
+// Type guard
+if (Ens.is(value)) {
+  // value is BrandedEns
+}
+
+// Convert to/from string
+const branded = Ens.from("vitalik.eth");
+const plain = Ens.toString(branded);
+```
+</Tab>
+<Tab title="Functional API">
+```typescript
+import {
+  normalize,
+  beautify,
+  is,
+  from,
+  toString
+} from '@tevm/voltaire/Ens';
+
+// Normalize ENS name
+const normalized = normalize("Nick.ETH");
+// Returns: "nick.eth"
+
+// Beautify (preserve emoji)
+const beautified = beautify("💩.eth");
+
+// Type guard
+if (is(value)) {
+  // value is BrandedEns
+}
+
+// Convert to/from string
+const branded = from("vitalik.eth");
+const plain = toString(branded);
+```
+</Tab>
+</Tabs>
+
+## Core Functions
+
+### normalize(name)
+```typescript
+normalize(name: string): string
+```
+
+Normalize ENS name to canonical form (lowercase, ENSIP-15 compliant).
+
+### beautify(name)
+```typescript
+beautify(name: string): string
+```
+
+Beautify ENS name (preserve emoji and mixed case where appropriate).
+
+### from(name)
+```typescript
+from(name: string): BrandedEns
+```
+
+Create branded ENS from string (auto-normalizes).
+
+### toString(ens)
+```typescript
+toString(ens: BrandedEns): string
+```
+
+Convert branded ENS to string.
+
+### is(value)
+```typescript
+is(value: unknown): value is BrandedEns
+```
+
+Type guard for branded ENS.
+
+## Types
+
+```typescript
+type BrandedEns = string & { readonly __tag: "Ens" }
+```
+
+## Security
+
+<Warning>
+Always normalize ENS names before use to prevent homograph attacks. Names like "аpple.eth" (with Cyrillic 'а') can appear identical to "apple.eth" but resolve to different addresses.
+</Warning>
+
+## See Also
+
+- [Normalization](/primitives/ens/normalization) - ENSIP-15 details
+- [Validation](/primitives/ens/validation) - Name validation rules
+- [Security](/primitives/ens/security) - Homograph attack prevention
+- [ENSIP Standards](/primitives/ens/ensip-standards) - ENS improvement proposals

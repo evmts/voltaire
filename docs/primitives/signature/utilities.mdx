@@ -1,0 +1,598 @@
+---
+title: "Utilities"
+---
+
+# Utilities
+
+Helper functions for signature operations.
+
+## Component Extraction
+
+### getAlgorithm
+
+Get signature algorithm.
+
+#### Signature
+
+```typescript
+function getAlgorithm(signature: BrandedSignature): SignatureAlgorithm
+```
+
+#### Parameters
+
+- `signature` - BrandedSignature
+
+#### Returns
+
+SignatureAlgorithm (`"secp256k1"` | `"p256"` | `"ed25519"`)
+
+#### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+console.log(Signature.getAlgorithm(sig)); // "secp256k1"
+
+const p256Sig = Signature.fromP256(r, s);
+console.log(Signature.getAlgorithm(p256Sig)); // "p256"
+
+const ed25519Sig = Signature.fromEd25519(bytes);
+console.log(Signature.getAlgorithm(ed25519Sig)); // "ed25519"
+```
+
+### getR
+
+Extract r component from ECDSA signature.
+
+#### Signature
+
+```typescript
+function getR(signature: BrandedSignature): Uint8Array
+```
+
+#### Parameters
+
+- `signature` - ECDSA BrandedSignature
+
+#### Returns
+
+Uint8Array (32 bytes) - r component
+
+#### Throws
+
+- Error if signature is Ed25519 (no r component)
+
+#### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+const rComponent = Signature.getR(sig);
+console.log(rComponent.length); // 32
+console.log(rComponent.every((b, i) => b === r[i])); // true
+
+// Ed25519 throws
+const ed25519Sig = Signature.fromEd25519(bytes);
+try {
+  Signature.getR(ed25519Sig); // Throws
+} catch (err) {
+  console.error('Ed25519 has no r component');
+}
+```
+
+### getS
+
+Extract s component from ECDSA signature.
+
+#### Signature
+
+```typescript
+function getS(signature: BrandedSignature): Uint8Array
+```
+
+#### Parameters
+
+- `signature` - ECDSA BrandedSignature
+
+#### Returns
+
+Uint8Array (32 bytes) - s component
+
+#### Throws
+
+- Error if signature is Ed25519 (no s component)
+
+#### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+const sComponent = Signature.getS(sig);
+console.log(sComponent.length); // 32
+console.log(sComponent.every((b, i) => b === s[i])); // true
+
+// Check canonicality of s
+const SECP256K1_N_DIV_2 = new Uint8Array([
+  0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0x5d, 0x57, 0x6e, 0x73, 0x57, 0xa4, 0x50, 0x1d,
+  0xdf, 0xe9, 0x2f, 0x46, 0x68, 0x1b, 0x20, 0xa0,
+]);
+
+function isLowS(sig: BrandedSignature): boolean {
+  const s = Signature.getS(sig);
+  for (let i = 0; i < 32; i++) {
+    if (s[i]! < SECP256K1_N_DIV_2[i]!) return true;
+    if (s[i]! > SECP256K1_N_DIV_2[i]!) return false;
+  }
+  return true;
+}
+```
+
+### getV
+
+Get recovery ID from secp256k1 signature.
+
+#### Signature
+
+```typescript
+function getV(signature: BrandedSignature): number | undefined
+```
+
+#### Parameters
+
+- `signature` - BrandedSignature
+
+#### Returns
+
+- `number` (27 or 28) - Recovery ID if present
+- `undefined` - If not secp256k1 or v not set
+
+#### Example
+
+```typescript
+// With recovery ID
+const sig1 = Signature.fromSecp256k1(r, s, 27);
+console.log(Signature.getV(sig1)); // 27
+
+// Without recovery ID
+const sig2 = Signature.fromSecp256k1(r, s);
+console.log(Signature.getV(sig2)); // undefined
+
+// P-256 has no v
+const sig3 = Signature.fromP256(r, s);
+console.log(Signature.getV(sig3)); // undefined
+
+// Ed25519 has no v
+const sig4 = Signature.fromEd25519(bytes);
+console.log(Signature.getV(sig4)); // undefined
+```
+
+#### Use Cases
+
+```typescript
+// Ethereum address recovery
+function recoverAddress(
+  message: Uint8Array,
+  sig: BrandedSignature
+): Address {
+  const v = Signature.getV(sig);
+  if (v === undefined) {
+    throw new Error('Recovery ID required');
+  }
+
+  const r = Signature.getR(sig);
+  const s = Signature.getS(sig);
+
+  // Use crypto module for actual recovery
+  return recoverPublicKey(message, r, s, v);
+}
+
+// EIP-155 transaction encoding
+function encodeTransaction(tx: Transaction, sig: BrandedSignature): Uint8Array {
+  const v = Signature.getV(sig);
+  const eip155V = tx.chainId * 2 + 35 + (v! - 27);
+
+  return RLP.encode([
+    tx.nonce,
+    tx.gasPrice,
+    tx.gasLimit,
+    tx.to,
+    tx.value,
+    tx.data,
+    eip155V,
+    Signature.getR(sig),
+    Signature.getS(sig),
+  ]);
+}
+```
+
+## Comparison
+
+### equals
+
+Compare signatures for equality.
+
+#### Signature
+
+```typescript
+function equals(
+  a: BrandedSignature,
+  b: BrandedSignature
+): boolean
+```
+
+#### Parameters
+
+- `a` - First signature
+- `b` - Second signature
+
+#### Returns
+
+`true` if signatures are equal (algorithm, bytes, and v match)
+
+#### Example
+
+```typescript
+const sig1 = Signature.fromSecp256k1(r, s, 27);
+const sig2 = Signature.fromSecp256k1(r, s, 27);
+const sig3 = Signature.fromSecp256k1(r, s, 28);
+
+console.log(Signature.equals(sig1, sig2)); // true
+console.log(Signature.equals(sig1, sig3)); // false (different v)
+
+// Different algorithms
+const p256Sig = Signature.fromP256(r, s);
+console.log(Signature.equals(sig1, p256Sig)); // false
+```
+
+#### Implementation
+
+Checks:
+1. Algorithm match
+2. Byte-by-byte comparison
+3. Recovery ID match (if present)
+
+```typescript
+// Constant-time byte comparison
+function equals(a: BrandedSignature, b: BrandedSignature): boolean {
+  if (a.algorithm !== b.algorithm) return false;
+  if (a.length !== b.length) return false;
+  if (a.v !== b.v) return false;
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a[i]! ^ b[i]!;
+  }
+
+  return result === 0;
+}
+```
+
+### is
+
+Type guard for BrandedSignature.
+
+#### Signature
+
+```typescript
+function is(value: unknown): value is BrandedSignature
+```
+
+#### Parameters
+
+- `value` - Value to check
+
+#### Returns
+
+`true` if value is BrandedSignature
+
+#### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+console.log(Signature.is(sig)); // true
+
+const bytes = new Uint8Array(64);
+console.log(Signature.is(bytes)); // false
+
+const obj = { algorithm: 'secp256k1' };
+console.log(Signature.is(obj)); // false
+
+// Type narrowing
+function process(value: unknown) {
+  if (Signature.is(value)) {
+    // value is BrandedSignature
+    console.log(value.algorithm);
+  }
+}
+```
+
+#### Checks
+
+1. Is object
+2. Is Uint8Array instance
+3. Has `__tag === "Signature"`
+4. Has `algorithm` property
+
+## Verification (Placeholder)
+
+### verify
+
+Verify signature against message and public key.
+
+#### Signature
+
+```typescript
+function verify(
+  signature: BrandedSignature,
+  message: Uint8Array,
+  publicKey: Uint8Array
+): boolean
+```
+
+#### Parameters
+
+- `signature` - Signature to verify
+- `message` - Message that was signed
+- `publicKey` - Public key to verify against
+
+#### Returns
+
+`true` if signature is valid
+
+#### Throws
+
+- `InvalidAlgorithmError` - Always (placeholder implementation)
+
+#### Example
+
+```typescript
+const sig = Signature.fromSecp256k1(r, s, 27);
+
+try {
+  const valid = Signature.verify(sig, message, publicKey);
+} catch (err) {
+  console.error(err.message);
+  // "Signature verification for secp256k1 requires integration with crypto primitives"
+}
+```
+
+#### Note
+
+This is a placeholder. Actual verification requires crypto module integration:
+
+```typescript
+// Use crypto module instead
+import { secp256k1 } from '@voltaire/crypto';
+
+function verifySecp256k1(
+  sig: BrandedSignature,
+  message: Uint8Array,
+  publicKey: Uint8Array
+): boolean {
+  const r = Signature.getR(sig);
+  const s = Signature.getS(sig);
+
+  return secp256k1.verify(message, r, s, publicKey);
+}
+```
+
+## Helper Functions
+
+### Component Comparison
+
+```typescript
+// Compare r components
+function compareR(a: BrandedSignature, b: BrandedSignature): boolean {
+  const rA = Signature.getR(a);
+  const rB = Signature.getR(b);
+  return rA.every((byte, i) => byte === rB[i]);
+}
+
+// Compare s components
+function compareS(a: BrandedSignature, b: BrandedSignature): boolean {
+  const sA = Signature.getS(a);
+  const sB = Signature.getS(b);
+  return sA.every((byte, i) => byte === sB[i]);
+}
+```
+
+### Algorithm Detection
+
+```typescript
+function isECDSA(sig: BrandedSignature): boolean {
+  return sig.algorithm === 'secp256k1' || sig.algorithm === 'p256';
+}
+
+function isEdDSA(sig: BrandedSignature): boolean {
+  return sig.algorithm === 'ed25519';
+}
+
+function hasRecoveryId(sig: BrandedSignature): boolean {
+  return sig.v !== undefined;
+}
+```
+
+### Component Extraction Helpers
+
+```typescript
+// Extract both r and s
+function getComponents(sig: BrandedSignature): {
+  r: Uint8Array;
+  s: Uint8Array;
+} {
+  return {
+    r: Signature.getR(sig),
+    s: Signature.getS(sig),
+  };
+}
+
+// Extract all metadata
+function getMetadata(sig: BrandedSignature): {
+  algorithm: SignatureAlgorithm;
+  v?: number;
+  length: number;
+} {
+  return {
+    algorithm: Signature.getAlgorithm(sig),
+    v: Signature.getV(sig),
+    length: sig.length,
+  };
+}
+```
+
+### Display Helpers
+
+```typescript
+function formatSignature(sig: BrandedSignature): string {
+  const r = Signature.getR(sig);
+  const s = Signature.getS(sig);
+  const v = Signature.getV(sig);
+
+  return [
+    `Algorithm: ${sig.algorithm}`,
+    `r: 0x${Hex.fromBytes(r)}`,
+    `s: 0x${Hex.fromBytes(s)}`,
+    v !== undefined ? `v: ${v}` : null,
+  ].filter(Boolean).join('\n');
+}
+
+console.log(formatSignature(sig));
+// Algorithm: secp256k1
+// r: 0x1234...
+// s: 0x5678...
+// v: 27
+```
+
+### Validation Helpers
+
+```typescript
+// Check if signature has expected algorithm
+function assertAlgorithm(
+  sig: BrandedSignature,
+  expected: SignatureAlgorithm
+): void {
+  const actual = Signature.getAlgorithm(sig);
+  if (actual !== expected) {
+    throw new Error(`Expected ${expected}, got ${actual}`);
+  }
+}
+
+// Check if signature has recovery ID
+function assertRecoveryId(sig: BrandedSignature): void {
+  if (Signature.getV(sig) === undefined) {
+    throw new Error('Recovery ID required');
+  }
+}
+
+// Usage
+assertAlgorithm(sig, 'secp256k1');
+assertRecoveryId(sig);
+```
+
+## Performance Considerations
+
+### Component Access
+
+```typescript
+// Efficient: direct property access
+const algorithm = sig.algorithm; // O(1)
+const v = sig.v; // O(1)
+
+// Efficient: slice creates view (no copy)
+const r = sig.slice(0, 32); // O(1) view creation
+const s = sig.slice(32, 64); // O(1) view creation
+
+// Less efficient: helper functions have call overhead
+const r2 = Signature.getR(sig); // O(1) + function call
+```
+
+### Equality Comparison
+
+```typescript
+// Constant-time comparison (security)
+Signature.equals(sig1, sig2); // O(n), constant-time
+
+// Fast but not constant-time
+function fastEquals(a: BrandedSignature, b: BrandedSignature): boolean {
+  if (a.algorithm !== b.algorithm) return false;
+  if (a.v !== b.v) return false;
+  return a.every((byte, i) => byte === b[i]); // Early exit
+}
+```
+
+### Type Checking
+
+```typescript
+// Fast runtime check
+Signature.is(value); // O(1)
+
+// Use for validation at API boundaries
+function acceptSignature(value: unknown): BrandedSignature {
+  if (!Signature.is(value)) {
+    throw new TypeError('Expected BrandedSignature');
+  }
+  return value;
+}
+```
+
+## Common Patterns
+
+### Decompose Signature
+
+```typescript
+function decomposeSignature(sig: BrandedSignature) {
+  return {
+    algorithm: Signature.getAlgorithm(sig),
+    r: Signature.getR(sig),
+    s: Signature.getS(sig),
+    v: Signature.getV(sig),
+  };
+}
+
+const { algorithm, r, s, v } = decomposeSignature(sig);
+```
+
+### Clone Signature
+
+```typescript
+function cloneSignature(sig: BrandedSignature): BrandedSignature {
+  const algorithm = Signature.getAlgorithm(sig);
+
+  switch (algorithm) {
+    case 'secp256k1':
+      return Signature.fromSecp256k1(
+        Signature.getR(sig),
+        Signature.getS(sig),
+        Signature.getV(sig)
+      );
+    case 'p256':
+      return Signature.fromP256(
+        Signature.getR(sig),
+        Signature.getS(sig)
+      );
+    case 'ed25519':
+      return Signature.fromEd25519(sig.slice());
+  }
+}
+```
+
+### Signature Info
+
+```typescript
+function getSignatureInfo(sig: BrandedSignature): string {
+  const algorithm = Signature.getAlgorithm(sig);
+  const v = Signature.getV(sig);
+
+  return `${algorithm}${v !== undefined ? ` (v=${v})` : ''}`;
+}
+
+console.log(getSignatureInfo(sig)); // "secp256k1 (v=27)"
+```
+
+## See Also
+
+- [Validation](./validation.mdx) - Signature validation functions
+- [Conversions](./conversions.mdx) - Format conversions
+- [BrandedSignature](./branded-signature.mdx) - Type definition
+- [Constructors](./constructors.mdx) - Creating signatures

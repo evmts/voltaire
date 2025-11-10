@@ -1,0 +1,453 @@
+---
+title: Address
+description: 20-byte Ethereum address with EIP-55 checksumming
+---
+
+# Address
+
+Ethereum addresses are 20-byte identifiers for accounts (both externally-owned and contracts). They're derived from public keys (EOAs) or calculated deterministically during contract deployment.
+
+## Overview
+
+Address is represented as a [branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
+
+```typescript
+export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
+```
+
+Addresses use EIP-55 mixed-case checksumming for error detection. Voltaire handles checksums automatically while storing addresses as raw bytes internally to avoid case-sensitivity bugs.
+
+<Tip title="Why Uint8Array over hex strings?">
+Storing addresses as bytes eliminates casing bugs (checksummed vs lowercase). Hex conversions happen at API boundaries; internal representation stays byte-based for consistency and performance.
+
+See [EIP-55](https://eips.ethereum.org/EIPS/eip-55) for checksum specification.
+</Tip>
+
+## Quick Start
+
+<Tabs>
+<Tab title="Class API">
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+// Create from hex string (most common)
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Validate input
+if (!Address.isValid("0xinvalid")) {
+  throw new Error("Invalid address");
+}
+
+// Convert to different formats
+addr.toHex();         // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+addr.toChecksummed(); // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+addr.toShortHex();    // "0x742d…1e3e"
+
+// Compare addresses
+addr.equals(addr2);   // false
+addr.isZero();        // false
+
+// Calculate contract addresses
+const contractAddr = addr.calculateCreateAddress(0n);  // CREATE
+const create2Addr = addr.calculateCreate2Address(salt, initCode);  // CREATE2
+```
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+```typescript
+import * as Address from '@tevm/voltaire/Address';
+
+// Create from hex string (most common)
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// Validate input
+if (!Address.isValid("0xinvalid")) {
+  throw new Error("Invalid address");
+}
+
+// Convert to different formats
+Address.toHex(addr);         // "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"
+Address.toChecksummed(addr); // "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+Address.toShortHex(addr);    // "0x742d…1e3e"
+
+// Compare addresses
+Address.equals(addr, addr2); // false
+Address.isZero(addr);        // false
+
+// Calculate contract addresses
+const contractAddr = Address.calculateCreateAddress(addr, 0n);  // CREATE
+const create2Addr = Address.calculateCreate2Address(addr, salt, initCode);  // CREATE2
+```
+
+</Tab>
+</Tabs>
+
+## Practical Examples
+
+### Deriving Address from Public Key
+
+Ethereum addresses are the last 20 bytes of the keccak256 hash of the public key:
+
+```typescript
+// From secp256k1 public key coordinates
+const publicKeyX = 0x742d35cc6634c0532925a3b844bc9e7595f51e3e8f73dc5c5b10a4b0e7d5f4a3n;
+const publicKeyY = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+
+const address = Address.fromPublicKey(publicKeyX, publicKeyY);
+console.log(address.toChecksummed());
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+### Deriving Address from Private Key
+
+```typescript
+import { secp256k1 } from '@tevm/voltaire/crypto';
+
+// 32-byte private key
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+
+// Derive address from private key
+const address = Address.fromPrivateKey(privateKey);
+console.log(address.toChecksummed());
+```
+
+### EIP-55 Checksum Validation
+
+Mixed-case checksums detect typos and copy-paste errors:
+
+```typescript
+const valid = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
+const invalid = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e";  // wrong case
+
+Address.isValidChecksum(valid);   // true
+Address.isValidChecksum(invalid); // false (correct hex, wrong checksum)
+
+// All-lowercase and all-uppercase are considered valid (no checksum)
+Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // true
+Address.isValidChecksum("0x742D35CC6634C0532925A3B844BC9E7595F51E3E"); // true
+```
+
+## Contract Address Calculation
+
+### CREATE (Standard Deployment)
+
+Contract address = last 20 bytes of keccak256(rlp([sender, nonce]))
+
+```typescript
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// First contract deployment (nonce = 0)
+const contract1 = deployer.calculateCreateAddress(0n);
+console.log(contract1.toChecksummed());
+// "0x8ba1f109551bD432803012645Ac136ddd64DBA72"
+
+// Second contract (nonce = 1)
+const contract2 = deployer.calculateCreateAddress(1n);
+console.log(contract2.toChecksummed());
+// Different address due to nonce
+```
+
+### CREATE2 (Deterministic Deployment)
+
+Contract address = last 20 bytes of keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))
+
+```typescript
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const salt = new Uint8Array(32);  // 32-byte salt
+const initCode = new Uint8Array([0x60, 0x80, 0x60, 0x40]);  // Bytecode
+
+const contract = deployer.calculateCreate2Address(salt, initCode);
+console.log(contract.toChecksummed());
+// Deterministic - same inputs always produce same address
+```
+
+**CREATE vs CREATE2**:
+- **CREATE**: Address depends on deployer nonce (changes each deployment)
+- **CREATE2**: Address depends on salt + initCode (deterministic, predictable)
+
+## API Documentation
+
+### Constructors
+
+Create addresses from hex, bytes, numbers, public keys, and private keys.
+
+[View constructors →](./constructors)
+
+### Conversions
+
+Convert to hex, checksummed, U256, ABI encoding, and display formats.
+
+[View conversions →](./conversions)
+
+### Validation
+
+Validate addresses, verify checksums, and type guards.
+
+[View validation →](./validation)
+
+### Comparisons
+
+Compare addresses for equality and ordering.
+
+[View comparisons →](./comparisons)
+
+### Contract Addresses
+
+Calculate CREATE and CREATE2 deployment addresses.
+
+[View contract addresses →](./contract-addresses)
+
+### Utilities
+
+Clone, sort, deduplicate, and zero addresses.
+
+[View utilities →](./variants)
+
+### All Methods
+
+<Tabs>
+<Tab title="Class API">
+
+**Constructors:**
+- `Address.from(value)` - Universal constructor from any input
+- `Address.fromHex(hex)` - Parse hex string (with or without 0x prefix)
+- `Address.fromBytes(bytes)` - Create from Uint8Array (must be 20 bytes)
+- `Address.fromNumber(value)` - Create from bigint or number
+- `Address.fromPublicKey(x, y)` - Derive from secp256k1 public key
+- `Address.fromPrivateKey(privateKey)` - Derive from private key
+- `Address.fromAbiEncoded(bytes)` - Decode from ABI-encoded bytes (32 bytes, left-padded)
+- `Address.fromBase64(b64)` - Parse base64 string
+- `Address.of(...items)` - Create from byte values
+- `Address.zero()` - Create zero address (0x0000...0000)
+
+**Conversions:**
+- `address.toHex()` - Convert to lowercase hex string with 0x prefix
+- `address.toChecksummed()` - Convert to EIP-55 mixed-case checksummed hex
+- `address.toLowercase()` - Convert to lowercase hex string
+- `address.toUppercase()` - Convert to uppercase hex string (no 0x)
+- `address.toU256()` - Convert to 256-bit unsigned integer
+- `address.toAbiEncoded()` - Encode as 32-byte left-padded buffer
+- `address.toShortHex()` - Format for display (0x742d…1e3e)
+- `address.toBytes()` - Return raw Uint8Array
+
+**Validation:**
+- `Address.isValid(value)` - Check if value can be converted to address
+- `Address.isValidChecksum(hex)` - Verify EIP-55 checksum (case-sensitive)
+- `Address.is(value)` - Type guard for BrandedAddress
+
+**Comparisons:**
+- `address.equals(other)` - Check equality
+- `address.compare(other)` - Compare for sorting (-1, 0, 1)
+- `address.lessThan(other)` - Check if less than
+- `address.greaterThan(other)` - Check if greater than
+- `address.isZero()` - Check if zero address
+
+**Contract Addresses:**
+- `address.calculateCreateAddress(nonce)` - Calculate CREATE deployment address
+- `address.calculateCreate2Address(salt, initCode)` - Calculate CREATE2 deployment address
+
+**Utilities:**
+- `address.clone()` - Create copy
+- `Address.sortAddresses(addresses)` - Sort addresses ascending
+- `Address.deduplicateAddresses(addresses)` - Remove duplicates
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+**Constructors:**
+- `from(value)` - Universal constructor from any input
+- `fromHex(hex)` - Parse hex string (with or without 0x prefix)
+- `fromBytes(bytes)` - Create from Uint8Array (must be 20 bytes)
+- `fromNumber(value)` - Create from bigint or number
+- `fromPublicKey(x, y)` - Derive from secp256k1 public key
+- `fromPrivateKey(privateKey)` - Derive from private key
+- `fromAbiEncoded(bytes)` - Decode from ABI-encoded bytes (32 bytes, left-padded)
+- `fromBase64(b64)` - Parse base64 string
+- `zero()` - Create zero address (0x0000...0000)
+
+**Conversions:**
+- `toHex(address)` - Convert to lowercase hex string with 0x prefix
+- `toChecksummed(address)` - Convert to EIP-55 mixed-case checksummed hex
+- `toLowercase(address)` - Convert to lowercase hex string
+- `toUppercase(address)` - Convert to uppercase hex string (no 0x)
+- `toU256(address)` - Convert to 256-bit unsigned integer
+- `toAbiEncoded(address)` - Encode as 32-byte left-padded buffer
+- `toShortHex(address)` - Format for display (0x742d…1e3e)
+- `toBytes(address)` - Return raw Uint8Array
+
+**Validation:**
+- `isValid(value)` - Check if value can be converted to address
+- `isValidChecksum(hex)` - Verify EIP-55 checksum (case-sensitive)
+- `is(value)` - Type guard for BrandedAddress
+
+**Comparisons:**
+- `equals(a, b)` - Check equality
+- `compare(a, b)` - Compare for sorting (-1, 0, 1)
+- `lessThan(a, b)` - Check if less than
+- `greaterThan(a, b)` - Check if greater than
+- `isZero(address)` - Check if zero address
+
+**Contract Addresses:**
+- `calculateCreateAddress(address, nonce)` - Calculate CREATE deployment address
+- `calculateCreate2Address(address, salt, initCode)` - Calculate CREATE2 deployment address
+
+**Utilities:**
+- `clone(address)` - Create copy
+- `sortAddresses(addresses)` - Sort addresses ascending
+- `deduplicateAddresses(addresses)` - Remove duplicates
+
+</Tab>
+</Tabs>
+
+## Types
+
+<Tabs>
+<Tab title="BrandedAddress">
+
+```typescript
+export type BrandedAddress = Uint8Array & {
+  readonly __tag: "Address";
+};
+```
+
+Main branded type. Runtime is `Uint8Array` (20 bytes), TypeScript enforces type safety.
+
+</Tab>
+<Tab title="AddressLike">
+
+```typescript
+type AddressLike =
+  | Uint8Array
+  | BrandedAddress
+  | Address
+  | string
+  | number
+  | bigint;
+```
+
+Union type accepting any input that can be coerced to address. Accepted by `Address.from()`.
+
+</Tab>
+<Tab title="Checksummed Variants">
+
+```typescript
+export type Checksummed = string & { readonly __tag: "Checksummed" };
+export type Lowercase = string & { readonly __tag: "Lowercase" };
+export type Uppercase = string & { readonly __tag: "Uppercase" };
+```
+
+Branded string types for different hex formats. See [variants](./variants) for details.
+
+</Tab>
+</Tabs>
+
+## Constants
+
+```typescript
+Address.SIZE      // 20 - Address size in bytes
+Address.HEX_SIZE  // 42 - Hex string length with "0x" prefix (2 + 40 characters)
+```
+
+## Usage Patterns
+
+### Validating User Input
+
+```typescript
+// Safe parsing with validation
+function parseUserAddress(input: string): Address {
+  if (!Address.isValid(input)) {
+    throw new Error("Invalid address format");
+  }
+
+  const addr = Address.fromHex(input);
+
+  // Optionally verify checksum if provided
+  if (Address.isValidChecksum(input) === false) {
+    console.warn("Checksum mismatch - possible typo");
+  }
+
+  return addr;
+}
+
+// Usage
+try {
+  const addr = parseUserAddress("0x742d35Cc...");
+  console.log(`Valid address: ${addr.toChecksummed()}`);
+} catch (e) {
+  console.error("Invalid address");
+}
+```
+
+### Sorting and Deduplicating
+
+```typescript
+// Sort addresses for consistent ordering
+const addresses = [
+  Address.fromHex("0xCCCC..."),
+  Address.fromHex("0xAAAA..."),
+  Address.fromHex("0xBBBB..."),
+];
+
+const sorted = Address.sortAddresses(addresses);
+console.log(sorted.map(a => a.toHex()));
+// ["0xaaaa...", "0xbbbb...", "0xcccc..."]
+
+// Remove duplicates
+const unique = Address.deduplicateAddresses([addr1, addr2, addr1]);
+console.log(unique.length); // 2
+```
+
+### Predicting Contract Addresses
+
+```typescript
+// Predict CREATE2 address before deployment
+const factory = Address.fromHex("0x...");
+const salt = new Uint8Array(32);
+const initCode = compileContract(); // bytecode
+
+// Calculate address deterministically
+const predictedAddress = factory.calculateCreate2Address(salt, initCode);
+
+// Deploy contract
+await deployer.deploy(initCode, salt);
+
+// Verify prediction
+const deployedAddress = await getDeployedAddress();
+console.log(predictedAddress.equals(deployedAddress)); // true
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { fromHex, toChecksummed, equals } from '@tevm/voltaire/BrandedAddress';
+
+const addr = fromHex("0x742d35cc...");
+const checksummed = toChecksummed(addr);
+const isEqual = equals(addr, addr2);
+
+// Only these 3 functions included in bundle
+// Unused functions (calculateCreateAddress, fromPublicKey, etc.) excluded
+```
+
+<Tip title="Bundle Impact">
+Importing from `@tevm/voltaire/BrandedAddress` instead of `@tevm/voltaire` enables tree-shaking. For example, if you only need `fromHex` and `toChecksummed`, contract address calculation and public key derivation are excluded from your bundle.
+</Tip>
+
+## Related
+
+- [Hash](/primitives/hash) - Keccak256 hashing for address derivation and verification
+- [Hex](/primitives/hex) - Hex string encoding with EIP-55 checksum support
+- [Uint](/primitives/uint) - Unsigned integer types for address arithmetic
+
+## Specification References
+
+- [EIP-55](https://eips.ethereum.org/EIPS/eip-55) - Mixed-case checksum address encoding
+- [EIP-1014](https://eips.ethereum.org/EIPS/eip-1014) - CREATE2 opcode and deterministic addresses
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Address derivation (Section 7)
+- [Account Model](https://ethereum.org/en/developers/docs/accounts/) - EOA vs Contract accounts

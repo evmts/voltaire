@@ -1,0 +1,149 @@
+---
+title: "0x01 ecRecover"
+description: "Elliptic curve signature recovery for Ethereum transactions"
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000001`
+**Introduced:** Frontier
+**EIP:** [EIP-2](https://eips.ethereum.org/EIPS/eip-2) (Signature Malleability Protection)
+
+The ecRecover precompile recovers the Ethereum address from an ECDSA signature using the secp256k1 elliptic curve. Given a message hash and signature components (v, r, s), it returns the 20-byte Ethereum address of the signer. This is fundamental for transaction validation and signature verification in Ethereum.
+
+EIP-2 enhanced this precompile by enforcing signature malleability protection, requiring that the `s` value be in the lower half of the curve order. This prevents transaction replay attacks where the same signature could be used with different `s` values.
+
+## Gas Cost
+
+**Fixed:** `3000` gas
+
+The cost is constant regardless of input validity. Even invalid signatures consume the full gas amount.
+
+## Input Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | Message hash (keccak256 of signed data)
+32     | 32     | v (recovery id, padded - last byte is 27, 28, 0, or 1)
+64     | 32     | r (signature component)
+96     | 32     | s (signature component, must be ≤ secp256k1_n/2)
+```
+
+Total input length: 128 bytes (padded/truncated to this size)
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 12     | Zero padding
+12     | 20     | Recovered Ethereum address
+```
+
+Total output length: 32 bytes
+
+Returns 32 zero bytes if signature is invalid.
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Prepare input (hash || v || r || s)
+const hash = new Uint8Array(32); // keccak256 of message
+const v = new Uint8Array(32); // v = 27 or 28 (last byte)
+v[31] = 27;
+const r = new Uint8Array(32); // signature r
+const s = new Uint8Array(32); // signature s
+
+const input = new Uint8Array(128);
+input.set(hash, 0);
+input.set(v, 32);
+input.set(r, 64);
+input.set(s, 96);
+
+// Execute precompile
+const result = execute(
+  PrecompileAddress.ECRECOVER,
+  input,
+  10000n,
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  // Address is in last 20 bytes
+  const address = result.output.slice(12, 32);
+  console.log('Recovered address:', address);
+  console.log('Gas used:', result.gasUsed); // 3000
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Error Conditions
+
+- Out of gas (gasLimit < 3000)
+- Invalid v value (not 0, 1, 27, or 28) → returns zero address
+- r = 0 or r ≥ secp256k1_n → returns zero address
+- s = 0 or s > secp256k1_n/2 → returns zero address (EIP-2)
+- Point not on curve → returns zero address
+- Invalid signature → returns zero address
+
+Note: Invalid signatures do NOT revert. They return a zero address and consume gas.
+
+## Use Cases
+
+- **Transaction validation:** Ethereum nodes use this to recover sender addresses from transaction signatures
+- **Signature verification:** Smart contracts verify off-chain signed messages (EIP-191, EIP-712)
+- **Meta-transactions:** Contracts validate user signatures for gasless transactions
+- **Multisig wallets:** Verify multiple signers approved a transaction
+- **Account abstraction:** Validate custom signature schemes
+
+## Implementation Details
+
+- **Zig:** Uses secp256k1 public key recovery from crypto module, applies keccak256 to derive address
+- **TypeScript:** Wraps Secp256k1.recoverPublicKey and Keccak256.hash
+- **Integration:** Depends on Secp256k1 and Keccak256 crypto modules
+- **Security:** Enforces EIP-2 malleability protection - rejects s > secp256k1_n/2
+- **Validation:** Checks r and s are in valid range [1, secp256k1_n)
+
+## Signature Malleability (EIP-2)
+
+Before EIP-2, signatures had malleability: for every valid signature (r, s, v), there exists another valid signature (r, -s mod n, v'). This allowed attackers to modify transaction signatures without invalidating them.
+
+EIP-2 solved this by requiring `s ≤ secp256k1_n/2`, where secp256k1_n = `0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141`. Any signature with s in the upper half is rejected.
+
+## Test Vectors
+
+```typescript
+// Valid signature recovery
+const hash = new Uint8Array(32).fill(0x47);
+const v = new Uint8Array(32); v[31] = 28;
+const r = new Uint8Array(32).fill(0x69);
+const s = new Uint8Array(32).fill(0x7a);
+// Should recover valid address
+
+// Invalid: s too high (EIP-2 violation)
+const s_high = new Uint8Array(32);
+s_high[0] = 0x80; // > secp256k1_n/2
+// Should return zero address
+
+// Invalid: v out of range
+const v_invalid = new Uint8Array(32); v_invalid[31] = 29;
+// Should return zero address
+```
+
+## References
+
+### Specifications
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E (Precompiled Contracts)
+- [EIP-2: Homestead Hard-fork Changes](https://eips.ethereum.org/EIPS/eip-2)
+- [secp256k1 Curve Parameters](https://www.secg.org/sec2-v2.pdf)
+
+### Related
+- [Crypto: Secp256k1](/crypto/secp256k1)
+- [Crypto: Keccak256](/crypto/keccak256)
+- [Primitives: Signature](/primitives/signature)
+- [Precompiles Overview](/precompiles)

@@ -1,0 +1,377 @@
+---
+title: "BrandedSiwe"
+description: "Branded type for SIWE messages with type safety"
+---
+
+# BrandedSiwe
+
+Branded type for SIWE messages with type safety.
+
+## Overview
+
+BrandedMessage provides type-safe SIWE message representation using TypeScript's structural typing. All SIWE operations work with BrandedMessage type.
+
+## Type Definition
+
+```typescript
+type BrandedMessage<
+  TDomain extends string = string,
+  TAddress extends BrandedAddress = BrandedAddress,
+  TUri extends string = string,
+  TVersion extends string = string,
+  TChainId extends number = number,
+> = {
+  domain: TDomain;
+  address: TAddress;
+  statement?: string;
+  uri: TUri;
+  version: TVersion;
+  chainId: TChainId;
+  nonce: string;
+  issuedAt: string;
+  expirationTime?: string;
+  notBefore?: string;
+  requestId?: string;
+  resources?: string[];
+};
+```
+
+## Generic Parameters
+
+### TDomain
+- **Type:** `string` literal type
+- **Default:** `string`
+- **Purpose:** Exact domain typing
+- **Example:** `"example.com"` vs `string`
+
+### TAddress
+- **Type:** `BrandedAddress`
+- **Default:** `BrandedAddress`
+- **Purpose:** Type-safe Ethereum address (20 bytes)
+
+### TUri
+- **Type:** `string` literal type
+- **Default:** `string`
+- **Purpose:** Exact URI typing
+- **Example:** `"https://example.com"` vs `string`
+
+### TVersion
+- **Type:** `string` literal type
+- **Default:** `string`
+- **Purpose:** Version typing (always "1" currently)
+
+### TChainId
+- **Type:** `number` literal type
+- **Default:** `number`
+- **Purpose:** Exact chain ID typing
+- **Example:** `1` vs `number`
+
+## Field Types
+
+### Required Fields
+
+```typescript
+domain: TDomain;              // DNS authority
+address: TAddress;            // 20-byte Ethereum address
+uri: TUri;                    // RFC 3986 URI
+version: TVersion;            // Current version "1"
+chainId: TChainId;            // EIP-155 Chain ID
+nonce: string;                // Min 8 chars, replay protection
+issuedAt: string;             // ISO 8601 timestamp
+```
+
+### Optional Fields
+
+```typescript
+statement?: string;           // Human-readable assertion
+expirationTime?: string;      // ISO 8601 expiration
+notBefore?: string;           // ISO 8601 not-before
+requestId?: string;           // System identifier
+resources?: string[];         // Resource URIs
+```
+
+## Type Examples
+
+### Basic Usage
+
+```typescript
+import type { BrandedMessage } from '@tevm/voltaire';
+
+const message: BrandedMessage = {
+  domain: "example.com",
+  address: Address.fromHex("0x..."),
+  uri: "https://example.com",
+  version: "1",
+  chainId: 1,
+  nonce: "abc123def",
+  issuedAt: "2021-09-30T16:25:24.000Z",
+};
+```
+
+### Literal Type Preservation
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com" as const,
+  address: specificAddress,
+  uri: "https://example.com" as const,
+  chainId: 1 as const,
+});
+
+// message.domain type: "example.com" (literal)
+// message.chainId type: 1 (literal)
+// message.version type: "1" (always literal)
+```
+
+### With Optional Fields
+
+```typescript
+const message: BrandedMessage = {
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  version: "1",
+  chainId: 1,
+  nonce: "abc123",
+  issuedAt: "2021-09-30T16:25:24.000Z",
+  statement: "Sign in to Example",
+  expirationTime: "2021-10-01T16:25:24.000Z",
+  resources: ["https://example.com/api"],
+};
+```
+
+### Type-Safe Functions
+
+```typescript
+function authenticateUser(message: BrandedMessage): void {
+  // TypeScript ensures all required fields present
+  console.log(`Auth request from ${message.domain}`);
+  console.log(`Address: ${Address.toHex(message.address)}`);
+  console.log(`Chain: ${message.chainId}`);
+}
+
+// Type error if missing required fields
+authenticateUser({ domain: "example.com" }); // Error
+```
+
+## Namespace Pattern
+
+BrandedSiwe follows namespace pattern for tree-shakeable methods:
+
+```typescript
+export const BrandedSiwe = {
+  create,
+  format,
+  generateNonce,
+  getMessageHash,
+  parse,
+  validate,
+  verify,
+  verifyMessage,
+};
+```
+
+### Usage
+
+```typescript
+import { BrandedSiwe } from '@tevm/voltaire';
+
+// Namespace access
+const message = BrandedSiwe.create({ ... });
+const text = BrandedSiwe.format(message);
+const valid = BrandedSiwe.verify(message, signature);
+
+// Individual imports (tree-shakeable)
+import { create, format, verify } from '@tevm/voltaire/BrandedSiwe';
+
+const message = create({ ... });
+const text = format(message);
+const valid = verify(message, signature);
+```
+
+## Type Guards
+
+### Runtime Type Checking
+
+```typescript
+function isBrandedMessage(value: unknown): value is BrandedMessage {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'domain' in value &&
+    'address' in value &&
+    'uri' in value &&
+    'version' in value &&
+    'chainId' in value &&
+    'nonce' in value &&
+    'issuedAt' in value
+  );
+}
+
+// Usage
+if (isBrandedMessage(unknownValue)) {
+  // TypeScript knows it's BrandedMessage
+  const text = Siwe.format(unknownValue);
+}
+```
+
+### Validation Type Guard
+
+```typescript
+function isValidMessage(message: BrandedMessage): message is BrandedMessage {
+  const result = Siwe.validate(message);
+  return result.valid;
+}
+
+// Usage
+if (isValidMessage(message)) {
+  // Message structure validated
+  Siwe.verify(message, signature);
+}
+```
+
+## Related Types
+
+### Signature
+
+```typescript
+type Signature = Uint8Array;
+```
+
+65-byte ECDSA signature (r + s + v)
+
+### ValidationResult
+
+```typescript
+type ValidationResult =
+  | { valid: true }
+  | { valid: false; error: ValidationError };
+```
+
+Discriminated union for validation results
+
+### ValidationError
+
+```typescript
+type ValidationError =
+  | { type: "invalid_domain"; message: string }
+  | { type: "invalid_address"; message: string }
+  | { type: "invalid_uri"; message: string }
+  | { type: "invalid_version"; message: string }
+  | { type: "invalid_chain_id"; message: string }
+  | { type: "invalid_nonce"; message: string }
+  | { type: "invalid_timestamp"; message: string }
+  | { type: "expired"; message: string }
+  | { type: "not_yet_valid"; message: string }
+  | { type: "signature_mismatch"; message: string };
+```
+
+Discriminated union for error types
+
+## Type Safety Benefits
+
+### Compile-Time Checks
+
+```typescript
+const message: BrandedMessage = {
+  domain: "example.com",
+  address: userAddress,
+  // Error: Missing required fields
+};
+
+const complete: BrandedMessage = {
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  version: "1",
+  chainId: 1,
+  nonce: "abc123",
+  issuedAt: "2021-09-30T16:25:24.000Z",
+}; // OK
+```
+
+### Inference
+
+```typescript
+// Type inferred from create
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+});
+// message type: BrandedMessage<string, BrandedAddress, string, "1", number>
+
+// Function parameters infer type
+function processMessage(msg: BrandedMessage) {
+  // msg.domain: string
+  // msg.chainId: number
+  // msg.version: string
+}
+```
+
+### Optional Field Handling
+
+```typescript
+function hasExpiration(message: BrandedMessage): boolean {
+  // Type narrowing with optional chaining
+  return message.expirationTime !== undefined;
+}
+
+function getExpiration(message: BrandedMessage): Date | undefined {
+  // Safe optional field access
+  return message.expirationTime
+    ? new Date(message.expirationTime)
+    : undefined;
+}
+```
+
+## Pattern Details
+
+### Data-Based Architecture
+
+All Siwe code follows data-based pattern:
+- **Data:** TypeScript interfaces (BrandedMessage)
+- **Methods:** Namespace functions operating on data
+- **No classes:** Functions take data as first argument
+
+```typescript
+// Data
+const message: BrandedMessage = { ... };
+
+// Methods operate on data
+const text = BrandedSiwe.format(message);
+const hash = BrandedSiwe.getMessageHash(message);
+const valid = BrandedSiwe.verify(message, signature);
+```
+
+### Tree-Shakeable
+
+Individual functions can be imported:
+```typescript
+import { create, format } from '@tevm/voltaire/BrandedSiwe';
+// Only create and format code included in bundle
+```
+
+### Type Conventions
+
+- `BrandedMessage` - Message type
+- `Signature` - Signature type
+- `ValidationResult` - Result type
+- `ValidationError` - Error type
+
+All follow `Branded*` or `*Result` naming.
+
+## Implementation Notes
+
+- **Plain objects:** No class instantiation overhead
+- **Immutable operations:** Functions don't mutate inputs
+- **Type-safe:** Full TypeScript type checking
+- **Serializable:** JSON-compatible data structures
+- **No brand field:** Uses structural typing, no runtime brand
+
+## See Also
+
+- [BrandedAddress](/primitives/address/branded-address) - Address type
+- [Siwe.create](/primitives/siwe/constructors) - Create messages
+- [Message Format](/primitives/siwe/message-format) - Field specifications

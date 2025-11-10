@@ -1,0 +1,300 @@
+---
+title: "Interactive Guide"
+description: "Complete SIWE implementation examples with React components and backend"
+---
+
+# Interactive Guide
+
+Complete implementations for SIWE authentication in modern dApps.
+
+## Step-by-Step Implementation
+
+### 1. Backend: Generate Nonce Endpoint
+
+```typescript
+// POST /auth/nonce
+import { Siwe } from '@tevm/voltaire';
+
+app.post('/auth/nonce', async (req, res) => {
+  try {
+    const nonce = Siwe.generateNonce();
+
+    // Store nonce with 5-minute expiry
+    await redis.set(
+      `nonce:${nonce}`,
+      JSON.stringify({
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 300000,
+      }),
+      'EX',
+      300
+    );
+
+    res.json({ nonce });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate nonce' });
+  }
+});
+```
+
+### 2. Frontend: Connect Wallet
+
+```typescript
+async function connectWallet() {
+  try {
+    const [address] = await window.ethereum.request({
+      method: 'eth_requestAccounts'
+    });
+    return address;
+  } catch (err) {
+    throw new Error('User rejected account connection');
+  }
+}
+```
+
+### 3. Frontend: Create and Sign Message
+
+```typescript
+import * as Siwe from '@tevm/primitives/Siwe';
+import * as Address from '@tevm/primitives/Address';
+
+async function signMessage(address: string, nonce: string) {
+  // Get chain ID
+  const chainIdHex = await window.ethereum.request({
+    method: 'eth_chainId'
+  });
+  const chainId = parseInt(chainIdHex, 16);
+
+  // Create SIWE message
+  const message = Siwe.create({
+    domain: window.location.host,
+    address: Address.fromHex(address),
+    uri: window.location.origin,
+    chainId,
+    statement: 'Sign in to Example App',
+    nonce,
+  });
+
+  // Format to string
+  const messageText = Siwe.format(message);
+
+  // Request signature from wallet
+  const signature = await window.ethereum.request({
+    method: 'personal_sign',
+    params: [messageText, address]
+  });
+
+  return { message: messageText, signature };
+}
+```
+
+### 4. Backend: Verify Signature
+
+```typescript
+// POST /auth/verify
+app.post('/auth/verify', async (req, res) => {
+  try {
+    const { message: messageText, signature: signatureHex } = req.body;
+
+    // Parse message
+    const message = Siwe.parse(messageText);
+
+    // Verify domain
+    if (message.domain !== req.hostname) {
+      return res.status(400).json({ error: 'Domain mismatch' });
+    }
+
+    // Verify nonce
+    const nonceData = await redis.get(`nonce:${message.nonce}`);
+    if (!nonceData) {
+      return res.status(400).json({ error: 'Invalid or expired nonce' });
+    }
+
+    // Verify message and signature
+    const signature = hexToBytes(signatureHex);
+    const verifyResult = Siwe.verifyMessage(message, signature);
+
+    if (!verifyResult.valid) {
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    // Consume nonce
+    await redis.del(`nonce:${message.nonce}`);
+
+    // Create session
+    const sessionToken = crypto.randomUUID();
+    await redis.set(
+      `session:${sessionToken}`,
+      JSON.stringify({
+        address: message.address,
+        chainId: message.chainId,
+        createdAt: Date.now(),
+      }),
+      'EX',
+      86400
+    );
+
+    res.json({ token: sessionToken });
+  } catch (err) {
+    res.status(400).json({ error: 'Authentication failed' });
+  }
+});
+```
+
+### 5. Frontend: React Authentication Hook
+
+```typescript
+import { useState } from 'react';
+
+export function useAuth() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [address, setAddress] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const authenticate = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Connect wallet
+      const userAddress = await connectWallet();
+
+      // Get nonce
+      const nonce = await getNonce();
+
+      // Sign message
+      const { message, signature } = await signMessage(userAddress, nonce);
+
+      // Verify on backend
+      const response = await fetch('/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, signature })
+      });
+
+      if (!response.ok) {
+        throw new Error('Authentication failed');
+      }
+
+      const { token } = await response.json();
+      localStorage.setItem('authToken', token);
+
+      setAddress(userAddress);
+      setIsAuthenticated(true);
+    } catch (err) {
+      setError((err as Error).message);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    setAddress(null);
+    setIsAuthenticated(false);
+  };
+
+  return {
+    isAuthenticated,
+    address,
+    error,
+    loading,
+    authenticate,
+    logout
+  };
+}
+```
+
+### 6. Frontend: Login Component
+
+```tsx
+import React from 'react';
+import { useAuth } from './useAuth';
+
+export function LoginButton() {
+  const { isAuthenticated, address, loading, error, authenticate, logout } = useAuth();
+
+  if (isAuthenticated) {
+    return (
+      <div className="auth-card">
+        <p className="connected">
+          Connected: {address?.slice(0, 6)}...{address?.slice(-4)}
+        </p>
+        <button onClick={logout} disabled={loading}>
+          Logout
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="auth-card">
+      <button onClick={authenticate} disabled={loading}>
+        {loading ? 'Signing...' : 'Sign In with Ethereum'}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </div>
+  );
+}
+```
+
+## Message Builder Examples
+
+<Tabs>
+<Tab title="Basic Auth">
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com/login",
+  chainId: 1,
+});
+```
+</Tab>
+<Tab title="With Statement">
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  statement: "Welcome to Example App!\n\nBy signing, you agree to our Terms.",
+});
+```
+</Tab>
+<Tab title="Session with Expiry">
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  expirationTime: new Date(Date.now() + 3600000).toISOString(),
+});
+```
+</Tab>
+</Tabs>
+
+## Security Checklist
+
+<Tip>
+Critical Security Requirements:
+- Always validate signature server-side
+- Check domain matches request origin
+- Verify nonce is fresh and single-use
+- Check message timestamp
+- Enforce HTTPS in production
+- Use cryptographically random nonces
+- Rate-limit nonce generation
+- Log authentication attempts
+</Tip>
+
+## See Also
+
+- [Constructors](/primitives/siwe/constructors) - Creating messages
+- [Parsing](/primitives/siwe/parsing) - Parse and format
+- [Validation](/primitives/siwe/validation) - Validate structure
+- [Verification](/primitives/siwe/verification) - Verify signatures
+- [Usage Patterns](/primitives/siwe/usage-patterns) - Production patterns

@@ -1,0 +1,490 @@
+---
+title: "0x13 BLS12-381 Map Fp2 to G2"
+description: Deterministic hash-to-curve mapping from extension field element to G2 point
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000013`
+**Introduced:** Prague (EIP-2537)
+**EIP:** [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537)
+
+The BLS12-381 Map Fp2 to G2 precompile maps an element from the quadratic extension field Fp2 to a point on the G2 curve. This is the G2 equivalent of the G1 hash-to-curve operation, essential for BLS signatures where messages are hashed to G2 (the standard BLS variant).
+
+G2 operates over Fp2, the quadratic extension field Fp2 = Fp[u]/(u²+1), providing additional algebraic structure required for pairing-based cryptography. Most BLS signature schemes hash messages to G2 rather than G1 for efficiency reasons.
+
+## Hash-to-Curve for G2
+
+The complete hash-to-curve process for G2:
+
+1. **Hash message to two Fp2 elements** using hash_to_field (external)
+2. **Map each Fp2 element to G2 point** using this precompile (0x13)
+3. **Add the two points** (use G2_ADD precompile 0x0e)
+4. **Clear cofactor** to ensure point is in correct subgroup (if needed)
+
+This precompile implements step 2: mapping a single Fp2 element to a G2 curve point.
+
+## Extension Field Fp2
+
+Fp2 is constructed as Fp[u]/(u²+1), where:
+- Elements have form: `a = c0 + c1*u`
+- Addition: `(a0 + a1*u) + (b0 + b1*u) = (a0+b0) + (a1+b1)*u`
+- Multiplication: `(a0 + a1*u) * (b0 + b1*u) = (a0*b0 - a1*b1) + (a0*b1 + a1*b0)*u`
+- Constraint: `u² = -1`
+
+Each component c0, c1 is an element of the base field Fp.
+
+## Gas Cost
+
+**Fixed cost:** `75,000` gas (current implementation)
+
+**Note:** The EIP-2537 specification proposes 23,800 gas for this operation. The current implementation uses 75,000 gas which may represent a pre-repricing value or conservative estimate. Consult the latest EIP-2537 status for the finalized gas cost. Code uses 75,000 in `/Users/williamcory/voltaire/src/precompiles/precompiles.ts` line 1196.
+
+Higher than G1 mapping (5,500 gas) due to:
+- Larger field (Fp2 vs Fp)
+- More complex curve arithmetic
+- G2 point operations are inherently more expensive
+
+Still much cheaper than scalar multiplication operations.
+
+## Input Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | c0: First component of Fp2 element (big-endian)
+64     | 64     | c1: Second component of Fp2 element (big-endian)
+```
+
+Total input length: **128 bytes** (exactly)
+
+**Fp2 element encoding:**
+- Element is `c0 + c1*u` where u² = -1
+- Each component must be < field modulus p
+- Both components big-endian, left-padded to 64 bytes
+- All values where c0, c1 ∈ [0, p-1] are valid
+
+**BLS12-381 field modulus p:**
+```
+0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+```
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 64     | x.c0: First component of x coordinate
+64     | 64     | x.c1: Second component of x coordinate
+128    | 64     | y.c0: First component of y coordinate
+192    | 64     | y.c1: Second component of y coordinate
+```
+
+Total output length: **256 bytes** (G2 point in uncompressed form)
+
+**G2 point structure:**
+- x = x.c0 + x.c1*u (Fp2 element)
+- y = y.c0 + y.c1*u (Fp2 element)
+- Satisfies curve equation: y² = x³ + 4(1+u)
+
+## Usage Examples
+
+### TypeScript
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+import { Keccak256 } from '@tevm/voltaire/crypto/Keccak256';
+
+// Hash message to G2 point (standard BLS signature scheme)
+function hashToG2Point(message: Uint8Array): Uint8Array {
+  // Step 1: Hash message to two field elements (simplified)
+  const hash1 = Keccak256.hash(message);
+  const hash2 = Keccak256.hash(hash1);
+
+  // Create two Fp2 elements
+  const u0 = new Uint8Array(128);
+  u0.set(hash1, 64 - 32); // c0 component
+  // c1 component stays zero for simplification
+
+  const u1 = new Uint8Array(128);
+  u1.set(hash2, 64 - 32); // c0 component
+
+  // Step 2: Map both to G2
+  const q0Result = execute(
+    PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+    u0,
+    75000n, // Current implementation gas cost
+    Hardfork.PRAGUE
+  );
+
+  const q1Result = execute(
+    PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+    u1,
+    75000n, // Current implementation gas cost
+    Hardfork.PRAGUE
+  );
+
+  if (!q0Result.success || !q1Result.success) {
+    throw new Error('Mapping failed');
+  }
+
+  // Step 3: Add points (use G2_ADD precompile 0x0e)
+  const addInput = new Uint8Array(512);
+  addInput.set(q0Result.output, 0);
+  addInput.set(q1Result.output, 256);
+
+  const addResult = execute(
+    PrecompileAddress.BLS12_G2_ADD,
+    addInput,
+    800n,
+    Hardfork.PRAGUE
+  );
+
+  return addResult.output; // 256-byte G2 point
+}
+
+// BLS signature: Sign by multiplying message point by secret key
+const message = new TextEncoder().encode("Sign this");
+const messagePoint = hashToG2Point(message);
+console.log('Message hashed to G2:', messagePoint.length, 'bytes');
+```
+
+### Zig
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+const crypto = @import("crypto");
+
+/// Hash message to G2 point for BLS signatures
+pub fn hashToG2(
+    allocator: std.mem.Allocator,
+    message: []const u8,
+) ![]u8 {
+    // Step 1: Hash to two Fp2 elements
+    var u0: [128]u8 = undefined;
+    var u1: [128]u8 = undefined;
+    @memset(&u0, 0);
+    @memset(&u1, 0);
+
+    // Hash message
+    const hash1 = crypto.Crypto.keccak256(message);
+    const hash2 = crypto.Crypto.keccak256(&hash1);
+
+    // Create Fp2 elements (simplified - c1 components zero)
+    @memcpy(u0[96..128], hash1[0..32]);
+    @memcpy(u1[96..128], hash2[0..32]);
+
+    // Step 2: Map both to G2
+    const q0_result = try precompiles.bls12_map_fp2_to_g2.execute(
+        allocator,
+        &u0,
+        75000, // Current implementation gas cost
+    );
+    defer allocator.free(q0_result.output);
+
+    const q1_result = try precompiles.bls12_map_fp2_to_g2.execute(
+        allocator,
+        &u1,
+        75000, // Current implementation gas cost
+    );
+    defer allocator.free(q1_result.output);
+
+    // Step 3: Add points
+    var add_input = try allocator.alloc(u8, 512);
+    defer allocator.free(add_input);
+
+    @memcpy(add_input[0..256], q0_result.output);
+    @memcpy(add_input[256..512], q1_result.output);
+
+    const add_result = try precompiles.bls12_g2_add.execute(
+        allocator,
+        add_input,
+        800,
+    );
+
+    return add_result.output; // Caller owns memory
+}
+
+test "hash to G2" {
+    const msg = "Hello BLS!";
+    const point = try hashToG2(std.testing.allocator, msg);
+    defer std.testing.allocator.free(point);
+
+    try std.testing.expectEqual(@as(usize, 256), point.len);
+}
+```
+
+## Error Conditions
+
+- **Out of gas:** Gas limit less than 75,000 (current implementation)
+- **Invalid input length:** Input not exactly 128 bytes
+- **Field element overflow:** c0 >= p or c1 >= p
+- **Invalid Fp2 encoding:** Malformed extension field element
+
+All Fp2 elements with both components in range [0, p-1] are valid inputs.
+
+## Use Cases
+
+### BLS Signature Scheme (Standard Variant)
+
+Standard BLS hashes messages to G2, signs in G2:
+
+```typescript
+// Secret key: sk ∈ Zr (scalar)
+// Public key: PK = sk * G1 (point in G1)
+// Signature: sig = sk * H(m) where H(m) ∈ G2
+// Verify: e(PK, H(m)) = e(G1, sig)
+
+function blsSign(secretKey: bigint, message: Uint8Array): Uint8Array {
+  // Hash message to G2
+  const h = hashToG2Point(message);
+
+  // Multiply by secret key (use G2_MUL precompile 0x0f)
+  const mulInput = new Uint8Array(288);
+  mulInput.set(h, 0);
+  // Set scalar (32 bytes at offset 256)
+  // ... secretKey encoding
+
+  const result = execute(
+    PrecompileAddress.BLS12_G2_MUL,
+    mulInput,
+    45000n,
+    Hardfork.PRAGUE
+  );
+
+  return result.output; // Signature in G2
+}
+```
+
+### Aggregate Signatures
+
+Multiple signatures on different messages:
+
+```typescript
+// Each signer signs their message
+const sig1 = blsSign(sk1, msg1); // H(msg1)^sk1
+const sig2 = blsSign(sk2, msg2); // H(msg2)^sk2
+
+// Aggregate signatures (point addition in G2)
+const aggInput = new Uint8Array(512);
+aggInput.set(sig1, 0);
+aggInput.set(sig2, 256);
+
+const aggSig = execute(
+  PrecompileAddress.BLS12_G2_ADD,
+  aggInput,
+  800n,
+  Hardfork.PRAGUE
+).output;
+
+// Verify aggregate:
+// e(PK1, H(msg1)) * e(PK2, H(msg2)) = e(G1, aggSig)
+```
+
+### Threshold Signatures
+
+Distribute signing authority across multiple parties:
+
+```typescript
+// Each party holds share of secret key
+// Hash message to G2 once
+const messagePoint = hashToG2Point(message);
+
+// Each party signs with their share
+const shares = parties.map(party =>
+  party.signWithShare(messagePoint)
+);
+
+// Combine t-of-n shares to reconstruct signature
+const signature = lagrangeInterpolate(shares);
+```
+
+### Boneh-Lynn-Shacham Signatures
+
+Original BLS paper construction:
+- Short signatures (G2 points)
+- Aggregation without interaction
+- Batch verification
+
+```typescript
+// Verify batch of signatures
+function batchVerify(
+  publicKeys: Uint8Array[], // G1 points
+  messages: Uint8Array[],
+  signatures: Uint8Array[]  // G2 points
+): boolean {
+  // Compute pairings for each (PK, H(msg), sig)
+  // Product of all pairings should equal 1
+  // Use BLS12_PAIRING precompile (0x11)
+}
+```
+
+## Implementation Details
+
+- **Algorithm:** Simplified SWU map for G2 curve
+- **Curve:** BLS12-381 G2 over Fp2 (twist curve)
+- **Equation:** y² = x³ + 4(1+u) where u² = -1
+- **Properties:** Deterministic, constant-time, uniform distribution
+- **Zig:** Uses blst library via C FFI
+- **TypeScript:** Uses @noble/curves BLS12-381
+
+### G2 Curve Properties
+
+G2 is the twist of the base curve:
+- Defined over Fp2 instead of Fp
+- Same group order as G1
+- Larger representation (256 bytes vs 128 bytes)
+- Slower arithmetic but richer structure for pairings
+
+### Why Hash to G2?
+
+BLS signatures typically hash to G2 because:
+1. **Verification efficiency:** Public keys in G1 (smaller)
+2. **Signature aggregation:** Addition in G2 during signing
+3. **Pairing efficiency:** G1 in first position of pairing is faster
+
+Alternative (hash to G1) is used when aggregating public keys instead.
+
+## Hash-to-Curve Standards
+
+Implements mapping from:
+- **RFC:** [draft-irtf-cfrg-hash-to-curve](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve)
+- **Suite:** BLS12381G2_XMD:SHA-256_SSWU_RO_
+- **Method:** Simplified SWU for G2 twist curve
+
+Complete hash-to-curve (standards-compliant):
+1. hash_to_field: message → (u0, u1) where ui ∈ Fp2
+2. map_to_curve: ui → Qi for i = 0,1 (this precompile)
+3. Q = Q0 + Q1 (use G2_ADD)
+4. P = clear_cofactor(Q)
+
+## Security Considerations
+
+### Constant-Time Execution
+
+Critical for signature schemes:
+- No timing leakage of field element values
+- Uniform execution across all valid inputs
+- Protects against side-channel attacks on secret keys
+
+### Uniform Distribution
+
+Two-map construction (u0, u1) ensures:
+- Output distribution indistinguishable from random
+- No bias toward specific curve points
+- Security proofs require uniformity
+
+### Domain Separation Tags
+
+Use unique DST per protocol:
+```typescript
+const DST = "MY_PROTOCOL_V1_G2_HASH";
+// Include in hash_to_field before calling precompile
+```
+
+Prevents cross-protocol attacks.
+
+### Subgroup Checking
+
+After mapping, ensure point is in correct subgroup:
+- G2 has cofactor h = 0x5d543a95414e7f1091d50792876a202cd91de4547085abaa68a205b2e5a7ddfa628f1cb4d9e82ef21537e293a6691ae1616ec6e786f0c70cf1c38e31c7238e5
+- Clear cofactor by multiplying: `P = h * Q`
+- Or use cofactor clearing map (protocol-specific)
+
+## Performance Notes
+
+### Gas Comparison
+
+| Operation | Gas | Notes |
+|-----------|-----|-------|
+| Map Fp to G1 | 5,500 | Base field |
+| Map Fp2 to G2 | 75,000 | Extension field (13.6x) |
+| G1 Add | 500 | Point addition |
+| G2 Add | 800 | Point addition |
+| G1 Mul | 12,000 | Scalar multiplication |
+| G2 Mul | 45,000 | Scalar multiplication |
+
+G2 operations consistently ~3-13x more expensive than G1.
+
+### Complete Hash-to-G2 Cost
+
+```
+2 × MAP_FP2_TO_G2: 2 × 75,000 = 150,000
+1 × G2_ADD:        1 × 800    =     800
+Total:                        = 150,800 gas
+```
+
+Plus external hash_to_field computation. Note: If EIP-2537 repricing occurs (23,800 per map), total would be ~48,400 gas.
+
+## Test Vectors
+
+### Zero Fp2 Element
+```typescript
+const input = new Uint8Array(128); // All zeros (0 + 0*u)
+const result = execute(
+  PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+  input,
+  75000n,
+  Hardfork.PRAGUE
+);
+// Should succeed with valid G2 point
+console.log('Zero mapped to G2:', result.success);
+```
+
+### Non-zero c0, Zero c1
+```typescript
+const input = new Uint8Array(128);
+input[63] = 1; // c0 = 1, c1 = 0
+// Represents Fp2 element: 1 + 0*u
+
+const result = execute(
+  PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+  input,
+  75000n,
+  Hardfork.PRAGUE
+);
+console.log('Success:', result.success);
+console.log('Point length:', result.output.length); // 256
+```
+
+### Both Components Non-zero
+```typescript
+const input = new Uint8Array(128);
+input[63] = 2;   // c0 = 2
+input[127] = 3;  // c1 = 3
+// Represents: 2 + 3*u
+
+const result = execute(
+  PrecompileAddress.BLS12_MAP_FP2_TO_G2,
+  input,
+  75000n,
+  Hardfork.PRAGUE
+);
+// Should produce different point than previous examples
+```
+
+### Determinism Verification
+```typescript
+const input = new Uint8Array(128);
+input[63] = 42;
+input[127] = 137;
+
+const result1 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, input, 75000n, Hardfork.PRAGUE);
+const result2 = execute(PrecompileAddress.BLS12_MAP_FP2_TO_G2, input, 75000n, Hardfork.PRAGUE);
+
+// Same input must produce identical output
+console.assert(result1.output.every((b, i) => b === result2.output[i]));
+```
+
+## Related
+
+- [Precompile: BLS12-381 Pairing](/precompiles/bls12-pairing)
+- [Precompile: BLS12-381 Map Fp to G1](/precompiles/bls12-map-fp-to-g1)
+- [Precompile: BLS12-381 G2 Add](/precompiles/bls12-g2-add)
+- [Precompile: BLS12-381 G2 Mul](/precompiles/bls12-g2-mul)
+- [EIP-2537: Precompiles for BLS12-381 Curve Operations](https://eips.ethereum.org/EIPS/eip-2537)
+- [Hash to Curve RFC](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve)
+- [BLS Signatures Spec](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature)
+- [Boneh-Lynn-Shacham Signatures](https://www.iacr.org/archive/asiacrypt2001/22480516.pdf)

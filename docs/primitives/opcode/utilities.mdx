@@ -1,0 +1,435 @@
+---
+title: Opcode Utilities
+description: Opcode metadata, stack effects, gas costs, and disassembly
+---
+
+# Utilities
+
+Utility functions for opcode metadata, stack analysis, gas costs, and bytecode disassembly.
+
+## Metadata
+
+### `Opcode.info(opcode)`
+
+Get complete opcode metadata (gas cost, stack I/O, name).
+
+```typescript
+import * as Opcode from '@tevm/primitives/Opcode'
+
+const info = Opcode.info(Opcode.ADD)
+// {
+//   gasCost: 3,
+//   stackInputs: 2,
+//   stackOutputs: 1,
+//   name: "ADD"
+// }
+
+const pushInfo = Opcode.info(Opcode.PUSH1)
+// {
+//   gasCost: 3,
+//   stackInputs: 0,
+//   stackOutputs: 1,
+//   name: "PUSH1"
+// }
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode to query
+
+**Returns:** `Info | undefined` - Metadata or undefined if invalid opcode
+
+```typescript
+type Info = {
+  gasCost: number       // Base gas cost (may be dynamic at runtime)
+  stackInputs: number   // Items consumed from stack
+  stackOutputs: number  // Items produced to stack
+  name: string          // Opcode mnemonic
+}
+```
+
+Defined in: [primitives/Opcode/BrandedOpcode/info.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Opcode/BrandedOpcode/info.js)
+
+### `Opcode.getName(opcode)`
+
+Get opcode mnemonic name.
+
+```typescript
+Opcode.getName(0x00)  // "STOP"
+Opcode.getName(0x01)  // "ADD"
+Opcode.getName(0x60)  // "PUSH1"
+Opcode.getName(0xFF)  // "SELFDESTRUCT"
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `string | undefined` - Mnemonic name or undefined
+
+### `Opcode.name(opcode)`
+
+Alias for `getName()`.
+
+```typescript
+const name = Opcode.name(0x01)  // "ADD"
+```
+
+### `Opcode.getDescription(opcode)`
+
+Get human-readable opcode description.
+
+```typescript
+Opcode.getDescription(Opcode.ADD)
+// "Add two values from stack"
+
+Opcode.getDescription(Opcode.SSTORE)
+// "Store value in storage"
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `string | undefined` - Description
+
+### `Opcode.getCategory(opcode)`
+
+Get opcode category.
+
+```typescript
+Opcode.getCategory(Opcode.ADD)      // "arithmetic"
+Opcode.getCategory(Opcode.SLOAD)    // "storage"
+Opcode.getCategory(Opcode.JUMPDEST) // "flow"
+Opcode.getCategory(Opcode.LOG0)     // "logging"
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `string | undefined` - Category
+
+## Stack Analysis
+
+### `Opcode.getStackInput(opcode)`
+
+Get number of stack items consumed.
+
+```typescript
+Opcode.getStackInput(Opcode.ADD)     // 2 (a, b)
+Opcode.getStackInput(Opcode.MSTORE)  // 2 (offset, value)
+Opcode.getStackInput(Opcode.PUSH1)   // 0 (pushes to stack)
+Opcode.getStackInput(Opcode.DUP1)    // 1 (duplicates top)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Stack inputs
+
+### `Opcode.getStackOutput(opcode)`
+
+Get number of stack items produced.
+
+```typescript
+Opcode.getStackOutput(Opcode.ADD)     // 1 (result)
+Opcode.getStackOutput(Opcode.PUSH1)   // 1 (pushed value)
+Opcode.getStackOutput(Opcode.DUP1)    // 2 (original + duplicate)
+Opcode.getStackOutput(Opcode.POP)     // 0 (removes from stack)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Stack outputs
+
+### `Opcode.getStackEffect(opcode)`
+
+Get net stack effect (outputs - inputs).
+
+```typescript
+Opcode.getStackEffect(Opcode.ADD)     // -1 (2 in, 1 out)
+Opcode.getStackEffect(Opcode.PUSH1)   //  1 (0 in, 1 out)
+Opcode.getStackEffect(Opcode.DUP1)    //  1 (1 in, 2 out)
+Opcode.getStackEffect(Opcode.SWAP1)   //  0 (2 in, 2 out)
+Opcode.getStackEffect(Opcode.POP)     // -1 (1 in, 0 out)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Net stack change
+
+## Gas Costs
+
+### `Opcode.getGasCost(opcode)`
+
+Get static base gas cost.
+
+```typescript
+Opcode.getGasCost(Opcode.ADD)       // 3
+Opcode.getGasCost(Opcode.MUL)       // 5
+Opcode.getGasCost(Opcode.SSTORE)    // 100 (base, may be much higher at runtime)
+Opcode.getGasCost(Opcode.KECCAK256) // 30 (base, + per-word cost)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Base gas cost
+
+**Note:** Many opcodes have dynamic gas costs depending on runtime state (e.g., SSTORE, CALL, CREATE). This returns only the base/minimum cost.
+
+## PUSH/DUP/SWAP Utilities
+
+### `Opcode.pushBytes(opcode)`
+
+Get number of immediate bytes for PUSH opcode.
+
+```typescript
+Opcode.pushBytes(Opcode.PUSH0)   // 0
+Opcode.pushBytes(Opcode.PUSH1)   // 1
+Opcode.pushBytes(Opcode.PUSH2)   // 2
+Opcode.pushBytes(Opcode.PUSH32)  // 32
+Opcode.pushBytes(Opcode.ADD)     // undefined (not a PUSH)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Byte count or undefined
+
+### `Opcode.dupPosition(opcode)`
+
+Get stack position duplicated by DUP opcode (1-16).
+
+```typescript
+Opcode.dupPosition(Opcode.DUP1)   // 1 (top of stack)
+Opcode.dupPosition(Opcode.DUP2)   // 2 (second item)
+Opcode.dupPosition(Opcode.DUP16)  // 16 (16th item)
+Opcode.dupPosition(Opcode.ADD)    // undefined (not a DUP)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Position (1-16) or undefined
+
+### `Opcode.swapPosition(opcode)`
+
+Get stack position swapped by SWAP opcode (1-16).
+
+```typescript
+Opcode.swapPosition(Opcode.SWAP1)   // 1 (swap top with 2nd)
+Opcode.swapPosition(Opcode.SWAP2)   // 2 (swap top with 3rd)
+Opcode.swapPosition(Opcode.SWAP16)  // 16 (swap top with 17th)
+Opcode.swapPosition(Opcode.ADD)     // undefined (not a SWAP)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Position (1-16) or undefined
+
+### `Opcode.logTopics(opcode)`
+
+Get number of topics for LOG opcode (0-4).
+
+```typescript
+Opcode.logTopics(Opcode.LOG0)  // 0
+Opcode.logTopics(Opcode.LOG1)  // 1
+Opcode.logTopics(Opcode.LOG2)  // 2
+Opcode.logTopics(Opcode.LOG4)  // 4
+Opcode.logTopics(Opcode.ADD)   // undefined (not a LOG)
+```
+
+**Parameters:**
+- `opcode: BrandedOpcode` - Opcode
+
+**Returns:** `number | undefined` - Topic count (0-4) or undefined
+
+## Disassembly
+
+### `Opcode.disassemble(bytecode)`
+
+Disassemble bytecode to human-readable assembly.
+
+```typescript
+const bytecode = new Uint8Array([
+  0x60, 0x80,    // PUSH1 0x80
+  0x60, 0x40,    // PUSH1 0x40
+  0x52,          // MSTORE
+  0x00           // STOP
+])
+
+const assembly = Opcode.disassemble(bytecode)
+// [
+//   "0000: PUSH1 0x80",
+//   "0002: PUSH1 0x40",
+//   "0004: MSTORE",
+//   "0005: STOP"
+// ]
+```
+
+**Parameters:**
+- `bytecode: Uint8Array` - Raw bytecode
+
+**Returns:** `string[]` - Array of formatted instruction strings
+
+**Format:** `"<offset>: <mnemonic> [immediate]"`
+
+### `Opcode.format(instruction)`
+
+Format single instruction as string.
+
+```typescript
+const instruction = {
+  offset: 0,
+  opcode: Opcode.PUSH1,
+  immediate: new Uint8Array([0x80])
+}
+
+const formatted = Opcode.format(instruction)
+// "0000: PUSH1 0x80"
+```
+
+**Parameters:**
+- `instruction: Instruction` - Parsed instruction
+
+**Returns:** `string` - Formatted string
+
+## Utility Patterns
+
+### Calculate Stack Depth
+
+```typescript
+function calculateStackDepth(bytecode: Uint8Array): number {
+  const instructions = Opcode.parse(bytecode)
+  let maxDepth = 0
+  let currentDepth = 0
+
+  for (const inst of instructions) {
+    const effect = Opcode.getStackEffect(inst.opcode)
+    if (effect === undefined) continue
+
+    currentDepth += effect
+
+    if (currentDepth < 0) {
+      throw new Error(`Stack underflow at offset ${inst.offset}`)
+    }
+
+    if (currentDepth > 1024) {
+      throw new Error(`Stack overflow at offset ${inst.offset}`)
+    }
+
+    maxDepth = Math.max(maxDepth, currentDepth)
+  }
+
+  return maxDepth
+}
+```
+
+### Estimate Gas Cost
+
+```typescript
+function estimateGas(bytecode: Uint8Array): bigint {
+  const instructions = Opcode.parse(bytecode)
+  let totalGas = 0n
+
+  for (const inst of instructions) {
+    const baseCost = Opcode.getGasCost(inst.opcode)
+    if (baseCost !== undefined) {
+      totalGas += BigInt(baseCost)
+    }
+
+    // Add per-byte cost for KECCAK256
+    if (inst.opcode === Opcode.KECCAK256 && inst.immediate) {
+      const wordCost = 6n
+      const words = BigInt(Math.ceil(inst.immediate.length / 32))
+      totalGas += wordCost * words
+    }
+  }
+
+  return totalGas
+}
+```
+
+### Group by Category
+
+```typescript
+function groupByCategory(bytecode: Uint8Array): Map<string, Instruction[]> {
+  const instructions = Opcode.parse(bytecode)
+  const groups = new Map<string, Instruction[]>()
+
+  for (const inst of instructions) {
+    const category = Opcode.getCategory(inst.opcode) ?? "unknown"
+    const group = groups.get(category) ?? []
+    group.push(inst)
+    groups.set(category, group)
+  }
+
+  return groups
+}
+```
+
+### Pretty Print Assembly
+
+```typescript
+function prettyPrint(bytecode: Uint8Array): string {
+  const lines = Opcode.disassemble(bytecode)
+  return lines.join('\n')
+}
+
+console.log(prettyPrint(bytecode))
+// 0000: PUSH1 0x80
+// 0002: PUSH1 0x40
+// 0004: MSTORE
+// 0005: STOP
+```
+
+### Extract PUSH Values
+
+```typescript
+function extractPushValues(bytecode: Uint8Array): Map<number, bigint> {
+  const instructions = Opcode.parse(bytecode)
+  const values = new Map<number, bigint>()
+
+  for (const inst of instructions) {
+    if (Opcode.isPush(inst.opcode) && inst.immediate) {
+      const value = BigInt('0x' + Array.from(inst.immediate)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(''))
+      values.set(inst.offset, value)
+    }
+  }
+
+  return values
+}
+```
+
+## Tree-Shakeable Usage
+
+```typescript
+import {
+  info,
+  getName,
+  getGasCost,
+  getStackEffect,
+  pushBytes,
+  dupPosition,
+  disassemble,
+  format
+} from '@tevm/primitives/Opcode'
+
+const metadata = info(opcode)
+const name = getName(opcode)
+const gas = getGasCost(opcode)
+const stackEffect = getStackEffect(opcode)
+const bytes = pushBytes(opcode)
+const pos = dupPosition(opcode)
+const assembly = disassemble(bytecode)
+const line = format(instruction)
+```
+
+## See Also
+
+- [Constructors](/primitives/opcode/constructors) - Parsing and constants
+- [Validation](/primitives/opcode/validation) - Opcode validation
+- [Usage Patterns](/primitives/opcode/usage-patterns) - Analysis examples

@@ -1,0 +1,373 @@
+---
+title: "Queries"
+description: "Queries"
+---
+
+# Queries
+
+Operations for inspecting AccessList contents.
+
+## AccessList.includesAddress()
+
+Check if address exists in access list.
+
+```typescript
+AccessList.includesAddress(list: BrandedAccessList, address: BrandedAddress): boolean
+```
+
+**Parameters:**
+- `list`: Access list to search
+- `address`: Address to find
+
+**Returns:** `true` if address is in list
+
+**Example:**
+```typescript
+const hasToken = list.includesAddress(tokenAddress);
+
+if (!hasToken) {
+  list = list.withAddress(tokenAddress);
+}
+```
+
+**Implementation:** O(n) byte-by-byte comparison
+
+## AccessList.includesStorageKey()
+
+Check if storage key exists for address.
+
+```typescript
+AccessList.includesStorageKey(
+  list: BrandedAccessList,
+  address: BrandedAddress,
+  key: BrandedHash
+): boolean
+```
+
+**Parameters:**
+- `list`: Access list to search
+- `address`: Address to check
+- `key`: Storage key to find
+
+**Returns:** `true` if key exists for address
+
+**Example:**
+```typescript
+const hasBalance = list.includesStorageKey(
+  tokenAddress,
+  balanceSlot
+);
+
+if (!hasBalance) {
+  list = list.withStorageKey(tokenAddress, balanceSlot);
+}
+```
+
+**Notes:**
+- Returns `false` if address not in list
+- Returns `false` if address has no storage keys
+- O(n×m) complexity: searches addresses then keys
+
+## AccessList.keysFor()
+
+Get all storage keys for an address.
+
+```typescript
+AccessList.keysFor(
+  list: BrandedAccessList,
+  address: BrandedAddress
+): readonly BrandedHash[] | undefined
+```
+
+**Parameters:**
+- `list`: Access list to search
+- `address`: Address to get keys for
+
+**Returns:** Array of storage keys, or `undefined` if address not in list
+
+**Example:**
+```typescript
+const keys = list.keysFor(tokenAddress);
+
+if (keys) {
+  console.log(`Token has ${keys.length} storage keys`);
+  for (const key of keys) {
+    console.log(key.toHex());
+  }
+} else {
+  console.log('Token not in access list');
+}
+```
+
+**Notes:**
+- Returns `undefined` if address not found (not empty array)
+- Returns reference to internal array (readonly)
+- May return empty array if address has no keys
+
+## AccessList.addressCount()
+
+Count total addresses in list.
+
+```typescript
+AccessList.addressCount(list: BrandedAccessList): number
+```
+
+**Parameters:**
+- `list`: Access list to count
+
+**Returns:** Number of addresses
+
+**Example:**
+```typescript
+const count = list.addressCount();
+console.log(`Accessing ${count} contracts`);
+
+if (count > 10) {
+  console.warn('Large access list may not be beneficial');
+}
+```
+
+**Notes:**
+- Counts all addresses, including duplicates
+- O(1) operation (array length)
+
+## AccessList.storageKeyCount()
+
+Count total storage keys across all addresses.
+
+```typescript
+AccessList.storageKeyCount(list: BrandedAccessList): number
+```
+
+**Parameters:**
+- `list`: Access list to count
+
+**Returns:** Total number of storage keys
+
+**Example:**
+```typescript
+const keyCount = list.storageKeyCount();
+console.log(`Accessing ${keyCount} storage slots`);
+
+const avgKeys = keyCount / list.addressCount();
+console.log(`Average ${avgKeys} keys per address`);
+```
+
+**Notes:**
+- Sums all keys across all addresses
+- Includes duplicates
+- O(n) operation
+
+## AccessList.isEmpty()
+
+Check if access list is empty.
+
+```typescript
+AccessList.isEmpty(list: BrandedAccessList): boolean
+```
+
+**Parameters:**
+- `list`: Access list to check
+
+**Returns:** `true` if list has no items
+
+**Example:**
+```typescript
+if (list.isEmpty()) {
+  console.log('No access list entries');
+  // Skip access list in transaction
+  tx.accessList = undefined;
+}
+```
+
+**Notes:**
+- Checks only top-level array length
+- Does not check if items have storage keys
+- O(1) operation
+
+## Patterns
+
+### Check Before Adding
+
+```typescript
+// Avoid duplicates
+if (!list.includesAddress(addr)) {
+  list = list.withAddress(addr);
+}
+
+if (!list.includesStorageKey(addr, key)) {
+  list = list.withStorageKey(addr, key);
+}
+```
+
+### Iterate All Keys
+
+```typescript
+const list: BrandedAccessList = [...];
+
+for (const item of list) {
+  const keys = list.keysFor(item.address);
+  if (keys) {
+    console.log(`${item.address.toHex()}: ${keys.length} keys`);
+  }
+}
+```
+
+### Count Analysis
+
+```typescript
+function analyzeAccessList(list: BrandedAccessList) {
+  const addresses = list.addressCount();
+  const keys = list.storageKeyCount();
+  const avgKeys = addresses > 0 ? keys / addresses : 0;
+
+  return {
+    addresses,
+    keys,
+    avgKeys,
+    empty: list.isEmpty(),
+    cost: list.gasCost(),
+  };
+}
+```
+
+### Conditional Building
+
+```typescript
+let list = AccessList.create();
+
+// Add router
+list = list.withAddress(routerAddress);
+
+// Add tokens if not already present
+for (const token of tokens) {
+  if (!list.includesAddress(token)) {
+    list = list.withAddress(token);
+  }
+}
+```
+
+### Find Missing Keys
+
+```typescript
+function findMissingKeys(
+  list: BrandedAccessList,
+  address: BrandedAddress,
+  requiredKeys: BrandedHash[]
+): BrandedHash[] {
+  return requiredKeys.filter(
+    key => !list.includesStorageKey(address, key)
+  );
+}
+
+const missing = findMissingKeys(list, token, [slot1, slot2, slot3]);
+for (const key of missing) {
+  list = list.withStorageKey(token, key);
+}
+```
+
+### List Summary
+
+```typescript
+function summarize(list: BrandedAccessList): string {
+  if (list.isEmpty()) {
+    return 'Empty access list';
+  }
+
+  const addrs = list.addressCount();
+  const keys = list.storageKeyCount();
+  const cost = list.gasCost();
+
+  return `${addrs} addresses, ${keys} keys, ${cost} gas`;
+}
+```
+
+### Validate Completeness
+
+```typescript
+function ensureComplete(
+  list: BrandedAccessList,
+  required: { address: BrandedAddress; keys: BrandedHash[] }[]
+): boolean {
+  for (const { address, keys } of required) {
+    if (!list.includesAddress(address)) {
+      return false;
+    }
+
+    for (const key of keys) {
+      if (!list.includesStorageKey(address, key)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+```
+
+## Performance
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| includesAddress | O(n) | n = addresses |
+| includesStorageKey | O(n×m) | Byte comparison |
+| keysFor | O(n) | Finds first match |
+| addressCount | O(1) | Array length |
+| storageKeyCount | O(n) | Sum all keys |
+| isEmpty | O(1) | Length check |
+
+**Optimization:**
+- Cache results if querying multiple times
+- Use `includesAddress` before `includesStorageKey`
+- Deduplicate before counting for accurate metrics
+
+## Best Practices
+
+1. **Check before adding to avoid duplicates**
+   ```typescript
+   if (!list.includesAddress(addr)) {
+     list = list.withAddress(addr);
+   }
+   ```
+
+2. **Handle undefined return from keysFor**
+   ```typescript
+   const keys = list.keysFor(addr);
+   if (keys) {
+     // Process keys
+   }
+   ```
+
+3. **Use isEmpty for conditional logic**
+   ```typescript
+   if (!list.isEmpty()) {
+     tx.accessList = list;
+   }
+   ```
+
+4. **Count before processing**
+   ```typescript
+   if (list.addressCount() > MAX_ADDRESSES) {
+     throw new Error('Access list too large');
+   }
+   ```
+
+5. **Cache query results**
+   ```typescript
+   // Good
+   const keys = list.keysFor(addr);
+   for (const key of keys || []) {
+     process(key);
+   }
+
+   // Bad: Repeated queries
+   for (let i = 0; i < list.keysFor(addr)?.length || 0; i++) {
+     // keysFor called every iteration
+   }
+   ```
+
+## See Also
+
+- [Manipulation](.manipulation) - Modifying lists
+- [Validation](.validation) - Type guards
+- [Gas Optimization](.gas-optimization) - Cost analysis

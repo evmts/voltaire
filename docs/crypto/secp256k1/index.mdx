@@ -1,0 +1,417 @@
+---
+title: Secp256k1
+description: ECDSA signatures using the secp256k1 elliptic curve - Ethereum's core signing algorithm
+---
+
+## Overview
+
+Secp256k1 is the elliptic curve used by Bitcoin and Ethereum for digital signatures. It provides 128 bits of security and is defined by the Standards for Efficient Cryptography Group (SECG) in SEC 2.
+
+**Curve equation**: y² = x³ + 7 (mod p)
+
+**Parameters**:
+- Prime field: `p = 2²⁵⁶ - 2³² - 977`
+- Curve order: `n = FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141`
+- Generator point G with coordinates (Gx, Gy)
+
+**Ethereum usage**: Every transaction signature, address derivation via `ecRecover`, and account authentication uses secp256k1 ECDSA.
+
+## Quick Start
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Sign a message hash
+const messageHash = Hash.keccak256String('Hello, Ethereum!');
+const privateKey = new Uint8Array(32); // Your 32-byte private key
+const signature = Secp256k1.sign(messageHash, privateKey);
+
+// Verify signature
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+const isValid = Secp256k1.verify(signature, messageHash, publicKey);
+
+// Recover public key from signature (Ethereum's ecRecover)
+const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
+```
+
+## API Reference
+
+### Signing
+
+#### `sign(messageHash, privateKey)`
+
+Sign a 32-byte message hash with a private key using deterministic ECDSA (RFC 6979).
+
+**Parameters**:
+- `messageHash` (`BrandedHash`) - 32-byte Keccak256 hash to sign
+- `privateKey` (`Uint8Array`) - 32-byte private key (must be > 0 and < curve order)
+
+**Returns**: `BrandedSignature` with components:
+- `r` (`Uint8Array`) - 32-byte signature component
+- `s` (`Uint8Array`) - 32-byte signature component (low-s enforced)
+- `v` (`number`) - Recovery ID (27 or 28 for Ethereum compatibility)
+
+**Throws**:
+- `InvalidPrivateKeyError` - Private key invalid (wrong length, zero, or >= curve order)
+- `Secp256k1Error` - Signing operation failed
+
+```typescript
+const signature = Secp256k1.sign(messageHash, privateKey);
+console.log(signature.v); // 27 or 28
+console.log(signature.r.length); // 32
+console.log(signature.s.length); // 32
+```
+
+### Verification
+
+#### `verify(signature, messageHash, publicKey)`
+
+Verify an ECDSA signature against a message hash and public key.
+
+**Parameters**:
+- `signature` (`BrandedSignature`) - Signature with r, s, v components
+- `messageHash` (`BrandedHash`) - 32-byte message hash that was signed
+- `publicKey` (`Uint8Array`) - 64-byte uncompressed public key (x || y coordinates)
+
+**Returns**: `boolean` - `true` if signature is valid, `false` otherwise
+
+**Throws**:
+- `InvalidPublicKeyError` - Public key wrong length
+- `InvalidSignatureError` - Signature components wrong length
+
+```typescript
+const valid = Secp256k1.verify(signature, messageHash, publicKey);
+if (valid) {
+  console.log('Signature verified!');
+}
+```
+
+#### `recoverPublicKey(signature, messageHash)`
+
+Recover the public key from a signature and message hash. This is the core of Ethereum's `ecRecover` precompile.
+
+**Parameters**:
+- `signature` (`BrandedSignature`) - Signature with r, s, v components
+- `messageHash` (`BrandedHash`) - 32-byte message hash that was signed
+
+**Returns**: `Uint8Array` - 64-byte uncompressed public key
+
+**Throws**:
+- `InvalidSignatureError` - Invalid signature format or recovery failed
+
+```typescript
+const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
+// Use recovered key to derive Ethereum address
+```
+
+### Key Management
+
+#### `derivePublicKey(privateKey)`
+
+Derive the public key from a private key using elliptic curve point multiplication (private_key * G).
+
+**Parameters**:
+- `privateKey` (`Uint8Array`) - 32-byte private key
+
+**Returns**: `Uint8Array` - 64-byte uncompressed public key
+
+**Throws**:
+- `InvalidPrivateKeyError` - Invalid private key
+
+```typescript
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+console.log(publicKey.length); // 64 (x || y, no 0x04 prefix)
+```
+
+#### `isValidPrivateKey(privateKey)`
+
+Check if a byte array is a valid secp256k1 private key.
+
+**Parameters**:
+- `privateKey` (`Uint8Array`) - Candidate private key
+
+**Returns**: `boolean` - `true` if valid (32 bytes, > 0, < curve order)
+
+```typescript
+if (Secp256k1.isValidPrivateKey(privateKey)) {
+  // Safe to use
+}
+```
+
+#### `isValidPublicKey(publicKey)`
+
+Check if a byte array is a valid secp256k1 public key.
+
+**Parameters**:
+- `publicKey` (`Uint8Array`) - Candidate public key
+
+**Returns**: `boolean` - `true` if valid (64 bytes, point on curve)
+
+```typescript
+if (Secp256k1.isValidPublicKey(publicKey)) {
+  // Point is on the curve
+}
+```
+
+#### `isValidSignature(signature)`
+
+Check if a signature has valid r, s, v components.
+
+**Parameters**:
+- `signature` (`BrandedSignature`) - Candidate signature
+
+**Returns**: `boolean` - `true` if valid
+
+```typescript
+if (Secp256k1.isValidSignature(signature)) {
+  // Signature format is correct
+}
+```
+
+### Constants
+
+```typescript
+Secp256k1.CURVE_ORDER            // 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n
+Secp256k1.PRIVATE_KEY_SIZE       // 32 bytes
+Secp256k1.PUBLIC_KEY_SIZE        // 64 bytes (uncompressed, no prefix)
+Secp256k1.SIGNATURE_COMPONENT_SIZE // 32 bytes (for r and s)
+```
+
+## Security Considerations
+
+### Critical Warnings
+
+⚠️ **NEVER reuse nonces**: Secp256k1 uses deterministic signatures (RFC 6979) to prevent nonce reuse. Random nonce generation is dangerous - reusing a nonce with different messages leaks the private key.
+
+⚠️ **Validate all inputs**: Always validate private keys (0 < key < curve order), public keys (point on curve), and signature components before use.
+
+⚠️ **Low-s enforcement**: Signatures automatically use low-s values (s ≤ n/2) to prevent malleability. Both high-s and low-s signatures verify successfully, but Ethereum requires low-s.
+
+⚠️ **Use cryptographically secure random**: Never use `Math.random()` for private key generation. Use `crypto.getRandomValues()` or similar CSPRNG.
+
+### TypeScript Implementation
+
+The TypeScript implementation uses **@noble/curves** by Paul Miller, a widely-audited and battle-tested library:
+- Constant-time operations to prevent timing attacks
+- RFC 6979 deterministic signatures (no nonce reuse risk)
+- Validates all curve points and scalars
+- Low-s normalization for Ethereum compatibility
+
+### Zig Implementation
+
+⚠️ **UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED** ⚠️
+
+The Zig implementation (`src/crypto/secp256k1.zig`) is a **custom elliptic curve cryptography implementation** that has **NOT been security audited**. It is provided for educational/testing purposes only.
+
+**Known risks**:
+- Potential timing attacks in modular arithmetic
+- Unvalidated against known ECC vulnerabilities
+- Custom point arithmetic may have edge case bugs
+- Memory safety not guaranteed under all conditions
+
+**DO NOT USE IN PRODUCTION** without proper security audit and testing.
+
+For production use, prefer:
+1. TypeScript implementation (audited @noble/curves)
+2. Ethereum precompile `ecRecover` for signature recovery
+3. Hardware wallet signing for sensitive operations
+
+## Test Vectors
+
+### RFC 6979 Deterministic Signatures
+
+```typescript
+// Private key = 1
+const privateKey = new Uint8Array(32);
+privateKey[31] = 1;
+
+// Message hash (SHA-256 of "hello world")
+const messageHash = sha256("hello world");
+
+// Sign twice - should produce identical signatures
+const sig1 = Secp256k1.sign(messageHash, privateKey);
+const sig2 = Secp256k1.sign(messageHash, privateKey);
+
+// Same message + key = same signature (deterministic)
+assert(sig1.r.every((byte, i) => byte === sig2.r[i]));
+assert(sig1.s.every((byte, i) => byte === sig2.s[i]));
+assert(sig1.v === sig2.v);
+```
+
+### Signature Recovery
+
+```typescript
+const privateKey = new Uint8Array(32);
+privateKey[31] = 42;
+const messageHash = sha256("test recovery");
+
+// Sign message
+const signature = Secp256k1.sign(messageHash, privateKey);
+
+// Recover public key using v value
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+const recovered = Secp256k1.recoverPublicKey(signature, messageHash);
+
+// Recovered key matches original
+assert(publicKey.every((byte, i) => byte === recovered[i]));
+```
+
+### Edge Cases
+
+```typescript
+// Minimum valid private key (1)
+const minKey = new Uint8Array(32);
+minKey[31] = 1;
+const sig1 = Secp256k1.sign(messageHash, minKey); // Valid
+
+// Maximum valid private key (n-1)
+const maxKey = new Uint8Array([
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
+]);
+const sig2 = Secp256k1.sign(messageHash, maxKey); // Valid
+
+// Zero private key (invalid)
+const zeroKey = new Uint8Array(32);
+expect(() => Secp256k1.sign(messageHash, zeroKey)).toThrow(); // Throws
+
+// Private key >= n (invalid)
+const invalidKey = new Uint8Array([
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
+]);
+expect(() => Secp256k1.sign(messageHash, invalidKey)).toThrow(); // Throws
+```
+
+## Implementation Details
+
+### TypeScript
+
+**Library**: `@noble/curves/secp256k1` by Paul Miller
+- **Audit status**: Multiple security audits, widely used in production
+- **Features**: Constant-time operations, RFC 6979 deterministic signing, point validation
+- **Size**: ~20KB minified (tree-shakeable)
+- **Performance**: Competitive with native implementations
+
+The TypeScript API wraps @noble/curves with Ethereum-specific conventions:
+- 64-byte uncompressed public keys (x || y, no 0x04 prefix)
+- Recovery ID v = 27 or 28 (Ethereum format)
+- Low-s normalization enforced
+
+### Zig
+
+**Implementation**: Custom elliptic curve arithmetic in `src/crypto/secp256k1.zig`
+- **Status**: ⚠️ UNAUDITED - Educational/testing only
+- **Features**: Affine point arithmetic, modular arithmetic, signature generation
+- **Limitations**: Not constant-time, unvalidated edge cases, no production guarantees
+
+For FFI usage, prefer the TypeScript implementation or use the EVM precompiles.
+
+### WASM
+
+Secp256k1 operations are available in WASM builds:
+- **ReleaseSmall**: Size-optimized for bundle size
+- **ReleaseFast**: Performance-optimized for throughput
+
+```typescript
+import { Secp256k1 } from '@tevm/voltaire/crypto/Secp256k1';
+// Automatically uses WASM in supported environments
+```
+
+## Ethereum Integration
+
+### Transaction Signing
+
+Every Ethereum transaction is signed with secp256k1:
+
+```typescript
+import * as Transaction from '@tevm/voltaire/primitives/Transaction';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Create transaction
+const tx = {
+  nonce: 0n,
+  gasPrice: 20000000000n,
+  gasLimit: 21000n,
+  to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+  value: 1000000000000000000n,
+  data: new Uint8Array(),
+};
+
+// Hash transaction (RLP-encoded)
+const txHash = Transaction.hash(tx);
+
+// Sign with private key
+const signature = Secp256k1.sign(txHash, privateKey);
+
+// Transaction now includes signature (r, s, v)
+const signedTx = { ...tx, ...signature };
+```
+
+### Address Derivation
+
+Ethereum addresses are derived from secp256k1 public keys:
+
+```typescript
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// Derive public key from private key
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+// Hash public key with Keccak256
+const hash = Hash.keccak256(publicKey);
+
+// Take last 20 bytes as address
+const address = Address.from(hash.slice(12));
+```
+
+### ecRecover Precompile
+
+The EVM's `ecRecover` precompile (address 0x01) uses secp256k1 signature recovery:
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+
+// Recover signer's public key from transaction signature
+const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+
+// Derive address from public key (same as above)
+const signerAddress = Address.fromPublicKey(publicKey);
+```
+
+## In-Depth Documentation
+
+Comprehensive technical documentation:
+
+- [Signing](/crypto/secp256k1/signing) - ECDSA signing with RFC 6979 deterministic nonces
+- [Verification](/crypto/secp256k1/verification) - Signature verification algorithm
+- [Key Derivation](/crypto/secp256k1/key-derivation) - Private → public key derivation
+- [Recovery](/crypto/secp256k1/recovery) - Public key recovery (ecRecover)
+- [Point Operations](/crypto/secp256k1/point-operations) - Elliptic curve arithmetic
+- [Test Vectors](/crypto/secp256k1/test-vectors) - Official test vectors (RFC 6979, IETF, Ethereum)
+- [Security](/crypto/secp256k1/security) - Side-channel attacks, malleability, best practices
+- [Performance](/crypto/secp256k1/performance) - Benchmarks and optimization techniques
+- [Usage Patterns](/crypto/secp256k1/usage-patterns) - Transaction signing, EIP-191, EIP-712
+
+## Comparison with Other Curves
+
+For comprehensive technical comparison with P-256 including performance, security, and use case analysis:
+
+**[Elliptic Curve Comparison: secp256k1 vs P-256](/crypto/comparison)**
+
+## Related
+
+- [Primitives: Signature](/primitives/signature) - Generic signature type
+- [Primitives: Hash](/primitives/hash) - Keccak256 hashing for message preparation
+- [Primitives: Address](/primitives/address) - Ethereum addresses from public keys
+- [Precompiles: ecRecover](/precompiles/ecrecover) - EVM signature recovery
+- [Crypto: P256](/crypto/p256) - NIST P-256 curve (WebAuthn)
+- [Crypto: Ed25519](/crypto/ed25519) - Edwards curve signatures

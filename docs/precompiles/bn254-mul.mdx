@@ -1,0 +1,179 @@
+---
+title: "0x07 BN254 Mul"
+description: BN254 elliptic curve scalar multiplication
+---
+
+## Overview
+
+**Address:** `0x0000000000000000000000000000000000000007`
+**Introduced:** Byzantium (EIP-196)
+**EIP:** [EIP-196](https://eips.ethereum.org/EIPS/eip-196), [EIP-1108](https://eips.ethereum.org/EIPS/eip-1108)
+
+The BN254 Mul precompile performs scalar multiplication on the BN254 (alt_bn128) curve. It multiplies a G1 point by a scalar, computing `scalar * point`. This operation is crucial for zkSNARK verification and cryptographic protocols.
+
+EIP-1108 (Istanbul) reduced gas costs by 99% compared to Byzantium, making zkSNARK verification practical.
+
+## Gas Cost
+
+**Fixed:** `6000` gas (reduced from 40,000 in Istanbul via EIP-1108)
+
+## Input Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | x (point x-coordinate, big-endian)
+32     | 32     | y (point y-coordinate, big-endian)
+64     | 32     | scalar (multiplier, big-endian)
+```
+
+Total input length: 96 bytes (padded/truncated to this size)
+
+Point must satisfy curve equation: `y^2 = x^3 + 3` over BN254 field.
+Scalar can be any 256-bit value (automatically reduced modulo curve order).
+
+## Output Format
+
+```
+Offset | Length | Description
+-------|--------|-------------
+0      | 32     | x (result point x-coordinate, big-endian)
+32     | 32     | y (result point y-coordinate, big-endian)
+```
+
+Total output length: 64 bytes
+
+## Usage Example
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Multiply G1 point by scalar
+const x = new Uint8Array(32); // point x-coordinate
+const y = new Uint8Array(32); // point y-coordinate
+const scalar = new Uint8Array(32); // scalar value
+scalar[31] = 5; // multiply by 5
+
+const input = new Uint8Array(96);
+input.set(x, 0);
+input.set(y, 32);
+input.set(scalar, 64);
+
+const result = execute(
+  PrecompileAddress.BN254_MUL,
+  input,
+  10000n,
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  const resultX = result.output.slice(0, 32);
+  const resultY = result.output.slice(32, 64);
+  console.log('Result point:', { x: resultX, y: resultY });
+  console.log('Gas used:', result.gasUsed); // 6000
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+## Error Conditions
+
+- Out of gas (gasLimit < 6000)
+- Point not on curve (x, y don't satisfy `y^2 = x^3 + 3`)
+- Coordinate >= field modulus
+
+Invalid points cause failure. Invalid scalars (including zero) are accepted - the operation completes normally.
+
+## Use Cases
+
+- **zkSNARK verification:** Groth16 proofs require scalar multiplications
+- **Key derivation:** Generate public keys from private scalars
+- **Commitment schemes:** Pedersen commitments use scalar multiplication
+- **Signature schemes:** BLS-like signatures on BN254
+- **Zero-knowledge protocols:** Privacy-preserving applications
+
+## Implementation Details
+
+- **Zig:** Pure Zig implementation using arkworks-rs bindings
+- **TypeScript:** Wraps BN254 crypto module scalar multiplication
+- **Integration:** Part of BN254 crypto suite
+- **Algorithm:** Double-and-add (windowed for performance)
+- **Optimization:** Constant-time execution to prevent timing attacks
+
+## Special Cases
+
+- **Scalar = 0:** Returns point at infinity (0, 0)
+- **Scalar = 1:** Returns input point unchanged
+- **Scalar = group order:** Returns point at infinity (nP = O)
+- **Point at infinity input:** Returns point at infinity regardless of scalar
+- **Scalar > group order:** Automatically reduced modulo group order
+
+## Scalar Arithmetic
+
+Scalars are elements of F_r where r is the curve order:
+- **Group order (r):** 21888242871839275222246405745257275088548364400416034343698204186575808495617
+- Scalars wrap around: `(r + k) * P = k * P`
+- Scalar = 0 or r: result is point at infinity
+
+## Test Vectors
+
+```typescript
+// Test 1: Any point * 0 = Identity
+const input1 = new Uint8Array(96);
+input1[31] = 1;  // x = 1
+input1[63] = 2;  // y = 2
+// scalar = 0 (already zero-filled)
+// Expected: (0, 0)
+
+// Test 2: Generator * 1 = Generator
+const input2 = new Uint8Array(96);
+input2[31] = 1;   // x = 1
+input2[63] = 2;   // y = 2
+input2[95] = 1;   // scalar = 1
+// Expected: (1, 2)
+
+// Test 3: Generator * 2 = 2*Generator
+const input3 = new Uint8Array(96);
+input3[31] = 1;   // x = 1
+input3[63] = 2;   // y = 2
+input3[95] = 2;   // scalar = 2
+// Expected: 0x1d739bd53b93e2d05f48f9626e5c6803e8cf53e8afb48a62337e42e555e44fa3
+//           0f13d0f0fbf2aa7969e5b86f27ca82e381bb0b495dc2be5e6ed7d28ce5efde77
+
+// Test 4: Invalid point (not on curve)
+const input4 = new Uint8Array(96);
+input4[31] = 1;   // x = 1
+input4[63] = 2;   // y = 2 (but let's say this was wrong)
+input4[95] = 5;   // scalar = 5
+// If point not on curve: Error (InvalidPoint)
+```
+
+## Gas Cost History
+
+| Hardfork | Gas Cost | Change |
+|----------|----------|--------|
+| Byzantium | 40,000 | Initial |
+| Istanbul (EIP-1108) | 6,000 | -85% |
+
+The 85% reduction made zkSNARK verification economically viable.
+
+## Performance Considerations
+
+- Scalar multiplication is ~40x more expensive than addition (6000 vs 150 gas)
+- Prefer addition when possible (e.g., precompute multiples)
+- Batch operations to amortize costs
+- Typical Groth16 proof verification uses 2-3 scalar multiplications
+
+## References
+
+### Specifications
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Appendix E (Precompiled Contracts)
+- [EIP-196: Precompiled Contracts for Addition and Scalar Multiplication on alt_bn128](https://eips.ethereum.org/EIPS/eip-196)
+- [EIP-1108: Reduce alt_bn128 Gas Costs](https://eips.ethereum.org/EIPS/eip-1108)
+
+### Related
+- [Crypto: BN254](/crypto/bn254)
+- [Precompile: BN254 Add](/precompiles/bn254-add)
+- [Precompile: BN254 Pairing](/precompiles/bn254-pairing)
+- [Precompiles Overview](/precompiles)

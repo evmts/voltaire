@@ -1,0 +1,589 @@
+---
+title: "Signing & Verification"
+description: "Signing & Verification"
+---
+
+# Signing & Verification
+
+Authorization hashing, signing, and signature verification.
+
+## hash
+
+Calculate signing hash for unsigned authorization.
+
+```typescript
+Authorization.hash.call(unsigned: Authorization.Unsigned): Hash
+```
+
+**Parameters:**
+- `unsigned`: Unsigned authorization to hash
+
+**Returns:** 32-byte hash to sign
+
+**Formula:** `keccak256(MAGIC_BYTE || rlp([chainId, address, nonce]))`
+
+Where:
+- `MAGIC_BYTE` = `0x05` (EIP-7702 identifier)
+- RLP encoding uses compact representation (no leading zeros)
+
+### Usage
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+const sigHash = Authorization.hash.call(unsigned);
+console.log(`Hash to sign: ${sigHash}`);
+
+// Sign this hash with secp256k1 private key
+```
+
+### Implementation Details
+
+**RLP Encoding:**
+1. Encode chainId as compact bigint (remove leading zeros)
+2. Encode address as 20-byte array
+3. Encode nonce as compact bigint
+4. Wrap in RLP list structure
+
+**Hashing:**
+1. Prepend MAGIC_BYTE (0x05)
+2. Apply Keccak-256
+
+**Example:**
+```
+unsigned = { chainId: 1, address: 0x742d...bEb2, nonce: 0 }
+
+RLP([1, 0x742d...bEb2, 0]) = 0xe594742d35cc6634c0532925a3b844bc9e7595f0beb280
+
+MAGIC || RLP = 0x05e594742d35cc6634c0532925a3b844bc9e7595f0beb280
+
+hash = keccak256(0x05e594...) = 0x123...def
+```
+
+### Why MAGIC_BYTE?
+
+EIP-7702 uses 0x05 to:
+- Prevent cross-protocol replay attacks
+- Distinguish from other signing formats (EIP-191, EIP-712)
+- Ensure unique hash domain
+
+## sign
+
+Create signed authorization from unsigned authorization.
+
+```typescript
+Authorization.sign.call(
+  unsigned: Authorization.Unsigned,
+  privateKey: Uint8Array
+): Authorization.Item
+```
+
+**Parameters:**
+- `unsigned`: Authorization to sign
+- `privateKey`: 32-byte secp256k1 private key
+
+**Returns:** Signed Authorization.Item
+
+**Process:**
+1. Hash unsigned authorization
+2. Sign hash with secp256k1
+3. Recover yParity by attempting recovery
+4. Return Authorization.Item with signature
+
+### Usage
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+const privateKey = new Uint8Array(32);
+// ... fill with your private key
+
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+console.log(`Signature:`);
+console.log(`  r: ${auth.r}`);
+console.log(`  s: ${auth.s}`);
+console.log(`  v: ${auth.yParity}`);
+```
+
+### Implementation Details
+
+**Signing Process:**
+
+1. **Hash Authorization**
+   ```typescript
+   const messageHash = hash(unsigned);
+   ```
+
+2. **Sign with secp256k1**
+   ```typescript
+   const sig = Secp256k1.sign(messageHash, privateKey);
+   // Returns { r: Uint8Array(32), s: Uint8Array(32), v: number }
+   ```
+
+3. **Convert to bigint**
+   ```typescript
+   const rBigint = bytesToBigint(sig.r);
+   const sBigint = bytesToBigint(sig.s);
+   ```
+
+4. **Recover yParity**
+   ```typescript
+   // Try v=0 and v=1, see which recovers to correct address
+   let yParity = 0;
+   try {
+     const recovered = Secp256k1.recoverPublicKey({ r, s, v: 0 }, messageHash);
+     const recoveredAddress = addressFromPublicKey(recovered);
+     if (!equals(recoveredAddress, unsigned.address)) {
+       yParity = 1;
+     }
+   } catch {
+     yParity = 1;
+   }
+   ```
+
+5. **Return signed authorization**
+   ```typescript
+   return {
+     chainId: unsigned.chainId,
+     address: unsigned.address,
+     nonce: unsigned.nonce,
+     yParity,
+     r: rBigint,
+     s: sBigint
+   };
+   ```
+
+### Signature Determinism
+
+secp256k1 signing is deterministic (RFC 6979):
+- Same private key + message always produces same signature
+- Prevents nonce reuse attacks
+- Signatures are reproducible
+
+## verify
+
+Recover authority (signer) from authorization signature.
+
+```typescript
+Authorization.verify.call(auth: Authorization.Item): Address
+```
+
+**Parameters:**
+- `auth`: Signed authorization to verify
+
+**Returns:** Recovered signer address (authority)
+
+**Throws:** `ValidationError` if validation fails or recovery fails
+
+**Process:**
+1. Validate authorization structure
+2. Hash unsigned portion
+3. Recover public key from signature
+4. Derive address from public key
+
+### Usage
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const auth: Authorization.Item = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n,
+  yParity: 0,
+  r: 0x123...n,
+  s: 0x456...n
+};
+
+try {
+  const authority = Authorization.verify.call(auth);
+  console.log(`Authorized by: ${authority}`);
+
+  // Verify it's the expected signer
+  if (authority === expectedEOA) {
+    console.log('Valid authorization from expected account');
+  }
+} catch (e) {
+  console.error(`Verification failed: ${e}`);
+}
+```
+
+### Implementation Details
+
+**Verification Process:**
+
+1. **Validate Structure**
+   ```typescript
+   validate(auth);  // Throws if invalid
+   ```
+
+2. **Hash Unsigned Portion**
+   ```typescript
+   const unsigned = {
+     chainId: auth.chainId,
+     address: auth.address,
+     nonce: auth.nonce
+   };
+   const messageHash = hash(unsigned);
+   ```
+
+3. **Convert Signature to Bytes**
+   ```typescript
+   const r = bigintToBytes(auth.r, 32);
+   const s = bigintToBytes(auth.s, 32);
+   ```
+
+4. **Recover Public Key**
+   ```typescript
+   const signature = { r, s, v: auth.yParity };
+   const publicKey = Secp256k1.recoverPublicKey(signature, messageHash);
+   // Returns 64-byte uncompressed public key (x || y)
+   ```
+
+5. **Derive Address**
+   ```typescript
+   const x = publicKey.slice(0, 32);
+   const y = publicKey.slice(32, 64);
+   return Address.fromPublicKey(x, y);
+   // keccak256(publicKey)[12:32]
+   ```
+
+### ECDSA Recovery
+
+Public key recovery uses ECDSA mathematics:
+
+Given signature (r, s, v) and message hash h:
+1. Compute point R from r and v
+2. Compute s_inv = s^-1 mod n
+3. Recover public key: Q = s_inv * (h * G + r * R)
+4. Derive address from Q
+
+The yParity (v) indicates which of two possible points to use.
+
+## Complete Signing Flow
+
+### Create, Sign, Verify
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+// 1. Create unsigned authorization
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  nonce: 0n
+};
+
+// 2. Calculate hash (optional - done internally by sign)
+const sigHash = Authorization.hash.call(unsigned);
+console.log(`Signing hash: ${sigHash}`);
+
+// 3. Sign with private key
+const privateKey = new Uint8Array(32);
+// ... your private key
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+// 4. Validate signature
+Authorization.validate.call(auth);
+console.log('Signature valid');
+
+// 5. Verify signer
+const authority = Authorization.verify.call(auth);
+console.log(`Signed by: ${authority}`);
+
+// 6. Confirm it's your account
+const myAddress = Address.fromPrivateKey(privateKey);
+console.log(`Match: ${Address.equals(authority, myAddress)}`);
+```
+
+## Signature Security
+
+### Private Key Safety
+
+Never expose private keys:
+
+```typescript
+// Good: Keep private key secure
+const privateKey = await getSecurePrivateKey();
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+// Good: Clear after use
+privateKey.fill(0);
+
+// Bad: Hardcoded private key
+const privateKey = new Uint8Array([1, 2, 3, ...]); // NEVER DO THIS
+```
+
+### Nonce Management
+
+Use correct nonce to prevent signature reuse:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+async function createAuthorization(
+  chainId: bigint,
+  delegateTo: Address,
+  privateKey: Uint8Array
+): Promise<Authorization.Item> {
+  // Get current account nonce
+  const myAddress = Address.fromPrivateKey(privateKey);
+  const nonce = await getAccountNonce(myAddress);
+
+  const unsigned = { chainId, address: delegateTo, nonce };
+  return Authorization.sign.call(unsigned, privateKey);
+}
+```
+
+### Chain ID Protection
+
+Always use correct chain ID:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const MAINNET = 1n;
+const POLYGON = 137n;
+
+// Good: Explicit chain ID
+const unsigned = {
+  chainId: MAINNET,
+  address: contractAddress,
+  nonce: 0n
+};
+
+// Bad: Reusing authorization cross-chain
+// Authorization signed for mainnet (1) won't work on polygon (137)
+```
+
+### Signature Malleability
+
+`sign()` automatically creates non-malleable signatures (s ≤ N/2):
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+// Signature is guaranteed non-malleable
+console.log(auth.s <= Authorization.SECP256K1_HALF_N); // true
+
+// Validation will pass
+Authorization.validate.call(auth);
+```
+
+## Advanced Patterns
+
+### Batch Signing
+
+Sign multiple authorizations:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function signAuthBatch(
+  unsignedList: Authorization.Unsigned[],
+  privateKey: Uint8Array
+): Authorization.Item[] {
+  return unsignedList.map(unsigned =>
+    Authorization.sign.call(unsigned, privateKey)
+  );
+}
+
+const batch = signAuthBatch([
+  { chainId: 1n, address: contract1, nonce: 0n },
+  { chainId: 1n, address: contract2, nonce: 1n },
+  { chainId: 1n, address: contract3, nonce: 2n }
+], privateKey);
+```
+
+### Verify Batch
+
+Verify all signatures and collect authorities:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+function verifyAuthBatch(authList: Authorization.Item[]): {
+  authorities: Address[];
+  valid: Authorization.Item[];
+  invalid: Array<{ auth: Authorization.Item; error: string }>;
+} {
+  const authorities: Address[] = [];
+  const valid: Authorization.Item[] = [];
+  const invalid: Array<{ auth: Authorization.Item; error: string }> = [];
+
+  for (const auth of authList) {
+    try {
+      const authority = Authorization.verify.call(auth);
+      authorities.push(authority);
+      valid.push(auth);
+    } catch (e) {
+      invalid.push({
+        auth,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+  }
+
+  return { authorities, valid, invalid };
+}
+
+const { authorities, valid, invalid } = verifyAuthBatch(authList);
+console.log(`Valid: ${valid.length}, Invalid: ${invalid.length}`);
+```
+
+### Pre-compute Hash
+
+Pre-compute signing hash for UI display:
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+async function requestSignature(
+  unsigned: Authorization.Unsigned
+): Promise<Authorization.Item> {
+  // Pre-compute hash for user confirmation
+  const sigHash = Authorization.hash.call(unsigned);
+
+  // Show to user
+  console.log(`You are signing:`);
+  console.log(`  Chain: ${unsigned.chainId}`);
+  console.log(`  Delegate to: ${unsigned.address}`);
+  console.log(`  Nonce: ${unsigned.nonce}`);
+  console.log(`  Hash: ${sigHash}`);
+
+  // Get confirmation
+  const confirmed = await confirmWithUser();
+  if (!confirmed) {
+    throw new Error('User rejected signature');
+  }
+
+  // Sign
+  const privateKey = await getPrivateKey();
+  return Authorization.sign.call(unsigned, privateKey);
+}
+```
+
+### Verify Expected Signer
+
+Verify signature is from expected account:
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+function verifyExpectedSigner(
+  auth: Authorization.Item,
+  expectedSigner: Address
+): boolean {
+  try {
+    const authority = Authorization.verify.call(auth);
+    return Address.equals(authority, expectedSigner);
+  } catch {
+    return false;
+  }
+}
+
+const isValid = verifyExpectedSigner(auth, userEOA);
+if (!isValid) {
+  throw new Error('Authorization not from expected signer');
+}
+```
+
+## Performance
+
+### Operation Costs
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| `hash` | O(1) | RLP encode + keccak256 |
+| `sign` | O(1) | secp256k1 signing |
+| `verify` | O(1) | Public key recovery |
+
+All operations are constant time with respect to input size.
+
+### Optimization Tips
+
+1. **Cache hashes** - Reuse hash if signing same unsigned multiple times
+2. **Batch verification** - Process multiple auths together
+3. **Pre-validate** - Call validate() before verify() to fail fast
+4. **Parallel signing** - Sign multiple auths in parallel (if private key allows)
+
+### Benchmarks
+
+Typical performance (actual values depend on hardware):
+
+```
+hash:     ~50,000 ops/sec
+sign:     ~10,000 ops/sec  (includes ECDSA signing)
+verify:   ~8,000 ops/sec   (includes public key recovery)
+```
+
+## Testing
+
+### Test Signing & Verification
+
+```typescript
+import { Authorization, Address } from '@tevm/voltaire';
+
+// Create test private key
+const privateKey = new Uint8Array(32);
+privateKey.fill(1);
+
+const myAddress = Address.fromPrivateKey(privateKey);
+
+// Create unsigned
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  nonce: 0n
+};
+
+// Sign
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+// Verify signature is valid
+Authorization.validate.call(auth);
+
+// Verify recovers correct signer
+const authority = Authorization.verify.call(auth);
+expect(Address.equals(authority, myAddress)).toBe(true);
+```
+
+### Test Hash Determinism
+
+```typescript
+import { Authorization } from '@tevm/voltaire';
+
+const unsigned: Authorization.Unsigned = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+};
+
+// Hash should be deterministic
+const hash1 = Authorization.hash.call(unsigned);
+const hash2 = Authorization.hash.call(unsigned);
+
+expect(hash1).toEqual(hash2);
+```
+
+## See Also
+
+- [Validation](./validation) - Signature validation
+- [Constructors](./constructors) - Creating unsigned authorizations
+- [Processing](./processing) - Processing signed authorizations
+- [EIP-7702](./eip7702) - Specification details

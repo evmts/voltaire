@@ -1,0 +1,465 @@
+---
+title: Uint8Array Methods
+description: Inherited methods from Uint8Array prototype
+---
+
+# Uint8Array Methods
+
+Hash extends `Uint8Array`, inheriting all standard array methods. These methods provide powerful operations for byte manipulation, iteration, and transformation.
+
+## Overview
+
+Because Hash is a `Uint8Array` subclass, you get full access to:
+- **Array-like operations** - `slice`, `map`, `filter`, `reduce`
+- **Byte manipulation** - `set`, `fill`, `copyWithin`
+- **Iteration** - `forEach`, `entries`, `keys`, `values`
+- **Search** - `find`, `findIndex`, `indexOf`, `includes`
+- **Comparison** - `every`, `some`
+
+## Instance Methods
+
+### Array Operations
+
+#### `slice(start?, end?)`
+
+Extract portion of hash:
+
+```typescript
+const hash = Hash.keccak256String("transfer(address,uint256)")
+
+// Get function selector (first 4 bytes)
+const selector = hash.slice(0, 4) // Uint8Array [0xa9, 0x05, 0x9c, 0xbb]
+
+// Get last 4 bytes
+hash.slice(-4)
+
+// Returns Uint8Array, not Hash
+const partial = hash.slice(0, 16)
+partial instanceof Hash // false (Uint8Array)
+```
+
+#### `subarray(start?, end?)`
+
+Like `slice()` but creates view (no copy):
+
+```typescript
+const hash = Hash.keccak256String("hello")
+const view = hash.subarray(0, 10)
+
+// Modifying view affects original
+view[0] = 0xff
+hash[0] === 0xff // true
+```
+
+#### `map(fn)`
+
+Transform each byte:
+
+```typescript
+const hash = Hash.random()
+
+// Invert all bits (demo only)
+const inverted = hash.map(b => ~b & 0xff)
+```
+
+#### `filter(fn)`
+
+Select bytes matching condition:
+
+```typescript
+const hash = Hash.random()
+
+// Find non-zero bytes
+const nonZero = Array.from(hash).filter(b => b !== 0)
+console.log(`${nonZero.length} non-zero bytes`)
+```
+
+#### `reduce(fn, initial)`
+
+Accumulate value from bytes:
+
+```typescript
+const hash = Hash.random()
+
+// Sum all bytes
+const sum = hash.reduce((acc, b) => acc + b, 0)
+
+// XOR all bytes
+const xor = hash.reduce((acc, b) => acc ^ b, 0)
+
+// Check if all bytes are equal
+const allEqual = hash.every((b, i, arr) => b === arr[0])
+```
+
+### Iteration
+
+#### `forEach(fn)`
+
+Execute function for each byte:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+hash.forEach((byte, index) => {
+  console.log(`Byte ${index}: 0x${byte.toString(16).padStart(2, '0')}`)
+})
+```
+
+#### `entries()`, `keys()`, `values()`
+
+Iterate as [index, value] pairs, indices, or values:
+
+```typescript
+const hash = Hash.random()
+
+// Iterate [index, byte] pairs
+for (const [i, byte] of hash.entries()) {
+  console.log(`${i}: ${byte}`)
+}
+
+// Iterate indices
+for (const i of hash.keys()) {
+  console.log(i) // 0, 1, 2, ..., 31
+}
+
+// Iterate values
+for (const byte of hash.values()) {
+  console.log(byte)
+}
+
+// Default iterator is values()
+for (const byte of hash) {
+  console.log(byte)
+}
+```
+
+### Search
+
+#### `find(fn)` / `findIndex(fn)`
+
+Find first matching byte:
+
+```typescript
+const hash = Hash.random()
+
+// Find first non-zero byte
+const firstNonZero = hash.find(b => b !== 0)
+
+// Find index of first 0xff byte
+const index = hash.findIndex(b => b === 0xff)
+```
+
+#### `findLast(fn)` / `findLastIndex(fn)`
+
+Find last matching byte:
+
+```typescript
+const hash = Hash.fromHex("0x000000000000000000000000000000000000000000000000000000000000003e")
+
+// Find last non-zero byte
+const lastNonZero = hash.findLast(b => b !== 0) // 0x3e
+
+// Find index
+const index = hash.findLastIndex(b => b !== 0) // 31
+```
+
+#### `indexOf(value)` / `lastIndexOf(value)`
+
+Find index of specific byte value:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+const firstIndex = hash.indexOf(0x1c) // First occurrence
+const lastIndex = hash.lastIndexOf(0xa8) // Last occurrence
+hash.indexOf(0xff) // -1 (not found)
+```
+
+#### `includes(value)`
+
+Check if byte exists:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+hash.includes(0x1c) // true
+hash.includes(0xff) // false
+```
+
+### Comparison
+
+#### `every(fn)`
+
+Test if all bytes match condition:
+
+```typescript
+const zeroHash = Hash.fromBytes(new Uint8Array(32))
+zeroHash.every(b => b === 0) // true
+
+const hash = Hash.random()
+hash.every(b => `b <= 0`xff) // true (always for Uint8Array)
+hash.every(b => b < 128) // maybe
+```
+
+#### `some(fn)`
+
+Test if any byte matches condition:
+
+```typescript
+const hash = Hash.fromHex("0x000000000000000000000000000000000000000000000000000000000000003e")
+hash.some(b => b !== 0) // true (has non-zero bytes)
+
+const zeroHash = Hash.ZERO
+zeroHash.some(b => b !== 0) // false
+```
+
+### Manipulation
+
+#### `fill(value, start?, end?)`
+
+Fill bytes with value (mutates):
+
+```typescript
+const hash = Hash.fromBytes(new Uint8Array(32))
+
+// Fill entire hash with 0xff
+hash.fill(0xff)
+
+// Fill first 4 bytes
+hash.fill(0xaa, 0, 4)
+
+// Fill from byte 10 onwards
+hash.fill(0xbb, 10)
+```
+
+#### `set(source, offset?)`
+
+Copy bytes from another array (mutates):
+
+```typescript
+const hash = Hash.fromBytes(new Uint8Array(32))
+
+// Copy 4 bytes at start
+const bytes = new Uint8Array([0x11, 0x22, 0x33, 0x44])
+hash.set(bytes, 0)
+
+// hash starts with 0x11223344...
+```
+
+#### `copyWithin(target, start, end?)`
+
+Copy portion within itself (mutates):
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+// Copy first 4 bytes to position 28
+hash.copyWithin(28, 0, 4)
+```
+
+### Sorting
+
+#### `sort(compareFn?)`
+
+Sort bytes in-place (mutates):
+
+```typescript
+const hash = Hash.random()
+
+// Sort ascending (mutates original)
+hash.sort()
+
+// Sort descending
+hash.sort((a, b) => b - a)
+```
+
+#### `reverse()`
+
+Reverse byte order (mutates):
+
+```typescript
+const hash = Hash.keccak256String("hello")
+hash.reverse()
+// hash is now reversed
+```
+
+#### `toReversed()`
+
+Return reversed copy (non-mutating):
+
+```typescript
+const hash = Hash.keccak256String("hello")
+const reversed = hash.toReversed()
+// hash unchanged, reversed is new array
+```
+
+#### `toSorted(compareFn?)`
+
+Return sorted copy (non-mutating):
+
+```typescript
+const hash = Hash.random()
+const sorted = hash.toSorted()
+// hash unchanged, sorted is new array
+```
+
+### Utility
+
+#### `at(index)`
+
+Access byte at index (supports negative):
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+hash.at(0)   // 0x1c (first byte)
+hash.at(-1)  // 0xc8 (last byte)
+hash.at(31)  // 0xc8 (last byte)
+hash.at(32)  // undefined (out of bounds)
+```
+
+#### `with(index, value)`
+
+Return copy with byte replaced (non-mutating):
+
+```typescript
+const hash = Hash.random()
+const modified = hash.with(0, 0xff)
+// hash unchanged, modified[0] === 0xff
+```
+
+#### `join(separator?)`
+
+Join bytes as string:
+
+```typescript
+const hash = Hash.keccak256String("hello")
+
+hash.join(':') // "28:138:255:149:6:133:..."
+hash.join(',') // "28,138,255,149,..."
+```
+
+#### `toString()`
+
+Convert to string representation (overridden by Hash):
+
+```typescript
+const hash = Hash.keccak256String("hello")
+hash.toString() // "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+```
+
+## Properties
+
+### `length`
+
+Always 32 for valid hashes:
+
+```typescript
+const hash = Hash.random()
+hash.length // 32
+```
+
+### `buffer`, `byteOffset`, `byteLength`
+
+Access underlying ArrayBuffer:
+
+```typescript
+const hash = Hash.random()
+hash.buffer       // ArrayBuffer(32)
+hash.byteOffset   // 0
+hash.byteLength   // 32
+```
+
+## Usage Patterns
+
+### Extract Function Selector
+
+```typescript
+// Get first 4 bytes as function selector
+const hash = Hash.keccak256String("transfer(address,uint256)")
+const selector = hash.slice(0, 4)
+console.log(Array.from(selector).map(b => b.toString(16).padStart(2, '0')).join(''))
+// "a9059cbb"
+```
+
+### Count Leading Zeros
+
+```typescript
+function countLeadingZeros(hash: Hash): number {
+  let count = 0
+  for (const byte of hash) {
+    if (byte === 0) count++
+    else break
+  }
+  return count
+}
+
+const hash = Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000045")
+countLeadingZeros(hash) // 31
+```
+
+### Hamming Distance
+
+```typescript
+function hammingDistance(a: Hash, b: Hash): number {
+  let distance = 0
+  for (let i = 0; i < 32; i++) {
+    let xor = a[i] ^ b[i]
+    while (xor) {
+      distance += xor & 1
+      xor >>= 1
+    }
+  }
+  return distance
+}
+
+const hash1 = Hash.random()
+const hash2 = Hash.random()
+console.log(`Hamming distance: ${hammingDistance(hash1, hash2)}`)
+```
+
+### Byte Frequency Analysis
+
+```typescript
+function byteFrequency(hash: Hash): Map<number, number> {
+  const freq = new Map<number, number>()
+  for (const byte of hash) {
+    freq.set(byte, (freq.get(byte) ?? 0) + 1)
+  }
+  return freq
+}
+
+const hash = Hash.random()
+const freq = byteFrequency(hash)
+console.log(`Most common byte: ${Array.from(freq.entries()).sort((a, b) => b[1] - a[1])[0][0]}`)
+```
+
+### Check Hash Entropy
+
+```typescript
+function hasLowEntropy(hash: Hash): boolean {
+  // Check if any byte value appears more than 4 times
+  const freq = new Map<number, number>()
+  for (const byte of hash) {
+    const count = (freq.get(byte) ?? 0) + 1
+    if (count > 4) return true
+    freq.set(byte, count)
+  }
+  return false
+}
+```
+
+## Notes
+
+- Methods returning arrays return `Uint8Array`, not `Hash`
+- Mutating methods modify the original Hash instance
+- `toReversed()`, `toSorted()`, `with()` create copies
+- Hash overrides `toString()` for hex display
+- Hash overrides `slice()` via prototype
+
+## Related
+
+- [Conversions](/primitives/hash/conversions) - Hash-specific conversion methods
+- [Comparisons](/primitives/hash/comparisons) - Semantic comparison methods
+- [Utilities](/primitives/hash/utilities) - Hash utility functions
+- [Bytes](/primitives/bytes) - General byte array utilities

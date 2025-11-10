@@ -1,0 +1,416 @@
+---
+title: SHA256 API Reference
+description: Complete API reference for SHA256 hash function
+---
+
+# SHA256 API Reference
+
+Complete reference for all SHA256 functions and methods.
+
+## Hash Functions
+
+### `SHA256.hash(data: Uint8Array): Uint8Array`
+
+Compute SHA256 hash of input data.
+
+One-shot hashing function for complete data available in memory.
+
+**Parameters:**
+- `data`: Input data to hash (Uint8Array)
+
+**Returns:** 32-byte SHA256 hash (Uint8Array)
+
+**Example:**
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+const data = new Uint8Array([1, 2, 3, 4, 5]);
+const hash = SHA256.hash(data);
+console.log(hash.length); // 32
+
+// Hash produces fixed 32-byte output
+const smallData = new Uint8Array([1]);
+const largeData = new Uint8Array(1000000);
+console.log(SHA256.hash(smallData).length); // 32
+console.log(SHA256.hash(largeData).length); // 32
+```
+
+**Performance Notes:**
+- Uses hardware acceleration (SHA-NI) when available
+- Constant-time implementation resists timing attacks
+- Optimal for data < 100MB; use streaming API for larger data
+
+---
+
+### `SHA256.hashString(str: string): Uint8Array`
+
+Hash UTF-8 encoded string with SHA256.
+
+Convenience function that encodes string to UTF-8 bytes before hashing.
+
+**Parameters:**
+- `str`: String to hash (UTF-8 encoded)
+
+**Returns:** 32-byte SHA256 hash (Uint8Array)
+
+**Example:**
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+const hash = SHA256.hashString('hello world');
+console.log(hash.length); // 32
+
+// Equivalent to manual encoding:
+const manual = SHA256.hash(new TextEncoder().encode('hello world'));
+console.log(hash.every((byte, i) => byte === manual[i])); // true
+
+// Unicode handling
+const emoji = SHA256.hashString('🚀');
+const chinese = SHA256.hashString('你好');
+```
+
+**Unicode Handling:**
+- UTF-8 encoding handles all Unicode codepoints correctly
+- Multi-byte characters encoded properly
+- Emoji and non-Latin scripts supported
+
+---
+
+### `SHA256.hashHex(hex: string): Uint8Array`
+
+Hash hex-encoded string with SHA256.
+
+Decodes hex string to bytes before hashing. Accepts both "0x"-prefixed and unprefixed hex strings.
+
+**Parameters:**
+- `hex`: Hex string to hash (with or without "0x" prefix)
+
+**Returns:** 32-byte SHA256 hash (Uint8Array)
+
+**Example:**
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+// With 0x prefix
+const hash1 = SHA256.hashHex('0xdeadbeef');
+
+// Without prefix
+const hash2 = SHA256.hashHex('deadbeef');
+
+// Both accept uppercase
+const hash3 = SHA256.hashHex('0xDEADBEEF');
+const hash4 = SHA256.hashHex('DEADBEEF');
+
+// Empty hex string
+const empty = SHA256.hashHex('0x');
+```
+
+**Throws:**
+- Error if hex string contains invalid characters
+- Error if hex string has odd length (incomplete byte)
+
+---
+
+## Streaming API
+
+### `SHA256.create(): Hasher`
+
+Create incremental hasher for streaming data.
+
+Returns stateful hasher instance for processing data in chunks. Useful for:
+- Large files that don't fit in memory
+- Streaming network data
+- Progressive hashing as data arrives
+- Memory-efficient processing
+
+**Returns:** Hasher instance with `update()` and `digest()` methods
+
+**Example:**
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+// Create hasher instance
+const hasher = SHA256.create();
+
+// Update with chunks
+hasher.update(new Uint8Array([1, 2, 3]));
+hasher.update(new Uint8Array([4, 5, 6]));
+hasher.update(new Uint8Array([7, 8, 9]));
+
+// Finalize and get hash
+const hash = hasher.digest();
+
+// Equivalent one-shot hash
+const oneShot = SHA256.hash(new Uint8Array([1,2,3,4,5,6,7,8,9]));
+console.log(hash.every((byte, i) => byte === oneShot[i])); // true
+```
+
+**Hasher Interface:**
+```typescript
+interface Hasher {
+  update(data: Uint8Array): void;
+  digest(): Uint8Array;
+}
+```
+
+---
+
+### `hasher.update(data: Uint8Array): void`
+
+Update hasher state with new data chunk.
+
+Can be called multiple times to process data incrementally. Order matters - chunks are processed sequentially.
+
+**Parameters:**
+- `data`: Data chunk to add to hash computation (Uint8Array)
+
+**Returns:** void (modifies hasher state)
+
+**Example:**
+```typescript
+const hasher = SHA256.create();
+
+// Process file in 1MB chunks
+const chunkSize = 1024 * 1024;
+for (let offset = 0; offset < file.size; offset += chunkSize) {
+  const chunk = file.slice(offset, offset + chunkSize);
+  const bytes = new Uint8Array(await chunk.arrayBuffer());
+  hasher.update(bytes);
+}
+
+const fileHash = hasher.digest();
+```
+
+**Important:**
+- Can call `update()` any number of times
+- Cannot call `update()` after `digest()`
+- Chunk size doesn't affect final hash (only performance)
+
+---
+
+### `hasher.digest(): Uint8Array`
+
+Finalize hash computation and return result.
+
+Completes the hash computation and returns the final 32-byte digest. After calling `digest()`, the hasher cannot be reused.
+
+**Returns:** 32-byte SHA256 hash (Uint8Array)
+
+**Example:**
+```typescript
+const hasher = SHA256.create();
+hasher.update(new Uint8Array([1, 2, 3]));
+
+const hash = hasher.digest();
+console.log(hash.length); // 32
+
+// Cannot reuse hasher after digest()
+// hasher.update(...) // Would throw error
+```
+
+**Note:**
+- Call `digest()` only once per hasher instance
+- Creates a new hasher for subsequent hashing operations
+
+---
+
+## Utility Functions
+
+### `SHA256.toHex(hash: Uint8Array): string`
+
+Convert hash bytes to hex string representation.
+
+Converts 32-byte hash to lowercase hex string with "0x" prefix.
+
+**Parameters:**
+- `hash`: Hash bytes to convert (Uint8Array, typically 32 bytes)
+
+**Returns:** Hex string with "0x" prefix (lowercase)
+
+**Example:**
+```typescript
+import { SHA256 } from '@tevm/voltaire/crypto/sha256';
+
+const hash = SHA256.hashString('hello');
+const hex = SHA256.toHex(hash);
+// "0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+
+// Works with any Uint8Array
+const partial = SHA256.toHex(hash.slice(0, 4));
+// "0x2cf24dba"
+```
+
+**Format:**
+- Always lowercase hex characters (a-f, not A-F)
+- Always includes "0x" prefix
+- Fixed-width: 32 bytes = 64 hex chars + "0x" = 66 total chars
+
+---
+
+## Constants
+
+### `SHA256.OUTPUT_SIZE`
+
+SHA256 output size in bytes.
+
+**Type:** `number`
+
+**Value:** `32`
+
+**Example:**
+```typescript
+console.log(SHA256.OUTPUT_SIZE); // 32
+
+// Verify hash output size
+const hash = SHA256.hashString('test');
+console.log(hash.length === SHA256.OUTPUT_SIZE); // true
+
+// Allocate output buffer
+const buffer = new Uint8Array(SHA256.OUTPUT_SIZE);
+```
+
+---
+
+### `SHA256.BLOCK_SIZE`
+
+SHA256 internal block size in bytes.
+
+Used internally for message padding and compression. Useful for understanding performance characteristics.
+
+**Type:** `number`
+
+**Value:** `64` (512 bits)
+
+**Example:**
+```typescript
+console.log(SHA256.BLOCK_SIZE); // 64
+
+// Optimal chunk size for streaming (multiple of block size)
+const optimalChunkSize = SHA256.BLOCK_SIZE * 16; // 1024 bytes
+```
+
+---
+
+## Type Definitions
+
+### `Hasher`
+
+Incremental hasher interface returned by `SHA256.create()`.
+
+```typescript
+interface Hasher {
+  /**
+   * Update hasher state with new data chunk
+   * @param data - Data chunk to process
+   */
+  update(data: Uint8Array): void;
+
+  /**
+   * Finalize hash computation and return result
+   * @returns 32-byte SHA256 hash
+   */
+  digest(): Uint8Array;
+}
+```
+
+**Usage Pattern:**
+```typescript
+const hasher = SHA256.create();
+hasher.update(chunk1);
+hasher.update(chunk2);
+const hash = hasher.digest();
+```
+
+---
+
+## Advanced Usage
+
+### Double SHA256 (Bitcoin)
+
+Bitcoin uses double SHA256 for block and transaction hashing:
+
+```typescript
+function doubleSha256(data: Uint8Array): Uint8Array {
+  return SHA256.hash(SHA256.hash(data));
+}
+
+// Bitcoin block hash
+const blockHeader = new Uint8Array(80); // 80-byte block header
+const blockHash = doubleSha256(blockHeader);
+```
+
+### SHA256d (Double-SHA256)
+
+```typescript
+// Alternative implementation with streaming API
+function sha256d(data: Uint8Array): Uint8Array {
+  const firstHash = SHA256.hash(data);
+  return SHA256.hash(firstHash);
+}
+```
+
+### HMAC-SHA256
+
+Hash-based Message Authentication Code (not built-in, requires separate implementation):
+
+```typescript
+// HMAC-SHA256 implementation (pseudocode)
+function hmacSha256(key: Uint8Array, message: Uint8Array): Uint8Array {
+  const blockSize = 64; // SHA256.BLOCK_SIZE
+
+  // Key derivation
+  let derivedKey = key.length > blockSize
+    ? SHA256.hash(key)
+    : key;
+
+  if (derivedKey.length < blockSize) {
+    const padded = new Uint8Array(blockSize);
+    padded.set(derivedKey);
+    derivedKey = padded;
+  }
+
+  // HMAC computation
+  const opad = new Uint8Array(blockSize).fill(0x5c);
+  const ipad = new Uint8Array(blockSize).fill(0x36);
+
+  for (let i = 0; i < blockSize; i++) {
+    opad[i] ^= derivedKey[i];
+    ipad[i] ^= derivedKey[i];
+  }
+
+  const innerHash = SHA256.hash(new Uint8Array([...ipad, ...message]));
+  return SHA256.hash(new Uint8Array([...opad, ...innerHash]));
+}
+```
+
+### Progressive File Hashing
+
+```typescript
+async function hashLargeFile(file: File): Promise<string> {
+  const hasher = SHA256.create();
+  const chunkSize = 1024 * 1024; // 1MB chunks
+
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+    hasher.update(new Uint8Array(chunk));
+
+    // Optional: report progress
+    const progress = Math.min(100, (offset / file.size) * 100);
+    console.log(`Hashing: ${progress.toFixed(1)}%`);
+  }
+
+  const hash = hasher.digest();
+  return SHA256.toHex(hash);
+}
+```
+
+---
+
+## See Also
+
+- [SHA256 Overview](/crypto/sha256) - Introduction and quick start
+- [Test Vectors](/crypto/sha256/test-vectors) - NIST test vectors
+- [Security](/crypto/sha256/security) - Security properties and considerations
+- [Performance](/crypto/sha256/performance) - Benchmarks and optimization
+- [Usage Patterns](/crypto/sha256/usage-patterns) - Common use cases
+- [Comparison](/crypto/sha256/comparison) - vs Keccak256, Blake2, RIPEMD160

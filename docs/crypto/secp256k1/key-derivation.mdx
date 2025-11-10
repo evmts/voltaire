@@ -1,0 +1,380 @@
+---
+title: Key Derivation
+description: Derive secp256k1 public keys from private keys via elliptic curve point multiplication
+---
+
+# Secp256k1 Key Derivation
+
+Derive public keys from private keys using elliptic curve point multiplication. Every Ethereum account's public key and address are derived from a 32-byte private key.
+
+## Overview
+
+Secp256k1 key derivation computes:
+
+```
+public_key = private_key * G
+```
+
+Where:
+- `private_key` is a 256-bit scalar (secret)
+- `G` is the secp256k1 generator point (public constant)
+- `*` denotes elliptic curve point multiplication (scalar multiplication)
+- `public_key` is a point on the curve (x, y coordinates)
+
+This operation is:
+- **One-way** - Easy to compute public from private, infeasible to reverse
+- **Deterministic** - Same private key always produces same public key
+- **Trapdoor** - Knowing the private key makes verification trivial
+
+## API
+
+### `derivePublicKey(privateKey)`
+
+Derive the 64-byte uncompressed public key from a private key.
+
+**Parameters:**
+- `privateKey` (`Uint8Array`) - 32-byte private key (0 < key < n)
+
+**Returns:** `Uint8Array` - 64-byte public key (x || y coordinates, no prefix)
+
+**Throws:**
+- `InvalidPrivateKeyError` - Key wrong length, zero, or >= curve order
+
+**Example:**
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+
+// Generate random private key
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+
+// Derive public key
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+console.log(publicKey.length); // 64 bytes
+console.log(publicKey.slice(0, 32)); // x-coordinate (32 bytes)
+console.log(publicKey.slice(32, 64)); // y-coordinate (32 bytes)
+```
+
+### `isValidPrivateKey(privateKey)`
+
+Check if a byte array is a valid secp256k1 private key.
+
+**Parameters:**
+- `privateKey` (`Uint8Array`) - Candidate private key
+
+**Returns:** `boolean`
+- `true` - Key is valid (32 bytes, 0 < key < n)
+- `false` - Key is invalid
+
+**Example:**
+```typescript
+const validKey = new Uint8Array(32);
+validKey[31] = 1;
+console.log(Secp256k1.isValidPrivateKey(validKey)); // true
+
+const zeroKey = new Uint8Array(32); // All zeros
+console.log(Secp256k1.isValidPrivateKey(zeroKey)); // false
+
+const shortKey = new Uint8Array(16); // Too short
+console.log(Secp256k1.isValidPrivateKey(shortKey)); // false
+```
+
+### `isValidPublicKey(publicKey)`
+
+Check if a byte array is a valid secp256k1 public key.
+
+**Parameters:**
+- `publicKey` (`Uint8Array`) - Candidate public key
+
+**Returns:** `boolean`
+- `true` - Key is valid (64 bytes, point on curve)
+- `false` - Key is invalid
+
+**Example:**
+```typescript
+const privateKey = new Uint8Array(32);
+privateKey[31] = 1;
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+console.log(Secp256k1.isValidPublicKey(publicKey)); // true
+
+const invalidKey = new Uint8Array(64); // Not on curve
+console.log(Secp256k1.isValidPublicKey(invalidKey)); // false
+```
+
+## Algorithm Details
+
+### Elliptic Curve Point Multiplication
+
+Scalar multiplication computes `k * P` (point P added to itself k times):
+
+**Naive approach (slow):**
+```
+Q = O (point at infinity)
+for i = 0 to k-1:
+  Q = Q + P
+return Q
+```
+
+**Double-and-add (fast):**
+```
+Q = O
+R = P
+while k > 0:
+  if k is odd:
+    Q = Q + R
+  R = R + R  (point doubling)
+  k = k >> 1
+return Q
+```
+
+For secp256k1, point operations use:
+- **Point addition**: `P + Q` (combining two different points)
+- **Point doubling**: `2P` (adding point to itself)
+- **Affine coordinates**: (x, y) satisfying y² = x³ + 7 mod p
+
+### Private Key Validation
+
+A valid private key must satisfy:
+
+```
+0 < private_key < n
+```
+
+Where `n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141` (curve order).
+
+Invalid keys:
+- **Zero** (`0x0000...0000`) - No corresponding public key
+- **>= n** - Wraps around modulo n, ambiguous
+- **Wrong length** - Must be exactly 32 bytes
+
+### Public Key Format
+
+Public keys are curve points (x, y) where:
+```
+y² = x³ + 7 (mod p)
+```
+
+With `p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F` (field prime).
+
+**Uncompressed (64 bytes):** `x || y`
+- Our internal format (no prefix)
+- Both coordinates included
+
+**Compressed (33 bytes):** `prefix || x`
+- Prefix 0x02 (y is even) or 0x03 (y is odd)
+- Reconstructs y from x using curve equation
+
+**Standard uncompressed (65 bytes):** `0x04 || x || y`
+- Common in other libraries
+- Our API strips the 0x04 prefix
+
+## Ethereum Address Derivation
+
+Ethereum addresses are derived from public keys:
+
+```typescript
+import * as Secp256k1 from '@tevm/voltaire/crypto/Secp256k1';
+import * as Address from '@tevm/voltaire/primitives/Address';
+import * as Hash from '@tevm/voltaire/primitives/Hash';
+
+// 1. Derive public key
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+// 2. Hash public key with Keccak256
+const hash = Hash.keccak256(publicKey);
+
+// 3. Take last 20 bytes as address
+const address = Address.from(hash.slice(12));
+console.log(Address.toHex(address)); // 0x...
+```
+
+**Important:** Ethereum addresses use the **last 20 bytes** of the Keccak256 hash, not the first 20 bytes.
+
+## Security Considerations
+
+### Private Key Generation
+
+⚠️ **Use cryptographically secure random** for private key generation:
+
+**Correct:**
+```typescript
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey); // CSPRNG
+```
+
+**Incorrect:**
+```typescript
+// NEVER do this - predictable keys, trivial to crack
+const privateKey = new Uint8Array(32);
+for (let i = 0; i < 32; i++) {
+  privateKey[i] = Math.floor(Math.random() * 256); // ❌ NOT secure
+}
+```
+
+**Entropy sources:**
+- `crypto.getRandomValues()` (browser)
+- `crypto.randomBytes()` (Node.js)
+- Hardware RNG (HSM, Secure Enclave)
+- Dice rolls + hashing (offline generation)
+
+**Never use:**
+- `Math.random()` - Predictable, not cryptographic
+- Timestamps - Low entropy, predictable
+- User input alone - Biased, low entropy
+
+### Key Storage
+
+⚠️ **Protect private keys at rest and in transit:**
+
+**Best practices:**
+- Store in hardware wallets (Ledger, Trezor)
+- Use Secure Enclave / TPM on mobile/desktop
+- Encrypt with strong passphrase (AES-256-GCM)
+- Never log, print, or transmit unencrypted
+- Use key derivation (BIP32/BIP44) for backups
+
+**Avoid:**
+- Plain text files
+- Environment variables (leaks in logs)
+- Version control (git history)
+- Clipboard (malware can read)
+- Screenshots (OCR readable)
+
+### Side-Channel Resistance
+
+Public key derivation can leak private keys through timing attacks if not constant-time:
+
+**Vulnerable (non-constant-time):**
+```zig
+// Early exit leaks bit values
+if (bit == 0) {
+  return Q;  // ❌ Timing depends on bit
+}
+Q = Q + R;
+```
+
+**Secure (constant-time):**
+```zig
+// Same timing regardless of bit value
+mask = -(bit & 1);  // 0 or 0xFFFFFFFF
+Q = Q + (R & mask); // Conditional without branching
+```
+
+**Implementation notes:**
+- TypeScript (`@noble/curves`): Constant-time ✅
+- Zig (custom): ⚠️ NOT constant-time, unaudited
+
+## Test Vectors
+
+### Known Private Key = 1
+
+```typescript
+// Private key = 1
+const privateKey = new Uint8Array(32);
+privateKey[31] = 1;
+
+// Public key should be generator point G
+const publicKey = Secp256k1.derivePublicKey(privateKey);
+
+// Expected: G = (Gx, Gy)
+const expectedX = BigInt(
+  "0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"
+);
+const expectedY = BigInt(
+  "0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8"
+);
+
+const actualX = bytesToBigInt(publicKey.slice(0, 32));
+const actualY = bytesToBigInt(publicKey.slice(32, 64));
+
+assert(actualX === expectedX);
+assert(actualY === expectedY);
+```
+
+### Deterministic Derivation
+
+```typescript
+const privateKey = new Uint8Array(32);
+privateKey[31] = 42;
+
+// Derive twice
+const publicKey1 = Secp256k1.derivePublicKey(privateKey);
+const publicKey2 = Secp256k1.derivePublicKey(privateKey);
+
+// Must be identical
+assert(publicKey1.every((byte, i) => byte === publicKey2[i]));
+```
+
+### Different Keys = Different Public Keys
+
+```typescript
+const key1 = new Uint8Array(32);
+key1[31] = 1;
+const key2 = new Uint8Array(32);
+key2[31] = 2;
+
+const pub1 = Secp256k1.derivePublicKey(key1);
+const pub2 = Secp256k1.derivePublicKey(key2);
+
+// Must be different
+assert(!pub1.every((byte, i) => byte === pub2[i]));
+```
+
+### Edge Cases
+
+```typescript
+// Minimum valid key (1)
+const minKey = new Uint8Array(32);
+minKey[31] = 1;
+const pub1 = Secp256k1.derivePublicKey(minKey); // Valid
+
+// Maximum valid key (n - 1)
+const maxKey = new Uint8Array([
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x40,
+]);
+const pub2 = Secp256k1.derivePublicKey(maxKey); // Valid
+
+// Zero key (invalid)
+const zeroKey = new Uint8Array(32);
+expect(() => Secp256k1.derivePublicKey(zeroKey)).toThrow();
+
+// Key = n (invalid)
+const nKey = new Uint8Array([
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41,
+]);
+expect(() => Secp256k1.derivePublicKey(nKey)).toThrow();
+```
+
+## Performance
+
+Elliptic curve point multiplication is computationally expensive:
+- **256-bit scalar** - Requires ~256 point doublings + ~128 additions (average)
+- **Modular arithmetic** - All operations modulo large primes
+
+Typical derivation time:
+- **TypeScript (@noble/curves):** ~0.5-1ms per key
+- **Zig (native):** ~0.2-0.5ms per key
+- **WASM (portable):** ~1-2ms per key
+
+For batch key derivation, consider:
+- Precomputing common multiples of G
+- Using windowed algorithms (NAF, wNAF)
+- Hardware acceleration (if available)
+
+## Related
+
+- [Signing](/crypto/secp256k1/signing) - Sign with private keys
+- [Verification](/crypto/secp256k1/verification) - Verify with public keys
+- [Point Operations](/crypto/secp256k1/point-operations) - Curve point arithmetic
+- [HD Wallet](/crypto/hdwallet) - Hierarchical key derivation (BIP32)
+- [Address](/primitives/address) - Ethereum address derivation

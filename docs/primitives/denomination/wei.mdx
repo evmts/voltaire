@@ -1,0 +1,288 @@
+---
+title: Wei
+description: Smallest Ethereum denomination for precise calculations
+---
+
+# Wei
+
+Smallest Ethereum denomination (10^-18 Ether) for precise value calculations.
+
+## Overview
+
+Wei is the atomic unit of Ether. All Ethereum values are ultimately represented in Wei internally. `Wei.Type` is a [branded](/concepts/branded-types) `Uint256` preventing accidental unit mixing.
+
+## Type Definition
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+// Wei.Type is branded Uint256 preventing unit mixing
+const wei: Wei.Type = Wei.from(1_000_000_000n)
+
+// Internal: Wei.Type = Uint.Type & { __brand: typeof weiSymbol }
+```
+
+## Construction
+
+### `Wei.from(value)`
+
+Create Wei from numeric value.
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+const wei1 = Wei.from(1_000_000_000n)              // 1 Gwei in Wei
+const wei2 = Wei.from(1_000_000_000_000_000_000n)  // 1 Ether in Wei
+const wei3 = Wei.from(21_000n)                     // Standard transfer gas
+const wei4 = Wei.from("1000000000000000000")       // String input
+const wei5 = Wei.from(42)                          // Number input
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert to Wei
+
+**Returns:** `Wei.Type`
+
+**Note:** Uses `Uint.from` internally for conversion.
+
+Defined in: [primitives/Denomination/Wei.ts:10](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Wei.ts)
+
+## Conversions From Other Units
+
+### `Wei.fromGwei(gwei)`
+
+Convert Gwei to Wei (multiply by 10^9).
+
+```typescript
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Wei from '@tevm/voltaire/Wei'
+
+const gwei = Gwei.from(50n)  // 50 Gwei gas price
+const wei = Wei.fromGwei(gwei)  // 50_000_000_000n Wei
+```
+
+**Parameters:**
+- `gwei: Gwei.Type` - Gwei value
+
+**Returns:** `Wei.Type`
+
+**Formula:** `wei = gwei * 1_000_000_000`
+
+Defined in: [primitives/Denomination/Wei.ts:14](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Wei.ts)
+
+### `Wei.fromEther(ether)`
+
+Convert Ether to Wei (multiply by 10^18).
+
+```typescript
+import * as Ether from '@tevm/voltaire/Ether'
+import * as Wei from '@tevm/voltaire/Wei'
+
+const ether = Ether.from(1n)  // 1 Ether
+const wei = Wei.fromEther(ether)  // 1_000_000_000_000_000_000n Wei
+```
+
+**Parameters:**
+- `ether: Ether.Type` - Ether value
+
+**Returns:** `Wei.Type`
+
+**Formula:** `wei = ether * 1_000_000_000_000_000_000`
+
+Defined in: [primitives/Denomination/Wei.ts:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Wei.ts)
+
+## Conversions To Other Units
+
+### `Wei.toGwei(wei)`
+
+Convert Wei to Gwei (divide by 10^9).
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+const wei = Wei.from(50_000_000_000n)  // 50 Gwei in Wei
+const gwei = Wei.toGwei(wei)  // 50n Gwei
+
+// Fractional values truncate
+const wei2 = Wei.from(50_000_000_001n)
+const gwei2 = Wei.toGwei(wei2)  // 50n (truncates)
+```
+
+**Parameters:**
+- `wei: Wei.Type` - Wei value
+
+**Returns:** `Gwei.Type`
+
+**Formula:** `gwei = wei / 1_000_000_000` (integer division)
+
+Defined in: [primitives/Denomination/Wei.ts:24](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Wei.ts)
+
+### `Wei.toEther(wei)`
+
+Convert Wei to Ether (divide by 10^18).
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+const wei = Wei.from(1_000_000_000_000_000_000n)  // 1 Ether in Wei
+const ether = Wei.toEther(wei)  // 1n Ether
+
+// Fractional values truncate
+const wei2 = Wei.from(500_000_000_000_000_000n)  // 0.5 Ether in Wei
+const ether2 = Wei.toEther(wei2)  // 0n (truncates)
+```
+
+**Parameters:**
+- `wei: Wei.Type` - Wei value
+
+**Returns:** `Ether.Type`
+
+**Formula:** `ether = wei / 1_000_000_000_000_000_000` (integer division)
+
+Defined in: [primitives/Denomination/Wei.ts:29](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Wei.ts)
+
+## Conversions To Base Type
+
+### `Wei.toU256(wei)`
+
+Convert Wei to raw Uint256 (removes branding).
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const wei = Wei.from(1_000_000_000n)
+const u256 = Wei.toU256(wei)  // Uint.Type (unbranded)
+
+// Can now use with Uint operations
+const doubled = Uint.times(u256, Uint.from(2n))
+```
+
+**Parameters:**
+- `wei: Wei.Type` - Wei value
+
+**Returns:** `Uint.Type`
+
+**Note:** Removes type safety. Use for arithmetic operations requiring `Uint.Type`.
+
+Defined in: [primitives/Denomination/Wei.ts:34](https://github.com/evmts/voltaire/blob/main/src/primitives/Denomination/Wei.ts)
+
+## Usage Examples
+
+### Gas Cost Calculation
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+const gasPrice = Gwei.from(50n)  // 50 Gwei
+const gasUsed = Uint.from(21_000n)  // Standard transfer
+
+// Convert to Wei for calculation
+const gasPriceWei = Gwei.toWei(gasPrice)
+const totalCostWei = Uint.times(gasPriceWei, gasUsed)
+
+console.log(`Cost: ${totalCostWei} Wei`)  // 1_050_000_000_000_000 Wei
+```
+
+### Transaction Value
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Ether from '@tevm/voltaire/Ether'
+
+const valueEther = Ether.from(1n)  // User wants to send 1 ETH
+const valueWei = Ether.toWei(valueEther)  // Convert to Wei
+
+const tx = {
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  value: valueWei,  // 1_000_000_000_000_000_000n Wei
+}
+```
+
+### Precise Accounting
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Uint from '@tevm/voltaire/Uint'
+
+// Work in Wei to avoid rounding errors
+const balance = Wei.from(1_234_567_890_123_456_789n)
+const amount = Wei.from(234_567_890_123_456_789n)
+
+const balanceU256 = Wei.toU256(balance)
+const amountU256 = Wei.toU256(amount)
+
+const remaining = Uint.minus(balanceU256, amountU256)
+const remainingWei = Wei.from(remaining)
+
+console.log(`Remaining: ${remainingWei} Wei`)
+```
+
+## Conversion Constants
+
+```typescript
+// Wei per Gwei
+const WEI_PER_GWEI = 1_000_000_000n  // 10^9
+
+// Wei per Ether
+const WEI_PER_ETHER = 1_000_000_000_000_000_000n  // 10^18
+```
+
+## Common Wei Values
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+
+// Gas costs
+const TRANSFER_GAS = Wei.from(21_000n)  // Standard ETH transfer
+const ERC20_TRANSFER = Wei.from(65_000n)  // Typical ERC20 transfer
+
+// Gas prices (in Wei)
+const CHEAP_GAS = Wei.from(1_000_000_000n)  // 1 Gwei
+const NORMAL_GAS = Wei.from(20_000_000_000n)  // 20 Gwei
+const HIGH_GAS = Wei.from(100_000_000_000n)  // 100 Gwei
+
+// Common amounts
+const ONE_ETHER = Wei.from(1_000_000_000_000_000_000n)
+const HALF_ETHER = Wei.from(500_000_000_000_000_000n)
+```
+
+## Type Safety
+
+Wei type prevents mixing with other denominations:
+
+```typescript
+import * as Wei from '@tevm/voltaire/Wei'
+import * as Gwei from '@tevm/voltaire/Gwei'
+
+const wei = Wei.from(1_000_000_000n)
+const gwei = Gwei.from(1n)
+
+// ✗ Type error - cannot compare different denominations
+if (wei === gwei) { }
+
+// ✓ Correct - explicit conversion
+if (wei === Gwei.toWei(gwei)) { }
+```
+
+## WASM Acceleration
+
+Wei conversions available in WebAssembly for performance:
+
+```typescript
+import * as WeiWasm from '@tevm/voltaire/Wei.wasm'
+
+const wei = WeiWasm.from(1_000_000_000n)
+const gwei = WeiWasm.toGwei(wei)
+```
+
+See [WASM](/primitives/denomination/wasm) for details.
+
+## Related
+
+- [Gwei](/primitives/denomination/gwei) - Gas price denomination
+- [Ether](/primitives/denomination/ether) - User-facing denomination
+- [Conversions](/primitives/denomination/conversions) - Converting between units
+- [Uint256](/primitives/uint) - Underlying numeric type

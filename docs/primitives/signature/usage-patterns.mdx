@@ -1,0 +1,655 @@
+---
+title: "Usage Patterns"
+description: "Common patterns and real-world examples for Signature operations"
+---
+
+# Usage Patterns
+
+Production patterns for signature handling.
+
+## Ethereum Transaction Signatures
+
+### Creating Transaction Signature
+
+```typescript
+import { Signature, Hex, Hash } from '@tevm/voltaire';
+import { secp256k1 } from '@voltaire/crypto';
+
+// Sign transaction
+async function signTransaction(
+  tx: Transaction,
+  privateKey: Uint8Array
+): Promise<BrandedSignature> {
+  // Encode transaction for signing
+  const encodedTx = RLP.encode([
+    tx.nonce,
+    tx.gasPrice,
+    tx.gasLimit,
+    tx.to,
+    tx.value,
+    tx.data,
+  ]);
+
+  // Hash transaction
+  const txHash = Hash.keccak256(encodedTx);
+
+  // Sign with secp256k1
+  const { r, s, v } = await secp256k1.sign(txHash, privateKey);
+
+  // Create signature
+  const sig = Signature.fromSecp256k1(r, s, v);
+
+  // Ensure canonical (required by Ethereum)
+  return Signature.normalize(sig);
+}
+```
+
+### Verifying Transaction Signature
+
+```typescript
+async function verifyTransactionSignature(
+  tx: Transaction,
+  sig: BrandedSignature
+): Promise<Address> {
+  // Ensure canonical
+  if (!Signature.isCanonical(sig)) {
+    throw new Error('Non-canonical signature rejected');
+  }
+
+  // Reconstruct transaction hash
+  const encodedTx = RLP.encode([
+    tx.nonce,
+    tx.gasPrice,
+    tx.gasLimit,
+    tx.to,
+    tx.value,
+    tx.data,
+  ]);
+  const txHash = Hash.keccak256(encodedTx);
+
+  // Recover public key
+  const publicKey = secp256k1.recover(
+    txHash,
+    Signature.getR(sig),
+    Signature.getS(sig),
+    Signature.getV(sig)!
+  );
+
+  // Derive address
+  return Address.fromPublicKey(publicKey);
+}
+```
+
+### EIP-155 Chain-Specific Signatures
+
+```typescript
+function createEIP155Signature(
+  tx: Transaction,
+  privateKey: Uint8Array,
+  chainId: number
+): BrandedSignature {
+  // EIP-155: Include chainId in signing
+  const encodedTx = RLP.encode([
+    tx.nonce,
+    tx.gasPrice,
+    tx.gasLimit,
+    tx.to,
+    tx.value,
+    tx.data,
+    chainId, // Chain ID
+    0, // r placeholder
+    0, // s placeholder
+  ]);
+
+  const txHash = Hash.keccak256(encodedTx);
+  const { r, s, v } = secp256k1.sign(txHash, privateKey);
+
+  // Convert to EIP-155 v value
+  const eip155V = chainId * 2 + 35 + (v - 27);
+
+  // Store as standard v (27/28) in signature
+  const sig = Signature.fromSecp256k1(r, s, v);
+
+  return {
+    signature: Signature.normalize(sig),
+    eip155V, // Use this in transaction encoding
+  };
+}
+```
+
+## Message Signing (EIP-191)
+
+### Personal Sign
+
+```typescript
+// Sign arbitrary message (EIP-191)
+async function personalSign(
+  message: string,
+  privateKey: Uint8Array
+): Promise<BrandedSignature> {
+  // EIP-191 prefix
+  const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
+  const prefixedMessage = new TextEncoder().encode(prefix + message);
+
+  // Hash
+  const messageHash = Hash.keccak256(prefixedMessage);
+
+  // Sign
+  const { r, s, v } = await secp256k1.sign(messageHash, privateKey);
+
+  // Create canonical signature
+  const sig = Signature.fromSecp256k1(r, s, v);
+  return Signature.normalize(sig);
+}
+
+// Verify personal sign
+async function personalVerify(
+  message: string,
+  sig: BrandedSignature
+): Promise<Address> {
+  // Reconstruct hash
+  const prefix = `\x19Ethereum Signed Message:\n${message.length}`;
+  const prefixedMessage = new TextEncoder().encode(prefix + message);
+  const messageHash = Hash.keccak256(prefixedMessage);
+
+  // Recover address
+  const publicKey = secp256k1.recover(
+    messageHash,
+    Signature.getR(sig),
+    Signature.getS(sig),
+    Signature.getV(sig)!
+  );
+
+  return Address.fromPublicKey(publicKey);
+}
+```
+
+### Typed Data Signing (EIP-712)
+
+```typescript
+// Sign typed data (EIP-712)
+async function signTypedData(
+  domain: TypedDataDomain,
+  types: Record<string, TypedDataField[]>,
+  message: Record<string, any>,
+  privateKey: Uint8Array
+): Promise<BrandedSignature> {
+  // Encode typed data
+  const domainHash = hashDomain(domain);
+  const messageHash = hashMessage(types, message);
+
+  // EIP-712 hash
+  const digest = Hash.keccak256(
+    concat([
+      Hex.toBytes('0x1901'),
+      domainHash,
+      messageHash,
+    ])
+  );
+
+  // Sign
+  const { r, s, v } = await secp256k1.sign(digest, privateKey);
+
+  // Create canonical signature
+  const sig = Signature.fromSecp256k1(r, s, v);
+  return Signature.normalize(sig);
+}
+```
+
+## Multi-Algorithm Support
+
+### Algorithm Detection
+
+```typescript
+function signMessage(
+  message: Uint8Array,
+  privateKey: Uint8Array,
+  algorithm: SignatureAlgorithm
+): BrandedSignature {
+  switch (algorithm) {
+    case 'secp256k1': {
+      const { r, s, v } = secp256k1.sign(message, privateKey);
+      return Signature.fromSecp256k1(r, s, v);
+    }
+    case 'p256': {
+      const { r, s } = p256.sign(message, privateKey);
+      return Signature.fromP256(r, s);
+    }
+    case 'ed25519': {
+      const sig = ed25519.sign(message, privateKey);
+      return Signature.fromEd25519(sig);
+    }
+  }
+}
+
+function verifyMessage(
+  message: Uint8Array,
+  sig: BrandedSignature,
+  publicKey: Uint8Array
+): boolean {
+  const algorithm = Signature.getAlgorithm(sig);
+
+  switch (algorithm) {
+    case 'secp256k1':
+      return secp256k1.verify(
+        message,
+        Signature.getR(sig),
+        Signature.getS(sig),
+        publicKey
+      );
+    case 'p256':
+      return p256.verify(
+        message,
+        Signature.getR(sig),
+        Signature.getS(sig),
+        publicKey
+      );
+    case 'ed25519':
+      return ed25519.verify(message, sig, publicKey);
+  }
+}
+```
+
+### Multi-Signature Wallet
+
+```typescript
+interface MultiSigSignature {
+  signatures: BrandedSignature[];
+  threshold: number;
+}
+
+async function createMultiSig(
+  message: Uint8Array,
+  privateKeys: Uint8Array[],
+  threshold: number
+): Promise<MultiSigSignature> {
+  const signatures = await Promise.all(
+    privateKeys.map(async (key) => {
+      const { r, s, v } = await secp256k1.sign(message, key);
+      const sig = Signature.fromSecp256k1(r, s, v);
+      return Signature.normalize(sig);
+    })
+  );
+
+  return { signatures, threshold };
+}
+
+async function verifyMultiSig(
+  message: Uint8Array,
+  multiSig: MultiSigSignature,
+  publicKeys: Uint8Array[]
+): Promise<boolean> {
+  let validCount = 0;
+
+  for (const sig of multiSig.signatures) {
+    for (const pubKey of publicKeys) {
+      const valid = await secp256k1.verify(
+        message,
+        Signature.getR(sig),
+        Signature.getS(sig),
+        pubKey
+      );
+
+      if (valid) {
+        validCount++;
+        break;
+      }
+    }
+  }
+
+  return validCount >= multiSig.threshold;
+}
+```
+
+## Signature Storage
+
+### Database Schema
+
+```typescript
+interface SignatureRecord {
+  id: string;
+  algorithm: SignatureAlgorithm;
+  r: Uint8Array; // ECDSA only
+  s: Uint8Array; // ECDSA only
+  v?: number; // secp256k1 only
+  signature?: Uint8Array; // Ed25519
+  createdAt: Date;
+  metadata?: Record<string, any>;
+}
+
+async function storeSignature(
+  db: Database,
+  sig: BrandedSignature,
+  metadata?: Record<string, any>
+): Promise<string> {
+  const id = crypto.randomUUID();
+  const algorithm = Signature.getAlgorithm(sig);
+
+  const record: SignatureRecord = {
+    id,
+    algorithm,
+    createdAt: new Date(),
+    metadata,
+    ...(algorithm === 'ed25519'
+      ? { signature: Signature.toBytes(sig) }
+      : {
+          r: Signature.getR(sig),
+          s: Signature.getS(sig),
+          v: Signature.getV(sig),
+        }
+    ),
+  };
+
+  await db.signatures.insert(record);
+  return id;
+}
+
+async function loadSignature(
+  db: Database,
+  id: string
+): Promise<BrandedSignature> {
+  const record = await db.signatures.findById(id);
+
+  switch (record.algorithm) {
+    case 'secp256k1':
+      return Signature.fromSecp256k1(record.r!, record.s!, record.v);
+    case 'p256':
+      return Signature.fromP256(record.r!, record.s!);
+    case 'ed25519':
+      return Signature.fromEd25519(record.signature!);
+  }
+}
+```
+
+### Compact Storage
+
+```typescript
+// Store signatures compactly
+interface CompactSignature {
+  bytes: Uint8Array; // 64 bytes
+  algorithm: number; // 1 byte enum
+  v?: number; // 1 byte optional
+}
+
+function serializeCompact(sig: BrandedSignature): Uint8Array {
+  const algorithmByte = {
+    'secp256k1': 0x01,
+    'p256': 0x02,
+    'ed25519': 0x03,
+  }[Signature.getAlgorithm(sig)];
+
+  const compact = Signature.toCompact(sig);
+  const v = Signature.getV(sig);
+
+  const result = new Uint8Array(1 + compact.length + (v ? 1 : 0));
+  result[0] = algorithmByte;
+  result.set(compact, 1);
+  if (v !== undefined) {
+    result[1 + compact.length] = v;
+  }
+
+  return result;
+}
+
+function deserializeCompact(bytes: Uint8Array): BrandedSignature {
+  const algorithmByte = bytes[0]!;
+  const algorithm = {
+    0x01: 'secp256k1',
+    0x02: 'p256',
+    0x03: 'ed25519',
+  }[algorithmByte] as SignatureAlgorithm;
+
+  const compact = bytes.slice(1, 65);
+  const v = bytes.length > 65 ? bytes[65] : undefined;
+
+  if (algorithm === 'secp256k1' && v !== undefined) {
+    const r = compact.slice(0, 32);
+    const s = compact.slice(32, 64);
+    return Signature.fromSecp256k1(r, s, v);
+  }
+
+  return Signature.fromCompact(compact, algorithm);
+}
+```
+
+## Signature Batching
+
+### Batch Verification
+
+```typescript
+interface SignatureBatch {
+  messages: Uint8Array[];
+  signatures: BrandedSignature[];
+  publicKeys: Uint8Array[];
+}
+
+async function verifyBatch(batch: SignatureBatch): Promise<boolean[]> {
+  return await Promise.all(
+    batch.signatures.map(async (sig, i) => {
+      const message = batch.messages[i]!;
+      const publicKey = batch.publicKeys[i]!;
+
+      return await verifyMessage(message, sig, publicKey);
+    })
+  );
+}
+
+// Optimized batch verification for same algorithm
+async function verifyBatchOptimized(
+  batch: SignatureBatch
+): Promise<boolean> {
+  const algorithm = Signature.getAlgorithm(batch.signatures[0]!);
+
+  // Ensure all signatures use same algorithm
+  if (!batch.signatures.every(sig =>
+    Signature.getAlgorithm(sig) === algorithm
+  )) {
+    throw new Error('Mixed algorithms not supported');
+  }
+
+  // Use algorithm-specific batch verification
+  switch (algorithm) {
+    case 'secp256k1':
+      return secp256k1.verifyBatch(
+        batch.messages,
+        batch.signatures,
+        batch.publicKeys
+      );
+    case 'ed25519':
+      return ed25519.verifyBatch(
+        batch.messages,
+        batch.signatures,
+        batch.publicKeys
+      );
+    default:
+      // Fallback to sequential verification
+      const results = await verifyBatch(batch);
+      return results.every(r => r);
+  }
+}
+```
+
+## Error Handling
+
+### Robust Signature Parsing
+
+```typescript
+function parseSignatureSafe(
+  data: unknown,
+  expectedAlgorithm?: SignatureAlgorithm
+): BrandedSignature | null {
+  try {
+    // Try parsing as BrandedSignature
+    if (Signature.is(data)) {
+      if (expectedAlgorithm &&
+          Signature.getAlgorithm(data) !== expectedAlgorithm) {
+        return null;
+      }
+      return data;
+    }
+
+    // Try parsing as bytes
+    if (data instanceof Uint8Array && data.length === 64) {
+      const algorithm = expectedAlgorithm || 'secp256k1';
+      return Signature.fromCompact(data, algorithm);
+    }
+
+    // Try parsing as object
+    if (typeof data === 'object' && data !== null) {
+      return Signature.from(data);
+    }
+
+    return null;
+  } catch (err) {
+    console.error('Signature parsing failed:', err);
+    return null;
+  }
+}
+```
+
+### Signature Validation
+
+```typescript
+interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+function validateSignature(sig: BrandedSignature): ValidationResult {
+  const errors: string[] = [];
+
+  // Check length
+  if (sig.length !== 64) {
+    errors.push(`Invalid length: ${sig.length} (expected 64)`);
+  }
+
+  // Check algorithm
+  const algorithm = Signature.getAlgorithm(sig);
+  if (!['secp256k1', 'p256', 'ed25519'].includes(algorithm)) {
+    errors.push(`Invalid algorithm: ${algorithm}`);
+  }
+
+  // Check recovery ID
+  const v = Signature.getV(sig);
+  if (v !== undefined && v !== 27 && v !== 28) {
+    errors.push(`Invalid recovery ID: ${v} (expected 27 or 28)`);
+  }
+
+  // Check canonicality
+  if (algorithm !== 'ed25519' && !Signature.isCanonical(sig)) {
+    errors.push('Non-canonical signature (s > n/2)');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+```
+
+## Security Patterns
+
+### Signature Replay Prevention
+
+```typescript
+class SignatureTracker {
+  private usedSignatures = new Set<string>();
+
+  private getSignatureHash(sig: BrandedSignature): string {
+    return Hex.fromBytes(Hash.keccak256(Signature.toBytes(sig)));
+  }
+
+  async verify(
+    message: Uint8Array,
+    sig: BrandedSignature,
+    publicKey: Uint8Array
+  ): Promise<boolean> {
+    // Check if signature already used
+    const sigHash = this.getSignatureHash(sig);
+    if (this.usedSignatures.has(sigHash)) {
+      throw new Error('Signature already used');
+    }
+
+    // Verify signature
+    const valid = await verifyMessage(message, sig, publicKey);
+    if (!valid) {
+      return false;
+    }
+
+    // Mark as used
+    this.usedSignatures.add(sigHash);
+    return true;
+  }
+}
+```
+
+### Time-Limited Signatures
+
+```typescript
+interface TimedSignature {
+  signature: BrandedSignature;
+  timestamp: number;
+  expiresAt: number;
+}
+
+function createTimedSignature(
+  sig: BrandedSignature,
+  ttl: number = 300000 // 5 minutes
+): TimedSignature {
+  const timestamp = Date.now();
+  return {
+    signature: sig,
+    timestamp,
+    expiresAt: timestamp + ttl,
+  };
+}
+
+function verifyTimedSignature(
+  timed: TimedSignature,
+  message: Uint8Array,
+  publicKey: Uint8Array
+): boolean {
+  // Check expiration
+  if (Date.now() > timed.expiresAt) {
+    throw new Error('Signature expired');
+  }
+
+  // Verify signature
+  return verifyMessage(message, timed.signature, publicKey);
+}
+```
+
+## Testing Helpers
+
+### Mock Signatures
+
+```typescript
+function createMockSignature(
+  algorithm: SignatureAlgorithm = 'secp256k1'
+): BrandedSignature {
+  const r = crypto.getRandomValues(new Uint8Array(32));
+  const s = crypto.getRandomValues(new Uint8Array(32));
+
+  switch (algorithm) {
+    case 'secp256k1':
+      return Signature.fromSecp256k1(r, s, 27);
+    case 'p256':
+      return Signature.fromP256(r, s);
+    case 'ed25519':
+      const sig = crypto.getRandomValues(new Uint8Array(64));
+      return Signature.fromEd25519(sig);
+  }
+}
+
+function createCanonicalMockSignature(): BrandedSignature {
+  const sig = createMockSignature('secp256k1');
+  return Signature.normalize(sig);
+}
+```
+
+## See Also
+
+- [Constructors](./constructors.mdx) - Creating signatures
+- [Validation](./validation.mdx) - Canonicalization
+- [Utilities](./utilities.mdx) - Helper functions
+- [Conversions](./conversions.mdx) - Format conversions

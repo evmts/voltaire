@@ -1,0 +1,78 @@
+---
+title: Bytecode.fromHex
+description: Parse hex string to bytecode with or without 0x prefix
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Bytecode.fromHex(hex: Hex): Bytecode`
+
+Parse hex string to bytecode. Accepts with or without `0x` prefix.
+
+**Parameters:**
+- `hex: Hex` - Hex string (with or without `0x` prefix)
+
+**Returns:** `Bytecode` - Bytecode instance with prototype methods
+
+**Throws:**
+- `Error` - If hex string has odd length or invalid characters
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code1 = Bytecode.fromHex("0x6001")
+const code2 = Bytecode.fromHex("6001")  // Works without prefix
+
+// Parse deployed contract bytecode
+const deployed = Bytecode.fromHex("0x608060405234801561001057600080fd5b50...")
+
+// Analyze after parsing
+const analysis = deployed.analyze()
+console.log(`Valid: ${analysis.valid}`)
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/fromHex.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/fromHex.js#L8)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `fromHex(hex: Hex): BrandedBytecode`
+
+Parse hex string to bytecode. Accepts with or without `0x` prefix.
+
+**Parameters:**
+- `hex: Hex` - Hex string (with or without `0x` prefix)
+
+**Returns:** `BrandedBytecode` - Branded Uint8Array
+
+**Throws:**
+- `Error` - If hex string has odd length or invalid characters
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code1 = Bytecode.fromHex("0x6001")
+const code2 = Bytecode.fromHex("6001")  // Works without prefix
+
+// Parse deployed contract bytecode
+const deployed = Bytecode.fromHex("0x608060405234801561001057600080fd5b50...")
+
+// Analyze after parsing
+const analysis = Bytecode.analyze(deployed)
+console.log(`Valid: ${analysis.valid}`)
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/fromHex.js:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/fromHex.js#L8)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [from](/primitives/bytecode/from) - Universal constructor
+- [toHex](/primitives/bytecode/tohex) - Convert back to hex string

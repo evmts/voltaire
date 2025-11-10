@@ -1,0 +1,219 @@
+---
+title: Chain
+description: Ethereum chain configuration with network metadata
+---
+
+# Chain
+
+Ethereum chain configuration objects with network metadata, RPC endpoints, and explorer information.
+
+## Overview
+
+[Branded](/concepts/branded-types) type representing Ethereum chain configurations. Provides chain constants, metadata, and lookup utilities for Ethereum networks. Zero-overhead design supports both tree-shakeable namespace methods and class instances.
+
+## Quick Start
+
+<Tabs>
+<Tab title="Class API">
+```typescript
+import { Chain } from '@tevm/voltaire'
+import { mainnet, optimism, arbitrum } from '@tevm/chains'
+
+// Construct from chain object (see Constructors)
+const chain = Chain.from(mainnet)
+
+// Lookup by chain ID (see Chain Lookup)
+const quai = Chain.fromId(9)
+const flare = Chain.fromId(14)
+
+// Access via byId record
+const chain1 = Chain.byId[1]  // mainnet
+const chain10 = Chain.byId[10] // optimism
+
+// Access metadata (see Metadata)
+console.log(chain.name)         // "Ethereum Mainnet"
+console.log(chain.chainId)      // 1
+console.log(chain.nativeCurrency.symbol) // "ETH"
+console.log(chain.rpc[0])       // RPC endpoint
+console.log(chain.explorers?.[0].url)    // Explorer URL
+```
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+```typescript
+import { Chain } from '@tevm/voltaire'
+import { mainnet } from '@tevm/chains'
+
+// Tree-shakeable imports minimize bundle size
+const chain = Chain.from(mainnet)
+
+// Lookup by ID
+const quai = Chain.fromId(9)
+
+// Access byId record
+const eth = Chain.byId[1]
+
+// See BrandedChain for complete functional API
+```
+</Tab>
+</Tabs>
+
+## Types
+
+<Tabs>
+<Tab title="class Chain">
+```typescript
+class Chain {
+  // Constructors (→ /primitives/chain/constructors)
+  static from(chain: Chain): Chain
+  static fromId(id: number): Chain | undefined
+
+  // Lookup (→ /primitives/chain/chain-lookup)
+  static byId: Record<number, Chain>
+}
+```
+
+Source: [Chain.js:14-36](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/Chain.js#L14-L36)
+</Tab>
+<Tab title="type Chain">
+```typescript
+export interface Chain {
+  name: string
+  chain: string
+  chainId: number
+  networkId?: number
+  shortName: string
+  rpc: string[]
+  nativeCurrency: NativeCurrency
+  infoURL?: string
+  explorers?: Explorer[]
+  [key: string]: any
+}
+
+export interface NativeCurrency {
+  name: string
+  symbol: string
+  decimals: number
+  [key: string]: any
+}
+
+export interface Explorer {
+  name: string
+  url: string
+  standard?: string
+  [key: string]: any
+}
+```
+
+Chain configuration object extending from [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains). Provides complete chain metadata including network name, chain ID, RPC endpoints, native currency details, and block explorer URLs.
+
+Source: [ChainType.ts:1](https://github.com/evmts/voltaire/blob/main/src/primitives/Chain/ChainType.ts#L1)
+</Tab>
+</Tabs>
+
+## Chain Constants
+
+Chain objects imported from [@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains):
+
+```typescript
+import {
+  // Mainnets
+  flr14,
+  quai9,
+  injective1776,
+  ronin2020,
+  moca2288,
+
+  // Popular networks (via chain ID)
+  // Use Chain.fromId(id) or Chain.byId[id]
+} from '@tevm/chains'
+
+// Access chain metadata
+console.log(quai9.name)          // "Quai Mainnet"
+console.log(quai9.chainId)       // 9
+console.log(quai9.nativeCurrency.symbol) // "QUAI"
+
+// Use with Chain constructor
+const chain = Chain.from(quai9)
+```
+
+**Available constants:**
+- 800+ chain configurations from @tevm/chains
+- Includes testnets, mainnets, L2s, and sidechains
+- Each constant includes full metadata (RPC, explorer, currency)
+
+See [@tevm/chains documentation](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains) for complete list.
+
+## API Documentation
+
+### Constructors
+
+Creating Chain instances from chain objects and chain IDs.
+
+    [View constructors →](/primitives/chain/constructors)
+
+### Chain Lookup
+
+Looking up chains by ID using fromId() and byId record.
+
+    [View chain lookup →](/primitives/chain/chain-lookup)
+
+### Metadata
+
+Accessing chain properties: name, chainId, RPC, explorers, currency.
+
+    [View metadata →](/primitives/chain/metadata)
+
+### BrandedChain
+
+Tree-shakeable functional API for minimal bundle size.
+
+    [View BrandedChain →](/primitives/chain/branded-chain)
+
+### Network Comparison
+
+Compare gas fees, costs, and characteristics across mainnet, L2s, and testnets.
+
+    [View Network Comparison →](/primitives/chain/network-comparison)
+
+<Tip title="Chain objects are plain JavaScript objects">
+Chain is a lightweight wrapper around plain JavaScript objects from @tevm/chains. The Chain class adds prototype methods while keeping the underlying data structure simple and serializable.
+</Tip>
+
+## Related Types
+
+### Address
+
+Ethereum address type for contract and account addresses.
+
+    [View Address →](/primitives/address)
+
+### Branded Types
+
+Zero-overhead type branding pattern used throughout primitives.
+
+    [View Branded Types →](/concepts/branded-types)
+
+### Denomination
+
+Wei, Gwei, and Ether types with currency conversions.
+
+    [View Denomination →](/primitives/denomination)
+
+### FeeMarket
+
+EIP-1559 gas pricing with base and priority fees.
+
+    [View FeeMarket →](/primitives/feemarket)
+
+### Hardfork
+
+Ethereum network upgrades and protocol versions.
+
+    [View Hardfork →](/primitives/hardfork)
+
+### Transaction
+
+Transaction creation and signing across networks.
+
+    [View Transaction →](/primitives/transaction)
+

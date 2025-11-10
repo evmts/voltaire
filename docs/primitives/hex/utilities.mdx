@@ -1,0 +1,295 @@
+---
+title: Hex Utilities
+description: Utility functions for hex strings
+---
+
+# Utilities
+
+Utility methods for hex string operations: size checking, equality testing, random generation, and zero values.
+
+## Size Operations
+
+### `Hex.size(hex)`
+
+Returns byte size of hex string.
+
+```typescript
+const hex1 = Hex("0x1234")
+Hex.size(hex1)  // 2 (bytes)
+
+const hex2 = Hex("0x")
+Hex.size(hex2)  // 0 (empty)
+
+const hash = Hex("0x" + "ff".repeat(32))
+Hex.size(hash)  // 32 (bytes)
+```
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string
+
+**Returns:** `number` - Size in bytes
+
+**Calculation:** `(hex.length - 2) / 2`
+
+Defined in: [primitives/Hex/BrandedHex/size.js:14-16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/size.js#L14-L16)
+Tests: [size.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/size.test.ts)
+
+**Note:** Two hex characters = one byte. Excludes `0x` prefix from count.
+
+## Equality
+
+### `Hex.equals(a, b)`
+
+Compares two hex strings for equality. Case-insensitive comparison.
+
+```typescript
+const hex1 = Hex("0x1234")
+const hex2 = Hex("0x1234")
+const hex3 = Hex("0x5678")
+
+Hex.equals(hex1, hex2)  // true
+Hex.equals(hex1, hex3)  // false
+
+// Case-insensitive
+Hex.equals(Hex("0xabcd"), Hex("0xABCD"))  // true
+Hex.equals(Hex("0xAbCd"), Hex("0xaBcD"))  // true
+```
+
+**Parameters:**
+- `a: BrandedHex` - First hex string
+- `b: BrandedHex` - Second hex string
+
+**Returns:** `boolean`
+
+Defined in: [primitives/Hex/BrandedHex/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/equals.js)
+Tests: [equals.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/equals.test.ts)
+
+**Implementation:** Uses case-insensitive string comparison via `toLowerCase()`.
+
+## Random Generation
+
+### `Hex.random(size)`
+
+Generates cryptographically secure random hex of specified byte size.
+
+```typescript
+// Random 32-byte hash
+const randomHash = Hex.random(32)
+console.log(Hex.size(randomHash))  // 32
+
+// Random 20-byte address
+const randomAddr = Hex.random(20)
+
+// Random 1-byte value
+const randomByte = Hex.random(1)
+
+// Empty
+const empty = Hex.random(0)  // "0x"
+```
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex`
+
+**Security:** Uses `crypto.getRandomValues()` for cryptographic randomness suitable for:
+- Private keys
+- Nonces
+- Salts
+- Session IDs
+- Testing
+
+Defined in: [primitives/Hex/BrandedHex/random.js:14-18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.js#L14-L18)
+Tests: [random.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/random.test.ts)
+
+**Note:** Not suitable for deterministic or seeded randomness. Use a PRNG if reproducibility needed.
+
+## Zero Values
+
+### `Hex.zero(size)`
+
+Creates zero-filled hex of specified byte size.
+
+```typescript
+// 32-byte zero hash
+const zeroHash = Hex.zero(32)
+// "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+// 20-byte zero address
+const zeroAddr = Hex.zero(20)
+// "0x0000000000000000000000000000000000000000"
+
+// Single zero byte
+const zeroByte = Hex.zero(1)  // "0x00"
+
+// Empty
+const empty = Hex.zero(0)  // "0x"
+```
+
+**Parameters:**
+- `size: number` - Size in bytes
+
+**Returns:** `BrandedHex`
+
+Defined in: [primitives/Hex/BrandedHex/zero.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.js)
+Tests: [zero.test.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/zero.test.ts)
+
+**Use cases:**
+- Default values
+- Empty storage slots
+- Zero address (0x0...0)
+- Null hash (0x0...0)
+- Testing
+
+## Tree-Shakeable Usage
+
+All utility methods available as tree-shakeable imports:
+
+```typescript
+import { size, equals, random, zero } from '@tevm/voltaire/BrandedHex'
+
+const hex = random(32)
+const byteSize = size(hex)
+const isEqual = equals(hex, zero(32))
+const zeroValue = zero(20)
+```
+
+See [BrandedHex](/primitives/hex/branded-hex) for details on tree-shakeable API.
+
+## Usage Patterns
+
+### Size Validation
+
+```typescript
+function validateHash(hex: BrandedHex) {
+  if (Hex.size(hex) !== 32) {
+    throw new Error("Expected 32-byte hash")
+  }
+}
+
+function validateAddress(hex: BrandedHex) {
+  if (Hex.size(hex) !== 20) {
+    throw new Error("Expected 20-byte address")
+  }
+}
+```
+
+### Comparison
+
+```typescript
+// Check if address is zero address
+function isZeroAddress(addr: BrandedHex): boolean {
+  return Hex.equals(addr, Hex.zero(20))
+}
+
+// Find duplicate in array
+function findDuplicate(hexes: BrandedHex[]): BrandedHex | null {
+  for (let i = 0; i < hexes.length; i++) {
+    for (let j = i + 1; j < hexes.length; j++) {
+      if (Hex.equals(hexes[i], hexes[j])) {
+        return hexes[i]
+      }
+    }
+  }
+  return null
+}
+```
+
+### Random Generation
+
+```typescript
+// Generate random private key
+function generatePrivateKey(): BrandedHex {
+  return Hex.random(32)
+}
+
+// Generate random nonce
+function generateNonce(): BrandedHex {
+  return Hex.random(8)
+}
+
+// Generate test data
+function generateTestHash(): BrandedHex {
+  return Hex.random(32)
+}
+```
+
+### Zero Values
+
+```typescript
+// Initialize storage
+function initializeStorage(): BrandedHex {
+  return Hex.zero(32)
+}
+
+// Zero address constant
+const ZERO_ADDRESS = Hex.zero(20)
+
+// Empty hash
+const EMPTY_HASH = Hex.zero(32)
+
+// Check for zero
+function isZero(hex: BrandedHex): boolean {
+  return Hex.equals(hex, Hex.zero(Hex.size(hex)))
+}
+```
+
+### Array Operations
+
+```typescript
+// Filter non-zero addresses
+const addresses: BrandedHex[] = [...]
+const nonZero = addresses.filter(addr =>
+  !Hex.equals(addr, Hex.zero(20))
+)
+
+// Sort by size
+const hexes: BrandedHex[] = [...]
+const sorted = [...hexes].sort((a, b) =>
+  Hex.size(a) - Hex.size(b)
+)
+
+// Find unique values
+function unique(hexes: BrandedHex[]): BrandedHex[] {
+  return hexes.filter((hex, i, arr) =>
+    arr.findIndex(h => Hex.equals(h, hex)) === i
+  )
+}
+```
+
+## Utility Functions Table
+
+| Function | Input | Output | Notes |
+|----------|-------|--------|-------|
+| `size` | `"0x1234"` | `2` | Byte count |
+| `equals` | `("0x12", "0x12")` | `true` | Case-insensitive |
+| `random` | `32` | `"0x..."` | Cryptographically secure |
+| `zero` | `32` | `"0x000...000"` | Zero-filled |
+
+## Performance Notes
+
+### `equals()`
+- O(n) where n is string length
+- Case-insensitive via `toLowerCase()`
+- Short-circuits on length mismatch
+
+### `size()`
+- O(1) constant time
+- Simple arithmetic: `(length - 2) / 2`
+
+### `random()`
+- Uses native `crypto.getRandomValues()`
+- Cryptographic quality randomness
+- Performance depends on platform CSPRNG
+
+### `zero()`
+- O(n) where n is size
+- Allocates Uint8Array and converts to hex
+- Consider caching common sizes
+
+## Related
+
+- [Constructors](/primitives/hex/constructors) - Creating Hex instances
+- [Validation](/primitives/hex/validation) - Size validation with `isSized()` and `assertSize()`
+- [Manipulation](/primitives/hex/manipulation) - Modifying hex strings
+- [BrandedHex](/primitives/hex/branded-hex) - Tree-shakeable functional API

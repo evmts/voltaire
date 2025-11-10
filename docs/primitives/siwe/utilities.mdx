@@ -1,0 +1,260 @@
+---
+title: "Utilities"
+description: "Helper functions for SIWE message operations"
+---
+
+# Utilities
+
+Helper functions for SIWE message operations.
+
+## generateNonce
+
+Generate cryptographically secure random nonce.
+
+### Signature
+
+```typescript
+function generateNonce(length?: number): string
+```
+
+### Parameters
+
+- `length` - Nonce length in characters (default: 11, minimum: 8)
+
+### Returns
+
+Random base62 alphanumeric string (0-9, a-z, A-Z)
+
+### Throws
+
+- `Error` - If length < 8 (EIP-4361 requirement)
+
+### Example
+
+```typescript
+// Default 11-character nonce
+const nonce = Siwe.generateNonce();
+// "a7b9c2d4e6f"
+
+// Custom length
+const longNonce = Siwe.generateNonce(16);
+// "a7b9c2d4e6f8g0h1"
+
+// Minimum length
+const minNonce = Siwe.generateNonce(8);
+// "abc12345"
+```
+
+### Character Set
+
+**Base62:** 62 total characters
+- **Digits:** `0123456789` (10 chars)
+- **Uppercase:** `ABCDEFGHIJKLMNOPQRSTUVWXYZ` (26 chars)
+- **Lowercase:** `abcdefghijklmnopqrstuvwxyz` (26 chars)
+
+**Properties:**
+- URL-safe (no special characters)
+- Case-sensitive
+- Human-readable
+- No ambiguous characters
+
+### Randomness
+
+#### Browser Environment
+
+Uses Web Crypto API:
+```javascript
+const randomBytes = new Uint8Array(length);
+crypto.getRandomValues(randomBytes);
+```
+
+#### Node.js Environment
+
+Uses Node crypto module:
+```javascript
+const crypto = require('crypto');
+const randomBytes = new Uint8Array(length);
+crypto.randomFillSync(randomBytes);
+```
+
+**Security:**
+- Cryptographically secure PRNG
+- Suitable for authentication tokens
+- Platform-specific random source
+
+### Generation Algorithm
+
+```javascript
+const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const randomBytes = new Uint8Array(length);
+crypto.getRandomValues(randomBytes);
+
+let nonce = "";
+for (let i = 0; i < length; i++) {
+  nonce += chars[randomBytes[i] % chars.length];
+}
+return nonce;
+```
+
+<Note>
+Modulo bias is negligible for 256 values mapped to 62 characters
+</Note>
+
+### Common Patterns
+
+#### Message Creation
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  nonce: Siwe.generateNonce(),  // Auto-generated if omitted
+});
+```
+
+#### Server-Side Nonce Management
+
+```typescript
+// Generate and store nonce
+const nonce = Siwe.generateNonce();
+await redis.set(`nonce:${nonce}`, JSON.stringify({
+  userId,
+  createdAt: Date.now(),
+  expiresAt: Date.now() + 300000,  // 5 minutes
+}), 'EX', 300);
+
+// Return to client
+res.json({ nonce });
+
+// Later: Verify and consume
+const nonceData = await redis.get(`nonce:${message.nonce}`);
+if (!nonceData) {
+  throw new Error('Invalid or expired nonce');
+}
+await redis.del(`nonce:${message.nonce}`);  // Single use
+```
+
+#### Batch Generation
+
+```typescript
+// Generate multiple nonces
+const nonces = Array.from(
+  { length: 100 },
+  () => Siwe.generateNonce()
+);
+
+// Pre-generate for session pool
+const noncePool = new Set();
+for (let i = 0; i < 1000; i++) {
+  noncePool.add(Siwe.generateNonce());
+}
+```
+
+#### Custom Length for Different Security Levels
+
+```typescript
+// Standard security (11 chars, ~65 bits entropy)
+const standardNonce = Siwe.generateNonce();
+
+// High security (22 chars, ~131 bits entropy)
+const secureNonce = Siwe.generateNonce(22);
+
+// Minimum spec-compliant (8 chars, ~48 bits entropy)
+const minNonce = Siwe.generateNonce(8);
+```
+
+### Entropy Analysis
+
+**Bits of entropy = log2(62^length)**
+
+| Length | Combinations | Bits of Entropy | Security Level |
+|--------|-------------|-----------------|----------------|
+| 8      | 62^8        | ~48 bits        | Minimum (spec) |
+| 11     | 62^11       | ~65 bits        | Standard       |
+| 16     | 62^16       | ~95 bits        | High           |
+| 22     | 62^22       | ~131 bits       | Very High      |
+
+**Recommendations:**
+- **8 chars:** Spec minimum, adequate for short-lived nonces with rate limiting
+- **11 chars:** Default, good balance of security and length
+- **16+ chars:** High-value authentication, long-lived sessions
+
+### Security Considerations
+
+#### Nonce Requirements
+
+1. **Uniqueness:** Each nonce must be globally unique
+2. **Randomness:** Cryptographically secure random generation
+3. **Single-Use:** Consume after verification to prevent replay
+4. **Expiration:** Limit nonce lifetime (5-15 minutes recommended)
+5. **Storage:** Store server-side, verify on auth
+
+#### Replay Attack Prevention
+
+```typescript
+// Store nonce with metadata
+const nonce = Siwe.generateNonce();
+storeNonce(nonce, {
+  createdAt: Date.now(),
+  expiresAt: Date.now() + 300000,
+  used: false,
+});
+
+// Verify and mark as used
+function verifyNonce(nonce: string): boolean {
+  const data = getNonce(nonce);
+  if (!data || data.used || Date.now() > data.expiresAt) {
+    return false;
+  }
+  markNonceUsed(nonce);
+  return true;
+}
+```
+
+#### Rate Limiting
+
+```typescript
+// Limit nonce generation per IP
+const requestCount = await redis.incr(`nonce-requests:${ip}`);
+await redis.expire(`nonce-requests:${ip}`, 60);
+
+if (requestCount > 10) {
+  throw new Error('Rate limit exceeded');
+}
+
+const nonce = Siwe.generateNonce();
+```
+
+### Performance
+
+**Time Complexity:** O(n) where n = length
+**Space Complexity:** O(n)
+
+**Typical Performance:**
+- 11-char nonce: less than 0.1ms
+- 100 nonces: less than 1ms
+- Dominated by random number generation
+
+**Optimization:**
+- Pre-generate nonce pool for high throughput
+- Batch generation more efficient than individual calls
+- No allocation overhead (returns string)
+
+### Best Practices
+
+1. **Default Length:** Use default 11 chars unless specific needs
+2. **Server-Side Generation:** Generate on backend, send to frontend
+3. **Store Metadata:** Track creation time, expiration, usage
+4. **Single Use:** Invalidate after successful authentication
+5. **Expiration:** Set reasonable TTL (5-15 minutes)
+6. **Rate Limit:** Prevent nonce generation abuse
+7. **Uniqueness Check:** Verify nonce not already in use (optional for high security)
+
+### See Also
+
+- [Siwe.create](/primitives/siwe/constructors) - Create message with nonce
+- [Validation](/primitives/siwe/validation) - Nonce validation rules
+- [Usage Patterns](/primitives/siwe/usage-patterns) - Nonce management patterns
+- [EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) - Nonce requirements

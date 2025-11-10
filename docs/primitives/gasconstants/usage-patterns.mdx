@@ -1,0 +1,590 @@
+---
+title: "Usage Patterns"
+---
+
+# Usage Patterns
+
+Common patterns and examples for gas cost estimation using GasConstants.
+
+## Transaction Cost Estimation
+
+### Basic Transaction
+
+```typescript
+import * as GasConstants from './GasConstants/index.js';
+
+function estimateSimpleTransfer(to: Address): bigint {
+  // Empty calldata, no contract creation
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(
+    new Uint8Array([]),
+    false
+  );
+  return intrinsic;  // 21000n
+}
+```
+
+### ERC20 Transfer
+
+```typescript
+function estimateERC20Transfer(hardfork: Hardfork): bigint {
+  // Function selector + address + uint256 = 68 bytes
+  // Typically: 4 (selector) + 32 (address padded) + 32 (amount)
+  const calldata = new Uint8Array(68);
+  calldata[0] = 0xa9; // transfer(address,uint256) selector
+  calldata[1] = 0x05;
+  calldata[2] = 0x9c;
+  calldata[3] = 0xbb;
+  // Rest zeros for simplicity
+
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(calldata, false);
+
+  // Warm SLOAD for balance check (sender)
+  const sload = GasConstants.Sload;
+
+  // SSTORE: decrease sender balance (modify non-zero)
+  const senderStore = GasConstants.calculateSstoreCost(true, 1000n, 900n);
+
+  // SSTORE: increase receiver balance (modify non-zero or zero to non-zero)
+  const receiverStore = GasConstants.calculateSstoreCost(false, 0n, 100n);
+
+  // LOG (Transfer event with 3 topics)
+  const log = GasConstants.calculateLogCost(3n, 64n);
+
+  return intrinsic + sload + senderStore.cost + receiverStore.cost + log;
+}
+
+const cost = estimateERC20Transfer('london');
+// ~24000-45000n depending on warm/cold access
+```
+
+### Contract Deployment
+
+```typescript
+function estimateContractDeployment(
+  hardfork: Hardfork,
+  initcode: Uint8Array,
+  deployedBytecode: Uint8Array
+): bigint {
+  // Intrinsic gas for contract creation
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(initcode, true);
+
+  // CREATE operation
+  const create = GasConstants.calculateCreateCost(
+    BigInt(initcode.length),
+    BigInt(deployedBytecode.length)
+  );
+
+  // Memory expansion for initcode
+  const memory = GasConstants.calculateMemoryExpansionCost(
+    0n,
+    BigInt(initcode.length)
+  );
+
+  // Check EIP-3860 limit (Shanghai+)
+  if (GasConstants.hasEIP3860(hardfork)) {
+    if (BigInt(initcode.length) > GasConstants.MaxInitcodeSize) {
+      throw new Error('Initcode exceeds 49152 byte limit');
+    }
+  }
+
+  return intrinsic + create.total + memory.expansionCost;
+}
+
+// Example: Deploy small contract
+const initcode = new Uint8Array(1000);
+const bytecode = new Uint8Array(500);
+const cost = estimateContractDeployment('london', initcode, bytecode);
+// ~153000n
+```
+
+## Storage Operations
+
+### Storage Pattern Tracking
+
+```typescript
+class StorageTracker {
+  private accessedSlots = new Set<bigint>();
+  private hardfork: Hardfork;
+  private totalCost = 0n;
+  private totalRefund = 0n;
+
+  constructor(hardfork: Hardfork) {
+    this.hardfork = hardfork;
+  }
+
+  sload(slot: bigint): bigint {
+    const isWarm = this.accessedSlots.has(slot);
+    this.accessedSlots.add(slot);
+
+    const cost = isWarm
+      ? GasConstants.Sload
+      : GasConstants.getColdSloadCost(this.hardfork);
+
+    this.totalCost += cost;
+    return cost;
+  }
+
+  sstore(slot: bigint, currentValue: bigint, newValue: bigint): bigint {
+    const isWarm = this.accessedSlots.has(slot);
+    this.accessedSlots.add(slot);
+
+    const result = GasConstants.calculateSstoreCost(
+      isWarm,
+      currentValue,
+      newValue
+    );
+
+    this.totalCost += result.cost;
+    this.totalRefund += result.refund;
+    return result.cost;
+  }
+
+  getNetCost(): bigint {
+    const maxRefund = GasConstants.calculateMaxRefund(this.totalCost);
+    const actualRefund = this.totalRefund > maxRefund
+      ? maxRefund
+      : this.totalRefund;
+    return this.totalCost - actualRefund;
+  }
+}
+
+// Usage
+const tracker = new StorageTracker('london');
+tracker.sload(0n);                    // Cold: 2100n
+tracker.sload(0n);                    // Warm: 100n
+tracker.sstore(0n, 0n, 100n);         // Set: 20000n (warm)
+tracker.sstore(1n, 100n, 0n);         // Clear: 7100n (cold), refund 4800n
+const net = tracker.getNetCost();     // Total - refund
+```
+
+### Storage Optimization
+
+```typescript
+function compareSstoreCosts(hardfork: Hardfork): void {
+  const scenarios = [
+    { name: 'Cold set (0→1)', isWarm: false, current: 0n, new: 1n },
+    { name: 'Warm set (0→1)', isWarm: true, current: 0n, new: 1n },
+    { name: 'Cold modify (1→2)', isWarm: false, current: 1n, new: 2n },
+    { name: 'Warm modify (1→2)', isWarm: true, current: 1n, new: 2n },
+    { name: 'Cold clear (1→0)', isWarm: false, current: 1n, new: 0n },
+    { name: 'Warm clear (1→0)', isWarm: true, current: 1n, new: 0n },
+    { name: 'No-op (1→1)', isWarm: true, current: 1n, new: 1n },
+  ];
+
+  console.log(`Storage costs (${hardfork}):\n`);
+  scenarios.forEach(({ name, isWarm, current, new: newVal }) => {
+    const result = GasConstants.calculateSstoreCost(isWarm, current, newVal);
+    console.log(
+      `${name.padEnd(25)} cost: ${result.cost.toString().padStart(6)} refund: ${result.refund}`
+    );
+  });
+}
+
+compareSstoreCosts('london');
+// Cold set (0→1)           cost:  22100 refund: 0
+// Warm set (0→1)           cost:  20000 refund: 0
+// Cold modify (1→2)        cost:   7100 refund: 0
+// Warm modify (1→2)        cost:   5000 refund: 0
+// Cold clear (1→0)         cost:   7100 refund: 4800
+// Warm clear (1→0)         cost:   5000 refund: 4800
+// No-op (1→1)              cost:    100 refund: 0
+```
+
+## Memory Management
+
+### Memory Cost Tracking
+
+```typescript
+class MemoryManager {
+  private currentSize = 0n;
+  private totalCost = 0n;
+
+  expand(newSize: bigint): bigint {
+    if (newSize <= this.currentSize) {
+      return 0n;
+    }
+
+    const expansion = GasConstants.calculateMemoryExpansionCost(
+      this.currentSize,
+      newSize
+    );
+
+    this.totalCost += expansion.expansionCost;
+    this.currentSize = newSize;
+
+    return expansion.expansionCost;
+  }
+
+  mstore(offset: bigint): bigint {
+    return this.expand(offset + 32n);
+  }
+
+  mstore8(offset: bigint): bigint {
+    return this.expand(offset + 1n);
+  }
+
+  calldatacopy(destOffset: bigint, size: bigint): bigint {
+    const expansionCost = this.expand(destOffset + size);
+    const copyCost = GasConstants.calculateCopyCost(size);
+    return expansionCost + copyCost;
+  }
+
+  getTotalCost(): bigint {
+    return this.totalCost;
+  }
+}
+
+// Usage
+const memory = new MemoryManager();
+memory.mstore(0n);         // Expand 0→32: 3n
+memory.mstore(32n);        // Expand 32→64: 3n
+memory.mstore(128n);       // Expand 64→160: 9n
+memory.calldatacopy(256n, 64n); // Expand 160→320 + copy: 15n + 6n
+const total = memory.getTotalCost(); // 36n
+```
+
+### Memory Growth Analysis
+
+```typescript
+function analyzeMemoryGrowth(operations: bigint[]): bigint[] {
+  const costs: bigint[] = [];
+  let currentSize = 0n;
+
+  for (const targetSize of operations) {
+    const expansion = GasConstants.calculateMemoryExpansionCost(
+      currentSize,
+      targetSize
+    );
+    costs.push(expansion.expansionCost);
+    currentSize = targetSize;
+  }
+
+  return costs;
+}
+
+// Linear growth
+const linear = analyzeMemoryGrowth([32n, 64n, 96n, 128n]);
+// [3n, 3n, 3n, 3n] - mostly linear at small sizes
+
+// Large jump
+const jump = analyzeMemoryGrowth([32n, 1024n]);
+// [3n, 95n] - quadratic cost kicks in
+
+// Repeated access (no expansion)
+const repeated = analyzeMemoryGrowth([64n, 64n, 64n]);
+// [6n, 0n, 0n] - no cost after initial expansion
+```
+
+## Call Operations
+
+### Call Cost Estimation
+
+```typescript
+function estimateCallSequence(
+  hardfork: Hardfork,
+  calls: Array<{
+    target: Address;
+    value: bigint;
+    targetExists: boolean;
+  }>
+): bigint {
+  const warmAddresses = new Set<Address>();
+  let totalCost = 0n;
+
+  for (const call of calls) {
+    const isWarm = warmAddresses.has(call.target);
+    warmAddresses.add(call.target);
+
+    const hasValue = call.value > 0n;
+    const isNewAccount = !call.targetExists && hasValue;
+
+    // Assume 100000n gas available for each call
+    const result = GasConstants.calculateCallCost(
+      isWarm,
+      hasValue,
+      isNewAccount,
+      100000n
+    );
+
+    totalCost += result.total;
+  }
+
+  return totalCost;
+}
+
+// Example: Multiple calls
+const calls = [
+  { target: addr1, value: 0n, targetExists: true },      // Cold, no value
+  { target: addr1, value: 0n, targetExists: true },      // Warm, no value
+  { target: addr2, value: 1n, targetExists: true },      // Cold, with value
+  { target: addr3, value: 1n, targetExists: false },     // Cold, new account
+];
+
+const cost = estimateCallSequence('berlin', calls);
+// 2600 + 100 + 11600 + 36600 = 50900n
+```
+
+### Gas Forwarding Calculation
+
+```typescript
+function analyzeGasForwarding(
+  availableGas: bigint,
+  hasValue: boolean
+): {
+  retained: bigint;
+  forwarded: bigint;
+  stipend: bigint;
+  effective: bigint;
+} {
+  const result = GasConstants.calculateCallCost(
+    true,
+    hasValue,
+    false,
+    availableGas
+  );
+
+  const retained = availableGas - result.forwarded - result.stipend;
+  const effective = result.forwarded + result.stipend;
+
+  return {
+    retained,
+    forwarded: result.forwarded,
+    stipend: result.stipend,
+    effective,
+  };
+}
+
+// Without value transfer
+const noValue = analyzeGasForwarding(100000n, false);
+// retained: 1661n (100000/64)
+// forwarded: 98339n (63/64 of remainder)
+// stipend: 0n
+// effective: 98339n
+
+// With value transfer
+const withValue = analyzeGasForwarding(100000n, true);
+// retained: 1661n
+// forwarded: 89381n (63/64 of (100000-9000))
+// stipend: 2300n
+// effective: 91681n (89381 + 2300)
+```
+
+## Refund Calculation
+
+### Maximum Refund Analysis
+
+```typescript
+function analyzeRefundScenarios(gasUsed: bigint, hardfork: Hardfork): void {
+  const maxRefund = GasConstants.calculateMaxRefund(gasUsed);
+  const refundPerSlot = GasConstants.getSstoreRefund(hardfork);
+
+  console.log(`\nRefund analysis (${hardfork}, ${gasUsed} gas used):`);
+  console.log(`Max refund: ${maxRefund} (gasUsed/${GasConstants.MaxRefundQuotient})`);
+  console.log(`Refund per cleared slot: ${refundPerSlot}\n`);
+
+  for (let slots = 1; slots <= 10; slots++) {
+    const totalRefund = BigInt(slots) * refundPerSlot;
+    const actualRefund = totalRefund > maxRefund ? maxRefund : totalRefund;
+    const netGas = gasUsed - actualRefund;
+    const capped = totalRefund > maxRefund ? ' (CAPPED)' : '';
+
+    console.log(
+      `${slots} slots: refund ${actualRefund}/${totalRefund} net ${netGas}${capped}`
+    );
+  }
+}
+
+analyzeRefundScenarios(100000n, 'london');
+// Refund analysis (london, 100000 gas used):
+// Max refund: 20000 (gasUsed/5)
+// Refund per cleared slot: 4800
+//
+// 1 slots: refund 4800/4800 net 95200
+// 2 slots: refund 9600/9600 net 90400
+// 3 slots: refund 14400/14400 net 85600
+// 4 slots: refund 19200/19200 net 80800
+// 5 slots: refund 20000/24000 net 80000 (CAPPED)
+// ...
+```
+
+### Refund Optimization
+
+```typescript
+function optimizeStorageClearing(
+  hardfork: Hardfork,
+  slotsToClean: number,
+  baseGasCost: bigint
+): {
+  batchSize: number;
+  batches: number;
+  totalGas: bigint;
+  savings: bigint;
+} {
+  const clearCost = GasConstants.SstoreClear;
+  const refundPerSlot = GasConstants.getSstoreRefund(hardfork);
+
+  // Find optimal batch size where refunds aren't capped
+  let optimalBatch = 1;
+  for (let batch = 1; batch <= slotsToClean; batch++) {
+    const gasUsed = baseGasCost + clearCost * BigInt(batch);
+    const maxRefund = GasConstants.calculateMaxRefund(gasUsed);
+    const potentialRefund = refundPerSlot * BigInt(batch);
+
+    if (potentialRefund <= maxRefund) {
+      optimalBatch = batch;
+    } else {
+      break;
+    }
+  }
+
+  const batches = Math.ceil(slotsToClean / optimalBatch);
+  const gasPerBatch = baseGasCost + clearCost * BigInt(optimalBatch);
+  const refundPerBatch = refundPerSlot * BigInt(optimalBatch);
+  const netPerBatch = gasPerBatch - refundPerBatch;
+  const totalGas = netPerBatch * BigInt(batches);
+
+  // Compare to doing all at once
+  const allAtOnce = baseGasCost + clearCost * BigInt(slotsToClean);
+  const maxRefundTotal = GasConstants.calculateMaxRefund(allAtOnce);
+  const actualRefundTotal = refundPerSlot * BigInt(slotsToClean);
+  const finalRefund = actualRefundTotal > maxRefundTotal ? maxRefundTotal : actualRefundTotal;
+  const singleBatchGas = allAtOnce - finalRefund;
+
+  return {
+    batchSize: optimalBatch,
+    batches,
+    totalGas,
+    savings: singleBatchGas - totalGas,
+  };
+}
+
+// Clear 100 slots (London)
+const result = optimizeStorageClearing('london', 100, 21000n);
+// Optimal batching to maximize refunds
+```
+
+## Complex Estimations
+
+### Uniswap V2 Swap
+
+```typescript
+function estimateUniswapV2Swap(hardfork: Hardfork): bigint {
+  // Function call
+  const calldata = new Uint8Array(164); // swap function
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(calldata, false);
+
+  // Storage operations (reserves, balances)
+  const sload1 = GasConstants.getColdSloadCost(hardfork); // Read reserves
+  const sload2 = GasConstants.Sload; // Read balance (warm)
+  const sload3 = GasConstants.Sload; // Read balance (warm)
+
+  const sstore1 = GasConstants.calculateSstoreCost(true, 1000n, 1100n); // Update reserve
+  const sstore2 = GasConstants.calculateSstoreCost(true, 2000n, 2100n); // Update reserve
+  const sstore3 = GasConstants.calculateSstoreCost(true, 5000n, 4900n); // Update balance
+  const sstore4 = GasConstants.calculateSstoreCost(true, 3000n, 3100n); // Update balance
+
+  // Events
+  const syncEvent = GasConstants.calculateLogCost(0n, 64n);
+  const swapEvent = GasConstants.calculateLogCost(3n, 128n);
+
+  // Math operations (estimate)
+  const arithmetic = GasConstants.FastestStep * 100n; // Many ADD/MUL operations
+
+  return (
+    intrinsic +
+    sload1 + sload2 + sload3 +
+    sstore1.cost + sstore2.cost + sstore3.cost + sstore4.cost +
+    syncEvent + swapEvent +
+    arithmetic
+  );
+}
+
+const swapCost = estimateUniswapV2Swap('london');
+// ~45000-60000n depending on exact operations
+```
+
+### Multisig Wallet Execution
+
+```typescript
+function estimateMultisigExecution(
+  hardfork: Hardfork,
+  signers: number,
+  calldata: Uint8Array
+): bigint {
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(calldata, false);
+
+  // ECRECOVER for each signature
+  const ecrecovers = BigInt(signers) * GasConstants.Precompile.EcRecover;
+
+  // Storage: nonce increment
+  const nonceUpdate = GasConstants.calculateSstoreCost(true, 100n, 101n);
+
+  // Internal call
+  const call = GasConstants.calculateCallCost(true, false, false, 100000n);
+
+  // Event
+  const executionEvent = GasConstants.calculateLogCost(1n, 96n);
+
+  return intrinsic + ecrecovers + nonceUpdate.cost + call.total + executionEvent;
+}
+
+const multisigCost = estimateMultisigExecution('london', 3, new Uint8Array(100));
+// ~30000n base + signature verification
+```
+
+## Best Practices
+
+### 1. Always Check Hardfork
+
+```typescript
+// Bad: assumes current costs
+const cost = GasConstants.ColdSload;
+
+// Good: hardfork-aware
+const cost = GasConstants.getColdSloadCost(hardfork);
+```
+
+### 2. Track Warm/Cold Access
+
+```typescript
+// Bad: assumes all cold
+const cost = slots * GasConstants.ColdSload;
+
+// Good: track accessed slots
+const tracker = new StorageTracker(hardfork);
+slots.forEach(slot => tracker.sload(slot));
+```
+
+### 3. Apply Refund Caps
+
+```typescript
+// Bad: unlimited refund
+const netGas = gasUsed - totalRefunds;
+
+// Good: apply EIP-3529 cap
+const maxRefund = GasConstants.calculateMaxRefund(gasUsed);
+const actualRefund = totalRefunds > maxRefund ? maxRefund : totalRefunds;
+const netGas = gasUsed - actualRefund;
+```
+
+### 4. Include All Components
+
+```typescript
+// Bad: only operation cost
+const cost = calculateSstoreCost(false, 0n, 1n).cost;
+
+// Good: include intrinsic, memory, logs
+const cost = (
+  calculateTxIntrinsicGas(data, false) +
+  calculateSstoreCost(false, 0n, 1n).cost +
+  calculateMemoryExpansionCost(0n, size).expansionCost +
+  calculateLogCost(topics, logSize)
+);
+```
+
+## See Also
+
+- [Constants](./constants.mdx) - Gas constant definitions
+- [Calculation Functions](./calculation-functions.mdx) - Cost calculations
+- [Hardfork Utilities](./hardfork-utilities.mdx) - EIP detection
+- [Precompiles](./precompiles.mdx) - Precompile costs

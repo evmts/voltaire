@@ -1,0 +1,465 @@
+---
+title: BinaryTree Operations
+description: Insert and get operations for Binary State Tree
+---
+
+# Operations
+
+Core operations for manipulating and querying Binary State Tree.
+
+## Insert
+
+### `BinaryTree.insert(tree, key, value)`
+
+Insert value at 32-byte key. Returns new tree with value inserted. Immutable operation.
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+
+// Insert first value
+const key1 = new Uint8Array(32)
+key1[31] = 5  // Subindex 5
+const value1 = new Uint8Array(32)
+value1[0] = 0x42
+
+tree = BinaryTree.insert(tree, key1, value1)
+console.log(tree.root.type) // 'stem'
+
+// Insert second value (same stem)
+const key2 = new Uint8Array(32)
+key2[31] = 10  // Subindex 10
+const value2 = new Uint8Array(32)
+value2[0] = 0x99
+
+tree = BinaryTree.insert(tree, key2, value2)
+console.log(tree.root.type) // Still 'stem'
+```
+
+**Parameters:**
+- `tree: BinaryTree` - Binary tree to insert into
+- `key: Uint8Array` - 32-byte key (31-byte stem + 1-byte subindex)
+- `value: Uint8Array` - Value to insert (typically 32 bytes)
+
+**Returns:** `BinaryTree` - New tree with value inserted
+
+**Throws:**
+- `InvalidTreeStateError` - If tree structure is invalid (leaf node encountered)
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+value[0] = 0xFF
+
+// Insert returns new tree
+const newTree = BinaryTree.insert(tree, key, value)
+
+// Original unchanged
+console.log(tree.root.type) // 'empty'
+console.log(newTree.root.type) // 'stem'
+```
+</Tab>
+<Tab title="Multiple Inserts">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+
+// Insert multiple values with same stem
+for (let i = 0; i < 10; i++) {
+  const key = new Uint8Array(32)
+  key[31] = i  // Different subindices
+
+  const value = new Uint8Array(32)
+  value[0] = i
+
+  tree = BinaryTree.insert(tree, key, value)
+}
+
+console.log(tree.root.type) // 'stem'
+if (tree.root.type === 'stem') {
+  console.log(tree.root.values.filter(v => v !== null).length) // 10
+}
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import { init, insert } from '@tevm/voltaire/BrandedBinaryTree'
+
+let tree = init()
+
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+
+tree = insert(tree, key, value)
+```
+</Tab>
+</Tabs>
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/insert.js:22-26](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/insert.js#L22-L26)
+
+## Insert Behavior
+
+### Same Stem Insertion
+
+When inserting keys with same 31-byte stem, values stored in single stem node:
+
+```typescript
+let tree = BinaryTree.init()
+
+// All keys have same stem (first 31 bytes are zero)
+const stem = new Uint8Array(31) // All zeros
+
+for (let subindex = 0; subindex < 256; subindex++) {
+  const key = new Uint8Array(32)
+  key.set(stem, 0)
+  key[31] = subindex
+
+  const value = new Uint8Array(32)
+  value[0] = subindex
+
+  tree = BinaryTree.insert(tree, key, value)
+}
+
+// Single stem node with 256 values
+console.log(tree.root.type) // 'stem'
+if (tree.root.type === 'stem') {
+  console.log(tree.root.values.length) // 256
+  console.log(tree.root.values.every(v => v !== null)) // true
+}
+```
+
+### Different Stem Insertion
+
+When inserting keys with different stems, tree branches into internal nodes:
+
+```typescript
+let tree = BinaryTree.init()
+
+// First key (stem all zeros)
+const key1 = new Uint8Array(32)
+key1[31] = 0
+tree = BinaryTree.insert(tree, key1, new Uint8Array(32))
+console.log(tree.root.type) // 'stem'
+
+// Second key (different stem)
+const key2 = new Uint8Array(32)
+key2[0] = 0xFF  // Different stem
+key2[31] = 0
+tree = BinaryTree.insert(tree, key2, new Uint8Array(32))
+console.log(tree.root.type) // 'internal' (branched)
+```
+
+### Stem Split Algorithm
+
+When two different stems inserted, tree splits into internal nodes based on stem bits:
+
+```typescript
+// Example: Inserting two stems that differ at bit 0
+const stem1 = new Uint8Array(31)
+stem1[0] = 0b00000000  // Bit 0 = 0
+
+const stem2 = new Uint8Array(31)
+stem2[0] = 0b10000000  // Bit 0 = 1
+
+let tree = BinaryTree.init()
+
+const key1 = new Uint8Array(32)
+key1.set(stem1, 0)
+tree = BinaryTree.insert(tree, key1, new Uint8Array(32))
+
+const key2 = new Uint8Array(32)
+key2.set(stem2, 0)
+tree = BinaryTree.insert(tree, key2, new Uint8Array(32))
+
+// Creates internal node
+console.log(tree.root.type) // 'internal'
+if (tree.root.type === 'internal') {
+  // stem1 goes left (bit 0 = 0)
+  // stem2 goes right (bit 0 = 1)
+  console.log(tree.root.left) // Hash of stem1 node
+  console.log(tree.root.right) // Hash of stem2 node
+}
+```
+
+## Get
+
+### `BinaryTree.get(tree, key)`
+
+Retrieve value at 32-byte key. Returns `null` if key not found.
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+
+const key = new Uint8Array(32)
+key[31] = 5
+
+const value = new Uint8Array(32)
+value[0] = 0x42
+
+tree = BinaryTree.insert(tree, key, value)
+
+// Get inserted value
+const retrieved = BinaryTree.get(tree, key)
+console.log(retrieved) // Uint8Array [0x42, 0, 0, ...]
+
+// Get non-existent value
+const key2 = new Uint8Array(32)
+key2[31] = 99
+console.log(BinaryTree.get(tree, key2)) // null
+```
+
+**Parameters:**
+- `tree: BinaryTree` - Binary tree to query
+- `key: Uint8Array` - 32-byte key to lookup
+
+**Returns:** `Uint8Array | null` - Value if found, `null` otherwise
+
+<Tabs>
+<Tab title="Basic Usage">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+
+// Insert
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+value[0] = 0xFF
+tree = BinaryTree.insert(tree, key, value)
+
+// Get
+const result = BinaryTree.get(tree, key)
+console.log(result?.[0]) // 0xFF
+```
+</Tab>
+<Tab title="Check Existence">
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+const tree = BinaryTree.init()
+const key = new Uint8Array(32)
+
+const value = BinaryTree.get(tree, key)
+if (value === null) {
+  console.log('Key not found')
+} else {
+  console.log('Value:', value)
+}
+```
+</Tab>
+<Tab title="Tree-shakeable">
+```typescript
+import { init, insert, get } from '@tevm/voltaire/BrandedBinaryTree'
+
+let tree = init()
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+
+tree = insert(tree, key, value)
+const retrieved = get(tree, key)
+```
+</Tab>
+</Tabs>
+
+Defined in: [primitives/BinaryTree/BrandedBinaryTree/get.js:18-21](https://github.com/evmts/voltaire/blob/main/src/primitives/BinaryTree/BrandedBinaryTree/get.js#L18-L21)
+
+## Get Behavior
+
+### Stem Node Lookup
+
+Get operation on stem node checks stem equality and returns value at subindex:
+
+```typescript
+let tree = BinaryTree.init()
+
+const key = new Uint8Array(32)
+key[31] = 42  // Subindex 42
+
+const value = new Uint8Array(32)
+value[0] = 0xAB
+
+tree = BinaryTree.insert(tree, key, value)
+
+// Lookup with same stem, same subindex
+const result1 = BinaryTree.get(tree, key)
+console.log(result1?.[0]) // 0xAB
+
+// Lookup with same stem, different subindex
+const key2 = new Uint8Array(32)
+key2[31] = 99  // Different subindex
+const result2 = BinaryTree.get(tree, key2)
+console.log(result2) // null (subindex not set)
+```
+
+### Internal Node Traversal
+
+Current implementation simplified for stem nodes. Full traversal through internal nodes not yet implemented:
+
+```typescript
+// Note: Deep internal node traversal returns null
+let tree = BinaryTree.init()
+
+// Insert keys with different stems (creates internal nodes)
+const key1 = new Uint8Array(32)
+key1[0] = 0x00
+
+const key2 = new Uint8Array(32)
+key2[0] = 0xFF
+
+tree = BinaryTree.insert(tree, key1, new Uint8Array(32))
+tree = BinaryTree.insert(tree, key2, new Uint8Array(32))
+
+// Get currently returns null for internal node traversal
+// (Simplified implementation)
+```
+
+<Note title="Implementation Status">
+Current get implementation handles stem nodes but returns null for internal node traversal. This is a simplified implementation suitable for single-stem trees or direct stem access.
+</Note>
+
+## Update Pattern
+
+Update existing value by re-inserting at same key:
+
+```typescript
+let tree = BinaryTree.init()
+
+const key = new Uint8Array(32)
+key[31] = 5
+
+// Insert initial value
+const value1 = new Uint8Array(32)
+value1[0] = 0x01
+tree = BinaryTree.insert(tree, key, value1)
+
+console.log(BinaryTree.get(tree, key)?.[0]) // 0x01
+
+// Update value
+const value2 = new Uint8Array(32)
+value2[0] = 0x02
+tree = BinaryTree.insert(tree, key, value2)
+
+console.log(BinaryTree.get(tree, key)?.[0]) // 0x02
+```
+
+## Batch Operations
+
+Efficient batch insertion:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+function batchInsert(
+  tree: BinaryTree,
+  entries: Array<{ key: Uint8Array; value: Uint8Array }>
+): BinaryTree {
+  let result = tree
+  for (const { key, value } of entries) {
+    result = BinaryTree.insert(result, key, value)
+  }
+  return result
+}
+
+// Usage
+let tree = BinaryTree.init()
+
+const entries = [
+  { key: new Uint8Array(32), value: new Uint8Array(32) },
+  { key: new Uint8Array(32), value: new Uint8Array(32) },
+  // ... more entries
+]
+
+tree = batchInsert(tree, entries)
+```
+
+## Account Storage Operations
+
+Inserting account data and storage:
+
+```typescript
+import { BinaryTree } from '@tevm/voltaire'
+
+let tree = BinaryTree.init()
+
+// Account address
+const address = new Uint8Array(20)
+// ... set address
+
+const accountKey = BinaryTree.addressToKey(address)
+
+// Insert account basic data (subindex 0)
+const basicDataKey = accountKey.slice()
+basicDataKey[31] = 0
+
+const accountData = new Uint8Array(32)
+accountData[0] = 1  // version
+// ... set other fields
+
+tree = BinaryTree.insert(tree, basicDataKey, accountData)
+
+// Insert storage slot (subindex 1-255)
+const storageKey = accountKey.slice()
+storageKey[31] = 1  // Storage slot 0 at subindex 1
+
+const storageValue = new Uint8Array(32)
+// ... set storage value
+
+tree = BinaryTree.insert(tree, storageKey, storageValue)
+
+// Retrieve
+const retrievedAccount = BinaryTree.get(tree, basicDataKey)
+const retrievedStorage = BinaryTree.get(tree, storageKey)
+```
+
+## Immutability
+
+All operations preserve immutability:
+
+```typescript
+const tree1 = BinaryTree.init()
+const key = new Uint8Array(32)
+const value = new Uint8Array(32)
+
+// Insert returns new tree
+const tree2 = BinaryTree.insert(tree1, key, value)
+
+// Get doesn't modify tree
+const retrieved = BinaryTree.get(tree2, key)
+
+// All trees independent
+console.log(tree1 !== tree2) // true
+console.log(tree1.root !== tree2.root) // true
+```
+
+## Error Handling
+
+```typescript
+import { BinaryTree, InvalidTreeStateError } from '@tevm/voltaire'
+
+try {
+  let tree = BinaryTree.init()
+  tree = BinaryTree.insert(tree, key, value)
+} catch (error) {
+  if (error instanceof InvalidTreeStateError) {
+    console.error('Invalid tree state:', error.message)
+  }
+  throw error
+}
+```
+
+## Related
+
+- [Constructors](/primitives/binarytree/constructors) - Creating trees
+- [Hashing](/primitives/binarytree/hashing) - Root hash calculation
+- [Key Utilities](/primitives/binarytree/key-utilities) - Key manipulation
+- [Usage Patterns](/primitives/binarytree/usage-patterns) - Account management patterns

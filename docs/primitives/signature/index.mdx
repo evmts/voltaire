@@ -1,0 +1,347 @@
+---
+title: "Signature"
+description: "ECDSA signature primitives for Ethereum transaction signing and verification"
+---
+
+# Signature
+
+Unified cryptographic signature primitive supporting multiple algorithms (secp256k1, P-256, Ed25519).
+
+## Overview
+
+Signature provides algorithm-agnostic signature handling with automatic metadata tracking. Supports ECDSA (secp256k1, P-256) and EdDSA (Ed25519) with format conversions (compact, DER).
+
+**Key Features:**
+- Multi-algorithm support (secp256k1, P-256, Ed25519)
+- Format conversions (compact, DER, RSV)
+- Signature validation and canonicalization
+- Public key recovery (secp256k1 only)
+- Zero-copy operations where possible
+- WASM acceleration available
+
+## Documentation
+
+<CardGrid>
+  <LinkCard
+    title="Constructors"
+    description="Create signatures from components, DER, compact formats, or algorithm-specific constructors"
+    href="./constructors"
+  />
+  <LinkCard
+    title="Conversions"
+    description="Convert between signature formats: compact, DER, RSV, and raw bytes"
+    href="./conversions"
+  />
+  <LinkCard
+    title="Validation"
+    description="Validate signatures, check canonicality, and prevent malleability attacks"
+    href="./validation"
+  />
+  <LinkCard
+    title="Recovery"
+    description="Recover public keys and addresses from secp256k1 signatures using recovery ID"
+    href="./recovery"
+  />
+  <LinkCard
+    title="Utilities"
+    description="Extract components, compare signatures, and type guards"
+    href="./utilities"
+  />
+  <LinkCard
+    title="Formats"
+    description="Compare signature formats: compact (64B), DER (variable), RSV, and EIP-2098"
+    href="./formats"
+  />
+  <LinkCard
+    title="EIP-2098"
+    description="Compact 64-byte format with embedded recovery ID for gas savings"
+    href="./eip-2098"
+  />
+  <LinkCard
+    title="Usage Patterns"
+    description="Real-world examples: Ethereum transactions, EIP-712, personal_sign"
+    href="./usage-patterns"
+  />
+  <LinkCard
+    title="WASM"
+    description="WASM-accelerated signature operations for improved performance"
+    href="./wasm"
+  />
+  <LinkCard
+    title="Branded Type"
+    description="Type definition and metadata structure"
+    href="./branded-signature"
+  />
+</CardGrid>
+
+## Signature Format Comparison
+
+| Format | Size | Recovery | Use Case |
+|--------|------|----------|----------|
+| **Compact** | 64 bytes | ❌ No | Standard ECDSA storage |
+| **Compact+V** | 65 bytes | ✅ Yes | Ethereum transactions |
+| **DER** | ~70-72 bytes | ❌ No | Bitcoin, X.509 certificates |
+| **EIP-2098** | 64 bytes | ✅ Yes (embedded) | Gas-optimized Ethereum |
+
+See [Signature Formats](./formats.mdx) for detailed comparison.
+
+## Quick Start
+
+```typescript
+import { Signature, Hex } from '@tevm/voltaire';
+
+// Create from transaction components
+const sig = Signature.fromSecp256k1(
+  Hex.toBytes('0x1234...'), // r (32 bytes)
+  Hex.toBytes('0x5678...'), // s (32 bytes)
+  27                         // v (recovery ID)
+);
+
+// Or use universal constructor
+const sig2 = Signature.from({
+  r: rBytes,
+  s: sBytes,
+  v: 27,
+  algorithm: 'secp256k1'
+});
+
+// Ensure canonical form (prevent malleability)
+const canonical = Signature.normalize(sig);
+console.log(Signature.isCanonical(canonical)); // true
+
+// Convert between formats
+const compact = Signature.toCompact(sig);    // 65 bytes (r + s + v)
+const der = Signature.toDER(sig);            // ~70 bytes (ASN.1 encoded)
+
+// Extract components
+const r = Signature.getR(sig);  // 32 bytes
+const s = Signature.getS(sig);  // 32 bytes
+const v = Signature.getV(sig);  // 27 or 28
+```
+
+## Security Considerations
+
+### Signature Malleability
+
+ECDSA signatures are malleable: both `(r, s)` and `(r, -s mod n)` are valid. Always normalize to prevent attacks:
+
+```typescript
+// Wrong: Accept any signature
+const address = Secp256k1.recoverAddress(sig, messageHash);
+
+// Right: Normalize first
+const canonical = Signature.normalize(sig);
+const address = Secp256k1.recoverAddress(canonical, messageHash);
+```
+
+**Standards:**
+- **Bitcoin BIP-62**: Requires canonical low-s signatures
+- **Ethereum**: Enforces low-s in consensus rules
+- **Best Practice**: Always normalize before verification or storage
+
+### Recovery ID Validation
+
+```typescript
+const v = Signature.getV(sig);
+
+// Validate recovery ID range
+if (v !== undefined && v !== 27 && v !== 28) {
+  // Handle EIP-155 chain-specific v values
+  const chainId = Math.floor((v - 35) / 2);
+  const yParity = (v - 35) % 2;
+  const standardV = 27 + yParity;
+  // Create new signature with standard v...
+}
+```
+
+### Replay Attack Prevention
+
+Ethereum uses EIP-155 to prevent cross-chain replay attacks:
+
+```typescript
+// EIP-155 v encoding: v = chainId * 2 + 35 + yParity
+const chainId = 1; // Mainnet
+const yParity = v === 27 ? 0 : 1;
+const eip155V = chainId * 2 + 35 + yParity; // 37 or 38
+```
+
+## API Reference
+
+### Constructors
+
+See [Constructors](./constructors.mdx) for detailed documentation.
+
+- `Signature.from(value)` - Universal constructor
+- `Signature.fromSecp256k1(r, s, v?)` - secp256k1 ECDSA
+- `Signature.fromP256(r, s)` - P-256 ECDSA
+- `Signature.fromEd25519(signature)` - Ed25519
+- `Signature.fromCompact(bytes, algorithm)` - Compact format
+- `Signature.fromDER(der, algorithm, v?)` - DER encoding
+
+### Conversions
+
+See [Conversions](./conversions.mdx) for detailed documentation.
+
+- `Signature.toBytes(signature)` - Raw bytes (strips metadata)
+- `Signature.toCompact(signature)` - Compact format (64 or 65 bytes)
+- `Signature.toDER(signature)` - DER encoding (~70 bytes)
+
+### Validation
+
+See [Validation](./validation.mdx) for detailed documentation.
+
+- `Signature.isCanonical(signature)` - Check if s ≤ n/2
+- `Signature.normalize(signature)` - Convert to canonical form
+
+### Component Extraction
+
+See [Utilities](./utilities.mdx) for detailed documentation.
+
+- `Signature.getAlgorithm(signature)` - Get algorithm
+- `Signature.getR(signature)` - Extract r component (32 bytes)
+- `Signature.getS(signature)` - Extract s component (32 bytes)
+- `Signature.getV(signature)` - Get recovery ID
+
+### Comparison
+
+- `Signature.equals(a, b)` - Compare signatures
+- `Signature.is(value)` - Type guard
+
+## Types
+
+```typescript
+type SignatureAlgorithm = "secp256k1" | "p256" | "ed25519";
+
+type BrandedSignature = Uint8Array & {
+  readonly __tag: "Signature";
+  readonly algorithm: SignatureAlgorithm;
+  readonly v?: number; // Recovery ID for secp256k1 (27 or 28)
+};
+```
+
+## Constants
+
+```typescript
+ECDSA_SIZE = 64;           // r + s
+ECDSA_WITH_V_SIZE = 65;    // r + s + v
+ED25519_SIZE = 64;         // Ed25519 signature
+COMPONENT_SIZE = 32;       // r or s component
+RECOVERY_ID_MIN = 27;      // Ethereum v value
+RECOVERY_ID_MAX = 28;      // Ethereum v value
+```
+
+## Errors
+
+- `SignatureError` - Base error class
+- `InvalidSignatureLengthError` - Invalid byte length
+- `InvalidSignatureFormatError` - Unsupported format
+- `InvalidAlgorithmError` - Invalid or unsupported algorithm
+- `NonCanonicalSignatureError` - Signature not canonical
+- `InvalidDERError` - DER encoding/decoding error
+
+## Structure
+
+### ECDSA (secp256k1, P-256)
+```
+Bytes: [r (32 bytes)][s (32 bytes)]
+Metadata: algorithm, v (optional for secp256k1)
+```
+
+### Ed25519
+```
+Bytes: [signature (64 bytes)]
+Metadata: algorithm = 'ed25519'
+```
+
+### Recovery ID (v)
+- **27**: First recovery attempt (Ethereum standard)
+- **28**: Second recovery attempt
+- Only applies to secp256k1
+- Not stored in signature bytes (metadata only)
+
+## Quick Start
+
+```typescript
+import { Signature, Hex } from '@tevm/voltaire';
+
+// Create secp256k1 signature
+const sig = Signature.fromSecp256k1(rBytes, sBytes, 27);
+
+// Universal constructor
+const sig2 = Signature.from({ r: rBytes, s: sBytes, v: 27 });
+
+// Check algorithm
+console.log(Signature.getAlgorithm(sig)); // "secp256k1"
+
+// Normalize to canonical form
+const canonical = Signature.normalize(sig);
+console.log(Signature.isCanonical(canonical)); // true
+
+// Convert to DER
+const der = Signature.toDER(sig);
+
+// Parse from DER
+const parsed = Signature.fromDER(der, 'secp256k1', 27);
+
+// Compare signatures
+console.log(Signature.equals(sig, parsed)); // true
+```
+
+## Complete Example
+
+```typescript
+import { Signature, Address, Hash, Hex } from '@tevm/voltaire';
+import { Secp256k1, keccak256 } from '@tevm/voltaire/crypto';
+
+// 1. Parse Ethereum transaction signature
+const tx = {
+  r: '0x1234...',
+  s: '0x5678...',
+  v: 27
+};
+
+const sig = Signature.fromSecp256k1(
+  Hex.toBytes(tx.r),
+  Hex.toBytes(tx.s),
+  tx.v
+);
+
+// 2. Validate and normalize (prevent malleability)
+if (!Signature.isCanonical(sig)) {
+  console.log('Non-canonical signature detected, normalizing...');
+  sig = Signature.normalize(sig);
+}
+
+// 3. Verify signature structure
+console.log('Algorithm:', Signature.getAlgorithm(sig)); // "secp256k1"
+console.log('Recovery ID:', Signature.getV(sig));        // 27 or 28
+console.log('Canonical:', Signature.isCanonical(sig));   // true
+
+// 4. Recover signer address
+const txHash = Hash.from(keccak256(encodedTxData));
+const signer = Secp256k1.recoverAddress(sig, txHash);
+console.log('Signer:', Address.toString(signer)); // "0x..."
+
+// 5. Convert to different formats
+const compact = Signature.toCompact(sig);  // 65 bytes (r + s + v)
+const der = Signature.toDER(sig);          // ~70 bytes (DER encoded)
+
+// 6. Round-trip verification
+const parsed = Signature.fromDER(der, 'secp256k1', tx.v);
+console.log('Equal:', Signature.equals(sig, parsed)); // true
+```
+
+## External References
+
+- [EIP-2098: Compact Signature Representation](https://eips.ethereum.org/EIPS/eip-2098)
+- [EIP-155: Simple Replay Attack Protection](https://eips.ethereum.org/EIPS/eip-155)
+- [BIP-62: Dealing with Malleability](https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki)
+- [SEC 1: Elliptic Curve Cryptography](https://www.secg.org/sec1-v2.pdf)
+- [ECDSA Signature Algorithm](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)
+
+## Related Documentation
+
+- [Secp256k1 Crypto](/crypto/secp256k1) - Signing and verification
+- [Hash Primitive](/primitives/hash) - Message hashing
+- [Address Primitive](/primitives/address) - Address types
+- [Transaction Primitive](/primitives/transaction) - Transaction signing

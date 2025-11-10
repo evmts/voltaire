@@ -1,0 +1,280 @@
+---
+title: "BrandedHardfork"
+description: "Branded type pattern for type-safe hardfork representation"
+---
+
+# BrandedHardfork
+
+Branded type pattern for type-safe hardfork representation.
+
+## Overview
+
+BrandedHardfork uses TypeScript's branded type pattern to create a distinct type from strings while maintaining runtime string behavior.
+
+```typescript
+type BrandedHardfork = string & { readonly __tag: "Hardfork" };
+```
+
+## Type Definition
+
+### BrandedHardfork Type
+
+```typescript
+/**
+ * Branded Hardfork type
+ *
+ * Hardfork is a branded string type that represents Ethereum protocol upgrades.
+ * Each hardfork represents a protocol upgrade that changes EVM behavior,
+ * gas costs, or adds new features.
+ */
+export type BrandedHardfork = string & {
+  readonly __tag: "Hardfork";
+};
+```
+
+**Key Properties:**
+- Extends `string` - all string methods available
+- Phantom `__tag` property - compile-time only, no runtime overhead
+- Readonly - immutable by type system
+- Nominal typing - distinct from plain strings
+
+## Branded Type Pattern
+
+### What is Branding?
+
+Branding adds a phantom type property to distinguish similar types at compile time:
+
+```typescript
+type UserId = string & { __tag: "UserId" };
+type Email = string & { __tag: "Email" };
+
+// Compile error - types are distinct
+function sendEmail(email: Email) { }
+const userId: UserId = "user123" as UserId;
+sendEmail(userId);  // Error: UserId not assignable to Email
+```
+
+### Why Use Branding?
+
+**Type Safety:**
+```typescript
+// Without branding - both are strings
+function processNetwork(hardfork: string, chainId: string) {
+  // Easy to swap arguments accidentally
+}
+
+// With branding - compile-time protection
+function processNetwork(hardfork: BrandedHardfork, chainId: ChainId) {
+  // Arguments can't be swapped
+}
+```
+
+**Runtime Behavior:**
+```typescript
+// Branded types are still strings at runtime
+const fork: BrandedHardfork = "cancun" as BrandedHardfork;
+console.log(typeof fork);  // "string"
+console.log(fork.toUpperCase());  // "CANCUN"
+```
+
+**No Runtime Overhead:**
+```typescript
+// Phantom property doesn't exist at runtime
+const fork: BrandedHardfork = "cancun" as BrandedHardfork;
+console.log(fork.__tag);  // undefined (not "Hardfork")
+```
+
+## Implementation
+
+### Constants
+
+All hardfork constants are branded strings:
+
+```typescript
+// From constants.js
+export const FRONTIER: BrandedHardfork = "frontier" as BrandedHardfork;
+export const HOMESTEAD: BrandedHardfork = "homestead" as BrandedHardfork;
+export const CANCUN: BrandedHardfork = "cancun" as BrandedHardfork;
+// ...
+```
+
+### Factory Function
+
+```typescript
+function fromString(name: string): BrandedHardfork | undefined {
+  const lower = name.toLowerCase();
+  return NAME_TO_HARDFORK[lower];  // Returns branded type or undefined
+}
+```
+
+### Ordering Array
+
+```typescript
+export const HARDFORK_ORDER: BrandedHardfork[] = [
+  FRONTIER,
+  HOMESTEAD,
+  DAO,
+  // ...
+  OSAKA,
+];
+```
+
+### Name Lookup
+
+```typescript
+export const NAME_TO_HARDFORK: Record<string, BrandedHardfork> = {
+  frontier: FRONTIER,
+  homestead: HOMESTEAD,
+  // ...
+  paris: MERGE,  // Alias
+};
+```
+
+## Usage Patterns
+
+### Type Guards
+
+```typescript
+function isBrandedHardfork(value: unknown): value is BrandedHardfork {
+  if (typeof value !== "string") return false;
+  return Hardfork.isValidName(value);
+}
+
+// Usage
+const input: unknown = getUserInput();
+if (isBrandedHardfork(input)) {
+  // input is BrandedHardfork here
+  Hardfork.hasEIP1559(input);
+}
+```
+
+### Type Assertions
+
+```typescript
+// Safe - validated first
+const fork = Hardfork.fromString("cancun");
+if (fork) {
+  // fork is BrandedHardfork
+}
+
+// Unsafe - skip validation (use carefully)
+const fork = "cancun" as BrandedHardfork;
+```
+
+### Function Signatures
+
+```typescript
+// Clear type requirements
+function estimateGas(
+  fork: BrandedHardfork,
+  bytecode: Uint8Array
+): bigint {
+  if (Hardfork.hasEIP3855(fork)) {
+    // PUSH0 available
+  }
+  // ...
+}
+
+// Can't accidentally pass wrong type
+estimateGas("cancun", data);  // Error: string not BrandedHardfork
+estimateGas(CANCUN, data);    // OK
+```
+
+## Advantages
+
+### 1. Compile-Time Safety
+
+```typescript
+// Prevents mixing up similar string parameters
+function compare(a: BrandedHardfork, b: BrandedHardfork): number {
+  return Hardfork.compare(a, b);
+}
+
+// Can't accidentally swap with other strings
+const chainId = "1";
+compare(CANCUN, chainId);  // Error: string not assignable to BrandedHardfork
+```
+
+### 2. Self-Documenting Code
+
+```typescript
+// Clear what type of string is expected
+function getFeatures(fork: BrandedHardfork): Features {
+  // Obviously dealing with hardfork, not just any string
+}
+```
+
+### 3. Zero Runtime Cost
+
+```typescript
+// No runtime overhead - still just strings
+const fork: BrandedHardfork = "cancun" as BrandedHardfork;
+console.log(fork.length);     // 6
+console.log(fork[0]);          // "c"
+console.log(fork.includes("c")); // true
+```
+
+## Best Practices
+
+### 1. Use Factory Functions
+
+```typescript
+// Good - validated and branded
+const fork = Hardfork.fromString(userInput);
+if (!fork) throw new Error("Invalid hardfork");
+
+// Bad - unsafe assertion
+const fork = userInput as BrandedHardfork;
+```
+
+### 2. Validate at Boundaries
+
+```typescript
+// Validate at system boundaries
+function handleApiRequest(req: Request): Response {
+  const hardforkStr = req.body.hardfork;
+
+  // Validate and brand
+  const fork = Hardfork.fromString(hardforkStr);
+  if (!fork) {
+    return badRequest("Invalid hardfork");
+  }
+
+  // Now type-safe throughout application
+  return processRequest(fork);
+}
+```
+
+### 3. Documentation
+
+```typescript
+/**
+ * Estimates gas for operation
+ * @param fork - Ethereum hardfork version (e.g., CANCUN, SHANGHAI)
+ * @param operation - Operation to estimate
+ * @returns Estimated gas cost
+ */
+function estimateGas(fork: BrandedHardfork, operation: Operation): bigint {
+  // ...
+}
+```
+
+## Related Branded Types
+
+Similar pattern used throughout primitives:
+
+```typescript
+// Address primitive
+type BrandedAddress = Uint8Array & { __tag: "Address" };
+
+// Hex primitive
+type BrandedHex = string & { __tag: "Hex" };
+
+// Hash primitive
+type BrandedHash = Uint8Array & { __tag: "Hash" };
+```
+
+**Consistency Benefits:**
+- Similar API patterns across primitives
+- Predictable type safety
+- Zero runtime overhead across all types

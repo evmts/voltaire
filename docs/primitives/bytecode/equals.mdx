@@ -1,0 +1,62 @@
+---
+title: Bytecode.equals
+description: Compare two bytecode instances for equality
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.equals(other: BrandedBytecode): boolean`
+
+Compare two bytecode instances for equality.
+
+**Parameters:**
+- `other: BrandedBytecode` - Bytecode to compare with
+
+**Returns:** `boolean` - `true` if bytecodes are equal
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code1 = Bytecode.fromHex("0x6001")
+const code2 = Bytecode.fromHex("0x6001")
+const code3 = Bytecode.fromHex("0x6002")
+
+console.log(code1.equals(code2))  // true
+console.log(code1.equals(code3))  // false
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/equals.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `equals(a: BrandedBytecode, b: BrandedBytecode): boolean`
+
+Compare two bytecode instances for equality.
+
+**Parameters:**
+- `a: BrandedBytecode` - First bytecode
+- `b: BrandedBytecode` - Second bytecode
+
+**Returns:** `boolean` - `true` if bytecodes are equal
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code1 = Bytecode.fromHex("0x6001")
+const code2 = Bytecode.fromHex("0x6001")
+const code3 = Bytecode.fromHex("0x6002")
+
+console.log(equals(code1, code2))  // true
+console.log(equals(code1, code3))  // false
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/equals.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/equals.js)
+
+</Tab>
+</Tabs>

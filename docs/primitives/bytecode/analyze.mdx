@@ -1,0 +1,86 @@
+---
+title: Bytecode.analyze
+description: Complete bytecode analysis with validation, jump destinations, and instructions
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.analyze(): Analysis`
+
+Perform complete bytecode analysis returning validation, jump destinations, and instructions.
+
+**Returns:** `Analysis` - Object containing:
+- `valid: boolean` - Whether bytecode is structurally valid
+- `jumpDestinations: ReadonlySet<number>` - Valid JUMPDEST positions
+- `instructions: readonly Instruction[]` - All parsed instructions
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code = Bytecode.fromHex("0x60016002015b00")
+const analysis = code.analyze()
+
+console.log(analysis.valid)                    // true
+console.log(analysis.jumpDestinations)         // Set(1) { 4 }
+console.log(analysis.instructions.length)      // 4
+
+// Examine instructions
+analysis.instructions.forEach(inst => {
+  console.log(`0x${inst.position.toString(16)}: 0x${inst.opcode.toString(16)}`)
+  if (inst.pushData) {
+    console.log(`  Data: ${inst.pushData}`)
+  }
+})
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/analyze.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js#L22)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `analyze(bytecode: BrandedBytecode): Analysis`
+
+Perform complete bytecode analysis returning validation, jump destinations, and instructions.
+
+**Parameters:**
+- `bytecode: BrandedBytecode` - Bytecode to analyze
+
+**Returns:** `Analysis` - Object containing:
+- `valid: boolean` - Whether bytecode is structurally valid
+- `jumpDestinations: ReadonlySet<number>` - Valid JUMPDEST positions
+- `instructions: readonly Instruction[]` - All parsed instructions
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code = Bytecode.fromHex("0x60016002015b00")
+const analysis = Bytecode.analyze(code)
+
+console.log(analysis.valid)                    // true
+console.log(analysis.jumpDestinations)         // Set(1) { 4 }
+console.log(analysis.instructions.length)      // 4
+
+// Examine instructions
+analysis.instructions.forEach(inst => {
+  console.log(`0x${inst.position.toString(16)}: 0x${inst.opcode.toString(16)}`)
+  if (inst.pushData) {
+    console.log(`  Data: ${inst.pushData}`)
+  }
+})
+```
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/analyze.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js#L22)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [analyzeJumpDestinations](/primitives/bytecode/analyzejumpdestinations) - Only analyze jump destinations
+- [parseInstructions](/primitives/bytecode/parseinstructions) - Only parse instructions
+- [validate](/primitives/bytecode/validate) - Only validate structure

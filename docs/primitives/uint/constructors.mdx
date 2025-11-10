@@ -1,0 +1,372 @@
+---
+title: Uint Constructors
+description: Creating Uint256 instances from various formats
+---
+
+# Constructors
+
+Methods for creating Uint256 instances from different input types.
+
+## Primary Constructor
+
+### `new Uint(value)`
+
+Create Uint256 from bigint, number, or string. Accepts decimal or hex strings.
+
+```typescript
+// From bigint
+const a = new Uint(100n)
+
+// From number
+const b = new Uint(255)
+
+// From decimal string
+const c = new Uint("12345")
+
+// From hex string
+const d = new Uint("0xff")
+const e = new Uint("0xFF")
+
+// Throws on invalid input
+new Uint(-1)           // Error: cannot be negative
+new Uint(2n ** 256n)   // Error: exceeds maximum
+new Uint("invalid")    // Error: invalid format
+new Uint(3.14)         // Error: must be integer
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedUint`
+
+**Throws:**
+- If value is negative
+- If value exceeds 2^256 - 1
+- If number is not an integer
+- If string is not valid decimal or hex format
+
+Source: [UintConstructor.ts:69](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/UintConstructor.ts#L69)
+
+## Static Constructors
+
+### `Uint.from(value)`
+
+Alias for constructor. Standard form matching other primitives.
+
+```typescript
+const a = Uint.from(100n)
+const b = Uint.from("255")
+const c = Uint.from("0xff")
+
+// Identical to:
+const d = new Uint(100n)
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedUint`
+
+**Throws:** Same as constructor
+
+**Static form:**
+```typescript
+import { from } from '@tevm/voltaire/BrandedUint'
+const value = from(100n)
+```
+
+Source: [from.ts:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/from.ts#L18)
+
+### `Uint.tryFrom(value)`
+
+Safe constructor returning `undefined` instead of throwing.
+
+```typescript
+const a = Uint.tryFrom(100n)         // BrandedUint
+const b = Uint.tryFrom(-1n)          // undefined
+const c = Uint.tryFrom(2n ** 256n)   // undefined
+const d = Uint.tryFrom("invalid")    // undefined
+const e = Uint.tryFrom(3.14)         // undefined
+
+// Use for safe parsing
+function parseUint(input: string): BrandedUint | null {
+  const result = Uint.tryFrom(input)
+  return result ?? null
+}
+```
+
+**Parameters:**
+- `value: bigint | number | string` - Value to convert
+
+**Returns:** `BrandedUint | undefined`
+
+**Never throws** - Returns `undefined` on invalid input
+
+**Static form:**
+```typescript
+import { tryFrom } from '@tevm/voltaire/BrandedUint'
+const value = tryFrom("100")
+```
+
+Source: [tryFrom.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/tryFrom.ts#L17)
+
+### `Uint.fromHex(hex)`
+
+Create from hex string with or without `0x` prefix.
+
+```typescript
+const a = Uint.fromHex("0xff")
+const b = Uint.fromHex("FF")
+const c = Uint.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001")
+
+// All valid formats
+Uint.fromHex("ff")         // 255
+Uint.fromHex("0xff")       // 255
+Uint.fromHex("FF")         // 255
+Uint.fromHex("0xFF")       // 255
+
+// Throws on invalid
+Uint.fromHex("0xGG")       // Error: invalid hex
+Uint.fromHex("0x" + "f".repeat(65))  // Error: exceeds maximum
+```
+
+**Parameters:**
+- `hex: string` - Hex string (with or without `0x` prefix)
+
+**Returns:** `BrandedUint`
+
+**Throws:**
+- If hex contains invalid characters
+- If value exceeds 2^256 - 1
+
+**Static form:**
+```typescript
+import { fromHex } from '@tevm/voltaire/BrandedUint'
+const value = fromHex("0xff")
+```
+
+Source: [fromHex.ts:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromHex.ts#L17)
+
+### `Uint.fromBigInt(value)`
+
+Create from bigint (alias for `from` with bigint).
+
+```typescript
+const a = Uint.fromBigInt(100n)
+const b = Uint.fromBigInt(0n)
+const c = Uint.fromBigInt(2n ** 255n)
+
+// Throws on invalid
+Uint.fromBigInt(-1n)          // Error: negative
+Uint.fromBigInt(2n ** 256n)   // Error: exceeds maximum
+```
+
+**Parameters:**
+- `value: bigint` - BigInt value
+
+**Returns:** `BrandedUint`
+
+**Throws:**
+- If value is negative
+- If value exceeds 2^256 - 1
+
+**Static form:**
+```typescript
+import { fromBigInt } from '@tevm/voltaire/BrandedUint'
+const value = fromBigInt(100n)
+```
+
+Source: [fromBigInt.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromBigInt.ts)
+
+### `Uint.fromNumber(value)`
+
+Create from number or bigint (alias for `from`).
+
+```typescript
+const a = Uint.fromNumber(100)
+const b = Uint.fromNumber(0)
+const c = Uint.fromNumber(255)
+
+// Also accepts bigint
+const d = Uint.fromNumber(100n)
+
+// Throws on invalid
+Uint.fromNumber(-1)      // Error: negative
+Uint.fromNumber(3.14)    // Error: must be integer
+```
+
+**Parameters:**
+- `value: number | bigint` - Numeric value
+
+**Returns:** `BrandedUint`
+
+**Throws:**
+- If value is negative
+- If value exceeds 2^256 - 1
+- If number is not an integer
+
+**Static form:**
+```typescript
+import { fromNumber } from '@tevm/voltaire/BrandedUint'
+const value = fromNumber(100)
+```
+
+Source: [fromNumber.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromNumber.ts)
+
+### `Uint.fromBytes(bytes)`
+
+Create from byte array (big-endian, up to 32 bytes).
+
+```typescript
+// From various byte arrays
+const a = Uint.fromBytes(new Uint8Array([0xff]))           // 255
+const b = Uint.fromBytes(new Uint8Array([0x01, 0x00]))     // 256
+const c = Uint.fromBytes(new Uint8Array(32))               // 0
+
+// Big-endian byte order (most significant byte first)
+const bytes = new Uint8Array([0x00, 0x00, 0x00, 0xff])
+const value = Uint.fromBytes(bytes)  // 255
+
+// Throws if too large
+const tooBig = new Uint8Array(33)
+Uint.fromBytes(tooBig)  // Error: cannot exceed 32 bytes
+```
+
+**Parameters:**
+- `bytes: Uint8Array` - Byte array (big-endian, max 32 bytes)
+
+**Returns:** `BrandedUint`
+
+**Throws:**
+- If bytes length exceeds 32
+
+**Byte order:** Big-endian (network byte order, most significant byte first)
+
+**Static form:**
+```typescript
+import { fromBytes } from '@tevm/voltaire/BrandedUint'
+const value = fromBytes(new Uint8Array([0xff]))
+```
+
+Source: [fromBytes.ts:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromBytes.ts#L16)
+
+### `Uint.fromAbiEncoded(bytes)`
+
+Create from ABI-encoded 32-byte value.
+
+```typescript
+// From ABI-encoded bytes (always 32 bytes)
+const encoded = new Uint8Array(32)
+encoded[31] = 0xff  // Last byte = 255
+
+const value = Uint.fromAbiEncoded(encoded)  // 255
+
+// Throws if wrong size
+const wrong = new Uint8Array(20)
+Uint.fromAbiEncoded(wrong)  // Error: must be 32 bytes
+```
+
+**Parameters:**
+- `bytes: Uint8Array` - ABI-encoded bytes (exactly 32 bytes, big-endian)
+
+**Returns:** `BrandedUint`
+
+**Throws:**
+- If bytes length is not exactly 32
+
+**Note:** ABI encoding for uint256 is always 32 bytes, big-endian. This is stricter than `fromBytes` which accepts 1-32 bytes.
+
+**Static form:**
+```typescript
+import { fromAbiEncoded } from '@tevm/voltaire/BrandedUint'
+const value = fromAbiEncoded(bytes32)
+```
+
+Source: [fromAbiEncoded.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromAbiEncoded.ts)
+
+## Usage Patterns
+
+### Constructor Selection
+
+```typescript
+// Known bigint - use from/fromBigInt
+const a = Uint.from(100n)
+
+// Hex string - use fromHex
+const b = Uint.fromHex("0xff")
+
+// Bytes - use fromBytes
+const c = Uint.fromBytes(new Uint8Array([0xff]))
+
+// User input - use tryFrom for safety
+const userInput = "12345"
+const d = Uint.tryFrom(userInput)
+if (d === undefined) {
+  throw new Error("Invalid uint")
+}
+
+// ABI decoding - use fromAbiEncoded
+const encoded = abiDecode(data)
+const e = Uint.fromAbiEncoded(encoded)
+```
+
+### Safe Parsing
+
+```typescript
+function parseUint(input: unknown): BrandedUint | null {
+  // Try multiple formats
+  if (typeof input === "bigint") {
+    return Uint.tryFrom(input) ?? null
+  }
+  if (typeof input === "number") {
+    return Uint.tryFrom(input) ?? null
+  }
+  if (typeof input === "string") {
+    // Try hex first
+    if (input.startsWith("0x")) {
+      return Uint.tryFrom(input) ?? null
+    }
+    // Try decimal
+    return Uint.tryFrom(input) ?? null
+  }
+  return null
+}
+```
+
+### Type Conversion
+
+```typescript
+// From other primitives
+import { Address } from '@tevm/voltaire'
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addrAsUint = Uint.fromBytes(addr)  // Address is Uint8Array(20)
+
+// From Bytes
+import type { Bytes } from '@tevm/voltaire'
+const bytes: Bytesless than 32> = new Uint8Array(32)
+const value = Uint.fromBytes(bytes)
+```
+
+## Tree-Shakeable Usage
+
+All constructors available as tree-shakeable imports:
+
+```typescript
+import {
+  from,
+  fromHex,
+  fromBigInt,
+  fromNumber,
+  fromBytes,
+  fromAbiEncoded,
+  tryFrom
+} from '@tevm/voltaire/BrandedUint'
+
+const a = from(100n)
+const b = fromHex("0xff")
+const c = fromBytes(new Uint8Array([0xff]))
+const d = tryFrom("12345")
+```
+
+See [BrandedUint](/primitives/uint/branded-uint) for details on tree-shakeable API.

@@ -1,0 +1,465 @@
+---
+title: Rlp
+description: Recursive Length Prefix encoding for Ethereum data structures
+---
+
+
+# Rlp
+
+RLP (Recursive Length Prefix) is Ethereum's canonical serialization format for encoding arbitrarily nested arrays of binary data.
+
+## Overview
+
+RLP is represented as a [branded](/concepts/branded-types) data structure following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
+
+```typescript
+export type BrandedRlp =
+  | { type: "bytes"; value: Uint8Array }
+  | { type: "list"; value: BrandedRlp[] };
+```
+
+RLP provides deterministic serialization for transactions, blocks, state tries, and network protocols. It encodes only structure (not types), making it space-efficient and fast.
+
+<Aside type="tip" title="Understanding RLP">
+RLP is a serialization format that encodes nested arrays of byte strings. Unlike JSON or Protocol Buffers, RLP doesn't encode type information - only the structure (bytes vs lists) and length. This simplicity makes it ideal for Ethereum's performance-critical operations.
+
+The main challenge: determining whether encoded data represents a single byte string or a list of items. RLP uses prefix bytes (0x00-0xff) to encode this information along with length, enabling efficient parsing.
+</Aside>
+
+## Quick Start
+
+<Tabs syncKey="api-style">
+<TabItem label="Namespace API (Tree-shakeable)">
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Encode bytes
+const bytes = new Uint8Array([1, 2, 3]);
+const encoded = Rlp.encode(bytes);
+// => Uint8Array([0x83, 1, 2, 3])
+
+// Encode list
+const list = [
+  new Uint8Array([0x01]),
+  new Uint8Array([0x02])
+];
+const encodedList = Rlp.encode(list);
+// => Uint8Array([0xc4, 0x01, 0x02])
+
+// Decode RLP data
+const decoded = Rlp.decode(encoded);
+console.log(decoded.data);              // { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+console.log(decoded.remainder.length);  // 0
+
+// Encode nested structures
+const nested = [
+  new Uint8Array([1]),
+  [new Uint8Array([2]), new Uint8Array([3])]
+];
+const encodedNested = Rlp.encode(nested);
+```
+
+</TabItem>
+<TabItem label="Function API">
+
+```typescript
+import { Rlp } from '@tevm/voltaire';
+
+// Encode bytes
+const bytes = new Uint8Array([1, 2, 3]);
+const encoded = Rlp.encode(bytes);
+// => Uint8Array([0x83, 1, 2, 3])
+
+// Encode list
+const list = [
+  new Uint8Array([0x01]),
+  new Uint8Array([0x02])
+];
+const encodedList = Rlp.encode(list);
+// => Uint8Array([0xc4, 0x01, 0x02])
+
+// Decode RLP data
+const decoded = Rlp.decode(encoded);
+console.log(decoded.data);              // { type: 'bytes', value: Uint8Array([1, 2, 3]) }
+console.log(decoded.remainder.length);  // 0
+
+// Encode nested structures
+const nested = [
+  new Uint8Array([1]),
+  [new Uint8Array([2]), new Uint8Array([3])]
+];
+const encodedNested = Rlp.encode(nested);
+```
+
+</TabItem>
+</Tabs>
+
+## Example: Encoding a Transaction
+
+Here's how RLP encodes an Ethereum transaction:
+
+```typescript
+// Legacy transaction fields
+const nonce = new Uint8Array([0x09]);       // 9
+const gasPrice = new Uint8Array([0x04a817c800]);  // 20 Gwei
+const gasLimit = new Uint8Array([0x5208]);  // 21000
+const to = new Uint8Array(20);              // Address (20 bytes)
+const value = new Uint8Array([0x0de0b6b3a7640000]);  // 1 ETH
+const data = new Uint8Array([]);            // Empty data
+const v = new Uint8Array([0x1b]);           // Chain ID + recovery
+const r = new Uint8Array(32);               // Signature r
+const s = new Uint8Array(32);               // Signature s
+
+// Encode as RLP list
+const encoded = Rlp.encode([nonce, gasPrice, gasLimit, to, value, data, v, r, s]);
+
+// Result: 0xf86d09...
+// 0xf8 = list prefix (length > 55 bytes)
+// 0x6d = 109 bytes total payload
+// [encoded nonce, gasPrice, gasLimit, to, value, data, v, r, s]
+```
+
+**Key concepts demonstrated**:
+- **Lists** - Transaction fields encoded as RLP list
+- **Bytes** - Each field is a byte string (even numbers)
+- **Deterministic** - Same transaction always produces same encoding
+- **Compact** - Minimal overhead for each field
+
+## RLP Encoding Rules
+
+RLP uses prefix bytes to indicate data type and length:
+
+### Single Bytes (0x00-0x7f)
+Bytes with values less than 0x80 encode as themselves (no prefix).
+
+```typescript
+const input = new Uint8Array([0x7f]);
+const encoded = Rlp.encode(input);
+// => Uint8Array([0x7f])
+```
+
+### Short Strings (0-55 bytes)
+Strings of 0-55 bytes: `[0x80 + length, ...bytes]`
+
+```typescript
+const input = new Uint8Array([1, 2, 3]);  // 3 bytes
+const encoded = Rlp.encode(input);
+// => Uint8Array([0x83, 1, 2, 3])
+// 0x83 = 0x80 + 3
+```
+
+### Long Strings (56+ bytes)
+Strings of 56+ bytes: `[0xb7 + length_of_length, ...length_bytes, ...bytes]`
+
+```typescript
+const input = new Uint8Array(60).fill(0x42);  // 60 bytes
+const encoded = Rlp.encode(input);
+// => Uint8Array([0xb8, 60, ...bytes])
+// 0xb8 = 0xb7 + 1 (length needs 1 byte)
+```
+
+### Short Lists (0-55 bytes total)
+Lists with total payload < 56 bytes: `[0xc0 + length, ...encoded_items]`
+
+```typescript
+const list = [new Uint8Array([0x01]), new Uint8Array([0x02])];
+const encoded = Rlp.encode(list);
+// => Uint8Array([0xc4, 0x01, 0x02, 0x02])
+// 0xc4 = 0xc0 + 4
+```
+
+### Long Lists (56+ bytes total)
+Lists with total payload >= 56 bytes: `[0xf7 + length_of_length, ...length_bytes, ...encoded_items]`
+
+```typescript
+const longList = Array.from({ length: 60 }, () => new Uint8Array([0x01]));
+const encoded = Rlp.encode(longList);
+// First byte will be 0xf8 or higher
+```
+
+## API Documentation
+
+<CardGrid>
+  <Card title="Encoding" icon="rocket">
+    Encode bytes, lists, and nested structures to RLP format.
+
+    [View encoding →](./encode)
+  </Card>
+
+  <Card title="Decoding" icon="document">
+    Decode RLP-encoded bytes back to data structures.
+
+    [View decoding →](./decode)
+  </Card>
+
+  <Card title="Validation" icon="approve-check">
+    Validate RLP encoding and check canonical form.
+
+    [View validation →](./validate)
+  </Card>
+
+  <Card title="Utilities" icon="seti:config">
+    Helper methods for length calculation, flattening, and comparison.
+
+    [View utilities →](./getEncodedLength)
+  </Card>
+</CardGrid>
+
+### All Methods
+
+<Tabs syncKey="api-style">
+<TabItem label="Namespace API (Tree-shakeable)">
+
+**Constructors:**
+- `from(value)` - Create RLP data structure from bytes or nested arrays
+
+**Encoding:**
+- `encode(data)` - Universal encoder (bytes, lists, nested structures)
+- `encodeBytes(bytes)` - Encode byte string
+- `encodeList(items)` - Encode list of items
+- `encodeArray(items, schema)` - Encode array with schema
+- `encodeObject(obj, schema)` - Encode object with schema
+- `encodeVariadic(...items)` - Encode variadic arguments
+- `encodeBatch(items)` - Batch encode multiple items
+
+**Decoding:**
+- `decode(bytes, stream?)` - Decode RLP bytes to data structure
+- `decodeArray(bytes, schema)` - Decode to array with schema
+- `decodeObject(bytes, schema)` - Decode to object with schema
+- `decodeBatch(bytes)` - Batch decode multiple items
+
+**Validation:**
+- `validate(bytes)` - Validate RLP encoding
+
+**Utilities:**
+- `getEncodedLength(data)` - Calculate encoded byte length
+- `getLength(bytes, offset)` - Parse length from encoded bytes
+- `flatten(data)` - Flatten nested structure to byte arrays
+- `equals(a, b)` - Compare RLP data structures
+- `toRaw(data)` - Convert to raw nested arrays
+
+**Type Guards:**
+- `isData(value)` - Check if value is RLP data
+- `isBytesData(value)` - Check if value is bytes data
+- `isListData(value)` - Check if value is list data
+- `isList(bytes)` - Check if encoded bytes represent list
+- `isString(bytes)` - Check if encoded bytes represent string
+
+**Serialization:**
+- `toJSON(data)` - Convert to JSON-serializable format
+- `fromJSON(json)` - Restore from JSON
+
+</TabItem>
+<TabItem label="Function API">
+
+**Constructors:**
+- `Rlp.from(value)` - Create RLP data structure from bytes or nested arrays
+
+**Encoding:**
+- `Rlp.encode(data)` - Universal encoder (bytes, lists, nested structures)
+- `Rlp.encodeBytes(bytes)` - Encode byte string
+- `Rlp.encodeList(items)` - Encode list of items
+- `Rlp.encodeArray(items, schema)` - Encode array with schema
+- `Rlp.encodeObject(obj, schema)` - Encode object with schema
+- `Rlp.encodeVariadic(...items)` - Encode variadic arguments
+- `Rlp.encodeBatch(items)` - Batch encode multiple items
+
+**Decoding:**
+- `Rlp.decode(bytes, stream?)` - Decode RLP bytes to data structure
+- `Rlp.decodeArray(bytes, schema)` - Decode to array with schema
+- `Rlp.decodeObject(bytes, schema)` - Decode to object with schema
+- `Rlp.decodeBatch(bytes)` - Batch decode multiple items
+
+**Validation:**
+- `Rlp.validate(bytes)` - Validate RLP encoding
+
+**Utilities:**
+- `Rlp.getEncodedLength(data)` - Calculate encoded byte length
+- `Rlp.getLength(bytes, offset)` - Parse length from encoded bytes
+- `Rlp.flatten(data)` - Flatten nested structure to byte arrays
+- `Rlp.equals(a, b)` - Compare RLP data structures
+- `Rlp.toRaw(data)` - Convert to raw nested arrays
+
+**Type Guards:**
+- `Rlp.isData(value)` - Check if value is RLP data
+- `Rlp.isBytesData(value)` - Check if value is bytes data
+- `Rlp.isListData(value)` - Check if value is list data
+- `Rlp.isList(bytes)` - Check if encoded bytes represent list
+- `Rlp.isString(bytes)` - Check if encoded bytes represent string
+
+**Serialization:**
+- `Rlp.toJSON(data)` - Convert to JSON-serializable format
+- `Rlp.fromJSON(json)` - Restore from JSON
+
+</TabItem>
+</Tabs>
+
+## Types
+
+<Tabs>
+<TabItem label="BrandedRlp">
+
+```typescript
+export type BrandedRlp =
+  | { type: "bytes"; value: Uint8Array }
+  | { type: "list"; value: BrandedRlp[] };
+```
+
+Main branded type. Union of bytes data (leaf nodes) and list data (nested arrays).
+
+**BytesData:** Leaf node containing raw bytes
+```typescript
+{ type: "bytes", value: Uint8Array }
+```
+
+**ListData:** Nested array of RLP data
+```typescript
+{ type: "list", value: BrandedRlp[] }
+```
+
+</TabItem>
+<TabItem label="Encodable">
+
+```typescript
+type Encodable =
+  | Uint8Array
+  | BrandedRlp
+  | Array<Uint8Array | BrandedRlp | any>;
+```
+
+Input type for encoding methods. Accepts raw bytes, RLP data structures, or nested arrays.
+
+See [Rlp.encode](./encode#encodable-type) for details.
+
+</TabItem>
+<TabItem label="Decoded">
+
+```typescript
+type Decoded = {
+  data: BrandedRlp;
+  remainder: Uint8Array;
+};
+```
+
+Return type for decode operations. Contains decoded RLP data and any remaining bytes (for stream decoding).
+
+</TabItem>
+</Tabs>
+
+## Usage Patterns
+
+### Encoding Transaction Data
+
+```typescript
+// Encode transaction fields for signing
+const txData = [
+  nonce,
+  gasPrice,
+  gasLimit,
+  to,
+  value,
+  data,
+  chainId,
+  new Uint8Array([]),  // r placeholder
+  new Uint8Array([])   // s placeholder
+];
+const encoded = Rlp.encode(txData);
+
+// Hash for signing
+const hash = keccak256(encoded);
+```
+
+### Decoding Block Headers
+
+```typescript
+// Fetch and decode block header
+const headerRlp = await provider.getBlockHeader(blockNumber);
+const decoded = Rlp.decode(headerRlp);
+
+// Access fields
+if (Rlp.isListData(decoded.data)) {
+  const [
+    parentHash,
+    unclesHash,
+    miner,
+    stateRoot,
+    transactionsRoot,
+    receiptsRoot,
+    // ... more fields
+  ] = decoded.data.value;
+}
+```
+
+### Streaming Decoding
+
+```typescript
+// Decode multiple RLP items from stream
+let buffer = receivedBytes;
+const items = [];
+
+while (buffer.length > 0) {
+  const decoded = Rlp.decode(buffer, true);  // stream mode
+  items.push(decoded.data);
+  buffer = decoded.remainder;
+}
+```
+
+### Validating RLP Data
+
+```typescript
+// Validate before decoding
+try {
+  Rlp.validate(rlpBytes);
+  const decoded = Rlp.decode(rlpBytes);
+  // Safe to use decoded data
+} catch (error) {
+  console.error('Invalid RLP encoding:', error.message);
+}
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { encode, decode, validate } from '@tevm/voltaire/BrandedRlp';
+
+const encoded = encode(new Uint8Array([1, 2, 3]));
+const decoded = decode(encoded);
+validate(encoded);
+
+// Only these 3 functions included in bundle
+// Unused functions (flatten, toJSON, etc.) excluded
+```
+
+<Aside type="tip" title="Bundle Impact">
+Importing from `@tevm/voltaire/BrandedRlp` instead of `@tevm/voltaire` enables tree-shaking. For example, if you only need `encode` and `decode`, schema-based encoding (`encodeArray`, `encodeObject`) and JSON serialization are excluded from your bundle.
+</Aside>
+
+## Related
+
+<CardGrid stagger>
+  <Card title="Transaction" icon="rocket">
+    Uses RLP encoding for transaction serialization.
+
+    [View →](/primitives/transaction)
+  </Card>
+  <Card title="Hex" icon="document">
+    Hex string encoding for displaying RLP data.
+
+    [View →](/primitives/hex)
+  </Card>
+  <Card title="Hash" icon="document">
+    Keccak256 hashing for RLP-encoded data.
+
+    [View →](/primitives/hash)
+  </Card>
+</CardGrid>
+
+## Specification References
+
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal RLP specification (Appendix B)
+- [Ethereum Wiki - RLP](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/) - RLP encoding guide
+- [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) - Typed transaction envelope using RLP

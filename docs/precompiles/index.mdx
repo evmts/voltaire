@@ -1,0 +1,412 @@
+---
+title: "EVM Precompiles"
+description: "Complete reference for all Ethereum precompiled contracts with implementations in TypeScript and Zig"
+---
+
+## Overview
+
+Precompiled contracts are special Ethereum addresses (0x01-0x13+) that execute optimized native code instead of EVM bytecode. They provide gas-efficient implementations of computationally expensive operations like cryptographic primitives, hashing, and elliptic curve operations.
+
+Voltaire implements all standard precompiles in both TypeScript and Zig, with WASM compilation support for portable high-performance execution.
+
+## Complete Precompile Reference
+
+| Address | Name | Gas Cost | Hardfork | Category | Description |
+|---------|------|----------|----------|----------|-------------|
+| 0x01 | [ECRECOVER](/precompiles/ecrecover) | 3,000 | Frontier | Crypto | Recover ECDSA signer address |
+| 0x02 | [SHA256](/precompiles/sha256) | 60 + 12/word | Frontier | Hash | SHA-256 hash function |
+| 0x03 | [RIPEMD160](/precompiles/ripemd160) | 600 + 120/word | Frontier | Hash | RIPEMD-160 hash function |
+| 0x04 | [IDENTITY](/precompiles/identity) | 15 + 3/word | Frontier | Data | Copy input to output |
+| 0x05 | [MODEXP](/precompiles/modexp) | Dynamic | Byzantium | Math | Modular exponentiation |
+| 0x06 | [BN254_ADD](/precompiles/bn254-add) | 150 | Byzantium | zkSNARKs | BN254 G1 point addition |
+| 0x07 | [BN254_MUL](/precompiles/bn254-mul) | 6,000 | Byzantium | zkSNARKs | BN254 G1 scalar multiplication |
+| 0x08 | [BN254_PAIRING](/precompiles/bn254-pairing) | 45,000 + 34,000k | Byzantium | zkSNARKs | BN254 pairing check |
+| 0x09 | [BLAKE2F](/precompiles/blake2f) | Dynamic | Istanbul | Hash | BLAKE2b compression function |
+| 0x0A | [POINT_EVALUATION](/precompiles/point-evaluation) | 50,000 | Cancun | Blobs | KZG point evaluation (EIP-4844) |
+| 0x0B | [BLS12_G1_ADD](/precompiles/bls12-g1-add) | 500 | Prague | ETH2 | BLS12-381 G1 point addition |
+| 0x0C | [BLS12_G1_MUL](/precompiles/bls12-g1-mul) | 12,000 | Prague | ETH2 | BLS12-381 G1 scalar multiplication |
+| 0x0D | [BLS12_G1_MSM](/precompiles/bls12-g1-msm) | Variable | Prague | ETH2 | BLS12-381 G1 multi-scalar multiplication |
+| 0x0E | [BLS12_G2_ADD](/precompiles/bls12-g2-add) | 800 | Prague | ETH2 | BLS12-381 G2 point addition |
+| 0x0F | [BLS12_G2_MUL](/precompiles/bls12-g2-mul) | 45,000 | Prague | ETH2 | BLS12-381 G2 scalar multiplication |
+| 0x10 | [BLS12_G2_MSM](/precompiles/bls12-g2-msm) | Variable | Prague | ETH2 | BLS12-381 G2 multi-scalar multiplication |
+| 0x11 | [BLS12_PAIRING](/precompiles/bls12-pairing) | 115,000 + 23,000k | Prague | ETH2 | BLS12-381 pairing check |
+| 0x12 | [BLS12_MAP_FP_TO_G1](/precompiles/bls12-map-fp-to-g1) | 5,500 | Prague | ETH2 | Map field element to G1 (hash-to-curve) |
+| 0x13 | [BLS12_MAP_FP2_TO_G2](/precompiles/bls12-map-fp2-to-g2) | 75,000 | Prague | ETH2 | Map Fp2 element to G2 (hash-to-curve) |
+
+## Precompile Categories
+
+### Cryptography (0x01)
+
+**ECRECOVER** recovers the Ethereum address from an ECDSA signature. Essential for transaction validation and signature verification.
+
+- Gas: 3,000 (fixed)
+- Input: 128 bytes (hash, v, r, s)
+- Output: 20-byte address
+- Use: Transaction signing, off-chain authentication
+
+### Hashing (0x02, 0x03, 0x09)
+
+**SHA256, RIPEMD160, BLAKE2F** provide standard cryptographic hash functions.
+
+- SHA256: Bitcoin compatibility, Merkle trees
+- RIPEMD160: Bitcoin address generation
+- BLAKE2F: High-performance modern hash (Zcash)
+
+### Data Operations (0x04)
+
+**IDENTITY** is a simple memcpy operation, mainly used for:
+- Gas benchmarking
+- Data copying in complex contracts
+- ABI encoding/decoding optimization
+
+### Mathematics (0x05)
+
+**MODEXP** performs modular exponentiation: `(base^exp) mod modulus`
+
+- RSA signature verification
+- Zero-knowledge proof systems
+- Cryptographic protocols
+- Dynamic gas based on input sizes
+
+### zkSNARKs - BN254 Curve (0x06-0x08)
+
+**BN254** precompiles enable efficient zero-knowledge proofs:
+
+- **ADD (150 gas):** Point addition for proof verification
+- **MUL (6,000 gas):** Scalar multiplication
+- **PAIRING (45k + 34k/pair):** Bilinear pairing checks
+
+Used by: Zcash, Tornado Cash, zkSync, StarkNet, Polygon zkEVM
+
+**Security:** ~100-bit (sufficient but aging)
+
+### Ethereum 2.0 - BLS12-381 Curve (0x0B-0x13)
+
+**BLS12-381** precompiles power Ethereum 2.0 consensus:
+
+#### G1 Operations (128-byte points)
+- **G1_ADD (500 gas):** Fast point addition
+- **G1_MUL (12,000 gas):** Scalar multiplication
+- **G1_MSM (variable):** Batch operations with discounts
+
+#### G2 Operations (256-byte points)
+- **G2_ADD (800 gas):** Extension field addition
+- **G2_MUL (45,000 gas):** More expensive than G1
+- **G2_MSM (variable):** Batch operations
+
+#### Pairing & Hash-to-Curve
+- **PAIRING (115k + 23k/pair):** Signature verification
+- **MAP_FP_TO_G1 (5,500 gas):** Hash messages to G1
+- **MAP_FP2_TO_G2 (75,000 gas):** Hash messages to G2
+
+**Security:** 128-bit (future-proof)
+
+**Applications:**
+- Validator signature aggregation
+- BLS multi-signatures
+- Threshold cryptography
+- Advanced zkSNARKs
+
+### Blob Data (0x0A)
+
+**POINT_EVALUATION** verifies KZG commitments for EIP-4844 blob transactions:
+
+- Gas: 50,000 (fixed)
+- Enables proto-danksharding
+- Reduces rollup costs by 10-100x
+- Critical for Ethereum scalability
+
+## Gas Cost Patterns
+
+### Fixed Cost
+Simple operations with predictable computation:
+- ECRECOVER: 3,000
+- BLS12_G1_ADD: 500
+- POINT_EVALUATION: 50,000
+
+### Linear Cost
+Scales with input size:
+- SHA256: 60 + 12 per word
+- IDENTITY: 15 + 3 per word
+
+### Dynamic Cost
+Complex calculation based on inputs:
+- MODEXP: Based on base/exp/mod sizes
+- BLS12_MSM: Batch discounts
+
+### Multi-Element Cost
+Per-item pricing:
+- BN254_PAIRING: 45,000 + 34,000 per pair
+- BLS12_PAIRING: 115,000 + 23,000 per pair
+
+## Performance Comparison
+
+### Elliptic Curve Operations
+
+| Operation | BN254 | BLS12-381 | Security | Use Case |
+|-----------|-------|-----------|----------|----------|
+| Point Add | 150 | 500 (G1) / 800 (G2) | 100-bit / 128-bit | zkSNARKs / ETH2 |
+| Scalar Mul | 6,000 | 12,000 (G1) / 45,000 (G2) | 100-bit / 128-bit | Proofs / Signatures |
+| Pairing | 45k+34k/pair | 115k+23k/pair | 100-bit / 128-bit | Verification |
+
+### Hashing Performance
+
+| Function | Gas/KB | Speed | Use Case |
+|----------|--------|-------|----------|
+| SHA256 | ~380 | Fast | Bitcoin compat |
+| RIPEMD160 | ~3,750 | Slower | Legacy |
+| BLAKE2F | Variable | Fastest | Modern |
+| Keccak256 | ~1,000 | Fast | Native EVM |
+
+## Usage Statistics
+
+Most frequently used precompiles by gas consumption:
+
+1. **ECRECOVER (0x01)** - Every transaction signature
+2. **BLS12_PAIRING (0x11)** - ETH2 consensus (thousands per block)
+3. **POINT_EVALUATION (0x0A)** - Blob transactions
+4. **BN254_PAIRING (0x08)** - zkRollup proofs
+5. **SHA256 (0x02)** - Bridge verifications
+
+Least used:
+- **RIPEMD160 (0x03)** - Legacy Bitcoin compatibility
+- **IDENTITY (0x04)** - Specialized optimization
+
+## Implementation Guide
+
+### TypeScript
+
+```typescript
+import { execute, PrecompileAddress } from '@tevm/voltaire/precompiles';
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Execute any precompile
+const result = execute(
+  PrecompileAddress.ECRECOVER,
+  input,        // Uint8Array
+  gasLimit,     // bigint
+  Hardfork.CANCUN
+);
+
+if (result.success) {
+  console.log('Output:', result.output);
+  console.log('Gas used:', result.gasUsed);
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+### Zig
+
+```zig
+const std = @import("std");
+const precompiles = @import("precompiles");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Execute precompile
+    const result = try precompiles.ecrecover.execute(
+        allocator,
+        input,      // []const u8
+        gas_limit,  // u64
+    );
+    defer result.deinit(allocator);
+
+    if (result.success) {
+        std.debug.print("Output: {any}\n", .{result.output});
+    }
+}
+```
+
+### WASM
+
+All precompiles available via WASM:
+
+```bash
+zig build build-ts-wasm       # ReleaseSmall (production)
+zig build build-ts-wasm-fast  # ReleaseFast (benchmarks)
+```
+
+Import and use like TypeScript implementation.
+
+## Security Considerations
+
+### Input Validation
+
+All precompiles validate:
+- Input length (exact or range)
+- Field element bounds (curve operations)
+- Point validity (on curve, in subgroup)
+- Gas sufficiency (before computation)
+
+Invalid inputs return error, not false results.
+
+### Constant-Time Execution
+
+Cryptographic precompiles use constant-time algorithms:
+- ECRECOVER: Prevents timing attacks on signatures
+- BN254/BLS12-381: Side-channel resistant scalar multiplication
+- MODEXP: Protects secret exponents
+
+### Gas DoS Protection
+
+Dynamic gas prevents abuse:
+- MODEXP: Exponential cost for large inputs
+- MSM operations: Bounded by block gas limit
+- Pairing: Linear cost per pair
+
+### Curve Security
+
+| Curve | Security | Status | Notes |
+|-------|----------|--------|-------|
+| secp256k1 | 128-bit | Mature | Bitcoin/Ethereum standard |
+| BN254 | ~100-bit | Aging | Sufficient for current zkSNARKs |
+| BLS12-381 | 128-bit | Future-proof | ETH2, modern protocols |
+
+## Hardfork Availability
+
+```typescript
+import { Hardfork } from '@tevm/voltaire/primitives/Hardfork';
+
+// Check precompile availability
+const precompiles = {
+  [Hardfork.FRONTIER]: [0x01, 0x02, 0x03, 0x04],
+  [Hardfork.BYZANTIUM]: [0x05, 0x06, 0x07, 0x08],
+  [Hardfork.ISTANBUL]: [0x09],
+  [Hardfork.CANCUN]: [0x0A],
+  [Hardfork.PRAGUE]: [0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13],
+};
+```
+
+Always check hardfork before calling newer precompiles.
+
+## Testing
+
+### Zig Tests
+
+```bash
+zig build test -Dtest-filter=precompiles
+zig build test -Dtest-filter=bls12
+zig build test -Dtest-filter=bn254
+```
+
+### TypeScript Tests
+
+```bash
+bun run test -- precompiles
+bun run test -- bls12
+bun run test:coverage
+```
+
+### Test Vectors
+
+All precompiles tested against:
+- EIP specification test vectors
+- Official Ethereum test suite
+- Cross-implementation validation
+- Edge cases (zero, max, infinity)
+
+## Benchmarks
+
+```bash
+# Zig benchmarks (zbench)
+zig build bench -Dbench-filter=precompiles
+
+# TypeScript benchmarks (mitata)
+bun run bench
+
+# Generate comparison report
+bun run scripts/run-benchmarks.ts
+```
+
+See [BENCHMARKING.md](https://github.com/evmts/voltaire/blob/main/BENCHMARKING.md) for detailed results.
+
+## Building
+
+```bash
+# Full build (all precompiles)
+zig build
+
+# Test all precompiles
+zig build test
+
+# Individual precompile tests
+zig build test -Dtest-filter=ecrecover
+zig build test -Dtest-filter=bn254_pairing
+zig build test -Dtest-filter=bls12_g1_msm
+
+# WASM builds
+zig build build-ts-wasm
+```
+
+## Implementation Status
+
+### Zig: Complete
+
+All precompiles fully implemented with native C library integration:
+- secp256k1: libsecp256k1
+- BN254: arkworks (Rust FFI)
+- BLS12-381: blst
+- KZG: c-kzg-4844
+- Hashes: libwally-core
+
+### TypeScript: Functional
+
+- **Production-ready:** ECRECOVER, SHA256, RIPEMD160, IDENTITY, BLAKE2F
+- **Stubs (use WASM):** BLS12-381 operations (return correct size, calculate gas, no crypto)
+- **Working:** BN254 via @noble/curves, MODEXP, POINT_EVALUATION via c-kzg
+
+For security-critical operations, always use Zig/WASM implementations.
+
+## Related Documentation
+
+### Curve Documentation
+- [BLS12-381 Overview](/precompiles/bls12-381) - Complete guide to 9 BLS precompiles
+- [BN254 Operations](/crypto/bn254) - zkSNARK curve primitives
+- [Secp256k1](/crypto/secp256k1) - ECDSA and ECRECOVER
+
+### Cryptography
+- [Keccak256](/crypto/keccak256) - Native EVM hash (not a precompile)
+- [KZG Commitments](/crypto/kzg) - Blob verification
+- [Signature Schemes](/crypto) - ECDSA, BLS, Schnorr
+
+### Primitives
+- [Transaction](/primitives/transaction) - Uses ECRECOVER
+- [Address](/primitives/address) - Derived from signatures
+- [Gas Constants](/primitives/gas-constants) - Precompile gas costs
+
+## References
+
+- **EIPs:**
+  - [EIP-196/197](https://eips.ethereum.org/EIPS/eip-196): BN254 (Byzantium)
+  - [EIP-198](https://eips.ethereum.org/EIPS/eip-198): MODEXP (Byzantium)
+  - [EIP-152](https://eips.ethereum.org/EIPS/eip-152): BLAKE2F (Istanbul)
+  - [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844): POINT_EVALUATION (Cancun)
+  - [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537): BLS12-381 (Prague)
+
+- **Standards:**
+  - [SEC2](https://www.secg.org/sec2-v2.pdf): secp256k1 specification
+  - [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf): SHA-256
+  - [RFC 1321](https://www.rfc-editor.org/rfc/rfc1321): RIPEMD-160
+  - [RFC 7693](https://www.rfc-editor.org/rfc/rfc7693): BLAKE2
+  - [BLS Signatures](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature): BLS12-381
+
+- **Libraries:**
+  - [blst](https://github.com/supranational/blst): BLS12-381 (audited)
+  - [c-kzg-4844](https://github.com/ethereum/c-kzg-4844): KZG commitments
+  - [@noble/curves](https://github.com/paulmillr/noble-curves): Pure JS curves
+  - [arkworks](https://github.com/arkworks-rs): BN254 Rust implementation
+
+## Contributing
+
+Precompile implementations require:
+- Exact adherence to EIP specifications
+- Comprehensive test vectors
+- Gas cost validation
+- Security audits for crypto operations
+- Cross-language parity (TypeScript ↔ Zig)
+
+See [CONTRIBUTING.md](https://github.com/evmts/voltaire/blob/main/CONTRIBUTING.md)

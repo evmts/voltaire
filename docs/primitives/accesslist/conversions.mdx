@@ -1,0 +1,367 @@
+---
+title: "Conversions"
+description: "Conversions"
+---
+
+# Conversions
+
+Encoding and decoding AccessList to/from RLP bytes.
+
+## AccessList.toBytes()
+
+Encode access list to RLP bytes.
+
+```typescript
+AccessList.toBytes(list: BrandedAccessList): Uint8Array
+```
+
+**Parameters:**
+- `list`: Access list to encode
+
+**Returns:** RLP-encoded bytes
+
+**Example:**
+```typescript
+const list = AccessList.from([
+  { address: addr1, storageKeys: [key1, key2] },
+  { address: addr2, storageKeys: [] }
+]);
+
+const bytes = list.toBytes();
+// Can be included in transaction encoding
+```
+
+**RLP Structure:**
+```
+[
+  [address1, [key1, key2]],
+  [address2, []],
+  ...
+]
+```
+
+**Encoding Rules:**
+- Top-level list of items
+- Each item is [address, keys] pair
+- Address encoded as 20-byte string
+- Keys encoded as list of 32-byte strings
+- Empty storageKeys encoded as empty list `[]`
+
+## AccessList.fromBytes()
+
+Decode RLP bytes to access list.
+
+```typescript
+AccessList.fromBytes(bytes: Uint8Array): BrandedAccessList
+```
+
+**Parameters:**
+- `bytes`: RLP-encoded access list
+
+**Returns:** Decoded BrandedAccessList
+
+**Throws:**
+- Error if not RLP list
+- Error if item not [address, keys] pair
+- Error if address not 20 bytes
+- Error if storage key not 32 bytes
+
+**Example:**
+```typescript
+const bytes = tx.accessListBytes;
+const list = AccessList.fromBytes(bytes);
+
+// Use decoded list
+console.log(list.addressCount());
+console.log(list.storageKeyCount());
+```
+
+**Validation:**
+- Validates RLP structure
+- Validates byte lengths
+- Does not validate address checksums
+- Does not deduplicate
+
+## Patterns
+
+### Round-trip Encoding
+
+```typescript
+const original = AccessList.from([
+  { address: addr, storageKeys: [key1, key2] }
+]);
+
+const bytes = original.toBytes();
+const decoded = AccessList.fromBytes(bytes);
+
+// Should be equivalent
+console.assert(original.length === decoded.length);
+```
+
+### Transaction Integration
+
+```typescript
+// Encode for transaction
+const tx = {
+  to: contractAddress,
+  data: callData,
+  accessList: list.toBytes()
+};
+
+// Decode from transaction
+const receivedTx = await provider.getTransaction(txHash);
+const accessList = AccessList.fromBytes(receivedTx.accessList);
+```
+
+### Safe Decoding
+
+```typescript
+function safeFromBytes(bytes: Uint8Array): BrandedAccessList | null {
+  try {
+    const list = AccessList.fromBytes(bytes);
+    AccessList.assertValid(list);
+    return list;
+  } catch (err) {
+    console.error('Failed to decode access list:', err);
+    return null;
+  }
+}
+```
+
+### Serialize for Storage
+
+```typescript
+// Store in database
+const serialized = Buffer.from(list.toBytes()).toString('hex');
+await db.store('access_list', serialized);
+
+// Retrieve from database
+const stored = await db.get('access_list');
+const bytes = Buffer.from(stored, 'hex');
+const list = AccessList.fromBytes(bytes);
+```
+
+### Network Transmission
+
+```typescript
+// Send over network
+const bytes = list.toBytes();
+await socket.send(bytes);
+
+// Receive from network
+const received = await socket.receive();
+const list = AccessList.fromBytes(received);
+```
+
+### Compare Encoded Size
+
+```typescript
+function compareEncodedSizes(lists: BrandedAccessList[]) {
+  return lists.map(list => ({
+    list,
+    addresses: list.addressCount(),
+    keys: list.storageKeyCount(),
+    encodedSize: list.toBytes().length
+  })).sort((a, b) => a.encodedSize - b.encodedSize);
+}
+```
+
+## RLP Format Details
+
+### Empty List
+
+```typescript
+const empty = AccessList.create();
+const bytes = empty.toBytes();
+// RLP: [0xc0] (empty list)
+```
+
+### Single Address, No Keys
+
+```typescript
+const list = AccessList.from([
+  { address: addr, storageKeys: [] }
+]);
+const bytes = list.toBytes();
+// RLP: [[[address], []]]
+```
+
+### Single Address, Single Key
+
+```typescript
+const list = AccessList.from([
+  { address: addr, storageKeys: [key] }
+]);
+const bytes = list.toBytes();
+// RLP: [[[address], [[key]]]]
+```
+
+### Multiple Items
+
+```typescript
+const list = AccessList.from([
+  { address: addr1, storageKeys: [key1, key2] },
+  { address: addr2, storageKeys: [] },
+  { address: addr3, storageKeys: [key3] }
+]);
+const bytes = list.toBytes();
+// RLP: [
+//   [[addr1], [[key1], [key2]]],
+//   [[addr2], []],
+//   [[addr3], [[key3]]]
+// ]
+```
+
+## Size Calculations
+
+### Encoded Size Formula
+
+```
+itemSize = 1 + 20 + 1 + (32 × numKeys) + overhead
+totalSize = sum(itemSize) + listOverhead
+```
+
+**Overhead:**
+- RLP list prefix: 1-9 bytes
+- Item tuple prefix: 1 byte
+- Keys list prefix: 1 byte
+
+**Examples:**
+```typescript
+// Empty list: ~1 byte
+// 1 address, 0 keys: ~23 bytes
+// 1 address, 1 key: ~56 bytes
+// 1 address, 2 keys: ~89 bytes
+// 2 addresses, 1 key each: ~112 bytes
+```
+
+### Size Analysis
+
+```typescript
+function analyzeEncodedSize(list: BrandedAccessList) {
+  const bytes = list.toBytes();
+  const addresses = list.addressCount();
+  const keys = list.storageKeyCount();
+
+  return {
+    totalBytes: bytes.length,
+    addresses,
+    keys,
+    avgBytesPerAddress: bytes.length / addresses || 0,
+    avgBytesPerKey: bytes.length / keys || 0
+  };
+}
+```
+
+## Error Handling
+
+### Encoding Errors
+
+```typescript
+try {
+  const bytes = list.toBytes();
+} catch (err) {
+  // Encoding should never fail for valid AccessList
+  // If it does, list structure is corrupted
+  console.error('Encoding failed:', err);
+}
+```
+
+### Decoding Errors
+
+```typescript
+try {
+  const list = AccessList.fromBytes(bytes);
+} catch (err) {
+  if (err.message.includes('expected list')) {
+    // Invalid RLP structure
+  } else if (err.message.includes('address')) {
+    // Invalid address length or structure
+  } else if (err.message.includes('storage key')) {
+    // Invalid key length
+  } else {
+    // Other RLP decoding error
+  }
+}
+```
+
+### Validation After Decoding
+
+```typescript
+const list = AccessList.fromBytes(bytes);
+
+// Additional validation
+try {
+  AccessList.assertValid(list);
+} catch (err) {
+  // Structure is valid RLP but fails semantic checks
+  throw new Error(`Invalid access list: ${err.message}`);
+}
+```
+
+## Best Practices
+
+1. **Validate before encoding**
+   ```typescript
+   AccessList.assertValid(list);
+   const bytes = list.toBytes();
+   ```
+
+2. **Always validate after decoding**
+   ```typescript
+   const list = AccessList.fromBytes(bytes);
+   AccessList.assertValid(list);
+   ```
+
+3. **Handle encoding errors gracefully**
+   ```typescript
+   try {
+     return list.toBytes();
+   } catch (err) {
+     console.error('Failed to encode:', err);
+     return AccessList.create().toBytes();
+   }
+   ```
+
+4. **Deduplicate before encoding**
+   ```typescript
+   const optimized = list.deduplicate();
+   const bytes = optimized.toBytes();
+   ```
+
+5. **Cache encoded results**
+   ```typescript
+   class CachedAccessList {
+     private list: BrandedAccessList;
+     private cachedBytes?: Uint8Array;
+
+     constructor(list: BrandedAccessList) {
+       this.list = list;
+     }
+
+     toBytes(): Uint8Array {
+       if (!this.cachedBytes) {
+         this.cachedBytes = this.list.toBytes();
+       }
+       return this.cachedBytes;
+     }
+   }
+   ```
+
+## Performance
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| toBytes | O(n×m) | Encodes all items |
+| fromBytes | O(n×m) | Decodes all items |
+
+**Optimization:**
+- Cache encoded bytes if encoding multiple times
+- Deduplicate before encoding to minimize size
+- Reuse decoded lists instead of re-decoding
+
+## See Also
+
+- [Constructors](.constructors) - Creating lists
+- [RLP](..Rlp/index) - RLP encoding
+- [Validation](.validation) - Type guards

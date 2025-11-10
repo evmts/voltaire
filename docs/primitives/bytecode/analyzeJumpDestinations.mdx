@@ -1,0 +1,71 @@
+---
+title: Bytecode.analyzeJumpDestinations
+description: Identify all valid JUMPDEST positions in bytecode
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `bytecode.analyzeJumpDestinations(): Set<number>`
+
+Identify all valid JUMPDEST positions. Correctly skips PUSH instruction data.
+
+**Returns:** `Set<number>` - Set of valid JUMPDEST positions
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire'
+
+const code = Bytecode.fromHex("0x605b5b")  // PUSH1 0x5b, JUMPDEST
+const jumpdests = code.analyzeJumpDestinations()
+
+jumpdests.has(0)  // false - PUSH1 opcode
+jumpdests.has(1)  // false - 0x5b is PUSH1 data (not actual JUMPDEST)
+jumpdests.has(2)  // true  - Actual JUMPDEST at position 2
+```
+
+<Tip>
+EVM JUMP/JUMPI must target valid JUMPDEST opcodes. Bytes inside PUSH data that equal 0x5b (JUMPDEST) are NOT valid jump targets.
+</Tip>
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js#L22)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `analyzeJumpDestinations(bytecode: BrandedBytecode): Set<number>`
+
+Identify all valid JUMPDEST positions. Correctly skips PUSH instruction data.
+
+**Parameters:**
+- `bytecode: BrandedBytecode` - Bytecode to analyze
+
+**Returns:** `Set<number>` - Set of valid JUMPDEST positions
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode'
+
+const code = Bytecode.fromHex("0x605b5b")  // PUSH1 0x5b, JUMPDEST
+const jumpdests = Bytecode.analyzeJumpDestinations(code)
+
+jumpdests.has(0)  // false - PUSH1 opcode
+jumpdests.has(1)  // false - 0x5b is PUSH1 data (not actual JUMPDEST)
+jumpdests.has(2)  // true  - Actual JUMPDEST at position 2
+```
+
+<Tip>
+EVM JUMP/JUMPI must target valid JUMPDEST opcodes. Bytes inside PUSH data that equal 0x5b (JUMPDEST) are NOT valid jump targets.
+</Tip>
+
+**Defined in:** [primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyzeJumpDestinations.js#L22)
+
+</Tab>
+</Tabs>
+
+## See Also
+
+- [analyze](/primitives/bytecode/analyze) - Complete analysis
+- [isValidJumpDest](/primitives/bytecode/isvalidjumpdest) - Check specific position
