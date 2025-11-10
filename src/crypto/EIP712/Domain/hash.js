@@ -1,16 +1,14 @@
 import { hashStruct } from "../hashStruct.js";
 
 /**
- * EIP-712 domain type definition
+ * All possible EIP-712 domain fields
  */
-const EIP712_DOMAIN_TYPES = {
-	EIP712Domain: [
-		{ name: "name", type: "string" },
-		{ name: "version", type: "string" },
-		{ name: "chainId", type: "uint256" },
-		{ name: "verifyingContract", type: "address" },
-		{ name: "salt", type: "bytes32" },
-	],
+const DOMAIN_FIELD_TYPES = {
+	name: { name: "name", type: "string" },
+	version: { name: "version", type: "string" },
+	chainId: { name: "chainId", type: "uint256" },
+	verifyingContract: { name: "verifyingContract", type: "address" },
+	salt: { name: "salt", type: "bytes32" },
 };
 
 /**
@@ -34,26 +32,29 @@ export function hash(domain) {
 	// Filter domain to only included fields
 	/** @type {Record<string, any>} */
 	const filteredDomain = {};
-	/** @type {string[]} */
-	const domainKeys = [];
+	/** @type {Array<{name: string, type: string}>} */
+	const domainFields = [];
+
+	// Build type definition with only present fields
 	for (const key of Object.keys(domain)) {
 		const value = /** @type {Record<string, any>} */ (domain)[key];
 		if (value !== undefined) {
 			filteredDomain[key] = value;
-			domainKeys.push(key);
+			const fieldDef = DOMAIN_FIELD_TYPES[key];
+			if (fieldDef) {
+				domainFields.push(fieldDef);
+			}
 		}
 	}
 
-	// Filter type definition to only included fields
-	const filteredTypes = {
-		EIP712Domain: EIP712_DOMAIN_TYPES.EIP712Domain.filter((field) =>
-			domainKeys.includes(field.name),
-		),
+	/** @type {import('../BrandedEIP712.js').TypeDefinitions} */
+	const domainTypes = {
+		EIP712Domain: domainFields,
 	};
 
 	return hashStruct(
 		"EIP712Domain",
 		/** @type {import('../BrandedEIP712.js').Message} */ (filteredDomain),
-		filteredTypes,
+		domainTypes,
 	);
 }
