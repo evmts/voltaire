@@ -1,14 +1,27 @@
 ---
-description: Update Starlight documentation with comprehensive context
+description: Update Mintlify documentation with comprehensive context
 ---
 
-You are tasked with updating the Voltaire Starlight documentation. Follow these patterns and structures precisely.
+You are tasked with updating the Voltaire Mintlify documentation. Follow these patterns and structures precisely.
 
 ## CRITICAL CONTEXT
 
 **Architecture**: Dual API (Class + Branded Types), multi-language (TS/Zig/Rust/C), tree-shakeable, WASM-accelerated
-**Docs Framework**: Astro Starlight (MDX), auto-generated sidebar, colocated docs pattern
+**Docs Framework**: Mintlify (MDX), mint.json navigation, centralized docs
 **Communication**: Brief, concise, evidence-based. No fluff.
+
+**Documentation Style Inspiration**: Write in the style of world-class documentation sites:
+- **Vue.js docs** - Clear progressive examples, scannable structure, excellent use of code tabs
+- **Stripe docs** - Precise API reference, real-world examples, clean visual hierarchy
+- **Ethereum specs** - Technical precision, specification references, formal definitions
+- **MDN Web Docs** - Comprehensive coverage, browser compatibility tables, interactive examples
+
+**Core Principles**:
+- **Clarity over cleverness** - Simple, direct language
+- **Examples before theory** - Show working code immediately
+- **Visual hierarchy** - Use headings, lists, cards, tabs to make content scannable
+- **Progressive disclosure** - Start simple, layer complexity gradually
+- **Zero ambiguity** - Precise technical language, link to specifications
 
 ---
 
@@ -17,12 +30,15 @@ You are tasked with updating the Voltaire Starlight documentation. Follow these 
 ### Directory Layout
 
 ```
-src/content/docs/               # Centralized docs
-├── getting-started.mdx         # Main intro
+docs/                           # All documentation (Mintlify)
+├── introduction.mdx           # Main intro
+├── getting-started.mdx        # Setup guide
+├── concepts/
+│   ├── branded-types.mdx      # Branded type pattern explanation
+│   └── data-first.mdx         # Data-first design pattern
 ├── primitives/
-│   ├── branded-types.mdx       # Overview of branded type pattern
-│   ├── address/                # Centralized (11 primitives total)
-│   │   ├── index.mdx          # Main overview with CardGrid
+│   ├── address/               # All primitives in docs/
+│   │   ├── overview.mdx       # Main overview
 │   │   ├── branded-address.mdx
 │   │   ├── constructors.mdx
 │   │   ├── conversions.mdx
@@ -32,397 +48,1388 @@ src/content/docs/               # Centralized docs
 │   │   ├── uint8array-methods.mdx
 │   │   ├── variants.mdx
 │   │   └── wasm.mdx
-│   ├── abi -> ../../../primitives/Abi        # Symlinks (12 primitives)
-│   ├── accesslist -> ../../../primitives/AccessList
-│   ├── authorization -> ../../../primitives/Authorization
-│   ├── blob -> ../../../primitives/Blob
-│   ├── eventlog -> ../../../primitives/EventLog
-│   ├── feemarket -> ../../../primitives/FeeMarket
-│   ├── gasconstants -> ../../../primitives/GasConstants
-│   ├── hardfork -> ../../../primitives/Hardfork
-│   ├── opcode -> ../../../primitives/Opcode
-│   ├── rlp -> ../../../primitives/Rlp
-│   ├── signature -> ../../../primitives/Signature
-│   ├── siwe -> ../../../primitives/Siwe
-│   └── state -> ../../../primitives/State
+│   ├── bytecode/
+│   ├── abi/
+│   └── ...                    # All 23 primitives
 ├── crypto/
-│   ├── keccak256/index.mdx
-│   ├── secp256k1/index.mdx
-│   ├── bls12-381.mdx          # Standalone (complex cryptographic primitives)
+│   ├── keccak256.mdx
+│   ├── secp256k1.mdx
+│   ├── bls12-381.mdx
 │   ├── bn254.mdx
 │   └── kzg.mdx
-└── precompiles/
-    ├── ecrecover.mdx
-    ├── sha256.mdx
-    └── bls12-381/index.mdx
+├── precompiles/
+│   ├── ecrecover.mdx
+│   ├── sha256.mdx
+│   └── bls12-381.mdx
+└── docs.json                  # Global site settings
 
-src/primitives/{PascalCase}/    # Colocated docs (source next to code)
-├── index.mdx                   # Main overview
-├── branded-{name}.mdx          # Functional API
-├── constructors.mdx
-├── conversions.mdx
-├── utilities.mdx
-├── validation.mdx
-├── usage-patterns.mdx
-├── wasm.mdx
-├── {name}.ts                   # TS implementation
-├── {name}.zig                  # Zig implementation
-└── {name}.test.ts
+src/                           # Source code (no docs)
+├── primitives/
+│   ├── Address/
+│   │   ├── BrandedAddress.ts
+│   │   ├── Address.ts
+│   │   └── *.test.ts
+│   └── ...
+└── crypto/
 ```
 
-**Centralized vs Colocated Decision**:
-- **Centralized** (`src/content/docs/primitives/{name}/`): Simpler primitives with ~5-10 doc pages
-- **Colocated** (`src/primitives/{Name}/` + symlink): Complex primitives with many pages, benefits from code proximity
+**All documentation is centralized in `docs/`**. No colocated docs, no symlinks.
+
+### Configuration Files
+
+- **docs.json** - Global site configuration (navigation, theme, metadata, integrations)
+- **mint.json** - Legacy name (same as docs.json, Mintlify supports both)
 
 ---
 
-## COLOCATED DOCUMENTATION PATTERN
+## FRONTMATTER REFERENCE
 
-### Creating Colocated Docs
+Every MDX file MUST have frontmatter. Frontmatter is YAML between `---` separators at the start of the file.
 
-1. **Create docs in source directory**:
-```
-src/primitives/NewPrimitive/
-├── index.mdx                  # Main overview
-├── branded-newprimitive.mdx   # Functional API
-├── constructors.mdx
-├── NewPrimitive.ts
-└── NewPrimitive.zig
-```
-
-2. **Create symlink to Starlight docs**:
-```bash
-cd src/content/docs/primitives
-ln -s ../../../primitives/NewPrimitive newprimitive
-```
-
-3. **Verify symlink**:
-```bash
-ls -la src/content/docs/primitives/newprimitive
-# Should show: newprimitive -> ../../../primitives/NewPrimitive
-```
-
-**Naming Convention**:
-- Source directory: `PascalCase` (e.g., `Abi`, `EventLog`, `AccessList`)
-- Symlink target: `lowercase` (e.g., `abi`, `eventlog`, `accesslist`)
-- Starlight uses lowercase URLs: `/primitives/abi`, `/primitives/eventlog`
-
-### Existing Colocated Primitives
-
-12 primitives use symlinks:
-- `Abi`, `AccessList`, `Authorization`, `Blob`, `Ens`, `EventLog`
-- `FeeMarket`, `GasConstants`, `Hardfork`, `Opcode`, `Rlp`, `Signature`
-- `Siwe`, `State`
-
-11 primitives centralized:
-- `address`, `base64`, `binarytree`, `bloomfilter`, `bytecode`
-- `chain`, `denomination`, `hash`, `hex`, `transaction`, `uint`
-
----
-
-## STARLIGHT CONFIGURATION
-
-### astro.config.mjs
-
-```javascript
-export default defineConfig({
-  integrations: [
-    starlight({
-      title: "Voltaire",
-      description: "Ethereum primitives and cryptography library for TypeScript and Zig",
-      social: [
-        { icon: "github", label: "GitHub", href: "https://github.com/evmts/voltaire" },
-        { icon: "x.com", label: "X", href: "https://twitter.com/tevmtools" }
-      ],
-      sidebar: [
-        { label: "Getting Started", link: "/getting-started/" },
-        { label: "Core Primitives", autogenerate: { directory: "primitives" } },
-        { label: "Cryptography", autogenerate: { directory: "crypto" } },
-        // Zig docs (currently not implemented)
-        { label: "Zig Overview", link: "/zig/" },
-        { label: "Zig Getting Started", link: "/zig/getting-started/" },
-        { label: "Zig Contributing", link: "/zig/contributing/" },
-        { label: "Zig Primitives", autogenerate: { directory: "zig/primitives" } },
-        { label: "Zig Cryptography", autogenerate: { directory: "zig/crypto" } },
-        { label: "Zig Precompiles", autogenerate: { directory: "zig/precompiles" } }
-      ],
-      customCss: ["./src/styles/custom.css"]
-    })
-  ]
-});
-```
-
-**Key Points**:
-- `autogenerate` reads `src/content/docs/{directory}` and creates sidebar from file structure
-- Symlinks are followed transparently by Starlight
-- Sidebar order determined by alphabetical file/directory names
-- Custom order: rename files with numeric prefixes or manually specify in sidebar config
-
----
-
-## FRONTMATTER
-
-Every MDX file MUST have frontmatter:
+### Required Fields
 
 ```yaml
 ---
-title: Address
-description: 20-byte Ethereum addresses with EIP-55 checksumming
+title: Page Title
+description: One-line description for SEO and social previews
 ---
 ```
 
-**Optional fields**:
-- `sidebar: { order: 1, label: "Custom Label" }`
-- `tableOfContents: false` (disable TOC for that page)
-- `template: splash` (full-width landing page)
+### All Available Fields
+
+```yaml
+---
+# Required
+title: string                    # Page title (displayed at top, browser tab, metadata)
+description: string              # SEO description (search engines, social previews)
+
+# Optional - Display & Navigation
+sidebarTitle: string             # Override title in sidebar navigation
+icon: string                     # Icon name (Font Awesome, Lucide, URL, or path)
+                                 # Font Awesome: "code", "book", "rocket", "shield-check"
+                                 # Lucide: any lucide icon name
+                                 # URL: https://example.com/icon.svg
+                                 # Path: /images/icon.svg
+iconType: string                 # Font Awesome style: "regular" | "solid" | "light" |
+                                 # "thin" | "sharp-solid" | "duotone" | "brands"
+tag: string                      # Badge displayed next to title in navigation
+
+# Optional - Page Layout (mode)
+mode: "default" | "wide" | "custom" | "frame" | "center"
+# - default: Standard layout with sidebar and TOC
+# - wide: Removes TOC for wider content area
+# - custom: Removes everything except top navbar (landing pages)
+# - frame: Custom layout with sidebar (Aspen/Almond themes only)
+# - center: Centers content, hides sidebar (Mint/Linden themes only)
+
+# Optional - SEO & Discovery
+noindex: boolean                 # Exclude from search engines (default: false)
+keywords: string[]               # Search keywords (not visible on page)
+
+# Optional - API Integration
+openapi: string                  # Path to OpenAPI spec for API playground
+                                 # Example: "GET /api/users" or "openapi.yaml#/paths/~1users/get"
+
+# Optional - External Links
+url: string                      # Redirect to external URL instead of rendering page
+
+# Optional - Content Display
+hideTitle: boolean               # Hide page title (default: false)
+---
+```
+
+### Frontmatter Examples
+
+**Simple page**:
+```yaml
+---
+title: Bytecode Analysis
+description: Analyze EVM bytecode for jump destinations and instructions
+---
+```
+
+**Page with icon and sidebar title**:
+```yaml
+---
+title: Advanced Patterns
+description: Complex usage patterns for power users
+sidebarTitle: Advanced
+icon: rocket
+tag: guide
+---
+```
+
+**API reference page**:
+```yaml
+---
+title: Bytecode.analyze
+description: Parse bytecode instructions and find jump destinations
+icon: code
+openapi: GET /api/bytecode/analyze
+---
+```
+
+**Concept explanation**:
+```yaml
+---
+title: Branded Types
+description: Zero-cost type safety with branded Uint8Arrays
+sidebarTitle: Branded Types
+icon: shield
+tag: concept
+---
+```
 
 ---
 
-## STARLIGHT COMPONENTS
+## MARKDOWN AUTHORING
 
-Import and use Starlight components for rich documentation:
+Mintlify supports full Markdown and MDX syntax. Use Markdown for structure, MDX for interactive components.
+
+### Inline Styles
+
+```markdown
+Text can be **bold**, *italic*, or ~~strikethrough~~.
+
+You can [link to another page](/getting-started/).
+
+You can highlight `inline code` with backticks.
+```
+
+### Headings
+
+```markdown
+## Level 2 heading
+### Level 3 heading
+#### Level 4 heading
+```
+
+**Heading Guidelines**:
+- H1 (`#`) is auto-generated from frontmatter `title` - do NOT manually add H1
+- Start page content with H2 (`##`)
+- Headings automatically get anchor links (e.g., `#level-2-heading`)
+- H2 and H3 appear in table of contents by default
+- Use descriptive headings for easy scanning
+
+### Lists
+
+**Unordered**:
+```markdown
+- Item one
+- Item two
+  - Nested item
+  - Another nested item
+- Item three
+```
+
+**Ordered**:
+```markdown
+1. First step
+2. Second step
+   1. Sub-step
+   2. Another sub-step
+3. Third step
+```
+
+**Task lists**:
+```markdown
+- [x] Completed task
+- [ ] Incomplete task
+- [ ] Another task
+```
+
+### Links
+
+**Internal links** (to other pages):
+```markdown
+[Getting Started](/getting-started)
+[Address constructors](/primitives/address/constructors)
+[Specific section](/primitives/bytecode/analyze#usage)
+```
+
+**Important**: Mintlify links use absolute paths WITHOUT file extensions or trailing slashes.
+
+**External links**:
+```markdown
+[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
+[EIP-55](https://eips.ethereum.org/EIPS/eip-55)
+```
+
+**Link to source code**:
+```markdown
+Defined in: [BrandedBytecode/analyze.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js#L22)
+```
+
+### Images
+
+**Relative images** (stored in repo):
+```markdown
+![Alt text](../../assets/images/diagram.png)
+```
+
+**External images**:
+```markdown
+![Ethereum logo](https://ethereum.org/logo.png)
+```
+
+Images are automatically optimized by Astro.
+
+### Code Blocks
+
+Code blocks support syntax highlighting via Shiki for all major languages.
+
+**Basic syntax**:
+````markdown
+```typescript
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+```
+````
+
+**Meta options** (flexible quoting: `""`, `''`, or unquoted strings; expressions use `{}`):
+````markdown
+```typescript title="example.ts" showLineNumbers
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+```
+````
+
+**Available meta options**:
+- `title="string"` or `title='string'` - Display title/filename
+- `icon="name"` - Add icon next to title
+- `showLineNumbers` or `showLineNumbers={true}` - Show line numbers
+- `{2-4}` - Highlight lines 2-4
+- `"text"` - Highlight specific text
+- `/regex/` - Highlight regex matches
+- `wrap` - Enable text wrapping for long lines
+- `collapsible` - Make code block expandable for long code
+- `frame="none"` - Remove window frame (useful for terminal output)
+
+**TypeScript with twoslash** (hover type info):
+````markdown
+```typescript twoslash
+const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+//    ^? (hover shows type)
+```
+````
+
+**Diff visualization**:
+````markdown
+```typescript ins="newFunction()" del="oldFunction()"
+// Shows additions in green, deletions in red
+oldFunction();
+newFunction();
+```
+````
+
+**Alternative diff syntax**:
+````markdown
+```diff lang="typescript"
+  function demo() {
+-   console.log('Removed')
++   console.log('Added')
+  }
+```
+````
+
+**Custom themes**: Configure in `docs.json` or use CSS variables:
+```json
+{
+  "codeBlock": {
+    "theme": "github-dark"
+  }
+}
+```
+
+### Blockquotes
+
+```markdown
+> This is a blockquote.
+>
+> Commonly used for quoting specs or other sources.
+```
+
+### Tables
+
+```markdown
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `from()` | Create from input | `Bytecode` |
+| `toHex()` | Convert to hex | `Hex` |
+| `equals()` | Compare bytecode | `boolean` |
+```
+
+**Alignment**:
+```markdown
+| Left | Center | Right |
+|:-----|:------:|------:|
+| L    | C      | R     |
+```
+
+### Horizontal Rules
+
+```markdown
+---
+```
+
+Use sparingly to separate major sections.
+
+### HTML in Markdown
+
+You can use HTML directly in Markdown:
+
+```markdown
+<details>
+<summary>Click to expand</summary>
+
+Hidden content here. Markdown **still works** inside HTML.
+
+</details>
+```
+
+### Escaping Characters
+
+Use backslash to escape special characters:
+
+```markdown
+\*Not italic\*
+\`Not code\`
+\[Not a link\]
+```
+
+---
+
+## MINTLIFY COMPONENTS
+
+Mintlify components are global - no imports needed. Components use JSX syntax within MDX files.
+
+**Key Rules**:
+- No imports required - all components are globally available
+- Use JSX syntax: `<Component prop="value">content</Component>`
+- Self-closing tags when no children: `<Component prop="value" />`
+- Props can be strings, booleans, or expressions in curly braces `{}`
+- Markdown content works inside component children
+
+### Tabs Component
+
+Group related code examples. Use for showing Class vs Namespace API or different languages.
+
+**Basic tabs**:
+```mdx
+<Tabs>
+  <Tab title="npm">
+  ```bash
+  npm install
+  ```
+  </Tab>
+  <Tab title="pnpm">
+  ```bash
+  pnpm install
+  ```
+  </Tab>
+  <Tab title="yarn">
+  ```bash
+  yarn install
+  ```
+  </Tab>
+</Tabs>
+```
+
+**API style tabs** (common pattern):
+```mdx
+<Tabs>
+  <Tab title="Class API">
+  ```typescript
+  const code = new Bytecode("0x6001");
+  const hex = code.toHex();
+  ```
+  </Tab>
+  <Tab title="Namespace API">
+  ```typescript
+  import * as Bytecode from '@tevm/voltaire/Bytecode';
+  const code = Bytecode.from("0x6001");
+  const hex = Bytecode.toHex(code);
+  ```
+  </Tab>
+</Tabs>
+```
+
+**Props**:
+- `title: string` (required) - Tab label text (keep short for better navigation)
+- `icon: string` (optional) - Font Awesome, Lucide icon, URL, or path
+- `iconType: string` (optional) - Font Awesome style (regular, solid, light, thin, sharp-solid, duotone, brands)
+
+**Important**: Mintlify tabs do NOT synchronize across the page (each tab group is independent).
+
+---
+
+### Callout Components
+
+Highlight important information. Seven pre-styled callout types plus custom callouts.
+
+**Pre-styled Callouts**:
 
 ```mdx
-import { Tabs, TabItem, Card, CardGrid, Aside, Code } from '@astrojs/starlight/components';
+<Note>
+General information and context.
+</Note>
 
-# Address
+<Tip>
+Helpful tips and best practices.
+</Tip>
 
-<Aside type="tip" title="What is an Address?">
-An Ethereum address is a 20-byte identifier for accounts and contracts.
-</Aside>
+<Info>
+Important information that needs attention.
+</Info>
 
-<Tabs>
-<TabItem label="Class API">
-```typescript
-const addr = new Address("0x...");
+<Warning>
+Caution about potential issues or gotchas.
+</Warning>
+
+<Danger>
+Critical warnings about dangerous operations.
+</Danger>
+
+<Check>
+Confirmation or success messages.
+</Check>
 ```
-</TabItem>
-<TabItem label="Namespace API">
-```typescript
-import * as Address from '@tevm/voltaire/Address';
-const addr = Address.from("0x...");
+
+**Custom Callout**:
+```mdx
+<Callout icon="rocket" iconType="solid" color="#FF6B6B">
+Create fully customized callouts with your own icon and color.
+</Callout>
 ```
-</TabItem>
-</Tabs>
 
-<CardGrid>
-  <Card title="Constructors" icon="rocket">
-    Create addresses from hex, bytes, numbers, or public keys.
+**Props** (all callouts):
+- `title: string` (optional) - Custom title text
+- `icon: string` (optional, Callout only) - Font Awesome, Lucide, URL, or path
+- `iconType: string` (optional) - Font Awesome style
+- `color: string` (optional, Callout only) - Icon color in hex format
 
-    [View constructors →](/primitives/address/constructors)
+---
+
+### Card & CardGroup Components
+
+Visual containers for navigation and content organization.
+
+**Basic Card**:
+```mdx
+<Card title="Constructors" icon="rocket" href="/primitives/bytecode/from">
+  Create bytecode from hex strings or Uint8Array.
+</Card>
+```
+
+**Horizontal Card** (compact layout):
+```mdx
+<Card title="Quick Start" icon="bolt" href="/getting-started" horizontal>
+  Get started in under 5 minutes.
+</Card>
+```
+
+**Image Card**:
+```mdx
+<Card title="Visual Guide" img="/images/guide.png" href="/guide">
+  Step-by-step visual walkthrough.
+</Card>
+```
+
+**Card Group** (grid layout):
+```mdx
+<CardGroup cols={3}>
+  <Card title="Analysis" icon="magnifying-glass" href="/primitives/bytecode/analyze">
+    Parse instructions and find jump destinations.
   </Card>
-
-  <Card title="Conversions" icon="document">
-    Convert addresses to hex, checksummed, bigint, or ABI-encoded.
-
-    [View conversions →](/primitives/address/conversions)
+  <Card title="Metadata" icon="file-code" href="/primitives/bytecode/metadata">
+    Detect and strip compiler metadata.
   </Card>
-</CardGrid>
+  <Card title="Validation" icon="shield-check" href="/primitives/bytecode/validate">
+    Validate bytecode structure.
+  </Card>
+</CardGroup>
 ```
 
-**Available Components**:
-- `<Tabs>` / `<TabItem>`: Tabbed content (use `syncKey` to sync across tabs)
-- `<Card>` / `<CardGrid>`: Card layouts for navigation
-- `<Aside>`: Callouts (`type: "note" | "tip" | "caution" | "danger"`)
-- `<Code>`: Syntax-highlighted code blocks
-- `<FileTree>`: Directory structure visualization
+**Card Props**:
+- `title: string` (required) - Card title
+- `icon: string` (optional) - Font Awesome, Lucide icon, SVG, URL, or path
+- `iconType: string` (optional) - Font Awesome style
+- `href: string` (optional) - Navigation URL
+- `img: string` (optional) - Image displayed at top of card
+- `cta: string` (optional) - Custom button text
+- `horizontal: boolean` (optional) - Compact horizontal layout
+- `arrow: boolean` (optional) - Show/hide link indicator
+- `color: string` (optional) - Icon color in hex format
 
-**Icons** (for Cards):
-- `rocket`, `document`, `open-book`, `seti:config`, `list-format`
-- `bell`, `warning`, `puzzle`, `star`, `pencil`
-- See: https://icon-sets.iconify.design/
+**CardGroup Props**:
+- `cols: number` (optional) - Number of columns (default: 2)
+
+---
+
+### Accordion & AccordionGroup Components
+
+Collapsible sections for organizing and progressively disclosing content.
+
+**Single Accordion**:
+```mdx
+<Accordion title="Advanced Options">
+Additional configuration options and parameters.
+
+```typescript
+const config = { advanced: true };
+```
+</Accordion>
+```
+
+**Accordion with description and icon**:
+```mdx
+<Accordion
+  title="Performance Optimization"
+  description="Techniques for improving execution speed"
+  icon="rocket"
+  defaultOpen={true}
+>
+Content about performance optimization...
+</Accordion>
+```
+
+**Accordion Group** (organized collection):
+```mdx
+<AccordionGroup>
+  <Accordion title="TypeScript Example">
+  ```typescript
+  const code = Bytecode.from("0x6001");
+  ```
+  </Accordion>
+
+  <Accordion title="JavaScript Example">
+  ```javascript
+  const code = Bytecode.from("0x6001");
+  ```
+  </Accordion>
+</AccordionGroup>
+```
+
+**Props**:
+- `title: string` (required) - Accordion header text
+- `description: string` (optional) - Additional detail shown below title
+- `icon: string` (optional) - Font Awesome, Lucide icon, SVG, URL, or path
+- `iconType: string` (optional) - Font Awesome style
+- `defaultOpen: boolean` (optional) - Start expanded (default: false)
+
+---
+
+### CodeGroup Component
+
+Group multiple code examples with tabs. Use for showing different languages or variations.
+
+**Basic CodeGroup**:
+```mdx
+<CodeGroup>
+```typescript TypeScript
+const code = Bytecode.from("0x6001");
+const hex = code.toHex();
+```
+
+```javascript JavaScript
+const code = Bytecode.from("0x6001");
+const hex = code.toHex();
+```
+</CodeGroup>
+```
+
+**API patterns**:
+```mdx
+<CodeGroup>
+```typescript Class API
+import { Bytecode } from '@tevm/voltaire';
+
+const code = new Bytecode("0x6001");
+const hex = code.toHex();
+```
+
+```typescript Namespace API
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const code = Bytecode.from("0x6001");
+const hex = Bytecode.toHex(code);
+```
+</CodeGroup>
+```
+
+**Syntax**: ` ```language TabTitle `
+
+---
+
+### Columns Component
+
+Display content in multiple columns.
+
+**Two columns**:
+```mdx
+<Columns>
+  <Column>
+  Left column content.
+
+  ```typescript
+  const a = 1;
+  ```
+  </Column>
+
+  <Column>
+  Right column content.
+
+  ```typescript
+  const b = 2;
+  ```
+  </Column>
+</Columns>
+```
+
+**Three columns**:
+```mdx
+<Columns>
+  <Column>Column 1</Column>
+  <Column>Column 2</Column>
+  <Column>Column 3</Column>
+</Columns>
+```
+
+Use for side-by-side comparisons or related content.
+
+---
+
+### Steps Component
+
+Sequential numbered content for tutorials and guides.
+
+**Basic steps**:
+```mdx
+<Steps>
+  <Step title="Install package">
+  ```bash
+  npm install @tevm/voltaire
+  ```
+  </Step>
+
+  <Step title="Import primitive">
+  ```typescript
+  import { Bytecode } from '@tevm/voltaire';
+  ```
+  </Step>
+
+  <Step title="Use it">
+  ```typescript
+  const code = Bytecode.from("0x6001");
+  ```
+  </Step>
+</Steps>
+```
+
+**Props**:
+- `title: string` (required) - Step title
+
+---
+
+### Additional Components
+
+**Expandable** (nested property disclosure):
+```mdx
+<Expandable title="Additional Properties">
+  <ResponseField name="nested" type="string">
+    Nested property details
+  </ResponseField>
+</Expandable>
+```
+
+**Frame** (wraps content in container):
+```mdx
+<Frame>
+  ![Diagram](/images/diagram.png)
+</Frame>
+```
+
+**Mermaid Diagrams**:
+````mdx
+```mermaid
+graph TD
+  A[Start] --> B[Process]
+  B --> C[End]
+```
+````
+
+**Tooltip** (hover definitions):
+```mdx
+<Tooltip tip="Ethereum Virtual Machine">EVM</Tooltip> executes bytecode.
+```
+
+**Response Fields** (API documentation):
+```mdx
+<ResponseField name="address" type="string" required>
+  The Ethereum address in checksummed format
+</ResponseField>
+```
+
+**Fields** (parameter documentation):
+```mdx
+<ParamField path="bytecode" type="string" required>
+  Hex-encoded bytecode string
+</ParamField>
+```
+
+---
+
+## DOCS.JSON CONFIGURATION
+
+The `docs.json` file (or `mint.json`, legacy name) configures site-wide settings and navigation.
+
+### Core Structure
+
+```json
+{
+  "name": "Voltaire",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#0066FF",
+    "light": "#4D9CFF",
+    "dark": "#0052CC"
+  },
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["introduction", "getting-started"]
+    },
+    {
+      "group": "Primitives",
+      "pages": [
+        "primitives/address",
+        "primitives/bytecode",
+        {
+          "group": "Bytecode",
+          "pages": [
+            "primitives/bytecode/overview",
+            "primitives/bytecode/analyze"
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Navigation Structure
+
+**Pages** - Simple array of file paths (without .mdx extension):
+```json
+"pages": ["settings", "pages", "navigation"]
+```
+
+**Groups** - Collapsible sections:
+```json
+{
+  "group": "API Reference",
+  "pages": ["api/overview", "api/endpoints"],
+  "icon": "code",
+  "expanded": true
+}
+```
+
+**Nested groups**:
+```json
+{
+  "group": "Primitives",
+  "pages": [
+    "primitives/overview",
+    {
+      "group": "Address",
+      "pages": ["primitives/address/overview", "primitives/address/methods"]
+    }
+  ]
+}
+```
+
+**Tabs** (top-level horizontal sections):
+```json
+"tabs": [
+  { "name": "Documentation", "url": "docs" },
+  { "name": "API Reference", "url": "api" }
+]
+```
+
+**Anchors** (persistent sidebar links):
+```json
+"anchors": [
+  {
+    "name": "GitHub",
+    "icon": "github",
+    "url": "https://github.com/evmts/voltaire"
+  },
+  {
+    "name": "API Reference",
+    "icon": "code",
+    "url": "api"
+  }
+]
+```
+
+### Additional Settings
+
+**Topbar**:
+```json
+"topbar": {
+  "cta": {
+    "name": "Get Started",
+    "url": "getting-started"
+  }
+}
+```
+
+**Footer**:
+```json
+"footer": {
+  "socials": {
+    "github": "https://github.com/evmts/voltaire",
+    "twitter": "https://twitter.com/evmts"
+  }
+}
+```
+
+**Search**:
+```json
+"search": {
+  "prompt": "Search Voltaire docs..."
+}
+```
+
+---
+
+## ICON REFERENCE
+
+Mintlify supports Font Awesome and Lucide icons.
+
+**Font Awesome Icons** (most common):
+- `code`, `file-code`, `brackets-curly`, `terminal`, `command`
+- `book`, `book-open`, `graduation-cap`, `lightbulb`
+- `rocket`, `bolt`, `fire`, `star`, `heart`
+- `shield`, `shield-check`, `lock`, `key`
+- `magnifying-glass`, `search`, `filter`
+- `circle-info`, `circle-exclamation`, `triangle-exclamation`
+- `arrow-right`, `arrow-left`, `arrow-up-right-from-square`
+
+**Brand Icons**:
+- `github`, `gitlab`, `discord`, `twitter`, `linkedin`
+- `npm`, `node`, `python`, `rust`, `golang`
+
+**Lucide Icons**: Any icon from https://lucide.dev/icons
+
+**Custom Icons**:
+- URL: `https://example.com/icon.svg`
+- Path: `/images/icon.svg`
+- SVG: Convert via SVGR converter, wrap in `{}`
+
+**Usage**:
+```mdx
+<Card icon="rocket" iconType="solid" title="..." href="..." />
+<Accordion icon="lightbulb">...</Accordion>
+```
 
 ---
 
 ## DOCUMENTATION PAGE STRUCTURE
 
-### Main Overview (`index.mdx`)
+### Main Overview (`overview.mdx`)
 
-Every primitive has a main `index.mdx` with this structure:
+Every primitive has a main `overview.mdx` with this structure:
 
 ```mdx
 ---
 title: Primitive Name
-description: Brief one-line description
+description: Brief one-line description (shown in search, social previews)
+icon: rocket
 ---
 
-import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+One-sentence overview of what this is and why it exists.
 
-# Primitive Name
-
-One-sentence overview.
+<Tip title="Quick Explanation">
+Brief explanation for users unfamiliar with the concept.
+</Tip>
 
 ## Overview
 
 2-3 paragraphs explaining:
-- What this primitive is
-- Why it exists
-- Key use cases in Ethereum
-- Branded type pattern (link to /primitives/branded-types)
+- What this primitive is and its purpose in Ethereum
+- Key use cases and when to use it
+- How it fits into the overall architecture
+
+This primitive uses the [branded type](/concepts/branded-types) pattern for type safety with zero runtime overhead.
+
+```typescript
+export type BrandedThing = Uint8Array & {
+  readonly __tag: "Thing";
+};
+```
 
 ## Quick Start
 
-<Tabs syncKey="api-style">
-<TabItem label="Class API">
+<Tabs>
+<Tab title="Class API">
+
 ```typescript
-// Simple examples showing class usage
-const x = new Thing("input");
-x.method();
+import { Thing } from '@tevm/voltaire';
+
+// Create instance
+const thing = new Thing("0x...");
+
+// Use methods
+const hex = thing.toHex();
+const valid = thing.validate();
 ```
-</TabItem>
-<TabItem label="Namespace API (Tree-shakeable)">
+
+</Tab>
+<Tab title="Namespace API">
+
 ```typescript
-// Same examples with namespace/functional API
 import * as Thing from '@tevm/voltaire/Thing';
-const x = Thing.from("input");
-Thing.method(x);
+
+// Create
+const thing = Thing.from("0x...");
+
+// Use functions
+const hex = Thing.toHex(thing);
+const valid = Thing.validate(thing);
 ```
-</TabItem>
+
+</Tab>
 </Tabs>
 
 ## API Documentation
 
-<CardGrid>
-  <Card title="Section 1" icon="icon-name">
-    Brief description of this API section.
-
-    [View details →](./section-1)
+<CardGroup cols={3}>
+  <Card title="Constructors" icon="rocket" href="/primitives/thing/from">
+    Create from hex strings, Uint8Array, or other inputs.
   </Card>
 
-  <Card title="Section 2" icon="icon-name">
-    Brief description.
-
-    [View details →](./section-2)
+  <Card title="Analysis" icon="magnifying-glass" href="/primitives/thing/analyze">
+    Analyze and parse instructions.
   </Card>
-</CardGrid>
+
+  <Card title="Validation" icon="shield-check" href="/primitives/thing/validate">
+    Validate structure and content.
+  </Card>
+
+  <Card title="Conversions" icon="arrow-right-arrow-left" href="/primitives/thing/tohex">
+    Convert to different formats.
+  </Card>
+
+  <Card title="Utilities" icon="wrench" href="/primitives/thing/size">
+    Helper functions and utilities.
+  </Card>
+</CardGroup>
 
 ## Types
 
 <Tabs>
-<TabItem label="Main Type">
+<Tab title="BrandedThing">
+
 ```typescript
-export type BrandedThing = BaseType & {
+export type BrandedThing = Uint8Array & {
   readonly __tag: "Thing";
-  // ... other metadata
 };
 ```
-</TabItem>
-<TabItem label="Related Types">
+
+Main branded type. Runtime is `Uint8Array`, TypeScript enforces type safety.
+
+</Tab>
+<Tab title="ThingLike">
+
 ```typescript
-// Supporting types
+export type ThingLike =
+  | Uint8Array
+  | BrandedThing
+  | Thing
+  | Hex
+  | string;
 ```
-</TabItem>
+
+Union type for flexible input. Accepted by `Thing.from()`.
+
+</Tab>
+<Tab title="Related Types">
+
+```typescript
+export type Analysis = {
+  readonly valid: boolean;
+  readonly data: Uint8Array;
+};
+```
+
+Supporting types for API methods.
+
+</Tab>
 </Tabs>
 
-## Error Types
+## Usage Patterns
+
+### Pattern 1: Common Use Case
 
 ```typescript
-// Custom error classes
+// Example of common pattern
+const thing = Thing.from("0x...");
+const result = thing.process();
 ```
+
+### Pattern 2: Advanced Use Case
+
+```typescript
+// Example of advanced pattern
+const thing = Thing.from("0x...");
+if (thing.validate()) {
+  const data = thing.extract();
+}
+```
+
+## Tree-Shaking
+
+Import only what you need for optimal bundle size:
+
+```typescript
+// Import specific functions (tree-shakeable)
+import { from, toHex, validate } from '@tevm/voltaire/BrandedThing';
+
+const thing = from("0x...");
+const hex = toHex(thing);
+const valid = validate(thing);
+
+// Result: Only these 3 functions included in bundle
+```
+
+<Tip>
+Importing from `@tevm/voltaire/BrandedThing` instead of `@tevm/voltaire` enables tree-shaking. Unused functions are excluded from your bundle.
+</Tip>
 
 ## Related
 
-<CardGrid stagger>
-  <Card title="Related Primitive" icon="document">
-    How it relates.
-
-    [View →](/primitives/related)
+<CardGroup cols={2}>
+  <Card title="Related Primitive" icon="file" href="/primitives/related">
+    Brief explanation of relationship.
   </Card>
-</CardGrid>
+  <Card title="Opcode" icon="code" href="/primitives/opcode">
+    EVM opcodes used in bytecode.
+  </Card>
+</CardGroup>
 
 ## Specification References
 
 - [EIP-XXX](https://eips.ethereum.org/EIPS/eip-xxx) - Description
+- [Yellow Paper Section X.Y](https://ethereum.github.io/yellowpaper/paper.pdf) - Description
 - [External Spec](https://example.com) - Description
 ```
 
-### Sub-Pages
+---
 
-Each sub-page follows this pattern:
+### Method Documentation (`method.mdx`)
+
+Each public method gets its own file:
 
 ```mdx
 ---
-title: Primitive Name - Sub-Topic
-description: Brief description of this sub-topic
+title: Thing.method
+description: Brief description of what this method does
+mode: api
+icon: code
 ---
 
-# Sub-Topic
+<Tabs>
+<Tab title="Class API">
 
-Brief introduction.
+## `thing.method(param: Type): ReturnType`
 
-## Method Category
-
-### `Namespace.method(param: Type): ReturnType`
-
-Description of what this method does.
+Brief description of what this method does and when to use it.
 
 **Parameters:**
-- `param: Type` - Description
+- `param: Type` - Description of parameter
 
-**Returns:** `ReturnType` - Description
+**Returns:** `ReturnType` - Description of return value
 
-**Throws:** (if applicable)
+**Throws:**
 - `ErrorType` - When this error occurs
 
 **Example:**
+
 ```typescript
-const result = Namespace.method(input);
+import { Thing } from '@tevm/voltaire';
+
+const thing = new Thing("0x...");
+const result = thing.method(param);
 // result: expected output
 ```
 
-**Static form:**
+**Defined in:** [path/to/method.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Thing/BrandedThing/method.js#L15)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `method(thing: BrandedThing, param: Type): ReturnType`
+
+Brief description of what this method does and when to use it.
+
+**Parameters:**
+- `thing: BrandedThing` - Thing instance to operate on
+- `param: Type` - Description of parameter
+
+**Returns:** `ReturnType` - Description of return value
+
+**Throws:**
+- `ErrorType` - When this error occurs
+
+**Example:**
+
 ```typescript
-Namespace.method(data)
+import * as Thing from '@tevm/voltaire/Thing';
+
+const thing = Thing.from("0x...");
+const result = Thing.method(thing, param);
+// result: expected output
 ```
 
-**Instance form:**
+**Tree-shakeable import:**
+
 ```typescript
-instance.method()
+import { method } from '@tevm/voltaire/BrandedThing';
+
+const result = method(thing, param);
 ```
 
-Defined in: [path/to/file.ts:line](https://github.com/evmts/voltaire/blob/main/src/path/to/file.ts#Lline)
+**Defined in:** [path/to/method.js:15](https://github.com/evmts/voltaire/blob/main/src/primitives/Thing/BrandedThing/method.js#L15)
 
----
-
-(Repeat for each method)
+</Tab>
+</Tabs>
 
 ## Usage Patterns
 
-Common patterns and examples.
-
-## Tree-Shakeable Usage
+### Basic Usage
 
 ```typescript
-// Import individual functions
-import { method1, method2 } from '@tevm/voltaire/Thing'
+// Common pattern
+const thing = Thing.from("0x...");
+const result = thing.method(param);
 ```
+
+### With Validation
+
+```typescript
+// Validate before processing
+const thing = Thing.from("0x...");
+if (thing.validate()) {
+  const result = thing.method(param);
+}
+```
+
+### Error Handling
+
+```typescript
+try {
+  const result = thing.method(param);
+} catch (error) {
+  if (error instanceof ErrorType) {
+    console.error('Specific error:', error.message);
+  }
+}
+```
+
+<Warning title="Performance Note">
+Any performance considerations or gotchas.
+</Warning>
+
+## See Also
+
+- [Related method](/primitives/thing/relatedmethod) - How it relates
+- [Another method](/primitives/thing/another) - How it relates
 ```
 
 ---
 
 ## WRITING STYLE
 
-### Tone
-- **Brief**: 1-2 sentence explanations, expand only when necessary
-- **Technical**: Assume Ethereum knowledge, use proper terminology
-- **Evidence-based**: Link to EIPs, Yellow Paper, specs
-- **No fluff**: Skip "Congratulations!", "Great!", "Amazing!"
+### Tone & Voice
+
+**Brief & Direct**:
+- 1-2 sentence explanations by default
+- Expand only when complexity requires it
+- Front-load most important information
+- No filler words or unnecessary preamble
+
+**Technical & Precise**:
+- Assume Ethereum knowledge (don't explain basic concepts)
+- Use correct terminology (EVM, keccak256, secp256k1, ABI encoding)
+- Link to specs for complex topics
+- Specify exact types and sizes (e.g., "20-byte Uint8Array" not "byte array")
+
+**Evidence-Based**:
+- Link to EIPs, Yellow Paper, specifications
+- Reference authoritative sources
+- Show working code examples
+- Verify all technical claims
+
+**No Fluff**:
+- ❌ "Congratulations!", "Great!", "Amazing!", "Let's get started!"
+- ❌ "Now we'll...", "First we need to...", "The next step is..."
+- ✅ Direct imperative or declarative statements
+- ✅ "Create an address:", "Returns the hex string:", "Throws when invalid:"
 
 ### Code Examples
-- **Complete**: Runnable code, no `...` placeholders unless showing elision
-- **Commented**: Explain non-obvious behavior inline
-- **Typed**: Include TypeScript types
-- **Both APIs**: Show Class and Namespace forms
 
-### Technical Terms
-- Use: "Ethereum", "EVM", "keccak256", "secp256k1", "EIP-55 checksumming"
-- Link first mention: `[branded type](/primitives/branded-types)`
-- Be precise: "20-byte Uint8Array" not "byte array"
+**Complete & Runnable**:
+```typescript
+// ✅ Good - complete, runnable
+import { Bytecode } from '@tevm/voltaire';
 
-### Structure
-- **Progressive disclosure**: Simple examples first, complex patterns later
-- **Scannable**: Headers, lists, code blocks
-- **Cross-referenced**: Link related docs liberally
+const code = Bytecode.fromHex("0x6001");
+const hex = code.toHex();
+console.log(hex); // "0x6001"
+```
+
+```typescript
+// ❌ Bad - incomplete, uses placeholders
+const code = ...
+const result = code.method(...);
+```
+
+**Commented for Non-Obvious Behavior**:
+```typescript
+// ✅ Good - comments explain non-obvious behavior
+const code = Bytecode.fromHex("0x60016002015b");
+const analysis = code.analyze();
+// Jump destination at position 4 (JUMPDEST opcode 0x5b)
+console.log(analysis.jumpDestinations); // Set(1) { 4 }
+```
+
+```typescript
+// ❌ Bad - obvious comment that adds no value
+// Create bytecode
+const code = Bytecode.fromHex("0x6001");
+```
+
+**TypeScript Types Included**:
+```typescript
+// ✅ Good - types shown
+const code: Bytecode = Bytecode.fromHex("0x6001");
+const hex: Hex = code.toHex();
+const valid: boolean = code.validate();
+```
+
+**Show Both APIs**:
+Always demonstrate both Class and Namespace APIs using tabs:
+
+```mdx
+<Tabs>
+<Tab title="Class API">
+```typescript
+const code = new Bytecode("0x6001");
+const hex = code.toHex();
+```
+</Tab>
+<Tab title="Namespace API">
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+const code = Bytecode.from("0x6001");
+const hex = Bytecode.toHex(code);
+```
+</Tab>
+</Tabs>
+```
+
+### Structure & Organization
+
+**Progressive Disclosure**:
+1. Start with simplest example
+2. Show common use case
+3. Layer in complexity gradually
+4. Advanced patterns at end
+
+```mdx
+## Quick Start
+
+```typescript
+// Simplest possible usage
+const code = Bytecode.from("0x6001");
+```
+
+## Common Patterns
+
+```typescript
+// Common real-world usage
+const code = Bytecode.fromHex("0x6001");
+const valid = code.validate();
+```
+
+## Advanced Usage
+
+```typescript
+// Complex patterns for power users
+const code = Bytecode.fromHex(contractBytecode);
+const analysis = code.analyze();
+const runtime = code.stripMetadata().extractRuntime();
+```
+```
+
+**Scannable Structure**:
+- Use headings liberally (H2, H3)
+- Break content into short paragraphs (2-4 sentences max)
+- Use lists for multiple items
+- Use tables for comparisons
+- Use cards for navigation
+- Use code blocks prominently
+
+**Cross-Referenced**:
+- Link to related docs liberally
+- Link first mention of concepts
+- Use descriptive link text
+- Show relationship between primitives
+
+```markdown
+Bytecode uses [opcodes](/primitives/opcode) as instructions. Each opcode is a single byte defining an [EVM operation](https://www.evm.codes/).
+
+For metadata handling, see [hasMetadata](./hasmetadata) and [stripMetadata](./stripmetadata).
+```
+
+### Technical Terminology
+
+**Use Precise Terms**:
+- ✅ "20-byte Uint8Array"
+- ❌ "byte array" or "array of bytes"
+
+- ✅ "keccak256 hash"
+- ❌ "hash" or "Keccak hash"
+
+- ✅ "EIP-55 checksummed address"
+- ❌ "checksummed address" or "mixed-case address"
+
+- ✅ "JUMPDEST opcode (0x5b)"
+- ❌ "jump destination instruction"
+
+**Link First Mention**:
+```markdown
+Bytecode is a [branded type](/concepts/branded-types) represented as a Uint8Array.
+
+The [EVM](/getting-started#evm) executes bytecode sequentially.
+
+Uses [keccak256](/crypto/keccak256) for hashing.
+```
+
+**Ethereum-Specific Terms**:
+- EVM (Ethereum Virtual Machine)
+- Opcodes (EVM instructions)
+- Gas (computational cost)
+- Wei, Gwei, Ether (denominations)
+- keccak256 (hashing algorithm)
+- secp256k1 (signature curve)
+- ABI encoding
+- RLP encoding
+- EIP (Ethereum Improvement Proposal)
+- Yellow Paper (formal specification)
 
 ---
 
@@ -433,71 +1440,70 @@ import { method1, method2 } from '@tevm/voltaire/Thing'
 Zig uses `///` for doc comments (extracted by `zig build docs`):
 
 ```zig
-/// X25519 Elliptic Curve Diffie-Hellman key exchange
-/// Re-exports Zig's standard library X25519 implementation
-pub const X25519 = crypto.dh.X25519;
-
-/// Generate public key from secret key
-pub fn publicKeyFromSecret(
+/// Analyze bytecode for jump destinations and instructions
+///
+/// Performs complete analysis returning validation status,
+/// jump destinations, and parsed instructions.
+///
+/// Returns error if bytecode is malformed.
+pub fn analyze(
     allocator: std.mem.Allocator,
-    secret_key: []const u8,
-) ![]u8 {
+    bytecode: []const u8,
+) !Analysis {
     // Implementation...
 }
 ```
 
 **Patterns**:
-- `///` before declarations (functions, constants, types)
-- Brief first line (one-sentence summary)
-- Detailed explanation in following lines
-- Document parameters, returns, errors inline or in comments
-- Link to related functions: "See also: `otherFunction`"
+- `///` before declarations (functions, constants, types, structs)
+- First line: brief one-sentence summary
+- Blank `///` line separator
+- Following lines: detailed explanation
+- Document parameters, return values, errors inline
 
-### Zig Test Blocks
+### Zig in MDX Documentation
 
-Tests are inline, serve as executable documentation:
-
-```zig
-test "x25519 basic" {
-    const allocator = std.testing.allocator;
-
-    const secret = [_]u8{1} ** SECRET_KEY_SIZE;
-    const public_key = try publicKeyFromSecret(allocator, &secret);
-    defer allocator.free(public_key);
-
-    try std.testing.expect(public_key.len == PUBLIC_KEY_SIZE);
-}
-```
-
-### Zig Docs in MDX
-
-Currently, Zig API docs are **NOT auto-generated** into Starlight. Document Zig APIs manually in MDX:
+Document Zig APIs manually in MDX (auto-generation not yet implemented):
 
 ```mdx
 ## Zig API
 
-### `Address.fromHex(hex_str: []const u8) !Address`
+### `analyze(allocator: std.mem.Allocator, bytecode: []const u8) !Analysis`
 
-Parse address from hex string.
+Analyze bytecode for jump destinations and instructions.
 
 **Parameters:**
-- `hex_str`: Hex string with or without `0x` prefix (40 or 42 chars)
+- `allocator: std.mem.Allocator` - Memory allocator for analysis results
+- `bytecode: []const u8` - Bytecode to analyze
 
-**Returns:** `Address` with 20-byte `bytes` field
+**Returns:** `Analysis` - Analysis result with:
+- `valid: bool` - Whether bytecode is structurally valid
+- `jumpDestinations: []u32` - Array of JUMPDEST positions
+- `instructions: []Instruction` - Parsed instructions
 
 **Errors:**
-- `error.InvalidHexFormat` - Invalid length
-- `error.InvalidHexString` - Non-hex characters
+- `error.OutOfMemory` - Allocation failed
+- `error.InvalidBytecode` - Malformed bytecode structure
 
 **Example:**
+
 ```zig
-const addr = try Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const std = @import("std");
+const Bytecode = @import("primitives").Bytecode;
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const code = [_]u8{ 0x60, 0x01, 0x5b };
+    const analysis = try Bytecode.analyze(allocator, &code);
+    defer analysis.deinit(allocator);
+}
 ```
 
-Defined in: [primitives/Address/address.zig:78-91](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L78-L91)
+**Defined in:** [primitives/Bytecode/bytecode.zig:120-145](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/bytecode.zig#L120-L145)
 ```
-
-**Future**: Generate Zig docs automatically with `zig build docs` and integrate into Starlight
 
 ---
 
@@ -508,37 +1514,53 @@ Defined in: [primitives/Address/address.zig:78-91](https://github.com/evmts/volt
 Explain branded type pattern when first mentioned:
 
 ```mdx
-[Branded](/primitives/branded-types) 20-byte Uint8Array. Runtime is just `Uint8Array`, TypeScript brand prevents mixing with other byte arrays.
+[Branded type](/concepts/branded-types) represented as Uint8Array. Runtime is plain `Uint8Array`, TypeScript brand provides compile-time type safety.
 
 ```typescript
-type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
+export type BrandedBytecode = Uint8Array & {
+  readonly __tag: "Bytecode";
+};
 ```
 
 **Benefits**:
-- Zero runtime overhead
-- Type safety (can't pass `Hash` where `Address` expected)
-- Natural serialization (no class wrapper to unwrap)
+- Zero runtime overhead (no wrapper object)
+- Type safety (can't pass `Hash` where `Bytecode` expected)
+- Natural serialization (no unwrapping needed)
+- Works with all Uint8Array methods
 ```
 
 ### Dual API (Class + Namespace)
 
-Always show both forms:
+Always show both forms using tabs:
 
 ```mdx
-<Tabs syncKey="api-style">
-<TabItem label="Class API">
+<Tabs>
+<Tab title="Class API">
+
 ```typescript
-const addr = new Address("0x...");
-addr.toHex();
+import { Bytecode } from '@tevm/voltaire';
+
+const code = new Bytecode("0x6001");
+const hex = code.toHex();
+const valid = code.validate();
 ```
-</TabItem>
-<TabItem label="Namespace API">
+
+Object-oriented API with instance methods.
+
+</Tab>
+<Tab title="Namespace API">
+
 ```typescript
-import * as Address from '@tevm/voltaire/Address';
-const addr = Address.from("0x...");
-Address.toHex(addr);
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const code = Bytecode.from("0x6001");
+const hex = Bytecode.toHex(code);
+const valid = Bytecode.validate(code);
 ```
-</TabItem>
+
+Functional API with tree-shakeable imports.
+
+</Tab>
 </Tabs>
 ```
 
@@ -549,46 +1571,64 @@ Emphasize bundle size benefits:
 ```mdx
 ## Tree-Shaking
 
-Import only what you need:
+Import only what you need for optimal bundle size:
 
 ```typescript
 // Import specific functions (tree-shakeable)
-import { from, toHex, equals } from '@tevm/voltaire/BrandedAddress'
+import { from, toHex, validate } from '@tevm/voltaire/BrandedBytecode';
 
-// Result: keccak256, RLP excluded from bundle if not used
+const code = from("0x6001");
+const hex = toHex(code);
+const valid = validate(code);
+
+// Only these 3 functions included in bundle
+// Unused functions (analyze, stripMetadata, etc.) excluded
 ```
 
-**Bundle impact**: Avoiding `toChecksummed()` excludes keccak256 implementation.
+<Tip title="Bundle Impact">
+Importing from `@tevm/voltaire/BrandedBytecode` instead of `@tevm/voltaire` enables tree-shaking. For example, avoiding `toChecksummed()` excludes the entire keccak256 implementation (~50kb).
+</Tip>
 ```
 
-### WASM
+### WASM Acceleration
 
-Document WASM availability:
+Document WASM availability when applicable:
 
 ```mdx
 ## WASM
 
-WASM-accelerated implementation available for browser environments.
+WASM-accelerated implementation available for browser and Node.js environments.
 
 ```typescript
 import { Keccak256Wasm } from '@tevm/voltaire/crypto/keccak256.wasm';
+
+// Initialize WASM module (one-time)
 await Keccak256Wasm.init();
+
+// Use WASM implementation (10-100x faster)
 const hash = Keccak256Wasm.hash(data);
 ```
 
-**Build modes**:
-- `ReleaseSmall`: Size-optimized (default, production)
-- `ReleaseFast`: Performance-optimized (benchmarking)
+**Build Modes**:
+- `ReleaseSmall` - Size-optimized (default for production)
+- `ReleaseFast` - Performance-optimized (benchmarking)
 
 ```bash
-zig build build-ts-wasm       # ReleaseSmall
-zig build build-ts-wasm-fast  # ReleaseFast
+zig build build-ts-wasm       # ReleaseSmall (~50KB)
+zig build build-ts-wasm-fast  # ReleaseFast (~120KB, 15% faster)
 ```
+
+**Performance**: WASM provides 10-100x speedup over JavaScript for cryptographic operations. Use for:
+- Hashing large amounts of data
+- Repeated signature verification
+- Performance-critical paths
+
+**Compatibility**: Requires WebAssembly support (all modern browsers, Node.js 12+).
 ```
 
 ### Security Considerations
 
-Document security implications:
+Document security implications for crypto operations:
 
 ```mdx
 ## Security Considerations
@@ -598,21 +1638,42 @@ Document security implications:
 Comparison operations use constant-time algorithms to prevent timing attacks:
 
 ```typescript
-// Constant-time comparison (safe)
-Hash.equals(hash1, hash2);
+// ✅ Constant-time comparison (safe)
+const equal = Hash.equals(hash1, hash2);
 
-// Early-return comparison (UNSAFE - leaks timing)
+// ❌ Early-return comparison (UNSAFE - timing leak)
 for (let i = 0; i < 32; i++) {
-  if (hash1[i] !== hash2[i]) return false; // ❌ Timing leak
+  if (hash1[i] !== hash2[i]) return false; // Leaks timing information
 }
 ```
 
+Timing attacks can reveal secret information by measuring execution time. Always use provided comparison functions.
+
 ### Input Validation
 
-Always validate inputs:
-- Signature components (r, s in valid range)
-- Curve points (on curve, not point at infinity)
-- Hash lengths (32 bytes for keccak256)
+Always validate cryptographic inputs:
+
+- **Signatures**: r and s components must be in valid range (1 to n-1)
+- **Public keys**: Must be valid curve points (on curve, not point at infinity)
+- **Hashes**: Must be correct length (32 bytes for keccak256)
+- **Private keys**: Must be non-zero and less than curve order
+
+```typescript
+// ✅ Validation before use
+if (!Signature.validate(sig)) {
+  throw new Error('Invalid signature');
+}
+const recovered = Signature.recover(sig, msgHash);
+```
+
+### Memory Management
+
+Sensitive data should be zeroed after use (not yet implemented - TODO):
+
+```typescript
+// TODO: Implement secure memory clearing
+// privateKey.clear(); // Zero memory
+```
 ```
 
 ---
@@ -620,56 +1681,269 @@ Always validate inputs:
 ## FILE NAMING CONVENTIONS
 
 ### TypeScript
-- Implementation: `{Name}.ts` (PascalCase, e.g., `Address.ts`)
-- Internal methods: `{method}.js` (lowercase, e.g., `toHex.js`)
-- Tests: `{name}.test.ts` (lowercase, e.g., `address.test.ts`)
+- Implementation: `{Name}.ts` (PascalCase, e.g., `Bytecode.ts`)
+- Internal methods: `{method}.js` (lowercase, e.g., `analyze.js`)
+- Tests: `{name}.test.ts` (lowercase, e.g., `bytecode.test.ts`)
 - Benchmarks: `{name}.bench.ts`
-- Types: `Branded{Name}.ts` (e.g., `BrandedAddress.ts`)
+- Types: `Branded{Name}.ts` (e.g., `BrandedBytecode.ts`)
 
 ### Zig
-- Implementation: `{name}.zig` (lowercase, e.g., `address.zig`)
+- Implementation: `{name}.zig` (lowercase, e.g., `bytecode.zig`)
 - Module root: `root.zig` (exports all primitives)
 - Tests: inline in source files
 - Benchmarks: `{name}.bench.zig`
 
 ### MDX Documentation
 - Main overview: `index.mdx`
-- Sub-pages: `{topic}.mdx` (lowercase-with-dashes, e.g., `branded-address.mdx`)
+- Method docs: `{method}.mdx` (lowercase, e.g., `analyze.mdx`, `fromuint8array.mdx`)
 - Keep filenames short and descriptive
+- Use kebab-case for multi-word names (e.g., `usage-patterns.mdx`)
 
 ---
 
 ## LINK CONVENTIONS
 
 ### Internal Links
-- Primitives: `/primitives/address`
-- Crypto: `/crypto/keccak256`
-- Sections: `/primitives/address/constructors`
-- Branded types: `/primitives/branded-types`
+
+**Primitives**:
+- `/primitives/address` - Main overview
+- `/primitives/address/from` - Method page
+- `/primitives/address#types` - Section anchor
+
+**Crypto**:
+- `/crypto/keccak256`
+- `/crypto/secp256k1`
+
+**Concepts**:
+- `/concepts/branded-types`
+- `/concepts/data-first`
+
+**Always use absolute paths from root** (not relative), without trailing slashes:
+```markdown
+✅ [Bytecode](/primitives/bytecode)
+✅ [analyze method](/primitives/bytecode/analyze)
+❌ [Bytecode](./bytecode)
+❌ [analyze](../bytecode/analyze)
+❌ [Bytecode](/primitives/bytecode/)  # No trailing slash
+```
 
 ### External Links
-- EIPs: `https://eips.ethereum.org/EIPS/eip-{number}`
-- GitHub source: `https://github.com/evmts/voltaire/blob/main/src/{path}#L{line}`
-- Specs: Link directly to authoritative source
+
+**EIPs**:
+```markdown
+[EIP-55](https://eips.ethereum.org/EIPS/eip-55)
+[EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)
+```
+
+**GitHub Source**:
+```markdown
+Defined in: [BrandedBytecode/analyze.js:22](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/analyze.js#L22)
+```
+
+**Specifications**:
+```markdown
+[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)
+[EVM Opcodes](https://www.evm.codes/)
+[Solidity ABI Spec](https://docs.soliditylang.org/en/latest/abi-spec.html)
+```
 
 ### Cross-References
-- Link liberally to related docs
-- First mention of key concepts should be linked
-- Use descriptive link text: `[EIP-55 checksumming](/primitives/address/conversions#checksummed)`
+
+Link liberally to related docs:
+
+```markdown
+Bytecode uses [opcodes](/primitives/opcode) as instructions.
+
+For address checksum validation, see [Address.toChecksummed](/primitives/address/conversions#checksummed).
+
+Uses [keccak256](/crypto/keccak256) hashing and [RLP](/primitives/rlp) encoding.
+```
+
+Use descriptive link text (not "click here"):
+```markdown
+✅ See [EIP-55 checksumming](/primitives/address/conversions#checksummed)
+❌ See [checksumming](/primitives/address/conversions#checksummed)
+❌ Click [here](/primitives/address/conversions#checksummed) for checksumming
+```
+
+---
+
+## MINTLIFY AI FEATURES
+
+Mintlify is AI-native with several built-in AI capabilities:
+
+**AI Assistant** - Semantic search with AI-powered answers:
+- Automatically indexes documentation content
+- Answers user questions based on docs
+- Configure in `docs.json`:
+```json
+{
+  "assistant": {
+    "enabled": true
+  }
+}
+```
+
+**Agent API** - Automated doc generation and maintenance:
+- Generate docs from code
+- Update docs based on code changes
+- API endpoint for programmatic access
+
+**llms.txt** - Optimize content for LLM indexing:
+- Add `llms.txt` file to improve AI tool discoverability
+- Lists all documentation pages for LLM context
+
+**Model Context Protocol** - Third-party AI tool integration:
+- Allows Claude, ChatGPT, and other AI tools to access docs
+- Enables AI-assisted development with your docs as context
+
+---
+
+## DEPLOYMENT & DEVELOPMENT
+
+### Local Development
+
+```bash
+# Install Mintlify CLI
+npm i -g mintlify
+
+# Development server
+mintlify dev                  # Run from docs/ directory
+bun run docs:dev              # Or via package.json script
+
+# Preview on localhost:3000
+```
+
+### Production Deployment
+
+**GitHub Integration** (recommended):
+1. Connect repository to Mintlify dashboard
+2. Configure deployment branch (usually `main`)
+3. Automatic deployment on push
+4. Preview deployments for PRs
+
+**GitLab Integration**:
+- Similar to GitHub integration
+- Configure in Mintlify dashboard
+
+**Manual Deployment**:
+- Mintlify is hosted (no build step needed)
+- Deployment via API or dashboard
+
+### Branch Workflows
+
+**Preview Deployments**:
+- Create branch for changes
+- Preview at `https://preview.yourdocs.com/branch-name`
+- Merge to main for production deployment
+
+**CI Checks**:
+Configure in `docs.json`:
+```json
+{
+  "checks": {
+    "brokenLinks": true,
+    "linting": true,
+    "grammar": true
+  }
+}
+```
 
 ---
 
 ## COMMANDS
 
 ```bash
-# Development
-bun run docs:dev              # Start dev server (localhost:4321)
-bun run docs:build            # Build production site
-bun run docs:preview          # Preview production build
+# Development (Mintlify)
+mintlify dev                  # Start Mintlify dev server (from docs/ dir)
+bun run docs:dev              # Or via package.json script
+
+# Installation
+npm i -g mintlify             # Global CLI install
+bun add -D mintlify           # Or as dev dependency
+
+# Note: Mintlify is hosted - no build/preview commands needed
+# Deployment happens automatically via GitHub/GitLab integration
 
 # Verification
-ls -la src/content/docs/primitives/  # Check symlinks
-zig build check               # Validate everything
+zig build check               # Validate code and types (project-specific)
+```
+
+---
+
+## SEO & ANALYTICS
+
+### SEO Configuration
+
+**Page-level SEO** (frontmatter):
+```yaml
+---
+title: Bytecode Analysis
+description: Analyze EVM bytecode for jump destinations and opcodes
+keywords: ["bytecode", "EVM", "opcodes", "analysis"]
+---
+```
+
+**Site-level SEO** (docs.json):
+```json
+{
+  "name": "Voltaire",
+  "metadata": {
+    "og:title": "Voltaire - Ethereum Primitives",
+    "og:description": "Multi-language Ethereum primitives library",
+    "og:image": "https://voltaire.dev/og-image.png",
+    "twitter:card": "summary_large_image"
+  },
+  "redirects": [
+    {
+      "source": "/old-path",
+      "destination": "/new-path"
+    }
+  ]
+}
+```
+
+### Analytics Integration
+
+Mintlify supports multiple analytics platforms via `docs.json`:
+
+```json
+{
+  "analytics": {
+    "ga4": {
+      "measurementId": "G-XXXXXXXXXX"
+    },
+    "gtm": {
+      "tagId": "GTM-XXXXXXX"
+    },
+    "posthog": {
+      "apiKey": "phc_xxxxxx"
+    },
+    "mixpanel": {
+      "projectToken": "xxxxx"
+    },
+    "amplitude": {
+      "apiKey": "xxxxx"
+    },
+    "fathom": {
+      "siteId": "XXXXX"
+    },
+    "plausible": {
+      "domain": "voltaire.dev"
+    }
+  }
+}
+```
+
+**User Feedback**:
+```json
+{
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  }
+}
 ```
 
 ---
@@ -677,16 +1951,22 @@ zig build check               # Validate everything
 ## EXAMPLES TO STUDY
 
 **Best examples of comprehensive docs**:
-1. `src/primitives/Abi/index.mdx` - Complete overview with CardGrid
-2. `src/content/docs/primitives/address/` - Well-structured sub-pages
-3. `src/content/docs/crypto/keccak256/index.mdx` - Thorough crypto doc
-4. `src/primitives/Signature/index.mdx` - Colocated docs pattern
-5. `src/content/docs/getting-started.mdx` - Top-level architecture intro
+1. `docs/primitives/address/overview.mdx` - Complete overview with CardGroup navigation
+2. `docs/primitives/bytecode/` - Well-structured sub-pages
+3. `docs/crypto/keccak256.mdx` - Thorough crypto docs
+4. `docs/getting-started.mdx` - Top-level architecture intro
 
-**Code examples**:
+**Code organization examples**:
 - `src/primitives/Address/BrandedAddress/` - Functional API organization
 - `src/primitives/Abi/` - Complex primitive with sub-namespaces
 - `src/crypto/x25519.zig` - Well-documented Zig module
+
+**External inspiration**:
+- [Vue.js docs](https://vuejs.org/) - Progressive examples, clean tabs
+- [Stripe API docs](https://stripe.com/docs/api) - Precise reference format
+- [Ethereum specs](https://ethereum.github.io/execution-specs/) - Technical precision
+- [MDN Web Docs](https://developer.mozilla.org/) - Comprehensive coverage
+- [Mintlify docs](https://mintlify.com/docs) - Component usage patterns
 
 ---
 
@@ -694,20 +1974,26 @@ zig build check               # Validate everything
 
 The user will specify documentation changes. You should:
 
-1. **Understand the scope**: What primitive/feature is being documented?
-2. **Locate relevant files**: Find existing docs or determine where new docs should go
-3. **Follow patterns**: Match style and structure of existing docs
-4. **Update comprehensively**: Don't just update one file - update all related files
-5. **Verify links**: Ensure all internal links work
-6. **Check symlinks**: If creating colocated docs, verify symlink exists
-7. **Run validation**: `bun run docs:build` to check for errors
+1. **Understand scope** - What primitive/feature is being documented?
+2. **Locate files** - Find existing docs in `docs/` directory
+3. **Follow patterns** - Match style and structure of existing docs
+4. **Update comprehensively** - Don't just update one file - update all related files
+5. **Verify links** - Ensure all internal links work (absolute paths, no trailing slashes)
+6. **Update navigation** - Update `mint.json` if adding new pages
+7. **Test locally** - Run `bun run docs:dev` to preview changes
 
 **Remember**:
-- Brief, technical, evidence-based writing
-- Code examples for both Class and Namespace APIs
+- Brief, technical, evidence-based writing (Vue.js/Stripe/Ethereum style)
+- Use visual hierarchy - headings, lists, cards, tabs
+- Code examples for both Class and Namespace APIs (use Tabs/Tab)
 - Link to source code with line numbers
 - Document TypeScript AND Zig APIs when both exist
-- Update navigation (CardGrid) on main overview pages
+- Update navigation (CardGroup) on main overview pages
 - No fluff, no congratulations, just facts
+- Progressive disclosure - simple to complex
+- Make content scannable
+- All documentation lives in `docs/` (centralized, not colocated)
+- Use Mintlify components (Note, Tip, Warning, Danger, Tabs, Card, etc.)
+- HTML tags must be on same line
 
 **Execute the user's docs update request now.**
