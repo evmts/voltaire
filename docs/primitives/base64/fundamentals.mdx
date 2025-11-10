@@ -1,0 +1,323 @@
+---
+title: Fundamentals
+description: Learn Base64 encoding algorithm, use cases, and implementation patterns
+---
+
+Base64 is a binary-to-text encoding scheme that converts binary data into ASCII text. This guide teaches Base64 fundamentals using Voltaire.
+
+## What is Base64?
+
+Base64 encoding converts binary data (bytes) into printable ASCII characters using an alphabet of 64 characters. It enables transmission of binary data through text-only channels.
+
+**Character set:** `A-Z`, `a-z`, `0-9`, `+`, `/` (standard) or `-`, `_` (URL-safe)
+
+## Why Base64?
+
+Binary data cannot be safely transmitted through systems that expect text:
+- **Email protocols** (MIME) - Expect ASCII text
+- **JSON/XML** - Cannot embed raw binary data
+- **URLs** - Require safe character sets
+- **Data URIs** - Embed images/files in HTML/CSS
+
+Base64 solves this by encoding binary into a restricted character set guaranteed to survive text processing.
+
+## Encoding Algorithm
+
+Base64 groups bytes into 24-bit chunks (3 bytes) and splits them into four 6-bit values. Each 6-bit value (0-63) maps to a character.
+
+### Step-by-step
+
+```
+Input:  3 bytes → 24 bits
+Split:  4 groups of 6 bits each
+Output: 4 Base64 characters
+
+Example: "Hi!"
+H = 0x48 = 01001000
+i = 0x69 = 01101001
+! = 0x21 = 00100001
+
+Combined: 010010000110100100100001
+
+Split into 6-bit groups:
+010010 = 18 → S
+000110 = 6  → G
+100100 = 36 → k
+100001 = 33 → h
+
+Result: "SGkh"
+```
+
+### Padding
+
+When input length isn't divisible by 3, Base64 adds padding:
+- **1 byte remaining:** Encode as 2 characters + `==` padding
+- **2 bytes remaining:** Encode as 3 characters + `=` padding
+- **3 bytes (no remainder):** No padding
+
+```typescript
+// 1 byte: "H" (0x48)
+// 010010 000000 (padded)
+// → "SA==" (2 chars + 2 padding)
+
+// 2 bytes: "Hi" (0x48, 0x69)
+// 010010 000110 100100 (padded)
+// → "SGk=" (3 chars + 1 padding)
+
+// 3 bytes: "Hi!" (0x48, 0x69, 0x21)
+// → "SGkh" (4 chars, no padding)
+```
+
+## Size Overhead
+
+Base64 increases data size by ~33%:
+
+```
+Input:  n bytes
+Output: ceil(n / 3) × 4 characters
+
+Examples:
+ 3 bytes →  4 chars (33% increase)
+24 bytes → 32 chars (33% increase)
+256 bytes → 344 chars (34.4% increase)
+```
+
+## Complete Examples
+
+### Encode Bytes to Base64
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+// Raw bytes
+const data = new Uint8Array([72, 101, 108, 108, 111]);
+// Represents: "Hello"
+
+// Encode to Base64
+const encoded = Base64.encode(data);
+console.log(encoded);
+// "SGVsbG8="
+
+// Breakdown:
+// H (72)  = 01001000
+// e (101) = 01100101
+// l (108) = 01101100
+// l (108) = 01101100
+// o (111) = 01101111
+//
+// Grouped (6-bit chunks):
+// 010010 000110 010101 101100 011011 000110 1111
+// S      G      V      s      b      G      8=
+```
+
+### Encode Hex to Base64
+
+```typescript
+import { Base64, Hex } from '@tevm/voltaire';
+
+// Start with hex
+const hexData = "0x48656c6c6f";
+
+// Convert hex → bytes → base64
+const bytes = Hex.toBytes(hexData);
+const encoded = Base64.encode(bytes);
+console.log(encoded); // "SGVsbG8="
+
+// Or use string encoding if it's UTF-8 text
+const text = "Hello";
+const encoded2 = Base64.encodeString(text);
+console.log(encoded2); // "SGVsbG8="
+```
+
+### Decode Base64 to Bytes
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+// Decode Base64 to bytes
+const encoded = "SGVsbG8=";
+const decoded = Base64.decode(encoded);
+console.log([...decoded]);
+// [72, 101, 108, 108, 111]
+
+// Convert to string
+const text = new TextDecoder().decode(decoded);
+console.log(text); // "Hello"
+
+// Or use convenience method
+const text2 = Base64.decodeToString(encoded);
+console.log(text2); // "Hello"
+```
+
+### Round-trip: Bytes → Base64 → Bytes
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+// Original data
+const original = new Uint8Array([255, 254, 253, 252, 251]);
+
+// Encode
+const encoded = Base64.encode(original);
+console.log(encoded); // "//79/Ps="
+
+// Decode
+const decoded = Base64.decode(encoded);
+
+// Verify match
+console.log(original.every((byte, i) => byte === decoded[i]));
+// true
+```
+
+## Standard vs URL-Safe
+
+### Standard Base64
+
+Uses `+` and `/` characters, includes `=` padding:
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+const data = new Uint8Array([255, 254, 253]);
+const encoded = Base64.encode(data);
+console.log(encoded);
+// "//79" + padding
+
+// Contains / which breaks URLs and filenames
+```
+
+### URL-Safe Base64
+
+Uses `-` and `_` instead of `+` and `/`, omits padding:
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+const data = new Uint8Array([255, 254, 253]);
+const encoded = Base64.encodeUrlSafe(data);
+console.log(encoded);
+// "_v79" (no padding, URL-safe)
+
+// Safe for URLs, filenames, tokens
+const url = `https://api.example.com/data/${encoded}`;
+```
+
+## Common Use Cases
+
+### JSON-RPC Binary Data
+
+Ethereum JSON-RPC often requires Base64 for binary data:
+
+```typescript
+import { Base64, Hex } from '@tevm/voltaire';
+
+// Encode transaction data for JSON-RPC
+const calldata = Hex.toBytes("0xa9059cbb...");
+const base64Data = Base64.encode(calldata);
+
+// Send via JSON-RPC
+const request = {
+  jsonrpc: "2.0",
+  method: "eth_sendRawTransaction",
+  params: [base64Data],
+  id: 1
+};
+```
+
+### Data URIs
+
+Embed binary data in HTML/CSS/JSON:
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+// Image data (example: 1x1 red pixel PNG)
+const pngData = new Uint8Array([
+  137, 80, 78, 71, 13, 10, 26, 10, // PNG signature
+  // ... PNG data
+]);
+
+const base64 = Base64.encode(pngData);
+const dataUri = `data:image/png;base64,${base64}`;
+
+// Use in HTML: <img src="${dataUri}" />
+```
+
+### Wallet Keystore Files
+
+Ethereum keystore files use Base64 for encrypted keys:
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+// Encrypted private key (example)
+const encryptedKey = new Uint8Array([/* AES-GCM ciphertext */]);
+const base64Key = Base64.encode(encryptedKey);
+
+const keystore = {
+  version: 3,
+  crypto: {
+    ciphertext: base64Key,
+    // ... other fields
+  }
+};
+```
+
+### JWT Tokens
+
+JSON Web Tokens use URL-safe Base64:
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+// JWT parts (header.payload.signature)
+const header = Base64.encodeStringUrlSafe('{"alg":"ES256K"}');
+const payload = Base64.encodeStringUrlSafe('{"sub":"0x..."}');
+const signature = Base64.encodeUrlSafe(signatureBytes);
+
+const jwt = `${header}.${payload}.${signature}`;
+// Safe for URLs and Authorization headers
+```
+
+## Validation
+
+Always validate Base64 before decoding:
+
+```typescript
+import { Base64 } from '@tevm/voltaire';
+
+function safeDecodeBase64(input: string): Uint8Array | null {
+  // Validate format
+  if (!Base64.isValid(input)) {
+    console.error("Invalid Base64 format");
+    return null;
+  }
+
+  try {
+    return Base64.decode(input);
+  } catch (error) {
+    console.error("Decoding failed:", error);
+    return null;
+  }
+}
+
+// Test validation
+console.log(Base64.isValid("SGVsbG8=")); // true - valid
+console.log(Base64.isValid("SGVsbG8"));  // false - missing padding
+console.log(Base64.isValid("SGVs!G8=")); // false - invalid char
+```
+
+## Resources
+
+- **[RFC 4648](https://tools.ietf.org/html/rfc4648)** - Base64 specification (sections 4 and 5)
+- **[MDN: btoa/atob](https://developer.mozilla.org/en-US/docs/Web/API/btoa)** - Browser Base64 APIs
+- **[Data URIs](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs)** - Embedding binary data
+- **[JWT](https://jwt.io/)** - JSON Web Tokens using URL-safe Base64
+
+## Next Steps
+
+- [Overview](/primitives/base64) - Type definitions and API reference
+- [Encoding](/primitives/base64/encoding) - Standard and URL-safe encoding
+- [Decoding](/primitives/base64/decoding) - Standard and URL-safe decoding
+- [Validation](/primitives/base64/validation) - Format validation
+- [Utilities](/primitives/base64/utilities) - Size calculations

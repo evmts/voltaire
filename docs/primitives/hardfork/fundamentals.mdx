@@ -1,0 +1,301 @@
+---
+title: Fundamentals
+description: Learn Ethereum hardfork protocol upgrades and version management
+---
+
+Ethereum hardforks are backwards-incompatible protocol upgrades that introduce new features, fix bugs, and improve performance across the network. This guide teaches hardfork fundamentals using Voltaire.
+
+## What Are Hardforks?
+
+Hardforks are coordinated protocol changes that require all nodes to upgrade. Unlike soft forks (backward-compatible), hardforks break compatibility with older node software - nodes that don't upgrade cannot validate new blocks.
+
+Key characteristics:
+- **Backwards-incompatible** - Old nodes reject new blocks
+- **Network-wide activation** - All validators must upgrade
+- **Block number or timestamp** - Activation at specific height or time
+- **EIP bundling** - Multiple Ethereum Improvement Proposals (EIPs) per fork
+
+## Why Hardforks Are Needed
+
+Hardforks enable protocol evolution without fragmenting the network:
+
+1. **Bug fixes** - Fix security vulnerabilities (DAO fork, Spurious Dragon)
+2. **Performance improvements** - Optimize gas costs, add new opcodes
+3. **Feature additions** - New transaction types (EIP-1559, EIP-4844), consensus changes (The Merge)
+4. **Security hardening** - Remove exploitable edge cases, strengthen validation
+
+## Timeline of Major Hardforks
+
+<Tabs>
+<Tab title="Chronological">
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+// Early era (2015-2017)
+Hardfork.FRONTIER          // July 2015 - Genesis block
+Hardfork.HOMESTEAD         // March 2016 - Gas cost adjustments
+Hardfork.BYZANTIUM         // October 2017 - EIP-140 REVERT, EIP-211 RETURNDATASIZE
+
+// Stability era (2019)
+Hardfork.CONSTANTINOPLE    // February 2019 - EIP-1283 SSTORE gas
+Hardfork.ISTANBUL          // December 2019 - EIP-1344 CHAINID, EIP-2200 gas
+
+// Modern era (2021-2024)
+Hardfork.BERLIN            // April 2021 - EIP-2929 access list gas costs
+Hardfork.LONDON            // August 2021 - EIP-1559 base fee mechanism
+Hardfork.MERGE             // September 2022 - Proof of Stake consensus
+Hardfork.SHANGHAI          // April 2023 - EIP-3855 PUSH0 opcode
+Hardfork.CANCUN            // March 2024 - EIP-4844 blob transactions
+
+// Compare versions
+console.log(Hardfork.compare(Hardfork.LONDON, Hardfork.CANCUN)); // -1 (London is earlier)
+```
+</Tab>
+<Tab title="Feature View">
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+// Gas optimizations
+Hardfork.BERLIN   // EIP-2929: SLOAD/CALL access list pricing
+Hardfork.ISTANBUL // EIP-2200: SSTORE gas metering
+
+// New opcodes
+Hardfork.BYZANTIUM  // REVERT, RETURNDATASIZE, STATICCALL
+Hardfork.SHANGHAI   // PUSH0
+
+// Transaction types
+Hardfork.BERLIN   // Type 1: EIP-2930 access lists
+Hardfork.LONDON   // Type 2: EIP-1559 dynamic fees
+Hardfork.CANCUN   // Type 3: EIP-4844 blob transactions
+
+// Consensus
+Hardfork.MERGE    // Proof of Stake (The Merge)
+
+// Check feature availability
+const fork = Hardfork.fromString("cancun");
+console.log(Hardfork.hasEIP1559(fork));  // true - base fee available
+console.log(Hardfork.hasEIP3855(fork));  // true - PUSH0 available
+console.log(Hardfork.hasEIP4844(fork));  // true - blobs available
+```
+</Tab>
+</Tabs>
+
+## Feature Activation
+
+Hardforks activate at predetermined block numbers (pre-Merge) or timestamps (post-Merge):
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+// Block-based activation (pre-Merge)
+const berlinBlock = 12244000;   // Mainnet Berlin activation
+const londonBlock = 12965000;   // Mainnet London activation
+
+// Timestamp-based activation (post-Merge)
+const shanghaiTimestamp = 1681338455;  // April 13, 2023
+const cancunTimestamp = 1710338135;    // March 13, 2024
+
+// Version comparison for feature gating
+function getGasCostMultiplier(hardfork: string, blockNumber: number): number {
+  const fork = Hardfork.fromString(hardfork);
+  if (!fork) throw new Error("Invalid hardfork");
+
+  // Berlin changed access list gas pricing
+  if (Hardfork.isAtLeast(fork, Hardfork.BERLIN)) {
+    return 2600; // EIP-2929 cold SLOAD cost
+  }
+
+  return 800; // Pre-Berlin SLOAD cost
+}
+
+console.log(getGasCostMultiplier("istanbul", 11000000)); // 800
+console.log(getGasCostMultiplier("berlin", 13000000));   // 2600
+```
+
+## Checking Hardfork Support
+
+Use version comparison to gate features based on hardfork:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+function validateTransaction(tx: any, networkHardfork: string) {
+  const fork = Hardfork.fromString(networkHardfork);
+  if (!fork) throw new Error("Invalid hardfork");
+
+  // Type 0/1: All hardforks
+  if (tx.type === 0 || tx.type === 1) {
+    return true;
+  }
+
+  // Type 2 (EIP-1559): London+
+  if (tx.type === 2) {
+    if (!Hardfork.hasEIP1559(fork)) {
+      throw new Error("EIP-1559 transactions require London hardfork or later");
+    }
+    return true;
+  }
+
+  // Type 3 (EIP-4844): Cancun+
+  if (tx.type === 3) {
+    if (!Hardfork.hasEIP4844(fork)) {
+      throw new Error("Blob transactions require Cancun hardfork or later");
+    }
+    return true;
+  }
+
+  throw new Error("Unknown transaction type");
+}
+
+// Valid - Cancun supports all transaction types
+validateTransaction({ type: 3 }, "cancun");
+
+// Throws - London doesn't support blob transactions
+try {
+  validateTransaction({ type: 3 }, "london");
+} catch (e) {
+  console.error(e.message); // "Blob transactions require Cancun hardfork or later"
+}
+```
+
+## Comparing Hardfork Features
+
+Compare feature availability across hardforks:
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+function compareFeatures(forkA: string, forkB: string) {
+  const a = Hardfork.fromString(forkA);
+  const b = Hardfork.fromString(forkB);
+  if (!a || !b) throw new Error("Invalid hardfork");
+
+  return {
+    comparison: Hardfork.compare(a, b),
+    features: {
+      eip1559: {
+        [forkA]: Hardfork.hasEIP1559(a),
+        [forkB]: Hardfork.hasEIP1559(b)
+      },
+      push0: {
+        [forkA]: Hardfork.hasEIP3855(a),
+        [forkB]: Hardfork.hasEIP3855(b)
+      },
+      blobs: {
+        [forkA]: Hardfork.hasEIP4844(a),
+        [forkB]: Hardfork.hasEIP4844(b)
+      },
+      transientStorage: {
+        [forkA]: Hardfork.hasEIP1153(a),
+        [forkB]: Hardfork.hasEIP1153(b)
+      }
+    }
+  };
+}
+
+const comparison = compareFeatures("london", "cancun");
+console.log(comparison);
+// {
+//   comparison: -1,  // London < Cancun
+//   features: {
+//     eip1559: { london: true, cancun: true },
+//     push0: { london: false, cancun: true },
+//     blobs: { london: false, cancun: true },
+//     transientStorage: { london: false, cancun: true }
+//   }
+// }
+```
+
+## Hardfork-Dependent Features
+
+Common features tied to specific hardforks:
+
+### EIP-1559 Base Fee (London)
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+function calculateMaxFee(hardfork: string, baseFee: bigint, priorityFee: bigint): bigint {
+  const fork = Hardfork.fromString(hardfork);
+  if (!fork) throw new Error("Invalid hardfork");
+
+  if (Hardfork.hasEIP1559(fork)) {
+    // London+: maxFeePerGas = baseFee + maxPriorityFeePerGas
+    return baseFee + priorityFee;
+  } else {
+    // Pre-London: Only gas price (no base fee)
+    throw new Error("EIP-1559 not supported before London");
+  }
+}
+
+console.log(calculateMaxFee("london", 20n, 2n));   // 22n
+console.log(calculateMaxFee("cancun", 15n, 3n));   // 18n
+```
+
+### EIP-3855 PUSH0 Opcode (Shanghai)
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+function supportsOptimizedBytecode(hardfork: string): boolean {
+  const fork = Hardfork.fromString(hardfork);
+  if (!fork) throw new Error("Invalid hardfork");
+
+  // PUSH0 (0x5f) allows cheaper zero-pushing
+  return Hardfork.hasEIP3855(fork);
+}
+
+console.log(supportsOptimizedBytecode("london"));   // false
+console.log(supportsOptimizedBytecode("shanghai")); // true
+console.log(supportsOptimizedBytecode("cancun"));   // true
+```
+
+### EIP-4844 Blob Transactions (Cancun)
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+function supportsBlobTransactions(hardfork: string): boolean {
+  const fork = Hardfork.fromString(hardfork);
+  if (!fork) throw new Error("Invalid hardfork");
+
+  // EIP-4844 blob transactions for L2 data availability
+  return Hardfork.hasEIP4844(fork);
+}
+
+console.log(supportsBlobTransactions("shanghai")); // false
+console.log(supportsBlobTransactions("cancun"));   // true
+```
+
+### EIP-1153 Transient Storage (Cancun)
+
+```typescript
+import { Hardfork } from '@tevm/voltaire';
+
+function supportsTransientStorage(hardfork: string): boolean {
+  const fork = Hardfork.fromString(hardfork);
+  if (!fork) throw new Error("Invalid hardfork");
+
+  // TLOAD/TSTORE opcodes for cheaper temporary storage
+  return Hardfork.hasEIP1153(fork);
+}
+
+console.log(supportsTransientStorage("london"));  // false
+console.log(supportsTransientStorage("cancun"));  // true
+```
+
+## Resources
+
+- **[ethereum.org/history](https://ethereum.org/en/history/)** - Official hardfork timeline and rationale
+- **[EIP List](https://eips.ethereum.org/)** - All Ethereum Improvement Proposals
+- **[EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)** - Base fee mechanism (London)
+- **[EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)** - Blob transactions (Cancun)
+- **[EIP-3855](https://eips.ethereum.org/EIPS/eip-3855)** - PUSH0 opcode (Shanghai)
+- **[EIP-1153](https://eips.ethereum.org/EIPS/eip-1153)** - Transient storage (Cancun)
+
+## Next Steps
+
+- [Overview](/primitives/hardfork) - Type definition and API reference
+- [Hardforks](/primitives/hardfork/hardforks) - Complete hardfork timeline
+- [Features](/primitives/hardfork/features) - EIP feature detection methods
+- [Comparisons](/primitives/hardfork/comparisons) - Version comparison methods

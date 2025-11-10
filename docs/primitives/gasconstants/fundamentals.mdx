@@ -1,0 +1,372 @@
+---
+title: Fundamentals
+description: Learn EVM gas cost model, categories, and calculation patterns
+---
+
+Gas is the unit that measures computational work on the Ethereum Virtual Machine. Every operation consumes gas, preventing DoS attacks and incentivizing efficient code. This guide teaches gas fundamentals using Voltaire.
+
+## What Are Gas Constants
+
+Gas constants are fixed costs assigned to EVM operations. They determine how much gas each instruction consumes during execution.
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Basic arithmetic
+GasConstants.VeryLowGas        // 3n - ADD, SUB, NOT
+GasConstants.LowGas            // 5n - MUL, DIV, MOD
+
+// Storage operations
+GasConstants.Sload             // 100n - Read from storage (warm)
+GasConstants.ColdSload         // 2100n - Read from storage (cold, Berlin+)
+
+// Memory
+GasConstants.Memory            // 3n per word
+
+// Calls
+GasConstants.Call              // 100n - CALL base cost
+GasConstants.CallValueTransfer // 9000n - ETH transfer cost
+```
+
+## Why Gas Costs Exist
+
+1. **Prevent Denial-of-Service** - Without gas limits, infinite loops could halt the network
+2. **Resource Allocation** - Expensive operations (storage writes) cost more than cheap ones (arithmetic)
+3. **Incentivize Efficiency** - Developers optimize to minimize user costs
+4. **Miner/Validator Compensation** - Gas fees pay for computational resources
+
+## Gas Cost Categories
+
+### Computational Operations
+
+Costs based on CPU complexity:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Zero cost (data access)
+GasConstants.Zero              // 0n - STOP, RETURN data portion
+
+// Minimal cost (stack/memory)
+GasConstants.Base              // 2n - CALLDATALOAD, PC
+GasConstants.VeryLowGas        // 3n - ADD, SUB, NOT, XOR
+GasConstants.LowGas            // 5n - MUL, DIV, MOD
+
+// Expensive operations
+GasConstants.JumpDest          // 1n - JUMPDEST (intentionally cheap)
+GasConstants.Keccak256Base     // 30n - Base cost for KECCAK256
+GasConstants.Keccak256Word     // 6n per word - KECCAK256 data cost
+```
+
+### Storage Operations
+
+Most expensive category due to persistent state changes:
+
+<Tabs>
+<Tab title="SSTORE Costs">
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Storage write costs (post-EIP-2929)
+GasConstants.SstoreSet         // 20000n - Zero to non-zero
+GasConstants.SstoreReset       // 5000n - Non-zero to different non-zero
+GasConstants.Sload             // 100n - Warm read (accessed this tx)
+GasConstants.ColdSload         // 2100n - Cold read (first access)
+
+// Storage refunds
+GasConstants.SstoreClearRefund // 4800n - Refund for clearing storage (EIP-3529)
+```
+</Tab>
+<Tab title="Calculating SSTORE">
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Writing 100 to empty slot (cold access)
+const result = GasConstants.calculateSstoreCost(
+  false,  // isWarm (first access = false)
+  0n,     // currentValue
+  100n    // newValue
+);
+
+console.log(result.cost);   // 22100n (20000n set + 2100n cold)
+console.log(result.refund); // 0n (no refund for new value)
+
+// Clearing storage slot (warm access)
+const clearResult = GasConstants.calculateSstoreCost(
+  true,   // isWarm (already accessed)
+  100n,   // currentValue
+  0n      // newValue (clearing)
+);
+
+console.log(clearResult.cost);   // 5000n (reset cost)
+console.log(clearResult.refund); // 4800n (refund for clearing)
+```
+</Tab>
+</Tabs>
+
+### Memory Expansion
+
+Memory grows dynamically. Expansion costs increase quadratically to discourage excessive allocation:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Expand memory from 0 to 128 bytes (4 words)
+const expansion = GasConstants.calculateMemoryExpansionCost(0n, 128n);
+
+console.log(expansion.oldCost);      // 0n
+console.log(expansion.newCost);      // 12n
+console.log(expansion.expansionCost); // 12n
+console.log(expansion.words);        // 4n
+
+// Expansion formula: cost = (words^2 / 512) + (3 * words)
+// For 4 words: (16 / 512) + (3 * 4) = 0 + 12 = 12n
+```
+
+## Intrinsic Transaction Gas
+
+Every transaction consumes gas before execution begins:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Base transaction cost
+GasConstants.Tx                // 21000n - Base cost for any transaction
+
+// Calldata costs
+GasConstants.TxDataZero        // 4n per zero byte
+GasConstants.TxDataNonZero     // 16n per non-zero byte (pre-EIP-2028)
+GasConstants.TxDataNonZeroEIP2028 // 68n per non-zero byte (EIP-2028)
+
+// Contract creation
+GasConstants.Create            // 32000n - CREATE/CREATE2 base cost
+GasConstants.InitcodeWord      // 2n per word (EIP-3860, Shanghai+)
+```
+
+<Tabs>
+<Tab title="Calculate Intrinsic Gas">
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Simple ETH transfer (no data)
+const simpleTransfer = GasConstants.calculateTxIntrinsicGas(
+  new Uint8Array([]),  // Empty calldata
+  false                // Not a contract creation
+);
+console.log(simpleTransfer); // 21000n
+
+// ERC-20 transfer with calldata
+const transferCalldata = new Uint8Array([
+  0xa9, 0x05, 0x9c, 0xbb,  // transfer(address,uint256) selector (4 non-zero)
+  ...new Uint8Array(32),    // address padded (12 zero + 20 non-zero)
+  ...new Uint8Array(32)     // uint256 amount (likely has zeros)
+]);
+
+const erc20Transfer = GasConstants.calculateTxIntrinsicGas(
+  transferCalldata,
+  false
+);
+// 21000n + (4 * 16n) + (32 * 4n) + ... = ~22,100n
+```
+</Tab>
+<Tab title="Contract Deployment">
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Deploy contract with 1KB initcode
+const initcode = new Uint8Array(1024);
+
+const deploymentGas = GasConstants.calculateTxIntrinsicGas(
+  initcode,
+  true  // isCreate = true
+);
+
+// Base (21000n) + Create (32000n) + initcode data costs + initcode word cost
+console.log(deploymentGas); // ~57,000n+ depending on zero/non-zero bytes
+```
+</Tab>
+</Tabs>
+
+## Hardfork Changes
+
+Gas costs evolve across network upgrades:
+
+### EIP-2929: Cold/Warm Access (Berlin, 2021)
+
+Introduced access sets to reduce costs for repeated access:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Pre-Berlin: All SLOAD cost 800n
+// Post-Berlin: First access costs 2100n, subsequent cost 100n
+
+console.log(GasConstants.hasEIP2929('istanbul')); // false
+console.log(GasConstants.hasEIP2929('berlin'));   // true
+
+console.log(GasConstants.getColdSloadCost('istanbul')); // 800n
+console.log(GasConstants.getColdSloadCost('berlin'));   // 2100n
+```
+
+### EIP-3529: Reduced Refunds (London, 2021)
+
+Limited refunds to prevent gas token abuse:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Pre-London: Max refund = gasUsed / 2 (50%)
+// Post-London: Max refund = gasUsed / 5 (20%)
+
+const gasUsed = 100000n;
+
+console.log(GasConstants.calculateMaxRefund(gasUsed)); // 20000n (1/5 of 100000)
+
+// Storage clear refund also reduced
+console.log(GasConstants.getSstoreRefund('istanbul')); // 15000n
+console.log(GasConstants.getSstoreRefund('london'));   // 4800n
+```
+
+### EIP-3860: Initcode Metering (Shanghai, 2023)
+
+Added per-word cost for contract initcode:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+console.log(GasConstants.hasEIP3860('berlin'));    // false
+console.log(GasConstants.hasEIP3860('shanghai'));  // true
+
+// Shanghai+: 2 gas per word of initcode
+console.log(GasConstants.InitcodeWord); // 2n
+```
+
+## Complete Example: Calculate Transaction Cost
+
+Estimate total gas for ERC-20 transfer:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+function estimateERC20Transfer(): bigint {
+  // 1. Intrinsic gas (21000 + calldata)
+  const selector = new Uint8Array([0xa9, 0x05, 0x9c, 0xbb]); // 4 non-zero
+  const address = new Uint8Array(32); // 12 zero + 20 non-zero = assume 20 non-zero
+  const amount = new Uint8Array(32);  // Assume 28 zero + 4 non-zero
+
+  const calldata = new Uint8Array(68);
+  calldata.set(selector, 0);
+  calldata.set(address, 4);
+  calldata.set(amount, 36);
+
+  const intrinsic = GasConstants.calculateTxIntrinsicGas(calldata, false);
+  // 21000n + (4*16) + (20*16) + (28*4) + (4*16) = 21000 + 64 + 320 + 112 + 64 = 21560n
+
+  // 2. SLOAD to check balance (cold access)
+  const balanceLoad = GasConstants.ColdSload; // 2100n
+
+  // 3. Balance arithmetic (SUB for sender, ADD for recipient)
+  const arithmetic = GasConstants.VeryLowGas * 2n; // 6n
+
+  // 4. SSTORE to update sender balance (warm, non-zero to non-zero)
+  const senderStore = GasConstants.SstoreReset; // 5000n
+
+  // 5. SLOAD recipient balance (cold)
+  const recipientLoad = GasConstants.ColdSload; // 2100n
+
+  // 6. SSTORE recipient balance (warm, likely non-zero to non-zero)
+  const recipientStore = GasConstants.SstoreReset; // 5000n
+
+  // 7. LOG3 for Transfer event (topic0=signature, topic1=from, topic2=to)
+  const logCost = GasConstants.calculateLogCost(
+    3n,   // 3 topics
+    32n   // 32 bytes data (amount)
+  );
+  // LogBase (375n) + (3 * LogTopic) + (32 * LogData)
+  // 375n + (3 * 375n) + (32 * 8n) = 375 + 1125 + 256 = 1756n
+
+  const total =
+    intrinsic +
+    balanceLoad +
+    arithmetic +
+    senderStore +
+    recipientLoad +
+    recipientStore +
+    logCost.total;
+
+  return total; // ~37,522n
+}
+
+console.log(estimateERC20Transfer()); // 37522n (~37.5k gas)
+```
+
+## Complete Example: Estimate Contract Call
+
+Calculate gas for CALL operation with value transfer:
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// CALL to transfer 1 ETH to EOA (cold access)
+const callResult = GasConstants.calculateCallCost(
+  false,    // isWarm = false (first access)
+  true,     // hasValue = true (sending ETH)
+  true,     // isNewAccount = false (account exists)
+  100000n   // gas forwarded to callee
+);
+
+console.log(callResult.base);    // 100n (CALL base)
+console.log(callResult.dynamic); // 11100n (2100n cold + 9000n value)
+console.log(callResult.total);   // 11200n
+
+// For new account (creating recipient), add 25000n:
+const newAccountCall = GasConstants.calculateCallCost(
+  false,
+  true,
+  true,     // isNewAccount = true
+  100000n
+);
+console.log(newAccountCall.total); // 36200n (11200n + 25000n)
+```
+
+## Common Constants Used in Practice
+
+```typescript
+import * as GasConstants from '@tevm/voltaire/GasConstants';
+
+// Most frequent operations
+GasConstants.VeryLowGas        // 3n - Arithmetic (ADD, SUB)
+GasConstants.Sload             // 100n - Storage read (warm)
+GasConstants.ColdSload         // 2100n - Storage read (cold)
+GasConstants.SstoreReset       // 5000n - Storage write (non-zero → non-zero)
+GasConstants.SstoreSet         // 20000n - Storage write (zero → non-zero)
+
+// Transaction costs
+GasConstants.Tx                // 21000n - Base transaction
+GasConstants.TxDataNonZero     // 16n - Calldata byte (non-zero)
+GasConstants.TxDataZero        // 4n - Calldata byte (zero)
+
+// Logging
+GasConstants.LogBase           // 375n - Base LOG cost
+GasConstants.LogTopic          // 375n - Per topic cost
+GasConstants.LogData           // 8n - Per byte of data
+
+// Hashing
+GasConstants.Keccak256Base     // 30n - Base KECCAK256
+GasConstants.Keccak256Word     // 6n - Per word hashed
+```
+
+## Resources
+
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal gas cost specification (Appendix G)
+- **[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)** - Cold/warm access costs (Berlin)
+- **[EIP-3529](https://eips.ethereum.org/EIPS/eip-3529)** - Reduced refunds (London)
+- **[evm.codes](https://www.evm.codes/)** - Interactive opcode gas costs by hardfork
+- **[EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)** - Base fee mechanism (London)
+
+## Next Steps
+
+- [Overview](/primitives/gasconstants) - Type definitions and API reference
+- [Constants](/primitives/gasconstants/constants) - All gas constant definitions
+- [Calculation Functions](/primitives/gasconstants/calculation-functions) - Complex gas calculations
+- [Hardfork Utilities](/primitives/gasconstants/hardfork-utilities) - Fork-specific behavior

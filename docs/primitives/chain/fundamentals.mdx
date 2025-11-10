@@ -1,0 +1,248 @@
+---
+title: Fundamentals
+description: Learn Ethereum chain IDs, network identification, and replay attack prevention
+---
+
+Ethereum chain IDs are unique numeric identifiers for blockchain networks that prevent replay attacks and enable multi-chain transaction signing. This guide covers chain ID fundamentals using Voltaire.
+
+## What Are Chain IDs?
+
+A chain ID is a numeric identifier that uniquely identifies an Ethereum network. Every blockchain network (mainnet, testnet, L2, sidechain) has its own chain ID.
+
+**Common Chain IDs:**
+- **Ethereum Mainnet**: 1
+- **Sepolia** (testnet): 11155111
+- **Goerli** (testnet, deprecated): 5
+- **Polygon**: 137
+- **Optimism**: 10
+- **Arbitrum One**: 42161
+- **Base**: 8453
+
+```typescript
+import { Chain } from '@tevm/voltaire';
+
+// Lookup by chain ID
+const mainnet = Chain.fromId(1);
+const sepolia = Chain.fromId(11155111);
+const polygon = Chain.fromId(137);
+
+console.log(mainnet?.name);  // "Ethereum Mainnet"
+console.log(sepolia?.name);  // "Sepolia"
+console.log(polygon?.name);  // "Polygon Mainnet"
+```
+
+## Why Chain IDs Exist
+
+Chain IDs solve the **replay attack problem** introduced by EIP-155. Before EIP-155, a transaction signed on one network could be replayed on another network with identical account state.
+
+### Replay Attack Scenario (Pre-EIP-155)
+
+```typescript
+// Without chain ID: Transaction could be replayed on any network
+const tx = {
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+  value: "1000000000000000000", // 1 ETH
+  nonce: 5,
+  gasPrice: "20000000000",
+  gasLimit: "21000"
+};
+
+// Signed on mainnet, but could be replayed on:
+// - Goerli (same addresses exist)
+// - Private network (if you have funds there)
+// - ANY network with identical account state
+```
+
+### EIP-155 Solution
+
+EIP-155 requires chain ID in transaction signatures, preventing cross-chain replay:
+
+```typescript
+import { Transaction } from '@tevm/voltaire';
+
+// Chain ID embedded in signature
+const mainnetTx = Transaction.fromLegacy({
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+  value: "1000000000000000000",
+  nonce: 5,
+  gasPrice: "20000000000",
+  gasLimit: "21000",
+  chainId: 1  // Mainnet only - cannot be replayed on other networks
+});
+
+const sepoliaTx = Transaction.fromLegacy({
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+  value: "1000000000000000000",
+  nonce: 5,
+  gasPrice: "20000000000",
+  gasLimit: "21000",
+  chainId: 11155111  // Sepolia only - different signature than mainnet
+});
+
+// Same transaction parameters, different signatures due to chain ID
+```
+
+## Chain ID in Transactions
+
+Chain IDs are signed into transactions, making them network-specific:
+
+```typescript
+import { Transaction } from '@tevm/voltaire';
+import { secp256k1 } from '@tevm/voltaire/crypto';
+
+const privateKey = new Uint8Array(32); // Your private key
+
+// Create transaction for specific network
+const tx = Transaction.fromEIP1559({
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+  value: "1000000000000000000",
+  nonce: 0,
+  chainId: 1,  // Mainnet
+  maxFeePerGas: "30000000000",
+  maxPriorityFeePerGas: "2000000000",
+  gasLimit: "21000"
+});
+
+// Sign with chain ID included in signature
+const signed = tx.sign(privateKey);
+
+// Extract chain ID from signed transaction
+console.log(signed.chainId);  // 1 (mainnet)
+
+// This transaction can ONLY be broadcast to mainnet
+// Attempting to broadcast to Sepolia will fail
+```
+
+## Network Identification
+
+Use chain IDs to identify network type:
+
+```typescript
+import { Chain } from '@tevm/voltaire';
+
+function identifyNetwork(chainId: number): string {
+  const chain = Chain.fromId(chainId);
+  if (!chain) return "Unknown network";
+
+  // Check network type
+  if (chainId === 1) return "Ethereum Mainnet (Production)";
+  if ([11155111, 5, 3, 4, 42].includes(chainId)) return "Ethereum Testnet";
+  if ([137, 10, 42161, 8453].includes(chainId)) return "Layer 2 Network";
+
+  return chain.name;
+}
+
+console.log(identifyNetwork(1));        // "Ethereum Mainnet (Production)"
+console.log(identifyNetwork(11155111)); // "Ethereum Testnet"
+console.log(identifyNetwork(137));      // "Layer 2 Network"
+```
+
+## Validating Network
+
+Check if transaction matches expected network:
+
+```typescript
+import { Transaction, Chain } from '@tevm/voltaire';
+
+function validateNetwork(tx: Transaction, expectedChainId: number): boolean {
+  if (tx.chainId !== expectedChainId) {
+    const expected = Chain.fromId(expectedChainId);
+    const actual = Chain.fromId(tx.chainId);
+    throw new Error(
+      `Network mismatch: expected ${expected?.name} (${expectedChainId}), ` +
+      `got ${actual?.name} (${tx.chainId})`
+    );
+  }
+  return true;
+}
+
+// Example: Validate mainnet transaction
+const tx = Transaction.fromEIP1559({
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+  value: "1000000000000000000",
+  chainId: 1,  // Mainnet
+  maxFeePerGas: "30000000000",
+  maxPriorityFeePerGas: "2000000000",
+  gasLimit: "21000"
+});
+
+validateNetwork(tx, 1);  // ✓ Pass
+validateNetwork(tx, 11155111);  // ✗ Throws: Network mismatch
+```
+
+## Testnet Detection
+
+Identify testnet vs mainnet programmatically:
+
+```typescript
+import { Chain } from '@tevm/voltaire';
+
+function isTestnet(chainId: number): boolean {
+  // Known testnets
+  const testnets = [
+    11155111,  // Sepolia
+    5,         // Goerli (deprecated)
+    3,         // Ropsten (deprecated)
+    4,         // Rinkeby (deprecated)
+    42,        // Kovan (deprecated)
+    17000,     // Holesky
+    84532,     // Base Sepolia
+    421614,    // Arbitrum Sepolia
+    11155420,  // Optimism Sepolia
+    80002      // Polygon Amoy
+  ];
+
+  return testnets.includes(chainId);
+}
+
+console.log(isTestnet(1));        // false (mainnet)
+console.log(isTestnet(11155111)); // true  (Sepolia)
+console.log(isTestnet(137));      // false (Polygon mainnet)
+```
+
+## Network Identification vs Security
+
+**Network identification** (chain metadata) and **replay protection** (chain ID in signature) serve different purposes:
+
+```typescript
+import { Chain, Transaction } from '@tevm/voltaire';
+
+// Network identification: Get chain metadata
+const chain = Chain.fromId(1);
+console.log(chain?.name);                      // "Ethereum Mainnet"
+console.log(chain?.nativeCurrency.symbol);     // "ETH"
+console.log(chain?.rpc[0]);                    // RPC endpoint
+console.log(chain?.explorers?.[0].url);        // "https://etherscan.io"
+
+// Replay protection: Chain ID in transaction signature
+const tx = Transaction.fromEIP1559({
+  to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2",
+  chainId: 1,  // Signed into transaction - prevents replay
+  // ... other fields
+});
+
+// Chain metadata helps you:
+// - Display network name to users
+// - Connect to correct RPC endpoint
+// - Link to block explorers
+// - Show correct currency symbols
+
+// Chain ID in signature ensures:
+// - Transaction only valid on intended network
+// - Cannot be replayed on other chains
+// - Network-specific transaction validity
+```
+
+## Resources
+
+- **[EIP-155: Simple replay attack protection](https://eips.ethereum.org/EIPS/eip-155)** - Original EIP introducing chain IDs
+- **[chainlist.org](https://chainlist.org/)** - Comprehensive list of Ethereum networks and chain IDs
+- **[@tevm/chains](https://github.com/evmts/tevm-monorepo/tree/main/packages/chains)** - Chain configuration constants (800+ networks)
+
+## Next Steps
+
+- [Overview](/primitives/chain) - Type definition and API reference
+- [Constructors](/primitives/chain/constructors) - Creating Chain instances
+- [Chain Lookup](/primitives/chain/chain-lookup) - Looking up chains by ID
+- [Metadata](/primitives/chain/metadata) - Accessing chain properties
+- [Transaction](/primitives/transaction) - Transaction types and signing

@@ -1,43 +1,32 @@
 ---
 title: "Hardfork"
+description: Ethereum protocol upgrade identification and comparison utilities
 ---
 
-# Hardfork
+<Tip>
+**New to hardforks?** Read the [Fundamentals](/primitives/hardfork/fundamentals) guide for an introduction to Ethereum protocol upgrades, activation mechanisms, and feature timeline.
+</Tip>
 
-Ethereum protocol upgrade identification and comparison utilities.
-
-## Overview
-
-Ethereum hardforks are protocol upgrades that change EVM behavior, gas costs, or add features. Each hardfork builds upon previous ones, maintaining backward compatibility while adding improvements. This module provides type-safe hardfork identification, version comparison, and feature detection.
+Ethereum hardforks are protocol upgrades that change EVM behavior, gas costs, or add features. This module provides type-safe hardfork identification, version comparison, and feature detection.
 
 ```typescript
 import { Hardfork } from '@tevm/voltaire';
 
 const fork = Hardfork.fromString("cancun");
-if (fork.hasEIP4844()) {
+if (Hardfork.hasEIP4844(fork)) {
   // Blob transactions available
 }
 ```
 
-## Core Concepts
+## Hardfork Type
 
-### Hardfork Type
-
-Hardforks are represented as branded strings with comparison and feature detection methods:
+Hardforks are represented as branded strings:
 
 ```typescript
 type BrandedHardfork = string & { __tag: "Hardfork" };
 ```
 
-### Chronological Order
-
-Hardforks follow chronological protocol evolution:
-- **Frontier** (2015) → **Homestead** (2016) → **Byzantium** (2017)
-- **Constantinople** (2019) → **Istanbul** (2019) → **Berlin** (2021)
-- **London** (2021) → **Merge** (2022) → **Shanghai** (2023)
-- **Cancun** (2024) → **Prague** (2025) → **Osaka** (TBD)
-
-### Key Features
+## Core Operations
 
 **Version Comparison:**
 ```typescript
@@ -58,7 +47,6 @@ Hardfork.isPostMerge(fork)  // Proof of Stake (Merge+)
 ```typescript
 Hardfork.fromString("cancun")        // Case-insensitive
 Hardfork.fromString("paris")         // Alias → MERGE
-Hardfork.fromString(">=Berlin")      // Strips operators
 Hardfork.toString(fork)              // Normalized name
 ```
 

@@ -1,0 +1,390 @@
+---
+title: Fundamentals
+description: Learn Sign-In with Ethereum protocol, message format, and authentication flow
+---
+
+Sign-In with Ethereum (SIWE) is a decentralized authentication protocol that lets users prove address ownership by signing structured messages with their private keys. No OAuth, no passwords, no third parties - just cryptographic proof.
+
+## What is SIWE?
+
+SIWE (EIP-4361) standardizes Ethereum-based authentication. Instead of usernames and passwords, users sign a message with their wallet to prove they control an address.
+
+### Why SIWE Exists
+
+Traditional web authentication relies on centralized identity providers (Google, Twitter, etc.). SIWE enables:
+
+- **Self-sovereign identity** - Users own their credentials (private keys)
+- **No intermediaries** - Direct cryptographic proof, no OAuth handshakes
+- **Privacy** - No personal data required, just address ownership
+- **Standardization** - Common format for Ethereum authentication across dApps
+
+## Message Format
+
+SIWE messages are human-readable structured text. Users read and sign them with wallets:
+
+```
+example.com wants you to sign in with your Ethereum account:
+0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e
+
+Sign in to Example App
+
+URI: https://example.com/login
+Version: 1
+Chain ID: 1
+Nonce: testnonce123
+Issued At: 2024-11-06T12:00:00.000Z
+Expiration Time: 2024-11-06T13:00:00.000Z
+```
+
+### Message Components
+
+Each field serves a specific security or usability purpose:
+
+- **Domain** - Origin where signing occurs (prevents phishing)
+- **Address** - Account performing authentication
+- **Statement** - Human-readable context (optional)
+- **URI** - Resource being accessed
+- **Version** - Protocol version (always "1")
+- **Chain ID** - Which blockchain (prevents replay across chains)
+- **Nonce** - One-time random value (prevents replay attacks)
+- **Issued At** - Timestamp when message created
+- **Expiration Time** - When message becomes invalid (optional)
+- **Not Before** - When message becomes valid (optional)
+- **Request ID** - System identifier (optional)
+- **Resources** - List of granted URIs (optional)
+
+## Authentication Flow
+
+SIWE follows a multi-step process:
+
+```
+1. Backend generates nonce, stores for 5 minutes
+2. Frontend requests nonce
+3. Frontend constructs SIWE message with nonce
+4. User signs message with wallet (off-chain)
+5. Frontend sends message + signature to backend
+6. Backend verifies signature matches address
+7. Backend checks nonce is valid and unused
+8. Backend marks nonce as used, creates session
+9. User authenticated
+```
+
+### Why Nonces Matter
+
+Without nonces, attackers could replay old signed messages to impersonate users. Nonces ensure each signature is single-use:
+
+```typescript
+// Backend: Generate and store nonce
+const nonce = Siwe.generateNonce(); // Random alphanumeric string
+storeNonce(userId, nonce, expiresIn5Minutes);
+
+// Frontend: Include nonce in message
+const message = Siwe.create({
+  domain: window.location.host,
+  address: userAddress,
+  uri: window.location.origin,
+  chainId: 1,
+  nonce, // From backend
+});
+
+// Backend: Verify nonce is valid and unused
+if (!isValidNonce(message.nonce)) {
+  throw new Error("Invalid or reused nonce");
+}
+markNonceUsed(message.nonce);
+```
+
+## Complete Example: Authentication
+
+Full authentication flow from message creation to verification:
+
+<Tabs>
+<Tab title="Frontend">
+
+```typescript
+import { Siwe, Address } from '@tevm/voltaire';
+
+// 1. Request nonce from backend
+const { nonce } = await fetch('/auth/nonce').then(r => r.json());
+
+// 2. Create SIWE message
+const message = Siwe.create({
+  domain: window.location.host,
+  address: Address.fromHex(userAddress),
+  uri: window.location.origin,
+  chainId: await provider.getChainId(),
+  statement: "Sign in to Example App",
+  nonce,
+});
+
+// 3. Format for signing
+const messageText = message.format();
+
+// 4. User signs with wallet
+const signature = await wallet.signMessage(messageText);
+
+// 5. Send to backend for verification
+const response = await fetch('/auth/verify', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    message: messageText,
+    signature
+  }),
+});
+
+if (response.ok) {
+  const { sessionToken } = await response.json();
+  // Store session token, user is authenticated
+}
+```
+
+</Tab>
+<Tab title="Backend">
+
+```typescript
+import { Siwe, Address } from '@tevm/voltaire';
+
+// Generate nonce endpoint
+app.get('/auth/nonce', (req, res) => {
+  const nonce = Siwe.generateNonce();
+
+  // Store nonce with 5 minute expiration
+  storeNonce(req.sessionID, nonce, Date.now() + 5 * 60 * 1000);
+
+  res.json({ nonce });
+});
+
+// Verify signature endpoint
+app.post('/auth/verify', async (req, res) => {
+  const { message: messageText, signature } = req.body;
+
+  // Parse message
+  const message = Siwe.parse(messageText);
+
+  // Verify message structure and expiration
+  const validation = Siwe.validate(message);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
+  }
+
+  // Verify nonce is valid and unused
+  const storedNonce = getNonce(req.sessionID);
+  if (!storedNonce || storedNonce !== message.nonce) {
+    return res.status(401).json({ error: "Invalid or expired nonce" });
+  }
+
+  // Verify signature matches address
+  if (!Siwe.verify(message, signature)) {
+    return res.status(401).json({ error: "Invalid signature" });
+  }
+
+  // Mark nonce as used (prevent replay)
+  markNonceUsed(message.nonce);
+
+  // Create authenticated session
+  const sessionToken = createSession({
+    address: Address.toHex(message.address),
+    chainId: message.chainId,
+  });
+
+  res.json({ sessionToken });
+});
+```
+
+</Tab>
+</Tabs>
+
+## Signing and Verification
+
+SIWE uses EIP-191 personal sign standard:
+
+```typescript
+import { Siwe, Address } from '@tevm/voltaire';
+
+const message = Siwe.create({
+  domain: "example.com",
+  address: Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  uri: "https://example.com",
+  chainId: 1,
+});
+
+// Get message hash for signing (32 bytes)
+const messageHash = message.getMessageHash();
+// Prepends: "\x19Ethereum Signed Message:\n" + length + message
+
+// User signs (wallet handles EIP-191 formatting)
+const signature = await wallet.signMessage(message.format());
+
+// Verify signature recovers to correct address
+const isValid = message.verify(signature);
+// Internally: ecrecover(hash, signature) === message.address
+```
+
+### Combined Validation and Verification
+
+Use `verifyMessage()` for complete validation:
+
+```typescript
+const result = Siwe.verifyMessage(message, signature);
+
+if (result.valid) {
+  // Message structure valid, not expired, signature correct
+} else {
+  console.error(result.error.type); // "expired" | "signature_mismatch" | etc.
+  console.error(result.error.message); // Human-readable explanation
+}
+```
+
+## Security Considerations
+
+### Domain Binding
+
+Always verify the domain matches your origin to prevent phishing:
+
+```typescript
+const message = Siwe.parse(messageText);
+
+if (message.domain !== window.location.host) {
+  throw new Error("Domain mismatch - possible phishing attack");
+}
+```
+
+Attackers can't use a signature from `attacker.com` on `example.com` because the domain is in the signed message.
+
+### Nonce Management
+
+Implement proper nonce handling:
+
+```typescript
+// Generate: cryptographically random
+const nonce = Siwe.generateNonce(11); // Min 8 chars
+
+// Store: with expiration (5-10 minutes typical)
+storeNonce(nonce, expiresAt);
+
+// Validate: check exists and not expired
+if (!isValidNonce(nonce)) {
+  throw new Error("Invalid or expired nonce");
+}
+
+// Consume: mark as used immediately after verification
+markNonceUsed(nonce);
+```
+
+### Expiration Times
+
+Set reasonable expiration windows:
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  expirationTime: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+});
+
+// Later, validate expiration
+const result = message.validate({ now: new Date() });
+if (!result.valid && result.error.type === "expired") {
+  // Request new signature
+}
+```
+
+### HTTPS in Production
+
+Always use HTTPS in production to prevent man-in-the-middle attacks. SIWE doesn't encrypt messages - they're signed plaintext.
+
+## Common Use Cases
+
+### dApp Login
+
+Authenticate users to access dApp features:
+
+```typescript
+// User connects wallet
+const address = await provider.getAddress();
+
+// Create login message
+const message = Siwe.create({
+  domain: "dapp.example.com",
+  address: Address.fromHex(address),
+  uri: "https://dapp.example.com",
+  chainId: 1,
+  statement: "Sign in to access your dashboard",
+});
+
+// Sign and verify
+const signature = await signer.signMessage(message.format());
+const result = Siwe.verifyMessage(message, signature);
+
+if (result.valid) {
+  // Grant access to dApp
+}
+```
+
+### Session Management
+
+Create time-limited sessions:
+
+```typescript
+const message = Siwe.create({
+  domain: "example.com",
+  address: userAddress,
+  uri: "https://example.com",
+  chainId: 1,
+  expirationTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+});
+
+// Store session
+const session = {
+  address: Address.toHex(message.address),
+  expiresAt: message.expirationTime,
+};
+
+// Validate on each request
+const validation = message.validate({ now: new Date() });
+if (!validation.valid) {
+  // Session expired, request re-authentication
+}
+```
+
+### Resource Authorization
+
+Grant access to specific resources:
+
+```typescript
+const message = Siwe.create({
+  domain: "api.example.com",
+  address: userAddress,
+  uri: "https://api.example.com",
+  chainId: 1,
+  statement: "Access user profile and settings",
+  resources: [
+    "https://api.example.com/user/profile",
+    "https://api.example.com/user/settings",
+  ],
+});
+
+// Backend checks requested resource is in authorized list
+function isAuthorized(message, requestedResource) {
+  return message.resources?.includes(requestedResource) ?? false;
+}
+```
+
+## Resources
+
+- [EIP-4361: Sign-In with Ethereum](https://eips.ethereum.org/EIPS/eip-4361) - Full specification
+- [EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191) - Message signing format
+- [siwe.xyz](https://siwe.xyz/) - Official SIWE website with tools and libraries
+- [login.xyz](https://login.xyz/) - Reference implementation and examples
+
+## Next Steps
+
+- [Overview](/primitives/siwe) - Type definition and API reference
+- [Constructors](/primitives/siwe/constructors) - Create SIWE messages
+- [Signing](/primitives/siwe/signing) - Sign and hash messages
+- [Verification](/primitives/siwe/verification) - Verify signatures
+- [Validation](/primitives/siwe/validation) - Validate message structure
+- [Usage Patterns](/primitives/siwe/usage-patterns) - Real-world authentication flows
