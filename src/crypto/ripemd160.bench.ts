@@ -209,7 +209,7 @@ function runBenchmarks() {
 		const avgTime = totalTime / iterations;
 		const opsPerSec = Math.round(1000 / avgTime);
 
-		results.noble_hashString = { opsPerSec, avgTime };
+		results["noble_hashString"] = { opsPerSec, avgTime };
 	}
 
 	// String benchmark - WASM
@@ -227,7 +227,7 @@ function runBenchmarks() {
 		const avgTime = totalTime / iterations;
 		const opsPerSec = Math.round(1000 / avgTime);
 
-		results.wasm_hashString = { opsPerSec, avgTime };
+		results["wasm_hashString"] = { opsPerSec, avgTime };
 	}
 	// Comparison logic removed (variables were unused)
 
