@@ -5,6 +5,10 @@ description: Complete Ethereum transaction encoding/decoding for all transaction
 
 # Transaction
 
+<Tip>
+**New to transactions?** Start with [Transaction Fundamentals](/primitives/transaction/fundamentals) to learn about transaction types, lifecycle, signing, and gas mechanics.
+</Tip>
+
 Complete Ethereum transaction implementation supporting all transaction types from Legacy to EIP-7702.
 
 ## Overview
@@ -142,139 +146,14 @@ const isValid = Transaction.verifySignature(tx)
 
 ## Transaction Types
 
-Ethereum supports five transaction types, each with different capabilities:
+| Type | Name | Description |
+|------|------|-------------|
+| `0x00` | [Legacy](/primitives/transaction/legacy) | Original format with fixed gas price |
+| `0x01` | [EIP-2930](/primitives/transaction/eip2930) | Access list transactions for gas optimization |
+| `0x02` | [EIP-1559](/primitives/transaction/eip1559) | Dynamic fee market with base fee and priority fee |
+| `0x03` | [EIP-4844](/primitives/transaction/eip4844) | Blob transactions for L2 data availability |
+| `0x04` | [EIP-7702](/primitives/transaction/eip7702) | EOA delegation to smart contracts |
 
-### Legacy (Type 0)
-
-Original transaction format with fixed gas price.
-
-    [View Legacy →](/primitives/transaction/legacy)
-
-### EIP-2930 (Type 1)
-
-Access list transactions for gas optimization.
-
-    [View EIP-2930 →](/primitives/transaction/eip2930)
-
-### EIP-1559 (Type 2)
-
-Dynamic fee market with base fee and priority fee.
-
-    [View EIP-1559 →](/primitives/transaction/eip1559)
-
-### EIP-4844 (Type 3)
-
-Blob transactions for L2 data availability.
-
-    [View EIP-4844 →](/primitives/transaction/eip4844)
-
-### EIP-7702 (Type 4)
-
-EOA delegation to smart contracts.
-
-    [View EIP-7702 →](/primitives/transaction/eip7702)
-
-## EIP Evolution Timeline
-
-The transaction layer has evolved to support new capabilities with each hard fork:
-
-```
-2015 ── Legacy (0x00)
-        └─ Fixed gasPrice
-        └─ Simple nonce + v/r/s
-        └─ 2 MB blocks
-
-        │
-        ├─ Replay protection (EIP-155)
-        │  └─ Chain ID in v value
-
-2020 ── EIP-2718 (Typed Transactions)
-        │  └─ Extensible envelope
-        │  └─ Future-proof structure
-
-        ├─ EIP-2930 (0x01) - Berlin
-        │  └─ Access lists (gas savings)
-        │  └─ yParity format (0 or 1)
-
-2021 ── EIP-1559 (0x02) - London
-        │  └─ Base fee + priority fee
-        │  └─ Automatic fee market
-        │  └─ ETH burn mechanism
-
-2024 ── EIP-4844 (0x03) - Dencun
-        │  └─ Blob transactions
-        │  └─ 128 KB blobs (6 max)
-        │  └─ Separate blob gas pricing
-        │  └─ L2 data availability
-
-        ├─ EIP-7702 (0x04) - Pectra
-        │  └─ EOA delegation
-        │  └─ Account abstraction lite
-        │  └─ Authorization list
-```
-
-**Key milestones:**
-- **Legacy**: Foundation - simple send/call operations
-- **EIP-155**: Security - replay protection across chains
-- **EIP-2930**: Optimization - explicit state access declaration
-- **EIP-1559**: Economics - transparent fee market
-- **EIP-4844**: Scalability - L2 data availability at scale
-- **EIP-7702**: Abstraction - EOAs execute smart contract logic
-
-## Feature Comparison
-
-| Aspect | Legacy | EIP-2930 | EIP-1559 | EIP-4844 | EIP-7702 |
-|--------|--------|----------|----------|----------|----------|
-| **Type byte** | 0x00 | 0x01 | 0x02 | 0x03 | 0x04 |
-| **Hard fork** | Genesis | Berlin | London | Dencun | Pectra |
-| **Gas pricing** | Fixed gasPrice | Fixed gasPrice | maxFee + priority | maxFee + priority | maxFee + priority |
-| **Chain ID** | In v value | Explicit | Explicit | Explicit | Explicit |
-| **Access lists** | ✗ | ✓ | ✓ | ✓ | ✓ |
-| **Blob data** | ✗ | ✗ | ✗ | ✓ (6 max) | ✗ |
-| **Authorization** | ✗ | ✗ | ✗ | ✗ | ✓ (delegation) |
-| **Contract creation** | ✓ | ✓ | ✓ | ✗ | ✓ |
-| **Signature format** | v/r/s (bigint) | yParity/r/s | yParity/r/s | yParity/r/s | yParity/r/s |
-
-## Transaction Lifecycle
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ 1. CONSTRUCT                                            │
-│    Set nonce, gasLimit, to, value, data, type, fees   │
-├─────────────────────────────────────────────────────────┤
-│ 2. HASH (Signing Hash)                                  │
-│    keccak256(encoded fields) - what gets signed        │
-├─────────────────────────────────────────────────────────┤
-│ 3. SIGN                                                 │
-│    secp256k1(signingHash) → r, s, yParity             │
-├─────────────────────────────────────────────────────────┤
-│ 4. SERIALIZE                                            │
-│    RLP encode [type, fields...] → bytes                │
-├─────────────────────────────────────────────────────────┤
-│ 5. BROADCAST                                            │
-│    Send to mempool / JSON-RPC endpoint                 │
-├─────────────────────────────────────────────────────────┤
-│ 6. MINE                                                 │
-│    Included in block, executed, state changed          │
-├─────────────────────────────────────────────────────────┤
-│ 7. VERIFY                                               │
-│    getSender() recovers signer from signature          │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Operations at each stage:**
-
-1. **Construct**: Validate field values, ensure type-specific constraints
-2. **Hash**: Compute signing hash (excludes signature fields)
-3. **Sign**: Produce signature using sender's private key
-4. **Serialize**: Encode to bytes for transmission
-5. **Broadcast**: Send to network (JSON-RPC `eth_sendRawTransaction`)
-6. **Mine**: Miner includes in block, state transitions execute
-7. **Verify**: Validate signature and recover sender for audit trail
-
-<Tip>
-The signing hash is computed **before** serialization. This ensures the signature proves the transaction's immutability - any change to the transaction data invalidates the signature.
-</Tip>
 
 ## Type Definitions
 
@@ -378,212 +257,79 @@ type Any = Legacy | EIP2930 | EIP1559 | EIP4844 | EIP7702
 
 Source: [types.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/types.ts)
 
-## Gas Fee Mechanisms
 
-How fees work across transaction types:
+## API Methods
 
-<Tabs>
-<Tab title="Legacy (Type 0)">
-```
-Effective Gas Price = gasPrice
-Total Gas Cost = gasLimit * gasPrice + value
-```
-- **Fixed price**: No market adaptation
-- **Risk**: Overpay in low-fee periods, underpay in high-fee periods
-</Tab>
+| Method | Description |
+|--------|-------------|
+| [`serialize()`](/primitives/transaction/serialize) | RLP encode transaction to bytes |
+| [`deserialize()`](/primitives/transaction/deserialize) | RLP decode bytes to transaction |
+| [`detectType()`](/primitives/transaction/detectType) | Detect transaction type from bytes |
+| [`hash()`](/primitives/transaction/hash) | Compute transaction hash |
+| [`getSigningHash()`](/primitives/transaction/getSigningHash) | Compute signing hash (what gets signed) |
+| [`getSender()`](/primitives/transaction/getSender) | Recover sender address from signature |
+| [`verifySignature()`](/primitives/transaction/verifySignature) | Validate signature is correct |
+| [`isSigned()`](/primitives/transaction/isSigned) | Check if transaction has signature |
+| [`assertSigned()`](/primitives/transaction/assertSigned) | Assert transaction is signed (throws) |
+| [`getChainId()`](/primitives/transaction/getChainId) | Extract chain ID from transaction |
+| [`getGasPrice()`](/primitives/transaction/getGasPrice) | Get effective gas price |
+| [`hasAccessList()`](/primitives/transaction/hasAccessList) | Check if transaction has access list |
+| [`getAccessList()`](/primitives/transaction/getAccessList) | Get access list from transaction |
+| [`format()`](/primitives/transaction/format) | Format transaction for display |
 
-<Tab title="EIP-2930/1559/4844 (Types 1-3)">
-```
-Base Fee = Set by protocol (burns to Ethereum)
-Priority Fee = User tip to miner
-maxFeePerGas = Maximum willing to pay per gas
+## Type-Specific Methods
 
-Effective Gas Price = min(
-  baseFee + priorityFeePerGas,
-  maxFeePerGas
-)
-Total Gas Cost = gasLimit * effectiveGasPrice + value
-```
-- **Market driven**: Fee adapts to block fullness
-- **Refunds**: If actual < max, difference refunded
-- **Example**: Base fee 20 gwei, you offer 25 gwei max + 2 gwei tip
-  - If block full: pay 20 + 2 = 22 gwei/gas
-  - If block empty: pay 20 + 2 = 22 gwei/gas (no overpayment)
-</Tab>
+### EIP-1559
 
-<Tab title="EIP-4844 (Type 3) - Blobs">
-```
-Gas Fee = gasLimit * effectiveGasPrice (same as EIP-1559)
-Blob Fee = blobCount * maxFeePerBlobGas * BlobGasPerBlob
+| Method | Description |
+|--------|-------------|
+| [`getEffectiveGasPrice()`](/primitives/transaction/eip1559#getEffectiveGasPrice) | Calculate effective gas price given base fee |
 
-Total Cost = Gas Cost + Blob Cost + value
-```
-- **Separate pricing**: Blob gas independent from execution gas
-- **Blob gas per blob**: 131,072 bytes per blob
-- **Maximum blobs**: 6 blobs per transaction
-- **Blob pricing**: Adapts like base fee, burns to chain
-</Tab>
+### EIP-4844
 
-<Tab title="EIP-7702 (Type 4) - Authorization">
-```
-Gas Cost = gasLimit * effectiveGasPrice + value
+| Method | Description |
+|--------|-------------|
+| [`getBlobGasCost()`](/primitives/transaction/eip4844#getBlobGasCost) | Calculate total blob gas cost |
 
-Authorization costs:
-- Each authorization: ~200 gas + secp256k1 verify
-- Scales with authorizationList.length
-```
-- **Same fee structure**: EIP-1559 fees apply
-- **Additional gas**: Authorizations increase intrinsic gas
-- **Delegation overhead**: EOA proof of delegation
-</Tab>
-</Tabs>
+## Usage Patterns
 
-## API Documentation
-
-### Types
-
-All transaction type definitions, enums, and type guards.
-
-    [View types →](/primitives/transaction/types)
-
-### Detection
-
-Detect transaction type from serialized bytes.
-
-    [View detection →](/primitives/transaction/detection)
-
-### Serialization
-
-RLP encode and decode transactions.
-
-    [View serialization →](/primitives/transaction/serialization)
-
-### Hashing
-
-Compute transaction and signing hashes.
-
-    [View hashing →](/primitives/transaction/hashing)
-
-### Signing
-
-Signature verification and sender recovery.
-
-    [View signing →](/primitives/transaction/signing)
-
-### Utilities
-
-Helper methods for gas, access lists, formatting, and more.
-
-    [View utilities →](/primitives/transaction/utilities)
-
-### Usage Patterns
-
-Common patterns for building and working with transactions.
+Common patterns for working with transactions:
 
     [View usage patterns →](/primitives/transaction/usage-patterns)
 
-## Architecture
+## Tree-Shaking
 
-Transaction module uses namespace pattern for tree-shaking:
+Import only what you need:
 
 ```typescript
-// Top-level operations work on any transaction type
-Transaction.serialize(tx)      // Dispatches to type-specific serialize
-Transaction.hash(tx)           // Dispatches to type-specific hash
-Transaction.getSender(tx)      // Dispatches to type-specific getSender
+// Namespace import (all methods)
+import * as Transaction from '@tevm/voltaire/Transaction';
 
-// Type-specific namespaces for specialized operations
-Transaction.Legacy.getChainId.call(legacyTx)
-Transaction.EIP1559.getEffectiveGasPrice(eip1559Tx, baseFee)
-Transaction.EIP4844.getBlobGasCost(eip4844Tx, blobBaseFee)
-
-// Tree-shakeable imports
-import { serialize } from '@tevm/voltaire/Transaction/serialize'
-import { hash } from '@tevm/voltaire/Transaction/hash'
+// Granular imports (tree-shakeable)
+import { serialize } from '@tevm/voltaire/Transaction/serialize';
+import { hash } from '@tevm/voltaire/Transaction/hash';
+import { getSender } from '@tevm/voltaire/Transaction/getSender';
 ```
 
-Each transaction type has its own namespace with type-specific methods:
-- `Transaction.Legacy.*` - Legacy transaction operations
-- `Transaction.EIP2930.*` - EIP-2930 operations
-- `Transaction.EIP1559.*` - EIP-1559 operations (effective gas price)
-- `Transaction.EIP4844.*` - EIP-4844 operations (blob gas cost)
-- `Transaction.EIP7702.*` - EIP-7702 operations (authorization)
+## Related
 
-<Tip title="Tree-shaking">
-Import only what you need. Each transaction type's methods are independently tree-shakeable.
-</Tip>
+- [Address](/primitives/address) - 20-byte Ethereum addresses
+- [Hash](/primitives/hash) - 32-byte hash values
+- [Hex](/primitives/hex) - Hex string utilities
+- [RLP](/primitives/rlp) - Recursive Length Prefix encoding
+- [AccessList](/primitives/access-list) - Pre-declared account/storage access
+- [Blob](/primitives/blob) - Blob data for EIP-4844
+- [Authorization](/primitives/authorization) - EOA delegation for EIP-7702
+- [FeeMarket](/primitives/fee-market) - Base fee and priority fee calculations
+- [GasConstants](/primitives/gas-constants) - Gas intrinsic costs
+- [Secp256k1](/crypto/secp256k1) - ECDSA signature utilities
 
-## Related Types
+## Specification
 
-### Core Dependencies
-
-### Address
-
-20-byte Ethereum addresses. Used in `to` field and sender recovery.
-
-    [View Address →](/primitives/address)
-
-### Hash
-
-32-byte hash values. Compute signing/transaction hashes via keccak256.
-
-    [View Hash →](/primitives/hash)
-
-### Hex
-
-Hex string utilities for encoding/decoding transaction data.
-
-    [View Hex →](/primitives/hex)
-
-### RLP
-
-Recursive Length Prefix encoding. Core serialization format for all transactions.
-
-    [View RLP →](/primitives/rlp)
-
-### Type-Specific References
-
-### AccessList
-
-Pre-declared account/storage access for gas optimization (EIP-2930+).
-
-    [View AccessList →](/primitives/access-list)
-
-### Blob
-
-Blob data for L2 data availability (EIP-4844). 128 KB chunks.
-
-    [View Blob →](/primitives/blob)
-
-### Authorization
-
-EOA delegation authorization list for EIP-7702 account abstraction.
-
-    [View Authorization →](/primitives/authorization)
-
-### FeeMarket
-
-Base fee and priority fee calculations. Context for EIP-1559+ transactions.
-
-    [View FeeMarket →](/primitives/fee-market)
-
-### GasConstants
-
-Gas intrinsic costs, opcode pricing. Essential for gas estimation.
-
-    [View GasConstants →](/primitives/gas-constants)
-
-### Signature
-
-ECDSA signature utilities (r, s, yParity). Used in signing and recovery.
-
-    [View Signature →](/crypto/secp256k1)
-
-## EIP References
-
-- [EIP-155: Simple replay attack protection](https://eips.ethereum.org/EIPS/eip-155)
-- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
-- [EIP-2930: Optional access lists](https://eips.ethereum.org/EIPS/eip-2930)
-- [EIP-1559: Fee market change](https://eips.ethereum.org/EIPS/eip-1559)
-- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
-- [EIP-7702: Set EOA account code](https://eips.ethereum.org/EIPS/eip-7702)
+- [EIP-155](https://eips.ethereum.org/EIPS/eip-155) - Replay protection
+- [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) - Typed transaction envelope
+- [EIP-2930](https://eips.ethereum.org/EIPS/eip-2930) - Access lists
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559) - Fee market
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Blob transactions
+- [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) - EOA delegation
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Transaction spec (Section 4.2)
