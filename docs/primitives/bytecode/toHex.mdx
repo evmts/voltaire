@@ -6,11 +6,11 @@ description: Convert bytecode to hex string with 0x prefix
 <Tabs>
 <Tab title="Class API (recommended)">
 
-## `bytecode.toHex(): Hex`
+## `bytecode.toHex(): BrandedBytecodeHex`
 
 Convert bytecode to hex string with `0x` prefix.
 
-**Returns:** `Hex` - Hex string with `0x` prefix
+**Returns:** `BrandedBytecodeHex` - Hex string with `0x` prefix
 
 **Example:**
 
@@ -27,14 +27,14 @@ console.log(hex)  // "0x6001"
 </Tab>
 <Tab title="Namespace API (Tree-shakeable)">
 
-## `toHex(bytecode: BrandedBytecode): Hex`
+## `toHex(bytecode: BrandedBytecode): BrandedBytecodeHex`
 
 Convert bytecode to hex string with `0x` prefix.
 
 **Parameters:**
 - `bytecode: BrandedBytecode` - Bytecode to convert
 
-**Returns:** `Hex` - Hex string with `0x` prefix
+**Returns:** `BrandedBytecodeHex` - Hex string with `0x` prefix
 
 **Example:**
 
