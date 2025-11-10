@@ -100,7 +100,7 @@ async function loadWasm(): Promise<void> {
 		const path = await import("node:path");
 		const url = await import("node:url");
 		const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-		const wasmPath = path.resolve(__dirname, "../../wasm/ripemd160.wasm");
+		const wasmPath = path.resolve(__dirname, "../../wasm/crypto/ripemd160.wasm");
 		const fileBuffer = await fs.readFile(wasmPath);
 		buffer = fileBuffer.buffer.slice(
 			fileBuffer.byteOffset,
@@ -108,7 +108,7 @@ async function loadWasm(): Promise<void> {
 		);
 	} else {
 		// Browser environment
-		const wasmPath = new URL("../../wasm/ripemd160.wasm", import.meta.url);
+		const wasmPath = new URL("../../wasm/crypto/ripemd160.wasm", import.meta.url);
 		const response = await fetch(wasmPath);
 		buffer = await response.arrayBuffer();
 	}
