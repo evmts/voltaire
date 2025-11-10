@@ -10,7 +10,7 @@ export default createTsUpOptions({
 		"src/primitives/Address/index.ts",
 		"src/primitives/Authorization/index.ts",
 		"src/primitives/Base64/index.js",
-		"src/primitives/BinaryTree/index.js",
+		"src/primitives/BinaryTree/index.ts",
 		"src/primitives/Blob/index.ts",
 		"src/primitives/BloomFilter/index.ts",
 		"src/primitives/Bytecode/index.ts",

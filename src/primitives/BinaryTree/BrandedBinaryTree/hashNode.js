@@ -25,5 +25,9 @@ export function hashNode(node) {
 			return hashStem(node);
 		case "leaf":
 			return hashLeaf(node);
+		default: {
+			const _exhaustive = node;
+			throw new Error(`Unknown node type: ${_exhaustive}`);
+		}
 	}
 }
