@@ -177,6 +177,8 @@
             "primitives/bytecode/analyzeJumpDestinations",
             "primitives/bytecode/detect-fusions",
             "primitives/bytecode/extractRuntime",
+            "primitives/bytecode/getBlock",
+            "primitives/bytecode/getNextPc",
             "primitives/bytecode/formatInstruction",
             "primitives/bytecode/formatInstructions",
             "primitives/bytecode/pretty-print",

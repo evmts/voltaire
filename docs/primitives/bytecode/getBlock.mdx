@@ -1,0 +1,298 @@
+---
+title: Bytecode.getBlock
+description: Get the basic block containing a given program counter
+icon: cube
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `bytecode.getBlock(pc: number): BasicBlock | undefined`
+
+Get the basic block that contains the given program counter position.
+
+Returns the block metadata including gas cost, stack effects, and control flow information.
+
+**Parameters:**
+- `pc: number` - Program counter (byte offset) to look up
+
+**Returns:** `BasicBlock | undefined` - Block containing the PC, or undefined if not found
+
+**Example:**
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x60016002015b80016003015b00");
+const blocks = code.analyzeBlocks();
+
+// Find block containing PC 5
+const block = code.getBlock(5);
+if (block) {
+  console.log(`Block ${block.index} (PC ${block.startPc}-${block.endPc})`);
+  console.log(`  Gas: ${block.gasEstimate}`);
+  console.log(`  Stack: [${block.minStack}, ${block.maxStack}]`);
+}
+```
+
+**Defined in:** [BrandedBytecode/getBlock.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/getBlock.js)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `getBlock(code: BrandedBytecode, pc: number): BasicBlock | undefined`
+
+Get the basic block that contains the given program counter position.
+
+**Parameters:**
+- `code: BrandedBytecode` - Bytecode to analyze
+- `pc: number` - Program counter to look up
+
+**Returns:** `BasicBlock | undefined` - Block containing the PC, or undefined if not found
+
+**Example:**
+
+```typescript
+import * as Bytecode from '@tevm/voltaire/Bytecode';
+
+const code = Bytecode.fromHex("0x60016002015b80016003015b00");
+const block = Bytecode.getBlock(code, 5);
+
+if (block) {
+  console.log(`Found in block ${block.index}`);
+}
+```
+
+**Tree-shakeable import:**
+
+```typescript
+import { getBlock } from '@tevm/voltaire/BrandedBytecode';
+
+const block = getBlock(code, 5);
+```
+
+**Defined in:** [BrandedBytecode/getBlock.js](https://github.com/evmts/voltaire/blob/main/src/primitives/Bytecode/BrandedBytecode/getBlock.js)
+
+</Tab>
+</Tabs>
+
+## BasicBlock Type
+
+```typescript
+interface BasicBlock {
+  /** Block index (0-based) */
+  index: number
+
+  /** Starting program counter */
+  startPc: number
+
+  /** Ending program counter (exclusive) */
+  endPc: number
+
+  /** Number of instructions in block */
+  instructionCount: number
+
+  /** Total static gas cost */
+  gasEstimate: number
+
+  /** Minimum stack items required to enter */
+  minStack: number
+
+  /** Maximum stack depth reached */
+  maxStack: number
+
+  /** Net stack effect (exit - entry) */
+  stackEffect: number
+
+  /** Block terminator type */
+  terminator: TerminatorType
+
+  /** Jump target PC (if terminator is JUMP/JUMPI) */
+  target?: number
+
+  /** Whether block is reachable from entry */
+  isReachable: boolean
+
+  /** Successor block indices */
+  successors: number[]
+
+  /** Predecessor block indices */
+  predecessors: number[]
+}
+```
+
+See [analyzeBlocks](/primitives/bytecode/analyze-blocks) for full type details.
+
+## Usage Patterns
+
+### Debug Specific Instruction
+
+```typescript
+const code = Bytecode.fromHex(contractBytecode);
+
+// Find which block contains an instruction
+const targetPc = 142;
+const block = code.getBlock(targetPc);
+
+if (block) {
+  console.log(`PC ${targetPc} is in block ${block.index}`);
+  console.log(`Block spans PC ${block.startPc} to ${block.endPc}`);
+  console.log(`Gas cost for block: ${block.gasEstimate}`);
+} else {
+  console.warn(`PC ${targetPc} not found in any block`);
+}
+```
+
+### Trace Execution Path
+
+```typescript
+const code = Bytecode.fromHex(bytecode);
+
+// Trace execution path from entry
+function tracePath(startPc: number, maxSteps: number = 100): number[] {
+  const path: number[] = [];
+  let currentPc = startPc;
+
+  for (let i = 0; i < maxSteps; i++) {
+    const block = code.getBlock(currentPc);
+    if (!block) break;
+
+    path.push(block.index);
+
+    // Follow first successor
+    if (block.successors.length > 0) {
+      const nextBlock = blocks[block.successors[0]];
+      currentPc = nextBlock.startPc;
+    } else {
+      break; // No successors (exit block)
+    }
+  }
+
+  return path;
+}
+
+const executionPath = tracePath(0);
+console.log(`Execution path: ${executionPath.join(' → ')}`);
+```
+
+### Jump Target Validation
+
+```typescript
+// Verify jump target is valid (starts a basic block)
+function isValidJumpTarget(code: BrandedBytecode, targetPc: number): boolean {
+  const block = code.getBlock(targetPc);
+
+  // Valid if target is exactly at block start (JUMPDEST)
+  return block !== undefined && block.startPc === targetPc;
+}
+
+const jumpTarget = 0x42;
+if (isValidJumpTarget(code, jumpTarget)) {
+  console.log(`${jumpTarget} is a valid jump target`);
+} else {
+  console.error(`${jumpTarget} is NOT a valid jump target`);
+}
+```
+
+### Gas Profiling by Block
+
+```typescript
+const code = Bytecode.fromHex(bytecode);
+
+// Profile gas costs of blocks containing specific opcodes
+const blocks = code.analyzeBlocks();
+const instructions = code.parseInstructions();
+
+const sstoreBlocks = new Set<number>();
+
+instructions.forEach(inst => {
+  if (inst.opcode === 'SSTORE') {
+    const block = code.getBlock(inst.position);
+    if (block) {
+      sstoreBlocks.add(block.index);
+    }
+  }
+});
+
+console.log(`Blocks with SSTORE operations:`);
+sstoreBlocks.forEach(blockIdx => {
+  const block = blocks[blockIdx];
+  console.log(`  Block ${blockIdx}: ${block.gasEstimate} gas`);
+});
+```
+
+### Coverage Analysis
+
+```typescript
+// Track which blocks were executed
+const executedPcs = new Set<number>([0, 5, 23, 45, 67]);
+const executedBlocks = new Set<number>();
+
+executedPcs.forEach(pc => {
+  const block = code.getBlock(pc);
+  if (block) {
+    executedBlocks.add(block.index);
+  }
+});
+
+const blocks = code.analyzeBlocks();
+const coverage = (executedBlocks.size / blocks.length) * 100;
+
+console.log(`Block coverage: ${coverage.toFixed(1)}%`);
+console.log(`Executed ${executedBlocks.size} of ${blocks.length} blocks`);
+```
+
+## Performance
+
+`getBlock()` internally caches block analysis results:
+
+- **First call**: O(n) to analyze all blocks
+- **Subsequent calls**: O(log n) binary search through cached blocks
+
+<Tip>
+Block analysis results are cached per bytecode instance. Multiple `getBlock()` calls on the same bytecode are efficient.
+</Tip>
+
+## Edge Cases
+
+### PC Not in Any Block
+
+```typescript
+const block = code.getBlock(9999);
+if (!block) {
+  console.log('PC out of bounds or in padding/metadata');
+}
+```
+
+### PC in Middle of PUSH Data
+
+```typescript
+// PUSH2 0x1234 at PC 0 means:
+//   PC 0: PUSH2 opcode
+//   PC 1-2: immediate data (0x1234)
+
+const block1 = code.getBlock(0);  // Valid: block start
+const block2 = code.getBlock(1);  // Same block (inside PUSH data)
+const block3 = code.getBlock(2);  // Same block (inside PUSH data)
+
+// All three return the same block
+console.log(block1.index === block2?.index); // true
+```
+
+### Invalid Bytecode
+
+```typescript
+const invalid = Bytecode.fromHex("0xFF"); // INVALID opcode
+
+const block = code.getBlock(0);
+if (block) {
+  console.log(`Terminator: ${block.terminator}`); // 'invalid'
+}
+```
+
+## See Also
+
+- [analyzeBlocks](/primitives/bytecode/analyze-blocks) - Complete basic block analysis
+- [getNextPc](/primitives/bytecode/getNextPc) - Get next program counter
+- [isValidJumpDest](/primitives/bytecode/isValidJumpDest) - Check JUMPDEST validity
+- [parseInstructions](/primitives/bytecode/parseInstructions) - Get all instructions

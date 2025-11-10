@@ -105,6 +105,8 @@ const disassembly = Bytecode.formatInstructions(code);
 - [`equals(a, b)`](./equals) - Compare bytecode equality
 - [`hash(bytecode)`](./hash) - Compute keccak256 hash
 - [`extractRuntime(bytecode)`](./extractRuntime) - Extract runtime code from deployment bytecode
+- [`getBlock(bytecode, pc)`](./getBlock) - Get basic block containing a program counter
+- [`getNextPc(bytecode, currentPc)`](./getNextPc) - Get next program counter after instruction
 
 ### Reference
 
