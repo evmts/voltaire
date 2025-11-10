@@ -1,9 +1,8 @@
 // @ts-nocheck
 import * as BrandedBytecode from "./BrandedBytecode/index.js";
 
-// Re-export BrandedBytecode type and constants
+// Re-export BrandedBytecode type
 export type { BrandedBytecode } from "./BrandedBytecode/index.js";
-export * from "./BrandedBytecode/constants.js";
 
 /**
  * Factory function for creating Bytecode instances
@@ -48,13 +47,6 @@ Bytecode.stripMetadata = BrandedBytecode.stripMetadata;
 Bytecode.toHex = BrandedBytecode.toHex;
 Bytecode.validate = BrandedBytecode.validate;
 
-Bytecode.JUMPDEST = BrandedBytecode.JUMPDEST;
-Bytecode.PUSH1 = BrandedBytecode.PUSH1;
-Bytecode.PUSH32 = BrandedBytecode.PUSH32;
-Bytecode.STOP = BrandedBytecode.STOP;
-Bytecode.RETURN = BrandedBytecode.RETURN;
-Bytecode.REVERT = BrandedBytecode.REVERT;
-Bytecode.INVALID = BrandedBytecode.INVALID;
 
 // Set up Bytecode.prototype to inherit from Uint8Array.prototype
 Object.setPrototypeOf(Bytecode.prototype, Uint8Array.prototype);
