@@ -154,8 +154,8 @@
         {
           "group": "Bytecode",
           "pages": [
-            "primitives/bytecode/fundamentals",
             "primitives/bytecode/index",
+            "primitives/bytecode/fundamentals",
             "primitives/bytecode/from",
             "primitives/bytecode/fromHex",
             "primitives/bytecode/fromUint8Array",
@@ -307,6 +307,7 @@
           "group": "RLP",
           "pages": [
             "primitives/rlp/index",
+            "primitives/rlp/fundamentals",
             "primitives/rlp/Rlp",
             "primitives/rlp/branded-rlp",
             "primitives/rlp/algorithm",
