@@ -1,23 +1,9 @@
 ---
-title: Bytecode
+title: Overview
 description: EVM bytecode analysis and manipulation
 ---
 
-# Bytecode
-
-EVM bytecode is the low-level machine code that smart contracts compile to. Each byte is either an [opcode](/primitives/opcode) (instruction) or constant data.
-
-## Overview
-
-Bytecode is represented as a [branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
-
-```typescript
-export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
-```
-
-The EVM reads bytecode sequentially, executing each instruction. Voltaire provides comprehensive tools for analyzing bytecode structure, parsing instructions, validating jump destinations, and extracting metadata.
-
-<Accordion title="What is EVM Bytecode? (New to bytecode?)">
+<Accordion title="Learn more">
 
 **EVM bytecode is the low-level machine code that smart contracts compile to and execute on the Ethereum Virtual Machine.**
 
@@ -66,7 +52,28 @@ If you naively treat every byte as an opcode, you'll misinterpret data as instru
 
 </Accordion>
 
-## Quick Start
+## Type Definition
+
+[Branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) with utils for analyzing, validating, and iterating over EVM bytecode.
+
+```typescript
+export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
+```
+
+### Native Uint8Array Methods
+
+JavaScript builtins available on all `Uint8Array` instances:
+
+- `setFromBase64()` - Populate from base64 string
+- `setFromHex()` - Populate from hex string
+- `toBase64()` - Encode to base64 string
+- `toHex()` - Encode to hex string
+
+[MDN Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)
+
+<Note>
+`toHex()` and `setFromHex()` are available as of 2025 (Node.js 22+, Chrome 131+). Use Voltaire's `Hex.toHex()` for broader compatibility.
+</Note>
 
 <Tabs>
 <Tab title="Class API">
@@ -160,10 +167,6 @@ JUMPDEST (0x5b) markers indicate valid jump targets. The EVM validates that JUMP
 
 **Metadata**:
 Compilers like Solidity append optional metadata (typically 50-100 bytes) at the end of deployed bytecode. This includes compiler version and IPFS hash of source code for verification.
-
-```typescript
-export type BrandedBytecode = Uint8Array & { readonly __tag: "Bytecode" };
-```
 
 ## API Documentation
 

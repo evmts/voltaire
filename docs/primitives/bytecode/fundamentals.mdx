@@ -1,0 +1,293 @@
+---
+title: Fundamentals
+description: Learn EVM bytecode structure, parsing, and analysis
+---
+
+EVM bytecode is the low-level machine code that smart contracts compile to and execute on the Ethereum Virtual Machine. This guide teaches bytecode fundamentals using Voltaire.
+
+## Structure
+
+Bytecode is a sequence of bytes where each byte (or sequence of bytes) represents either:
+- **An opcode** - Instruction telling the EVM what to do (ADD, PUSH1, JUMP, etc.)
+- **Data** - Constant values embedded after PUSH opcodes
+
+## Parsing Bytecode
+
+The main challenge: **PUSH1-PUSH32 opcodes (0x60-0x7f) are followed by 1-32 bytes of data that are NOT opcodes.**
+
+<Tabs>
+<Tab title="Correct Parsing">
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+// Bytecode: PUSH1 0x5b (0x5b is data, not JUMPDEST opcode)
+const code = Bytecode.fromHex("0x605b");
+
+const instructions = code.parseInstructions();
+console.log(instructions);
+// [{ opcode: 0x60, position: 0, pushData: Uint8Array([0x5b]) }]
+
+// Voltaire correctly identifies 0x5b as data, not JUMPDEST
+```
+</Tab>
+<Tab title="Naive Parsing ❌">
+```typescript
+// WRONG: Treating every byte as an opcode
+const bytes = new Uint8Array([0x60, 0x5b]);
+
+// Incorrect interpretation:
+// 0x60 = PUSH1
+// 0x5b = JUMPDEST ❌ (this is actually data for PUSH1!)
+
+// This leads to:
+// - Invalid jump destinations
+// - Incorrect disassembly
+// - Security vulnerabilities
+```
+</Tab>
+</Tabs>
+
+## Analyzing Structure
+
+Use [`analyze()`](/primitives/bytecode/analyze) for complete bytecode analysis:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x6001600201");
+
+const analysis = code.analyze();
+console.log(analysis.valid);              // true
+console.log(analysis.jumpDestinations);   // Set<number> of valid JUMPDEST positions
+console.log(analysis.instructions.length); // 3 instructions
+```
+
+### What `analyze()` Returns
+
+```typescript
+type Analysis = {
+  valid: boolean;                          // Bytecode structure is valid
+  jumpDestinations: ReadonlySet<number>;   // Valid jump targets (JUMPDEST positions)
+  instructions: readonly Instruction[];    // Parsed instructions with push data
+}
+
+type Instruction = {
+  opcode: number;        // Opcode byte (0x00-0xff)
+  position: number;      // Byte offset in bytecode
+  pushData?: Uint8Array; // Data following PUSH opcodes (undefined for non-PUSH)
+}
+```
+
+## Jump Destinations
+
+JUMPDEST (0x5b) markers indicate valid jump targets. The EVM validates that JUMP/JUMPI only target JUMPDEST opcodes:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x5b6001565b60025600"); // Two JUMPDESTs
+
+// Find all valid jump destinations
+const jumpDests = code.analyzeJumpDestinations();
+console.log(jumpDests); // Set(2) { 0, 5 }
+
+// Check if specific position is valid jump target
+console.log(code.isValidJumpDest(0));  // true  (JUMPDEST at position 0)
+console.log(code.isValidJumpDest(5));  // true  (JUMPDEST at position 5)
+console.log(code.isValidJumpDest(2));  // false (PUSH1 data, not JUMPDEST)
+```
+
+## Disassembly
+
+Use [`formatInstructions()`](/primitives/bytecode/formatInstructions) to disassemble bytecode to human-readable strings:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x6001600201");
+
+const disassembly = code.formatInstructions();
+console.log(disassembly);
+// [
+//   "PUSH1 0x01",
+//   "PUSH1 0x02",
+//   "ADD"
+// ]
+```
+
+## Complete Example: ADD Operation
+
+Here's bytecode that adds 5 + 3 and returns the result:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+// Deployment + runtime bytecode
+const code = Bytecode.fromHex("0x6005600301600052602060006000f3");
+
+// Disassemble to understand structure
+const instructions = code.formatInstructions();
+console.log(instructions);
+// [
+//   "PUSH1 0x05",  // Push 5 onto stack
+//   "PUSH1 0x03",  // Push 3 onto stack
+//   "ADD",         // Add top two values (5 + 3 = 8)
+//   "PUSH1 0x00",  // Push memory offset 0
+//   "MSTORE",      // Store 8 at memory[0]
+//   "PUSH1 0x20",  // Push 32 (return size in bytes)
+//   "PUSH1 0x00",  // Push 0 (memory offset to return)
+//   "PUSH1 0x00",  // Push 0 (unused in RETURN context)
+//   "RETURN"       // Return 32 bytes from memory[0]
+// ]
+
+// Analyze structure
+const analysis = code.analyze();
+console.log(`Valid: ${analysis.valid}`);           // Valid: true
+console.log(`Instructions: ${analysis.instructions.length}`); // Instructions: 9
+console.log(`Size: ${code.size()} bytes`);         // Size: 13 bytes
+```
+
+### Execution Flow
+
+```
+Initial Stack: []
+
+PUSH1 0x05 → Stack: [5]
+PUSH1 0x03 → Stack: [3, 5]
+ADD        → Stack: [8]           // Pops 3 and 5, pushes result
+PUSH1 0x00 → Stack: [0, 8]
+MSTORE     → Stack: []            // Writes 8 to memory[0:32]
+PUSH1 0x20 → Stack: [32]
+PUSH1 0x00 → Stack: [0, 32]
+PUSH1 0x00 → Stack: [0, 0, 32]
+RETURN     → Returns memory[0:32] containing 8
+```
+
+## Parsing Individual Instructions
+
+Use [`parseInstructions()`](/primitives/bytecode/parseInstructions) for detailed instruction data:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x6005600301");
+
+const instructions = code.parseInstructions();
+console.log(instructions);
+// [
+//   { opcode: 0x60, position: 0, pushData: Uint8Array([0x05]) },
+//   { opcode: 0x60, position: 2, pushData: Uint8Array([0x03]) },
+//   { opcode: 0x01, position: 4, pushData: undefined }
+// ]
+
+// Access push data
+instructions.forEach(inst => {
+  if (inst.pushData) {
+    console.log(`PUSH at ${inst.position}: 0x${[...inst.pushData].map(b => b.toString(16).padStart(2, '0')).join('')}`);
+  }
+});
+```
+
+## Metadata Detection
+
+Solidity compilers append metadata (typically 50-100 bytes) containing compiler version and IPFS hash:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const deployedCode = Bytecode.fromHex("0x608060..."); // Full deployed bytecode
+
+// Check for metadata
+if (deployedCode.hasMetadata()) {
+  console.log("Contract includes compiler metadata");
+
+  // Strip metadata for comparison
+  const cleanCode = deployedCode.stripMetadata();
+  console.log(`Original: ${deployedCode.size()} bytes`);
+  console.log(`Stripped: ${cleanCode.size()} bytes`);
+}
+```
+
+See [`hasMetadata()`](/primitives/bytecode/hasMetadata) and [`stripMetadata()`](/primitives/bytecode/stripMetadata).
+
+## Extracting Runtime Code
+
+Deployment bytecode includes initialization code that runs once. Extract just the runtime portion:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const deploymentCode = Bytecode.fromHex("0x608060...");
+
+// Extract runtime bytecode (the code stored on-chain)
+const runtimeCode = deploymentCode.extractRuntime();
+
+console.log(`Deployment: ${deploymentCode.size()} bytes`);
+console.log(`Runtime: ${runtimeCode.size()} bytes`);
+```
+
+See [`extractRuntime()`](/primitives/bytecode/extractRuntime).
+
+## EVM Instructions
+
+The EVM has ~140 single-byte [opcodes](/primitives/opcode) organized by category:
+
+- **Arithmetic & Logic** - ADD, MUL, SUB, DIV, AND, OR, XOR
+- **Storage** - SLOAD, SSTORE (persistent contract storage)
+- **Memory** - MLOAD, MSTORE (temporary execution data)
+- **Control Flow** - JUMP, JUMPI, JUMPDEST (loops, conditionals)
+- **Contract Calls** - CALL, DELEGATECALL, STATICCALL
+- **Contract Creation** - CREATE, CREATE2
+- **System** - SELFDESTRUCT, REVERT
+
+### PUSH Instructions
+
+PUSH1-PUSH32 (0x60-0x7f) embed 1-32 bytes of immediate data:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+// PUSH20 for Ethereum address (20 bytes)
+const addressCode = Bytecode.fromHex("0x73742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+// 0x73 = PUSH20
+// Next 20 bytes = address
+
+// PUSH4 for function selector (4 bytes)
+const selectorCode = Bytecode.fromHex("0x63a9059cbb");
+// 0x63 = PUSH4
+// 0xa9059cbb = transfer(address,uint256) selector
+
+const instructions = selectorCode.parseInstructions();
+console.log(instructions[0].pushData); // Uint8Array([0xa9, 0x05, 0x9c, 0xbb])
+```
+
+## Validation
+
+Use [`validate()`](/primitives/bytecode/validate) to check bytecode structure:
+
+```typescript
+import { Bytecode } from '@tevm/voltaire';
+
+const code = Bytecode.fromHex("0x6001600201");
+
+const validation = code.validate();
+if (validation.valid) {
+  console.log("Bytecode is structurally valid");
+} else {
+  console.error(`Invalid bytecode: ${validation.error}`);
+}
+```
+
+## Resources
+
+- **[evm.codes](https://www.evm.codes/)** - Interactive EVM opcode reference with gas costs
+- **[wolflo/evm-opcodes](https://github.com/wolflo/evm-opcodes)** - Comprehensive opcode reference
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal EVM specification (Appendix H)
+- **[Opcode Reference](/primitives/opcode)** - Voltaire's opcode documentation
+
+## Next Steps
+
+- [Overview](/primitives/bytecode) - Type definition and API reference
+- [analyze()](/primitives/bytecode/analyze) - Complete bytecode analysis
+- [parseInstructions()](/primitives/bytecode/parseInstructions) - Parse individual instructions
+- [formatInstructions()](/primitives/bytecode/formatInstructions) - Disassemble to strings
