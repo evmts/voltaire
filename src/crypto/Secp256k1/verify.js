@@ -82,6 +82,11 @@ export function verify(signature, messageHash, publicKey) {
 		);
 	}
 
+	// Validate v parameter (must be 27 or 28)
+	if (signature.v !== 27 && signature.v !== 28) {
+		return false;
+	}
+
 	try {
 		// Create 64-byte compact signature (r || s)
 		const compactSig = concat(signature.r, signature.s);

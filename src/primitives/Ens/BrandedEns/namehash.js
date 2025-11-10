@@ -1,4 +1,5 @@
 import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
+import { fromBytes } from "../../Hex/fromBytes.ts";
 
 /**
  * Compute ENS namehash for a given name
@@ -7,7 +8,7 @@ import { hash as keccak256 } from "../../../crypto/Keccak256/hash.js";
  * Empty string has hash of 32 zero bytes.
  *
  * @param {import('./BrandedEns.js').BrandedEns} name - ENS name
- * @returns {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} - ENS namehash
+ * @returns {import('../../Hex/BrandedHex/BrandedHex.js').BrandedHex} - ENS namehash as hex string
  */
 export function namehash(name) {
 	// Start with root hash (32 zero bytes)
@@ -16,9 +17,7 @@ export function namehash(name) {
 
 	// Empty string returns root hash
 	if (!name || name.length === 0) {
-		return /** @type {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} */ (
-			hash
-		);
+		return fromBytes(hash);
 	}
 
 	// Split into labels and process in reverse order
@@ -38,7 +37,5 @@ export function namehash(name) {
 		hash = new Uint8Array(keccak256(combined));
 	}
 
-	return /** @type {import('../../Hash/BrandedHash/BrandedHash.js').BrandedHash} */ (
-		hash
-	);
+	return fromBytes(hash);
 }
