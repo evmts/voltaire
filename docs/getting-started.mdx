@@ -104,7 +104,7 @@ Let's build a simple example that demonstrates Voltaire's core capabilities: has
 <Tabs>
   <Tab title="Node.js">
     ```bash
-    node --loader tsx example.ts
+    tsx example.ts
     ```
   </Tab>
   <Tab title="Bun">
@@ -127,7 +127,7 @@ Signer address: 0xA0Cf798816D4b9b9866b5330EEa46A18382f251e
 Signature valid: true
 ```
 
-Congratulations! You've just hashed data, signed a message, and recovered an Ethereum address using Voltaire.
+You've just hashed data, signed a message, and recovered an Ethereum address using Voltaire.
 
 ## Core Architecture
 
@@ -178,14 +178,6 @@ const isZero = BrandedAddress.isZero(addr);
 ```
 
 **Tree-Shaking:** Only the specific functions you import are bundled.
-
-```typescript
-// This bundles ONLY fromHex and toChecksummed
-import { BrandedAddress } from "@tevm/voltaire/Address";
-
-const addr = BrandedAddress.fromHex("0x...");
-const checksum = BrandedAddress.toChecksummed(addr);
-```
 
 ## Class API Pattern
 
@@ -433,17 +425,17 @@ Now let's build something practical: create and sign an EIP-1559 transaction.
 ### 1. Create a transaction
 
 ```typescript
-import { Transaction, Address, Uint } from "@tevm/voltaire";
+import { Transaction, Address } from "@tevm/voltaire";
 
 const tx = {
   type: 2, // EIP-1559
   chainId: 1n, // Ethereum mainnet
   nonce: 0n,
-  maxFeePerGas: Uint.from("30 gwei"),
-  maxPriorityFeePerGas: Uint.from("1 gwei"),
+  maxFeePerGas: 30_000_000_000n, // 30 gwei
+  maxPriorityFeePerGas: 1_000_000_000n, // 1 gwei
   gasLimit: 21_000n,
   to: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
-  value: Uint.from("1 ether"),
+  value: 1_000_000_000_000_000_000n, // 1 ether
   data: new Uint8Array(),
 };
 ```
@@ -464,11 +456,13 @@ console.log("Signed transaction:", signedTx);
 ### 3. Serialize for broadcasting
 
 ```typescript
+import { Hash } from "@tevm/voltaire";
+
 // Serialize to RLP-encoded bytes
 const serialized = Transaction.serialize(signedTx);
 
 // Convert to hex for RPC
-const txHex = Hex.fromBytes(serialized);
+const txHex = Hash.toHex(serialized);
 console.log("Transaction hex:", txHex);
 
 // You can now send this via eth_sendRawTransaction
