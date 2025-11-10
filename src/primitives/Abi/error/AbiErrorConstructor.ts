@@ -1,4 +1,5 @@
-import type { Parameter, ParametersToPrimitiveTypes } from "../Parameter.js";
+import type { ParametersToPrimitiveTypes } from "../Parameter.js";
+import type { BrandedParameter } from "../parameter/index.js";
 import type { BrandedError } from "./BrandedError/BrandedError.js";
 import type { decodeParams } from "./BrandedError/decodeParams.js";
 import type { encodeParams } from "./BrandedError/encodeParams.js";
@@ -7,7 +8,7 @@ import type { getSignature } from "./BrandedError/getSignature.js";
 
 type AbiErrorPrototype<
 	TName extends string = string,
-	TInputs extends readonly Parameter[] = readonly Parameter[],
+	TInputs extends readonly BrandedParameter[] = readonly BrandedParameter[],
 > = BrandedError<TName, TInputs> & {
 	getSelector(
 		this: BrandedError<TName, TInputs>,
@@ -28,7 +29,7 @@ type AbiErrorPrototype<
 export interface AbiErrorConstructor {
 	<
 		TName extends string = string,
-		TInputs extends readonly Parameter[] = readonly Parameter[],
+		TInputs extends readonly BrandedParameter[] = readonly BrandedParameter[],
 	>(
 		error: BrandedError<TName, TInputs>,
 	): AbiErrorPrototype<TName, TInputs>;

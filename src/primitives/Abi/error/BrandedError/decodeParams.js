@@ -6,7 +6,7 @@ import { getSelector } from "./getSelector.js";
  * Decode error parameters from encoded data
  *
  * @template {string} TName
- * @template {readonly import('../../Parameter.js').Parameter[]} TInputs
+ * @template {readonly import('../../parameter/index.js').BrandedParameter[]} TInputs
  * @param {import('./BrandedError.js').BrandedError<TName, TInputs>} error - ABI error definition
  * @param {Uint8Array} data - Encoded error data with selector prefix
  * @returns {import('../../Parameter.js').ParametersToPrimitiveTypes<TInputs>} Decoded parameter values

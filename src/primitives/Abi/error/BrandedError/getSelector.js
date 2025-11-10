@@ -5,7 +5,7 @@ import { getSignature } from "./getSignature.js";
  * Get the 4-byte selector for an error
  *
  * @template {string} TName
- * @template {readonly import('../../Parameter.js').Parameter[]} TInputs
+ * @template {readonly import('../../parameter/index.js').BrandedParameter[]} TInputs
  * @param {import('./BrandedError.js').BrandedError<TName, TInputs>} error - ABI error definition
  * @returns {Uint8Array} 4-byte selector
  *
