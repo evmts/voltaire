@@ -7,6 +7,10 @@ description: Application Binary Interface encoding and decoding for Ethereum sma
 
 Complete Application Binary Interface (ABI) encoding and decoding with type safety for Ethereum smart contracts.
 
+<Tip title="New to ABI encoding?">
+Start with [ABI Fundamentals](/primitives/abi/fundamentals) to learn about function selectors, encoding rules, and event structure.
+</Tip>
+
 ## Overview
 
 [Branded](/primitives/branded-types) array of ABI items (functions, events, errors, constructors). Zero-overhead design supports both tree-shakeable namespace methods and class instances, following the same pattern as [Address](/primitives/address).
@@ -287,6 +291,12 @@ export type StateMutability = "pure" | "view" | "nonpayable" | "payable"
 ## API Documentation
 
 <Columns>
+  <Card title="Fundamentals" icon="open-book">
+    Learn ABI encoding structure, function selectors, and data layout.
+
+    [View fundamentals →](/primitives/abi/fundamentals)
+  </Card>
+
   <Card title="Types" icon="seti:config">
     Complete ABI type system: Abi, Parameter, AbiType, Item types, and type utilities.
 
@@ -347,12 +357,6 @@ export type StateMutability = "pure" | "view" | "nonpayable" | "payable"
     [View patterns →](/primitives/abi/usage-patterns)
   </Card>
 </Columns>
-
-<Tip title="What is ABI?">
-The Application Binary Interface (ABI) defines how to encode/decode data when interacting with Ethereum smart contracts. It specifies the layout of function calls, event logs, errors, and data structures.
-
-See [Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html) for complete details.
-</Tip>
 
 ## ABI JSON Format
 

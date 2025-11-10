@@ -1,0 +1,723 @@
+---
+title: Fundamentals
+description: Learn RLP encoding, decoding, and serialization fundamentals
+---
+
+RLP (Recursive Length Prefix) is Ethereum's serialization format for encoding arbitrarily nested arrays of binary data. This guide teaches RLP fundamentals using Voltaire.
+
+## What is RLP?
+
+RLP is a binary encoding scheme that serializes:
+- **Byte strings** - Raw binary data (addresses, hashes, numbers)
+- **Lists** - Ordered collections of byte strings or nested lists
+- **Nested structures** - Recursive lists containing other lists
+
+RLP encodes only structure (bytes vs lists) and length - no type information, field names, or metadata. This simplicity makes it fast and compact for Ethereum's performance-critical operations.
+
+## Why Ethereum Uses RLP
+
+**Deterministic serialization** - Same data always produces identical encoding, critical for:
+- Transaction signing (hash must be consistent)
+- Merkle tree construction (state/transaction/receipt tries)
+- Network protocol messages (devp2p)
+
+**Compact representation** - Minimal overhead:
+- Single byte values encode as themselves (no prefix)
+- Short strings use 1 byte prefix
+- Only long data needs multi-byte length encoding
+
+**Simple parsing** - No schema required:
+- Decode without knowing data structure
+- Parse incrementally from byte stream
+- Validate structure without semantic knowledge
+
+## RLP vs Other Formats
+
+<Tabs>
+<Tab title="RLP">
+
+```typescript
+// Encode [1, 2] as RLP
+const encoded = Rlp.encode([
+  new Uint8Array([0x01]),
+  new Uint8Array([0x02])
+]);
+// => Uint8Array([0xc4, 0x01, 0x02, 0x02])
+// 4 bytes total
+```
+
+**Pros**: Deterministic, compact, fast parsing
+**Cons**: No type information, requires knowledge of data structure
+
+</Tab>
+<Tab title="JSON">
+
+```json
+[1, 2]
+```
+
+**6 bytes** as ASCII string
+**Pros**: Human-readable, self-describing
+**Cons**: Non-deterministic whitespace, larger size, slower parsing
+
+</Tab>
+<Tab title="Protocol Buffers">
+
+```protobuf
+message Numbers {
+  repeated int32 values = 1;
+}
+```
+
+**Pros**: Schema validation, backward compatibility
+**Cons**: Requires schema, more complex encoding
+
+</Tab>
+</Tabs>
+
+## Encoding Algorithm
+
+RLP encoding follows a simple recursive algorithm based on input type:
+
+```
+encode(input):
+  if input is byte string:
+    return encodeBytes(input)
+  else if input is list:
+    return encodeList(input.map(encode))
+```
+
+The challenge: determining whether output represents a byte string or list. RLP uses prefix bytes to encode this distinction.
+
+## Encoding Rules
+
+RLP uses five encoding rules based on data type and length:
+
+### Rule 1: Single Byte (0x00-0x7f)
+
+Bytes with values less than 0x80 encode as themselves - no prefix needed.
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Single byte < 0x80
+const encoded = Rlp.encode(new Uint8Array([0x42]));
+console.log([...encoded]); // [0x42]
+
+// Single byte = 0x7f (maximum for this rule)
+const max = Rlp.encode(new Uint8Array([0x7f]));
+console.log([...max]); // [0x7f]
+```
+
+**Why this works**: Prefix bytes for other rules start at 0x80 or higher, so single bytes < 0x80 cannot be confused with prefixes.
+
+### Rule 2: Short Strings (0-55 bytes)
+
+Byte strings of 0-55 bytes: `[0x80 + length, ...bytes]`
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Empty string
+const empty = Rlp.encode(new Uint8Array([]));
+console.log([...empty]); // [0x80]
+// 0x80 = 0x80 + 0 (length is 0)
+
+// 3 bytes
+const short = Rlp.encode(new Uint8Array([1, 2, 3]));
+console.log([...short]); // [0x83, 1, 2, 3]
+// 0x83 = 0x80 + 3
+
+// Single byte >= 0x80
+const highByte = Rlp.encode(new Uint8Array([0x80]));
+console.log([...highByte]); // [0x81, 0x80]
+// 0x81 = 0x80 + 1 (needs prefix because value >= 0x80)
+
+// 55 bytes (maximum for this rule)
+const maxShort = Rlp.encode(new Uint8Array(55).fill(0x42));
+console.log(maxShort[0]); // 0xb7 (0x80 + 55)
+console.log(maxShort.length); // 56 (prefix + 55 bytes)
+```
+
+**Prefix range**: 0x80-0xb7 (128-183)
+**Data follows immediately** after the prefix byte
+
+### Rule 3: Long Strings (56+ bytes)
+
+Byte strings of 56+ bytes: `[0xb7 + length_of_length, ...length_bytes, ...bytes]`
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// 56 bytes (minimum for this rule)
+const minLong = Rlp.encode(new Uint8Array(56).fill(0x42));
+console.log(minLong[0]); // 0xb8 (0xb7 + 1)
+console.log(minLong[1]); // 56 (length encoded in 1 byte)
+console.log(minLong.length); // 58 (prefix + length + 56 bytes)
+
+// 300 bytes
+const mediumLong = Rlp.encode(new Uint8Array(300).fill(0x42));
+console.log(mediumLong[0]); // 0xb9 (0xb7 + 2)
+console.log(mediumLong[1]); // 1 (high byte of 300)
+console.log(mediumLong[2]); // 44 (low byte of 300)
+// 300 = (1 << 8) + 44
+
+// 70000 bytes (needs 3 bytes for length)
+const veryLong = Rlp.encode(new Uint8Array(70000).fill(0x42));
+console.log(veryLong[0]); // 0xba (0xb7 + 3)
+// Next 3 bytes encode 70000
+```
+
+**Prefix range**: 0xb8-0xbf (184-191)
+**Length encoding**: Big-endian unsigned integer
+**Maximum supported**: Theoretically 2^64 bytes (practically limited by memory)
+
+### Rule 4: Short Lists (0-55 bytes total payload)
+
+Lists with total payload < 56 bytes: `[0xc0 + length, ...encoded_items]`
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Empty list
+const empty = Rlp.encode([]);
+console.log([...empty]); // [0xc0]
+// 0xc0 = 0xc0 + 0
+
+// List of two single bytes
+const simple = Rlp.encode([
+  new Uint8Array([0x01]),
+  new Uint8Array([0x02])
+]);
+console.log([...simple]); // [0xc4, 0x01, 0x02, 0x02]
+// 0xc4 = 0xc0 + 4 (total payload: 1 + 1 + 1 + 1 = 4)
+// Payload: [0x01] encodes as [0x01], [0x02] encodes as [0x02], second [0x02] encodes as [0x02]
+
+// List with encoded strings
+const withStrings = Rlp.encode([
+  new Uint8Array([0x42, 0x43]),
+  new Uint8Array([0x44])
+]);
+console.log([...withStrings]); // [0xc5, 0x82, 0x42, 0x43, 0x44]
+// 0xc5 = 0xc0 + 5
+// Payload: [0x82, 0x42, 0x43] + [0x44] = 5 bytes
+```
+
+**Prefix range**: 0xc0-0xf7 (192-247)
+**Payload** = sum of all encoded item lengths
+
+### Rule 5: Long Lists (56+ bytes total payload)
+
+Lists with total payload >= 56 bytes: `[0xf7 + length_of_length, ...length_bytes, ...encoded_items]`
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// List with 60 single-byte items
+const longList = Rlp.encode(
+  Array.from({ length: 60 }, (_, i) => new Uint8Array([i]))
+);
+console.log(longList[0]); // 0xf8 (0xf7 + 1)
+console.log(longList[1]); // 60 (payload length)
+console.log(longList.length); // 62 (prefix + length + 60 bytes)
+
+// List of 30 two-byte strings (total payload: 30 * 3 = 90 bytes)
+const manyStrings = Rlp.encode(
+  Array.from({ length: 30 }, () => new Uint8Array([0x42, 0x43]))
+);
+console.log(manyStrings[0]); // 0xf8 (0xf7 + 1)
+console.log(manyStrings[1]); // 90 (payload length)
+```
+
+**Prefix range**: 0xf8-0xff (248-255)
+**Length encoding**: Same as Rule 3 (big-endian)
+
+## Visual Encoding Examples
+
+### Example 1: Encoding "dog"
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+const dog = new TextEncoder().encode('dog');
+// Uint8Array([0x64, 0x6f, 0x67]) - 3 bytes
+
+const encoded = Rlp.encode(dog);
+console.log([...encoded]); // [0x83, 0x64, 0x6f, 0x67]
+
+// Breakdown:
+// 0x83 = 0x80 + 3 (Rule 2: short string of 3 bytes)
+// 0x64, 0x6f, 0x67 = "dog" in ASCII
+```
+
+**Visual representation**:
+```
+Input:  "dog" → [0x64, 0x6f, 0x67]
+                      ↓
+                 Apply Rule 2
+                      ↓
+Output: [0x83, 0x64, 0x6f, 0x67]
+         └─┬─┘ └──────┬──────┘
+        Prefix    Original bytes
+     (0x80 + 3)
+```
+
+### Example 2: Encoding [ "cat", "dog" ]
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+const cat = new TextEncoder().encode('cat');
+const dog = new TextEncoder().encode('dog');
+
+const encoded = Rlp.encode([cat, dog]);
+console.log([...encoded]);
+// [0xc8, 0x83, 0x63, 0x61, 0x74, 0x83, 0x64, 0x6f, 0x67]
+
+// Breakdown:
+// First encode items:
+//   "cat" → [0x83, 0x63, 0x61, 0x74] (4 bytes)
+//   "dog" → [0x83, 0x64, 0x6f, 0x67] (4 bytes)
+// Total payload: 8 bytes
+//
+// Then encode list:
+//   0xc8 = 0xc0 + 8 (Rule 4: short list of 8 bytes)
+```
+
+**Visual representation**:
+```
+Input: ["cat", "dog"]
+          ↓
+   Encode each item
+          ↓
+  "cat" → [0x83, 0x63, 0x61, 0x74]
+  "dog" → [0x83, 0x64, 0x6f, 0x67]
+          ↓
+  Concatenate payload (8 bytes)
+          ↓
+   Apply Rule 4 (short list)
+          ↓
+Output: [0xc8, 0x83, 0x63, 0x61, 0x74, 0x83, 0x64, 0x6f, 0x67]
+         └─┬┘ └───────┬───────┘ └───────┬───────┘
+        Prefix  "cat" encoded    "dog" encoded
+       (0xc0+8)
+```
+
+### Example 3: Nested Structure
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// [ "hello", [ "world" ] ]
+const hello = new TextEncoder().encode('hello');
+const world = new TextEncoder().encode('world');
+
+const encoded = Rlp.encode([hello, [world]]);
+console.log([...encoded]);
+// [0xcd, 0x85, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xc6, 0x85, 0x77, 0x6f, 0x72, 0x6c, 0x64]
+
+// Breakdown:
+// 1. Encode "world": [0x85, 0x77, 0x6f, 0x72, 0x6c, 0x64] (6 bytes)
+// 2. Encode ["world"]: [0xc6, 0x85, 0x77, 0x6f, 0x72, 0x6c, 0x64] (7 bytes)
+//    0xc6 = 0xc0 + 6 (payload of inner list)
+// 3. Encode "hello": [0x85, 0x68, 0x65, 0x6c, 0x6c, 0x6f] (6 bytes)
+// 4. Total payload: 6 + 7 = 13 bytes
+// 5. Encode outer list: 0xcd = 0xc0 + 13
+```
+
+**Visual representation**:
+```
+Input: ["hello", ["world"]]
+           ↓           ↓
+      Encode each  Recurse into nested
+           ↓           ↓
+  "hello" → [0x85, ...5 bytes...]
+  "world" → [0x85, ...5 bytes...]
+           ↓
+  ["world"] → [0xc6, 0x85, ...5 bytes...]
+              (inner list: 0xc0 + 6)
+           ↓
+  Concatenate outer payload: 6 + 7 = 13 bytes
+           ↓
+Output: [0xcd, ...encoded items...]
+         (outer list: 0xc0 + 13)
+```
+
+## Encoding Numbers
+
+RLP treats numbers as byte strings - you must convert to bytes first:
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Zero encodes as empty byte string (NOT 0x00)
+const zero = Rlp.encode(new Uint8Array([]));
+console.log([...zero]); // [0x80]
+
+// Small number (< 256)
+const small = Rlp.encode(new Uint8Array([15]));
+console.log([...small]); // [0x0f]
+// Rule 1: single byte < 0x80
+
+// Larger number: 1000 = 0x03e8
+const large = Rlp.encode(new Uint8Array([0x03, 0xe8]));
+console.log([...large]); // [0x82, 0x03, 0xe8]
+// Rule 2: short string of 2 bytes
+
+// Number >= 0x80: 400 = 0x0190
+const medium = Rlp.encode(new Uint8Array([0x01, 0x90]));
+console.log([...medium]); // [0x82, 0x01, 0x90]
+// Rule 2: short string
+
+// Important: No leading zeros
+const withLeading = Rlp.encode(new Uint8Array([0x00, 0x01, 0x90]));
+// ❌ Non-canonical (has leading zero)
+
+const canonical = Rlp.encode(new Uint8Array([0x01, 0x90]));
+// ✅ Canonical encoding
+```
+
+**Canonical number encoding rules**:
+1. Zero encodes as empty byte string: `[0x80]`
+2. No leading zeros (except for zero itself)
+3. Big-endian byte order
+4. Minimal byte representation
+
+## Decoding Process
+
+Decoding reverses the encoding process by examining prefix bytes:
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+const encoded = new Uint8Array([0xc8, 0x83, 0x63, 0x61, 0x74, 0x83, 0x64, 0x6f, 0x67]);
+
+const decoded = Rlp.decode(encoded);
+console.log(decoded.data);
+// {
+//   type: 'list',
+//   value: [
+//     { type: 'bytes', value: Uint8Array([0x63, 0x61, 0x74]) },
+//     { type: 'bytes', value: Uint8Array([0x64, 0x6f, 0x67]) }
+//   ]
+// }
+```
+
+### Decoding Algorithm
+
+```
+decode(input, offset = 0):
+  prefix = input[offset]
+
+  if prefix < 0x80:
+    // Rule 1: single byte
+    return { type: 'bytes', value: [prefix] }
+
+  else if prefix <= 0xb7:
+    // Rule 2: short string
+    length = prefix - 0x80
+    return { type: 'bytes', value: input[offset+1 : offset+1+length] }
+
+  else if prefix <= 0xbf:
+    // Rule 3: long string
+    lengthOfLength = prefix - 0xb7
+    length = decodeLength(input[offset+1 : offset+1+lengthOfLength])
+    return { type: 'bytes', value: input[offset+1+lengthOfLength : ...] }
+
+  else if prefix <= 0xf7:
+    // Rule 4: short list
+    length = prefix - 0xc0
+    return { type: 'list', value: decodeList(input[offset+1 : offset+1+length]) }
+
+  else:
+    // Rule 5: long list
+    lengthOfLength = prefix - 0xf7
+    length = decodeLength(input[offset+1 : offset+1+lengthOfLength])
+    return { type: 'list', value: decodeList(input[offset+1+lengthOfLength : ...]) }
+```
+
+### Streaming Decoding
+
+Process multiple RLP-encoded items from a byte stream:
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Byte stream containing multiple RLP items
+let buffer = new Uint8Array([
+  0x83, 0x63, 0x61, 0x74,  // "cat"
+  0x83, 0x64, 0x6f, 0x67,  // "dog"
+  0xc0                     // []
+]);
+
+const items = [];
+
+while (buffer.length > 0) {
+  const decoded = Rlp.decode(buffer, true); // stream mode
+  items.push(decoded.data);
+  buffer = decoded.remainder;
+}
+
+console.log(items.length); // 3
+console.log(items[0]); // { type: 'bytes', value: Uint8Array([0x63, 0x61, 0x74]) }
+console.log(items[1]); // { type: 'bytes', value: Uint8Array([0x64, 0x6f, 0x67]) }
+console.log(items[2]); // { type: 'list', value: [] }
+```
+
+## Complete Example: Transaction Encoding
+
+Ethereum transactions use RLP encoding for signing and transmission:
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Legacy transaction fields (9 fields)
+const nonce = new Uint8Array([0x09]);                    // 9
+const gasPrice = new Uint8Array([0x04, 0xa8, 0x17, 0xc8, 0x00]);  // 20 Gwei
+const gasLimit = new Uint8Array([0x52, 0x08]);           // 21000
+const to = new Uint8Array([
+  0x74, 0x2d, 0x35, 0xcc, 0x66, 0x34, 0xc0, 0x53, 0x29, 0x25,
+  0xa3, 0xb8, 0x44, 0xbc, 0x9e, 0x75, 0x95, 0xf0, 0xbe, 0xb2
+]); // 20-byte address
+const value = new Uint8Array([0x0d, 0xe0, 0xb6, 0xb3, 0xa7, 0x64, 0x00, 0x00]); // 1 ETH
+const data = new Uint8Array([]);                         // Empty
+const v = new Uint8Array([0x1b]);                        // Chain ID encoding
+const r = new Uint8Array(32);                            // Signature r (placeholder)
+const s = new Uint8Array(32);                            // Signature s (placeholder)
+
+// Encode as RLP list
+const encoded = Rlp.encode([nonce, gasPrice, gasLimit, to, value, data, v, r, s]);
+
+console.log(`Transaction size: ${encoded.length} bytes`);
+// First byte indicates long list
+console.log(`List prefix: 0x${encoded[0].toString(16)}`); // 0xf8 or 0xf9
+
+// This is what gets hashed for signing
+import { keccak256 } from '@tevm/voltaire/Keccak256';
+const txHash = keccak256(encoded);
+console.log(`Transaction hash: ${txHash}`);
+
+// Decode to verify structure
+const decoded = Rlp.decode(encoded);
+if (decoded.data.type === 'list') {
+  console.log(`Field count: ${decoded.data.value.length}`); // 9
+}
+```
+
+### Transaction Encoding Breakdown
+
+```
+Input: [nonce, gasPrice, gasLimit, to, value, data, v, r, s]
+         ↓
+Encode each field:
+  nonce     → [0x09]           (1 byte, Rule 1)
+  gasPrice  → [0x85, ...]      (5 bytes encoded, Rule 2)
+  gasLimit  → [0x82, ...]      (2 bytes encoded, Rule 2)
+  to        → [0x94, ...]      (20 bytes encoded, Rule 2)
+  value     → [0x88, ...]      (8 bytes encoded, Rule 2)
+  data      → [0x80]           (empty, Rule 2)
+  v         → [0x1b]           (1 byte, Rule 1)
+  r         → [0xa0, ...]      (32 bytes encoded, Rule 2)
+  s         → [0xa0, ...]      (32 bytes encoded, Rule 2)
+         ↓
+Sum payload: ~110 bytes (exceeds 55)
+         ↓
+Apply Rule 5 (long list):
+  [0xf8, length_byte, ...encoded_fields]
+```
+
+## Use Cases in Ethereum
+
+### Transactions
+
+All transaction types use RLP:
+- Legacy transactions (9 fields)
+- EIP-2930 (access list transactions)
+- EIP-1559 (fee market transactions)
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Decode raw transaction from network
+const rawTx = new Uint8Array([...]); // From eth_getRawTransaction
+const decoded = Rlp.decode(rawTx);
+
+if (decoded.data.type === 'list') {
+  const fields = decoded.data.value;
+  // Access transaction fields
+}
+```
+
+### Block Headers
+
+Block headers are RLP-encoded lists of 15+ fields:
+
+```typescript
+// Block header fields
+const header = [
+  parentHash,      // 32 bytes
+  unclesHash,      // 32 bytes
+  miner,           // 20 bytes
+  stateRoot,       // 32 bytes
+  transactionsRoot,// 32 bytes
+  receiptsRoot,    // 32 bytes
+  logsBloom,       // 256 bytes
+  difficulty,      // Variable
+  number,          // Variable
+  gasLimit,        // Variable
+  gasUsed,         // Variable
+  timestamp,       // Variable
+  extraData,       // Variable
+  mixHash,         // 32 bytes
+  nonce            // 8 bytes
+];
+
+const encodedHeader = Rlp.encode(header);
+const blockHash = keccak256(encodedHeader);
+```
+
+### Merkle Patricia Tries
+
+State, transaction, and receipt tries use RLP for node encoding:
+
+```typescript
+// Trie node structure
+const branch = [
+  child0, child1, child2, ..., child15, // 16 children
+  value                                  // Optional value
+];
+
+const encodedNode = Rlp.encode(branch);
+// Node hash = keccak256(encodedNode) if length >= 32
+```
+
+### Network Protocol (devp2p)
+
+Ethereum's peer-to-peer protocol messages use RLP:
+
+```typescript
+// Hello message
+const hello = [
+  protocolVersion,  // P2P version
+  clientId,         // Client name
+  capabilities,     // [[cap1, version1], [cap2, version2], ...]
+  listenPort,       // TCP port
+  nodeId            // Public key
+];
+
+const encodedMessage = Rlp.encode(hello);
+```
+
+## Validation
+
+Ensure RLP encoding is valid before decoding:
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+const rlpBytes = new Uint8Array([0xc8, 0x83, 0x63, 0x61, 0x74]);
+
+try {
+  Rlp.validate(rlpBytes);
+  console.log("Valid RLP encoding");
+
+  const decoded = Rlp.decode(rlpBytes);
+  // Safe to use decoded data
+} catch (error) {
+  console.error(`Invalid RLP: ${error.message}`);
+  // Possible errors:
+  // - Truncated data (length exceeds available bytes)
+  // - Invalid prefix byte
+  // - Non-canonical encoding
+}
+```
+
+### Canonical Encoding
+
+RLP has canonical form requirements:
+- Numbers must not have leading zeros (except zero itself)
+- Shortest encoding must be used
+- Empty byte string is `[0x80]`, not `[]`
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Non-canonical: leading zero
+const nonCanonical = new Uint8Array([0x82, 0x00, 0x01]);
+// Should be: [0x01]
+
+// Non-canonical: could use shorter encoding
+const shouldBeShort = new Uint8Array([0xb8, 0x01, 0x42]);
+// Should be: [0x42] (Rule 1 applies)
+
+// Voltaire always produces canonical encoding
+const canonical = Rlp.encode(new Uint8Array([0x42]));
+console.log([...canonical]); // [0x42] ✅
+```
+
+## Common Patterns
+
+### Working with Addresses
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Address from '@tevm/voltaire/Address';
+
+const address = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+
+// Encode address (20 bytes)
+const encoded = Rlp.encode(address);
+console.log([...encoded]); // [0x94, ...20 bytes...]
+// 0x94 = 0x80 + 20 (Rule 2)
+
+// Decode address
+const decoded = Rlp.decode(encoded);
+if (decoded.data.type === 'bytes') {
+  const recoveredAddress = Address.fromUint8Array(decoded.data.value);
+}
+```
+
+### Working with Hashes
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const hash = Hash.fromHex("0x1234...");
+
+// Encode hash (32 bytes)
+const encoded = Rlp.encode(hash);
+console.log([...encoded]); // [0xa0, ...32 bytes...]
+// 0xa0 = 0x80 + 32 (Rule 2)
+
+// Multiple hashes in list
+const hashes = [hash1, hash2, hash3];
+const encodedList = Rlp.encode(hashes);
+```
+
+### Encoding Variable-Length Data
+
+```typescript
+import * as Rlp from '@tevm/voltaire/Rlp';
+
+// Contract deployment data (can be large)
+const initCode = new Uint8Array(5000); // 5KB
+
+const encoded = Rlp.encode(initCode);
+console.log(encoded[0]); // 0xb9 (0xb7 + 2)
+// Next 2 bytes encode length (5000)
+```
+
+## Resources
+
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal RLP specification (Appendix B)
+- **[Ethereum RLP Documentation](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/)** - Official RLP guide
+- **[EIP-2718](https://eips.ethereum.org/EIPS/eip-2718)** - Typed transaction envelope using RLP
+- **[Merkle Patricia Trie](https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/)** - RLP in state tries
+
+## Next Steps
+
+- [Overview](/primitives/rlp) - Type definition and API reference
+- [encode()](/primitives/rlp/encode) - Encode bytes and lists to RLP
+- [decode()](/primitives/rlp/decode) - Decode RLP to data structures
+- [validate()](/primitives/rlp/validate) - Validate RLP encoding

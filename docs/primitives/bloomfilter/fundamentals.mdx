@@ -1,0 +1,704 @@
+---
+title: Fundamentals
+description: Learn bloom filter theory, Ethereum log filtering, and probabilistic data structures
+---
+
+Bloom filters are space-efficient probabilistic data structures that test set membership. Ethereum uses them to enable fast log filtering without scanning entire block histories.
+
+## What is a Bloom Filter?
+
+A bloom filter answers "Is X in the set?" with two possible responses:
+- **"Definitely not"** - Guaranteed accurate (no false negatives)
+- **"Probably yes"** - May be incorrect (false positives possible)
+
+### Key Properties
+
+```
+Space Efficiency:   256 bytes stores information about thousands of items
+Time Complexity:    O(1) constant-time operations (add, contains)
+False Positives:    Possible - filter may report item exists when it doesn't
+False Negatives:    Impossible - if filter says "no", it's definitely absent
+Immutable Size:     Fixed at creation, doesn't grow with items added
+Append-Only:        Cannot remove items once added
+```
+
+### Why Ethereum Uses Bloom Filters
+
+Ethereum blocks contain logs (events emitted by contracts). Finding logs matching specific criteria (address, topics) requires filtering potentially millions of entries. Bloom filters solve this:
+
+1. Each block header includes a 256-byte bloom filter summarizing all logs
+2. Clients check the bloom filter before fetching block data
+3. If filter returns "definitely not", skip the block entirely
+4. If filter returns "probably yes", fetch and examine actual logs
+
+**Result**: 99%+ of blocks filtered out without network requests or disk I/O.
+
+## Algorithm
+
+Bloom filters use three components:
+
+1. **Bit array** - `m` bits, initially all zeros
+2. **Hash functions** - `k` independent hash functions
+3. **Operations** - Add items and test membership
+
+### Structure
+
+```
+Ethereum Bloom Filter:
+┌──────────────────────────────────────────────┐
+│ 256 bytes = 2048 bits = m                    │
+│ All bits initially 0                          │
+│ Set bits to 1 when items added               │
+└──────────────────────────────────────────────┘
+
+Hash Functions:
+┌──────────────────────────────────────────────┐
+│ k = 3 hash functions                          │
+│ Each maps item → bit position (0 to 2047)    │
+│ Independent: hash₁, hash₂, hash₃             │
+└──────────────────────────────────────────────┘
+```
+
+### Adding Items
+
+To add item to filter:
+
+1. Compute `k` hash values from item
+2. Each hash maps to bit position (0 to m-1)
+3. Set all `k` bits to 1
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire';
+
+const filter = BloomFilter.create(2048, 3); // m=2048 bits, k=3 hashes
+
+// Add "Transfer" topic
+const topic = new TextEncoder().encode("Transfer(address,address,uint256)");
+
+// Internally computes 3 hashes:
+// hash₁(topic) → bit position 42   → set bit 42 = 1
+// hash₂(topic) → bit position 791  → set bit 791 = 1
+// hash₃(topic) → bit position 1523 → set bit 1523 = 1
+
+filter.add(topic);
+```
+
+Visual representation:
+
+```
+Before add():
+Bit array: [0,0,0,0,0,0,...,0,0,0]  (all 2048 bits are 0)
+
+After add(topic):
+Bit array: [0,0,...,1,...,0,...,1,...,0,...,1,...,0]
+                  ↑42        ↑791         ↑1523
+                  (3 bits set to 1)
+```
+
+### Testing Membership
+
+To test if item might be in filter:
+
+1. Compute `k` hash values from item
+2. Check if all `k` bits are 1
+3. Return true only if ALL bits are set
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire';
+
+const filter = BloomFilter.create(2048, 3);
+const topic = new TextEncoder().encode("Transfer(address,address,uint256)");
+filter.add(topic);
+
+// Check membership
+if (filter.contains(topic)) {
+  console.log("Topic might be in filter"); // TRUE - all 3 bits are 1
+}
+
+// Check non-member
+const other = new TextEncoder().encode("Approval(address,address,uint256)");
+if (filter.contains(other)) {
+  console.log("False positive");
+} else {
+  console.log("Definitely not in filter"); // Likely outcome
+}
+```
+
+Visual check:
+
+```
+Item added:     Transfer topic → bits 42, 791, 1523 all set to 1 ✓
+Check Transfer: hash → 42, 791, 1523 → all are 1 → return TRUE
+
+Item not added: Approval topic → bits 15, 203, 891
+Check Approval: hash → 15, 203, 891 → bit 15 is 0 → return FALSE
+                                      (at least one bit is 0)
+```
+
+## False Positives vs False Negatives
+
+### False Negatives: Impossible
+
+If an item was added, ALL its bits are guaranteed to be 1. The `contains()` check will always return true.
+
+```typescript
+const filter = BloomFilter.create(2048, 3);
+const item = new TextEncoder().encode("test");
+
+filter.add(item);
+filter.contains(item); // ALWAYS true - no false negatives
+```
+
+### False Positives: Possible
+
+As more items are added, more bits become 1. Eventually, random combinations of set bits may match the hash pattern of items never added.
+
+```typescript
+const filter = BloomFilter.create(2048, 3);
+
+// Add 1000 items
+for (let i = 0; i < 1000; i++) {
+  filter.add(new TextEncoder().encode(`item${i}`));
+}
+
+// Many bits now set to 1
+
+// Check item never added
+const neverAdded = new TextEncoder().encode("phantom");
+if (filter.contains(neverAdded)) {
+  console.log("False positive"); // Possible as filter fills
+}
+```
+
+### False Positive Rate
+
+Probability of false positive depends on:
+- `m` - number of bits (larger = lower rate)
+- `k` - number of hash functions (optimal around `(m/n) * ln(2)`)
+- `n` - number of items added (more items = higher rate)
+
+Formula: `P ≈ (1 - e^(-kn/m))^k`
+
+Ethereum's parameters (m=2048, k=3) with ~100 log entries per block:
+```
+False positive rate ≈ 14%
+```
+
+This is acceptable because:
+1. False positives only trigger block fetch (cheap operation)
+2. False negatives would miss logs entirely (unacceptable)
+
+## Complete Example: Log Filtering
+
+Here's how Ethereum uses bloom filters for efficient log queries:
+
+```typescript
+import { BloomFilter, Address, Hex, Keccak256 } from '@tevm/voltaire';
+
+// Block header contains bloom filter
+const blockBloom = BloomFilter.create(2048, 3);
+
+// Contract emits Transfer event
+const contract = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2");
+const transferSignature = "Transfer(address,address,uint256)";
+const transferTopic = Keccak256.hash(new TextEncoder().encode(transferSignature));
+
+// Add to block bloom when log emitted
+blockBloom.add(contract);           // Add contract address
+blockBloom.add(transferTopic);      // Add event topic
+
+// Later: Query for Transfer events from this contract
+function findTransferLogs(fromAddress: Address, eventTopic: Uint8Array) {
+  // Step 1: Check bloom filter (fast, no I/O)
+  if (!blockBloom.contains(fromAddress)) {
+    console.log("Block definitely has no logs from this address");
+    return []; // Skip block entirely
+  }
+
+  if (!blockBloom.contains(eventTopic)) {
+    console.log("Block definitely has no Transfer events");
+    return []; // Skip block entirely
+  }
+
+  // Step 2: Bloom says "maybe" - fetch actual logs (slow, requires I/O)
+  console.log("Block might have matching logs - fetching...");
+  // ... fetch and filter actual logs ...
+}
+
+findTransferLogs(contract, transferTopic);
+// Output: "Block might have matching logs - fetching..."
+// (True positive - logs actually exist)
+
+// Query for non-existent event
+const swapTopic = Keccak256.hash(new TextEncoder().encode("Swap(address,uint256,uint256)"));
+findTransferLogs(contract, swapTopic);
+// Likely output: "Block definitely has no Swap events"
+// (True negative - bloom filter saves I/O)
+```
+
+### Query Performance
+
+Without bloom filters:
+```
+Query 10,000 blocks:
+- Fetch all 10,000 blocks from disk/network
+- Parse logs in all blocks
+- Filter for matching criteria
+- Time: ~10-30 seconds
+```
+
+With bloom filters:
+```
+Query 10,000 blocks:
+- Check 10,000 bloom filters in headers (cached in memory)
+- Fetch only ~14 blocks (1% false positive rate + true matches)
+- Parse logs in those 14 blocks
+- Time: ~100-300ms (100x faster)
+```
+
+## Ethereum Log Structure
+
+Ethereum logs have fields that go into bloom filters:
+
+```typescript
+type Log = {
+  address: Address;      // Contract that emitted log (20 bytes)
+  topics: Hash[];        // Indexed event parameters (0-4 topics, 32 bytes each)
+  data: Hex;            // Non-indexed parameters (not in bloom filter)
+};
+```
+
+### What Gets Added to Bloom Filter
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire';
+
+const bloom = BloomFilter.create(2048, 3);
+
+// Example log from ERC-20 Transfer
+const log = {
+  address: Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"),
+  topics: [
+    // topics[0] = keccak256("Transfer(address,address,uint256)")
+    Hash.from("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),
+    // topics[1] = from address (indexed parameter)
+    Hash.from("0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
+    // topics[2] = to address (indexed parameter)
+    Hash.from("0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"),
+  ],
+  data: "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000", // value (not indexed)
+};
+
+// Add to bloom filter
+bloom.add(log.address);     // Contract address
+bloom.add(log.topics[0]);   // Event signature
+bloom.add(log.topics[1]);   // From address
+bloom.add(log.topics[2]);   // To address
+// data is NOT added to bloom filter
+```
+
+### Query Patterns
+
+```typescript
+// Query 1: All logs from specific contract
+function logsFromContract(blockBloom: BloomFilter, address: Address) {
+  if (blockBloom.contains(address)) {
+    // Fetch block and filter logs by address
+  }
+}
+
+// Query 2: All Transfer events (any contract)
+function allTransferEvents(blockBloom: BloomFilter, transferTopic: Hash) {
+  if (blockBloom.contains(transferTopic)) {
+    // Fetch block and filter logs by topic
+  }
+}
+
+// Query 3: Transfer events from specific contract
+function contractTransferEvents(
+  blockBloom: BloomFilter,
+  address: Address,
+  transferTopic: Hash
+) {
+  if (blockBloom.contains(address) && blockBloom.contains(transferTopic)) {
+    // Both might be present - fetch and filter
+  }
+}
+
+// Query 4: Transfers involving specific address
+function transfersToAddress(
+  blockBloom: BloomFilter,
+  transferTopic: Hash,
+  userAddress: Hash  // Padded to 32 bytes as topic
+) {
+  if (blockBloom.contains(transferTopic) && blockBloom.contains(userAddress)) {
+    // Fetch and check if userAddress is in topics[1] or topics[2]
+  }
+}
+```
+
+## Hash Function Implementation
+
+Voltaire's bloom filter uses three hash functions based on keccak256:
+
+```typescript
+class BloomFilter extends Uint8Array {
+  static hash(item: Uint8Array, seed: number, m: number): number {
+    // Use keccak256 with seed to generate independent hashes
+    // Maps result to bit position (0 to m-1)
+  }
+}
+
+// Usage
+const filter = BloomFilter.create(2048, 3);
+const item = new TextEncoder().encode("test");
+
+// Compute individual hash positions
+const pos1 = BloomFilter.hash(item, 0, 2048); // First hash function
+const pos2 = BloomFilter.hash(item, 1, 2048); // Second hash function
+const pos3 = BloomFilter.hash(item, 2, 2048); // Third hash function
+
+console.log(`Bit positions: ${pos1}, ${pos2}, ${pos3}`);
+// Example output: "Bit positions: 42, 791, 1523"
+```
+
+### Properties of Hash Functions
+
+1. **Deterministic** - Same input always produces same output
+2. **Uniform distribution** - Bits chosen evenly across range
+3. **Independence** - Each hash function uncorrelated with others
+4. **Fast** - Constant-time computation
+
+```typescript
+// Verify determinism
+const item = new TextEncoder().encode("test");
+const pos1a = BloomFilter.hash(item, 0, 2048);
+const pos1b = BloomFilter.hash(item, 0, 2048);
+console.log(pos1a === pos1b); // true - always same result
+
+// Verify independence
+const pos2 = BloomFilter.hash(item, 1, 2048);
+const pos3 = BloomFilter.hash(item, 2, 2048);
+console.log(pos1a !== pos2 && pos2 !== pos3); // true - different results
+```
+
+## Merging Bloom Filters
+
+Bloom filters can be merged using bitwise OR to represent the union of two sets:
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire';
+
+// Block 1 logs
+const bloom1 = BloomFilter.create(2048, 3);
+bloom1.add(new TextEncoder().encode("Transfer"));
+bloom1.add(new TextEncoder().encode("Approval"));
+
+// Block 2 logs
+const bloom2 = BloomFilter.create(2048, 3);
+bloom2.add(new TextEncoder().encode("Swap"));
+bloom2.add(new TextEncoder().encode("Mint"));
+
+// Merge: represents logs from both blocks
+const merged = bloom1.merge(bloom2);
+
+// Merged filter contains items from both
+console.log(merged.contains(new TextEncoder().encode("Transfer"))); // true
+console.log(merged.contains(new TextEncoder().encode("Swap")));     // true
+console.log(merged.contains(new TextEncoder().encode("Burn")));     // false (probably)
+```
+
+Visual representation:
+
+```
+bloom1 bits: [1,0,1,0,0,1,...] (Transfer, Approval bits set)
+bloom2 bits: [0,1,0,1,1,0,...] (Swap, Mint bits set)
+──────────────────────────────────────────────────────────
+merged bits: [1,1,1,1,1,1,...] (bitwise OR - all bits set)
+```
+
+### Use Case: Block Range Queries
+
+```typescript
+// Efficiently query logs across block range
+function queryBlockRange(
+  blocks: Array<{ number: number; bloom: BloomFilter }>,
+  topic: Uint8Array
+): number[] {
+  const matchingBlocks: number[] = [];
+
+  for (const block of blocks) {
+    if (block.bloom.contains(topic)) {
+      matchingBlocks.push(block.number);
+    }
+  }
+
+  return matchingBlocks;
+}
+
+// Example: Find all blocks with Transfer events
+const blocks = [
+  { number: 100, bloom: BloomFilter.fromHex("0x...", 2048, 3) },
+  { number: 101, bloom: BloomFilter.fromHex("0x...", 2048, 3) },
+  { number: 102, bloom: BloomFilter.fromHex("0x...", 2048, 3) },
+  // ... thousands more
+];
+
+const transferTopic = Keccak256.hash(
+  new TextEncoder().encode("Transfer(address,address,uint256)")
+);
+
+const matches = queryBlockRange(blocks, transferTopic);
+console.log(`Found ${matches.length} blocks with potential Transfer events`);
+// Only fetch and parse these blocks
+```
+
+## Empty Filter Detection
+
+Check if filter has any items:
+
+```typescript
+import { BloomFilter } from '@tevm/voltaire';
+
+const filter = BloomFilter.create(2048, 3);
+
+// Initially empty
+console.log(filter.isEmpty()); // true
+
+// Add item
+filter.add(new TextEncoder().encode("test"));
+console.log(filter.isEmpty()); // false
+
+// Empty filters have all bits = 0
+const emptyFilter = BloomFilter.create(2048, 3);
+console.log(emptyFilter.every(byte => byte === 0)); // true - all zeros
+```
+
+Use case: Skip processing empty blocks:
+
+```typescript
+function processBlock(block: { bloom: BloomFilter; logs: Log[] }) {
+  if (block.bloom.isEmpty()) {
+    console.log("Block has no logs - skip processing");
+    return;
+  }
+
+  // Process logs...
+}
+```
+
+## Trade-offs
+
+### Space vs Accuracy
+
+Larger filters (more bits) reduce false positive rate:
+
+```typescript
+// Small filter: higher false positive rate
+const small = BloomFilter.create(256, 3);   // 32 bytes
+// False positive rate ~50% after 100 items
+
+// Medium filter: balanced
+const medium = BloomFilter.create(2048, 3); // 256 bytes (Ethereum standard)
+// False positive rate ~14% after 100 items
+
+// Large filter: lower false positive rate
+const large = BloomFilter.create(16384, 3); // 2 KB
+// False positive rate ~2% after 100 items
+```
+
+### Hash Functions vs Performance
+
+More hash functions reduce false positives but increase computation:
+
+```typescript
+// Few hashes: faster but less accurate
+const fast = BloomFilter.create(2048, 2);   // 2 hashes per operation
+
+// Optimal hashes: balanced (Ethereum uses this)
+const optimal = BloomFilter.create(2048, 3); // 3 hashes per operation
+
+// Many hashes: slower but more accurate
+const accurate = BloomFilter.create(2048, 5); // 5 hashes per operation
+```
+
+Optimal k (hash count) formula: `k = (m/n) * ln(2)` where:
+- m = number of bits
+- n = expected number of items
+
+For Ethereum (m=2048, n~100): `k = (2048/100) * 0.693 ≈ 14`
+
+But k=3 is used because:
+- Faster computation (only 3 hashes instead of 14)
+- Acceptable false positive rate (~14%)
+- Simpler implementation
+
+## Visualization
+
+### Bit Array Over Time
+
+```
+Empty filter:
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] (all bits 0)
+
+After adding 1 item (3 hashes):
+[0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0] (3 bits set)
+      ↑     ↑           ↑
+
+After adding 2 items:
+[0,0,1,1,0,1,0,0,1,0,1,0,0,1,0,0] (6 bits set)
+      ↑ ↑   ↑     ↑     ↑     ↑
+
+After adding 10 items:
+[1,0,1,1,1,1,0,1,1,0,1,1,0,1,1,0] (many bits set)
+
+After adding 100 items:
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] (most bits set)
+```
+
+As filter fills, collision probability increases → higher false positive rate.
+
+### Membership Test States
+
+```
+Item Added:
+┌─────────────────────────────────────┐
+│ Compute 3 hashes → positions a,b,c  │
+│ Check bits[a], bits[b], bits[c]     │
+│ All are 1? → Return TRUE            │
+│ Result: TRUE POSITIVE ✓             │
+└─────────────────────────────────────┘
+
+Item Not Added (Case 1):
+┌─────────────────────────────────────┐
+│ Compute 3 hashes → positions x,y,z  │
+│ Check bits[x], bits[y], bits[z]     │
+│ At least one is 0? → Return FALSE   │
+│ Result: TRUE NEGATIVE ✓             │
+└─────────────────────────────────────┘
+
+Item Not Added (Case 2):
+┌─────────────────────────────────────┐
+│ Compute 3 hashes → positions x,y,z  │
+│ Check bits[x], bits[y], bits[z]     │
+│ All are 1? → Return TRUE            │
+│ Result: FALSE POSITIVE ✗            │
+│ (bits set by other items)           │
+└─────────────────────────────────────┘
+```
+
+## Performance Characteristics
+
+| Operation | Time | Space | Notes |
+|-----------|------|-------|-------|
+| `create(m, k)` | O(1) | O(m/8) bytes | Allocates bit array |
+| `add(item)` | O(k) | O(1) | Computes k hashes, sets k bits |
+| `contains(item)` | O(k) | O(1) | Computes k hashes, checks k bits |
+| `merge(other)` | O(m/8) | O(m/8) bytes | Bitwise OR of all bytes |
+| `isEmpty()` | O(m/8) | O(1) | Checks if all bytes are 0 |
+
+Ethereum parameters (m=2048, k=3):
+- `add()`: 3 keccak256 hashes + 3 bit sets = ~10-20μs
+- `contains()`: 3 keccak256 hashes + 3 bit checks = ~10-20μs
+- `merge()`: 256 byte OR operations = ~1-2μs
+
+## Real-World Example: Event Indexing
+
+Complete example of building an event index using bloom filters:
+
+```typescript
+import { BloomFilter, Address, Keccak256, Hex } from '@tevm/voltaire';
+
+// Index of Transfer events across multiple blocks
+class TransferIndex {
+  private blockBlooms: Map<number, BloomFilter>;
+  private transferTopic: Uint8Array;
+
+  constructor() {
+    this.blockBlooms = new Map();
+    this.transferTopic = Keccak256.hash(
+      new TextEncoder().encode("Transfer(address,address,uint256)")
+    );
+  }
+
+  // Add block logs to index
+  addBlock(blockNumber: number, logs: Array<{ address: Address; topics: Hash[] }>) {
+    const bloom = BloomFilter.create(2048, 3);
+
+    for (const log of logs) {
+      // Add contract address and all topics to bloom
+      bloom.add(log.address);
+      for (const topic of log.topics) {
+        bloom.add(topic);
+      }
+    }
+
+    this.blockBlooms.set(blockNumber, bloom);
+  }
+
+  // Query: Find blocks with Transfer events from specific contract
+  findTransfersFromContract(contractAddress: Address): number[] {
+    const matchingBlocks: number[] = [];
+
+    for (const [blockNumber, bloom] of this.blockBlooms.entries()) {
+      // Check if block might contain Transfer from this contract
+      if (bloom.contains(this.transferTopic) && bloom.contains(contractAddress)) {
+        matchingBlocks.push(blockNumber);
+      }
+    }
+
+    return matchingBlocks;
+  }
+
+  // Query: Find blocks with Transfers to specific address
+  findTransfersToAddress(userAddress: Address): number[] {
+    const matchingBlocks: number[] = [];
+
+    // Pad address to 32 bytes (as it appears in topics)
+    const paddedAddress = new Uint8Array(32);
+    paddedAddress.set(userAddress, 12); // Address at offset 12
+
+    for (const [blockNumber, bloom] of this.blockBlooms.entries()) {
+      if (bloom.contains(this.transferTopic) && bloom.contains(paddedAddress)) {
+        matchingBlocks.push(blockNumber);
+      }
+    }
+
+    return matchingBlocks;
+  }
+}
+
+// Usage
+const index = new TransferIndex();
+
+// Index blocks 100-200
+for (let i = 100; i <= 200; i++) {
+  const logs = await fetchBlockLogs(i); // Your RPC call
+  index.addBlock(i, logs);
+}
+
+// Find Transfer events from USDC contract
+const usdcAddress = Address.from("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
+const blocks = index.findTransfersFromContract(usdcAddress);
+
+console.log(`Found ${blocks.length} blocks with potential USDC transfers`);
+console.log(`Need to fetch and parse only these blocks: ${blocks}`);
+// Example: [100, 105, 112, 198]
+// Only 4 blocks instead of 100 - 96% reduction!
+```
+
+## Resources
+
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 4.3.1 (Bloom Filter specification)
+- **[Bloom Filters by Example](https://llimllib.github.io/bloomfilter-tutorial/)** - Interactive visualization
+- **[Wikipedia: Bloom Filter](https://en.wikipedia.org/wiki/Bloom_filter)** - Mathematical analysis and variants
+- **[Ethereum JSON-RPC Specification](https://ethereum.org/en/developers/docs/apis/json-rpc/)** - Log filtering methods (`eth_getLogs`, `eth_getFilterLogs`)
+- **[EIP-234](https://eips.ethereum.org/EIPS/eip-234)** - JSON-RPC filter API specification
+
+## Next Steps
+
+- [Overview](/primitives/bloomfilter) - Type definition and API reference
+- [Constructors](/primitives/bloomfilter/constructors) - Create bloom filters
+- [Operations](/primitives/bloomfilter/operations) - Add items and merge filters
+- [Queries](/primitives/bloomfilter/queries) - Test membership and check state
+- [Log Filtering](/primitives/bloomfilter/log-filtering) - Ethereum-specific patterns

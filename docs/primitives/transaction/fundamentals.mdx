@@ -1,0 +1,898 @@
+---
+title: Transaction Fundamentals
+description: Learn Ethereum transaction types, lifecycle, signing, and gas mechanics
+---
+
+Ethereum transactions are cryptographically signed messages that initiate state transitions on the Ethereum blockchain. This guide teaches transaction fundamentals using Voltaire.
+
+## What Are Transactions?
+
+Transactions are the **only** way to modify Ethereum state. Every state change (ETH transfer, contract deployment, function call) requires a transaction.
+
+Key properties:
+- **Atomic** - Either fully executes or fully reverts
+- **Cryptographically signed** - Proves sender authorization via ECDSA signature
+- **Immutable** - Once mined, cannot be altered
+- **Ordered** - Executed sequentially per account (nonce ordering)
+
+## Transaction Types
+
+Ethereum supports 5 transaction types, each adding new capabilities:
+
+### Legacy (Type 0)
+
+Original transaction format from Ethereum genesis (2015).
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Address from '@tevm/voltaire/Address';
+
+const legacy: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 20_000_000_000n,  // 20 gwei fixed price
+  gasLimit: 21_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,  // 1 ETH
+  data: new Uint8Array(),
+  v: 27n,  // Signature v (pre-EIP-155: 27 or 28)
+  r: new Uint8Array(32),  // Signature r component
+  s: new Uint8Array(32),  // Signature s component
+};
+
+// Serialize to bytes for broadcasting
+const serialized = Transaction.serialize(legacy);
+
+// Compute transaction hash
+const txHash = Transaction.hash(legacy);
+```
+
+**Characteristics:**
+- Fixed `gasPrice` - No automatic fee market
+- `v` encodes chain ID (EIP-155) - Prevents replay attacks across chains
+- Simple structure - 9 fields total
+- Still widely supported
+
+### EIP-2930 (Type 1)
+
+Access list transactions introduced in Berlin hard fork (2021).
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Address from '@tevm/voltaire/Address';
+
+const eip2930: Transaction.EIP2930 = {
+  type: Transaction.Type.EIP2930,
+  chainId: 1n,  // Explicit chain ID
+  nonce: 0n,
+  gasPrice: 20_000_000_000n,
+  gasLimit: 30_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 0n,
+  data: new Uint8Array(),
+  accessList: [
+    {
+      address: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+      storageKeys: [
+        new Uint8Array(32),  // Storage slot to access
+      ],
+    },
+  ],
+  yParity: 0,  // Signature parity (0 or 1, replaces v)
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+const serialized = Transaction.serialize(eip2930);
+```
+
+**Access Lists:**
+Pre-declare which addresses and storage slots will be accessed. Reduces gas costs for declared access (2100 gas → 100 gas for warm access).
+
+**Why use EIP-2930?**
+- Gas savings on repeated storage access
+- Explicit contract interaction declaration
+- Foundation for later transaction types
+
+### EIP-1559 (Type 2)
+
+Dynamic fee market transactions from London hard fork (2021).
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Address from '@tevm/voltaire/Address';
+
+const eip1559: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 2_000_000_000n,  // 2 gwei tip to miner
+  maxFeePerGas: 30_000_000_000n,  // 30 gwei max willing to pay
+  gasLimit: 21_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+// Calculate effective gas price given current base fee
+const baseFee = 20_000_000_000n;  // 20 gwei from block
+const effectiveGasPrice = Transaction.EIP1559.getEffectiveGasPrice(
+  eip1559,
+  baseFee
+);
+console.log(effectiveGasPrice);
+// 22_000_000_000n (base 20 + priority 2)
+
+const serialized = Transaction.serialize(eip1559);
+```
+
+**Fee Mechanics:**
+
+```
+effectiveGasPrice = min(
+  baseFee + maxPriorityFeePerGas,
+  maxFeePerGas
+)
+
+totalCost = gasLimit * effectiveGasPrice + value
+
+refund = (maxFeePerGas - effectiveGasPrice) * gasUsed
+```
+
+**Base Fee:**
+- Set by protocol, adjusts block-to-block based on block fullness
+- Burns to Ethereum (deflationary mechanism)
+- Target: 50% block utilization
+
+**Priority Fee:**
+- Tip to miner/validator
+- Incentivizes transaction inclusion
+- Goes to block proposer
+
+**Benefits:**
+- Predictable fees - Base fee visible before transaction
+- No overpayment - Refund if actual < max
+- ETH burn - Reduces supply
+
+### EIP-4844 (Type 3)
+
+Blob transactions for L2 data availability from Dencun hard fork (2024).
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const eip4844: Transaction.EIP4844 = {
+  type: Transaction.Type.EIP4844,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  maxFeePerGas: 20_000_000_000n,
+  gasLimit: 100_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),  // Must be contract
+  value: 0n,
+  data: new Uint8Array(),
+  accessList: [],
+  maxFeePerBlobGas: 1_000_000_000n,  // Max willing to pay per blob gas
+  blobVersionedHashes: [
+    Hash.from('0x01...'),  // KZG commitment hash for blob 1
+    Hash.from('0x01...'),  // KZG commitment hash for blob 2
+  ],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+// Calculate blob gas cost
+const blobBaseFee = 1n;  // From block header
+const blobGasCost = Transaction.EIP4844.getBlobGasCost(eip4844, blobBaseFee);
+console.log(blobGasCost);
+// blobCount * blobBaseFee * 131_072
+
+const serialized = Transaction.serialize(eip4844);
+```
+
+**Blob Details:**
+- **Size**: 128 KB per blob (131,072 bytes)
+- **Maximum**: 6 blobs per transaction
+- **Pricing**: Separate from execution gas, adapts to blob demand
+- **Availability**: Data pruned after ~18 days (not permanent storage)
+- **Use case**: L2 rollups post batch data cheaply
+
+**Total Cost:**
+```
+executionCost = gasLimit * effectiveGasPrice
+blobCost = blobCount * blobBaseFee * 131_072
+totalCost = executionCost + blobCost + value
+```
+
+**Why blob transactions?**
+- 10-100x cheaper than CALLDATA for L2s
+- Scales Ethereum data availability
+- Does not compete with execution gas market
+
+### EIP-7702 (Type 4)
+
+EOA delegation transactions from Pectra hard fork (2024).
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Address from '@tevm/voltaire/Address';
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+const eip7702: Transaction.EIP7702 = {
+  type: Transaction.Type.EIP7702,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  maxFeePerGas: 20_000_000_000n,
+  gasLimit: 100_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 0n,
+  data: new Uint8Array(),
+  accessList: [],
+  authorizationList: [
+    {
+      chainId: 1n,
+      address: Address.from('0x...'),  // Contract to delegate to
+      nonce: 0n,  // EOA nonce at time of signing
+      yParity: 0,
+      r: new Uint8Array(32),
+      s: new Uint8Array(32),
+    },
+  ],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+const serialized = Transaction.serialize(eip7702);
+```
+
+**Authorization List:**
+Each authorization temporarily delegates an EOA's code to a contract:
+- EOA signs authorization to execute contract logic
+- Transaction sender can trigger delegated logic
+- EOA retains control (can revoke by incrementing nonce)
+- Enables account abstraction without migrating funds
+
+**Use cases:**
+- Batched transactions from EOA
+- Sponsored transactions (gasless for user)
+- Social recovery
+- Multi-sig from EOA
+
+## Transaction Lifecycle
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ 1. CONSTRUCTION                                            │
+│    Create transaction object with all required fields      │
+├────────────────────────────────────────────────────────────┤
+│ 2. SIGNING HASH                                            │
+│    Compute keccak256 hash of transaction fields            │
+│    (excludes signature fields: v/r/s or yParity/r/s)       │
+├────────────────────────────────────────────────────────────┤
+│ 3. SIGNING                                                 │
+│    Sign hash with private key using secp256k1 ECDSA        │
+│    Produces r, s, v (or yParity) signature components      │
+├────────────────────────────────────────────────────────────┤
+│ 4. SERIALIZATION                                           │
+│    RLP encode transaction + signature → bytes              │
+│    For typed txs (1-4): [type_byte] + RLP(fields)         │
+├────────────────────────────────────────────────────────────┤
+│ 5. BROADCASTING                                            │
+│    Send serialized bytes via eth_sendRawTransaction        │
+│    Transaction enters mempool                              │
+├────────────────────────────────────────────────────────────┤
+│ 6. MINING/VALIDATION                                       │
+│    Block proposer includes transaction in block            │
+│    EVM executes transaction, updates state                 │
+├────────────────────────────────────────────────────────────┤
+│ 7. CONFIRMATION                                            │
+│    Block finalized, transaction immutable                  │
+│    Can verify sender via signature recovery                │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Complete Example: Send ETH
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Address from '@tevm/voltaire/Address';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+
+// 1. CONSTRUCT - Create unsigned transaction
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 5n,  // Sender's transaction count
+  maxPriorityFeePerGas: 2_000_000_000n,  // 2 gwei
+  maxFeePerGas: 30_000_000_000n,  // 30 gwei
+  gasLimit: 21_000n,  // Standard ETH transfer
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,  // 1 ETH
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,  // Placeholder, will be overwritten
+  r: new Uint8Array(32),  // Placeholder
+  s: new Uint8Array(32),  // Placeholder
+};
+
+// 2. SIGNING HASH - Compute what gets signed
+const signingHash = Transaction.getSigningHash(tx);
+console.log(signingHash);
+// Uint8Array(32) - keccak256 hash
+
+// 3. SIGNING - Sign with private key
+const privateKey = new Uint8Array(32);  // Your private key
+const signature = Secp256k1.sign(signingHash, privateKey);
+
+// Update transaction with signature
+const signedTx: Transaction.EIP1559 = {
+  ...tx,
+  yParity: signature.recovery,
+  r: signature.r,
+  s: signature.s,
+};
+
+// 4. SERIALIZATION - Encode to bytes
+const serialized = Transaction.serialize(signedTx);
+console.log(serialized);
+// Uint8Array - Ready for broadcasting
+
+// 5. BROADCASTING - Send via JSON-RPC (example)
+// await provider.send('eth_sendRawTransaction', [toHex(serialized)])
+
+// 7. VERIFICATION - Recover sender from signature
+const sender = Transaction.getSender(signedTx);
+console.log(sender);
+// BrandedAddress - Matches signing key's address
+```
+
+### Signing Hash Computation
+
+The signing hash is what gets signed by the sender's private key. It proves the transaction came from that sender.
+
+<Tabs>
+<Tab title="EIP-1559">
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Keccak256 from '@tevm/voltaire/Keccak256';
+
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 2_000_000_000n,
+  maxFeePerGas: 30_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+// What gets signed (excludes signature fields)
+const payload = Rlp.encode([
+  tx.chainId,
+  tx.nonce,
+  tx.maxPriorityFeePerGas,
+  tx.maxFeePerGas,
+  tx.gasLimit,
+  tx.to ?? new Uint8Array(),
+  tx.value,
+  tx.data,
+  tx.accessList,
+]);
+
+// For typed transactions, prepend type byte
+const signingData = new Uint8Array([0x02, ...payload]);
+
+// Hash to produce signing hash
+const signingHash = Keccak256.hash(signingData);
+
+// Equivalent to
+const signingHashDirect = Transaction.getSigningHash(tx);
+```
+</Tab>
+<Tab title="Legacy">
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Rlp from '@tevm/voltaire/Rlp';
+import * as Keccak256 from '@tevm/voltaire/Keccak256';
+
+const tx: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  nonce: 0n,
+  gasPrice: 20_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  v: 27n,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+// Extract chain ID from v (EIP-155)
+const chainId = (tx.v - 35n) / 2n;  // If v >= 35
+
+// Signing payload includes chain ID for replay protection
+const payload = Rlp.encode([
+  tx.nonce,
+  tx.gasPrice,
+  tx.gasLimit,
+  tx.to ?? new Uint8Array(),
+  tx.value,
+  tx.data,
+  chainId,
+  0,
+  0,
+]);
+
+const signingHash = Keccak256.hash(payload);
+
+// Equivalent to
+const signingHashDirect = Transaction.getSigningHash(tx);
+```
+</Tab>
+</Tabs>
+
+<Tip>
+The signing hash does **not** include the signature fields. This prevents circular dependencies - you need the hash to compute the signature.
+</Tip>
+
+## Gas Mechanics
+
+Gas is the unit of computational work on Ethereum. Every operation (opcode) costs gas.
+
+### Gas Limit
+
+Maximum gas you're willing to consume for the transaction.
+
+```typescript
+// Simple ETH transfer
+gasLimit: 21_000n  // Intrinsic gas for transaction
+
+// Contract interaction (estimate required)
+gasLimit: 100_000n  // More complex operations
+
+// Too low: Transaction reverts, you still pay gas
+// Too high: Unused gas refunded, but max fee reserved upfront
+```
+
+### Gas Price (Legacy)
+
+```typescript
+const legacy: Transaction.Legacy = {
+  gasPrice: 20_000_000_000n,  // 20 gwei per gas
+  gasLimit: 21_000n,
+  // ...
+};
+
+// Total cost reserved upfront
+const maxCost = legacy.gasPrice * legacy.gasLimit;
+// 420_000_000_000_000n (0.00042 ETH)
+
+// If transaction uses all gas
+const actualCost = legacy.gasPrice * 21_000n;
+// 420_000_000_000_000n
+
+// No refund mechanism for overestimation
+```
+
+### Max Fee Per Gas (EIP-1559)
+
+```typescript
+const eip1559: Transaction.EIP1559 = {
+  maxPriorityFeePerGas: 2_000_000_000n,  // 2 gwei tip
+  maxFeePerGas: 30_000_000_000n,  // 30 gwei max
+  gasLimit: 21_000n,
+  // ...
+};
+
+// Current block's base fee
+const baseFee = 20_000_000_000n;  // 20 gwei
+
+// Effective gas price
+const effectiveGasPrice = Math.min(
+  baseFee + eip1559.maxPriorityFeePerGas,  // 22 gwei
+  eip1559.maxFeePerGas  // 30 gwei
+);
+// 22_000_000_000n
+
+// Max cost reserved upfront
+const maxCost = eip1559.maxFeePerGas * eip1559.gasLimit;
+// 630_000_000_000_000n (0.00063 ETH)
+
+// Actual cost if transaction uses 21,000 gas
+const actualCost = effectiveGasPrice * 21_000n;
+// 462_000_000_000_000n (0.000462 ETH)
+
+// Refund
+const refund = maxCost - actualCost;
+// 168_000_000_000_000n (0.000168 ETH)
+```
+
+### Base Fee Adjustment
+
+Base fee adjusts block-to-block based on congestion:
+
+```
+Target gas per block: 15M gas
+Max gas per block: 30M gas
+
+If block uses > 15M gas:
+  nextBaseFee = baseFee * 1.125  (12.5% increase)
+
+If block uses < 15M gas:
+  nextBaseFee = baseFee * 0.875  (12.5% decrease)
+```
+
+This creates automatic fee market adjustment without user intervention.
+
+### Blob Gas (EIP-4844)
+
+Separate gas market for blob data:
+
+```typescript
+const eip4844: Transaction.EIP4844 = {
+  maxFeePerGas: 30_000_000_000n,  // Execution gas
+  maxFeePerBlobGas: 1_000_000_000n,  // Blob gas
+  gasLimit: 100_000n,
+  blobVersionedHashes: [hash1, hash2],  // 2 blobs
+  // ...
+};
+
+// Blob gas per blob: 131,072 (fixed)
+const blobGasPerBlob = 131_072;
+
+// Current blob base fee
+const blobBaseFee = 1n;
+
+// Blob cost
+const blobCost = 2 * blobGasPerBlob * blobBaseFee;
+// 262_144n
+
+// Execution cost (same as EIP-1559)
+const executionCost = effectiveGasPrice * gasUsed;
+
+// Total transaction cost
+const totalCost = executionCost + blobCost + value;
+```
+
+**Blob base fee** adjusts independently from execution base fee based on blob usage:
+- Target: 3 blobs per block
+- Max: 6 blobs per block
+- Same 12.5% adjustment algorithm
+
+## Transaction Validation
+
+Transactions must satisfy multiple validation rules:
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 2_000_000_000n,
+  maxFeePerGas: 30_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+// 1. Check transaction is signed
+const isSigned = Transaction.isSigned(tx);
+if (!isSigned) {
+  throw new Error('Transaction not signed');
+}
+
+// 2. Verify signature is valid
+const isValid = Transaction.verifySignature(tx);
+if (!isValid) {
+  throw new Error('Invalid signature');
+}
+
+// 3. Recover sender address
+const sender = Transaction.getSender(tx);
+console.log(sender);
+// BrandedAddress
+
+// 4. Validate field constraints
+// - maxPriorityFeePerGas <= maxFeePerGas
+// - gasLimit >= intrinsic gas (21,000 for basic transfer)
+// - nonce matches sender's current nonce
+// - sender has sufficient balance for maxCost
+```
+
+### Intrinsic Gas
+
+Minimum gas required before execution:
+
+```typescript
+// Base transaction cost
+const baseCost = 21_000n;
+
+// Data cost (per byte)
+const zeroByteCost = 4n;
+const nonZeroByteCost = 16n;
+
+// Access list cost
+const accessListAddressCost = 2_400n;
+const accessListStorageKeyCost = 1_900n;
+
+// Example calculation
+function intrinsicGas(tx: Transaction.EIP1559): bigint {
+  let gas = baseCost;
+
+  // Data cost
+  for (const byte of tx.data) {
+    gas += byte === 0 ? zeroByteCost : nonZeroByteCost;
+  }
+
+  // Access list cost
+  for (const entry of tx.accessList) {
+    gas += accessListAddressCost;
+    gas += BigInt(entry.storageKeys.length) * accessListStorageKeyCost;
+  }
+
+  return gas;
+}
+```
+
+## Detecting Transaction Type
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+
+// From serialized bytes
+const serialized = new Uint8Array([0x02, /* ... */]);
+
+// Detect type from first byte
+const type = Transaction.detectType(serialized);
+console.log(type);
+// 2 (EIP-1559)
+
+// Deserialize to typed transaction
+const tx = Transaction.deserialize(serialized);
+
+// Check type with type guard
+if (tx.type === Transaction.Type.EIP1559) {
+  // TypeScript knows this is EIP1559 transaction
+  console.log(tx.maxPriorityFeePerGas);
+}
+```
+
+### Type Detection Rules
+
+```
+If first byte < 0xc0:
+  - Type byte determines transaction type
+  - 0x00 = Legacy
+  - 0x01 = EIP-2930
+  - 0x02 = EIP-1559
+  - 0x03 = EIP-4844
+  - 0x04 = EIP-7702
+
+If first byte >= 0xc0:
+  - Legacy transaction (RLP list marker)
+  - No type byte prefix
+```
+
+## Working With Signatures
+
+### Sign Transaction
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Secp256k1 from '@tevm/voltaire/Secp256k1';
+
+// Unsigned transaction
+const unsigned: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 2_000_000_000n,
+  maxFeePerGas: 30_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+// Get signing hash
+const hash = Transaction.getSigningHash(unsigned);
+
+// Sign with private key
+const privateKey = new Uint8Array(32);  // Your private key
+const signature = Secp256k1.sign(hash, privateKey);
+
+// Create signed transaction
+const signed: Transaction.EIP1559 = {
+  ...unsigned,
+  yParity: signature.recovery,
+  r: signature.r,
+  s: signature.s,
+};
+```
+
+### Verify Signature
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+
+// Verify signature is valid
+const isValid = Transaction.verifySignature(signed);
+console.log(isValid);  // true
+
+// Recover sender address
+const sender = Transaction.getSender(signed);
+console.log(sender);
+// BrandedAddress matching private key
+```
+
+### Assert Signed
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+
+// Check if transaction is signed
+if (!Transaction.isSigned(tx)) {
+  throw new Error('Transaction not signed');
+}
+
+// Or use assertion (throws if not signed)
+Transaction.assertSigned(tx);
+
+// Now safe to call getSender
+const sender = Transaction.getSender(tx);
+```
+
+## Comparing Transaction Types
+
+<Tabs>
+<Tab title="Use Cases">
+| Type | Best For |
+|------|----------|
+| **Legacy** | Compatibility with old tools, simple transfers |
+| **EIP-2930** | Gas savings on known storage access patterns |
+| **EIP-1559** | Modern applications, predictable fees |
+| **EIP-4844** | L2 rollup data posting, batch submissions |
+| **EIP-7702** | Account abstraction, sponsored transactions |
+</Tab>
+<Tab title="Gas Costs">
+| Type | Gas Price | Additional Costs |
+|------|-----------|------------------|
+| **Legacy** | Fixed `gasPrice` | None |
+| **EIP-2930** | Fixed `gasPrice` | Access list (2400 + 1900n per storage key) |
+| **EIP-1559** | `maxFee` + `priorityFee` | Access list (optional) |
+| **EIP-4844** | `maxFee` + `priorityFee` | Blob gas (131,072 per blob) |
+| **EIP-7702** | `maxFee` + `priorityFee` | Authorization signatures |
+</Tab>
+<Tab title="Limitations">
+| Type | Limitations |
+|------|-------------|
+| **Legacy** | No access lists, fixed gas pricing |
+| **EIP-2930** | Still uses fixed gas price |
+| **EIP-1559** | None (standard) |
+| **EIP-4844** | Cannot deploy contracts (`to` must be address) |
+| **EIP-7702** | EOA delegation complexity |
+</Tab>
+</Tabs>
+
+## RLP Serialization
+
+Transactions use Recursive Length Prefix (RLP) encoding:
+
+```typescript
+import * as Transaction from '@tevm/voltaire/Transaction';
+import * as Hex from '@tevm/voltaire/Hex';
+
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  nonce: 0n,
+  maxPriorityFeePerGas: 2_000_000_000n,
+  maxFeePerGas: 30_000_000_000n,
+  gasLimit: 21_000n,
+  to: Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  value: 1_000_000_000_000_000_000n,
+  data: new Uint8Array(),
+  accessList: [],
+  yParity: 0,
+  r: new Uint8Array(32),
+  s: new Uint8Array(32),
+};
+
+// Serialize to bytes
+const serialized = Transaction.serialize(tx);
+console.log(Hex.fromBytes(serialized));
+// "0x02f8..."
+
+// Deserialize back to transaction
+const deserialized = Transaction.deserialize(serialized);
+console.log(deserialized.type === tx.type);  // true
+```
+
+### Serialization Format
+
+<Tabs>
+<Tab title="Typed Transactions">
+```
+Serialized = [type_byte] + RLP(transaction_fields)
+
+Example (EIP-1559):
+0x02 + RLP([
+  chainId,
+  nonce,
+  maxPriorityFeePerGas,
+  maxFeePerGas,
+  gasLimit,
+  to,
+  value,
+  data,
+  accessList,
+  yParity,
+  r,
+  s
+])
+```
+</Tab>
+<Tab title="Legacy">
+```
+Serialized = RLP([
+  nonce,
+  gasPrice,
+  gasLimit,
+  to,
+  value,
+  data,
+  v,
+  r,
+  s
+])
+
+No type byte prefix
+```
+</Tab>
+</Tabs>
+
+## Resources
+
+- **[EIP-155](https://eips.ethereum.org/EIPS/eip-155)** - Replay protection
+- **[EIP-2718](https://eips.ethereum.org/EIPS/eip-2718)** - Typed transaction envelope
+- **[EIP-2930](https://eips.ethereum.org/EIPS/eip-2930)** - Access lists
+- **[EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)** - Fee market change
+- **[EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)** - Blob transactions
+- **[EIP-7702](https://eips.ethereum.org/EIPS/eip-7702)** - EOA delegation
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Transaction spec (Section 4.2)
+
+## Next Steps
+
+- [Overview](/primitives/transaction) - Type definitions and API reference
+- [Serialization](/primitives/transaction/serialization) - Encode/decode transactions
+- [Hashing](/primitives/transaction/hashing) - Transaction and signing hashes
+- [Signing](/primitives/transaction/signing) - Signature verification and recovery
+- [Utilities](/primitives/transaction/utilities) - Gas calculations and helpers

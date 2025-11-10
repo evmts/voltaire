@@ -1,0 +1,420 @@
+---
+title: Fundamentals
+description: Learn Ethereum address structure, derivation, and checksumming
+---
+
+Ethereum addresses are 20-byte identifiers for accounts on the Ethereum network. This guide covers address fundamentals: what they are, how they're derived, and how to work with them using Voltaire.
+
+## What is an Address?
+
+An address uniquely identifies an account on Ethereum:
+- **EOA (Externally Owned Account)** - Controlled by a private key, derived from a public key
+- **Contract Account** - Controlled by contract code, created via CREATE or CREATE2
+
+Both types are represented as 20 bytes (160 bits), typically displayed as 40 hex characters with a `0x` prefix.
+
+## Structure
+
+Addresses are fixed-length 20-byte values:
+
+```
+0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e
+  ^^
+  0x prefix (not part of address)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    40 hex characters = 20 bytes
+```
+
+Voltaire stores addresses as raw `Uint8Array` internally, performing hex conversions only at API boundaries for performance and to avoid case-sensitivity bugs.
+
+## EOA Address Derivation
+
+EOA addresses derive from secp256k1 public keys through keccak256 hashing:
+
+### Step-by-Step Derivation
+
+```typescript
+import { Secp256k1 } from '@tevm/voltaire/crypto';
+import { Keccak256 } from '@tevm/voltaire/crypto';
+import { Address } from '@tevm/voltaire';
+
+// 1. Start with 32-byte private key
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+
+// 2. Derive 64-byte uncompressed public key (32-byte x + 32-byte y coordinates)
+const publicKey = Secp256k1.getPublicKey(privateKey, false); // false = uncompressed
+// publicKey is 65 bytes: [0x04, x (32 bytes), y (32 bytes)]
+
+// 3. Remove the 0x04 prefix byte
+const publicKeyUnprefixed = publicKey.slice(1); // 64 bytes: [x, y]
+
+// 4. Hash with keccak256
+const hash = Keccak256.hash(publicKeyUnprefixed); // 32 bytes
+
+// 5. Take last 20 bytes
+const address = hash.slice(12); // Last 20 bytes
+
+console.log(`Address: 0x${[...address].map(b => b.toString(16).padStart(2, '0')).join('')}`);
+```
+
+### Using Voltaire's High-Level API
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+// From private key (derives public key internally)
+const privateKey = new Uint8Array(32);
+crypto.getRandomValues(privateKey);
+
+const addr = Address.fromPrivateKey(privateKey);
+console.log(addr.toChecksummed());
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// From public key coordinates (x, y as bigints)
+const x = 0x742d35cc6634c0532925a3b844bc9e7595f51e3e8f73dc5c5b10a4b0e7d5f4a3n;
+const y = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+
+const addr2 = Address.fromPublicKey(x, y);
+console.log(addr2.toChecksummed());
+```
+
+## EIP-55 Checksumming
+
+EIP-55 adds error detection through mixed-case encoding. The checksum is computed by hashing the lowercase address and capitalizing letters based on the hash bits.
+
+### How Checksums Work
+
+```typescript
+import { Keccak256 } from '@tevm/voltaire/crypto';
+
+const address = "742d35cc6634c0532925a3b844bc9e7595f51e3e"; // lowercase, no 0x
+
+// 1. Hash the lowercase hex string
+const hash = Keccak256.hash(new TextEncoder().encode(address));
+
+// 2. For each letter (a-f), capitalize if corresponding hash nibble >= 8
+// Hash: 0x1a2b3c... → nibbles [1, a, 2, b, 3, c, ...]
+//   '7' (digit)  → keep '7'
+//   '4' (digit)  → keep '4'
+//   '2' (digit)  → keep '2'
+//   'd' (letter) → hash nibble 3: check if >= 8 → no → keep 'd'
+//   '3' (digit)  → keep '3'
+//   '5' (letter) → hash nibble 5: check if >= 8 → yes → capitalize 'C'
+
+// Result: "742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+```
+
+### Using Voltaire's Checksum API
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const addr = Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e");
+
+// Generate checksummed representation
+const checksummed = addr.toChecksummed();
+console.log(checksummed);
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Validate checksum
+const valid = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
+const invalid = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e"; // wrong case
+
+console.log(Address.isValidChecksum(valid));   // true
+console.log(Address.isValidChecksum(invalid)); // false
+
+// All-lowercase and all-uppercase are considered valid (no checksum)
+console.log(Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e")); // true
+console.log(Address.isValidChecksum("0x742D35CC6634C0532925A3B844BC9E7595F51E3E")); // true
+```
+
+### Why Checksumming Matters
+
+Checksums detect typos and transcription errors:
+
+```typescript
+// User copies address but makes typo
+const original = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
+const typo     = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3f"; // last char wrong
+
+// Checksum detects the error
+if (!Address.isValidChecksum(typo)) {
+  console.error("Invalid checksum - possible typo detected");
+}
+```
+
+Without checksums, sending funds to a typo'd address would result in permanent loss.
+
+## Contract Address Generation
+
+Contract addresses are computed deterministically from deployment parameters, not derived from public keys.
+
+### CREATE (Standard Deployment)
+
+Standard contract deployment uses the deployer's address and nonce:
+
+```
+address = keccak256(rlp([sender, nonce]))[12:]
+```
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// First contract deployment (nonce = 0)
+const contract1 = deployer.calculateCreateAddress(0n);
+console.log(contract1.toChecksummed());
+// "0x8ba1f109551bD432803012645Ac136ddd64DBA72"
+
+// Second contract deployment (nonce = 1)
+const contract2 = deployer.calculateCreateAddress(1n);
+console.log(contract2.toChecksummed());
+// "0x639Fe72929ac89da0De34Ed00c4Aa988c7CeB22c"
+
+// Different nonce = different address
+console.log(contract1.equals(contract2)); // false
+```
+
+### CREATE2 (Deterministic Deployment)
+
+CREATE2 enables deterministic addresses independent of nonce, using a salt and initialization code:
+
+```
+address = keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))[12:]
+```
+
+```typescript
+import { Address } from '@tevm/voltaire';
+import { Keccak256 } from '@tevm/voltaire/crypto';
+
+const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+
+// 32-byte salt (can be any value)
+const salt = new Uint8Array(32);
+salt[31] = 1; // Salt = 0x0000...0001
+
+// Contract bytecode (initialization code)
+const initCode = new Uint8Array([
+  0x60, 0x80, 0x60, 0x40, 0x52, // PUSH1 0x80 PUSH1 0x40 MSTORE
+  // ... rest of bytecode
+]);
+
+// Calculate deterministic address
+const contract = deployer.calculateCreate2Address(salt, initCode);
+console.log(contract.toChecksummed());
+// "0x4f4495243837681061C4743b74B3eEdf548D56A5"
+
+// Same inputs always produce same address
+const contract2 = deployer.calculateCreate2Address(salt, initCode);
+console.log(contract.equals(contract2)); // true
+```
+
+### CREATE vs CREATE2 Comparison
+
+<Tabs>
+<Tab title="CREATE">
+
+**Pros:**
+- Simpler (no salt/initCode needed)
+- Standard deployment method
+- Supported by all EVM chains
+
+**Cons:**
+- Non-deterministic (depends on nonce)
+- Can't predict address before deployment
+- Redeployment gets different address
+
+**Use when:**
+- Standard contract deployment
+- Address predictability not needed
+- Simplicity preferred
+
+</Tab>
+<Tab title="CREATE2">
+
+**Pros:**
+- Deterministic (same inputs = same address)
+- Can compute address before deployment
+- Enables counterfactual contracts
+- Redeployment to same address possible (after SELFDESTRUCT)
+
+**Cons:**
+- More complex (requires salt management)
+- Slightly higher gas cost
+- Requires EIP-1014 support (post-Constantinople)
+
+**Use when:**
+- Need deterministic addresses
+- Deploying across multiple chains
+- Counterfactual contracts (address exists before deployment)
+- Factory patterns
+
+</Tab>
+</Tabs>
+
+### Complete CREATE2 Example
+
+```typescript
+import { Address } from '@tevm/voltaire';
+import { Bytecode } from '@tevm/voltaire';
+
+// Factory contract that deploys via CREATE2
+const factory = Address.fromHex("0x0000000000FFe8B47B3e2130213B802212439497");
+
+// Simple contract bytecode (returns 42)
+const runtimeCode = Bytecode.fromHex("0x602a60005260206000f3");
+// PUSH1 0x2a PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
+
+// Deployment code wraps runtime code
+const deployCode = Bytecode.fromHex("0x69602a60005260206000f3600052600a6016f3");
+// PUSH10 0x602a60005260206000f3 PUSH1 0x00 MSTORE PUSH1 0x0a PUSH1 0x16 RETURN
+
+// Choose salt for deterministic address
+const salt = new Uint8Array(32);
+// Using zero salt for simplicity
+
+// Predict address before deployment
+const predictedAddress = factory.calculateCreate2Address(salt, deployCode);
+console.log(`Predicted: ${predictedAddress.toChecksummed()}`);
+// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+
+// Deploy contract via factory
+// await factory.deploy(salt, deployCode);
+
+// Verify deployed address matches prediction
+// const deployedAddress = await getDeployedAddress();
+// console.log(predictedAddress.equals(deployedAddress)); // true
+```
+
+## Special Addresses
+
+### Zero Address
+
+The zero address (`0x0000000000000000000000000000000000000000`) represents "no address" or burnt tokens:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const zero = Address.zero();
+console.log(zero.toHex());
+// "0x0000000000000000000000000000000000000000"
+
+// Check if address is zero
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+console.log(addr.isZero()); // false
+console.log(zero.isZero()); // true
+
+// Common use: burning tokens by sending to zero address
+// transfer(Address.zero(), amount); // Tokens permanently destroyed
+```
+
+### Precompile Addresses
+
+Addresses `0x01` through `0x0a` (and beyond) are reserved for precompiled contracts:
+
+```typescript
+// Precompile addresses
+const ecRecover  = Address.fromHex("0x0000000000000000000000000000000000000001"); // ECRecover
+const sha256     = Address.fromHex("0x0000000000000000000000000000000000000002"); // SHA-256
+const ripemd160  = Address.fromHex("0x0000000000000000000000000000000000000003"); // RIPEMD-160
+const identity   = Address.fromHex("0x0000000000000000000000000000000000000004"); // Identity
+const modexp     = Address.fromHex("0x0000000000000000000000000000000000000005"); // ModExp
+const ecAdd      = Address.fromHex("0x0000000000000000000000000000000000000006"); // BN254 Add
+const ecMul      = Address.fromHex("0x0000000000000000000000000000000000000007"); // BN254 Mul
+const ecPairing  = Address.fromHex("0x0000000000000000000000000000000000000008"); // BN254 Pairing
+const blake2f    = Address.fromHex("0x0000000000000000000000000000000000000009"); // Blake2f
+const pointEval  = Address.fromHex("0x000000000000000000000000000000000000000a"); // KZG Point Evaluation
+```
+
+See [Precompiles](/precompiles) for detailed documentation.
+
+## Common Operations
+
+### Validating User Input
+
+Always validate addresses from untrusted sources:
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+function parseUserAddress(input: string): Address {
+  // Check basic format
+  if (!Address.isValid(input)) {
+    throw new Error(`Invalid address format: ${input}`);
+  }
+
+  const addr = Address.fromHex(input);
+
+  // Optionally verify checksum if mixed-case
+  if (input.match(/[a-f].*[A-F]|[A-F].*[a-f]/)) { // Has both cases
+    if (!Address.isValidChecksum(input)) {
+      throw new Error(`Invalid checksum: ${input}`);
+    }
+  }
+
+  return addr;
+}
+
+// Usage
+try {
+  const addr = parseUserAddress("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+  console.log(`Valid: ${addr.toChecksummed()}`);
+} catch (e) {
+  console.error(e.message);
+}
+```
+
+### Comparing Addresses
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
+const addr2 = Address.fromHex("0x742D35CC6634C0532925A3B844BC9E7595F51E3E"); // Different case
+
+// Equality (case-insensitive)
+console.log(addr1.equals(addr2)); // true (same bytes)
+
+// Ordering
+const addr3 = Address.fromHex("0x0000000000000000000000000000000000000001");
+console.log(addr3.lessThan(addr1)); // true
+console.log(addr1.greaterThan(addr3)); // true
+
+// Sorting
+const addresses = [addr1, addr3, addr2];
+const sorted = Address.sortAddresses(addresses);
+console.log(sorted.map(a => a.toHex()));
+// ["0x0000...0001", "0x742d...1e3e", "0x742d...1e3e"]
+```
+
+### Deduplicating Addresses
+
+```typescript
+import { Address } from '@tevm/voltaire';
+
+const addresses = [
+  Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"),
+  Address.fromHex("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"), // Duplicate (different case)
+  Address.fromHex("0x0000000000000000000000000000000000000001"),
+];
+
+const unique = Address.deduplicateAddresses(addresses);
+console.log(unique.length); // 2 (duplicates removed)
+```
+
+## Resources
+
+- **[EIP-55](https://eips.ethereum.org/EIPS/eip-55)** - Mixed-case checksum address encoding
+- **[EIP-1014](https://eips.ethereum.org/EIPS/eip-1014)** - CREATE2 opcode specification
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Address derivation (Section 7)
+- **[Ethereum Account Model](https://ethereum.org/en/developers/docs/accounts/)** - EOA vs Contract accounts
+- **[evm.codes](https://www.evm.codes/)** - CREATE and CREATE2 opcode reference
+
+## Next Steps
+
+- [Overview](/primitives/address) - Type definition and API reference
+- [Constructors](/primitives/address/constructors) - Creating addresses from various inputs
+- [Conversions](/primitives/address/conversions) - Converting to different formats
+- [Contract Addresses](/primitives/address/contract-addresses) - CREATE and CREATE2 in depth

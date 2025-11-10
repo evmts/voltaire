@@ -1,0 +1,728 @@
+---
+title: Fundamentals
+description: Learn EIP-7702 authorization structure, delegation, and account abstraction
+---
+
+EIP-7702 authorizations enable Externally Owned Accounts (EOAs) to temporarily delegate code execution to smart contracts. This guide teaches authorization fundamentals using Voltaire.
+
+## What is EIP-7702 Authorization?
+
+An authorization is a signed message allowing an EOA to temporarily set its code pointer to a smart contract's code for a single transaction. After the transaction, the EOA reverts to its normal state.
+
+**Key Characteristics:**
+- **Temporary** - Delegation lasts only one transaction
+- **Signed** - EOA owner must explicitly sign authorization
+- **Per-transaction** - Included in transaction's authorization list
+- **Non-invasive** - EOA retains original balance, nonce, storage
+
+## Why EIP-7702 Exists
+
+### The Account Abstraction Problem
+
+Traditional EOAs have limitations:
+- Can't batch operations (need multiple transactions)
+- Can't sponsor gas (user always pays)
+- Can't implement custom validation logic
+- Can't recover if keys are lost
+
+Contract wallets solve these but require:
+- Migrating funds to new contract address
+- Losing original EOA identity
+- CREATE2 deployment complexity
+
+EIP-7702 enables **account abstraction without migration** - your EOA gains smart contract capabilities on demand.
+
+### Use Cases
+
+1. **Sponsored Transactions** - Relayer pays gas, user signs authorization
+2. **Batch Operations** - Multiple token approvals, swaps, transfers in one transaction
+3. **Social Recovery** - Guardian-based recovery without moving funds
+4. **Session Keys** - Temporary signing keys for games, dApps
+5. **Custom Validation** - Multi-sig, time locks, spending limits
+
+## Authorization Structure
+
+An authorization contains 6 fields:
+
+```typescript
+type Authorization = {
+  chainId: bigint;      // Chain ID where valid (prevents replay)
+  address: Address;     // Contract to delegate to (20 bytes)
+  nonce: bigint;        // Account nonce (prevents replay)
+  yParity: number;      // Signature Y parity (0 or 1)
+  r: bigint;            // Signature r value (32 bytes)
+  s: bigint;            // Signature s value (32 bytes)
+};
+```
+
+### Field Details
+
+**chainId** - Prevents cross-chain replay attacks. Authorization signed for mainnet (1) is invalid on Optimism (10).
+
+**address** - The smart contract that will execute in your EOA's context. Choose trusted contracts only.
+
+**nonce** - Your EOA's current nonce. Prevents replaying old authorizations.
+
+**yParity, r, s** - secp256k1 signature components proving you authorized this delegation.
+
+## Delegation Mechanics
+
+### Before Authorization
+
+```
+EOA (0x742d...)
+├── Balance: 10 ETH
+├── Nonce: 5
+├── Code: None (empty)
+└── Storage: None (empty)
+```
+
+### During Transaction with Authorization
+
+```
+EOA (0x742d...) [Delegated to 0xABCD...]
+├── Balance: 10 ETH          (unchanged)
+├── Nonce: 5 → 6             (incremented)
+├── Code: → Points to 0xABCD (temporary)
+└── Storage: Still empty     (contract uses its own storage)
+```
+
+**Execution Context:**
+- Calls to EOA address execute delegated contract's code
+- `msg.sender` in delegated contract is the transaction sender
+- `address(this)` is the EOA address
+- Contract reads/writes its own storage (NOT EOA's storage)
+
+### After Transaction
+
+```
+EOA (0x742d...)
+├── Balance: 9.8 ETH (gas deducted)
+├── Nonce: 6         (incremented)
+├── Code: None       (reverted)
+└── Storage: None    (unchanged)
+```
+
+Delegation is removed. EOA returns to normal state.
+
+## Authorization Lifecycle
+
+### 1. Create Unsigned Authorization
+
+Define what to delegate and where:
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+const unsigned = {
+  chainId: 1n,                          // Mainnet
+  address: '0xABCD....',               // Trusted batch executor contract
+  nonce: 0n                            // Your current nonce
+};
+```
+
+### 2. Sign Authorization
+
+EOA owner signs with their private key:
+
+```typescript
+const privateKey = new Uint8Array(32); // Your private key
+
+const auth = Authorization.sign.call(unsigned, privateKey);
+
+console.log(auth);
+// {
+//   chainId: 1n,
+//   address: Uint8Array(20),
+//   nonce: 0n,
+//   yParity: 1,
+//   r: 12345...n,
+//   s: 67890...n
+// }
+```
+
+**What Happens:**
+1. RLP-encodes `[chainId, address, nonce]`
+2. Prepends EIP-7702 magic byte (0x05)
+3. Keccak256 hashes the result
+4. Signs hash with secp256k1
+5. Returns authorization with signature fields
+
+### 3. Include in Transaction
+
+Authorization list is added to EIP-7702 transaction:
+
+```typescript
+const transaction = {
+  type: 0x04,                           // EIP-7702 transaction type
+  chainId: 1n,
+  nonce: 0n,
+  maxFeePerGas: 20_000_000_000n,
+  maxPriorityFeePerGas: 1_000_000_000n,
+  gasLimit: 500_000n,
+  to: batchExecutorAddress,             // Contract to call
+  value: 0n,
+  data: encodedBatchCalldata,
+  authorizationList: [auth]             // Our signed authorization
+};
+
+// Sign and send transaction
+const signedTx = signTransaction(transaction, senderPrivateKey);
+await sendRawTransaction(signedTx);
+```
+
+### 4. Processing at Execution
+
+When transaction executes:
+
+1. **Validate** - Check signature, nonce, chain ID
+2. **Recover Authority** - Extract EOA address from signature
+3. **Set Code Delegation** - Point authority's code to delegated address
+4. **Deduct Gas** - Charge authorization processing costs
+5. **Execute Transaction** - Run transaction with delegated code active
+6. **Revert Delegation** - Remove code pointer after transaction
+
+## Complete Example: Sponsored Transaction
+
+User wants to swap tokens but has no ETH for gas. Relayer sponsors the transaction.
+
+### Step 1: User Creates Authorization
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+// User's EOA: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2
+// Sponsor contract: 0x1234567890123456789012345678901234567890
+
+const userPrivateKey = new Uint8Array(32); // User's key
+const userNonce = 0n; // Current nonce from chain
+
+// User delegates to sponsor contract
+const unsigned = {
+  chainId: 1n,
+  address: '0x1234567890123456789012345678901234567890', // Sponsor contract
+  nonce: userNonce
+};
+
+const auth = Authorization.sign.call(unsigned, userPrivateKey);
+
+// User sends auth to relayer (no transaction sent yet)
+```
+
+### Step 2: Relayer Builds Transaction
+
+```typescript
+// Relayer receives authorization from user
+const receivedAuth = auth;
+
+// Validate before using
+Authorization.validate.call(receivedAuth);
+
+// Calculate gas cost
+const isEmpty = false; // Assuming sponsor contract exists
+const authGas = Authorization.getGasCost.call(receivedAuth, isEmpty);
+
+// Build transaction
+const transaction = {
+  type: 0x04,
+  chainId: 1n,
+  nonce: relayerNonce,
+  maxFeePerGas: 30_000_000_000n,
+  maxPriorityFeePerGas: 2_000_000_000n,
+  gasLimit: 300_000n + authGas,         // Transaction gas + auth gas
+  to: receivedAuth.address,             // Call sponsor contract
+  value: 0n,
+  data: encodeSwapCall(                 // Sponsor contract executes swap
+    userTokenAddress,
+    dexAddress,
+    swapAmount
+  ),
+  authorizationList: [receivedAuth]
+};
+
+// Relayer signs and pays for transaction
+const signedTx = signTransaction(transaction, relayerPrivateKey);
+await sendRawTransaction(signedTx);
+```
+
+### Step 3: Execution Flow
+
+```
+1. Transaction received by network
+2. Process authorization:
+   a. Verify signature → Recover authority (user's EOA)
+   b. Check nonce matches user's current nonce
+   c. Set user EOA code → sponsor contract code
+   d. Deduct authorization gas
+
+3. Execute transaction:
+   a. Call sponsor contract (at user's EOA address)
+   b. Sponsor contract verifies user authorized this action
+   c. Sponsor contract executes swap on behalf of user
+   d. Relayer pays all gas costs
+
+4. Transaction completes:
+   a. User EOA nonce incremented
+   b. Code delegation removed
+   c. Relayer charged gas fees
+   d. User receives swapped tokens (paid no gas)
+```
+
+### Step 4: Verify Authority
+
+Relayer can verify who authorized the delegation:
+
+```typescript
+const authority = Authorization.verify.call(receivedAuth);
+console.log(`Authorized by: ${authority}`);
+// "Authorized by: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2"
+
+// Check this matches expected user
+if (authority !== expectedUserAddress) {
+  throw new Error('Authorization from wrong address');
+}
+```
+
+## Security Considerations
+
+### What Can Be Delegated
+
+**Safe to delegate:**
+- Code execution logic
+- Transaction batching
+- Gas payment
+- Custom validation rules
+
+**Cannot be delegated:**
+- Private keys (always remain with EOA owner)
+- Existing ETH balance (stays in EOA)
+- Existing storage (remains unchanged)
+- Permanent account state
+
+### Authority vs Sender
+
+Understand the difference:
+
+```solidity
+contract SponsorContract {
+  function executeSwap(address token, address dex) external {
+    address authority = address(this);  // EOA that delegated
+    address sender = msg.sender;        // Relayer who sent transaction
+
+    // Authority owns the tokens
+    IERC20(token).transferFrom(authority, dex, amount);
+
+    // Sender pays gas
+    // (gas deducted from sender's balance)
+  }
+}
+```
+
+**Authority** - EOA that signed authorization (owns assets)
+**Sender** - Address that sent transaction (pays gas)
+
+### Signature Validation
+
+Always validate before processing:
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+function processAuthorization(auth: unknown) {
+  // Type guard
+  if (!Authorization.isItem(auth)) {
+    throw new Error('Invalid authorization format');
+  }
+
+  // Structure validation
+  Authorization.validate.call(auth);
+
+  // Verify signer
+  const authority = Authorization.verify.call(auth);
+
+  // Check authority is expected/whitelisted
+  if (!trustedAuthorities.has(authority)) {
+    throw new Error('Unauthorized authority');
+  }
+
+  // Check nonce (prevent replay)
+  const currentNonce = await provider.getTransactionCount(authority);
+  if (auth.nonce !== currentNonce) {
+    throw new Error('Nonce mismatch');
+  }
+
+  // Safe to process
+  return processValidAuth(auth, authority);
+}
+```
+
+### Nonce Management
+
+Nonces prevent replay attacks:
+
+```typescript
+// Wrong: Using old nonce
+const auth = Authorization.sign.call({
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n  // If user's nonce is now 5, this will fail
+}, privateKey);
+
+// Correct: Fetch current nonce
+const currentNonce = await provider.getTransactionCount(userAddress);
+const auth = Authorization.sign.call({
+  chainId: 1n,
+  address: contractAddress,
+  nonce: currentNonce  // Use actual current nonce
+}, privateKey);
+```
+
+### Chain ID Validation
+
+Prevent cross-chain replay:
+
+```typescript
+// Authorization signed for mainnet
+const mainnetAuth = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n
+  // ... signature ...
+};
+
+// This will FAIL on Optimism (chainId: 10)
+// Authorization's chainId must match network's chainId
+```
+
+### Delegated Contract Trust
+
+Only delegate to trusted contracts:
+
+```typescript
+// Dangerous: Unknown contract
+const unsafeAuth = {
+  chainId: 1n,
+  address: '0xUNKNOWN...', // Could drain your tokens
+  nonce: 0n
+};
+
+// Safe: Verified contract
+const safeAuth = {
+  chainId: 1n,
+  address: verifiedSponsorContract, // Audited, trusted
+  nonce: 0n
+};
+```
+
+**Why this matters:** Delegated contract executes with full access to authority's assets for that transaction.
+
+## Gas Implications
+
+### Authorization Processing Costs
+
+Each authorization costs gas to process:
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+// Base cost: 12,500 gas per authorization
+const BASE_COST = 12_500n;
+
+// Empty account cost: 25,000 gas (if delegated contract doesn't exist yet)
+const EMPTY_ACCOUNT_COST = 25_000n;
+
+// Calculate cost
+const auth = { /* ... */ };
+const isEmpty = false; // Contract exists at delegated address
+
+const gasCost = Authorization.getGasCost.call(auth, isEmpty);
+console.log(`Authorization gas: ${gasCost}`);
+// 12,500 gas (base only, since not empty)
+
+// For new contract:
+const newContractAuth = { /* ... */ };
+const isNewEmpty = true;
+
+const newGasCost = Authorization.getGasCost.call(newContractAuth, isNewEmpty);
+console.log(`New contract authorization gas: ${newGasCost}`);
+// 37,500 gas (12,500 base + 25,000 empty)
+```
+
+### Multiple Authorizations
+
+Transaction can include multiple authorizations:
+
+```typescript
+const authList = [auth1, auth2, auth3];
+
+// Calculate total cost
+const emptyAccounts = [false, true, false]; // Second is empty account
+const totalGas = Authorization.calculateGasCost.call(authList, emptyAccounts);
+
+console.log(`Total authorization gas: ${totalGas}`);
+// 50,000 gas (12,500 * 3 + 25,000 * 1 empty)
+
+// Add to transaction gas limit
+transaction.gasLimit = executionGas + totalGas;
+```
+
+### Gas Optimization Tips
+
+1. **Reuse existing contracts** - Avoid empty account cost (25k gas)
+2. **Minimize authorization count** - Each costs 12.5k gas minimum
+3. **Batch operations** - Use one authorization for multiple actions
+4. **Cache validation** - Don't validate same authorization multiple times
+
+```typescript
+// Inefficient: 3 authorizations = 37,500 gas minimum
+const swap1 = createAuth(swapContract1);
+const swap2 = createAuth(swapContract2);
+const swap3 = createAuth(swapContract3);
+
+// Efficient: 1 authorization = 12,500 gas
+const batchAuth = createAuth(batchContract); // Contract handles all 3 swaps
+```
+
+## Visual Flow Diagrams
+
+### Authorization Creation Flow
+
+```
+User Wallet                    Authorization Library
+    |                                  |
+    |------ unsigned data -----------→ |
+    |     (chainId, address, nonce)    |
+    |                                  |
+    |                                  | RLP encode
+    |                                  | Add magic byte (0x05)
+    |                                  | Keccak256 hash
+    |                                  |
+    |←------ signing hash ------------  |
+    |                                  |
+    | Sign with private key            |
+    |                                  |
+    |------ signature (y, r, s) ------→|
+    |                                  |
+    |                                  | Combine with unsigned data
+    |                                  |
+    |←------ complete authorization -- |
+    |    (chainId, address, nonce,     |
+    |     yParity, r, s)               |
+```
+
+### Transaction Execution Flow
+
+```
+Relayer                    Network                  EOA State
+  |                          |                         |
+  |--- Submit transaction ---|                         |
+  |    (with authList)       |                         |
+  |                          |                         |
+  |                          | Validate authorization  |
+  |                          | - Check signature       |
+  |                          | - Verify nonce          |
+  |                          | - Check chainId         |
+  |                          |                         |
+  |                          |-------- Set code -------|
+  |                          |         delegation      |
+  |                          |                         |
+  |                          |                    Code → 0xABCD
+  |                          |                         |
+  |                          | Execute transaction     |
+  |                          | (delegated code active) |
+  |                          |                         |
+  |                          | Transaction completes   |
+  |                          |                         |
+  |                          |------ Remove code ------|
+  |                          |       delegation        |
+  |                          |                         |
+  |                          |                    Code → None
+  |                          |                         |
+  |←----- Transaction -------|                         |
+  |       receipt            |                         |
+```
+
+### Sponsored Transaction Flow
+
+```
+User                 Relayer              Network              Smart Contract
+ |                     |                     |                       |
+ |-- Create auth ------|                     |                       |
+ |   (signs)           |                     |                       |
+ |                     |                     |                       |
+ |------ Send auth ----|                     |                       |
+ |                     |                     |                       |
+ |                     | Build transaction  |                       |
+ |                     | (relayer pays gas) |                       |
+ |                     |                     |                       |
+ |                     |--- Submit tx -------|                       |
+ |                     |   (with authList)   |                       |
+ |                     |                     |                       |
+ |                     |                     | Process authorization |
+ |                     |                     | Set user EOA → contract|
+ |                     |                     |                       |
+ |                     |                     |------ Call contract --|
+ |                     |                     |                       |
+ |                     |                     |                       | Execute
+ |                     |                     |                       | on behalf
+ |                     |                     |                       | of user
+ |                     |                     |                       |
+ |                     |                     |←------ Result --------|
+ |                     |                     |                       |
+ |                     |                     | Remove delegation     |
+ |                     |                     | Deduct gas from relayer|
+ |                     |                     |                       |
+ |                     |←---- Receipt -------|                       |
+ |                     |                     |                       |
+ |←---- Confirm -------|                     |                       |
+```
+
+## Signing Hash Calculation
+
+Understanding how the signing hash is computed:
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+const unsigned = {
+  chainId: 1n,
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2',
+  nonce: 0n
+};
+
+// Calculate signing hash
+const hash = Authorization.hash.call(unsigned);
+
+console.log(`Signing hash: 0x${[...hash].map(b =>
+  b.toString(16).padStart(2, '0')
+).join('')}`);
+```
+
+**Process:**
+
+1. **RLP Encode** - `[chainId, address, nonce]`
+   ```
+   RLP([1, "0x742d...", 0])
+   ```
+
+2. **Prepend Magic Byte** - `0x05 || rlpEncoded`
+   ```
+   0x05 + RLP_DATA
+   ```
+
+3. **Keccak256 Hash**
+   ```
+   keccak256(0x05 || RLP_DATA)
+   ```
+
+4. **Result** - 32-byte signing hash
+
+This hash is what gets signed with secp256k1 to produce `(yParity, r, s)`.
+
+## Authority Recovery
+
+Extract the EOA address that signed an authorization:
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+const auth = {
+  chainId: 1n,
+  address: contractAddress,
+  nonce: 0n,
+  yParity: 1,
+  r: 12345678901234567890n,
+  s: 98765432109876543210n
+};
+
+// Recover authority (signer)
+const authority = Authorization.verify.call(auth);
+console.log(`Signed by: ${authority}`);
+
+// Process authorization result
+const result = Authorization.process.call(auth);
+console.log(`Authority: ${result.authority}`);
+console.log(`Delegated to: ${result.delegatedAddress}`);
+```
+
+**How it works:**
+
+1. Recalculate signing hash from `(chainId, address, nonce)`
+2. Use `ecrecover` with `(hash, yParity, r, s)` to extract public key
+3. Hash public key with keccak256 and take last 20 bytes
+4. Result is the EOA address (authority)
+
+## Batch Processing
+
+Process multiple authorizations efficiently:
+
+```typescript
+import * as Authorization from '@tevm/voltaire/Authorization';
+
+const authList = [auth1, auth2, auth3];
+
+// Process all at once
+const results = Authorization.processAll.call(authList);
+
+results.forEach((result, index) => {
+  console.log(`Authorization ${index}:`);
+  console.log(`  Authority: ${result.authority}`);
+  console.log(`  Delegated to: ${result.delegatedAddress}`);
+});
+
+// Calculate total gas
+const emptyAccounts = [false, true, false];
+const totalGas = Authorization.calculateGasCost.call(authList, emptyAccounts);
+console.log(`Total gas cost: ${totalGas}`);
+```
+
+## Comparison: Traditional vs EIP-7702
+
+### Scenario: User Wants to Swap 3 Tokens
+
+**Traditional EOA:**
+```
+Transaction 1: Approve Token A
+Transaction 2: Approve Token B
+Transaction 3: Approve Token C
+Transaction 4: Execute multi-token swap
+
+Total: 4 transactions, ~300k gas total, user pays all gas
+```
+
+**EIP-7702:**
+```
+Create authorization (off-chain)
+Relayer submits 1 transaction:
+  - Authorization processed (12.5k gas)
+  - Batch contract executes all approvals + swap (~200k gas)
+
+Total: 1 transaction, ~212k gas total, relayer pays gas
+```
+
+**Benefits:**
+- Fewer transactions (1 vs 4)
+- Better UX (no gas for user)
+- Atomic execution (all or nothing)
+- Lower total gas cost
+
+## Resources
+
+### Specifications
+- **[EIP-7702: Set EOA Account Code](https://eips.ethereum.org/EIPS/eip-7702)** - Full specification
+- **[EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)** - Transaction type framework
+- **[EIP-191: Signed Data Standard](https://eips.ethereum.org/EIPS/eip-191)** - Signature format
+
+### Related Topics
+- **[Account Abstraction](https://eips.ethereum.org/EIPS/eip-4337)** - ERC-4337 alternative approach
+- **[Transaction Types](/primitives/transaction)** - Voltaire transaction documentation
+- **[Signature Verification](/crypto/secp256k1)** - secp256k1 cryptography
+- **[RLP Encoding](/primitives/rlp)** - Recursive Length Prefix encoding
+
+## Next Steps
+
+- [Overview](/primitives/authorization) - Type definition and complete API reference
+- [Validation](/primitives/authorization/validation) - Authorization structure validation
+- [Signing](/primitives/authorization/signing) - Create and verify signatures
+- [Gas Calculations](/primitives/authorization/gas-calculations) - Calculate processing costs
+- [Processing](/primitives/authorization/processing) - Process authorization lists

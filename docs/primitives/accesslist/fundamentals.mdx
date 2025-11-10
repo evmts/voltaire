@@ -1,0 +1,421 @@
+---
+title: Fundamentals
+description: Learn EIP-2930 access lists, gas mechanics, and when to use pre-declared storage access
+---
+
+Access lists (EIP-2930) allow transactions to pre-declare which addresses and storage slots will be accessed. This converts expensive "cold" storage reads into cheaper "warm" reads, potentially reducing gas costs. This guide explains how they work and when to use them.
+
+## What Are Access Lists?
+
+An access list is an array of items, where each item specifies:
+- A contract **address** (20 bytes)
+- A list of **storage keys** (32 bytes each) within that address
+
+By declaring these upfront in the transaction, you "warm up" the addresses and storage slots before execution begins.
+
+```typescript
+type AccessList = readonly Item[];
+
+type Item = {
+  address: BrandedAddress;              // 20-byte contract address
+  storageKeys: readonly BrandedHash[];  // 32-byte storage slot keys
+};
+```
+
+## Why Access Lists Exist
+
+Before EIP-2929 (Berlin hard fork), all storage accesses cost the same amount of gas. After EIP-2929, the EVM tracks which addresses and storage slots have been accessed during a transaction:
+
+- **Cold access** - First time accessing an address/slot: expensive
+- **Warm access** - Already accessed in this transaction: cheap
+
+This creates a problem: you can't predict gas costs accurately because the first access to a slot costs more than subsequent accesses.
+
+**EIP-2930 solves this** by letting you pre-declare what you'll access. Items in the access list are marked "warm" before execution starts, making costs predictable.
+
+## Gas Mechanics
+
+### Access Costs Without Access List
+
+| Operation | First Access (Cold) | Subsequent Access (Warm) |
+|-----------|---------------------|--------------------------|
+| Account access | 2,600 gas | 100 gas |
+| Storage read (SLOAD) | 2,100 gas | 100 gas |
+| Storage write (SSTORE) | 20,000+ gas | 2,900+ gas |
+
+### Access List Costs
+
+Including items in an access list costs upfront gas:
+
+| Item Type | Cost per Item |
+|-----------|---------------|
+| Address | 2,400 gas |
+| Storage key | 1,900 gas |
+
+### Savings Calculation
+
+Each item you include converts one cold access to a warm access:
+
+| Access Type | Cold Cost | Warm Cost | Savings |
+|-------------|-----------|-----------|---------|
+| Address | 2,600 | 100 | **2,500 gas** |
+| Storage key | 2,100 | 100 | **2,000 gas** |
+
+**Net savings** = Savings from warm access - Cost to include in list
+
+```
+Net per address = 2,500 - 2,400 = 100 gas saved
+Net per storage key = 2,000 - 1,900 = 100 gas saved
+```
+
+This means access lists only save 100 gas per item on the **first access**. They're beneficial when:
+1. You access the same slot multiple times in one transaction
+2. The 100 gas per-item savings multiplied by number of accesses exceeds the upfront cost
+
+## Structure and Examples
+
+### Creating an Access List
+
+<Tabs>
+<Tab title="Class API">
+```typescript
+import { AccessList, Address, Hash } from '@tevm/voltaire';
+
+// Start with empty list
+let list = AccessList.create();
+
+// Add a contract address
+const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+list = list.withAddress(token);
+
+// Add storage keys for that address
+const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+const allowanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000004');
+
+list = list.withStorageKey(token, balanceSlot);
+list = list.withStorageKey(token, allowanceSlot);
+
+console.log(list);
+// [
+//   {
+//     address: Uint8Array(20) [...],
+//     storageKeys: [
+//       Uint8Array(32) [...],
+//       Uint8Array(32) [...]
+//     ]
+//   }
+// ]
+```
+</Tab>
+<Tab title="Namespace API">
+```typescript
+import * as AccessList from '@tevm/voltaire/AccessList';
+import { Address, Hash } from '@tevm/voltaire';
+
+// Start with empty list
+let list = AccessList.create();
+
+// Add a contract address
+const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+list = AccessList.withAddress(list, token);
+
+// Add storage keys for that address
+const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+const allowanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000004');
+
+list = AccessList.withStorageKey(list, token, balanceSlot);
+list = AccessList.withStorageKey(list, token, allowanceSlot);
+
+console.log(list);
+// [
+//   {
+//     address: Uint8Array(20) [...],
+//     storageKeys: [
+//       Uint8Array(32) [...],
+//       Uint8Array(32) [...]
+//     ]
+//   }
+// ]
+```
+</Tab>
+</Tabs>
+
+### Adding Multiple Addresses
+
+```typescript
+import { AccessList, Address } from '@tevm/voltaire';
+
+let list = AccessList.create();
+
+// Add multiple contracts
+const router = Address.fromHex('0xE592427A0AEce92De3Edee1F18E0157C05861564');
+const factory = Address.fromHex('0x1F98431c8aD98523631AE4a59f267346ea31F984');
+const pool = Address.fromHex('0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8');
+
+list = list.withAddress(router);
+list = list.withAddress(factory);
+list = list.withAddress(pool);
+
+console.log(`Addresses: ${list.addressCount()}`); // 3
+console.log(`Total items: ${list.storageKeyCount()}`); // 0 (no keys yet)
+```
+
+### Querying Access Lists
+
+```typescript
+import { AccessList, Address, Hash } from '@tevm/voltaire';
+
+const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+
+let list = AccessList.create();
+list = list.withAddress(token);
+list = list.withStorageKey(token, balanceSlot);
+
+// Check inclusion
+console.log(list.includesAddress(token));                    // true
+console.log(list.includesStorageKey(token, balanceSlot));    // true
+
+// Get keys for address
+const keys = list.keysFor(token);
+console.log(keys.length); // 1
+
+// Check if empty
+console.log(list.isEmpty()); // false
+```
+
+## Complete Example: Gas Savings Calculation
+
+Here's a real-world example analyzing whether an access list saves gas:
+
+```typescript
+import { AccessList, Address, Hash } from '@tevm/voltaire';
+
+// Uniswap V3 swap accessing USDC and WETH
+const router = Address.fromHex('0xE592427A0AEce92De3Edee1F18E0157C05861564');
+const usdc = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const weth = Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2');
+
+// Storage slots for balances (simplified)
+const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+
+// Build access list
+let list = AccessList.create();
+list = list.withAddress(router);
+list = list.withAddress(usdc);
+list = list.withStorageKey(usdc, balanceSlot);
+list = list.withAddress(weth);
+list = list.withStorageKey(weth, balanceSlot);
+
+// Calculate costs
+const cost = list.gasCost();
+// (3 addresses × 2,400) + (2 keys × 1,900) = 11,000 gas
+
+const savings = list.gasSavings();
+// (3 addresses × 100) + (2 keys × 100) = 500 gas
+
+const net = savings - cost;
+console.log(`Cost: ${cost} gas`);           // 11,000
+console.log(`Savings: ${savings} gas`);     // 500
+console.log(`Net: ${net} gas`);             // -10,500 (loses gas!)
+
+// Check if beneficial
+if (list.hasSavings()) {
+  console.log('✓ Include access list');
+} else {
+  console.log('✗ Don\'t use access list - costs more than it saves');
+}
+```
+
+**Result**: For a single swap, the access list **costs 10,500 more gas** than it saves. This is typical for single-operation transactions.
+
+### When Access Lists Help: Batch Operations
+
+Access lists become beneficial when you access the same slots **multiple times**:
+
+```typescript
+import { AccessList, Address, Hash } from '@tevm/voltaire';
+
+const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+const balanceSlot = Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003');
+
+let list = AccessList.create();
+list = list.withAddress(token);
+list = list.withStorageKey(token, balanceSlot);
+
+// Cost to include in transaction
+const cost = list.gasCost();
+// (1 address × 2,400) + (1 key × 1,900) = 4,300 gas
+
+// For a loop that reads this balance 10 times:
+// - Without access list: 2,100 (cold) + 9 × 100 (warm) = 3,000 gas
+// - With access list: 4,300 (list cost) + 10 × 100 (warm) = 5,300 gas
+//   ❌ Still costs more!
+
+// For a loop that reads this balance 50 times:
+// - Without access list: 2,100 (cold) + 49 × 100 (warm) = 7,000 gas
+// - With access list: 4,300 (list cost) + 50 × 100 (warm) = 9,300 gas
+//   ❌ Still costs more!
+
+// The access list saves 100 gas on the FIRST access, then both paths
+// cost 100 gas per subsequent access. You need MANY accesses to break even.
+```
+
+**Key insight**: Access lists save gas mainly when the upfront cost is offset by many storage reads/writes in a complex transaction (e.g., flash loans, multi-hop swaps, liquidations).
+
+## When to Use Access Lists
+
+### Good Use Cases
+
+1. **Batch operations with repeated storage access**
+```typescript
+// Loop processing many items from same contract storage
+for (let i = 0; i < 100; i++) {
+  // Reads same slots repeatedly
+  const balance = await token.balanceOf(users[i]);
+}
+```
+
+2. **Multi-contract DeFi transactions**
+```typescript
+// Arbitrage touching multiple pools
+// Each pool accessed multiple times
+const list = AccessList.create()
+  .withAddress(poolA)
+  .withStorageKey(poolA, reserves)
+  .withAddress(poolB)
+  .withStorageKey(poolB, reserves);
+```
+
+3. **Flash loan liquidations**
+```typescript
+// Single transaction:
+// 1. Borrow from Aave (cold access)
+// 2. Liquidate on Compound (cold access)
+// 3. Swap on Uniswap (cold access)
+// 4. Repay Aave (warm access)
+// Multiple reads/writes to same contracts
+```
+
+### Poor Use Cases
+
+1. **Simple transfers** - Single SLOAD/SSTORE operations
+2. **Already-warm storage** - Slots accessed earlier in same block
+3. **Single-contract calls** - Not enough repeated access to benefit
+4. **Small operations** - Upfront cost exceeds potential savings
+
+## Trade-offs
+
+### Advantages
+- **Predictable gas costs** - All accesses are warm, no surprises
+- **Savings in complex transactions** - Multi-access operations benefit
+- **Required for some EIPs** - EIP-1559 transactions support access lists
+
+### Disadvantages
+- **Upfront cost** - 2,400 gas per address, 1,900 per key
+- **Rarely break even** - Most transactions don't access slots enough times
+- **Complexity** - Must calculate storage slots correctly
+- **Maintenance burden** - Storage layouts change between contract versions
+
+## Visual: Gas Cost Comparison
+
+Scenario: Reading a storage slot N times in one transaction
+
+| Accesses (N) | Without List | With List | Net Savings |
+|--------------|--------------|-----------|-------------|
+| 1 | 2,100 | 1,900 + 100 = 2,000 | +100 ✓ |
+| 5 | 2,100 + 400 = 2,500 | 1,900 + 500 = 2,400 | +100 ✓ |
+| 10 | 2,100 + 900 = 3,000 | 1,900 + 1,000 = 2,900 | +100 ✓ |
+| 50 | 2,100 + 4,900 = 7,000 | 1,900 + 5,000 = 6,900 | +100 ✓ |
+
+**Notice**: The savings is always **exactly 100 gas** (the difference between cold access cost 2,100 and access list cost 1,900), regardless of how many times you access the slot.
+
+For addresses, the pattern is the same (2,600 cold vs 2,400 list = 200 gas saved, but subsequent accesses cost 100 either way).
+
+## Calculating Storage Slots
+
+To build an access list, you need to know which storage slots will be accessed. For Solidity contracts:
+
+```solidity
+// Solidity contract
+contract Token {
+  mapping(address => uint256) public balances; // slot 0
+  mapping(address => mapping(address => uint256)) public allowances; // slot 1
+}
+```
+
+```typescript
+import { Hash, Address } from '@tevm/voltaire';
+
+// Calculate storage slot for balances[user]
+function getBalanceSlot(user: Address): Hash {
+  // keccak256(abi.encodePacked(user, slot))
+  const slot = 0n;
+  const encoded = new Uint8Array(64);
+  encoded.set(user, 0);           // 20 bytes: user address
+  encoded.set([...new Uint8Array(12)], 20); // 12 bytes: padding
+  encoded.set(numberToBytes(slot, 32), 32); // 32 bytes: slot number
+
+  return Hash.fromBytes(keccak256(encoded));
+}
+
+const user = Address.fromHex('0x...');
+const balanceSlot = getBalanceSlot(user);
+```
+
+Most applications should use libraries like `@ethersproject/abi` or `viem` to calculate storage slots rather than implementing this manually.
+
+## Deduplication
+
+Always deduplicate before using an access list:
+
+```typescript
+import { AccessList, Address } from '@tevm/voltaire';
+
+const token = Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e');
+
+let list = AccessList.create();
+list = list.withAddress(token);
+list = list.withAddress(token); // duplicate!
+list = list.withAddress(token); // duplicate!
+
+console.log(list.addressCount()); // 3 (includes duplicates)
+
+// Deduplicate removes duplicates
+list = list.deduplicate();
+console.log(list.addressCount()); // 1
+
+// Cost before deduplication: 3 × 2,400 = 7,200 gas
+// Cost after deduplication: 1 × 2,400 = 2,400 gas
+```
+
+## Merging Access Lists
+
+Combine multiple access lists for complex operations:
+
+```typescript
+import { AccessList, Address } from '@tevm/voltaire';
+
+const tokenList = AccessList.create()
+  .withAddress(Address.fromHex('0xA0b86991c6cC137282C01B19e27F0f0751D85f469e'));
+
+const poolList = AccessList.create()
+  .withAddress(Address.fromHex('0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8'));
+
+const combined = AccessList.merge(tokenList, poolList);
+console.log(combined.addressCount()); // 2
+```
+
+## Resources
+
+- [EIP-2930: Optional Access Lists](https://eips.ethereum.org/EIPS/eip-2930) - Access list specification
+- [EIP-2929: Gas Cost Increases for State Access](https://eips.ethereum.org/EIPS/eip-2929) - Cold vs warm access costs
+- [EIP-1559: Fee Market Change](https://eips.ethereum.org/EIPS/eip-1559) - Transaction type supporting access lists
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Formal EVM specification
+
+## Next Steps
+
+- [Overview](/primitives/accesslist) - API reference and complete method listing
+- [Gas Optimization](/primitives/accesslist/gas-optimization) - Deep dive on cost analysis
+- [Usage Patterns](/primitives/accesslist/usage-patterns) - Real-world examples
+- [Transaction](/primitives/transaction) - Using access lists in transactions

@@ -7,6 +7,10 @@ description: 20-byte Ethereum address with EIP-55 checksumming
 
 Ethereum addresses are 20-byte identifiers for accounts (both externally-owned and contracts). They're derived from public keys (EOAs) or calculated deterministically during contract deployment.
 
+<Tip title="Learn the fundamentals">
+New to Ethereum addresses? Start with [Fundamentals](/primitives/address/fundamentals) to learn address derivation, EIP-55 checksumming, and CREATE/CREATE2 contract deployment.
+</Tip>
+
 ## Overview
 
 Address is represented as a [branded](/concepts/branded-types) [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) following the [data-first pattern](/concepts/data-first) used throughout Voltaire.
@@ -16,12 +20,6 @@ export type BrandedAddress = Uint8Array & { readonly __tag: "Address" };
 ```
 
 Addresses use EIP-55 mixed-case checksumming for error detection. Voltaire handles checksums automatically while storing addresses as raw bytes internally to avoid case-sensitivity bugs.
-
-<Tip title="Why Uint8Array over hex strings?">
-Storing addresses as bytes eliminates casing bugs (checksummed vs lowercase). Hex conversions happen at API boundaries; internal representation stays byte-based for consistency and performance.
-
-See [EIP-55](https://eips.ethereum.org/EIPS/eip-55) for checksum specification.
-</Tip>
 
 ## Quick Start
 
@@ -86,87 +84,7 @@ const create2Addr = Address.calculateCreate2Address(addr, salt, initCode);  // C
 
 ## Practical Examples
 
-### Deriving Address from Public Key
-
-Ethereum addresses are the last 20 bytes of the keccak256 hash of the public key:
-
-```typescript
-// From secp256k1 public key coordinates
-const publicKeyX = 0x742d35cc6634c0532925a3b844bc9e7595f51e3e8f73dc5c5b10a4b0e7d5f4a3n;
-const publicKeyY = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
-
-const address = Address.fromPublicKey(publicKeyX, publicKeyY);
-console.log(address.toChecksummed());
-// "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
-```
-
-### Deriving Address from Private Key
-
-```typescript
-import { secp256k1 } from '@tevm/voltaire/crypto';
-
-// 32-byte private key
-const privateKey = new Uint8Array(32);
-crypto.getRandomValues(privateKey);
-
-// Derive address from private key
-const address = Address.fromPrivateKey(privateKey);
-console.log(address.toChecksummed());
-```
-
-### EIP-55 Checksum Validation
-
-Mixed-case checksums detect typos and copy-paste errors:
-
-```typescript
-const valid = "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e";
-const invalid = "0x742d35cc6634c0532925a3b844bc9e7595f51e3e";  // wrong case
-
-Address.isValidChecksum(valid);   // true
-Address.isValidChecksum(invalid); // false (correct hex, wrong checksum)
-
-// All-lowercase and all-uppercase are considered valid (no checksum)
-Address.isValidChecksum("0x742d35cc6634c0532925a3b844bc9e7595f51e3e"); // true
-Address.isValidChecksum("0x742D35CC6634C0532925A3B844BC9E7595F51E3E"); // true
-```
-
-## Contract Address Calculation
-
-### CREATE (Standard Deployment)
-
-Contract address = last 20 bytes of keccak256(rlp([sender, nonce]))
-
-```typescript
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-
-// First contract deployment (nonce = 0)
-const contract1 = deployer.calculateCreateAddress(0n);
-console.log(contract1.toChecksummed());
-// "0x8ba1f109551bD432803012645Ac136ddd64DBA72"
-
-// Second contract (nonce = 1)
-const contract2 = deployer.calculateCreateAddress(1n);
-console.log(contract2.toChecksummed());
-// Different address due to nonce
-```
-
-### CREATE2 (Deterministic Deployment)
-
-Contract address = last 20 bytes of keccak256(0xff ++ sender ++ salt ++ keccak256(initCode))
-
-```typescript
-const deployer = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e");
-const salt = new Uint8Array(32);  // 32-byte salt
-const initCode = new Uint8Array([0x60, 0x80, 0x60, 0x40]);  // Bytecode
-
-const contract = deployer.calculateCreate2Address(salt, initCode);
-console.log(contract.toChecksummed());
-// Deterministic - same inputs always produce same address
-```
-
-**CREATE vs CREATE2**:
-- **CREATE**: Address depends on deployer nonce (changes each deployment)
-- **CREATE2**: Address depends on salt + initCode (deterministic, predictable)
+See [Fundamentals](/primitives/address/fundamentals) for detailed explanations of address derivation, checksumming, and contract address calculation.
 
 ## API Documentation
 

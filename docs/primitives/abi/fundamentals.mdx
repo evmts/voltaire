@@ -1,0 +1,693 @@
+---
+title: Fundamentals
+description: Learn Ethereum ABI encoding structure, function selectors, and data layout
+---
+
+The Application Binary Interface (ABI) is Ethereum's standard for encoding function calls, return values, events, and errors when interacting with smart contracts. This guide teaches ABI fundamentals using Voltaire.
+
+## What is ABI?
+
+ABI defines how to encode and decode data for contract interactions:
+- **Function calls** - Encode parameters into calldata
+- **Function returns** - Decode return values from execution
+- **Events** - Encode/decode log entries
+- **Errors** - Encode custom error data
+
+Without ABI, contracts couldn't communicate. It's the protocol that lets you call `transfer(address,uint256)` or parse `Transfer` events.
+
+## Function Selectors
+
+Every function call starts with a **4-byte selector** derived from the function signature:
+
+```typescript
+import { Function } from '@tevm/voltaire';
+import { Keccak256 } from '@tevm/voltaire';
+
+// Function signature: name + parameter types (no spaces, no names)
+const signature = "transfer(address,uint256)";
+
+// Hash signature with keccak256
+const hash = Keccak256.hash(signature); // 0xa9059cbb...
+
+// Take first 4 bytes for selector
+const selector = hash.slice(0, 4); // 0xa9059cbb
+
+// Or use Function.getSelector()
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+};
+
+const sel = Function.getSelector(transferFn); // 0xa9059cbb
+```
+
+### Why Selectors Matter
+
+The EVM uses selectors to route function calls. Calldata format:
+```
+[4 bytes selector][encoded parameters]
+```
+
+Example calling `transfer(0x742d..., 1000)`:
+```
+0xa9059cbb  // Selector for transfer(address,uint256)
+0000000000000000000000742d35Cc6634C0532925a3b844Bc9e7595f51e3e  // address (32 bytes)
+00000000000000000000000000000000000000000000000000000000000003e8  // uint256(1000)
+```
+
+## Encoding Rules
+
+ABI encoding packs data into 32-byte words with specific alignment rules.
+
+### Fixed-Size Types
+
+Types with known size encode directly into 32-byte slots:
+
+<Tabs>
+<Tab title="uint256">
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setValue",
+  inputs: [{ type: "uint256", name: "value" }]
+};
+
+const encoded = Function.encodeParams(fn, [42n]);
+// 0x000000000000000000000000000000000000000000000000000000000000002a
+//   ^-- 32 bytes, right-aligned
+```
+</Tab>
+<Tab title="address">
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setOwner",
+  inputs: [{ type: "address", name: "owner" }]
+};
+
+const encoded = Function.encodeParams(fn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+]);
+// 0x000000000000000000000000742d35Cc6634C0532925a3b844Bc9e7595f51e3e
+//   ^-- Left-padded with zeros to 32 bytes
+```
+</Tab>
+<Tab title="bool">
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setActive",
+  inputs: [{ type: "bool", name: "active" }]
+};
+
+const encoded = Function.encodeParams(fn, [true]);
+// 0x0000000000000000000000000000000000000000000000000000000000000001
+//   ^-- 1 for true, 0 for false, padded to 32 bytes
+```
+</Tab>
+<Tab title="bytes32">
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setHash",
+  inputs: [{ type: "bytes32", name: "hash" }]
+};
+
+const hash = new Uint8Array(32).fill(0xaa);
+const encoded = Function.encodeParams(fn, [hash]);
+// 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+//   ^-- Exactly 32 bytes, right-aligned
+```
+</Tab>
+</Tabs>
+
+### Dynamic Types
+
+Dynamic types (string, bytes, arrays) use **offset-based encoding**:
+
+<Tabs>
+<Tab title="string">
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setName",
+  inputs: [{ type: "string", name: "name" }]
+};
+
+const encoded = Function.encodeParams(fn, ["hello"]);
+// 0x0000000000000000000000000000000000000000000000000000000000000020  // Offset to data (32 bytes)
+//   0000000000000000000000000000000000000000000000000000000000000005  // Length (5 bytes)
+//   68656c6c6f000000000000000000000000000000000000000000000000000000  // "hello" + padding
+```
+
+Structure:
+1. **Offset** (32 bytes) - Where data starts relative to parameter start
+2. **Length** (32 bytes) - Number of bytes in data
+3. **Data** (padded to 32-byte multiple) - Actual content
+</Tab>
+<Tab title="bytes">
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setData",
+  inputs: [{ type: "bytes", name: "data" }]
+};
+
+const encoded = Function.encodeParams(fn, [new Uint8Array([0xaa, 0xbb])]);
+// 0x0000000000000000000000000000000000000000000000000000000000000020  // Offset
+//   0000000000000000000000000000000000000000000000000000000000000002  // Length (2)
+//   aabb000000000000000000000000000000000000000000000000000000000000  // Data + padding
+```
+</Tab>
+<Tab title="uint256[]">
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setNumbers",
+  inputs: [{ type: "uint256[]", name: "numbers" }]
+};
+
+const encoded = Function.encodeParams(fn, [[1n, 2n, 3n]]);
+// 0x0000000000000000000000000000000000000000000000000000000000000020  // Offset
+//   0000000000000000000000000000000000000000000000000000000000000003  // Length (3 elements)
+//   0000000000000000000000000000000000000000000000000000000000000001  // Element 0
+//   0000000000000000000000000000000000000000000000000000000000000002  // Element 1
+//   0000000000000000000000000000000000000000000000000000000000000003  // Element 2
+```
+</Tab>
+</Tabs>
+
+## Complete Function Call Example
+
+Encode complete calldata for `transfer(address,uint256)`:
+
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  stateMutability: "nonpayable",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+};
+
+// Encode function call
+const calldata = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+]);
+
+console.log(calldata);
+// Result (68 bytes total):
+// 0xa9059cbb  // Function selector (4 bytes)
+//   000000000000000000000000742d35Cc6634C0532925a3b844Bc9e7595f51e3e  // address
+//   00000000000000000000000000000000000000000000000000000000000003e8  // uint256(1000)
+```
+
+Use this calldata when making contract calls via RPC or transaction.
+
+## Decoding Return Values
+
+Decode function return data after execution:
+
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+};
+
+// Simulate return data from contract
+const returnData = new Uint8Array([
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xe8  // 1000 in hex
+]);
+
+const result = Function.decodeResult(balanceOfFn, returnData);
+console.log(result); // [1000n]
+```
+
+## Multiple Parameters
+
+Mixed fixed and dynamic types require offset tracking:
+
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "register",
+  inputs: [
+    { type: "address", name: "user" },      // Fixed (32 bytes)
+    { type: "string", name: "username" },   // Dynamic (offset)
+    { type: "uint256", name: "age" }        // Fixed (32 bytes)
+  ]
+};
+
+const encoded = Function.encodeParams(fn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  "alice",
+  25n
+]);
+
+// Structure:
+// [selector - 4 bytes]
+// [address - 32 bytes, inline]
+// [string offset - 32 bytes, points to 0x60]
+// [age - 32 bytes, inline]
+// [string length - 32 bytes]
+// [string data - padded to 32 byte multiple]
+```
+
+### Encoding Layout
+
+```
+Offset  Content
+------  -------
+0x00    a9059cbb...                                                        [selector]
+0x04    000000000000000000000000742d35Cc6634C0532925a3b844Bc9e7595f51e3e  [address inline]
+0x24    0000000000000000000000000000000000000000000000000000000000000060  [string offset → 0x64]
+0x44    0000000000000000000000000000000000000000000000000000000000000019  [uint256(25) inline]
+0x64    0000000000000000000000000000000000000000000000000000000000000005  [string length]
+0x84    616c696365000000000000000000000000000000000000000000000000000000  [string data "alice"]
+```
+
+## Constructor Encoding
+
+Encode constructor parameters for contract deployment:
+
+```typescript
+import { Constructor } from '@tevm/voltaire';
+
+const constructorDef = {
+  type: "constructor",
+  inputs: [
+    { type: "string", name: "name" },
+    { type: "string", name: "symbol" },
+    { type: "uint8", name: "decimals" }
+  ]
+};
+
+const encoded = Constructor.encodeParams(constructorDef, [
+  "MyToken",
+  "MTK",
+  18
+]);
+
+// Append this to bytecode when deploying:
+// const deployData = concat([contractBytecode, encoded]);
+```
+
+## Event Encoding
+
+Events split data into **indexed topics** (for filtering) and **non-indexed data** (for details).
+
+### Event Structure
+
+```typescript
+import { Event } from '@tevm/voltaire';
+
+const transferEvent = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },   // Topic 1
+    { type: "address", name: "to", indexed: true },     // Topic 2
+    { type: "uint256", name: "value", indexed: false }  // Data
+  ]
+};
+```
+
+### Encoding Event Topics
+
+Topic 0 is always the event signature hash:
+
+```typescript
+import { Event, Keccak256 } from '@tevm/voltaire';
+
+// Get event signature hash (topic 0)
+const signature = Event.getSignature(transferEvent);
+// "Transfer(address,address,uint256)"
+
+const topic0 = Keccak256.hash(signature);
+// 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+
+// Encode indexed parameters as topics
+const topics = Event.encodeTopics(transferEvent, {
+  from: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  to: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4"
+});
+
+console.log(topics);
+// [
+//   "0xddf252ad...",  // Topic 0: event signature
+//   "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e",  // from
+//   "0x0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc4"   // to
+// ]
+```
+
+### Decoding Event Logs
+
+Parse log data and topics back to values:
+
+```typescript
+import { Event } from '@tevm/voltaire';
+
+const transferEvent = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+};
+
+// Simulate log from blockchain
+const logData = new Uint8Array([
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xe8  // value: 1000
+]);
+
+const logTopics = [
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+  "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f51e3e",
+  "0x0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc4"
+];
+
+const decoded = Event.decodeLog(transferEvent, logData, logTopics);
+console.log(decoded);
+// {
+//   from: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+//   to: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+//   value: 1000n
+// }
+```
+
+### Why Indexed Parameters?
+
+Indexed parameters become topics, enabling efficient filtering:
+
+```typescript
+// Filter for transfers TO specific address
+const logsToAddress = await provider.getLogs({
+  address: tokenAddress,
+  topics: [
+    Event.getSignature(transferEvent),
+    null,  // from: any
+    "0x0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc4"  // to: filter
+  ]
+});
+```
+
+Limit: Maximum 3 indexed parameters per event (topics 1-3).
+
+## Tuple Encoding
+
+Tuples (structs) encode as grouped parameters:
+
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setUser",
+  inputs: [
+    {
+      type: "tuple",
+      name: "user",
+      components: [
+        { type: "address", name: "addr" },
+        { type: "string", name: "name" },
+        { type: "uint256", name: "balance" }
+      ]
+    }
+  ]
+};
+
+const encoded = Function.encodeParams(fn, [
+  {
+    addr: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+    name: "alice",
+    balance: 1000n
+  }
+]);
+
+// Tuple contents encode like function parameters:
+// [address inline]
+// [string offset]
+// [balance inline]
+// [string data]
+```
+
+### Array of Tuples
+
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const fn = {
+  type: "function",
+  name: "setUsers",
+  inputs: [
+    {
+      type: "tuple[]",
+      name: "users",
+      components: [
+        { type: "address", name: "addr" },
+        { type: "uint256", name: "balance" }
+      ]
+    }
+  ]
+};
+
+const encoded = Function.encodeParams(fn, [
+  [
+    { addr: "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e", balance: 1000n },
+    { addr: "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", balance: 2000n }
+  ]
+]);
+
+// Structure:
+// [array offset]
+// [array length]
+// [tuple 0 data]
+// [tuple 1 data]
+```
+
+## Visual Encoding Example
+
+Encoding `register(address,string,uint256)` with values:
+- address: `0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e`
+- string: `"alice"`
+- uint256: `25`
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Calldata Structure                                              │
+├─────────────────────────────────────────────────────────────────┤
+│ 0x00: a9059cbb        │ Function selector                       │
+├─────────────────────────────────────────────────────────────────┤
+│ 0x04: 000000...51e3e │ address (fixed, 32 bytes)              │
+├─────────────────────────────────────────────────────────────────┤
+│ 0x24: 000000...00060 │ string offset → points to 0x64         │
+├─────────────────────────────────────────────────────────────────┤
+│ 0x44: 000000...00019 │ uint256(25) (fixed, 32 bytes)          │
+├─────────────────────────────────────────────────────────────────┤
+│ 0x64: 000000...00005 │ string length (5 bytes)                │
+├─────────────────────────────────────────────────────────────────┤
+│ 0x84: 616c69...00000 │ "alice" + padding                      │
+└─────────────────────────────────────────────────────────────────┘
+
+Key:
+• Fixed types encode inline at their position
+• Dynamic types store offset, actual data follows all fixed types
+• Offsets are relative to first parameter (after selector)
+• All values padded to 32-byte boundaries
+```
+
+## Common Use Cases
+
+### Calling Contract Functions
+
+```typescript
+import { Function } from '@tevm/voltaire';
+
+// Define function
+const transferFn = {
+  type: "function",
+  name: "transfer",
+  inputs: [
+    { type: "address", name: "to" },
+    { type: "uint256", name: "amount" }
+  ],
+  outputs: [{ type: "bool" }]
+};
+
+// Encode calldata
+const calldata = Function.encodeParams(transferFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e",
+  1000n
+]);
+
+// Use in transaction
+const tx = {
+  to: tokenAddress,
+  data: calldata,  // Send this to contract
+  value: 0n
+};
+```
+
+### Parsing Event Logs
+
+```typescript
+import { Event } from '@tevm/voltaire';
+
+const transferEvent = {
+  type: "event",
+  name: "Transfer",
+  inputs: [
+    { type: "address", name: "from", indexed: true },
+    { type: "address", name: "to", indexed: true },
+    { type: "uint256", name: "value", indexed: false }
+  ]
+};
+
+// Get logs from RPC
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  topics: [Event.getSignature(transferEvent)]
+});
+
+// Decode each log
+const transfers = logs.map(log =>
+  Event.decodeLog(transferEvent, log.data, log.topics)
+);
+
+console.log(transfers);
+// [
+//   { from: "0x...", to: "0x...", value: 1000n },
+//   { from: "0x...", to: "0x...", value: 2000n }
+// ]
+```
+
+### Handling Contract Errors
+
+```typescript
+import { AbiError } from '@tevm/voltaire';
+
+const insufficientBalanceError = {
+  type: "error",
+  name: "InsufficientBalance",
+  inputs: [
+    { type: "uint256", name: "balance" },
+    { type: "uint256", name: "required" }
+  ]
+};
+
+try {
+  // Contract call that reverts
+  await contract.call();
+} catch (error) {
+  // Decode revert data
+  const decoded = AbiError.decodeParams(
+    insufficientBalanceError,
+    error.data
+  );
+
+  console.log(`Balance: ${decoded.balance}, Required: ${decoded.required}`);
+}
+```
+
+## Type Safety
+
+Voltaire provides full TypeScript type inference:
+
+```typescript
+import { Function } from '@tevm/voltaire';
+
+const balanceOfFn = {
+  type: "function",
+  name: "balanceOf",
+  inputs: [{ type: "address", name: "owner" }],
+  outputs: [{ type: "uint256", name: "balance" }]
+} as const;  // Use 'as const' for inference
+
+// TypeScript knows parameters must be [address]
+const encoded = Function.encodeParams(balanceOfFn, [
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e"
+  // "invalid"  // TypeScript error - must be address
+]);
+
+// TypeScript knows result is [bigint]
+const result = Function.decodeResult(balanceOfFn, returnData);
+//    ^-- Type: [bigint]
+```
+
+## Error Handling
+
+ABI operations can fail with specific error types:
+
+```typescript
+import {
+  AbiEncodingError,
+  AbiDecodingError,
+  AbiParameterMismatchError
+} from '@tevm/voltaire';
+
+try {
+  const encoded = Function.encodeParams(fn, [/* params */]);
+} catch (error) {
+  if (error instanceof AbiParameterMismatchError) {
+    // Wrong number of parameters
+    console.error("Parameter count mismatch");
+  } else if (error instanceof AbiEncodingError) {
+    // Invalid value (out of range, wrong type)
+    console.error("Encoding failed:", error.message);
+  }
+}
+```
+
+## Resources
+
+- **[Solidity ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html)** - Official encoding specification
+- **[Contract ABI Specification](https://docs.soliditylang.org/en/latest/abi-spec.html#json)** - JSON ABI format
+- **[EIP-712](https://eips.ethereum.org/EIPS/eip-712)** - Typed structured data hashing
+- **[ABI Playground](https://abi.hashex.org/)** - Interactive encoder/decoder
+
+## Next Steps
+
+- [Overview](/primitives/abi) - Type definitions and API reference
+- [Function](/primitives/abi/function) - Function encoding/decoding
+- [Event](/primitives/abi/event) - Event log handling
+- [Error](/primitives/abi/error) - Custom error encoding
+- [Constructor](/primitives/abi/constructor) - Constructor parameters

@@ -3,11 +3,11 @@ title: BloomFilter
 description: Probabilistic data structure for efficient set membership testing
 ---
 
-# BloomFilter
+<Tip>
+New to bloom filters? Start with [Fundamentals](/primitives/bloomfilter/fundamentals) for guided examples and concepts.
+</Tip>
 
-Probabilistic data structure for fast set membership testing with configurable false positive rates.
-
-## Overview
+## Type Definition
 
 [Branded](/concepts/branded-types) `Uint8Array` representing a bloom filter with `m` bits and `k` hash functions. Zero-overhead design supports both tree-shakeable namespace methods and class instances. Used extensively in Ethereum for log filtering.
 
@@ -160,6 +160,12 @@ Convert to hex format and hash item data.
 
     [View conversions →](/primitives/bloomfilter/conversions)
 
+### Fundamentals
+
+Learn bloom filter theory, Ethereum log filtering, and probabilistic data structures.
+
+    [View fundamentals →](/primitives/bloomfilter/fundamentals)
+
 ### Algorithm
 
 Understanding bloom filter theory, false positives, and hash functions.
@@ -184,71 +190,6 @@ Common patterns for log filtering, event indexing, and optimization.
 
     [View usage patterns →](/primitives/bloomfilter/usage-patterns)
 
-<Tip title="Why Bloom Filters?">
-Bloom filters provide constant-time O(1) membership testing with configurable space-time tradeoffs. False positives possible but false negatives impossible - perfect for Ethereum's log filtering where we can afford checking false matches but cannot miss true matches.
-</Tip>
-
-## What is a Bloom Filter?
-
-A bloom filter is a space-efficient probabilistic data structure that tests whether an element is a member of a set:
-
-- **False positives possible**: Filter may report item exists when it doesn't
-- **False negatives impossible**: If filter reports item doesn't exist, it definitely doesn't
-- **Constant time operations**: O(1) for add and contains
-- **Fixed size**: Size determined at creation, doesn't grow with items added
-- **Cannot remove items**: Bloom filters are append-only
-
-### How It Works
-
-1. Create bit array of `m` bits (all zeros initially)
-2. Choose `k` independent hash functions
-3. To add item: compute `k` hashes, set corresponding bits to 1
-4. To check item: compute `k` hashes, return true if all corresponding bits are 1
-
-```typescript
-// Example: 2048-bit filter with 3 hash functions
-const filter = BloomFilter.create(2048, 3)
-
-// Adding "Transfer" event
-const item = new TextEncoder().encode("Transfer")
-// Sets 3 bits based on 3 hash functions
-filter.add(item)
-
-// Checking membership
-filter.contains(item)  // true - all 3 bits are set
-
-// Checking non-member
-const other = new TextEncoder().encode("Approval")
-filter.contains(other)  // false or true (false positive)
-```
-
-See [Algorithm](/primitives/bloomfilter/algorithm) for detailed explanation.
-
-## Ethereum Usage
-
-Bloom filters are used in Ethereum to efficiently filter logs across blocks:
-
-```typescript
-import { BloomFilter } from '@tevm/voltaire'
-
-// Each block header contains a bloom filter
-const blockBloom = BloomFilter.fromHex(block.logsBloom, 2048, 3)
-
-// Check if block might contain logs for an address
-const address = Address.from("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
-if (blockBloom.contains(address)) {
-  // Block might contain logs from this address
-  // Fetch and examine actual logs
-}
-
-// Check if block might contain specific event topic
-const transferTopic = keccak256(new TextEncoder().encode("Transfer(address,address,uint256)"))
-if (blockBloom.contains(transferTopic)) {
-  // Block might contain Transfer events
-}
-```
-
-See [Log Filtering](/primitives/bloomfilter/log-filtering) for detailed Ethereum patterns.
 
 ## Performance Characteristics
 
@@ -264,23 +205,16 @@ Where:
 - `m` = number of bits (2048 for Ethereum)
 - `k` = number of hash functions (3 for Ethereum)
 
-## Related Types
+## Related
 
-### Hex
+- [Fundamentals](/primitives/bloomfilter/fundamentals) - Learn bloom filter theory and Ethereum usage
+- [Hex](/primitives/hex) - Hex string utilities for serialization
+- [Hash](/primitives/hash) - Keccak256 hashing for log topics
+- [Branded Types](/concepts/branded-types) - Zero-overhead type branding pattern
 
-Hex string utilities for bloom filter serialization.
+## Specification
 
-    [View Hex →](/primitives/hex)
-
-### Bytes
-
-Byte array operations for item hashing.
-
-    [View Bytes →](/primitives/bytes)
-
-### Branded Types
-
-Zero-overhead type branding pattern used throughout primitives.
-
-    [View Branded Types →](/concepts/branded-types)
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 4.3.1 (Bloom Filter)
+- [Wikipedia: Bloom Filter](https://en.wikipedia.org/wiki/Bloom_filter) - Mathematical analysis
+- [EIP-234](https://eips.ethereum.org/EIPS/eip-234) - JSON-RPC filter API specification
 

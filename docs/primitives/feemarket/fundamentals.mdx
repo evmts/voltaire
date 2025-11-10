@@ -1,0 +1,474 @@
+---
+title: Fundamentals
+description: Learn Ethereum fee market mechanics for EIP-1559 and EIP-4844
+---
+
+Ethereum has two independent fee markets: EIP-1559 for transaction execution (gas) and EIP-4844 for blob data availability. This guide explains how both work using Voltaire.
+
+## What is EIP-1559?
+
+EIP-1559 replaced the legacy gas price auction with a predictable base fee that adjusts based on network demand:
+
+- **Base Fee**: Minimum fee per gas, adjusted each block based on utilization
+- **Priority Fee**: Optional tip to validators for faster inclusion
+- **Fee Burn**: Base fee is burned (destroyed), reducing ETH supply
+
+### Why EIP-1559 Exists
+
+**Before EIP-1559 (Legacy):**
+- Users bid gas prices in blind auction
+- Unpredictable fees (overpay or wait forever)
+- Validators keep all fees
+
+**After EIP-1559:**
+- Base fee calculated algorithmically
+- Predictable costs: `base_fee + priority_fee`
+- Base fee burned (deflationary pressure)
+- Only tips go to validators
+
+## Base Fee Mechanics
+
+The base fee targets **50% block utilization** and adjusts ±12.5% per block:
+
+```
+Target: 15M gas (50% of 30M limit)
+
+Block utilization → Next block adjustment:
+├─ < 15M gas (under target) → Base fee decreases by 12.5%
+├─ = 15M gas (at target)    → Base fee unchanged
+└─ > 15M gas (above target) → Base fee increases by 12.5%
+```
+
+### Calculating Next Base Fee
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire';
+
+// Block with 50% utilization (at target)
+const nextFee1 = FeeMarket.calculateBaseFee(
+  15_000_000n, // gas used (50% of limit)
+  30_000_000n, // gas limit
+  1_000_000_000n // current base fee (1 gwei)
+);
+console.log(nextFee1); // 1_000_000_000n (unchanged)
+
+// Block with 100% utilization (over target)
+const nextFee2 = FeeMarket.calculateBaseFee(
+  30_000_000n, // gas used (100% of limit)
+  30_000_000n, // gas limit
+  1_000_000_000n // current base fee (1 gwei)
+);
+console.log(nextFee2); // 1_125_000_000n (increased by 12.5%)
+
+// Block with 0% utilization (under target)
+const nextFee3 = FeeMarket.calculateBaseFee(
+  0n,            // gas used (0% of limit)
+  30_000_000n,   // gas limit
+  1_000_000_000n // current base fee (1 gwei)
+);
+console.log(nextFee3); // 875_000_000n (decreased by 12.5%)
+```
+
+### Base Fee Adjustment Formula
+
+```typescript
+// Adjustment based on gas used vs target
+const gasTarget = gasLimit / 2n; // 50% utilization target
+const gasUsedDelta = gasUsed - gasTarget;
+
+if (gasUsedDelta === 0n) {
+  // At target: no change
+  nextBaseFee = currentBaseFee;
+} else if (gasUsedDelta > 0n) {
+  // Over target: increase
+  const increase = (currentBaseFee * gasUsedDelta) / gasTarget / 8n;
+  nextBaseFee = currentBaseFee + Math.max(increase, 1n);
+} else {
+  // Under target: decrease
+  const decrease = (currentBaseFee * Math.abs(gasUsedDelta)) / gasTarget / 8n;
+  nextBaseFee = currentBaseFee - decrease;
+}
+
+// Minimum base fee is 7 wei
+nextBaseFee = Math.max(nextBaseFee, 7n);
+```
+
+The `/8n` factor gives 12.5% max adjustment per block.
+
+## Priority Fee (Tip)
+
+Priority fee (tip) incentivizes validators to include your transaction:
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire';
+
+const txFee = FeeMarket.calculateTxFee({
+  maxFeePerGas: 2_000_000_000n,         // Max you'll pay (2 gwei)
+  maxPriorityFeePerGas: 500_000_000n,   // Max tip (0.5 gwei)
+  baseFee: 1_000_000_000n               // Current base fee (1 gwei)
+});
+
+console.log(txFee.effectiveGasPrice);    // 1_500_000_000n (1.5 gwei)
+console.log(txFee.priorityFee);          // 500_000_000n (0.5 gwei tip)
+console.log(txFee.baseFee);              // 1_000_000_000n (1 gwei burned)
+```
+
+### How Effective Gas Price is Calculated
+
+```typescript
+// Effective gas price is the minimum of:
+// 1. maxFeePerGas (user's max)
+// 2. baseFee + maxPriorityFeePerGas (base + tip)
+
+effectiveGasPrice = Math.min(
+  maxFeePerGas,
+  baseFee + maxPriorityFeePerGas
+);
+
+// Priority fee paid is the remainder after base fee
+priorityFeePaid = effectiveGasPrice - baseFee;
+```
+
+**Example scenarios:**
+
+```typescript
+// Scenario 1: Normal operation (tip fully paid)
+maxFeePerGas = 2_000_000_000n;         // 2 gwei
+maxPriorityFeePerGas = 500_000_000n;   // 0.5 gwei
+baseFee = 1_000_000_000n;              // 1 gwei
+
+effectiveGasPrice = Math.min(2_000_000_000n, 1_000_000_000n + 500_000_000n);
+// = 1_500_000_000n (1.5 gwei)
+priorityFeePaid = 1_500_000_000n - 1_000_000_000n;
+// = 500_000_000n (full 0.5 gwei tip)
+
+// Scenario 2: Tip reduced by maxFee cap
+maxFeePerGas = 1_200_000_000n;         // 1.2 gwei
+maxPriorityFeePerGas = 500_000_000n;   // 0.5 gwei
+baseFee = 1_000_000_000n;              // 1 gwei
+
+effectiveGasPrice = Math.min(1_200_000_000n, 1_000_000_000n + 500_000_000n);
+// = 1_200_000_000n (capped at maxFee)
+priorityFeePaid = 1_200_000_000n - 1_000_000_000n;
+// = 200_000_000n (only 0.2 gwei tip, rest capped)
+
+// Scenario 3: Transaction rejected (base fee too high)
+maxFeePerGas = 1_000_000_000n;         // 1 gwei
+maxPriorityFeePerGas = 500_000_000n;   // 0.5 gwei
+baseFee = 1_500_000_000n;              // 1.5 gwei
+
+// Transaction REJECTED: maxFeePerGas < baseFee
+// effectiveGasPrice would be 1_000_000_000n, but baseFee is 1_500_000_000n
+```
+
+## maxFeePerGas vs maxPriorityFeePerGas
+
+Understanding the two fee parameters:
+
+```typescript
+// maxFeePerGas: Absolute maximum you'll pay per gas
+// - Protects you from overpaying if base fee spikes
+// - Must be >= baseFee for transaction to be included
+// - Set this based on urgency and budget
+
+// maxPriorityFeePerGas: Maximum tip to validator
+// - Incentivizes faster inclusion
+// - Actual tip may be less if maxFee caps it
+// - Set this based on how quickly you need inclusion
+```
+
+### Setting Fees for Different Urgency Levels
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire';
+
+// Current network state
+const currentBaseFee = 1_000_000_000n; // 1 gwei
+
+// Low urgency: can wait, minimal tip
+const lowUrgency = {
+  maxFeePerGas: currentBaseFee + 500_000_000n,  // 1.5 gwei (50% buffer)
+  maxPriorityFeePerGas: 100_000_000n            // 0.1 gwei tip
+};
+
+// Standard urgency: normal inclusion time
+const standard = {
+  maxFeePerGas: currentBaseFee * 2n,            // 2 gwei (100% buffer)
+  maxPriorityFeePerGas: 1_000_000_000n          // 1 gwei tip
+};
+
+// High urgency: next block inclusion
+const highUrgency = {
+  maxFeePerGas: currentBaseFee * 3n,            // 3 gwei (200% buffer)
+  maxPriorityFeePerGas: 2_000_000_000n          // 2 gwei tip
+};
+
+// Calculate what you'll actually pay for each
+const lowFee = FeeMarket.calculateTxFee({
+  ...lowUrgency,
+  baseFee: currentBaseFee
+});
+
+const standardFee = FeeMarket.calculateTxFee({
+  ...standard,
+  baseFee: currentBaseFee
+});
+
+const highFee = FeeMarket.calculateTxFee({
+  ...highUrgency,
+  baseFee: currentBaseFee
+});
+
+console.log('Low urgency:', lowFee.effectiveGasPrice);      // 1_100_000_000n
+console.log('Standard:', standardFee.effectiveGasPrice);     // 2_000_000_000n
+console.log('High urgency:', highFee.effectiveGasPrice);     // 3_000_000_000n
+```
+
+## Complete Example: Estimating Transaction Cost
+
+Calculate total cost for a token transfer:
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire';
+
+// Current network conditions
+const currentBaseFee = 1_200_000_000n; // 1.2 gwei
+const gasLimit = 30_000_000n;
+const gasUsed = 21_000_000n; // 70% utilization (above target)
+
+// Project next block's base fee
+const nextBaseFee = FeeMarket.calculateBaseFee(
+  gasUsed,
+  gasLimit,
+  currentBaseFee
+);
+console.log(`Next base fee: ${nextBaseFee} wei`); // ~1.35 gwei (increased)
+
+// Set fees with buffer for potential spike
+const maxFeePerGas = nextBaseFee * 2n;            // 2.7 gwei buffer
+const maxPriorityFeePerGas = 1_000_000_000n;      // 1 gwei tip
+
+// Calculate effective fee
+const txFee = FeeMarket.calculateTxFee({
+  maxFeePerGas,
+  maxPriorityFeePerGas,
+  baseFee: nextBaseFee
+});
+
+console.log(`Effective gas price: ${txFee.effectiveGasPrice}`);
+// 2_350_000_000n (1.35 base + 1.0 tip)
+
+// Total cost for 21,000 gas transfer
+const gasUsedForTransfer = 21_000n;
+const totalCost = txFee.effectiveGasPrice * gasUsedForTransfer;
+const ethCost = totalCost / 1_000_000_000_000_000_000n; // Convert wei to ETH
+
+console.log(`Total cost: ${totalCost} wei`);
+// 49_350_000_000_000 wei
+console.log(`Total cost: ${ethCost} ETH`);
+// ~0.000049 ETH
+```
+
+## Handling Fee Spikes
+
+Protect against sudden base fee increases:
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire';
+
+// Project base fees for next 5 blocks assuming high utilization
+const currentBaseFee = 1_000_000_000n;
+const gasLimit = 30_000_000n;
+const highUtilization = 25_000_000n; // 83% full blocks
+
+const projections = FeeMarket.projectBaseFees({
+  baseFee: currentBaseFee,
+  gasLimit,
+  blocks: 5,
+  gasUsedPerBlock: highUtilization
+});
+
+console.log('Base fee projections:');
+projections.forEach((fee, i) => {
+  const gwei = Number(fee) / 1_000_000_000;
+  console.log(`Block +${i}: ${gwei.toFixed(2)} gwei`);
+});
+// Block +0: 1.00 gwei (current)
+// Block +1: 1.11 gwei
+// Block +2: 1.23 gwei
+// Block +3: 1.36 gwei
+// Block +4: 1.51 gwei
+
+// Set maxFee based on worst-case projection
+const maxProjected = projections[projections.length - 1];
+const maxFeePerGas = maxProjected + 1_000_000_000n; // Add 1 gwei buffer
+
+console.log(`Safe maxFeePerGas: ${maxFeePerGas}`);
+// Covers spike up to ~2.51 gwei
+```
+
+## EIP-4844 Blob Gas
+
+EIP-4844 introduced a separate fee market for blob data (layer 2 data availability):
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire';
+
+// Blob gas operates independently from regular gas
+const BLOB_GAS_PER_BLOB = 131_072n; // Each blob costs this much blob gas
+const TARGET_BLOB_GAS = 393_216n;   // Target: 3 blobs per block
+const MAX_BLOBS = 6n;               // Max: 6 blobs per block
+
+// Calculate blob base fee from excess blob gas
+const excessBlobGas = 262_144n; // 2 blobs above target
+const blobBaseFee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+
+console.log(`Blob base fee: ${blobBaseFee} wei per blob gas`);
+```
+
+### Blob Fee Mechanics
+
+Unlike EIP-1559's ±12.5% adjustment, blob fees use **exponential pricing**:
+
+```typescript
+// Blob base fee formula (simplified):
+// blobBaseFee = MIN_BLOB_BASE_FEE * e^(excessBlobGas / TARGET_BLOB_GAS)
+
+// Examples at different utilization levels:
+const scenarios = [
+  { blobs: 0, excessBlobGas: 0n },
+  { blobs: 3, excessBlobGas: 0n },        // At target
+  { blobs: 4, excessBlobGas: 131_072n },  // 1 over target
+  { blobs: 6, excessBlobGas: 393_216n }   // 3 over target (max)
+];
+
+scenarios.forEach(({ blobs, excessBlobGas }) => {
+  const fee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+  console.log(`${blobs} blobs: ${fee} wei/gas`);
+});
+// 0 blobs: 1 wei/gas (minimum)
+// 3 blobs: 1 wei/gas (at target)
+// 4 blobs: ~1.1 wei/gas
+// 6 blobs: ~1.4 wei/gas
+```
+
+### Complete Blob Transaction Example
+
+```typescript
+import * as FeeMarket from '@tevm/voltaire';
+
+// Current blob market state
+const parentExcessBlobGas = 131_072n; // 1 blob above target
+const parentBlobGasUsed = 262_144n;   // 2 blobs used in parent
+
+// Calculate next block's blob base fee
+const excessBlobGas = FeeMarket.calculateExcessBlobGas(
+  parentExcessBlobGas,
+  parentBlobGasUsed
+);
+const blobBaseFee = FeeMarket.calculateBlobBaseFee(excessBlobGas);
+
+console.log(`Excess blob gas: ${excessBlobGas}`);
+console.log(`Blob base fee: ${blobBaseFee} wei/gas`);
+
+// Your transaction: 3 blobs
+const blobCount = 3n;
+const totalBlobGas = blobCount * 131_072n; // 393,216 blob gas
+
+// Calculate blob fee cost
+const blobFee = FeeMarket.calculateBlobTxFee({
+  maxFeePerBlobGas: 100n,      // Your max (100 wei/gas)
+  blobBaseFee: blobBaseFee,    // Current blob base fee
+  blobGasUsed: totalBlobGas    // Total blob gas for your blobs
+});
+
+console.log(`Blob fee: ${blobFee.blobFee} wei`);
+console.log(`Blobs: ${blobFee.blobsCount}`);
+
+// Total blob cost
+const totalBlobCost = blobBaseFee * totalBlobGas;
+console.log(`Total blob cost: ${totalBlobCost} wei`);
+```
+
+## Visual Fee Calculation
+
+### EIP-1559 Transaction Fee Breakdown
+
+```
+User Transaction Parameters:
+├─ maxFeePerGas: 2.0 gwei
+└─ maxPriorityFeePerGas: 1.0 gwei
+
+Network State:
+└─ baseFee: 1.0 gwei
+
+Calculation:
+├─ effectiveGasPrice = min(maxFeePerGas, baseFee + maxPriorityFeePerGas)
+│  = min(2.0, 1.0 + 1.0) = 2.0 gwei
+│
+├─ User pays: 2.0 gwei × 21,000 gas = 42,000 gwei = 0.000042 ETH
+│
+└─ Fee distribution:
+   ├─ Burned: 1.0 gwei × 21,000 = 21,000 gwei (base fee)
+   └─ To validator: 1.0 gwei × 21,000 = 21,000 gwei (priority fee)
+```
+
+### Base Fee Adjustment Visualization
+
+```
+Block Sequence (30M gas limit, 15M target):
+
+Block N:   gasUsed = 15M, baseFee = 1.0 gwei → No change
+           ├─ At target (50% full)
+           └─ Next baseFee = 1.0 gwei
+
+Block N+1: gasUsed = 30M, baseFee = 1.0 gwei → Increase
+           ├─ Over target (100% full)
+           └─ Next baseFee = 1.125 gwei (+12.5%)
+
+Block N+2: gasUsed = 30M, baseFee = 1.125 gwei → Increase
+           ├─ Over target (100% full)
+           └─ Next baseFee = 1.265625 gwei (+12.5%)
+
+Block N+3: gasUsed = 5M, baseFee = 1.265625 gwei → Decrease
+           ├─ Under target (16.7% full)
+           └─ Next baseFee = 1.107... gwei (-12.5%)
+```
+
+### Blob Gas Market Visualization
+
+```
+Blob Market (131,072 gas per blob, 3 blob target, 6 max):
+
+Target: ▓▓▓ (3 blobs = 393,216 gas)
+Max:    ▓▓▓▓▓▓ (6 blobs = 786,432 gas)
+
+Utilization → Blob Base Fee:
+├─ 0 blobs:  1 wei/gas    (under target)
+├─ 1 blob:   1 wei/gas    (under target)
+├─ 2 blobs:  1 wei/gas    (under target)
+├─ 3 blobs:  1 wei/gas    (at target)
+├─ 4 blobs:  ~1.1 wei/gas (over target)
+├─ 5 blobs:  ~1.3 wei/gas (over target)
+└─ 6 blobs:  ~1.4 wei/gas (at max)
+
+Sustained high usage → exponential growth:
+├─ +10 blocks at 6 blobs: ~2 wei/gas
+├─ +50 blocks at 6 blobs: ~100 wei/gas
+└─ +100 blocks at 6 blobs: ~10,000 wei/gas
+```
+
+## Resources
+
+- **[EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)** - Fee market change specification
+- **[EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)** - Shard blob transactions specification
+- **[ethereum.org fee guide](https://ethereum.org/en/developers/docs/gas/)** - Gas and fees overview
+- **[Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Formal protocol specification
+
+## Next Steps
+
+- [Overview](/primitives/feemarket) - Type definitions and API reference
+- [calculateBaseFee](/primitives/feemarket/eip1559#calculatebasefee) - Calculate next base fee
+- [calculateTxFee](/primitives/feemarket/calculations#calculatetxfee) - Estimate transaction cost
+- [calculateBlobBaseFee](/primitives/feemarket/eip4844#calculateblobbasefee) - Calculate blob fees
+- [projectBaseFees](/primitives/feemarket/calculations#projectbasefees) - Project future fees
