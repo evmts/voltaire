@@ -60,6 +60,7 @@
         {
           "group": "ABI",
           "pages": [
+            "primitives/abi/fundamentals",
             "primitives/abi/index"
           ]
         },
@@ -98,6 +99,7 @@
         {
           "group": "Authorization",
           "pages": [
+            "primitives/authorization/fundamentals",
             "primitives/authorization/index",
             "primitives/authorization/branded-authorization",
             "primitives/authorization/eip7702",
@@ -117,6 +119,7 @@
           "group": "Base64",
           "pages": [
             "primitives/base64/index",
+            "primitives/base64/fundamentals",
             "primitives/base64/branded-base64",
             "primitives/base64/encoding",
             "primitives/base64/decoding",
@@ -141,6 +144,7 @@
         {
           "group": "BloomFilter",
           "pages": [
+            "primitives/bloomfilter/fundamentals",
             "primitives/bloomfilter/index",
             "primitives/bloomfilter/branded-bloomfilter",
             "primitives/bloomfilter/algorithm",
@@ -179,6 +183,7 @@
         {
           "group": "Chain",
           "pages": [
+            "primitives/chain/fundamentals",
             "primitives/chain/index",
             "primitives/chain/branded-chain",
             "primitives/chain/constructors",
@@ -190,6 +195,7 @@
         {
           "group": "Denomination",
           "pages": [
+            "primitives/denomination/fundamentals",
             "primitives/denomination/index",
             "primitives/denomination/wei",
             "primitives/denomination/gwei",
@@ -239,6 +245,7 @@
         {
           "group": "GasConstants",
           "pages": [
+            "primitives/gasconstants/fundamentals",
             "primitives/gasconstants/index",
             "primitives/gasconstants/branded-gasconstants",
             "primitives/gasconstants/constants",
@@ -254,6 +261,7 @@
           "group": "Hardfork",
           "pages": [
             "primitives/hardfork/index",
+            "primitives/hardfork/fundamentals",
             "primitives/hardfork/branded-hardfork",
             "primitives/hardfork/hardforks",
             "primitives/hardfork/features",
@@ -345,6 +353,7 @@
         {
           "group": "SIWE",
           "pages": [
+            "primitives/siwe/fundamentals",
             "primitives/siwe/index",
             "primitives/siwe/branded-siwe",
             "primitives/siwe/message-format",
@@ -378,6 +387,7 @@
         {
           "group": "Transaction",
           "pages": [
+            "primitives/transaction/fundamentals",
             "primitives/transaction/index",
             "primitives/transaction/types",
             "primitives/transaction/legacy",
@@ -396,7 +406,8 @@
         {
           "group": "Uint",
           "pages": [
-            "primitives/uint/index"
+            "primitives/uint/index",
+            "primitives/uint/fundamentals"
           ]
         }
       ]
@@ -614,9 +625,11 @@
   "contextual": {
     "options": [
       "copy",
+      "view",
       "claude",
       "chatgpt",
       "cursor",
+      "vscode",
       "mcp"
     ]
   }
