@@ -1,0 +1,248 @@
+---
+title: "PUSH12 (0x6B)"
+description: "Push 12-byte immediate value onto stack"
+---
+
+## Overview
+
+**Opcode:** `0x6B`
+**Introduced:** Frontier (EVM genesis)
+
+PUSH12 pushes a 12-byte immediate value from the bytecode onto the stack. The 12 bytes immediately following the opcode are read and zero-padded to 256 bits.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+value (uint256, 12 bytes from bytecode)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Bytecode:** 1 byte opcode + 12 bytes immediate data
+
+**Operation:**
+```
+value = read_bytes(pc + 1, 12)  // Big-endian
+stack.push(value)
+pc += 13
+```
+
+## Behavior
+
+PUSH12 reads 12 bytes from bytecode starting at position `pc + 1`, interprets them as a big-endian unsigned integer, and pushes the result onto the stack.
+
+Key characteristics:
+- Reads exactly 12 bytes following opcode
+- Big-endian byte order (most significant byte first)
+- Zero-padded to 256 bits if less than 32 bytes
+- InvalidOpcode if insufficient bytecode remaining
+- PC advances by 13 (opcode + data)
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x6B_PUSH12 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Bytecode with PUSH12
+const bytecode = new Uint8Array([
+  0x6B,  // PUSH12
+  0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c   // 12 bytes: 0102030405060708090a0b0c
+]);
+
+const frame = createFrame({
+  bytecode,
+  pc: 0,
+  stack: [],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x6B_PUSH12(frame);
+
+console.log(frame.stack); // [0x0102030405060708090a0b0c0000000000000000000000000000000000000000n]
+console.log(frame.pc); // 13
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    // 12-byte constant
+    uint96 constant VALUE = 7.922816251426434e+28;
+    // PUSH12 0xffffffffffffffffffffffff
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    // Push 12-byte value
+    push12 0xffffffffffffffffffffffff
+    
+    // Example: 12-byte constant
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All PUSH1-32 instructions cost the same despite different data sizes. Bytecode size impact:
+- PUSH12: 13 bytes (1 opcode + 12 data)
+- PUSH32: 33 bytes (1 opcode + 32 data)
+
+**Comparison:**
+| Opcode | Gas | Bytes | Use Case |
+|--------|-----|-------|----------|
+| PUSH0 | 2 | 1 | Zero constant (Shanghai+) |
+| PUSH1 | 3 | 2 | Small numbers (0-255) |
+
+
+
+
+## Common Usage
+
+### 12-Byte Constants
+
+```solidity
+assembly {
+    // 12-byte literal
+    push12 0xabababababababababababab
+}
+```
+
+### Big-Endian Encoding
+
+```typescript
+// Bytecode: PUSH12 01 02 03 04 05 06 07 08 09 0a 0b 0c
+// Reads as: 0x0102030405060708090a0b0c
+
+// Most significant byte first
+// Byte 0: 0x01 (highest significance)
+// Byte 11: 0x0c (lowest significance)
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * Read immediate data from bytecode for PUSH operations
+ */
+function readImmediate(bytecode: Uint8Array, pc: number, size: number): bigint | null {
+  if (pc + 1 + size > bytecode.length) {
+    return null;
+  }
+
+  let result = 0n;
+  for (let i = 0; i < size; i++) {
+    result = (result << 8n) | BigInt(bytecode[pc + 1 + i]);
+  }
+  return result;
+}
+
+/**
+ * PUSH12 opcode (0x6B) - Push 12 bytes onto stack
+ *
+ * Stack: [] => [value]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x6B_PUSH12(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  const value = readImmediate(frame.bytecode, frame.pc, 12);
+  if (value === null) {
+    return { type: "InvalidOpcode" };
+  }
+
+  const pushErr = pushStack(frame, value);
+  if (pushErr) return pushErr;
+
+  frame.pc += 13;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// PUSH12 opcode (0x6B) - Push 12 bytes onto stack
+pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    const push_size = opcode - 0x5f;
+    try frame.consumeGas(GasConstants.GasFastestStep);
+
+    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
+    try frame.pushStack(value);
+    frame.pc += 1 + push_size;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Insufficient Bytecode
+
+```typescript
+// Bytecode ends before 12 bytes read
+const bytecode = new Uint8Array([0x6B, 0x01]); // Only 1 byte instead of 12
+const frame = createFrame({ bytecode, pc: 0 });
+
+const err = handler_0x6B_PUSH12(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum capacity
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  bytecode: new Uint8Array([0x6B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+});
+
+const err = handler_0x6B_PUSH12(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  gasRemaining: 2n,  // Need 3 gas
+  bytecode: new Uint8Array([0x6B, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff])
+});
+
+const err = handler_0x6B_PUSH12(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Maximum Value
+
+```typescript
+// All bytes 0xFF
+const bytecode = new Uint8Array([0x6B, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+const frame = createFrame({ bytecode, pc: 0 });
+
+handler_0x6B_PUSH12(frame);
+console.log(frame.stack[0]); // 0xffffffffffffffffffffffff0000000000000000000000000000000000000000n
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (PUSH)
+- [EVM Codes - PUSH12](https://www.evm.codes/#6b?fork=cancun)
+- [Solidity Assembly - push12](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)

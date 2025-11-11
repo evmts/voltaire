@@ -1,0 +1,248 @@
+---
+title: "PUSH6 (0x65)"
+description: "Push 6-byte immediate value onto stack"
+---
+
+## Overview
+
+**Opcode:** `0x65`
+**Introduced:** Frontier (EVM genesis)
+
+PUSH6 pushes a 6-byte immediate value from the bytecode onto the stack. The 6 bytes immediately following the opcode are read and zero-padded to 256 bits.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+value (uint256, 6 bytes from bytecode)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Bytecode:** 1 byte opcode + 6 bytes immediate data
+
+**Operation:**
+```
+value = read_bytes(pc + 1, 6)  // Big-endian
+stack.push(value)
+pc += 7
+```
+
+## Behavior
+
+PUSH6 reads 6 bytes from bytecode starting at position `pc + 1`, interprets them as a big-endian unsigned integer, and pushes the result onto the stack.
+
+Key characteristics:
+- Reads exactly 6 bytes following opcode
+- Big-endian byte order (most significant byte first)
+- Zero-padded to 256 bits if less than 32 bytes
+- InvalidOpcode if insufficient bytecode remaining
+- PC advances by 7 (opcode + data)
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x65_PUSH6 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Bytecode with PUSH6
+const bytecode = new Uint8Array([
+  0x65,  // PUSH6
+  0x01, 0x02, 0x03, 0x04, 0x05, 0x06   // 6 bytes: 010203040506
+]);
+
+const frame = createFrame({
+  bytecode,
+  pc: 0,
+  stack: [],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x65_PUSH6(frame);
+
+console.log(frame.stack); // [0x0102030405060000000000000000000000000000000000000000000000000000n]
+console.log(frame.pc); // 7
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    // 6-byte constant
+    uint48 constant VALUE = 281474976710655;
+    // PUSH6 0xffffffffffff
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    // Push 6-byte value
+    push6 0xffffffffffff
+    
+    // Example: 6-byte constant
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All PUSH1-32 instructions cost the same despite different data sizes. Bytecode size impact:
+- PUSH6: 7 bytes (1 opcode + 6 data)
+- PUSH32: 33 bytes (1 opcode + 32 data)
+
+**Comparison:**
+| Opcode | Gas | Bytes | Use Case |
+|--------|-----|-------|----------|
+| PUSH0 | 2 | 1 | Zero constant (Shanghai+) |
+| PUSH1 | 3 | 2 | Small numbers (0-255) |
+
+
+
+
+## Common Usage
+
+### 6-Byte Constants
+
+```solidity
+assembly {
+    // 6-byte literal
+    push6 0xabababababab
+}
+```
+
+### Big-Endian Encoding
+
+```typescript
+// Bytecode: PUSH6 01 02 03 04 05 06
+// Reads as: 0x010203040506
+
+// Most significant byte first
+// Byte 0: 0x01 (highest significance)
+// Byte 5: 0x06 (lowest significance)
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * Read immediate data from bytecode for PUSH operations
+ */
+function readImmediate(bytecode: Uint8Array, pc: number, size: number): bigint | null {
+  if (pc + 1 + size > bytecode.length) {
+    return null;
+  }
+
+  let result = 0n;
+  for (let i = 0; i < size; i++) {
+    result = (result << 8n) | BigInt(bytecode[pc + 1 + i]);
+  }
+  return result;
+}
+
+/**
+ * PUSH6 opcode (0x65) - Push 6 bytes onto stack
+ *
+ * Stack: [] => [value]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x65_PUSH6(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  const value = readImmediate(frame.bytecode, frame.pc, 6);
+  if (value === null) {
+    return { type: "InvalidOpcode" };
+  }
+
+  const pushErr = pushStack(frame, value);
+  if (pushErr) return pushErr;
+
+  frame.pc += 7;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// PUSH6 opcode (0x65) - Push 6 bytes onto stack
+pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    const push_size = opcode - 0x5f;
+    try frame.consumeGas(GasConstants.GasFastestStep);
+
+    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
+    try frame.pushStack(value);
+    frame.pc += 1 + push_size;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Insufficient Bytecode
+
+```typescript
+// Bytecode ends before 6 bytes read
+const bytecode = new Uint8Array([0x65, 0x01]); // Only 1 byte instead of 6
+const frame = createFrame({ bytecode, pc: 0 });
+
+const err = handler_0x65_PUSH6(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum capacity
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  bytecode: new Uint8Array([0x65, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+});
+
+const err = handler_0x65_PUSH6(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  gasRemaining: 2n,  // Need 3 gas
+  bytecode: new Uint8Array([0x65, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff])
+});
+
+const err = handler_0x65_PUSH6(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Maximum Value
+
+```typescript
+// All bytes 0xFF
+const bytecode = new Uint8Array([0x65, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+const frame = createFrame({ bytecode, pc: 0 });
+
+handler_0x65_PUSH6(frame);
+console.log(frame.stack[0]); // 0xffffffffffff0000000000000000000000000000000000000000000000000000n
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (PUSH)
+- [EVM Codes - PUSH6](https://www.evm.codes/#65?fork=cancun)
+- [Solidity Assembly - push6](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)

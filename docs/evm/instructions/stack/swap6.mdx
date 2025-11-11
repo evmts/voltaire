@@ -1,0 +1,309 @@
+---
+title: "SWAP6 (0x95)"
+description: "Swap top with 7th stack item"
+---
+
+## Overview
+
+**Opcode:** `0x95`
+**Introduced:** Frontier (EVM genesis)
+
+SWAP6 exchanges the top stack item with the 7th item from the top. Only these two positions change - all other items remain in place.
+
+## Specification
+
+**Stack Input:**
+```
+[..., valueN, item5, ..., item1, top]
+```
+
+**Stack Output:**
+```
+[..., top, item5, ..., item1, valueN]
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+temp = stack[top]
+stack[top] = stack[top - 7]
+stack[top - 7] = temp
+```
+
+## Behavior
+
+SWAP6 exchanges positions of the top item and the item at position 7 from top. Requires stack depth ≥ 7.
+
+Key characteristics:
+- Requires stack depth ≥ 7
+- Only two items change positions
+- Middle items (items 1-6) unchanged
+- StackUnderflow if depth < 7
+- Stack depth unchanged
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x95_SWAP6 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Swap top with 7th item
+const frame = createFrame({
+  stack: [700n, 600n, 500n, 400n, 300n, 200n, 100n],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x95_SWAP6(frame);
+
+console.log(frame.stack); // [100n, 600n, 500n, 400n, 300n, 200n, 700n] - positions 0 and 6 swapped
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    function deepSwap() public pure {
+        assembly {
+            push1 0x01
+            push1 0x02
+            push1 0x03
+            push1 0x04
+            push1 0x05
+            push1 0x06
+            push1 0x07
+            // Stack: [1, 2, 3, 4, 5, 6, 7]
+            swap6
+            // Stack: [7, 2, 3, 4, 5, 6, 1]
+        }
+    }
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    push1 0xa
+    push1 0xb
+    push1 0xc
+    push1 0xd
+    push1 0xe
+    push1 0xf
+    push1 0xg
+    // Stack: ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+
+    swap6
+    // Stack: ['g', 'b', 'c', 'd', 'e', 'f', 'a'] - 'a' and 'g' swapped
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All SWAP1-16 operations cost the same despite different stack depths accessed.
+
+**Comparison:**
+| Operation | Gas | Note |
+|-----------|-----|------|
+| SWAP6 | 3 | Swap with 7th item |
+| DUP1-16 | 3 | Same cost tier |
+| POP | 2 | Cheaper |
+
+## Common Usage
+
+### Deep Stack Manipulation
+
+```solidity
+function complex() public pure {
+    assembly {
+        let v0 := 0
+        let v1 := 1
+        let v2 := 2
+        let v3 := 3
+        let v4 := 4
+        let v5 := 5
+        let v6 := 6
+        // Need v0 at top
+        swap6
+        // v0 now at top
+    }
+}```
+
+### Efficient Reordering
+
+```solidity
+// Reorder for function call
+assembly {
+    // Have: [value, to, token]
+    // Need: [token, to, value]
+    swap2  // [token, to, value]
+
+    // Call transfer(token, to, value)
+    call(gas(), target, 0, 0, 100, 0, 0)
+}
+```
+
+### Storage Optimization
+
+```solidity
+assembly {
+    let slot := 0
+    let value := 42
+    // Stack: [slot, value]
+
+    // SSTORE needs (slot, value) but we have them reversed
+    // No swap needed in this case, but if we did:
+    swap1
+    // Stack: [value, slot]
+    sstore
+}
+```
+
+## Stack Depth Requirements
+
+### Minimum Depth
+
+```solidity
+// SWAP6 requires 7 items
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    push1 0x04
+    push1 0x05
+    push1 0x06
+    // Only 6 items - SWAP6 will fail!
+    swap6  // StackUnderflow
+}
+```
+
+### Safe Usage
+
+```solidity
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    push1 0x04
+    push1 0x05
+    push1 0x06
+    push1 0x07
+    // Exactly 7 items - safe
+    swap6  // Success
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * SWAP6 opcode (0x95) - Swap top with 7th item
+ *
+ * Stack: [..., valueN, ..., top] => [..., top, ..., valueN]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x95_SWAP6(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  if (frame.stack.length <= 6) {
+    return { type: "StackUnderflow" };
+  }
+
+  const topIdx = frame.stack.length - 1;
+  const swapIdx = frame.stack.length - 7;
+  const temp = frame.stack[topIdx];
+  frame.stack[topIdx] = frame.stack[swapIdx];
+  frame.stack[swapIdx] = temp;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// SWAP6 opcode (0x95) - Swap top with 7th item
+pub fn swap(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const n = opcode - 0x8f;
+    if (frame.stack.items.len <= n) {
+        return error.StackUnderflow;
+    }
+    const top_idx = frame.stack.items.len - 1;
+    const swap_idx = frame.stack.items.len - 1 - n;
+    const temp = frame.stack.items[top_idx];
+    frame.stack.items[top_idx] = frame.stack.items[swap_idx];
+    frame.stack.items[swap_idx] = temp;
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Stack Underflow
+
+```typescript
+// Insufficient stack depth
+const frame = createFrame({
+  stack: [100n, 100n, 100n, 100n, 100n, 100n]  // Only 6 items, need 7
+});
+
+const err = handler_0x95_SWAP6(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  stack: [100n, 100n, 100n, 100n, 100n, 100n, 100n],
+  gasRemaining: 2n  // Need 3
+});
+
+const err = handler_0x95_SWAP6(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Identity Swap
+
+```typescript
+// Swap same values
+const frame = createFrame({
+  stack: new Array(7).fill(42n)
+});
+
+handler_0x95_SWAP6(frame);
+console.log(frame.stack); // All still 42n
+```
+
+### Maximum Values
+
+```typescript
+// Swap with max uint256
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({
+  stack: [0n, 0n, 0n, 0n, 0n, 0n, MAX, 1n]
+});
+
+handler_0x95_SWAP6(frame);
+console.log(frame.stack[0]); // 1n (was at top)
+console.log(frame.stack[6]); // MAX (was at bottom)
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Stack Operations)
+- [EVM Codes - SWAP6](https://www.evm.codes/#95?fork=cancun)
+- [Solidity Assembly - swap6](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)

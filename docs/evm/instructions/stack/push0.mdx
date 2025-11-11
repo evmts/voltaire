@@ -1,0 +1,404 @@
+---
+title: "PUSH0 (0x5f)"
+description: "Push constant zero onto stack"
+---
+
+## Overview
+
+**Opcode:** `0x5f`
+**Introduced:** Shanghai (EIP-3855)
+
+PUSH0 pushes the constant value 0 onto the stack. Introduced in Shanghai hardfork as a gas optimization - previously required PUSH1 0x00 (3 gas).
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+0 (uint256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(0)
+```
+
+## Behavior
+
+PUSH0 pushes constant zero without reading from bytecode. Unlike PUSH1-32, no immediate bytes follow the opcode.
+
+Key characteristics:
+- No bytecode reading (pure constant)
+- Cheaper than PUSH1 0x00 (2 vs 3 gas)
+- Only available Shanghai hardfork onwards
+- InvalidOpcode error on earlier hardforks
+- Most efficient way to push zero
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x5f_PUSH0 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Push zero
+const frame = createFrame({
+  stack: [],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x5f_PUSH0(frame);
+
+console.log(frame.stack); // [0n]
+console.log(frame.gasRemaining); // 998n (2 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    function getZero() public pure returns (uint256) {
+        return 0;
+    }
+
+    // Pre-Shanghai:
+    // PUSH1 0x00  (3 gas)
+
+    // Shanghai+:
+    // PUSH0       (2 gas)
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    // Most efficient zero initialization
+    push0                // 2 gas
+
+    // Old way (still works)
+    push1 0x00           // 3 gas
+
+    // Use for memory initialization
+    push0
+    push0
+    mstore               // Store 0 at memory offset 0
+}
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+**Comparison:**
+| Opcode | Gas | Bytes | Note |
+|--------|-----|-------|------|
+| PUSH0 | 2 | 1 | Shanghai+ only |
+| PUSH1 0x00 | 3 | 2 | All hardforks |
+
+**Savings:**
+- 1 gas per zero value
+- 1 byte per zero value in bytecode
+- Significant for contracts with many zero constants
+
+## Common Usage
+
+### Memory Initialization
+
+```solidity
+assembly {
+    // Clear memory slots
+    push0
+    push0
+    mstore  // mem[0] = 0
+
+    push0
+    push1 0x20
+    mstore  // mem[32] = 0
+}
+```
+
+### Default Return Values
+
+```solidity
+function maybeValue(bool condition) public pure returns (uint256) {
+    if (!condition) {
+        assembly {
+            push0
+            push0
+            mstore
+            return(0, 32)  // Return 0
+        }
+    }
+    return 42;
+}
+```
+
+### Array Length Initialization
+
+```solidity
+assembly {
+    // Create empty array in memory
+    let ptr := mload(0x40)  // Free memory pointer
+    push0
+    mstore(ptr, 0)          // Length = 0
+    mstore(0x40, add(ptr, 0x20))  // Update free pointer
+}
+```
+
+### Comparison Operations
+
+```solidity
+assembly {
+    // Check if value is zero
+    let x := calldataload(0)
+    push0
+    eq  // x == 0
+}
+```
+
+## Hardfork Compatibility
+
+### Shanghai Check
+
+```typescript
+// Zig implementation checks hardfork
+if (push_size == 0) {
+    const evm = frame.getEvm();
+    if (evm.hardfork.isBefore(.SHANGHAI)) {
+        return error.InvalidOpcode;
+    }
+    try frame.consumeGas(GasConstants.GasQuickStep);
+}
+```
+
+### Safe Fallback
+
+```solidity
+// Pre-Shanghai compatible code
+assembly {
+    // Use PUSH1 for compatibility
+    push1 0x00
+}
+
+// Shanghai+ optimized code
+assembly {
+    // Use PUSH0 for efficiency
+    push0
+}
+```
+
+## EIP-3855 Rationale
+
+**Problem:**
+- PUSH1 0x00 wastes gas (3 instead of 2)
+- PUSH1 0x00 wastes bytecode space (2 bytes instead of 1)
+- Zero is extremely common in EVM code
+
+**Solution:**
+- Dedicated opcode for pushing zero
+- Same gas as other constant operations (ADDRESS, CALLER, etc.)
+- Saves ~0.1% gas on typical contracts
+
+**Impact:**
+```solidity
+// Example contract
+contract Token {
+    mapping(address => uint256) balances;
+
+    function transfer(address to, uint256 amount) public {
+        // Many zero comparisons and initializations
+        // Each PUSH0 saves 1 gas compared to PUSH1 0x00
+    }
+}
+
+// Aggregate savings: ~100-500 gas per transaction
+```
+
+## Security
+
+### Hardfork Detection
+
+```solidity
+// UNSAFE: Assumes Shanghai
+assembly {
+    push0  // May revert pre-Shanghai!
+}
+```
+
+```solidity
+// SAFE: Check hardfork or use PUSH1
+function safeZero() public pure returns (uint256) {
+    assembly {
+        // Use PUSH1 0x00 for compatibility
+        push1 0x00
+    }
+}
+```
+
+### Gas Calculation
+
+```solidity
+// Account for hardfork differences
+function estimateGas(bool isShanghai) public pure returns (uint256) {
+    if (isShanghai) {
+        return 2;  // PUSH0
+    } else {
+        return 3;  // PUSH1 0x00
+    }
+}
+```
+
+## Optimization
+
+### Replace PUSH1 0x00
+
+```solidity
+// BEFORE (Pre-Shanghai or conservative)
+assembly {
+    push1 0x00
+    push1 0x00
+    push1 0x00
+    // Total: 9 gas, 6 bytes
+}
+
+// AFTER (Shanghai+)
+assembly {
+    push0
+    push0
+    push0
+    // Total: 6 gas, 3 bytes
+}
+```
+
+### Memory Clearing
+
+```solidity
+// Efficient memory initialization
+assembly {
+    // Clear 5 slots
+    push0
+    dup1
+    dup1
+    dup1
+    dup1
+    // Cost: 2 (PUSH0) + 4*3 (DUP) = 14 gas
+    // vs PUSH1 0x00 version: 3 + 4*3 = 15 gas
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../../Frame/consumeGas.js";
+import { pushStack } from "../../Frame/pushStack.js";
+import { QuickStep } from "../../../primitives/GasConstants/BrandedGasConstants/constants.js";
+
+/**
+ * PUSH0 opcode (0x5f) - Push 0 onto stack
+ * EIP-3855: Introduced in Shanghai hardfork
+ *
+ * Stack: [] => [0]
+ * Gas: 2 (GasQuickStep)
+ */
+export function handler_0x5f_PUSH0(frame: BrandedFrame): EvmError | null {
+  // TODO: Add hardfork check when Hardfork module is available
+  // if (evm.hardfork.isBefore(.SHANGHAI)) {
+  //   return { type: "InvalidOpcode" };
+  // }
+
+  const gasErr = consumeGas(frame, QuickStep);
+  if (gasErr) return gasErr;
+
+  const pushErr = pushStack(frame, 0n);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// PUSH0-PUSH32 opcodes (0x5f-0x7f) - Push immediate value onto stack
+/// PUSH0 (0x5f) costs 2 gas, PUSH1-PUSH32 (0x60-0x7f) cost 3 gas
+pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    const push_size = opcode - 0x5f;
+
+    // EIP-3855: PUSH0 was introduced in Shanghai hardfork
+    if (push_size == 0) {
+        const evm = frame.getEvm();
+        if (evm.hardfork.isBefore(.SHANGHAI)) {
+            return error.InvalidOpcode;
+        }
+        try frame.consumeGas(GasConstants.GasQuickStep);
+    } else {
+        try frame.consumeGas(GasConstants.GasFastestStep);
+    }
+
+    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
+    try frame.pushStack(value);
+    frame.pc += 1 + push_size;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum capacity
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  gasRemaining: 10n
+});
+
+const err = handler_0x5f_PUSH0(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  stack: [],
+  gasRemaining: 1n
+});
+
+const err = handler_0x5f_PUSH0(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Pre-Shanghai Error
+
+```typescript
+// Would error on pre-Shanghai hardfork
+// (hardfork check not yet implemented in TS)
+const frame = createFrame({
+  hardfork: 'london',
+  stack: []
+});
+
+// TODO: Should return InvalidOpcode
+const err = handler_0x5f_PUSH0(frame);
+```
+
+## References
+
+- [EIP-3855: PUSH0 instruction](https://eips.ethereum.org/EIPS/eip-3855)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1
+- [EVM Codes - PUSH0](https://www.evm.codes/#5f?fork=shanghai)
+- [Shanghai Hardfork Meta](https://eips.ethereum.org/EIPS/eip-3855)

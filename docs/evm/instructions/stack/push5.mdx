@@ -1,0 +1,248 @@
+---
+title: "PUSH5 (0x64)"
+description: "Push 5-byte immediate value onto stack"
+---
+
+## Overview
+
+**Opcode:** `0x64`
+**Introduced:** Frontier (EVM genesis)
+
+PUSH5 pushes a 5-byte immediate value from the bytecode onto the stack. The 5 bytes immediately following the opcode are read and zero-padded to 256 bits.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+value (uint256, 5 bytes from bytecode)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Bytecode:** 1 byte opcode + 5 bytes immediate data
+
+**Operation:**
+```
+value = read_bytes(pc + 1, 5)  // Big-endian
+stack.push(value)
+pc += 6
+```
+
+## Behavior
+
+PUSH5 reads 5 bytes from bytecode starting at position `pc + 1`, interprets them as a big-endian unsigned integer, and pushes the result onto the stack.
+
+Key characteristics:
+- Reads exactly 5 bytes following opcode
+- Big-endian byte order (most significant byte first)
+- Zero-padded to 256 bits if less than 32 bytes
+- InvalidOpcode if insufficient bytecode remaining
+- PC advances by 6 (opcode + data)
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x64_PUSH5 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Bytecode with PUSH5
+const bytecode = new Uint8Array([
+  0x64,  // PUSH5
+  0x01, 0x02, 0x03, 0x04, 0x05   // 5 bytes: 0102030405
+]);
+
+const frame = createFrame({
+  bytecode,
+  pc: 0,
+  stack: [],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x64_PUSH5(frame);
+
+console.log(frame.stack); // [0x0102030405000000000000000000000000000000000000000000000000000000n]
+console.log(frame.pc); // 6
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    // 5-byte constant
+    uint40 constant VALUE = 1099511627775;
+    // PUSH5 0xffffffffff
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    // Push 5-byte value
+    push5 0xffffffffff
+    
+    // Example: 5-byte constant
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All PUSH1-32 instructions cost the same despite different data sizes. Bytecode size impact:
+- PUSH5: 6 bytes (1 opcode + 5 data)
+- PUSH32: 33 bytes (1 opcode + 32 data)
+
+**Comparison:**
+| Opcode | Gas | Bytes | Use Case |
+|--------|-----|-------|----------|
+| PUSH0 | 2 | 1 | Zero constant (Shanghai+) |
+| PUSH1 | 3 | 2 | Small numbers (0-255) |
+
+
+
+
+## Common Usage
+
+### 5-Byte Constants
+
+```solidity
+assembly {
+    // 5-byte literal
+    push5 0xababababab
+}
+```
+
+### Big-Endian Encoding
+
+```typescript
+// Bytecode: PUSH5 01 02 03 04 05
+// Reads as: 0x0102030405
+
+// Most significant byte first
+// Byte 0: 0x01 (highest significance)
+// Byte 4: 0x05 (lowest significance)
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * Read immediate data from bytecode for PUSH operations
+ */
+function readImmediate(bytecode: Uint8Array, pc: number, size: number): bigint | null {
+  if (pc + 1 + size > bytecode.length) {
+    return null;
+  }
+
+  let result = 0n;
+  for (let i = 0; i < size; i++) {
+    result = (result << 8n) | BigInt(bytecode[pc + 1 + i]);
+  }
+  return result;
+}
+
+/**
+ * PUSH5 opcode (0x64) - Push 5 bytes onto stack
+ *
+ * Stack: [] => [value]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x64_PUSH5(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  const value = readImmediate(frame.bytecode, frame.pc, 5);
+  if (value === null) {
+    return { type: "InvalidOpcode" };
+  }
+
+  const pushErr = pushStack(frame, value);
+  if (pushErr) return pushErr;
+
+  frame.pc += 6;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// PUSH5 opcode (0x64) - Push 5 bytes onto stack
+pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    const push_size = opcode - 0x5f;
+    try frame.consumeGas(GasConstants.GasFastestStep);
+
+    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
+    try frame.pushStack(value);
+    frame.pc += 1 + push_size;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Insufficient Bytecode
+
+```typescript
+// Bytecode ends before 5 bytes read
+const bytecode = new Uint8Array([0x64, 0x01]); // Only 1 byte instead of 5
+const frame = createFrame({ bytecode, pc: 0 });
+
+const err = handler_0x64_PUSH5(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum capacity
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  bytecode: new Uint8Array([0x64, 0x00, 0x00, 0x00, 0x00, 0x00])
+});
+
+const err = handler_0x64_PUSH5(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  gasRemaining: 2n,  // Need 3 gas
+  bytecode: new Uint8Array([0x64, 0xff, 0xff, 0xff, 0xff, 0xff])
+});
+
+const err = handler_0x64_PUSH5(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Maximum Value
+
+```typescript
+// All bytes 0xFF
+const bytecode = new Uint8Array([0x64, 0xff, 0xff, 0xff, 0xff, 0xff]);
+const frame = createFrame({ bytecode, pc: 0 });
+
+handler_0x64_PUSH5(frame);
+console.log(frame.stack[0]); // 0xffffffffff000000000000000000000000000000000000000000000000000000n
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (PUSH)
+- [EVM Codes - PUSH5](https://www.evm.codes/#64?fork=cancun)
+- [Solidity Assembly - push5](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)

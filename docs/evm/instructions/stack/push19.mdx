@@ -1,0 +1,248 @@
+---
+title: "PUSH19 (0x72)"
+description: "Push 19-byte immediate value onto stack"
+---
+
+## Overview
+
+**Opcode:** `0x72`
+**Introduced:** Frontier (EVM genesis)
+
+PUSH19 pushes a 19-byte immediate value from the bytecode onto the stack. The 19 bytes immediately following the opcode are read and zero-padded to 256 bits.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+value (uint256, 19 bytes from bytecode)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Bytecode:** 1 byte opcode + 19 bytes immediate data
+
+**Operation:**
+```
+value = read_bytes(pc + 1, 19)  // Big-endian
+stack.push(value)
+pc += 20
+```
+
+## Behavior
+
+PUSH19 reads 19 bytes from bytecode starting at position `pc + 1`, interprets them as a big-endian unsigned integer, and pushes the result onto the stack.
+
+Key characteristics:
+- Reads exactly 19 bytes following opcode
+- Big-endian byte order (most significant byte first)
+- Zero-padded to 256 bits if less than 32 bytes
+- InvalidOpcode if insufficient bytecode remaining
+- PC advances by 20 (opcode + data)
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x72_PUSH19 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Bytecode with PUSH19
+const bytecode = new Uint8Array([
+  0x72,  // PUSH19
+  0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13   // 19 bytes: 0102030405060708090a0b0c0d0e0f10111213
+]);
+
+const frame = createFrame({
+  bytecode,
+  pc: 0,
+  stack: [],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x72_PUSH19(frame);
+
+console.log(frame.stack); // [0x0102030405060708090a0b0c0d0e0f1011121300000000000000000000000000n]
+console.log(frame.pc); // 20
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    // 19-byte constant
+    uint152 constant VALUE = 5.70899077082384e+45;
+    // PUSH19 0xffffffffffffffffffffffffffffffffffffff
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    // Push 19-byte value
+    push19 0xffffffffffffffffffffffffffffffffffffff
+    
+    // Example: 19-byte constant
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All PUSH1-32 instructions cost the same despite different data sizes. Bytecode size impact:
+- PUSH19: 20 bytes (1 opcode + 19 data)
+- PUSH32: 33 bytes (1 opcode + 32 data)
+
+**Comparison:**
+| Opcode | Gas | Bytes | Use Case |
+|--------|-----|-------|----------|
+| PUSH0 | 2 | 1 | Zero constant (Shanghai+) |
+| PUSH1 | 3 | 2 | Small numbers (0-255) |
+
+
+
+
+## Common Usage
+
+### 19-Byte Constants
+
+```solidity
+assembly {
+    // 19-byte literal
+    push19 0xababababababababababababababababababab
+}
+```
+
+### Big-Endian Encoding
+
+```typescript
+// Bytecode: PUSH19 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10 11 12 13
+// Reads as: 0x0102030405060708090a0b0c0d0e0f10111213
+
+// Most significant byte first
+// Byte 0: 0x01 (highest significance)
+// Byte 18: 0x13 (lowest significance)
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * Read immediate data from bytecode for PUSH operations
+ */
+function readImmediate(bytecode: Uint8Array, pc: number, size: number): bigint | null {
+  if (pc + 1 + size > bytecode.length) {
+    return null;
+  }
+
+  let result = 0n;
+  for (let i = 0; i < size; i++) {
+    result = (result << 8n) | BigInt(bytecode[pc + 1 + i]);
+  }
+  return result;
+}
+
+/**
+ * PUSH19 opcode (0x72) - Push 19 bytes onto stack
+ *
+ * Stack: [] => [value]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x72_PUSH19(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  const value = readImmediate(frame.bytecode, frame.pc, 19);
+  if (value === null) {
+    return { type: "InvalidOpcode" };
+  }
+
+  const pushErr = pushStack(frame, value);
+  if (pushErr) return pushErr;
+
+  frame.pc += 20;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// PUSH19 opcode (0x72) - Push 19 bytes onto stack
+pub fn push(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    const push_size = opcode - 0x5f;
+    try frame.consumeGas(GasConstants.GasFastestStep);
+
+    const value = frame.readImmediate(push_size) orelse return error.InvalidPush;
+    try frame.pushStack(value);
+    frame.pc += 1 + push_size;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Insufficient Bytecode
+
+```typescript
+// Bytecode ends before 19 bytes read
+const bytecode = new Uint8Array([0x72, 0x01]); // Only 1 byte instead of 19
+const frame = createFrame({ bytecode, pc: 0 });
+
+const err = handler_0x72_PUSH19(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum capacity
+const frame = createFrame({
+  stack: new Array(1024).fill(0n),
+  bytecode: new Uint8Array([0x72, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+});
+
+const err = handler_0x72_PUSH19(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  gasRemaining: 2n,  // Need 3 gas
+  bytecode: new Uint8Array([0x72, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff])
+});
+
+const err = handler_0x72_PUSH19(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Maximum Value
+
+```typescript
+// All bytes 0xFF
+const bytecode = new Uint8Array([0x72, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+const frame = createFrame({ bytecode, pc: 0 });
+
+handler_0x72_PUSH19(frame);
+console.log(frame.stack[0]); // 0xffffffffffffffffffffffffffffffffffffff00000000000000000000000000n
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (PUSH)
+- [EVM Codes - PUSH19](https://www.evm.codes/#72?fork=cancun)
+- [Solidity Assembly - push19](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)

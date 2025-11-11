@@ -1,0 +1,317 @@
+---
+title: "DUP12 (0x8B)"
+description: "Duplicate 12th stack item"
+---
+
+## Overview
+
+**Opcode:** `0x8B`
+**Introduced:** Frontier (EVM genesis)
+
+DUP12 duplicates the 12th stack item and pushes it to the top of the stack. The original 12th item remains in place.
+
+## Specification
+
+**Stack Input:**
+```
+[..., value, item11, ..., item1]
+```
+
+**Stack Output:**
+```
+[..., value, item11, ..., item1, value]
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+value = stack[depth - 12]
+stack.push(value)
+```
+
+## Behavior
+
+DUP12 copies the 12th-from-top stack item without removing it. Requires stack depth ≥ 12.
+
+Key characteristics:
+- Requires stack depth ≥ 12
+- Original value unchanged
+- New copy pushed to top
+- StackUnderflow if depth < 12
+- Stack depth increases by 1
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x8B_DUP12 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Duplicate 12th item
+const frame = createFrame({
+  stack: [1200n, 1100n, 1000n, 900n, 800n, 700n, 600n, 500n, 400n, 300n, 200n, 100n],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x8B_DUP12(frame);
+
+console.log(frame.stack); // [1200n, 1100n, 1000n, 900n, 800n, 700n, 600n, 500n, 400n, 300n, 200n, 100n, 100n] - 12th item duplicated
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    function deepAccess() public pure {
+        // Access deep stack value
+        assembly {
+            // Stack has 12 items
+            dup12  // Duplicate 12th item to top
+        }
+    }
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    push1 0x04
+    push1 0x05
+    push1 0x06
+    push1 0x07
+    push1 0x08
+    push1 0x09
+    push1 0x0a
+    push1 0x0b
+    push1 0x0c
+    // Stack: [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c]
+
+    dup12
+    // Stack: [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x01] - first item duplicated
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All DUP1-16 operations cost the same despite different stack depths accessed.
+
+**Comparison:**
+| Operation | Gas | Note |
+|-----------|-----|------|
+| DUP12 | 3 | Duplicate 12th item |
+| PUSH1-32 | 3 | Same cost tier |
+| POP | 2 | Cheaper |
+
+## Common Usage
+
+### Deep Stack Access
+
+```solidity
+function complex() public pure {
+    assembly {
+        // Build deep stack
+        let v1 := 1
+        let v2 := 2
+        let v3 := 3
+        let v4 := 4
+        let v5 := 5
+        let v6 := 6
+        let v7 := 7
+        let v8 := 8
+        let v9 := 9
+        let v10 := 10
+        let v11 := 11
+        let v12 := 12
+
+        // Access v1 from depth 12
+        dup12
+    }
+}```
+
+### Efficient Copies
+
+```solidity
+// Instead of multiple loads
+assembly {
+    let value := sload(slot)  // Expensive
+    // Use value
+    let value2 := sload(slot) // Wasteful!
+}
+
+// Use DUP to reuse
+assembly {
+    let value := sload(slot)  // Load once
+    dup1                       // Copy
+    // Use both copies
+}
+```
+
+### Conditional Logic
+
+```solidity
+assembly {
+    let condition := calldataload(0)
+    dup1  // Keep condition for later
+    iszero
+    jumpi(skip)
+    // Use condition again
+    skip:
+}
+```
+
+## Stack Depth Requirements
+
+### Minimum Depth
+
+```solidity
+// DUP12 requires 12 items on stack
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    push1 0x04
+    push1 0x05
+    push1 0x06
+    push1 0x07
+    push1 0x08
+    push1 0x09
+    push1 0x0a
+    push1 0x0b
+    // Only 11 items - DUP12 will fail!
+    dup12  // StackUnderflow
+}
+```
+
+### Safe Usage
+
+```solidity
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    push1 0x04
+    push1 0x05
+    push1 0x06
+    push1 0x07
+    push1 0x08
+    push1 0x09
+    push1 0x0a
+    push1 0x0b
+    push1 0x0c
+    // Exactly 12 items - safe
+    dup12  // Success
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * DUP12 opcode (0x8B) - Duplicate 12th stack item
+ *
+ * Stack: [..., value, ...] => [..., value, ..., value]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x8B_DUP12(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  if (frame.stack.length < 12) {
+    return { type: "StackUnderflow" };
+  }
+
+  const value = frame.stack[frame.stack.length - 12];
+  const pushErr = pushStack(frame, value);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// DUP12 opcode (0x8B) - Duplicate 12th stack item
+pub fn dup(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const n = opcode - 0x7f;
+    if (frame.stack.items.len < n) {
+        return error.StackUnderflow;
+    }
+    const value = frame.stack.items[frame.stack.items.len - n];
+    try frame.pushStack(value);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Stack Underflow
+
+```typescript
+// Insufficient stack depth
+const frame = createFrame({
+  stack: [100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n]  // Only 11 items
+});
+
+const err = handler_0x8B_DUP12(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum, can't add more
+const frame = createFrame({
+  stack: new Array(1024).fill(0n)
+});
+
+const err = handler_0x8B_DUP12(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  stack: [100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n, 100n],
+  gasRemaining: 2n  // Need 3
+});
+
+const err = handler_0x8B_DUP12(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Maximum Value
+
+```typescript
+// Duplicate max uint256
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({
+  stack: [0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, MAX]
+});
+
+handler_0x8B_DUP12(frame);
+console.log(frame.stack[frame.stack.length - 1]); // MAX (duplicated)
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Stack Operations)
+- [EVM Codes - DUP12](https://www.evm.codes/#8b?fork=cancun)
+- [Solidity Assembly - dup12](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)

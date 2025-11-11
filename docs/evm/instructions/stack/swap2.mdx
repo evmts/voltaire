@@ -1,0 +1,287 @@
+---
+title: "SWAP2 (0x91)"
+description: "Swap top with 3rd stack item"
+---
+
+## Overview
+
+**Opcode:** `0x91`
+**Introduced:** Frontier (EVM genesis)
+
+SWAP2 exchanges the top stack item with the 3rd item from the top. Only these two positions change - all other items remain in place.
+
+## Specification
+
+**Stack Input:**
+```
+[..., valueN, item1, ..., item1, top]
+```
+
+**Stack Output:**
+```
+[..., top, item1, ..., item1, valueN]
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+temp = stack[top]
+stack[top] = stack[top - 3]
+stack[top - 3] = temp
+```
+
+## Behavior
+
+SWAP2 exchanges positions of the top item and the item at position 3 from top. Requires stack depth ≥ 3.
+
+Key characteristics:
+- Requires stack depth ≥ 3
+- Only two items change positions
+- Middle items (items 1-2) unchanged
+- StackUnderflow if depth < 3
+- Stack depth unchanged
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x91_SWAP2 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Swap top with 3rd item
+const frame = createFrame({
+  stack: [300n, 200n, 100n],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x91_SWAP2(frame);
+
+console.log(frame.stack); // [100n, 200n, 300n] - positions 0 and 2 swapped
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    function reorder() public pure {
+        assembly {
+            push1 0x01
+            push1 0x02
+            push1 0x03
+            // Stack: [1, 2, 3]
+            swap2
+            // Stack: [3, 2, 1]
+        }
+    }
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    push1 0xa
+    push1 0xb
+    push1 0xc
+    // Stack: ['a', 'b', 'c']
+
+    swap2
+    // Stack: ['c', 'b', 'a'] - 'a' and 'c' swapped
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All SWAP1-16 operations cost the same despite different stack depths accessed.
+
+**Comparison:**
+| Operation | Gas | Note |
+|-----------|-----|------|
+| SWAP2 | 3 | Swap with 3rd item |
+| DUP1-16 | 3 | Same cost tier |
+| POP | 2 | Cheaper |
+
+## Common Usage
+
+### Triple Reordering
+
+```solidity
+assembly {
+    let a := 1
+    let b := 2
+    let c := 3
+    // Stack: [a, b, c]
+    swap2
+    // Stack: [c, b, a]
+}```
+
+### Efficient Reordering
+
+```solidity
+// Reorder for function call
+assembly {
+    // Have: [value, to, token]
+    // Need: [token, to, value]
+    swap2  // [token, to, value]
+
+    // Call transfer(token, to, value)
+    call(gas(), target, 0, 0, 100, 0, 0)
+}
+```
+
+### Storage Optimization
+
+```solidity
+assembly {
+    let slot := 0
+    let value := 42
+    // Stack: [slot, value]
+
+    // SSTORE needs (slot, value) but we have them reversed
+    // No swap needed in this case, but if we did:
+    swap1
+    // Stack: [value, slot]
+    sstore
+}
+```
+
+## Stack Depth Requirements
+
+### Minimum Depth
+
+```solidity
+// SWAP2 requires 3 items
+assembly {
+    push1 0x01
+    push1 0x02
+    // Only 2 items - SWAP2 will fail!
+    swap2  // StackUnderflow
+}
+```
+
+### Safe Usage
+
+```solidity
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    // Exactly 3 items - safe
+    swap2  // Success
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * SWAP2 opcode (0x91) - Swap top with 3rd item
+ *
+ * Stack: [..., valueN, ..., top] => [..., top, ..., valueN]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x91_SWAP2(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  if (frame.stack.length <= 2) {
+    return { type: "StackUnderflow" };
+  }
+
+  const topIdx = frame.stack.length - 1;
+  const swapIdx = frame.stack.length - 3;
+  const temp = frame.stack[topIdx];
+  frame.stack[topIdx] = frame.stack[swapIdx];
+  frame.stack[swapIdx] = temp;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// SWAP2 opcode (0x91) - Swap top with 3rd item
+pub fn swap(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const n = opcode - 0x8f;
+    if (frame.stack.items.len <= n) {
+        return error.StackUnderflow;
+    }
+    const top_idx = frame.stack.items.len - 1;
+    const swap_idx = frame.stack.items.len - 1 - n;
+    const temp = frame.stack.items[top_idx];
+    frame.stack.items[top_idx] = frame.stack.items[swap_idx];
+    frame.stack.items[swap_idx] = temp;
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Stack Underflow
+
+```typescript
+// Insufficient stack depth
+const frame = createFrame({
+  stack: [100n, 100n]  // Only 2 items, need 3
+});
+
+const err = handler_0x91_SWAP2(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  stack: [100n, 100n, 100n],
+  gasRemaining: 2n  // Need 3
+});
+
+const err = handler_0x91_SWAP2(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Identity Swap
+
+```typescript
+// Swap same values
+const frame = createFrame({
+  stack: new Array(3).fill(42n)
+});
+
+handler_0x91_SWAP2(frame);
+console.log(frame.stack); // All still 42n
+```
+
+### Maximum Values
+
+```typescript
+// Swap with max uint256
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({
+  stack: [0n, 0n, MAX, 1n]
+});
+
+handler_0x91_SWAP2(frame);
+console.log(frame.stack[0]); // 1n (was at top)
+console.log(frame.stack[2]); // MAX (was at bottom)
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Stack Operations)
+- [EVM Codes - SWAP2](https://www.evm.codes/#91?fork=cancun)
+- [Solidity Assembly - swap2](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)

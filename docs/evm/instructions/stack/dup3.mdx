@@ -1,0 +1,281 @@
+---
+title: "DUP3 (0x82)"
+description: "Duplicate 3rd stack item"
+---
+
+## Overview
+
+**Opcode:** `0x82`
+**Introduced:** Frontier (EVM genesis)
+
+DUP3 duplicates the 3rd stack item and pushes it to the top of the stack. The original 3th item remains in place.
+
+## Specification
+
+**Stack Input:**
+```
+[..., value, item2, ..., item1]
+```
+
+**Stack Output:**
+```
+[..., value, item2, ..., item1, value]
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+value = stack[depth - 3]
+stack.push(value)
+```
+
+## Behavior
+
+DUP3 copies the 3th-from-top stack item without removing it. Requires stack depth ≥ 3.
+
+Key characteristics:
+- Requires stack depth ≥ 3
+- Original value unchanged
+- New copy pushed to top
+- StackUnderflow if depth < 3
+- Stack depth increases by 1
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { handler_0x82_DUP3 } from '@tevm/voltaire/evm/stack/handlers';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Duplicate 3th item
+const frame = createFrame({
+  stack: [300n, 200n, 100n],
+  gasRemaining: 1000n
+});
+
+const err = handler_0x82_DUP3(frame);
+
+console.log(frame.stack); // [300n, 200n, 100n, 100n] - 3th item duplicated
+console.log(frame.gasRemaining); // 997n (3 gas consumed)
+```
+
+### Solidity Compilation
+
+```solidity
+contract Example {
+    function deepAccess() public pure {
+        // Access deep stack value
+        assembly {
+            // Stack has 3 items
+            dup3  // Duplicate 3th item to top
+        }
+    }
+}
+```
+
+### Assembly Usage
+
+```solidity
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    // Stack: [0x01, 0x02, 0x03]
+
+    dup3
+    // Stack: [0x01, 0x02, 0x03, 0x01] - first item duplicated
+}
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+All DUP1-16 operations cost the same despite different stack depths accessed.
+
+**Comparison:**
+| Operation | Gas | Note |
+|-----------|-----|------|
+| DUP3 | 3 | Duplicate 3th item |
+| PUSH1-32 | 3 | Same cost tier |
+| POP | 2 | Cheaper |
+
+## Common Usage
+
+### Deep Stack Access
+
+```solidity
+function complex() public pure {
+    assembly {
+        // Build deep stack
+        let v1 := 1
+        let v2 := 2
+        let v3 := 3
+
+        // Access v1 from depth 3
+        dup3
+    }
+}```
+
+### Efficient Copies
+
+```solidity
+// Instead of multiple loads
+assembly {
+    let value := sload(slot)  // Expensive
+    // Use value
+    let value2 := sload(slot) // Wasteful!
+}
+
+// Use DUP to reuse
+assembly {
+    let value := sload(slot)  // Load once
+    dup1                       // Copy
+    // Use both copies
+}
+```
+
+### Conditional Logic
+
+```solidity
+assembly {
+    let condition := calldataload(0)
+    dup1  // Keep condition for later
+    iszero
+    jumpi(skip)
+    // Use condition again
+    skip:
+}
+```
+
+## Stack Depth Requirements
+
+### Minimum Depth
+
+```solidity
+// DUP3 requires 3 items on stack
+assembly {
+    push1 0x01
+    push1 0x02
+    // Only 2 items - DUP3 will fail!
+    dup3  // StackUnderflow
+}
+```
+
+### Safe Usage
+
+```solidity
+assembly {
+    push1 0x01
+    push1 0x02
+    push1 0x03
+    // Exactly 3 items - safe
+    dup3  // Success
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * DUP3 opcode (0x82) - Duplicate 3rd stack item
+ *
+ * Stack: [..., value, ...] => [..., value, ..., value]
+ * Gas: 3 (GasFastestStep)
+ */
+export function handler_0x82_DUP3(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, FastestStep);
+  if (gasErr) return gasErr;
+
+  if (frame.stack.length < 3) {
+    return { type: "StackUnderflow" };
+  }
+
+  const value = frame.stack[frame.stack.length - 3];
+  const pushErr = pushStack(frame, value);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// DUP3 opcode (0x82) - Duplicate 3rd stack item
+pub fn dup(frame: *FrameType, opcode: u8) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const n = opcode - 0x7f;
+    if (frame.stack.items.len < n) {
+        return error.StackUnderflow;
+    }
+    const value = frame.stack.items[frame.stack.items.len - n];
+    try frame.pushStack(value);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Stack Underflow
+
+```typescript
+// Insufficient stack depth
+const frame = createFrame({
+  stack: [100n, 100n]  // Only 2 items
+});
+
+const err = handler_0x82_DUP3(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Stack Overflow
+
+```typescript
+// Stack at maximum, can't add more
+const frame = createFrame({
+  stack: new Array(1024).fill(0n)
+});
+
+const err = handler_0x82_DUP3(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({
+  stack: [100n, 100n, 100n],
+  gasRemaining: 2n  // Need 3
+});
+
+const err = handler_0x82_DUP3(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+### Maximum Value
+
+```typescript
+// Duplicate max uint256
+const MAX = (1n << 256n) - 1n;
+const frame = createFrame({
+  stack: [0n, 0n, MAX]
+});
+
+handler_0x82_DUP3(frame);
+console.log(frame.stack[frame.stack.length - 1]); // MAX (duplicated)
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.1 (Stack Operations)
+- [EVM Codes - DUP3](https://www.evm.codes/#82?fork=cancun)
+- [Solidity Assembly - dup3](https://docs.soliditylang.org/en/latest/yul.html#evm-opcodes)
