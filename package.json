@@ -407,6 +407,16 @@
 				"types": "./types/crypto/SHA256/index.d.ts",
 				"default": "./dist/crypto/SHA256/index.cjs"
 			}
+		},
+		"./jsonrpc": {
+			"import": {
+				"types": "./types/jsonrpc/index.d.ts",
+				"default": "./dist/jsonrpc/index.js"
+			},
+			"require": {
+				"types": "./types/jsonrpc/index.d.ts",
+				"default": "./dist/jsonrpc/index.cjs"
+			}
 		}
 	},
 	"main": "dist/index.cjs",
@@ -423,6 +433,8 @@
 		"build:dist": "tsup",
 		"build:types": "tsup --dts-only && tsc --emitDeclarationOnly --declaration",
 		"clean": "rm -rf node_modules && rm -rf dist && rm -rf types && rm -rf zig-out && rm -rf zig-cache",
+		"generate:jsonrpc": "zig build generate-jsonrpc",
+		"clean:jsonrpc": "zig build clean-jsonrpc",
 		"docs:dev": "cd docs && mint dev",
 		"mint:dev": "cd docs && mint dev",
 		"mint:install": "npm install -g mintlify@latest",

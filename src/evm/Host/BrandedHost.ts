@@ -48,4 +48,16 @@ export type BrandedHost = {
 	 * Set account nonce
 	 */
 	setNonce: (address: Address, nonce: bigint) => void;
+
+	/**
+	 * Get transient storage slot value (EIP-1153)
+	 * Transaction-scoped, cleared at end of transaction
+	 */
+	getTransientStorage: (address: Address, slot: bigint) => bigint;
+
+	/**
+	 * Set transient storage slot value (EIP-1153)
+	 * Transaction-scoped, cleared at end of transaction
+	 */
+	setTransientStorage: (address: Address, slot: bigint, value: bigint) => void;
 };
