@@ -1,3 +1,4 @@
+import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/deserialize.js";
 import * as EIP2930 from "./EIP2930/deserialize.js";
 import * as EIP4844 from "./EIP4844/deserialize.js";
@@ -13,7 +14,7 @@ import { type Any, Type } from "./types.js";
  * @since 0.0.0
  * @param data - RLP encoded transaction data
  * @returns Deserialized transaction
- * @throws {Error} If data is invalid
+ * @throws {InvalidTransactionTypeError} If transaction type is unknown or unsupported
  * @example
  * ```javascript
  * import { deserialize } from './primitives/Transaction/deserialize.js';
@@ -34,6 +35,10 @@ export function deserialize(data: Uint8Array): Any {
 		case Type.EIP7702:
 			return EIP7702.deserialize(data);
 		default:
-			throw new Error(`Unknown transaction type: ${type}`);
+			throw new InvalidTransactionTypeError(`Unknown transaction type: ${type}`, {
+				code: "UNKNOWN_TRANSACTION_TYPE",
+				context: { type },
+				docsPath: "/primitives/transaction/deserialize#error-handling",
+			});
 	}
 }

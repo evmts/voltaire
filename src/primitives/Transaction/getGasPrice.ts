@@ -1,3 +1,7 @@
+import {
+	InvalidRangeError,
+	InvalidTransactionTypeError,
+} from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/getEffectiveGasPrice.js";
 import * as EIP4844 from "./EIP4844/getEffectiveGasPrice.js";
 import * as EIP7702 from "./EIP7702/getEffectiveGasPrice.js";
@@ -17,7 +21,8 @@ import type { Any } from "./types.js";
  * @since 0.0.0
  * @param baseFee - Optional base fee for EIP-1559 transactions
  * @returns Gas price
- * @throws {never} Never throws
+ * @throws {InvalidRangeError} If baseFee is missing for EIP-1559+ transactions
+ * @throws {InvalidTransactionTypeError} If transaction type is unknown
  * @example
  * ```javascript
  * import { getGasPrice } from './primitives/Transaction/getGasPrice.js';
@@ -30,7 +35,12 @@ export function getGasPrice(this: Any, baseFee?: bigint): bigint {
 	}
 
 	if (!baseFee) {
-		throw new Error("baseFee required for EIP-1559+ transactions");
+		throw new InvalidRangeError("baseFee required for EIP-1559+ transactions", {
+			code: "MISSING_BASE_FEE",
+			value: baseFee,
+			expected: "Non-null baseFee value for EIP-1559+ transaction",
+			docsPath: "/primitives/transaction/get-gas-price#error-handling",
+		});
 	}
 
 	if (isEIP1559(this)) {
@@ -45,5 +55,12 @@ export function getGasPrice(this: Any, baseFee?: bigint): bigint {
 		return EIP7702.getEffectiveGasPrice(this as any, baseFee);
 	}
 
-	throw new Error(`Unknown transaction type: ${(this as any).type}`);
+	throw new InvalidTransactionTypeError(
+		`Unknown transaction type: ${(this as any).type}`,
+		{
+			code: "UNKNOWN_TRANSACTION_TYPE",
+			context: { type: (this as any).type },
+			docsPath: "/primitives/transaction/get-gas-price#error-handling",
+		},
+	);
 }

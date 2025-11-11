@@ -1,3 +1,4 @@
+import { InvalidTransactionTypeError } from "../errors/index.js";
 import type { BrandedHash } from "../Hash/index.js";
 import * as EIP1559 from "./EIP1559/getSigningHash.js";
 import * as EIP2930 from "./EIP2930/getSigningHash.js";
@@ -12,7 +13,7 @@ import { type Any, Type } from "./types.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @returns Signing hash
- * @throws {never} Never throws
+ * @throws {InvalidTransactionTypeError} If transaction type is unknown or unsupported
  * @example
  * ```javascript
  * import { getSigningHash } from './primitives/Transaction/getSigningHash.js';
@@ -32,6 +33,13 @@ export function getSigningHash(this: Any): BrandedHash {
 		case Type.EIP7702:
 			return EIP7702.getSigningHash(this as any);
 		default:
-			throw new Error(`Unknown transaction type: ${(this as any).type}`);
+			throw new InvalidTransactionTypeError(
+				`Unknown transaction type: ${(this as any).type}`,
+				{
+					code: "UNKNOWN_TRANSACTION_TYPE",
+					context: { type: (this as any).type },
+					docsPath: "/primitives/transaction/get-signing-hash#error-handling",
+				},
+			);
 	}
 }

@@ -1,3 +1,4 @@
+import { InvalidTransactionTypeError } from "../errors/index.js";
 import type { BrandedTransactionEIP1559 } from "./EIP1559/BrandedTransactionEIP1559.js";
 import * as EIP1559 from "./EIP1559/verifySignature.js";
 import type { BrandedTransactionEIP2930 } from "./EIP2930/BrandedTransactionEIP2930.js";
@@ -16,7 +17,7 @@ import { type Any, Type } from "./types.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @returns True if signature is valid
- * @throws {never} Never throws - returns false on error
+ * @throws {InvalidTransactionTypeError} If transaction type is unknown or unsupported
  * @example
  * ```javascript
  * import { verifySignature } from './primitives/Transaction/verifySignature.js';
@@ -46,6 +47,13 @@ export function verifySignature(this: Any): boolean {
 				this as unknown as BrandedTransactionEIP7702,
 			);
 		default:
-			throw new Error(`Unknown transaction type: ${(this as any).type}`);
+			throw new InvalidTransactionTypeError(
+				`Unknown transaction type: ${(this as any).type}`,
+				{
+					code: "UNKNOWN_TRANSACTION_TYPE",
+					context: { type: (this as any).type },
+					docsPath: "/primitives/transaction/verify-signature#error-handling",
+				},
+			);
 	}
 }

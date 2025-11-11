@@ -1,3 +1,4 @@
+import { InvalidTransactionTypeError } from "../errors/index.js";
 import * as EIP1559 from "./EIP1559/serialize.js";
 import * as EIP2930 from "./EIP2930/serialize.js";
 import * as EIP4844 from "./EIP4844/serialize.js";
@@ -11,7 +12,7 @@ import { type Any, Type } from "./types.js";
  * @see https://voltaire.tevm.sh/primitives/transaction for Transaction documentation
  * @since 0.0.0
  * @returns RLP encoded transaction
- * @throws {never} Never throws
+ * @throws {InvalidTransactionTypeError} If transaction type is unknown or unsupported
  * @example
  * ```javascript
  * import { serialize } from './primitives/Transaction/serialize.js';
@@ -31,6 +32,13 @@ export function serialize(this: Any): Uint8Array {
 		case Type.EIP7702:
 			return EIP7702.serialize(this as any);
 		default:
-			throw new Error(`Unknown transaction type: ${(this as any).type}`);
+			throw new InvalidTransactionTypeError(
+				`Unknown transaction type: ${(this as any).type}`,
+				{
+					code: "UNKNOWN_TRANSACTION_TYPE",
+					context: { type: (this as any).type },
+					docsPath: "/primitives/transaction/serialize#error-handling",
+				},
+			);
 	}
 }

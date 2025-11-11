@@ -1,4 +1,8 @@
 import {
+	InvalidFormatError,
+	InvalidTransactionTypeError,
+} from "../errors/index.js";
+import {
 	type Any,
 	type EIP1559,
 	type EIP2930,
@@ -45,10 +49,18 @@ export function isEIP7702(tx: Any): tx is EIP7702 {
 
 /**
  * Detect transaction type from serialized data
+ *
+ * @throws {InvalidFormatError} If transaction data is empty
+ * @throws {InvalidTransactionTypeError} If transaction type byte is unknown
  */
 export function detectType(data: Uint8Array): Type {
 	if (data.length === 0) {
-		throw new Error("Empty transaction data");
+		throw new InvalidFormatError("Empty transaction data", {
+			code: "EMPTY_TRANSACTION_DATA",
+			value: data,
+			expected: "Non-empty transaction data",
+			docsPath: "/primitives/transaction/type-guards#error-handling",
+		});
 	}
 
 	const firstByte = data[0]!;
@@ -69,6 +81,13 @@ export function detectType(data: Uint8Array): Type {
 		case Type.EIP7702:
 			return Type.EIP7702;
 		default:
-			throw new Error(`Unknown transaction type: 0x${firstByte.toString(16)}`);
+			throw new InvalidTransactionTypeError(
+				`Unknown transaction type: 0x${firstByte.toString(16)}`,
+				{
+					code: "UNKNOWN_TRANSACTION_TYPE",
+					context: { typeByte: `0x${firstByte.toString(16)}` },
+					docsPath: "/primitives/transaction/type-guards#error-handling",
+				},
+			);
 	}
 }
