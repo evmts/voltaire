@@ -3,16 +3,18 @@ import { MAX } from "./constants.js";
 /**
  * Create Uint256 from bigint, number, or string (standard form)
  *
+ * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
+ * @since 0.0.0
  * @param {bigint | number | string} value - bigint, number, or decimal/hex string
  * @returns {import('./BrandedUint.js').BrandedUint} Uint256 value
  * @throws {Error} If value is out of range or invalid
- *
  * @example
- * ```typescript
- * const a = Uint.from(100n);
- * const b = Uint.from("255");
- * const c = Uint.from("0xff");
- * const d = Uint.from(42);
+ * ```javascript
+ * import * as Uint256 from './primitives/Uint/index.js';
+ * const a = Uint256.from(100n);
+ * const b = Uint256.from("255");
+ * const c = Uint256.from("0xff");
+ * const d = Uint256.from(42);
  * ```
  */
 export function from(value) {

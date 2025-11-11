@@ -1,14 +1,16 @@
 /**
  * Create Uint256 from bytes (big-endian)
  *
+ * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
+ * @since 0.0.0
  * @param {Uint8Array} bytes - bytes to convert
  * @returns {import('./BrandedUint.js').BrandedUint} Uint256 value
  * @throws {Error} If bytes length exceeds 32
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import * as Uint256 from './primitives/Uint/index.js';
  * const bytes = new Uint8Array([0xff, 0x00]);
- * const value = Uint.fromBytes(bytes);
+ * const value = Uint256.fromBytes(bytes);
  * ```
  */
 export function fromBytes(bytes) {

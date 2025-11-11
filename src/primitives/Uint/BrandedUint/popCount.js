@@ -1,14 +1,16 @@
 /**
  * Count number of set bits (population count)
  *
+ * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
+ * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - Value to check
  * @returns {number} Number of 1 bits
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const a = Uint(0xffn);
- * const count1 = Uint.popCount(a); // 8
- * const count2 = a.popCount(); // 8
+ * ```javascript
+ * import * as Uint256 from './primitives/Uint/index.js';
+ * const a = Uint256.from(0xffn);
+ * const count = Uint256.popCount(a); // 8
  * ```
  */
 export function popCount(uint) {

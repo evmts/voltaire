@@ -3,13 +3,16 @@ import { ZERO } from "./constants.js";
 /**
  * Check if value is a power of 2
  *
+ * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
+ * @since 0.0.0
  * @param {import('./BrandedUint.ts').BrandedUint} value - Value to check
  * @returns {boolean} True if value is power of 2
- *
+ * @throws {never}
  * @example
- * ```typescript
- * Uint.isPowerOf2(Uint(16n)); // true
- * Uint.isPowerOf2(Uint(15n)); // false
+ * ```javascript
+ * import * as Uint256 from './primitives/Uint/index.js';
+ * Uint256.isPowerOf2(Uint256.from(16n)); // true
+ * Uint256.isPowerOf2(Uint256.from(15n)); // false
  * ```
  */
 export function isPowerOf2(value) {

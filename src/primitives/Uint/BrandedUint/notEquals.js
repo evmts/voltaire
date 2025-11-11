@@ -1,16 +1,18 @@
 /**
  * Check inequality
  *
+ * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
+ * @since 0.0.0
  * @param {import('./BrandedUint.js').BrandedUint} uint - First value
  * @param {import('./BrandedUint.js').BrandedUint} b - Second value
  * @returns {boolean} true if uint !== b
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const a = Uint(100n);
- * const b = Uint(200n);
- * const notEq1 = Uint.notEquals(a, b); // true
- * const notEq2 = a.notEquals(b); // true
+ * ```javascript
+ * import * as Uint256 from './primitives/Uint/index.js';
+ * const a = Uint256.from(100n);
+ * const b = Uint256.from(200n);
+ * const notEq = Uint256.notEquals(a, b); // true
  * ```
  */
 export function notEquals(uint, b) {

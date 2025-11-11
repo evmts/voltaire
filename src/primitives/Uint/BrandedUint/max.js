@@ -1,12 +1,15 @@
 /**
  * Find maximum of multiple Uint256 values
  *
+ * @see https://voltaire.tevm.sh/primitives/uint for Uint documentation
+ * @since 0.0.0
  * @param {...import('./BrandedUint.ts').BrandedUint} values - Values to compare
  * @returns {import('./BrandedUint.ts').BrandedUint} Maximum value
- *
+ * @throws {Error} If no values provided
  * @example
- * ```typescript
- * const result = Uint.max(Uint(100n), Uint(50n), Uint(75n)); // 100
+ * ```javascript
+ * import * as Uint256 from './primitives/Uint/index.js';
+ * const result = Uint256.max(Uint256.from(100n), Uint256.from(50n), Uint256.from(75n)); // 100n
  * ```
  */
 export function max(...values) {
