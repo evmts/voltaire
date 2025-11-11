@@ -7,19 +7,22 @@ import { calculateExcessBlobGas } from "./calculateExcessBlobGas.js";
  *
  * Updates both EIP-1559 base fee and EIP-4844 blob base fee components.
  *
+ * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+ * @since 0.0.0
  * @param {import('../BrandedState.js').BrandedState} state - Current block state
  * @returns {import('../BrandedState.js').BrandedState} Next block's state
- *
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as FeeMarket from './primitives/FeeMarket/index.js';
  * const currentState = {
  *   gasUsed: 20_000_000n,
  *   gasLimit: 30_000_000n,
  *   baseFee: 1_000_000_000n,
  *   excessBlobGas: 0n,
- *   blobGasUsed: 262144n // 2 blobs
+ *   blobGasUsed: 262144n
  * };
- * const nextState = nextState(currentState);
+ * const next = FeeMarket.nextState(currentState);
  * ```
  */
 export function nextState(state) {

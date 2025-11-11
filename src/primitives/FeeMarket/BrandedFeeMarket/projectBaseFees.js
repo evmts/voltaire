@@ -6,23 +6,24 @@ import { nextState } from "./nextState.js";
  *
  * Useful for estimating fee trends over multiple blocks.
  *
+ * @see https://voltaire.tevm.sh/primitives/feemarket for FeeMarket documentation
+ * @since 0.0.0
  * @param {import('../BrandedState.js').BrandedState} initialState - Starting state
  * @param {number} blocks - Number of blocks to project
  * @param {bigint} avgGasUsed - Average gas used per block
  * @param {bigint} [avgBlobGasUsed=0n] - Average blob gas used per block
  * @returns {bigint[]} Array of future base fees
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const fees = projectBaseFees(
+ * ```javascript
+ * import * as FeeMarket from './primitives/FeeMarket/index.js';
+ * const fees = FeeMarket.projectBaseFees(
  *   { gasUsed: 15_000_000n, gasLimit: 30_000_000n, baseFee: 1_000_000_000n,
  *     excessBlobGas: 0n, blobGasUsed: 0n },
- *   10, // next 10 blocks
- *   25_000_000n, // expect 83% full blocks
- *   262144n // expect 2 blobs per block
+ *   10,
+ *   25_000_000n,
+ *   262144n
  * );
- * // fees.length === 10
- * // fees show increasing trend (above target usage)
  * ```
  */
 export function projectBaseFees(
