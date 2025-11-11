@@ -1,0 +1,410 @@
+---
+title: "CALLER (0x33)"
+description: "Get immediate caller address (msg.sender)"
+---
+
+## Overview
+
+**Opcode:** `0x33`
+**Introduced:** Frontier (EVM genesis)
+
+CALLER pushes the address of the immediate caller onto the stack. This is the address that directly invoked the current execution context, changing with each call in the call chain.
+
+## Specification
+
+**Stack Input:**
+```
+[]
+```
+
+**Stack Output:**
+```
+caller (uint160 as uint256)
+```
+
+**Gas Cost:** 2 (GasQuickStep)
+
+**Operation:**
+```
+stack.push(execution_context.caller)
+```
+
+## Behavior
+
+CALLER provides the address that made the current call. Unlike ORIGIN which remains constant, CALLER changes with each contract call in the execution chain.
+
+Key characteristics:
+- Changes with each call (CALL, STATICCALL, DELEGATECALL)
+- Can be either EOA or contract address
+- Used for authentication and access control
+- Safe for authorization checks
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { caller } from '@tevm/voltaire/evm/context';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+import * as Address from '@tevm/voltaire/primitives/Address';
+
+// Immediate caller address
+const callerAddr = Address.from('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+const frame = createFrame({
+  caller: callerAddr,
+  stack: []
+});
+
+const err = caller(frame);
+
+console.log(frame.stack[0]); // 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEbn
+```
+
+### Access Control
+
+```solidity
+contract Ownable {
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;  // Uses CALLER opcode
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");  // SAFE
+        _;
+    }
+
+    function restricted() public onlyOwner {
+        // Only owner can call
+    }
+}
+```
+
+### Call Chain Tracking
+
+```solidity
+contract ContractC {
+    function whoCalledMe() public view returns (address) {
+        return msg.sender;  // Returns ContractB's address
+    }
+}
+
+contract ContractB {
+    function callC(ContractC c) public returns (address) {
+        return c.whoCalledMe();  // msg.sender in C = address(this)
+    }
+}
+
+// User (0xAAA) → ContractB (0xBBB) → ContractC (0xCCC)
+// In ContractC: msg.sender = 0xBBB
+```
+
+## Gas Cost
+
+**Cost:** 2 gas (GasQuickStep)
+
+Same cost as other environment access opcodes:
+- ADDRESS (0x30): 2 gas
+- ORIGIN (0x32): 2 gas
+- CALLVALUE (0x34): 2 gas
+
+## Common Usage
+
+### Ownership Pattern
+
+```solidity
+contract Owned {
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function transferOwnership(address newOwner) public {
+        require(msg.sender == owner, "Not owner");
+        require(newOwner != address(0), "Invalid address");
+        owner = newOwner;
+    }
+}
+```
+
+### Access Control Lists
+
+```solidity
+contract ACL {
+    mapping(address => bool) public authorized;
+
+    modifier onlyAuthorized() {
+        require(authorized[msg.sender], "Not authorized");
+        _;
+    }
+
+    function grantAccess(address account) public onlyAuthorized {
+        authorized[account] = true;
+    }
+
+    function revokeAccess(address account) public onlyAuthorized {
+        authorized[account] = false;
+    }
+}
+```
+
+### Payment Tracking
+
+```solidity
+contract PaymentTracker {
+    mapping(address => uint256) public payments;
+
+    receive() external payable {
+        payments[msg.sender] += msg.value;
+    }
+
+    function refund() public {
+        uint256 amount = payments[msg.sender];
+        require(amount > 0, "No payment");
+
+        payments[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+### Delegation Pattern
+
+```solidity
+contract Delegator {
+    mapping(address => address) public delegates;
+
+    function setDelegate(address delegate) public {
+        delegates[msg.sender] = delegate;
+    }
+
+    function actAsDelegate(address principal) public view returns (bool) {
+        return delegates[principal] == msg.sender;
+    }
+}
+```
+
+## Security
+
+### CALLER vs ORIGIN
+
+**SAFE pattern - use msg.sender (CALLER):**
+```solidity
+contract Safe {
+    address public owner;
+
+    function withdraw() public {
+        require(msg.sender == owner, "Not owner");  // ✓ SAFE
+        payable(owner).transfer(address(this).balance);
+    }
+}
+```
+
+**UNSAFE pattern - use tx.origin (ORIGIN):**
+```solidity
+contract Unsafe {
+    address public owner;
+
+    function withdraw() public {
+        require(tx.origin == owner, "Not owner");  // ✗ DANGEROUS
+        payable(owner).transfer(address(this).balance);
+    }
+}
+```
+
+### DELEGATECALL Context Preservation
+
+```solidity
+contract Implementation {
+    address public owner;
+
+    function whoIsOwner() public view returns (address) {
+        return msg.sender;  // Returns caller in delegatecall context
+    }
+}
+
+contract Proxy {
+    address public implementation;
+
+    fallback() external payable {
+        address impl = implementation;
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+
+// User calls Proxy.whoIsOwner() via delegatecall
+// msg.sender in Implementation = User's address (not Proxy)
+```
+
+### Reentrancy Protection
+
+```solidity
+contract ReentrancyGuard {
+    mapping(address => bool) private locked;
+
+    modifier nonReentrant() {
+        require(!locked[msg.sender], "Reentrant call");
+        locked[msg.sender] = true;
+        _;
+        locked[msg.sender] = false;
+    }
+
+    function withdraw() public nonReentrant {
+        // Protected from reentrancy
+        uint256 amount = balances[msg.sender];
+        balances[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+### Authorization Checks
+
+```solidity
+contract MultiSig {
+    mapping(address => bool) public isSigner;
+    mapping(bytes32 => mapping(address => bool)) public approved;
+
+    function approve(bytes32 txHash) public {
+        require(isSigner[msg.sender], "Not a signer");  // ✓ SAFE
+        approved[txHash][msg.sender] = true;
+    }
+
+    function execute(bytes32 txHash) public {
+        require(approved[txHash][msg.sender], "Not approved");
+        // Execute transaction
+    }
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+import { consumeGas } from "../Frame/consumeGas.js";
+import { pushStack } from "../Frame/pushStack.js";
+import { toU256 } from "../../primitives/Address/BrandedAddress/toU256.js";
+
+/**
+ * CALLER opcode (0x33) - Get caller address
+ *
+ * Stack: [] => [caller]
+ * Gas: 2 (GasQuickStep)
+ */
+export function caller(frame: BrandedFrame): EvmError | null {
+  const gasErr = consumeGas(frame, 2n);
+  if (gasErr) return gasErr;
+
+  const callerU256 = toU256(frame.caller);
+  const pushErr = pushStack(frame, callerU256);
+  if (pushErr) return pushErr;
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// CALLER opcode (0x33) - Get caller address
+pub fn caller(frame: *FrameType) FrameType.EvmError!void {
+    try frame.consumeGas(GasConstants.GasQuickStep);
+
+    // Convert 20-byte address to u256
+    var caller_u256: u256 = 0;
+    for (frame.caller) |byte| {
+        caller_u256 = (caller_u256 << 8) | byte;
+    }
+
+    try frame.pushStack(caller_u256);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Contract as Caller
+
+```typescript
+// Caller can be a contract address
+const contractCaller = Address.from('0xContractAddress...');
+const frame = createFrame({ caller: contractCaller });
+
+caller(frame);
+console.log(frame.stack[0]); // Contract address as u256
+```
+
+### Stack Overflow
+
+```typescript
+const frame = createFrame({
+  caller: callerAddr,
+  stack: new Array(1024).fill(0n)
+});
+
+const err = caller(frame);
+console.log(err); // { type: "StackOverflow" }
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({
+  caller: callerAddr,
+  gasRemaining: 1n
+});
+
+const err = caller(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Best Practices
+
+### ✅ DO: Use for access control
+
+```solidity
+require(msg.sender == owner);
+```
+
+### ✅ DO: Track caller identity
+
+```solidity
+mapping(address => uint256) public balances;
+balances[msg.sender] += amount;
+```
+
+### ✅ DO: Validate caller
+
+```solidity
+require(authorizedCallers[msg.sender], "Unauthorized");
+```
+
+### ❌ DON'T: Confuse with tx.origin
+
+```solidity
+// WRONG
+require(tx.origin == owner);
+
+// CORRECT
+require(msg.sender == owner);
+```
+
+## References
+
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3 (Execution Environment)
+- [EVM Codes - CALLER](https://www.evm.codes/#33)
+- [Solidity Docs - msg.sender](https://docs.soliditylang.org/en/latest/units-and-global-variables.html#block-and-transaction-properties)
+- [SWC-115: Authorization through tx.origin](https://swcregistry.io/docs/SWC-115) - Why NOT to use ORIGIN

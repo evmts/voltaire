@@ -1,0 +1,670 @@
+---
+title: "SAR (0x1d)"
+description: "Arithmetic shift right operation for signed division by powers of 2 (EIP-145, Constantinople+)"
+---
+
+## Overview
+
+**Opcode:** `0x1d`
+**Introduced:** Constantinople (EIP-145)
+
+SAR performs arithmetic (signed) shift right on a 256-bit value interpreted as a two's complement signed integer. Vacated bits (on the left) are filled with the sign bit (MSB), preserving the sign of the value. This operation efficiently divides signed integers by powers of 2 with correct rounding toward negative infinity.
+
+Before EIP-145, signed right shifts required expensive SDIV + EXP operations. SAR reduces this to 3 gas.
+
+**Note:** SAR is for signed values. For unsigned division, use SHR (0x1c).
+
+## Specification
+
+**Stack Input:**
+```
+shift (top) - number of bit positions to shift
+value - 256-bit value (interpreted as signed i256)
+```
+
+**Stack Output:**
+```
+value >> shift (arithmetic, sign-fill)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Hardfork:** Constantinople (EIP-145) or later
+
+**Shift Behavior:**
+```
+shift < 256:
+  - Positive: value >> shift (zero-fill, same as SHR)
+  - Negative: value >> shift (one-fill, preserves sign)
+shift >= 256:
+  - Positive: 0
+  - Negative: 0xFFFF...FFFF (-1)
+```
+
+## Behavior
+
+SAR pops two values from the stack:
+1. **shift** - number of bit positions to shift right (0-255)
+2. **value** - 256-bit value interpreted as signed i256 (two's complement)
+
+Result is value shifted right by shift positions, with the sign bit (MSB) replicated to fill vacated high-order bits.
+
+**Sign Extension:**
+- If MSB = 0 (positive): fill with 0s (same as SHR)
+- If MSB = 1 (negative): fill with 1s (preserve negative sign)
+
+**Overflow behavior:**
+- shift >= 256 and positive: result = 0
+- shift >= 256 and negative: result = -1 (0xFFFF...FFFF)
+
+## Examples
+
+### Positive Value (Same as SHR)
+
+```typescript
+import { sar } from '@tevm/voltaire/evm/bitwise';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Positive value: SAR behaves like SHR
+const value = 0x1000n;  // MSB = 0 (positive)
+const frame = createFrame({ stack: [4n, value] });
+const err = sar(frame);
+
+console.log(frame.stack[0].toString(16));  // '100' (zero-filled)
+```
+
+### Negative Value (Sign Extension)
+
+```typescript
+// Negative value: SAR preserves sign
+const negativeValue = (1n << 255n) | 0xFFn;  // MSB = 1 (negative)
+const frame = createFrame({ stack: [4n, negativeValue] });
+sar(frame);
+
+// High bits filled with 1s (sign-extended)
+const expectedMsb = 1n << 251n;  // MSB shifted to bit 251
+console.log((frame.stack[0] >> 251n) & 1n);  // 1 (sign preserved)
+```
+
+### Divide Negative by Power of 2
+
+```typescript
+// SAR correctly divides signed integers
+// -16 / 4 = -4
+const minussixteen = (1n << 256n) - 16n;  // Two's complement of -16
+const frame = createFrame({ stack: [2n, minussixteen] });
+sar(frame);
+
+const minusFour = (1n << 256n) - 4n;
+console.log(frame.stack[0] === minusFour);  // true (-4 in two's complement)
+```
+
+### Maximum Shift on Negative
+
+```typescript
+// Shift >= 256 on negative → -1 (all ones)
+const negativeValue = 1n << 255n;  // -2^255 in two's complement
+const frame = createFrame({ stack: [256n, negativeValue] });
+sar(frame);
+
+const allOnes = (1n << 256n) - 1n;
+console.log(frame.stack[0] === allOnes);  // true (-1)
+```
+
+### Maximum Shift on Positive
+
+```typescript
+// Shift >= 256 on positive → 0
+const positiveValue = (1n << 254n);  // Large positive
+const frame = createFrame({ stack: [256n, positiveValue] });
+sar(frame);
+
+console.log(frame.stack[0]);  // 0n
+```
+
+### SAR vs SHR Comparison
+
+```typescript
+// Same negative value, different shifts
+const negValue = 1n << 255n;  // MSB set
+
+// SHR: logical (zero-fill)
+const frameSHR = createFrame({ stack: [1n, negValue] });
+shr(frameSHR);
+console.log(frameSHR.stack[0] === (1n << 254n));  // true (bit 254, positive)
+
+// SAR: arithmetic (sign-fill)
+const frameSAR = createFrame({ stack: [1n, negValue] });
+sar(frameSAR);
+const expectedSAR = (1n << 255n) | (1n << 254n);  // Both bits 254 and 255 set
+console.log(frameSAR.stack[0] === expectedSAR);  // true (still negative)
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+**Pre-EIP-145 equivalent:**
+```solidity
+// Before Constantinople: expensive!
+result = int256(value) / int256(2 ** shift)  // SDIV (5 gas) + EXP (10 + 50/byte gas)
+// Total: 15-1615 gas
+
+// After Constantinople: cheap!
+assembly { result := sar(shift, value) }  // 3 gas
+```
+
+**Savings:** 12-1612 gas per signed shift operation.
+
+## Edge Cases
+
+### Zero Value
+
+```typescript
+// Shifting zero always yields zero (sign = 0)
+const frame = createFrame({ stack: [100n, 0n] });
+sar(frame);
+
+console.log(frame.stack[0]);  // 0n
+```
+
+### Zero Shift
+
+```typescript
+// No shift = identity
+const value = 0xDEADBEEFn;
+const frame = createFrame({ stack: [0n, value] });
+sar(frame);
+
+console.log(frame.stack[0] === value);  // true
+```
+
+### Minus One
+
+```typescript
+// -1 (all ones) shifted remains -1
+const minusOne = (1n << 256n) - 1n;
+const frame = createFrame({ stack: [100n, minusOne] });
+sar(frame);
+
+console.log(frame.stack[0] === minusOne);  // true (sign-extended)
+```
+
+### Minimum Signed Int
+
+```typescript
+// MIN_INT256 = -2^255
+const MIN_INT = 1n << 255n;
+const frame = createFrame({ stack: [1n, MIN_INT] });
+sar(frame);
+
+// -2^255 / 2 = -2^254 (sign-extended)
+const expected = (1n << 255n) | (1n << 254n);
+console.log(frame.stack[0] === expected);  // true
+```
+
+### Maximum Positive Int
+
+```typescript
+// MAX_INT256 = 2^255 - 1 (MSB = 0, all other bits = 1)
+const MAX_INT = (1n << 255n) - 1n;
+const frame = createFrame({ stack: [1n, MAX_INT] });
+sar(frame);
+
+// Result: zero-filled (positive)
+const expected = (1n << 254n) - 1n;
+console.log(frame.stack[0] === expected);  // true
+```
+
+### Shift to Sign Bit Only
+
+```typescript
+// Shift negative value to leave only sign bit
+const negValue = (1n << 255n) | 0xFFFFn;
+const frame = createFrame({ stack: [255n, negValue] });
+sar(frame);
+
+const allOnes = (1n << 256n) - 1n;
+console.log(frame.stack[0] === allOnes);  // true (all 1s)
+```
+
+### Edge of Sign Change
+
+```typescript
+// Value with only bit 254 set (large positive)
+const value = 1n << 254n;  // MSB = 0
+const frame = createFrame({ stack: [1n, value] });
+sar(frame);
+
+// Result: 1 << 253 (still positive)
+console.log(frame.stack[0] === (1n << 253n));  // true
+```
+
+### Hardfork Check
+
+```typescript
+// SAR is invalid before Constantinople
+const frame = createFrame({
+  stack: [4n, 0xFF00n],
+  hardfork: 'byzantium'
+});
+const err = sar(frame);
+
+console.log(err);  // { type: "InvalidOpcode" }
+```
+
+### Stack Underflow
+
+```typescript
+const frame = createFrame({ stack: [4n] });
+const err = sar(frame);
+
+console.log(err);  // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({ stack: [4n, 0xFF00n], gasRemaining: 2n });
+const err = sar(frame);
+
+console.log(err);  // { type: "OutOfGas" }
+```
+
+## Common Usage
+
+### Signed Division by Power of 2
+
+```solidity
+// Efficient signed division
+function divideBy8(int256 value) pure returns (int256) {
+    assembly {
+        result := sar(3, value)  // Divide by 2^3 = 8
+    }
+    return result;
+}
+```
+
+### Extract Signed Value from Packed Data
+
+```solidity
+// Extract signed 16-bit value from lower bits
+function extractInt16(uint256 packed) pure returns (int16) {
+    uint256 raw = packed & 0xFFFF;  // Extract 16 bits
+
+    // Sign-extend to 256 bits
+    int256 extended;
+    assembly {
+        // Shift left to MSB, then SAR back (sign-extends)
+        extended := sar(240, shl(240, raw))
+    }
+
+    return int16(extended);
+}
+```
+
+### Fixed-Point Arithmetic
+
+```solidity
+// Q64.64 fixed-point division by 2
+function halfFixedPoint(int128 value) pure returns (int128) {
+    // value is Q64.64: upper 64 bits integer, lower 64 fractional
+    // Shift right 1 to divide by 2 (preserves sign)
+    assembly {
+        result := sar(1, value)
+    }
+    return int128(result);
+}
+```
+
+### Sign Extension
+
+```solidity
+// Extend sign from bit position
+function signExtend(uint256 value, uint256 bitPos) pure returns (uint256) {
+    require(bitPos < 256, "bit position out of range");
+
+    // Shift to align sign bit with MSB, then SAR back
+    uint256 shift = 255 - bitPos;
+    assembly {
+        value := sar(shift, shl(shift, value))
+    }
+    return value;
+}
+```
+
+### Check Sign of Packed Int
+
+```solidity
+// Check if packed signed value is negative
+function isNegative(uint256 packed, uint256 bitWidth) pure returns (bool) {
+    require(bitWidth > 0 && bitWidth <= 256, "invalid bit width");
+
+    // Extract sign bit
+    uint256 signBit = (packed >> (bitWidth - 1)) & 1;
+    return signBit == 1;
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// SAR opcode (0x1d) - Arithmetic shift right operation (EIP-145)
+pub fn sar(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    // EIP-145: SAR opcode was introduced in Constantinople hardfork
+    if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
+
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    // Pop shift (TOS), then value
+    const shift = try frame.popStack();
+    const value = try frame.popStack();
+    const value_signed = @as(i256, @bitCast(value));
+    // For shifts >= 256, result depends on sign bit
+    const result = if (shift >= 256) blk: {
+        // If negative, result is all 1s (-1); if positive, result is 0
+        break :blk if (value_signed < 0)
+            @as(u256, @bitCast(@as(i256, -1)))
+        else
+            0;
+    } else blk: {
+        break :blk @as(u256, @bitCast(value_signed >> @as(u8, @intCast(shift))));
+    };
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * SAR opcode (0x1d) - Arithmetic shift right operation (EIP-145)
+ */
+export function sar(frame: BrandedFrame): EvmError | null {
+  // Check hardfork (Constantinople or later)
+  if (frame.hardfork.isBefore('constantinople')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Consume gas (GasFastestStep = 3)
+  frame.gasRemaining -= 3n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const shift = frame.stack.pop();
+  const value = frame.stack.pop();
+
+  // Compute arithmetic shift right (sign-fill)
+  // Convert to signed interpretation
+  const isNegative = (value >> 255n) === 1n;
+
+  let result: bigint;
+  if (shift >= 256n) {
+    // Overflow: return 0 or -1 based on sign
+    result = isNegative ? (1n << 256n) - 1n : 0n;
+  } else {
+    // Arithmetic shift with sign extension
+    result = value >> shift;
+
+    // Sign-fill: if negative, fill upper bits with 1s
+    if (isNegative && shift > 0n) {
+      const fillBits = ((1n << shift) - 1n) << (256n - shift);
+      result |= fillBits;
+    }
+  }
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { sar } from './sar.js';
+
+describe('SAR (0x1d)', () => {
+  it('shifts positive value (same as SHR)', () => {
+    const frame = createFrame({ stack: [4n, 0x1000n] });
+    expect(sar(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0x100n);
+  });
+
+  it('sign-extends negative value', () => {
+    const negValue = 1n << 255n;  // MSB set
+    const frame = createFrame({ stack: [1n, negValue] });
+    expect(sar(frame)).toBeNull();
+
+    // Result should have both bit 255 and 254 set (sign-extended)
+    const expected = (1n << 255n) | (1n << 254n);
+    expect(frame.stack[0]).toBe(expected);
+  });
+
+  it('divides negative by power of 2', () => {
+    // -16 / 4 = -4
+    const minus16 = (1n << 256n) - 16n;
+    const frame = createFrame({ stack: [2n, minus16] });
+    expect(sar(frame)).toBeNull();
+
+    const minus4 = (1n << 256n) - 4n;
+    expect(frame.stack[0]).toBe(minus4);
+  });
+
+  it('returns -1 for shift >= 256 on negative', () => {
+    const negValue = 1n << 255n;
+    const frame = createFrame({ stack: [256n, negValue] });
+    expect(sar(frame)).toBeNull();
+
+    const minusOne = (1n << 256n) - 1n;
+    expect(frame.stack[0]).toBe(minusOne);
+  });
+
+  it('returns 0 for shift >= 256 on positive', () => {
+    const posValue = 1n << 254n;
+    const frame = createFrame({ stack: [256n, posValue] });
+    expect(sar(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0n);
+  });
+
+  it('handles zero shift (identity)', () => {
+    const value = 0x123456n;
+    const frame = createFrame({ stack: [0n, value] });
+    expect(sar(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(value);
+  });
+
+  it('shifts -1 remains -1', () => {
+    const minusOne = (1n << 256n) - 1n;
+    const frame = createFrame({ stack: [100n, minusOne] });
+    expect(sar(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(minusOne);
+  });
+
+  it('handles MIN_INT256', () => {
+    const MIN_INT = 1n << 255n;
+    const frame = createFrame({ stack: [1n, MIN_INT] });
+    expect(sar(frame)).toBeNull();
+
+    // -2^255 / 2 = -2^254 (sign-extended)
+    const expected = (1n << 255n) | (1n << 254n);
+    expect(frame.stack[0]).toBe(expected);
+  });
+
+  it('differs from SHR on negative values', () => {
+    const negValue = 1n << 255n;
+
+    // SHR: logical (zero-fill)
+    const frameSHR = createFrame({ stack: [1n, negValue] });
+    shr(frameSHR);
+
+    // SAR: arithmetic (sign-fill)
+    const frameSAR = createFrame({ stack: [1n, negValue] });
+    sar(frameSAR);
+
+    expect(frameSHR.stack[0]).not.toBe(frameSAR.stack[0]);
+    expect(frameSHR.stack[0]).toBe(1n << 254n);  // Positive
+    expect(frameSAR.stack[0]).toBe((1n << 255n) | (1n << 254n));  // Negative
+  });
+
+  it('returns InvalidOpcode before Constantinople', () => {
+    const frame = createFrame({
+      stack: [4n, 0xFF00n],
+      hardfork: 'byzantium'
+    });
+    expect(sar(frame)).toEqual({ type: 'InvalidOpcode' });
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame({ stack: [4n] });
+    expect(sar(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame({ stack: [4n, 0xFF00n], gasRemaining: 2n });
+    expect(sar(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Positive value shifts (same as SHR)
+- Negative value sign extension
+- Signed division by powers of 2
+- Shift >= 256 on positive (→ 0)
+- Shift >= 256 on negative (→ -1)
+- Zero shift (identity)
+- -1 shifted remains -1
+- MIN_INT256 handling
+- MAX_INT256 handling
+- Comparison with SHR
+- Hardfork compatibility
+- Stack underflow
+- Out of gas
+
+## Security
+
+### SHR vs SAR Confusion
+
+```solidity
+// CRITICAL: Using wrong shift for signed values
+function divideSignedBy4(int256 value) pure returns (int256) {
+    assembly {
+        result := shr(2, value)  // WRONG! Treats as unsigned
+    }
+    return result;
+}
+
+// CORRECT: Use SAR for signed
+function divideSignedBy4(int256 value) pure returns (int256) {
+    assembly {
+        result := sar(2, value)  // Preserves sign
+    }
+    return result;
+}
+
+// Example:
+// value = -16 (0xFFFF...FFF0)
+// SHR: 0x3FFF...FFFC (large positive, WRONG!)
+// SAR: 0xFFFF...FFFC (-4, correct)
+```
+
+### Rounding Direction
+
+```solidity
+// SAR rounds toward negative infinity (floor division)
+function divideSigned(int256 a, int256 b) pure returns (int256) {
+    // Only use SAR if b is a power of 2
+    require(isPowerOf2(uint256(b)), "not power of 2");
+
+    uint256 shift = log2(uint256(b));
+    assembly {
+        result := sar(shift, a)
+    }
+    return result;
+}
+
+// Note: -7 / 4 using SAR = -2 (floor)
+//       -7 / 4 in Solidity SDIV = -1 (truncate toward zero)
+```
+
+### Sign Extension Pitfalls
+
+```solidity
+// WRONG: Assuming SAR on unsigned creates signed
+function makeNegative(uint256 value) pure returns (int256) {
+    assembly {
+        value := sar(1, value)  // Doesn't make value negative!
+    }
+    return int256(value);
+}
+
+// SAR interprets existing sign bit, doesn't change sign
+```
+
+### Mixed Signed/Unsigned Operations
+
+```solidity
+// DANGEROUS: Mixing signed and unsigned shifts
+function process(uint256 value, bool isSigned) pure returns (uint256) {
+    assembly {
+        switch isSigned
+        case 0 { value := shr(4, value) }  // Unsigned
+        case 1 { value := sar(4, value) }  // Signed
+    }
+    return value;
+}
+
+// Risk: Type confusion if isSigned doesn't match value's actual signedness
+```
+
+## Benchmarks
+
+SAR is one of the fastest EVM operations:
+
+**Execution time (relative):**
+- SAR: 1.0x (baseline, fastest tier)
+- SHR/SHL: 1.0x (same tier)
+- SDIV: 2.5x
+
+**Gas comparison (signed right shift by 3):**
+| Method | Gas | Notes |
+|--------|-----|-------|
+| SAR (Constantinople+) | 3 | Native arithmetic shift |
+| SDIV (pre-EIP-145) | 5 | value / 8 |
+| EXP + SDIV (variable) | 65+ | value / 2^shift |
+
+**Gas savings:** 2-1612 gas per signed shift vs pre-EIP-145 methods.
+
+## References
+
+- [EIP-145](https://eips.ethereum.org/EIPS/eip-145) - Bitwise shifting instructions (SHL, SHR, SAR)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1
+- [EVM Codes - SAR](https://www.evm.codes/#1d)
+- [Two's Complement](https://en.wikipedia.org/wiki/Two%27s_complement) - Signed integer representation
+
+## Related Documentation
+
+- [SHR (0x1c)](/evm/instructions/bitwise/shr) - Logical shift right (unsigned)
+- [SHL (0x1b)](/evm/instructions/bitwise/shl) - Shift left
+- [SDIV (0x05)](/evm/instructions/arithmetic/sdiv) - Signed division
+- [SIGNEXTEND (0x0b)](/evm/instructions/arithmetic/signextend) - Sign extension
+- [Hardfork](/primitives/hardfork) - Constantinople

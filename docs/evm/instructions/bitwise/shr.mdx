@@ -1,0 +1,600 @@
+---
+title: "SHR (0x1c)"
+description: "Logical shift right operation for efficient division by powers of 2 (EIP-145, Constantinople+)"
+---
+
+## Overview
+
+**Opcode:** `0x1c`
+**Introduced:** Constantinople (EIP-145)
+
+SHR performs logical (unsigned) shift right on a 256-bit value, shifting bits toward the least significant position. Vacated bits (on the left) are filled with zeros. This operation efficiently divides by powers of 2 and extracts high-order bits.
+
+Before EIP-145, right shifts required expensive DIV + EXP operations (15-60+ gas). SHR reduces this to 3 gas.
+
+**Note:** SHR is for unsigned values. For signed division, use SAR (0x1d).
+
+## Specification
+
+**Stack Input:**
+```
+shift (top) - number of bit positions to shift
+value - 256-bit value to shift
+```
+
+**Stack Output:**
+```
+value >> shift (logical, zero-fill)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Hardfork:** Constantinople (EIP-145) or later
+
+**Shift Behavior:**
+```
+shift < 256: value >> shift (logical, zero-fill)
+shift >= 256: 0 (all bits shifted out)
+```
+
+## Behavior
+
+SHR pops two values from the stack:
+1. **shift** - number of bit positions to shift right (0-255)
+2. **value** - 256-bit value to be shifted
+
+Result is value shifted right by shift positions, with zeros filling vacated high-order bits (logical shift). If shift >= 256, result is 0.
+
+**Difference from SAR:** SHR always fills with zeros (unsigned), while SAR preserves the sign bit (signed).
+
+## Examples
+
+### Basic Right Shift
+
+```typescript
+import { shr } from '@tevm/voltaire/evm/bitwise';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+// Shift 0xFF00 right by 8 bits (divide by 256)
+const frame = createFrame({ stack: [8n, 0xFF00n] });
+const err = shr(frame);
+
+console.log(frame.stack[0].toString(16));  // 'ff'
+```
+
+### Divide by Power of 2
+
+```typescript
+// Shift right by N = divide by 2^N
+// 40 >> 3 = 40 / 8 = 5
+const frame = createFrame({ stack: [3n, 40n] });
+shr(frame);
+
+console.log(frame.stack[0]);  // 5n
+```
+
+### Zero Shift (Identity)
+
+```typescript
+// Shift by 0 positions = identity
+const value = 0x123456n;
+const frame = createFrame({ stack: [0n, value] });
+shr(frame);
+
+console.log(frame.stack[0] === value);  // true
+```
+
+### Maximum Shift (Underflow)
+
+```typescript
+// Shift >= 256 results in 0
+const value = 0xFFFFFFFFn;
+const frame = createFrame({ stack: [256n, value] });
+shr(frame);
+
+console.log(frame.stack[0]);  // 0n
+```
+
+### Extract High Bytes
+
+```typescript
+// Extract upper 128 bits
+const value = 0x123456789ABCDEF0n << 128n | 0xFEDCBA9876543210n;
+const frame = createFrame({ stack: [128n, value] });
+shr(frame);
+
+console.log(frame.stack[0].toString(16));  // '123456789abcdef0'
+```
+
+### Logical vs Arithmetic (Negative Number)
+
+```typescript
+// SHR treats as unsigned (zero-fill)
+const negativeValue = 1n << 255n;  // MSB set (negative in two's complement)
+const frame = createFrame({ stack: [1n, negativeValue] });
+shr(frame);
+
+// Result: MSB is now 0 (zero-filled, becomes positive)
+const expected = 1n << 254n;  // 0x4000...0000
+console.log(frame.stack[0] === expected);  // true
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+**Pre-EIP-145 equivalent:**
+```solidity
+// Before Constantinople: expensive!
+result = value / (2 ** shift)  // DIV (5 gas) + EXP (10 + 50/byte gas)
+// Total: 15-1615 gas
+
+// After Constantinople: cheap!
+assembly { result := shr(shift, value) }  // 3 gas
+```
+
+**Savings:** 12-1612 gas per shift operation.
+
+## Edge Cases
+
+### Zero Value
+
+```typescript
+// Shifting zero always yields zero
+const frame = createFrame({ stack: [100n, 0n] });
+shr(frame);
+
+console.log(frame.stack[0]);  // 0n
+```
+
+### Zero Shift
+
+```typescript
+// No shift = identity
+const value = 0xDEADBEEFn;
+const frame = createFrame({ stack: [0n, value] });
+shr(frame);
+
+console.log(frame.stack[0] === value);  // true
+```
+
+### Shift by 1 (Halve)
+
+```typescript
+// Shift right by 1 = divide by 2 (truncate)
+const value = 43n;
+const frame = createFrame({ stack: [1n, value] });
+shr(frame);
+
+console.log(frame.stack[0]);  // 21n (truncated)
+```
+
+### Shift by 255 (Extract MSB)
+
+```typescript
+// Shift to LSB position
+const value = 1n << 255n;  // MSB set
+const frame = createFrame({ stack: [255n, value] });
+shr(frame);
+
+console.log(frame.stack[0]);  // 1n
+```
+
+### Shift by 256+ (Complete Underflow)
+
+```typescript
+// Any shift >= 256 yields 0
+for (const shift of [256n, 257n, 1000n, (1n << 200n)]) {
+  const frame = createFrame({ stack: [shift, 0xFFFFn] });
+  shr(frame);
+  console.log(frame.stack[0]);  // 0n for all
+}
+```
+
+### MSB Set (Unsigned Interpretation)
+
+```typescript
+// SHR treats MSB as regular bit (unsigned)
+const value = (1n << 255n) | 0xFFn;  // MSB set + lower bits
+const frame = createFrame({ stack: [8n, value] });
+shr(frame);
+
+// Result: MSB shifted right, zero-filled
+const expected = (1n << 247n) | 0n;
+console.log(frame.stack[0] === expected);  // true (MSB now at bit 247)
+```
+
+### Truncation
+
+```typescript
+// Low bits are discarded
+const value = 0xFFFFn;  // Binary: ...1111111111111111
+const frame = createFrame({ stack: [4n, value] });
+shr(frame);
+
+console.log(frame.stack[0].toString(16));  // 'fff' (lower 4 bits discarded)
+```
+
+### Hardfork Check (Pre-Constantinople)
+
+```typescript
+// SHR is invalid before Constantinople
+const frame = createFrame({
+  stack: [8n, 0xFF00n],
+  hardfork: 'byzantium'  // Before Constantinople
+});
+const err = shr(frame);
+
+console.log(err);  // { type: "InvalidOpcode" }
+```
+
+### Stack Underflow
+
+```typescript
+// Insufficient stack items
+const frame = createFrame({ stack: [8n] });
+const err = shr(frame);
+
+console.log(err);  // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+// Insufficient gas
+const frame = createFrame({ stack: [8n, 0xFF00n], gasRemaining: 2n });
+const err = shr(frame);
+
+console.log(err);  // { type: "OutOfGas" }
+console.log(frame.gasRemaining);  // 0n
+```
+
+## Common Usage
+
+### Divide by Power of 2
+
+```solidity
+// Efficient division by 256
+assembly {
+    result := shr(8, value)  // 3 gas vs DIV (5 gas)
+}
+```
+
+### Unpack Data Fields
+
+```solidity
+// Extract timestamp from packed data (upper 40 bits)
+function extractTimestamp(uint256 packed) pure returns (uint40) {
+    return uint40(packed >> 216);  // Shift right 216 bits
+    // Or in assembly:
+    // assembly { result := shr(216, packed) }
+}
+```
+
+### Extract High Bits
+
+```solidity
+// Get upper N bits
+function getHighBits(uint256 value, uint256 numBits) pure returns (uint256) {
+    require(numBits <= 256, "invalid bit count");
+    uint256 shift = 256 - numBits;
+    return value >> shift;
+    // assembly { result := shr(shift, value) }
+}
+```
+
+### Check MSB (Sign Bit)
+
+```solidity
+// Check if MSB is set (would be negative if signed)
+function isMsbSet(uint256 value) pure returns (bool) {
+    return (value >> 255) == 1;
+    // assembly {
+    //     result := eq(shr(255, value), 1)
+    // }
+}
+```
+
+### Bitmap Operations
+
+```solidity
+// Check if bit at position is set
+function isBitSet(uint256 bitmap, uint256 bitPos) pure returns (bool) {
+    require(bitPos < 256, "bit position out of range");
+    return ((bitmap >> bitPos) & 1) == 1;
+}
+```
+
+### Extract Nibble (4 bits)
+
+```solidity
+// Extract nibble at position (0 = lowest nibble)
+function getNibble(uint256 value, uint256 nibblePos) pure returns (uint8) {
+    require(nibblePos < 64, "nibble position out of range");
+    return uint8((value >> (nibblePos * 4)) & 0xF);
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// SHR opcode (0x1c) - Logical shift right operation (EIP-145)
+pub fn shr(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+    // EIP-145: SHR opcode was introduced in Constantinople hardfork
+    if (evm.hardfork.isBefore(.CONSTANTINOPLE)) return error.InvalidOpcode;
+
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    // Pop shift (TOS), then value
+    const shift = try frame.popStack();
+    const value = try frame.popStack();
+    // For shifts >= 256, result is always 0
+    const result = if (shift >= 256)
+        0
+    else
+        value >> @as(u8, @intCast(shift));
+    try frame.pushStack(result);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * SHR opcode (0x1c) - Logical shift right operation (EIP-145)
+ */
+export function shr(frame: BrandedFrame): EvmError | null {
+  // Check hardfork (Constantinople or later)
+  if (frame.hardfork.isBefore('constantinople')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Consume gas (GasFastestStep = 3)
+  frame.gasRemaining -= 3n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop operands
+  if (frame.stack.length < 2) return { type: "StackUnderflow" };
+  const shift = frame.stack.pop();
+  const value = frame.stack.pop();
+
+  // Compute logical shift right (zero-fill)
+  const result = shift >= 256n
+    ? 0n
+    : value >> shift;
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(result);
+
+  // Increment PC
+  frame.pc += 1;
+
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+### Test Coverage
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { shr } from './shr.js';
+
+describe('SHR (0x1c)', () => {
+  it('shifts right by 8 bits', () => {
+    const frame = createFrame({ stack: [8n, 0xFF00n] });
+    expect(shr(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0xFFn);
+  });
+
+  it('divides by power of 2', () => {
+    const frame = createFrame({ stack: [3n, 40n] });
+    expect(shr(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(5n);  // 40 / 2^3
+  });
+
+  it('handles zero shift (identity)', () => {
+    const value = 0x123456n;
+    const frame = createFrame({ stack: [0n, value] });
+    expect(shr(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(value);
+  });
+
+  it('returns 0 for shift >= 256', () => {
+    const frame = createFrame({ stack: [256n, 0xFFFFFFFFn] });
+    expect(shr(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0n);
+  });
+
+  it('extracts MSB', () => {
+    const value = 1n << 255n;
+    const frame = createFrame({ stack: [255n, value] });
+    expect(shr(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(1n);
+  });
+
+  it('zero-fills on negative values (logical shift)', () => {
+    const value = 1n << 255n;  // MSB set (negative if signed)
+    const frame = createFrame({ stack: [1n, value] });
+    expect(shr(frame)).toBeNull();
+
+    // Logical shift: zero-filled
+    expect(frame.stack[0]).toBe(1n << 254n);
+  });
+
+  it('truncates low bits', () => {
+    const value = 0xFFFFn;
+    const frame = createFrame({ stack: [4n, value] });
+    expect(shr(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0xFFFn);
+  });
+
+  it('extracts high bits', () => {
+    const value = (0x123456n << 128n) | 0xABCDEFn;
+    const frame = createFrame({ stack: [128n, value] });
+    expect(shr(frame)).toBeNull();
+    expect(frame.stack[0]).toBe(0x123456n);
+  });
+
+  it('returns InvalidOpcode before Constantinople', () => {
+    const frame = createFrame({
+      stack: [8n, 0xFF00n],
+      hardfork: 'byzantium'
+    });
+    expect(shr(frame)).toEqual({ type: 'InvalidOpcode' });
+  });
+
+  it('returns StackUnderflow with insufficient stack', () => {
+    const frame = createFrame({ stack: [8n] });
+    expect(shr(frame)).toEqual({ type: 'StackUnderflow' });
+  });
+
+  it('returns OutOfGas when insufficient gas', () => {
+    const frame = createFrame({ stack: [8n, 0xFF00n], gasRemaining: 2n });
+    expect(shr(frame)).toEqual({ type: 'OutOfGas' });
+  });
+});
+```
+
+### Edge Cases Tested
+
+- Basic shift operations
+- Division by powers of 2
+- Zero shift (identity)
+- Shift >= 256 (underflow to zero)
+- MSB extraction
+- Logical shift (zero-fill) vs arithmetic
+- Bit truncation
+- High bit extraction
+- Zero value shifts
+- Hardfork compatibility
+- Stack underflow
+- Out of gas
+
+## Security
+
+### Signed vs Unsigned Confusion
+
+```solidity
+// WRONG: Using SHR for signed division
+function divideSignedBy2(int256 value) pure returns (int256) {
+    return int256(uint256(value) >> 1);  // Incorrect for negative values!
+}
+
+// CORRECT: Use SAR for signed division
+function divideSignedBy2(int256 value) pure returns (int256) {
+    assembly {
+        value := sar(1, value)  // Sign-preserving shift
+    }
+    return value;
+}
+
+// Example:
+// -8 in two's complement: 0xFFFF...FFF8
+// SHR(1, -8) = 0x7FFF...FFFC (large positive, wrong!)
+// SAR(1, -8) = 0xFFFF...FFFC (-4, correct)
+```
+
+### Truncation Assumptions
+
+```solidity
+// RISKY: Assuming remainder is zero
+function divideBy256(uint256 value) pure returns (uint256) {
+    uint256 result = value >> 8;
+    // Lost information: value % 256 is discarded
+    return result;
+}
+
+// SAFER: Explicit handling
+function divideBy256(uint256 value) pure returns (uint256 quotient, uint256 remainder) {
+    quotient = value >> 8;
+    remainder = value & 0xFF;  // Lower 8 bits
+}
+```
+
+### Unchecked Shift Amount
+
+```solidity
+// DANGEROUS: User-controlled shift without validation
+function shiftRight(uint256 value, uint256 shift) pure returns (uint256) {
+    return value >> shift;  // shift >= 256 → 0 (may not be intended)
+}
+
+// SAFER: Validate shift range
+function shiftRight(uint256 value, uint256 shift) pure returns (uint256) {
+    require(shift < 256, "shift underflow");
+    return value >> shift;
+}
+```
+
+### Incorrect Division
+
+```solidity
+// Use SHR only for powers of 2
+function divide(uint256 a, uint256 b) pure returns (uint256) {
+    // WRONG: Only works if b is a power of 2
+    return a >> b;  // Treats b as exponent, not divisor!
+}
+
+// CORRECT: Use DIV for general division
+function divide(uint256 a, uint256 b) pure returns (uint256) {
+    return a / b;
+}
+```
+
+### Endianness in Byte Extraction
+
+```solidity
+// Using SHR to extract bytes (alternative to BYTE opcode)
+function extractByte(bytes32 data, uint256 byteIndex) pure returns (uint8) {
+    require(byteIndex < 32, "index out of range");
+
+    // CAREFUL: Byte ordering matters
+    // BYTE(i, x): byte 0 = MSB
+    // SHR: shift from MSB side
+
+    uint256 shift = (31 - byteIndex) * 8;  // Convert to bit shift
+    return uint8((uint256(data) >> shift) & 0xFF);
+}
+```
+
+## Benchmarks
+
+SHR is one of the fastest EVM operations:
+
+**Execution time (relative):**
+- SHR: 1.0x (baseline, fastest tier)
+- SHL/SAR: 1.0x (same tier)
+- DIV: 2.5x
+
+**Gas comparison (right shift by 8):**
+| Method | Gas | Notes |
+|--------|-----|-------|
+| SHR (Constantinople+) | 3 | Native shift |
+| DIV (pre-EIP-145) | 5 | value / 256 |
+| EXP + DIV (variable) | 65+ | value / 2^shift |
+
+**Gas savings:** 2-1612 gas per shift vs pre-EIP-145 methods.
+
+## References
+
+- [EIP-145](https://eips.ethereum.org/EIPS/eip-145) - Bitwise shifting instructions in EVM
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1
+- [EVM Codes - SHR](https://www.evm.codes/#1c)
+
+## Related Documentation
+
+- [SHL (0x1b)](/evm/instructions/bitwise/shl) - Shift left
+- [SAR (0x1d)](/evm/instructions/bitwise/sar) - Arithmetic shift right (signed)
+- [DIV (0x04)](/evm/instructions/arithmetic/div) - Unsigned division
+- [Hardfork](/primitives/hardfork) - Constantinople

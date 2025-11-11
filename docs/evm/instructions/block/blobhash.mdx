@@ -1,0 +1,572 @@
+---
+title: "BLOBHASH (0x49)"
+description: "Get versioned blob hash by index from EIP-4844 blob transaction"
+---
+
+## Overview
+
+**Opcode:** `0x49`
+**Introduced:** Cancun (EIP-4844)
+
+BLOBHASH retrieves a versioned blob hash from the current transaction's blob list by index. This enables proto-danksharding support, allowing contracts to verify blob commitments for Layer 2 data availability.
+
+## Specification
+
+**Stack Input:**
+```
+index (u256)
+```
+
+**Stack Output:**
+```
+versioned_hash (or 0 if out of bounds)
+```
+
+**Gas Cost:** 3 (GasFastestStep)
+
+**Operation:**
+```
+if index < len(tx.blob_versioned_hashes):
+    stack.push(tx.blob_versioned_hashes[index])
+else:
+    stack.push(0)
+```
+
+**Hardfork:** Available from Cancun onwards (EIP-4844)
+
+## Behavior
+
+BLOBHASH retrieves a versioned hash from the transaction's blob array:
+
+```
+Transaction blobs:     [blob0, blob1, blob2]
+Versioned hashes:      [hash0, hash1, hash2]
+
+BLOBHASH(0) → hash0    (32-byte versioned hash)
+BLOBHASH(1) → hash1
+BLOBHASH(2) → hash2
+BLOBHASH(3) → 0        (out of bounds)
+```
+
+Versioned hashes are commitment hashes with a version byte prefix:
+```
+Format: 0x01 || sha256(kzg_commitment)[1:]
+Version: 0x01 (KZG commitments)
+Length: 32 bytes
+```
+
+## Examples
+
+### Basic Usage
+
+```typescript
+import { blobhash } from '@tevm/voltaire/evm/block';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const blobHash0 = new Uint8Array(32);
+blobHash0[0] = 0x01; // Version byte
+// ... rest of hash
+
+const frame = createFrame({
+  stack: [0n], // Query index 0
+  hardfork: 'CANCUN',
+  evm: {
+    blob_versioned_hashes: [blobHash0]
+  }
+});
+
+const err = blobhash(frame);
+console.log(frame.stack); // [hash as u256]
+console.log(frame.gasRemaining); // Original - 3
+```
+
+### Pre-Cancun Error
+
+```typescript
+// Before Cancun hardfork
+const preCancunFrame = createFrame({
+  stack: [0n],
+  hardfork: 'SHANGHAI'
+});
+
+const err = blobhash(preCancunFrame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### Out of Bounds Access
+
+```typescript
+// Query index beyond available blobs
+const frame = createFrame({
+  stack: [5n], // Index 5
+  hardfork: 'CANCUN',
+  evm: {
+    blob_versioned_hashes: [blob0, blob1] // Only 2 blobs
+  }
+});
+
+blobhash(frame);
+console.log(frame.stack); // [0n] - Out of bounds returns 0
+```
+
+### Multiple Blob Access
+
+```typescript
+// Access multiple blobs sequentially
+const frame = createFrame({
+  hardfork: 'CANCUN',
+  evm: {
+    blob_versioned_hashes: [hash0, hash1, hash2]
+  }
+});
+
+// Get first blob hash
+frame.stack.push(0n);
+blobhash(frame);
+const firstHash = frame.stack.pop();
+
+// Get second blob hash
+frame.stack.push(1n);
+blobhash(frame);
+const secondHash = frame.stack.pop();
+
+console.log(`Hash 0: ${firstHash}, Hash 1: ${secondHash}`);
+```
+
+### Index Overflow Handling
+
+```typescript
+// Index larger than usize can represent
+const frame = createFrame({
+  stack: [(1n << 256n) - 1n], // Maximum u256
+  hardfork: 'CANCUN',
+  evm: {
+    blob_versioned_hashes: [hash0]
+  }
+});
+
+blobhash(frame);
+console.log(frame.stack); // [0n] - Safely returns 0
+```
+
+## Gas Cost
+
+**Cost:** 3 gas (GasFastestStep)
+
+BLOBHASH is very cheap, matching the cost of basic arithmetic operations.
+
+**Comparison:**
+- `BLOBHASH`: 3 gas
+- `BLOBBASEFEE`: 2 gas
+- `ADD`, `SUB`: 3 gas
+- `BLOCKHASH`: 20 gas
+
+The low cost enables efficient blob verification without significant overhead.
+
+## Common Usage
+
+### Blob Commitment Verification
+
+```solidity
+contract BlobVerifier {
+    event BlobCommitment(bytes32 versionedHash);
+
+    function verifyBlob(uint256 index, bytes32 expectedHash) external {
+        bytes32 actualHash = blobhash(index);
+        require(actualHash != bytes32(0), "Blob index out of bounds");
+        require(actualHash == expectedHash, "Blob hash mismatch");
+
+        emit BlobCommitment(actualHash);
+    }
+}
+```
+
+### L2 Data Availability
+
+```solidity
+contract L2DataCommitment {
+    mapping(uint256 => bytes32) public batchCommitments;
+    uint256 public batchCounter;
+
+    function submitBatch() external {
+        // L2 sequencer submits batch commitment
+        bytes32 commitment = blobhash(0);
+        require(commitment != bytes32(0), "No blob data");
+
+        batchCommitments[batchCounter] = commitment;
+        batchCounter++;
+
+        emit BatchSubmitted(batchCounter - 1, commitment);
+    }
+
+    event BatchSubmitted(uint256 indexed batchId, bytes32 commitment);
+}
+```
+
+### Multi-Blob Processing
+
+```solidity
+contract MultiBlobProcessor {
+    uint256 public constant MAX_BLOBS_PER_TX = 6; // EIP-4844 limit
+
+    function processBlobTransaction() external returns (bytes32[] memory) {
+        bytes32[] memory hashes = new bytes32[](MAX_BLOBS_PER_TX);
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < MAX_BLOBS_PER_TX; i++) {
+            bytes32 hash = blobhash(i);
+            if (hash == bytes32(0)) break; // No more blobs
+
+            hashes[count] = hash;
+            count++;
+        }
+
+        // Resize array to actual count
+        assembly {
+            mstore(hashes, count)
+        }
+
+        return hashes;
+    }
+}
+```
+
+### Rollup Batch Commitment
+
+```solidity
+contract RollupBatchCommitment {
+    struct Batch {
+        uint256 blockNumber;
+        bytes32 blobHash;
+        bytes32 stateRoot;
+        uint256 timestamp;
+    }
+
+    Batch[] public batches;
+
+    function commitBatch(bytes32 stateRoot) external {
+        bytes32 blobHash = blobhash(0);
+        require(blobHash != bytes32(0), "No blob data");
+
+        batches.push(Batch({
+            blockNumber: block.number,
+            blobHash: blobHash,
+            stateRoot: stateRoot,
+            timestamp: block.timestamp
+        }));
+    }
+
+    function verifyBatch(
+        uint256 batchId,
+        bytes32 expectedBlob
+    ) external view returns (bool) {
+        return batches[batchId].blobHash == expectedBlob;
+    }
+}
+```
+
+### Blob Data Anchoring
+
+```solidity
+contract BlobAnchor {
+    mapping(bytes32 => bool) public anchoredBlobs;
+
+    function anchorBlob(uint256 index) external {
+        bytes32 hash = blobhash(index);
+        require(hash != bytes32(0), "Invalid blob index");
+        require(!anchoredBlobs[hash], "Already anchored");
+
+        anchoredBlobs[hash] = true;
+        emit BlobAnchored(hash, block.number);
+    }
+
+    event BlobAnchored(bytes32 indexed hash, uint256 blockNumber);
+}
+```
+
+## Security Considerations
+
+### Blob Availability Window
+
+Blobs are only available for a limited time (~18 days on Ethereum):
+
+```solidity
+contract BlobExpiry {
+    struct BlobReference {
+        bytes32 hash;
+        uint256 expiryBlock;
+    }
+
+    uint256 constant BLOB_RETENTION_BLOCKS = 4096 * 32; // ~18 days
+
+    function storeBlob(uint256 index) external {
+        bytes32 hash = blobhash(index);
+        require(hash != bytes32(0), "No blob");
+
+        // Blob data expires after retention period
+        uint256 expiry = block.number + BLOB_RETENTION_BLOCKS;
+
+        // Store hash, but blob data won't be retrievable after expiry
+    }
+}
+```
+
+### Index Validation
+
+Always check for zero return (out of bounds):
+
+```solidity
+contract SafeBlobAccess {
+    function safeGetBlob(uint256 index) external view returns (bytes32) {
+        bytes32 hash = blobhash(index);
+        require(hash != bytes32(0), "Blob not found");
+        return hash;
+    }
+
+    // UNSAFE: Doesn't check zero
+    function unsafeGetBlob(uint256 index) external view returns (bytes32) {
+        return blobhash(index); // Could be 0!
+    }
+}
+```
+
+### Commitment vs Data
+
+BLOBHASH returns commitment hash, not actual blob data:
+
+```solidity
+contract BlobMisunderstanding {
+    // WRONG: Cannot access blob data on-chain
+    function getBlobData(uint256 index) external view returns (bytes memory) {
+        bytes32 hash = blobhash(index);
+        // hash is just a commitment, not the data itself!
+        // Actual blob data is NOT available to EVM
+    }
+
+    // CORRECT: Store commitment for off-chain verification
+    function storeCommitment(uint256 index) external returns (bytes32) {
+        bytes32 commitment = blobhash(index);
+        // Off-chain: fetch blob from beacon node
+        // On-chain: verify commitment matches
+        return commitment;
+    }
+}
+```
+
+### Transaction Context
+
+BLOBHASH only works in blob transactions:
+
+```solidity
+contract ContextAware {
+    function checkBlob() external view returns (bool) {
+        bytes32 hash = blobhash(0);
+
+        // In non-blob transaction: returns 0
+        // In blob transaction: returns hash
+        return hash != bytes32(0);
+    }
+}
+```
+
+## EIP-4844 Context
+
+### Blob Transaction Format
+
+```
+Type 3 Transaction (Blob Transaction):
+├─ max_fee_per_gas
+├─ max_priority_fee_per_gas
+├─ max_fee_per_blob_gas
+├─ blob_versioned_hashes[]  ← BLOBHASH accesses this
+└─ blobs[] (not in transaction hash)
+```
+
+### Versioned Hash Format
+
+```
+Versioned Hash (32 bytes):
+├─ Byte 0:    0x01 (version - KZG commitment)
+└─ Bytes 1-31: sha256(kzg_commitment)[1:32]
+```
+
+### Maximum Blobs per Transaction
+
+```solidity
+// EIP-4844 limits
+uint256 constant MAX_BLOBS_PER_BLOCK = 6;
+uint256 constant TARGET_BLOBS_PER_BLOCK = 3;
+uint256 constant BLOB_SIZE = 128 * 1024; // 128 KB per blob
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// BLOBHASH opcode (0x49) - Get versioned blob hash (EIP-4844, Cancun+)
+pub fn blobhash(frame: *FrameType) FrameType.EvmError!void {
+    const evm = frame.getEvm();
+
+    // EIP-4844: BLOBHASH was introduced in Cancun hardfork
+    if (evm.hardfork.isBefore(.CANCUN)) return error.InvalidOpcode;
+
+    try frame.consumeGas(GasConstants.GasFastestStep);
+    const index = try frame.popStack();
+
+    // Return the blob hash at the given index, or 0 if out of bounds
+    const hash_value = if (std.math.cast(usize, index)) |index_usize| blk: {
+        if (index_usize < evm.blob_versioned_hashes.len) {
+            // Convert the 32-byte blob hash to u256
+            const blob_hash = evm.blob_versioned_hashes[index_usize];
+            var value: u256 = 0;
+            for (blob_hash) |byte| {
+                value = (value << 8) | byte;
+            }
+            break :blk value;
+        } else {
+            break :blk 0;
+        }
+    } else blk: {
+        // Index too large to represent as usize
+        break :blk 0;
+    };
+
+    try frame.pushStack(hash_value);
+    frame.pc += 1;
+}
+```
+</Tab>
+
+<Tab title="TypeScript">
+```typescript
+/**
+ * BLOBHASH opcode (0x49) - Get versioned blob hash
+ * Available: Cancun+ (EIP-4844)
+ */
+export function blobhash(frame: BrandedFrame): EvmError | null {
+  // Check hardfork availability
+  if (frame.evm.hardfork.isBefore('CANCUN')) {
+    return { type: "InvalidOpcode" };
+  }
+
+  // Consume gas (GasFastestStep = 3)
+  frame.gasRemaining -= 3n;
+  if (frame.gasRemaining < 0n) {
+    frame.gasRemaining = 0n;
+    return { type: "OutOfGas" };
+  }
+
+  // Pop index
+  if (frame.stack.length < 1) return { type: "StackUnderflow" };
+  const index = frame.stack.pop();
+
+  // Get blob hash at index, or 0 if out of bounds
+  let hashValue = 0n;
+
+  if (index < BigInt(frame.evm.blob_versioned_hashes.length)) {
+    const indexNum = Number(index);
+    const blobHash = frame.evm.blob_versioned_hashes[indexNum];
+
+    // Convert 32-byte hash to u256
+    for (const byte of blobHash) {
+      hashValue = (hashValue << 8n) | BigInt(byte);
+    }
+  }
+  // else: out of bounds, hashValue remains 0
+
+  // Push result
+  if (frame.stack.length >= 1024) return { type: "StackOverflow" };
+  frame.stack.push(hashValue);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+</Tabs>
+
+## Edge Cases
+
+### Pre-Cancun Execution
+
+```typescript
+// Before Cancun: InvalidOpcode
+const frame = createFrame({
+  stack: [0n],
+  hardfork: 'SHANGHAI'
+});
+
+const err = blobhash(frame);
+console.log(err); // { type: "InvalidOpcode" }
+```
+
+### No Blobs in Transaction
+
+```typescript
+// Non-blob transaction (empty array)
+const frame = createFrame({
+  stack: [0n],
+  hardfork: 'CANCUN',
+  evm: {
+    blob_versioned_hashes: []
+  }
+});
+
+blobhash(frame);
+console.log(frame.stack); // [0n]
+```
+
+### Maximum Blob Index
+
+```typescript
+// Access last blob in max-blob transaction
+const frame = createFrame({
+  stack: [5n], // Index 5 (6th blob, 0-indexed)
+  hardfork: 'CANCUN',
+  evm: {
+    blob_versioned_hashes: new Array(6).fill(mockHash)
+  }
+});
+
+blobhash(frame);
+console.log(frame.stack); // [hash as u256]
+```
+
+### Index Overflow
+
+```typescript
+// Index too large for usize
+const frame = createFrame({
+  stack: [BigInt(Number.MAX_SAFE_INTEGER) + 1000n],
+  hardfork: 'CANCUN',
+  evm: { blob_versioned_hashes: [hash0] }
+});
+
+blobhash(frame);
+console.log(frame.stack); // [0n] - Safely handled
+```
+
+## Benchmarks
+
+**Performance:**
+- Index bounds check: O(1)
+- Array access: O(1)
+- Hash to u256 conversion: O(32)
+
+**Gas efficiency:**
+- 3 gas per query
+- ~333,333 queries per million gas
+
+## Related Instructions
+
+- **[BLOBBASEFEE (0x4A)](/evm/instructions/block/blobbasefee)** - Get blob base fee
+- **[BLOCKHASH (0x40)](/evm/instructions/block/blockhash)** - Get block hash
+- **[CALLDATALOAD (0x35)](/evm/instructions/context/calldataload)** - Get calldata
+
+## References
+
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) - Shard Blob Transactions
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.3
+- [EVM Codes - BLOBHASH](https://www.evm.codes/#49)
+- [EIP-4844 FAQ](https://notes.ethereum.org/@vbuterin/proto_danksharding_faq)

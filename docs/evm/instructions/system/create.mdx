@@ -1,0 +1,566 @@
+---
+title: "CREATE (0xf0)"
+description: "Create new contract with computed address based on sender and nonce"
+---
+
+## Overview
+
+**Opcode:** `0xf0`
+**Introduced:** Frontier (EVM genesis)
+
+CREATE deploys a new contract by executing initialization code and storing the resulting runtime bytecode. The new contract's address is deterministically computed from the creator's address and nonce.
+
+## Specification
+
+**Stack Input:**
+```
+value   (wei to send)
+offset  (memory offset of init code)
+length  (size of init code)
+```
+
+**Stack Output:**
+```
+address  (deployed contract address, or 0 if failed)
+```
+
+**Gas Cost:** 32,000 + init_code_cost + memory_expansion + deployment_cost
+
+**Operation:**
+```
+address = keccak256(rlp([sender_address, sender_nonce]))[12:]
+success = deploy(address, init_code, value, gas * 63/64)
+push(success ? address : 0)
+```
+
+## Behavior
+
+CREATE executes a multi-step deployment process:
+
+1. **Pop stack arguments:** value, memory offset, length
+2. **Charge gas:** Base 32,000 + init code cost + memory expansion
+3. **Read init code** from memory at offset:length
+4. **Compute address:** `keccak256(rlp([sender, nonce]))[12:]`
+5. **Forward gas:** Up to 63/64 of remaining gas (EIP-150)
+6. **Execute init code** in new context with forwarded gas
+7. **Store runtime code** returned by init code (charged 200 gas/byte)
+8. **Push address** to stack (0 if deployment failed)
+9. **Refund unused gas** from child execution
+10. **Clear return_data** on success, set to child output on failure
+
+**Key rules:**
+- Cannot be called in static context (EIP-214)
+- Init code executes with empty storage/code
+- Nonce incremented before address computation
+- Init code size limited to 49,152 bytes (EIP-3860)
+- Runtime code size limited to 24,576 bytes (EIP-170)
+
+## Examples
+
+### Basic Contract Creation
+
+```typescript
+import { CREATE } from '@tevm/voltaire/evm/system';
+import { createFrame } from '@tevm/voltaire/evm/Frame';
+
+const frame = createFrame({
+  gasRemaining: 1000000n,
+  address: Address.from("0x1234..."),
+  nonce: 5n
+});
+
+// Init code: PUSH1 0x42 PUSH1 0x00 MSTORE PUSH1 0x01 PUSH1 0x1f RETURN
+// Returns single byte: 0x42
+const initCode = new Uint8Array([
+  0x60, 0x42,        // PUSH1 0x42
+  0x60, 0x00,        // PUSH1 0x00
+  0x52,              // MSTORE
+  0x60, 0x01,        // PUSH1 0x01 (length)
+  0x60, 0x1f,        // PUSH1 0x1f (offset)
+  0xf3               // RETURN
+]);
+
+// Write init code to memory
+for (let i = 0; i < initCode.length; i++) {
+  frame.memory.set(i, initCode[i]);
+}
+
+// Stack: [value=0, offset=0, length=9]
+frame.stack.push(9n);       // length
+frame.stack.push(0n);       // offset
+frame.stack.push(0n);       // value
+
+const err = CREATE(frame);
+
+console.log(err);                    // null (success)
+console.log(frame.stack[0]);         // address (non-zero if successful)
+console.log(frame.return_data);      // empty on success
+```
+
+### Address Prediction
+
+```typescript
+import { Address } from '@tevm/voltaire/primitives';
+import { keccak256 } from '@tevm/voltaire/crypto';
+import { RLP } from '@tevm/voltaire/primitives';
+
+function predictAddress(creator: Address, nonce: bigint): Address {
+  // CREATE address = keccak256(rlp([sender, nonce]))[12:]
+  const encoded = RLP.encode([
+    creator,
+    nonce
+  ]);
+
+  const hash = keccak256(encoded);
+  return Address.fromBytes(hash.slice(12));
+}
+
+const creator = Address.from("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
+const nonce = 5n;
+
+const predictedAddr = predictAddress(creator, nonce);
+console.log(predictedAddr);  // Address where contract will be deployed
+```
+
+### Factory Contract
+
+```solidity
+contract Factory {
+    event Deployed(address indexed contractAddress, address indexed creator);
+
+    // Deploy new contract and return address
+    function deployContract(bytes memory initCode) external returns (address) {
+        address contractAddr;
+
+        assembly {
+            // CREATE(value, offset, length)
+            contractAddr := create(
+                0,                              // No ETH sent
+                add(initCode, 0x20),           // Skip length prefix
+                mload(initCode)                 // Init code length
+            )
+
+            // Revert if deployment failed
+            if iszero(contractAddr) {
+                revert(0, 0)
+            }
+        }
+
+        emit Deployed(contractAddr, msg.sender);
+        return contractAddr;
+    }
+
+    // Predict next deployment address
+    function predictNextAddress() external view returns (address) {
+        // Address of this contract
+        address factory = address(this);
+
+        // Next nonce will be current nonce + 1
+        uint256 nonce = vm.getNonce(factory) + 1;
+
+        // Compute CREATE address
+        return address(uint160(uint256(keccak256(abi.encodePacked(
+            bytes1(0xd6),  // RLP prefix for [address, nonce] with nonce < 128
+            bytes1(0x94),  // RLP prefix for 20-byte address
+            factory,
+            bytes1(uint8(nonce))
+        )))));
+    }
+}
+```
+
+### Constructor with Arguments
+
+```solidity
+contract Example {
+    uint256 public value;
+    address public owner;
+
+    constructor(uint256 _value) {
+        value = _value;
+        owner = msg.sender;
+    }
+}
+
+contract Deployer {
+    function deploy(uint256 constructorArg) external returns (address) {
+        // Get creation bytecode with encoded constructor args
+        bytes memory bytecode = abi.encodePacked(
+            type(Example).creationCode,
+            abi.encode(constructorArg)
+        );
+
+        address deployed;
+        assembly {
+            deployed := create(0, add(bytecode, 32), mload(bytecode))
+        }
+
+        return deployed;
+    }
+}
+```
+
+## Gas Cost
+
+**Total cost:** 32,000 + init_code_cost + memory_expansion + deployment_cost
+
+### Base Cost: 32,000 gas
+
+Fixed cost for CREATE operation.
+
+### Init Code Cost (EIP-3860)
+
+**Shanghai+:** 2 gas per word (32 bytes)
+
+```
+init_code_cost = 2 * ceil(init_code_length / 32)
+```
+
+**Pre-Shanghai:** No init code cost.
+
+### Memory Expansion
+
+Dynamic cost for reading init code from memory:
+
+```
+words_needed = ceil((offset + length) / 32)
+expansion_cost = (words_needed)² / 512 + 3 * (words_needed - current_words)
+```
+
+### Deployment Cost
+
+**Runtime code storage:** 200 gas per byte of returned code
+
+```
+deployment_cost = 200 * runtime_code_length
+```
+
+### Gas Forwarding (EIP-150)
+
+**Tangerine Whistle+:** Forward up to 63/64 of remaining gas:
+
+```
+gas_after_charge = remaining_gas - total_cost
+max_forwarded = gas_after_charge - (gas_after_charge / 64)
+```
+
+**Pre-Tangerine Whistle:** Forward all remaining gas after charging.
+
+### Example Calculation
+
+```typescript
+// Deploy contract with 100-byte init code, returns 50-byte runtime code
+const initCodeLength = 100;
+const runtimeCodeLength = 50;
+
+// Base cost
+const baseCost = 32000;
+
+// Init code cost (Shanghai+): 2 gas/word
+const initCodeWords = Math.ceil(initCodeLength / 32);  // 4 words
+const initCodeCost = 2 * initCodeWords;  // 8 gas
+
+// Memory expansion (assume clean memory)
+const memWords = Math.ceil(initCodeLength / 32);  // 4 words
+const memCost = Math.floor(memWords ** 2 / 512) + 3 * memWords;  // 12 gas
+
+// Deployment cost: 200 gas/byte
+const deploymentCost = 200 * runtimeCodeLength;  // 10,000 gas
+
+// Total charged to caller
+const totalCost = baseCost + initCodeCost + memCost;  // 32,020 gas
+
+// Gas forwarded to init code (assume 100,000 remaining after charge)
+const remainingAfterCharge = 100000 - totalCost;  // 67,980 gas
+const forwardedGas = remainingAfterCharge - Math.floor(remainingAfterCharge / 64);  // 66,918 gas
+
+// Total gas consumed (if init code uses all forwarded gas)
+const totalConsumed = totalCost + forwardedGas + deploymentCost;  // 108,938 gas
+```
+
+## Common Usage
+
+### Contract Factory
+
+```solidity
+contract TokenFactory {
+    Token[] public deployedTokens;
+
+    function createToken(
+        string memory name,
+        string memory symbol,
+        uint256 initialSupply
+    ) external returns (address) {
+        Token token = new Token(name, symbol, initialSupply, msg.sender);
+        deployedTokens.push(token);
+        return address(token);
+    }
+
+    function getDeployedTokens() external view returns (Token[] memory) {
+        return deployedTokens;
+    }
+}
+
+contract Token {
+    string public name;
+    string public symbol;
+    uint256 public totalSupply;
+    address public creator;
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _initialSupply,
+        address _creator
+    ) {
+        name = _name;
+        symbol = _symbol;
+        totalSupply = _initialSupply;
+        creator = _creator;
+    }
+}
+```
+
+### Clone Pattern (Minimal Proxy)
+
+```solidity
+contract Cloner {
+    // Minimal proxy bytecode (EIP-1167)
+    function clone(address implementation) external returns (address instance) {
+        bytes20 targetBytes = bytes20(implementation);
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
+            mstore(add(ptr, 0x14), targetBytes)
+            mstore(add(ptr, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
+            instance := create(0, ptr, 0x37)
+        }
+        require(instance != address(0), "Clone failed");
+    }
+}
+```
+
+### Upgradeable Contract
+
+```solidity
+contract UpgradeableContract {
+    address public implementation;
+
+    function upgrade(bytes memory newCode) external {
+        // Deploy new implementation
+        address newImpl;
+        assembly {
+            newImpl := create(0, add(newCode, 32), mload(newCode))
+        }
+        require(newImpl != address(0), "Deployment failed");
+
+        implementation = newImpl;
+    }
+}
+```
+
+## Security
+
+### Nonce Prediction
+
+CREATE addresses are predictable - can pre-compute future deployment addresses:
+
+```solidity
+// VULNERABLE: Relying on address unpredictability
+function deploy() external returns (address) {
+    Contract c = new Contract();
+    // Assuming address(c) is unpredictable - WRONG!
+    return address(c);
+}
+```
+
+**Risk:** Attacker can pre-compute addresses and exploit race conditions.
+
+**Mitigation:** Use CREATE2 if address unpredictability is required.
+
+### Deployment Failure
+
+CREATE returns 0 on failure - must check result:
+
+```solidity
+// VULNERABLE: Not checking deployment result
+function deployUnchecked() external {
+    address deployed;
+    assembly {
+        deployed := create(0, 0, 0)
+    }
+    // deployed might be 0!
+    Contract(deployed).initialize();  // Will revert with confusing error
+}
+
+// SAFE: Check deployment result
+function deploySafe() external {
+    address deployed;
+    assembly {
+        deployed := create(0, add(bytecode, 32), mload(bytecode))
+    }
+    require(deployed != address(0), "Deployment failed");
+    Contract(deployed).initialize();
+}
+```
+
+### Constructor Reentrancy
+
+Init code can make external calls - reentrancy risk during construction:
+
+```solidity
+contract Victim {
+    mapping(address => bool) public initialized;
+
+    function register() external {
+        // Deploy new contract
+        address deployed = address(new Malicious());
+
+        // VULNERABLE: Malicious constructor could re-enter here
+        initialized[deployed] = true;
+    }
+}
+
+contract Malicious {
+    constructor() {
+        // Re-enter during construction!
+        Victim(msg.sender).register();  // Reentrancy attack
+    }
+}
+```
+
+**Mitigation:** Use reentrancy guards, check-effects-interactions.
+
+### Gas Griefing
+
+Init code controls gas consumption - griefing risk:
+
+```solidity
+// VULNERABLE: Unbounded gas consumption
+function deployUserContract(bytes memory code) external {
+    address deployed;
+    assembly {
+        deployed := create(0, add(code, 32), mload(code))
+    }
+    // User can provide gas-heavy init code
+}
+
+// BETTER: Limit gas forwarded
+function deployUserContractSafe(bytes memory code) external {
+    address deployed;
+    assembly {
+        // Forward limited gas
+        deployed := create(0, add(code, 32), mload(code))
+    }
+    // Gas limit naturally bounds init code execution
+}
+```
+
+### Code Size Limits
+
+**Init code:** Max 49,152 bytes (EIP-3860, Shanghai+)
+**Runtime code:** Max 24,576 bytes (EIP-170, Spurious Dragon+)
+
+```solidity
+// Pre-deploy check
+require(initCode.length <= 49152, "Init code too large");
+
+// Runtime code check happens during deployment
+// Will fail if init code returns >24,576 bytes
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="Zig">
+```zig
+/// CREATE opcode (0xf0) - Create a new contract
+pub fn create(frame: *FrameType) FrameType.EvmError!void {
+    // EIP-214: CREATE cannot be executed in static call context
+    if (frame.is_static) return error.StaticCallViolation;
+
+    // Clear return_data at the start
+    frame.return_data = &[_]u8{};
+
+    const value = try frame.popStack();
+    const offset = try frame.popStack();
+    const length = try frame.popStack();
+
+    const len = std.math.cast(u32, length) orelse return error.OutOfBounds;
+    const gas_cost = frame.createGasCost(len);
+    try frame.consumeGas(gas_cost);
+
+    // Read init code from memory
+    var init_code: []const u8 = &.{};
+    if (length > 0 and length <= std.math.maxInt(u32)) {
+        const off = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+
+        // Charge for memory expansion
+        const end_bytes = @as(u64, off) + @as(u64, len);
+        const mem_cost = frame.memoryExpansionCost(end_bytes);
+        try frame.consumeGas(mem_cost);
+
+        // Update memory size
+        const aligned = wordAlignedSize(end_bytes);
+        if (aligned > frame.memory_size) frame.memory_size = aligned;
+
+        const code = try frame.allocator.alloc(u8, len);
+        var j: u32 = 0;
+        while (j < len) : (j += 1) {
+            const addr = try add_u32(off, j);
+            code[j] = frame.readMemory(addr);
+        }
+        init_code = code;
+    }
+
+    const evm = frame.getEvm();
+
+    // Calculate available gas (EIP-150: 63/64 rule)
+    const remaining_gas = @as(u64, @intCast(@max(frame.gas_remaining, 0)));
+    const max_gas = if (evm.hardfork.isAtLeast(.TANGERINE_WHISTLE))
+        remaining_gas - (remaining_gas / 64)
+    else
+        remaining_gas;
+
+    // Perform CREATE
+    const result = try evm.inner_create(value, init_code, max_gas, null);
+
+    // Update gas
+    const gas_used = max_gas - result.gas_left;
+    const gas_used_i64 = std.math.cast(i64, gas_used) orelse {
+        frame.gas_remaining = 0;
+        return error.OutOfGas;
+    };
+    frame.gas_remaining -= gas_used_i64;
+
+    // Set return_data
+    if (result.success) {
+        frame.return_data = &[_]u8{};
+    } else {
+        frame.return_data = result.output;
+    }
+
+    // Push address onto stack (0 if failed)
+    const addr_u256 = if (result.success) blk: {
+        var val: u256 = 0;
+        for (result.address.bytes) |b| {
+            val = (val << 8) | b;
+        }
+        break :blk val;
+    } else 0;
+    try frame.pushStack(addr_u256);
+
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 7 (Contract Creation)
+- **[EIP-150](https://eips.ethereum.org/EIPS/eip-150)** - Gas cost changes (63/64 rule)
+- **[EIP-170](https://eips.ethereum.org/EIPS/eip-170)** - Contract code size limit (24,576 bytes)
+- **[EIP-214](https://eips.ethereum.org/EIPS/eip-214)** - STATICCALL restrictions
+- **[EIP-3860](https://eips.ethereum.org/EIPS/eip-3860)** - Init code size limit (49,152 bytes)
+- **[evm.codes - CREATE](https://www.evm.codes/#f0)** - Interactive reference

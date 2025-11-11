@@ -1,0 +1,276 @@
+---
+title: "System Instructions"
+description: "EVM opcodes for contract creation, message calls, and account management"
+---
+
+## Overview
+
+System instructions enable contracts to interact with external accounts, create new contracts, and manage account lifecycle. These are the most complex EVM opcodes, handling gas forwarding, context preservation, and state modifications.
+
+## Instructions
+
+### Contract Creation
+
+- **[CREATE (0xf0)](/evm/instructions/system/create)** - Create contract at computed address
+- **[CREATE2 (0xf5)](/evm/instructions/system/create2)** - Create contract at deterministic address (Constantinople+)
+
+### Message Calls
+
+- **[CALL (0xf1)](/evm/instructions/system/call)** - External call with value transfer
+- **[CALLCODE (0xf2)](/evm/instructions/system/callcode)** - Execute code in current context (deprecated)
+- **[DELEGATECALL (0xf4)](/evm/instructions/system/delegatecall)** - Execute code preserving msg.sender/value (Homestead+)
+- **[STATICCALL (0xfa)](/evm/instructions/system/staticcall)** - Read-only call (Byzantium+)
+
+### Account Management
+
+- **[SELFDESTRUCT (0xff)](/evm/instructions/system/selfdestruct)** - Transfer balance and mark for deletion
+
+## Key Concepts
+
+### Gas Forwarding (EIP-150)
+
+**63/64 Rule (Tangerine Whistle+):** Caller retains 1/64th of remaining gas, forwards up to 63/64:
+
+```
+max_forwarded = remaining_gas - (remaining_gas / 64)
+```
+
+**Pre-Tangerine Whistle:** Forward all remaining gas.
+
+### Call Variants
+
+| Opcode | msg.sender | msg.value | Storage | State Changes | Introduced |
+|--------|-----------|-----------|---------|---------------|-----------|
+| CALL | caller | specified | callee | allowed | Frontier |
+| CALLCODE | caller | specified | caller | allowed | Frontier |
+| DELEGATECALL | preserved | preserved | caller | allowed | Homestead |
+| STATICCALL | caller | 0 | callee | forbidden | Byzantium |
+
+### Value Transfer Gas Costs
+
+**With non-zero value:**
+- Base call cost: 700 gas (Tangerine Whistle+)
+- Value transfer: +9,000 gas
+- Stipend to callee: +2,300 gas (free)
+- New account: +25,000 gas (if recipient doesn't exist)
+
+**Without value:**
+- Base call cost: 700 gas (Tangerine Whistle+)
+- Access cost: 100 (warm) or 2,600 (cold) gas (Berlin+)
+
+### Address Computation
+
+**CREATE:**
+```
+address = keccak256(rlp([sender, nonce]))[12:]
+```
+
+**CREATE2:**
+```
+address = keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]
+```
+
+## Security Considerations
+
+### Reentrancy
+
+External calls enable reentrancy attacks:
+
+```solidity
+// VULNERABLE: State change after external call
+function withdraw(uint256 amount) external {
+    require(balances[msg.sender] >= amount);
+
+    // External call before state update
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success);
+
+    balances[msg.sender] -= amount;  // Too late!
+}
+```
+
+**Mitigation: Checks-Effects-Interactions pattern:**
+
+```solidity
+function withdraw(uint256 amount) external {
+    require(balances[msg.sender] >= amount);
+
+    // Update state BEFORE external call
+    balances[msg.sender] -= amount;
+
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success);
+}
+```
+
+### CREATE2 Address Collision
+
+CREATE2 enables deterministic addresses but introduces collision risks:
+
+```solidity
+// Attack: Deploy different code at same address
+// 1. Deploy contract A with init_code_1
+// 2. SELFDESTRUCT contract A (pre-Cancun)
+// 3. Deploy contract B with init_code_2 using same salt
+// Result: Different code at same address!
+```
+
+**EIP-6780 (Cancun) mitigation:** SELFDESTRUCT only deletes if created in same transaction.
+
+### CALLCODE Deprecation
+
+CALLCODE is deprecated - use DELEGATECALL instead:
+
+```solidity
+// ❌ CALLCODE: msg.value preserved but semantics confusing
+assembly {
+    callcode(gas(), target, value, in, insize, out, outsize)
+}
+
+// ✅ DELEGATECALL: Clear semantics, preserves full context
+assembly {
+    delegatecall(gas(), target, in, insize, out, outsize)
+}
+```
+
+### SELFDESTRUCT Changes (EIP-6780)
+
+**Pre-Cancun:** SELFDESTRUCT deletes code, storage, nonce.
+
+**Cancun+:** SELFDESTRUCT only transfers balance (unless created same tx).
+
+```solidity
+// Pre-Cancun: Code/storage deleted at end of tx
+selfdestruct(beneficiary);
+// Contract unusable after tx
+
+// Cancun+: Code/storage persist
+selfdestruct(beneficiary);
+// Contract still functional after tx!
+```
+
+## Gas Cost Summary
+
+### Call Instructions
+
+| Operation | Base | Value Transfer | New Account | Cold Access | Memory |
+|-----------|------|----------------|-------------|-------------|--------|
+| CALL | 700 | +9,000 | +25,000 | +2,600 | dynamic |
+| CALLCODE | 700 | +9,000 | - | +2,600 | dynamic |
+| DELEGATECALL | 700 | - | - | +2,600 | dynamic |
+| STATICCALL | 700 | - | - | +2,600 | dynamic |
+
+### Creation Instructions
+
+| Operation | Base | Init Code | Memory | Notes |
+|-----------|------|-----------|--------|-------|
+| CREATE | 32,000 | +6/byte (EIP-3860) | dynamic | +200/byte codesize |
+| CREATE2 | 32,000 | +6/byte + 6/byte (hashing) | dynamic | +200/byte codesize |
+
+### SELFDESTRUCT
+
+- Base: 5,000 gas
+- Cold beneficiary: +2,600 gas (Berlin+)
+- New account: +25,000 gas (if beneficiary doesn't exist)
+- Refund: 24,000 gas (removed in London)
+
+## Common Patterns
+
+### Safe External Call
+
+```solidity
+function safeCall(address target, bytes memory data) internal returns (bool) {
+    // 1. Update state first (reentrancy protection)
+    // 2. Limit gas forwarded
+    // 3. Handle return data safely
+
+    (bool success, bytes memory returnData) = target.call{
+        gas: 100000  // Limit forwarded gas
+    }(data);
+
+    if (!success) {
+        // Handle error (revert or return false)
+        if (returnData.length > 0) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+        return false;
+    }
+
+    return true;
+}
+```
+
+### Factory Pattern (CREATE2)
+
+```solidity
+contract Factory {
+    function deploy(bytes32 salt) external returns (address) {
+        bytes memory bytecode = type(Contract).creationCode;
+
+        address addr;
+        assembly {
+            addr := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        require(addr != address(0), "Deploy failed");
+
+        return addr;
+    }
+
+    function predictAddress(bytes32 salt) external view returns (address) {
+        bytes32 hash = keccak256(abi.encodePacked(
+            bytes1(0xff),
+            address(this),
+            salt,
+            keccak256(type(Contract).creationCode)
+        ));
+        return address(uint160(uint256(hash)));
+    }
+}
+```
+
+### Proxy Pattern (DELEGATECALL)
+
+```solidity
+contract Proxy {
+    address public implementation;
+
+    fallback() external payable {
+        address impl = implementation;
+        assembly {
+            // Copy calldata
+            calldatacopy(0, 0, calldatasize())
+
+            // Delegatecall to implementation
+            let result := delegatecall(
+                gas(),
+                impl,
+                0,
+                calldatasize(),
+                0,
+                0
+            )
+
+            // Copy return data
+            returndatacopy(0, 0, returndatasize())
+
+            // Return or revert
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+```
+
+## References
+
+- **[Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf)** - Section 9.4.4 (System Operations)
+- **[EIP-150](https://eips.ethereum.org/EIPS/eip-150)** - Gas cost changes (63/64 rule)
+- **[EIP-214](https://eips.ethereum.org/EIPS/eip-214)** - STATICCALL opcode
+- **[EIP-1014](https://eips.ethereum.org/EIPS/eip-1014)** - CREATE2 opcode
+- **[EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)** - Access list gas costs
+- **[EIP-3860](https://eips.ethereum.org/EIPS/eip-3860)** - Init code size limit
+- **[EIP-6780](https://eips.ethereum.org/EIPS/eip-6780)** - SELFDESTRUCT behavior change
+- **[evm.codes](https://www.evm.codes/)** - Interactive opcode reference
