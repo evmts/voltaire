@@ -9,15 +9,17 @@ import { validateBlob } from "./validateBlob.js";
  *
  * Generates proof that polynomial(z) = y.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array} blob - Blob data (131072 bytes)
  * @param {Uint8Array} z - Evaluation point (32 bytes)
  * @returns {{proof: Uint8Array, y: Uint8Array}} Proof and evaluation result y
  * @throws {KzgNotInitializedError} If trusted setup not loaded
  * @throws {KzgInvalidBlobError} If blob is invalid
  * @throws {KzgError} If proof computation fails
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { computeKzgProof } from './crypto/KZG/index.js';
  * const blob = new Uint8Array(131072);
  * const z = new Uint8Array(32);
  * const { proof, y } = computeKzgProof(blob, z);

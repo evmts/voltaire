@@ -1,16 +1,22 @@
 import { recoverAddress } from "./recoverAddress.js";
 
 /**
- * Verify typed data signature
+ * Verify EIP-712 typed data signature against expected signer address.
  *
- * @param {import('./BrandedEIP712.js').Signature} signature - ECDSA signature
+ * Uses constant-time comparison to prevent timing attacks.
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('./BrandedEIP712.js').Signature} signature - ECDSA signature to verify
  * @param {import('./BrandedEIP712.js').TypedData} typedData - Typed data that was signed
  * @param {import('../../primitives/Address/index.js').BrandedAddress} address - Expected signer address
- * @returns {boolean} True if signature is valid
- *
+ * @returns {boolean} True if signature is valid and matches the address, false otherwise
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import * as EIP712 from './crypto/EIP712/index.js';
  * const valid = EIP712.verifyTypedData(signature, typedData, signerAddress);
+ * if (valid) console.log('Signature verified');
  * ```
  */
 export function verifyTypedData(signature, typedData, address) {

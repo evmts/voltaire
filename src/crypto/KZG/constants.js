@@ -1,14 +1,41 @@
 /**
  * EIP-4844 Blob Constants
  *
- * @constant {number} BYTES_PER_BLOB - Total bytes per blob (128 KB)
- * @constant {number} BYTES_PER_COMMITMENT - Bytes per KZG commitment (BLS12-381 G1 point)
- * @constant {number} BYTES_PER_PROOF - Bytes per KZG proof (BLS12-381 G1 point)
- * @constant {number} BYTES_PER_FIELD_ELEMENT - Bytes per field element
- * @constant {number} FIELD_ELEMENTS_PER_BLOB - Number of field elements per blob
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ */
+
+/**
+ * Total bytes per blob (128 KB)
+ * @type {number}
+ * @since 0.0.0
  */
 export const BYTES_PER_BLOB = 131072;
+
+/**
+ * Bytes per KZG commitment (BLS12-381 G1 point)
+ * @type {number}
+ * @since 0.0.0
+ */
 export const BYTES_PER_COMMITMENT = 48;
+
+/**
+ * Bytes per KZG proof (BLS12-381 G1 point)
+ * @type {number}
+ * @since 0.0.0
+ */
 export const BYTES_PER_PROOF = 48;
+
+/**
+ * Bytes per field element
+ * @type {number}
+ * @since 0.0.0
+ */
 export const BYTES_PER_FIELD_ELEMENT = 32;
+
+/**
+ * Number of field elements per blob
+ * @type {number}
+ * @since 0.0.0
+ */
 export const FIELD_ELEMENTS_PER_BLOB = 4096;

@@ -4,15 +4,21 @@ import { Eip712Error } from "./errors.js";
 import { hashTypedData } from "./hashTypedData.js";
 
 /**
- * Recover address from typed data signature
+ * Recover Ethereum address from EIP-712 typed data signature.
  *
- * @param {import('./BrandedEIP712.js').Signature} signature - ECDSA signature
+ * Uses ECDSA public key recovery to determine the signer's address.
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @param {import('./BrandedEIP712.js').Signature} signature - ECDSA signature with r, s, v components
  * @param {import('./BrandedEIP712.js').TypedData} typedData - Typed data that was signed
- * @returns {import('../../primitives/Address/index.js').BrandedAddress} Recovered address
- *
+ * @returns {import('../../primitives/Address/index.js').BrandedAddress} 20-byte recovered Ethereum address
+ * @throws {Eip712Error} If signature recovery fails or public key format is invalid
  * @example
- * ```typescript
+ * ```javascript
+ * import * as EIP712 from './crypto/EIP712/index.js';
  * const address = EIP712.recoverAddress(signature, typedData);
+ * console.log('Signer:', address);
  * ```
  */
 export function recoverAddress(signature, typedData) {

@@ -8,15 +8,17 @@ import { validateBlob } from "./validateBlob.js";
  *
  * More efficient than verifying proofs individually.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array[]} blobs - Array of blobs
  * @param {Uint8Array[]} commitments - Array of commitments
  * @param {Uint8Array[]} proofs - Array of proofs
  * @returns {boolean} true if all proofs are valid, false otherwise
  * @throws {KzgNotInitializedError} If trusted setup not loaded
  * @throws {KzgError} If arrays have different lengths or verification fails
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { verifyBlobKzgProofBatch } from './crypto/KZG/index.js';
  * const valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
  * ```
  */

@@ -33,6 +33,18 @@ export {
  * KZG Commitments for EIP-4844
  *
  * Factory function for KZG operations
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @throws {Error} Always throws - use static methods instead
+ * @example
+ * ```javascript
+ * import { KZG } from './crypto/KZG/index.js';
+ * // Initialize trusted setup
+ * KZG.loadTrustedSetup();
+ * // Generate commitment
+ * const commitment = KZG.blobToKzgCommitment(blob);
+ * ```
  */
 export function KZG() {
 	throw new Error(

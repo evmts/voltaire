@@ -10,11 +10,14 @@ let initialized = false;
  * Uses embedded trusted setup from c-kzg by default.
  * Call this once during application startup.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {string} [filePath] - Optional path to trusted setup file
+ * @returns {void}
  * @throws {KzgError} If loading fails
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { loadTrustedSetup } from './crypto/KZG/index.js';
  * // Use embedded setup (recommended)
  * loadTrustedSetup();
  *

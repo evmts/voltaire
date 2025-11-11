@@ -9,6 +9,8 @@ import { validateBlob } from "./validateBlob.js";
  *
  * Efficient verification that commitment matches blob.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array} blob - Blob data (131072 bytes)
  * @param {Uint8Array} commitment - KZG commitment (48 bytes)
  * @param {Uint8Array} proof - KZG proof (48 bytes)
@@ -16,9 +18,9 @@ import { validateBlob } from "./validateBlob.js";
  * @throws {KzgNotInitializedError} If trusted setup not loaded
  * @throws {KzgInvalidBlobError} If blob is invalid
  * @throws {KzgError} If verification fails
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { verifyBlobKzgProof } from './crypto/KZG/index.js';
  * const valid = verifyBlobKzgProof(blob, commitment, proof);
  * ```
  */

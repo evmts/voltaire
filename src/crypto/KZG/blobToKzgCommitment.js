@@ -8,14 +8,16 @@ import { validateBlob } from "./validateBlob.js";
  *
  * Computes polynomial commitment to blob data using KZG scheme.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array} blob - Blob data (131072 bytes)
  * @returns {Uint8Array} KZG commitment (48 bytes)
  * @throws {KzgNotInitializedError} If trusted setup not loaded
  * @throws {KzgInvalidBlobError} If blob is invalid
  * @throws {KzgError} If commitment computation fails
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { blobToKzgCommitment } from './crypto/KZG/index.js';
  * const blob = new Uint8Array(131072);
  * const commitment = blobToKzgCommitment(blob);
  * ```

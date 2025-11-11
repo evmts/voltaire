@@ -1,5 +1,8 @@
 /**
  * Base KZG error
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class KzgError extends Error {
 	constructor(message: string) {
@@ -10,6 +13,9 @@ export class KzgError extends Error {
 
 /**
  * Trusted setup not initialized error
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class KzgNotInitializedError extends Error {
 	constructor(message = "KZG trusted setup not initialized") {
@@ -20,6 +26,9 @@ export class KzgNotInitializedError extends Error {
 
 /**
  * Invalid blob error
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class KzgInvalidBlobError extends Error {
 	constructor(message: string) {
@@ -30,6 +39,9 @@ export class KzgInvalidBlobError extends Error {
 
 /**
  * Verification error
+ *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  */
 export class KzgVerificationError extends Error {
 	constructor(message: string) {

@@ -12,6 +12,8 @@ import { getInitialized } from "./loadTrustedSetup.js";
  *
  * Verifies that commitment C corresponds to polynomial P where P(z) = y.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
  * @param {Uint8Array} commitment - KZG commitment (48 bytes)
  * @param {Uint8Array} z - Evaluation point (32 bytes)
  * @param {Uint8Array} y - Claimed evaluation result (32 bytes)
@@ -19,9 +21,9 @@ import { getInitialized } from "./loadTrustedSetup.js";
  * @returns {boolean} true if proof is valid, false otherwise
  * @throws {KzgNotInitializedError} If trusted setup not loaded
  * @throws {KzgError} If verification fails due to invalid inputs
- *
  * @example
- * ```typescript
+ * ```javascript
+ * import { verifyKzgProof } from './crypto/KZG/index.js';
  * const valid = verifyKzgProof(commitment, z, y, proof);
  * if (!valid) {
  *   throw new Error('Invalid proof');

@@ -8,8 +8,13 @@ import { setInitialized } from "./loadTrustedSetup.js";
  * This function is provided for API compatibility and only resets
  * the initialized flag.
  *
+ * @see https://voltaire.tevm.sh/crypto for crypto documentation
+ * @since 0.0.0
+ * @returns {void}
+ * @throws {never}
  * @example
- * ```typescript
+ * ```javascript
+ * import { freeTrustedSetup } from './crypto/KZG/index.js';
  * // Reset initialization state
  * freeTrustedSetup();
  * ```
