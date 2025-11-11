@@ -1,0 +1,592 @@
+---
+title: "LOG2 (0xa2)"
+description: "Emit log with 2 indexed topics"
+---
+
+## Overview
+
+**Opcode:** `0xa2`
+**Introduced:** Frontier (EVM genesis)
+
+LOG2 emits a log entry with two indexed topics. This is the standard form for binary relationships like token transfers (from → to) or state transitions with two parameters.
+
+## Specification
+
+**Stack Input:**
+```
+offset (top)
+length
+topic0
+topic1
+```
+
+**Stack Output:**
+```
+(none)
+```
+
+**Gas Cost:** `375 + (2 × 375) + (8 × data_length) + memory_expansion_cost`
+
+**Operation:**
+```
+data = memory[offset : offset + length]
+topic0 = stack.pop()
+topic1 = stack.pop()
+log_entry = { address: msg.sender, topics: [topic0, topic1], data: data }
+append log_entry to logs
+```
+
+## Behavior
+
+LOG2 pops four values from the stack:
+
+1. **Offset**: Starting position in memory (256-bit value)
+2. **Length**: Number of bytes to read from memory (256-bit value)
+3. **Topic0**: First indexed parameter (256-bit value)
+4. **Topic1**: Second indexed parameter (256-bit value)
+
+Topics are stored in the order they're popped, enabling efficient filtering by either or both topics.
+
+### Topic Values
+
+Both topics are preserved as full 256-bit values. For dynamic types, keccak256 hashes are used:
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value);
+// topic0 = from (address, zero-extended to 256 bits)
+// topic1 = to (address, zero-extended to 256 bits)
+// data = abi.encode(value)
+```
+
+### Memory Expansion
+
+Memory expands to word boundaries with associated gas costs.
+
+### Static Call Protection
+
+LOG2 cannot execute in static call context (EIP-214).
+
+## Examples
+
+### Transfer Event (Most Common)
+
+```typescript
+import { handler_0xa2_LOG2 } from '@tevm/voltaire/evm/log';
+
+const frame = createFrame({
+  address: "0x1234567890123456789012345678901234567890",
+  stack: [
+    0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbn,  // topic1 (to)
+    0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan,  // topic0 (from)
+    0n,  // length
+    0n,  // offset
+  ],
+  gasRemaining: 1000000n,
+});
+
+const err = handler_0xa2_LOG2(frame);
+console.log(err); // null (success)
+console.log(frame.logs[0].topics);
+// [0xaaa...aaan, 0xbbb...bbbn]
+console.log(frame.gasRemaining); // 999000n (375 + 750 topic cost)
+```
+
+### Transfer with Value Data
+
+```typescript
+const frame = createFrame({
+  address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  memory: new Map([
+    [0, 0x00], [1, 0x00], [2, 0x00], [3, 0x64],  // 100 in decimal
+  ]),
+  stack: [
+    0x2222222222222222222222222222222222222222222222222222222222222222n,
+    0x1111111111111111111111111111111111111111111111111111111111111111n,
+    4n,    // length (value = 100)
+    0n,    // offset
+  ],
+  gasRemaining: 1000000n,
+});
+
+handler_0xa2_LOG2(frame);
+
+const log = frame.logs[0];
+console.log(log.topics);
+// [0x1111...1111n, 0x2222...2222n]
+console.log(log.data);
+// Uint8Array(4) [0, 0, 0, 100]
+console.log(frame.gasRemaining);
+// 999383n (375 + 750 + 32 data + 3 memory)
+```
+
+### ERC20 Token Transfer
+
+```solidity
+pragma solidity ^0.8.0;
+
+contract ERC20 {
+  event Transfer(address indexed from, address indexed to, uint256 value);
+
+  mapping(address => uint256) public balances;
+
+  function transfer(address to, uint256 amount) public returns (bool) {
+    require(balances[msg.sender] >= amount, "Insufficient balance");
+
+    balances[msg.sender] -= amount;
+    balances[to] += amount;
+
+    // Compiler generates LOG2 for this event
+    // topic0 = from (msg.sender)
+    // topic1 = to
+    // data = abi.encode(amount)
+    emit Transfer(msg.sender, to, amount);
+
+    return true;
+  }
+}
+```
+
+### Swap Event
+
+```solidity
+event Swap(
+  address indexed sender,
+  address indexed recipient,
+  uint256 amount0In,
+  uint256 amount1Out
+);
+
+function swap(address to, uint256 minOut) public {
+  uint256 amountOut = getAmountOut(msg.value);
+  require(amountOut >= minOut);
+
+  // LOG2: topic0=sender, topic1=recipient
+  //       data=abi.encode(amountIn, amountOut)
+  emit Swap(msg.sender, to, msg.value, amountOut);
+}
+```
+
+### State Transition Event
+
+```solidity
+event StateChanged(address indexed from, address indexed to);
+
+contract StateMachine {
+  mapping(bytes32 => address) public currentState;
+
+  function transition(bytes32 id, address newState) public {
+    address oldState = currentState[id];
+    currentState[id] = newState;
+
+    emit StateChanged(oldState, newState);  // LOG2
+  }
+}
+```
+
+## Gas Cost
+
+**Base Cost:** 375 gas
+
+**Topic Cost:** 375 gas per topic = 750 gas (for 2 topics)
+
+**Data Cost:** 8 gas per byte
+
+**Memory Expansion:** Proportional to new memory range
+
+**Examples:**
+- Empty data: 375 + 750 = 1125 gas
+- 1 byte: 1125 + 8 = 1133 gas
+- 32 bytes: 1125 + 256 = 1381 gas
+- 64 bytes: 1125 + 512 + 3 (memory expansion) = 1640 gas
+- 256 bytes: 1125 + 2048 + 6 (memory expansion) = 3179 gas
+
+## Edge Cases
+
+### Topic Boundary Values
+
+```typescript
+const frame = createFrame({
+  stack: [
+    (1n << 256n) - 1n,  // Max uint256 topic1
+    0n,                 // Min uint256 topic0
+    0n,                 // length
+    0n,                 // offset
+  ],
+  gasRemaining: 1000000n,
+});
+handler_0xa2_LOG2(frame);
+const log = frame.logs[0];
+console.log(log.topics); // [0n, (1n << 256n) - 1n]
+```
+
+### Identical Topics
+
+```typescript
+const topic = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdefn;
+const frame = createFrame({
+  stack: [topic, topic, 0n, 0n],
+  gasRemaining: 1000000n,
+});
+handler_0xa2_LOG2(frame);
+const log = frame.logs[0];
+console.log(log.topics); // [topic, topic] (allowed, both identical)
+```
+
+### Large Data
+
+```typescript
+const frame = createFrame({
+  stack: [0xfffn, 0xfffn, 10000n, 0n],
+  gasRemaining: 100000n,
+});
+const err = handler_0xa2_LOG2(frame);
+// Gas: 1125 + 80000 (data) + memory expansion ≈ 81125
+// Result: OutOfGas (insufficient)
+```
+
+### Stack Underflow
+
+```typescript
+const frame = createFrame({ stack: [0n, 0n, 0n] });  // Missing topic1
+const err = handler_0xa2_LOG2(frame);
+console.log(err); // { type: "StackUnderflow" }
+```
+
+### Out of Gas
+
+```typescript
+const frame = createFrame({
+  stack: [0xfffn, 0xfffn, 0n, 0n],
+  gasRemaining: 1124n,  // Not enough for base + both topics
+});
+const err = handler_0xa2_LOG2(frame);
+console.log(err); // { type: "OutOfGas" }
+```
+
+## Common Usage
+
+### Event Filtering
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value);
+
+contract Token {
+  function transfer(address to, uint256 amount) public {
+    // ...
+    emit Transfer(msg.sender, to, amount);
+  }
+}
+```
+
+Off-chain filtering:
+
+```typescript
+// Listen for all transfers FROM a specific address
+const logs = await provider.getLogs({
+  address: token.address,
+  topics: [
+    keccak256("Transfer(address,indexed address,indexed uint256)"),
+    "0xfrom_address"  // First topic filter
+  ]
+});
+
+// Listen for all transfers TO a specific address
+const logsTo = await provider.getLogs({
+  address: token.address,
+  topics: [
+    keccak256("Transfer(address,indexed address,indexed uint256)"),
+    null,             // Any from
+    "0xto_address"    // Second topic filter
+  ]
+});
+
+// Listen for transfers between specific addresses
+const logsBetween = await provider.getLogs({
+  address: token.address,
+  topics: [
+    keccak256("Transfer(address,indexed address,indexed uint256)"),
+    "0xfrom_address",  // Specific from
+    "0xto_address"     // Specific to
+  ]
+});
+```
+
+### Dual Authorization
+
+```solidity
+event Approved(address indexed owner, address indexed spender, uint256 value);
+
+contract ERC20 {
+  function approve(address spender, uint256 amount) public returns (bool) {
+    allowance[msg.sender][spender] = amount;
+    emit Approved(msg.sender, spender, amount);  // LOG2
+    return true;
+  }
+}
+```
+
+### Pair Operations
+
+```solidity
+event LiquidityAdded(
+  address indexed provider,
+  address indexed token,
+  uint256 amount
+);
+
+contract LiquidityPool {
+  function addLiquidity(address token, uint256 amount) public {
+    // ...
+    emit LiquidityAdded(msg.sender, token, amount);  // LOG2
+  }
+}
+```
+
+## Security
+
+### Topic Filtering Security
+
+Topics enable efficient filtering, but are visible off-chain:
+
+```solidity
+// Sensitive data should NOT be in topics
+event BadPractice(address indexed user, string indexed password);
+// password hash is visible to anyone reading logs
+
+// Better: hash dynamic data
+event GoodPractice(address indexed user, bytes32 passwordHash);
+```
+
+### Address Topic Semantics
+
+When filtering by address topics, ensure zero-extension understanding:
+
+```solidity
+event Log(address indexed addr);
+// Topic = addr as uint256 (20 bytes zero-extended to 256 bits)
+
+// Off-chain filtering must match zero-extended form
+const logs = await getLogs({
+  topics: ["0x0000000000000000000000001234567890123456789012345678901234567890"]
+});
+```
+
+### Static Call Context
+
+LOG2 reverts in view/pure functions:
+
+```solidity
+// WRONG
+function badView(address a, address b) external view {
+  emit SomeEvent(a, b);  // Reverts
+}
+
+// CORRECT
+function goodNonView(address a, address b) external {
+  emit SomeEvent(a, b);  // Works
+}
+```
+
+## Implementation
+
+<Tabs>
+<Tab title="TypeScript">
+```typescript
+/**
+ * LOG2 opcode (0xa2) - Emit log with 2 indexed topics
+ */
+export function handler_0xa2_LOG2(frame: BrandedFrame): EvmError | null {
+  if (frame.isStatic) {
+    return { type: "WriteProtection" };
+  }
+
+  if (frame.stack.length < 4) {
+    return { type: "StackUnderflow" };
+  }
+
+  const offset = frame.stack.pop();
+  const length = frame.stack.pop();
+  const topic0 = frame.stack.pop();
+  const topic1 = frame.stack.pop();
+
+  if (offset > Number.MAX_SAFE_INTEGER || length > Number.MAX_SAFE_INTEGER) {
+    return { type: "OutOfBounds" };
+  }
+
+  const offsetNum = Number(offset);
+  const lengthNum = Number(length);
+
+  // Gas: 375 base + 750 topics + 8 per byte data
+  const logGas = 375n + 750n;
+  const dataGas = BigInt(lengthNum) * 8n;
+  const totalGas = logGas + dataGas;
+
+  // Memory expansion
+  if (lengthNum > 0) {
+    const endByte = offsetNum + lengthNum;
+    const newMemWords = Math.ceil(endByte / 32);
+    const newMemSize = newMemWords * 32;
+    const memExpansion = calculateMemoryExpansion(frame.memorySize, newMemSize);
+    frame.memorySize = newMemSize;
+    frame.gasRemaining -= BigInt(memExpansion);
+  }
+
+  frame.gasRemaining -= totalGas;
+  if (frame.gasRemaining < 0n) {
+    return { type: "OutOfGas" };
+  }
+
+  // Read data
+  const data = new Uint8Array(lengthNum);
+  for (let i = 0; i < lengthNum; i++) {
+    data[i] = frame.memory.get(offsetNum + i) ?? 0;
+  }
+
+  // Create log entry
+  const logEntry = {
+    address: frame.address,
+    topics: [topic0, topic1],
+    data,
+  };
+
+  if (!frame.logs) frame.logs = [];
+  frame.logs.push(logEntry);
+
+  frame.pc += 1;
+  return null;
+}
+```
+</Tab>
+
+<Tab title="Zig">
+```zig
+/// LOG2 opcode (0xa2) - Emit log with 2 indexed topics
+pub fn log2(frame: *FrameType) FrameType.EvmError!void {
+    if (frame.is_static) return error.StaticCallViolation;
+
+    const offset = try frame.popStack();
+    const length = try frame.popStack();
+    const topic0 = try frame.popStack();
+    const topic1 = try frame.popStack();
+
+    const off_u32 = std.math.cast(u32, offset) orelse return error.OutOfBounds;
+    const length_u32 = std.math.cast(u32, length) orelse return error.OutOfBounds;
+
+    // Gas: 375 base + 375 per topic (2 topics = 750) + 8 per data byte
+    const log_cost = 375 + 750 + @as(u64, length_u32) * 8;
+    try frame.consumeGas(log_cost);
+
+    if (length_u32 > 0) {
+        const end_bytes: u64 = @as(u64, off_u32) + @as(u64, length_u32);
+        const mem_cost = frame.memoryExpansionCost(end_bytes);
+        try frame.consumeGas(mem_cost);
+        const aligned = wordAlignedSize(end_bytes);
+        if (aligned > frame.memory_size) frame.memory_size = aligned;
+    }
+
+    const evm = frame.getEvm();
+
+    // Read data
+    var data_slice: []u8 = &[_]u8{};
+    if (length_u32 > 0) {
+        const alloc = evm.arena.allocator();
+        const buf = try alloc.alloc(u8, length_u32);
+        var idx: u32 = 0;
+        while (idx < length_u32) : (idx += 1) {
+            buf[idx] = frame.readMemory(off_u32 + idx);
+        }
+        data_slice = buf;
+    }
+
+    // Create and append log with 2 topics
+    var topics_buf = try evm.arena.allocator().alloc(u256, 2);
+    topics_buf[0] = topic0;
+    topics_buf[1] = topic1;
+
+    const log_entry = call_result.Log{
+        .address = frame.address,
+        .topics = topics_buf,
+        .data = data_slice,
+    };
+
+    try evm.logs.append(evm.arena.allocator(), log_entry);
+    frame.pc += 1;
+}
+```
+</Tab>
+</Tabs>
+
+## Testing
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { handler_0xa2_LOG2 } from './0xa2_LOG2.js';
+
+describe('LOG2 (0xa2)', () => {
+  it('emits log with 2 topics and empty data', () => {
+    const topic0 = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan;
+    const topic1 = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbn;
+    const frame = createFrame({
+      stack: [topic1, topic0, 0n, 0n],
+      gasRemaining: 1000000n,
+    });
+    const err = handler_0xa2_LOG2(frame);
+    expect(err).toBeNull();
+    expect(frame.logs).toHaveLength(1);
+    expect(frame.logs[0].topics).toEqual([topic0, topic1]);
+    expect(frame.gasRemaining).toBe(998875n);
+  });
+
+  it('emits log with 2 topics and data', () => {
+    const frame = createFrame({
+      memory: new Map([[0, 0xde], [1, 0xad]]),
+      stack: [0x2222n, 0x1111n, 2n, 0n],
+      gasRemaining: 1000000n,
+    });
+    handler_0xa2_LOG2(frame);
+    const log = frame.logs[0];
+    expect(log.topics).toEqual([0x1111n, 0x2222n]);
+    expect(log.data).toEqual(new Uint8Array([0xde, 0xad]));
+  });
+
+  it('returns WriteProtection in static context', () => {
+    const frame = createFrame({ isStatic: true, stack: [0n, 0n, 0n, 0n] });
+    const err = handler_0xa2_LOG2(frame);
+    expect(err).toEqual({ type: "WriteProtection" });
+  });
+
+  it('returns StackUnderflow with 3 items', () => {
+    const frame = createFrame({ stack: [0n, 0n, 0n] });
+    const err = handler_0xa2_LOG2(frame);
+    expect(err).toEqual({ type: "StackUnderflow" });
+  });
+
+  it('handles max values for both topics', () => {
+    const maxUint256 = (1n << 256n) - 1n;
+    const frame = createFrame({
+      stack: [maxUint256, maxUint256, 0n, 0n],
+      gasRemaining: 1000000n,
+    });
+    handler_0xa2_LOG2(frame);
+    expect(frame.logs[0].topics).toEqual([maxUint256, maxUint256]);
+  });
+
+  it('expands memory correctly with large data', () => {
+    const frame = createFrame({
+      stack: [0xfffn, 0xfffn, 100n, 50n],
+      gasRemaining: 1000000n,
+    });
+    handler_0xa2_LOG2(frame);
+    // Memory expands to cover offset 50 + length 100 = 150 bytes
+    // Word-aligned to 160 bytes (5 words * 32)
+    expect(frame.memorySize).toBe(160);
+  });
+});
+```
+
+## References
+
+- [LOG2 Instruction (evm.codes)](https://www.evm.codes/#a2)
+- [EIP-214: New opcode STATICCALL](https://eips.ethereum.org/EIPS/eip-214)
+- [Solidity Events with Multiple Indexed Parameters](https://docs.soliditylang.org/en/latest/contracts.html#events)
+- [Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 9.4.1 (Logging)
