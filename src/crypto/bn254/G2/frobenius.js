@@ -13,13 +13,17 @@ const frob_y_coeff = Fp2.create(
 /**
  * Frobenius endomorphism for G2
  *
+ * @see https://voltaire.tevm.sh/crypto for BN254 cryptography documentation
+ * @since 0.0.0
  * @param {import('../BrandedG2Point.js').BrandedG2Point} point - Point
  * @param {bigint} power - Number of times to apply frobenius
  * @returns {import('../BrandedG2Point.js').BrandedG2Point} Frobenius map result
- *
+ * @throws {never}
  * @example
- * ```typescript
- * const frob = frobenius(point, 1n);
+ * ```javascript
+ * import * as G2 from './crypto/bn254/G2/index.js';
+ * const point = G2.generator();
+ * const frob = G2.frobenius(point, 1n);
  * ```
  */
 export function frobenius(point, power = 1n) {
