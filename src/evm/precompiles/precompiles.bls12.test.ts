@@ -922,11 +922,7 @@ describe("BLS12-381 Map Fp to G1 (0x12)", () => {
 
 	test("via execute with address", () => {
 		const input = new Uint8Array(64);
-		const result = execute(
-			PrecompileAddress.BLS12_MAP_FP_TO_G1,
-			input,
-			10000n,
-		);
+		const result = execute(PrecompileAddress.BLS12_MAP_FP_TO_G1, input, 10000n);
 		expect(result.success).toBe(true);
 		expect(result.gasUsed).toBe(5500n);
 	});

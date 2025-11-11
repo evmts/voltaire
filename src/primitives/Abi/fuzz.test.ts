@@ -18,28 +18,52 @@ describe("ABI Fuzz Tests", () => {
 	// Helper: generate random hex string
 	function randomHex(length: number): `0x${string}` {
 		const bytes = randomBytes(length);
-		return `0x${Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')}`;
+		return `0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 	}
 
 	// Helper: generate random ABI type
 	function randomAbiType(): string {
 		const types = [
-			"uint256", "uint128", "uint64", "uint32", "uint16", "uint8",
-			"int256", "int128", "int64", "int32", "int16", "int8",
-			"address", "bool", "bytes", "string",
-			"bytes32", "bytes16", "bytes8", "bytes4", "bytes1",
-			"uint256[]", "address[]", "bool[]", "bytes[]",
+			"uint256",
+			"uint128",
+			"uint64",
+			"uint32",
+			"uint16",
+			"uint8",
+			"int256",
+			"int128",
+			"int64",
+			"int32",
+			"int16",
+			"int8",
+			"address",
+			"bool",
+			"bytes",
+			"string",
+			"bytes32",
+			"bytes16",
+			"bytes8",
+			"bytes4",
+			"bytes1",
+			"uint256[]",
+			"address[]",
+			"bool[]",
+			"bytes[]",
 		];
 		return types[Math.floor(Math.random() * types.length)];
 	}
 
 	describe("Encode/Decode Round-trip Fuzz", () => {
 		it("should handle random uint256 values", () => {
-			const params: readonly AbiParameter[] = [{ type: "uint256", name: "value" }];
+			const params: readonly AbiParameter[] = [
+				{ type: "uint256", name: "value" },
+			];
 
 			for (let i = 0; i < 100; i++) {
 				// Random value between 0 and 2^256-1
-				const randomValue = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+				const randomValue = BigInt(
+					Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
+				);
 				const values = [randomValue];
 
 				try {
@@ -55,7 +79,9 @@ describe("ABI Fuzz Tests", () => {
 		});
 
 		it("should handle random addresses", () => {
-			const params: readonly AbiParameter[] = [{ type: "address", name: "addr" }];
+			const params: readonly AbiParameter[] = [
+				{ type: "address", name: "addr" },
+			];
 
 			for (let i = 0; i < 50; i++) {
 				const randomAddr = randomHex(20);
@@ -94,8 +120,8 @@ describe("ABI Fuzz Tests", () => {
 				// Random string of varying length
 				const length = Math.floor(Math.random() * 200);
 				const randomStr = Array.from({ length }, () =>
-					String.fromCharCode(32 + Math.floor(Math.random() * 94))
-				).join('');
+					String.fromCharCode(32 + Math.floor(Math.random() * 94)),
+				).join("");
 				const values = [randomStr];
 
 				const encoded = Abi.encodeParameters(params, values);
@@ -125,7 +151,9 @@ describe("ABI Fuzz Tests", () => {
 			const sizes = [1, 4, 8, 16, 32];
 
 			for (const size of sizes) {
-				const params: readonly AbiParameter[] = [{ type: `bytes${size}`, name: "data" }];
+				const params: readonly AbiParameter[] = [
+					{ type: `bytes${size}`, name: "data" },
+				];
 
 				for (let i = 0; i < 20; i++) {
 					const randomData = randomBytes(size);
@@ -141,12 +169,14 @@ describe("ABI Fuzz Tests", () => {
 		});
 
 		it("should handle random arrays", () => {
-			const params: readonly AbiParameter[] = [{ type: "uint256[]", name: "values" }];
+			const params: readonly AbiParameter[] = [
+				{ type: "uint256[]", name: "values" },
+			];
 
 			for (let i = 0; i < 30; i++) {
 				const arrayLength = Math.floor(Math.random() * 20);
 				const randomArray = Array.from({ length: arrayLength }, () =>
-					BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER))
+					BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)),
 				);
 				const values = [randomArray];
 
@@ -160,7 +190,9 @@ describe("ABI Fuzz Tests", () => {
 
 	describe("Malformed Input Fuzz", () => {
 		it("should reject random malformed hex data", () => {
-			const params: readonly AbiParameter[] = [{ type: "uint256", name: "value" }];
+			const params: readonly AbiParameter[] = [
+				{ type: "uint256", name: "value" },
+			];
 
 			for (let i = 0; i < 50; i++) {
 				// Random length, often not aligned to 32 bytes
@@ -184,7 +216,11 @@ describe("ABI Fuzz Tests", () => {
 			const encoded = Abi.encodeParameters(params, values);
 
 			// Try decoding progressively truncated data
-			for (let truncateBytes = 1; truncateBytes < encoded.length / 2; truncateBytes += 4) {
+			for (
+				let truncateBytes = 1;
+				truncateBytes < encoded.length / 2;
+				truncateBytes += 4
+			) {
 				const truncated = encoded.slice(0, -truncateBytes * 2) as `0x${string}`;
 
 				try {
@@ -208,7 +244,9 @@ describe("ABI Fuzz Tests", () => {
 			];
 
 			for (const invalidType of invalidTypes) {
-				const params: readonly AbiParameter[] = [{ type: invalidType, name: "value" }];
+				const params: readonly AbiParameter[] = [
+					{ type: invalidType, name: "value" },
+				];
 
 				try {
 					Abi.encodeParameters(params, [0]);
@@ -261,7 +299,9 @@ describe("ABI Fuzz Tests", () => {
 
 	describe("Edge Case Fuzz", () => {
 		it("should handle maximum uint256 values", () => {
-			const params: readonly AbiParameter[] = [{ type: "uint256", name: "value" }];
+			const params: readonly AbiParameter[] = [
+				{ type: "uint256", name: "value" },
+			];
 			const maxValues = [
 				0n,
 				1n,
@@ -278,7 +318,13 @@ describe("ABI Fuzz Tests", () => {
 		});
 
 		it("should handle empty arrays", () => {
-			const arrayTypes = ["uint256[]", "address[]", "bool[]", "bytes[]", "string[]"];
+			const arrayTypes = [
+				"uint256[]",
+				"address[]",
+				"bool[]",
+				"bytes[]",
+				"string[]",
+			];
 
 			for (const type of arrayTypes) {
 				const params: readonly AbiParameter[] = [{ type, name: "arr" }];
@@ -292,7 +338,9 @@ describe("ABI Fuzz Tests", () => {
 		});
 
 		it("should handle very long arrays", () => {
-			const params: readonly AbiParameter[] = [{ type: "uint256[]", name: "values" }];
+			const params: readonly AbiParameter[] = [
+				{ type: "uint256[]", name: "values" },
+			];
 
 			// Test with progressively larger arrays
 			for (const length of [10, 50, 100, 200]) {
@@ -371,10 +419,7 @@ describe("ABI Fuzz Tests", () => {
 
 			// Tuple values should be arrays, not objects
 			const values = [
-				[
-					[42n, "0x1234567890123456789012345678901234567890"],
-					true,
-				],
+				[[42n, "0x1234567890123456789012345678901234567890"], true],
 			];
 
 			const encoded = Abi.encodeParameters(params, values);
@@ -395,10 +440,13 @@ describe("ABI Fuzz Tests", () => {
 			];
 
 			for (let i = 0; i < 20; i++) {
-				const number = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
-				const text = Array.from({ length: Math.floor(Math.random() * 50) }, () =>
-					String.fromCharCode(32 + Math.floor(Math.random() * 94))
-				).join('');
+				const number = BigInt(
+					Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
+				);
+				const text = Array.from(
+					{ length: Math.floor(Math.random() * 50) },
+					() => String.fromCharCode(32 + Math.floor(Math.random() * 94)),
+				).join("");
 				const addr = randomHex(20);
 				const data = randomBytes(Math.floor(Math.random() * 100));
 				const flag = Math.random() > 0.5;
@@ -421,8 +469,18 @@ describe("ABI Fuzz Tests", () => {
 	describe("Boundary Condition Fuzz", () => {
 		it("should handle zero values", () => {
 			const intTypes = [
-				"uint8", "uint16", "uint32", "uint64", "uint128", "uint256",
-				"int8", "int16", "int32", "int64", "int128", "int256",
+				"uint8",
+				"uint16",
+				"uint32",
+				"uint64",
+				"uint128",
+				"uint256",
+				"int8",
+				"int16",
+				"int32",
+				"int64",
+				"int128",
+				"int256",
 			];
 
 			for (const type of intTypes) {

@@ -743,11 +743,7 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 
 		it("authorization with max chain ID", () => {
 			const maxChainId = 2n ** 64n - 1n;
-			const hash = authorizationSigningHash(
-				maxChainId,
-				new Uint8Array(20),
-				0n,
-			);
+			const hash = authorizationSigningHash(maxChainId, new Uint8Array(20), 0n);
 			expect(hash).toHaveLength(32);
 		});
 
@@ -760,10 +756,10 @@ describe("WASM Loader - Additional Tests (Untested Functions)", () => {
 
 	describe("Integration - Cross-Function Tests", () => {
 		it("blob encoding with ABI-encoded data", () => {
-			const abiData = abiEncodeParameters(["uint256", "address"], [
-				"42",
-				"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-			]);
+			const abiData = abiEncodeParameters(
+				["uint256", "address"],
+				["42", "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"],
+			);
 			const blob = blobFromData(abiData);
 			const decoded = blobToData(blob);
 			expect(decoded).toEqual(abiData);

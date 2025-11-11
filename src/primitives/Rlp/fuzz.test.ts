@@ -231,7 +231,11 @@ describe("RLP Fuzz Tests", () => {
 				// Create non-canonical long form
 				const payload = canonicalEncoded.slice(1);
 				if (payload.length < 56) {
-					const nonCanonical = new Uint8Array([0xf8, payload.length, ...payload]);
+					const nonCanonical = new Uint8Array([
+						0xf8,
+						payload.length,
+						...payload,
+					]);
 					expect(() => Rlp.decode(nonCanonical)).toThrow();
 				}
 			}
@@ -325,11 +329,16 @@ describe("RLP Fuzz Tests", () => {
 	describe("Boundary Conditions Fuzz", () => {
 		it("should handle exact boundary sizes for length encoding", () => {
 			const boundaries = [
-				0, 1, // Empty and single byte
-				55, 56, // Short vs long string boundary
-				127, 128, // Single byte value boundary
-				255, 256, // One vs two byte length
-				65535, 65536, // Two vs three byte length (if supported)
+				0,
+				1, // Empty and single byte
+				55,
+				56, // Short vs long string boundary
+				127,
+				128, // Single byte value boundary
+				255,
+				256, // One vs two byte length
+				65535,
+				65536, // Two vs three byte length (if supported)
 			];
 
 			for (const size of boundaries.filter((s) => s <= 10000)) {
@@ -399,7 +408,8 @@ describe("RLP Fuzz Tests", () => {
 		it("should reject length that exceeds buffer size", () => {
 			for (let i = 0; i < 50; i++) {
 				const actualLength = Math.floor(Math.random() * 50) + 10;
-				const claimedLength = actualLength + Math.floor(Math.random() * 100) + 50;
+				const claimedLength =
+					actualLength + Math.floor(Math.random() * 100) + 50;
 
 				// Create buffer claiming to be longer than it is
 				if (claimedLength < 256) {
@@ -478,7 +488,10 @@ describe("RLP Fuzz Tests", () => {
 				}
 
 				// Concatenate all encoded values
-				const totalLength = encodedValues.reduce((sum, arr) => sum + arr.length, 0);
+				const totalLength = encodedValues.reduce(
+					(sum, arr) => sum + arr.length,
+					0,
+				);
 				const stream = new Uint8Array(totalLength);
 				let offset = 0;
 				for (const encoded of encodedValues) {

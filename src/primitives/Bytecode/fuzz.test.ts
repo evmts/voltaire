@@ -201,7 +201,12 @@ describe("Bytecode Fuzz: Metadata section parsing", () => {
 			const mainCode = randomBytes(100);
 			const metadataLen = 0x20 + Math.floor(Math.random() * 0x20); // 0x20-0x3f
 			const code = bc(
-				new Uint8Array([...mainCode, ...randomBytes(metadataLen - 2), 0x00, metadataLen]),
+				new Uint8Array([
+					...mainCode,
+					...randomBytes(metadataLen - 2),
+					0x00,
+					metadataLen,
+				]),
 			);
 			expect(() => Bytecode.hasMetadata(code)).not.toThrow();
 			expect(() => Bytecode.stripMetadata(code)).not.toThrow();
@@ -223,7 +228,9 @@ describe("Bytecode Fuzz: Metadata section parsing", () => {
 		const validLengths = [0x20, 0x25, 0x30, 0x33, 0x40];
 		for (const len of validLengths) {
 			const mainCode = randomBytes(50);
-			const code = bc(new Uint8Array([...mainCode, ...randomBytes(len - 2), 0x00, len]));
+			const code = bc(
+				new Uint8Array([...mainCode, ...randomBytes(len - 2), 0x00, len]),
+			);
 			expect(Bytecode.hasMetadata(code)).toBe(true);
 			const stripped = Bytecode.stripMetadata(code);
 			expect(stripped.length).toBe(mainCode.length);
@@ -317,7 +324,9 @@ describe("Bytecode Fuzz: Stack analysis edge cases", () => {
 	it("handles stack analysis with various initial depths", () => {
 		const code = bc(randomBytes(50));
 		for (let depth = 0; depth <= 10; depth++) {
-			expect(() => Bytecode.analyzeStack(code, { initialDepth: depth })).not.toThrow();
+			expect(() =>
+				Bytecode.analyzeStack(code, { initialDepth: depth }),
+			).not.toThrow();
 		}
 	});
 
@@ -337,8 +346,11 @@ describe("Bytecode Fuzz: Stack analysis edge cases", () => {
 			}
 			// Add random DUP/SWAP
 			for (let i = 0; i < 10; i++) {
-				const op = Math.random() < 0.5 ? 0x80 + Math.floor(Math.random() * 16) : // DUP1-DUP16
-					0x90 + Math.floor(Math.random() * 16); // SWAP1-SWAP16
+				const op =
+					Math.random() < 0.5
+						? 0x80 + Math.floor(Math.random() * 16)
+						: // DUP1-DUP16
+							0x90 + Math.floor(Math.random() * 16); // SWAP1-SWAP16
 				parts.push(op);
 			}
 			const code = bc(new Uint8Array(parts));
@@ -440,7 +452,10 @@ describe("Bytecode Fuzz: Fusion pattern detection", () => {
 			const parts: number[] = [];
 			for (let i = 0; i < 10; i++) {
 				parts.push(0x60, randomByte()); // PUSH1
-				parts.push(arithmeticOps[Math.floor(Math.random() * arithmeticOps.length)] ?? 0x01);
+				parts.push(
+					arithmeticOps[Math.floor(Math.random() * arithmeticOps.length)] ??
+						0x01,
+				);
 			}
 			const code = bc(new Uint8Array(parts));
 			const fusions = Bytecode.detectFusions(code);
@@ -453,7 +468,11 @@ describe("Bytecode Fuzz: Fusion pattern detection", () => {
 			const parts: number[] = [];
 			for (let i = 0; i < 20; i++) {
 				const isDup = Math.random() < 0.5;
-				parts.push(isDup ? 0x80 + Math.floor(Math.random() * 16) : 0x90 + Math.floor(Math.random() * 16));
+				parts.push(
+					isDup
+						? 0x80 + Math.floor(Math.random() * 16)
+						: 0x90 + Math.floor(Math.random() * 16),
+				);
 			}
 			const code = bc(new Uint8Array(parts));
 			expect(() => Bytecode.detectFusions(code)).not.toThrow();
@@ -631,7 +650,7 @@ describe("Bytecode Fuzz: Combined stress tests", () => {
 			// All 0xff
 			new Uint8Array(1000).fill(0xff),
 			// Alternating
-			new Uint8Array(1000).map((_, i) => i % 2 === 0 ? 0x00 : 0xff),
+			new Uint8Array(1000).map((_, i) => (i % 2 === 0 ? 0x00 : 0xff)),
 			// All JUMPDEST
 			new Uint8Array(1000).fill(0x5b),
 			// All PUSH1
