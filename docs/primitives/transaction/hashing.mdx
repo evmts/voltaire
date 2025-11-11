@@ -11,24 +11,23 @@ Keccak256 hashing for transaction identification and signing.
 
 Compute transaction hash (keccak256 of serialized transaction).
 
+<Tabs>
+<Tab title="Namespace API">
+
 ```typescript
 function hash(tx: Any): BrandedHash
 ```
 
-### Parameters
-
+**Parameters:**
 - `tx: Any` - Any transaction type
 
-### Returns
+**Returns:** `BrandedHash` - 32-byte keccak256 hash
 
-`BrandedHash` - 32-byte keccak256 hash
-
-### Throws
-
+**Throws:**
 - `Error("Unknown transaction type")` - If transaction type is invalid
 - `Error("Not implemented")` - If type-specific hashing not implemented yet
 
-### Usage
+**Example:**
 
 ```typescript
 import { hash } from '@tevm/voltaire/Transaction'
@@ -58,30 +57,41 @@ console.log('Transaction ID:', Hex.fromBytes(txHash))
 // "0x3ac225..."
 ```
 
-Source: [hash.ts:12-27](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/hash.ts#L12-L27)
+**Source:** [hash.ts:12-27](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/hash.ts#L12-L27)
+
+</Tab>
+<Tab title="Zig">
+
+## TypeScript only
+
+Transaction hashing currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
+
+Use TypeScript API for transaction hashing and signing operations.
+
+</Tab>
+</Tabs>
 
 ## getSigningHash
 
 Get hash that should be signed (excludes signature fields).
 
+<Tabs>
+<Tab title="Namespace API">
+
 ```typescript
 function getSigningHash(tx: Any): BrandedHash
 ```
 
-### Parameters
-
+**Parameters:**
 - `tx: Any` - Any transaction type (signature fields ignored)
 
-### Returns
+**Returns:** `BrandedHash` - 32-byte keccak256 signing hash
 
-`BrandedHash` - 32-byte keccak256 signing hash
-
-### Throws
-
+**Throws:**
 - `Error("Unknown transaction type")` - If transaction type is invalid
 - `Error("Not implemented")` - If type-specific signing hash not implemented yet
 
-### Usage
+**Example:**
 
 ```typescript
 import { getSigningHash } from '@tevm/voltaire/Transaction'
@@ -118,7 +128,19 @@ const signedTx = {
 }
 ```
 
-Source: [getSigningHash.ts:12-27](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getSigningHash.ts#L12-L27)
+**Source:** [getSigningHash.ts:12-27](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getSigningHash.ts#L12-L27)
+
+</Tab>
+<Tab title="Zig">
+
+## TypeScript only
+
+Transaction signing hash computation currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
+
+Use TypeScript API for transaction hashing and signing operations.
+
+</Tab>
+</Tabs>
 
 ## Hash vs Signing Hash
 
@@ -405,6 +427,13 @@ const hashes = await Promise.all(
 | EIP-7702 | Partial | Partial | In progress |
 
 Many methods currently throw "Not implemented" - check test files for implementation status.
+
+## See Also
+
+- [Serialization](/primitives/transaction/serialization) - RLP encode and decode transactions
+- [Signing](/primitives/transaction/signing) - Signature verification and sender recovery
+- [Hash](/primitives/hash) - 32-byte hash primitive
+- [Secp256k1](/crypto/secp256k1) - ECDSA signature operations
 
 ## EIP References
 

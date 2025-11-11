@@ -1,0 +1,383 @@
+---
+title: Hash.assert
+description: Assert value is a valid Hash, throws if not
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.assert(value: unknown, message?: string): asserts value is BrandedHash`
+
+Asserts value is a valid Hash. Throws error if validation fails.
+
+**Parameters:**
+- `value: unknown` - Value to assert
+- `message?: string` - Optional custom error message
+
+**Returns:** `void` (type assertion)
+
+**Throws:** `Error` - If value is not a Hash
+
+**Type assertion:** Narrows type to `BrandedHash` after call
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+function processHash(value: unknown) {
+  Hash.assert(value) // Throws if not Hash
+
+  // TypeScript knows value is BrandedHash
+  console.log(value.toHex())
+  console.log(value.length) // 32
+}
+
+// With custom message
+Hash.assert(value, "Expected transaction hash")
+
+// Fail-fast validation
+Hash.assert(txHash)
+Hash.assert(blockHash)
+// Both must be valid or function throws
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/assert.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/assert.js#L18)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `assert(value: unknown, message?: string): asserts value is BrandedHash`
+
+Asserts value is a valid Hash. Throws error if validation fails.
+
+**Parameters:**
+- `value: unknown` - Value to assert
+- `message?: string` - Optional custom error message
+
+**Returns:** `void` (type assertion)
+
+**Throws:** `Error` - If value is not a Hash
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+function processHash(value: unknown) {
+  Hash.assert(value) // Throws if not Hash
+
+  // TypeScript knows value is BrandedHash
+  const hex = Hash.toHex(value)
+}
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/assert.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/assert.js#L18)
+
+</Tab>
+<Tab title="Zig">
+
+## Compile-Time Assertions
+
+Zig uses compile-time assertions and types:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+fn processHash(hash: [32]u8) void {
+    // Type enforced at compile time
+}
+
+// Runtime assertion (if needed)
+fn assertHash(value: []const u8) ![32]u8 {
+    if (value.len != 32) {
+        return error.InvalidHashLength;
+    }
+
+    var hash: [32]u8 = undefined;
+    @memcpy(&hash, value);
+    return hash;
+}
+```
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Uses `isHash` and throws if validation fails:
+
+```typescript
+function assert(value: unknown, message?: string): asserts value is BrandedHash {
+  if (!isHash(value)) {
+    throw new Error(message ?? "Value is not a Hash")
+  }
+}
+```
+
+## Type Assertion
+
+TypeScript automatically narrows type after `assert`:
+
+```typescript
+function example(value: unknown) {
+  // Before: value is unknown
+  console.log(value.toHex()) // ❌ Error
+
+  Hash.assert(value)
+
+  // After: value is BrandedHash
+  console.log(value.toHex()) // ✅ OK
+  console.log(value.length) // ✅ OK: 32
+}
+```
+
+## Usage Examples
+
+### Fail-Fast Validation
+
+```typescript
+function processTransaction(
+  txHash: unknown,
+  blockHash: unknown
+) {
+  // Validate all inputs upfront
+  Hash.assert(txHash, "Invalid transaction hash")
+  Hash.assert(blockHash, "Invalid block hash")
+
+  // All hashes are now valid - proceed with logic
+  return {
+    transaction: getTransaction(txHash),
+    block: getBlock(blockHash)
+  }
+}
+```
+
+### API Endpoint Validation
+
+```typescript
+async function handleGetTransaction(req: Request, res: Response) {
+  const { hash } = req.params
+
+  try {
+    const hashBytes = Hash.fromHex(hash)
+    Hash.assert(hashBytes, "Invalid transaction hash format")
+
+    const tx = await getTransaction(hashBytes)
+    res.json(tx)
+  } catch (e) {
+    res.status(400).json({ error: e.message })
+  }
+}
+```
+
+### Constructor Validation
+
+```typescript
+class Transaction {
+  constructor(
+    public hash: BrandedHash,
+    public blockHash: BrandedHash
+  ) {
+    Hash.assert(hash, "Invalid transaction hash")
+    Hash.assert(blockHash, "Invalid block hash")
+  }
+}
+
+// Usage
+const tx = new Transaction(txHash, blockHash) // Validates on construction
+```
+
+### Function Preconditions
+
+```typescript
+function compareHashes(a: unknown, b: unknown): boolean {
+  // Validate preconditions
+  Hash.assert(a, "First argument must be a Hash")
+  Hash.assert(b, "Second argument must be a Hash")
+
+  return a.equals(b)
+}
+```
+
+### Deserialization
+
+```typescript
+interface SerializedData {
+  hash: unknown
+  timestamp: number
+}
+
+function deserialize(data: SerializedData) {
+  Hash.assert(data.hash, "Invalid hash in serialized data")
+
+  return {
+    hash: data.hash,
+    timestamp: data.timestamp
+  }
+}
+```
+
+### Type Guards with Assertions
+
+```typescript
+function ensureHash(value: unknown): BrandedHash {
+  Hash.assert(value)
+  return value
+}
+
+// Usage
+const hash = ensureHash(someValue) // Throws if invalid
+processHash(hash) // TypeScript knows hash is BrandedHash
+```
+
+### Array Validation
+
+```typescript
+function assertHashArray(values: unknown[]): asserts values is BrandedHash[] {
+  for (let i = 0; i < values.length; i++) {
+    Hash.assert(values[i], `Invalid hash at index ${i}`)
+  }
+}
+
+// Usage
+const maybeHashes: unknown[] = getUserInput()
+assertHashArray(maybeHashes)
+// TypeScript now knows maybeHashes is BrandedHash[]
+```
+
+### Database Record Validation
+
+```typescript
+interface DatabaseRecord {
+  hash: unknown
+  data: string
+}
+
+function loadRecord(record: DatabaseRecord) {
+  Hash.assert(record.hash, `Invalid hash in database record`)
+
+  return {
+    hash: record.hash,
+    data: JSON.parse(record.data)
+  }
+}
+```
+
+## Custom Error Messages
+
+Provide context-specific error messages:
+
+```typescript
+// Generic message
+Hash.assert(value)
+// Error: Value is not a Hash
+
+// Custom message
+Hash.assert(value, "Transaction hash must be 32 bytes")
+// Error: Transaction hash must be 32 bytes
+
+// Context-specific
+Hash.assert(
+  txHash,
+  `Invalid transaction hash for block ${blockNumber}`
+)
+// Error: Invalid transaction hash for block 12345
+```
+
+## Comparison with isHash
+
+| Method | Returns | Throws | Use Case |
+|--------|---------|--------|----------|
+| `isHash()` | boolean | Never | Conditional logic, type guards |
+| `assert()` | void | On error | Fail-fast validation, preconditions |
+
+```typescript
+// Use isHash for conditional logic
+if (Hash.isHash(value)) {
+  processHash(value)
+} else {
+  handleInvalidInput()
+}
+
+// Use assert for fail-fast validation
+Hash.assert(value) // Throws immediately if invalid
+processHash(value) // Only reached if valid
+```
+
+### When to Use Each
+
+**Use `isHash()`:**
+- Conditional logic (if/else)
+- Optional parameters
+- Filtering/validation without errors
+- Type narrowing in expressions
+
+**Use `assert()`:**
+- Precondition validation
+- Constructor validation
+- Function argument validation
+- Fail-fast error handling
+
+```typescript
+// isHash: conditional logic
+function process(value: unknown) {
+  if (Hash.isHash(value)) {
+    // Handle valid hash
+  } else {
+    // Handle invalid value
+  }
+}
+
+// assert: precondition
+function process(value: unknown) {
+  Hash.assert(value) // Must be valid
+  // Continue with logic
+}
+```
+
+## Error Handling
+
+Wrap `assert` in try-catch for error recovery:
+
+```typescript
+try {
+  Hash.assert(value, "Invalid hash")
+  processHash(value)
+} catch (e) {
+  console.error("Validation failed:", e.message)
+  // Recover or re-throw
+}
+```
+
+## Performance
+
+**Fast validation:** Same performance as `isHash()` (~1-2ns) plus error throw overhead:
+
+```typescript
+// Valid hash (no throw)
+console.time('assert-valid')
+for (let i = 0; i < 1000000; i++) {
+  try {
+    Hash.assert(validHash)
+  } catch {}
+}
+console.timeEnd('assert-valid') // ~2ms = ~2ns each
+
+// Invalid value (with throw) - slower
+console.time('assert-invalid')
+for (let i = 0; i < 1000; i++) {
+  try {
+    Hash.assert(invalidValue)
+  } catch {}
+}
+console.timeEnd('assert-invalid') // ~50ms = ~50μs each (throw overhead)
+```
+
+## See Also
+
+- [isHash](/primitives/hash/is-hash) - Type guard (returns boolean)
+- [isValidHex](/primitives/hash/is-valid-hex) - Validate hex string format
+- [fromBytes](/primitives/hash/from-bytes) - Create Hash from Uint8Array

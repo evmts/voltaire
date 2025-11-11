@@ -1,0 +1,369 @@
+---
+title: EventLog.sortLogs
+description: Sort logs by block number then log index
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `EventLog.sortLogs(logs: readonly BrandedEventLog[]): BrandedEventLog[]`
+
+Sort logs by block number (ascending) then log index (ascending). Returns new sorted array.
+
+**Parameters:**
+- `logs: readonly BrandedEventLog[]` - Array of event logs to sort
+
+**Returns:** `BrandedEventLog[]` - New array sorted chronologically
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const logs = [
+  EventLog.from({
+    address: Address.fromHex('0x...'),
+    topics: [Hash.fromHex('0xddf252ad...')],
+    data: new Uint8Array([]),
+    blockNumber: 18000002n,
+    logIndex: 5,
+  }),
+  EventLog.from({
+    address: Address.fromHex('0x...'),
+    topics: [Hash.fromHex('0xddf252ad...')],
+    data: new Uint8Array([]),
+    blockNumber: 18000001n,
+    logIndex: 10,
+  }),
+  EventLog.from({
+    address: Address.fromHex('0x...'),
+    topics: [Hash.fromHex('0xddf252ad...')],
+    data: new Uint8Array([]),
+    blockNumber: 18000002n,
+    logIndex: 2,
+  }),
+];
+
+const sorted = EventLog.sortLogs(logs);
+
+// Result order:
+// 1. blockNumber: 18000001n, logIndex: 10
+// 2. blockNumber: 18000002n, logIndex: 2
+// 3. blockNumber: 18000002n, logIndex: 5
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/sortLogs.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/sortLogs.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `sortLogs(logs: readonly BrandedEventLog[]): BrandedEventLog[]`
+
+Sort logs by block number (ascending) then log index (ascending). Returns new sorted array.
+
+**Parameters:**
+- `logs: readonly BrandedEventLog[]` - Array of event logs to sort
+
+**Returns:** `BrandedEventLog[]` - New array sorted chronologically
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const logs = [
+  EventLog.from({ /* block 2, index 5 */ }),
+  EventLog.from({ /* block 1, index 10 */ }),
+  EventLog.from({ /* block 2, index 2 */ }),
+];
+
+const sorted = EventLog.sortLogs(logs);
+
+// Sorted by block, then by index within block
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/sortLogs.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/sortLogs.js)
+
+</Tab>
+</Tabs>
+
+## Sort Order
+
+### Primary: Block Number
+
+Logs sorted by block number ascending (earliest blocks first):
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const sorted = EventLog.sortLogs([
+  { blockNumber: 18000003n, logIndex: 0 },
+  { blockNumber: 18000001n, logIndex: 0 },
+  { blockNumber: 18000002n, logIndex: 0 },
+]);
+
+// Result:
+// 1. blockNumber: 18000001n
+// 2. blockNumber: 18000002n
+// 3. blockNumber: 18000003n
+```
+
+### Secondary: Log Index
+
+Within same block, sorted by log index ascending:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const sorted = EventLog.sortLogs([
+  { blockNumber: 18000000n, logIndex: 10 },
+  { blockNumber: 18000000n, logIndex: 2 },
+  { blockNumber: 18000000n, logIndex: 5 },
+]);
+
+// Result:
+// 1. logIndex: 2
+// 2. logIndex: 5
+// 3. logIndex: 10
+```
+
+### Missing Values
+
+Logs without `blockNumber` or `logIndex` treated as 0:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const sorted = EventLog.sortLogs([
+  { blockNumber: 100n, logIndex: 5 },
+  { /* no blockNumber, no logIndex */ },
+  { blockNumber: 50n, logIndex: 2 },
+]);
+
+// Result:
+// 1. No blockNumber (treated as 0)
+// 2. blockNumber: 50n, logIndex: 2
+// 3. blockNumber: 100n, logIndex: 5
+```
+
+## Usage Patterns
+
+### Chronological Processing
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Sort before processing
+const sorted = EventLog.sortLogs(allLogs);
+
+for (const log of sorted) {
+  console.log(`Block ${log.blockNumber}, Log ${log.logIndex}`);
+  // Process in blockchain order
+}
+```
+
+### Combining with Filtering
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const TRANSFER_SIG = Hash.fromHex('0xddf252ad...');
+
+// Filter then sort
+const transfers = EventLog.filterLogs(allLogs, {
+  address: usdcAddress,
+  topics: [TRANSFER_SIG],
+});
+
+const sorted = EventLog.sortLogs(transfers);
+
+console.log(`Found ${sorted.length} transfers in chronological order`);
+```
+
+### Finding Latest Log
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const sorted = EventLog.sortLogs(logs);
+const latest = sorted[sorted.length - 1];
+
+if (latest) {
+  console.log(`Latest log: block ${latest.blockNumber}, index ${latest.logIndex}`);
+}
+```
+
+### Finding Earliest Log
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const sorted = EventLog.sortLogs(logs);
+const earliest = sorted[0];
+
+if (earliest) {
+  console.log(`Earliest log: block ${earliest.blockNumber}, index ${earliest.logIndex}`);
+}
+```
+
+### Grouping by Block
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+const sorted = EventLog.sortLogs(allLogs);
+
+// Group by block
+const byBlock = new Map<bigint, EventLog[]>();
+
+for (const log of sorted) {
+  const blockNum = log.blockNumber ?? 0n;
+  if (!byBlock.has(blockNum)) {
+    byBlock.set(blockNum, []);
+  }
+  byBlock.get(blockNum)!.push(log);
+}
+
+// Process each block's logs (already sorted by logIndex)
+for (const [blockNumber, blockLogs] of byBlock) {
+  console.log(`\nBlock ${blockNumber}: ${blockLogs.length} logs`);
+  for (const log of blockLogs) {
+    console.log(`  Log ${log.logIndex}: ${Address.toHex(log.address)}`);
+  }
+}
+```
+
+### Time-Ordered Event Replay
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function replayEvents(logs: EventLog[]): void {
+  const sorted = EventLog.sortLogs(logs);
+
+  let currentBlock = 0n;
+  for (const log of sorted) {
+    if (log.blockNumber && log.blockNumber > currentBlock) {
+      console.log(`\n=== Block ${log.blockNumber} ===`);
+      currentBlock = log.blockNumber;
+    }
+
+    // Decode and replay event
+    const sig = log.getTopic0();
+    if (sig) {
+      console.log(`  Event: ${Hash.toHex(sig).slice(0, 10)}...`);
+      // ... decode and apply state changes
+    }
+  }
+}
+
+replayEvents(allLogs);
+```
+
+### Detecting Missing Logs
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function detectGaps(logs: EventLog[]): void {
+  const sorted = EventLog.sortLogs(logs);
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const curr = sorted[i];
+
+    const prevBlock = prev.blockNumber ?? 0n;
+    const currBlock = curr.blockNumber ?? 0n;
+
+    if (currBlock === prevBlock) {
+      // Same block: check log index
+      const prevIndex = prev.logIndex ?? 0;
+      const currIndex = curr.logIndex ?? 0;
+
+      if (currIndex > prevIndex + 1) {
+        console.log(`Gap in block ${currBlock}: missing log indices ${prevIndex + 1} to ${currIndex - 1}`);
+      }
+    }
+  }
+}
+```
+
+### Pagination
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function paginateLogs(logs: EventLog[], page: number, pageSize: number) {
+  const sorted = EventLog.sortLogs(logs);
+  const start = page * pageSize;
+  const end = start + pageSize;
+
+  return {
+    logs: sorted.slice(start, end),
+    total: sorted.length,
+    page,
+    pageSize,
+    hasMore: end < sorted.length,
+    hasLess: start > 0,
+  };
+}
+
+const result = paginateLogs(allLogs, 0, 100);
+console.log(`Page 1: ${result.logs.length} logs`);
+console.log(`Total: ${result.total} logs`);
+console.log(`Has more: ${result.hasMore}`);
+```
+
+## Implementation
+
+Sort algorithm:
+
+1. Compare block numbers (ascending)
+2. If equal, compare log indices (ascending)
+3. Treat undefined as 0
+
+```typescript
+// Equivalent implementation
+function sortLogs(logs: readonly EventLog[]): EventLog[] {
+  return [...logs].sort((a, b) => {
+    const blockA = a.blockNumber ?? 0n;
+    const blockB = b.blockNumber ?? 0n;
+
+    if (blockA !== blockB) {
+      return blockA < blockB ? -1 : 1;
+    }
+
+    const indexA = a.logIndex ?? 0;
+    const indexB = b.logIndex ?? 0;
+    return indexA - indexB;
+  });
+}
+```
+
+## Performance
+
+- **Time complexity:** O(n log n)
+- **Space complexity:** O(n) (creates new array)
+- **Stable sort:** Maintains relative order of equal elements
+
+For large arrays, sort once and reuse:
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Sort once
+const sorted = EventLog.sortLogs(allLogs);
+
+// Reuse sorted array for multiple operations
+const first100 = sorted.slice(0, 100);
+const last100 = sorted.slice(-100);
+const middle = sorted.slice(1000, 2000);
+```
+
+## See Also
+
+- [filterLogs](/primitives/eventlog/filterlogs) - Filter before sorting
+- [isRemoved](/primitives/eventlog/isremoved) - Filter removed logs
+- [Fundamentals](/primitives/eventlog/fundamentals) - Log ordering and blocks

@@ -1,0 +1,139 @@
+---
+title: Uint.toHex
+description: Convert Uint256 to hex string with 0x prefix
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.toHex(value: BrandedUint): Hex`
+
+Convert Uint256 to hex string with `0x` prefix.
+
+**Parameters:**
+- `value: BrandedUint` - Uint256 value
+
+**Returns:** `Hex` - Hex string with `0x` prefix
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(255n)
+Uint.toHex(a)  // "0xff"
+
+const b = Uint.from(0n)
+Uint.toHex(b)  // "0x0"
+
+const c = Uint.from(256n)
+Uint.toHex(c)  // "0x100"
+
+// No leading zeros (minimal form)
+const d = Uint.from(1n)
+Uint.toHex(d)  // "0x1" (not "0x0000...0001")
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/toHex.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toHex.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `toHex(value: BrandedUint): Hex`
+
+Convert Uint256 to hex string.
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const value = Uint.from(255n)
+const hex = Uint.toHex(value)  // "0xff"
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/toHex.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toHex.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `uint.toHex(allocator: Allocator): ![]u8`
+
+Convert to hex string (caller owns memory).
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Uint = @import("primitives").Uint;
+
+const value = Uint.init(255);
+const hex = try value.toHex(allocator);
+defer allocator.free(hex);
+// hex: "0xff"
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## Output Format
+
+Hex strings are **minimal** - no unnecessary leading zeros:
+
+```typescript
+Uint.toHex(Uint.from(0n))      // "0x0"
+Uint.toHex(Uint.from(1n))      // "0x1"
+Uint.toHex(Uint.from(15n))     // "0xf"
+Uint.toHex(Uint.from(16n))     // "0x10"
+Uint.toHex(Uint.from(255n))    // "0xff"
+Uint.toHex(Uint.from(256n))    // "0x100"
+```
+
+### Always Lowercase
+
+```typescript
+Uint.toHex(Uint.from(0xdeadbeefn))  // "0xdeadbeef"
+```
+
+### Always Has 0x Prefix
+
+```typescript
+// Never returns without prefix
+Uint.toHex(Uint.from(255n))  // "0xff" (not "ff")
+```
+
+## Usage Patterns
+
+### Logging and Debugging
+
+```typescript
+const value = Uint.from(12345n)
+console.log(`Value: ${Uint.toHex(value)}`)  // "Value: 0x3039"
+```
+
+### Ethereum RPC
+
+```typescript
+// Format for JSON-RPC
+const balance = Uint.from(1000000000000000000n)
+const rpcValue = Uint.toHex(balance)  // "0xde0b6b3a7640000"
+
+await eth_sendTransaction({
+  value: rpcValue
+})
+```
+
+### Storage Keys
+
+```typescript
+const slot = Uint.from(5n)
+const key = Uint.toHex(slot)  // "0x5"
+```
+
+## See Also
+
+- [fromHex](/primitives/uint/from-hex) - Parse hex string
+- [toString](/primitives/uint/to-string) - Convert to string (any radix)
+- [toBigInt](/primitives/uint/to-bigint) - Convert to BigInt

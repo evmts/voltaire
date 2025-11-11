@@ -1,0 +1,382 @@
+---
+title: KZG Commitments
+description: KZG commitment scheme for blob data integrity
+---
+
+KZG (Kate-Zaverucha-Goldberg) commitments provide cryptographic binding between blob data and commitments. This page explains the mathematics and implementation.
+
+## Overview
+
+KZG commitments enable:
+- **Binding** - Cannot create two different blobs with same commitment
+- **Hiding** - Commitment doesn't reveal blob contents
+- **Succinct** - 48-byte commitment for 131,072-byte blob
+- **Verifiable** - Prove blob matches commitment without revealing data
+
+## Mathematical Foundation
+
+### Polynomial Commitment Scheme
+
+1. **Blob as Polynomial**
+   - Blob contains 4,096 field elements
+   - Treat as polynomial coefficients: `f(x) = a₀ + a₁x + a₂x² + ... + a₄₀₉₅x⁴⁰⁹⁵`
+
+2. **Trusted Setup**
+   - Generate powers of secret: `[G₁, sG₁, s²G₁, ..., s⁴⁰⁹⁵G₁]` where `G₁` is BLS12-381 generator
+   - Secret `s` destroyed after ceremony
+
+3. **Commitment**
+   - Evaluate polynomial at secret: `C = f(s)G₁ = Σ(aᵢ · sⁱG₁)`
+   - Result is 48-byte G₁ point (commitment)
+
+4. **Proof**
+   - Prove evaluation at challenge point `z`: `f(z) = y`
+   - Generate proof `π` that verifies: `e(C - yG₁, G₂) = e(π, (s - z)G₂)`
+
+### BLS12-381 Curve
+
+KZG uses BLS12-381 pairing-friendly curve:
+
+```typescript
+// Field modulus (scalar field)
+const MODULUS =
+  52435875175126190479447740508185965837690552500527637822603658699938581184513n;
+
+// G1 point size: 48 bytes (compressed)
+// G2 point size: 96 bytes (compressed)
+
+// Each blob field element must be < MODULUS
+```
+
+## Implementation
+
+### Computing Commitments
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+
+// Compute commitment (requires c-kzg-4844 library)
+const commitment = Blob.toCommitment(blob);
+
+console.log(commitment.length); // 48 bytes
+console.log(commitment instanceof Uint8Array); // true
+```
+
+### Internal Process
+
+```typescript
+// Conceptual implementation (actual uses c-kzg-4844)
+function computeKZGCommitment(blob: Uint8Array): Uint8Array {
+  // 1. Parse blob as 4,096 field elements
+  const fieldElements = parseFieldElements(blob);
+
+  // 2. Load trusted setup (powers of tau)
+  const setup = loadTrustedSetup();
+
+  // 3. Compute commitment: C = Σ(aᵢ · sⁱG₁)
+  let commitment = G1.identity();
+  for (let i = 0; i < fieldElements.length; i++) {
+    commitment = commitment.add(
+      setup.g1Powers[i].mul(fieldElements[i])
+    );
+  }
+
+  // 4. Serialize to 48 bytes
+  return commitment.toBytes();
+}
+```
+
+### Generating Proofs
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+
+// Generate KZG proof
+const proof = Blob.toProof(blob);
+
+console.log(proof.length); // 48 bytes
+
+// Verify proof
+const isValid = Blob.verify(blob, commitment, proof);
+console.log(isValid); // true
+```
+
+## Trusted Setup
+
+### KZG Ceremony
+
+EIP-4844 uses trusted setup from [ceremony.ethereum.org](https://ceremony.ethereum.org/):
+
+```typescript
+// Trusted setup parameters
+const SETUP_SIZE = 4096; // Powers of tau
+const PARTICIPANTS = 4000+; // Contributors
+
+// Security guarantee:
+// Safe if at least 1 participant honest and destroyed secret
+```
+
+### Powers of Tau
+
+```typescript
+// Trusted setup contains:
+// G1 powers: [G₁, sG₁, s²G₁, ..., s⁴⁰⁹⁵G₁]
+// G2 powers: [G₂, sG₂]
+// Where s is secret, destroyed after ceremony
+
+// Used for:
+// - Computing commitments (G1 powers)
+// - Verifying proofs (G2 powers, pairings)
+```
+
+### Loading Setup
+
+```typescript
+// c-kzg-4844 loads trusted setup
+import { loadTrustedSetup } from 'c-kzg';
+
+// Mainnet setup
+const setup = loadTrustedSetup('mainnet.txt');
+
+// Or load from file
+const setupData = readFileSync('trusted_setup.txt');
+loadTrustedSetup(setupData);
+```
+
+## Verification
+
+### Proof Verification
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Create blob and proof
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob);
+
+// Verify (uses pairing check)
+const isValid = Blob.verify(blob, commitment, proof);
+console.log(isValid); // true
+```
+
+### Pairing Equation
+
+Verification uses BLS12-381 pairing:
+
+```
+e(commitment, G₂) = e(proof, challenge_G₂)
+
+Where:
+- e() is pairing function
+- commitment is 48-byte G₁ point
+- proof is 48-byte G₁ point
+- G₂ is generator
+- challenge_G₂ is challenge point in G₂
+```
+
+### Batch Verification
+
+More efficient for multiple blobs:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blobs = [blob1, blob2, blob3];
+const commitments = blobs.map(b => Blob.toCommitment(b));
+const proofs = blobs.map(b => Blob.toProof(b));
+
+// Batch verify (single pairing check)
+const allValid = Blob.verifyBatch(blobs, commitments, proofs);
+console.log(allValid); // true
+```
+
+## Security Properties
+
+### Computational Binding
+
+Cannot find two different blobs with same commitment:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob1 = Blob.fromData(data1);
+const blob2 = Blob.fromData(data2); // Different data
+
+const commitment1 = Blob.toCommitment(blob1);
+const commitment2 = Blob.toCommitment(blob2);
+
+// Commitments differ (except with negligible probability)
+console.log(Blob.equals(commitment1, commitment2)); // false
+
+// Cannot create valid proof for wrong blob
+const proof1 = Blob.toProof(blob1);
+console.log(Blob.verify(blob1, commitment1, proof1)); // true
+console.log(Blob.verify(blob2, commitment1, proof1)); // false
+```
+
+### Hiding (Partial)
+
+Commitment doesn't directly reveal blob contents, but:
+- Not fully hiding (deterministic)
+- Same data = same commitment
+- Use versioned hash (SHA256) for additional hiding
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+
+// Commitment doesn't reveal data (48 bytes for 131 KB)
+console.log(`Blob: ${blob.length} bytes`);
+console.log(`Commitment: ${commitment.length} bytes`);
+
+// But versioned hash adds additional hiding
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+console.log(`Versioned hash: ${versionedHash.length} bytes`);
+```
+
+### Soundness
+
+Valid proofs always verify:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob);
+
+// Always verifies for correctly generated proof
+console.log(Blob.verify(blob, commitment, proof)); // true (always)
+
+// Cannot create fake proof
+const fakeProof = new Uint8Array(48);
+console.log(Blob.verify(blob, commitment, fakeProof)); // false (except negligible probability)
+```
+
+## Field Element Validation
+
+### Modulus Check
+
+Each 32-byte element must be < BLS12-381 modulus:
+
+```typescript
+const BLS_MODULUS =
+  52435875175126190479447740508185965837690552500527637822603658699938581184513n;
+
+// Valid field element
+const validElement = new Uint8Array(32);
+validElement[31] = 0x01; // Small value
+// OK: 1 < BLS_MODULUS
+
+// Invalid field element
+const invalidElement = new Uint8Array(32);
+invalidElement.fill(0xff); // Large value
+// Error: 0xfff...fff > BLS_MODULUS
+```
+
+### Automatic Validation
+
+Voltaire's `fromData()` ensures valid field elements:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Automatic field element validation
+const blob = Blob.fromData(data);
+
+// All field elements guaranteed < BLS_MODULUS
+const isValid = Blob.isValid(blob);
+console.log(isValid); // true
+```
+
+## Implementation Notes
+
+### c-kzg-4844 Library
+
+Voltaire uses [c-kzg-4844](https://github.com/ethereum/c-kzg-4844):
+
+```typescript
+// Native bindings to C library
+import * as kzg from 'c-kzg';
+
+// Load trusted setup
+kzg.loadTrustedSetup('trusted_setup.txt');
+
+// Compute commitment
+const commitment = kzg.blobToKzgCommitment(blob);
+
+// Compute proof
+const proof = kzg.computeBlobKzgProof(blob, commitment);
+
+// Verify
+const isValid = kzg.verifyBlobKzgProof(blob, commitment, proof);
+```
+
+### WASM Support
+
+WASM builds stub KZG operations (not yet supported):
+
+```typescript
+// In WASM environment
+try {
+  const commitment = Blob.toCommitment(blob);
+} catch (e) {
+  console.error(e); // "Not implemented: requires c-kzg-4844 library"
+}
+
+// Use native builds for KZG operations
+```
+
+## Performance
+
+### Operation Costs
+
+Approximate timing (single-threaded):
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| Commitment | ~10ms | FFT + MSM |
+| Proof | ~10ms | Similar to commitment |
+| Verify | ~5ms | Pairing check |
+| Batch Verify (6) | ~15ms | Single pairing |
+
+### Optimization
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Individual verification (slower)
+console.time('individual');
+for (const [blob, commitment, proof] of items) {
+  Blob.verify(blob, commitment, proof);
+}
+console.timeEnd('individual'); // ~30ms
+
+// Batch verification (faster)
+console.time('batch');
+Blob.verifyBatch(blobs, commitments, proofs);
+console.timeEnd('batch'); // ~15ms
+```
+
+## Resources
+
+- **[KZG Paper](https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf)** - Original KZG10 paper
+- **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** - Reference implementation
+- **[KZG Ceremony](https://ceremony.ethereum.org/)** - Trusted setup details
+- **[BLS12-381](https://hackmd.io/@benjaminion/bls12-381)** - Curve specification
+- **[Dankrad's Explanation](https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html)** - KZG for Ethereum
+
+## See Also
+
+- [EIP-4844](/primitives/blob/eip4844) - EIP-4844 specification
+- [toCommitment](./toCommitment) - Generate commitment
+- [verify](./verify) - Verify proof
+- [Fundamentals](/primitives/blob/fundamentals) - Blob basics

@@ -1,0 +1,188 @@
+---
+title: Transaction.getChainId
+description: Extract chain ID from transaction
+---
+
+# getChainId
+
+Extract chain ID from transaction.
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function getChainId(tx: Any): bigint | undefined
+```
+
+**Parameters:**
+- `tx: Any` - Any transaction type
+
+**Returns:** `bigint | undefined` - Chain ID if present, undefined for pre-EIP-155 legacy transactions
+
+**Example:**
+
+```typescript
+import { getChainId } from '@tevm/voltaire/Transaction'
+
+// EIP-1559 transaction
+const eip1559: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,
+  // ... other fields
+}
+
+const chainId = getChainId(eip1559)
+console.log(chainId) // 1n
+
+// Legacy transaction with EIP-155
+const legacy: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  v: 37n,  // chainId = (37 - 35) / 2 = 1
+  // ... other fields
+}
+
+const legacyChainId = getChainId(legacy)
+console.log(legacyChainId) // 1n
+
+// Pre-EIP-155 legacy transaction
+const preEip155: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  v: 27n,  // No chain ID
+  // ... other fields
+}
+
+const noChainId = getChainId(preEip155)
+console.log(noChainId) // undefined
+```
+
+**Source:** [getChainId.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getChainId.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## TypeScript only
+
+Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
+
+Use TypeScript API for transaction operations.
+
+</Tab>
+</Tabs>
+
+## Chain ID Extraction
+
+### Typed Transactions
+
+For typed transactions (EIP-2930, EIP-1559, EIP-4844, EIP-7702), chain ID is explicitly included:
+
+```typescript
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  chainId: 1n,  // Explicit field
+  // ...
+}
+
+getChainId(tx) // 1n
+```
+
+### Legacy Transactions
+
+For legacy transactions, chain ID is encoded in the `v` value per EIP-155:
+
+```typescript
+// EIP-155 formula: v = chainId * 2 + 35 + yParity
+// Reverse: chainId = (v - 35 - yParity) / 2
+
+// Example: Mainnet (chainId = 1)
+v = 37 → chainId = (37 - 35) / 2 = 1  // yParity = 0
+v = 38 → chainId = (38 - 35 - 1) / 2 = 1  // yParity = 1
+
+// Example: Polygon (chainId = 137)
+v = 309 → chainId = (309 - 35) / 2 = 137  // yParity = 0
+v = 310 → chainId = (310 - 35 - 1) / 2 = 137  // yParity = 1
+```
+
+### Pre-EIP-155 Transactions
+
+Pre-EIP-155 legacy transactions use simple v values (27 or 28):
+
+```typescript
+const preEip155: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  v: 27n,  // yParity = 0, no chain ID
+  // ...
+}
+
+getChainId(preEip155) // undefined
+```
+
+## Usage Patterns
+
+### Replay Protection
+
+```typescript
+import { getChainId } from '@tevm/voltaire/Transaction'
+
+function validateChainId(tx: Transaction.Any, expectedChainId: bigint) {
+  const txChainId = getChainId(tx)
+
+  if (txChainId !== undefined && txChainId !== expectedChainId) {
+    throw new Error(
+      `Wrong chain: expected ${expectedChainId}, got ${txChainId}`
+    )
+  }
+}
+
+// Usage
+validateChainId(tx, 1n) // Mainnet
+```
+
+### Cross-Chain Detection
+
+```typescript
+import { getChainId } from '@tevm/voltaire/Transaction'
+
+function detectChain(tx: Transaction.Any): string {
+  const chainId = getChainId(tx)
+
+  switch (chainId) {
+    case 1n: return 'Ethereum Mainnet'
+    case 137n: return 'Polygon'
+    case 42161n: return 'Arbitrum One'
+    case 10n: return 'Optimism'
+    default: return chainId ? `Chain ${chainId}` : 'Pre-EIP-155'
+  }
+}
+```
+
+### Transaction Filtering
+
+```typescript
+import { getChainId } from '@tevm/voltaire/Transaction'
+
+function filterByChain(
+  transactions: Transaction.Any[],
+  targetChainId: bigint
+): Transaction.Any[] {
+  return transactions.filter(tx => {
+    const chainId = getChainId(tx)
+    return chainId === targetChainId
+  })
+}
+
+// Get all mainnet transactions
+const mainnetTxs = filterByChain(allTransactions, 1n)
+```
+
+## See Also
+
+- [Hashing](/primitives/transaction/hashing) - Transaction and signing hash computation
+- [Signing](/primitives/transaction/signing) - Signature verification and sender recovery
+- [getGasPrice](/primitives/transaction/get-gas-price) - Get effective gas price
+- [format](/primitives/transaction/format) - Format transaction for display
+
+## References
+
+- [EIP-155: Simple replay attack protection](https://eips.ethereum.org/EIPS/eip-155)
+- [EIP-2718: Typed Transaction Envelope](https://eips.ethereum.org/EIPS/eip-2718)
+- [Chain IDs](https://chainlist.org/) - Comprehensive list of EVM chain IDs

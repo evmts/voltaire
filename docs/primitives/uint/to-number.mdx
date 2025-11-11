@@ -1,0 +1,118 @@
+---
+title: Uint.toNumber
+description: Convert Uint256 to JavaScript number
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.toNumber(value: BrandedUint): number`
+
+Convert Uint256 to JavaScript number. Throws if value exceeds Number.MAX_SAFE_INTEGER.
+
+**Parameters:**
+- `value: BrandedUint` - Uint256 value
+
+**Returns:** `number` - JavaScript number
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.from(255n)
+Uint.toNumber(a)  // 255
+
+const b = Uint.from(0n)
+Uint.toNumber(b)  // 0
+
+// Throws if too large
+const large = Uint.from(2n ** 60n)
+Uint.toNumber(large)  // Error: exceeds MAX_SAFE_INTEGER
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/toNumber.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toNumber.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `toNumber(value: BrandedUint): number`
+
+Convert to number (throws if too large).
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const value = Uint.from(255n)
+const num = Uint.toNumber(value)  // 255
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/toNumber.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toNumber.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `uint.toInt(comptime T: type): !T`
+
+Convert to any integer type (with overflow check).
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const value = Uint.init(255);
+const num = try value.toInt(u32);  // 255
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## Safe Integer Range
+
+<Warning title="Number Precision Limits">
+JavaScript numbers are 64-bit floats. Only integers in range [-2^53 + 1, 2^53 - 1] are safe.
+
+Values exceeding Number.MAX_SAFE_INTEGER (9007199254740991) will throw.
+</Warning>
+
+```typescript
+// Safe values
+Uint.toNumber(Uint.from(0n))                         // 0
+Uint.toNumber(Uint.from(9007199254740991n))         // OK: MAX_SAFE_INTEGER
+
+// Unsafe values throw
+Uint.toNumber(Uint.from(9007199254740992n))         // Error: too large
+Uint.toNumber(Uint.from(10n ** 18n))                // Error: too large
+```
+
+## Usage Patterns
+
+### Array Indices
+
+```typescript
+const index = Uint.from(5n)
+const arr = [1, 2, 3, 4, 5, 6]
+const value = arr[Uint.toNumber(index)]  // 6
+```
+
+### Safe Conversion
+
+```typescript
+function toNumberSafe(uint: BrandedUint): number | null {
+  try {
+    return Uint.toNumber(uint)
+  } catch {
+    return null
+  }
+}
+```
+
+## See Also
+
+- [fromNumber](/primitives/uint/from-number) - Create from number
+- [toBigInt](/primitives/uint/to-bigint) - Convert to BigInt (no limits)

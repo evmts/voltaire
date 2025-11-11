@@ -1,0 +1,171 @@
+---
+title: Uint.fromBigInt
+description: Create Uint256 from JavaScript BigInt
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.fromBigInt(value: bigint): BrandedUint`
+
+Create Uint256 from BigInt value. Validates range [0, 2^256 - 1].
+
+**Parameters:**
+- `value: bigint` - BigInt value
+
+**Returns:** `BrandedUint` - Uint256 as branded Uint8Array
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const a = Uint.fromBigInt(100n)
+const b = Uint.fromBigInt(0n)
+const c = Uint.fromBigInt(2n ** 255n)
+
+// Max value
+const max = Uint.fromBigInt(2n ** 256n - 1n)
+
+// Throws on invalid
+Uint.fromBigInt(-1n)          // Error: negative
+Uint.fromBigInt(2n ** 256n)   // Error: exceeds maximum
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/fromBigInt.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromBigInt.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `fromBigInt(value: bigint): BrandedUint`
+
+Create Uint256 from BigInt value.
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const a = Uint.fromBigInt(100n)
+const b = Uint.fromBigInt(2n ** 255n)
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/fromBigInt.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/fromBigInt.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `Uint.init(value: u256): Uint`
+
+Initialize from u256 value.
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const a = Uint.init(100);
+const b = Uint.init(0);
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## BigInt Values
+
+JavaScript BigInt provides arbitrary precision integers:
+
+```typescript
+// Small values
+Uint.fromBigInt(0n)
+Uint.fromBigInt(1n)
+Uint.fromBigInt(255n)
+
+// Large values
+Uint.fromBigInt(2n ** 128n)
+Uint.fromBigInt(2n ** 255n)
+
+// Maximum
+Uint.fromBigInt(2n ** 256n - 1n)
+```
+
+<Warning>
+BigInt values must be non-negative and less than 2^256. Negative values and overflow throw errors.
+</Warning>
+
+## Range Validation
+
+### Valid Range
+
+```typescript
+// Minimum: 0
+Uint.fromBigInt(0n)
+
+// Maximum: 2^256 - 1
+const max = 115792089237316195423570985008687907853269984665640564039457584007913129639935n
+Uint.fromBigInt(max)
+```
+
+### Out of Range
+
+```typescript
+// Negative values throw
+Uint.fromBigInt(-1n)        // Error: Value cannot be negative
+Uint.fromBigInt(-100n)      // Error: Value cannot be negative
+
+// Overflow throws
+Uint.fromBigInt(2n ** 256n)     // Error: Value exceeds 2^256 - 1
+Uint.fromBigInt(2n ** 257n)     // Error: Value exceeds 2^256 - 1
+```
+
+## Usage Patterns
+
+### Computation Results
+
+```typescript
+// BigInt arithmetic
+const a = 100n
+const b = 50n
+const sum = Uint.fromBigInt(a + b)        // 150
+const product = Uint.fromBigInt(a * b)    // 5000
+
+// With validation
+function safeFromBigInt(value: bigint): BrandedUint | null {
+  if (value < 0n || value >= 2n ** 256n) {
+    return null
+  }
+  return Uint.fromBigInt(value)
+}
+```
+
+### Constants
+
+```typescript
+// Common Ethereum constants
+const ONE_ETHER = Uint.fromBigInt(10n ** 18n)
+const ONE_GWEI = Uint.fromBigInt(10n ** 9n)
+const MAX_UINT256 = Uint.fromBigInt(2n ** 256n - 1n)
+const MAX_UINT128 = Uint.fromBigInt(2n ** 128n - 1n)
+```
+
+### Parsing Large Numbers
+
+```typescript
+// JSON doesn't support BigInt, must parse strings
+interface ApiResponse {
+  balance: string  // BigInt serialized as string
+}
+
+function parseBalance(data: ApiResponse): BrandedUint {
+  const balanceBigInt = BigInt(data.balance)
+  return Uint.fromBigInt(balanceBigInt)
+}
+```
+
+## See Also
+
+- [from](/primitives/uint/from) - Universal constructor
+- [toBigInt](/primitives/uint/to-bigint) - Convert to BigInt
+- [fromNumber](/primitives/uint/from-number) - From number

@@ -1,0 +1,313 @@
+---
+title: Address.clone
+description: Create deep copy of address
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `address.clone(): Address`
+
+Creates a deep copy of the address. Returns a new Address instance with copied bytes.
+
+**Returns:** `Address` - Deep copy of address
+
+**Example:**
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = addr1.clone()
+
+// Values are equal
+console.log(addr1.equals(addr2)) // true
+
+// But different objects
+console.log(addr1 === addr2) // false
+
+// Modifications don't affect original
+addr2[0] = 0xFF
+console.log(addr1[0]) // Still 0x74
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/clone.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/clone.js#L17)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `clone(address: BrandedAddress): BrandedAddress`
+
+Creates a deep copy of the address.
+
+**Parameters:**
+- `address: BrandedAddress` - Address to clone
+
+**Returns:** `BrandedAddress` - Deep copy
+
+**Example:**
+
+```typescript
+import * as Address from '@tevm/voltaire/Address'
+
+const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const addr2 = Address.clone(addr1)
+
+console.log(Address.equals(addr1, addr2)) // true
+console.log(addr1 === addr2)              // false
+```
+
+**Defined in:** [primitives/Address/BrandedAddress/clone.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/BrandedAddress/clone.js#L17)
+
+</Tab>
+<Tab title="Zig">
+
+## `address` (value type)
+
+In Zig, addresses are value types. Assignment creates a copy automatically.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Address = @import("primitives").Address;
+
+const addr1 = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e") catch unreachable;
+
+// Assignment copies value
+const addr2 = addr1;
+
+// Independent copies
+var addr3 = addr1;
+addr3.bytes[0] = 0xFF;
+
+try std.testing.expect(addr1.bytes[0] != addr3.bytes[0]);
+```
+
+**Note:** No explicit clone needed in Zig - assignment copies value types.
+
+**Defined in:** [primitives/Address/address.zig:8](https://github.com/evmts/voltaire/blob/main/src/primitives/Address/address.zig#L8)
+
+</Tab>
+</Tabs>
+
+## Memory Behavior
+
+**Deep copy:** Creates new Uint8Array with copied bytes.
+
+**Independent:** Modifications to clone don't affect original:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const original = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const clone = original.clone()
+
+// Modify clone
+clone[0] = 0xFF
+clone[19] = 0xAA
+
+// Original unchanged
+console.log(original[0])  // 0x74
+console.log(original[19]) // 0x3e
+console.log(clone[0])     // 0xFF
+console.log(clone[19])    // 0xAA
+```
+
+## Use Cases
+
+### Defensive Copying
+
+Protect against external mutation:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class Account {
+  private _address: Address
+
+  constructor(address: Address) {
+    // Clone to prevent external modification
+    this._address = address.clone()
+  }
+
+  getAddress(): Address {
+    // Return clone to prevent caller modification
+    return this._address.clone()
+  }
+}
+
+const addr = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+const account = new Account(addr)
+
+// External modification doesn't affect account
+addr[0] = 0xFF
+console.log(account.getAddress().equals(addr)) // false
+```
+
+### Immutable Updates
+
+Create modified copies:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+function incrementAddress(addr: Address): Address {
+  const clone = addr.clone()
+  const value = clone.toU256() + 1n
+  return Address.fromNumber(value)
+}
+
+const addr = Address.fromNumber(100n)
+const next = incrementAddress(addr)
+
+console.log(addr.toU256())  // 100n
+console.log(next.toU256())  // 101n
+```
+
+### Array Modifications
+
+Clone before modifying array elements:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const addresses = [
+  Address.fromNumber(1n),
+  Address.fromNumber(2n),
+  Address.fromNumber(3n),
+]
+
+// Modify copy, not original
+function processAddresses(addrs: Address[]): Address[] {
+  return addrs.map(addr => {
+    const clone = addr.clone()
+    // Modify clone...
+    return clone
+  })
+}
+```
+
+### Snapshot State
+
+Save address state at point in time:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+class Wallet {
+  private history: Address[] = []
+
+  constructor(private current: Address) {
+    this.snapshot()
+  }
+
+  snapshot() {
+    // Save clone of current state
+    this.history.push(this.current.clone())
+  }
+
+  update(newAddress: Address) {
+    this.current = newAddress.clone()
+    this.snapshot()
+  }
+
+  revert(index: number) {
+    if (index < this.history.length) {
+      this.current = this.history[index].clone()
+    }
+  }
+}
+```
+
+## When to Clone
+
+**Clone when:**
+- Storing address in mutable structure
+- Returning address from getter
+- Passing address to untrusted code
+- Creating snapshots
+
+**Don't clone when:**
+- Address is immediately consumed
+- Working with immutable patterns
+- Performance is critical and mutation controlled
+
+## Alternative: Avoid Mutation
+
+Instead of cloning, use immutable patterns:
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Instead of mutating
+function badUpdate(addr: Address) {
+  addr[0] = 0xFF // Mutation!
+  return addr
+}
+
+// Return new address
+function goodUpdate(addr: Address): Address {
+  const bytes = new Uint8Array(addr)
+  bytes[0] = 0xFF
+  return Address.fromBytes(bytes)
+}
+```
+
+## Performance
+
+**Memory:** Allocates new 20-byte array.
+
+**Time complexity:** O(n) where n = 20 (constant time for addresses).
+
+**Overhead:** Minimal - just 20 bytes.
+
+**When performance matters:**
+- Avoid cloning in tight loops
+- Reuse addresses when possible
+- Use direct byte access
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+// Less efficient (clones every iteration)
+for (let i = 0; i < 1000000; i++) {
+  const clone = addr.clone()
+  process(clone)
+}
+
+// More efficient (no cloning)
+for (let i = 0; i < 1000000; i++) {
+  process(addr) // Reuse original
+}
+```
+
+## Comparison with Other Operations
+
+```typescript
+import { Address } from '@tevm/voltaire'
+
+const original = Address.fromHex("0x742d35Cc6634C0532925a3b844Bc9e7595f51e3e")
+
+// Clone (new object, same value)
+const clone = original.clone()
+console.log(original === clone)        // false
+console.log(original.equals(clone))    // true
+
+// Assignment (same object)
+const reference = original
+console.log(original === reference)    // true
+console.log(original.equals(reference)) // true
+
+// Conversion (new object, same value)
+const fromHex = Address.fromHex(original.toHex())
+console.log(original === fromHex)      // false
+console.log(original.equals(fromHex))  // true
+```
+
+## See Also
+
+- [from](/primitives/address/from) - Universal constructor
+- [fromBytes](/primitives/address/from-bytes) - Create from bytes
+- [equals](/primitives/address/equals) - Compare addresses
+- [toBytes](/primitives/address/to-bytes) - Convert to bytes

@@ -1,0 +1,381 @@
+---
+title: Hash.isValidHex
+description: Validate hex string is valid 32-byte hash format
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.isValidHex(hex: string): boolean`
+
+Validates hex string is valid hash format. Checks length and hex characters.
+
+**Parameters:**
+- `hex: string` - Hex string to validate (with or without `0x` prefix)
+
+**Returns:** `boolean` - True if valid hash hex format (64 hex chars)
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+// Valid hex strings
+Hash.isValidHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // true
+Hash.isValidHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // true
+
+// Invalid hex strings
+Hash.isValidHex("0x1234") // false (too short)
+Hash.isValidHex("not hex") // false (invalid chars)
+Hash.isValidHex("") // false (empty)
+
+// Use before parsing
+if (Hash.isValidHex(input)) {
+  const hash = Hash.fromHex(input)
+} else {
+  console.error("Invalid hash format")
+}
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/isValidHex.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isValidHex.js#L19)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isValidHex(hex: string): boolean`
+
+Validates hex string is valid hash format. Checks length and hex characters.
+
+**Parameters:**
+- `hex: string` - Hex string to validate
+
+**Returns:** `boolean` - True if valid hash hex format
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+// Validate before parsing
+if (Hash.isValidHex(input)) {
+  const hash = Hash.fromHex(input)
+}
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/isValidHex.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isValidHex.js#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## Manual Hex Validation
+
+Zig requires manual hex validation:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+fn isValidHashHex(hex: []const u8) bool {
+    // Strip 0x prefix if present
+    const clean = if (std.mem.startsWith(u8, hex, "0x"))
+        hex[2..]
+    else
+        hex;
+
+    // Must be exactly 64 hex chars
+    if (clean.len != 64) return false;
+
+    // Check all chars are hex
+    for (clean) |c| {
+        const is_hex = (c >= '0' and c <= '9') or
+                      (c >= 'a' and c <= 'f') or
+                      (c >= 'A' and c <= 'F');
+        if (!is_hex) return false;
+    }
+
+    return true;
+}
+```
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Validates length and hex character format:
+
+```typescript
+function isValidHex(hex: string): boolean {
+  const normalized = hex.startsWith("0x") ? hex.slice(2) : hex
+  return normalized.length === 64 && /^[0-9a-fA-F]+$/.test(normalized)
+}
+```
+
+## Validation Rules
+
+### Length Requirements
+
+Must be exactly 64 hex characters (66 total with `0x`):
+
+```typescript
+// Valid (64 hex chars)
+Hash.isValidHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // true
+
+// Valid (0x + 64 hex chars)
+Hash.isValidHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // true
+
+// Invalid (too short)
+Hash.isValidHex("0x1c8aff") // false
+
+// Invalid (too long)
+Hash.isValidHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac800") // false
+
+// Invalid (odd length)
+Hash.isValidHex("0x1c8aff9") // false
+```
+
+### Character Requirements
+
+Only valid hex characters: `0-9`, `a-f`, `A-F`
+
+```typescript
+// Valid (lowercase)
+Hash.isValidHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // true
+
+// Valid (uppercase)
+Hash.isValidHex("0x1C8AFF950685C2ED4BC3174F3472287B56D9517B9C948127319A09A7A36DEAC8") // true
+
+// Valid (mixed case)
+Hash.isValidHex("0x1C8aFf950685c2ED4bc3174F3472287b56d9517B9c948127319a09A7a36deAC8") // true
+
+// Invalid (contains 'g')
+Hash.isValidHex("0x1c8agg950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // false
+
+// Invalid (contains space)
+Hash.isValidHex("0x1c8aff 950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // false
+```
+
+### Prefix Handling
+
+The `0x` prefix is optional:
+
+```typescript
+// Both valid
+Hash.isValidHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // true
+Hash.isValidHex("1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8") // true
+```
+
+## Usage Examples
+
+### Validating User Input
+
+```typescript
+function parseUserHash(input: string): Hash {
+  if (!Hash.isValidHex(input)) {
+    throw new Error("Invalid hash format")
+  }
+  return Hash.fromHex(input)
+}
+
+// Usage
+try {
+  const hash = parseUserHash(userInput)
+} catch (e) {
+  console.error("Invalid input:", e.message)
+}
+```
+
+### API Parameter Validation
+
+```typescript
+interface TransactionRequest {
+  hash: string
+  blockHash: string
+}
+
+function validateTransactionRequest(req: TransactionRequest): void {
+  if (!Hash.isValidHex(req.hash)) {
+    throw new Error("Invalid transaction hash")
+  }
+
+  if (!Hash.isValidHex(req.blockHash)) {
+    throw new Error("Invalid block hash")
+  }
+}
+```
+
+### Form Validation
+
+```typescript
+function validateHashInput(value: string): string | null {
+  if (!value) {
+    return "Hash is required"
+  }
+
+  if (!Hash.isValidHex(value)) {
+    return "Invalid hash format (must be 64 hex characters)"
+  }
+
+  return null // Valid
+}
+
+// Usage in form
+const error = validateHashInput(formData.hash)
+if (error) {
+  showError(error)
+}
+```
+
+### Safe Parsing
+
+```typescript
+function safeParseHash(hex: string): Hash | null {
+  if (!Hash.isValidHex(hex)) {
+    return null
+  }
+  return Hash.fromHex(hex)
+}
+
+// Usage
+const hash = safeParseHash(input)
+if (hash) {
+  processHash(hash)
+} else {
+  console.error("Invalid hash format")
+}
+```
+
+### Batch Validation
+
+```typescript
+function validateHashArray(hexStrings: string[]): string[] {
+  const errors: string[] = []
+
+  for (let i = 0; i < hexStrings.length; i++) {
+    if (!Hash.isValidHex(hexStrings[i])) {
+      errors.push(`Invalid hash at index ${i}: ${hexStrings[i]}`)
+    }
+  }
+
+  return errors
+}
+
+// Usage
+const errors = validateHashArray(inputs)
+if (errors.length > 0) {
+  console.error("Validation errors:", errors)
+}
+```
+
+### URL Parameter Validation
+
+```typescript
+function getTransactionFromUrl(url: URL): Hash {
+  const txHash = url.searchParams.get('tx')
+
+  if (!txHash || !Hash.isValidHex(txHash)) {
+    throw new Error("Invalid or missing transaction hash in URL")
+  }
+
+  return Hash.fromHex(txHash)
+}
+```
+
+### Database Query Validation
+
+```typescript
+async function getTransaction(hashHex: string) {
+  if (!Hash.isValidHex(hashHex)) {
+    throw new Error("Invalid hash format for database query")
+  }
+
+  return await db.transactions.findOne({
+    where: { hash: hashHex }
+  })
+}
+```
+
+### Filter Valid Hashes
+
+```typescript
+const inputs = [
+  "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+  "invalid",
+  "0x1234", // too short
+  "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+]
+
+const validHexes = inputs.filter(Hash.isValidHex)
+// ["0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+//  "ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]
+```
+
+## Avoiding Double Validation
+
+`fromHex` already validates - use `isValidHex` only when validation errors are expected:
+
+```typescript
+// ❌ Double validation (slow)
+if (Hash.isValidHex(input)) {
+  const hash = Hash.fromHex(input) // Validates again
+}
+
+// ✅ Better: let fromHex validate
+try {
+  const hash = Hash.fromHex(input)
+} catch (e) {
+  console.error("Invalid hash:", e.message)
+}
+
+// ✅ Use isValidHex when error is expected
+if (Hash.isValidHex(input)) {
+  const hash = Hash.fromHex(input)
+} else {
+  // Handle invalid input without exception
+  showErrorMessage("Invalid hash format")
+}
+```
+
+## Error Messages
+
+Provide helpful error messages based on validation:
+
+```typescript
+function validateHashWithMessage(hex: string): string | null {
+  if (!hex) {
+    return "Hash is required"
+  }
+
+  const normalized = hex.startsWith("0x") ? hex.slice(2) : hex
+
+  if (normalized.length !== 64) {
+    return `Invalid length: expected 64 hex characters, got ${normalized.length}`
+  }
+
+  if (!/^[0-9a-fA-F]+$/.test(normalized)) {
+    return "Invalid characters: only 0-9 and a-f allowed"
+  }
+
+  return null // Valid
+}
+```
+
+## Performance
+
+**Fast validation:** Regex check is fast (~10-20ns):
+
+```typescript
+console.time('isValidHex')
+for (let i = 0; i < 100000; i++) {
+  Hash.isValidHex("0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8")
+}
+console.timeEnd('isValidHex') // ~2ms = ~20ns each
+```
+
+## See Also
+
+- [fromHex](/primitives/hash/from-hex) - Parse hex string (includes validation)
+- [isHash](/primitives/hash/is-hash) - Type guard for Hash objects
+- [assert](/primitives/hash/assert) - Assert value is Hash (throws on error)
+- [Hex.isValidHex](/primitives/hex/is-valid-hex) - Validate any hex string

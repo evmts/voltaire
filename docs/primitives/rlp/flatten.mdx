@@ -1,0 +1,468 @@
+---
+title: Rlp.flatten
+description: Flatten nested RLP list into array of byte values
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Rlp.flatten(data: BrandedRlp): BytesData[]`
+
+Flatten nested list Data into array of bytes Data (depth-first). Recursively extracts all byte values from nested lists.
+
+**Parameters:**
+- `data: BrandedRlp` - RLP Data to flatten
+
+**Returns:** `BytesData[]` - Array of bytes Data structures
+
+```typescript
+type BytesData = { type: "bytes"; value: Uint8Array }
+```
+
+**Example:**
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Nested structure
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) },
+        { type: 'bytes', value: new Uint8Array([3]) }
+      ]
+    }
+  ]
+}
+
+const flat = Rlp.flatten(nested)
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) },
+//   { type: 'bytes', value: Uint8Array([3]) }
+// ]
+
+// Instance method
+const rlpData = new Rlp([...])
+const flat = rlpData.flatten()
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/flatten.js:26](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/flatten.js#L26)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `flatten(data: BrandedRlp): BytesData[]`
+
+Flatten nested list Data into array of bytes Data.
+
+**Parameters:**
+- `data: BrandedRlp` - RLP Data to flatten
+
+**Returns:** `BytesData[]` - Array of bytes Data structures
+
+**Example:**
+
+```typescript
+import { flatten } from '@tevm/voltaire/BrandedRlp'
+
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [{ type: 'bytes', value: new Uint8Array([2]) }]
+    }
+  ]
+}
+
+const flat = flatten(nested)
+// => [
+//   { type: 'bytes', value: Uint8Array([1]) },
+//   { type: 'bytes', value: Uint8Array([2]) }
+// ]
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/flatten.js:26](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/flatten.js#L26)
+
+</Tab>
+<Tab title="Zig">
+
+## `rlp.flatten(allocator: Allocator, data: Data) ![][]u8`
+
+Flatten nested RLP data to array of byte slices.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for result
+- `data: Data` - RLP data to flatten
+
+**Returns:** `[][]u8` - Array of byte slices (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const rlp = @import("primitives").rlp;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Create nested data
+const nested = rlp.Data{
+    .list = &[_]rlp.Data{
+        .{ .bytes = &[_]u8{1} },
+        .{ .list = &[_]rlp.Data{
+            .{ .bytes = &[_]u8{2} }
+        }}
+    }
+};
+
+const flat = try rlp.flatten(allocator, nested);
+defer {
+    for (flat) |item| allocator.free(item);
+    allocator.free(flat);
+}
+```
+
+**Memory:** Caller must free array and each element.
+
+**Defined in:** [primitives/rlp/data.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/data.zig)
+
+</Tab>
+</Tabs>
+
+## Flattening Order
+
+`flatten` uses depth-first traversal:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },      // #1
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) },  // #2
+        { type: 'bytes', value: new Uint8Array([3]) }   // #3
+      ]
+    },
+    { type: 'bytes', value: new Uint8Array([4]) }       // #4
+  ]
+}
+
+const flat = Rlp.flatten(nested)
+// => [
+//   { type: 'bytes', value: [1] },  // #1
+//   { type: 'bytes', value: [2] },  // #2
+//   { type: 'bytes', value: [3] },  // #3
+//   { type: 'bytes', value: [4] }   // #4
+// ]
+```
+
+## Usage Patterns
+
+### Extract Transaction Fields
+
+Extract all byte values from transaction:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const txBytes = new Uint8Array([...])
+const decoded = Rlp.decode(txBytes)
+
+// Flatten to get all fields
+const fields = Rlp.flatten(decoded.data)
+
+// Access individual fields
+const [nonce, gasPrice, gas, to, value, data, v, r, s] = fields.map(f => f.value)
+
+console.log('Nonce:', nonce)
+console.log('To:', to)
+console.log('Signature r:', r)
+```
+
+### Extract Proof Nodes
+
+Extract all nodes from Merkle proof:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const proofBytes = new Uint8Array([...])
+const decoded = Rlp.decode(proofBytes)
+
+// Flatten to get all nodes
+const nodes = Rlp.flatten(decoded.data).map(n => n.value)
+
+console.log(`Proof has ${nodes.length} nodes`)
+
+// Verify each node
+for (const node of nodes) {
+  verifyNode(node)
+}
+```
+
+### Extract Log Data
+
+Extract all data from event logs:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const logBytes = new Uint8Array([...])
+const decoded = Rlp.decode(logBytes)
+
+// Flatten to get all byte values
+const allData = Rlp.flatten(decoded.data)
+
+// First item is address
+const address = allData[0].value
+
+// Topics follow
+const topics = allData.slice(1, -1).map(t => t.value)
+
+// Last item is data
+const data = allData[allData.length - 1].value
+
+console.log('Address:', address)
+console.log('Topics:', topics)
+console.log('Data:', data)
+```
+
+### Count Byte Values
+
+Count total byte values in nested structure:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function countByteValues(rlpData: BrandedRlp): number {
+  return Rlp.flatten(rlpData).length
+}
+
+const nested = {
+  type: 'list',
+  value: [
+    { type: 'bytes', value: new Uint8Array([1]) },
+    {
+      type: 'list',
+      value: [
+        { type: 'bytes', value: new Uint8Array([2]) },
+        { type: 'bytes', value: new Uint8Array([3]) }
+      ]
+    }
+  ]
+}
+
+const count = countByteValues(nested)
+console.log(`Contains ${count} byte values`)  // 3
+```
+
+### Extract All Hashes
+
+Extract all hash values from trie:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function extractHashes(trieNode: BrandedRlp): Uint8Array[] {
+  return Rlp.flatten(trieNode)
+    .map(item => item.value)
+    .filter(bytes => bytes.length === 32)  // Filter 32-byte hashes
+}
+
+const trieBytes = new Uint8Array([...])
+const decoded = Rlp.decode(trieBytes)
+
+const hashes = extractHashes(decoded.data)
+console.log(`Found ${hashes.length} hashes`)
+```
+
+### Search for Value
+
+Search for specific byte value in nested structure:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function findValue(
+  rlpData: BrandedRlp,
+  target: Uint8Array
+): boolean {
+  const flattened = Rlp.flatten(rlpData)
+
+  for (const item of flattened) {
+    if (item.value.length === target.length) {
+      if (item.value.every((b, i) => b === target[i])) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+const nested = {...}
+const target = new Uint8Array([1, 2, 3])
+
+if (findValue(nested, target)) {
+  console.log('Found target value')
+}
+```
+
+### Calculate Total Data Size
+
+Calculate total bytes in nested structure:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function calculateTotalBytes(rlpData: BrandedRlp): number {
+  return Rlp.flatten(rlpData).reduce(
+    (sum, item) => sum + item.value.length,
+    0
+  )
+}
+
+const nested = {...}
+const totalBytes = calculateTotalBytes(nested)
+console.log(`Total: ${totalBytes} bytes`)
+```
+
+## Return Type
+
+`flatten` returns an array of `BytesData`:
+
+```typescript
+type BytesData = {
+  type: "bytes"
+  value: Uint8Array
+}
+
+// Example
+const flat: BytesData[] = Rlp.flatten(data)
+
+// Access values
+for (const item of flat) {
+  console.log('Type:', item.type)      // Always "bytes"
+  console.log('Value:', item.value)    // Uint8Array
+}
+```
+
+## Algorithm
+
+Conceptual implementation:
+
+```typescript
+function flatten(data: BrandedRlp): BytesData[] {
+  const result: BytesData[] = []
+
+  function visit(d: BrandedRlp) {
+    if (d.type === 'bytes') {
+      result.push(d)
+    } else {
+      // Recursively visit list items
+      for (const item of d.value) {
+        visit(item)
+      }
+    }
+  }
+
+  visit(data)
+  return result
+}
+```
+
+### Depth-first Traversal
+
+```
+Input:
+┌─────────────────────┐
+│ List                │
+│ ├─ Bytes [1]        │  <-- Visit #1
+│ └─ List             │
+│    ├─ Bytes [2]     │  <-- Visit #2
+│    └─ Bytes [3]     │  <-- Visit #3
+└─────────────────────┘
+
+Output:
+[
+  { type: 'bytes', value: [1] },  // #1
+  { type: 'bytes', value: [2] },  // #2
+  { type: 'bytes', value: [3] }   // #3
+]
+```
+
+## Performance
+
+### Complexity
+
+- **Time**: O(n) where n is total number of items
+- **Space**: O(n) for result array + O(d) for recursion depth
+
+### vs Manual Extraction
+
+`flatten` is more convenient than manual extraction:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const decoded = Rlp.decode(bytes)
+
+// Using flatten (simple)
+const values = Rlp.flatten(decoded.data).map(item => item.value)
+
+// Manual extraction (verbose)
+const values: Uint8Array[] = []
+function extract(data: BrandedRlp) {
+  if (data.type === 'bytes') {
+    values.push(data.value)
+  } else {
+    for (const item of data.value) {
+      extract(item)
+    }
+  }
+}
+extract(decoded.data)
+```
+
+### Caching
+
+Cache flattened results for repeated access:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+class FlatCache {
+  private cache = new Map<string, BytesData[]>()
+
+  flatten(data: BrandedRlp): BytesData[] {
+    const key = Rlp.encode(data).toString()
+
+    let cached = this.cache.get(key)
+    if (!cached) {
+      cached = Rlp.flatten(data)
+      this.cache.set(key, cached)
+    }
+
+    return cached
+  }
+}
+```
+
+## See Also
+
+- [decode](/primitives/rlp/decode) - Decode RLP bytes
+- [equals](/primitives/rlp/equals) - Compare RLP data
+- [Types](/primitives/rlp/types) - RLP type system
+- [Usage Patterns](/primitives/rlp/usage-patterns) - Real-world examples

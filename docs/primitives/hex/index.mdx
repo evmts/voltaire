@@ -44,46 +44,36 @@ const size = Hex.size(hex);
 
 ## API Methods
 
-### Constructors
+<CardGroup>
+<Card title="Constructors" icon="rocket">
+Create hex from bytes, numbers, strings, and booleans
+[View constructors →](./from)
+</Card>
+<Card title="Conversions" icon="arrow-right-arrow-left">
+Convert to bytes, numbers, bigints, strings, and booleans
+[View conversions →](./toBytes)
+</Card>
+<Card title="Validation" icon="check">
+Validate hex format, check sizes, and type guards
+[View validation →](./isHex)
+</Card>
+<Card title="Manipulation" icon="scissors">
+Concat, slice, pad, trim, and XOR operations
+[View manipulation →](./concat)
+</Card>
+<Card title="Utilities" icon="wrench">
+Size, equals, random, zero, and clone utilities
+[View utilities →](./size)
+</Card>
+</CardGroup>
 
-- [`from(value)`](./from) - Universal constructor from any input
-- [`fromBytes(bytes)`](./fromBytes) - Create from Uint8Array
-- [`fromNumber(value, size?)`](./fromNumber) - Create from number with optional padding
-- [`fromBigInt(value, size?)`](./fromBigInt) - Create from bigint with optional padding
-- [`fromString(value)`](./fromString) - Encode string as hex
-- [`fromBoolean(value)`](./fromBoolean) - Encode boolean as hex
+### Methods Reference
 
-### Conversions
-
-- [`toBytes(hex)`](./toBytes) - Convert to Uint8Array
-- [`toNumber(hex)`](./toNumber) - Convert to number (unsafe for values > 2^53-1)
-- [`toBigInt(hex)`](./toBigInt) - Convert to bigint (safe for any size)
-- [`toString(hex)`](./toString) - Decode to UTF-8 string
-- [`toBoolean(hex)`](./toBoolean) - Decode to boolean
-
-### Validation
-
-- [`isHex(value)`](./isHex) - Type guard checking if value is valid hex
-- [`validate(value)`](./validate) - Validate and throw if invalid
-- [`isSized(hex, size)`](./isSized) - Check if hex is exactly N bytes
-- [`assertSize(hex, size)`](./assertSize) - Assert hex size and throw if wrong
-
-### Manipulation
-
-- [`concat(...hexes)`](./concat) - Concatenate multiple hex strings
-- [`slice(hex, start?, end?)`](./slice) - Extract byte slice
-- [`pad(hex, size)`](./pad) - Left-pad with zeros to size
-- [`padRight(hex, size)`](./padRight) - Right-pad with zeros to size
-- [`trim(hex)`](./trim) - Remove leading zero bytes
-- [`xor(a, b)`](./xor) - Bitwise XOR of two equal-length hex strings
-
-### Utilities
-
-- [`size(hex)`](./size) - Get byte length
-- [`equals(a, b)`](./equals) - Compare hex equality
-- [`random(size)`](./random) - Generate random hex of N bytes
-- [`zero(size)`](./zero) - Create zero-filled hex of N bytes
-- [`clone(hex)`](./clone) - Create copy of hex string
+- **Constructors**: `from`, `fromBytes`, `fromNumber`, `fromBigInt`, `fromString`, `fromBoolean`
+- **Conversions**: `toBytes`, `toNumber`, `toBigInt`, `toString`, `toBoolean`
+- **Validation**: `isHex`, `validate`, `isSized`, `assertSize`
+- **Manipulation**: `concat`, `slice`, `pad`, `padRight`, `trim`, `xor`
+- **Utilities**: `size`, `equals`, `random`, `zero`, `clone`
 
 
 ## Types

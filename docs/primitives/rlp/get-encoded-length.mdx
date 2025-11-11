@@ -1,0 +1,472 @@
+---
+title: Rlp.getEncodedLength
+description: Calculate RLP-encoded size without encoding
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Rlp.getEncodedLength(data: Encodable): number`
+
+Get the total byte length of RLP-encoded data without actually encoding. Useful for pre-allocating buffers.
+
+**Parameters:**
+- `data: Encodable` - Data to measure (Uint8Array, BrandedRlp, or array)
+
+**Returns:** `number` - Length in bytes after RLP encoding
+
+**Example:**
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Calculate byte string length
+const bytes = new Uint8Array([1, 2, 3])
+const length = Rlp.getEncodedLength(bytes)
+// => 4 (0x83 prefix + 3 bytes)
+
+// Calculate list length
+const list = [new Uint8Array([1]), new Uint8Array([2])]
+const length = Rlp.getEncodedLength(list)
+// => 4 (0xc2 prefix + 2 single bytes)
+
+// Single byte < 0x80
+const single = new Uint8Array([0x7f])
+const length = Rlp.getEncodedLength(single)
+// => 1 (no prefix)
+
+// Long string
+const long = new Uint8Array(60).fill(0x42)
+const length = Rlp.getEncodedLength(long)
+// => 62 (0xb8 + 60 + 60 bytes)
+
+// Instance method
+const rlpData = new Rlp(new Uint8Array([1, 2, 3]))
+const length = rlpData.getEncodedLength()
+// => 4
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/getEncodedLength.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/getEncodedLength.js#L18)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `getEncodedLength(data: Encodable): number`
+
+Get the total byte length of RLP-encoded data without actually encoding.
+
+**Parameters:**
+- `data: Encodable` - Data to measure
+
+**Returns:** `number` - Length in bytes after RLP encoding
+
+**Example:**
+
+```typescript
+import { getEncodedLength } from '@tevm/voltaire/BrandedRlp'
+
+const bytes = new Uint8Array([1, 2, 3])
+const length = getEncodedLength(bytes)
+// => 4 (0x83 prefix + 3 bytes)
+```
+
+**Defined in:** [primitives/Rlp/BrandedRlp/getEncodedLength.js:18](https://github.com/evmts/voltaire/blob/main/src/primitives/Rlp/BrandedRlp/getEncodedLength.js#L18)
+
+</Tab>
+<Tab title="Zig">
+
+## `rlp.getEncodedLength(data: anytype) usize`
+
+Calculate RLP-encoded size without encoding.
+
+**Parameters:**
+- `data: anytype` - Data to measure
+
+**Returns:** `usize` - Length in bytes
+
+**Example:**
+
+```zig
+const std = @import("std");
+const rlp = @import("primitives").rlp;
+
+const bytes = [_]u8{ 1, 2, 3 };
+const length = rlp.getEncodedLength(&bytes);
+// length = 4
+```
+
+**Defined in:** [primitives/rlp/encode.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/rlp/encode.zig)
+
+</Tab>
+</Tabs>
+
+## Length Calculation Rules
+
+### Single Byte < 0x80
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const byte = new Uint8Array([0x7f])
+Rlp.getEncodedLength(byte)
+// => 1 (no prefix)
+
+const high = new Uint8Array([0x80])
+Rlp.getEncodedLength(high)
+// => 2 (0x81 prefix + 1 byte)
+```
+
+### Short String (0-55 bytes)
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Empty bytes: [0x80]
+const empty = new Uint8Array([])
+Rlp.getEncodedLength(empty)
+// => 1 (just prefix)
+
+// 3 bytes: [0x83, 1, 2, 3]
+const bytes = new Uint8Array([1, 2, 3])
+Rlp.getEncodedLength(bytes)
+// => 4 (1 prefix + 3 bytes)
+
+// 55 bytes: [0xb7, ...55 bytes]
+const max = new Uint8Array(55)
+Rlp.getEncodedLength(max)
+// => 56 (1 prefix + 55 bytes)
+```
+
+### Long String (56+ bytes)
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// 56 bytes: [0xb8, 56, ...56 bytes]
+const min = new Uint8Array(56)
+Rlp.getEncodedLength(min)
+// => 58 (1 prefix + 1 length + 56 bytes)
+
+// 256 bytes: [0xb9, 0x01, 0x00, ...256 bytes]
+const large = new Uint8Array(256)
+Rlp.getEncodedLength(large)
+// => 259 (1 prefix + 2 length + 256 bytes)
+
+// 65536 bytes: [0xba, 0x01, 0x00, 0x00, ...65536 bytes]
+const huge = new Uint8Array(65536)
+Rlp.getEncodedLength(huge)
+// => 65540 (1 prefix + 3 length + 65536 bytes)
+```
+
+### Short List (< 56 bytes total)
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// Empty list: [0xc0]
+const empty = []
+Rlp.getEncodedLength(empty)
+// => 1 (just prefix)
+
+// List with 2 single bytes: [0xc2, 0x01, 0x02]
+const list = [new Uint8Array([0x01]), new Uint8Array([0x02])]
+Rlp.getEncodedLength(list)
+// => 3 (1 prefix + 2 bytes)
+
+// List with short strings: [0xc7, 0x82, 1, 2, 0x83, 3, 4, 5]
+const strings = [
+  new Uint8Array([1, 2]),     // 3 bytes encoded
+  new Uint8Array([3, 4, 5])   // 4 bytes encoded
+]
+Rlp.getEncodedLength(strings)
+// => 8 (1 prefix + 7 bytes payload)
+```
+
+### Long List (56+ bytes total)
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+// List with 60 bytes total: [0xf8, 60, ...]
+const items = Array.from({ length: 30 }, () => new Uint8Array([0x01, 0x02]))
+Rlp.getEncodedLength(items)
+// => 62 (1 prefix + 1 length + 60 bytes)
+
+// List with 256 bytes total: [0xf9, 0x01, 0x00, ...]
+const large = Array.from({ length: 128 }, () => new Uint8Array([0x01, 0x02]))
+Rlp.getEncodedLength(large)
+// => 259 (1 prefix + 2 length + 256 bytes)
+```
+
+## Usage Patterns
+
+### Pre-allocate Buffers
+
+Allocate exact buffer size before encoding:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const data = [
+  new Uint8Array([1, 2, 3]),
+  new Uint8Array([4, 5, 6])
+]
+
+// Calculate size first
+const size = Rlp.getEncodedLength(data)
+console.log(`Need ${size} bytes`)
+
+// Allocate buffer of exact size
+const buffer = new Uint8Array(size)
+
+// Then encode
+const encoded = Rlp.encode(data)
+// encoded.length === size
+```
+
+### Batch Size Estimation
+
+Estimate total size for batches:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface Transaction {
+  nonce: bigint
+  gasPrice: bigint
+  gasLimit: bigint
+  to: Uint8Array
+  value: bigint
+  data: Uint8Array
+}
+
+function estimateBatchSize(txs: Transaction[]): number {
+  let totalSize = 0
+
+  for (const tx of txs) {
+    const fields = [
+      bigintToBytes(tx.nonce),
+      bigintToBytes(tx.gasPrice),
+      bigintToBytes(tx.gasLimit),
+      tx.to,
+      bigintToBytes(tx.value),
+      tx.data
+    ]
+
+    totalSize += Rlp.getEncodedLength(fields)
+  }
+
+  return totalSize
+}
+
+const txs = [tx1, tx2, tx3]
+const size = estimateBatchSize(txs)
+console.log(`Batch will be ${size} bytes`)
+```
+
+### Block Size Calculation
+
+Calculate block size before encoding:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface Block {
+  header: BlockHeader
+  transactions: Transaction[]
+  uncles: BlockHeader[]
+}
+
+function calculateBlockSize(block: Block): number {
+  const headerSize = Rlp.getEncodedLength(encodeBlockHeader(block.header))
+  const txsSize = block.transactions.reduce(
+    (sum, tx) => sum + Rlp.getEncodedLength(encodeTx(tx)),
+    0
+  )
+  const unclesSize = block.uncles.reduce(
+    (sum, uncle) => sum + Rlp.getEncodedLength(encodeBlockHeader(uncle)),
+    0
+  )
+
+  return headerSize + txsSize + unclesSize
+}
+```
+
+### Network Message Sizing
+
+Check message sizes before sending:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const MAX_MESSAGE_SIZE = 10 * 1024 * 1024  // 10 MB
+
+function canSendMessage(data: any[]): boolean {
+  const size = Rlp.getEncodedLength(data)
+  return size <= MAX_MESSAGE_SIZE
+}
+
+const messages = [...]
+if (canSendMessage(messages)) {
+  const encoded = Rlp.encode(messages)
+  send(encoded)
+} else {
+  console.error('Message too large')
+}
+```
+
+### Merkle Tree Size
+
+Calculate merkle tree proof sizes:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+function calculateProofSize(proof: Uint8Array[]): number {
+  return Rlp.getEncodedLength(proof)
+}
+
+const proof = [
+  new Uint8Array(32).fill(0x01),  // Node 1
+  new Uint8Array(32).fill(0x02),  // Node 2
+  new Uint8Array(32).fill(0x03)   // Node 3
+]
+
+const size = calculateProofSize(proof)
+console.log(`Proof is ${size} bytes`)
+```
+
+### Storage Estimation
+
+Estimate storage requirements:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+interface StorageEntry {
+  key: Uint8Array
+  value: Uint8Array
+}
+
+function estimateStorageSize(entries: StorageEntry[]): number {
+  return entries.reduce((sum, entry) => {
+    const encoded = [entry.key, entry.value]
+    return sum + Rlp.getEncodedLength(encoded)
+  }, 0)
+}
+
+const entries = [
+  { key: new Uint8Array([1]), value: new Uint8Array([2, 3]) },
+  { key: new Uint8Array([4]), value: new Uint8Array([5, 6]) }
+]
+
+const size = estimateStorageSize(entries)
+console.log(`Storage will use ${size} bytes`)
+```
+
+## Algorithm
+
+Conceptual implementation:
+
+```typescript
+function getEncodedLength(data: Encodable): number {
+  // Single byte < 0x80
+  if (data instanceof Uint8Array) {
+    if (data.length === 1 && data[0] < 0x80) {
+      return 1
+    }
+
+    // Short string (0-55 bytes)
+    if (data.length < 56) {
+      return 1 + data.length
+    }
+
+    // Long string (56+ bytes)
+    const lengthBytes = Math.ceil(Math.log2(data.length + 1) / 8)
+    return 1 + lengthBytes + data.length
+  }
+
+  // List
+  if (Array.isArray(data)) {
+    // Calculate total payload length
+    const totalLength = data.reduce(
+      (sum, item) => sum + getEncodedLength(item),
+      0
+    )
+
+    // Short list (< 56 bytes)
+    if (totalLength < 56) {
+      return 1 + totalLength
+    }
+
+    // Long list (56+ bytes)
+    const lengthBytes = Math.ceil(Math.log2(totalLength + 1) / 8)
+    return 1 + lengthBytes + totalLength
+  }
+
+  throw new Error('Invalid encodable data type')
+}
+```
+
+## Performance
+
+### Zero Allocation
+
+`getEncodedLength` doesn't allocate memory:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const data = new Uint8Array(1000000)
+
+// Fast - no allocation
+const length = Rlp.getEncodedLength(data)
+
+// Slow - allocates 1MB+
+const encoded = Rlp.encode(data)
+```
+
+### vs Encoding
+
+Much faster than encoding + measuring:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const data = [...]
+
+// Fast: O(n) where n is item count
+const size = Rlp.getEncodedLength(data)
+
+// Slow: O(n) + allocation overhead
+const encoded = Rlp.encode(data)
+const size = encoded.length
+```
+
+### Nested Structures
+
+Handles nested structures recursively:
+
+```typescript
+import { Rlp } from '@tevm/voltaire'
+
+const nested = [
+  new Uint8Array([1]),
+  [
+    new Uint8Array([2]),
+    [
+      new Uint8Array([3])
+    ]
+  ]
+]
+
+// Recursively calculates size
+const size = Rlp.getEncodedLength(nested)
+```
+
+## See Also
+
+- [encode](/primitives/rlp/encode) - Encode data to RLP
+- [encodeBytes](/primitives/rlp/encode-bytes) - Encode byte string
+- [encodeList](/primitives/rlp/encode-list) - Encode list
+- [Algorithm](/primitives/rlp/algorithm) - RLP specification

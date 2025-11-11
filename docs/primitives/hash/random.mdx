@@ -1,0 +1,409 @@
+---
+title: Hash.random
+description: Generate cryptographically secure random hash using Web Crypto API
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.random(): Hash`
+
+Generates cryptographically secure random hash using Web Crypto API.
+
+**Returns:** `Hash` - Random 32-byte hash
+
+**Throws:**
+- `Error` - If `crypto.getRandomValues` not available
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+// Generate random hash
+const randomHash = Hash.random()
+
+// Generate multiple random hashes
+const hashes = Array.from({ length: 10 }, () => Hash.random())
+
+// Use as nonce or salt
+const salt = Hash.random()
+const commitment = Hash.keccak256(new Uint8Array([...data, ...salt]))
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/random.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/random.js#L16)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `random(): BrandedHash`
+
+Generates cryptographically secure random hash using Web Crypto API.
+
+**Returns:** `BrandedHash` - Random 32-byte hash
+
+**Throws:**
+- `Error` - If `crypto.getRandomValues` not available
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+// Generate random hash
+const randomHash = Hash.random()
+
+// Generate array of random hashes
+const hashes = Array.from({ length: 10 }, () => Hash.random())
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/random.js:16](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/random.js#L16)
+
+</Tab>
+<Tab title="Zig">
+
+## Random Bytes
+
+Zig uses `std.crypto.random` for cryptographically secure random bytes:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+var hash: [32]u8 = undefined;
+std.crypto.random.bytes(&hash);
+
+// Multiple random hashes
+var hashes: [10][32]u8 = undefined;
+for (&hashes) |*hash| {
+    std.crypto.random.bytes(hash);
+}
+```
+
+**Cryptographically secure:** Uses system random number generator.
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Uses Web Crypto API's `crypto.getRandomValues()`:
+
+```typescript
+function random(): BrandedHash {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const bytes = new Uint8Array(32)
+    crypto.getRandomValues(bytes)
+    return bytes as BrandedHash
+  }
+  throw new Error("crypto.getRandomValues not available")
+}
+```
+
+**Available in:**
+- Modern browsers
+- Node.js 15+
+- Deno
+- Bun
+
+## Usage Examples
+
+### Generating Salts
+
+```typescript
+// Create commitment with random salt
+function createCommitment(secret: string): { commitment: Hash; salt: Hash } {
+  const salt = Hash.random()
+  const secretBytes = new TextEncoder().encode(secret)
+  const combined = new Uint8Array([...secretBytes, ...salt])
+  const commitment = Hash.keccak256(combined)
+
+  return { commitment, salt }
+}
+
+// Later reveal
+function revealCommitment(secret: string, salt: Hash): Hash {
+  const secretBytes = new TextEncoder().encode(secret)
+  const combined = new Uint8Array([...secretBytes, ...salt])
+  return Hash.keccak256(combined)
+}
+```
+
+### Generating Nonces
+
+```typescript
+interface Transaction {
+  to: Address
+  value: bigint
+  data: Uint8Array
+  nonce: Hash
+}
+
+function createTransaction(
+  to: Address,
+  value: bigint,
+  data: Uint8Array
+): Transaction {
+  return {
+    to,
+    value,
+    data,
+    nonce: Hash.random() // Random nonce
+  }
+}
+```
+
+### Test Data Generation
+
+```typescript
+// Generate random test hashes
+function generateTestHashes(count: number): Hash[] {
+  return Array.from({ length: count }, () => Hash.random())
+}
+
+// Generate random Merkle tree leaves
+const leaves = generateTestHashes(100)
+const root = Hash.merkleRoot(leaves)
+```
+
+### Mock Data
+
+```typescript
+interface MockTransaction {
+  hash: Hash
+  from: Address
+  to: Address
+  value: bigint
+}
+
+function createMockTransaction(): MockTransaction {
+  return {
+    hash: Hash.random(),
+    from: Address.random(),
+    to: Address.random(),
+    value: BigInt(Math.random() * 1e18)
+  }
+}
+```
+
+### Challenge Generation
+
+```typescript
+// Generate random challenge for proof-of-work
+function generateChallenge(): Hash {
+  return Hash.random()
+}
+
+// Verify solution
+function verifySolution(challenge: Hash, solution: Uint8Array): boolean {
+  const hash = Hash.keccak256(new Uint8Array([...challenge, ...solution]))
+  // Check if hash meets difficulty target
+  return hash[0] === 0 && hash[1] === 0
+}
+```
+
+### Session IDs
+
+```typescript
+class Session {
+  id: Hash
+  createdAt: number
+
+  constructor() {
+    this.id = Hash.random()
+    this.createdAt = Date.now()
+  }
+
+  toString(): string {
+    return this.id.format()
+  }
+}
+```
+
+### Unique Identifiers
+
+```typescript
+interface Document {
+  id: Hash
+  content: string
+  timestamp: number
+}
+
+function createDocument(content: string): Document {
+  return {
+    id: Hash.random(),
+    content,
+    timestamp: Date.now()
+  }
+}
+```
+
+### Placeholder Values
+
+```typescript
+// Placeholder hash for pending transactions
+const PENDING_HASH = Hash.random()
+
+// Placeholder block hash
+const GENESIS_HASH = Hash.random()
+
+// Use in tests
+function createPendingTransaction(): Transaction {
+  return {
+    hash: PENDING_HASH,
+    blockHash: Hash.ZERO,
+    status: 'pending'
+  }
+}
+```
+
+### Blind Signatures
+
+```typescript
+// Generate random blinding factor
+function blindMessage(message: Hash): { blinded: Hash; blindingFactor: Hash } {
+  const blindingFactor = Hash.random()
+
+  const combined = new Uint8Array([...message, ...blindingFactor])
+  const blinded = Hash.keccak256(combined)
+
+  return { blinded, blindingFactor }
+}
+
+// Unblind signature
+function unblindSignature(
+  blindedSig: Hash,
+  blindingFactor: Hash
+): Hash {
+  const combined = new Uint8Array([...blindedSig, ...blindingFactor])
+  return Hash.keccak256(combined)
+}
+```
+
+## Security
+
+**Cryptographically secure:** Uses `crypto.getRandomValues()` which is cryptographically secure random number generator (CSPRNG).
+
+**Suitable for:**
+- ✅ Cryptographic keys
+- ✅ Salts
+- ✅ Nonces
+- ✅ Challenge generation
+- ✅ Session IDs
+
+**NOT suitable for:**
+- ❌ Deterministic key derivation (use HKDF)
+- ❌ Password hashing (use Argon2/scrypt/PBKDF2)
+
+### Entropy Source
+
+Web Crypto API uses system entropy:
+- **Browser:** OS-provided CSPRNG
+- **Node.js:** OpenSSL RAND_bytes
+- **Deno/Bun:** System random device
+
+```typescript
+// High-quality random bytes
+const random1 = Hash.random() // Unpredictable
+const random2 = Hash.random() // Different from random1
+const random3 = Hash.random() // Different from random1 and random2
+```
+
+## Performance
+
+**Fast generation:** ~1-2μs per hash on modern hardware:
+
+```typescript
+console.time('random')
+for (let i = 0; i < 10000; i++) {
+  Hash.random()
+}
+console.timeEnd('random') // ~10-20ms = ~1-2μs each
+```
+
+**Comparison:**
+```typescript
+// Random generation (1-2μs)
+Hash.random()
+
+// Hashing (slower, ~10-20μs)
+Hash.keccak256(data)
+
+// Hex parsing (slower, ~50-100ns)
+Hash.fromHex("0x1234...")
+```
+
+## Collision Probability
+
+With 32 bytes (256 bits), collision probability is astronomically low:
+
+**Birthday paradox:**
+- 2^128 hashes needed for 50% collision chance
+- ~10^38 hashes
+- Impossible in practice
+
+```typescript
+// Generate millions of random hashes
+const hashes = new Set<string>()
+for (let i = 0; i < 1000000; i++) {
+  hashes.add(Hash.random().toHex())
+}
+
+console.log(hashes.size) // 1000000 (no collisions)
+```
+
+## Deterministic Alternatives
+
+For deterministic generation, use hashing instead:
+
+```typescript
+// ❌ Random (non-deterministic)
+const random = Hash.random()
+
+// ✅ Deterministic from seed
+function deterministicHash(seed: string): Hash {
+  return Hash.keccak256String(seed)
+}
+
+// ✅ Deterministic sequence
+function generateSequence(seed: string, count: number): Hash[] {
+  const hashes: Hash[] = []
+  let current = Hash.keccak256String(seed)
+
+  for (let i = 0; i < count; i++) {
+    hashes.push(current)
+    current = Hash.keccak256(current) // Hash of hash
+  }
+
+  return hashes
+}
+```
+
+## Environment Detection
+
+Check if random is available:
+
+```typescript
+function isRandomAvailable(): boolean {
+  return typeof crypto !== "undefined" &&
+         typeof crypto.getRandomValues === "function"
+}
+
+// Graceful fallback
+function getHash(): Hash {
+  if (isRandomAvailable()) {
+    return Hash.random()
+  } else {
+    // Fallback to deterministic hash
+    return Hash.keccak256String(`fallback-${Date.now()}`)
+  }
+}
+```
+
+## See Also
+
+- [keccak256](/primitives/hash/keccak256) - Deterministic hashing
+- [fromBytes](/primitives/hash/from-bytes) - Create Hash from bytes
+- [clone](/primitives/hash/clone) - Copy existing hash
+- [Address.random](/primitives/address/random) - Random addresses

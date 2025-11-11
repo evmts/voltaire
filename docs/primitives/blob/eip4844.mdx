@@ -1,0 +1,491 @@
+---
+title: EIP-4844 Specification
+description: Detailed EIP-4844 proto-danksharding specification coverage
+---
+
+EIP-4844 (Proto-Danksharding) introduces blobs to Ethereum, enabling L2 rollups to post data at significantly reduced costs. This page covers the technical specification in detail.
+
+## Overview
+
+**EIP**: [4844 - Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844)
+**Status**: Final (Deployed in Dencun upgrade, March 2024)
+**Purpose**: Temporary data availability for L2 rollups
+
+### Key Changes
+
+1. **New Transaction Type** - Type 3 (0x03) for blob transactions
+2. **Blob Data** - 131,072 bytes per blob, max 6 per transaction
+3. **Separate Gas Market** - Blob gas independent from execution gas
+4. **Temporary Storage** - Blobs pruned after ~18 days
+5. **KZG Commitments** - Cryptographic proofs for data integrity
+
+## Blob Structure
+
+### Field Elements
+
+Blobs contain 4,096 field elements over BLS12-381 scalar field:
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+console.log(Blob.SIZE);                    // 131,072 bytes (128 KB)
+console.log(Blob.FIELD_ELEMENTS_PER_BLOB); // 4,096 elements
+console.log(Blob.BYTES_PER_FIELD_ELEMENT); // 32 bytes per element
+
+// Total: 4,096 * 32 = 131,072 bytes
+```
+
+### Field Element Constraints
+
+Each 32-byte element must be < BLS12-381 scalar field modulus:
+
+```
+Modulus (p):
+0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+
+Decimal:
+52435875175126190479447740508185965837690552500527637822603658699938581184513
+```
+
+Elements >= modulus cause transaction rejection.
+
+## Transaction Format
+
+### Type 3 Transaction
+
+```typescript
+interface BlobTransaction {
+  type: '0x03';
+  chainId: bigint;
+  nonce: bigint;
+  maxPriorityFeePerGas: bigint;
+  maxFeePerGas: bigint;
+  gas: bigint;
+  to: Address;
+  value: bigint;
+  data: Uint8Array;
+  accessList: AccessList;
+  maxFeePerBlobGas: bigint;              // Blob-specific
+  blobVersionedHashes: VersionedHash[];  // Blob-specific
+  // Signature fields
+  v: bigint;
+  r: bigint;
+  s: bigint;
+}
+```
+
+### Blob Sidecar
+
+Blobs, commitments, and proofs are NOT included in on-chain transaction:
+
+```typescript
+interface BlobSidecar {
+  blobs: Blob[];              // Not on-chain
+  commitments: Commitment[];  // Not on-chain
+  proofs: Proof[];            // Not on-chain
+}
+```
+
+Only `blobVersionedHashes` are stored on-chain permanently.
+
+### Complete Example
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Prepare blob data
+const data = new TextEncoder().encode("Rollup batch");
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+const proof = Blob.toProof(blob);
+const versionedHash = Blob.Commitment.toVersionedHash(commitment);
+
+// Create transaction
+const tx = {
+  type: '0x03',
+  chainId: 1n,
+  nonce: 42n,
+  maxPriorityFeePerGas: 1_000_000_000n,  // 1 gwei
+  maxFeePerGas: 30_000_000_000n,         // 30 gwei
+  gas: 21000n,
+  to: '0xYourContract',
+  value: 0n,
+  data: '0x',
+  accessList: [],
+  maxFeePerBlobGas: 100_000_000n,        // 100 gwei
+  blobVersionedHashes: [versionedHash],  // On-chain
+  // Sidecar (mempool only)
+  blobs: [blob],
+  commitments: [commitment],
+  proofs: [proof],
+};
+```
+
+## Blob Gas Market
+
+### Gas Parameters
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+console.log(Blob.GAS_PER_BLOB);        // 131,072 (2^17)
+console.log(Blob.TARGET_GAS_PER_BLOCK); // 393,216 (3 blobs)
+
+// Maximum per block: 6 blobs
+const maxGas = Blob.GAS_PER_BLOB * 6;
+console.log(maxGas); // 786,432
+```
+
+### Base Fee Adjustment
+
+Blob base fee adjusts exponentially based on usage:
+
+```
+Target: 3 blobs per block (393,216 gas)
+Max: 6 blobs per block (786,432 gas)
+
+If excess_blob_gas > 0:
+  blob_base_fee increases
+
+If excess_blob_gas < 0:
+  blob_base_fee decreases
+```
+
+### Formula
+
+```python
+# EIP-4844 fee adjustment
+BLOB_BASE_FEE_UPDATE_FRACTION = 3338477
+
+def fake_exponential(factor, numerator, denominator):
+    """Approximation of e^(factor * numerator / denominator)"""
+    i = 1
+    output = 0
+    numerator_accumulator = factor * denominator
+    while numerator_accumulator > 0:
+        output += numerator_accumulator
+        numerator_accumulator = (numerator_accumulator * numerator) // (denominator * i)
+        i += 1
+    return output // denominator
+
+def get_blob_base_fee(excess_blob_gas):
+    """Calculate blob base fee from excess gas"""
+    return fake_exponential(
+        1,  # MIN_BASE_FEE_PER_BLOB_GAS
+        excess_blob_gas,
+        BLOB_BASE_FEE_UPDATE_FRACTION
+    )
+```
+
+### Example Calculation
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Block with 2 blobs (below target of 3)
+const usedGas = Blob.calculateGas(2);
+const targetGas = Blob.TARGET_GAS_PER_BLOCK;
+
+if (usedGas < targetGas) {
+  console.log('Next block: fee decreases');
+  // excess_blob_gas becomes more negative
+}
+
+// Block with 5 blobs (above target)
+const highUsage = Blob.calculateGas(5);
+
+if (highUsage > targetGas) {
+  console.log('Next block: fee increases');
+  // excess_blob_gas becomes more positive
+}
+```
+
+## Versioned Hashes
+
+### Format
+
+```
+┌─────────────┬──────────────────────────────────────┐
+│  Version    │  SHA256(commitment)[1:32]            │
+├─────────────┼──────────────────────────────────────┤
+│  0x01       │  31 bytes from hash                  │
+└─────────────┴──────────────────────────────────────┘
+```
+
+### Computation
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+import { sha256 } from '@noble/hashes/sha256';
+
+const blob = Blob.fromData(data);
+const commitment = Blob.toCommitment(blob);
+
+// SHA256 of commitment
+const hash = sha256(commitment);
+
+// Versioned hash: 0x01 + hash[1:32]
+const versionedHash = new Uint8Array(32);
+versionedHash[0] = 0x01; // KZG version
+versionedHash.set(hash.slice(1), 1);
+
+// Verify
+const auto = Blob.Commitment.toVersionedHash(commitment);
+console.log(Blob.equals(versionedHash, auto)); // true
+```
+
+### Version Byte
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+console.log(Blob.COMMITMENT_VERSION_KZG); // 0x01
+
+// Future versions (not yet used)
+// 0x02 = Future commitment scheme
+// 0x03 = Another scheme
+```
+
+## Data Availability
+
+### Retention Period
+
+```typescript
+// Constants
+const MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS = 4096;
+const SECONDS_PER_EPOCH = 384; // 32 slots * 12 seconds
+const RETENTION_SECONDS = MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS * SECONDS_PER_EPOCH;
+const RETENTION_DAYS = RETENTION_SECONDS / 86400;
+
+console.log(`Retention: ~${RETENTION_DAYS} days`); // ~18 days
+```
+
+### Pruning
+
+After ~18 days:
+- **Pruned**: Blob data, commitments, proofs
+- **Retained**: Versioned hashes (on-chain)
+
+L2s MUST:
+1. Download blob data within retention period
+2. Store data locally for fraud/validity proofs
+3. Make data available to users (RPC nodes)
+
+### Example: L2 Data Recovery
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class L2DataManager {
+  async storeBlock(blockNumber: number, blobs: Blob[]) {
+    // Download blobs from beacon chain
+    const data = Blob.joinData(blobs);
+
+    // Store in local database
+    await this.db.put(`block:${blockNumber}`, data);
+
+    console.log(`Stored block ${blockNumber}: ${data.length} bytes`);
+  }
+
+  async getBlock(blockNumber: number): Promise<Uint8Array> {
+    // Retrieve from local storage
+    const data = await this.db.get(`block:${blockNumber}`);
+
+    if (!data) {
+      throw new Error(`Block ${blockNumber} not available (pruned)`);
+    }
+
+    return data;
+  }
+}
+```
+
+## KZG Commitments
+
+### Trusted Setup
+
+EIP-4844 uses KZG commitments with trusted setup from [KZG Ceremony](https://ceremony.ethereum.org/):
+
+- **Participants**: 4,096+ contributors
+- **Security**: Safe if at least 1 participant honest
+- **Powers of Tau**: 4,096 (matching blob field elements)
+
+### Commitment Binding
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Different data = different commitments
+const blob1 = Blob.fromData(data1);
+const blob2 = Blob.fromData(data2);
+
+const commitment1 = blob1.toCommitment();
+const commitment2 = blob2.toCommitment();
+
+console.log(Blob.equals(commitment1, commitment2)); // false
+
+// Cannot create valid proof for wrong blob
+const proof1 = blob1.toProof();
+console.log(Blob.verify(blob1, commitment1, proof1)); // true
+console.log(Blob.verify(blob2, commitment1, proof1)); // false
+```
+
+## Network Propagation
+
+### Mempool Inclusion
+
+Blob transactions in mempool include full sidecar:
+- Transaction (with versioned hashes)
+- Blobs (full 131,072 bytes each)
+- Commitments (48 bytes each)
+- Proofs (48 bytes each)
+
+### Block Inclusion
+
+Blocks include only:
+- Transaction (with versioned hashes)
+
+Validators must:
+1. Verify KZG proofs before including
+2. Publish blob sidecar to beacon chain
+3. Store blobs for retention period
+
+### Example: Validator Verification
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+class BlobValidator {
+  verifyTransaction(tx: BlobTransaction): boolean {
+    // Verify arrays match
+    if (
+      tx.blobs.length !== tx.commitments.length ||
+      tx.blobs.length !== tx.proofs.length ||
+      tx.blobs.length !== tx.blobVersionedHashes.length
+    ) {
+      return false;
+    }
+
+    // Verify blob count
+    if (tx.blobs.length > Blob.MAX_PER_TRANSACTION) {
+      return false;
+    }
+
+    // Batch verify KZG proofs
+    if (!Blob.verifyBatch(tx.blobs, tx.commitments, tx.proofs)) {
+      return false;
+    }
+
+    // Verify versioned hashes
+    for (let i = 0; i < tx.blobs.length; i++) {
+      const computed = Blob.Commitment.toVersionedHash(tx.commitments[i]);
+      if (!Blob.equals(computed, tx.blobVersionedHashes[i])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+}
+```
+
+## Transaction Costs
+
+### Total Cost
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Execution gas (normal transaction)
+const executionGas = 21000n;
+const executionBaseFee = 30_000_000_000n; // 30 gwei
+const executionCost = executionGas * executionBaseFee;
+
+// Blob gas (separate market)
+const blobCount = 2;
+const blobBaseFee = 50_000_000n; // 50 gwei
+const blobGas = Blob.calculateGas(blobCount);
+const blobCost = BigInt(blobGas) * blobBaseFee;
+
+// Total
+const totalCost = executionCost + blobCost;
+
+console.log(`Execution: ${executionCost / 10n**9n} gwei`);
+console.log(`Blobs: ${blobCost / 10n**9n} gwei`);
+console.log(`Total: ${totalCost / 10n**9n} gwei`);
+```
+
+### Comparison with Calldata
+
+```typescript
+import { Blob } from '@tevm/voltaire';
+
+// Blob transaction (2 blobs = ~256 KB)
+const blobBytes = Blob.SIZE * 2;
+const blobGas = Blob.calculateGas(2);
+const blobBaseFee = 50_000_000n;
+const blobCost = BigInt(blobGas) * blobBaseFee;
+
+// Equivalent calldata
+const calldataGas = BigInt(blobBytes) * 16n; // 16 gas per byte
+const executionBaseFee = 30_000_000_000n;
+const calldataCost = calldataGas * executionBaseFee;
+
+console.log(`Blob cost: ${blobCost / 10n**9n} gwei`);
+console.log(`Calldata cost: ${calldataCost / 10n**9n} gwei`);
+
+const savings = ((1 - Number(blobCost) / Number(calldataCost)) * 100).toFixed(1);
+console.log(`Savings: ${savings}%`);
+```
+
+## Consensus Layer Integration
+
+### Beacon Chain Storage
+
+Blobs stored in beacon chain for ~18 days:
+- Location: Separate from execution payload
+- Access: Via beacon node API
+- Pruning: Automatic after retention period
+
+### RPC Endpoints
+
+```typescript
+// Fetch blobs for transaction (beacon node)
+const response = await fetch(
+  `http://beacon-node/eth/v1/beacon/blob_sidecars/${slot}`
+);
+const sidecars = await response.json();
+
+// Each sidecar contains:
+// - blob: 131,072 bytes
+// - kzg_commitment: 48 bytes
+// - kzg_proof: 48 bytes
+```
+
+## Upgrade Path
+
+EIP-4844 is step 1 of full danksharding:
+
+1. **Proto-Danksharding (EIP-4844)** - Current
+   - 6 blobs per block (768 KB)
+   - KZG commitments
+   - Temporary storage
+
+2. **Full Danksharding** - Future
+   - 64+ blobs per block (8+ MB)
+   - Data availability sampling
+   - Same commitment scheme
+
+## Resources
+
+- **[EIP-4844 Specification](https://eips.ethereum.org/EIPS/eip-4844)** - Official EIP
+- **[KZG Ceremony](https://ceremony.ethereum.org/)** - Trusted setup details
+- **[Dencun Upgrade](https://ethereum.org/en/roadmap/dencun/)** - EIP-4844 deployment
+- **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** - Reference implementation
+- **[Danksharding Roadmap](https://ethereum.org/en/roadmap/danksharding/)** - Full scaling plan
+
+## See Also
+
+- [Fundamentals](/primitives/blob/fundamentals) - Blob basics and EIP-4844 overview
+- [KZG](/primitives/blob/kzg) - KZG commitment scheme deep dive
+- [Usage Patterns](/primitives/blob/usage-patterns) - Real-world examples

@@ -97,43 +97,34 @@ const verifyHash = Hash.keccak256(receivedTx);
 console.log(txHash.equals(verifyHash)); // true
 ```
 
-## API Documentation
+## API Methods
 
-### Constructors
-
-Create hash from hex strings, Uint8Array, or generic input.
-
-    [View constructors →](./from)
-
-### Hashing
-
-Compute Keccak-256 hashes from bytes, strings, and hex data.
-
-    [View hashing →](./keccak256)
-
-### Conversions
-
-Convert hashes to hex strings, bytes, and display formats.
-
-    [View conversions →](./toHex)
-
-### Comparisons
-
-Compare hash equality and check for zero values.
-
-    [View comparisons →](./equals)
-
-### Validation
-
-Validate hash format and check type constraints.
-
-    [View validation →](./isHash)
-
-### Utilities
-
-Generate random hashes, clone, slice, and format for display.
-
-    [View utilities →](./random)
+<CardGroup>
+<Card title="Constructors" icon="rocket">
+Create hash from hex strings, Uint8Array, or generic input
+[View constructors →](./from)
+</Card>
+<Card title="Hashing" icon="hashtag">
+Compute Keccak-256 hashes from bytes, strings, and hex data
+[View hashing →](./keccak256)
+</Card>
+<Card title="Conversions" icon="arrow-right-arrow-left">
+Convert hashes to hex strings, bytes, and display formats
+[View conversions →](./toHex)
+</Card>
+<Card title="Comparisons" icon="code-compare">
+Compare hash equality and check for zero values
+[View comparisons →](./equals)
+</Card>
+<Card title="Validation" icon="check">
+Validate hash format and check type constraints
+[View validation →](./isHash)
+</Card>
+<Card title="Utilities" icon="wrench">
+Generate random hashes, clone, slice, and format for display
+[View utilities →](./random)
+</Card>
+</CardGroup>
 
 ### All Methods
 

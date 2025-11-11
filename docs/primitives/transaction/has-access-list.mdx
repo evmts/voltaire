@@ -1,0 +1,216 @@
+---
+title: Transaction.hasAccessList
+description: Check if transaction has access list
+---
+
+# hasAccessList
+
+Check if transaction has an access list.
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function hasAccessList(tx: Any): boolean
+```
+
+**Parameters:**
+- `tx: Any` - Any transaction type
+
+**Returns:** `boolean` - `true` if transaction has access list field, `false` otherwise
+
+**Example:**
+
+```typescript
+import { hasAccessList } from '@tevm/voltaire/Transaction'
+
+// Legacy transaction - no access list
+const legacy: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  // ... fields
+}
+
+console.log(hasAccessList(legacy)) // false
+
+// EIP-2930 transaction - has access list
+const eip2930: Transaction.EIP2930 = {
+  type: Transaction.Type.EIP2930,
+  accessList: [
+    { address: token, storageKeys: [balanceSlot] }
+  ],
+  // ... other fields
+}
+
+console.log(hasAccessList(eip2930)) // true
+
+// EIP-1559 transaction - has access list
+const eip1559: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  accessList: [],  // Empty but present
+  // ... other fields
+}
+
+console.log(hasAccessList(eip1559)) // true
+```
+
+**Source:** [hasAccessList.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/hasAccessList.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## TypeScript only
+
+Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
+
+Use TypeScript API for transaction operations.
+
+</Tab>
+</Tabs>
+
+## Transaction Types with Access Lists
+
+| Type | Has Access List | Notes |
+|------|-----------------|-------|
+| Legacy (0x00) | No | Pre-EIP-2930 |
+| EIP-2930 (0x01) | Yes | Introduced access lists |
+| EIP-1559 (0x02) | Yes | Inherits from EIP-2930 |
+| EIP-4844 (0x03) | Yes | Blob transactions include access lists |
+| EIP-7702 (0x04) | Yes | Authorization transactions include access lists |
+
+## Usage Patterns
+
+### Conditional Access List Processing
+
+```typescript
+import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+
+function processTransaction(tx: Transaction.Any) {
+  if (hasAccessList(tx)) {
+    const accessList = getAccessList(tx)
+    prewarmStorage(accessList)
+  }
+
+  executeTransaction(tx)
+}
+```
+
+### Type-Safe Access List Access
+
+```typescript
+import { hasAccessList } from '@tevm/voltaire/Transaction'
+
+function analyzeAccessList(tx: Transaction.Any) {
+  if (!hasAccessList(tx)) {
+    return { addresses: 0, storageKeys: 0 }
+  }
+
+  // Safe to access accessList
+  const list = getAccessList(tx)
+  return {
+    addresses: list.length,
+    storageKeys: list.reduce(
+      (sum, item) => sum + item.storageKeys.length,
+      0
+    )
+  }
+}
+```
+
+### Transaction Classification
+
+```typescript
+import { hasAccessList } from '@tevm/voltaire/Transaction'
+
+function classifyTransaction(tx: Transaction.Any): string {
+  if (!hasAccessList(tx)) {
+    return 'legacy'
+  }
+
+  switch (tx.type) {
+    case Transaction.Type.EIP2930:
+      return 'eip2930-access-list'
+    case Transaction.Type.EIP1559:
+      return 'eip1559-dynamic-fee'
+    case Transaction.Type.EIP4844:
+      return 'eip4844-blob'
+    case Transaction.Type.EIP7702:
+      return 'eip7702-authorization'
+    default:
+      return 'unknown'
+  }
+}
+```
+
+### Gas Cost Analysis
+
+```typescript
+import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+
+function calculateAccessListGasCost(tx: Transaction.Any): bigint {
+  if (!hasAccessList(tx)) {
+    return 0n
+  }
+
+  const accessList = getAccessList(tx)
+  let cost = 0n
+
+  for (const item of accessList) {
+    cost += 2400n  // Per address
+    cost += BigInt(item.storageKeys.length) * 1900n  // Per storage key
+  }
+
+  return cost
+}
+```
+
+### Filtering Transactions
+
+```typescript
+import { hasAccessList } from '@tevm/voltaire/Transaction'
+
+function filterTransactionsWithAccessLists(
+  transactions: Transaction.Any[]
+): Transaction.Any[] {
+  return transactions.filter(hasAccessList)
+}
+
+// Get only legacy transactions
+function filterLegacyTransactions(
+  transactions: Transaction.Any[]
+): Transaction.Legacy[] {
+  return transactions.filter(
+    (tx): tx is Transaction.Legacy => !hasAccessList(tx)
+  )
+}
+```
+
+## Type Guard Pattern
+
+The `hasAccessList` function works well as a type guard:
+
+```typescript
+import { hasAccessList, getAccessList } from '@tevm/voltaire/Transaction'
+
+function processWithAccessList(tx: Transaction.Any) {
+  // Type guard narrows tx type
+  if (hasAccessList(tx)) {
+    // TypeScript knows tx has accessList field
+    const list = tx.accessList
+    // or use helper
+    const accessList = getAccessList(tx)
+  }
+}
+```
+
+## See Also
+
+- [getAccessList](/primitives/transaction/get-access-list) - Extract access list from transaction
+- [AccessList](/primitives/accesslist) - Access list primitive and utilities
+- [getGasPrice](/primitives/transaction/get-gas-price) - Get effective gas price
+- [detectType](/primitives/transaction/detect-type) - Detect transaction type from bytes
+
+## References
+
+- [EIP-2930: Optional access lists](https://eips.ethereum.org/EIPS/eip-2930)
+- [EIP-2929: Gas cost increases for state access opcodes](https://eips.ethereum.org/EIPS/eip-2929)
+- [EIP-1559: Fee market change](https://eips.ethereum.org/EIPS/eip-1559)

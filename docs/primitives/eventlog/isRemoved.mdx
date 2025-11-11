@@ -1,0 +1,299 @@
+---
+title: EventLog.isRemoved
+description: Check if log was removed due to chain reorganization
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.isRemoved(): boolean`
+
+Check if log was removed due to chain reorganization.
+
+**Returns:** `boolean` - True if `log.removed === true`
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+  blockNumber: 18000000n,
+  removed: true, // Marked as removed due to reorg
+});
+
+const removed = log.isRemoved();
+console.log(removed); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/isRemoved.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/isRemoved.js)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `isRemoved(log: BrandedEventLog): boolean`
+
+Check if log was removed due to chain reorganization.
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+
+**Returns:** `boolean` - True if `log.removed === true`
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+  blockNumber: 18000000n,
+  removed: true,
+});
+
+const removed = EventLog.isRemoved(log);
+console.log(removed); // true
+```
+
+**Defined in:** [primitives/EventLog/BrandedEventLog/isRemoved.js](https://github.com/evmts/voltaire/blob/main/src/primitives/EventLog/BrandedEventLog/isRemoved.js)
+
+</Tab>
+</Tabs>
+
+## Chain Reorganizations
+
+Chain reorganizations occur when a different chain becomes canonical, invalidating blocks and their logs:
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+// Original log (in canonical chain)
+const log = EventLog.from({
+  address: tokenAddress,
+  topics: [TRANSFER_SIG, fromHash, toHash],
+  data: valueData,
+  blockNumber: 18000000n,
+  blockHash: Hash.fromHex('0xabc...'),
+  removed: false,
+});
+
+// After reorg, RPC marks log as removed
+const updatedLog = EventLog.from({
+  ...log,
+  removed: true,
+});
+
+console.log(log.isRemoved()); // false
+console.log(updatedLog.isRemoved()); // true
+```
+
+## Usage Patterns
+
+### Filtering Active Logs
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+// Remove invalidated logs
+const activeLogs = allLogs.filter(log => !log.isRemoved());
+
+console.log(`Active: ${activeLogs.length} of ${allLogs.length}`);
+```
+
+### Detecting Reorgs
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function detectReorg(newLogs: EventLog[]): void {
+  const removed = newLogs.filter(log => log.isRemoved());
+
+  if (removed.length > 0) {
+    console.log(`⚠️  Chain reorg detected: ${removed.length} logs invalidated`);
+
+    for (const log of removed) {
+      console.log(`  Block ${log.blockNumber}, Log ${log.logIndex}`);
+      console.log(`  Address: ${Address.toHex(log.address)}`);
+    }
+
+    // Reprocess affected blocks
+    const affectedBlocks = new Set(
+      removed.map(log => log.blockNumber).filter(n => n !== undefined)
+    );
+
+    for (const blockNum of affectedBlocks) {
+      console.log(`  Reprocessing block ${blockNum}`);
+      // Re-fetch and reprocess
+    }
+  }
+}
+
+detectReorg(latestLogs);
+```
+
+### Comparing Log Sets
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function compareLogSets(oldLogs: EventLog[], newLogs: EventLog[]): void {
+  const oldActive = oldLogs.filter(log => !log.isRemoved());
+  const newActive = newLogs.filter(log => !log.isRemoved());
+  const newRemoved = newLogs.filter(log => log.isRemoved());
+
+  console.log(`Old active: ${oldActive.length}`);
+  console.log(`New active: ${newActive.length}`);
+  console.log(`Newly removed: ${newRemoved.length}`);
+
+  if (newRemoved.length > 0) {
+    console.log('⚠️  Reorg detected!');
+  }
+}
+```
+
+### Processing with Reorg Handling
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function processLogs(logs: EventLog[]): void {
+  for (const log of logs) {
+    if (log.isRemoved()) {
+      console.log(`Skipping removed log at block ${log.blockNumber}`);
+      continue;
+    }
+
+    // Process active log
+    const sig = log.getTopic0();
+    // ... decode and handle event
+  }
+}
+
+processLogs(allLogs);
+```
+
+### Reorg-Aware Database
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+class LogDatabase {
+  private logs: Map<string, EventLog> = new Map();
+
+  insert(log: EventLog): void {
+    if (log.isRemoved()) {
+      console.log('Refusing to insert removed log');
+      return;
+    }
+
+    const key = this.makeKey(log);
+    this.logs.set(key, log);
+  }
+
+  update(log: EventLog): void {
+    const key = this.makeKey(log);
+
+    if (log.isRemoved()) {
+      console.log(`Removing invalidated log: ${key}`);
+      this.logs.delete(key);
+    } else {
+      this.logs.set(key, log);
+    }
+  }
+
+  private makeKey(log: EventLog): string {
+    return `${log.blockNumber}-${log.logIndex}`;
+  }
+}
+
+const db = new LogDatabase();
+
+// Initial insert
+db.insert(log);
+
+// After reorg
+const updatedLog = { ...log, removed: true };
+db.update(updatedLog); // Removes from database
+```
+
+### Transaction Receipt Processing
+
+```typescript
+import { EventLog } from '@tevm/voltaire';
+
+function processReceipt(receipt: TransactionReceipt): void {
+  const logs = receipt.logs.map(EventLog.from);
+
+  const activeLogs = logs.filter(log => !log.isRemoved());
+
+  if (activeLogs.length < logs.length) {
+    console.log(`⚠️  ${logs.length - activeLogs.length} logs removed by reorg`);
+  }
+
+  // Process only active logs
+  for (const log of activeLogs) {
+    // ... handle event
+  }
+}
+```
+
+## Default Behavior
+
+Logs without `removed` field default to active (not removed):
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+  // No removed field
+});
+
+console.log(log.removed); // undefined
+console.log(log.isRemoved()); // false (treats undefined as false)
+```
+
+## RPC Integration
+
+`eth_getLogs` and receipt endpoints include `removed` flag:
+
+```typescript
+import { EventLog, Address, Hash, Hex } from '@tevm/voltaire';
+
+// RPC response includes removed flag
+const rpcLog = {
+  address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2',
+  topics: ['0xddf252ad...'],
+  data: '0x0000...0001',
+  blockNumber: '0x112a880',
+  removed: true, // Set by RPC after reorg
+};
+
+const log = EventLog.from({
+  address: Address.fromHex(rpcLog.address),
+  topics: rpcLog.topics.map(Hash.fromHex),
+  data: Hex.toBytes(rpcLog.data),
+  blockNumber: BigInt(rpcLog.blockNumber),
+  removed: rpcLog.removed,
+});
+
+if (log.isRemoved()) {
+  console.log('Log invalidated by chain reorganization');
+}
+```
+
+## See Also
+
+- [wasRemoved](/primitives/eventlog/wasremoved) - Alias for isRemoved
+- [sortLogs](/primitives/eventlog/sortlogs) - Sort logs chronologically
+- [filterLogs](/primitives/eventlog/filterlogs) - Filter logs (can exclude removed)
+- [Fundamentals](/primitives/eventlog/fundamentals) - Chain reorganizations

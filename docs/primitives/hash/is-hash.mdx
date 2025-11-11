@@ -1,0 +1,349 @@
+---
+title: Hash.isHash
+description: Type guard to check if value is a valid Hash
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hash.isHash(value: unknown): value is BrandedHash`
+
+Type guard to check if value is a valid Hash. Validates type and length.
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:** `boolean` - True if value is Hash type (Uint8Array with 32 bytes)
+
+**Type guard:** Narrows type to `BrandedHash` when true
+
+**Example:**
+
+```typescript
+import { Hash } from '@tevm/voltaire'
+
+const value: unknown = someValue
+
+if (Hash.isHash(value)) {
+  // TypeScript knows value is BrandedHash
+  console.log(value.toHex())
+  console.log(value.length) // 32
+}
+
+// Check before using
+const maybeHash = getUserInput()
+if (Hash.isHash(maybeHash)) {
+  processHash(maybeHash)
+} else {
+  console.error("Invalid hash")
+}
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/isHash.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isHash.js#L19)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `isHash(value: unknown): value is BrandedHash`
+
+Type guard to check if value is a valid Hash. Validates type and length.
+
+**Parameters:**
+- `value: unknown` - Value to check
+
+**Returns:** `boolean` - True if value is Hash type
+
+**Type guard:** Narrows type to `BrandedHash` when true
+
+**Example:**
+
+```typescript
+import * as Hash from '@tevm/voltaire/Hash'
+
+const value: unknown = someValue
+
+if (Hash.isHash(value)) {
+  // TypeScript knows value is BrandedHash
+  const hex = Hash.toHex(value)
+}
+```
+
+**Defined in:** [primitives/Hash/BrandedHash/isHash.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Hash/BrandedHash/isHash.js#L19)
+
+</Tab>
+<Tab title="Zig">
+
+## Compile-Time Type Checking
+
+Zig uses compile-time type checking - no runtime validation needed:
+
+**Example:**
+
+```zig
+const std = @import("std");
+
+fn processHash(hash: [32]u8) void {
+    // Type is enforced at compile time
+    // No runtime check needed
+}
+
+const hash: [32]u8 = .{0} ** 32;
+processHash(hash); // Compiles
+
+const wrong: [31]u8 = .{0} ** 31;
+// processHash(wrong); // Compile error
+```
+
+</Tab>
+</Tabs>
+
+## Implementation
+
+Checks if value is Uint8Array with exactly 32 bytes:
+
+```typescript
+function isHash(value: unknown): value is BrandedHash {
+  return value instanceof Uint8Array && value.length === 32
+}
+```
+
+## Validation Rules
+
+**Must be Uint8Array:**
+```typescript
+Hash.isHash(new Uint8Array(32)) // true
+Hash.isHash([0, 1, 2, ...]) // false (array, not Uint8Array)
+Hash.isHash("0x1234...") // false (string)
+Hash.isHash(null) // false
+Hash.isHash(undefined) // false
+```
+
+**Must be exactly 32 bytes:**
+```typescript
+Hash.isHash(new Uint8Array(32)) // true
+Hash.isHash(new Uint8Array(31)) // false (too short)
+Hash.isHash(new Uint8Array(33)) // false (too long)
+Hash.isHash(new Uint8Array(0)) // false (empty)
+```
+
+## Usage Examples
+
+### Type Guards in Functions
+
+```typescript
+function processHash(value: unknown): void {
+  if (!Hash.isHash(value)) {
+    throw new Error("Expected Hash, got " + typeof value)
+  }
+
+  // TypeScript knows value is BrandedHash
+  console.log(value.toHex())
+  console.log(value[0])
+}
+```
+
+### Validating API Responses
+
+```typescript
+interface ApiResponse {
+  txHash: unknown
+  blockHash: unknown
+}
+
+function validateApiResponse(response: ApiResponse) {
+  if (!Hash.isHash(response.txHash)) {
+    throw new Error("Invalid txHash in API response")
+  }
+
+  if (!Hash.isHash(response.blockHash)) {
+    throw new Error("Invalid blockHash in API response")
+  }
+
+  // Both are now known to be BrandedHash
+  return {
+    txHash: response.txHash,
+    blockHash: response.blockHash
+  }
+}
+```
+
+### Array Validation
+
+```typescript
+function validateHashArray(values: unknown[]): BrandedHash[] {
+  const hashes: BrandedHash[] = []
+
+  for (const value of values) {
+    if (!Hash.isHash(value)) {
+      throw new Error("Array contains non-Hash value")
+    }
+    hashes.push(value)
+  }
+
+  return hashes
+}
+```
+
+### Optional Hash Parameters
+
+```typescript
+function processOptionalHash(hash?: unknown): void {
+  if (hash !== undefined && !Hash.isHash(hash)) {
+    throw new Error("Invalid hash parameter")
+  }
+
+  if (hash) {
+    // TypeScript knows hash is BrandedHash
+    console.log(hash.toHex())
+  }
+}
+```
+
+### User Input Validation
+
+```typescript
+function handleUserInput(input: unknown) {
+  if (typeof input === 'string') {
+    // Try parsing as hex
+    if (Hash.isValidHex(input)) {
+      return Hash.fromHex(input)
+    }
+    throw new Error("Invalid hex string")
+  }
+
+  if (Hash.isHash(input)) {
+    // Already a valid hash
+    return input
+  }
+
+  throw new Error("Invalid input: expected hex string or Hash")
+}
+```
+
+### Deserialization
+
+```typescript
+interface SerializedTransaction {
+  hash: Uint8Array
+  nonce: number
+  value: string
+}
+
+function deserializeTransaction(data: SerializedTransaction): Transaction {
+  if (!Hash.isHash(data.hash)) {
+    throw new Error("Invalid hash in serialized transaction")
+  }
+
+  return {
+    hash: data.hash,
+    nonce: BigInt(data.nonce),
+    value: BigInt(data.value)
+  }
+}
+```
+
+### Type Narrowing
+
+```typescript
+type HashOrString = BrandedHash | string
+
+function normalizeHash(input: HashOrString): BrandedHash {
+  if (Hash.isHash(input)) {
+    // input is BrandedHash
+    return input
+  } else {
+    // input is string
+    return Hash.fromHex(input)
+  }
+}
+```
+
+### Filter Valid Hashes
+
+```typescript
+const mixed: unknown[] = [
+  Hash.random(),
+  "not a hash",
+  new Uint8Array(32),
+  null,
+  Hash.keccak256String("hello"),
+  123
+]
+
+const validHashes = mixed.filter(Hash.isHash)
+// validHashes is BrandedHash[]
+```
+
+### Safe Casting
+
+```typescript
+function safeCastToHash(value: unknown): BrandedHash | null {
+  return Hash.isHash(value) ? value : null
+}
+
+// Usage
+const maybeHash = getUserInput()
+const hash = safeCastToHash(maybeHash)
+
+if (hash) {
+  processHash(hash)
+} else {
+  console.error("Not a valid hash")
+}
+```
+
+## Type Guard Benefits
+
+TypeScript automatically narrows types after `isHash`:
+
+```typescript
+function example(value: unknown) {
+  // Before: value is unknown
+  console.log(value.toHex()) // ❌ Error: Property 'toHex' does not exist
+
+  if (Hash.isHash(value)) {
+    // After: value is BrandedHash
+    console.log(value.toHex()) // ✅ OK
+    console.log(value.length) // ✅ OK: 32
+    console.log(value[0]) // ✅ OK: number
+  }
+}
+```
+
+## Comparison with assert
+
+| Method | Returns | Throws | Use Case |
+|--------|---------|--------|----------|
+| `isHash()` | boolean | Never | Type guard, conditional logic |
+| `assert()` | void | On error | Assertion, fail-fast validation |
+
+```typescript
+// Use isHash for conditional logic
+if (Hash.isHash(value)) {
+  processHash(value)
+} else {
+  handleInvalidInput()
+}
+
+// Use assert for fail-fast validation
+Hash.assert(value) // Throws if invalid
+processHash(value) // Only reached if valid
+```
+
+## Performance
+
+**Fast check:** Only validates `instanceof` and length (~1-2ns):
+
+```typescript
+console.time('isHash')
+for (let i = 0; i < 1000000; i++) {
+  Hash.isHash(someValue)
+}
+console.timeEnd('isHash') // ~2ms = ~2ns each
+```
+
+## See Also
+
+- [assert](/primitives/hash/assert) - Assert value is Hash (throws on error)
+- [isValidHex](/primitives/hash/is-valid-hex) - Validate hex string format
+- [fromBytes](/primitives/hash/from-bytes) - Create Hash from Uint8Array

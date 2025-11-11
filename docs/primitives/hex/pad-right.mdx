@@ -1,0 +1,187 @@
+---
+title: Hex.padRight
+description: Right-pad hex with zeros to target byte size
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.padRight(hex: BrandedHex, targetSize: number): BrandedHex`
+
+Right-pads hex string with zeros to reach target byte size. If hex is already at or larger than target size, returns unchanged.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to pad
+- `targetSize: number` - Target size in bytes
+
+**Returns:** `BrandedHex` - Right-padded hex string
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Pad to larger size
+Hex.padRight("0x1234", 4)   // "0x12340000"
+Hex.padRight("0xff", 32)    // "0xff00000000000000000000000000000000000000000000000000000000000000"
+
+// Already at target - no change
+Hex.padRight("0x1234", 2)   // "0x1234"
+Hex.padRight("0x123456", 2) // "0x123456" (already larger)
+
+// Pad string data
+const str = Hex.fromString("hello")  // "0x68656c6c6f"
+const padded = Hex.padRight(str, 32)
+// "0x68656c6c6f000000000000000000000000000000000000000000000000000000"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/padRight.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/padRight.js#L20)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `padRight(hex: BrandedHex, targetSize: number): BrandedHex`
+
+Right-pads hex string with zeros to reach target byte size.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to pad
+- `targetSize: number` - Target size in bytes
+
+**Returns:** `BrandedHex` - Right-padded hex string
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.padRight("0x1234", 4)   // "0x12340000"
+Hex.padRight("0xff", 32)    // "0xff00...00" (32 bytes)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/padRight.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/padRight.js#L20)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.padRight(hex: []const u8, targetSize: usize, allocator: Allocator): ![]const u8`
+
+Right-pad hex with zeros.
+
+**Parameters:**
+- `hex: []const u8` - Hex string
+- `targetSize: usize` - Target byte size
+- `allocator: Allocator` - Memory allocator
+
+**Returns:** `[]const u8` - Right-padded hex (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const hex = "0x1234";
+const padded = try Hex.padRight(hex, 4, allocator);
+defer allocator.free(padded);
+// padded = "0x12340000"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Padding Behavior
+
+Adds zeros to the **right** (least significant side):
+
+```typescript
+// 1 byte → 4 bytes
+Hex.padRight("0x12", 4)
+// "0x12000000"
+
+// 2 bytes → 32 bytes
+Hex.padRight("0x1234", 32)
+// "0x1234000000000000000000000000000000000000000000000000000000000000"
+```
+
+## vs pad() (Left-Pad)
+
+**pad() - Left-pad:**
+```typescript
+Hex.pad("0x1234", 4)
+// "0x00001234" (zeros on left)
+```
+
+**padRight() - Right-pad:**
+```typescript
+Hex.padRight("0x1234", 4)
+// "0x12340000" (zeros on right)
+```
+
+## Common Use Cases
+
+**ABI String Encoding:**
+```typescript
+// Solidity string stored as: length + data (right-padded to 32-byte chunks)
+const str = "hello"
+const data = Hex.fromString(str)
+const paddedData = Hex.padRight(data, 32)
+// "0x68656c6c6f000000000000000000000000000000000000000000000000000000"
+```
+
+**Bytes Storage:**
+```typescript
+// Dynamic bytes in storage (right-padded)
+const bytes = Hex.from("0x123456")
+const stored = Hex.padRight(bytes, 32)
+```
+
+**String Comparison:**
+```typescript
+// Normalize string lengths for comparison
+const str1 = Hex.fromString("abc")
+const str2 = Hex.fromString("def")
+
+const normalized1 = Hex.padRight(str1, 32)
+const normalized2 = Hex.padRight(str2, 32)
+
+// Now same length for consistent comparison
+```
+
+**Bitmap Construction:**
+```typescript
+// Build bitmap with trailing space
+const flags = Hex.fromBoolean(true) // "0x01"
+const bitmap = Hex.padRight(flags, 4)  // "0x01000000" (32-bit bitmap)
+```
+
+## When to Use
+
+**Use `pad()` (left-pad) for:**
+- Numbers (uint8, uint16, uint32, uint256)
+- Addresses
+- Hashes
+- Numeric values
+- Storage keys
+
+**Use `padRight()` (right-pad) for:**
+- Strings
+- Byte arrays (bytes, bytes32)
+- Text data
+- Variable-length data
+
+## Performance
+
+Allocates new array only if padding needed. Complexity: O(n) where n is target size.
+
+## See Also
+
+- [pad](/primitives/hex/pad) - Left-pad with zeros
+- [trim](/primitives/hex/trim) - Remove leading zeros
+- [slice](/primitives/hex/slice) - Extract portion

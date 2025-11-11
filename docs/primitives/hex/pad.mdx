@@ -1,0 +1,197 @@
+---
+title: Hex.pad
+description: Left-pad hex with zeros to target byte size
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.pad(hex: BrandedHex, targetSize: number): BrandedHex`
+
+Left-pads hex string with zeros to reach target byte size. If hex is already at or larger than target size, returns unchanged.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to pad
+- `targetSize: number` - Target size in bytes
+
+**Returns:** `BrandedHex` - Padded hex string
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Pad to larger size
+Hex.pad("0x1234", 4)   // "0x00001234"
+Hex.pad("0xff", 32)    // "0x00000000000000000000000000000000000000000000000000000000000000ff"
+
+// Already at target - no change
+Hex.pad("0x1234", 2)   // "0x1234"
+Hex.pad("0x123456", 2) // "0x123456" (already larger)
+
+// Pad address to uint256 (ABI encoding)
+const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
+const padded = Hex.pad(address, 32)
+// "0x000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f12345"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/pad.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/pad.js#L20)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `pad(hex: BrandedHex, targetSize: number): BrandedHex`
+
+Left-pads hex string with zeros to reach target byte size.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to pad
+- `targetSize: number` - Target size in bytes
+
+**Returns:** `BrandedHex` - Padded hex string
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.pad("0x1234", 4)   // "0x00001234"
+Hex.pad("0xff", 32)    // "0x00...ff" (32 bytes)
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/pad.js:20](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/pad.js#L20)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.pad(hex: []const u8, targetSize: usize, allocator: Allocator): ![]const u8`
+
+Left-pad hex with zeros.
+
+**Parameters:**
+- `hex: []const u8` - Hex string
+- `targetSize: usize` - Target byte size
+- `allocator: Allocator` - Memory allocator
+
+**Returns:** `[]const u8` - Padded hex (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const hex = "0x1234";
+const padded = try Hex.pad(hex, 4, allocator);
+defer allocator.free(padded);
+// padded = "0x00001234"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Padding Behavior
+
+Adds zeros to the **left** (most significant side):
+
+```typescript
+// 1 byte → 4 bytes
+Hex.pad("0x12", 4)
+// "0x00000012"
+
+// 2 bytes → 32 bytes
+Hex.pad("0x1234", 32)
+// "0x0000000000000000000000000000000000000000000000000000000000001234"
+```
+
+## Common Ethereum Sizes
+
+**uint8 (1 byte):**
+```typescript
+Hex.pad("0xff", 1)  // "0xff"
+```
+
+**uint16 (2 bytes):**
+```typescript
+Hex.pad("0xff", 2)  // "0x00ff"
+```
+
+**uint32 (4 bytes):**
+```typescript
+Hex.pad("0xff", 4)  // "0x000000ff"
+```
+
+**uint64 (8 bytes):**
+```typescript
+Hex.pad("0xff", 8)  // "0x00000000000000ff"
+```
+
+**uint256 (32 bytes) - Most common:**
+```typescript
+Hex.pad("0xff", 32)
+// "0x00000000000000000000000000000000000000000000000000000000000000ff"
+```
+
+## Common Use Cases
+
+**ABI Encoding - Pad Values:**
+```typescript
+// Solidity: function set(uint256 value, address addr, bool flag)
+
+const value = Hex.fromBigInt(1000n)
+const address = "0x742d35Cc6634C0532925a3b844Bc9e7595f12345"
+const flag = Hex.fromBoolean(true)
+
+// All parameters must be 32 bytes for ABI encoding
+const encodedValue = Hex.pad(value, 32)
+const encodedAddress = Hex.pad(address, 32)
+const encodedFlag = Hex.pad(flag, 32)
+
+const calldata = Hex.concat(selector, encodedValue, encodedAddress, encodedFlag)
+```
+
+**Storage Keys:**
+```typescript
+// Storage slots are uint256 (32 bytes)
+const slot = Hex.fromNumber(5)
+const paddedSlot = Hex.pad(slot, 32)
+const value = await provider.getStorageAt(address, paddedSlot)
+```
+
+**Fixed-Size Fields:**
+```typescript
+// Ensure consistent size for hashing
+const chainId = Hex.pad(Hex.fromNumber(1), 32)
+const nonce = Hex.pad(Hex.fromNumber(42), 32)
+```
+
+## Already Correct Size
+
+Returns unchanged if already at target:
+
+```typescript
+const hex = "0x12345678"  // 4 bytes
+
+Hex.pad(hex, 4)  // "0x12345678" (no change)
+Hex.pad(hex, 3)  // "0x12345678" (already larger, no truncation)
+Hex.pad(hex, 8)  // "0x0000000012345678" (pad to 8)
+```
+
+## Performance
+
+Allocates new array only if padding needed. Complexity: O(n) where n is target size.
+
+For repeated padding to same size, consider pre-allocating buffers.
+
+## See Also
+
+- [padRight](/primitives/hex/pad-right) - Right-pad with zeros
+- [trim](/primitives/hex/trim) - Remove leading zeros
+- [assertSize](/primitives/hex/assert-size) - Assert specific size
+- [slice](/primitives/hex/slice) - Extract portion

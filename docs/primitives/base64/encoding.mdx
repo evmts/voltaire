@@ -9,6 +9,9 @@ Methods for encoding binary data and strings to base64 format.
 
 ## Standard Base64 Encoding
 
+<Tabs>
+<Tab title="TypeScript">
+
 ### `Base64.encode(data)`
 
 Encodes bytes to standard base64 string using RFC 4648 alphabet (A-Z, a-z, 0-9, +, /) with padding.
@@ -38,6 +41,46 @@ console.log(b64Hash.length) // 44 characters (32 * 4/3 rounded up)
 ```
 
 Defined in: [primitives/Base64/BrandedBase64/encode.js:17](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/encode.js)
+
+</Tab>
+<Tab title="Zig">
+
+### `base64.encode(allocator: Allocator, data: []const u8) ![]u8`
+
+Encodes bytes to standard base64 string using RFC 4648 alphabet (A-Z, a-z, 0-9, +, /) with padding.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for encoded string
+- `data: []const u8` - Binary data to encode
+
+**Returns:** `![]u8` - Standard base64-encoded string with padding. Caller owns memory.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const base64 = @import("primitives").base64;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Encode data
+const data = [_]u8{ 72, 101, 108, 108, 111 }; // "Hello"
+const encoded = try base64.encode(allocator, &data);
+defer allocator.free(encoded);
+// encoded = "SGVsbG8="
+
+// Encode binary data
+const binary = [_]u8{ 0xff, 0xfe, 0xfd };
+const encoded2 = try base64.encode(allocator, &binary);
+defer allocator.free(encoded2);
+```
+
+**Defined in:** [primitives/base64.zig:17](https://github.com/evmts/voltaire/blob/main/src/primitives/base64.zig#L17)
+
+</Tab>
+</Tabs>
 
 ### `Base64.encodeString(str)`
 
@@ -77,6 +120,9 @@ Defined in: [primitives/Base64/BrandedBase64/encodeString.js:14](https://github.
 
 ## URL-Safe Base64 Encoding
 
+<Tabs>
+<Tab title="TypeScript">
+
 ### `Base64.encodeUrlSafe(data)`
 
 Encodes bytes to URL-safe base64 string. Uses URL-safe alphabet (A-Z, a-z, 0-9, -, _) and removes padding characters.
@@ -115,6 +161,42 @@ const apiUrl = `https://api.example.com/auth?token=${token}`
 ```
 
 Defined in: [primitives/Base64/BrandedBase64/encodeUrlSafe.js:19](https://github.com/evmts/voltaire/blob/main/src/primitives/Base64/BrandedBase64/encodeUrlSafe.js)
+
+</Tab>
+<Tab title="Zig">
+
+### `base64.encodeUrlSafe(allocator: Allocator, data: []const u8) ![]u8`
+
+Encodes bytes to URL-safe base64 string. Uses URL-safe alphabet (A-Z, a-z, 0-9, -, _) without padding.
+
+**Parameters:**
+- `allocator: Allocator` - Memory allocator for encoded string
+- `data: []const u8` - Binary data to encode
+
+**Returns:** `![]u8` - URL-safe base64 string without padding. Caller owns memory.
+
+**Example:**
+
+```zig
+const std = @import("std");
+const base64 = @import("primitives").base64;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+// Encode to URL-safe format
+const data = [_]u8{ 0xff, 0xfe, 0xfd };
+const encoded = try base64.encodeUrlSafe(allocator, &data);
+defer allocator.free(encoded);
+
+// No +, /, or = characters - safe for URLs and filenames
+```
+
+**Defined in:** [primitives/base64.zig:54](https://github.com/evmts/voltaire/blob/main/src/primitives/base64.zig#L54)
+
+</Tab>
+</Tabs>
 
 ### `Base64.encodeStringUrlSafe(str)`
 

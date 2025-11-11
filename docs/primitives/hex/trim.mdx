@@ -1,0 +1,236 @@
+---
+title: Hex.trim
+description: Remove leading zero bytes from hex string
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.trim(hex: BrandedHex): BrandedHex`
+
+Removes leading zero bytes from hex string, producing minimal representation.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to trim
+
+**Returns:** `BrandedHex` - Trimmed hex string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Remove leading zeros
+Hex.trim("0x00001234")   // "0x1234"
+Hex.trim("0x00000001")   // "0x01"
+Hex.trim("0x000000ff")   // "0xff"
+
+// All zeros becomes empty
+Hex.trim("0x00000000")   // "0x"
+
+// No leading zeros - unchanged
+Hex.trim("0x1234")       // "0x1234"
+Hex.trim("0xff")         // "0xff"
+
+// Trim uint256 values
+const padded = Hex.fromBigInt(255n, 32)
+// "0x00000000000000000000000000000000000000000000000000000000000000ff"
+const minimal = Hex.trim(padded)
+// "0xff"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/trim.js:26](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/trim.js#L26)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `trim(hex: BrandedHex): BrandedHex`
+
+Removes leading zero bytes from hex string.
+
+**Parameters:**
+- `hex: BrandedHex` - Hex string to trim
+
+**Returns:** `BrandedHex` - Trimmed hex string
+
+**Throws:**
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.trim("0x00001234")   // "0x1234"
+Hex.trim("0x00000001")   // "0x01"
+Hex.trim("0x000000ff")   // "0xff"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/trim.js:26](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/trim.js#L26)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.trim(hex: []const u8, allocator: Allocator): ![]const u8`
+
+Remove leading zero bytes.
+
+**Parameters:**
+- `hex: []const u8` - Hex string
+- `allocator: Allocator` - Memory allocator
+
+**Returns:** `[]const u8` - Trimmed hex (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const hex = "0x00001234";
+const trimmed = try Hex.trim(hex, allocator);
+defer allocator.free(trimmed);
+// trimmed = "0x1234"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## Trim Behavior
+
+Removes all leading `0x00` bytes until first non-zero:
+
+```typescript
+// Remove leading zeros
+Hex.trim("0x00001234")
+// "0x1234"
+
+Hex.trim("0x00000000000000000000000000000001")
+// "0x01"
+
+// All zeros = empty
+Hex.trim("0x0000")
+// "0x"
+
+// No leading zeros = unchanged
+Hex.trim("0x1234")
+// "0x1234"
+```
+
+## Common Use Cases
+
+**Minimize Storage Values:**
+```typescript
+const storage = await provider.getStorageAt(address, slot)
+// "0x0000000000000000000000000000000000000000000000000000000000001234"
+
+const minimal = Hex.trim(storage)
+// "0x1234"
+
+// Use minimal representation for display/logging
+console.log(`Value: ${minimal}`)
+```
+
+**Normalize BigInt Values:**
+```typescript
+// Create padded uint256
+const value = Hex.fromBigInt(42n, 32)
+// "0x000000000000000000000000000000000000000000000000000000000000002a"
+
+// Trim for compact representation
+const compact = Hex.trim(value)
+// "0x2a"
+```
+
+**Optimize RPC Responses:**
+```typescript
+// Trim padded responses before returning
+function getBalance(address: string): string {
+  const balance = await contract.balanceOf(address)
+  return Hex.trim(balance)  // Return minimal form
+}
+```
+
+**Compare Values:**
+```typescript
+// Normalize before comparison
+const a = "0x00001234"
+const b = "0x1234"
+
+Hex.equals(Hex.trim(a), Hex.trim(b))  // true
+```
+
+**Display Optimization:**
+```typescript
+// Shorten for UI display
+const hash = "0x0000000000000000123456789abcdef..."
+const display = Hex.trim(hash)
+// Shorter, easier to read
+```
+
+## All Zeros
+
+When all bytes are zero, returns empty hex:
+
+```typescript
+Hex.trim("0x00")          // "0x"
+Hex.trim("0x0000")        // "0x"
+Hex.trim("0x00000000")    // "0x"
+
+// 32-byte zero
+Hex.trim(Hex.zero(32))    // "0x"
+```
+
+## No Leading Zeros
+
+If no leading zeros, returns unchanged:
+
+```typescript
+Hex.trim("0x1234")   // "0x1234" (no change)
+Hex.trim("0xff")     // "0xff" (no change)
+Hex.trim("0xabcd")   // "0xabcd" (no change)
+```
+
+## Error Handling
+
+Throws on invalid input:
+
+```typescript
+try {
+  Hex.trim("1234")  // Missing 0x
+} catch (e) {
+  // InvalidFormatError
+}
+
+try {
+  Hex.trim("0x123")  // Odd length
+} catch (e) {
+  // OddLengthError
+}
+```
+
+## Performance
+
+Scans bytes from start until first non-zero. Complexity: O(n) where n is number of leading zero bytes.
+
+Best case (no zeros): O(1)
+Worst case (all zeros): O(n)
+
+## See Also
+
+- [pad](/primitives/hex/pad) - Add leading zeros
+- [slice](/primitives/hex/slice) - Extract portion
+- [size](/primitives/hex/size) - Get byte size

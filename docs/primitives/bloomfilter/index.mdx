@@ -1,5 +1,5 @@
 ---
-title: BloomFilter
+title: Overview
 description: Probabilistic data structure for efficient set membership testing
 ---
 
@@ -11,210 +11,287 @@ New to bloom filters? Start with [Fundamentals](/primitives/bloomfilter/fundamen
 
 [Branded](/concepts/branded-types) `Uint8Array` representing a bloom filter with `m` bits and `k` hash functions. Zero-overhead design supports both tree-shakeable namespace methods and class instances. Used extensively in Ethereum for log filtering.
 
-## Quick Start
+```typescript
+export type BrandedBloomFilter = Uint8Array & {
+  readonly __tag: "BloomFilter";
+  readonly k: number;  // Number of hash functions
+  readonly m: number;  // Number of bits
+};
+```
+
+### Ethereum Constants
+
+Ethereum uses standard bloom filter parameters for block headers:
+
+```typescript
+const SIZE = 256;                // 256 bytes (2048 bits)
+const BITS = 2048;               // 2048 bits
+const DEFAULT_HASH_COUNT = 3;    // 3 hash functions
+```
+
+<Note>
+Ethereum block headers contain a 256-byte bloom filter for efficient log filtering. Each log topic is hashed 3 times into the filter.
+</Note>
+
+## Quick Reference
 
 <Tabs>
 <Tab title="Class API">
+
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import { BloomFilter } from '@tevm/voltaire';
 
-// Create with standard Ethereum parameters (2048 bits, 3 hash functions)
-const filter = BloomFilter.create(2048, 3)
+const filter = BloomFilter.create(2048, 3);
+const item = new TextEncoder().encode("Transfer");
 
-// Add items (see Operations)
-const item = new TextEncoder().encode("Transfer")
-filter.add(item)
-
-// Query membership (see Queries)
-if (filter.contains(item)) {
-  console.log("Item might be in set")
-}
-
-// Convert to/from hex (see Conversions)
-const hex = filter.toHex()
-const restored = BloomFilter.fromHex(hex, 2048, 3)
-
-// Merge filters (see Operations)
-const filter2 = BloomFilter.create(2048, 3)
-const merged = filter.merge(filter2)
-
-// Check if empty
-if (filter.isEmpty()) {
-  console.log("Filter is empty")
-}
+filter.add(item);
+const exists = filter.contains(item);
+const hex = filter.toHex();
 ```
+
 </Tab>
-<Tab title="Namespace API (Tree-shakeable)">
+<Tab title="Namespace API">
+
 ```typescript
-import { BloomFilter } from '@tevm/voltaire'
+import * as BloomFilter from '@tevm/voltaire/BloomFilter';
 
-// Tree-shakeable imports minimize bundle size
-const filter = BloomFilter.create(2048, 3)
-
-// Each function imported independently
-const item = new TextEncoder().encode("Transfer")
-BloomFilter.add(filter, item)
-BloomFilter.contains(filter, item)  // boolean
-
-// See BrandedBloomFilter for complete functional API
+const filter = BloomFilter.create(2048, 3);
+BloomFilter.add(filter, item);
+const exists = BloomFilter.contains(filter, item);
+const hex = BloomFilter.toHex(filter);
 ```
+
 </Tab>
 </Tabs>
+
+## API Methods
+
+### Constructors
+
+- [`create(m, k)`](./constructors#create) - Create filter with m bits and k hash functions
+- [`fromHex(hex, m, k)`](./constructors#fromhex) - Parse filter from hex string
+
+### Operations
+
+- [`add(filter, item)`](./operations#add) - Add item to filter (mutates)
+- [`merge(a, b)`](./operations#merge) - Merge two filters via bitwise OR
+- [`combine(filters)`](./operations#combine) - Combine multiple filters
+
+### Queries
+
+- [`contains(filter, item)`](./queries#contains) - Test if item might be in set
+- [`isEmpty(filter)`](./queries#isempty) - Check if filter has no items
+- [`density(filter)`](./queries#density) - Calculate percentage of set bits
+- [`expectedFalsePositiveRate(filter)`](./queries#expectedfalsepositiverate) - Estimate false positive rate
+
+### Conversions
+
+- [`toHex(filter)`](./conversions#tohex) - Convert to hex string
+- [`hash(item, seed, m)`](./conversions#hash) - Compute hash for item
+
+### Reference
+
+- [Algorithm](./algorithm) - Bloom filter theory and false positives
+- [Log Filtering](./log-filtering) - Ethereum log filtering patterns
+- [BrandedBloomFilter](./branded-bloomfilter) - Tree-shakeable functional API
 
 ## Types
 
 <Tabs>
-<Tab title="class BloomFilter">
-```typescript
-class BloomFilter extends Uint8Array {
-  readonly k: number      // Number of hash functions
-  readonly m: number      // Number of bits
+<Tab title="BrandedBloomFilter">
 
-  // Constructors (→ /primitives/bloomfilter/constructors)
-  static create(m: number, k: number): BloomFilter
-  static fromHex(hex: string, m: number, k: number): BloomFilter
-
-  // Operations (→ /primitives/bloomfilter/operations)
-  add(item: Uint8Array): void
-  merge(other: BloomFilter): BloomFilter
-
-  // Queries (→ /primitives/bloomfilter/queries)
-  contains(item: Uint8Array): boolean
-  isEmpty(): boolean
-
-  // Conversions (→ /primitives/bloomfilter/conversions)
-  toHex(): string
-  static hash(item: Uint8Array, seed: number, m: number): number
-
-  // Uint8Array methods (inherited)
-  slice(start?: number, end?: number): BloomFilter
-  subarray(start?: number, end?: number): BloomFilter
-  // ... and all other Uint8Array methods
-}
-```
-
-Source: [BloomFilter/index.ts:12-66](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/index.ts#L12-L66)
-</Tab>
-<Tab title="type BrandedBloomFilter">
 ```typescript
 export type BrandedBloomFilter = Uint8Array & {
-  readonly __tag: "BloomFilter"
-  readonly k: number      // Number of hash functions
-  readonly m: number      // Number of bits
+  readonly __tag: "BloomFilter";
+  readonly k: number;  // Number of hash functions
+  readonly m: number;  // Number of bits
+};
+```
+
+Main branded type wrapping `Uint8Array` with filter parameters. Runtime is `Uint8Array`, TypeScript enforces type safety.
+
+</Tab>
+<Tab title="BloomFilter Class">
+
+```typescript
+class BloomFilter extends Uint8Array {
+  readonly k: number;      // Number of hash functions
+  readonly m: number;      // Number of bits
+
+  static create(m: number, k: number): BloomFilter;
+  static fromHex(hex: string, m: number, k: number): BloomFilter;
+
+  add(item: Uint8Array): void;
+  merge(other: BloomFilter): BloomFilter;
+  contains(item: Uint8Array): boolean;
+  isEmpty(): boolean;
+  toHex(): string;
 }
 ```
 
-[Branded type](/concepts/branded-types) wrapping `Uint8Array` with bloom filter parameters. Used as underlying type for BloomFilter class and tree-shakeable functions.
+Class API extending `Uint8Array` with methods. Inherits all `Uint8Array` methods (slice, subarray, etc.).
 
-Source: [BrandedBloomFilter/BrandedBloomFilter.ts:1-6](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/BrandedBloomFilter.ts#L1-L6)
+</Tab>
+<Tab title="Constants">
+
+```typescript
+export const SIZE = 256;                // Ethereum filter size (bytes)
+export const BITS = 2048;               // Ethereum filter size (bits)
+export const DEFAULT_HASH_COUNT = 3;    // Ethereum hash function count
+```
+
+Standard Ethereum bloom filter parameters for block headers.
+
 </Tab>
 </Tabs>
 
-## Constants
+## Usage Patterns
 
-BloomFilter module exports standard Ethereum bloom filter constants:
+### Creating and Using Filters
 
 ```typescript
-import { BloomFilter, SIZE, BITS, DEFAULT_HASH_COUNT } from '@tevm/voltaire'
+import { BloomFilter, BITS, DEFAULT_HASH_COUNT } from '@tevm/voltaire';
 
-// Standard Ethereum bloom filter parameters
-SIZE                 // 256 (bytes)
-BITS                 // 2048 (bits)
-DEFAULT_HASH_COUNT   // 3 (hash functions)
+// Create filter with Ethereum parameters
+const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 
-// Usage examples
-const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT)
-const buffer = new Uint8Array(SIZE)  // 256-byte buffer
+// Add items
+const topic1 = new TextEncoder().encode("Transfer(address,address,uint256)");
+const topic2 = new TextEncoder().encode("Approval(address,address,uint256)");
+
+filter.add(topic1);
+filter.add(topic2);
+
+// Query membership
+if (filter.contains(topic1)) {
+  console.log("Topic might be in filter");
+}
+
+// Check if empty
+if (!filter.isEmpty()) {
+  console.log("Filter contains items");
+}
 ```
 
-**Available constants:**
-- `SIZE = 256` - Standard Ethereum bloom filter size in bytes
-- `BITS = 2048` - Number of bits in Ethereum bloom filter (256 * 8)
-- `DEFAULT_HASH_COUNT = 3` - Standard number of hash functions for Ethereum
+### Ethereum Log Filtering
 
-Source: [BrandedBloomFilter/constants.js](https://github.com/evmts/voltaire/blob/main/src/primitives/BloomFilter/BrandedBloomFilter/constants.js)
+```typescript
+// Create filter from block header
+const blockFilter = BloomFilter.fromHex(block.logsBloom, BITS, DEFAULT_HASH_COUNT);
 
-## API Documentation
+// Check if block might contain logs for topic
+const transferTopic = keccak256("Transfer(address,address,uint256)");
 
-### Constructors
+if (blockFilter.contains(transferTopic)) {
+  // Block might contain Transfer events - fetch logs
+  const logs = await provider.getLogs({
+    fromBlock: block.number,
+    toBlock: block.number,
+    topics: [transferTopic],
+  });
+}
+```
 
-Creating BloomFilter instances with custom parameters or from hex strings.
+### Merging Filters
 
-    [View constructors →](/primitives/bloomfilter/constructors)
+```typescript
+// Combine filters from multiple blocks
+const filter1 = BloomFilter.fromHex(block1.logsBloom, BITS, DEFAULT_HASH_COUNT);
+const filter2 = BloomFilter.fromHex(block2.logsBloom, BITS, DEFAULT_HASH_COUNT);
 
-### Operations
+// Merge via bitwise OR
+const merged = BloomFilter.merge(filter1, filter2);
 
-Add items and merge filters using bitwise operations.
+// Check if either block contains topic
+if (merged.contains(topic)) {
+  console.log("Topic might be in block1 or block2");
+}
+```
 
-    [View operations →](/primitives/bloomfilter/operations)
+### Analyzing False Positive Rate
 
-### Queries
+```typescript
+// Create filter and add items
+const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
 
-Check membership and test filter state.
+for (let i = 0; i < 100; i++) {
+  const item = new TextEncoder().encode(`item${i}`);
+  filter.add(item);
+}
 
-    [View queries →](/primitives/bloomfilter/queries)
+// Check density and false positive rate
+const d = BloomFilter.density(filter);
+const fpr = BloomFilter.expectedFalsePositiveRate(filter);
 
-### Conversions
+console.log(`Density: ${(d * 100).toFixed(2)}%`);
+console.log(`Expected FPR: ${(fpr * 100).toFixed(4)}%`);
+```
 
-Convert to hex format and hash item data.
+### Batch Operations
 
-    [View conversions →](/primitives/bloomfilter/conversions)
+```typescript
+// Add multiple items efficiently
+const items = [
+  "Transfer(address,address,uint256)",
+  "Approval(address,address,uint256)",
+  "Swap(address,uint256,uint256,uint256,uint256,address)",
+].map(sig => new TextEncoder().encode(sig));
 
-### Fundamentals
+const filter = BloomFilter.create(BITS, DEFAULT_HASH_COUNT);
+items.forEach(item => filter.add(item));
 
-Learn bloom filter theory, Ethereum log filtering, and probabilistic data structures.
+// Serialize for storage
+const hex = filter.toHex();
+localStorage.setItem('eventFilter', hex);
 
-    [View fundamentals →](/primitives/bloomfilter/fundamentals)
+// Restore from storage
+const restored = BloomFilter.fromHex(hex, BITS, DEFAULT_HASH_COUNT);
+```
 
-### Algorithm
+## Tree-Shaking
 
-Understanding bloom filter theory, false positives, and hash functions.
+Import only what you need for optimal bundle size:
 
-    [View algorithm →](/primitives/bloomfilter/algorithm)
+```typescript
+// Import specific functions (tree-shakeable)
+import { create, add, contains, toHex } from '@tevm/voltaire/BrandedBloomFilter';
 
-### Log Filtering
+const filter = create(2048, 3);
+add(filter, item);
+const exists = contains(filter, item);
+const hex = toHex(filter);
 
-Ethereum log filtering and event matching patterns.
+// Only these 4 functions included in bundle
+```
 
-    [View log filtering →](/primitives/bloomfilter/log-filtering)
-
-### BrandedBloomFilter
-
-Tree-shakeable functional API for minimal bundle size.
-
-    [View BrandedBloomFilter →](/primitives/bloomfilter/branded-bloomfilter)
-
-### Usage Patterns
-
-Common patterns for log filtering, event indexing, and optimization.
-
-    [View usage patterns →](/primitives/bloomfilter/usage-patterns)
-
-
-## Performance Characteristics
-
-| Operation | Time Complexity | Space Complexity |
-|-----------|----------------|------------------|
-| `create`  | O(1)           | O(m/8) bytes     |
-| `add`     | O(k)           | O(1)             |
-| `contains`| O(k)           | O(1)             |
-| `merge`   | O(m/8)         | O(m/8) bytes     |
-| `isEmpty` | O(m/8)         | O(1)             |
-
-Where:
-- `m` = number of bits (2048 for Ethereum)
-- `k` = number of hash functions (3 for Ethereum)
+**Bundle size impact:**
+- Core operations: ~1KB
+- Hashing functions: ~2KB
+- Full BloomFilter namespace: ~3KB
 
 ## Related
 
-- [Fundamentals](/primitives/bloomfilter/fundamentals) - Learn bloom filter theory and Ethereum usage
-- [Hex](/primitives/hex) - Hex string utilities for serialization
+### Core Documentation
+
+- [Fundamentals](/primitives/bloomfilter/fundamentals) - Learn bloom filter theory
+- [Algorithm](/primitives/bloomfilter/algorithm) - False positives and hash functions
+- [Log Filtering](/primitives/bloomfilter/log-filtering) - Ethereum event filtering
+
+### API Documentation
+
+- [Constructors](/primitives/bloomfilter/constructors) - Creating filter instances
+- [Operations](/primitives/bloomfilter/operations) - Add items and merge filters
+- [Queries](/primitives/bloomfilter/queries) - Membership testing and statistics
+- [Conversions](/primitives/bloomfilter/conversions) - Hex encoding and hashing
+
+### Related Primitives
+
+- [EventLog](/primitives/eventlog) - Ethereum event logs
 - [Hash](/primitives/hash) - Keccak256 hashing for log topics
-- [Branded Types](/concepts/branded-types) - Zero-overhead type branding pattern
+- [Hex](/primitives/hex) - Hex string encoding
 
 ## Specification
 
 - [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Section 4.3.1 (Bloom Filter)
 - [Wikipedia: Bloom Filter](https://en.wikipedia.org/wiki/Bloom_filter) - Mathematical analysis
 - [EIP-234](https://eips.ethereum.org/EIPS/eip-234) - JSON-RPC filter API specification
-

@@ -1,0 +1,108 @@
+---
+title: Uint.toString
+description: Convert Uint256 to string with configurable radix
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `Uint.toString(value: BrandedUint, radix?: number): string`
+
+Convert Uint256 to string. Supports radix 2-36 (default 10).
+
+**Parameters:**
+- `value: BrandedUint` - Uint256 value
+- `radix?: number` - Base (2-36, default 10)
+
+**Returns:** `string` - String representation
+
+**Example:**
+
+```typescript
+import { Uint } from '@tevm/voltaire'
+
+const value = Uint.from(255n)
+
+Uint.toString(value)      // "255" (decimal)
+Uint.toString(value, 10)  // "255" (decimal)
+Uint.toString(value, 16)  // "ff" (hex, no prefix)
+Uint.toString(value, 2)   // "11111111" (binary)
+Uint.toString(value, 8)   // "377" (octal)
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/toString.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toString.ts)
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `toString(value: BrandedUint, radix?: number): string`
+
+Convert to string with radix.
+
+**Example:**
+
+```typescript
+import * as Uint from '@tevm/voltaire/Uint'
+
+const value = Uint.from(255n)
+const str = Uint.toString(value, 10)  // "255"
+```
+
+**Defined in:** [primitives/Uint/BrandedUint/toString.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/BrandedUint/toString.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## `uint.toString(allocator: Allocator, radix: u8): ![]u8`
+
+Convert to string (caller owns memory).
+
+**Example:**
+
+```zig
+const Uint = @import("primitives").Uint;
+
+const value = Uint.init(255);
+const str = try value.toString(allocator, 10);
+defer allocator.free(str);
+```
+
+**Defined in:** [primitives/Uint/uint.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Uint/uint.zig)
+
+</Tab>
+</Tabs>
+
+## Radix Support
+
+### Decimal (base 10)
+
+```typescript
+Uint.toString(Uint.from(12345n))  // "12345"
+```
+
+### Hexadecimal (base 16)
+
+```typescript
+Uint.toString(Uint.from(255n), 16)  // "ff" (no 0x prefix)
+```
+
+<Tip>
+For hex with `0x` prefix, use `toHex()` instead.
+</Tip>
+
+### Binary (base 2)
+
+```typescript
+Uint.toString(Uint.from(15n), 2)  // "1111"
+```
+
+### Octal (base 8)
+
+```typescript
+Uint.toString(Uint.from(64n), 8)  // "100"
+```
+
+## See Also
+
+- [toHex](/primitives/uint/to-hex) - Convert to hex (with 0x prefix)
+- [toBigInt](/primitives/uint/to-bigint) - Convert to BigInt

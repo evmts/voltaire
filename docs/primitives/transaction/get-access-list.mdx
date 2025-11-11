@@ -1,0 +1,276 @@
+---
+title: Transaction.getAccessList
+description: Extract access list from transaction
+---
+
+# getAccessList
+
+Extract access list from transaction.
+
+<Tabs>
+<Tab title="Namespace API">
+
+```typescript
+function getAccessList(tx: Any): AccessList
+```
+
+**Parameters:**
+- `tx: Any` - Any transaction type
+
+**Returns:** `AccessList` - Access list array (empty array for Legacy transactions)
+
+**Example:**
+
+```typescript
+import { getAccessList } from '@tevm/voltaire/Transaction'
+
+// EIP-1559 transaction with access list
+const tx: Transaction.EIP1559 = {
+  type: Transaction.Type.EIP1559,
+  accessList: [
+    {
+      address: Address.fromHex('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+      storageKeys: [
+        Hash.fromHex('0x0000000000000000000000000000000000000000000000000000000000000003')
+      ]
+    },
+    {
+      address: Address.fromHex('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'),
+      storageKeys: []
+    }
+  ],
+  // ... other fields
+}
+
+const accessList = getAccessList(tx)
+console.log(accessList.length) // 2
+console.log(accessList[0].storageKeys.length) // 1
+
+// Legacy transaction - returns empty array
+const legacy: Transaction.Legacy = {
+  type: Transaction.Type.Legacy,
+  // ... fields
+}
+
+const emptyList = getAccessList(legacy)
+console.log(emptyList.length) // 0
+```
+
+**Source:** [getAccessList.ts](https://github.com/evmts/voltaire/blob/main/src/primitives/Transaction/getAccessList.ts)
+
+</Tab>
+<Tab title="Zig">
+
+## TypeScript only
+
+Transaction utilities currently available in TypeScript only. FFI overhead makes native calls inefficient for transaction operations.
+
+Use TypeScript API for transaction operations.
+
+</Tab>
+</Tabs>
+
+## Access List Structure
+
+```typescript
+type AccessList = readonly Item[]
+
+type Item = {
+  address: BrandedAddress       // 20-byte contract address
+  storageKeys: readonly Hash[]  // 32-byte storage slot keys
+}
+```
+
+## Transaction Types
+
+| Type | Access List Support |
+|------|---------------------|
+| Legacy (0x00) | Returns `[]` |
+| EIP-2930 (0x01) | Returns `tx.accessList` |
+| EIP-1559 (0x02) | Returns `tx.accessList` |
+| EIP-4844 (0x03) | Returns `tx.accessList` |
+| EIP-7702 (0x04) | Returns `tx.accessList` |
+
+## Usage Patterns
+
+### Pre-warming Storage
+
+```typescript
+import { getAccessList } from '@tevm/voltaire/Transaction'
+
+async function prewarmStorage(tx: Transaction.Any) {
+  const accessList = getAccessList(tx)
+
+  for (const item of accessList) {
+    // Mark address as warm (2600 gas vs 100 gas)
+    await markAddressWarm(item.address)
+
+    // Mark storage slots as warm (2100 gas vs 100 gas)
+    for (const key of item.storageKeys) {
+      await markStorageWarm(item.address, key)
+    }
+  }
+}
+```
+
+### Gas Cost Calculation
+
+```typescript
+import { getAccessList } from '@tevm/voltaire/Transaction'
+
+function calculateAccessListGasCost(tx: Transaction.Any): bigint {
+  const accessList = getAccessList(tx)
+
+  let cost = 0n
+
+  for (const item of accessList) {
+    cost += 2400n  // Per address (TU_DATA + TU_ACCESS_LIST_ADDRESS_COST)
+
+    for (const _ of item.storageKeys) {
+      cost += 1900n  // Per storage key (TU_ACCESS_LIST_STORAGE_KEY_COST)
+    }
+  }
+
+  return cost
+}
+
+// Usage
+const accessListCost = calculateAccessListGasCost(tx)
+console.log(`Access list adds ${accessListCost} gas`)
+```
+
+### Access List Analysis
+
+```typescript
+import { getAccessList } from '@tevm/voltaire/Transaction'
+
+function analyzeAccessList(tx: Transaction.Any) {
+  const accessList = getAccessList(tx)
+
+  const uniqueAddresses = new Set(
+    accessList.map(item => Address.toHex(item.address))
+  )
+
+  const totalStorageKeys = accessList.reduce(
+    (sum, item) => sum + item.storageKeys.length,
+    0
+  )
+
+  return {
+    addressCount: uniqueAddresses.size,
+    storageKeyCount: totalStorageKeys,
+    isEmpty: accessList.length === 0,
+    gasCost: calculateAccessListGasCost(tx)
+  }
+}
+```
+
+### Merging Access Lists
+
+```typescript
+import { getAccessList } from '@tevm/voltaire/Transaction'
+import * as AccessList from '@tevm/voltaire/AccessList'
+
+function mergeTransactionAccessLists(
+  transactions: Transaction.Any[]
+): AccessList.AccessList {
+  const lists = transactions.map(getAccessList)
+  return AccessList.merge(...lists)
+}
+
+// Usage
+const merged = mergeTransactionAccessLists([tx1, tx2, tx3])
+```
+
+### Validation
+
+```typescript
+import { getAccessList } from '@tevm/voltaire/Transaction'
+
+function validateAccessList(tx: Transaction.Any): boolean {
+  const accessList = getAccessList(tx)
+
+  for (const item of accessList) {
+    // Check address is valid
+    if (item.address.length !== 20) {
+      return false
+    }
+
+    // Check storage keys are valid
+    for (const key of item.storageKeys) {
+      if (key.length !== 32) {
+        return false
+      }
+    }
+
+    // Check for duplicates
+    const uniqueKeys = new Set(item.storageKeys.map(k => Hash.toHex(k)))
+    if (uniqueKeys.size !== item.storageKeys.length) {
+      return false  // Duplicate storage keys
+    }
+  }
+
+  return true
+}
+```
+
+### Building Access Lists
+
+```typescript
+import { getAccessList } from '@tevm/voltaire/Transaction'
+import * as AccessList from '@tevm/voltaire/AccessList'
+
+function buildOptimalAccessList(
+  existingTx: Transaction.Any,
+  additionalAddresses: BrandedAddress[]
+): AccessList.AccessList {
+  // Start with existing access list
+  let list = getAccessList(existingTx)
+
+  // Add additional addresses
+  for (const addr of additionalAddresses) {
+    list = AccessList.withAddress(list, addr)
+  }
+
+  // Remove duplicates and optimize
+  return AccessList.deduplicate(list)
+}
+```
+
+## Gas Savings
+
+Access lists pre-declare storage access to save gas:
+
+```typescript
+// Without access list
+const coldAddressAccess = 2600n  // COLD_ACCOUNT_ACCESS_COST
+const coldStorageAccess = 2100n  // COLD_SLOAD_COST
+
+// With access list
+const accessListAddress = 2400n      // Per address in list
+const accessListStorage = 1900n      // Per storage key in list
+const warmAddressAccess = 100n       // WARM_STORAGE_READ_COST
+const warmStorageAccess = 100n       // WARM_STORAGE_READ_COST
+
+// Net savings per access (if accessed multiple times)
+const addressSavings = coldAddressAccess - (accessListAddress + warmAddressAccess)
+// = 2600 - (2400 + 100) = 100 gas
+
+const storageSavings = coldStorageAccess - (accessListStorage + warmStorageAccess)
+// = 2100 - (1900 + 100) = 100 gas
+```
+
+Access lists are beneficial when addresses/slots accessed 2+ times.
+
+## See Also
+
+- [hasAccessList](/primitives/transaction/has-access-list) - Check if transaction has access list
+- [AccessList](/primitives/accesslist) - Access list primitive and utilities
+- [GasConstants](/primitives/gasconstants) - Gas cost constants
+- [EIP-2930](/primitives/transaction/eip2930) - Access list transaction type
+
+## References
+
+- [EIP-2930: Optional access lists](https://eips.ethereum.org/EIPS/eip-2930)
+- [EIP-2929: Gas cost increases for state access opcodes](https://eips.ethereum.org/EIPS/eip-2929)
+- [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) - Gas costs

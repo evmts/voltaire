@@ -1,0 +1,79 @@
+---
+title: EventLog.wasRemoved
+description: Alias for isRemoved
+---
+
+<Tabs>
+<Tab title="Class API (recommended)">
+
+## `eventLog.wasRemoved(): boolean`
+
+Check if log was removed due to chain reorganization. Alias for `isRemoved()`.
+
+**Returns:** `boolean` - True if `log.removed === true`
+
+**Example:**
+
+```typescript
+import { EventLog, Address, Hash } from '@tevm/voltaire';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+  removed: true,
+});
+
+const removed = log.wasRemoved();
+console.log(removed); // true
+```
+
+</Tab>
+<Tab title="Namespace API (Tree-shakeable)">
+
+## `wasRemoved(log: BrandedEventLog): boolean`
+
+Check if log was removed due to chain reorganization. Alias for `isRemoved()`.
+
+**Parameters:**
+- `log: BrandedEventLog` - Event log to check
+
+**Returns:** `boolean` - True if `log.removed === true`
+
+**Example:**
+
+```typescript
+import * as EventLog from '@tevm/voltaire/EventLog';
+import * as Address from '@tevm/voltaire/Address';
+import * as Hash from '@tevm/voltaire/Hash';
+
+const log = EventLog.from({
+  address: Address.fromHex('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2'),
+  topics: [Hash.fromHex('0xddf252ad...')],
+  data: new Uint8Array([]),
+  removed: true,
+});
+
+const removed = EventLog.wasRemoved(log);
+console.log(removed); // true
+```
+
+</Tab>
+</Tabs>
+
+## Usage Notes
+
+`wasRemoved()` is functionally identical to `isRemoved()`:
+
+```typescript
+// Both equivalent
+const removed1 = log.isRemoved();
+const removed2 = log.wasRemoved();
+```
+
+Use whichever name is clearer in context. `wasRemoved()` emphasizes past tense; `isRemoved()` emphasizes current state.
+
+## See Also
+
+- [isRemoved](/primitives/eventlog/isremoved) - Primary method with full documentation
+- [Fundamentals](/primitives/eventlog/fundamentals) - Chain reorganizations

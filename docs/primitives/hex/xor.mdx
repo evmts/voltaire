@@ -1,0 +1,269 @@
+---
+title: Hex.xor
+description: Bitwise XOR operation on two hex strings
+---
+
+<Tabs>
+<Tab title="Class API">
+
+## `Hex.xor(hex: BrandedHex, other: BrandedHex): BrandedHex`
+
+Performs bitwise XOR operation on two hex strings of equal length.
+
+**Parameters:**
+- `hex: BrandedHex` - First hex string
+- `other: BrandedHex` - Second hex string (must be same length)
+
+**Returns:** `BrandedHex` - XOR result
+
+**Throws:**
+- `InvalidLengthError` - Hex strings have different lengths
+- `InvalidFormatError` - Missing `0x` prefix
+- `OddLengthError` - Odd number of hex digits
+- `InvalidCharacterError` - Invalid hex characters
+
+**Example:**
+
+```typescript
+import { Hex } from '@tevm/voltaire'
+
+// Basic XOR
+Hex.xor("0x12", "0x34")
+// "0x26" (0x12 ^ 0x34 = 0x26)
+
+// Multi-byte XOR
+Hex.xor("0x1234", "0x5678")
+// "0x444c"
+
+// XOR with all zeros (identity)
+Hex.xor("0xabcd", "0x0000")
+// "0xabcd"
+
+// XOR with all ones (invert)
+Hex.xor("0x12", "0xff")
+// "0xed"
+
+// XOR same values (zero result)
+Hex.xor("0x1234", "0x1234")
+// "0x0000"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/xor.js:29](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/xor.js#L29)
+
+</Tab>
+<Tab title="Namespace API">
+
+## `xor(hex: BrandedHex, other: BrandedHex): BrandedHex`
+
+Performs bitwise XOR operation on two hex strings of equal length.
+
+**Parameters:**
+- `hex: BrandedHex` - First hex string
+- `other: BrandedHex` - Second hex string (must be same length)
+
+**Returns:** `BrandedHex` - XOR result
+
+**Throws:**
+- `InvalidLengthError` - Different lengths
+
+**Example:**
+
+```typescript
+import * as Hex from '@tevm/voltaire/Hex'
+
+Hex.xor("0x12", "0x34")   // "0x26"
+Hex.xor("0x1234", "0x5678")  // "0x444c"
+```
+
+**Defined in:** [primitives/Hex/BrandedHex/xor.js:29](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/BrandedHex/xor.js#L29)
+
+</Tab>
+<Tab title="Zig">
+
+## `Hex.xor(hex: []const u8, other: []const u8, allocator: Allocator): ![]const u8`
+
+Bitwise XOR operation.
+
+**Parameters:**
+- `hex: []const u8` - First hex string
+- `other: []const u8` - Second hex string
+- `allocator: Allocator` - Memory allocator
+
+**Returns:** `[]const u8` - XOR result (caller owns memory)
+
+**Example:**
+
+```zig
+const std = @import("std");
+const Hex = @import("primitives").Hex;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+const result = try Hex.xor("0x12", "0x34", allocator);
+defer allocator.free(result);
+// result = "0x26"
+```
+
+**Defined in:** [primitives/Hex/hex.zig](https://github.com/evmts/voltaire/blob/main/src/primitives/Hex/hex.zig)
+
+</Tab>
+</Tabs>
+
+## XOR Truth Table
+
+Bitwise XOR for each bit:
+
+```
+0 ^ 0 = 0
+0 ^ 1 = 1
+1 ^ 0 = 1
+1 ^ 1 = 0
+```
+
+Byte-level examples:
+
+```typescript
+// 0x12 = 0001 0010
+// 0x34 = 0011 0100
+// XOR  = 0010 0110 = 0x26
+Hex.xor("0x12", "0x34")  // "0x26"
+
+// 0xff = 1111 1111
+// 0xaa = 1010 1010
+// XOR  = 0101 0101 = 0x55
+Hex.xor("0xff", "0xaa")  // "0x55"
+```
+
+## Common Use Cases
+
+**Encryption/Obfuscation:**
+```typescript
+// Simple XOR cipher
+const data = "0x1234567890abcdef"
+const key = "0xfedcba0987654321"
+
+// Encrypt
+const encrypted = Hex.xor(data, key)
+
+// Decrypt (XOR again with same key)
+const decrypted = Hex.xor(encrypted, key)
+// decrypted === data
+```
+
+**Merkle Tree Node Combination:**
+```typescript
+function combineNodes(left: string, right: string): string {
+  // XOR before hashing for mixing
+  const mixed = Hex.xor(left, right)
+  return keccak256(mixed)
+}
+```
+
+**Checksum Calculation:**
+```typescript
+function calculateChecksum(blocks: string[]): string {
+  return blocks.reduce((acc, block) =>
+    Hex.xor(acc, block),
+    Hex.zero(32)  // Start with all zeros
+  )
+}
+```
+
+**Bit Flipping:**
+```typescript
+// Flip all bits (XOR with all ones)
+const value = "0x12345678"
+const mask = "0xffffffff"
+const flipped = Hex.xor(value, mask)
+// "0xedcba987"
+```
+
+**Difference Detection:**
+```typescript
+// XOR highlights differences
+const v1 = "0xabcdef12"
+const v2 = "0xabcd0012"
+
+const diff = Hex.xor(v1, v2)
+// "0x0000ef00" (shows which bytes differ)
+```
+
+## Length Requirement
+
+Both hex strings must have same byte length:
+
+```typescript
+// Same length - ok
+Hex.xor("0x12", "0x34")      // ✓ Both 1 byte
+Hex.xor("0x1234", "0x5678")  // ✓ Both 2 bytes
+
+// Different lengths - throws
+try {
+  Hex.xor("0x12", "0x3456")  // 1 byte vs 2 bytes
+} catch (e) {
+  console.error(e.message)
+  // "Hex strings must have same length for XOR"
+}
+```
+
+Pad to same length if needed:
+
+```typescript
+const a = "0x12"
+const b = "0x3456"
+
+// Pad a to match b's length
+const padded = Hex.pad(a, 2)
+const result = Hex.xor(padded, b)
+// "0x3444"
+```
+
+## XOR Properties
+
+**Identity (XOR with zero):**
+```typescript
+Hex.xor("0x1234", "0x0000")  // "0x1234"
+```
+
+**Self-inverse (XOR with self = zero):**
+```typescript
+Hex.xor("0x1234", "0x1234")  // "0x0000"
+```
+
+**Commutative:**
+```typescript
+Hex.xor("0x12", "0x34") === Hex.xor("0x34", "0x12")  // true
+```
+
+**Associative:**
+```typescript
+const a = "0x12"
+const b = "0x34"
+const c = "0x56"
+
+Hex.xor(Hex.xor(a, b), c) === Hex.xor(a, Hex.xor(b, c))  // true
+```
+
+**Double XOR cancels:**
+```typescript
+const original = "0x1234"
+const key = "0x5678"
+
+const encrypted = Hex.xor(original, key)
+const decrypted = Hex.xor(encrypted, key)
+// decrypted === original
+```
+
+## Performance
+
+Byte-by-byte XOR operation. Complexity: O(n) where n is byte length.
+
+Very fast - typically used in cryptographic operations where performance matters.
+
+## See Also
+
+- [equals](/primitives/hex/equals) - Compare hex strings
+- [concat](/primitives/hex/concat) - Combine hex strings
+- [pad](/primitives/hex/pad) - Pad to same length
